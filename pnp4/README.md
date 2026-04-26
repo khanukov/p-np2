@@ -30,6 +30,18 @@ Ultimate bridge target:
 MCSP ∉ PpolyDAG ⇒ NP ⊄ PpolyDAG ⇒ P ≠ NP
 ```
 
+Next progress target:
+
+1. Treat the CKLM formula/local-PRG route as an exact-slice lower-bound
+   transfer, not as a `PpolyFormula` asymptotic source.  The current
+   `N^{2-o(1)}` envelope cannot beat every polynomial-size formula family.
+2. Make the next asymptotic milestone the `AC^0[p]` coin route for fixed depth:
+   prove that its paper-facing `exp(N^(0.49 / d))` envelope beats every
+   polynomial-size bound at truth-table lengths, then derive a non-vacuous
+   external-class MCSP lower bound.
+3. Keep the final `PpolyDAG` bridge frozen until an explicit `NP` language lower
+   bound against `PpolyDAG` is available.
+
 Honesty policy:
 
 `pnp4` does not claim unconditional `P ≠ NP` unless it proves `MCSP ∉ PpolyDAG`
@@ -82,5 +94,7 @@ Current theorem surface status:
   `CKLMFormulaCircuitLocalPRGSourceContract → FormulaCircuitPublishedLowerBoundContract → SizeLowerBound`.
 - `FormulaCircuitAsymptotic.lean`: optional bridge from slice lower bounds to
   `¬ PpolyFormula`, only under an explicit table-length escape hypothesis.
+  It also records the guardrail that the current CKLM `N^{2-o(1)}` envelope
+  cannot discharge that asymptotic growth hypothesis by itself.
 - `BridgeToPpolyDAG.lean`: final bridge shell from a verified `NP` language
   lower bound against `PpolyDAG` to the existing `pnp3` `P ≠ NP` target.

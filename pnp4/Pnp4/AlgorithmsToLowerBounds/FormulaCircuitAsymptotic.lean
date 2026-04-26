@@ -20,6 +20,133 @@ def BeatsEveryPpolyBoundAtSomeTableLength
       ∃ n : Nat, polyBound (Pnp3.Models.Partial.tableLen n) < sizeBound n + 1
 
 /--
+Strengthened growth escape condition: for every polynomial witness and every
+requested lower cutoff `nMin`, there is a later truth-table slice where the
+size schedule beats that polynomial witness.
+
+This is useful only as a reusable growth-transfer tool.  For the current CKLM
+`N^{2-o(1)}` envelope below, the matching frequent-growth obligation is proved
+impossible by `not_beatsEveryPpolyBoundFrequentlyAtSomeTableLength_cklmEnvelope`.
+-/
+def BeatsEveryPpolyBoundFrequentlyAtSomeTableLength
+    (sizeBound : Nat → Nat) : Prop :=
+  ∀ polyBound : Nat → Nat,
+    (∃ c : Nat, ∀ m : Nat, polyBound m ≤ m ^ c + c) →
+      ∀ nMin : Nat,
+        ∃ n : Nat,
+          nMin ≤ n ∧
+            polyBound (Pnp3.Models.Partial.tableLen n) < sizeBound n + 1
+
+/--
+The strengthened frequent escape condition implies the original one-shot
+escape condition by instantiating `nMin = 0`.
+-/
+theorem BeatsEveryPpolyBoundAtSomeTableLength.of_frequently
+    {sizeBound : Nat → Nat}
+    (hFreq : BeatsEveryPpolyBoundFrequentlyAtSomeTableLength sizeBound) :
+    BeatsEveryPpolyBoundAtSomeTableLength sizeBound := by
+  intro polyBound hPoly
+  rcases hFreq polyBound hPoly 0 with ⟨n, _hn0, hBeat⟩
+  exact ⟨n, hBeat⟩
+
+/--
+Transfer lemma for growth obligations.
+
+If `lowerBound` already beats every polynomial witness on arbitrarily late
+truth-table slices, and `sizeBound` eventually dominates `lowerBound`, then
+`sizeBound` also beats every polynomial witness on some truth-table slice.
+-/
+theorem BeatsEveryPpolyBoundAtSomeTableLength.of_eventuallyAtLeast
+    {lowerBound sizeBound : Nat → Nat}
+    (hFreqLower : BeatsEveryPpolyBoundFrequentlyAtSomeTableLength lowerBound)
+    (hEventually : ∃ n0 : Nat, ∀ n : Nat, n0 ≤ n → lowerBound n ≤ sizeBound n) :
+    BeatsEveryPpolyBoundAtSomeTableLength sizeBound := by
+  rcases hEventually with ⟨n0, hEventually⟩
+  refine BeatsEveryPpolyBoundAtSomeTableLength.of_frequently ?_
+  intro polyBound hPoly nMin
+  let nCut := max nMin n0
+  rcases hFreqLower polyBound hPoly nCut with ⟨n, hnCut, hBeatLower⟩
+  have hn0 : n0 ≤ n := le_trans (le_max_right nMin n0) hnCut
+  have hLowerLe : lowerBound n ≤ sizeBound n := hEventually n hn0
+  refine ⟨n, le_trans (le_max_left nMin n0) hnCut, ?_⟩
+  exact lt_of_lt_of_le hBeatLower (Nat.succ_le_succ hLowerLe)
+
+/--
+No-go theorem for the currently encoded CKLM Theorem-2 envelope:
+it cannot satisfy `BeatsEveryPpolyBoundAtSomeTableLength`.
+
+Reason: on slice length `m = 2^n`, the encoded envelope is always at most
+`m^2`, while the polynomial witness `m ↦ m^8 + 8` is strictly larger than
+`m^2 + 1`.  Thus the strict growth obligation needed for the asymptotic
+`¬ PpolyFormula` bridge can never hold for this envelope.
+-/
+theorem not_beatsEveryPpolyBoundAtSomeTableLength_cklmEnvelope
+    (c : Nat) :
+    ¬ BeatsEveryPpolyBoundAtSomeTableLength (cklmFormulaTheorem2LowerEnvelope c) := by
+  intro hBeat
+  let polyBound : Nat → Nat := fun m => m ^ 8 + 8
+  have hPolyBound :
+      ∃ d : Nat, ∀ m : Nat, polyBound m ≤ m ^ d + d := by
+    refine ⟨8, ?_⟩
+    intro m
+    simp [polyBound]
+  rcases hBeat polyBound hPolyBound with ⟨n, hlt⟩
+  have hExpLe : (2 * n) / (2 ^ (c * Nat.sqrt n + c)) ≤ 2 * n := by
+    exact Nat.div_le_self _ _
+  have hEnvelopeLe_pow2n :
+      cklmFormulaTheorem2LowerEnvelope c n ≤ 2 ^ (2 * n) := by
+    unfold cklmFormulaTheorem2LowerEnvelope
+    exact Nat.pow_le_pow_right (by decide : 0 < 2) hExpLe
+  have hPowLe :
+      2 ^ (2 * n) ≤ 2 ^ (8 * n) := by
+    have hMul : 2 * n ≤ 8 * n := by omega
+    exact Nat.pow_le_pow_right (by decide : 0 < 2) hMul
+  have hEnvelopeSuccLe :
+      cklmFormulaTheorem2LowerEnvelope c n + 1 ≤
+        polyBound (Pnp3.Models.Partial.tableLen n) := by
+    have hStep1 :
+        cklmFormulaTheorem2LowerEnvelope c n + 1 ≤ 2 ^ (2 * n) + 1 :=
+      Nat.succ_le_succ hEnvelopeLe_pow2n
+    have hStep2 :
+        2 ^ (2 * n) + 1 ≤ 2 ^ (8 * n) + 8 := by
+      have hPowPlus :
+          2 ^ (2 * n) + 1 ≤ 2 ^ (8 * n) + 1 :=
+        Nat.add_le_add_right hPowLe 1
+      have hOneLeEight : (1 : Nat) ≤ 8 := by decide
+      have hLift :
+          2 ^ (8 * n) + 1 ≤ 2 ^ (8 * n) + 8 :=
+        Nat.add_le_add_left hOneLeEight (2 ^ (8 * n))
+      exact le_trans hPowPlus hLift
+    have hPolyEval :
+        polyBound (Pnp3.Models.Partial.tableLen n) = 2 ^ (8 * n) + 8 := by
+      simp [polyBound, Pnp3.Models.Partial.tableLen, Nat.pow_mul, Nat.mul_comm]
+    exact le_trans hStep1 (by simpa [hPolyEval] using hStep2)
+  exact (Nat.not_lt_of_ge hEnvelopeSuccLe) hlt
+
+/--
+Frequent-escape no-go for the currently encoded CKLM envelope.
+-/
+theorem not_beatsEveryPpolyBoundFrequentlyAtSomeTableLength_cklmEnvelope
+    (c : Nat) :
+    ¬ BeatsEveryPpolyBoundFrequentlyAtSomeTableLength
+        (cklmFormulaTheorem2LowerEnvelope c) := by
+  intro hFreq
+  exact not_beatsEveryPpolyBoundAtSomeTableLength_cklmEnvelope c
+    (BeatsEveryPpolyBoundAtSomeTableLength.of_frequently hFreq)
+
+/--
+Global guardrail: a uniform frequent-growth hypothesis for the current CKLM
+envelope family is inconsistent.  Any downstream route requiring this hypothesis
+is diagnostic/vacuous, not progress toward `¬ PpolyFormula`.
+-/
+theorem no_uniform_cklmEnvelopeFrequentEscape : (∀ c : Nat,
+    BeatsEveryPpolyBoundFrequentlyAtSomeTableLength
+      (cklmFormulaTheorem2LowerEnvelope c)) → False := by
+  intro hUniform
+  exact not_beatsEveryPpolyBoundFrequentlyAtSomeTableLength_cklmEnvelope 0
+    (hUniform 0)
+
+/--
 Global asymptotic language attached to one thresholded exact-slice schedule.
 
 At lengths of the form `2^n`, this recovers the exact thresholded tree-MCSP

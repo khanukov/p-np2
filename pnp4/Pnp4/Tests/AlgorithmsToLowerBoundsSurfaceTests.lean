@@ -774,6 +774,23 @@ def check_no_ppolyFormula_of_CKLM_localPRG_source
   no_PpolyFormula_of_CKLMFormulaCircuitLocalPRGSource_and_growth
     contract hGrowth
 
+def check_not_beatsEveryPpolyBoundAtSomeTableLength_cklmEnvelope
+    (c : Nat) :
+    ¬ BeatsEveryPpolyBoundAtSomeTableLength (cklmFormulaTheorem2LowerEnvelope c) :=
+  not_beatsEveryPpolyBoundAtSomeTableLength_cklmEnvelope c
+
+def check_not_beatsEveryPpolyBoundFrequentlyAtSomeTableLength_cklmEnvelope
+    (c : Nat) :
+    ¬ BeatsEveryPpolyBoundFrequentlyAtSomeTableLength
+        (cklmFormulaTheorem2LowerEnvelope c) :=
+  not_beatsEveryPpolyBoundFrequentlyAtSomeTableLength_cklmEnvelope c
+
+def check_no_uniform_cklmEnvelopeFrequentEscape :
+    (∀ c : Nat,
+      BeatsEveryPpolyBoundFrequentlyAtSomeTableLength
+        (cklmFormulaTheorem2LowerEnvelope c)) → False :=
+  no_uniform_cklmEnvelopeFrequentEscape
+
 #print axioms AlgorithmsToLowerBounds.NP_not_subset_PpolyDAG_of_verified_source
 #print axioms AlgorithmsToLowerBounds.P_ne_NP_of_verified_source
 #print axioms AlgorithmsToLowerBounds.ImplementedThresholdOracle.classSolvesCoinProblem_of_advantage
@@ -813,6 +830,9 @@ def check_no_ppolyFormula_of_CKLM_localPRG_source
 #print axioms AlgorithmsToLowerBounds.no_PpolyFormula_of_formulaCircuitPublishedLocalPRGRoute_and_growth
 #print axioms AlgorithmsToLowerBounds.no_PpolyFormula_of_CKLM_formulaOrBranchingProgramRoute_and_growth
 #print axioms AlgorithmsToLowerBounds.no_PpolyFormula_of_CKLMFormulaCircuitLocalPRGSource_and_growth
+#print axioms AlgorithmsToLowerBounds.not_beatsEveryPpolyBoundAtSomeTableLength_cklmEnvelope
+#print axioms AlgorithmsToLowerBounds.not_beatsEveryPpolyBoundFrequentlyAtSomeTableLength_cklmEnvelope
+#print axioms AlgorithmsToLowerBounds.no_uniform_cklmEnvelopeFrequentEscape
 
 end Tests
 end Pnp4

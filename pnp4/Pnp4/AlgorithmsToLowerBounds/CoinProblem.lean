@@ -337,6 +337,18 @@ theorem classSolvesCoinProblem_of_bounded
   rcases h with ⟨c, _hcSize, hSolve⟩
   exact ⟨c, hSolve⟩
 
+/-- A solver bounded by a smaller size is also bounded by any larger size. -/
+theorem BoundedClassSolvesCoinProblem.mono_size
+    {C : CircuitFamilyClass}
+    {inst : CoinProblemInstance}
+    {adv : Rat}
+    {smallBound largeBound : Nat}
+    (hSolve : BoundedClassSolvesCoinProblem C inst adv smallBound)
+    (hLe : smallBound ≤ largeBound) :
+    BoundedClassSolvesCoinProblem C inst adv largeBound := by
+  rcases hSolve with ⟨c, hSize, hCoin⟩
+  exact ⟨c, le_trans hSize hLe, hCoin⟩
+
 /-- Acceptance probability depends only on the extensional Boolean function. -/
 theorem acceptanceProbability_congr
     {n : Nat} {bias : Rat}

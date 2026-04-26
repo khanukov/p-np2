@@ -93,7 +93,11 @@ Current theorem surface status:
   `CircuitCoinDistinguisherFamily` and `CoinTranslationPreservesClass`, making
   explicit the required class/size preservation: a circuit-realized source
   distinguisher translates to a circuit-realized half-vs-fair distinguisher
-  with no larger size schedule.  The older
+  with no larger size schedule.  This now feeds the published coin lower-bound
+  contract through `BoundedClassSolvesCoinProblem_of_translated_realization`
+  and the adjacent-bias contradiction theorem
+  `false_of_AC0p_circuit_family_computes_adjacentBias_MCSP_hardDecision`.
+  The older
   `AdjacentBiasToHalfVsFairRejectionTranslationContract` remains only as a
   stronger direct-translation target.
 - `AC0pCoinLowerBound.lean`: explicit contract layer for published `AC^0[p]`

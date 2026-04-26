@@ -580,6 +580,16 @@ def check_circuit_coin_distinguisher_family_bounded_solves
       (realized.sizeBound n) :=
   realized.boundedSolves n
 
+def check_boundedClassSolvesCoinProblem_mono_size
+    {C : CircuitFamilyClass}
+    {inst : CoinProblemInstance}
+    {adv : Rat}
+    {smallBound largeBound : Nat}
+    (hSolve : BoundedClassSolvesCoinProblem C inst adv smallBound)
+    (hLe : smallBound ≤ largeBound) :
+    BoundedClassSolvesCoinProblem C inst adv largeBound :=
+  BoundedClassSolvesCoinProblem.mono_size hSolve hLe
+
 noncomputable def check_coin_distinguisher_family_of_adjacentBiasMCSP
     (facts : AdjacentBiasMCSPThresholdSeparationFacts) :
     CoinDistinguisherFamily :=
@@ -673,6 +683,112 @@ noncomputable def check_circuit_coin_distinguisher_family_translate_to_halfVsFai
             (realized.circuit n)
             (realized.solves n))) :=
   realized.translate_to_halfVsFair translation
+
+def check_boundedClassSolvesCoinProblem_of_translated_realization
+    {C : CircuitFamilyClass}
+    {source : CoinDistinguisherFamily}
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (realized : CircuitCoinDistinguisherFamily C source)
+    (translation : CoinTranslationPreservesClass C source hardness)
+    (n : Nat) :
+    BoundedClassSolvesCoinProblem
+      C
+      (hardness.instance n)
+      (hardness.advantage n)
+      (realized.sizeBound n) :=
+  BoundedClassSolvesCoinProblem_of_translated_realization
+    realized
+    translation
+    n
+
+def check_false_of_translated_realization_and_AC0pCoinLowerBound
+    {model : AC0pFamilyModel}
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    {source : CoinDistinguisherFamily}
+    {p depth n : Nat}
+    (contract : AC0pHalfVsFairCoinLowerBoundContract model hardness)
+    (hp : Nat.Prime p)
+    (realized :
+      CircuitCoinDistinguisherFamily
+        (model.classOf p depth)
+        source)
+    (translation :
+      CoinTranslationPreservesClass
+        (model.classOf p depth)
+        source
+        hardness)
+    (hSize :
+      realized.sizeBound n ≤ contract.sizeBound depth n) :
+    False :=
+  false_of_translated_realization_and_AC0pCoinLowerBound
+    contract
+    hp
+    realized
+    translation
+    hSize
+
+def check_false_of_adjacentBias_realization_translation_and_AC0pCoinLowerBound
+    {model : AC0pFamilyModel}
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    {facts : AdjacentBiasMCSPThresholdSeparationFacts}
+    {p depth n : Nat}
+    (contract : AC0pHalfVsFairCoinLowerBoundContract model hardness)
+    (hp : Nat.Prime p)
+    (realized :
+      CircuitCoinDistinguisherFamily
+        (model.classOf p depth)
+        (CoinDistinguisherFamily.of_adjacentBiasMCSP facts))
+    (translation :
+      CoinTranslationPreservesClass
+        (model.classOf p depth)
+        (CoinDistinguisherFamily.of_adjacentBiasMCSP facts)
+        hardness)
+    (hSize :
+      realized.sizeBound n ≤ contract.sizeBound depth n) :
+    False :=
+  false_of_adjacentBias_realization_translation_and_AC0pCoinLowerBound
+    contract
+    hp
+    realized
+    translation
+    hSize
+
+def check_false_of_AC0p_circuit_family_computes_adjacentBias_MCSP_hardDecision
+    {model : AC0pFamilyModel}
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (contract : AC0pHalfVsFairCoinLowerBoundContract model hardness)
+    (facts : AdjacentBiasMCSPThresholdSeparationFacts)
+    {p depth n : Nat}
+    (hp : Nat.Prime p)
+    (translation :
+      CoinTranslationPreservesClass
+        (model.classOf p depth)
+        (CoinDistinguisherFamily.of_adjacentBiasMCSP facts)
+        hardness)
+    (circuit :
+      ∀ m : Nat,
+        (model.classOf p depth).Family (Pnp3.Models.Partial.tableLen m))
+    (computes :
+      ∀ m : Nat, ∀ x : AlgorithmsToLowerBounds.BitVec (Pnp3.Models.Partial.tableLen m),
+        (model.classOf p depth).eval (circuit m) x =
+          exactTreeMCSPThresholdHardDecision m (facts.threshold m) x)
+    (sizeBound : Nat → Nat)
+    (size_le :
+      ∀ m : Nat,
+        (model.classOf p depth).size (circuit m) ≤ sizeBound m)
+    (hSize :
+      sizeBound n ≤ contract.sizeBound depth n) :
+    False :=
+  false_of_AC0p_circuit_family_computes_adjacentBias_MCSP_hardDecision
+    contract
+    facts
+    hp
+    translation
+    circuit
+    computes
+    sizeBound
+    size_le
+    hSize
 
 noncomputable def check_adjacent_bias_to_half_vs_fair_coin_solver_translation_contract
     (facts : AdjacentBiasMCSPThresholdSeparationFacts)
@@ -1566,6 +1682,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms AlgorithmsToLowerBounds.MCSPThresholdOracle.rejects_of_not_treeMCSPPredicate
 #print axioms AlgorithmsToLowerBounds.ImplementedThresholdOracle.classSolvesCoinProblem_of_advantage
 #print axioms AlgorithmsToLowerBounds.classSolvesCoinProblem_of_bounded
+#print axioms AlgorithmsToLowerBounds.BoundedClassSolvesCoinProblem.mono_size
 #print axioms AlgorithmsToLowerBounds.AC0pHalfVsFairCoinLowerBoundContract.excludes_small_solver
 #print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinReductionContract.of_distributionFacts
 #print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinReductionContract.of_treeMCSPPredicateMassFacts
@@ -1581,6 +1698,10 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms AlgorithmsToLowerBounds.CoinDistinguisherToHalfVsFairTranslationContract.solvesCoin
 #print axioms AlgorithmsToLowerBounds.halfVsFairCoinDistinguisherFamily
 #print axioms AlgorithmsToLowerBounds.CircuitCoinDistinguisherFamily.translate_to_halfVsFair
+#print axioms AlgorithmsToLowerBounds.BoundedClassSolvesCoinProblem_of_translated_realization
+#print axioms AlgorithmsToLowerBounds.false_of_translated_realization_and_AC0pCoinLowerBound
+#print axioms AlgorithmsToLowerBounds.false_of_adjacentBias_realization_translation_and_AC0pCoinLowerBound
+#print axioms AlgorithmsToLowerBounds.false_of_AC0p_circuit_family_computes_adjacentBias_MCSP_hardDecision
 #print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinRejectionContract.of_adjacentBiasSeparation_and_translation
 #print axioms AlgorithmsToLowerBounds.treeMCSPCountRatio_le_one_sub_self_fairLower
 #print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinRejectionContract.of_biasedLowComplexityMassFacts

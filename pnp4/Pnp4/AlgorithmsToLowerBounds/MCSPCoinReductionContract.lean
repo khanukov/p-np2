@@ -385,6 +385,143 @@ noncomputable def CircuitCoinDistinguisherFamily.translate_to_halfVsFair
       (translation.size_le n (realized.circuit n))
       (realized.size_le n)
 
+/--
+The lower-bound-facing readout of a class-preserving coin translation: a
+circuit-realized source solver yields a bounded circuit solver for the target
+half-vs-fair coin instance.
+-/
+theorem BoundedClassSolvesCoinProblem_of_translated_realization
+    {C : CircuitFamilyClass}
+    {source : CoinDistinguisherFamily}
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (realized : CircuitCoinDistinguisherFamily C source)
+    (translation : CoinTranslationPreservesClass C source hardness)
+    (n : Nat) :
+    BoundedClassSolvesCoinProblem
+      C
+      (hardness.instance n)
+      (hardness.advantage n)
+      (realized.sizeBound n) :=
+  (realized.translate_to_halfVsFair translation).boundedSolves n
+
+/--
+Generic contradiction bridge: once a source coin solver is circuit-realized and
+the translation preserves the circuit class and size, the published half-vs-fair
+coin lower-bound contract rules out any slice whose translated size fits under
+the contract's bound.
+-/
+theorem false_of_translated_realization_and_AC0pCoinLowerBound
+    {model : AC0pFamilyModel}
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    {source : CoinDistinguisherFamily}
+    {p depth n : Nat}
+    (contract : AC0pHalfVsFairCoinLowerBoundContract model hardness)
+    (hp : Nat.Prime p)
+    (realized :
+      CircuitCoinDistinguisherFamily
+        (model.classOf p depth)
+        source)
+    (translation :
+      CoinTranslationPreservesClass
+        (model.classOf p depth)
+        source
+        hardness)
+    (hSize :
+      realized.sizeBound n ≤ contract.sizeBound depth n) :
+    False := by
+  have hTargetSmall :
+      BoundedClassSolvesCoinProblem
+        (model.classOf p depth)
+        (hardness.instance n)
+        (hardness.advantage n)
+        (realized.sizeBound n) :=
+    BoundedClassSolvesCoinProblem_of_translated_realization
+      realized
+      translation
+      n
+  have hTarget :
+      BoundedClassSolvesCoinProblem
+        (model.classOf p depth)
+        (hardness.instance n)
+        (hardness.advantage n)
+        (contract.sizeBound depth n) :=
+    BoundedClassSolvesCoinProblem.mono_size hTargetSmall hSize
+  exact contract.excludes_small_solver hp hTarget
+
+/--
+Adjacent-bias specialization of the generic contradiction bridge.
+-/
+theorem false_of_adjacentBias_realization_translation_and_AC0pCoinLowerBound
+    {model : AC0pFamilyModel}
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    {facts : AdjacentBiasMCSPThresholdSeparationFacts}
+    {p depth n : Nat}
+    (contract : AC0pHalfVsFairCoinLowerBoundContract model hardness)
+    (hp : Nat.Prime p)
+    (realized :
+      CircuitCoinDistinguisherFamily
+        (model.classOf p depth)
+        (CoinDistinguisherFamily.of_adjacentBiasMCSP facts))
+    (translation :
+      CoinTranslationPreservesClass
+        (model.classOf p depth)
+        (CoinDistinguisherFamily.of_adjacentBiasMCSP facts)
+        hardness)
+    (hSize :
+      realized.sizeBound n ≤ contract.sizeBound depth n) :
+    False :=
+  false_of_translated_realization_and_AC0pCoinLowerBound
+    contract
+    hp
+    realized
+    translation
+    hSize
+
+/--
+Contradiction form starting from an explicit `AC0[p]` circuit family computing
+the adjacent-bias MCSP hard-threshold decisions.
+-/
+theorem false_of_AC0p_circuit_family_computes_adjacentBias_MCSP_hardDecision
+    {model : AC0pFamilyModel}
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (contract : AC0pHalfVsFairCoinLowerBoundContract model hardness)
+    (facts : AdjacentBiasMCSPThresholdSeparationFacts)
+    {p depth n : Nat}
+    (hp : Nat.Prime p)
+    (translation :
+      CoinTranslationPreservesClass
+        (model.classOf p depth)
+        (CoinDistinguisherFamily.of_adjacentBiasMCSP facts)
+        hardness)
+    (circuit :
+      ∀ m : Nat, (model.classOf p depth).Family (Pnp3.Models.Partial.tableLen m))
+    (computes :
+      ∀ m : Nat, ∀ x : BitVec (Pnp3.Models.Partial.tableLen m),
+        (model.classOf p depth).eval (circuit m) x =
+          exactTreeMCSPThresholdHardDecision m (facts.threshold m) x)
+    (sizeBound : Nat → Nat)
+    (size_le :
+      ∀ m : Nat,
+        (model.classOf p depth).size (circuit m) ≤ sizeBound m)
+    (hSize :
+      sizeBound n ≤ contract.sizeBound depth n) :
+    False := by
+  let realized :=
+    CircuitCoinDistinguisherFamily.of_adjacentBiasMCSP_circuit
+      (model.classOf p depth)
+      facts
+      circuit
+      computes
+      sizeBound
+      size_le
+  exact
+    false_of_adjacentBias_realization_translation_and_AC0pCoinLowerBound
+      contract
+      hp
+      realized
+      translation
+      hSize
+
 /-- Adjacent-bias specialization of the generic half-vs-fair translation contract. -/
 abbrev AdjacentBiasToHalfVsFairCoinSolverTranslationContract
     (facts : AdjacentBiasMCSPThresholdSeparationFacts)

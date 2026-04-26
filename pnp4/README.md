@@ -35,11 +35,11 @@ Next progress target:
 1. Treat the CKLM formula/local-PRG route as an exact-slice lower-bound
    transfer, not as a `PpolyFormula` asymptotic source.  The current
    `N^{2-o(1)}` envelope cannot beat every polynomial-size formula family.
-2. Use the `AC^0[p]` coin route through the weaker normalized contract
-   `QuasiPolyLower N = N ^ log2 N`.  The pointwise and asymptotic bridges from
-   this lower bound to no polynomial-size fixed-depth `AC^0[p]` families are now
-   unconditional; the next source theorem is the published coin/MCSP lower-bound
-   contract in asymptotic quasi-polynomial form.
+2. Use the `AC^0[p]` coin route through the published-envelope contract and the
+   truth-table-slice asymptotic language.  The dense `EventuallySizeLowerBound`
+   bridge is available for dense lower bounds; the current coin route is sparse
+   on truth-table lengths, so it is connected through an explicit table-slice
+   growth condition instead of being forced into a false dense contract.
 3. Keep the final `PpolyDAG` bridge frozen until an explicit `NP` language lower
    bound against `PpolyDAG` is available.
 
@@ -77,6 +77,10 @@ Current theorem surface status:
 - `MCSP_AC0p_Quantitative.lean`: paper-facing quantitative shell for the
   published `exp(N^(0.49 / d))` envelope, with explicit bias-gap and advantage
   profile metadata for the half-vs-fair coin regime.
+- `AC0pCoinAsymptotic.lean`: global half-vs-fair MCSP coin asymptotic language
+  on truth-table lengths and the published-contract consequence
+  `¬ InAC0p`, conditional on the published envelope beating every polynomial on
+  those slices.
 - `Growth.lean`: unconditional arithmetic that
   `QuasiPolyLower N = N ^ log2 N` has super-polynomial growth.
 - `SuperPolynomialBridge.lean`: generic bridge from a super-polynomial

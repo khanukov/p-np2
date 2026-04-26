@@ -31,6 +31,29 @@ theorem EventuallySizeLowerBound.of_sizeLowerBound
   exact hLB N
 
 /--
+Weaken an eventual size lower bound along an eventual domination witness.
+
+If `strong` eventually dominates `weak`, then any eventual lower bound by
+`strong` is also an eventual lower bound by `weak`.
+-/
+theorem EventuallySizeLowerBound.weaken
+    {C : CircuitFamilyClass}
+    {L : BitVecLanguage}
+    {strong weak : Nat → Nat}
+    (hLB : EventuallySizeLowerBound C L strong)
+    (hDom : EventuallyDominates strong weak) :
+    EventuallySizeLowerBound C L weak := by
+  rcases hLB with ⟨NLower, hLB⟩
+  rcases hDom with ⟨NDom, hDom⟩
+  refine ⟨max NLower NDom, ?_⟩
+  intro N hN c hCorrect
+  have hNLower : NLower ≤ N :=
+    le_trans (Nat.le_max_left NLower NDom) hN
+  have hNDom : NDom ≤ N :=
+    le_trans (Nat.le_max_right NLower NDom) hN
+  exact le_trans (hDom N hNDom) (hLB N hNLower c hCorrect)
+
+/--
 Generic asymptotic super-polynomial bridge.
 
 If exact circuits for `L` are eventually at least `lower`, and `lower` is

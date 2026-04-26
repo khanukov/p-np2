@@ -162,6 +162,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.AlgorithmsToLowerBounds.MCSPCoinReductionContract,
     Glob.one `Pnp4.AlgorithmsToLowerBounds.MCSP_AC0p_Final,
     Glob.one `Pnp4.AlgorithmsToLowerBounds.MCSP_AC0p_Quantitative,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.AC0pCoinAsymptotic,
     Glob.one `Pnp4.AlgorithmsToLowerBounds.MCSP_LocalPRG_Transfer,
     Glob.one `Pnp4.AlgorithmsToLowerBounds.LocalPRGHardnessSpec,
     Glob.one `Pnp4.AlgorithmsToLowerBounds.FormulaCircuitTargetModel,

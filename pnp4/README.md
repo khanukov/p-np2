@@ -35,10 +35,11 @@ Next progress target:
 1. Treat the CKLM formula/local-PRG route as an exact-slice lower-bound
    transfer, not as a `PpolyFormula` asymptotic source.  The current
    `N^{2-o(1)}` envelope cannot beat every polynomial-size formula family.
-2. Make the next asymptotic milestone the `AC^0[p]` coin route for fixed depth:
-   prove that its paper-facing `exp(N^(0.49 / d))` envelope beats every
-   polynomial-size bound at truth-table lengths, then derive a non-vacuous
-   external-class MCSP lower bound.
+2. Use the `AC^0[p]` coin route through the weaker normalized contract
+   `QuasiPolyLower N = N ^ log2 N`.  The generic bridge from this lower bound to
+   no polynomial-size fixed-depth `AC^0[p]` families is now unconditional; the
+   next source theorem is the published coin/MCSP lower-bound contract in this
+   quasi-polynomial form.
 3. Keep the final `PpolyDAG` bridge frozen until an explicit `NP` language lower
    bound against `PpolyDAG` is available.
 
@@ -76,6 +77,14 @@ Current theorem surface status:
 - `MCSP_AC0p_Quantitative.lean`: paper-facing quantitative shell for the
   published `exp(N^(0.49 / d))` envelope, with explicit bias-gap and advantage
   profile metadata for the half-vs-fair coin regime.
+- `Growth.lean`: unconditional arithmetic that
+  `QuasiPolyLower N = N ^ log2 N` has super-polynomial growth.
+- `SuperPolynomialBridge.lean`: generic bridge from a super-polynomial
+  `SizeLowerBound` to exclusion of polynomial-size non-uniform families.
+- `AC0pSuperPolynomialBridge.lean`: fixed-depth `AC0[p]` specialization,
+  deriving `¬ InAC0p` from depthwise quasi-polynomial lower bounds.  The bridge
+  is unconditional; the quasi-polynomial lower-bound contract remains the
+  external published input.
 - `LocalPRG.lean`: truth-table local-PRG surface with easy-image and
   pseudorandomness interfaces against size-bounded circuit classes.
 - `MCSP_LocalPRG_Transfer.lean`: proved Shannon-counting upper bound for

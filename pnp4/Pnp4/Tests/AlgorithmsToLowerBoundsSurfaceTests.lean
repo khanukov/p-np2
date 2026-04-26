@@ -1,4 +1,7 @@
 import Pnp4.AlgorithmsToLowerBounds.BasicCircuitClasses
+import Pnp4.AlgorithmsToLowerBounds.Growth
+import Pnp4.AlgorithmsToLowerBounds.SuperPolynomialBridge
+import Pnp4.AlgorithmsToLowerBounds.AC0pSuperPolynomialBridge
 import Pnp4.AlgorithmsToLowerBounds.TruthTableMCSP
 import Pnp4.AlgorithmsToLowerBounds.LocalPRG
 import Pnp4.AlgorithmsToLowerBounds.CoinProblem
@@ -25,6 +28,52 @@ def check_NotInClass :
     ∀ (C : CircuitFamilyClass) (L : BitVecLanguage),
       NotInClass C L → NotInClass C L :=
   fun _ _ h => h
+
+def check_quasiPolyLower_superPolynomialGrowth :
+    SuperPolynomialGrowth QuasiPolyLower :=
+  quasiPolyLower_superPolynomialGrowth
+
+def check_not_hasPolynomialSizeFamily_of_superPolynomial_lowerBound
+    {C : CircuitFamilyClass}
+    {L : BitVecLanguage}
+    {lower : Nat → Nat}
+    (hLB : SizeLowerBound C L lower)
+    (hGrowth : SuperPolynomialGrowth lower) :
+    ¬ HasPolynomialSizeFamily C L :=
+  not_hasPolynomialSizeFamily_of_superPolynomial_lowerBound hLB hGrowth
+
+def check_not_hasPolynomialSizeFamily_of_quasiPolynomial_lowerBound
+    {C : CircuitFamilyClass}
+    {L : BitVecLanguage}
+    (hLB : SizeLowerBound C L QuasiPolyLower) :
+    ¬ HasPolynomialSizeFamily C L :=
+  not_hasPolynomialSizeFamily_of_quasiPolynomial_lowerBound hLB
+
+def check_not_depth_d_AC0p_of_quasiPoly_lowerBound
+    (model : AC0pFamilyModel)
+    (p depth : Nat)
+    (L : BitVecLanguage)
+    (hLB : SizeLowerBound (model.classOf p depth) L QuasiPolyLower) :
+    ¬ HasPolynomialSizeFamily (model.classOf p depth) L :=
+  not_depth_d_AC0p_of_quasiPoly_lowerBound model p depth L hLB
+
+def check_not_in_AC0p_of_depthwise_quasiPoly_lowerBound
+    (model : AC0pFamilyModel)
+    (p : Nat)
+    (L : BitVecLanguage)
+    (hLB : ∀ depth : Nat,
+      SizeLowerBound (model.classOf p depth) L QuasiPolyLower) :
+    ¬ InAC0p model p L :=
+  not_in_AC0p_of_depthwise_quasiPoly_lowerBound model p L hLB
+
+def check_not_in_AC0p_from_quasiPolynomial_contract
+    {model : AC0pFamilyModel}
+    {L : BitVecLanguage}
+    (contract : AC0pQuasiPolynomialLowerBoundContract model L)
+    (p : Nat)
+    (hp : Nat.Prime p) :
+    ¬ InAC0p model p L :=
+  not_in_AC0p_from_quasiPolynomial_contract contract p hp
 
 def check_treeMCSPPredicate
     (n s : Nat) (tt : TruthTable n) : Prop :=
@@ -793,6 +842,12 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 
 #print axioms AlgorithmsToLowerBounds.NP_not_subset_PpolyDAG_of_verified_source
 #print axioms AlgorithmsToLowerBounds.P_ne_NP_of_verified_source
+#print axioms AlgorithmsToLowerBounds.quasiPolyLower_superPolynomialGrowth
+#print axioms AlgorithmsToLowerBounds.not_hasPolynomialSizeFamily_of_superPolynomial_lowerBound
+#print axioms AlgorithmsToLowerBounds.not_hasPolynomialSizeFamily_of_quasiPolynomial_lowerBound
+#print axioms AlgorithmsToLowerBounds.not_depth_d_AC0p_of_quasiPoly_lowerBound
+#print axioms AlgorithmsToLowerBounds.not_in_AC0p_of_depthwise_quasiPoly_lowerBound
+#print axioms AlgorithmsToLowerBounds.not_in_AC0p_from_quasiPolynomial_contract
 #print axioms AlgorithmsToLowerBounds.ImplementedThresholdOracle.classSolvesCoinProblem_of_advantage
 #print axioms AlgorithmsToLowerBounds.classSolvesCoinProblem_of_bounded
 #print axioms AlgorithmsToLowerBounds.AC0pHalfVsFairCoinLowerBoundContract.excludes_small_solver

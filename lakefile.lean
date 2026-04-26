@@ -149,6 +149,9 @@ lean_lib Pnp4 where
   srcDir := "pnp4"
   globs := #[
     Glob.one `Pnp4.AlgorithmsToLowerBounds.BasicCircuitClasses,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.Growth,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.SuperPolynomialBridge,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.AC0pSuperPolynomialBridge,
     Glob.one `Pnp4.AlgorithmsToLowerBounds.TruthTableMCSP,
     Glob.one `Pnp4.AlgorithmsToLowerBounds.LocalPRG,
     Glob.one `Pnp4.AlgorithmsToLowerBounds.CoinProblem,

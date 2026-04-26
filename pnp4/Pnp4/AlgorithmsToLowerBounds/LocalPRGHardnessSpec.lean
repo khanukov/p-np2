@@ -4,18 +4,6 @@ namespace Pnp4
 namespace AlgorithmsToLowerBounds
 
 /--
-Counting ratio for truth tables on `n` variables accepted by an exact
-tree-MCSP threshold oracle at threshold `threshold`.
-
-This is the Shannon-counting upper bound proved in
-`uniformTruthTableAcceptanceProbability_le_countRatio_of_treeMCSPOracle`.
--/
-noncomputable def treeMCSPCountRatio
-    (n threshold : Nat) : Rat :=
-  (Pnp3.Models.circuitCountBound n threshold : Rat) /
-    (2 ^ (Pnp3.Models.Partial.tableLen n) : Rat)
-
-/--
 Paper-facing quantitative specification for one local-PRG lower-bound regime.
 
 The intended reading is:

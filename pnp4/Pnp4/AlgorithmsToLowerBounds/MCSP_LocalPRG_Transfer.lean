@@ -157,6 +157,18 @@ lemma mem_easyFunctions_of_treeMCSPPredicate
   simpa [hEq] using hImage
 
 /--
+Counting ratio for truth tables on `n` variables accepted by an exact
+tree-MCSP threshold oracle at threshold `threshold`.
+
+This is the Shannon-counting upper-bound target reused by both the local-PRG
+route and the half-vs-fair MCSP/coin route.
+-/
+noncomputable def treeMCSPCountRatio
+    (n threshold : Nat) : Rat :=
+  (Pnp3.Models.circuitCountBound n threshold : Rat) /
+    (2 ^ (Pnp3.Models.Partial.tableLen n) : Rat)
+
+/--
 If a thresholded tree-MCSP oracle has threshold at least the PRG image-size
 bound, then every PRG output is accepted by that oracle.
 -/

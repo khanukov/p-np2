@@ -77,9 +77,11 @@ Current theorem surface status:
   `1 / 2`.  It also records the corrected-polarity rejection profile, where
   acceptance means "not below the tree-MCSP threshold"; this is the working
   direction for the half-vs-fair MCSP-side reduction.  The current
-  source-facing constructor reduces that rejection contract to two mass facts:
-  low-bias tables are low-complexity with high probability, and the fair-side
-  Shannon-counting ratio is small enough for the requested gap.
+  source-facing constructor exposes the remaining biased/easy source theorem as
+  `HalfVsFairBiasedLowComplexityMassFacts`: low-bias tables are low-complexity
+  with high probability.  The fair-side lower bound is fixed to the
+  Shannon-counting value `1 - treeMCSPCountRatio`; the remaining companion
+  obligation is the explicit advantage-gap arithmetic.
 - `AC0pCoinLowerBound.lean`: explicit contract layer for published `AC^0[p]`
   coin lower bounds, in size-bounded form.
 - `MCSP_AC0p_Final.lean`: consequence layer saying that, under the `AC^0[p]`
@@ -113,8 +115,9 @@ Current theorem surface status:
   uniform acceptance of exact tree-MCSP threshold oracles and the resulting
   local-PRG transfer contradiction theorem surface, plus exact tree-MCSP
   threshold accept/reject facts and probability lifts from predicate mass to
-  exact threshold-decision acceptance.  It also proves the fair-side
-  Shannon-counting upper bound for `treeMCSPPredicateDecision` and the
+  exact threshold-decision acceptance.  It also defines the reusable
+  `treeMCSPCountRatio`, proves the fair-side Shannon-counting upper bound for
+  `treeMCSPPredicateDecision`, and proves the
   complementary fair-side lower bound for the hard-table decision
   `notTreeMCSPPredicateDecision`.
 - `LocalPRGHardnessSpec.lean`: paper-facing published-route layer packaging

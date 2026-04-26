@@ -15,6 +15,9 @@ import Pnp4.AlgorithmsToLowerBounds.BridgeToPpolyDAG
 namespace Pnp4
 namespace Tests
 
+#print axioms AlgorithmsToLowerBounds.maskBit_true
+#print axioms AlgorithmsToLowerBounds.maskBit_false
+#print axioms AlgorithmsToLowerBounds.maskVec_apply
 #print axioms AlgorithmsToLowerBounds.quasiPolyLower_superPolynomialGrowth
 #print axioms AlgorithmsToLowerBounds.not_hasPolynomialSizeFamily_of_superPolynomial_lowerBound
 #print axioms AlgorithmsToLowerBounds.not_hasPolynomialSizeFamily_of_quasiPolynomial_lowerBound

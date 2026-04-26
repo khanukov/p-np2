@@ -61,6 +61,9 @@ route, but it still does not claim the concentration, hybrid, or concrete
 
 Current theorem surface status:
 
+- `BasicCircuitClasses.lean`: minimal non-uniform circuit-class interface plus
+  the input-masking operator `maskVec` and `ClosedUnderInputMasking`, the class
+  closure condition needed for the masking/averaging translation proof.
 - `CoinProblem.lean`: exact finite-distribution semantics for the coin problem,
   monotonicity and complement laws for acceptance probabilities, total-mass
   normalization for product Bernoulli weights, and the reusable probability-gap

@@ -27,6 +27,49 @@ structure CircuitFamilyClass where
   eval : ∀ {n : Nat}, Family n → BitVec n → Bool
   size : ∀ {n : Nat}, Family n → Nat
 
+/-- One-bit input masking used by the coin-translation route. -/
+def maskBit (keep x : Bool) : Bool :=
+  keep && x
+
+@[simp] theorem maskBit_true (x : Bool) :
+    maskBit true x = x := by
+  cases x <;> rfl
+
+@[simp] theorem maskBit_false (x : Bool) :
+    maskBit false x = false :=
+  rfl
+
+/--
+Coordinatewise input masking.
+
+`keep i = false` substitutes the `i`-th input by `0`; `keep i = true` keeps
+the original input bit.
+-/
+def maskVec {n : Nat} (keep x : BitVec n) : BitVec n :=
+  fun i => maskBit (keep i) (x i)
+
+@[simp] theorem maskVec_apply
+    {n : Nat} (keep x : BitVec n) (i : Fin n) :
+    maskVec keep x i = maskBit (keep i) (x i) :=
+  rfl
+
+/--
+Circuit classes closed under substituting arbitrary inputs by `0`.
+
+This is the class/size side of the masking-translation argument: applying an
+input mask to a circuit keeps the result in the same family and does not
+increase size.
+-/
+structure ClosedUnderInputMasking (C : CircuitFamilyClass) where
+  maskCircuit :
+    ∀ {n : Nat}, BitVec n → C.Family n → C.Family n
+  eval_maskCircuit :
+    ∀ {n : Nat} (keep : BitVec n) (c : C.Family n) (x : BitVec n),
+      C.eval (maskCircuit keep c) x = C.eval c (maskVec keep x)
+  size_maskCircuit :
+    ∀ {n : Nat} (keep : BitVec n) (c : C.Family n),
+      C.size (maskCircuit keep c) ≤ C.size c
+
 /--
 The class `C` computes the language `L` non-uniformly if every input length has
 some witness circuit computing the corresponding slice.

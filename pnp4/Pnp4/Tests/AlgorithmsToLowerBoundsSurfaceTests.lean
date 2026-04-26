@@ -32,6 +32,37 @@ def check_NotInClass :
       NotInClass C L → NotInClass C L :=
   fun _ _ h => h
 
+def check_maskBit_true (x : Bool) :
+    maskBit true x = x :=
+  maskBit_true x
+
+def check_maskBit_false (x : Bool) :
+    maskBit false x = false :=
+  maskBit_false x
+
+def check_maskVec_apply
+    {n : Nat} (keep x : AlgorithmsToLowerBounds.BitVec n) (i : Fin n) :
+    maskVec keep x i = maskBit (keep i) (x i) :=
+  maskVec_apply keep x i
+
+def check_closedUnderInputMasking_eval
+    {C : CircuitFamilyClass}
+    (closed : ClosedUnderInputMasking C)
+    {n : Nat}
+    (keep x : AlgorithmsToLowerBounds.BitVec n)
+    (c : C.Family n) :
+    C.eval (closed.maskCircuit keep c) x = C.eval c (maskVec keep x) :=
+  closed.eval_maskCircuit keep c x
+
+def check_closedUnderInputMasking_size
+    {C : CircuitFamilyClass}
+    (closed : ClosedUnderInputMasking C)
+    {n : Nat}
+    (keep : AlgorithmsToLowerBounds.BitVec n)
+    (c : C.Family n) :
+    C.size (closed.maskCircuit keep c) ≤ C.size c :=
+  closed.size_maskCircuit keep c
+
 def check_quasiPolyLower_superPolynomialGrowth :
     SuperPolynomialGrowth QuasiPolyLower :=
   quasiPolyLower_superPolynomialGrowth
@@ -1655,6 +1686,9 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 
 #print axioms AlgorithmsToLowerBounds.NP_not_subset_PpolyDAG_of_verified_source
 #print axioms AlgorithmsToLowerBounds.P_ne_NP_of_verified_source
+#print axioms AlgorithmsToLowerBounds.maskBit_true
+#print axioms AlgorithmsToLowerBounds.maskBit_false
+#print axioms AlgorithmsToLowerBounds.maskVec_apply
 #print axioms AlgorithmsToLowerBounds.quasiPolyLower_superPolynomialGrowth
 #print axioms AlgorithmsToLowerBounds.not_hasPolynomialSizeFamily_of_superPolynomial_lowerBound
 #print axioms AlgorithmsToLowerBounds.not_hasPolynomialSizeFamily_of_quasiPolynomial_lowerBound

@@ -63,6 +63,79 @@ theorem acceptanceProbability_fair_eq_bitVecAcceptanceProbability
     _ = bitVecAcceptanceProbability A := by
           simp [bitVecAcceptanceProbability, accepted]
 
+/-- Uniform acceptance of a Boolean complement is one minus acceptance. -/
+theorem bitVecAcceptanceProbability_not
+    {m : Nat}
+    (A : BitVec m → Bool) :
+    bitVecAcceptanceProbability (fun x => ! A x) =
+      1 - bitVecAcceptanceProbability A := by
+  classical
+  let accepted : Finset (BitVec m) :=
+    (Finset.univ : Finset (BitVec m)).filter (fun x => A x = true)
+  let rejected : Finset (BitVec m) :=
+    (Finset.univ : Finset (BitVec m)).filter (fun x => (! A x) = true)
+  have hDisjoint : Disjoint accepted rejected := by
+    rw [Finset.disjoint_left]
+    intro x hxAccepted hxRejected
+    have hA : A x = true := (Finset.mem_filter.mp hxAccepted).2
+    have hNotA : (! A x) = true := (Finset.mem_filter.mp hxRejected).2
+    cases hAx : A x <;> simp [hAx] at hA hNotA
+  have hUnion :
+      accepted ∪ rejected = (Finset.univ : Finset (BitVec m)) := by
+    ext x
+    by_cases hA : A x = true
+    · simp [accepted, rejected, hA]
+    · have hFalse : A x = false := by
+        cases hAx : A x
+        · rfl
+        · exact (hA hAx).elim
+      simp [accepted, rejected, hFalse]
+  have hCard : accepted.card + rejected.card = 2 ^ m := by
+    rw [← Finset.card_union_of_disjoint hDisjoint, hUnion]
+    simp
+  have hCardRat :
+      (accepted.card : Rat) + (rejected.card : Rat) = (2 ^ m : Rat) := by
+    exact_mod_cast hCard
+  have hDenNeZero : (2 ^ m : Rat) ≠ 0 := by positivity
+  have hRejected :
+      (rejected.card : Rat) / (2 ^ m : Rat) =
+        1 - (accepted.card : Rat) / (2 ^ m : Rat) := by
+    field_simp [hDenNeZero]
+    linarith
+  calc
+    bitVecAcceptanceProbability (fun x => ! A x)
+        = (rejected.card : Rat) / (2 ^ m : Rat) := by
+            simp [bitVecAcceptanceProbability, rejected]
+    _ = 1 - (accepted.card : Rat) / (2 ^ m : Rat) := hRejected
+    _ = 1 - bitVecAcceptanceProbability A := by
+            simp [bitVecAcceptanceProbability, accepted]
+
+/--
+If a predicate has uniform acceptance at most `q`, then its Boolean complement
+has uniform acceptance at least `1 - q`.
+-/
+theorem one_sub_upper_le_bitVecAcceptanceProbability_not
+    {m : Nat}
+    {A : BitVec m → Bool}
+    {q : Rat}
+    (hA : bitVecAcceptanceProbability A ≤ q) :
+    1 - q ≤ bitVecAcceptanceProbability (fun x => ! A x) := by
+  rw [bitVecAcceptanceProbability_not]
+  linarith
+
+/--
+Fair product-distribution specialization of the complement lower-bound lemma.
+-/
+theorem one_sub_upper_le_acceptanceProbability_fair_not
+    {m : Nat}
+    {A : BitVec m → Bool}
+    {q : Rat}
+    (hA : acceptanceProbability ((1 : Rat) / 2) A ≤ q) :
+    1 - q ≤ acceptanceProbability ((1 : Rat) / 2) (fun x => ! A x) := by
+  rw [acceptanceProbability_fair_eq_bitVecAcceptanceProbability] at hA
+  rw [acceptanceProbability_fair_eq_bitVecAcceptanceProbability]
+  exact one_sub_upper_le_bitVecAcceptanceProbability_not hA
+
 /--
 Any truth table accepted by the proof-level tree-MCSP predicate at threshold
 `s` is one of the Shannon-counting "easy functions" of size at most `s`.
@@ -163,6 +236,25 @@ theorem exactTreeMCSPThresholdDecision_spec
   simp [exactTreeMCSPThresholdDecision]
 
 /--
+Complement of the exact thresholded tree-MCSP predicate.  This is the correct
+polarity for the half-vs-fair coin route when the high-bias side is the fair
+coin: random fair truth tables should be rejected by the low-complexity
+predicate and accepted by this hard-table predicate.
+-/
+noncomputable def exactTreeMCSPThresholdHardDecision
+    (n threshold : Nat) : TruthTable n → Bool :=
+  fun tt => ! exactTreeMCSPThresholdDecision n threshold tt
+
+/-- Specification lemma for the hard-table thresholded tree-MCSP predicate. -/
+theorem exactTreeMCSPThresholdHardDecision_spec
+    {n threshold : Nat}
+    (tt : TruthTable n) :
+    exactTreeMCSPThresholdHardDecision n threshold tt = true ↔
+      ¬ treeMCSPPredicate n threshold tt := by
+  classical
+  simp [exactTreeMCSPThresholdHardDecision, exactTreeMCSPThresholdDecision]
+
+/--
 Boolean indicator for the proof-level tree-MCSP predicate.  This gives
 probability statements a name that refers to the predicate mass rather than to
 the exact MCSP decision wrapper.
@@ -181,6 +273,32 @@ theorem treeMCSPPredicateDecision_spec
       treeMCSPPredicate n threshold tt := by
   classical
   simp [treeMCSPPredicateDecision]
+
+/-- Boolean complement of the proof-level tree-MCSP predicate decision. -/
+noncomputable def notTreeMCSPPredicateDecision
+    (n threshold : Nat) : TruthTable n → Bool :=
+  fun tt => ! treeMCSPPredicateDecision n threshold tt
+
+/-- Specification lemma for `notTreeMCSPPredicateDecision`. -/
+theorem notTreeMCSPPredicateDecision_spec
+    {n threshold : Nat}
+    (tt : TruthTable n) :
+    notTreeMCSPPredicateDecision n threshold tt = true ↔
+      ¬ treeMCSPPredicate n threshold tt := by
+  classical
+  simp [notTreeMCSPPredicateDecision, treeMCSPPredicateDecision]
+
+/--
+The exact hard-table decision agrees extensionally with the complement of the
+proof-level predicate decision.
+-/
+theorem exactTreeMCSPThresholdHardDecision_eq_notTreeMCSPPredicateDecision
+    (n threshold : Nat) :
+    exactTreeMCSPThresholdHardDecision n threshold =
+      notTreeMCSPPredicateDecision n threshold := by
+  funext tt
+  simp [exactTreeMCSPThresholdHardDecision, exactTreeMCSPThresholdDecision,
+    notTreeMCSPPredicateDecision, treeMCSPPredicateDecision]
 
 /-- `treeMCSPPredicateDecision` packaged as a correct threshold oracle. -/
 noncomputable def treeMCSPPredicateOracle
@@ -216,6 +334,26 @@ theorem fairAcceptanceProbability_treeMCSPPredicateDecision_le_countRatio
     uniformTruthTableAcceptanceProbability_treeMCSPPredicateDecision_le_countRatio
       n threshold
 
+/--
+Fair product-distribution lower bound for the hard-table predicate, obtained by
+complementing the Shannon-counting upper bound for low-complexity tables.
+-/
+theorem one_sub_countRatio_le_fairAcceptanceProbability_notTreeMCSPPredicateDecision
+    (n threshold : Nat) :
+    1 -
+        (Pnp3.Models.circuitCountBound n threshold : Rat) /
+          (2 ^ (Pnp3.Models.Partial.tableLen n) : Rat) ≤
+      acceptanceProbability ((1 : Rat) / 2)
+        (notTreeMCSPPredicateDecision n threshold) := by
+  have hLowMass :
+      acceptanceProbability ((1 : Rat) / 2)
+          (treeMCSPPredicateDecision n threshold) ≤
+        (Pnp3.Models.circuitCountBound n threshold : Rat) /
+          (2 ^ (Pnp3.Models.Partial.tableLen n) : Rat) :=
+    fairAcceptanceProbability_treeMCSPPredicateDecision_le_countRatio n threshold
+  simpa [notTreeMCSPPredicateDecision] using
+    one_sub_upper_le_acceptanceProbability_fair_not hLowMass
+
 /-- The exact thresholded tree-MCSP decision accepts low-complexity tables. -/
 theorem exactTreeMCSPThresholdDecision_accepts_of_treeMCSPPredicate
     {n threshold : Nat}
@@ -233,6 +371,26 @@ theorem exactTreeMCSPThresholdDecision_rejects_of_not_treeMCSPPredicate
   by_cases hTrue : exactTreeMCSPThresholdDecision n threshold tt = true
   · exact (hHard ((exactTreeMCSPThresholdDecision_spec tt).1 hTrue)).elim
   · cases hDecision : exactTreeMCSPThresholdDecision n threshold tt
+    · rfl
+    · exact (hTrue hDecision).elim
+
+/-- The hard-table decision accepts tables above the threshold. -/
+theorem exactTreeMCSPThresholdHardDecision_accepts_of_not_treeMCSPPredicate
+    {n threshold : Nat}
+    {tt : TruthTable n}
+    (hHard : ¬ treeMCSPPredicate n threshold tt) :
+    exactTreeMCSPThresholdHardDecision n threshold tt = true :=
+  (exactTreeMCSPThresholdHardDecision_spec tt).2 hHard
+
+/-- The hard-table decision rejects low-complexity tables. -/
+theorem exactTreeMCSPThresholdHardDecision_rejects_of_treeMCSPPredicate
+    {n threshold : Nat}
+    {tt : TruthTable n}
+    (hEasy : treeMCSPPredicate n threshold tt) :
+    exactTreeMCSPThresholdHardDecision n threshold tt = false := by
+  by_cases hTrue : exactTreeMCSPThresholdHardDecision n threshold tt = true
+  · exact ((exactTreeMCSPThresholdHardDecision_spec tt).1 hTrue hEasy).elim
+  · cases hDecision : exactTreeMCSPThresholdHardDecision n threshold tt
     · rfl
     · exact (hTrue hDecision).elim
 

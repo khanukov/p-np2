@@ -70,6 +70,53 @@ theorem HalfVsFairMCSPCoinAcceptanceProfile.exact_solvesCoin
     (profile.advantage_gap n)
 
 /--
+Acceptance-profile contract with the corrected half-vs-fair polarity.
+
+Here acceptance means "the table is above the low-complexity MCSP threshold".
+Since `highBias` is the fair side in `halfVsFairCoinInstance`, this is the
+profile whose fair-side acceptance should be large by Shannon counting.
+-/
+structure HalfVsFairMCSPCoinRejectionProfile
+    (hardness : HalfVsFairTruthTableCoinHardness) where
+  threshold : Nat → Nat
+  lowAcceptanceUpper : Nat → Rat
+  fairAcceptanceLower : Nat → Rat
+  low_rejection_acceptance_le :
+    ∀ n : Nat,
+      acceptanceProbability (hardness.instance n).lowBias
+          (exactTreeMCSPThresholdHardDecision n (threshold n)) ≤
+        lowAcceptanceUpper n
+  fair_rejection_acceptance_ge :
+    ∀ n : Nat,
+      fairAcceptanceLower n ≤
+        acceptanceProbability (hardness.instance n).highBias
+          (exactTreeMCSPThresholdHardDecision n (threshold n))
+  advantage_gap :
+    ∀ n : Nat,
+      hardness.advantage n + lowAcceptanceUpper n ≤ fairAcceptanceLower n
+
+/--
+The corrected-polarity rejection profile solves the half-vs-fair coin problem.
+-/
+theorem HalfVsFairMCSPCoinRejectionProfile.hard_solvesCoin
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (profile : HalfVsFairMCSPCoinRejectionProfile hardness)
+    (n : Nat) :
+    SolvesCoinProblem
+      (hardness.instance n)
+      (exactTreeMCSPThresholdHardDecision n (profile.threshold n))
+      (hardness.advantage n) := by
+  exact solvesCoinProblem_of_acceptanceProbability_bounds
+    (inst := hardness.instance n)
+    (A := exactTreeMCSPThresholdHardDecision n (profile.threshold n))
+    (adv := hardness.advantage n)
+    (lowAcceptanceUpper := profile.lowAcceptanceUpper n)
+    (highAcceptanceLower := profile.fairAcceptanceLower n)
+    (profile.low_rejection_acceptance_le n)
+    (profile.fair_rejection_acceptance_ge n)
+    (profile.advantage_gap n)
+
+/--
 Smaller theorem-facing contract for the MCSP-to-coin reduction on truth-table
 inputs.
 
@@ -81,6 +128,17 @@ solves the half-vs-fair coin problem.
 structure HalfVsFairMCSPCoinReductionContract
     (hardness : HalfVsFairTruthTableCoinHardness)
     extends HalfVsFairMCSPCoinAcceptanceProfile hardness
+
+/--
+Theorem-facing contract for the corrected-polarity MCSP-to-coin reduction.
+
+This does not extend `MCSPThresholdOracle`, whose `decide = true` convention is
+reserved for low-complexity tables.  It instead packages the hard-table
+complement decision that actually has large fair-side acceptance.
+-/
+structure HalfVsFairMCSPCoinRejectionContract
+    (hardness : HalfVsFairTruthTableCoinHardness)
+    extends HalfVsFairMCSPCoinRejectionProfile hardness
 
 /--
 Named constructor for the MCSP-side half-vs-fair reduction contract from the
@@ -110,6 +168,32 @@ def HalfVsFairMCSPCoinReductionContract.of_distributionFacts
   fairAcceptanceLower := fairAcceptanceLower
   low_acceptance_le := low_acceptance_le
   fair_acceptance_ge := fair_acceptance_ge
+  advantage_gap := advantage_gap
+
+/-- Constructor for the corrected-polarity rejection contract. -/
+def HalfVsFairMCSPCoinRejectionContract.of_distributionFacts
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (threshold : Nat → Nat)
+    (lowAcceptanceUpper fairAcceptanceLower : Nat → Rat)
+    (low_rejection_acceptance_le :
+      ∀ n : Nat,
+        acceptanceProbability (hardness.instance n).lowBias
+            (exactTreeMCSPThresholdHardDecision n (threshold n)) ≤
+          lowAcceptanceUpper n)
+    (fair_rejection_acceptance_ge :
+      ∀ n : Nat,
+        fairAcceptanceLower n ≤
+          acceptanceProbability (hardness.instance n).highBias
+            (exactTreeMCSPThresholdHardDecision n (threshold n)))
+    (advantage_gap :
+      ∀ n : Nat,
+        hardness.advantage n + lowAcceptanceUpper n ≤ fairAcceptanceLower n) :
+    HalfVsFairMCSPCoinRejectionContract hardness where
+  threshold := threshold
+  lowAcceptanceUpper := lowAcceptanceUpper
+  fairAcceptanceLower := fairAcceptanceLower
+  low_rejection_acceptance_le := low_rejection_acceptance_le
+  fair_rejection_acceptance_ge := fair_rejection_acceptance_ge
   advantage_gap := advantage_gap
 
 /--
@@ -163,6 +247,40 @@ def HalfVsFairMCSPCoinReductionContract.of_treeMCSPPredicateMassFacts
     advantage_gap
 
 /--
+Build the corrected-polarity rejection contract from probability-mass bounds
+for the complement of the proof-level tree-MCSP predicate.
+-/
+def HalfVsFairMCSPCoinRejectionContract.of_notTreeMCSPPredicateMassFacts
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (threshold : Nat → Nat)
+    (lowAcceptanceUpper fairAcceptanceLower : Nat → Rat)
+    (low_not_mass_le :
+      ∀ n : Nat,
+        acceptanceProbability (hardness.instance n).lowBias
+            (notTreeMCSPPredicateDecision n (threshold n)) ≤
+          lowAcceptanceUpper n)
+    (fair_not_mass_ge :
+      ∀ n : Nat,
+        fairAcceptanceLower n ≤
+          acceptanceProbability (hardness.instance n).highBias
+            (notTreeMCSPPredicateDecision n (threshold n)))
+    (advantage_gap :
+      ∀ n : Nat,
+        hardness.advantage n + lowAcceptanceUpper n ≤ fairAcceptanceLower n) :
+    HalfVsFairMCSPCoinRejectionContract hardness :=
+  HalfVsFairMCSPCoinRejectionContract.of_distributionFacts
+    threshold
+    lowAcceptanceUpper
+    fairAcceptanceLower
+    (fun n => by
+      simpa [exactTreeMCSPThresholdHardDecision_eq_notTreeMCSPPredicateDecision]
+        using low_not_mass_le n)
+    (fun n => by
+      simpa [exactTreeMCSPThresholdHardDecision_eq_notTreeMCSPPredicateDecision]
+        using fair_not_mass_ge n)
+    advantage_gap
+
+/--
 In the half-vs-fair regime, `highBias` is the fair side `1 / 2`.  Therefore the
 Shannon-counting upper bound applies directly to the `highBias` mass of
 low-tree-complexity truth tables.
@@ -196,6 +314,58 @@ theorem halfVsFair_highBias_treeMCSPPredicateDecision_le_of_countRatio_le
     hRatio
 
 /--
+Correct-polarity fair-side lower bound: under `highBias = 1 / 2`, the
+hard-table complement of the low-complexity predicate has mass at least one
+minus the Shannon-counting ratio.
+-/
+theorem one_sub_countRatio_le_halfVsFair_highBias_notTreeMCSPPredicateDecision
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (n threshold : Nat) :
+    1 -
+        (Pnp3.Models.circuitCountBound n threshold : Rat) /
+          (2 ^ (Pnp3.Models.Partial.tableLen n) : Rat) ≤
+      acceptanceProbability (hardness.instance n).highBias
+        (notTreeMCSPPredicateDecision n threshold) := by
+  simpa [HalfVsFairTruthTableCoinHardness.instance, halfVsFairCoinInstance] using
+    one_sub_countRatio_le_fairAcceptanceProbability_notTreeMCSPPredicateDecision
+      n threshold
+
+/--
+Exact hard-decision form of
+`one_sub_countRatio_le_halfVsFair_highBias_notTreeMCSPPredicateDecision`.
+-/
+theorem one_sub_countRatio_le_halfVsFair_highBias_exactTreeMCSPThresholdHardDecision
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (n threshold : Nat) :
+    1 -
+        (Pnp3.Models.circuitCountBound n threshold : Rat) /
+          (2 ^ (Pnp3.Models.Partial.tableLen n) : Rat) ≤
+      acceptanceProbability (hardness.instance n).highBias
+        (exactTreeMCSPThresholdHardDecision n threshold) := by
+  simpa [exactTreeMCSPThresholdHardDecision_eq_notTreeMCSPPredicateDecision] using
+    one_sub_countRatio_le_halfVsFair_highBias_notTreeMCSPPredicateDecision
+      (hardness := hardness) n threshold
+
+/--
+Convenience form: any upper bound `q` on the Shannon-counting ratio yields a
+fair-side lower bound `1 - q` for the corrected-polarity hard-table decision.
+-/
+theorem one_sub_countRatioUpper_le_halfVsFair_highBias_exactTreeMCSPThresholdHardDecision
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    {n threshold : Nat}
+    {q : Rat}
+    (hRatio :
+      (Pnp3.Models.circuitCountBound n threshold : Rat) /
+          (2 ^ (Pnp3.Models.Partial.tableLen n) : Rat) ≤ q) :
+    1 - q ≤
+      acceptanceProbability (hardness.instance n).highBias
+        (exactTreeMCSPThresholdHardDecision n threshold) := by
+  have hBase :=
+    one_sub_countRatio_le_halfVsFair_highBias_exactTreeMCSPThresholdHardDecision
+      (hardness := hardness) n threshold
+  linarith
+
+/--
 Recover the original monolithic coin-solving statement from the decomposed
 reduction contract.
 -/
@@ -208,6 +378,17 @@ theorem HalfVsFairMCSPCoinReductionContract.exact_solvesCoin
       (exactTreeMCSPThresholdDecision n (contract.threshold n))
       (hardness.advantage n) :=
   contract.toHalfVsFairMCSPCoinAcceptanceProfile.exact_solvesCoin n
+
+/-- The corrected-polarity rejection contract solves the half-vs-fair coin problem. -/
+theorem HalfVsFairMCSPCoinRejectionContract.hard_solvesCoin
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (contract : HalfVsFairMCSPCoinRejectionContract hardness)
+    (n : Nat) :
+    SolvesCoinProblem
+      (hardness.instance n)
+      (exactTreeMCSPThresholdHardDecision n (contract.threshold n))
+      (hardness.advantage n) :=
+  contract.toHalfVsFairMCSPCoinRejectionProfile.hard_solvesCoin n
 
 /--
 Exact thresholded MCSP language attached to one half-vs-fair reduction

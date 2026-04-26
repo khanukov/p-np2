@@ -236,6 +236,21 @@ def check_acceptanceProbability_fair_eq_bitVecAcceptanceProbability
       bitVecAcceptanceProbability A :=
   acceptanceProbability_fair_eq_bitVecAcceptanceProbability A
 
+def check_bitVecAcceptanceProbability_not
+    {m : Nat}
+    (A : AlgorithmsToLowerBounds.BitVec m → Bool) :
+    bitVecAcceptanceProbability (fun x => ! A x) =
+      1 - bitVecAcceptanceProbability A :=
+  bitVecAcceptanceProbability_not A
+
+def check_one_sub_upper_le_acceptanceProbability_fair_not
+    {m : Nat}
+    {A : AlgorithmsToLowerBounds.BitVec m → Bool}
+    {q : Rat}
+    (hA : acceptanceProbability ((1 : Rat) / 2) A ≤ q) :
+    1 - q ≤ acceptanceProbability ((1 : Rat) / 2) (fun x => ! A x) :=
+  one_sub_upper_le_acceptanceProbability_fair_not hA
+
 def check_mcspThresholdOracle_accepts_of_treeMCSPPredicate
     {n : Nat}
     (oracle : MCSPThresholdOracle n)
@@ -330,6 +345,16 @@ def check_half_vs_fair_mcsp_coin_acceptance_profile_solves
       (hardness.advantage n) :=
   profile.exact_solvesCoin n
 
+def check_half_vs_fair_mcsp_coin_rejection_profile_solves
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (profile : HalfVsFairMCSPCoinRejectionProfile hardness)
+    (n : Nat) :
+    SolvesCoinProblem
+      (hardness.instance n)
+      (exactTreeMCSPThresholdHardDecision n (profile.threshold n))
+      (hardness.advantage n) :=
+  profile.hard_solvesCoin n
+
 def check_half_vs_fair_mcsp_coin_reduction_contract_of_distributionFacts
     {hardness : HalfVsFairTruthTableCoinHardness}
     (threshold : Nat → Nat)
@@ -354,6 +379,32 @@ def check_half_vs_fair_mcsp_coin_reduction_contract_of_distributionFacts
     fairAcceptanceLower
     low_acceptance_le
     fair_acceptance_ge
+    advantage_gap
+
+def check_half_vs_fair_mcsp_coin_rejection_contract_of_distributionFacts
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (threshold : Nat → Nat)
+    (lowAcceptanceUpper fairAcceptanceLower : Nat → Rat)
+    (low_rejection_acceptance_le :
+      ∀ n : Nat,
+        acceptanceProbability (hardness.instance n).lowBias
+            (exactTreeMCSPThresholdHardDecision n (threshold n)) ≤
+          lowAcceptanceUpper n)
+    (fair_rejection_acceptance_ge :
+      ∀ n : Nat,
+        fairAcceptanceLower n ≤
+          acceptanceProbability (hardness.instance n).highBias
+            (exactTreeMCSPThresholdHardDecision n (threshold n)))
+    (advantage_gap :
+      ∀ n : Nat,
+        hardness.advantage n + lowAcceptanceUpper n ≤ fairAcceptanceLower n) :
+    HalfVsFairMCSPCoinRejectionContract hardness :=
+  HalfVsFairMCSPCoinRejectionContract.of_distributionFacts
+    threshold
+    lowAcceptanceUpper
+    fairAcceptanceLower
+    low_rejection_acceptance_le
+    fair_rejection_acceptance_ge
     advantage_gap
 
 def check_half_vs_fair_mcsp_coin_reduction_contract_of_treeMCSPPredicateMassFacts
@@ -382,6 +433,32 @@ def check_half_vs_fair_mcsp_coin_reduction_contract_of_treeMCSPPredicateMassFact
     fair_mass_ge
     advantage_gap
 
+def check_half_vs_fair_mcsp_coin_rejection_contract_of_notTreeMCSPPredicateMassFacts
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (threshold : Nat → Nat)
+    (lowAcceptanceUpper fairAcceptanceLower : Nat → Rat)
+    (low_not_mass_le :
+      ∀ n : Nat,
+        acceptanceProbability (hardness.instance n).lowBias
+            (notTreeMCSPPredicateDecision n (threshold n)) ≤
+          lowAcceptanceUpper n)
+    (fair_not_mass_ge :
+      ∀ n : Nat,
+        fairAcceptanceLower n ≤
+          acceptanceProbability (hardness.instance n).highBias
+            (notTreeMCSPPredicateDecision n (threshold n)))
+    (advantage_gap :
+      ∀ n : Nat,
+        hardness.advantage n + lowAcceptanceUpper n ≤ fairAcceptanceLower n) :
+    HalfVsFairMCSPCoinRejectionContract hardness :=
+  HalfVsFairMCSPCoinRejectionContract.of_notTreeMCSPPredicateMassFacts
+    threshold
+    lowAcceptanceUpper
+    fairAcceptanceLower
+    low_not_mass_le
+    fair_not_mass_ge
+    advantage_gap
+
 def check_halfVsFair_highBias_treeMCSPPredicateDecision_le_countRatio
     {hardness : HalfVsFairTruthTableCoinHardness}
     (n threshold : Nat) :
@@ -390,6 +467,28 @@ def check_halfVsFair_highBias_treeMCSPPredicateDecision_le_countRatio
       (Pnp3.Models.circuitCountBound n threshold : Rat) /
         (2 ^ (Pnp3.Models.Partial.tableLen n) : Rat) :=
   halfVsFair_highBias_treeMCSPPredicateDecision_le_countRatio n threshold
+
+def check_one_sub_countRatio_le_halfVsFair_highBias_notTreeMCSPPredicateDecision
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (n threshold : Nat) :
+    1 -
+        (Pnp3.Models.circuitCountBound n threshold : Rat) /
+          (2 ^ (Pnp3.Models.Partial.tableLen n) : Rat) ≤
+      acceptanceProbability (hardness.instance n).highBias
+        (notTreeMCSPPredicateDecision n threshold) :=
+  one_sub_countRatio_le_halfVsFair_highBias_notTreeMCSPPredicateDecision
+    n threshold
+
+def check_one_sub_countRatio_le_halfVsFair_highBias_exactTreeMCSPThresholdHardDecision
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (n threshold : Nat) :
+    1 -
+        (Pnp3.Models.circuitCountBound n threshold : Rat) /
+          (2 ^ (Pnp3.Models.Partial.tableLen n) : Rat) ≤
+      acceptanceProbability (hardness.instance n).highBias
+        (exactTreeMCSPThresholdHardDecision n threshold) :=
+  one_sub_countRatio_le_halfVsFair_highBias_exactTreeMCSPThresholdHardDecision
+    n threshold
 
 def check_half_vs_fair_mcsp_coin_reduction_contract_solves
     {hardness : HalfVsFairTruthTableCoinHardness}
@@ -400,6 +499,16 @@ def check_half_vs_fair_mcsp_coin_reduction_contract_solves
       (exactTreeMCSPThresholdDecision n (contract.threshold n))
       (hardness.advantage n) :=
   contract.exact_solvesCoin n
+
+def check_half_vs_fair_mcsp_coin_rejection_contract_solves
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (contract : HalfVsFairMCSPCoinRejectionContract hardness)
+    (n : Nat) :
+    SolvesCoinProblem
+      (hardness.instance n)
+      (exactTreeMCSPThresholdHardDecision n (contract.threshold n))
+      (hardness.advantage n) :=
+  contract.hard_solvesCoin n
 
 noncomputable def check_half_vs_fair_mcsp_coin_language
     {hardness : HalfVsFairTruthTableCoinHardness}
@@ -677,6 +786,26 @@ def check_treeMCSPPredicateDecision_spec
       treeMCSPPredicate n threshold tt :=
   treeMCSPPredicateDecision_spec tt
 
+def check_notTreeMCSPPredicateDecision_spec
+    {n threshold : Nat}
+    (tt : TruthTable n) :
+    notTreeMCSPPredicateDecision n threshold tt = true ↔
+      ¬ treeMCSPPredicate n threshold tt :=
+  notTreeMCSPPredicateDecision_spec tt
+
+def check_exactTreeMCSPThresholdHardDecision_spec
+    {n threshold : Nat}
+    (tt : TruthTable n) :
+    exactTreeMCSPThresholdHardDecision n threshold tt = true ↔
+      ¬ treeMCSPPredicate n threshold tt :=
+  exactTreeMCSPThresholdHardDecision_spec tt
+
+def check_exactTreeMCSPThresholdHardDecision_eq_notTreeMCSPPredicateDecision
+    (n threshold : Nat) :
+    exactTreeMCSPThresholdHardDecision n threshold =
+      notTreeMCSPPredicateDecision n threshold :=
+  exactTreeMCSPThresholdHardDecision_eq_notTreeMCSPPredicateDecision n threshold
+
 noncomputable def check_treeMCSPPredicateOracle
     (n threshold : Nat) :
     MCSPThresholdOracle n :=
@@ -697,12 +826,36 @@ def check_fairAcceptanceProbability_treeMCSPPredicateDecision_le_countRatio
         (2 ^ (Pnp3.Models.Partial.tableLen n) : Rat) :=
   fairAcceptanceProbability_treeMCSPPredicateDecision_le_countRatio n threshold
 
+def check_one_sub_countRatio_le_fairAcceptanceProbability_notTreeMCSPPredicateDecision
+    (n threshold : Nat) :
+    1 -
+        (Pnp3.Models.circuitCountBound n threshold : Rat) /
+          (2 ^ (Pnp3.Models.Partial.tableLen n) : Rat) ≤
+      acceptanceProbability ((1 : Rat) / 2)
+        (notTreeMCSPPredicateDecision n threshold) :=
+  one_sub_countRatio_le_fairAcceptanceProbability_notTreeMCSPPredicateDecision
+    n threshold
+
 def check_exact_tree_mcsp_threshold_decision_rejects
     {n threshold : Nat}
     {tt : TruthTable n}
     (hHard : ¬ treeMCSPPredicate n threshold tt) :
     exactTreeMCSPThresholdDecision n threshold tt = false :=
   exactTreeMCSPThresholdDecision_rejects_of_not_treeMCSPPredicate hHard
+
+def check_exact_tree_mcsp_threshold_hard_decision_accepts
+    {n threshold : Nat}
+    {tt : TruthTable n}
+    (hHard : ¬ treeMCSPPredicate n threshold tt) :
+    exactTreeMCSPThresholdHardDecision n threshold tt = true :=
+  exactTreeMCSPThresholdHardDecision_accepts_of_not_treeMCSPPredicate hHard
+
+def check_exact_tree_mcsp_threshold_hard_decision_rejects
+    {n threshold : Nat}
+    {tt : TruthTable n}
+    (hEasy : treeMCSPPredicate n threshold tt) :
+    exactTreeMCSPThresholdHardDecision n threshold tt = false :=
+  exactTreeMCSPThresholdHardDecision_rejects_of_treeMCSPPredicate hEasy
 
 def check_acceptanceProbability_exactTreeMCSPThresholdDecision_le_treeMCSPPredicateDecision
     {n threshold : Nat}
@@ -1126,6 +1279,8 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms AlgorithmsToLowerBounds.acceptanceProbability_mono_lowBias
 #print axioms AlgorithmsToLowerBounds.acceptanceProbability_mono_highBias
 #print axioms AlgorithmsToLowerBounds.acceptanceProbability_fair_eq_bitVecAcceptanceProbability
+#print axioms AlgorithmsToLowerBounds.bitVecAcceptanceProbability_not
+#print axioms AlgorithmsToLowerBounds.one_sub_upper_le_acceptanceProbability_fair_not
 #print axioms AlgorithmsToLowerBounds.solvesCoinProblem_of_acceptanceProbability_bounds
 #print axioms AlgorithmsToLowerBounds.MCSPThresholdOracle.accepts_of_treeMCSPPredicate
 #print axioms AlgorithmsToLowerBounds.MCSPThresholdOracle.rejects_of_not_treeMCSPPredicate
@@ -1134,12 +1289,21 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms AlgorithmsToLowerBounds.AC0pHalfVsFairCoinLowerBoundContract.excludes_small_solver
 #print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinReductionContract.of_distributionFacts
 #print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinReductionContract.of_treeMCSPPredicateMassFacts
+#print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinRejectionProfile.hard_solvesCoin
+#print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinRejectionContract.of_notTreeMCSPPredicateMassFacts
+#print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinRejectionContract.hard_solvesCoin
 #print axioms AlgorithmsToLowerBounds.treeMCSPPredicateDecision_spec
+#print axioms AlgorithmsToLowerBounds.notTreeMCSPPredicateDecision_spec
+#print axioms AlgorithmsToLowerBounds.exactTreeMCSPThresholdHardDecision_spec
 #print axioms AlgorithmsToLowerBounds.uniformTruthTableAcceptanceProbability_treeMCSPPredicateDecision_le_countRatio
 #print axioms AlgorithmsToLowerBounds.fairAcceptanceProbability_treeMCSPPredicateDecision_le_countRatio
+#print axioms AlgorithmsToLowerBounds.one_sub_countRatio_le_fairAcceptanceProbability_notTreeMCSPPredicateDecision
 #print axioms AlgorithmsToLowerBounds.halfVsFair_highBias_treeMCSPPredicateDecision_le_countRatio
+#print axioms AlgorithmsToLowerBounds.one_sub_countRatio_le_halfVsFair_highBias_exactTreeMCSPThresholdHardDecision
 #print axioms AlgorithmsToLowerBounds.exactTreeMCSPThresholdDecision_accepts_of_treeMCSPPredicate
 #print axioms AlgorithmsToLowerBounds.exactTreeMCSPThresholdDecision_rejects_of_not_treeMCSPPredicate
+#print axioms AlgorithmsToLowerBounds.exactTreeMCSPThresholdHardDecision_accepts_of_not_treeMCSPPredicate
+#print axioms AlgorithmsToLowerBounds.exactTreeMCSPThresholdHardDecision_rejects_of_treeMCSPPredicate
 #print axioms AlgorithmsToLowerBounds.acceptanceProbability_exactTreeMCSPThresholdDecision_le_treeMCSPPredicateDecision
 #print axioms AlgorithmsToLowerBounds.treeMCSPPredicateDecision_le_acceptanceProbability_exactTreeMCSPThresholdDecision
 #print axioms AlgorithmsToLowerBounds.noSmallImplementedThresholdOracle_of_AC0pCoinLowerBound

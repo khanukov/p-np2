@@ -107,6 +107,26 @@ theorem exactTreeMCSPThresholdDecision_spec
   classical
   simp [exactTreeMCSPThresholdDecision]
 
+/-- The exact thresholded tree-MCSP decision accepts low-complexity tables. -/
+theorem exactTreeMCSPThresholdDecision_accepts_of_treeMCSPPredicate
+    {n threshold : Nat}
+    {tt : TruthTable n}
+    (hEasy : treeMCSPPredicate n threshold tt) :
+    exactTreeMCSPThresholdDecision n threshold tt = true :=
+  (exactTreeMCSPThresholdDecision_spec tt).2 hEasy
+
+/-- The exact thresholded tree-MCSP decision rejects tables above the threshold. -/
+theorem exactTreeMCSPThresholdDecision_rejects_of_not_treeMCSPPredicate
+    {n threshold : Nat}
+    {tt : TruthTable n}
+    (hHard : ¬ treeMCSPPredicate n threshold tt) :
+    exactTreeMCSPThresholdDecision n threshold tt = false := by
+  by_cases hTrue : exactTreeMCSPThresholdDecision n threshold tt = true
+  · exact (hHard ((exactTreeMCSPThresholdDecision_spec tt).1 hTrue)).elim
+  · cases hDecision : exactTreeMCSPThresholdDecision n threshold tt
+    · rfl
+    · exact (hTrue hDecision).elim
+
 /--
 Boolean single-slice MCSP language: at input length `2^n`, return the exact
 thresholded tree-MCSP predicate for `threshold`; off that slice, return `false`.

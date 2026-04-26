@@ -205,6 +205,35 @@ def check_class_solves_coin_problem_of_bounded
       ClassSolvesCoinProblem C inst adv :=
   classSolvesCoinProblem_of_bounded
 
+def check_solvesCoinProblem_of_acceptanceProbability_bounds
+    {inst : CoinProblemInstance}
+    {A : AlgorithmsToLowerBounds.BitVec inst.sampleBits → Bool}
+    {adv lowAcceptanceUpper highAcceptanceLower : Rat}
+    (hLow :
+      acceptanceProbability inst.lowBias A ≤ lowAcceptanceUpper)
+    (hHigh :
+      highAcceptanceLower ≤ acceptanceProbability inst.highBias A)
+    (hGap :
+      adv + lowAcceptanceUpper ≤ highAcceptanceLower) :
+    SolvesCoinProblem inst A adv :=
+  solvesCoinProblem_of_acceptanceProbability_bounds hLow hHigh hGap
+
+def check_mcspThresholdOracle_accepts_of_treeMCSPPredicate
+    {n : Nat}
+    (oracle : MCSPThresholdOracle n)
+    {tt : TruthTable n}
+    (hEasy : treeMCSPPredicate n oracle.threshold tt) :
+    oracle.decide tt = true :=
+  MCSPThresholdOracle.accepts_of_treeMCSPPredicate oracle hEasy
+
+def check_mcspThresholdOracle_rejects_of_not_treeMCSPPredicate
+    {n : Nat}
+    (oracle : MCSPThresholdOracle n)
+    {tt : TruthTable n}
+    (hHard : ¬ treeMCSPPredicate n oracle.threshold tt) :
+    oracle.decide tt = false :=
+  MCSPThresholdOracle.rejects_of_not_treeMCSPPredicate oracle hHard
+
 def check_ac0p_coin_contract_excludes_small_solver
     {model : AC0pFamilyModel}
     {hardness : HalfVsFairTruthTableCoinHardness}
@@ -282,6 +311,32 @@ def check_half_vs_fair_mcsp_coin_acceptance_profile_solves
       (exactTreeMCSPThresholdDecision n (profile.threshold n))
       (hardness.advantage n) :=
   profile.exact_solvesCoin n
+
+def check_half_vs_fair_mcsp_coin_reduction_contract_of_distributionFacts
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (threshold : Nat → Nat)
+    (lowAcceptanceUpper fairAcceptanceLower : Nat → Rat)
+    (low_acceptance_le :
+      ∀ n : Nat,
+        acceptanceProbability (hardness.instance n).lowBias
+            (exactTreeMCSPThresholdDecision n (threshold n)) ≤
+          lowAcceptanceUpper n)
+    (fair_acceptance_ge :
+      ∀ n : Nat,
+        fairAcceptanceLower n ≤
+          acceptanceProbability (hardness.instance n).highBias
+            (exactTreeMCSPThresholdDecision n (threshold n)))
+    (advantage_gap :
+      ∀ n : Nat,
+        hardness.advantage n + lowAcceptanceUpper n ≤ fairAcceptanceLower n) :
+    HalfVsFairMCSPCoinReductionContract hardness :=
+  HalfVsFairMCSPCoinReductionContract.of_distributionFacts
+    threshold
+    lowAcceptanceUpper
+    fairAcceptanceLower
+    low_acceptance_le
+    fair_acceptance_ge
+    advantage_gap
 
 def check_half_vs_fair_mcsp_coin_reduction_contract_solves
     {hardness : HalfVsFairTruthTableCoinHardness}
@@ -549,6 +604,20 @@ def check_no_small_implemented_threshold_oracle_of_ac0p_coin_published_exp_lower
         impl.threshold = reduction.threshold n :=
   noSmallImplementedThresholdOracle_of_AC0pCoinPublishedExpLowerBoundContract_and_reduction
     contract reduction hp
+
+def check_exact_tree_mcsp_threshold_decision_accepts
+    {n threshold : Nat}
+    {tt : TruthTable n}
+    (hEasy : treeMCSPPredicate n threshold tt) :
+    exactTreeMCSPThresholdDecision n threshold tt = true :=
+  exactTreeMCSPThresholdDecision_accepts_of_treeMCSPPredicate hEasy
+
+def check_exact_tree_mcsp_threshold_decision_rejects
+    {n threshold : Nat}
+    {tt : TruthTable n}
+    (hHard : ¬ treeMCSPPredicate n threshold tt) :
+    exactTreeMCSPThresholdDecision n threshold tt = false :=
+  exactTreeMCSPThresholdDecision_rejects_of_not_treeMCSPPredicate hHard
 
 def check_uniform_truth_table_acceptance_probability_le_count_ratio_of_tree_mcsp_oracle
     {n : Nat}
@@ -948,9 +1017,15 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms AlgorithmsToLowerBounds.not_depth_d_AC0p_of_eventual_quasiPoly_lowerBound
 #print axioms AlgorithmsToLowerBounds.not_in_AC0p_of_depthwise_eventual_quasiPoly_lowerBound
 #print axioms AlgorithmsToLowerBounds.not_in_AC0p_from_asymptotic_quasiPolynomial_contract
+#print axioms AlgorithmsToLowerBounds.solvesCoinProblem_of_acceptanceProbability_bounds
+#print axioms AlgorithmsToLowerBounds.MCSPThresholdOracle.accepts_of_treeMCSPPredicate
+#print axioms AlgorithmsToLowerBounds.MCSPThresholdOracle.rejects_of_not_treeMCSPPredicate
 #print axioms AlgorithmsToLowerBounds.ImplementedThresholdOracle.classSolvesCoinProblem_of_advantage
 #print axioms AlgorithmsToLowerBounds.classSolvesCoinProblem_of_bounded
 #print axioms AlgorithmsToLowerBounds.AC0pHalfVsFairCoinLowerBoundContract.excludes_small_solver
+#print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinReductionContract.of_distributionFacts
+#print axioms AlgorithmsToLowerBounds.exactTreeMCSPThresholdDecision_accepts_of_treeMCSPPredicate
+#print axioms AlgorithmsToLowerBounds.exactTreeMCSPThresholdDecision_rejects_of_not_treeMCSPPredicate
 #print axioms AlgorithmsToLowerBounds.noSmallImplementedThresholdOracle_of_AC0pCoinLowerBound
 #print axioms AlgorithmsToLowerBounds.sizeLowerBound_exactTreeMCSPThresholdLanguage_of_AC0pCoinLowerBound
 #print axioms AlgorithmsToLowerBounds.MCSP_lower_bound_from_AC0pCoinLowerBound

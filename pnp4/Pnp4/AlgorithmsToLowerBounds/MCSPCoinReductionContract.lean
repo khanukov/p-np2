@@ -59,11 +59,15 @@ theorem HalfVsFairMCSPCoinAcceptanceProfile.exact_solvesCoin
       (hardness.instance n)
       (exactTreeMCSPThresholdDecision n (profile.threshold n))
       (hardness.advantage n) := by
-  unfold SolvesCoinProblem acceptanceGap
-  have hLow := profile.low_acceptance_le n
-  have hFair := profile.fair_acceptance_ge n
-  have hGap := profile.advantage_gap n
-  linarith
+  exact solvesCoinProblem_of_acceptanceProbability_bounds
+    (inst := hardness.instance n)
+    (A := exactTreeMCSPThresholdDecision n (profile.threshold n))
+    (adv := hardness.advantage n)
+    (lowAcceptanceUpper := profile.lowAcceptanceUpper n)
+    (highAcceptanceLower := profile.fairAcceptanceLower n)
+    (profile.low_acceptance_le n)
+    (profile.fair_acceptance_ge n)
+    (profile.advantage_gap n)
 
 /--
 Smaller theorem-facing contract for the MCSP-to-coin reduction on truth-table
@@ -77,6 +81,36 @@ solves the half-vs-fair coin problem.
 structure HalfVsFairMCSPCoinReductionContract
     (hardness : HalfVsFairTruthTableCoinHardness)
     extends HalfVsFairMCSPCoinAcceptanceProfile hardness
+
+/--
+Named constructor for the MCSP-side half-vs-fair reduction contract from the
+three distribution facts that remain after the exact threshold predicate is
+fixed.
+-/
+def HalfVsFairMCSPCoinReductionContract.of_distributionFacts
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (threshold : Nat → Nat)
+    (lowAcceptanceUpper fairAcceptanceLower : Nat → Rat)
+    (low_acceptance_le :
+      ∀ n : Nat,
+        acceptanceProbability (hardness.instance n).lowBias
+            (exactTreeMCSPThresholdDecision n (threshold n)) ≤
+          lowAcceptanceUpper n)
+    (fair_acceptance_ge :
+      ∀ n : Nat,
+        fairAcceptanceLower n ≤
+          acceptanceProbability (hardness.instance n).highBias
+            (exactTreeMCSPThresholdDecision n (threshold n)))
+    (advantage_gap :
+      ∀ n : Nat,
+        hardness.advantage n + lowAcceptanceUpper n ≤ fairAcceptanceLower n) :
+    HalfVsFairMCSPCoinReductionContract hardness where
+  threshold := threshold
+  lowAcceptanceUpper := lowAcceptanceUpper
+  fairAcceptanceLower := fairAcceptanceLower
+  low_acceptance_le := low_acceptance_le
+  fair_acceptance_ge := fair_acceptance_ge
+  advantage_gap := advantage_gap
 
 /--
 Recover the original monolithic coin-solving statement from the decomposed

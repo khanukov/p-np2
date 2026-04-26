@@ -61,13 +61,16 @@ route, but it still does not claim the concentration, hybrid, or concrete
 
 Current theorem surface status:
 
-- `CoinProblem.lean`: exact finite-distribution semantics for the coin problem.
+- `CoinProblem.lean`: exact finite-distribution semantics for the coin problem
+  and the reusable probability-gap criterion for `SolvesCoinProblem`.
 - `MCSPCoinReduction.lean`: threshold-oracle reduction surface from MCSP to coin
-  distinguishing on truth tables.
+  distinguishing on truth tables, including accept/reject facts for correct
+  MCSP threshold oracles.
 - `MCSPCoinReductionContract.lean`: smaller theorem-facing half-vs-fair
   reduction contract, fixing a threshold schedule and the exact MCSP slice
   coin-solving obligation via separate low-acceptance, fair-acceptance, and
-  advantage-gap certificates.
+  advantage-gap certificates, with a named constructor from those distribution
+  facts.
 - `AC0pCoinLowerBound.lean`: explicit contract layer for published `AC^0[p]`
   coin lower bounds, in size-bounded form.
 - `MCSP_AC0p_Final.lean`: consequence layer saying that, under the `AC^0[p]`
@@ -99,7 +102,8 @@ Current theorem surface status:
   pseudorandomness interfaces against size-bounded circuit classes.
 - `MCSP_LocalPRG_Transfer.lean`: proved Shannon-counting upper bound for
   uniform acceptance of exact tree-MCSP threshold oracles and the resulting
-  local-PRG transfer contradiction theorem surface.
+  local-PRG transfer contradiction theorem surface, plus exact tree-MCSP
+  threshold accept/reject facts.
 - `LocalPRGHardnessSpec.lean`: paper-facing published-route layer packaging
   `LocalPRGHardnessSpec`, target family models, and exact-threshold exclusion
   theorems for published local-PRG regimes.

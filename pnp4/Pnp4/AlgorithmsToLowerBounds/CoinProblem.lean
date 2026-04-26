@@ -114,6 +114,28 @@ theorem solvesCoinProblem_congr
   simpa [SolvesCoinProblem, acceptanceGap, hAB] using hSolve
 
 /--
+A reusable probability-gap criterion for solving one finite coin-problem
+instance.
+
+If the algorithm's low-bias acceptance is at most `lowAcceptanceUpper`, its
+high-bias acceptance is at least `highAcceptanceLower`, and those bounds leave
+the requested advantage gap, then the algorithm solves the coin problem.
+-/
+theorem solvesCoinProblem_of_acceptanceProbability_bounds
+    {inst : CoinProblemInstance}
+    {A : BitVec inst.sampleBits → Bool}
+    {adv lowAcceptanceUpper highAcceptanceLower : Rat}
+    (hLow :
+      acceptanceProbability inst.lowBias A ≤ lowAcceptanceUpper)
+    (hHigh :
+      highAcceptanceLower ≤ acceptanceProbability inst.highBias A)
+    (hGap :
+      adv + lowAcceptanceUpper ≤ highAcceptanceLower) :
+    SolvesCoinProblem inst A adv := by
+  unfold SolvesCoinProblem acceptanceGap
+  linarith
+
+/--
 Standard uniform-vs-biased instance:
 distinguish `1/2 - ε` from `1/2` on strings of length `sampleBits`.
 -/

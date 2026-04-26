@@ -35,6 +35,28 @@ structure MCSPThresholdOracle (n : Nat) where
   correct : ∀ tt : TruthTable n,
     decide tt = true ↔ treeMCSPPredicate n threshold tt
 
+/-- A correct threshold oracle accepts every truth table below its threshold. -/
+theorem MCSPThresholdOracle.accepts_of_treeMCSPPredicate
+    {n : Nat}
+    (oracle : MCSPThresholdOracle n)
+    {tt : TruthTable n}
+    (hEasy : treeMCSPPredicate n oracle.threshold tt) :
+    oracle.decide tt = true :=
+  (oracle.correct tt).2 hEasy
+
+/-- A correct threshold oracle rejects every truth table not below its threshold. -/
+theorem MCSPThresholdOracle.rejects_of_not_treeMCSPPredicate
+    {n : Nat}
+    (oracle : MCSPThresholdOracle n)
+    {tt : TruthTable n}
+    (hHard : ¬ treeMCSPPredicate n oracle.threshold tt) :
+    oracle.decide tt = false := by
+  by_cases hTrue : oracle.decide tt = true
+  · exact (hHard ((oracle.correct tt).1 hTrue)).elim
+  · cases hDecision : oracle.decide tt
+    · rfl
+    · exact (hTrue hDecision).elim
+
 /--
 An `MCSPThresholdOracle` implemented by a circuit from a chosen non-uniform
 class over truth-table inputs.

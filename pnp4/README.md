@@ -78,9 +78,9 @@ Current theorem surface status:
   published `exp(N^(0.49 / d))` envelope, with explicit bias-gap and advantage
   profile metadata for the half-vs-fair coin regime.
 - `AC0pCoinAsymptotic.lean`: global half-vs-fair MCSP coin asymptotic language
-  on truth-table lengths and the published-contract consequence
-  `¬ InAC0p`, conditional on the published envelope beating every polynomial on
-  those slices.
+  on truth-table lengths, unconditional arithmetic that the published
+  `exp(N^(0.49 / d))` envelope beats every polynomial on arbitrarily late
+  truth-table slices, and the published-contract consequence `¬ InAC0p`.
 - `Growth.lean`: unconditional arithmetic that
   `QuasiPolyLower N = N ^ log2 N` has super-polynomial growth.
 - `SuperPolynomialBridge.lean`: generic bridge from a super-polynomial

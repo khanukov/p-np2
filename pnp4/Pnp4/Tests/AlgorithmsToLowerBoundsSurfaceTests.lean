@@ -340,6 +340,24 @@ def check_not_in_AC0p_halfVsFairMCSPCoinAsymptoticLanguage_from_published_contra
   not_in_AC0p_halfVsFairMCSPCoinAsymptoticLanguage_from_published_contract_and_growth
     contract reduction hGrowth p hp
 
+def check_ac0pCoinLowerEnvelope_beatsEveryPolynomial
+    (envelopeConst depth : Nat) :
+    BeatsEveryPolynomialSizeBoundAtArbitrarilyLargeTableLengths
+      (fun n => ac0pCoinLowerEnvelope envelopeConst depth n) :=
+  ac0pCoinLowerEnvelope_beatsEveryPolynomial_at_arbitrarilyLarge_tableLengths
+    envelopeConst depth
+
+def check_not_in_AC0p_halfVsFairMCSPCoinAsymptoticLanguage_from_published_contract
+    {model : AC0pFamilyModel}
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (contract : AC0pCoinPublishedExpLowerBoundContract model hardness)
+    (reduction : HalfVsFairMCSPCoinReductionContract hardness)
+    (p : Nat)
+    (hp : Nat.Prime p) :
+    ¬ InAC0p model p (halfVsFairMCSPCoinAsymptoticLanguage reduction) :=
+  not_in_AC0p_halfVsFairMCSPCoinAsymptoticLanguage_from_published_contract
+    contract reduction p hp
+
 def check_no_small_implemented_threshold_oracle_of_ac0p_coin_lower_bound_and_reduction
     {model : AC0pFamilyModel}
     {hardness : HalfVsFairTruthTableCoinHardness}
@@ -947,8 +965,10 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms AlgorithmsToLowerBounds.noSmallImplementedThresholdOracle_of_AC0pCoinPublishedExpLowerBoundContract_and_reduction
 #print axioms AlgorithmsToLowerBounds.MCSP_lower_bound_from_AC0pCoinPublishedExpLowerBoundContract_and_reduction
 #print axioms AlgorithmsToLowerBounds.halfVsFairMCSPCoinAsymptoticLanguage_eq_slice_at_tableLen
+#print axioms AlgorithmsToLowerBounds.ac0pCoinLowerEnvelope_beatsEveryPolynomial_at_arbitrarilyLarge_tableLengths
 #print axioms AlgorithmsToLowerBounds.not_hasPolynomialSizeFamily_halfVsFairMCSPCoinAsymptoticLanguage
 #print axioms AlgorithmsToLowerBounds.not_in_AC0p_halfVsFairMCSPCoinAsymptoticLanguage_from_published_contract_and_growth
+#print axioms AlgorithmsToLowerBounds.not_in_AC0p_halfVsFairMCSPCoinAsymptoticLanguage_from_published_contract
 #print axioms AlgorithmsToLowerBounds.uniformTruthTableAcceptanceProbability_le_countRatio_of_treeMCSPOracle
 #print axioms AlgorithmsToLowerBounds.noSmallImplementedThresholdOracle_of_localPRGTransfer
 #print axioms AlgorithmsToLowerBounds.sizeLowerBound_exactTreeMCSPThresholdLanguage_of_localPRGTransfer

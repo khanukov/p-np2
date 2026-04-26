@@ -774,6 +774,77 @@ def check_no_ppolyFormula_of_CKLM_localPRG_source
   no_PpolyFormula_of_CKLMFormulaCircuitLocalPRGSource_and_growth
     contract hGrowth
 
+def check_no_ppolyFormula_of_cklm_theorem2_quantitative_contract_and_cklm_profile
+    {hardness : CKLMFormulaCircuitTheorem2Hardness}
+    (contract : CKLMFormulaCircuitPublishedTheorem2QuantitativeContract hardness)
+    (hEnvelopeFreq :
+      ∀ c : Nat,
+        BeatsEveryPpolyBoundFrequentlyAtSomeTableLength
+          (cklmFormulaTheorem2LowerEnvelope c)) :
+    ¬ Pnp3.ComplexityInterfaces.PpolyFormula
+        (formulaCircuitAsymptoticLanguageOfSliceSpec hardness.toSliceSpec) :=
+  no_PpolyFormula_of_CKLMFormulaCircuitTheorem2QuantitativeContract_and_cklmProfile
+    contract hEnvelopeFreq
+
+def check_not_beatsEveryPpolyBoundAtSomeTableLength_cklmEnvelope
+    (c : Nat) :
+    ¬ BeatsEveryPpolyBoundAtSomeTableLength (cklmFormulaTheorem2LowerEnvelope c) :=
+  not_beatsEveryPpolyBoundAtSomeTableLength_cklmEnvelope c
+
+def check_not_beatsEveryPpolyBoundFrequentlyAtSomeTableLength_cklmEnvelope
+    (c : Nat) :
+    ¬ BeatsEveryPpolyBoundFrequentlyAtSomeTableLength
+        (cklmFormulaTheorem2LowerEnvelope c) :=
+  not_beatsEveryPpolyBoundFrequentlyAtSomeTableLength_cklmEnvelope c
+
+def check_no_uniform_cklmEnvelopeFrequentEscape :
+    (∀ c : Nat,
+      BeatsEveryPpolyBoundFrequentlyAtSomeTableLength
+        (cklmFormulaTheorem2LowerEnvelope c)) → False :=
+  no_uniform_cklmEnvelopeFrequentEscape
+
+def check_no_ppolyFormula_of_cklm_published_route_and_cklm_profile
+    {spec : CKLMFormulaCircuitHardnessSpec}
+    (hProfile : EventuallyAtLeastCKLMFormulaTheorem2LowerEnvelope spec.sizeBound)
+    (contract : CKLMFormulaCircuitPublishedRouteContract spec)
+    (hEnvelopeFreq :
+      ∀ c : Nat,
+        BeatsEveryPpolyBoundFrequentlyAtSomeTableLength
+          (cklmFormulaTheorem2LowerEnvelope c)) :
+    ¬ Pnp3.ComplexityInterfaces.PpolyFormula
+        (formulaCircuitAsymptoticLanguage spec.toLocalPRGHardnessSpec) :=
+  no_PpolyFormula_of_CKLMFormulaCircuitPublishedRoute_and_cklmProfile
+    hProfile
+    contract
+    hEnvelopeFreq
+
+def check_no_ppolyFormula_of_cklm_published_oneSided_route_and_cklm_profile
+    {spec : CKLMFormulaCircuitHardnessSpec}
+    (hProfile : EventuallyAtLeastCKLMFormulaTheorem2LowerEnvelope spec.sizeBound)
+    (contract : CKLMFormulaCircuitPublishedOneSidedRouteContract spec)
+    (hEnvelopeFreq :
+      ∀ c : Nat,
+        BeatsEveryPpolyBoundFrequentlyAtSomeTableLength
+          (cklmFormulaTheorem2LowerEnvelope c)) :
+    ¬ Pnp3.ComplexityInterfaces.PpolyFormula
+        (formulaCircuitAsymptoticLanguage spec.toLocalPRGHardnessSpec) :=
+  no_PpolyFormula_of_CKLMFormulaCircuitPublishedOneSidedRoute_and_cklmProfile
+    hProfile
+    contract
+    hEnvelopeFreq
+
+def check_no_ppolyFormula_of_CKLM_localPRG_source_and_cklm_profile
+    {source : CKLMFormulaCircuitLocalPRGSourceSpec}
+    (contract : CKLMFormulaCircuitLocalPRGSourceContract source)
+    (hEnvelopeFreq :
+      ∀ c : Nat,
+        BeatsEveryPpolyBoundFrequentlyAtSomeTableLength
+          (cklmFormulaTheorem2LowerEnvelope c)) :
+    ¬ Pnp3.ComplexityInterfaces.PpolyFormula
+        (formulaCircuitAsymptoticLanguage source.toLocalPRGHardnessSpec) :=
+  no_PpolyFormula_of_CKLMFormulaCircuitLocalPRGSource_and_cklmProfile
+    contract hEnvelopeFreq
+
 #print axioms AlgorithmsToLowerBounds.NP_not_subset_PpolyDAG_of_verified_source
 #print axioms AlgorithmsToLowerBounds.P_ne_NP_of_verified_source
 #print axioms AlgorithmsToLowerBounds.ImplementedThresholdOracle.classSolvesCoinProblem_of_advantage
@@ -813,6 +884,13 @@ def check_no_ppolyFormula_of_CKLM_localPRG_source
 #print axioms AlgorithmsToLowerBounds.no_PpolyFormula_of_formulaCircuitPublishedLocalPRGRoute_and_growth
 #print axioms AlgorithmsToLowerBounds.no_PpolyFormula_of_CKLM_formulaOrBranchingProgramRoute_and_growth
 #print axioms AlgorithmsToLowerBounds.no_PpolyFormula_of_CKLMFormulaCircuitLocalPRGSource_and_growth
+#print axioms AlgorithmsToLowerBounds.no_PpolyFormula_of_CKLMFormulaCircuitTheorem2QuantitativeContract_and_cklmProfile
+#print axioms AlgorithmsToLowerBounds.not_beatsEveryPpolyBoundAtSomeTableLength_cklmEnvelope
+#print axioms AlgorithmsToLowerBounds.not_beatsEveryPpolyBoundFrequentlyAtSomeTableLength_cklmEnvelope
+#print axioms AlgorithmsToLowerBounds.no_uniform_cklmEnvelopeFrequentEscape
+#print axioms AlgorithmsToLowerBounds.no_PpolyFormula_of_CKLMFormulaCircuitPublishedRoute_and_cklmProfile
+#print axioms AlgorithmsToLowerBounds.no_PpolyFormula_of_CKLMFormulaCircuitPublishedOneSidedRoute_and_cklmProfile
+#print axioms AlgorithmsToLowerBounds.no_PpolyFormula_of_CKLMFormulaCircuitLocalPRGSource_and_cklmProfile
 
 end Tests
 end Pnp4

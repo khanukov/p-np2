@@ -62,7 +62,8 @@ route, but it still does not claim the concentration, hybrid, or concrete
 Current theorem surface status:
 
 - `CoinProblem.lean`: exact finite-distribution semantics for the coin problem,
-  monotonicity of acceptance probabilities, and the reusable probability-gap
+  monotonicity and complement laws for acceptance probabilities, total-mass
+  normalization for product Bernoulli weights, and the reusable probability-gap
   criterion for `SolvesCoinProblem`.
 - `MCSPCoinReduction.lean`: threshold-oracle reduction surface from MCSP to coin
   distinguishing on truth tables, including accept/reject facts for correct
@@ -75,7 +76,10 @@ Current theorem surface status:
   explicit polarity fact that the half-vs-fair `highBias` side is fair bias
   `1 / 2`.  It also records the corrected-polarity rejection profile, where
   acceptance means "not below the tree-MCSP threshold"; this is the working
-  direction for the half-vs-fair MCSP-side reduction.
+  direction for the half-vs-fair MCSP-side reduction.  The current
+  source-facing constructor reduces that rejection contract to two mass facts:
+  low-bias tables are low-complexity with high probability, and the fair-side
+  Shannon-counting ratio is small enough for the requested gap.
 - `AC0pCoinLowerBound.lean`: explicit contract layer for published `AC^0[p]`
   coin lower bounds, in size-bounded form.
 - `MCSP_AC0p_Final.lean`: consequence layer saying that, under the `AC^0[p]`

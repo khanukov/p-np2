@@ -366,6 +366,99 @@ theorem one_sub_countRatioUpper_le_halfVsFair_highBias_exactTreeMCSPThresholdHar
   linarith
 
 /--
+Low-bias upper bound for the corrected-polarity predicate from a lower bound on
+the low-bias mass of low-complexity truth tables.
+-/
+theorem halfVsFair_lowBias_notTreeMCSPPredicateDecision_le_of_treeMCSPPredicate_mass_lower
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    {n threshold : Nat}
+    {q : Rat}
+    (hMass :
+      1 - q ≤
+        acceptanceProbability (hardness.instance n).lowBias
+          (treeMCSPPredicateDecision n threshold)) :
+    acceptanceProbability (hardness.instance n).lowBias
+        (notTreeMCSPPredicateDecision n threshold) ≤ q := by
+  simpa [notTreeMCSPPredicateDecision] using
+    acceptanceProbability_not_le_of_one_sub_le
+      (bias := (hardness.instance n).lowBias)
+      (A := treeMCSPPredicateDecision n threshold)
+      (q := q)
+      hMass
+
+/--
+Exact hard-decision version of
+`halfVsFair_lowBias_notTreeMCSPPredicateDecision_le_of_treeMCSPPredicate_mass_lower`.
+-/
+theorem halfVsFair_lowBias_exactTreeMCSPThresholdHardDecision_le_of_treeMCSPPredicate_mass_lower
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    {n threshold : Nat}
+    {q : Rat}
+    (hMass :
+      1 - q ≤
+        acceptanceProbability (hardness.instance n).lowBias
+          (treeMCSPPredicateDecision n threshold)) :
+    acceptanceProbability (hardness.instance n).lowBias
+        (exactTreeMCSPThresholdHardDecision n threshold) ≤ q := by
+  simpa [exactTreeMCSPThresholdHardDecision_eq_notTreeMCSPPredicateDecision] using
+    halfVsFair_lowBias_notTreeMCSPPredicateDecision_le_of_treeMCSPPredicate_mass_lower
+      (hardness := hardness)
+      (n := n)
+      (threshold := threshold)
+      (q := q)
+      hMass
+
+/--
+Source-facing constructor for the corrected-polarity MCSP/coin reduction.
+
+The remaining probabilistic input is now stated in the mathematically natural
+direction: the low-bias side has large low-complexity mass, while the fair side
+is controlled by the already-proved Shannon-counting ratio.
+-/
+def HalfVsFairMCSPCoinRejectionContract.of_treeMCSPPredicateBiasedLower_and_fairCounting
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (threshold : Nat → Nat)
+    (lowAcceptanceUpper fairAcceptanceLower : Nat → Rat)
+    (low_lowComplexity_mass_ge :
+      ∀ n : Nat,
+        1 - lowAcceptanceUpper n ≤
+          acceptanceProbability (hardness.instance n).lowBias
+            (treeMCSPPredicateDecision n (threshold n)))
+    (fair_count_ratio_le :
+      ∀ n : Nat,
+        (Pnp3.Models.circuitCountBound n (threshold n) : Rat) /
+            (2 ^ (Pnp3.Models.Partial.tableLen n) : Rat) ≤
+          1 - fairAcceptanceLower n)
+    (advantage_gap :
+      ∀ n : Nat,
+        hardness.advantage n + lowAcceptanceUpper n ≤ fairAcceptanceLower n) :
+    HalfVsFairMCSPCoinRejectionContract hardness :=
+  HalfVsFairMCSPCoinRejectionContract.of_distributionFacts
+    threshold
+    lowAcceptanceUpper
+    fairAcceptanceLower
+    (fun n =>
+      halfVsFair_lowBias_exactTreeMCSPThresholdHardDecision_le_of_treeMCSPPredicate_mass_lower
+        (hardness := hardness)
+        (n := n)
+        (threshold := threshold n)
+        (q := lowAcceptanceUpper n)
+        (low_lowComplexity_mass_ge n))
+    (fun n => by
+      have hFairBase :
+          1 - (1 - fairAcceptanceLower n) ≤
+            acceptanceProbability (hardness.instance n).highBias
+              (exactTreeMCSPThresholdHardDecision n (threshold n)) :=
+        one_sub_countRatioUpper_le_halfVsFair_highBias_exactTreeMCSPThresholdHardDecision
+          (hardness := hardness)
+          (n := n)
+          (threshold := threshold n)
+          (q := 1 - fairAcceptanceLower n)
+          (fair_count_ratio_le n)
+      linarith)
+    advantage_gap
+
+/--
 Recover the original monolithic coin-solving statement from the decomposed
 reduction contract.
 -/

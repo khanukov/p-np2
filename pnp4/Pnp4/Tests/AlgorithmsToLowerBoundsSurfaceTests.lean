@@ -229,6 +229,35 @@ def check_acceptanceProbability_mono
     acceptanceProbability bias A ≤ acceptanceProbability bias B :=
   acceptanceProbability_mono hBias_nonneg hBias_le_one hAB
 
+def check_productBiasWeight_total
+    (bias : Rat)
+    (n : Nat) :
+    (∑ x : AlgorithmsToLowerBounds.BitVec n, productBiasWeight bias x) = 1 :=
+  productBiasWeight_total bias n
+
+def check_acceptanceProbability_true
+    {n : Nat}
+    (bias : Rat) :
+    acceptanceProbability bias (fun _ : AlgorithmsToLowerBounds.BitVec n => true) = 1 :=
+  acceptanceProbability_true bias
+
+def check_acceptanceProbability_not
+    {n : Nat}
+    (bias : Rat)
+    (A : AlgorithmsToLowerBounds.BitVec n → Bool) :
+    acceptanceProbability bias (fun x => ! A x) =
+      1 - acceptanceProbability bias A :=
+  acceptanceProbability_not bias A
+
+def check_acceptanceProbability_not_le_of_one_sub_le
+    {n : Nat}
+    {bias : Rat}
+    {A : AlgorithmsToLowerBounds.BitVec n → Bool}
+    {q : Rat}
+    (hMass : 1 - q ≤ acceptanceProbability bias A) :
+    acceptanceProbability bias (fun x => ! A x) ≤ q :=
+  acceptanceProbability_not_le_of_one_sub_le hMass
+
 def check_acceptanceProbability_fair_eq_bitVecAcceptanceProbability
     {m : Nat}
     (A : AlgorithmsToLowerBounds.BitVec m → Bool) :
@@ -459,6 +488,32 @@ def check_half_vs_fair_mcsp_coin_rejection_contract_of_notTreeMCSPPredicateMassF
     fair_not_mass_ge
     advantage_gap
 
+def check_half_vs_fair_mcsp_coin_rejection_contract_of_treeMCSPPredicateBiasedLower_and_fairCounting
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (threshold : Nat → Nat)
+    (lowAcceptanceUpper fairAcceptanceLower : Nat → Rat)
+    (low_lowComplexity_mass_ge :
+      ∀ n : Nat,
+        1 - lowAcceptanceUpper n ≤
+          acceptanceProbability (hardness.instance n).lowBias
+            (treeMCSPPredicateDecision n (threshold n)))
+    (fair_count_ratio_le :
+      ∀ n : Nat,
+        (Pnp3.Models.circuitCountBound n (threshold n) : Rat) /
+            (2 ^ (Pnp3.Models.Partial.tableLen n) : Rat) ≤
+          1 - fairAcceptanceLower n)
+    (advantage_gap :
+      ∀ n : Nat,
+        hardness.advantage n + lowAcceptanceUpper n ≤ fairAcceptanceLower n) :
+    HalfVsFairMCSPCoinRejectionContract hardness :=
+  HalfVsFairMCSPCoinRejectionContract.of_treeMCSPPredicateBiasedLower_and_fairCounting
+    threshold
+    lowAcceptanceUpper
+    fairAcceptanceLower
+    low_lowComplexity_mass_ge
+    fair_count_ratio_le
+    advantage_gap
+
 def check_halfVsFair_highBias_treeMCSPPredicateDecision_le_countRatio
     {hardness : HalfVsFairTruthTableCoinHardness}
     (n threshold : Nat) :
@@ -487,8 +542,34 @@ def check_one_sub_countRatio_le_halfVsFair_highBias_exactTreeMCSPThresholdHardDe
           (2 ^ (Pnp3.Models.Partial.tableLen n) : Rat) ≤
       acceptanceProbability (hardness.instance n).highBias
         (exactTreeMCSPThresholdHardDecision n threshold) :=
-  one_sub_countRatio_le_halfVsFair_highBias_exactTreeMCSPThresholdHardDecision
+    one_sub_countRatio_le_halfVsFair_highBias_exactTreeMCSPThresholdHardDecision
     n threshold
+
+def check_halfVsFair_lowBias_notTreeMCSPPredicateDecision_le_of_treeMCSPPredicate_mass_lower
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    {n threshold : Nat}
+    {q : Rat}
+    (hMass :
+      1 - q ≤
+        acceptanceProbability (hardness.instance n).lowBias
+          (treeMCSPPredicateDecision n threshold)) :
+    acceptanceProbability (hardness.instance n).lowBias
+        (notTreeMCSPPredicateDecision n threshold) ≤ q :=
+  halfVsFair_lowBias_notTreeMCSPPredicateDecision_le_of_treeMCSPPredicate_mass_lower
+    hMass
+
+def check_halfVsFair_lowBias_exactTreeMCSPThresholdHardDecision_le_of_treeMCSPPredicate_mass_lower
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    {n threshold : Nat}
+    {q : Rat}
+    (hMass :
+      1 - q ≤
+        acceptanceProbability (hardness.instance n).lowBias
+          (treeMCSPPredicateDecision n threshold)) :
+    acceptanceProbability (hardness.instance n).lowBias
+        (exactTreeMCSPThresholdHardDecision n threshold) ≤ q :=
+  halfVsFair_lowBias_exactTreeMCSPThresholdHardDecision_le_of_treeMCSPPredicate_mass_lower
+    hMass
 
 def check_half_vs_fair_mcsp_coin_reduction_contract_solves
     {hardness : HalfVsFairTruthTableCoinHardness}
@@ -1275,6 +1356,10 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms AlgorithmsToLowerBounds.not_depth_d_AC0p_of_eventual_quasiPoly_lowerBound
 #print axioms AlgorithmsToLowerBounds.not_in_AC0p_of_depthwise_eventual_quasiPoly_lowerBound
 #print axioms AlgorithmsToLowerBounds.not_in_AC0p_from_asymptotic_quasiPolynomial_contract
+#print axioms AlgorithmsToLowerBounds.productBiasWeight_total
+#print axioms AlgorithmsToLowerBounds.acceptanceProbability_true
+#print axioms AlgorithmsToLowerBounds.acceptanceProbability_not
+#print axioms AlgorithmsToLowerBounds.acceptanceProbability_not_le_of_one_sub_le
 #print axioms AlgorithmsToLowerBounds.acceptanceProbability_mono
 #print axioms AlgorithmsToLowerBounds.acceptanceProbability_mono_lowBias
 #print axioms AlgorithmsToLowerBounds.acceptanceProbability_mono_highBias
@@ -1291,6 +1376,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinReductionContract.of_treeMCSPPredicateMassFacts
 #print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinRejectionProfile.hard_solvesCoin
 #print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinRejectionContract.of_notTreeMCSPPredicateMassFacts
+#print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinRejectionContract.of_treeMCSPPredicateBiasedLower_and_fairCounting
 #print axioms AlgorithmsToLowerBounds.HalfVsFairMCSPCoinRejectionContract.hard_solvesCoin
 #print axioms AlgorithmsToLowerBounds.treeMCSPPredicateDecision_spec
 #print axioms AlgorithmsToLowerBounds.notTreeMCSPPredicateDecision_spec
@@ -1300,6 +1386,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms AlgorithmsToLowerBounds.one_sub_countRatio_le_fairAcceptanceProbability_notTreeMCSPPredicateDecision
 #print axioms AlgorithmsToLowerBounds.halfVsFair_highBias_treeMCSPPredicateDecision_le_countRatio
 #print axioms AlgorithmsToLowerBounds.one_sub_countRatio_le_halfVsFair_highBias_exactTreeMCSPThresholdHardDecision
+#print axioms AlgorithmsToLowerBounds.halfVsFair_lowBias_exactTreeMCSPThresholdHardDecision_le_of_treeMCSPPredicate_mass_lower
 #print axioms AlgorithmsToLowerBounds.exactTreeMCSPThresholdDecision_accepts_of_treeMCSPPredicate
 #print axioms AlgorithmsToLowerBounds.exactTreeMCSPThresholdDecision_rejects_of_not_treeMCSPPredicate
 #print axioms AlgorithmsToLowerBounds.exactTreeMCSPThresholdHardDecision_accepts_of_not_treeMCSPPredicate

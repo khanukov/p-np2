@@ -50,6 +50,143 @@ theorem productBiasWeight_nonneg
   exact Finset.prod_nonneg fun i _ =>
     bernoulliBitWeight_nonneg hBias_nonneg hBias_le_one (x i)
 
+/-- Split an `(n+1)`-bit vector into its head bit and remaining tail. -/
+private def bitVecSuccEquiv (n : Nat) :
+    BitVec (n + 1) ≃ Bool × BitVec n where
+  toFun x := (x 0, fun i => x i.succ)
+  invFun y := Fin.cases y.1 y.2
+  left_inv x := by
+    funext i
+    cases i using Fin.cases <;> simp
+  right_inv y := by
+    cases y with
+    | mk b x =>
+        rfl
+
+/-- The total mass of the Bernoulli product distribution is one. -/
+theorem productBiasWeight_total
+    (bias : Rat)
+    (n : Nat) :
+    (∑ x : BitVec n, productBiasWeight bias x) = 1 := by
+  induction n with
+  | zero =>
+      simp [productBiasWeight]
+  | succ n ih =>
+      have hSplit :
+          (∑ x : BitVec (n + 1), productBiasWeight bias x) =
+            ∑ y : Bool × BitVec n,
+              productBiasWeight bias ((bitVecSuccEquiv n).symm y) := by
+        exact Fintype.sum_equiv (bitVecSuccEquiv n)
+          (fun x : BitVec (n + 1) => productBiasWeight bias x)
+          (fun y : Bool × BitVec n =>
+            productBiasWeight bias ((bitVecSuccEquiv n).symm y))
+          (fun _ => by simp)
+      have hWeight :
+          ∀ b : Bool, ∀ x : BitVec n,
+            productBiasWeight bias ((bitVecSuccEquiv n).symm (b, x)) =
+              bernoulliBitWeight bias b * productBiasWeight bias x := by
+        intro b x
+        unfold productBiasWeight
+        rw [Fin.prod_univ_succ]
+        simp [bitVecSuccEquiv]
+      calc
+        (∑ x : BitVec (n + 1), productBiasWeight bias x)
+            = ∑ y : Bool × BitVec n,
+                productBiasWeight bias ((bitVecSuccEquiv n).symm y) := hSplit
+        _ = ∑ b : Bool, ∑ x : BitVec n,
+              bernoulliBitWeight bias b * productBiasWeight bias x := by
+              rw [Fintype.sum_prod_type]
+              apply Finset.sum_congr rfl
+              intro b _hb
+              apply Finset.sum_congr rfl
+              intro x _hx
+              exact hWeight b x
+        _ = ∑ b : Bool, bernoulliBitWeight bias b *
+              (∑ x : BitVec n, productBiasWeight bias x) := by
+              apply Finset.sum_congr rfl
+              intro b _hb
+              rw [Finset.mul_sum]
+        _ = ∑ b : Bool, bernoulliBitWeight bias b := by
+              rw [ih]
+              simp
+        _ = 1 := by
+              simp [bernoulliBitWeight]
+
+/-- The always-accept algorithm has probability one under any Bernoulli bias. -/
+theorem acceptanceProbability_true
+    {n : Nat}
+    (bias : Rat) :
+    acceptanceProbability bias (fun _ : BitVec n => true) = 1 := by
+  simp [acceptanceProbability, productBiasWeight_total]
+
+/-- Acceptance probability of a Boolean complement under a product distribution. -/
+theorem acceptanceProbability_not
+    {n : Nat}
+    (bias : Rat)
+    (A : BitVec n → Bool) :
+    acceptanceProbability bias (fun x => ! A x) =
+      1 - acceptanceProbability bias A := by
+  classical
+  let accepted : Finset (BitVec n) :=
+    (Finset.univ : Finset (BitVec n)).filter (fun x => A x = true)
+  let rejected : Finset (BitVec n) :=
+    (Finset.univ : Finset (BitVec n)).filter (fun x => (! A x) = true)
+  have hDisjoint : Disjoint accepted rejected := by
+    rw [Finset.disjoint_left]
+    intro x hxAccepted hxRejected
+    have hA : A x = true := (Finset.mem_filter.mp hxAccepted).2
+    have hNotA : (! A x) = true := (Finset.mem_filter.mp hxRejected).2
+    cases hAx : A x <;> simp [hAx] at hA hNotA
+  have hUnion :
+      accepted ∪ rejected = (Finset.univ : Finset (BitVec n)) := by
+    ext x
+    by_cases hA : A x = true
+    · simp [accepted, rejected, hA]
+    · have hFalse : A x = false := by
+        cases hAx : A x
+        · rfl
+        · exact (hA hAx).elim
+      simp [accepted, rejected, hFalse]
+  have hTotal :
+      (∑ x ∈ accepted, productBiasWeight bias x) +
+          (∑ x ∈ rejected, productBiasWeight bias x) = 1 := by
+    have hUnionSum :
+        (∑ x ∈ accepted ∪ rejected, productBiasWeight bias x) =
+          (∑ x ∈ accepted, productBiasWeight bias x) +
+            (∑ x ∈ rejected, productBiasWeight bias x) := by
+      rw [Finset.sum_union hDisjoint]
+    have hAll :
+        (∑ x ∈ accepted ∪ rejected, productBiasWeight bias x) = 1 := by
+      rw [hUnion]
+      simpa using productBiasWeight_total bias n
+    linarith
+  have hAccepted :
+      acceptanceProbability bias A =
+        ∑ x ∈ accepted, productBiasWeight bias x := by
+    unfold acceptanceProbability
+    rw [← Finset.sum_filter]
+  have hRejected :
+      acceptanceProbability bias (fun x => ! A x) =
+        ∑ x ∈ rejected, productBiasWeight bias x := by
+    unfold acceptanceProbability
+    rw [← Finset.sum_filter]
+  rw [hAccepted, hRejected]
+  linarith
+
+/--
+If a predicate has mass at least `1 - q`, its Boolean complement has mass at
+most `q`.
+-/
+theorem acceptanceProbability_not_le_of_one_sub_le
+    {n : Nat}
+    {bias : Rat}
+    {A : BitVec n → Bool}
+    {q : Rat}
+    (hMass : 1 - q ≤ acceptanceProbability bias A) :
+    acceptanceProbability bias (fun x => ! A x) ≤ q := by
+  rw [acceptanceProbability_not]
+  linarith
+
 /--
 One finite coin-problem instance: distinguish `lowBias` from `highBias` on
 sample strings of length `sampleBits`.

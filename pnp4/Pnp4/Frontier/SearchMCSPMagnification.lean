@@ -16,11 +16,20 @@ weak lower bounds talk about circuit families producing witnesses.
 structure SearchMCSPCompressionProblem where
   instanceBits : Nat → Nat
   witnessBits : Nat → Nat
+  promise :
+    ∀ n : Nat,
+      AlgorithmsToLowerBounds.BitVec (instanceBits n) →
+        Prop
   relation :
     ∀ n : Nat,
       AlgorithmsToLowerBounds.BitVec (instanceBits n) →
         AlgorithmsToLowerBounds.BitVec (witnessBits n) →
           Prop
+  totalOnPromise :
+    ∀ n : Nat, ∀ x : AlgorithmsToLowerBounds.BitVec (instanceBits n),
+      promise n x →
+        ∃ w : AlgorithmsToLowerBounds.BitVec (witnessBits n),
+          relation n x w
 
 /-- Output vector produced by one Boolean circuit per witness bit. -/
 def searchSolverOutput
@@ -52,7 +61,8 @@ structure BoundedSearchSolver
       C.size (outputCircuit n i) ≤ sizeBound n
   solves :
     ∀ n : Nat, ∀ x : AlgorithmsToLowerBounds.BitVec (problem.instanceBits n),
-      problem.relation n x (searchSolverOutput (outputCircuit n) x)
+      problem.promise n x →
+        problem.relation n x (searchSolverOutput (outputCircuit n) x)
 
 /-- The weak lower-bound proposition: no bounded solver exists. -/
 def SearchProblemNoBoundedSolver

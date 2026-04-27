@@ -25,6 +25,7 @@ import Pnp4.AlgorithmsToLowerBounds.BridgeToPpolyDAG
 import Pnp4.Frontier.PvsNPBridgeRequirements
 import Pnp4.Frontier.CompressionMagnification
 import Pnp4.Frontier.SearchMCSPMagnification
+import Pnp4.Frontier.SearchMCSPConcreteTargets
 
 namespace Pnp4
 namespace Tests
@@ -647,6 +648,35 @@ def check_mainlineProgress_of_weakCircuitLowerBound
     (hMag : Frontier.SearchMCSPMagnificationContract target) :
     Frontier.PvsNPMainlineProgress :=
   Frontier.PvsNPMainlineProgress.of_weakCircuitLowerBound hWeak hMag
+
+def check_treeMCSPSearchProblem
+    (threshold : Nat → Nat)
+    (encoding : Frontier.TreeMCSPSearchWitnessEncoding threshold) :
+    Frontier.SearchMCSPCompressionProblem :=
+  Frontier.treeMCSPSearchProblem threshold encoding
+
+def check_treeMCSPSearchWeakLowerBoundTarget
+    (threshold : Nat → Nat)
+    (encoding : Frontier.TreeMCSPSearchWitnessEncoding threshold)
+    (C : CircuitFamilyClass)
+    (sizeBound : Nat → Nat) :
+    Frontier.SearchMCSPWeakCircuitLowerBoundTarget :=
+  Frontier.treeMCSPSearchWeakLowerBoundTarget threshold encoding C sizeBound
+
+def check_treeMCSPSearchSource_to_np_not_subset
+    (src : Frontier.TreeMCSPSearchMagnificationSource) :
+    Frontier.NP_not_subset_Ppoly :=
+  Frontier.NP_not_subset_Ppoly_of_treeMCSPSearchMagnificationSource src
+
+def check_treeMCSPSearchSource_to_pne_np
+    (src : Frontier.TreeMCSPSearchMagnificationSource) :
+    Pnp3.ComplexityInterfaces.P_ne_NP :=
+  Frontier.P_ne_NP_of_treeMCSPSearchMagnificationSource src
+
+def check_mainlineProgress_of_treeMCSPSearchSource
+    (src : Frontier.TreeMCSPSearchMagnificationSource) :
+    Frontier.PvsNPMainlineProgress :=
+  Frontier.PvsNPMainlineProgress.of_treeMCSPSearchMagnificationSource src
 
 def check_uniform_vs_biased_coin_instance
     (sampleBits : Nat) (ε : Rat)

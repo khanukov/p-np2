@@ -186,3 +186,9 @@ Current theorem surface status:
   size schedule, and the lower-bound statement that no bounded search solver
   exists.  A separate `SearchMCSPMagnificationContract` is still required to
   turn that weak lower bound into a `VerifiedNPDAGLowerBoundSource`.
+- `Frontier/SearchMCSPConcreteTargets.lean`: concrete tree-MCSP promise-search
+  target for the mainline.  Instances are truth tables promised to satisfy the
+  existing proof-level `treeMCSPPredicate`; a witness encoding must prove
+  soundness and completeness for small tree-circuit witnesses.  This is the
+  first named target where a weak search lower bound can be paired with a
+  magnification contract to reach `PpolyDAG`.

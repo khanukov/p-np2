@@ -175,6 +175,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.PvsNPBridgeRequirements,
     Glob.one `Pnp4.Frontier.CompressionMagnification,
     Glob.one `Pnp4.Frontier.SearchMCSPMagnification,
+    Glob.one `Pnp4.Frontier.SearchMCSPConcreteTargets,
     Glob.one `Pnp4.Tests.AlgorithmsToLowerBoundsSurfaceTests,
     Glob.one `Pnp4.Tests.AxiomsAudit
   ]

@@ -15,6 +15,7 @@ import Pnp4.AlgorithmsToLowerBounds.BridgeToPpolyDAG
 import Pnp4.Frontier.PvsNPBridgeRequirements
 import Pnp4.Frontier.CompressionMagnification
 import Pnp4.Frontier.SearchMCSPMagnification
+import Pnp4.Frontier.SearchMCSPConcreteTargets
 
 namespace Pnp4
 namespace Tests
@@ -166,6 +167,12 @@ namespace Tests
 #print axioms Frontier.NP_not_subset_Ppoly_of_weakCircuitLowerBound
 #print axioms Frontier.P_ne_NP_of_weakCircuitLowerBound
 #print axioms Frontier.PvsNPMainlineProgress.of_weakCircuitLowerBound
+#print axioms Frontier.treeMCSPSearchProblem
+#print axioms Frontier.treeMCSPSearchWeakLowerBoundTarget
+#print axioms Frontier.TreeMCSPSearchMagnificationSource.verifiedSource
+#print axioms Frontier.NP_not_subset_Ppoly_of_treeMCSPSearchMagnificationSource
+#print axioms Frontier.P_ne_NP_of_treeMCSPSearchMagnificationSource
+#print axioms Frontier.PvsNPMainlineProgress.of_treeMCSPSearchMagnificationSource
 
 end Tests
 end Pnp4

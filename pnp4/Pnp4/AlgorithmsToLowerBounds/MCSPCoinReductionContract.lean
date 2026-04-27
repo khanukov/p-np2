@@ -242,6 +242,68 @@ noncomputable def CoinDistinguisherFamily.of_adjacentBiasMCSP
   solves := fun n => facts.toSolvesCoin n
 
 /--
+Parameter matching for the Claim 2.4 masking translation from the adjacent-bias
+MCSP source pair to the half-vs-fair target pair.
+
+For each slice, the source pair is expected to have the form
+`qLow = qHigh * (1 - eps)` and `qHigh`, while the target pair has the same
+multiplicative low/high ratio at the half-vs-fair high bias.
+-/
+structure AdjacentBiasToHalfVsFairMaskingSetupFacts
+    (facts : AdjacentBiasMCSPThresholdSeparationFacts)
+    (hardness : HalfVsFairTruthTableCoinHardness) where
+  sourceLow_pos :
+    ∀ n : Nat, 0 < facts.qLow n
+  sourceHigh_pos :
+    ∀ n : Nat, 0 < facts.qHigh n
+  sourceHigh_le_targetHigh :
+    ∀ n : Nat, facts.qHigh n ≤ (hardness.instance n).highBias
+  targetLow_eq_scaled :
+    ∀ n : Nat,
+      (hardness.instance n).lowBias =
+        (hardness.instance n).highBias * (facts.qLow n / facts.qHigh n)
+  advantage_le :
+    ∀ n : Nat, hardness.advantage n ≤ facts.advantage n
+
+/-- Masking parameters induced by adjacent-bias to half-vs-fair matching data. -/
+def maskingParams_of_adjacentBiasToHalfVsFair
+    {facts : AdjacentBiasMCSPThresholdSeparationFacts}
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (setupFacts :
+      AdjacentBiasToHalfVsFairMaskingSetupFacts facts hardness)
+    (n : Nat) :
+    MaskingBiasParams where
+  p := facts.qHigh n
+  q := (hardness.instance n).highBias
+  eps := 1 - facts.qLow n / facts.qHigh n
+  hp_nonneg := le_of_lt (setupFacts.sourceHigh_pos n)
+  hp_pos := setupFacts.sourceHigh_pos n
+  hq_pos :=
+    lt_of_lt_of_le
+      (setupFacts.sourceHigh_pos n)
+      (setupFacts.sourceHigh_le_targetHigh n)
+  hq_le_one := (hardness.instance n).high_le_one
+  hp_le_q := setupFacts.sourceHigh_le_targetHigh n
+  heps_nonneg := by
+    have hDiv :
+        facts.qLow n / facts.qHigh n ≤
+          facts.qHigh n / facts.qHigh n :=
+      div_le_div_of_nonneg_right
+        (le_of_lt (facts.qLow_lt_qHigh n))
+        (le_of_lt (setupFacts.sourceHigh_pos n))
+    have hDivOne :
+        facts.qLow n / facts.qHigh n ≤ 1 := by
+      simpa [div_self (ne_of_gt (setupFacts.sourceHigh_pos n))] using hDiv
+    linarith
+  heps_lt_one := by
+    have hDivPos :
+        0 < facts.qLow n / facts.qHigh n :=
+      div_pos
+        (setupFacts.sourceLow_pos n)
+        (setupFacts.sourceHigh_pos n)
+    linarith
+
+/--
 If circuits in `C` compute the adjacent-bias MCSP hard-threshold decisions,
 then they realize the corresponding generic adjacent-bias coin-distinguisher
 family.
@@ -351,6 +413,42 @@ structure CoinMaskingTranslationSetup
     ∀ n : Nat, (target.instance n).highBias = (params n).highTargetBias
   advantage_le :
     ∀ n : Nat, target.advantage n ≤ source.advantage n
+
+/--
+Instantiate the generic masking-translation setup for adjacent-bias MCSP source
+facts and a half-vs-fair target once the slice parameters are matched.
+-/
+def CoinMaskingTranslationSetup.of_adjacentBiasToHalfVsFair
+    {facts : AdjacentBiasMCSPThresholdSeparationFacts}
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (setupFacts :
+      AdjacentBiasToHalfVsFairMaskingSetupFacts facts hardness) :
+    CoinMaskingTranslationSetup
+      (CoinDistinguisherFamily.of_adjacentBiasMCSP facts)
+      hardness where
+  params := maskingParams_of_adjacentBiasToHalfVsFair setupFacts
+  sampleBits_eq := by
+    intro n
+    rfl
+  source_low_eq := by
+    intro n
+    unfold CoinDistinguisherFamily.of_adjacentBiasMCSP
+      maskingParams_of_adjacentBiasToHalfVsFair
+      MaskingBiasParams.lowSourceBias
+    field_simp [ne_of_gt (setupFacts.sourceHigh_pos n)]
+  source_high_eq := by
+    intro n
+    rfl
+  target_low_eq := by
+    intro n
+    unfold maskingParams_of_adjacentBiasToHalfVsFair
+      MaskingBiasParams.lowTargetBias
+    rw [setupFacts.targetLow_eq_scaled n]
+    ring
+  target_high_eq := by
+    intro n
+    rfl
+  advantage_le := setupFacts.advantage_le
 
 private def castFamily
     {C : CircuitFamilyClass}
@@ -781,6 +879,55 @@ theorem false_of_AC0p_circuit_family_computes_adjacentBias_MCSP_hardDecision_of_
       depth
       setup
       maskFacts)
+    circuit
+    computes
+    sizeBound
+    size_le
+    hSize
+
+/--
+Adjacent-bias contradiction bridge with the masking setup instantiated from
+explicit adjacent-to-half-vs-fair parameter matching.  The probability-side
+masking facts are supplied automatically from the constructed parameters.
+-/
+theorem false_of_AC0p_circuit_family_computes_adjacentBias_MCSP_hardDecision_of_adjacentMaskingSetup
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (model : AC0pFamilyModelWithMasking)
+    (contract :
+      AC0pHalfVsFairCoinLowerBoundContract
+        model.toAC0pFamilyModel
+        hardness)
+    (facts : AdjacentBiasMCSPThresholdSeparationFacts)
+    (setupFacts :
+      AdjacentBiasToHalfVsFairMaskingSetupFacts facts hardness)
+    {p depth n : Nat}
+    (hp : Nat.Prime p)
+    (circuit :
+      ∀ m : Nat,
+        (model.toAC0pFamilyModel.classOf p depth).Family
+          (Pnp3.Models.Partial.tableLen m))
+    (computes :
+      ∀ m : Nat, ∀ x : BitVec (Pnp3.Models.Partial.tableLen m),
+        (model.toAC0pFamilyModel.classOf p depth).eval (circuit m) x =
+          exactTreeMCSPThresholdHardDecision m (facts.threshold m) x)
+    (sizeBound : Nat → Nat)
+    (size_le :
+      ∀ m : Nat,
+        (model.toAC0pFamilyModel.classOf p depth).size (circuit m) ≤
+          sizeBound m)
+    (hSize :
+      sizeBound n ≤ contract.sizeBound depth n) :
+    False :=
+  false_of_AC0p_circuit_family_computes_adjacentBias_MCSP_hardDecision_of_maskingSetup
+    model
+    contract
+    facts
+    hp
+    (CoinMaskingTranslationSetup.of_adjacentBiasToHalfVsFair setupFacts)
+    (fun m =>
+      CoinMaskingTranslationFacts.of_maskingBiasParams
+        ((CoinMaskingTranslationSetup.of_adjacentBiasToHalfVsFair setupFacts).params m)
+        ((CoinDistinguisherFamily.of_adjacentBiasMCSP facts).sampleBits m))
     circuit
     computes
     sizeBound

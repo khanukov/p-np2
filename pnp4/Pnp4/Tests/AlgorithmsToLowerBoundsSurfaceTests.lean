@@ -390,6 +390,70 @@ theorem check_false_of_AC0p_circuit_family_computes_adjacentBias_MCSP_hardDecisi
     size_le
     hSize
 
+def check_adjacentBiasToHalfVsFairMaskingSetupFacts_type
+    (facts : AdjacentBiasMCSPThresholdSeparationFacts)
+    (hardness : HalfVsFairTruthTableCoinHardness) : Prop :=
+  AdjacentBiasToHalfVsFairMaskingSetupFacts facts hardness
+
+def check_maskingParams_of_adjacentBiasToHalfVsFair
+    {facts : AdjacentBiasMCSPThresholdSeparationFacts}
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (setupFacts :
+      AdjacentBiasToHalfVsFairMaskingSetupFacts facts hardness)
+    (n : Nat) :
+    MaskingBiasParams :=
+  maskingParams_of_adjacentBiasToHalfVsFair setupFacts n
+
+def check_coinMaskingTranslationSetup_of_adjacentBiasToHalfVsFair
+    {facts : AdjacentBiasMCSPThresholdSeparationFacts}
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (setupFacts :
+      AdjacentBiasToHalfVsFairMaskingSetupFacts facts hardness) :
+    CoinMaskingTranslationSetup
+      (CoinDistinguisherFamily.of_adjacentBiasMCSP facts)
+      hardness :=
+  CoinMaskingTranslationSetup.of_adjacentBiasToHalfVsFair setupFacts
+
+theorem check_false_of_AC0p_circuit_family_computes_adjacentBias_MCSP_hardDecision_of_adjacentMaskingSetup
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (model : AC0pFamilyModelWithMasking)
+    (contract :
+      AC0pHalfVsFairCoinLowerBoundContract
+        model.toAC0pFamilyModel
+        hardness)
+    (facts : AdjacentBiasMCSPThresholdSeparationFacts)
+    (setupFacts :
+      AdjacentBiasToHalfVsFairMaskingSetupFacts facts hardness)
+    {p depth n : Nat}
+    (hp : Nat.Prime p)
+    (circuit :
+      ∀ m : Nat,
+        (model.toAC0pFamilyModel.classOf p depth).Family
+          (Pnp3.Models.Partial.tableLen m))
+    (computes :
+      ∀ m : Nat, ∀ x : AlgorithmsToLowerBounds.BitVec (Pnp3.Models.Partial.tableLen m),
+        (model.toAC0pFamilyModel.classOf p depth).eval (circuit m) x =
+          exactTreeMCSPThresholdHardDecision m (facts.threshold m) x)
+    (sizeBound : Nat → Nat)
+    (size_le :
+      ∀ m : Nat,
+        (model.toAC0pFamilyModel.classOf p depth).size (circuit m) ≤
+          sizeBound m)
+    (hSize :
+      sizeBound n ≤ contract.sizeBound depth n) :
+    False :=
+  false_of_AC0p_circuit_family_computes_adjacentBias_MCSP_hardDecision_of_adjacentMaskingSetup
+    model
+    contract
+    facts
+    setupFacts
+    hp
+    circuit
+    computes
+    sizeBound
+    size_le
+    hSize
+
 def check_quasiPolyLower_superPolynomialGrowth :
     SuperPolynomialGrowth QuasiPolyLower :=
   quasiPolyLower_superPolynomialGrowth
@@ -2038,6 +2102,9 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms AlgorithmsToLowerBounds.AC0pFamilyModelWithMasking.closed
 #print axioms AlgorithmsToLowerBounds.coinTranslationPreservesClass_of_maskingSetup_AC0p
 #print axioms AlgorithmsToLowerBounds.false_of_AC0p_circuit_family_computes_adjacentBias_MCSP_hardDecision_of_maskingSetup
+#print axioms AlgorithmsToLowerBounds.maskingParams_of_adjacentBiasToHalfVsFair
+#print axioms AlgorithmsToLowerBounds.CoinMaskingTranslationSetup.of_adjacentBiasToHalfVsFair
+#print axioms AlgorithmsToLowerBounds.false_of_AC0p_circuit_family_computes_adjacentBias_MCSP_hardDecision_of_adjacentMaskingSetup
 #print axioms AlgorithmsToLowerBounds.quasiPolyLower_superPolynomialGrowth
 #print axioms AlgorithmsToLowerBounds.not_hasPolynomialSizeFamily_of_superPolynomial_lowerBound
 #print axioms AlgorithmsToLowerBounds.not_hasPolynomialSizeFamily_of_quasiPolynomial_lowerBound

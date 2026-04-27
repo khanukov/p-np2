@@ -169,6 +169,9 @@ namespace Tests
 #print axioms Frontier.PvsNPMainlineProgress.of_weakCircuitLowerBound
 #print axioms Frontier.treeMCSPSearchProblem
 #print axioms Frontier.treeMCSPSearchWeakLowerBoundTarget
+#print axioms Frontier.TreeCircuitWitnessCodec.sound
+#print axioms Frontier.TreeCircuitWitnessCodec.complete
+#print axioms Frontier.TreeMCSPSearchWitnessEncoding.ofCodec
 #print axioms Frontier.TreeMCSPSearchMagnificationSource.verifiedSource
 #print axioms Frontier.NP_not_subset_Ppoly_of_treeMCSPSearchMagnificationSource
 #print axioms Frontier.P_ne_NP_of_treeMCSPSearchMagnificationSource

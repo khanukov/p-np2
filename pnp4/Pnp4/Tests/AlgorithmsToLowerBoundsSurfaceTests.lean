@@ -655,6 +655,30 @@ def check_treeMCSPSearchProblem
     Frontier.SearchMCSPCompressionProblem :=
   Frontier.treeMCSPSearchProblem threshold encoding
 
+def check_treeCircuitWitnessCodec_verifies
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n : Nat)
+    (tt : TruthTable n)
+    (w : AlgorithmsToLowerBounds.BitVec (codec.witnessBits n)) : Prop :=
+  codec.verifies n tt w
+
+def check_treeCircuitWitnessCodec_sound
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n : Nat)
+    (tt : TruthTable n)
+    (w : AlgorithmsToLowerBounds.BitVec (codec.witnessBits n)) :
+    codec.verifies n tt w →
+      treeMCSPPredicate n (threshold n) tt :=
+  codec.sound n tt w
+
+def check_treeMCSPSearchWitnessEncoding_ofCodec
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold) :
+    Frontier.TreeMCSPSearchWitnessEncoding threshold :=
+  Frontier.TreeMCSPSearchWitnessEncoding.ofCodec codec
+
 def check_treeMCSPSearchWeakLowerBoundTarget
     (threshold : Nat → Nat)
     (encoding : Frontier.TreeMCSPSearchWitnessEncoding threshold)

@@ -34,6 +34,77 @@ structure TreeMCSPSearchWitnessEncoding
           verifies n tt w
 
 /--
+Codec-shaped source for tree-circuit witnesses.
+
+This is the next refinement below `TreeMCSPSearchWitnessEncoding`: a witness is
+accepted only by decoding it to an actual `Pnp3.Models.Circuit n` whose size is
+within the threshold and whose truth table is correct.  A later bit-serialization
+proof should instantiate this codec.
+-/
+structure TreeCircuitWitnessCodec
+    (threshold : Nat → Nat) where
+  witnessBits : Nat → Nat
+  encode :
+    ∀ n : Nat,
+      Pnp3.Models.Circuit n →
+        AlgorithmsToLowerBounds.BitVec (witnessBits n)
+  decode :
+    ∀ n : Nat,
+      AlgorithmsToLowerBounds.BitVec (witnessBits n) →
+        Option (Pnp3.Models.Circuit n)
+  decode_encode :
+    ∀ n : Nat, ∀ c : Pnp3.Models.Circuit n,
+      Pnp3.Models.Circuit.size c ≤ threshold n →
+        decode n (encode n c) = some c
+
+/-- Verification relation induced by a tree-circuit witness codec. -/
+def TreeCircuitWitnessCodec.verifies
+    {threshold : Nat → Nat}
+    (codec : TreeCircuitWitnessCodec threshold)
+    (n : Nat)
+    (tt : TruthTable n)
+    (w : AlgorithmsToLowerBounds.BitVec (codec.witnessBits n)) : Prop :=
+  ∃ c : Pnp3.Models.Circuit n,
+    codec.decode n w = some c ∧
+      Pnp3.Models.Circuit.size c ≤ threshold n ∧
+        ComputesTruthTable treeCircuitClass c tt
+
+/-- Codec verification is sound for the existing tree-MCSP predicate. -/
+theorem TreeCircuitWitnessCodec.sound
+    {threshold : Nat → Nat}
+    (codec : TreeCircuitWitnessCodec threshold)
+    (n : Nat)
+    (tt : TruthTable n)
+    (w : AlgorithmsToLowerBounds.BitVec (codec.witnessBits n))
+    (h : codec.verifies n tt w) :
+    treeMCSPPredicate n (threshold n) tt := by
+  rcases h with ⟨c, _hDecode, hSize, hComputes⟩
+  exact ⟨c, hSize, hComputes⟩
+
+/-- Codec verification is complete on promised tree-MCSP instances. -/
+theorem TreeCircuitWitnessCodec.complete
+    {threshold : Nat → Nat}
+    (codec : TreeCircuitWitnessCodec threshold)
+    (n : Nat)
+    (tt : TruthTable n)
+    (h : treeMCSPPredicate n (threshold n) tt) :
+    ∃ w : AlgorithmsToLowerBounds.BitVec (codec.witnessBits n),
+      codec.verifies n tt w := by
+  rcases h with ⟨c, hSize, hComputes⟩
+  refine ⟨codec.encode n c, ?_⟩
+  exact ⟨c, codec.decode_encode n c hSize, hSize, hComputes⟩
+
+/-- Build the generic tree-MCSP search witness encoding from a concrete codec. -/
+def TreeMCSPSearchWitnessEncoding.ofCodec
+    {threshold : Nat → Nat}
+    (codec : TreeCircuitWitnessCodec threshold) :
+    TreeMCSPSearchWitnessEncoding threshold where
+  witnessBits := codec.witnessBits
+  verifies := codec.verifies
+  sound := codec.sound
+  complete := codec.complete
+
+/--
 Concrete promise-search problem for tree-MCSP.
 
 Instances are truth tables on `n` variables.  The promise says the table has a

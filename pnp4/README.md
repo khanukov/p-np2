@@ -191,4 +191,7 @@ Current theorem surface status:
   existing proof-level `treeMCSPPredicate`; a witness encoding must prove
   soundness and completeness for small tree-circuit witnesses.  This is the
   first named target where a weak search lower bound can be paired with a
-  magnification contract to reach `PpolyDAG`.
+  magnification contract to reach `PpolyDAG`.  The preferred witness surface is
+  now codec-shaped: `TreeCircuitWitnessCodec` supplies `encode`, `decode`, and
+  `decode_encode`, and `TreeMCSPSearchWitnessEncoding.ofCodec` derives the
+  verifier from actual decoded `Pnp3.Models.Circuit` witnesses.

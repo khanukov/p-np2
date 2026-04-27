@@ -14,6 +14,7 @@ import Pnp4.AlgorithmsToLowerBounds.FormulaCircuitAsymptotic
 import Pnp4.AlgorithmsToLowerBounds.BridgeToPpolyDAG
 import Pnp4.Frontier.PvsNPBridgeRequirements
 import Pnp4.Frontier.CompressionMagnification
+import Pnp4.Frontier.SearchMCSPMagnification
 
 namespace Pnp4
 namespace Tests
@@ -160,6 +161,11 @@ namespace Tests
 #print axioms Frontier.P_ne_NP_of_searchMCSPWeakLowerBound
 #print axioms Frontier.P_ne_NP_of_mainlineProgress
 #print axioms Frontier.PvsNPMainlineProgress.of_searchMCSPWeakLowerBound
+#print axioms Frontier.SearchMCSPWeakLowerBound.of_weakCircuitLowerBound
+#print axioms Frontier.SearchMCSPWeakCircuitLowerBound.verifiedSource
+#print axioms Frontier.NP_not_subset_Ppoly_of_weakCircuitLowerBound
+#print axioms Frontier.P_ne_NP_of_weakCircuitLowerBound
+#print axioms Frontier.PvsNPMainlineProgress.of_weakCircuitLowerBound
 
 end Tests
 end Pnp4

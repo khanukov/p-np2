@@ -180,3 +180,9 @@ Current theorem surface status:
   repository-local `NP_not_subset_Ppoly` endpoint as `NP_not_subset_PpolyDAG`,
   derives `P ≠ NP` from it, and accepts only packages that produce a
   `VerifiedNPDAGLowerBoundSource`.
+- `Frontier/SearchMCSPMagnification.lean`: falsifiable mainline source target
+  for search-MCSP/resource-bounded-compression magnification.  It replaces a
+  bare `Prop` with a concrete search/compression problem, a circuit class, a
+  size schedule, and the lower-bound statement that no bounded search solver
+  exists.  A separate `SearchMCSPMagnificationContract` is still required to
+  turn that weak lower bound into a `VerifiedNPDAGLowerBoundSource`.

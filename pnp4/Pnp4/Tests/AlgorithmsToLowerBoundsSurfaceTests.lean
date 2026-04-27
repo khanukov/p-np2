@@ -24,6 +24,7 @@ import Pnp4.AlgorithmsToLowerBounds.FormulaCircuitAsymptotic
 import Pnp4.AlgorithmsToLowerBounds.BridgeToPpolyDAG
 import Pnp4.Frontier.PvsNPBridgeRequirements
 import Pnp4.Frontier.CompressionMagnification
+import Pnp4.Frontier.SearchMCSPMagnification
 
 namespace Pnp4
 namespace Tests
@@ -608,6 +609,44 @@ def check_mainlineProgress_to_pne_np :
     Frontier.PvsNPMainlineProgress →
       Pnp3.ComplexityInterfaces.P_ne_NP :=
   Frontier.P_ne_NP_of_mainlineProgress
+
+def check_searchMCSPWeakCircuitTarget_noBoundedSolver
+    (target : Frontier.SearchMCSPWeakCircuitLowerBoundTarget) : Prop :=
+  target.noBoundedSolver
+
+def check_searchProblemNoBoundedSolver
+    (problem : Frontier.SearchMCSPCompressionProblem)
+    (C : CircuitFamilyClass)
+    (sizeBound : Nat → Nat) : Prop :=
+  Frontier.SearchProblemNoBoundedSolver problem C sizeBound
+
+def check_searchMCSPWeakLowerBound_of_weakCircuitLowerBound
+    {target : Frontier.SearchMCSPWeakCircuitLowerBoundTarget}
+    (hWeak : Frontier.SearchMCSPWeakCircuitLowerBound target)
+    (hMag : Frontier.SearchMCSPMagnificationContract target) :
+    Frontier.SearchMCSPWeakLowerBound :=
+  Frontier.SearchMCSPWeakLowerBound.of_weakCircuitLowerBound hWeak hMag
+
+def check_weakCircuitLowerBound_to_np_not_subset
+    {target : Frontier.SearchMCSPWeakCircuitLowerBoundTarget}
+    (hWeak : Frontier.SearchMCSPWeakCircuitLowerBound target)
+    (hMag : Frontier.SearchMCSPMagnificationContract target) :
+    Frontier.NP_not_subset_Ppoly :=
+  Frontier.NP_not_subset_Ppoly_of_weakCircuitLowerBound hWeak hMag
+
+def check_weakCircuitLowerBound_to_pne_np
+    {target : Frontier.SearchMCSPWeakCircuitLowerBoundTarget}
+    (hWeak : Frontier.SearchMCSPWeakCircuitLowerBound target)
+    (hMag : Frontier.SearchMCSPMagnificationContract target) :
+    Pnp3.ComplexityInterfaces.P_ne_NP :=
+  Frontier.P_ne_NP_of_weakCircuitLowerBound hWeak hMag
+
+def check_mainlineProgress_of_weakCircuitLowerBound
+    {target : Frontier.SearchMCSPWeakCircuitLowerBoundTarget}
+    (hWeak : Frontier.SearchMCSPWeakCircuitLowerBound target)
+    (hMag : Frontier.SearchMCSPMagnificationContract target) :
+    Frontier.PvsNPMainlineProgress :=
+  Frontier.PvsNPMainlineProgress.of_weakCircuitLowerBound hWeak hMag
 
 def check_uniform_vs_biased_coin_instance
     (sampleBits : Nat) (ε : Rat)

@@ -162,3 +162,8 @@ Current theorem surface status:
   cannot discharge that asymptotic growth hypothesis by itself.
 - `BridgeToPpolyDAG.lean`: final bridge shell from a verified `NP` language
   lower bound against `PpolyDAG` to the existing `pnp3` `P ≠ NP` target.
+- `Frontier/PvsNPBridgeRequirements.lean`: explicit frontier split between
+  restricted `AC0[p]` milestones and the separate source needed for `P ≠ NP`:
+  a verified `NP` language lower bound against `PpolyDAG`.  It records that an
+  `AC0[p]` exclusion only reaches the final bridge after an additional
+  restricted-to-`PpolyDAG` source theorem.

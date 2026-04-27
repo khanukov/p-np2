@@ -12,6 +12,7 @@ import Pnp4.AlgorithmsToLowerBounds.MCSP_Formula_Final
 import Pnp4.AlgorithmsToLowerBounds.MCSP_Formula_Theorem2Quantitative
 import Pnp4.AlgorithmsToLowerBounds.FormulaCircuitAsymptotic
 import Pnp4.AlgorithmsToLowerBounds.BridgeToPpolyDAG
+import Pnp4.Frontier.PvsNPBridgeRequirements
 
 namespace Pnp4
 namespace Tests
@@ -149,6 +150,9 @@ namespace Tests
 #print axioms AlgorithmsToLowerBounds.not_in_AC0p_halfVsFairMCSPCoinAsymptoticLanguage_from_published_contract_and_growth
 #print axioms AlgorithmsToLowerBounds.not_in_AC0p_halfVsFairMCSPCoinAsymptoticLanguage_from_published_contract
 #print axioms AlgorithmsToLowerBounds.P_ne_NP_of_verified_source
+#print axioms Frontier.AC0pRestrictedLowerBoundSource.restrictedConclusion
+#print axioms Frontier.P_ne_NP_of_pnp4_bridge_requirement
+#print axioms Frontier.P_ne_NP_of_restricted_source_and_dag_bridge
 
 end Tests
 end Pnp4

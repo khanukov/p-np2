@@ -22,6 +22,7 @@ import Pnp4.AlgorithmsToLowerBounds.MCSP_Formula_Final
 import Pnp4.AlgorithmsToLowerBounds.MCSP_Formula_Theorem2Quantitative
 import Pnp4.AlgorithmsToLowerBounds.FormulaCircuitAsymptotic
 import Pnp4.AlgorithmsToLowerBounds.BridgeToPpolyDAG
+import Pnp4.Frontier.PvsNPBridgeRequirements
 
 namespace Pnp4
 namespace Tests
@@ -565,6 +566,22 @@ def check_verified_source_to_pne_np :
     VerifiedNPDAGLowerBoundSource →
       Pnp3.ComplexityInterfaces.P_ne_NP :=
   P_ne_NP_of_verified_source
+
+def check_ac0p_restricted_source_restrictedConclusion
+    (src : Frontier.AC0pRestrictedLowerBoundSource) :
+    ¬ InAC0p src.model src.p src.L :=
+  src.restrictedConclusion
+
+def check_pnp4_bridge_requirement_to_pne_np :
+    Frontier.PvsNPBridgeRequirement →
+      Pnp3.ComplexityInterfaces.P_ne_NP :=
+  Frontier.P_ne_NP_of_pnp4_bridge_requirement
+
+def check_restricted_source_with_dag_bridge_to_pne_np
+    (restricted : Frontier.AC0pRestrictedLowerBoundSource) :
+    Frontier.RestrictedToVerifiedDAGBridge restricted →
+      Pnp3.ComplexityInterfaces.P_ne_NP :=
+  Frontier.P_ne_NP_of_restricted_source_and_dag_bridge restricted
 
 def check_uniform_vs_biased_coin_instance
     (sampleBits : Nat) (ε : Rat)

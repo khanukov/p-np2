@@ -172,6 +172,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.AlgorithmsToLowerBounds.MCSP_Formula_Theorem2Quantitative,
     Glob.one `Pnp4.AlgorithmsToLowerBounds.FormulaCircuitAsymptotic,
     Glob.one `Pnp4.AlgorithmsToLowerBounds.BridgeToPpolyDAG,
+    Glob.one `Pnp4.Frontier.PvsNPBridgeRequirements,
     Glob.one `Pnp4.Tests.AlgorithmsToLowerBoundsSurfaceTests,
     Glob.one `Pnp4.Tests.AxiomsAudit
   ]

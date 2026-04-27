@@ -70,6 +70,35 @@ noncomputable def check_expectationProductBias
     (F : AlgorithmsToLowerBounds.BitVec n → Rat) : Rat :=
   expectationProductBias bias F
 
+theorem check_expectationProductBias_sub
+    {n : Nat}
+    (bias : Rat)
+    (F G : AlgorithmsToLowerBounds.BitVec n → Rat) :
+    expectationProductBias bias (fun x => F x - G x) =
+      expectationProductBias bias F - expectationProductBias bias G :=
+  expectationProductBias_sub bias F G
+
+theorem check_expectationProductBias_le_of_pointwise_le
+    {n : Nat}
+    {bias bound : Rat}
+    (hBias_nonneg : 0 ≤ bias)
+    (hBias_le_one : bias ≤ 1)
+    (F : AlgorithmsToLowerBounds.BitVec n → Rat)
+    (hF : ∀ x : AlgorithmsToLowerBounds.BitVec n, F x ≤ bound) :
+    expectationProductBias bias F ≤ bound :=
+  expectationProductBias_le_of_pointwise_le
+    hBias_nonneg
+    hBias_le_one
+    F
+    hF
+
+theorem check_exists_max_bitVec_rat
+    {n : Nat}
+    (F : AlgorithmsToLowerBounds.BitVec n → Rat) :
+    ∃ x0 : AlgorithmsToLowerBounds.BitVec n,
+      ∀ x : AlgorithmsToLowerBounds.BitVec n, F x ≤ F x0 :=
+  exists_max_bitVec_rat F
+
 noncomputable def check_maskedAcceptanceAverage
     {n : Nat}
     (keepBias inputBias : Rat)
@@ -84,6 +113,16 @@ def check_maskingBiasParams_derived
     params.lowTargetBias,
     params.highTargetBias,
     params.keepBias)
+
+theorem check_maskingBiasParams_keepBias_nonneg
+    (params : MaskingBiasParams) :
+    0 ≤ params.keepBias :=
+  params.keepBias_nonneg
+
+theorem check_maskingBiasParams_keepBias_le_one
+    (params : MaskingBiasParams) :
+    params.keepBias ≤ 1 :=
+  params.keepBias_le_one
 
 def check_maskingPushforwardFacts_type
     (n : Nat)
@@ -103,6 +142,20 @@ noncomputable def check_fixedMaskAcceptanceAdvantage
     (A : AlgorithmsToLowerBounds.BitVec n → Bool) : Rat :=
   fixedMaskAcceptanceAdvantage keep targetLowBias targetHighBias A
 
+theorem check_maskedAcceptanceAdvantage_eq_expectation_fixed
+    {n : Nat}
+    (keepBias targetLowBias targetHighBias : Rat)
+    (A : AlgorithmsToLowerBounds.BitVec n → Bool) :
+    maskedAcceptanceAdvantage keepBias targetLowBias targetHighBias A =
+      expectationProductBias keepBias
+        (fun keep =>
+          fixedMaskAcceptanceAdvantage keep targetLowBias targetHighBias A) :=
+  maskedAcceptanceAdvantage_eq_expectation_fixed
+    keepBias
+    targetLowBias
+    targetHighBias
+    A
+
 theorem check_maskingPushforwardFacts_masked_advantage_eq_source
     {n : Nat}
     {params : MaskingBiasParams}
@@ -121,6 +174,20 @@ def check_maskAveragingContract_type
     (n : Nat)
     (keepBias : Rat) : Prop :=
   MaskAveragingContract n keepBias
+
+theorem check_maskAveragingContract_of_valid_keepBias
+    {n : Nat}
+    {keepBias : Rat}
+    (hKeep_nonneg : 0 ≤ keepBias)
+    (hKeep_le_one : keepBias ≤ 1) :
+    MaskAveragingContract n keepBias :=
+  MaskAveragingContract.of_valid_keepBias hKeep_nonneg hKeep_le_one
+
+theorem check_maskAveragingContract_of_maskingBiasParams
+    (params : MaskingBiasParams)
+    (n : Nat) :
+    MaskAveragingContract n params.keepBias :=
+  MaskAveragingContract.of_maskingBiasParams params n
 
 def check_coinMaskingTranslationFacts_type
     (params : MaskingBiasParams)
@@ -1778,6 +1845,14 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms AlgorithmsToLowerBounds.maskBit_true
 #print axioms AlgorithmsToLowerBounds.maskBit_false
 #print axioms AlgorithmsToLowerBounds.maskVec_apply
+#print axioms AlgorithmsToLowerBounds.expectationProductBias_sub
+#print axioms AlgorithmsToLowerBounds.expectationProductBias_le_of_pointwise_le
+#print axioms AlgorithmsToLowerBounds.exists_max_bitVec_rat
+#print axioms AlgorithmsToLowerBounds.MaskingBiasParams.keepBias_nonneg
+#print axioms AlgorithmsToLowerBounds.MaskingBiasParams.keepBias_le_one
+#print axioms AlgorithmsToLowerBounds.maskedAcceptanceAdvantage_eq_expectation_fixed
+#print axioms AlgorithmsToLowerBounds.MaskAveragingContract.of_valid_keepBias
+#print axioms AlgorithmsToLowerBounds.MaskAveragingContract.of_maskingBiasParams
 #print axioms AlgorithmsToLowerBounds.MaskingPushforwardFacts.masked_advantage_eq_source
 #print axioms AlgorithmsToLowerBounds.CoinMaskingTranslationFacts.exists_mask_with_source_advantage
 #print axioms AlgorithmsToLowerBounds.quasiPolyLower_superPolynomialGrowth

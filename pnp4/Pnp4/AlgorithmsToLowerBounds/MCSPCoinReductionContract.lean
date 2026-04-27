@@ -1,4 +1,5 @@
 import Pnp4.AlgorithmsToLowerBounds.AC0pCoinLowerBound
+import Pnp4.AlgorithmsToLowerBounds.CoinMaskingTranslation
 import Pnp4.AlgorithmsToLowerBounds.MCSP_LocalPRG_Transfer
 
 namespace Pnp4
@@ -329,6 +330,191 @@ structure CoinTranslationPreservesClass
           (target.instance n)
           (fun x => C.eval (translateCircuit n c) x)
           (target.advantage n)
+
+/--
+Bias/sample matching data needed to instantiate the masking translation between
+a source coin-distinguisher family and a half-vs-fair target.
+-/
+structure CoinMaskingTranslationSetup
+    (source : CoinDistinguisherFamily)
+    (target : HalfVsFairTruthTableCoinHardness) where
+  params : Nat → MaskingBiasParams
+  sampleBits_eq :
+    ∀ n : Nat, source.sampleBits n = (target.instance n).sampleBits
+  source_low_eq :
+    ∀ n : Nat, source.lowBias n = (params n).lowSourceBias
+  source_high_eq :
+    ∀ n : Nat, source.highBias n = (params n).highSourceBias
+  target_low_eq :
+    ∀ n : Nat, (target.instance n).lowBias = (params n).lowTargetBias
+  target_high_eq :
+    ∀ n : Nat, (target.instance n).highBias = (params n).highTargetBias
+  advantage_le :
+    ∀ n : Nat, target.advantage n ≤ source.advantage n
+
+private def castFamily
+    {C : CircuitFamilyClass}
+    {m n : Nat}
+    (h : m = n)
+    (c : C.Family m) : C.Family n :=
+  cast (congrArg C.Family h) c
+
+private def castBitVec
+    {m n : Nat}
+    (h : m = n)
+    (x : BitVec m) : BitVec n :=
+  cast (congrArg BitVec h) x
+
+private theorem size_castFamily
+    {C : CircuitFamilyClass}
+    {m n : Nat}
+    (h : m = n)
+    (c : C.Family m) :
+    C.size (castFamily h c) = C.size c := by
+  cases h
+  rfl
+
+private theorem eval_castFamily
+    {C : CircuitFamilyClass}
+    {m n : Nat}
+    (h : m = n)
+    (c : C.Family m)
+    (x : BitVec n) :
+    C.eval (castFamily h c) x =
+      C.eval c (castBitVec h.symm x) := by
+  cases h
+  rfl
+
+private theorem acceptanceProbability_castDomain
+    {m n : Nat}
+    (h : m = n)
+    (bias : Rat)
+    (A : BitVec m → Bool) :
+    acceptanceProbability bias (fun x : BitVec n => A (castBitVec h.symm x)) =
+      acceptanceProbability bias A := by
+  cases h
+  rfl
+
+/--
+Derive the class/size-preserving coin translation from input-masking closure
+and the masking probability facts.
+
+The translated circuit uses a mask chosen solely from the circuit and target
+biases, before any source-solving proof is supplied. The correctness proof then
+uses maximality of that mask plus the probability-side masking facts.
+-/
+noncomputable def coinTranslationPreservesClass_of_maskingSetup
+    {C : CircuitFamilyClass}
+    {source : CoinDistinguisherFamily}
+    {target : HalfVsFairTruthTableCoinHardness}
+    (closed : ClosedUnderInputMasking C)
+    (setup : CoinMaskingTranslationSetup source target)
+    (facts :
+      ∀ n : Nat,
+        CoinMaskingTranslationFacts (setup.params n) (source.sampleBits n)) :
+    CoinTranslationPreservesClass C source target where
+  translateCircuit := fun n c =>
+    castFamily (setup.sampleBits_eq n)
+      (closed.maskCircuit
+        (bestMaskForCircuit
+          (setup.params n).lowTargetBias
+          (setup.params n).highTargetBias
+          c)
+        c)
+  size_le := by
+    intro n c
+    rw [size_castFamily]
+    exact
+      closed.size_maskCircuit
+        (bestMaskForCircuit
+          (setup.params n).lowTargetBias
+          (setup.params n).highTargetBias
+          c)
+        c
+  solvesTarget_of_solvesSource := by
+    intro n c hSource
+    let keep : BitVec (source.sampleBits n) :=
+      bestMaskForCircuit
+        (setup.params n).lowTargetBias
+        (setup.params n).highTargetBias
+        c
+    have hEval :
+        ∀ x : BitVec (target.instance n).sampleBits,
+          C.eval
+              (castFamily (setup.sampleBits_eq n)
+                (closed.maskCircuit keep c))
+              x =
+            C.eval c (maskVec keep (castBitVec (setup.sampleBits_eq n).symm x)) := by
+      intro x
+      rw [eval_castFamily]
+      exact closed.eval_maskCircuit keep c (castBitVec (setup.sampleBits_eq n).symm x)
+    have hHighEval :
+        acceptanceProbability (target.instance n).highBias
+            (fun x : BitVec (target.instance n).sampleBits =>
+              C.eval
+                (castFamily (setup.sampleBits_eq n)
+                  (closed.maskCircuit keep c))
+                x) =
+          acceptanceProbability (target.instance n).highBias
+            (fun y : BitVec (source.sampleBits n) =>
+              C.eval c (maskVec keep y)) := by
+      rw [← acceptanceProbability_castDomain
+        (setup.sampleBits_eq n)
+        (target.instance n).highBias
+        (fun y : BitVec (source.sampleBits n) => C.eval c (maskVec keep y))]
+      congr
+      funext x
+      exact hEval x
+    have hLowEval :
+        acceptanceProbability (target.instance n).lowBias
+            (fun x : BitVec (target.instance n).sampleBits =>
+              C.eval
+                (castFamily (setup.sampleBits_eq n)
+                  (closed.maskCircuit keep c))
+                x) =
+          acceptanceProbability (target.instance n).lowBias
+            (fun y : BitVec (source.sampleBits n) =>
+              C.eval c (maskVec keep y)) := by
+      rw [← acceptanceProbability_castDomain
+        (setup.sampleBits_eq n)
+        (target.instance n).lowBias
+        (fun y : BitVec (source.sampleBits n) => C.eval c (maskVec keep y))]
+      congr
+      funext x
+      exact hEval x
+    have hSourceAdv :
+        source.advantage n ≤
+          acceptanceProbability (setup.params n).highSourceBias
+              (fun x => C.eval c x) -
+            acceptanceProbability (setup.params n).lowSourceBias
+              (fun x => C.eval c x) := by
+      simpa [SolvesCoinProblem, acceptanceGap, CoinDistinguisherFamily.instance,
+        setup.source_low_eq n, setup.source_high_eq n] using hSource
+    have hBest :
+        source.advantage n ≤
+          fixedMaskAcceptanceAdvantage
+            (bestMaskForCircuit
+              (setup.params n).lowTargetBias
+              (setup.params n).highTargetBias
+              c)
+            (setup.params n).lowTargetBias
+            (setup.params n).highTargetBias
+            (fun x => C.eval c x) :=
+      source_advantage_le_bestMask_fixed_advantage
+        (facts n)
+        c
+        hSourceAdv
+    have hTargetAdv :
+        target.advantage n ≤
+          fixedMaskAcceptanceAdvantage
+            keep
+            (setup.params n).lowTargetBias
+            (setup.params n).highTargetBias
+            (fun x => C.eval c x) :=
+      le_trans (setup.advantage_le n) hBest
+    unfold SolvesCoinProblem acceptanceGap
+    rw [hHighEval, hLowEval, setup.target_high_eq n, setup.target_low_eq n]
+    simpa [fixedMaskAcceptanceAdvantage, keep] using hTargetAdv
 
 /--
 Coin-distinguisher family for a half-vs-fair target, parameterized by the

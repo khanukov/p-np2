@@ -481,5 +481,81 @@ theorem CoinMaskingTranslationFacts.exists_mask_with_source_advantage
   apply facts.averaging.exists_good_mask
   rwa [facts.pushforward.masked_advantage_eq_source A]
 
+/--
+Choose, for a fixed circuit and target biases, a mask maximizing the translated
+fixed-mask advantage.
+-/
+noncomputable def bestMaskForCircuit
+    {C : CircuitFamilyClass}
+    {n : Nat}
+    (targetLowBias targetHighBias : Rat)
+    (c : C.Family n) : BitVec n :=
+  Classical.choose
+    (exists_max_bitVec_rat
+      (fun keep =>
+        fixedMaskAcceptanceAdvantage
+          keep
+          targetLowBias
+          targetHighBias
+          (fun x => C.eval c x)))
+
+/-- The selected best mask maximizes fixed-mask advantage. -/
+theorem bestMaskForCircuit_max
+    {C : CircuitFamilyClass}
+    {n : Nat}
+    (targetLowBias targetHighBias : Rat)
+    (c : C.Family n) :
+    ∀ keep : BitVec n,
+      fixedMaskAcceptanceAdvantage
+        keep
+        targetLowBias
+        targetHighBias
+        (fun x => C.eval c x) ≤
+      fixedMaskAcceptanceAdvantage
+        (bestMaskForCircuit targetLowBias targetHighBias c)
+        targetLowBias
+        targetHighBias
+        (fun x => C.eval c x) :=
+  Classical.choose_spec
+    (exists_max_bitVec_rat
+      (fun keep =>
+        fixedMaskAcceptanceAdvantage
+          keep
+          targetLowBias
+          targetHighBias
+          (fun x => C.eval c x)))
+
+/--
+If a circuit has source advantage, its pre-selected best mask has at least that
+advantage on the translated target biases.
+-/
+theorem source_advantage_le_bestMask_fixed_advantage
+    {C : CircuitFamilyClass}
+    {n : Nat}
+    {params : MaskingBiasParams}
+    (facts : CoinMaskingTranslationFacts params n)
+    (c : C.Family n)
+    {adv : Rat}
+    (hSourceAdv :
+      adv ≤
+        acceptanceProbability params.highSourceBias (fun x => C.eval c x) -
+          acceptanceProbability params.lowSourceBias (fun x => C.eval c x)) :
+    adv ≤
+      fixedMaskAcceptanceAdvantage
+        (bestMaskForCircuit params.lowTargetBias params.highTargetBias c)
+        params.lowTargetBias
+        params.highTargetBias
+        (fun x => C.eval c x) := by
+  rcases facts.exists_mask_with_source_advantage
+      (fun x => C.eval c x)
+      hSourceAdv with
+    ⟨keep, hKeep⟩
+  exact le_trans hKeep
+    (bestMaskForCircuit_max
+      params.lowTargetBias
+      params.highTargetBias
+      c
+      keep)
+
 end AlgorithmsToLowerBounds
 end Pnp4

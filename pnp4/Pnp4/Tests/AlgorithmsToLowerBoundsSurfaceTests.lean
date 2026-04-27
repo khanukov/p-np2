@@ -249,6 +249,68 @@ theorem check_coinMaskingTranslationFacts_exists_mask_with_source_advantage
           A :=
   facts.exists_mask_with_source_advantage A hAdv
 
+noncomputable def check_bestMaskForCircuit
+    {C : CircuitFamilyClass}
+    {n : Nat}
+    (targetLowBias targetHighBias : Rat)
+    (c : C.Family n) :
+    AlgorithmsToLowerBounds.BitVec n :=
+  bestMaskForCircuit targetLowBias targetHighBias c
+
+theorem check_bestMaskForCircuit_max
+    {C : CircuitFamilyClass}
+    {n : Nat}
+    (targetLowBias targetHighBias : Rat)
+    (c : C.Family n) :
+    ∀ keep : AlgorithmsToLowerBounds.BitVec n,
+      fixedMaskAcceptanceAdvantage
+        keep
+        targetLowBias
+        targetHighBias
+        (fun x => C.eval c x) ≤
+      fixedMaskAcceptanceAdvantage
+        (bestMaskForCircuit targetLowBias targetHighBias c)
+        targetLowBias
+        targetHighBias
+        (fun x => C.eval c x) :=
+  bestMaskForCircuit_max targetLowBias targetHighBias c
+
+theorem check_source_advantage_le_bestMask_fixed_advantage
+    {C : CircuitFamilyClass}
+    {n : Nat}
+    {params : MaskingBiasParams}
+    (facts : CoinMaskingTranslationFacts params n)
+    (c : C.Family n)
+    {adv : Rat}
+    (hSourceAdv :
+      adv ≤
+        acceptanceProbability params.highSourceBias (fun x => C.eval c x) -
+          acceptanceProbability params.lowSourceBias (fun x => C.eval c x)) :
+    adv ≤
+      fixedMaskAcceptanceAdvantage
+        (bestMaskForCircuit params.lowTargetBias params.highTargetBias c)
+        params.lowTargetBias
+        params.highTargetBias
+        (fun x => C.eval c x) :=
+  source_advantage_le_bestMask_fixed_advantage facts c hSourceAdv
+
+def check_coinMaskingTranslationSetup_type
+    (source : CoinDistinguisherFamily)
+    (target : HalfVsFairTruthTableCoinHardness) : Type :=
+  CoinMaskingTranslationSetup source target
+
+noncomputable def check_coinTranslationPreservesClass_of_maskingSetup
+    {C : CircuitFamilyClass}
+    {source : CoinDistinguisherFamily}
+    {target : HalfVsFairTruthTableCoinHardness}
+    (closed : ClosedUnderInputMasking C)
+    (setup : CoinMaskingTranslationSetup source target)
+    (facts :
+      ∀ n : Nat,
+        CoinMaskingTranslationFacts (setup.params n) (source.sampleBits n)) :
+    CoinTranslationPreservesClass C source target :=
+  coinTranslationPreservesClass_of_maskingSetup closed setup facts
+
 def check_quasiPolyLower_superPolynomialGrowth :
     SuperPolynomialGrowth QuasiPolyLower :=
   quasiPolyLower_superPolynomialGrowth
@@ -1890,6 +1952,10 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms AlgorithmsToLowerBounds.CoinMaskingTranslationFacts.of_maskingBiasParams
 #print axioms AlgorithmsToLowerBounds.MaskingPushforwardFacts.masked_advantage_eq_source
 #print axioms AlgorithmsToLowerBounds.CoinMaskingTranslationFacts.exists_mask_with_source_advantage
+#print axioms AlgorithmsToLowerBounds.bestMaskForCircuit
+#print axioms AlgorithmsToLowerBounds.bestMaskForCircuit_max
+#print axioms AlgorithmsToLowerBounds.source_advantage_le_bestMask_fixed_advantage
+#print axioms AlgorithmsToLowerBounds.coinTranslationPreservesClass_of_maskingSetup
 #print axioms AlgorithmsToLowerBounds.quasiPolyLower_superPolynomialGrowth
 #print axioms AlgorithmsToLowerBounds.not_hasPolynomialSizeFamily_of_superPolynomial_lowerBound
 #print axioms AlgorithmsToLowerBounds.not_hasPolynomialSizeFamily_of_quasiPolynomial_lowerBound

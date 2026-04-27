@@ -13,6 +13,26 @@ structure AC0pFamilyModel where
   classOf : Nat → Nat → CircuitFamilyClass
 
 /--
+Abstract `AC0[p]` family model equipped with the input-restriction closure used
+by the masking translation.
+
+For concrete `AC0[p]` syntax this is normally proved by substituting selected
+inputs by constants without increasing depth or size.  Since `AC0pFamilyModel`
+is intentionally abstract here, the closure is carried as explicit adequacy
+data rather than assumed silently.
+-/
+structure AC0pFamilyModelWithMasking extends AC0pFamilyModel where
+  closedUnderInputMasking :
+    ∀ p depth : Nat, ClosedUnderInputMasking (classOf p depth)
+
+/-- Read the input-masking closure for one fixed modulus/depth slice. -/
+def AC0pFamilyModelWithMasking.closed
+    (model : AC0pFamilyModelWithMasking)
+    (p depth : Nat) :
+    ClosedUnderInputMasking (model.toAC0pFamilyModel.classOf p depth) :=
+  model.closedUnderInputMasking p depth
+
+/--
 Concrete package for one depth-`d`, modulus-`p` `AC0[p]` family surface.
 
 This is a paper-facing wrapper around `AC0pFamilyModel.classOf p d`.

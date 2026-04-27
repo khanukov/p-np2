@@ -517,6 +517,30 @@ noncomputable def coinTranslationPreservesClass_of_maskingSetup
     simpa [fixedMaskAcceptanceAdvantage, keep] using hTargetAdv
 
 /--
+Specialize the masking-translation theorem to one fixed `AC0[p]` model slice.
+
+The closure under input masking is read from `AC0pFamilyModelWithMasking`; all
+probability-side and bias-matching data remain explicit.
+-/
+noncomputable def coinTranslationPreservesClass_of_maskingSetup_AC0p
+    {source : CoinDistinguisherFamily}
+    {target : HalfVsFairTruthTableCoinHardness}
+    (model : AC0pFamilyModelWithMasking)
+    (p depth : Nat)
+    (setup : CoinMaskingTranslationSetup source target)
+    (facts :
+      ∀ n : Nat,
+        CoinMaskingTranslationFacts (setup.params n) (source.sampleBits n)) :
+    CoinTranslationPreservesClass
+      (model.toAC0pFamilyModel.classOf p depth)
+      source
+      target :=
+  coinTranslationPreservesClass_of_maskingSetup
+    (model.closed p depth)
+    setup
+    facts
+
+/--
 Coin-distinguisher family for a half-vs-fair target, parameterized by the
 actual Boolean algorithms used on each slice.
 -/
@@ -707,6 +731,61 @@ theorem false_of_AC0p_circuit_family_computes_adjacentBias_MCSP_hardDecision
       realized
       translation
       hSize
+
+/--
+Adjacent-bias contradiction bridge using the concrete masking setup rather than
+an already-packaged `CoinTranslationPreservesClass` witness.
+-/
+theorem false_of_AC0p_circuit_family_computes_adjacentBias_MCSP_hardDecision_of_maskingSetup
+    {hardness : HalfVsFairTruthTableCoinHardness}
+    (model : AC0pFamilyModelWithMasking)
+    (contract :
+      AC0pHalfVsFairCoinLowerBoundContract
+        model.toAC0pFamilyModel
+        hardness)
+    (facts : AdjacentBiasMCSPThresholdSeparationFacts)
+    {p depth n : Nat}
+    (hp : Nat.Prime p)
+    (setup :
+      CoinMaskingTranslationSetup
+        (CoinDistinguisherFamily.of_adjacentBiasMCSP facts)
+        hardness)
+    (maskFacts :
+      ∀ m : Nat,
+        CoinMaskingTranslationFacts
+          (setup.params m)
+          ((CoinDistinguisherFamily.of_adjacentBiasMCSP facts).sampleBits m))
+    (circuit :
+      ∀ m : Nat,
+        (model.toAC0pFamilyModel.classOf p depth).Family
+          (Pnp3.Models.Partial.tableLen m))
+    (computes :
+      ∀ m : Nat, ∀ x : BitVec (Pnp3.Models.Partial.tableLen m),
+        (model.toAC0pFamilyModel.classOf p depth).eval (circuit m) x =
+          exactTreeMCSPThresholdHardDecision m (facts.threshold m) x)
+    (sizeBound : Nat → Nat)
+    (size_le :
+      ∀ m : Nat,
+        (model.toAC0pFamilyModel.classOf p depth).size (circuit m) ≤
+          sizeBound m)
+    (hSize :
+      sizeBound n ≤ contract.sizeBound depth n) :
+    False :=
+  false_of_AC0p_circuit_family_computes_adjacentBias_MCSP_hardDecision
+    contract
+    facts
+    hp
+    (coinTranslationPreservesClass_of_maskingSetup_AC0p
+      model
+      p
+      depth
+      setup
+      maskFacts)
+    circuit
+    computes
+    sizeBound
+    size_le
+    hSize
 
 /-- Adjacent-bias specialization of the generic half-vs-fair translation contract. -/
 abbrev AdjacentBiasToHalfVsFairCoinSolverTranslationContract

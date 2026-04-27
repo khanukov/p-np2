@@ -4,6 +4,105 @@ import Mathlib.Data.Fintype.Lattice
 namespace Pnp4
 namespace AlgorithmsToLowerBounds
 
+/-- Local splitter for one head bit and an `n`-bit tail. -/
+private def bitVecSuccEquivMask (n : Nat) :
+    BitVec (n + 1) ≃ Bool × BitVec n where
+  toFun x := (x 0, fun i => x i.succ)
+  invFun y := Fin.cases y.1 y.2
+  left_inv x := by
+    funext i
+    cases i using Fin.cases <;> simp
+  right_inv y := by
+    cases y with
+    | mk b x =>
+        rfl
+
+/-- Sum over `(n+1)`-bit vectors by head bit and tail. -/
+private theorem sum_bitVec_succ
+    {n : Nat}
+    {α : Type}
+    [AddCommMonoid α]
+    (F : BitVec (n + 1) → α) :
+    (∑ x : BitVec (n + 1), F x) =
+      ∑ b : Bool, ∑ x : BitVec n, F ((bitVecSuccEquivMask n).symm (b, x)) := by
+  calc
+    (∑ x : BitVec (n + 1), F x)
+        = ∑ y : Bool × BitVec n, F ((bitVecSuccEquivMask n).symm y) := by
+          exact Fintype.sum_equiv (bitVecSuccEquivMask n)
+            F
+            (fun y : Bool × BitVec n => F ((bitVecSuccEquivMask n).symm y))
+            (fun _ => by simp)
+    _ = ∑ b : Bool, ∑ x : BitVec n,
+          F ((bitVecSuccEquivMask n).symm (b, x)) := by
+          rw [Fintype.sum_prod_type]
+
+/-- Product weight split by head bit and tail. -/
+private theorem productBiasWeight_succ
+    (bias : Rat)
+    {n : Nat}
+    (b : Bool)
+    (x : BitVec n) :
+    productBiasWeight bias ((bitVecSuccEquivMask n).symm (b, x)) =
+      bernoulliBitWeight bias b * productBiasWeight bias x := by
+  unfold productBiasWeight
+  rw [Fin.prod_univ_succ]
+  simp [bitVecSuccEquivMask]
+
+/-- Coordinatewise masking respects the head/tail split. -/
+private theorem maskVec_succ
+    {n : Nat}
+    (keepBit xBit : Bool)
+    (keepTail xTail : BitVec n) :
+    maskVec
+        ((bitVecSuccEquivMask n).symm (keepBit, keepTail))
+        ((bitVecSuccEquivMask n).symm (xBit, xTail)) =
+      (bitVecSuccEquivMask n).symm
+        (maskBit keepBit xBit, maskVec keepTail xTail) := by
+  funext i
+  cases i using Fin.cases <;> simp [bitVecSuccEquivMask, maskVec]
+
+/-- Acceptance probability split by head bit and tail. -/
+private theorem acceptanceProbability_succ
+    (bias : Rat)
+    {n : Nat}
+    (A : BitVec (n + 1) → Bool) :
+    acceptanceProbability bias A =
+      ∑ b : Bool,
+        bernoulliBitWeight bias b *
+          acceptanceProbability bias
+            (fun x : BitVec n =>
+              A ((bitVecSuccEquivMask n).symm (b, x))) := by
+  unfold acceptanceProbability
+  rw [sum_bitVec_succ]
+  apply Finset.sum_congr rfl
+  intro b _hb
+  calc
+    (∑ x : BitVec n,
+        if A ((bitVecSuccEquivMask n).symm (b, x)) then
+          productBiasWeight bias ((bitVecSuccEquivMask n).symm (b, x))
+        else
+          0)
+        =
+          ∑ x : BitVec n,
+            bernoulliBitWeight bias b *
+              (if A ((bitVecSuccEquivMask n).symm (b, x)) then
+                productBiasWeight bias x
+              else
+                0) := by
+          apply Finset.sum_congr rfl
+          intro x _hx
+          rw [productBiasWeight_succ]
+          by_cases hA : A ((bitVecSuccEquivMask n).symm (b, x)) <;>
+            simp [hA]
+    _ =
+          bernoulliBitWeight bias b *
+            (∑ x : BitVec n,
+              if A ((bitVecSuccEquivMask n).symm (b, x)) then
+                productBiasWeight bias x
+              else
+                0) := by
+          rw [Finset.mul_sum]
+
 /--
 Expectation of a rational-valued observable under the Bernoulli product
 distribution with bit bias `bias`.
@@ -73,6 +172,54 @@ noncomputable def maskedAcceptanceAverage
   expectationProductBias keepBias
     (fun keep => acceptanceProbability inputBias (fun x => A (maskVec keep x)))
 
+/-- Masked acceptance split by head bit, target head bit, and tail. -/
+private theorem maskedAcceptanceAverage_succ
+    (keepBias inputBias : Rat)
+    {n : Nat}
+    (A : BitVec (n + 1) → Bool) :
+    maskedAcceptanceAverage keepBias inputBias A =
+      ∑ keepBit : Bool,
+        ∑ xBit : Bool,
+          bernoulliBitWeight keepBias keepBit *
+            bernoulliBitWeight inputBias xBit *
+              maskedAcceptanceAverage keepBias inputBias
+                (fun tail : BitVec n =>
+                  A ((bitVecSuccEquivMask n).symm
+                    (maskBit keepBit xBit, tail))) := by
+  unfold maskedAcceptanceAverage expectationProductBias
+  rw [sum_bitVec_succ]
+  simp_rw [productBiasWeight_succ]
+  simp_rw [acceptanceProbability_succ]
+  simp_rw [maskVec_succ]
+  simp [Finset.mul_sum, Finset.sum_add_distrib, mul_add, mul_assoc,
+    mul_left_comm]
+
+/--
+Masking a product-biased input by an independent product-biased keep mask
+pushes the input bias from `inputBias` to `keepBias * inputBias`.
+-/
+theorem maskedAcceptanceAverage_eq_acceptanceProbability_mul
+    {n : Nat}
+    (keepBias inputBias : Rat)
+    (A : BitVec n → Bool) :
+    maskedAcceptanceAverage keepBias inputBias A =
+      acceptanceProbability (keepBias * inputBias) A := by
+  induction n with
+  | zero =>
+      have hMask : ∀ keep x : BitVec 0, maskVec keep x = x := by
+        intro keep x
+        funext i
+        exact Fin.elim0 i
+      unfold maskedAcceptanceAverage expectationProductBias acceptanceProbability productBiasWeight
+      simp [hMask]
+  | succ n ih =>
+      rw [maskedAcceptanceAverage_succ]
+      simp_rw [ih]
+      rw [acceptanceProbability_succ]
+      simp [maskBit, bernoulliBitWeight, sub_eq_add_neg, mul_add, add_mul,
+        mul_assoc, mul_comm]
+      ring
+
 /-- Bias parameters for the masking translation in the coin-problem route. -/
 structure MaskingBiasParams where
   p : Rat
@@ -123,6 +270,28 @@ theorem MaskingBiasParams.keepBias_le_one
     div_le_div_of_nonneg_right params.hp_le_q (le_of_lt params.hq_pos)
   simpa [div_self (ne_of_gt params.hq_pos)] using hDiv
 
+/-- The keep mask turns the target high bias `q` into the source high bias `p`. -/
+theorem MaskingBiasParams.keepBias_mul_highTargetBias
+    (params : MaskingBiasParams) :
+    params.keepBias * params.highTargetBias = params.highSourceBias := by
+  unfold MaskingBiasParams.keepBias
+    MaskingBiasParams.highTargetBias
+    MaskingBiasParams.highSourceBias
+  field_simp [ne_of_gt params.hq_pos]
+
+/--
+The keep mask turns the target low bias `q * (1 - eps)` into the source low
+bias `p * (1 - eps)`.
+-/
+theorem MaskingBiasParams.keepBias_mul_lowTargetBias
+    (params : MaskingBiasParams) :
+    params.keepBias * params.lowTargetBias = params.lowSourceBias := by
+  unfold MaskingBiasParams.keepBias
+    MaskingBiasParams.lowTargetBias
+    MaskingBiasParams.lowSourceBias
+  field_simp [ne_of_gt params.hq_pos]
+  ring
+
 /--
 Distribution-pushforward facts for input masking.
 
@@ -141,6 +310,19 @@ structure MaskingPushforwardFacts
     ∀ A : BitVec n → Bool,
       acceptanceProbability params.lowSourceBias A =
         maskedAcceptanceAverage params.keepBias params.lowTargetBias A
+
+/-- The masking pushforward identities induced by valid masking parameters. -/
+theorem MaskingPushforwardFacts.of_maskingBiasParams
+    (params : MaskingBiasParams)
+    (n : Nat) :
+    MaskingPushforwardFacts n params := by
+  refine ⟨?_, ?_⟩
+  · intro A
+    rw [maskedAcceptanceAverage_eq_acceptanceProbability_mul]
+    rw [params.keepBias_mul_highTargetBias]
+  · intro A
+    rw [maskedAcceptanceAverage_eq_acceptanceProbability_mul]
+    rw [params.keepBias_mul_lowTargetBias]
 
 /-- Advantage of the masked target algorithms, averaged over masks. -/
 noncomputable def maskedAcceptanceAdvantage
@@ -258,6 +440,14 @@ structure CoinMaskingTranslationFacts
     (n : Nat) where
   pushforward : MaskingPushforwardFacts n params
   averaging : MaskAveragingContract n params.keepBias
+
+/-- Probability side of the masking translation from explicit masking params. -/
+theorem CoinMaskingTranslationFacts.of_maskingBiasParams
+    (params : MaskingBiasParams)
+    (n : Nat) :
+    CoinMaskingTranslationFacts params n :=
+  { pushforward := MaskingPushforwardFacts.of_maskingBiasParams params n
+    averaging := MaskAveragingContract.of_maskingBiasParams params n }
 
 /-- Combined class/probability source facts for a fixed slice. -/
 structure CoinMaskingClassTranslationFacts

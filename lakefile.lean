@@ -157,6 +157,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.AlgorithmsToLowerBounds.TruthTableMCSP,
     Glob.one `Pnp4.AlgorithmsToLowerBounds.LocalPRG,
     Glob.one `Pnp4.AlgorithmsToLowerBounds.CoinProblem,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.CoinMaskingTranslation,
     Glob.one `Pnp4.AlgorithmsToLowerBounds.MCSPCoinReduction,
     Glob.one `Pnp4.AlgorithmsToLowerBounds.AC0pCoinLowerBound,
     Glob.one `Pnp4.AlgorithmsToLowerBounds.MCSPCoinReductionContract,

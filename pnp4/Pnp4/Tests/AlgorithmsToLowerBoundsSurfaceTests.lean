@@ -7,6 +7,7 @@ import Pnp4.AlgorithmsToLowerBounds.AC0pAsymptoticBridge
 import Pnp4.AlgorithmsToLowerBounds.TruthTableMCSP
 import Pnp4.AlgorithmsToLowerBounds.LocalPRG
 import Pnp4.AlgorithmsToLowerBounds.CoinProblem
+import Pnp4.AlgorithmsToLowerBounds.CoinMaskingTranslation
 import Pnp4.AlgorithmsToLowerBounds.MCSPCoinReduction
 import Pnp4.AlgorithmsToLowerBounds.AC0pCoinLowerBound
 import Pnp4.AlgorithmsToLowerBounds.MCSPCoinReductionContract
@@ -62,6 +63,94 @@ def check_closedUnderInputMasking_size
     (c : C.Family n) :
     C.size (closed.maskCircuit keep c) ≤ C.size c :=
   closed.size_maskCircuit keep c
+
+noncomputable def check_expectationProductBias
+    {n : Nat}
+    (bias : Rat)
+    (F : AlgorithmsToLowerBounds.BitVec n → Rat) : Rat :=
+  expectationProductBias bias F
+
+noncomputable def check_maskedAcceptanceAverage
+    {n : Nat}
+    (keepBias inputBias : Rat)
+    (A : AlgorithmsToLowerBounds.BitVec n → Bool) : Rat :=
+  maskedAcceptanceAverage keepBias inputBias A
+
+def check_maskingBiasParams_derived
+    (params : MaskingBiasParams) :
+    Rat × Rat × Rat × Rat × Rat :=
+  (params.lowSourceBias,
+    params.highSourceBias,
+    params.lowTargetBias,
+    params.highTargetBias,
+    params.keepBias)
+
+def check_maskingPushforwardFacts_type
+    (n : Nat)
+    (params : MaskingBiasParams) : Prop :=
+  MaskingPushforwardFacts n params
+
+noncomputable def check_maskedAcceptanceAdvantage
+    {n : Nat}
+    (keepBias targetLowBias targetHighBias : Rat)
+    (A : AlgorithmsToLowerBounds.BitVec n → Bool) : Rat :=
+  maskedAcceptanceAdvantage keepBias targetLowBias targetHighBias A
+
+noncomputable def check_fixedMaskAcceptanceAdvantage
+    {n : Nat}
+    (keep : AlgorithmsToLowerBounds.BitVec n)
+    (targetLowBias targetHighBias : Rat)
+    (A : AlgorithmsToLowerBounds.BitVec n → Bool) : Rat :=
+  fixedMaskAcceptanceAdvantage keep targetLowBias targetHighBias A
+
+theorem check_maskingPushforwardFacts_masked_advantage_eq_source
+    {n : Nat}
+    {params : MaskingBiasParams}
+    (facts : MaskingPushforwardFacts n params)
+    (A : AlgorithmsToLowerBounds.BitVec n → Bool) :
+    maskedAcceptanceAdvantage
+        params.keepBias
+        params.lowTargetBias
+        params.highTargetBias
+        A =
+      acceptanceProbability params.highSourceBias A -
+        acceptanceProbability params.lowSourceBias A :=
+  facts.masked_advantage_eq_source A
+
+def check_maskAveragingContract_type
+    (n : Nat)
+    (keepBias : Rat) : Prop :=
+  MaskAveragingContract n keepBias
+
+def check_coinMaskingTranslationFacts_type
+    (params : MaskingBiasParams)
+    (n : Nat) : Prop :=
+  CoinMaskingTranslationFacts params n
+
+def check_coinMaskingClassTranslationFacts_type
+    (C : CircuitFamilyClass)
+    (params : MaskingBiasParams)
+    (n : Nat) : Type :=
+  CoinMaskingClassTranslationFacts C params n
+
+theorem check_coinMaskingTranslationFacts_exists_mask_with_source_advantage
+    {n : Nat}
+    {params : MaskingBiasParams}
+    (facts : CoinMaskingTranslationFacts params n)
+    (A : AlgorithmsToLowerBounds.BitVec n → Bool)
+    {adv : Rat}
+    (hAdv :
+      adv ≤
+        acceptanceProbability params.highSourceBias A -
+          acceptanceProbability params.lowSourceBias A) :
+    ∃ keep : AlgorithmsToLowerBounds.BitVec n,
+      adv ≤
+        fixedMaskAcceptanceAdvantage
+          keep
+          params.lowTargetBias
+          params.highTargetBias
+          A :=
+  facts.exists_mask_with_source_advantage A hAdv
 
 def check_quasiPolyLower_superPolynomialGrowth :
     SuperPolynomialGrowth QuasiPolyLower :=
@@ -1689,6 +1778,8 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms AlgorithmsToLowerBounds.maskBit_true
 #print axioms AlgorithmsToLowerBounds.maskBit_false
 #print axioms AlgorithmsToLowerBounds.maskVec_apply
+#print axioms AlgorithmsToLowerBounds.MaskingPushforwardFacts.masked_advantage_eq_source
+#print axioms AlgorithmsToLowerBounds.CoinMaskingTranslationFacts.exists_mask_with_source_advantage
 #print axioms AlgorithmsToLowerBounds.quasiPolyLower_superPolynomialGrowth
 #print axioms AlgorithmsToLowerBounds.not_hasPolynomialSizeFamily_of_superPolynomial_lowerBound
 #print axioms AlgorithmsToLowerBounds.not_hasPolynomialSizeFamily_of_quasiPolynomial_lowerBound

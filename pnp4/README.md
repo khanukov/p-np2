@@ -68,6 +68,10 @@ Current theorem surface status:
   monotonicity and complement laws for acceptance probabilities, total-mass
   normalization for product Bernoulli weights, and the reusable probability-gap
   criterion for `SolvesCoinProblem`.
+- `CoinMaskingTranslation.lean`: probability-facing decomposition of the
+  masking translation step, including rational-valued product expectations,
+  `maskedAcceptanceAverage`, `MaskingBiasParams`, pushforward identities as
+  explicit facts, and the finite-mask averaging contract.
 - `MCSPCoinReduction.lean`: threshold-oracle reduction surface from MCSP to coin
   distinguishing on truth tables, including accept/reject facts for correct
   MCSP threshold oracles.

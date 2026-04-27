@@ -5,12 +5,14 @@
 Scope split:
 
 - `pnp3`: SAL / locality / Route-A/B frontier.
-- `pnp4`: algorithmic lower bounds / MCSP / Williams-style route.
+- `pnp4`: algorithmic lower bounds / MCSP / compression magnification frontier.
 
 Current goal:
 
-- build a verified algorithms-to-lower-bounds track without polluting the
-  active `pnp3` research frontier.
+- mainline: expose a source whose endpoint has the strength
+  `NP ⊄ PpolyDAG`, then feed the existing `P ≠ NP` bridge;
+- side track: keep the `AC0[p]`, formula, local-PRG, and coin-problem work as
+  published restricted-lower-bound formalization.
 
 Milestones:
 
@@ -32,16 +34,13 @@ MCSP ∉ PpolyDAG ⇒ NP ⊄ PpolyDAG ⇒ P ≠ NP
 
 Next progress target:
 
-1. Treat the CKLM formula/local-PRG route as an exact-slice lower-bound
-   transfer, not as a `PpolyFormula` asymptotic source.  The current
-   `N^{2-o(1)}` envelope cannot beat every polynomial-size formula family.
-2. Use the `AC^0[p]` coin route through the published-envelope contract and the
-   truth-table-slice asymptotic language.  The dense `EventuallySizeLowerBound`
-   bridge is available for dense lower bounds; the current coin route is sparse
-   on truth-table lengths, so it is connected through an explicit table-slice
-   growth condition instead of being forced into a false dense contract.
-3. Keep the final `PpolyDAG` bridge frozen until an explicit `NP` language lower
-   bound against `PpolyDAG` is available.
+1. Treat restricted `AC0[p]`/formula/local-PRG lower bounds as side-track
+   milestones unless they are paired with an explicit bridge to `PpolyDAG`.
+2. Use `Frontier/CompressionMagnification.lean` as the P-vs-NP mainline:
+   reduce a search-MCSP/resource-bounded-compression weak lower-bound package
+   to `VerifiedNPDAGLowerBoundSource`.
+3. Count a new theorem as P-vs-NP progress only if it reduces
+   `SearchMCSPWeakLowerBound` or directly reduces `VerifiedNPDAGLowerBoundSource`.
 
 Honesty policy:
 
@@ -58,6 +57,15 @@ Current reference point for the coin-problem track:
 The current `pnp4` code proves reusable transfer/consequence layers for that
 route, but it still does not claim the concentration, hybrid, or concrete
 `AC^0[p]` lower-bound ingredients.  Those remain explicit published contracts.
+
+Current reference point for the mainline compression-magnification frontier:
+
+- McKay, Murray, Williams, `Weak lower bounds on resource-bounded compression
+  imply strong separations of complexity classes`, STOC 2019.
+
+The Lean surface records this as a theorem-facing source package rather than as
+an already-proved result: a `SearchMCSPWeakLowerBound` must supply a verified
+`NP` language lower bound against `PpolyDAG`.
 
 Current theorem surface status:
 
@@ -167,3 +175,8 @@ Current theorem surface status:
   a verified `NP` language lower bound against `PpolyDAG`.  It records that an
   `AC0[p]` exclusion only reaches the final bridge after an additional
   restricted-to-`PpolyDAG` source theorem.
+- `Frontier/CompressionMagnification.lean`: P-vs-NP mainline surface for
+  search-MCSP/resource-bounded-compression magnification.  It names the
+  repository-local `NP_not_subset_Ppoly` endpoint as `NP_not_subset_PpolyDAG`,
+  derives `P ≠ NP` from it, and accepts only packages that produce a
+  `VerifiedNPDAGLowerBoundSource`.

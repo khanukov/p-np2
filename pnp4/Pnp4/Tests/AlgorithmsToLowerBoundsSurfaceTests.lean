@@ -23,6 +23,7 @@ import Pnp4.AlgorithmsToLowerBounds.MCSP_Formula_Theorem2Quantitative
 import Pnp4.AlgorithmsToLowerBounds.FormulaCircuitAsymptotic
 import Pnp4.AlgorithmsToLowerBounds.BridgeToPpolyDAG
 import Pnp4.Frontier.PvsNPBridgeRequirements
+import Pnp4.Frontier.CompressionMagnification
 
 namespace Pnp4
 namespace Tests
@@ -582,6 +583,31 @@ def check_restricted_source_with_dag_bridge_to_pne_np
     Frontier.RestrictedToVerifiedDAGBridge restricted →
       Pnp3.ComplexityInterfaces.P_ne_NP :=
   Frontier.P_ne_NP_of_restricted_source_and_dag_bridge restricted
+
+def check_P_ne_NP_of_NP_not_subset_Ppoly :
+    Frontier.NP_not_subset_Ppoly →
+      Pnp3.ComplexityInterfaces.P_ne_NP :=
+  Frontier.P_ne_NP_of_NP_not_subset_Ppoly
+
+def check_searchMCSPWeakLowerBound_to_np_not_subset
+    (src : Frontier.SearchMCSPWeakLowerBound) :
+    Frontier.NP_not_subset_Ppoly :=
+  Frontier.NP_not_subset_Ppoly_of_searchMCSPWeakLowerBound src
+
+def check_searchMCSPWeakLowerBound_to_pne_np
+    (src : Frontier.SearchMCSPWeakLowerBound) :
+    Pnp3.ComplexityInterfaces.P_ne_NP :=
+  Frontier.P_ne_NP_of_searchMCSPWeakLowerBound src
+
+def check_mainlineProgress_of_searchMCSPWeakLowerBound
+    (src : Frontier.SearchMCSPWeakLowerBound) :
+    Frontier.PvsNPMainlineProgress :=
+  Frontier.PvsNPMainlineProgress.of_searchMCSPWeakLowerBound src
+
+def check_mainlineProgress_to_pne_np :
+    Frontier.PvsNPMainlineProgress →
+      Pnp3.ComplexityInterfaces.P_ne_NP :=
+  Frontier.P_ne_NP_of_mainlineProgress
 
 def check_uniform_vs_biased_coin_instance
     (sampleBits : Nat) (ε : Rat)

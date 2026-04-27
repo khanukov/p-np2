@@ -13,6 +13,7 @@ import Pnp4.AlgorithmsToLowerBounds.MCSP_Formula_Theorem2Quantitative
 import Pnp4.AlgorithmsToLowerBounds.FormulaCircuitAsymptotic
 import Pnp4.AlgorithmsToLowerBounds.BridgeToPpolyDAG
 import Pnp4.Frontier.PvsNPBridgeRequirements
+import Pnp4.Frontier.CompressionMagnification
 
 namespace Pnp4
 namespace Tests
@@ -153,6 +154,12 @@ namespace Tests
 #print axioms Frontier.AC0pRestrictedLowerBoundSource.restrictedConclusion
 #print axioms Frontier.P_ne_NP_of_pnp4_bridge_requirement
 #print axioms Frontier.P_ne_NP_of_restricted_source_and_dag_bridge
+#print axioms Frontier.P_ne_NP_of_NP_not_subset_Ppoly
+#print axioms Frontier.SearchMCSPWeakLowerBound.verifiedSource
+#print axioms Frontier.NP_not_subset_Ppoly_of_searchMCSPWeakLowerBound
+#print axioms Frontier.P_ne_NP_of_searchMCSPWeakLowerBound
+#print axioms Frontier.P_ne_NP_of_mainlineProgress
+#print axioms Frontier.PvsNPMainlineProgress.of_searchMCSPWeakLowerBound
 
 end Tests
 end Pnp4

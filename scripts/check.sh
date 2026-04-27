@@ -379,6 +379,45 @@ fi
 
 echo "Route policy docs OK (fixed-slice no-go + refuted support-bounds + fixedParams + simulation + method/DevOps boundaries enforced)."
 
+# Agent policy guardrails:
+# Keep the repository-level coding-agent instructions aligned with the current
+# P-vs-NP mainline decision: restricted pnp4 lower bounds are side-track work
+# unless they bridge to `VerifiedNPDAGLowerBoundSource` / `PpolyDAG`.
+agent_policy_docs=(
+  "AGENTS.md"
+  "pnp4/README.md"
+)
+
+for f in "${agent_policy_docs[@]}"; do
+  if [[ ! -f "${f}" ]]; then
+    echo "Missing required agent-policy document: ${f}"
+    exit 1
+  fi
+done
+
+if ! rg -n "SearchMCSPWeakLowerBound" "${agent_policy_docs[@]}" >/tmp/pnp4_agent_policy_search_mcsp_hits.log; then
+  echo "Agent-policy violation: pnp4 mainline does not mention SearchMCSPWeakLowerBound."
+  exit 1
+fi
+
+if ! rg -n "VerifiedNPDAGLowerBoundSource" "${agent_policy_docs[@]}" >/tmp/pnp4_agent_policy_verified_source_hits.log; then
+  echo "Agent-policy violation: pnp4 mainline does not mention VerifiedNPDAGLowerBoundSource."
+  exit 1
+fi
+
+if ! rg -n "AC0\\[p\\].*side track|side track.*AC0\\[p\\]|restricted.*side track|side track.*restricted" \
+    "${agent_policy_docs[@]}" >/tmp/pnp4_agent_policy_side_track_hits.log; then
+  echo "Agent-policy violation: restricted pnp4 lower bounds are not documented as side track."
+  exit 1
+fi
+
+if ! rg -n "PpolyDAG" "${agent_policy_docs[@]}" >/tmp/pnp4_agent_policy_ppolydag_hits.log; then
+  echo "Agent-policy violation: pnp4 mainline does not mention the PpolyDAG endpoint."
+  exit 1
+fi
+
+echo "Agent policy docs OK (pnp4 P-vs-NP mainline + restricted side-track boundary enforced)."
+
 echo "[check] Step 4/7: pnp3 explicit theorem-axiom surface dump"
 axiom_surface_log="/tmp/pnp3_axiom_surface.log"
 if ! rg -n -U "pnp3/Tests/AxiomsAudit\\.lean:[^\\n]*depends on axioms:\\s*\\[[^\\]]*\\]" \

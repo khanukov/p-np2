@@ -176,23 +176,23 @@ Final DAG-separation wrapper specialized to the fixed-slice support-bounds route
 The DAG-to-formula conversion is no longer a hypothesis here.  It is supplied by
 the constructive fixed-slice truth-table formula bridge.
 -/
-theorem NP_not_subset_PpolyDAG_final_of_supportBounds_TM
+theorem RefutedRoute_NP_not_subset_PpolyDAG_final_of_supportBounds_TM
   {p : GapPartialMCSPParams}
   (W : Models.GapPartialMCSP_TMWitness p)
   (hBounds : Magnification.FormulaSupportRestrictionBoundsPartial) :
   ComplexityInterfaces.NP_not_subset_PpolyDAG := by
-  exact LowerBounds.NP_not_subset_PpolyDAG_of_supportBounds_TM W hBounds
+  exact LowerBounds.RefutedRoute_NP_not_subset_PpolyDAG_of_supportBounds_TM W hBounds
 
 /--
 Companion `P ≠ NP` endpoint for the same fixed-slice support-bounds route.
 -/
-theorem P_ne_NP_final_of_supportBounds_TM
+theorem RefutedRoute_P_ne_NP_final_of_supportBounds_TM
   {p : GapPartialMCSPParams}
   (W : Models.GapPartialMCSP_TMWitness p)
   (hBounds : Magnification.FormulaSupportRestrictionBoundsPartial) :
   ComplexityInterfaces.P_ne_NP := by
   exact P_ne_NP_final_dag_only
-    (NP_not_subset_PpolyDAG_final_of_supportBounds_TM W hBounds)
+    (RefutedRoute_NP_not_subset_PpolyDAG_final_of_supportBounds_TM W hBounds)
 
 
 /--

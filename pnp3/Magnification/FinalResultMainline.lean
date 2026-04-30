@@ -626,7 +626,7 @@ provider constructors ultimately route through `hBounds`).
 The migration plan is documented in `pnp3/Docs/PhaseI_Verifier_Design.md`
 session 55 / 57 entries.
 -/
-theorem NP_not_subset_PpolyFormula_final_with_supportBounds
+theorem RefutedRoute_NP_not_subset_PpolyFormula_final_with_supportBounds
   (hBounds : FormulaSupportRestrictionBoundsPartial)
   (hAsym : AsymptoticFormulaTrackHypothesis)
   (hNPbridge : AsymptoticNPPullback hAsym)
@@ -647,7 +647,7 @@ strengthened A9 multi-switching contract.
 
 ## ⚠ EX-FALSO UNDER CURRENT FORMALIZATION ⚠
 
-Same caveat as `NP_not_subset_PpolyFormula_final_with_supportBounds`:
+Same caveat as `RefutedRoute_NP_not_subset_PpolyFormula_final_with_supportBounds`:
 the hypothesis `hMS : FormulaSupportBoundsFromMultiSwitchingContract`
 is inconsistent (Probe 4 of the audit,
 `false_of_FormulaSupportBoundsFromMultiSwitchingContract`), because it
@@ -658,14 +658,14 @@ ex-falso.
 Migrate to `NP_not_subset_PpolyFormula_final_with_provider` with a
 non-ex-falso provider source (TBD — see session 55/57 migration plan).
 -/
-theorem NP_not_subset_PpolyFormula_final_with_multiswitching
+theorem RefutedRoute_NP_not_subset_PpolyFormula_final_with_multiswitching
   (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
   (hAsym : AsymptoticFormulaTrackHypothesis)
   (hNPbridge : AsymptoticNPPullback hAsym)
   (n : Nat) (hn : hAsym.N0 ≤ n) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
   exact
-    NP_not_subset_PpolyFormula_final_with_supportBounds
+    RefutedRoute_NP_not_subset_PpolyFormula_final_with_supportBounds
       (hBounds := formula_support_bounds_from_multiswitching hMS)
       (hAsym := hAsym)
       (hNPbridge := hNPbridge)
@@ -701,7 +701,7 @@ theorem NP_not_subset_PpolyFormula_final
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
   exact
-    NP_not_subset_PpolyFormula_final_with_multiswitching
+    RefutedRoute_NP_not_subset_PpolyFormula_final_with_multiswitching
       (hMS := hMag.switching.multiswitching)
       (hAsym := hMag.antiChecker.asymptotic)
       (hNPbridge := hMag.antiChecker.npBridge)
@@ -783,11 +783,11 @@ derive the structured locality provider internally from support-based bounds.
 ## ⚠ EX-FALSO UNDER CURRENT FORMALIZATION ⚠
 
 See the formula-side counterpart
-`NP_not_subset_PpolyFormula_final_with_supportBounds`: the
+`RefutedRoute_NP_not_subset_PpolyFormula_final_with_supportBounds`: the
 `hBounds : FormulaSupportRestrictionBoundsPartial` hypothesis is
 inconsistent (audit Probe 3).
 -/
-theorem NP_not_subset_PpolyReal_final_with_supportBounds
+theorem RefutedRoute_NP_not_subset_PpolyReal_final_with_supportBounds
   (hBounds : FormulaSupportRestrictionBoundsPartial)
   (hAsym : AsymptoticFormulaTrackHypothesis)
   (hNPbridge : AsymptoticNPPullback hAsym)
@@ -809,18 +809,18 @@ strengthened A9 multi-switching contract.
 ## ⚠ EX-FALSO UNDER CURRENT FORMALIZATION ⚠
 
 See the formula-side counterpart
-`NP_not_subset_PpolyFormula_final_with_multiswitching`: the
+`RefutedRoute_NP_not_subset_PpolyFormula_final_with_multiswitching`: the
 `hMS : FormulaSupportBoundsFromMultiSwitchingContract` hypothesis is
 inconsistent (audit Probe 4).
 -/
-theorem NP_not_subset_PpolyReal_final_with_multiswitching
+theorem RefutedRoute_NP_not_subset_PpolyReal_final_with_multiswitching
   (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
   (hAsym : AsymptoticFormulaTrackHypothesis)
   (hNPbridge : AsymptoticNPPullback hAsym)
   (n : Nat) (hn : hAsym.N0 ≤ n) :
   ComplexityInterfaces.NP_not_subset_PpolyReal := by
   exact
-    NP_not_subset_PpolyReal_final_with_supportBounds
+    RefutedRoute_NP_not_subset_PpolyReal_final_with_supportBounds
       (hBounds := formula_support_bounds_from_multiswitching hMS)
       (hAsym := hAsym)
       (hNPbridge := hNPbridge)
@@ -842,7 +842,7 @@ theorem NP_not_subset_PpolyReal_final
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n) :
   ComplexityInterfaces.NP_not_subset_PpolyReal := by
   exact
-    NP_not_subset_PpolyReal_final_with_multiswitching
+    RefutedRoute_NP_not_subset_PpolyReal_final_with_multiswitching
       (hMS := hMag.switching.multiswitching)
       (hAsym := hMag.antiChecker.asymptotic)
       (hNPbridge := hMag.antiChecker.npBridge)

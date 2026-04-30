@@ -2371,7 +2371,7 @@ No DAG-to-formula hypothesis is required: for `gapPartialMCSP_Language p`, the
 conversion is the explicit truth-table formula construction
 `Complexity.ppolyFormula_of_ppolyDAG_gapPartialMCSP_fixedSlice`.
 -/
-theorem NP_not_subset_PpolyDAG_of_supportBounds
+theorem RefutedRoute_NP_not_subset_PpolyDAG_of_supportBounds
     {p : GapPartialMCSPParams}
     (hNP : ComplexityInterfaces.NP (gapPartialMCSP_Language p))
     (hBounds : Magnification.FormulaSupportRestrictionBoundsPartial) :
@@ -2414,12 +2414,12 @@ theorem NP_not_subset_PpolyDAG_of_dag_stableRestriction_TM
 /--
 TM-packaged constructive fixed-slice support-bounds route.
 -/
-theorem NP_not_subset_PpolyDAG_of_supportBounds_TM
+theorem RefutedRoute_NP_not_subset_PpolyDAG_of_supportBounds_TM
     {p : GapPartialMCSPParams}
     (W : Models.GapPartialMCSP_TMWitness p)
     (hBounds : Magnification.FormulaSupportRestrictionBoundsPartial) :
     ComplexityInterfaces.NP_not_subset_PpolyDAG := by
-  apply NP_not_subset_PpolyDAG_of_supportBounds
+  apply RefutedRoute_NP_not_subset_PpolyDAG_of_supportBounds
   exact
     Models.gapPartialMCSP_in_NP_of_TM p
       (Models.gapPartialMCSP_in_NP_TM_of_witness p W)

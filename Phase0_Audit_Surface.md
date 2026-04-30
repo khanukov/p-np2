@@ -58,25 +58,64 @@ how to discharge.
 
 ### 1.2 Direct refuted-route endpoints
 
-These endpoints depend transitively on one of the six refuted predicates
-listed in §2. They are mathematically vacuous in the sense of Rule 6 and
-must be relocated under `pnp3/Magnification/AuditRoutes/` and renamed
-`RefutedRoute_*`.
+**PR 3 status: rename-in-place complete.** All final-looking endpoints
+whose direct premise is one of the six refuted predicates listed in §2
+have been renamed with the explicit `RefutedRoute_*` prefix. Physical
+relocation under `pnp3/Magnification/AuditRoutes/` is deferred to a
+later split PR (alongside PR 2b).
 
-The list below is **not** exhaustive; a full enumeration is the work
-product of Phase 0 PR 3 (`Rename/move direct refuted-route endpoints`).
-Representative names from the inventory:
+Endpoints renamed in PR 3:
 
-- `NP_not_subset_PpolyFormula_final_with_supportBounds`
-- `NP_not_subset_PpolyFormula_final_with_multiswitching`
-- `NP_not_subset_PpolyDAG_final_of_supportBounds`
-- `P_ne_NP_final_of_supportBounds`
-- `P_ne_NP_final_of_magnification`
-- `NP_not_subset_PpolyDAG_of_supportBounds`
-- `NP_not_subset_PpolyDAG_of_supportBounds_TM`
+| File                                                    | Old name                                                         |
+| ------------------------------------------------------- | ---------------------------------------------------------------- |
+| `pnp3/Magnification/FinalResultMainline.lean`           | `NP_not_subset_PpolyFormula_final_with_supportBounds`            |
+| `pnp3/Magnification/FinalResultMainline.lean`           | `NP_not_subset_PpolyFormula_final_with_multiswitching`           |
+| `pnp3/Magnification/FinalResultMainline.lean`           | `NP_not_subset_PpolyReal_final_with_supportBounds`               |
+| `pnp3/Magnification/FinalResultMainline.lean`           | `NP_not_subset_PpolyReal_final_with_multiswitching`              |
+| `pnp3/Magnification/FinalResultAuditRoutes.lean`        | `NP_not_subset_PpolyDAG_final_of_asymptotic_supportBounds`       |
+| `pnp3/Magnification/FinalResultAuditRoutes.lean`        | `NP_not_subset_PpolyDAG_final_with_magnification`                |
+| `pnp3/Magnification/FinalResultAuditRoutes.lean`        | `NP_not_subset_PpolyDAG_final_of_asymptoticPullback`             |
+| `pnp3/Magnification/FinalResultAuditRoutes.lean`        | `NP_not_subset_PpolyDAG_final_of_multiswitchingData`             |
+| `pnp3/Magnification/FinalResultAuditRoutes.lean`        | `NP_not_subset_PpolyDAG_final_under_fixedParams_and_uniformProvenance` |
+| `pnp3/Magnification/FinalResultAuditRoutes.lean`        | `NP_not_subset_PpolyDAG_final_of_magnification`                  |
+| `pnp3/Magnification/FinalResultAuditRoutes.lean`        | `P_ne_NP_final_of_asymptoticPullback`                            |
+| `pnp3/Magnification/FinalResultAuditRoutes.lean`        | `P_ne_NP_final_of_multiswitchingData`                            |
+| `pnp3/Magnification/FinalResultAuditRoutes.lean`        | `NP_not_subset_PpolyDAG_final_of_supportBounds`                  |
+| `pnp3/Magnification/FinalResultAuditRoutes.lean`        | `P_ne_NP_final_of_supportBounds`                                 |
+| `pnp3/Magnification/FinalResultAuditRoutes.lean`        | `P_ne_NP_final_of_magnification`                                 |
+| `pnp3/Magnification/FinalResultLegacyTM.lean`           | `NP_not_subset_PpolyDAG_final_of_supportBounds_TM`               |
+| `pnp3/Magnification/FinalResultLegacyTM.lean`           | `P_ne_NP_final_of_supportBounds_TM`                              |
+| `pnp3/LowerBounds/SingletonDensityContradiction.lean`   | `NP_not_subset_PpolyDAG_of_supportBounds`                        |
+| `pnp3/LowerBounds/SingletonDensityContradiction.lean`   | `NP_not_subset_PpolyDAG_of_supportBounds_TM`                     |
 
-Estimated count of direct refuted endpoints: **≥ 19**. Final count to be
-produced as `outputs/phase0_endpoint_table.csv` during PR 3.
+Each row's new name is the old name with the prefix `RefutedRoute_`
+prepended. No backwards-compatibility aliases were introduced. All
+internal callers and `Tests/AxiomsAudit.lean` /
+`Tests/BridgeLocalityRegression.lean` / `Tests/RouteSurfaceAudit.lean`
+references have been updated.
+
+Total: **19 endpoints renamed.**
+
+Out of PR 3 scope (deferred):
+
+- The bare `NP_not_subset_PpolyFormula_final` /
+  `NP_not_subset_PpolyReal_final` (and their `_fromPipeline` variants)
+  with `MagnificationAssumptions` / `MagnificationAssumptions_fromPipeline`
+  premise. These are direct-refuted by the same Rule 6 logic, but
+  `scripts/check.sh` currently enforces these *exact* bare names and
+  signatures (see lines 222-233). Renaming them requires also updating
+  the conflicting policy in `scripts/check.sh` and is therefore tracked
+  as **PR 3b: bare _final endpoint quarantine**.
+- Helper / intermediate lemmas that consume a refuted predicate but do
+  not look like a final endpoint (e.g.
+  `dag_stableRestrictionGoal_of_supportBounds`,
+  `*_of_supportBounds` wrappers in `LocalityProvider_Partial.lean`).
+  These will be addressed in PR 4 (`Centralize refuted predicates under
+  pnp3/RefutedPredicates/`).
+
+A regression guard, `scripts/check_refuted_route_quarantine.sh`, is
+wired into `scripts/check.sh` as Step 6/10 to prevent reintroduction of
+unmarked direct-refuted final endpoints in production code.
 
 ### 1.3 Typeclass-payload-channel endpoints
 

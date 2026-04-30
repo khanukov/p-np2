@@ -127,7 +127,7 @@ compatibility/audit name.
 def check_legacy_magnification_surface_is_explicitly_named :
     Magnification.MagnificationAssumptions →
       ComplexityInterfaces.P_ne_NP :=
-  Magnification.P_ne_NP_final_of_magnification
+  Magnification.RefutedRoute_P_ne_NP_final_of_magnification
 
 /--
 The refuted support-bounds input is still present only under an explicit
@@ -137,7 +137,7 @@ def check_legacy_supportBounds_surface_is_explicitly_named :
     Magnification.FormulaSupportRestrictionBoundsPartial →
       Magnification.AsymptoticFormulaTrackData →
         ComplexityInterfaces.P_ne_NP :=
-  Magnification.P_ne_NP_final_of_supportBounds
+  Magnification.RefutedRoute_P_ne_NP_final_of_supportBounds
 
 /--
 The old fixed-slice package-shaped route is retained only under its legacy

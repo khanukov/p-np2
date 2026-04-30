@@ -51,7 +51,7 @@ Legacy/audit status: the support-bounds payload is refuted.  This endpoint is
 kept for compatibility with historical call sites, not as an active research
 target.
 -/
-theorem NP_not_subset_PpolyDAG_final_of_asymptotic_supportBounds
+theorem RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptotic_supportBounds
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n) :
   ComplexityInterfaces.NP_not_subset_PpolyDAG := by
@@ -74,13 +74,13 @@ surface.  The public active final boundary is
 `UnconditionalResearchGap.P_ne_NP_final`, which requires `ResearchGapWitness`
 instead of this legacy package.
 -/
-theorem NP_not_subset_PpolyDAG_final_with_magnification
+theorem RefutedRoute_NP_not_subset_PpolyDAG_final_with_magnification
   (hMag : MagnificationAssumptions) :
   ComplexityInterfaces.NP_not_subset_PpolyDAG := by
   let n : Nat := hMag.antiChecker.asymptotic.N0
   have hn : hMag.antiChecker.asymptotic.N0 ≤ n := le_rfl
   exact
-    NP_not_subset_PpolyDAG_final_of_asymptotic_supportBounds
+    RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptotic_supportBounds
       (hMag := hMag)
       (n := n)
       (hn := hn)
@@ -496,7 +496,7 @@ shape available for callers that still have a pre-packaged
 Legacy/audit status: `hMS` is `FormulaSupportBoundsFromMultiSwitchingContract`,
 a refuted support-bounds surface.
 -/
-theorem NP_not_subset_PpolyDAG_final_of_asymptoticPullback
+theorem RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptoticPullback
   (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
   (hAsym : AsymptoticFormulaTrackHypothesis)
   (hNPbridge : AsymptoticNPPullback hAsym) :
@@ -508,7 +508,7 @@ theorem NP_not_subset_PpolyDAG_final_of_asymptoticPullback
       antiChecker :=
         { asymptotic := hAsym
           npBridge := hNPbridge } }
-  exact NP_not_subset_PpolyDAG_final_with_magnification hMag
+  exact RefutedRoute_NP_not_subset_PpolyDAG_final_with_magnification hMag
 
 /--
 Legacy multiswitching-data DAG-separation API.
@@ -521,12 +521,12 @@ This endpoint is intentionally no longer named `NP_not_subset_PpolyDAG_final`,
 because its `hMS` input is a refuted support-bounds surface.  The public final
 name is reserved for the research-gap route in `UnconditionalResearchGap`.
 -/
-theorem NP_not_subset_PpolyDAG_final_of_multiswitchingData
+theorem RefutedRoute_NP_not_subset_PpolyDAG_final_of_multiswitchingData
   (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
   (D : AsymptoticFormulaTrackData) :
   ComplexityInterfaces.NP_not_subset_PpolyDAG := by
   exact
-    NP_not_subset_PpolyDAG_final_of_asymptoticPullback
+    RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptoticPullback
       hMS
       (asymptoticFormulaTrackHypothesis_of_data D)
       (asymptoticNPPullback_of_data D)
@@ -534,7 +534,7 @@ theorem NP_not_subset_PpolyDAG_final_of_multiswitchingData
 /-! ### Step 6 (session 68) — fixed-params DAG final, all assumptions explicit
 
 The compatibility endpoint
-`NP_not_subset_PpolyDAG_final_of_asymptoticPullback` above takes
+`RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptoticPullback` above takes
 `FormulaSupportBoundsFromMultiSwitchingContract`, which was proven
 formally inconsistent in audit Probe 4
 (`Tests/FormulaSupportBoundsFalsifiabilityProbe.lean:~315`).  The
@@ -569,7 +569,7 @@ commits to uniform parameters AND produces the polylog support bounds
 AND is consistent with known `MCSP ∉ AC⁰` intuition.  That formal
 content is the research-open gap.  **This theorem exposes the gap, it
 does not bridge it.** -/
-theorem NP_not_subset_PpolyDAG_final_under_fixedParams_and_uniformProvenance
+theorem RefutedRoute_NP_not_subset_PpolyDAG_final_under_fixedParams_and_uniformProvenance
   (ac0 : ThirdPartyFacts.AC0Parameters)
   (sb : Nat → Nat)
   (hBoundsP : FormulaSupportBoundsPartial_fromPipeline_fixedParams ac0 sb)
@@ -612,7 +612,7 @@ theorem NP_not_subset_PpolyDAG_final_under_fixedParams_and_uniformProvenance
     multiswitching_contract_of_semantic_provider_and_support_bounds
       AC0LocalityBridge.formulaSemanticMultiSwitchingProvider_internal
       hBoundsOld
-  exact NP_not_subset_PpolyDAG_final_of_multiswitchingData hMS D
+  exact RefutedRoute_NP_not_subset_PpolyDAG_final_of_multiswitchingData hMS D
 
 /--
 Compatibility wrapper preserving the historical package-shaped DAG endpoint.
@@ -620,10 +620,10 @@ Compatibility wrapper preserving the historical package-shaped DAG endpoint.
 Legacy/audit status: this consumes `MagnificationAssumptions`, whose switching
 field carries the refuted multiswitching support-bounds contract.
 -/
-theorem NP_not_subset_PpolyDAG_final_of_magnification
+theorem RefutedRoute_NP_not_subset_PpolyDAG_final_of_magnification
   (hMag : MagnificationAssumptions) :
   ComplexityInterfaces.NP_not_subset_PpolyDAG :=
-  NP_not_subset_PpolyDAG_final_with_magnification hMag
+  RefutedRoute_NP_not_subset_PpolyDAG_final_with_magnification hMag
 
 /--
 Compatibility `P ≠ NP` endpoint with an explicit asymptotic NP pullback.
@@ -634,13 +634,13 @@ shape for historical wrappers.
 
 Legacy/audit status: `hMS` is a refuted support-bounds surface.
 -/
-theorem P_ne_NP_final_of_asymptoticPullback
+theorem RefutedRoute_P_ne_NP_final_of_asymptoticPullback
   (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
   (hAsym : AsymptoticFormulaTrackHypothesis)
   (hNPbridge : AsymptoticNPPullback hAsym) :
   ComplexityInterfaces.P_ne_NP := by
   exact P_ne_NP_final_dag_only
-    (NP_not_subset_PpolyDAG_final_of_asymptoticPullback hMS hAsym hNPbridge)
+    (RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptoticPullback hMS hAsym hNPbridge)
 
 /--
 Legacy multiswitching-data `P ≠ NP` endpoint.
@@ -653,12 +653,12 @@ This theorem is kept as an audit route.  Its `hMS` input is not an acceptable
 unconditional source, so the public name `P_ne_NP_final` is reserved for the
 research-gap endpoint in `UnconditionalResearchGap`.
 -/
-theorem P_ne_NP_final_of_multiswitchingData
+theorem RefutedRoute_P_ne_NP_final_of_multiswitchingData
   (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
   (D : AsymptoticFormulaTrackData) :
   ComplexityInterfaces.P_ne_NP := by
   exact P_ne_NP_final_dag_only
-    (NP_not_subset_PpolyDAG_final_of_multiswitchingData hMS D)
+    (RefutedRoute_NP_not_subset_PpolyDAG_final_of_multiswitchingData hMS D)
 
 /--
 Support-bounds endpoint that removes `hMS` from the public input surface.
@@ -670,12 +670,12 @@ The multi-switching contract is reconstructed internally from
 Legacy/audit status: `FormulaSupportRestrictionBoundsPartial` is refuted, so
 this is an interface compatibility wrapper, not an active route.
 -/
-theorem NP_not_subset_PpolyDAG_final_of_supportBounds
+theorem RefutedRoute_NP_not_subset_PpolyDAG_final_of_supportBounds
   (hBounds : FormulaSupportRestrictionBoundsPartial)
   (D : AsymptoticFormulaTrackData) :
   ComplexityInterfaces.NP_not_subset_PpolyDAG := by
   exact
-    NP_not_subset_PpolyDAG_final_of_multiswitchingData
+    RefutedRoute_NP_not_subset_PpolyDAG_final_of_multiswitchingData
       (hMS := multiswitching_contract_internalized_of_support_bounds hBounds)
       (D := D)
 
@@ -685,12 +685,12 @@ theorem NP_not_subset_PpolyDAG_final_of_supportBounds
 Legacy/audit status: the support-bounds input is refuted; this theorem only
 preserves the historical interface layer.
 -/
-theorem P_ne_NP_final_of_supportBounds
+theorem RefutedRoute_P_ne_NP_final_of_supportBounds
   (hBounds : FormulaSupportRestrictionBoundsPartial)
   (D : AsymptoticFormulaTrackData) :
   ComplexityInterfaces.P_ne_NP := by
   exact P_ne_NP_final_dag_only
-    (NP_not_subset_PpolyDAG_final_of_supportBounds hBounds D)
+    (RefutedRoute_NP_not_subset_PpolyDAG_final_of_supportBounds hBounds D)
 
 /--
 Compatibility wrapper preserving the historical package-shaped `P ≠ NP`
@@ -699,10 +699,10 @@ endpoint for callers that still pass `MagnificationAssumptions`.
 Legacy/audit status: this consumes the refuted multiswitching support-bounds
 contract inside `hMag.switching`.
 -/
-theorem P_ne_NP_final_of_magnification
+theorem RefutedRoute_P_ne_NP_final_of_magnification
   (hMag : MagnificationAssumptions) :
   ComplexityInterfaces.P_ne_NP :=
-  P_ne_NP_final_of_asymptoticPullback
+  RefutedRoute_P_ne_NP_final_of_asymptoticPullback
     hMag.switching.multiswitching
     hMag.antiChecker.asymptotic
     hMag.antiChecker.npBridge
@@ -807,7 +807,7 @@ canonical final endpoint.  No backwards-compatibility alias is provided.
 theorem Vacuous_P_ne_NP_via_FinalPayloadProvider
     [payload : VacuousFinalPayloadProvider] :
   ComplexityInterfaces.P_ne_NP :=
-  P_ne_NP_final_of_multiswitchingData payload.hMS payload.data
+  RefutedRoute_P_ne_NP_final_of_multiswitchingData payload.hMS payload.data
 
 /--
 Zero-argument endpoint under the default formula-side source policy.
@@ -871,7 +871,7 @@ theorem Vacuous_P_ne_NP_via_ConstructiveAsymptotic
   let hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract :=
     multiswitching_contract_internalized_of_support_bounds
       (defaultFormulaSupportRestrictionBoundsPartial hBounds.out)
-  exact P_ne_NP_final_of_multiswitchingData hMS D
+  exact RefutedRoute_P_ne_NP_final_of_multiswitchingData hMS D
 
 end Magnification
 end Pnp3

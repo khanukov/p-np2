@@ -11,16 +11,16 @@ if ! command -v rg >/dev/null 2>&1; then
 fi
 
 build_log="/tmp/pnp3_full_build.log"
-echo "[check] Step 1/8: full Lean build"
+echo "[check] Step 1/9: full Lean build"
 if ! lake build 2>&1 | tee "${build_log}"; then
   echo "Full build failed; see ${build_log} for details."
   exit 1
 fi
 
-echo "[check] Step 2/8: smoke execution"
+echo "[check] Step 2/9: smoke execution"
 lake env lean --run scripts/smoke.lean
 
-echo "[check] Step 3/8: source hygiene scan (axiom/sorry/native_decide/interface policy)"
+echo "[check] Step 3/9: source hygiene scan (axiom/sorry/native_decide/interface policy)"
 expected_axioms=0
 actual_axioms_pnp3=$( (rg "^[[:space:]]*axiom " -g"*.lean" pnp3 || true) | wc -l | tr -d ' ' )
 if [[ "${actual_axioms_pnp3}" -ne "${expected_axioms}" ]]; then
@@ -418,10 +418,13 @@ fi
 
 echo "Agent policy docs OK (pnp4 P-vs-NP mainline + restricted side-track boundary enforced)."
 
-echo "[check] Step 4/8: doc-honesty linter (Research Governance v0.1, Rule 1)"
+echo "[check] Step 4/9: doc-honesty linter (Research Governance v0.1, Rule 1)"
 "${ROOT_DIR}/scripts/check_doc_honesty.sh"
 
-echo "[check] Step 5/8: pnp3 explicit theorem-axiom surface dump"
+echo "[check] Step 5/9: typeclass-payload quarantine (Research Governance v0.1, Rule 16)"
+"${ROOT_DIR}/scripts/check_typeclass_payload_quarantine.sh"
+
+echo "[check] Step 6/9: pnp3 explicit theorem-axiom surface dump"
 axiom_surface_log="/tmp/pnp3_axiom_surface.log"
 if ! rg -n -U "pnp3/Tests/AxiomsAudit\\.lean:[^\\n]*depends on axioms:\\s*\\[[^\\]]*\\]" \
     "${build_log}" >"${axiom_surface_log}"; then
@@ -446,7 +449,7 @@ echo "  propext occurrences: ${propext_count}"
 echo "  Classical.choice occurrences: ${classical_count}"
 echo "  Quot.sound occurrences: ${quot_count}"
 
-echo "[check] Step 6/8: pnp4 explicit theorem-axiom surface dump"
+echo "[check] Step 7/9: pnp4 explicit theorem-axiom surface dump"
 pnp4_axiom_surface_log="/tmp/pnp4_axiom_surface.log"
 if ! rg -n -U "pnp4/Pnp4/Tests/AxiomsAudit\\.lean:[^\\n]*depends on axioms:\\s*\\[[^\\]]*\\]" \
     "${build_log}" >"${pnp4_axiom_surface_log}"; then
@@ -467,13 +470,13 @@ echo "  propext occurrences: ${pnp4_propext_count}"
 echo "  Classical.choice occurrences: ${pnp4_classical_count}"
 echo "  Quot.sound occurrences: ${pnp4_quot_count}"
 
-echo "[check] Step 7/8: run barrier audit module"
+echo "[check] Step 8/9: run barrier audit module"
 if ! rg -n "pnp3/Tests/BarrierAudit\\.lean" "${build_log}" >/tmp/pnp3_barrier_audit.log; then
   # Keep this explicit so regressions in barrier-facing final statements are visible.
   lake env lean pnp3/Tests/BarrierAudit.lean >/tmp/pnp3_barrier_audit.log 2>&1
 fi
 
-echo "[check] Step 8/8: unconditional witness gate (optional)"
+echo "[check] Step 9/9: unconditional witness gate (optional)"
 if [[ "${UNCONDITIONAL:-0}" == "1" ]]; then
   echo "Checking unconditional witness surface..."
   # Legacy witness surface markers (historical blockers).

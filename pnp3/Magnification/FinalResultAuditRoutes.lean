@@ -715,13 +715,21 @@ this does **not** make the result unconditional by itself.  It only moves the
 remaining payload from explicit theorem arguments into one auditable provider
 interface.  The `hMS` field is the refuted multiswitching support-bounds
 contract, so this provider surface is retained for audit/compatibility only.
+
+Quarantine status (Research Governance v0.1, PR 2):
+this provider channel is hereby renamed `VacuousFinalPayloadProvider` to
+make its audit-only status visible at the type level.  Use of
+`[VacuousFinalPayloadProvider]` is forbidden outside the audit/test/docs
+tree by `scripts/check_typeclass_payload_quarantine.sh`.  See
+`RESEARCH_CONSTITUTION.md` Rule 16 and `Phase0_Audit_Surface.md` §1.3.
 -/
-class FinalPayloadProvider : Type where
+class VacuousFinalPayloadProvider : Type where
   hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract
   data : AsymptoticFormulaTrackData
 
 /--
-Asymptotic-side provider extracted out of `FinalPayloadProvider`.
+Asymptotic-side provider extracted out of `VacuousFinalPayloadProvider`
+(historically `FinalPayloadProvider` before the PR 2 quarantine).
 
 This isolates the non-formula residual payload as constructive source data, so
 the formula-side part (`hMS`) can be reconstructed internally from
@@ -769,11 +777,15 @@ Legacy/audit status: this reconstructs the refuted formula-side support-bounds
 source at the final endpoint boundary.  Callers no longer pass `hMS`
 explicitly, but the same refuted payload is still present through typeclass
 resolution.
+
+Quarantine status (Research Governance v0.1, PR 2): renamed from
+`finalPayloadProvider_of_default_supportBounds` so that its
+audit-only status is visible at the call site.
 -/
-instance finalPayloadProvider_of_default_supportBounds
+instance vacuousFinalPayloadProvider_of_default_supportBounds
     [hAsymProv : AsymptoticPayloadProvider]
     [hBounds : Fact hasDefaultFormulaSupportRestrictionBoundsPartial] :
-    FinalPayloadProvider where
+    VacuousFinalPayloadProvider where
   hMS :=
     multiswitching_contract_internalized_of_support_bounds
       (defaultFormulaSupportRestrictionBoundsPartial hBounds.out)
@@ -783,29 +795,38 @@ instance finalPayloadProvider_of_default_supportBounds
 Legacy zero-argument provider-backed endpoint.
 
 This theorem removes explicit non-zero payload from the visible signature, but
-the hidden `FinalPayloadProvider` still contains the refuted support-bounds
-surface.  The active public frontier is
+the hidden `VacuousFinalPayloadProvider` still contains the refuted
+support-bounds surface.  The active public frontier is
 `UnconditionalResearchGap.P_ne_NP_final`, not this compatibility theorem.
+
+Quarantine status (Research Governance v0.1, PR 2): the previous public
+name `P_ne_NP` is replaced with `Vacuous_P_ne_NP_via_FinalPayloadProvider`
+so that the typeclass-payload channel can no longer be mistaken for a
+canonical final endpoint.  No backwards-compatibility alias is provided.
 -/
-theorem P_ne_NP [payload : FinalPayloadProvider] :
+theorem Vacuous_P_ne_NP_via_FinalPayloadProvider
+    [payload : VacuousFinalPayloadProvider] :
   ComplexityInterfaces.P_ne_NP :=
   P_ne_NP_final_of_multiswitchingData payload.hMS payload.data
 
 /--
 Zero-argument endpoint under the default formula-side source policy.
 
-Compared to `P_ne_NP [FinalPayloadProvider]`, this variant no longer requires
-explicit/opaque `hMS`: it is reconstructed internally from
+Compared to `Vacuous_P_ne_NP_via_FinalPayloadProvider`, this variant no longer
+requires explicit/opaque `hMS`: it is reconstructed internally from
 `hasDefaultFormulaSupportRestrictionBoundsPartial`.
 
 Legacy/audit status: the default formula-side source is the refuted
 `FormulaSupportRestrictionBoundsPartial` surface.
+
+Quarantine status (Research Governance v0.1, PR 2): renamed from
+`P_ne_NP_of_default_formulaSource`.
 -/
-theorem P_ne_NP_of_default_formulaSource
+theorem Vacuous_P_ne_NP_via_DefaultFormulaSource
     [AsymptoticPayloadProvider]
     [Fact hasDefaultFormulaSupportRestrictionBoundsPartial] :
     ComplexityInterfaces.P_ne_NP :=
-  P_ne_NP
+  Vacuous_P_ne_NP_via_FinalPayloadProvider
 
 /--
 Zero-argument endpoint under both default source policies:
@@ -813,17 +834,20 @@ Zero-argument endpoint under both default source policies:
 1) formula-side source from support-bounds defaults, and
 2) constructive asymptotic source data from theorem-level default flags.
 
-Compared to `P_ne_NP_of_default_formulaSource`, this variant no longer requires
-an explicit `AsymptoticPayloadProvider` contract.
+Compared to `Vacuous_P_ne_NP_via_DefaultFormulaSource`, this variant no
+longer requires an explicit `AsymptoticPayloadProvider` contract.
 
 Legacy/audit status: it still depends on the refuted default formula-side
 support-bounds source.
+
+Quarantine status (Research Governance v0.1, PR 2): renamed from
+`P_ne_NP_of_default_sources`.
 -/
-theorem P_ne_NP_of_default_sources
+theorem Vacuous_P_ne_NP_via_DefaultSources
     [Fact hasDefaultFormulaSupportRestrictionBoundsPartial]
     [Fact hasDefaultAsymptoticFormulaTrackData] :
     ComplexityInterfaces.P_ne_NP :=
-  P_ne_NP_of_default_formulaSource
+  Vacuous_P_ne_NP_via_DefaultFormulaSource
 
 /--
 Legacy provider-free compatibility endpoint from explicit constructive
@@ -836,8 +860,11 @@ reconstructed from default support-bounds assumptions.
 
 Legacy/audit status: the formula-side default support-bounds assumptions are
 refuted, so this endpoint is not an active unconditional route.
+
+Quarantine status (Research Governance v0.1, PR 2): renamed from
+`P_ne_NP_of_constructive_asymptoticData`.
 -/
-theorem P_ne_NP_of_constructive_asymptoticData
+theorem Vacuous_P_ne_NP_via_ConstructiveAsymptotic
     [hBounds : Fact hasDefaultFormulaSupportRestrictionBoundsPartial]
     (D : AsymptoticFormulaTrackData) :
     ComplexityInterfaces.P_ne_NP := by

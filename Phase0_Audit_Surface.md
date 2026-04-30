@@ -80,17 +80,27 @@ produced as `outputs/phase0_endpoint_table.csv` during PR 3.
 
 ### 1.3 Typeclass-payload-channel endpoints
 
-These live in `pnp3/Magnification/FinalResultAuditRoutes.lean` and
-violate Rule 16. They must be quarantined in
-`pnp3/Magnification/AuditRoutes/Vacuous_TypeclassChannel.lean` (PR 2)
-and renamed `Vacuous_*`:
+**PR 2 status: rename-in-place complete; physical move deferred to PR 2b.**
+These endpoints live in `pnp3/Magnification/FinalResultAuditRoutes.lean`
+and violated Rule 16. PR 2 (commit on
+`claude/research-governance-phase0-lmZBP`) renamed them in place with
+the `Vacuous_*` prefix; the physical move into a dedicated
+`pnp3/Magnification/AuditRoutes/Vacuous_TypeclassChannel.lean` is
+deferred to PR 2b to avoid a wider import-cycle refactor.
 
-| Current name                                  | Proposed renamed name                                |
+| Old name                                      | Renamed (PR 2)                                       |
 | --------------------------------------------- | ---------------------------------------------------- |
-| `P_ne_NP` *(takes `[FinalPayloadProvider]`)*  | `Vacuous_P_ne_NP_via_FinalPayloadProvider`           |
+| `P_ne_NP` *(took `[FinalPayloadProvider]`)*   | `Vacuous_P_ne_NP_via_FinalPayloadProvider`           |
 | `P_ne_NP_of_default_formulaSource`            | `Vacuous_P_ne_NP_via_DefaultFormulaSource`           |
 | `P_ne_NP_of_default_sources`                  | `Vacuous_P_ne_NP_via_DefaultSources`                 |
 | `P_ne_NP_of_constructive_asymptoticData`      | `Vacuous_P_ne_NP_via_ConstructiveAsymptotic`         |
+| `class FinalPayloadProvider`                  | `class VacuousFinalPayloadProvider`                  |
+| `instance finalPayloadProvider_of_default_supportBounds` | `instance vacuousFinalPayloadProvider_of_default_supportBounds` |
+
+No backwards-compatibility aliases were introduced. The bare name
+`P_ne_NP` no longer occurs as a `theorem` declaration in the
+magnification tree; the only remaining definition with that name is the
+canonical `def P_ne_NP` in `pnp3/Complexity/Interfaces.lean`.
 
 Defining declarations to follow them out of the public surface:
 
@@ -224,14 +234,21 @@ A change to any of these is Foundational, never Candidate.
 
 Active classes / facts found in the active tree:
 
-- `class FinalPayloadProvider`
-  (`pnp3/Magnification/FinalResultAuditRoutes.lean:719`)
+- `class VacuousFinalPayloadProvider` (renamed from
+  `FinalPayloadProvider` in PR 2;
+  `pnp3/Magnification/FinalResultAuditRoutes.lean`).
+  Use as a typeclass parameter is now blocked outside the audit/test/
+  docs allowlist by `scripts/check_typeclass_payload_quarantine.sh`.
 - `def hasDefaultAsymptoticFormulaTrackData`
-  (`pnp3/Magnification/FinalResultAuditRoutes.lean:740`)
+  (`pnp3/Magnification/FinalResultAuditRoutes.lean`).
+  Not renamed in PR 2; flagged for PR 6 (`Provider audit annotations`).
 - `def hasDefaultFormulaSupportRestrictionBoundsPartial`
-  (referenced in `FinalResultAuditRoutes.lean:775,806,823,824,841`)
+  (defined in `pnp3/Magnification/LocalityProvider_Partial.lean`,
+  consumed in `FinalResultAuditRoutes.lean`). Use as
+  `[Fact hasDefaultFormulaSupportRestrictionBoundsPartial]` is now
+  blocked outside the audit/test/docs allowlist by the same guard.
 
-Plus references to provider classes:
+Plus references to provider classes (deferred to PR 6):
 
 - `AsymptoticPayloadProvider`
 - `FormulaCertificateProviderPartial`
@@ -240,16 +257,26 @@ Plus references to provider classes:
 - `LocalCircuitFamilyWitnessProvider`
 - `AC0MultiSwitchingWitnessProvider`
 
-Phase 0 cleanup must:
+PR 2 status (this commit):
 
-1. Move all of these into
-   `pnp3/Magnification/AuditRoutes/Vacuous_TypeclassChannel.lean`.
-2. Annotate each with one of:
-   `@audit-class: refuted-channel`,
-   `@audit-class: optional-combinatorial`,
-   `@audit-class: infrastructure`.
-3. Forbid candidate-local code from using any of them (Rule 16, see
-   `spec/implicit_assumption_channels.md`).
+1. Endpoints renamed `Vacuous_*` (see §1.3).
+2. Provider class `FinalPayloadProvider` → `VacuousFinalPayloadProvider`.
+3. Instance `finalPayloadProvider_of_default_supportBounds` →
+   `vacuousFinalPayloadProvider_of_default_supportBounds`.
+4. Guard script `scripts/check_typeclass_payload_quarantine.sh` added
+   and wired into `scripts/check.sh` as Step 5/9.
+5. Bare `theorem P_ne_NP` is now forbidden in `pnp3/Magnification/`
+   and `pnp3/LowerBounds/` by part (B) of the same guard.
+
+Still pending after PR 2:
+
+- PR 2b: physical move into
+  `pnp3/Magnification/AuditRoutes/Vacuous_TypeclassChannel.lean`.
+- PR 6: `@audit-class:` annotations on every provider/typeclass class,
+  including `AsymptoticPayloadProvider` and the six provider classes
+  listed above.
+- Candidate-local enforcement (verifier, PR 5–6 of the constitution
+  ordering, see `spec/implicit_assumption_channels.md`).
 
 ---
 

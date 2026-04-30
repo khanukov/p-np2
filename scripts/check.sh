@@ -12,7 +12,11 @@ fi
 
 build_log="/tmp/pnp3_full_build.log"
 echo "[check] Step 1/9: full Lean build"
-if ! lake build 2>&1 | tee "${build_log}"; then
+# Both libs (`PnP3` and `Pnp4`) must be built here: Step 7/9 inspects
+# pnp4's axiom-surface dump, which only appears in the build log when
+# Pnp4 is actually compiled.  Plain `lake build` only builds the
+# `@[default_target]` (PnP3), so we name both libraries explicitly.
+if ! lake build PnP3 Pnp4 2>&1 | tee "${build_log}"; then
   echo "Full build failed; see ${build_log} for details."
   exit 1
 fi

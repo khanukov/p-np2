@@ -1,0 +1,35 @@
+endpoint,kind,file,canonicality,rule_violated,proposed_action,proposed_new_name,notes
+NP_not_subset_PpolyDAG_final,canonical,pnp3/Magnification/UnconditionalResearchGap.lean,canonical,,keep,,Takes ResearchGapWitness explicitly
+P_ne_NP_final,canonical,pnp3/Magnification/UnconditionalResearchGap.lean,canonical,,keep,,Takes ResearchGapWitness explicitly
+P_ne_NP_of_researchGap,canonical,pnp3/Magnification/UnconditionalResearchGap.lean,canonical,,keep,,Takes ResearchGapWitness explicitly
+P_ne_NP_final_dag_only,canonical,pnp3/Magnification/UnconditionalResearchGap.lean,canonical,,keep,,Takes NP_not_subset_PpolyDAG explicitly
+P_ne_NP,typeclass-channel,pnp3/Magnification/FinalResultAuditRoutes.lean,vacuous,Rule 16,move-and-rename,Vacuous_P_ne_NP_via_FinalPayloadProvider,Uses [FinalPayloadProvider]
+P_ne_NP_of_default_formulaSource,typeclass-channel,pnp3/Magnification/FinalResultAuditRoutes.lean,vacuous,Rule 16,move-and-rename,Vacuous_P_ne_NP_via_DefaultFormulaSource,
+P_ne_NP_of_default_sources,typeclass-channel,pnp3/Magnification/FinalResultAuditRoutes.lean,vacuous,Rule 16,move-and-rename,Vacuous_P_ne_NP_via_DefaultSources,
+P_ne_NP_of_constructive_asymptoticData,typeclass-channel,pnp3/Magnification/FinalResultAuditRoutes.lean,vacuous,Rule 16,move-and-rename,Vacuous_P_ne_NP_via_ConstructiveAsymptotic,
+NP_not_subset_PpolyFormula_final_with_supportBounds,refuted-route,pnp3/Magnification/,refuted,Rule 6,move-and-rename,RefutedRoute_NP_not_subset_PpolyFormula_final_with_supportBounds,Depends on FormulaSupportRestrictionBoundsPartial
+NP_not_subset_PpolyFormula_final_with_multiswitching,refuted-route,pnp3/Magnification/,refuted,Rule 6,move-and-rename,RefutedRoute_NP_not_subset_PpolyFormula_final_with_multiswitching,Depends on FormulaSupportBoundsFromMultiSwitchingContract
+NP_not_subset_PpolyDAG_final_of_supportBounds,refuted-route,pnp3/Magnification/,refuted,Rule 6,move-and-rename,RefutedRoute_NP_not_subset_PpolyDAG_final_of_supportBounds,
+P_ne_NP_final_of_supportBounds,refuted-route,pnp3/Magnification/,refuted,Rule 6,move-and-rename,RefutedRoute_P_ne_NP_final_of_supportBounds,
+P_ne_NP_final_of_magnification,refuted-route,pnp3/Magnification/,refuted,Rule 6,move-and-rename,RefutedRoute_P_ne_NP_final_of_magnification,Depends on MagnificationAssumptions
+NP_not_subset_PpolyDAG_of_supportBounds,refuted-route,pnp3/Magnification/,refuted,Rule 6,move-and-rename,RefutedRoute_NP_not_subset_PpolyDAG_of_supportBounds,
+NP_not_subset_PpolyDAG_of_supportBounds_TM,refuted-route,pnp3/Magnification/,refuted,Rule 6,move-and-rename,RefutedRoute_NP_not_subset_PpolyDAG_of_supportBounds_TM,
+class FinalPayloadProvider,typeclass-channel,pnp3/Magnification/FinalResultAuditRoutes.lean:719,vacuous,Rule 16,move-and-annotate,FinalPayloadProvider,@audit-class refuted-channel
+def hasDefaultAsymptoticFormulaTrackData,fact-channel,pnp3/Magnification/FinalResultAuditRoutes.lean:740,vacuous,Rule 16,move-and-annotate,hasDefaultAsymptoticFormulaTrackData,@audit-class refuted-channel
+def hasDefaultFormulaSupportRestrictionBoundsPartial,fact-channel,pnp3/Magnification/FinalResultAuditRoutes.lean,vacuous,Rule 16,move-and-annotate,hasDefaultFormulaSupportRestrictionBoundsPartial,@audit-class refuted-channel
+FormulaSupportRestrictionBoundsPartial,refuted-predicate,pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean:280,refuted,Rule 6,centralize,FormulaSupportRestrictionBoundsPartial,Move to pnp3/RefutedPredicates/SupportBoundsPartial.lean
+FormulaSupportBoundsFromMultiSwitchingContract,refuted-predicate,pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean:315,refuted,Rule 6,centralize,FormulaSupportBoundsFromMultiSwitchingContract,Move to pnp3/RefutedPredicates/MultiSwitchingContract.lean
+MagnificationAssumptions,refuted-predicate,pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean:333,refuted,Rule 6,centralize,MagnificationAssumptions,Move to pnp3/RefutedPredicates/MagnificationAssumptions.lean
+FormulaSupportBoundsPartial_fromPipeline,refuted-predicate,pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean:401,refuted,Rule 6,centralize,FormulaSupportBoundsPartial_fromPipeline,Move to pnp3/RefutedPredicates/PipelineRoutes.lean
+MagnificationAssumptions_fromPipeline,refuted-predicate,pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean:426,refuted,Rule 6,centralize,MagnificationAssumptions_fromPipeline,Move to pnp3/RefutedPredicates/PipelineRoutes.lean
+fixedParams_and_uniformProvenance,refuted-predicate,pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean:532,refuted,Rule 6,centralize,fixedParams_and_uniformProvenance,Move to pnp3/RefutedPredicates/UniformProvenanceLeak.lean
+Bridge_to_Magnification_Partial,conditional-suspicious,pnp3/Magnification/Bridge_to_Magnification_Partial.lean,non-canonical,needs_review,reclassify-in-PR8,,
+AsymptoticDAGCollapse,conditional-collapse,pnp3/Magnification/AsymptoticDAGCollapse.lean,non-canonical,Rule 8,reclassify-in-PR8,,Collapse consequence not contradiction
+AsymptoticFormulaCollapse,conditional-collapse,pnp3/Magnification/AsymptoticFormulaCollapse.lean,non-canonical,Rule 8,reclassify-in-PR8,,
+ComplexityInterfaces (semantic bridges),semantic-conditional,pnp3/Complexity/Interfaces.lean,trust-root,,frozen-target-surface,,9 conditional bridges; verify against FrozenSpec
+AsymptoticPayloadProvider,provider-class,pnp3/Magnification/,non-canonical,Rule 16,annotate-in-PR6,,
+FormulaCertificateProviderPartial,provider-class,pnp3/Magnification/,non-canonical,Rule 16,annotate-in-PR6,,
+FormulaSemanticMultiSwitchingProvider,provider-class,pnp3/Magnification/,non-canonical,Rule 16,annotate-in-PR6,,
+AC0FamilyWitnessProvider,provider-class,pnp3/ThirdPartyFacts/,non-canonical,Rule 16,annotate-in-PR6,,
+LocalCircuitFamilyWitnessProvider,provider-class,pnp3/ThirdPartyFacts/,non-canonical,Rule 16,annotate-in-PR6,,
+AC0MultiSwitchingWitnessProvider,provider-class,pnp3/ThirdPartyFacts/,non-canonical,Rule 16,annotate-in-PR6,,

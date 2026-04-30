@@ -1,0 +1,148 @@
+# Frozen research target — Research Governance v0.1
+#
+# This file is the machine-readable companion to RESEARCH_CONSTITUTION.md.
+# It is consumed by the verifier (planned), the doc-honesty linter (planned),
+# and the candidate-intake checks.
+#
+# Versioning: bump [meta].spec_version on any change. The verifier records
+# which spec_version was in force at the time of a candidate's verification.
+
+[meta]
+spec_version    = "0.1.0"
+constitution    = "RESEARCH_CONSTITUTION.md"
+status          = "frozen"
+last_reviewed   = "2026-04-30"
+
+[target]
+# The honest target: a `ResearchGapWitness` value whose `dagSeparation`
+# field is `NP_not_subset_PpolyDAG`. The repository ends when this is
+# inhabited without refuted-route hypotheses.
+name            = "ResearchGapWitness"
+required_field  = "dagSeparation"
+required_type   = "ComplexityInterfaces.NP_not_subset_PpolyDAG"
+defined_in      = "pnp3/Magnification/UnconditionalResearchGap.lean"
+
+[final]
+# The closed term that, when it exists, satisfies the project goal. Until
+# it exists no document may claim unconditional P != NP (see Rule 1).
+name                    = "P_ne_NP_unconditional"
+type                    = "ComplexityInterfaces.P_ne_NP"
+allowed_args            = 0
+allowed_implicit_args   = "whitelist-only"  # see spec/implicit_assumption_channels.md
+phantom_axiom_allowed   = false
+opaque_allowed          = false
+noncomputable_allowed   = false
+
+[axioms]
+# Allowed axioms in the dependency closure of `P_ne_NP_unconditional`.
+# Anything else triggers verifier rejection.
+allowed = ["Classical.choice", "propext", "Quot.sound"]
+
+[source_theorem_size]
+# Rule 4 limits. Counted using spec/source_theorem_size_policy.md.
+K_stmt = 40
+K_exp  = 200
+
+[human_review]
+candidate_queue_limit       = 3
+candidate_sla_days          = 14
+foundational_queue_separate = true
+
+[frozen_identifiers]
+# Rule 0. These objects are part of the trust root. A Candidate PR may not
+# redefine them; only a Foundational PR may, with a version bump.
+items = [
+  "ComplexityInterfaces.P",
+  "ComplexityInterfaces.NP",
+  "ComplexityInterfaces.PpolyDAG",
+  "ComplexityInterfaces.PpolyFormula",
+  "ComplexityInterfaces.NP_not_subset_PpolyDAG",
+  "ComplexityInterfaces.P_ne_NP",
+  "ResearchGapTarget",
+  "ResearchGapWitness",
+  "ResearchGapWitness.dagSeparation",
+  "FormulaCircuit.size",
+  "DagCircuit.size",
+  "SAT.encoding",
+  "DAG.encoding",
+  "decides",
+  "recognizes",
+]
+
+[frozen_files]
+# Files the verifier hashes and pins. A change to any of these by a
+# Candidate or governance PR is auto-rejected; only a Foundational PR may
+# touch them.
+items = [
+  "pnp3/Complexity/Interfaces.lean",
+  "pnp3/Magnification/UnconditionalResearchGap.lean",
+  "pnp3/Spec/FrozenSpec.lean",                     # planned, not yet present
+]
+
+[refuted_predicates]
+# Rule 6. These are formally proved `→ False` somewhere in the repository.
+# Any endpoint that imports them transitively must live under one of
+# `[refuted_routes].allowed_dirs` and be renamed `RefutedRoute_*`,
+# `Vacuous_*`, or `AuditOnly_*`.
+items = [
+  "FormulaSupportRestrictionBoundsPartial",
+  "FormulaSupportBoundsFromMultiSwitchingContract",
+  "MagnificationAssumptions",
+  "FormulaSupportBoundsPartial_fromPipeline",
+  "MagnificationAssumptions_fromPipeline",
+  "fixedParams_and_uniformProvenance",  # the `fixedParams ∧ uniformProvenance` route
+]
+falsifiability_probe = "pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean"
+
+[refuted_routes]
+allowed_dirs = [
+  "pnp3/RefutedPredicates/",          # planned, not yet present
+  "pnp3/Magnification/AuditRoutes/",  # planned, not yet present
+  "pnp3/Tests/",
+  "pnp3/Barrier/",
+  "pnp3/Docs/",
+]
+
+[hidden_payload_channels]
+# Rule 16 detection patterns. The verifier rejects candidates whose files
+# match any of these in candidate-local code.
+forbidden_keywords = [
+  "FinalPayloadProvider",
+  "AsymptoticPayloadProvider",
+  "FormulaCertificateProviderPartial",
+  "FormulaSemanticMultiSwitchingProvider",
+  "AC0FamilyWitnessProvider",
+  "LocalCircuitFamilyWitnessProvider",
+  "AC0MultiSwitchingWitnessProvider",
+  "ResearchGapProvider",
+  "default_instance",
+]
+forbidden_decls = [
+  "class",
+  "instance",
+  "attribute [instance]",
+  "opaque",
+]
+suspicious_noncomputable_substrings = [
+  "Provider", "Default", "Payload", "Witness", "Source", "Gap",
+]
+
+[doc_honesty]
+# Phrases that, if found in any tracked Markdown/LaTeX file, require Rule 1
+# to be satisfied. See PR 1 in RESEARCH_CONSTITUTION.md.
+forbidden_unless_final_term_exists = [
+  "unconditional P != NP",
+  "unconditional P ≠ NP",
+  "we prove unconditional",
+  "complete proof of P vs NP",
+  "P≠NP solved",
+  "P!=NP solved",
+]
+final_term_locator = "P_ne_NP_unconditional"
+
+[scopes]
+# PR scope tags. Mixing `foundational` with `candidate` is auto-rejected.
+allowed = ["governance", "cleanup", "foundational", "verifier", "candidate", "docs"]
+mutually_exclusive_pairs = [
+  ["foundational", "candidate"],
+]

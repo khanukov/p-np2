@@ -1,0 +1,49 @@
+# Known guards registry — Research Governance v0.1
+#
+# A "known guard" is a structural condition that is already understood to
+# carry no new mathematical content for the route at hand. The FixedParams
+# Probe (see FixedParams_Probe.md) classifies a non-trivial provenance Π
+# as Outcome B ("non-dead but uninteresting") only by reducing Π to a
+# combination of guards that appear in this registry.
+#
+# The registry is intentionally empty on day 0. Adding an entry is a
+# Foundational PR (Rule 0): it admits that a particular structural pattern
+# is *known* and routes through it are *known to lack new content*.
+#
+# Format per entry:
+#
+# [guards.<short_name>]
+# formal_name = "<fully qualified Lean name or '∅' if not yet formalized>"
+# file        = "<path:line of the formal artifact, or '∅'>"
+# status      = "accepted" | "informal"
+# audit       = "<one-paragraph audit explanation>"
+# added_in    = "<spec version>"
+# rationale   = "<why it is no longer counted as new content>"
+#
+# Outcome B in FixedParams_Probe.md may reference only guards whose
+# `status = "accepted"`.
+
+[meta]
+spec_version    = "0.1.0"
+status          = "frozen"
+last_reviewed   = "2026-04-30"
+
+# --- No accepted guards yet. Examples below are placeholders showing the
+# --- intended shape; they are commented out and do not constitute admitted
+# --- guards.
+
+# [guards.HardwiringGuard]
+# formal_name = "Pnp3.Tests.FormulaSupportBoundsFalsifiabilityProbe.fixedSlice_gapPartialMCSP_in_PpolyFormula"
+# file        = "pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean:218"
+# status      = "informal"
+# audit       = "The truth-table hardwiring construction (Probe 2 in the falsifiability audit) shows that arbitrary PpolyFormula witnesses can be reconstructed by per-language families. This is the structural pattern that defeats overbroad uniform provenance combined with fixed-params support bounds."
+# added_in    = "0.1.0"
+# rationale   = "Recognized in the FixedParams Probe as the obstruction that any 'route is dead' Outcome A reduction must point to."
+
+# [guards.ProvenanceFilter_v1]
+# formal_name = "∅"
+# file        = "∅"
+# status      = "informal"
+# audit       = "Reserved name for a planned filter that prunes truth-table-like AC0 family witnesses. Intended Outcome-B partner of HardwiringGuard. Not yet formalized."
+# added_in    = "0.1.0"
+# rationale   = "Declared so that Outcome B references stay stable across spec versions."

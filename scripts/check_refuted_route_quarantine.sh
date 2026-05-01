@@ -126,6 +126,49 @@ for suffix in "${suffix_patterns[@]}"; do
   done <<< "${hits}"
 done
 
+# PR 3b: bare `_final` and `_final_fromPipeline` package-based endpoints
+# whose head is `NP_not_subset_PpolyFormula` or `NP_not_subset_PpolyReal`
+# are direct-refuted (premise: `MagnificationAssumptions[_fromPipeline]`).
+# `NP_not_subset_PpolyDAG_final` is the canonical research-gap bridge and
+# is intentionally NOT covered by this restricted head set.
+package_heads='NP_not_subset_(PpolyFormula|PpolyReal)'
+package_suffixes=(
+  '_final'
+  '_final_fromPipeline'
+)
+
+for psuffix in "${package_suffixes[@]}"; do
+  pattern="^[[:space:]]*theorem[[:space:]]+${package_heads}${psuffix}\\b"
+  hits="$(rg -n --no-heading --color=never \
+            -g '*.lean' "${excludes[@]}" \
+            -- "${pattern}" "${search_paths[@]}" 2>/dev/null || true)"
+  if [[ -z "${hits}" ]]; then
+    continue
+  fi
+  while IFS= read -r line; do
+    content="${line#*:*:}"
+    ident="$(echo "${content}" \
+              | sed -nE 's/^[[:space:]]*theorem[[:space:]]+([A-Za-z0-9_]+).*/\1/p')"
+    if [[ -z "${ident}" ]]; then
+      continue
+    fi
+    # Only flag exact-match suffixes (so `_final_with_supportBounds`
+    # doesn't double-count here — it's caught by the `_final_*` suffix
+    # patterns above).
+    if [[ "${ident}" != *"${psuffix}" ]]; then
+      continue
+    fi
+    if [[ "${ident}" =~ ^(${allowed_prefixes}) ]]; then
+      continue
+    fi
+    echo "[refuted-route] FAIL: unmarked direct-refuted package final: ${ident}"
+    echo "  ${line}"
+    echo "  Suffix: ${psuffix} (package-based, premise MagnificationAssumptions[_fromPipeline])"
+    echo "  Required prefix: RefutedRoute_, Vacuous_, or AuditOnly_."
+    fail=1
+  done <<< "${hits}"
+done
+
 # Bare-form `_of_supportBounds` (no `_final_` infix), restricted to
 # final-looking heads.  The match excludes `_of_supportBounds_TM` (a
 # distinct suffix above) and `_final_of_supportBounds` (handled above).

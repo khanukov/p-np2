@@ -220,15 +220,21 @@ if [[ "${UNCONDITIONAL:-0}" != "1" ]]; then
     exit 1
   fi
 
-  if ! rg -n -U "theorem[[:space:]]+NP_not_subset_PpolyFormula_final\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
+  # Research Governance v0.1, PR 3b: bare `NP_not_subset_PpolyFormula_final`
+  # and `NP_not_subset_PpolyReal_final` (with `MagnificationAssumptions`
+  # premise) are direct-refuted finals and have been renamed to
+  # `RefutedRoute_*`.  We require the renamed forms to exist for audit
+  # continuity.  Reintroduction of the unprefixed names is blocked by
+  # `scripts/check_refuted_route_quarantine.sh` (Step 6/10).
+  if ! rg -n -U "theorem[[:space:]]+RefutedRoute_NP_not_subset_PpolyFormula_final\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
       "${final_result_surface_files[@]}" >/tmp/pnp3_formula_final_pkg_sig_hits.log; then
-    echo "Detected non-package signature for NP_not_subset_PpolyFormula_final (expected hMag : MagnificationAssumptions)."
+    echo "Detected non-package signature for RefutedRoute_NP_not_subset_PpolyFormula_final (expected hMag : MagnificationAssumptions)."
     exit 1
   fi
 
-  if ! rg -n -U "theorem[[:space:]]+NP_not_subset_PpolyReal_final\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
+  if ! rg -n -U "theorem[[:space:]]+RefutedRoute_NP_not_subset_PpolyReal_final\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
       "${final_result_surface_files[@]}" >/tmp/pnp3_real_final_pkg_sig_hits.log; then
-    echo "Detected non-package signature for NP_not_subset_PpolyReal_final (expected hMag : MagnificationAssumptions)."
+    echo "Detected non-package signature for RefutedRoute_NP_not_subset_PpolyReal_final (expected hMag : MagnificationAssumptions)."
     exit 1
   fi
 
@@ -251,17 +257,25 @@ if [[ "${UNCONDITIONAL:-0}" != "1" ]]; then
   fi
 fi
 
-if rg -n -U "theorem[[:space:]]+NP_not_subset_PpolyFormula_final\\n[[:space:]]*\\(hDefaultProvider[[:space:]]*:[[:space:]]*hasDefaultStructuredLocalityProviderPartial\\)" \
-    "${final_result_surface_files[@]}" >/tmp/pnp3_formula_final_default_sig_hits.log; then
-  echo "Detected forbidden default-provider signature for NP_not_subset_PpolyFormula_final:"
-  cat /tmp/pnp3_formula_final_default_sig_hits.log
+# Research Governance v0.1, PR 3b: forbid resurrecting the bare
+# `NP_not_subset_PpolyFormula_final` / `NP_not_subset_PpolyReal_final`
+# names in any form (including the legacy `hDefaultProvider` shape).
+# The renamed `RefutedRoute_*` forms keep their `hMag` package signature
+# above; `check_refuted_route_quarantine.sh` (Step 6/10) blocks the
+# reverse rename.
+if rg -n -U "theorem[[:space:]]+NP_not_subset_PpolyFormula_final\\b" \
+    "${final_result_surface_files[@]}" >/tmp/pnp3_formula_final_unmarked_hits.log; then
+  echo "Detected forbidden unprefixed bare _final endpoint for NP_not_subset_PpolyFormula_final."
+  echo "Use RefutedRoute_NP_not_subset_PpolyFormula_final (or _fromPipeline) per PR 3b:"
+  cat /tmp/pnp3_formula_final_unmarked_hits.log
   exit 1
 fi
 
-if rg -n -U "theorem[[:space:]]+NP_not_subset_PpolyReal_final\\n[[:space:]]*\\(hDefaultProvider[[:space:]]*:[[:space:]]*hasDefaultStructuredLocalityProviderPartial\\)" \
-    "${final_result_surface_files[@]}" >/tmp/pnp3_real_final_default_sig_hits.log; then
-  echo "Detected forbidden default-provider signature for NP_not_subset_PpolyReal_final:"
-  cat /tmp/pnp3_real_final_default_sig_hits.log
+if rg -n -U "theorem[[:space:]]+NP_not_subset_PpolyReal_final\\b" \
+    "${final_result_surface_files[@]}" >/tmp/pnp3_real_final_unmarked_hits.log; then
+  echo "Detected forbidden unprefixed bare _final endpoint for NP_not_subset_PpolyReal_final."
+  echo "Use RefutedRoute_NP_not_subset_PpolyReal_final (or _fromPipeline) per PR 3b:"
+  cat /tmp/pnp3_real_final_unmarked_hits.log
   exit 1
 fi
 

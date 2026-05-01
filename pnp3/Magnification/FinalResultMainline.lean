@@ -696,7 +696,7 @@ Until the migration completes, callers should prefer the underlying
 `NP_not_subset_PpolyFormula_final_with_provider` directly, making
 the ex-falso-vs-legitimate distinction explicit at the call site.
 -/
-theorem NP_not_subset_PpolyFormula_final
+theorem RefutedRoute_NP_not_subset_PpolyFormula_final
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula := by
@@ -721,7 +721,7 @@ ingredients (semProv + boundsP) without the inconsistent packaging.
 This is the **recommended** entrypoint for new downstream callers:
 the conclusion `NP_not_subset_PpolyFormula` is genuinely derived, not
 ex-falso. -/
-theorem NP_not_subset_PpolyFormula_final_fromPipeline
+theorem RefutedRoute_NP_not_subset_PpolyFormula_final_fromPipeline
   (hMagP : MagnificationAssumptions_fromPipeline)
   (n : Nat) (hn : hMagP.antiChecker.asymptotic.N0 ≤ n) :
   ComplexityInterfaces.NP_not_subset_PpolyFormula :=
@@ -837,7 +837,7 @@ See formula-side counterpart `NP_not_subset_PpolyFormula_final`: the
 The conclusion is ex-falso and does not represent genuine progress
 toward unconditional `NP ⊄ P/poly_real`.
 -/
-theorem NP_not_subset_PpolyReal_final
+theorem RefutedRoute_NP_not_subset_PpolyReal_final
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n) :
   ComplexityInterfaces.NP_not_subset_PpolyReal := by
@@ -853,7 +853,7 @@ theorem NP_not_subset_PpolyReal_final
 for `NP_not_subset_PpolyReal_final`.  Takes the pipeline-aware
 `MagnificationAssumptions_fromPipeline` package; conclusion is
 genuinely derived, not ex-falso. -/
-theorem NP_not_subset_PpolyReal_final_fromPipeline
+theorem RefutedRoute_NP_not_subset_PpolyReal_final_fromPipeline
   (hMagP : MagnificationAssumptions_fromPipeline)
   (n : Nat) (hn : hMagP.antiChecker.asymptotic.N0 ≤ n) :
   ComplexityInterfaces.NP_not_subset_PpolyReal :=

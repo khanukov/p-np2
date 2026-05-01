@@ -96,22 +96,40 @@ references have been updated.
 
 Total: **19 endpoints renamed.**
 
-Out of PR 3 scope (deferred):
+**PR 3b status: closed.** The bare package-based `_final` endpoints
+have been quarantined:
 
-- The bare `NP_not_subset_PpolyFormula_final` /
-  `NP_not_subset_PpolyReal_final` (and their `_fromPipeline` variants)
-  with `MagnificationAssumptions` / `MagnificationAssumptions_fromPipeline`
-  premise. These are direct-refuted by the same Rule 6 logic, but
-  `scripts/check.sh` currently enforces these *exact* bare names and
-  signatures (see lines 222-233). Renaming them requires also updating
-  the conflicting policy in `scripts/check.sh` and is therefore tracked
-  as **PR 3b: bare _final endpoint quarantine**.
+| File                                                    | Old name                                          |
+| ------------------------------------------------------- | ------------------------------------------------- |
+| `pnp3/Magnification/FinalResultMainline.lean`           | `NP_not_subset_PpolyFormula_final`                |
+| `pnp3/Magnification/FinalResultMainline.lean`           | `NP_not_subset_PpolyFormula_final_fromPipeline`   |
+| `pnp3/Magnification/FinalResultMainline.lean`           | `NP_not_subset_PpolyReal_final`                   |
+| `pnp3/Magnification/FinalResultMainline.lean`           | `NP_not_subset_PpolyReal_final_fromPipeline`      |
+
+Each row's new name has the `RefutedRoute_` prefix. The conflicting
+policy block in `scripts/check.sh` (formerly lines 222-233) now requires
+the renamed `RefutedRoute_*` forms instead of the bare names; the
+default-provider-signature block (formerly lines 254-266) was tightened
+into a positive ban on bare `theorem NP_not_subset_PpolyFormula_final`
+/ `NP_not_subset_PpolyReal_final` declarations in the magnification
+surface. Reintroduction is also blocked by Step 6/10's
+`scripts/check_refuted_route_quarantine.sh` which now recognises
+`_final` and `_final_fromPipeline` as direct-refuted suffixes when the
+head is `NP_not_subset_PpolyFormula` or `NP_not_subset_PpolyReal`.
+The canonical research-gap final `NP_not_subset_PpolyDAG_final` (with
+`gap : ResearchGapWitness` premise) is intentionally outside the
+restricted head set and remains canonical.
+
+Out of PR 3 / PR 3b scope (deferred):
+
 - Helper / intermediate lemmas that consume a refuted predicate but do
   not look like a final endpoint (e.g.
   `dag_stableRestrictionGoal_of_supportBounds`,
   `*_of_supportBounds` wrappers in `LocalityProvider_Partial.lean`).
   These will be addressed in PR 4 (`Centralize refuted predicates under
   pnp3/RefutedPredicates/`).
+- Provider/composite endpoints (`*_with_provider`, `*_fromPipeline`-on-
+  provider, `*_withAntiChecker`, etc.) — separate provider-audit PR.
 
 A regression guard, `scripts/check_refuted_route_quarantine.sh`, is
 wired into `scripts/check.sh` as Step 6/10 to prevent reintroduction of

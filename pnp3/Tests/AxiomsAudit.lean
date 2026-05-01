@@ -24,12 +24,12 @@ open Pnp3.ComplexityInterfaces
 open Pnp3.Magnification
 
 -- Итоговые утверждения (формульная сепарация).
-#print axioms NP_not_subset_PpolyFormula_final
+#print axioms RefutedRoute_NP_not_subset_PpolyFormula_final
 #print axioms NP_not_subset_PpolyFormula_final_with_provider
 #print axioms RefutedRoute_NP_not_subset_PpolyFormula_final_with_supportBounds
 #print axioms RefutedRoute_NP_not_subset_PpolyFormula_final_with_multiswitching
 #print axioms asymptotic_formula_collapse
-#print axioms NP_not_subset_PpolyReal_final
+#print axioms RefutedRoute_NP_not_subset_PpolyReal_final
 #print axioms NP_not_subset_PpolyReal_final_with_provider
 #print axioms RefutedRoute_NP_not_subset_PpolyReal_final_with_supportBounds
 #print axioms RefutedRoute_NP_not_subset_PpolyReal_final_with_multiswitching

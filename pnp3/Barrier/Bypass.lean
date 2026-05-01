@@ -42,7 +42,7 @@ theorem NP_not_subset_PpolyFormula_final_with_barriers
     (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
     (hBarriers : BarrierBypassPackage) :
     NP_not_subset_PpolyFormula ∧ BarrierBypassPackage := by
-  refine ⟨NP_not_subset_PpolyFormula_final hMag n hn, hBarriers⟩
+  refine ⟨RefutedRoute_NP_not_subset_PpolyFormula_final hMag n hn, hBarriers⟩
 
 /--
 Final `P ≠ NP` wrapper with explicit barrier obligations.

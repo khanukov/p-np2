@@ -14,11 +14,11 @@ jobs:
         with:
           default-toolchain: leanprover/lean4:v4.22.0-rc2
       - name: Install ripgrep
-        run: sudo apt-get update && sudo apt-get install -y ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep jq
       - name: Get mathlib cache
         run: lake exe cache get
       - name: Build project
-        run: lake build
+        run: lake build PnP3 Pnp4
       - name: Run smoke test
         run: lake env lean --run scripts/smoke.lean
       - name: Run tests

@@ -9,6 +9,28 @@ rejection is ambiguous"). The driver
 `scripts/verify_candidate.sh` are also live. The smoke driver is wired
 into `scripts/check.sh` as a new step.
 
+**PR 15.1 deferred-probe status (re-confirmed):**
+
+Three probes are explicitly deferred and remain TODO:
+
+| Deferred probe                              | Target PR                              |
+| ------------------------------------------- | -------------------------------------- |
+| `rejected_arbitrary_witness`                | PR 6 / PR 8 — Rule 5 enforcement       |
+| `rejected_goal_drift`                       | follow-up — partially testable via PR 11 TargetLock guard but the candidate-local "redefine NP_not_subset_PpolyDAG_ref" shape requires its own dedicated check |
+| `rejected_hidden_source_theorem_payload`    | PR 6 / PR 8 — Rule 16 hidden payload at SourceTheorem level |
+
+These remain in `bench/SmokeProbe/expected_results.json` under the
+`deferred_probes` array. PR 15.1 chose NOT to ship a partial version
+of `rejected_goal_drift` because the only currently-actionable shape
+(local mutation of `pnp3/Magnification/UnconditionalResearchGap.lean`)
+would require staging a destructive edit to a trust-root file, which
+contradicts Rule 0 even temporarily.
+
+The PR 15.1 verifier `--full` mode (Item 3 of the hardening list) does
+invoke `scripts/check_target_lock.sh`, so any Lean-side drift to the
+ResearchGapWitness shape IS caught at verifier time — just not via a
+dedicated smoke probe.
+
 The probes serve a single purpose: to demonstrate that the
 currently-shipped guards reject every kind of move that the Research
 Constitution forbids. This is not a benchmark of *successful*

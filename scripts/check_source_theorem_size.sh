@@ -91,6 +91,26 @@ if [[ -z "${source_theorem}" ]]; then
 fi
 
 # ---------------------------------------------------------------------------
+# PR 15.1 — read [source].bridge from manifest.toml.
+# ---------------------------------------------------------------------------
+
+source_bridge="$(awk '
+  /^\[/ { in_source = ($0 ~ /^\[source\]/) ? 1 : 0; next }
+  in_source && /^[[:space:]]*bridge[[:space:]]*=/ {
+    sub(/^[^"]*"/, "")
+    sub(/".*$/, "")
+    print
+    exit
+  }
+' "${manifest_file}")"
+
+if [[ -z "${source_bridge}" ]]; then
+  echo "[size] FAIL: manifest.toml has no [source].bridge entry"
+  echo "status=missing-bridge"
+  exit 1
+fi
+
+# ---------------------------------------------------------------------------
 # Strip Lean comments and produce a line-aligned view of proof.lean.
 # ---------------------------------------------------------------------------
 #
@@ -201,6 +221,51 @@ if [[ "${k_stmt_actual}" == "-1" || -z "${k_stmt_actual}" ]]; then
   echo "[size] FAIL: source theorem '${source_theorem}' not found in ${proof_file}"
   echo "status=missing-source-theorem"
   exit 1
+fi
+
+# ---------------------------------------------------------------------------
+# PR 15.1 — bridge-presence check.
+# ---------------------------------------------------------------------------
+#
+# `manifest.toml::[source].bridge` must correspond to a top-level
+# declaration in `proof.lean`.  For non-template candidates the bridge
+# must additionally mention `ResearchGapWitness` in its signature
+# (otherwise the candidate's `gap_from_<id>` could trivially "succeed"
+# by returning `True`, which is exactly what the template does).
+#
+# The template (`pnp3/Candidates/_template/`) is exempt from the
+# `ResearchGapWitness` signature check by design: its bridge has type
+# `True → True` so that the template never silently inhabits the
+# trust-root structure.
+
+bridge_decl_re="^[[:space:]]*(theorem|def|noncomputable[[:space:]]+def|abbrev)[[:space:]]+${source_bridge}([[:space:]:({]|$)"
+bridge_match="$(grep -nE "${bridge_decl_re}" "${stripped}" | head -1 || true)"
+if [[ -z "${bridge_match}" ]]; then
+  echo "[size] FAIL: bridge '${source_bridge}' not found in ${proof_file}"
+  echo "status=missing-bridge"
+  exit 1
+fi
+
+is_template=0
+case "${candidate_dir%/}" in
+  *_template|*_template/) is_template=1 ;;
+esac
+
+if [[ "${is_template}" -eq 0 ]]; then
+  # Real candidate: bridge must mention ResearchGapWitness somewhere
+  # in the same statement block.  We grep the whole `proof.lean` for
+  # the substring within 30 lines of the bridge declaration.
+  bridge_lineno="$(echo "${bridge_match}" | cut -d: -f1)"
+  bridge_end=$(( bridge_lineno + 30 ))
+  if ! awk -v start="${bridge_lineno}" -v stop="${bridge_end}" \
+          'NR >= start && NR <= stop' "${stripped}" \
+       | grep -q 'ResearchGapWitness'; then
+    echo "[size] FAIL: bridge '${source_bridge}' does not mention ResearchGapWitness"
+    echo "[size]       within ${bridge_lineno}..${bridge_end}; non-template candidates"
+    echo "[size]       must target Pnp3.Magnification.ResearchGapWitness."
+    echo "status=bridge-target-wrong"
+    exit 1
+  fi
 fi
 
 # ---------------------------------------------------------------------------

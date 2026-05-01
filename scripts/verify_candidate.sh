@@ -30,13 +30,23 @@
 #
 # Usage:
 #
-#   scripts/verify_candidate.sh [--candidate <dir>] [--json <path>]
+#   scripts/verify_candidate.sh [--candidate <dir>] [--json <path>] [--full]
 #
 #   --candidate <dir>   Optional candidate directory (relative to
 #                       repo root).  Without it, only tree-level
 #                       guards run.
 #   --json <path>       Optional JSON output path.  When given, the
 #                       script writes result.json after the run.
+#   --full              Run the FULL verifier (PR 15.1):
+#                       core guards + target_lock + Rule-16
+#                       candidate-local scan + JSONL validation +
+#                       barrier-certificate queue scan.  Without
+#                       this flag the script runs only the
+#                       candidate-core checks (PR 15 baseline).
+#                       The full mode is what `scripts/check.sh`
+#                       Step 12/16 invokes; standalone use of this
+#                       script outside CI should also pass --full
+#                       to get coverage equivalent to scripts/check.sh.
 
 set -euo pipefail
 
@@ -63,6 +73,7 @@ USAGE
 
 candidate_dir=""
 json_path=""
+full_mode=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --candidate)
@@ -75,6 +86,10 @@ while [[ $# -gt 0 ]]; do
       shift
       [[ $# -gt 0 ]] || { usage >&2; exit 2; }
       json_path="$1"
+      shift
+      ;;
+    --full)
+      full_mode=1
       shift
       ;;
     -h|--help)
@@ -258,6 +273,83 @@ for entry in "${guards[@]}"; do
     record_check "${name}" "PASS"
   fi
 done
+
+# ---------------------------------------------------------------------------
+# (C) Full-mode extras (PR 15.1).
+# ---------------------------------------------------------------------------
+#
+# `--full` adds the global guards that scripts/check.sh wires
+# separately as discrete steps:
+#   - target_lock                     (PR 11)
+#   - candidate_rule16_scan           (PR 15.1)
+#   - barrier_certificate_queue_scan  (PR 12)
+#   - jsonl_validation                (PR 9)
+# It does NOT re-run `lake build`, the smoke driver, or the axiom-
+# surface dump; those remain scripts/check.sh's responsibility.
+
+if [[ "${full_mode}" -eq 1 ]]; then
+  full_guards=(
+    "target_lock:scripts/check_target_lock.sh"
+    "candidate_rule16_scan:scripts/check_candidate_rule16.sh"
+  )
+  for entry in "${full_guards[@]}"; do
+    name="${entry%%:*}"
+    script="${entry##*:}"
+    echo "[verify] running (full): ${name}"
+    if [[ ! -x "${script}" ]]; then
+      echo "[verify]   FAIL: ${script} is not executable"
+      record_check "${name}" "FAIL" "guard not executable"
+      continue
+    fi
+    set +e
+    "${script}" > "/tmp/verify_${name}.log" 2>&1
+    rc=$?
+    set -e
+    if [[ "${rc}" -ne 0 ]]; then
+      echo "[verify]   FAIL: ${name} returned ${rc}"
+      tail -8 "/tmp/verify_${name}.log" | sed 's/^/[verify]     /'
+      record_check "${name}" "FAIL" "returned ${rc}"
+    else
+      echo "[verify]   PASS"
+      record_check "${name}" "PASS"
+    fi
+  done
+
+  # Barrier-certificate queue scan (PR 12).
+  echo "[verify] running (full): barrier_certificate_queue_scan"
+  set +e
+  scripts/check_barrier_certificate.sh --queue \
+    > "/tmp/verify_barrier_certificate_queue_scan.log" 2>&1
+  rc=$?
+  set -e
+  if [[ "${rc}" -ne 0 ]]; then
+    echo "[verify]   FAIL: barrier queue scan returned ${rc}"
+    tail -8 "/tmp/verify_barrier_certificate_queue_scan.log" \
+      | sed 's/^/[verify]     /'
+    record_check "barrier_certificate_queue_scan" "FAIL" \
+                 "returned ${rc} (queue exceeds limit)"
+  else
+    echo "[verify]   PASS"
+    record_check "barrier_certificate_queue_scan" "PASS"
+  fi
+
+  # JSONL validation (PR 9).
+  echo "[verify] running (full): jsonl_validation"
+  set +e
+  python3 scripts/validate_jsonl.py \
+    > "/tmp/verify_jsonl_validation.log" 2>&1
+  rc=$?
+  set -e
+  if [[ "${rc}" -ne 0 ]]; then
+    echo "[verify]   FAIL: JSONL validation returned ${rc}"
+    tail -8 "/tmp/verify_jsonl_validation.log" \
+      | sed 's/^/[verify]     /'
+    record_check "jsonl_validation" "FAIL" "returned ${rc}"
+  else
+    echo "[verify]   PASS"
+    record_check "jsonl_validation" "PASS"
+  fi
+fi
 
 # ---------------------------------------------------------------------------
 # Aggregate verdict.

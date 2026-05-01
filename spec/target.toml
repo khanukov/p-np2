@@ -47,6 +47,22 @@ K_exp  = 200
 candidate_queue_limit       = 3
 candidate_sla_days          = 14
 foundational_queue_separate = true
+# PR 15.1 status:
+#   - candidate_queue_limit  : enforced by
+#                              scripts/check_barrier_certificate.sh --queue
+#                              (Step 9/16 of scripts/check.sh).
+#   - candidate_sla_days     : NOT YET ENFORCED. Requires a
+#                              per-candidate intake timestamp
+#                              that the manifest does not yet
+#                              carry. The scaffolding slots
+#                              exist in pnp3/Candidates/_template/manifest.toml::
+#                              [verifier].spec_version_at_intake /
+#                              attack_suite_version_at_intake.
+#                              SLA expiry will be added after the
+#                              first real candidate enters intake.
+#   - foundational_queue_separate : enforced by convention (PR scope
+#                              labels mutual_exclusive_pairs) rather
+#                              than by an automated guard.
 
 [frozen_identifiers]
 # Rule 0. These objects are part of the trust root. A Candidate PR may not

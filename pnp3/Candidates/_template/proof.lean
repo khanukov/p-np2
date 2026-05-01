@@ -35,17 +35,27 @@ def SourceTheorem_template : Prop := True
 
 /--
 Placeholder bridge.  A real candidate proves a non-trivial implication
-from `SourceTheorem_template` to a `ResearchGapWitness`.  The signature
-must be:
+from `SourceTheorem_template` to a
+`Pnp3.Magnification.ResearchGapWitness`.  The signature for a real
+candidate must be:
 
-    gap_from_<id> :
-      SourceTheorem_<id> →
-      Pnp3.Magnification.ResearchGapWitness
+    def gap_from_<id> :
+      SourceTheorem_<id> → Pnp3.Magnification.ResearchGapWitness
 
-For the template we just record `True → True`; this is **not** a
-candidate, only a shape skeleton.
+For the template we record a no-op of type `True → True`; this is
+**not** a candidate, only a shape skeleton.  The template's bridge
+is intentionally NOT typed as `→ ResearchGapWitness` because that
+would silently inhabit the trust-root structure.
+
+Real candidates MUST adjust the return type to
+`Pnp3.Magnification.ResearchGapWitness` and provide a real proof.
+
+The verifier's bridge-presence check (PR 15.1) consults
+`manifest.toml::[source].bridge` and asserts a same-named declaration
+exists in `proof.lean`; for non-template candidates it additionally
+asserts the declaration's signature mentions `ResearchGapWitness`.
 -/
-example (h : SourceTheorem_template) : True := h
+def gap_from_template (h : SourceTheorem_template) : True := h
 
 end Template
 end Candidates

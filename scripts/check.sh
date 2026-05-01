@@ -11,7 +11,7 @@ if ! command -v rg >/dev/null 2>&1; then
 fi
 
 build_log="/tmp/pnp3_full_build.log"
-echo "[check] Step 1/13: full Lean build"
+echo "[check] Step 1/14: full Lean build"
 # Both libs (`PnP3` and `Pnp4`) must be built here: Step 7/9 inspects
 # pnp4's axiom-surface dump, which only appears in the build log when
 # Pnp4 is actually compiled.  Plain `lake build` only builds the
@@ -21,10 +21,10 @@ if ! lake build PnP3 Pnp4 2>&1 | tee "${build_log}"; then
   exit 1
 fi
 
-echo "[check] Step 2/13: smoke execution"
+echo "[check] Step 2/14: smoke execution"
 lake env lean --run scripts/smoke.lean
 
-echo "[check] Step 3/13: source hygiene scan (axiom/sorry/native_decide/interface policy)"
+echo "[check] Step 3/14: source hygiene scan (axiom/sorry/native_decide/interface policy)"
 expected_axioms=0
 actual_axioms_pnp3=$( (rg "^[[:space:]]*axiom " -g"*.lean" pnp3 || true) | wc -l | tr -d ' ' )
 if [[ "${actual_axioms_pnp3}" -ne "${expected_axioms}" ]]; then
@@ -436,25 +436,28 @@ fi
 
 echo "Agent policy docs OK (pnp4 P-vs-NP mainline + restricted side-track boundary enforced)."
 
-echo "[check] Step 4/13: doc-honesty linter (Research Governance v0.1, Rule 1)"
+echo "[check] Step 4/14: doc-honesty linter (Research Governance v0.1, Rule 1)"
 "${ROOT_DIR}/scripts/check_doc_honesty.sh"
 
-echo "[check] Step 5/13: typeclass-payload quarantine (Research Governance v0.1, Rule 16)"
+echo "[check] Step 5/14: typeclass-payload quarantine (Research Governance v0.1, Rule 16)"
 "${ROOT_DIR}/scripts/check_typeclass_payload_quarantine.sh"
 
-echo "[check] Step 6/13: refuted-route quarantine (Research Governance v0.1, Rule 6)"
+echo "[check] Step 6/14: refuted-route quarantine (Research Governance v0.1, Rule 6)"
 "${ROOT_DIR}/scripts/check_refuted_route_quarantine.sh"
 
-echo "[check] Step 7/13: refuted-predicate allowed-use guard (Research Governance v0.1, PR 4a)"
+echo "[check] Step 7/14: refuted-predicate allowed-use guard (Research Governance v0.1, PR 4a)"
 "${ROOT_DIR}/scripts/check_refuted_predicate_usage.sh"
 
-echo "[check] Step 8/13: smoke probes (Research Governance v0.1, PR 5)"
+echo "[check] Step 8/14: target-lock guard (Research Governance v0.1, PR 11)"
+"${ROOT_DIR}/scripts/check_target_lock.sh"
+
+echo "[check] Step 9/14: smoke probes (Research Governance v0.1, PR 5)"
 "${ROOT_DIR}/scripts/run_smoke_probes.sh"
 
-echo "[check] Step 9/13: NoGoLog + survivor history validation (Research Governance v0.1, PR 9)"
+echo "[check] Step 10/14: NoGoLog + survivor history validation (Research Governance v0.1, PR 9)"
 python3 "${ROOT_DIR}/scripts/validate_jsonl.py"
 
-echo "[check] Step 10/13: pnp3 explicit theorem-axiom surface dump"
+echo "[check] Step 11/14: pnp3 explicit theorem-axiom surface dump"
 axiom_surface_log="/tmp/pnp3_axiom_surface.log"
 if ! rg -n -U "pnp3/Tests/AxiomsAudit\\.lean:[^\\n]*depends on axioms:\\s*\\[[^\\]]*\\]" \
     "${build_log}" >"${axiom_surface_log}"; then
@@ -479,7 +482,7 @@ echo "  propext occurrences: ${propext_count}"
 echo "  Classical.choice occurrences: ${classical_count}"
 echo "  Quot.sound occurrences: ${quot_count}"
 
-echo "[check] Step 11/13: pnp4 explicit theorem-axiom surface dump"
+echo "[check] Step 12/14: pnp4 explicit theorem-axiom surface dump"
 pnp4_axiom_surface_log="/tmp/pnp4_axiom_surface.log"
 if ! rg -n -U "pnp4/Pnp4/Tests/AxiomsAudit\\.lean:[^\\n]*depends on axioms:\\s*\\[[^\\]]*\\]" \
     "${build_log}" >"${pnp4_axiom_surface_log}"; then
@@ -500,13 +503,13 @@ echo "  propext occurrences: ${pnp4_propext_count}"
 echo "  Classical.choice occurrences: ${pnp4_classical_count}"
 echo "  Quot.sound occurrences: ${pnp4_quot_count}"
 
-echo "[check] Step 12/13: run barrier audit module"
+echo "[check] Step 13/14: run barrier audit module"
 if ! rg -n "pnp3/Tests/BarrierAudit\\.lean" "${build_log}" >/tmp/pnp3_barrier_audit.log; then
   # Keep this explicit so regressions in barrier-facing final statements are visible.
   lake env lean pnp3/Tests/BarrierAudit.lean >/tmp/pnp3_barrier_audit.log 2>&1
 fi
 
-echo "[check] Step 13/13: unconditional witness gate (optional)"
+echo "[check] Step 14/14: unconditional witness gate (optional)"
 if [[ "${UNCONDITIONAL:-0}" == "1" ]]; then
   echo "Checking unconditional witness surface..."
   # Legacy witness surface markers (historical blockers).

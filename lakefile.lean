@@ -146,7 +146,9 @@ lean_lib PnP3 where
     Glob.one `Tests.WeakRouteSurfaceTests,
     Glob.one `Tests.FormulaSupportBoundsFalsifiabilityProbe,
     Glob.one `Tests.SmokeTests,
-    Glob.one `Tests.UnitTests
+    Glob.one `Tests.UnitTests,
+    -- Research Governance v0.1, PR 11: target-lock compile-time probe.
+    Glob.one `Tests.TargetLockProbe
   ]
 
 lean_lib Pnp4 where

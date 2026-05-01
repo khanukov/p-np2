@@ -96,6 +96,40 @@ if [[ -n "${candidate_dir}" ]]; then
     else
       echo "[verify]   PASS (all 5 required files present)"
 
+      # PR 12: barrier-certificate per-candidate check (file shape +
+      # required [barriers] keys). Script exits 0 for both `ok` and
+      # `human-review-required`; we capture its status output below.
+      echo "[verify] running: barrier_certificate"
+      if [[ ! -x "scripts/check_barrier_certificate.sh" ]]; then
+        echo "[verify]   FAIL: scripts/check_barrier_certificate.sh is not executable"
+        reasons+=("barrier_certificate: guard not executable")
+        overall_status="FAIL"
+      else
+        set +e
+        scripts/check_barrier_certificate.sh "${candidate_dir}" \
+          > "/tmp/verify_barrier_certificate.log" 2>&1
+        bc_rc=$?
+        set -e
+        bc_status="$(awk -F= '/^\[barrier\] status=/ { print $2 }' \
+                          /tmp/verify_barrier_certificate.log)"
+        bc_status="${bc_status:-unknown}"
+        if [[ "${bc_rc}" -ne 0 ]]; then
+          echo "[verify]   FAIL: barrier checker returned ${bc_rc}"
+          tail -8 /tmp/verify_barrier_certificate.log \
+            | sed 's/^/[verify]     /'
+          reasons+=("barrier_certificate: returned ${bc_rc} (status=${bc_status})")
+          overall_status="FAIL"
+        elif [[ "${bc_status}" == "human-review-required" ]]; then
+          echo "[verify]   HUMAN_REVIEW_REQUIRED (barrier certificate)"
+          reasons+=("barrier_certificate: human-review-required (Rule 7)")
+          if [[ "${overall_status}" == "PASS_SHAPE_ONLY" ]]; then
+            overall_status="HUMAN_REVIEW_REQUIRED"
+          fi
+        else
+          echo "[verify]   PASS (barrier status=${bc_status})"
+        fi
+      fi
+
       # PR 8: source theorem size policy (Rule 4). The script exits 0
       # for both `ok` and `human-review-required`; we capture its
       # status output and surface `human-review-required` separately.

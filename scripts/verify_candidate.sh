@@ -66,7 +66,7 @@ reasons=()
 overall_status="PASS_SHAPE_ONLY"
 
 # ---------------------------------------------------------------------------
-# (A) Optional candidate-shape check (PR 7).
+# (A) Optional candidate-shape check (PR 7) + size policy check (PR 8).
 # ---------------------------------------------------------------------------
 
 if [[ -n "${candidate_dir}" ]]; then
@@ -95,6 +95,45 @@ if [[ -n "${candidate_dir}" ]]; then
       overall_status="FAIL"
     else
       echo "[verify]   PASS (all 5 required files present)"
+
+      # PR 8: source theorem size policy (Rule 4). The script exits 0
+      # for both `ok` and `human-review-required`; we capture its
+      # status output and surface `human-review-required` separately.
+      echo "[verify] running: source_theorem_size"
+      if [[ ! -x "scripts/check_source_theorem_size.sh" ]]; then
+        echo "[verify]   FAIL: scripts/check_source_theorem_size.sh is not executable"
+        reasons+=("source_theorem_size: guard not executable")
+        overall_status="FAIL"
+      else
+        set +e
+        scripts/check_source_theorem_size.sh "${candidate_dir}" \
+          > "/tmp/verify_source_theorem_size.log" 2>&1
+        size_rc=$?
+        set -e
+        size_status="$(awk -F= '/^\[size\] status=/ { print $2 }' \
+                          /tmp/verify_source_theorem_size.log)"
+        size_status="${size_status:-unknown}"
+        if [[ "${size_rc}" -ne 0 ]]; then
+          echo "[verify]   FAIL: size checker returned ${size_rc}"
+          tail -8 /tmp/verify_source_theorem_size.log \
+            | sed 's/^/[verify]     /'
+          reasons+=("source_theorem_size: returned ${size_rc} (status=${size_status})")
+          overall_status="FAIL"
+        elif [[ "${size_status}" == "human-review-required" ]]; then
+          echo "[verify]   HUMAN_REVIEW_REQUIRED (size policy)"
+          tail -6 /tmp/verify_source_theorem_size.log \
+            | sed 's/^/[verify]     /'
+          reasons+=("source_theorem_size: human-review-required (Rule 4)")
+          # Plan v0.2.1 §"PR 8" AC: H-R-R is NOT auto-fail.
+          # Surface it in `overall_status` only if no harder failure
+          # has already been recorded.
+          if [[ "${overall_status}" == "PASS_SHAPE_ONLY" ]]; then
+            overall_status="HUMAN_REVIEW_REQUIRED"
+          fi
+        else
+          echo "[verify]   PASS (size status=${size_status})"
+        fi
+      fi
     fi
   fi
 fi

@@ -194,3 +194,47 @@ For each candidate, the verifier emits a JSON record of the form
 - `ok` — both checks pass.
 - `human-review-required` — at least one of `K_stmt` or `K_exp` exceeded.
 - `refuted-import` — Rule 6 fail. Candidate rejected.
+
+---
+
+## 6. PR 8 MVP implementation note
+
+`scripts/check_source_theorem_size.sh` ships as a **grep-based MVP**
+(`implementation_level = MVP_GREP_FALLBACK`), not the full BFS + `pp.all`
+algorithm above. Concrete deviations:
+
+1. **No `pp.all` rendering.** The MVP reads `proof.lean` directly,
+   strips Lean comments via the same awk pass used by
+   `check_refuted_predicate_usage.sh`, and counts non-blank source
+   lines.
+
+2. **`K_stmt_actual`** — found heuristically by matching
+   `^[[:space:]]*(theorem|def|noncomputable def|abbrev|structure|inductive|class)[[:space:]]+<source.theorem>`
+   and counting lines until the first subsequent line containing `:=`
+   or `where` (inclusive). One-line definitions like
+   `def F : Prop := True` count as 1.
+
+3. **`K_exp_actual`** — count of all non-blank, non-comment lines in
+   the entire candidate `proof.lean`. This is a **loose upper bound**:
+   the MVP does not BFS through candidate-local references and does
+   not stop at trusted-boundary identifiers. PR 15 replaces this with
+   the full algorithm.
+
+4. **Refuted-import detection** is delegated to PR 4a's
+   `scripts/check_refuted_predicate_usage.sh`. The PR 4a guard's
+   hard-fail zone already includes `pnp3/Candidates/`, so any bare
+   refuted-predicate name in candidate-local code triggers a
+   `refuted-import` reject at the verifier level. The size checker
+   itself only reports `ok` / `human-review-required` /
+   `missing-source-theorem`.
+
+5. **Trusted-boundary exemption** (§3.2) is **not** implemented in
+   MVP. References from `proof.lean` into `Spec/FrozenSpec.lean`
+   (after PR 10), `ComplexityInterfaces`, `Core.*`, or stdlib are
+   currently counted toward `K_exp_actual`. This will inflate the
+   count for legitimate candidates that import standard
+   infrastructure; PR 15 addresses this by AST-based reference
+   tracing.
+
+`spec_version` of this MVP: `0.1.0`. When PR 15 lands, bump to
+`0.2.0` and remove this section.

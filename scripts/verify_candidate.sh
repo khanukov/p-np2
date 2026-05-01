@@ -1,40 +1,60 @@
 #!/usr/bin/env bash
-# verify_candidate.sh — Research Governance v0.1, PR 5 + PR 7 MVP.
+# verify_candidate.sh — Research Governance v0.1.
 #
-# Composes the currently-shipped global guards into a single
-# verification entrypoint and emits a human-readable status to stdout.
-# Optional `--candidate <dir>` mode also checks per-candidate file
-# layout (per pnp3/Candidates/README.md and RESEARCH_CONSTITUTION.md
-# Rule 3).
+# Composes the currently-shipped global guards plus per-candidate
+# checks into a deterministic verifier and emits a human-readable
+# trace to stdout (always) and a JSON `result.json` (with --json).
 #
-# This is the seed of the Verifier v1 specified in PR 15; PR 8 / 11 /
-# 12 extend it with size-checker, target-lock, and barrier-
-# certificate checks, and PR 15 finalises the JSON output schema.
+# Status semantics (Plan v0.2.1):
 #
-# Status semantics (current MVP):
+#   PASS_SHAPE_ONLY        every check returned PASS.
+#   HUMAN_REVIEW_REQUIRED  at least one check returned
+#                          HUMAN_REVIEW_REQUIRED and none returned
+#                          a FAIL.  Per Rule 4 / Rule 7 this is
+#                          NOT auto-reject; the candidate enters
+#                          the human-review queue.
+#   FAIL_<reason>          at least one check returned FAIL.
+#                          `<reason>` is the snake_case name of the
+#                          FIRST check that failed; all failures are
+#                          listed in `reasons`.
+#   EXPIRED_REVIEW         (reserved; produced when SLA expiry is
+#                          implemented in a follow-up PR).
 #
-#   PASS_SHAPE_ONLY        every shape check and every guard returned 0
-#   FAIL_<reason>          at least one check failed
+# `PASS_SHAPE_ONLY` is the highest positive status this verifier
+# emits.  Per `RESEARCH_CONSTITUTION.md` Rule 1, an `accepted`
+# status requires a closed `P_ne_NP_unconditional` term, which the
+# verifier does NOT yet check.
 #
-# `PASS_SHAPE_ONLY` is the only positive result this MVP can emit;
-# per `RESEARCH_CONSTITUTION.md` Rule 1, an `accepted` status
-# requires a closed `P_ne_NP_unconditional` term, which this script
-# does NOT verify.
+# Output schema: `scripts/verifier_result_schema.json` (Plan v0.2.1
+# PR 15).
+#
+# Usage:
+#
+#   scripts/verify_candidate.sh [--candidate <dir>] [--json <path>]
+#
+#   --candidate <dir>   Optional candidate directory (relative to
+#                       repo root).  Without it, only tree-level
+#                       guards run.
+#   --json <path>       Optional JSON output path.  When given, the
+#                       script writes result.json after the run.
 
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT_DIR}"
 
+VERIFIER_IMPL_LEVEL="v1.0"
+
 usage() {
   cat <<USAGE
-Usage: scripts/verify_candidate.sh [--candidate <dir>]
+Usage: scripts/verify_candidate.sh [--candidate <dir>] [--json <path>]
 
-  --candidate <dir>   Optional path (relative to repo root) to a
-                      candidate directory; the verifier additionally
-                      checks the Rule 3 file layout (proof.lean,
-                      manifest.toml, sketch.md, barrier_certificate.md,
-                      self_attack.md).
+  --candidate <dir>   Optional path to a candidate directory.
+                      Adds Rule 3 file-shape, Rule 4 size, and
+                      Rule 7 barrier-certificate checks.
+
+  --json <path>       Write a JSON result.json to <path>; schema
+                      at scripts/verifier_result_schema.json.
 
   Without --candidate, the verifier runs the four currently-shipped
   global guards and reports tree-level status only.
@@ -42,12 +62,19 @@ USAGE
 }
 
 candidate_dir=""
+json_path=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --candidate)
       shift
       [[ $# -gt 0 ]] || { usage >&2; exit 2; }
       candidate_dir="$1"
+      shift
+      ;;
+    --json)
+      shift
+      [[ $# -gt 0 ]] || { usage >&2; exit 2; }
+      json_path="$1"
       shift
       ;;
     -h|--help)
@@ -62,19 +89,51 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# ---------------------------------------------------------------------------
+# Per-check tracking.  Parallel arrays keep the result.json field
+# order deterministic.
+# ---------------------------------------------------------------------------
+
+check_names=()
+check_statuses=()
 reasons=()
-overall_status="PASS_SHAPE_ONLY"
+first_fail=""
+
+record_check() {
+  # $1: check name
+  # $2: status (PASS / FAIL / HUMAN_REVIEW_REQUIRED / SKIPPED / UNKNOWN)
+  # $3: reason text (only used when status != PASS)
+  local name="$1" status="$2" reason="${3:-}"
+  check_names+=("${name}")
+  check_statuses+=("${status}")
+  case "${status}" in
+    FAIL)
+      reasons+=("${name}: ${reason}")
+      [[ -z "${first_fail}" ]] && first_fail="${name}"
+      ;;
+    HUMAN_REVIEW_REQUIRED)
+      reasons+=("${name}: ${reason}")
+      ;;
+    *)
+      ;;
+  esac
+}
 
 # ---------------------------------------------------------------------------
-# (A) Optional candidate-shape check (PR 7) + size policy check (PR 8).
+# (A) Optional candidate-shape check (PR 7).
 # ---------------------------------------------------------------------------
 
+candidate_id=""
+candidate_dir_for_json="null"
 if [[ -n "${candidate_dir}" ]]; then
+  candidate_dir_for_json="\"${candidate_dir}\""
+  candidate_id="$(basename "${candidate_dir%/}")"
+
   echo "[verify] candidate-shape check: ${candidate_dir}"
   if [[ ! -d "${candidate_dir}" ]]; then
     echo "[verify]   FAIL: candidate directory does not exist"
-    reasons+=("candidate-shape: missing directory ${candidate_dir}")
-    overall_status="FAIL"
+    record_check "candidate_shape" "FAIL" \
+                 "missing directory ${candidate_dir}"
   else
     required_files=(
       "proof.lean"
@@ -91,19 +150,17 @@ if [[ -n "${candidate_dir}" ]]; then
     done
     if [[ ${#missing[@]} -gt 0 ]]; then
       echo "[verify]   FAIL: missing required files: ${missing[*]}"
-      reasons+=("candidate-shape: missing ${missing[*]}")
-      overall_status="FAIL"
+      record_check "candidate_shape" "FAIL" \
+                   "missing ${missing[*]}"
     else
       echo "[verify]   PASS (all 5 required files present)"
+      record_check "candidate_shape" "PASS"
 
-      # PR 12: barrier-certificate per-candidate check (file shape +
-      # required [barriers] keys). Script exits 0 for both `ok` and
-      # `human-review-required`; we capture its status output below.
+      # PR 12: barrier-certificate per-candidate check.
       echo "[verify] running: barrier_certificate"
       if [[ ! -x "scripts/check_barrier_certificate.sh" ]]; then
         echo "[verify]   FAIL: scripts/check_barrier_certificate.sh is not executable"
-        reasons+=("barrier_certificate: guard not executable")
-        overall_status="FAIL"
+        record_check "barrier_certificate" "FAIL" "guard not executable"
       else
         set +e
         scripts/check_barrier_certificate.sh "${candidate_dir}" \
@@ -117,27 +174,23 @@ if [[ -n "${candidate_dir}" ]]; then
           echo "[verify]   FAIL: barrier checker returned ${bc_rc}"
           tail -8 /tmp/verify_barrier_certificate.log \
             | sed 's/^/[verify]     /'
-          reasons+=("barrier_certificate: returned ${bc_rc} (status=${bc_status})")
-          overall_status="FAIL"
+          record_check "barrier_certificate" "FAIL" \
+                       "returned ${bc_rc} (status=${bc_status})"
         elif [[ "${bc_status}" == "human-review-required" ]]; then
           echo "[verify]   HUMAN_REVIEW_REQUIRED (barrier certificate)"
-          reasons+=("barrier_certificate: human-review-required (Rule 7)")
-          if [[ "${overall_status}" == "PASS_SHAPE_ONLY" ]]; then
-            overall_status="HUMAN_REVIEW_REQUIRED"
-          fi
+          record_check "barrier_certificate" "HUMAN_REVIEW_REQUIRED" \
+                       "Rule 7 (barrier_certificate)"
         else
           echo "[verify]   PASS (barrier status=${bc_status})"
+          record_check "barrier_certificate" "PASS"
         fi
       fi
 
-      # PR 8: source theorem size policy (Rule 4). The script exits 0
-      # for both `ok` and `human-review-required`; we capture its
-      # status output and surface `human-review-required` separately.
+      # PR 8: source theorem size policy (Rule 4).
       echo "[verify] running: source_theorem_size"
       if [[ ! -x "scripts/check_source_theorem_size.sh" ]]; then
         echo "[verify]   FAIL: scripts/check_source_theorem_size.sh is not executable"
-        reasons+=("source_theorem_size: guard not executable")
-        overall_status="FAIL"
+        record_check "source_theorem_size" "FAIL" "guard not executable"
       else
         set +e
         scripts/check_source_theorem_size.sh "${candidate_dir}" \
@@ -151,21 +204,17 @@ if [[ -n "${candidate_dir}" ]]; then
           echo "[verify]   FAIL: size checker returned ${size_rc}"
           tail -8 /tmp/verify_source_theorem_size.log \
             | sed 's/^/[verify]     /'
-          reasons+=("source_theorem_size: returned ${size_rc} (status=${size_status})")
-          overall_status="FAIL"
+          record_check "source_theorem_size" "FAIL" \
+                       "returned ${size_rc} (status=${size_status})"
         elif [[ "${size_status}" == "human-review-required" ]]; then
           echo "[verify]   HUMAN_REVIEW_REQUIRED (size policy)"
           tail -6 /tmp/verify_source_theorem_size.log \
             | sed 's/^/[verify]     /'
-          reasons+=("source_theorem_size: human-review-required (Rule 4)")
-          # Plan v0.2.1 §"PR 8" AC: H-R-R is NOT auto-fail.
-          # Surface it in `overall_status` only if no harder failure
-          # has already been recorded.
-          if [[ "${overall_status}" == "PASS_SHAPE_ONLY" ]]; then
-            overall_status="HUMAN_REVIEW_REQUIRED"
-          fi
+          record_check "source_theorem_size" "HUMAN_REVIEW_REQUIRED" \
+                       "Rule 4 (size policy)"
         else
           echo "[verify]   PASS (size status=${size_status})"
+          record_check "source_theorem_size" "PASS"
         fi
       fi
     fi
@@ -190,8 +239,7 @@ for entry in "${guards[@]}"; do
 
   if [[ ! -x "${script}" ]]; then
     echo "[verify]   FAIL: ${script} is not executable"
-    reasons+=("${name}: guard not executable")
-    overall_status="FAIL"
+    record_check "${name}" "FAIL" "guard not executable"
     continue
   fi
 
@@ -204,16 +252,28 @@ for entry in "${guards[@]}"; do
     echo "[verify]   FAIL: ${name} returned ${rc}"
     echo "[verify]     last lines (full log: /tmp/verify_${name}.log):"
     tail -8 "/tmp/verify_${name}.log" | sed 's/^/[verify]       /'
-    reasons+=("${name}: returned ${rc} (see /tmp/verify_${name}.log)")
-    overall_status="FAIL"
+    record_check "${name}" "FAIL" "returned ${rc}"
   else
     echo "[verify]   PASS"
+    record_check "${name}" "PASS"
   fi
 done
 
 # ---------------------------------------------------------------------------
-# Result.
+# Aggregate verdict.
 # ---------------------------------------------------------------------------
+
+overall_status="PASS_SHAPE_ONLY"
+if [[ -n "${first_fail}" ]]; then
+  overall_status="FAIL_${first_fail}"
+else
+  for s in "${check_statuses[@]}"; do
+    if [[ "${s}" == "HUMAN_REVIEW_REQUIRED" ]]; then
+      overall_status="HUMAN_REVIEW_REQUIRED"
+      break
+    fi
+  done
+fi
 
 echo
 echo "[verify] status: ${overall_status}"
@@ -222,6 +282,82 @@ if [[ ${#reasons[@]} -gt 0 ]]; then
   for r in "${reasons[@]}"; do
     echo "  - ${r}"
   done
-  exit 1
 fi
-exit 0
+
+# ---------------------------------------------------------------------------
+# Optional JSON output (PR 15).
+# ---------------------------------------------------------------------------
+
+if [[ -n "${json_path}" ]]; then
+  # Read spec_version + axioms allowlist from spec/target.toml.
+  # Fail-closed if either is missing.
+  spec_version="$(awk -F'"' '/^spec_version/ { print $2; exit }' \
+                  spec/target.toml)"
+  spec_version="${spec_version:-unknown}"
+  axioms_line="$(awk '/^\[axioms\]/{flag=1;next} flag && /^allowed/{print; exit}' \
+                  spec/target.toml)"
+  # Extract array body between [ and ] from `allowed = ["X", "Y", ...]`.
+  axioms_body="$(printf '%s' "${axioms_line}" \
+                  | sed -E 's/^[^[]*\[(.*)\][^]]*$/\1/' \
+                  | tr -d ' ')"
+  # Now `axioms_body` is like `"Classical.choice","propext","Quot.sound"`.
+  # Re-emit as a JSON array.
+  axioms_json="[${axioms_body}]"
+
+  cdir_id_for_json="\"${candidate_id:-tree-level}\""
+
+  # Build checks object.
+  checks_pairs=()
+  for i in "${!check_names[@]}"; do
+    checks_pairs+=("\"${check_names[$i]}\": \"${check_statuses[$i]}\"")
+  done
+  checks_body="$(IFS=,; printf '%s' "${checks_pairs[*]}")"
+
+  # Build reasons array.
+  if [[ ${#reasons[@]} -eq 0 ]]; then
+    reasons_body=""
+  else
+    reasons_pairs=()
+    for r in "${reasons[@]}"; do
+      # Escape backslashes and double quotes for JSON.
+      esc="$(printf '%s' "${r}" | python3 -c \
+              'import json,sys; print(json.dumps(sys.stdin.read()), end="")')"
+      reasons_pairs+=("${esc}")
+    done
+    reasons_body="$(IFS=,; printf '%s' "${reasons_pairs[*]}")"
+  fi
+
+  completed_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+
+  # Emit JSON.  We construct it manually to keep field order
+  # deterministic for Rule 13 reproducibility (modulo
+  # `completed_at`).
+  cat >"${json_path}" <<JSON
+{
+  "schema_version": "1.0",
+  "candidate_id": ${cdir_id_for_json},
+  "candidate_dir": ${candidate_dir_for_json},
+  "status": "${overall_status}",
+  "reasons": [${reasons_body}],
+  "checks": {${checks_body}},
+  "axioms_allowed": ${axioms_json},
+  "spec_version": "${spec_version}",
+  "verifier_implementation_level": "${VERIFIER_IMPL_LEVEL}",
+  "completed_at": "${completed_at}"
+}
+JSON
+  echo "[verify] wrote JSON: ${json_path}"
+fi
+
+# ---------------------------------------------------------------------------
+# Exit code.
+# ---------------------------------------------------------------------------
+
+case "${overall_status}" in
+  PASS_SHAPE_ONLY|HUMAN_REVIEW_REQUIRED)
+    exit 0
+    ;;
+  *)
+    exit 1
+    ;;
+esac

@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://p-np2/scripts/verifier_result_schema.json",
+  "title": "Verifier v1 result schema (Research Governance v0.1, PR 15)",
+  "description": "Output of `scripts/verify_candidate.sh --json <path>`. Records the deterministic verdict of one verification run.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "candidate_id",
+    "candidate_dir",
+    "status",
+    "reasons",
+    "checks",
+    "axioms_allowed",
+    "spec_version",
+    "verifier_implementation_level"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "candidate_id": {
+      "type": "string",
+      "description": "Identifier from <candidate-dir>/manifest.toml::[candidate].id; falls back to the basename of <candidate-dir> when running without --candidate."
+    },
+    "candidate_dir": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "null" }
+      ],
+      "description": "Path of the candidate directory, or null when the verifier was invoked tree-level (no --candidate)."
+    },
+    "status": {
+      "type": "string",
+      "description": "Top-level verdict.",
+      "pattern": "^(PASS_SHAPE_ONLY|FAIL_[a-z_]+|HUMAN_REVIEW_REQUIRED|EXPIRED_REVIEW)$"
+    },
+    "reasons": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Empty for PASS_SHAPE_ONLY. One entry per failed/HRR check otherwise."
+    },
+    "checks": {
+      "type": "object",
+      "description": "Per-check sub-statuses. Keys are the check names; values are PASS/FAIL/HUMAN_REVIEW_REQUIRED/SKIPPED/UNKNOWN. Absence of a key means the check did not run.",
+      "additionalProperties": {
+        "type": "string",
+        "enum": ["PASS", "FAIL", "HUMAN_REVIEW_REQUIRED", "SKIPPED", "UNKNOWN"]
+      }
+    },
+    "axioms_allowed": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Allowed axioms for the closed final term, mirrored from spec/target.toml::[axioms].allowed at run time."
+    },
+    "spec_version": {
+      "type": "string",
+      "description": "Value of spec/target.toml::[meta].spec_version at run time."
+    },
+    "verifier_implementation_level": {
+      "type": "string",
+      "description": "MVP, MVP_GREP_FALLBACK, or v1.0+",
+      "enum": ["v1.0", "MVP", "MVP_GREP_FALLBACK"]
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 UTC timestamp at end of the run. Optional; verify_candidate.sh emits it for human inspection but it is NOT part of the canonical hash for Rule 13 reproducibility."
+    }
+  }
+}

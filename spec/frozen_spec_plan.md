@@ -1,7 +1,17 @@
 # Frozen Spec — implementation plan for `pnp3/Spec/FrozenSpec.lean`
 
-This document describes the planned `FrozenSpec` module. It is **not** yet
-implemented; implementing it is a Foundational PR (Rule 0 in
+> **Status: STAGE 1 IMPLEMENTED (PR 10).**
+> The actual file is at `pnp3/Spec/FrozenSpec.lean`. The three
+> stage-1 equivalences (`DagCircuit_size_ref`,
+> `FormulaCircuit_size_ref`, `NP_not_subset_PpolyDAG_ref`) are
+> proved without `sorry`/`admit`. Stage 2 (independent
+> `P_ref`/`NP_ref`/`PpolyDAG_ref` from first-principles semantics)
+> remains deferred. Sections 1–6 below describe the original
+> design; sections 7+ track stage-1 implementation notes.
+
+This document describes the `FrozenSpec` module. The original PR
+plan called it "planned, not yet implemented"; PR 10 ships stage 1
+as a Foundational PR (Rule 0 in
 `RESEARCH_CONSTITUTION.md`) and must not be combined with cleanup or
 candidate work.
 
@@ -131,3 +141,53 @@ After `FrozenSpec.lean` lands:
 5. `spec/target.toml::[frozen_files]` lists the new file.
 6. The verifier's frozen-hash check passes.
 7. The PR is tagged `foundational` and contains no other scope.
+
+---
+
+## 7. PR 10 — stage 1 implementation notes
+
+`pnp3/Spec/FrozenSpec.lean` ships at the shape-pinning level only.
+Concrete contents of the stage-1 file:
+
+1. **`FrozenSpec.DagCircuit_size_ref {n} (C : DagCircuit n) : Nat :=
+   C.gates + 1`**
+   Field-based reference; equivalence
+   `theorem DagCircuit_size_matches_ref ... := rfl`.
+
+2. **`FrozenSpec.FormulaCircuit_size_ref`** — five-branch recursion
+   on the active `FormulaCircuit` constructors (`const`, `input`,
+   `not`, `and`, `or`). Equivalence proved by structural induction.
+
+3. **`FrozenSpec.NP_not_subset_PpolyDAG_ref : Prop`** — the
+   existential `∃ L, NP L ∧ ¬ PpolyDAG L`. Equivalence
+   `theorem NP_not_subset_PpolyDAG_matches_ref ... := Iff.rfl`. This
+   pins the existential shape; it does NOT verify the semantics of
+   `NP` or `PpolyDAG` independently. That is stage-2 work.
+
+Imports: only `Complexity.Interfaces`. The file does not import
+`Magnification/`, `LowerBounds/`, `ThirdPartyFacts/`, or
+`Barrier/`, so the trust root surface remains untangled from the
+audit/cleanup tree.
+
+Forbidden in stage 1 (Plan v0.2.1 amendments ② and ③):
+
+- **`def NP_not_subset_PpolyDAG_ref := ∀ L, NP_ref L → ¬ PpolyDAG_ref L`** —
+  the active definition is existential; a universal "ref" would be
+  a stronger, incorrect target.
+- **`def FormulaCircuit_size_ref := ComplexityInterfaces.FormulaCircuit.size`** —
+  circular aliasing is forbidden; reference semantics must use
+  fields/constructors of the underlying type.
+- **`def P_ref := ComplexityInterfaces.P`** — reserved for stage 2,
+  must be defined from first principles.
+
+## 8. Stage 2 (deferred)
+
+When stage 2 lands:
+
+- Bump `pnp3/Spec/FrozenSpec.lean` (Foundational PR).
+- Introduce `FrozenSpec.TM_ref`, `FrozenSpec.P_ref`,
+  `FrozenSpec.NP_ref`, `FrozenSpec.PpolyDAG_ref` from first-
+  principles Turing-machine / circuit-family semantics.
+- Prove `P_matches_ref`, `NP_matches_ref`, `PpolyDAG_matches_ref`,
+  ideally without `Classical.choice` if possible.
+- Update `[meta].spec_version` and remove this stage-1 section.

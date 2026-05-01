@@ -76,8 +76,16 @@ items = [
 items = [
   "pnp3/Complexity/Interfaces.lean",
   "pnp3/Magnification/UnconditionalResearchGap.lean",
-  "pnp3/Spec/FrozenSpec.lean",                     # planned, not yet present
+  "pnp3/Spec/FrozenSpec.lean",                     # PR 10 stage 1
 ]
+# PR 10 status: stage 1 (shape-level pinning only).
+# - DagCircuit_size_ref     : field-based, equivalence by `rfl`.
+# - FormulaCircuit_size_ref : constructor-based recursion, equivalence
+#                             proved by induction.
+# - NP_not_subset_PpolyDAG_ref : existential shape pin, equivalence by
+#                                `Iff.rfl`.
+# Stage 2 (independent P_ref / NP_ref / PpolyDAG_ref semantics) is
+# deferred and explicitly NOT introduced as circular aliases.
 
 [refuted_predicates]
 # Rule 6. These are formally proved `→ False` somewhere in the repository.

@@ -1890,17 +1890,38 @@ abbrev LocalCircuitFamilyWitnessProp
     (params : LocalCircuitParameters) (F : Family params.n) : Prop :=
   FamilyIsLocalCircuit params F
 
-/-- Typeclass package for an AC0 family witness. -/
+/-- Typeclass package for an AC0 family witness.
+
+@audit-class: suspicious-provider
+@audit-pr: PR 6
+@audit-registry: spec/provider_audit_registry.toml
+@audit-note:
+  Family-witness provider. PR 13 audit pending: is the witness shape
+  compatible with truth-table hardwiring (Probe 2)? -/
 class AC0FamilyWitnessProvider
     (params : AC0Parameters) (F : Family params.n) : Prop where
   witness : AC0FamilyWitnessProp params F
 
-/-- Typeclass package for a local-circuit family witness. -/
+/-- Typeclass package for a local-circuit family witness.
+
+@audit-class: suspicious-provider
+@audit-pr: PR 6
+@audit-registry: spec/provider_audit_registry.toml
+@audit-note:
+  Local-circuit variant of the family-witness provider. -/
 class LocalCircuitFamilyWitnessProvider
     (params : LocalCircuitParameters) (F : Family params.n) : Prop where
   witness : LocalCircuitFamilyWitnessProp params F
 
-/-- Typeclass package for a concrete multi-switching witness. -/
+/-- Typeclass package for a concrete multi-switching witness.
+
+@audit-class: suspicious-provider
+@audit-pr: PR 6
+@audit-registry: spec/provider_audit_registry.toml
+@audit-note:
+  Multi-switching variant of the family-witness provider.  Naming
+  overlap with the refuted multiswitching contract; PR 13 audit
+  pending. -/
 class AC0MultiSwitchingWitnessProvider
     (params : AC0Parameters) (F : Family params.n) where
   witness : AC0MultiSwitchingWitness params F

@@ -2801,6 +2801,14 @@ This is the I-4 target interface at the magnification boundary: once
 multi-switching/depth-induction can construct these certificates for formula
 witnesses, the structured locality provider is obtained without half-size
 assumptions.
+
+@audit-class: suspicious-provider
+@audit-pr: PR 6
+@audit-registry: spec/provider_audit_registry.toml
+@audit-note:
+  Provider shape combining locality lift + certificate data. PR 13
+  audit pending: does it transitively reach
+  `FormulaSupportRestrictionBoundsPartial`?
 -/
 structure FormulaCertificateProviderPartial where
   cert :
@@ -2890,7 +2898,14 @@ the same body as the old `_of_restrictionData` builder with the
 restriction-data extraction adapted to the new signature. -/
 
 /-- Pipeline-aware formula-certificate provider.  Each `cert` call
-takes AC0 provenance inputs along with the formula witness. -/
+takes AC0 provenance inputs along with the formula witness.
+
+@audit-class: suspicious-provider
+@audit-pr: PR 6
+@audit-registry: spec/provider_audit_registry.toml
+@audit-note:
+  Pipeline variant of `FormulaCertificateProviderPartial`. Same audit
+  question pending in PR 13. -/
 structure FormulaCertificateProviderPartial_fromPipeline where
   cert :
     ∀ {p : GapPartialMCSPParams}

@@ -1,0 +1,170 @@
+# Provider audit registry — Research Governance v0.1, PR 6.
+#
+# Classifies every provider/typeclass/structure in `pnp3/` whose name
+# contains one of `Provider`, `Payload`, `Witness`, `Certificate`,
+# `Source`, `Default`, `Gap`.  Each row carries an `audit_class`
+# (used by `scripts/check_typeclass_payload_quarantine.sh` to extend
+# the forbidden-typeclass-parameter list) and a one-line note.
+#
+# `audit_class` taxonomy (RESEARCH_CONSTITUTION.md Rule 16):
+#
+#   refuted-channel        : embeds a refuted predicate (per
+#                            spec/target.toml::[refuted_predicates])
+#                            either as a field or as a transitive
+#                            dependency. New uses of these typeclasses
+#                            as theorem parameters outside audit/
+#                            test/docs are forbidden.
+#
+#   optional-combinatorial : carries non-refuted but optional
+#                            combinatorial source data. Allowed
+#                            outside the trust root, but flagged for
+#                            human review when used in a candidate.
+#
+#   suspicious-provider    : provider/payload shape that has not been
+#                            audited yet. Treated as "unknown until
+#                            audited"; the typeclass-payload guard
+#                            flags new uses but does not yet hard-
+#                            fail outside audit zones.
+#
+#   infrastructure         : non-payload typeclass/structure used for
+#                            ordinary infrastructure (Decidable-style,
+#                            data containers, etc.). Allowed
+#                            everywhere.
+#
+# This file is the source-of-truth consumed by:
+#   - scripts/check_typeclass_payload_quarantine.sh (Step 5/12)
+#     extends its hard-rejection list with every `refuted-channel`
+#     entry's `name`.
+#   - Future PRs (PR 11 TargetLock, PR 12 barrier-certificate) may
+#     consult this file when validating candidate-local typeclass use.
+
+[meta]
+spec_version  = "0.1.0"
+status        = "frozen"
+last_reviewed = "2026-04-30"
+schema_note   = "Add a new row whenever a new provider/typeclass/structure with a Provider/Payload/Witness/Certificate/Source/Default/Gap name is introduced. Bump [meta].spec_version on any taxonomy change."
+
+# ---------------------------------------------------------------------------
+# refuted-channel  : embeds a refuted predicate
+# ---------------------------------------------------------------------------
+
+[[entries]]
+name           = "VacuousFinalPayloadProvider"
+kind           = "class"
+file           = "pnp3/Magnification/FinalResultAuditRoutes.lean"
+line           = 726
+audit_class    = "refuted-channel"
+embeds_refuted = ["FormulaSupportBoundsFromMultiSwitchingContract"]
+note           = "Quarantined in PR 2 (was FinalPayloadProvider). The hMS field is the refuted multiswitching support-bounds contract."
+
+[[entries]]
+name           = "FormulaSemanticMultiSwitchingProvider"
+kind           = "structure"
+file           = "pnp3/Magnification/AC0LocalityBridge.lean"
+line           = 85
+audit_class    = "refuted-channel"
+embeds_refuted = ["FormulaSupportBoundsFromMultiSwitchingContract"]
+note           = "Provider shape that wraps the refuted multiswitching contract. Use only inside the audit/test/docs surface."
+
+# ---------------------------------------------------------------------------
+# optional-combinatorial  : non-refuted but optional source data
+# ---------------------------------------------------------------------------
+
+[[entries]]
+name           = "AsymptoticPayloadProvider"
+kind           = "class"
+file           = "pnp3/Magnification/FinalResultAuditRoutes.lean"
+line           = 738
+audit_class    = "optional-combinatorial"
+embeds_refuted = []
+note           = "Carries `AsymptoticFormulaTrackData`. Not refuted on its own; refuted only when paired with the formula-side support-bounds default flag."
+
+# ---------------------------------------------------------------------------
+# suspicious-provider  : not audited yet (deferred to a later cycle)
+# ---------------------------------------------------------------------------
+
+[[entries]]
+name           = "FormulaCertificateProviderPartial"
+kind           = "structure"
+file           = "pnp3/Magnification/LocalityProvider_Partial.lean"
+line           = 2805
+audit_class    = "suspicious-provider"
+embeds_refuted = []
+note           = "Provider shape combining locality lift + certificate data. Audit needed: does it transitively reach FormulaSupportRestrictionBoundsPartial?"
+
+[[entries]]
+name           = "FormulaCertificateProviderPartial_fromPipeline"
+kind           = "structure"
+file           = "pnp3/Magnification/LocalityProvider_Partial.lean"
+line           = 2894
+audit_class    = "suspicious-provider"
+embeds_refuted = []
+note           = "Pipeline-aware variant of FormulaCertificateProviderPartial. Same audit question."
+
+[[entries]]
+name           = "AC0FamilyWitnessProvider"
+kind           = "class"
+file           = "pnp3/ThirdPartyFacts/Facts_Switching.lean"
+line           = 1894
+audit_class    = "suspicious-provider"
+embeds_refuted = []
+note           = "Family-witness provider. Audit needed: is the witness shape compatible with truth-table hardwiring (Probe 2)?"
+
+[[entries]]
+name           = "LocalCircuitFamilyWitnessProvider"
+kind           = "class"
+file           = "pnp3/ThirdPartyFacts/Facts_Switching.lean"
+line           = 1899
+audit_class    = "suspicious-provider"
+embeds_refuted = []
+note           = "Local-circuit variant of the family-witness provider."
+
+[[entries]]
+name           = "AC0MultiSwitchingWitnessProvider"
+kind           = "class"
+file           = "pnp3/ThirdPartyFacts/Facts_Switching.lean"
+line           = 1904
+audit_class    = "suspicious-provider"
+embeds_refuted = []
+note           = "Multi-switching variant of the family-witness provider. Naming overlap with the refuted multiswitching contract; audit needed."
+
+# ---------------------------------------------------------------------------
+# infrastructure  : ordinary, no payload risk
+# ---------------------------------------------------------------------------
+
+[[entries]]
+name           = "StepCClosureDataPartialProvider"
+kind           = "class"
+file           = "pnp3/LowerBounds/AntiChecker_Partial.lean"
+line           = 1226
+audit_class    = "infrastructure"
+embeds_refuted = []
+note           = "Step-C closure data infrastructure for the partial-locality lift. No refuted dependency."
+
+# ---------------------------------------------------------------------------
+# Forbidden-typeclass-parameter list (consumed by the guard).
+# ---------------------------------------------------------------------------
+# All entries with `audit_class = "refuted-channel"` are forbidden as
+# typeclass parameters (the bracketed `[X]` form) outside the
+# audit/test/docs allowlist. The guard currently hard-codes:
+#
+#   - VacuousFinalPayloadProvider             (PR 2 baseline)
+#   - FinalPayloadProvider                    (PR 2 historical name)
+#   - Fact hasDefaultFormulaSupportRestrictionBoundsPartial
+#                                              (PR 2 baseline)
+#
+# PR 6 adds:
+#
+#   - FormulaSemanticMultiSwitchingProvider
+#
+# When new refuted-channel entries are added, both this registry AND
+# the guard's `typeclass_patterns` array must be updated together.
+[guard_extensions]
+refuted_channel_typeclasses = [
+  "VacuousFinalPayloadProvider",                  # PR 2
+  "FinalPayloadProvider",                         # PR 2 historical
+  "FormulaSemanticMultiSwitchingProvider",        # PR 6
+]
+refuted_channel_facts = [
+  "hasDefaultFormulaSupportRestrictionBoundsPartial",  # PR 2
+]

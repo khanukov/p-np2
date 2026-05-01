@@ -341,14 +341,25 @@ Active classes / facts found in the active tree:
   `[Fact hasDefaultFormulaSupportRestrictionBoundsPartial]` is now
   blocked outside the audit/test/docs allowlist by the same guard.
 
-Plus references to provider classes (deferred to PR 6):
+**PR 6 status: provider audit annotations shipped.** All nine
+provider/typeclass/structure objects are classified in
+`spec/provider_audit_registry.toml` and carry `@audit-class:`
+annotations in their docstrings. Classification:
 
-- `AsymptoticPayloadProvider`
-- `FormulaCertificateProviderPartial`
-- `FormulaSemanticMultiSwitchingProvider`
-- `AC0FamilyWitnessProvider`
-- `LocalCircuitFamilyWitnessProvider`
-- `AC0MultiSwitchingWitnessProvider`
+| audit_class            | members                                                  |
+| ---------------------- | -------------------------------------------------------- |
+| `refuted-channel`      | `VacuousFinalPayloadProvider`, `FormulaSemanticMultiSwitchingProvider` |
+| `optional-combinatorial` | `AsymptoticPayloadProvider`                            |
+| `suspicious-provider`  | `FormulaCertificateProviderPartial`, `FormulaCertificateProviderPartial_fromPipeline`, `AC0FamilyWitnessProvider`, `LocalCircuitFamilyWitnessProvider`, `AC0MultiSwitchingWitnessProvider` |
+| `infrastructure`       | `StepCClosureDataPartialProvider`                        |
+
+`scripts/check_typeclass_payload_quarantine.sh` now hard-rejects
+typeclass-parameter use of `FormulaSemanticMultiSwitchingProvider`
+in addition to the PR 2 baseline (`VacuousFinalPayloadProvider`,
+`FinalPayloadProvider`, `Fact hasDefaultFormulaSupportRestrictionBoundsPartial`).
+The five `suspicious-provider` entries are flagged for PR 13 audit
+(do they transitively reach a refuted predicate?) but are not yet
+hard-rejected.
 
 PR 2 status (this commit):
 

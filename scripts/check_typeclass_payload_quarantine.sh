@@ -56,6 +56,10 @@ typeclass_patterns=(
   # `[Fact <maybe-qualified> hasDefaultFormulaSupportRestrictionBoundsPartial]`,
   # tolerant of arbitrary inner whitespace and namespace prefix.
   '\[[[:space:]]*Fact[[:space:]]+[A-Za-z0-9_.]*hasDefaultFormulaSupportRestrictionBoundsPartial[[:space:]]*\]'
+  # PR 6: `FormulaSemanticMultiSwitchingProvider` is a refuted-channel
+  # entry per spec/provider_audit_registry.toml. New typeclass-
+  # parameter uses outside the audit/test/docs surface are forbidden.
+  '\[[A-Za-z0-9_.]*FormulaSemanticMultiSwitchingProvider\]'
 )
 
 # Exclusions for the typeclass parameter check.  Order matters: positives

@@ -722,6 +722,10 @@ make its audit-only status visible at the type level.  Use of
 `[VacuousFinalPayloadProvider]` is forbidden outside the audit/test/docs
 tree by `scripts/check_typeclass_payload_quarantine.sh`.  See
 `RESEARCH_CONSTITUTION.md` Rule 16 and `Phase0_Audit_Surface.md` §1.3.
+
+@audit-class: refuted-channel
+@audit-pr: PR 2
+@audit-registry: spec/provider_audit_registry.toml
 -/
 class VacuousFinalPayloadProvider : Type where
   hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract
@@ -734,6 +738,15 @@ Asymptotic-side provider extracted out of `VacuousFinalPayloadProvider`
 This isolates the non-formula residual payload as constructive source data, so
 the formula-side part (`hMS`) can be reconstructed internally from
 support-bounds default flags.
+
+@audit-class: optional-combinatorial
+@audit-pr: PR 6
+@audit-registry: spec/provider_audit_registry.toml
+@audit-note:
+  Carries `AsymptoticFormulaTrackData`. Not refuted on its own; refuted
+  only when paired with the formula-side default flag
+  `hasDefaultFormulaSupportRestrictionBoundsPartial` (already blocked
+  by PR 2 guard outside audit/test/docs).
 -/
 class AsymptoticPayloadProvider : Type where
   data : AsymptoticFormulaTrackData

@@ -163,7 +163,21 @@ following two reductions is formally proved.
   ```
 
   where `ExistingKnownGuard` again must be in
-  `spec/known_guards.toml::[guards.*]` with `status = "accepted"`.
+  `spec/known_guards.toml::[guards.*]` with `status = "accepted"`
+  AND `standalone_factorization_target = true`.
+
+  > **Tautology caveat (added during v0.1 Machine Revalidation):**
+  > `HardwiringGuard` is a Lean theorem proved unconditionally via
+  > `Pnp3.Magnification.AuditRoutes.FixedParamsProbe.hardwiring_guard_holds`,
+  > so its `standalone_factorization_target` flag in
+  > `spec/known_guards.toml` is `false`. Any `Π → HardwiringGuard`
+  > factorization is vacuous and is **not** an admissible Outcome B.
+  > A real Outcome B requires a guard that is genuinely conditional
+  > (a `Prop` whose body is NOT already a Lean theorem); see the
+  > deferred `ProvenanceFilter_v1` placeholder in the registry.
+  > `HardwiringGuard` may still appear in an Outcome B body, but
+  > only conjoined with another non-tautological guard such that
+  > the conjunction is itself non-trivial.
 
 If neither B1 nor B2 is provable, Outcome B is **not** the conclusion;
 the candidate is `under-investigation`, not an audit artifact.

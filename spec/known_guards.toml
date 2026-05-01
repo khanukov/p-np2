@@ -43,8 +43,19 @@ audit_alias      = "Pnp3.Magnification.AuditRoutes.FixedParamsProbe.HardwiringGu
 audit_alias_file = "pnp3/Magnification/AuditRoutes/FixedParamsProbe.lean"
 status           = "accepted"
 added_in         = "0.1.1"
+# Tautology caveat (added during the v0.1 Machine Revalidation Review):
+# `HardwiringGuard` is a Lean theorem inhabited unconditionally via
+# `Pnp3.Magnification.AuditRoutes.FixedParamsProbe.hardwiring_guard_holds`.
+# Therefore it is NOT admissible as a standalone Outcome-B factorization
+# target: any `Π → HardwiringGuard` is vacuous because anything implies
+# a tautology.  Outcome B (per `FixedParams_Probe.md` §3.B) may reference
+# `HardwiringGuard` only as part of an obstruction-style argument
+# (Rule-5 exclusion lemma: candidate Π must formally exclude the
+# truth-table hardwired witness).
+outcome_b_usage                   = "obstruction_only"
+standalone_factorization_target   = false
 audit            = """The truth-table hardwiring construction (Probe 2 of the falsifiability audit at FormulaSupportBoundsFalsifiabilityProbe.lean:218) inhabits Pnp3.ComplexityInterfaces.PpolyFormula for every Partial-MCSP slice, so per-language singleton families are always available.  Any candidate provenance Π that quantifies over arbitrary PpolyFormula witnesses without a Rule-5 exclusion lemma is therefore vacuously true on this hardwired witness."""
-rationale        = """Recognized in the FixedParams Probe as the obstruction that any 'route is dead' Outcome A reduction must point to: a candidate must either formally exclude this witness (Rule 5) or factor through HardwiringGuard (Outcome B)."""
+rationale        = """Recognized in the FixedParams Probe as the obstruction that any 'route is dead' Outcome A reduction must point to: a candidate must formally EXCLUDE this witness shape (Rule 5 exclusion lemma `¬ ∃ W, TruthTableHardwired W ∧ Π_holds_for W`).  HardwiringGuard is NOT a standalone Outcome-B factorization target — see `outcome_b_usage` and `standalone_factorization_target` above; a real Outcome B requires a different guard (e.g. a future `ProvenanceFilter_v1` that is genuinely conditional, not a Lean theorem)."""
 
 # ---------------------------------------------------------------------------
 # Informal / planned guards (not admissible for Outcome B).

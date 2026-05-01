@@ -162,6 +162,42 @@ theorem NoGo_FixedParamsRoute_with_OverbroadUniformProvenance
   Pnp3.Tests.FormulaSupportBoundsFalsifiabilityProbe.false_of_fixedParams_and_uniformProvenance
     p ac0 sb hUniform hRoute
 
+/-!
+## FP-3 anchor — `ProvenanceFilter_v1` (informal placeholder, NO Lean
+artifact).
+
+`spec/known_guards.toml::guards.ProvenanceFilter_v1` reserves a stable
+name for the planned filter that, if formalized, would prune truth-
+table-like AC0 family witnesses to non-singleton, non-hardwired AC0
+families.  It is the *intended* Outcome-B partner of
+`HardwiringGuard`: the conjunction `HardwiringGuard ∧ ProvenanceFilter_v1`
+is meant to become non-trivial once the second conjunct is no longer a
+Lean theorem.
+
+This module **deliberately does NOT define a Lean `Prop`, `def`,
+`abbrev`, or `theorem` for `ProvenanceFilter_v1`.**  Doing so today
+would either:
+
+* introduce a vacuous tautology (Outcome A trap — `Π := True` is
+  formally inhabited by anything, just like `HardwiringGuard`); or
+* introduce an `axiom` / `opaque` / typeclass payload, which
+  Rule 16 forbids.
+
+When FP-3 work matures enough to propose a real Lean predicate, the
+artifact will land HERE under the audit-only namespace
+`Pnp3.Magnification.AuditRoutes.FixedParamsProbe` and the registry
+entry will be promoted to `status = "accepted"` with
+`standalone_factorization_target = true` (see the registry's
+"informal → accepted" promotion checklist).  Until that PR ships:
+
+* No new code in this module references `ProvenanceFilter_v1`.
+* `FixedParams_Probe.md` §3.B continues to forbid quoting
+  `ProvenanceFilter_v1` in any Outcome-B reduction.
+* The hardwiring obstruction (Probe 2) and the Outcome A baseline
+  (`NoGo_FixedParamsRoute_with_OverbroadUniformProvenance`) above
+  remain the only formal artifacts the FixedParams Probe exposes.
+-/
+
 end FixedParamsProbe
 end AuditRoutes
 end Magnification

@@ -24,7 +24,7 @@
 # `status = "accepted"`.
 
 [meta]
-spec_version    = "0.1.1"
+spec_version    = "0.1.2"
 status          = "frozen"
 last_reviewed   = "2026-05-01"
 
@@ -58,13 +58,37 @@ audit            = """The truth-table hardwiring construction (Probe 2 of the fa
 rationale        = """Recognized in the FixedParams Probe as the obstruction that any 'route is dead' Outcome A reduction must point to: a candidate must formally EXCLUDE this witness shape (Rule 5 exclusion lemma `¬ ∃ W, TruthTableHardwired W ∧ Π_holds_for W`).  HardwiringGuard is NOT a standalone Outcome-B factorization target — see `outcome_b_usage` and `standalone_factorization_target` above; a real Outcome B requires a different guard (e.g. a future `ProvenanceFilter_v1` that is genuinely conditional, not a Lean theorem)."""
 
 # ---------------------------------------------------------------------------
-# Informal / planned guards (not admissible for Outcome B).
+# Informal / planned guards (NOT admissible for Outcome B).
 # ---------------------------------------------------------------------------
+#
+# An "informal" entry exists ONLY to reserve a stable name for cross-spec
+# references.  It MUST NOT be cited by any formal Outcome-B reduction
+# (`Π ↔ KnownGuardCombination` or `Π → ExistingKnownGuard`); per
+# `FixedParams_Probe.md` §3.B, those reductions may quote only guards
+# whose `status = "accepted"`.
+#
+# An informal entry is promoted to `accepted` only when ALL of the
+# following hold:
+#   1. A `formal_name` points to a real Lean artifact compiled by
+#      `lake build` (not `axiom`, not `opaque`, not `Fact`/typeclass
+#      payload — Rule 16).
+#   2. The artifact's body is genuinely conditional (a `Prop` whose
+#      proof would require non-trivial mathematics), NOT a Lean theorem
+#      provable in the active tree (the `HardwiringGuard` tautology
+#      caveat applies).
+#   3. `standalone_factorization_target = true` is added explicitly,
+#      and `outcome_b_usage` is set to a non-`obstruction_only` value.
+#   4. The promotion ships in a Foundational PR (Rule 0) that records
+#      the spec-version bump.
 
-# [guards.ProvenanceFilter_v1]
-# formal_name = "∅"
-# file        = "∅"
-# status      = "informal"
-# audit       = "Reserved name for a planned filter that prunes truth-table-like AC0 family witnesses. Intended Outcome-B partner of HardwiringGuard. Not yet formalized."
-# added_in    = "0.1.0"
-# rationale   = "Declared so that Outcome B references stay stable across spec versions."
+[guards.ProvenanceFilter_v1]
+formal_name                       = ""
+file                              = ""
+audit_alias                       = ""
+audit_alias_file                  = ""
+status                            = "informal"
+added_in                          = "0.1.2"
+outcome_b_usage                   = "not_admissible"
+standalone_factorization_target   = false
+audit                             = """Reserved name for a planned provenance filter that, if formalized, would prune truth-table-like AC0 family witnesses to non-singleton, non-hardwired AC0 families.  Intended (eventual) Outcome-B partner of `HardwiringGuard` so that the conjunction `HardwiringGuard ∧ ProvenanceFilter_v1` is genuinely conditional.  No Lean artifact exists; consequently the FixedParams Probe cannot quote `ProvenanceFilter_v1` in a formal Outcome-B reduction.  Future FP-3 work that produces a Lean predicate matching this description must additionally demonstrate it is not itself a tautology before promotion to `status = "accepted"`."""
+rationale                         = """Declared so that FP-3 / FP-4 work has a stable cross-spec reference for the planned non-trivial provenance filter without prematurely committing to a Lean shape.  Until promoted to `accepted`, any candidate Π reduced to `ProvenanceFilter_v1` is `under-investigation`, NOT Outcome B (per `FixedParams_Probe.md` §3.B closing clause)."""

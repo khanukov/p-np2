@@ -42,6 +42,34 @@
 > NoGo entry `NOGO-000001` recorded in `outputs/nogolog.jsonl` with
 > `failure_class = "hardwiring"` and `regression_test =
 > "pnp3/Tests/FixedParams_Probe_NoGo.lean"`.
+>
+> **FP-3 status: SURFACE ONLY (no formal claim).**
+>
+> - `spec/known_guards.toml::guards.ProvenanceFilter_v1` is now an
+>   active *informal* entry (`status = "informal"`, `formal_name =
+>   ""`, `outcome_b_usage = "not_admissible"`,
+>   `standalone_factorization_target = false`).
+> - `pnp3/Magnification/AuditRoutes/FixedParamsProbe.lean` carries a
+>   docstring anchor naming this future predicate's home but
+>   **defines no Lean `Prop`, `def`, `abbrev`, or `theorem`** under
+>   that name.
+> - **Promotion to `status = "accepted"` is forbidden** until ALL of
+>   the four conditions in the registry's "informal → accepted"
+>   checklist are met (real Lean artifact, genuinely conditional,
+>   `standalone_factorization_target = true`, Foundational PR with
+>   spec-version bump).
+> - **What FP-3 surface DOES NOT claim:**
+>     * No Lean predicate for `ProvenanceFilter_v1`.
+>     * No `gap_from_*` bridge.
+>     * No `SourceTheorem_*`.
+>     * No `ResearchGapWitness` constructor.
+>     * No new NoGoLog entry.
+>     * No new regression test.
+>     * No Outcome B / Outcome C — the surface is pre-Outcome work.
+> - The first ACTUAL FP-3 step is a separate PR that proposes a
+>   concrete Lean shape for `ProvenanceFilter_v1` together with a
+>   non-tautology proof that it is not inhabited unconditionally.
+>   That PR is OUT OF SCOPE for the FP-3-surface preparation here.
 
 This is the **first** mathematical experiment of the project. It does
 **not** start until Phase 0 cleanup PR 1–6 are merged and the verifier

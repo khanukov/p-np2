@@ -53,6 +53,28 @@
       "rule": "Rule 6 / PR 3b"
     },
     {
+      "case_id": "rejected_candidate_type_error",
+      "kind": "rejected",
+      "probe_file": "bench/SmokeProbe/rejected_candidate_type_error.lean",
+      "staging_path": "/tmp/_smoke_kernel_typeerr.lean",
+      "guard": "scripts/check_candidate_kernel.sh",
+      "guard_args": ["--probe", "${staging_path}"],
+      "expected_failure_class": "kernel_error",
+      "expected_log_marker": "status=kernel-error",
+      "rule": "Layer 3 (Machine Revalidation) / PR 15.2"
+    },
+    {
+      "case_id": "rejected_candidate_sorry",
+      "kind": "rejected",
+      "probe_file": "bench/SmokeProbe/rejected_candidate_sorry.lean",
+      "staging_path": "/tmp/_smoke_kernel_sorry.lean",
+      "guard": "scripts/check_candidate_kernel.sh",
+      "guard_args": ["--probe", "${staging_path}"],
+      "expected_failure_class": "sorry_admit",
+      "expected_log_marker": "status=sorry-admit",
+      "rule": "Layer 3 (Machine Revalidation) / PR 15.2"
+    },
+    {
       "case_id": "accepted_noop_candidate_shape",
       "kind": "accepted_shape_only",
       "probe_file": "bench/SmokeProbe/accepted_noop_candidate_shape.lean",

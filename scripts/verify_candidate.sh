@@ -201,6 +201,44 @@ if [[ -n "${candidate_dir}" ]]; then
         fi
       fi
 
+      # PR 15.2: candidate kernel-elaboration check (Layer 3 of the
+      # Machine Revalidation Review).  This is the first check that
+      # actually invokes the Lean kernel on `<candidate>/proof.lean`.
+      # Without this step, type errors and sorry/admit in candidate
+      # code are silently accepted by the verifier.
+      #
+      # Only runs in --full mode because it requires `lake env lean`
+      # and the candidate's imports to already be built.  In core
+      # mode the check is recorded as SKIPPED.
+      echo "[verify] running: candidate_kernel_elaboration"
+      if [[ "${full_mode}" -ne 1 ]]; then
+        echo "[verify]   SKIPPED (--full not set)"
+        record_check "candidate_kernel_elaboration" "SKIPPED"
+      elif [[ ! -x "scripts/check_candidate_kernel.sh" ]]; then
+        echo "[verify]   FAIL: scripts/check_candidate_kernel.sh is not executable"
+        record_check "candidate_kernel_elaboration" "FAIL" \
+                     "guard not executable"
+      else
+        set +e
+        scripts/check_candidate_kernel.sh "${candidate_dir}" \
+          > "/tmp/verify_candidate_kernel_elaboration.log" 2>&1
+        kernel_rc=$?
+        set -e
+        kernel_status="$(awk -F= '/^\[kernel\] status=/ { print $2 }' \
+                          /tmp/verify_candidate_kernel_elaboration.log)"
+        kernel_status="${kernel_status:-unknown}"
+        if [[ "${kernel_rc}" -ne 0 ]]; then
+          echo "[verify]   FAIL: kernel check returned ${kernel_rc} (status=${kernel_status})"
+          tail -10 /tmp/verify_candidate_kernel_elaboration.log \
+            | sed 's/^/[verify]     /'
+          record_check "candidate_kernel_elaboration" "FAIL" \
+                       "returned ${kernel_rc} (status=${kernel_status})"
+        else
+          echo "[verify]   PASS (kernel status=${kernel_status})"
+          record_check "candidate_kernel_elaboration" "PASS"
+        fi
+      fi
+
       # PR 8: source theorem size policy (Rule 4).
       echo "[verify] running: source_theorem_size"
       if [[ ! -x "scripts/check_source_theorem_size.sh" ]]; then

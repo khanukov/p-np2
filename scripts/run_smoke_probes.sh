@@ -63,6 +63,24 @@ while IFS= read -r line; do
   guard="$(echo "${line}" | jq -r '.guard')"
   expected_marker="$(echo "${line}" | jq -r '.expected_log_marker')"
 
+  # PR 15.2: optional guard_args.  Each element substitutes
+  # ${staging_path} verbatim if it equals the literal string
+  # "${staging_path}".  Used by kernel-check probes that pass the
+  # staged file path on the command line.
+  guard_args_raw="$(echo "${line}" | jq -r '.guard_args // [] | @sh')"
+  declare -a guard_args=()
+  if [[ -n "${guard_args_raw}" ]]; then
+    eval "guard_args=(${guard_args_raw})"
+  fi
+  declare -a guard_args_resolved=()
+  for a in "${guard_args[@]:-}"; do
+    if [[ "${a}" == "\${staging_path}" ]]; then
+      guard_args_resolved+=("${staging_path}")
+    else
+      guard_args_resolved+=("${a}")
+    fi
+  done
+
   echo "[smoke] running rejected probe: ${case_id}"
 
   if [[ ! -f "${probe_file}" ]]; then
@@ -82,7 +100,11 @@ while IFS= read -r line; do
   staged_files+=("${staging_path}")
 
   set +e
-  guard_output="$("${guard}" 2>&1)"
+  if [[ ${#guard_args_resolved[@]} -gt 0 ]]; then
+    guard_output="$("${guard}" "${guard_args_resolved[@]}" 2>&1)"
+  else
+    guard_output="$("${guard}" 2>&1)"
+  fi
   guard_exit=$?
   set -e
 

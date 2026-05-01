@@ -46,7 +46,7 @@ only confirms that the Lean file's *shape* is well-formed.
 
 ## 1. Files
 
-### Shipped in PR 5
+### Shipped in PR 5 + PR 15.2
 
 ```
 bench/SmokeProbe/
@@ -55,9 +55,18 @@ bench/SmokeProbe/
   rejected_typeclass_payload_channel.lean    -> PR 2 guard
   rejected_unmarked_refuted_route.lean       -> PR 3 guard
   rejected_bare_package_final.lean           -> PR 3b extension of PR 3 guard
+  rejected_candidate_type_error.lean         -> PR 15.2 candidate kernel check
+  rejected_candidate_sorry.lean              -> PR 15.2 candidate kernel check
   accepted_noop_candidate_shape.lean         -> PASS_SHAPE_ONLY
   expected_results.json                      -> driver source-of-truth
 ```
+
+PR 15.2 (Machine Revalidation Layer 3 fix) closed the kernel-check gap.
+Two new probes stage standalone Lean files at `/tmp/_smoke_kernel_*`
+and invoke `scripts/check_candidate_kernel.sh --probe <staged>`. The
+driver supports a new `guard_args` field in `expected_results.json`;
+each `${staging_path}` literal in that array is substituted by the
+actual staging path at runtime.
 
 The five rejected probes are staged into forbidden zones (per the
 `staging_path` field of `expected_results.json`), the named guard is

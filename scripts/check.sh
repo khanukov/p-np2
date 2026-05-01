@@ -463,14 +463,25 @@ echo "[check] Step 11/17: smoke probes (Research Governance v0.1, PR 5)"
 echo "[check] Step 12/17: NoGoLog + survivor history validation (Research Governance v0.1, PR 9)"
 python3 "${ROOT_DIR}/scripts/validate_jsonl.py"
 
-echo "[check] Step 13/17: verify_candidate.sh smoke (Research Governance v0.1, PR 15)"
+echo "[check] Step 13/17: verify_candidate.sh --full smoke (Research Governance v0.1, PR 15 + PR 15.2)"
+# PR 15.2: invoke `--full` so the candidate kernel-elaboration check
+# (Layer 3 of the v0.1 Machine Revalidation) runs against the noop
+# template.  Without `--full` the kernel check is recorded as
+# SKIPPED, which would defeat the whole point of PR 15.2 in CI.
 "${ROOT_DIR}/scripts/verify_candidate.sh" \
   --candidate pnp3/Candidates/_template \
+  --full \
   --json /tmp/verify_template_result.json
-# The smoke run must produce PASS_SHAPE_ONLY on the noop template.
+# The smoke run must produce PASS_SHAPE_ONLY on the noop template
+# AND the kernel check must have run (i.e. not SKIPPED, not FAIL).
 result_status="$(python3 -c 'import json; print(json.load(open("/tmp/verify_template_result.json"))["status"])')"
+kernel_status="$(python3 -c 'import json; print(json.load(open("/tmp/verify_template_result.json"))["checks"].get("candidate_kernel_elaboration", "ABSENT"))')"
 if [[ "${result_status}" != "PASS_SHAPE_ONLY" ]]; then
   echo "[check] FAIL: verify_candidate.sh on _template returned status=${result_status} (expected PASS_SHAPE_ONLY)"
+  exit 1
+fi
+if [[ "${kernel_status}" != "PASS" ]]; then
+  echo "[check] FAIL: candidate_kernel_elaboration on _template returned ${kernel_status} (expected PASS)"
   exit 1
 fi
 

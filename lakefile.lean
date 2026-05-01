@@ -127,6 +127,8 @@ lean_lib PnP3 where
     Glob.one `Magnification.FinalResultCore,
     Glob.one `Magnification.UnconditionalResearchGap,
     Glob.one `Magnification.FinalResult,
+    -- Research Governance v0.1, PR 4a: refuted-predicate registry.
+    Glob.one `RefutedPredicates.Registry,
     Glob.one `ThirdPartyFacts.Facts_Switching,
     -- Partial-track bibliography/lemmas used by final magnification result.
     Glob.one `ThirdPartyFacts.PartialTransport,

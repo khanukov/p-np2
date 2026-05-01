@@ -198,6 +198,42 @@ against `FrozenSpec.lean` once it lands.
 
 ## 2. Refuted hypotheses and routes
 
+**PR 4a status: registry shipped.** A centralised audit registry lives at
+`pnp3/RefutedPredicates/Registry.lean`. Each refuted predicate has a
+canonical `RefutedPredicate_*` alias (six entries; see
+`spec/target.toml::[refuted_predicates].registry_module`). The guard
+`scripts/check_refuted_predicate_usage.sh` is wired into Step 7/11 of
+`scripts/check.sh`. Physical relocation of the predicate definitions
+into `pnp3/RefutedPredicates/` is **deferred to PR 4b after PR 14**
+(amendment per Engineering Execution Plan v0.2.1; see
+`MagnificationAssumptions[_fromPipeline]` cycle risk in §1.2).
+
+The PR 4a guard runs in two modes:
+
+- **Hard-fail zone**: `pnp3/Complexity/`, `pnp3/Candidates/`, `pnp4/`,
+  and `pnp3/Magnification/UnconditionalResearchGap.lean`. New
+  code-level use of any bare refuted-predicate name in these locations
+  is a CI failure. Comment-only mentions are filtered out (the guard
+  strips Lean comments before matching).
+- **Soft-report zone**: `pnp3/Magnification/` (excluding
+  `AuditRoutes/`, the trust-root `UnconditionalResearchGap.lean`, and
+  `FinalResultAuditRoutes.lean`), `pnp3/LowerBounds/`,
+  `pnp3/ThirdPartyFacts/`. Existing code-level uses are PRINTED to
+  the build log as a regression-watch list but DO NOT block CI. This
+  is a temporary fallback per Plan amendment ⑤; PR 4b after PR 14
+  replaces it with hard-fail or region-bracket markers.
+
+Soft-report counts on the current tree (line counts of code-level
+occurrences after comment stripping):
+
+| Predicate                                          | Count |
+| -------------------------------------------------- | ----- |
+| `FormulaSupportRestrictionBoundsPartial`           | 43    |
+| `FormulaSupportBoundsFromMultiSwitchingContract`   | 28    |
+| `MagnificationAssumptions`                         |  3    |
+| `FormulaSupportBoundsPartial_fromPipeline`         |  5    |
+| `MagnificationAssumptions_fromPipeline`            |  3    |
+
 The falsifiability probe in
 `pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean` formally proves
 that the following predicates imply `False`. Any endpoint whose statement

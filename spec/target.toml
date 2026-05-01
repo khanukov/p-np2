@@ -93,6 +93,12 @@ items = [
   "fixedParams_and_uniformProvenance",  # the `fixedParams ∧ uniformProvenance` route
 ]
 falsifiability_probe = "pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean"
+# Research Governance v0.1, PR 4a: canonical audit aliases live in the
+# registry module below. Allowed-use guard:
+# `scripts/check_refuted_predicate_usage.sh` (hybrid hard-fail +
+# soft-report; physical relocation deferred to PR 4b after PR 14).
+registry_module = "pnp3/RefutedPredicates/Registry.lean"
+registry_namespace = "Pnp3.RefutedPredicates"
 
 [refuted_routes]
 allowed_dirs = [

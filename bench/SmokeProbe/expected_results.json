@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "_comment": "Research Governance v0.1, PR 5. Each `rejected_*` probe is staged into a forbidden zone, the named guard is run, and the probe is then removed. Expected outcome: guard exits non-zero AND its log contains `expected_log_marker`. The single `accepted_noop_candidate_shape` probe lives permanently in bench/SmokeProbe/ and its expected outcome is PASS_SHAPE_ONLY when all currently-shipped guards run cleanly on the tree. The 3 deferred probes listed in `bench/SmokeProbe_plan.md` (arbitrary_witness, goal_drift, hidden_source_theorem_payload) ship in PR 6 / PR 8.",
+  "probes": [
+    {
+      "case_id": "rejected_imports_refuted",
+      "kind": "rejected",
+      "probe_file": "bench/SmokeProbe/rejected_imports_refuted.lean",
+      "staging_path": "pnp3/Complexity/_smoke_probe_imports_refuted.lean",
+      "guard": "scripts/check_refuted_predicate_usage.sh",
+      "expected_failure_class": "refuted_predicate_usage",
+      "expected_log_marker": "FAIL: bare 'FormulaSupportRestrictionBoundsPartial' in hard-fail zone",
+      "rule": "Rule 6 / PR 4a"
+    },
+    {
+      "case_id": "rejected_phantom_axiom",
+      "kind": "rejected",
+      "probe_file": "bench/SmokeProbe/rejected_phantom_axiom.lean",
+      "staging_path": "pnp3/Tests/_smoke_probe_phantom_axiom.lean",
+      "guard": "scripts/check_doc_honesty.sh",
+      "expected_failure_class": "phantom_axiom",
+      "expected_log_marker": "phantom 'axiom P_ne_NP_unconditional' detected",
+      "rule": "Rule 1 / PR 1"
+    },
+    {
+      "case_id": "rejected_typeclass_payload_channel",
+      "kind": "rejected",
+      "probe_file": "bench/SmokeProbe/rejected_typeclass_payload_channel.lean",
+      "staging_path": "pnp3/Magnification/_smoke_probe_typeclass.lean",
+      "guard": "scripts/check_typeclass_payload_quarantine.sh",
+      "expected_failure_class": "typeclass_payload",
+      "expected_log_marker": "VacuousFinalPayloadProvider",
+      "rule": "Rule 16 / PR 2"
+    },
+    {
+      "case_id": "rejected_unmarked_refuted_route",
+      "kind": "rejected",
+      "probe_file": "bench/SmokeProbe/rejected_unmarked_refuted_route.lean",
+      "staging_path": "pnp3/LowerBounds/_smoke_probe_unmarked_route.lean",
+      "guard": "scripts/check_refuted_route_quarantine.sh",
+      "expected_failure_class": "unmarked_refuted_route",
+      "expected_log_marker": "unmarked direct-refuted final endpoint: P_ne_NP_final_of_supportBounds",
+      "rule": "Rule 6 / PR 3"
+    },
+    {
+      "case_id": "rejected_bare_package_final",
+      "kind": "rejected",
+      "probe_file": "bench/SmokeProbe/rejected_bare_package_final.lean",
+      "staging_path": "pnp3/LowerBounds/_smoke_probe_bare_final.lean",
+      "guard": "scripts/check_refuted_route_quarantine.sh",
+      "expected_failure_class": "bare_package_final",
+      "expected_log_marker": "unmarked direct-refuted package final: NP_not_subset_PpolyFormula_final",
+      "rule": "Rule 6 / PR 3b"
+    },
+    {
+      "case_id": "accepted_noop_candidate_shape",
+      "kind": "accepted_shape_only",
+      "probe_file": "bench/SmokeProbe/accepted_noop_candidate_shape.lean",
+      "expected_status": "PASS_SHAPE_ONLY",
+      "guards_to_run_clean": [
+        "scripts/check_doc_honesty.sh",
+        "scripts/check_typeclass_payload_quarantine.sh",
+        "scripts/check_refuted_route_quarantine.sh",
+        "scripts/check_refuted_predicate_usage.sh"
+      ]
+    }
+  ],
+  "deferred_probes": [
+    {
+      "case_id": "rejected_arbitrary_witness",
+      "rationale": "Rule 5 (arbitrary PpolyFormula quantification without exclusion lemma) has no automated guard yet. Ships in PR 6 (Rule 16 hardening) or PR 8 (source theorem size checker)."
+    },
+    {
+      "case_id": "rejected_goal_drift",
+      "rationale": "Rule 0 / Rule 2 (goal-drift detection: locally redefined NP_not_subset_PpolyDAG_ref or analogue) has no automated guard yet. Ships in PR 11 (TargetLock checker)."
+    },
+    {
+      "case_id": "rejected_hidden_source_theorem_payload",
+      "rationale": "Rule 16 hidden-payload detection at SourceTheorem level (pp.all rendering of candidate theorem statements) ships in PR 6 (provider audit + Rule 16 hardening) or PR 8 (size checker pp.all integration)."
+    }
+  ]
+}

@@ -1,10 +1,20 @@
 # SmokeProbe plan — rejection-path tests for the verifier
 
-This file is the plan for `bench/SmokeProbe/`. The probes themselves are
-not implemented yet; implementing them is **Phase 0 PR 5** ("Rule 16
-smoke probes and verifier shell"). The probes serve a single purpose:
-to demonstrate that the verifier rejects every kind of move that the
-Research Constitution forbids.
+This file is the plan for `bench/SmokeProbe/`.
+
+**PR 5 status: 5 rejected probes + 1 accepted_shape_only probe shipped**
+(per Engineering Execution Plan v0.2.1 fallback "ship 5/8 if Lean-level
+rejection is ambiguous"). The driver
+`scripts/run_smoke_probes.sh` and the verifier-shell MVP
+`scripts/verify_candidate.sh` are also live. The smoke driver is wired
+into `scripts/check.sh` as a new step.
+
+The probes serve a single purpose: to demonstrate that the
+currently-shipped guards reject every kind of move that the Research
+Constitution forbids. This is not a benchmark of *successful*
+candidates. The verifier never "accepts" a Lean file as a proof of
+P ≠ NP at the smoke-probe stage; it only confirms that the Lean
+file's *shape* is well-formed.
 
 This is not a benchmark of *successful* candidates. The verifier never
 "accepts" a Lean file as a proof of P ≠ NP at the smoke-probe stage; it
@@ -12,15 +22,47 @@ only confirms that the Lean file's *shape* is well-formed.
 
 ---
 
-## 1. Files to create
+## 1. Files
+
+### Shipped in PR 5
 
 ```
 bench/SmokeProbe/
-  rejected_imports_refuted.lean
-  rejected_arbitrary_witness.lean
-  rejected_phantom_axiom.lean
-  rejected_goal_drift.lean
-  rejected_typeclass_payload_channel.lean
+  rejected_imports_refuted.lean              -> PR 4a guard
+  rejected_phantom_axiom.lean                -> PR 1 guard (Part A)
+  rejected_typeclass_payload_channel.lean    -> PR 2 guard
+  rejected_unmarked_refuted_route.lean       -> PR 3 guard
+  rejected_bare_package_final.lean           -> PR 3b extension of PR 3 guard
+  accepted_noop_candidate_shape.lean         -> PASS_SHAPE_ONLY
+  expected_results.json                      -> driver source-of-truth
+```
+
+The five rejected probes are staged into forbidden zones (per the
+`staging_path` field of `expected_results.json`), the named guard is
+run, the guard must exit non-zero AND its log must contain the
+`expected_log_marker`, and the staged file is removed. The accepted
+probe lives permanently in `bench/SmokeProbe/`; all four currently-
+shipped guards run against the tree containing it and must each
+return 0.
+
+### Deferred (per Engineering Execution Plan v0.2.1 fallback)
+
+The following probes ship in later PRs because their corresponding
+guards do not exist yet:
+
+```
+bench/SmokeProbe/
+  rejected_arbitrary_witness.lean              -> PR 6 / PR 8 (Rule 5)
+  rejected_goal_drift.lean                     -> PR 11 (TargetLock)
+  rejected_hidden_source_theorem_payload.lean  -> PR 6 / PR 8 (Rule 16 hidden payload at SourceTheorem level)
+```
+
+These three are recorded under `deferred_probes` in
+`bench/SmokeProbe/expected_results.json` with their target PR.
+
+### Original v0.1 plan placeholders (preserved for reference)
+
+```
   rejected_size_policy_violation.lean
   rejected_collapse_not_contradiction.lean
   accepted_noop_candidate_shape.lean

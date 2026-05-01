@@ -66,6 +66,7 @@ typeclass_excludes=(
   -g '!pnp3/Tests/**'
   -g '!pnp3/Docs/**'
   -g '!archive/**'
+  -g '!bench/**'
 )
 
 echo "[quarantine] (A) typeclass-parameter check"
@@ -105,6 +106,7 @@ bare_excludes=(
   -g '!pnp3/Magnification/AuditRoutes/**'
   -g '!pnp3/Magnification/FinalResultAuditRoutes.lean'
   -g '!archive/**'
+  -g '!bench/**'
 )
 
 bare_hits="$(rg -n --no-heading --color=never \

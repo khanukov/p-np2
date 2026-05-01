@@ -1,5 +1,27 @@
 # FixedParams Probe — research plan
 
+> **FP-1 status: COMPLETE.**
+>
+> - `spec/known_guards.toml::guards.HardwiringGuard` is `accepted` and
+>   points to `pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean:218`
+>   (truth-table hardwiring construction, Probe 2 of the falsifiability
+>   audit).
+> - Audit-only surface lives at
+>   `pnp3/Magnification/AuditRoutes/FixedParamsProbe.lean` and
+>   exposes the canonical names `FixedParamsRoute`,
+>   `OverbroadUniformProvenance`, `HardwiringObstruction`,
+>   `HardwiringGuard`, `hardwiring_guard_holds`.
+> - Smoke skeleton `pnp3/Tests/FixedParams_Probe_NoGo.lean` checks
+>   that the audit names elaborate at the expected types.
+> - **No Outcome A / B / C claimed in FP-1.** No new candidate, no new
+>   final endpoint, no edits to `ResearchGapWitness`,
+>   `ComplexityInterfaces`, `UnconditionalResearchGap.lean`, or the
+>   active `FormulaSupportBoundsPartial_fromPipeline_fixedParams`
+>   definition.
+>
+> FP-2 begins from this prepared surface; see the original research
+> plan below.
+
 This is the **first** mathematical experiment of the project. It does
 **not** start until Phase 0 cleanup PR 1–6 are merged and the verifier
 shell exists.

@@ -131,6 +131,8 @@ lean_lib PnP3 where
     Glob.one `RefutedPredicates.Registry,
     -- Research Governance v0.1, PR 10: FrozenSpec stage 1.
     Glob.one `Spec.FrozenSpec,
+    -- Research Governance v0.1, FP-1: FixedParams Probe audit surface.
+    Glob.one `Magnification.AuditRoutes.FixedParamsProbe,
     Glob.one `ThirdPartyFacts.Facts_Switching,
     -- Partial-track bibliography/lemmas used by final magnification result.
     Glob.one `ThirdPartyFacts.PartialTransport,
@@ -148,7 +150,9 @@ lean_lib PnP3 where
     Glob.one `Tests.SmokeTests,
     Glob.one `Tests.UnitTests,
     -- Research Governance v0.1, PR 11: target-lock compile-time probe.
-    Glob.one `Tests.TargetLockProbe
+    Glob.one `Tests.TargetLockProbe,
+    -- Research Governance v0.1, FP-1: FixedParams Probe NoGo smoke skeleton.
+    Glob.one `Tests.FixedParams_Probe_NoGo
   ]
 
 lean_lib Pnp4 where

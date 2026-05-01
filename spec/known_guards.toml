@@ -24,21 +24,31 @@
 # `status = "accepted"`.
 
 [meta]
-spec_version    = "0.1.0"
+spec_version    = "0.1.1"
 status          = "frozen"
-last_reviewed   = "2026-04-30"
+last_reviewed   = "2026-05-01"
 
-# --- No accepted guards yet. Examples below are placeholders showing the
-# --- intended shape; they are commented out and do not constitute admitted
-# --- guards.
+# ---------------------------------------------------------------------------
+# Accepted guards (FP-1).
+# ---------------------------------------------------------------------------
+#
+# An "accepted" guard MUST point to a real Lean artifact that is
+# compiled by `lake build`.  Outcome B in `FixedParams_Probe.md` may
+# only reference accepted guards.
 
-# [guards.HardwiringGuard]
-# formal_name = "Pnp3.Tests.FormulaSupportBoundsFalsifiabilityProbe.fixedSlice_gapPartialMCSP_in_PpolyFormula"
-# file        = "pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean:218"
-# status      = "informal"
-# audit       = "The truth-table hardwiring construction (Probe 2 in the falsifiability audit) shows that arbitrary PpolyFormula witnesses can be reconstructed by per-language families. This is the structural pattern that defeats overbroad uniform provenance combined with fixed-params support bounds."
-# added_in    = "0.1.0"
-# rationale   = "Recognized in the FixedParams Probe as the obstruction that any 'route is dead' Outcome A reduction must point to."
+[guards.HardwiringGuard]
+formal_name      = "Pnp3.Tests.FormulaSupportBoundsFalsifiabilityProbe.fixedSlice_gapPartialMCSP_in_PpolyFormula"
+file             = "pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean:218"
+audit_alias      = "Pnp3.Magnification.AuditRoutes.FixedParamsProbe.HardwiringGuard"
+audit_alias_file = "pnp3/Magnification/AuditRoutes/FixedParamsProbe.lean"
+status           = "accepted"
+added_in         = "0.1.1"
+audit            = """The truth-table hardwiring construction (Probe 2 of the falsifiability audit at FormulaSupportBoundsFalsifiabilityProbe.lean:218) inhabits Pnp3.ComplexityInterfaces.PpolyFormula for every Partial-MCSP slice, so per-language singleton families are always available.  Any candidate provenance Π that quantifies over arbitrary PpolyFormula witnesses without a Rule-5 exclusion lemma is therefore vacuously true on this hardwired witness."""
+rationale        = """Recognized in the FixedParams Probe as the obstruction that any 'route is dead' Outcome A reduction must point to: a candidate must either formally exclude this witness (Rule 5) or factor through HardwiringGuard (Outcome B)."""
+
+# ---------------------------------------------------------------------------
+# Informal / planned guards (not admissible for Outcome B).
+# ---------------------------------------------------------------------------
 
 # [guards.ProvenanceFilter_v1]
 # formal_name = "∅"

@@ -1,36 +1,107 @@
 #!/usr/bin/env bash
-# verify_candidate.sh — Research Governance v0.1, PR 5 MVP.
+# verify_candidate.sh — Research Governance v0.1, PR 5 + PR 7 MVP.
 #
 # Composes the currently-shipped global guards into a single
 # verification entrypoint and emits a human-readable status to stdout.
-# This is the seed of the Verifier v1 specified in PR 15; PR 8/11/12
-# extend it with size-checker, target-lock, and barrier-certificate
-# checks, and PR 15 finalises the JSON output schema.
+# Optional `--candidate <dir>` mode also checks per-candidate file
+# layout (per pnp3/Candidates/README.md and RESEARCH_CONSTITUTION.md
+# Rule 3).
 #
-# Current MVP semantics:
+# This is the seed of the Verifier v1 specified in PR 15; PR 8 / 11 /
+# 12 extend it with size-checker, target-lock, and barrier-
+# certificate checks, and PR 15 finalises the JSON output schema.
 #
-#   - The script does NOT take a candidate-specific path argument.
-#     `pnp3/Candidates/` is not yet populated; the global guards
-#     already scan the whole tree.  When PR 7 introduces the
-#     candidate template and PR 12 adds barrier-certificate checks,
-#     this script will gain a `--candidate <dir>` mode.
+# Status semantics (current MVP):
 #
-#   - Status semantics:
-#       PASS_SHAPE_ONLY  every guard returned 0
-#       FAIL             at least one guard returned non-zero
+#   PASS_SHAPE_ONLY        every shape check and every guard returned 0
+#   FAIL_<reason>          at least one check failed
 #
-#     `PASS_SHAPE_ONLY` is the only positive result this MVP can
-#     emit; per `RESEARCH_CONSTITUTION.md` Rule 1, an `accepted`
-#     status requires a closed `P_ne_NP_unconditional` term, which
-#     this script does NOT verify.
-#
-#   - Output: human-readable. PR 15 introduces a JSON `result.json`
-#     output following `scripts/verifier_result_schema.json`.
+# `PASS_SHAPE_ONLY` is the only positive result this MVP can emit;
+# per `RESEARCH_CONSTITUTION.md` Rule 1, an `accepted` status
+# requires a closed `P_ne_NP_unconditional` term, which this script
+# does NOT verify.
 
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT_DIR}"
+
+usage() {
+  cat <<USAGE
+Usage: scripts/verify_candidate.sh [--candidate <dir>]
+
+  --candidate <dir>   Optional path (relative to repo root) to a
+                      candidate directory; the verifier additionally
+                      checks the Rule 3 file layout (proof.lean,
+                      manifest.toml, sketch.md, barrier_certificate.md,
+                      self_attack.md).
+
+  Without --candidate, the verifier runs the four currently-shipped
+  global guards and reports tree-level status only.
+USAGE
+}
+
+candidate_dir=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --candidate)
+      shift
+      [[ $# -gt 0 ]] || { usage >&2; exit 2; }
+      candidate_dir="$1"
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "[verify] unknown argument: $1" >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+done
+
+reasons=()
+overall_status="PASS_SHAPE_ONLY"
+
+# ---------------------------------------------------------------------------
+# (A) Optional candidate-shape check (PR 7).
+# ---------------------------------------------------------------------------
+
+if [[ -n "${candidate_dir}" ]]; then
+  echo "[verify] candidate-shape check: ${candidate_dir}"
+  if [[ ! -d "${candidate_dir}" ]]; then
+    echo "[verify]   FAIL: candidate directory does not exist"
+    reasons+=("candidate-shape: missing directory ${candidate_dir}")
+    overall_status="FAIL"
+  else
+    required_files=(
+      "proof.lean"
+      "manifest.toml"
+      "sketch.md"
+      "barrier_certificate.md"
+      "self_attack.md"
+    )
+    missing=()
+    for f in "${required_files[@]}"; do
+      if [[ ! -f "${candidate_dir}/${f}" ]]; then
+        missing+=("${f}")
+      fi
+    done
+    if [[ ${#missing[@]} -gt 0 ]]; then
+      echo "[verify]   FAIL: missing required files: ${missing[*]}"
+      reasons+=("candidate-shape: missing ${missing[*]}")
+      overall_status="FAIL"
+    else
+      echo "[verify]   PASS (all 5 required files present)"
+    fi
+  fi
+fi
+
+# ---------------------------------------------------------------------------
+# (B) Global guards (PR 5 baseline).
+# ---------------------------------------------------------------------------
 
 guards=(
   "doc_honesty:scripts/check_doc_honesty.sh"
@@ -38,9 +109,6 @@ guards=(
   "refuted_route_quarantine:scripts/check_refuted_route_quarantine.sh"
   "refuted_predicate_usage:scripts/check_refuted_predicate_usage.sh"
 )
-
-reasons=()
-overall_status="PASS_SHAPE_ONLY"
 
 for entry in "${guards[@]}"; do
   name="${entry%%:*}"
@@ -69,6 +137,10 @@ for entry in "${guards[@]}"; do
     echo "[verify]   PASS"
   fi
 done
+
+# ---------------------------------------------------------------------------
+# Result.
+# ---------------------------------------------------------------------------
 
 echo
 echo "[verify] status: ${overall_status}"

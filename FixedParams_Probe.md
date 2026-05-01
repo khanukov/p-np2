@@ -13,14 +13,35 @@
 >   `HardwiringGuard`, `hardwiring_guard_holds`.
 > - Smoke skeleton `pnp3/Tests/FixedParams_Probe_NoGo.lean` checks
 >   that the audit names elaborate at the expected types.
-> - **No Outcome A / B / C claimed in FP-1.** No new candidate, no new
->   final endpoint, no edits to `ResearchGapWitness`,
->   `ComplexityInterfaces`, `UnconditionalResearchGap.lean`, or the
->   active `FormulaSupportBoundsPartial_fromPipeline_fixedParams`
->   definition.
 >
-> FP-2 begins from this prepared surface; see the original research
-> plan below.
+> **FP-2 status: COMPLETE — Outcome A baseline only.**
+>
+> - The audit module now also exposes
+>   `NoGo_FixedParamsRoute_with_OverbroadUniformProvenance`, a
+>   re-export of `Pnp3.Tests.FormulaSupportBoundsFalsifiabilityProbe.false_of_fixedParams_and_uniformProvenance`
+>   under the canonical Outcome-A audit name.
+> - `FixedParams_Probe_NoGo.lean::fp2_outcome_a_overbroad_baseline`
+>   regression-tests the chain.
+> - **Scope:** the FP-2 result kills the route only for the single
+>   candidate provenance `Π = OverbroadUniformProvenance ac0`. It is
+>   **not** a claim that the FixedParams route is dead in general for
+>   every `Π`. An honest Outcome A for an arbitrary `Π` requires
+>   additionally proving `Π → OverbroadUniformProvenance ac0`, which
+>   is in general open and is the FP-3 / FP-4 entry point.
+> - **What FP-2 does NOT claim:**
+>     * No `gap_from_*` bridge.
+>     * No `SourceTheorem_*`.
+>     * No `ResearchGapWitness` constructor.
+>     * No edits to `ResearchGapWitness`, `Complexity/Interfaces`,
+>       `UnconditionalResearchGap.lean`, or
+>       `FormulaSupportBoundsPartial_fromPipeline_fixedParams`.
+>     * No new final endpoint.
+>     * No Outcome B / C.
+>     * The proof is `False`, not `P ≠ NP`.
+>
+> NoGo entry `NOGO-000001` recorded in `outputs/nogolog.jsonl` with
+> `failure_class = "hardwiring"` and `regression_test =
+> "pnp3/Tests/FixedParams_Probe_NoGo.lean"`.
 
 This is the **first** mathematical experiment of the project. It does
 **not** start until Phase 0 cleanup PR 1–6 are merged and the verifier

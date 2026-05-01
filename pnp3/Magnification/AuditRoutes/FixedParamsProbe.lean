@@ -111,6 +111,57 @@ def HardwiringGuard : Prop :=
 theorem hardwiring_guard_holds : HardwiringGuard :=
   fun p => ⟨HardwiringObstruction p⟩
 
+/-!
+## Outcome A — overbroad uniform provenance baseline (FP-2).
+
+The smallest-possible-scope FP-2 result: the route fails for the
+**single** candidate provenance `Π = OverbroadUniformProvenance ac0`.
+
+This is **not** a claim that the FixedParams route is dead in
+general.  It is a re-export, under an audit-only name, of the
+already-formalised Probe 8a leak theorem
+(`false_of_fixedParams_and_uniformProvenance` in
+`pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean`):
+combining `FixedParamsRoute ac0 sb` with the overbroad provenance
+shape reconstructs the refuted `FormulaSupportRestrictionBoundsPartial`
+predicate, and Probe 3 of the falsifiability audit refutes that.
+
+The wrapper exists so that:
+
+1. Future FP-3 / FP-4 work has a stable audit name to reference
+   (they may NOT inline the underlying Probe 8a theorem; this
+   wrapper is the canonical access point).
+2. The verifier-side NoGo log entry has a stable
+   `formal_witness` pointer (file:line of this theorem).
+3. Any future `Π` that is at least as strong as the overbroad
+   shape is automatically dead by composition with this theorem.
+
+This theorem proves **`False`**, not `→ ResearchGapWitness`.  It is
+not a bridge; it is an obstruction.  An honest Outcome A for an
+arbitrary candidate `Π` would require additionally showing that
+`Π → OverbroadUniformProvenance ac0`, which is in general open.
+-/
+
+/-- **Outcome A baseline** (FP-2): pairing `FixedParamsRoute ac0 sb`
+with the overbroad uniform provenance shape is ex-falso.
+
+Proof: re-export of
+`Pnp3.Tests.FormulaSupportBoundsFalsifiabilityProbe.false_of_fixedParams_and_uniformProvenance`
+under the canonical audit name.  No new mathematics.
+
+Naming convention: `NoGo_*` prefix marks a theorem whose conclusion
+is `False` (not `ResearchGapWitness`).  These are obstructions used
+by FP-N analysis, not bridges to the final target. -/
+theorem NoGo_FixedParamsRoute_with_OverbroadUniformProvenance
+    (p : Pnp3.Models.GapPartialMCSPParams)
+    (ac0 : Pnp3.ThirdPartyFacts.AC0Parameters)
+    (sb : Nat → Nat)
+    (hUniform : OverbroadUniformProvenance ac0)
+    (hRoute   : FixedParamsRoute ac0 sb) :
+    False :=
+  Pnp3.Tests.FormulaSupportBoundsFalsifiabilityProbe.false_of_fixedParams_and_uniformProvenance
+    p ac0 sb hUniform hRoute
+
 end FixedParamsProbe
 end AuditRoutes
 end Magnification

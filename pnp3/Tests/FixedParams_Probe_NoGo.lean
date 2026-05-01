@@ -58,6 +58,26 @@ theorem fp1_hardwiring_obstruction_exists
                 (Pnp3.Models.gapPartialMCSP_Language p)) :=
   ⟨HardwiringObstruction p⟩
 
+/-! ### FP-2 — Outcome A baseline (overbroad uniform provenance) -/
+
+/-- **FP-2 regression test**: the audit-only Outcome A baseline
+elaborates and produces `False` from `FixedParamsRoute` paired with
+`OverbroadUniformProvenance`.
+
+This is a re-statement of the underlying audit theorem
+`NoGo_FixedParamsRoute_with_OverbroadUniformProvenance`; if the
+audit chain ever drifts (e.g. a refactor of Probe 8a), this test
+breaks at build time. -/
+theorem fp2_outcome_a_overbroad_baseline
+    (p : Pnp3.Models.GapPartialMCSPParams)
+    (ac0 : Pnp3.ThirdPartyFacts.AC0Parameters)
+    (sb : Nat → Nat)
+    (hUniform : OverbroadUniformProvenance ac0)
+    (hRoute   : FixedParamsRoute ac0 sb) :
+    False :=
+  NoGo_FixedParamsRoute_with_OverbroadUniformProvenance
+    p ac0 sb hUniform hRoute
+
 end FixedParamsProbeNoGo
 end Tests
 end Pnp3

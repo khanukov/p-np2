@@ -174,18 +174,44 @@ outside `pnp3/Magnification/AuditRoutes/` or `pnp3/Tests/`.
 
 ### 1.4 Suspicious provider/composite endpoints
 
-Estimated ~80 declarations referencing one or more of:
+**PR 13a status: inventory done.** 107 suspicious endpoint
+declarations enumerated and classified by pattern in
+`outputs/phase0_endpoint_table.csv` (see the
+"PR 13a — Suspicious endpoint inventory" section). No Lean code
+changed in PR 13a; the inventory is read-only.
 
-- `FormulaCertificateProviderPartial`
-- `FormulaSemanticMultiSwitchingProvider`
-- `AC0FamilyWitnessProvider`
-- `LocalCircuitFamilyWitnessProvider`
-- `AC0MultiSwitchingWitnessProvider`
-- `AsymptoticPayloadProvider`
+Pattern → classification distribution (heuristic, set in PR 13a):
 
-These are **not auto-rejected**. They will be reclassified during PR 8
-(`Suspicious endpoint reclassification`). Until then they are treated as
-**non-canonical**.
+| Pattern                                 | Count | Classification |
+| --------------------------------------- | ----- | -------------- |
+| `*_withAntiChecker*`                    |  34   | Conditional    |
+| `*_with_provider`                       |   3   | Optional       |
+| `*_with_provider_fromPipeline`          |   2   | Optional       |
+| FinalResultWeakRoutes (all 44 theorems) |  44   | Optional       |
+| `*_sourceClosure*` (non-AntiChecker)    |   2   | Optional       |
+| `*_blocker*` (non-AntiChecker)          |   2   | BarrierAudit   |
+| `AsymptoticDAGCollapse.lean` theorems   |   4   | AuditOnly (Rule 8) |
+| `AsymptoticFormulaCollapse.lean` theorems |  7   | AuditOnly (Rule 8) |
+| `Bridge_to_Magnification_Partial.lean`  |   6   | Conditional    |
+| Stand-alone `_fromPipeline` helpers     |   2   | Conditional    |
+| `asymptotic_formula_collapse` (orphan)  |   1   | AuditOnly      |
+| **Total**                               | **107** | (sums above)  |
+
+PR 13b will rename the entries with classification `RefutedRoute`
+or `Vacuous` (none in PR 13a's heuristic — the existing audit
+work in PR 3/3b already caught those). PR 13c will physically move
+`Conditional` and `AuditOnly` entries into
+`pnp3/Magnification/AuditRoutes/Conditional_*.lean` and
+`pnp3/Magnification/Optional/*.lean`. PR 13c is droppable: if its
+import topology is too tangled, it migrates into PR 14.
+
+The provider classes themselves
+(`VacuousFinalPayloadProvider`, `AsymptoticPayloadProvider`,
+`FormulaCertificateProviderPartial[_fromPipeline]`,
+`FormulaSemanticMultiSwitchingProvider`,
+`AC0FamilyWitnessProvider`, `LocalCircuitFamilyWitnessProvider`,
+`AC0MultiSwitchingWitnessProvider`, `StepCClosureDataPartialProvider`)
+were classified in PR 6 (see `spec/provider_audit_registry.toml`).
 
 ### 1.5 Conditional semantic bridges in `Complexity/Interfaces.lean`
 

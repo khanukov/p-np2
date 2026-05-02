@@ -140,6 +140,11 @@ record_check() {
 
 candidate_id=""
 candidate_dir_for_json="null"
+# Autoresearch MVP-4 marker: whether the optional critic_report.md
+# exists in the candidate directory.  Set during the candidate-shape
+# check; defaults to false when no candidate is supplied (tree-level
+# run, e.g. via scripts/check.sh's smoke step against the template).
+critic_report_present="false"
 if [[ -n "${candidate_dir}" ]]; then
   candidate_dir_for_json="\"${candidate_dir}\""
   candidate_id="$(basename "${candidate_dir%/}")"
@@ -168,7 +173,16 @@ if [[ -n "${candidate_dir}" ]]; then
       record_check "candidate_shape" "FAIL" \
                    "missing ${missing[*]}"
     else
-      echo "[verify]   PASS (all 5 required files present)"
+      # Autoresearch MVP-4: surface whether the optional critic_report.md
+      # is present.  The Verifier does NOT require it (Critic runs AFTER
+      # Verifier per spec/critic_protocol.md), but reporting its
+      # presence in the result.json helps downstream tooling decide
+      # whether to record critic_status = not_run vs. parse the report.
+      if [[ -f "${candidate_dir}/critic_report.md" ]]; then
+        critic_report_present="true"
+      fi
+      echo "[verify]   PASS (all 5 required files present;"\
+        "critic_report.md present=${critic_report_present})"
       record_check "candidate_shape" "PASS"
 
       # PR 12: barrier-certificate per-candidate check.
@@ -464,7 +478,7 @@ if [[ -n "${json_path}" ]]; then
   # `completed_at`).
   cat >"${json_path}" <<JSON
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "candidate_id": ${cdir_id_for_json},
   "candidate_dir": ${candidate_dir_for_json},
   "status": "${overall_status}",
@@ -473,6 +487,7 @@ if [[ -n "${json_path}" ]]; then
   "axioms_allowed": ${axioms_json},
   "spec_version": "${spec_version}",
   "verifier_implementation_level": "${VERIFIER_IMPL_LEVEL}",
+  "critic_report_present": ${critic_report_present},
   "completed_at": "${completed_at}"
 }
 JSON

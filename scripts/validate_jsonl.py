@@ -62,7 +62,12 @@ SURVIVOR_FINAL_STATUS = {
     "requires_revalidation",
 }
 
+# AttemptLedgerEntry — Autoresearch MVP control plane.
+ATTEMPT_VERIFIER_STATUS = {"PASS", "FAIL", "PASS_SHAPE_ONLY"}
+ATTEMPT_CRITIC_STATUS = {"not_run", "pass", "fail"}
+
 NOGO_ID_RE = re.compile(r"^NOGO-[0-9]{6}$")
+ATTEMPT_ID_RE = re.compile(r"^ATT-[0-9]{6}$")
 TIMESTAMP_RE = re.compile(
     r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?Z$"
 )
@@ -81,8 +86,19 @@ SURVIVOR_REQUIRED = (
     "applicable_spec_version", "attack_suite_version", "created_at",
 )
 
+ATTEMPT_REQUIRED = (
+    "id", "candidate_id", "method_family",
+    "verifier_status", "critic_status",
+    "applicable_spec_version", "attack_suite_version", "created_at",
+)
+
 NOGO_ALLOWED = set(NOGO_REQUIRED) | {"supersedes", "notes"}
 SURVIVOR_ALLOWED = set(SURVIVOR_REQUIRED) | {"notes"}
+ATTEMPT_ALLOWED = set(ATTEMPT_REQUIRED) | {
+    "seed_pack_id", "verifier_failure_class",
+    "critic_break_class", "critic_report_path",
+    "supersedes", "notes",
+}
 
 
 # ---------------------------------------------------------------------------
@@ -186,6 +202,64 @@ def validate_survivor(entry: dict) -> list[str]:
     return errs
 
 
+def validate_attempt(entry: dict) -> list[str]:
+    """Validate one outputs/attempts.jsonl line (AttemptLedgerEntry shape)."""
+    errs: list[str] = []
+    if not isinstance(entry, dict):
+        return ["entry is not a JSON object"]
+    errs += _check_required(entry, ATTEMPT_REQUIRED)
+    errs += _check_no_extras(entry, ATTEMPT_ALLOWED)
+    errs += _check_pattern(entry, "id", ATTEMPT_ID_RE)
+    errs += _check_string_nonempty(entry, "candidate_id")
+    errs += _check_enum(entry, "method_family", METHOD_FAMILY)
+    errs += _check_enum(entry, "verifier_status", ATTEMPT_VERIFIER_STATUS)
+    if "verifier_failure_class" in entry:
+        v = entry["verifier_failure_class"]
+        if v is None:
+            pass
+        elif v in NOGO_FAILURE_CLASS:
+            pass
+        else:
+            errs.append(
+                f"verifier_failure_class not in enum or null: {v!r}")
+    errs += _check_enum(entry, "critic_status", ATTEMPT_CRITIC_STATUS)
+    if "critic_break_class" in entry:
+        v = entry["critic_break_class"]
+        if v is None:
+            pass
+        elif v in NOGO_FAILURE_CLASS:
+            pass
+        else:
+            errs.append(
+                f"critic_break_class not in enum or null: {v!r}")
+    errs += _check_string_or_null(entry, "critic_report_path")
+    errs += _check_string_nonempty(entry, "applicable_spec_version")
+    errs += _check_string_nonempty(entry, "attack_suite_version")
+    errs += _check_pattern(entry, "created_at", TIMESTAMP_RE)
+    if "seed_pack_id" in entry:
+        errs += _check_string_nonempty(entry, "seed_pack_id")
+    if "supersedes" in entry:
+        errs += _check_pattern(entry, "supersedes", ATTEMPT_ID_RE)
+    # Cross-field consistency.
+    if entry.get("verifier_status") == "FAIL" \
+            and entry.get("verifier_failure_class") in (None, ...):
+        # Only flag if explicitly null when status=FAIL; missing field is OK
+        # under the optional-attribute rule, but tooling should populate it.
+        if "verifier_failure_class" in entry \
+                and entry["verifier_failure_class"] is None:
+            errs.append(
+                "verifier_failure_class must be populated when "
+                "verifier_status = FAIL")
+    if entry.get("critic_status") == "fail" \
+            and entry.get("critic_break_class") in (None, ...):
+        if "critic_break_class" in entry \
+                and entry["critic_break_class"] is None:
+            errs.append(
+                "critic_break_class must be populated when "
+                "critic_status = fail")
+    return errs
+
+
 # ---------------------------------------------------------------------------
 # JSONL file driver.
 # ---------------------------------------------------------------------------
@@ -227,19 +301,22 @@ def validate_jsonl(path: Path, validator: Validator) -> bool:
 
 def main(argv: list[str]) -> int:
     if len(argv) > 1:
-        # Caller supplied paths explicitly; default to NoGoLog shape
-        # except when the path's basename is `survivor_history.jsonl`.
+        # Caller supplied paths explicitly; pick a validator from the
+        # path's basename. Defaults to NoGoLog shape.
         targets: list[tuple[Path, Validator]] = []
         for arg in argv[1:]:
             p = Path(arg)
             if p.name == "survivor_history.jsonl":
                 targets.append((p, validate_survivor))
+            elif p.name == "attempts.jsonl":
+                targets.append((p, validate_attempt))
             else:
                 targets.append((p, validate_nogo))
     else:
         targets = [
             (Path("outputs/nogolog.jsonl"), validate_nogo),
             (Path("outputs/survivor_history.jsonl"), validate_survivor),
+            (Path("outputs/attempts.jsonl"), validate_attempt),
         ]
     ok = True
     for p, v in targets:

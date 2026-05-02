@@ -1,0 +1,79 @@
+# Seed packs — Research Governance v0.1, Autoresearch MVP-5
+
+A **seed pack** is a self-contained research task description
+suitable for a single parallel-search worker (manual or LLM).  It
+specifies:
+
+* the goal of the task (one sentence);
+* the scope and forbidden-zone (what the worker MAY and MAY NOT
+  touch);
+* the success criteria, in the form of executable checks where
+  possible;
+* pointers to the relevant Constitution rules, registry entries,
+  audit modules, and prior NoGoLog entries;
+* the expected output shape (Lean artifacts, NoGoLog entries,
+  `outputs/attempts.jsonl` rows, etc.).
+
+Seed packs are **NOT** candidate packages.  A candidate package
+lives under `pnp3/Candidates/<id>/` and is the result of a worker
+*successfully* completing one or more seed packs.  A seed pack is
+the *brief*, not the *artifact*.
+
+## Directory layout
+
+```
+seed_packs/
+  README.md                          ← this file
+  <seed_pack_id>/
+    README.md                        ← brief + scope + success criteria
+    [extra files specific to the pack, e.g. Lean snippets]
+```
+
+Every seed pack id must be lowercase ASCII with underscores, and
+must be referenced by the `seed_pack_id` field of any
+`outputs/attempts.jsonl` entry that responds to the pack.
+
+## Active seed packs
+
+| ID                                    | Track       | Status        |
+| ------------------------------------- | ----------- | ------------- |
+| `fp3b1_log_width_hardwiring`          | Research-A  | open          |
+
+## Forbidden across all seed packs
+
+Per the Research Constitution:
+
+* **Trust root edits forbidden.**  No worker, regardless of seed
+  pack, may edit `pnp3/Complexity/Interfaces.lean`,
+  `pnp3/Complexity/PsubsetPpolyInternal/`,
+  `pnp3/Magnification/UnconditionalResearchGap.lean`,
+  `pnp3/Magnification/FormulaSupportBoundsPartial_fromPipeline_fixedParams`,
+  or `ResearchGapWitness`.
+* **No `Candidates/` promotion** without a green Verifier+Critic
+  cycle.  Seed packs that produce audit-only artifacts under
+  `pnp3/Magnification/AuditRoutes/` do NOT trigger
+  `pnp3/Candidates/` directories.
+* **No bridge / SourceTheorem / final endpoint** is added by a
+  seed pack except via an explicit FP-4-style Candidates promotion.
+* **No `axiom`, `opaque`, `Fact`, hidden typeclass payload, or
+  `sorry`/`admit`** in any committed artifact (Rule 16, Rule 1).
+* **JSONL logs are append-only** (Rule 9).  Corrections are new
+  entries with `supersedes` pointing to the original.
+
+## Worker output expectations
+
+Each seed pack defines its own concrete acceptance criteria.  At
+minimum every worker run produces exactly one
+`outputs/attempts.jsonl` entry, regardless of whether the run
+succeeds or fails:
+
+```jsonl
+{"id": "ATT-NNNNNN", "candidate_id": "<seed_pack_id-or-candidate_id>",
+ "method_family": "<MethodFamily>", "seed_pack_id": "<seed_pack_id>",
+ "verifier_status": "PASS|FAIL|PASS_SHAPE_ONLY",
+ "critic_status": "not_run|pass|fail", ...}
+```
+
+If a worker run produces a Critic report, a `critic_report.md` file
+following `spec/critic_protocol.md` MUST also be written and
+referenced by the attempts.jsonl line.

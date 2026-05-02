@@ -172,6 +172,79 @@
         "created_at":               { "$ref": "#/$defs/Timestamp" },
         "notes":                    { "type": "string" }
       }
+    },
+
+    "AttemptLedgerEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "candidate_id",
+        "method_family",
+        "verifier_status",
+        "critic_status",
+        "applicable_spec_version",
+        "attack_suite_version",
+        "created_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^ATT-[0-9]{6}$",
+          "description": "Globally unique attempt id, monotonically assigned. Each Verifier+Critic cycle produces exactly one entry."
+        },
+        "candidate_id": {
+          "type": "string",
+          "description": "Identifier of the candidate package under pnp3/Candidates/."
+        },
+        "method_family":   { "$ref": "#/$defs/MethodFamily" },
+        "seed_pack_id": {
+          "type": "string",
+          "description": "Optional pointer to the seed pack under seed_packs/<id>/ that this attempt is responding to."
+        },
+        "verifier_status": {
+          "type": "string",
+          "enum": ["PASS", "FAIL", "PASS_SHAPE_ONLY"],
+          "description": "Outcome of scripts/verify_candidate.sh on this candidate."
+        },
+        "verifier_failure_class": {
+          "oneOf": [
+            { "$ref": "#/$defs/FailureClass" },
+            { "type": "null" }
+          ],
+          "description": "Populated only when verifier_status = FAIL; null otherwise."
+        },
+        "critic_status": {
+          "type": "string",
+          "enum": ["not_run", "pass", "fail"],
+          "description": "Status of the structured Critic report (spec/critic_protocol.md). 'not_run' if Critic has not yet produced a critic_report.md for this attempt; 'pass' if all six attack sections classified the candidate as 'no break found'; 'fail' if any attack section produced a documented break."
+        },
+        "critic_break_class": {
+          "oneOf": [
+            { "$ref": "#/$defs/FailureClass" },
+            { "type": "null" }
+          ],
+          "description": "Populated only when critic_status = fail; classifies the dominant Critic-found break."
+        },
+        "critic_report_path": {
+          "oneOf": [
+            { "type": "string", "description": "Path to the structured critic_report.md file (typically pnp3/Candidates/<candidate_id>/critic_report.md)." },
+            { "type": "null" }
+          ]
+        },
+        "applicable_spec_version": { "type": "string" },
+        "attack_suite_version":    { "type": "string" },
+        "created_at":              { "$ref": "#/$defs/Timestamp" },
+        "supersedes": {
+          "type": "string",
+          "pattern": "^ATT-[0-9]{6}$",
+          "description": "Optional reference to an earlier attempt being corrected (e.g. after a Verifier or Critic re-run)."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Free-form notes. Must not contain claims that contradict the recorded statuses."
+        }
+      }
     }
   },
 
@@ -183,6 +256,10 @@
     {
       "title": "outputs/survivor_history.jsonl",
       "$ref": "#/$defs/SurvivorHistoryEntry"
+    },
+    {
+      "title": "outputs/attempts.jsonl",
+      "$ref": "#/$defs/AttemptLedgerEntry"
     }
   ]
 }

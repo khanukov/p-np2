@@ -460,7 +460,7 @@ echo "[check] Step 10/17: candidate-local Rule 16 scan (Research Governance v0.1
 echo "[check] Step 11/17: smoke probes (Research Governance v0.1, PR 5)"
 "${ROOT_DIR}/scripts/run_smoke_probes.sh"
 
-echo "[check] Step 12/17: NoGoLog + survivor history validation (Research Governance v0.1, PR 9)"
+echo "[check] Step 12/17: NoGoLog + survivor history + attempts ledger validation (Research Governance v0.1, PR 9 + Autoresearch MVP-3)"
 python3 "${ROOT_DIR}/scripts/validate_jsonl.py"
 
 echo "[check] Step 13/17: verify_candidate.sh --full smoke (Research Governance v0.1, PR 15 + PR 15.2)"

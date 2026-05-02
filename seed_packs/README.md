@@ -35,9 +35,9 @@ must be referenced by the `seed_pack_id` field of any
 
 ## Active seed packs
 
-| ID                                    | Track       | Status        |
-| ------------------------------------- | ----------- | ------------- |
-| `fp3b1_log_width_hardwiring`          | Research-A  | open          |
+| ID                                    | Track       | Status                                |
+| ------------------------------------- | ----------- | ------------------------------------- |
+| `fp3b1_log_width_hardwiring`          | Research-A  | skeleton-shipped; FP-3b.2 still open  |
 
 ## Forbidden across all seed packs
 

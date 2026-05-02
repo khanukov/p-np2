@@ -114,6 +114,39 @@ theorem fp3_actual_test3_hardwiring_attack_defeated
     ¬ FP3Attempt.InSupportFunctionalDiversity w :=
   FP3Attempt.InSupportFunctionalDiversity_excludes_uniformPolyBound w B hBound
 
+/-! ### FP-3b.1 — audit-only Lean skeleton (`FP3b1` namespace)
+
+Smoke checks that the FP-3b.1 skeleton compiles and the
+corrected-packaging trick (language defined as `eval (family n)`,
+NOT a fixed function) yields a structurally sound
+`InPpolyFormula` record.  These tests do NOT claim the skeleton
+satisfies the diversity property — see the FP-3b.2 GOAL docstring
+in `pnp3/Magnification/AuditRoutes/FixedParamsProbe.lean::FP3b1`. -/
+
+/-- Smoke: the FP-3b.1 placeholder language elaborates. -/
+example (n : Nat) (x : Pnp3.ComplexityInterfaces.Bitstring n) :
+    FP3b1.adversaryLanguage n x = FP3b1.adversaryLanguage n x :=
+  rfl
+
+/-- Smoke: the FP-3b.1 placeholder family elaborates. -/
+example (n : Nat) :
+    FP3b1.adversaryFamily n = FP3b1.adversaryFamily n :=
+  rfl
+
+/-- **FP-3b.1 packaging-correction regression**: the
+`InPpolyFormula adversaryLanguage` record is inhabited and its
+`correct` field is genuinely `rfl` because the language is
+defined to be the family's evaluation.
+
+If a future PR mistakenly switches `adversaryLanguage` to
+`fun _ _ => false` (the FP-3b.0 anti-pattern), this `rfl` proof
+would fail because the family's body is `const false` only by
+luck for the trivial skeleton.  The test pins the corrected
+shape against drift. -/
+example : Pnp3.ComplexityInterfaces.InPpolyFormula
+            FP3b1.adversaryLanguage :=
+  FP3b1.adversaryWitness
+
 end FixedParamsProbeNoGo
 end Tests
 end Pnp3

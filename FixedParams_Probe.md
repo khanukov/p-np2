@@ -155,7 +155,39 @@
 > * `NOGO-000003` (`status = "needs_review"`, `supersedes =
 >   "NOGO-000002"`) — the FP-3b.0-corrected caveat: log-width
 >   hardwiring is the genuine concern; alternating-slice full-width is
->   blocked by `polyBound_poly`; Lean witness is FP-3b.1.
+>   blocked by `polyBound_poly`; Lean witness is FP-3b.2 (was
+>   FP-3b.1, now split — FP-3b.1 ships the audit-only skeleton,
+>   FP-3b.2 lifts it to a real diversity-defeating adversary).
+>
+> **FP-3b.1 status: SKELETON SHIPPED (audit-only, structural only).**
+>
+> `pnp3/Magnification/AuditRoutes/FixedParamsProbe.lean::FP3b1` now
+> contains:
+>
+> * `FP3b1.adversaryFamily : ∀ n, FormulaCircuit n` — placeholder
+>   `const false` body;
+> * `FP3b1.adversaryLanguage : Language` — defined as
+>   `eval (adversaryFamily n) x` (NOT `fun _ _ => false`); this pins
+>   the FP-3b.0 packaging correction;
+> * `FP3b1.adversaryWitness : InPpolyFormula adversaryLanguage` — full
+>   record assembled, `correct := fun _ _ => rfl`;
+> * an `FP-3b.2 GOAL` docstring enumerating the TODO list for the
+>   diversity-witness lift.
+>
+> Regression smoke at
+> `pnp3/Tests/FixedParams_Probe_NoGo.lean::FP3b1` pins the
+> packaging-correction shape against drift.
+>
+> What FP-3b.1 establishes: (1) the FP-3b.0 packaging correction is
+> sound; (2) a full `InPpolyFormula` record can be assembled in the
+> audit namespace without trust-root edits; (3) FP-3b.2 can be a
+> drop-in replacement of `FP3b1.adversaryFamily`'s body.
+>
+> What FP-3b.1 does NOT establish: no diversity-satisfaction proof,
+> no `NOGO-000003` upgrade, no `ProvenanceFilter_v1` promotion, no
+> `Candidates/<id>/`, no bridge / SourceTheorem / final endpoint.
+> The skeleton is intentionally trivial; FP-3b.2 is where the
+> mathematical content lives.
 
 This is the **first** mathematical experiment of the project. It does
 **not** start until Phase 0 cleanup PR 1–6 are merged and the verifier

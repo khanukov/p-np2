@@ -282,6 +282,154 @@ theorem InSupportFunctionalDiversity_excludes_uniformPolyBound
 
 end FP3Attempt
 
+/-!
+## FP-3b.1 — audit-only Lean skeleton (`FP3b1` namespace).
+
+Research Governance v0.1, Autoresearch MVP / FP-3b.1.
+
+This namespace ships the **structural scaffolding** for the
+log-width / power-of-two-slice hardwiring adversary described in
+`seed_packs/fp3b1_log_width_hardwiring/README.md`.  It is
+intentionally minimal:
+
+* `adversaryFamily n` is `FormulaCircuit.const false` at every
+  length — a trivial placeholder family;
+* `adversaryLanguage` is **defined as** `eval (adversaryFamily n) x`,
+  per the FP-3b.0 packaging correction (NOT `fun _ _ => false`,
+  which would force the body of `adversaryFamily` to evaluate to
+  `false` everywhere);
+* `adversaryWitness : InPpolyFormula adversaryLanguage` is a
+  complete `InPpolyFormula` record over the trivial family,
+  demonstrating that the corrected packaging compiles end-to-end
+  and that `correct := by intro n x; rfl` is sound.
+
+The skeleton **does NOT** satisfy
+`FP3Attempt.InSupportFunctionalDiversity` — `const false` has
+empty support at every length, so the unboundedness conjunct
+fails by inspection.  This is intentional: FP-3b.1 ships the
+scaffolding; FP-3b.2 fills in a real log-width truth-table-shaped
+family that DOES satisfy the diversity property.  Because no
+incomplete-proof markers is allowed in the active tree, the diversity-witness
+theorem is preserved here as a docstring goal rather than a
+half-proved `theorem`.
+
+What FP-3b.1 establishes (audit-only):
+
+1. The packaging correction from FP-3b.0 is sound: defining
+   `adversaryLanguage n x := eval (adversaryFamily n) x` makes the
+   `correct` field of `InPpolyFormula` trivially `rfl`, regardless
+   of the family's body.
+2. A full `InPpolyFormula` record can be assembled in the
+   `FP3Attempt.FP3b1` namespace without touching the trust root,
+   without introducing typeclass / axiom / opaque payload, and
+   without modifying existing FP-3 / FP-3-actual artifacts.
+3. FP-3b.2 (the actual log-width adversary) can be a drop-in
+   replacement of `adversaryFamily`'s body, with the surrounding
+   record and language definitions unchanged.
+
+What FP-3b.1 does NOT establish:
+
+* No diversity-satisfaction proof.
+* No NOGO-000003 upgrade to `status = "formalized"` (it stays
+  `needs_review`).
+* No `ProvenanceFilter_v1` promotion (stays informal).
+* No `Candidates/<id>/` directory (audit-only routing).
+* No bridge / SourceTheorem / final endpoint.
+-/
+
+namespace FP3b1
+
+open Pnp3.ComplexityInterfaces
+
+/-- **FP-3b.1 placeholder adversary family.**
+
+This is INTENTIONALLY trivial (`FormulaCircuit.const false` at
+every length) so that the surrounding `InPpolyFormula` packaging
+compiles.  The corrected-packaging trick — defining the language
+as `eval (family n)` rather than `fun _ _ => false` — works for
+ANY `family : ∀ n, FormulaCircuit n`, including the trivial body
+here.
+
+FP-3b.2 will replace this body with a log-width / power-of-two-
+slice truth-table-shaped construction (see
+`seed_packs/fp3b1_log_width_hardwiring/README.md` §5–6 for the
+construction and §6 for the lemma TODOs).  The surrounding
+`adversaryLanguage` and `adversaryWitness` definitions do NOT
+need to change. -/
+def adversaryFamily : ∀ n : Nat, FormulaCircuit n :=
+  fun _ => FormulaCircuit.const false
+
+/-- **FP-3b.0 packaging correction (verified here).**
+
+The language is defined as the family's evaluation, NOT as a
+fixed function like `fun _ _ => false`.  This makes the
+`correct` field of `InPpolyFormula adversaryLanguage` trivially
+provable by `rfl`, regardless of `adversaryFamily`'s body.
+
+The original FP-3b.0 sketch in `outputs/nogolog.jsonl::NOGO-000003`
+notes mentioned packaging into `InPpolyFormula (fun _ _ => false)`.
+That packaging is INCORRECT for an arbitrary truth-table
+hardwired family because `correct` would not hold for `L = const
+false` unless the family also evaluates to `false` everywhere —
+which is NOT the case for an adversary that hardwires arbitrary
+Boolean functions on a log-width window. -/
+def adversaryLanguage : Pnp3.ComplexityInterfaces.Language :=
+  fun n x => FormulaCircuit.eval (adversaryFamily n) x
+
+/-- **FP-3b.1 placeholder InPpolyFormula record.**
+
+Polynomial bound is the trivial `polyBound n := 1`; for the real
+FP-3b.2 log-width adversary this will become
+`polyBound n := 6 * (n + 1)` (or similar, derived from
+`(ttFormula at width logWidth n).size ≤ 6 * 2^(logWidth n) ≤
+6 * (n + 1)`).  All four field-proofs degenerate to `rfl` /
+`decide` here because the family is constant. -/
+def adversaryWitness : InPpolyFormula adversaryLanguage where
+  polyBound := fun _ => 1
+  polyBound_poly := ⟨1, by intro n; exact Nat.le_add_left 1 _⟩
+  family := adversaryFamily
+  family_size_le := fun _ => by
+    show FormulaCircuit.size (FormulaCircuit.const false) ≤ 1
+    exact Nat.le.refl
+  correct := fun _ _ => rfl
+
+/-- **FP-3b.2 GOAL (not proved here).**
+
+The diversity-witness theorem that FP-3b.2 must close:
+
+```lean
+theorem adversary_satisfies_diversity :
+    FP3Attempt.InSupportFunctionalDiversity adversaryWitness
+```
+
+The FP-3b.1 skeleton's `adversaryFamily := fun _ => const false`
+does NOT satisfy this — `const false` has empty support at every
+length and the unboundedness conjunct
+`∀ B, ∃ n, B < (support (family n)).card` fails for any `B ≥ 0`
+because the support cardinality is identically `0`.
+
+To close the goal, FP-3b.2 must:
+
+1. replace `adversaryFamily`'s body with a log-width TT
+   construction (or the simpler power-of-two-slice variant);
+2. update `polyBound` (e.g. to `6 * (n + 1)`) and re-prove
+   `polyBound_poly` and `family_size_le`;
+3. derive `(family n).support.card` is unbounded as `n → ∞`;
+4. derive `(family n).support.card < n` infinitely often;
+5. compose the two diversity conjuncts into the final theorem.
+
+The supporting lemmas (`Nat.log` helpers, `(ttFormula f).size ≤
+6 * 2^k`, `FormulaCircuit.rename` size + support transport) are
+enumerated in `seed_packs/fp3b1_log_width_hardwiring/README.md`
+§6.  None of them exist as stand-alone Lean lemmas yet; FP-3b.2
+will add them either as fresh top-level lemmas in this audit
+module or as a small new audit module under
+`pnp3/Magnification/AuditRoutes/`. -/
+example : True := trivial   -- placeholder so the docstring above
+                            -- attaches to a real declaration
+
+end FP3b1
+
 end FixedParamsProbe
 end AuditRoutes
 end Magnification

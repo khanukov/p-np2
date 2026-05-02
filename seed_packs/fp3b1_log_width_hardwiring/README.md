@@ -1,11 +1,27 @@
 # Seed pack `fp3b1_log_width_hardwiring`
 
 > **Track:** Research-A (FixedParams Probe research thread).
-> **Status:** open.
+> **Status:** skeleton-shipped; FP-3b.2 still open.
 > **Method family:** `ac0_locality_support`.
 > **Created:** FP-3b.0 (commit `80f0f72` introduced
-> `NOGO-000003 needs_review`; this seed pack is the FP-3b.1 follow-up
-> that aims to upgrade NOGO-000003 to `formalized`).
+> `NOGO-000003 needs_review`); this seed pack was the FP-3b.1
+> follow-up.
+>
+> **FP-3b.1 audit-only skeleton:** shipped, see commit
+> `<this commit>` and
+> `pnp3/Magnification/AuditRoutes/FixedParamsProbe.lean::FP3b1`.
+> The skeleton pins the corrected `L = eval (family n)` packaging
+> (the FP-3b.0 anti-pattern was `InPpolyFormula (fun _ _ => false)`)
+> with a TRIVIAL placeholder family (`const false` everywhere).
+> The skeleton compiles, but does NOT satisfy
+> `FP3Attempt.InSupportFunctionalDiversity` — that is FP-3b.2.
+>
+> **FP-3b.2 (still open):** replace `FP3b1.adversaryFamily`'s body
+> with a real log-width / power-of-two-slice truth-table-shaped
+> construction, prove the diversity-witness theorem, upgrade
+> `NOGO-000003` to `status = "formalized"`.  See
+> `pnp3/Magnification/AuditRoutes/FixedParamsProbe.lean::FP3b1`'s
+> `FP-3b.2 GOAL` docstring for the explicit TODO list.
 
 ## 1. Goal
 

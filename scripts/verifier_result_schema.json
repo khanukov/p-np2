@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://p-np2/scripts/verifier_result_schema.json",
-  "title": "Verifier v1 result schema (Research Governance v0.1, PR 15)",
-  "description": "Output of `scripts/verify_candidate.sh --json <path>`. Records the deterministic verdict of one verification run.",
+  "title": "Verifier v1 result schema (Research Governance v0.1, PR 15 + Autoresearch MVP-0.1.1)",
+  "description": "Output of `scripts/verify_candidate.sh --json <path>`. Records the deterministic verdict of one verification run. MVP-0.1.1 (Critic state hardening) extends the schema with three new fields (critic_report_is_template, critic_completed, critic_status) and bumps schema_version to 1.2.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -19,7 +19,7 @@
   "properties": {
     "schema_version": {
       "type": "string",
-      "const": "1.0"
+      "enum": ["1.0", "1.1", "1.2"]
     },
     "candidate_id": {
       "type": "string",
@@ -63,6 +63,23 @@
       "type": "string",
       "description": "MVP, MVP_GREP_FALLBACK, or v1.0+",
       "enum": ["v1.0", "MVP", "MVP_GREP_FALLBACK"]
+    },
+    "critic_report_present": {
+      "type": "boolean",
+      "description": "MVP-4: whether <candidate>/critic_report.md exists on disk. The Verifier does NOT require this file (the Critic runs after the Verifier per spec/critic_protocol.md §4); the field is reported for downstream tooling that decides whether to record critic_status = not_run vs. parse the report."
+    },
+    "critic_report_is_template": {
+      "type": "boolean",
+      "description": "MVP-0.1.1: whether the parsed critic_report.md still carries template markers (the <!-- TEMPLATE_MARKER --> HTML comment, or the literal 'Template placeholder' text in every attack section). Computed by scripts/validate_critic_report.py. False when critic_report_present is false."
+    },
+    "critic_completed": {
+      "type": "boolean",
+      "description": "MVP-0.1.1: critic_report_present && !critic_report_is_template && all six attack sections present and well-formed && Verdict block has critic_status in {pass, fail}. A 'completed' Critic report is the only kind that scripts/validate_jsonl.py::validate_attempt accepts as evidence for critic_status = pass / fail in outputs/attempts.jsonl."
+    },
+    "critic_status": {
+      "type": "string",
+      "enum": ["not_run", "pass", "fail"],
+      "description": "MVP-0.1.1: the Verifier-side view of Critic status. Per spec/critic_protocol.md §4 the Critic runs after the Verifier, so this is always 'not_run' in result.json regardless of whether a (potentially filled) critic_report.md is present. Real pass/fail values appear only in the Critic's outputs/attempts.jsonl line."
     },
     "completed_at": {
       "type": "string",

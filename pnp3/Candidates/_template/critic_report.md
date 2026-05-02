@@ -1,3 +1,5 @@
+<!-- TEMPLATE_MARKER: do-not-treat-as-completed -->
+
 # Critic report — `<candidate_id>`
 
 > **Template note.**  This file is a placeholder for the structured
@@ -9,7 +11,16 @@
 >
 > The six-attack schema below is fixed; do not reorder, rename, or
 > add sections.  Each section's three-field schema (`status`,
-> `summary`, `evidence`) is enforced by `spec/critic_protocol.md`.
+> `summary`, `evidence`) is enforced by `spec/critic_protocol.md` and
+> by `scripts/validate_critic_report.py`.
+>
+> When filling this file in, **delete the
+> `<!-- TEMPLATE_MARKER ... -->` HTML comment at the top of the file**.
+> Until that marker is removed, `validate_critic_report.py` reports
+> `is_template = true` and `attempts.jsonl` will refuse to record
+> `critic_status = pass` (Autoresearch MVP-0.1.1).  The
+> `critic_status: template_not_filled` sentinel below is parsed as
+> `not_run` until the Critic replaces it with `pass` or `fail`.
 
 ## Attack 1: Hidden-payload attack
 
@@ -78,14 +89,17 @@
 
 ## Verdict
 
-- **critic_status:** `pass`
+- **critic_status:** `template_not_filled`
 - **dominant_break_class:** `null`
 - **dominant_break_section:** `null`
 - **next_recommended_action:** `Template — replace with concrete next-step recommendation. Default: do NOT promote until at least one human Critic reviews this report.`
 
-> **Template caveat.**  The default `pass` above is a TEMPLATE marker,
-> NOT an actual Critic verdict.  A real `pass` requires every attack
-> section to be FILLED IN with non-template evidence.  Verifier
-> tooling that records `critic_status = pass` from this template
-> file is incorrect — the template's `attack not applicable` defaults
-> are placeholders.
+> **Template caveat.**  The default `template_not_filled` sentinel above
+> is parsed as `critic_status = not_run` by
+> `scripts/validate_critic_report.py`.  A real `pass` requires every
+> attack section to be FILLED IN with non-template evidence AND the
+> `<!-- TEMPLATE_MARKER ... -->` line at the top of this file to be
+> removed.  Verifier tooling that records `critic_status = pass`
+> from this template file is incorrect — the cross-field check in
+> `scripts/validate_jsonl.py::validate_attempt` will reject such
+> entries (Autoresearch MVP-0.1.1).

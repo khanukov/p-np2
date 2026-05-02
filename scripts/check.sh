@@ -485,6 +485,60 @@ if [[ "${kernel_status}" != "PASS" ]]; then
   exit 1
 fi
 
+# MVP-0.1.1: the result.json must classify the template's
+# critic_report.md as a *template* (not a real Critic report).  This
+# is the structural barrier that prevents the template-trap blocker
+# (Pilot Wave 0 readiness audit, Engineer A).
+critic_present="$(python3 -c 'import json; print(json.load(open("/tmp/verify_template_result.json")).get("critic_report_present", "ABSENT"))')"
+critic_is_template="$(python3 -c 'import json; print(json.load(open("/tmp/verify_template_result.json")).get("critic_report_is_template", "ABSENT"))')"
+critic_completed="$(python3 -c 'import json; print(json.load(open("/tmp/verify_template_result.json")).get("critic_completed", "ABSENT"))')"
+critic_status_val="$(python3 -c 'import json; print(json.load(open("/tmp/verify_template_result.json")).get("critic_status", "ABSENT"))')"
+if [[ "${critic_present}" != "True" ]]; then
+  echo "[check] FAIL: result.json critic_report_present=${critic_present} (expected True)"
+  exit 1
+fi
+if [[ "${critic_is_template}" != "True" ]]; then
+  echo "[check] FAIL: result.json critic_report_is_template=${critic_is_template} (expected True for _template)"
+  exit 1
+fi
+if [[ "${critic_completed}" != "False" ]]; then
+  echo "[check] FAIL: result.json critic_completed=${critic_completed} (expected False for _template)"
+  exit 1
+fi
+if [[ "${critic_status_val}" != "not_run" ]]; then
+  echo "[check] FAIL: result.json critic_status=${critic_status_val} (expected not_run on Verifier-side)"
+  exit 1
+fi
+echo "Critic-state fields OK (present=True, is_template=True, completed=False, status=not_run)."
+
+echo "[check] Step 13.1/17: critic-template trap negative fixture (MVP-0.1.1)"
+# Construct a minimal AttemptLedgerEntry that claims critic_status = pass
+# against the template critic_report.md.  validate_jsonl must reject it.
+# This is the Engineer A blocker fixture: without MVP-0.1.1 hardening,
+# the validator silently accepted such entries.
+trap_fixture_dir="$(mktemp -d)"
+trap_fixture="${trap_fixture_dir}/attempts.jsonl"
+cat >"${trap_fixture}" <<'TRAP_FIXTURE'
+{"id":"ATT-000001","candidate_id":"trap_fixture","method_family":"other","verifier_status":"PASS_SHAPE_ONLY","critic_status":"pass","critic_report_path":"pnp3/Candidates/_template/critic_report.md","applicable_spec_version":"0.1.0","attack_suite_version":"0.1.0","created_at":"2026-05-02T00:00:00Z"}
+TRAP_FIXTURE
+set +e
+python3 "${ROOT_DIR}/scripts/validate_jsonl.py" "${trap_fixture}" \
+  >/tmp/pnp3_critic_trap_log.txt 2>&1
+trap_rc=$?
+set -e
+rm -rf "${trap_fixture_dir}"
+if [[ "${trap_rc}" -eq 0 ]]; then
+  echo "[check] FAIL: critic-template trap fixture was ACCEPTED by validate_jsonl (MVP-0.1.1 regression)."
+  cat /tmp/pnp3_critic_trap_log.txt
+  exit 1
+fi
+if ! rg -q "is forbidden against template critic report" /tmp/pnp3_critic_trap_log.txt; then
+  echo "[check] FAIL: critic-template trap fixture rejected, but for the wrong reason:"
+  cat /tmp/pnp3_critic_trap_log.txt
+  exit 1
+fi
+echo "Critic-template trap fixture correctly REJECTED."
+
 echo "[check] Step 14/17: pnp3 explicit theorem-axiom surface dump"
 axiom_surface_log="/tmp/pnp3_axiom_surface.log"
 if ! rg -n -U "pnp3/Tests/AxiomsAudit\\.lean:[^\\n]*depends on axioms:\\s*\\[[^\\]]*\\]" \

@@ -140,11 +140,32 @@ record_check() {
 
 candidate_id=""
 candidate_dir_for_json="null"
-# Autoresearch MVP-4 marker: whether the optional critic_report.md
-# exists in the candidate directory.  Set during the candidate-shape
-# check; defaults to false when no candidate is supplied (tree-level
-# run, e.g. via scripts/check.sh's smoke step against the template).
+# Autoresearch MVP-4 + MVP-0.1.1: critic-state markers populated below
+# during the candidate-shape check.  Defaults reflect a tree-level
+# run with no candidate.
+#
+#   critic_report_present     = critic_report.md exists at the
+#                               canonical location.
+#   critic_report_is_template = the report still carries the
+#                               <!-- TEMPLATE_MARKER -->
+#                               or the literal "Template placeholder"
+#                               text in every attack section
+#                               (see scripts/validate_critic_report.py).
+#   critic_completed          = the report is well-formed AND not a
+#                               template AND its verdict is pass/fail.
+#   critic_status             = the *Verifier-side* view of Critic
+#                               status.  Per spec/critic_protocol.md
+#                               §4 the Critic runs AFTER the Verifier,
+#                               so the Verifier always reports
+#                               `not_run` even when a (potentially
+#                               filled) critic_report.md is present.
+#                               Real pass/fail values appear only in
+#                               the Critic's outputs/attempts.jsonl
+#                               line.
 critic_report_present="false"
+critic_report_is_template="false"
+critic_completed="false"
+critic_state_status="not_run"
 if [[ -n "${candidate_dir}" ]]; then
   candidate_dir_for_json="\"${candidate_dir}\""
   candidate_id="$(basename "${candidate_dir%/}")"
@@ -173,16 +194,43 @@ if [[ -n "${candidate_dir}" ]]; then
       record_check "candidate_shape" "FAIL" \
                    "missing ${missing[*]}"
     else
-      # Autoresearch MVP-4: surface whether the optional critic_report.md
-      # is present.  The Verifier does NOT require it (Critic runs AFTER
-      # Verifier per spec/critic_protocol.md), but reporting its
-      # presence in the result.json helps downstream tooling decide
-      # whether to record critic_status = not_run vs. parse the report.
+      # Autoresearch MVP-4 + MVP-0.1.1: surface whether the optional
+      # critic_report.md is present, and parse it for the four
+      # critic-state fields that downstream tooling uses to decide
+      # whether `critic_status = pass` is admissible in
+      # outputs/attempts.jsonl.  The Verifier does NOT require the
+      # file (Critic runs AFTER Verifier per spec/critic_protocol.md),
+      # so the *Verifier-side* `critic_status` reported here is
+      # always `not_run`.  Real pass/fail values appear only in the
+      # Critic's attempts.jsonl entry, where validate_attempt
+      # cross-checks the file via scripts/validate_critic_report.py.
       if [[ -f "${candidate_dir}/critic_report.md" ]]; then
         critic_report_present="true"
+        # Parse with the dedicated validator.  We do not fail the
+        # Verifier on a malformed report — that's the Critic's
+        # problem at attempts-append time — but we surface the
+        # parsed flags in result.json for diagnostics.
+        if [[ -x "scripts/validate_critic_report.py" ]]; then
+          set +e
+          critic_state_json="$(scripts/validate_critic_report.py \
+            "${candidate_dir}/critic_report.md" 2>/dev/null)"
+          set -e
+          if [[ -n "${critic_state_json}" ]]; then
+            cs_is_template="$(printf '%s' "${critic_state_json}" \
+              | python3 -c 'import json,sys; print(str(json.load(sys.stdin).get("is_template", False)).lower())' \
+              2>/dev/null || echo "false")"
+            cs_is_completed="$(printf '%s' "${critic_state_json}" \
+              | python3 -c 'import json,sys; print(str(json.load(sys.stdin).get("is_completed", False)).lower())' \
+              2>/dev/null || echo "false")"
+            critic_report_is_template="${cs_is_template:-false}"
+            critic_completed="${cs_is_completed:-false}"
+          fi
+        fi
       fi
       echo "[verify]   PASS (all 5 required files present;"\
-        "critic_report.md present=${critic_report_present})"
+        "critic_report.md present=${critic_report_present}"\
+        "is_template=${critic_report_is_template}"\
+        "completed=${critic_completed})"
       record_check "candidate_shape" "PASS"
 
       # PR 12: barrier-certificate per-candidate check.
@@ -478,7 +526,7 @@ if [[ -n "${json_path}" ]]; then
   # `completed_at`).
   cat >"${json_path}" <<JSON
 {
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "candidate_id": ${cdir_id_for_json},
   "candidate_dir": ${candidate_dir_for_json},
   "status": "${overall_status}",
@@ -488,6 +536,9 @@ if [[ -n "${json_path}" ]]; then
   "spec_version": "${spec_version}",
   "verifier_implementation_level": "${VERIFIER_IMPL_LEVEL}",
   "critic_report_present": ${critic_report_present},
+  "critic_report_is_template": ${critic_report_is_template},
+  "critic_completed": ${critic_completed},
+  "critic_status": "${critic_state_status}",
   "completed_at": "${completed_at}"
 }
 JSON

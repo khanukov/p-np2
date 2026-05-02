@@ -1,8 +1,20 @@
-# Critic protocol — Research Governance v0.1, Autoresearch MVP-4
+# Critic protocol — Research Governance v0.1, Autoresearch MVP-4 / MVP-0.1.1
 
 This document specifies the **structured output format** every Critic
 agent (manual or LLM-assisted) must produce when evaluating a
 candidate package under `pnp3/Candidates/<id>/`.
+
+> **MVP-0.1.1 update (Critic state hardening).**  Section 8 below
+> formalises the four critic-state fields that
+> `scripts/verify_candidate.sh` now emits in `result.json`
+> (`critic_report_present`, `critic_report_is_template`,
+> `critic_completed`, `critic_status`) and the cross-field rules
+> that `scripts/validate_jsonl.py::validate_attempt` enforces on
+> `outputs/attempts.jsonl` lines.  The intent is that a
+> `critic_status = pass` / `fail` line in the attempts ledger is
+> only admissible when the Critic has produced a real,
+> non-template, well-formed report — not just any file at the
+> conventional path.
 
 The Critic is **not** a verifier; that is `scripts/verify_candidate.sh`
 (Autoresearch MVP-2).  The Critic is **adversarial**: its job is to
@@ -145,7 +157,57 @@ across runs.  Extensions (e.g. weighted attack severity, per-method-
 family attack specialisations, Critic-Critic adversarial loops) are
 follow-up work.
 
-## 7. Relationship to FixedParams Probe
+## 7. Critic-state fields and cross-field validation (MVP-0.1.1)
+
+`scripts/verify_candidate.sh` emits four critic-state fields in
+`result.json` (schema_version 1.2):
+
+| Field                       | Source                                             |
+| --------------------------- | -------------------------------------------------- |
+| `critic_report_present`     | `[[ -f <candidate>/critic_report.md ]]`            |
+| `critic_report_is_template` | `validate_critic_report.py` (TEMPLATE_MARKER scan) |
+| `critic_completed`          | `validate_critic_report.py` (well-formed && !template && verdict in {pass, fail}) |
+| `critic_status`             | Always `not_run` in Verifier-side `result.json`. Real pass/fail values are written by the Critic into the corresponding `outputs/attempts.jsonl` line. |
+
+A Critic claiming a real verdict MUST do all of the following:
+
+1. **Remove** the `<!-- TEMPLATE_MARKER: do-not-treat-as-completed -->`
+   HTML comment line at the top of the report.
+2. **Replace** every section's `Template placeholder` summary with
+   real prose, and every `Template — fill ...` evidence bullet with
+   real evidence (`path:line` or a structurally reproducible
+   argument).
+3. **Set** the Verdict block's `critic_status` to `pass` or `fail`
+   (the template ships with the sentinel `template_not_filled`,
+   which `validate_critic_report.py` reports as `not_run`).
+4. **Append** a new `attempts.jsonl` line via
+   `scripts/attempts_append.py` with `critic_report_path` pointing
+   to the filled-in report.
+
+`scripts/validate_jsonl.py::validate_attempt` enforces the following
+cross-field rules on every `attempts.jsonl` entry:
+
+* `verifier_status = "FAIL"` ⇒ `verifier_failure_class` present and
+  non-null.
+* `critic_status ∈ {"pass", "fail"}` ⇒
+  `verifier_status ∈ {"PASS", "PASS_SHAPE_ONLY"}` (the Critic only
+  runs after a passing Verifier, §4).
+* `critic_status = "pass"` ⇒ `critic_report_path` is a non-empty
+  string pointing to an existing file inside the repo, the file
+  parses as well-formed and non-template via
+  `validate_critic_report.py`, the file's own Verdict
+  `critic_status` is `pass`, and no attack section reports
+  `break found`.
+* `critic_status = "fail"` ⇒ `critic_break_class` present and
+  non-null AND `critic_report_path` points to an existing,
+  well-formed, non-template report whose Verdict
+  `critic_status` is `fail`.
+
+A template `critic_report.md` (e.g.
+`pnp3/Candidates/_template/critic_report.md`) is NEVER accepted as
+evidence for `critic_status ∈ {"pass", "fail"}`.
+
+## 8. Relationship to FixedParams Probe
 
 The FixedParams Probe (FP-1 .. FP-3b.0) was conducted **before** the
 Critic protocol existed; its self-attack lives in

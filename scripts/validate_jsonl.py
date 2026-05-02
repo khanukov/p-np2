@@ -202,8 +202,68 @@ def validate_survivor(entry: dict) -> list[str]:
     return errs
 
 
+def _critic_report_state(path_str: str) -> tuple[bool, dict, list[str]]:
+    """Resolve `path_str` against the repo root and parse the report
+    via `scripts/validate_critic_report.py`.
+
+    Returns `(exists, parsed_state, errors)`.  `parsed_state` is the
+    dict produced by `validate_critic_report.parse_report`; empty
+    when the file does not exist.  `errors` is non-empty on parser
+    failures or when the path escapes the repository.
+    """
+    errors: list[str] = []
+    repo_root = Path(__file__).resolve().parent.parent
+    p = Path(path_str)
+    if not p.is_absolute():
+        p = repo_root / p
+    try:
+        resolved = p.resolve()
+    except OSError as e:
+        return (False, {}, [f"critic_report_path is unresolvable: {e}"])
+    try:
+        resolved.relative_to(repo_root)
+    except ValueError:
+        # Allow /tmp paths used in audit transcripts; flag as warning
+        # by returning errors so cross-field check rejects.
+        errors.append(
+            f"critic_report_path escapes repo root: {resolved}")
+    if not resolved.exists():
+        return (False, {}, errors)
+    try:
+        text = resolved.read_text(encoding="utf-8")
+    except OSError as e:
+        return (True, {}, errors + [f"critic_report read error: {e}"])
+    try:
+        # Late import to keep validate_jsonl stdlib-only at import
+        # time when called purely as a JSONL validator with no
+        # Critic-state cross-checks.
+        from validate_critic_report import parse_report
+    except ImportError as e:
+        return (True, {}, errors + [
+            f"validate_critic_report import failed: {e}"])
+    parsed = parse_report(text)
+    return (True, parsed, errors)
+
+
 def validate_attempt(entry: dict) -> list[str]:
-    """Validate one outputs/attempts.jsonl line (AttemptLedgerEntry shape)."""
+    """Validate one outputs/attempts.jsonl line (AttemptLedgerEntry shape).
+
+    Cross-field consistency rules (Autoresearch MVP-0.1.1, Critic state
+    hardening):
+
+    * `verifier_status = "FAIL"` requires `verifier_failure_class` to
+      be present and non-null.
+    * `critic_status != "not_run"` requires
+      `verifier_status ∈ {"PASS", "PASS_SHAPE_ONLY"}`; the Critic
+      runs after the Verifier per `spec/critic_protocol.md` §4.
+    * `critic_status = "pass"` requires `critic_report_path` to point
+      to an existing, well-formed, non-template, completed Critic
+      report whose own verdict is `pass`.
+    * `critic_status = "fail"` requires `critic_break_class` to be
+      present and non-null AND `critic_report_path` to point to an
+      existing, well-formed, non-template, completed report whose
+      own verdict is `fail`.
+    """
     errs: list[str] = []
     if not isinstance(entry, dict):
         return ["entry is not a JSON object"]
@@ -240,23 +300,75 @@ def validate_attempt(entry: dict) -> list[str]:
         errs += _check_string_nonempty(entry, "seed_pack_id")
     if "supersedes" in entry:
         errs += _check_pattern(entry, "supersedes", ATTEMPT_ID_RE)
-    # Cross-field consistency.
-    if entry.get("verifier_status") == "FAIL" \
-            and entry.get("verifier_failure_class") in (None, ...):
-        # Only flag if explicitly null when status=FAIL; missing field is OK
-        # under the optional-attribute rule, but tooling should populate it.
-        if "verifier_failure_class" in entry \
-                and entry["verifier_failure_class"] is None:
+
+    # ----- Cross-field consistency (MVP-0.1.1) -----
+    verifier_status = entry.get("verifier_status")
+    critic_status = entry.get("critic_status")
+
+    # (1) Verifier FAIL requires a failure class — present AND non-null.
+    if verifier_status == "FAIL":
+        if "verifier_failure_class" not in entry \
+                or entry.get("verifier_failure_class") is None:
             errs.append(
-                "verifier_failure_class must be populated when "
-                "verifier_status = FAIL")
-    if entry.get("critic_status") == "fail" \
-            and entry.get("critic_break_class") in (None, ...):
-        if "critic_break_class" in entry \
-                and entry["critic_break_class"] is None:
+                "verifier_failure_class must be populated and non-null "
+                "when verifier_status = FAIL")
+
+    # (2) Critic only runs after a passing Verifier.
+    if critic_status in {"pass", "fail"}:
+        if verifier_status not in {"PASS", "PASS_SHAPE_ONLY"}:
             errs.append(
-                "critic_break_class must be populated when "
-                "critic_status = fail")
+                f"critic_status={critic_status!r} is inconsistent "
+                f"with verifier_status={verifier_status!r}: "
+                "Critic only runs after the Verifier passes "
+                "(spec/critic_protocol.md §4)")
+
+    # (3, 4) Critic verdicts require a real, non-template, completed
+    # report file.  Only reach the filesystem when the basic shape
+    # checks above produced no schema errors that would already make
+    # the entry invalid; this keeps unit tests fast and deterministic.
+    if critic_status in {"pass", "fail"}:
+        path_value = entry.get("critic_report_path")
+        if path_value is None or path_value == "":
+            errs.append(
+                f"critic_status={critic_status!r} requires "
+                "critic_report_path to be a non-empty path")
+        elif isinstance(path_value, str):
+            exists, parsed, parse_errs = _critic_report_state(path_value)
+            errs.extend(parse_errs)
+            if not exists:
+                errs.append(
+                    f"critic_status={critic_status!r} but "
+                    f"critic_report_path {path_value!r} does not exist")
+            else:
+                if not parsed.get("is_well_formed", False):
+                    errs.append(
+                        f"critic_report_path {path_value!r} is not "
+                        f"well-formed (six attack sections + Verdict)")
+                if parsed.get("is_template", False):
+                    errs.append(
+                        f"critic_status={critic_status!r} is "
+                        f"forbidden against template critic report "
+                        f"{path_value!r}; remove the "
+                        f"<!-- TEMPLATE_MARKER --> line and replace "
+                        f"every 'Template placeholder' summary "
+                        f"before recording a non-not_run status")
+                if not parsed.get("is_completed", False):
+                    errs.append(
+                        f"critic_report_path {path_value!r} is not "
+                        f"completed (well-formed + non-template + "
+                        f"verdict pass/fail)")
+                file_status = parsed.get("critic_status")
+                if file_status != critic_status:
+                    errs.append(
+                        f"attempts ledger critic_status={critic_status!r} "
+                        f"disagrees with critic report's verdict "
+                        f"{file_status!r} at {path_value!r}")
+                if critic_status == "fail":
+                    if entry.get("critic_break_class") in (None,):
+                        errs.append(
+                            "critic_break_class must be populated when "
+                            "critic_status = fail")
+
     return errs
 
 

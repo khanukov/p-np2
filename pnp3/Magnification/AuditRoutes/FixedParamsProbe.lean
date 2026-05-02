@@ -174,29 +174,105 @@ families.  It is the *intended* Outcome-B partner of
 is meant to become non-trivial once the second conjunct is no longer a
 Lean theorem.
 
-This module **deliberately does NOT define a Lean `Prop`, `def`,
-`abbrev`, or `theorem` for `ProvenanceFilter_v1`.**  Doing so today
-would either:
-
-* introduce a vacuous tautology (Outcome A trap — `Π := True` is
-  formally inhabited by anything, just like `HardwiringGuard`); or
-* introduce an `axiom` / `opaque` / typeclass payload, which
-  Rule 16 forbids.
-
-When FP-3 work matures enough to propose a real Lean predicate, the
-artifact will land HERE under the audit-only namespace
-`Pnp3.Magnification.AuditRoutes.FixedParamsProbe` and the registry
-entry will be promoted to `status = "accepted"` with
-`standalone_factorization_target = true` (see the registry's
-"informal → accepted" promotion checklist).  Until that PR ships:
-
-* No new code in this module references `ProvenanceFilter_v1`.
-* `FixedParams_Probe.md` §3.B continues to forbid quoting
-  `ProvenanceFilter_v1` in any Outcome-B reduction.
-* The hardwiring obstruction (Probe 2) and the Outcome A baseline
-  (`NoGo_FixedParamsRoute_with_OverbroadUniformProvenance`) above
-  remain the only formal artifacts the FixedParams Probe exposes.
+The registry's `ProvenanceFilter_v1` entry stays `status = "informal"`
+and `formal_name = ""`.  The audit-only experimental shapes below
+(`FP3Attempt.*`) are NOT promoted to the registry and are NOT
+admissible for any Outcome-B reduction.  They exist solely to record
+the FP-3 actual self-attack work.
 -/
+
+/-!
+## FP-3 actual — experimental candidate `SupportFunctionalDiversity`
+(audit-only, NOT promoted to `spec/known_guards.toml`).
+
+This namespace encodes ONE concrete Lean shape proposed during FP-3
+actual self-attack and the formal artifact that defeats the truth-
+table hardwiring attack against it (Test 3 of the four-test self-
+attack protocol).
+
+The candidate is intentionally NOT promoted to the known-guards
+registry.  Its purpose is to record the FP-3 actual report's
+mathematical content under verifier control: future drift to the
+candidate's behaviour breaks the regression test in
+`pnp3/Tests/FixedParams_Probe_NoGo.lean`, which is what we want.
+
+See `FixedParams_Probe.md` for the full self-attack report,
+including the multi-slice hardwiring caveat and the explicit reason
+the candidate is NOT promoted to FP-4.
+-/
+
+namespace FP3Attempt
+
+open Pnp3.ComplexityInterfaces
+
+/-- **Candidate `ProvenanceFilter_v1` shape** (audit-only).
+
+The support-cardinality function `n ↦ |support (w.family n)|` of the
+record `w : InPpolyFormula L` is required to be:
+
+1. **Unbounded**: for every `B`, some length witnesses support card > B.
+2. **Eventually sublinear**: for every threshold `N`, some length
+   `n ≥ N` witnesses `support card < n`.
+
+Together, (1) and (2) forbid two degenerate shapes simultaneously:
+
+* shapes with bounded support (incl. the truth-table hardwired witness
+  of Probe 2, whose support is `n₀` at one length and `0` elsewhere);
+* shapes with always-saturated support (e.g. `support n = n` at every
+  length, which is full-truth-table at every length).
+
+Defined at the `InPpolyFormula` record level rather than the `Prop`
+existential, because `Classical.choose` of `PpolyFormula L = ∃ _, True`
+is opaque and gives no handle on the underlying `family`. -/
+def InSupportFunctionalDiversity {L : Pnp3.ComplexityInterfaces.Language}
+    (w : InPpolyFormula L) : Prop :=
+  (∀ B : Nat, ∃ n, B < (FormulaCircuit.support (w.family n)).card) ∧
+  (∀ N : Nat, ∃ n, N ≤ n ∧ (FormulaCircuit.support (w.family n)).card < n)
+
+/-- **Test 3 (hardwiring attack defeat)** at the record level.
+
+Any `InPpolyFormula` record whose `polyBound` is uniformly bounded by
+some constant `B` automatically fails `InSupportFunctionalDiversity`,
+because
+
+```
+support card  ≤  formula size  ≤  polyBound n  ≤  B
+```
+
+and so the unboundedness conjunct of the diversity condition is
+violated.
+
+The Probe-2 truth-table hardwired witness
+(`Pnp3.Tests.FormulaSupportBoundsFalsifiabilityProbe.fixedSlice_gapPartialMCSP_in_PpolyFormula`)
+is an instance of this lemma: it builds an `InPpolyFormula` record
+with `polyBound m = if m = n₀ then c₀_size else 1`, hence bounded by
+`max(c₀_size, 1)`.  Therefore that record violates the candidate
+filter.
+
+This is a clean Outcome-A-style obstruction against the SPECIFIC
+hardwiring shape used by the active leak proof — but NOT against
+hypothetical multi-slice / alternating-length hardwiring patterns,
+which are not constructed in the active code base.  See
+`FixedParams_Probe.md` §FP-3 actual for the caveat. -/
+theorem InSupportFunctionalDiversity_excludes_uniformPolyBound
+    {L : Pnp3.ComplexityInterfaces.Language}
+    (w : InPpolyFormula L) (B : Nat)
+    (hBound : ∀ n, w.polyBound n ≤ B) :
+    ¬ InSupportFunctionalDiversity w := by
+  intro hDiv
+  obtain ⟨hUnbounded, _⟩ := hDiv
+  obtain ⟨n, hn⟩ := hUnbounded B
+  have h1 : (FormulaCircuit.support (w.family n)).card
+              ≤ FormulaCircuit.size (w.family n) :=
+    FormulaCircuit.support_card_le_size (w.family n)
+  have h2 : FormulaCircuit.size (w.family n) ≤ w.polyBound n :=
+    w.family_size_le n
+  have h3 : w.polyBound n ≤ B := hBound n
+  have hLe : (FormulaCircuit.support (w.family n)).card ≤ B :=
+    Nat.le_trans h1 (Nat.le_trans h2 h3)
+  exact (Nat.not_lt_of_ge hLe) hn
+
+end FP3Attempt
 
 end FixedParamsProbe
 end AuditRoutes

@@ -70,6 +70,70 @@
 >   concrete Lean shape for `ProvenanceFilter_v1` together with a
 >   non-tautology proof that it is not inhabited unconditionally.
 >   That PR is OUT OF SCOPE for the FP-3-surface preparation here.
+>
+> **FP-3 actual status: C-CANDIDATE WITH CAVEATS (do NOT promote to FP-4).**
+>
+> One concrete Lean shape, `FP3Attempt.InSupportFunctionalDiversity`,
+> is now committed to
+> `pnp3/Magnification/AuditRoutes/FixedParamsProbe.lean` under the
+> audit-only `FP3Attempt` namespace.  The four-test self-attack
+> protocol gives:
+>
+> | Test | Result | Notes |
+> | ---- | ------ | ----- |
+> | 1. No hidden payload                  | PASS    | only `FormulaCircuit.support`, `Nat`, `InPpolyFormula` fields are referenced; no `ResearchGapWitness`, no `NP_not_subset_PpolyDAG`, no `P_ne_NP`, no `¬ PpolyDAG`, no separation. |
+> | 2. Not a tautological hardwiring guard | PASS    | the candidate is a positive structural condition (support function unbounded but eventually sublinear), not `¬ TruthTableHardwired W`. |
+> | 3. Hardwiring attack defeated         | PASS    | abstract Lean theorem `FP3Attempt.InSupportFunctionalDiversity_excludes_uniformPolyBound` proves any record with a uniformly-bounded `polyBound` violates the diversity condition.  The Probe-2 hardwired witness has `polyBound m = if m = n₀ then c₀_size else 1`, hence is bounded. |
+> | 4. KnownGuards factorization          | PASS    | the candidate does not factor through `HardwiringGuard` (different shape — diversity vs Rule-5 exclusion).  Currently no other `accepted` guard exists in `spec/known_guards.toml`. |
+>
+> **Classification: Outcome C-candidate (formal).**
+>
+> But:
+>
+> 1. **Multi-slice hardwiring caveat.**  The Probe-2 hardwiring is
+>    *single-slice*: hardwired only at `n = n₀`, `const false`
+>    elsewhere.  An *alternating-slice* hardwired record (TT at every
+>    second length, `const false` at the others) would have an
+>    unbounded support function (large at hardwired lengths) AND
+>    `support n < n` at the unhardwired lengths, satisfying the
+>    candidate filter.  The active code base does NOT construct such a
+>    record, so the `FP3Attempt` exclusion lemma still defeats every
+>    hardwiring attack realised in code today, but the candidate is
+>    NOT a structural exclusion of all conceivable hardwiring shapes.
+> 2. **Bridge is not yet constructed.**  Constraint (4) of §2 requires
+>    a non-trivial `gap_from_FixedParamsProbe :
+>    fixedParams ac0 sb ∧ Π → ResearchGapWitness`.  No such bridge has
+>    been attempted in this round; that work is FP-4 (candidate
+>    package + bridge + barrier certificate).
+> 3. **Vacuity proximity check (informal).**  The candidate filter
+>    enforces `support` properties; the route `FixedParamsRoute ac0 sb`
+>    concludes a polylog support bound on the matching AC0 family at
+>    `n = partialInputLen p`.  These two `support` quantities are
+>    semantically related but not directly equal; the candidate is
+>    *not* simply a re-statement of the route's conclusion.  However,
+>    a careless bridge construction could trivialise the conclusion's
+>    support-bound part.  Any FP-4 bridge attempt MUST carry an
+>    explicit non-vacuity argument (the conclusion has additional
+>    parts: `LocalCircuitSmallEnough` and `support ≤ inputLen / 4`).
+>
+> **Therefore FP-4 is NOT started in this PR.**  The candidate stays
+> audit-only under `FP3Attempt.*`; `spec/known_guards.toml::guards.ProvenanceFilter_v1`
+> remains `status = "informal"` with `formal_name = ""`.  Promotion to
+> `accepted` is forbidden until the multi-slice caveat is resolved
+> (e.g. by strengthening the diversity condition to bound *both*
+> directions of the support function — not only "support unbounded"
+> but also "support density does not concentrate on TT-shaped
+> lengths") and a non-vacuous bridge is exhibited.
+>
+> NoGo entry `NOGO-000002` recorded in `outputs/nogolog.jsonl` with
+> `failure_class = "hardwiring"` (multi-slice caveat) and
+> `regression_test = "pnp3/Tests/FixedParams_Probe_NoGo.lean"`,
+> capturing the multi-slice hardwiring caveat as a known weakness of
+> the candidate (the structural pattern is "alternating-slice
+> hardwiring evades single-slice support filter"; the schema-allowed
+> failure_class value `hardwiring` is used because the underlying
+> attack family is still truth-table hardwiring, just at multiple
+> slices).
 
 This is the **first** mathematical experiment of the project. It does
 **not** start until Phase 0 cleanup PR 1–6 are merged and the verifier
@@ -326,3 +390,186 @@ These should be screened out before any new attempt.
 
 Each of these has appeared in informal explorations and should be
 captured as `NoGoLog` entries the moment they re-appear.
+
+---
+
+## 8. FP-3 actual report — `SupportFunctionalDiversity` candidate
+
+This is the FP-3 actual self-attack report.  The candidate is
+audit-only and is NOT promoted to `spec/known_guards.toml`.  See the
+status block at the top of this document for the summary verdict
+(C-candidate with caveats; do NOT start FP-4).
+
+### 8.1 Proposed Lean shape
+
+`pnp3/Magnification/AuditRoutes/FixedParamsProbe.lean` defines, under
+the experimental namespace `FP3Attempt`:
+
+```lean
+def InSupportFunctionalDiversity {L : Pnp3.ComplexityInterfaces.Language}
+    (w : InPpolyFormula L) : Prop :=
+  (∀ B : Nat, ∃ n, B < (FormulaCircuit.support (w.family n)).card) ∧
+  (∀ N : Nat, ∃ n, N ≤ n ∧ (FormulaCircuit.support (w.family n)).card < n)
+```
+
+The two conjuncts say, respectively, that the support-cardinality
+function `n ↦ |support (w.family n)|` is unbounded **and** eventually
+sublinear in `n`.
+
+The candidate is defined at the `InPpolyFormula` record level rather
+than the existential `PpolyFormula L = ∃ _ : InPpolyFormula L, True`
+because `Classical.choose` of the latter is opaque and gives no
+handle on the underlying `family`.  Lifting to a Prop on
+`PpolyFormula L` is straightforward (apply to `Classical.choose h`)
+but the regression machinery operates at the record level.
+
+### 8.2 What it forbids
+
+The candidate excludes two degenerate shapes simultaneously:
+
+* **Bounded-support shapes.**  The single-slice truth-table
+  hardwired witness from Probe 2 has `family m = ttFormula L_{n₀}`
+  at `m = n₀` (support cardinality `n₀`) and `family m = const false`
+  elsewhere (support cardinality `0`).  Image of the support function
+  is `{0, n₀}`, hence bounded by `n₀`.  The unboundedness conjunct
+  fails, and the candidate excludes this shape.
+* **Always-saturated shapes.**  A record with `family m = ttFormula
+  L_m` at every length `m` (truth-table hardwired at every slice)
+  has support cardinality `m` at every length, hence `support n < n`
+  is never witnessed.  The eventually-sublinear conjunct fails, and
+  the candidate also excludes this shape.
+
+### 8.3 Why truth-table hardwiring should fail (Test 3 formal)
+
+The key formal artifact is `FP3Attempt.InSupportFunctionalDiversity_excludes_uniformPolyBound`:
+
+```lean
+theorem InSupportFunctionalDiversity_excludes_uniformPolyBound
+    {L} (w : InPpolyFormula L) (B : Nat)
+    (hBound : ∀ n, w.polyBound n ≤ B) :
+    ¬ InSupportFunctionalDiversity w
+```
+
+Proof sketch (5 lines):
+
+```
+support card ≤ size  (FormulaCircuit.support_card_le_size)
+size ≤ polyBound n   (InPpolyFormula.family_size_le)
+polyBound n ≤ B      (hypothesis)
+⇒ support card ≤ B   (transitivity)
+⇒ ∀ B', ∃ n, B' < support card  fails for B' = B  (omega)
+```
+
+The Probe-2 hardwired witness has `polyBound m = if m = n₀ then
+c₀_size else 1`, hence is uniformly bounded by `max(c₀_size, 1)`.
+Therefore the abstract lemma directly defeats the single-slice
+hardwiring attack.
+
+### 8.4 Why this is not hidden payload (Test 1 formal)
+
+The candidate's body references only:
+
+* `FormulaCircuit.support` (line 99 of `pnp3/Complexity/Interfaces.lean`)
+* `Finset.card`
+* `Nat`
+* `InPpolyFormula.family` and `InPpolyFormula.polyBound` (record fields)
+
+It does NOT reference `ResearchGapWitness`, `NP_not_subset_PpolyDAG`,
+`P_ne_NP`, `P_ne_NP_unconditional`, `P_ne_NP_final`, `¬ PpolyDAG`,
+nor any quantifier of the shape `∀ C : PpolyDAG, ...`.  No structure
+field has type `ResearchGapWitness` or any Rule-16 hidden-payload
+shape.  The verifier guard `scripts/check_candidate_rule16.sh` would
+not flag this candidate (the file is under `pnp3/Magnification/AuditRoutes/`,
+not `pnp3/Candidates/`, so the check does not technically run, but
+the structural property holds).
+
+### 8.5 Why this is not just KnownGuardCombination (Test 4 formal)
+
+The only guard in `spec/known_guards.toml` with `status = "accepted"`
+is `HardwiringGuard`, which states that every Partial-MCSP slice
+admits *some* `PpolyFormula` witness.  `HardwiringGuard` carries the
+tautology caveat (`outcome_b_usage = "obstruction_only"`,
+`standalone_factorization_target = false`), so it is not an
+admissible Outcome-B factorization target in the first place.
+
+`InSupportFunctionalDiversity` is structurally distinct: it is a
+property of an `InPpolyFormula` record, not a claim about all slices,
+and it asserts *diversity* across input lengths rather than
+*existence* at each length.  No reduction `Π ↔ HardwiringGuard ∧ ...`
+or `Π → HardwiringGuard` factors `Π` through known guards in any
+Outcome-B-admissible sense.
+
+### 8.6 Expected bridge to FixedParams (constraint 4 of §2)
+
+NOT exhibited.  This is intentional: the bridge `gap_from_FixedParamsProbe :
+FixedParamsRoute ac0 sb ∧ Π → ResearchGapWitness` is FP-4 territory.
+A plausibility argument:
+
+* `FixedParamsRoute ac0 sb` concludes a polylog support bound on the
+  AC0 family extracted from a `PpolyFormula` witness.
+* `InSupportFunctionalDiversity` requires the underlying record's
+  support function to be unbounded but eventually sublinear.
+* These two are not directly composable: the route's conclusion is
+  about the *AC0 family*, the candidate is about the *formula record*.
+
+So a non-trivial bridge would need to pass through an
+agreement-style hypothesis (the record's `family n` matches some
+`Core.Family` element pointwise — exactly the shape that
+`OverbroadUniformFormulaProvenance` provides, but THAT is the
+overbroad shape we're trying to weaken).
+
+The plausibility of a valid FP-4 bridge therefore reduces to the
+question: can a non-overbroad agreement hypothesis be combined with
+the candidate to yield AC0 separation?  This is, in spirit, a
+restatement of the central P/poly research gap and is open.
+
+### 8.7 Self-attack
+
+Two known weaknesses, recorded as `NOGO-000002`:
+
+* **Multi-slice / alternating-length hardwiring evades the filter.**
+  An alternating-slice hardwired record (e.g. TT at every even length,
+  `const false` at odd lengths) has unbounded support (large at
+  evens) AND `support n < n` at odd lengths (where support = 0 < n).
+  Both conjuncts of `InSupportFunctionalDiversity` are satisfied.
+  The candidate does NOT structurally exclude this shape.  Mitigant:
+  this multi-slice record is not constructed in the active code base,
+  so the practical exclusion against currently-realised hardwiring
+  attacks is intact, but the theoretical exclusion is incomplete.
+* **Vacuity proximity to route conclusion.**  The route concludes,
+  among other things, `support ≤ polylog (inputLen)`.  The candidate
+  asserts a structural property of the support function.  These are
+  not directly equal, but a careless FP-4 bridge could derive the
+  route's support-bound part from the candidate's
+  eventually-sublinear conjunct, trivialising part of the
+  conclusion.  Any FP-4 bridge attempt MUST carry an explicit
+  non-vacuity argument.
+
+### 8.8 Classification
+
+**Outcome C-candidate (formal Tests 1–4 PASS) with caveats — do NOT
+promote to FP-4.**
+
+The candidate is recorded in audit-only form:
+
+* `pnp3/Magnification/AuditRoutes/FixedParamsProbe.lean::FP3Attempt.InSupportFunctionalDiversity`
+* `pnp3/Magnification/AuditRoutes/FixedParamsProbe.lean::FP3Attempt.InSupportFunctionalDiversity_excludes_uniformPolyBound`
+* `pnp3/Tests/FixedParams_Probe_NoGo.lean::fp3_actual_test3_hardwiring_attack_defeated`
+* `outputs/nogolog.jsonl::NOGO-000002` (multi-slice hardwiring caveat
+  + bridge-not-constructed note).
+
+`spec/known_guards.toml::guards.ProvenanceFilter_v1` STAYS at
+`status = "informal"` with `formal_name = ""`.  The candidate is NOT
+promoted because:
+
+1. The multi-slice hardwiring caveat is unresolved.
+2. No bridge attempt is in scope for FP-3 actual.
+3. The candidate has not survived a real Critic-style adversarial
+   pass (Critic loop does not yet exist; see Autoresearch MVP block).
+
+The next research step, if pursued, would be FP-3.b: strengthen
+`InSupportFunctionalDiversity` to also exclude alternating-slice
+hardwiring (e.g. by requiring a quantifier of the shape "support is
+unbounded over *every* infinite arithmetic progression of lengths"
+or similar).  Whether that strengthening introduces hidden payload
+or factors through known guards is a separate self-attack pass.

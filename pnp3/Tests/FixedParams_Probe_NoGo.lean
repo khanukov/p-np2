@@ -78,6 +78,42 @@ theorem fp2_outcome_a_overbroad_baseline
   NoGo_FixedParamsRoute_with_OverbroadUniformProvenance
     p ac0 sb hUniform hRoute
 
+/-! ### FP-3 actual — `SupportFunctionalDiversity` candidate (audit-only)
+
+Regression-test scaffolding for the FP-3 actual self-attack work.
+The candidate `FP3Attempt.InSupportFunctionalDiversity` is NOT
+promoted to `spec/known_guards.toml`; these tests simply pin the
+audit-only surface against future drift.
+
+Per `FixedParams_Probe.md` §FP-3 actual, the candidate is classified
+as **C-candidate with caveats** — it formally defeats the Probe-2
+single-slice truth-table hardwiring attack via the abstract uniform-
+`polyBound` exclusion lemma, but it carries an explicit multi-slice
+hardwiring caveat and is NOT a green light to start FP-4. -/
+
+/-- Smoke: the candidate diversity Prop elaborates at the expected
+type. -/
+example
+    {L : Pnp3.ComplexityInterfaces.Language}
+    (w : Pnp3.ComplexityInterfaces.InPpolyFormula L) :
+    FP3Attempt.InSupportFunctionalDiversity w
+      = FP3Attempt.InSupportFunctionalDiversity w :=
+  rfl
+
+/-- **FP-3 actual Test-3 regression**: the abstract hardwiring-attack
+defeat lemma is inhabited.  Any `InPpolyFormula` record with a
+uniformly-bounded `polyBound` violates the candidate diversity
+filter.  The Probe-2 hardwired record is an instance of this
+abstract pattern (its `polyBound` is `c₀_size` at one length and `1`
+elsewhere); the abstract form keeps the regression light-weight
+without re-constructing the full hardwired record here. -/
+theorem fp3_actual_test3_hardwiring_attack_defeated
+    {L : Pnp3.ComplexityInterfaces.Language}
+    (w : Pnp3.ComplexityInterfaces.InPpolyFormula L) (B : Nat)
+    (hBound : ∀ n, w.polyBound n ≤ B) :
+    ¬ FP3Attempt.InSupportFunctionalDiversity w :=
+  FP3Attempt.InSupportFunctionalDiversity_excludes_uniformPolyBound w B hBound
+
 end FixedParamsProbeNoGo
 end Tests
 end Pnp3

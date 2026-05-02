@@ -58,17 +58,83 @@ if [[ ! -d "${candidates_root}" ]]; then
 fi
 
 # Collect candidate directories: any directory under
-# `pnp3/Candidates/` whose path does NOT contain a component
-# starting with `_` (so `_template/`, `_scratch/`, etc. are
-# excluded).  Both depth-1 (`pnp3/Candidates/<id>/`) and depth-2
-# (`pnp3/Candidates/<method-family>/<id>/`) layouts are accepted.
+# `pnp3/Candidates/` whose path is NOT the explicitly-allowed
+# `_template` skip target.  Both depth-1 (`pnp3/Candidates/<id>/`)
+# and depth-2 (`pnp3/Candidates/<method-family>/<id>/`) layouts are
+# accepted.
+#
+# Underscore-policy hardening (Autoresearch MVP-0.1.3): only
+# `_template` may be silently skipped.  Any OTHER underscore-prefixed
+# component (e.g. `_evil`, `_scratch`, `_archive`, `_skip`) is now a
+# hard FAIL — the previous behaviour silently ignored arbitrary
+# `_*` dirs, which let a malicious worker bypass Rule 16 by naming
+# their candidate `_evil/` instead of `evil/`.  The exact allowlist
+# is encoded in `ALLOWED_UNDERSCORE_DIRS` below.
+
+# The single allowlisted underscore directory.  Edits here MUST be
+# accompanied by a documented spec change.
+ALLOWED_UNDERSCORE_DIRS=("_template")
+
+# Build a regex like `^(_template)$` that the awk filter matches a
+# path component against.
+allowed_pattern=""
+for d in "${ALLOWED_UNDERSCORE_DIRS[@]}"; do
+  if [[ -z "${allowed_pattern}" ]]; then
+    allowed_pattern="${d}"
+  else
+    allowed_pattern="${allowed_pattern}|${d}"
+  fi
+done
+
+# First pass: detect any FORBIDDEN underscore-prefixed dir under
+# pnp3/Candidates/.  This is a HARD FAIL irrespective of contents
+# — silently skipping `_evil/` is the bug we're closing.
+mapfile -t forbidden_underscore_dirs < <(
+  find "${candidates_root}" -mindepth 1 -maxdepth 3 -type d \
+    | awk -v allow="${allowed_pattern}" -F/ '{
+        for (i = 1; i <= NF; i++) {
+          c = $i
+          if (substr(c, 1, 1) == "_") {
+            if (c !~ "^("allow")$") {
+              print
+              next
+            }
+          }
+        }
+      }'
+)
+
+if [[ ${#forbidden_underscore_dirs[@]} -gt 0 ]]; then
+  echo "[rule16] FAIL: forbidden underscore-prefixed candidate"\
+       "directory (only ${ALLOWED_UNDERSCORE_DIRS[*]} are allowed):"
+  for d in "${forbidden_underscore_dirs[@]}"; do
+    echo "[rule16]   ${d}"
+  done
+  echo "[rule16]   Underscore directories under pnp3/Candidates/"
+  echo "[rule16]   are silently excluded from Rule-16 scanning."
+  echo "[rule16]   Naming a candidate '_evil' or '_scratch' is a"
+  echo "[rule16]   bypass.  Move the directory out of the underscore"
+  echo "[rule16]   namespace or, if it is genuinely intended as a"
+  echo "[rule16]   skip target, add it to ALLOWED_UNDERSCORE_DIRS"
+  echo "[rule16]   in scripts/check_candidate_rule16.sh and update"
+  echo "[rule16]   the spec accordingly."
+  exit 1
+fi
+
+# Second pass: collect the real (non-underscore-prefixed) candidate
+# directories for actual Rule-16 scanning.
 mapfile -t candidate_dirs < <(
   find "${candidates_root}" -mindepth 1 -maxdepth 3 -type d \
-    | awk -F/ '{
+    | awk -v allow="${allowed_pattern}" -F/ '{
         skip = 0
-        # Skip if any path component starts with "_".
         for (i = 1; i <= NF; i++) {
-          if ($i ~ /^_/) { skip = 1; break }
+          c = $i
+          if (substr(c, 1, 1) == "_") {
+            # Either allowed (skip silently) or forbidden (was
+            # already flagged by the first pass and we exited).
+            skip = 1
+            break
+          }
         }
         if (!skip) print
       }'

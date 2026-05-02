@@ -456,6 +456,8 @@ echo "[check] Step 9/17: barrier-certificate queue scan (Research Governance v0.
 
 echo "[check] Step 10/17: candidate-local Rule 16 scan (Research Governance v0.1, PR 15.1)"
 "${ROOT_DIR}/scripts/check_candidate_rule16.sh"
+echo "[check] Step 10.b: underscore candidate-dir bypass policy (Research Governance v0.1, Autoresearch MVP-0.1.3)"
+"${ROOT_DIR}/scripts/test_underscore_policy.sh"
 
 echo "[check] Step 11/17: smoke probes (Research Governance v0.1, PR 5)"
 "${ROOT_DIR}/scripts/run_smoke_probes.sh"

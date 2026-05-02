@@ -458,6 +458,8 @@ echo "[check] Step 10/17: candidate-local Rule 16 scan (Research Governance v0.1
 "${ROOT_DIR}/scripts/check_candidate_rule16.sh"
 echo "[check] Step 10.b: underscore candidate-dir bypass policy (Research Governance v0.1, Autoresearch MVP-0.1.3)"
 "${ROOT_DIR}/scripts/test_underscore_policy.sh"
+echo "[check] Step 10.c: dedicated Rule-16 negative-control (Research Governance v0.1, Autoresearch MVP-0.1.2)"
+"${ROOT_DIR}/scripts/test_rule16_negative.sh"
 
 echo "[check] Step 11/17: smoke probes (Research Governance v0.1, PR 5)"
 "${ROOT_DIR}/scripts/run_smoke_probes.sh"

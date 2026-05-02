@@ -211,8 +211,12 @@ The support-cardinality function `n ↦ |support (w.family n)|` of the
 record `w : InPpolyFormula L` is required to be:
 
 1. **Unbounded**: for every `B`, some length witnesses support card > B.
-2. **Eventually sublinear**: for every threshold `N`, some length
-   `n ≥ N` witnesses `support card < n`.
+2. **Infinitely often non-saturated**: for every threshold `N`, some
+   length `n ≥ N` witnesses `support card < n`.  This is strictly
+   weaker than "eventually sublinear" — the support function is
+   allowed to hit `n` (full saturation) at infinitely many lengths,
+   as long as it also drops strictly below `n` at infinitely many
+   other lengths.
 
 Together, (1) and (2) forbid two degenerate shapes simultaneously:
 
@@ -251,9 +255,13 @@ filter.
 
 This is a clean Outcome-A-style obstruction against the SPECIFIC
 hardwiring shape used by the active leak proof — but NOT against
-hypothetical multi-slice / alternating-length hardwiring patterns,
-which are not constructed in the active code base.  See
-`FixedParams_Probe.md` §FP-3 actual for the caveat. -/
+log-width hardwiring (truth-table at width `k(n) = O(log n)`
+selected variables), which is polynomially-bounded and therefore
+admissible inside `InPpolyFormula L`.  See `FixedParams_Probe.md`
+§FP-3 actual / §8.7 for the caveat (FP-3b.0 update: the original
+"alternating-slice full-width TT" caveat was incorrect — that
+shape violates `polyBound_poly` and cannot be a counterexample;
+the real residual concern is log-width TT). -/
 theorem InSupportFunctionalDiversity_excludes_uniformPolyBound
     {L : Pnp3.ComplexityInterfaces.Language}
     (w : InPpolyFormula L) (B : Nat)

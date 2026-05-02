@@ -1,11 +1,19 @@
-# Critic report — `<candidate_id>`
+# TEMPLATE FILE — Critic report — `<candidate_id>`
 
-> **Template note.**  This file is a placeholder for the structured
-> Critic output specified in `spec/critic_protocol.md`.  Each candidate
-> package under `pnp3/Candidates/<id>/` should ship with this file
-> filled in **after** `scripts/verify_candidate.sh` returns
-> `verifier_status ∈ {PASS, PASS_SHAPE_ONLY}`.  The Critic produces it,
-> not the Generator (Rule 12).
+> **TEMPLATE FILE.  DO NOT USE AS A REAL CRITIC OUTPUT.**
+>
+> This file is the empty template specified in
+> `spec/critic_protocol.md`.  Every line below is a placeholder.  The
+> Critic-state validator (`scripts/validate_critic_report.py`) detects
+> this file by the `TEMPLATE FILE` banner above, by the
+> `critic_status: TEMPLATE` line in the Verdict, and by the
+> per-section `Template placeholder` markers, and refuses to count
+> this file as a completed report.
+>
+> Each candidate package under `pnp3/Candidates/<id>/` should ship
+> with this file filled in **after** `scripts/verify_candidate.sh`
+> returns `verifier_status ∈ {PASS, PASS_SHAPE_ONLY}`.  The Critic
+> produces it, not the Generator (Rule 12).
 >
 > The six-attack schema below is fixed; do not reorder, rename, or
 > add sections.  Each section's three-field schema (`status`,
@@ -78,14 +86,27 @@
 
 ## Verdict
 
-- **critic_status:** `pass`
+- **critic_status:** `TEMPLATE`
 - **dominant_break_class:** `null`
 - **dominant_break_section:** `null`
 - **next_recommended_action:** `Template — replace with concrete next-step recommendation. Default: do NOT promote until at least one human Critic reviews this report.`
 
-> **Template caveat.**  The default `pass` above is a TEMPLATE marker,
-> NOT an actual Critic verdict.  A real `pass` requires every attack
-> section to be FILLED IN with non-template evidence.  Verifier
-> tooling that records `critic_status = pass` from this template
-> file is incorrect — the template's `attack not applicable` defaults
-> are placeholders.
+> **Filling in this file.**  When a real Critic produces a non-
+> template report:
+>
+> * remove the `TEMPLATE FILE` banner above,
+> * remove every `Template placeholder` / `Template — fill` /
+>   `Template.` line,
+> * replace every per-section `attack not applicable` default with a
+>   real `status` (`no break found`, `break found`, or a JUSTIFIED
+>   `attack not applicable`),
+> * replace every per-section `summary` and `evidence` block,
+> * replace the Verdict's `critic_status: TEMPLATE` with the actual
+>   verdict (`pass` or `fail`),
+> * if `fail`, populate `dominant_break_class` and
+>   `dominant_break_section`.
+>
+> Then run `scripts/validate_critic_report.py <path>` to confirm the
+> report parses as `completed=true`, `is_template=false`, and the
+> verdict's `critic_status ∈ {pass, fail}` agrees with the cited
+> `outputs/attempts.jsonl` line's `critic_status` field.

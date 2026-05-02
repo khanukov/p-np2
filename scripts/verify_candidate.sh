@@ -145,6 +145,15 @@ candidate_dir_for_json="null"
 # check; defaults to false when no candidate is supplied (tree-level
 # run, e.g. via scripts/check.sh's smoke step against the template).
 critic_report_present="false"
+# Autoresearch MVP-0.1.1 hardening: differentiate between "file is
+# present" (often the empty template) and "file is a real, completed
+# Critic report".  These three flags are emitted alongside
+# critic_report_present in result.json and are the canonical state
+# downstream tooling should use to decide whether to count the
+# candidate as critic-cleared.
+critic_report_is_template="false"
+critic_completed="false"
+critic_report_status="not_run"
 if [[ -n "${candidate_dir}" ]]; then
   candidate_dir_for_json="\"${candidate_dir}\""
   candidate_id="$(basename "${candidate_dir%/}")"
@@ -180,9 +189,56 @@ if [[ -n "${candidate_dir}" ]]; then
       # whether to record critic_status = not_run vs. parse the report.
       if [[ -f "${candidate_dir}/critic_report.md" ]]; then
         critic_report_present="true"
+        # MVP-0.1.1: parse the report via validate_critic_report.py
+        # so the result.json captures is_template / completed /
+        # verdict_status, not just presence.  Tooling that only reads
+        # critic_report_present is now considered out-of-date.
+        if [[ -x "scripts/validate_critic_report.py" ]]; then
+          _critic_json="$(python3 scripts/validate_critic_report.py \
+                            "${candidate_dir}/critic_report.md" \
+                          2>/dev/null || true)"
+          # Extract three booleans / one string via Python (stdlib).
+          _critic_state_py="$(printf '%s' "${_critic_json}" \
+                              | python3 -c '
+import json, sys
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+print(("true" if d.get("is_template") else "false"))
+print(("true" if d.get("completed") else "false"))
+print(d.get("verdict_critic_status") or "not_run")
+')"
+          if [[ -n "${_critic_state_py}" ]]; then
+            critic_report_is_template="$(printf '%s' "${_critic_state_py}" \
+                                          | sed -n '1p')"
+            critic_completed="$(printf '%s' "${_critic_state_py}" \
+                                  | sed -n '2p')"
+            _verdict="$(printf '%s' "${_critic_state_py}" \
+                          | sed -n '3p')"
+            # Translate parsed verdict to the attempts.jsonl
+            # critic_status enum.  An incomplete or template report
+            # always maps to not_run, regardless of what
+            # `critic_status:` says.
+            if [[ "${critic_completed}" == "true" \
+                  && "${critic_report_is_template}" == "false" ]]; then
+              if [[ "${_verdict}" == "pass" \
+                    || "${_verdict}" == "fail" ]]; then
+                critic_report_status="${_verdict}"
+              else
+                critic_report_status="not_run"
+              fi
+            else
+              critic_report_status="not_run"
+            fi
+          fi
+        fi
       fi
       echo "[verify]   PASS (all 5 required files present;"\
-        "critic_report.md present=${critic_report_present})"
+        "critic_report.md present=${critic_report_present},"\
+        "is_template=${critic_report_is_template},"\
+        "completed=${critic_completed},"\
+        "verdict=${critic_report_status})"
       record_check "candidate_shape" "PASS"
 
       # PR 12: barrier-certificate per-candidate check.
@@ -478,7 +534,7 @@ if [[ -n "${json_path}" ]]; then
   # `completed_at`).
   cat >"${json_path}" <<JSON
 {
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "candidate_id": ${cdir_id_for_json},
   "candidate_dir": ${candidate_dir_for_json},
   "status": "${overall_status}",
@@ -488,6 +544,9 @@ if [[ -n "${json_path}" ]]; then
   "spec_version": "${spec_version}",
   "verifier_implementation_level": "${VERIFIER_IMPL_LEVEL}",
   "critic_report_present": ${critic_report_present},
+  "critic_report_is_template": ${critic_report_is_template},
+  "critic_completed": ${critic_completed},
+  "critic_status": "${critic_report_status}",
   "completed_at": "${completed_at}"
 }
 JSON

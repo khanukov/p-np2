@@ -77,16 +77,49 @@ The report ends with one of:
 ```markdown
 ## Verdict
 
-- **critic_status:** `pass` | `fail`
+- **critic_status:** `pass` | `fail` | `TEMPLATE`
 - **dominant_break_class:** <one of nogolog_schema.json's failure_class enum>  (when status=fail)
 - **dominant_break_section:** <integer 1..6>  (when status=fail)
 - **next_recommended_action:** <free-text, ≤ 200 chars>
 ```
 
 `critic_status = pass` is allowed iff every attack section has
-`status ∈ {no break found, attack not applicable}`.  A single
-`break found` forces `critic_status = fail`, with `dominant_break_class`
-and `dominant_break_section` populated.
+`status ∈ {no break found, attack not applicable}` AND the file is
+NOT detected as a template (see §3.1).  A single `break found`
+forces `critic_status = fail`, with `dominant_break_class` and
+`dominant_break_section` populated.
+
+The synthetic value `TEMPLATE` is used ONLY by the empty template at
+`pnp3/Candidates/_template/critic_report.md` and never appears in a
+real Critic-produced report.
+
+### 3.1 TEMPLATE detection (MVP-0.1.1)
+
+The validator `scripts/validate_critic_report.py` flags a report as
+`is_template = true` when ANY of:
+
+* the file contains the banner `TEMPLATE FILE` or any of:
+  `Template placeholder`, `Template caveat`, `TEMPLATE marker`,
+  `Template — fill`, `Template note.`, or
+  `DO NOT USE AS A REAL CRITIC OUTPUT`;
+* the Verdict's `critic_status:` line equals `TEMPLATE`;
+* every attack section's `status` is `attack not applicable` AND the
+  file contains the soft template marker `Template.` in any
+  evidence block.
+
+A real Critic-produced report MUST clear all three signals:
+
+1. Remove the `TEMPLATE FILE` banner and any `Template …`
+   placeholder text;
+2. set the Verdict's `critic_status` to `pass` or `fail`;
+3. provide non-template evidence in every section (the validator
+   does not deeply parse evidence prose, but the `Template` markers
+   above MUST be absent).
+
+`outputs/attempts.jsonl` validation refuses to record
+`critic_status ∈ {pass, fail}` when the cited
+`critic_report_path` resolves to a template-flagged or incomplete
+file.
 
 ## 4. Append to `outputs/attempts.jsonl`
 
@@ -114,6 +147,62 @@ entry via `scripts/nogolog_append.py` describing the structural
 pattern that was broken.  The two appends are NOT optional:
 together they form the audit trail that proves the candidate has
 been adversarially evaluated.
+
+### 4.1 Cross-field consistency rules (MVP-0.1.1 hardening)
+
+`scripts/validate_jsonl.py::validate_attempt` enforces:
+
+* `critic_status = "pass"` REJECTS the entry unless ALL of:
+  * `critic_report_path` is a non-null string;
+  * the file at that path exists relative to repo root;
+  * `validate_critic_report_file(<path>).is_template == false`;
+  * `validate_critic_report_file(<path>).completed == true`;
+  * `validate_critic_report_file(<path>).verdict_critic_status == "pass"`.
+* `critic_status = "fail"` REJECTS the entry unless ALL of:
+  * the same four conditions above with verdict `"fail"` instead of
+    `"pass"`;
+  * `critic_break_class` populated with a `FailureClass` enum value;
+  * the report's `dominant_break_class` agrees with
+    `critic_break_class` (when both are present).
+* `critic_status = "not_run"` allows `critic_report_path` to be
+  missing, null, or pointing at a template — this is the "Critic
+  has not yet run" state, e.g. immediately after Verifier has
+  produced `verifier_status = PASS_SHAPE_ONLY`.
+
+Three pass-traps the audit identified are now structurally
+rejected:
+
+1. `critic_status = "pass"` with NO `critic_report_path` field.
+2. `critic_status = "pass"` with `critic_report_path` pointing at a
+   non-existent file.
+3. `critic_status = "pass"` with `critic_report_path` pointing at
+   `pnp3/Candidates/_template/critic_report.md` (or any file
+   carrying the TEMPLATE markers from §3.1).
+
+These three cases are exercised by
+`scripts/test_attempts_validator.sh`, which is wired into
+`scripts/check.sh` step 12.b.
+
+### 4.2 Verifier surface (MVP-0.1.1)
+
+`scripts/verify_candidate.sh` emits four critic-state fields in
+its `result.json` (schema_version 1.2):
+
+```json
+{
+  "critic_report_present":     true | false,
+  "critic_report_is_template": true | false,
+  "critic_completed":          true | false,
+  "critic_status":             "not_run" | "pass" | "fail"
+}
+```
+
+The Verifier-emitted `critic_status` is `not_run` whenever the
+report is a template, incomplete, or absent — even if the report
+file's `critic_status:` line says `pass`.  Downstream tooling MUST
+read `critic_status` and `critic_completed` (NOT just
+`critic_report_present`) to decide whether the candidate has been
+critic-cleared.
 
 ## 5. Forbidden Critic actions
 

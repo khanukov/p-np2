@@ -462,6 +462,8 @@ echo "[check] Step 11/17: smoke probes (Research Governance v0.1, PR 5)"
 
 echo "[check] Step 12/17: NoGoLog + survivor history + attempts ledger validation (Research Governance v0.1, PR 9 + Autoresearch MVP-3)"
 python3 "${ROOT_DIR}/scripts/validate_jsonl.py"
+echo "[check] Step 12.b: attempts-validator critic-state hardening smoke (Research Governance v0.1, Autoresearch MVP-0.1.1)"
+"${ROOT_DIR}/scripts/test_attempts_validator.sh"
 
 echo "[check] Step 13/17: verify_candidate.sh --full smoke (Research Governance v0.1, PR 15 + PR 15.2)"
 # PR 15.2: invoke `--full` so the candidate kernel-elaboration check

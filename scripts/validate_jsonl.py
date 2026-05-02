@@ -203,7 +203,25 @@ def validate_survivor(entry: dict) -> list[str]:
 
 
 def validate_attempt(entry: dict) -> list[str]:
-    """Validate one outputs/attempts.jsonl line (AttemptLedgerEntry shape)."""
+    """Validate one outputs/attempts.jsonl line (AttemptLedgerEntry shape).
+
+    Cross-field consistency rules (Autoresearch MVP-0.1.1 hardening):
+
+    * `critic_status = "pass"` REQUIRES `critic_report_path` to be a
+      non-null string pointing to a file that parses as a completed,
+      non-template Critic report whose own `critic_status` field is
+      `"pass"`.  A `pass` line with no path / nonexistent path /
+      template path is REJECTED.
+    * `critic_status = "fail"` REQUIRES `critic_report_path` to be a
+      non-null string pointing to a completed, non-template Critic
+      report whose `critic_status` is `"fail"`, AND
+      `critic_break_class` populated, AND the report's
+      `dominant_break_class` agrees with `critic_break_class`.
+    * `critic_status = "not_run"` allows `critic_report_path` to be
+      missing, null, or pointing to a template (the latter for
+      candidate packages that ship the empty template before Critic
+      runs).
+    """
     errs: list[str] = []
     if not isinstance(entry, dict):
         return ["entry is not a JSON object"]
@@ -240,23 +258,94 @@ def validate_attempt(entry: dict) -> list[str]:
         errs += _check_string_nonempty(entry, "seed_pack_id")
     if "supersedes" in entry:
         errs += _check_pattern(entry, "supersedes", ATTEMPT_ID_RE)
-    # Cross-field consistency.
+    # Cross-field consistency — Verifier side.
     if entry.get("verifier_status") == "FAIL" \
             and entry.get("verifier_failure_class") in (None, ...):
-        # Only flag if explicitly null when status=FAIL; missing field is OK
-        # under the optional-attribute rule, but tooling should populate it.
         if "verifier_failure_class" in entry \
                 and entry["verifier_failure_class"] is None:
             errs.append(
                 "verifier_failure_class must be populated when "
                 "verifier_status = FAIL")
-    if entry.get("critic_status") == "fail" \
-            and entry.get("critic_break_class") in (None, ...):
-        if "critic_break_class" in entry \
-                and entry["critic_break_class"] is None:
+
+    # Cross-field consistency — Critic side (MVP-0.1.1).
+    critic_status = entry.get("critic_status")
+    critic_path = entry.get("critic_report_path")
+    if critic_status in ("pass", "fail"):
+        if critic_path is None or critic_path == "" or \
+                "critic_report_path" not in entry:
+            errs.append(
+                f"critic_status={critic_status!r} requires a non-null "
+                "critic_report_path")
+        else:
+            # Resolve relative to repo root.
+            from pathlib import Path as _Path
+            repo_root = _Path(__file__).resolve().parent.parent
+            full = (repo_root / critic_path)
+            if not full.exists():
+                errs.append(
+                    f"critic_status={critic_status!r}: critic_report_path "
+                    f"file does not exist: {critic_path}")
+            else:
+                # Lazy import to keep top-level import light.
+                try:
+                    sys.path.insert(0, str(repo_root / "scripts"))
+                    from validate_critic_report import (  # noqa: E402
+                        validate_critic_report_file,
+                    )
+                except ImportError as e:
+                    errs.append(
+                        f"could not import validate_critic_report: {e}")
+                else:
+                    state = validate_critic_report_file(full)
+                    if state.is_template:
+                        errs.append(
+                            f"critic_status={critic_status!r}: "
+                            f"critic_report_path points to a TEMPLATE "
+                            f"file (template marker detected): "
+                            f"{critic_path}")
+                    elif not state.completed:
+                        errs.append(
+                            f"critic_status={critic_status!r}: "
+                            f"critic_report at {critic_path} is not "
+                            f"completed: {state.errors}")
+                    elif state.verdict_critic_status != critic_status:
+                        errs.append(
+                            f"critic_status={critic_status!r} disagrees "
+                            f"with report verdict "
+                            f"{state.verdict_critic_status!r} at "
+                            f"{critic_path}")
+    if critic_status == "fail":
+        # Require critic_break_class populated.
+        if "critic_break_class" not in entry \
+                or entry.get("critic_break_class") in (None, ""):
             errs.append(
                 "critic_break_class must be populated when "
                 "critic_status = fail")
+        else:
+            # Optional: report's dominant_break_class agrees.
+            if critic_path and isinstance(critic_path, str):
+                from pathlib import Path as _Path
+                repo_root = _Path(__file__).resolve().parent.parent
+                full = (repo_root / critic_path)
+                if full.exists():
+                    try:
+                        sys.path.insert(0, str(repo_root / "scripts"))
+                        from validate_critic_report import (  # noqa: E402
+                            validate_critic_report_file,
+                        )
+                        state = validate_critic_report_file(full)
+                        rep_class = state.verdict_dominant_break_class
+                        ent_class = entry.get("critic_break_class")
+                        if rep_class and rep_class != "null" \
+                                and rep_class != ent_class:
+                            errs.append(
+                                f"critic_break_class={ent_class!r} "
+                                f"disagrees with report's "
+                                f"dominant_break_class={rep_class!r} "
+                                f"at {critic_path}")
+                    except Exception:
+                        pass  # already reported above
+
     return errs
 
 

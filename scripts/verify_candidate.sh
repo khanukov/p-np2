@@ -58,22 +58,50 @@ VERIFIER_IMPL_LEVEL="v1.0"
 usage() {
   cat <<USAGE
 Usage: scripts/verify_candidate.sh [--candidate <dir>] [--json <path>]
+       [--full] [--stage-timeout <seconds>]
 
-  --candidate <dir>   Optional path to a candidate directory.
-                      Adds Rule 3 file-shape, Rule 4 size, and
-                      Rule 7 barrier-certificate checks.
+  --candidate <dir>      Optional path to a candidate directory.
+                         Adds Rule 3 file-shape, Rule 4 size, and
+                         Rule 7 barrier-certificate checks.
 
-  --json <path>       Write a JSON result.json to <path>; schema
-                      at scripts/verifier_result_schema.json.
+  --json <path>          Write a JSON result.json to <path>; schema
+                         at scripts/verifier_result_schema.json.
+                         If the script aborts mid-stage, a PARTIAL
+                         result.json with status="ABNORMAL_EXIT" is
+                         written via an EXIT trap so downstream
+                         tooling does not see "no JSON" and silently
+                         skip the run (Autoresearch MVP-0.1.6).
 
-  Without --candidate, the verifier runs the four currently-shipped
-  global guards and reports tree-level status only.
+  --full                 Run the full verifier (PR 15.1 + later
+                         hardening): core guards + target_lock +
+                         Rule-16 candidate-local scan +
+                         JSONL validation + barrier-certificate
+                         queue scan + critic_report parse.
+
+  --stage-timeout <sec>  Wrap long-running stages (kernel check,
+                         lake invocations) in 'timeout <sec>'.
+                         Default: no timeout.  Useful for pilot-
+                         wave runs where one stuck candidate must
+                         not block a batch (Autoresearch MVP-0.1.6).
+
+  Without --candidate, the verifier runs the global guards and
+  reports tree-level status only.
+
+  Stage progress is emitted to stderr as 'stage=<name> at=<time>'
+  lines so an operator can tell which stage was active when the
+  script died (MVP-0.1.6 heartbeat).
 USAGE
 }
 
 candidate_dir=""
 json_path=""
 full_mode=0
+# Autoresearch MVP-0.1.6 — verifier resilience.
+# `--stage-timeout <seconds>` wraps long-running stages (lake build,
+# lean kernel check) in `timeout`.  Defaults to unset (no timeout).
+stage_timeout=""
+# `--heartbeat <seconds>` is reserved (MVP-0.1.6 emits one progress
+# line per stage entry; richer heartbeat is future work).
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --candidate)
@@ -92,6 +120,12 @@ while [[ $# -gt 0 ]]; do
       full_mode=1
       shift
       ;;
+    --stage-timeout)
+      shift
+      [[ $# -gt 0 ]] || { usage >&2; exit 2; }
+      stage_timeout="$1"
+      shift
+      ;;
     -h|--help)
       usage
       exit 0
@@ -103,6 +137,97 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+# ---------------------------------------------------------------------------
+# Resilience layer (MVP-0.1.6).
+#
+# `progress_stage <name>`        prints one heartbeat line per stage
+#                                so an operator watching stderr can
+#                                tell which stage was active when a
+#                                run dies.
+# `with_timeout <cmd> [args...]` wraps a long-running call in
+#                                `timeout`.  No-op if --stage-timeout
+#                                was not passed.
+#
+# Plus an EXIT trap that always emits a partial result.json when
+# --json was provided, even if the script aborts mid-stage.  Without
+# this, an abnormal termination produced no JSON and the operator
+# had to scrape stderr.
+# ---------------------------------------------------------------------------
+
+current_stage="(init)"
+
+progress_stage() {
+  current_stage="$1"
+  printf '[verify-progress] stage=%s at=%s\n' \
+    "${current_stage}" "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >&2
+}
+
+with_timeout() {
+  if [[ -n "${stage_timeout}" ]] && command -v timeout >/dev/null 2>&1; then
+    timeout "${stage_timeout}" "$@"
+  else
+    "$@"
+  fi
+}
+
+json_emitted=0
+emit_partial_json_on_abnormal_exit() {
+  local exit_code=$?
+  # Fire only when --json is set, the JSON has not already been
+  # emitted by the normal end-of-run path, and exit was abnormal
+  # (non-zero or interrupted mid-stage).
+  if [[ -z "${json_path}" ]]; then
+    return
+  fi
+  if [[ "${json_emitted}" == "1" ]]; then
+    return
+  fi
+  if [[ "${exit_code}" == "0" ]]; then
+    return
+  fi
+  # Best-effort partial emission.  We use `null`/`false` placeholders
+  # for fields we couldn't compute, and explicitly mark the outcome
+  # as ABNORMAL_EXIT so downstream tooling can distinguish a partial
+  # result from a normal FAIL.
+  local completed_at_partial
+  completed_at_partial="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+  local checks_pairs_partial=""
+  local first=1
+  if [[ ${#check_names[@]} -gt 0 ]]; then
+    for i in "${!check_names[@]}"; do
+      if [[ "${first}" == "1" ]]; then
+        first=0
+      else
+        checks_pairs_partial+=","
+      fi
+      checks_pairs_partial+="\"${check_names[$i]}\": \"${check_statuses[$i]}\""
+    done
+  fi
+  cat >"${json_path}" <<JSON
+{
+  "schema_version": "1.3",
+  "candidate_id": ${candidate_dir_for_json:-null},
+  "candidate_dir": ${candidate_dir_for_json:-null},
+  "status": "ABNORMAL_EXIT",
+  "reasons": ["abnormal exit during stage: ${current_stage}; bash exit=${exit_code}"],
+  "checks": {${checks_pairs_partial}},
+  "axioms_allowed": [],
+  "spec_version": "unknown",
+  "verifier_implementation_level": "${VERIFIER_IMPL_LEVEL}",
+  "critic_report_present": ${critic_report_present:-false},
+  "critic_report_is_template": ${critic_report_is_template:-false},
+  "critic_completed": ${critic_completed:-false},
+  "critic_status": "not_run",
+  "completed_at": "${completed_at_partial}",
+  "abnormal_exit_stage": "${current_stage}",
+  "abnormal_exit_code": ${exit_code}
+}
+JSON
+  echo "[verify] wrote PARTIAL JSON on abnormal exit: ${json_path}" >&2
+}
+
+trap emit_partial_json_on_abnormal_exit EXIT
 
 # ---------------------------------------------------------------------------
 # Per-check tracking.  Parallel arrays keep the result.json field
@@ -137,6 +262,8 @@ record_check() {
 # ---------------------------------------------------------------------------
 # (A) Optional candidate-shape check (PR 7).
 # ---------------------------------------------------------------------------
+
+progress_stage "candidate_shape"
 
 candidate_id=""
 candidate_dir_for_json="null"
@@ -290,7 +417,7 @@ print(d.get("verdict_critic_status") or "not_run")
                      "guard not executable"
       else
         set +e
-        scripts/check_candidate_kernel.sh "${candidate_dir}" \
+        with_timeout scripts/check_candidate_kernel.sh "${candidate_dir}" \
           > "/tmp/verify_candidate_kernel_elaboration.log" 2>&1
         kernel_rc=$?
         set -e
@@ -348,6 +475,8 @@ fi
 # (B) Global guards (PR 5 baseline).
 # ---------------------------------------------------------------------------
 
+progress_stage "global_guards"
+
 guards=(
   "doc_honesty:scripts/check_doc_honesty.sh"
   "typeclass_payload_quarantine:scripts/check_typeclass_payload_quarantine.sh"
@@ -385,6 +514,9 @@ done
 # ---------------------------------------------------------------------------
 # (C) Full-mode extras (PR 15.1).
 # ---------------------------------------------------------------------------
+
+progress_stage "full_mode_extras"
+
 #
 # `--full` adds the global guards that scripts/check.sh wires
 # separately as discrete steps:
@@ -463,6 +595,8 @@ fi
 # Aggregate verdict.
 # ---------------------------------------------------------------------------
 
+progress_stage "aggregate_verdict"
+
 overall_status="PASS_SHAPE_ONLY"
 if [[ -n "${first_fail}" ]]; then
   overall_status="FAIL_${first_fail}"
@@ -534,7 +668,7 @@ if [[ -n "${json_path}" ]]; then
   # `completed_at`).
   cat >"${json_path}" <<JSON
 {
-  "schema_version": "1.2",
+  "schema_version": "1.3",
   "candidate_id": ${cdir_id_for_json},
   "candidate_dir": ${candidate_dir_for_json},
   "status": "${overall_status}",
@@ -551,6 +685,7 @@ if [[ -n "${json_path}" ]]; then
 }
 JSON
   echo "[verify] wrote JSON: ${json_path}"
+  json_emitted=1
 fi
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,145 @@
+# Version manifest — Research Governance v0.1, Autoresearch MVP-0.1.4
+#
+# Single coordinated source-of-truth for the cross-spec versioning
+# model.  Each spec file under `spec/` carries its own
+# `[meta].spec_version` tracking edits to that file in isolation;
+# this manifest names each version explicitly and records the
+# coordinated snapshot that has been jointly reviewed and shipped.
+#
+# Five-engineer audit observation (consolidated triage): four
+# independent auditors saw `target.toml::[meta].spec_version =
+# "0.1.0"` next to `known_guards.toml::[meta].spec_version =
+# "0.1.2"` and asked which is canonical.  Both are canonical for
+# their own files; the apparent mismatch is real but per-file.
+# This manifest documents the intended model and gives each version
+# a self-describing name (target_spec_version,
+# known_guards_version, ...) so the relationship is unambiguous.
+#
+# `scripts/validate_version_manifest.py` cross-checks this manifest
+# against the actual `[meta].spec_version` fields of the underlying
+# files.  Drift fails the check.
+
+[meta]
+manifest_version = "0.1.0"
+status           = "frozen"
+last_reviewed    = "2026-05-02"
+
+# ---------------------------------------------------------------------------
+# Coordinated snapshot — current per-spec versions.
+# ---------------------------------------------------------------------------
+#
+# Each entry below MUST equal the corresponding file's
+# `[meta].spec_version`.  When a spec file's contents change, bump
+# its own [meta].spec_version AND update the corresponding row here
+# in the same PR.  The validator at
+# scripts/validate_version_manifest.py enforces equality.
+
+[snapshot]
+target_spec_version              = "0.1.0"
+target_spec_path                 = "spec/target.toml"
+known_guards_version             = "0.1.2"
+known_guards_path                = "spec/known_guards.toml"
+provider_audit_registry_version  = "0.1.0"
+provider_audit_registry_path     = "spec/provider_audit_registry.toml"
+
+# ---------------------------------------------------------------------------
+# Non-`[meta].spec_version` versions (no in-file [meta] block).
+# ---------------------------------------------------------------------------
+
+# Smoke-probe attack suite.  Tracked here because
+# `bench/SmokeProbe/` does not carry a [meta] block; the version
+# advances when probes are added/removed/changed semantics.  The
+# AttemptLedgerEntry schema's `attack_suite_version` field is
+# expected to equal this value at the time of the attempt.
+[snapshot.attack_suite]
+version = "0.1.0"
+notes   = "Eight probes shipped (5 rejected + 1 accepted_shape_only + 2 kernel-check)."
+target  = "bench/SmokeProbe/expected_results.json"
+
+# Autoresearch MVP control plane.  Bumped each time a major MVP
+# slice ships.  Component-level history:
+#
+#   0.1.0  Autoresearch MVP control plane baseline
+#          (commit 7dcba2c — ledger + Critic protocol + seed packs)
+#   0.1.1  Critic-state hardening
+#          (commit c5eb808 — closes template/pass trap;
+#           validate_critic_report.py + verifier 4-field surface)
+#   0.1.2  Underscore policy + Rule-16 negative + audit bootstrap
+#          + FP-3b.1 audit-only Lean skeleton
+#          (commits 01710a7 / 2501ac8 / e1e949b / 17f71d0)
+#   0.1.3  Spec-version manifest (this file)
+#          + verifier resilience (MVP-0.1.6) + Pilot Wave 0 protocol
+[snapshot.autoresearch_mvp]
+version = "0.1.3"
+notes   = "Latest coordinated MVP release.  See seed_packs/ for active research seeds."
+
+# Critic protocol.  Tracked here because spec/critic_protocol.md
+# does not carry a [meta] block; the version advances when the
+# protocol's required-section schema or cross-field rules change.
+[snapshot.critic_protocol]
+version = "0.1.1"
+notes   = "Six fixed attack sections; TEMPLATE marker; cross-field rules from MVP-0.1.1."
+target  = "spec/critic_protocol.md"
+
+# Source-theorem size policy.
+[snapshot.source_theorem_size_policy]
+version = "0.1.0"
+notes   = "MVP grep-based size checker."
+target  = "spec/source_theorem_size_policy.md"
+
+# Implicit-assumption channels (Rule 16 taxonomy).
+[snapshot.implicit_assumption_channels]
+version = "0.1.0"
+target  = "spec/implicit_assumption_channels.md"
+
+# Frozen-spec plan (separate from the FrozenSpec.lean module).
+[snapshot.frozen_spec_plan]
+version = "0.1.0"
+target  = "spec/frozen_spec_plan.md"
+
+# Schema for the JSONL ledgers.
+[snapshot.nogolog_schema]
+version = "0.1.1"
+notes   = "AttemptLedgerEntry added in MVP-0.1 baseline; cross-field rules tightened in MVP-0.1.1."
+target  = "spec/nogolog_schema.json"
+
+# ---------------------------------------------------------------------------
+# Bump rules.
+# ---------------------------------------------------------------------------
+#
+# The model is intentionally per-file, NOT a single global version.
+# A single global version would pretend that a doc-only edit to one
+# spec invalidates all others; that is dishonest and forces
+# spurious churn on downstream artifacts.
+#
+# Concretely:
+#
+#  * Edit `spec/target.toml`           ->  bump target_spec_version.
+#  * Edit `spec/known_guards.toml`     ->  bump known_guards_version.
+#  * Add/remove/change provider class  ->  bump provider_audit_registry_version.
+#  * Add/remove/change a smoke probe   ->  bump attack_suite_version.
+#  * Ship a new MVP slice              ->  bump autoresearch_mvp_version.
+#  * Change Critic protocol schema     ->  bump critic_protocol_version.
+#
+# In all cases: bump THIS file's matching `[snapshot.*].version`
+# AND the underlying file's `[meta].spec_version` (when applicable),
+# and run `scripts/validate_version_manifest.py` to confirm
+# consistency.
+#
+# `outputs/attempts.jsonl::AttemptLedgerEntry` records
+# `applicable_spec_version` (= target_spec_version at attempt time)
+# and `attack_suite_version` (= attack_suite_version at attempt
+# time).  Both names match this manifest's snapshot fields.
+
+# ---------------------------------------------------------------------------
+# What this manifest does NOT do.
+# ---------------------------------------------------------------------------
+#
+# It does NOT version Lean source files.  Lean module versions are
+# tracked via git history (commit hash) and via the
+# `attempt.applicable_spec_version` field, NOT here.
+#
+# It does NOT version the Research Constitution itself.  The
+# Constitution is a frozen document; substantive amendments require
+# a Foundational PR (Rule 0) and would update the file's narrative
+# header, not this manifest.

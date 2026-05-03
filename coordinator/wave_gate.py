@@ -53,9 +53,56 @@ class WaveGate:
         self._waves: dict[int, WaveConfig] = {}
         self._initial_wave = 0
         self._load()
-        self._current_wave = int(
-            os.environ.get("AUTORESEARCH_INITIAL_WAVE",
-                           str(self._initial_wave)))
+        self._current_wave = self._resolve_initial_wave()
+
+    def _resolve_initial_wave(self) -> int:
+        """MVP-0.5.5 / PR 5: refuse to start at any wave > 0 unless
+        the operator passes an explicit promotion-force env var.
+
+        The wave-gate has no automatic promotion evaluator (per
+        spec/wave_gate_thresholds.toml — promotion is manual until
+        the evaluator ships).  Allowing
+        AUTORESEARCH_INITIAL_WAVE=2 to silently set max_concurrent
+        to 500 lets an operator skip the demonstrable-promotion-
+        requirements step.  The PR-5 guard makes that explicit:
+
+            * env unset, or AUTORESEARCH_INITIAL_WAVE=0:
+                  start at the spec default initial_wave (== 0).
+            * AUTORESEARCH_INITIAL_WAVE=N for N>0 AND
+              AUTORESEARCH_PROMOTION_FORCE=true:
+                  start at wave N (operator override).
+            * AUTORESEARCH_INITIAL_WAVE=N for N>0 WITHOUT the FORCE
+              flag:
+                  REFUSED at startup (raise ValueError).
+
+        Tests that legitimately need wave > 0 (the existing 20-
+        worker e2e) set BOTH env vars.
+        """
+        raw = os.environ.get("AUTORESEARCH_INITIAL_WAVE")
+        if raw is None or raw == "":
+            return self._initial_wave
+        try:
+            requested = int(raw)
+        except ValueError:
+            raise ValueError(
+                f"AUTORESEARCH_INITIAL_WAVE must be an integer, "
+                f"got {raw!r}")
+        if requested == 0:
+            return 0
+        force = os.environ.get("AUTORESEARCH_PROMOTION_FORCE", "").lower()
+        if force not in ("true", "1", "yes"):
+            raise ValueError(
+                f"AUTORESEARCH_INITIAL_WAVE={requested} requires "
+                f"AUTORESEARCH_PROMOTION_FORCE=true.  Wave-gate has "
+                f"no automatic promotion evaluator yet "
+                f"(spec/wave_gate_thresholds.toml documents the "
+                f"manual-promotion requirements per Wave); the "
+                f"FORCE flag is the explicit operator override.")
+        if requested not in self._waves:
+            raise ValueError(
+                f"AUTORESEARCH_INITIAL_WAVE={requested} is not a "
+                f"defined wave; valid: {sorted(self._waves.keys())}")
+        return requested
 
     def _load(self) -> None:
         if tomllib is None:

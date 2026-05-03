@@ -31,6 +31,7 @@ import threading
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from typing import Any
 from uuid import uuid4
 
 from . import __version__
@@ -152,6 +153,8 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
                 self._handle_result(payload)
             elif path == "/v1/release":
                 self._handle_release(payload)
+            elif path == "/v1/dedup/register":
+                self._handle_dedup_register(payload)
             else:
                 self._send_error(404, f"unknown path: {path!r}")
         except Exception as e:  # pragma: no cover
@@ -162,6 +165,11 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
     # ------------------------------------------------------------------
 
     def _handle_health(self) -> None:
+        # MVP-0.5.3 / PR 3: reclaim expired leases before counting
+        # in-flight, so /v1/health reports the live (post-expiry)
+        # state and so /v1/task's wave-cap check (which reads
+        # counts_by_status) sees the freed capacity.
+        self.coordinator_store.expire_due()
         counts = self.coordinator_store.counts_by_status()
         in_flight = int(counts.get("assigned", 0))
         # MVP-0.5 Phase E: surface gauges so /v1/metrics is fresh.
@@ -191,6 +199,7 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
 
     def _handle_metrics(self) -> None:
         # Refresh gauges first so the scrape is point-in-time.
+        self.coordinator_store.expire_due()  # PR 3
         counts = self.coordinator_store.counts_by_status()
         in_flight = int(counts.get("assigned", 0))
         if self.metrics is not None:
@@ -256,13 +265,13 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
                 return
             seed_pack_id = seed_pack_param
         else:
-            # Round-robin via assignment seq mod #packs.
-            seq = self.coordinator_store._next_assignment_seq() - 1
-            self.coordinator_store._conn.execute(  # roll the counter back
-                "UPDATE counters SET value = ? WHERE name = 'assignment_seq'",
-                (seq,),
-            )
-            seed_pack_id = seed_packs[seq % len(seed_packs)]
+            # MVP-0.5.2 / PR 2: dedicated round-robin counter; no
+            # rollback of the assignment_seq counter.  The previous
+            # implementation peeked at next_assignment_seq() and
+            # then UPDATE'd the value back, which under concurrent
+            # /v1/task could lose assignment ids or duplicate them.
+            rr = self.coordinator_store.next_seed_pack_rr()
+            seed_pack_id = seed_packs[(rr - 1) % len(seed_packs)]
 
         try:
             lease_seconds = clamp_lease_seconds(
@@ -274,6 +283,10 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
 
         # MVP-0.5 Phase E — wave-gate worker-cap enforcement.
         if self.wave_gate is not None:
+            # MVP-0.5.3 / PR 3: reclaim expired leases first so the
+            # cap reflects the live in-flight count, not stale
+            # assignments from crashed workers.
+            self.coordinator_store.expire_due()
             counts = self.coordinator_store.counts_by_status()
             in_flight = int(counts.get("assigned", 0))
             ok, msg = self.wave_gate.can_assign(in_flight)
@@ -347,7 +360,33 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
                 f"{rec['worker_id']!r}, not {sub.worker_id!r}",
             )
             return
+
+        # MVP-0.5.1 / PR 1: idempotent retry.
+        # If the assignment is already in `submitted` state and the
+        # caller is the same worker that originally submitted it,
+        # return the previously-merged attempt_id (200 OK) rather
+        # than 409.  This makes /v1/result safe to retry under
+        # network errors / lease-deadline-near-expiry.  Wrong-worker
+        # / released / expired assignments still 4xx.
+        if rec["status"] == "submitted":
+            if rec.get("attempt_id"):
+                self._send_json(200, {
+                    "ok": True,
+                    "assignment_id": sub.assignment_id,
+                    "attempt_id": rec["attempt_id"],
+                    "nogolog_id": None,        # not tracked across retries
+                    "survivor_msg": None,
+                    "idempotent_retry": True,
+                })
+                return
+            self._send_error(
+                500,
+                f"assignment {sub.assignment_id} is submitted but no "
+                f"attempt_id is recorded (coordinator state inconsistency)",
+            )
+            return
         if rec["status"] != "assigned":
+            # released / expired
             self._send_error(
                 409,
                 f"assignment {sub.assignment_id} is in status "
@@ -360,12 +399,6 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
         sub.attempt["candidate_id"] = rec["candidate_id"]
 
         # MVP-0.4 / Phase D — Generator/Critic role-gate.
-        # Server-side enforcement that:
-        #   role=gen  => attempt.critic_status == "not_run", no supersedes;
-        #   role=crit => attempt.critic_status in {pass, fail},
-        #                attempt.supersedes points at an existing
-        #                gen attempt, AND worker_id != that gen attempt's
-        #                worker_id (Rule 12).
         gate_err = enforce_role_for_submission(
             role=rec["role"],
             worker_id=sub.worker_id,
@@ -383,6 +416,20 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
             self._send_error(403, gate_err)
             return
 
+        # MVP-0.5.1 / PR 1: pre-validate every payload BEFORE any
+        # canonical-ledger append.  This guarantees we never enter
+        # the "main attempt appended, auxiliary append failed,
+        # assignment not yet marked submitted" state where a
+        # client retry produces a duplicate canonical entry.
+        prevalidation_err = self._prevalidate_submission(sub)
+        if prevalidation_err is not None:
+            if self.metrics is not None:
+                self.metrics.inc(
+                    "autoresearch_results_rejected_total",
+                    {"reason": "prevalidate"})
+            self._send_error(400, prevalidation_err)
+            return
+
         try:
             attempt_id = append_attempt(sub.attempt)
         except LedgerWriteError as e:
@@ -393,41 +440,43 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
             self._send_error(400, f"attempt ledger rejected: {e.stderr}")
             return
 
-        nogo_id = None
-        survivor_msg = None
-        if sub.nogolog_entry is not None:
-            try:
-                nogo_id = append_nogolog(sub.nogolog_entry)
-            except LedgerWriteError as e:
-                # Attempt was already merged; nogolog is auxiliary,
-                # report the failure but don't roll back.
-                self._send_error(
-                    500,
-                    f"attempt {attempt_id} merged, but nogolog rejected: "
-                    f"{e.stderr}",
-                )
-                return
-        if sub.survivor_entry is not None:
-            try:
-                survivor_msg = append_survivor(sub.survivor_entry)
-            except LedgerWriteError as e:
-                self._send_error(
-                    500,
-                    f"attempt {attempt_id} merged, but survivor rejected: "
-                    f"{e.stderr}",
-                )
-                return
-
+        # MVP-0.5.1 / PR 1: mark submitted IMMEDIATELY after the
+        # canonical attempt append.  Auxiliary log appends below
+        # MUST NOT block the assignment transition.  Once the
+        # canonical ledger has the attempt, the assignment is
+        # "consumed" — even if the auxiliary writes fail, the
+        # client should not be able to retry the main append.
         if not self.coordinator_store.mark_submitted(
                 sub.assignment_id, attempt_id):
-            # Should not happen — we held the assignment row check
-            # above and assignments has a single-writer invariant.
+            # Concurrent transition (impossible under the
+            # assigned-status check above, but defensive).
             self._send_error(
                 500,
                 f"attempt {attempt_id} merged but assignment "
                 f"{sub.assignment_id} could not be marked submitted",
             )
             return
+
+        # Auxiliary log appends — best-effort, NEVER roll back the
+        # main attempt or unmark the assignment.  Failures here
+        # surface as a `partial` field in the 200 response so the
+        # operator can investigate (the canonical attempt is
+        # already merged; auxiliary entries can be retried out-of-
+        # band by Reviewer or backfilled from
+        # outputs/attempts.jsonl).
+        nogo_id: str | None = None
+        survivor_msg: str | None = None
+        partial: list[str] = []
+        if sub.nogolog_entry is not None:
+            try:
+                nogo_id = append_nogolog(sub.nogolog_entry)
+            except LedgerWriteError as e:
+                partial.append(f"nogolog_append_failed: {e.stderr.strip()}")
+        if sub.survivor_entry is not None:
+            try:
+                survivor_msg = append_survivor(sub.survivor_entry)
+            except LedgerWriteError as e:
+                partial.append(f"survivor_append_failed: {e.stderr.strip()}")
 
         if self.metrics is not None:
             self.metrics.inc(
@@ -449,13 +498,67 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
                     },
                 )
 
-        self._send_json(200, {
+        resp_body: dict[str, Any] = {
             "ok": True,
             "assignment_id": sub.assignment_id,
             "attempt_id": attempt_id,
             "nogolog_id": nogo_id,
             "survivor_msg": survivor_msg,
-        })
+        }
+        if partial:
+            resp_body["partial"] = partial
+        self._send_json(200, resp_body)
+
+    def _handle_dedup_register(self, payload: dict) -> None:
+        """MVP-0.5.4 / PR 4: atomic check-and-set for content_hash.
+
+        Workers compute their candidate's content_hash via
+        coordinator.dedup.hash_gen_candidate() (or
+        hash_critic_report() for crit role) and call this endpoint
+        BEFORE running the verifier — if 200, they proceed; if 409,
+        they release the assignment and pick a different one.
+
+        Body shape:
+            {
+              "content_hash":  "<sha256 hex>",
+              "assignment_id": "ASN-NNNNNN"
+            }
+
+        Responses:
+            200 — newly registered; field `first_assignment_id`
+                  equals the supplied `assignment_id`.
+            409 — already seen; `first_assignment_id` is the
+                  earlier assignment that registered the same hash.
+            400 — body invalid.
+        """
+        content_hash = payload.get("content_hash", "")
+        assignment_id = payload.get("assignment_id", "")
+        if not isinstance(content_hash, str) or not content_hash \
+                or not all(c in "0123456789abcdef" for c in content_hash):
+            self._send_error(
+                400,
+                f"content_hash must be lowercase hex: {content_hash!r}")
+            return
+        err = validate_assignment_id(assignment_id)
+        if err:
+            self._send_error(400, err)
+            return
+        # Confirm the assignment exists (so workers can't pollute
+        # the dedup table with hashes for non-existent assignments).
+        rec = self.coordinator_store.get_assignment(assignment_id)
+        if rec is None:
+            self._send_error(
+                404, f"unknown assignment_id: {assignment_id!r}")
+            return
+        inserted = self.coordinator_store.remember_dedup(
+            content_hash, assignment_id)
+        first = self.coordinator_store.lookup_dedup(content_hash)
+        resp = DedupResponse(
+            content_hash=content_hash,
+            seen=not inserted,
+            first_assignment_id=first,
+        )
+        self._send_json(200 if inserted else 409, resp.to_json())
 
     def _handle_release(self, payload: dict) -> None:
         assignment_id = payload.get("assignment_id", "")
@@ -474,6 +577,66 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
     # ------------------------------------------------------------------
     # Helpers.
     # ------------------------------------------------------------------
+
+    # ------------------------------------------------------------------
+    # Pre-validation (MVP-0.5.1 / PR 1).
+    # ------------------------------------------------------------------
+
+    def _prevalidate_submission(
+        self, sub: ResultSubmission,
+    ) -> str | None:
+        """Validate every payload (attempt + nogolog + survivor) BEFORE
+        any canonical-ledger append.  If a validator rejects, return
+        a one-line reason; the HTTP layer translates that into 400.
+
+        This guarantees we never enter the dangerous state where the
+        main attempt has been appended but a subsequent auxiliary
+        append rejects, leaving the canonical ledger updated and the
+        assignment still in 'assigned'.
+        """
+        # Lazy import to avoid bloating module-load time.
+        try:
+            sys.path.insert(0, str(ROOT / "scripts"))
+            from validate_jsonl import (   # noqa: E402
+                validate_attempt as _vattempt,
+                validate_nogo as _vnogo,
+                validate_survivor as _vsurvivor,
+            )
+        except ImportError as e:           # pragma: no cover
+            return f"validator import failed: {e}"
+
+        # The attempt validator wants `id` and `created_at` to be
+        # present; the writer script fills those in inside the lock.
+        # We supply transient placeholders for prevalidation so we
+        # don't reject a payload that the writer would have accepted.
+        from datetime import datetime, timezone
+        attempt_probe = dict(sub.attempt)
+        attempt_probe.setdefault("id", "ATT-000000")
+        attempt_probe.setdefault("created_at",
+                                 datetime.now(tz=timezone.utc).strftime(
+                                     "%Y-%m-%dT%H:%M:%SZ"))
+        errs = _vattempt(attempt_probe)
+        if errs:
+            return f"attempt prevalidation failed: {errs}"
+
+        if sub.nogolog_entry is not None:
+            nogo_probe = dict(sub.nogolog_entry)
+            nogo_probe.setdefault("id", "NOGO-000000")
+            nogo_probe.setdefault("created_at",
+                                  attempt_probe["created_at"])
+            errs = _vnogo(nogo_probe)
+            if errs:
+                return f"nogolog prevalidation failed: {errs}"
+
+        if sub.survivor_entry is not None:
+            survivor_probe = dict(sub.survivor_entry)
+            survivor_probe.setdefault("created_at",
+                                      attempt_probe["created_at"])
+            errs = _vsurvivor(survivor_probe)
+            if errs:
+                return f"survivor prevalidation failed: {errs}"
+
+        return None
 
     def _send_json(self, status: int, body: dict) -> None:
         encoded = write_json(body)
@@ -512,8 +675,16 @@ def serve(
     if wave_gate is None:
         try:
             wave_gate = WaveGate()
-        except Exception:
-            wave_gate = None  # missing thresholds → run capless
+        except FileNotFoundError:
+            # Missing thresholds file → degrade to capless (single
+            # legitimate fallback, e.g. local-dev runs without spec/).
+            wave_gate = None
+        except ValueError:
+            # MVP-0.5.5 / PR 5: AUTORESEARCH_INITIAL_WAVE > 0
+            # without AUTORESEARCH_PROMOTION_FORCE=true raises
+            # ValueError; let it propagate so the operator sees the
+            # refusal at startup time, not silently runs capless.
+            raise
     if metrics is None:
         metrics = Metrics()
 

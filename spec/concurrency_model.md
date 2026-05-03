@@ -153,6 +153,37 @@ design.
 
 ## 6. What an engineer doing async parallel work must know
 
+**Honest scaling readiness statement (MVP-0.5.1 .. 0.5.5).**
+
+The coordinator + ledger layer has e2e tests up to its synthetic
+scope (N=20 parallel `/v1/task`, N=20 parallel `/v1/result`,
+N=16 parallel ledger writers).  This is **NOT** a guarantee that
+N real verifier workers can run concurrently on one host:
+
+* Real workers run `lake build`, which writes to the shared
+  `.lake/build/` (see §4 above).  Until Phase C ships per-worker
+  scratch isolation, more than ~10 simultaneous
+  `verify_candidate.sh` invocations on one host are unsafe.
+* `spec/wave_gate_thresholds.toml::waves.2.max_concurrent = 500`
+  is a **policy ceiling**, not a tested guarantee.  Promotion to
+  Wave 2 is manual (PR 5 / MVP-0.5.5 enforces explicit operator
+  opt-in via `AUTORESEARCH_INITIAL_WAVE=2` AND
+  `AUTORESEARCH_PROMOTION_FORCE=true`); the coordinator does NOT
+  independently verify the listed `promotion_requirements`.
+* `outputs/attempts.jsonl.lock` (Phase A flock) prevents ledger
+  corruption from N parallel writers; it does NOT throttle the
+  workers' upstream (verifier / Lean kernel / build cache).
+
+In short: **MVP-0.5.5 is safe for Pilot Wave 0 (5–10 manual
+workers, one host) provided the operator follows the worker
+checklist in `seed_packs/PILOT_WAVE_0_PROTOCOL.md`.**  Scaling
+beyond Wave 0 requires either (a) human-coordinated operator
+discipline ("wait for `lake build` to finish before launching
+the next worker") or (b) Phase C scratch isolation +
+distributed build cache (deferred).
+
+---
+
 If you are building infrastructure (Phase B–F):
 
 * You may rely on Categories 1, 2, 3 above being parallel-safe on

@@ -17,9 +17,28 @@
 #
 # The gate refuses `GET /v1/task` if the current in-flight worker
 # count is at or above the current Wave's `max_concurrent` cap.
-# Promotion to the next Wave is automatic when ALL of the listed
-# `promotion_requirements` are met for the gate evaluator;
-# demotion is manual (operator override; out of scope for MVP-0.5).
+#
+# Promotion is **manual** in MVP-0.5.  An evaluator that
+# automatically advances the wave when promotion_requirements are
+# met is post-MVP work (placeholder seed pack: would live under
+# `seed_packs/INFRA/E_followup/`).  Until that ships:
+#
+#   * The default startup wave is 0.
+#   * An operator who has independently verified that the listed
+#     `promotion_requirements` for Wave N hold passes BOTH
+#     `AUTORESEARCH_INITIAL_WAVE=N` AND
+#     `AUTORESEARCH_PROMOTION_FORCE=true` to opt into Wave N
+#     (PR 5 / MVP-0.5.5 hardening).  The FORCE flag is the
+#     explicit operator decision point; the coordinator does
+#     NOT independently verify the requirements before
+#     accepting the override.
+#   * Demotion is manual: restart with a lower
+#     `AUTORESEARCH_INITIAL_WAVE`.
+#
+# The `promotion_requirements` block in each `[waves.N]` table
+# below is the operator's CHECKLIST, NOT a coordinator-evaluated
+# precondition.  Treat it as a contract for what the operator
+# must verify before flipping the FORCE flag.
 
 [meta]
 schema_version = "0.5.0"

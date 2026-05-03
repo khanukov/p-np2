@@ -185,6 +185,58 @@ def run_test_cap_released_on_submit(tasks: list[dict]) -> None:
     print("[test_wave_gate] OK   cap released on submit (-1 in-flight)")
 
 
+def run_test_expired_lease_frees_cap(stub: Path) -> None:
+    """MVP-0.5.3 / PR 3: an assignment whose deadline has passed
+    must be reclaimed by expire_due() so the wave cap reflects
+    LIVE in-flight workers, not stale assignments from crashed
+    ones.
+
+    Real-time wait is avoided by directly back-dating the deadline
+    column on an existing in-flight assignment via the stub's
+    coordinator/state.db file.  Then the next /v1/task probe
+    triggers expire_due() and admits a new worker.
+    """
+    import sqlite3
+
+    # Confirm we're currently at the cap (the prior tests left
+    # the coordinator with 10/10 in-flight: 9 from cap_enforced
+    # plus 1 from cap_released_on_submit's gen-cap-after).
+    code, body = _http_get(
+        "/v1/task?role=gen&worker_id=gen-expiry-pre"
+        "&seed_pack=wave_gate_smoke_pack")
+    assert code == 503, (
+        f"pre-expiry task should hit cap (503), got {code}: {body}")
+
+    # Pick any existing in-flight assignment and back-date it.
+    db_path = stub / "coordinator" / "state.db"
+    conn = sqlite3.connect(str(db_path))
+    try:
+        row = conn.execute(
+            "SELECT assignment_id FROM assignments "
+            " WHERE status = 'assigned' LIMIT 1"
+        ).fetchone()
+        assert row is not None, "no in-flight assignment to back-date"
+        asn = row[0]
+        conn.execute(
+            "UPDATE assignments SET deadline = '1970-01-01T00:00:00Z' "
+            " WHERE assignment_id = ?",
+            (asn,),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    # Now the next /v1/task call should run expire_due() FIRST,
+    # which transitions the back-dated assignment to 'expired'
+    # and frees one slot in the cap.  The new task should succeed.
+    code, body = _http_get(
+        "/v1/task?role=gen&worker_id=gen-expiry-post"
+        "&seed_pack=wave_gate_smoke_pack")
+    assert code == 200, (
+        f"after expire_due, /v1/task should succeed, got {code}: {body}")
+    print(f"[test_wave_gate] OK   expired lease ({asn}) frees wave cap")
+
+
 def run_test_metrics_endpoint() -> None:
     code, body = _http_get("/v1/metrics")
     assert code == 200, f"/v1/metrics returned {code}: {body!r}"
@@ -206,14 +258,56 @@ def run_test_metrics_endpoint() -> None:
           " families")
 
 
+def run_test_promotion_force_required(stub: Path) -> None:
+    """MVP-0.5.5 / PR 5: AUTORESEARCH_INITIAL_WAVE > 0 without
+    AUTORESEARCH_PROMOTION_FORCE=true MUST refuse to start."""
+    # Spawn a SHORT-lived coordinator on a different port that
+    # tries to start at Wave 2 without the FORCE flag.
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(stub)
+    env["AUTORESEARCH_INITIAL_WAVE"] = "2"
+    env.pop("AUTORESEARCH_PROMOTION_FORCE", None)
+    proc = subprocess.Popen(
+        [sys.executable, "-m", "coordinator.server",
+         "--bind", "127.0.0.1", "--port", str(TEST_PORT + 100),
+         "--db", str(stub / "coordinator" / "state2.db"),
+         "--quiet"],
+        cwd=stub,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    try:
+        rc = proc.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.wait()
+        raise AssertionError(
+            "coordinator should have refused to start without "
+            "AUTORESEARCH_PROMOTION_FORCE; instead it kept running")
+    err = proc.stderr.read().decode("utf-8", "replace") if proc.stderr else ""
+    assert rc != 0, (
+        f"coordinator should have exited non-zero; got rc={rc}, stderr={err!r}")
+    assert "AUTORESEARCH_PROMOTION_FORCE" in err, (
+        f"refusal message must mention AUTORESEARCH_PROMOTION_FORCE; "
+        f"stderr={err!r}")
+    print("[test_wave_gate] OK   AUTORESEARCH_INITIAL_WAVE=2 without FORCE "
+          "-> refused at startup")
+
+
 def main() -> int:
     with tempfile.TemporaryDirectory(prefix="wave_gate_e2e_") as tmp:
         tmp_path = Path(tmp)
         stub = _stage_stub_repo(tmp_path)
+        # Run the promotion-force-required test BEFORE the
+        # main coordinator comes up: it spawns its own short-
+        # lived subprocess and asserts non-zero exit.
+        run_test_promotion_force_required(stub)
         proc = _start_coordinator(stub)
         try:
             tasks = run_test_cap_enforced()
             run_test_cap_released_on_submit(tasks)
+            run_test_expired_lease_frees_cap(stub)
             run_test_metrics_endpoint()
         finally:
             proc.send_signal(2)
@@ -222,7 +316,7 @@ def main() -> int:
             except subprocess.TimeoutExpired:
                 proc.kill()
                 proc.wait()
-    print("[test_wave_gate] OK (3/3 wave-gate + metrics cases passed)")
+    print("[test_wave_gate] OK (4 wave-gate + metrics cases passed)")
     return 0
 
 

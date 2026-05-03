@@ -98,6 +98,7 @@ def _start_coordinator(stub: Path) -> subprocess.Popen:
     env = os.environ.copy()
     env["PYTHONPATH"] = str(stub)
     env["AUTORESEARCH_INITIAL_WAVE"] = "2"  # bypass Wave-0 cap=10
+    env["AUTORESEARCH_PROMOTION_FORCE"] = "true"  # PR 5 guard opt-in
     proc = subprocess.Popen(
         [sys.executable, "-m", "coordinator.server",
          "--bind", "127.0.0.1", "--port", str(TEST_PORT),

@@ -147,9 +147,58 @@ target  = "bench/SmokeProbe/expected_results.json"
 #          Existing test_coordinator.py + test_role_gate.py
 #           updated to opt into AUTORESEARCH_INITIAL_WAVE=2 so
 #           they don't trip the Wave-0 cap.
+#   0.5.5  Coordinator-consistency hardening (MVP-0.5.1 .. 0.5.5).
+#          External audit identified five concrete bugs in the
+#          Phase B/D/E coordinator that blocked actual Pilot Wave 0
+#          runtime:
+#            PR 1 (0.5.1) — /v1/result atomicity + idempotent retry.
+#               Pre-validate attempt + nogolog + survivor before any
+#               canonical-ledger append; mark assignment submitted
+#               IMMEDIATELY after the main append; auxiliary log
+#               failures surface as `partial` in the 200 response
+#               but do NOT roll back or block the next retry.
+#               Same-worker double-submit returns 200 with the
+#               previously-merged attempt_id (idempotent_retry=true).
+#            PR 2 (0.5.2) — dedicated seed_pack_rr_seq counter.
+#               Replaces the assignment_seq peek-and-rollback hack
+#               in /v1/task's no-seed-pack path.  Round-robin is
+#               now race-safe under concurrent /v1/task without
+#               seed_pack parameter.
+#            PR 3 (0.5.3) — expire_due() integration.
+#               /v1/task and /v1/health (and /v1/metrics) call
+#               expire_due() before counts_by_status() so the
+#               wave-cap check reflects LIVE in-flight workers,
+#               not stale assignments from crashed workers.
+#            PR 4 (0.5.4) — POST /v1/dedup/register.
+#               Atomic check-and-set: workers compute their
+#               candidate's content_hash and call this endpoint
+#               BEFORE running the verifier.  GET /v1/dedup is
+#               read-only lookup; POST /v1/dedup/register is the
+#               write path that actually populates the dedup
+#               table.
+#            PR 5 (0.5.5) — wave promotion guard.
+#               AUTORESEARCH_INITIAL_WAVE > 0 now requires
+#               AUTORESEARCH_PROMOTION_FORCE=true; without the
+#               FORCE flag the coordinator REFUSES TO START.
+#               Documents in spec/wave_gate_thresholds.toml that
+#               promotion is manual (no automatic evaluator yet)
+#               and that promotion_requirements are an operator
+#               checklist, not a coordinator-evaluated
+#               precondition.
+#          Five new test cases land in coordinator/test_*.py:
+#            * test_coordinator: double-submit -> 200 idempotent;
+#               bad nogolog -> 400 + no ledger drift;
+#               no-seed-pack RR -> 8 distinct asn / 2 distinct seeds;
+#               dedup register-then-lookup -> 200 / 409 / 409.
+#            * test_wave_gate: expired lease frees cap;
+#               wave > 0 without FORCE -> refused at startup.
+#          spec/concurrency_model.md tightens its scaling-readiness
+#          claim: MVP-0.5.5 is safe for Pilot Wave 0 (5-10 workers
+#          on one host, operator-disciplined); Wave 2 cap=500 is a
+#          policy ceiling, not a tested guarantee.
 [snapshot.autoresearch_mvp]
-version = "0.5.0"
-notes   = "Phase E of the v0.3 100K-worker scaling plan.  Wave gate + metrics + telemetry shipped.  Default startup is Wave 0 (cap=10); operators promote by restarting with AUTORESEARCH_INITIAL_WAVE=N once promotion_requirements per spec/wave_gate_thresholds.toml are demonstrably met.  Phase C (worker scratch + build cache) and Phase F (sharded coordinator + 100K rollout) remain deferred."
+version = "0.5.5"
+notes   = "Phase E + audit-identified consistency hardening shipped.  Pilot Wave 0 (5-10 manual workers on one host with serialised lake build) is GO-conditional.  10-20 workers and beyond remain blocked by Phase C (worker scratch isolation + distributed build cache) which is deferred until deployment context is available."
 
 # Critic protocol.  Tracked here because spec/critic_protocol.md
 # does not carry a [meta] block; the version advances when the

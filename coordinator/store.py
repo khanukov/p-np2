@@ -115,6 +115,32 @@ class CoordinatorStore:
     def next_assignment_id(self) -> str:
         return f"ASN-{self._next_assignment_seq():06d}"
 
+    def next_seed_pack_rr(self) -> int:
+        """Monotonic counter for seed-pack round-robin selection.
+
+        Separate from `assignment_seq` so the seed-pack rotation
+        does not piggy-back on the assignment id allocator (which
+        would force a counter rollback under concurrency — the
+        bug PR 2 / MVP-0.5.2 closes).
+        """
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT value FROM counters WHERE name = 'seed_pack_rr_seq'"
+            ).fetchone()
+            if row is None:
+                self._conn.execute(
+                    "INSERT INTO counters(name, value) VALUES "
+                    "('seed_pack_rr_seq', 1)"
+                )
+                return 1
+            new_value = int(row[0]) + 1
+            self._conn.execute(
+                "UPDATE counters SET value = ? "
+                " WHERE name = 'seed_pack_rr_seq'",
+                (new_value,),
+            )
+            return new_value
+
     # ------------------------------------------------------------------
     # Assignments.
     # ------------------------------------------------------------------

@@ -91,10 +91,13 @@ def _stage_stub_repo(tmp: Path) -> Path:
     for name in ("attempts.jsonl", "nogolog.jsonl", "survivor_history.jsonl"):
         (stub / "outputs" / name).write_text("")
     # One synthetic seed pack so /v1/task can succeed.
-    sp = stub / "seed_packs" / "smoke_test_pack"
-    sp.mkdir(parents=True, exist_ok=True)
-    (sp / "README.md").write_text(
-        "# Synthetic seed pack used only by coordinator e2e test.\n")
+    # Stage TWO synthetic seed packs so the no-seed-pack
+    # round-robin path (MVP-0.5.2 / PR 2) is exercised meaningfully.
+    for sp_name in ("smoke_test_pack", "smoke_test_pack_b"):
+        sp = stub / "seed_packs" / sp_name
+        sp.mkdir(parents=True, exist_ok=True)
+        (sp / "README.md").write_text(
+            f"# Synthetic seed pack {sp_name} used only by coordinator e2e test.\n")
     # Copy coordinator package into stub (so subprocess scripts that
     # use Path(__file__).resolve().parent.parent resolve to the stub
     # root).
@@ -121,6 +124,7 @@ def _start_coordinator(stub: Path) -> subprocess.Popen:
     # 2 (cap=500) so the e2e suite still passes; the wave-gate
     # behaviour itself is exercised by coordinator/test_wave_gate.py.
     env["AUTORESEARCH_INITIAL_WAVE"] = "2"
+    env["AUTORESEARCH_PROMOTION_FORCE"] = "true"  # PR 5 guard opt-in
     proc = subprocess.Popen(
         [sys.executable, "-m", "coordinator.server",
          "--bind", "127.0.0.1", "--port", str(TEST_PORT),
@@ -278,8 +282,15 @@ def run_test_wrong_worker_submission(stub: Path) -> None:
     print("[test_coordinator] OK   /v1/result wrong-worker -> 403")
 
 
-def run_test_double_submit(stub: Path) -> None:
-    """A second /v1/result on the same assignment MUST be 409."""
+def run_test_double_submit_is_idempotent(stub: Path) -> None:
+    """A second /v1/result on the same assignment by the same worker
+    MUST return the previously-merged attempt_id (200 OK with
+    idempotent_retry=true), NOT 409.  This is the MVP-0.5.1 PR-1
+    contract: workers can safely retry under network errors.
+    A different worker submitting the same assignment is still 403
+    (covered by run_test_wrong_worker_submission).  Released /
+    expired assignments are still 409 (covered by
+    run_test_release_then_submit)."""
     code, task = _http_get(
         "/v1/task?role=gen&worker_id=gen-double&seed_pack=smoke_test_pack")
     assert code == 200
@@ -295,11 +306,85 @@ def run_test_double_submit(stub: Path) -> None:
             "attack_suite_version": "0.1.0",
         },
     }
-    code1, _ = _http_post("/v1/result", body)
-    assert code1 == 200
-    code2, resp = _http_post("/v1/result", body)
-    assert code2 == 409, f"expected 409 on second submit, got {code2}: {resp}"
-    print("[test_coordinator] OK   /v1/result double-submit -> 409")
+    code1, resp1 = _http_post("/v1/result", body)
+    assert code1 == 200, f"first submit failed: {code1}: {resp1}"
+    first_attempt_id = resp1["attempt_id"]
+    code2, resp2 = _http_post("/v1/result", body)
+    assert code2 == 200, (
+        f"second submit (idempotent retry) should be 200, got {code2}: {resp2}")
+    assert resp2.get("attempt_id") == first_attempt_id, (
+        f"idempotent retry must return the same attempt_id; "
+        f"first={first_attempt_id} second={resp2.get('attempt_id')}")
+    assert resp2.get("idempotent_retry") is True, (
+        f"idempotent retry response must carry idempotent_retry=true: {resp2}")
+    print("[test_coordinator] OK   /v1/result double-submit -> 200 (idempotent)")
+
+
+def run_test_no_seed_pack_round_robin() -> None:
+    """MVP-0.5.2 / PR 2: parallel /v1/task without seed_pack
+    parameter must produce N distinct assignment ids AND must
+    distribute across the available seed packs (round-robin)."""
+    from concurrent.futures import ThreadPoolExecutor
+    n = 8
+
+    def fetch(i: int) -> dict:
+        code, body = _http_get(
+            f"/v1/task?role=gen&worker_id=gen-rr-{i:02d}")
+        assert code == 200, f"task {i} returned {code}: {body}"
+        return body
+
+    with ThreadPoolExecutor(max_workers=n) as ex:
+        tasks = list(ex.map(fetch, range(n)))
+    asn_ids = {t["assignment_id"] for t in tasks}
+    seed_pack_ids = {t["seed_pack_id"] for t in tasks}
+    assert len(asn_ids) == n, (
+        f"distinct assignment ids: {len(asn_ids)}/{n}")
+    assert len(seed_pack_ids) >= 2, (
+        f"round-robin should hit >=2 distinct seed packs; "
+        f"got {seed_pack_ids}")
+    print(f"[test_coordinator] OK   /v1/task no-seed-pack RR -> "
+          f"{len(asn_ids)} distinct asn, {len(seed_pack_ids)} distinct seeds")
+
+
+def run_test_prevalidation_rejects_bad_nogolog(stub: Path) -> None:
+    """MVP-0.5.1 / PR 1: a /v1/result whose `nogolog_entry` is
+    malformed MUST be rejected with 400 BEFORE the main attempt
+    is appended to the canonical ledger.  This proves the
+    pre-validation gate works: we don't end up with the attempt
+    persisted but the auxiliary entry rejected."""
+    code, task = _http_get(
+        "/v1/task?role=gen&worker_id=gen-prev&seed_pack=smoke_test_pack")
+    assert code == 200
+    # Read the canonical ledger length before the doomed submit.
+    ledger = stub / "outputs" / "attempts.jsonl"
+    before = len([_ for _ in ledger.read_text().splitlines() if _.strip()])
+    body = {
+        "assignment_id": task["assignment_id"],
+        "worker_id": "gen-prev",
+        "attempt": {
+            "candidate_id": task["candidate_id"],
+            "method_family": "ac0_locality_support",
+            "verifier_status": "PASS_SHAPE_ONLY",
+            "critic_status": "not_run",
+            "applicable_spec_version": "0.1.0",
+            "attack_suite_version": "0.1.0",
+        },
+        "nogolog_entry": {
+            # Deliberately malformed: missing required fields.
+            "candidate_id": "synthetic_prev",
+            # missing method_family, status, failure_class, ...
+        },
+    }
+    code, resp = _http_post("/v1/result", body)
+    assert code == 400, (
+        f"prevalidation should reject bad nogolog with 400, "
+        f"got {code}: {resp}")
+    assert "nogolog prevalidation failed" in resp.get("error", ""), resp
+    # Ledger MUST NOT have grown.
+    after = len([_ for _ in ledger.read_text().splitlines() if _.strip()])
+    assert after == before, (
+        f"ledger grew during failed prevalidation: {before} -> {after}")
+    print("[test_coordinator] OK   /v1/result bad nogolog -> 400 + no ledger drift")
 
 
 def run_test_release_then_submit() -> None:
@@ -326,6 +411,67 @@ def run_test_release_then_submit() -> None:
     })
     assert code2 == 409, f"expected 409 after release, got {code2}: {resp}"
     print("[test_coordinator] OK   /v1/release then /v1/result -> 409")
+
+
+def run_test_dedup_register_then_lookup() -> None:
+    """MVP-0.5.4 / PR 4: register a content_hash, then look it up.
+
+    Sequence:
+        1. lease an assignment (need a real assignment_id to bind
+           the dedup row to);
+        2. POST /v1/dedup/register {content_hash, assignment_id};
+           expect 200 with seen=False and first_assignment_id == ours;
+        3. POST /v1/dedup/register again with the same hash but a
+           different assignment_id; expect 409 with
+           first_assignment_id pointing at the original;
+        4. GET /v1/dedup?content_hash=... ; expect 409 with the
+           same first_assignment_id.
+
+    Together (with run_test_release_then_submit's lease release
+    keeping the test isolated from the wave-cap test) this proves
+    the dedup table actually persists.
+    """
+    # Lease an assignment first.
+    code, task = _http_get(
+        "/v1/task?role=gen&worker_id=gen-dedup-1"
+        "&seed_pack=smoke_test_pack")
+    assert code == 200, f"task lease failed: {code}: {task}"
+    asn_a = task["assignment_id"]
+    h = "1" * 64
+
+    # Step 1: register.
+    code, body = _http_post("/v1/dedup/register", {
+        "content_hash": h,
+        "assignment_id": asn_a,
+    })
+    assert code == 200, f"first register should 200, got {code}: {body}"
+    assert body["seen"] is False, body
+    assert body["first_assignment_id"] == asn_a, body
+
+    # Step 2: register again under a different assignment.
+    code, task_b = _http_get(
+        "/v1/task?role=gen&worker_id=gen-dedup-2"
+        "&seed_pack=smoke_test_pack")
+    assert code == 200
+    asn_b = task_b["assignment_id"]
+    code, body = _http_post("/v1/dedup/register", {
+        "content_hash": h,
+        "assignment_id": asn_b,
+    })
+    assert code == 409, f"second register should 409, got {code}: {body}"
+    assert body["seen"] is True, body
+    assert body["first_assignment_id"] == asn_a, body
+
+    # Step 3: GET lookup confirms.
+    code, body = _http_get(f"/v1/dedup?content_hash={h}")
+    assert code == 409, f"GET lookup of seen hash should 409, got {code}: {body}"
+    assert body["first_assignment_id"] == asn_a, body
+    print("[test_coordinator] OK   /v1/dedup register-then-lookup -> "
+          "200 (newly), 409 (seen), 409 (lookup)")
+
+    # Release the leases so they don't pollute later tests.
+    for asn, wid in ((asn_a, "gen-dedup-1"), (asn_b, "gen-dedup-2")):
+        _http_post("/v1/release", {"assignment_id": asn, "worker_id": wid})
 
 
 def run_test_dedup() -> None:
@@ -361,9 +507,12 @@ def main() -> int:
             tasks = run_test_n_parallel_tasks(n=20)
             run_test_n_parallel_results(tasks)
             run_test_wrong_worker_submission(stub)
-            run_test_double_submit(stub)
+            run_test_double_submit_is_idempotent(stub)
+            run_test_no_seed_pack_round_robin()
+            run_test_prevalidation_rejects_bad_nogolog(stub)
             run_test_release_then_submit()
             run_test_dedup()
+            run_test_dedup_register_then_lookup()
             # 20 tasks submitted + 1 double-submit (counts once) +
             # 1 wrong-worker (rejected, no merge) = 21 entries.
             run_test_ledger_persisted(stub, expected_min=20)

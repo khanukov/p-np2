@@ -33,6 +33,11 @@ Every seed pack id must be lowercase ASCII with underscores, and
 must be referenced by the `seed_pack_id` field of any
 `outputs/attempts.jsonl` entry that responds to the pack.
 
+## Worker protocol
+
+See `seed_packs/PILOT_WAVE_0_PROTOCOL.md` for the step-by-step
+minimum-viable cycle every Pilot Wave 0 worker must follow.
+
 ## Active seed packs
 
 | ID                                    | Track       | Status                                |

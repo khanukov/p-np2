@@ -183,17 +183,21 @@ These three cases are exercised by
 `scripts/test_attempts_validator.sh`, which is wired into
 `scripts/check.sh` step 12.b.
 
-### 4.2 Verifier surface (MVP-0.1.1)
+### 4.2 Verifier surface (MVP-0.1.1, schema 1.2; MVP-0.1.6 added 1.3)
 
 `scripts/verify_candidate.sh` emits four critic-state fields in
-its `result.json` (schema_version 1.2):
+its `result.json` since schema 1.2, plus optional abnormal-exit
+metadata at schema 1.3:
 
 ```json
 {
+  "schema_version":            "1.3",
   "critic_report_present":     true | false,
   "critic_report_is_template": true | false,
   "critic_completed":          true | false,
-  "critic_status":             "not_run" | "pass" | "fail"
+  "critic_status":             "not_run" | "pass" | "fail",
+  "abnormal_exit_stage":       "<stage>",   // only when status=ABNORMAL_EXIT
+  "abnormal_exit_code":        <int>        // only when status=ABNORMAL_EXIT
 }
 ```
 
@@ -203,6 +207,11 @@ file's `critic_status:` line says `pass`.  Downstream tooling MUST
 read `critic_status` and `critic_completed` (NOT just
 `critic_report_present`) to decide whether the candidate has been
 critic-cleared.
+
+The full machine-readable contract is at
+`scripts/verifier_result_schema.json`.  Cross-field rules in that
+schema enforce: `critic_status ∈ {pass, fail}` ⇒
+`critic_completed = true` AND `critic_report_is_template = false`.
 
 ## 5. Forbidden Critic actions
 

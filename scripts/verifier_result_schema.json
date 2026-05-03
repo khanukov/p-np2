@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://p-np2/scripts/verifier_result_schema.json",
-  "title": "Verifier v1 result schema (Research Governance v0.1, PR 15)",
-  "description": "Output of `scripts/verify_candidate.sh --json <path>`. Records the deterministic verdict of one verification run.",
+  "title": "Verifier v1 result schema (Research Governance v0.1, PR 15 + MVP-0.1.1 + MVP-0.1.6)",
+  "description": "Output of `scripts/verify_candidate.sh --json <path>`. Records the deterministic verdict of one verification run. Schema 1.3 adds the four critic-state fields (MVP-0.1.1) and the abnormal-exit metadata (MVP-0.1.6).",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -14,15 +14,23 @@
     "checks",
     "axioms_allowed",
     "spec_version",
-    "verifier_implementation_level"
+    "verifier_implementation_level",
+    "critic_report_present",
+    "critic_report_is_template",
+    "critic_completed",
+    "critic_status"
   ],
   "properties": {
     "schema_version": {
       "type": "string",
-      "const": "1.0"
+      "enum": ["1.0", "1.1", "1.2", "1.3"],
+      "description": "Verifier result schema version. Current is 1.3 (MVP-0.1.6). 1.0 = PR 15 baseline; 1.1 = + critic_report_present; 1.2 = + critic_report_is_template/critic_completed/critic_status (MVP-0.1.1); 1.3 = + abnormal_exit_stage/abnormal_exit_code (MVP-0.1.6)."
     },
     "candidate_id": {
-      "type": "string",
+      "oneOf": [
+        { "type": "string" },
+        { "type": "null" }
+      ],
       "description": "Identifier from <candidate-dir>/manifest.toml::[candidate].id; falls back to the basename of <candidate-dir> when running without --candidate."
     },
     "candidate_dir": {
@@ -35,12 +43,12 @@
     "status": {
       "type": "string",
       "description": "Top-level verdict.",
-      "pattern": "^(PASS_SHAPE_ONLY|FAIL_[a-z_]+|HUMAN_REVIEW_REQUIRED|EXPIRED_REVIEW)$"
+      "pattern": "^(PASS_SHAPE_ONLY|FAIL_[a-z_]+|HUMAN_REVIEW_REQUIRED|EXPIRED_REVIEW|ABNORMAL_EXIT)$"
     },
     "reasons": {
       "type": "array",
       "items": { "type": "string" },
-      "description": "Empty for PASS_SHAPE_ONLY. One entry per failed/HRR check otherwise."
+      "description": "Empty for PASS_SHAPE_ONLY. One entry per failed/HRR check otherwise. For ABNORMAL_EXIT, contains a single entry naming the stage and bash exit code."
     },
     "checks": {
       "type": "object",
@@ -57,17 +65,59 @@
     },
     "spec_version": {
       "type": "string",
-      "description": "Value of spec/target.toml::[meta].spec_version at run time."
+      "description": "Value of spec/target.toml::[meta].spec_version at run time. Should equal version_manifest.toml::[snapshot].target_spec_version."
     },
     "verifier_implementation_level": {
       "type": "string",
       "description": "MVP, MVP_GREP_FALLBACK, or v1.0+",
       "enum": ["v1.0", "MVP", "MVP_GREP_FALLBACK"]
     },
+    "critic_report_present": {
+      "type": "boolean",
+      "description": "Whether <candidate-dir>/critic_report.md exists at all. Added in schema 1.1."
+    },
+    "critic_report_is_template": {
+      "type": "boolean",
+      "description": "Whether the existing critic_report.md is detected as the empty template (TEMPLATE FILE banner / critic_status: TEMPLATE / per-section Template placeholders). Added in schema 1.2 (MVP-0.1.1). Cross-checked by scripts/validate_critic_report.py."
+    },
+    "critic_completed": {
+      "type": "boolean",
+      "description": "Whether the critic_report.md parses as completed (not_template AND all six attack sections present AND verdict block present AND verdict's critic_status in {pass, fail}). Added in schema 1.2 (MVP-0.1.1)."
+    },
+    "critic_status": {
+      "type": "string",
+      "enum": ["not_run", "pass", "fail"],
+      "description": "Verifier-emitted critic state: 'not_run' whenever the report is template, incomplete, or absent (even if the report file's critic_status: line says pass); otherwise the parsed verdict. Downstream tooling MUST read this AND critic_completed (NOT just critic_report_present) to decide whether the candidate has been critic-cleared. Added in schema 1.2 (MVP-0.1.1)."
+    },
     "completed_at": {
       "type": "string",
       "format": "date-time",
       "description": "ISO-8601 UTC timestamp at end of the run. Optional; verify_candidate.sh emits it for human inspection but it is NOT part of the canonical hash for Rule 13 reproducibility."
+    },
+    "abnormal_exit_stage": {
+      "type": "string",
+      "description": "When status='ABNORMAL_EXIT' (MVP-0.1.6 EXIT trap), the value of the last-entered progress_stage at the time the script aborted. Absent on normal exit."
+    },
+    "abnormal_exit_code": {
+      "type": "integer",
+      "description": "When status='ABNORMAL_EXIT', the bash exit code that triggered the trap. Absent on normal exit."
     }
-  }
+  },
+  "allOf": [
+    {
+      "description": "Cross-field rule: when critic_status = pass, the report MUST have parsed as completed.",
+      "if": { "properties": { "critic_status": { "const": "pass" } }, "required": ["critic_status"] },
+      "then": { "properties": { "critic_completed": { "const": true } } }
+    },
+    {
+      "description": "Cross-field rule: when critic_status = fail, the report MUST have parsed as completed.",
+      "if": { "properties": { "critic_status": { "const": "fail" } }, "required": ["critic_status"] },
+      "then": { "properties": { "critic_completed": { "const": true } } }
+    },
+    {
+      "description": "Cross-field rule: when critic_status = pass or fail, the report MUST NOT be a template.",
+      "if": { "properties": { "critic_status": { "enum": ["pass", "fail"] } }, "required": ["critic_status"] },
+      "then": { "properties": { "critic_report_is_template": { "const": false } } }
+    }
+  ]
 }

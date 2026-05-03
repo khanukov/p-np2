@@ -99,9 +99,22 @@ target  = "bench/SmokeProbe/expected_results.json"
 #          parallel writers x 2 ledgers, all distinct ids); new
 #          spec/concurrency_model.md.  Substrate for Phase B
 #          Coordinator service.
+#   0.2.0  Coordinator service (MVP-0.2 / Phase B).  HTTP/JSON
+#          dispatch service: /v1/health, /v1/manifest, /v1/task,
+#          /v1/dedup, /v1/result, /v1/release.  SQLite-backed
+#          assignment + dedup state at coordinator/state.db.
+#          Stdlib-only (http.server, sqlite3, hashlib).  Reuses
+#          Phase A flock-protected append scripts via subprocess
+#          pipe (single-writer canonical ledger preserved).
+#          scripts/run_worker.sh dispatcher.
+#          coordinator/test_coordinator.py 10/10 e2e cases
+#          (20 parallel /v1/task, 20 parallel /v1/result, role
+#          mismatch -> 403, wrong-worker submit -> 403,
+#          double-submit -> 409, release-then-submit -> 409,
+#          dedup, ledger persisted).  Up to ~1K workers per host.
 [snapshot.autoresearch_mvp]
-version = "0.1.5"
-notes   = "Phase A of the v0.3 100K-worker scaling plan.  See seed_packs/ for active research seeds; coordinator/ added in Phase B (MVP-0.2)."
+version = "0.2.0"
+notes   = "Phase B of the v0.3 100K-worker scaling plan.  Coordinator HTTP service shipped; per-host capacity ~1K workers.  Phase C (worker isolation + build cache) opens 1K-10K cross-host."
 
 # Critic protocol.  Tracked here because spec/critic_protocol.md
 # does not carry a [meta] block; the version advances when the
@@ -133,6 +146,12 @@ target  = "spec/frozen_spec_plan.md"
 [snapshot.concurrency_model]
 version = "0.1.0"
 target  = "spec/concurrency_model.md"
+
+# Coordinator HTTP protocol (introduced by MVP-0.2 / Phase B).
+# Wire contract for the parallel-worker dispatch service.
+[snapshot.coordinator_protocol]
+version = "0.2.0"
+target  = "spec/coordinator_protocol.md"
 
 # Schema for the JSONL ledgers.
 [snapshot.nogolog_schema]

@@ -9,6 +9,14 @@ lake-manifest.json
 # never carry canonical content).
 outputs/*.jsonl.lock
 
+# Autoresearch MVP-0.2 (Phase B) — coordinator state.  Carries
+# in-progress lease + dedup state; reconstructible from
+# outputs/attempts.jsonl on coordinator restart.
+coordinator/state.db
+coordinator/state.db-journal
+coordinator/state.db-wal
+coordinator/state.db-shm
+
 # Local LeanDojo-v2 integration and generated artifacts.
 tools/LeanDojo-v2/
 tools/lean_dojo_raid/

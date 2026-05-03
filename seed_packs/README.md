@@ -40,9 +40,29 @@ minimum-viable cycle every Pilot Wave 0 worker must follow.
 
 ## Active seed packs
 
+### Research seeds (under `seed_packs/<id>/`)
+
 | ID                                    | Track       | Status                                |
 | ------------------------------------- | ----------- | ------------------------------------- |
 | `fp3b1_log_width_hardwiring`          | Research-A  | skeleton-shipped; FP-3b.2 still open  |
+
+### Infrastructure seeds (under `seed_packs/INFRA/<id>/`)
+
+The `INFRA/` subtree mirrors the research-seed format but covers
+**control-plane scaling** work toward the v0.3 100K-worker target.
+See `seed_packs/INFRA/README.md` for the full listing and phase
+status.
+
+Active phases summary:
+
+| Phase | Goal                                          | Status              |
+| ----- | --------------------------------------------- | ------------------- |
+| A     | Concurrency hardening                         | shipped             |
+| B     | Coordinator HTTP service                      | shipped             |
+| C     | Worker scratch + distributed build cache      | spec-only (deferred)|
+| D     | Generator/Critic role-gate                    | shipped             |
+| E     | Telemetry + wave gate                         | shipped             |
+| F     | Sharded coordinator + 100K rollout            | spec-only (deferred)|
 
 ## Forbidden across all seed packs
 

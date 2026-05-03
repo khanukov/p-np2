@@ -24,10 +24,22 @@ Usage:
 Append-only invariant (Research Constitution Rule 9): existing
 entries are never edited.  Corrections are added as new entries
 with the optional `supersedes` field pointing to the original.
+
+Concurrency model (MVP-0.1.8 / Phase A):
+
+  Multiple workers MAY invoke this script concurrently.  The
+  read-then-write next-id allocation is wrapped in an exclusive
+  fcntl.flock(LOCK_EX) on a sibling lockfile
+  `outputs/attempts.jsonl.lock` so two simultaneous calls do NOT
+  produce duplicate ATT-NNNNNN ids.  The lock is held for the
+  full critical section (re-scan max id -> validate -> append),
+  released on file close.  See spec/concurrency_model.md for the
+  full locking contract.
 """
 
 from __future__ import annotations
 
+import fcntl
 import json
 import sys
 from datetime import datetime, timezone
@@ -39,10 +51,16 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from validate_jsonl import validate_attempt  # noqa: E402
 
 LOG_PATH = ROOT / "outputs" / "attempts.jsonl"
+LOCK_PATH = ROOT / "outputs" / "attempts.jsonl.lock"
 
 
-def next_id() -> str:
-    """Compute the next available ATT-NNNNNN id."""
+def _scan_max_id() -> int:
+    """Return the largest ATT-NNNNNN suffix already in the ledger.
+
+    Caller MUST hold the exclusive lock on LOCK_PATH; otherwise a
+    racing writer can append between this scan and the eventual
+    write, breaking monotonicity.
+    """
     n = 0
     if LOG_PATH.exists() and LOG_PATH.stat().st_size > 0:
         for raw in LOG_PATH.read_text(encoding="utf-8").splitlines():
@@ -59,7 +77,7 @@ def next_id() -> str:
                     n = max(n, int(v[4:]))
                 except ValueError:
                     pass
-    return f"ATT-{n + 1:06d}"
+    return n
 
 
 def main() -> int:
@@ -74,23 +92,39 @@ def main() -> int:
               file=sys.stderr)
         return 1
 
-    if "id" not in data:
-        data["id"] = next_id()
-    if "created_at" not in data:
-        data["created_at"] = (
-            datetime.now(tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))
-
-    errs = validate_attempt(data)
-    if errs:
-        print("[attempts_append] FAIL: entry does not validate:",
-              file=sys.stderr)
-        for err in errs:
-            print(f"  - {err}", file=sys.stderr)
-        return 1
-
     LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with LOG_PATH.open("a", encoding="utf-8") as f:
-        f.write(json.dumps(data, ensure_ascii=False, sort_keys=True) + "\n")
+    # Open the lockfile separately from the ledger.  Writing to the
+    # ledger via `open("a")` is atomic per write() but the next-id
+    # scan + write must be one critical section: holding the lock
+    # on a sibling lockfile guarantees that.  The lockfile is
+    # created on first use; never deleted (open creates if missing).
+    LOCK_PATH.touch(exist_ok=True)
+    with LOCK_PATH.open("a+", encoding="utf-8") as lockf:
+        fcntl.flock(lockf.fileno(), fcntl.LOCK_EX)
+        try:
+            # Re-scan max id INSIDE the lock; another worker may have
+            # appended between the time this process started and now.
+            if "id" not in data:
+                data["id"] = f"ATT-{_scan_max_id() + 1:06d}"
+            if "created_at" not in data:
+                data["created_at"] = (
+                    datetime.now(tz=timezone.utc)
+                    .strftime("%Y-%m-%dT%H:%M:%SZ"))
+
+            errs = validate_attempt(data)
+            if errs:
+                print("[attempts_append] FAIL: entry does not validate:",
+                      file=sys.stderr)
+                for err in errs:
+                    print(f"  - {err}", file=sys.stderr)
+                return 1
+
+            with LOG_PATH.open("a", encoding="utf-8") as f:
+                f.write(json.dumps(data, ensure_ascii=False,
+                                   sort_keys=True) + "\n")
+        finally:
+            fcntl.flock(lockf.fileno(), fcntl.LOCK_UN)
+
     print(data["id"])
     return 0
 

@@ -470,6 +470,8 @@ echo "[check] Step 12.b: attempts-validator critic-state hardening smoke (Resear
 "${ROOT_DIR}/scripts/test_attempts_validator.sh"
 echo "[check] Step 12.c: spec version manifest cross-check (Research Governance v0.1, Autoresearch MVP-0.1.4)"
 python3 "${ROOT_DIR}/scripts/validate_version_manifest.py"
+echo "[check] Step 12.d: ledger concurrency-safety smoke (Research Governance v0.1, Autoresearch MVP-0.1.8 Phase A)"
+"${ROOT_DIR}/scripts/test_concurrency_safety.sh"
 
 echo "[check] Step 13/17: verify_candidate.sh --full smoke (Research Governance v0.1, PR 15 + PR 15.2)"
 # PR 15.2: invoke `--full` so the candidate kernel-elaboration check

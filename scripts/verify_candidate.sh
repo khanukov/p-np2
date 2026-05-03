@@ -139,6 +139,40 @@ while [[ $# -gt 0 ]]; do
 done
 
 # ---------------------------------------------------------------------------
+# Concurrency hardening (MVP-0.1.8 / Phase A).
+#
+# Per-worker scratch directory.  All temporary log files go under
+# this directory so two workers running verify_candidate.sh
+# simultaneously do NOT clobber each other's logs.  The directory
+# is unique per (PID, RUN_UUID) and is cleaned up on EXIT.
+#
+# Workers running on a shared filesystem (e.g. one machine with
+# many parallel runs) MUST get distinct VERIFY_TMP_DIR values.
+# The default below derives one from PID + a UUID; callers can
+# override by exporting VERIFY_TMP_DIR before invocation.
+# ---------------------------------------------------------------------------
+
+if command -v uuidgen >/dev/null 2>&1; then
+  RUN_UUID="$(uuidgen)"
+elif [[ -r /proc/sys/kernel/random/uuid ]]; then
+  RUN_UUID="$(cat /proc/sys/kernel/random/uuid)"
+else
+  RUN_UUID="${RANDOM}-${RANDOM}-${RANDOM}-${RANDOM}"
+fi
+
+VERIFY_TMP_DIR="${VERIFY_TMP_DIR:-/tmp/verify_${USER:-anon}_$$_${RUN_UUID}}"
+mkdir -p "${VERIFY_TMP_DIR}"
+# Trap-cleanup the per-worker scratch on script exit (note the
+# existing EXIT trap below for partial-JSON emission is appended
+# to via a wrapper; we set our cleanup as a separate trap function
+# and ensure the chain calls both).
+_verify_cleanup_tmp_dir() {
+  if [[ -n "${VERIFY_TMP_DIR:-}" && -d "${VERIFY_TMP_DIR}" ]]; then
+    rm -rf "${VERIFY_TMP_DIR}"
+  fi
+}
+
+# ---------------------------------------------------------------------------
 # Resilience layer (MVP-0.1.6).
 #
 # `progress_stage <name>`        prints one heartbeat line per stage
@@ -227,7 +261,19 @@ JSON
   echo "[verify] wrote PARTIAL JSON on abnormal exit: ${json_path}" >&2
 }
 
-trap emit_partial_json_on_abnormal_exit EXIT
+# Composed EXIT trap: emit partial JSON (MVP-0.1.6) THEN clean up
+# the per-worker scratch directory (MVP-0.1.8 Phase A).  Order
+# matters: the partial JSON write must complete before the temp
+# dir disappears, since some checks may have left logs there.
+# IMPORTANT: do NOT capture $? before calling
+# emit_partial_json_on_abnormal_exit — that function's first
+# statement reads $? to detect abnormal exit, and any preceding
+# command in this wrapper would clobber it to 0.
+_verify_exit_trap() {
+  emit_partial_json_on_abnormal_exit
+  _verify_cleanup_tmp_dir
+}
+trap _verify_exit_trap EXIT
 
 # ---------------------------------------------------------------------------
 # Per-check tracking.  Parallel arrays keep the result.json field
@@ -376,15 +422,15 @@ print(d.get("verdict_critic_status") or "not_run")
       else
         set +e
         scripts/check_barrier_certificate.sh "${candidate_dir}" \
-          > "/tmp/verify_barrier_certificate.log" 2>&1
+          > "${VERIFY_TMP_DIR}/verify_barrier_certificate.log" 2>&1
         bc_rc=$?
         set -e
         bc_status="$(awk -F= '/^\[barrier\] status=/ { print $2 }' \
-                          /tmp/verify_barrier_certificate.log)"
+                          ${VERIFY_TMP_DIR}/verify_barrier_certificate.log)"
         bc_status="${bc_status:-unknown}"
         if [[ "${bc_rc}" -ne 0 ]]; then
           echo "[verify]   FAIL: barrier checker returned ${bc_rc}"
-          tail -8 /tmp/verify_barrier_certificate.log \
+          tail -8 ${VERIFY_TMP_DIR}/verify_barrier_certificate.log \
             | sed 's/^/[verify]     /'
           record_check "barrier_certificate" "FAIL" \
                        "returned ${bc_rc} (status=${bc_status})"
@@ -418,15 +464,15 @@ print(d.get("verdict_critic_status") or "not_run")
       else
         set +e
         with_timeout scripts/check_candidate_kernel.sh "${candidate_dir}" \
-          > "/tmp/verify_candidate_kernel_elaboration.log" 2>&1
+          > "${VERIFY_TMP_DIR}/verify_candidate_kernel_elaboration.log" 2>&1
         kernel_rc=$?
         set -e
         kernel_status="$(awk -F= '/^\[kernel\] status=/ { print $2 }' \
-                          /tmp/verify_candidate_kernel_elaboration.log)"
+                          ${VERIFY_TMP_DIR}/verify_candidate_kernel_elaboration.log)"
         kernel_status="${kernel_status:-unknown}"
         if [[ "${kernel_rc}" -ne 0 ]]; then
           echo "[verify]   FAIL: kernel check returned ${kernel_rc} (status=${kernel_status})"
-          tail -10 /tmp/verify_candidate_kernel_elaboration.log \
+          tail -10 ${VERIFY_TMP_DIR}/verify_candidate_kernel_elaboration.log \
             | sed 's/^/[verify]     /'
           record_check "candidate_kernel_elaboration" "FAIL" \
                        "returned ${kernel_rc} (status=${kernel_status})"
@@ -444,21 +490,21 @@ print(d.get("verdict_critic_status") or "not_run")
       else
         set +e
         scripts/check_source_theorem_size.sh "${candidate_dir}" \
-          > "/tmp/verify_source_theorem_size.log" 2>&1
+          > "${VERIFY_TMP_DIR}/verify_source_theorem_size.log" 2>&1
         size_rc=$?
         set -e
         size_status="$(awk -F= '/^\[size\] status=/ { print $2 }' \
-                          /tmp/verify_source_theorem_size.log)"
+                          ${VERIFY_TMP_DIR}/verify_source_theorem_size.log)"
         size_status="${size_status:-unknown}"
         if [[ "${size_rc}" -ne 0 ]]; then
           echo "[verify]   FAIL: size checker returned ${size_rc}"
-          tail -8 /tmp/verify_source_theorem_size.log \
+          tail -8 ${VERIFY_TMP_DIR}/verify_source_theorem_size.log \
             | sed 's/^/[verify]     /'
           record_check "source_theorem_size" "FAIL" \
                        "returned ${size_rc} (status=${size_status})"
         elif [[ "${size_status}" == "human-review-required" ]]; then
           echo "[verify]   HUMAN_REVIEW_REQUIRED (size policy)"
-          tail -6 /tmp/verify_source_theorem_size.log \
+          tail -6 ${VERIFY_TMP_DIR}/verify_source_theorem_size.log \
             | sed 's/^/[verify]     /'
           record_check "source_theorem_size" "HUMAN_REVIEW_REQUIRED" \
                        "Rule 4 (size policy)"
@@ -496,14 +542,14 @@ for entry in "${guards[@]}"; do
   fi
 
   set +e
-  "${script}" > "/tmp/verify_${name}.log" 2>&1
+  "${script}" > "${VERIFY_TMP_DIR}/verify_${name}.log" 2>&1
   rc=$?
   set -e
 
   if [[ "${rc}" -ne 0 ]]; then
     echo "[verify]   FAIL: ${name} returned ${rc}"
-    echo "[verify]     last lines (full log: /tmp/verify_${name}.log):"
-    tail -8 "/tmp/verify_${name}.log" | sed 's/^/[verify]       /'
+    echo "[verify]     last lines (full log: ${VERIFY_TMP_DIR}/verify_${name}.log):"
+    tail -8 "${VERIFY_TMP_DIR}/verify_${name}.log" | sed 's/^/[verify]       /'
     record_check "${name}" "FAIL" "returned ${rc}"
   else
     echo "[verify]   PASS"
@@ -542,12 +588,12 @@ if [[ "${full_mode}" -eq 1 ]]; then
       continue
     fi
     set +e
-    "${script}" > "/tmp/verify_${name}.log" 2>&1
+    "${script}" > "${VERIFY_TMP_DIR}/verify_${name}.log" 2>&1
     rc=$?
     set -e
     if [[ "${rc}" -ne 0 ]]; then
       echo "[verify]   FAIL: ${name} returned ${rc}"
-      tail -8 "/tmp/verify_${name}.log" | sed 's/^/[verify]     /'
+      tail -8 "${VERIFY_TMP_DIR}/verify_${name}.log" | sed 's/^/[verify]     /'
       record_check "${name}" "FAIL" "returned ${rc}"
     else
       echo "[verify]   PASS"
@@ -559,12 +605,12 @@ if [[ "${full_mode}" -eq 1 ]]; then
   echo "[verify] running (full): barrier_certificate_queue_scan"
   set +e
   scripts/check_barrier_certificate.sh --queue \
-    > "/tmp/verify_barrier_certificate_queue_scan.log" 2>&1
+    > "${VERIFY_TMP_DIR}/verify_barrier_certificate_queue_scan.log" 2>&1
   rc=$?
   set -e
   if [[ "${rc}" -ne 0 ]]; then
     echo "[verify]   FAIL: barrier queue scan returned ${rc}"
-    tail -8 "/tmp/verify_barrier_certificate_queue_scan.log" \
+    tail -8 "${VERIFY_TMP_DIR}/verify_barrier_certificate_queue_scan.log" \
       | sed 's/^/[verify]     /'
     record_check "barrier_certificate_queue_scan" "FAIL" \
                  "returned ${rc} (queue exceeds limit)"
@@ -577,12 +623,12 @@ if [[ "${full_mode}" -eq 1 ]]; then
   echo "[verify] running (full): jsonl_validation"
   set +e
   python3 scripts/validate_jsonl.py \
-    > "/tmp/verify_jsonl_validation.log" 2>&1
+    > "${VERIFY_TMP_DIR}/verify_jsonl_validation.log" 2>&1
   rc=$?
   set -e
   if [[ "${rc}" -ne 0 ]]; then
     echo "[verify]   FAIL: JSONL validation returned ${rc}"
-    tail -8 "/tmp/verify_jsonl_validation.log" \
+    tail -8 "${VERIFY_TMP_DIR}/verify_jsonl_validation.log" \
       | sed 's/^/[verify]     /'
     record_check "jsonl_validation" "FAIL" "returned ${rc}"
   else

@@ -24,9 +24,22 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT_DIR}"
 
+# Concurrency hardening (MVP-0.1.8 / Phase A): use a UUID-suffixed
+# staging directory so two workers running this test simultaneously
+# (e.g. on the same host under parallel CI) do NOT collide on a
+# shared PID-only path.  PID alone is insufficient in containerized
+# environments where PID reuse is common.
+if command -v uuidgen >/dev/null 2>&1; then
+  _STAGE_UUID="$(uuidgen)"
+elif [[ -r /proc/sys/kernel/random/uuid ]]; then
+  _STAGE_UUID="$(cat /proc/sys/kernel/random/uuid)"
+else
+  _STAGE_UUID="${RANDOM}-${RANDOM}-${RANDOM}-${RANDOM}"
+fi
+
 # Stage path: must be under pnp3/Candidates/ for the guard to scan
 # it (the guard hard-codes `candidates_root=pnp3/Candidates`).
-STAGE="pnp3/Candidates/_evil_smoke_$$"
+STAGE="pnp3/Candidates/_evil_smoke_$$_${_STAGE_UUID}"
 
 cleanup() {
   rm -rf "${STAGE}"
@@ -71,7 +84,7 @@ elif ! grep -q "forbidden underscore-prefixed candidate" \
   echo "${output}"
   fail=1
 else
-  echo "[test_underscore_policy] OK   _evil_smoke_$$ rejected with"\
+  echo "[test_underscore_policy] OK   $(basename "${STAGE}") rejected with"\
        "underscore-policy marker"
 fi
 

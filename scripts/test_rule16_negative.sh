@@ -28,6 +28,17 @@ cd "${ROOT_DIR}"
 
 CANDIDATES_ROOT="pnp3/Candidates"
 
+# Concurrency hardening (MVP-0.1.8 / Phase A): UUID-suffixed
+# staging directories.  PID alone is insufficient in containerized
+# environments where PID reuse is common.
+if command -v uuidgen >/dev/null 2>&1; then
+  _STAGE_UUID="$(uuidgen)"
+elif [[ -r /proc/sys/kernel/random/uuid ]]; then
+  _STAGE_UUID="$(cat /proc/sys/kernel/random/uuid)"
+else
+  _STAGE_UUID="${RANDOM}-${RANDOM}-${RANDOM}-${RANDOM}"
+fi
+
 active_stage=""
 
 cleanup() {
@@ -47,7 +58,7 @@ run_case() {
   local name="$1"
   local marker="$2"
   local body="$3"
-  active_stage="${CANDIDATES_ROOT}/rule16_smoke_${name}_$$"
+  active_stage="${CANDIDATES_ROOT}/rule16_smoke_${name}_$$_${_STAGE_UUID}"
   mkdir -p "${active_stage}"
   printf '%s\n' "${body}" >"${active_stage}/proof.lean"
 
@@ -128,7 +139,7 @@ def consume (h : Fact True) : True := h.elim id'
 # false-positive over-rejection from the new fixture machinery.
 # ---------------------------------------------------------------------------
 
-active_stage="${CANDIDATES_ROOT}/rule16_smoke_clean_$$"
+active_stage="${CANDIDATES_ROOT}/rule16_smoke_clean_$$_${_STAGE_UUID}"
 mkdir -p "${active_stage}"
 cat >"${active_stage}/proof.lean" <<'LEAN'
 -- A deliberately Rule-16-CLEAN candidate stub.

@@ -82,16 +82,26 @@ target  = "bench/SmokeProbe/expected_results.json"
 #          + verifier resilience (MVP-0.1.6) + Pilot Wave 0 protocol
 #          (commits 612d2ac / d1fb4e7 / 0995a49)
 #   0.1.4  Schema-drift correction + Critic positive controls
-#          + 1bc6555 non-canonical note (this commit, MVP-0.1.7).
+#          + 1bc6555 non-canonical note (commit 307c7a5, MVP-0.1.7).
 #          Bumps verifier_result_schema.json from 1.0 to 1.3 to
 #          match the verifier's emitted shape; bumps
 #          spec/critic_protocol.md §4.2 from 1.2 to 1.3; adds
 #          completed-pass / completed-fail positive-control
 #          fixtures to scripts/test_attempts_validator.sh
 #          (closing the audit's "no positive control" gap).
+#   0.1.5  Concurrency hardening (MVP-0.1.8 / Phase A of the
+#          v0.3 100K-worker plan).  Adds fcntl.flock-protected
+#          ID assignment to attempts_append.py / nogolog_append.py
+#          / survivor_append.py; per-worker ${VERIFY_TMP_DIR}
+#          paths in verify_candidate.sh; UUID staging in
+#          test_underscore_policy.sh / test_rule16_negative.sh;
+#          new scripts/test_concurrency_safety.sh smoke (16
+#          parallel writers x 2 ledgers, all distinct ids); new
+#          spec/concurrency_model.md.  Substrate for Phase B
+#          Coordinator service.
 [snapshot.autoresearch_mvp]
-version = "0.1.4"
-notes   = "Latest coordinated MVP release.  See seed_packs/ for active research seeds."
+version = "0.1.5"
+notes   = "Phase A of the v0.3 100K-worker scaling plan.  See seed_packs/ for active research seeds; coordinator/ added in Phase B (MVP-0.2)."
 
 # Critic protocol.  Tracked here because spec/critic_protocol.md
 # does not carry a [meta] block; the version advances when the
@@ -116,6 +126,13 @@ target  = "spec/implicit_assumption_channels.md"
 [snapshot.frozen_spec_plan]
 version = "0.1.0"
 target  = "spec/frozen_spec_plan.md"
+
+# Concurrency model (introduced by MVP-0.1.8 / Phase A).  Defines
+# which scripts are parallel-safe, which require per-worker
+# scratch, and which need Coordinator mediation in later phases.
+[snapshot.concurrency_model]
+version = "0.1.0"
+target  = "spec/concurrency_model.md"
 
 # Schema for the JSONL ledgers.
 [snapshot.nogolog_schema]

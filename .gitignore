@@ -3,6 +3,12 @@ __pycache__/
 .lake/
 lake-manifest.json
 
+# Autoresearch MVP-0.1.8 (Phase A) — sibling lockfiles for the
+# append-only JSONL ledgers (created on first concurrent write
+# by attempts_append.py / nogolog_append.py / survivor_append.py;
+# never carry canonical content).
+outputs/*.jsonl.lock
+
 # Local LeanDojo-v2 integration and generated artifacts.
 tools/LeanDojo-v2/
 tools/lean_dojo_raid/

@@ -39,12 +39,14 @@ from .leases import clamp_lease_seconds
 from .ledger import (
     LedgerWriteError, append_attempt, append_nogolog, append_survivor,
 )
+from .metrics import Metrics
 from .role_gate import enforce_role_for_submission
 from .schema import (
     DedupResponse, HealthStatus, ResultSubmission, TaskAssignment,
     validate_assignment_id, validate_role, validate_worker_id, write_json,
 )
 from .store import CoordinatorStore
+from .wave_gate import WaveGate
 
 ROOT = Path(__file__).resolve().parent.parent
 SEED_PACKS_DIR = ROOT / "seed_packs"
@@ -96,6 +98,8 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
     # Per-server shared state, attached by `serve()` below.
     coordinator_store: CoordinatorStore = None  # type: ignore[assignment]
     autoresearch_mvp_version: str = "unknown"
+    wave_gate: WaveGate = None  # type: ignore[assignment]
+    metrics: Metrics = None  # type: ignore[assignment]
     log_to_stderr: bool = True
 
     # ------------------------------------------------------------------
@@ -123,6 +127,8 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
                 self._handle_task(parsed)
             elif path == "/v1/dedup":
                 self._handle_dedup(parsed)
+            elif path == "/v1/metrics":
+                self._handle_metrics()
             else:
                 self._send_error(404, f"unknown path: {path!r}")
         except Exception as e:  # pragma: no cover
@@ -157,17 +163,55 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
 
     def _handle_health(self) -> None:
         counts = self.coordinator_store.counts_by_status()
+        in_flight = int(counts.get("assigned", 0))
+        # MVP-0.5 Phase E: surface gauges so /v1/metrics is fresh.
+        if self.metrics is not None:
+            self.metrics.set_gauge(
+                "autoresearch_in_flight_assignments", in_flight)
+            if self.wave_gate is not None:
+                self.metrics.set_gauge(
+                    "autoresearch_current_wave",
+                    self.wave_gate.current_wave)
+                self.metrics.set_gauge(
+                    "autoresearch_worker_cap",
+                    self.wave_gate.max_concurrent())
+        current_wave = (self.wave_gate.current_wave
+                        if self.wave_gate is not None else 0)
         status = HealthStatus(
             status="ok",
             coordinator_version=__version__,
             autoresearch_mvp_version=self.autoresearch_mvp_version,
-            current_wave=0,  # Phase E populates this from wave_gate.py
-            assigned_count=int(counts.get("assigned", 0)),
+            current_wave=current_wave,
+            assigned_count=in_flight,
             completed_count=int(counts.get("submitted", 0)),
             abandoned_count=int(counts.get("expired", 0))
                             + int(counts.get("released", 0)),
         )
         self._send_json(200, status.to_json())
+
+    def _handle_metrics(self) -> None:
+        # Refresh gauges first so the scrape is point-in-time.
+        counts = self.coordinator_store.counts_by_status()
+        in_flight = int(counts.get("assigned", 0))
+        if self.metrics is not None:
+            self.metrics.set_gauge(
+                "autoresearch_in_flight_assignments", in_flight)
+            if self.wave_gate is not None:
+                self.metrics.set_gauge(
+                    "autoresearch_current_wave",
+                    self.wave_gate.current_wave)
+                self.metrics.set_gauge(
+                    "autoresearch_worker_cap",
+                    self.wave_gate.max_concurrent())
+            body = self.metrics.render_prometheus()
+        else:
+            body = b"# coordinator/metrics.py not initialised\n"
+        self.send_response(200)
+        self.send_header("Content-Type",
+                         "text/plain; version=0.0.4; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
     def _handle_manifest(self) -> None:
         manifest_path = ROOT / "spec" / "version_manifest.toml"
@@ -228,6 +272,18 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
             self._send_error(400, f"invalid lease_seconds: {lease_param!r}")
             return
 
+        # MVP-0.5 Phase E — wave-gate worker-cap enforcement.
+        if self.wave_gate is not None:
+            counts = self.coordinator_store.counts_by_status()
+            in_flight = int(counts.get("assigned", 0))
+            ok, msg = self.wave_gate.can_assign(in_flight)
+            if not ok:
+                if self.metrics is not None:
+                    self.metrics.inc("autoresearch_tasks_refused_total",
+                                     {"reason": "wave_cap"})
+                self._send_error(503, msg or "wave cap reached")
+                return
+
         assignment_id = self.coordinator_store.next_assignment_id()
         candidate_id = f"{seed_pack_id}_{uuid4().hex[:12]}"
         record = self.coordinator_store.create_assignment(
@@ -247,6 +303,9 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
             lease_seconds=lease_seconds,
             deadline=record["deadline"],
         )
+        if self.metrics is not None:
+            self.metrics.inc("autoresearch_tasks_assigned_total",
+                             {"role": role})
         self._send_json(200, assignment.to_json())
 
     def _handle_dedup(self, parsed: urllib.parse.ParseResult) -> None:
@@ -314,12 +373,23 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
             store=self.coordinator_store,
         )
         if gate_err is not None:
+            if self.metrics is not None:
+                self.metrics.inc(
+                    "autoresearch_role_gate_violations_total",
+                    {"rule": rec["role"]})
+                self.metrics.inc(
+                    "autoresearch_results_rejected_total",
+                    {"reason": "role_gate"})
             self._send_error(403, gate_err)
             return
 
         try:
             attempt_id = append_attempt(sub.attempt)
         except LedgerWriteError as e:
+            if self.metrics is not None:
+                self.metrics.inc(
+                    "autoresearch_results_rejected_total",
+                    {"reason": "ledger_validate"})
             self._send_error(400, f"attempt ledger rejected: {e.stderr}")
             return
 
@@ -358,6 +428,26 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
                 f"{sub.assignment_id} could not be marked submitted",
             )
             return
+
+        if self.metrics is not None:
+            self.metrics.inc(
+                "autoresearch_results_merged_total",
+                {
+                    "role": rec["role"],
+                    "verifier_status": str(
+                        sub.attempt.get("verifier_status", "unknown")),
+                    "critic_status": str(
+                        sub.attempt.get("critic_status", "unknown")),
+                },
+            )
+            if nogo_id is not None and sub.nogolog_entry is not None:
+                self.metrics.inc(
+                    "autoresearch_nogolog_appended_total",
+                    {
+                        "failure_class": str(
+                            sub.nogolog_entry.get("failure_class", "other")),
+                    },
+                )
 
         self._send_json(200, {
             "ok": True,
@@ -407,6 +497,8 @@ def serve(
     bind_port: int = 8765,
     db_path: Path | None = None,
     quiet: bool = False,
+    wave_gate: WaveGate | None = None,
+    metrics: Metrics | None = None,
 ) -> tuple[ThreadingHTTPServer, threading.Thread, CoordinatorStore]:
     """Start the coordinator in a background thread.
 
@@ -417,11 +509,21 @@ def serve(
     store = CoordinatorStore(db_path=db_path)
     autoresearch_mvp_version = _read_autoresearch_mvp_version()
 
+    if wave_gate is None:
+        try:
+            wave_gate = WaveGate()
+        except Exception:
+            wave_gate = None  # missing thresholds → run capless
+    if metrics is None:
+        metrics = Metrics()
+
     class BoundHandler(CoordinatorHandler):
         pass
 
     BoundHandler.coordinator_store = store
     BoundHandler.autoresearch_mvp_version = autoresearch_mvp_version
+    BoundHandler.wave_gate = wave_gate
+    BoundHandler.metrics = metrics
     BoundHandler.log_to_stderr = not quiet
 
     httpd = ThreadingHTTPServer((bind_host, bind_port), BoundHandler)

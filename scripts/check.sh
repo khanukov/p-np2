@@ -476,6 +476,8 @@ echo "[check] Step 12.e: coordinator HTTP service e2e (Research Governance v0.1,
 python3 "${ROOT_DIR}/coordinator/test_coordinator.py"
 echo "[check] Step 12.f: Generator/Critic role-gate e2e (Research Governance v0.1, Autoresearch MVP-0.4 Phase D)"
 python3 "${ROOT_DIR}/coordinator/test_role_gate.py"
+echo "[check] Step 12.g: wave gate + metrics endpoint e2e (Research Governance v0.1, Autoresearch MVP-0.5 Phase E)"
+python3 "${ROOT_DIR}/coordinator/test_wave_gate.py"
 
 echo "[check] Step 13/17: verify_candidate.sh --full smoke (Research Governance v0.1, PR 15 + PR 15.2)"
 # PR 15.2: invoke `--full` so the candidate kernel-elaboration check

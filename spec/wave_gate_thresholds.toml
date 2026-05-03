@@ -1,0 +1,116 @@
+# Wave gate thresholds — Research Governance v0.1, MVP-0.5 (Phase E).
+#
+# Numbers consumed by `coordinator/wave_gate.py`.  Bumping any
+# threshold requires an explicit owner-approved PR; the gate treats
+# this file as authoritative.
+#
+# Wave model (mirrors `seed_packs/PILOT_WAVE_0_PROTOCOL.md` §9):
+#
+#   Wave 0  —  pilot, 5–10 manual workers
+#   Wave 1  —  10–20 workers, requires 3 clean Pilot Wave 0 cycles
+#   Wave 2  —  50–500 workers, requires Critic-vs-Generator split
+#              enforced at infrastructure level (MVP-0.4 ✓)
+#   Wave 3  —  1K-10K workers, requires worker scratch isolation
+#              + distributed build cache (MVP-0.3 / Phase C)
+#   Wave 4  —  10K-100K workers, requires sharded coordinator + Kafka
+#              (Phase F)
+#
+# The gate refuses `GET /v1/task` if the current in-flight worker
+# count is at or above the current Wave's `max_concurrent` cap.
+# Promotion to the next Wave is automatic when ALL of the listed
+# `promotion_requirements` are met for the gate evaluator;
+# demotion is manual (operator override; out of scope for MVP-0.5).
+
+[meta]
+schema_version = "0.5.0"
+status         = "frozen"
+last_reviewed  = "2026-05-03"
+
+# ---------------------------------------------------------------------------
+# Default Wave at coordinator startup.  An operator can override via
+# environment variable `AUTORESEARCH_INITIAL_WAVE`.
+# ---------------------------------------------------------------------------
+
+[default]
+initial_wave = 0
+
+# ---------------------------------------------------------------------------
+# Wave 0 — pilot.
+# ---------------------------------------------------------------------------
+
+[waves.0]
+name                     = "Pilot Wave 0"
+max_concurrent           = 10
+default_lease_seconds    = 1800
+max_attempts_per_worker  = 50
+
+[waves.0.promotion_requirements]
+min_clean_cycles         = 3       # ≥3 cycles with verifier_status=PASS
+min_critic_pass_observed = 1       # at least one human-Critic pass
+min_critic_fail_observed = 1       # at least one human-Critic fail
+min_distinct_seed_packs  = 1
+max_false_pass_rate      = 0.0     # zero tolerance for false positives at Wave 0
+
+# ---------------------------------------------------------------------------
+# Wave 1 — small parallel.
+# ---------------------------------------------------------------------------
+
+[waves.1]
+name                     = "Wave 1 (10–20 workers)"
+max_concurrent           = 20
+default_lease_seconds    = 1800
+max_attempts_per_worker  = 200
+
+[waves.1.promotion_requirements]
+min_clean_cycles         = 30
+max_false_pass_rate      = 0.001   # 0.1%
+role_gate_enforced       = true    # MVP-0.4 must be live
+
+# ---------------------------------------------------------------------------
+# Wave 2 — Critic-vs-Generator infra-enforced.
+# ---------------------------------------------------------------------------
+
+[waves.2]
+name                     = "Wave 2 (50–500 workers)"
+max_concurrent           = 500
+default_lease_seconds    = 1800
+max_attempts_per_worker  = 2000
+
+[waves.2.promotion_requirements]
+min_clean_cycles         = 300
+max_false_pass_rate      = 0.0005
+mtbf_coordinator_hours   = 24
+no_rule16_slip           = true   # any Rule-16 slip drops back to Wave 1
+
+# ---------------------------------------------------------------------------
+# Wave 3 — worker scratch isolation + distributed build cache.
+# ---------------------------------------------------------------------------
+
+[waves.3]
+name                     = "Wave 3 (1K–10K workers)"
+max_concurrent           = 10000
+default_lease_seconds    = 1200
+max_attempts_per_worker  = 20000
+
+[waves.3.promotion_requirements]
+min_clean_cycles                  = 3000
+max_false_pass_rate               = 0.0001
+worker_scratch_isolation_active   = true   # MVP-0.3 / Phase C
+distributed_build_cache_active    = true
+
+# ---------------------------------------------------------------------------
+# Wave 4 — sharded coordinator + Kafka stream.
+# ---------------------------------------------------------------------------
+
+[waves.4]
+name                     = "Wave 4 (10K–100K workers)"
+max_concurrent           = 100000
+default_lease_seconds    = 900
+max_attempts_per_worker  = 200000
+
+[waves.4.promotion_requirements]
+min_clean_cycles                = 30000
+max_false_pass_rate             = 0.00001
+sharded_coordinator_active      = true   # Phase F
+result_stream_processor_active  = true
+nightly_survivor_promotion      = true

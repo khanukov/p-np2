@@ -99,9 +99,14 @@ def _stage_stub_repo(tmp: Path) -> Path:
     # use Path(__file__).resolve().parent.parent resolve to the stub
     # root).
     for name in ("__init__.py", "schema.py", "store.py", "dedup.py",
-                 "leases.py", "ledger.py", "role_gate.py", "server.py"):
+                 "leases.py", "ledger.py", "role_gate.py", "wave_gate.py",
+                 "metrics.py", "server.py"):
         shutil.copy2(ROOT / "coordinator" / name,
                      stub / "coordinator" / name)
+    # Phase E: thresholds file required by wave_gate.py.
+    src_th = ROOT / "spec" / "wave_gate_thresholds.toml"
+    if src_th.exists():
+        shutil.copy2(src_th, stub / "spec" / "wave_gate_thresholds.toml")
     return stub
 
 
@@ -111,6 +116,11 @@ def _start_coordinator(stub: Path) -> subprocess.Popen:
     to the stub repo, isolating ledger writes."""
     env = os.environ.copy()
     env["PYTHONPATH"] = str(stub)
+    # MVP-0.5 Phase E: the test exercises N=20 parallel tasks which
+    # exceeds Wave-0's max_concurrent=10 cap.  Bump initial wave to
+    # 2 (cap=500) so the e2e suite still passes; the wave-gate
+    # behaviour itself is exercised by coordinator/test_wave_gate.py.
+    env["AUTORESEARCH_INITIAL_WAVE"] = "2"
     proc = subprocess.Popen(
         [sys.executable, "-m", "coordinator.server",
          "--bind", "127.0.0.1", "--port", str(TEST_PORT),

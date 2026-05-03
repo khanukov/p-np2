@@ -128,9 +128,28 @@ target  = "bench/SmokeProbe/expected_results.json"
 #          deferred until a real deployment context is available;
 #          Phase D ships the safety-critical role-gate now so
 #          Phase E can build the auto-dispatcher on top.
+#   0.5.0  Telemetry + wave gate (MVP-0.5 / Phase E).
+#          coordinator/metrics.py (Prometheus exposition over
+#           /v1/metrics, stdlib-only).
+#          coordinator/wave_gate.py (reads
+#           spec/wave_gate_thresholds.toml; refuses /v1/task
+#           when the current Wave's max_concurrent cap is at).
+#          spec/wave_gate_thresholds.toml (Wave 0..4: caps
+#           10/20/500/10000/100000 + per-Wave promotion reqs).
+#          server.py: /v1/metrics endpoint; wave-cap enforcement
+#           in /v1/task; metric increments on every assignment /
+#           result merge / role-gate violation / NoGoLog append.
+#          Default initial wave = 0 (Pilot Wave, cap=10);
+#           operator override via env AUTORESEARCH_INITIAL_WAVE.
+#          coordinator/test_wave_gate.py 3/3 cases pass
+#           (cap enforced -> 11th task 503; cap released on
+#           submit; /v1/metrics exposes 6/6 metric families).
+#          Existing test_coordinator.py + test_role_gate.py
+#           updated to opt into AUTORESEARCH_INITIAL_WAVE=2 so
+#           they don't trip the Wave-0 cap.
 [snapshot.autoresearch_mvp]
-version = "0.4.0"
-notes   = "Phase D of the v0.3 100K-worker scaling plan.  Generator/Critic separation is now infrastructure-enforced.  Phase E (telemetry, wave gate, critic auto-dispatcher) builds on top.  Phase C (worker scratch isolation, distributed build cache) deferred until deployment context is available."
+version = "0.5.0"
+notes   = "Phase E of the v0.3 100K-worker scaling plan.  Wave gate + metrics + telemetry shipped.  Default startup is Wave 0 (cap=10); operators promote by restarting with AUTORESEARCH_INITIAL_WAVE=N once promotion_requirements per spec/wave_gate_thresholds.toml are demonstrably met.  Phase C (worker scratch + build cache) and Phase F (sharded coordinator + 100K rollout) remain deferred."
 
 # Critic protocol.  Tracked here because spec/critic_protocol.md
 # does not carry a [meta] block; the version advances when the
@@ -174,6 +193,13 @@ target  = "spec/coordinator_protocol.md"
 [snapshot.worker_roles]
 version = "0.4.0"
 target  = "spec/worker_roles.md"
+
+# Wave-gate thresholds (introduced by MVP-0.5 / Phase E).
+# Wave 0..4 worker caps + promotion requirements consumed by
+# coordinator/wave_gate.py.
+[snapshot.wave_gate_thresholds]
+version = "0.5.0"
+target  = "spec/wave_gate_thresholds.toml"
 
 # Schema for the JSONL ledgers.
 [snapshot.nogolog_schema]

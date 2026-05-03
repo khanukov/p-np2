@@ -84,15 +84,20 @@ def _stage_stub_repo(tmp: Path) -> Path:
     (sp / "README.md").write_text(
         "# Synthetic seed pack used only by role-gate e2e test.\n")
     for name in ("__init__.py", "schema.py", "store.py", "dedup.py",
-                 "leases.py", "ledger.py", "role_gate.py", "server.py"):
+                 "leases.py", "ledger.py", "role_gate.py", "wave_gate.py",
+                 "metrics.py", "server.py"):
         shutil.copy2(ROOT / "coordinator" / name,
                      stub / "coordinator" / name)
+    src_th = ROOT / "spec" / "wave_gate_thresholds.toml"
+    if src_th.exists():
+        shutil.copy2(src_th, stub / "spec" / "wave_gate_thresholds.toml")
     return stub
 
 
 def _start_coordinator(stub: Path) -> subprocess.Popen:
     env = os.environ.copy()
     env["PYTHONPATH"] = str(stub)
+    env["AUTORESEARCH_INITIAL_WAVE"] = "2"  # bypass Wave-0 cap=10
     proc = subprocess.Popen(
         [sys.executable, "-m", "coordinator.server",
          "--bind", "127.0.0.1", "--port", str(TEST_PORT),

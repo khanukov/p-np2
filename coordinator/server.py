@@ -39,6 +39,7 @@ from .leases import clamp_lease_seconds
 from .ledger import (
     LedgerWriteError, append_attempt, append_nogolog, append_survivor,
 )
+from .role_gate import enforce_role_for_submission
 from .schema import (
     DedupResponse, HealthStatus, ResultSubmission, TaskAssignment,
     validate_assignment_id, validate_role, validate_worker_id, write_json,
@@ -298,6 +299,23 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
         # Inject the candidate_id from the assignment into the
         # AttemptLedgerEntry so the worker cannot fabricate one.
         sub.attempt["candidate_id"] = rec["candidate_id"]
+
+        # MVP-0.4 / Phase D — Generator/Critic role-gate.
+        # Server-side enforcement that:
+        #   role=gen  => attempt.critic_status == "not_run", no supersedes;
+        #   role=crit => attempt.critic_status in {pass, fail},
+        #                attempt.supersedes points at an existing
+        #                gen attempt, AND worker_id != that gen attempt's
+        #                worker_id (Rule 12).
+        gate_err = enforce_role_for_submission(
+            role=rec["role"],
+            worker_id=sub.worker_id,
+            attempt=sub.attempt,
+            store=self.coordinator_store,
+        )
+        if gate_err is not None:
+            self._send_error(403, gate_err)
+            return
 
         try:
             attempt_id = append_attempt(sub.attempt)

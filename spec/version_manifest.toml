@@ -112,9 +112,25 @@ target  = "bench/SmokeProbe/expected_results.json"
 #          mismatch -> 403, wrong-worker submit -> 403,
 #          double-submit -> 409, release-then-submit -> 409,
 #          dedup, ledger persisted).  Up to ~1K workers per host.
+#   0.4.0  Generator/Critic role-gate (MVP-0.4 / Phase D).
+#          coordinator/role_gate.py adds infrastructure-level
+#          Rule-12 enforcement: gen-* submissions must have
+#          critic_status='not_run'; crit-* submissions must have
+#          critic_status in {pass, fail}, supersedes pointing at
+#          a known gen attempt, AND worker_id != that gen
+#          attempt's worker_id.  Hooked into server.py
+#          _handle_result.  spec/worker_roles.md defines the
+#          three-role taxonomy (gen / crit / rev).
+#          coordinator/test_role_gate.py 4/4 cases pass (gen-as-
+#          crit -> 403, crit-as-gen -> 403, gen+crit same
+#          worker -> 403 Rule 12, gen-alice + crit-bob -> 200).
+#          Phase C (worker scratch + build cache) is intentionally
+#          deferred until a real deployment context is available;
+#          Phase D ships the safety-critical role-gate now so
+#          Phase E can build the auto-dispatcher on top.
 [snapshot.autoresearch_mvp]
-version = "0.2.0"
-notes   = "Phase B of the v0.3 100K-worker scaling plan.  Coordinator HTTP service shipped; per-host capacity ~1K workers.  Phase C (worker isolation + build cache) opens 1K-10K cross-host."
+version = "0.4.0"
+notes   = "Phase D of the v0.3 100K-worker scaling plan.  Generator/Critic separation is now infrastructure-enforced.  Phase E (telemetry, wave gate, critic auto-dispatcher) builds on top.  Phase C (worker scratch isolation, distributed build cache) deferred until deployment context is available."
 
 # Critic protocol.  Tracked here because spec/critic_protocol.md
 # does not carry a [meta] block; the version advances when the
@@ -152,6 +168,12 @@ target  = "spec/concurrency_model.md"
 [snapshot.coordinator_protocol]
 version = "0.2.0"
 target  = "spec/coordinator_protocol.md"
+
+# Worker-role taxonomy (introduced by MVP-0.4 / Phase D).
+# Defines gen / crit / rev roles + Rule-12 enforcement matrix.
+[snapshot.worker_roles]
+version = "0.4.0"
+target  = "spec/worker_roles.md"
 
 # Schema for the JSONL ledgers.
 [snapshot.nogolog_schema]

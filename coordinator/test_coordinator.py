@@ -99,7 +99,7 @@ def _stage_stub_repo(tmp: Path) -> Path:
     # use Path(__file__).resolve().parent.parent resolve to the stub
     # root).
     for name in ("__init__.py", "schema.py", "store.py", "dedup.py",
-                 "leases.py", "ledger.py", "server.py"):
+                 "leases.py", "ledger.py", "role_gate.py", "server.py"):
         shutil.copy2(ROOT / "coordinator" / name,
                      stub / "coordinator" / name)
     return stub

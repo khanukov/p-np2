@@ -215,6 +215,21 @@ class CoordinatorStore:
             )
             return cur.rowcount == 1
 
+    def find_worker_for_attempt(
+        self, attempt_id: str,
+    ) -> str | None:
+        """Return the `worker_id` that submitted `attempt_id`, or None
+        if no assignment row carries it.  Used by the role-gate
+        (MVP-0.4 / Phase D) to enforce that a Critic is not the same
+        worker as the original Generator."""
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT worker_id FROM assignments "
+                " WHERE attempt_id = ? LIMIT 1",
+                (attempt_id,),
+            ).fetchone()
+        return row[0] if row else None
+
     def counts_by_status(self) -> dict[str, int]:
         with self._lock:
             rows = self._conn.execute(

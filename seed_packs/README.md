@@ -45,6 +45,7 @@ minimum-viable cycle every Pilot Wave 0 worker must follow.
 | ID                                    | Track       | Status                                |
 | ------------------------------------- | ----------- | ------------------------------------- |
 | `fp3b1_log_width_hardwiring`          | Research-A  | skeleton-shipped; FP-3b.2 still open  |
+| `fp3b1_log_width_hardwiring_lift`     | Research-A  | open — parallel decomposition (10 slots) of FP-3b.2; lifts `NOGO-000003` to `formalized` |
 
 ### Infrastructure seeds (under `seed_packs/INFRA/<id>/`)
 

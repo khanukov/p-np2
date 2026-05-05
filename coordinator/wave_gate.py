@@ -56,27 +56,25 @@ class WaveGate:
         self._current_wave = self._resolve_initial_wave()
 
     def _resolve_initial_wave(self) -> int:
-        """MVP-0.5.5 / PR 5: refuse to start at any wave > 0 unless
-        the operator passes an explicit promotion-force env var.
+        """v0.4.2 Track C4: consult the promotion_evaluator.
 
-        The wave-gate has no automatic promotion evaluator (per
-        spec/wave_gate_thresholds.toml — promotion is manual until
-        the evaluator ships).  Allowing
-        AUTORESEARCH_INITIAL_WAVE=2 to silently set max_concurrent
-        to 500 lets an operator skip the demonstrable-promotion-
-        requirements step.  The PR-5 guard makes that explicit:
+        Behaviour matrix:
 
-            * env unset, or AUTORESEARCH_INITIAL_WAVE=0:
-                  start at the spec default initial_wave (== 0).
-            * AUTORESEARCH_INITIAL_WAVE=N for N>0 AND
-              AUTORESEARCH_PROMOTION_FORCE=true:
-                  start at wave N (operator override).
-            * AUTORESEARCH_INITIAL_WAVE=N for N>0 WITHOUT the FORCE
-              flag:
-                  REFUSED at startup (raise ValueError).
+          * env unset, or AUTORESEARCH_INITIAL_WAVE=0:
+                start at the spec default initial_wave (== 0).
+          * AUTORESEARCH_INITIAL_WAVE=N for N>0:
+                ask the evaluator.  If can_promote(N) is True,
+                start at N silently.  If False AND
+                AUTORESEARCH_PROMOTION_FORCE=true: start at N
+                LOUDLY (stderr WARN + audit-log append; metric
+                increment from server.py).  If False AND no FORCE:
+                refuse at startup (raise ValueError listing the
+                unmet reasons).
 
-        Tests that legitimately need wave > 0 (the existing 20-
-        worker e2e) set BOTH env vars.
+        Tests that legitimately need wave > 0 set BOTH env vars
+        (preserving MVP-0.5.5 behaviour).  Tests that exercise the
+        evaluator directly call `evaluate(...)` from
+        `coordinator.promotion_evaluator`.
         """
         raw = os.environ.get("AUTORESEARCH_INITIAL_WAVE")
         if raw is None or raw == "":
@@ -89,19 +87,56 @@ class WaveGate:
                 f"got {raw!r}")
         if requested == 0:
             return 0
-        force = os.environ.get("AUTORESEARCH_PROMOTION_FORCE", "").lower()
-        if force not in ("true", "1", "yes"):
-            raise ValueError(
-                f"AUTORESEARCH_INITIAL_WAVE={requested} requires "
-                f"AUTORESEARCH_PROMOTION_FORCE=true.  Wave-gate has "
-                f"no automatic promotion evaluator yet "
-                f"(spec/wave_gate_thresholds.toml documents the "
-                f"manual-promotion requirements per Wave); the "
-                f"FORCE flag is the explicit operator override.")
         if requested not in self._waves:
             raise ValueError(
                 f"AUTORESEARCH_INITIAL_WAVE={requested} is not a "
                 f"defined wave; valid: {sorted(self._waves.keys())}")
+
+        # v0.4.2 Track C4: consult the evaluator.
+        from .promotion_evaluator import (
+            append_forced_promotion_audit_record,
+            emit_force_warning,
+            evaluate,
+        )
+        can_promote, unmet = evaluate(
+            requested,
+            thresholds_path=self.thresholds_path,
+        )
+
+        force = os.environ.get("AUTORESEARCH_PROMOTION_FORCE", "").lower()
+        force_consumed = force in ("true", "1", "yes")
+
+        if can_promote:
+            return requested
+
+        if not force_consumed:
+            joined = "\n  - " + "\n  - ".join(unmet) if unmet else "(none)"
+            raise ValueError(
+                f"AUTORESEARCH_INITIAL_WAVE={requested}: "
+                f"promotion_evaluator reports requirements unmet."
+                f"  Set AUTORESEARCH_PROMOTION_FORCE=true to "
+                f"override (LOUD: stderr warning + audit log "
+                f"append; CI step 12.k fails on any audit entry)."
+                f"  Unmet:{joined}")
+
+        # FORCE consumed — emit warning, append audit record.
+        emit_force_warning(requested, unmet)
+        operator_note = os.environ.get(
+            "AUTORESEARCH_PROMOTION_FORCE_NOTE", "")
+        # The git_commit is cached on the handler at server start
+        # (v0.4.2 Track B); we don't have direct access here, so
+        # the audit record carries an empty string when the
+        # wave_gate is constructed before the handler.  In
+        # practice serve() instantiates wave_gate before stamping
+        # the handler, so this is a known minor fidelity gap; the
+        # wave_promotion_audit_schema documents that empty is
+        # acceptable.
+        append_forced_promotion_audit_record(
+            target_wave=requested,
+            coordinator_git_commit="",
+            unmet_reasons=unmet,
+            operator_note=operator_note,
+        )
         return requested
 
     def _load(self) -> None:

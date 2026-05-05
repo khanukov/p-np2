@@ -101,6 +101,11 @@
     "abnormal_exit_code": {
       "type": "integer",
       "description": "When status='ABNORMAL_EXIT', the bash exit code that triggered the trap. Absent on normal exit."
+    },
+    "git_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{7,40}$",
+      "description": "v0.4.2 Track B: lower-case hex of the git commit on which the verifier was invoked. Optional; emitted when scripts/verify_candidate.sh can resolve `git rev-parse HEAD`."
     }
   },
   "allOf": [

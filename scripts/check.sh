@@ -478,6 +478,19 @@ echo "[check] Step 12.f: Generator/Critic role-gate e2e (Research Governance v0.
 python3 "${ROOT_DIR}/coordinator/test_role_gate.py"
 echo "[check] Step 12.g: wave gate + metrics endpoint e2e (Research Governance v0.1, Autoresearch MVP-0.5 Phase E)"
 python3 "${ROOT_DIR}/coordinator/test_wave_gate.py"
+echo "[check] Step 12.h: cost-budget reaper + lease_id compare-and-set e2e (Research Governance v0.1, Autoresearch MVP-0.5.6, v0.4.2 Track C2)"
+python3 "${ROOT_DIR}/coordinator/test_cost_budget.py"
+echo "[check] Step 12.j: promotion_evaluator + loud FORCE audit (Research Governance v0.1, Autoresearch MVP-0.5.6, v0.4.2 Track C4)"
+python3 "${ROOT_DIR}/coordinator/test_promotion_evaluator.py"
+echo "[check] Step 12.k: wave_promotion_audit.jsonl must be empty in CI (Research Governance v0.1, Autoresearch MVP-0.5.6, v0.4.2 Track C4)"
+WPAUDIT="${ROOT_DIR}/outputs/wave_promotion_audit.jsonl"
+if [[ -s "${WPAUDIT}" ]]; then
+  echo "[check] FAIL: ${WPAUDIT} is non-empty in CI run." >&2
+  echo "[check]       AUTORESEARCH_PROMOTION_FORCE was consumed at some point." >&2
+  echo "[check]       Reset the file to empty AND record the reason in a PR before re-running." >&2
+  exit 1
+fi
+echo "[wave_promotion_audit] OK (empty)"
 
 echo "[check] Step 13/17: verify_candidate.sh --full smoke (Research Governance v0.1, PR 15 + PR 15.2)"
 # PR 15.2: invoke `--full` so the candidate kernel-elaboration check

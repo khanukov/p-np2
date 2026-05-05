@@ -28,8 +28,10 @@
         "joint_candidate_non_independent",
         "prior_work_collision",
         "reproducibility_failure",
+        "timeout",
         "other"
-      ]
+      ],
+      "description": "v0.4.2 Track C2 added 'timeout' (distinct from 'reproducibility_failure') for cost-budget reaper auto-fails. The verifier never produces 'timeout' on its own; it is reserved for AttemptLedgerEntry rows whose verifier_status='FAIL_TIMEOUT' was synthesised by the coordinator."
     },
 
     "MethodFamily": {
@@ -204,8 +206,8 @@
         },
         "verifier_status": {
           "type": "string",
-          "enum": ["PASS", "FAIL", "PASS_SHAPE_ONLY"],
-          "description": "Outcome of scripts/verify_candidate.sh on this candidate."
+          "enum": ["PASS", "FAIL", "FAIL_TIMEOUT", "PASS_SHAPE_ONLY"],
+          "description": "Outcome of scripts/verify_candidate.sh on this candidate. v0.4.2 Track C2 added 'FAIL_TIMEOUT' for ledger entries synthesised by the coordinator's cost-budget reaper when an assignment exceeds its hard_cap_minutes; cross-field rule requires verifier_failure_class='timeout' in that case."
         },
         "verifier_failure_class": {
           "oneOf": [
@@ -243,6 +245,24 @@
         "notes": {
           "type": "string",
           "description": "Free-form notes. Must not contain claims that contradict the recorded statuses."
+        },
+        "git_commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{7,40}$",
+          "description": "v0.4.2 Track B: lower-case hex of the git commit on which the worker produced this attempt. Optional on entries created before the v0.4.2 cutoff date in spec/version_manifest.toml; mandatory afterwards. Coordinator rejects /v1/result whose attempt.git_commit does not match its own HEAD."
+        },
+        "git_ref": {
+          "type": "string",
+          "description": "v0.4.2 Track B: optional symbolic ref (branch name) the worker observed at submission time. Informational only; the gate is on git_commit."
+        },
+        "lease_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "description": "v0.4.2 Track C2: UUID4 identifying the assignment lease this attempt was produced under. Workers stamp it from the TaskAssignment.lease_id; the coordinator's cost-budget reaper uses it for compare-and-set when auto-failing overdue assignments so worker-vs-reaper races cannot produce two ledger entries for one slot."
+        },
+        "generator_principal_id": {
+          "type": "string",
+          "description": "v0.4.2 Track C3: principal id (suffix after the role prefix of the worker_id) that produced this gen attempt. Populated by the coordinator on every gen-* result merge; used by the critic dispatcher to refuse offering a gen attempt to a critic whose principal id matches. Protocol-level integrity guard for honest workers; NOT authentication (deferred to JWT track)."
         }
       }
     }

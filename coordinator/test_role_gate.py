@@ -85,12 +85,18 @@ def _stage_stub_repo(tmp: Path) -> Path:
         "# Synthetic seed pack used only by role-gate e2e test.\n")
     for name in ("__init__.py", "schema.py", "store.py", "dedup.py",
                  "leases.py", "ledger.py", "role_gate.py", "wave_gate.py",
-                 "metrics.py", "server.py"):
+                 "metrics.py", "server.py",
+                 # v0.4.2 Track C2 / C3 / C4.
+                 "cost_budget.py", "critic_dispatcher.py",
+                 "promotion_evaluator.py"):
         shutil.copy2(ROOT / "coordinator" / name,
                      stub / "coordinator" / name)
     src_th = ROOT / "spec" / "wave_gate_thresholds.toml"
     if src_th.exists():
         shutil.copy2(src_th, stub / "spec" / "wave_gate_thresholds.toml")
+    src_cb = ROOT / "spec" / "cost_budget_thresholds.toml"
+    if src_cb.exists():
+        shutil.copy2(src_cb, stub / "spec" / "cost_budget_thresholds.toml")
     return stub
 
 
@@ -323,6 +329,97 @@ _SYNTHETIC_PASS_REPORT = """\
 """
 
 
+def run_test_dispatcher_no_pending_returns_503() -> None:
+    """v0.4.2 Track C3: a critic asking for work without a seed_pack
+    when no verified gen attempt is available gets 503 with reason
+    `no_pending_critic`."""
+    # No prior verified gen attempt has been submitted, so the
+    # dispatcher's ledger scan finds nothing.  We pick a fresh
+    # critic worker_id that has never appeared so previous tests
+    # in the suite cannot have left state attributable to it.
+    code, body = _http_get(
+        "/v1/task?role=crit&worker_id=crit-disp-empty")
+    assert code == 503, f"expected 503, got {code}: {body}"
+    msg = json.dumps(body).lower()
+    assert "no_pending_critic" in msg, body
+    print("[test_role_gate] OK   /v1/task crit no-seed-pack with empty "
+          "ledger -> 503 no_pending_critic")
+
+
+def run_test_dispatcher_offers_pending_with_supersedes(stub: Path) -> None:
+    """v0.4.2 Track C3: when one verified gen attempt exists, the
+    dispatcher returns it via supersedes."""
+    # Step 1: gen-eve generates a verified attempt.
+    gen_task = _take_task("gen", "gen-eve")
+    code, resp = _http_post("/v1/result", {
+        "assignment_id": gen_task["assignment_id"],
+        "worker_id": "gen-eve",
+        "attempt": _attempt_body(gen_task["candidate_id"]),
+    })
+    assert code == 200, f"gen-eve submission failed: {code}: {resp}"
+    gen_attempt_id = resp["attempt_id"]
+    # Step 2: crit-frank asks for work; dispatcher picks gen-eve's
+    # attempt and stamps supersedes.
+    code, body = _http_get(
+        "/v1/task?role=crit&worker_id=crit-frank")
+    assert code == 200, f"expected 200, got {code}: {body}"
+    assert body.get("supersedes") == gen_attempt_id, body
+    # Release the assignment so subsequent tests don't see this
+    # critic in-flight (the wave cap is generous in the e2e harness
+    # but we still avoid pollution).
+    _http_post("/v1/release", {
+        "assignment_id": body["assignment_id"],
+        "worker_id": "crit-frank",
+    })
+    print("[test_role_gate] OK   /v1/task crit no-seed-pack -> 200 with "
+          "supersedes pointing at pending gen attempt")
+
+
+def run_test_principal_identity_rejects_same_principal(stub: Path) -> None:
+    """v0.4.2 Track C3: gen-grace generates; crit-grace submits the
+    critic verdict with explicit supersedes.  Rejected by role_gate
+    even though worker_ids differ in prefix (principal matches)."""
+    # Step 0: stage a synthetic completed Critic report (we'll
+    # attach it to the rejected submission so the rejection comes
+    # from the principal-identity gate, not from the report
+    # cross-field check).
+    report_dir = stub / "synthetic_critic_reports"
+    report_dir.mkdir(parents=True, exist_ok=True)
+    report_path = report_dir / "synthetic_role_gate_principal.md"
+    report_path.write_text(_SYNTHETIC_PASS_REPORT)
+    rel_report = report_path.relative_to(stub).as_posix()
+    # Step 1: gen-grace generates.
+    gen_task = _take_task("gen", "gen-grace")
+    code, resp = _http_post("/v1/result", {
+        "assignment_id": gen_task["assignment_id"],
+        "worker_id": "gen-grace",
+        "attempt": _attempt_body(gen_task["candidate_id"]),
+    })
+    assert code == 200, resp
+    gen_attempt_id = resp["attempt_id"]
+    # Step 2: dispatcher must NOT offer this attempt to crit-grace.
+    # Use the explicit-seed-pack path so we get a fresh assignment
+    # without going through the dispatcher (which would itself
+    # refuse with 503).
+    crit_task = _take_task("crit", "crit-grace")
+    code, resp = _http_post("/v1/result", {
+        "assignment_id": crit_task["assignment_id"],
+        "worker_id": "crit-grace",
+        "attempt": _attempt_body(
+            crit_task["candidate_id"],
+            verifier_status="PASS_SHAPE_ONLY",
+            critic_status="pass",
+            supersedes=gen_attempt_id,
+            critic_report_path=rel_report,
+        ),
+    })
+    assert code == 403, f"expected 403, got {code}: {resp}"
+    err_text = json.dumps(resp).lower()
+    assert "principal" in err_text, resp
+    print("[test_role_gate] OK   crit-grace + gen-grace -> 403 "
+          "(principal identity guard)")
+
+
 def run_test_gen_then_crit_different_worker_accepted(stub: Path) -> None:
     """gen-alice generates attempt X.  Then crit-bob submits a
     critic verdict that supersedes X.  Allowed."""
@@ -380,7 +477,17 @@ def main() -> int:
             run_test_gen_carrying_critic_pass_rejected()
             run_test_crit_carrying_not_run_rejected()
             run_test_gen_then_crit_same_worker_rejected()
+            # v0.4.2 Track C3: dispatcher 503 BEFORE any verified gen
+            # attempt is in the ledger, so this case must run before
+            # the "different worker accepted" case below populates one.
+            run_test_dispatcher_no_pending_returns_503()
             run_test_gen_then_crit_different_worker_accepted(stub)
+            # v0.4.2 Track C3: dispatcher offers a pending gen attempt
+            # to a critic with a different principal id.
+            run_test_dispatcher_offers_pending_with_supersedes(stub)
+            # v0.4.2 Track C3: principal-identity guard rejects same
+            # principal even when prefix differs.
+            run_test_principal_identity_rejects_same_principal(stub)
         finally:
             proc.send_signal(2)  # SIGINT
             try:
@@ -388,7 +495,7 @@ def main() -> int:
             except subprocess.TimeoutExpired:
                 proc.kill()
                 proc.wait()
-    print("[test_role_gate] OK (4/4 Rule-12 cases passed)")
+    print("[test_role_gate] OK (7 Rule-12 + dispatcher cases passed)")
     return 0
 
 

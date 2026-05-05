@@ -43,6 +43,42 @@ class _StoreLike(Protocol):
     ) -> Optional[str]: ...
 
 
+def enforce_commit_match(
+    attempt: dict[str, Any],
+    coordinator_git_commit: str,
+) -> str | None:
+    """v0.4.2 Track B: reject results submitted from a different commit.
+
+    `attempt.git_commit` MUST equal the coordinator's HEAD that was
+    cached at server start.  Returns a non-None error string on
+    mismatch (caller maps that to a 403).
+
+    Backwards compatibility: when the coordinator could not resolve
+    its own HEAD (`coordinator_git_commit == ""`), the gate degrades
+    to no-op so a non-git-managed deployment still works.  The same
+    relaxation applies when `attempt.git_commit` is missing — that
+    branch is taken only by AttemptLedgerEntry payloads minted before
+    the v0.4.2 cutoff and is policed separately by
+    `scripts/validate_jsonl.py`.
+    """
+    if not coordinator_git_commit:
+        return None  # coordinator can't resolve HEAD; degrade
+    attempt_commit = attempt.get("git_commit")
+    if attempt_commit is None or attempt_commit == "":
+        return None  # backfill window, validated elsewhere
+    if not isinstance(attempt_commit, str):
+        return f"attempt.git_commit must be a string, got {type(attempt_commit).__name__}"
+    # Accept short prefix match too (>=7 hex chars), since some clients
+    # may stamp short hashes; both must agree on the prefix.
+    short = max(7, min(len(attempt_commit), len(coordinator_git_commit)))
+    if attempt_commit[:short] != coordinator_git_commit[:short]:
+        return (f"commit_mismatch: attempt.git_commit={attempt_commit!r} "
+                f"does not match coordinator HEAD "
+                f"{coordinator_git_commit!r}; worker is on a different "
+                "branch / commit and must re-checkout before submitting.")
+    return None
+
+
 def enforce_role_for_submission(
     role: str,
     worker_id: str,
@@ -110,6 +146,20 @@ def _enforce_crit(
                 f"{supersedes} and is now attempting to criticise "
                 "the same candidate.  Generator and Critic must be "
                 "different workers.")
+    # v0.4.2 Track C3: principal-identity check (protocol-level
+    # integrity guard, NOT authentication — see spec/worker_roles.md).
+    # gen-alice + crit-alice would pass the worker_id check above
+    # but fail this one.
+    from .schema import principal_id_from_worker_id  # avoid cycle
+    crit_principal = principal_id_from_worker_id(worker_id)
+    gen_principal = principal_id_from_worker_id(gen_worker)
+    if crit_principal and gen_principal and crit_principal == gen_principal:
+        return ("Rule 12 violation (principal): worker "
+                f"{worker_id!r} shares principal id "
+                f"{crit_principal!r} with the gen worker "
+                f"{gen_worker!r} that produced {supersedes}.  "
+                "Same principal cannot generate AND criticise the "
+                "same candidate, regardless of role prefix.")
     if cs == "fail":
         if not isinstance(attempt.get("critic_break_class"), str):
             return ("Critic submission with critic_status='fail' "

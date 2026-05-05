@@ -1,0 +1,46 @@
+# Cost-budget thresholds — Research Governance v0.1, Autoresearch MVP-0.5.6
+# (v0.4.2 Track C2).
+#
+# Used by `coordinator/cost_budget.py::CostBudgetReaper` to auto-FAIL_TIMEOUT
+# assignments that exceed the role's hard cap.
+#
+# Semantics:
+#
+#   * `default_minutes` is the wall-clock budget the coordinator hands
+#     to a worker via `lease_seconds = default_minutes * 60` when no
+#     explicit lease is requested.
+#   * `hard_cap_minutes` is an upper ceiling: even if a client requests
+#     a longer `lease_seconds`, the lease is clamped to
+#     `hard_cap_minutes * 60`.  Lease_seconds clamping is enforced by
+#     `coordinator/leases.py::clamp_lease_seconds`; the reaper here
+#     observes the resulting deadline.
+#   * Once a lease's deadline is past, the reaper synthesises a
+#     ledger entry with `verifier_status="FAIL_TIMEOUT"` and
+#     `verifier_failure_class="timeout"` and finalises the assignment
+#     to `submitted`.  This is distinct from the older `expired`
+#     state (silent abandon, no ledger entry).
+#
+# These thresholds bump on owner-approved PR only; do NOT silently
+# increase them in a worker brief.
+
+[role.gen]
+default_minutes = 30
+hard_cap_minutes = 90
+
+[role.crit]
+# Critic work is shorter on average (read existing artifact, run six
+# attacks, write a structured report).  Cap accordingly.
+default_minutes = 15
+hard_cap_minutes = 45
+
+[role.rev]
+# Reviewers are humans operating outside the autoresearch cycle;
+# the coordinator does not enforce a budget on them, but lists a
+# default for completeness.
+default_minutes = 60
+hard_cap_minutes = 240
+
+[reaper]
+# Background loop interval.  Keep at 60s — finer grain is wasteful,
+# coarser grain delays auto-fail beyond useful UX.
+tick_seconds = 60

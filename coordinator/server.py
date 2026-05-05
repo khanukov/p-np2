@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 import threading
 import urllib.parse
@@ -41,9 +42,10 @@ from .ledger import (
     LedgerWriteError, append_attempt, append_nogolog, append_survivor,
 )
 from .metrics import Metrics
-from .role_gate import enforce_role_for_submission
+from .role_gate import enforce_commit_match, enforce_role_for_submission
 from .schema import (
     DedupResponse, HealthStatus, ResultSubmission, TaskAssignment,
+    principal_id_from_worker_id,
     validate_assignment_id, validate_role, validate_worker_id, write_json,
 )
 from .store import CoordinatorStore
@@ -68,6 +70,41 @@ def _read_autoresearch_mvp_version() -> str:
     snapshot = data.get("snapshot", {})
     ar = snapshot.get("autoresearch_mvp", {})
     return ar.get("version", "unknown") if isinstance(ar, dict) else "unknown"
+
+
+# v0.4.2 Track B: commit pinning.  Read HEAD at startup so the
+# coordinator can stamp every TaskAssignment with the commit it was
+# launched on; workers refuse to run when their local HEAD differs.
+def _read_git_commit() -> str:
+    """Resolve full 40-char hex of HEAD or empty string on failure."""
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(ROOT), "rev-parse", "HEAD"],
+            capture_output=True, text=True, timeout=5, check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    if proc.returncode != 0:
+        return ""
+    out = proc.stdout.strip()
+    if len(out) != 40 or any(c not in "0123456789abcdef" for c in out):
+        return ""
+    return out
+
+
+def _read_git_ref() -> str:
+    """Symbolic ref for HEAD (short branch name) or 'detached'."""
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(ROOT), "symbolic-ref", "--short", "-q", "HEAD"],
+            capture_output=True, text=True, timeout=5, check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return "detached"
+    if proc.returncode != 0:
+        return "detached"
+    out = proc.stdout.strip()
+    return out or "detached"
 
 
 def _scan_seed_packs() -> list[str]:
@@ -102,6 +139,10 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
     wave_gate: WaveGate = None  # type: ignore[assignment]
     metrics: Metrics = None  # type: ignore[assignment]
     log_to_stderr: bool = True
+    # v0.4.2 Track B: cached at server start; injected into TaskAssignment
+    # and HealthStatus so workers can pre-check + stamp git_commit.
+    coordinator_git_commit: str = ""
+    coordinator_git_ref: str = "detached"
 
     # ------------------------------------------------------------------
     # Logging — quieter than the default, every request is one line.
@@ -194,6 +235,8 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
             completed_count=int(counts.get("submitted", 0)),
             abandoned_count=int(counts.get("expired", 0))
                             + int(counts.get("released", 0)),
+            coordinator_git_commit=self.coordinator_git_commit,
+            coordinator_git_ref=self.coordinator_git_ref,
         )
         self._send_json(200, status.to_json())
 
@@ -258,12 +301,51 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
         if not seed_packs:
             self._send_error(503, "no seed packs available")
             return
+
+        # v0.4.2 Track C3: critic auto-dispatcher.  When a critic
+        # asks for work without specifying a seed_pack, the
+        # coordinator picks an oldest verified gen attempt that
+        # this critic's principal is allowed to critique and
+        # stamps `supersedes` on the assignment.  When a seed_pack
+        # IS specified, fall through to the legacy round-robin
+        # path so ad-hoc re-critique against a specific pack still
+        # works.
+        crit_dispatch_payload: dict | None = None
+        if role == "crit" and not seed_pack_param:
+            from .critic_dispatcher import (
+                NoPendingCriticAttempt, dispatch_critic_task,
+            )
+            try:
+                crit_dispatch_payload = dispatch_critic_task(
+                    store=self.coordinator_store,
+                    crit_worker_id=worker_id,
+                    attempts_jsonl_path=ROOT / "outputs" / "attempts.jsonl",
+                )
+            except NoPendingCriticAttempt as exc:
+                if self.metrics is not None:
+                    self.metrics.inc(
+                        "autoresearch_tasks_refused_total",
+                        {"reason": "no_pending_critic"})
+                self._send_error(503, f"no_pending_critic: {exc}")
+                return
+
         if seed_pack_param:
             if seed_pack_param not in seed_packs:
                 self._send_error(
                     404, f"unknown seed_pack: {seed_pack_param!r}")
                 return
             seed_pack_id = seed_pack_param
+        elif crit_dispatch_payload is not None:
+            sp = crit_dispatch_payload["seed_pack_id"]
+            if sp and sp in seed_packs:
+                seed_pack_id = sp
+            else:
+                # Gen attempt's seed_pack_id is unknown to us (e.g.
+                # the seed pack was renamed or removed).  Fall back
+                # to the first available seed pack — the critic
+                # task is still well-defined because supersedes
+                # carries the gen ATT id.
+                seed_pack_id = seed_packs[0]
         else:
             # MVP-0.5.2 / PR 2: dedicated round-robin counter; no
             # rollback of the assignment_seq counter.  The previous
@@ -298,7 +380,16 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
                 return
 
         assignment_id = self.coordinator_store.next_assignment_id()
-        candidate_id = f"{seed_pack_id}_{uuid4().hex[:12]}"
+        if crit_dispatch_payload is not None and \
+                crit_dispatch_payload.get("candidate_id"):
+            # v0.4.2 Track C3: dispatcher routes the critic at the
+            # exact candidate_id of the gen attempt under critique.
+            candidate_id = crit_dispatch_payload["candidate_id"]
+        else:
+            candidate_id = f"{seed_pack_id}_{uuid4().hex[:12]}"
+        supersedes_for_assignment = (
+            crit_dispatch_payload["supersedes"]
+            if crit_dispatch_payload is not None else "")
         record = self.coordinator_store.create_assignment(
             assignment_id=assignment_id,
             candidate_id=candidate_id,
@@ -315,6 +406,10 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
             worker_id=record["worker_id"],
             lease_seconds=lease_seconds,
             deadline=record["deadline"],
+            git_commit=self.coordinator_git_commit,
+            git_ref=self.coordinator_git_ref,
+            lease_id=record.get("lease_id", ""),
+            supersedes=supersedes_for_assignment,
         )
         if self.metrics is not None:
             self.metrics.inc("autoresearch_tasks_assigned_total",
@@ -386,7 +481,14 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
             )
             return
         if rec["status"] != "assigned":
-            # released / expired
+            # released / expired / timed_out
+            reason = ("stale_lease"
+                      if rec["status"] == "timed_out"
+                      else "non_assigned_state")
+            if self.metrics is not None:
+                self.metrics.inc(
+                    "autoresearch_results_rejected_total",
+                    {"reason": reason})
             self._send_error(
                 409,
                 f"assignment {sub.assignment_id} is in status "
@@ -394,9 +496,54 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
             )
             return
 
+        # v0.4.2 Track C2: defence-in-depth — reject submissions whose
+        # stamped lease_id no longer matches the current row.  Under
+        # the present design this can only happen in pathological
+        # cases (the reaper transitions assigned→timed_out atomically,
+        # so a worker submitting after that should already have hit
+        # the status check above).  Belt-and-suspenders for future
+        # designs that re-issue lease_ids.
+        attempt_lease = sub.attempt.get("lease_id")
+        stored_lease = rec.get("lease_id") or ""
+        if attempt_lease and stored_lease and attempt_lease != stored_lease:
+            if self.metrics is not None:
+                self.metrics.inc(
+                    "autoresearch_results_rejected_total",
+                    {"reason": "stale_lease"})
+            self._send_error(
+                409,
+                f"stale_lease: attempt.lease_id {attempt_lease!r} "
+                f"does not match current assignment lease "
+                f"{stored_lease!r}",
+            )
+            return
+
         # Inject the candidate_id from the assignment into the
         # AttemptLedgerEntry so the worker cannot fabricate one.
         sub.attempt["candidate_id"] = rec["candidate_id"]
+
+        # v0.4.2 Track C3: stamp generator_principal_id on every
+        # gen-* result so the critic dispatcher can later refuse to
+        # offer this attempt to a critic with the same principal.
+        if rec["role"] == "gen":
+            sub.attempt["generator_principal_id"] = (
+                principal_id_from_worker_id(sub.worker_id))
+
+        # v0.4.2 Track B — commit pinning.  Reject results that
+        # reference a different HEAD than the coordinator's.  This
+        # closes the audit-discovered hole that allowed workers on
+        # `work` to submit results against a stale branch.
+        commit_err = enforce_commit_match(
+            attempt=sub.attempt,
+            coordinator_git_commit=self.coordinator_git_commit,
+        )
+        if commit_err is not None:
+            if self.metrics is not None:
+                self.metrics.inc(
+                    "autoresearch_results_rejected_total",
+                    {"reason": "commit_mismatch"})
+            self._send_error(403, commit_err)
+            return
 
         # MVP-0.4 / Phase D — Generator/Critic role-gate.
         gate_err = enforce_role_for_submission(
@@ -662,6 +809,7 @@ def serve(
     quiet: bool = False,
     wave_gate: WaveGate | None = None,
     metrics: Metrics | None = None,
+    enable_cost_budget_reaper: bool = True,
 ) -> tuple[ThreadingHTTPServer, threading.Thread, CoordinatorStore]:
     """Start the coordinator in a background thread.
 
@@ -696,6 +844,34 @@ def serve(
     BoundHandler.wave_gate = wave_gate
     BoundHandler.metrics = metrics
     BoundHandler.log_to_stderr = not quiet
+    # v0.4.2 Track B: cache HEAD at startup so workers can verify
+    # the coordinator's commit before doing any work, and so every
+    # AttemptLedgerEntry can carry a coordinator-confirmed git_commit.
+    coord_commit = _read_git_commit()
+    BoundHandler.coordinator_git_commit = coord_commit
+    BoundHandler.coordinator_git_ref = _read_git_ref()
+
+    # v0.4.2 Track C2: cost-budget reaper.
+    if enable_cost_budget_reaper:
+        from .cost_budget import CostBudgetReaper, CostBudgetThresholds
+        thresholds_path = ROOT / "spec" / "cost_budget_thresholds.toml"
+        thresholds = CostBudgetThresholds(
+            thresholds_path if thresholds_path.exists() else None)
+        def _on_autofail(info: dict) -> None:
+            if metrics is not None:
+                metrics.inc(
+                    "autoresearch_attempts_auto_failed_total",
+                    {"reason": "timeout"})
+        reaper = CostBudgetReaper(
+            store=store,
+            thresholds=thresholds,
+            coordinator_git_commit=coord_commit,
+            on_autofail=_on_autofail,
+        )
+        reaper.start()
+        # Stash on the handler class so callers shutting down the
+        # server can stop the reaper too.
+        BoundHandler._cost_budget_reaper = reaper  # type: ignore[attr-defined]
 
     httpd = ThreadingHTTPServer((bind_host, bind_port), BoundHandler)
     thread = threading.Thread(target=httpd.serve_forever, daemon=True)

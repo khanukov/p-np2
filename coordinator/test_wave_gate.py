@@ -73,9 +73,18 @@ def _stage_stub_repo(tmp: Path) -> Path:
         "# Synthetic seed pack used only by wave-gate e2e test.\n")
     for name in ("__init__.py", "schema.py", "store.py", "dedup.py",
                  "leases.py", "ledger.py", "role_gate.py", "wave_gate.py",
-                 "metrics.py", "server.py"):
+                 "metrics.py", "server.py",
+                 # v0.4.2 Track C2 / C3 / C4.
+                 "cost_budget.py", "critic_dispatcher.py",
+                 "promotion_evaluator.py"):
         shutil.copy2(ROOT / "coordinator" / name,
                      stub / "coordinator" / name)
+    # v0.4.2 Track C2: thresholds file (optional; reaper degrades to
+    # defaults if missing, but copy when available so tests reflect
+    # production config).
+    src_cb = ROOT / "spec" / "cost_budget_thresholds.toml"
+    if src_cb.exists():
+        shutil.copy2(src_cb, stub / "spec" / "cost_budget_thresholds.toml")
     return stub
 
 

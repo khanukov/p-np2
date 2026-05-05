@@ -1,4 +1,4 @@
-# Coordinator HTTP protocol — Research Governance v0.1, MVP-0.2
+# Coordinator HTTP protocol — Research Governance v0.1, MVP-0.5.6 (v0.4.2)
 
 This document is the wire contract for the Autoresearch coordinator
 service.  Workers (Generator, Critic, Reviewer) communicate with the
@@ -12,6 +12,24 @@ auth and per-worker quota; Phase D adds Generator/Critic infra-level
 separation; Phase E adds metrics and wave gates; Phase F shards the
 coordinator.  Each later phase preserves the contract below as a
 strict subset.
+
+v0.4.2 added on top of MVP-0.5: commit-pinning fields (`git_commit` /
+`git_ref`) on every `TaskAssignment` + `AttemptLedgerEntry`, the
+`POST /v1/release` endpoint, the `lease_id` UUID on `TaskAssignment`
++ `AttemptLedgerEntry` for cost-budget compare-and-set, the new
+`FAIL_TIMEOUT` `verifier_status` + `timeout` `failure_class`, the
+`generator_principal_id` field on gen-* AttemptLedgerEntries, the
+`supersedes` field on `TaskAssignment` for the critic auto-dispatcher,
+and the loud `AUTORESEARCH_PROMOTION_FORCE` audit-log path.
+
+> **Threat-model boundary.**  Principal identity (the suffix after
+> the `gen-`/`crit-`/`rev-` prefix in `worker_id`) is a
+> *protocol-level integrity guard* for honest, coordinated workers.
+> It is NOT an authentication mechanism.  Until the deferred Phase
+> C-3 JWT auth track ships, any worker can self-declare any
+> `worker_id` and bypass Rule 12 by impersonation.  The coordinator
+> does not — and cannot — distinguish two distinct principals named
+> `alice` from one principal pretending to be both.
 
 ## 0. Conventions
 
@@ -57,17 +75,22 @@ Response:
 {
   "status":                     "ok" | "draining" | "shutdown",
   "coordinator_version":        "0.2.0",
-  "autoresearch_mvp_version":   "0.1.5",
+  "autoresearch_mvp_version":   "0.5.6",
   "current_wave":               0,
   "assigned_count":             <int>,
   "completed_count":            <int>,
-  "abandoned_count":            <int>
+  "abandoned_count":            <int>,
+  "coordinator_git_commit":     "<40-char-hex>",
+  "coordinator_git_ref":        "<branch-name|detached>"
 }
 ```
 
 `current_wave` is `0` in MVP-0.2 (Phase E populates it from
 `coordinator/wave_gate.py`).  `assigned_count` is the live
-in-progress lease count.
+in-progress lease count.  `coordinator_git_commit` and
+`coordinator_git_ref` (v0.4.2 Track B) carry the HEAD the
+coordinator was launched at; workers MUST refuse to run on a
+different commit.
 
 ### 2.2 `GET /v1/manifest`
 
@@ -92,9 +115,28 @@ is optional; clamped to `[30, 7200]` (default 1800).
   "role":           "gen",
   "worker_id":      "gen-test-001",
   "lease_seconds":  1800,
-  "deadline":       "2026-05-03T14:30:00Z"
+  "deadline":       "2026-05-03T14:30:00Z",
+  "git_commit":     "<40-char-hex>",
+  "git_ref":        "<branch-name|detached>",
+  "lease_id":       "<UUID4>",
+  "supersedes":     "" | "ATT-NNNNNN"
 }
 ```
+
+`git_commit` / `git_ref` (v0.4.2 Track B) — coordinator's HEAD;
+worker MUST verify locally before doing any work and MUST stamp
+`git_commit` on the submitted AttemptLedgerEntry.
+
+`lease_id` (v0.4.2 Track C2) — UUID4 minted at lease creation
+time.  Worker MUST stamp it on the submitted AttemptLedgerEntry
+so the cost-budget reaper's compare-and-set cannot produce a
+double ledger entry under reaper-vs-worker race.
+
+`supersedes` (v0.4.2 Track C3) — populated by the critic
+auto-dispatcher when `role=crit` is requested without an
+explicit `seed_pack`.  Carries the gen attempt's `ATT-NNNNNN`
+that this critic should critique.  Empty string for legacy
+fresh-candidate critic flows and for all gen tasks.
 
 Errors:
 
@@ -103,7 +145,7 @@ Errors:
 | 400  | Missing/malformed query parameter                           |
 | 403  | `worker_id` prefix does not match `role`                    |
 | 404  | `seed_pack` does not exist                                  |
-| 503  | No seed packs available                                     |
+| 503  | No seed packs available, or `no_pending_critic` (v0.4.2 C3) |
 
 ### 2.4 `GET /v1/dedup?content_hash=…`
 
@@ -161,13 +203,29 @@ The coordinator:
 2. Verifies `worker_id` matches the lease holder.
 3. Overwrites `attempt.candidate_id` with the assignment's
    `candidate_id` so a worker cannot fabricate.
-4. Calls `scripts/attempts_append.py` to validate + append
+4. v0.4.2 Track B: rejects with 403 + reason `commit_mismatch`
+   if `attempt.git_commit` does not match the coordinator's HEAD
+   (cached at server start).  Backfill window: omitted on entries
+   minted before the cutoff date in `spec/version_manifest.toml`.
+5. v0.4.2 Track C2: rejects with 409 + reason `stale_lease` if
+   `attempt.lease_id` does not match the assignment's stored
+   `lease_id` (i.e. the cost-budget reaper claimed the slot
+   first).
+6. v0.4.2 Track C3: stamps `attempt.generator_principal_id =
+   principal_id_from_worker_id(worker_id)` on every gen-*
+   submission so the critic dispatcher can later refuse to offer
+   this attempt to a critic with the matching principal id.
+7. v0.4.2 Track C2: when `verifier_status == "FAIL_TIMEOUT"`,
+   `verifier_failure_class` MUST equal `"timeout"`; rejected at
+   the JSONL validator.  This status is normally synthesised by
+   the cost-budget reaper, not by external workers.
+8. Calls `scripts/attempts_append.py` to validate + append
    atomically (the Phase A flock primitive applies).
-5. If `nogolog_entry` is present, calls
+9. If `nogolog_entry` is present, calls
    `scripts/nogolog_append.py` similarly.
-6. If `survivor_entry` is present, calls
-   `scripts/survivor_append.py` similarly.
-7. Marks the assignment `submitted` with the new `attempt_id`.
+10. If `survivor_entry` is present, calls
+    `scripts/survivor_append.py` similarly.
+11. Marks the assignment `submitted` with the new `attempt_id`.
 
 200 response:
 
@@ -186,9 +244,9 @@ Errors:
 | Code | When                                                        |
 | ---- | ----------------------------------------------------------- |
 | 400  | Body parse error / missing fields / attempt fails validation|
-| 403  | Wrong `worker_id` for this assignment                       |
+| 403  | Wrong `worker_id`, role-gate violation (Rule 12 prefix or principal), or v0.4.2 `commit_mismatch` |
 | 404  | Unknown `assignment_id`                                     |
-| 409  | Assignment is not in status `assigned` (already submitted, expired, or released) |
+| 409  | Assignment is not in status `assigned` (already submitted, expired, released, or v0.4.2 `timed_out`); also `stale_lease` if attempt.lease_id has been invalidated |
 | 500  | Attempt merged but auxiliary log (NoGo/survivor) rejected   |
 
 ### 2.6 `POST /v1/release`
@@ -212,14 +270,32 @@ Cancel an assignment without submitting.  Body shape:
                      │
                      ▼
                  assigned
-                /    │    \
-        POST     POST  deadline
-        /result  /release passed
-           │        │       │
-           ▼        ▼       ▼
-       submitted  released  expired
-       (final)    (final)   (final)
+              /    │      │       \
+       POST   POST  deadline   v0.4.2 cost-
+       /result /rel  passed    budget reaper
+          │     │       │           │
+          │     │       │           ▼
+          │     │       │       timed_out
+          │     │       │           │ FAIL_TIMEOUT
+          │     │       │           │ ledger entry
+          ▼     ▼       ▼           ▼
+      submitted released expired   submitted
+      (final)   (final) (final)   (final)
 ```
+
+States:
+
+* `assigned` — lease active.
+* `submitted` — terminal: worker submitted (or reaper auto-failed).
+* `released` — terminal: worker explicitly cancelled
+  via `POST /v1/release` (v0.4.2 worker-side commit pre-check
+  uses this).
+* `expired` — terminal: lease deadline passed and the
+  `expire_due` cleaner ran before the cost-budget reaper.
+* `timed_out` (v0.4.2 Track C2) — internal: cost-budget reaper
+  has claimed the row for compare-and-set; about to write
+  FAIL_TIMEOUT and transition to `submitted`.  Visible only
+  during the brief window between claim and finalize.
 
 Once a lease leaves `assigned`, no further transitions are allowed.
 The coordinator MAY allocate a NEW lease for the same

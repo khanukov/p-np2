@@ -133,6 +133,9 @@ lean_lib PnP3 where
     Glob.one `Spec.FrozenSpec,
     -- Research Governance v0.1, FP-1: FixedParams Probe audit surface.
     Glob.one `Magnification.AuditRoutes.FixedParamsProbe,
+    -- v0.4.2 Track A-CL0: CrossLength coherence audit target surface
+    -- (research objectives only; no theorems, no NoGoLog entry).
+    Glob.one `Magnification.AuditRoutes.CrossLengthCoherence_NoGo,
     Glob.one `ThirdPartyFacts.Facts_Switching,
     -- Partial-track bibliography/lemmas used by final magnification result.
     Glob.one `ThirdPartyFacts.PartialTransport,
@@ -152,7 +155,9 @@ lean_lib PnP3 where
     -- Research Governance v0.1, PR 11: target-lock compile-time probe.
     Glob.one `Tests.TargetLockProbe,
     -- Research Governance v0.1, FP-1: FixedParams Probe NoGo smoke skeleton.
-    Glob.one `Tests.FixedParams_Probe_NoGo
+    Glob.one `Tests.FixedParams_Probe_NoGo,
+    -- v0.4.2 Track A-CL0: regression smoke for the CL-0 target surface.
+    Glob.one `Tests.AuditRoutes_CL0_NoGo_Regression
   ]
 
 lean_lib Pnp4 where

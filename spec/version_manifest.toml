@@ -197,8 +197,8 @@ target  = "bench/SmokeProbe/expected_results.json"
 #          on one host, operator-disciplined); Wave 2 cap=500 is a
 #          policy ceiling, not a tested guarantee.
 [snapshot.autoresearch_mvp]
-version = "0.5.5"
-notes   = "Phase E + audit-identified consistency hardening shipped.  Pilot Wave 0 (5-10 manual workers on one host with serialised lake build) is GO-conditional.  10-20 workers and beyond remain blocked by Phase C (worker scratch isolation + distributed build cache) which is deferred until deployment context is available."
+version = "0.5.6"
+notes   = "v0.4.2 increment shipped: coordinator commit pinning (Track B), CL-0 audit target surface (Track A-CL0; A-FP2 was already in place pre-v0.4.2 as NoGo_FixedParamsRoute_with_OverbroadUniformProvenance + NOGO-000001), cost-budget reaper with lease_id compare-and-set (Track C2), critic auto-dispatcher with principal-identity guard (Track C3), promotion_evaluator with LOUD FORCE override + wave_promotion_audit.jsonl (Track C4).  Pilot Wave 0 stays GO; Pilot Wave 1 technical readiness GO, Pilot Wave 1 activation GATED on real ledger evidence (>=30 clean cycles, >=1 critic_pass, >=1 critic_fail).  500 workers and cross-host remain DEFERRED."
 
 # Critic protocol.  Tracked here because spec/critic_protocol.md
 # does not carry a [meta] block; the version advances when the
@@ -228,20 +228,23 @@ target  = "spec/frozen_spec_plan.md"
 # which scripts are parallel-safe, which require per-worker
 # scratch, and which need Coordinator mediation in later phases.
 [snapshot.concurrency_model]
-version = "0.1.0"
+version = "0.1.1"
 target  = "spec/concurrency_model.md"
+notes   = "v0.4.2 Track C5: §6 expanded with Pilot Wave 1 readiness vs activation distinction and the principal-identity threat-model boundary."
 
 # Coordinator HTTP protocol (introduced by MVP-0.2 / Phase B).
 # Wire contract for the parallel-worker dispatch service.
 [snapshot.coordinator_protocol]
-version = "0.2.0"
+version = "0.4.2"
 target  = "spec/coordinator_protocol.md"
+notes   = "v0.4.2 added /v1/release endpoint and the released state, git_commit/git_ref pinning fields on TaskAssignment + AttemptLedgerEntry, lease_id on TaskAssignment + AttemptLedgerEntry, supersedes on TaskAssignment, FAIL_TIMEOUT verifier_status + timeout failure_class for cost-budget reaper auto-fails, generator_principal_id on AttemptLedgerEntry, plus the protocol-level integrity-not-authentication caveat for principal-id."
 
 # Worker-role taxonomy (introduced by MVP-0.4 / Phase D).
 # Defines gen / crit / rev roles + Rule-12 enforcement matrix.
 [snapshot.worker_roles]
-version = "0.4.0"
+version = "0.4.2"
 target  = "spec/worker_roles.md"
+notes   = "v0.4.2 added §3.4 — principal identity is a protocol-level integrity guard, not authentication.  Cap remains Wave-0=10 / Wave-1=20 enforced; Wave 1 activation gated on real ledger evidence."
 
 # Wave-gate thresholds (introduced by MVP-0.5 / Phase E).
 # Wave 0..4 worker caps + promotion requirements consumed by
@@ -250,9 +253,23 @@ target  = "spec/worker_roles.md"
 version = "0.5.0"
 target  = "spec/wave_gate_thresholds.toml"
 
+# Cost-budget thresholds (introduced by v0.4.2 Track C2).
+# Per-role default_minutes + hard_cap_minutes consumed by
+# coordinator/cost_budget.py for auto-FAIL_TIMEOUT.
+[snapshot.cost_budget_thresholds]
+version = "0.1.0"
+target  = "spec/cost_budget_thresholds.toml"
+
+# Wave promotion audit schema (introduced by v0.4.2 Track C4).
+# Append-only file written every time AUTORESEARCH_PROMOTION_FORCE
+# is consumed; `scripts/check.sh` Step 12.k asserts emptiness in CI.
+[snapshot.wave_promotion_audit_schema]
+version = "0.1.0"
+target  = "spec/wave_promotion_audit_schema.json"
+
 # Schema for the JSONL ledgers.
 [snapshot.nogolog_schema]
-version = "0.1.1"
+version = "0.1.2"
 notes   = "AttemptLedgerEntry added in MVP-0.1 baseline; cross-field rules tightened in MVP-0.1.1."
 target  = "spec/nogolog_schema.json"
 

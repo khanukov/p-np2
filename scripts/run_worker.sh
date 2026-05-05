@@ -105,9 +105,36 @@ SEED_PACK_ID="$(python3 -c '
 import json, sys
 print(json.load(sys.stdin)["seed_pack_id"])
 ' < "${SCRATCH}/task.json")"
+ASSIGNMENT_GIT_COMMIT="$(python3 -c '
+import json, sys
+print(json.load(sys.stdin).get("git_commit", ""))
+' < "${SCRATCH}/task.json")"
 
 echo "[run_worker] assignment=${ASSIGNMENT_ID}"\
      "candidate=${CANDIDATE_ID} seed_pack=${SEED_PACK_ID}"
+
+# ---------------------------------------------------------------------------
+# v0.4.2 Track B — worker-side commit pre-check.
+#
+# The coordinator stamps `git_commit` on every TaskAssignment.  If our
+# local HEAD differs, the work is doomed (the server will 403 anyway
+# at /v1/result), so refuse early and release the lease so another
+# worker on the right commit can pick it up immediately.
+# ---------------------------------------------------------------------------
+
+LOCAL_HEAD="$(git -C "${ROOT_DIR}" rev-parse HEAD 2>/dev/null || true)"
+if [[ -n "${ASSIGNMENT_GIT_COMMIT}" && -n "${LOCAL_HEAD}" ]]; then
+  PFX_LEN=7
+  if [[ "${ASSIGNMENT_GIT_COMMIT:0:${PFX_LEN}}" != "${LOCAL_HEAD:0:${PFX_LEN}}" ]]; then
+    echo "[run_worker] FAIL: commit_mismatch_local — coordinator pinned" \
+         "${ASSIGNMENT_GIT_COMMIT}, local HEAD is ${LOCAL_HEAD}" >&2
+    curl -fsS -X POST \
+         -H "Content-Type: application/json" \
+         -d "{\"assignment_id\":\"${ASSIGNMENT_ID}\",\"worker_id\":\"${WORKER_ID}\",\"reason\":\"commit_mismatch_local\"}" \
+         "${COORDINATOR}/v1/release" >/dev/null 2>&1 || true
+    exit 1
+  fi
+fi
 
 # ---------------------------------------------------------------------------
 # Step 2: stage the candidate (SYNTHETIC for MVP-0.2)
@@ -173,10 +200,12 @@ case "${VERIFIER_STATUS}" in
 esac
 
 ATTEMPT_BODY="$(python3 - "${CANDIDATE_ID}" "${AS_VERIFIER_STATUS}" \
-                "${NOW}" <<'PY'
+                "${NOW}" "${LOCAL_HEAD}" <<'PY'
 import json, sys
-candidate_id, status, now = sys.argv[1], sys.argv[2], sys.argv[3]
-print(json.dumps({
+candidate_id, status, now, head = (
+    sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4],
+)
+entry = {
     "candidate_id": candidate_id,
     "method_family": "ac0_locality_support",
     "verifier_status": status,
@@ -184,7 +213,10 @@ print(json.dumps({
     "applicable_spec_version": "0.1.0",
     "attack_suite_version": "0.1.0",
     "created_at": now,
-}))
+}
+if head:
+    entry["git_commit"] = head
+print(json.dumps(entry))
 PY
 )"
 

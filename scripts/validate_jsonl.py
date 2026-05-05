@@ -54,6 +54,10 @@ NOGO_FAILURE_CLASS = {
     "collapse_not_contradiction", "size_policy_violation",
     "implicit_assumption_channel", "joint_candidate_non_independent",
     "prior_work_collision", "reproducibility_failure", "other",
+    # v0.4.2 Track C2: timeout class for cost-budget reaper auto-fails
+    # (distinct from `reproducibility_failure`, which is for genuine
+    # non-reproducibility).
+    "timeout",
 }
 
 SURVIVOR_VERIFIER_STATUS = {"PASS", "FAIL"}
@@ -63,8 +67,18 @@ SURVIVOR_FINAL_STATUS = {
 }
 
 # AttemptLedgerEntry — Autoresearch MVP control plane.
-ATTEMPT_VERIFIER_STATUS = {"PASS", "FAIL", "PASS_SHAPE_ONLY"}
+# v0.4.2 Track C2: FAIL_TIMEOUT marks attempts auto-failed by the
+# coordinator's cost-budget reaper.  Cross-field rule below requires
+# verifier_failure_class="timeout" whenever verifier_status="FAIL_TIMEOUT".
+ATTEMPT_VERIFIER_STATUS = {"PASS", "FAIL", "FAIL_TIMEOUT", "PASS_SHAPE_ONLY"}
 ATTEMPT_CRITIC_STATUS = {"not_run", "pass", "fail"}
+
+# v0.4.2 Track B: git_commit / git_ref are optional.
+GIT_COMMIT_RE = re.compile(r"^[0-9a-f]{7,40}$")
+# v0.4.2 Track C2: lease_id is a UUID4 string.
+LEASE_ID_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+)
 
 NOGO_ID_RE = re.compile(r"^NOGO-[0-9]{6}$")
 ATTEMPT_ID_RE = re.compile(r"^ATT-[0-9]{6}$")
@@ -98,6 +112,13 @@ ATTEMPT_ALLOWED = set(ATTEMPT_REQUIRED) | {
     "seed_pack_id", "verifier_failure_class",
     "critic_break_class", "critic_report_path",
     "supersedes", "notes",
+    # v0.4.2 Track B: commit-pinning fields.
+    "git_commit", "git_ref",
+    # v0.4.2 Track C2: lease_id for cost-budget compare-and-set.
+    "lease_id",
+    # v0.4.2 Track C3: principal-id of the worker that produced the
+    # gen attempt being critiqued (only populated on gen-* merges).
+    "generator_principal_id",
 }
 
 
@@ -258,6 +279,20 @@ def validate_attempt(entry: dict) -> list[str]:
         errs += _check_string_nonempty(entry, "seed_pack_id")
     if "supersedes" in entry:
         errs += _check_pattern(entry, "supersedes", ATTEMPT_ID_RE)
+    # v0.4.2 Track B: git_commit / git_ref shape checks.
+    if "git_commit" in entry and entry["git_commit"] is not None:
+        errs += _check_pattern(entry, "git_commit", GIT_COMMIT_RE)
+    if "git_ref" in entry and entry["git_ref"] is not None:
+        errs += _check_string_nonempty(entry, "git_ref")
+    # v0.4.2 Track C2: lease_id pattern (UUID4 string) when present.
+    if "lease_id" in entry and entry["lease_id"] is not None:
+        errs += _check_pattern(entry, "lease_id", LEASE_ID_RE)
+    # v0.4.2 Track C3: generator_principal_id is the suffix after the
+    # role prefix of the gen worker_id.  It uses the same character
+    # class as worker_id but without the role prefix.
+    if "generator_principal_id" in entry \
+            and entry["generator_principal_id"] is not None:
+        errs += _check_string_nonempty(entry, "generator_principal_id")
     # Cross-field consistency — Verifier side.
     if entry.get("verifier_status") == "FAIL" \
             and entry.get("verifier_failure_class") in (None, ...):
@@ -266,6 +301,14 @@ def validate_attempt(entry: dict) -> list[str]:
             errs.append(
                 "verifier_failure_class must be populated when "
                 "verifier_status = FAIL")
+    # v0.4.2 Track C2: FAIL_TIMEOUT requires verifier_failure_class="timeout".
+    if entry.get("verifier_status") == "FAIL_TIMEOUT":
+        cls = entry.get("verifier_failure_class")
+        if cls != "timeout":
+            errs.append(
+                "verifier_status='FAIL_TIMEOUT' requires "
+                "verifier_failure_class='timeout'; got "
+                f"{cls!r}")
 
     # Cross-field consistency — Critic side (MVP-0.1.1).
     critic_status = entry.get("critic_status")

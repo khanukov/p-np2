@@ -103,13 +103,36 @@ def _stage_stub_repo(tmp: Path) -> Path:
     # root).
     for name in ("__init__.py", "schema.py", "store.py", "dedup.py",
                  "leases.py", "ledger.py", "role_gate.py", "wave_gate.py",
-                 "metrics.py", "server.py"):
+                 "metrics.py", "server.py",
+                 # v0.4.2 Track C2 / C3 / C4.
+                 "cost_budget.py", "critic_dispatcher.py",
+                 "promotion_evaluator.py"):
         shutil.copy2(ROOT / "coordinator" / name,
                      stub / "coordinator" / name)
     # Phase E: thresholds file required by wave_gate.py.
     src_th = ROOT / "spec" / "wave_gate_thresholds.toml"
     if src_th.exists():
         shutil.copy2(src_th, stub / "spec" / "wave_gate_thresholds.toml")
+    # v0.4.2 Track C2: cost_budget thresholds file.
+    src_cb = ROOT / "spec" / "cost_budget_thresholds.toml"
+    if src_cb.exists():
+        shutil.copy2(src_cb, stub / "spec" / "cost_budget_thresholds.toml")
+    # v0.4.2 Track B: initialise the stub as a git repo with a single
+    # empty commit so the coordinator's `git rev-parse HEAD` returns a
+    # real, deterministic-shaped 40-char hex.  The exact hash differs
+    # per run (timestamp goes into the commit object), but the tests
+    # that need it just read it from /v1/health.
+    subprocess.run(["git", "-C", str(stub), "init", "-q"], check=True)
+    subprocess.run(["git", "-C", str(stub), "config", "user.email",
+                    "test@example.invalid"], check=True)
+    subprocess.run(["git", "-C", str(stub), "config", "user.name",
+                    "coord-test"], check=True)
+    subprocess.run(["git", "-C", str(stub), "config", "commit.gpgsign",
+                    "false"], check=True)
+    subprocess.run(["git", "-C", str(stub), "commit", "--allow-empty",
+                    "-m", "stub", "-q"], check=True,
+                   env={**os.environ, "GIT_AUTHOR_DATE": "2026-05-05T12:00:00Z",
+                        "GIT_COMMITTER_DATE": "2026-05-05T12:00:00Z"})
     return stub
 
 
@@ -482,6 +505,71 @@ def run_test_dedup() -> None:
     print("[test_coordinator] OK   /v1/dedup unseen -> 200")
 
 
+def run_test_health_carries_commit() -> str:
+    """v0.4.2 Track B: /v1/health exposes coordinator_git_commit
+    (40-char hex) and coordinator_git_ref.  Returns the commit so
+    later tests can use it."""
+    code, body = _http_get("/v1/health")
+    assert code == 200, body
+    commit = body.get("coordinator_git_commit", "")
+    ref = body.get("coordinator_git_ref", "")
+    assert isinstance(commit, str), body
+    assert len(commit) == 40, f"expected 40-char commit, got {commit!r}"
+    assert all(c in "0123456789abcdef" for c in commit), commit
+    assert isinstance(ref, str) and ref, body
+    print("[test_coordinator] OK   /v1/health carries 40-hex coordinator_git_commit")
+    return commit
+
+
+def run_test_task_carries_commit(coord_commit: str) -> None:
+    """v0.4.2 Track B: /v1/task response includes git_commit + git_ref."""
+    code, body = _http_get(
+        "/v1/task?role=gen&worker_id=gen-pinning&seed_pack=smoke_test_pack")
+    assert code == 200, body
+    assert body.get("git_commit") == coord_commit, body
+    assert isinstance(body.get("git_ref"), str) and body["git_ref"], body
+    # Release immediately so we don't pollute subsequent tests.
+    _http_post("/v1/release", {
+        "assignment_id": body["assignment_id"],
+        "worker_id": "gen-pinning",
+    })
+    print("[test_coordinator] OK   /v1/task carries git_commit + git_ref")
+
+
+def run_test_result_commit_mismatch_rejected(coord_commit: str) -> None:
+    """v0.4.2 Track B: a /v1/result whose attempt.git_commit does
+    not match the coordinator's HEAD MUST be rejected with 403 and
+    the error message MUST mention 'commit_mismatch'."""
+    code, task = _http_get(
+        "/v1/task?role=gen&worker_id=gen-mismatch&seed_pack=smoke_test_pack")
+    assert code == 200, task
+    bogus = "0" * 40  # certainly not the stub's HEAD
+    assert bogus != coord_commit
+    body = {
+        "assignment_id": task["assignment_id"],
+        "worker_id": "gen-mismatch",
+        "attempt": {
+            "candidate_id": task["candidate_id"],
+            "method_family": "ac0_locality_support",
+            "verifier_status": "PASS_SHAPE_ONLY",
+            "critic_status": "not_run",
+            "applicable_spec_version": "0.1.0",
+            "attack_suite_version": "0.1.0",
+            "git_commit": bogus,
+        },
+    }
+    code2, resp = _http_post("/v1/result", body)
+    assert code2 == 403, f"expected 403, got {code2}: {resp}"
+    err_text = json.dumps(resp).lower()
+    assert "commit_mismatch" in err_text, resp
+    # Release the assignment so the wave-cap stays clean.
+    _http_post("/v1/release", {
+        "assignment_id": task["assignment_id"],
+        "worker_id": "gen-mismatch",
+    })
+    print("[test_coordinator] OK   /v1/result commit-mismatch -> 403 commit_mismatch")
+
+
 def run_test_ledger_persisted(stub: Path, expected_min: int) -> None:
     """Ledger file should contain at least expected_min lines."""
     ledger = stub / "outputs" / "attempts.jsonl"
@@ -511,6 +599,10 @@ def main() -> int:
             run_test_no_seed_pack_round_robin()
             run_test_prevalidation_rejects_bad_nogolog(stub)
             run_test_release_then_submit()
+            # v0.4.2 Track B commit-pinning trio.
+            coord_commit = run_test_health_carries_commit()
+            run_test_task_carries_commit(coord_commit)
+            run_test_result_commit_mismatch_rejected(coord_commit)
             run_test_dedup()
             run_test_dedup_register_then_lookup()
             # 20 tasks submitted + 1 double-submit (counts once) +

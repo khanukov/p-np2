@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://p-np2/spec/wave_promotion_audit_schema.json",
+  "title": "Wave promotion audit record (Research Governance v0.1, Autoresearch MVP-0.5.6, v0.4.2 Track C4)",
+  "description": "Append-only record written every time AUTORESEARCH_PROMOTION_FORCE is consumed at coordinator startup.  Each record documents WHO forced the promotion, WHEN, AT WHAT GIT COMMIT, and WHICH automatic requirements were unmet.  scripts/check.sh Step 12.k asserts this file is empty in CI runs (or contains only test-marked entries).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "forced_at",
+    "target_wave",
+    "coordinator_git_commit",
+    "unmet_reasons",
+    "operator_note"
+  ],
+  "properties": {
+    "forced_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 UTC timestamp at the moment AUTORESEARCH_PROMOTION_FORCE was consumed."
+    },
+    "target_wave": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Wave number the operator forced the coordinator to start at."
+    },
+    "coordinator_git_commit": {
+      "type": "string",
+      "description": "Lower-case hex of HEAD at the moment of override.  Empty string only if `git rev-parse HEAD` could not be resolved."
+    },
+    "unmet_reasons": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of requirement keys + diagnostics that the promotion_evaluator could not auto-satisfy.  Empty list is unusual: it means the evaluator said the wave WAS unlocked yet the operator still set FORCE; record kept regardless."
+    },
+    "operator_note": {
+      "type": "string",
+      "description": "Free-form reason supplied by the operator (via env var AUTORESEARCH_PROMOTION_FORCE_NOTE).  Empty string is allowed but discouraged."
+    }
+  }
+}

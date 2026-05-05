@@ -1,4 +1,4 @@
-# Concurrency model — Research Governance v0.1, Autoresearch MVP-0.1.8
+# Concurrency model — Research Governance v0.1, Autoresearch MVP-0.5.6
 
 This document specifies the **concurrency contract** of the
 autoresearch infrastructure: which scripts are safe to invoke from
@@ -153,7 +153,7 @@ design.
 
 ## 6. What an engineer doing async parallel work must know
 
-**Honest scaling readiness statement (MVP-0.5.1 .. 0.5.5).**
+**Honest scaling readiness statement (MVP-0.5.6, v0.4.2).**
 
 The coordinator + ledger layer has e2e tests up to its synthetic
 scope (N=20 parallel `/v1/task`, N=20 parallel `/v1/result`,
@@ -165,22 +165,52 @@ N real verifier workers can run concurrently on one host:
   scratch isolation, more than ~10 simultaneous
   `verify_candidate.sh` invocations on one host are unsafe.
 * `spec/wave_gate_thresholds.toml::waves.2.max_concurrent = 500`
-  is a **policy ceiling**, not a tested guarantee.  Promotion to
-  Wave 2 is manual (PR 5 / MVP-0.5.5 enforces explicit operator
-  opt-in via `AUTORESEARCH_INITIAL_WAVE=2` AND
-  `AUTORESEARCH_PROMOTION_FORCE=true`); the coordinator does NOT
-  independently verify the listed `promotion_requirements`.
+  remains a **policy ceiling**, not a tested guarantee.  v0.4.2
+  Track C4 added an automatic `coordinator/promotion_evaluator.py`
+  that consults the ledger against
+  `[waves.N.promotion_requirements]` and can refuse to start at
+  Wave N until the requirements are observed; the
+  `AUTORESEARCH_PROMOTION_FORCE` override is preserved as a LOUD
+  emergency exit (stderr WARN + audit log append +
+  `scripts/check.sh` Step 12.k assertion).
 * `outputs/attempts.jsonl.lock` (Phase A flock) prevents ledger
   corruption from N parallel writers; it does NOT throttle the
   workers' upstream (verifier / Lean kernel / build cache).
 
-In short: **MVP-0.5.5 is safe for Pilot Wave 0 (5–10 manual
-workers, one host) provided the operator follows the worker
-checklist in `seed_packs/PILOT_WAVE_0_PROTOCOL.md`.**  Scaling
-beyond Wave 0 requires either (a) human-coordinated operator
-discipline ("wait for `lake build` to finish before launching
-the next worker") or (b) Phase C scratch isolation +
-distributed build cache (deferred).
+**Pilot Wave 1 readiness vs activation (v0.4.2 Track C5).**
+
+* **Pilot Wave 1 technical readiness: GO** as of MVP-0.5.6.
+  Track B (commit pinning), Track C2 (cost-budget reaper with
+  `lease_id` compare-and-set), Track C3 (critic auto-dispatcher
+  with principal-identity guard), and Track C4 (automatic
+  `promotion_evaluator`) are all in place.
+* **Pilot Wave 1 activation: GATED** on real ledger evidence.
+  `spec/wave_gate_thresholds.toml::waves.1.promotion_requirements`
+  demands `min_clean_cycles=30`, `max_false_pass_rate=0.001`,
+  and `role_gate_enforced=true`.  The first two are
+  ledger-derived and consulted by the evaluator on every
+  coordinator start; the third is operator-attestable, so it
+  appears in the unmet list until an operator ack is recorded
+  (deferred mechanism).  Until activation flips,
+  `max_concurrent` stays at the Wave-0 cap of 10.
+
+**Threat-model boundary on principal identity (v0.4.2 Track C3).**
+
+Principal identity (the suffix after `gen-`/`crit-`/`rev-`) is a
+*protocol-level integrity guard* for honest, coordinated workers.
+It is NOT an authentication mechanism.  Until the deferred
+Phase C-3 JWT auth track ships, any worker can self-declare any
+`worker_id` and bypass Rule 12 by impersonation.
+
+In short: **MVP-0.5.6 / v0.4.2 is safe for Pilot Wave 0 (5–10
+manual workers, one host) and is *technically ready* for Pilot
+Wave 1 (10–20 workers, one host with operator-disciplined `lake
+build` serialisation).  Pilot Wave 1 *activation* requires real
+ledger evidence per the promotion_evaluator.**  Scaling beyond
+Wave 1 requires either (a) human-coordinated operator
+discipline AND ledger evidence accumulating to the Wave-2
+threshold, or (b) Phase C scratch isolation + distributed build
+cache (deferred until deployment context is available).
 
 ---
 

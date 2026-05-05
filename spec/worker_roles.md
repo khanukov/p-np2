@@ -84,12 +84,48 @@ role-gate compares them verbatim.  Therefore:
 * `gen-alice` cannot generate AND submit a critic verdict against
   her own ATT — caught directly by C3.
 * `crit-alice` (a separately-named worker that happens to share
-  the suffix) CAN critique `gen-alice`'s ATT — the strings differ.
+  the suffix) used to be allowed to critique `gen-alice`'s ATT
+  because the literal strings differ.  v0.4.2 Track C3 closes this
+  prefix-only bypass by also comparing the **principal id** (the
+  suffix after the role prefix); see §3.4.
 
 Operators MUST NOT reuse a worker_id base name across roles.  The
 recommended convention is to namespace worker_ids by deployment
 identity (e.g. `gen-llm-claude-opus-001`, `crit-llm-claude-opus-002`),
 NOT by human author.
+
+### 3.4 Principal identity (v0.4.2 Track C3) — protocol-level integrity, NOT authentication
+
+> **Important.**  Principal identity (extracted from `worker_id`
+> suffix) is a *protocol-level integrity guard* for honest,
+> coordinated workers.  It is NOT an authentication mechanism.
+> Until the deferred Phase C-3 JWT auth track ships, any worker
+> can self-declare any `worker_id` and bypass Rule 12 by
+> impersonation.  The coordinator does not — and cannot —
+> distinguish two distinct principals named `alice` from one
+> principal pretending to be both.
+
+Mechanism:
+
+* `principal_id_from_worker_id("gen-alice") == "alice"`.
+* On every gen-* `/v1/result` merge the coordinator stamps
+  `attempt.generator_principal_id` from the gen worker's principal.
+* On every crit-* submission, `role_gate._enforce_crit` rejects
+  with 403 if `principal_id_from_worker_id(crit_worker_id)`
+  matches the gen worker's principal — i.e. `gen-alice`'s ATT
+  cannot be critiqued by `crit-alice`, even though the worker_id
+  strings differ.
+* The critic auto-dispatcher (Phase E,
+  `coordinator/critic_dispatcher.py`) refuses to OFFER a gen
+  attempt to a crit worker with a matching principal at task
+  issuance time, so honest workers don't waste a lease on a
+  doomed submission.
+
+Threat-model boundary: a malicious worker that runs both
+`gen-alice` and `crit-alice` can be observed by an external
+auditor scanning `outputs/attempts.jsonl`, but the coordinator
+itself cannot detect it.  Strong-cryptographic authentication is
+deferred to JWT auth.
 
 ### 3.2 Generator rate vs Critic rate
 
@@ -129,13 +165,19 @@ Beyond what role-gate enforces, every worker MUST NOT:
 
 ## 5. Test coverage
 
-`coordinator/test_role_gate.py` exercises the four canonical
-Rule-12 cases:
+`coordinator/test_role_gate.py` exercises seven canonical
+Rule-12 cases (four MVP-0.4 + three v0.4.2 Track C3):
 
 1. gen submission carrying `critic_status="pass"` → 403.
 2. crit submission carrying `critic_status="not_run"` → 403.
 3. gen + crit by the SAME `worker_id` → 403 (Rule 12 reject).
 4. gen by `gen-alice` + crit by `crit-bob` → 200 (allowed).
+5. `/v1/task` crit dispatcher with empty ledger → 503
+   `no_pending_critic`.
+6. `/v1/task` crit dispatcher with pending verified gen → 200
+   carrying `supersedes=ATT-NNNNNN`.
+7. gen by `gen-grace` + crit by `crit-grace` → 403 (principal
+   identity guard; v0.4.2 Track C3).
 
 The test is wired into `scripts/check.sh` as Step 12.f and runs
 on every CI push.

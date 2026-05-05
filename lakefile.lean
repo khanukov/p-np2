@@ -147,6 +147,9 @@ lean_lib PnP3 where
     Glob.one `Magnification.AuditRoutes.LogWidthAdversary.Family_PowOfTwoSlice,
     Glob.one `Magnification.AuditRoutes.LogWidthAdversary.Diversity_BelowN,
     Glob.one `Magnification.AuditRoutes.LogWidthAdversary.Diversity_Unbounded,
+    -- v0.4.3-followup S11 integration: composition of the parallel
+    -- engineer outputs into logWidthAdversary_satisfies_diversity.
+    Glob.one `Magnification.AuditRoutes.LogWidthAdversary.Composition,
     Glob.one `ThirdPartyFacts.Facts_Switching,
     -- Partial-track bibliography/lemmas used by final magnification result.
     Glob.one `ThirdPartyFacts.PartialTransport,
@@ -168,7 +171,10 @@ lean_lib PnP3 where
     -- Research Governance v0.1, FP-1: FixedParams Probe NoGo smoke skeleton.
     Glob.one `Tests.FixedParams_Probe_NoGo,
     -- v0.4.2 Track A-CL0: regression smoke for the CL-0 target surface.
-    Glob.one `Tests.AuditRoutes_CL0_NoGo_Regression
+    Glob.one `Tests.AuditRoutes_CL0_NoGo_Regression,
+    -- v0.4.3-followup S11: regression smoke for the log-width adversary
+    -- composition + the parallel-engineer outputs it consumes.
+    Glob.one `Tests.AuditRoutes_LogWidthAdversary_Smoke
   ]
 
 lean_lib Pnp4 where

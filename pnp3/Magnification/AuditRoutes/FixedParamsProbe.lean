@@ -393,38 +393,57 @@ def adversaryWitness : InPpolyFormula adversaryLanguage where
     exact Nat.le.refl
   correct := fun _ _ => rfl
 
-/-- **FP-3b.2 GOAL (not proved here).**
+/-- **FP-3b.2 GOAL — DISCHARGED** (v0.4.3-followup, S11 integration).
 
-The diversity-witness theorem that FP-3b.2 must close:
+The diversity-witness theorem FP-3b.2 demanded is now closed.  It
+lives at
 
-```lean
-theorem adversary_satisfies_diversity :
-    FP3Attempt.InSupportFunctionalDiversity adversaryWitness
+```
+Pnp3.Magnification.AuditRoutes.LogWidthAdversary
+  .logWidthAdversary_satisfies_diversity
 ```
 
-The FP-3b.1 skeleton's `adversaryFamily := fun _ => const false`
-does NOT satisfy this — `const false` has empty support at every
-length and the unboundedness conjunct
-`∀ B, ∃ n, B < (support (family n)).card` fails for any `B ≥ 0`
-because the support cardinality is identically `0`.
+(see `pnp3/Magnification/AuditRoutes/LogWidthAdversary/Composition.lean`)
+and has the type
 
-To close the goal, FP-3b.2 must:
+```lean
+theorem logWidthAdversary_satisfies_diversity :
+    FP3Attempt.InSupportFunctionalDiversity adversaryWitness_v_natlog2
+```
 
-1. replace `adversaryFamily`'s body with a log-width TT
-   construction (or the simpler power-of-two-slice variant);
-2. update `polyBound` (e.g. to `6 * (n + 1)`) and re-prove
-   `polyBound_poly` and `family_size_le`;
-3. derive `(family n).support.card` is unbounded as `n → ∞`;
-4. derive `(family n).support.card < n` infinitely often;
-5. compose the two diversity conjuncts into the final theorem.
+against the witness `adversaryWitness_v_natlog2` defined in the
+sub-namespace `FP3b1.LogWidthAdversary` (see
+`Magnification/AuditRoutes/LogWidthAdversary/Family_NatLog2.lean`).
 
-The supporting lemmas (`Nat.log` helpers, `(ttFormula f).size ≤
-6 * 2^k`, `FormulaCircuit.rename` size + support transport) are
-enumerated in `seed_packs/fp3b1_log_width_hardwiring/README.md`
-§6.  None of them exist as stand-alone Lean lemmas yet; FP-3b.2
-will add them either as fresh top-level lemmas in this audit
-module or as a small new audit module under
-`pnp3/Magnification/AuditRoutes/`. -/
+The placeholder record below (`adversaryFamily := fun _ => const
+false`, `polyBound := fun _ => 1`) is intentionally retained as the
+historical FP-3b.1 scaffolding artefact — the integration phase
+parked the real adversary alongside it under
+`FP3b1.LogWidthAdversary` rather than rewriting this record's body.
+That keeps the docstring trail and Outcome-A unit tests against
+the constant family stable while the canonical theorem operates
+on the real witness.
+
+What the canonical theorem discharges:
+
+1. `(adversaryFamily_v_natlog2 n).support.card` is exactly
+   `Nat.log2 (n + 1)` (lemma
+   `LogWidthAdversary.adversaryFamily_v_natlog2_support_card`);
+2. that cardinality is unbounded as `n → ∞`
+   (`LogWidthAdversary.adversaryWitness_v_natlog2_support_unbounded`);
+3. that cardinality is strictly below the ambient input length
+   infinitely often
+   (`LogWidthAdversary.adversaryWitness_v_natlog2_support_below_n_io`);
+4. the two diversity conjuncts compose into the headline theorem
+   (`LogWidthAdversary.logWidthAdversary_satisfies_diversity`).
+
+Consequence: the candidate filter `InSupportFunctionalDiversity` as
+stated does NOT exclude log-width truth-table-shaped families.
+Any future `ProvenanceFilter_v2` MUST exclude such shapes by an
+argument that does not reduce to support-cardinality counting.
+The corresponding NoGoLog upgrade is `NOGO-000004`, superseding
+`NOGO-000003`.  No bridge / SourceTheorem / final endpoint is
+added by this work. -/
 example : True := trivial   -- placeholder so the docstring above
                             -- attaches to a real declaration
 

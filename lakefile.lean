@@ -142,8 +142,11 @@ lean_lib PnP3 where
     Glob.one `Magnification.AuditRoutes.LogWidthAdversary.Width_PowOfTwoSlice,
     Glob.one `Magnification.AuditRoutes.LogWidthAdversary.RenameSize,
     Glob.one `Magnification.AuditRoutes.LogWidthAdversary.RenameSupport,
+    Glob.one `Magnification.AuditRoutes.LogWidthAdversary.TTFormulaSizeBound,
     Glob.one `Magnification.AuditRoutes.LogWidthAdversary.Family_NatLog2,
+    Glob.one `Magnification.AuditRoutes.LogWidthAdversary.Family_PowOfTwoSlice,
     Glob.one `Magnification.AuditRoutes.LogWidthAdversary.Diversity_BelowN,
+    Glob.one `Magnification.AuditRoutes.LogWidthAdversary.Diversity_Unbounded,
     Glob.one `ThirdPartyFacts.Facts_Switching,
     -- Partial-track bibliography/lemmas used by final magnification result.
     Glob.one `ThirdPartyFacts.PartialTransport,

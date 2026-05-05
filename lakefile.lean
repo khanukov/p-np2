@@ -136,6 +136,14 @@ lean_lib PnP3 where
     -- v0.4.2 Track A-CL0: CrossLength coherence audit target surface
     -- (research objectives only; no theorems, no NoGoLog entry).
     Glob.one `Magnification.AuditRoutes.CrossLengthCoherence_NoGo,
+    -- v0.4.3-followup: 10-engineer parallel attack on FP-3b.2.
+    -- Triage wiring; final selection happens at S11 integration.
+    Glob.one `Magnification.AuditRoutes.LogWidthAdversary.Width_NatLog2,
+    Glob.one `Magnification.AuditRoutes.LogWidthAdversary.Width_PowOfTwoSlice,
+    Glob.one `Magnification.AuditRoutes.LogWidthAdversary.RenameSize,
+    Glob.one `Magnification.AuditRoutes.LogWidthAdversary.RenameSupport,
+    Glob.one `Magnification.AuditRoutes.LogWidthAdversary.Family_NatLog2,
+    Glob.one `Magnification.AuditRoutes.LogWidthAdversary.Diversity_BelowN,
     Glob.one `ThirdPartyFacts.Facts_Switching,
     -- Partial-track bibliography/lemmas used by final magnification result.
     Glob.one `ThirdPartyFacts.PartialTransport,

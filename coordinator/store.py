@@ -313,14 +313,28 @@ class CoordinatorStore:
             return cur.rowcount == 1
 
     def expire_due(self) -> int:
-        """Mark all assigned-but-deadline-passed assignments as expired.
-        Returns the number of rows affected."""
+        """Mark legacy assigned-but-deadline-passed assignments as expired.
+
+        v0.4.3 Track Blocker-3: this method now SKIPS rows that
+        carry a non-empty `lease_id` (i.e. v0.4.2+ assignments).
+        Those rows are owned by `coordinator/cost_budget.py` —
+        which atomically transitions them to `timed_out` and
+        synthesises a FAIL_TIMEOUT ledger entry.  Letting
+        `expire_due` race against the reaper would silently
+        abandon them as `expired` and lose the FAIL_TIMEOUT
+        signal.
+
+        Legacy rows (lease_id == '') retain the original semantics:
+        deadline-passed → expired, no ledger entry.
+        Returns the number of rows affected (legacy only).
+        """
         now_s = datetime.now(tz=timezone.utc).strftime(
             "%Y-%m-%dT%H:%M:%SZ")
         with self._lock:
             cur = self._conn.execute(
                 "UPDATE assignments SET status = 'expired' "
-                " WHERE status = 'assigned' AND deadline < ?",
+                " WHERE status = 'assigned' AND deadline < ? "
+                " AND lease_id = ''",
                 (now_s,),
             )
             return cur.rowcount

@@ -22,9 +22,29 @@ API:
 from __future__ import annotations
 
 import os
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+
+def _resolve_git_head_for_audit() -> str:
+    """v0.4.3 Minor-1: best-effort `git rev-parse HEAD` resolution
+    for the wave_promotion_audit record.  Returns the empty
+    string on any failure (the audit schema accepts that)."""
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(ROOT), "rev-parse", "HEAD"],
+            capture_output=True, text=True, timeout=5, check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    if proc.returncode != 0:
+        return ""
+    out = proc.stdout.strip()
+    if len(out) != 40 or any(c not in "0123456789abcdef" for c in out):
+        return ""
+    return out
 
 try:
     import tomllib  # type: ignore[import]
@@ -123,17 +143,15 @@ class WaveGate:
         emit_force_warning(requested, unmet)
         operator_note = os.environ.get(
             "AUTORESEARCH_PROMOTION_FORCE_NOTE", "")
-        # The git_commit is cached on the handler at server start
-        # (v0.4.2 Track B); we don't have direct access here, so
-        # the audit record carries an empty string when the
-        # wave_gate is constructed before the handler.  In
-        # practice serve() instantiates wave_gate before stamping
-        # the handler, so this is a known minor fidelity gap; the
-        # wave_promotion_audit_schema documents that empty is
-        # acceptable.
+        # v0.4.3 Minor-1: read HEAD directly so the audit record
+        # carries the coordinator commit even when WaveGate is
+        # constructed before the handler caches it.  Best-effort:
+        # an empty string is still acceptable per
+        # spec/wave_promotion_audit_schema.json.
+        coord_commit = _resolve_git_head_for_audit()
         append_forced_promotion_audit_record(
             target_wave=requested,
-            coordinator_git_commit="",
+            coordinator_git_commit=coord_commit,
             unmet_reasons=unmet,
             operator_note=operator_note,
         )

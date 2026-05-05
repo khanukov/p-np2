@@ -148,8 +148,8 @@ def _http_post(path: str, body: dict) -> tuple[int, dict]:
         return e.code, json.loads(e.read().decode("utf-8"))
 
 
-def _attempt_body(candidate_id: str) -> dict:
-    return {
+def _attempt_body(candidate_id: str, *, task: dict | None = None) -> dict:
+    out = {
         "candidate_id": candidate_id,
         "method_family": "ac0_locality_support",
         "verifier_status": "PASS_SHAPE_ONLY",
@@ -157,6 +157,15 @@ def _attempt_body(candidate_id: str) -> dict:
         "applicable_spec_version": "0.1.0",
         "attack_suite_version": "0.1.0",
     }
+    # v0.4.3 Blocker-1/2: stamp git_commit + lease_id from the
+    # TaskAssignment so live submissions reach the wave-cap test
+    # without being blocked at the commit/lease checks.
+    if task is not None:
+        if task.get("git_commit"):
+            out["git_commit"] = task["git_commit"]
+        if task.get("lease_id"):
+            out["lease_id"] = task["lease_id"]
+    return out
 
 
 def run_test_cap_enforced() -> list[dict]:
@@ -183,7 +192,7 @@ def run_test_cap_released_on_submit(tasks: list[dict]) -> None:
     code, _ = _http_post("/v1/result", {
         "assignment_id": t["assignment_id"],
         "worker_id": t["worker_id"],
-        "attempt": _attempt_body(t["candidate_id"]),
+        "attempt": _attempt_body(t["candidate_id"], task=t),
     })
     assert code == 200
     code, body = _http_get(

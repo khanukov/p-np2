@@ -197,8 +197,8 @@ target  = "bench/SmokeProbe/expected_results.json"
 #          on one host, operator-disciplined); Wave 2 cap=500 is a
 #          policy ceiling, not a tested guarantee.
 [snapshot.autoresearch_mvp]
-version = "0.5.6"
-notes   = "v0.4.2 increment shipped: coordinator commit pinning (Track B), CL-0 audit target surface (Track A-CL0; A-FP2 was already in place pre-v0.4.2 as NoGo_FixedParamsRoute_with_OverbroadUniformProvenance + NOGO-000001), cost-budget reaper with lease_id compare-and-set (Track C2), critic auto-dispatcher with principal-identity guard (Track C3), promotion_evaluator with LOUD FORCE override + wave_promotion_audit.jsonl (Track C4).  Pilot Wave 0 stays GO; Pilot Wave 1 technical readiness GO, Pilot Wave 1 activation GATED on real ledger evidence (>=30 clean cycles, >=1 critic_pass, >=1 critic_fail).  500 workers and cross-host remain DEFERRED."
+version = "0.5.7"
+notes   = "v0.4.3 hardening shipped on top of v0.4.2.  Three audit-flagged runtime-enforcement gaps closed: (Blocker 1) /v1/result rejects 403 commit_missing when coordinator_git_commit is resolved but attempt.git_commit is absent; backcompat applies only to on-disk ledger entries, not live HTTP submissions.  (Blocker 2) run_worker.sh now parses TaskAssignment.lease_id and stamps it on attempt.lease_id; /v1/result rejects 409 lease_missing when the assignment carries a stored lease_id but the submission omits it, and 409 stale_lease when the values disagree.  (Blocker 3) store.expire_due now skips lease_id-backed assignments so it cannot race the cost-budget reaper to silent expiry; /v1/health, /v1/task, /v1/metrics call the reaper inline before counts_by_status so wave-cap freshness is preserved.  (Minor 1) wave_promotion_audit records now carry coordinator_git_commit via best-effort git rev-parse.  Pilot Wave 1 technical readiness GO confirmed; activation still GATED on real ledger evidence."
 
 # Critic protocol.  Tracked here because spec/critic_protocol.md
 # does not carry a [meta] block; the version advances when the

@@ -244,10 +244,20 @@ Errors:
 | Code | When                                                        |
 | ---- | ----------------------------------------------------------- |
 | 400  | Body parse error / missing fields / attempt fails validation|
-| 403  | Wrong `worker_id`, role-gate violation (Rule 12 prefix or principal), or v0.4.2 `commit_mismatch` |
+| 403  | Wrong `worker_id`, role-gate violation (Rule 12 prefix or principal), v0.4.2 `commit_mismatch`, or v0.4.3 `commit_missing` (coordinator HEAD resolved but attempt.git_commit absent) |
 | 404  | Unknown `assignment_id`                                     |
-| 409  | Assignment is not in status `assigned` (already submitted, expired, released, or v0.4.2 `timed_out`); also `stale_lease` if attempt.lease_id has been invalidated |
+| 409  | Assignment is not in status `assigned` (already submitted, expired, released, or v0.4.2 `timed_out`); v0.4.2 `stale_lease` (attempt.lease_id differs from stored); v0.4.3 `lease_missing` (assignment carries lease_id but submission omits it) |
 | 500  | Attempt merged but auxiliary log (NoGo/survivor) rejected   |
+
+> **v0.4.3 enforcement note.**  The `commit_missing` and
+> `lease_missing` rejections close two runtime-enforcement gaps
+> the v0.4.2 audit identified.  The on-disk JSONL backfill window
+> (entries that predate the v0.4.2 cutoff date in
+> `spec/version_manifest.toml`) applies ONLY to
+> `scripts/validate_jsonl.py`'s file-level validation; live HTTP
+> submissions cannot rely on the backfill window and MUST stamp
+> `git_commit` and `lease_id` from the TaskAssignment on every
+> `/v1/result`.
 
 ### 2.6 `POST /v1/release`
 

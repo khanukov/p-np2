@@ -267,6 +267,12 @@ def run_test_n_parallel_results(tasks: list[dict]) -> None:
                 "critic_status": "not_run",
                 "applicable_spec_version": "0.1.0",
                 "attack_suite_version": "0.1.0",
+                # v0.4.2 Track B / v0.4.3 Blocker-1: stamp the
+                # commit + lease_id the coordinator pinned this
+                # task at; live HTTP submissions cannot omit them
+                # when the coordinator has resolved its own HEAD.
+                "git_commit": t.get("git_commit", ""),
+                "lease_id": t.get("lease_id", ""),
             },
         }
         code, resp = _http_post("/v1/result", body)
@@ -327,6 +333,8 @@ def run_test_double_submit_is_idempotent(stub: Path) -> None:
             "critic_status": "not_run",
             "applicable_spec_version": "0.1.0",
             "attack_suite_version": "0.1.0",
+            "git_commit": task.get("git_commit", ""),
+            "lease_id": task.get("lease_id", ""),
         },
     }
     code1, resp1 = _http_post("/v1/result", body)
@@ -391,6 +399,11 @@ def run_test_prevalidation_rejects_bad_nogolog(stub: Path) -> None:
             "critic_status": "not_run",
             "applicable_spec_version": "0.1.0",
             "attack_suite_version": "0.1.0",
+            # Stamp commit + lease so the request reaches
+            # prevalidation (the test under check); without these
+            # the request is 403'd at the commit check first.
+            "git_commit": task.get("git_commit", ""),
+            "lease_id": task.get("lease_id", ""),
         },
         "nogolog_entry": {
             # Deliberately malformed: missing required fields.
@@ -536,6 +549,211 @@ def run_test_task_carries_commit(coord_commit: str) -> None:
     print("[test_coordinator] OK   /v1/task carries git_commit + git_ref")
 
 
+def run_test_result_missing_git_commit_rejected(coord_commit: str) -> None:
+    """v0.4.3 Blocker-1: when coordinator HEAD is resolved
+    (`coord_commit != ""`), a /v1/result without
+    attempt.git_commit MUST be 403'd with reason `commit_missing`.
+
+    Backcompat applies only to entries already on disk, not to
+    live HTTP submissions.
+    """
+    code, task = _http_get(
+        "/v1/task?role=gen&worker_id=gen-missing-commit"
+        "&seed_pack=smoke_test_pack")
+    assert code == 200, task
+    assert coord_commit, "test setup expects resolved coordinator HEAD"
+    body = {
+        "assignment_id": task["assignment_id"],
+        "worker_id": "gen-missing-commit",
+        "attempt": {
+            "candidate_id": task["candidate_id"],
+            "method_family": "ac0_locality_support",
+            "verifier_status": "PASS_SHAPE_ONLY",
+            "critic_status": "not_run",
+            "applicable_spec_version": "0.1.0",
+            "attack_suite_version": "0.1.0",
+            # Deliberately NO git_commit — must be rejected.
+            # Stamp lease_id so the lease check (runs BEFORE the
+            # commit check) doesn't preempt the assertion.
+            "lease_id": task.get("lease_id", ""),
+        },
+    }
+    code2, resp = _http_post("/v1/result", body)
+    assert code2 == 403, f"expected 403, got {code2}: {resp}"
+    err_text = json.dumps(resp).lower()
+    assert "commit_missing" in err_text, resp
+    # Release the lease so subsequent tests don't see this in-flight.
+    _http_post("/v1/release", {
+        "assignment_id": task["assignment_id"],
+        "worker_id": "gen-missing-commit",
+    })
+    print("[test_coordinator] OK   /v1/result missing git_commit -> "
+          "403 commit_missing (Blocker-1)")
+
+
+def run_test_result_missing_lease_id_rejected() -> None:
+    """v0.4.3 Blocker-2: when the assignment has a stored lease_id,
+    a /v1/result without attempt.lease_id MUST be 409'd with
+    reason `lease_missing`."""
+    code, task = _http_get(
+        "/v1/task?role=gen&worker_id=gen-missing-lease"
+        "&seed_pack=smoke_test_pack")
+    assert code == 200, task
+    assert task.get("lease_id"), "test setup expects lease_id on TaskAssignment"
+    body = {
+        "assignment_id": task["assignment_id"],
+        "worker_id": "gen-missing-lease",
+        "attempt": {
+            "candidate_id": task["candidate_id"],
+            "method_family": "ac0_locality_support",
+            "verifier_status": "PASS_SHAPE_ONLY",
+            "critic_status": "not_run",
+            "applicable_spec_version": "0.1.0",
+            "attack_suite_version": "0.1.0",
+            "git_commit": task.get("git_commit", ""),
+            # Deliberately NO lease_id.
+        },
+    }
+    code2, resp = _http_post("/v1/result", body)
+    assert code2 == 409, f"expected 409, got {code2}: {resp}"
+    err_text = json.dumps(resp).lower()
+    assert "lease_missing" in err_text, resp
+    _http_post("/v1/release", {
+        "assignment_id": task["assignment_id"],
+        "worker_id": "gen-missing-lease",
+    })
+    print("[test_coordinator] OK   /v1/result missing lease_id -> "
+          "409 lease_missing (Blocker-2)")
+
+
+def run_test_result_stale_lease_id_rejected() -> None:
+    """v0.4.3 Blocker-2: when the assignment carries a different
+    lease_id than the worker stamps, /v1/result MUST 409
+    `stale_lease`."""
+    code, task = _http_get(
+        "/v1/task?role=gen&worker_id=gen-stale-lease"
+        "&seed_pack=smoke_test_pack")
+    assert code == 200, task
+    body = {
+        "assignment_id": task["assignment_id"],
+        "worker_id": "gen-stale-lease",
+        "attempt": {
+            "candidate_id": task["candidate_id"],
+            "method_family": "ac0_locality_support",
+            "verifier_status": "PASS_SHAPE_ONLY",
+            "critic_status": "not_run",
+            "applicable_spec_version": "0.1.0",
+            "attack_suite_version": "0.1.0",
+            "git_commit": task.get("git_commit", ""),
+            "lease_id": "00000000-0000-0000-0000-000000000000",
+        },
+    }
+    code2, resp = _http_post("/v1/result", body)
+    assert code2 == 409, f"expected 409, got {code2}: {resp}"
+    err_text = json.dumps(resp).lower()
+    assert "stale_lease" in err_text, resp
+    _http_post("/v1/release", {
+        "assignment_id": task["assignment_id"],
+        "worker_id": "gen-stale-lease",
+    })
+    print("[test_coordinator] OK   /v1/result stale lease_id -> "
+          "409 stale_lease (Blocker-2)")
+
+
+def run_test_result_correct_lease_id_accepted() -> None:
+    """v0.4.3 Blocker-2: stamping the correct lease_id leads to
+    a clean 200."""
+    code, task = _http_get(
+        "/v1/task?role=gen&worker_id=gen-good-lease"
+        "&seed_pack=smoke_test_pack")
+    assert code == 200, task
+    body = {
+        "assignment_id": task["assignment_id"],
+        "worker_id": "gen-good-lease",
+        "attempt": {
+            "candidate_id": task["candidate_id"],
+            "method_family": "ac0_locality_support",
+            "verifier_status": "PASS_SHAPE_ONLY",
+            "critic_status": "not_run",
+            "applicable_spec_version": "0.1.0",
+            "attack_suite_version": "0.1.0",
+            "git_commit": task.get("git_commit", ""),
+            "lease_id": task.get("lease_id", ""),
+        },
+    }
+    code2, resp = _http_post("/v1/result", body)
+    assert code2 == 200, f"expected 200, got {code2}: {resp}"
+    print("[test_coordinator] OK   /v1/result correct lease_id -> 200 "
+          "(Blocker-2)")
+
+
+def run_test_overdue_lease_id_row_becomes_fail_timeout(stub: Path) -> None:
+    """v0.4.3 Blocker-3: an overdue lease_id-backed assignment must
+    end up as a FAIL_TIMEOUT ledger entry, NOT a silent `expired`,
+    even after /v1/health is called BEFORE the natural reaper tick.
+
+    Sequence:
+      1. Acquire a fresh lease.
+      2. Back-date the deadline via direct sqlite UPDATE.
+      3. Call /v1/health — handler runs reaper.tick() inline,
+         which converts the back-dated row through
+         assigned -> timed_out -> submitted with a FAIL_TIMEOUT
+         AttemptLedgerEntry.
+      4. Read outputs/attempts.jsonl in the stub; assert one row
+         carries verifier_status=FAIL_TIMEOUT and the matching
+         lease_id.
+    """
+    import sqlite3
+    code, task = _http_get(
+        "/v1/task?role=gen&worker_id=gen-overdue-blocker3"
+        "&seed_pack=smoke_test_pack")
+    assert code == 200, task
+    asn = task["assignment_id"]
+    lease_id = task["lease_id"]
+    assert lease_id, task
+    db_path = stub / "coordinator" / "state.db"
+    conn = sqlite3.connect(str(db_path))
+    try:
+        conn.execute(
+            "UPDATE assignments SET deadline = '1970-01-01T00:00:00Z' "
+            " WHERE assignment_id = ?", (asn,))
+        conn.commit()
+    finally:
+        conn.close()
+    # /v1/health triggers reaper.tick() inline (Blocker-3 fix).
+    code, _ = _http_get("/v1/health")
+    assert code == 200
+    # Confirm assignment is now `submitted` with a FAIL_TIMEOUT
+    # attempt_id, not `expired`.
+    conn = sqlite3.connect(str(db_path))
+    try:
+        row = conn.execute(
+            "SELECT status, attempt_id FROM assignments "
+            " WHERE assignment_id = ?", (asn,)).fetchone()
+    finally:
+        conn.close()
+    assert row is not None, asn
+    status, attempt_id = row
+    assert status == "submitted", (
+        f"expected submitted, got {status!r} (Blocker-3 regression: "
+        "lease_id-backed row went to expired silently)")
+    assert isinstance(attempt_id, str) and attempt_id.startswith("ATT-"), \
+        f"expected ATT-NNNNNN attempt_id, got {attempt_id!r}"
+    # Confirm the ledger entry is FAIL_TIMEOUT/timeout with the
+    # correct lease_id.
+    ledger = (stub / "outputs" / "attempts.jsonl"
+              ).read_text(encoding="utf-8").splitlines()
+    matched = [json.loads(L) for L in ledger if L.strip()
+               and json.loads(L).get("id") == attempt_id]
+    assert len(matched) == 1, matched
+    entry = matched[0]
+    assert entry["verifier_status"] == "FAIL_TIMEOUT", entry
+    assert entry["verifier_failure_class"] == "timeout", entry
+    assert entry["lease_id"] == lease_id, entry
+    print("[test_coordinator] OK   overdue lease_id-backed row -> "
+          "FAIL_TIMEOUT (Blocker-3)")
+
+
 def run_test_result_commit_mismatch_rejected(coord_commit: str) -> None:
     """v0.4.2 Track B: a /v1/result whose attempt.git_commit does
     not match the coordinator's HEAD MUST be rejected with 403 and
@@ -556,6 +774,9 @@ def run_test_result_commit_mismatch_rejected(coord_commit: str) -> None:
             "applicable_spec_version": "0.1.0",
             "attack_suite_version": "0.1.0",
             "git_commit": bogus,
+            # Stamp the correct lease_id so the lease check (which
+            # runs BEFORE the commit check) doesn't fire first.
+            "lease_id": task.get("lease_id", ""),
         },
     }
     code2, resp = _http_post("/v1/result", body)
@@ -603,6 +824,19 @@ def main() -> int:
             coord_commit = run_test_health_carries_commit()
             run_test_task_carries_commit(coord_commit)
             run_test_result_commit_mismatch_rejected(coord_commit)
+            # v0.4.3 Blocker-1: missing git_commit MUST be rejected
+            # (live HTTP submissions cannot rely on the on-disk
+            # backcompat window).
+            run_test_result_missing_git_commit_rejected(coord_commit)
+            # v0.4.3 Blocker-2: lease_id stamping is required;
+            # missing or stale lease_id is 409'd, correct one is 200.
+            run_test_result_missing_lease_id_rejected()
+            run_test_result_stale_lease_id_rejected()
+            run_test_result_correct_lease_id_accepted()
+            # v0.4.3 Blocker-3: overdue lease_id-backed row must
+            # land in the ledger as FAIL_TIMEOUT, not silently
+            # expired.
+            run_test_overdue_lease_id_row_becomes_fail_timeout(stub)
             run_test_dedup()
             run_test_dedup_register_then_lookup()
             # 20 tasks submitted + 1 double-submit (counts once) +

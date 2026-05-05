@@ -258,7 +258,7 @@
         "lease_id": {
           "type": "string",
           "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-          "description": "v0.4.2 Track C2: UUID4 identifying the assignment lease this attempt was produced under. Workers stamp it from the TaskAssignment.lease_id; the coordinator's cost-budget reaper uses it for compare-and-set when auto-failing overdue assignments so worker-vs-reaper races cannot produce two ledger entries for one slot."
+          "description": "v0.4.2 Track C2 + v0.4.3 Blocker-2: UUID4 identifying the assignment lease this attempt was produced under. Workers MUST stamp it from the TaskAssignment.lease_id; the coordinator's cost-budget reaper uses it for compare-and-set when auto-failing overdue assignments so worker-vs-reaper races cannot produce two ledger entries for one slot. Optional in this schema only because the file-level validator must accept entries minted before the v0.4.2 cutoff; live /v1/result submissions are required to include it (the coordinator returns 409 lease_missing otherwise)."
         },
         "generator_principal_id": {
           "type": "string",

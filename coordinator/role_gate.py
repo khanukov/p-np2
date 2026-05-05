@@ -47,25 +47,35 @@ def enforce_commit_match(
     attempt: dict[str, Any],
     coordinator_git_commit: str,
 ) -> str | None:
-    """v0.4.2 Track B: reject results submitted from a different commit.
+    """v0.4.2 Track B / v0.4.3 Blocker-1: reject results submitted
+    from a different commit OR with no git_commit at all.
 
     `attempt.git_commit` MUST equal the coordinator's HEAD that was
     cached at server start.  Returns a non-None error string on
-    mismatch (caller maps that to a 403).
+    mismatch or absence (caller maps that to a 403).
 
-    Backwards compatibility: when the coordinator could not resolve
-    its own HEAD (`coordinator_git_commit == ""`), the gate degrades
-    to no-op so a non-git-managed deployment still works.  The same
-    relaxation applies when `attempt.git_commit` is missing — that
-    branch is taken only by AttemptLedgerEntry payloads minted before
-    the v0.4.2 cutoff and is policed separately by
-    `scripts/validate_jsonl.py`.
+    Backwards-compat policy:
+
+      * Coordinator HEAD unresolved (`coordinator_git_commit == ""`):
+        gate degrades to no-op so a non-git-managed deployment
+        still works.
+      * Coordinator HEAD resolved AND
+        `attempt.git_commit` missing/empty:
+        REJECTED with `commit_missing` (v0.4.3 Blocker-1).
+        Backwards-compat for old jsonl ENTRIES that predate the
+        cutoff date is enforced ONLY by
+        `scripts/validate_jsonl.py`'s on-disk validation; live
+        HTTP submissions MUST stamp the field.
     """
     if not coordinator_git_commit:
         return None  # coordinator can't resolve HEAD; degrade
     attempt_commit = attempt.get("git_commit")
     if attempt_commit is None or attempt_commit == "":
-        return None  # backfill window, validated elsewhere
+        return ("commit_missing: coordinator HEAD is "
+                f"{coordinator_git_commit!r} but attempt.git_commit is "
+                "absent or empty.  Workers MUST stamp git_commit on "
+                "every /v1/result; backwards-compat windows apply only "
+                "to ledger entries on disk, not live submissions.")
     if not isinstance(attempt_commit, str):
         return f"attempt.git_commit must be a string, got {type(attempt_commit).__name__}"
     # Accept short prefix match too (>=7 hex chars), since some clients

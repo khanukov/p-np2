@@ -161,7 +161,8 @@ def _take_task(role: str, worker_id: str) -> dict:
     return body
 
 
-def _attempt_body(candidate_id: str, **overrides) -> dict:
+def _attempt_body(candidate_id: str, *, task: dict | None = None,
+                  **overrides) -> dict:
     base = {
         "candidate_id": candidate_id,
         "method_family": "ac0_locality_support",
@@ -170,6 +171,18 @@ def _attempt_body(candidate_id: str, **overrides) -> dict:
         "applicable_spec_version": "0.1.0",
         "attack_suite_version": "0.1.0",
     }
+    # v0.4.3 Blocker-1/2: when the test passed the TaskAssignment in,
+    # stamp its git_commit + lease_id so the live commit/lease gates
+    # don't preempt the role-gate assertion under test.  Most stub
+    # repos in the role-gate test are NOT git-init'd, so git_commit
+    # may be empty (which is fine — coordinator's HEAD is also empty
+    # in that case and the gate degrades to no-op).  lease_id is
+    # always set on v0.4.2+ assignments.
+    if task is not None:
+        if task.get("git_commit"):
+            base["git_commit"] = task["git_commit"]
+        if task.get("lease_id"):
+            base["lease_id"] = task["lease_id"]
     base.update(overrides)
     return base
 
@@ -188,6 +201,7 @@ def run_test_gen_carrying_critic_pass_rejected() -> None:
         "worker_id": "gen-rule12-1",
         "attempt": _attempt_body(
             task["candidate_id"],
+            task=task,
             critic_status="pass",   # <-- forbidden for gen role
             critic_break_class=None,
         ),
@@ -206,7 +220,7 @@ def run_test_crit_carrying_not_run_rejected() -> None:
     body = {
         "assignment_id": task["assignment_id"],
         "worker_id": "crit-rule12-1",
-        "attempt": _attempt_body(task["candidate_id"]),  # critic_status='not_run'
+        "attempt": _attempt_body(task["candidate_id"], task=task),  # critic_status='not_run'
     }
     code, resp = _http_post("/v1/result", body)
     assert code == 403, (
@@ -354,7 +368,7 @@ def run_test_dispatcher_offers_pending_with_supersedes(stub: Path) -> None:
     code, resp = _http_post("/v1/result", {
         "assignment_id": gen_task["assignment_id"],
         "worker_id": "gen-eve",
-        "attempt": _attempt_body(gen_task["candidate_id"]),
+        "attempt": _attempt_body(gen_task["candidate_id"], task=gen_task),
     })
     assert code == 200, f"gen-eve submission failed: {code}: {resp}"
     gen_attempt_id = resp["attempt_id"]
@@ -393,7 +407,7 @@ def run_test_principal_identity_rejects_same_principal(stub: Path) -> None:
     code, resp = _http_post("/v1/result", {
         "assignment_id": gen_task["assignment_id"],
         "worker_id": "gen-grace",
-        "attempt": _attempt_body(gen_task["candidate_id"]),
+        "attempt": _attempt_body(gen_task["candidate_id"], task=gen_task),
     })
     assert code == 200, resp
     gen_attempt_id = resp["attempt_id"]
@@ -407,6 +421,7 @@ def run_test_principal_identity_rejects_same_principal(stub: Path) -> None:
         "worker_id": "crit-grace",
         "attempt": _attempt_body(
             crit_task["candidate_id"],
+            task=crit_task,
             verifier_status="PASS_SHAPE_ONLY",
             critic_status="pass",
             supersedes=gen_attempt_id,
@@ -439,7 +454,7 @@ def run_test_gen_then_crit_different_worker_accepted(stub: Path) -> None:
     code, resp = _http_post("/v1/result", {
         "assignment_id": gen_task["assignment_id"],
         "worker_id": "gen-alice",
-        "attempt": _attempt_body(gen_task["candidate_id"]),
+        "attempt": _attempt_body(gen_task["candidate_id"], task=gen_task),
     })
     assert code == 200, f"gen submission failed: {code}: {resp}"
     gen_attempt_id = resp["attempt_id"]
@@ -451,6 +466,7 @@ def run_test_gen_then_crit_different_worker_accepted(stub: Path) -> None:
         "worker_id": "crit-bob",
         "attempt": _attempt_body(
             crit_task["candidate_id"],
+            task=crit_task,
             verifier_status="PASS_SHAPE_ONLY",
             critic_status="pass",
             supersedes=gen_attempt_id,

@@ -143,6 +143,33 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
     # and HealthStatus so workers can pre-check + stamp git_commit.
     coordinator_git_commit: str = ""
     coordinator_git_ref: str = "detached"
+    # v0.4.2 / v0.4.3 Track C2: cost-budget reaper, attached by `serve()`.
+    # Used by request handlers to run an inline tick before reading
+    # counts_by_status so lease_id-backed overdue assignments are
+    # converted to FAIL_TIMEOUT (and thereby free the wave cap)
+    # without waiting for the natural 60-s reaper interval.
+    cost_budget_reaper: Any = None
+
+    def _sweep_overdue(self) -> None:
+        """v0.4.3 Track Blocker-3: bring the assignment table to a
+        consistent post-deadline state before any read.
+
+        Order matters:
+        1. cost-budget reaper: lease_id-backed rows go to
+           `timed_out` then `submitted` with a FAIL_TIMEOUT ledger
+           entry.
+        2. legacy `expire_due`: only acts on `lease_id=''` rows now,
+           so it does NOT race the reaper.
+
+        Reaper.tick() failures are non-fatal (the daemon thread
+        retries on its own schedule).
+        """
+        if self.cost_budget_reaper is not None:
+            try:
+                self.cost_budget_reaper.tick()
+            except Exception:
+                pass
+        self.coordinator_store.expire_due()
 
     # ------------------------------------------------------------------
     # Logging — quieter than the default, every request is one line.
@@ -206,11 +233,13 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
     # ------------------------------------------------------------------
 
     def _handle_health(self) -> None:
-        # MVP-0.5.3 / PR 3: reclaim expired leases before counting
-        # in-flight, so /v1/health reports the live (post-expiry)
-        # state and so /v1/task's wave-cap check (which reads
-        # counts_by_status) sees the freed capacity.
-        self.coordinator_store.expire_due()
+        # MVP-0.5.3 / PR 3 + v0.4.3 Track Blocker-3: reclaim expired
+        # leases before counting in-flight, so /v1/health reports
+        # the live (post-expiry) state.  Cost-budget reaper acts
+        # FIRST so lease_id-backed overdue rows go to FAIL_TIMEOUT
+        # (not silently `expired`); then legacy expire_due cleans
+        # up lease_id='' rows.
+        self._sweep_overdue()
         counts = self.coordinator_store.counts_by_status()
         in_flight = int(counts.get("assigned", 0))
         # MVP-0.5 Phase E: surface gauges so /v1/metrics is fresh.
@@ -242,7 +271,10 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
 
     def _handle_metrics(self) -> None:
         # Refresh gauges first so the scrape is point-in-time.
-        self.coordinator_store.expire_due()  # PR 3
+        # v0.4.3 Blocker-3: reaper.tick() before expire_due so
+        # lease_id-backed overdue rows produce FAIL_TIMEOUT
+        # ledger entries instead of being silently expired.
+        self._sweep_overdue()
         counts = self.coordinator_store.counts_by_status()
         in_flight = int(counts.get("assigned", 0))
         if self.metrics is not None:
@@ -365,10 +397,11 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
 
         # MVP-0.5 Phase E — wave-gate worker-cap enforcement.
         if self.wave_gate is not None:
-            # MVP-0.5.3 / PR 3: reclaim expired leases first so the
-            # cap reflects the live in-flight count, not stale
-            # assignments from crashed workers.
-            self.coordinator_store.expire_due()
+            # MVP-0.5.3 / PR 3 + v0.4.3 Blocker-3: reclaim expired
+            # leases first so the cap reflects the live in-flight
+            # count.  Reaper.tick() handles lease_id-backed rows
+            # (FAIL_TIMEOUT) and expire_due handles legacy ones.
+            self._sweep_overdue()
             counts = self.coordinator_store.counts_by_status()
             in_flight = int(counts.get("assigned", 0))
             ok, msg = self.wave_gate.can_assign(in_flight)
@@ -496,15 +529,32 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
             )
             return
 
-        # v0.4.2 Track C2: defence-in-depth — reject submissions whose
-        # stamped lease_id no longer matches the current row.  Under
-        # the present design this can only happen in pathological
-        # cases (the reaper transitions assigned→timed_out atomically,
-        # so a worker submitting after that should already have hit
-        # the status check above).  Belt-and-suspenders for future
-        # designs that re-issue lease_ids.
-        attempt_lease = sub.attempt.get("lease_id")
+        # v0.4.2 Track C2 + v0.4.3 Blocker-2: reject submissions
+        # that fail the lease_id compare-and-set.  Three failure
+        # modes:
+        #
+        #   1. attempt.lease_id MISSING but assignment carries one
+        #      → 409 lease_missing.  Live submissions cannot omit
+        #      it; only legacy entries from before v0.4.2 may.
+        #   2. attempt.lease_id present BUT differs from stored
+        #      → 409 stale_lease (reaper invalidation, lease
+        #      rotation in future designs).
+        #   3. Both absent → no-op (pre-v0.4.2 legacy row).
+        attempt_lease = sub.attempt.get("lease_id") or ""
         stored_lease = rec.get("lease_id") or ""
+        if stored_lease and not attempt_lease:
+            if self.metrics is not None:
+                self.metrics.inc(
+                    "autoresearch_results_rejected_total",
+                    {"reason": "lease_missing"})
+            self._send_error(
+                409,
+                f"lease_missing: assignment {sub.assignment_id} "
+                f"carries lease_id={stored_lease!r} but "
+                f"attempt.lease_id is absent.  Workers MUST stamp "
+                f"the TaskAssignment.lease_id on every /v1/result.",
+            )
+            return
         if attempt_lease and stored_lease and attempt_lease != stored_lease:
             if self.metrics is not None:
                 self.metrics.inc(
@@ -529,19 +579,22 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
             sub.attempt["generator_principal_id"] = (
                 principal_id_from_worker_id(sub.worker_id))
 
-        # v0.4.2 Track B — commit pinning.  Reject results that
-        # reference a different HEAD than the coordinator's.  This
-        # closes the audit-discovered hole that allowed workers on
-        # `work` to submit results against a stale branch.
+        # v0.4.2 Track B + v0.4.3 Blocker-1 — commit pinning.
+        # Reject results that reference a different HEAD than the
+        # coordinator's, OR omit git_commit entirely when the
+        # coordinator's HEAD is resolved.
         commit_err = enforce_commit_match(
             attempt=sub.attempt,
             coordinator_git_commit=self.coordinator_git_commit,
         )
         if commit_err is not None:
+            reason = ("commit_missing"
+                      if commit_err.startswith("commit_missing")
+                      else "commit_mismatch")
             if self.metrics is not None:
                 self.metrics.inc(
                     "autoresearch_results_rejected_total",
-                    {"reason": "commit_mismatch"})
+                    {"reason": reason})
             self._send_error(403, commit_err)
             return
 
@@ -870,8 +923,10 @@ def serve(
         )
         reaper.start()
         # Stash on the handler class so callers shutting down the
-        # server can stop the reaper too.
-        BoundHandler._cost_budget_reaper = reaper  # type: ignore[attr-defined]
+        # server can stop the reaper too, and so request handlers
+        # (e.g. _handle_health, _handle_task) can call reaper.tick()
+        # inline before reading counts_by_status (v0.4.3 Blocker-3).
+        BoundHandler.cost_budget_reaper = reaper
 
     httpd = ThreadingHTTPServer((bind_host, bind_port), BoundHandler)
     thread = threading.Thread(target=httpd.serve_forever, daemon=True)

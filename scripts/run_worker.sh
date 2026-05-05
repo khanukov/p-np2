@@ -109,6 +109,10 @@ ASSIGNMENT_GIT_COMMIT="$(python3 -c '
 import json, sys
 print(json.load(sys.stdin).get("git_commit", ""))
 ' < "${SCRATCH}/task.json")"
+ASSIGNMENT_LEASE_ID="$(python3 -c '
+import json, sys
+print(json.load(sys.stdin).get("lease_id", ""))
+' < "${SCRATCH}/task.json")"
 
 echo "[run_worker] assignment=${ASSIGNMENT_ID}"\
      "candidate=${CANDIDATE_ID} seed_pack=${SEED_PACK_ID}"
@@ -200,10 +204,10 @@ case "${VERIFIER_STATUS}" in
 esac
 
 ATTEMPT_BODY="$(python3 - "${CANDIDATE_ID}" "${AS_VERIFIER_STATUS}" \
-                "${NOW}" "${LOCAL_HEAD}" <<'PY'
+                "${NOW}" "${LOCAL_HEAD}" "${ASSIGNMENT_LEASE_ID}" <<'PY'
 import json, sys
-candidate_id, status, now, head = (
-    sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4],
+candidate_id, status, now, head, lease_id = (
+    sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5],
 )
 entry = {
     "candidate_id": candidate_id,
@@ -216,6 +220,13 @@ entry = {
 }
 if head:
     entry["git_commit"] = head
+# v0.4.3 Blocker-2: stamp lease_id from the TaskAssignment so
+# the cost-budget reaper's compare-and-set on /v1/result can
+# detect a stale-lease race.  /v1/result rejects 409 stale_lease
+# if attempt.lease_id is missing while the assignment carries
+# one.
+if lease_id:
+    entry["lease_id"] = lease_id
 print(json.dumps(entry))
 PY
 )"

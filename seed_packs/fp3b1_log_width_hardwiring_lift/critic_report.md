@@ -140,7 +140,27 @@
 ## Verdict
 
 - **critic_status:** `pass`
-- **next_recommended_action:** Begin FP-3b.3 — design a stronger
-  filter `ProvenanceFilter_v2` that excludes log-width truth-
-  table-shaped families.  The new bar is now formal and can be
-  used as a self-attack target in the next seed pack.
+- **next_recommended_action:** Strengthen the obstruction before
+  designing `ProvenanceFilter_v2`.  The current theorem
+  formalises only the prefix-AND specialisation of NOGO-000003;
+  arbitrary all-essential `f_n` packaged via
+  `FormulaCircuit.rename σ_n (ttFormula f_n)` is the topic of
+  the follow-up seed pack `fp3b2_arbitrary_logwidth_tt_payload`.
+  Designing `ProvenanceFilter_v2` against the prefix-AND
+  obstruction alone risks producing a filter that excludes
+  prefix-AND but admits arbitrary `ttFormula` payload — exactly
+  the failure mode the original NOGO-000003 sketch warned
+  against.  Therefore: ship `fp3b2` first
+  (target NOGO-000006), then `ProvenanceFilter_v2`.
+
+## Post-review scope correction
+
+External review (post-merge) accepted the theorem as valid but
+flagged that NOGO-000004 is **weaker** than the original
+NOGO-000003 sketch claimed: the formal artefact closes the
+prefix-AND specialisation, not the full arbitrary-payload
+target.  This Critic report's body has been updated to record
+the correct scope; the JSONL ledger captures the correction in a
+separate append-only entry NOGO-000005 (status="formalized",
+supersedes="NOGO-000004").  No Lean proof body was changed by
+the scope correction.

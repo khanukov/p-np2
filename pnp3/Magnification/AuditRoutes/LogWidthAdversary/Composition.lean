@@ -197,13 +197,31 @@ candidate filter `FP3Attempt.InSupportFunctionalDiversity`.
 Combined with
 `FP3Attempt.InSupportFunctionalDiversity_excludes_uniformPolyBound`
 (the existing Outcome-A obstruction against constant-`polyBound`
-families), this proves that the candidate filter as stated does NOT
-exclude log-width truth-table hardwiring shapes.  Any future
-`ProvenanceFilter_v2` MUST exclude them by an argument other than
-support cardinality.
+families), this proves that the candidate filter as stated does
+NOT exclude **the prefix-AND family on a `Nat.log2 (n+1)`-window
+of inputs** — a polynomial-size, syntactically log-width shape
+whose support is exactly the first `Nat.log2 (n+1)` coordinates.
 
-This is the formal lift of `outputs/nogolog.jsonl::NOGO-000003`
-from `status = "needs_review"` to `status = "formalized"`.  Kernel-checked,
+**Scope (read this carefully).**  This theorem closes the
+prefix-AND specialisation of NOGO-000003.  It does NOT yet
+formalise the full original NOGO-000003 sketch, which asked
+for arbitrary all-essential `f_n : Bitstring k(n) → Bool`
+packaged via `FormulaCircuit.rename σ_n (ttFormula f_n)`.  The
+prefix-AND payload is the simplest truth-table-shaped witness
+satisfying the candidate filter; arbitrary `ttFormula` payload
+is the topic of the follow-up seed pack
+`seed_packs/fp3b2_arbitrary_logwidth_tt_payload/`.
+
+The corresponding NoGoLog upgrade chain is
+`NOGO-000003 (needs_review)
+ → NOGO-000004 (formalized; this theorem)
+ → NOGO-000005 (formalized scope-correction)
+ → [open: NOGO-000006 = full arbitrary-payload upgrade]`.
+
+A future `ProvenanceFilter_v2` MUST eventually exclude both the
+prefix-AND specialisation (this theorem) AND the arbitrary-
+payload generalisation (fp3b2 target) by an argument that does
+not reduce to support-cardinality counting.  Kernel-checked,
 no proof-suspension placeholders, no `axiom`. -/
 theorem logWidthAdversary_satisfies_diversity :
     InSupportFunctionalDiversity adversaryWitness_v_natlog2 :=

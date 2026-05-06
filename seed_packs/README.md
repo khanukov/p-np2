@@ -44,8 +44,9 @@ minimum-viable cycle every Pilot Wave 0 worker must follow.
 
 | ID                                    | Track       | Status                                |
 | ------------------------------------- | ----------- | ------------------------------------- |
-| `fp3b1_log_width_hardwiring`          | Research-A  | skeleton-shipped; FP-3b.2 closed via `_lift` |
-| `fp3b1_log_width_hardwiring_lift`     | Research-A  | shipped — `NOGO-000003` lifted to `NOGO-000004 status=formalized`; theorem `LogWidthAdversary.logWidthAdversary_satisfies_diversity` |
+| `fp3b1_log_width_hardwiring`          | Research-A  | skeleton-shipped; FP-3b.2 prefix-AND specialisation closed via `_lift` |
+| `fp3b1_log_width_hardwiring_lift`     | Research-A  | shipped (prefix-AND only) — `NOGO-000003` → `NOGO-000004 status=formalized`; post-review scope-corrected by `NOGO-000005` |
+| `fp3b2_arbitrary_logwidth_tt_payload` | Research-A  | OPEN — strengthens NOGO-000005 to arbitrary all-essential `ttFormula` payload (target NOGO-000006); 6-slot decomposition; strict prerequisite for `ProvenanceFilter_v2` design |
 
 ### Infrastructure seeds (under `seed_packs/INFRA/<id>/`)
 

@@ -437,13 +437,27 @@ What the canonical theorem discharges:
 4. the two diversity conjuncts compose into the headline theorem
    (`LogWidthAdversary.logWidthAdversary_satisfies_diversity`).
 
-Consequence: the candidate filter `InSupportFunctionalDiversity` as
-stated does NOT exclude log-width truth-table-shaped families.
-Any future `ProvenanceFilter_v2` MUST exclude such shapes by an
-argument that does not reduce to support-cardinality counting.
-The corresponding NoGoLog upgrade is `NOGO-000004`, superseding
-`NOGO-000003`.  No bridge / SourceTheorem / final endpoint is
-added by this work. -/
+**Scope (read carefully).**  The headline theorem closes the
+prefix-AND specialisation of NOGO-000003: the candidate filter
+`InSupportFunctionalDiversity` does NOT exclude the
+`prefixAnd n (Nat.log2 (n+1)) _` family.  It does NOT yet
+formalise the full original NOGO-000003 sketch (arbitrary
+all-essential `f_n` packaged via
+`FormulaCircuit.rename σ_n (ttFormula f_n)`).  The full
+arbitrary-payload upgrade is the topic of the follow-up seed
+pack `seed_packs/fp3b2_arbitrary_logwidth_tt_payload/` and is
+tracked as the open NOGO-000006 target.
+
+The NoGoLog upgrade chain is
+`NOGO-000003 (needs_review)
+ → NOGO-000004 (formalized; this theorem, prefix-AND specialisation)
+ → NOGO-000005 (formalized scope-correction)
+ → [open: NOGO-000006 = full arbitrary-payload upgrade]`.
+
+A future `ProvenanceFilter_v2` MUST eventually exclude both the
+prefix-AND specialisation (this theorem) AND the arbitrary-
+payload generalisation (fp3b2 target).  No bridge /
+SourceTheorem / final endpoint is added by this work. -/
 example : True := trivial   -- placeholder so the docstring above
                             -- attaches to a real declaration
 

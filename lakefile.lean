@@ -151,12 +151,13 @@ lean_lib PnP3 where
     -- engineer outputs into logWidthAdversary_satisfies_diversity.
     Glob.one `Magnification.AuditRoutes.LogWidthAdversary.Composition,
     -- fp3b2 arbitrary-payload strengthening (post-NOGO-000005 follow-up).
-    -- T1..T5 of the 6-slot decomposition; T6 still open.
+    -- T1..T6 of the 6-slot decomposition, ending in the composition theorem.
     Glob.one `Magnification.AuditRoutes.ArbitraryLogWidthTT.AllEssential,
     Glob.one `Magnification.AuditRoutes.ArbitraryLogWidthTT.TTFormulaSupport,
     Glob.one `Magnification.AuditRoutes.ArbitraryLogWidthTT.RenamePayload,
     Glob.one `Magnification.AuditRoutes.ArbitraryLogWidthTT.Family,
     Glob.one `Magnification.AuditRoutes.ArbitraryLogWidthTT.Witness,
+    Glob.one `Magnification.AuditRoutes.ArbitraryLogWidthTT.Composition,
     Glob.one `ThirdPartyFacts.Facts_Switching,
     -- Partial-track bibliography/lemmas used by final magnification result.
     Glob.one `ThirdPartyFacts.PartialTransport,
@@ -181,7 +182,8 @@ lean_lib PnP3 where
     Glob.one `Tests.AuditRoutes_CL0_NoGo_Regression,
     -- v0.4.3-followup S11: regression smoke for the log-width adversary
     -- composition + the parallel-engineer outputs it consumes.
-    Glob.one `Tests.AuditRoutes_LogWidthAdversary_Smoke
+    Glob.one `Tests.AuditRoutes_LogWidthAdversary_Smoke,
+    Glob.one `Tests.AuditRoutes_ArbitraryLogWidthTT_Smoke
   ]
 
 lean_lib Pnp4 where

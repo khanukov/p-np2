@@ -150,6 +150,11 @@ lean_lib PnP3 where
     -- v0.4.3-followup S11 integration: composition of the parallel
     -- engineer outputs into logWidthAdversary_satisfies_diversity.
     Glob.one `Magnification.AuditRoutes.LogWidthAdversary.Composition,
+    -- fp3b2 arbitrary-payload strengthening (post-NOGO-000005 follow-up).
+    -- T1..T3 of the 6-slot decomposition; T4..T6 still open.
+    Glob.one `Magnification.AuditRoutes.ArbitraryLogWidthTT.AllEssential,
+    Glob.one `Magnification.AuditRoutes.ArbitraryLogWidthTT.TTFormulaSupport,
+    Glob.one `Magnification.AuditRoutes.ArbitraryLogWidthTT.RenamePayload,
     Glob.one `ThirdPartyFacts.Facts_Switching,
     -- Partial-track bibliography/lemmas used by final magnification result.
     Glob.one `ThirdPartyFacts.PartialTransport,

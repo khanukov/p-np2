@@ -150,6 +150,12 @@ lean_lib PnP3 where
     -- v0.4.3-followup S11 integration: composition of the parallel
     -- engineer outputs into logWidthAdversary_satisfies_diversity.
     Glob.one `Magnification.AuditRoutes.LogWidthAdversary.Composition,
+    -- fp3b4 support-cardinality barrier (post-NOGO-000006 follow-up).
+    -- T1..T4 of the 6-slot decomposition; T5..T6 still open.
+    Glob.one `Magnification.AuditRoutes.SupportCardinalityBarrier.CanonicalHardwiringFamily,
+    Glob.one `Magnification.AuditRoutes.SupportCardinalityBarrier.CanonicalHardwiringSupport,
+    Glob.one `Magnification.AuditRoutes.SupportCardinalityBarrier.CanonicalHardwiringWitness,
+    Glob.one `Magnification.AuditRoutes.SupportCardinalityBarrier.SupportCardinalityOnly,
     -- fp3b2 arbitrary-payload strengthening (post-NOGO-000005 follow-up).
     -- T1..T6 of the 6-slot decomposition, ending in the composition theorem.
     Glob.one `Magnification.AuditRoutes.ArbitraryLogWidthTT.AllEssential,

@@ -48,16 +48,45 @@ checkout, stop and report.
 
 ## 2. Slot list (pick one)
 
+**Dependency chain (read carefully before picking):**
+
+```text
+T1 (canonicalHardwiringFamily)  ← independent
+T4 (IsSupportCardinalityOnly)   ← independent
+T2 (canonicalHardwiringFamily_support_card)  ← depends on T1
+T3 (canonicalHardwiringWitness)              ← depends on T1, T2
+T5 (Barrier theorem)            ← depends on T1, T2, T3, T4
+T6 (Application + NOGO-000007)  ← depends on T5
+```
+
+T1 and T4 may start immediately in parallel.  T2/T3 may start in
+parallel **only with explicit dependency awareness**:
+
+* If T1 has landed in the tree → import T1's module, proceed
+  normally.
+* If T1 has NOT landed yet → DO NOT redefine
+  `canonicalHardwiringFamily` or `canonicalHardwiringLanguage`
+  in your slot file (that's T1's job; duplicating creates merge
+  conflict and namespace collision).  Instead, ship a structured
+  **blocker report** at
+  `seed_packs/fp3b4_support_cardinality_barrier/failures/T<k>_<HANDLE>_blocked_on_T1.md`
+  with one section: "T1 not yet in tree as of `<commit-hash>`;
+  resuming when T1 lands."  Then stop.
+
+T5 and T6 are NOT in scope for this dispatch round; do not pick
+them.
+
 | Slot | File | Goal | Depends on |
 | ---- | ---- | ---- | ---------- |
-| T1 | `SupportCardinalityBarrier/CanonicalHardwiringFamily.lean` | `canonicalHardwiringFamily` + `canonicalHardwiringLanguage` (parameterised by `s : Nat → Nat`, `hs : ∀ n, s n ≤ n`) | — |
-| T2 | `SupportCardinalityBarrier/CanonicalHardwiringSupport.lean` | `canonicalHardwiringFamily_support_card : (support …).card = s n` | T1 |
-| T3 | `SupportCardinalityBarrier/CanonicalHardwiringWitness.lean` | `canonicalHardwiringWitness : InPpolyFormula (canonicalHardwiringLanguage s hs)` with linear `polyBound n := 2*n+1` | T1, T2, fp3b1's `prefixAnd_size` |
-| T4 | `SupportCardinalityBarrier/SupportCardinalityOnly.lean` | `IsSupportCardinalityOnly Π : Prop` (weak invariance: filter doesn't distinguish witnesses with same support function) | — |
-| T5 | `SupportCardinalityBarrier/Barrier.lean` | `support_cardinality_barrier` headline theorem (3-line proof using T2 + T4) | T1, T2, T3, T4 |
-| T6 | `SupportCardinalityBarrier/InSupportFunctionalDiversityApplication.lean` + `outputs/nogolog.jsonl` (`NOGO-000007`) + `outputs/attempts.jsonl` + `seed_packs/fp3b4_support_cardinality_barrier/critic_report.md` | Apply barrier to `InSupportFunctionalDiversity`; ship NOGO-000007 + Critic report | T1–T5 |
+| T1 | `SupportCardinalityBarrier/CanonicalHardwiringFamily.lean` | `canonicalHardwiringFamily` + `canonicalHardwiringLanguage` (parameterised by `s : Nat → Nat`, `hs : ∀ n, s n ≤ n`) | — (independent) |
+| T2 | `SupportCardinalityBarrier/CanonicalHardwiringSupport.lean` | `canonicalHardwiringFamily_support_card : (support …).card = s n` | **T1** |
+| T3 | `SupportCardinalityBarrier/CanonicalHardwiringWitness.lean` | `canonicalHardwiringWitness : InPpolyFormula (canonicalHardwiringLanguage s hs)` with linear `polyBound n := 2*n+1` | **T1**, **T2**, fp3b1's `prefixAnd_size` |
+| T4 | `SupportCardinalityBarrier/SupportCardinalityOnly.lean` | `IsSupportCardinalityOnly Π : Prop` (weak invariance: filter doesn't distinguish witnesses with same support function) | — (independent) |
+| T5 | `SupportCardinalityBarrier/Barrier.lean` | `support_cardinality_barrier` headline theorem (3-line proof using T2 + T4) | T1, T2, T3, T4 — **NOT in this dispatch round** |
+| T6 | `SupportCardinalityBarrier/InSupportFunctionalDiversityApplication.lean` + `outputs/nogolog.jsonl` (`NOGO-000007`) + `outputs/attempts.jsonl` + `seed_packs/fp3b4_support_cardinality_barrier/critic_report.md` | Apply barrier to `InSupportFunctionalDiversity`; ship NOGO-000007 + Critic report | T1–T5 — **NOT in this dispatch round** |
 
-T6 is the integration slot; it can ship only after T1..T5 land.
+T6 is the integration slot; it can ship only after T1..T5 land
+AND a separate dispatch round opens it.
 
 ## 3. File-path convention
 

@@ -46,7 +46,10 @@ minimum-viable cycle every Pilot Wave 0 worker must follow.
 | ------------------------------------- | ----------- | ------------------------------------- |
 | `fp3b1_log_width_hardwiring`          | Research-A  | skeleton-shipped; FP-3b.2 prefix-AND specialisation closed via `_lift` |
 | `fp3b1_log_width_hardwiring_lift`     | Research-A  | shipped (prefix-AND only) — `NOGO-000003` → `NOGO-000004 status=formalized`; post-review scope-corrected by `NOGO-000005` |
-| `fp3b2_arbitrary_logwidth_tt_payload` | Research-A  | OPEN — strengthens NOGO-000005 to arbitrary all-essential `ttFormula` payload (target NOGO-000006); 6-slot decomposition; strict prerequisite for `ProvenanceFilter_v2` design |
+| `fp3b2_arbitrary_logwidth_tt_payload` | Research-A  | shipped — `NOGO-000005` → `NOGO-000006 status=formalized`; full arbitrary all-essential `ttFormula` payload obstruction |
+| `fp3b4_support_cardinality_barrier`   | Research-A  | OPEN (priority 1) — meta-barrier theorem generalising NOGO-000006 to any support-cardinality-only filter; 6 slots; target `NOGO-000007` |
+| `fp3b3_provenance_filter_v2_design`   | Research-A  | OPEN (priority 2) — four parallel directions (V2-A formula-shape, V2-B cross-length coherence, V2-C bounded incremental info, V2-D rename/provenance signature); two-phase shipping (paper sketch → Lean) |
+| `first_move_search_2026`              | Research-A  | OPEN (priority parallel) — structured literature scan for non-obvious "move-one" ideas from adjacent areas; markdown reports only, NOT Lean code; survivors become future seed packs |
 
 ### Infrastructure seeds (under `seed_packs/INFRA/<id>/`)
 

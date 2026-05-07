@@ -3,52 +3,60 @@
 ## Attack 1: Hidden-payload attack
 
 - **status:** `no break found`
-- **summary:** The Phase-2 files define ordinary `def`/`theorem` surfaces over explicit `InPpolyFormula` records and do not introduce typeclass, `Fact`, `axiom`, or opaque payload channels.
+- **summary:** The Phase-2 V2-A files remain explicit Lean definitions and theorems over strict `InPpolyFormula` records.  This fixup adds only a concrete support-profile separation theorem and does not add hidden assumption channels.
 - **evidence:**
-    - `Filter.lean` defines only syntactic gate counters, rename invariance lemmas, and the explicit `ProvenanceFilter_v2_V2_A_gpt55_phase2` predicate.
-    - Local search of the Phase-2 directory reports no `axiom`, `sorry`, `admit`, `native_decide`, `opaque`, or `Fact` tokens.
+    - `NotSupportCardinalityOnly.lean` proves a plain theorem about two explicit witnesses; it introduces no trust root, no typeclass payload, no `Fact` payload, no opaque definition, and no candidate package.
+    - The Phase-2 surface remains under `pnp3/Magnification/AuditRoutes/ProvenanceFilterV2/V2_A_gpt55/` as audit-route code.
 
 ## Attack 2: Hardwiring attack
 
 - **status:** `no break found`
-- **summary:** The concrete log-width prefix-AND and arbitrary truth-table hardwiring witnesses are rejected by kernel-checked AND-gate exclusions.
+- **summary:** The concrete hardwiring self-attacks are kernel-checked for the current syntactic filter.  Prefix-AND hardwiring is rejected by the OR/NOT-mix clause, and arbitrary recursive truth-table payload hardwiring is rejected by the linear Boolean-gate cap.
 - **evidence:**
     - `ExcludesPrefixAnd.lean` proves `excludes_adversaryWitness_v_natlog2`.
-    - `ExcludesArbitraryPayload.lean` proves `excludes_adversaryWitness_v_arbpayload` for every all-essential payload package.
-    - `ExcludesOverbroad.lean` keeps the bounded-support/bounded-polyBound exclusion as a precise local theorem for non-constant hardwiring shapes.
+    - `ExcludesArbitraryPayload.lean` proves `excludes_adversaryWitness_v_arbpayload` for every all-essential payload family.
+    - `ExcludesOverbroad.lean` proves `excludes_bounded_support` and `excludes_uniform_polyBound` for bounded-support/bounded-polyBound hardwiring shapes.
 
-## Attack 3: KnownGuards-factorization attack
+## Attack 3: Support-cardinality-only barrier attack
 
 - **status:** `no break found`
-- **summary:** The filter is deliberately audit-only and is not promoted to an accepted guard, so the known-guards attack does not obtain a final-route contradiction from this PR.
+- **summary:** The missing support-cardinality barrier response is now formalized.  V2-A is proved not support-cardinality-only by separating two witnesses with the same support-cardinality profile: accepted `seededPrefixAndWitness` and rejected full-prefix canonical hardwiring.
 - **evidence:**
-    - The modules live under `pnp3/Magnification/AuditRoutes/ProvenanceFilterV2/V2_A_gpt55/`.
-    - `Survivor.lean` only exposes a review surface and explicitly does not create a `SourceTheorem`, `gap_from_*`, candidate package, or endpoint.
+    - `NonVacuity.lean` proves `seededPrefixAndWitness_admitted`; the non-vacuity witness is `seededPrefixAndWitness`, not the old constant-false smoke witness.
+    - `NotSupportCardinalityOnly.lean` proves `excludes_fullPrefixAnd_canonicalWitness`.
+    - `NotSupportCardinalityOnly.lean` proves `ProvenanceFilter_v2_V2_A_gpt55_not_support_cardinality_only`.
+    - `Survivor.lean` includes the not-support-cardinality-only theorem in the Phase-2 review surface.
 
-## Attack 4: Natural-proof / relativization / algebrization barrier audit
+## Attack 4: KnownGuards-factorization attack
+
+- **status:** `no break found`
+- **summary:** The filter remains a proposal-level audit object only.  This fixup does not promote V2-A to an accepted guard and does not create any factorization path through known guards.
+- **evidence:**
+    - No accepted guard is introduced.
+    - No `SourceTheorem` is introduced.
+    - No `gap_from` bridge is introduced.
+    - No final endpoint is introduced.
+    - No FP-4 claim is introduced.
+
+## Attack 5: Natural-proof / relativization / algebrization barrier audit
 
 - **status:** `attack not applicable`
-- **summary:** The submitted work is a syntactic provenance-filter self-attack and does not assert a lower-bound proof, a largeness/usefulness theorem, or an oracle/algebraic transfer.
+- **summary:** V2-A Phase 2 is a syntactic provenance-filter audit and self-attack, not a lower-bound theorem, largeness/usefulness theorem, oracle construction, algebraic transfer, or P-vs-NP bridge.
 - **evidence:**
-    - No lower-bound endpoint or P-vs-NP bridge is introduced.
-    - The progress classification in the new modules is side-track audit formalization.
-
-## Attack 5: Collapse-not-contradiction audit
-
-- **status:** `attack not applicable`
-- **summary:** The Phase-2 survivor surface proves local rejection/non-vacuity facts only; it does not derive a collapse or contradiction statement.
-- **evidence:**
-    - The strongest integration theorem is `v2_A_gpt55_phase2_survivor_surface`, a conjunction of two concrete exclusions plus one admitted witness.
+    - The modules classify themselves as side-track audit formalization.
+    - The survivor surface packages local audit facts only: not-support-cardinality-only, bounded-support rejection, concrete hardwiring exclusions, and non-vacuity.
 
 ## Attack 6: Vacuity / source-theorem rephrasing audit
 
 - **status:** `no break found`
-- **summary:** The filter is not empty: `NonVacuity.lean` packages a named constant-false family and proves it is admitted. It is also not a source-theorem rephrasing because it never mentions `VerifiedNPDAGLowerBoundSource` or `SearchMCSPWeakLowerBound`.
+- **summary:** The filter is non-vacuous via the seeded full-prefix conjunction witness, and it is not a source-theorem rephrasing.  The fixup explicitly replaces the stale constant-false description with `seededPrefixAndWitness`.
 - **evidence:**
-    - `honestConstFalseWitness_admitted` proves non-vacuity for a concrete `InPpolyFormula` record.
-    - The filter remains quarantined as a proposal-level audit object.
+    - `NonVacuity.lean` defines `seededPrefixAndWitness` and proves `seededPrefixAndWitness_admitted`.
+    - The report and survivor surface state no accepted guard, no `SourceTheorem`, no `gap_from`, no final endpoint, and no FP-4.
 
 ## Verdict
 
 - **critic_status:** `pass`
-- **next_recommended_action:** Review whether the constant-false smoke family is too weak; if so, require a stronger OR/parity non-vacuity witness in a follow-up.
+- **dominant_break_class:** `null`
+- **dominant_break_section:** `null`
+- **next_recommended_action:** Keep V2-A quarantined as an audit-only proposal; if promoted later, require a separate accepted-guard review and renewed hardwiring/barrier audits.

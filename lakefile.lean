@@ -166,6 +166,7 @@ lean_lib PnP3 where
     Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_A_gpt55.ExcludesPrefixAnd,
     Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_A_gpt55.ExcludesArbitraryPayload,
     Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_A_gpt55.NonVacuity,
+    Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_A_gpt55.NotSupportCardinalityOnly,
     Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_A_gpt55.Survivor,
     Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_B_gpt55.Sketch,
     Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_C_GPT55.Sketch,

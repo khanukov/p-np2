@@ -27,15 +27,12 @@ bounded-support shape.
 -/
 theorem excludes_bounded_support
     {L : Language} (w : InPpolyFormula L) (B : Nat)
-    (hBound : ∀ n : Nat, (FormulaCircuit.support (w.family n)).card ≤ B)
-    (hNotConst : ¬ ∀ n : Nat, w.family n = FormulaCircuit.const false) :
+    (hBound : ∀ n : Nat, (FormulaCircuit.support (w.family n)).card ≤ B) :
     ¬ ProvenanceFilter_v2_V2_A_gpt55_Filter w := by
   intro hFilter
-  obtain ⟨hSupport, _hGate, _hDepth, _hAndFree⟩ := hFilter
-  rcases hSupport with hUnbounded | hConst
-  · obtain ⟨n, hn⟩ := hUnbounded B
-    exact Nat.not_lt_of_ge (hBound n) hn
-  · exact hNotConst hConst
+  obtain ⟨hUnbounded, _hGate, _hDepth, _hMix⟩ := hFilter
+  obtain ⟨n, hn⟩ := hUnbounded B
+  exact Nat.not_lt_of_ge (hBound n) hn
 
 /--
 A convenient corollary for witnesses with a uniformly bounded polynomial-size
@@ -45,10 +42,9 @@ record's `polyBound`, and `polyBound` is bounded by a constant.
 -/
 theorem excludes_uniform_polyBound
     {L : Language} (w : InPpolyFormula L) (B : Nat)
-    (hBound : ∀ n : Nat, w.polyBound n ≤ B)
-    (hNotConst : ¬ ∀ n : Nat, w.family n = FormulaCircuit.const false) :
+    (hBound : ∀ n : Nat, w.polyBound n ≤ B) :
     ¬ ProvenanceFilter_v2_V2_A_gpt55_Filter w := by
-  apply excludes_bounded_support w B ?_ hNotConst
+  apply excludes_bounded_support w B
   intro n
   exact Nat.le_trans (FormulaCircuit.support_card_le_size (w.family n))
     (Nat.le_trans (w.family_size_le n) (hBound n))

@@ -1,5 +1,5 @@
 import Magnification.AuditRoutes.ProvenanceFilterV2.V2_A_gpt55.Filter
-import Magnification.AuditRoutes.LogWidthAdversary.Family_NatLog2
+import Magnification.AuditRoutes.LogWidthAdversary.Composition
 
 /-!
 # V2-A Phase 2: prefix-AND exclusion
@@ -25,26 +25,42 @@ theorem andGateCount_prefixAnd (n k : Nat) (h : k ≤ n) :
   | succ k ih =>
       simp [Pnp3.Magnification.AuditRoutes.FixedParamsProbe.FP3Attempt.FP3b1.LogWidthAdversary.prefixAnd, andGateCount, ih]
 
-/-- At length `3`, the Nat.log2 prefix-AND adversary has an AND gate. -/
-theorem one_le_andGateCount_adversaryFamily_v_natlog2_at_three :
-    1 ≤ andGateCount (Pnp3.Magnification.AuditRoutes.FixedParamsProbe.FP3Attempt.FP3b1.LogWidthAdversary.adversaryFamily_v_natlog2 3) := by
-  simp [Pnp3.Magnification.AuditRoutes.FixedParamsProbe.FP3Attempt.FP3b1.LogWidthAdversary.adversaryFamily_v_natlog2, Pnp3.Magnification.AuditRoutes.FixedParamsProbe.FP3Attempt.FP3b1.LogWidthAdversary.logWidthNat,
-    andGateCount_prefixAnd]
-  rw [Nat.le_log2 (by decide : 4 ≠ 0)]
-  norm_num
+/-- The concrete `prefixAnd` syntax contains no OR gates. -/
+theorem orGateCount_prefixAnd (n k : Nat) (h : k ≤ n) :
+    orGateCount (Pnp3.Magnification.AuditRoutes.FixedParamsProbe.FP3Attempt.FP3b1.LogWidthAdversary.prefixAnd n k h) = 0 := by
+  induction k with
+  | zero => simp [Pnp3.Magnification.AuditRoutes.FixedParamsProbe.FP3Attempt.FP3b1.LogWidthAdversary.prefixAnd, orGateCount]
+  | succ k ih =>
+      simp [Pnp3.Magnification.AuditRoutes.FixedParamsProbe.FP3Attempt.FP3b1.LogWidthAdversary.prefixAnd, orGateCount, ih]
+
+
+/-- The concrete `prefixAnd` syntax contains no NOT gates. -/
+theorem notGateCount_prefixAnd (n k : Nat) (h : k ≤ n) :
+    notGateCount (Pnp3.Magnification.AuditRoutes.FixedParamsProbe.FP3Attempt.FP3b1.LogWidthAdversary.prefixAnd n k h) = 0 := by
+  induction k with
+  | zero => simp [Pnp3.Magnification.AuditRoutes.FixedParamsProbe.FP3Attempt.FP3b1.LogWidthAdversary.prefixAnd, notGateCount]
+  | succ k ih =>
+      simp [Pnp3.Magnification.AuditRoutes.FixedParamsProbe.FP3Attempt.FP3b1.LogWidthAdversary.prefixAnd, notGateCount, ih]
 
 /-- The concrete `adversaryWitness_v_natlog2` is rejected by V2-A Phase 2. -/
 theorem excludes_adversaryWitness_v_natlog2 :
     ¬ ProvenanceFilter_v2_V2_A_gpt55_Filter Pnp3.Magnification.AuditRoutes.FixedParamsProbe.FP3Attempt.FP3b1.LogWidthAdversary.adversaryWitness_v_natlog2 := by
   intro hFilter
-  obtain ⟨_hUnbounded, _hGate, _hDepth, hAndFree⟩ := hFilter
-  have hZero := hAndFree 3
-  have hZero' : andGateCount
-      (Pnp3.Magnification.AuditRoutes.FixedParamsProbe.FP3Attempt.FP3b1.LogWidthAdversary.adversaryFamily_v_natlog2 3) = 0 := by
-    simpa [Pnp3.Magnification.AuditRoutes.FixedParamsProbe.FP3Attempt.FP3b1.LogWidthAdversary.adversaryWitness_v_natlog2] using hZero
-  have hPos := one_le_andGateCount_adversaryFamily_v_natlog2_at_three
-  rw [hZero'] at hPos
-  exact Nat.not_succ_le_zero 0 hPos
+  obtain ⟨_hUnbounded, _hGate, _hDepth, hMix⟩ := hFilter
+  have hSupport : 2 ≤ (FormulaCircuit.support
+      (Pnp3.Magnification.AuditRoutes.FixedParamsProbe.FP3Attempt.FP3b1.LogWidthAdversary.adversaryWitness_v_natlog2.family 3)).card := by
+    rw [Pnp3.Magnification.AuditRoutes.FixedParamsProbe.FP3Attempt.FP3b1.LogWidthAdversary.adversaryWitness_v_natlog2]
+    rw [Pnp3.Magnification.AuditRoutes.FixedParamsProbe.FP3Attempt.FP3b1.LogWidthAdversary.adversaryFamily_v_natlog2_support_card]
+    rw [Pnp3.Magnification.AuditRoutes.FixedParamsProbe.FP3Attempt.FP3b1.LogWidthAdversary.logWidthNat]
+    rw [Nat.le_log2 (by decide : 4 ≠ 0)]
+  have hOrPos := (hMix 3 hSupport).1
+  have hOrZero : orGateCount
+      (Pnp3.Magnification.AuditRoutes.FixedParamsProbe.FP3Attempt.FP3b1.LogWidthAdversary.adversaryWitness_v_natlog2.family 3) = 0 := by
+    simp [Pnp3.Magnification.AuditRoutes.FixedParamsProbe.FP3Attempt.FP3b1.LogWidthAdversary.adversaryWitness_v_natlog2,
+      Pnp3.Magnification.AuditRoutes.FixedParamsProbe.FP3Attempt.FP3b1.LogWidthAdversary.adversaryFamily_v_natlog2,
+      orGateCount_prefixAnd]
+  rw [hOrZero] at hOrPos
+  exact Nat.lt_irrefl 0 hOrPos
 
 end V2_A_gpt55
 end ProvenanceFilterV2

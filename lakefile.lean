@@ -151,11 +151,13 @@ lean_lib PnP3 where
     -- engineer outputs into logWidthAdversary_satisfies_diversity.
     Glob.one `Magnification.AuditRoutes.LogWidthAdversary.Composition,
     -- fp3b4 support-cardinality barrier (post-NOGO-000006 follow-up).
-    -- T1..T4 of the 6-slot decomposition; T5..T6 still open.
+    -- T1..T6 of the 6-slot decomposition, ending in the T6 application.
     Glob.one `Magnification.AuditRoutes.SupportCardinalityBarrier.CanonicalHardwiringFamily,
     Glob.one `Magnification.AuditRoutes.SupportCardinalityBarrier.CanonicalHardwiringSupport,
     Glob.one `Magnification.AuditRoutes.SupportCardinalityBarrier.CanonicalHardwiringWitness,
     Glob.one `Magnification.AuditRoutes.SupportCardinalityBarrier.SupportCardinalityOnly,
+    Glob.one `Magnification.AuditRoutes.SupportCardinalityBarrier.Barrier,
+    Glob.one `Magnification.AuditRoutes.SupportCardinalityBarrier.InSupportFunctionalDiversityApplication,
     -- fp3b2 arbitrary-payload strengthening (post-NOGO-000005 follow-up).
     -- T1..T6 of the 6-slot decomposition, ending in the composition theorem.
     Glob.one `Magnification.AuditRoutes.ArbitraryLogWidthTT.AllEssential,
@@ -189,7 +191,8 @@ lean_lib PnP3 where
     -- v0.4.3-followup S11: regression smoke for the log-width adversary
     -- composition + the parallel-engineer outputs it consumes.
     Glob.one `Tests.AuditRoutes_LogWidthAdversary_Smoke,
-    Glob.one `Tests.AuditRoutes_ArbitraryLogWidthTT_Smoke
+    Glob.one `Tests.AuditRoutes_ArbitraryLogWidthTT_Smoke,
+    Glob.one `Tests.AuditRoutes_SupportCardinalityBarrier_Smoke
   ]
 
 lean_lib Pnp4 where

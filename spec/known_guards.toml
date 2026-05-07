@@ -24,9 +24,9 @@
 # `status = "accepted"`.
 
 [meta]
-spec_version    = "0.1.2"
+spec_version    = "0.1.3"
 status          = "frozen"
-last_reviewed   = "2026-05-01"
+last_reviewed   = "2026-05-07"
 
 # ---------------------------------------------------------------------------
 # Accepted guards (FP-1).
@@ -92,3 +92,17 @@ outcome_b_usage                   = "not_admissible"
 standalone_factorization_target   = false
 audit                             = """Reserved name for a planned provenance filter that, if formalized, would prune truth-table-like AC0 family witnesses to non-singleton, non-hardwired AC0 families.  Intended (eventual) Outcome-B partner of `HardwiringGuard` so that the conjunction `HardwiringGuard ∧ ProvenanceFilter_v1` is genuinely conditional.  No Lean artifact exists; consequently the FixedParams Probe cannot quote `ProvenanceFilter_v1` in a formal Outcome-B reduction.  Future FP-3 work that produces a Lean predicate matching this description must additionally demonstrate it is not itself a tautology before promotion to `status = "accepted"`."""
 rationale                         = """Declared so that FP-3 / FP-4 work has a stable cross-spec reference for the planned non-trivial provenance filter without prematurely committing to a Lean shape.  Until promoted to `accepted`, any candidate Π reduced to `ProvenanceFilter_v1` is `under-investigation`, NOT Outcome B (per `FixedParams_Probe.md` §3.B closing clause)."""
+
+[guards.ProvenanceFilter_v2]
+formal_name                       = "Pnp3.Magnification.AuditRoutes.ProvenanceFilterV2.V2_A_gpt55.ProvenanceFilter_v2_V2_A_gpt55_phase2"
+file                              = "pnp3/Magnification/AuditRoutes/ProvenanceFilterV2/V2_A_gpt55/Filter.lean"
+audit_alias                       = ""
+audit_alias_file                  = ""
+status                            = "informal"
+added_in                          = "0.1.3"
+outcome_b_usage                   = "not_admissible"
+standalone_factorization_target   = false
+survivor_surface_witness          = "pnp3/Magnification/AuditRoutes/ProvenanceFilterV2/V2_A_gpt55/Survivor.lean::v2_A_gpt55_phase2_survivor_surface"
+operator_review                   = "seed_packs/fp3b3_provenance_filter_v2_design/operator_reviews/V2_A_gpt55_promotion_review.md"
+audit                             = """Audit-only Phase-2 survivor of the fp3b3 ProvenanceFilter_v2 design search.  V2-A/gpt55 is a *syntactic* predicate on `InPpolyFormula L` records: it asks for unbounded support, a linear Boolean-gate cap (≤ 16·|support|+16), a linear depth cap (≤ 8·|support|+8), and the joint presence of OR and NOT gates once support reaches size two.  V2-A's five mandatory deliverables — `not_support_cardinality_only`, `excludes_bounded_support`, `excludes_adversaryWitness_v_natlog2`, `excludes_adversaryWitness_v_arbpayload`, `seededPrefixAndWitness_admitted` — are kernel-checked in `Survivor.lean::v2_A_gpt55_phase2_survivor_surface`; the survivor surface dodges fp3b4's `support_cardinality_barrier` (NOGO-000007) and excludes the currently-formalised hardwiring witnesses (NOGO-000001 / 000004 / 000005 / 000006).  This entry is **informal only**: it is **not accepted**, **not admissible for Outcome B** of the FixedParams Probe (per `FixedParams_Probe.md` §3.B, which permits only `status = "accepted"` guards), introduces **no FP-4** surface, **no `SourceTheorem_*`**, **no `gap_from_*`** bridge, and **no final endpoint**.  Promotion to `status = "accepted"` is forbidden until a Razborov-Rudich self-test (V2-A is constructive + useful + arguably large in the natural-proofs sense), an adversarial-robustness lemma against syntactic rewritings, and a richer honest-family corpus all ship as kernel-checked artifacts.  See `operator_review` above for the independent six-attack re-review and caveat severity assessment."""
+rationale                         = """Reserves a stable cross-spec name for the V2-A/gpt55 audit-only survivor and pins its Lean witness location so that future seed packs (e.g. `fp3b3.1` Razborov-Rudich self-test, `fp3b3.2` adversarial robustness, V2-B/V2-C/V2-D Phase 2 dispatches) and any subsequent FP-N research can reference V2-A by formal name without ambiguity.  Per the `informal` clause at the top of this file, no `Π → ProvenanceFilter_v2` factorization is admissible for Outcome B; the entry is purely a registry pin.  Wave activation is NOT triggered by this promotion: Pilot Wave 1 activation remains gated on the documented ledger evidence (≥ 1 Critic-pass + ≥ 1 Critic-fail + min_clean_cycles=30) per `spec/wave_gate_thresholds.toml`."""

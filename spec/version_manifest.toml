@@ -37,7 +37,7 @@ last_reviewed    = "2026-05-02"
 [snapshot]
 target_spec_version              = "0.1.0"
 target_spec_path                 = "spec/target.toml"
-known_guards_version             = "0.1.2"
+known_guards_version             = "0.1.3"
 known_guards_path                = "spec/known_guards.toml"
 provider_audit_registry_version  = "0.1.0"
 provider_audit_registry_path     = "spec/provider_audit_registry.toml"

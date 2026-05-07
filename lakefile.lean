@@ -161,6 +161,12 @@ lean_lib PnP3 where
     -- fp3b3 ProvenanceFilter v2 design — Phase 1 paper sketches
     -- (4 directions, single engineer handle gpt55).
     Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_A_gpt55.Sketch,
+    Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_A_gpt55.Filter,
+    Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_A_gpt55.ExcludesOverbroad,
+    Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_A_gpt55.ExcludesPrefixAnd,
+    Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_A_gpt55.ExcludesArbitraryPayload,
+    Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_A_gpt55.NonVacuity,
+    Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_A_gpt55.Survivor,
     Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_B_gpt55.Sketch,
     Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_C_GPT55.Sketch,
     Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_D_GPT55.Sketch,

@@ -205,6 +205,49 @@ Bool`.  If you find yourself needing to evaluate the formula on inputs
 to decide what to do, you've crossed into V2-A.2 territory — STOP and
 ship a failure report.
 
+**Explicit forbidden definitions of `canonicalNormalise` (all kick
+V2-A.1 over the cliff into V2-A.2 / semantic-quotient territory and
+re-instate the natural-proof barrier):**
+
+```lean
+-- FORBIDDEN: argmin over equivalent formulas
+def canonicalNormalise (C : FormulaCircuit n) : FormulaCircuit n :=
+  (Finset.image id ...).argmin (fun D => D.size) ...
+
+-- FORBIDDEN: truth-table reconstruction
+def canonicalNormalise (C : FormulaCircuit n) : FormulaCircuit n :=
+  ttFormula (FormulaCircuit.eval C)
+  -- or any variant that round-trips through a Boolean function
+
+-- FORBIDDEN: choice principle
+def canonicalNormalise (C : FormulaCircuit n) : FormulaCircuit n :=
+  Classical.choose (existence_of_canonical_form C)
+```
+
+These are V2-A.2's territory.  If any of them is your candidate
+definition, STOP — that is the global-failure signal for T1, ship
+the failure report with `Global` obstruction classification.
+
+**Recommended lemma names** (the audit will check for these or
+clearly-equivalent renamings):
+
+```text
+canonicalNormalise_eval
+canonicalNormalise_size_le
+canonicalNormalise_double_not
+canonicalNormalise_or_self_not_self
+canonicalNormalise_or_not_self_self
+canonicalNormalise_and_self_not_self
+canonicalNormalise_and_not_self_self
+canonicalNormalise_and_const_true
+canonicalNormalise_and_true_const
+canonicalNormalise_or_const_false       -- OR-identity with const false
+canonicalNormalise_or_false_const       -- symmetric
+```
+
+The HARD-minimum set is the first nine; the OR-identity pair is
+strongly recommended for symmetry but not strictly required for T4.
+
 ### T2 — V2-A.1 filter definition + non-vacuity
 
 **File:** `V2_A_1_<HANDLE>/Filter.lean` + `V2_A_1_<HANDLE>/NonVacuity.lean`.
@@ -507,6 +550,31 @@ artifacts in this seed pack.
   just one candidate.
 
 Either way, no compute is wasted.
+
+**Pivot chain (operator-side, full):**
+
+```
+T1 global fail (structured failure report, Global classification)
+   ↓
+fp3b3_4_v2_a_normalise_meta_barrier seed pack opens
+   ↓
+meta-barrier theorem landed
+   ↓
+natural-proof risk review (because V2-A.2 trades non-extensionality
+for full extensionality and re-enters Razborov-Rudich territory)
+   ↓
+fp3b3_5_v2_a_2_semantic_quotient seed pack opens (if and only if
+the natural-proof review concludes the semantic quotient has a
+defensible re-entry pattern, e.g. via partial-truth-table
+restriction, not full extensionality)
+```
+
+Note: V2-A.2 (semantic-equivalence quotient) is NOT the automatic
+next route after T1 global failure.  The intermediate meta-barrier
+theorem must land first, and the natural-proof review must clear
+V2-A.2, before fp3b3_5_* opens.  Skipping the review and dispatching
+V2-A.2 directly would re-instate the Razborov-Rudich barrier that
+V2-A's original design escaped — a regression, not a fix.
 
 ## 11. Closing note
 

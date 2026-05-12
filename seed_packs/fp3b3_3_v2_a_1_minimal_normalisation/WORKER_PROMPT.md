@@ -127,6 +127,17 @@ See seed pack `README.md` §4.  Hard rules:
 * No truth-table semantics inside `canonicalNormalise` (this is the
   V2-A.1 vs V2-A.2 boundary; truth-table normalisation is V2-A.2
   territory).
+* Specifically forbidden non-structural definitions of
+  `canonicalNormalise` (each one collapses V2-A.1 into V2-A.2):
+  * `argmin` over equivalent formulas / minimisation-driven choice;
+  * truth-table reconstruction `ttFormula (FormulaCircuit.eval C)`
+    or any variant that round-trips through `Bitstring n → Bool`;
+  * `Classical.choose` over an existence-of-canonical-form lemma;
+  * any definition that requires `Decidable (FormulaCircuit.eval _ _)`
+    at the meta level.
+  If your candidate definition matches any of these, STOP and ship
+  failure report with `Global` obstruction classification — that IS
+  the T1 research result.
 * No appending NOGO entries; V2-A.1 is a positive result.
 
 ## 5. Output (exactly ONE of two)
@@ -170,12 +181,16 @@ with EXACTLY these four sections:
    * Global: V2-A.1's syntactic-normalisation route is structurally
      wrong.  Concretely: `canonicalNormalise` cannot be defined to
      satisfy *both* (a) it eliminates the NOGO-000008 seed gate AND
-     (b) it leaves `seededPrefixAndFamily` admitted as-is.  This is
-     a research result — V2-A's non-extensional-but-defeatable
+     (b) it leaves `seededPrefixAndFamily` admitted as-is, while
+     remaining a structural recursion on `FormulaCircuit n` (no
+     truth-table, no argmin, no `Classical.choose`).  This IS the
+     research result — V2-A's non-extensional-but-defeatable
      trade-off may be inseparable for any purely-syntactic
-     normalisation, forcing V2-A.2 (semantic quotient) as the only
-     route.  Document carefully — the operator may decide to
-     dispatch `fp3b3_4_*` (V2-A.2) instead.
+     normalisation.  Operator-side pivot chain (do NOT pre-stage):
+     `fp3b3_4_*` meta-barrier theorem → natural-proof risk review →
+     conditionally `fp3b3_5_*` V2-A.2 semantic quotient.  Your job
+     is to document the obstruction; the operator decides the
+     pivot.
 4. **What an integrator must know.**
 
 Broken Lean files MUST NOT be committed.  Failure markdown is the

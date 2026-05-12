@@ -45,6 +45,13 @@ If this seed pack lands, V2-A.1 becomes the new
 operator review and potentially for `accepted` promotion (gated on
 that review).
 
+If T1 globally fails (the structural normalisation impossibility
+result), the operator pivots to a meta-barrier seed pack
+`fp3b3_4_v2_a_normalise_meta_barrier/` — see §10 for the
+negative-pivot protocol.  This dispatch is therefore **positive
+with pre-staged negative pivot readiness** — either outcome
+produces durable research artifacts.
+
 ## 1. Why minimal-formula normalisation (and not semantic quotient)
 
 Two patch routes were enumerated in the operator review §7:
@@ -127,11 +134,15 @@ Disjoint file paths under
    `canonicalNormalise (or c (not c)) = const true` and
    `canonicalNormalise (or (not c) c) = const true`.  This kills the
    `seedGate` shape used by NOGO-000008.
-3. **AND identity with `const true`:**
+3. **Contradictory binary AND with negation:** symmetric for AND —
+   `canonicalNormalise (and c (not c)) = const false` and
+   `canonicalNormalise (and (not c) c) = const false`.  Pre-empts a
+   trivial NOGO-000008-style dual attack via contradiction-seeded AND.
+4. **AND identity with `const true`:**
    `canonicalNormalise (and c (const true)) = canonicalNormalise c`,
    `canonicalNormalise (and (const true) c) = canonicalNormalise c`.
-4. **OR identity with `const false`:** symmetric.
-5. **Structural recursion** on the formula tree.  The pass must be a
+5. **OR identity with `const false`:** symmetric.
+6. **Structural recursion** on the formula tree.  The pass must be a
    single fixed-point pass: after applying the case rules
    bottom-up once, the formula must be in normal form (no further
    reductions applicable).  Worker discretion: if a worked-out
@@ -442,7 +453,62 @@ write a critic report.
   re-classification):
   `pnp3/Barrier/NaturalProofs.lean`.
 
-## 10. Closing note
+## 10. Negative-pivot protocol (operator-side, NOT worker scope)
+
+This seed pack is dispatched under the operator's "**positive with
+readiness to pivot negative**" stance.  Workers always pursue the
+positive goal (build V2-A.1 survivor) — but the dispatcher pre-stages
+a negative-result pivot path so a structured failure becomes a
+research artifact, not wasted compute.
+
+**Pivot trigger:** T1 ships a structured failure report
+(Outcome B, §6 with `Global` obstruction classification) AND independent
+review confirms the obstruction is structural rather than implementation
+detail.
+
+**Pivot action (operator only):** open a successor seed pack
+`fp3b3_4_v2_a_normalise_meta_barrier/` whose target is the Lean
+theorem
+
+```lean
+theorem v2_a_syntactic_normalise_meta_barrier :
+    ∀ (normalise : ∀ {n}, FormulaCircuit n → FormulaCircuit n),
+      <some structural class predicate on normalise> →
+      (∀ n, eval (normalise (rewritePrefixAndFamily n)) = eval (rewritePrefixAndFamily n))
+      → ¬ <V2-A_predicate-style filter composed with normalise admits
+           both seededPrefixAndWitness AND rejects rewritePrefixAndWitness>
+```
+
+i.e. a meta-theorem stating that any structural syntactic normaliser
+in the relevant class CANNOT simultaneously preserve V2-A's
+non-vacuity and resist NOGO-000008.  This would be a **fifth structural
+barrier theorem**, joining
+`pnp3/Barrier/{Relativization,NaturalProofs,Algebrization}.lean` and
+`pnp3/Magnification/AuditRoutes/SupportCardinalityBarrier/Barrier.lean`
+in the audit-route barrier suite.  The pivot would consume the T1
+failure report as its starting point and re-dispatch as a fresh
+research direction.
+
+**Worker scope (this seed pack):** ignore the pivot — pursue Outcome A
+(positive landing) or Outcome B (structured failure).  The pivot is
+an operator decision based on whether the failure is local or global,
+informed by independent review.  Workers do NOT pre-stage pivot
+artifacts in this seed pack.
+
+**Scientific value of either outcome:**
+
+* Outcome A on T1+T2 (positive) → Round 2 opens.  V2-A.1 has measured
+  Razborov-Rudich re-entry; a fresh `informal` candidate enters the
+  registry pipeline.
+* Outcome B on T1 (global) → operator pivots to `fp3b3_4_*`
+  meta-barrier seed pack.  The negative result, if formalised,
+  would be a stronger anti-evidence than NOGO-000008: it would close
+  the **entire V2-A-with-structural-normalisation design space**, not
+  just one candidate.
+
+Either way, no compute is wasted.
+
+## 11. Closing note
 
 > V2-A.1 is the **first attempted patch** of V2-A under the
 > kernel-checked anti-evidence of NOGO-000008.  It targets exactly
@@ -453,7 +519,9 @@ write a critic report.
 > and "fully extensional but barrier-bound" (V2-A.2).  If it
 > fails on T1's structural impossibility, that is itself a result:
 > the audit predicate's escape from the barrier may be inseparable
-> from its rewrite vulnerability.
+> from its rewrite vulnerability, and `fp3b3_4_*` opens.
 
 Round 1 cap: T1, T2 only.  Round 2 (T3, T4, T5) opens when T1 + T2
 have landed.  Do not stage Round 2 artifacts in a Round 1 commit.
+Do not stage `fp3b3_4_*` artifacts here either — that is an operator
+decision after Round 1 outcome.

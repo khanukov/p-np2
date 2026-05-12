@@ -183,22 +183,37 @@ only artifact in this outcome.
 
 ## 6. What success means scientifically
 
-If T1 + T2 land, V2-A.1 has:
+This seed pack is dispatched under the operator's **"positive with
+negative-pivot readiness"** stance.  Both outcomes produce durable
+artifacts; neither is wasted compute.
+
+If T1 + T2 land (Outcome A), V2-A.1 has:
 
 * A canonical structural normalisation pass on `FormulaCircuit` that
   eliminates the syntactic redundancies exploited by NOGO-000008
   (double negation, tautological `seedGate`, AND-identity with
-  `const true`).
+  `const true`, plus the symmetric AND-contradiction case).
 * A composite filter `ProvenanceFilter_v2_V2_A_1_<HANDLE>_Filter`
   that admits the honest seeded prefix-AND family.
 
 This is the structural foundation Round 2 needs to ship the four
 classical exclusions (T3), the anti-rewrite theorem (T4), and the
 honest Razborov-Rudich re-classification (T4 companion markdown).
+Round 2 lands → V2-A.1 enters the registry pipeline as an `informal`
+candidate eligible for `accepted` promotion review.
 
-If T1 fails globally (the normalisation pass cannot be defined
-syntactically to thread the needle), that is the research result
-that switches Stream X from V2-A.1 to V2-A.2.
+If T1 fails globally (Outcome B with `Global` obstruction; the
+normalisation pass cannot be defined syntactically to thread the
+needle), that is itself a research result.  The operator will pivot
+to seed pack `fp3b3_4_v2_a_normalise_meta_barrier/` whose target is
+a **meta-barrier theorem** stating that no structural syntactic
+normaliser can both preserve V2-A's non-vacuity and resist
+NOGO-000008.  See seed pack README §10 for the pivot protocol.
+
+**Worker scope:** ignore the pivot path — pursue Outcome A or
+Outcome B honestly.  The pivot is an operator decision based on
+independent review of your failure report's `Global` classification.
+Do NOT stage `fp3b3_4_*` artifacts in this dispatch.
 
 ## 7. Begin
 

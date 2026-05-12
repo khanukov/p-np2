@@ -5,6 +5,21 @@
 > self-pick `<YOUR-HANDLE>` and `<SLOT>`.  Multiple workers may
 > attack the same slot; the cleanest output is merged at
 > audit-review.  This is **Round 1**: only T1 and T2 are open.
+>
+> **Round 1 attempt #2 dispatch — revised post-g55 audit.**
+> Attempt #1 (worker g55, commit `7840ef4` / PR #1239) shipped a
+> `Local`-classified structured failure report identifying a real
+> spec inconsistency: two HARD-minimum lemmas specialise to the
+> same left-hand side and force constant-negation reductions that
+> were not listed.  Audit at
+> `audits/T1_g55_operator_audit.md` upheld `Local` and operator
+> approved a parallel dispatch:
+>   * fp3b3_3 T1 retry with **patched spec** (this file);
+>   * fp3b3_4 M1 meta-barrier statement candidate (separate pack).
+>
+> **Handles already used (T1 attempts):** `g55`.
+> Retry handle convention: `g55r1` (g55's own retry), `<other>r1`
+> for fresh attempts.  T2 may use any unused handle once T1 lands.
 
 ---
 
@@ -81,10 +96,71 @@ Then stop.
 
 | Slot | File | Goal | Depends on |
 | ---- | ---- | ---- | ---------- |
-| T1 | `V2_A_1_<HANDLE>/Normalisation.lean` | `canonicalNormalise`, `canonicalNormalise_eval`, `canonicalNormalise_size_le`, and the four targeted reduction lemmas listed in README §3 T1. | — |
+| T1 | `V2_A_1_<HANDLE>/CanonicalNormalise.lean` | `canonicalNormalise`, `canonicalNormalise_eval`, `canonicalNormalise_size_le`, the `IsCanonical` predicate + `canonicalNormalise_isCanonical` invariant, `canonicalNormalise_double_not_canonical` + `canonicalNormalise_double_not` wrapper, plus the targeted reduction lemmas in README §3 T1 (including the new constant-negation pair). | — |
 | T2 | `V2_A_1_<HANDLE>/Filter.lean` + `V2_A_1_<HANDLE>/NonVacuity.lean` | `normalisedWitness`, `ProvenanceFilter_v2_V2_A_1_<HANDLE>_Filter`, `v2A_1_admits_seededPrefixAndWitness`. | **T1** |
 
 T3 / T4 / T5 are NOT in this dispatch round; do not pick them.
+
+## 2A. Lessons from g55's attempt (T1 retry workers MUST read)
+
+g55's failure report at
+`seed_packs/fp3b3_3_v2_a_1_minimal_normalisation/failures/T1_g55.md`
+and the operator audit at
+`audits/T1_g55_operator_audit.md` contain three load-bearing
+findings for any T1 retry:
+
+1. **Constant-negation is forced by the lemma surface.**  The two
+   reductions
+   `canonicalNormalise (not (const true)) = const false` and
+   `canonicalNormalise (not (const false)) = const true`
+   are not "extra" requirements — they are **derived** by
+   specialising existing AND-identity + AND-contradiction lemmas
+   at `C := const true` / `C := not (const true)`.  Adding them
+   to your structural definition is the simplest way to make the
+   lemma surface consistent.  Define `normaliseNot (const b) :=
+   const (¬b)` at the local NOT constructor level, then prove the
+   constant-negation reductions as immediate `rfl` or one-line
+   simp lemmas.
+
+2. **Double-negation is NOT an unconditional local involution.**
+   Once constant negation is added, the local NOT normaliser
+   `normaliseNot` is no longer involutive on raw `FormulaCircuit`
+   syntax — e.g. `normaliseNot (normaliseNot (not (const true)))
+   = normaliseNot (const false) = const true ≠ not (const true)`.
+   The correct shape is an **image invariant**:
+
+   ```lean
+   inductive IsCanonical : {n : Nat} → FormulaCircuit n → Prop
+     -- exclude (not (const _)) at root
+     -- exclude (not (not _))   at root
+     -- recursive clauses for and/or
+   ```
+
+   Prove `canonicalNormalise_isCanonical : IsCanonical
+   (canonicalNormalise C)` by structural induction.  Then prove
+   `canonicalNormalise_double_not_canonical : IsCanonical C →
+   canonicalNormalise (not (not C)) = C`.  Finally derive the
+   originally-requested wrapper:
+
+   ```lean
+   theorem canonicalNormalise_double_not (C : FormulaCircuit n) :
+       canonicalNormalise (not (not C)) = canonicalNormalise C
+   ```
+
+   from the canonical version + `canonicalNormalise_isCanonical`.
+   Do NOT attempt the unconditional shape — it is false.
+
+3. **Factor normaliseAnd / normaliseOr to avoid proof debt.**
+   g55 hit Lean's nested-match proof-engineering wall on
+   `repeat' split` over the broad cases.  Split each compound
+   constructor into a chain of small `normaliseAndStep_<rule>`
+   helpers (one per HARD-minimum reduction case for that
+   connective), prove each case as a separate `match`-eliminator
+   lemma, and assemble.  Smaller proof obligations land cleanly.
+
+If you propose any deviation from this recipe, document the
+deviation in a top-of-file comment block (no more than 12 lines).
+Do NOT silently ignore the audit findings.
 
 ## 3. File-path convention
 

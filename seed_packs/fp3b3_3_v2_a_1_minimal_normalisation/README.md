@@ -127,22 +127,30 @@ Disjoint file paths under
 
 **File:** `V2_A_1_<HANDLE>/Normalisation.lean`.
 
-**Required reductions (HARD minimum):**
+**Required reductions (HARD minimum) — REVISED after g55 audit:**
 
 1. **Double-negation elimination:** `canonicalNormalise (not (not c)) = canonicalNormalise c`.
-2. **Tautological binary OR with negation:** for any `c`,
+2. **Constant negation under NOT (NEW after g55 audit):** for the two
+   constants, `canonicalNormalise (not (const true)) = const false`
+   and `canonicalNormalise (not (const false)) = const true`.
+   **Derivation, not extension:** these are forced by the existing
+   AND-identity + AND-contradiction lemmas under specialisation at
+   `C := const true` / `C := not (const true)` (see audit document
+   `audits/T1_g55_operator_audit.md` §1).  Adding them explicitly
+   removes the spec inconsistency g55 discovered.
+3. **Tautological binary OR with negation:** for any `c`,
    `canonicalNormalise (or c (not c)) = const true` and
    `canonicalNormalise (or (not c) c) = const true`.  This kills the
    `seedGate` shape used by NOGO-000008.
-3. **Contradictory binary AND with negation:** symmetric for AND —
+4. **Contradictory binary AND with negation:** symmetric for AND —
    `canonicalNormalise (and c (not c)) = const false` and
    `canonicalNormalise (and (not c) c) = const false`.  Pre-empts a
    trivial NOGO-000008-style dual attack via contradiction-seeded AND.
-4. **AND identity with `const true`:**
+5. **AND identity with `const true`:**
    `canonicalNormalise (and c (const true)) = canonicalNormalise c`,
    `canonicalNormalise (and (const true) c) = canonicalNormalise c`.
-5. **OR identity with `const false`:** symmetric.
-6. **Structural recursion** on the formula tree.  The pass must be a
+6. **OR identity with `const false`:** symmetric.
+7. **Structural recursion** on the formula tree.  The pass must be a
    single fixed-point pass: after applying the case rules
    bottom-up once, the formula must be in normal form (no further
    reductions applicable).  Worker discretion: if a worked-out
@@ -166,6 +174,47 @@ theorem canonicalNormalise_size_le {n : Nat} (c : FormulaCircuit n) :
     FormulaCircuit.size (canonicalNormalise c) ≤ FormulaCircuit.size c
 ```
 
+**Canonical-output invariant (NEW after g55 audit):**
+
+g55's failure report flagged that the originally-requested
+`canonicalNormalise_double_not` is **false** as an unconditional
+local involution on raw `FormulaCircuit` syntax — it holds only on
+the **image** of `canonicalNormalise`.  Repair: introduce a
+syntactic normal-form predicate, prove every output is canonical,
+derive the originally-shaped theorem as a wrapper.
+
+```lean
+/-- Syntactic normal-form predicate.  Canonical outputs avoid these
+shapes at the root (and recursively in sub-formulas, modulo the
+inductive clauses for and/or). -/
+inductive IsCanonical : {n : Nat} → FormulaCircuit n → Prop
+  -- const and variable nodes are always canonical
+  -- (not (const _)) at root: FORBIDDEN
+  -- (not (not _)) at root:   FORBIDDEN
+  -- recursive clauses for and / or with canonical sub-formulas
+  | -- ... (worker fills in)
+
+/-- Every output of canonicalNormalise satisfies IsCanonical. -/
+theorem canonicalNormalise_isCanonical {n : Nat}
+    (C : FormulaCircuit n) :
+    IsCanonical (canonicalNormalise C)
+
+/-- Image-invariant double-not: holds on canonical inputs. -/
+theorem canonicalNormalise_double_not_canonical {n : Nat}
+    (C : FormulaCircuit n) (h : IsCanonical C) :
+    canonicalNormalise (not (not C)) = C
+
+/-- Wrapper recovering the originally-requested theorem shape.
+Derived via canonicalNormalise_isCanonical + the canonical version. -/
+theorem canonicalNormalise_double_not {n : Nat}
+    (C : FormulaCircuit n) :
+    canonicalNormalise (not (not C)) = canonicalNormalise C
+```
+
+The wrapper is what T4 consumes; the invariant is the proof
+vehicle.  Workers should NOT attempt the unconditional local
+involution shape g55 discovered to be false.
+
 **Targeted reduction lemmas** (required so T2-T4 can ship cleanly):
 
 ```lean
@@ -186,6 +235,13 @@ theorem canonicalNormalise_and_const_true
 theorem canonicalNormalise_and_true_const
     {n : Nat} (c : FormulaCircuit n) :
     canonicalNormalise (and (const true) c) = canonicalNormalise c
+
+-- NEW after g55 audit: constant-negation reductions
+theorem canonicalNormalise_not_const_true {n : Nat} :
+    canonicalNormalise (not (const true) : FormulaCircuit n) = const false
+
+theorem canonicalNormalise_not_const_false {n : Nat} :
+    canonicalNormalise (not (const false) : FormulaCircuit n) = const true
 ```
 
 Plus, optionally, an idempotence lemma:
@@ -195,8 +251,33 @@ theorem canonicalNormalise_idempotent {n : Nat} (c : FormulaCircuit n) :
     canonicalNormalise (canonicalNormalise c) = canonicalNormalise c
 ```
 
-**Expected LOC:** 100–200, depending on how aggressive the optional
-reductions are.  The HARD-minimum reductions are sufficient to land T4.
+**Expected LOC (revised after g55 audit):** 150–280.  The
+canonical-output invariant adds ~50 LOC for the `IsCanonical`
+predicate definition, its preservation proofs across the structural
+recursion, and the image-invariant double-not proof.  The
+HARD-minimum reductions, the constant-negation pair, and the
+invariant together are sufficient to land T4.
+
+**Proof-strategy hints (synthesised from g55 audit recipe):**
+
+1. Define `canonicalNormalise` structurally with local constructors
+   ordered so that constants are normalised under NOT first:
+   `not (const true) ↦ const false`, `not (const false) ↦ const true`,
+   `not (not C) ↦ C` (after recursive normalisation of `C`).
+2. Define `IsCanonical` to exclude `not (const _)` and `not (not _)`
+   at the root, plus recursive clauses for `and`/`or`.
+3. Prove `canonicalNormalise_isCanonical` by structural induction
+   on `FormulaCircuit n`, case-splitting on whether sub-formulas
+   match the local-reduction patterns.
+4. Derive `canonicalNormalise_double_not_canonical` from the
+   invariant directly.
+5. Wrap to recover `canonicalNormalise_double_not` via
+   `canonicalNormalise_isCanonical (canonicalNormalise C)` and the
+   canonical version.
+6. Factor `normaliseAnd` and `normaliseOr` into smaller helper
+   functions (e.g. `normaliseAndStep`, `normaliseOrStep`) and prove
+   their local lemmas by explicit constructor cases, avoiding broad
+   `repeat' split` proofs over deeply nested generated matches.
 
 **Critical scope rule:** `canonicalNormalise` MUST be a **structural,
 syntactic** function on `FormulaCircuit n` — NO truth-table evaluation,
@@ -511,22 +592,35 @@ left-hand side and together force constant-negation reductions that
 were not listed as HARD-minimum), and shipped a structured failure
 report classified as `Local`.  The full audit is at
 `audits/T1_g55_operator_audit.md`; the operator countersigned the
-`Local` classification (math-checked, recipe-plausible) and placed
-T1 retry on **HOLD** pending:
+`Local` classification (math-checked, recipe-plausible).
 
-1. parallel meta-barrier track `../fp3b3_4_v2_a_normalise_meta_barrier/`
-   producing preliminary findings (opened as **research insurance**,
-   not as a `Global`-triggered pivot — see audit §5(B) for the
-   override reasoning);
-2. spec patch on this seed pack §3 T1 to add the derived
-   constant-negation reductions explicitly and to reformulate
-   `canonicalNormalise_double_not` via a canonical-output
-   invariant (`IsCanonical` predicate + image-invariant double-not
-   theorem + wrapper recovering the originally-requested shape);
-3. operator countersignature for the retry dispatch (and a fresh
-   handle `g55r1` so the attempt chain stays navigable).
+**Retry gate (REVISED — parallel dispatch approved):** the initial
+audit draft listed a sequential gate (no retry until fp3b3_4
+findings).  Operator reconsidered and approved parallel dispatch
+on the reasoning that the spec patch is deterministic, fp3b3_4 M1
+is markdown-only, and parallel work amortises operator time with
+acceptable downside.  See audit §5 for the revised operationalisation.
+Current state:
 
-No T2 worker was dispatched; the T1 → T2 dependency held.
+1. **Spec patch on this seed pack §3 T1 — DONE.**  Added the
+   derived constant-negation reductions explicitly
+   (`not (const true) ↦ const false`, `not (const false) ↦
+   const true`) and reformulated `canonicalNormalise_double_not`
+   via a canonical-output invariant (`IsCanonical` predicate +
+   image-invariant double-not theorem + wrapper recovering the
+   originally-requested shape).
+2. **Worker prompt revised — DONE.**  WORKER_PROMPT.md §2A
+   explicitly walks T1 retry workers through g55's three
+   load-bearing findings.
+3. **Operator countersignature for retry dispatch — DONE.**
+   See audit §6.  Retry handle: `g55r1` for g55 reattempt, or
+   fresh `<handle>r1` for independent attempts.
+4. **Parallel `fp3b3_4` M1 dispatch — APPROVED.**  Markdown-only
+   meta-barrier statement candidate; see
+   `../fp3b3_4_v2_a_normalise_meta_barrier/WORKER_PROMPT_M1.md`.
+
+No T2 worker has been dispatched yet; the T1 → T2 dependency
+holds.  T2 dispatch waits for a clean T1 retry landing.
 
 **Pivot trigger (original, still in force):** T1 ships a structured
 failure report (Outcome B, §6 with `Global` obstruction

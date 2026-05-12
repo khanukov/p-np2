@@ -223,36 +223,53 @@ the failure report.  Selected outcomes (recorded for audit):
 * **Spec refinement direction:** _Canonical-output invariant
   approach_ — encoded in §3 above for the eventual retry.
 
-**Operationalisation:**
+**Operationalisation (REVISED — parallel dispatch):**
 
-(A) **No T1 retry dispatch right now.**  The retry would be
-    premature without the parallel meta-barrier track's
-    preliminary findings.  Retry gate releases when **all** of:
+The initial draft of this section listed a sequential retry
+gate (no T1 retry until fp3b3_4 produces preliminary findings).
+Operator reconsidered and **revised to parallel dispatch** on
+the following reasoning:
 
-    1. `fp3b3_4` meta-barrier track produces a preliminary
-       structural assessment (positive: "no meta-barrier
-       theorem; T1 retry is well-motivated"; or negative:
-       "meta-barrier theorem looks formalisable; T1 retry
-       becomes secondary").
-    2. seed pack `fp3b3_3` §3 T1 is patched with the
-       canonical-output invariant approach (see §3 of this
-       audit).
-    3. operator countersigns the retry dispatch.
+* The fp3b3_3 spec patch is deterministic and well-understood
+  (add the derived constant-negation reductions explicitly +
+  reformulate `canonicalNormalise_double_not` via the
+  canonical-output invariant the audit §3 already specifies).
+  Risk of "another spec inconsistency surfaces" is low because
+  the lemma surface is now closed under the specialisations
+  that broke attempt #1.
+* The fp3b3_4 M1 deliverable is **markdown-only** (no Lean), so
+  worker effort is bounded and reversible.
+* If fp3b3_4 M1 lands `DISCREDITED` (anti-meta-barrier
+  counterexample succeeds), T1 retry is already in flight —
+  saved one operator roundtrip.
+* If fp3b3_4 M1 lands `PROCEED to M2` (meta-barrier
+  hypothesis plausible), T1 retry can be paused at the next
+  worker check-in with minimal sunk cost.
 
-(B) **Open `fp3b3_4_v2_a_normalise_meta_barrier/` immediately**
-    as a parallel research track.  This is **not** triggered
-    by g55's `Local` classification per the seed pack's §10
-    protocol (which gates the meta-barrier pivot on `Global`).
-    Instead, operator opens it as a **research insurance**
-    track based on the meta-signal observed in §2(b): the
-    spec inconsistency on first dispatch is a weak (not
-    structural) signal that the design space is harder to
-    specify than initially estimated, and it is cheaper to
-    explore the meta-barrier hypothesis in parallel than to
-    bet the entire Stream X budget on T1 retries that may
-    accumulate similar spec-evolution costs.
+(A) **Patched fp3b3_3 §3 T1 spec is committed in the same
+    coordinated commit as this audit revision.**  See seed pack
+    README §3 T1 for the patched HARD-minimum reduction set
+    (now seven items including the two constant-negation
+    reductions) and the canonical-output invariant approach.
 
-(C) **`fp3b3_3` seed pack remains the primary Stream X
+(B) **T1 retry dispatch is approved** under the revised gate:
+
+    1. seed pack `fp3b3_3` §3 T1 patched — **DONE** (this commit).
+    2. WORKER_PROMPT.md §2A explicitly walks T1 retry workers
+       through g55's three load-bearing findings — **DONE**.
+    3. operator countersignature for retry dispatch —
+       **countersigned in this audit revision** (see §6 below).
+    4. Retry handle convention: `g55r1` for g55's own retry,
+       fresh `<other>r1` for independent attempts.
+
+(C) **`fp3b3_4` M1 dispatch is approved** in parallel:
+
+    1. `fp3b3_4` README written — **DONE** (separate commit).
+    2. `fp3b3_4/WORKER_PROMPT_M1.md` written — **DONE** (this commit).
+    3. M1 is markdown-only; worker dispatch is operator
+       discretion.
+
+(D) **`fp3b3_3` seed pack remains the primary Stream X
     track.**  Opening `fp3b3_4` does **not** demote
     `fp3b3_3`.  Both tracks may end with:
     * `fp3b3_3` lands → V2-A.1 successor candidate, meta-barrier
@@ -262,20 +279,49 @@ the failure report.  Selected outcomes (recorded for audit):
     * Both stall → operator escalates: archive both,
       re-evaluate V2-A.2 / V2-A.3 / V2-B / V2-D priorities.
 
-## 6. Cross-references
+## 6. Operator countersignature for T1 retry
+
+Per audit §5(B), T1 retry dispatch is countersigned subject to:
+
+* Worker MUST read `audits/T1_g55_operator_audit.md` (this
+  document) and `failures/T1_g55.md` before starting.  This is
+  enforced by `WORKER_PROMPT.md` §2A.
+* Worker MUST follow the canonical-output invariant approach
+  (see audit §3 / README §3 T1).  Any deviation requires a
+  documented top-of-file comment block.
+* Worker MUST adopt a retry handle (`g55r1` for g55 reattempt,
+  or a fresh `<handle>r1`-style suffix for independent
+  attempts).  This keeps the audit chain navigable.
+* If retry surfaces another spec inconsistency (analogous to
+  g55's finding), worker MUST ship a structured failure report
+  documenting the new inconsistency.  Operator will then
+  re-audit and either patch the spec again OR re-classify the
+  obstruction as `Global` and pivot per the original §10
+  protocol.
+* Round 2 (T3 / T4 / T5) remains gated on T1 + T2 landing
+  cleanly.  Round 2 must not be pre-staged in retry commits.
+
+This countersignature applies to the current spec at commit
+hash recorded at landing time; if the spec evolves further
+before retry dispatch, the countersignature must be re-issued.
+
+## 7. Cross-references
 
 * g55 failure report:
   `seed_packs/fp3b3_3_v2_a_1_minimal_normalisation/failures/T1_g55.md`
 * g55 worker commit: `7840ef4` (merged via PR #1239 → `f120b78`).
-* Seed pack as of audit: commit `3d52fad`.
+* Seed pack initial dispatch commit: `3d52fad`.
+* Audit + fp3b3_4 opening commit: `59a20ac`.
+* Spec patch + audit revision + M1 prompt commit:
+  recorded at this commit.
 * Parallel track opened:
   `seed_packs/fp3b3_4_v2_a_normalise_meta_barrier/`
-  (separate README + WORKER_PROMPT — see that pack for scope).
+  with `README.md` + `WORKER_PROMPT_M1.md`.
 * Negative-pivot protocol pre-staged in seed pack README §10
   (operator activated the meta-barrier opening early, ahead
   of `Global` classification, per the §5 reasoning above).
 
-## 7. Audit-only scope confirmation
+## 8. Audit-only scope confirmation
 
 This audit document writes nothing to:
 

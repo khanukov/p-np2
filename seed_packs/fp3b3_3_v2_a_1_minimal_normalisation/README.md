@@ -504,10 +504,42 @@ positive goal (build V2-A.1 survivor) — but the dispatcher pre-stages
 a negative-result pivot path so a structured failure becomes a
 research artifact, not wasted compute.
 
-**Pivot trigger:** T1 ships a structured failure report
-(Outcome B, §6 with `Global` obstruction classification) AND independent
-review confirms the obstruction is structural rather than implementation
-detail.
+**Round 1 dispatch outcome (commit `7840ef4` / PR #1239):** worker
+g55 attempted T1, surfaced an internal spec inconsistency on the
+HARD-minimum lemma surface (two lemmas specialise to the same
+left-hand side and together force constant-negation reductions that
+were not listed as HARD-minimum), and shipped a structured failure
+report classified as `Local`.  The full audit is at
+`audits/T1_g55_operator_audit.md`; the operator countersigned the
+`Local` classification (math-checked, recipe-plausible) and placed
+T1 retry on **HOLD** pending:
+
+1. parallel meta-barrier track `../fp3b3_4_v2_a_normalise_meta_barrier/`
+   producing preliminary findings (opened as **research insurance**,
+   not as a `Global`-triggered pivot — see audit §5(B) for the
+   override reasoning);
+2. spec patch on this seed pack §3 T1 to add the derived
+   constant-negation reductions explicitly and to reformulate
+   `canonicalNormalise_double_not` via a canonical-output
+   invariant (`IsCanonical` predicate + image-invariant double-not
+   theorem + wrapper recovering the originally-requested shape);
+3. operator countersignature for the retry dispatch (and a fresh
+   handle `g55r1` so the attempt chain stays navigable).
+
+No T2 worker was dispatched; the T1 → T2 dependency held.
+
+**Pivot trigger (original, still in force):** T1 ships a structured
+failure report (Outcome B, §6 with `Global` obstruction
+classification) AND independent review confirms the obstruction is
+structural rather than implementation detail.
+
+**Note on early opening of `fp3b3_4_*`:** the operator opened the
+meta-barrier track ahead of a `Global` classification because the
+first dispatch's spec inconsistency was a weak meta-signal that
+made parallel exploration cheaper than a pure retry sequence.  This
+**override is recorded** in the audit document, does not modify the
+`Global`-trigger protocol for future dispatches, and does not
+preempt the fp3b3_3 retry track — both tracks run in parallel.
 
 **Pivot action (operator only):** open a successor seed pack
 `fp3b3_4_v2_a_normalise_meta_barrier/` whose target is the Lean

@@ -207,7 +207,10 @@ lean_lib PnP3 where
     -- composition + the parallel-engineer outputs it consumes.
     Glob.one `Tests.AuditRoutes_LogWidthAdversary_Smoke,
     Glob.one `Tests.AuditRoutes_ArbitraryLogWidthTT_Smoke,
-    Glob.one `Tests.AuditRoutes_SupportCardinalityBarrier_Smoke
+    Glob.one `Tests.AuditRoutes_SupportCardinalityBarrier_Smoke,
+    -- fp3b3.1 + fp3b3.2: smoke for V2-A landing artifacts
+    -- (representation-sensitivity self-test + rewrite attack).
+    Glob.one `Tests.AuditRoutes_V2A_LandingArtifacts_Smoke
   ]
 
 lean_lib Pnp4 where

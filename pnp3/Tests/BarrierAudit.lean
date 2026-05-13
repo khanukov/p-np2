@@ -56,7 +56,7 @@ theorem locality_contra_np_to_formula
 #print axioms locality_contradiction_from_provider_witness
 #print axioms locality_contra_np_to_formula
 #print axioms OPS_trigger_formulas_partial_of_provider_formula_separation
-#print axioms NP_not_subset_PpolyFormula_final
+#print axioms RefutedRoute_NP_not_subset_PpolyFormula_final
 #print axioms P_ne_NP_final
 
 end Pnp3.Tests

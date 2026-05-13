@@ -1222,6 +1222,13 @@ Solver-local provider for the missing Step-C closure package.
 
 This isolates the remaining mathematical work in the strongest reusable form:
 for a fixed solver, provide family-level AC0 data and a strict capacity gap.
+
+@audit-class: infrastructure
+@audit-pr: PR 6
+@audit-registry: spec/provider_audit_registry.toml
+@audit-note:
+  Step-C closure data infrastructure for the partial-locality lift.
+  No refuted dependency.
 -/
 class StepCClosureDataPartialProvider
     {p : GapPartialMCSPParams}

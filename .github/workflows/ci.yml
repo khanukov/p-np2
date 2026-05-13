@@ -16,33 +16,38 @@ jobs:
           default-toolchain: leanprover/lean4:v4.22.0-rc2
 
       - name: Install ripgrep
-        run: sudo apt-get update && sudo apt-get install -y ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep jq
 
-      # 3. Update mathlib и подтягиваем его кеш
-      - name: lake update mathlib
-        run: lake update mathlib
-
+      # 3. Pull the prebuilt mathlib cache.
+      #    We do NOT run `lake update mathlib` here: per Engineering
+      #    Execution Plan v0.2.1 amendment ④, dependency updates are a
+      #    separate dedicated PR scope, not part of ordinary verification.
       - name: Get prebuilt mathlib cache
         run: lake exe cache get
 
-      # 4. Кешируем .lake между прогонками
+      # 4. Cache .lake between runs.
       - uses: actions/cache@v3
         with:
           path: .lake
           key: ${{ runner.os }}-lake-${{ hashFiles('lakefile.lean') }}
 
-      # 5. Сборка проекта
+      # 5. Build both libraries explicitly.
+      #    `lake build` without args only compiles the @[default_target]
+      #    (PnP3); naming both libs ensures Pnp4 is built so that
+      #    scripts/check.sh Step 14/16's pnp4 axiom-surface dump finds
+      #    its expected lines.
       - name: Build project
-        run: lake build
+        run: lake build PnP3 Pnp4
 
-      # 6. Запуск smoke‐теста
+      # 6. Smoke test.
       - name: Run smoke test
         run: lake env lean --run scripts/smoke.lean
 
-      # 7. Запуск всех тестов
+      # 7. Run tests.
       - name: Run all tests
         run: lake test
 
-      # 8. Аудит поверхности аксиом и базовых гейтов
+      # 8. Full governance/verifier audit.
       - name: Run audit check script
         run: ./scripts/check.sh
+

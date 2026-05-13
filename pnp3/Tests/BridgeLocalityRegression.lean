@@ -78,7 +78,7 @@ theorem i4_final_wiring_of_supportBounds
     (n : Nat) (hn : hAsym.N0 ≤ n) :
     NP_not_subset_PpolyFormula := by
   simpa using
-    (NP_not_subset_PpolyFormula_final_with_supportBounds
+    (RefutedRoute_NP_not_subset_PpolyFormula_final_with_supportBounds
       (hBounds := hBounds)
       (hAsym := hAsym)
       (hNPbridge := hNPbridge)
@@ -243,7 +243,7 @@ theorem i4_np_not_subset_ppolyDAG_of_supportBounds
     (hBounds : Pnp3.Magnification.FormulaSupportRestrictionBoundsPartial) :
     NP_not_subset_PpolyDAG := by
   exact
-    Pnp3.LowerBounds.NP_not_subset_PpolyDAG_of_supportBounds_TM
+    Pnp3.LowerBounds.RefutedRoute_NP_not_subset_PpolyDAG_of_supportBounds_TM
       W hBounds
 
 theorem i4_p_ne_np_final_of_supportBounds
@@ -252,20 +252,20 @@ theorem i4_p_ne_np_final_of_supportBounds
     (hBounds : Pnp3.Magnification.FormulaSupportRestrictionBoundsPartial) :
     P_ne_NP := by
   exact
-    Pnp3.Magnification.P_ne_NP_final_of_supportBounds_TM
+    Pnp3.Magnification.RefutedRoute_P_ne_NP_final_of_supportBounds_TM
       W hBounds
 
 theorem i4_np_not_subset_ppolyDAG_final_of_multiswitching_data
     (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
     (D : AsymptoticFormulaTrackData) :
     NP_not_subset_PpolyDAG := by
-  exact Pnp3.Magnification.NP_not_subset_PpolyDAG_final_of_multiswitchingData hMS D
+  exact Pnp3.Magnification.RefutedRoute_NP_not_subset_PpolyDAG_final_of_multiswitchingData hMS D
 
 theorem i4_p_ne_np_final_of_multiswitching_data
     (hMS : AC0LocalityBridge.FormulaSupportBoundsFromMultiSwitchingContract)
     (D : AsymptoticFormulaTrackData) :
     P_ne_NP := by
-  exact Pnp3.Magnification.P_ne_NP_final_of_multiswitchingData hMS D
+  exact Pnp3.Magnification.RefutedRoute_P_ne_NP_final_of_multiswitchingData hMS D
 
 theorem i4_p_ne_np_final_of_dag_stableRestrictionPayload
     {p : GapPartialMCSPParams}
@@ -296,7 +296,7 @@ theorem i4_final_wiring_of_multiswitching
     (n : Nat) (hn : hAsym.N0 ≤ n) :
     NP_not_subset_PpolyFormula := by
   simpa using
-    (NP_not_subset_PpolyFormula_final_with_multiswitching
+    (RefutedRoute_NP_not_subset_PpolyFormula_final_with_multiswitching
       (hMS := hMS)
       (hAsym := hAsym)
       (hNPbridge := hNPbridge)

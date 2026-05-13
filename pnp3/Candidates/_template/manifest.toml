@@ -1,0 +1,71 @@
+# Candidate manifest — template
+
+# Replace this template's values when copying to a real candidate
+# directory.  All keys below are required unless marked optional.
+
+[candidate]
+id            = "template"
+method_family = "template"   # one of: algebraic, spectral,
+                             # proof_complexity, fine_grained,
+                             # meta_complexity, ac0_locality_support,
+                             # natural_property, algorithmic_williams,
+                             # info_theoretic, sos, wild_card, other
+status        = "template"   # one of: template, draft, intake,
+                             # under_review, refuted, accepted
+
+[source]
+# The candidate's main mathematical claim.
+theorem = "SourceTheorem_template"
+# The bridge from the source theorem to ResearchGapWitness.
+bridge  = "gap_from_template"
+# File where both declarations live.
+file    = "proof.lean"
+
+[barriers]
+# Rule 7 barrier certificate.  Each field must be one of:
+#   "yes"                  — the barrier is overcome by the candidate
+#   "no"                   — the candidate does not claim to
+#                             overcome this barrier
+#   "unknown"              — not yet investigated
+#   "unknown-human-review" — investigation requires the human-review
+#                            queue (Rule 7)
+relativization     = "unknown"
+natural_proof      = "unknown"
+algebrization      = "unknown"
+hardwiring_checked = false   # boolean
+collapse_not_contradiction_checked = false
+
+# When the candidate claims natural-proof escape, set
+# `natural_proof_breaks` to one of: constructivity, largeness,
+# usefulness, unknown-human-review.
+# natural_proof_breaks = ""
+
+[prior_work]
+# Rule 15: list known papers, preprints, archived attempts, similar
+# SourceTheorem skeletons.  Empty list = explicit assertion that
+# nothing is known.
+items = []
+
+[whitelisted_typeclasses]
+# Rule 16 / spec/implicit_assumption_channels.md §3.  Only the
+# typeclasses listed here may appear in the candidate's proof.lean.
+# Allowed without justification: Decidable, DecidableEq, Inhabited,
+# Nonempty, Fintype, Finite, Repr, ToString, Coe, CoeHead, CoeTail,
+# plus algebraic/order classes on Nat/Int/Bool only.
+allowed       = []
+justification = ""
+
+[review]
+# When a candidate's barrier certificate or size policy triggers
+# human review, set this to true.  The verifier counts open
+# human-review entries against
+# spec/target.toml::[human_review].candidate_queue_limit.
+human_review_required = false
+
+[verifier]
+# Pinned at intake: which spec_version + attack_suite_version was
+# active when the candidate was last verified (Rule 14).  Both fields
+# are populated by scripts/verify_candidate.sh in PR 15; for the
+# template they remain empty.
+spec_version_at_intake        = ""
+attack_suite_version_at_intake = ""

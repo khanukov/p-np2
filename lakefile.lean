@@ -128,6 +128,61 @@ lean_lib PnP3 where
     Glob.one `Magnification.UnconditionalResearchGap,
     Glob.one `Magnification.AuditRoutes.DistinguisherMatrixProvenance.V_gpt55.MatrixPrimitives,
     Glob.one `Magnification.FinalResult,
+    -- Research Governance v0.1, PR 4a: refuted-predicate registry.
+    Glob.one `RefutedPredicates.Registry,
+    -- Research Governance v0.1, PR 10: FrozenSpec stage 1.
+    Glob.one `Spec.FrozenSpec,
+    -- Research Governance v0.1, FP-1: FixedParams Probe audit surface.
+    Glob.one `Magnification.AuditRoutes.FixedParamsProbe,
+    -- v0.4.2 Track A-CL0: CrossLength coherence audit target surface
+    -- (research objectives only; no theorems, no NoGoLog entry).
+    Glob.one `Magnification.AuditRoutes.CrossLengthCoherence_NoGo,
+    -- v0.4.3-followup: 10-engineer parallel attack on FP-3b.2.
+    -- Triage wiring; final selection happens at S11 integration.
+    Glob.one `Magnification.AuditRoutes.LogWidthAdversary.Width_NatLog2,
+    Glob.one `Magnification.AuditRoutes.LogWidthAdversary.Width_PowOfTwoSlice,
+    Glob.one `Magnification.AuditRoutes.LogWidthAdversary.RenameSize,
+    Glob.one `Magnification.AuditRoutes.LogWidthAdversary.RenameSupport,
+    Glob.one `Magnification.AuditRoutes.LogWidthAdversary.TTFormulaSizeBound,
+    Glob.one `Magnification.AuditRoutes.LogWidthAdversary.Family_NatLog2,
+    Glob.one `Magnification.AuditRoutes.LogWidthAdversary.Family_PowOfTwoSlice,
+    Glob.one `Magnification.AuditRoutes.LogWidthAdversary.Diversity_BelowN,
+    Glob.one `Magnification.AuditRoutes.LogWidthAdversary.Diversity_Unbounded,
+    -- v0.4.3-followup S11 integration: composition of the parallel
+    -- engineer outputs into logWidthAdversary_satisfies_diversity.
+    Glob.one `Magnification.AuditRoutes.LogWidthAdversary.Composition,
+    -- fp3b4 support-cardinality barrier (post-NOGO-000006 follow-up).
+    -- T1..T6 of the 6-slot decomposition, ending in the T6 application.
+    Glob.one `Magnification.AuditRoutes.SupportCardinalityBarrier.CanonicalHardwiringFamily,
+    Glob.one `Magnification.AuditRoutes.SupportCardinalityBarrier.CanonicalHardwiringSupport,
+    Glob.one `Magnification.AuditRoutes.SupportCardinalityBarrier.CanonicalHardwiringWitness,
+    Glob.one `Magnification.AuditRoutes.SupportCardinalityBarrier.SupportCardinalityOnly,
+    Glob.one `Magnification.AuditRoutes.SupportCardinalityBarrier.Barrier,
+    Glob.one `Magnification.AuditRoutes.SupportCardinalityBarrier.InSupportFunctionalDiversityApplication,
+    -- fp3b3 ProvenanceFilter v2 design — Phase 1 paper sketches
+    -- (4 directions, single engineer handle gpt55).
+    Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_A_gpt55.Sketch,
+    Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_A_gpt55.Filter,
+    Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_A_gpt55.ExcludesOverbroad,
+    Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_A_gpt55.ExcludesPrefixAnd,
+    Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_A_gpt55.ExcludesArbitraryPayload,
+    Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_A_gpt55.NonVacuity,
+    Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_A_gpt55.NotSupportCardinalityOnly,
+    Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_A_gpt55.Survivor,
+    Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_A_gpt55.AdversarialRobustness.RewriteAttack,
+    Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_A_gpt55.NaturalProofsSelfTest.RepresentationSensitivity,
+    Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_A_NormaliseMetaBarrier.Barrier,
+    Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_B_gpt55.Sketch,
+    Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_C_GPT55.Sketch,
+    Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_D_GPT55.Sketch,
+    -- fp3b2 arbitrary-payload strengthening (post-NOGO-000005 follow-up).
+    -- T1..T6 of the 6-slot decomposition, ending in the composition theorem.
+    Glob.one `Magnification.AuditRoutes.ArbitraryLogWidthTT.AllEssential,
+    Glob.one `Magnification.AuditRoutes.ArbitraryLogWidthTT.TTFormulaSupport,
+    Glob.one `Magnification.AuditRoutes.ArbitraryLogWidthTT.RenamePayload,
+    Glob.one `Magnification.AuditRoutes.ArbitraryLogWidthTT.Family,
+    Glob.one `Magnification.AuditRoutes.ArbitraryLogWidthTT.Witness,
+    Glob.one `Magnification.AuditRoutes.ArbitraryLogWidthTT.Composition,
     Glob.one `ThirdPartyFacts.Facts_Switching,
     -- Partial-track bibliography/lemmas used by final magnification result.
     Glob.one `ThirdPartyFacts.PartialTransport,
@@ -143,7 +198,21 @@ lean_lib PnP3 where
     Glob.one `Tests.WeakRouteSurfaceTests,
     Glob.one `Tests.FormulaSupportBoundsFalsifiabilityProbe,
     Glob.one `Tests.SmokeTests,
-    Glob.one `Tests.UnitTests
+    Glob.one `Tests.UnitTests,
+    -- Research Governance v0.1, PR 11: target-lock compile-time probe.
+    Glob.one `Tests.TargetLockProbe,
+    -- Research Governance v0.1, FP-1: FixedParams Probe NoGo smoke skeleton.
+    Glob.one `Tests.FixedParams_Probe_NoGo,
+    -- v0.4.2 Track A-CL0: regression smoke for the CL-0 target surface.
+    Glob.one `Tests.AuditRoutes_CL0_NoGo_Regression,
+    -- v0.4.3-followup S11: regression smoke for the log-width adversary
+    -- composition + the parallel-engineer outputs it consumes.
+    Glob.one `Tests.AuditRoutes_LogWidthAdversary_Smoke,
+    Glob.one `Tests.AuditRoutes_ArbitraryLogWidthTT_Smoke,
+    Glob.one `Tests.AuditRoutes_SupportCardinalityBarrier_Smoke,
+    -- fp3b3.1 + fp3b3.2: smoke for V2-A landing artifacts
+    -- (representation-sensitivity self-test + rewrite attack).
+    Glob.one `Tests.AuditRoutes_V2A_LandingArtifacts_Smoke
   ]
 
 lean_lib Pnp4 where

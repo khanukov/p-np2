@@ -1,0 +1,124 @@
+# Known guards registry — Research Governance v0.1
+#
+# A "known guard" is a structural condition that is already understood to
+# carry no new mathematical content for the route at hand. The FixedParams
+# Probe (see FixedParams_Probe.md) classifies a non-trivial provenance Π
+# as Outcome B ("non-dead but uninteresting") only by reducing Π to a
+# combination of guards that appear in this registry.
+#
+# The registry is intentionally empty on day 0. Adding an entry is a
+# Foundational PR (Rule 0): it admits that a particular structural pattern
+# is *known* and routes through it are *known to lack new content*.
+#
+# Format per entry:
+#
+# [guards.<short_name>]
+# formal_name = "<fully qualified Lean name or '∅' if not yet formalized>"
+# file        = "<path:line of the formal artifact, or '∅'>"
+# status      = "accepted" | "informal"
+# audit       = "<one-paragraph audit explanation>"
+# added_in    = "<spec version>"
+# rationale   = "<why it is no longer counted as new content>"
+#
+# Outcome B in FixedParams_Probe.md may reference only guards whose
+# `status = "accepted"`.
+
+[meta]
+spec_version    = "0.1.4"
+status          = "frozen"
+last_reviewed   = "2026-05-12"
+
+# ---------------------------------------------------------------------------
+# Accepted guards (FP-1).
+# ---------------------------------------------------------------------------
+#
+# An "accepted" guard MUST point to a real Lean artifact that is
+# compiled by `lake build`.  Outcome B in `FixedParams_Probe.md` may
+# only reference accepted guards.
+
+[guards.HardwiringGuard]
+formal_name      = "Pnp3.Tests.FormulaSupportBoundsFalsifiabilityProbe.fixedSlice_gapPartialMCSP_in_PpolyFormula"
+file             = "pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean:218"
+audit_alias      = "Pnp3.Magnification.AuditRoutes.FixedParamsProbe.HardwiringGuard"
+audit_alias_file = "pnp3/Magnification/AuditRoutes/FixedParamsProbe.lean"
+status           = "accepted"
+added_in         = "0.1.1"
+# Tautology caveat (added during the v0.1 Machine Revalidation Review):
+# `HardwiringGuard` is a Lean theorem inhabited unconditionally via
+# `Pnp3.Magnification.AuditRoutes.FixedParamsProbe.hardwiring_guard_holds`.
+# Therefore it is NOT admissible as a standalone Outcome-B factorization
+# target: any `Π → HardwiringGuard` is vacuous because anything implies
+# a tautology.  Outcome B (per `FixedParams_Probe.md` §3.B) may reference
+# `HardwiringGuard` only as part of an obstruction-style argument
+# (Rule-5 exclusion lemma: candidate Π must formally exclude the
+# truth-table hardwired witness).
+outcome_b_usage                   = "obstruction_only"
+standalone_factorization_target   = false
+audit            = """The truth-table hardwiring construction (Probe 2 of the falsifiability audit at FormulaSupportBoundsFalsifiabilityProbe.lean:218) inhabits Pnp3.ComplexityInterfaces.PpolyFormula for every Partial-MCSP slice, so per-language singleton families are always available.  Any candidate provenance Π that quantifies over arbitrary PpolyFormula witnesses without a Rule-5 exclusion lemma is therefore vacuously true on this hardwired witness."""
+rationale        = """Recognized in the FixedParams Probe as the obstruction that any 'route is dead' Outcome A reduction must point to: a candidate must formally EXCLUDE this witness shape (Rule 5 exclusion lemma `¬ ∃ W, TruthTableHardwired W ∧ Π_holds_for W`).  HardwiringGuard is NOT a standalone Outcome-B factorization target — see `outcome_b_usage` and `standalone_factorization_target` above; a real Outcome B requires a different guard (e.g. a future `ProvenanceFilter_v1` that is genuinely conditional, not a Lean theorem)."""
+
+# ---------------------------------------------------------------------------
+# Informal / planned guards (NOT admissible for Outcome B).
+# ---------------------------------------------------------------------------
+#
+# An "informal" entry exists ONLY to reserve a stable name for cross-spec
+# references.  It MUST NOT be cited by any formal Outcome-B reduction
+# (`Π ↔ KnownGuardCombination` or `Π → ExistingKnownGuard`); per
+# `FixedParams_Probe.md` §3.B, those reductions may quote only guards
+# whose `status = "accepted"`.
+#
+# An informal entry is promoted to `accepted` only when ALL of the
+# following hold:
+#   1. A `formal_name` points to a real Lean artifact compiled by
+#      `lake build` (not `axiom`, not `opaque`, not `Fact`/typeclass
+#      payload — Rule 16).
+#   2. The artifact's body is genuinely conditional (a `Prop` whose
+#      proof would require non-trivial mathematics), NOT a Lean theorem
+#      provable in the active tree (the `HardwiringGuard` tautology
+#      caveat applies).
+#   3. `standalone_factorization_target = true` is added explicitly,
+#      and `outcome_b_usage` is set to a non-`obstruction_only` value.
+#   4. The promotion ships in a Foundational PR (Rule 0) that records
+#      the spec-version bump.
+
+[guards.ProvenanceFilter_v1]
+formal_name                       = ""
+file                              = ""
+audit_alias                       = ""
+audit_alias_file                  = ""
+status                            = "informal"
+added_in                          = "0.1.2"
+outcome_b_usage                   = "not_admissible"
+standalone_factorization_target   = false
+audit                             = """Reserved name for a planned provenance filter that, if formalized, would prune truth-table-like AC0 family witnesses to non-singleton, non-hardwired AC0 families.  Intended (eventual) Outcome-B partner of `HardwiringGuard` so that the conjunction `HardwiringGuard ∧ ProvenanceFilter_v1` is genuinely conditional.  No Lean artifact exists; consequently the FixedParams Probe cannot quote `ProvenanceFilter_v1` in a formal Outcome-B reduction.  Future FP-3 work that produces a Lean predicate matching this description must additionally demonstrate it is not itself a tautology before promotion to `status = "accepted"`."""
+rationale                         = """Declared so that FP-3 / FP-4 work has a stable cross-spec reference for the planned non-trivial provenance filter without prematurely committing to a Lean shape.  Until promoted to `accepted`, any candidate Π reduced to `ProvenanceFilter_v1` is `under-investigation`, NOT Outcome B (per `FixedParams_Probe.md` §3.B closing clause)."""
+
+[guards.ProvenanceFilter_v2]
+formal_name                       = "Pnp3.Magnification.AuditRoutes.ProvenanceFilterV2.V2_A_gpt55.ProvenanceFilter_v2_V2_A_gpt55_phase2"
+file                              = "pnp3/Magnification/AuditRoutes/ProvenanceFilterV2/V2_A_gpt55/Filter.lean"
+audit_alias                       = ""
+audit_alias_file                  = ""
+status                            = "informal"
+added_in                          = "0.1.3"
+outcome_b_usage                   = "not_admissible"
+standalone_factorization_target   = false
+survivor_surface_witness          = "pnp3/Magnification/AuditRoutes/ProvenanceFilterV2/V2_A_gpt55/Survivor.lean::v2_A_gpt55_phase2_survivor_surface"
+operator_review                   = "seed_packs/fp3b3_provenance_filter_v2_design/operator_reviews/V2_A_gpt55_promotion_review.md"
+audit                             = """Audit-only Phase-2 survivor of the fp3b3 ProvenanceFilter_v2 design search.  V2-A/gpt55 is a *syntactic* predicate on `InPpolyFormula L` records: it asks for unbounded support, a linear Boolean-gate cap (≤ 16·|support|+16), a linear depth cap (≤ 8·|support|+8), and the joint presence of OR and NOT gates once support reaches size two.  V2-A's five mandatory deliverables — `not_support_cardinality_only`, `excludes_bounded_support`, `excludes_adversaryWitness_v_natlog2`, `excludes_adversaryWitness_v_arbpayload`, `seededPrefixAndWitness_admitted` — are kernel-checked in `Survivor.lean::v2_A_gpt55_phase2_survivor_surface`; the survivor surface dodges fp3b4's `support_cardinality_barrier` (NOGO-000007) and excludes the currently-formalised *syntactic* hardwiring witnesses (NOGO-000001 / 000004 / 000005 / 000006).  This entry is **informal only**: it is **not accepted**, **not admissible for Outcome B** of the FixedParams Probe (per `FixedParams_Probe.md` §3.B, which permits only `status = "accepted"` guards), introduces **no FP-4** surface, **no `SourceTheorem_*`**, **no `gap_from_*`** bridge, and **no final endpoint**.
+
+Razborov-Rudich naturality (fp3b3.1): the kernel-checked self-test `pnp3/Magnification/AuditRoutes/ProvenanceFilterV2/V2_A_gpt55/NaturalProofsSelfTest/RepresentationSensitivity.lean::v2A_same_language_different_representation` proves V2-A is **non-extensional on Boolean functions** (it separates two `InPpolyFormula` witnesses for the same language that compute pointwise-identical truth tables).  The accompanying audit report `seed_packs/fp3b3_1_v2a_natural_proofs_self_test/reports/V2_A_natural_proofs_audit_gpt55.md` classifies V2-A as `representation_sensitive_escape_plausible` from the classical Natural Proofs barrier.  Razborov-Rudich therefore does not directly apply to the audit predicate as currently formulated.
+
+Adversarial robustness (fp3b3.2): **ATTACK LANDED.**  The kernel-checked theorem `pnp3/Magnification/AuditRoutes/ProvenanceFilterV2/V2_A_gpt55/AdversarialRobustness/RewriteAttack.lean::v2A_rewrite_attack_prefixAnd` exhibits an `InPpolyFormula` for `adversaryLanguage_v_natlog2` (the same language as the NOGO-000004/NOGO-000005 excluded prefix-AND hardwiring witness) that is accepted by V2-A: the construction conjoins the canonical prefix-AND family with a tautological seed gate `(x₀ ∨ ¬x₀)`, adding exactly one AND, one OR, and one NOT gate while preserving the Boolean function.  This kernel-checked anti-evidence is recorded as `NOGO-000008` and demonstrates that purely-syntactic V2-style filters are **semantically circumventable**: V2-A excludes a specific syntactic shape of NOGO-000004/5, not the underlying Boolean function family.
+
+Consequently promotion to `status = "accepted"` is **formally blocked**, not merely deferred.  Any future V2-* candidate seeking accepted status must address NOGO-000008: it must either (a) operate on semantic equivalence classes rather than displayed formula syntax, (b) prove a closed-form invariance under tautological seed rewritings, or (c) explicitly carve out the rewrite attack as out-of-scope with a precise structural reason.  Until then, no `Π → ProvenanceFilter_v2` factorisation is admissible for Outcome B.  See `operator_review` above for the original six-attack re-review and caveat severity assessment, which the rewrite attack landing now elevates the syntactic-rewrite caveat from MEDIUM-unproven to HIGH-refuted.
+
+Structural-normalisation patch closure (fp3b3.3 + fp3b3.4): the natural NOGO-000008 patch — composing V2-A with a syntactic normaliser that collapses the tautological seed — is **formally closed** by NOGO-000009.  The kernel-checked meta-barrier `pnp3/Magnification/AuditRoutes/ProvenanceFilterV2/V2_A_NormaliseMetaBarrier/Barrier.lean::v2_a_structural_normalisation_meta_barrier` proves that any context-uniform bottom-up structural normaliser satisfying the HARD-minimum seed elimination and `AND true` reduction makes V2-A reject V2-A's own seeded non-vacuity witness `seededPrefixAndWitness`.  See `seed_packs/fp3b3_4_v2_a_normalise_meta_barrier/audits/M2_operator_review.md` for the operator review and `seed_packs/fp3b3_3_v2_a_1_minimal_normalisation/audits/T1_retry_pause_post_M1.md` for the V2-A.1 pause decision that opened fp3b3.4 in parallel.  Together NOGO-000008 + NOGO-000009 close (a) bare V2-style syntactic filters and (b) the natural structural-normalisation patch for those filters.
+
+Successor design space closure (fp3b3 priority refresh): the three remaining V2-family successor design spaces — V2-A.2 (semantic quotient), V2-B (cross-length coherence), V2-D (shape/provenance signature) — were triaged in `seed_packs/fp3b3_priority_refresh/`.  V2-A.2 full and minimal semantic-quotient variants face Razborov-Rudich re-entry; only V2-A.2 partial rule-generated quotient survives, gated on a future natural-proofs audit.  V2-B survives NOGO-000008/9 semantically but its xor-successor equation is parity-specific (non-vacuity risk).  V2-D is rejected: defeated by adaptive tautological padding over missing variables, AND its stated parity/XOR non-vacuity claim is mathematically false on the De Morgan basis (`xor x_0 x_1 = (x_0 ∧ ¬x_1) ∨ (¬x_0 ∧ x_1)` has `inputOccurrences 0 = 2` at `n = 2`).  See `seed_packs/fp3b3_priority_refresh/audits/priority_refresh_operator_consolidation.md` for the per-route operator review.
+
+Stream X V2 family episode closure: as of 2026-05-13, the syntactic-only V2 audit-route design family is **CLOSED for accepted-status promotion**.  No fp3b3_5_* successor seed pack is opened; the suggested names `fp3b3_5_v2_a_2_partial_quotient_metareview/` and `fp3b3_5_v2_b_cross_length_nonvacuity_refresh/` are recorded as soft holds.  See `seed_packs/fp3b3_provenance_filter_v2_design/operator_reviews/v2_family_closure_retrospective.md` for the full retrospective."""
+rationale                         = """Reserves a stable cross-spec name for the V2-A/gpt55 audit-only survivor and pins its Lean witness location so that future seed packs and any subsequent FP-N research can reference V2-A by formal name without ambiguity.  Per the `informal` clause at the top of this file, no `Π → ProvenanceFilter_v2` factorization is admissible for Outcome B; the entry is purely a registry pin.  Wave activation is NOT triggered by this promotion: Pilot Wave 1 activation remains gated on the documented ledger evidence (≥ 1 Critic-pass + ≥ 1 Critic-fail + min_clean_cycles=30) per `spec/wave_gate_thresholds.toml`.
+
+The NOGO-000008 rewrite attack landing (fp3b3.2) did not retract this informal-status entry — V2-A remains a useful audit-only object that dodges NOGO-000007, excludes the syntactic prefix-AND/ttFormula/bounded-support witnesses, and admits a substantively honest family — but it closed the path to `status = "accepted"` until a semantic V2-* successor exists.
+
+NOGO-000009 (fp3b3.3 + fp3b3.4) subsequently closed the natural structural-normalisation patch route, and the fp3b3 priority refresh consolidation closed the V2-A.2 / V2-B / V2-D successor design spaces.  As of 2026-05-13 the syntactic-only V2 audit-route design family is CLOSED for accepted-status promotion; this entry remains `informal` as a registry pin and as anti-evidence documenting which audit-route design moves do not yield an `accepted` ProvenanceFilter_v2.  Any future V2-* successor seeking accepted status must (a) operate outside the syntactic-only design family, (b) satisfy the NOGO-000008 + NOGO-000009 closure constraints explicitly, and (c) ship a kernel-checked exclusion theorem against both rewrite attacks and the structural-normalisation meta-barrier.  See `seed_packs/fp3b3_provenance_filter_v2_design/operator_reviews/v2_family_closure_retrospective.md` for the operator-grade closure retrospective."""

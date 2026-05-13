@@ -11,16 +11,20 @@ if ! command -v rg >/dev/null 2>&1; then
 fi
 
 build_log="/tmp/pnp3_full_build.log"
-echo "[check] Step 1/7: full Lean build"
-if ! lake build 2>&1 | tee "${build_log}"; then
+echo "[check] Step 1/17: full Lean build"
+# Both libs (`PnP3` and `Pnp4`) must be built here: Step 7/9 inspects
+# pnp4's axiom-surface dump, which only appears in the build log when
+# Pnp4 is actually compiled.  Plain `lake build` only builds the
+# `@[default_target]` (PnP3), so we name both libraries explicitly.
+if ! lake build PnP3 Pnp4 2>&1 | tee "${build_log}"; then
   echo "Full build failed; see ${build_log} for details."
   exit 1
 fi
 
-echo "[check] Step 2/7: smoke execution"
+echo "[check] Step 2/17: smoke execution"
 lake env lean --run scripts/smoke.lean
 
-echo "[check] Step 3/7: source hygiene scan (axiom/sorry/native_decide/interface policy)"
+echo "[check] Step 3/17: source hygiene scan (axiom/sorry/native_decide/interface policy)"
 expected_axioms=0
 actual_axioms_pnp3=$( (rg "^[[:space:]]*axiom " -g"*.lean" pnp3 || true) | wc -l | tr -d ' ' )
 if [[ "${actual_axioms_pnp3}" -ne "${expected_axioms}" ]]; then
@@ -216,15 +220,21 @@ if [[ "${UNCONDITIONAL:-0}" != "1" ]]; then
     exit 1
   fi
 
-  if ! rg -n -U "theorem[[:space:]]+NP_not_subset_PpolyFormula_final\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
+  # Research Governance v0.1, PR 3b: bare `NP_not_subset_PpolyFormula_final`
+  # and `NP_not_subset_PpolyReal_final` (with `MagnificationAssumptions`
+  # premise) are direct-refuted finals and have been renamed to
+  # `RefutedRoute_*`.  We require the renamed forms to exist for audit
+  # continuity.  Reintroduction of the unprefixed names is blocked by
+  # `scripts/check_refuted_route_quarantine.sh` (Step 6/11).
+  if ! rg -n -U "theorem[[:space:]]+RefutedRoute_NP_not_subset_PpolyFormula_final\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
       "${final_result_surface_files[@]}" >/tmp/pnp3_formula_final_pkg_sig_hits.log; then
-    echo "Detected non-package signature for NP_not_subset_PpolyFormula_final (expected hMag : MagnificationAssumptions)."
+    echo "Detected non-package signature for RefutedRoute_NP_not_subset_PpolyFormula_final (expected hMag : MagnificationAssumptions)."
     exit 1
   fi
 
-  if ! rg -n -U "theorem[[:space:]]+NP_not_subset_PpolyReal_final\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
+  if ! rg -n -U "theorem[[:space:]]+RefutedRoute_NP_not_subset_PpolyReal_final\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
       "${final_result_surface_files[@]}" >/tmp/pnp3_real_final_pkg_sig_hits.log; then
-    echo "Detected non-package signature for NP_not_subset_PpolyReal_final (expected hMag : MagnificationAssumptions)."
+    echo "Detected non-package signature for RefutedRoute_NP_not_subset_PpolyReal_final (expected hMag : MagnificationAssumptions)."
     exit 1
   fi
 
@@ -247,17 +257,25 @@ if [[ "${UNCONDITIONAL:-0}" != "1" ]]; then
   fi
 fi
 
-if rg -n -U "theorem[[:space:]]+NP_not_subset_PpolyFormula_final\\n[[:space:]]*\\(hDefaultProvider[[:space:]]*:[[:space:]]*hasDefaultStructuredLocalityProviderPartial\\)" \
-    "${final_result_surface_files[@]}" >/tmp/pnp3_formula_final_default_sig_hits.log; then
-  echo "Detected forbidden default-provider signature for NP_not_subset_PpolyFormula_final:"
-  cat /tmp/pnp3_formula_final_default_sig_hits.log
+# Research Governance v0.1, PR 3b: forbid resurrecting the bare
+# `NP_not_subset_PpolyFormula_final` / `NP_not_subset_PpolyReal_final`
+# names in any form (including the legacy `hDefaultProvider` shape).
+# The renamed `RefutedRoute_*` forms keep their `hMag` package signature
+# above; `check_refuted_route_quarantine.sh` (Step 6/11) blocks the
+# reverse rename.
+if rg -n -U "theorem[[:space:]]+NP_not_subset_PpolyFormula_final\\b" \
+    "${final_result_surface_files[@]}" >/tmp/pnp3_formula_final_unmarked_hits.log; then
+  echo "Detected forbidden unprefixed bare _final endpoint for NP_not_subset_PpolyFormula_final."
+  echo "Use RefutedRoute_NP_not_subset_PpolyFormula_final (or _fromPipeline) per PR 3b:"
+  cat /tmp/pnp3_formula_final_unmarked_hits.log
   exit 1
 fi
 
-if rg -n -U "theorem[[:space:]]+NP_not_subset_PpolyReal_final\\n[[:space:]]*\\(hDefaultProvider[[:space:]]*:[[:space:]]*hasDefaultStructuredLocalityProviderPartial\\)" \
-    "${final_result_surface_files[@]}" >/tmp/pnp3_real_final_default_sig_hits.log; then
-  echo "Detected forbidden default-provider signature for NP_not_subset_PpolyReal_final:"
-  cat /tmp/pnp3_real_final_default_sig_hits.log
+if rg -n -U "theorem[[:space:]]+NP_not_subset_PpolyReal_final\\b" \
+    "${final_result_surface_files[@]}" >/tmp/pnp3_real_final_unmarked_hits.log; then
+  echo "Detected forbidden unprefixed bare _final endpoint for NP_not_subset_PpolyReal_final."
+  echo "Use RefutedRoute_NP_not_subset_PpolyReal_final (or _fromPipeline) per PR 3b:"
+  cat /tmp/pnp3_real_final_unmarked_hits.log
   exit 1
 fi
 
@@ -418,7 +436,85 @@ fi
 
 echo "Agent policy docs OK (pnp4 P-vs-NP mainline + restricted side-track boundary enforced)."
 
-echo "[check] Step 4/7: pnp3 explicit theorem-axiom surface dump"
+echo "[check] Step 4/17: doc-honesty linter (Research Governance v0.1, Rule 1)"
+"${ROOT_DIR}/scripts/check_doc_honesty.sh"
+
+echo "[check] Step 5/17: typeclass-payload quarantine (Research Governance v0.1, Rule 16)"
+"${ROOT_DIR}/scripts/check_typeclass_payload_quarantine.sh"
+
+echo "[check] Step 6/17: refuted-route quarantine (Research Governance v0.1, Rule 6)"
+"${ROOT_DIR}/scripts/check_refuted_route_quarantine.sh"
+
+echo "[check] Step 7/17: refuted-predicate allowed-use guard (Research Governance v0.1, PR 4a)"
+"${ROOT_DIR}/scripts/check_refuted_predicate_usage.sh"
+
+echo "[check] Step 8/17: target-lock guard (Research Governance v0.1, PR 11)"
+"${ROOT_DIR}/scripts/check_target_lock.sh"
+
+echo "[check] Step 9/17: barrier-certificate queue scan (Research Governance v0.1, PR 12)"
+"${ROOT_DIR}/scripts/check_barrier_certificate.sh" --queue
+
+echo "[check] Step 10/17: candidate-local Rule 16 scan (Research Governance v0.1, PR 15.1)"
+"${ROOT_DIR}/scripts/check_candidate_rule16.sh"
+echo "[check] Step 10.b: underscore candidate-dir bypass policy (Research Governance v0.1, Autoresearch MVP-0.1.3)"
+"${ROOT_DIR}/scripts/test_underscore_policy.sh"
+echo "[check] Step 10.c: dedicated Rule-16 negative-control (Research Governance v0.1, Autoresearch MVP-0.1.2)"
+"${ROOT_DIR}/scripts/test_rule16_negative.sh"
+
+echo "[check] Step 11/17: smoke probes (Research Governance v0.1, PR 5)"
+"${ROOT_DIR}/scripts/run_smoke_probes.sh"
+
+echo "[check] Step 12/17: NoGoLog + survivor history + attempts ledger validation (Research Governance v0.1, PR 9 + Autoresearch MVP-3)"
+python3 "${ROOT_DIR}/scripts/validate_jsonl.py"
+echo "[check] Step 12.b: attempts-validator critic-state hardening smoke (Research Governance v0.1, Autoresearch MVP-0.1.1)"
+"${ROOT_DIR}/scripts/test_attempts_validator.sh"
+echo "[check] Step 12.c: spec version manifest cross-check (Research Governance v0.1, Autoresearch MVP-0.1.4)"
+python3 "${ROOT_DIR}/scripts/validate_version_manifest.py"
+echo "[check] Step 12.d: ledger concurrency-safety smoke (Research Governance v0.1, Autoresearch MVP-0.1.8 Phase A)"
+"${ROOT_DIR}/scripts/test_concurrency_safety.sh"
+echo "[check] Step 12.e: coordinator HTTP service e2e (Research Governance v0.1, Autoresearch MVP-0.2 Phase B)"
+python3 "${ROOT_DIR}/coordinator/test_coordinator.py"
+echo "[check] Step 12.f: Generator/Critic role-gate e2e (Research Governance v0.1, Autoresearch MVP-0.4 Phase D)"
+python3 "${ROOT_DIR}/coordinator/test_role_gate.py"
+echo "[check] Step 12.g: wave gate + metrics endpoint e2e (Research Governance v0.1, Autoresearch MVP-0.5 Phase E)"
+python3 "${ROOT_DIR}/coordinator/test_wave_gate.py"
+echo "[check] Step 12.h: cost-budget reaper + lease_id compare-and-set e2e (Research Governance v0.1, Autoresearch MVP-0.5.6, v0.4.2 Track C2)"
+python3 "${ROOT_DIR}/coordinator/test_cost_budget.py"
+echo "[check] Step 12.j: promotion_evaluator + loud FORCE audit (Research Governance v0.1, Autoresearch MVP-0.5.6, v0.4.2 Track C4)"
+python3 "${ROOT_DIR}/coordinator/test_promotion_evaluator.py"
+echo "[check] Step 12.k: wave_promotion_audit.jsonl must be empty in CI (Research Governance v0.1, Autoresearch MVP-0.5.6, v0.4.2 Track C4)"
+WPAUDIT="${ROOT_DIR}/outputs/wave_promotion_audit.jsonl"
+if [[ -s "${WPAUDIT}" ]]; then
+  echo "[check] FAIL: ${WPAUDIT} is non-empty in CI run." >&2
+  echo "[check]       AUTORESEARCH_PROMOTION_FORCE was consumed at some point." >&2
+  echo "[check]       Reset the file to empty AND record the reason in a PR before re-running." >&2
+  exit 1
+fi
+echo "[wave_promotion_audit] OK (empty)"
+
+echo "[check] Step 13/17: verify_candidate.sh --full smoke (Research Governance v0.1, PR 15 + PR 15.2)"
+# PR 15.2: invoke `--full` so the candidate kernel-elaboration check
+# (Layer 3 of the v0.1 Machine Revalidation) runs against the noop
+# template.  Without `--full` the kernel check is recorded as
+# SKIPPED, which would defeat the whole point of PR 15.2 in CI.
+"${ROOT_DIR}/scripts/verify_candidate.sh" \
+  --candidate pnp3/Candidates/_template \
+  --full \
+  --json /tmp/verify_template_result.json
+# The smoke run must produce PASS_SHAPE_ONLY on the noop template
+# AND the kernel check must have run (i.e. not SKIPPED, not FAIL).
+result_status="$(python3 -c 'import json; print(json.load(open("/tmp/verify_template_result.json"))["status"])')"
+kernel_status="$(python3 -c 'import json; print(json.load(open("/tmp/verify_template_result.json"))["checks"].get("candidate_kernel_elaboration", "ABSENT"))')"
+if [[ "${result_status}" != "PASS_SHAPE_ONLY" ]]; then
+  echo "[check] FAIL: verify_candidate.sh on _template returned status=${result_status} (expected PASS_SHAPE_ONLY)"
+  exit 1
+fi
+if [[ "${kernel_status}" != "PASS" ]]; then
+  echo "[check] FAIL: candidate_kernel_elaboration on _template returned ${kernel_status} (expected PASS)"
+  exit 1
+fi
+
+echo "[check] Step 14/17: pnp3 explicit theorem-axiom surface dump"
 axiom_surface_log="/tmp/pnp3_axiom_surface.log"
 if ! rg -n -U "pnp3/Tests/AxiomsAudit\\.lean:[^\\n]*depends on axioms:\\s*\\[[^\\]]*\\]" \
     "${build_log}" >"${axiom_surface_log}"; then
@@ -443,7 +539,7 @@ echo "  propext occurrences: ${propext_count}"
 echo "  Classical.choice occurrences: ${classical_count}"
 echo "  Quot.sound occurrences: ${quot_count}"
 
-echo "[check] Step 5/7: pnp4 explicit theorem-axiom surface dump"
+echo "[check] Step 15/17: pnp4 explicit theorem-axiom surface dump"
 pnp4_axiom_surface_log="/tmp/pnp4_axiom_surface.log"
 if ! rg -n -U "pnp4/Pnp4/Tests/AxiomsAudit\\.lean:[^\\n]*depends on axioms:\\s*\\[[^\\]]*\\]" \
     "${build_log}" >"${pnp4_axiom_surface_log}"; then
@@ -464,13 +560,13 @@ echo "  propext occurrences: ${pnp4_propext_count}"
 echo "  Classical.choice occurrences: ${pnp4_classical_count}"
 echo "  Quot.sound occurrences: ${pnp4_quot_count}"
 
-echo "[check] Step 6/7: run barrier audit module"
+echo "[check] Step 16/17: run barrier audit module"
 if ! rg -n "pnp3/Tests/BarrierAudit\\.lean" "${build_log}" >/tmp/pnp3_barrier_audit.log; then
   # Keep this explicit so regressions in barrier-facing final statements are visible.
   lake env lean pnp3/Tests/BarrierAudit.lean >/tmp/pnp3_barrier_audit.log 2>&1
 fi
 
-echo "[check] Step 7/7: unconditional witness gate (optional)"
+echo "[check] Step 17/17: unconditional witness gate (optional)"
 if [[ "${UNCONDITIONAL:-0}" == "1" ]]; then
   echo "Checking unconditional witness surface..."
   # Legacy witness surface markers (historical blockers).

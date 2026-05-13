@@ -1,0 +1,315 @@
+# Version manifest — Research Governance v0.1, Autoresearch MVP-0.1.4
+#
+# Single coordinated source-of-truth for the cross-spec versioning
+# model.  Each spec file under `spec/` carries its own
+# `[meta].spec_version` tracking edits to that file in isolation;
+# this manifest names each version explicitly and records the
+# coordinated snapshot that has been jointly reviewed and shipped.
+#
+# Five-engineer audit observation (consolidated triage): four
+# independent auditors saw `target.toml::[meta].spec_version =
+# "0.1.0"` next to `known_guards.toml::[meta].spec_version =
+# "0.1.2"` and asked which is canonical.  Both are canonical for
+# their own files; the apparent mismatch is real but per-file.
+# This manifest documents the intended model and gives each version
+# a self-describing name (target_spec_version,
+# known_guards_version, ...) so the relationship is unambiguous.
+#
+# `scripts/validate_version_manifest.py` cross-checks this manifest
+# against the actual `[meta].spec_version` fields of the underlying
+# files.  Drift fails the check.
+
+[meta]
+manifest_version = "0.1.0"
+status           = "frozen"
+last_reviewed    = "2026-05-02"
+
+# ---------------------------------------------------------------------------
+# Coordinated snapshot — current per-spec versions.
+# ---------------------------------------------------------------------------
+#
+# Each entry below MUST equal the corresponding file's
+# `[meta].spec_version`.  When a spec file's contents change, bump
+# its own [meta].spec_version AND update the corresponding row here
+# in the same PR.  The validator at
+# scripts/validate_version_manifest.py enforces equality.
+
+[snapshot]
+target_spec_version              = "0.1.0"
+target_spec_path                 = "spec/target.toml"
+known_guards_version             = "0.1.4"
+known_guards_path                = "spec/known_guards.toml"
+provider_audit_registry_version  = "0.1.0"
+provider_audit_registry_path     = "spec/provider_audit_registry.toml"
+
+# ---------------------------------------------------------------------------
+# Non-`[meta].spec_version` versions (no in-file [meta] block).
+# ---------------------------------------------------------------------------
+
+# Smoke-probe attack suite.  Tracked here because
+# `bench/SmokeProbe/` does not carry a [meta] block; the version
+# advances when probes are added/removed/changed semantics.  The
+# AttemptLedgerEntry schema's `attack_suite_version` field is
+# expected to equal this value at the time of the attempt.
+[snapshot.attack_suite]
+version = "0.1.0"
+notes   = "Eight probes shipped (5 rejected + 1 accepted_shape_only + 2 kernel-check)."
+target  = "bench/SmokeProbe/expected_results.json"
+
+# Autoresearch MVP control plane.  Bumped each time a major MVP
+# slice ships.  Component-level history:
+#
+#   0.1.0  Autoresearch MVP control plane baseline
+#          (commit 7dcba2c — ledger + Critic protocol + seed packs)
+#   0.1.1  Critic-state hardening — CANONICAL commit c5eb808.
+#          Closes the template/pass trap; ships
+#          validate_critic_report.py + verifier 4-field surface.
+#          NOTE: a separate commit 1bc6555 also exists in the repo
+#          object graph as an alternate implementation of the same
+#          hardening idea (using <!-- TEMPLATE_MARKER --> and
+#          'template_not_filled' instead of the 'TEMPLATE FILE'
+#          banner + critic_status: TEMPLATE design that c5eb808
+#          shipped).  THIS BRANCH USES c5eb808.  1bc6555 is
+#          superseded / non-canonical for this lineage and must
+#          NOT be merged separately on top of c5eb808 — doing so
+#          would fork the Critic-state hardening into two
+#          mutually-incompatible designs.  When in doubt, prefer
+#          c5eb808 and reject 1bc6555.
+#   0.1.2  Underscore policy + Rule-16 negative + audit bootstrap
+#          + FP-3b.1 audit-only Lean skeleton
+#          (commits 01710a7 / 2501ac8 / e1e949b / 17f71d0)
+#   0.1.3  Spec-version manifest (this file)
+#          + verifier resilience (MVP-0.1.6) + Pilot Wave 0 protocol
+#          (commits 612d2ac / d1fb4e7 / 0995a49)
+#   0.1.4  Schema-drift correction + Critic positive controls
+#          + 1bc6555 non-canonical note (commit 307c7a5, MVP-0.1.7).
+#          Bumps verifier_result_schema.json from 1.0 to 1.3 to
+#          match the verifier's emitted shape; bumps
+#          spec/critic_protocol.md §4.2 from 1.2 to 1.3; adds
+#          completed-pass / completed-fail positive-control
+#          fixtures to scripts/test_attempts_validator.sh
+#          (closing the audit's "no positive control" gap).
+#   0.1.5  Concurrency hardening (MVP-0.1.8 / Phase A of the
+#          v0.3 100K-worker plan).  Adds fcntl.flock-protected
+#          ID assignment to attempts_append.py / nogolog_append.py
+#          / survivor_append.py; per-worker ${VERIFY_TMP_DIR}
+#          paths in verify_candidate.sh; UUID staging in
+#          test_underscore_policy.sh / test_rule16_negative.sh;
+#          new scripts/test_concurrency_safety.sh smoke (16
+#          parallel writers x 2 ledgers, all distinct ids); new
+#          spec/concurrency_model.md.  Substrate for Phase B
+#          Coordinator service.
+#   0.2.0  Coordinator service (MVP-0.2 / Phase B).  HTTP/JSON
+#          dispatch service: /v1/health, /v1/manifest, /v1/task,
+#          /v1/dedup, /v1/result, /v1/release.  SQLite-backed
+#          assignment + dedup state at coordinator/state.db.
+#          Stdlib-only (http.server, sqlite3, hashlib).  Reuses
+#          Phase A flock-protected append scripts via subprocess
+#          pipe (single-writer canonical ledger preserved).
+#          scripts/run_worker.sh dispatcher.
+#          coordinator/test_coordinator.py 10/10 e2e cases
+#          (20 parallel /v1/task, 20 parallel /v1/result, role
+#          mismatch -> 403, wrong-worker submit -> 403,
+#          double-submit -> 409, release-then-submit -> 409,
+#          dedup, ledger persisted).  Up to ~1K workers per host.
+#   0.4.0  Generator/Critic role-gate (MVP-0.4 / Phase D).
+#          coordinator/role_gate.py adds infrastructure-level
+#          Rule-12 enforcement: gen-* submissions must have
+#          critic_status='not_run'; crit-* submissions must have
+#          critic_status in {pass, fail}, supersedes pointing at
+#          a known gen attempt, AND worker_id != that gen
+#          attempt's worker_id.  Hooked into server.py
+#          _handle_result.  spec/worker_roles.md defines the
+#          three-role taxonomy (gen / crit / rev).
+#          coordinator/test_role_gate.py 4/4 cases pass (gen-as-
+#          crit -> 403, crit-as-gen -> 403, gen+crit same
+#          worker -> 403 Rule 12, gen-alice + crit-bob -> 200).
+#          Phase C (worker scratch + build cache) is intentionally
+#          deferred until a real deployment context is available;
+#          Phase D ships the safety-critical role-gate now so
+#          Phase E can build the auto-dispatcher on top.
+#   0.5.0  Telemetry + wave gate (MVP-0.5 / Phase E).
+#          coordinator/metrics.py (Prometheus exposition over
+#           /v1/metrics, stdlib-only).
+#          coordinator/wave_gate.py (reads
+#           spec/wave_gate_thresholds.toml; refuses /v1/task
+#           when the current Wave's max_concurrent cap is at).
+#          spec/wave_gate_thresholds.toml (Wave 0..4: caps
+#           10/20/500/10000/100000 + per-Wave promotion reqs).
+#          server.py: /v1/metrics endpoint; wave-cap enforcement
+#           in /v1/task; metric increments on every assignment /
+#           result merge / role-gate violation / NoGoLog append.
+#          Default initial wave = 0 (Pilot Wave, cap=10);
+#           operator override via env AUTORESEARCH_INITIAL_WAVE.
+#          coordinator/test_wave_gate.py 3/3 cases pass
+#           (cap enforced -> 11th task 503; cap released on
+#           submit; /v1/metrics exposes 6/6 metric families).
+#          Existing test_coordinator.py + test_role_gate.py
+#           updated to opt into AUTORESEARCH_INITIAL_WAVE=2 so
+#           they don't trip the Wave-0 cap.
+#   0.5.5  Coordinator-consistency hardening (MVP-0.5.1 .. 0.5.5).
+#          External audit identified five concrete bugs in the
+#          Phase B/D/E coordinator that blocked actual Pilot Wave 0
+#          runtime:
+#            PR 1 (0.5.1) — /v1/result atomicity + idempotent retry.
+#               Pre-validate attempt + nogolog + survivor before any
+#               canonical-ledger append; mark assignment submitted
+#               IMMEDIATELY after the main append; auxiliary log
+#               failures surface as `partial` in the 200 response
+#               but do NOT roll back or block the next retry.
+#               Same-worker double-submit returns 200 with the
+#               previously-merged attempt_id (idempotent_retry=true).
+#            PR 2 (0.5.2) — dedicated seed_pack_rr_seq counter.
+#               Replaces the assignment_seq peek-and-rollback hack
+#               in /v1/task's no-seed-pack path.  Round-robin is
+#               now race-safe under concurrent /v1/task without
+#               seed_pack parameter.
+#            PR 3 (0.5.3) — expire_due() integration.
+#               /v1/task and /v1/health (and /v1/metrics) call
+#               expire_due() before counts_by_status() so the
+#               wave-cap check reflects LIVE in-flight workers,
+#               not stale assignments from crashed workers.
+#            PR 4 (0.5.4) — POST /v1/dedup/register.
+#               Atomic check-and-set: workers compute their
+#               candidate's content_hash and call this endpoint
+#               BEFORE running the verifier.  GET /v1/dedup is
+#               read-only lookup; POST /v1/dedup/register is the
+#               write path that actually populates the dedup
+#               table.
+#            PR 5 (0.5.5) — wave promotion guard.
+#               AUTORESEARCH_INITIAL_WAVE > 0 now requires
+#               AUTORESEARCH_PROMOTION_FORCE=true; without the
+#               FORCE flag the coordinator REFUSES TO START.
+#               Documents in spec/wave_gate_thresholds.toml that
+#               promotion is manual (no automatic evaluator yet)
+#               and that promotion_requirements are an operator
+#               checklist, not a coordinator-evaluated
+#               precondition.
+#          Five new test cases land in coordinator/test_*.py:
+#            * test_coordinator: double-submit -> 200 idempotent;
+#               bad nogolog -> 400 + no ledger drift;
+#               no-seed-pack RR -> 8 distinct asn / 2 distinct seeds;
+#               dedup register-then-lookup -> 200 / 409 / 409.
+#            * test_wave_gate: expired lease frees cap;
+#               wave > 0 without FORCE -> refused at startup.
+#          spec/concurrency_model.md tightens its scaling-readiness
+#          claim: MVP-0.5.5 is safe for Pilot Wave 0 (5-10 workers
+#          on one host, operator-disciplined); Wave 2 cap=500 is a
+#          policy ceiling, not a tested guarantee.
+[snapshot.autoresearch_mvp]
+version = "0.5.7"
+notes   = "v0.4.3 hardening shipped on top of v0.4.2.  Three audit-flagged runtime-enforcement gaps closed: (Blocker 1) /v1/result rejects 403 commit_missing when coordinator_git_commit is resolved but attempt.git_commit is absent; backcompat applies only to on-disk ledger entries, not live HTTP submissions.  (Blocker 2) run_worker.sh now parses TaskAssignment.lease_id and stamps it on attempt.lease_id; /v1/result rejects 409 lease_missing when the assignment carries a stored lease_id but the submission omits it, and 409 stale_lease when the values disagree.  (Blocker 3) store.expire_due now skips lease_id-backed assignments so it cannot race the cost-budget reaper to silent expiry; /v1/health, /v1/task, /v1/metrics call the reaper inline before counts_by_status so wave-cap freshness is preserved.  (Minor 1) wave_promotion_audit records now carry coordinator_git_commit via best-effort git rev-parse.  Pilot Wave 1 technical readiness GO confirmed; activation still GATED on real ledger evidence."
+
+# Critic protocol.  Tracked here because spec/critic_protocol.md
+# does not carry a [meta] block; the version advances when the
+# protocol's required-section schema or cross-field rules change.
+[snapshot.critic_protocol]
+version = "0.1.1"
+notes   = "Six fixed attack sections; TEMPLATE marker; cross-field rules from MVP-0.1.1."
+target  = "spec/critic_protocol.md"
+
+# Source-theorem size policy.
+[snapshot.source_theorem_size_policy]
+version = "0.1.0"
+notes   = "MVP grep-based size checker."
+target  = "spec/source_theorem_size_policy.md"
+
+# Implicit-assumption channels (Rule 16 taxonomy).
+[snapshot.implicit_assumption_channels]
+version = "0.1.0"
+target  = "spec/implicit_assumption_channels.md"
+
+# Frozen-spec plan (separate from the FrozenSpec.lean module).
+[snapshot.frozen_spec_plan]
+version = "0.1.0"
+target  = "spec/frozen_spec_plan.md"
+
+# Concurrency model (introduced by MVP-0.1.8 / Phase A).  Defines
+# which scripts are parallel-safe, which require per-worker
+# scratch, and which need Coordinator mediation in later phases.
+[snapshot.concurrency_model]
+version = "0.1.1"
+target  = "spec/concurrency_model.md"
+notes   = "v0.4.2 Track C5: §6 expanded with Pilot Wave 1 readiness vs activation distinction and the principal-identity threat-model boundary."
+
+# Coordinator HTTP protocol (introduced by MVP-0.2 / Phase B).
+# Wire contract for the parallel-worker dispatch service.
+[snapshot.coordinator_protocol]
+version = "0.4.2"
+target  = "spec/coordinator_protocol.md"
+notes   = "v0.4.2 added /v1/release endpoint and the released state, git_commit/git_ref pinning fields on TaskAssignment + AttemptLedgerEntry, lease_id on TaskAssignment + AttemptLedgerEntry, supersedes on TaskAssignment, FAIL_TIMEOUT verifier_status + timeout failure_class for cost-budget reaper auto-fails, generator_principal_id on AttemptLedgerEntry, plus the protocol-level integrity-not-authentication caveat for principal-id."
+
+# Worker-role taxonomy (introduced by MVP-0.4 / Phase D).
+# Defines gen / crit / rev roles + Rule-12 enforcement matrix.
+[snapshot.worker_roles]
+version = "0.4.2"
+target  = "spec/worker_roles.md"
+notes   = "v0.4.2 added §3.4 — principal identity is a protocol-level integrity guard, not authentication.  Cap remains Wave-0=10 / Wave-1=20 enforced; Wave 1 activation gated on real ledger evidence."
+
+# Wave-gate thresholds (introduced by MVP-0.5 / Phase E).
+# Wave 0..4 worker caps + promotion requirements consumed by
+# coordinator/wave_gate.py.
+[snapshot.wave_gate_thresholds]
+version = "0.5.0"
+target  = "spec/wave_gate_thresholds.toml"
+
+# Cost-budget thresholds (introduced by v0.4.2 Track C2).
+# Per-role default_minutes + hard_cap_minutes consumed by
+# coordinator/cost_budget.py for auto-FAIL_TIMEOUT.
+[snapshot.cost_budget_thresholds]
+version = "0.1.0"
+target  = "spec/cost_budget_thresholds.toml"
+
+# Wave promotion audit schema (introduced by v0.4.2 Track C4).
+# Append-only file written every time AUTORESEARCH_PROMOTION_FORCE
+# is consumed; `scripts/check.sh` Step 12.k asserts emptiness in CI.
+[snapshot.wave_promotion_audit_schema]
+version = "0.1.0"
+target  = "spec/wave_promotion_audit_schema.json"
+
+# Schema for the JSONL ledgers.
+[snapshot.nogolog_schema]
+version = "0.1.2"
+notes   = "AttemptLedgerEntry added in MVP-0.1 baseline; cross-field rules tightened in MVP-0.1.1."
+target  = "spec/nogolog_schema.json"
+
+# ---------------------------------------------------------------------------
+# Bump rules.
+# ---------------------------------------------------------------------------
+#
+# The model is intentionally per-file, NOT a single global version.
+# A single global version would pretend that a doc-only edit to one
+# spec invalidates all others; that is dishonest and forces
+# spurious churn on downstream artifacts.
+#
+# Concretely:
+#
+#  * Edit `spec/target.toml`           ->  bump target_spec_version.
+#  * Edit `spec/known_guards.toml`     ->  bump known_guards_version.
+#  * Add/remove/change provider class  ->  bump provider_audit_registry_version.
+#  * Add/remove/change a smoke probe   ->  bump attack_suite_version.
+#  * Ship a new MVP slice              ->  bump autoresearch_mvp_version.
+#  * Change Critic protocol schema     ->  bump critic_protocol_version.
+#
+# In all cases: bump THIS file's matching `[snapshot.*].version`
+# AND the underlying file's `[meta].spec_version` (when applicable),
+# and run `scripts/validate_version_manifest.py` to confirm
+# consistency.
+#
+# `outputs/attempts.jsonl::AttemptLedgerEntry` records
+# `applicable_spec_version` (= target_spec_version at attempt time)
+# and `attack_suite_version` (= attack_suite_version at attempt
+# time).  Both names match this manifest's snapshot fields.
+
+# ---------------------------------------------------------------------------
+# What this manifest does NOT do.
+# ---------------------------------------------------------------------------
+#
+# It does NOT version Lean source files.  Lean module versions are
+# tracked via git history (commit hash) and via the
+# `attempt.applicable_spec_version` field, NOT here.
+#
+# It does NOT version the Research Constitution itself.  The
+# Constitution is a frozen document; substantive amendments require
+# a Foundational PR (Rule 0) and would update the file's narrative
+# header, not this manifest.

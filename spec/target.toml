@@ -1,0 +1,178 @@
+# Frozen research target — Research Governance v0.1
+#
+# This file is the machine-readable companion to RESEARCH_CONSTITUTION.md.
+# It is consumed by the verifier (planned), the doc-honesty linter (planned),
+# and the candidate-intake checks.
+#
+# Versioning: bump [meta].spec_version on any change. The verifier records
+# which spec_version was in force at the time of a candidate's verification.
+
+[meta]
+spec_version    = "0.1.0"
+constitution    = "RESEARCH_CONSTITUTION.md"
+status          = "frozen"
+last_reviewed   = "2026-04-30"
+
+[target]
+# The honest target: a `ResearchGapWitness` value whose `dagSeparation`
+# field is `NP_not_subset_PpolyDAG`. The repository ends when this is
+# inhabited without refuted-route hypotheses.
+name            = "ResearchGapWitness"
+required_field  = "dagSeparation"
+required_type   = "ComplexityInterfaces.NP_not_subset_PpolyDAG"
+defined_in      = "pnp3/Magnification/UnconditionalResearchGap.lean"
+
+[final]
+# The closed term that, when it exists, satisfies the project goal. Until
+# it exists no document may claim unconditional P != NP (see Rule 1).
+name                    = "P_ne_NP_unconditional"
+type                    = "ComplexityInterfaces.P_ne_NP"
+allowed_args            = 0
+allowed_implicit_args   = "whitelist-only"  # see spec/implicit_assumption_channels.md
+phantom_axiom_allowed   = false
+opaque_allowed          = false
+noncomputable_allowed   = false
+
+[axioms]
+# Allowed axioms in the dependency closure of `P_ne_NP_unconditional`.
+# Anything else triggers verifier rejection.
+allowed = ["Classical.choice", "propext", "Quot.sound"]
+
+[source_theorem_size]
+# Rule 4 limits. Counted using spec/source_theorem_size_policy.md.
+K_stmt = 40
+K_exp  = 200
+
+[human_review]
+candidate_queue_limit       = 3
+candidate_sla_days          = 14
+foundational_queue_separate = true
+# PR 15.1 status:
+#   - candidate_queue_limit  : enforced by
+#                              scripts/check_barrier_certificate.sh --queue
+#                              (Step 9/16 of scripts/check.sh).
+#   - candidate_sla_days     : NOT YET ENFORCED. Requires a
+#                              per-candidate intake timestamp
+#                              that the manifest does not yet
+#                              carry. The scaffolding slots
+#                              exist in pnp3/Candidates/_template/manifest.toml::
+#                              [verifier].spec_version_at_intake /
+#                              attack_suite_version_at_intake.
+#                              SLA expiry will be added after the
+#                              first real candidate enters intake.
+#   - foundational_queue_separate : enforced by convention (PR scope
+#                              labels mutual_exclusive_pairs) rather
+#                              than by an automated guard.
+
+[frozen_identifiers]
+# Rule 0. These objects are part of the trust root. A Candidate PR may not
+# redefine them; only a Foundational PR may, with a version bump.
+items = [
+  "ComplexityInterfaces.P",
+  "ComplexityInterfaces.NP",
+  "ComplexityInterfaces.PpolyDAG",
+  "ComplexityInterfaces.PpolyFormula",
+  "ComplexityInterfaces.NP_not_subset_PpolyDAG",
+  "ComplexityInterfaces.P_ne_NP",
+  "ResearchGapTarget",
+  "ResearchGapWitness",
+  "ResearchGapWitness.dagSeparation",
+  "FormulaCircuit.size",
+  "DagCircuit.size",
+  "SAT.encoding",
+  "DAG.encoding",
+  "decides",
+  "recognizes",
+]
+
+[frozen_files]
+# Files the verifier hashes and pins. A change to any of these by a
+# Candidate or governance PR is auto-rejected; only a Foundational PR may
+# touch them.
+items = [
+  "pnp3/Complexity/Interfaces.lean",
+  "pnp3/Magnification/UnconditionalResearchGap.lean",
+  "pnp3/Spec/FrozenSpec.lean",                     # PR 10 stage 1
+]
+# PR 10 status: stage 1 (shape-level pinning only).
+# - DagCircuit_size_ref     : field-based, equivalence by `rfl`.
+# - FormulaCircuit_size_ref : constructor-based recursion, equivalence
+#                             proved by induction.
+# - NP_not_subset_PpolyDAG_ref : existential shape pin, equivalence by
+#                                `Iff.rfl`.
+# Stage 2 (independent P_ref / NP_ref / PpolyDAG_ref semantics) is
+# deferred and explicitly NOT introduced as circular aliases.
+
+[refuted_predicates]
+# Rule 6. These are formally proved `→ False` somewhere in the repository.
+# Any endpoint that imports them transitively must live under one of
+# `[refuted_routes].allowed_dirs` and be renamed `RefutedRoute_*`,
+# `Vacuous_*`, or `AuditOnly_*`.
+items = [
+  "FormulaSupportRestrictionBoundsPartial",
+  "FormulaSupportBoundsFromMultiSwitchingContract",
+  "MagnificationAssumptions",
+  "FormulaSupportBoundsPartial_fromPipeline",
+  "MagnificationAssumptions_fromPipeline",
+  "fixedParams_and_uniformProvenance",  # the `fixedParams ∧ uniformProvenance` route
+]
+falsifiability_probe = "pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean"
+# Research Governance v0.1, PR 4a: canonical audit aliases live in the
+# registry module below. Allowed-use guard:
+# `scripts/check_refuted_predicate_usage.sh` (hybrid hard-fail +
+# soft-report; physical relocation deferred to PR 4b after PR 14).
+registry_module = "pnp3/RefutedPredicates/Registry.lean"
+registry_namespace = "Pnp3.RefutedPredicates"
+
+[refuted_routes]
+allowed_dirs = [
+  "pnp3/RefutedPredicates/",          # planned, not yet present
+  "pnp3/Magnification/AuditRoutes/",  # planned, not yet present
+  "pnp3/Tests/",
+  "pnp3/Barrier/",
+  "pnp3/Docs/",
+]
+
+[hidden_payload_channels]
+# Rule 16 detection patterns. The verifier rejects candidates whose files
+# match any of these in candidate-local code.
+forbidden_keywords = [
+  "FinalPayloadProvider",
+  "AsymptoticPayloadProvider",
+  "FormulaCertificateProviderPartial",
+  "FormulaSemanticMultiSwitchingProvider",
+  "AC0FamilyWitnessProvider",
+  "LocalCircuitFamilyWitnessProvider",
+  "AC0MultiSwitchingWitnessProvider",
+  "ResearchGapProvider",
+  "default_instance",
+]
+forbidden_decls = [
+  "class",
+  "instance",
+  "attribute [instance]",
+  "opaque",
+]
+suspicious_noncomputable_substrings = [
+  "Provider", "Default", "Payload", "Witness", "Source", "Gap",
+]
+
+[doc_honesty]
+# Phrases that, if found in any tracked Markdown/LaTeX file, require Rule 1
+# to be satisfied. See PR 1 in RESEARCH_CONSTITUTION.md.
+forbidden_unless_final_term_exists = [
+  "unconditional P != NP",
+  "unconditional P ≠ NP",
+  "we prove unconditional",
+  "complete proof of P vs NP",
+  "P≠NP solved",
+  "P!=NP solved",
+]
+final_term_locator = "P_ne_NP_unconditional"
+
+[scopes]
+# PR scope tags. Mixing `foundational` with `candidate` is auto-rejected.
+allowed = ["governance", "cleanup", "foundational", "verifier", "candidate", "docs"]
+mutually_exclusive_pairs = [
+  ["foundational", "candidate"],
+]

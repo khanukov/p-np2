@@ -1,0 +1,285 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://p-np2/spec/nogolog_schema.json",
+  "title": "NoGoLog and survivor-history schemas (Research Governance v0.1)",
+  "description": "Two append-only logs that record refuted candidates and surviving candidates respectively. Both logs are JSONL: one JSON object per line, no trailing comma. Edits are forbidden; corrections are added as new entries that reference the original.",
+
+  "$defs": {
+    "Timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 UTC timestamp, e.g. 2026-04-30T12:34:56Z."
+    },
+
+    "FailureClass": {
+      "type": "string",
+      "enum": [
+        "hardwiring",
+        "natural_proof",
+        "relativization",
+        "algebrization",
+        "vacuity",
+        "refuted_route",
+        "typeclass_payload",
+        "goal_drift",
+        "collapse_not_contradiction",
+        "size_policy_violation",
+        "implicit_assumption_channel",
+        "joint_candidate_non_independent",
+        "prior_work_collision",
+        "reproducibility_failure",
+        "timeout",
+        "other"
+      ],
+      "description": "v0.4.2 Track C2 added 'timeout' (distinct from 'reproducibility_failure') for cost-budget reaper auto-fails. The verifier never produces 'timeout' on its own; it is reserved for AttemptLedgerEntry rows whose verifier_status='FAIL_TIMEOUT' was synthesised by the coordinator."
+    },
+
+    "MethodFamily": {
+      "type": "string",
+      "enum": [
+        "algebraic",
+        "spectral",
+        "proof_complexity",
+        "fine_grained",
+        "meta_complexity",
+        "ac0_locality_support",
+        "natural_property",
+        "algorithmic_williams",
+        "info_theoretic",
+        "sos",
+        "wild_card",
+        "other"
+      ]
+    },
+
+    "Status": {
+      "type": "string",
+      "enum": ["formalized", "informal", "needs_review"]
+    },
+
+    "FormalWitness": {
+      "description": "Either a 'path:line' pointer into the repository, or null when no formal witness exists yet.",
+      "oneOf": [
+        { "type": "string", "pattern": "^[A-Za-z0-9_./-]+:[0-9]+$" },
+        { "type": "null" }
+      ]
+    },
+
+    "NoGoLogEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "candidate_id",
+        "method_family",
+        "status",
+        "failure_class",
+        "structural_pattern",
+        "counterexample_family",
+        "why_generalizes",
+        "formal_witness",
+        "regression_test",
+        "applicable_spec_version",
+        "attack_suite_version",
+        "created_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^NOGO-[0-9]{6}$",
+          "description": "Globally unique id, monotonically assigned."
+        },
+        "candidate_id": {
+          "type": "string",
+          "description": "Identifier of the candidate package under pnp3/Candidates/."
+        },
+        "method_family": { "$ref": "#/$defs/MethodFamily" },
+        "status": { "$ref": "#/$defs/Status" },
+        "failure_class": { "$ref": "#/$defs/FailureClass" },
+        "structural_pattern": {
+          "type": "string",
+          "description": "Short, reusable label for the structural pattern of the failure. E.g. 'truth-table hardwiring of arbitrary PpolyFormula witness'."
+        },
+        "counterexample_family": {
+          "type": "string",
+          "description": "Family of counterexamples that defeats the route. E.g. 'singleton family computing the truth table of the candidate language'."
+        },
+        "why_generalizes": {
+          "type": "string",
+          "description": "Why the same failure recurs across superficially different candidates."
+        },
+        "formal_witness": { "$ref": "#/$defs/FormalWitness" },
+        "regression_test": {
+          "oneOf": [
+            { "type": "string", "description": "Path to a Lean test that reproduces the failure mode." },
+            { "type": "null" }
+          ]
+        },
+        "applicable_spec_version": {
+          "type": "string",
+          "description": "Value of [meta].spec_version from spec/target.toml at time of entry."
+        },
+        "attack_suite_version": {
+          "type": "string",
+          "description": "Version tag of the bench/SmokeProbe attack suite at time of entry."
+        },
+        "created_at": { "$ref": "#/$defs/Timestamp" },
+        "supersedes": {
+          "type": "string",
+          "pattern": "^NOGO-[0-9]{6}$",
+          "description": "Optional reference to an earlier entry being corrected."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Free-form notes. Must not contain claims that contradict the failure_class."
+        }
+      }
+    },
+
+    "SurvivorHistoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_id",
+        "method_family",
+        "source_theorem_skeleton",
+        "verifier_status",
+        "critic_attacks_survived",
+        "final_status",
+        "applicable_spec_version",
+        "attack_suite_version",
+        "created_at"
+      ],
+      "properties": {
+        "candidate_id":             { "type": "string" },
+        "method_family":            { "$ref": "#/$defs/MethodFamily" },
+        "source_theorem_skeleton":  { "type": "string" },
+        "verifier_status": {
+          "type": "string",
+          "enum": ["PASS", "FAIL"]
+        },
+        "critic_attacks_survived":  { "type": "integer", "minimum": 0 },
+        "final_status": {
+          "type": "string",
+          "enum": [
+            "survived",
+            "refuted",
+            "expired_review",
+            "accepted",
+            "requires_revalidation"
+          ]
+        },
+        "applicable_spec_version":  { "type": "string" },
+        "attack_suite_version":     { "type": "string" },
+        "created_at":               { "$ref": "#/$defs/Timestamp" },
+        "notes":                    { "type": "string" }
+      }
+    },
+
+    "AttemptLedgerEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "candidate_id",
+        "method_family",
+        "verifier_status",
+        "critic_status",
+        "applicable_spec_version",
+        "attack_suite_version",
+        "created_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^ATT-[0-9]{6}$",
+          "description": "Globally unique attempt id, monotonically assigned. Each Verifier+Critic cycle produces exactly one entry."
+        },
+        "candidate_id": {
+          "type": "string",
+          "description": "Identifier of the candidate package under pnp3/Candidates/."
+        },
+        "method_family":   { "$ref": "#/$defs/MethodFamily" },
+        "seed_pack_id": {
+          "type": "string",
+          "description": "Optional pointer to the seed pack under seed_packs/<id>/ that this attempt is responding to."
+        },
+        "verifier_status": {
+          "type": "string",
+          "enum": ["PASS", "FAIL", "FAIL_TIMEOUT", "PASS_SHAPE_ONLY"],
+          "description": "Outcome of scripts/verify_candidate.sh on this candidate. v0.4.2 Track C2 added 'FAIL_TIMEOUT' for ledger entries synthesised by the coordinator's cost-budget reaper when an assignment exceeds its hard_cap_minutes; cross-field rule requires verifier_failure_class='timeout' in that case."
+        },
+        "verifier_failure_class": {
+          "oneOf": [
+            { "$ref": "#/$defs/FailureClass" },
+            { "type": "null" }
+          ],
+          "description": "Populated only when verifier_status = FAIL; null otherwise."
+        },
+        "critic_status": {
+          "type": "string",
+          "enum": ["not_run", "pass", "fail"],
+          "description": "Status of the structured Critic report (spec/critic_protocol.md). 'not_run' if Critic has not yet produced a critic_report.md for this attempt; 'pass' if all six attack sections classified the candidate as 'no break found'; 'fail' if any attack section produced a documented break."
+        },
+        "critic_break_class": {
+          "oneOf": [
+            { "$ref": "#/$defs/FailureClass" },
+            { "type": "null" }
+          ],
+          "description": "Populated only when critic_status = fail; classifies the dominant Critic-found break."
+        },
+        "critic_report_path": {
+          "oneOf": [
+            { "type": "string", "description": "Path to the structured critic_report.md file (typically pnp3/Candidates/<candidate_id>/critic_report.md)." },
+            { "type": "null" }
+          ]
+        },
+        "applicable_spec_version": { "type": "string" },
+        "attack_suite_version":    { "type": "string" },
+        "created_at":              { "$ref": "#/$defs/Timestamp" },
+        "supersedes": {
+          "type": "string",
+          "pattern": "^ATT-[0-9]{6}$",
+          "description": "Optional reference to an earlier attempt being corrected (e.g. after a Verifier or Critic re-run)."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Free-form notes. Must not contain claims that contradict the recorded statuses."
+        },
+        "git_commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{7,40}$",
+          "description": "v0.4.2 Track B: lower-case hex of the git commit on which the worker produced this attempt. Optional on entries created before the v0.4.2 cutoff date in spec/version_manifest.toml; mandatory afterwards. Coordinator rejects /v1/result whose attempt.git_commit does not match its own HEAD."
+        },
+        "git_ref": {
+          "type": "string",
+          "description": "v0.4.2 Track B: optional symbolic ref (branch name) the worker observed at submission time. Informational only; the gate is on git_commit."
+        },
+        "lease_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "description": "v0.4.2 Track C2 + v0.4.3 Blocker-2: UUID4 identifying the assignment lease this attempt was produced under. Workers MUST stamp it from the TaskAssignment.lease_id; the coordinator's cost-budget reaper uses it for compare-and-set when auto-failing overdue assignments so worker-vs-reaper races cannot produce two ledger entries for one slot. Optional in this schema only because the file-level validator must accept entries minted before the v0.4.2 cutoff; live /v1/result submissions are required to include it (the coordinator returns 409 lease_missing otherwise)."
+        },
+        "generator_principal_id": {
+          "type": "string",
+          "description": "v0.4.2 Track C3: principal id (suffix after the role prefix of the worker_id) that produced this gen attempt. Populated by the coordinator on every gen-* result merge; used by the critic dispatcher to refuse offering a gen attempt to a critic whose principal id matches. Protocol-level integrity guard for honest workers; NOT authentication (deferred to JWT track)."
+        }
+      }
+    }
+  },
+
+  "oneOf": [
+    {
+      "title": "outputs/nogolog.jsonl",
+      "$ref": "#/$defs/NoGoLogEntry"
+    },
+    {
+      "title": "outputs/survivor_history.jsonl",
+      "$ref": "#/$defs/SurvivorHistoryEntry"
+    },
+    {
+      "title": "outputs/attempts.jsonl",
+      "$ref": "#/$defs/AttemptLedgerEntry"
+    }
+  ]
+}

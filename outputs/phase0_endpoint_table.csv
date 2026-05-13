@@ -1,0 +1,163 @@
+endpoint,kind,file,canonicality,rule_violated,proposed_action,proposed_new_name,notes
+NP_not_subset_PpolyDAG_final,canonical,pnp3/Magnification/UnconditionalResearchGap.lean,canonical,,keep,,Takes ResearchGapWitness explicitly
+P_ne_NP_final,canonical,pnp3/Magnification/UnconditionalResearchGap.lean,canonical,,keep,,Takes ResearchGapWitness explicitly
+P_ne_NP_of_researchGap,canonical,pnp3/Magnification/UnconditionalResearchGap.lean,canonical,,keep,,Takes ResearchGapWitness explicitly
+P_ne_NP_final_dag_only,canonical,pnp3/Magnification/UnconditionalResearchGap.lean,canonical,,keep,,Takes NP_not_subset_PpolyDAG explicitly
+Vacuous_P_ne_NP_via_FinalPayloadProvider,typeclass-channel,pnp3/Magnification/FinalResultAuditRoutes.lean,vacuous,Rule 16,renamed-in-place-PR2 (physical-move-PR2b),Vacuous_P_ne_NP_via_FinalPayloadProvider,Uses [VacuousFinalPayloadProvider]
+Vacuous_P_ne_NP_via_DefaultFormulaSource,typeclass-channel,pnp3/Magnification/FinalResultAuditRoutes.lean,vacuous,Rule 16,renamed-in-place-PR2 (physical-move-PR2b),Vacuous_P_ne_NP_via_DefaultFormulaSource,
+Vacuous_P_ne_NP_via_DefaultSources,typeclass-channel,pnp3/Magnification/FinalResultAuditRoutes.lean,vacuous,Rule 16,renamed-in-place-PR2 (physical-move-PR2b),Vacuous_P_ne_NP_via_DefaultSources,
+Vacuous_P_ne_NP_via_ConstructiveAsymptotic,typeclass-channel,pnp3/Magnification/FinalResultAuditRoutes.lean,vacuous,Rule 16,renamed-in-place-PR2 (physical-move-PR2b),Vacuous_P_ne_NP_via_ConstructiveAsymptotic,
+RefutedRoute_NP_not_subset_PpolyFormula_final_with_supportBounds,refuted-route,pnp3/Magnification/FinalResultMainline.lean,refuted,Rule 6,renamed-in-place-PR3,RefutedRoute_NP_not_subset_PpolyFormula_final_with_supportBounds,Depends on FormulaSupportRestrictionBoundsPartial
+RefutedRoute_NP_not_subset_PpolyFormula_final_with_multiswitching,refuted-route,pnp3/Magnification/FinalResultMainline.lean,refuted,Rule 6,renamed-in-place-PR3,RefutedRoute_NP_not_subset_PpolyFormula_final_with_multiswitching,Depends on FormulaSupportBoundsFromMultiSwitchingContract
+RefutedRoute_NP_not_subset_PpolyReal_final_with_supportBounds,refuted-route,pnp3/Magnification/FinalResultMainline.lean,refuted,Rule 6,renamed-in-place-PR3,RefutedRoute_NP_not_subset_PpolyReal_final_with_supportBounds,Depends on FormulaSupportRestrictionBoundsPartial
+RefutedRoute_NP_not_subset_PpolyReal_final_with_multiswitching,refuted-route,pnp3/Magnification/FinalResultMainline.lean,refuted,Rule 6,renamed-in-place-PR3,RefutedRoute_NP_not_subset_PpolyReal_final_with_multiswitching,Depends on FormulaSupportBoundsFromMultiSwitchingContract
+RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptotic_supportBounds,refuted-route,pnp3/Magnification/FinalResultAuditRoutes.lean,refuted,Rule 6,renamed-in-place-PR3,RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptotic_supportBounds,Depends on MagnificationAssumptions
+RefutedRoute_NP_not_subset_PpolyDAG_final_with_magnification,refuted-route,pnp3/Magnification/FinalResultAuditRoutes.lean,refuted,Rule 6,renamed-in-place-PR3,RefutedRoute_NP_not_subset_PpolyDAG_final_with_magnification,Depends on MagnificationAssumptions
+RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptoticPullback,refuted-route,pnp3/Magnification/FinalResultAuditRoutes.lean,refuted,Rule 6,renamed-in-place-PR3,RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptoticPullback,
+RefutedRoute_NP_not_subset_PpolyDAG_final_of_multiswitchingData,refuted-route,pnp3/Magnification/FinalResultAuditRoutes.lean,refuted,Rule 6,renamed-in-place-PR3,RefutedRoute_NP_not_subset_PpolyDAG_final_of_multiswitchingData,Depends on FormulaSupportBoundsFromMultiSwitchingContract
+RefutedRoute_NP_not_subset_PpolyDAG_final_under_fixedParams_and_uniformProvenance,refuted-route,pnp3/Magnification/FinalResultAuditRoutes.lean,refuted,Rule 6,renamed-in-place-PR3,RefutedRoute_NP_not_subset_PpolyDAG_final_under_fixedParams_and_uniformProvenance,Depends on fixedParams ∧ uniformProvenance leak
+RefutedRoute_NP_not_subset_PpolyDAG_final_of_magnification,refuted-route,pnp3/Magnification/FinalResultAuditRoutes.lean,refuted,Rule 6,renamed-in-place-PR3,RefutedRoute_NP_not_subset_PpolyDAG_final_of_magnification,Depends on MagnificationAssumptions
+RefutedRoute_P_ne_NP_final_of_asymptoticPullback,refuted-route,pnp3/Magnification/FinalResultAuditRoutes.lean,refuted,Rule 6,renamed-in-place-PR3,RefutedRoute_P_ne_NP_final_of_asymptoticPullback,
+RefutedRoute_P_ne_NP_final_of_multiswitchingData,refuted-route,pnp3/Magnification/FinalResultAuditRoutes.lean,refuted,Rule 6,renamed-in-place-PR3,RefutedRoute_P_ne_NP_final_of_multiswitchingData,Depends on FormulaSupportBoundsFromMultiSwitchingContract
+RefutedRoute_NP_not_subset_PpolyDAG_final_of_supportBounds,refuted-route,pnp3/Magnification/FinalResultAuditRoutes.lean,refuted,Rule 6,renamed-in-place-PR3,RefutedRoute_NP_not_subset_PpolyDAG_final_of_supportBounds,Depends on FormulaSupportRestrictionBoundsPartial
+RefutedRoute_P_ne_NP_final_of_supportBounds,refuted-route,pnp3/Magnification/FinalResultAuditRoutes.lean,refuted,Rule 6,renamed-in-place-PR3,RefutedRoute_P_ne_NP_final_of_supportBounds,Depends on FormulaSupportRestrictionBoundsPartial
+RefutedRoute_P_ne_NP_final_of_magnification,refuted-route,pnp3/Magnification/FinalResultAuditRoutes.lean,refuted,Rule 6,renamed-in-place-PR3,RefutedRoute_P_ne_NP_final_of_magnification,Depends on MagnificationAssumptions
+RefutedRoute_NP_not_subset_PpolyDAG_final_of_supportBounds_TM,refuted-route,pnp3/Magnification/FinalResultLegacyTM.lean,refuted,Rule 6,renamed-in-place-PR3,RefutedRoute_NP_not_subset_PpolyDAG_final_of_supportBounds_TM,Depends on FormulaSupportRestrictionBoundsPartial
+RefutedRoute_P_ne_NP_final_of_supportBounds_TM,refuted-route,pnp3/Magnification/FinalResultLegacyTM.lean,refuted,Rule 6,renamed-in-place-PR3,RefutedRoute_P_ne_NP_final_of_supportBounds_TM,Depends on FormulaSupportRestrictionBoundsPartial
+RefutedRoute_NP_not_subset_PpolyDAG_of_supportBounds,refuted-route,pnp3/LowerBounds/SingletonDensityContradiction.lean,refuted,Rule 6,renamed-in-place-PR3,RefutedRoute_NP_not_subset_PpolyDAG_of_supportBounds,Depends on FormulaSupportRestrictionBoundsPartial
+RefutedRoute_NP_not_subset_PpolyDAG_of_supportBounds_TM,refuted-route,pnp3/LowerBounds/SingletonDensityContradiction.lean,refuted,Rule 6,renamed-in-place-PR3,RefutedRoute_NP_not_subset_PpolyDAG_of_supportBounds_TM,Depends on FormulaSupportRestrictionBoundsPartial
+RefutedRoute_NP_not_subset_PpolyFormula_final,refuted-route,pnp3/Magnification/FinalResultMainline.lean,refuted,Rule 6,renamed-in-place-PR3b,RefutedRoute_NP_not_subset_PpolyFormula_final,Premise MagnificationAssumptions
+RefutedRoute_NP_not_subset_PpolyFormula_final_fromPipeline,refuted-route,pnp3/Magnification/FinalResultMainline.lean,refuted,Rule 6,renamed-in-place-PR3b,RefutedRoute_NP_not_subset_PpolyFormula_final_fromPipeline,Premise MagnificationAssumptions_fromPipeline
+RefutedRoute_NP_not_subset_PpolyReal_final,refuted-route,pnp3/Magnification/FinalResultMainline.lean,refuted,Rule 6,renamed-in-place-PR3b,RefutedRoute_NP_not_subset_PpolyReal_final,Premise MagnificationAssumptions
+RefutedRoute_NP_not_subset_PpolyReal_final_fromPipeline,refuted-route,pnp3/Magnification/FinalResultMainline.lean,refuted,Rule 6,renamed-in-place-PR3b,RefutedRoute_NP_not_subset_PpolyReal_final_fromPipeline,Premise MagnificationAssumptions_fromPipeline
+class VacuousFinalPayloadProvider,typeclass-channel,pnp3/Magnification/FinalResultAuditRoutes.lean,vacuous,Rule 16,renamed-in-place-PR2 (physical-move-PR2b PR6 annotation),VacuousFinalPayloadProvider,Quarantined by scripts/check_typeclass_payload_quarantine.sh
+def hasDefaultAsymptoticFormulaTrackData,fact-channel,pnp3/Magnification/FinalResultAuditRoutes.lean,vacuous,Rule 16,annotate-in-PR6,hasDefaultAsymptoticFormulaTrackData,Not renamed in PR 2; deferred to PR 6
+def hasDefaultFormulaSupportRestrictionBoundsPartial,fact-channel,pnp3/Magnification/LocalityProvider_Partial.lean,vacuous,Rule 16,annotate-in-PR6,hasDefaultFormulaSupportRestrictionBoundsPartial,Use as [Fact ...] now blocked outside audit/test/docs by quarantine guard
+RefutedPredicate_FormulaSupportRestrictionBoundsPartial,refuted-predicate-alias,pnp3/RefutedPredicates/Registry.lean,refuted,Rule 6,registered-PR4a (physical-move-PR4b),RefutedPredicate_FormulaSupportRestrictionBoundsPartial,Def home pnp3/Magnification/LocalityProvider_Partial.lean:239
+RefutedPredicate_FormulaSupportBoundsFromMultiSwitchingContract,refuted-predicate-alias,pnp3/RefutedPredicates/Registry.lean,refuted,Rule 6,registered-PR4a (physical-move-PR4b),RefutedPredicate_FormulaSupportBoundsFromMultiSwitchingContract,Def home pnp3/Magnification/AC0LocalityBridge.lean:42
+RefutedPredicate_MagnificationAssumptions,refuted-predicate-alias,pnp3/RefutedPredicates/Registry.lean,refuted,Rule 6,registered-PR4a (physical-move-PR4b),RefutedPredicate_MagnificationAssumptions,Def home pnp3/Magnification/FinalResultMainline.lean:152
+RefutedPredicate_FormulaSupportBoundsPartial_fromPipeline,refuted-predicate-alias,pnp3/RefutedPredicates/Registry.lean,refuted,Rule 6,registered-PR4a (physical-move-PR4b),RefutedPredicate_FormulaSupportBoundsPartial_fromPipeline,Def home pnp3/Magnification/LocalityProvider_Partial.lean:312
+RefutedPredicate_MagnificationAssumptions_fromPipeline,refuted-predicate-alias,pnp3/RefutedPredicates/Registry.lean,refuted,Rule 6,registered-PR4a (physical-move-PR4b),RefutedPredicate_MagnificationAssumptions_fromPipeline,Def home pnp3/Magnification/FinalResultMainline.lean:161
+RefutedPredicate_FixedParamsUniformProvenancePair,refuted-predicate-alias,pnp3/RefutedPredicates/Registry.lean,refuted,Rule 6,registered-PR4a,RefutedPredicate_FixedParamsUniformProvenancePair,Conjunction shape from Probe 8a in pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean:532
+Bridge_to_Magnification_Partial,conditional-suspicious,pnp3/Magnification/Bridge_to_Magnification_Partial.lean,non-canonical,needs_review,reclassify-in-PR8,,
+AsymptoticDAGCollapse,conditional-collapse,pnp3/Magnification/AsymptoticDAGCollapse.lean,non-canonical,Rule 8,reclassify-in-PR8,,Collapse consequence not contradiction
+AsymptoticFormulaCollapse,conditional-collapse,pnp3/Magnification/AsymptoticFormulaCollapse.lean,non-canonical,Rule 8,reclassify-in-PR8,,
+ComplexityInterfaces (semantic bridges),semantic-conditional,pnp3/Complexity/Interfaces.lean,trust-root,,frozen-target-surface,,9 conditional bridges; verify against FrozenSpec
+AsymptoticPayloadProvider,provider-class,pnp3/Magnification/,non-canonical,Rule 16,annotate-in-PR6,,
+FormulaCertificateProviderPartial,provider-class,pnp3/Magnification/,non-canonical,Rule 16,annotate-in-PR6,,
+FormulaSemanticMultiSwitchingProvider,provider-class,pnp3/Magnification/,non-canonical,Rule 16,annotate-in-PR6,,
+AC0FamilyWitnessProvider,provider-class,pnp3/ThirdPartyFacts/,non-canonical,Rule 16,annotate-in-PR6,,
+LocalCircuitFamilyWitnessProvider,provider-class,pnp3/ThirdPartyFacts/,non-canonical,Rule 16,annotate-in-PR6,,
+AC0MultiSwitchingWitnessProvider,provider-class,pnp3/ThirdPartyFacts/,non-canonical,Rule 16,annotate-in-PR6,,
+
+# === PR 13a — Suspicious endpoint inventory (Research Governance v0.1) ===
+# Generated by classification heuristic per Engineering Execution Plan v0.2.1.
+# Each row carries a proposed_action of classified-PR13a; the notes column
+# encodes the assigned category and rationale.
+NP_not_subset_PpolyDAG_final_of_asymptotic_isoStrongRoute_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,NP_not_subset_PpolyDAG_final_of_asymptotic_isoStrongRoute_withAntiChecker,Conditional: anti-checker premise; not refuted
+P_ne_NP_final_of_asymptotic_isoStrongRoute_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,P_ne_NP_final_of_asymptotic_isoStrongRoute_withAntiChecker,Conditional: anti-checker premise; not refuted
+NP_not_subset_PpolyDAG_final_of_asymptotic_promiseYesCertificateRoute_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,NP_not_subset_PpolyDAG_final_of_asymptotic_promiseYesCertificateRoute_withAntiChecker,Conditional: anti-checker premise; not refuted
+P_ne_NP_final_of_asymptotic_promiseYesCertificateRoute_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,P_ne_NP_final_of_asymptotic_promiseYesCertificateRoute_withAntiChecker,Conditional: anti-checker premise; not refuted
+NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse_withAntiChecker,Conditional: anti-checker premise; not refuted
+P_ne_NP_final_of_asymptotic_fixedSliceCollapse_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,P_ne_NP_final_of_asymptotic_fixedSliceCollapse_withAntiChecker,Conditional: anti-checker premise; not refuted
+NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSlicePromiseYesCertificateRoute_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSlicePromiseYesCertificateRoute_withAntiChecker,Conditional: anti-checker premise; not refuted
+P_ne_NP_final_of_asymptotic_fixedSlicePromiseYesCertificateRoute_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,P_ne_NP_final_of_asymptotic_fixedSlicePromiseYesCertificateRoute_withAntiChecker,Conditional: anti-checker premise; not refuted
+NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSlicePromiseValueLocalityRoute_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSlicePromiseValueLocalityRoute_withAntiChecker,Conditional: anti-checker premise; not refuted
+P_ne_NP_final_of_asymptotic_fixedSlicePromiseValueLocalityRoute_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,P_ne_NP_final_of_asymptotic_fixedSlicePromiseValueLocalityRoute_withAntiChecker,Conditional: anti-checker premise; not refuted
+NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceSupportHalfValueSupportedRoute_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceSupportHalfValueSupportedRoute_withAntiChecker,Conditional: anti-checker premise; not refuted
+P_ne_NP_final_of_asymptotic_fixedSliceSupportHalfValueSupportedRoute_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,P_ne_NP_final_of_asymptotic_fixedSliceSupportHalfValueSupportedRoute_withAntiChecker,Conditional: anti-checker premise; not refuted
+NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceDAGStableRestrictionSlackRoute_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceDAGStableRestrictionSlackRoute_withAntiChecker,Conditional: anti-checker premise; not refuted
+P_ne_NP_final_of_asymptotic_fixedSliceDAGStableRestrictionSlackRoute_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,P_ne_NP_final_of_asymptotic_fixedSliceDAGStableRestrictionSlackRoute_withAntiChecker,Conditional: anti-checker premise; not refuted
+NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceShrinkageCertificateRoute_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceShrinkageCertificateRoute_withAntiChecker,Conditional: anti-checker premise; not refuted
+P_ne_NP_final_of_asymptotic_fixedSliceShrinkageCertificateRoute_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,P_ne_NP_final_of_asymptotic_fixedSliceShrinkageCertificateRoute_withAntiChecker,Conditional: anti-checker premise; not refuted
+NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceRestrictionDataRoute_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceRestrictionDataRoute_withAntiChecker,Conditional: anti-checker premise; not refuted
+P_ne_NP_final_of_asymptotic_fixedSliceRestrictionDataRoute_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,P_ne_NP_final_of_asymptotic_fixedSliceRestrictionDataRoute_withAntiChecker,Conditional: anti-checker premise; not refuted
+NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceSupportNumericRoute_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceSupportNumericRoute_withAntiChecker,Conditional: anti-checker premise; not refuted
+P_ne_NP_final_of_asymptotic_fixedSliceSupportNumericRoute_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,P_ne_NP_final_of_asymptotic_fixedSliceSupportNumericRoute_withAntiChecker,Conditional: anti-checker premise; not refuted
+NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceSupportNumericComponentRoute_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceSupportNumericComponentRoute_withAntiChecker,Conditional: anti-checker premise; not refuted
+P_ne_NP_final_of_asymptotic_fixedSliceSupportNumericComponentRoute_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,P_ne_NP_final_of_asymptotic_fixedSliceSupportNumericComponentRoute_withAntiChecker,Conditional: anti-checker premise; not refuted
+NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceTransferQuarterRoute_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceTransferQuarterRoute_withAntiChecker,Conditional: anti-checker premise; not refuted
+P_ne_NP_final_of_asymptotic_fixedSliceTransferQuarterRoute_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,P_ne_NP_final_of_asymptotic_fixedSliceTransferQuarterRoute_withAntiChecker,Conditional: anti-checker premise; not refuted
+NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceWitnessEasyDensityRoute_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceWitnessEasyDensityRoute_withAntiChecker,Conditional: anti-checker premise; not refuted
+P_ne_NP_final_of_asymptotic_fixedSliceWitnessEasyDensityRoute_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,P_ne_NP_final_of_asymptotic_fixedSliceWitnessEasyDensityRoute_withAntiChecker,Conditional: anti-checker premise; not refuted
+NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceWitnessUniformLowerRoute_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceWitnessUniformLowerRoute_withAntiChecker,Conditional: anti-checker premise; not refuted
+P_ne_NP_final_of_asymptotic_fixedSliceWitnessUniformLowerRoute_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,P_ne_NP_final_of_asymptotic_fixedSliceWitnessUniformLowerRoute_withAntiChecker,Conditional: anti-checker premise; not refuted
+NP_not_subset_PpolyDAG_final_of_asymptotic_dag_stableRestriction_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,NP_not_subset_PpolyDAG_final_of_asymptotic_dag_stableRestriction_withAntiChecker,Conditional: anti-checker premise; not refuted
+P_ne_NP_final_of_asymptotic_dag_stableRestriction_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,P_ne_NP_final_of_asymptotic_dag_stableRestriction_withAntiChecker,Conditional: anti-checker premise; not refuted
+NP_not_subset_PpolyDAG_final_of_asymptotic_sourceClosure_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,NP_not_subset_PpolyDAG_final_of_asymptotic_sourceClosure_withAntiChecker,Conditional: anti-checker premise; not refuted
+P_ne_NP_final_of_asymptotic_sourceClosure_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,P_ne_NP_final_of_asymptotic_sourceClosure_withAntiChecker,Conditional: anti-checker premise; not refuted
+NP_not_subset_PpolyDAG_final_of_asymptotic_blocker_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,NP_not_subset_PpolyDAG_final_of_asymptotic_blocker_withAntiChecker,Conditional: anti-checker premise; not refuted
+P_ne_NP_final_of_asymptotic_blocker_withAntiChecker,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,P_ne_NP_final_of_asymptotic_blocker_withAntiChecker,Conditional: anti-checker premise; not refuted
+NP_not_subset_PpolyFormula_final_with_provider,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,NP_not_subset_PpolyFormula_final_with_provider,Optional: provider class audited in PR 6 / @audit-class
+NP_not_subset_PpolyReal_final_with_provider,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,NP_not_subset_PpolyReal_final_with_provider,Optional: provider class audited in PR 6 / @audit-class
+P_ne_NP_final_with_provider,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,P_ne_NP_final_with_provider,Optional: provider class audited in PR 6 / @audit-class
+NP_not_subset_PpolyFormula_final_with_provider_fromPipeline,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,NP_not_subset_PpolyFormula_final_with_provider_fromPipeline,Optional: provider+pipeline; provider audited in PR 6
+NP_not_subset_PpolyReal_final_with_provider_fromPipeline,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,NP_not_subset_PpolyReal_final_with_provider_fromPipeline,Optional: provider+pipeline; provider audited in PR 6
+,suspicious,38,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,53,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,68,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,79,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,98,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,107,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,121,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,132,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,147,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,161,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,177,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,199,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,219,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,242,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,261,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,285,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,310,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,339,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,367,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,394,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,424,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,446,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,471,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,497,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,517,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,538,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,558,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,576,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,595,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,615,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,637,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,651,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,668,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,681,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,702,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,721,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,752,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,766,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,783,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,800,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,814,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,828,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,842,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+,suspicious,857,non-canonical,Rule needs_review,classified-PR13a,,Optional: weak-route audit surface
+NP_not_subset_PpolyDAG_final_of_asymptotic_sourceClosure,suspicious,pnp3/Magnification/FinalResultAuditRoutes.lean,non-canonical,Rule needs_review,classified-PR13a,NP_not_subset_PpolyDAG_final_of_asymptotic_sourceClosure,Optional: source-closure variant
+P_ne_NP_final_of_asymptotic_sourceClosure,suspicious,pnp3/Magnification/FinalResultAuditRoutes.lean,non-canonical,Rule needs_review,classified-PR13a,P_ne_NP_final_of_asymptotic_sourceClosure,Optional: source-closure variant
+NP_not_subset_PpolyDAG_final_of_asymptotic_blocker,suspicious,pnp3/Magnification/FinalResultAuditRoutes.lean,non-canonical,Rule needs_review,classified-PR13a,NP_not_subset_PpolyDAG_final_of_asymptotic_blocker,BarrierAudit: blocker shape; barrier-audit zone
+P_ne_NP_final_of_asymptotic_blocker,suspicious,pnp3/Magnification/FinalResultAuditRoutes.lean,non-canonical,Rule needs_review,classified-PR13a,P_ne_NP_final_of_asymptotic_blocker,BarrierAudit: blocker shape; barrier-audit zone
+,suspicious,46,non-canonical,Rule needs_review,classified-PR13a,,AuditOnly: collapse consequence (Rule 8: collapse != contradiction)
+,suspicious,66,non-canonical,Rule needs_review,classified-PR13a,,AuditOnly: collapse consequence (Rule 8: collapse != contradiction)
+,suspicious,126,non-canonical,Rule needs_review,classified-PR13a,,AuditOnly: collapse consequence (Rule 8: collapse != contradiction)
+,suspicious,142,non-canonical,Rule needs_review,classified-PR13a,,AuditOnly: collapse consequence (Rule 8: collapse != contradiction)
+,suspicious,36,non-canonical,Rule needs_review,classified-PR13a,,AuditOnly: collapse consequence (Rule 8: collapse != contradiction)
+,suspicious,59,non-canonical,Rule needs_review,classified-PR13a,,AuditOnly: collapse consequence (Rule 8: collapse != contradiction)
+,suspicious,80,non-canonical,Rule needs_review,classified-PR13a,,AuditOnly: collapse consequence (Rule 8: collapse != contradiction)
+,suspicious,96,non-canonical,Rule needs_review,classified-PR13a,,AuditOnly: collapse consequence (Rule 8: collapse != contradiction)
+,suspicious,141,non-canonical,Rule needs_review,classified-PR13a,,AuditOnly: collapse consequence (Rule 8: collapse != contradiction)
+,suspicious,157,non-canonical,Rule needs_review,classified-PR13a,,AuditOnly: collapse consequence (Rule 8: collapse != contradiction)
+,suspicious,174,non-canonical,Rule needs_review,classified-PR13a,,AuditOnly: collapse consequence (Rule 8: collapse != contradiction)
+,suspicious,22,non-canonical,Rule needs_review,classified-PR13a,,Conditional: Formula↔Real bridge; needs_review for refuted-deps audit
+,suspicious,38,non-canonical,Rule needs_review,classified-PR13a,,Conditional: Formula↔Real bridge; needs_review for refuted-deps audit
+,suspicious,59,non-canonical,Rule needs_review,classified-PR13a,,Conditional: Formula↔Real bridge; needs_review for refuted-deps audit
+,suspicious,70,non-canonical,Rule needs_review,classified-PR13a,,Conditional: Formula↔Real bridge; needs_review for refuted-deps audit
+,suspicious,91,non-canonical,Rule needs_review,classified-PR13a,,Conditional: Formula↔Real bridge; needs_review for refuted-deps audit
+,suspicious,106,non-canonical,Rule needs_review,classified-PR13a,,Conditional: Formula↔Real bridge; needs_review for refuted-deps audit
+asymptotic_formula_collapse_fromPipeline,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,asymptotic_formula_collapse_fromPipeline,Conditional: pipeline-aware variant; refuted-deps audit pending
+fixed_formula_collapse_of_provider_fromPipeline,suspicious,pnp3/Magnification/AsymptoticFormulaCollapse.lean,non-canonical,Rule needs_review,classified-PR13a,fixed_formula_collapse_of_provider_fromPipeline,Conditional: pipeline-aware variant; refuted-deps audit pending
+asymptotic_formula_collapse,suspicious,pnp3/Magnification/FinalResultMainline.lean,non-canonical,Rule needs_review,classified-PR13a,asymptotic_formula_collapse,AuditOnly: collapse helper (Rule 8)

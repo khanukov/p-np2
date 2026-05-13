@@ -81,6 +81,14 @@ structure FormulaSupportBoundsFromMultiSwitchingContract where
 Semantic multi-switching provider (A9 core payload without numeric locality
 bounds): for each extracted strict formula `c`, provide AC0 provenance plus a
 function in `F` extensionally equal to `eval c` (after length cast).
+
+@audit-class: refuted-channel
+@audit-pr: PR 6
+@audit-registry: spec/provider_audit_registry.toml
+@audit-note:
+  Wraps the refuted multiswitching contract shape. New uses of this
+  structure (or typeclass parameters of it) outside the audit/test/
+  docs surface are blocked by `scripts/check_typeclass_payload_quarantine.sh`.
 -/
 structure FormulaSemanticMultiSwitchingProvider where
   package :

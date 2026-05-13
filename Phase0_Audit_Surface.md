@@ -1,0 +1,477 @@
+# Phase 0 Audit Surface
+
+This document is the read-only inventory baseline for the
+`p-np2` repository at the start of Research Governance v0.1. It is the
+input to Phase 0 cleanup PRs 1–6 (see `RESEARCH_CONSTITUTION.md`).
+
+Baseline commit: `91693ef` (branch
+`claude/research-governance-phase0-lmZBP` cut from main analysis).
+
+This file does **not** modify any Lean code. It only records what
+exists, what is canonical, what is refuted, and what must be moved.
+
+---
+
+## 0. Summary
+
+- **Honest unconditional theorem**: **none**. The identifier
+  `P_ne_NP_unconditional` is mentioned in comments and documentation but
+  is **not defined as a closed term** anywhere in the active source tree.
+- **Canonical research-gap port**:
+  `pnp3/Magnification/UnconditionalResearchGap.lean`. It defines
+  `ResearchGapTarget := ComplexityInterfaces.NP_not_subset_PpolyDAG` and
+  the structure `ResearchGapWitness` whose only field is
+  `dagSeparation : ResearchGapTarget`.
+- **Refuted predicates**: 6 predicates have been formally proved
+  `→ False` in `pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean`.
+- **Active typeclass-payload channel**: `FinalPayloadProvider` and the
+  associated `Fact has...` instances in
+  `pnp3/Magnification/FinalResultAuditRoutes.lean` provide a vacuous /
+  refuted-shaped path to `P_ne_NP` that violates Rule 16. This is the
+  primary attack vector that Phase 0 must close.
+- **Suspicious endpoints**: ~80 final-looking declarations route
+  transitively through refuted predicates or the typeclass-payload
+  channel. None of them is a real unconditional theorem.
+
+The repository must be treated as **not having an unconditional proof of
+P ≠ NP**. Public claims to the contrary are governed by Rule 1.
+
+---
+
+## 1. Public final-looking endpoints
+
+### 1.1 Canonical (honest) endpoints
+
+These endpoints take a `ResearchGapWitness` argument explicitly. They are
+not vacuous: they faithfully express "if the gap is closed, the final
+target follows".
+
+| Endpoint                                         | File                                                   |
+| ------------------------------------------------ | ------------------------------------------------------ |
+| `NP_not_subset_PpolyDAG_final`                   | `pnp3/Magnification/UnconditionalResearchGap.lean`     |
+| `P_ne_NP_final`                                  | `pnp3/Magnification/UnconditionalResearchGap.lean`     |
+| `P_ne_NP_of_researchGap`                         | `pnp3/Magnification/UnconditionalResearchGap.lean`     |
+| `P_ne_NP_final_dag_only` *(no `gap` arg, but takes `NP_not_subset_PpolyDAG`)* | `pnp3/Magnification/UnconditionalResearchGap.lean` |
+
+All four are honest: they admit a hypothesis that nobody currently knows
+how to discharge.
+
+### 1.2 Direct refuted-route endpoints
+
+**PR 3 status: rename-in-place complete.** All final-looking endpoints
+whose direct premise is one of the six refuted predicates listed in §2
+have been renamed with the explicit `RefutedRoute_*` prefix. Physical
+relocation under `pnp3/Magnification/AuditRoutes/` is deferred to a
+later split PR (alongside PR 2b).
+
+Endpoints renamed in PR 3:
+
+| File                                                    | Old name                                                         |
+| ------------------------------------------------------- | ---------------------------------------------------------------- |
+| `pnp3/Magnification/FinalResultMainline.lean`           | `NP_not_subset_PpolyFormula_final_with_supportBounds`            |
+| `pnp3/Magnification/FinalResultMainline.lean`           | `NP_not_subset_PpolyFormula_final_with_multiswitching`           |
+| `pnp3/Magnification/FinalResultMainline.lean`           | `NP_not_subset_PpolyReal_final_with_supportBounds`               |
+| `pnp3/Magnification/FinalResultMainline.lean`           | `NP_not_subset_PpolyReal_final_with_multiswitching`              |
+| `pnp3/Magnification/FinalResultAuditRoutes.lean`        | `NP_not_subset_PpolyDAG_final_of_asymptotic_supportBounds`       |
+| `pnp3/Magnification/FinalResultAuditRoutes.lean`        | `NP_not_subset_PpolyDAG_final_with_magnification`                |
+| `pnp3/Magnification/FinalResultAuditRoutes.lean`        | `NP_not_subset_PpolyDAG_final_of_asymptoticPullback`             |
+| `pnp3/Magnification/FinalResultAuditRoutes.lean`        | `NP_not_subset_PpolyDAG_final_of_multiswitchingData`             |
+| `pnp3/Magnification/FinalResultAuditRoutes.lean`        | `NP_not_subset_PpolyDAG_final_under_fixedParams_and_uniformProvenance` |
+| `pnp3/Magnification/FinalResultAuditRoutes.lean`        | `NP_not_subset_PpolyDAG_final_of_magnification`                  |
+| `pnp3/Magnification/FinalResultAuditRoutes.lean`        | `P_ne_NP_final_of_asymptoticPullback`                            |
+| `pnp3/Magnification/FinalResultAuditRoutes.lean`        | `P_ne_NP_final_of_multiswitchingData`                            |
+| `pnp3/Magnification/FinalResultAuditRoutes.lean`        | `NP_not_subset_PpolyDAG_final_of_supportBounds`                  |
+| `pnp3/Magnification/FinalResultAuditRoutes.lean`        | `P_ne_NP_final_of_supportBounds`                                 |
+| `pnp3/Magnification/FinalResultAuditRoutes.lean`        | `P_ne_NP_final_of_magnification`                                 |
+| `pnp3/Magnification/FinalResultLegacyTM.lean`           | `NP_not_subset_PpolyDAG_final_of_supportBounds_TM`               |
+| `pnp3/Magnification/FinalResultLegacyTM.lean`           | `P_ne_NP_final_of_supportBounds_TM`                              |
+| `pnp3/LowerBounds/SingletonDensityContradiction.lean`   | `NP_not_subset_PpolyDAG_of_supportBounds`                        |
+| `pnp3/LowerBounds/SingletonDensityContradiction.lean`   | `NP_not_subset_PpolyDAG_of_supportBounds_TM`                     |
+
+Each row's new name is the old name with the prefix `RefutedRoute_`
+prepended. No backwards-compatibility aliases were introduced. All
+internal callers and `Tests/AxiomsAudit.lean` /
+`Tests/BridgeLocalityRegression.lean` / `Tests/RouteSurfaceAudit.lean`
+references have been updated.
+
+Total: **19 endpoints renamed.**
+
+**PR 3b status: closed.** The bare package-based `_final` endpoints
+have been quarantined:
+
+| File                                                    | Old name                                          |
+| ------------------------------------------------------- | ------------------------------------------------- |
+| `pnp3/Magnification/FinalResultMainline.lean`           | `NP_not_subset_PpolyFormula_final`                |
+| `pnp3/Magnification/FinalResultMainline.lean`           | `NP_not_subset_PpolyFormula_final_fromPipeline`   |
+| `pnp3/Magnification/FinalResultMainline.lean`           | `NP_not_subset_PpolyReal_final`                   |
+| `pnp3/Magnification/FinalResultMainline.lean`           | `NP_not_subset_PpolyReal_final_fromPipeline`      |
+
+Each row's new name has the `RefutedRoute_` prefix. The conflicting
+policy block in `scripts/check.sh` (formerly lines 222-233) now requires
+the renamed `RefutedRoute_*` forms instead of the bare names; the
+default-provider-signature block (formerly lines 254-266) was tightened
+into a positive ban on bare `theorem NP_not_subset_PpolyFormula_final`
+/ `NP_not_subset_PpolyReal_final` declarations in the magnification
+surface. Reintroduction is also blocked by Step 6/10's
+`scripts/check_refuted_route_quarantine.sh` which now recognises
+`_final` and `_final_fromPipeline` as direct-refuted suffixes when the
+head is `NP_not_subset_PpolyFormula` or `NP_not_subset_PpolyReal`.
+The canonical research-gap final `NP_not_subset_PpolyDAG_final` (with
+`gap : ResearchGapWitness` premise) is intentionally outside the
+restricted head set and remains canonical.
+
+Out of PR 3 / PR 3b scope (deferred):
+
+- Helper / intermediate lemmas that consume a refuted predicate but do
+  not look like a final endpoint (e.g.
+  `dag_stableRestrictionGoal_of_supportBounds`,
+  `*_of_supportBounds` wrappers in `LocalityProvider_Partial.lean`).
+  These will be addressed in PR 4 (`Centralize refuted predicates under
+  pnp3/RefutedPredicates/`).
+- Provider/composite endpoints (`*_with_provider`, `*_fromPipeline`-on-
+  provider, `*_withAntiChecker`, etc.) — separate provider-audit PR.
+
+A regression guard, `scripts/check_refuted_route_quarantine.sh`, is
+wired into `scripts/check.sh` as Step 6/10 to prevent reintroduction of
+unmarked direct-refuted final endpoints in production code.
+
+### 1.3 Typeclass-payload-channel endpoints
+
+**PR 2 status: rename-in-place complete; physical move deferred to PR 2b.**
+These endpoints live in `pnp3/Magnification/FinalResultAuditRoutes.lean`
+and violated Rule 16. PR 2 (commit on
+`claude/research-governance-phase0-lmZBP`) renamed them in place with
+the `Vacuous_*` prefix; the physical move into a dedicated
+`pnp3/Magnification/AuditRoutes/Vacuous_TypeclassChannel.lean` is
+deferred to PR 2b to avoid a wider import-cycle refactor.
+
+| Old name                                      | Renamed (PR 2)                                       |
+| --------------------------------------------- | ---------------------------------------------------- |
+| `P_ne_NP` *(took `[FinalPayloadProvider]`)*   | `Vacuous_P_ne_NP_via_FinalPayloadProvider`           |
+| `P_ne_NP_of_default_formulaSource`            | `Vacuous_P_ne_NP_via_DefaultFormulaSource`           |
+| `P_ne_NP_of_default_sources`                  | `Vacuous_P_ne_NP_via_DefaultSources`                 |
+| `P_ne_NP_of_constructive_asymptoticData`      | `Vacuous_P_ne_NP_via_ConstructiveAsymptotic`         |
+| `class FinalPayloadProvider`                  | `class VacuousFinalPayloadProvider`                  |
+| `instance finalPayloadProvider_of_default_supportBounds` | `instance vacuousFinalPayloadProvider_of_default_supportBounds` |
+
+No backwards-compatibility aliases were introduced. The bare name
+`P_ne_NP` no longer occurs as a `theorem` declaration in the
+magnification tree; the only remaining definition with that name is the
+canonical `def P_ne_NP` in `pnp3/Complexity/Interfaces.lean`.
+
+Defining declarations to follow them out of the public surface:
+
+- `class FinalPayloadProvider` (line 719)
+- `def hasDefaultAsymptoticFormulaTrackData` (line 740)
+- `def hasDefaultFormulaSupportRestrictionBoundsPartial` (referenced at
+  lines 775, 806, 823, 824, 841)
+- `instance` declarations that inhabit the above `Fact`s.
+
+Phase 0 PR 2 is a guard: `[FinalPayloadProvider]` must not appear outside
+`pnp3/Magnification/AuditRoutes/`, and `Fact
+hasDefaultFormulaSupportRestrictionBoundsPartial` must not appear
+outside `pnp3/Magnification/AuditRoutes/` or `pnp3/Tests/`.
+
+### 1.4 Suspicious provider/composite endpoints
+
+**PR 13a status: inventory done.** 107 suspicious endpoint
+declarations enumerated and classified by pattern in
+`outputs/phase0_endpoint_table.csv` (see the
+"PR 13a — Suspicious endpoint inventory" section). No Lean code
+changed in PR 13a; the inventory is read-only.
+
+Pattern → classification distribution (heuristic, set in PR 13a):
+
+| Pattern                                 | Count | Classification |
+| --------------------------------------- | ----- | -------------- |
+| `*_withAntiChecker*`                    |  34   | Conditional    |
+| `*_with_provider`                       |   3   | Optional       |
+| `*_with_provider_fromPipeline`          |   2   | Optional       |
+| FinalResultWeakRoutes (all 44 theorems) |  44   | Optional       |
+| `*_sourceClosure*` (non-AntiChecker)    |   2   | Optional       |
+| `*_blocker*` (non-AntiChecker)          |   2   | BarrierAudit   |
+| `AsymptoticDAGCollapse.lean` theorems   |   4   | AuditOnly (Rule 8) |
+| `AsymptoticFormulaCollapse.lean` theorems |  7   | AuditOnly (Rule 8) |
+| `Bridge_to_Magnification_Partial.lean`  |   6   | Conditional    |
+| Stand-alone `_fromPipeline` helpers     |   2   | Conditional    |
+| `asymptotic_formula_collapse` (orphan)  |   1   | AuditOnly      |
+| **Total**                               | **107** | (sums above)  |
+
+PR 13b will rename the entries with classification `RefutedRoute`
+or `Vacuous` (none in PR 13a's heuristic — the existing audit
+work in PR 3/3b already caught those). PR 13c will physically move
+`Conditional` and `AuditOnly` entries into
+`pnp3/Magnification/AuditRoutes/Conditional_*.lean` and
+`pnp3/Magnification/Optional/*.lean`. PR 13c is droppable: if its
+import topology is too tangled, it migrates into PR 14.
+
+The provider classes themselves
+(`VacuousFinalPayloadProvider`, `AsymptoticPayloadProvider`,
+`FormulaCertificateProviderPartial[_fromPipeline]`,
+`FormulaSemanticMultiSwitchingProvider`,
+`AC0FamilyWitnessProvider`, `LocalCircuitFamilyWitnessProvider`,
+`AC0MultiSwitchingWitnessProvider`, `StepCClosureDataPartialProvider`)
+were classified in PR 6 (see `spec/provider_audit_registry.toml`).
+
+### 1.5 Conditional semantic bridges in `Complexity/Interfaces.lean`
+
+Rough count: **9** semantic-conditional bridges. They are not refuted
+routes and are not typeclass channels, but they remain conditional. They
+are part of the trust root surface (Rule 0) and will be cross-checked
+against `FrozenSpec.lean` once it lands.
+
+---
+
+## 2. Refuted hypotheses and routes
+
+**PR 4a status: registry shipped.** A centralised audit registry lives at
+`pnp3/RefutedPredicates/Registry.lean`. Each refuted predicate has a
+canonical `RefutedPredicate_*` alias (six entries; see
+`spec/target.toml::[refuted_predicates].registry_module`). The guard
+`scripts/check_refuted_predicate_usage.sh` is wired into Step 7/11 of
+`scripts/check.sh`. Physical relocation of the predicate definitions
+into `pnp3/RefutedPredicates/` is **deferred to PR 4b after PR 14**
+(amendment per Engineering Execution Plan v0.2.1; see
+`MagnificationAssumptions[_fromPipeline]` cycle risk in §1.2).
+
+The PR 4a guard runs in two modes:
+
+- **Hard-fail zone**: `pnp3/Complexity/`, `pnp3/Candidates/`, `pnp4/`,
+  and `pnp3/Magnification/UnconditionalResearchGap.lean`. New
+  code-level use of any bare refuted-predicate name in these locations
+  is a CI failure. Comment-only mentions are filtered out (the guard
+  strips Lean comments before matching).
+- **Soft-report zone**: `pnp3/Magnification/` (excluding
+  `AuditRoutes/`, the trust-root `UnconditionalResearchGap.lean`, and
+  `FinalResultAuditRoutes.lean`), `pnp3/LowerBounds/`,
+  `pnp3/ThirdPartyFacts/`. Existing code-level uses are PRINTED to
+  the build log as a regression-watch list but DO NOT block CI. This
+  is a temporary fallback per Plan amendment ⑤; PR 4b after PR 14
+  replaces it with hard-fail or region-bracket markers.
+
+Soft-report counts on the current tree (line counts of code-level
+occurrences after comment stripping):
+
+| Predicate                                          | Count |
+| -------------------------------------------------- | ----- |
+| `FormulaSupportRestrictionBoundsPartial`           | 43    |
+| `FormulaSupportBoundsFromMultiSwitchingContract`   | 28    |
+| `MagnificationAssumptions`                         |  3    |
+| `FormulaSupportBoundsPartial_fromPipeline`         |  5    |
+| `MagnificationAssumptions_fromPipeline`            |  3    |
+
+The falsifiability probe in
+`pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean` formally proves
+that the following predicates imply `False`. Any endpoint whose statement
+takes one of these as a hypothesis is therefore vacuous.
+
+| Refuted predicate                                  | Theorem of refutation                                                |
+| -------------------------------------------------- | -------------------------------------------------------------------- |
+| `FormulaSupportRestrictionBoundsPartial`           | `false_of_FormulaSupportRestrictionBoundsPartial` (≈ line 280)       |
+| `FormulaSupportBoundsFromMultiSwitchingContract`   | `false_of_FormulaSupportBoundsFromMultiSwitchingContract` (≈ 315)    |
+| `MagnificationAssumptions`                         | `false_of_MagnificationAssumptions` (≈ 333)                          |
+| `FormulaSupportBoundsPartial_fromPipeline`         | `false_of_FormulaSupportBoundsPartial_fromPipeline` (≈ 401)          |
+| `MagnificationAssumptions_fromPipeline`            | `false_of_MagnificationAssumptions_fromPipeline` (≈ 426)             |
+| `fixedParams ∧ uniformProvenance`                  | `false_of_fixedParams_and_uniformProvenance` (≈ 532)                 |
+
+The probe also contains a positive lemma
+`fixedParams_entails_old_under_uniformProvenance` (≈ 502) which is the
+**leak theorem**: it shows precisely how the route collapses into the
+refuted predicate. This lemma is what motivates the FixedParams Probe
+(see `FixedParams_Probe.md`): we want to find a **strictly weaker**
+provenance Π that defeats hardwiring.
+
+---
+
+## 3. Import graph risk
+
+Risk classes for downstream files:
+
+- **Refuted-route imports.** Files under `pnp3/Magnification/` that
+  import or transitively reference refuted predicates. Currently:
+  - `FinalResult.lean`
+  - `FinalResultAuditRoutes.lean`
+  - `FinalResultLegacyTM.lean`
+  - `FinalResultMainline.lean`
+  - `FinalResultWeakRoutes.lean`
+  - `Bridge_to_Magnification_Partial.lean`
+  - `Facts_Magnification_Partial.lean`
+  - `PipelineStatements_Partial.lean`
+  - `LocalityInterfaces_Partial.lean`
+  - `LocalityLift_Partial.lean`
+  - `LocalityProvider_Partial.lean`
+  - `AsymptoticDAGCollapse.lean`
+  - `AsymptoticFormulaCollapse.lean`
+
+  Phase 0 PR 9 splits this into a thin
+  `pnp3/Magnification/FinalResultCanonical.lean` (honest bridges only)
+  plus `pnp3/Magnification/AuditRoutes/RefutedRoute_*.lean` and
+  `Conditional_*.lean` siblings.
+
+- **Typeclass-payload imports.** Anything importing
+  `FinalResultAuditRoutes.lean` inherits the `FinalPayloadProvider`
+  channel. PR 2 must add a guard ensuring no file outside
+  `pnp3/Magnification/AuditRoutes/` imports `FinalResultAuditRoutes.lean`
+  after it is split.
+
+- **Trust-root imports.** `pnp3/Complexity/Interfaces.lean` currently
+  delegates `P` to `Internal.PsubsetPpoly.Complexity.P`. Therefore
+  `pnp3/Complexity/PsubsetPpolyInternal/` is part of the **current trust
+  root**. This is recorded here so the FrozenSpec PR (PR 7) can address
+  it explicitly (see `spec/frozen_spec_plan.md` §1).
+
+---
+
+## 4. Frozen target identifiers
+
+(Identical to `spec/target.toml::[frozen_identifiers]`; reproduced here
+for human readability.)
+
+```
+ComplexityInterfaces.P
+ComplexityInterfaces.NP
+ComplexityInterfaces.PpolyDAG
+ComplexityInterfaces.PpolyFormula
+ComplexityInterfaces.NP_not_subset_PpolyDAG
+ComplexityInterfaces.P_ne_NP
+ResearchGapTarget
+ResearchGapWitness
+ResearchGapWitness.dagSeparation
+FormulaCircuit.size
+DagCircuit.size
+SAT.encoding
+DAG.encoding
+decides
+recognizes
+```
+
+A change to any of these is Foundational, never Candidate.
+
+---
+
+## 5. Hidden payload / typeclass channels (Rule 16 inventory)
+
+Active classes / facts found in the active tree:
+
+- `class VacuousFinalPayloadProvider` (renamed from
+  `FinalPayloadProvider` in PR 2;
+  `pnp3/Magnification/FinalResultAuditRoutes.lean`).
+  Use as a typeclass parameter is now blocked outside the audit/test/
+  docs allowlist by `scripts/check_typeclass_payload_quarantine.sh`.
+- `def hasDefaultAsymptoticFormulaTrackData`
+  (`pnp3/Magnification/FinalResultAuditRoutes.lean`).
+  Not renamed in PR 2; flagged for PR 6 (`Provider audit annotations`).
+- `def hasDefaultFormulaSupportRestrictionBoundsPartial`
+  (defined in `pnp3/Magnification/LocalityProvider_Partial.lean`,
+  consumed in `FinalResultAuditRoutes.lean`). Use as
+  `[Fact hasDefaultFormulaSupportRestrictionBoundsPartial]` is now
+  blocked outside the audit/test/docs allowlist by the same guard.
+
+**PR 6 status: provider audit annotations shipped.** All nine
+provider/typeclass/structure objects are classified in
+`spec/provider_audit_registry.toml` and carry `@audit-class:`
+annotations in their docstrings. Classification:
+
+| audit_class            | members                                                  |
+| ---------------------- | -------------------------------------------------------- |
+| `refuted-channel`      | `VacuousFinalPayloadProvider`, `FormulaSemanticMultiSwitchingProvider` |
+| `optional-combinatorial` | `AsymptoticPayloadProvider`                            |
+| `suspicious-provider`  | `FormulaCertificateProviderPartial`, `FormulaCertificateProviderPartial_fromPipeline`, `AC0FamilyWitnessProvider`, `LocalCircuitFamilyWitnessProvider`, `AC0MultiSwitchingWitnessProvider` |
+| `infrastructure`       | `StepCClosureDataPartialProvider`                        |
+
+`scripts/check_typeclass_payload_quarantine.sh` now hard-rejects
+typeclass-parameter use of `FormulaSemanticMultiSwitchingProvider`
+in addition to the PR 2 baseline (`VacuousFinalPayloadProvider`,
+`FinalPayloadProvider`, `Fact hasDefaultFormulaSupportRestrictionBoundsPartial`).
+The five `suspicious-provider` entries are flagged for PR 13 audit
+(do they transitively reach a refuted predicate?) but are not yet
+hard-rejected.
+
+PR 2 status (this commit):
+
+1. Endpoints renamed `Vacuous_*` (see §1.3).
+2. Provider class `FinalPayloadProvider` → `VacuousFinalPayloadProvider`.
+3. Instance `finalPayloadProvider_of_default_supportBounds` →
+   `vacuousFinalPayloadProvider_of_default_supportBounds`.
+4. Guard script `scripts/check_typeclass_payload_quarantine.sh` added
+   and wired into `scripts/check.sh` as Step 5/9.
+5. Bare `theorem P_ne_NP` is now forbidden in `pnp3/Magnification/`
+   and `pnp3/LowerBounds/` by part (B) of the same guard.
+
+Still pending after PR 2:
+
+- PR 2b: physical move into
+  `pnp3/Magnification/AuditRoutes/Vacuous_TypeclassChannel.lean`.
+- PR 6: `@audit-class:` annotations on every provider/typeclass class,
+  including `AsymptoticPayloadProvider` and the six provider classes
+  listed above.
+- Candidate-local enforcement (verifier, PR 5–6 of the constitution
+  ordering, see `spec/implicit_assumption_channels.md`).
+
+---
+
+## 6. Candidate surface risks
+
+There are no `pnp3/Candidates/` packages yet. When the directory is
+created (after PR 1–6), every package must satisfy:
+
+- Layout: `proof.lean`, `manifest.toml`, `sketch.md`,
+  `barrier_certificate.md`, `self_attack.md`.
+- No imports from `pnp3/RefutedPredicates/` or
+  `pnp3/Magnification/AuditRoutes/`.
+- No `class`/`instance`/`opaque`/`Fact` over a frozen-target type.
+- `SourceTheorem_<id>` and `gap_from_<id>` rendered with `pp.all` must
+  satisfy `spec/implicit_assumption_channels.md`.
+- `K_stmt`/`K_exp` checks per `spec/source_theorem_size_policy.md`.
+
+Until the verifier exists (PR 6), candidate intake is closed.
+
+---
+
+## 7. Proposed Phase 0 cleanup plan
+
+(Stub — full description in `RESEARCH_CONSTITUTION.md` § "Implementation
+PR order". The below is the order, not the implementation.)
+
+1. **PR 1 — Doc-honesty linter.** Reject Markdown/LaTeX claims of
+   unconditional P ≠ NP unless `P_ne_NP_unconditional` exists as a
+   closed Lean term.
+2. **PR 2 — Quarantine typeclass-payload channel.** Move the four
+   endpoints in §1.3 plus their supporting `class`/`Fact` declarations
+   into `pnp3/Magnification/AuditRoutes/Vacuous_TypeclassChannel.lean`,
+   add the import guard.
+3. **PR 3 — Rename/move direct refuted-route endpoints.** Per §1.2.
+4. **PR 4 — Centralize refuted predicates** under
+   `pnp3/RefutedPredicates/`.
+5. **PR 5 — Rule 16 smoke probes and verifier shell.** See
+   `bench/SmokeProbe_plan.md`.
+6. **PR 6 — Provider audit annotations.** Annotate every provider /
+   typeclass class.
+7. **PR 7 — FrozenSpec implementation.** See
+   `spec/frozen_spec_plan.md`.
+8. **PR 8 — Suspicious endpoint reclassification.** Walk the ~80
+   endpoints from §1.4 and assign a final class to each.
+9. **PR 9 — Split `FinalResultMainline.lean`** into
+   `FinalResultCanonical.lean` + audit-route siblings.
+10. **PR 10 — FixedParams Probe.** See `FixedParams_Probe.md`.
+
+---
+
+## 8. `needs_review` classifications
+
+The following items are deliberately not assigned a final classification
+in this baseline. They are tagged `needs_review` and must be addressed
+during PR 8 or a dedicated audit PR.
+
+| Path / object                                       | Tentative class                | Reason                                                                  |
+| --------------------------------------------------- | ------------------------------ | ----------------------------------------------------------------------- |
+| `pnp3/Magnification/Bridge_to_Magnification_Partial.lean` | `conditional-suspicious` | Not canonical; do not use as path to the final theorem before audit.   |
+| `pnp3/Magnification/AsymptoticDAGCollapse.lean`     | `conditional-collapse`         | Collapse consequence ≠ contradiction (Rule 8); audit-only until proof. |
+| `pnp3/Magnification/AsymptoticFormulaCollapse.lean` | `conditional-collapse`         | Same.                                                                   |
+| `pnp3/Magnification/AsymptoticDAGBarrierTheorems.lean` *(if present)* | `barrier-audit-suspicious` | Barrier/audit area; not a source route.                                 |
+| `pnp3/Complexity/Interfaces.lean`                   | `semantic-conditional-bridges` | Part of frozen target surface; verify against FrozenSpec.              |
+| `pnp3/Magnification/Bypass.lean` *(if present)*     | `barrier-suite / audit`        | Barrier infrastructure, not a candidate source.                         |
+
+These classifications are intentionally conservative: when in doubt, an
+endpoint is **not canonical**. Reclassification upward (toward canonical)
+requires explicit Foundational PR review.

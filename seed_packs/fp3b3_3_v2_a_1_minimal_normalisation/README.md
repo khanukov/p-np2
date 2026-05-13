@@ -577,12 +577,24 @@ write a critic report.
   re-classification):
   `pnp3/Barrier/NaturalProofs.lean`.
 
-## 10. Negative-pivot protocol (operator-side, NOT worker scope) — STALLED post-M1
+## 10. Negative-pivot protocol (operator-side, NOT worker scope) — CLOSED post-M2
 
-**SEED PACK STATUS: STALLED.**  T1 retry track PAUSED.  T2 / Round
-2 PAUSED.  Pause decision documented at
-`audits/T1_retry_pause_post_M1.md` (commit added with the M1
-operator review).
+**SEED PACK STATUS: CLOSED.**  V2-A.1 design space formally
+closed by `NOGO-000009` (kernel-checked Lean theorem at
+`pnp3/Magnification/AuditRoutes/ProvenanceFilterV2/V2_A_NormaliseMetaBarrier/Barrier.lean:268`,
+landed via PR #1242 / commit `186bffc`).  T1 retry track stays
+PAUSED — permanent.  T2 / Round 2 dispatched: never.
+
+Closure trail:
+* Pause decision (post-M1):
+  `audits/T1_retry_pause_post_M1.md`.
+* M2 Lean formalisation operator review:
+  `../fp3b3_4_v2_a_normalise_meta_barrier/audits/M2_operator_review.md`.
+* NOGO-000009: `outputs/nogolog.jsonl` line 9.
+
+This pack remains in-tree as STALLED → CLOSED documentation; the
+chronological audit chain (g55 → g55r1 → M1 → M2 → NOGO-000009)
+is itself part of the research artifact.
 
 **Why STALLED (one-paragraph summary):** parallel meta-barrier
 track fp3b3_4 M1 landed a candidate statement (worker `m1nova`,

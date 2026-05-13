@@ -198,34 +198,45 @@ design space is not structurally barred.
 * **M1:** LANDED — worker `m1nova`, commit `8c45586` (PR #1241).
   Candidate at `candidates/M1_m1nova.md`.  Operator review at
   `audits/M1_m1nova_operator_review.md` PROMOTED M1 with
-  verification against trust-rooted Lean facts.  Recommendation:
-  PROCEED to M2.
-* **M2:** **READY for dispatch.**  Worker prompt at
-  `WORKER_PROMPT_M2.md`.  Target Lean module:
-  `pnp3/Magnification/AuditRoutes/ProvenanceFilterV2/V2_A_NormaliseMetaBarrier/Barrier.lean`.
-  Deliverable: formal `v2_a_structural_normalisation_meta_barrier`
-  theorem closing V2-A.1's design space.  No worker dispatched
-  yet (this commit lands the prompt; user dispatches when ready).
-* **M3:** DEFERRED — audit-route-suite integration alongside
-  `SupportCardinalityBarrier`.  Gated on M2 landing + operator
-  review.  Operator discretion.
+  verification against trust-rooted Lean facts.
+* **M2:** **LANDED** — worker, commit `186bffc` (PR #1242).
+  Lean module:
+  `pnp3/Magnification/AuditRoutes/ProvenanceFilterV2/V2_A_NormaliseMetaBarrier/Barrier.lean`
+  (330 LOC).  Theorem `v2_a_structural_normalisation_meta_barrier`
+  proven kernel-clean (no sorry/admit/axiom/opaque/Fact/Classical;
+  no truth-table reconstruction).  Identity-normaliser
+  sanity-inhabitant proven.  `lake build PnP3 Pnp4` green.
+  `./scripts/check.sh` PASS_SHAPE_ONLY across 17/17 steps.
+  Operator review at `audits/M2_operator_review.md` approved
+  the landing.
+* **M3:** DEFERRED (operator decision).  Audit-route-suite
+  registry consolidation is cosmetic — the theorem is already
+  kernel-checked and registered via NOGO-000009.  Lower marginal
+  value than V2-A.2 / V2-B / V2-D priority refresh.
 
-**Coordinated state of sibling track `fp3b3_3`:**
+**Outcome — V2-A.1 design space CLOSED.**  Per pause decision
+§5, NOGO-000009 was appended to `outputs/nogolog.jsonl` in the
+same coordinated commit as M2's operator review.  See
+`outputs/nogolog.jsonl` line 9 (status `formalized`,
+formal_witness Barrier.lean:268, regression_test Barrier.lean).
+Together with NOGO-000008, NOGO-000009 closes the syntactic-only
+V2 design family for `accepted`-status promotion.
 
-The fp3b3_3 seed pack is STALLED post-M1.  T1 retry track PAUSED
-because the meta-barrier observation is reachable directly from
-fp3b3_3's published T1 spec (see operator review
-`audits/M1_m1nova_operator_review.md` §2).  See
-`../fp3b3_3_v2_a_1_minimal_normalisation/audits/T1_retry_pause_post_M1.md`
-for the pause decision.
+**Sibling track `fp3b3_3` archival:**
 
-**Post-M2 operator-side actions (anticipated):**
+The fp3b3_3 seed pack is archived in-tree as **CLOSED**.
+README §10 banner reflects the closure with cross-reference to
+NOGO-000009 and the M2 operator review.  All audits and failure
+reports remain in-tree as research documentation (the chronological
+audit trail is itself part of the research artifact).
 
-* M2 lands successfully → add NOGO-000009 (V2-A.1 design-space
-  closed by meta-barrier theorem), archive fp3b3_3, refresh
-  V2-A.2 / V2-B / V2-D priorities.
-* M2 fails with `Local` classification → revise class
-  formalisation, re-dispatch M2.
-* M2 fails with `Global` classification (meta-barrier
-  structurally false) → fp3b3_3 design space reopens; un-pause
-  T1 retry track with the g55r1 factoring recipe.
+**Successor design spaces (operator note, NOT this pack's scope):**
+
+* V2-A.2 (semantic quotient) — open under natural-proof audit
+  obligation.
+* V2-B / V2-D — alternative Phase-2 survivor surfaces; no formal
+  predicates shipped yet.
+* Operator priority refresh recommended before opening new
+  V2-* seed packs.
+
+No new seed pack is opened in this commit.

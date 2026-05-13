@@ -577,7 +577,28 @@ write a critic report.
   re-classification):
   `pnp3/Barrier/NaturalProofs.lean`.
 
-## 10. Negative-pivot protocol (operator-side, NOT worker scope)
+## 10. Negative-pivot protocol (operator-side, NOT worker scope) — STALLED post-M1
+
+**SEED PACK STATUS: STALLED.**  T1 retry track PAUSED.  T2 / Round
+2 PAUSED.  Pause decision documented at
+`audits/T1_retry_pause_post_M1.md` (commit added with the M1
+operator review).
+
+**Why STALLED (one-paragraph summary):** parallel meta-barrier
+track fp3b3_4 M1 landed a candidate statement (worker `m1nova`,
+PR #1241) showing that any structural normaliser satisfying the
+HARD-minimum reductions in §3 T1 forces `canonicalNormalise
+(seededPrefixAndFamily n) ≠ seededPrefixAndFamily n` for `n ≥ 1`,
+collapsing V2-A's own non-vacuity witness to a formula with zero
+OR + zero NOT gates.  This makes V2-A's mixed-gate clause reject
+the normalised seeded witness at `n ≥ 2`, so the T2 theorem
+`v2A_1_admits_seededPrefixAndWitness` is **structurally false**
+under the published T1 spec.  The fp3b3_3 §T2 scope rule (lines
+377-388) anticipates this failure mode but lists only two escapes
+(refine the family — forbidden; refine T1 — kills V2-A.1's
+purpose), both blocked.
+
+Round 1 history below preserves the audit trail.
 
 This seed pack is dispatched under the operator's "**positive with
 readiness to pivot negative**" stance.  Workers always pursue the
@@ -585,47 +606,47 @@ positive goal (build V2-A.1 survivor) — but the dispatcher pre-stages
 a negative-result pivot path so a structured failure becomes a
 research artifact, not wasted compute.
 
-**Round 1 dispatch outcome (commit `7840ef4` / PR #1239):** worker
+**Round 1 attempt #1 (commit `7840ef4` / PR #1239):** worker
 g55 attempted T1, surfaced an internal spec inconsistency on the
-HARD-minimum lemma surface (two lemmas specialise to the same
-left-hand side and together force constant-negation reductions that
-were not listed as HARD-minimum), and shipped a structured failure
-report classified as `Local`.  The full audit is at
-`audits/T1_g55_operator_audit.md`; the operator countersigned the
-`Local` classification (math-checked, recipe-plausible).
+HARD-minimum lemma surface, shipped a structured failure
+report classified as `Local`.  Audit at
+`audits/T1_g55_operator_audit.md` countersigned `Local`, spec
+patched, parallel fp3b3_4 M1 dispatch approved.
 
-**Retry gate (REVISED — parallel dispatch approved):** the initial
-audit draft listed a sequential gate (no retry until fp3b3_4
-findings).  Operator reconsidered and approved parallel dispatch
-on the reasoning that the spec patch is deterministic, fp3b3_4 M1
-is markdown-only, and parallel work amortises operator time with
-acceptable downside.  See audit §5 for the revised operationalisation.
-Current state:
+**Round 1 attempt #2 (commit `c6b63d7` / PR #1240):** worker
+g55r1 attempted T1 retry with the canonical-output invariant
+recipe.  Hit a different proof-engineering wall on local AND/OR
+identity lemmas — fixable with the abstract-canonical-term
+helper-lemma factoring recipe in `failures/T1_g55r1.md` §4.
+Failure classified `Local`.
 
-1. **Spec patch on this seed pack §3 T1 — DONE.**  Added the
-   derived constant-negation reductions explicitly
-   (`not (const true) ↦ const false`, `not (const false) ↦
-   const true`) and reformulated `canonicalNormalise_double_not`
-   via a canonical-output invariant (`IsCanonical` predicate +
-   image-invariant double-not theorem + wrapper recovering the
-   originally-requested shape).
-2. **Worker prompt revised — DONE.**  WORKER_PROMPT.md §2A
-   explicitly walks T1 retry workers through g55's three
-   load-bearing findings.
-3. **Operator countersignature for retry dispatch — DONE.**
-   See audit §6.  Retry handle: `g55r1` for g55 reattempt, or
-   fresh `<handle>r1` for independent attempts.
-4. **Parallel `fp3b3_4` M1 dispatch — APPROVED.**  Markdown-only
-   meta-barrier statement candidate; see
-   `../fp3b3_4_v2_a_normalise_meta_barrier/WORKER_PROMPT_M1.md`.
+**Round 1 fp3b3_4 M1 (commit `8c45586` / PR #1241):** worker
+m1nova shipped a meta-barrier candidate recommending PROCEED to
+M2.  Operator review at
+`../fp3b3_4_v2_a_normalise_meta_barrier/audits/M1_m1nova_operator_review.md`
+verified m1nova's argument against trust-rooted Lean facts
+(`NonVacuity.lean:24-40`, `ExcludesPrefixAnd.lean:29-43`) and
+promoted M1.  Operator-level synthesis: the meta-barrier
+observation is reachable **directly from the published T1 spec**
+without M2 / M3 formalisation, making T1 retry track wasted
+compute.  See
+`audits/T1_retry_pause_post_M1.md` for the full pause decision.
 
-No T2 worker has been dispatched yet; the T1 → T2 dependency
-holds.  T2 dispatch waits for a clean T1 retry landing.
+**Next operator-side action:** dispatch fp3b3_4 M2 (Lean
+formalisation of the meta-barrier theorem), see
+`../fp3b3_4_v2_a_normalise_meta_barrier/WORKER_PROMPT_M2.md`.
+M2 landing triggers: NOGO-000009 addition, fp3b3_3 archival,
+V2-A.2 / V2-B / V2-D priority refresh.  M2 failure triggers:
+re-audit operator-level argument, decide whether to (a) refine
+class formalisation, (b) accept operator-level closure without
+Lean theorem, or (c) re-open fp3b3_3 with revised non-vacuity
+witness design.
 
-**Pivot trigger (original, still in force):** T1 ships a structured
-failure report (Outcome B, §6 with `Global` obstruction
-classification) AND independent review confirms the obstruction is
-structural rather than implementation detail.
+**Pivot trigger (original, still in force for future re-dispatches
+if fp3b3_3 ever re-opens under a redesigned T1/T2 spec):** T1
+ships a structured failure report (Outcome B, §6 with `Global`
+obstruction classification) AND independent review confirms the
+obstruction is structural rather than implementation detail.
 
 **Note on early opening of `fp3b3_4_*`:** the operator opened the
 meta-barrier track ahead of a `Global` classification because the

@@ -1,4 +1,33 @@
-# Worker prompt — fp3b3_3_v2_a_1_minimal_normalisation (Round 1: T1 + T2)
+# Worker prompt — fp3b3_3_v2_a_1_minimal_normalisation (Round 1: T1 + T2) — DISPATCH PAUSED
+
+> **DISPATCH STATUS: PAUSED.**  Do NOT pick a slot from this
+> file.  The fp3b3_3 design space is STALLED pending fp3b3_4 M2
+> Lean formalisation of the structural-normalisation meta-barrier.
+>
+> See:
+>   * `audits/T1_retry_pause_post_M1.md` — pause decision and
+>     reasoning (operator-level argument that T2 is structurally
+>     blocked under the published T1 spec).
+>   * `../fp3b3_4_v2_a_normalise_meta_barrier/audits/M1_m1nova_operator_review.md` —
+>     verification of the meta-barrier argument against
+>     trust-rooted Lean facts.
+>   * `../fp3b3_4_v2_a_normalise_meta_barrier/WORKER_PROMPT_M2.md` —
+>     the active dispatch instrument.  If you want to work on this
+>     research thread, attack M2 there.
+>
+> Round 1 attempts already shipped:
+>   * `g55` (T1 attempt #1, commit `7840ef4` / PR #1239) → `Local`
+>     failure (spec inconsistency).
+>   * `g55r1` (T1 attempt #2, commit `c6b63d7` / PR #1240) →
+>     `Local` failure (proof-engineering, fixable with the
+>     factored-helper recipe in `T1_g55r1.md` §4).
+>
+> The pause is reversible.  If fp3b3_4 M2 fails to formalise the
+> meta-barrier OR surfaces a counterexample, operator may
+> re-issue a new WORKER_PROMPT here under a revised spec.  Until
+> then, **DO NOT** dispatch additional T1 retries.
+
+---
 
 > Send this entire file as the prompt body to one independent
 > research engineer (human + LLM session) per slot.  Workers
@@ -17,9 +46,9 @@
 >   * fp3b3_3 T1 retry with **patched spec** (this file);
 >   * fp3b3_4 M1 meta-barrier statement candidate (separate pack).
 >
-> **Handles already used (T1 attempts):** `g55`.
-> Retry handle convention: `g55r1` (g55's own retry), `<other>r1`
-> for fresh attempts.  T2 may use any unused handle once T1 lands.
+> **Handles already used (T1 attempts):** `g55`, `g55r1`.
+> Retry handle convention: would be `g55r2` / `<other>r1` — but
+> dispatch is PAUSED (see top of file).
 
 ---
 

@@ -195,12 +195,37 @@ design space is not structurally barred.
 
 ## 8. Dispatch status
 
-* **M1:** READY for dispatch — operator may issue WORKER_PROMPT.md
-  for M1 when desired.  No M1 worker has been dispatched yet.
-* **M2:** GATED on M1 landing + review.
-* **M3:** GATED on M1 + M2 landing + explicit operator dispatch decision.
+* **M1:** LANDED — worker `m1nova`, commit `8c45586` (PR #1241).
+  Candidate at `candidates/M1_m1nova.md`.  Operator review at
+  `audits/M1_m1nova_operator_review.md` PROMOTED M1 with
+  verification against trust-rooted Lean facts.  Recommendation:
+  PROCEED to M2.
+* **M2:** **READY for dispatch.**  Worker prompt at
+  `WORKER_PROMPT_M2.md`.  Target Lean module:
+  `pnp3/Magnification/AuditRoutes/ProvenanceFilterV2/V2_A_NormaliseMetaBarrier/Barrier.lean`.
+  Deliverable: formal `v2_a_structural_normalisation_meta_barrier`
+  theorem closing V2-A.1's design space.  No worker dispatched
+  yet (this commit lands the prompt; user dispatches when ready).
+* **M3:** DEFERRED — audit-route-suite integration alongside
+  `SupportCardinalityBarrier`.  Gated on M2 landing + operator
+  review.  Operator discretion.
 
-This pack is **opened** (directory exists, README written) but
-**no worker has been dispatched yet**.  Operator may choose to
-keep it cold (audit-only existence) or warm it by writing
-`WORKER_PROMPT_M1.md` and dispatching.
+**Coordinated state of sibling track `fp3b3_3`:**
+
+The fp3b3_3 seed pack is STALLED post-M1.  T1 retry track PAUSED
+because the meta-barrier observation is reachable directly from
+fp3b3_3's published T1 spec (see operator review
+`audits/M1_m1nova_operator_review.md` §2).  See
+`../fp3b3_3_v2_a_1_minimal_normalisation/audits/T1_retry_pause_post_M1.md`
+for the pause decision.
+
+**Post-M2 operator-side actions (anticipated):**
+
+* M2 lands successfully → add NOGO-000009 (V2-A.1 design-space
+  closed by meta-barrier theorem), archive fp3b3_3, refresh
+  V2-A.2 / V2-B / V2-D priorities.
+* M2 fails with `Local` classification → revise class
+  formalisation, re-dispatch M2.
+* M2 fails with `Global` classification (meta-barrier
+  structurally false) → fp3b3_3 design space reopens; un-pause
+  T1 retry track with the g55r1 factoring recipe.

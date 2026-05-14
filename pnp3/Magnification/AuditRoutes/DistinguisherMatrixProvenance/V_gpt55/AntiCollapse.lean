@@ -78,6 +78,38 @@ theorem no_sparse_matrix_separates_overlapping_singletons
   rintro ⟨D, _hSparse, hsep⟩
   exact no_self_fingerprintSeparation D x r hsep
 
+
+/--
+Support-cardinality/all-essential payload facts cannot be used as a black-box
+implication producing a sparse fingerprint separator, even for a single fixed
+finite audit relation.  The conclusion below is deliberately the *negation of
+an automatic derivation principle*: if such a principle tried to turn the exact
+log-width support-cardinality theorem into a positive-radius sparse separator
+for the overlapping singleton relation, it would contradict
+`no_sparse_matrix_separates_overlapping_singletons`.
+
+This theorem is the most compact Target-C form of the D3 anti-collapse lesson:
+the payload facts are real and kernel-checked, but the matrix/relation witness is
+not derivable from them alone.
+-/
+theorem no_supportProfile_implication_to_overlapping_separation
+    (F : PayloadFamily)
+    (hF : AllEssentialPayload F)
+    (n m k r : Nat)
+    (x : Bitstring n) :
+    ¬ (((FormulaCircuit.support (adversaryFamily_v_arbpayload F n)).card =
+          widthFn n) →
+        ∃ D : BoolMatrix m n,
+          SparseDistinguisherMatrix m n k D ∧
+            FingerprintSeparation D ({x} : Finset (Bitstring n)) ({x}) (r + 1)) := by
+  intro hderive
+  have hSupport :
+      (FormulaCircuit.support (adversaryFamily_v_arbpayload F n)).card =
+        widthFn n :=
+    adversaryFamily_v_arbpayload_support_card F hF n
+  exact no_sparse_matrix_separates_overlapping_singletons
+    (m := m) (n := n) (k := k) x r (hderive hSupport)
+
 /--
 D3 anti-collapse theorem.
 

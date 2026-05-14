@@ -189,6 +189,7 @@ lean_lib PnP3 where
     Glob.one `Magnification.AuditRoutes.DistinguisherMatrixProvenance.V_gpt55.AntiCollapse,
     Glob.one `Magnification.AuditRoutes.DistinguisherMatrixProvenance.V_codex.ToySeparation,
     Glob.one `Magnification.AuditRoutes.DistinguisherMatrixProvenance.V_codexd3a.AntiCollapsePrime,
+    Glob.one `Magnification.AuditRoutes.DistinguisherMatrixProvenance.V_codexd3c.Sharpness,
     Glob.one `ThirdPartyFacts.Facts_Switching,
     -- Partial-track bibliography/lemmas used by final magnification result.
     Glob.one `ThirdPartyFacts.PartialTransport,

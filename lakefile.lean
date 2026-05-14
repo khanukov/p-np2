@@ -184,9 +184,10 @@ lean_lib PnP3 where
     Glob.one `Magnification.AuditRoutes.ArbitraryLogWidthTT.Family,
     Glob.one `Magnification.AuditRoutes.ArbitraryLogWidthTT.Witness,
     Glob.one `Magnification.AuditRoutes.ArbitraryLogWidthTT.Composition,
-    -- fp3b6 distinguisher-matrix provenance audit route (D1 + D3, handle gpt55).
+    -- fp3b6 distinguisher-matrix provenance audit route (D1/D3 gpt55 + D2 codex).
     Glob.one `Magnification.AuditRoutes.DistinguisherMatrixProvenance.V_gpt55.MatrixPrimitives,
     Glob.one `Magnification.AuditRoutes.DistinguisherMatrixProvenance.V_gpt55.AntiCollapse,
+    Glob.one `Magnification.AuditRoutes.DistinguisherMatrixProvenance.V_codex.ToySeparation,
     Glob.one `ThirdPartyFacts.Facts_Switching,
     -- Partial-track bibliography/lemmas used by final magnification result.
     Glob.one `ThirdPartyFacts.PartialTransport,

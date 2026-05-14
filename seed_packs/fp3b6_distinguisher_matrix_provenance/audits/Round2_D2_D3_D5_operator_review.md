@@ -362,3 +362,108 @@ This review writes nothing to:
 * Any Lean module (D1/D2/D3 landed by workers; this review only assesses them).
 
 No `accepted` promotions. No FP-4 implications. No `SourceTheorem_*` / `gap_from_*` / `ResearchGapWitness` writes. No final endpoint implications. No P ≠ NP claims.
+
+---
+
+## 9. Addendum — post-review landings (commits `3a95fdb`, `e484f70`)
+
+After the Round 2 review (commit `e42a9c1`) was published, two further landings reached `main`:
+
+* **Commit `3a95fdb`** — `Add D2 toy fingerprint separation` (new handle `codex`).
+  File: `pnp3/Magnification/AuditRoutes/DistinguisherMatrixProvenance/V_codex/ToySeparation.lean` (108 LOC).
+* **Commit `e484f70`** — `Strengthen D3 anti-collapse implication guard` (same handle `gpt55`).
+  File: `pnp3/Magnification/AuditRoutes/DistinguisherMatrixProvenance/V_gpt55/AntiCollapse.lean` (+32 LOC).
+
+### 9.1 V_codex D2 — first cross-V landing
+
+The `V_codex` D2 module is an independent, self-contained smoke test:
+
+* Imports **only** `V_gpt55.MatrixPrimitives` (D1).  No edits to V_gpt55, no shared local types beyond D1's `BoolMatrix`, `fingerprint`, `SparseDistinguisherMatrix`.
+* Defines an `identity-style 2 × 2` matrix `D_id`, explicit YES/NO bitstrings `toyYes = 11` / `toyNo = 00`, and a local separation predicate `ToySeparated D yes no := fingerprint D yes ≠ fingerprint D no`.
+* Closes `D_id_sparse`, the two per-coordinate `fingerprint_D_id_toyYes_zero/one` lemmas, and `toy_fingerprint_separation` (the headline) by `decide` / `funext + fin_cases <;> decide`.
+* No `sorry` / `admit` / `axiom` / `opaque` / `Fact` / `Classical.choose`.
+* `lakefile.lean` extended by one entry in the existing `Glob.one ...` pattern (within allowed scope per README §4).
+
+**Significance.**  This is **the first cross-V landing** for fp3b6.  The V_codex worker reused V_gpt55's D1 primitives across handle boundaries without modification.  This is a weak positive signal for **D1's interface quality**: a second worker, working independently, was able to consume D1 cleanly.
+
+**What V_codex D2 does NOT establish.**  Exactly the same caveats as V_gpt55 D2 (Round 2 review §1.3).  A single explicit `2 × 2` separation does not establish non-vacuity on honest-structured families, nor distinguish honest from hardwired payloads.  V_codex D2 is a smoke test, not a non-vacuity theorem.
+
+**V_codex D2 verdict.**  APPROVE LANDING.  Cross-V signal: D1 interface is multi-worker-usable.
+
+### 9.2 V_gpt55 D3 strengthening — **syntactic re-packaging, not content strengthening**
+
+The +32-LOC addition introduces a new theorem `no_supportProfile_implication_to_overlapping_separation` (`AntiCollapse.lean:81-110`):
+
+```lean
+theorem no_supportProfile_implication_to_overlapping_separation
+    (F : PayloadFamily)
+    (hF : AllEssentialPayload F)
+    (n m k r : Nat)
+    (x : Bitstring n) :
+    ¬ (((FormulaCircuit.support (adversaryFamily_v_arbpayload F n)).card =
+          widthFn n) →
+        ∃ D : BoolMatrix m n,
+          SparseDistinguisherMatrix m n k D ∧
+            FingerprintSeparation D ({x} : Finset (Bitstring n)) ({x}) (r + 1))
+```
+
+**Logical content analysis.**  Let
+`P_F := (FormulaCircuit.support (adversaryFamily_v_arbpayload F n)).card = widthFn n`,
+`R   := ∃ D, SparseDistinguisherMatrix m n k D ∧ FingerprintSeparation D ({x}) ({x}) (r+1)`.
+
+The new theorem is `¬(P_F → R)`.  Classically (which Lean's `Classical.em` admits in the ambient logic):
+
+```
+¬(P_F → R)   ≡   P_F ∧ ¬R
+```
+
+i.e., the new statement is **logically equivalent** to the conjunction form already present in `allEssentialLogWidthPayload_no_fingerprintSeparation` (Round 2 review §2.1).  The proof of the new theorem at `AntiCollapse.lean:101-110` confirms this directly:
+
+```lean
+intro hderive
+have hSupport : … = widthFn n := adversaryFamily_v_arbpayload_support_card F hF n
+exact no_sparse_matrix_separates_overlapping_singletons (m := …) (n := …) (k := …) x r
+  (hderive hSupport)
+```
+
+It uses exactly the same two ingredients as the original conjunction: (a) the pre-existing `adversaryFamily_v_arbpayload_support_card` support-card lemma; (b) `no_self_fingerprintSeparation` via `hammingDistance_self = 0`.
+
+**The two structural problems from Round 2 review §2.2 persist.**
+
+* **Axis (a) — payload independence of the load-bearing factor.**  `¬R` (the right-hand factor in `P_F ∧ ¬R`) does not depend on `F`.  It is the universal self-separation impossibility for any singleton at positive radius.
+* **Axis (b) — overlapping YES/NO is not the audit-route YES/NO.**  The relation `{x}` vs `{x}` is degenerate.  Magnification-relevant separation (per OPS 2021 `s₁ < s₂`, per Atserias–Müller code-like distance) requires non-overlapping YES vs far-NO in input space.
+
+**What the strengthening clarifies.**  The new framing — *"no black-box implication from support-cardinality facts to an overlapping-singleton separator exists"* — is a useful **rhetorical** clarification of the same skeleton.  It makes explicit that the D3 lesson is "no automatic derivation principle from support facts to matrix witness".  The doc-comment correctly says: *"the payload facts are real and kernel-checked, but the matrix/relation witness is not derivable from them alone."*  This is honest.
+
+**What the strengthening does NOT do.**
+
+* It does not introduce a non-overlapping YES/NO relation.
+* It does not make the second factor (`¬R`) depend on `F`.
+* It does not refute the **strong** anti-collapse statement (existential or hardwiring-twin form per Round 2 review §5.1) — that statement remains neither proved nor refuted.
+* It does not discharge the README §3 D3 obligation.
+
+**V_gpt55 D3 strengthening verdict.**  ACCEPT as rhetorical clarification of the D3 skeleton.  **D3' (per Round 2 review §5.1) remains MATERIALLY OPEN.**  No status change to the slot.
+
+### 9.3 Updated pack status
+
+| Slot | Status (post-addendum) | Note |
+| --- | --- | --- |
+| D1 | LANDED ✓ (`V_gpt55`) | Round 1 |
+| D5 | LANDED ✓ (`V_gpt55`) | conservative; D5-tight follow-up still open |
+| D2 | LANDED ✓ (`V_gpt55`, `V_codex`) | **cross-V smoke confirmation** for D1 |
+| D3 | **MATERIALLY OPEN** | `V_gpt55` skeleton clarified rhetorically; logical content unchanged |
+| D3' | OPEN for dispatch | unchanged from Round 2 review §5.1 |
+| D5-tight | OPEN for dispatch | unchanged from Round 2 review §5.2 |
+| D4 | GATED on D3' | unchanged |
+
+Pack status: **OPEN** (Round 2 fully landed including cross-V D2; D3 obligation still re-opened as D3').
+
+### 9.4 Discipline note for D3' re-dispatch
+
+The V_gpt55 strengthening pattern — converting a conjunction `P ∧ ¬R` into a negated implication `¬(P → R)` to make the framing rhetorically sharper without changing logical content — should be **explicitly flagged in the D3' dispatch prompt** as a non-discharging move.  Workers attacking D3' must:
+
+* Either prove `D3'-A` (existential F with no separator against a **non-overlapping** YES_F / NO_F derived from F's truth table), or
+* Prove `D3'-B` (honest H admits a witness; hardwiring twin T of H does not), or
+* Ship a structured `failures/D3prime_<HANDLE>.md` with `Local` / `Global` classification.
+
+Any return-trip that produces yet another `(payload-fact) ∧ ¬(degenerate-separation)` shape — in any logical encoding (conjunction, negated implication, contrapositive, etc.) — is **not** a discharge of D3' and should be reviewed as such, **not** merged as a strengthening.

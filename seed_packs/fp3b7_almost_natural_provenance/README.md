@@ -2,12 +2,14 @@
 
 ## 1. Status
 
-**OPEN — D0 only.**
+**RED-LIGHT — full Round 1 not authorised.**
 
-Full Round 1 is **NOT** authorised.
+Full Round 1 is **NOT** authorised.  fp3b7 remains an audit-artifact seed
+pack only after D0, D0.1, and D0.1-second-review.  See
+`audits/fp3b7_red_light_operator_decision_gpt55.md` for the closure decision.
 
-This seed pack is an infrastructure / research-governance skeleton for a
-markdown-only feasibility check.  It is not mainline progress toward `P != NP`,
+This seed pack is an infrastructure / research-governance record for
+markdown-only feasibility checks.  It is not mainline progress toward `P != NP`,
 does not reduce `SearchMCSPWeakLowerBound` or
 `VerifiedNPDAGLowerBoundSource`, and does not introduce any endpoint.
 

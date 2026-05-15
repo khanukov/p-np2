@@ -2,7 +2,7 @@
 
 ## 1. Status
 
-**OPEN — D0 only.**
+**RED-LIGHT — full Round 1 not authorised.**
 
 Full Round 1 is **NOT** authorised.
 

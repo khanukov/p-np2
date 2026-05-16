@@ -26,11 +26,38 @@ import Pnp4.Frontier.PvsNPBridgeRequirements
 import Pnp4.Frontier.CompressionMagnification
 import Pnp4.Frontier.SearchMCSPMagnification
 import Pnp4.Frontier.SearchMCSPConcreteTargets
+import Pnp4.Frontier.ContractExpansion.C_DAG_Adapter
 
 namespace Pnp4
 namespace Tests
 
 open AlgorithmsToLowerBounds
+
+def check_C_DAG : CircuitFamilyClass :=
+  Pnp4.Frontier.ContractExpansion.C_DAG
+
+noncomputable def check_InPpolyDAG_to_C_DAG_family
+    {L : Pnp3.ComplexityInterfaces.Language}
+    (h : Pnp3.ComplexityInterfaces.InPpolyDAG L) :
+    Pnp4.Frontier.ContractExpansion.PolynomiallyBoundedFamily
+      Pnp4.Frontier.ContractExpansion.C_DAG L :=
+  Pnp4.Frontier.ContractExpansion.InPpolyDAG_to_C_DAG_family h
+
+def check_C_DAG_family_to_InPpolyDAG
+    {L : Pnp3.ComplexityInterfaces.Language}
+    (h : Pnp4.Frontier.ContractExpansion.PolynomiallyBoundedFamily
+      Pnp4.Frontier.ContractExpansion.C_DAG L) :
+    Pnp3.ComplexityInterfaces.InPpolyDAG L :=
+  Pnp4.Frontier.ContractExpansion.C_DAG_family_to_InPpolyDAG h
+
+theorem check_PpolyDAG_decider_as_C_DAG_decider
+    {L : Pnp3.ComplexityInterfaces.Language}
+    (h : Pnp3.ComplexityInterfaces.PpolyDAG L) :
+    ∃ c : Nat, ∀ n : Nat, ∃ C : Pnp4.Frontier.ContractExpansion.C_DAG.Family n,
+      Pnp4.Frontier.ContractExpansion.C_DAG.size C ≤ n ^ c + c ∧
+        ∀ x : AlgorithmsToLowerBounds.BitVec n,
+          Pnp4.Frontier.ContractExpansion.C_DAG.eval C x = L n x :=
+  Pnp4.Frontier.ContractExpansion.PpolyDAG_decider_as_C_DAG_decider h
 
 def check_NotInClass :
     ∀ (C : CircuitFamilyClass) (L : BitVecLanguage),

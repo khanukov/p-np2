@@ -27,6 +27,7 @@ import Pnp4.Frontier.CompressionMagnification
 import Pnp4.Frontier.SearchMCSPMagnification
 import Pnp4.Frontier.SearchMCSPConcreteTargets
 import Pnp4.Frontier.ContractExpansion.C_DAG_Adapter
+import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage
 
 namespace Pnp4
 namespace Tests
@@ -58,6 +59,45 @@ theorem check_PpolyDAG_decider_as_C_DAG_decider
         ∀ x : AlgorithmsToLowerBounds.BitVec n,
           Pnp4.Frontier.ContractExpansion.C_DAG.eval C x = L n x :=
   Pnp4.Frontier.ContractExpansion.PpolyDAG_decider_as_C_DAG_decider h
+
+section PrefixExtensionLanguageSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+def check_PrefixParser
+    (problem : Frontier.SearchMCSPCompressionProblem) : Type :=
+  PrefixParser problem
+
+def check_parsePrefixInput
+    {problem : Frontier.SearchMCSPCompressionProblem}
+    (parser : PrefixParser problem)
+    {m : Nat}
+    (y : AlgorithmsToLowerBounds.BitVec m) :
+    Option (PrefixInput problem m) :=
+  parsePrefixInput parser y
+
+def check_PrefixExtendable
+    {problem : Frontier.SearchMCSPCompressionProblem}
+    (parser : PrefixParser problem)
+    {m : Nat}
+    (y : AlgorithmsToLowerBounds.BitVec m) : Prop :=
+  PrefixExtendable parser y
+
+noncomputable def check_PrefixExtensionLanguage
+    {problem : Frontier.SearchMCSPCompressionProblem}
+    (parser : PrefixParser problem) : Pnp3.ComplexityInterfaces.Language :=
+  PrefixExtensionLanguage parser
+
+theorem check_PrefixExtensionLanguage_rejects_malformed
+    {problem : Frontier.SearchMCSPCompressionProblem}
+    (parser : PrefixParser problem)
+    {m : Nat}
+    (y : AlgorithmsToLowerBounds.BitVec m)
+    (hparse : parsePrefixInput parser y = none) :
+    PrefixExtensionLanguage parser m y = false :=
+  PrefixExtensionLanguage_rejects_malformed parser y hparse
+
+end PrefixExtensionLanguageSurface
 
 def check_NotInClass :
     ∀ (C : CircuitFamilyClass) (L : BitVecLanguage),

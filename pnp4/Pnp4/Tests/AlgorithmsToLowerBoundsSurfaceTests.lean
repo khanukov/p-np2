@@ -28,6 +28,7 @@ import Pnp4.Frontier.SearchMCSPMagnification
 import Pnp4.Frontier.SearchMCSPConcreteTargets
 import Pnp4.Frontier.ContractExpansion.C_DAG_Adapter
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage
+import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageRuntime
 
 namespace Pnp4
 namespace Tests
@@ -98,6 +99,53 @@ theorem check_PrefixExtensionLanguage_rejects_malformed
   PrefixExtensionLanguage_rejects_malformed parser y hparse
 
 end PrefixExtensionLanguageSurface
+
+section PrefixExtensionLanguageRuntimeSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+def check_FunctionPolynomiallyBoundedBy
+    (M f : Nat → Nat) : Prop :=
+  FunctionPolynomiallyBoundedBy M f
+
+def check_treeMCSPPrefixAmbientLength
+    (overhead witnessBits padBits : Nat → Nat)
+    (n : Nat) : Nat :=
+  treeMCSPPrefixAmbientLength overhead witnessBits padBits n
+
+theorem check_tableLen_le_treeMCSPPrefixAmbientLength
+    (overhead witnessBits padBits : Nat → Nat)
+    (n : Nat) :
+    Pnp3.Models.Partial.tableLen n ≤
+      treeMCSPPrefixAmbientLength overhead witnessBits padBits n :=
+  tableLen_le_treeMCSPPrefixAmbientLength overhead witnessBits padBits n
+
+def check_threshold_poly_in_M
+    (M threshold : Nat → Nat) : Prop :=
+  threshold_poly_in_M M threshold
+
+def check_witnessBits_poly_in_M
+    (M witnessBits : Nat → Nat) : Prop :=
+  witnessBits_poly_in_M M witnessBits
+
+def check_RuntimeAwareTreeCircuitCodec
+    (threshold : Nat → Nat) : Type :=
+  RuntimeAwareTreeCircuitCodec threshold
+
+def check_RuntimeAwarePrefixParser
+    (problem : Frontier.SearchMCSPCompressionProblem) : Type :=
+  RuntimeAwarePrefixParser problem
+
+def check_TreeMCSPPrefixRuntimeBudget
+    (threshold : Nat → Nat)
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (overhead padBits : Nat → Nat)
+    (parser : PrefixParser
+      (Frontier.treeMCSPSearchProblem threshold
+        (Frontier.TreeMCSPSearchWitnessEncoding.ofCodec codec))) : Type :=
+  TreeMCSPPrefixRuntimeBudget threshold codec overhead padBits parser
+
+end PrefixExtensionLanguageRuntimeSurface
 
 def check_NotInClass :
     ∀ (C : CircuitFamilyClass) (L : BitVecLanguage),

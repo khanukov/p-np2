@@ -28,6 +28,7 @@ import Pnp4.Frontier.SearchMCSPMagnification
 import Pnp4.Frontier.SearchMCSPConcreteTargets
 import Pnp4.Frontier.ContractExpansion.C_DAG_Adapter
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage
+import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageRuntime
 
 namespace Pnp4
 namespace Tests
@@ -96,6 +97,45 @@ theorem check_PrefixExtensionLanguage_rejects_malformed
     (hparse : parsePrefixInput parser y = none) :
     PrefixExtensionLanguage parser m y = false :=
   PrefixExtensionLanguage_rejects_malformed parser y hparse
+
+
+section PrefixExtensionLanguageRuntimeSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+def check_treeMCSPPrefixAmbientLength
+    (overhead witnessBits padBits : Nat → Nat)
+    (n : Nat) : Nat :=
+  treeMCSPPrefixAmbientLength overhead witnessBits padBits n
+
+theorem check_tableLen_le_treeMCSPPrefixAmbientLength
+    (overhead witnessBits padBits : Nat → Nat)
+    (n : Nat) :
+    Pnp3.Models.Partial.tableLen n ≤
+      treeMCSPPrefixAmbientLength overhead witnessBits padBits n :=
+  tableLen_le_treeMCSPPrefixAmbientLength overhead witnessBits padBits n
+
+def check_PolynomiallyBoundedInAmbient
+    (M f : Nat → Nat) : Prop :=
+  PolynomiallyBoundedInAmbient M f
+
+def check_RuntimeAwareTreeCircuitCodec
+    (threshold M : Nat → Nat) : Type :=
+  RuntimeAwareTreeCircuitCodec threshold M
+
+def check_RuntimeAwarePrefixParser
+    (problem : Frontier.SearchMCSPCompressionProblem)
+    (M : Nat → Nat) : Type :=
+  RuntimeAwarePrefixParser problem M
+
+def check_TreeMCSPPrefixRuntimeBudget
+    (threshold M : Nat → Nat)
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (parser : PrefixParser (Frontier.treeMCSPSearchProblem threshold
+      (Frontier.TreeMCSPSearchWitnessEncoding.ofCodec codec))) : Type :=
+  TreeMCSPPrefixRuntimeBudget threshold M codec parser
+
+end PrefixExtensionLanguageRuntimeSurface
 
 end PrefixExtensionLanguageSurface
 

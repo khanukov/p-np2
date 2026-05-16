@@ -18,6 +18,7 @@ import Pnp4.Frontier.SearchMCSPMagnification
 import Pnp4.Frontier.SearchMCSPConcreteTargets
 import Pnp4.Frontier.ContractExpansion.C_DAG_Adapter
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage
+import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageNP
 
 namespace Pnp4
 namespace Tests
@@ -189,3 +190,6 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage_accepts_iff
 #print axioms Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage_rejects_malformed
 #print axioms Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage_accepts_of_parse_and_witness
+#print axioms Pnp4.Frontier.ContractExpansion.treeMCSPPrefixParser_parse_eq
+#print axioms Pnp4.Frontier.ContractExpansion.treeMCSPSearchRelation_decidable_of_encoding_decidable
+#print axioms Pnp4.Frontier.ContractExpansion.treeMCSPPrefixVerifierCore_relationDecidable

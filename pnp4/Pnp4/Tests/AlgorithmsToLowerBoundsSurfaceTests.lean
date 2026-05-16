@@ -28,6 +28,7 @@ import Pnp4.Frontier.SearchMCSPMagnification
 import Pnp4.Frontier.SearchMCSPConcreteTargets
 import Pnp4.Frontier.ContractExpansion.C_DAG_Adapter
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage
+import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageNP
 
 namespace Pnp4
 namespace Tests
@@ -96,6 +97,35 @@ theorem check_PrefixExtensionLanguage_rejects_malformed
     (hparse : parsePrefixInput parser y = none) :
     PrefixExtensionLanguage parser m y = false :=
   PrefixExtensionLanguage_rejects_malformed parser y hparse
+
+def check_treeMCSPPrefixParser
+    {threshold : Nat → Nat}
+    {encoding : Frontier.TreeMCSPSearchWitnessEncoding threshold}
+    (spec : TreeMCSPPrefixParserSpec threshold encoding) :
+    PrefixParser (TreeMCSPPrefixProblem threshold encoding) :=
+  treeMCSPPrefixParser spec
+
+theorem check_treeMCSPPrefixParser_parse_eq
+    {threshold : Nat → Nat}
+    {encoding : Frontier.TreeMCSPSearchWitnessEncoding threshold}
+    (spec : TreeMCSPPrefixParserSpec threshold encoding)
+    {m : Nat}
+    (y : AlgorithmsToLowerBounds.BitVec m) :
+    parsePrefixInput (treeMCSPPrefixParser spec) y = spec.parse y :=
+  treeMCSPPrefixParser_parse_eq spec y
+
+def check_treeMCSPSearchRelation_decidable_of_encoding_decidable
+    {threshold : Nat → Nat}
+    {encoding : Frontier.TreeMCSPSearchWitnessEncoding threshold}
+    (h : TreeMCSPSearchRelationDecidable threshold encoding)
+    (n : Nat)
+    (x : AlgorithmsToLowerBounds.BitVec ((TreeMCSPPrefixProblem threshold encoding).instanceBits n))
+    (w : AlgorithmsToLowerBounds.BitVec ((TreeMCSPPrefixProblem threshold encoding).witnessBits n)) :
+    Decidable ((TreeMCSPPrefixProblem threshold encoding).relation n x w) :=
+  treeMCSPSearchRelation_decidable_of_encoding_decidable h n x w
+
+def check_treeMCSPRelationDecidabilityBlocker : R1B1VerifierBudgetBlocker :=
+  treeMCSPRelationDecidabilityBlocker
 
 end PrefixExtensionLanguageSurface
 

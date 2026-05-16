@@ -256,6 +256,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.C_DAG_Adapter,
     Glob.one `Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage,
     Glob.one `Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageNP,
+    Glob.one `Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageRuntime,
     Glob.one `Pnp4.Tests.AlgorithmsToLowerBoundsSurfaceTests,
     Glob.one `Pnp4.Tests.AxiomsAudit
   ]

@@ -27,6 +27,7 @@ import Pnp4.Frontier.CompressionMagnification
 import Pnp4.Frontier.SearchMCSPMagnification
 import Pnp4.Frontier.SearchMCSPConcreteTargets
 import Pnp4.Frontier.ContractExpansion.C_DAG_Adapter
+import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage
 
 namespace Pnp4
 namespace Tests
@@ -58,6 +59,53 @@ theorem check_PpolyDAG_decider_as_C_DAG_decider
         ∀ x : AlgorithmsToLowerBounds.BitVec n,
           Pnp4.Frontier.ContractExpansion.C_DAG.eval C x = L n x :=
   Pnp4.Frontier.ContractExpansion.PpolyDAG_decider_as_C_DAG_decider h
+
+def check_PrefixInput_indexInRange
+    {problem : Pnp4.Frontier.SearchMCSPCompressionProblem}
+    (input : Pnp4.Frontier.ContractExpansion.PrefixInput problem) : Prop :=
+  Pnp4.Frontier.ContractExpansion.PrefixInput.indexInRange input
+
+def check_PrefixInput_extendable
+    {problem : Pnp4.Frontier.SearchMCSPCompressionProblem}
+    (input : Pnp4.Frontier.ContractExpansion.PrefixInput problem) : Prop :=
+  Pnp4.Frontier.ContractExpansion.PrefixInput.extendable input
+
+def check_PrefixExtendable
+    {problem : Pnp4.Frontier.SearchMCSPCompressionProblem}
+    (parser : Pnp4.Frontier.ContractExpansion.PrefixParser problem)
+    {m : Nat}
+    (y : Pnp4.Frontier.ContractExpansion.PrefixBitVec m) : Prop :=
+  Pnp4.Frontier.ContractExpansion.PrefixExtendable parser y
+
+noncomputable def check_PrefixExtensionLanguage
+    {problem : Pnp4.Frontier.SearchMCSPCompressionProblem}
+    (parser : Pnp4.Frontier.ContractExpansion.PrefixParser problem) :
+    Pnp3.ComplexityInterfaces.Language :=
+  Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage parser
+
+theorem check_PrefixExtensionLanguage_accept_iff
+    {problem : Pnp4.Frontier.SearchMCSPCompressionProblem}
+    (parser : Pnp4.Frontier.ContractExpansion.PrefixParser problem)
+    (m : Nat)
+    (y : Pnp4.Frontier.ContractExpansion.PrefixBitVec m) :
+    Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage parser m y = true ↔
+      Pnp4.Frontier.ContractExpansion.PrefixExtendable parser y :=
+  Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage_accept_iff parser m y
+
+theorem check_PrefixExtensionLanguage_malformed_nonmember
+    {problem : Pnp4.Frontier.SearchMCSPCompressionProblem}
+    (parser : Pnp4.Frontier.ContractExpansion.PrefixParser problem)
+    {m : Nat}
+    {y : Pnp4.Frontier.ContractExpansion.PrefixBitVec m}
+    (hParse : parser.parsePrefixInput m y = none) :
+    Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage parser m y = false :=
+  Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage_malformed_nonmember parser hParse
+
+def check_PrefixNPVerifierPlan_codecRequirements
+    {problem : Pnp4.Frontier.SearchMCSPCompressionProblem}
+    {parser : Pnp4.Frontier.ContractExpansion.PrefixParser problem}
+    (plan : Pnp4.Frontier.ContractExpansion.PrefixNPVerifierPlan problem parser) : Prop :=
+  Pnp4.Frontier.ContractExpansion.PrefixNPVerifierPlan.codecRequirements plan
 
 def check_NotInClass :
     ∀ (C : CircuitFamilyClass) (L : BitVecLanguage),

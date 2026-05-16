@@ -17,6 +17,7 @@ import Pnp4.Frontier.CompressionMagnification
 import Pnp4.Frontier.SearchMCSPMagnification
 import Pnp4.Frontier.SearchMCSPConcreteTargets
 import Pnp4.Frontier.ContractExpansion.C_DAG_Adapter
+import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage
 
 namespace Pnp4
 namespace Tests
@@ -184,3 +185,11 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.InPpolyDAG_to_C_DAG_family
 #print axioms Pnp4.Frontier.ContractExpansion.C_DAG_family_to_InPpolyDAG
 #print axioms Pnp4.Frontier.ContractExpansion.PpolyDAG_decider_as_C_DAG_decider
+
+#print axioms Pnp4.Frontier.ContractExpansion.PrefixInput.relation_of_extendable
+#print axioms Pnp4.Frontier.ContractExpansion.PrefixInput.indexInRange_of_extendable
+#print axioms Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage_accept_iff
+#print axioms Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage_malformed_nonmember
+#print axioms Pnp4.Frontier.ContractExpansion.PrefixExtendable.length_eq
+#print axioms Pnp4.Frontier.ContractExpansion.PrefixExtendable.tag_eq
+#print axioms Pnp4.Frontier.ContractExpansion.PrefixNPVerifierPlan.codecRequirements

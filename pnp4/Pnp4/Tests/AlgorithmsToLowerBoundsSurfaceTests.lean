@@ -28,6 +28,7 @@ import Pnp4.Frontier.SearchMCSPMagnification
 import Pnp4.Frontier.SearchMCSPConcreteTargets
 import Pnp4.Frontier.ContractExpansion.C_DAG_Adapter
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage
+import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageRuntime
 
 namespace Pnp4
 namespace Tests
@@ -98,6 +99,46 @@ theorem check_PrefixExtensionLanguage_rejects_malformed
   PrefixExtensionLanguage_rejects_malformed parser y hparse
 
 end PrefixExtensionLanguageSurface
+
+
+section PrefixExtensionLanguageRuntimeSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+def check_treeMCSPPrefixAmbientLength
+    (overhead witnessBits padBits : Nat → Nat) (n : Nat) : Nat :=
+  treeMCSPPrefixAmbientLength overhead witnessBits padBits n
+
+theorem check_tableLen_le_treeMCSPPrefixAmbientLength
+    (overhead witnessBits padBits : Nat → Nat) (n : Nat) :
+    treeMCSPTableLen n ≤
+      treeMCSPPrefixAmbientLength overhead witnessBits padBits n :=
+  tableLen_le_treeMCSPPrefixAmbientLength overhead witnessBits padBits n
+
+def check_PolynomiallyBoundedIn (f M : Nat → Nat) : Prop :=
+  PolynomiallyBoundedIn f M
+
+def check_RuntimeAwareTreeCircuitCodec
+    (threshold M : Nat → Nat) : Type :=
+  RuntimeAwareTreeCircuitCodec threshold M
+
+def check_RuntimeAwarePrefixParser
+    (problem : Frontier.SearchMCSPCompressionProblem) (M : Nat → Nat) : Type :=
+  RuntimeAwarePrefixParser problem M
+
+def check_TreeMCSPPrefixRuntimeBudget
+    (threshold : Nat → Nat)
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (M : Nat → Nat) : Type :=
+  TreeMCSPPrefixRuntimeBudget threshold codec M
+
+theorem check_tableLen_le_M_of_treeMCSPPrefixAmbientLength
+    (overhead witnessBits padBits : Nat → Nat) (n : Nat) :
+    treeMCSPTableLen n ≤
+      treeMCSPPrefixAmbientLength overhead witnessBits padBits n :=
+  tableLen_le_M_of_treeMCSPPrefixAmbientLength overhead witnessBits padBits n
+
+end PrefixExtensionLanguageRuntimeSurface
 
 def check_NotInClass :
     ∀ (C : CircuitFamilyClass) (L : BitVecLanguage),

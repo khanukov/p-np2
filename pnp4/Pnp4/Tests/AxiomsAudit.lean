@@ -16,6 +16,7 @@ import Pnp4.Frontier.PvsNPBridgeRequirements
 import Pnp4.Frontier.CompressionMagnification
 import Pnp4.Frontier.SearchMCSPMagnification
 import Pnp4.Frontier.SearchMCSPConcreteTargets
+import Pnp4.Frontier.ContractExpansion.C_DAG_Adapter
 
 namespace Pnp4
 namespace Tests
@@ -179,3 +180,7 @@ namespace Tests
 
 end Tests
 end Pnp4
+
+#print axioms Pnp4.Frontier.ContractExpansion.InPpolyDAG_to_C_DAG_family
+#print axioms Pnp4.Frontier.ContractExpansion.C_DAG_family_to_InPpolyDAG
+#print axioms Pnp4.Frontier.ContractExpansion.PpolyDAG_decider_as_C_DAG_decider

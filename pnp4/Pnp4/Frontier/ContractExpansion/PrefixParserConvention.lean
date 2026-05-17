@@ -352,6 +352,192 @@ def gammaBit (n : Nat) (j : Fin (gammaLen n)) : Bool :=
       rw [hlen] at j
       omega⟩
 
+/-- The Elias-gamma encoder emits only `false` bits before its unary terminator. -/
+theorem gammaBit_zero_prefix
+    (n : Nat)
+    {j : Fin (gammaLen n)}
+    (hj : j.1 < bitLength (n + 1) - 1) :
+    gammaBit n j = false := by
+  simp [gammaBit, hj]
+
+/-- The most-significant bit of a positive value is set in its `bitLength` field. -/
+theorem natBitBE_bitLength_msb
+    {value : Nat}
+    (hpos : 0 < value) :
+    natBitBE value (bitLength value) ⟨0, bitLength_pos_of_pos hpos⟩ = true := by
+  unfold natBitBE bitLength
+  have hne : value ≠ 0 := Nat.ne_of_gt hpos
+  simp [hne]
+  have hlo : 2 ^ Nat.log2 value ≤ value := Nat.log2_self_le hne
+  have hhi : value < 2 * 2 ^ Nat.log2 value := by
+    simpa [Nat.pow_succ, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+      using (Nat.lt_log2_self (n := value))
+  have hdiv : value / 2 ^ Nat.log2 value = 1 := by
+    exact Nat.div_eq_of_lt_le (k := 1) (n := 2 ^ Nat.log2 value)
+      (m := value) (by simpa using hlo) (by simpa [Nat.mul_comm] using hhi)
+  simp [hdiv]
+
+/-- The bit at the unary terminator position of the Elias-gamma code is `true`. -/
+theorem gammaBit_terminator
+    (n : Nat) :
+    gammaBit n ⟨bitLength (n + 1) - 1, by
+      have hpos : 0 < bitLength (n + 1) := bitLength_pos_of_pos (Nat.succ_pos n)
+      unfold gammaLen
+      omega⟩ = true := by
+  unfold gammaBit
+  let zeros := bitLength (n + 1) - 1
+  have hnot : ¬ zeros < zeros := Nat.lt_irrefl zeros
+  simpa using natBitBE_bitLength_msb (value := n + 1) (Nat.succ_pos n)
+
+/-- `readBit?` form of `gammaBit_zero_prefix`, convenient for decoder proofs. -/
+theorem readBit_gammaBit_zero_prefix
+    (n z : Nat)
+    (hz : z < bitLength (n + 1) - 1) :
+    readBit? (fun j : Fin (gammaLen n) => gammaBit n j) z = some false := by
+  unfold readBit?
+  have hbound : z < gammaLen n := by
+    unfold gammaLen
+    omega
+  simp [hbound, gammaBit_zero_prefix n (j := ⟨z, hbound⟩) hz]
+
+/-- `readBit?` form of `gammaBit_terminator`, convenient for decoder proofs. -/
+theorem readBit_gammaBit_terminator
+    (n : Nat) :
+    readBit? (fun j : Fin (gammaLen n) => gammaBit n j) (bitLength (n + 1) - 1) =
+      some true := by
+  unfold readBit?
+  have hbound : bitLength (n + 1) - 1 < gammaLen n := by
+    have hpos : 0 < bitLength (n + 1) := bitLength_pos_of_pos (Nat.succ_pos n)
+    unfold gammaLen
+    omega
+  simp [hbound, gammaBit_terminator n]
+
+/--
+Reading the payload following the Elias-gamma unary terminator recovers exactly
+all non-leading bits of `n + 1`.
+-/
+theorem readNatBE_gammaBit_payload
+    (n : Nat) :
+    readNatBE
+      (fun j : Fin (gammaLen n) => gammaBit n j)
+      (bitLength (n + 1))
+      (bitLength (n + 1) - 1) =
+    some ((n + 1) % 2 ^ (bitLength (n + 1) - 1)) := by
+  let width := bitLength (n + 1)
+  let zeros := width - 1
+  have hwidth_pos : 0 < width := by
+    exact bitLength_pos_of_pos (Nat.succ_pos n)
+  have hwidth : width = zeros + 1 := by omega
+  calc
+    readNatBE (fun j : Fin (gammaLen n) => gammaBit n j) (bitLength (n + 1))
+        (bitLength (n + 1) - 1) =
+        readNatBE (natBEField (n + 1) width) 1 zeros := by
+      apply readNatBE_eq_of_readBit_eq
+      intro t ht
+      unfold readBit? natBEField
+      have hgamma : bitLength (n + 1) + t < gammaLen n := by
+        unfold gammaLen width zeros at *
+        omega
+      have hfield : 1 + t < width := by omega
+      simp [hgamma, hfield]
+      have hnot : ¬ (bitLength (n + 1) + t) < bitLength (n + 1) - 1 := by omega
+      have hidx : bitLength (n + 1) + t - (bitLength (n + 1) - 1) = 1 + t := by
+        have hpos : 0 < bitLength (n + 1) := bitLength_pos_of_pos (Nat.succ_pos n)
+        omega
+      simp [gammaBit, hnot, natBitBE, width, hidx]
+    _ = some (((n + 1) / 2 ^ (width - (1 + zeros))) % 2 ^ zeros) := by
+      exact readNatBE_natBEField_slice (n + 1) width 1 zeros (by omega)
+    _ = some ((n + 1) % 2 ^ (bitLength (n + 1) - 1)) := by
+      have hshift : width - (1 + zeros) = 0 := by omega
+      simp [width, zeros, hshift]
+
+/--
+General decoder loop invariant for an Elias-gamma slice starting at offset zero:
+if the current zero count has not passed the terminator and the fuel reaches the
+terminator, the auxiliary decoder returns the encoded natural and full gamma
+length.
+-/
+theorem decodeGammaAux_gammaBit_from
+    (n fuel zerosSeen : Nat)
+    (hzeros : zerosSeen ≤ bitLength (n + 1) - 1)
+    (hfuel : bitLength (n + 1) - 1 - zerosSeen < fuel) :
+    decodeGammaAux?
+      (fun j : Fin (gammaLen n) => gammaBit n j)
+      0
+      fuel
+      zerosSeen = some (n, gammaLen n) := by
+  induction fuel generalizing zerosSeen with
+  | zero =>
+      omega
+  | succ fuel' ih =>
+      rw [decodeGammaAux?]
+      by_cases hterm : zerosSeen = bitLength (n + 1) - 1
+      · subst hterm
+        have hoff : bitLength (n + 1) - 1 + 1 = bitLength (n + 1) := by
+          have hpos : 0 < bitLength (n + 1) := bitLength_pos_of_pos (Nat.succ_pos n)
+          omega
+        simp [readBit_gammaBit_terminator n, hoff, readNatBE_gammaBit_payload n]
+        have hlen : gammaLen n = 2 * (bitLength (n + 1) - 1) + 1 := by
+          have hpos : 0 < bitLength (n + 1) := bitLength_pos_of_pos (Nat.succ_pos n)
+          unfold gammaLen
+          omega
+        have hdecomp : 2 ^ (bitLength (n + 1) - 1) +
+              (n + 1) % 2 ^ (bitLength (n + 1) - 1) = n + 1 := by
+          have hpos : 0 < bitLength (n + 1) := bitLength_pos_of_pos (Nat.succ_pos n)
+          have htop : (n + 1) / 2 ^ (bitLength (n + 1) - 1) = 1 := by
+            have hbl : bitLength (n + 1) = Nat.log2 (n + 1) + 1 := by
+              unfold bitLength
+              simp
+            have hsub : bitLength (n + 1) - 1 = Nat.log2 (n + 1) := by
+              rw [hbl]
+              omega
+            rw [hsub]
+            have hne : n + 1 ≠ 0 := Nat.succ_ne_zero n
+            have hlo : 2 ^ Nat.log2 (n + 1) ≤ n + 1 := Nat.log2_self_le hne
+            have hhi : n + 1 < 2 * 2 ^ Nat.log2 (n + 1) := by
+              simpa [Nat.pow_succ, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+                using (Nat.lt_log2_self (n := n + 1))
+            exact Nat.div_eq_of_lt_le (k := 1) (n := 2 ^ Nat.log2 (n + 1))
+              (m := n + 1) (by simpa using hlo) (by simpa [Nat.mul_comm] using hhi)
+          have hmod := Nat.mod_add_div (n + 1) (2 ^ (bitLength (n + 1) - 1))
+          calc
+            2 ^ (bitLength (n + 1) - 1) +
+                (n + 1) % 2 ^ (bitLength (n + 1) - 1)
+                = (n + 1) % 2 ^ (bitLength (n + 1) - 1) +
+                    2 ^ (bitLength (n + 1) - 1) *
+                      ((n + 1) / 2 ^ (bitLength (n + 1) - 1)) := by
+                  rw [htop]
+                  omega
+            _ = n + 1 := hmod
+        simp [hdecomp, hlen]
+      · have hlt : zerosSeen < bitLength (n + 1) - 1 := Nat.lt_of_le_of_ne hzeros hterm
+        simp [readBit_gammaBit_zero_prefix n zerosSeen hlt]
+        apply ih (zerosSeen + 1)
+        · omega
+        · omega
+
+/-- The auxiliary Elias-gamma decoder inverts the repository's `gammaBit` encoder. -/
+theorem decodeGammaAux_gammaBit
+    (n : Nat) :
+    decodeGammaAux?
+      (fun j : Fin (gammaLen n) => gammaBit n j)
+      0
+      (gammaLen n + 1)
+      0 = some (n, gammaLen n) := by
+  apply decodeGammaAux_gammaBit_from
+  · omega
+  · unfold gammaLen
+    omega
+
+/-- The public Elias-gamma decoder inverts the repository's `gammaBit` encoder. -/
+theorem decodeGamma_gammaBit
+    (n : Nat) :
+    decodeGamma?
+      (fun j : Fin (gammaLen n) => gammaBit n j)
+      0 = some (n, gammaLen n) := by
+  unfold decodeGamma?
+  exact decodeGammaAux_gammaBit n
+
 /--
 Computable encoder for canonical raw tree-MCSP prefix fields.
 

@@ -1,8 +1,16 @@
-# Phase 1 — Parallel dispatch (19 tasks across 5 phases)
+# Phase 1 — A11-gated dispatch
 
 ## Status
 
-**OPEN** for parallel dispatch. All tasks are independent and run concurrently.
+**LIMITED DISPATCH ONLY.** A11 synthesized Phase 0 as `PHASE0_COMPLETE_DISPATCH_LIMITED_PHASE1_PLUS`; broad implementation dispatch is not authorised.
+
+Current authorised dispatch:
+
+- P1P-01
+- P1P-02
+- follow-up tasks only by explicit operator authorisation.
+
+No implementation task may start without an explicit operator prompt after A11/P1P documentation is in place. A11 synthesis is required before any Phase 1+ / L / B / K / X implementation wave.
 
 ## Critical revision (post-audit)
 
@@ -22,7 +30,7 @@ This phase is **not** P-vs-NP mainline progress. It accelerates the kill-machine
 4. **Phase 4** — industrial-scale kill-machine tooling (2 tasks).
 5. **Phase 5** — complete contract_expansion implementation per D0 scoping (2 tasks).
 
-After Phase 1 lands, Phase 1+ (completion of partial work) can be dispatched based on Phase 0 audit findings. **Phase 1+ size is conditional on audit results** (likely 5-15 additional tasks).
+After A11/P1P governance repair, Phase 1+ (completion of partial work) may be redispatched only by explicit operator authorisation. **A11 synthesis is required before any Phase 1+ / L / B / K / X implementation wave.**
 
 ## What the repo already has (per pre-dispatch audit)
 
@@ -39,7 +47,7 @@ After Phase 1 lands, Phase 1+ (completion of partial work) can be dispatched bas
 
 ## Engineer dispatch
 
-You are one of 19 engineers. Take **ONE** task by ID. Don't take more than one.
+Take **ONE** authorised task by `<TASK_ID>`. Don't take more than one. Current authorised dispatch is P1P-01 and P1P-02 only; every follow-up task requires explicit operator authorisation.
 
 ### Common reading (everyone)
 
@@ -47,7 +55,7 @@ Before starting your task:
 
 1. `RESEARCH_CONSTITUTION.md` — discipline rules; binding.
 2. `seed_packs/phase1_20engineer_parallel_dispatch/COMMON_WORKER_INSTRUCTIONS.md` — universal rules for this phase.
-3. **Your specific task file** in `tasks/<ID>_*.md`.
+3. **Your specific task file** in `tasks/<TASK_ID>_*.md`.
 4. (If your task is Phase 0 audit) The files you're auditing — read carefully.
 
 ### Task list
@@ -100,21 +108,30 @@ Before starting your task:
 
 #### (Future) Phase 1+ — Completion of partial work
 
-**Dispatched conditionally after Phase 0 audits land.** Size depends on findings. Likely 5-15 additional tasks targeting specific gaps in `pnp3/Magnification/*_Partial.lean`, `FinalResult*.lean`, and `pnp4/Pnp4/AlgorithmsToLowerBounds/`.
+**Not currently dispatched.** Phase 1+ completion work requires A11 synthesis plus explicit operator authorisation before any implementation wave. Future scope may target specific gaps in `pnp3/Magnification/*_Partial.lean`, `FinalResult*.lean`, and `pnp4/Pnp4/AlgorithmsToLowerBounds/` only after that gate.
 
-### Dependency graph
+### A11 dispatch gate and task status summary
 
-```
-Phase 0 (A01-A10): all independent of each other.
-Phase 2 (L01-L02): independent of all.
-Phase 3 (B01-B03): independent of all.
-Phase 4 (K01-K02): K01/K02 independent. Both benefit from A04+A09 landing but don't block.
-Phase 5 (X01-X02): X02 benefits from X01; both independent of A/L/B/K.
+A11 is now the governing synthesis for this dispatch pack. The old dependency graph has been superseded: L/B/K/X implementation tasks are **not** globally independent and are **not** dispatchable as a concurrent wave.
 
-NO engineer is blocked on another. All 19 tasks dispatch-able NOW.
+Current authorised dispatch:
 
-Phase 1+ completion tasks dispatched AFTER Phase 0 audits land.
-```
+- P1P-01
+- P1P-02
+- follow-up tasks only by explicit operator authorisation.
+
+A11 synthesis is required before any Phase 1+ / L / B / K / X implementation wave. No implementation task may start without an explicit operator prompt after A11/P1P documentation is in place.
+
+| Task(s) | A11 status | Dispatch implication |
+| --- | --- | --- |
+| B02 | Cancelled as written | Do not dispatch without a replacement scope. |
+| B03 | Cancelled as written | Do not dispatch without a replacement scope. |
+| B01 | Rewrite required | Redispatch only after concrete barrier-certificate criteria are approved. |
+| K01 | Rewrite required | Redispatch only after the NoGo/manual-classification scope is corrected. |
+| K02 | Hold until governance repair | Hold until README/COMMON and related governance repairs land. |
+| X01 | Hold pending no-faking / NP-interface review | Do not implement until the bridge cannot accept staged placeholders and the interface review is complete. |
+| X02 | Rewrite after parser convention design | Wait for P1P-02 parser convention design before any implementation scope. |
+| L01/L02 | Downgrade to markdown | Treat as literature/interface alignment documents, not Lean implementation tasks. |
 
 ## Acceptance criteria — universal
 

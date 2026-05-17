@@ -197,8 +197,12 @@ end Pnp4
 #check Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixRuntimeBudget
 #print axioms Pnp4.Frontier.ContractExpansion.tableLen_le_treeMCSPPrefixM
 #check Pnp4.Frontier.ContractExpansion.CanonicalRawTreeMCSPPrefixFields
+#check Pnp4.Frontier.ContractExpansion.CanonicalRawTreeMCSPPrefixFields.toPrefixInput
 #check Pnp4.Frontier.ContractExpansion.encodeTreeMCSPPrefixFields
 #print axioms Pnp4.Frontier.ContractExpansion.encodeTreeMCSPPrefixFields_length_convention
+#print axioms Pnp4.Frontier.ContractExpansion.readNatBE_encode_tag
+#print axioms Pnp4.Frontier.ContractExpansion.sliceBits_encode_x
+#print axioms Pnp4.Frontier.ContractExpansion.sliceBits_encode_p
 #print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_bad_tag
 #print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_length_convention
 #print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_malformed_rejected

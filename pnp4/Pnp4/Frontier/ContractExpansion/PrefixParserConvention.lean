@@ -180,6 +180,97 @@ def encodeTreeMCSPPrefixFields
             else
               false
 
+
+/--
+Canonical parsed input represented by canonical raw tree-MCSP prefix fields.
+
+This is the object expected from a successful parse of
+`encodeTreeMCSPPrefixFields`: it fixes the version tag, reuses the raw `n`, `x`,
+`i`, and `p` fields, carries the original `i ≤ witnessBits n` proof, and sets
+all inactive padding bits to zero.  It is intentionally only a parser/encoder
+round-trip target, not a runtime or NP-membership assertion.
+-/
+def CanonicalRawTreeMCSPPrefixFields.toPrefixInput
+    {threshold : Nat → Nat}
+    (codec : TreeCircuitWitnessCodec threshold)
+    (fields : CanonicalRawTreeMCSPPrefixFields codec) :
+    PrefixInput
+      (treeMCSPSearchProblem threshold (TreeMCSPSearchWitnessEncoding.ofCodec codec))
+      (treeMCSPPrefixM codec fields.n) where
+  tag := treePrefixTag
+  n := fields.n
+  x := fields.x
+  i := fields.i
+  prefixLength_le := fields.prefixLength_le
+  p := fields.p
+  padBits := codec.witnessBits fields.n - fields.i
+  pad := fun _ => false
+
+/--
+Partial P1P-02L3 round-trip progress: the full canonical theorem
+`parseTreeMCSPPrefixInput threshold codec (encodeTreeMCSPPrefixFields codec fields)
+ = some (CanonicalRawTreeMCSPPrefixFields.toPrefixInput codec fields)` remains
+open.  The lemmas below prove concrete field-level round-trip facts for the
+fixed tag and direct `x`/`p` slices, isolating the remaining work to the gamma
+and big-endian numeric decoders plus dependent record equality.
+-/
+theorem readNatBE_encode_tag
+    {threshold : Nat → Nat}
+    (codec : TreeCircuitWitnessCodec threshold)
+    (fields : CanonicalRawTreeMCSPPrefixFields codec) :
+    readNatBE (encodeTreeMCSPPrefixFields codec fields) 0 tagLen = some treePrefixTag := by
+  have h0 : 0 < treeMCSPPrefixM codec fields.n := by unfold treeMCSPPrefixM tagLen; omega
+  have h1 : 1 < treeMCSPPrefixM codec fields.n := by unfold treeMCSPPrefixM tagLen; omega
+  have h2 : 2 < treeMCSPPrefixM codec fields.n := by unfold treeMCSPPrefixM tagLen; omega
+  have h3 : 3 < treeMCSPPrefixM codec fields.n := by unfold treeMCSPPrefixM tagLen; omega
+  have h4 : 4 < treeMCSPPrefixM codec fields.n := by unfold treeMCSPPrefixM tagLen; omega
+  have h5 : 5 < treeMCSPPrefixM codec fields.n := by unfold treeMCSPPrefixM tagLen; omega
+  have h6 : 6 < treeMCSPPrefixM codec fields.n := by unfold treeMCSPPrefixM tagLen; omega
+  have h7 : 7 < treeMCSPPrefixM codec fields.n := by unfold treeMCSPPrefixM tagLen; omega
+  simp [readNatBE, readBit?, encodeTreeMCSPPrefixFields, tagLen, treePrefixTag, natBitBE,
+    h0, h1, h2, h3, h4, h5, h6, h7]
+
+/-- The encoder's truth-table field is recovered by slicing at the canonical `x` offset. -/
+theorem sliceBits_encode_x
+    {threshold : Nat → Nat}
+    (codec : TreeCircuitWitnessCodec threshold)
+    (fields : CanonicalRawTreeMCSPPrefixFields codec) :
+    sliceBits? (encodeTreeMCSPPrefixFields codec fields)
+      (tagLen + gammaLen fields.n) (Pnp3.Models.Partial.tableLen fields.n) = some fields.x := by
+  unfold sliceBits?
+  have hlen : tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n ≤
+      treeMCSPPrefixM codec fields.n := by
+    unfold treeMCSPPrefixM
+    omega
+  simp [hlen]
+  ext j
+  have hnotTag : ¬ tagLen + gammaLen fields.n + j.1 < tagLen := by omega
+  simp [encodeTreeMCSPPrefixFields, hnotTag]
+
+/-- The encoder's active witness-prefix field is recovered by slicing at the canonical `p` offset. -/
+theorem sliceBits_encode_p
+    {threshold : Nat → Nat}
+    (codec : TreeCircuitWitnessCodec threshold)
+    (fields : CanonicalRawTreeMCSPPrefixFields codec) :
+    sliceBits? (encodeTreeMCSPPrefixFields codec fields)
+      (tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+        idxWidth codec.witnessBits fields.n) fields.i = some fields.p := by
+  unfold sliceBits?
+  have hlen : tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+        idxWidth codec.witnessBits fields.n + fields.i ≤ treeMCSPPrefixM codec fields.n := by
+    unfold treeMCSPPrefixM
+    exact Nat.add_le_add_left fields.prefixLength_le _
+  simp [hlen]
+  ext j
+  have hnotTag : ¬ tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+        idxWidth codec.witnessBits fields.n + j.1 < tagLen := by omega
+  have hnotGamma : ¬ tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+        idxWidth codec.witnessBits fields.n + j.1 < tagLen + gammaLen fields.n := by omega
+  have hnotX : ¬ tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+        idxWidth codec.witnessBits fields.n + j.1 <
+          tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n := by omega
+  simp [encodeTreeMCSPPrefixFields, hnotTag, hnotGamma, hnotX]
+
 /-- The raw-field encoder's length is the canonical `M(n)` by its result type. -/
 theorem encodeTreeMCSPPrefixFields_length_convention
     {threshold : Nat → Nat}

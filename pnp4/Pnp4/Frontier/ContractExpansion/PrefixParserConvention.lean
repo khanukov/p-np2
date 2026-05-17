@@ -53,6 +53,32 @@ theorem tableLen_le_treeMCSPPrefixM
   unfold treeMCSPPrefixM
   omega
 
+
+/-- Big-endian bit of a fixed-width unsigned natural-number field.
+
+`index = 0` addresses the most-significant bit.  The helper is total in the
+index so it can be used directly inside dependent bit-vector lambdas; callers
+supply indices in the intended range by construction.
+-/
+def natBitBE (value width index : Nat) : Bool :=
+  (value / 2 ^ (width - 1 - index)) % 2 = 1
+
+/-- Bit of the canonical Elias-gamma encoding of `n + 1`.
+
+The parser convention writes `z = bitLength (n+1)-1` leading zero bits, one
+terminator bit, and then the low `z` payload bits of `n+1` in big-endian order.
+This definition is deliberately computable and does not recover fields by
+inverting the parser.
+-/
+def gammaBit (n index : Nat) : Bool :=
+  let z := bitLength (n + 1) - 1
+  if index < z then
+    false
+  else if index = z then
+    true
+  else
+    natBitBE ((n + 1) - 2 ^ z) z (index - (z + 1))
+
 /-- Read one bit at a natural offset, rejecting offsets outside the vector. -/
 def readBit? {m : Nat} (y : PrefixBitVec m) (offset : Nat) : Option Bool :=
   if h : offset < m then some (y ⟨offset, h⟩) else none
@@ -174,6 +200,119 @@ def treeMCSPConcretePrefixParser
   M := treeMCSPPrefixM codec
   parse := parseTreeMCSPPrefixInput threshold codec
 
+
+/--
+Computable canonical encoder for parsed tree-MCSP prefix inputs.
+
+The encoder normalizes the serialization to the P1P-02 layout: the version tag
+and gamma-coded target length are regenerated, the truth table and active
+prefix payload are copied from `input`, the active-prefix-length field is
+encoded as an unsigned fixed-width integer, and all inactive witness-prefix bits
+are written as zero.  In particular, this is an encoder for the canonical byte
+layout, not a parser inverse obtained by `Classical.choose` or by inspecting a
+successful parse.
+-/
+def encodeTreeMCSPPrefixInput
+    {threshold : Nat → Nat}
+    (codec : TreeCircuitWitnessCodec threshold)
+    {m : Nat}
+    (input : PrefixInput
+      (treeMCSPSearchProblem threshold (TreeMCSPSearchWitnessEncoding.ofCodec codec)) m) :
+    PrefixBitVec (treeMCSPPrefixM codec input.n) :=
+  fun j =>
+    let n := input.n
+    let xOffset := tagLen + gammaLen n
+    let iOffset := xOffset + Pnp3.Models.Partial.tableLen n
+    let pOffset := iOffset + idxWidth codec.witnessBits n
+    if htag : j.1 < tagLen then
+      natBitBE treePrefixTag tagLen j.1
+    else if hgamma : j.1 < xOffset then
+      gammaBit n (j.1 - tagLen)
+    else if hx : j.1 < iOffset then
+      input.x ⟨j.1 - xOffset, by
+        simpa [treeMCSPSearchProblem, n] using
+          (by omega : j.1 - xOffset < Pnp3.Models.Partial.tableLen n)⟩
+    else if hi : j.1 < pOffset then
+      natBitBE input.i (idxWidth codec.witnessBits n) (j.1 - iOffset)
+    else
+      let r := j.1 - pOffset
+      if hp : r < input.i then
+        input.p ⟨r, hp⟩
+      else
+        false
+
+/--
+Successful parses obey the concrete single-length convention `m = M(input.n)`.
+
+This is the R1-B2a runtime-budget hook for the P1P-02 parser convention: the
+parser has no trailing-garbage or alternate-padding acceptance mode, so every
+accepted input length is exactly the canonical ambient length for the decoded
+parameter.
+-/
+theorem parseTreeMCSPPrefixInput_length_convention
+    (threshold : Nat → Nat)
+    (codec : TreeCircuitWitnessCodec threshold)
+    {m : Nat}
+    (y : PrefixBitVec m)
+    (input : PrefixInput
+      (treeMCSPSearchProblem threshold (TreeMCSPSearchWitnessEncoding.ofCodec codec)) m)
+    (h : parseTreeMCSPPrefixInput threshold codec y = some input) :
+    m = treeMCSPPrefixM codec input.n := by
+  unfold parseTreeMCSPPrefixInput at h
+  generalize hTagOpt : readNatBE y 0 tagLen = tagOpt at h
+  cases tagOpt with
+  | none => simp at h
+  | some tag =>
+      by_cases htag : tag = treePrefixTag
+      · simp [htag] at h
+        generalize hDecodedOpt : decodeGamma? y tagLen = decodedOpt at h
+        cases decodedOpt with
+        | none => simp at h
+        | some decoded =>
+            by_cases hlen : m = treeMCSPPrefixM codec decoded.1
+            · simp [hlen] at h
+              generalize hXOpt : sliceBits? y (tagLen + decoded.2)
+                  (Pnp3.Models.Partial.tableLen decoded.1) = xOpt at h
+              cases xOpt with
+              | none => simp at h
+              | some x =>
+                  generalize hIOpt : readNatBE y
+                      (tagLen + decoded.2 + Pnp3.Models.Partial.tableLen decoded.1)
+                      (idxWidth codec.witnessBits decoded.1) = iOpt at h
+                  cases iOpt with
+                  | none => simp at h
+                  | some i =>
+                      by_cases hi : i ≤ codec.witnessBits decoded.1
+                      · simp [hi] at h
+                        generalize hPOpt : sliceBits? y
+                            (tagLen + decoded.2 + Pnp3.Models.Partial.tableLen decoded.1 +
+                              idxWidth codec.witnessBits decoded.1) i = pOpt at h
+                        cases pOpt with
+                        | none => simp at h
+                        | some p =>
+                            generalize hPadOpt : sliceBits? y
+                                (tagLen + decoded.2 + Pnp3.Models.Partial.tableLen decoded.1 +
+                                    idxWidth codec.witnessBits decoded.1 + i)
+                                (codec.witnessBits decoded.1 - i) = padOpt at h
+                            cases padOpt with
+                            | none => simp at h
+                            | some pad =>
+                                generalize hPadZeroOpt : allZeroSlice? y
+                                    (tagLen + decoded.2 + Pnp3.Models.Partial.tableLen decoded.1 +
+                                        idxWidth codec.witnessBits decoded.1 + i)
+                                    (codec.witnessBits decoded.1 - i) = padZeroOpt at h
+                                cases padZeroOpt with
+                                | none => simp at h
+                                | some padZero =>
+                                    by_cases hpad : padZero = true
+                                    · simp [hpad] at h
+                                      cases h
+                                      exact hlen
+                                    · simp [hpad] at h
+                      · simp [hi] at h
+            · simp [hlen] at h
+      · simp [htag] at h
+
 /-- A wrong version tag is rejected before any dependent field slicing occurs. -/
 theorem parseTreeMCSPPrefixInput_bad_tag
     (threshold : Nat → Nat)
@@ -196,6 +335,31 @@ theorem parseTreeMCSPPrefixInput_malformed_rejected
     PrefixExtensionLanguage (treeMCSPConcretePrefixParser threshold codec) m y = false := by
   exact PrefixExtensionLanguage_rejects_malformed
     (treeMCSPConcretePrefixParser threshold codec) y hparse
+
+
+/--
+Concrete runtime-aware parser package, parameterized by the still-open parser
+runtime obligation.
+
+Supplying `parser_polynomial_time_in_M` remains future work; this constructor
+only wires in the already proved malformed-input and length-convention facts and
+therefore does not manufacture a fake runtime theorem.
+-/
+def treeMCSPRuntimeAwarePrefixParser
+    (threshold : Nat → Nat)
+    (codec : TreeCircuitWitnessCodec threshold)
+    (parser_polynomial_time_in_M : Prop) :
+    RuntimeAwarePrefixParser
+      (treeMCSPSearchProblem threshold (TreeMCSPSearchWitnessEncoding.ofCodec codec))
+      (treeMCSPPrefixM codec) where
+  parser := treeMCSPConcretePrefixParser threshold codec
+  parser_polynomial_time_in_M := parser_polynomial_time_in_M
+  malformed_inputs_rejected := by
+    intro m y hparse
+    exact parseTreeMCSPPrefixInput_malformed_rejected threshold codec y hparse
+  length_convention_matches_M := by
+    intro m y input hparse
+    exact parseTreeMCSPPrefixInput_length_convention threshold codec y input hparse
 
 end ContractExpansion
 end Frontier

@@ -44,9 +44,14 @@ def check_C_DAG : CircuitFamilyClass :=
 #check Pnp4.Frontier.ContractExpansion.gammaLen
 #check Pnp4.Frontier.ContractExpansion.idxWidth
 #check Pnp4.Frontier.ContractExpansion.treeMCSPPrefixM
+#check Pnp4.Frontier.ContractExpansion.natBitBE
+#check Pnp4.Frontier.ContractExpansion.gammaBit
 #check Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput
+#check Pnp4.Frontier.ContractExpansion.encodeTreeMCSPPrefixInput
 #check Pnp4.Frontier.ContractExpansion.treeMCSPConcretePrefixParser
+#check Pnp4.Frontier.ContractExpansion.treeMCSPRuntimeAwarePrefixParser
 #print axioms Pnp4.Frontier.ContractExpansion.tableLen_le_treeMCSPPrefixM
+#print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_length_convention
 #print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_bad_tag
 #print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_malformed_rejected
 

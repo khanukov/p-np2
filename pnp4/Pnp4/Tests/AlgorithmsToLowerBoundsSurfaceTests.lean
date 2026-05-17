@@ -41,8 +41,12 @@ def check_C_DAG : CircuitFamilyClass :=
 
 #check Pnp4.Frontier.ContractExpansion.treePrefixTag
 #check Pnp4.Frontier.ContractExpansion.tagLen
+#check Pnp4.Frontier.ContractExpansion.bitLength
 #check Pnp4.Frontier.ContractExpansion.gammaLen
 #check Pnp4.Frontier.ContractExpansion.idxWidth
+#print axioms Pnp4.Frontier.ContractExpansion.bitLength_pos_of_pos
+#print axioms Pnp4.Frontier.ContractExpansion.nat_lt_two_pow_bitLength
+#print axioms Pnp4.Frontier.ContractExpansion.prefixLength_lt_two_pow_idxWidth
 #check Pnp4.Frontier.ContractExpansion.treeMCSPPrefixM
 #check Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput
 #check Pnp4.Frontier.ContractExpansion.treeMCSPConcretePrefixParser
@@ -2470,6 +2474,9 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms AlgorithmsToLowerBounds.no_uniform_cklmEnvelopeFrequentEscape
 
 #check Pnp4.Frontier.ContractExpansion.CanonicalRawTreeMCSPPrefixFields
+#check Pnp4.Frontier.ContractExpansion.natBEField
+#print axioms Pnp4.Frontier.ContractExpansion.readNatBE_natBEField_zero
+#print axioms Pnp4.Frontier.ContractExpansion.readNatBE_natBitBE_zero
 #check Pnp4.Frontier.ContractExpansion.encodeTreeMCSPPrefixFields
 #check Pnp4.Frontier.ContractExpansion.CanonicalRawTreeMCSPPrefixFields.toPrefixInput
 #print axioms Pnp4.Frontier.ContractExpansion.encodeTreeMCSPPrefixFields_length_convention

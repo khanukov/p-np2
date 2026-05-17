@@ -22,6 +22,23 @@ small while matching the usual unsigned binary width.
 def bitLength (n : Nat) : Nat :=
   if n = 0 then 0 else Nat.log2 n + 1
 
+/-- Positive naturals have a positive unsigned binary width. -/
+theorem bitLength_pos_of_pos
+    {n : Nat} (h : 0 < n) :
+    0 < bitLength n := by
+  unfold bitLength
+  simp [Nat.ne_of_gt h]
+
+/-- Every natural fits in its own `bitLength`-many big-endian bits. -/
+theorem nat_lt_two_pow_bitLength
+    (n : Nat) :
+    n < 2 ^ bitLength n := by
+  by_cases h : n = 0
+  · simp [h, bitLength]
+  · have hlog : n < 2 ^ (Nat.log2 n + 1) := by
+      simpa [Nat.log2_eq_log_two] using Nat.lt_pow_succ_log_self Nat.one_lt_two n
+    simpa [bitLength, h] using hlog
+
 /-- Length of the Elias-gamma code used for the natural number `n` as `n + 1`. -/
 def gammaLen (n : Nat) : Nat :=
   2 * bitLength (n + 1) - 1
@@ -29,6 +46,13 @@ def gammaLen (n : Nat) : Nat :=
 /-- Width of the unsigned active-prefix-length field for a witness block. -/
 def idxWidth (W : Nat → Nat) (n : Nat) : Nat :=
   bitLength (W n)
+
+/-- Any active prefix length bounded by `W n` fits in the configured index field. -/
+theorem prefixLength_lt_two_pow_idxWidth
+    {W : Nat → Nat} {n i : Nat}
+    (hi : i ≤ W n) :
+    i < 2 ^ idxWidth W n := by
+  exact lt_of_le_of_lt hi (by simpa [idxWidth] using nat_lt_two_pow_bitLength (W n))
 
 /--
 Canonical ambient length for the tree-MCSP prefix parser convention.
@@ -124,6 +148,109 @@ structure CanonicalRawTreeMCSPPrefixFields
 /-- Big-endian bit `j` of a fixed-width natural-number field. -/
 def natBitBE (value width : Nat) (j : Fin width) : Bool :=
   value / 2 ^ (width - 1 - j.1) % 2 = 1
+
+/-- A standalone fixed-width field whose bits are supplied by `natBitBE`. -/
+def natBEField (value width : Nat) : PrefixBitVec width :=
+  fun j => natBitBE value width j
+
+/--
+Taking the low `k` bits before inspecting bit `e < k` does not change that bit.
+This arithmetic lemma is the core reusable fact behind the big-endian reader
+inversion below.
+-/
+lemma div_mod_two_mod_pow_eq
+    (value k e : Nat) (h : e + 1 ≤ k) :
+    (value % 2 ^ k) / 2 ^ e % 2 = value / 2 ^ e % 2 := by
+  have hdiv : 2 ^ (e + 1) ∣ 2 ^ k := Nat.pow_dvd_pow 2 h
+  calc
+    (value % 2 ^ k) / 2 ^ e % 2
+        = (value % 2 ^ k) % (2 ^ e * 2) / 2 ^ e := by
+            rw [Nat.mod_mul_right_div_self]
+    _ = (value % 2 ^ k) % (2 ^ (e + 1)) / 2 ^ e := by
+            rw [pow_succ, Nat.mul_comm]
+    _ = (value % (2 ^ (e + 1))) / 2 ^ e := by
+            rw [Nat.mod_mod_of_dvd value hdiv]
+    _ = value / 2 ^ e % 2 := by
+            rw [← Nat.mod_mul_right_div_self]
+            rw [pow_succ, Nat.mul_comm]
+
+/-- Replacing a value by its low `k` bits preserves all `k` big-endian field bits. -/
+lemma natBitBE_mod_pow_eq
+    (value k e : Nat) (h : e + 1 ≤ k) :
+    natBitBE (value % 2 ^ k) k ⟨k - 1 - e, by omega⟩ =
+      natBitBE value k ⟨k - 1 - e, by omega⟩ := by
+  have hs : k - 1 - (k - 1 - e) = e := by omega
+  simp [natBitBE, hs, div_mod_two_mod_pow_eq value k e h]
+
+/--
+Reading a suffix of a larger `natBEField` is the same as reading a standalone
+field containing exactly the corresponding low bits.
+-/
+lemma readNatBE_natBEField_suffix
+    (value skip width : Nat) :
+    readNatBE (natBEField value (skip + width)) skip width =
+      readNatBE (natBEField (value % 2 ^ width) width) 0 width := by
+  induction width generalizing value skip with
+  | zero => simp [readNatBE]
+  | succ k ih =>
+      simp only [readNatBE, readBit?]
+      have hlen : skip + (k + 1) = skip + 1 + k := by omega
+      rw [hlen]
+      rw [ih value (skip + 1)]
+      have hright : k + 1 = 1 + k := by omega
+      rw [hright]
+      simp only [Nat.zero_add]
+      rw [ih (value % 2 ^ (1 + k)) 1]
+      have hmod : value % 2 ^ (1 + k) % 2 ^ k = value % 2 ^ k := by
+        exact Nat.mod_mod_of_dvd value (Nat.pow_dvd_pow 2 (by omega : k ≤ 1 + k))
+      have hbit : natBitBE value (skip + 1 + k) ⟨skip, by omega⟩ =
+          natBitBE (value % 2 ^ (1 + k)) (1 + k) 0 := by
+        simp [natBitBE, div_mod_two_mod_pow_eq value (1 + k) k (by omega)]
+      have hskip : skip < skip + 1 + k := by omega
+      simp [natBEField, hmod, hbit, hskip]
+
+/-- A fixed-width big-endian field decodes to the encoded value when the value fits. -/
+theorem readNatBE_natBEField_zero
+    (value width : Nat)
+    (h : value < 2 ^ width) :
+    readNatBE (natBEField value width) 0 width = some value := by
+  induction width generalizing value with
+  | zero =>
+      have hv : value = 0 := by simpa using h
+      simp [readNatBE, hv]
+  | succ k ih =>
+      simp only [readNatBE, readBit?]
+      have hlen : k + 1 = 1 + k := by omega
+      rw [hlen]
+      rw [readNatBE_natBEField_suffix value 1 k]
+      have hmod_lt : value % 2 ^ k < 2 ^ k := Nat.mod_lt _ (Nat.pow_pos (by decide : 0 < 2))
+      rw [ih (value % 2 ^ k) hmod_lt]
+      have h0 : 0 < 1 + k := by omega
+      simp [natBEField, h0]
+      have hpow : 0 < 2 ^ k := Nat.pow_pos (by decide : 0 < 2)
+      have hq_lt : value / 2 ^ k < 2 := by
+        rw [Nat.div_lt_iff_lt_mul hpow]
+        simpa [pow_succ', Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using h
+      have hq_cases : value / 2 ^ k = 0 ∨ value / 2 ^ k = 1 := by
+        interval_cases value / 2 ^ k <;> simp
+      rcases hq_cases with hq | hq
+      · have hv : value % 2 ^ k = value := by
+          have hdecomp := Nat.mod_add_div value (2 ^ k)
+          rw [hq, mul_zero, add_zero] at hdecomp
+          exact hdecomp
+        simp [natBitBE, hq, hv]
+      · have hv : 2 ^ k + value % 2 ^ k = value := by
+          have hdecomp := Nat.mod_add_div value (2 ^ k)
+          rw [hq, mul_one] at hdecomp
+          simpa [Nat.add_comm] using hdecomp
+        simp [natBitBE, hq, hv]
+
+/-- The same zero-offset inversion theorem stated directly for the `natBitBE` lambda. -/
+theorem readNatBE_natBitBE_zero
+    (value width : Nat)
+    (h : value < 2 ^ width) :
+    readNatBE (fun j : Fin width => natBitBE value width j) 0 width = some value := by
+  simpa [natBEField] using readNatBE_natBEField_zero value width h
 
 /--
 Bit `j` of the Elias-gamma code for `n + 1`.

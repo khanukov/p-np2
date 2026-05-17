@@ -2469,5 +2469,11 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms AlgorithmsToLowerBounds.not_beatsEveryPpolyBoundFrequentlyAtSomeTableLength_cklmEnvelope
 #print axioms AlgorithmsToLowerBounds.no_uniform_cklmEnvelopeFrequentEscape
 
+#check Pnp4.Frontier.ContractExpansion.CanonicalRawTreeMCSPPrefixFields
+#check Pnp4.Frontier.ContractExpansion.encodeTreeMCSPPrefixFields
+#print axioms Pnp4.Frontier.ContractExpansion.encodeTreeMCSPPrefixFields_length_convention
+#print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_length_convention
+#check Pnp4.Frontier.ContractExpansion.treeMCSPRuntimeAwarePrefixParser
+
 end Tests
 end Pnp4

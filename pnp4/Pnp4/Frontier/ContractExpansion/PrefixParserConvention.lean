@@ -180,6 +180,93 @@ def encodeTreeMCSPPrefixFields
             else
               false
 
+
+/--
+Partial P1P-02L3 round-trip progress: the full parser/encoder theorem remains
+open, but the byte tag and the direct dependent slices below are already tied to
+`encodeTreeMCSPPrefixFields`.  The remaining hard pieces are the generic
+big-endian and Elias-gamma decode lemmas needed for the `i` and `n` fields.
+-/
+theorem readNatBE_encodeTreeMCSPPrefixFields_tag
+    {threshold : Nat → Nat}
+    (codec : TreeCircuitWitnessCodec threshold)
+    (fields : CanonicalRawTreeMCSPPrefixFields codec) :
+    readNatBE (encodeTreeMCSPPrefixFields codec fields) 0 tagLen = some treePrefixTag := by
+  have h0 : 0 < treeMCSPPrefixM codec fields.n := by
+    unfold treeMCSPPrefixM tagLen
+    omega
+  have h1 : 1 < treeMCSPPrefixM codec fields.n := by
+    unfold treeMCSPPrefixM tagLen
+    omega
+  have h2 : 2 < treeMCSPPrefixM codec fields.n := by
+    unfold treeMCSPPrefixM tagLen
+    omega
+  have h3 : 3 < treeMCSPPrefixM codec fields.n := by
+    unfold treeMCSPPrefixM tagLen
+    omega
+  have h4 : 4 < treeMCSPPrefixM codec fields.n := by
+    unfold treeMCSPPrefixM tagLen
+    omega
+  have h5 : 5 < treeMCSPPrefixM codec fields.n := by
+    unfold treeMCSPPrefixM tagLen
+    omega
+  have h6 : 6 < treeMCSPPrefixM codec fields.n := by
+    unfold treeMCSPPrefixM tagLen
+    omega
+  have h7 : 7 < treeMCSPPrefixM codec fields.n := by
+    unfold treeMCSPPrefixM tagLen
+    omega
+  norm_num [readNatBE, readBit?, encodeTreeMCSPPrefixFields, h0, h1, h2, h3, h4, h5, h6, h7,
+    treePrefixTag, tagLen, natBitBE]
+
+/-- The raw-field encoder exposes the truth-table payload at the canonical offset. -/
+theorem sliceBits_encodeTreeMCSPPrefixFields_x
+    {threshold : Nat → Nat}
+    (codec : TreeCircuitWitnessCodec threshold)
+    (fields : CanonicalRawTreeMCSPPrefixFields codec) :
+    sliceBits? (encodeTreeMCSPPrefixFields codec fields)
+      (tagLen + gammaLen fields.n) (Pnp3.Models.Partial.tableLen fields.n) = some fields.x := by
+  unfold sliceBits?
+  have h : tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n ≤
+      treeMCSPPrefixM codec fields.n := by
+    unfold treeMCSPPrefixM tagLen
+    omega
+  simp [h]
+  ext j
+  simp [encodeTreeMCSPPrefixFields]
+  have hnotTag : ¬ (tagLen + gammaLen fields.n + j.1 < tagLen) := by
+    omega
+  simp [hnotTag]
+
+/-- The raw-field encoder exposes the active witness prefix at the canonical offset. -/
+theorem sliceBits_encodeTreeMCSPPrefixFields_p
+    {threshold : Nat → Nat}
+    (codec : TreeCircuitWitnessCodec threshold)
+    (fields : CanonicalRawTreeMCSPPrefixFields codec) :
+    sliceBits? (encodeTreeMCSPPrefixFields codec fields)
+      (tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+        idxWidth codec.witnessBits fields.n)
+      fields.i = some fields.p := by
+  unfold sliceBits?
+  have h : tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+      idxWidth codec.witnessBits fields.n + fields.i ≤ treeMCSPPrefixM codec fields.n := by
+    unfold treeMCSPPrefixM tagLen
+    exact Nat.add_le_add_left fields.prefixLength_le _
+  simp [h]
+  ext j
+  simp [encodeTreeMCSPPrefixFields]
+  have hnotTag : ¬ (tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+      idxWidth codec.witnessBits fields.n + j.1 < tagLen) := by
+    omega
+  have hnotGamma : ¬ (tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+      idxWidth codec.witnessBits fields.n + j.1 < tagLen + gammaLen fields.n) := by
+    omega
+  have hnotX : ¬ (tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+      idxWidth codec.witnessBits fields.n + j.1 <
+        tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n) := by
+    omega
+  simp [hnotTag, hnotGamma, hnotX]
+
 /-- The raw-field encoder's length is the canonical `M(n)` by its result type. -/
 theorem encodeTreeMCSPPrefixFields_length_convention
     {threshold : Nat → Nat}
@@ -187,6 +274,31 @@ theorem encodeTreeMCSPPrefixFields_length_convention
     (fields : CanonicalRawTreeMCSPPrefixFields codec) :
     (treeMCSPPrefixM codec fields.n) = treeMCSPPrefixM codec fields.n := by
   rfl
+
+
+/--
+Canonical parsed input associated to raw canonical tree-MCSP prefix fields.
+
+This is the object the concrete parser is expected to return after decoding
+`encodeTreeMCSPPrefixFields`: the version tag and payload fields are copied
+verbatim, and the inactive witness suffix is represented as the canonical
+all-zero padding block of length `codec.witnessBits fields.n - fields.i`.
+-/
+def CanonicalRawTreeMCSPPrefixFields.toPrefixInput
+    {threshold : Nat → Nat}
+    (codec : TreeCircuitWitnessCodec threshold)
+    (fields : CanonicalRawTreeMCSPPrefixFields codec) :
+    PrefixInput
+      (treeMCSPSearchProblem threshold (TreeMCSPSearchWitnessEncoding.ofCodec codec))
+      (treeMCSPPrefixM codec fields.n) where
+  tag := treePrefixTag
+  n := fields.n
+  x := fields.x
+  i := fields.i
+  prefixLength_le := fields.prefixLength_le
+  p := fields.p
+  padBits := codec.witnessBits fields.n - fields.i
+  pad := fun _ => false
 
 /-- Predicate recording the canonical zero-padding convention for parsed inputs. -/
 def CanonicalTreeMCSPPrefixInput

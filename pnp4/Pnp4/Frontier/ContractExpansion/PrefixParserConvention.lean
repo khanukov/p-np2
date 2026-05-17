@@ -125,6 +125,112 @@ structure CanonicalRawTreeMCSPPrefixFields
 def natBitBE (value width : Nat) (j : Fin width) : Bool :=
   value / 2 ^ (width - 1 - j.1) % 2 = 1
 
+/-- A stand-alone fixed-width big-endian field for `value`. -/
+def natBEField (value width : Nat) : PrefixBitVec width :=
+  fun j => natBitBE value width j
+
+/-- Positive naturals have positive binary length. -/
+theorem bitLength_pos_of_pos
+    {n : Nat} (h : 0 < n) :
+    0 < bitLength n := by
+  unfold bitLength
+  simp [Nat.ne_of_gt h]
+
+/-- Every natural fits into its declared `bitLength` bits. -/
+theorem nat_lt_two_pow_bitLength
+    (n : Nat) :
+    n < 2 ^ bitLength n := by
+  unfold bitLength
+  by_cases h : n = 0
+  · simp [h]
+  · simpa [h] using (Nat.lt_log2_self (n := n))
+
+/-- Positive variant of `nat_lt_two_pow_bitLength`, convenient for APIs that carry positivity. -/
+theorem nat_lt_two_pow_bitLength_of_pos
+    {n : Nat} (_h : 0 < n) :
+    n < 2 ^ bitLength n :=
+  nat_lt_two_pow_bitLength n
+
+theorem be_digit_step (a k : Nat) :
+    (if a / 2 ^ k % 2 = 1 then 2 ^ k else 0) + a % 2 ^ k =
+      a % 2 ^ (k + 1) := by
+  have hpow2 : 2 ^ (k + 1) = 2 ^ k * 2 := by
+    rw [Nat.pow_succ]
+  have hq : (a % (2 ^ k * 2)) / 2 ^ k = a / 2 ^ k % 2 := by
+    simpa using (Nat.mod_mul_right_div_self a (2 ^ k) 2)
+  have hr : (a % (2 ^ k * 2)) % 2 ^ k = a % 2 ^ k := by
+    exact Nat.mod_mul_right_mod a (2 ^ k) 2
+  have hq_lt : (a / 2 ^ k) % 2 < 2 := Nat.mod_lt _ (by decide : 0 < 2)
+  have hq_cases : a / 2 ^ k % 2 = 0 ∨ a / 2 ^ k % 2 = 1 := by
+    omega
+  calc
+    (if a / 2 ^ k % 2 = 1 then 2 ^ k else 0) + a % 2 ^ k
+        = (a % (2 ^ k * 2)) / 2 ^ k * 2 ^ k +
+            (a % (2 ^ k * 2)) % 2 ^ k := by
+            rcases hq_cases with hzero | hone
+            · simp [hzero, hq, hr]
+            · simp [hone, hq, hr]
+    _ = a % (2 ^ k * 2) := by
+          rw [Nat.div_add_mod']
+    _ = a % 2 ^ (k + 1) := by
+          rw [hpow2]
+
+/--
+Reading a bounded slice of a stand-alone big-endian field returns the natural
+represented by exactly that slice.  At `offset = 0` and `len = width`, this is
+the main encoder/reader inversion lemma below.  The quotient drops the low bits
+to the right of the slice; the modulo forgets all bits to the left of it.
+-/
+theorem readNatBE_natBEField_slice
+    (value width offset len : Nat)
+    (hfit : offset + len ≤ width) :
+    readNatBE (natBEField value width) offset len =
+      some ((value / 2 ^ (width - (offset + len))) % 2 ^ len) := by
+  induction len generalizing offset with
+  | zero =>
+      simp [readNatBE, Nat.mod_one]
+  | succ k ih =>
+      have hoff : offset < width := by omega
+      have hfitRest : offset + 1 + k ≤ width := by omega
+      let shift := width - (offset + (k + 1))
+      have hsub : width - 1 - offset = shift + k := by omega
+      have hrest : width - (offset + 1 + k) = shift := by omega
+      have hpowadd : 2 ^ (shift + k) = 2 ^ shift * 2 ^ k := by
+        rw [Nat.pow_add]
+      simp [readNatBE, readBit?, natBEField, natBitBE, hoff,
+        ih (offset + 1) hfitRest, hsub, hrest, hpowadd]
+      rw [show width - (offset + (k + 1)) = shift by rfl]
+      rw [← Nat.div_div_eq_div_mul]
+      exact be_digit_step (value / 2 ^ shift) k
+
+/-- Reading a complete stand-alone big-endian field inverts `natBEField`. -/
+theorem readNatBE_natBEField_zero
+    (value width : Nat)
+    (h : value < 2 ^ width) :
+    readNatBE (natBEField value width) 0 width = some value := by
+  rw [readNatBE_natBEField_slice value width 0 width (by omega)]
+  simp [Nat.mod_eq_of_lt h]
+
+/-- Reading a complete anonymous `natBitBE` field inverts the encoder. -/
+theorem readNatBE_natBitBE_zero
+    (value width : Nat)
+    (h : value < 2 ^ width) :
+    readNatBE (fun j : Fin width => natBitBE value width j) 0 width = some value := by
+  simpa [natBEField] using readNatBE_natBEField_zero value width h
+
+/-- The generic big-endian inversion lemma specialized to the one-byte tree-prefix tag. -/
+theorem readNatBE_treePrefixTag :
+    readNatBE (natBEField treePrefixTag tagLen) 0 tagLen = some treePrefixTag := by
+  exact readNatBE_natBEField_zero treePrefixTag tagLen (by norm_num [treePrefixTag, tagLen])
+
+/-- Any witness-prefix length bounded by `W n` fits in the parser's index width. -/
+theorem prefixLength_lt_two_pow_idxWidth
+    {W : Nat → Nat} {n i : Nat}
+    (hi : i ≤ W n) :
+    i < 2 ^ idxWidth W n := by
+  unfold idxWidth
+  exact Nat.lt_of_le_of_lt hi (nat_lt_two_pow_bitLength (W n))
+
 /--
 Bit `j` of the Elias-gamma code for `n + 1`.
 
@@ -213,7 +319,15 @@ def CanonicalRawTreeMCSPPrefixFields.toPrefixInput
   padBits := codec.witnessBits fields.n - fields.i
   pad := fun _ => false
 
-/-- The first committed decoder lemma for P1P-02L3: the encoder writes the byte tag. -/
+/--
+The first committed decoder lemma for P1P-02L3: the encoder writes the byte tag.
+
+The stand-alone byte inversion is now the generic `readNatBE_treePrefixTag`
+specialization above.  This layout-local proof is intentionally left in its
+direct form because it also discharges the ambient-offset bounds inside
+`treeMCSPPrefixM`; future parser round-trip refactors can combine the generic
+field lemma with a small prefix-extensionality lemma to remove this unrolling.
+-/
 theorem readNatBE_encode_tag
     {threshold : Nat → Nat}
     (codec : TreeCircuitWitnessCodec threshold)

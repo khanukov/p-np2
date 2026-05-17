@@ -199,6 +199,15 @@ end Pnp4
 #check Pnp4.Frontier.ContractExpansion.CanonicalRawTreeMCSPPrefixFields
 #check Pnp4.Frontier.ContractExpansion.encodeTreeMCSPPrefixFields
 #check Pnp4.Frontier.ContractExpansion.CanonicalRawTreeMCSPPrefixFields.toPrefixInput
+#print axioms Pnp4.Frontier.ContractExpansion.bitLength_pos_of_pos
+#print axioms Pnp4.Frontier.ContractExpansion.nat_lt_two_pow_bitLength
+#print axioms Pnp4.Frontier.ContractExpansion.nat_lt_two_pow_bitLength_of_pos
+#print axioms Pnp4.Frontier.ContractExpansion.be_digit_step
+#print axioms Pnp4.Frontier.ContractExpansion.readNatBE_natBEField_slice
+#print axioms Pnp4.Frontier.ContractExpansion.readNatBE_natBEField_zero
+#print axioms Pnp4.Frontier.ContractExpansion.readNatBE_natBitBE_zero
+#print axioms Pnp4.Frontier.ContractExpansion.readNatBE_treePrefixTag
+#print axioms Pnp4.Frontier.ContractExpansion.prefixLength_lt_two_pow_idxWidth
 #print axioms Pnp4.Frontier.ContractExpansion.encodeTreeMCSPPrefixFields_length_convention
 #print axioms Pnp4.Frontier.ContractExpansion.readNatBE_encode_tag
 #print axioms Pnp4.Frontier.ContractExpansion.sliceBits_encode_x

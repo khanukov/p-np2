@@ -1,5 +1,12 @@
 # B02: Relativization (BGS) barrier — concrete oracle witnesses
 
+> **DEFERRED (2026-05-17 plan reduction).** Not dispatchable in the current wave.
+> Reason: spec explicitly authorizes placeholder relativized predicates and
+> placeholder oracles; honest caveat acknowledges that making them concrete
+> would require multi-month oracle-TM machinery. Wrapper surface, not a
+> kernel-checked barrier theorem. Cancelled this phase.
+> See `AUDIT_2026-05-17_PLAN_REDUCTION.md`.
+
 **Engineer:** B02 | **Phase:** 3 — Barriers | **Estimated:** 3 weeks | **Difficulty:** high
 
 ## Goal

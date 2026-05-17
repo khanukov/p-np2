@@ -1,5 +1,13 @@
 # L01: Hirahara search-to-decision MCSP surface
 
+> **DEFERRED (2026-05-17 plan reduction).** Not dispatchable in the current wave.
+> Reason: bibliographic ID error. Spec cites `arXiv:1804.05985` for Hirahara
+> "Non-Black-Box Worst-Case to Average-Case Reductions within NP" (FOCS 2018),
+> but the correct arXiv ID for that paper is `1808.06848`. Before reactivation:
+> verify which paper / which theorem statement is actually being formalized,
+> and consider re-routing as a markdown-only literature D0 first.
+> See `AUDIT_2026-05-17_PLAN_REDUCTION.md`.
+
 **Engineer:** L01 | **Phase:** 2 — Literature | **Estimated:** 2 weeks | **Difficulty:** high
 
 ## Goal

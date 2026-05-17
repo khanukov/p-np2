@@ -1,5 +1,22 @@
 # X02: Concrete tree-MCSP parser implementation + runtime proofs
 
+> **DEFERRED (2026-05-17 plan reduction).** Not dispatchable in the current wave.
+> Reasons:
+> 1. Spec uses `M := fun n => n` in `length_convention` / `malformed_rejected`,
+>    but the live runtime in
+>    `pnp4/Pnp4/Frontier/ContractExpansion/PrefixExtensionLanguageRuntime.lean`
+>    fixes the ambient-length convention as
+>    `treeMCSPPrefixAmbientLength overhead witnessBits padBits n
+>     = tableLen n + overhead n + witnessBits n + padBits n`.
+>    The theorem signatures as written do not align with that convention and
+>    cannot be proved against the current runtime layer.
+> 2. X02 is gated on X01 landing; even with a corrected spec it must not run
+>    in parallel with X01.
+> Before reactivation: rewrite signatures to consume `treeMCSPPrefixAmbientLength`
+> (or some explicitly stated ambient-length convention from R1-B2a) and gate
+> dispatch on X01 merged + reviewed.
+> See `AUDIT_2026-05-17_PLAN_REDUCTION.md`.
+
 **Engineer:** X02 | **Phase:** 5 — Contract expansion | **Estimated:** 4 weeks | **Difficulty:** medium-high | **Benefits from:** X01 landing
 
 ## Goal

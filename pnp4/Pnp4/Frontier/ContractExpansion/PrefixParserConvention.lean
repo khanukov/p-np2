@@ -258,6 +258,73 @@ theorem readNatBE_natBEField_zero
             omega
           _ = value := hdecomp
 
+/--
+One-step big-endian digit identity used by the slice reader proof.
+
+Selecting the `k`-th big-endian digit (i.e. `a / 2^k % 2`) and adding `a % 2^k`
+recovers `a % 2^(k+1)`.  This is the arithmetic core of the inductive step in
+`readNatBE_natBEField_slice` below.
+
+Ported from PR #1338 to make sub-slice reads of `natBEField` available without
+re-deriving them from `readNatBE_eq_of_readBit_eq` at every call site.
+-/
+theorem be_digit_step (a k : Nat) :
+    (if a / 2 ^ k % 2 = 1 then 2 ^ k else 0) + a % 2 ^ k =
+      a % 2 ^ (k + 1) := by
+  have hpow2 : 2 ^ (k + 1) = 2 ^ k * 2 := by
+    rw [Nat.pow_succ]
+  have hq : (a % (2 ^ k * 2)) / 2 ^ k = a / 2 ^ k % 2 := by
+    simpa using (Nat.mod_mul_right_div_self a (2 ^ k) 2)
+  have hr : (a % (2 ^ k * 2)) % 2 ^ k = a % 2 ^ k := by
+    exact Nat.mod_mul_right_mod a (2 ^ k) 2
+  have hq_lt : (a / 2 ^ k) % 2 < 2 := Nat.mod_lt _ (by decide : 0 < 2)
+  have hq_cases : a / 2 ^ k % 2 = 0 ∨ a / 2 ^ k % 2 = 1 := by
+    omega
+  calc
+    (if a / 2 ^ k % 2 = 1 then 2 ^ k else 0) + a % 2 ^ k
+        = (a % (2 ^ k * 2)) / 2 ^ k * 2 ^ k +
+            (a % (2 ^ k * 2)) % 2 ^ k := by
+            rcases hq_cases with hzero | hone
+            · simp [hzero, hq, hr]
+            · simp [hone, hq, hr]
+    _ = a % (2 ^ k * 2) := by
+          rw [Nat.div_add_mod']
+    _ = a % 2 ^ (k + 1) := by
+          rw [hpow2]
+
+/--
+Reading a bounded sub-slice of a stand-alone big-endian field returns exactly
+the natural represented by that slice: the quotient drops the low bits to the
+right of the slice; the modulo forgets the high bits to the left of it.
+
+This generalises `readNatBE_natBEField_zero` (the `offset = 0`, `len = width`
+case) and is the lemma a future P1P-02L₅ worker needs to decode the Elias-gamma
+payload, which lives at a non-zero offset inside its enclosing field.
+
+Ported from PR #1338 to extend the proof library landed by PR #1339.
+-/
+theorem readNatBE_natBEField_slice
+    (value width offset len : Nat)
+    (hfit : offset + len ≤ width) :
+    readNatBE (natBEField value width) offset len =
+      some ((value / 2 ^ (width - (offset + len))) % 2 ^ len) := by
+  induction len generalizing offset with
+  | zero =>
+      simp [readNatBE, Nat.mod_one]
+  | succ k ih =>
+      have hoff : offset < width := by omega
+      have hfitRest : offset + 1 + k ≤ width := by omega
+      let shift := width - (offset + (k + 1))
+      have hsub : width - 1 - offset = shift + k := by omega
+      have hrest : width - (offset + 1 + k) = shift := by omega
+      have hpowadd : 2 ^ (shift + k) = 2 ^ shift * 2 ^ k := by
+        rw [Nat.pow_add]
+      simp [readNatBE, readBit?, natBEField, natBitBE, hoff,
+        ih (offset + 1) hfitRest, hsub, hrest, hpowadd]
+      rw [show width - (offset + (k + 1)) = shift by rfl]
+      rw [← Nat.div_div_eq_div_mul]
+      exact be_digit_step (value / 2 ^ shift) k
+
 /-- Values bounded by the witness length fit in the parser's index-width field. -/
 theorem prefixLength_lt_two_pow_idxWidth
     {W : Nat → Nat} {n i : Nat}

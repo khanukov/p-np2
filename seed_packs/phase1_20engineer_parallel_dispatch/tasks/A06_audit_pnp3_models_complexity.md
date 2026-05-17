@@ -1,5 +1,11 @@
 # A06: Audit `pnp3/Models/` + non-trust-root `pnp3/Complexity/`
 
+> **DEFERRED (2026-05-17 plan reduction).** Not dispatchable in the current wave.
+> Reason: broad audit of model + complexity layers; valuable for maintainability
+> but not shortest-path to wave-1 objectives. Trust-root files in `pnp3/Complexity/`
+> are already protected by build invariants.
+> See `AUDIT_2026-05-17_PLAN_REDUCTION.md`.
+
 **Engineer:** A06 | **Phase:** 0 | **Estimated:** 1 week | **Difficulty:** medium | **Type:** markdown-only
 
 ## Goal

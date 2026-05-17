@@ -1,5 +1,10 @@
 # A04: Audit `pnp3/Barrier/`
 
+> **DEFERRED (2026-05-17 plan reduction).** Not dispatchable in the current wave.
+> Reason: only 4 trust-root files (~200 LOC); minimal audit yield; deferred barrier
+> tasks B01-B03 are also deferred this wave so the audit has no consumer.
+> See `AUDIT_2026-05-17_PLAN_REDUCTION.md`.
+
 **Engineer:** A04 | **Phase:** 0 | **Estimated:** 3 days | **Difficulty:** low-medium | **Type:** markdown-only
 
 ## Goal

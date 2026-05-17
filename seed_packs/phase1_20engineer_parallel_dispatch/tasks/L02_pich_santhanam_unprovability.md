@@ -1,5 +1,11 @@
 # L02: Pich-Santhanam bounded arithmetic unprovability surface
 
+> **DEFERRED (2026-05-17 plan reduction).** Not dispatchable in the current wave.
+> Reason: long-horizon literature investment not on shortest path to the active
+> bottleneck. May be revived if a feasible-unprovability angle becomes the
+> operator focus.
+> See `AUDIT_2026-05-17_PLAN_REDUCTION.md`.
+
 **Engineer:** L02 | **Phase:** 2 — Literature | **Estimated:** 3 weeks | **Difficulty:** high
 
 ## Goal

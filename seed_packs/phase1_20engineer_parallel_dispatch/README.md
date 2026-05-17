@@ -1,126 +1,58 @@
-# Phase 1 — A11-gated dispatch
+# Phase 1 — Contract-expansion infrastructure track (P1P-02 line)
 
 ## Status
 
-**LIMITED DISPATCH ONLY.** A11 synthesized Phase 0 as `PHASE0_COMPLETE_DISPATCH_LIMITED_PHASE1_PLUS`; broad implementation dispatch is not authorised.
+**Wave 1 audits complete (A01–A10 + A11 synthesis).** Contract-expansion parser infrastructure track active and progressing: P1P-01 governance + P1P-02 design + P1P-02L real parser + P1P-02L₂ encoder/length-convention/RuntimeAwarePrefixParser wiring all landed. Next: P1P-02L₃ canonical round-trip.
+
+No broad L/B/K/X dispatch authorised. Every follow-up task requires explicit operator authorisation.
+
+## What landed (wave 1 + P1P track)
+
+### Wave 1 audits (A01–A10) and synthesis
+
+| ID | Report | Verdict | Key finding |
+|---|---|---|---|
+| A01 | `audit_reports/A01_pnp3_magnification_partial_codex.md` | PARTIAL_BUT_USEFUL | `FormulaSupportRestrictionBoundsPartial` legacy/refuted-risk; safer `_fromPipeline` predicates available |
+| A02 | `audit_reports/A02_pnp3_finalresult_auditor.md` | PARTIAL_BUT_USEFUL | Pipeline complete only modulo `ResearchGapWitness`; refuted/vacuous quarantine routes named visibly; no pnp4 adapter to `ResearchGapWitness` |
+| A03 | `audit_reports/A03_pnp3_ac0_bridges_gpt55.md` | PARTIAL_BUT_USEFUL | `FormulaSemanticMultiSwitchingProvider` audit-marked refuted-channel; `AsymptoticDAGCollapse` is the only conditional DAG endpoint |
+| A04 | `audit_reports/A04_pnp3_barrier_gpt55.md` | PARTIAL_BUT_USEFUL | 4 trust-root barrier files ~200 LOC; `BarrierBypassPackage` is Prop wrapper not certificate |
+| A05 | `audit_reports/A05_pnp3_lowerbounds_codex.md` | PARTIAL_BUT_USEFUL | Kernel-checked anti-checker + locality contradictions; `FailedRoute_*` legacy quarantine |
+| A06 | `audit_reports/A06_pnp3_models_complexity_codex.md` | PARTIAL_BUT_USEFUL | Kernel-checked partial truth-table + `P_subset_PpolyDAG` upper-bound route |
+| A07 | `audit_reports/A07_pnp4_algorithmstolowebounds_codex.md` | PARTIAL_BUT_USEFUL | 24 files ~6,687 LOC; AC0[p]/coin/local-PRG contracts; no `VerifiedNPDAGLowerBoundSource` construction |
+| A08 | `audit_reports/A08_pnp4_frontier_codex.md` | PARTIAL_BUT_USEFUL | pnp4 Frontier + ContractExpansion audited |
+| A09 | `audit_reports/A09_nogolog_formal_witnesses_codex.md` | PARTIAL_BUT_USEFUL | NOGO-000002/000004/000005 stale anchors; NOGO-000003 `needs_review` |
+| A10 | `audit_reports/A10_partial_legacy_markers_codex.md` | PARTIAL_BUT_USEFUL | Repo-wide marker scan; key hotspots inventoried |
+| A11 | `audit_reports/A11_phase0_synthesis_codex.md` | PHASE0_COMPLETE_DISPATCH_LIMITED_PHASE1_PLUS | Consensus across all syntheses: no hidden shorter route; only limited Phase 1+ dispatch authorised |
+
+### P1P infrastructure track
+
+| ID | Deliverable | Status |
+|---|---|---|
+| P1P-01 | `docs/P1P_01_route_map_dispatch_errata_codex.md` (191 lines) | Landed: 5-bucket route map, dispatch status table, 13-item governance errata. |
+| P1P-01 governance application | README + COMMON updated with A11-gated dispatch policy | Landed (commit `b796282`). |
+| P1P-02 | `docs/P1P_02_prefix_parser_convention_gpt55.md` (364 lines) | Landed: parser convention design — tag, Elias-gamma `n`, fixed-width `i`, `M(n)` ambient length, malformed semantics, round-trip targets, R1-B2a mapping. |
+| P1P-02L | `pnp4/Pnp4/Frontier/ContractExpansion/PrefixParserConvention.lean` (202 lines) | Landed: real computable parser, `readBit?`, `readNatBE`, `sliceBits?`, `decodeGamma?` helpers, main `parseTreeMCSPPrefixInput`, `tableLen_le_treeMCSPPrefixM`, `parseTreeMCSPPrefixInput_bad_tag`, `parseTreeMCSPPrefixInput_malformed_rejected`. |
+| P1P-02L operator review | `docs/P1P_02L_operator_review_claudeopus.md` (215 lines) | Landed: verdict `approve_P1P02L`. |
+| P1P-02L₂ | Same Lean file + 188 lines | Landed: `CanonicalRawTreeMCSPPrefixFields` struct + `Fin`-indexed `natBitBE`/`gammaBit` bit encoders + `encodeTreeMCSPPrefixFields`/`encodeTreeMCSPPrefixInput` computable encoders + `parseTreeMCSPPrefixInput_length_convention` + `treeMCSPRuntimeAwarePrefixParser` R1-B2a wiring with `parser_polynomial_time_in_M` as honest staged `Prop`. |
+
+### What is next
+
+**P1P-02L₃ — canonical parse-encode round-trip:**
+- Prove `parseTreeMCSPPrefixInput threshold codec (encodeTreeMCSPPrefixInput input) = some input` for canonical inputs.
+- Auxiliary lemmas needed: gamma round-trip (`decodeGamma? (gammaBit n) = some (n, gammaLen n)`), `natBitBE` round-trip, slice/identity round-trips.
+- Estimated 150-300 LOC; main proof-engineering risk is `prefixLength_le` proof-irrelevance — mitigated by `CanonicalRawTreeMCSPPrefixFields` separation already in place from P1P-02L₂.
+- **No** NP membership claim, **no** R1-C, **no** `RuntimeAwareTreeCircuitCodec` full instantiation, **no** `TreeMCSPPrefixRuntimeBudget` instantiation, **no** source theorem.
+
+After P1P-02L₃ lands, the parser convention surface will be fully ready for any future X01-style PolyTimeVerifierSpec work toward `PrefixExtensionLanguage ∈ NP`. Until then, the polynomial-time formalism gap remains visibly staged via `parser_polynomial_time_in_M : Prop`.
+
+## A11 dispatch gate and task status summary
+
+A11 is the governing synthesis. The original 19-task plan has been replaced by the A11-gated decision: only narrowly-scoped, operator-authorised tasks dispatch.
 
 Current authorised dispatch:
 
-- P1P-01
-- P1P-02
-- follow-up tasks only by explicit operator authorisation.
-
-No implementation task may start without an explicit operator prompt after A11/P1P documentation is in place. A11 synthesis is required before any Phase 1+ / L / B / K / X implementation wave.
-
-## Critical revision (post-audit)
-
-This dispatch plan was **revised** after discovering substantial existing infrastructure in `pnp3/Magnification/*_Partial.lean`, `pnp3/Magnification/FinalResult*.lean`, `pnp3/LowerBounds/*_Partial.lean`, and `pnp4/Pnp4/AlgorithmsToLowerBounds/*` (~24 files). The original 20-task plan would have duplicated existing work.
-
-**The revised plan front-loads a Phase 0 audit** to map what's actually done, what's partial, what's missing — so subsequent dispatches target real gaps.
-
-## Classification
-
-**Infrastructure / kill-machine acceleration / repo state mapping.**
-
-This phase is **not** P-vs-NP mainline progress. It accelerates the kill-machine by:
-
-1. **Phase 0** — comprehensive audit of existing repo infrastructure (10 tasks).
-2. **Phase 2** — formalize literature genuinely missing from repo (2 tasks).
-3. **Phase 3** — extend minimal barrier interfaces to kernel-checked theorems (3 tasks).
-4. **Phase 4** — industrial-scale kill-machine tooling (2 tasks).
-5. **Phase 5** — complete contract_expansion implementation per D0 scoping (2 tasks).
-
-After A11/P1P governance repair, Phase 1+ (completion of partial work) may be redispatched only by explicit operator authorisation. **A11 synthesis is required before any Phase 1+ / L / B / K / X implementation wave.**
-
-## What the repo already has (per pre-dispatch audit)
-
-| Area | Files | LOC | Status |
-| --- | --- | --- | --- |
-| `pnp3/Magnification/*_Partial.lean` | 6 | ~4,474 | Substantively complete for partial-MCSP variant |
-| `pnp3/Magnification/FinalResult*.lean` | 6 | ~4,091 | Main pipeline; needs `ResearchGapWitness` instance |
-| `pnp3/LowerBounds/*_Partial.lean` | 2 | ~2,290 | AntiChecker + formula LB chain |
-| `pnp3/Barrier/*.lean` | 4 | ~200 | Minimal interfaces; need pnp4-side extensions |
-| `pnp4/Pnp4/AlgorithmsToLowerBounds/` | 24 | ? | AC⁰[p] + MCSP infrastructure |
-| `pnp4/Pnp4/Frontier/ContractExpansion/` | 4 | ~700 | R1-A, R1-B, R1-B1, R1-B2a |
-
-`UnconditionalResearchGap.lean` confirms: `P_ne_NP_final (gap : ResearchGapWitness) : P_ne_NP` is **already proven**. The only mathematically meaningful gap is producing a `ResearchGapWitness` instance — i.e., a real proof of `NP_not_subset_PpolyDAG`.
-
-## Engineer dispatch
-
-Take **ONE** authorised task by `<TASK_ID>`. Don't take more than one. Current authorised dispatch is P1P-01 and P1P-02 only; every follow-up task requires explicit operator authorisation.
-
-### Common reading (everyone)
-
-Before starting your task:
-
-1. `RESEARCH_CONSTITUTION.md` — discipline rules; binding.
-2. `seed_packs/phase1_20engineer_parallel_dispatch/COMMON_WORKER_INSTRUCTIONS.md` — universal rules for this phase.
-3. **Your specific task file** in `tasks/<TASK_ID>_*.md`.
-4. (If your task is Phase 0 audit) The files you're auditing — read carefully.
-
-### Task list
-
-#### Phase 0 — Repo audit (10 tasks, all markdown-only)
-
-| ID | Audit area | LOC scope | Time |
-| --- | --- | --- | --- |
-| [A01](tasks/A01_audit_pnp3_magnification_partial.md) | `pnp3/Magnification/*_Partial.lean` (6 files) | ~4,474 | 1 wk |
-| [A02](tasks/A02_audit_pnp3_finalresult.md) | `pnp3/Magnification/FinalResult*.lean` (6 files) | ~4,091 | 1 wk |
-| [A03](tasks/A03_audit_pnp3_ac0_bridges.md) | `pnp3/Magnification/AC0*.lean` + `Asymptotic*Collapse.lean` (~6 files) | ~1,500 | 1 wk |
-| [A04](tasks/A04_audit_pnp3_barrier.md) | `pnp3/Barrier/` (4 files) | ~200 | 3 days |
-| [A05](tasks/A05_audit_pnp3_lowerbounds.md) | `pnp3/LowerBounds/` (incl `_Partial`) | ~2,290 | 1 wk |
-| [A06](tasks/A06_audit_pnp3_models_complexity.md) | `pnp3/Models/` + non-trust-root `pnp3/Complexity/` | varies | 1 wk |
-| [A07](tasks/A07_audit_pnp4_algorithmstolowebounds.md) | `pnp4/Pnp4/AlgorithmsToLowerBounds/` (24 files) | ? | 1 wk |
-| [A08](tasks/A08_audit_pnp4_frontier.md) | `pnp4/Pnp4/Frontier/*` (incl. ContractExpansion) | ~1,000 | 1 wk |
-| [A09](tasks/A09_audit_nogolog_formal_witnesses.md) | `outputs/nogolog.jsonl` formal_witness validation | — | 3 days |
-| [A10](tasks/A10_audit_partial_legacy_markers.md) | Cross-cutting search for `_Partial`/`_Legacy`/`TODO`/placeholder | — | 3 days |
-
-**Phase 0 output:** each audit lands one markdown report at `seed_packs/phase1_20engineer_parallel_dispatch/audit_reports/<ID>_<area>_<handle>.md` with required sections (see task file).
-
-#### Phase 2 — Literature genuinely missing (2 tasks)
-
-| ID | Title | Time | Difficulty |
-| --- | --- | --- | --- |
-| [L01](tasks/L01_hirahara_search_to_decision.md) | Hirahara search-to-decision MCSP surface | 2 wks | high |
-| [L02](tasks/L02_pich_santhanam_unprovability.md) | Pich-Santhanam bounded arithmetic unprovability surface | 3 wks | high |
-
-#### Phase 3 — Barriers as kernel-checked theorems (3 tasks)
-
-| ID | Title | Time | Difficulty |
-| --- | --- | --- | --- |
-| [B01](tasks/B01_razborov_rudich_barrier.md) | Razborov-Rudich natural proofs barrier — pnp4 extension | 3 wks | high |
-| [B02](tasks/B02_relativization_barrier.md) | Relativization (BGS) barrier — concrete oracle witnesses | 3 wks | high |
-| [B03](tasks/B03_algebrization_barrier.md) | Algebrization (Aaronson-Wigderson) barrier | 3 wks | high |
-
-#### Phase 4 — Industrial kill-machine (2 tasks)
-
-| ID | Title | Time | Difficulty |
-| --- | --- | --- | --- |
-| [K01](tasks/K01_cross_route_nogo_checker.md) | Cross-route NoGo applicability checker library | 2 wks | medium |
-| [K02](tasks/K02_pre_dispatch_barrier_classifier.md) | Pre-dispatch barrier classification tool | 2 wks | medium |
-
-#### Phase 5 — Contract expansion completion (2 tasks)
-
-| ID | Title | Time | Difficulty |
-| --- | --- | --- | --- |
-| [X01](tasks/X01_polytimeverifierspec_bridge.md) | PolyTimeVerifierSpec + bridge to NP_TM (Option B.1) | 3 wks | medium |
-| [X02](tasks/X02_concrete_tree_mcsp_parser.md) | Concrete tree-MCSP parser implementation + runtime proofs | 4 wks | medium-high |
-
-#### (Future) Phase 1+ — Completion of partial work
-
-**Not currently dispatched.** Phase 1+ completion work requires A11 synthesis plus explicit operator authorisation before any implementation wave. Future scope may target specific gaps in `pnp3/Magnification/*_Partial.lean`, `FinalResult*.lean`, and `pnp4/Pnp4/AlgorithmsToLowerBounds/` only after that gate.
-
-### A11 dispatch gate and task status summary
-
-A11 is now the governing synthesis for this dispatch pack. The old dependency graph has been superseded: L/B/K/X implementation tasks are **not** globally independent and are **not** dispatchable as a concurrent wave.
-
-Current authorised dispatch:
-
-- P1P-01
-- P1P-02
-- follow-up tasks only by explicit operator authorisation.
-
-A11 synthesis is required before any Phase 1+ / L / B / K / X implementation wave. No implementation task may start without an explicit operator prompt after A11/P1P documentation is in place.
+- The P1P-02 → P1P-02L → P1P-02L₂ chain (parser infrastructure track) — landed.
+- Next planned: P1P-02L₃ — only by explicit operator authorisation.
 
 | Task(s) | A11 status | Dispatch implication |
 | --- | --- | --- |
@@ -128,92 +60,47 @@ A11 synthesis is required before any Phase 1+ / L / B / K / X implementation wav
 | B03 | Cancelled as written | Do not dispatch without a replacement scope. |
 | B01 | Rewrite required | Redispatch only after concrete barrier-certificate criteria are approved. |
 | K01 | Rewrite required | Redispatch only after the NoGo/manual-classification scope is corrected. |
-| K02 | Hold until governance repair | Hold until README/COMMON and related governance repairs land. |
+| K02 | Hold until governance repair | Hold until further README/COMMON repair lands (most governance now in place). |
 | X01 | Hold pending no-faking / NP-interface review | Do not implement until the bridge cannot accept staged placeholders and the interface review is complete. |
-| X02 | Rewrite after parser convention design | Wait for P1P-02 parser convention design before any implementation scope. |
+| X02 | Rewrite after parser convention design | P1P-02L/L₂ now provide the parser; X02 should be redesigned around them if reactivated. |
 | L01/L02 | Downgrade to markdown | Treat as literature/interface alignment documents, not Lean implementation tasks. |
 
-## Acceptance criteria — universal
+## Repository reality (recap)
 
-For every task:
+`UnconditionalResearchGap.lean` proves `P_ne_NP_final (gap : ResearchGapWitness) : P_ne_NP`. The mathematical bottleneck is a non-vacuous `ResearchGapWitness` source — equivalent to a real proof of `NP_not_subset_PpolyDAG`. Wave 1 audits confirm this is the only mathematical gap; engineering is otherwise compartmentalized and axiom-clean. The P1P track does not move this bottleneck; it cleanly stages contract-expansion infrastructure so future work can attempt it honestly.
 
-1. ✅ Files at exact paths specified in the task.
-2. ✅ For Lean tasks: `lake build PnP3 Pnp4` passes; `./scripts/check.sh` passes.
-3. ✅ `rg sorry|admit -g"*.lean" pnp3 pnp4` empty.
-4. ✅ For audit tasks: markdown report at expected path with all required sections.
-5. ✅ For Lean tasks: smoke tests + `#print axioms` entries where applicable.
-6. ✅ PR description uses structured template from COMMON.
-7. ✅ No edits to forbidden files (see COMMON).
+## Cross-cutting items still open (from A11 synthesis)
 
-Operator review target: **< 15 minutes per landed task** for Phase 2-5; **< 30 minutes** for Phase 0 audits (longer because audit reports contain more synthesis).
+These are markdown-only or low-risk cleanup items still on the table. Operator may dispatch any of them individually:
 
-## Forbidden scope — universal
+- P1P-03: NoGoLog stale-anchor repair plan (markdown-only, A09 evidence)
+- P1P-04: Restricted-lower-bound side-track guardrails (markdown-only)
+- P1P-05: Existing surface-test gap inventory for pnp4 public theorems
+- Provider/default quarantine pass for `LocalityProvider_Partial.lean`
+- pnp3↔pnp4 MCSP crosswalk markdown
+- `FailedRoute_*` cleanup recommendations from A05
 
-See `COMMON_WORKER_INSTRUCTIONS.md`. Summary:
-
-- No edits to `pnp3/Complexity/Interfaces.lean`, `pnp3/Magnification/UnconditionalResearchGap.lean`, `pnp3/Barrier/*` (trust roots).
-- No edits to existing `pnp3/Magnification/*_Partial.lean`, `FinalResult*.lean`, `AC0*Bridge.lean` files. **Even though Phase 0 audits them, Phase 0 tasks produce markdown reports — NOT Lean edits.** Phase 1+ (separate dispatch) may edit them after operator approval.
-- No `sorry` / `admit` / `axiom` / `opaque` / `Fact` / typeclass-payload in committed Lean.
-- No `Classical.choose` in core definitions (acceptable in derived proofs if standard exponent extraction; document).
-- No `SourceTheorem_*` / `gap_from_*` / `ResearchGapWitness` / FP-4 / final endpoint / P ≠ NP claim.
-- No `ProvenanceFilter_v1` promotion.
-- No new NoGoLog entries (operator-side action only).
-
-## Output template — every PR
-
-See `COMMON_WORKER_INSTRUCTIONS.md` §12.
-
-## Operator review process
-
-Each completed task lands as one PR to `main`. Operator:
-
-1. Reads the PR description and verifies the acceptance checklist.
-2. For Phase 0 audits: spot-checks 2-3 file-state claims against repo reality.
-3. For Phase 2-5: spot-checks Lean signatures.
-4. Either merges or requests specific changes.
-5. Phase 0 audits inform the **Phase 1+ dispatch decision**.
-
-Target: 2-3 audits + 1-2 implementation PRs merged per operator-day during active dispatch.
-
-## What this phase does NOT do
-
-* No P-vs-NP proof.
-* No `ResearchGapWitness` construction.
-* No new endpoint or final theorem.
-* No claim that magnification reaches a strong enough lower bound on its own.
-
-Phase 1 is **strictly infrastructure + repo state mapping**. Its value:
-- Phase 0 audits prevent duplicate work in subsequent dispatches.
-- Phase 2-5 add genuinely missing infrastructure.
-- Phase 1+ (post-audit) completes existing partial work where viable.
-
-## Re-dispatch / failure protocol
-
-If you cannot complete your task within scope, write a structured failure report at:
-
-`seed_packs/phase1_20engineer_parallel_dispatch/failures/<ID>_<your-handle>.md`
-
-Four sections: What was attempted / Where it broke / Local vs global obstruction / What an integrator must know.
-
-## Cross-references
-
-* `RESEARCH_CONSTITUTION.md` — overarching discipline.
-* `seed_packs/first_move_search_2026/reports/fp3b_epoch_strategic_retrospective_claudeopus.md` — context for why this phase exists.
-* `seed_packs/polynomial_time_formalism_scoping_D0/reports/D0_four_way_review_and_synthesis_claudeopus.md` — context for X01/X02.
-* `seed_packs/phase1_20engineer_parallel_dispatch/COMMON_WORKER_INSTRUCTIONS.md` — required reading.
+None are gating on the contract-expansion track and none move the math-level bottleneck. They reduce confusion and operator review load.
 
 ## Status header
 
 ```
-Phase: 1 (initial dispatch)
-Engineers: 19 (parallel)
-  - Phase 0 audit: 10
-  - Phase 2 literature: 2
-  - Phase 3 barriers: 3
-  - Phase 4 kill-machine: 2
-  - Phase 5 contract expansion: 2
-Phase 1+ (conditional, post-audit): 5-15 additional tasks
-Estimated wall-clock to complete Phase 1 initial dispatch: 4 weeks (with full parallelism)
-Operator review load Phase 1 initial: ~19 PRs × ~20 min = ~6 operator-hours
-Outcome: complete repo state map + targeted infrastructure additions, ready for Phase 1+ completion dispatches
+Phase 1 status: contract-expansion infrastructure track active
+Wave 1: complete (A01-A10 + A11)
+P1P track: P1P-01 design + governance + P1P-02 design + P1P-02L parser + P1P-02L₂ encoder/length-conv/RuntimeAware all landed
+Next planned: P1P-02L₃ canonical round-trip (operator-authorised only)
+L/B/K/X dispatch: not authorised; per-task status in A11 table above
 ```
+
+## Cross-references
+
+- `RESEARCH_CONSTITUTION.md` — overarching discipline.
+- `seed_packs/phase1_20engineer_parallel_dispatch/AUDIT_2026-05-17_PLAN_REDUCTION.md` — pre-audit reduction memo (historical record).
+- `seed_packs/phase1_20engineer_parallel_dispatch/audit_reports/A11_phase0_synthesis_codex.md` — A11 synthesis verdict.
+- `seed_packs/phase1_20engineer_parallel_dispatch/docs/P1P_01_route_map_dispatch_errata_codex.md` — A11-aligned route map and governance errata.
+- `seed_packs/phase1_20engineer_parallel_dispatch/docs/P1P_02_prefix_parser_convention_gpt55.md` — parser convention design.
+- `seed_packs/phase1_20engineer_parallel_dispatch/docs/P1P_02L_operator_review_claudeopus.md` — operator review of P1P-02L.
+- `pnp4/Pnp4/Frontier/ContractExpansion/PrefixParserConvention.lean` — landed parser + encoder + length convention.
+- `seed_packs/first_move_search_2026/reports/fp3b_epoch_strategic_retrospective_claudeopus.md` — FP3b context.
+- `seed_packs/polynomial_time_formalism_scoping_D0/reports/D0_four_way_review_and_synthesis_claudeopus.md` — X01 rationale (still relevant if X01 reactivated post-review).
+- `seed_packs/phase1_20engineer_parallel_dispatch/COMMON_WORKER_INSTRUCTIONS.md` — universal worker rules.

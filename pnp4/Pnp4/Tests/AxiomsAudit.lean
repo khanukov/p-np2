@@ -200,6 +200,8 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.readNatBE_eq_of_readBit_eq
 #print axioms Pnp4.Frontier.ContractExpansion.readNatBE_natBEField_tail
 #print axioms Pnp4.Frontier.ContractExpansion.readNatBE_natBEField_zero
+#print axioms Pnp4.Frontier.ContractExpansion.be_digit_step
+#print axioms Pnp4.Frontier.ContractExpansion.readNatBE_natBEField_slice
 #print axioms Pnp4.Frontier.ContractExpansion.prefixLength_lt_two_pow_idxWidth
 #print axioms Pnp4.Frontier.ContractExpansion.tableLen_le_treeMCSPPrefixM
 #check Pnp4.Frontier.ContractExpansion.natBEField

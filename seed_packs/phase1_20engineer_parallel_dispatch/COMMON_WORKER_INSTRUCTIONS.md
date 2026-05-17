@@ -1,6 +1,6 @@
-# Common worker instructions — Phase 1 20-engineer parallel dispatch
+# Common worker instructions — Phase 1 A11-gated dispatch
 
-You are **engineer E<NN>** in a parallel dispatch of 20 independent tasks. Read this file once before starting your specific task file at `tasks/E<NN>_*.md`.
+You are assigned **one authorised `<TASK_ID>`** in an A11-gated dispatch. Read this file once before starting your specific task file at `tasks/<TASK_ID>_*.md`. Current authorised dispatch is P1P-01 and P1P-02 only; follow-up tasks require explicit operator authorisation.
 
 This is binding. Violations result in operator rejection.
 
@@ -8,20 +8,20 @@ This is binding. Violations result in operator rejection.
 
 ## 1. Identity and scope
 
-Pick **one** task ID. Don't take more than one. Don't change tasks mid-flight.
+Pick **one** authorised `<TASK_ID>`. Don't take more than one. Don't change tasks mid-flight. No implementation task may start without an explicit operator prompt after A11/P1P documentation is in place.
 
 Your branch name **must** follow this convention:
 
 ```
-khanukov/phase1-E<NN>-<short-handle>
+khanukov/phase1-<TASK_ID>-<short-handle>
 ```
 
-Example: `khanukov/phase1-E07-codex-gpt55`
+Example: `khanukov/phase1-P1P-01-codex-gpt55`
 
 Your PR title:
 
 ```
-Phase 1 E<NN>: <task title from README.md task list>
+Phase 1 <TASK_ID>: <task title from README.md task list>
 ```
 
 ---
@@ -33,33 +33,54 @@ Before you start:
 1. **`RESEARCH_CONSTITUTION.md`** — binding discipline.
 2. **`seed_packs/phase1_20engineer_parallel_dispatch/README.md`** — phase overview, dependencies, acceptance criteria.
 3. **`seed_packs/first_move_search_2026/reports/fp3b_epoch_strategic_retrospective_claudeopus.md`** — context for why this phase exists. Read §3 (what was accomplished), §6 (the gap), §11 (honest framing). You do not need to read the full FP3b history; the retrospective is sufficient.
-4. **Your specific task file** at `seed_packs/phase1_20engineer_parallel_dispatch/tasks/E<NN>_*.md`.
+4. **Your specific task file** at `seed_packs/phase1_20engineer_parallel_dispatch/tasks/<TASK_ID>_*.md`.
 
 If your task touches pnp3 / pnp4 Lean code:
 
 5. **`pnp3/Complexity/Interfaces.lean`** — trust-root types you must import but never modify.
 6. **`pnp4/Pnp4/AlgorithmsToLowerBounds/BasicCircuitClasses.lean`** — pnp4 `CircuitFamilyClass` and `BitVec` conventions.
 
-If your task touches barrier files (E14-E16):
+If your authorised task touches barrier files (for example B01-B03):
 
 7. **`pnp3/Barrier/NaturalProofs.lean`, `pnp3/Barrier/Relativization.lean`, `pnp3/Barrier/Algebrization.lean`, `pnp3/Barrier/Bypass.lean`** — existing trust-root barrier interfaces. **Read only; do not modify.** Your new content goes under `pnp4/Pnp4/Barriers/`.
 
-If your task touches kill-machine infra (E17-E18):
+If your authorised task touches kill-machine infra (for example K01-K02):
 
 8. **`outputs/nogolog.jsonl`** — existing NoGoLog entries (NOGO-000005 through 000009). Read structure; do not append.
 
-If your task touches contract_expansion (E19-E20):
+If your authorised task touches contract_expansion (for example X01-X02):
 
 9. **`pnp4/Pnp4/Frontier/ContractExpansion/PrefixExtensionLanguage.lean`**
 10. **`pnp4/Pnp4/Frontier/ContractExpansion/PrefixExtensionLanguageNP.lean`**
 11. **`pnp4/Pnp4/Frontier/ContractExpansion/PrefixExtensionLanguageRuntime.lean`**
 12. **`pnp4/Pnp4/Frontier/SearchMCSPMagnification.lean`** for `NP_TM` interface (read only).
 
+## 2.1 A11 dispatch gate
+
+A11 synthesis is required before any Phase 1+ / L / B / K / X implementation wave. Current authorised dispatch:
+
+- P1P-01
+- P1P-02
+- follow-up tasks only by explicit operator authorisation.
+
+No implementation task may start without an explicit operator prompt after A11/P1P documentation is in place. The old broad concurrent dispatch model is superseded.
+
+| Task(s) | A11 status | Dispatch implication |
+| --- | --- | --- |
+| B02 | Cancelled as written | Do not dispatch without a replacement scope. |
+| B03 | Cancelled as written | Do not dispatch without a replacement scope. |
+| B01 | Rewrite required | Redispatch only after concrete barrier-certificate criteria are approved. |
+| K01 | Rewrite required | Redispatch only after the NoGo/manual-classification scope is corrected. |
+| K02 | Hold until governance repair | Hold until README/COMMON and related governance repairs land. |
+| X01 | Hold pending no-faking / NP-interface review | Do not implement until the bridge cannot accept staged placeholders and the interface review is complete. |
+| X02 | Rewrite after parser convention design | Wait for P1P-02 parser convention design before any implementation scope. |
+| L01/L02 | Downgrade to markdown | Treat as literature/interface alignment documents, not Lean implementation tasks. |
+
 ---
 
 ## 3. Universal forbidden scope
 
-The following are **forbidden across all 20 tasks**. Violations are operator-rejection-level.
+The following are **forbidden across all tasks**. Violations are operator-rejection-level.
 
 ### 3.1 Trust-root edits (HARD FORBIDDEN)
 
@@ -177,13 +198,13 @@ it does not by itself reduce `SearchMCSPWeakLowerBound`, construct
 
 ### 4.6 No `Classical.choose` in literature definitions
 
-For Phase A tasks (E01-E13):
+For authorised Phase A/L/X-style tasks:
 
 - The **structure definitions** and **theorem statements** must be free of `Classical.choose`.
 - The `def` instances and theorem **proofs** may use `Classical.choose` **only** if it's a standard polynomial-exponent extraction (e.g., `Classical.choose h.polyBound_poly` where `h.polyBound_poly : ∃ c, ...`).
 - Such use must be documented in a 1-line comment.
 
-For Phase B tasks (E14-E16):
+For authorised Phase B tasks:
 
 - Razborov-Rudich barrier may use `Classical.choose` in the construction of the diagonal adversary (this is mathematically necessary). Document it.
 
@@ -213,7 +234,7 @@ Before opening your PR, you **must** run a 10-minute self-attack:
 
 5. **Verify the doc-comment honestly describes what you proved.** No "this module proves a step toward P ≠ NP" language.
 
-If self-attack reveals problems, fix them or write a `failures/E<NN>_<handle>.md` report (see §10 below).
+If self-attack reveals problems, fix them or write a `failures/<TASK_ID>_<handle>.md` report (see §10 below).
 
 ---
 
@@ -253,11 +274,11 @@ All commands must succeed (or for `rg` and `git diff`, return empty).
 
 ## 9. PR submission
 
-1. Push your branch: `git push -u origin khanukov/phase1-E<NN>-<handle>`.
+1. Push your branch only if explicitly instructed by the operator: `git push -u origin khanukov/phase1-<TASK_ID>-<handle>`.
 2. Open PR to `main`.
-3. PR title: `Phase 1 E<NN>: <task title>`.
+3. PR title: `Phase 1 <TASK_ID>: <task title>`.
 4. PR description must include the structured output template from the README §"Output template — every PR".
-5. Tag the PR with label `phase1-engineer-NN` if labels are configured.
+5. Tag the PR with an appropriate `<TASK_ID>`/phase label if labels are configured.
 
 Do **not** request review unless your self-attack (§5) is clean.
 
@@ -267,7 +288,7 @@ Do **not** request review unless your self-attack (§5) is clean.
 
 If you cannot complete your task within scope, write a failure report:
 
-`seed_packs/phase1_20engineer_parallel_dispatch/failures/E<NN>_<handle>.md`
+`seed_packs/phase1_20engineer_parallel_dispatch/failures/<TASK_ID>_<handle>.md`
 
 With **exactly four sections**:
 
@@ -304,9 +325,9 @@ Honest framing is **rewarded**. The operator merges honest partial completions; 
 ## 12. Universal output format (for your PR description)
 
 ```text
-Task: E<NN> <title>
+Task: <TASK_ID> <title>
 Engineer handle: <your-handle>
-Branch: khanukov/phase1-E<NN>-<handle>
+Branch: khanukov/phase1-<TASK_ID>-<handle>
 Commit: <sha>
 
 Files added/modified:

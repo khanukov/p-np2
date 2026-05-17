@@ -29,6 +29,7 @@ import Pnp4.Frontier.SearchMCSPConcreteTargets
 import Pnp4.Frontier.ContractExpansion.C_DAG_Adapter
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageRuntime
+import Pnp4.Frontier.ContractExpansion.PrefixParserConvention
 
 namespace Pnp4
 namespace Tests

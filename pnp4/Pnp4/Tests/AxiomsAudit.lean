@@ -19,6 +19,7 @@ import Pnp4.Frontier.SearchMCSPConcreteTargets
 import Pnp4.Frontier.ContractExpansion.C_DAG_Adapter
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageRuntime
+import Pnp4.Frontier.ContractExpansion.PrefixParserConvention
 
 namespace Pnp4
 namespace Tests
@@ -191,6 +192,20 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage_rejects_malformed
 #print axioms Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage_accepts_of_parse_and_witness
 #print axioms Pnp4.Frontier.ContractExpansion.tableLen_le_treeMCSPPrefixAmbientLength
+#print axioms Pnp4.Frontier.ContractExpansion.tableLen_le_treeMCSPPrefixM
+#print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_some_encoded
+#print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_length_convention
+#print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_bad_length_rejection
+#print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_malformed_rejected
+#print axioms Pnp4.Frontier.ContractExpansion.treeMCSPConcretePrefixParser_length_convention
+#check Pnp4.Frontier.ContractExpansion.treePrefixTag
+#check Pnp4.Frontier.ContractExpansion.gammaLen
+#check Pnp4.Frontier.ContractExpansion.idxWidth
+#check Pnp4.Frontier.ContractExpansion.treeMCSPPrefixM
+#check Pnp4.Frontier.ContractExpansion.CanonicalTreeMCSPPrefixInput
+#check Pnp4.Frontier.ContractExpansion.encodeTreeMCSPPrefixInput
+#check Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput
+#check Pnp4.Frontier.ContractExpansion.treeMCSPConcretePrefixParser
 #check Pnp4.Frontier.ContractExpansion.RuntimeAwareTreeCircuitCodec
 #check Pnp4.Frontier.ContractExpansion.RuntimeAwarePrefixParser
 #check Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixRuntimeBudget

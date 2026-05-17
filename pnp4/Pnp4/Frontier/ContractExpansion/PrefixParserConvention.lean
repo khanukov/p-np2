@@ -125,6 +125,147 @@ structure CanonicalRawTreeMCSPPrefixFields
 def natBitBE (value width : Nat) (j : Fin width) : Bool :=
   value / 2 ^ (width - 1 - j.1) % 2 = 1
 
+/-- Positive naturals have a positive binary length. -/
+theorem bitLength_pos_of_pos
+    {n : Nat} (h : 0 < n) :
+    0 < bitLength n := by
+  unfold bitLength
+  simp [Nat.ne_of_gt h]
+
+/-- Every natural fits in its own `bitLength`-wide unsigned binary field. -/
+theorem nat_lt_two_pow_bitLength
+    (n : Nat) :
+    n < 2 ^ bitLength n := by
+  by_cases hn : n = 0
+  · simp [bitLength, hn]
+  · unfold bitLength
+    simp [hn, Nat.lt_log2_self]
+
+/-- A standalone big-endian field as a dependent bit-vector. -/
+def natBEField (value width : Nat) : PrefixBitVec width :=
+  fun j => natBitBE value width j
+
+/--
+`readNatBE` depends only on the bits in the width-many positions that it reads.
+
+The two offsets may live in different ambient vectors; this is the small
+transport lemma used to compare an in-place field inside a parser input with a
+standalone `natBEField`.
+-/
+theorem readNatBE_eq_of_readBit_eq
+    {m₁ m₂ : Nat}
+    (y₁ : PrefixBitVec m₁)
+    (y₂ : PrefixBitVec m₂)
+    (offset₁ offset₂ width : Nat)
+    (h : ∀ t : Nat, t < width →
+      readBit? y₁ (offset₁ + t) = readBit? y₂ (offset₂ + t)) :
+    readNatBE y₁ offset₁ width = readNatBE y₂ offset₂ width := by
+  induction width generalizing offset₁ offset₂ with
+  | zero =>
+      simp [readNatBE]
+  | succ k ih =>
+      rw [readNatBE, readNatBE]
+      have hb : readBit? y₁ offset₁ = readBit? y₂ offset₂ := by
+        simpa using h 0 (Nat.zero_lt_succ k)
+      rw [hb]
+      cases readBit? y₂ offset₂ <;> simp
+      have hrec : readNatBE y₁ (offset₁ + 1) k = readNatBE y₂ (offset₂ + 1) k := by
+        apply ih
+        intro t ht
+        have := h (t + 1) (Nat.succ_lt_succ ht)
+        simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using this
+      rw [hrec]
+
+/--
+The tail of a `(k+1)`-bit big-endian field is the standalone `k`-bit field for
+`value % 2^k`.  This is the bit-level step in the reader inversion induction.
+-/
+theorem readNatBE_natBEField_tail
+    (value k : Nat) :
+    readNatBE (natBEField value (k + 1)) 1 k =
+      readNatBE (natBEField (value % 2 ^ k) k) 0 k := by
+  apply readNatBE_eq_of_readBit_eq
+  intro t ht
+  unfold readBit? natBEField natBitBE
+  have ht1 : 1 + t < k + 1 := by omega
+  have ht0 : t < k := ht
+  simp [ht1, ht0]
+  have he : k - 1 - t < k := by omega
+  have hbit : (value % 2 ^ k).testBit (k - 1 - t) =
+      value.testBit (k - 1 - t) := by
+    rw [Nat.testBit_mod_two_pow]
+    simp [he]
+  rw [show k - (1 + t) = k - 1 - t by omega]
+  simpa [Nat.testBit, Nat.shiftRight_eq_div_pow, Nat.one_and_eq_mod_two] using hbit.symm
+
+/--
+Reading a standalone `natBEField` at offset zero recovers the encoded value,
+provided the value fits in the declared fixed width.
+-/
+theorem readNatBE_natBEField_zero
+    (value width : Nat)
+    (h : value < 2 ^ width) :
+    readNatBE (natBEField value width) 0 width = some value := by
+  induction width generalizing value with
+  | zero =>
+      have hv : value = 0 := by omega
+      simp [readNatBE, hv]
+  | succ k ih =>
+      rw [readNatBE]
+      have h0 : 0 < k + 1 := Nat.zero_lt_succ k
+      simp [readBit?, natBEField, h0]
+      have htail : readNatBE (natBEField value (k + 1)) 1 k =
+          readNatBE (natBEField (value % 2 ^ k) k) 0 k :=
+        readNatBE_natBEField_tail value k
+      rw [htail]
+      have hmod : value % 2 ^ k < 2 ^ k := Nat.mod_lt _ (Nat.two_pow_pos k)
+      rw [ih (value % 2 ^ k) hmod]
+      have hq : value / 2 ^ k < 2 := by
+        rw [Nat.div_lt_iff_lt_mul (Nat.two_pow_pos k)]
+        rw [Nat.pow_succ] at h
+        simpa [Nat.mul_comm] using h
+      have hq_le : value / 2 ^ k ≤ 1 := Nat.lt_succ_iff.mp hq
+      have hq_cases : value / 2 ^ k = 0 ∨ value / 2 ^ k = 1 := by
+        rcases Nat.eq_zero_or_pos (value / 2 ^ k) with hzero | hpos
+        · exact Or.inl hzero
+        · exact Or.inr (Nat.le_antisymm hq_le hpos)
+      simp only [Option.bind_some, Option.some.injEq]
+      rcases hq_cases with hq0 | hq1
+      · have hbit : natBitBE value (k + 1) ⟨0, h0⟩ = false := by
+          unfold natBitBE
+          simp [hq0]
+        change (if natBitBE value (k + 1) ⟨0, h0⟩ then 2 ^ k else 0) +
+          value % 2 ^ k = value
+        rw [hbit]
+        simp
+        have hdecomp := Nat.mod_add_div value (2 ^ k)
+        calc
+          value % 2 ^ k = value % 2 ^ k + 2 ^ k * (value / 2 ^ k) := by
+            rw [hq0]
+            simp
+          _ = value := hdecomp
+      · have hbit : natBitBE value (k + 1) ⟨0, h0⟩ = true := by
+          unfold natBitBE
+          simp [hq1]
+        change (if natBitBE value (k + 1) ⟨0, h0⟩ then 2 ^ k else 0) +
+          value % 2 ^ k = value
+        rw [hbit]
+        simp
+        have hdecomp := Nat.mod_add_div value (2 ^ k)
+        calc
+          2 ^ k + value % 2 ^ k = value % 2 ^ k + 2 ^ k * (value / 2 ^ k) := by
+            rw [hq1]
+            omega
+          _ = value := hdecomp
+
+/-- Values bounded by the witness length fit in the parser's index-width field. -/
+theorem prefixLength_lt_two_pow_idxWidth
+    {W : Nat → Nat} {n i : Nat}
+    (hi : i ≤ W n) :
+    i < 2 ^ idxWidth W n := by
+  unfold idxWidth
+  exact Nat.lt_of_le_of_lt hi (nat_lt_two_pow_bitLength (W n))
+
 /--
 Bit `j` of the Elias-gamma code for `n + 1`.
 
@@ -219,16 +360,19 @@ theorem readNatBE_encode_tag
     (codec : TreeCircuitWitnessCodec threshold)
     (fields : CanonicalRawTreeMCSPPrefixFields codec) :
     readNatBE (encodeTreeMCSPPrefixFields codec fields) 0 tagLen = some treePrefixTag := by
-  have h0 : 0 < treeMCSPPrefixM codec fields.n := by unfold treeMCSPPrefixM tagLen; omega
-  have h1 : 1 < treeMCSPPrefixM codec fields.n := by unfold treeMCSPPrefixM tagLen; omega
-  have h2 : 2 < treeMCSPPrefixM codec fields.n := by unfold treeMCSPPrefixM tagLen; omega
-  have h3 : 3 < treeMCSPPrefixM codec fields.n := by unfold treeMCSPPrefixM tagLen; omega
-  have h4 : 4 < treeMCSPPrefixM codec fields.n := by unfold treeMCSPPrefixM tagLen; omega
-  have h5 : 5 < treeMCSPPrefixM codec fields.n := by unfold treeMCSPPrefixM tagLen; omega
-  have h6 : 6 < treeMCSPPrefixM codec fields.n := by unfold treeMCSPPrefixM tagLen; omega
-  have h7 : 7 < treeMCSPPrefixM codec fields.n := by unfold treeMCSPPrefixM tagLen; omega
-  simp [readNatBE, readBit?, encodeTreeMCSPPrefixFields, tagLen, treePrefixTag, natBitBE,
-    h0, h1, h2, h3, h4, h5, h6, h7]
+  calc
+    readNatBE (encodeTreeMCSPPrefixFields codec fields) 0 tagLen =
+        readNatBE (natBEField treePrefixTag tagLen) 0 tagLen := by
+      apply readNatBE_eq_of_readBit_eq
+      intro t ht
+      unfold readBit? natBEField
+      have hm : t < treeMCSPPrefixM codec fields.n := by
+        have ht8 : t < 8 := by simpa [tagLen] using ht
+        unfold treeMCSPPrefixM
+        omega
+      simp [hm, ht, encodeTreeMCSPPrefixFields]
+    _ = some treePrefixTag := by
+      exact readNatBE_natBEField_zero treePrefixTag tagLen (by norm_num [treePrefixTag, tagLen])
 
 /-- The encoded truth-table slice is exactly the raw `x` field. -/
 theorem sliceBits_encode_x

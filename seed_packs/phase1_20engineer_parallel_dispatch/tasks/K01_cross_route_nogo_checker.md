@@ -1,5 +1,12 @@
 # K01: Cross-route NoGo applicability checker library
 
+> **DEFERRED (2026-05-17 plan reduction).** Not dispatchable in the current wave.
+> Reason: NoGo applicability is reduced to a hand-coded `List (String × NoGoApplicability)`
+> over a `ProofSafetyCertificate` whose fields are bare `Prop`s. Typed rubric,
+> not a theorem-producing engine. Useful as documentation/program-management
+> after routes are settled; not on shortest path now.
+> See `AUDIT_2026-05-17_PLAN_REDUCTION.md`.
+
 **Engineer:** K01 | **Phase:** 4 — Kill-machine | **Estimated:** 2 weeks | **Difficulty:** medium
 
 ## Goal

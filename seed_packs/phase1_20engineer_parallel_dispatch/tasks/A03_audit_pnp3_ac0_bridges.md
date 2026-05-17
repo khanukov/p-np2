@@ -1,5 +1,10 @@
 # A03: Audit `pnp3/Magnification/AC0*.lean` + `Asymptotic*Collapse.lean`
 
+> **DEFERRED (2026-05-17 plan reduction).** Not dispatchable in the current wave.
+> Reason: scope overlap with A07 (`pnp4/Pnp4/AlgorithmsToLowerBounds/`) and A08
+> (`pnp4/Pnp4/Frontier/`), both of which already cover AC⁰/MCSP/bridge surfaces.
+> See `AUDIT_2026-05-17_PLAN_REDUCTION.md`.
+
 **Engineer:** A03 | **Phase:** 0 | **Estimated:** 1 week | **Difficulty:** medium | **Type:** markdown-only
 
 ## Goal

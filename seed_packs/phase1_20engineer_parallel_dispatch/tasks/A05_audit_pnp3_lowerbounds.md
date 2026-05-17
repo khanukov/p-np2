@@ -1,5 +1,11 @@
 # A05: Audit `pnp3/LowerBounds/`
 
+> **DEFERRED (2026-05-17 plan reduction).** Not dispatchable in the current wave.
+> Reason: `_Partial` files are largely covered by A10's cross-cutting inventory;
+> deeper audit of LowerBounds is maintainability not shortest-path. Re-evaluate
+> after wave-1 synthesis if AC⁰[p] routes become critical.
+> See `AUDIT_2026-05-17_PLAN_REDUCTION.md`.
+
 **Engineer:** A05 | **Phase:** 0 | **Estimated:** 1 week | **Difficulty:** medium | **Type:** markdown-only
 
 ## Goal

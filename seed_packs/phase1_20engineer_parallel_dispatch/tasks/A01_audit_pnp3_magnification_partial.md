@@ -1,5 +1,11 @@
 # A01: Audit `pnp3/Magnification/*_Partial.lean`
 
+> **DEFERRED (2026-05-17 plan reduction).** Not dispatchable in the current wave.
+> Reason: lower-yield audit; the `_Partial` files are largely covered by the
+> cross-cutting marker inventory A10, and partial-route consumption is covered
+> by A02. Not on the shortest path to wave-1 objectives.
+> See `AUDIT_2026-05-17_PLAN_REDUCTION.md`.
+
 **Engineer:** A01 | **Phase:** 0 — Repo audit | **Estimated:** 1 week | **Difficulty:** medium | **Type:** markdown-only
 
 ## Goal

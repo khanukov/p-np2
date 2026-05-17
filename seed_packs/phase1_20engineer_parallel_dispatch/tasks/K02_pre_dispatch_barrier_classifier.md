@@ -1,5 +1,11 @@
 # K02: Pre-dispatch barrier classification tool
 
+> **DEFERRED (2026-05-17 plan reduction).** Not dispatchable in the current wave.
+> Reason: barrier evidence stored as `String`; classification rubric, not a
+> theorem-producing engine. Has value as a downstream documentation layer once
+> live route questions are settled; not on shortest path now.
+> See `AUDIT_2026-05-17_PLAN_REDUCTION.md`.
+
 **Engineer:** K02 | **Phase:** 4 — Kill-machine | **Estimated:** 2 weeks | **Difficulty:** medium
 
 ## Goal

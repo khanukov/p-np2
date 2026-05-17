@@ -1,27 +1,34 @@
-# Common worker instructions — Phase 1 20-engineer parallel dispatch
+# Common worker instructions — Phase 1 reduced wave (6 engineers)
 
-You are **engineer E<NN>** in a parallel dispatch of 20 independent tasks. Read this file once before starting your specific task file at `tasks/E<NN>_*.md`.
+You are **one of 6 engineers** in a reduced parallel dispatch. Read this file once before starting your specific task file.
 
-This is binding. Violations result in operator rejection.
+Active task IDs are:
+
+- **Audit (markdown only):** A02, A07, A08, A09, A10
+- **Lean bridge:** X01
+
+This file replaces the earlier 20-engineer / `E<NN>`-scheme instructions. If you see references in other documents to `E<NN>` IDs, ignore them — they predate the 2026-05-17 plan reduction (see `AUDIT_2026-05-17_PLAN_REDUCTION.md`).
+
+This file is binding. Violations result in operator rejection.
 
 ---
 
 ## 1. Identity and scope
 
-Pick **one** task ID. Don't take more than one. Don't change tasks mid-flight.
+Pick **one** task ID from the active list above. Don't take more than one. Don't change tasks mid-flight.
 
 Your branch name **must** follow this convention:
 
 ```
-khanukov/phase1-E<NN>-<short-handle>
+khanukov/phase1-<ID>-<short-handle>
 ```
 
-Example: `khanukov/phase1-E07-codex-gpt55`
+Example: `khanukov/phase1-A07-codex-gpt55` or `khanukov/phase1-X01-claudeopus`.
 
 Your PR title:
 
 ```
-Phase 1 E<NN>: <task title from README.md task list>
+Phase 1 <ID>: <task title from README.md task list>
 ```
 
 ---
@@ -32,65 +39,59 @@ Before you start:
 
 1. **`RESEARCH_CONSTITUTION.md`** — binding discipline.
 2. **`seed_packs/phase1_20engineer_parallel_dispatch/README.md`** — phase overview, dependencies, acceptance criteria.
-3. **`seed_packs/first_move_search_2026/reports/fp3b_epoch_strategic_retrospective_claudeopus.md`** — context for why this phase exists. Read §3 (what was accomplished), §6 (the gap), §11 (honest framing). You do not need to read the full FP3b history; the retrospective is sufficient.
-4. **Your specific task file** at `seed_packs/phase1_20engineer_parallel_dispatch/tasks/E<NN>_*.md`.
+3. **`seed_packs/phase1_20engineer_parallel_dispatch/AUDIT_2026-05-17_PLAN_REDUCTION.md`** — context for why this wave is reduced.
+4. **`seed_packs/first_move_search_2026/reports/fp3b_epoch_strategic_retrospective_claudeopus.md`** — context for the broader phase. Read §3 (what was accomplished), §6 (the gap), §11 (honest framing). Full FP3b history is not required.
+5. **Your specific task file** at `seed_packs/phase1_20engineer_parallel_dispatch/tasks/<ID>_*.md`.
 
-If your task touches pnp3 / pnp4 Lean code:
+If your task is X01 (touches Lean):
 
-5. **`pnp3/Complexity/Interfaces.lean`** — trust-root types you must import but never modify.
-6. **`pnp4/Pnp4/AlgorithmsToLowerBounds/BasicCircuitClasses.lean`** — pnp4 `CircuitFamilyClass` and `BitVec` conventions.
+6. **`pnp3/Complexity/Interfaces.lean`** — trust-root types you must import but never modify.
+7. **`pnp3/Complexity/PsubsetPpolyInternal/TuringEncoding.lean`** — TM model used in the bridge.
+8. **`seed_packs/polynomial_time_formalism_scoping_D0/reports/D0_polynomial_time_formalism_gpt55.md`** — V4 of the D0 scoping, which X01 implements.
+9. **`seed_packs/polynomial_time_formalism_scoping_D0/reports/D0_four_way_review_and_synthesis_claudeopus.md`** — synthesis memo with the chosen design.
 
-If your task touches barrier files (E14-E16):
-
-7. **`pnp3/Barrier/NaturalProofs.lean`, `pnp3/Barrier/Relativization.lean`, `pnp3/Barrier/Algebrization.lean`, `pnp3/Barrier/Bypass.lean`** — existing trust-root barrier interfaces. **Read only; do not modify.** Your new content goes under `pnp4/Pnp4/Barriers/`.
-
-If your task touches kill-machine infra (E17-E18):
-
-8. **`outputs/nogolog.jsonl`** — existing NoGoLog entries (NOGO-000005 through 000009). Read structure; do not append.
-
-If your task touches contract_expansion (E19-E20):
-
-9. **`pnp4/Pnp4/Frontier/ContractExpansion/PrefixExtensionLanguage.lean`**
-10. **`pnp4/Pnp4/Frontier/ContractExpansion/PrefixExtensionLanguageNP.lean`**
-11. **`pnp4/Pnp4/Frontier/ContractExpansion/PrefixExtensionLanguageRuntime.lean`**
-12. **`pnp4/Pnp4/Frontier/SearchMCSPMagnification.lean`** for `NP_TM` interface (read only).
+Audit tasks (A02, A07, A08, A09, A10) only need the files they are auditing, plus the universal items above.
 
 ---
 
 ## 3. Universal forbidden scope
 
-The following are **forbidden across all 20 tasks**. Violations are operator-rejection-level.
+The following are **forbidden across all 6 tasks**. Violations are operator-rejection-level.
 
 ### 3.1 Trust-root edits (HARD FORBIDDEN)
 
 - `pnp3/Complexity/Interfaces.lean` — read only.
 - `pnp3/Complexity/PsubsetPpolyInternal/**` — read only.
 - `pnp3/Magnification/UnconditionalResearchGap.lean` — read only.
-- `pnp3/Barrier/**` — read only. New barriers go under `pnp4/Pnp4/Barriers/`.
-- `pnp3/Magnification/AuditRoutes/**` — read only. Existing audit routes are frozen.
+- `pnp3/Barrier/**` — read only.
+- `pnp3/Magnification/AuditRoutes/**` — read only.
+- `pnp3/Magnification/*_Partial.lean` — read only this wave.
+- `pnp3/Magnification/FinalResult*.lean` — read only (A02 audits these; does **not** edit them).
+- `pnp3/LowerBounds/*_Partial.lean` — read only this wave.
 - `pnp4/Pnp4/AlgorithmsToLowerBounds/BridgeToPpolyDAG.lean` — read only.
 - `pnp4/Pnp4/Frontier/SearchMCSPMagnification.lean` — read only.
 - `pnp4/Pnp4/Frontier/CompressionMagnification.lean` — read only.
 - `pnp4/Pnp4/Frontier/PvsNPBridgeRequirements.lean` — read only.
+- `pnp4/Pnp4/Frontier/ContractExpansion/PrefixExtensionLanguage*.lean` (R1-B, R1-B1, R1-B2a) — read only.
 
-If your task **appears** to require trust-root edits, you have **misread the task**. Re-read your task file; the deliverable is always in a new file path.
+If your task **appears** to require trust-root edits, you have **misread the task**. Re-read your task file; the deliverable is always at a new file path.
 
-### 3.2 Forbidden Lean constructs
+### 3.2 Forbidden Lean constructs (X01 only; audits produce no Lean)
 
 In every Lean file you write or modify:
 
 - ❌ `sorry`
 - ❌ `admit`
-- ❌ `axiom` (unless your task file **explicitly** authorizes it; none do in Phase 1)
+- ❌ `axiom`
 - ❌ `opaque`
-- ❌ `Fact` (typeclass-payload pattern; forbidden by Rule 16)
+- ❌ `Fact` (typeclass-payload pattern)
 - ❌ `Classical.choose` in core definitions (acceptable in derived proofs only if standard exponent extraction; document explicitly)
 - ❌ `decide` in places that take more than ~1 second to elaborate
 - ❌ `native_decide`
 
 ### 3.3 Forbidden registry / spec edits
 
-- ❌ `outputs/nogolog.jsonl` — no new entries.
+- ❌ `outputs/nogolog.jsonl` — no new entries (A09 audits; does not append).
 - ❌ `outputs/attempts.jsonl` — no edits.
 - ❌ `spec/known_guards.toml` — no edits.
 - ❌ `spec/wave_*.toml` — no edits.
@@ -101,10 +102,10 @@ In every Lean file you write or modify:
 
 - ❌ `SourceTheorem` / `gap_from_*` / `ResearchGapWitness` / `NP_not_subset_PpolyDAG` / `P_ne_NP` — no construction, no claim.
 - ❌ FP-4 work — gated separately.
-- ❌ "Proves P ≠ NP" / "advances P-vs-NP" — never in commit messages, PR descriptions, or code comments.
+- ❌ "Proves P ≠ NP" / "advances P-vs-NP" — never in commit messages, PR descriptions, code comments, or audit reports.
 - ❌ Any unconditional complexity separation claim.
 
-Phase 1 is **infrastructure only**. Do not overclaim.
+This wave is **infrastructure + operator situational awareness only**. Do not overclaim.
 
 ---
 
@@ -112,108 +113,83 @@ Phase 1 is **infrastructure only**. Do not overclaim.
 
 These apply to **every** task. Your task file adds task-specific items on top.
 
-### 4.1 Build hygiene
+### 4.1 For audit tasks (A02, A07, A08, A09, A10)
+
+1. **Markdown report** at exact path `seed_packs/phase1_20engineer_parallel_dispatch/audit_reports/<ID>_<area>_<handle>.md`.
+2. **No Lean edits anywhere.** Run `git diff origin/main -- "*.lean"` → must be empty.
+3. **No edits to `outputs/`, `spec/`, or `Candidates/`.**
+4. Report must include required sections per your task file (typically: file inventory, signature surface, gap inventory, recommendations, honest caveats).
+5. Claims about file state must be reproducible from the cited commit SHA.
+
+### 4.2 For X01
 
 1. `lake build PnP3 Pnp4` — must pass from the repository root.
 2. `./scripts/check.sh` — must pass.
-3. `rg -n "\bsorry\b|\badmit\b" -g"*.lean" pnp3 pnp4` — must return **no output** across the whole repo (not just your files).
+3. `rg -n "\bsorry\b|\badmit\b" -g"*.lean" pnp3 pnp4` — must return **no output** across the whole repo.
+4. New Lean modules at exact paths specified in `tasks/X01_polytimeverifierspec_bridge.md`.
+5. Doc-comment at top of each new module: states D0 scoping reference, declares infrastructure-only scope (not P ≠ NP progress).
 
-### 4.2 File placement
+### 4.3 Shared-file conventions for X01
 
-Your new Lean module(s) **must** be at the exact path(s) specified in your task file. If your task specifies:
+X01 needs additions to three project-shared files:
 
-```
-pnp4/Pnp4/Literature/AtseriasMuller2025/Definitions.lean
-```
+- `lakefile.lean` — one `Glob.one` line per new module.
+- `pnp4/Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean` — one `check_<name>` wrapper per public signature in your task's "Expected signatures" list.
+- `pnp4/Pnp4/Tests/AxiomsAudit.lean` — one `#print axioms` line per theorem in your task.
 
-then you create exactly that file. Don't reorganize.
+**You apply these patches directly in your PR.** Within wave 1 X01 is the only Lean task, so no parallel-merge collision is expected. If a collision arises with concurrent operator-side work, rebase rather than retarget.
 
-### 4.3 Lakefile registration
-
-Every new Lean module you create must be added to `lakefile.lean` via one `Glob.one` line:
-
-```
-Glob.one `Pnp4.Literature.AtseriasMuller2025.Definitions,
-```
-
-Match the existing pattern in `lakefile.lean`.
-
-### 4.4 Test surface
-
-For every public theorem or structure your task lists in "Expected signatures":
-
-1. Add one `check_<name>` wrapper to `pnp4/Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`:
-
-   ```
-   def check_<name> : <signature> := <expression>
-   ```
-
-   This lets the test surface verify the name is accessible from a separate module.
-
-2. Add one `#print axioms` line for each **theorem** (not every definition) to `pnp4/Pnp4/Tests/AxiomsAudit.lean`. Match existing patterns.
-
-### 4.5 Module documentation
+### 4.4 Module documentation (X01)
 
 Every new Lean module must have a `/-! ... -/` doc-comment at the top stating:
 
-- The literature source (paper, year, arXiv/DOI), if Phase A.
+- The D0 scoping reference (V4 chosen, `d367652`).
 - That this is infrastructure, **not** a proof of any unconditional complexity statement.
-- That the contents may be used by future kill-machine routes but do not themselves advance P-vs-NP.
+- That the bridge enables resumability of the contract-expansion track and does not itself advance `NP_not_subset_PpolyDAG`.
 
 Example template:
 
 ```
 /-!
-# <Module title>
+# PolyTimeVerifierSpec
 
-Formalization of <theorem name> from <Author Year> (<verifiable identifier>).
+Implementation of the polynomial-time verifier spec + bridge to `NP_TM`,
+per D0 polynomial-time formalism scoping (V4 selected, `d367652`) and the
+four-way synthesis memo (`d3676520`).
 
-**Scope:** infrastructure for the kill-machine and future audit routes. This
-module proves a specific literature theorem (or stages it as a typed surface);
-it does not by itself reduce `SearchMCSPWeakLowerBound`, construct
-`VerifiedNPDAGLowerBoundSource`, or advance `NP_not_subset_PpolyDAG`.
+**Scope:** infrastructure bridge for the contract-expansion track. This module
+defines a typed surface that consumes verifiable polynomial-time data and
+produces an `NP_TM L` witness. It does **not** by itself reduce
+`SearchMCSPWeakLowerBound`, construct `ResearchGapWitness`, or advance
+`NP_not_subset_PpolyDAG`.
 -/
 ```
 
-### 4.6 No `Classical.choose` in literature definitions
-
-For Phase A tasks (E01-E13):
-
-- The **structure definitions** and **theorem statements** must be free of `Classical.choose`.
-- The `def` instances and theorem **proofs** may use `Classical.choose` **only** if it's a standard polynomial-exponent extraction (e.g., `Classical.choose h.polyBound_poly` where `h.polyBound_poly : ∃ c, ...`).
-- Such use must be documented in a 1-line comment.
-
-For Phase B tasks (E14-E16):
-
-- Razborov-Rudich barrier may use `Classical.choose` in the construction of the diagonal adversary (this is mathematically necessary). Document it.
-
-### 4.7 Trust-root unchanged
+### 4.5 Trust-root unchanged (all tasks)
 
 After your work:
 
 - `git diff origin/main pnp3/Complexity/Interfaces.lean` must be empty.
 - `git diff origin/main pnp3/Barrier/` must be empty.
 - `git diff origin/main pnp3/Magnification/UnconditionalResearchGap.lean` must be empty.
+- `git diff origin/main pnp3/Magnification/AuditRoutes/` must be empty.
+- For audit tasks: `git diff origin/main -- "*.lean"` must be empty.
 
-If your `git diff` shows changes to these files, your PR will be rejected. No exceptions.
+If any of these diffs is non-empty for your task, the PR will be rejected.
 
 ---
 
 ## 5. Self-attack discipline
 
-Before opening your PR, you **must** run a 10-minute self-attack:
+Before opening your PR, run a 10-minute self-attack:
 
-1. **Read your own deliverable as if you were an adversary trying to falsify it.** Is there a way the theorem you proved is vacuous? Does it accidentally smuggle a stronger assumption than the literature requires?
-
-2. **Check that you did not formalize a circular interface.** A structure with field `proven_NP_not_subset_PpolyDAG : Prop` would technically compile but is circular. If your task involves bridging literature to a target like `NP_TM`, ensure the bridge is genuine, not a renaming.
-
-3. **Verify your `#print axioms` output is clean.** New theorems should only depend on standard Mathlib axioms (`propext`, `Classical.choice`, `Quot.sound`) plus the explicit literature axioms your task authorizes. If you see unexpected axioms, debug before submitting.
-
+1. **Read your own deliverable as an adversary.** For audits: are file-state claims actually reproducible from cited SHAs, or did you accidentally over-summarize? For X01: is the bridge a renaming, or does it actually produce an `NP L` witness consuming concrete polynomial-time data?
+2. **Check that you did not formalize a circular interface.** A `PolyTimeVerifierSpec` with a field `proven_in_NP : Prop` would technically compile but is circular. The bridge must genuinely extract poly-time verification data, not assert membership.
+3. **Verify `#print axioms`.** New X01 theorems should depend only on standard Mathlib axioms (`propext`, `Classical.choice`, `Quot.sound`) plus whatever the D0 memo authorizes.
 4. **Check the test surface compiles.** `lake build` on the test files specifically.
+5. **Verify doc-comment honesty.** No "this module proves a step toward P ≠ NP" language.
 
-5. **Verify the doc-comment honestly describes what you proved.** No "this module proves a step toward P ≠ NP" language.
-
-If self-attack reveals problems, fix them or write a `failures/E<NN>_<handle>.md` report (see §10 below).
+If self-attack reveals problems, fix them or write a `failures/<ID>_<handle>.md` report (§10).
 
 ---
 
@@ -222,42 +198,52 @@ If self-attack reveals problems, fix them or write a `failures/E<NN>_<handle>.md
 You don't coordinate with other engineers directly. The operator does.
 
 - If another engineer's PR lands first and conflicts with your file paths, **do not** retarget. Report via failure report.
-- If you need a definition from another engineer's pending work, **do not** assume it will land. Write your task self-containedly; the operator will resolve dependencies during integration.
+- If you need a definition from another engineer's pending work, **do not** assume it will land. Write your task self-containedly.
+
+Within this wave the only Lean task is X01, so audit/audit collisions cannot occur (different markdown paths), and audit/X01 collisions cannot occur (audits produce no Lean).
 
 ---
 
 ## 7. Time budget
 
-Each task has an estimated time in the README task list. If you exceed 1.5× the estimate without a clean Lean module to show, **stop and write a structured failure report** (see §10).
+Each task has an estimated time in the README task list. If you exceed 1.5× the estimate without a clean deliverable, **stop and write a structured failure report** (§10).
 
-Don't grind past 1.5× — the operator wants signals about infeasibility, not heroic effort on an under-scoped task.
+Don't grind past 1.5× — operator wants signals about infeasibility, not heroic effort on an under-scoped task.
 
 ---
 
 ## 8. Required commands
 
-Run before opening your PR:
+### For audit tasks
+
+```bash
+git diff origin/main -- "*.lean"                                # must be empty
+git diff origin/main pnp3/Barrier/                              # must be empty
+git diff origin/main pnp3/Magnification/UnconditionalResearchGap.lean  # must be empty
+ls seed_packs/phase1_20engineer_parallel_dispatch/audit_reports/  # your report must appear
+```
+
+### For X01
 
 ```bash
 lake build PnP3 Pnp4
 ./scripts/check.sh
-rg -n "\bsorry\b|\badmit\b" -g"*.lean" pnp3 pnp4
-git diff origin/main pnp3/Complexity/Interfaces.lean       # must be empty
-git diff origin/main pnp3/Barrier/                          # must be empty
+rg -n "\bsorry\b|\badmit\b" -g"*.lean" pnp3 pnp4                # must be empty
+git diff origin/main pnp3/Complexity/Interfaces.lean            # must be empty
+git diff origin/main pnp3/Barrier/                              # must be empty
 git diff origin/main pnp3/Magnification/UnconditionalResearchGap.lean  # must be empty
 ```
 
-All commands must succeed (or for `rg` and `git diff`, return empty).
+All commands must succeed (or for `rg` / `git diff`, return empty).
 
 ---
 
 ## 9. PR submission
 
-1. Push your branch: `git push -u origin khanukov/phase1-E<NN>-<handle>`.
+1. Push your branch: `git push -u origin khanukov/phase1-<ID>-<handle>`.
 2. Open PR to `main`.
-3. PR title: `Phase 1 E<NN>: <task title>`.
-4. PR description must include the structured output template from the README §"Output template — every PR".
-5. Tag the PR with label `phase1-engineer-NN` if labels are configured.
+3. PR title: `Phase 1 <ID>: <task title>`.
+4. PR description uses §12 template.
 
 Do **not** request review unless your self-attack (§5) is clean.
 
@@ -265,81 +251,83 @@ Do **not** request review unless your self-attack (§5) is clean.
 
 ## 10. Failure protocol
 
-If you cannot complete your task within scope, write a failure report:
+If you cannot complete your task within scope, write a failure report at:
 
-`seed_packs/phase1_20engineer_parallel_dispatch/failures/E<NN>_<handle>.md`
+`seed_packs/phase1_20engineer_parallel_dispatch/failures/<ID>_<handle>.md`
 
 With **exactly four sections**:
 
-1. **What was attempted.** Concrete Lean code tried; high-level approach; time spent.
-2. **Where it broke.** Lean error verbatim, or precise mathematical / interface obstruction.
+1. **What was attempted.** Concrete approach; high-level recipe; time spent.
+2. **Where it broke.** Lean error verbatim (X01) or precise audit-scope obstruction (audits).
 3. **Local vs global obstruction.**
-   - `Local`: another engineer with a different approach might succeed; the task as specified is feasible.
+   - `Local`: another engineer with a different approach might succeed.
    - `Global`: the task as specified is unimplementable in the current repo state; needs operator scope revision.
 4. **What an integrator must know.** Specific recipe for redispatching or pivoting.
 
-PR the failure report only (no Lean changes). Operator decides on redispatch or scope revision.
+PR the failure report only (no Lean changes). Operator decides on redispatch.
 
 ---
 
 ## 11. Honest reporting
 
-Every PR description **must** include a "Honest caveats" line. Examples of good honest caveats:
+Every PR description **must** include a "Honest caveats" line. Examples of good caveats:
 
-- "The theorem proves the bound for the codec-induced case only; the abstract-encoding case remains as a `Prop`-staged obligation."
-- "The `Classical.choose` in line 84 extracts the polynomial exponent from `polyBound_poly`; this is standard but introduces `Classical.choice` into the axiom surface."
-- "The structure has 9 fields; 3 are real `∀`-quantified theorems, 6 are `Prop` placeholders for future runtime / serialization work."
-- "I did not verify that the literature theorem holds verbatim; I formalized the statement under the assumption that AM 2025 v1 §2 Theorem 1 is correctly stated in the arXiv PDF."
+- "The audit covers the 24 files in `AlgorithmsToLowerBounds/` at SHA `<x>`; one file (`<name>`) was skimmed not deep-read."
+- "X01's toy verifier uses the empty language to keep `runTimeBound` trivially provable; a non-trivial language is left for follow-up."
+- "The `Classical.choose` in line 84 extracts the polynomial exponent from `polyBound_poly`; standard usage."
+- "I did not verify all 24 `#print axioms` outputs match; I sampled 4 representative ones."
 
-Examples of dishonest framing to avoid:
+Dishonest framing to avoid:
 
 - ❌ "This module advances toward P ≠ NP."
-- ❌ "Successfully formalized AM 2025 Theorem 1." (when only the statement is typed, not proved)
-- ❌ "No caveats." (when there are clearly staged obligations)
+- ❌ "Audit complete." (when sections are skimmed)
+- ❌ "No caveats." (when there are clearly limitations)
 
-Honest framing is **rewarded**. The operator merges honest partial completions; the operator rejects dishonest "complete" claims.
+Honest framing is **rewarded**. Operator merges honest partial completions; rejects dishonest "complete" claims.
 
 ---
 
 ## 12. Universal output format (for your PR description)
 
 ```text
-Task: E<NN> <title>
+Task: <ID> <title>
 Engineer handle: <your-handle>
-Branch: khanukov/phase1-E<NN>-<handle>
+Branch: khanukov/phase1-<ID>-<handle>
 Commit: <sha>
 
 Files added/modified:
   - <list>
 
 Acceptance criteria (universal):
-  [x] lake build PnP3 Pnp4 → green
-  [x] ./scripts/check.sh → green
-  [x] rg sorry|admit -g"*.lean" pnp3 pnp4 → empty
   [x] No trust-root edits (verified via git diff)
-  [x] lakefile.lean updated with one Glob.one line
-  [x] Smoke test in AlgorithmsToLowerBoundsSurfaceTests.lean
-  [x] #print axioms entries in AxiomsAudit.lean
-  [x] Module doc-comment honestly describes scope
+  [x] Audit-only: no Lean edits (git diff origin/main -- "*.lean" empty)
+      OR Lean-task: lake build PnP3 Pnp4 → green;
+                    ./scripts/check.sh → green;
+                    rg sorry|admit -g"*.lean" pnp3 pnp4 → empty;
+                    lakefile.lean updated with Glob.one line(s);
+                    smoke test in AlgorithmsToLowerBoundsSurfaceTests.lean;
+                    #print axioms entries in AxiomsAudit.lean
+  [x] Module/report doc-comment honestly describes scope
 
 Acceptance criteria (task-specific):
   [x] / [ ] <each item from your task file>
 
-Lean signatures landed:
+For X01 — Lean signatures landed:
   - <name> : <type>
   - ...
+
+For audits — Report sections:
+  - File inventory: <count> files, <LOC> total
+  - Signature surface: <summary>
+  - Gap inventory: <summary>
+  - Recommendations: <summary>
 
 Honest caveats:
   - <list any place where deliverable falls short of literal task spec, or where
     you took a design liberty>
 
 Commands run:
-  - lake build PnP3 Pnp4 → <status>
-  - ./scripts/check.sh → <status>
-  - rg sorry|admit -g*.lean pnp3 pnp4 → <status>
-  - git diff origin/main pnp3/Complexity/Interfaces.lean → empty
-  - git diff origin/main pnp3/Barrier/ → empty
-  - git diff origin/main pnp3/Magnification/UnconditionalResearchGap.lean → empty
+  - <list per §8>
 
 Self-attack notes:
   - <what you checked and concluded during your 10-minute adversarial review>
@@ -351,11 +339,12 @@ Scope violations: none / <list>
 
 ## 13. Final reminders
 
-- **Phase 1 is infrastructure**, not P ≠ NP progress. Don't overclaim.
+- **This wave is infrastructure + operator situational awareness**, not P ≠ NP progress. Don't overclaim.
 - **Trust-root files are read-only.** No exceptions.
 - **Honest partial completion is good**; dishonest "complete" is rejected.
 - **Time-box at 1.5× the estimate.** If exceeding, write a failure report.
 - **Self-attack before submitting.** 10 minutes minimum.
 - **One task per engineer.** Don't grab multiple.
+- **Active IDs are A02, A07, A08, A09, A10, X01 only.** All other task files in `tasks/` are DEFERRED — do not pick them.
 
-Good luck. The kill-machine framework relies on each engineer producing exactly what their task file specifies — no more, no less.
+Good luck. Reduced wave is intentional — fewer, higher-yield tasks for faster operator decision.

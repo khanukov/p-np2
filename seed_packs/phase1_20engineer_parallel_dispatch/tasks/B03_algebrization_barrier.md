@@ -1,5 +1,11 @@
 # B03: Algebrization (Aaronson-Wigderson) barrier — pnp4 extension
 
+> **DEFERRED (2026-05-17 plan reduction).** Not dispatchable in the current wave.
+> Reason: spec defines `algebrizes` as `True`-typed placeholder, allows
+> `algebraicExtension := True`, and the named theorems are `trivial`. This is a
+> wrapper surface, not a kernel-checked barrier theorem. Cancelled this phase.
+> See `AUDIT_2026-05-17_PLAN_REDUCTION.md`.
+
 **Engineer:** B03 | **Phase:** 3 — Barriers | **Estimated:** 3 weeks | **Difficulty:** high
 
 ## Goal

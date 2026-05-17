@@ -1,13 +1,12 @@
-# Common worker instructions — Phase 1 reduced wave (6 engineers)
+# Common worker instructions — Phase 1 wave 1 synthesis (A11)
 
-You are **one of 6 engineers** in a reduced parallel dispatch. Read this file once before starting your specific task file.
+You are the **A11 synthesis engineer**. Wave 1 audits (A01–A10) are complete and merged to main. A11 is the only active task: it reads all 10 audit reports and produces an operator-decision memo for wave 2.
 
-Active task IDs are:
+Active task ID: **A11 only.**
 
-- **Audit (markdown only):** A02, A07, A08, A09, A10
-- **Lean bridge:** X01
+L01, L02, B01, B02, B03, K01, K02, X01, X02 are **blocked** pending A11 + operator decision. Do not dispatch them.
 
-This file replaces the earlier 20-engineer / `E<NN>`-scheme instructions. If you see references in other documents to `E<NN>` IDs, ignore them — they predate the 2026-05-17 plan reduction (see `AUDIT_2026-05-17_PLAN_REDUCTION.md`).
+If you see references in other documents to `E<NN>` IDs, ignore them — they predate the 2026-05-17 plan reduction.
 
 This file is binding. Violations result in operator rejection.
 
@@ -15,7 +14,7 @@ This file is binding. Violations result in operator rejection.
 
 ## 1. Identity and scope
 
-Pick **one** task ID from the active list above. Don't take more than one. Don't change tasks mid-flight.
+The active task is **A11**. Don't pick any other task; the deferred task files (L01..L02, B01..B03, K01..K02, X01..X02) exist as record for A11 to read, not for direct dispatch.
 
 Your branch name **must** follow this convention:
 
@@ -345,6 +344,6 @@ Scope violations: none / <list>
 - **Time-box at 1.5× the estimate.** If exceeding, write a failure report.
 - **Self-attack before submitting.** 10 minutes minimum.
 - **One task per engineer.** Don't grab multiple.
-- **Active IDs are A02, A07, A08, A09, A10, X01 only.** All other task files in `tasks/` are DEFERRED — do not pick them.
+- **The only active ID is A11.** All other task files in `tasks/` are wave-1 record (A01–A10 completed and merged) or wave-2 candidates blocked on A11 (L01–L02, B01–B03, K01–K02, X01–X02). Do not pick any of them.
 
 Good luck. Reduced wave is intentional — fewer, higher-yield tasks for faster operator decision.

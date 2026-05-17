@@ -29,6 +29,7 @@ import Pnp4.Frontier.SearchMCSPConcreteTargets
 import Pnp4.Frontier.ContractExpansion.C_DAG_Adapter
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageRuntime
+import Pnp4.Frontier.ContractExpansion.PrefixParserConvention
 
 namespace Pnp4
 namespace Tests
@@ -136,6 +137,69 @@ def check_TreeMCSPPrefixRuntimeBudget
   TreeMCSPPrefixRuntimeBudget threshold M codec parser
 
 end PrefixExtensionLanguageRuntimeSurface
+
+section PrefixParserConventionSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+def check_treePrefixTag : Nat :=
+  treePrefixTag
+
+def check_tagLen : Nat :=
+  tagLen
+
+def check_bitLength (k : Nat) : Nat :=
+  bitLength k
+
+def check_gammaLen (n : Nat) : Nat :=
+  gammaLen n
+
+def check_idxWidth
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n : Nat) : Nat :=
+  idxWidth codec n
+
+def check_treeMCSPPrefixM
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n : Nat) : Nat :=
+  treeMCSPPrefixM codec n
+
+theorem check_tableLen_le_treeMCSPPrefixM
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n : Nat) :
+    Pnp3.Models.Partial.tableLen n ≤ treeMCSPPrefixM codec n :=
+  tableLen_le_treeMCSPPrefixM codec n
+
+def check_CanonicalTreeMCSPPrefixInput
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    {m : Nat}
+    (y : AlgorithmsToLowerBounds.BitVec m)
+    (input : PrefixInput
+      (Frontier.treeMCSPSearchProblem threshold
+        (Frontier.TreeMCSPSearchWitnessEncoding.ofCodec codec)) m) : Prop :=
+  CanonicalTreeMCSPPrefixInput codec y input
+
+noncomputable def check_treeMCSPConcretePrefixParser
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold) :
+    PrefixParser (Frontier.treeMCSPSearchProblem threshold
+      (Frontier.TreeMCSPSearchWitnessEncoding.ofCodec codec)) :=
+  treeMCSPConcretePrefixParser codec
+
+theorem check_parseTreeMCSPPrefixInput_malformed_rejected
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    {m : Nat}
+    (y : AlgorithmsToLowerBounds.BitVec m)
+    (hparse : parseTreeMCSPPrefixInput codec y = none) :
+    PrefixExtensionLanguage (treeMCSPConcretePrefixParser codec) m y = false :=
+  parseTreeMCSPPrefixInput_malformed_rejected codec y hparse
+
+end PrefixParserConventionSurface
 
 end PrefixExtensionLanguageSurface
 

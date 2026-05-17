@@ -29,6 +29,7 @@ import Pnp4.Frontier.SearchMCSPConcreteTargets
 import Pnp4.Frontier.ContractExpansion.C_DAG_Adapter
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageRuntime
+import Pnp4.Frontier.ContractExpansion.PrefixParserConvention
 
 namespace Pnp4
 namespace Tests
@@ -37,6 +38,17 @@ open AlgorithmsToLowerBounds
 
 def check_C_DAG : CircuitFamilyClass :=
   Pnp4.Frontier.ContractExpansion.C_DAG
+
+#check Pnp4.Frontier.ContractExpansion.treePrefixTag
+#check Pnp4.Frontier.ContractExpansion.tagLen
+#check Pnp4.Frontier.ContractExpansion.gammaLen
+#check Pnp4.Frontier.ContractExpansion.idxWidth
+#check Pnp4.Frontier.ContractExpansion.treeMCSPPrefixM
+#check Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput
+#check Pnp4.Frontier.ContractExpansion.treeMCSPConcretePrefixParser
+#print axioms Pnp4.Frontier.ContractExpansion.tableLen_le_treeMCSPPrefixM
+#print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_bad_tag
+#print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_malformed_rejected
 
 noncomputable def check_InPpolyDAG_to_C_DAG_family
     {L : Pnp3.ComplexityInterfaces.Language}

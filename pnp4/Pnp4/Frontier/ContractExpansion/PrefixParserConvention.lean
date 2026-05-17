@@ -22,6 +22,24 @@ small while matching the usual unsigned binary width.
 def bitLength (n : Nat) : Nat :=
   if n = 0 then 0 else Nat.log2 n + 1
 
+
+/-- Positive naturals have a positive binary width. -/
+theorem bitLength_pos_of_pos
+    {n : Nat} (h : 0 < n) :
+    0 < bitLength n := by
+  unfold bitLength
+  simp [Nat.ne_of_gt h]
+
+/-- Every natural fits in its `bitLength`-wide unsigned binary field. -/
+theorem nat_lt_two_pow_bitLength
+    (n : Nat) :
+    n < 2 ^ bitLength n := by
+  by_cases h : n = 0
+  · simp [h, bitLength]
+  · have hlog : n < 2 ^ (Nat.log 2 n).succ := by
+      exact Nat.lt_pow_succ_log_self Nat.one_lt_two n
+    simpa [bitLength, h, Nat.log2_eq_log_two, Nat.succ_eq_add_one] using hlog
+
 /-- Length of the Elias-gamma code used for the natural number `n` as `n + 1`. -/
 def gammaLen (n : Nat) : Nat :=
   2 * bitLength (n + 1) - 1
@@ -125,6 +143,127 @@ structure CanonicalRawTreeMCSPPrefixFields
 def natBitBE (value width : Nat) (j : Fin width) : Bool :=
   value / 2 ^ (width - 1 - j.1) % 2 = 1
 
+
+/-- A standalone fixed-width big-endian field for `value`. -/
+def natBEField (value width : Nat) : PrefixBitVec width :=
+  fun j => natBitBE value width j
+
+/--
+Dropping the leading bit of a `(k+1)`-wide big-endian encoding leaves the
+`k`-wide encoding of the low `k` bits.  This is the arithmetic core used by the
+reader inversion below: after shifting down to any tail bit, reducing modulo the
+larger power of two does not change the final parity bit.
+-/
+theorem natBitBE_tail_mod
+    (value k : Nat) (j : Fin k) :
+    natBitBE value (k + 1) ⟨j.1 + 1, by omega⟩ =
+      natBitBE (value % 2 ^ k) k j := by
+  unfold natBitBE
+  have heqexp : k + 1 - 1 - (j.1 + 1) = k - 1 - j.1 := by
+    omega
+  rw [heqexp]
+  let e := k - 1 - j.1
+  have he_lt : e < k := by
+    dsimp [e]
+    omega
+  have hpow_split : 2 ^ e * 2 ^ (k - e) = 2 ^ k := by
+    rw [← Nat.pow_add]
+    congr 1
+    omega
+  have hdiv := Nat.mod_mul_right_div_self value (2 ^ e) (2 ^ (k - e))
+  have hdiv' : value % 2 ^ k / 2 ^ e = value / 2 ^ e % 2 ^ (k - e) := by
+    simpa [hpow_split] using hdiv
+  rw [hdiv']
+  have hposdiff : 0 < k - e := by
+    omega
+  have hdvd : 2 ∣ 2 ^ (k - e) := by
+    rcases Nat.exists_eq_succ_of_ne_zero (Nat.ne_of_gt hposdiff) with ⟨t, ht⟩
+    rw [ht]
+    use 2 ^ t
+    simp [Nat.pow_succ]
+    omega
+  rw [Nat.mod_mod_of_dvd _ hdvd]
+
+/--
+Reading from offset `offset + 1` in an ambient vector is the same as reading from
+`offset` in the vector with its first bit removed.  This keeps the big-endian
+inversion proof independent of the concrete ambient parser layout.
+-/
+theorem readNatBE_shift_tail
+    {m k offset : Nat} (y : PrefixBitVec (m + 1)) :
+    readNatBE y (offset + 1) k =
+      readNatBE (fun j : Fin m => y ⟨j.1 + 1, by omega⟩) offset k := by
+  induction k generalizing offset with
+  | zero => rfl
+  | succ t ih =>
+      simp [readNatBE, readBit?]
+      rw [ih (offset := offset + 1)]
+
+/-- Specialized zero-offset tail reader for a field of length `k + 1`. -/
+theorem readNatBE_tail_zero
+    {k : Nat} (y : PrefixBitVec (k + 1)) :
+    readNatBE y 1 k =
+      readNatBE (fun j : Fin k => y ⟨j.1 + 1, by omega⟩) 0 k := by
+  simpa using (readNatBE_shift_tail (m := k) (k := k) (offset := 0) y)
+
+/--
+A fixed-width big-endian field produced by `natBEField` decodes back to the
+original value whenever that value fits in the declared width.
+-/
+theorem readNatBE_natBEField_zero
+    (value width : Nat)
+    (h : value < 2 ^ width) :
+    readNatBE (natBEField value width) 0 width = some value := by
+  induction width generalizing value with
+  | zero =>
+      have hv0 : value = 0 := by
+        omega
+      simp [readNatBE, hv0]
+  | succ k ih =>
+      have htail :
+          readNatBE (natBEField value (k + 1)) 1 k = some (value % 2 ^ k) := by
+        rw [readNatBE_tail_zero]
+        have hfield_tail :
+            (fun j : Fin k => natBEField value (k + 1) ⟨j.1 + 1, by omega⟩) =
+              natBEField (value % 2 ^ k) k := by
+          funext j
+          exact natBitBE_tail_mod value k j
+        rw [hfield_tail]
+        exact ih (value % 2 ^ k) (Nat.mod_lt _ (Nat.two_pow_pos k))
+      have hq_lt : value / 2 ^ k < 2 := by
+        rw [Nat.div_lt_iff_lt_mul (Nat.two_pow_pos k)]
+        simpa [Nat.pow_succ, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using h
+      have hq_cases : value / 2 ^ k = 0 ∨ value / 2 ^ k = 1 := by
+        interval_cases value / 2 ^ k <;> simp
+      have hdecomp : 2 ^ k * (value / 2 ^ k) + value % 2 ^ k = value := by
+        simpa using (Nat.div_add_mod value (2 ^ k))
+      simp [readNatBE, readBit?, natBEField, natBitBE, htail]
+      rcases hq_cases with hq | hq
+      · have hvmod : value % 2 ^ k = value := by
+          rw [← hdecomp]
+          simp [hq]
+        simp [hq, hvmod]
+      · have hvsum : 2 ^ k + value % 2 ^ k = value := by
+          rw [← hdecomp]
+          simp [hq]
+        simp [hq, hvsum]
+
+/-- Direct zero-offset inversion for fields written with `natBitBE`. -/
+theorem readNatBE_natBitBE_zero
+    (value width : Nat)
+    (h : value < 2 ^ width) :
+    readNatBE (fun j : Fin width => natBitBE value width j) 0 width = some value := by
+  exact readNatBE_natBEField_zero value width h
+
+/-- Any valid active-prefix length fits in the parser's index-width field. -/
+theorem prefixLength_lt_two_pow_idxWidth
+    {W : Nat → Nat} {n i : Nat}
+    (hi : i ≤ W n) :
+    i < 2 ^ idxWidth W n := by
+  exact Nat.lt_of_le_of_lt hi (by
+    unfold idxWidth
+    exact nat_lt_two_pow_bitLength (W n))
+
 /--
 Bit `j` of the Elias-gamma code for `n + 1`.
 
@@ -213,7 +352,13 @@ def CanonicalRawTreeMCSPPrefixFields.toPrefixInput
   padBits := codec.witnessBits fields.n - fields.i
   pad := fun _ => false
 
-/-- The first committed decoder lemma for P1P-02L3: the encoder writes the byte tag. -/
+/--
+The first committed decoder lemma for P1P-02L3: the encoder writes the byte tag.
+
+The generic `readNatBE_natBitBE_zero` theorem above is now available for future
+parser round-trip refactors; this byte-tag proof is intentionally left in its
+small ambient-vector form to keep this proof-library PR scoped.
+-/
 theorem readNatBE_encode_tag
     {threshold : Nat → Nat}
     (codec : TreeCircuitWitnessCodec threshold)

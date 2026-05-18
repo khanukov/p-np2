@@ -4,6 +4,7 @@ import Complexity.PsubsetPpolyInternal.TuringToolkit.ConstStatePhasedProgram
 import Complexity.PsubsetPpolyInternal.TuringToolkit.BinaryCounter
 import Models.Model_PartialMCSP
 import Magnification.CanonicalAsymptoticTrackData
+import Magnification.CanonicalAsymptoticDecider
 
 /-!
 # GapMCSP NP-verifier scaffold
@@ -78,6 +79,31 @@ and correctness proofs are TODOs.  The estimated effort is ~800–1500 LOC.
 The `TODO`-marked theorems are not `sorry`-bearing: they are simply not
 yet defined.  The overall `canonicalGapMCSPVerifier` is also not yet a
 definition; once each phase is built, it will be a single composition.
+
+## Reduction target
+
+The mathematical content has been **fully decomposed** in
+`Magnification.CanonicalAsymptoticDecider`:
+
+* `decideAsymptotic : (n : Nat) → Bitstring n → Bool` — a *computable*
+  Boolean decider proved equivalent to
+  `gapPartialMCSP_AsymptoticLanguage canonicalAsymptoticSpec`.
+* `CanonicalAsymptoticVerifierComponents` — minimum-sufficient structure
+  packaging a TM whose acceptance on `(x ++ w)` equals
+  `decideAsymptotic n x` (independent of the certificate `w`).
+* `CanonicalAsymptoticVerifierComponents.witness : Components →
+  GapPartialMCSP_Asymptotic_TMWitness canonicalAsymptoticSpec`.
+
+So the remaining open obligation is **just**:
+
+```
+buildCanonicalVerifierComponents :
+  CanonicalAsymptoticVerifierComponents
+```
+
+i.e., a concrete TM realising `decideAsymptotic` in polynomial time.
+Once this term exists, every `canonical_*` theorem in
+`Tests/CanonicalIntegrationTests.lean` becomes unconditional.
 -/
 
 namespace Pnp3

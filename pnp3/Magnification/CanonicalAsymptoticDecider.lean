@@ -311,6 +311,52 @@ theorem decideAsymptotic_at_three (x : Bitstring 3) :
       omega
     omega
 
+/-- At canonical length `2 = Partial.inputLen 0`, the asymptotic
+language is **always true**: with `m = 0` variables, the partial truth
+table has a single row, and one of `Circuit.const false` or
+`Circuit.const true` matches it (vacuously when the row is `none`, or
+exactly when the row is `some b`). -/
+theorem decideYesAt1_zero_always_true (T : PartialTruthTable 0) :
+    decideYesAt1 0 T = true := by
+  unfold decideYesAt1
+  apply List.any_eq_true.mpr
+  -- The partial table has exactly one row (Fin (Partial.tableLen 0) = Fin 1).
+  -- Choose the matching constant.
+  cases hT : T ⟨0, by decide⟩ with
+  | none =>
+    refine ⟨Circuit.const false, mem_size1Candidates_const 0 false, ?_⟩
+    unfold is_consistent_bool
+    apply List.all_eq_true.mpr
+    intro i _
+    have hi : i = ⟨0, by decide⟩ := by
+      have hsub : Subsingleton (Fin (Partial.tableLen 0)) := by
+        show Subsingleton (Fin 1); infer_instance
+      exact hsub.elim _ _
+    subst hi
+    rw [hT]
+  | some b =>
+    refine ⟨Circuit.const b, mem_size1Candidates_const 0 b, ?_⟩
+    unfold is_consistent_bool
+    apply List.all_eq_true.mpr
+    intro i _
+    have hi : i = ⟨0, by decide⟩ := by
+      have hsub : Subsingleton (Fin (Partial.tableLen 0)) := by
+        show Subsingleton (Fin 1); infer_instance
+      exact hsub.elim _ _
+    subst hi
+    rw [hT]
+    simp [Circuit.eval]
+
+/-- At canonical length `2`, the asymptotic language is `true` for any
+input.  This is the smallest canonical slice (`m = 0`), and shows the
+decider correctly accepts all canonical-length-2 inputs. -/
+theorem decideAsymptotic_at_two (x : Bitstring 2) :
+    decideAsymptotic 2 x = true := by
+  -- 2 = Partial.inputLen 0 definitionally.
+  have heq : decideAsymptotic 2 x = decideAsymptotic (Partial.inputLen 0) x := rfl
+  rw [heq, decideAsymptotic_at_inputLen]
+  exact decideYesAt1_zero_always_true _
+
 /-! ## Verifier-components bridge
 
 A `CanonicalAsymptoticVerifierComponents` packages a TM whose acceptance

@@ -135,107 +135,91 @@ def canonicalAsymptoticParams (n : Nat) (hn : 8 ≤ n) : GapPartialMCSPParams wh
 @[simp] lemma canonicalAsymptoticParams_partialInputLen (n : Nat) (hn : 8 ≤ n) :
     Models.partialInputLen (canonicalAsymptoticParams n hn) = Partial.inputLen n := rfl
 
-/-! ## Canonical-slice equality (Lean technical bridge)
+/-! ## Canonical-slice equality (proved unconditionally)
 
-We package the canonical-slice equality as a parameter to allow the rest of
-the infrastructure to land unblocked.  The mathematical content (both
-languages return the same Bool because they share `sYES = 1` at the same
-slice index) is trivial; the Lean encoding requires bridging a dependent
-`Classical.choose`-cast inside the noncomputable `gapPartialMCSP_AsymptoticLanguage`
-definition.
+Closed using the helper
+`Models.gapPartialMCSP_asymptoticLanguage_apply_inputLen` from
+`Model_PartialMCSP.lean`, which bridges the `Classical.choose` cast via
+`Eq.rec` with a universally-quantified motive.
 -/
 
-/-- The slice-equality predicate at the canonical spec/params pair. -/
-def CanonicalSliceEqProp : Prop :=
-  ∀ (n : Nat) (hn : 8 ≤ n)
-    (x : Core.BitVec (Models.partialInputLen (canonicalAsymptoticParams n hn))),
+/-- Slice equality at canonical length for the canonical spec/params pair. -/
+theorem canonicalSliceEq (n : Nat) (hn : 8 ≤ n)
+    (x : Core.BitVec (Models.partialInputLen (canonicalAsymptoticParams n hn))) :
     gapPartialMCSP_AsymptoticLanguage canonicalAsymptoticSpec
         (Models.partialInputLen (canonicalAsymptoticParams n hn)) x =
       gapPartialMCSP_Language (canonicalAsymptoticParams n hn)
-        (Models.partialInputLen (canonicalAsymptoticParams n hn)) x
-
-/-! ## On closing `CanonicalSliceEqProp`
-
-The slice equality is mathematically trivial: at canonical length
-`N = Partial.inputLen n`, both `gapPartialMCSP_AsymptoticLanguage
-canonicalAsymptoticSpec` and `gapPartialMCSP_Language (canonicalAsymptoticParams
-n hn)` reduce to `decide (PartialMCSP_YES_at n 1 (decodePartial x))`.  They
-share the same `sYES = 1` at slice `n`.
-
-The technical Lean obstacle: the noncomputable
-`gapPartialMCSP_AsymptoticLanguage` uses `dite (∃ m, N = inputLen m)` whose
-`Classical.choose` produces a witness `m₀` propositionally equal to `n` (by
-`partialInputLen_injective`), but with a dependent cast on the input `x`
-inside the `decodePartial` argument that resists standard rewriting.
-
-Proof strategies explored (each documented to attempt + obstruction):
-
-  1. `simp [gapPartialMCSP_AsymptoticLanguage]` — works for the analogous
-     per-slice lemma (`gapPartialMCSP_language_true_iff_yes`) but leaves a
-     residual `Iff` with `Classical.choose ⋯` in dependent positions.
-
-  2. `set m := Classical.choose hShape; clear_value m; subst hChoose_eq` —
-     after subst, the residual goal still contains `Classical.choose ⋯`
-     since `hShape` itself depends on `n` (cyclic via `partialInputLen`).
-
-  3. `obtain rfl : m₀ = Classical.choose hShape := hm₀_def` — fails because
-     `m₀` occurs in `Classical.choose hShape` (same cyclic dependency).
-
-  4. `congr! 3` reduces the iff to a goal `h₁.mp x = h₂ ▸ x` where both
-     are casts along propositionally-equal `Eq` proofs.
-
-  5. `apply eq_of_heq; refine HEq.trans (cast_heq _ x) ?_` — leaves
-     `x ≍ h₂ ▸ x`.  Closing requires `rec_heq_of_heq`/`heq_rec_iff_heq`
-     but Lean cannot infer the metavariables consistently with the
-     specific Eq proof appearing in the residual.
-
-  6. Adding a `@[simp]`-style evaluation lemma directly in
-     `Model_PartialMCSP.lean`:
-     ```
-     lemma gapPartialMCSP_asymptoticLanguage_true_iff_yes ... := by simp [...]
-     ```
-     leaves the same `Classical.choose ⋯ ↔ ...` residual.
-
-  7. Mathlib `subsingleton` tactic / `proof_irrel_heq` — the goal is `Iff`
-     not `Eq` / `HEq`, so the tactic doesn't apply directly.
-
-A clean unconditional close would require either:
-
-  (a) Refactoring `gapPartialMCSP_AsymptoticLanguage` in
-      `Model_PartialMCSP.lean` to use a `decide`-based evaluator at
-      canonical lengths instead of `Classical.choose`.  This touches a
-      foundational file with many dependents.
-
-  (b) A more advanced dependent-rewriting technique (e.g., custom
-      congruence lemmas, or `Eq.rec` with carefully constructed motives
-      that match the asymptotic-language elaboration).
-
-Until then, `CanonicalSliceEqProp` is parameterized as a hypothesis. -/
-
-example : True := trivial
+        (Models.partialInputLen (canonicalAsymptoticParams n hn)) x := by
+  classical
+  -- Both Bools equal `decide (PartialMCSP_YES_at n 1 (decodePartial x))`.
+  by_cases hYes : PartialMCSP_YES (canonicalAsymptoticParams n hn) (decodePartial x)
+  · have hRHS_true :
+        gapPartialMCSP_Language (canonicalAsymptoticParams n hn)
+            (Models.partialInputLen (canonicalAsymptoticParams n hn)) x = true :=
+      (Models.gapPartialMCSP_language_true_iff_yes
+        (canonicalAsymptoticParams n hn) x).2 hYes
+    have hYesAt : PartialMCSP_YES_at n 1 (decodePartial (n := n) x) := by
+      rcases hYes with ⟨C, hSize, hCons⟩
+      exact ⟨C, by simpa using hSize, hCons⟩
+    have hLHS_true :
+        gapPartialMCSP_AsymptoticLanguage canonicalAsymptoticSpec
+            (Models.partialInputLen (canonicalAsymptoticParams n hn)) x = true := by
+      have : gapPartialMCSP_AsymptoticLanguage canonicalAsymptoticSpec
+          (Partial.inputLen n) x = true :=
+        (Models.gapPartialMCSP_asymptoticLanguage_apply_inputLen
+          canonicalAsymptoticSpec n x).2 (by simpa using hYesAt)
+      exact this
+    rw [hLHS_true, hRHS_true]
+  · have hRHS_not_true :
+        gapPartialMCSP_Language (canonicalAsymptoticParams n hn)
+            (Models.partialInputLen (canonicalAsymptoticParams n hn)) x ≠ true := by
+      intro hT
+      exact hYes ((Models.gapPartialMCSP_language_true_iff_yes
+        (canonicalAsymptoticParams n hn) x).1 hT)
+    have hRHS_false :
+        gapPartialMCSP_Language (canonicalAsymptoticParams n hn)
+            (Models.partialInputLen (canonicalAsymptoticParams n hn)) x = false := by
+      cases hV : gapPartialMCSP_Language (canonicalAsymptoticParams n hn)
+          (Models.partialInputLen (canonicalAsymptoticParams n hn)) x
+      · rfl
+      · exact (hRHS_not_true hV).elim
+    have hYesAt_not : ¬ PartialMCSP_YES_at n 1 (decodePartial (n := n) x) := by
+      intro hAt
+      apply hYes
+      rcases hAt with ⟨C, hSize, hCons⟩
+      exact ⟨C, by simpa using hSize, hCons⟩
+    have hLHS_not_true :
+        gapPartialMCSP_AsymptoticLanguage canonicalAsymptoticSpec
+            (Models.partialInputLen (canonicalAsymptoticParams n hn)) x ≠ true := by
+      intro hT
+      have hAt : PartialMCSP_YES_at n (canonicalAsymptoticSpec.sYES n) (decodePartial x) :=
+        (Models.gapPartialMCSP_asymptoticLanguage_apply_inputLen
+          canonicalAsymptoticSpec n x).1 hT
+      exact hYesAt_not (by simpa using hAt)
+    have hLHS_false :
+        gapPartialMCSP_AsymptoticLanguage canonicalAsymptoticSpec
+            (Models.partialInputLen (canonicalAsymptoticParams n hn)) x = false := by
+      cases hV : gapPartialMCSP_AsymptoticLanguage canonicalAsymptoticSpec
+          (Models.partialInputLen (canonicalAsymptoticParams n hn)) x
+      · rfl
+      · exact (hLHS_not_true hV).elim
+    rw [hLHS_false, hRHS_false]
 
 /-! ## Canonical `AsymptoticFormulaTrackHypothesis` -/
 
-/-- Canonical asymptotic hypothesis, with threshold `N0 := 8`.
-
-Parameterized on the technical Lean bridge `canonicalSliceEq`.  Once the
-bridge is filled (by a follow-up commit), this becomes unconditional. -/
-def canonicalAsymptoticHAsym (canonicalSliceEq : CanonicalSliceEqProp) :
-    AsymptoticFormulaTrackHypothesis where
+/-- Canonical asymptotic hypothesis, with threshold `N0 := 8`. **Unconditional**. -/
+def canonicalAsymptoticHAsym : AsymptoticFormulaTrackHypothesis where
   spec := canonicalAsymptoticSpec
   N0 := 8
   pAt := canonicalAsymptoticParams
   pAt_n := fun _ _ => rfl
   sliceEq := canonicalSliceEq
 
-@[simp] lemma canonicalAsymptoticHAsym_spec
-    (canonicalSliceEq : CanonicalSliceEqProp) :
-    (canonicalAsymptoticHAsym canonicalSliceEq).spec = canonicalAsymptoticSpec :=
-  rfl
+@[simp] lemma canonicalAsymptoticHAsym_spec :
+    canonicalAsymptoticHAsym.spec = canonicalAsymptoticSpec := rfl
 
-@[simp] lemma canonicalAsymptoticHAsym_N0
-    (canonicalSliceEq : CanonicalSliceEqProp) :
-    (canonicalAsymptoticHAsym canonicalSliceEq).N0 = 8 := rfl
+@[simp] lemma canonicalAsymptoticHAsym_N0 :
+    canonicalAsymptoticHAsym.N0 = 8 := rfl
 
 /-! ## Conditional NP-bridge from a concrete TM witness
 
@@ -252,9 +236,8 @@ toolkit primitives in `pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit/`.
 
 /-- NP-bridge for the canonical asymptotic spec from a concrete TM witness. -/
 def canonicalAsymptoticNPBridge_of_TM
-    (canonicalSliceEq : CanonicalSliceEqProp)
     (W : Models.GapPartialMCSP_Asymptotic_TMWitness canonicalAsymptoticSpec) :
-    AsymptoticNPPullback (canonicalAsymptoticHAsym canonicalSliceEq) where
+    AsymptoticNPPullback canonicalAsymptoticHAsym where
   strictAsymptotic :=
     Models.gapPartialMCSP_Asymptotic_in_NP_of_TM canonicalAsymptoticSpec
       (Models.gapPartialMCSP_Asymptotic_in_NP_TM_of_witness
@@ -262,7 +245,6 @@ def canonicalAsymptoticNPBridge_of_TM
 
 /-- Canonical `AsymptoticFormulaTrackData` built from a TM witness. -/
 def canonicalAsymptoticData_of_TM
-    (canonicalSliceEq : CanonicalSliceEqProp)
     (W : Models.GapPartialMCSP_Asymptotic_TMWitness canonicalAsymptoticSpec) :
     AsymptoticFormulaTrackData where
   spec := canonicalAsymptoticSpec
@@ -275,19 +257,17 @@ def canonicalAsymptoticData_of_TM
       canonicalAsymptoticSpec W
 
 lemma canonicalAsymptoticData_hypothesis
-    (canonicalSliceEq : CanonicalSliceEqProp)
     (W : Models.GapPartialMCSP_Asymptotic_TMWitness canonicalAsymptoticSpec) :
     asymptoticFormulaTrackHypothesis_of_data
-        (canonicalAsymptoticData_of_TM canonicalSliceEq W) =
-      canonicalAsymptoticHAsym canonicalSliceEq := rfl
+        (canonicalAsymptoticData_of_TM W) =
+      canonicalAsymptoticHAsym := rfl
 
 /-- The canonical anti-checker assumptions built from a TM witness. -/
 def canonicalAntiCheckerAssumptions_of_TM
-    (canonicalSliceEq : CanonicalSliceEqProp)
     (W : Models.GapPartialMCSP_Asymptotic_TMWitness canonicalAsymptoticSpec) :
     AntiCheckerAssumptions where
-  asymptotic := canonicalAsymptoticHAsym canonicalSliceEq
-  npBridge := canonicalAsymptoticNPBridge_of_TM canonicalSliceEq W
+  asymptotic := canonicalAsymptoticHAsym
+  npBridge := canonicalAsymptoticNPBridge_of_TM W
 
 end Magnification
 end Pnp3

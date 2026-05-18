@@ -614,6 +614,65 @@ lemma gapPartialMCSP_language_true_iff_yes
   classical
   simp [gapPartialMCSP_Language]
 
+/-- На канонической длине `Partial.inputLen n` асимптотический язык равен
+`true` тогда и только тогда, когда выполнено `PartialMCSP_YES_at n (spec.sYES n)`
+на декодированной таблице. -/
+lemma gapPartialMCSP_asymptoticLanguage_apply_inputLen
+    (spec : GapPartialMCSPAsymptoticSpec) (n : Nat)
+    (x : Core.BitVec (Partial.inputLen n)) :
+    gapPartialMCSP_AsymptoticLanguage spec (Partial.inputLen n) x = true ↔
+      PartialMCSP_YES_at n (spec.sYES n) (decodePartial x) := by
+  classical
+  have hShape : ∃ m : Nat, Partial.inputLen n = Partial.inputLen m := ⟨n, rfl⟩
+  have hChoose_spec : Partial.inputLen n =
+      Partial.inputLen (Classical.choose hShape) := Classical.choose_spec hShape
+  have hChoose_eq : Classical.choose hShape = n :=
+    (partialInputLen_injective hChoose_spec).symm
+  -- Step 1: rewrite the LHS Bool to an explicit `decide` form.
+  have hAsym_decide :
+      gapPartialMCSP_AsymptoticLanguage spec (Partial.inputLen n) x = true ↔
+        PartialMCSP_YES_at (Classical.choose hShape) (spec.sYES (Classical.choose hShape))
+          (decodePartial ((congrArg Core.BitVec hChoose_spec).mp x)) := by
+    classical
+    -- Unfold + reduce the dite.  Both `if-then-else` branches yield Bool;
+    -- the `= true` iff is the truth value of the inner predicate.
+    constructor
+    · intro hL
+      -- LHS = true.  Derive inner predicate.
+      by_contra hNo
+      have hLfalse :
+          gapPartialMCSP_AsymptoticLanguage spec (Partial.inputLen n) x = false := by
+        classical
+        simp only [gapPartialMCSP_AsymptoticLanguage, hShape, dite_true]
+        rw [dif_neg hNo]
+      rw [hLfalse] at hL
+      exact Bool.false_ne_true hL
+    · intro hAt
+      classical
+      simp only [gapPartialMCSP_AsymptoticLanguage, hShape, dite_true]
+      rw [dif_pos hAt]
+  -- Step 2: bridge the inner predicate via Eq.rec on hChoose_eq.
+  rw [hAsym_decide]
+  -- Goal: PartialMCSP_YES_at (Classical.choose hShape) ... (decodePartial cast_x) ↔
+  --       PartialMCSP_YES_at n (spec.sYES n) (decodePartial x)
+  -- Use Eq.rec on hChoose_eq with motive parameterized by m AND hMatch.
+  -- At m := n with hMatch := rfl, the iff is reflexive.
+  let motive : (m : Nat) → Prop := fun m =>
+    ∀ (hMatch : Partial.inputLen n = Partial.inputLen m),
+      PartialMCSP_YES_at m (spec.sYES m)
+        (decodePartial ((congrArg Core.BitVec hMatch).mp x)) ↔
+      PartialMCSP_YES_at n (spec.sYES n) (decodePartial x)
+  have base : motive n := by
+    intro hMatch
+    have hMatch_rfl : hMatch = rfl := Subsingleton.elim _ _
+    subst hMatch_rfl
+    -- congrArg Core.BitVec rfl = rfl, so cast is identity.
+    rfl
+  -- Transport base from m := n to m := Classical.choose hShape via hChoose_eq.symm.
+  -- hChoose_eq.symm : n = Classical.choose hShape, so ▸ goes motive n → motive (Classical.choose hShape).
+  have target : motive (Classical.choose hShape) := hChoose_eq.symm ▸ base
+  exact target hChoose_spec
+
 /-- Если выполнено NO-условие, язык возвращает `false`. -/
 lemma gapPartialMCSP_language_false_of_no
     (p : GapPartialMCSPParams) (x : Core.BitVec (partialInputLen p)) :

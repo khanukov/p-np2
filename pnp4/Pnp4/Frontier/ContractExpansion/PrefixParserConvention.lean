@@ -553,6 +553,114 @@ theorem decodeGamma_gammaBit (n : Nat) :
   exact decodeGammaAux_gammaBit n
 
 /--
+Layout-local gamma decoder invariant for an ambient vector.
+
+If the ambient input agrees with `gammaBit n` throughout the whole gamma region
+starting at `offset`, then the executable gamma-search loop decodes the same
+`(n, gammaLen n)` pair from any point in the unary-zero run.  This is the
+ambient counterpart of `decodeGammaAux_gammaBit_from`; it avoids re-proving the
+standalone Elias-gamma arithmetic when the gamma field is embedded after a tag.
+-/
+theorem decodeGammaAux_gammaBit_from_at
+    {m : Nat} (y : PrefixBitVec m) (offset n fuel zeros : Nat)
+    (hbits : ∀ (t : Nat) (ht : t < gammaLen n),
+      readBit? y (offset + t) = some (gammaBit n ⟨t, ht⟩))
+    (hzeros : zeros ≤ bitLength (n + 1) - 1)
+    (hfuel : bitLength (n + 1) - 1 - zeros < fuel) :
+    decodeGammaAux? y offset fuel zeros = some (n, gammaLen n) := by
+  induction fuel generalizing zeros with
+  | zero => omega
+  | succ fuel' ih =>
+      rw [decodeGammaAux?]
+      have hzeros_lt_gamma : zeros < gammaLen n := by
+        rw [gammaLen_eq_zeros_add_bitLength]
+        exact Nat.lt_of_le_of_lt hzeros
+          (Nat.lt_add_of_pos_right (bitLength_pos_of_pos (Nat.succ_pos n)))
+      have hread : readBit? y (offset + zeros) =
+          some (gammaBit n ⟨zeros, hzeros_lt_gamma⟩) := by
+        exact hbits zeros hzeros_lt_gamma
+      rw [hread]
+      by_cases hz : zeros < bitLength (n + 1) - 1
+      · have hbit : gammaBit n ⟨zeros, by
+            rw [gammaLen_eq_zeros_add_bitLength]
+            omega⟩ = false := by
+          exact gammaBit_zero_prefix n hz
+        simp [hbit]
+        apply ih
+        · omega
+        · have hstep : bitLength (n + 1) - 1 - (zeros + 1) + 1 =
+              bitLength (n + 1) - 1 - zeros := by omega
+          omega
+      · have hzeq : zeros = bitLength (n + 1) - 1 := by omega
+        subst hzeq
+        simp [gammaBit_terminator]
+        have hoffPayload : offset + (bitLength (n + 1) - 1) + 1 =
+            offset + bitLength (n + 1) := by
+          rw [Nat.add_assoc]
+          congr 1
+        rw [hoffPayload]
+        have hpayload :
+            readNatBE y (offset + bitLength (n + 1)) (bitLength (n + 1) - 1) =
+              readNatBE (fun j : Fin (gammaLen n) => gammaBit n j)
+                (bitLength (n + 1)) (bitLength (n + 1) - 1) := by
+          apply readNatBE_eq_of_readBit_eq
+          intro t ht
+          have hstand : bitLength (n + 1) + t < gammaLen n := by
+            rw [gammaLen_eq_zeros_add_bitLength]
+            omega
+          have hamb := hbits (bitLength (n + 1) + t) hstand
+          have hgamma : bitLength (n + 1) + t < gammaLen n := hstand
+          simpa [readBit?, hgamma, Nat.add_assoc] using hamb
+        rw [hpayload, readNatBE_gammaBit_payload]
+        simp only [Option.bind_some, Option.some.injEq, Prod.mk.injEq]
+        constructor
+        · have hv := gamma_payload_value n
+          omega
+        · rw [gammaLen_eq_two_mul_zeros_add_one]
+
+/-- `allZeroSlice?` accepts any in-bounds slice of an all-false bit-vector. -/
+theorem allZeroSlice_false_of_within
+    {m : Nat} (offset width : Nat)
+    (hwithin : offset + width ≤ m) :
+    allZeroSlice? (fun _ : Fin m => false) offset width = some true := by
+  induction width generalizing offset with
+  | zero => simp [allZeroSlice?]
+  | succ k ih =>
+      rw [allZeroSlice?]
+      have hoff : offset < m := by omega
+      simp [readBit?, hoff, ih (offset + 1) (by omega)]
+
+/-- `allZeroSlice?` accepts a standalone all-false bit-vector. -/
+theorem allZeroSlice_false (width : Nat) :
+    allZeroSlice? (fun _ : Fin width => false) 0 width = some true := by
+  exact allZeroSlice_false_of_within 0 width (by omega)
+
+/-- `allZeroSlice?` depends only on the width-many bits that it reads. -/
+theorem allZeroSlice_eq_of_readBit_eq
+    {m₁ m₂ : Nat}
+    (y₁ : PrefixBitVec m₁)
+    (y₂ : PrefixBitVec m₂)
+    (offset₁ offset₂ width : Nat)
+    (h : ∀ t : Nat, t < width →
+      readBit? y₁ (offset₁ + t) = readBit? y₂ (offset₂ + t)) :
+    allZeroSlice? y₁ offset₁ width = allZeroSlice? y₂ offset₂ width := by
+  induction width generalizing offset₁ offset₂ with
+  | zero => simp [allZeroSlice?]
+  | succ k ih =>
+      rw [allZeroSlice?, allZeroSlice?]
+      have hb : readBit? y₁ offset₁ = readBit? y₂ offset₂ := by
+        simpa using h 0 (Nat.zero_lt_succ k)
+      rw [hb]
+      cases readBit? y₂ offset₂ <;> simp
+      have hrec : allZeroSlice? y₁ (offset₁ + 1) k =
+          allZeroSlice? y₂ (offset₂ + 1) k := by
+        apply ih
+        intro t ht
+        have := h (t + 1) (Nat.succ_lt_succ ht)
+        simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using this
+      rw [hrec]
+
+/--
 Computable encoder for canonical raw tree-MCSP prefix fields.
 
 The output has the canonical ambient length by construction.  Its layout is
@@ -697,6 +805,191 @@ theorem sliceBits_encode_p
           idxWidth codec.witnessBits fields.n + fields.i := by
     exact Nat.add_lt_add_left j.2 _
   simp [hnotTag, hnotGamma, hnotX, hnotI, hp]
+
+/-- The embedded gamma field decodes to the raw target parameter `n`. -/
+theorem decodeGamma_encodeTreeMCSPPrefixFields
+    {threshold : Nat → Nat}
+    (codec : TreeCircuitWitnessCodec threshold)
+    (fields : CanonicalRawTreeMCSPPrefixFields codec) :
+    decodeGamma? (encodeTreeMCSPPrefixFields codec fields) tagLen =
+      some (fields.n, gammaLen fields.n) := by
+  unfold decodeGamma?
+  apply decodeGammaAux_gammaBit_from_at
+  · intro t ht
+    unfold readBit?
+    have hm : tagLen + t < treeMCSPPrefixM codec fields.n := by
+      unfold treeMCSPPrefixM
+      omega
+    simp [hm]
+    unfold encodeTreeMCSPPrefixFields
+    have hnotTag : ¬ tagLen + t < tagLen := by omega
+    have hgamma : tagLen + t < tagLen + gammaLen fields.n := by omega
+    simp [hnotTag, hgamma]
+  · omega
+  · unfold treeMCSPPrefixM
+    have hlen : gammaLen fields.n = 2 * (bitLength (fields.n + 1) - 1) + 1 :=
+      gammaLen_eq_two_mul_zeros_add_one fields.n
+    omega
+
+/-- The embedded active-prefix-length index field reads back as `fields.i`. -/
+theorem readNatBE_encode_i
+    {threshold : Nat → Nat}
+    (codec : TreeCircuitWitnessCodec threshold)
+    (fields : CanonicalRawTreeMCSPPrefixFields codec) :
+    readNatBE (encodeTreeMCSPPrefixFields codec fields)
+      (tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n)
+      (idxWidth codec.witnessBits fields.n) =
+    some fields.i := by
+  let iOffset := tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n
+  calc
+    readNatBE (encodeTreeMCSPPrefixFields codec fields) iOffset
+        (idxWidth codec.witnessBits fields.n) =
+        readNatBE (natBEField fields.i (idxWidth codec.witnessBits fields.n)) 0
+          (idxWidth codec.witnessBits fields.n) := by
+      apply readNatBE_eq_of_readBit_eq
+      intro t ht
+      unfold readBit? natBEField
+      have hm : iOffset + t < treeMCSPPrefixM codec fields.n := by
+        unfold iOffset treeMCSPPrefixM
+        omega
+      have hfield : t < idxWidth codec.witnessBits fields.n := ht
+      simp [hm, hfield]
+      unfold encodeTreeMCSPPrefixFields
+      have hnotTag : ¬ iOffset + t < tagLen := by
+        unfold iOffset; omega
+      have hnotGamma : ¬ iOffset + t < tagLen + gammaLen fields.n := by
+        unfold iOffset; omega
+      have hnotX : ¬ iOffset + t <
+          tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n := by
+        unfold iOffset; omega
+      have hi : iOffset + t <
+          tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+            idxWidth codec.witnessBits fields.n := by
+        unfold iOffset; omega
+      simp [hnotTag, hnotGamma, hnotX, hi]
+      unfold natBitBE
+      simp [show iOffset + t -
+          (tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n) = t by
+        unfold iOffset
+        omega]
+    _ = some fields.i := by
+      exact readNatBE_natBEField_zero fields.i (idxWidth codec.witnessBits fields.n)
+        (prefixLength_lt_two_pow_idxWidth fields.prefixLength_le)
+
+/-- The encoder's implicit padding slice is the all-zero vector. -/
+theorem sliceBits_encode_pad
+    {threshold : Nat → Nat}
+    (codec : TreeCircuitWitnessCodec threshold)
+    (fields : CanonicalRawTreeMCSPPrefixFields codec) :
+    sliceBits? (encodeTreeMCSPPrefixFields codec fields)
+      (tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+        idxWidth codec.witnessBits fields.n + fields.i)
+      (codec.witnessBits fields.n - fields.i) =
+    some (fun _ : Fin (codec.witnessBits fields.n - fields.i) => false) := by
+  unfold sliceBits?
+  have hWithin : tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+      idxWidth codec.witnessBits fields.n + fields.i +
+        (codec.witnessBits fields.n - fields.i) ≤ treeMCSPPrefixM codec fields.n := by
+    unfold treeMCSPPrefixM
+    have hle := fields.prefixLength_le
+    omega
+  simp [hWithin]
+  funext j
+  unfold encodeTreeMCSPPrefixFields
+  have hnotTag : ¬ tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+      idxWidth codec.witnessBits fields.n + fields.i + j.1 < tagLen := by omega
+  have hnotGamma : ¬ tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+      idxWidth codec.witnessBits fields.n + fields.i + j.1 < tagLen + gammaLen fields.n := by omega
+  have hnotX : ¬ tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+      idxWidth codec.witnessBits fields.n + fields.i + j.1 <
+        tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n := by omega
+  have hnotI : ¬ tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+      idxWidth codec.witnessBits fields.n + fields.i + j.1 <
+        tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+          idxWidth codec.witnessBits fields.n := by omega
+  have hnotP : ¬ tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+      idxWidth codec.witnessBits fields.n + fields.i + j.1 <
+        tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+          idxWidth codec.witnessBits fields.n + fields.i := by omega
+  simp [hnotTag, hnotGamma, hnotX, hnotI, hnotP]
+
+/-- The executable all-zero padding check accepts the encoder's implicit padding. -/
+theorem allZeroSlice_encode_pad
+    {threshold : Nat → Nat}
+    (codec : TreeCircuitWitnessCodec threshold)
+    (fields : CanonicalRawTreeMCSPPrefixFields codec) :
+    allZeroSlice? (encodeTreeMCSPPrefixFields codec fields)
+      (tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+        idxWidth codec.witnessBits fields.n + fields.i)
+      (codec.witnessBits fields.n - fields.i) =
+    some true := by
+  let padOffset := tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+    idxWidth codec.witnessBits fields.n + fields.i
+  calc
+    allZeroSlice? (encodeTreeMCSPPrefixFields codec fields) padOffset
+        (codec.witnessBits fields.n - fields.i) =
+        allZeroSlice? (fun _ : Fin (codec.witnessBits fields.n - fields.i) => false) 0
+          (codec.witnessBits fields.n - fields.i) := by
+      apply allZeroSlice_eq_of_readBit_eq
+      intro t ht
+      unfold readBit?
+      have hm : padOffset + t < treeMCSPPrefixM codec fields.n := by
+        unfold padOffset treeMCSPPrefixM
+        omega
+      have hstand : t < codec.witnessBits fields.n - fields.i := ht
+      simp [hm, hstand]
+      unfold encodeTreeMCSPPrefixFields
+      have hnotTag : ¬ padOffset + t < tagLen := by
+        unfold padOffset; omega
+      have hnotGamma : ¬ padOffset + t < tagLen + gammaLen fields.n := by
+        unfold padOffset; omega
+      have hnotX : ¬ padOffset + t <
+          tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n := by
+        unfold padOffset; omega
+      have hnotI : ¬ padOffset + t <
+          tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+            idxWidth codec.witnessBits fields.n := by
+        unfold padOffset; omega
+      have hnotP : ¬ padOffset + t <
+          tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+            idxWidth codec.witnessBits fields.n + fields.i := by
+        unfold padOffset; omega
+      simp [hnotTag, hnotGamma, hnotX, hnotI, hnotP]
+    _ = some true := by
+      exact allZeroSlice_false (codec.witnessBits fields.n - fields.i)
+
+/-- Bundled executable field obligations for the canonical raw-field encoder. -/
+theorem parse_encodeTreeMCSPPrefixFields_field_obligations
+    {threshold : Nat → Nat}
+    (codec : TreeCircuitWitnessCodec threshold)
+    (fields : CanonicalRawTreeMCSPPrefixFields codec) :
+    readNatBE (encodeTreeMCSPPrefixFields codec fields) 0 tagLen = some treePrefixTag ∧
+    decodeGamma? (encodeTreeMCSPPrefixFields codec fields) tagLen =
+      some (fields.n, gammaLen fields.n) ∧
+    sliceBits? (encodeTreeMCSPPrefixFields codec fields)
+      (tagLen + gammaLen fields.n) (Pnp3.Models.Partial.tableLen fields.n) = some fields.x ∧
+    readNatBE (encodeTreeMCSPPrefixFields codec fields)
+      (tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n)
+      (idxWidth codec.witnessBits fields.n) = some fields.i ∧
+    sliceBits? (encodeTreeMCSPPrefixFields codec fields)
+      (tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+        idxWidth codec.witnessBits fields.n) fields.i = some fields.p ∧
+    sliceBits? (encodeTreeMCSPPrefixFields codec fields)
+      (tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+        idxWidth codec.witnessBits fields.n + fields.i)
+      (codec.witnessBits fields.n - fields.i) =
+        some (fun _ : Fin (codec.witnessBits fields.n - fields.i) => false) ∧
+    allZeroSlice? (encodeTreeMCSPPrefixFields codec fields)
+      (tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+        idxWidth codec.witnessBits fields.n + fields.i)
+      (codec.witnessBits fields.n - fields.i) = some true := by
+  exact ⟨readNatBE_encode_tag codec fields,
+    decodeGamma_encodeTreeMCSPPrefixFields codec fields,
+    sliceBits_encode_x codec fields,
+    readNatBE_encode_i codec fields,
+    sliceBits_encode_p codec fields,
+    sliceBits_encode_pad codec fields,
+    allZeroSlice_encode_pad codec fields⟩
 
 /--
 P1P-02L3 partial-progress marker.

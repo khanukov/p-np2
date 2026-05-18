@@ -77,6 +77,82 @@ ex-falso via `FormulaCertificateProviderPartial -> False`.  Therefore:
   provider that does not universally quantify over `PpolyFormula` (so it
   is not satisfied by truth-table hardwiring).
 
+**Note on post-PR13 retarget chain (May 2026).**  The post-PR13 audit chain
+landed three D0 / L0 deliverables under `seed_packs/`:
+
+1. `seed_packs/post_pr13_provider_retarget_D0` (opus47):
+   `RETARGET_EXISTING_ROUTE` — identified
+   `AsymptoticIsoStrongRoute canonicalAsymptoticHAsym` and
+   `AsymptoticPromiseYesCertificateRoute canonicalAsymptoticHAsym` as the
+   two non-refuted DAG-side consumers of the canonical track.
+2. `seed_packs/asymptotic_isostrong_route_audit_D0` (gpt55, PR #1378):
+   `YELLOW_ROUTE_OPEN_BUT_NEEDS_TARGETED_SELF_ATTACKS` — confirmed neither
+   route imports `FormulaCertificateProviderPartial` or universally
+   quantifies over `PpolyFormula`, and that NOGO-000004/6/8/9 do not
+   transfer.
+3. `seed_packs/hInDag_triviality_probe_D0` (gpt55, PR #1383):
+   `YELLOW_INCONCLUSIVE` — no markdown-only argument settles the
+   triviality question; blocking construction is either
+   `canonicalAsymptotic_in_P` (multi-session TM-verifier plan) OR a
+   direct DAG truth-table hardwiring at fixed slice.
+4. `seed_packs/hInDag_triviality_probe_L0` (gpt55, PR #1388):
+   `RED_HINDAG_TRIVIAL_BUT_CONCLUSION_OPEN` — the L0-A route closed.
+   `pnp3/Tests/HInDagTrivialityProbe.lean` (121 LOC, kernel-checked,
+   no `axiom`/`opaque`/`sorry`/`native_decide`, no refuted-predicate
+   imports) defines:
+
+   ```lean
+   noncomputable def fixedSlice_gapPartialMCSP_in_PpolyDAG
+       (p : GapPartialMCSPParams) : InPpolyDAG (gapPartialMCSP_Language p)
+
+   noncomputable def hInDag_for_canonicalAsymptoticHAsym :
+       ∀ n β, InPpolyDAG (gapPartialMCSP_Language
+         ((eventualGapSliceFamily_of_asymptotic
+             canonicalAsymptoticHAsym).paramsOf n β))
+   ```
+
+   via per-slice truth-table DAG hardwiring at the single encoded length
+   `partialInputLen p` plus `constFalseDag` elsewhere.  The polynomial
+   bound holds with a slice-dependent constant `K_p` because
+   `InPpolyDAG.polyBound_poly` requires polynomiality in the input
+   length `n`, and constant-in-`n` is polynomial.
+
+**Structural consequence of the L0 landing.**  Both
+`AsymptoticIsoStrongRoute canonicalAsymptoticHAsym` and
+`AsymptoticPromiseYesCertificateRoute canonicalAsymptoticHAsym` have
+the shape `∀ hInDag, <structural conclusion>`.  With
+`hInDag_for_canonicalAsymptoticHAsym` now Lean-witnessed, the `∀`
+collapses to instantiation at the hardwired witness.  But the derived
+`ppolyDAGSizeBoundOnSlicesEventually F hInDag` under truth-table
+`polyBound = K_p` is a per-slice constant of order `2^N` at canonical
+input length `N = 2 · 2^m`, doubly-exponential in the slice index.
+"Small DAG" under this bound admits essentially every DAG of size
+`≤ 2^N`, so the iso-strong / promise-YES conclusions now ask for
+YES-isolating combinatorial structure for **arbitrary-size DAGs**, not
+just polynomial-size DAGs.
+
+This is a **different, potentially harder** research-open obligation
+than the original "small polynomial-size DAG ⇒ structural payload"
+framing.  Neither vacuously true nor vacuously false; the conclusion
+side is now the dominant research-open content.
+
+The current research-open frontier is therefore:
+
+- **`IsoStrongFamilyEventually F hInDag_for_canonicalAsymptoticHAsym`**:
+  given that every fixed canonical slice has a polynomial-size DAG
+  family (Lean-witnessed by `fixedSlice_gapPartialMCSP_in_PpolyDAG`),
+  can we still extract YES-isolating combinatorial structure for
+  every DAG correctly deciding `gapPartialMCSP_Language` on the
+  promise?
+- equivalently for `PromiseYesSubcubeCertificateAt W` under the same
+  hardwired hInDag.
+
+A natural follow-up D0 audits whether the canonical choice `sYES = 1,
+sNO = 2` (the minimal legal spec) yields a tractable conclusion side
+under hardwired hInDag, or whether the canonical spec needs to be
+re-chosen with non-trivial `sYES/sNO` to recover a useful structural
+conclusion.
+
 ## Fixed-Params Status
 
 Session 67 introduced the stronger contract

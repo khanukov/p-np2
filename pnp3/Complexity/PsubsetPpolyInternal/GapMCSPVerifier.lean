@@ -129,19 +129,173 @@ def runtimeExponent : Nat := 3
 `k = 2` gives `n^2 + 2` bits of certificate. -/
 def certificateExponent : Nat := 2
 
-/-! ## Phase A — read certificate (TODO)
+/-! ## Phase A — read certificate
 
 The certificate occupies positions `n .. n + certificateLength n 2 - 1`.
 Phase A walks right from the head's initial position 0 through the input
 region (`n` cells), enters the certificate region, scans for the unique
 `1` bit, and saves the candidate index in state.
 
-**Target signature**:
-```
-def readCertificate (n : Nat) : PhasedProgram.{0}
-theorem readCertificate_run_finds_candidate ...
-```
+This session lands the first *local* machine component only.  It deliberately
+does **not** state or prove a top-level `accepts_eq`: subsequent phases still
+have to interpret the selected candidate and check the partial truth table.
 -/
+
+/-- The canonical certificate length used by the verifier scaffold. -/
+def certificateRegionLength (n : Nat) : Nat :=
+  Pnp3.ComplexityInterfaces.certificateLength n certificateExponent
+
+@[simp] theorem certificateRegionLength_eq (n : Nat) :
+    certificateRegionLength n = n ^ 2 + 2 := by
+  simp [certificateRegionLength, Pnp3.ComplexityInterfaces.certificateLength,
+    certificateExponent]
+
+/-- State carried by Phase A while scanning the certificate region.
+
+The first component records the unique `1` found so far, if any.  The second
+component is a sticky duplicate flag: once a second `1` is seen, it remains
+`true`.  This is intentionally a finite-control state for each fixed input
+length, because `Fin certLen` is finite. -/
+abbrev CertificateScanState (certLen : Nat) := Option (Fin certLen) × Bool
+
+/-- Initial Phase-A scan state: no candidate bit has been seen, and no
+duplicate has been detected. -/
+def CertificateScanState.initial (certLen : Nat) : CertificateScanState certLen :=
+  (none, false)
+
+/-- Update the one-hot scan summary at certificate offset `j` after reading
+one certificate bit.  A `false` bit leaves the summary unchanged; the first
+`true` bit records `j`; every later `true` bit sets the duplicate flag. -/
+def updateCertificateScanState {certLen : Nat}
+    (st : CertificateScanState certLen) (j : Fin certLen) (bit : Bool) :
+    CertificateScanState certLen :=
+  if bit then
+    match st.1 with
+    | none => (some j, st.2)
+    | some _ => (st.1, true)
+  else
+    st
+
+@[simp] theorem updateCertificateScanState_false {certLen : Nat}
+    (st : CertificateScanState certLen) (j : Fin certLen) :
+    updateCertificateScanState st j false = st := by
+  simp [updateCertificateScanState]
+
+@[simp] theorem updateCertificateScanState_true_none {certLen : Nat}
+    (j : Fin certLen) (dup : Bool) :
+    updateCertificateScanState (none, dup) j true = (some j, dup) := by
+  simp [updateCertificateScanState]
+
+@[simp] theorem updateCertificateScanState_true_some {certLen : Nat}
+    (old j : Fin certLen) (dup : Bool) :
+    updateCertificateScanState (some old, dup) j true = (some old, true) := by
+  simp [updateCertificateScanState]
+
+/-- Number of phases in the certificate scanner: `n` input-navigation phases,
+`certLen` certificate-scan phases, and one final handoff phase. -/
+def readCertificateNumPhases (n : Nat) : Nat :=
+  n + certificateRegionLength n + 1
+
+/-- Phase A as a uniform-state phased program.
+
+For phases `< n`, the program only walks right across the original input.
+For phases `n ≤ i < n + certLen`, the current tape bit is interpreted as the
+certificate bit at offset `i - n` and folded into `CertificateScanState`.  The
+last phase is a stable handoff/accept phase for later `seq` composition; its
+`acceptState` is not a claim that the full verifier accepts. -/
+def readCertificateCS (n : Nat) :
+    ConstStatePhasedProgram (CertificateScanState (certificateRegionLength n)) where
+  numPhases := readCertificateNumPhases n
+  startPhase := ⟨0, by
+    simp [readCertificateNumPhases]
+  ⟩
+  startState := CertificateScanState.initial (certificateRegionLength n)
+  acceptPhase := ⟨n + certificateRegionLength n, by
+    simp [readCertificateNumPhases]
+  ⟩
+  acceptState := CertificateScanState.initial (certificateRegionLength n)
+  transition := fun i st scan =>
+    if hInput : i.val < n then
+      (⟨i.val + 1, by
+          change i.val + 1 < n + certificateRegionLength n + 1
+          omega⟩,
+        st, scan, Move.right)
+    else if hCert : i.val < n + certificateRegionLength n then
+      let j : Fin (certificateRegionLength n) := ⟨i.val - n, by omega⟩
+      (⟨i.val + 1, by
+          change i.val + 1 < n + certificateRegionLength n + 1
+          omega⟩,
+        updateCertificateScanState st j scan, scan, Move.right)
+    else
+      (⟨n + certificateRegionLength n, by
+          simp [readCertificateNumPhases]
+        ⟩, st, scan, Move.stay)
+  timeBound := fun _ => n + certificateRegionLength n
+
+/-- General-phased-program view of the Phase-A certificate scanner. -/
+def readCertificate (n : Nat) : PhasedProgram.{0} :=
+  (readCertificateCS n).toPhased
+
+@[simp] theorem readCertificateCS_numPhases (n : Nat) :
+    (readCertificateCS n).numPhases = n + certificateRegionLength n + 1 := rfl
+
+@[simp] theorem readCertificateCS_timeBound (n inputLen : Nat) :
+    (readCertificateCS n).timeBound inputLen = n + certificateRegionLength n := rfl
+
+@[simp] theorem readCertificate_timeBound (n inputLen : Nat) :
+    (readCertificate n).timeBound inputLen = n + certificateRegionLength n := rfl
+
+/-- Local transition lemma for the input-navigation part of Phase A.  Before
+the certificate starts, the scanner preserves the summary and tape bit, moves
+right, and advances one phase. -/
+theorem readCertificateCS_transition_input (n : Nat)
+    {i : Fin (readCertificateCS n).numPhases} (hi : i.val < n)
+    (st : CertificateScanState (certificateRegionLength n)) (scan : Bool) :
+    (readCertificateCS n).transition i st scan =
+      (⟨i.val + 1, by
+          have hit := i.isLt
+          simp [readCertificateCS_numPhases] at hit ⊢
+          omega⟩, st, scan, Move.right) := by
+  simp [readCertificateCS, hi]
+
+/-- Local transition lemma for the certificate-scanning part of Phase A.  At
+certificate offset `j`, the scanner folds the scanned bit into the one-hot
+summary, preserves the tape bit, moves right, and advances one phase. -/
+theorem readCertificateCS_transition_certificate (n : Nat)
+    (j : Fin (certificateRegionLength n))
+    (st : CertificateScanState (certificateRegionLength n)) (scan : Bool) :
+    (readCertificateCS n).transition
+        ⟨n + j.val, by
+          change n + j.val < n + certificateRegionLength n + 1
+          omega⟩ st scan =
+      (⟨n + j.val + 1, by
+          change n + j.val + 1 < n + certificateRegionLength n + 1
+          omega⟩,
+        updateCertificateScanState st j scan, scan, Move.right) := by
+  have hInput : ¬ n + j.val < n := by omega
+  have hjExpanded : j.val < n ^ 2 + 2 := by
+    simpa [certificateRegionLength_eq] using j.isLt
+  simp [readCertificateCS, hInput, hjExpanded]
+
+/-- Local transition lemma for the final handoff phase.  Once Phase A has
+scanned exactly `n + certLen` cells, it stops moving and leaves the accumulated
+summary untouched for later phases. -/
+theorem readCertificateCS_transition_done (n : Nat)
+    (st : CertificateScanState (certificateRegionLength n)) (scan : Bool) :
+    (readCertificateCS n).transition
+        ⟨n + certificateRegionLength n, by
+          simp [readCertificateCS_numPhases]
+        ⟩ st scan =
+      (⟨n + certificateRegionLength n, by
+          simp [readCertificateCS_numPhases]
+        ⟩, st, scan, Move.stay) := by
+  simp [readCertificateCS]
+
+/-- Runtime accounting for Phase A: the declared runtime is exactly the number
+of cells traversed before the handoff phase, namely the input prefix plus the
+certificate region. -/
+theorem readCertificateCS_runtime_exact (n inputLen : Nat) :
+    (readCertificateCS n).timeBound inputLen = n + certificateRegionLength n := rfl
 
 /-! ## Phase B — identify candidate (TODO)
 

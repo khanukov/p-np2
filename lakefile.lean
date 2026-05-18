@@ -202,6 +202,7 @@ lean_lib PnP3 where
     Glob.one `Tests.AxiomsAudit,
     Glob.one `Tests.AC0PublishableSurface,
     Glob.one `Tests.BridgeLocalityRegression,
+    Glob.one `Tests.CanonicalIntegrationTests,
     Glob.one `Tests.RouteSurfaceAudit,
     Glob.one `Tests.WeakRouteSurfaceTests,
     Glob.one `Tests.FormulaSupportBoundsFalsifiabilityProbe,

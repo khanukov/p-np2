@@ -129,7 +129,162 @@ def runtimeExponent : Nat := 3
 `k = 2` gives `n^2 + 2` bits of certificate. -/
 def certificateExponent : Nat := 2
 
-/-! ## Phase A — read certificate (TODO)
+/-! ## Phase A — certificate scan scaffold
+
+Progress classification: **Infrastructure**.  This section is a local TM
+engineering scaffold for the eventual verifier.  It does not perform any
+lower-bound extraction, does not build a `ResearchGapWitness`, and does not
+claim the final `CanonicalAsymptoticVerifierComponents` term.
+
+The program below is intentionally small and honest: starting with the head at
+the first certificate cell, it scans a fixed certificate window of length `L`,
+records whether it has seen zero, exactly one, or multiple `1` bits, and then
+enters a terminal handoff phase.  It does **not** claim full verifier
+correctness; later sessions still have to connect this state to candidate
+identification and row/table consistency.
+-/
+
+/-- Accumulator carried while scanning a one-hot certificate window.
+
+* `none` means no `1` bit has been seen yet.
+* `unique i` means the unique `1` seen so far was at certificate offset `i`.
+* `many` means at least two `1` bits have been seen, so the one-hot check has
+  already failed.
+-/
+inductive CertificateScanStatus (L : Nat) where
+  | none : CertificateScanStatus L
+  | unique : Fin L → CertificateScanStatus L
+  | many : CertificateScanStatus L
+  deriving DecidableEq, Repr, Fintype
+
+namespace CertificateScanStatus
+
+variable {L : Nat}
+
+instance (L : Nat) : Inhabited (CertificateScanStatus L) :=
+  ⟨CertificateScanStatus.none⟩
+
+/-- Update the one-hot accumulator after reading certificate offset `i`.
+A zero bit leaves the accumulator unchanged.  A one bit changes `none` to
+`unique i`, but changes any previous `unique` or `many` state to `many`. -/
+def register (s : CertificateScanStatus L) (i : Fin L) (bit : Bool) :
+    CertificateScanStatus L :=
+  if bit then
+    match s with
+    | CertificateScanStatus.none => CertificateScanStatus.unique i
+    | CertificateScanStatus.unique _ => CertificateScanStatus.many
+    | CertificateScanStatus.many => CertificateScanStatus.many
+  else
+    s
+
+/-- Extract the candidate offset if and only if the scan has seen exactly one
+`1` bit. -/
+def candidate? : CertificateScanStatus L → Option (Fin L)
+  | CertificateScanStatus.none => Option.none
+  | CertificateScanStatus.unique i => some i
+  | CertificateScanStatus.many => Option.none
+
+@[simp] theorem register_false (s : CertificateScanStatus L) (i : Fin L) :
+    register s i false = s := by
+  simp [register]
+
+@[simp] theorem register_none_true (i : Fin L) :
+    register CertificateScanStatus.none i true = CertificateScanStatus.unique i := by
+  simp [register]
+
+@[simp] theorem register_unique_true (j i : Fin L) :
+    register (CertificateScanStatus.unique j) i true = CertificateScanStatus.many := by
+  simp [register]
+
+@[simp] theorem register_many_true (i : Fin L) :
+    register CertificateScanStatus.many i true = CertificateScanStatus.many := by
+  simp [register]
+
+@[simp] theorem candidate?_none :
+    (CertificateScanStatus.none : CertificateScanStatus L).candidate? = Option.none := rfl
+
+@[simp] theorem candidate?_unique (i : Fin L) :
+    (CertificateScanStatus.unique i).candidate? = some i := rfl
+
+@[simp] theorem candidate?_many :
+    (CertificateScanStatus.many : CertificateScanStatus L).candidate? = Option.none := rfl
+
+end CertificateScanStatus
+
+/-- Fold-level specification of the certificate scan, independent of the TM
+encoding.  The list is read left-to-right; offset `k` corresponds to the `k`th
+certificate cell. -/
+def scanCertificateStatus (L : Nat) (bits : List Bool) : CertificateScanStatus L :=
+  ((List.finRange L).zip (bits.take L)).foldl
+    (fun acc pair => CertificateScanStatus.register acc pair.fst pair.snd)
+    CertificateScanStatus.none
+
+/-- A small phased program for Phase A.  It assumes the head is already at the
+first certificate cell and scans exactly `L` cells.
+
+Phase layout:
+* phases `0, ..., L-1`: scan the corresponding certificate offset, update the
+  one-hot accumulator, write the scanned bit back unchanged, and move right;
+* phase `L`: terminal handoff/decision phase, preserving the accumulator;
+* phase `L+1`: idle phase.  The unique accepting state is deliberately not used
+  to claim verifier correctness; the useful postcondition is the accumulator in
+  phase `L`/`L+1`.
+-/
+def certificateScanProgram (L : Nat) : ConstStatePhasedProgram (CertificateScanStatus L) where
+  numPhases := L + 2
+  startPhase := ⟨0, by omega⟩
+  startState := CertificateScanStatus.none
+  acceptPhase := ⟨L + 1, by omega⟩
+  acceptState := CertificateScanStatus.many
+  transition := fun i s bit =>
+    if hscan : i.val < L then
+      (⟨i.val + 1, by omega⟩,
+        CertificateScanStatus.register s ⟨i.val, hscan⟩ bit,
+        bit,
+        Move.right)
+    else if hdone : i.val = L then
+      (⟨L + 1, by omega⟩, s, bit, Move.stay)
+    else
+      (i, s, bit, Move.stay)
+  timeBound := fun _ => L + 1
+
+@[simp] theorem certificateScanProgram_numPhases (L : Nat) :
+    (certificateScanProgram L).numPhases = L + 2 := rfl
+
+@[simp] theorem certificateScanProgram_timeBound (L n : Nat) :
+    (certificateScanProgram L).timeBound n = L + 1 := rfl
+
+/-- Local transition lemma for active scan phases: the program advances by one
+phase, records the scanned bit in the one-hot accumulator, preserves the tape
+symbol, and moves right. -/
+theorem certificateScanProgram_transition_scan (L : Nat)
+    {i : Fin (certificateScanProgram L).numPhases} (hscan : i.val < L)
+    (s : CertificateScanStatus L) (bit : Bool) :
+    ((certificateScanProgram L).transition i s bit).fst.val = i.val + 1 ∧
+    ((certificateScanProgram L).transition i s bit).snd.fst =
+      CertificateScanStatus.register s ⟨i.val, hscan⟩ bit ∧
+    ((certificateScanProgram L).transition i s bit).snd.snd.fst = bit ∧
+    ((certificateScanProgram L).transition i s bit).snd.snd.snd = Move.right := by
+  simp [certificateScanProgram, hscan]
+
+/-- Local transition lemma for the terminal handoff phase after all certificate
+cells have been scanned.  The accumulator is preserved and the head stays put. -/
+theorem certificateScanProgram_transition_done (L : Nat)
+    {i : Fin (certificateScanProgram L).numPhases} (hdone : i.val = L)
+    (s : CertificateScanStatus L) (bit : Bool) :
+    ((certificateScanProgram L).transition i s bit).fst.val = L + 1 ∧
+    ((certificateScanProgram L).transition i s bit).snd.fst = s ∧
+    ((certificateScanProgram L).transition i s bit).snd.snd.fst = bit ∧
+    ((certificateScanProgram L).transition i s bit).snd.snd.snd = Move.stay := by
+  simp [certificateScanProgram, hdone]
+
+/-- The Phase-A scaffold has the declared linear local runtime.  For the
+canonical verifier this will be instantiated with
+`L = certificateLength n certificateExponent`. -/
+theorem certificateScanProgram_runtime (L inputLen : Nat) :
+    (certificateScanProgram L).timeBound inputLen = L + 1 := rfl
+
+/-! ## Phase A — read certificate (remaining integration work)
 
 The certificate occupies positions `n .. n + certificateLength n 2 - 1`.
 Phase A walks right from the head's initial position 0 through the input

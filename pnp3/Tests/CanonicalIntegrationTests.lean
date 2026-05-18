@@ -1,4 +1,5 @@
 import Magnification.CanonicalAsymptoticTrackData
+import Magnification.CanonicalAsymptoticDecider
 import Magnification.FinalResultMainline
 import Magnification.FinalResultAuditRoutes
 import Magnification.UnconditionalResearchGap
@@ -117,5 +118,38 @@ theorem canonical_P_ne_NP_of_promiseYesCertificateRoute
   Pnp3.Magnification.P_ne_NP_final_of_asymptotic_promiseYesCertificateRoute_withAntiChecker
     (anti := canonicalAntiCheckerAssumptions_of_TM W)
     hRoute
+
+/-! ## Decoder-bridge integration
+
+The `CanonicalAsymptoticVerifierComponents` bridge reduces the open
+TM-verifier obligation to a single typed sub-obligation.  Every
+`canonical_*` theorem above can be re-stated taking `Components`
+instead of `Asymptotic_TMWitness`, since `Components → Witness`. -/
+
+example (V : Pnp3.Magnification.CanonicalAsymptoticVerifierComponents) :
+    Models.GapPartialMCSP_Asymptotic_TMWitness canonicalAsymptoticSpec :=
+  Pnp3.Magnification.CanonicalAsymptoticVerifierComponents.witness V
+
+example (V : Pnp3.Magnification.CanonicalAsymptoticVerifierComponents) :
+    AntiCheckerAssumptions :=
+  Pnp3.Magnification.canonicalAntiCheckerAssumptions_of_components V
+
+/-- Components-track version of the iso-strong route plug-in. -/
+theorem canonical_NP_not_subset_PpolyDAG_of_components_and_isoStrongRoute
+    (V : Pnp3.Magnification.CanonicalAsymptoticVerifierComponents)
+    (hIso : Pnp3.Magnification.AsymptoticIsoStrongRoute canonicalAsymptoticHAsym) :
+    NP_not_subset_PpolyDAG :=
+  canonical_NP_not_subset_PpolyDAG_of_isoStrongRoute
+    (W := Pnp3.Magnification.CanonicalAsymptoticVerifierComponents.witness V)
+    hIso
+
+/-- Components-track companion `P ≠ NP` via the iso-strong route. -/
+theorem canonical_P_ne_NP_of_components_and_isoStrongRoute
+    (V : Pnp3.Magnification.CanonicalAsymptoticVerifierComponents)
+    (hIso : Pnp3.Magnification.AsymptoticIsoStrongRoute canonicalAsymptoticHAsym) :
+    P_ne_NP :=
+  canonical_P_ne_NP_of_isoStrongRoute
+    (W := Pnp3.Magnification.CanonicalAsymptoticVerifierComponents.witness V)
+    hIso
 
 end Pnp3.Tests

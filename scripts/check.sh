@@ -42,29 +42,10 @@ if [[ "${actual_axioms_pnp4}" -ne "${expected_axioms}" ]]; then
   exit 1
 fi
 
-# `sorry`/`admit` are forbidden in `pnp3` EXCEPT for explicit, tagged
-# multi-session work-in-progress markers tied to the TMVerifier session
-# plan (`pnp3/Docs/TMVerifier_Session_Plan.md`).  Tagged sorries are
-# matched on a window of 5 lines preceding them; the marker comment
-# `TMVerifier-Session-` is the allowed tag.
-auto_holes_all=$( (rg -n "\bsorry\b|\badmit\b" -g"*.lean" pnp3 || true) )
-# Strip whitelisted sorries: those preceded (within the same file, 5
-# lines window) by `TMVerifier-Session-` marker.
-auto_holes_filtered=$(echo "${auto_holes_all}" | while IFS= read -r line; do
-  [ -z "$line" ] && continue
-  file=$(echo "$line" | cut -d: -f1)
-  lineno=$(echo "$line" | cut -d: -f2)
-  start=$((lineno - 5)); [ "$start" -lt 1 ] && start=1
-  if sed -n "${start},${lineno}p" "$file" 2>/dev/null | grep -q "TMVerifier-Session-"; then
-    continue
-  fi
-  echo "$line"
-done)
-auto_holes=$(echo -n "${auto_holes_filtered}" | grep -c . || true)
+auto_holes=$( (rg -n "\bsorry\b|\badmit\b" -g"*.lean" pnp3 || true) | wc -l | tr -d ' ' )
 if [[ "${auto_holes}" -ne 0 ]]; then
-  echo "Found ${auto_holes} untagged unfinished proof placeholders (sorry/admit) in pnp3:"
-  echo "${auto_holes_filtered}"
-  echo "(Tagged TMVerifier-Session-* sorries are whitelisted; see pnp3/Docs/TMVerifier_Session_Plan.md.)"
+  echo "Found ${auto_holes} unfinished proof placeholders (sorry/admit) in pnp3:"
+  rg -n "\bsorry\b|\badmit\b" -g"*.lean" pnp3 || true
   exit 1
 fi
 

@@ -638,6 +638,14 @@ theorem seqList_timeBound_singleton (p : ConstStatePhasedProgram S) (n : Nat) :
     (seqList [p]).timeBound n = p.timeBound n + 1 := by
   rw [seqList_timeBound_cons, seqList_timeBound_nil]
 
+/-- Singleton seqList run: `runConfig c (p.tb + 1) = runConfig (runConfig c p.tb) 1`. -/
+theorem seqList_run_singleton (p : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := (seqList [p]).toPhased.toTM) n) :
+    TM.runConfig (M := (seqList [p]).toPhased.toTM) c ((seqList [p]).timeBound n) =
+      TM.runConfig (M := (seqList [p]).toPhased.toTM)
+        (TM.runConfig (M := (seqList [p]).toPhased.toTM) c (p.timeBound n)) 1 := by
+  rw [seqList_run_decomp p [] c, seqList_timeBound_nil]
+
 end IdleSeqList
 
 /-! ### Embedding from P1's TM into the composed `seq P1 P2` TM

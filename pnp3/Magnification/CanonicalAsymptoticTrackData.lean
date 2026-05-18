@@ -154,19 +154,63 @@ def CanonicalSliceEqProp : Prop :=
       gapPartialMCSP_Language (canonicalAsymptoticParams n hn)
         (Models.partialInputLen (canonicalAsymptoticParams n hn)) x
 
-/-! ## Attempt to discharge the slice equality unconditionally
+/-! ## On closing `CanonicalSliceEqProp`
 
-The proof below uses `Classical.choose_spec` on the canonical-length
-existential to identify the `Classical.choose`-witness with `n` by
-`partialInputLen_injective`.  The dependent cast inside the asymptotic-language
-definition is bridged via `Subsingleton.elim` on the underlying `Eq` proof
-(both relevant `Eq` proofs are propositionally equal).
+The slice equality is mathematically trivial: at canonical length
+`N = Partial.inputLen n`, both `gapPartialMCSP_AsymptoticLanguage
+canonicalAsymptoticSpec` and `gapPartialMCSP_Language (canonicalAsymptoticParams
+n hn)` reduce to `decide (PartialMCSP_YES_at n 1 (decodePartial x))`.  They
+share the same `sYES = 1` at slice `n`.
 
-Status: this proof attempt has been extensively iterated but consistently
-hits Lean's dependent-pattern-matching limitations on the noncomputable
-`Classical.choose` cast inside the language definition.  We retain
-`CanonicalSliceEqProp` as a parameter to keep the rest of the file landing
-unconditionally. -/
+The technical Lean obstacle: the noncomputable
+`gapPartialMCSP_AsymptoticLanguage` uses `dite (∃ m, N = inputLen m)` whose
+`Classical.choose` produces a witness `m₀` propositionally equal to `n` (by
+`partialInputLen_injective`), but with a dependent cast on the input `x`
+inside the `decodePartial` argument that resists standard rewriting.
+
+Proof strategies explored (each documented to attempt + obstruction):
+
+  1. `simp [gapPartialMCSP_AsymptoticLanguage]` — works for the analogous
+     per-slice lemma (`gapPartialMCSP_language_true_iff_yes`) but leaves a
+     residual `Iff` with `Classical.choose ⋯` in dependent positions.
+
+  2. `set m := Classical.choose hShape; clear_value m; subst hChoose_eq` —
+     after subst, the residual goal still contains `Classical.choose ⋯`
+     since `hShape` itself depends on `n` (cyclic via `partialInputLen`).
+
+  3. `obtain rfl : m₀ = Classical.choose hShape := hm₀_def` — fails because
+     `m₀` occurs in `Classical.choose hShape` (same cyclic dependency).
+
+  4. `congr! 3` reduces the iff to a goal `h₁.mp x = h₂ ▸ x` where both
+     are casts along propositionally-equal `Eq` proofs.
+
+  5. `apply eq_of_heq; refine HEq.trans (cast_heq _ x) ?_` — leaves
+     `x ≍ h₂ ▸ x`.  Closing requires `rec_heq_of_heq`/`heq_rec_iff_heq`
+     but Lean cannot infer the metavariables consistently with the
+     specific Eq proof appearing in the residual.
+
+  6. Adding a `@[simp]`-style evaluation lemma directly in
+     `Model_PartialMCSP.lean`:
+     ```
+     lemma gapPartialMCSP_asymptoticLanguage_true_iff_yes ... := by simp [...]
+     ```
+     leaves the same `Classical.choose ⋯ ↔ ...` residual.
+
+  7. Mathlib `subsingleton` tactic / `proof_irrel_heq` — the goal is `Iff`
+     not `Eq` / `HEq`, so the tactic doesn't apply directly.
+
+A clean unconditional close would require either:
+
+  (a) Refactoring `gapPartialMCSP_AsymptoticLanguage` in
+      `Model_PartialMCSP.lean` to use a `decide`-based evaluator at
+      canonical lengths instead of `Classical.choose`.  This touches a
+      foundational file with many dependents.
+
+  (b) A more advanced dependent-rewriting technique (e.g., custom
+      congruence lemmas, or `Eq.rec` with carefully constructed motives
+      that match the asymptotic-language elaboration).
+
+Until then, `CanonicalSliceEqProp` is parameterized as a hypothesis. -/
 
 example : True := trivial
 

@@ -1084,15 +1084,12 @@ theorem parse_encodeTreeMCSPPrefixFields_field_obligations
     allZeroSlice_encode_pad codec fields⟩
 
 /--
-P1P-02L3 partial-progress marker.
+P1P-02L3 partial-progress marker retained for downstream surface tests.
 
-The full canonical theorem
-`parseTreeMCSPPrefixInput threshold codec (encodeTreeMCSPPrefixFields codec fields)
- = some (fields.toPrefixInput codec)` remains open.  The landed partial lemmas
-above isolate the already-verified tag, table slice, and active-prefix slice;
-the remaining proof work is the generic Elias-gamma round trip and big-endian
-index-field round trip, plus dependent proof-field normalization in the final
-`PrefixInput` equality.
+The full canonical round-trip theorem has since landed as
+`parse_encodeTreeMCSPPrefixFields`; this older bundled obligation remains useful
+for callers that only need the first tag/table/prefix slices without unfolding
+the full parser proof.
 -/
 theorem parse_encodeTreeMCSPPrefixFields_partial_obligation
     {threshold : Nat → Nat}
@@ -1170,6 +1167,27 @@ def parseTreeMCSPPrefixInput
       none
   else
     none
+
+/-- The canonical raw-field encoder is a right inverse of the concrete parser. -/
+theorem parse_encodeTreeMCSPPrefixFields
+    {threshold : Nat → Nat}
+    (codec : TreeCircuitWitnessCodec threshold)
+    (fields : CanonicalRawTreeMCSPPrefixFields codec) :
+    parseTreeMCSPPrefixInput threshold codec
+      (encodeTreeMCSPPrefixFields codec fields) =
+    some (CanonicalRawTreeMCSPPrefixFields.toPrefixInput codec fields) := by
+  unfold parseTreeMCSPPrefixInput
+  rw [readNatBE_encode_tag codec fields]
+  rw [decodeGamma_encodeTreeMCSPPrefixFields codec fields]
+  simp [treePrefixTag]
+  rw [sliceBits_encode_x codec fields]
+  rw [readNatBE_encode_i codec fields]
+  simp
+  refine ⟨fields.prefixLength_le, ?_⟩
+  rw [sliceBits_encode_p codec fields]
+  rw [sliceBits_encode_pad codec fields]
+  rw [allZeroSlice_encode_pad codec fields]
+  simp [CanonicalRawTreeMCSPPrefixFields.toPrefixInput, treePrefixTag]
 
 /-- The concrete parser packaged in the existing `PrefixParser` interface. -/
 def treeMCSPConcretePrefixParser

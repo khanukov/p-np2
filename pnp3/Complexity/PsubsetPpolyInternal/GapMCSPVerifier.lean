@@ -2,6 +2,7 @@ import Complexity.PsubsetPpolyInternal.TuringToolkit.Foundation
 import Complexity.PsubsetPpolyInternal.TuringToolkit.AtomicPrograms
 import Complexity.PsubsetPpolyInternal.TuringToolkit.ConstStatePhasedProgram
 import Complexity.PsubsetPpolyInternal.TuringToolkit.BinaryCounter
+import Complexity.Interfaces
 import Models.Model_PartialMCSP
 import Magnification.CanonicalAsymptoticTrackData
 import Magnification.CanonicalAsymptoticDecider
@@ -129,19 +130,180 @@ def runtimeExponent : Nat := 3
 `k = 2` gives `n^2 + 2` bits of certificate. -/
 def certificateExponent : Nat := 2
 
-/-! ## Phase A — read certificate (TODO)
+/-! ## Phase A — read certificate
 
 The certificate occupies positions `n .. n + certificateLength n 2 - 1`.
 Phase A walks right from the head's initial position 0 through the input
-region (`n` cells), enters the certificate region, scans for the unique
-`1` bit, and saves the candidate index in state.
+region (`n` cells), enters the certificate region, scans the first `n + 2`
+candidate bits, and records whether it has seen no candidate, a unique
+candidate index, or a duplicate.  The remaining certificate slack is deliberately
+ignored by this phase; later witness-decoder phases may use it for auxiliary
+encodings.
 
-**Target signature**:
-```
-def readCertificate (n : Nat) : PhasedProgram.{0}
-theorem readCertificate_run_finds_candidate ...
-```
+This is intentionally only a local TM-verifier phase.  It does **not** claim a
+full `accepts_eq`, construct `CanonicalAsymptoticVerifierComponents`, or build
+any lower-bound object.
 -/
+
+/-- Number of certificate cells available to the canonical verifier. -/
+def canonicalCertificateLength (n : Nat) : Nat :=
+  ComplexityInterfaces.certificateLength n certificateExponent
+
+@[simp] lemma canonicalCertificateLength_eq (n : Nat) :
+    canonicalCertificateLength n = n ^ 2 + 2 := by
+  simp [canonicalCertificateLength, certificateExponent, ComplexityInterfaces.certificateLength]
+
+/-- Number of tape cells scanned by Phase A: the whole input plus the whole
+certificate.  The candidate scan itself only uses the first `n + 2` certificate
+cells, but walking over the slack leaves the head at the end of the certificate
+region for the next verifier phase. -/
+def readCertificateSteps (n : Nat) : Nat :=
+  n + canonicalCertificateLength n
+
+@[simp] lemma readCertificateSteps_eq (n : Nat) :
+    readCertificateSteps n = n + (n ^ 2 + 2) := by
+  simp [readCertificateSteps]
+
+/-- Phase-A register.  The first component stores the unique candidate index
+seen so far (if any); the second component is the duplicate flag.  Once the
+duplicate flag is set, downstream phases must reject rather than interpreting
+the optional index as valid. -/
+abbrev CertificateScanState (n : Nat) := Option (Fin (n + 2)) × Bool
+
+/-- Initial Phase-A register: no candidate bit has been seen and no duplicate
+has been detected. -/
+def certificateScanInitial (n : Nat) : CertificateScanState n :=
+  (none, false)
+
+/-- The register is one-hot-valid exactly when Phase A has seen one candidate
+bit and no duplicate candidate bit. -/
+def certificateScanValid {n : Nat} (s : CertificateScanState n) : Prop :=
+  s.1.isSome ∧ s.2 = false
+
+/-- Read one candidate-region bit at candidate index `idx`.  A `false` bit
+leaves the register unchanged; the first `true` bit records `idx`; any later
+`true` bit sets the duplicate flag permanently. -/
+def certificateScanStep {n : Nat} (s : CertificateScanState n)
+    (idx : Fin (n + 2)) (bit : Bool) : CertificateScanState n :=
+  if bit then
+    if s.2 then
+      s
+    else
+      match s.1 with
+      | none => (some idx, false)
+      | some old => (some old, true)
+  else
+    s
+
+@[simp] lemma certificateScanStep_false {n : Nat}
+    (s : CertificateScanState n) (idx : Fin (n + 2)) :
+    certificateScanStep s idx false = s := by
+  simp [certificateScanStep]
+
+@[simp] lemma certificateScanStep_duplicate_true {n : Nat}
+    (s : CertificateScanState n) (idx : Fin (n + 2)) (hdup : s.2 = true) :
+    certificateScanStep s idx true = s := by
+  cases s with
+  | mk cand dup =>
+      cases dup <;> simp [certificateScanStep] at hdup ⊢
+
+@[simp] lemma certificateScanStep_first_true {n : Nat} (idx : Fin (n + 2)) :
+    certificateScanStep (n := n) (none, false) idx true = (some idx, false) := by
+  simp [certificateScanStep]
+
+@[simp] lemma certificateScanStep_second_true {n : Nat}
+    (old idx : Fin (n + 2)) :
+    certificateScanStep (n := n) (some old, false) idx true = (some old, true) := by
+  simp [certificateScanStep]
+
+/-- Update the Phase-A register for the cell currently scanned by phase `pos`.
+Positions `< n` belong to the input and are ignored.  In the certificate
+region, offsets `< n + 2` are one-hot candidate bits and offsets `≥ n + 2` are
+certificate slack, ignored by this navigation phase. -/
+def certificateScanUpdate (n pos : Nat) (s : CertificateScanState n)
+    (bit : Bool) : CertificateScanState n :=
+  if _hInput : pos < n then
+    s
+  else
+    let off := pos - n
+    if hCand : off < n + 2 then
+      certificateScanStep s ⟨off, hCand⟩ bit
+    else
+      s
+
+@[simp] lemma certificateScanUpdate_input {n pos : Nat}
+    (s : CertificateScanState n) (bit : Bool) (hInput : pos < n) :
+    certificateScanUpdate n pos s bit = s := by
+  simp [certificateScanUpdate, hInput]
+
+@[simp] lemma certificateScanUpdate_slack {n pos : Nat}
+    (s : CertificateScanState n) (bit : Bool)
+    (hInput : ¬ pos < n) (hSlack : ¬ pos - n < n + 2) :
+    certificateScanUpdate n pos s bit = s := by
+  simp [certificateScanUpdate, hInput, hSlack]
+
+/-- Phase A as a constant-state phased program.  Phase index `i` means that the
+head is positioned at tape cell `i` and the register summarizes all earlier
+candidate cells.  Active phases preserve the scanned bit, move right, and update
+the register exactly at candidate-region cells.  The final phase idles. -/
+def readCertificateProgram (n : Nat) :
+    ConstStatePhasedProgram (CertificateScanState n) where
+  numPhases := readCertificateSteps n + 1
+  startPhase := ⟨0, by omega⟩
+  startState := certificateScanInitial n
+  acceptPhase := ⟨readCertificateSteps n, by omega⟩
+  acceptState := certificateScanInitial n
+  transition := fun i s bit =>
+    if hActive : i.val < readCertificateSteps n then
+      (⟨i.val + 1, by omega⟩,
+       certificateScanUpdate n i.val s bit, bit, Move.right)
+    else
+      (⟨readCertificateSteps n, by omega⟩, s, bit, Move.stay)
+  timeBound := fun _ => readCertificateSteps n
+
+/-- Public Phase-A program in the general phased-program interface. -/
+def readCertificate (n : Nat) : PhasedProgram.{0} :=
+  (readCertificateProgram n).toPhased
+
+@[simp] lemma readCertificateProgram_timeBound (n inputLen : Nat) :
+    (readCertificateProgram n).timeBound inputLen = readCertificateSteps n := rfl
+
+@[simp] lemma readCertificate_timeBound (n inputLen : Nat) :
+    (readCertificate n).timeBound inputLen = readCertificateSteps n := rfl
+
+/-- Local transition lemma for an active Phase-A cell.  It is the key scaffold
+fact needed by later run-level proofs: one active step advances to the next
+phase, preserves the tape bit, moves right, and applies the pure scan update to
+the finite register. -/
+theorem readCertificateProgram_transition_active (n : Nat)
+    {i : Fin (readCertificateProgram n).numPhases}
+    (hActive : i.val < readCertificateSteps n)
+    (s : CertificateScanState n) (bit : Bool) :
+    (readCertificateProgram n).transition i s bit =
+      (⟨i.val + 1, by
+          have hlt : i.val + 1 < readCertificateSteps n + 1 := by omega
+          simpa [readCertificateProgram] using hlt⟩,
+       certificateScanUpdate n i.val s bit, bit, Move.right) := by
+  have hActive' : i.val < n + (n ^ 2 + 2) := by
+    simpa [readCertificateSteps] using hActive
+  simp [readCertificateProgram, hActive']
+
+/-- Local transition lemma for the terminal Phase-A cell.  Once the scan budget
+is exhausted, the phase idles at the terminal phase and does not alter the
+register or the scanned bit. -/
+theorem readCertificateProgram_transition_done (n : Nat)
+    {i : Fin (readCertificateProgram n).numPhases}
+    (hDone : ¬ i.val < readCertificateSteps n)
+    (s : CertificateScanState n) (bit : Bool) :
+    (readCertificateProgram n).transition i s bit =
+      (⟨readCertificateSteps n, by omega⟩, s, bit, Move.stay) := by
+  have hDone' : ¬ i.val < n + (n ^ 2 + 2) := by
+    simpa [readCertificateSteps] using hDone
+  have hge : n + (n ^ 2 + 2) ≤ i.val := Nat.le_of_not_gt hDone'
+  have hlt : i.val < n + (n ^ 2 + 2) + 1 := by
+    simpa [readCertificateProgram] using i.isLt
+  have hi : i.val = n + (n ^ 2 + 2) := by omega
+  simp [readCertificateProgram, hi]
 
 /-! ## Phase B — identify candidate (TODO)
 

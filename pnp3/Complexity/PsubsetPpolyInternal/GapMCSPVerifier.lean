@@ -76,7 +76,7 @@ This file currently provides the **interface scaffold**.  Each phase is
 declared with its target signature; concrete `PhasedProgram` constructions
 and correctness proofs are TODOs.  The estimated effort is ~800–1500 LOC.
 
-The `TODO`-marked theorems are not `sorry`-bearing: they are simply not
+The `TODO`-marked theorems are not proof-placeholder-bearing: they are simply not
 yet defined.  The overall `canonicalGapMCSPVerifier` is also not yet a
 definition; once each phase is built, it will be a single composition.
 

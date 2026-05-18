@@ -26,7 +26,7 @@ created so that:
    `pnp3/RefutedPredicates/` (PR 4b) becomes a mechanical follow-up
    after the FinalResult file split (PR 14).
 
-The six refuted predicates and their definition homes:
+The seven refuted predicates and their definition homes:
 
 | Refuted predicate                                  | Definition home                                                      |
 | -------------------------------------------------- | -------------------------------------------------------------------- |
@@ -35,6 +35,7 @@ The six refuted predicates and their definition homes:
 | `FormulaSupportBoundsFromMultiSwitchingContract`   | `pnp3/Magnification/AC0LocalityBridge.lean:42`                       |
 | `MagnificationAssumptions`                         | `pnp3/Magnification/FinalResultMainline.lean:152`                    |
 | `MagnificationAssumptions_fromPipeline`            | `pnp3/Magnification/FinalResultMainline.lean:161`                    |
+| `FormulaCertificateProviderPartial` (PR 13)        | `pnp3/Magnification/LocalityProvider_Partial.lean:2813`              |
 | `fixedParams ∧ uniformProvenance` (Probe 8a shape) | `pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean:532` (premise of `false_of_fixedParams_and_uniformProvenance`) |
 
 The first five are named definitions; the sixth is a conjunction shape
@@ -54,6 +55,7 @@ open Magnification (
   FormulaSupportBoundsPartial_fromPipeline_fixedParams
   MagnificationAssumptions
   MagnificationAssumptions_fromPipeline
+  FormulaCertificateProviderPartial
   OverbroadUniformFormulaProvenance
 )
 
@@ -105,6 +107,21 @@ Audit alias for the pipeline-aware refuted package structure
 -/
 abbrev RefutedPredicate_MagnificationAssumptions_fromPipeline : Type :=
   MagnificationAssumptions_fromPipeline
+
+/--
+Audit alias for the refuted certificate provider structure
+`Magnification.FormulaCertificateProviderPartial` (PR 13 audit).
+
+The universal quantification of `.cert` over any
+`PpolyFormula (gapPartialMCSP_Language p)` is satisfied by the truth-table
+hardwiring witness from Probe 2, which combined with the gap-target
+payload contradicts `MCSPGapLocality.no_local_function_solves_mcsp`.
+
+`False` is provable via
+`Pnp3.Tests.false_of_FormulaCertificateProviderPartial`.
+-/
+abbrev RefutedPredicate_FormulaCertificateProviderPartial : Type :=
+  FormulaCertificateProviderPartial
 
 /--
 Audit alias bundling the refuted "fixed-parameters with uniform

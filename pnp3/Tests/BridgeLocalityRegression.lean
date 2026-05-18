@@ -57,6 +57,16 @@ theorem i3_certificate_auto_no_manual_hCardHalf
     (ThirdPartyFacts.locality_lift_partial_of_certificate_auto
       (p := p) solver)
 
+/-- ⚠ **EX-FALSO WRAPPER** (PR 13 audit, Probe 13).
+
+`FormulaCertificateProviderPartial -> False` is established in
+`pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean` as
+`false_of_FormulaCertificateProviderPartial`.  Therefore every consumer of
+`hCert` — including this wiring — has a vacuous conclusion.  Retained as
+an integration-surface anchor for the migration trail (matching the policy
+for the support-bounds / multi-switching ex-falso wrappers from sessions
+59-67), but must NOT be presented as progress toward unconditional
+`NP ⊄ P/poly`. -/
 theorem i4_final_wiring_of_formulaCertificate
     (hCert : FormulaCertificateProviderPartial)
     (hAsym : AsymptoticFormulaTrackHypothesis)

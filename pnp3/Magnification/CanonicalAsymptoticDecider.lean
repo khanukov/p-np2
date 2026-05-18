@@ -677,6 +677,17 @@ theorem decideYesAt1_one_iff (T : PartialTruthTable 1) :
           · exact ⟨Circuit.const true, by simp [Circuit.size],
               consistent_const_at_one true T (Or.inr h0) (Or.inr h1)⟩
 
+/-- At canonical length `n = 4 = Partial.inputLen 1`, the asymptotic
+language is true iff the decoded partial table does NOT have the
+unique swap pattern (T 0 = some true, T 1 = some false).  This is the
+m=1 specialisation of `decideAsymptotic_at_inputLen_iff_size1`. -/
+theorem decideAsymptotic_at_four
+    (x : Core.BitVec (Partial.inputLen 1)) :
+    decideAsymptotic (Partial.inputLen 1) x = true ↔
+      ¬ (decodePartial x ⟨0, by decide⟩ = some true ∧
+         decodePartial x ⟨1, by decide⟩ = some false) := by
+  rw [decideAsymptotic_at_inputLen, decideYesAt1_one_iff]
+
 /-! ## Verifier-components bridge
 
 A `CanonicalAsymptoticVerifierComponents` packages a TM whose acceptance

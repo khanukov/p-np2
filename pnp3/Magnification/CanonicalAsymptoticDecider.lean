@@ -265,7 +265,11 @@ theorem decideAsymptotic_iff (N : Nat) (x : Bitstring N) :
 A `CanonicalAsymptoticVerifierComponents` packages a TM whose acceptance
 on `(x ++ w)` matches `decideAsymptotic N x` for every certificate `w`.
 This is the **minimum sufficient condition** for the witness package
-required by `canonicalAsymptoticData_of_TM`. -/
+required by `canonicalAsymptoticData_of_TM`.
+
+The plan for closing this is documented in
+`pnp3/Docs/TMVerifier_Session_Plan.md` — a 7-session decomposition
+totalling ~2500 LOC of TM-engineering with 0 sorries per session. -/
 
 /-- Components sufficient to build the canonical asymptotic NP witness. -/
 structure CanonicalAsymptoticVerifierComponents where

@@ -1084,15 +1084,12 @@ theorem parse_encodeTreeMCSPPrefixFields_field_obligations
     allZeroSlice_encode_pad codec fields⟩
 
 /--
-P1P-02L3 partial-progress marker.
+P1P-02L3 partial-progress marker retained for downstream users.
 
-The full canonical theorem
-`parseTreeMCSPPrefixInput threshold codec (encodeTreeMCSPPrefixFields codec fields)
- = some (fields.toPrefixInput codec)` remains open.  The landed partial lemmas
-above isolate the already-verified tag, table slice, and active-prefix slice;
-the remaining proof work is the generic Elias-gamma round trip and big-endian
-index-field round trip, plus dependent proof-field normalization in the final
-`PrefixInput` equality.
+The full canonical theorem `parse_encodeTreeMCSPPrefixFields` below now closes
+the parser/encoder round trip.  This narrower bundled obligation remains useful
+for callers that only need the original tag/table/prefix slice facts without
+opening the complete parser proof.
 -/
 theorem parse_encodeTreeMCSPPrefixFields_partial_obligation
     {threshold : Nat → Nat}
@@ -1170,6 +1167,27 @@ def parseTreeMCSPPrefixInput
       none
   else
     none
+
+/--
+The canonical raw-field encoder is accepted by the concrete tree-MCSP prefix parser.
+
+This is the final P1P-02 parser/encoder round-trip: the proof only unfolds the
+parser far enough to expose its executable field reads, then rewrites each read
+with the field-local inversion lemmas above.  The resulting record equality is
+handled by extensionality; proof fields are discharged by proof irrelevance.
+-/
+theorem parse_encodeTreeMCSPPrefixFields
+    {threshold : Nat → Nat}
+    (codec : TreeCircuitWitnessCodec threshold)
+    (fields : CanonicalRawTreeMCSPPrefixFields codec) :
+    parseTreeMCSPPrefixInput threshold codec
+      (encodeTreeMCSPPrefixFields codec fields) =
+    some (CanonicalRawTreeMCSPPrefixFields.toPrefixInput codec fields) := by
+  simp [parseTreeMCSPPrefixInput, readNatBE_encode_tag codec fields,
+    decodeGamma_encodeTreeMCSPPrefixFields codec fields, sliceBits_encode_x codec fields,
+    readNatBE_encode_i codec fields, fields.prefixLength_le, sliceBits_encode_p codec fields,
+    sliceBits_encode_pad codec fields, allZeroSlice_encode_pad codec fields,
+    CanonicalRawTreeMCSPPrefixFields.toPrefixInput]
 
 /-- The concrete parser packaged in the existing `PrefixParser` interface. -/
 def treeMCSPConcretePrefixParser

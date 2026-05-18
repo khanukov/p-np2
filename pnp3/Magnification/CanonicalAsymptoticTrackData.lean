@@ -145,7 +145,7 @@ lemma canonicalShannonBound (n : Nat) (hn : 8 ≤ n) :
   have hexp_strict : 2 ^ (n - 1) < 2 ^ (2 ^ (n - 1)) := by
     have hself : n - 1 < 2 ^ (n - 1) := Nat.lt_two_pow_self
     -- Monotonicity of `2^_` in the exponent.
-    exact Nat.pow_lt_pow_right (by decide : 1 < 2) hself
+    exact (Nat.pow_lt_pow_iff_right (by decide : 1 < (2 : Nat))).2 hself
   rw [hCount, hdiv]
   exact lt_of_le_of_lt hlin hexp_strict
 

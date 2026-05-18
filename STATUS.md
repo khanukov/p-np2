@@ -169,9 +169,32 @@ i.e., a concrete polynomial-time TM that verifies
 size-1 circuit certificate.  Mathematically this is the published
 OPS19/CJW20 fact `GapMCSP ∈ NP` (one-half-page argument in textbooks).
 
-Lean-engineering scope: ~800–1500 LOC composing the existing primitives
-in `pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit/` (`PhasedProgram`,
-`AtomicPrograms`, `BinaryCounter`, `ConstStatePhasedProgram`,
+**Decomposition (May 2026)**:
+`pnp3/Magnification/CanonicalAsymptoticDecider.lean` reduces the
+obligation to a single TM-engineering target.  It contains:
+
+- `decideAsymptotic : (n : Nat) → Bitstring n → Bool` — a computable
+  decider equal pointwise to `gapPartialMCSP_AsymptoticLanguage
+  canonicalAsymptoticSpec` (proved as `decideAsymptotic_iff`).
+- `findCanonicalSlice` — fully axiom-free `Option Nat` detector for
+  canonical input lengths `Partial.inputLen m = 2 · 2^m`.
+- `decideYesAt1` — enumerates the `m + 2` size-1 circuit candidates
+  and checks consistency via the now-proved `is_consistent_iff_bool`.
+- `CanonicalAsymptoticVerifierComponents` — the minimum-sufficient
+  structure: a TM `M` plus the property `accepts (x ++ w) = decideAsymptotic n x`
+  for every certificate `w`, plus the polynomial-runtime bound.
+- `witnessOfComponents : Components → GapPartialMCSP_Asymptotic_TMWitness
+  canonicalAsymptoticSpec` — closed bridge.
+
+After this decomposition, the only remaining sub-obligation is to
+construct a TM whose acceptance behaviour matches the (now-defined)
+`decideAsymptotic` function, with polynomial runtime.  All decidability
+and language correctness are closed; the engineering reduces to
+"build a TM that ignores `w` and computes a known Bool function on `x`".
+
+Lean-engineering scope (TM construction only): ~800–1500 LOC composing
+the existing primitives in `pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit/`
+(`PhasedProgram`, `AtomicPrograms`, `BinaryCounter`, `ConstStatePhasedProgram`,
 `GateWrappers`) into a verifier with five phases: read-certificate,
 identify-candidate, walk-table, check-consistency, accept.  No new
 mathematics required.

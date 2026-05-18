@@ -128,6 +128,7 @@ lean_lib PnP3 where
     Glob.one `Magnification.FinalResultCore,
     Glob.one `Magnification.UnconditionalResearchGap,
     Glob.one `Magnification.CanonicalAsymptoticTrackData,
+    Glob.one `Magnification.CanonicalAsymptoticDecider,
     Glob.one `Magnification.AuditRoutes.DistinguisherMatrixProvenance.V_gpt55.MatrixPrimitives,
     Glob.one `Magnification.AuditRoutes.DistinguisherMatrixProvenance.V_gpt55.ToySeparation,
     Glob.one `Magnification.FinalResult,

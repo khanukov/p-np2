@@ -357,6 +357,95 @@ theorem decideAsymptotic_at_two (x : Bitstring 2) :
   rw [heq, decideAsymptotic_at_inputLen]
   exact decideYesAt1_zero_always_true _
 
+/-! ## Slice m=1: a concrete NO instance
+
+At m=1, `size1Candidates 1 = [const false, const true, input 0]`.
+The slice fails (`decideYesAt1 1 T = false`) exactly when both
+constants are inconsistent (table contains both `some true` and
+`some false`) AND the input-0 circuit is inconsistent (specifically:
+T 0 = some true OR T 1 = some false).
+
+The simplest concrete NO instance: T 0 = some true, T 1 = some false.
+This makes all three size-1 candidates fail simultaneously.
+-/
+
+/-- `Circuit.const false` is inconsistent with any table that has a
+`some true` cell. -/
+private lemma not_consistent_const_false_at_one
+    (T : PartialTruthTable 1) (h : T ⟨0, by decide⟩ = some true) :
+    ¬ is_consistent (Circuit.const false) T := by
+  intro hc
+  have hidx : assignmentIndex (Core.vecOfNat 1 0) = ⟨0, by decide⟩ := by
+    ext; show 0 % _ = 0; decide
+  have hat := hc (Core.vecOfNat 1 0)
+  rw [hidx, h] at hat
+  simp [Circuit.eval] at hat
+
+/-- `Circuit.const true` is inconsistent with any table that has a
+`some false` cell. -/
+private lemma not_consistent_const_true_at_one
+    (T : PartialTruthTable 1) (h : T ⟨1, by decide⟩ = some false) :
+    ¬ is_consistent (Circuit.const true) T := by
+  intro hc
+  have hidx : assignmentIndex (Core.vecOfNat 1 1) = ⟨1, by decide⟩ := by
+    ext
+    show bitVecToNat (Core.vecOfNat 1 1) % Partial.tableLen 1 = 1
+    have hbn := bitVecToNat_vecOfNat (n := 1) (m := 1) (by decide)
+    rw [hbn]; decide
+  have hat := hc (Core.vecOfNat 1 1)
+  rw [hidx, h] at hat
+  simp [Circuit.eval] at hat
+
+/-- `Circuit.input 0` is inconsistent if `T 0 = some true`
+(since `(input 0).eval (vecOfNat 1 0) = false ≠ true`). -/
+private lemma not_consistent_input_zero_at_one
+    (T : PartialTruthTable 1) (h : T ⟨0, by decide⟩ = some true) :
+    ¬ is_consistent (Circuit.input (⟨0, by decide⟩ : Fin 1)) T := by
+  intro hc
+  have hidx : assignmentIndex (Core.vecOfNat 1 0) = ⟨0, by decide⟩ := by
+    ext; show 0 % _ = 0; decide
+  have hat := hc (Core.vecOfNat 1 0)
+  rw [hidx, h] at hat
+  -- hat : Circuit.eval (input ⟨0,_⟩) (vecOfNat 1 0) = true
+  -- (input k).eval x = x k
+  have hev : Circuit.eval (Circuit.input (⟨0, by decide⟩ : Fin 1))
+      (Core.vecOfNat 1 0) = false := by
+    show Core.vecOfNat 1 0 ⟨0, by decide⟩ = false
+    show Nat.testBit 0 0 = false
+    decide
+  rw [hev] at hat
+  exact Bool.false_ne_true hat
+
+/-- Concrete NO witness at `m = 1`: if T 0 = some true and
+T 1 = some false, then no size-1 circuit is consistent with T. -/
+theorem decideYesAt1_one_NO_case
+    (T : PartialTruthTable 1)
+    (h0 : T ⟨0, by decide⟩ = some true)
+    (h1 : T ⟨1, by decide⟩ = some false) :
+    decideYesAt1 1 T = false := by
+  by_contra hne
+  have hne' : decideYesAt1 1 T ≠ false := hne
+  -- decideYesAt1 1 T must be true; extract a consistent size-1 candidate
+  cases hT : decideYesAt1 1 T with
+  | false => exact hne' hT
+  | true =>
+    rcases (decideYesAt1_iff 1 T).mp hT with ⟨C, hSize, hCons⟩
+    have hMem : C ∈ size1Candidates 1 :=
+      mem_size1Candidates_of_size_le_one C hSize
+    -- C is one of: const false, const true, input ⟨0, _⟩.
+    rcases List.mem_cons.mp hMem with rfl | hrest
+    · exact not_consistent_const_false_at_one T h0 hCons
+    rcases List.mem_cons.mp hrest with rfl | hrest2
+    · exact not_consistent_const_true_at_one T h1 hCons
+    rcases List.mem_map.mp hrest2 with ⟨i, _, hi⟩
+    -- i : Fin 1, so i = ⟨0, _⟩.  Then C = Circuit.input i.
+    have hi_eq : i = ⟨0, by decide⟩ := by
+      have hsub : Subsingleton (Fin 1) := by infer_instance
+      exact hsub.elim _ _
+    subst hi_eq
+    rw [← hi] at hCons
+    exact not_consistent_input_zero_at_one T h0 hCons
+
 /-! ## Verifier-components bridge
 
 A `CanonicalAsymptoticVerifierComponents` packages a TM whose acceptance

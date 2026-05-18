@@ -698,6 +698,282 @@ theorem sliceBits_encode_p
     exact Nat.add_lt_add_left j.2 _
   simp [hnotTag, hnotGamma, hnotX, hnotI, hp]
 
+
+/-- The full encoder exposes the standalone gamma bits at the gamma offset. -/
+theorem readBit_encode_gamma
+    {threshold : Nat → Nat}
+    (codec : TreeCircuitWitnessCodec threshold)
+    (fields : CanonicalRawTreeMCSPPrefixFields codec)
+    {t : Nat} (ht : t < gammaLen fields.n) :
+    readBit? (encodeTreeMCSPPrefixFields codec fields) (tagLen + t) =
+      some (gammaBit fields.n ⟨t, ht⟩) := by
+  unfold readBit?
+  have hm : tagLen + t < treeMCSPPrefixM codec fields.n := by
+    unfold treeMCSPPrefixM
+    omega
+  simp [hm]
+  unfold encodeTreeMCSPPrefixFields
+  have hnotTag : ¬ tagLen + t < tagLen := by omega
+  have hGamma : tagLen + t < tagLen + gammaLen fields.n := by omega
+  simp [hnotTag, hGamma]
+
+/--
+`decodeGammaAux?` sees the same gamma tape inside the full tree-MCSP encoder as
+it sees in the standalone `gammaBit` vector, from any point in the unary zero
+run.  This is the offset-transport version of `decodeGammaAux_gammaBit_from`.
+-/
+theorem decodeGammaAux_encodeTreeMCSPPrefixFields_from
+    {threshold : Nat → Nat}
+    (codec : TreeCircuitWitnessCodec threshold)
+    (fields : CanonicalRawTreeMCSPPrefixFields codec)
+    (fuel zeros : Nat)
+    (hzeros : zeros ≤ bitLength (fields.n + 1) - 1)
+    (hfuel : bitLength (fields.n + 1) - 1 - zeros < fuel) :
+    decodeGammaAux? (encodeTreeMCSPPrefixFields codec fields) tagLen fuel zeros =
+      some (fields.n, gammaLen fields.n) := by
+  induction fuel generalizing zeros with
+  | zero => omega
+  | succ fuel' ih =>
+      rw [decodeGammaAux?]
+      have hLpos : 0 < bitLength (fields.n + 1) :=
+        bitLength_pos_of_pos (Nat.succ_pos fields.n)
+      have hread : readBit? (encodeTreeMCSPPrefixFields codec fields) (tagLen + zeros) =
+          some (gammaBit fields.n ⟨zeros, by
+            rw [gammaLen_eq_zeros_add_bitLength]
+            omega⟩) := by
+        exact readBit_encode_gamma codec fields (by
+          rw [gammaLen_eq_zeros_add_bitLength]
+          omega)
+      rw [hread]
+      by_cases hz : zeros < bitLength (fields.n + 1) - 1
+      · have hbit : gammaBit fields.n ⟨zeros, by
+            rw [gammaLen_eq_zeros_add_bitLength]
+            omega⟩ = false := by
+          exact gammaBit_zero_prefix fields.n hz
+        simp [hbit]
+        apply ih
+        · omega
+        · omega
+      · have hzeq : zeros = bitLength (fields.n + 1) - 1 := by omega
+        subst hzeq
+        simp [gammaBit_terminator]
+        rw [show tagLen + (bitLength (fields.n + 1) - 1) + 1 =
+            tagLen + bitLength (fields.n + 1) by omega]
+        have hpayload : readNatBE (encodeTreeMCSPPrefixFields codec fields)
+            (tagLen + bitLength (fields.n + 1))
+            (bitLength (fields.n + 1) - 1) =
+            readNatBE (fun j : Fin (gammaLen fields.n) => gammaBit fields.n j)
+              (bitLength (fields.n + 1))
+              (bitLength (fields.n + 1) - 1) := by
+          apply readNatBE_eq_of_readBit_eq
+          intro t ht
+          have hGamma : bitLength (fields.n + 1) + t < gammaLen fields.n := by
+            rw [gammaLen_eq_zeros_add_bitLength]
+            omega
+          change readBit? (encodeTreeMCSPPrefixFields codec fields)
+              ((tagLen + bitLength (fields.n + 1)) + t) =
+            readBit? (fun j : Fin (gammaLen fields.n) => gammaBit fields.n j)
+              (bitLength (fields.n + 1) + t)
+          rw [show (tagLen + bitLength (fields.n + 1)) + t =
+              tagLen + (bitLength (fields.n + 1) + t) by omega]
+          rw [readBit_encode_gamma codec fields hGamma]
+          unfold readBit?
+          simp [hGamma]
+        rw [hpayload, readNatBE_gammaBit_payload]
+        simp only [Option.bind_some, Option.some.injEq, Prod.mk.injEq]
+        constructor
+        · have hv := gamma_payload_value fields.n
+          omega
+        · rw [gammaLen_eq_two_mul_zeros_add_one]
+
+/-- The full encoder decodes its gamma field at the byte-tag offset. -/
+theorem decodeGamma_encodeTreeMCSPPrefixFields
+    {threshold : Nat → Nat}
+    (codec : TreeCircuitWitnessCodec threshold)
+    (fields : CanonicalRawTreeMCSPPrefixFields codec) :
+    decodeGamma? (encodeTreeMCSPPrefixFields codec fields) tagLen =
+      some (fields.n, gammaLen fields.n) := by
+  unfold decodeGamma?
+  apply decodeGammaAux_encodeTreeMCSPPrefixFields_from
+  · omega
+  · have hlen : gammaLen fields.n = 2 * (bitLength (fields.n + 1) - 1) + 1 :=
+      gammaLen_eq_two_mul_zeros_add_one fields.n
+    unfold treeMCSPPrefixM
+    omega
+
+/-- The encoded active-prefix length field is exactly the raw `i` value. -/
+theorem readNatBE_encode_i
+    {threshold : Nat → Nat}
+    (codec : TreeCircuitWitnessCodec threshold)
+    (fields : CanonicalRawTreeMCSPPrefixFields codec) :
+    readNatBE (encodeTreeMCSPPrefixFields codec fields)
+      (tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n)
+      (idxWidth codec.witnessBits fields.n) =
+    some fields.i := by
+  let iOffset := tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n
+  calc
+    readNatBE (encodeTreeMCSPPrefixFields codec fields) iOffset
+        (idxWidth codec.witnessBits fields.n) =
+        readNatBE (natBEField fields.i (idxWidth codec.witnessBits fields.n)) 0
+          (idxWidth codec.witnessBits fields.n) := by
+      apply readNatBE_eq_of_readBit_eq
+      intro t ht
+      unfold readBit? natBEField
+      have hm : iOffset + t < treeMCSPPrefixM codec fields.n := by
+        unfold iOffset treeMCSPPrefixM
+        omega
+      have hNat : t < idxWidth codec.witnessBits fields.n := ht
+      simp [hm, hNat]
+      unfold encodeTreeMCSPPrefixFields
+      have hnotTag : ¬ iOffset + t < tagLen := by
+        unfold iOffset
+        omega
+      have hnotGamma : ¬ iOffset + t < tagLen + gammaLen fields.n := by
+        unfold iOffset
+        omega
+      have hnotX : ¬ iOffset + t <
+          tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n := by
+        unfold iOffset
+        omega
+      have hI : iOffset + t <
+          tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+            idxWidth codec.witnessBits fields.n := by
+        unfold iOffset
+        omega
+      have hsub : iOffset + t -
+          (tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n) = t := by
+        unfold iOffset
+        omega
+      simp [hnotTag, hnotGamma, hnotX, hI, hsub]
+    _ = some fields.i := by
+      exact readNatBE_natBEField_zero fields.i (idxWidth codec.witnessBits fields.n)
+        (prefixLength_lt_two_pow_idxWidth fields.prefixLength_le)
+
+/-- The encoded inactive witness suffix is precisely all-zero padding. -/
+theorem sliceBits_encode_pad
+    {threshold : Nat → Nat}
+    (codec : TreeCircuitWitnessCodec threshold)
+    (fields : CanonicalRawTreeMCSPPrefixFields codec) :
+    sliceBits? (encodeTreeMCSPPrefixFields codec fields)
+      (tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+        idxWidth codec.witnessBits fields.n + fields.i)
+      (codec.witnessBits fields.n - fields.i) =
+    some (fun _ : Fin (codec.witnessBits fields.n - fields.i) => false) := by
+  unfold sliceBits?
+  have hWithin : tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+      idxWidth codec.witnessBits fields.n + fields.i +
+        (codec.witnessBits fields.n - fields.i) ≤ treeMCSPPrefixM codec fields.n := by
+    have hi := fields.prefixLength_le
+    unfold treeMCSPPrefixM
+    omega
+  simp [hWithin]
+  funext j
+  unfold encodeTreeMCSPPrefixFields
+  have hnotTag : ¬ tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+      idxWidth codec.witnessBits fields.n + fields.i + j.1 < tagLen := by omega
+  have hnotGamma : ¬ tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+      idxWidth codec.witnessBits fields.n + fields.i + j.1 < tagLen + gammaLen fields.n := by omega
+  have hnotX : ¬ tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+      idxWidth codec.witnessBits fields.n + fields.i + j.1 <
+        tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n := by omega
+  have hnotI : ¬ tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+      idxWidth codec.witnessBits fields.n + fields.i + j.1 <
+        tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+          idxWidth codec.witnessBits fields.n := by omega
+  have hnotP : ¬ tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+      idxWidth codec.witnessBits fields.n + fields.i + j.1 <
+        tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+          idxWidth codec.witnessBits fields.n + fields.i := by omega
+  simp [hnotTag, hnotGamma, hnotX, hnotI, hnotP]
+
+/-- If every bit in a slice reads as false, the executable zero-check accepts it. -/
+theorem allZeroSlice?_eq_true_of_readBit_false
+    {m : Nat} (y : PrefixBitVec m) (offset width : Nat)
+    (h : ∀ t : Nat, t < width → readBit? y (offset + t) = some false) :
+    allZeroSlice? y offset width = some true := by
+  induction width generalizing offset with
+  | zero => simp [allZeroSlice?]
+  | succ k ih =>
+      rw [allZeroSlice?]
+      have hb : readBit? y offset = some false := by
+        simpa using h 0 (Nat.zero_lt_succ k)
+      rw [hb]
+      have hrec : allZeroSlice? y (offset + 1) k = some true := by
+        apply ih
+        intro t ht
+        have := h (t + 1) (Nat.succ_lt_succ ht)
+        simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using this
+      simp [hrec]
+
+/-- The executable zero-padding check accepts the full encoder's inactive suffix. -/
+theorem allZeroSlice_encode_pad
+    {threshold : Nat → Nat}
+    (codec : TreeCircuitWitnessCodec threshold)
+    (fields : CanonicalRawTreeMCSPPrefixFields codec) :
+    allZeroSlice? (encodeTreeMCSPPrefixFields codec fields)
+      (tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+        idxWidth codec.witnessBits fields.n + fields.i)
+      (codec.witnessBits fields.n - fields.i) =
+    some true := by
+  apply allZeroSlice?_eq_true_of_readBit_false
+  intro t ht
+  unfold readBit?
+  have hm : tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+      idxWidth codec.witnessBits fields.n + fields.i + t < treeMCSPPrefixM codec fields.n := by
+    unfold treeMCSPPrefixM
+    omega
+  simp [hm]
+  unfold encodeTreeMCSPPrefixFields
+  have hnotTag : ¬ tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+      idxWidth codec.witnessBits fields.n + fields.i + t < tagLen := by omega
+  have hnotGamma : ¬ tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+      idxWidth codec.witnessBits fields.n + fields.i + t < tagLen + gammaLen fields.n := by omega
+  have hnotX : ¬ tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+      idxWidth codec.witnessBits fields.n + fields.i + t <
+        tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n := by omega
+  have hnotI : ¬ tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+      idxWidth codec.witnessBits fields.n + fields.i + t <
+        tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+          idxWidth codec.witnessBits fields.n := by omega
+  have hnotP : ¬ tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+      idxWidth codec.witnessBits fields.n + fields.i + t <
+        tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+          idxWidth codec.witnessBits fields.n + fields.i := by omega
+  simp [hnotTag, hnotGamma, hnotX, hnotI, hnotP]
+
+/-- Bundled parser-field obligations for the canonical tree-MCSP prefix encoder. -/
+theorem parse_encodeTreeMCSPPrefixFields_field_obligations
+    {threshold : Nat → Nat}
+    (codec : TreeCircuitWitnessCodec threshold)
+    (fields : CanonicalRawTreeMCSPPrefixFields codec) :
+    readNatBE (encodeTreeMCSPPrefixFields codec fields) 0 tagLen = some treePrefixTag ∧
+    decodeGamma? (encodeTreeMCSPPrefixFields codec fields) tagLen =
+      some (fields.n, gammaLen fields.n) ∧
+    sliceBits? (encodeTreeMCSPPrefixFields codec fields)
+      (tagLen + gammaLen fields.n) (Pnp3.Models.Partial.tableLen fields.n) = some fields.x ∧
+    readNatBE (encodeTreeMCSPPrefixFields codec fields)
+      (tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n)
+      (idxWidth codec.witnessBits fields.n) = some fields.i ∧
+    sliceBits? (encodeTreeMCSPPrefixFields codec fields)
+      (tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+        idxWidth codec.witnessBits fields.n) fields.i = some fields.p ∧
+    sliceBits? (encodeTreeMCSPPrefixFields codec fields)
+      (tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+        idxWidth codec.witnessBits fields.n + fields.i)
+      (codec.witnessBits fields.n - fields.i) =
+        some (fun _ : Fin (codec.witnessBits fields.n - fields.i) => false) ∧
+    allZeroSlice? (encodeTreeMCSPPrefixFields codec fields)
+      (tagLen + gammaLen fields.n + Pnp3.Models.Partial.tableLen fields.n +
+        idxWidth codec.witnessBits fields.n + fields.i)
+      (codec.witnessBits fields.n - fields.i) = some true := by
+  exact ⟨readNatBE_encode_tag codec fields,
+    decodeGamma_encodeTreeMCSPPrefixFields codec fields,
+    sliceBits_encode_x codec fields,
+    readNatBE_encode_i codec fields,
+    sliceBits_encode_p codec fields,
+    sliceBits_encode_pad codec fields,
+    allZeroSlice_encode_pad codec fields⟩
+
 /--
 P1P-02L3 partial-progress marker.
 

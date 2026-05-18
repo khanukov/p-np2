@@ -646,6 +646,17 @@ theorem seqList_run_singleton (p : ConstStatePhasedProgram S) {n : Nat}
         (TM.runConfig (M := (seqList [p]).toPhased.toTM) c (p.timeBound n)) 1 := by
   rw [seqList_run_decomp p [] c, seqList_timeBound_nil]
 
+/-- Number of phases in `seqList [p]`: just `p.numPhases + 1` (idleCS contributes 1). -/
+theorem seqList_numPhases_singleton (p : ConstStatePhasedProgram S) :
+    (seqList [p]).numPhases = p.numPhases + 1 := by
+  rw [seqList_numPhases_cons, seqList_numPhases_nil]
+
+/-- Total timeBound for a 2-element seqList. -/
+theorem seqList_timeBound_two (p1 p2 : ConstStatePhasedProgram S) (n : Nat) :
+    (seqList [p1, p2]).timeBound n = p1.timeBound n + p2.timeBound n + 2 := by
+  rw [seqList_timeBound_cons, seqList_timeBound_cons, seqList_timeBound_nil]
+  omega
+
 end IdleSeqList
 
 /-! ### Embedding from P1's TM into the composed `seq P1 P2` TM

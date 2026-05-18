@@ -1171,6 +1171,44 @@ def parseTreeMCSPPrefixInput
   else
     none
 
+
+/--
+The canonical parser accepts the canonical encoder and reconstructs exactly the
+raw-field `PrefixInput` view.
+
+This is the final parser/encoder assembly theorem for the P1P-02 convention. It
+uses the already-localized field inversion lemmas for the tag, gamma-encoded
+parameter, table slice, active-prefix length, active witness-prefix slice, and
+zero padding; the only dependent-record wrinkle is the parser's freshly-created
+`i ≤ witnessBits n` proof, which is identified with the raw-field proof by proof
+irrelevance.
+-/
+theorem parse_encodeTreeMCSPPrefixFields
+    {threshold : Nat → Nat}
+    (codec : TreeCircuitWitnessCodec threshold)
+    (fields : CanonicalRawTreeMCSPPrefixFields codec) :
+    parseTreeMCSPPrefixInput threshold codec
+      (encodeTreeMCSPPrefixFields codec fields) =
+    some (CanonicalRawTreeMCSPPrefixFields.toPrefixInput codec fields) := by
+  unfold parseTreeMCSPPrefixInput
+  rw [readNatBE_encode_tag codec fields]
+  simp [treePrefixTag]
+  rw [decodeGamma_encodeTreeMCSPPrefixFields codec fields]
+  simp only [Option.bind_some]
+  simp
+  rw [sliceBits_encode_x codec fields]
+  simp only [Option.bind_some]
+  rw [readNatBE_encode_i codec fields]
+  simp [fields.prefixLength_le]
+  rw [sliceBits_encode_p codec fields]
+  simp only [Option.bind_some]
+  rw [sliceBits_encode_pad codec fields]
+  simp only [Option.bind_some]
+  rw [allZeroSlice_encode_pad codec fields]
+  simp only [Option.bind_some]
+  simp
+  rfl
+
 /-- The concrete parser packaged in the existing `PrefixParser` interface. -/
 def treeMCSPConcretePrefixParser
     (threshold : Nat → Nat)

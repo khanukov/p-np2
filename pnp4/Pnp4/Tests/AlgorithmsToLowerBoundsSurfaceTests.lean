@@ -60,6 +60,7 @@ def check_C_DAG : CircuitFamilyClass :=
 #print axioms Pnp4.Frontier.ContractExpansion.decodeGammaAux_gammaBit_from_at
 #print axioms Pnp4.Frontier.ContractExpansion.prefixLength_lt_two_pow_idxWidth
 #print axioms Pnp4.Frontier.ContractExpansion.tableLen_le_treeMCSPPrefixM
+#print axioms Pnp4.Frontier.ContractExpansion.parse_encodeTreeMCSPPrefixFields
 #print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_bad_tag
 #print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_malformed_rejected
 

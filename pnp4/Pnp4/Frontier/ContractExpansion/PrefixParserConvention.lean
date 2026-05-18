@@ -1171,6 +1171,34 @@ def parseTreeMCSPPrefixInput
   else
     none
 
+
+/--
+The canonical raw-field encoder is a right inverse of the concrete parser.
+
+This theorem is purely parser/serialization infrastructure: it assembles the
+already-localized field reader lemmas for the tag, gamma-coded target length,
+truth-table slice, active-prefix-length field, active witness-prefix slice, and
+zero-padding check.  After those rewrites, Lean's proof irrelevance normalizes
+the parser-produced bound proof against the bound stored in the raw fields.
+-/
+theorem parse_encodeTreeMCSPPrefixFields
+    {threshold : Nat → Nat}
+    (codec : TreeCircuitWitnessCodec threshold)
+    (fields : CanonicalRawTreeMCSPPrefixFields codec) :
+    parseTreeMCSPPrefixInput threshold codec
+      (encodeTreeMCSPPrefixFields codec fields) =
+    some (CanonicalRawTreeMCSPPrefixFields.toPrefixInput codec fields) := by
+  simp [parseTreeMCSPPrefixInput,
+    readNatBE_encode_tag codec fields,
+    decodeGamma_encodeTreeMCSPPrefixFields codec fields,
+    sliceBits_encode_x codec fields,
+    readNatBE_encode_i codec fields,
+    fields.prefixLength_le,
+    sliceBits_encode_p codec fields,
+    sliceBits_encode_pad codec fields,
+    allZeroSlice_encode_pad codec fields,
+    CanonicalRawTreeMCSPPrefixFields.toPrefixInput]
+
 /-- The concrete parser packaged in the existing `PrefixParser` interface. -/
 def treeMCSPConcretePrefixParser
     (threshold : Nat → Nat)

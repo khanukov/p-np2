@@ -571,6 +571,28 @@ private lemma consistent_input_zero_at_one
       show x ⟨0, by decide⟩ = true
       exact hx0
 
+/-- `Circuit.const b` is consistent with T at m=1 when both cells are
+either `none` or match `b`. -/
+private lemma consistent_const_at_one
+    (b : Bool) (T : PartialTruthTable 1)
+    (h0 : T ⟨0, by decide⟩ = none ∨ T ⟨0, by decide⟩ = some b)
+    (h1 : T ⟨1, by decide⟩ = none ∨ T ⟨1, by decide⟩ = some b) :
+    is_consistent (Circuit.const b) T := by
+  apply (is_consistent_const_iff_at b T).mpr
+  intro i hne
+  have hi_lt : (i : Nat) < 2 := i.isLt
+  interval_cases hiv : (i : Nat)
+  · have hi_eq : i = ⟨0, by decide⟩ := by ext; exact hiv
+    subst hi_eq
+    cases h0 with
+    | inl hnone => rw [hnone] at hne; exact Option.noConfusion hne
+    | inr hb => rw [hb] at hne; injection hne with hbb; cases b <;> simp at hbb
+  · have hi_eq : i = ⟨1, by decide⟩ := by ext; exact hiv
+    subst hi_eq
+    cases h1 with
+    | inl hnone => rw [hnone] at hne; exact Option.noConfusion hne
+    | inr hb => rw [hb] at hne; injection hne with hbb; cases b <;> simp at hbb
+
 /-- Concrete YES witness at `m = 1`: if T 0 = some false and
 T 1 = some true, then `decideYesAt1 1 T = true` via `Circuit.input 0`.
 This is the "identity-on-one-bit" pattern that distinguishes `input 0`
@@ -614,6 +636,46 @@ theorem decideYesAt1_one_NO_case
     subst hi_eq
     rw [← hi] at hCons
     exact not_consistent_input_zero_at_one T h0 hCons
+
+/-- Complete characterisation of `decideYesAt1 1 T`: at m=1, the
+slice-1 decider returns `false` only on the "swap pattern"
+T 0 = some true, T 1 = some false; in all other 8 of 9 configurations
+of `(T 0, T 1)`, at least one size-1 candidate is consistent. -/
+theorem decideYesAt1_one_iff (T : PartialTruthTable 1) :
+    decideYesAt1 1 T = true ↔
+      ¬ (T ⟨0, by decide⟩ = some true ∧ T ⟨1, by decide⟩ = some false) := by
+  constructor
+  · intro hYes ⟨h0t, h1f⟩
+    have : decideYesAt1 1 T = false := decideYesAt1_one_NO_case T h0t h1f
+    rw [this] at hYes
+    exact Bool.false_ne_true hYes
+  · intro hnotSwap
+    apply (decideYesAt1_iff 1 T).mpr
+    cases h0 : T ⟨0, by decide⟩ with
+    | none =>
+      cases h1 : T ⟨1, by decide⟩ with
+      | none =>
+        exact ⟨Circuit.const false, by simp [Circuit.size],
+          consistent_const_at_one false T (Or.inl h0) (Or.inl h1)⟩
+      | some b =>
+        exact ⟨Circuit.const b, by simp [Circuit.size],
+          consistent_const_at_one b T (Or.inl h0) (Or.inr h1)⟩
+    | some b0 =>
+      cases h1 : T ⟨1, by decide⟩ with
+      | none =>
+        exact ⟨Circuit.const b0, by simp [Circuit.size],
+          consistent_const_at_one b0 T (Or.inr h0) (Or.inl h1)⟩
+      | some b1 =>
+        cases b0
+        · cases b1
+          · exact ⟨Circuit.const false, by simp [Circuit.size],
+              consistent_const_at_one false T (Or.inr h0) (Or.inr h1)⟩
+          · exact ⟨Circuit.input ⟨0, by decide⟩, by simp [Circuit.size],
+              consistent_input_zero_at_one T (Or.inr h0) (Or.inr h1)⟩
+        · cases b1
+          · exact absurd ⟨h0, h1⟩ hnotSwap
+          · exact ⟨Circuit.const true, by simp [Circuit.size],
+              consistent_const_at_one true T (Or.inr h0) (Or.inr h1)⟩
 
 /-! ## Verifier-components bridge
 

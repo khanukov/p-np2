@@ -553,6 +553,73 @@ theorem decodeGamma_gammaBit (n : Nat) :
   exact decodeGammaAux_gammaBit n
 
 /--
+Fully-ambient gamma decoder invariant.
+
+If the bits of an ambient vector `y` agree with `gammaBit n` throughout the
+gamma window starting at `offset`, then the executable gamma-search loop
+decodes `(n, gammaLen n)` from any point in the unary-zero run.  This is the
+generalization of `decodeGammaAux_gammaBit_from` to an arbitrary carrier and
+arbitrary `offset`; the encoder-specific corollary
+`decodeGammaAux_encodeTreeMCSPPrefixFields_from` becomes one of its instances.
+Ported from the closed sibling variant PR #1351 for long-term reuse — future
+parser-side proofs can hit this lemma against any layout that satisfies the
+bit-agreement hypothesis, without re-doing the gamma arithmetic.
+-/
+theorem decodeGammaAux_gammaBit_from_at
+    {m : Nat} (y : PrefixBitVec m) (offset n fuel zeros : Nat)
+    (hbits : ∀ (t : Nat) (ht : t < gammaLen n),
+      readBit? y (offset + t) = some (gammaBit n ⟨t, ht⟩))
+    (hzeros : zeros ≤ bitLength (n + 1) - 1)
+    (hfuel : bitLength (n + 1) - 1 - zeros < fuel) :
+    decodeGammaAux? y offset fuel zeros = some (n, gammaLen n) := by
+  induction fuel generalizing zeros with
+  | zero => omega
+  | succ fuel' ih =>
+      rw [decodeGammaAux?]
+      have hzeros_lt_gamma : zeros < gammaLen n := by
+        rw [gammaLen_eq_zeros_add_bitLength]
+        exact Nat.lt_of_le_of_lt hzeros
+          (Nat.lt_add_of_pos_right (bitLength_pos_of_pos (Nat.succ_pos n)))
+      have hread : readBit? y (offset + zeros) =
+          some (gammaBit n ⟨zeros, hzeros_lt_gamma⟩) :=
+        hbits zeros hzeros_lt_gamma
+      rw [hread]
+      by_cases hz : zeros < bitLength (n + 1) - 1
+      · have hbit : gammaBit n ⟨zeros, by
+            rw [gammaLen_eq_zeros_add_bitLength]; omega⟩ = false :=
+          gammaBit_zero_prefix n hz
+        simp [hbit]
+        apply ih
+        · omega
+        · have hstep : bitLength (n + 1) - 1 - (zeros + 1) + 1 =
+              bitLength (n + 1) - 1 - zeros := by omega
+          omega
+      · have hzeq : zeros = bitLength (n + 1) - 1 := by omega
+        subst hzeq
+        simp [gammaBit_terminator]
+        have hoffPayload : offset + (bitLength (n + 1) - 1) + 1 =
+            offset + bitLength (n + 1) := by
+          rw [Nat.add_assoc]; congr 1
+        rw [hoffPayload]
+        have hpayload :
+            readNatBE y (offset + bitLength (n + 1)) (bitLength (n + 1) - 1) =
+              readNatBE (fun j : Fin (gammaLen n) => gammaBit n j)
+                (bitLength (n + 1)) (bitLength (n + 1) - 1) := by
+          apply readNatBE_eq_of_readBit_eq
+          intro t ht
+          have hstand : bitLength (n + 1) + t < gammaLen n := by
+            rw [gammaLen_eq_zeros_add_bitLength]; omega
+          have hamb := hbits (bitLength (n + 1) + t) hstand
+          have hgamma : bitLength (n + 1) + t < gammaLen n := hstand
+          simpa [readBit?, hgamma, Nat.add_assoc] using hamb
+        rw [hpayload, readNatBE_gammaBit_payload]
+        simp only [Option.bind_some, Option.some.injEq, Prod.mk.injEq]
+        constructor
+        · have hv := gamma_payload_value n
+          omega
+        · rw [gammaLen_eq_two_mul_zeros_add_one]
+
+/--
 Computable encoder for canonical raw tree-MCSP prefix fields.
 
 The output has the canonical ambient length by construction.  Its layout is

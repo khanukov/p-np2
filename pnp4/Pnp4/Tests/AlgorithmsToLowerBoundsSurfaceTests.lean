@@ -57,6 +57,7 @@ def check_C_DAG : CircuitFamilyClass :=
 #print axioms Pnp4.Frontier.ContractExpansion.readNatBE_gammaBit_payload
 #print axioms Pnp4.Frontier.ContractExpansion.decodeGammaAux_gammaBit
 #print axioms Pnp4.Frontier.ContractExpansion.decodeGamma_gammaBit
+#print axioms Pnp4.Frontier.ContractExpansion.decodeGammaAux_gammaBit_from_at
 #print axioms Pnp4.Frontier.ContractExpansion.prefixLength_lt_two_pow_idxWidth
 #print axioms Pnp4.Frontier.ContractExpansion.tableLen_le_treeMCSPPrefixM
 #print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_bad_tag
@@ -2497,6 +2498,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms Pnp4.Frontier.ContractExpansion.readNatBE_gammaBit_payload
 #print axioms Pnp4.Frontier.ContractExpansion.decodeGammaAux_gammaBit
 #print axioms Pnp4.Frontier.ContractExpansion.decodeGamma_gammaBit
+#print axioms Pnp4.Frontier.ContractExpansion.decodeGammaAux_gammaBit_from_at
 #print axioms Pnp4.Frontier.ContractExpansion.prefixLength_lt_two_pow_idxWidth
 #print axioms Pnp4.Frontier.ContractExpansion.readNatBE_encode_tag
 #print axioms Pnp4.Frontier.ContractExpansion.sliceBits_encode_x

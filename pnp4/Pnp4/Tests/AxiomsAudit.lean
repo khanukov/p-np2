@@ -207,6 +207,7 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.readNatBE_gammaBit_payload
 #print axioms Pnp4.Frontier.ContractExpansion.decodeGammaAux_gammaBit
 #print axioms Pnp4.Frontier.ContractExpansion.decodeGamma_gammaBit
+#print axioms Pnp4.Frontier.ContractExpansion.decodeGammaAux_gammaBit_from_at
 #print axioms Pnp4.Frontier.ContractExpansion.prefixLength_lt_two_pow_idxWidth
 #print axioms Pnp4.Frontier.ContractExpansion.tableLen_le_treeMCSPPrefixM
 #check Pnp4.Frontier.ContractExpansion.natBEField

@@ -423,6 +423,41 @@ theorem is_consistent_input_iff_at {n : Nat} (i : Fin n) (T : PartialTruthTable 
       rw [← hround]
       exact hall'
 
+/-- Unified closed-form characterisation of `decideYesAt1 m T`: it
+returns `true` iff one of the `m + 2` size-1 candidates is consistent
+with T.  This phrases the YES-condition entirely in terms of T's row
+constraints and bit-tests, without referring to circuit evaluation. -/
+theorem decideYesAt1_iff_const_or_input (m : Nat) (T : PartialTruthTable m) :
+    decideYesAt1 m T = true ↔
+      (∃ b : Bool, ∀ i : Fin (Partial.tableLen m), T i ≠ some !b) ∨
+      (∃ k : Fin m, ∀ j : Fin (Partial.tableLen m), ∀ b : Bool,
+        T j = some b → Nat.testBit j.val k.val = b) := by
+  rw [decideYesAt1_iff]
+  constructor
+  · rintro ⟨C, hSize, hCons⟩
+    have hMem := mem_size1Candidates_of_size_le_one C hSize
+    rcases List.mem_cons.mp hMem with rfl | hrest
+    · -- C = const false
+      left
+      exact ⟨false, (is_consistent_const_iff_at false T).mp hCons⟩
+    rcases List.mem_cons.mp hrest with rfl | hrest2
+    · -- C = const true
+      left
+      exact ⟨true, (is_consistent_const_iff_at true T).mp hCons⟩
+    rcases List.mem_map.mp hrest2 with ⟨k, _, hk⟩
+    -- C = Circuit.input k
+    right
+    refine ⟨k, ?_⟩
+    rw [← hk] at hCons
+    exact (is_consistent_input_iff_at k T).mp hCons
+  · rintro (⟨b, hb⟩ | ⟨k, hk⟩)
+    · refine ⟨Circuit.const b, ?_, ?_⟩
+      · simp [Circuit.size]
+      · exact (is_consistent_const_iff_at b T).mpr hb
+    · refine ⟨Circuit.input k, ?_, ?_⟩
+      · simp [Circuit.size]
+      · exact (is_consistent_input_iff_at k T).mpr hk
+
 /-! ## Slice m=1: a concrete NO instance
 
 At m=1, `size1Candidates 1 = [const false, const true, input 0]`.

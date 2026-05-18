@@ -632,6 +632,12 @@ theorem seqList_run_decomp (p : ConstStatePhasedProgram S)
       p.timeBound n + ((seqList rest).timeBound n + 1) := by omega
   rw [hassoc, runConfig_add]
 
+/-- Singleton seqList: `seqList [p]` is `seq p idleCS`.  Its `timeBound` is
+`p.timeBound + 1` (one handoff step after `p`'s work). -/
+theorem seqList_timeBound_singleton (p : ConstStatePhasedProgram S) (n : Nat) :
+    (seqList [p]).timeBound n = p.timeBound n + 1 := by
+  rw [seqList_timeBound_cons, seqList_timeBound_nil]
+
 end IdleSeqList
 
 /-! ### Embedding from P1's TM into the composed `seq P1 P2` TM

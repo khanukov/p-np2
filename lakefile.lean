@@ -55,6 +55,7 @@ lean_lib PnP3 where
     Glob.one `Complexity.Promise,
     Glob.one `Complexity.Interfaces,
     Glob.one `Complexity.PsubsetPpolyInternal.Bitstring,
+    Glob.one `Complexity.PsubsetPpolyInternal.GapMCSPVerifier,
     Glob.one `Complexity.PsubsetPpolyInternal.TuringEncoding,
     Glob.one `Complexity.PsubsetPpolyInternal.TuringToolkit,
     Glob.one `Complexity.PsubsetPpolyInternal.TuringToolkit.Foundation,

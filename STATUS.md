@@ -93,6 +93,39 @@ algebraic, spectral, finite-field, SOS, or other non-combinatorial proof.
 
 ## What Is Closed
 
+### Canonical asymptotic track (May 2026)
+
+The asymptotic anti-checker pair `(hAsym, hNPbridge)` is no longer a
+hypothesis parameter throughout the magnification mainline.  See
+`pnp3/Magnification/CanonicalAsymptoticTrackData.lean`:
+
+- `canonicalAsymptoticSpec : GapPartialMCSPAsymptoticSpec` — minimal legal
+  asymptotic spec (`sYES = 1, sNO = 2`); all four structure fields built.
+- `canonicalAsymptoticParams n hn : GapPartialMCSPParams` — per-slice
+  parameters at slice `n ≥ 8` with Shannon-counting `circuit_bound_ok`
+  proved unconditionally via `canonicalShannonBound`.
+- `canonicalSliceEq : ∀ n hn x, asymp(...) = perSlice(...)` — Lean
+  technical bridge for the `Classical.choose` dependent cast.  Closed via
+  an `Eq.rec` motive parameterised over the type-level witness proof; the
+  base case reduces the cast through `Subsingleton.elim` on the `Eq`
+  proof.  The supporting helper
+  `Models.gapPartialMCSP_asymptoticLanguage_apply_inputLen` is in
+  `Model_PartialMCSP.lean`.
+- `canonicalAsymptoticHAsym : AsymptoticFormulaTrackHypothesis` —
+  **unconditional**.
+- `canonicalAsymptoticNPBridge_of_TM W`, `canonicalAsymptoticData_of_TM W`,
+  `canonicalAntiCheckerAssumptions_of_TM W` — produce the strict NP
+  package from a single concrete TM-verifier witness
+  `W : Models.GapPartialMCSP_Asymptotic_TMWitness canonicalAsymptoticSpec`.
+
+`pnp3/Tests/CanonicalIntegrationTests.lean` validates end-to-end
+integration with `i4_final_wiring_of_formulaCertificate`,
+`NP_not_subset_PpolyDAG_final_of_asymptotic_isoStrongRoute_withAntiChecker`,
+the promise-YES certificate route, and their `P ≠ NP` companions.
+
+The single remaining typed-deliverable for the canonical track is the TM
+verifier: see "What Is Still Open" below.
+
 ### Inclusion side
 
 - Default inclusion is internalized via
@@ -121,6 +154,29 @@ fixed-slice `PpolyDAG` membership:
 - `not_gapPartialMCSP_supportHalfObligation_of_inPpolyDAG`
 
 ## What Is Still Open
+
+### Canonical-track TM-verifier deliverable
+
+The canonical asymptotic infrastructure reduces the asymptotic-side
+research-gap to a single typed object:
+
+```
+W : Models.GapPartialMCSP_Asymptotic_TMWitness canonicalAsymptoticSpec
+```
+
+i.e., a concrete polynomial-time TM that verifies
+`gapPartialMCSP_AsymptoticLanguage canonicalAsymptoticSpec` against a
+size-1 circuit certificate.  Mathematically this is the published
+OPS19/CJW20 fact `GapMCSP ∈ NP` (one-half-page argument in textbooks).
+
+Lean-engineering scope: ~800–1500 LOC composing the existing primitives
+in `pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit/` (`PhasedProgram`,
+`AtomicPrograms`, `BinaryCounter`, `ConstStatePhasedProgram`,
+`GateWrappers`) into a verifier with five phases: read-certificate,
+identify-candidate, walk-table, check-consistency, accept.  No new
+mathematics required.
+
+### Research-gap source theorem (longer-horizon)
 
 The remaining blocker is not endpoint plumbing.  It is the missing
 non-vacuous source theorem for `ResearchGapWitness`, equivalently

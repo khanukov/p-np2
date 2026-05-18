@@ -657,6 +657,17 @@ theorem seqList_timeBound_two (p1 p2 : ConstStatePhasedProgram S) (n : Nat) :
   rw [seqList_timeBound_cons, seqList_timeBound_cons, seqList_timeBound_nil]
   omega
 
+/-- Decomposed run for a 2-element seqList: peel off `p1.timeBound` first,
+then run the remaining `p2.timeBound + 2` steps. -/
+theorem seqList_run_two (p1 p2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := (seqList [p1, p2]).toPhased.toTM) n) :
+    TM.runConfig (M := (seqList [p1, p2]).toPhased.toTM) c
+        ((seqList [p1, p2]).timeBound n) =
+      TM.runConfig (M := (seqList [p1, p2]).toPhased.toTM)
+        (TM.runConfig (M := (seqList [p1, p2]).toPhased.toTM) c (p1.timeBound n))
+        (p2.timeBound n + 2) := by
+  rw [seqList_run_decomp p1 [p2] c, seqList_timeBound_singleton]
+
 end IdleSeqList
 
 /-! ### Embedding from P1's TM into the composed `seq P1 P2` TM

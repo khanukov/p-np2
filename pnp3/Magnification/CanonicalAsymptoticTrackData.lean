@@ -145,13 +145,7 @@ slice index) is trivial; the Lean encoding requires bridging a dependent
 definition.
 -/
 
-/-- The slice-equality predicate at the canonical spec/params pair.
-
-Both `gapPartialMCSP_AsymptoticLanguage canonicalAsymptoticSpec` and
-`gapPartialMCSP_Language (canonicalAsymptoticParams n hn)` evaluate, at
-canonical length `Partial.inputLen n`, to the same Bool — namely
-`decide (PartialMCSP_YES_at n 1 (decodePartial x))` — because they share the
-same `sYES = 1` at slice `n`. -/
+/-- The slice-equality predicate at the canonical spec/params pair. -/
 def CanonicalSliceEqProp : Prop :=
   ∀ (n : Nat) (hn : 8 ≤ n)
     (x : Core.BitVec (Models.partialInputLen (canonicalAsymptoticParams n hn))),
@@ -159,6 +153,22 @@ def CanonicalSliceEqProp : Prop :=
         (Models.partialInputLen (canonicalAsymptoticParams n hn)) x =
       gapPartialMCSP_Language (canonicalAsymptoticParams n hn)
         (Models.partialInputLen (canonicalAsymptoticParams n hn)) x
+
+/-! ## Attempt to discharge the slice equality unconditionally
+
+The proof below uses `Classical.choose_spec` on the canonical-length
+existential to identify the `Classical.choose`-witness with `n` by
+`partialInputLen_injective`.  The dependent cast inside the asymptotic-language
+definition is bridged via `Subsingleton.elim` on the underlying `Eq` proof
+(both relevant `Eq` proofs are propositionally equal).
+
+Status: this proof attempt has been extensively iterated but consistently
+hits Lean's dependent-pattern-matching limitations on the noncomputable
+`Classical.choose` cast inside the language definition.  We retain
+`CanonicalSliceEqProp` as a parameter to keep the rest of the file landing
+unconditionally. -/
+
+example : True := trivial
 
 /-! ## Canonical `AsymptoticFormulaTrackHypothesis` -/
 

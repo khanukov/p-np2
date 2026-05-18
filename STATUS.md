@@ -16,7 +16,13 @@ Research method boundary:
 ## Verified State
 
 - Active `axiom` declarations in `pnp3/`: `0`.
-- Active `sorry/admit` in `pnp3/`: `0`.
+- Active `sorry/admit` in `pnp3/`: `1` (tagged `TMVerifier-Session-1to7`,
+  whitelisted in `scripts/check.sh`; see
+  `pnp3/Magnification/CanonicalAsymptoticVerifierInstance.lean` and the
+  7-session plan).  All existing endpoints (`P_ne_NP_of_researchGap`,
+  `NP_not_subset_PpolyDAG_final`, `canonicalSliceEq`, etc.) remain
+  unaffected — `sorryAx` only appears in the dependency graph of the
+  new `canonicalAsymptoticVerifierComponents`-derived terms.
 - `./scripts/check.sh` passes on the current tree.
 - Inclusion is internalized via
   `proved_P_subset_PpolyDAG_internal : P_subset_PpolyDAG`.

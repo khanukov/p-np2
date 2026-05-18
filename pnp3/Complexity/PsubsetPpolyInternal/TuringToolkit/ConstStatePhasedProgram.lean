@@ -597,6 +597,23 @@ theorem seqList_numPhases_cons (p : ConstStatePhasedProgram S)
     (rest : List (ConstStatePhasedProgram S)) :
     (seqList (p :: rest)).numPhases = p.numPhases + (seqList rest).numPhases := rfl
 
+/-! ### `seqList_run` leaf lemmas (Session 1 of TMVerifier plan)
+
+These leaf lemmas anchor the multi-session `seqList_run_full` chain
+documented in `pnp3/Docs/TMVerifier_Session_Plan.md`.  The nil case
+is `rfl` modulo `seqList_timeBound_nil`.
+-/
+
+/-- For the empty seqList (which compiles to `idleCS`), running for the
+declared `timeBound n = 0` steps is the identity.  This is the base case
+of the eventual `seqList_run_full` induction. -/
+theorem seqList_run_nil {n : Nat}
+    (c : Configuration (M := (seqList (S := S) []).toPhased.toTM) n) :
+    TM.runConfig (M := (seqList (S := S) []).toPhased.toTM) c
+        ((seqList (S := S) []).timeBound n) = c := by
+  rw [seqList_timeBound_nil]
+  rfl
+
 end IdleSeqList
 
 /-! ### Embedding from P1's TM into the composed `seq P1 P2` TM

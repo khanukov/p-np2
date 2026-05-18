@@ -392,6 +392,37 @@ theorem is_consistent_const_iff_at {n : Nat} (b : Bool) (T : PartialTruthTable n
       show Circuit.eval (Circuit.const b) x = b'
       simp [Circuit.eval, hbb]
 
+/-- `Circuit.input i` is consistent with T iff for every cell `j` of T,
+when `T j = some b`, the i-th bit of `j` (interpreted as an n-bit
+assignment) equals `b`.  -/
+theorem is_consistent_input_iff_at {n : Nat} (i : Fin n) (T : PartialTruthTable n) :
+    is_consistent (Circuit.input i) T ↔
+      ∀ j : Fin (Partial.tableLen n), ∀ b : Bool,
+        T j = some b → Nat.testBit j.val i.val = b := by
+  constructor
+  · intro hcons j b hTj
+    have hat := hcons (Core.vecOfNat n j.val)
+    have hidx : assignmentIndex (Core.vecOfNat n j.val) = j :=
+      assignmentIndex_vecOfNat_eq j
+    rw [hidx, hTj] at hat
+    -- hat : Circuit.eval (input i) (vecOfNat n j.val) = b
+    -- Circuit.eval (input i) x = x i = vecOfNat n j.val i = Nat.testBit j.val i.val
+    show Nat.testBit j.val i.val = b
+    exact hat
+  · intro hall x
+    cases hTi : T (assignmentIndex x) with
+    | none => trivial
+    | some b =>
+      have hall' := hall (assignmentIndex x) b hTi
+      -- hall' : Nat.testBit (assignmentIndex x).val i.val = b
+      show Circuit.eval (Circuit.input i) x = b
+      show x i = b
+      -- vecOfNat n (assignmentIndex x).val = x by round-trip
+      have hround : Core.vecOfNat n (assignmentIndex x).val = x :=
+        vecOfNat_assignmentIndex_val x
+      rw [← hround]
+      exact hall'
+
 /-! ## Slice m=1: a concrete NO instance
 
 At m=1, `size1Candidates 1 = [const false, const true, input 0]`.

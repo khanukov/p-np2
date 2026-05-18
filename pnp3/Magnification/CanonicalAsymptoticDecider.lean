@@ -416,6 +416,59 @@ private lemma not_consistent_input_zero_at_one
   rw [hev] at hat
   exact Bool.false_ne_true hat
 
+/-- `Circuit.input 0` IS consistent with T at m=1 when
+T 0 ∈ {none, some false} and T 1 ∈ {none, some true}. -/
+private lemma consistent_input_zero_at_one
+    (T : PartialTruthTable 1)
+    (h0 : T ⟨0, by decide⟩ = none ∨ T ⟨0, by decide⟩ = some false)
+    (h1 : T ⟨1, by decide⟩ = none ∨ T ⟨1, by decide⟩ = some true) :
+    is_consistent (Circuit.input (⟨0, by decide⟩ : Fin 1)) T := by
+  intro x
+  have hround : Core.vecOfNat 1 (assignmentIndex x).val = x :=
+    vecOfNat_assignmentIndex_val x
+  have hi_lt : (assignmentIndex x).val < 2 := (assignmentIndex x).isLt
+  interval_cases hiv : (assignmentIndex x).val
+  · -- (assignmentIndex x).val = 0, so assignmentIndex x = ⟨0, _⟩
+    have hi_eq : assignmentIndex x = ⟨0, by decide⟩ := by ext; exact hiv
+    rw [hi_eq]
+    cases h0 with
+    | inl hnone => rw [hnone]; trivial
+    | inr hfalse =>
+      rw [hfalse]
+      have hx0 : x ⟨0, by decide⟩ = false := by
+        rw [← hround]
+        show Nat.testBit 0 0 = false
+        decide
+      show x ⟨0, by decide⟩ = false
+      exact hx0
+  · -- (assignmentIndex x).val = 1
+    have hi_eq : assignmentIndex x = ⟨1, by decide⟩ := by ext; exact hiv
+    rw [hi_eq]
+    cases h1 with
+    | inl hnone => rw [hnone]; trivial
+    | inr htrue =>
+      rw [htrue]
+      have hx0 : x ⟨0, by decide⟩ = true := by
+        rw [← hround]
+        show Nat.testBit 1 0 = true
+        decide
+      show x ⟨0, by decide⟩ = true
+      exact hx0
+
+/-- Concrete YES witness at `m = 1`: if T 0 = some false and
+T 1 = some true, then `decideYesAt1 1 T = true` via `Circuit.input 0`.
+This is the "identity-on-one-bit" pattern that distinguishes `input 0`
+from both constants. -/
+theorem decideYesAt1_one_input_YES_case
+    (T : PartialTruthTable 1)
+    (h0 : T ⟨0, by decide⟩ = some false)
+    (h1 : T ⟨1, by decide⟩ = some true) :
+    decideYesAt1 1 T = true := by
+  apply (decideYesAt1_iff 1 T).mpr
+  refine ⟨Circuit.input (⟨0, by decide⟩ : Fin 1), ?_, ?_⟩
+  · simp [Circuit.size]
+  · exact consistent_input_zero_at_one T (Or.inr h0) (Or.inr h1)
+
 /-- Concrete NO witness at `m = 1`: if T 0 = some true and
 T 1 = some false, then no size-1 circuit is consistent with T. -/
 theorem decideYesAt1_one_NO_case

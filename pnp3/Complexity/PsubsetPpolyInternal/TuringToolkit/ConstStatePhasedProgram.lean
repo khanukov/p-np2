@@ -614,6 +614,24 @@ theorem seqList_run_nil {n : Nat}
   rw [seqList_timeBound_nil]
   rfl
 
+/-- For a cons seqList, the full run decomposes into "run `p` for its
+own timeBound" followed by "run the remaining tail for `(seqList rest).timeBound + 1`
+steps".  This is the recursive backbone of the eventual `seqList_run_full`
+induction. -/
+theorem seqList_run_decomp (p : ConstStatePhasedProgram S)
+    (rest : List (ConstStatePhasedProgram S)) {n : Nat}
+    (c : Configuration (M := (seqList (p :: rest)).toPhased.toTM) n) :
+    TM.runConfig (M := (seqList (p :: rest)).toPhased.toTM) c
+        ((seqList (p :: rest)).timeBound n) =
+      TM.runConfig (M := (seqList (p :: rest)).toPhased.toTM)
+        (TM.runConfig (M := (seqList (p :: rest)).toPhased.toTM) c (p.timeBound n))
+        ((seqList rest).timeBound n + 1) := by
+  rw [seqList_timeBound_cons]
+  -- Rewrite `(p.tb + (seqList rest).tb + 1) = p.tb + ((seqList rest).tb + 1)` via assoc
+  have hassoc : p.timeBound n + (seqList rest).timeBound n + 1 =
+      p.timeBound n + ((seqList rest).timeBound n + 1) := by omega
+  rw [hassoc, runConfig_add]
+
 end IdleSeqList
 
 /-! ### Embedding from P1's TM into the composed `seq P1 P2` TM

@@ -260,6 +260,57 @@ theorem decideAsymptotic_iff (N : Nat) (x : Bitstring N) :
   · rw [decideAsymptotic_of_not_canonical N x h]
     rw [gapPartialMCSP_AsymptoticLanguage_of_not_canonical N x h]
 
+/-! ## Concrete decidability facts (placeholder-free leaves)
+
+These lemmas characterise `decideAsymptotic` on common non-canonical
+lengths.  They are used as building blocks for the eventual
+TM-verifier correctness, and demonstrate that the decider terminates
+on concrete inputs.
+-/
+
+/-- Lower bound: every canonical input length is at least 2. -/
+private lemma partialInputLen_ge_two (m : Nat) : 2 ≤ Partial.inputLen m := by
+  show 2 ≤ 2 * Partial.tableLen m
+  have hpos : 1 ≤ Partial.tableLen m := by
+    show 1 ≤ 2 ^ m
+    exact Nat.one_le_two_pow
+  omega
+
+/-- At non-canonical length `0`, the asymptotic language is `false`. -/
+theorem decideAsymptotic_at_zero (x : Bitstring 0) :
+    decideAsymptotic 0 x = false := by
+  apply decideAsymptotic_of_not_canonical
+  rintro ⟨m, hEq⟩
+  have := partialInputLen_ge_two m
+  omega
+
+/-- At non-canonical length `1`, the asymptotic language is `false`. -/
+theorem decideAsymptotic_at_one (x : Bitstring 1) :
+    decideAsymptotic 1 x = false := by
+  apply decideAsymptotic_of_not_canonical
+  rintro ⟨m, hEq⟩
+  have := partialInputLen_ge_two m
+  omega
+
+/-- At non-canonical length `3`, the asymptotic language is `false`.
+Demonstrates the decider correctly rejects odd lengths between
+consecutive canonical points (`2 < 3 < 4`). -/
+theorem decideAsymptotic_at_three (x : Bitstring 3) :
+    decideAsymptotic 3 x = false := by
+  apply decideAsymptotic_of_not_canonical
+  rintro ⟨m, hEq⟩
+  match m, hEq with
+  | 0, h => exact absurd h (by decide)
+  | m + 1, h =>
+    have hlb : 4 ≤ Partial.inputLen (m + 1) := by
+      show 4 ≤ 2 * Partial.tableLen (m + 1)
+      have : 2 ≤ Partial.tableLen (m + 1) := by
+        show 2 ≤ 2 ^ (m + 1)
+        calc 2 = 2 ^ 1 := by decide
+          _ ≤ 2 ^ (m + 1) := Nat.pow_le_pow_right (by decide) (by omega)
+      omega
+    omega
+
 /-! ## Verifier-components bridge
 
 A `CanonicalAsymptoticVerifierComponents` packages a TM whose acceptance

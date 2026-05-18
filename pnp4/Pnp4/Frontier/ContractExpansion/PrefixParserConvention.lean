@@ -1171,6 +1171,40 @@ def parseTreeMCSPPrefixInput
   else
     none
 
+/--
+The canonical encoder is a right inverse of the concrete parser.
+
+This is the final P1P-02 parser/encoder assembly theorem: the executable
+parser accepts the exact byte/gamma/table/index/witness layout emitted by
+`encodeTreeMCSPPrefixFields` and reconstructs the canonical `PrefixInput`
+record represented by the raw fields.  The proof is intentionally just
+serialization proof engineering; it does not prove NP membership, witness
+extraction, or any lower-bound endpoint.
+-/
+theorem parse_encodeTreeMCSPPrefixFields
+    {threshold : Nat → Nat}
+    (codec : TreeCircuitWitnessCodec threshold)
+    (fields : CanonicalRawTreeMCSPPrefixFields codec) :
+    parseTreeMCSPPrefixInput threshold codec
+      (encodeTreeMCSPPrefixFields codec fields) =
+    some (CanonicalRawTreeMCSPPrefixFields.toPrefixInput codec fields) := by
+  unfold parseTreeMCSPPrefixInput
+  rw [readNatBE_encode_tag codec fields]
+  simp
+  rw [decodeGamma_encodeTreeMCSPPrefixFields codec fields]
+  simp
+  rw [sliceBits_encode_x codec fields]
+  simp
+  rw [readNatBE_encode_i codec fields]
+  simp [fields.prefixLength_le]
+  rw [sliceBits_encode_p codec fields]
+  simp
+  rw [sliceBits_encode_pad codec fields]
+  simp
+  rw [allZeroSlice_encode_pad codec fields]
+  simp
+  rfl
+
 /-- The concrete parser packaged in the existing `PrefixParser` interface. -/
 def treeMCSPConcretePrefixParser
     (threshold : Nat → Nat)

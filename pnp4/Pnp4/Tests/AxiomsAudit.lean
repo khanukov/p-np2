@@ -207,6 +207,9 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.readNatBE_gammaBit_payload
 #print axioms Pnp4.Frontier.ContractExpansion.decodeGammaAux_gammaBit
 #print axioms Pnp4.Frontier.ContractExpansion.decodeGamma_gammaBit
+#print axioms Pnp4.Frontier.ContractExpansion.readBit_encode_gamma
+#print axioms Pnp4.Frontier.ContractExpansion.readNatBE_encode_gamma_eq_standalone
+#print axioms Pnp4.Frontier.ContractExpansion.decodeGamma_encodeTreeMCSPPrefixFields
 #print axioms Pnp4.Frontier.ContractExpansion.prefixLength_lt_two_pow_idxWidth
 #print axioms Pnp4.Frontier.ContractExpansion.tableLen_le_treeMCSPPrefixM
 #check Pnp4.Frontier.ContractExpansion.natBEField
@@ -216,7 +219,11 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.encodeTreeMCSPPrefixFields_length_convention
 #print axioms Pnp4.Frontier.ContractExpansion.readNatBE_encode_tag
 #print axioms Pnp4.Frontier.ContractExpansion.sliceBits_encode_x
+#print axioms Pnp4.Frontier.ContractExpansion.readNatBE_encode_i
 #print axioms Pnp4.Frontier.ContractExpansion.sliceBits_encode_p
+#print axioms Pnp4.Frontier.ContractExpansion.sliceBits_encode_pad
+#print axioms Pnp4.Frontier.ContractExpansion.allZeroSlice_encode_pad
+#print axioms Pnp4.Frontier.ContractExpansion.parse_encodeTreeMCSPPrefixFields_field_obligations
 #print axioms Pnp4.Frontier.ContractExpansion.parse_encodeTreeMCSPPrefixFields_partial_obligation
 #print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_bad_tag
 #print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_length_convention

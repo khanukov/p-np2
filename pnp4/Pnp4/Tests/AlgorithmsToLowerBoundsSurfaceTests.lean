@@ -2499,6 +2499,14 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms Pnp4.Frontier.ContractExpansion.decodeGamma_gammaBit
 #print axioms Pnp4.Frontier.ContractExpansion.prefixLength_lt_two_pow_idxWidth
 #print axioms Pnp4.Frontier.ContractExpansion.readNatBE_encode_tag
+#print axioms Pnp4.Frontier.ContractExpansion.sliceBits_encode_gamma
+#print axioms Pnp4.Frontier.ContractExpansion.allZeroSlice_false
+#print axioms Pnp4.Frontier.ContractExpansion.decodeGammaAux_encodeTreeMCSPPrefixFields_from
+#print axioms Pnp4.Frontier.ContractExpansion.decodeGamma_encodeTreeMCSPPrefixFields
+#print axioms Pnp4.Frontier.ContractExpansion.readNatBE_encode_i
+#print axioms Pnp4.Frontier.ContractExpansion.sliceBits_encode_pad
+#print axioms Pnp4.Frontier.ContractExpansion.allZeroSlice_encode_pad
+#print axioms Pnp4.Frontier.ContractExpansion.parse_encodeTreeMCSPPrefixFields_field_obligations
 #print axioms Pnp4.Frontier.ContractExpansion.sliceBits_encode_x
 #print axioms Pnp4.Frontier.ContractExpansion.sliceBits_encode_p
 #print axioms Pnp4.Frontier.ContractExpansion.parse_encodeTreeMCSPPrefixFields_partial_obligation

@@ -192,12 +192,19 @@ construct a TM whose acceptance behaviour matches the (now-defined)
 and language correctness are closed; the engineering reduces to
 "build a TM that ignores `w` and computes a known Bool function on `x`".
 
-Lean-engineering scope (TM construction only): ~800–1500 LOC composing
-the existing primitives in `pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit/`
-(`PhasedProgram`, `AtomicPrograms`, `BinaryCounter`, `ConstStatePhasedProgram`,
-`GateWrappers`) into a verifier with five phases: read-certificate,
-identify-candidate, walk-table, check-consistency, accept.  No new
-mathematics required.
+**Multi-session plan**: see `pnp3/Docs/TMVerifier_Session_Plan.md` for
+the 7-session decomposition (Variant B NP-style architecture):
+
+1. Session 1: `seqList_run_full` (generic CS-composition correctness)
+2. Session 2: `writeVecOfNatProgram` + `_run_full`
+3. Session 3: `mcspCheckAllRows_correct`
+4. Session 4: Witness decoder (`decodeCandidateSpec` + `_writeToTape_run_full`)
+5. Session 5: `canonicalLengthCheckProgram_run_full`
+6. Session 6: Top-level composition `verifierProgram_accepts_iff`
+7. Session 7: Runtime bound + final `canonicalAsymptoticVerifierComponents` term
+
+Each session = ~350 LOC, closes one leaf theorem with 0 sorry / standard
+classical axioms.  Total estimated work: ~2500 LOC over 7 sessions.
 
 ### Research-gap source theorem (longer-horizon)
 

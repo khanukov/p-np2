@@ -357,6 +357,41 @@ theorem decideAsymptotic_at_two (x : Bitstring 2) :
   rw [heq, decideAsymptotic_at_inputLen]
   exact decideYesAt1_zero_always_true _
 
+/-! ## Closed-form characterisations of size-1 consistency
+
+The size-1 candidates `Circuit.const b` and `Circuit.input i` have
+closed-form consistency characterisations that don't require evaluating
+the boolean checker.  These will be used by the TM verifier to phrase
+its acceptance condition without re-implementing `is_consistent_bool`.
+-/
+
+/-- `Circuit.const b` is consistent with T iff T never asserts the
+opposite value: for every cell `i`, `T i ≠ some !b`. -/
+theorem is_consistent_const_iff_at {n : Nat} (b : Bool) (T : PartialTruthTable n) :
+    is_consistent (Circuit.const b) T ↔ ∀ i, T i ≠ some !b := by
+  constructor
+  · intro hcons i hne
+    -- hne : T i = some !b
+    -- Apply hcons at x = vecOfNat n i.val to derive eval = !b, contradiction with eval = b
+    have hat := hcons (Core.vecOfNat n i.val)
+    have hidx : assignmentIndex (Core.vecOfNat n i.val) = i :=
+      assignmentIndex_vecOfNat_eq i
+    rw [hidx, hne] at hat
+    -- hat : Circuit.eval (const b) _ = !b, i.e., b = !b
+    simp [Circuit.eval] at hat
+  · intro hnever x
+    cases hTi : T (assignmentIndex x) with
+    | none => trivial
+    | some b' =>
+      -- hnever (assignmentIndex x) : T (assignmentIndex x) ≠ some !b
+      -- so b' ≠ !b, meaning b' = b
+      have hne := hnever (assignmentIndex x)
+      rw [hTi] at hne
+      have hbb : b' = b := by
+        cases b <;> cases b' <;> simp_all
+      show Circuit.eval (Circuit.const b) x = b'
+      simp [Circuit.eval, hbb]
+
 /-! ## Slice m=1: a concrete NO instance
 
 At m=1, `size1Candidates 1 = [const false, const true, input 0]`.

@@ -181,7 +181,7 @@ private lemma foldl_shift_factor {n : Nat}
   exact sum_map_pow_succ x _
 
 /-- Recursive characterization of bitVecToNat. -/
-private lemma bitVecToNat_succ {n : Nat} (x : Core.BitVec (n + 1)) :
+lemma bitVecToNat_succ {n : Nat} (x : Core.BitVec (n + 1)) :
     bitVecToNat x = (if x ⟨0, Nat.zero_lt_succ n⟩ then 1 else 0) +
       2 * bitVecToNat (fun i : Fin n => x (Fin.succ i)) := by
   unfold bitVecToNat
@@ -211,6 +211,50 @@ lemma bitVecToNat_vecOfNat {n m : Nat} (hm : m < 2 ^ n) :
     -- Goal: (if decide (m % 2 = 1) then 1 else 0) + 2 * (m / 2) = m
     rcases Nat.mod_two_eq_zero_or_one m with h | h <;> simp [h] <;> omega
 
+/-- Round-trip in the other direction: `vecOfNat n (bitVecToNat x) = x`.
+Proved via an auxiliary induction on `n` with `i` generalised. -/
+private lemma vecOfNat_bitVecToNat_aux :
+    ∀ (n : Nat) (x : Core.BitVec n) (i : Nat) (hi : i < n),
+      Nat.testBit (bitVecToNat x) i = x ⟨i, hi⟩ := by
+  intro n
+  induction n with
+  | zero =>
+    intro _ _ hi
+    exact absurd hi (Nat.not_lt_zero _)
+  | succ n ih =>
+    intro x i hi
+    cases i with
+    | zero =>
+      rw [Nat.testBit_zero, bitVecToNat_succ]
+      set m := bitVecToNat (fun i : Fin n => x (Fin.succ i))
+      cases hx : x ⟨0, Nat.zero_lt_succ n⟩
+      · -- bitVecToNat x = 0 + 2m, so (... % 2 = 1) = false = x 0
+        show decide ((0 + 2 * m) % 2 = 1) = false
+        have : (0 + 2 * m) % 2 = 0 := by omega
+        rw [this]; rfl
+      · -- bitVecToNat x = 1 + 2m, so (... % 2 = 1) = true = x 0
+        show decide ((1 + 2 * m) % 2 = 1) = true
+        have : (1 + 2 * m) % 2 = 1 := by omega
+        rw [this]; rfl
+    | succ j =>
+      have hjn : j < n := Nat.lt_of_succ_lt_succ hi
+      rw [Nat.testBit_succ, bitVecToNat_succ]
+      set m := bitVecToNat (fun i : Fin n => x (Fin.succ i)) with hm_def
+      have hdiv :
+          ((if x ⟨0, Nat.zero_lt_succ n⟩ then 1 else 0) + 2 * m) / 2 = m := by
+        cases x ⟨0, Nat.zero_lt_succ n⟩
+        · show (0 + 2 * m) / 2 = m
+          omega
+        · show (1 + 2 * m) / 2 = m
+          omega
+      rw [hdiv]
+      exact ih (fun i : Fin n => x (Fin.succ i)) j hjn
+
+lemma vecOfNat_bitVecToNat {n : Nat} (x : Core.BitVec n) :
+    Core.vecOfNat n (bitVecToNat x) = x := by
+  funext ⟨i, hi⟩
+  exact vecOfNat_bitVecToNat_aux n x i hi
+
 /-- bitVecToNat stays below 2^n. -/
 lemma bitVecToNat_lt {n : Nat} (x : Core.BitVec n) :
     bitVecToNat x < Partial.tableLen n := by
@@ -224,6 +268,16 @@ lemma bitVecToNat_lt {n : Nat} (x : Core.BitVec n) :
     have h_inner := ih (fun i : Fin n => x (Fin.succ i))
     have h_head : (if x ⟨0, Nat.zero_lt_succ n⟩ then 1 else 0) ≤ 1 := by split <;> omega
     linarith [pow_succ 2 n]
+
+/-- `vecOfNat n` applied to the `Fin.val` of `assignmentIndex x` returns `x`. -/
+lemma vecOfNat_assignmentIndex_val {n : Nat} (x : Core.BitVec n) :
+    Core.vecOfNat n (assignmentIndex x).val = x := by
+  have hLt : bitVecToNat x < Partial.tableLen n := bitVecToNat_lt x
+  have hVal : (assignmentIndex x).val = bitVecToNat x := by
+    show (bitVecToNat x) % Partial.tableLen n = bitVecToNat x
+    exact Nat.mod_eq_of_lt hLt
+  rw [hVal]
+  exact vecOfNat_bitVecToNat x
 
 /-- assignmentIndex is surjective. -/
 theorem assignmentIndex_surjective {n : Nat} :
@@ -384,6 +438,33 @@ lemma is_consistent_bool_of_is_consistent {n : Nat} (C : Circuit n) (T : Partial
         have hAt' := hAt
         simpa [is_consistent, hIdx, hTi] using hAt'
       simp [hEval]
+
+/-- Converse of `is_consistent_bool_of_is_consistent`. -/
+lemma is_consistent_of_is_consistent_bool {n : Nat} (C : Circuit n) (T : PartialTruthTable n) :
+    is_consistent_bool C T = true → is_consistent C T := by
+  intro hBool x
+  cases hTx : T (assignmentIndex x) with
+  | none => trivial
+  | some b =>
+    have hAll := List.all_eq_true.mp hBool
+    have hApp := hAll (assignmentIndex x) (List.mem_finRange _)
+    rw [hTx] at hApp
+    have hRound : Core.vecOfNat n (assignmentIndex x).val = x :=
+      vecOfNat_assignmentIndex_val x
+    show Circuit.eval C x = b
+    rw [← hRound]
+    exact (beq_iff_eq).mp hApp
+
+/-- `is_consistent` and `is_consistent_bool` agree. -/
+lemma is_consistent_iff_bool {n : Nat} (C : Circuit n) (T : PartialTruthTable n) :
+    is_consistent C T ↔ is_consistent_bool C T = true :=
+  ⟨is_consistent_bool_of_is_consistent C T,
+   is_consistent_of_is_consistent_bool C T⟩
+
+/-- `is_consistent` is decidable. -/
+instance is_consistent_decidable {n : Nat} (C : Circuit n) (T : PartialTruthTable n) :
+    Decidable (is_consistent C T) :=
+  decidable_of_iff _ (is_consistent_iff_bool C T).symm
 
 /--
 Standard (semantic) verifier for fixed-parameter GapPartialMCSP.
@@ -613,6 +694,65 @@ lemma gapPartialMCSP_language_true_iff_yes
       PartialMCSP_YES p (decodePartial x) := by
   classical
   simp [gapPartialMCSP_Language]
+
+/-- На канонической длине `Partial.inputLen n` асимптотический язык равен
+`true` тогда и только тогда, когда выполнено `PartialMCSP_YES_at n (spec.sYES n)`
+на декодированной таблице. -/
+lemma gapPartialMCSP_asymptoticLanguage_apply_inputLen
+    (spec : GapPartialMCSPAsymptoticSpec) (n : Nat)
+    (x : Core.BitVec (Partial.inputLen n)) :
+    gapPartialMCSP_AsymptoticLanguage spec (Partial.inputLen n) x = true ↔
+      PartialMCSP_YES_at n (spec.sYES n) (decodePartial x) := by
+  classical
+  have hShape : ∃ m : Nat, Partial.inputLen n = Partial.inputLen m := ⟨n, rfl⟩
+  have hChoose_spec : Partial.inputLen n =
+      Partial.inputLen (Classical.choose hShape) := Classical.choose_spec hShape
+  have hChoose_eq : Classical.choose hShape = n :=
+    (partialInputLen_injective hChoose_spec).symm
+  -- Step 1: rewrite the LHS Bool to an explicit `decide` form.
+  have hAsym_decide :
+      gapPartialMCSP_AsymptoticLanguage spec (Partial.inputLen n) x = true ↔
+        PartialMCSP_YES_at (Classical.choose hShape) (spec.sYES (Classical.choose hShape))
+          (decodePartial ((congrArg Core.BitVec hChoose_spec).mp x)) := by
+    classical
+    -- Unfold + reduce the dite.  Both `if-then-else` branches yield Bool;
+    -- the `= true` iff is the truth value of the inner predicate.
+    constructor
+    · intro hL
+      -- LHS = true.  Derive inner predicate.
+      by_contra hNo
+      have hLfalse :
+          gapPartialMCSP_AsymptoticLanguage spec (Partial.inputLen n) x = false := by
+        classical
+        simp only [gapPartialMCSP_AsymptoticLanguage, hShape, dite_true]
+        rw [dif_neg hNo]
+      rw [hLfalse] at hL
+      exact Bool.false_ne_true hL
+    · intro hAt
+      classical
+      simp only [gapPartialMCSP_AsymptoticLanguage, hShape, dite_true]
+      rw [dif_pos hAt]
+  -- Step 2: bridge the inner predicate via Eq.rec on hChoose_eq.
+  rw [hAsym_decide]
+  -- Goal: PartialMCSP_YES_at (Classical.choose hShape) ... (decodePartial cast_x) ↔
+  --       PartialMCSP_YES_at n (spec.sYES n) (decodePartial x)
+  -- Use Eq.rec on hChoose_eq with motive parameterized by m AND hMatch.
+  -- At m := n with hMatch := rfl, the iff is reflexive.
+  let motive : (m : Nat) → Prop := fun m =>
+    ∀ (hMatch : Partial.inputLen n = Partial.inputLen m),
+      PartialMCSP_YES_at m (spec.sYES m)
+        (decodePartial ((congrArg Core.BitVec hMatch).mp x)) ↔
+      PartialMCSP_YES_at n (spec.sYES n) (decodePartial x)
+  have base : motive n := by
+    intro hMatch
+    have hMatch_rfl : hMatch = rfl := Subsingleton.elim _ _
+    subst hMatch_rfl
+    -- congrArg Core.BitVec rfl = rfl, so cast is identity.
+    rfl
+  -- Transport base from m := n to m := Classical.choose hShape via hChoose_eq.symm.
+  -- hChoose_eq.symm : n = Classical.choose hShape, so ▸ goes motive n → motive (Classical.choose hShape).
+  have target : motive (Classical.choose hShape) := hChoose_eq.symm ▸ base
+  exact target hChoose_spec
 
 /-- Если выполнено NO-условие, язык возвращает `false`. -/
 lemma gapPartialMCSP_language_false_of_no

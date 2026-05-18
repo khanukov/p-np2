@@ -597,6 +597,140 @@ theorem seqList_numPhases_cons (p : ConstStatePhasedProgram S)
     (rest : List (ConstStatePhasedProgram S)) :
     (seqList (p :: rest)).numPhases = p.numPhases + (seqList rest).numPhases := rfl
 
+/-! ### `seqList_run` leaf lemmas (Session 1 of TMVerifier plan)
+
+These leaf lemmas anchor the multi-session `seqList_run_full` chain
+documented in `pnp3/Docs/TMVerifier_Session_Plan.md`.  The nil case
+is `rfl` modulo `seqList_timeBound_nil`.
+-/
+
+/-- For the empty seqList (which compiles to `idleCS`), running for the
+declared `timeBound n = 0` steps is the identity.  This is the base case
+of the eventual `seqList_run_full` induction. -/
+theorem seqList_run_nil {n : Nat}
+    (c : Configuration (M := (seqList (S := S) []).toPhased.toTM) n) :
+    TM.runConfig (M := (seqList (S := S) []).toPhased.toTM) c
+        ((seqList (S := S) []).timeBound n) = c := by
+  rw [seqList_timeBound_nil]
+  rfl
+
+/-- For a cons seqList, the full run decomposes into "run `p` for its
+own timeBound" followed by "run the remaining tail for `(seqList rest).timeBound + 1`
+steps".  This is the recursive backbone of the eventual `seqList_run_full`
+induction. -/
+theorem seqList_run_decomp (p : ConstStatePhasedProgram S)
+    (rest : List (ConstStatePhasedProgram S)) {n : Nat}
+    (c : Configuration (M := (seqList (p :: rest)).toPhased.toTM) n) :
+    TM.runConfig (M := (seqList (p :: rest)).toPhased.toTM) c
+        ((seqList (p :: rest)).timeBound n) =
+      TM.runConfig (M := (seqList (p :: rest)).toPhased.toTM)
+        (TM.runConfig (M := (seqList (p :: rest)).toPhased.toTM) c (p.timeBound n))
+        ((seqList rest).timeBound n + 1) := by
+  rw [seqList_timeBound_cons]
+  -- Rewrite `(p.tb + (seqList rest).tb + 1) = p.tb + ((seqList rest).tb + 1)` via assoc
+  have hassoc : p.timeBound n + (seqList rest).timeBound n + 1 =
+      p.timeBound n + ((seqList rest).timeBound n + 1) := by omega
+  rw [hassoc, runConfig_add]
+
+/-- Singleton seqList: `seqList [p]` is `seq p idleCS`.  Its `timeBound` is
+`p.timeBound + 1` (one handoff step after `p`'s work). -/
+theorem seqList_timeBound_singleton (p : ConstStatePhasedProgram S) (n : Nat) :
+    (seqList [p]).timeBound n = p.timeBound n + 1 := by
+  rw [seqList_timeBound_cons, seqList_timeBound_nil]
+
+/-- Singleton seqList run: `runConfig c (p.tb + 1) = runConfig (runConfig c p.tb) 1`. -/
+theorem seqList_run_singleton (p : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := (seqList [p]).toPhased.toTM) n) :
+    TM.runConfig (M := (seqList [p]).toPhased.toTM) c ((seqList [p]).timeBound n) =
+      TM.runConfig (M := (seqList [p]).toPhased.toTM)
+        (TM.runConfig (M := (seqList [p]).toPhased.toTM) c (p.timeBound n)) 1 := by
+  rw [seqList_run_decomp p [] c, seqList_timeBound_nil]
+
+/-- Number of phases in `seqList [p]`: just `p.numPhases + 1` (idleCS contributes 1). -/
+theorem seqList_numPhases_singleton (p : ConstStatePhasedProgram S) :
+    (seqList [p]).numPhases = p.numPhases + 1 := by
+  rw [seqList_numPhases_cons, seqList_numPhases_nil]
+
+/-- Total timeBound for a 2-element seqList. -/
+theorem seqList_timeBound_two (p1 p2 : ConstStatePhasedProgram S) (n : Nat) :
+    (seqList [p1, p2]).timeBound n = p1.timeBound n + p2.timeBound n + 2 := by
+  rw [seqList_timeBound_cons, seqList_timeBound_cons, seqList_timeBound_nil]
+  omega
+
+/-- Decomposed run for a 2-element seqList: peel off `p1.timeBound` first,
+then run the remaining `p2.timeBound + 2` steps. -/
+theorem seqList_run_two (p1 p2 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := (seqList [p1, p2]).toPhased.toTM) n) :
+    TM.runConfig (M := (seqList [p1, p2]).toPhased.toTM) c
+        ((seqList [p1, p2]).timeBound n) =
+      TM.runConfig (M := (seqList [p1, p2]).toPhased.toTM)
+        (TM.runConfig (M := (seqList [p1, p2]).toPhased.toTM) c (p1.timeBound n))
+        (p2.timeBound n + 2) := by
+  rw [seqList_run_decomp p1 [p2] c, seqList_timeBound_singleton]
+
+/-- Total timeBound for a 3-element seqList. -/
+theorem seqList_timeBound_three (p1 p2 p3 : ConstStatePhasedProgram S) (n : Nat) :
+    (seqList [p1, p2, p3]).timeBound n =
+      p1.timeBound n + p2.timeBound n + p3.timeBound n + 3 := by
+  rw [seqList_timeBound_cons, seqList_timeBound_two]
+  omega
+
+/-- Decomposed run for a 3-element seqList: peel off `p1.timeBound`,
+then run the remaining `p2.timeBound + p3.timeBound + 3` steps. -/
+theorem seqList_run_three (p1 p2 p3 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := (seqList [p1, p2, p3]).toPhased.toTM) n) :
+    TM.runConfig (M := (seqList [p1, p2, p3]).toPhased.toTM) c
+        ((seqList [p1, p2, p3]).timeBound n) =
+      TM.runConfig (M := (seqList [p1, p2, p3]).toPhased.toTM)
+        (TM.runConfig (M := (seqList [p1, p2, p3]).toPhased.toTM) c
+          (p1.timeBound n))
+        (p2.timeBound n + p3.timeBound n + 3) := by
+  rw [seqList_run_decomp p1 [p2, p3] c, seqList_timeBound_two]
+
+/-- Total timeBound for a 4-element seqList. -/
+theorem seqList_timeBound_four
+    (p1 p2 p3 p4 : ConstStatePhasedProgram S) (n : Nat) :
+    (seqList [p1, p2, p3, p4]).timeBound n =
+      p1.timeBound n + p2.timeBound n + p3.timeBound n + p4.timeBound n + 4 := by
+  rw [seqList_timeBound_cons, seqList_timeBound_three]
+  omega
+
+/-- Decomposed run for a 4-element seqList. -/
+theorem seqList_run_four
+    (p1 p2 p3 p4 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := (seqList [p1, p2, p3, p4]).toPhased.toTM) n) :
+    TM.runConfig (M := (seqList [p1, p2, p3, p4]).toPhased.toTM) c
+        ((seqList [p1, p2, p3, p4]).timeBound n) =
+      TM.runConfig (M := (seqList [p1, p2, p3, p4]).toPhased.toTM)
+        (TM.runConfig (M := (seqList [p1, p2, p3, p4]).toPhased.toTM) c
+          (p1.timeBound n))
+        (p2.timeBound n + p3.timeBound n + p4.timeBound n + 4) := by
+  rw [seqList_run_decomp p1 [p2, p3, p4] c, seqList_timeBound_three]
+
+/-- Total timeBound for a 5-element seqList (covers the canonical
+5-phase verifier composition). -/
+theorem seqList_timeBound_five
+    (p1 p2 p3 p4 p5 : ConstStatePhasedProgram S) (n : Nat) :
+    (seqList [p1, p2, p3, p4, p5]).timeBound n =
+      p1.timeBound n + p2.timeBound n + p3.timeBound n +
+        p4.timeBound n + p5.timeBound n + 5 := by
+  rw [seqList_timeBound_cons, seqList_timeBound_four]
+  omega
+
+/-- Decomposed run for a 5-element seqList (covers the canonical
+5-phase verifier composition). -/
+theorem seqList_run_five
+    (p1 p2 p3 p4 p5 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := (seqList [p1, p2, p3, p4, p5]).toPhased.toTM) n) :
+    TM.runConfig (M := (seqList [p1, p2, p3, p4, p5]).toPhased.toTM) c
+        ((seqList [p1, p2, p3, p4, p5]).timeBound n) =
+      TM.runConfig (M := (seqList [p1, p2, p3, p4, p5]).toPhased.toTM)
+        (TM.runConfig (M := (seqList [p1, p2, p3, p4, p5]).toPhased.toTM) c
+          (p1.timeBound n))
+        (p2.timeBound n + p3.timeBound n + p4.timeBound n +
+          p5.timeBound n + 5) := by
+  rw [seqList_run_decomp p1 [p2, p3, p4, p5] c, seqList_timeBound_four]
+
 end IdleSeqList
 
 /-! ### Embedding from P1's TM into the composed `seq P1 P2` TM

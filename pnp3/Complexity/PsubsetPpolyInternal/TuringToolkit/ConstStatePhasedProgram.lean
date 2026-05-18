@@ -668,6 +668,38 @@ theorem seqList_run_two (p1 p2 : ConstStatePhasedProgram S) {n : Nat}
         (p2.timeBound n + 2) := by
   rw [seqList_run_decomp p1 [p2] c, seqList_timeBound_singleton]
 
+/-- General `seqList_run_full` via foldl: running a `seqList ps` for its
+total `timeBound` decomposes into a left-fold where each element `p`
+contributes `p.timeBound + 1` consecutive steps on the outer TM.
+
+The handoff `+1` is the boundary step from `p`'s accept phase to the
+next program's start phase in the `seq` composition.  This is the
+direct generalisation of `seqList_run_two`. -/
+theorem seqList_run_full (ps : List (ConstStatePhasedProgram S)) {n : Nat}
+    (c : Configuration (M := (seqList ps).toPhased.toTM) n) :
+    TM.runConfig (M := (seqList ps).toPhased.toTM) c ((seqList ps).timeBound n) =
+      ps.foldl
+        (fun acc p => TM.runConfig (M := (seqList ps).toPhased.toTM) acc
+          (p.timeBound n + 1))
+        c := by
+  induction ps with
+  | nil =>
+    rw [seqList_timeBound_nil]
+    rfl
+  | cons p rest ih =>
+    -- LHS via `seqList_run_decomp` peels off `p.timeBound` then runs
+    -- `(seqList rest).timeBound + 1` more steps on the outer TM.
+    -- Combined with `runConfig_add`, this re-packs into `p.timeBound + 1`
+    -- followed by `(seqList rest).timeBound` steps.  The remaining
+    -- `(seqList rest).timeBound` matches `ih` modulo TM transport.
+    --
+    -- TMVerifier-Session-1: the IH is on `(seqList rest).toPhased.toTM`
+    -- (smaller TM), while the goal is on `(seqList (p :: rest)).toPhased.toTM`
+    -- (outer TM).  A transport lemma is required to bridge these, since
+    -- intermediate configurations naturally live in the outer TM during
+    -- the `(seqList rest).timeBound` tail run.
+    sorry
+
 end IdleSeqList
 
 /-! ### Embedding from P1's TM into the composed `seq P1 P2` TM

@@ -572,6 +572,52 @@ theorem internal_provider_does_not_meet_uniform_provenance_for_arbitrary_ac0
     -- This theorem exists as a named anchor in the audit trail.
     True := trivial
 
+/-! ### Probe 13 — `FormulaCertificateProviderPartial` is ex-falso (PR 13 audit)
+
+The `FormulaCertificateProviderPartial` provider quantifies universally over
+`hFormula : PpolyFormula (gapPartialMCSP_Language p)` and promises a
+`ShrinkageCertificate` (carrying `stable` + `alive.card ≤ inputLen p / 4`)
+for any such formula.  By the same truth-table-hardwiring + MCSP-gap-locality
+contradiction used in Probes 3/4/7, this is inconsistent: instantiating at
+the canonical truth-table witness from Probe 2 + the gap-target payload
+contradicts `MCSPGapLocality.no_local_function_solves_mcsp`.
+
+PR 13 audit verdict: VACUOUS.  Direct refutation in 3 lines below, using
+only the existing chain `false_of_abstractGapTargetedPayload_of_formulaCertificate`
+(see `pnp3/LowerBounds/SingletonDensityContradiction.lean:586`).
+
+**Implication.**  All consumers of `FormulaCertificateProviderPartial`
+inherit ex-falso conclusions:
+  * `i4_final_wiring_of_formulaCertificate` (`Tests/BridgeLocalityRegression.lean`),
+  * `structuredLocalityProviderPartial_of_formulaCertificate` and the
+    wrappers at `Magnification/LocalityProvider_Partial.lean:3543–3601`,
+  * `dag_stableRestrictionGoal_of_formulaCertificate` and
+    `dag_stableRestriction_producer_of_formulaCertificate`
+    (`LowerBounds/SingletonDensityContradiction.lean:2210, 2228, 2304`).
+
+These remain in-project (matching the policy for ⚠ ex-falso wrappers from
+sessions 59-66) but must not be presented as progress toward unconditional
+`NP ⊄ P/poly`. -/
+
+/-- **Probe 13**: `FormulaCertificateProviderPartial` is inconsistent.
+
+Direct consequence of Probe 2 (`fixedSlice_gapPartialMCSP_in_PpolyFormula`)
++ existing infrastructure `abstractGapTargetedSingletonDensityPayload_of_internal_provider`
++ `false_of_abstractGapTargetedPayload_of_formulaCertificate`. -/
+theorem false_of_FormulaCertificateProviderPartial
+    (p : GapPartialMCSPParams)
+    (hCert : Magnification.FormulaCertificateProviderPartial) :
+    False := by
+  classical
+  have hFormula : ComplexityInterfaces.PpolyFormula (gapPartialMCSP_Language p) :=
+    fixedSlice_gapPartialMCSP_in_PpolyFormula p
+  have hPkg :
+      Nonempty (AbstractGapTargetedSingletonDensityPayload p) :=
+    abstractGapTargetedSingletonDensityPayload_of_internal_provider hFormula
+  rcases hPkg with ⟨pkg⟩
+  exact false_of_abstractGapTargetedPayload_of_formulaCertificate
+    pkg hCert hFormula
+
 /-! ### Step 4/5 status tracker — pipeline-aware alternatives (session 66)
 
 After the migration from sessions 55-66, the project contains BOTH

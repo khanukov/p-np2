@@ -2806,9 +2806,20 @@ assumptions.
 @audit-pr: PR 6
 @audit-registry: spec/provider_audit_registry.toml
 @audit-note:
-  Provider shape combining locality lift + certificate data. PR 13
-  audit pending: does it transitively reach
-  `FormulaSupportRestrictionBoundsPartial`?
+  ⚠ **REFUTED.**  PR 13 audit (completed) shows
+  `FormulaCertificateProviderPartial -> False` is provable in 3 lines via
+  the existing chain
+    Probe 2 (`fixedSlice_gapPartialMCSP_in_PpolyFormula`)
+      → `abstractGapTargetedSingletonDensityPayload_of_internal_provider`
+      → `false_of_abstractGapTargetedPayload_of_formulaCertificate`.
+  See Probe 13 in `pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean`
+  (`false_of_FormulaCertificateProviderPartial`).  The refutation does NOT
+  route through `FormulaSupportRestrictionBoundsPartial` — it is an
+  independent failure via the universal `PpolyFormula` quantification
+  being satisfied by truth-table hardwiring (same structural failure as
+  the other ⚠ siblings in STATUS.md).  All consumers of this provider
+  inherit ex-falso conclusions; they are retained as integration anchors
+  but must NOT be presented as progress toward unconditional `NP ⊄ P/poly`.
 -/
 structure FormulaCertificateProviderPartial where
   cert :

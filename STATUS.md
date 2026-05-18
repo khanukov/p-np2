@@ -55,9 +55,27 @@ public closure boundary.  The falsifiability audit proves:
 - `MagnificationAssumptions -> False`
 - `FormulaSupportBoundsPartial_fromPipeline -> False`
 - `MagnificationAssumptions_fromPipeline -> False`
+- `FormulaCertificateProviderPartial -> False` (Probe 13, PR 13 audit)
 
-So the legacy support-bounds and multi-switching final routes are vacuous:
-they compile, but they route through inconsistent assumptions.
+So the legacy support-bounds, multi-switching, and certificate-provider
+final routes are vacuous: they compile, but they route through inconsistent
+assumptions.
+
+**Note on PR #1366 canonical asymptotic infrastructure.**  PR #1366 landed
+`canonicalAsymptoticHAsym` (unconditional fill of the
+`AsymptoticFormulaTrackHypothesis` data structure) and a 7-session
+TM-verifier construction plan for the canonical spec.  Probe 13 above shows
+that the downstream wiring `i4_final_wiring_of_formulaCertificate` (the
+consumer of a hypothetical `canonicalAsymptoticNPBridge_of_TM W`) is
+ex-falso via `FormulaCertificateProviderPartial -> False`.  Therefore:
+
+- The canonical infrastructure (slice-equality bridge, computable decider,
+  TM-verifier scaffold) is sound Lean engineering and can be retargeted.
+- The 7-session TM-verifier construction targeting `canonicalAsymptoticSpec`
+  is **NOT** a path to unconditional `NP ⊄ P/poly` in the current
+  formalization.  A future TM-witness consumer must route through a NEW
+  provider that does not universally quantify over `PpolyFormula` (so it
+  is not satisfied by truth-table hardwiring).
 
 ## Fixed-Params Status
 

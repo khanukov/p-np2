@@ -458,6 +458,21 @@ theorem decideYesAt1_iff_const_or_input (m : Nat) (T : PartialTruthTable m) :
       · simp [Circuit.size]
       · exact (is_consistent_input_iff_at k T).mpr hk
 
+/-- Closed-form characterisation of `decideAsymptotic` at canonical
+input length `Partial.inputLen m`, in terms of `decodePartial x`'s
+row constraints.  This is the **TM verifier specification** at
+canonical length: walking the table region and checking either
+"all constrained cells agree on a value `b`" (constant case) or
+"all constrained cells satisfy the i-th projection" (input case). -/
+theorem decideAsymptotic_at_inputLen_iff_size1
+    (m : Nat) (x : Core.BitVec (Partial.inputLen m)) :
+    decideAsymptotic (Partial.inputLen m) x = true ↔
+      (∃ b : Bool, ∀ i : Fin (Partial.tableLen m),
+        decodePartial x i ≠ some !b) ∨
+      (∃ k : Fin m, ∀ j : Fin (Partial.tableLen m), ∀ b : Bool,
+        decodePartial x j = some b → Nat.testBit j.val k.val = b) := by
+  rw [decideAsymptotic_at_inputLen, decideYesAt1_iff_const_or_input]
+
 /-! ## Slice m=1: a concrete NO instance
 
 At m=1, `size1Candidates 1 = [const false, const true, input 0]`.

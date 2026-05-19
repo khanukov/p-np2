@@ -155,6 +155,75 @@ theorem exists_trace_not_size1
   exact exists_trace_not_size1_of_card_lt ((Finset.univ \\ D).attach)
     (fun i => ⟨i.1.1, i.1.2.1⟩) hSlack'
 
+/--
+Trace a size-1 candidate along a finite family of **truth-table rows**.
+
+This is the row-correct variant needed for the L1 diagonal step:
+`row : α → Fin (Partial.tableLen n)` selects concrete truth-table indices,
+and projection candidates read the corresponding input bit from that row index.
+-/
+def traceSize1CandidateOnRows
+    {n : Nat}
+    (α : Type) [Fintype α]
+    (row : α → Fin (Partial.tableLen n))
+    (c : Size1Candidate n) : α → Bool :=
+  match c with
+  | .const b => fun _ => b
+  | .input i => fun a => Nat.testBit (row a).val i.val
+
+/--
+Diagonal partial table: keep the `D`-coordinates from `yYes`, assign free
+coordinates by `label`.
+-/
+def diagonalPartialTable
+    (p : GapPartialMCSPParams)
+    (yYes : Bitstring (partialInputLen p))
+    (D : Finset (Fin (Partial.tableLen p.n)))
+    (label : (Finset.univ \\ D).attach → Bool) :
+    PartialTruthTable p.n :=
+  fun j =>
+    if hD : j ∈ D then
+      decodePartial yYes j
+    else
+      some (label ⟨j, by
+        exact Finset.mem_sdiff.mpr ⟨Finset.mem_univ j, hD⟩⟩)
+
+/-- The encoded diagonal table is always a valid canonical encoding. -/
+theorem diagonal_z_valid
+    (p : GapPartialMCSPParams)
+    (yYes : Bitstring (partialInputLen p))
+    (D : Finset (Fin (Partial.tableLen p.n)))
+    (label : (Finset.univ \\ D).attach → Bool) :
+    ValidEncoding p (encodePartial (diagonalPartialTable p yYes D label)) := by
+  exact validEncoding_encodePartial p (diagonalPartialTable p yYes D label)
+
+/--
+The diagonal construction agrees with `yYes` on the value coordinates indexed by
+`D`.
+-/
+theorem diagonal_z_agrees_on_D
+    (p : GapPartialMCSPParams)
+    (yYes : Bitstring (partialInputLen p))
+    (hValidYes : ValidEncoding p yYes)
+    (D : Finset (Fin (Partial.tableLen p.n)))
+    (label : (Finset.univ \\ D).attach → Bool) :
+    AgreeOnValues D yYes (encodePartial (diagonalPartialTable p yYes D label)) := by
+  intro i hiD
+  -- Canonicalization of `yYes` from validity.
+  have hCanonical : yYes = encodePartial (decodePartial yYes) := hValidYes
+  -- On coordinates in `D`, the diagonal table reuses `decodePartial yYes`.
+  have hDiagAt : diagonalPartialTable p yYes D label i = decodePartial yYes i := by
+    simp [diagonalPartialTable, hiD]
+  -- Reduce both sides to value components of canonical `encodePartial` forms.
+  calc
+    Partial.valPart (encodePartial (diagonalPartialTable p yYes D label)) i
+        = Option.getD (diagonalPartialTable p yYes D label i) false := by
+            simp [Partial.valPart, encodePartial]
+    _ = Option.getD (decodePartial yYes i) false := by rw [hDiagAt]
+    _ = Partial.valPart (encodePartial (decodePartial yYes)) i := by
+          simp [Partial.valPart, encodePartial]
+    _ = Partial.valPart yYes i := by rw [hCanonical]
+
 /-- L1 session status: one kernel-checked sub-lemma family landed. -/
 theorem isoStrong_conclusion_L1_status : True := by
   trivial

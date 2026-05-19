@@ -202,11 +202,17 @@ theorem isoStrong_conclusion_negative_for_canonical :
    contradiction.
 
 **Consequence.** The canonical asymptotic track via
-`canonicalAsymptoticHAsym` is **formally closed** at conclusion
-level.  The iso-strong route, the promise-YES weak route, and the
-promise-YES certificate route at the canonical spec are all
-inconsistent at the conclusion side under the (now Lean-witnessed)
-`GlobalAsymptoticDAGWitness` contract.
+`canonicalAsymptoticHAsym` is closed at conclusion side in the
+following precise sense.  The iso-strong route is formally refuted by
+the standalone theorem
+`isoStrong_conclusion_negative_for_canonical`.  For the
+promise-YES weak and promise-YES certificate routes, closure at
+`globalWitness_to_hInDag W` currently follows by pointwise
+contrapositive chaining of existing route-level implications
+`asymptoticPromiseYesCertificateRoute_of_asymptoticPromiseYesWeakRouteEventually`
+and
+`asymptoticIsoStrongRoute_of_asymptoticPromiseYesCertificateRoute`,
+not by currently exposed standalone negation theorems.
 
 This does **NOT** prove `P ≠ NP` or even `NP ⊄ P/poly`.  It rules
 out the canonical asymptotic track at the canonical `sYES = 1,
@@ -239,7 +245,8 @@ either:
 | 10. isoStrong_conclusion_L1 sessions 1-3 (#1416, #1423, #1427) | YELLOW_PARTIAL chain | extends to 340 LOC |
 | 11. isoStrong_conclusion_L1 session 4 (#1433) | **RED_CONCLUSION_REFUTED** | extends to 409 LOC; `isoStrong_conclusion_negative_for_canonical` formally proved |
 
-The canonical asymptotic track is now formally closed.  The four
+The canonical asymptotic track is now closed at conclusion side under
+the clarified attribution above.  The four
 major refutations in the post-PR13 chain:
 
 1. `FormulaCertificateProviderPartial → False` (PR 13, formula-side
@@ -251,6 +258,10 @@ major refutations in the post-PR13 chain:
 4. **`isoStrong_conclusion_negative_for_canonical` provable
    (L1 sessions 1-4, canonical track formally inconsistent at
    conclusion level).**
+
+Companion standalone negation theorems for the promise-YES weak and
+promise-YES certificate routes remain optional packaging improvements;
+they are not required for this status correction.
 
 ## Fixed-Params Status
 

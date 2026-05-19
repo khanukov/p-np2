@@ -203,10 +203,20 @@ theorem isoStrong_conclusion_negative_for_canonical :
 
 **Consequence.** The canonical asymptotic track via
 `canonicalAsymptoticHAsym` is **formally closed** at conclusion
-level.  The iso-strong route, the promise-YES weak route, and the
-promise-YES certificate route at the canonical spec are all
-inconsistent at the conclusion side under the (now Lean-witnessed)
-`GlobalAsymptoticDAGWitness` contract.
+level for the iso-strong route: the standalone Lean negation theorem is
+`isoStrong_conclusion_negative_for_canonical`.
+
+For the promise-YES weak and promise-YES certificate routes, the
+post-RED closure at `globalWitness_to_hInDag W` is currently obtained by
+pointwise contrapositive propagation along existing route-level
+implications,
+`asymptoticPromiseYesCertificateRoute_of_asymptoticPromiseYesWeakRouteEventually`
+and
+`asymptoticIsoStrongRoute_of_asymptoticPromiseYesCertificateRoute`,
+composed with `isoStrong_conclusion_negative_for_canonical`.
+These two companion promise negations are not yet exposed as standalone
+Lean negation theorems; adding them is optional packaging and is not
+required for the present status correction.
 
 This does **NOT** prove `P ≠ NP` or even `NP ⊄ P/poly`.  It rules
 out the canonical asymptotic track at the canonical `sYES = 1,

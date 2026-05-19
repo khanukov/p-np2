@@ -203,10 +203,22 @@ theorem isoStrong_conclusion_negative_for_canonical :
 
 **Consequence.** The canonical asymptotic track via
 `canonicalAsymptoticHAsym` is **formally closed** at conclusion
-level.  The iso-strong route, the promise-YES weak route, and the
-promise-YES certificate route at the canonical spec are all
-inconsistent at the conclusion side under the (now Lean-witnessed)
-`GlobalAsymptoticDAGWitness` contract.
+level for the iso-strong route: the standalone Lean theorem
+`isoStrong_conclusion_negative_for_canonical` directly refutes the
+canonical iso-strong conclusion at `globalWitness_to_hInDag W`.
+
+For the promise-YES weak and promise-YES certificate routes, the
+current closure statement is derivation-level (not standalone-negation
+-theorem-level) in the inspected Lean surface: at
+`globalWitness_to_hInDag W`, closure follows pointwise by
+contrapositive composition of
+`asymptoticPromiseYesCertificateRoute_of_asymptoticPromiseYesWeakRouteEventually`
+and
+`asymptoticIsoStrongRoute_of_asymptoticPromiseYesCertificateRoute`
+together with `isoStrong_conclusion_negative_for_canonical`.
+
+Companion promise-route negation theorems would be optional packaging
+improvements; they are not required for this status correction.
 
 This does **NOT** prove `P ≠ NP` or even `NP ⊄ P/poly`.  It rules
 out the canonical asymptotic track at the canonical `sYES = 1,
@@ -239,8 +251,11 @@ either:
 | 10. isoStrong_conclusion_L1 sessions 1-3 (#1416, #1423, #1427) | YELLOW_PARTIAL chain | extends to 340 LOC |
 | 11. isoStrong_conclusion_L1 session 4 (#1433) | **RED_CONCLUSION_REFUTED** | extends to 409 LOC; `isoStrong_conclusion_negative_for_canonical` formally proved |
 
-The canonical asymptotic track is now formally closed.  The four
-major refutations in the post-PR13 chain:
+The canonical asymptotic track is now formally closed, with
+iso-strong closure theorem-backed directly and promise-route closure
+currently carried as pointwise-contrapositive derivations at
+`globalWitness_to_hInDag W`.  The four major refutations in the
+post-PR13 chain:
 
 1. `FormulaCertificateProviderPartial → False` (PR 13, formula-side
    truth-table hardwiring).

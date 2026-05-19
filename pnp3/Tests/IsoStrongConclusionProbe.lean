@@ -113,6 +113,22 @@ def traceSize1CandidateOnFree {n : Nat} (α : Type) [Fintype α]
   fun a => evalSize1Candidate c (fun i => decide (i = embed a))
 
 /--
+Row-trace of a size-1 candidate on an arbitrary finite family of truth-table rows.
+
+Unlike `traceSize1CandidateOnFree`, this trace is over *table row indices*
+`Fin (Partial.tableLen n)` (assignment indices), not variable indices `Fin n`.
+This is the semantically correct object for diagonalisation on free rows.
+-/
+def traceSize1CandidateOnRows
+    {n : Nat}
+    (α : Type) [Fintype α]
+    (row : α → Fin (Partial.tableLen n))
+    (c : Size1Candidate n) : α → Bool :=
+  match c with
+  | .const b => fun _ => b
+  | .input i => fun a => Nat.testBit (row a).val i.val
+
+/--
 Finite-pigeonhole core: if the candidate family has size `< 2^|α|`, there exists
 a Boolean labeling of `α` outside all candidate traces.
 -/
@@ -154,6 +170,60 @@ theorem exists_trace_not_size1
     simpa using hSlack
   exact exists_trace_not_size1_of_card_lt ((Finset.univ \\ D).attach)
     (fun i => ⟨i.1.1, i.1.2.1⟩) hSlack'
+
+/--
+Diagonal partial table:
+* on constrained coordinates `D`, reuse values of `decodePartial yYes`;
+* on free coordinates, set values to `label`.
+-/
+def diagonalPartialTable
+    (p : GapPartialMCSPParams)
+    (yYes : Bitstring (partialInputLen p))
+    (D : Finset (Fin (Partial.tableLen p.n)))
+    (label : (Finset.univ \\ D).attach → Bool) :
+    PartialTruthTable p.n :=
+  fun j =>
+    if hD : j ∈ D then
+      decodePartial yYes j
+    else
+      some (label ⟨j, by simp [hD]⟩)
+
+/-- The encoded diagonal table is always a valid canonical encoding. -/
+theorem diagonal_z_valid
+    (p : GapPartialMCSPParams)
+    (yYes : Bitstring (partialInputLen p))
+    (D : Finset (Fin (Partial.tableLen p.n)))
+    (label : (Finset.univ \\ D).attach → Bool) :
+    ValidEncoding p (encodePartial (diagonalPartialTable p yYes D label)) := by
+  simpa using validEncoding_encodePartial p (diagonalPartialTable p yYes D label)
+
+/--
+On coordinates from `D`, diagonal encoding agrees with `yYes` at value bits.
+
+The proof uses that `yYes` is canonical (`ValidEncoding`) and that decoding an
+encoding returns the underlying partial table.
+-/
+theorem diagonal_z_agrees_on_D
+    (p : GapPartialMCSPParams)
+    (yYes : Bitstring (partialInputLen p))
+    (D : Finset (Fin (Partial.tableLen p.n)))
+    (label : (Finset.univ \\ D).attach → Bool)
+    (hValidYes : ValidEncoding p yYes) :
+    AgreeOnValues D yYes (encodePartial (diagonalPartialTable p yYes D label)) := by
+  intro i hiD
+  have hyCanon : yYes = encodePartial (decodePartial yYes) := hValidYes
+  have hLeft : Partial.valPart yYes i = Partial.valPart (encodePartial (decodePartial yYes)) i := by
+    simpa [hyCanon]
+  have hDiag :
+      decodePartial (encodePartial (diagonalPartialTable p yYes D label)) i =
+      decodePartial yYes i := by
+    simp [diagonalPartialTable, hiD]
+  have hRight :
+      Partial.valPart (encodePartial (diagonalPartialTable p yYes D label)) i =
+      Partial.valPart (encodePartial (decodePartial yYes)) i := by
+    -- Convert through decoded tables; both sides encode equal values at `i`.
+    cases hdy : decodePartial yYes i <;> simp [Partial.valPart, encodePartial, hDiag, hdy]
+  exact hLeft.trans hRight.symm
 
 /-- L1 session status: one kernel-checked sub-lemma family landed. -/
 theorem isoStrong_conclusion_L1_status : True := by

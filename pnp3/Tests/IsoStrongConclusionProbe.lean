@@ -33,6 +33,40 @@ open Magnification
 open LowerBounds
 open GlobalHInDagContractProbe
 
+/-- Finite canonical index type for size-1 candidate circuits over `n` variables. -/
+inductive Size1Candidate (n : Nat)
+  | const : Bool → Size1Candidate n
+  | input : Fin n → Size1Candidate n
+
+namespace Size1Candidate
+
+instance (n : Nat) : Fintype (Size1Candidate n) :=
+  Fintype.ofFinite _
+
+@[simp] lemma card_size1Candidate (n : Nat) :
+    Fintype.card (Size1Candidate n) = n + 2 := by
+  classical
+  -- `Bool ⊕ Fin n` has cardinality `2 + n`, and `Size1Candidate n` is equivalent to it.
+  let e : Size1Candidate n ≃ (Bool ⊕ Fin n) :=
+    { toFun := fun c =>
+        match c with
+        | .const b => Sum.inl b
+        | .input i => Sum.inr i
+      invFun := fun s =>
+        match s with
+        | Sum.inl b => .const b
+        | Sum.inr i => .input i
+      left_inv := by intro c; cases c <;> rfl
+      right_inv := by intro s; cases s <;> rfl }
+  calc
+    Fintype.card (Size1Candidate n)
+        = Fintype.card (Bool ⊕ Fin n) := Fintype.card_congr e
+    _ = Fintype.card Bool + Fintype.card (Fin n) := Fintype.card_sum
+    _ = 2 + n := by simp
+    _ = n + 2 := by omega
+
+end Size1Candidate
+
 /-- Shorthand for the canonical eventual gap-slice family. -/
 private def F : GapSliceFamilyEventually :=
   eventualGapSliceFamily_of_asymptotic canonicalAsymptoticHAsym

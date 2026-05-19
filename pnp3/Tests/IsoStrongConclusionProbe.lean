@@ -155,6 +155,90 @@ theorem exists_trace_not_size1
   exact exists_trace_not_size1_of_card_lt ((Finset.univ \\ D).attach)
     (fun i => ⟨i.1.1, i.1.2.1⟩) hSlack'
 
+/--
+Trace of a size-1 candidate on an arbitrary finite family of truth-table rows.
+
+Unlike `traceSize1CandidateOnFree`, this trace is expressed directly in terms of
+row indices `Fin (Partial.tableLen n)` and therefore aligns with partial-table
+semantics (value coordinates), not variable-index coordinates `Fin n`.
+-/
+def traceSize1CandidateOnRows
+    {n : Nat}
+    (α : Type) [Fintype α]
+    (row : α → Fin (Partial.tableLen n))
+    (c : Size1Candidate n) : α → Bool :=
+  match c with
+  | .const b => fun _ => b
+  | .input i => fun a => Nat.testBit (row a).val i.val
+
+/--
+Generic finite-family diagonalization: any family `γ` of traces over `α` with
+strictly fewer members than `2^|α|` misses at least one Boolean label.
+-/
+theorem exists_label_not_in_finite_trace_family
+    {α γ : Type} [Fintype α] [Fintype γ]
+    (trace : γ → α → Bool)
+    (h : Fintype.card γ < 2 ^ Fintype.card α) :
+    ∃ label : α → Bool,
+      ∀ g : γ, label ≠ trace g := by
+  classical
+  have hNotSurj : ¬ Function.Surjective trace := by
+    intro hsurj
+    have hCardLe : Fintype.card (α → Bool) ≤ Fintype.card γ :=
+      Fintype.card_le_of_surjective _ hsurj
+    have hCardLt : Fintype.card γ < Fintype.card (α → Bool) := by
+      simpa [Fintype.card_fun, Fintype.card_bool] using h
+    exact (Nat.not_lt.mpr hCardLe) hCardLt
+  rcases not_forall.mp hNotSurj with ⟨label, hLabel⟩
+  refine ⟨label, ?_⟩
+  intro g hg
+  exact hLabel ⟨g, hg⟩
+
+/--
+Diagonal partial table: keep `yYes` values on `D`, and force the complement by
+the diagonal label.
+-/
+def diagonalPartialTable
+    (p : GapPartialMCSPParams)
+    (yYes : Bitstring (partialInputLen p))
+    (D : Finset (Fin (Partial.tableLen p.n)))
+    (label : (Finset.univ \\ D).attach → Bool) :
+    PartialTruthTable p.n :=
+  fun j =>
+    if hD : j ∈ D then
+      decodePartial yYes j
+    else
+      some (label ⟨j, by
+        refine Finset.mem_sdiff.mpr ?_
+        exact ⟨Finset.mem_univ j, hD⟩⟩)
+
+theorem diagonal_z_valid
+    (p : GapPartialMCSPParams)
+    (yYes : Bitstring (partialInputLen p))
+    (D : Finset (Fin (Partial.tableLen p.n)))
+    (label : (Finset.univ \\ D).attach → Bool) :
+    ValidEncoding p (encodePartial (diagonalPartialTable p yYes D label)) := by
+  simpa using validEncoding_encodePartial p (diagonalPartialTable p yYes D label)
+
+theorem diagonal_z_agrees_on_D
+    (p : GapPartialMCSPParams)
+    (yYes : Bitstring (partialInputLen p))
+    (hValidYes : ValidEncoding p yYes)
+    (D : Finset (Fin (Partial.tableLen p.n)))
+    (label : (Finset.univ \\ D).attach → Bool) :
+    AgreeOnValues D yYes (encodePartial (diagonalPartialTable p yYes D label)) := by
+  intro i hiD
+  have hDecodeEq : decodePartial yYes i = decodePartial (encodePartial (decodePartial yYes)) i := by
+    simp
+  rw [← hValidYes] at hDecodeEq
+  rw [Partial.decodePartial_valPart] at hDecodeEq
+  have hDiag : diagonalPartialTable p yYes D label i = decodePartial yYes i := by
+    simp [diagonalPartialTable, hiD]
+  have hValZ : Partial.valPart (encodePartial (diagonalPartialTable p yYes D label)) i =
+      Option.getD (diagonalPartialTable p yYes D label i) false := by
+    simp [Partial.valPart]
+  rw [hValZ, hDiag, hDecodeEq]
+
 /-- L1 session status: one kernel-checked sub-lemma family landed. -/
 theorem isoStrong_conclusion_L1_status : True := by
   trivial

@@ -331,6 +331,91 @@ theorem exists_valid_agreeing_not_yes_under_slack
   · exact diagonal_z_agrees_on_D p yYes hValidYes D label
   · exact diagonal_z_not_yes_of_label_not_trace p hsYES yYes D label hLabel
 
+
+
+/-- Slice-family correctness extracted from the `InPpolyDAG` witness at active length. -/
+theorem correctOnPromiseSlice_of_InPpolyDAG_family
+    (F : GapSliceFamilyEventually)
+    (hInDag :
+      ∀ n β, InPpolyDAG (gapPartialMCSP_Language (F.paramsOf n β)))
+    (n : Nat) (β : Rat) :
+    CorrectOnPromiseSlice
+      ((hInDag n β).family (GapSliceFamilyEventually.encodedLen F n β))
+      (gapSliceOfParams (F.paramsOf n β)) := by
+  intro x hx
+  rcases hx with hxYes | hxNo
+  · left
+    have hEval := (hInDag n β).correct (GapSliceFamilyEventually.encodedLen F n β) x
+    have hTrue :
+        gapPartialMCSP_Language (F.paramsOf n β)
+          (GapSliceFamilyEventually.encodedLen F n β) x = true := by
+      simpa [gapSliceOfParams] using hxYes
+    exact hEval.trans hTrue
+  · right
+    have hEval := (hInDag n β).correct (GapSliceFamilyEventually.encodedLen F n β) x
+    have hFalse :
+        gapPartialMCSP_Language (F.paramsOf n β)
+          (GapSliceFamilyEventually.encodedLen F n β) x = false := by
+      simpa [gapSliceOfParams] using hxNo
+    exact hEval.trans hFalse
+
+/-- Canonical slice parameters always use the unit YES-size threshold. -/
+@[simp] theorem F_params_sYES (n : Nat) (β : Rat) :
+    (F.paramsOf n β).sYES = 1 := by
+  simp [F, eventualGapSliceFamily_of_asymptotic]
+
+/-- Convert iso-strong slack from `κ` to an arbitrary smaller witness set `D`. -/
+theorem slack_for_D_of_isoStrong_slack
+    (p : GapPartialMCSPParams)
+    (κv Dcard : Nat)
+    (hDcard : Dcard ≤ κv)
+    (hRawSlack : p.n + 2 < 2 ^ (Partial.tableLen p.n - κv)) :
+    p.n + 2 < 2 ^ (Partial.tableLen p.n - Dcard) := by
+  have hSub : Partial.tableLen p.n - κv ≤ Partial.tableLen p.n - Dcard := by
+    exact Nat.sub_le_sub_left hDcard _
+  exact lt_of_lt_of_le hRawSlack (Nat.pow_le_pow_right (by omega) hSub)
+
+/-- L1 session 4: final composition contradiction for canonical iso-strong family. -/
+theorem isoStrong_conclusion_negative_for_canonical :
+    ∀ W : GlobalAsymptoticDAGWitness canonicalAsymptoticHAsym,
+      ¬ IsoStrongFamilyEventually
+          (eventualGapSliceFamily_of_asymptotic canonicalAsymptoticHAsym)
+          (globalWitness_to_hInDag W) := by
+  intro W hIso
+  rcases hIso with ⟨β0, hβ0, κ, nIso, hForce, hSlack⟩
+  let β : Rat := β0 / 2
+  have hβPos : 0 < β := by
+    dsimp [β]
+    linarith
+  have hβLt : β < β0 := by
+    dsimp [β]
+    linarith
+  let n : Nat := max F.N0 (nIso β)
+  have hn : n ≥ max F.N0 (nIso β) := by
+    exact le_rfl
+  let hInDag := globalWitness_to_hInDag W
+  let C : DagCircuit (GapSliceFamilyEventually.encodedLen F n β) :=
+    (hInDag n β).family (GapSliceFamilyEventually.encodedLen F n β)
+  have hSize :
+      ppolyDAGSizeBoundOnSlicesEventually F hInDag n β 1 (DagCircuit.size C) := by
+    dsimp [C, ppolyDAGSizeBoundOnSlicesEventually]
+    simpa using (hInDag n β).family_size_le (GapSliceFamilyEventually.encodedLen F n β)
+  have hCorrect : CorrectOnPromiseSlice C (gapSliceOfParams (F.paramsOf n β)) := by
+    simpa [C] using correctOnPromiseSlice_of_InPpolyDAG_family F hInDag n β
+  rcases hForce n β hβPos hβLt hn C hSize hCorrect with
+    ⟨yYes, hyYes, hValidYes, D, hDcard, hAllYes⟩
+  have hRawSlack := hSlack n β hβPos hβLt hn
+  have hSlackForD :
+      (F.paramsOf n β).n + 2 < 2 ^ (Partial.tableLen (F.paramsOf n β).n - D.card) := by
+    have hCanon :
+        (F.paramsOf n β).n + 2 < 2 ^ (Partial.tableLen (F.paramsOf n β).n - κ n β) := by
+      simpa [F, eventualGapSliceFamily_of_asymptotic] using hRawSlack
+    exact slack_for_D_of_isoStrong_slack (F.paramsOf n β) (κ n β) D.card hDcard hCanon
+  rcases exists_valid_agreeing_not_yes_under_slack
+      (p := F.paramsOf n β)
+      (hsYES := by simp)
+      yYes hValidYes D hSlackForD with ⟨z, hzValid, hzAgree, hzNotYes⟩
+  exact hzNotYes (hAllYes z hzValid hzAgree)
 /-- L1 session status: one kernel-checked sub-lemma family landed. -/
 theorem isoStrong_conclusion_L1_status : True := by
   trivial

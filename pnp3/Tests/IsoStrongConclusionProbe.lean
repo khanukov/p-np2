@@ -1,6 +1,7 @@
 import Complexity.Interfaces
 import Models.Model_PartialMCSP
 import Magnification.CanonicalAsymptoticTrackData
+import Magnification.CanonicalAsymptoticDecider
 import Magnification.FinalResultMainline
 import LowerBounds.AsymptoticDAGBarrierTheorems
 import LowerBounds.AsymptoticDAGBarrierInterfaces
@@ -239,6 +240,101 @@ theorem diagonal_z_agrees_on_D
       symm
       simp [Partial.valPart, encodePartial, Partial.valIndex]
 
+
+
+/-- Convert a size-1 candidate code into the corresponding circuit. -/
+def Size1Candidate.toCircuit {n : Nat} : Size1Candidate n → Circuit n
+  | .const b => Circuit.const b
+  | .input i => Circuit.input i
+
+@[simp] theorem trace_const_rows
+    (p : GapPartialMCSPParams)
+    (D : Finset (Fin (Partial.tableLen p.n)))
+    (b : Bool) :
+    traceSize1CandidateOnRows ((Finset.univ \ D).attach) (fun a => a.1)
+      (Size1Candidate.const b) = fun _ => b := by
+  funext a; rfl
+
+@[simp] theorem trace_input_rows
+    (p : GapPartialMCSPParams)
+    (D : Finset (Fin (Partial.tableLen p.n)))
+    (i : Fin p.n) :
+    traceSize1CandidateOnRows ((Finset.univ \ D).attach) (fun a => a.1)
+      (Size1Candidate.input i) = fun a => Nat.testBit a.1.val i.val := by
+  funext a; rfl
+
+/-- Consistency of a size-1 candidate circuit with the diagonal table forces
+exact equality with the chosen free-row label trace. -/
+theorem is_consistent_diagonal_table_implies_label_trace
+    (p : GapPartialMCSPParams)
+    (yYes : Bitstring (partialInputLen p))
+    (D : Finset (Fin (Partial.tableLen p.n)))
+    (label : (Finset.univ \ D).attach → Bool)
+    (c : Size1Candidate p.n)
+    (hCons :
+      is_consistent (Size1Candidate.toCircuit c)
+        (diagonalPartialTable p yYes D label)) :
+    label =
+      traceSize1CandidateOnRows ((Finset.univ \ D).attach)
+        (fun a => a.1) c := by
+  funext a
+  have hAt := hCons (Core.vecOfNat p.n a.1.val)
+  have hIdx : assignmentIndex (Core.vecOfNat p.n a.1.val) = a.1 :=
+    assignmentIndex_vecOfNat_eq a.1
+  have hDiag : diagonalPartialTable p yYes D label a.1 = some (label a) := by
+    simp [diagonalPartialTable, a.2.2]
+  rw [hIdx, hDiag] at hAt
+  cases c with
+  | const b =>
+    simpa [Size1Candidate.toCircuit, traceSize1CandidateOnRows, Circuit.eval] using hAt.symm
+  | input i =>
+    simpa [Size1Candidate.toCircuit, traceSize1CandidateOnRows, Circuit.eval] using hAt.symm
+
+theorem diagonal_z_not_yes_of_label_not_trace
+    (p : GapPartialMCSPParams)
+    (hsYES : p.sYES = 1)
+    (yYes : Bitstring (partialInputLen p))
+    (D : Finset (Fin (Partial.tableLen p.n)))
+    (label : (Finset.univ \ D).attach → Bool)
+    (hLabel : ∀ c : Size1Candidate p.n,
+      label ≠ traceSize1CandidateOnRows ((Finset.univ \ D).attach)
+        (fun a => a.1) c) :
+    ¬ encodePartial (diagonalPartialTable p yYes D label)
+        ∈ (gapSliceOfParams p).Yes := by
+  intro hzYes
+  have hLang : gapPartialMCSP_Language p (partialInputLen p)
+      (encodePartial (diagonalPartialTable p yYes D label)) = true := by
+    simpa [gapSliceOfParams] using hzYes
+  have hYesDec : PartialMCSP_YES p
+      (decodePartial (encodePartial (diagonalPartialTable p yYes D label))) :=
+    (gapPartialMCSP_language_true_iff_yes p
+      (encodePartial (diagonalPartialTable p yYes D label))).mp hLang
+  have hYesTable : PartialMCSP_YES p (diagonalPartialTable p yYes D label) := by
+    simpa [decodePartial_encodePartial] using hYesDec
+  rcases hYesTable with ⟨C, hSize, hCons⟩
+  have hSize1 : C.size ≤ 1 := by simpa [hsYES] using hSize
+  have hMem := mem_size1Candidates_of_size_le_one C hSize1
+  rcases List.mem_cons.mp hMem with hC0 | hRest
+  · have hTrace : label = traceSize1CandidateOnRows ((Finset.univ \ D).attach)
+        (fun a => a.1) (Size1Candidate.const false) := by
+      have hCons' : is_consistent (Size1Candidate.toCircuit (Size1Candidate.const false))
+          (diagonalPartialTable p yYes D label) := by simpa [Size1Candidate.toCircuit] [hC0] using hCons
+      exact is_consistent_diagonal_table_implies_label_trace p yYes D label _ hCons'
+    exact (hLabel (Size1Candidate.const false)) hTrace
+  rcases List.mem_cons.mp hRest with hC1 | hInputs
+  · have hTrace : label = traceSize1CandidateOnRows ((Finset.univ \ D).attach)
+        (fun a => a.1) (Size1Candidate.const true) := by
+      have hCons' : is_consistent (Size1Candidate.toCircuit (Size1Candidate.const true))
+          (diagonalPartialTable p yYes D label) := by simpa [Size1Candidate.toCircuit] [hC1] using hCons
+      exact is_consistent_diagonal_table_implies_label_trace p yYes D label _ hCons'
+    exact (hLabel (Size1Candidate.const true)) hTrace
+  rcases List.mem_map.mp hInputs with ⟨i, _, hi⟩
+  have hTrace : label = traceSize1CandidateOnRows ((Finset.univ \ D).attach)
+      (fun a => a.1) (Size1Candidate.input i) := by
+    have hCons' : is_consistent (Size1Candidate.toCircuit (Size1Candidate.input i))
+        (diagonalPartialTable p yYes D label) := by simpa [Size1Candidate.toCircuit] [hi] using hCons
+    exact is_consistent_diagonal_table_implies_label_trace p yYes D label _ hCons'
+  exact (hLabel (Size1Candidate.input i)) hTrace
 /-- L1 session status: one kernel-checked sub-lemma family landed. -/
 theorem isoStrong_conclusion_L1_status : True := by
   trivial

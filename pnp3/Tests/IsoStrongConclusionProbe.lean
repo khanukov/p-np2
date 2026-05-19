@@ -1,6 +1,7 @@
 import Complexity.Interfaces
 import Models.Model_PartialMCSP
 import Magnification.CanonicalAsymptoticTrackData
+import Magnification.CanonicalAsymptoticDecider
 import Magnification.FinalResultMainline
 import LowerBounds.AsymptoticDAGBarrierTheorems
 import LowerBounds.AsymptoticDAGBarrierInterfaces
@@ -238,6 +239,97 @@ theorem diagonal_z_agrees_on_D
     _ = Partial.valPart (encodePartial (diagonalPartialTable p yYes D label)) i := by
       symm
       simp [Partial.valPart, encodePartial, Partial.valIndex]
+
+/-- Convert a size-1 candidate code into a concrete circuit. -/
+def Size1Candidate.toCircuit {n : Nat} : Size1Candidate n → Circuit n
+  | .const b => Circuit.const b
+  | .input i => Circuit.input i
+
+@[simp] theorem eval_toCircuit_eq_evalSize1Candidate
+    {n : Nat} (c : Size1Candidate n) (x : Fin n → Bool) :
+    Circuit.eval (Size1Candidate.toCircuit c) x = evalSize1Candidate c x := by
+  cases c <;> rfl
+
+theorem is_consistent_diagonal_table_implies_label_trace
+    (p : GapPartialMCSPParams)
+    (yYes : Bitstring (partialInputLen p))
+    (D : Finset (Fin (Partial.tableLen p.n)))
+    (label : (Finset.univ \\ D).attach → Bool)
+    (c : Size1Candidate p.n)
+    (hCons :
+      is_consistent (Size1Candidate.toCircuit c)
+        (diagonalPartialTable p yYes D label)) :
+    label =
+      traceSize1CandidateOnRows ((Finset.univ \\ D).attach)
+        (fun a => a.1) c := by
+  funext a
+  have hdiag : diagonalPartialTable p yYes D label a.1 = some (label a) := by
+    simp [diagonalPartialTable, a.2, Finset.mem_sdiff] at *
+  have hAt := hCons (Core.vecOfNat p.n a.1.1.val)
+  have hIdx : assignmentIndex (Core.vecOfNat p.n a.1.1.val) = a.1 := by
+    exact assignmentIndex_vecOfNat_eq a.1
+  rw [hIdx, hdiag] at hAt
+  cases c with
+  | const b =>
+      simp [traceSize1CandidateOnRows, Size1Candidate.toCircuit, Circuit.eval] at hAt ⊢
+      simpa [hAt]
+  | input i =>
+      simpa [traceSize1CandidateOnRows, Size1Candidate.toCircuit] using hAt.symm
+
+theorem diagonal_z_not_yes_of_label_not_trace
+    (p : GapPartialMCSPParams)
+    (hsYES : p.sYES = 1)
+    (yYes : Bitstring (partialInputLen p))
+    (D : Finset (Fin (Partial.tableLen p.n)))
+    (label : (Finset.univ \\ D).attach → Bool)
+    (hLabel : ∀ c : Size1Candidate p.n,
+      label ≠ traceSize1CandidateOnRows ((Finset.univ \\ D).attach)
+        (fun a => a.1) c) :
+    ¬ encodePartial (diagonalPartialTable p yYes D label)
+        ∈ (gapSliceOfParams p).Yes := by
+  intro hzYes
+  rcases (gapSlice_yes_iff p (partialInputLen p)
+      (by simp [partialInputLen]) _).1 hzYes with hLang
+  rw [gapPartialMCSP_Language_eq_true_iff_yes] at hLang
+  rw [PartialMCSP_YES, hsYES] at hLang
+  rcases hLang with ⟨C, hSize, hCons⟩
+  have hMem : C ∈ size1Candidates p.n :=
+    mem_size1Candidates_of_size_le_one C hSize
+  have hTable :
+      is_consistent C (diagonalPartialTable p yYes D label) := by
+    simpa [decodePartial_encodePartial] using hCons
+  rcases List.mem_cons.mp hMem with rfl | hRest
+  · exact (hLabel (.const false))
+      (is_consistent_diagonal_table_implies_label_trace p yYes D label (.const false) hTable)
+  rcases List.mem_cons.mp hRest with rfl | hRest2
+  · exact (hLabel (.const true))
+      (is_consistent_diagonal_table_implies_label_trace p yYes D label (.const true) hTable)
+  rcases List.mem_map.mp hRest2 with ⟨i, _, hi⟩
+  rw [hi] at hTable
+  exact (hLabel (.input i))
+    (is_consistent_diagonal_table_implies_label_trace p yYes D label (.input i) hTable)
+
+theorem exists_valid_agreeing_not_yes_under_slack
+    (p : GapPartialMCSPParams)
+    (hsYES : p.sYES = 1)
+    (yYes : Bitstring (partialInputLen p))
+    (hValidYes : ValidEncoding p yYes)
+    (D : Finset (Fin (Partial.tableLen p.n)))
+    (hSlack : p.n + 2 < 2 ^ (Partial.tableLen p.n - D.card)) :
+    ∃ z : Bitstring (partialInputLen p),
+      ValidEncoding p z ∧
+      AgreeOnValues D yYes z ∧
+      ¬ z ∈ (gapSliceOfParams p).Yes := by
+  have hSlack' : p.n + 2 < 2 ^ ((Finset.univ \\ D).card) := by
+    simpa [Finset.card_sdiff (Finset.subset_univ D)] using hSlack
+  rcases exists_label_not_in_finite_trace_family
+      (trace := fun c : Size1Candidate p.n =>
+        traceSize1CandidateOnRows ((Finset.univ \\ D).attach) (fun a => a.1) c)
+      (by simpa [card_Size1Candidate] using hSlack') with ⟨label, hLabel⟩
+  refine ⟨encodePartial (diagonalPartialTable p yYes D label), ?_, ?_, ?_⟩
+  · exact diagonal_z_valid p yYes D label
+  · exact diagonal_z_agrees_on_D p yYes hValidYes D label
+  · exact diagonal_z_not_yes_of_label_not_trace p hsYES yYes D label hLabel
 
 /-- L1 session status: one kernel-checked sub-lemma family landed. -/
 theorem isoStrong_conclusion_L1_status : True := by

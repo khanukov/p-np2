@@ -331,6 +331,85 @@ theorem exists_valid_agreeing_not_yes_under_slack
   · exact diagonal_z_agrees_on_D p yYes hValidYes D label
   · exact diagonal_z_not_yes_of_label_not_trace p hsYES yYes D label hLabel
 
+
+
+theorem correctOnPromiseSlice_of_InPpolyDAG_family
+    (F : GapSliceFamilyEventually)
+    (hInDag : ∀ n β, InPpolyDAG (gapPartialMCSP_Language (F.paramsOf n β)))
+    (n : Nat) (β : Rat) :
+    CorrectOnPromiseSlice
+      ((hInDag n β).family (GapSliceFamilyEventually.encodedLen F n β))
+      (gapSliceOfParams (F.paramsOf n β)) := by
+  intro x hx
+  rcases hx with hxYes | hxNo
+  · left
+    exact (hInDag n β).correct _ x (by
+      simpa [gapSliceOfParams] using hxYes)
+  · right
+    exact (hInDag n β).correct _ x (by
+      simpa [gapSliceOfParams] using hxNo)
+
+theorem slack_for_D_of_isoStrong_slack
+    (p : GapPartialMCSPParams)
+    (D : Finset (Fin (Partial.tableLen p.n)))
+    (κv : Nat)
+    (hDcard : D.card ≤ κv)
+    (hRawSlack : p.n + 2 < 2 ^ (Partial.tableLen p.n - κv)) :
+    p.n + 2 < 2 ^ (Partial.tableLen p.n - D.card) := by
+  have hSub : Partial.tableLen p.n - κv ≤ Partial.tableLen p.n - D.card := by
+    exact Nat.sub_le_sub_left hDcard _
+  exact lt_of_lt_of_le hRawSlack (Nat.pow_le_pow_right hSub)
+
+theorem isoStrong_conclusion_negative_for_canonical :
+    ∀ W : GlobalAsymptoticDAGWitness canonicalAsymptoticHAsym,
+      ¬ IsoStrongFamilyEventually
+          (eventualGapSliceFamily_of_asymptotic canonicalAsymptoticHAsym)
+          (globalWitness_to_hInDag W) := by
+  intro W hIso
+  rcases hIso with ⟨β0, hβ0, κ, nIso, hForce, hSlack⟩
+  let β : Rat := β0 / 2
+  have hβPos : 0 < β := by
+    dsimp [β]
+    linarith
+  have hβLt : β < β0 := by
+    dsimp [β]
+    linarith
+  let n : Nat := max F.N0 (nIso β)
+  have hn : n ≥ max F.N0 (nIso β) := by
+    exact Nat.le_refl _
+  let hInDag := globalWitness_to_hInDag W
+  let C := (hInDag n β).family (GapSliceFamilyEventually.encodedLen F n β)
+  have hSize :
+      ppolyDAGSizeBoundOnSlicesEventually F hInDag n β 1 (DagCircuit.size C) := by
+    dsimp [C]
+    exact (hInDag n β).family_size_le _
+  have hCorrect :
+      CorrectOnPromiseSlice C (gapSliceOfParams (F.paramsOf n β)) := by
+    dsimp [C]
+    exact correctOnPromiseSlice_of_InPpolyDAG_family F hInDag n β
+  rcases hForce n β hβPos hβLt hn C hSize hCorrect with
+    ⟨yYes, hyYes, hValidYes, D, hDcard, hAllYes⟩
+  have hRawSlack := hSlack n β hβPos hβLt hn
+  let p : GapPartialMCSPParams := F.paramsOf n β
+  have hsYES : p.sYES = 1 := by
+    dsimp [p, F]
+    simp [eventualGapSliceFamily_of_asymptotic]
+  have hRawSlack' : p.n + 2 < 2 ^ (Partial.tableLen p.n - κ n β) := by
+    simpa [p, F, eventualGapSliceFamily_of_asymptotic] using hRawSlack
+  have hSlackForD : p.n + 2 < 2 ^ (Partial.tableLen p.n - D.card) := by
+    exact slack_for_D_of_isoStrong_slack p D (κ n β) hDcard hRawSlack'
+  have hyYes' : yYes ∈ (gapSliceOfParams p).Yes := by
+    simpa [p] using hyYes
+  have hAllYes' : ∀ z : Bitstring (partialInputLen p),
+      ValidEncoding p z →
+      AgreeOnValues D yYes z →
+      z ∈ (gapSliceOfParams p).Yes := by
+    intro z hzValid hzAgree
+    simpa [p] using hAllYes z hzValid hzAgree
+  rcases exists_valid_agreeing_not_yes_under_slack p hsYES yYes hValidYes D hSlackForD with
+    ⟨z, hzValid, hzAgree, hzNotYes⟩
+  exact hzNotYes (hAllYes' z hzValid hzAgree)
+
 /-- L1 session status: one kernel-checked sub-lemma family landed. -/
 theorem isoStrong_conclusion_L1_status : True := by
   trivial

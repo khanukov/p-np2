@@ -202,11 +202,20 @@ theorem isoStrong_conclusion_negative_for_canonical :
    contradiction.
 
 **Consequence.** The canonical asymptotic track via
-`canonicalAsymptoticHAsym` is **formally closed** at conclusion
-level.  The iso-strong route, the promise-YES weak route, and the
-promise-YES certificate route at the canonical spec are all
-inconsistent at the conclusion side under the (now Lean-witnessed)
-`GlobalAsymptoticDAGWitness` contract.
+`canonicalAsymptoticHAsym` is closed at conclusion level in the
+following precise sense:
+
+- The iso-strong route is formally refuted by the standalone theorem
+  `isoStrong_conclusion_negative_for_canonical`.
+- The promise-YES weak and promise-YES certificate routes are not yet
+  exposed as standalone Lean negation theorems.
+- Their closure at `globalWitness_to_hInDag W` follows by pointwise
+  contrapositive of existing route-level implications:
+  `asymptoticPromiseYesCertificateRoute_of_asymptoticPromiseYesWeakRouteEventually`
+  and
+  `asymptoticIsoStrongRoute_of_asymptoticPromiseYesCertificateRoute`.
+- Companion promise-route negation theorems are optional packaging for
+  attribution clarity, not required for the current status correction.
 
 This does **NOT** prove `P ≠ NP` or even `NP ⊄ P/poly`.  It rules
 out the canonical asymptotic track at the canonical `sYES = 1,
@@ -313,9 +322,13 @@ hypothesis parameter throughout the magnification mainline.  See
   `W : Models.GapPartialMCSP_Asymptotic_TMWitness canonicalAsymptoticSpec`.
 
 `pnp3/Tests/CanonicalIntegrationTests.lean` validates end-to-end
-integration with `i4_final_wiring_of_formulaCertificate`,
-`NP_not_subset_PpolyDAG_final_of_asymptotic_isoStrongRoute_withAntiChecker`,
-the promise-YES certificate route, and their `P ≠ NP` companions.
+integration wiring surfaces, including
+`i4_final_wiring_of_formulaCertificate` and
+`NP_not_subset_PpolyDAG_final_of_asymptotic_isoStrongRoute_withAntiChecker`.
+For the canonical conclusion-side closure statement, only
+`isoStrong_conclusion_negative_for_canonical` is currently a standalone
+negation theorem; promise-route closure is presently tracked via the
+route-implication contrapositive chain above.
 
 The single remaining typed-deliverable for the canonical track is the TM
 verifier: see "What Is Still Open" below.

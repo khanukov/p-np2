@@ -131,27 +131,126 @@ input length `N = 2 · 2^m`, doubly-exponential in the slice index.
 YES-isolating combinatorial structure for **arbitrary-size DAGs**, not
 just polynomial-size DAGs.
 
-This is a **different, potentially harder** research-open obligation
-than the original "small polynomial-size DAG ⇒ structural payload"
-framing.  Neither vacuously true nor vacuously false; the conclusion
-side is now the dominant research-open content.
+**Note on canonical asymptotic track conclusion-side refutation
+(May 2026, completed).**  Following the L0 hInDag triviality
+landing, the audit chain continued with three additional D0 and L0
+deliverables that ultimately **refuted the canonical track at the
+conclusion level**:
 
-The current research-open frontier is therefore:
+5. `seed_packs/global_hInDag_contract_repair_D0` (codex53, PR #1396):
+   `REPAIR_POSSIBLE_WITH_GLOBAL_WITNESS` — proposed
+   `GlobalAsymptoticDAGWitness` structure with single shared
+   `(coeff, exponent)` polynomial bound to structurally close the
+   hardwiring loophole.
+6. `seed_packs/global_hInDag_contract_L0` (gpt55, PR #1404):
+   `RED_GLOBAL_CONTRACT_CORE_LANDED` — landed
+   `pnp3/Tests/GlobalHInDagContractProbe.lean` (116 LOC) with
+   `GlobalAsymptoticDAGWitness` + `globalPolyDAGSizeBound` +
+   `AsymptoticPromiseYesWeakRouteEventually_global` +
+   `globalWitness_to_hInDag` forward projection.  Hypothesis-side
+   hardwiring loophole structurally closed.
+7. `seed_packs/isoStrong_conclusion_audit_D0` (codex53, PR #1407):
+   `INCONCLUSIVE_NEEDS_LEAN_PROBE` — 4/4 D0 workers identified the
+   conclusion-side question needs Lean probe.
+8. `seed_packs/isoStrong_conclusion_L0` (codex, PR #1413):
+   `YELLOW_PARTIAL_LANDING` — landed
+   `pnp3/Tests/IsoStrongConclusionProbe.lean` (80 LOC) with `F_Mof =
+   n+2` simp lemma + `canonical_isoStrong_implies_eventual_strict_slack`
+   slack-inequality extraction.  Identified pigeonhole
+   z-construction as L1 blocker.
+9. `seed_packs/isoStrong_conclusion_L1` (4 codex sessions, PRs
+   #1416, #1423, #1427, #1433):
+   **`RED_CONCLUSION_REFUTED`** — the canonical iso-strong route is
+   **formally inconsistent** at canonical `sYES=1, sNO=2`.  Total
+   staging file size: 409 LOC, kernel-checked, no `axiom`/`opaque`/
+   `sorry`/`admit`/`native_decide`, no refuted-predicate imports.
 
-- **`IsoStrongFamilyEventually F hInDag_for_canonicalAsymptoticHAsym`**:
-  given that every fixed canonical slice has a polynomial-size DAG
-  family (Lean-witnessed by `fixedSlice_gapPartialMCSP_in_PpolyDAG`),
-  can we still extract YES-isolating combinatorial structure for
-  every DAG correctly deciding `gapPartialMCSP_Language` on the
-  promise?
-- equivalently for `PromiseYesSubcubeCertificateAt W` under the same
-  hardwired hInDag.
+The L1 chain (4 sessions) proved the **fourth major refutation** in
+the post-PR13 chain via a corrected pigeonhole argument over
+size-1 candidate traces on truth-table rows:
 
-A natural follow-up D0 audits whether the canonical choice `sYES = 1,
-sNO = 2` (the minimal legal spec) yields a tractable conclusion side
-under hardwired hInDag, or whether the canonical spec needs to be
-re-chosen with non-trivial `sYES/sNO` to recover a useful structural
-conclusion.
+```lean
+theorem isoStrong_conclusion_negative_for_canonical :
+    ∀ W : GlobalAsymptoticDAGWitness canonicalAsymptoticHAsym,
+      ¬ IsoStrongFamilyEventually
+          (eventualGapSliceFamily_of_asymptotic canonicalAsymptoticHAsym)
+          (globalWitness_to_hInDag W)
+```
+
+**Proof structure:**
+1. Pigeonhole core (session 1): `Size1Candidate n` finite type with
+   `Fintype.card = n + 2`; `exists_trace_not_size1_of_card_lt` shows
+   that under slack `n + 2 < 2 ^ Fintype.card α`, there exists a
+   Boolean labeling outside all size-1 traces.
+2. Encoding bridge (session 2): `traceSize1CandidateOnRows` evaluates
+   size-1 candidates on truth-table rows via `Nat.testBit`;
+   `diagonalPartialTable` constructs the candidate counterexample
+   `z := encodePartial (diagonalPartialTable p yYes D label)`;
+   `diagonal_z_valid` (ValidEncoding) and `diagonal_z_agrees_on_D`
+   (AgreeOnValues) verify two of the three required properties.
+3. Not-YES bridge + composition (session 3):
+   `is_consistent_diagonal_table_implies_label_trace` (size-1
+   consistency → label equals trace);
+   `diagonal_z_not_yes_of_label_not_trace` (contradiction with
+   label-not-in-trace hypothesis);
+   `exists_valid_agreeing_not_yes_under_slack` (full composition).
+4. Main theorem assembly (session 4):
+   `correctOnPromiseSlice_of_InPpolyDAG_family` (lift InPpolyDAG to
+   CorrectOnPromiseSlice); `slack_for_D_of_isoStrong_slack` (convert
+   iso-strong slack κ-form to D.card-form); compose with `hForce`
+   and `exists_valid_agreeing_not_yes_under_slack` to derive
+   contradiction.
+
+**Consequence.** The canonical asymptotic track via
+`canonicalAsymptoticHAsym` is **formally closed** at conclusion
+level.  The iso-strong route, the promise-YES weak route, and the
+promise-YES certificate route at the canonical spec are all
+inconsistent at the conclusion side under the (now Lean-witnessed)
+`GlobalAsymptoticDAGWitness` contract.
+
+This does **NOT** prove `P ≠ NP` or even `NP ⊄ P/poly`.  It rules
+out the canonical asymptotic track at the canonical `sYES = 1,
+sNO = 2` spec as a route to those endpoints.  Future work must
+either:
+
+- Choose a NEW canonical spec with non-trivial `sYES/sNO` where
+  the pigeonhole argument doesn't apply (i.e., `Mof` grows fast
+  enough relative to `tableLen` to invalidate the slack inequality
+  used in `slack_for_D_of_isoStrong_slack`).
+- Pivot to a different route family: pnp4 frontier
+  `SearchMCSPWeakLowerBound` / `VerifiedNPDAGLowerBoundSource`,
+  restricted-model `gapPartialMCSP_not_in_AC0` (already in
+  `pnp3/LowerBounds/AC0_GapMCSP.lean`), or genuinely new
+  research-level mathematics.
+
+**Audit chain summary (11 stages, all kernel-checked).**
+
+| Stage | Verdict | Lean witness |
+|---|---|---|
+| 1. PR 13 / Probe 13 | `FormulaCertificateProviderPartial → False` | `pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean` |
+| 2. post_pr13_provider_retarget_D0 (opus47) | RETARGET_EXISTING_ROUTE | markdown audit |
+| 3. asymptotic_isostrong_route_audit_D0 (gpt55, #1378) | YELLOW | markdown audit |
+| 4. hInDag_triviality_probe_D0 (gpt55, #1383) | YELLOW_INCONCLUSIVE | markdown audit |
+| 5. hInDag_triviality_probe_L0 (gpt55, #1388) | RED_HINDAG_TRIVIAL_BUT_CONCLUSION_OPEN | `HInDagTrivialityProbe.lean` (121 LOC) |
+| 6. global_hInDag_contract_repair_D0 (codex53, #1396) | REPAIR_POSSIBLE_WITH_GLOBAL_WITNESS | markdown audit |
+| 7. global_hInDag_contract_L0 (gpt55, #1404) | RED_GLOBAL_CONTRACT_CORE_LANDED | `GlobalHInDagContractProbe.lean` (116 LOC) |
+| 8. isoStrong_conclusion_audit_D0 (codex53, #1407) | INCONCLUSIVE_NEEDS_LEAN_PROBE | markdown audit |
+| 9. isoStrong_conclusion_L0 (codex, #1413) | YELLOW_PARTIAL_LANDING | `IsoStrongConclusionProbe.lean` (80 LOC) |
+| 10. isoStrong_conclusion_L1 sessions 1-3 (#1416, #1423, #1427) | YELLOW_PARTIAL chain | extends to 340 LOC |
+| 11. isoStrong_conclusion_L1 session 4 (#1433) | **RED_CONCLUSION_REFUTED** | extends to 409 LOC; `isoStrong_conclusion_negative_for_canonical` formally proved |
+
+The canonical asymptotic track is now formally closed.  The four
+major refutations in the post-PR13 chain:
+
+1. `FormulaCertificateProviderPartial → False` (PR 13, formula-side
+   truth-table hardwiring).
+2. `hInDag_for_canonicalAsymptoticHAsym` provable
+   (L0 #1388, DAG-side per-slice truth-table hardwiring).
+3. Global contract structurally closes hypothesis side
+   (L0 #1404).
+4. **`isoStrong_conclusion_negative_for_canonical` provable
+   (L1 sessions 1-4, canonical track formally inconsistent at
+   conclusion level).**
 
 ## Fixed-Params Status
 

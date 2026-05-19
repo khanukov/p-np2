@@ -331,6 +331,72 @@ theorem exists_valid_agreeing_not_yes_under_slack
   · exact diagonal_z_agrees_on_D p yYes hValidYes D label
   · exact diagonal_z_not_yes_of_label_not_trace p hsYES yYes D label hLabel
 
+
+theorem correctOnPromiseSlice_of_InPpolyDAG_family
+    (F : GapSliceFamilyEventually)
+    (hInDag :
+      ∀ n β, InPpolyDAG (gapPartialMCSP_Language (F.paramsOf n β)))
+    (n : Nat) (β : Rat) :
+    CorrectOnPromiseSlice
+      ((hInDag n β).family (GapSliceFamilyEventually.encodedLen F n β))
+      (gapSliceOfParams (F.paramsOf n β)) := by
+  constructor
+  · intro x hx
+    have hcorr := (hInDag n β).correct (GapSliceFamilyEventually.encodedLen F n β) x
+    simpa [gapSliceOfParams] using hcorr.trans hx
+  · intro x hx
+    have hcorr := (hInDag n β).correct (GapSliceFamilyEventually.encodedLen F n β) x
+    simpa [gapSliceOfParams] using hcorr.trans hx
+
+lemma F_params_sYES (n : Nat) (β : Rat) :
+    ((eventualGapSliceFamily_of_asymptotic canonicalAsymptoticHAsym).paramsOf n β).sYES = 1 := by
+  simp [eventualGapSliceFamily_of_asymptotic, canonicalAsymptoticHAsym, canonicalAsymptoticSpec]
+
+theorem isoStrong_conclusion_negative_for_canonical :
+    ∀ W : GlobalAsymptoticDAGWitness canonicalAsymptoticHAsym,
+      ¬ IsoStrongFamilyEventually
+          (eventualGapSliceFamily_of_asymptotic canonicalAsymptoticHAsym)
+          (globalWitness_to_hInDag W) := by
+  intro W hIso
+  rcases hIso with ⟨β0, hβ0, κ, nIso, hForce, hSlack⟩
+  let β : Rat := β0 / 2
+  have hβPos : 0 < β := by
+    dsimp [β]
+    nlinarith [hβ0]
+  have hβLt : β < β0 := by
+    dsimp [β]
+    nlinarith [hβ0]
+  let n : Nat := max F.N0 (nIso β)
+  have hn : n ≥ max F.N0 (nIso β) := by
+    exact le_rfl
+  let hInDag := globalWitness_to_hInDag W
+  let C : DagCircuit (GapSliceFamilyEventually.encodedLen F n β) :=
+    (hInDag n β).family (GapSliceFamilyEventually.encodedLen F n β)
+  have hSize :
+      ppolyDAGSizeBoundOnSlicesEventually F hInDag n β 1 (DagCircuit.size C) := by
+    dsimp [ppolyDAGSizeBoundOnSlicesEventually, C]
+    exact (hInDag n β).family_size_le _
+  have hCorrect : CorrectOnPromiseSlice C (gapSliceOfParams (F.paramsOf n β)) := by
+    simpa [C] using correctOnPromiseSlice_of_InPpolyDAG_family F hInDag n β
+  rcases hForce n β hβPos hβLt hn C hSize hCorrect with
+    ⟨yYes, hyYes, hValidYes, D, hDcard, hAllYes⟩
+  have hRawSlack := hSlack n β hβPos hβLt hn
+  have hPowMono :
+      2 ^ (GapSliceFamilyEventually.tableLen F n β - κ n β)
+        ≤ 2 ^ (GapSliceFamilyEventually.tableLen F n β - D.card) := by
+    apply Nat.pow_le_pow_right
+    exact Nat.sub_le_sub_left hDcard _
+  have hSlackForD :
+      F.Mof n (F.Tof n β) < 2 ^ (GapSliceFamilyEventually.tableLen F n β - D.card) :=
+    lt_of_lt_of_le hRawSlack hPowMono
+  have hsYES : (F.paramsOf n β).sYES = 1 := by
+    simpa [F] using F_params_sYES n β
+  obtain ⟨z, hzValid, hzAgree, hzNotYes⟩ :=
+    exists_valid_agreeing_not_yes_under_slack
+      (p := F.paramsOf n β)
+      hsYES yYes hValidYes D (by simpa [GapSliceFamilyEventually.tableLen] using hSlackForD)
+  exact hzNotYes (hAllYes z hzValid hzAgree)
+
 /-- L1 session status: one kernel-checked sub-lemma family landed. -/
 theorem isoStrong_conclusion_L1_status : True := by
   trivial

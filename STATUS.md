@@ -206,16 +206,28 @@ theorem isoStrong_conclusion_negative_for_canonical :
 following precise sense:
 
 - The iso-strong route is formally refuted by the standalone theorem
-  `isoStrong_conclusion_negative_for_canonical`.
+  `isoStrong_conclusion_negative_for_canonical`
+  (`pnp3/Tests/IsoStrongConclusionProbe.lean:368`).
 - The promise-YES weak and promise-YES certificate routes are not yet
   exposed as standalone Lean negation theorems.
 - Their closure at `globalWitness_to_hInDag W` follows by pointwise
   contrapositive of existing route-level implications:
   `asymptoticPromiseYesCertificateRoute_of_asymptoticPromiseYesWeakRouteEventually`
+  (`pnp3/Magnification/FinalResultMainline.lean:348`)
   and
-  `asymptoticIsoStrongRoute_of_asymptoticPromiseYesCertificateRoute`.
+  `asymptoticIsoStrongRoute_of_asymptoticPromiseYesCertificateRoute`
+  (`pnp3/Magnification/FinalResultMainline.lean:400`).
+  Both implication theorems open with `intro hInDag` and operate on the
+  body at that specific `hInDag`, so contrapositive at
+  `hInDag = globalWitness_to_hInDag W` propagates the iso-strong negation
+  to negations of the promise-route bodies.
 - Companion promise-route negation theorems are optional packaging for
   attribution clarity, not required for the current status correction.
+- Inhabitancy caveat: `GlobalAsymptoticDAGWitness canonicalAsymptoticHAsym`
+  is referenced only as a universal hypothesis (`∀ W : ...`) in the
+  inspected files; no explicit inhabitant is constructed in the current
+  codebase.  This is recorded as context; the `∀ W, ¬P(W)` theorem is
+  logically meaningful as-is.
 
 This does **NOT** prove `P ≠ NP` or even `NP ⊄ P/poly`.  It rules
 out the canonical asymptotic track at the canonical `sYES = 1,
@@ -248,8 +260,11 @@ either:
 | 10. isoStrong_conclusion_L1 sessions 1-3 (#1416, #1423, #1427) | YELLOW_PARTIAL chain | extends to 340 LOC |
 | 11. isoStrong_conclusion_L1 session 4 (#1433) | **RED_CONCLUSION_REFUTED** | extends to 409 LOC; `isoStrong_conclusion_negative_for_canonical` formally proved |
 
-The canonical asymptotic track is now formally closed.  The four
-major refutations in the post-PR13 chain:
+The canonical asymptotic track is now closed at conclusion side under
+the attribution above (iso-strong via standalone theorem; promise-YES
+weak and certificate routes via pointwise contrapositive of existing
+route-level implications composed with the iso-strong negation).  The
+four major refutations in the post-PR13 chain:
 
 1. `FormulaCertificateProviderPartial → False` (PR 13, formula-side
    truth-table hardwiring).

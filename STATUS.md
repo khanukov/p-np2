@@ -259,6 +259,10 @@ either:
 | 9. isoStrong_conclusion_L0 (codex, #1413) | YELLOW_PARTIAL_LANDING | `IsoStrongConclusionProbe.lean` (80 LOC) |
 | 10. isoStrong_conclusion_L1 sessions 1-3 (#1416, #1423, #1427) | YELLOW_PARTIAL chain | extends to 340 LOC |
 | 11. isoStrong_conclusion_L1 session 4 (#1433) | **RED_CONCLUSION_REFUTED** | extends to 409 LOC; `isoStrong_conclusion_negative_for_canonical` formally proved |
+| 12. general_isoStrong_no_go D0 (codex53, ffd47f6) | NEEDS_LEAN_PROBE | markdown audit |
+| 13. circuit_count_trace_bound L0 (codex53, c436392) | GREEN_COUNTING_BRICKS_LANDED | `CircuitCountTraceBoundProbe.lean` (~120 LOC) |
+| 14. general_isoStrong_no_go L1 sessions 1-4 (codex53+opus47, 75c5ae0 → 24d51510) | **RED_GENERAL_ISOSTRONG_REFUTED** | `GeneralIsoStrongNoGoProbe.lean` (~460 LOC); `isoStrong_conclusion_negative_general` formally proved over arbitrary `GapSliceFamilyEventually` |
+| 15. general_isoStrong_route_closure (opus47) | **ROUTES_NAMED_AS_CLOSED** | `GeneralIsoStrongRouteClosure.lean` (~120 LOC); four named route-closure theorems |
 
 The canonical asymptotic track is now closed at conclusion side under
 the attribution above (iso-strong via standalone theorem; promise-YES
@@ -275,6 +279,48 @@ four major refutations in the post-PR13 chain:
 4. **`isoStrong_conclusion_negative_for_canonical` provable
    (L1 sessions 1-4, canonical track formally inconsistent at
    conclusion level).**
+
+**Note on general iso-strong refutation and route-level closure
+(May 2026, completed).**  Following the canonical L1 session 4
+landing, the audit chain continued with a D0 audit, an L0 counting-
+brick probe, and four L1 sessions that lifted the canonical
+refutation to the general `GapSliceFamilyEventually` schema.  After
+these steps the route-level refutation lives in
+`pnp3/Tests/GeneralIsoStrongNoGoProbe.lean` as
+
+```lean
+theorem isoStrong_conclusion_negative_general
+    (F : GapSliceFamilyEventually)
+    (hInDag : ∀ n β, InPpolyDAG (gapPartialMCSP_Language (F.paramsOf n β))) :
+    ¬ IsoStrongFamilyEventually F hInDag
+```
+
+and the strategic consequence is packaged as four named theorems
+in `pnp3/Tests/GeneralIsoStrongRouteClosure.lean`:
+
+- `not_AsymptoticIsoStrongRoute_of_hInDag`
+  (parameter-agnostic helper);
+- `not_AsymptoticIsoStrongRoute_canonical`
+  (instantiated via `HInDagTrivialityProbe.hInDag_for_canonicalAsymptoticHAsym`);
+- `not_AsymptoticPromiseYesCertificateRoute_canonical`
+  (via `asymptoticIsoStrongRoute_of_asymptoticPromiseYesCertificateRoute`);
+- `not_AsymptoticPromiseYesWeakRouteEventually_canonical`
+  (via `asymptoticPromiseYesCertificateRoute_of_asymptoticPromiseYesWeakRouteEventually`).
+
+All four are kernel-checked with standard axioms only (`propext`,
+`Classical.choice`, `Quot.sound`).  They make the iso-strong /
+promise-YES certificate / promise-YES weak route class **formally
+retired** at the canonical asymptotic instantiation: each named
+theorem refutes the corresponding route prop directly, so a future
+reader scanning the route catalogue can identify these three routes
+as closed without re-deriving the meta-argument.
+
+This does **NOT** prove `P ≠ NP` or `NP ⊄ P/poly`.  It closes the
+iso-strong route class as a path to those endpoints; future work
+must pivot to a different route family (pnp4 frontier
+`SearchMCSPWeakLowerBound` / `VerifiedNPDAGLowerBoundSource`,
+restricted-model `gapPartialMCSP_not_in_AC0`, or genuinely new
+research-level mathematics).
 
 ## Fixed-Params Status
 

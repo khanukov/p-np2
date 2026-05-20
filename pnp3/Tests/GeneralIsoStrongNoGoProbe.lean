@@ -391,6 +391,89 @@ theorem exists_valid_agreeing_not_yes_under_general_slack
   · exact general_diagonal_z_agrees_on_D p yYes hValidYes D label
   · exact general_diagonal_z_not_yes_of_label_not_in_trace_image p yYes D label hLabel
 
+/--
+Lift an `InPpolyDAG` witness at slice `(n, β)` to the corresponding
+`CorrectOnPromiseSlice` witness for the family circuit at encoded length.
+
+This is the direct general counterpart of
+`correctOnPromiseSlice_of_InPpolyDAG_family` in
+`Tests/IsoStrongConclusionProbe.lean`.
+-/
+lemma correctOnPromiseSlice_of_InPpolyDAG_family_general
+    (F : GapSliceFamilyEventually)
+    (hInDag :
+      ∀ n β,
+        ComplexityInterfaces.InPpolyDAG
+          (gapPartialMCSP_Language (F.paramsOf n β)))
+    (n : Nat) (β : Rat) :
+    CorrectOnPromiseSlice
+      ((hInDag n β).family (GapSliceFamilyEventually.encodedLen F n β))
+      (gapSliceOfParams (F.paramsOf n β)) := by
+  constructor
+  · intro x hx
+    have hCorr := (hInDag n β).correct
+      (GapSliceFamilyEventually.encodedLen F n β) x
+    exact hx ▸ hCorr
+  · intro x hx
+    have hCorr := (hInDag n β).correct
+      (GapSliceFamilyEventually.encodedLen F n β) x
+    exact hx ▸ hCorr
+
+/--
+Route-level no-go assembly for the general iso-strong route.
+
+Given an eventual family `F` and any per-slice `InPpolyDAG` witness family,
+`IsoStrongFamilyEventually F hInDag` is inconsistent: the forcing clause
+requires all valid encodings agreeing on `D` to be YES, but the session-3
+constructive diagonal (`exists_valid_agreeing_not_yes_under_general_slack`)
+produces a valid/agreeing counterexample under the same strict slack.
+-/
+theorem isoStrong_conclusion_negative_general
+    (F : GapSliceFamilyEventually)
+    (hInDag :
+      ∀ n β,
+        ComplexityInterfaces.InPpolyDAG
+          (gapPartialMCSP_Language (F.paramsOf n β))) :
+    ¬ IsoStrongFamilyEventually F hInDag := by
+  intro hIso
+  rcases hIso with ⟨β0, hβ0, κ, nIso, hForce, hSlack⟩
+  let β : Rat := β0 / 2
+  have hβPos : 0 < β := by
+    dsimp [β]
+    nlinarith [hβ0]
+  have hβLt : β < β0 := by
+    dsimp [β]
+    nlinarith [hβ0]
+  let n : Nat := max F.N0 (nIso β)
+  have hn : n ≥ max F.N0 (nIso β) := le_rfl
+  have hn0 : F.N0 ≤ n := le_max_left _ _
+  let p := F.paramsOf n β
+  let C : ComplexityInterfaces.DagCircuit (GapSliceFamilyEventually.encodedLen F n β) :=
+    (hInDag n β).family (GapSliceFamilyEventually.encodedLen F n β)
+  have hSize :
+      ppolyDAGSizeBoundOnSlicesEventually F hInDag n β 1 (ComplexityInterfaces.DagCircuit.size C) := by
+    simpa [C, ppolyDAGSizeBoundOnSlicesEventually] using
+      (hInDag n β).family_size_le (GapSliceFamilyEventually.encodedLen F n β)
+  have hCorrect : CorrectOnPromiseSlice C (gapSliceOfParams p) := by
+    simpa [C, p] using
+      correctOnPromiseSlice_of_InPpolyDAG_family_general F hInDag n β
+  rcases hForce n β hβPos hβLt hn C hSize hCorrect with
+    ⟨yYes, hyYes, hValidYes, D, hDcard, hAllYes⟩
+  have hRawSlack := hSlack n β hβPos hβLt hn
+  have hSlackForD :
+      circuitCountBound (F.paramsOf n β).n ((F.paramsOf n β).sNO - 1) <
+        2 ^ (Partial.tableLen (F.paramsOf n β).n - D.card) := by
+    exact slack_for_D_of_isoStrong_slack_general
+      F n β hn0 D (κ n β) hDcard hRawSlack
+  have hSlackForD' :
+      circuitCountBound p.n (p.sNO - 1) <
+        2 ^ ((Finset.univ \ D).card) := by
+    simpa [p, Finset.card_sdiff (Finset.subset_univ D)] using hSlackForD
+  rcases exists_valid_agreeing_not_yes_under_general_slack
+      p yYes hValidYes D hSlackForD' with
+    ⟨z, hzValid, hzAgree, hzNotYes⟩
+  exact hzNotYes (hAllYes z hzValid hzAgree)
+
 end GeneralIsoStrongNoGoProbe
 end Tests
 end Pnp3

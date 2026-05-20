@@ -1,0 +1,36 @@
+{
+  "id": "idea-1779300551-cf7566",
+  "created_at": "2026-05-20T18:09:11+00:00",
+  "thesis": "We propose a separation route via **proof complexity lower bounds for a specific bounded-arithmetic theory `VNC\u00b9` extended with a `dual-weak-PHP` axiom**, leveraging the Pich\u2013Kraj\u00ed\u010dek correspondence to translate unprovability into circuit lower bounds for an *explicit* `NP`-language: the **Nisan\u2013Wigderson designs evaluator** `NW-EVAL` (deciding whether a given assignment is consistent with a fixed NW-design output pattern). The thesis is that `NW-EVAL \u2208 NP` but does not have `P/poly` circuits, established by showing: (i) any `P/poly` circuit family for `NW-EVAL` would be formalizable as a feasibly-constructible sequence in `VNC\u00b9 + dWPHP(PV)`; (ii) such formalizability contradicts a *witnessing theorem* refinement (Kraj\u00ed\u010dek\u2013Pudl\u00e1k style) that forces the existence of a `PLS`-style search problem with no feasible witness, instantiated against the NW combinatorial design parameters. The novelty is that the unprovability argument is anchored to a **non-algebrizing cryptographic hard-core predicate** (Goldreich\u2013Levin embedded into the NW design seed), so the obstruction is not a generic property of Boolean functions but a property of *short proofs* about a specific construction. The class of functions for which the obstruction certificate exists has **measure zero** in the space of Boolean functions (it depends on a specific design matrix), defeating largeness; testing membership requires solving a `\u03a3\u00b2`-complete proof-search problem, defeating constructivity.",
+  "prerequisites": [
+    "Witnessing theorems for `VNC\u00b9` and `dWPHP(PV)`: Cook\u2013Nguyen, *Logical Foundations of Proof Complexity*, 2010, Cambridge.",
+    "Feasible incompleteness / circuit lower bounds from unprovability: Pich & Santhanam, \"Why are Proof Complexity Lower Bounds Hard?\", 2019, FOCS.",
+    "Nisan\u2013Wigderson combinatorial designs: Nisan & Wigderson, \"Hardness vs. Randomness\", 1994, JCSS.",
+    "Goldreich\u2013Levin hardcore predicate (non-algebrizing): Goldreich & Levin, \"A Hard-Core Predicate for Any One-Way Function\", 1989, STOC.",
+    "Kraj\u00ed\u010dek's forcing with random variables (for bounded-arithmetic independence): Kraj\u00ed\u010dek, *Forcing with Random Variables and Proof Complexity*, 2011, Cambridge LMS Lecture Notes 382.",
+    "Bounded reverse mathematics of `P/poly`: Cook\u2013Kraj\u00ed\u010dek, \"Consequences of the Provability of NP \u2286 P/poly\", 2007, JSL.",
+    "Atserias\u2013M\u00fcller, \"Automating Resolution is NP-Hard\", 2020, JACM (for hardness of proof search underlying non-constructivity)."
+  ],
+  "mechanism": "Fix an `NW`-design `(S_i)` with combinatorial parameters tuned to a Goldreich\u2013Levin-hardcore seed. Define `NW-EVAL_n` as the language of pairs `(x, b)` such that `b = \u27e8r, f(x|_{S_i})\u27e9` for the design-indexed restrictions, where `f` is a candidate one-way function template. Membership in `NP` is direct: guess `r` and the restrictions, verify in polynomial time. For the lower bound, suppose `NW-EVAL \u2208 P/poly`. Then in `VNC\u00b9 + dWPHP(PV)`, one can formalize the circuit family as a `\u03a3^B_1`-definable sequence. The witnessing theorem for `dWPHP(PV)` forces any such provably-correct circuit family to yield a feasible inverter for the Goldreich\u2013Levin construction, which by Cook\u2013Kraj\u00ed\u010dek contradicts the consistency of `VNC\u00b9 + dWPHP(PV)` with the assumed one-wayness scheme (instantiated, not assumed: the construction is unconditional inside the design). The contradiction is **not** oracle-relative because the Goldreich\u2013Levin reduction uses non-black-box access to the hardcore bit's algebraic structure modulo 2, but in a way that does *not* extend to low-degree-polynomial oracles (Aaronson\u2013Wigderson's algebraic oracle framework treats `\u27e8\u00b7,\u00b7\u27e9` as inner-product which their separation explicitly handles only over restricted query patterns).",
+  "target_interface": "Introduce `NWDesignProofComplexityRoute` as a new `ResearchGapWitness` variant, with fields:\n- `designParams : NWDesignSpec`\n- `proofTheoryAxioms : BoundedArithmeticTheory` (specifically `VNC1_dWPHP`)\n- `unprovabilityCertificate : \u00ac Provable proofTheoryAxioms (PpolyContains NWEval)`\n- `witnessingTransfer : UnprovabilityToCircuitLB designParams proofTheoryAxioms`\n\nWire into `VerifiedNPDAGLowerBoundSource` via a new constructor `fromBoundedArithmeticUnprovability`, distinct from existing `hWitness`-based providers.",
+  "novelty_self_assessment": "",
+  "stages": {
+    "stage0_generate": {
+      "stage": "stage0_generate",
+      "verdict": "GENERATED",
+      "ran_at": "2026-05-20T18:09:11+00:00",
+      "report_file": "stage1_idea_card.md",
+      "model": "claude-opus-4-7",
+      "is_mock": false
+    },
+    "stage1_literature_kill": {
+      "stage": "stage1_literature_kill",
+      "verdict": "LIT_RED",
+      "ran_at": "2026-05-20T18:10:16+00:00",
+      "report_file": "stage1_literature_kill.md",
+      "model": "claude-opus-4-7",
+      "is_mock": false
+    }
+  },
+  "final_verdict": "CLOSED_AT_STAGE_1"
+}

@@ -1,0 +1,49 @@
+# Idea Card
+
+## 1. Thesis
+
+We propose a separation strategy targeting a **specific structured NP problem** — the **Rectangular Permanent Coincidence Problem (RPCP)**: deciding, given two arithmetic circuits $C_1, C_2$ over $\mathbb{Z}$ of polynomial size computing $n \times n$ integer matrices, whether $\mathrm{perm}(C_1(x)) = \mathrm{perm}(C_2(x))$ on at least one input $x \in \{0,1\}^n$. The strategy combines **proof-complexity lifting** with **GCT-style symmetry obstructions**: we conjecture and aim to prove that any subexponential nondeterministic algorithm for RPCP would yield, via Pich–Krajíček-style witnessing in $V^1_2$ + extension, a formal proof of a permanent-vs-determinant containment that is *provably refuted* by an orbit-closure obstruction in the Mulmuley–Sohoni programme (specifically, a Kronecker-coefficient–based occurrence obstruction shown by Bürgisser–Ikenmeyer–Panova-style methods to separate the relevant $\mathrm{GL}_{n^2}$ orbit closures). The obstruction is a representation-theoretic invariant of a **measure-zero algebraic variety** (the permanent orbit closure), not of generic Boolean functions. The Lean target encodes RPCP-hardness as a `ResearchGapWitness` whose validity is reduced to (a) a bounded-arithmetic non-provability statement and (b) an explicit representation-theoretic non-occurrence. Neither component is constructive on truth tables, neither holds on a positive measure of Boolean functions, and both fail to relativize because they depend on the algebraic structure of the permanent polynomial that no oracle preserves.
+
+## 2. Prerequisite techniques
+
+- **Geometric Complexity Theory framework**: Mulmuley & Sohoni, 2001/2008, *SIAM J. Comput.* ("Geometric Complexity Theory I & II").
+- **Occurrence obstructions and their limits**: Bürgisser, Ikenmeyer, Panova, 2019, *J. AMS* ("No occurrence obstructions in geometric complexity theory") — used here as a *guide* to avoid the failed occurrence route and instead leverage **multiplicity obstructions** per Ikenmeyer–Kandasamy, 2020, *STOC*.
+- **Bounded-arithmetic witnessing**: Krajíček, 1995, Cambridge UP, *Bounded Arithmetic, Propositional Logic, and Complexity Theory*; Pich, 2015, *Annals of Pure and Applied Logic* ("Logical strength of complexity theory and a formalization of the PCP theorem in bounded arithmetic").
+- **Proof complexity ↔ circuit LB connections**: Pich & Santhanam, 2021, *FOCS* ("Strong co-nondeterministic lower bounds for NP cannot be proved feasibly from probabilistic circuit lower bounds").
+- **Permanent vs. determinant**: Valiant, 1979, *TCS*; Mignon & Ressayre, 2004, *IMRN* (lower bound $\Omega(n^2)$).
+- **Algebraic non-relativization**: Aaronson & Wigderson, 2009, *TOCT* — used as a barrier-test, not a tool.
+
+## 3. Expected mechanism
+
+The mechanism has three layers. **Layer 1 (algebraic core):** RPCP encodes coincidence on the permanent orbit. Using Ikenmeyer–Kandasamy multiplicity obstructions, exhibit a partition $\lambda$ such that the multiplicity of the irreducible $\mathrm{GL}_{n^2}$-module $V_\lambda$ in the coordinate ring of $\overline{\mathrm{GL} \cdot \mathrm{perm}_n}$ strictly exceeds that in $\overline{\mathrm{GL} \cdot \mathrm{det}_m^{n-m}}$ for $m = n^{O(1)}$. This is a property of a single algebraic variety of dimension $\ll 2^{n^2}$ — it does not hold on a positive fraction of Boolean functions.
+
+**Layer 2 (proof-complexity bridge):** A subexponential NTIME algorithm for RPCP, formalized in $V^1_2$ via standard Cook–Krajíček translation, would yield a $V^1_2$-proof of a $\Pi^b_2$-statement $\phi$ asserting orbit-closure containment up to padding. By Pich-style witnessing, such a proof extracts an explicit $\mathrm{GL}$-equivariant module homomorphism witnessing containment.
+
+**Layer 3 (contradiction):** The multiplicity obstruction from Layer 1 forbids any such homomorphism. Hence the NTIME algorithm cannot exist. The argument never inspects truth tables, never uses random restrictions, never counts function supports, and never invokes natural-proof-style largeness.
+
+## 4. Target pnp3 / pnp4 interface
+
+`pnp4/Research/GCTProofComplexity/RPCPRoute.lean`, exposing
+
+```
+structure RPCPMultiplicityObstructionRoute :
+  ResearchGapWitness
+```
+
+with fields `(λ : Partition)`, `permMult : ℕ`, `detPaddedMult : ℕ`, `mult_strict : detPaddedMult < permMult`, and `boundedArithRefutation : ¬ V12Provable (orbitContainmentFormula λ)`, feeding into the existing `VerifiedNPDAGLowerBoundSource` aggregator via a new constructor `ofGCTBoundedArith`.
+
+## 5. Self-assessment of novelty and barrier-avoidance
+
+Overall novelty: **HIGH**.
+
+Barrier-avoidance:
+- **B1 relativization**: The argument depends on the specific algebraic structure of the permanent polynomial (its $\mathrm{GL}_{n^2}$-orbit closure). Oracles do not alter $\mathrm{GL}$-representation multiplicities of $\mathrm{perm}_n$; the proof has no oracle-uniform skeleton.
+- **B2 natural proofs**: The multiplicity-obstruction property is (a) **not constructive** — computing Kronecker/plethysm multiplicities is #P-hard and not known in poly($2^n$); (b) **not large** — it is a property of a single algebraic variety of dimension polynomial in $n$, i.e., a measure-zero subset of Boolean functions. Both naturality conditions fail (escape E7 + E8).
+- **B3 algebrization**: While algebraic, the argument is not a low-degree-extension oracle method. It uses representation-theoretic invariants of a *fixed* polynomial; algebraic oracles à la Aaronson–Wigderson permute coefficients but not orbit-closure multiplicities of the permanent specifically.
+- **B4 locality barrier**: We target a strong (subexponential NTIME) lower bound for an algebraic decision problem, not a magnification-style weak LB; locality of oracle gates is irrelevant because we do not extend circuits with small-fanin oracles.
+- **B5 magnification threshold**: We do not invoke magnification; the LB is direct via GCT+proof complexity, not via threshold amplification.
+- **Project NoGos**: No support cardinality, no provenance filter, no iso-strong forcing, no `Size1Candidate` trace counting, no shrinkage, no Promise-YES certificate, no universal `hWitness` over `PpolyFormula`. The witness is an algebraic-geometric integer (multiplicity gap) plus a bounded-arithmetic non-provability claim — orthogonal to all refuted families.
+
+Genuine novelty escape: **E4 (GCT representation theory) + E6 (bounded arithmetic / proof complexity) + E7 (non-constructive: multiplicities not poly-time on TT) + E8 (measure-zero algebraic variety)**.
+
+VERDICT: idea_card_generated

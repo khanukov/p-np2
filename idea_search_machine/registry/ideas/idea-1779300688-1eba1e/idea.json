@@ -1,0 +1,37 @@
+{
+  "id": "idea-1779300688-1eba1e",
+  "created_at": "2026-05-20T18:11:28+00:00",
+  "thesis": "We propose attacking P vs NP via a **proof-complexity-to-circuit-lower-bound transfer** route, specifically: showing that any `P/poly` circuit family solving `SAT` would yield a feasibly-constructive proof of a combinatorial statement (a variant of the Paris-Wilkie / dual-weak-pigeonhole principle for a specific gadget construction) inside a bounded arithmetic theory `VNC^1` or `VPV`, where such a proof is known to be impossible under the assumption that `RSA` (or another concrete one-way function) is secure against quasi-polynomial adversaries. The target is not an arbitrary `P/poly` lower bound but specifically a **Je\u0159\u00e1bek-style witnessing collapse**: a SAT-solving circuit family witnesses, in a uniform way, an `\u2200\u03a3^b_1` formula in `S^1_2(\u03b1)` whose witnessing is provably hard given hardness of factoring. The route is non-natural (the property \"SAT-solving\" is not testable on truth tables in `poly(2^n)` since SAT itself requires the input length to scale), non-relativizing (uses arithmetic encoding of cryptographic objects), and non-algebrizing (the cryptographic hardness assumption breaks low-degree extension). The novelty is in pinning the bounded-arithmetic-witnessing target to a **specific gadget** \u2014 a Goldreich-style local PRG composed with a Tseitin formula over an expander \u2014 for which the witnessing collapse can be made concrete enough to drive a Lean-formalisable contradiction at the level of a `Route` definition.",
+  "prerequisites": [
+    "KPT witnessing theorem and `S^1_2` provability: Kraj\u00ed\u010dek-Pudl\u00e1k-Takeuti, 1991, *Annals of Pure and Applied Logic*.",
+    "Bounded arithmetic and feasibly-constructive proofs: Kraj\u00ed\u010dek, *Bounded Arithmetic, Propositional Logic and Complexity Theory*, 1995, Cambridge University Press.",
+    "Approximate counting in `VPV` / `VNC^1`: Je\u0159\u00e1bek, 2007, *Annals of Pure and Applied Logic* (\"Approximate counting in bounded arithmetic\").",
+    "Hardness of feasible interpolation under factoring: Kraj\u00ed\u010dek-Pudl\u00e1k, 1998, *JSL* (\"Some consequences of cryptographical conjectures for `S^1_2` and `EF`\").",
+    "Pich's framework relating circuit LB provability to LB themselves: Pich, 2015, *Annals of Pure and Applied Logic* (\"Circuit lower bounds in bounded arithmetic via Nisan-Wigderson generators\").",
+    "M\u00fcller-Pich on consistency of strong circuit LBs: M\u00fcller-Pich, 2020, *Annals of Pure and Applied Logic*.",
+    "Goldreich's local PRG candidate: Goldreich, ECCC 2000.",
+    "Tseitin tautologies over expanders, hardness in Resolution: Ben-Sasson-Wigderson, 2001, *JACM*."
+  ],
+  "mechanism": "Assume a `P/poly` circuit `C_n` solves SAT. Encode `C_n` as a propositional translation of an `\u2200\u03a3^b_1` sentence `\u03a6` in `S^1_2(\u03b1)` (with `\u03b1` denoting the circuit family). By KPT witnessing, if `S^1_2(\u03b1) \u22a2 \u03a6`, then a feasibly-constructive Student-Teacher protocol witnesses `\u03a6` in polynomially many rounds. We instantiate `\u03a6` on a Goldreich-PRG-composed-with-expander-Tseitin gadget `G_n`: the SAT instance encodes \"find a preimage under the local PRG of a string that violates a Tseitin parity constraint.\" Hardness of factoring (lifted to Goldreich's PRG via standard reductions, or alternatively assumed directly for the PRG) implies the witnessing protocol must, in some round, reveal a preimage \u2014 contradicting cryptographic hardness against quasi-polynomial adversaries. The contradiction is **specific to the gadget**, not a generic counting argument. Crucially, the property \"circuit family solves SAT on this gadget\" is **not** a natural property: it is not testable in `poly(2^n)` on truth tables (the gadget structure depends on `n`, and verifying SAT-solving requires solving SAT), and it holds on a measure-zero set of function families. The non-relativizing ingredient is the arithmetic interpretation of the PRG-security reduction; the non-algebrizing ingredient is the use of factoring hardness, which has no known algebraic-oracle analogue.",
+  "target_interface": "Define a new route:\n\n```\nBoundedArithmeticWitnessingCollapseRoute :\n  (SAT_in_Ppoly) \u2192\n  (\u2203 \u03a6 : SigmaB1Formula,\n     S12_provable \u03a6 \u2227\n     \u00ac FeasibleWitnessing \u03a6 (under_OWF_hardness))\n  \u2192 False\n```\n\ninstantiated at the `GoldreichTseitinGadget n` and producing a `VerifiedNPDAGLowerBoundSource` via the witnessing-vs-cryptography contradiction. The Lean interface object would be `BoundedArithmeticGadgetWitness` parallel to `ResearchGapWitness`, carrying the gadget specification, the KPT-protocol formalisation, and the cryptographic-hardness hypothesis as a parameter.",
+  "novelty_self_assessment": "",
+  "stages": {
+    "stage0_generate": {
+      "stage": "stage0_generate",
+      "verdict": "GENERATED",
+      "ran_at": "2026-05-20T18:11:28+00:00",
+      "report_file": "stage1_idea_card.md",
+      "model": "claude-opus-4-7",
+      "is_mock": false
+    },
+    "stage1_literature_kill": {
+      "stage": "stage1_literature_kill",
+      "verdict": "LIT_RED",
+      "ran_at": "2026-05-20T18:12:17+00:00",
+      "report_file": "stage1_literature_kill.md",
+      "model": "claude-opus-4-7",
+      "is_mock": false
+    }
+  },
+  "final_verdict": "CLOSED_AT_STAGE_1"
+}

@@ -126,6 +126,32 @@ theorem slack_for_D_of_isoStrong_slack_general
   have hLt' := lt_of_lt_of_le hRaw' hPowLe
   simpa [GapSliceFamilyEventually.tableLen] using hLt'
 
+/--
+General diagonal partial table over an arbitrary bounded-size trace family:
+copy `yYes` on fixed rows `D`, and use `label` on free rows.
+-/
+def generalDiagonalPartialTable
+    (p : GapPartialMCSPParams)
+    (yYes : Core.BitVec (partialInputLen p))
+    (D : Finset (Fin (Partial.tableLen p.n)))
+    (label : (Finset.univ \ D).attach → Bool) :
+    PartialTruthTable p.n :=
+  fun j =>
+    if hD : j ∈ D then
+      decodePartial yYes j
+    else
+      some (label ⟨⟨j, by
+        refine Finset.mem_sdiff.mpr ?_
+        exact ⟨Finset.mem_univ j, hD⟩⟩, by simp⟩)
+
+theorem general_diagonal_z_valid
+    (p : GapPartialMCSPParams)
+    (yYes : Core.BitVec (partialInputLen p))
+    (D : Finset (Fin (Partial.tableLen p.n)))
+    (label : (Finset.univ \ D).attach → Bool) :
+    ValidEncoding p (encodePartial (generalDiagonalPartialTable p yYes D label)) := by
+  exact validEncoding_encodePartial p _
+
 end GeneralIsoStrongNoGoProbe
 end Tests
 end Pnp3

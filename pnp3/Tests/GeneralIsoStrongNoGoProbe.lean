@@ -71,6 +71,8 @@ namespace GeneralIsoStrongNoGoProbe
 
 open Models
 open LowerBounds
+open Counting
+open CircuitCountTraceBoundProbe
 
 /--
 Finite-image pigeonhole: any `S : Finset (α → Bool)` of cardinality strictly
@@ -213,6 +215,81 @@ theorem general_diagonal_z_agrees_on_D
         (encodePartial (generalDiagonalPartialTable p yYes D label)) i := by
       symm
       simp [Partial.valPart, encodePartial, Partial.valIndex]
+
+theorem is_consistent_general_diagonal_table_implies_trace_in_image
+    (p : GapPartialMCSPParams)
+    (yYes : Core.BitVec (partialInputLen p))
+    (D : Finset (Fin (Partial.tableLen p.n)))
+    (label : (Finset.univ \ D).attach → Bool)
+    (C : Circuit p.n)
+    (hSize : C.size ≤ p.sYES)
+    (hCons :
+      is_consistent C
+        (generalDiagonalPartialTable p yYes D label)) :
+    traceCircuitOnRows
+      (n := p.n)
+      ((Finset.univ \ D).attach)
+      (fun a => a.1)
+      C
+    =
+    label := by
+  funext a
+  have hNotInD : a.1.1 ∉ D := by
+    exact (Finset.mem_sdiff.mp a.1.2).2
+  have hdiag : generalDiagonalPartialTable p yYes D label a.1.1 = some (label a) := by
+    simp [generalDiagonalPartialTable, hNotInD]
+  have hAt := hCons (Core.vecOfNat p.n a.1.1.val)
+  have hIdx : assignmentIndex (Core.vecOfNat p.n a.1.1.val) = a.1.1 := by
+    exact assignmentIndex_vecOfNat_eq a.1.1
+  rw [hIdx, hdiag] at hAt
+  simpa [traceCircuitOnRows] using hAt
+
+theorem general_diagonal_z_not_yes_of_label_not_in_trace_image
+    (p : GapPartialMCSPParams)
+    (yYes : Core.BitVec (partialInputLen p))
+    (D : Finset (Fin (Partial.tableLen p.n)))
+    (label : (Finset.univ \ D).attach → Bool)
+    (hLabel :
+      label ∉
+        (circuitsOfSizeAtMost p.n p.sYES).image
+          (traceCircuitOnRows
+            (n := p.n)
+            ((Finset.univ \ D).attach)
+            (fun a => a.1))) :
+    ¬ encodePartial (generalDiagonalPartialTable p yYes D label)
+        ∈ (gapSliceOfParams p).Yes := by
+  intro hzYes
+  have hLang : PartialMCSP_YES p (decodePartial (encodePartial (generalDiagonalPartialTable p yYes D label))) :=
+    (gapPartialMCSP_language_true_iff_yes p
+      (encodePartial (generalDiagonalPartialTable p yYes D label))).1 hzYes
+  rcases hLang with ⟨C, hSize, hCons⟩
+  have hTable :
+      is_consistent C (generalDiagonalPartialTable p yYes D label) := by
+    simpa [decodePartial_encodePartial] using hCons
+  have hTrace :
+      traceCircuitOnRows
+        (n := p.n)
+        ((Finset.univ \ D).attach)
+        (fun a => a.1)
+        C = label :=
+    is_consistent_general_diagonal_table_implies_trace_in_image
+      p yYes D label C hSize hTable
+  have hMemC : C ∈ circuitsOfSizeAtMost p.n p.sYES :=
+    Counting.mem_circuitsOfSizeAtMost C p.sYES hSize
+  have hInImage :
+      label ∈
+        (circuitsOfSizeAtMost p.n p.sYES).image
+          (traceCircuitOnRows
+            (n := p.n)
+            ((Finset.univ \ D).attach)
+            (fun a => a.1)) := by
+    refine Finset.mem_image.mpr ?_
+    exact ⟨C, hMemC, hTrace⟩
+  exact hLabel hInImage
+
+
+
+
 
 end GeneralIsoStrongNoGoProbe
 end Tests

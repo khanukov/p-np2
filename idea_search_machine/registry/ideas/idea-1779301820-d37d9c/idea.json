@@ -1,0 +1,37 @@
+{
+  "id": "idea-1779301820-d37d9c",
+  "created_at": "2026-05-20T18:30:20+00:00",
+  "thesis": "I propose to separate **P from NP** (specifically, to lower-bound general Boolean circuits computing a specific NP-hard tiling-derived language) by importing the **undecidability and entropy machinery of multidimensional subshifts of finite type (SFTs)** from symbolic dynamics. The bridge is **E14 \u2014 topological/symbolic dynamics**, specifically the Hochman\u2013Meyerovitch theorem characterising the set of topological entropies of \u2124\u00b2-SFTs as exactly the right-recursively-enumerable reals, together with Hochman's later work on effective dynamical systems as factors of SFTs.\n\nThe core idea: encode a parametrised family of NP instances as **finite patches of a \u2124\u00b2-SFT** whose **patch-complexity function** p_n (number of globally extendable n\u00d7n patterns) has a growth rate controlled by the topological entropy h. Hochman\u2013Meyerovitch lets us *design* an SFT whose entropy equals a chosen right-r.e. real encoding a hard computation, while the **Desai entropy-density theorem** (and the simulation theorem of Aubrun\u2013Sablik / Durand\u2013Romashchenko\u2013Shen) forces any sub-exponential **circuit** decoding patch-extendability to violate a **factor-map entropy inequality**. The conclusion is a super-polynomial circuit lower bound for the language \"is this n\u00d7n patch globally extendable in \ud835\udcae\", which is NP-complete by Berger-style reduction.\n\nThe novelty is that the lower bound is extracted not from a combinatorial / Fourier / algebraic invariant of the function, but from a **dynamical-systems invariant (topological entropy and its factor behaviour) of the language's natural \u2124\u00b2-shift presentation**.",
+  "prerequisites": [
+    "From E14 \u2014 symbolic / topological dynamics:**",
+    "Hochman, M. & Meyerovitch, T., *\"A characterization of the entropies of multidimensional shifts of finite type,\"* Annals of Mathematics 171 (2011), 2011\u20132038. Establishes that the set of topological entropies of \u2124^d SFTs (d\u22652) equals the right-recursively-enumerable non-negative reals. This is the load-bearing simulation theorem.",
+    "Aubrun, N. & Sablik, M., *\"Simulation of effective subshifts by two-dimensional subshifts of finite type,\"* Acta Applicandae Mathematicae 126 (2013), 35\u201363. Provides the explicit factor-map construction from any \u03a0\u2081-effective subshift to a \u2124\u00b2-SFT, preserving entropy quantitatively.",
+    "Hochman, M., *\"On the dynamics and recursive properties of multidimensional symbolic systems,\"* Inventiones Mathematicae 176 (2009), 131\u2013167. Gives the effective-dynamics-as-factors framework and the *quantitative* control on patch-complexity needed to translate circuit size bounds into entropy bounds.",
+    "(Supporting) Pavlov, R. & Schraudner, M., *\"Entropies realizable by block-gluing \u2124^d shifts of finite type,\"* J. d'Analyse Math\u00e9matique 126 (2015) \u2014 gives mixing-class refinements.",
+    "From complexity theory (background only):**",
+    "Berger's classical tiling undecidability + its finite analogue (bounded domino problem is NP-complete).",
+    "Standard worst-case circuit-size definitions in `pnp3`."
+  ],
+  "mechanism": "Fix a \u2124\u00b2-SFT \ud835\udcae with alphabet A and forbidden patterns F. Let **L_\ud835\udcae = {w \u2208 A^{n\u00d7n} : w extends to a configuration in \ud835\udcae}**. By Berger / Robinson, choosing F appropriately makes L_\ud835\udcae NP-complete (bounded tiling).\n\nSuppose, for contradiction, a circuit family {C_n} of size s(n) = n^k decides L_\ud835\udcae. Then the *patch-complexity* function p_\ud835\udcae(n) = |L_\ud835\udcae \u2229 A^{n\u00d7n}| is computable by an n^{O(k)}-time enumeration: iterate C_n over A^{n\u00b2}.\n\nNow invoke Hochman\u2013Meyerovitch in **reverse**: choose \ud835\udcae so that its topological entropy h(\ud835\udcae) = lim (1/n\u00b2) log p_\ud835\udcae(n) is a right-r.e. real whose **rate of approximation from above is provably slow** \u2014 specifically, encoding a halting-time function of a fixed universal machine on inputs of length log n. The Aubrun\u2013Sablik simulation gives explicit quantitative control: the n-th rational upper approximant to h(\ud835\udcae) requires reading patches of size at least \u03a6(n), where \u03a6 is the busy-beaver-like function from the simulated computation.\n\nA polynomial-size circuit enumerating L_\ud835\udcae would yield an n^{O(k)}-time upper approximant to h(\ud835\udcae) of accuracy 2^{-n\u00b2}, contradicting the constructed slow-approximation lower bound. The load-bearing step is the **factor-map entropy quantitative inequality** of Hochman 2009 \u00a74, which is intrinsically dynamical \u2014 it has no Fourier, polynomial, or combinatorial-rectangle analogue.\n\nCrucially, the contradiction passes through *topological entropy*, an invariant defined on infinite-volume limits, not on finite truth tables.",
+  "target_interface": "The target Lean interface is `pnp3/Core/BooleanCircuit.lean`'s definition `Circuit.computes` combined with the worst-case size definition `CircuitSize`. The specific theorem statement to formalise:\n\n`theorem tiling_lower_bound : \u2200 k, \u2203 N, \u2200 n \u2265 N, \u2200 C : Circuit (Fin (n*n) \u2192 Bool), C.computes (L_S n) \u2192 C.size > n^k`\n\nwhere `L_S` is the Lean encoding of the bounded tiling language for the Hochman\u2013Meyerovitch-constructed SFT \ud835\udcae, defined in a new file `pnp4/Dynamics/SFTEntropy.lean`. The bridge to P \u2260 NP uses the existing `pnp3` reduction infrastructure from SAT to bounded tiling.",
+  "novelty_self_assessment": "",
+  "stages": {
+    "stage0_generate": {
+      "stage": "stage0_generate",
+      "verdict": "GENERATED",
+      "ran_at": "2026-05-20T18:30:20+00:00",
+      "report_file": "stage1_idea_card.md",
+      "model": "claude-opus-4-7",
+      "is_mock": false
+    },
+    "stage1_literature_kill": {
+      "stage": "stage1_literature_kill",
+      "verdict": "LIT_RED",
+      "ran_at": "2026-05-20T18:31:14+00:00",
+      "report_file": "stage1_literature_kill.md",
+      "model": "claude-opus-4-7",
+      "is_mock": false
+    }
+  },
+  "final_verdict": "CLOSED_AT_STAGE_1"
+}

@@ -1,0 +1,36 @@
+{
+  "id": "idea-1779301562-a79c72",
+  "created_at": "2026-05-20T18:26:02+00:00",
+  "thesis": "I propose separating **P from NP** (in the form of a superpolynomial circuit lower bound for an NP language) by reformulating circuit computation as a **subshift of finite type (SFT) on a Cayley-like graph**, then invoking **Hochman\u2013Meyerovitch's characterization of computable topological entropies** to show that any polynomial-size family of circuits computing a particular self-referential NP property forces the resulting 2D SFT to have a topological entropy that is **simultaneously** a right-recursively-enumerable real (by Hochman\u2013Meyerovitch) **and** strictly less than a specific transcendental value determined by the language's Kolmogorov-style description complexity. The contradiction yields the separation.\n\n**Cross-domain bridge**: E14 \u2014 topological/symbolic dynamics, specifically the Hochman\u2013Meyerovitch theorem on multidimensional SFT entropies.\n\n**Conclusion**: a specific padded NP-complete language (a \"tiling-encoded SAT\" variant) cannot be decided by polynomial-size circuit families because the entropy of its associated SFT must lie outside the computable entropies admitting polynomial-rate approximation.\n\nThe key novelty: circuit *families* (indexed by input length) are encoded as a **multidimensional shift space** where the second dimension is input length. Lower bounds on circuit size translate to lower bounds on the **complexity of approximating** the SFT's topological entropy from below, a quantity controlled by Hochman\u2013Meyerovitch rather than by any combinatorial counting / random-restriction argument.",
+  "prerequisites": [
+    "From E14 (primary domain)**:",
+    "M. Hochman and T. Meyerovitch, *\"A characterization of the entropies of multidimensional shifts of finite type,\"* Annals of Mathematics 171 (2010), 2011\u20132038. Establishes that the set of topological entropies of d-dimensional SFTs (d \u2265 2) equals the set of non-negative right-recursively-enumerable reals.",
+    "M. Hochman, *\"On the dynamics and recursive properties of multidimensional symbolic systems,\"* Inventiones Mathematicae 176 (2009), 131\u2013167. Provides the recursive-theoretic machinery for embedding computations into sofic shifts.",
+    "N. Aubrun and M. Sablik, *\"Simulation of effective subshifts by two-dimensional subshifts of finite type,\"* Acta Applicandae Mathematicae 126 (2013), 35\u201363. Gives the explicit substitution-based construction translating effective 1D subshifts into 2D SFTs \u2014 the bridge needed to encode circuit families.",
+    "Background from complexity theory (background only)**:",
+    "Standard fact that NP-complete tiling problems exist (Lewis\u2013Papadimitriou style bounded tiling).",
+    "Standard size hierarchy / padding arguments."
+  ],
+  "mechanism": "Let L be a padded NP-complete tiling language. Define a 2D SFT X_L whose horizontal direction encodes a candidate input x and whose vertical direction encodes a purported polynomial-size circuit computation trace. The local constraint rules enforce: (i) gate-level consistency of a circuit C evaluated on x, (ii) the answer matches the membership predicate for L, (iii) the size of C at horizontal coordinate n is bounded by p(n) for a fixed polynomial p.\n\nBy Aubrun\u2013Sablik, this is realizable as a genuine 2D SFT (not merely sofic). Its topological entropy h(X_L) measures the asymptotic count of valid (input, polynomial-circuit-trace) pairs per unit area.\n\n**Load-bearing step (E14)**: Hochman\u2013Meyerovitch's theorem characterizes h(X_L) as a right-r.e. real. Crucially, their proof gives **explicit rate-of-approximation bounds** tying the approximation modulus to the time-complexity of the recursive enumeration. If P = NP, the trace constraints become decidable in polynomial time, forcing h(X_L) into a strictly thinner subclass \u2014 those right-r.e. reals admitting **polynomial-time approximation from below**.\n\nThe contradiction: by a diagonalization that uses self-reference of L against polynomial-time approximators (Kolmogorov-incompressibility flavor, but operating on entropy values rather than truth tables), h(X_L) provably falls outside this thinner subclass. Hence no polynomial-size circuit family decides L.",
+  "target_interface": "`Pnp3.Separation.NP_not_subset_Ppoly` \u2014 the headline statement that the SAT-flavored padded language is not in P/poly. Concretely, target a theorem of the form `\u2203 L \u2208 NP, \u2200 p polynomial, \u00ac (L \u2208 SIZE(p))` instantiated via the SFT-entropy obstruction, packaged as a Lean structure `SFTEntropyObstruction` parallel to existing obstruction structures in the `pnp3` tree.",
+  "novelty_self_assessment": "",
+  "stages": {
+    "stage0_generate": {
+      "stage": "stage0_generate",
+      "verdict": "GENERATED",
+      "ran_at": "2026-05-20T18:26:02+00:00",
+      "report_file": "stage1_idea_card.md",
+      "model": "claude-opus-4-7",
+      "is_mock": false
+    },
+    "stage1_literature_kill": {
+      "stage": "stage1_literature_kill",
+      "verdict": "LIT_RED",
+      "ran_at": "2026-05-20T18:26:52+00:00",
+      "report_file": "stage1_literature_kill.md",
+      "model": "claude-opus-4-7",
+      "is_mock": false
+    }
+  },
+  "final_verdict": "CLOSED_AT_STAGE_1"
+}

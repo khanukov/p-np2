@@ -1,0 +1,36 @@
+{
+  "id": "idea-1779301928-91831c",
+  "created_at": "2026-05-20T18:32:08+00:00",
+  "thesis": "We propose separating P from NP by exhibiting an explicit NP language whose characteristic sequences, viewed as orbits of a computable Z^d-action, generate a **subshift of finite type (SFT) whose topological entropy is uncomputable at a specific rate**, while any P-time language's corresponding subshift has **computably approximable entropy with a polynomial modulus**. The cross-domain bridge is **E14 \u2014 topological/symbolic dynamics**, specifically the **Hochman\u2013Meyerovitch theorem** (Annals of Math, 2010) which characterises the set of entropies of multidimensional SFTs as exactly the upper semicomputable nonnegative reals (\u03a0\u2080\u2081 right-recursively-enumerable numbers).\n\nThe separation idea: encode SAT instances as local matching rules of a 2D SFT in such a way that the topological entropy of the resulting subshift equals a specific \u03a0\u2080\u2081 real `h_SAT` whose **right-approximation modulus** is provably super-polynomial. For any P-time decidable language, a uniform construction yields an SFT whose entropy is approximable with a polynomial-time-computable modulus (because membership decisions feed into a finite-window approximation). The two moduli classes are disjoint, separating P from NP via entropy-modulus rate.\n\nThe load-bearing cross-domain step is Hochman\u2013Meyerovitch's **simulation of Turing machines by SFTs with controlled entropy contribution**: their construction gives quantitative control on how computational hardness translates to entropy approximation rates \u2014 a quantitative dimension never exploited by complexity theory.",
+  "prerequisites": [
+    "From E14 (symbolic dynamics):**",
+    "M. Hochman and T. Meyerovitch, *A characterization of the entropies of multidimensional shifts of finite type*, Annals of Mathematics 171 (2010), 2011\u20132038. **Load-bearing**: the SFT-from-TM simulation with entropy-rate control.",
+    "M. Hochman, *On the dynamics and recursive properties of multidimensional symbolic systems*, Inventiones Math. 176 (2009), 131\u2013167. Provides the recursive-theoretic framework for \u03a0\u2080\u2081-rates of subshift invariants.",
+    "N. Aubrun and M. Sablik, *Simulation of effective subshifts by two-dimensional subshifts of finite type*, Acta Applicandae Mathematicae 126 (2013), 35\u201363. Gives the cleaner 2D simulation with explicit window/alphabet bounds \u2014 essential for the quantitative modulus tracking.",
+    "E. Jeandel and P. Vanier, *Turing degrees of multidimensional SFTs*, Theoretical Computer Science 505 (2013), 81\u201392. Calibrates which Turing degrees are realised \u2014 needed for the NP-vs-P granularity.",
+    "Background from complexity theory (used only as scaffolding):**",
+    "Standard Cook\u2013Levin reduction (to encode SAT into local SFT rules)."
+  ],
+  "mechanism": "Given a language L, build a uniform family of 2D SFTs `X_L^n` over an alphabet whose local rules encode \"tile (i,j) carries a partial computation trace of L on input encoded in row 0\". By Aubrun\u2013Sablik, this is realisable as a genuine SFT (not merely effective subshift) in 2D. Define the **complexity-entropy** `H(L,n) := h_top(X_L^n)`. \n\nHochman\u2013Meyerovitch's quantitative construction shows: `H(L,n)` admits a right-computable approximation `\u03b1_k \u2192 H(L,n)` from above where `\u03b1_k \u2212 H(L,n) \u2264 f_L(k)` for a modulus `f_L` that **directly inherits** the time complexity of deciding L. The key quantitative lemma (extractable from \u00a77 of Hochman\u2013Meyerovitch and refined by Aubrun\u2013Sablik) gives: if L \u2208 TIME(t(n)), then `f_L(k) = O(1/poly(k))` with constants depending on `t`. \n\nConversely, for SAT-encoding SFTs, we show via a **diagonal entropy obstruction** \u2014 built by joining a Hochman-construction realising a \u03a0\u2080\u2081 real `\u03c1` whose approximation modulus is super-polynomial (such \u03c1 exist by a Kolmogorov-complexity argument inside the \u03a0\u2080\u2081 class) \u2014 that any P-uniform family fails to match the modulus.\n\nThe crucial point: this is **not** a natural property, not a relativising argument, and not a circuit-counting argument. It is a **topological-dynamical invariant** of a uniformly-constructed shift space.",
+  "target_interface": "`pnp3/Complexity/ShiftEntropy.lean` \u2014 a new file defining `SFT_of_language : Language \u2192 ShiftSpace (Fin 2) (Fin 2)` and `top_entropy_modulus : ShiftSpace \u2192 (\u2115 \u2192 \u211d)`, culminating in the theorem `entropy_modulus_separates : (\u2203 L \u2208 NP, \u00ac poly_modulus (top_entropy_modulus (SFT_of_language L))) \u2192 P \u2260 NP`. This plugs into the existing `pnp3.Core.SeparationAxioms` interface via a new constructor `SeparationWitness.entropyModulus`.",
+  "novelty_self_assessment": "",
+  "stages": {
+    "stage0_generate": {
+      "stage": "stage0_generate",
+      "verdict": "GENERATED",
+      "ran_at": "2026-05-20T18:32:08+00:00",
+      "report_file": "stage1_idea_card.md",
+      "model": "claude-opus-4-7",
+      "is_mock": false
+    },
+    "stage1_literature_kill": {
+      "stage": "stage1_literature_kill",
+      "verdict": "LIT_RED",
+      "ran_at": "2026-05-20T18:32:45+00:00",
+      "report_file": "stage1_literature_kill.md",
+      "model": "claude-opus-4-7",
+      "is_mock": false
+    }
+  },
+  "final_verdict": "CLOSED_AT_STAGE_1"
+}

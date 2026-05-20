@@ -1,0 +1,37 @@
+{
+  "id": "idea-1779301688-ebc713",
+  "created_at": "2026-05-20T18:28:08+00:00",
+  "thesis": "We propose to separate **P from NP** (specifically: prove a superpolynomial circuit lower bound for an NP-complete problem suitable for the `pnp3` LB_Formulas / `pnp4` LB_GeneralCircuit interface) by importing **Hochman\u2013Meyerovitch's theory of computable entropies realised by multidimensional subshifts of finite type (SFTs)** from symbolic dynamics (domain **E14**).\n\nBridge: encode a circuit family `{C_n}` deciding an NP-complete language `L` as a **Z\u00b2-SFT** `X_C` whose admissible configurations encode tilings that simulate computation traces of `C_n` on inputs of length `n`. The **topological entropy** `h(X_C)` is, by Hochman\u2013Meyerovitch (Annals of Math 2010), a right-recursively-enumerable real, and conversely every such real is realisable; crucially, the **rate of convergence** of finite-window entropy approximations `h_n(X_C) \u2192 h(X_C)` is governed by the Kolmogorov-style complexity of the local rules.\n\nWe define a **\"computation-trace SFT\" functor** `C \u21a6 X_C` such that:\n- If `L \u2208 P/poly`, then `h(X_C) \u2212 h_n(X_C) = O(n^{-k})` polynomially fast for some `k`.\n- For `L = SAT`, a diagonal SFT construction (a dynamical analogue of time-hierarchy) forces **subrecursive entropy-convergence** strictly slower than any polynomial.\n\nThe contradiction yields `SAT \u2209 P/poly`.",
+  "prerequisites": [
+    "From E14 (primary)**:",
+    "Hochman, M. & Meyerovitch, T., *\"A characterization of the entropies of multidimensional shifts of finite type\"*, Annals of Mathematics 171 (2010), 2011\u20132038. \u2014 The classification of Z\u00b2-SFT entropies as right-r.e. reals.",
+    "Hochman, M., *\"On the dynamics and recursive properties of multidimensional symbolic systems\"*, Inventiones Math. 176 (2009), 131\u2013167. \u2014 Recursive-theoretic structure of effective dynamical systems and simulation theorems.",
+    "Aubrun, N. & Sablik, M., *\"Simulation of effective subshifts by two-dimensional subshifts of finite type\"*, Acta Applicandae Math. 126 (2013), 35\u201363. \u2014 Tools for embedding Turing machines into Z\u00b2-SFTs with quantitative window bounds.",
+    "Pavlov, R. & Schraudner, M., *\"Entropies realizable by block gluing Z^d shifts of finite type\"*, Journal d'Analyse Math. 126 (2015) \u2014 refined entropy-approximation rates under mixing conditions.",
+    "From complexity (background only)**:",
+    "Standard simulation of polynomial circuits by uniform-window local rules (Cook\u2013Levin style).",
+    "The `pnp3` formal definition of `LB_Formulas` / `pnp4` `LB_GeneralCircuit`."
+  ],
+  "mechanism": "The load-bearing step is **dynamical, not combinatorial**.\n\nStep 1 (encoding). For a circuit family `{C_n}` decide `L`, build a single Z\u00b2-SFT `X_C` whose alphabet encodes gate-states and whose local rules enforce that horizontal slabs of height `n` admit configurations iff some input `x \u2208 {0,1}^n` produces an accepting trace in `C_n(x)`. The Aubrun\u2013Sablik simulation theorem provides a uniform-radius local-rule realisation.\n\nStep 2 (entropy \u2194 circuit size). The topological entropy `h(X_C)` measures the asymptotic exponential growth of admissible configurations per unit area. We prove (this is the main lemma) that the **window-approximation defect** `h(X_C) \u2212 h_n(X_C)` is bounded above by `poly(circuit-size(C_n))/n` when `C` is polynomial-size. The proof uses Pavlov\u2013Schraudner block-gluing bounds combined with a circuit-to-tiling locality argument.\n\nStep 3 (diagonal SFT). Using the Hochman\u2013Meyerovitch realisation half: construct an SFT `X*` whose entropy equals a right-r.e. real `\u03b1` with **provably subpolynomial approximation rate** (such reals exist by a Solovay-style diagonalisation over poly-time computable rates). Encode `X*` into SAT instances so that any polynomial circuit family for SAT would induce a polynomial approximation rate for `\u03b1`, contradicting its construction.\n\nThe cross-domain content is irreducible: the obstruction lives in the **recursion-theoretic stratification of right-r.e. reals via SFT entropies**, an object having no shadow in proof complexity, GCT, or natural-proofs frameworks.",
+  "target_interface": "Target: `pnp4.LB_GeneralCircuit` \u2014 specifically the existential statement\n\n```\n\u2203 (L : Language), L \u2208 NP \u2227 \u2200 k, \u00ac (L \u2208 SIZE(n^k))\n```\n\nThe bridge to Lean is via a definition `SFTEntropyDefect : Circuit \u2192 \u2115 \u2192 \u211d` and a lemma stating that polynomial circuit size forces polynomial defect decay; the contradiction is then proved against a Hochman\u2013Meyerovitch witness SFT formalised as a fixed-radius local rule.",
+  "novelty_self_assessment": "",
+  "stages": {
+    "stage0_generate": {
+      "stage": "stage0_generate",
+      "verdict": "GENERATED",
+      "ran_at": "2026-05-20T18:28:08+00:00",
+      "report_file": "stage1_idea_card.md",
+      "model": "claude-opus-4-7",
+      "is_mock": false
+    },
+    "stage1_literature_kill": {
+      "stage": "stage1_literature_kill",
+      "verdict": "LIT_RED",
+      "ran_at": "2026-05-20T18:29:14+00:00",
+      "report_file": "stage1_literature_kill.md",
+      "model": "claude-opus-4-7",
+      "is_mock": false
+    }
+  },
+  "final_verdict": "CLOSED_AT_STAGE_1"
+}

@@ -1,0 +1,37 @@
+{
+  "id": "idea-1779302022-102380",
+  "created_at": "2026-05-20T18:33:42+00:00",
+  "thesis": "I propose to separate **P from NP** (specifically, to lower-bound general Boolean circuit size for an NP-complete problem) by importing **Hochman\u2013Meyerovitch undecidability of effective topological entropy for multidimensional subshifts of finite type (SFTs)** into the analysis of circuit families.\n\nThe bridge: encode a uniform family of Boolean circuits $\\{C_n\\}$ computing SAT-restricted-to-tiling-instances as a **2-dimensional sofic shift** $X_C \\subseteq \\Sigma^{\\mathbb{Z}^2}$, where horizontal direction encodes circuit-layer evaluation and vertical direction encodes input variation. The **topological entropy** $h(X_C)$ of this shift is, by the Hochman\u2013Meyerovitch realisation theorem (Annals of Math 2010), a $\\Pi_1$-computable real iff the circuit family has bounded depth-vs-width tradeoff matching $\\mathsf{P}$.\n\nI conjecture (and the proof attempt aims to establish) a **rigidity dichotomy**: the sofic-shift entropy of any polynomial-size circuit family solving a tiling-encoded NP-complete language is forced (by Hochman's converse construction) to be a right-recursively-enumerable real strictly below a *threshold entropy* $h^\\ast$, which is realised by the canonical 2D SFT encoding the NP-problem itself. Since the entropy of the problem-shift exceeds $h^\\ast$, no polynomial circuit family can simulate it, yielding $\\mathsf{P} \\neq \\mathsf{NP}$.\n\nThe cross-domain leverage: entropy is a *topological invariant of the symbolic dynamics* and is **immune to oracle relativization** (oracles change the alphabet but not the entropy class), and **non-natural** (the obstruction is a $\\Pi_2$-arithmetical real, not a P/poly-checkable property of truth tables).",
+  "prerequisites": [
+    "From E14 (topological / symbolic dynamics):**",
+    "M. Hochman & T. Meyerovitch, *\"A characterization of the entropies of multidimensional shifts of finite type\"*, Annals of Mathematics **171** (2010), 2011\u20132038. (Main tool: a real $h \\geq 0$ is the entropy of a $\\mathbb{Z}^d$-SFT for $d \\geq 2$ iff $h$ is right-recursively-enumerable.)",
+    "M. Hochman, *\"On the dynamics and recursive properties of multidimensional symbolic systems\"*, Inventiones Math. **176** (2009), 131\u2013167. (Computability hierarchy of entropies; Medvedev degrees of subshifts.)",
+    "N. Aubrun & M. Sablik, *\"Simulation of effective subshifts by two-dimensional subshifts of finite type\"*, Acta Applicandae Math. **126** (2013), 35\u201363. (Sofic simulation theorem \u2014 converts any effectively-closed 1D subshift into a 2D sofic projection; needed to encode circuit evaluation traces.)",
+    "E. Jeandel & P. Vanier, *\"Turing degrees of multidimensional SFTs\"*, Theor. Comp. Sci. **505** (2013), 81\u201392. (Refined computability of SFT invariants, used for the threshold separation.)",
+    "From complexity theory (background only):**",
+    "The standard Cook\u2013Levin tiling formulation of SAT (Lewis\u2013Papadimitriou framing).",
+    "Razborov\u2013Rudich (only to *check* non-naturality of the resulting obstruction, not as a mechanism)."
+  ],
+  "mechanism": "**Step 1 (Encoding).** Given a uniform circuit family $\\{C_n\\}$ of size $s(n)$ purportedly deciding the NP-complete *bounded-domino-tiling* problem $\\mathsf{BDT}$, construct a 2D sofic shift $X_C$ whose configurations are space-time diagrams of $C_n$ acting on tiling instances. Use Aubrun\u2013Sablik simulation to realise $X_C$ as the projection of a 2D SFT $Y_C$. Crucially, the **alphabet size and local rules of $Y_C$ scale as $O(s(n))$**, so polynomial circuit size $\\Leftrightarrow$ $Y_C$ has polynomially-bounded local complexity.\n\n**Step 2 (Entropy upper bound).** Show that $h(X_C) \\leq \\log_2(\\text{branching of } C_n)$, a right-r.e. real whose rate-of-approach to its limit is controlled by the circuit's *evaluation time*, hence polynomial.\n\n**Step 3 (Entropy lower bound for $\\mathsf{BDT}$).** The natural SFT $X_{\\mathsf{BDT}}$ encoding the tiling problem has entropy $h^\\ast > 0$ realised by a Hochman\u2013Meyerovitch-type construction with a *transcendence-rate* of approximation that is provably **not right-r.e. at polynomial rate** (this is the load-bearing claim, drawing on Jeandel\u2013Vanier's Turing-degree analysis).\n\n**Step 4 (Separation).** If $\\mathsf{P} = \\mathsf{NP}$, then $X_C$ would simulate $X_{\\mathsf{BDT}}$ entropically, forcing $h^\\ast$ into the polynomial-rate right-r.e. class \u2014 contradicting Step 3.\n\nThe cross-domain bridge is **load-bearing at Steps 2\u20133**: the separation comes from the *recursion-theoretic rate of approximation of topological entropy*, an invariant from symbolic dynamics with no prior use in circuit lower bounds.",
+  "target_interface": "`pnp4.Separation.EntropySeparation` \u2014 a Lean structure\n```\nstructure EntropyObstruction (L : Language) where\n  shift  : SFT2D\n  entropy_lb : \u211d\n  rate_class : ApproximationRateClass\n  not_poly_re : \u00ac rate_class.IsPolynomialRightRE\n```\nplugged into the existing `pnp3.Core.SeparationCertificate` interface by providing a `EntropyObstruction \u2192 CircuitLowerBound` adapter lemma.",
+  "novelty_self_assessment": "",
+  "stages": {
+    "stage0_generate": {
+      "stage": "stage0_generate",
+      "verdict": "GENERATED",
+      "ran_at": "2026-05-20T18:33:42+00:00",
+      "report_file": "stage1_idea_card.md",
+      "model": "claude-opus-4-7",
+      "is_mock": false
+    },
+    "stage1_literature_kill": {
+      "stage": "stage1_literature_kill",
+      "verdict": "LIT_RED",
+      "ran_at": "2026-05-20T18:34:31+00:00",
+      "report_file": "stage1_literature_kill.md",
+      "model": "claude-opus-4-7",
+      "is_mock": false
+    }
+  },
+  "final_verdict": "CLOSED_AT_STAGE_1"
+}

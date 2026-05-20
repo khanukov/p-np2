@@ -1,0 +1,37 @@
+{
+  "id": "idea-1779302551-5ad7f3",
+  "created_at": "2026-05-20T18:42:31+00:00",
+  "thesis": "We propose separating **P from NP** (in the form of a super-polynomial circuit lower bound for a specific NP language) by transferring an **undecidability-of-entropy** result from the theory of **multidimensional subshifts of finite type (SFTs)** to a circuit-uniform-tile model of Boolean computation. The cross-domain bridge is **E14 \u2014 topological/symbolic dynamics**, specifically the **Hochman\u2013Meyerovitch theorem** (Annals of Mathematics 171, 2010, \"A characterization of the entropies of multidimensional shifts of finite type\"), which shows that the set of topological entropies of \u2124\u00b2-SFTs is exactly the set of right-recursively-enumerable numbers.\n\nThe conclusion: we encode the computation history of a 3-SAT-solving circuit family as a \u2124\u00b2-SFT whose admissible configurations correspond to satisfying assignments embedded along a self-similar Robinson-style aperiodic tiling. The **topological entropy** of this SFT becomes a circuit-size-monotone invariant. Using Hochman\u2013Meyerovitch's **conjugacy between \u03a0\u2081-computable reals and SFT entropies**, we show that a polynomial-size circuit family would force the entropy of the associated SFT to be a polynomial-time-approximable real, contradicting an entropy lower bound established via **block-gluing obstructions** (Pavlov\u2013Schraudner). The separation therefore rests on a topological-dynamical invariant, not on combinatorial counting of circuits.",
+  "prerequisites": [
+    "From E14 (symbolic dynamics):**",
+    "Hochman & Meyerovitch, *A characterization of the entropies of multidimensional shifts of finite type*, Annals of Math. 171 (2010), 2011\u20132038. (Entropy \u2194 \u03a0\u2081-computable reals.)",
+    "Pavlov & Schraudner, *Entropies realizable by block gluing \u2124\u1d48 shifts of finite type*, J. d'Analyse Math. 126 (2015), 113\u2013174. (Block-gluing entropy gap.)",
+    "Robinson, *Undecidability and nonperiodicity for tilings of the plane*, Invent. Math. 12 (1971), 177\u2013209, combined with Mozes' substitution-to-SFT theorem, *J. d'Analyse Math.* 53 (1989), 139\u2013186.",
+    "Hochman, *On the dynamics and recursive properties of multidimensional symbolic systems*, Invent. Math. 176 (2009), 131\u2013167. (Effectivity \u2194 SFT factor structure in \u2124\u00b3.)",
+    "From complexity theory (background only):**",
+    "Wegener, *The Complexity of Boolean Functions* (1987), Ch. 6, for circuit-size monotonicity terminology.",
+    "Standard NP-completeness of tiling (Lewis\u2013Papadimitriou-style), used only for the encoding scaffold."
+  ],
+  "mechanism": "The load-bearing step is **not** counting, restriction, or proof-system unprovability. It is the following: associate to each circuit family {C_n} solving an NP-complete tiling-with-constraints language **L_tile** a \u2124\u00b2-SFT X(C) whose forbidden patterns encode the *negations of intermediate gate evaluations* inside Robinson-tile macro-blocks at hierarchical scales 2^k. The construction guarantees:\n\n(a) **Entropy upper bound from circuits**: If |C_n| \u2264 n^c, then via a Mozes-style substitution presentation, h_top(X(C)) is a \u03a0\u2081-computable real with a **polynomial-time approximation schedule** \u2014 formally, the n-th rational lower bound is computable in time poly(n).\n\n(b) **Entropy lower bound from L_tile**: Because L_tile is engineered so that its yes-instances embed an effective \u2124\u00b2-subshift Y of entropy \u03b1 where \u03b1 is a **specific \u03a0\u2081-real with no polynomial approximation schedule** (constructed by diagonalizing against polynomial-time approximators using Hochman's effectivity machinery; such \u03b1 exists because the \u03a0\u2081-computable reals strictly contain the polynomial-time approximable reals \u2014 a uniform diagonalization), we get h_top(X(C)) \u2265 \u03b1.\n\n(c) **Pavlov\u2013Schraudner block-gluing**: forces equality of upper and effective lower bounds, yielding a contradiction with (a). The cross-domain machinery is load-bearing at step (a)\u2013(b): the conversion of circuit size into entropy-approximation rate is the Hochman\u2013Meyerovitch correspondence applied in reverse.",
+  "target_interface": "Lean object: `Pnp3.Separation.NP_not_in_Ppoly` \u2014 instantiated by providing a term of type \n`\u2203 L : Language, L \u2208 NP \u2227 \u2200 c : \u2115, \u00ac (L \u2208 SIZE (fun n => n^c))`\nwith `L := SFT.TilingEntropyGap.lang` (a new namespace `Pnp3.SymbolicDynamics.SFTEntropy`). The key lemma `Pnp3.SymbolicDynamics.entropy_approx_of_circuit_size` formalizes mechanism (a); `entropy_lower_bound_diagonal` formalizes (b).",
+  "novelty_self_assessment": "",
+  "stages": {
+    "stage0_generate": {
+      "stage": "stage0_generate",
+      "verdict": "GENERATED",
+      "ran_at": "2026-05-20T18:42:31+00:00",
+      "report_file": "stage1_idea_card.md",
+      "model": "claude-opus-4-7",
+      "is_mock": false
+    },
+    "stage1_literature_kill": {
+      "stage": "stage1_literature_kill",
+      "verdict": "LIT_RED",
+      "ran_at": "2026-05-20T18:43:23+00:00",
+      "report_file": "stage1_literature_kill.md",
+      "model": "claude-opus-4-7",
+      "is_mock": false
+    }
+  },
+  "final_verdict": "CLOSED_AT_STAGE_1"
+}

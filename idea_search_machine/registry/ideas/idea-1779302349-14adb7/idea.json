@@ -1,0 +1,36 @@
+{
+  "id": "idea-1779302349-14adb7",
+  "created_at": "2026-05-20T18:39:09+00:00",
+  "thesis": "We propose to separate **P from NP** (specifically, to prove a superpolynomial circuit lower bound for an NP-complete problem on a structured input distribution) by importing the **Hochman\u2013Meyerovitch theorem** on computable entropies of multidimensional subshifts of finite type (SFTs) into circuit complexity via a novel **\"circuit-as-tiling\" correspondence**.\n\nThe bridge is **E14 (topological/symbolic dynamics)**. The key idea: a Boolean circuit of size $s$ computing a function $f: \\{0,1\\}^n \\to \\{0,1\\}$ can be encoded as a finite local rule generating a 2D SFT $X_C$, whose **topological entropy** $h(X_C)$ equals (up to normalisation) the log-density of admissible computation histories. Hochman\u2013Meyerovitch (Annals 2010) characterise exactly which real numbers arise as entropies of 2D SFTs: they are precisely the right-recursively-enumerable reals in $[0,\\infty)$, and entropy is **not** computable in general \u2014 it is $\\Pi_2$-complete.\n\nOur separation strategy: define an NP-complete tiling-flavoured language $L$ (a variant of bounded periodic tiling) such that any polynomial-size circuit family $\\{C_n\\}$ deciding $L$ would force the entropy $h(X_{C_n})$ to converge to a **computable** real at a polynomial rate. Hochman\u2013Meyerovitch + a quantitative refinement (Gangloff\u2013Sablik 2021, *Ergodic Theory Dyn. Syst.*) imply that polynomial-rate-computable SFT entropies form a strict subclass \u2014 specifically, the rate of approximation cannot beat a logarithmic barrier coming from the $\\Pi_2$ structure. This gives a non-relativizing, non-algebrizing, non-natural lower bound.",
+  "prerequisites": [
+    "From E14 \u2014 symbolic dynamics:**",
+    "M. Hochman and T. Meyerovitch, *A characterization of the entropies of multidimensional shifts of finite type*, **Annals of Mathematics 171 (2010), 2011\u20132038**. Establishes: $h(X)$ for a 2D SFT $X$ ranges exactly over the right-r.e. reals in $[0,\\infty)$.",
+    "S. Gangloff and M. Sablik, *Quantified block gluing for multidimensional subshifts of finite type: aperiodicity and entropy*, **Journal d'Analyse Math\u00e9matique 144 (2021)**. Provides quantitative rates linking gluing/mixing properties to computable entropy approximation.",
+    "N. Aubrun and M. Sablik, *Simulation of effective subshifts by two-dimensional subshifts of finite type*, **Acta Applicandae Mathematicae 126 (2013), 35\u201363**. Gives the simulation theorem we use to embed Turing-machine traces into SFTs with controlled local rules.",
+    "From complexity theory (background only):**",
+    "R. Robinson's classical NP-hardness of bounded tiling (used merely to identify $L$ as NP-complete).",
+    "The Razborov\u2013Rudich natural proofs barrier (only to verify our argument evades it \u2014 the entropy invariant is neither constructive nor large)."
+  ],
+  "mechanism": "Given a circuit family $\\{C_n\\}$ of size $s(n)$ purportedly deciding the tiling language $L$, we construct via the Aubrun\u2013Sablik simulation theorem a 2D SFT $X_n$ whose admissible configurations encode space-time diagrams of $C_n$ on inputs of length $n$. The **local rule** of $X_n$ has alphabet size and window size both polynomial in $s(n)$.\n\n**Load-bearing step (E14):** The topological entropy $h(X_n)$ measures the exponential growth rate of admissible $C_n$-traces. If $C_n$ decides $L$ correctly and $s(n) = n^{O(1)}$, then $h(X_n)$ can be approximated to within $\\varepsilon$ in time polynomial in $1/\\varepsilon$ and $n$ (by enumerating circuit evaluations).\n\nBut $L$ is constructed (via a padded version of Robinson's tiling) so that **deciding $L$ on inputs of length $n$ requires simulating an SFT whose entropy is a specific real $\\alpha_n$** whose approximation rate is governed by the Hochman\u2013Meyerovitch hierarchy. Gangloff\u2013Sablik's quantitative bounds show $\\alpha_n$ requires approximation time growing as $2^{\\Omega(n^\\delta)}$ for some $\\delta > 0$ \u2014 a **dynamical lower bound** independent of circuit model.\n\nThe contradiction yields $s(n) = n^{\\omega(1)}$.",
+  "target_interface": "`Pnp3.LowerBounds.CircuitLowerBound` \u2014 specifically, a Lean statement of the form\n`theorem tiling_language_requires_superpoly_circuits : \u2200 (c : \u2115), \u2203 (n\u2080 : \u2115), \u2200 n \u2265 n\u2080, \u2200 (C : Circuit n), decides C L_tile n \u2192 size C > n^c`\nparameterised by an abstract `SFTEntropyOracle` interface that wraps the Hochman\u2013Meyerovitch existence theorem as a non-constructive axiom.",
+  "novelty_self_assessment": "",
+  "stages": {
+    "stage0_generate": {
+      "stage": "stage0_generate",
+      "verdict": "GENERATED",
+      "ran_at": "2026-05-20T18:39:09+00:00",
+      "report_file": "stage1_idea_card.md",
+      "model": "claude-opus-4-7",
+      "is_mock": false
+    },
+    "stage1_literature_kill": {
+      "stage": "stage1_literature_kill",
+      "verdict": "LIT_RED",
+      "ran_at": "2026-05-20T18:39:55+00:00",
+      "report_file": "stage1_literature_kill.md",
+      "model": "claude-opus-4-7",
+      "is_mock": false
+    }
+  },
+  "final_verdict": "CLOSED_AT_STAGE_1"
+}

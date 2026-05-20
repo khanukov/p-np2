@@ -1,0 +1,36 @@
+{
+  "id": "idea-1779302445-61377a",
+  "created_at": "2026-05-20T18:40:45+00:00",
+  "thesis": "We propose separating **P from NP** via a **topological-entropy obstruction** on the space of **circuit-induced subshifts**. Associate to each polynomial-size circuit family $\\{C_n\\}$ a **multidimensional subshift of finite type (SFT)** $X_C \\subseteq \\Sigma^{\\mathbb{Z}^2}$ whose admissible configurations encode space-time tableaux of $C_n$ on padded inputs (rows = circuit layers, columns = wire indices, with local SFT constraints enforcing gate-locality). For an NP-complete language $L$, the *acceptance subshift* $X_L$ \u2014 configurations encoding a verifier together with a witness \u2014 has a **specific topological entropy spectrum** controlled by the Hochman\u2013Meyerovitch theorem: the set of entropies of $\\mathbb{Z}^2$-SFTs is exactly the set of right-recursively-enumerable numbers, and these entropies are **computable invariants** that distinguish SFT classes.\n\n**Cross-domain bridge (E14)**: We use the Hochman\u2013Meyerovitch characterization of SFT entropies plus **Pavlov\u2013Schraudner conjugacy invariants** to show that the \"shift of finite type\" associated to any P-circuit family has entropy in a strictly smaller recursive sub-class (call it $\\mathcal{E}_P$) than the entropy of $X_{\\mathrm{SAT}}$, which lies in $\\mathcal{E}_{NP} \\setminus \\mathcal{E}_P$. The separation conclusion: if $\\mathrm{P} = \\mathrm{NP}$, the entropy of $X_{\\mathrm{SAT}}$ would collapse into $\\mathcal{E}_P$, contradicting an unconditional gap derivable from the **block-gluing distortion function** of the SAT subshift.",
+  "prerequisites": [
+    "From E14 (symbolic / topological dynamics)**:",
+    "Hochman & Meyerovitch, *\"A characterization of the entropies of multidimensional shifts of finite type\"*, Annals of Mathematics 171 (2010), 2011\u20132038.",
+    "Pavlov & Schraudner, *\"Entropies realizable by block gluing $\\mathbb{Z}^d$ shifts of finite type\"*, J. d'Analyse Math. 126 (2015), 113\u2013174.",
+    "Hochman, *\"On the dynamics and recursive properties of multidimensional symbolic systems\"*, Inventiones Mathematicae 176 (2009), 131\u2013167. (Computable invariants of subactions.)",
+    "Boyle, Pavlov, Schraudner, *\"Multidimensional sofic shifts without separation and their factors\"*, Trans. AMS 362 (2010). (Distortion / gluing functions as separators.)",
+    "From complexity (background only)**:",
+    "Standard tableau encoding of Turing machines / circuits as tilings (Robinson-style), used purely as the bridge object."
+  ],
+  "mechanism": "The load-bearing step is the **distortion-function dichotomy** for $\\mathbb{Z}^2$-SFTs: Pavlov\u2013Schraudner show that a $\\mathbb{Z}^2$-SFT is *block-gluing with linear distortion* iff its entropy can be approximated by a specific class of computable functions tied to linear-time machines. We define the **circuit subshift functor** $\\Phi: \\{\\text{circuit families}\\} \\to \\{\\mathbb{Z}^2\\text{-SFTs}\\}$ such that:\n\n1. $\\Phi(C)$ has block-gluing distortion $O(\\mathrm{depth}(C) \\cdot \\mathrm{width}(C))$ \u2014 a quantitative refinement of Robinson-style encodings.\n2. For polynomial circuits, $\\Phi(C)$ lies in the **polynomially-block-gluing class** $\\mathcal{BG}_{\\mathrm{poly}}$.\n3. By Pavlov\u2013Schraudner, $\\mathcal{BG}_{\\mathrm{poly}}$-SFTs have entropies in a recursive class $\\mathcal{E}_{\\mathrm{poly}}$ strictly smaller (in the Hochman recursive hierarchy) than the full r.e. class.\n4. We construct an SFT $X_{\\mathrm{SAT}}$ encoding SAT-witness verification whose entropy we compute via a **Furstenberg-style disjointness** argument: it equals $\\log 2 \\cdot \\alpha$ where $\\alpha$ is the asymptotic witness density, which is provably outside $\\mathcal{E}_{\\mathrm{poly}}$ unless witness-search collapses.\n\nThe cross-domain machinery (Hochman\u2013Meyerovitch computability classification + Pavlov\u2013Schraudner distortion bounds) is the actual separator \u2014 not a metaphor.",
+  "target_interface": "`pnp3.Separation.SAT_not_in_P` instantiated via a new module `pnp3.Dynamics.CircuitSubshift` exposing:\n- `CircuitSubshift.entropy : CircuitFamily \u2192 \u211d`\n- `CircuitSubshift.blockGluingDistortion : CircuitFamily \u2192 (\u2115 \u2192 \u2115)`\n- Lemma `entropy_poly_distortion_bound`: poly-distortion \u21d2 entropy in a Lean-formalised recursive class.",
+  "novelty_self_assessment": "",
+  "stages": {
+    "stage0_generate": {
+      "stage": "stage0_generate",
+      "verdict": "GENERATED",
+      "ran_at": "2026-05-20T18:40:45+00:00",
+      "report_file": "stage1_idea_card.md",
+      "model": "claude-opus-4-7",
+      "is_mock": false
+    },
+    "stage1_literature_kill": {
+      "stage": "stage1_literature_kill",
+      "verdict": "LIT_RED",
+      "ran_at": "2026-05-20T18:41:38+00:00",
+      "report_file": "stage1_literature_kill.md",
+      "model": "claude-opus-4-7",
+      "is_mock": false
+    }
+  },
+  "final_verdict": "CLOSED_AT_STAGE_1"
+}

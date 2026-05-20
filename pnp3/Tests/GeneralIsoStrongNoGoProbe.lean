@@ -5,17 +5,21 @@ import LowerBounds.MCSPGapLocality
 import Tests.CircuitCountTraceBoundProbe
 
 /-!
-# General iso-strong no-go probe (L1, sessions 1, 2, and 3)
+# General iso-strong no-go probe (L1, sessions 1–4)
 
 L1 staging probe consuming the counting bricks landed in
 `pnp3/Tests/CircuitCountTraceBoundProbe.lean` and lifting the full
-generalised pigeonhole, slack, diagonal-encoding, and not-YES bridge
-chain towards `isoStrong_conclusion_negative_general`.
+generalised pigeonhole, slack, diagonal-encoding, not-YES bridge,
+and route-level assembly chain.  After session 4 the route-level
+conclusion-side refutation of `IsoStrongFamilyEventually` is closed
+for arbitrary `GapSliceFamilyEventually`:
 
-After session 3 all six canonical L1 ingredients have generic
-replacements, kernel-checked here.  The only remaining work is the
-final route-level assembly into `isoStrong_conclusion_negative_general`
-over an arbitrary `GapSliceFamilyEventually`.
+```lean
+theorem isoStrong_conclusion_negative_general
+    (F : GapSliceFamilyEventually)
+    (hInDag : ∀ n β, InPpolyDAG (gapPartialMCSP_Language (F.paramsOf n β))) :
+    ¬ IsoStrongFamilyEventually F hInDag
+```
 
 This file is intentionally local to `pnp3/Tests/` and does not modify
 endpoints, specs, or trust-root surfaces.  No `axiom` / `opaque` /
@@ -72,20 +76,31 @@ endpoints, specs, or trust-root surfaces.  No `axiom` / `opaque` /
    `diagonal_z_not_yes_of_label_not_trace`.
 
 8. `exists_valid_agreeing_not_yes_under_general_slack` — the
-   final session-3 composition: under the strict trace-cardinality
-   slack `circuitCountBound p.n (p.sNO - 1) < 2 ^ |Finset.univ \ D|`,
+   session-3 composition: under the strict trace-cardinality slack
+   `circuitCountBound p.n (p.sNO - 1) < 2 ^ |Finset.univ \ D|`,
    there exists `z` that is a `ValidEncoding`, agrees with `yYes`
    on `D`, and is not in the YES promise slice.  Generic replacement
    for canonical `exists_valid_agreeing_not_yes_under_slack`.
 
-## What remains for L1 session 4
+## What session 4 lands
 
-- Final route-level assembly
-  `isoStrong_conclusion_negative_general (F : GapSliceFamilyEventually)
-    (hInDag : ∀ n β, InPpolyDAG (gapPartialMCSP_Language (F.paramsOf n β))) :
-    ¬ IsoStrongFamilyEventually F hInDag`,
-  composing the per-slice bricks above with `slack_for_D_of_isoStrong_slack_general`
-  to thread the eventual κ-slack through `F.hM` / `F.hT`.
+9. `correctOnPromiseSlice_of_InPpolyDAG_family_general` — lifts an
+   `InPpolyDAG` witness at slice `(n, β)` to the corresponding
+   `CorrectOnPromiseSlice` witness for the family circuit at encoded
+   length.  Direct general counterpart of the canonical helper
+   `correctOnPromiseSlice_of_InPpolyDAG_family` in
+   `Tests/IsoStrongConclusionProbe.lean`.
+
+10. `isoStrong_conclusion_negative_general` — the route-level
+    no-go assembly: for any `F : GapSliceFamilyEventually` and any
+    per-slice `InPpolyDAG` family, the iso-strong forcing/slack
+    package is contradictory.  The forcing clause requires all
+    valid encodings agreeing on `D` to be YES; the session-3
+    constructive diagonal produces a valid/agreeing counterexample
+    under the same strict slack.
+
+After session 4 the entire canonical iso-strong L1 chain has a
+parameter-agnostic generic counterpart in this file.
 -/
 
 namespace Pnp3
@@ -95,6 +110,7 @@ namespace GeneralIsoStrongNoGoProbe
 open Models
 open LowerBounds
 open Counting
+open ComplexityInterfaces
 
 /--
 Finite-image pigeonhole: any `S : Finset (α → Bool)` of cardinality strictly
@@ -390,6 +406,91 @@ theorem exists_valid_agreeing_not_yes_under_general_slack
   · exact general_diagonal_z_valid p yYes D label
   · exact general_diagonal_z_agrees_on_D p yYes hValidYes D label
   · exact general_diagonal_z_not_yes_of_label_not_in_trace_image p yYes D label hLabel
+
+/--
+Lift an `InPpolyDAG` witness at slice `(n, β)` to the corresponding
+`CorrectOnPromiseSlice` witness for the family circuit at encoded
+length.
+
+Direct general counterpart of `correctOnPromiseSlice_of_InPpolyDAG_family`
+from `pnp3/Tests/IsoStrongConclusionProbe.lean`.
+-/
+lemma correctOnPromiseSlice_of_InPpolyDAG_family_general
+    (F : GapSliceFamilyEventually)
+    (hInDag :
+      ∀ n β,
+        ComplexityInterfaces.InPpolyDAG
+          (gapPartialMCSP_Language (F.paramsOf n β)))
+    (n : Nat) (β : Rat) :
+    CorrectOnPromiseSlice
+      ((hInDag n β).family (GapSliceFamilyEventually.encodedLen F n β))
+      (gapSliceOfParams (F.paramsOf n β)) := by
+  constructor
+  · intro x hx
+    have hCorr := (hInDag n β).correct (GapSliceFamilyEventually.encodedLen F n β) x
+    exact hx ▸ hCorr
+  · intro x hx
+    have hCorr := (hInDag n β).correct (GapSliceFamilyEventually.encodedLen F n β) x
+    exact hx ▸ hCorr
+
+/--
+Route-level no-go assembly for the general iso-strong route.
+
+Given an eventual family `F : GapSliceFamilyEventually` and any
+per-slice `InPpolyDAG` witness family `hInDag`,
+`IsoStrongFamilyEventually F hInDag` is inconsistent: the forcing
+clause would require all valid encodings agreeing on `D` to be in
+YES, but the session-3 constructive diagonal
+(`exists_valid_agreeing_not_yes_under_general_slack`) produces a
+valid/agreeing counterexample under the same strict trace-cardinality
+slack derived via `slack_for_D_of_isoStrong_slack_general`.
+
+Generic counterpart of the canonical `isoStrong_conclusion_negative_for_canonical`,
+covering arbitrary eventual families rather than just the canonical
+`sYES = 1, sNO = 2` instantiation.
+-/
+theorem isoStrong_conclusion_negative_general
+    (F : GapSliceFamilyEventually)
+    (hInDag :
+      ∀ n β,
+        ComplexityInterfaces.InPpolyDAG
+          (gapPartialMCSP_Language (F.paramsOf n β))) :
+    ¬ IsoStrongFamilyEventually F hInDag := by
+  intro hIso
+  rcases hIso with ⟨β0, hβ0, κ, nIso, hForce, hSlack⟩
+  let β : Rat := β0 / 2
+  have hβPos : 0 < β := by
+    dsimp [β]
+    linarith
+  have hβLt : β < β0 := by
+    dsimp [β]
+    linarith
+  let n : Nat := max F.N0 (nIso β)
+  have hn : n ≥ max F.N0 (nIso β) := le_rfl
+  have hn0 : F.N0 ≤ n := le_max_left _ _
+  let p := F.paramsOf n β
+  let C : DagCircuit (GapSliceFamilyEventually.encodedLen F n β) :=
+    (hInDag n β).family (GapSliceFamilyEventually.encodedLen F n β)
+  have hSize :
+      ppolyDAGSizeBoundOnSlicesEventually F hInDag n β 1 (DagCircuit.size C) := by
+    simpa [C, ppolyDAGSizeBoundOnSlicesEventually] using
+      (hInDag n β).family_size_le (GapSliceFamilyEventually.encodedLen F n β)
+  have hCorrect : CorrectOnPromiseSlice C (gapSliceOfParams p) := by
+    simpa [C, p] using
+      correctOnPromiseSlice_of_InPpolyDAG_family_general F hInDag n β
+  rcases hForce n β hβPos hβLt hn C hSize hCorrect with
+    ⟨yYes, _hyYes, hValidYes, D, hDcard, hAllYes⟩
+  have hRawSlack := hSlack n β hβPos hβLt hn
+  have hSlackForD :
+      circuitCountBound p.n (p.sNO - 1) < 2 ^ (Partial.tableLen p.n - D.card) := by
+    simpa [p, GapSliceFamilyEventually.tableLen] using
+      slack_for_D_of_isoStrong_slack_general F n β hn0 D (κ n β) hDcard hRawSlack
+  have hSlackForD' :
+      circuitCountBound p.n (p.sNO - 1) < 2 ^ ((Finset.univ \ D).card) := by
+    simpa [Finset.card_sdiff (Finset.subset_univ D)] using hSlackForD
+  rcases exists_valid_agreeing_not_yes_under_general_slack
+      p yYes hValidYes D hSlackForD' with ⟨z, hzValid, hzAgree, hzNotYes⟩
+  exact hzNotYes (hAllYes z hzValid hzAgree)
 
 end GeneralIsoStrongNoGoProbe
 end Tests

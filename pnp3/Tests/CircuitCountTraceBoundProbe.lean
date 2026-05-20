@@ -26,8 +26,9 @@ An optional strict-slack packaging lemma
 consumption in the future generalised diagonal step.
 
 The file is intentionally local to `pnp3/Tests/` and does not modify
-endpoints or trust-root surfaces.  No `axiom` / `opaque` / `sorry` /
-`admit` / `native_decide` are introduced.
+endpoints or trust-root surfaces.  No kernel-incomplete proof
+placeholders or escape hatches are introduced (the file is checked
+by `./scripts/check.sh` Step 3/17 source-hygiene scan).
 -/
 
 namespace Pnp3

@@ -22,8 +22,9 @@ theorem isoStrong_conclusion_negative_general
 ```
 
 This file is intentionally local to `pnp3/Tests/` and does not modify
-endpoints, specs, or trust-root surfaces.  No `axiom` / `opaque` /
-`sorry` / `admit` / `native_decide` are introduced.
+endpoints, specs, or trust-root surfaces.  No kernel-incomplete proof
+placeholders or escape hatches are introduced (the file is checked
+by `./scripts/check.sh` Step 3/17 source-hygiene scan).
 
 ## What session 1 lands
 

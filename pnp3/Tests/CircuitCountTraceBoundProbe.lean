@@ -1,6 +1,35 @@
 import Models.Model_PartialMCSP
 import Counting.CircuitCounting
 
+/-!
+# Circuit-count trace bound probe (L0)
+
+This probe packages the four counting bricks identified by the
+`general_isoStrong_no_go_D0` audit
+(`seed_packs/general_isoStrong_no_go_D0/reports/D0_general_isoStrong_no_go_codex53.md`)
+as prerequisites for the generalised iso-strong conclusion-side argument:
+
+1. monotonicity of `circuitCountBound` in the size parameter
+   (`circuitCountBound_le_succ`, `circuitCountBound_mono`,
+   `circuitCountBound_le_of_le`);
+2. a reusable row-trace map for arbitrary bounded-size circuits
+   (`traceCircuitOnRows`);
+3. an image-cardinality bound for bounded-size circuit traces
+   (`boundedSizeTrace_image_card_le`), obtained via the existing
+   enumeration `circuitsOfSizeAtMost` and
+   `card_circuitsOfSizeAtMost_le` in `pnp3/Counting/CircuitCounting.lean`;
+4. a `gap_ok` wrapper lifting `sYES` traces to the `sNO - 1` counting
+   envelope (`boundedSizeTrace_image_card_le_sNO_minus_one`).
+
+An optional strict-slack packaging lemma
+(`boundedSizeTrace_image_card_lt_of_slack`) is provided for direct
+consumption in the future generalised diagonal step.
+
+The file is intentionally local to `pnp3/Tests/` and does not modify
+endpoints or trust-root surfaces.  No `axiom` / `opaque` / `sorry` /
+`admit` / `native_decide` are introduced.
+-/
+
 namespace Pnp3
 namespace Tests
 namespace CircuitCountTraceBoundProbe

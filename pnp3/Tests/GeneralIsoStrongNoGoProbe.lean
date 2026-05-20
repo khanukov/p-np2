@@ -5,18 +5,21 @@ import LowerBounds.MCSPGapLocality
 import Tests.CircuitCountTraceBoundProbe
 
 /-!
-# General iso-strong no-go probe (L1, sessions 1 and 2 partial)
+# General iso-strong no-go probe (L1, sessions 1, 2, and 3)
 
 L1 staging probe consuming the counting bricks landed in
-`pnp3/Tests/CircuitCountTraceBoundProbe.lean` and lifting generalised
-pigeonhole, slack, and diagonal-encoding bricks towards
-`isoStrong_conclusion_negative_general`.
+`pnp3/Tests/CircuitCountTraceBoundProbe.lean` and lifting the full
+generalised pigeonhole, slack, diagonal-encoding, and not-YES bridge
+chain towards `isoStrong_conclusion_negative_general`.
+
+After session 3 all six canonical L1 ingredients have generic
+replacements, kernel-checked here.  The only remaining work is the
+final route-level assembly into `isoStrong_conclusion_negative_general`
+over an arbitrary `GapSliceFamilyEventually`.
 
 This file is intentionally local to `pnp3/Tests/` and does not modify
 endpoints, specs, or trust-root surfaces.  No `axiom` / `opaque` /
-`sorry` / `admit` / `native_decide` are introduced.  The remaining
-not-YES bridge and final contradiction assembly are staged for a
-follow-up L1 session (`open_general_isoStrong_no_go_L1_session_3`).
+`sorry` / `admit` / `native_decide` are introduced.
 
 ## What session 1 lands
 
@@ -35,7 +38,7 @@ follow-up L1 session (`open_general_isoStrong_no_go_L1_session_3`).
    `Nat.pow_le_pow_right`.  Generic replacement for the canonical L1
    session 4 `slack_for_D_of_isoStrong_slack`.
 
-## What session 2 partially lands
+## What session 2 lands
 
 3. `generalDiagonalPartialTable` — the general diagonal partial table
    carrying `decodePartial yYes` on fixed coordinates `D` and `label`
@@ -52,17 +55,37 @@ follow-up L1 session (`open_general_isoStrong_no_go_L1_session_3`).
    `diagonal_z_agrees_on_D`.  Closed by the same value-bit calc chain
    used in the canonical proof.
 
-## What remains for L1 session 3
+## What session 3 lands
 
-- A general not-YES bridge analogous to canonical
-  `is_consistent_diagonal_table_implies_label_trace` and
-  `diagonal_z_not_yes_of_label_not_trace`, generalised from size-1
-  candidate consistency to bounded-size circuit consistency via the
-  L0 trace-image cardinality bound `boundedSizeTrace_image_card_le`.
-- A general composition theorem
-  `exists_valid_agreeing_not_yes_under_general_slack`.
-- Final assembly into `isoStrong_conclusion_negative_general` over an
-  arbitrary `GapSliceFamilyEventually`.
+6. `is_consistent_general_diagonal_table_implies_trace_in_image` —
+   any bounded-size circuit `C` consistent with the general diagonal
+   table satisfies `traceCircuitOnRows ... C = label` on the free
+   rows.  Generic replacement for canonical
+   `is_consistent_diagonal_table_implies_label_trace`, lifted from
+   size-1 candidate consistency to arbitrary bounded-size circuit
+   consistency.
+
+7. `general_diagonal_z_not_yes_of_label_not_in_trace_image` — if
+   `label` lies outside the bounded-size trace image, then the
+   encoded general diagonal cannot be in the YES promise slice.
+   Generic replacement for canonical
+   `diagonal_z_not_yes_of_label_not_trace`.
+
+8. `exists_valid_agreeing_not_yes_under_general_slack` — the
+   final session-3 composition: under the strict trace-cardinality
+   slack `circuitCountBound p.n (p.sNO - 1) < 2 ^ |Finset.univ \ D|`,
+   there exists `z` that is a `ValidEncoding`, agrees with `yYes`
+   on `D`, and is not in the YES promise slice.  Generic replacement
+   for canonical `exists_valid_agreeing_not_yes_under_slack`.
+
+## What remains for L1 session 4
+
+- Final route-level assembly
+  `isoStrong_conclusion_negative_general (F : GapSliceFamilyEventually)
+    (hInDag : ∀ n β, InPpolyDAG (gapPartialMCSP_Language (F.paramsOf n β))) :
+    ¬ IsoStrongFamilyEventually F hInDag`,
+  composing the per-slice bricks above with `slack_for_D_of_isoStrong_slack_general`
+  to thread the eventual κ-slack through `F.hM` / `F.hT`.
 -/
 
 namespace Pnp3
@@ -215,6 +238,17 @@ theorem general_diagonal_z_agrees_on_D
       symm
       simp [Partial.valPart, encodePartial, Partial.valIndex]
 
+/--
+General version of canonical `is_consistent_diagonal_table_implies_label_trace`:
+any bounded-size circuit `C` consistent with the general diagonal table
+satisfies `traceCircuitOnRows ... C = label` on the free rows.
+
+Lifted from canonical size-1 candidate consistency to arbitrary
+bounded-size circuit consistency.  The `_hSize` argument is retained
+in the signature for downstream consumers (used by
+`general_diagonal_z_not_yes_of_label_not_in_trace_image`) but is not
+needed for the trace-equality conclusion at this layer.
+-/
 theorem is_consistent_general_diagonal_table_implies_trace_in_image
     (p : GapPartialMCSPParams)
     (yYes : Core.BitVec (partialInputLen p))
@@ -242,6 +276,21 @@ theorem is_consistent_general_diagonal_table_implies_trace_in_image
   rw [hIdx, hdiag] at hAt
   simpa [CircuitCountTraceBoundProbe.traceCircuitOnRows] using hAt
 
+/--
+General not-YES bridge: if `label` is not in the bounded-size trace
+image, the encoded general diagonal cannot be in the YES promise
+slice.
+
+Generic replacement for canonical `diagonal_z_not_yes_of_label_not_trace`.
+Proof unpacks YES-membership via `gapPartialMCSP_language_true_iff_yes`
+(direct API, avoiding the heavier `gapSlice_yes_iff` route which can
+trigger `whnf` blow-ups under this file's import surface), pulls out
+the bounded-size circuit witness `C`, converts consistency-on-decoded
+to consistency-on-table via `decodePartial_encodePartial`, applies the
+trace-equality lemma `is_consistent_general_diagonal_table_implies_trace_in_image`,
+and contradicts `hLabel` by exhibiting `label` in the trace image
+through `C`.
+-/
 theorem general_diagonal_z_not_yes_of_label_not_in_trace_image
     (p : GapPartialMCSPParams)
     (yYes : Core.BitVec (partialInputLen p))
@@ -289,6 +338,29 @@ theorem general_diagonal_z_not_yes_of_label_not_in_trace_image
     exact ⟨C, hMemC, hTrace⟩
   exact hLabel hInImage
 
+/--
+The session-3 final composition.  Under the strict trace-cardinality
+slack `circuitCountBound p.n (p.sNO - 1) < 2 ^ |Finset.univ \ D|`,
+there exists a partial-encoding `z` that is
+
+- a `ValidEncoding`;
+- agrees with `yYes` on the fixed coordinates `D`; and
+- is not in the YES promise slice.
+
+Generic replacement for canonical `exists_valid_agreeing_not_yes_under_slack`.
+
+Proof: bound the cardinality of the bounded-size trace image via
+`boundedSizeTrace_image_card_lt_of_slack` (L0 brick), invoke
+`exists_label_not_in_trace_image_of_card_lt` (session-1 pigeonhole)
+to pick a `label` outside the image, and assemble the diagonal `z`
+from `generalDiagonalPartialTable` together with the three witnesses
+(`general_diagonal_z_valid`, `general_diagonal_z_agrees_on_D`,
+`general_diagonal_z_not_yes_of_label_not_in_trace_image`).
+
+This closes the six-of-six generic ingredient set required for the
+final route-level theorem `isoStrong_conclusion_negative_general`
+(staged for L1 session 4).
+-/
 theorem exists_valid_agreeing_not_yes_under_general_slack
     (p : GapPartialMCSPParams)
     (yYes : Core.BitVec (partialInputLen p))

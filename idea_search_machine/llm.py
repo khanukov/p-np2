@@ -70,9 +70,12 @@ class LLMClient:
         kwargs = {
             "model": self.model,
             "max_tokens": max_tokens,
-            "temperature": temperature,
             "messages": messages,
         }
+        # opus-4-7 and newer drop the temperature parameter; pass it
+        # only for older models that still accept it.
+        if not self.model.startswith("claude-opus-4-7"):
+            kwargs["temperature"] = temperature
         if system:
             kwargs["system"] = system
         resp = self._client.messages.create(**kwargs)

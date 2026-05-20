@@ -46,7 +46,9 @@ def _parse_prerequisites(block: str) -> list[str]:
 def run(llm: LLMClient, *, system_extra: str = "") -> registry.Idea:
     """Generate one idea card and persist it to the registry."""
     prompt = _load_prompt()
-    result: LLMResult = llm.query(prompt, temperature=0.7, max_tokens=2000)
+    # Opus generates substantially longer, structured idea cards
+    # (full barrier-avoidance analysis); bump max_tokens accordingly.
+    result: LLMResult = llm.query(prompt, temperature=0.7, max_tokens=4000)
     parsed = _parse_idea_card(result.text)
     idea = registry.Idea(
         id=registry.new_idea_id(),

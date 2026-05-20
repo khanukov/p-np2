@@ -39,7 +39,7 @@ def _parse_verdict(markdown: str) -> str:
 
 def run(llm: LLMClient, idea: registry.Idea) -> registry.StageResult:
     prompt = _build_prompt(idea)
-    result: LLMResult = llm.query(prompt, temperature=0.2, max_tokens=4000)
+    result: LLMResult = llm.query(prompt, temperature=0.2, max_tokens=8000)
     verdict = _parse_verdict(result.text)
     report_filename = registry.save_stage_report(idea, "stage3_repo_surface", result.text)
     sr = registry.StageResult(

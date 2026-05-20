@@ -207,6 +207,7 @@ lean_lib PnP3 where
     Glob.one `Tests.CanonicalIntegrationTests,
     Glob.one `Tests.RouteSurfaceAudit,
     Glob.one `Tests.CircuitCountTraceBoundProbe,
+    Glob.one `Tests.GeneralIsoStrongNoGoProbe,
     Glob.one `Tests.WeakRouteSurfaceTests,
     Glob.one `Tests.FormulaSupportBoundsFalsifiabilityProbe,
     Glob.one `Tests.SmokeTests,

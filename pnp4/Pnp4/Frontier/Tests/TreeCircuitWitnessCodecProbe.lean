@@ -49,6 +49,52 @@ def defaultFiniteIndex
     (n : Nat) : Fin (finiteIndexWitnessBits threshold n) :=
   ⟨0, finiteIndexWitnessBits_pos threshold n⟩
 
+/--
+If an element belongs to a finset, it appears at some finite list index in the
+canonical `toList` enumeration.
+
+This is the core indexing lemma needed by finite-index encoders.
+-/
+theorem exists_index_of_mem_finset
+    {α : Type} [DecidableEq α]
+    (S : Finset α)
+    (a : α)
+    (ha : a ∈ S) :
+    ∃ i : Fin S.card, S.toList[i.1]? = some a := by
+  have hmemList : a ∈ S.toList := by
+    exact Finset.mem_toList.mpr ha
+  let idx : Nat := S.toList.idxOf a
+  have hlt : idx < S.card := by
+    simpa [idx, Finset.length_toList] using List.idxOf_lt_length_iff.mpr hmemList
+  refine ⟨⟨idx, hlt⟩, ?_⟩
+  simpa [idx] using List.getElem?_idxOf (l := S.toList) hmemList
+
+/--
+One-hot vector on `k` active positions plus one spare bit.
+
+The first `k` coordinates carry the one-hot payload; the final spare coordinate
+is always `false` in this L1 staging encoding.
+-/
+def oneHot (k : Nat) (i : Fin k) : AlgorithmsToLowerBounds.BitVec (k + 1) :=
+  fun j => if h : j.1 < k then (⟨j.1, h⟩ : Fin k) = i else false
+
+/-- The selected index is marked `true` by `oneHot`. -/
+theorem oneHot_at_index
+    (k : Nat)
+    (i : Fin k) :
+    oneHot k i ⟨i.1, Nat.lt_trans i.2 (Nat.lt_succ_self k)⟩ = true := by
+  simp [oneHot, i.2]
+
+/-- Non-selected active coordinates are `false` in `oneHot`. -/
+theorem oneHot_ne_at_index
+    (k : Nat)
+    (i : Fin k)
+    (j : Fin k)
+    (hji : j ≠ i) :
+    oneHot k i ⟨j.1, Nat.lt_trans j.2 (Nat.lt_succ_self k)⟩ = false := by
+  have : j.1 < k := j.2
+  simp [oneHot, this, hji]
+
 end Tests
 end Frontier
 end Pnp4

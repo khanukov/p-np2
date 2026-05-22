@@ -95,6 +95,48 @@ theorem oneHot_ne_at_index
   have : j.1 < k := j.2
   simp [oneHot, this, hji]
 
+
+/-- The spare bit (index `k`) is always `false` in one-hot encoding. -/
+theorem oneHot_spare_false
+    (k : Nat)
+    (i : Fin k) :
+    oneHot k i ⟨k, Nat.lt_succ_self k⟩ = false := by
+  simp [oneHot]
+
+/-- Active-position characterization for one-hot vectors. -/
+theorem oneHot_active_true_iff
+    (k : Nat)
+    (i j : Fin k) :
+    oneHot k i ⟨j.1, Nat.lt_trans j.2 (Nat.lt_succ_self k)⟩ = true ↔ j = i := by
+  have hj : j.1 < k := j.2
+  simp [oneHot, hj]
+
+/--
+Decode a `(k+1)`-bit one-hot vector by choosing an active index in `Fin k`
+when one exists; ignore the spare bit.
+-/
+noncomputable def decodeOneHotIndex (k : Nat)
+    (w : AlgorithmsToLowerBounds.BitVec (k + 1)) :
+    Option (Fin k) :=
+  if h : ∃ i : Fin k, w ⟨i.1, Nat.lt_trans i.2 (Nat.lt_succ_self k)⟩ = true then
+    some (Classical.choose h)
+  else
+    none
+
+/-- One-hot encoding round-trips through `decodeOneHotIndex`. -/
+theorem decodeOneHotIndex_oneHot
+    (k : Nat)
+    (i : Fin k) :
+    decodeOneHotIndex k (oneHot k i) = some i := by
+  unfold decodeOneHotIndex
+  have hExists :
+      ∃ j : Fin k,
+        oneHot k i ⟨j.1, Nat.lt_trans j.2 (Nat.lt_succ_self k)⟩ = true := by
+    exact ⟨i, oneHot_at_index k i⟩
+  simp [hExists]
+  apply (oneHot_active_true_iff k i (Classical.choose hExists)).1
+  exact Classical.choose_spec hExists
+
 end Tests
 end Frontier
 end Pnp4

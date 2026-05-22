@@ -37,6 +37,20 @@ abbrev TreeMCSPExtractedLanguage : Type :=
   Pnp3.ComplexityInterfaces.Language
 
 /--
+Concrete extracted language for tree-MCSP via the staged prefix parser surface.
+
+This binds the language to `PrefixExtensionLanguage` using parser data supplied
+through `TreeMCSPPrefixParserObligations`.  No lower-bound or extraction theorem
+is assumed here; this is purely the concrete language definition layer.
+-/
+noncomputable def TreeMCSPPrefixExtractedLanguage
+    (threshold : Nat → Nat)
+    (encoding : TreeMCSPSearchWitnessEncoding threshold)
+    (obligations : TreeMCSPPrefixParserObligations threshold encoding) :
+    Pnp3.ComplexityInterfaces.Language :=
+  PrefixExtensionLanguage obligations.parser
+
+/--
 Explicit target-specific packaging theorem.
 
 Given:
@@ -102,6 +116,66 @@ def TreeMCSPNoBoundedSolverObligation
     (TreeMCSP_C_DAG_Target threshold encoding sizeBound).problem
     (TreeMCSP_C_DAG_Target threshold encoding sizeBound).circuitClass
     (TreeMCSP_C_DAG_Target threshold encoding sizeBound).sizeBound
+
+/--
+Concrete extraction obligation for the bound prefix language.
+
+This is the target-specific R1-C-style statement: if the concrete extracted
+prefix language lands in `PpolyDAG`, then the corresponding bounded solver
+exists for `TreeMCSP_C_DAG_Target`.
+-/
+def TreeMCSPConcretePrefixToSolverObligation
+    (threshold : Nat → Nat)
+    (encoding : TreeMCSPSearchWitnessEncoding threshold)
+    (sizeBound : Nat → Nat)
+    (obligations : TreeMCSPPrefixParserObligations threshold encoding) : Prop :=
+  Pnp3.ComplexityInterfaces.PpolyDAG
+      (TreeMCSPPrefixExtractedLanguage threshold encoding obligations) →
+    Nonempty
+      (BoundedSearchSolver
+        (TreeMCSP_C_DAG_Target threshold encoding sizeBound).problem
+        (TreeMCSP_C_DAG_Target threshold encoding sizeBound).circuitClass
+        (TreeMCSP_C_DAG_Target threshold encoding sizeBound).sizeBound)
+
+/--
+Concrete NP obligation for the bound prefix language.
+
+This surfaces the missing R1-B obligation in target-specific form, without
+claiming it is already proved.
+-/
+def TreeMCSPConcretePrefixNPObligation
+    (threshold : Nat → Nat)
+    (encoding : TreeMCSPSearchWitnessEncoding threshold)
+    (obligations : TreeMCSPPrefixParserObligations threshold encoding) : Prop :=
+  Pnp3.ComplexityInterfaces.NP
+    (TreeMCSPPrefixExtractedLanguage threshold encoding obligations)
+
+/--
+Target-specific packaging theorem over the concrete prefix language alias.
+
+This theorem does not prove `hNP`, `hExtract`, or `hNoSolver`; it only composes
+those explicit obligations through the L0 packaging lemma.
+-/
+theorem verifiedSource_of_treeMCSP_concrete_prefix_obligations
+    (threshold : Nat → Nat)
+    (encoding : TreeMCSPSearchWitnessEncoding threshold)
+    (sizeBound : Nat → Nat)
+    (obligations : TreeMCSPPrefixParserObligations threshold encoding)
+    (hNP : TreeMCSPConcretePrefixNPObligation threshold encoding obligations)
+    (hExtract :
+      TreeMCSPConcretePrefixToSolverObligation
+        threshold encoding sizeBound obligations)
+    (hNoSolver :
+      TreeMCSPNoBoundedSolverObligation threshold encoding sizeBound) :
+    VerifiedNPDAGLowerBoundSource :=
+  verifiedSource_of_treeMCSP_prefix_obligations
+    threshold
+    encoding
+    sizeBound
+    (TreeMCSPPrefixExtractedLanguage threshold encoding obligations)
+    hNP
+    hExtract
+    hNoSolver
 
 end ContractExpansion
 end Frontier

@@ -9,6 +9,9 @@ open Core
 open Models
 open LowerBounds
 
+/-- Explicit coercion helper from interface bitstrings to core bit-vectors. -/
+def bitstringToBitVec {N : Nat} (x : ComplexityInterfaces.Bitstring N) : Core.BitVec N := x
+
 /--
 Structured trace language assembled from the route ingredients.
 
@@ -18,9 +21,9 @@ source record, while requiring a definitional link to route ingredients.
 noncomputable def traceMEMLanguageFromStructure
     (spec : Models.GapPartialMCSPAsymptoticSpec)
     (nOfLen mOfLen : Nat → Nat)
-    (params : ∀ t, Models.GapPartialMCSPParams)
-    (rows : ∀ t, Fin (mOfLen t) → Core.BitVec ((params t).n))
-    (red : ∀ t, LowerBounds.TraceToPartialReduction
+    (params : ∀ t : Nat, Models.GapPartialMCSPParams)
+    (rows : ∀ t : Nat, Fin (mOfLen t) → Core.BitVec ((params t).n))
+    (red : ∀ t : Nat, LowerBounds.TraceToPartialReduction
       ((params t).n) (mOfLen t) (params t) (rows t))
     (N : Nat) (x : ComplexityInterfaces.Bitstring N) : Bool := by
   classical
@@ -28,10 +31,11 @@ noncomputable def traceMEMLanguageFromStructure
     if h : ∃ t, mOfLen t = N then
       let t := Classical.choose h
       let hEq : N = mOfLen t := (Classical.choose_spec h).symm
-      let x' : Core.BitVec (mOfLen t) := by simpa [hEq] using x
+      let x' : Core.BitVec (mOfLen t) := by
+        simpa [hEq] using (bitstringToBitVec x)
       Models.gapPartialMCSP_Language (params t)
         (Models.partialInputLen (params t))
-        ((red t).encodeY x')
+        ((LowerBounds.TraceToPartialReduction.encode (R := red t)) x')
     else
       false
 
@@ -46,13 +50,13 @@ structure StructuredTraceSetHardnessSource where
   spec : Models.GapPartialMCSPAsymptoticSpec
   nOfLen : Nat → Nat
   mOfLen : Nat → Nat
-  params : ∀ t, Models.GapPartialMCSPParams
-  params_n : ∀ t, (params t).n = nOfLen t
-  rows : ∀ t, Fin (mOfLen t) → Core.BitVec ((params t).n)
-  rowsInj : ∀ t, Function.Injective (fun j : Fin (mOfLen t) => Models.assignmentIndex (rows t j))
-  traceToPartialReduction : ∀ t, LowerBounds.TraceToPartialReduction
+  params : ∀ t : Nat, Models.GapPartialMCSPParams
+  params_n : ∀ t : Nat, (params t).n = nOfLen t
+  rows : ∀ t : Nat, Fin (mOfLen t) → Core.BitVec ((params t).n)
+  rowsInj : ∀ t : Nat, Function.Injective (fun j : Fin (mOfLen t) => Models.assignmentIndex (rows t j))
+  traceToPartialReduction : ∀ t : Nat, LowerBounds.TraceToPartialReduction
     ((params t).n) (mOfLen t) (params t) (rows t)
-  polyLength : ∀ t,
+  polyLength : ∀ t : Nat,
     LowerBounds.PolyLengthDominance
       (mOfLen t)
       (Models.partialInputLen (params t))

@@ -340,7 +340,7 @@ theorem gapPartialMCSP_trace_false_of_unrealized_NO
 
 /-- Canonical row sampler from the first `m` truth-table indices. -/
 def rowsFromFinTable {n m : Nat}
-    (h : m ≤ Partial.tableLen n) :
+    (_h : m ≤ Partial.tableLen n) :
     Fin m → Core.BitVec n :=
   fun j => Core.vecOfNat n j.val
 
@@ -385,6 +385,15 @@ structure TraceToPartialReduction
   encodeY_correct :
     ∀ y, encodeY y = Models.encodePartial (partialFromTrace rows y)
 
+/-- Named helper so callers can use reduction encoding with explicit parameters. -/
+def TraceToPartialReduction.encode
+    {n m : Nat}
+    {p : Models.GapPartialMCSPParams}
+    {rows : Fin m → Core.BitVec p.n}
+    (R : TraceToPartialReduction n m p rows) :
+    Core.BitVec m → Core.BitVec (Models.partialInputLen p) :=
+  R.encodeY
+
 /-- A bookkeeping condition that states the target length is polynomial in source length. -/
 def PolyLengthDominance (m N : Nat) : Prop :=
   ∃ k : Nat, N ≤ (m + 1) ^ (k + 1)
@@ -399,7 +408,7 @@ theorem polynomial_size_preservation_of_poly_length
   have hpow : N ^ c ≤ ((m + 1) ^ (k0 + 1)) ^ c := by
     exact Nat.pow_le_pow_left hdom c
   have hmono : ((m + 1) ^ (k0 + 1)) ^ c ≤ (m + 1) ^ ((k0 + 1) * c) := by
-    simpa [Nat.pow_mul]
+    simp [Nat.pow_mul]
   have hstep : (m + 1) ^ ((k0 + 1) * c) ≤ (m + 1) ^ ((k0 + 1) * c + 1) := by
     exact Nat.pow_le_pow_right (Nat.succ_pos _) (Nat.le_succ _)
   calc

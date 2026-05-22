@@ -22,6 +22,7 @@ import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageRuntime
 import Pnp4.Frontier.ContractExpansion.PrefixParserConvention
 import Pnp4.Frontier.Tests.AntiEvalSearchProbe
 import Pnp4.Frontier.Tests.TreeCircuitWitnessCodecProbe
+import Pnp4.Frontier.Tests.TreeMCSPSearchTargetProbe
 
 namespace Pnp4
 namespace Tests
@@ -235,3 +236,6 @@ end Pnp4
 
 #print axioms Pnp4.Frontier.Tests.decode_encode_finiteIndex
 #print axioms Pnp4.Frontier.Tests.finiteIndexTreeCircuitWitnessCodec
+
+#print axioms Pnp4.Frontier.Tests.stagingTreeWitnessEncoding
+#print axioms Pnp4.Frontier.Tests.stagingTreeSearchTarget

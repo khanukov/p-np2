@@ -180,6 +180,7 @@ lean_lib PnP3 where
     Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_B_gpt55.Sketch,
     Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_C_GPT55.Sketch,
     Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_D_GPT55.Sketch,
+    Glob.one `Magnification.AuditRoutes.TraceSetHardnessBridge,
     -- fp3b2 arbitrary-payload strengthening (post-NOGO-000005 follow-up).
     -- T1..T6 of the 6-slot decomposition, ending in the composition theorem.
     Glob.one `Magnification.AuditRoutes.ArbitraryLogWidthTT.AllEssential,

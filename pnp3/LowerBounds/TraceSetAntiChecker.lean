@@ -3,7 +3,6 @@ import Mathlib.Data.Fintype.Card
 import Mathlib.Tactic
 import Counting.CircuitCounting
 import Models.Model_PartialMCSP
-import Magnification.UnconditionalResearchGap
 
 namespace Pnp3
 namespace LowerBounds
@@ -390,28 +389,25 @@ structure TraceToPartialReduction where
 
 /-- A bookkeeping condition that states the target length is polynomial in source length. -/
 def PolyLengthDominance (m N : Nat) : Prop :=
-  ∃ k c : Nat, N ≤ m ^ (k + 1) + c
+  ∃ k : Nat, N ≤ (m + 1) ^ (k + 1)
 
-/-- If target length `N` is polynomial in `m`, composing with a poly-`N` DAG remains poly in `m`. -/
+/-- If `N ≤ poly(m)`, then `N^c + c` is polynomially bounded in `(m+1)`. -/
 theorem polynomial_size_preservation_of_poly_length
     {m N c : Nat}
-    (hPoly : ∃ k c' : Nat, N ^ c + c ≤ m ^ (k + 1) + c') :
-    ∃ k c' : Nat, N ^ c + c ≤ m ^ (k + 1) + c' := by
-  exact hPoly
-
-/-- Honest source interface: explicit language + NP witness + DAG lower bound statement. -/
-structure TraceSetHardnessSource where
-  spec : Models.GapPartialMCSPAsymptoticSpec
-  traceLang : ComplexityInterfaces.Language
-  traceMEM_in_NP : ComplexityInterfaces.NP traceLang
-  traceMEM_not_in_PpolyDAG : ¬ ComplexityInterfaces.PpolyDAG traceLang
-
-/-- Bridge only: any honest TraceSet hardness source yields the research-gap witness. -/
-noncomputable def researchGapWitness_of_traceSetHardness
-    (H : TraceSetHardnessSource) :
-    Magnification.ResearchGapWitness := by
-  refine ⟨?_⟩
-  exact ⟨H.traceLang, H.traceMEM_in_NP, H.traceMEM_not_in_PpolyDAG⟩
+    (hLen : PolyLengthDominance m N) :
+    ∃ k c' : Nat, N ^ c + c ≤ (m + 1) ^ (k + 1) + c' := by
+  rcases hLen with ⟨k0, hdom⟩
+  refine ⟨(k0 + 1) * c, c, ?_⟩
+  have hpow : N ^ c ≤ ((m + 1) ^ (k0 + 1)) ^ c := by
+    exact Nat.pow_le_pow_left hdom c
+  have hmono : ((m + 1) ^ (k0 + 1)) ^ c ≤ (m + 1) ^ ((k0 + 1) * c) := by
+    simpa [Nat.pow_mul]
+  have hstep : (m + 1) ^ ((k0 + 1) * c) ≤ (m + 1) ^ ((k0 + 1) * c + 1) := by
+    exact Nat.pow_le_pow_right (Nat.succ_pos _) (Nat.le_succ _)
+  calc
+    N ^ c + c ≤ ((m + 1) ^ (k0 + 1)) ^ c + c := Nat.add_le_add_right hpow _
+    _ ≤ (m + 1) ^ ((k0 + 1) * c) + c := Nat.add_le_add_right hmono _
+    _ ≤ (m + 1) ^ ((k0 + 1) * c + 1) + c := Nat.add_le_add_right hstep _
 
 end LowerBounds
 end Pnp3

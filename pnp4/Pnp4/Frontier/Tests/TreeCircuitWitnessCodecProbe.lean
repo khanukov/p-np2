@@ -222,6 +222,22 @@ theorem decode_encode_finiteIndex
   unfold encodeFiniteIndex
   simp [decode_encode_finiteIndexFromMembership, hmem]
 
+/-- Full finite-index `TreeCircuitWitnessCodec` staging object. -/
+noncomputable def finiteIndexTreeCircuitWitnessCodec
+    (threshold : Nat → Nat) :
+    TreeCircuitWitnessCodec threshold where
+  witnessBits := finiteIndexWitnessBits threshold
+  encode := encodeFiniteIndex threshold
+  decode := decodeFiniteIndex threshold
+  decode_encode := decode_encode_finiteIndex threshold
+
+/-- Optional convenience packaging into the generic search witness encoding surface. -/
+noncomputable def finiteIndexTreeMCSPSearchWitnessEncoding
+    (threshold : Nat → Nat) :
+    TreeMCSPSearchWitnessEncoding threshold :=
+  TreeMCSPSearchWitnessEncoding.ofCodec
+    (finiteIndexTreeCircuitWitnessCodec threshold)
+
 end Tests
 end Frontier
 end Pnp4

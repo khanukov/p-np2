@@ -2521,3 +2521,6 @@ end Pnp4
 #check Pnp4.Frontier.Tests.finiteIndexWitnessBits
 #check Pnp4.Frontier.Tests.mem_circuitsOfSizeAtMost_threshold
 #check Pnp4.Frontier.Tests.defaultFiniteIndex
+
+#check Pnp4.Frontier.Tests.finiteIndexTreeCircuitWitnessCodec
+#check Pnp4.Frontier.Tests.finiteIndexTreeMCSPSearchWitnessEncoding

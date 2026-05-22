@@ -232,3 +232,6 @@ end Pnp4
 
 #print axioms Pnp4.Frontier.Tests.mem_circuitsOfSizeAtMost_threshold
 #print axioms Pnp4.Frontier.Tests.finiteIndexWitnessBits_pos
+
+#print axioms Pnp4.Frontier.Tests.decode_encode_finiteIndex
+#print axioms Pnp4.Frontier.Tests.finiteIndexTreeCircuitWitnessCodec

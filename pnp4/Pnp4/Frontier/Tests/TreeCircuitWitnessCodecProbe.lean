@@ -137,6 +137,91 @@ theorem decodeOneHotIndex_oneHot
   apply (oneHot_active_true_iff k i (Classical.choose hExists)).1
   exact Classical.choose_spec hExists
 
+/-- Finset used by the finite-index codec at length `n`. -/
+def finiteIndexSupport (threshold : Nat → Nat) (n : Nat) : Finset (Pnp3.Models.Circuit n) :=
+  Pnp3.Counting.circuitsOfSizeAtMost n (threshold n)
+
+/--
+Encode from an explicit support-membership proof using one-hot indexing.
+-/
+noncomputable def encodeFiniteIndexFromMembership
+    (threshold : Nat → Nat)
+    (n : Nat)
+    (c : Pnp3.Models.Circuit n)
+    (hmem : c ∈ finiteIndexSupport threshold n) :
+    AlgorithmsToLowerBounds.BitVec (finiteIndexWitnessBits threshold n) :=
+  let i : Fin (finiteIndexSupport threshold n).card := Classical.choose
+    (exists_index_of_mem_finset (finiteIndexSupport threshold n) c hmem)
+  oneHot (finiteIndexSupport threshold n).card i
+
+/--
+Finite-index encoder for circuits: one-hot at an index witnessing membership in
+`circuitsOfSizeAtMost`; if no membership proof is supplied, use a default slot.
+-/
+noncomputable def encodeFiniteIndex
+    (threshold : Nat → Nat)
+    (n : Nat)
+    (c : Pnp3.Models.Circuit n) :
+    AlgorithmsToLowerBounds.BitVec (finiteIndexWitnessBits threshold n) :=
+  if hmem : c ∈ finiteIndexSupport threshold n then
+    encodeFiniteIndexFromMembership threshold n c hmem
+  else
+    fun _ => false
+
+/--
+Decode finite-index witness bits by decoding the one-hot index and looking up
+the corresponding circuit in the canonical support list.
+-/
+noncomputable def decodeFiniteIndex
+    (threshold : Nat → Nat)
+    (n : Nat)
+    (w : AlgorithmsToLowerBounds.BitVec (finiteIndexWitnessBits threshold n)) :
+    Option (Pnp3.Models.Circuit n) := do
+  let i ← decodeOneHotIndex (finiteIndexSupport threshold n).card w
+  (finiteIndexSupport threshold n).toList[i.1]?
+
+/-- Decoding a one-hot index and then list lookup returns the indexed circuit. -/
+theorem decodeFiniteIndex_oneHot_index
+    (threshold : Nat → Nat)
+    (n : Nat)
+    (i : Fin (finiteIndexSupport threshold n).card)
+    (c : Pnp3.Models.Circuit n)
+    (hi : (finiteIndexSupport threshold n).toList[i.1]? = some c) :
+    decodeFiniteIndex threshold n
+      (oneHot (finiteIndexSupport threshold n).card i) = some c := by
+  unfold decodeFiniteIndex
+  have hget : (finiteIndexSupport threshold n).toList[i.1] = c := by
+    simpa using hi
+  simp [decodeOneHotIndex_oneHot, hget]
+
+/-- Round-trip for membership-based finite-index encoding. -/
+theorem decode_encode_finiteIndexFromMembership
+    (threshold : Nat → Nat)
+    (n : Nat)
+    (c : Pnp3.Models.Circuit n)
+    (hmem : c ∈ finiteIndexSupport threshold n) :
+    decodeFiniteIndex threshold n
+      (encodeFiniteIndexFromMembership threshold n c hmem) = some c := by
+  unfold encodeFiniteIndexFromMembership
+  let hex := exists_index_of_mem_finset (finiteIndexSupport threshold n) c hmem
+  let i : Fin (finiteIndexSupport threshold n).card := Classical.choose hex
+  have hi : (finiteIndexSupport threshold n).toList[i.1]? = some c :=
+    Classical.choose_spec hex
+  simpa [i] using decodeFiniteIndex_oneHot_index threshold n i c hi
+
+/-- Round-trip for bounded circuits through the finite-index codec staging API. -/
+theorem decode_encode_finiteIndex
+    (threshold : Nat → Nat)
+    (n : Nat)
+    (c : Pnp3.Models.Circuit n)
+    (hc : Pnp3.Models.Circuit.size c ≤ threshold n) :
+    decodeFiniteIndex threshold n
+      (encodeFiniteIndex threshold n c) = some c := by
+  have hmem : c ∈ finiteIndexSupport threshold n :=
+    mem_circuitsOfSizeAtMost_threshold threshold n c hc
+  unfold encodeFiniteIndex
+  simp [decode_encode_finiteIndexFromMembership, hmem]
+
 end Tests
 end Frontier
 end Pnp4

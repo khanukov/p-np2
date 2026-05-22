@@ -215,11 +215,13 @@ theorem DagWireDirectInputOf_iff_mem_cover
     DagWireDirectInputOf w j ↔ j ∈ dagWireDirectInputCover w := by
   cases w with
   | input a =>
-      constructor <;> intro h
-      · have ha : a = j := by simpa [DagWireDirectInputOf] using h
-        simpa [dagWireDirectInputCover] using ha.symm
-      · have hj : j = a := by simpa [dagWireDirectInputCover] using h
-        simpa [DagWireDirectInputOf] using hj.symm
+      constructor
+      · intro h
+        have ha : a = j := by simpa [DagWireDirectInputOf] using h
+        simpa [dagWireDirectInputCover, ha]
+      · intro h
+        have hj : j = a := by simpa [dagWireDirectInputCover] using h
+        simpa [DagWireDirectInputOf, hj.symm]
   | gate g => simp [DagWireDirectInputOf, dagWireDirectInputCover]
 
 theorem DagOutputDirectInputOf_iff_mem_cover
@@ -227,11 +229,13 @@ theorem DagOutputDirectInputOf_iff_mem_cover
     DagOutputDirectInputOf w j ↔ j ∈ dagOutputDirectInputCover w := by
   cases w with
   | input a =>
-      constructor <;> intro h
-      · have ha : a = j := by simpa [DagOutputDirectInputOf] using h
-        simpa [dagOutputDirectInputCover] using ha.symm
-      · have hj : j = a := by simpa [dagOutputDirectInputCover] using h
-        simpa [DagOutputDirectInputOf] using hj.symm
+      constructor
+      · intro h
+        have ha : a = j := by simpa [DagOutputDirectInputOf] using h
+        simpa [dagOutputDirectInputCover, ha]
+      · intro h
+        have hj : j = a := by simpa [dagOutputDirectInputCover] using h
+        simpa [DagOutputDirectInputOf, hj.symm]
   | gate g => simp [DagOutputDirectInputOf, dagOutputDirectInputCover]
 
 theorem DagGateDirectInputOf_mem_cover

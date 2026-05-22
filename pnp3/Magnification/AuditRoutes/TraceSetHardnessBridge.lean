@@ -19,15 +19,18 @@ noncomputable def traceMEMLanguageFromStructure
     (spec : Models.GapPartialMCSPAsymptoticSpec)
     (nOfLen mOfLen : Nat → Nat)
     (rows : ∀ t, Fin (mOfLen t) → Core.BitVec (nOfLen t))
-    (red : ∀ t, LowerBounds.TraceToPartialReduction)
+    (params : ∀ t, Models.GapPartialMCSPParams)
+    (red : ∀ t, LowerBounds.TraceToPartialReduction
+      (nOfLen t) (mOfLen t) (params t) (rows t))
     (N : Nat) (x : ComplexityInterfaces.Bitstring N) : Bool := by
   classical
   exact
     if h : ∃ t, mOfLen t = N then
       let t := Classical.choose h
-      let p := (red t).p
       let x' : Core.BitVec (mOfLen t) := by simpa [Classical.choose_spec h] using x
-      Models.gapPartialMCSP_Language p (Models.partialInputLen p) ((red t).encodeY x')
+      Models.gapPartialMCSP_Language (params t)
+        (Models.partialInputLen (params t))
+        ((red t).encodeY x')
     else
       false
 
@@ -44,16 +47,19 @@ structure StructuredTraceSetHardnessSource where
   mOfLen : Nat → Nat
   rows : ∀ t, Fin (mOfLen t) → Core.BitVec (nOfLen t)
   rowsInj : ∀ t, Function.Injective (fun j : Fin (mOfLen t) => Models.assignmentIndex (rows t j))
+  params : ∀ t, Models.GapPartialMCSPParams
+  params_n : ∀ t, (params t).n = nOfLen t
   traceToPartialReduction : ∀ t, LowerBounds.TraceToPartialReduction
+    (nOfLen t) (mOfLen t) (params t) (rows t)
   polyLength : ∀ t,
     LowerBounds.PolyLengthDominance
       (mOfLen t)
-      (Models.partialInputLen ((traceToPartialReduction t).p))
+      (Models.partialInputLen (params t))
   traceLang : ComplexityInterfaces.Language
   traceLang_def :
     traceLang =
       traceMEMLanguageFromStructure
-        spec nOfLen mOfLen rows traceToPartialReduction
+        spec nOfLen mOfLen rows params traceToPartialReduction
   traceMEM_in_NP : ComplexityInterfaces.NP traceLang
   traceMEM_not_in_PpolyDAG : ¬ ComplexityInterfaces.PpolyDAG traceLang
 

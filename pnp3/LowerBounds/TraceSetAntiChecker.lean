@@ -376,12 +376,10 @@ theorem trace_slack_for_regime
     simpa using hpow)
 
 /-- Explicit reduction surface from trace labels to encoded partial-MCSP instances. -/
-structure TraceToPartialReduction where
-  n : Nat
-  m : Nat
-  p : Models.GapPartialMCSPParams
-  hn : p.n = n
-  rows : Fin m → Core.BitVec p.n
+structure TraceToPartialReduction
+    (n m : Nat)
+    (p : Models.GapPartialMCSPParams)
+    (rows : Fin m → Core.BitVec p.n) where
   rowsInj : Function.Injective (fun j : Fin m => Models.assignmentIndex (rows j))
   encodeY : Core.BitVec m → Core.BitVec (Models.partialInputLen p)
   encodeY_correct :

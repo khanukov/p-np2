@@ -31,6 +31,7 @@ import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageRuntime
 import Pnp4.Frontier.ContractExpansion.PrefixParserConvention
 import Pnp4.Frontier.Tests.AntiEvalSearchProbe
+import Pnp4.Frontier.Tests.TreeCircuitWitnessCodecProbe
 
 namespace Pnp4
 namespace Tests
@@ -2516,3 +2517,7 @@ end Pnp4
 #check Pnp4.Frontier.Tests.antiEvalTarget
 #check Pnp4.Frontier.Tests.SelfEncodingCapacity
 #check Pnp4.Frontier.Tests.antiEval_noBoundedSolver_of_selfEncodingCapacity
+
+#check Pnp4.Frontier.Tests.finiteIndexWitnessBits
+#check Pnp4.Frontier.Tests.mem_circuitsOfSizeAtMost_threshold
+#check Pnp4.Frontier.Tests.defaultFiniteIndex

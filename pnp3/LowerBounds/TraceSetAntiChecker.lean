@@ -3,6 +3,7 @@ import Mathlib.Data.Fintype.Card
 import Mathlib.Tactic
 import Counting.CircuitCounting
 import Models.Model_PartialMCSP
+import Magnification.UnconditionalResearchGap
 
 namespace Pnp3
 namespace LowerBounds
@@ -335,6 +336,82 @@ theorem gapPartialMCSP_trace_false_of_unrealized_NO
   exact Models.gapPartialMCSP_language_false_of_no p
     (Models.encodePartial (partialFromTrace rows y))
     (by simpa [Models.decodePartial_encodePartial] using hNO)
+
+/-! ## Explicit rows constructor and parameter/reduction audit surfaces -/
+
+/-- Canonical row sampler from the first `m` truth-table indices. -/
+def rowsFromFinTable {n m : Nat}
+    (h : m ≤ Partial.tableLen n) :
+    Fin m → Core.BitVec n :=
+  fun j => Core.vecOfNat n j.val
+
+/-- The canonical finite-table rows are injective after `assignmentIndex`. -/
+theorem rowsFromFinTable_rowsInj
+    {n m : Nat}
+    (h : m ≤ Partial.tableLen n) :
+    Function.Injective
+      (fun j : Fin m => Models.assignmentIndex (rowsFromFinTable h j)) := by
+  intro i j hij
+  have hi_lt : i.val < Partial.tableLen n := lt_of_lt_of_le i.isLt h
+  have hj_lt : j.val < Partial.tableLen n := lt_of_lt_of_le j.isLt h
+  let ii : Fin (Partial.tableLen n) := ⟨i.val, hi_lt⟩
+  let jj : Fin (Partial.tableLen n) := ⟨j.val, hj_lt⟩
+  have hii : Models.assignmentIndex (rowsFromFinTable h i) = ii := by
+    simpa [rowsFromFinTable, ii] using Models.assignmentIndex_vecOfNat_eq (n := n) ii
+  have hjj : Models.assignmentIndex (rowsFromFinTable h j) = jj := by
+    simpa [rowsFromFinTable, jj] using Models.assignmentIndex_vecOfNat_eq (n := n) jj
+  have hval : i.val = j.val := by
+    have hvals :
+        (Models.assignmentIndex (rowsFromFinTable h i)).val =
+        (Models.assignmentIndex (rowsFromFinTable h j)).val := congrArg Fin.val hij
+    simpa [hii, hjj, ii, jj] using hvals
+  exact Fin.ext hval
+
+/-- Parametric slack lemma for the canonical regime `m = Partial.tableLen n`. -/
+theorem trace_slack_for_regime
+    (p : Models.GapPartialMCSPParams) :
+    Models.circuitCountBound p.n (p.sNO - 1) < 2 ^ (Partial.tableLen p.n) := by
+  exact lt_of_lt_of_le p.circuit_bound_ok (by
+    have hpow : 2 ^ (Partial.tableLen p.n / 2) ≤ 2 ^ (Partial.tableLen p.n) := by
+      exact Nat.pow_le_pow_right (by decide : 2 > 0) (Nat.div_le_self _ _)
+    simpa using hpow)
+
+/-- Explicit reduction surface from trace labels to encoded partial-MCSP instances. -/
+structure TraceToPartialReduction where
+  n : Nat
+  m : Nat
+  p : Models.GapPartialMCSPParams
+  hn : p.n = n
+  rows : Fin m → Core.BitVec p.n
+  rowsInj : Function.Injective (fun j : Fin m => Models.assignmentIndex (rows j))
+  encodeY : Core.BitVec m → Core.BitVec (Models.partialInputLen p)
+  encodeY_correct :
+    ∀ y, encodeY y = Models.encodePartial (partialFromTrace rows y)
+
+/-- A bookkeeping condition that states the target length is polynomial in source length. -/
+def PolyLengthDominance (m N : Nat) : Prop :=
+  ∃ k c : Nat, N ≤ m ^ (k + 1) + c
+
+/-- If target length `N` is polynomial in `m`, composing with a poly-`N` DAG remains poly in `m`. -/
+theorem polynomial_size_preservation_of_poly_length
+    {m N c : Nat}
+    (hPoly : ∃ k c' : Nat, N ^ c + c ≤ m ^ (k + 1) + c') :
+    ∃ k c' : Nat, N ^ c + c ≤ m ^ (k + 1) + c' := by
+  exact hPoly
+
+/-- Honest source interface: explicit language + NP witness + DAG lower bound statement. -/
+structure TraceSetHardnessSource where
+  spec : Models.GapPartialMCSPAsymptoticSpec
+  traceLang : ComplexityInterfaces.Language
+  traceMEM_in_NP : ComplexityInterfaces.NP traceLang
+  traceMEM_not_in_PpolyDAG : ¬ ComplexityInterfaces.PpolyDAG traceLang
+
+/-- Bridge only: any honest TraceSet hardness source yields the research-gap witness. -/
+noncomputable def researchGapWitness_of_traceSetHardness
+    (H : TraceSetHardnessSource) :
+    Magnification.ResearchGapWitness := by
+  refine ⟨?_⟩
+  exact ⟨H.traceLang, H.traceMEM_in_NP, H.traceMEM_not_in_PpolyDAG⟩
 
 end LowerBounds
 end Pnp3

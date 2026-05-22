@@ -1,24 +1,19 @@
-# SearchMCSP R1-C0: concrete prefix-to-solver extraction feasibility audit
+# SearchMCSP R1-C0 extraction feasibility audit
 
-## 1) Executive verdict
+## 1. Executive verdict
 
 **YELLOW_NEEDS_SIZEBOUND_REPAIR**
 
-Short reason:
-
-- The extraction shape from `PpolyDAG (PrefixExtensionLanguage parser)` to
-  `Nonempty (BoundedSearchSolver target)` is conceptually standard and appears
-  feasible.
-- The blocking uncertainty is not logical correctness but the **exact size
-  accounting** needed to land it under a practical `sizeBound` in the current
-  `BoundedSearchSolver` surface (one circuit per output bit, no explicit shared
-  DAG accounting in the type).
+Reason: the extraction argument is logically standard and likely feasible, but the
+current `BoundedSearchSolver` surface (separate per-output-bit circuits) makes
+size accounting the critical unresolved item. The theorem is plausibly true with
+an explicitly repaired `sizeBound` schedule and supporting composition lemmas.
 
 ---
 
-## 2) Exact theorem surface
+## 2. Exact theorem surface
 
-Target theorem in current symbols:
+Current obligation symbol:
 
 ```lean
 TreeMCSPConcretePrefixToSolverObligation
@@ -28,7 +23,7 @@ TreeMCSPConcretePrefixToSolverObligation
   (obligations : TreeMCSPPrefixParserObligations threshold encoding) : Prop
 ```
 
-Unfolded form:
+Unfolded exactly (from `SearchMCSPTargetSurface.lean`):
 
 ```lean
 Pnp3.ComplexityInterfaces.PpolyDAG
@@ -40,177 +35,241 @@ Pnp3.ComplexityInterfaces.PpolyDAG
       (TreeMCSP_C_DAG_Target threshold encoding sizeBound).sizeBound)
 ```
 
-With `TreeMCSP_C_DAG_Target ...` and concrete language alias from L1, this is
-exactly the R1-C extraction obligation.
+Expanded components relevant to R1-C0:
+
+- `TreeMCSP_C_DAG_Target ... .problem = treeMCSPSearchProblem threshold encoding`.
+- `TreeMCSP_C_DAG_Target ... .circuitClass = C_DAG`.
+- `TreeMCSPPrefixExtractedLanguage ... = PrefixExtensionLanguage obligations.parser`.
+
+So the theorem shape is:
+
+```lean
+PpolyDAG (PrefixExtensionLanguage obligations.parser)
+→ Nonempty (BoundedSearchSolver (treeMCSPSearchProblem threshold encoding) C_DAG sizeBound)
+```
 
 ---
 
-## 3) Bit-by-bit extraction plan
+## 3. Bit-by-bit extraction plan
 
-Assume a nonuniform decider family for
-`TreeMCSPPrefixExtractedLanguage threshold encoding obligations`.
+Assume `hDec : PpolyDAG (TreeMCSPPrefixExtractedLanguage threshold encoding obligations)`.
 
-Plan:
+Extraction sketch:
 
-1. **Prefix query semantics**
-   - For fixed instance `x` and current prefix `p` of length `i`, build encoded
-     language input representing `(tag, n, x, i+1, p ++ b, pad)` for branch
-     `b ∈ {0,1}`.
-   - Query decider on branch-0 encoding first.
+1. **Prefix queries**
+   - For input instance `x` at parameter `n`, and current prefix bits `p` of
+     length `i`, build canonical well-formed query strings encoding
+     `(tag, n, x, i+1, p ++ b, pad)` for `b=0,1` via parser convention.
+   - Feed query to the decider family from `hDec`.
 
-2. **Bit selection rule**
-   - If branch-0 query accepts, output bit `0`.
-   - Otherwise output bit `1`.
+2. **Choose next bit**
+   - Query branch `b=0`.
+   - If decider says YES, choose bit `0`; else choose bit `1`.
 
 3. **Output-bit circuits**
-   - For each witness coordinate `j`, define one output circuit that implements
-     the above rule using previously selected bits as internal logic.
-   - In nonuniform setting, this is done by circuit composition/hardwiring of
-     parser-layout constants and branch control.
+   - For each witness coordinate `j`, define output circuit `Out_j` over `x` that
+     recursively simulates the above branch-choice process up to depth `j+1` and
+     outputs the chosen bit.
+   - Nonuniform constants include parser format and fixed wiring templates.
 
 4. **Correctness on promised inputs**
-   - Promise gives existence of at least one full witness.
-   - Prefix extension semantics guarantee at each step at least one branch is
+   - Promise gives existence of at least one valid witness for relation.
+   - Prefix-extension semantics ensure at each stage at least one branch remains
      extendable.
-   - Chosen bits therefore stay on an extendable path.
+   - Branch rule preserves extendability invariant.
 
 5. **Malformed inputs**
-   - Handled by parser-level rejection semantics of `PrefixExtensionLanguage`.
-   - Extraction only needs canonical well-formed encodings for queries; malformed
-     ambient inputs are irrelevant to solver correctness because solver feeds the
-     decider with deliberate internal encodings.
+   - Solver never needs malformed external strings; it fabricates canonical
+     query strings internally.
+   - Parser-reject behavior is only needed to show language semantics are clean;
+     solver correctness depends on well-formed internal encodings.
 
 ---
 
-## 4) Size ledger
-
-This is the critical risk section.
+## 4. Size ledger
 
 Let:
 
-- `S_dec(n)` = size bound of prefix-language decider on ambient length `M(n)`;
-- `W(n)` = witness bit-length = `problem.witnessBits n`;
-- `E(n, j)` = overhead to encode query input for step `j` (tag/gamma/x/i/p/pad);
-- `C_sel(n, j)` = control logic cost to choose branch bit from decider result and
-  prior extracted bits.
+- `S_dec(n)` = size of decider circuit at ambient length `M(n)`.
+- `W(n)` = witness length (`problem.witnessBits n`).
+- `E(n,j)` = encoding overhead to build prefix query at stage `j`.
+- `Sel(n,j)` = branch selection/control overhead.
 
-Per-bit output circuit size candidate:
+Per-output-bit circuit size prototype:
 
 \[
-S_{out}(n,j) \approx S_{dec}(M(n)) + E(n,j) + C_{sel}(n,j).
+S_{out}(n,j) \lesssim S_{dec}(M(n)) + E(n,j) + Sel(n,j) + R(n,j)
 \]
 
-Important subcases:
+where `R(n,j)` is recomputation overhead for earlier branch decisions.
 
-1. **Naive duplication per `j`**
-   - Each output bit circuit internally recomputes all earlier branch decisions.
-   - Worst-case can introduce multiplicative blowup by `j`, giving near
-     `O(W(n) * S_dec(M(n)))` for late bits.
+Critical cases:
 
-2. **Shared-DAG intuition vs current type**
-   - Mathematically one wants shared prefix-query DAG reused across bits.
-   - But `BoundedSearchSolver` stores **separate per-bit circuits**; shared nodes
-     are not explicitly represented across coordinates.
-   - Unless we prove a factoring lemma that each per-bit circuit can stay within
-     a similar polynomial bound despite recomputation, the ledger can inflate.
+1. **If naive recomputation**
+   - `R(n,j)` can scale with `j`.
+   - Late bits may require up to `O(W(n) * S_dec(M(n)))`-style overhead.
 
-3. **Parser/encoding overhead**
-   - If query encoder is circuit-friendly (mostly wiring + constants + small
-     arithmetic on `i`), overhead can be low-order polynomial.
-   - If gamma/index handling needs heavy arithmetic each time, overhead may be
-     nontrivial but still likely polynomial.
+2. **If sharing available only inside each `Out_j` DAG**
+   - Could reduce constants but still may keep linear-in-`j` growth.
 
-4. **Required `sizeBound` relation**
-   - Safe conservative expectation: `sizeBound` must dominate composed extraction
-     circuits, potentially larger polynomial than base decider bound.
-   - If current intended `sizeBound` is too tight (e.g., near-decider-size with
-     no slack), theorem may fail without repair.
+3. **If cross-bit sharing were modeled**
+   - Global solver graph could be smaller, but current
+     `BoundedSearchSolver` type does not model cross-output DAG sharing.
 
-Conclusion on ledger:
+Consequences for `sizeBound`:
 
-- Feasibility likely with **repaired/explicit sizeBound schedule**.
-- Not yet justified that one can keep the exact same polynomial as raw decider
-  family without additional sharing lemmas.
+- Usually **not safe** to assume “same polynomial as decider” without proof.
+- Likely need a repaired schedule dominating composed extraction circuits.
+- Possible acceptable form: polynomial in `M(n)` multiplied by low-order factor
+  depending on `W(n)` (still polynomial if `W` is polynomial in `M`).
+- Requires explicit composition theorem/lemma in `C_DAG` model.
+
+Status:
+
+- **Too small risk:** if `sizeBound` intended near raw decider size.
+- **Too large risk:** if inflated bound weakens downstream lower-bound meaning.
+- Therefore: **repair with explicit ledger theorem is required**.
 
 ---
 
-## 5) Nonuniformity audit
+## 5. Nonuniformity audit
 
-- Uses one decider family by length (standard `PpolyDAG` witness), reused in the
+- Uses one decider family by input length (standard `PpolyDAG` witness).
+- Construction is length-nonuniform, not per-instance-advice nonuniform.
+- No per-input truth-table hardwiring is required by extraction design.
+- Advice/constants are parser layout + circuit templates, fixed by length.
+- Construction is compatible with legitimate nonuniformity discipline.
+
+Verdict: nonuniformity model is acceptable if implemented as length-family only.
+
+---
+
+## 6. Correctness proof plan
+
+Induction on prefix length `i`:
+
+1. **Base (`i=0`)**
+   - Empty prefix is extendable on promised input via problem totality.
+
+2. **Step**
+   - Assume prefix `p` length `i` is extendable: there exists witness `w` with
+     `p` as prefix and `relation n x w`.
+   - Then next witness bit `w_i` shows at least one branch (`p0` or `p1`) is
+     extendable.
+
+3. **Branch rule**
+   - If `p0` is extendable, decider accepts branch-0 query; algorithm picks `0`.
+   - Otherwise picks `1`; by previous item, branch-1 must be extendable.
+
+4. **Invariant**
+   - Chosen prefix remains extendable at each stage.
+
+5. **Termination (`i = W(n)`)**
+   - Full-length extendable prefix is a full witness; relation holds.
+   - Output vector from `Out_j` circuits satisfies target relation.
+
+This proves solver correctness assuming decider correctness and encoding lemmas.
+
+---
+
+## 7. Dependency on NP proof
+
+Extraction does **not** require `TreeMCSPConcretePrefixNPObligation`.
+
+- Needed for extraction: prefix semantics + decider in `PpolyDAG` + circuit
+  construction + size bounds.
+- Needed for final verified source packaging: NP obligation is separate and used
+  later by `verifiedSource_of_treeMCSP_concrete_prefix_obligations`.
+
+So expected answer is confirmed: **No NP dependency for extraction itself**.
+
+---
+
+## 8. Required closure lemmas
+
+Exact lemma buckets needed for Lean closure:
+
+1. **C_DAG composition/closure under wiring**
+   - Need: compose decider with query-encoder gadgets and selectors.
+   - Status: **missing/partial** (adapter exists; extraction-specific closure
+     lemmas not yet exposed in this surface).
+   - Risk: **hard but local**.
+
+2. **Hardwired constants and fixed bits injection**
+   - Need: encode fixed tag/pad/prefix constants into DAG circuits.
+   - Status: **likely existing primitives in pnp3 DAG toolkit, not yet wrapped
+     for this theorem**.
+   - Risk: **moderate**.
+
+3. **Parser/input embedding lemma**
+   - Need: canonical query constructor corresponds to parser acceptance and to
+     intended `PrefixInput` fields.
+   - Status: **partially present** in `PrefixParserConvention` infrastructure,
+     but extraction-ready wrapper lemma seems **missing**.
+   - Risk: **moderate-to-hard**.
+
+4. **Boolean control gadget (if/then/else via gates)**
+   - Need: output `0/1` based on decider result.
+   - Status: **existing primitives expected**, theorem surface not yet bundled.
+   - Risk: **low**.
+
+5. **Prefix projection and extension mechanics**
+   - Need: formal relation between chosen branch history and query payload.
+   - Status: **missing theorem packaging** (logic known, Lean lemma absent).
+   - Risk: **moderate**.
+
+6. **Size preservation/composition bounds**
+   - Need: explicit upper bound transferring decider size + encoder overhead to
+     each output circuit.
+   - Status: **missing and critical**.
+   - Risk: **high (main R1-C0 blocker)**.
+
+Trust-root risk for these lemmas: **low** (all local engineering within existing
+circuit semantics, no trust-root edits needed).
+
+---
+
+## 9. Hardwiring / NoGo audit
+
+- **CircuitPHP D1 caution:** relevant as warning that global no-solver lower
+  bounds are hard; does not invalidate conditional extraction theorem.
+- **Formula-certificate refutation chain:** not on this dependency path.
+- **Support-bound refutations:** not directly reused; still caution against
+  accidental vacuity.
+- **Iso-strong closure:** not directly in route, but warns against hidden
+  quantifier/hardwiring loopholes.
+- **Per-slice hardwiring hazard:** moderate risk if extraction implementation
+  accidentally encodes per-instance tables; should enforce length-family-only
   construction.
-- Does **not** require advice depending on specific runtime input instance `x`
-  beyond normal nonuniform length-dependent circuits.
-- No forbidden per-instance hardwiring is needed for extraction theorem itself;
-  all hardwiring is of parser format constants and branch wiring schema.
-- Risk remains only in accidental over-hardwiring if implementation shortcuts the
-  query encoder by embedding large per-input tables (should be disallowed).
+- **Wrapper-field hazard:** reduced after L1 because obligations are explicit;
+  remain vigilant not to re-hide extraction in structure fields.
+
+Net result: no fatal conflict detected, but discipline required.
 
 ---
 
-## 6) Correctness proof plan
+## 10. Recommended next Lean task
 
-Inductive skeleton:
+Exactly one L1 task:
 
-1. **Base:** empty prefix is extendable for promised `x` by totality.
-2. **Step:** if prefix `p` is extendable, then at least one of `p0` or `p1`
-   extendable (witness next bit decides branch).
-3. **Choice rule correctness:** branch-0 accepted ⇒ choose `0`; else choose `1`.
-   If both accepted, either is fine.
-4. **Invariant:** chosen prefix after each step is extendable.
-5. **Termination:** at full length `W(n)`, extendable full prefix means relation
-   witness itself, yielding solver correctness.
+**Prove a size ledger lemma for extraction output circuits in `C_DAG`.**
 
-This uses only language semantics + decider correctness, no NP-membership fact.
+Why this one:
 
----
+- correctness induction is standard and comparatively straightforward;
+- size lemma is the decisive unresolved feasibility item for inhabiting
+  `TreeMCSPConcretePrefixToSolverObligation` with meaningful `sizeBound`.
 
-## 7) Dependency on NP proof
+A good target shape:
 
-Extraction theorem **does not require** `L ∈ NP`.
-
-- It needs only: (i) decider existence for language, (ii) prefix-extension
-  semantics, (iii) construction/size of query circuits.
-- NP is needed later for packaging into `VerifiedNPDAGLowerBoundSource`, but not
-  for decider-to-solver extraction itself.
+- given decider polynomial bound + encoder overhead polynomial,
+- produce explicit polynomial upper bound for each `Out_j`,
+- derive admissible `sizeBound` schedule.
 
 ---
 
-## 8) Hardwiring / NoGo audit
+## Final R1-C0 snapshot
 
-- **CircuitPHP side-track failure:** informative caution only; does not directly
-  refute this extraction because this step is conditional on `PpolyDAG` decider.
-- **Per-slice hardwiring risk:** moderate; must ensure extraction circuits are
-  length-uniform and not per-instance lookup tables.
-- **Wrapper fields risk:** improved in L1 surface; obligations are explicit.
-- **FormulaCertificateProviderPartial refutation:** not on this dependency path.
-- **Iso-strong closure no-go:** not directly applicable, but reinforces need for
-  strict quantifier discipline and no hidden witness universality tricks.
-
-Status: risks are manageable with explicit size/accounting lemmas.
-
----
-
-## 9) Recommended next Lean task
-
-Exactly one next task (recommended):
-
-**Prove one size ledger lemma** for the query embedding circuit family:
-
-- formalize an upper bound template for per-bit extraction circuit size in terms
-  of `S_dec(M(n))`, `W(n)`, and fixed parser overhead;
-- derive a concrete admissible `sizeBound` schedule for
-  `TreeMCSP_C_DAG_Target threshold encoding sizeBound`.
-
-Why this task first:
-
-- correctness proof skeleton is standard;
-- size accounting is currently the highest uncertainty and directly determines
-  whether R1-C theorem can inhabit current `BoundedSearchSolver` type.
-
----
-
-## Final assessment snapshot
-
-- Logical extraction shape: **feasible**.
-- Immediate blocker: **exact per-output-bit size bound accounting**.
-- Route status at R1-C0: **YELLOW_NEEDS_SIZEBOUND_REPAIR**.
+- Extraction feasibility (logical): **yes, plausible**.
+- Dominant blocker: **per-output size accounting in current solver surface**.
+- Route decision: **YELLOW_NEEDS_SIZEBOUND_REPAIR**.

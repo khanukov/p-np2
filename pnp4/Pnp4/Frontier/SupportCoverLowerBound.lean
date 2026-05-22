@@ -74,8 +74,15 @@ theorem evalGateAt_eq_of_eq_on_direct_inputs
             | gate j =>
                 exact evalGateAt_eq_of_eq_on_direct_inputs (C := C)
                   (hi := Nat.lt_trans j.2 hi) (x := x) (y := y) hxy
-          cases w <;>
-            simpa only [DagCircuit.eval.evalGateAt, hGate] using hWire
+          cases w with
+          | input j =>
+              rw [DagCircuit.eval.evalGateAt, hGate]
+              rw [DagCircuit.eval.evalGateAt, hGate]
+              exact congrArg (fun b => !b) hWire
+          | gate j =>
+              rw [DagCircuit.eval.evalGateAt, hGate]
+              rw [DagCircuit.eval.evalGateAt, hGate]
+              simpa using hWire
       | and w₁ w₂ =>
           have hWire₁ :
               match w₁ with
@@ -109,8 +116,11 @@ theorem evalGateAt_eq_of_eq_on_direct_inputs
             | gate j =>
                 exact evalGateAt_eq_of_eq_on_direct_inputs (C := C)
                   (hi := Nat.lt_trans j.2 hi) (x := x) (y := y) hxy
-          cases w₁ <;> cases w₂ <;>
-            simpa only [DagCircuit.eval.evalGateAt, hGate] using And.intro hWire₁ hWire₂
+          cases w₁ <;> cases w₂
+          all_goals
+            rw [DagCircuit.eval.evalGateAt, hGate]
+            rw [DagCircuit.eval.evalGateAt, hGate]
+            simp [hWire₁, hWire₂]
       | or w₁ w₂ =>
           have hWire₁ :
               match w₁ with
@@ -144,8 +154,11 @@ theorem evalGateAt_eq_of_eq_on_direct_inputs
             | gate j =>
                 exact evalGateAt_eq_of_eq_on_direct_inputs (C := C)
                   (hi := Nat.lt_trans j.2 hi) (x := x) (y := y) hxy
-          cases w₁ <;> cases w₂ <;>
-            simpa only [DagCircuit.eval.evalGateAt, hGate] using And.intro hWire₁ hWire₂
+          cases w₁ <;> cases w₂
+          all_goals
+            rw [DagCircuit.eval.evalGateAt, hGate]
+            rw [DagCircuit.eval.evalGateAt, hGate]
+            simp [hWire₁, hWire₂]
 
 /-- Whole-circuit evaluation invariance under direct-input agreement. -/
 theorem DagCircuit_eval_eq_of_eq_on_direct_inputs

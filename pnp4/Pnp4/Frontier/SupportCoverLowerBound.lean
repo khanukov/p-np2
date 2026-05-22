@@ -4,86 +4,165 @@ import Pnp4.Frontier.ContractExpansion.C_DAG_Adapter
 namespace Pnp4
 namespace Frontier
 
-open AlgorithmsToLowerBounds
-open ContractExpansion
+open Pnp3.ComplexityInterfaces
 
-/--
-`C_DAG` support-cover upper bound schema.
+/-- Direct input occurrence for one wire: only `.input` carries a coordinate. -/
+def DagWireDirectInputOf
+    {n k : Nat}
+    (w : DagWire n k)
+    (j : Fin n) : Prop :=
+  match w with
+  | .input i => i = j
+  | .gate _ => False
 
-The theorem is intentionally stated as a reusable adapter surface: if each
-output-bit circuit in a bounded search solver has support at most its DAG size,
-then the union support cover used by the full solver is bounded by
-`witnessBits n * sizeBound n`.
+/-- Direct input occurrence for one gate. -/
+def DagGateDirectInputOf
+    {n k : Nat}
+    (g : DagGate n k)
+    (j : Fin n) : Prop :=
+  match g with
+  | .const _ => False
+  | .not w => DagWireDirectInputOf w j
+  | .and w₁ w₂ => DagWireDirectInputOf w₁ j ∨ DagWireDirectInputOf w₂ j
+  | .or w₁ w₂ => DagWireDirectInputOf w₁ j ∨ DagWireDirectInputOf w₂ j
 
-This is the combinatorial estimate consumed by the hWeak contradiction theorem
-below.
--/
-theorem C_DAG_support_card_le_size
-    {problem : SearchMCSPCompressionProblem}
-    {sizeBound : Nat → Nat}
-    (solver : BoundedSearchSolver problem C_DAG sizeBound)
-    (hSupportLeSize :
-      ∀ n : Nat, ∀ i : Fin (problem.witnessBits n),
-        (Pnp3.ComplexityInterfaces.DagCircuit.support
-          (solver.outputCircuit n i)).card
-          ≤ C_DAG.size (solver.outputCircuit n i))
-    (n : Nat) :
-    ∀ i : Fin (problem.witnessBits n),
-      (Pnp3.ComplexityInterfaces.DagCircuit.support
-        (solver.outputCircuit n i)).card ≤ sizeBound n := by
-  intro i
-  exact Nat.le_trans (hSupportLeSize n i) (solver.size_le n i)
+/-- Direct input occurrence for the output wire itself. -/
+def DagOutputDirectInputOf
+    {n gates : Nat}
+    (w : DagWire n gates)
+    (j : Fin n) : Prop :=
+  match w with
+  | .input i => i = j
+  | .gate _ => False
 
-/--
-Pure hWeak contradiction surface (no magnification contract is used).
+/-- Circuit-level direct input occurrence: output wire or one gate payload wire. -/
+def DagCircuitDirectInputOf
+    {n : Nat}
+    (C : DagCircuit n)
+    (j : Fin n) : Prop :=
+  DagOutputDirectInputOf C.output j ∨
+    ∃ i : Fin C.gates, DagGateDirectInputOf (C.gate i) j
 
-If promised instances contain a zero point and all singleton points, and the
-relation is functional (uniqueness of witness on promise instances), then any
-bounded solver would force a support cover of size at least `instanceBits n`.
-Therefore the inequality
-`witnessBits n * sizeBound n < instanceBits n`
-contradicts existence of a bounded `C_DAG` solver.
+/-- Gate-evaluation invariance under agreement on every circuit direct input. -/
+theorem evalGateAt_eq_of_eq_on_direct_inputs
+    {n : Nat}
+    (C : DagCircuit n) :
+    ∀ {i : Nat} (hi : i < C.gates) {x y : Bitstring n},
+      (∀ j : Fin n, DagCircuitDirectInputOf C j → x j = y j) →
+        DagCircuit.eval.evalGateAt (C := C) (x := x) i hi =
+          DagCircuit.eval.evalGateAt (C := C) (x := y) i hi
+  | i, hi, x, y, hxy => by
+      classical
+      cases hGate : C.gate ⟨i, hi⟩ with
+      | const b =>
+          simpa only [DagCircuit.eval.evalGateAt, hGate]
+      | not w =>
+          have hWire :
+              match w with
+              | .input j => x j = y j
+              | .gate j =>
+                  DagCircuit.eval.evalGateAt (C := C) (x := x) j.1 (Nat.lt_trans j.2 hi) =
+                    DagCircuit.eval.evalGateAt (C := C) (x := y) j.1 (Nat.lt_trans j.2 hi) := by
+            cases w with
+            | input j =>
+                have hOccGate : DagGateDirectInputOf (C.gate ⟨i, hi⟩) j := by
+                  rw [hGate]
+                  simp [DagGateDirectInputOf, DagWireDirectInputOf]
+                have hOcc : DagCircuitDirectInputOf C j := by
+                  exact Or.inr ⟨⟨i, hi⟩, hOccGate⟩
+                exact hxy j hOcc
+            | gate j =>
+                exact evalGateAt_eq_of_eq_on_direct_inputs (C := C)
+                  (hi := Nat.lt_trans j.2 hi) (x := x) (y := y) hxy
+          cases w <;>
+            simpa only [DagCircuit.eval.evalGateAt, hGate] using hWire
+      | and w₁ w₂ =>
+          have hWire₁ :
+              match w₁ with
+              | .input j => x j = y j
+              | .gate j =>
+                  DagCircuit.eval.evalGateAt (C := C) (x := x) j.1 (Nat.lt_trans j.2 hi) =
+                    DagCircuit.eval.evalGateAt (C := C) (x := y) j.1 (Nat.lt_trans j.2 hi) := by
+            cases w₁ with
+            | input j =>
+                have hOccGate : DagGateDirectInputOf (C.gate ⟨i, hi⟩) j := by
+                  rw [hGate]
+                  simp [DagGateDirectInputOf, DagWireDirectInputOf]
+                have hOcc : DagCircuitDirectInputOf C j := Or.inr ⟨⟨i, hi⟩, hOccGate⟩
+                exact hxy j hOcc
+            | gate j =>
+                exact evalGateAt_eq_of_eq_on_direct_inputs (C := C)
+                  (hi := Nat.lt_trans j.2 hi) (x := x) (y := y) hxy
+          have hWire₂ :
+              match w₂ with
+              | .input j => x j = y j
+              | .gate j =>
+                  DagCircuit.eval.evalGateAt (C := C) (x := x) j.1 (Nat.lt_trans j.2 hi) =
+                    DagCircuit.eval.evalGateAt (C := C) (x := y) j.1 (Nat.lt_trans j.2 hi) := by
+            cases w₂ with
+            | input j =>
+                have hOccGate : DagGateDirectInputOf (C.gate ⟨i, hi⟩) j := by
+                  rw [hGate]
+                  simp [DagGateDirectInputOf, DagWireDirectInputOf]
+                have hOcc : DagCircuitDirectInputOf C j := Or.inr ⟨⟨i, hi⟩, hOccGate⟩
+                exact hxy j hOcc
+            | gate j =>
+                exact evalGateAt_eq_of_eq_on_direct_inputs (C := C)
+                  (hi := Nat.lt_trans j.2 hi) (x := x) (y := y) hxy
+          cases w₁ <;> cases w₂ <;>
+            simpa only [DagCircuit.eval.evalGateAt, hGate] using And.intro hWire₁ hWire₂
+      | or w₁ w₂ =>
+          have hWire₁ :
+              match w₁ with
+              | .input j => x j = y j
+              | .gate j =>
+                  DagCircuit.eval.evalGateAt (C := C) (x := x) j.1 (Nat.lt_trans j.2 hi) =
+                    DagCircuit.eval.evalGateAt (C := C) (x := y) j.1 (Nat.lt_trans j.2 hi) := by
+            cases w₁ with
+            | input j =>
+                have hOccGate : DagGateDirectInputOf (C.gate ⟨i, hi⟩) j := by
+                  rw [hGate]
+                  simp [DagGateDirectInputOf, DagWireDirectInputOf]
+                have hOcc : DagCircuitDirectInputOf C j := Or.inr ⟨⟨i, hi⟩, hOccGate⟩
+                exact hxy j hOcc
+            | gate j =>
+                exact evalGateAt_eq_of_eq_on_direct_inputs (C := C)
+                  (hi := Nat.lt_trans j.2 hi) (x := x) (y := y) hxy
+          have hWire₂ :
+              match w₂ with
+              | .input j => x j = y j
+              | .gate j =>
+                  DagCircuit.eval.evalGateAt (C := C) (x := x) j.1 (Nat.lt_trans j.2 hi) =
+                    DagCircuit.eval.evalGateAt (C := C) (x := y) j.1 (Nat.lt_trans j.2 hi) := by
+            cases w₂ with
+            | input j =>
+                have hOccGate : DagGateDirectInputOf (C.gate ⟨i, hi⟩) j := by
+                  rw [hGate]
+                  simp [DagGateDirectInputOf, DagWireDirectInputOf]
+                have hOcc : DagCircuitDirectInputOf C j := Or.inr ⟨⟨i, hi⟩, hOccGate⟩
+                exact hxy j hOcc
+            | gate j =>
+                exact evalGateAt_eq_of_eq_on_direct_inputs (C := C)
+                  (hi := Nat.lt_trans j.2 hi) (x := x) (y := y) hxy
+          cases w₁ <;> cases w₂ <;>
+            simpa only [DagCircuit.eval.evalGateAt, hGate] using And.intro hWire₁ hWire₂
 
-The bridge from zero/singleton + functionality to the lower bound on support
-cover cardinality is passed as an explicit premise
-`hSupportCoverAtLeastInstanceBits`; this keeps this file focused on the final
-counting contradiction used by SearchMCSP weak lower-bound sections.
--/
-theorem no_bounded_solver_if_support_cover_too_small
-    (problem : SearchMCSPCompressionProblem)
-    (sizeBound : Nat → Nat)
-    (hZeroPromised : ∀ n : Nat,
-      problem.promise n (fun _ => false))
-    (hSingletonPromised : ∀ n : Nat,
-      ∀ j : Fin (problem.instanceBits n),
-        problem.promise n (fun k => k = j))
-    (hFunctional :
-      ∀ n : Nat,
-        ∀ x : AlgorithmsToLowerBounds.BitVec (problem.instanceBits n),
-          problem.promise n x →
-            ∀ w₁ w₂ : AlgorithmsToLowerBounds.BitVec (problem.witnessBits n),
-              problem.relation n x w₁ →
-              problem.relation n x w₂ →
-              w₁ = w₂)
-    (hSupportCoverAtLeastInstanceBits :
-      ∀ solver : BoundedSearchSolver problem C_DAG sizeBound,
-        ∀ n : Nat,
-          problem.instanceBits n ≤
-            problem.witnessBits n * sizeBound n)
-    (hTooSmall : ∀ n : Nat,
-      problem.witnessBits n * sizeBound n < problem.instanceBits n) :
-    SearchProblemNoBoundedSolver problem C_DAG sizeBound := by
-  intro hNonempty
-  rcases hNonempty with ⟨solver⟩
-  let n0 : Nat := 0
-  have hLower :
-      problem.instanceBits n0 ≤
-        problem.witnessBits n0 * sizeBound n0 :=
-    hSupportCoverAtLeastInstanceBits solver n0
-  have hUpper :
-      problem.witnessBits n0 * sizeBound n0 < problem.instanceBits n0 :=
-    hTooSmall n0
-  exact (Nat.not_lt_of_ge hLower) hUpper
+/-- Whole-circuit evaluation invariance under direct-input agreement. -/
+theorem DagCircuit_eval_eq_of_eq_on_direct_inputs
+    {n : Nat}
+    (C : DagCircuit n)
+    {x y : Bitstring n}
+    (hxy : ∀ j : Fin n, DagCircuitDirectInputOf C j → x j = y j) :
+    DagCircuit.eval C x = DagCircuit.eval C y := by
+  classical
+  cases hOut : C.output with
+  | input j =>
+      have hOcc : DagCircuitDirectInputOf C j := Or.inl (by simp [DagOutputDirectInputOf, hOut])
+      have hEq : x j = y j := hxy j hOcc
+      simpa [DagCircuit.eval, hOut] using hEq
+  | gate j =>
+      simpa [DagCircuit.eval, hOut] using
+        evalGateAt_eq_of_eq_on_direct_inputs (C := C) (hi := j.2) (x := x) (y := y) hxy
 
 end Frontier
 end Pnp4

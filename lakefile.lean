@@ -111,6 +111,7 @@ lean_lib PnP3 where
     Glob.one `LowerBounds.LB_Formulas_Core_Partial,
     Glob.one `LowerBounds.AC0_GapMCSP_Final,
     Glob.one `LowerBounds.AC0_GapMCSP,
+    Glob.one `LowerBounds.TraceSetAntiChecker,
     Glob.one `Magnification.LocalityInterfaces_Partial,
     Glob.one `Magnification.Facts_Magnification_Partial,
     Glob.one `Magnification.PipelineStatements_Partial,

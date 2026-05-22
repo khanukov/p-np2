@@ -30,6 +30,7 @@ import Pnp4.Frontier.ContractExpansion.C_DAG_Adapter
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageRuntime
 import Pnp4.Frontier.ContractExpansion.PrefixParserConvention
+import Pnp4.Frontier.Tests.AntiEvalSearchProbe
 
 namespace Pnp4
 namespace Tests
@@ -2510,3 +2511,8 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 
 end Tests
 end Pnp4
+
+#check Pnp4.Frontier.Tests.AntiEvalEncodingInterface
+#check Pnp4.Frontier.Tests.antiEvalTarget
+#check Pnp4.Frontier.Tests.SelfEncodingCapacity
+#check Pnp4.Frontier.Tests.antiEval_noBoundedSolver_of_selfEncodingCapacity

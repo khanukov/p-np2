@@ -20,6 +20,7 @@ import Pnp4.Frontier.ContractExpansion.C_DAG_Adapter
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageRuntime
 import Pnp4.Frontier.ContractExpansion.PrefixParserConvention
+import Pnp4.Frontier.Tests.AntiEvalSearchProbe
 
 namespace Pnp4
 namespace Tests
@@ -225,3 +226,5 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_malformed_rejected
 #check Pnp4.Frontier.ContractExpansion.treeMCSPConcretePrefixParser
 #check Pnp4.Frontier.ContractExpansion.treeMCSPRuntimeAwarePrefixParser
+
+#print axioms Pnp4.Frontier.Tests.antiEval_noBoundedSolver_of_selfEncodingCapacity

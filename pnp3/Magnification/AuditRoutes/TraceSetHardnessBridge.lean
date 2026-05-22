@@ -18,16 +18,17 @@ source record, while requiring a definitional link to route ingredients.
 noncomputable def traceMEMLanguageFromStructure
     (spec : Models.GapPartialMCSPAsymptoticSpec)
     (nOfLen mOfLen : Nat → Nat)
-    (rows : ∀ t, Fin (mOfLen t) → Core.BitVec (nOfLen t))
     (params : ∀ t, Models.GapPartialMCSPParams)
+    (rows : ∀ t, Fin (mOfLen t) → Core.BitVec ((params t).n))
     (red : ∀ t, LowerBounds.TraceToPartialReduction
-      (nOfLen t) (mOfLen t) (params t) (rows t))
+      ((params t).n) (mOfLen t) (params t) (rows t))
     (N : Nat) (x : ComplexityInterfaces.Bitstring N) : Bool := by
   classical
   exact
     if h : ∃ t, mOfLen t = N then
       let t := Classical.choose h
-      let x' : Core.BitVec (mOfLen t) := by simpa [Classical.choose_spec h] using x
+      let hEq : N = mOfLen t := (Classical.choose_spec h).symm
+      let x' : Core.BitVec (mOfLen t) := by simpa [hEq] using x
       Models.gapPartialMCSP_Language (params t)
         (Models.partialInputLen (params t))
         ((red t).encodeY x')
@@ -45,12 +46,12 @@ structure StructuredTraceSetHardnessSource where
   spec : Models.GapPartialMCSPAsymptoticSpec
   nOfLen : Nat → Nat
   mOfLen : Nat → Nat
-  rows : ∀ t, Fin (mOfLen t) → Core.BitVec (nOfLen t)
-  rowsInj : ∀ t, Function.Injective (fun j : Fin (mOfLen t) => Models.assignmentIndex (rows t j))
   params : ∀ t, Models.GapPartialMCSPParams
   params_n : ∀ t, (params t).n = nOfLen t
+  rows : ∀ t, Fin (mOfLen t) → Core.BitVec ((params t).n)
+  rowsInj : ∀ t, Function.Injective (fun j : Fin (mOfLen t) => Models.assignmentIndex (rows t j))
   traceToPartialReduction : ∀ t, LowerBounds.TraceToPartialReduction
-    (nOfLen t) (mOfLen t) (params t) (rows t)
+    ((params t).n) (mOfLen t) (params t) (rows t)
   polyLength : ∀ t,
     LowerBounds.PolyLengthDominance
       (mOfLen t)
@@ -59,7 +60,7 @@ structure StructuredTraceSetHardnessSource where
   traceLang_def :
     traceLang =
       traceMEMLanguageFromStructure
-        spec nOfLen mOfLen rows params traceToPartialReduction
+        spec nOfLen mOfLen params rows traceToPartialReduction
   traceMEM_in_NP : ComplexityInterfaces.NP traceLang
   traceMEM_not_in_PpolyDAG : ¬ ComplexityInterfaces.PpolyDAG traceLang
 

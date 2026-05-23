@@ -26,6 +26,8 @@ import Pnp4.Frontier.PvsNPBridgeRequirements
 import Pnp4.Frontier.CompressionMagnification
 import Pnp4.Frontier.SearchMCSPMagnification
 import Pnp4.Frontier.SearchMCSPConcreteTargets
+import Pnp4.Frontier.SignSkeletonRectangleLowerBound
+import Pnp4.Frontier.RandomSkeletonCoverNumber
 import Pnp4.Frontier.ContractExpansion.C_DAG_Adapter
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageRuntime
@@ -257,6 +259,13 @@ def check_maskingBiasParams_derived
     params.lowTargetBias,
     params.highTargetBias,
     params.keepBias)
+
+#check Frontier.productZeroRectangle_singletons_cover
+#check Frontier.singleton_cover_card_ge_coverNumber
+#check Frontier.rectangleDNF_size_lower_bound_of_density
+#check Frontier.signSkeleton_productZeroRectangleDNF_size_lower_bound
+#check Frontier.expansionUpTo
+#check Frontier.expansionUpTo_implies_coverNumber_gt
 
 theorem check_maskingBiasParams_keepBias_nonneg
     (params : MaskingBiasParams) :

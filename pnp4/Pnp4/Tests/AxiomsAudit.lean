@@ -16,6 +16,8 @@ import Pnp4.Frontier.PvsNPBridgeRequirements
 import Pnp4.Frontier.CompressionMagnification
 import Pnp4.Frontier.SearchMCSPMagnification
 import Pnp4.Frontier.SearchMCSPConcreteTargets
+import Pnp4.Frontier.SignSkeletonRectangleLowerBound
+import Pnp4.Frontier.RandomSkeletonCoverNumber
 import Pnp4.Frontier.ContractExpansion.C_DAG_Adapter
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageRuntime
@@ -180,6 +182,11 @@ namespace Tests
 #print axioms Frontier.NP_not_subset_Ppoly_of_treeMCSPSearchMagnificationSource
 #print axioms Frontier.P_ne_NP_of_treeMCSPSearchMagnificationSource
 #print axioms Frontier.PvsNPMainlineProgress.of_treeMCSPSearchMagnificationSource
+#print axioms Frontier.productZeroRectangle_singletons_cover
+#print axioms Frontier.singleton_cover_card_ge_coverNumber
+#print axioms Frontier.rectangleDNF_size_lower_bound_of_density
+#print axioms Frontier.signSkeleton_productZeroRectangleDNF_size_lower_bound
+#print axioms Frontier.expansionUpTo_implies_coverNumber_gt
 
 end Tests
 end Pnp4

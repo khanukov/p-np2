@@ -3,95 +3,109 @@ import Mathlib
 namespace Pnp4
 namespace Frontier
 
-abbrev Sign := Bool
+abbrev plantedProduct
+    {Assignment Coord Sign : Type}
+    (badSign : Assignment → Coord → Sign)
+    (σ : Coord → Sign)
+    (a : Assignment) : Prop :=
+  ∀ i : Coord, σ i ≠ badSign a i
 
-structure SignInput (Skeleton Assignment : Type) where
-  skel : Skeleton
-  assignment : Assignment
-  sign : Sign
+def patternSubcube
+    {Assignment Coord Sign : Type}
+    (badSign : Assignment → Coord → Sign)
+    (i : Coord)
+    (τ : Sign) : Set Assignment :=
+  {a | badSign a i = τ}
 
-abbrev badSign {Skeleton Assignment : Type} (_G : Skeleton) (_x : Assignment) : Sign := false
-abbrev plantedProduct {Skeleton Assignment : Type} (_G : Skeleton) (_x : Assignment) : Sign := true
-abbrev SAT_G {Skeleton Assignment : Type} (_G : Skeleton) (_x : Assignment) : Prop := True
-abbrev patternSubcube {Skeleton Assignment : Type} (_G : Skeleton) : Set Assignment := Set.univ
+structure Rectangle (Coord Sign : Type) where
+  singletonCoords : Finset Coord
+  fixedSign : Coord → Sign
+  carrier : Set (Coord → Sign)
+  mem_iff : ∀ σ : Coord → Sign,
+    σ ∈ carrier ↔ ∀ i ∈ singletonCoords, σ i = fixedSign i
 
-abbrev CoversAssignmentCube {Skeleton : Type} (_G : Skeleton) (_coords : Finset Nat) : Prop := True
-abbrev coverNumber {Skeleton : Type} (_G : Skeleton) : Nat := 0
+abbrev InRectangle {Coord Sign : Type} (R : Rectangle Coord Sign) (σ : Coord → Sign) : Prop :=
+  σ ∈ R.carrier
 
-structure Rectangle (α : Type) where
-  carrier : Set α
+abbrev ProductZeroRectangle
+    {Assignment Coord Sign : Type}
+    (badSign : Assignment → Coord → Sign)
+    (R : Rectangle Coord Sign) : Prop :=
+  ∀ a σ, InRectangle R σ → plantedProduct badSign σ a → False
 
-structure RectangleDNF (α : Type) where
-  terms : Finset (Rectangle α)
-
-abbrev ProductZeroRectangle {Skeleton Assignment : Type}
-    (_G : Skeleton) (_R : Rectangle (SignInput Skeleton Assignment)) : Prop := True
-abbrev ProductZeroRectangleDNF {Skeleton Assignment : Type}
-    (G : Skeleton) (D : RectangleDNF (SignInput Skeleton Assignment)) : Prop :=
-  ∀ R ∈ D.terms, ProductZeroRectangle G R
-
-abbrev rectangleMeasure {Skeleton Assignment : Type}
-    (_R : Rectangle (SignInput Skeleton Assignment)) : ℚ := 0
-abbrev density {Skeleton Assignment : Type}
-    (_D : RectangleDNF (SignInput Skeleton Assignment)) : ℚ := 0
+abbrev CoverLowerBound
+    {Assignment Coord Sign : Type}
+    (badSign : Assignment → Coord → Sign)
+    (T : Nat) : Prop :=
+  ∀ S : Finset Coord,
+    (∀ a : Assignment, ∃ i ∈ S, ∃ τ : Sign, a ∈ patternSubcube badSign i τ) →
+      T ≤ S.card
 
 theorem productZeroRectangle_singletons_cover
-    {Skeleton Assignment : Type}
-    (G : Skeleton)
-    (R : Rectangle (SignInput Skeleton Assignment))
-    (hR : ProductZeroRectangle G R) :
-    ∃ coords : Finset Nat, CoversAssignmentCube G coords := by
-  exact ⟨∅, trivial⟩
+    {Assignment Coord Sign : Type}
+    [DecidableEq Coord]
+    (badSign : Assignment → Coord → Sign)
+    (avoidBad : Assignment → Coord → Sign)
+    (hAvoid : ∀ a i, avoidBad a i ≠ badSign a i)
+    (R : Rectangle Coord Sign)
+    (hNonempty : ∃ σ0, InRectangle R σ0)
+    (hZero : ProductZeroRectangle badSign R) :
+    ∀ a : Assignment, ∃ i ∈ R.singletonCoords, R.fixedSign i = badSign a i := by
+  intro a
+  by_contra hNoHit
+  rcases hNonempty with ⟨σ0, hσ0⟩
+  let σa : Coord → Sign := fun i => if hi : i ∈ R.singletonCoords then R.fixedSign i else avoidBad a i
+  have hσa_mem : InRectangle R σa := by
+    change σa ∈ R.carrier
+    rw [R.mem_iff]
+    intro i hi
+    simp [σa, hi]
+  have hPlant : plantedProduct badSign σa a := by
+    intro i
+    by_cases hi : i ∈ R.singletonCoords
+    · have hneq : R.fixedSign i ≠ badSign a i := by
+        exact fun hEq => hNoHit ⟨i, hi, hEq⟩
+      simpa [σa, hi] using hneq
+    · simpa [σa, hi] using hAvoid a i
+  exact hZero a σa hσa_mem hPlant
 
 theorem singleton_cover_card_ge_coverNumber
-    {Skeleton : Type}
-    (G : Skeleton)
-    (coords : Finset Nat)
-    (hCover : CoversAssignmentCube G coords) :
-    coverNumber G ≤ coords.card := by
-  simp [coverNumber]
+    {Assignment Coord Sign : Type}
+    [DecidableEq Coord]
+    (badSign : Assignment → Coord → Sign)
+    (T : Nat)
+    (hCoverLB : CoverLowerBound badSign T)
+    (R : Rectangle Coord Sign)
+    (hCovers : ∀ a : Assignment, ∃ i ∈ R.singletonCoords, R.fixedSign i = badSign a i) :
+    T ≤ R.singletonCoords.card := by
+  apply hCoverLB
+  intro a
+  rcases hCovers a with ⟨i, hi, hEq⟩
+  refine ⟨i, hi, R.fixedSign i, ?_⟩
+  simpa [patternSubcube] using hEq.symm
 
-def RectangleMeasureBound {Skeleton Assignment : Type} (k : Nat) (G : Skeleton) : Prop :=
-  ∀ R : Rectangle (SignInput Skeleton Assignment),
-    ProductZeroRectangle G R →
-      rectangleMeasure R ≤ (2 : ℚ) ^ (-(k * coverNumber G : Int))
+abbrev rectangleMeasure {Coord Sign : Type} (signCard : Nat) (R : Rectangle Coord Sign) : ℚ :=
+  1 / (signCard : ℚ) ^ R.singletonCoords.card
 
-def RectangleDNFDensityBound {Skeleton Assignment : Type} (k : Nat) (G : Skeleton) : Prop :=
-  ∀ D : RectangleDNF (SignInput Skeleton Assignment),
-    ProductZeroRectangleDNF G D →
-      density D ≤ (D.terms.card : ℚ) * (2 : ℚ) ^ (-(k * coverNumber G : Int))
-
-theorem rectangleDNF_size_lower_bound_of_density
-    {Skeleton Assignment : Type}
-    (k : Nat)
-    (G : Skeleton)
-    (D : RectangleDNF (SignInput Skeleton Assignment))
-    (δ : ℚ)
-    (hBound : density D ≤ (D.terms.card : ℚ) * (2 : ℚ) ^ (-(k * coverNumber G : Int)))
-    (hδ : δ ≤ density D)
-    (hPos : 0 < (2 : ℚ) ^ (-(k * coverNumber G : Int))) :
-    δ * (2 : ℚ) ^ (k * coverNumber G : Int) ≤ D.terms.card := by
-  have h₁ : δ ≤ (D.terms.card : ℚ) * (2 : ℚ) ^ (-(k * coverNumber G : Int)) := le_trans hδ hBound
-  have h₂ := (mul_le_mul_right hPos).2 h₁
-  have hInv : (2 : ℚ) ^ (-(k * coverNumber G : Int)) * (2 : ℚ) ^ (k * coverNumber G : Int) = 1 := by
-    simpa [zpow_neg] using (inv_mul_cancel₀ (show (2 : ℚ) ^ (k * coverNumber G : Int) ≠ 0 by positivity))
-  have hInv' : (2 : ℚ) ^ (k * coverNumber G : Int) * (2 : ℚ) ^ (-(k * coverNumber G : Int)) = 1 := by
-    simpa [mul_comm] using hInv
-  simpa [mul_assoc, hInv', one_mul, mul_comm, mul_left_comm] using h₂
-
-theorem signSkeleton_productZeroRectangleDNF_size_lower_bound
-    {Skeleton Assignment : Type}
-    (k : Nat)
-    (G : Skeleton)
-    (D : RectangleDNF (SignInput Skeleton Assignment))
-    (δ : ℚ)
-    (hProd : ProductZeroRectangleDNF G D)
-    (hDensityBound : RectangleDNFDensityBound (Skeleton := Skeleton) (Assignment := Assignment) k G)
-    (hδ : δ ≤ density D)
-    (hPos : 0 < (2 : ℚ) ^ (-(k * coverNumber G : Int))) :
-    δ * (2 : ℚ) ^ (k * coverNumber G : Int) ≤ D.terms.card := by
-  exact rectangleDNF_size_lower_bound_of_density
-    k G D δ (hDensityBound D hProd) hδ hPos
+theorem rectangleMeasure_le_pow_two
+    {Coord Sign : Type}
+    [DecidableEq Coord]
+    (k T signCard : Nat)
+    (hSignCard : signCard = 2 ^ k)
+    (R : Rectangle Coord Sign)
+    (hCard : T ≤ R.singletonCoords.card) :
+    rectangleMeasure signCard R ≤ 1 / (2 : ℚ) ^ (k * T) := by
+  have hpow_nat : (2 ^ k) ^ T ≤ (2 ^ k) ^ R.singletonCoords.card := by
+    exact Nat.pow_le_pow_right (by positivity) hCard
+  have hpow_q : ((2 : ℚ) ^ k) ^ T ≤ ((2 : ℚ) ^ k) ^ R.singletonCoords.card := by
+    exact_mod_cast hpow_nat
+  have hdenom : (2 : ℚ) ^ (k * T) ≤ (2 : ℚ) ^ (k * R.singletonCoords.card) := by
+    simpa [pow_mul] using hpow_q
+  have hpos : 0 < (2 : ℚ) ^ (k * T) := by positivity
+  have hpos' : 0 < (2 : ℚ) ^ (k * R.singletonCoords.card) := by positivity
+  have hrecip : (1 / (2 : ℚ) ^ (k * R.singletonCoords.card)) ≤ (1 / (2 : ℚ) ^ (k * T)) := by
+    exact one_div_le_one_div_of_le hpos hdenom
+  simpa [rectangleMeasure, hSignCard, pow_mul, one_div] using hrecip
 
 end Frontier
 end Pnp4

@@ -262,8 +262,7 @@ def check_maskingBiasParams_derived
 
 #check Frontier.productZeroRectangle_singletons_cover
 #check Frontier.singleton_cover_card_ge_coverNumber
-#check Frontier.rectangleDNF_size_lower_bound_of_density
-#check Frontier.signSkeleton_productZeroRectangleDNF_size_lower_bound
+#check Frontier.rectangleMeasure_le_pow_two
 #check Frontier.expansionUpTo
 #check Frontier.expansionUpTo_implies_coverNumber_gt
 

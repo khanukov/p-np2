@@ -184,8 +184,7 @@ namespace Tests
 #print axioms Frontier.PvsNPMainlineProgress.of_treeMCSPSearchMagnificationSource
 #print axioms Frontier.productZeroRectangle_singletons_cover
 #print axioms Frontier.singleton_cover_card_ge_coverNumber
-#print axioms Frontier.rectangleDNF_size_lower_bound_of_density
-#print axioms Frontier.signSkeleton_productZeroRectangleDNF_size_lower_bound
+#print axioms Frontier.rectangleMeasure_le_pow_two
 #print axioms Frontier.expansionUpTo_implies_coverNumber_gt
 
 end Tests

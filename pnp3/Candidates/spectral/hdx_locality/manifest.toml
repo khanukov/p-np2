@@ -1,0 +1,44 @@
+# Candidate manifest — hdx_locality
+#
+# DRAFT skeleton. Secondary candidate; targets the locality barrier (B4).
+# Pending the same §3-style auditor crux review as psc_gapmcsp.
+
+[candidate]
+id            = "hdx_locality"
+method_family = "spectral"
+status        = "draft"
+
+[source]
+theorem = "SourceTheorem_hdx_locality"
+bridge  = "gap_from_hdx_locality"
+file    = "proof.lean"
+
+[barriers]
+# Primary target is the LOCALITY barrier (B4), which has no dedicated
+# enum field below; documented in barrier_certificate.md. The classical
+# three are secondary here.
+relativization     = "unknown"
+natural_proof      = "unknown"
+algebrization      = "unknown"
+hardwiring_checked = false
+collapse_not_contradiction_checked = true
+# natural_proof_breaks = ""   # not the primary mechanism
+
+[prior_work]
+items = [
+  "Chen-Hirahara-Oliveira-Pich-Rajgopal-Santhanam, Beyond Natural Proofs: Hardness Magnification and Locality, JACM 2022 — defines the B4 locality barrier this candidate attacks.",
+  "Dinur-Filmus-Harsha-Tulsiani, Explicit SoS lower bounds from high-dimensional expanders, arXiv:2009.05218 — HDX as a source of explicit hard-yet-structured objects.",
+  "HDX literature: c3 locally testable codes (Dinur-Evra-Livne-Lubotzky-Mozes 2021); quasi-linear PCPs and direct-product / agreement testing from HDX (STOC 2024-2025).",
+  "Internal: pnp3/Docs/BARRIER_CATALOGUE.md (B4); pnp4/Pnp4/Frontier/SearchMCSPMagnification.lean (the magnification surface B4 blocks); outputs/nogolog.jsonl.",
+]
+
+[whitelisted_typeclasses]
+allowed       = []
+justification = ""
+
+[review]
+human_review_required = true
+
+[verifier]
+spec_version_at_intake         = ""
+attack_suite_version_at_intake = ""

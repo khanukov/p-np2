@@ -1,0 +1,52 @@
+# Candidate manifest — psc_gapmcsp
+#
+# DRAFT skeleton produced for auditor review BEFORE engineer dispatch.
+# See sketch.md / barrier_certificate.md / self_attack.md.
+
+[candidate]
+id            = "psc_gapmcsp"
+method_family = "natural_property"
+status        = "draft"
+
+[source]
+theorem = "SourceTheorem_psc_gapmcsp"
+bridge  = "gap_from_psc_gapmcsp"
+file    = "proof.lean"
+
+[barriers]
+# The candidate's whole thesis is to escape Razborov–Rudich by giving up
+# largeness (Chow's almost-natural route).  Until the inhabitant exists,
+# the escape is unestablished -> human-review.
+relativization     = "unknown"
+natural_proof      = "unknown-human-review"
+algebrization      = "unknown"
+hardwiring_checked = false   # Attack 1 (self_attack.md) MUST run before intake
+collapse_not_contradiction_checked = true   # genuine separation, not PH-collapse
+natural_proof_breaks = "largeness"
+
+[prior_work]
+# Rule 15.  See sketch.md §"Connection to prior work" for what is
+# structurally different here.
+items = [
+  "Chow, Almost-natural proofs, arXiv:0805.1385 — sub-largeness escapes RR; explicit 'discrimination' property separates P/poly from NP under the RR pseudorandomness assumption.",
+  "Razborov-Rudich, Natural Proofs, JCSS 1997 — the barrier this candidate must escape.",
+  "Sum-of-Squares Lower Bounds for MCSP, CCC 2023, arXiv:2311.12994 — PRIOR-ART BARRIER: no low-degree SoS proof of NP-not-in-P/poly. The SourceTheorem inhabitant MUST NOT be a low-degree SoS/PC certificate.",
+  "Barak-Hopkins-Kelner-Kothari-Moitra-Steurer, pseudo-calibration, arXiv:1604.03084 — the 'thinning' mechanism for sub-largeness, and the source of the inversion risk (Attack 8).",
+  "Carmosino-Impagliazzo-Kabanets-Kolokolova, Algorithms from Natural Lower Bounds, ECCC TR16-008 — natural property => learning algorithm; sanity check on the Constructive conjunct.",
+  "Hirahara, Capturing OWF via NP-hardness of meta-complexity, STOC 2023 — needed worst->average bridge IF the 'holds on GapMCSP' clause is only average-case.",
+  "Internal: outputs/nogolog.jsonl (9 entries, all failure_class=hardwiring); pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean (hardwiring attack template).",
+]
+
+[whitelisted_typeclasses]
+# Rule 16. proof.lean uses none beyond core; keep empty.
+allowed       = []
+justification = ""
+
+[review]
+# Draft: the SourceTheorem inhabitant and the ResearchGapWitness bridge
+# are open research, so this is human-review by construction.
+human_review_required = true
+
+[verifier]
+spec_version_at_intake         = ""
+attack_suite_version_at_intake = ""

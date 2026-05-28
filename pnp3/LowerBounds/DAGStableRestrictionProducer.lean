@@ -7079,7 +7079,7 @@ def easyImagePRGAtProviderOnSlices_of_smallDAGEasyImageFoolingSourceProviderOnSl
     (SizeBound : Nat → Rat → Rat → Nat → Prop)
     (hSource : smallDAGEasyImageFoolingSourceProviderOnSlices F SizeBound) :
     easyImagePRGAtProviderOnSlices F SizeBound :=
-  fun n β ε W =>
+  fun n β _ε W =>
     easyImagePRGAt_of_smallDAGEasyImageFoolingSourceAt
       (source := hSource n β) W
 
@@ -7092,7 +7092,7 @@ def easyImagePRGAtProviderOnSlices_of_smallDAGEasyDistSourceProviderOnSlices
     (SizeBound : Nat → Rat → Rat → Nat → Prop)
     (hSource : smallDAGEasyDistSourceProviderOnSlices F SizeBound) :
     easyImagePRGAtProviderOnSlices F SizeBound :=
-  fun n β ε W =>
+  fun n β _ε W =>
     easyImagePRGAt_of_smallDAGEasyDistSourceAt
       (source := hSource n β) W
 
@@ -7105,7 +7105,7 @@ def easyImageTransferAtProviderOnSlices_of_smallDAGEasyHSGSourceProviderOnSlices
     (SizeBound : Nat → Rat → Rat → Nat → Prop)
     (hSource : smallDAGEasyHSGSourceProviderOnSlices F SizeBound) :
     easyImageTransferAtProviderOnSlices F SizeBound :=
-  fun n β ε W =>
+  fun n β _ε W =>
     easyImageTransferAt_of_smallDAGEasyHSGSourceAt
       (source := hSource n β) W
 
@@ -7118,7 +7118,7 @@ def easyImageTransferAtProviderOnSlices_of_canonicalEasyDensitySourceProviderOnS
     (SizeBound : Nat → Rat → Rat → Nat → Prop)
     (hSource : canonicalSmallDAGEasyDensitySourceProviderOnSlices F SizeBound) :
     easyImageTransferAtProviderOnSlices F SizeBound :=
-  fun n β ε W =>
+  fun n β _ε W =>
     easyImageTransferAt_of_canonicalEasyDensitySourceAt
       (source := hSource n β) W
 

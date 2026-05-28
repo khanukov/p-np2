@@ -2847,7 +2847,7 @@ theorem evalOneGateCS_writes_compute_result {n : Nat} (g : SLGate n) (slot : Nat
         (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM.tapeLength N)
     (prior : List Bool)
     (h_prior_len : prior.length = slot)
-    (h_prior_match : ∀ (k : Nat) (hk : k < prior.length)
+    (h_prior_match : ∀ (k : Nat) (_hk : k < prior.length)
         (hpos : (c_P1.head : ℕ) + Δscratch + k <
           (evalOneGateCS g slot Δrowbase Δscratch hle).toPhased.toTM.tapeLength N),
         prior[k]? = some (c_P1.tape ⟨(c_P1.head : ℕ) + Δscratch + k, hpos⟩))
@@ -3566,7 +3566,7 @@ theorem circuitEvaluatorCSAt_run_correct_cond_single {n : Nat}
         N ≤ i.val → c.tape i = false)
     (prior : List Bool) (v : Bool)
     (h_prior_len : prior.length = offset)
-    (h_prior_match : ∀ (k : Nat) (hk : k < prior.length)
+    (h_prior_match : ∀ (k : Nat) (_hk : k < prior.length)
         (hpos : (c.head : ℕ) + Δscratch + k <
           (circuitEvaluatorCSAt ([g] : List (SLGate n)) offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N),
         prior[k]? = some (c.tape ⟨(c.head : ℕ) + Δscratch + k, hpos⟩))
@@ -3790,7 +3790,7 @@ theorem SLProgram_evalAux_prior_prefix {n : Nat} :
 theorem SLProgram_evalAux_cons_split {n : Nat} (row : Fin n → Bool)
     (g : SLGate n) (rest : List (SLGate n)) (prior vals : List Bool)
     (h_eval : SLProgram.evalAux row (g :: rest) prior = some (prior ++ vals))
-    (h_len : vals.length = (g :: rest).length) :
+    (_h_len : vals.length = (g :: rest).length) :
     ∃ (v : Bool) (vals_rest : List Bool),
       g.compute row prior = some v ∧
       vals = v :: vals_rest ∧
@@ -3833,7 +3833,7 @@ theorem circuitEvaluatorCSAt_run_correct_cond_short {n : Nat}
         N ≤ i.val → c.tape i = false)
     (prior vals : List Bool)
     (h_prior_len : prior.length = offset)
-    (h_prior_match : ∀ (k : Nat) (hk : k < prior.length)
+    (h_prior_match : ∀ (k : Nat) (_hk : k < prior.length)
         (hpos : (c.head : ℕ) + Δscratch + k <
           (circuitEvaluatorCSAt gates offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N),
         prior[k]? = some (c.tape ⟨(c.head : ℕ) + Δscratch + k, hpos⟩))
@@ -3965,7 +3965,7 @@ theorem cons_any_row_lift_eq_c {n : Nat} (g : SLGate n) (g' : SLGate n)
       (circuitEvaluatorCSAt (g' :: rest') (offset + 1) Δrowbase Δscratch hle).toPhased.toTM.tapeLength N)
     (prior : List Bool) (v : Bool)
     (h_prior_len : prior.length = offset)
-    (h_prior_match : ∀ (k : Nat) (hk : k < prior.length)
+    (h_prior_match : ∀ (k : Nat) (_hk : k < prior.length)
         (hpos : (c.head : ℕ) + Δscratch + k <
           (circuitEvaluatorCSAt (g :: g' :: rest') offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N),
         prior[k]? = some (c.tape ⟨(c.head : ℕ) + Δscratch + k, hpos⟩))
@@ -3982,7 +3982,7 @@ theorem cons_any_row_lift_eq_c {n : Nat} (g : SLGate n) (g' : SLGate n)
       (h_row : (lift.head : ℕ) + Δrowbase + i.val < P2.toPhased.toTM.tapeLength N),
       lift.tape ⟨(lift.head : ℕ) + Δrowbase + i.val, h_row⟩ =
         c.tape ⟨(c.head : ℕ) + Δrowbase + i.val, by
-          have hi := i.isLt
+          have _hi := i.isLt
           have h_len_ge : N ≤
               (circuitEvaluatorCSAt (g :: g' :: rest') offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N := by
             show N ≤ N + _ + 1; omega
@@ -4119,7 +4119,7 @@ theorem cons_any_h_prior_match_lift {n : Nat} (g : SLGate n) (g' : SLGate n)
       (circuitEvaluatorCSAt (g' :: rest') (offset + 1) Δrowbase Δscratch hle).toPhased.toTM.tapeLength N)
     (prior : List Bool) (v : Bool)
     (h_prior_len : prior.length = offset)
-    (h_prior_match : ∀ (k : Nat) (hk : k < prior.length)
+    (h_prior_match : ∀ (k : Nat) (_hk : k < prior.length)
         (hpos : (c.head : ℕ) + Δscratch + k <
           (circuitEvaluatorCSAt (g :: g' :: rest') offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N),
         prior[k]? = some (c.tape ⟨(c.head : ℕ) + Δscratch + k, hpos⟩))
@@ -4132,7 +4132,7 @@ theorem cons_any_h_prior_match_lift {n : Nat} (g : SLGate n) (g' : SLGate n)
     let c_P1 := ConstStatePhasedProgram.projectSeqP1 P1 P2 c hphase_lt hhead_lt
     let c_P1_final := TM.runConfig (M := P1.toPhased.toTM) c_P1 (2 * (Δscratch + offset) + 3)
     let lift := ConstStatePhasedProgram.liftP1ToP2 P1 P2 c_P1_final h_tG_head
-    ∀ (k : Nat) (hk : k < (prior ++ [v]).length)
+    ∀ (k : Nat) (_hk : k < (prior ++ [v]).length)
       (hpos : (lift.head : ℕ) + Δscratch + k < P2.toPhased.toTM.tapeLength N),
       (prior ++ [v])[k]? = some (lift.tape ⟨(lift.head : ℕ) + Δscratch + k, hpos⟩) := by
   intro P1 P2 c_P1 c_P1_final lift
@@ -4299,7 +4299,7 @@ theorem cons_any_rowFromConfig_lift_eq {n : Nat} (g : SLGate n) (g' : SLGate n)
       (circuitEvaluatorCSAt (g' :: rest') (offset + 1) Δrowbase Δscratch hle).toPhased.toTM.tapeLength N)
     (prior : List Bool) (v : Bool)
     (h_prior_len : prior.length = offset)
-    (h_prior_match : ∀ (k : Nat) (hk : k < prior.length)
+    (h_prior_match : ∀ (k : Nat) (_hk : k < prior.length)
         (hpos : (c.head : ℕ) + Δscratch + k <
           (circuitEvaluatorCSAt (g :: g' :: rest') offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N),
         prior[k]? = some (c.tape ⟨(c.head : ℕ) + Δscratch + k, hpos⟩))

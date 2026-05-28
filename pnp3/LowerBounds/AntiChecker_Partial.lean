@@ -678,9 +678,30 @@ lemma exists_partial_outside_if_card_lt_tableLen {n : Nat} (F : Finset (TotalTab
   exact exists_partial_outside_if_card_lt (F := F) hsmall'
 
 /-!
-  TODO (следующий шаг): связать множество `F` с семейством «малых» AC⁰‑решателей
-  и получить конкретную числовую оценку для `F.card`, чтобы применить
+  Historical note: earlier versions of this file left a TODO here to
+  connect the finset `F` with a family of "small" AC⁰ solvers and
+  derive a concrete bound on `F.card` before invoking
   `exists_partial_outside_if_card_lt`.
+
+  That TODO is now closed.  The current route runs:
+
+  * semantic AC⁰ solver  →  `StepCClosureDataPartial`
+    (via the canonical semantic→syntactic lift,
+    `stepCClosureData_of_syntacticLift`);
+  * `StepCClosureDataPartial`  →  Step-C contradiction
+    (`noSmallAC0Solver_partial_closed`, then
+    `noSmallAC0Solver_partial_closed_of_syntacticLift`);
+  * the final internalized contradiction is exposed downstream as
+    `LB_Formulas_core_partial_closed_internalized` in
+    `LowerBounds/LB_Formulas_Core_Partial.lean`, which is what the
+    publishable AC0 endpoint `gapPartialMCSP_no_semantic_AC0_solver`
+    in `LowerBounds/AC0_GapMCSP.lean` ultimately calls.
+
+  So `exists_partial_outside_if_card_lt` is preserved here as the
+  underlying combinatorial brick (`|F| * 2^(2^n) < 3^(2^n)` ⇒ a hard
+  partial table exists), but the link to AC⁰ solvers no longer goes
+  through a per-call cardinality bound; it goes through the typed
+  Step-C closure infrastructure above.
 -/
 
 /-!
@@ -1980,10 +2001,14 @@ theorem antiChecker_testset_incompatibility_local_partial_constructive
 /-!
   ### Комбинаторная версия «случайной» леммы
 
-  В TODO требовалась вероятностная формулировка: случайная partial‑таблица
-  редко согласуется с малой схемой.  Мы фиксируем эквивалентную
-  counting‑форму: если число функций «малого» класса ограничено, то
-  существует partial‑таблица, не согласованная ни с одной из них.
+  Исторически на этом месте просили вероятностную формулировку:
+  случайная partial‑таблица редко согласуется с малой схемой.  Здесь
+  мы фиксируем эквивалентную counting‑форму: если число функций
+  «малого» класса ограничено, то существует partial‑таблица, не
+  согласованная ни с одной из них.  Эта counting-форма уже встроена в
+  Step-C closure infrastructure выше (через
+  `exists_partial_not_consistent_with_family` и его потребителей);
+  отдельная вероятностная формализация не требуется.
 -/
 
 /--
@@ -2013,10 +2038,9 @@ lemma exists_partial_not_consistent_with_family_tableLen {n : Nat}
   exact exists_partial_not_consistent_with_family (F := F) hsmall'
 
 /-!
-  TODO (следующие шаги):
-
-  Все ключевые интерфейсы Step-C в partial-треке интернализованы.
-  Дальнейшие шаги — только факультативный рефакторинг/упрощение API.
+  Status: all key Step-C interfaces in the partial track are now
+  internalized.  Anything beyond this point is optional API
+  refactoring / simplification, not an open mathematical step.
 -/
 
 /-!

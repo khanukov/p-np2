@@ -99,6 +99,90 @@ def gap_from_psc_gapmcsp
     True :=
   True.intro
 
+/-!
+## Structural critique (auditor, May 2026) — two kill-gates
+
+The candidate's *shape* is correct (unlike `hdx_locality`'s reversed
+arrow): usefulness is stated against plain `InPpolyDAG`. But the
+deeper audit found that the candidate is **structurally hollow** in
+two specific senses, both kernel-checked below.
+
+### Gate A — sub-largeness is decorative (equivalence collapse)
+
+The two main conjuncts of `SourceTheorem_psc_gapmcsp`
+("useful against `InPpolyDAG`" + "holds on `IsGapMCSP`") together
+are provably **equivalent** to the bare separation
+`∀ n f, IsGapMCSP n f → ¬ InPpolyDAG n f`. The remaining conjuncts
+(`Constructive`, `IsSubLarge`, `NotHardwired`) constrain the *form*
+of the proof but do not reduce its mathematical content. In
+particular, `IsSubLarge` is not load-bearing without a strong
+`NotHardwired`: the witness `P := IsGapMCSP` itself satisfies
+usefulness + accepts, and (under any natural largeness measure) is
+already sub-large.
+
+### Gate B — forbidden-target collision
+
+If `IsGapMCSP` is instantiated to **any** target the repository
+already proves to lie in `InPpolyDAG`, the source theorem is
+unconditionally `False` (same structural shape as
+`hdx_locality_current_shape_impossible`, against plain `InPpolyDAG`
+rather than oracle-extended).
+
+Repo-proved DAG-hardwirings the engineer must therefore **forbid**
+as `IsGapMCSP` instantiations:
+
+* `Tests.HInDagTrivialityProbe.fixedSlice_gapPartialMCSP_in_PpolyDAG`
+  — fixed-slice `gapPartialMCSP_Language p` is in `PpolyDAG` via
+  per-slice truth-table hardwiring at constant `K_p`;
+* `Tests.HInDagTrivialityProbe.hInDag_for_canonicalAsymptoticHAsym`
+  — canonical asymptotic GapMCSP (`sYES=1, sNO=2`) is in `PpolyDAG`
+  for the same reason; the canonical track is additionally refuted
+  at conclusion level (`STATUS.md §Audit chain stages 11, 14`).
+
+A valid C1 instantiation requires a **new** asymptotic NP language
+that is (i) not yet repo-hardwirable, and (ii) where no analogous
+truth-table-hardwiring witness should be derivable. Picking such a
+language is itself an open design question, recorded as the
+engineer-blocking precondition.
+-/
+
+/-- **Gate A.** Sub-largeness is decorative: the two main structural
+conjuncts of `SourceTheorem_psc_gapmcsp` together are equivalent to
+the bare DAG separation `IsGapMCSP ⇒ ¬ InPpolyDAG`. -/
+theorem psc_two_conjuncts_iff_bare_separation
+    (InPpolyDAG IsGapMCSP : BoolProperty) :
+    (∃ P : BoolProperty,
+        (∀ (n : Nat) (f : BoolFn n), InPpolyDAG n f → ¬ P n f) ∧
+        (∀ (n : Nat) (f : BoolFn n), IsGapMCSP n f → P n f))
+    ↔
+    (∀ (n : Nat) (f : BoolFn n), IsGapMCSP n f → ¬ InPpolyDAG n f) :=
+  Iff.intro
+    (fun hExists n f hGap hInPpoly =>
+      match hExists with
+      | ⟨_P, hUseful, hHolds⟩ => hUseful n f hInPpoly (hHolds n f hGap))
+    (fun hSep =>
+      ⟨IsGapMCSP,
+       fun n f hInPpoly hGap => hSep n f hGap hInPpoly,
+       fun _ _ hGap => hGap⟩)
+
+/-- **Gate B.** Forbidden-target collapse. If the chosen `IsGapMCSP`
+predicate identifies a target the repository already proves to lie in
+`InPpolyDAG` (e.g. `fixedSlice_gapPartialMCSP_in_PpolyDAG` or
+`hInDag_for_canonicalAsymptoticHAsym`), the source theorem is
+unconditionally `False`. -/
+theorem psc_forbidden_target_collapse
+    {InPpolyDAG IsGapMCSP : BoolProperty}
+    {IsSubLarge Constructive NotHardwired : BoolProperty → Prop}
+    (hSource : SourceTheorem_psc_gapmcsp
+                  InPpolyDAG IsGapMCSP IsSubLarge Constructive NotHardwired)
+    (hGapInhabited : ∃ (n : Nat) (f : BoolFn n), IsGapMCSP n f)
+    (hTargetInPpoly :
+      ∀ (n : Nat) (f : BoolFn n), IsGapMCSP n f → InPpolyDAG n f) :
+    False :=
+  match hSource, hGapInhabited with
+  | ⟨_P, _hConstr, hUseful, hHolds, _hSub, _hNH⟩, ⟨n, f, hGap⟩ =>
+      hUseful n f (hTargetInPpoly n f hGap) (hHolds n f hGap)
+
 end PscGapMCSP
 end NaturalProperty
 end Candidates

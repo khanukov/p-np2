@@ -1,8 +1,12 @@
 # Barrier certificate — psc_gapmcsp
 
-**Status: DRAFT for auditor review.** Per Rule 7, this records which
-classical barriers the approach contends with and where the obstacle is
-overcome. Cells marked `unknown` are the auditor/engineer's checkpoints.
+**Status: under_review (auditor verdict May 2026).** Per Rule 7. The
+shape is correct (no oracle-target collision against plain `PpolyDAG`),
+but two kernel-checked kill-gates in `proof.lean` weaken the natural-
+proof escape claim — sub-largeness is decorative without a strong
+`NotHardwired` (Gate A), and several natural target instantiations are
+already in `PpolyDAG` by repo theorems (Gate B). See `self_attack.md`
+Attacks 9 and 10.
 
 ## Relativization
 
@@ -16,17 +20,25 @@ relativizes (B1). Auditor check: does the intended inhabitant exploit
 
 ## Natural proofs (Razborov–Rudich)
 
-Status: `natural-but-with-caveat` (claim: escapes via `largeness`)
+Status: `natural-but-with-caveat-and-decorative` (claimed escape via
+`largeness`, weakened by Gate A)
 
-Condition broken: **largeness**. The property is designed to hold on a
-`2^{-ω(n)}` fraction of functions (Chow's almost-natural route), so the
-RR proof does not apply. Constructivity is retained where possible.
+Condition nominally broken: **largeness**. The property is designed to
+hold on a `2^{-ω(n)}` fraction of functions (Chow's almost-natural
+route), so the RR proof does not apply. However, **Gate A**
+(`psc_two_conjuncts_iff_bare_separation`) shows that the
+sub-largeness conjunct is *decorative* on top of the usefulness +
+accepts pair, which is already equivalent to the bare separation. So
+the natural-proof escape is real only insofar as the witness `P` is
+*not* the trivial `P := IsGapMCSP` (which trivially passes the two
+main conjuncts and is sub-large under any natural measure). The real
+escape mechanism therefore lives entirely in `NotHardwired`, not in
+`IsSubLarge`.
 
-**Auditor must adjudicate (make-or-break):** is the sub-largeness
-(`IsSubLarge P`) a *proved* lemma or an assumption? RR says useful +
-constructive ⇒ large (under PRGs); therefore either (a) sub-largeness is
-genuinely established for this `P`, or (b) `P` collapses to large
-(hits RR) or to hardwiring (hits the NoGo). Decide which.
+**Auditor adjudication:** the natural-proof escape claim is downgraded
+from "primary mechanism" to "compatibility condition". Engineers must
+treat `NotHardwired` as the load-bearing predicate and supply a
+*non-vacuous* concrete definition that excludes the trivial witness.
 
 ## Algebrization (Aaronson–Wigderson)
 
@@ -39,17 +51,38 @@ the inhabitant must NOT be a low-degree SoS/PC certificate.
 
 ## Hardwiring (Probe 2 of the falsifiability audit)
 
-Status: `not-checked` — **highest-priority gate**
+Status: `attack-succeeded-against-the-skeleton` — **highest-priority gate, escalated by Gate A**
 
-Question: does a singleton truth-table evaluator satisfy
-`SourceTheorem_psc_gapmcsp` while the bridge cannot use it? All nine
-prior `NoGoLog` entries died here. The Rule 5 exclusion lemma is the
-`NotHardwired P` conjunct in `proof.lean`. Engineer must instantiate it
-and discharge it against the attack in
-`pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean` BEFORE intake.
+Gate A shows that without a strong, concrete `NotHardwired`, the
+trivial witness `P := IsGapMCSP` already passes the two main conjuncts
+(under the bare separation), so the candidate is structurally a
+re-statement of the conclusion. Therefore hardwiring is not only a
+self-attack risk to check — it is the **only thing standing between
+the candidate and a trivial collapse**. The Rule 5 exclusion lemma
+must be supplied as a *concrete definition* (not an abstract
+parameter) before any positive engineering work, and it must
+demonstrably exclude:
 
-If `checked-and-excluded`, point here to the formal lemma:
-`NotHardwired` instantiation at `proof.lean:<line>` (TODO).
+* singleton truth-table evaluators of `L_N`,
+* hash/log-width truth-table payloads,
+* target-truth-table advice (extensional dependence on `tt(L_N)`).
+
+Attack template: `pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean`.
+
+## Forbidden target instantiations (Gate B)
+
+Status: `attack-succeeded-against-the-skeleton`
+
+Formal witness: `psc_forbidden_target_collapse` in `proof.lean`.
+`IsGapMCSP` must NOT be instantiated to any target the repo already
+proves to lie in `InPpolyDAG`. Specifically forbidden:
+
+* `Tests.HInDagTrivialityProbe.fixedSlice_gapPartialMCSP_in_PpolyDAG`;
+* `Tests.HInDagTrivialityProbe.hInDag_for_canonicalAsymptoticHAsym`.
+
+A valid C1 candidate requires a *new* asymptotic NP language outside
+the repo's known DAG-hardwiring envelope. Designing such a language is
+itself an open research precondition for any positive C1 work.
 
 ## Collapse-vs-contradiction (Rule 8)
 

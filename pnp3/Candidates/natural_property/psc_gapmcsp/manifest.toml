@@ -6,7 +6,19 @@
 [candidate]
 id            = "psc_gapmcsp"
 method_family = "natural_property"
-status        = "draft"
+# Downgraded from "draft" to "under_review" by auditor (May 2026).
+# Shape is correct (unlike hdx_locality), but two kernel-checked
+# kill-gates show the candidate is structurally hollow as written:
+#   Gate A (psc_two_conjuncts_iff_bare_separation): the two main
+#     conjuncts together are equivalent to the bare DAG separation,
+#     i.e. sub-largeness is decorative without a strong NotHardwired.
+#   Gate B (psc_forbidden_target_collapse): instantiating IsGapMCSP
+#     with any repo-hardwired target (fixed-slice or canonical
+#     asymptotic GapMCSP) makes the source theorem unconditionally
+#     False.
+# Productive next deliverable is a NEGATIVE meta-theorem, not an
+# attempted positive proof; see sketch.md §"Productive next step".
+status        = "under_review"
 
 [source]
 theorem = "SourceTheorem_psc_gapmcsp"

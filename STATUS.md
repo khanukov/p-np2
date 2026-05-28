@@ -1,6 +1,6 @@
 # Project Status (current)
 
-Updated: 2026-04-23
+Updated: 2026-05-28
 
 Authoritative checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
@@ -446,10 +446,18 @@ fixed-slice `PpolyDAG` membership:
 
 ## What Is Still Open
 
-### Canonical-track TM-verifier deliverable
+### Canonical-track TM-verifier deliverable (independent infrastructure milestone)
 
-The canonical asymptotic infrastructure reduces the asymptotic-side
-research-gap to a single typed object:
+> **Scope note.**  After the canonical iso-strong / promise-YES
+> conclusion-side refutations recorded above, the canonical asymptotic
+> track is **no longer a P-vs-NP closure route**.  The TM-verifier
+> deliverable below is therefore an independent formalization /
+> infrastructure milestone for the reusable NP-verifier and decider
+> scaffolding.  Finishing it does not reduce the `ResearchGapWitness`
+> gap by itself, and it must not be presented as P-vs-NP progress.
+
+Considered as an isolated infrastructure target, the canonical
+asymptotic infrastructure reduces to a single typed object:
 
 ```
 W : Models.GapPartialMCSP_Asymptotic_TMWitness canonicalAsymptoticSpec
@@ -477,11 +485,13 @@ obligation to a single TM-engineering target.  It contains:
 - `witnessOfComponents : Components → GapPartialMCSP_Asymptotic_TMWitness
   canonicalAsymptoticSpec` — closed bridge.
 
-After this decomposition, the only remaining sub-obligation is to
-construct a TM whose acceptance behaviour matches the (now-defined)
-`decideAsymptotic` function, with polynomial runtime.  All decidability
-and language correctness are closed; the engineering reduces to
-"build a TM that ignores `w` and computes a known Bool function on `x`".
+After this decomposition, the only remaining sub-obligation **for the
+infrastructure milestone** is to construct a TM whose acceptance
+behaviour matches the (now-defined) `decideAsymptotic` function, with
+polynomial runtime.  All decidability and language correctness are
+closed; the engineering reduces to "build a TM that ignores `w` and
+computes a known Bool function on `x`".  Again, this is reusable
+NP-verifier infrastructure, not a P-vs-NP closure step.
 
 **Multi-session plan**: see `pnp3/Docs/TMVerifier_Session_Plan.md` for
 the 7-session decomposition (Variant B NP-style architecture):

@@ -8,7 +8,7 @@
 # which spec_version was in force at the time of a candidate's verification.
 
 [meta]
-spec_version    = "0.1.1"
+spec_version    = "0.1.2"
 constitution    = "RESEARCH_CONSTITUTION.md"
 status          = "frozen"
 last_reviewed   = "2026-05-28"
@@ -167,6 +167,7 @@ forbidden_unless_final_term_exists = [
   "complete proof of P vs NP",
   "P≠NP solved",
   "P!=NP solved",
+  "P != NP solved",
 ]
 final_term_locator = "P_ne_NP_unconditional"
 

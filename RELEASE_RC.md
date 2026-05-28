@@ -1,4 +1,4 @@
-# Release Plan (RC): 2026-04-22
+# Release Plan (RC): 2026-05-28
 
 This document defines the recommended release posture for the current state.
 
@@ -72,13 +72,24 @@ for f in pnp3/Tests/AxiomsAudit.lean \
 done
 ```
 
-Confirm docs are aligned:
+Confirm docs are aligned (matches the public-doc allowlist enforced by
+`scripts/check.sh` route-policy step):
 
 - `README.md`
+- `README_PUBLICATION.md`
 - `STATUS.md`
 - `TODO.md`
+- `FAQ.md`
+- `PROOF_OVERVIEW.md`
+- `TECHNICAL_CLAIMS.md`
+- `AXIOMS_FINAL_LIST.md`
 - `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`
+- `RELEASE_RC.md` (this file)
 - `pnp3/Docs/CLOSURE_ROUTE_POLICY.md`
+- `pnp3/Docs/Unconditional_NP_not_subset_PpolyDAG_Plan.md`
+- `pnp3/Docs/Simulation_FineGrained_Status.md`
+- `pnp3/Docs/Research_Method_Boundary.md`
+- `pnp3/Docs/Unconditionality_FAQ_ru.md`
 
 ## Post-RC Research Plan
 

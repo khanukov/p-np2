@@ -192,6 +192,7 @@ claim_phrases=(
   "we prove unconditional"
   "complete proof of P vs NP"
   "P≠NP solved"
+  "P!=NP solved"
   "P != NP solved"
 )
 

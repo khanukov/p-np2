@@ -1,6 +1,6 @@
 # TODO / Roadmap (current)
 
-Updated: 2026-04-23
+Updated: 2026-05-28
 
 Canonical checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
@@ -24,8 +24,11 @@ Research method boundary:
 - The final `ResearchGapWitness` port is method-agnostic; AC0/locality and
   `AcceptedFamilyCertificateAt` routes are optional sufficient routes, not a
   mandatory interface for every future proof.
-- DAG endpoint plumbing is substantial, but the current separation route still
-  depends on formula-side support-bounds assumptions that the audit refutes.
+- DAG endpoint plumbing is substantial.  The legacy formula-side
+  support-bounds / multi-switching separation route is formally
+  refuted; the current public closure boundary is `ResearchGapWitness`,
+  whose `dagSeparation` field (= `NP_not_subset_PpolyDAG`) is the only
+  remaining mathematical input.
 - A separate restricted-model AC0 surface exists at
   `pnp3/LowerBounds/AC0_GapMCSP.lean`.  It is a side artifact /
   formalization milestone, not the current P-vs-NP mainline (see

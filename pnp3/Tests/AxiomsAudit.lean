@@ -9,6 +9,7 @@ import LowerBounds.SingletonDensityContradiction
 import LowerBounds.DAGStableRestrictionProducer
 import LowerBounds.AC0_GapMCSP
 import Tests.BridgeLocalityRegression
+import Tests.PromiseRouteConclusionProbe
 import ThirdPartyFacts.Facts_Switching
 
 /-!
@@ -397,3 +398,10 @@ open Pnp3.Magnification
 #print axioms LowerBounds.gapPartialMCSP_not_in_AC0_iff_notInSmallAC0
 #print axioms LowerBounds.noSmallLocalCircuitSolver_partial_constructive
 #print axioms LowerBounds.antiChecker_testset_incompatibility_local_partial_constructive
+
+-- Companion promise-route conclusion negations at the canonical asymptotic
+-- instantiation.  Together with `isoStrong_conclusion_negative_for_canonical`
+-- (already audited by the build via its import chain), these close the
+-- canonical-track conclusion side at three matching standalone Lean theorems.
+#print axioms Tests.PromiseRouteConclusionProbe.promiseYesCertificate_conclusion_negative_for_canonical
+#print axioms Tests.PromiseRouteConclusionProbe.promiseYesWeak_conclusion_negative_for_canonical

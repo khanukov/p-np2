@@ -4,18 +4,21 @@
 (B4)**, which has no dedicated `manifest.toml::[barriers]` field, so it
 is documented here.
 
-## Locality barrier (B4 — Chen et al., JACM 2022)  **(primary target)**
+## Locality barrier (B4 — Chen et al., JACM 2022)  **(primary target — attack-succeeded)**
 
-Status: `unknown` — **make-or-break**
+Status: `not-overcome — current shape is self-contradictory under B4`
 
-The barrier: weak lower-bound techniques extend to circuits with
-small-fan-in oracle gates, so they fail to magnify. Escape attempted:
-the usefulness conjunct in `proof.lean` is stated against
-`InPpolyDAGOracle` (the oracle-extended class), and `GlobalHardness P`
-is an HDX local-to-global measure. **Auditor must adjudicate:** once the
-HDX measure is made concrete, does it stay non-local (useful against
-oracle-extended circuits), or does it collapse to a local measure that
-B4 defeats? If the latter → `NoGoLog`.
+Auditor verdict (May 2026): the chosen escape mechanism is reversed.
+Stating usefulness against the **oracle-extended** class
+(`InPpolyDAGOracle`) requires `GapMCSP ∉ InPpolyDAGOracle`, but the B4
+fact recorded in `Docs/BARRIER_CATALOGUE.md` says exactly the opposite —
+Gap-MCSP **does** admit oracle-extended small circuits. The conjuncts
+of `SourceTheorem_hdx_locality` are therefore jointly inconsistent
+under any inhabited `IsGapMCSP` slice. The honest B4 escape is to prove
+usefulness against **plain** `PpolyDAG` via a technique that
+**does not lift** to oracle-augmented circuits (`NonOracleRobust(P)`);
+the current shape demands the opposite. Formal witness:
+`hdx_locality_current_shape_impossible` in `proof.lean`.
 
 ## Relativization
 

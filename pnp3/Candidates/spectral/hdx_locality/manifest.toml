@@ -6,7 +6,14 @@
 [candidate]
 id            = "hdx_locality"
 method_family = "spectral"
-status        = "draft"
+# REFUTED by auditor (May 2026): the source theorem is unconditionally
+# False under the B4 fact (Gap-MCSP admits oracle-extended small
+# circuits). Formal refutation: `hdx_locality_current_shape_impossible`
+# in proof.lean. The arrow was reversed (asks for usefulness against
+# the oracle-extended class instead of usefulness against plain
+# PpolyDAG via a non-oracle-robust technique). See self_attack.md
+# Attack 8 (attack-succeeded).
+status        = "refuted"
 
 [source]
 theorem = "SourceTheorem_hdx_locality"

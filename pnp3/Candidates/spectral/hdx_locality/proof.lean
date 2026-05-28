@@ -73,6 +73,39 @@ def gap_from_hdx_locality
     True :=
   True.intro
 
+/-!
+## Current-shape no-go (auditor refutation, May 2026)
+
+**Auditor verdict on the shape above:**
+`RED_CURRENT_STATEMENT_ORACLE_TARGET_COLLISION`.
+
+The arrow is reversed. Beating B4 requires usefulness against *plain*
+`PpolyDAG` via a technique that does **not** extend to the oracle-
+augmented class.  The shape above asks the opposite — usefulness against
+the *oracle-extended* class — and the repo's `Docs/BARRIER_CATALOGUE.md`
+records the B4 fact "Gap-MCSP admits highly-efficient circuits extended
+with small-fan-in oracle gates".  Together these make the source
+theorem **unconditionally False** as soon as `IsGapMCSP` is inhabited.
+
+The theorem below formalises this: under the B4 fact (the third
+hypothesis) and any inhabited `IsGapMCSP` slice (the second hypothesis),
+the source theorem yields `False`.  This refutation IS the candidate's
+deliverable; see `self_attack.md` Attack 8 (status `attack-succeeded`)
+and `manifest.toml` (`status = "refuted"`).
+-/
+
+theorem hdx_locality_current_shape_impossible
+    {InPpolyDAGOracle IsGapMCSP : BoolProperty}
+    {GlobalHardness NotHardwired : BoolProperty → Prop}
+    (hSource : SourceTheorem_hdx_locality
+                  InPpolyDAGOracle IsGapMCSP GlobalHardness NotHardwired)
+    (hGapInhabited : ∃ (n : Nat) (f : BoolFn n), IsGapMCSP n f)
+    (hB4 : ∀ (n : Nat) (f : BoolFn n), IsGapMCSP n f → InPpolyDAGOracle n f) :
+    False :=
+  match hSource, hGapInhabited with
+  | ⟨_P, _hGlobal, hUseful, hHolds, _hNotHardwired⟩, ⟨n, f, hGap⟩ =>
+      hUseful n f (hB4 n f hGap) (hHolds n f hGap)
+
 end HdxLocality
 end Spectral
 end Candidates

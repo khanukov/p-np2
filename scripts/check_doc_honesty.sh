@@ -29,7 +29,7 @@
 #
 #   The identifier `P_ne_NP_unconditional` itself is NOT in the public-
 #   doc forbidden-phrase list.  Existing public docs (TODO.md,
-#   pnp3/Docs/Unconditionality_FAQ_ru.md, ...) legitimately describe the
+#   pnp3/Docs/Unconditionality_FAQ.md, ...) legitimately describe the
 #   identifier as the absent target, e.g. "expose `P_ne_NP_unconditional`
 #   from that same file".  Mentioning a name is not the same as claiming
 #   completion.  The phantom-axiom check (A) and the existing
@@ -192,6 +192,7 @@ claim_phrases=(
   "we prove unconditional"
   "complete proof of P vs NP"
   "P≠NP solved"
+  "P!=NP solved"
   "P != NP solved"
 )
 
@@ -235,6 +236,85 @@ if [[ "${valid_term_present}" == "0" ]]; then
     fi
   done
 fi
+
+# ---------------------------------------------------------------------------
+# (D) Stale public-endpoint wording scan.
+# ---------------------------------------------------------------------------
+#
+# Independent of Rule 1 / valid_term_present.  These patterns describe the
+# pre-ResearchGapWitness picture where `P_ne_NP_final` still consumed
+# `MagnificationAssumptions`.  The current public default is
+# `P_ne_NP_final (gap : ResearchGapWitness)`; legacy hMag / hMS /
+# support-bounds endpoints are audit / compatibility wrappers only, and the
+# support-bounds route is formally refuted (`MagnificationAssumptions ->
+# False`, etc.).
+#
+# Source list: spec/target.toml::[stale_public_endpoint_wording].
+#
+# Allowed locations: archive/**, outputs/**, seed_packs/**, spec/**,
+# bench/**, scripts/**, governance/audit docs that are exempt by name,
+# and individual files that contain the opt-out marker
+# `<!-- doc-status: legacy -->` near the top.
+
+echo "[doc-honesty] (D) stale public-endpoint wording scan"
+
+stale_endpoint_patterns=(
+  'P_ne_NP_final\b\s*\(hMag'
+  'current public default theorem[^\n]*MagnificationAssumptions'
+  'fastest path[^\n]*remove hMag'
+  'only formula-side internalization remains'
+)
+
+stale_excluded_globs=(
+  -g '!RESEARCH_CONSTITUTION.md'
+  -g '!Phase0_Audit_Surface.md'
+  -g '!FixedParams_Probe.md'
+  -g '!spec/**'
+  -g '!bench/**'
+  -g '!outputs/**'
+  -g '!archive/**'
+  -g '!seed_packs/**'
+  -g '!scripts/**'
+)
+
+legacy_marker='<!-- doc-status: legacy -->'
+
+for pattern in "${stale_endpoint_patterns[@]}"; do
+  raw_hits="$(rg -n --no-heading --color=never \
+                "${scan_globs[@]}" "${stale_excluded_globs[@]}" \
+                -e "${pattern}" . 2>/dev/null || true)"
+  if [[ -z "${raw_hits}" ]]; then
+    continue
+  fi
+
+  # Filter out files that carry the legacy opt-out marker.  ripgrep
+  # output lines look like `path:line:content`; the path is everything
+  # before the first colon.
+  filtered_hits=""
+  while IFS= read -r line; do
+    [[ -z "${line}" ]] && continue
+    file_path="${line%%:*}"
+    if [[ -f "${file_path}" ]] && rg -q -F -- "${legacy_marker}" "${file_path}" 2>/dev/null; then
+      # File is explicitly tagged as legacy; skip.
+      continue
+    fi
+    if [[ -z "${filtered_hits}" ]]; then
+      filtered_hits="${line}"
+    else
+      filtered_hits="${filtered_hits}"$'\n'"${line}"
+    fi
+  done <<<"${raw_hits}"
+
+  if [[ -n "${filtered_hits}" ]]; then
+    echo "[doc-honesty] FAIL: stale public-endpoint pattern: ${pattern}"
+    echo "${filtered_hits}"
+    echo "[doc-honesty]   Active public docs must reflect the current public"
+    echo "[doc-honesty]   default: P_ne_NP_final (gap : ResearchGapWitness)."
+    echo "[doc-honesty]   Move stale phrases to archive/, outputs/, or annotate"
+    echo "[doc-honesty]   the file with '${legacy_marker}' near the top to opt out."
+    fail=1
+  fi
+done
 
 # ---------------------------------------------------------------------------
 # Result.

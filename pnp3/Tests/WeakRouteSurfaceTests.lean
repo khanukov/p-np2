@@ -1368,7 +1368,7 @@ def check_NP_not_subset_PpolyDAG_final_of_sourceClosure_TM :
       Models.GapPartialMCSP_TMWitness p →
       DAGRouteBSourceClosure p →
       ComplexityInterfaces.NP_not_subset_PpolyDAG :=
-  NP_not_subset_PpolyDAG_final_of_sourceClosure_TM
+  AuditOnly_NP_not_subset_PpolyDAG_final_of_sourceClosure_TM
 
 /--
 Companion `P ≠ NP` final wrapper for the same localized source closure is
@@ -1379,7 +1379,7 @@ def check_P_ne_NP_final_of_sourceClosure_TM :
       Models.GapPartialMCSP_TMWitness p →
       DAGRouteBSourceClosure p →
       ComplexityInterfaces.P_ne_NP :=
-  P_ne_NP_final_of_sourceClosure_TM
+  AuditOnly_P_ne_NP_final_of_sourceClosure_TM
 
 /--
 Direct final DAG-separation wrapper from the named Route-B blocker is available
@@ -1390,7 +1390,7 @@ def check_NP_not_subset_PpolyDAG_final_of_blocker_TM :
       Models.GapPartialMCSP_TMWitness p →
       dagRouteBSourceBlocker p →
       ComplexityInterfaces.NP_not_subset_PpolyDAG :=
-  NP_not_subset_PpolyDAG_final_of_blocker_TM
+  AuditOnly_NP_not_subset_PpolyDAG_final_of_blocker_TM
 
 /--
 Companion direct `P ≠ NP` wrapper from the same Route-B blocker gate is
@@ -1401,7 +1401,7 @@ def check_P_ne_NP_final_of_blocker_TM :
       Models.GapPartialMCSP_TMWitness p →
       dagRouteBSourceBlocker p →
       ComplexityInterfaces.P_ne_NP :=
-  P_ne_NP_final_of_blocker_TM
+  AuditOnly_P_ne_NP_final_of_blocker_TM
 
 /--
 Asymptotic DAG-separation wrapper from one fixed-slice collapse is available
@@ -1414,7 +1414,7 @@ def check_NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse :
       (ComplexityInterfaces.PpolyDAG
           (Models.gapPartialMCSP_Language (hMag.antiChecker.asymptotic.pAt n hn)) → False) →
       ComplexityInterfaces.NP_not_subset_PpolyDAG :=
-  NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse
+  RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse
 
 /--
 Companion `P ≠ NP` asymptotic wrapper from one fixed-slice collapse is
@@ -1427,7 +1427,7 @@ def check_P_ne_NP_final_of_asymptotic_fixedSliceCollapse :
       (ComplexityInterfaces.PpolyDAG
           (Models.gapPartialMCSP_Language (hMag.antiChecker.asymptotic.pAt n hn)) → False) →
       ComplexityInterfaces.P_ne_NP :=
-  P_ne_NP_final_of_asymptotic_fixedSliceCollapse
+  RefutedRoute_P_ne_NP_final_of_asymptotic_fixedSliceCollapse
 
 /--
 Asymptotic DAG-separation wrapper from one fixed-slice stable-restriction
@@ -1440,7 +1440,7 @@ def check_NP_not_subset_PpolyDAG_final_of_asymptotic_dag_stableRestriction :
       LowerBounds.dag_stableRestriction_producer
         (hMag.antiChecker.asymptotic.pAt n hn) →
       ComplexityInterfaces.NP_not_subset_PpolyDAG :=
-  NP_not_subset_PpolyDAG_final_of_asymptotic_dag_stableRestriction
+  RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptotic_dag_stableRestriction
 
 /--
 Companion `P ≠ NP` asymptotic wrapper from one fixed-slice stable-restriction
@@ -1453,7 +1453,7 @@ def check_P_ne_NP_final_of_asymptotic_dag_stableRestriction :
       LowerBounds.dag_stableRestriction_producer
         (hMag.antiChecker.asymptotic.pAt n hn) →
       ComplexityInterfaces.P_ne_NP :=
-  P_ne_NP_final_of_asymptotic_dag_stableRestriction
+  RefutedRoute_P_ne_NP_final_of_asymptotic_dag_stableRestriction
 
 /--
 Asymptotic DAG-separation wrapper from one fixed-slice Route-B blocker is
@@ -1465,7 +1465,7 @@ def check_NP_not_subset_PpolyDAG_final_of_asymptotic_blocker :
       (hn : hMag.antiChecker.asymptotic.N0 ≤ n),
       dagRouteBSourceBlocker (hMag.antiChecker.asymptotic.pAt n hn) →
       ComplexityInterfaces.NP_not_subset_PpolyDAG :=
-  NP_not_subset_PpolyDAG_final_of_asymptotic_blocker
+  RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptotic_blocker
 
 /--
 Companion `P ≠ NP` asymptotic wrapper from one fixed-slice source-closure
@@ -1477,7 +1477,7 @@ def check_P_ne_NP_final_of_asymptotic_sourceClosure :
       (hn : hMag.antiChecker.asymptotic.N0 ≤ n),
       LowerBounds.DAGRouteBSourceClosure (hMag.antiChecker.asymptotic.pAt n hn) →
       ComplexityInterfaces.P_ne_NP :=
-  P_ne_NP_final_of_asymptotic_sourceClosure
+  RefutedRoute_P_ne_NP_final_of_asymptotic_sourceClosure
 
 /--
 Companion `P ≠ NP` asymptotic wrapper from the same fixed-slice blocker is
@@ -1489,7 +1489,7 @@ def check_P_ne_NP_final_of_asymptotic_blocker :
       (hn : hMag.antiChecker.asymptotic.N0 ≤ n),
       dagRouteBSourceBlocker (hMag.antiChecker.asymptotic.pAt n hn) →
       ComplexityInterfaces.P_ne_NP :=
-  P_ne_NP_final_of_asymptotic_blocker
+  RefutedRoute_P_ne_NP_final_of_asymptotic_blocker
 
 /--
 Branch-A strengthened provider target (nontrivial `S`) is exposed with the

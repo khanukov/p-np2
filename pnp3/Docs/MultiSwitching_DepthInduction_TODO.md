@@ -1,112 +1,121 @@
-# Multi‑switching depth>2: что нужно формализовать для polylog‑bound
+# Multi-switching depth>2: what must be formalised for the polylog bound
 
-Глобальный чеклист до безусловного `P ≠ NP`:
+Global checklist for unconditional `P ≠ NP`:
 `/root/p-np2/CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
-Этот файл покрывает только локальный подпроцесс multi-switching/depth.
+This file covers only the local multi-switching / depth sub-process.
 
-Статус файла: рабочий TODO/roadmap по подпроцесcу depth>2.
-Этот файл не является источником глобального статуса по проекту; для общего
-состояния используйте `STATUS.md` и `TODO.md`.
+File status: working TODO / roadmap for the depth>2 sub-process.
+This file is not the source of the global project status; for the
+overall state, see `STATUS.md` and `TODO.md`.
 
-Этот документ фиксирует **конкретный список лемм и конструкций**, которые
-должны быть реализованы, чтобы **без аксиом** получить
+This document pins **the concrete list of lemmas and constructions**
+that have to be implemented in order to obtain, **without axioms**,
 
 ```
 t ≤ (log₂(M+2))^(d+1)
 ```
 
-и построить `AC0MultiSwitchingWitness` / `AC0PolylogBoundWitness`
-для **общей глубины `d > 2`**.
+and to build `AC0MultiSwitchingWitness` / `AC0PolylogBoundWitness` for
+**general depth `d > 2`**.
 
-Смысл: сейчас depth‑2 часть и small‑alphabet encoding закрыты конструктивно,
-но **индукция по глубине и CCDT‑вероятностный слой отсутствуют**.
-Ниже — точные недостающие шаги.
+Context: at present the depth-2 piece and the small-alphabet encoding
+are closed constructively, but **the depth induction and the
+CCDT-probabilistic layer are missing**.  The exact missing steps follow.
 
 ---
 
-## 0) Текущий готовый фундамент (уже есть в коде)
+## 0) Existing foundations (already in the code)
 
-1. **Encoding/injection + counting** для canonical CCDT:
-   - `AC0/MultiSwitching/Encoding.lean` (малый алфавит, декодер, injective).
-   - `AC0/MultiSwitching/Counting.lean` (cardinality bound → ∃ good restriction).
-2. **Переход Good restriction → PartialCertificate**:
+1. **Encoding / injection + counting** for the canonical CCDT:
+   - `AC0/MultiSwitching/Encoding.lean` (small alphabet, decoder,
+     injective);
+   - `AC0/MultiSwitching/Counting.lean` (cardinality bound → ∃ good
+     restriction).
+2. **Transition: good restriction → PartialCertificate**:
    - `AC0/MultiSwitching/ShrinkageFromGood.lean`.
-3. **Stage‑pipeline входы** в `AC0/MultiSwitching/Main.lean`:
-   - Stage 1–3 в виде лемм типа `exists_good_restriction_*`.
-4. **Численный каркас для depth‑trace** в `AC0/MultiSwitching/DepthInduction.lean`:
-   - `level_le_maxSteps`, `totalSteps_le_mul_maxSteps`, `maxSteps_le_totalSteps`
-     (связка «сумма ↔ максимум» по уровням).
+3. **Stage-pipeline inputs** in `AC0/MultiSwitching/Main.lean`:
+   - Stages 1–3 in the form of lemmas like
+     `exists_good_restriction_*`.
+4. **Numerical scaffolding for the depth trace** in
+   `AC0/MultiSwitching/DepthInduction.lean`:
+   - `level_le_maxSteps`, `totalSteps_le_mul_maxSteps`,
+     `maxSteps_le_totalSteps`
+     (the "sum ↔ maximum" coupling per level).
 
-👉 **Проблема**: весь этот слой построен для depth‑2 (CNF family),
-а для depth>2 нет **индукции по глубине** и нет **вероятностной модели**.
+👉 **Problem**: this entire layer is built for depth-2 (CNF family),
+and for depth>2 there is **no depth induction** and **no probabilistic
+model**.
 
 ---
 
-## 1) CCDT для depth>2 (индуктивный алгоритм)
+## 1) CCDT for depth>2 (inductive algorithm)
 
-Нужно определить **общую CCDT‑конструкцию** для depth‑d формул, которая:
+A **general CCDT construction** for depth-d formulas is needed; it must:
 
-1. Раскладывает depth‑(d+1) формулу на CNF/DNF подпроцессы,
-2. Возвращает каноническую трассу для каждого уровня,
-3. Позволяет применить encoding на каждом шаге.
+1. decompose a depth-(d+1) formula into CNF/DNF sub-processes,
+2. return a canonical trace for each level,
+3. allow applying the encoding at every step.
 
-Минимальные требования:
+Minimal requirements:
 
-* **Тип CCDT‑алгоритма** для глубины `d`:
+* **CCDT algorithm type** for depth `d`:
   ```lean
   CCDTAlgorithm (n k ℓ t : Nat) (F : FormulaFamily n k)
   ```
-  должен существовать не только для CNF (depth‑2),
-  но и для общих depth‑d формул.
+  must exist not only for CNF (depth-2) but also for general depth-d
+  formulas.
 
-* **Trace‑структура**: последовательная композиция “локальных трасс”
-  (`Trace` для каждого уровня) должна быть формализована как inductive‑тип.
-
----
-
-## 2) Индукция по глубине (multi‑switching)
-
-Нужна **реальная индукция**:
-
-* **База (depth‑2)**: уже доказана конструктивно.
-* **Шаг (d → d+1)**:
-  - из good restriction уровня `d+1` построить семейство формул глубины `d`;
-  - применить индукционную гипотезу для depth‑d;
-  - склеить полученные PDT/PartialCertificate в один shrinkage‑сертификат.
-
-Это требует:
-
-1. **Композиции CCDT + encoding** на каждом уровне.
-2. **Леммы “склейки” shrinkage**:
-   - комбинировать shrinkage для подформул в shrinkage для общей формулы;
-   - контролировать глубину (t) и ε‑ошибку при склейке.
+* **Trace structure**: the sequential composition of "local traces"
+  (`Trace` for each level) must be formalised as an inductive type.
 
 ---
 
-## 3) Вероятностный слой (формализация counting bound)
+## 2) Depth induction (multi-switching)
 
-Для polylog‑bound нужна **вероятностная интерпретация**, либо эквивалентный
-детерминированный подсчёт (encoding/injection).
+A **real induction** is needed:
 
-Что требуется формально:
+* **Base (depth-2)**: already proved constructively.
+* **Step (d → d+1)**:
+  - from a good restriction at level `d+1`, build a family of
+    depth-`d` formulas;
+  - apply the induction hypothesis for depth-`d`;
+  - glue the resulting PDTs / PartialCertificates into a single
+    shrinkage certificate.
 
-1. **Параметры ограничения**: выбор `p`, `s`, `t` как функции от `M`, `d`.
-2. **Неравенство** вида:
+This requires:
+
+1. **Composition of CCDT + encoding** at every level.
+2. **A shrinkage "gluing" lemma**:
+   - combine shrinkage for sub-formulas into shrinkage for the whole
+     formula;
+   - control the depth (`t`) and the ε-error under gluing.
+
+---
+
+## 3) Probabilistic layer (formalising the counting bound)
+
+The polylog bound needs a **probabilistic interpretation** or an
+equivalent deterministic counting argument (encoding / injection).
+
+What is required formally:
+
+1. **Restriction parameters**: choice of `p`, `s`, `t` as functions of
+   `M`, `d`.
+2. **An inequality** of the form:
    ```
    |Bad ∩ R_s| ≤ |R_{s−t}| * B^t
    ```
-   и превращение его в `∃ ρ ∈ R_s, ¬BadEvent ρ`.
-3. **Согласование** параметров на глубине `d+1`:
-   при фиксированном `t`, `ℓ`, `B` получить
-   `t ≤ (log₂(M+2))^(d+1)`.
+   and its conversion into `∃ ρ ∈ R_s, ¬BadEvent ρ`.
+3. **Parameter alignment** at depth `d+1`: with fixed `t`, `ℓ`, `B`,
+   obtain `t ≤ (log₂(M+2))^(d+1)`.
 
-Без этого **polylog‑bound** не доказывается.
+Without this the **polylog bound** cannot be proved.
 
 ---
 
-## 4) Финальный объект: AC0MultiSwitchingWitness
+## 4) Final object: AC0MultiSwitchingWitness
 
-Нужна конструкция:
+A construction is needed:
 
 ```lean
 def ac0MultiSwitchingWitness_of_depthInduction
@@ -115,99 +124,101 @@ def ac0MultiSwitchingWitness_of_depthInduction
   AC0MultiSwitchingWitness params F := ...
 ```
 
-Эта лемма должна:
+This lemma must:
 
-1. Построить `Shrinkage` (из индукции),
-2. Доказать `depth_le_polylog` именно в форме:
+1. Build `Shrinkage` (from the induction),
+2. Prove `depth_le_polylog` exactly in the form:
    ```
    t ≤ (log₂(M+2))^(d+1)
    ```
-3. Перенести `family_eq`, `epsilon_nonneg`, `epsilon_le_inv`.
+3. Carry over `family_eq`, `epsilon_nonneg`, `epsilon_le_inv`.
 
-После этого:
-* `ac0PolylogBoundWitness_of_multi_switching` становится доказуемым,
-* Stage‑6 (`partial_shrinkage_for_AC0_with_polylog`) становится
-  полностью конструктивной без внешних аксиом.
-
----
-
-## 5) Итог: что блокирует прямо сейчас
-
-* **Нет CCDT‑индукции для depth>2** — только depth‑2.
-* **Нет формального “склеивания” shrinkage** для глубинного шага.
-* **Нет доказанного polylog‑bound** для `t` как функции от `M, d`.
-
-Пока эти три шага не реализованы, **конструктивный polylog‑witness
-для depth>2 отсутствует**.
+After this:
+* `ac0PolylogBoundWitness_of_multi_switching` becomes provable;
+* Stage 6 (`partial_shrinkage_for_AC0_with_polylog`) becomes fully
+  constructive without external axioms.
 
 ---
 
-## 6) Рекомендованный порядок реализации
+## 5) Bottom line: what blocks the depth>2 case right now
 
-1. Реализовать CCDT‑индукцию на уровне типов (trace → encoding).
-2. Доказать лемму “склейки” shrinkage для глубины d+1.
-3. Подключить counting‑bound и получить `∃ good restriction`.
-4. Из индукции построить `AC0MultiSwitchingWitness`.
-5. Завести end‑to‑end proof в `Facts_Switching.lean`.
+* **No CCDT induction for depth>2** — only depth-2.
+* **No formal "gluing" of shrinkage** for the depth step.
+* **No proved polylog bound** for `t` as a function of `M`, `d`.
 
----
-
-## 7) Связанные файлы (места для имплементации)
-
-* `pnp3/AC0/MultiSwitching/Main.lean` — Stage‑pipeline + индукция.
-* `pnp3/AC0/MultiSwitching/Trace*.lean` — типы трасс и композиция.
-* `pnp3/AC0/MultiSwitching/DepthInduction.lean` — базовые типы для трасс по глубине.
-* `pnp3/AC0/MultiSwitching/Counting.lean` — подсчёт и bounds.
-* `pnp3/ThirdPartyFacts/Facts_Switching.lean` — финальный witness.
+Until these three steps are implemented, **a constructive polylog
+witness for depth>2 does not exist**.
 
 ---
 
-## 8) Вопросы для закрытия плана (нужны ответы)
+## 6) Recommended implementation order
 
-Пожалуйста, уточните эти пункты — без них нельзя корректно завершить
-индукцию по глубине и вывести polylog‑bound:
-
-1. **Точный формат индукционного шага**:
-   - Нужно ли в индукции склеивать *один общий* CCDT для depth‑(d+1),
-     или допускается `d` отдельных shrinkage‑свидетелей (по слоям)
-     с последующим комбинированием через `PartialCertificate`?
-2. **Какой базовый объект индукции предпочтителен**:
-   - `Shrinkage` (полный PDT) или `PartialCertificate` (trunk+tails)?
-   Это влияет на леммы “склейки” и контроль глубины.
-3. **Формализация вероятностного шага**:
-   - Достаточно ли детерминированного counting‑аргумента
-     (encoding/injection) на каждом уровне,
-     или нужно строить явное вероятностное пространство `R_s`?
-4. **Параметризация t, s, p**:
-   - Нужно ли фиксировать ровно классические параметры Håstad/Servedio–Tan,
-     или допустима “приближённая” (но корректная) схема, дающая
-     `t ≤ (log₂(M+2))^(d+1)` с большими константами?
-5. **CNF/DNF ядро индукции**:
-   - Оставляем CNF‑pipeline как canonical и переводим DNF через отрицание,
-     или нужен симметричный (двойной) индукционный шаг?
-6. **Формат ε‑бюджета по глубине**:
-   - Окончательно фиксируем линейный бюджет
-     `ε_level ≤ 1/((d+1)(n+2))`, или нужен другой (геометрический) профиль?
-7. **Склейка сертификатов**:
-   - Какая именно формула для итоговой глубины предпочтительна:
-     `depth_total = ℓ + t + max(depth_tail)` или сумма по уровням?
-8. **LeafPartition для canonical CCDT**:
-   - Вшиваем `LeafPartition` в shrinkage‑сертификаты как поле,
-     или оставляем отдельной леммой и подставляем локально?
+1. Implement the CCDT induction at the type level (trace → encoding).
+2. Prove the "gluing" lemma for shrinkage at depth d+1.
+3. Plug in the counting bound and obtain `∃ good restriction`.
+4. From the induction, build `AC0MultiSwitchingWitness`.
+5. Wire the end-to-end proof in `Facts_Switching.lean`.
 
 ---
 
-## 9) Итоговый критерий успеха (для фиксации DoD)
+## 7) Related files (places for implementation)
 
-Когда рабочий чеклист A0–A8 для depth>2 закрыт, то:
+* `pnp3/AC0/MultiSwitching/Main.lean` — Stage-pipeline + induction.
+* `pnp3/AC0/MultiSwitching/Trace*.lean` — trace types and composition.
+* `pnp3/AC0/MultiSwitching/DepthInduction.lean` — base types for
+  depth-indexed traces.
+* `pnp3/AC0/MultiSwitching/Counting.lean` — counting and bounds.
+* `pnp3/ThirdPartyFacts/Facts_Switching.lean` — final witness.
 
-* `AC0MultiSwitchingWitness` / `AC0PolylogBoundWitness` строятся
-  **внутри проекта**, без внешних фактов;
-* `partial_shrinkage_for_AC0` и `shrinkage_for_localCircuit` становятся
-  внутренними теоремами;
-* внешняя зависимость от witness-backed switching/shrinkage фактов
-  снимается в активной формульной цепочке.
+---
 
-Если цель — полностью конструктивный статус активной цепочки, нужно
-дополнительно закрыть ветку B (локализованный bridge/NP-hardness слой)
-в плане.
+## 8) Open questions for closing the plan (answers needed)
+
+Please clarify these points — without them the depth induction and
+the polylog bound cannot be completed correctly:
+
+1. **Exact form of the induction step**:
+   - Should the induction glue *one common* CCDT for depth-(d+1), or
+     is it acceptable to use `d` separate shrinkage witnesses (one per
+     layer) and combine them via `PartialCertificate`?
+2. **Preferred base object for the induction**:
+   - `Shrinkage` (a full PDT) or `PartialCertificate` (trunk + tails)?
+   This affects the gluing lemmas and the depth control.
+3. **Formalisation of the probabilistic step**:
+   - Is a deterministic counting argument (encoding / injection) at
+     each level enough, or does an explicit probability space `R_s`
+     need to be built?
+4. **Parametrisation of t, s, p**:
+   - Must we pin exactly the classical Håstad / Servedio–Tan
+     parameters, or is an "approximate" (but correct) scheme yielding
+     `t ≤ (log₂(M+2))^(d+1)` with larger constants acceptable?
+5. **CNF/DNF kernel of the induction**:
+   - Do we keep the CNF pipeline canonical and route DNF through
+     negation, or do we need a symmetric (dual) induction step?
+6. **Per-depth ε budget**:
+   - Do we finally pin the linear budget
+     `ε_level ≤ 1/((d+1)(n+2))`, or do we need a different
+     (geometric) profile?
+7. **Certificate gluing**:
+   - Which formula for the total depth is preferred:
+     `depth_total = ℓ + t + max(depth_tail)`, or a sum over levels?
+8. **LeafPartition for the canonical CCDT**:
+   - Do we embed `LeafPartition` into the shrinkage certificates as a
+     field, or do we keep it as a separate lemma applied locally?
+
+---
+
+## 9) Success criterion (for fixing DoD)
+
+When the working checklist A0–A8 for depth>2 is closed:
+
+* `AC0MultiSwitchingWitness` / `AC0PolylogBoundWitness` are built
+  **inside the project**, without external facts;
+* `partial_shrinkage_for_AC0` and `shrinkage_for_localCircuit` become
+  internal theorems;
+* the external dependency on witness-backed switching / shrinkage
+  facts is removed in the active formula chain.
+
+If the goal is a fully constructive status of the active chain, the
+plan additionally requires closing branch B (the localised bridge /
+NP-hardness layer).

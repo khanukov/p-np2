@@ -1,6 +1,6 @@
 # TODO / Roadmap (current)
 
-Updated: 2026-04-23
+Updated: 2026-05-28
 
 Canonical checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
@@ -24,10 +24,16 @@ Research method boundary:
 - The final `ResearchGapWitness` port is method-agnostic; AC0/locality and
   `AcceptedFamilyCertificateAt` routes are optional sufficient routes, not a
   mandatory interface for every future proof.
-- DAG endpoint plumbing is substantial, but the current separation route still
-  depends on formula-side support-bounds assumptions that the audit refutes.
-- A separate restricted-model AC0 milestone surface now exists:
-  `pnp3/LowerBounds/AC0_GapMCSP.lean`.
+- DAG endpoint plumbing is substantial.  The legacy formula-side
+  support-bounds / multi-switching separation route is formally
+  refuted; the current public closure boundary is `ResearchGapWitness`,
+  whose `dagSeparation` field (= `NP_not_subset_PpolyDAG`) is the only
+  remaining mathematical input.
+- A separate restricted-model AC0 surface exists at
+  `pnp3/LowerBounds/AC0_GapMCSP.lean`.  It is a side artifact /
+  formalization milestone, not the current P-vs-NP mainline (see
+  Practical Work Item 7 below and the same posture in `STATUS.md`,
+  `AGENTS.md`, `pnp4/README.md`).
 
 ## Hard Policy Update
 
@@ -61,8 +67,10 @@ The DAG side has useful plumbing:
 3. Route-B/source-closure/blocker surfaces,
 4. final wrappers exposing the exact assumptions consumed.
 
-This infrastructure is valuable only when paired with a non-vacuous
-formula-side source theorem.
+This infrastructure is valuable when paired with either a non-vacuous
+formula / locality source theorem, or a direct method-agnostic source
+theorem that proves `ResearchGapWitness` /
+`NP_not_subset_PpolyDAG`.
 
 ### Target 2. Replace the false support-bounds source
 
@@ -132,8 +140,13 @@ Canonical docs must say:
    at `ResearchGapWitness` rather than forcing it through AC0/locality plumbing.
 6. Optionally finish independent verifier/formalization milestones such as the
    polynomial-time MCSP verifier, but do not present them as closing `P != NP`.
-7. Package the AC0 restricted-model result around
-   `LowerBounds.AC0_GapMCSP` as a standalone formalization deliverable, with
-   paper-facing `in_AC0` / `not_in_AC0` theorem names over the active
-   `SmallAC0Solver_Partial` interface and without mixing it into the
-   `ResearchGapWitness` closure story.
+7. The restricted-model AC0 surface around `LowerBounds.AC0_GapMCSP`
+   is kept available with paper-facing `in_AC0` / `not_in_AC0`
+   theorem names over the `SmallAC0Solver_Partial` interface, but it
+   is treated as a side artifact / formalization milestone only —
+   not as the current P-vs-NP mainline and not as a planned closure
+   route unless paired with an explicit bridge to
+   `NP_not_subset_PpolyDAG`.  Do not present it as a standalone
+   publishable AC0 lower bound, do not mix it into the
+   `ResearchGapWitness` closure story, and keep release docs
+   consistent with `AGENTS.md` / `pnp4/README.md` on this point.

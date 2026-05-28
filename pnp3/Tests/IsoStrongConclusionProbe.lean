@@ -6,7 +6,7 @@ import Magnification.FinalResultMainline
 import LowerBounds.AsymptoticDAGBarrierTheorems
 import LowerBounds.AsymptoticDAGBarrierInterfaces
 import LowerBounds.MCSPGapLocality
-import «pnp3».Tests.GlobalHInDagContractProbe
+import Tests.GlobalHInDagContractProbe
 
 /-!
 # Iso-strong conclusion L0 probe (canonical track)

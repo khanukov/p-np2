@@ -1,175 +1,197 @@
-# Compiled Runtime Size Closure Runbook (`P ⊆ PpolyDAG`)
+# Compiled runtime size-closure runbook (`P ⊆ PpolyDAG`)
 
-Дата: 2026-03-02  
-Статус: active
+Date: 2026-03-02
+Status: active
 
 > Current-scope note (2026-04-03):
-> это inclusion-side architectural runbook, не глобальный статус проекта.
+> this is an inclusion-side architectural runbook, not the global
+> project status.
 
 > Release note (2026-03-14):
-> этот runbook сохранён как архитектурная трассировка.
-> Для текущего release-статуса и active-route используйте:
-> `pnp3/Docs/PsubsetPpoly_Internal_TODO.md` и
+> this runbook is kept as architectural tracing.
+> For the current release status and active route, use:
+> `pnp3/Docs/PsubsetPpoly_Internal_TODO.md` and
 > `pnp3/Docs/PsubsetPpoly_AUDITOR_CHECKLIST.md`.
 
 ## Update (2026-03-13): post-recheck note
 
-Проверки на текущем дереве:
+Checks on the current tree:
 
-- `./scripts/check.sh` проходит;
-- актуальные audit/regression тесты проходят
+- `./scripts/check.sh` passes;
+- the current audit / regression tests pass
   (`AxiomsAudit`, `BarrierAudit`, `BarrierBypassAudit`,
   `BridgeLocalityRegression`).
 
-Что изменилось с момента фиксации этого runbook:
+What changed since this runbook was pinned:
 
-1. Линейный size-route закрыт internal witness-ом
+1. The linear size route is closed by the internal witness
    `CompiledRuntimeCircuitSizeBoundLinear_internal`.
-2. Для linear route correctness закрывается через
+2. For the linear route, correctness is closed via
    `compiledRuntimeAcceptCorrectnessLinear_of_stepSpecProvider`
-   с internal step-spec provider.
-3. Остаточный inclusion-блокер теперь не size-часть, а no-arg
-   evaluator/output-wire agreement witness для сборки
+   with an internal step-spec provider.
+3. The residual inclusion blocker is no longer the size part, but a
+   no-arg evaluator / output-wire agreement witness used to assemble
    `proved_P_subset_PpolyDAG_internal`.
 
-Разделы ниже сохраняются как архитектурная трассировка решений.
+The sections below are kept as an architectural decision trace.
 
 ## 1. Executive decision
 
-Текущий маршрут закрытия `CompiledRuntimeCircuitSizeBound` через существующий
-`stepCompiled` **не является замыкаемым** в текущем виде.
+The current route to closing `CompiledRuntimeCircuitSizeBound` via the
+existing `stepCompiled` **cannot be closed** in its present form.
 
-Причина не в одной недостающей лемме, а в архитектуре шага:
+The reason is not a single missing lemma but the architecture of the
+step:
 
-1. `ConfigCircuits.stepCircuits` сейчас использует `truthTableCircuit` для
-   `nextTapeCircuit/nextHeadCircuit/nextStateCircuit`.
-2. `stepCompiled` строится через
-   `toConfigCircuits` -> `toTreeWire` -> `packFin (compileTree ...)`.
-3. Это регулярно разворачивает DAG-представление в деревья и компилирует заново.
+1. `ConfigCircuits.stepCircuits` currently uses `truthTableCircuit`
+   for `nextTapeCircuit / nextHeadCircuit / nextStateCircuit`.
+2. `stepCompiled` is built via
+   `toConfigCircuits` → `toTreeWire` → `packFin (compileTree ...)`.
+3. This regularly unfolds the DAG representation into trees and
+   recompiles.
 
-Итог: нет реалистичного пути получить внутренний полиномиальный bound вида
-`n^(c+5) + (c+5)` для `runtimeConfigCompiled` без рефактора шага.
+Bottom line: there is no realistic way to obtain an internal
+polynomial bound of the form `n^(c+5) + (c+5)` for
+`runtimeConfigCompiled` without refactoring the step.
 
-## 2. Что это значит для стратегии
+## 2. What that means for the strategy
 
-Лучший путь к финальной цели (`P ⊆ PpolyDAG` без внешних контрактов):
+The best path to the final goal (`P ⊆ PpolyDAG` without external
+contracts):
 
-1. Убрать truth-table шаг как основу симуляции.
-2. Сделать DAG-preserving шаг на уровне `StraightConfig` (append-only builder).
-3. Доказывать размер через one-step gate increment и итерацию по `runTime`.
+1. Remove the truth-table step as the basis of the simulation.
+2. Make a DAG-preserving step at the `StraightConfig` level
+   (append-only builder).
+3. Prove the size bound through a one-step gate increment and
+   iteration over `runTime`.
 
-Именно этот путь одновременно:
+This is simultaneously:
 
-- конструктивный,
-- совместим с уже закрытой семантической частью (`stepCompiled`-ветка),
-- даёт прямую траекторию к закрытию `CompiledRuntimeCircuitSizeBound`.
+- constructive;
+- compatible with the already-closed semantic part
+  (the `stepCompiled` branch);
+- a direct trajectory to closing
+  `CompiledRuntimeCircuitSizeBound`.
 
-## 3. Priority plan (реально исполнимый)
+## 3. Priority plan (actually executable)
 
-### P0 (критический, высокая сложность)
-Ввести новый шаг `stepCompiledLinear` (рабочее имя), который:
+### P0 (critical, high complexity)
+Introduce a new step `stepCompiledLinear` (working name) that:
 
-1. стартует из `sc.circuit` (`EvalBuildCtx`/builder primitives),
-2. добавляет только новые gates (без `toTreeWire`/`compileTree` на всей формуле),
-3. возвращает новые wire selectors для tape/head/state.
+1. starts from `sc.circuit` (`EvalBuildCtx` / builder primitives);
+2. only appends new gates (no `toTreeWire` / `compileTree` on the
+   whole formula);
+3. returns new wire selectors for `tape / head / state`.
 
-Ожидаемый результат:
+Expected outcome:
 
-- лемма one-step вида  
+- a one-step lemma of the form
   `gates(stepCompiledLinear sc) ≤ gates(sc) + K(M,n)`.
 
-### P1 (высокий)
-Семантика нового шага:
+### P1 (high)
+Semantics of the new step:
 
 1. one-step spec:
-   `Spec sc f -> Spec (stepCompiledLinear sc) (TM.stepConfig ∘ f)`,
-2. итерация:
-   runtime-spec для `Nat.iterate stepCompiledLinear`.
+   `Spec sc f -> Spec (stepCompiledLinear sc) (TM.stepConfig ∘ f)`;
+2. iteration: a runtime spec for `Nat.iterate stepCompiledLinear`.
 
-### P2 (средне-высокий)
-Size-chain:
+### P2 (medium-high)
+Size chain:
 
-1. из P0 вывести bound на `Nat.iterate`,
-2. подставить `hRun : runTime ≤ n^c + c`,
-3. получить `CompiledRuntimeCircuitGateBound`,
-4. закрыть `CompiledRuntimeCircuitSizeBound` через уже существующий мост
+1. from P0, derive the bound on `Nat.iterate`;
+2. plug in `hRun : runTime ≤ n^c + c`;
+3. obtain `CompiledRuntimeCircuitGateBound`;
+4. close `CompiledRuntimeCircuitSizeBound` via the existing bridge
    `compiledRuntimeCircuitSizeBound_of_gateBound`.
 
-### P3 (средний)
+### P3 (medium)
 Route closure:
 
-1. закрыть runtime-only bundle полностью (без входных контрактов),
-2. довести internal-source endpoint до no-arg theorem,
-3. синхронизировать `FinalResult` / `Barrier.Bypass`.
+1. close the runtime-only bundle fully (without input contracts);
+2. bring the internal-source endpoint to a no-arg theorem;
+3. synchronise `FinalResult` / `Barrier.Bypass`.
 
-## 4. Non-goals (чтобы не терять время)
+## 4. Non-goals (so we don't waste time)
 
-1. Не пытаться «дожать» текущий `CompiledRuntimeCircuitSizeBound` только
-   арифметическими леммами поверх старого `stepCompiled`.
-2. Не наращивать дополнительные slack-версии bound (`+6`, `+7`, ...), пока шаг
-   остаётся truth-table/tree-recompile.
+1. Do not try to "push through" the current
+   `CompiledRuntimeCircuitSizeBound` using only arithmetic lemmas on
+   top of the old `stepCompiled`.
+2. Do not add further slack versions of the bound
+   (`+6`, `+7`, ...) while the step is still a truth-table /
+   tree-recompile.
 
 ## 5. Immediate next coding steps
 
-1. Вынести в `Simulation.lean` новый namespace/блок для linear-step assembly.
-2. Сначала закрыть только gate growth skeleton:
-   - размер после append,
-   - суммарный per-step прирост.
-3. Затем подключить семантические obligations (используя уже существующие
-   шаблоны `Spec` и `runtime_spec_of_next`).
+1. Carve out, in `Simulation.lean`, a new namespace / block for the
+   linear-step assembly.
+2. First close only the gate-growth skeleton:
+   - size after append;
+   - cumulative per-step increase.
+3. Then attach the semantic obligations (using the existing
+   templates `Spec` and `runtime_spec_of_next`).
 
 ## 6. Definition of Done for this runbook
 
-Считаем блок закрытым, когда одновременно:
+Block considered closed when all of the following hold at once:
 
-1. есть внутренний witness `CompiledRuntimeCircuitSizeBound`,
-2. он не опирается на внешние contract inputs,
-3. маршрут `proved_P_subset_PpolyDAG_of_iteratedRuntimeOnlyContracts` можно
-   свернуть до no-arg internal theorem,
-4. `lake build` проходит на ключевых и полном таргете.
+1. there is an internal witness `CompiledRuntimeCircuitSizeBound`;
+2. it does not depend on external contract inputs;
+3. the route
+   `proved_P_subset_PpolyDAG_of_iteratedRuntimeOnlyContracts` can be
+   folded down to a no-arg internal theorem;
+4. `lake build` passes on the key modules and on the full target.
 
 ## 7. Execution status (2026-03-02, current pass)
 
-Сделано:
+Done:
 
-1. В `Simulation.lean` выделены switch-points:
+1. In `Simulation.lean`, switch points have been carved out:
    - `stepCircuitsTruthTable` + alias `stepCircuits`,
    - `stepCompiledTruthTable` + alias `stepCompiled`.
-   - добавлены явные linear switch-points:
+   - Explicit linear switch points were added:
      `stepCircuitsLinear`, `stepCompiledLinear`.
-2. В `StraightLineBuilder.lean` добавлены append-only helper'ы для
-   `EvalBuildCtx`:
-   - `appendOp`, `appendConst`, `appendNot`, `appendAnd`, `appendOr`.
-3. В `Simulation.lean` добавлен append-only scaffolding:
-   - `StraightConfig.BuiltWire` + базовые операции над текущими/base wire,
-   - `BuiltWire.buildSymbolAux/buildSymbol` для
-     `OR_i (head_i ∧ tape_i)` без tree-recompile.
+2. In `StraightLineBuilder.lean`, append-only helpers for
+   `EvalBuildCtx` have been added:
+   - `appendOp`, `appendConst`, `appendNot`, `appendAnd`,
+     `appendOr`.
+3. In `Simulation.lean`, append-only scaffolding has been added:
+   - `StraightConfig.BuiltWire` + base operations over the
+     current / base wire;
+   - `BuiltWire.buildSymbolAux / buildSymbol` for
+     `OR_i (head_i ∧ tape_i)` without a tree recompile;
    - `BuiltWire.buildGuardSymbol`, `BuiltWire.buildBranchIndicator`,
-     `BuiltWire.buildWriteTerm`.
-   - `BuiltWire.BuiltCarry` + append-carry transport helpers.
+     `BuiltWire.buildWriteTerm`;
+   - `BuiltWire.BuiltCarry` + append-carry transport helpers;
    - `BuiltWire.buildSymbolFromCarry`, `buildBranchFromCarry`,
-     `buildWriteTermFromCarry`, `buildWriteBitAux/buildWriteBit`.
-   - `linearWriteBitWire` как явный linear-step building block.
-4. Исправлен critical carry-transport defect в append-only fold:
-   - `buildSymbolFromCarry` теперь не теряет внешний accumulator-carry,
-   - `buildBranchFromCarry`/`buildWriteTermFromCarry` сохраняют carry,
-   - `buildWriteBitAux` теперь действительно делает `acc := acc OR term`.
-5. Добавлены новые append-only blocks для продолжения linear-step:
-   - `moveIndex`,
-   - `headStateSymbolPairs`,
-   - `buildStateTermFromCarry`, `buildNextStateAux`, `buildNextState`,
-   - `buildHeadTermFromCarry`, `buildNextHeadAux`, `buildNextHead`,
-   - `buildNextTapeFromCarry`, `buildNextTape`,
-   - публичные switch wires:
+     `buildWriteTermFromCarry`, `buildWriteBitAux / buildWriteBit`;
+   - `linearWriteBitWire` as an explicit linear-step building block.
+4. A critical carry-transport defect in the append-only fold has been
+   fixed:
+   - `buildSymbolFromCarry` no longer loses the external accumulator
+     carry;
+   - `buildBranchFromCarry` / `buildWriteTermFromCarry` preserve the
+     carry;
+   - `buildWriteBitAux` now actually performs `acc := acc OR term`.
+5. New append-only blocks have been added to continue the linear
+   step:
+   - `moveIndex`;
+   - `headStateSymbolPairs`;
+   - `buildStateTermFromCarry`, `buildNextStateAux`,
+     `buildNextState`;
+   - `buildHeadTermFromCarry`, `buildNextHeadAux`, `buildNextHead`;
+   - `buildNextTapeFromCarry`, `buildNextTape`;
+   - public switch wires:
      `linearNextStateWire`, `linearNextHeadWire`, `linearNextTapeWire`.
-4. Сборка проходит:
-   - `lake build pnp3/Complexity/PsubsetPpolyInternal/StraightLineBuilder.lean`
-   - `lake build pnp3/Complexity/PsubsetPpolyInternal/Simulation.lean`
-   - `lake build pnp3/Complexity/Simulation/Circuit_Compiler.lean`
+6. The build passes:
+   - `lake build pnp3/Complexity/PsubsetPpolyInternal/StraightLineBuilder.lean`,
+   - `lake build pnp3/Complexity/PsubsetPpolyInternal/Simulation.lean`,
+   - `lake build pnp3/Complexity/Simulation/Circuit_Compiler.lean`.
 
-Следующий шаг:
+Next step:
 
-1. Собрать единый `stepCompiledLinear` (один shared circuit, selectors для tape/head/state)
-   поверх уже готовых блоков `writeBit/nextState/nextHead/nextTape`.
-2. Изолировать и зафиксировать per-step gate increment в явной лемме.
-3. Поднять increment через итерацию по `runTime` и закрыть `CompiledRuntimeCircuitGateBound`.
+1. Assemble a single `stepCompiledLinear` (one shared circuit,
+   selectors for `tape / head / state`) over the already-prepared
+   blocks `writeBit / nextState / nextHead / nextTape`.
+2. Isolate and pin the per-step gate increment in an explicit lemma.
+3. Lift the increment through the iteration over `runTime` and close
+   `CompiledRuntimeCircuitGateBound`.

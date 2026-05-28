@@ -1,22 +1,21 @@
-# P⊆P/poly Internal Route — Audit Handoff
+# P⊆P/poly internal route — Audit handoff
 
-Дата актуализации: 2026-04-03.
-Статус: current for inclusion-side only.
+Last refresh: 2026-04-03.
+Status: current for inclusion-side only.
 
-Scope note:
-это inclusion-side handoff. Он не фиксирует общий статус DAG-separation или
-финального `P ≠ NP`.
+Scope note: this is an inclusion-side handoff.  It does not record the
+overall status of DAG separation or of the final `P ≠ NP`.
 
-## 1) Текущий итог по inclusion-side
+## 1) Current inclusion-side bottom line
 
-`P ⊆ PpolyDAG` закрыт на active no-arg endpoint:
+`P ⊆ PpolyDAG` is closed at the active no-arg endpoint:
 - `Complexity.Simulation.proved_P_subset_PpolyDAG_internal`
 
-Machine-check:
-- `lake build` проходит;
-- `./scripts/check.sh` проходит.
+Machine check:
+- `lake build` passes;
+- `./scripts/check.sh` passes.
 
-## 2) Активная цепочка доказательства
+## 2) Active proof chain
 
 1. `proved_P_subset_PpolyDAG_internal`
 2. `proved_P_subset_PpolyDAG_of_compiledRuntimeLinearOutputContracts`
@@ -25,39 +24,42 @@ Machine-check:
    `compiledRuntimeCircuitSizeBoundLinear_internal`,
    `compiledRuntimeAcceptCorrectnessLinear_of_stepSpecProvider (...)`
 
-В финальном default wiring:
-- `pnp3/Magnification/FinalResultCore.lean` использует
+In the default final wiring:
+- `pnp3/Magnification/FinalResultCore.lean` uses
   `proved_P_subset_PpolyDAG_internal`.
 
-В explicit-wrapper wiring:
-- `with_provider` / `with_barriers` используют linear contract bundle
+In the explicit-wrapper wiring:
+- `with_provider` / `with_barriers` use the linear contract bundle
   `PsubsetPpolyCompiledRuntimeLinearOutputContracts`.
 
-## 3) Что удалено из active surface
+## 3) What was removed from the active surface
 
-1. legacy `step = id` runtime-ветка (`step/runConfig/runtimeConfig/runtimeConfig_eq_initial`).
-2. legacy bridge-шина `runtimeConfig ↔ stepCompiled` в default closure path.
-3. legacy/iterated compatibility chain из активных wrapper-маршрутов.
-4. legacy aliases в `PsubsetPpolyDAG_Internal.lean`.
-5. direct legacy naming в active conversion route:
-   активный вход — `Complexity.PpolyDAG_from_StraightLine` +
+1. The legacy `step = id` runtime branch
+   (`step/runConfig/runtimeConfig/runtimeConfig_eq_initial`).
+2. The legacy bridge bus `runtimeConfig ↔ stepCompiled` in the default
+   closure path.
+3. The legacy / iterated compatibility chain from the active wrapper
+   routes.
+4. Legacy aliases in `PsubsetPpolyDAG_Internal.lean`.
+5. Direct legacy naming in the active conversion route: the active
+   entry point is `Complexity.PpolyDAG_from_StraightLine` plus
    `StraightLineAdapter`.
 
-## 4) Остаток, который не блокирует inclusion
+## 4) What remains but does not block inclusion
 
-После закрытия inclusion-side остаётся отдельный внешний вход:
-- `NP_not_subset_PpolyDAG` (DAG-separation слой).
+After closing the inclusion side, a separate external input remains:
+- `NP_not_subset_PpolyDAG` (the DAG-separation layer).
 
-Это не является блокером факта наличия безусловного
-`proved_P_subset_PpolyDAG_internal`.
+This is not a blocker for the fact that
+`proved_P_subset_PpolyDAG_internal` is unconditional.
 
-## 5) Аудиторские проверки
+## 5) Audit checks
 
-Операционный чеклист:
+Operational checklist:
 - `pnp3/Docs/PsubsetPpoly_AUDITOR_CHECKLIST.md`
 
-Ключевая дополнительная проверка conversion-слоя:
-- `#print axioms` для
+Key extra check on the conversion layer:
+- `#print axioms` for
   `StraightLineAdapter.ppolyDAG_of_straightLine_family`,
   `ppolyDAG_of_ppolyStraightLine`,
   `P_subset_PpolyDAG_of_P_subset_PpolyStraightLine`.

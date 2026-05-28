@@ -227,14 +227,14 @@ theorem i4_np_not_subset_ppolyDAG_final_of_invariantProvider
     (W : Models.GapPartialMCSP_TMWitness p)
     (hInv : Pnp3.LowerBounds.dagStableRestrictionInvariantProvider p) :
     NP_not_subset_PpolyDAG := by
-  exact Pnp3.Magnification.NP_not_subset_PpolyDAG_final_of_invariantProvider_TM W hInv
+  exact Pnp3.Magnification.AuditOnly_NP_not_subset_PpolyDAG_final_of_invariantProvider_TM W hInv
 
 theorem i4_p_ne_np_final_of_invariantProvider
     {p : GapPartialMCSPParams}
     (W : Models.GapPartialMCSP_TMWitness p)
     (hInv : Pnp3.LowerBounds.dagStableRestrictionInvariantProvider p) :
     P_ne_NP := by
-  exact Pnp3.Magnification.P_ne_NP_final_of_invariantProvider_TM W hInv
+  exact Pnp3.Magnification.AuditOnly_P_ne_NP_final_of_invariantProvider_TM W hInv
 
 theorem i4_np_not_subset_ppolyDAG_of_formulaCertificate
     {p : GapPartialMCSPParams}
@@ -288,7 +288,7 @@ theorem i4_p_ne_np_final_of_dag_stableRestrictionPayload
         (hStable hDag).base = Pnp3.LowerBounds.dagCanonicalPayload hDag) :
     P_ne_NP := by
   exact
-    Pnp3.Magnification.P_ne_NP_final_of_dag_stableRestrictionPayload_TM
+    Pnp3.Magnification.AuditOnly_P_ne_NP_final_of_dag_stableRestrictionPayload_TM
       W hStable hBase
 
 theorem i4_p_ne_np_final_of_dag_stableRestriction
@@ -296,7 +296,7 @@ theorem i4_p_ne_np_final_of_dag_stableRestriction
     (W : Models.GapPartialMCSP_TMWitness p)
     (hStable : Pnp3.LowerBounds.dag_stableRestriction_producer p) :
     P_ne_NP := by
-  exact Pnp3.Magnification.P_ne_NP_final_of_dag_stableRestriction_TM
+  exact Pnp3.Magnification.AuditOnly_P_ne_NP_final_of_dag_stableRestriction_TM
     W hStable
 
 theorem i4_final_wiring_of_multiswitching

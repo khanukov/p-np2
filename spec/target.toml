@@ -8,10 +8,10 @@
 # which spec_version was in force at the time of a candidate's verification.
 
 [meta]
-spec_version    = "0.1.0"
+spec_version    = "0.1.2"
 constitution    = "RESEARCH_CONSTITUTION.md"
 status          = "frozen"
-last_reviewed   = "2026-04-30"
+last_reviewed   = "2026-05-28"
 
 [target]
 # The honest target: a `ResearchGapWitness` value whose `dagSeparation`
@@ -167,8 +167,51 @@ forbidden_unless_final_term_exists = [
   "complete proof of P vs NP",
   "P≠NP solved",
   "P!=NP solved",
+  "P != NP solved",
 ]
 final_term_locator = "P_ne_NP_unconditional"
+
+[stale_public_endpoint_wording]
+# Phrases that describe the pre-ResearchGapWitness public-endpoint picture
+# (where `P_ne_NP_final` still consumed `MagnificationAssumptions`).  They
+# must not appear in active public documentation, regardless of whether
+# `P_ne_NP_unconditional` exists; the current public default is
+# `P_ne_NP_final (gap : ResearchGapWitness)`.
+#
+# Two-tier enforcement:
+#
+#   Tier 1 (strict allowlist) — `scripts/check.sh` route-policy step.
+#     Applied to an explicit `public_docs` list (README.md, FAQ.md,
+#     PROOF_OVERVIEW.md, TECHNICAL_CLAIMS.md, AXIOMS_FINAL_LIST.md,
+#     README_PUBLICATION.md, RELEASE_RC.md, plus route_docs).  These docs
+#     are the first thing an external reader sees; they must always be
+#     clean and CANNOT opt out via the legacy-banner marker.
+#
+#   Tier 2 (repo-wide safety net) — `scripts/check_doc_honesty.sh`
+#     section (D).  Scans all `*.md` / `*.tex` / `*.latex` files with
+#     directory exclusions and per-file opt-out via the
+#     `legacy_opt_out_marker` below.
+#
+# Allowed locations (excluded from Tier 2 scan):
+#   - archive/**
+#   - outputs/**
+#   - seed_packs/**
+#   - spec/**
+#   - bench/**
+#   - scripts/**
+#   - RESEARCH_CONSTITUTION.md
+#   - Phase0_Audit_Surface.md
+#   - FixedParams_Probe.md
+#   - any file containing `legacy_opt_out_marker` near the top.
+#
+# Patterns are PCRE-style, interpreted by ripgrep.
+forbidden_patterns = [
+  'P_ne_NP_final\b\s*\(hMag',
+  'current public default theorem[^\n]*MagnificationAssumptions',
+  'fastest path[^\n]*remove hMag',
+  'only formula-side internalization remains',
+]
+legacy_opt_out_marker = "<!-- doc-status: legacy -->"
 
 [scopes]
 # PR scope tags. Mixing `foundational` with `candidate` is auto-rejected.

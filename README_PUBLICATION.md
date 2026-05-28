@@ -1,36 +1,99 @@
-# PNP3: Publication-facing status snapshot
+# Release landing page
 
-Updated: 2026-04-03
+This is the publication-facing entry point for the PNP3 release.
 
-Canonical checklist for unconditional claim readiness:
-`CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
-Release wording/checklist for the current milestone:
-`RELEASE_RC.md`.
+- Release type: **RC / framework milestone**, not a final unconditional claim.
+- Status date: 2026-05-28.
+- Source of truth for release wording: `RELEASE_RC.md`.
+- Source of truth for closure progress: `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
 
-## Current claim level
+## Claim matrix
 
-1. Active `pnp3/` formalization has no project-local axioms and no
-   `sorry/admit`.
-2. Final route compiles in
-   `pnp3/Magnification/FinalResultCore.lean`
-   (via compatibility import path `pnp3/Magnification/FinalResult.lean`).
-3. `./scripts/check.sh` and current audit tests pass on the current tree.
-4. Audited theorem surface still uses standard Lean assumptions
-   `propext`, `Classical.choice`, `Quot.sound`.
-5. Additional honest DAG wrappers now exist for asymptotic fixed-slice collapse
-   and for concrete `_TM` source/blocker routes.
-6. Final `P ≠ NP` remains conditional on explicit assumptions.
+| Claim                                                                 | Status                                                       |
+|-----------------------------------------------------------------------|--------------------------------------------------------------|
+| Active `pnp3/` has no project-local axioms and no `sorry`/`admit`     | Verified by `scripts/check.sh` policy                        |
+| `P_subset_PpolyDAG` internalized                                      | Proved, but coarse polynomial-size inclusion                 |
+| `ResearchGapWitness` → `P_ne_NP_final`                                | Proved conditional bridge                                    |
+| Old support-bounds / multi-switching route                            | Formally refuted; retained only as audit / compatibility     |
+| `FormulaSupportBoundsPartial_fromPipeline_fixedParams`                | Candidate contract shape, not a proved source theorem        |
+| Restricted-model AC0 surface (`gapPartialMCSP_not_in_AC0`)            | Side artifact only; not part of this release's P-vs-NP mainline |
+| Unconditional `P != NP`                                               | **Not claimed**                                              |
 
-## Public statement rule
+## Public closure boundary
 
-Until the checklist is fully closed, do not claim unconditional `P ≠ NP`.
+The current public default endpoints (in
+`pnp3/Magnification/UnconditionalResearchGap.lean`) are:
 
-## Recommended publication wording for this release
+```text
+NP_not_subset_PpolyDAG_final (gap : ResearchGapWitness)
+P_ne_NP_final               (gap : ResearchGapWitness)
+```
 
-1. Inclusion side for default final wrappers is internalized (`P ⊆ PpolyDAG`).
-2. The repository now exposes richer DAG-facing theorem surfaces than before,
-   including fixed-slice/asymptotic wrappers and fallback accepted-family
-   closures.
-3. The default public final theorem still depends on explicit DAG separation,
-   so this remains a milestone/RC release rather than an unconditional final
-   claim.
+The only mathematical input is
+`ResearchGapWitness.dagSeparation : NP_not_subset_PpolyDAG`.  Legacy
+`hMag` / `hMS` / support-bounds / multi-switching / provider entry points
+are retained only as explicit audit / compatibility wrappers; their source
+predicates are formally refuted by the falsifiability audit.
+
+## What this release does not include
+
+1. An unconditional in-repo theorem `P != NP`.
+2. A non-vacuous proof of the formula-side support / locality source
+   theorem.
+3. A proof that `FormulaSupportBoundsPartial_fromPipeline_fixedParams` is
+   realizable for realistic AC0 parameters.
+4. A zero-argument final theorem with no external research payload.
+5. A claim that the restricted-model AC0 endpoint
+   `gapPartialMCSP_not_in_AC0` is the current P-vs-NP route or a
+   planned closure path.  It is a side artifact / formalization
+   milestone only and is not packaged as a publishable standalone
+   lower bound by this release.
+
+## Audit-only theorem surfaces — not claims
+
+The final-result modules also contain quarantined audit / compatibility
+endpoints that compile but do not represent publishable claims.  Per
+Research Constitution Rule 6, every such endpoint carries one of three
+explicit name prefixes:
+
+| Prefix          | Meaning                                                      | Module                                       |
+|-----------------|--------------------------------------------------------------|----------------------------------------------|
+| `RefutedRoute_` | Consumes a refuted predicate (e.g. `MagnificationAssumptions`, `FormulaSupportBoundsFromMultiSwitchingContract`, ...).  Vacuous as a path to unconditional closure. | `FinalResultAuditRoutes.lean`, plus the `_supportBounds_TM` companions in `FinalResultLegacyTM.lean` |
+| `AuditOnly_`    | Legacy `_TM` compatibility wrapper not consuming refuted predicates directly, but kept off the publishable surface. | `FinalResultLegacyTM.lean`                   |
+| `Vacuous_`      | Vacuous via the typeclass-payload audit channel (`FinalPayloadProvider`, `DefaultFormulaSource`, ...).  Records the channel concretely so it cannot quietly come back. | `FinalResultAuditRoutes.lean`                |
+
+These prefixes are enforced visually: no `RefutedRoute_*` /
+`AuditOnly_*` / `Vacuous_*` endpoint should ever be presented as the
+public closure boundary.  Treat them as the analogue of an `audit/`
+directory inside the type-theoretic API: their job is to keep historical
+shapes importable while making it impossible to mistake them for
+unconditional results.
+
+## How to verify
+
+```bash
+./scripts/check.sh
+for f in pnp3/Tests/AxiomsAudit.lean \
+         pnp3/Tests/BarrierAudit.lean \
+         pnp3/Tests/BarrierBypassAudit.lean \
+         pnp3/Tests/BridgeLocalityRegression.lean \
+         pnp3/Tests/WeakRouteSurfaceTests.lean \
+         pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean; do
+  lake env lean "$f"
+done
+```
+
+## Where to read next
+
+| Question                                | File                                         |
+|-----------------------------------------|----------------------------------------------|
+| What is the project, in two pages?      | `README.md`                                  |
+| What is closed and what is open?        | `STATUS.md`                                  |
+| What blocks unconditional closure?      | `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`         |
+| Route map for auditors                  | `PROOF_OVERVIEW.md`                          |
+| Common questions                        | `FAQ.md`                                     |
+| Verified vs. not-claimed claim table    | `TECHNICAL_CLAIMS.md`                        |
+| Axiom / `sorry` hygiene only            | `AXIOMS_FINAL_LIST.md`                       |
+| Detailed frontier FAQ           | `pnp3/Docs/Unconditionality_FAQ.md`       |
+| Route policy lock                       | `pnp3/Docs/CLOSURE_ROUTE_POLICY.md`          |
+| Release wording guardrail               | `RELEASE_RC.md`                              |

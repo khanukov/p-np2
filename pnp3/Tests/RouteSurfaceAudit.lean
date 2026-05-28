@@ -151,7 +151,7 @@ def check_legacy_fixedSlice_package_surface_is_explicitly_named :
           (Models.gapPartialMCSP_Language
             (hMag.antiChecker.asymptotic.pAt n hn)) → False) →
         ComplexityInterfaces.NP_not_subset_PpolyDAG :=
-  Magnification.NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse
+  Magnification.RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse
 
 end RouteSurfaceAudit
 

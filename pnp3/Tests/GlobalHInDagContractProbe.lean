@@ -107,9 +107,18 @@ def globalWitness_to_hInDag
       have hDec := W.decides_global activeLen x
       have hSlice := hAsym.sliceEq (max n hAsym.N0) (Nat.le_max_right n hAsym.N0) x
       simpa [p, activeLen] using hDec.trans hSlice
-    · have hLang : gapPartialMCSP_Language p m x = false := by
-        simp [gapPartialMCSP_Language, activeLen, hm]
-      simp [hm, hLang]
+    · -- m ≠ activeLen: the DAG family yields `constFalseDag m`,
+      -- and the language is constantly false off the encoded length.
+      simp [hm]
+      -- Remaining goal (post-`simp [gapPartialMCSP_Language]`):
+      -- `∀ h : m = partialInputLen p, ¬PartialMCSP_YES p ...`.
+      -- `hm` (≡ `m ≠ partialInputLen p`) refutes the binder.
+      show gapPartialMCSP_Language p m x = false
+      simp [gapPartialMCSP_Language]
+      intro h
+      exact absurd h hm
+
+end  -- noncomputable section
 
 end GlobalHInDagContractProbe
 end Tests

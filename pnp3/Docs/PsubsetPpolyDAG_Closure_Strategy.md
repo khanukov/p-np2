@@ -1,229 +1,249 @@
-# Strategy: Closing Internal `P ⊆ PpolyDAG` in `pnp3`
+# Strategy: Closing internal `P ⊆ PpolyDAG` in `pnp3`
 
-Дата фиксации: 2026-03-02
-Основа: deep-dive по ветке `khanukov/continue-step-10-in-psubsetppoly_internal_todo.md`
-Статус: active runbook
+Pinned date: 2026-03-02
+Basis: deep-dive on the branch
+`khanukov/continue-step-10-in-psubsetppoly_internal_todo.md`
+Status: active runbook
 
 > Current-scope note (2026-04-03):
-> этот файл описывает только историческую/архитектурную стратегию inclusion-side.
-> Для общего статуса репозитория используйте top-level docs.
+> this file describes only the historical / architectural inclusion-side
+> strategy.  For the repository-wide status use the top-level docs.
 
 > Release note (2026-03-14):
-> этот документ фиксирует стратегический и исторический deep-dive слой.
-> Для актуального release-среза (active-route, проверенные endpoints, audit checks)
-> используйте:
+> this document records the strategic / historical deep-dive layer.
+> For the current release snapshot (active route, verified endpoints,
+> audit checks) use:
 > `pnp3/Docs/PsubsetPpoly_Internal_TODO.md`,
 > `pnp3/Docs/PsubsetPpoly_AUDIT_HANDOFF.md`,
 > `pnp3/Docs/PsubsetPpoly_AUDITOR_CHECKLIST.md`.
 >
 > Update (2026-03-14 cleanup):
-> compatibility-слой `InternalCompiler/*` и ветка `EvalAgreement`
-> удалены из active `Circuit_Compiler.lean`; упоминания этих узлов ниже
-> являются историческими.
+> the `InternalCompiler/*` compatibility layer and the `EvalAgreement`
+> branch have been removed from the active `Circuit_Compiler.lean`;
+> mentions of those nodes below are historical.
 
-Дополнение (2026-03-02):
-- отдельный runbook для size-closure:
-  `pnp3/Docs/CompiledRuntime_SizeClosure_Runbook.md`.
-- текущая truth-table/tree-recompile форма `stepCompiled` признана
-  архитектурным блокером для внутреннего polynomial size witness.
+Addendum (2026-03-02):
+- a separate size-closure runbook lives at
+  `pnp3/Docs/CompiledRuntime_SizeClosure_Runbook.md`;
+- the current truth-table / tree-recompile shape of `stepCompiled` is
+  recognised as an architectural blocker for an internal polynomial
+  size witness.
 
 ## Update (2026-03-13): status after full recheck
 
-Проверено на текущем дереве:
+Verified on the current tree:
 
-- `./scripts/check.sh` проходит.
-- актуальные audit/regression тесты компилируются
+- `./scripts/check.sh` passes.
+- The current audit / regression tests compile
   (`AxiomsAudit`, `BarrierAudit`, `BarrierBypassAudit`,
   `BridgeLocalityRegression`).
-- Targeted сборки `Simulation/Circuit_Compiler/FinalResult/Bypass` проходят.
+- Targeted builds of `Simulation/Circuit_Compiler/FinalResult/Bypass`
+  pass.
 
-Что изменилось относительно baseline этого runbook:
+What changed relative to this runbook's baseline:
 
-1. Закрыт internal one-step provider на linear-candidate ветке:
-   `stepCompiledLinearCandidateStepSpecProvider_internal`.
-2. Закрыт internal linear correctness witness:
+1. An internal one-step provider on the linear-candidate branch was
+   closed: `stepCompiledLinearCandidateStepSpecProvider_internal`.
+2. The internal linear correctness witness was closed:
    `compiledRuntimeAcceptCorrectnessLinear_internal`.
-3. В compiled-runtime route убран контракт
-   `CompiledRuntimeAcceptCorrectness` из минимального residual surface
-   (корректность теперь закрывается internal теоремой).
-4. Закрыт no-arg output-wire witness:
+3. In the compiled-runtime route, the contract
+   `CompiledRuntimeAcceptCorrectness` was removed from the minimal
+   residual surface (correctness is now closed by the internal
+   theorem).
+4. A no-arg output-wire witness was closed:
    `compiledAcceptOutputWireAgreementLinear_internal`.
-5. Собран no-arg endpoint:
+5. The no-arg endpoint was assembled:
    `proved_P_subset_PpolyDAG_internal : P_subset_PpolyDAG`.
 
-Текущий остаток после этого этапа: не inclusion-wiring, а отдельный
-DAG-separation blocker (`NP_not_subset_PpolyDAG`) на final маршруте.
+After this stage, what remains is not inclusion wiring but a separate
+DAG-separation blocker (`NP_not_subset_PpolyDAG`) on the final route.
 
-Примечание:
-таблица и шаги ниже остаются полезными как детальный журнал архитектуры,
-но актуальный blocker summary определяется этим апдейтом.
+Note: the table and steps below are still useful as a detailed
+architectural log, but the current blocker summary is determined by
+this update.
 
-## 1. Цель
+## 1. Goal
 
-Довести текущий DAG-маршрут
+Bring the current DAG route
 
-- `P ⊆ PpolyDAG` (внутренний источник в `pnp3`)
+- `P ⊆ PpolyDAG` (internal source inside `pnp3`)
 
-до максимально закрытой формы, начиная с самого дешёвого по трудозатратам узла,
-и только затем заходя в более глубокий рефактор симуляции.
+to a maximally closed form, starting with the cheapest node and only
+then entering a deeper simulation refactor.
 
-## 2. Snapshot: что уже закрыто
+## 2. Snapshot: what is already closed
 
-1. Закрыты:
+1. Closed:
    - `appendWireSemantics`
    - `compileTreeWireSemantics`
-2. Закрыт internal assembly:
+2. Internal assembly closed:
    - `stepCompiledContracts_internal`
-3. Есть рабочее условное замыкание в `P_subset_PpolyDAG` через контрактный bundle.
-4. Targeted build проходит:
-   - `TreeToStraight`, `Circuit_Compiler`, `FinalResult`, `Barrier/Bypass`.
+3. A working conditional closure of `P_subset_PpolyDAG` via the
+   contract bundle exists.
+4. Targeted builds pass:
+   - `TreeToStraight`, `Circuit_Compiler`, `FinalResult`,
+     `Barrier/Bypass`.
 
-## 3. Карта статусов (на момент фиксации)
+## 3. Status map (at the time of pinning)
 
-| Узел | Статус | Комментарий |
+| Node | Status | Comment |
 |---|---|---|
-| `appendWireSemantics` | closed | Без `sorry/admit`; собран из gate-right closure. |
-| `compileTreeWireSemantics` | closed | Внутренне закрыт, используется в сборке контрактов. |
-| `stepCompiledContracts_internal` | closed | Assumption-free witness для stepCompiled-path. |
-| `runtimeSpecProviderIterated_internal` | closed | Итеративный runtime-spec есть внутри. |
-| `RuntimeConfigEqStepCompiled` | open (contract) | Legacy bridge-контракт, не закрыт теоремой. |
-| `EvalAgreement` | open (contract) | Семантический мост archive-eval ↔ internal-eval. |
-| `proved_P_subset_PpolyDAG_of_iteratedContractsBridged` | working conditional | Работает, но параметризован bundle-контрактом. |
-| `Interfaces_InternalSource` endpoints | working conditional | Экспортируют internal-source route с контрактом. |
+| `appendWireSemantics` | closed | No `sorry/admit`; built from a gate-right closure. |
+| `compileTreeWireSemantics` | closed | Closed internally, used in contract assembly. |
+| `stepCompiledContracts_internal` | closed | Assumption-free witness for the stepCompiled path. |
+| `runtimeSpecProviderIterated_internal` | closed | Iterative runtime-spec is internal. |
+| `RuntimeConfigEqStepCompiled` | open (contract) | Legacy bridge contract, not closed by a theorem. |
+| `EvalAgreement` | open (contract) | Semantic bridge archive-eval ↔ internal-eval. |
+| `proved_P_subset_PpolyDAG_of_iteratedContractsBridged` | working conditional | Works but is parameterised by the contract bundle. |
+| `Interfaces_InternalSource` endpoints | working conditional | Expose the internal-source route with a contract. |
 
-## 4. Реальные блокеры
+## 4. Actual blockers
 
-### B1. `EvalAgreement` (локальный семантический мост)
+### B1. `EvalAgreement` (local semantic bridge)
 
-Сейчас в `Circuit_Compiler` это входной контракт:
+In `Circuit_Compiler` this is currently an input contract:
 
-- `InternalCompiler.EvalAgreement`
+- `InternalCompiler.EvalAgreement`.
 
-Смысл: согласовать семантику
+Meaning: reconcile the semantics of
 
 - `StraightLineAdapter.eval`
 - `Internal.PsubsetPpoly.StraightLine.eval`.
 
-Это локальная задача склейки семантик, без ломки архитектуры шага симуляции.
+This is a local semantic-gluing task; it does not break the
+simulation-step architecture.
 
-### B2. `RuntimeConfigEqStepCompiled` (архитектурный блокер)
+### B2. `RuntimeConfigEqStepCompiled` (architectural blocker)
 
-Сейчас bridge требует:
+The bridge currently requires:
 
-- `RuntimeConfigEqStepCompiled`
+- `RuntimeConfigEqStepCompiled`,
 
-но:
+but:
 
-- `step` определён как identity (`sc`)
-- `runtimeConfig` строится через итерацию `step`
-- `stepCompiled` — отдельный «реальный» шаг.
+- `step` is defined as identity (`sc`);
+- `runtimeConfig` is built by iterating `step`;
+- `stepCompiled` is a separate "real" step.
 
-Поэтому это не «дописать одну лемму», а вопрос архитектурного выравнивания маршрута.
+So this is not "finish one lemma" — it is an architectural alignment
+question for the route.
 
-Техническая фиксация причины (по текущему коду):
+Technical pinning of the cause (per the current code):
 
-1. `runConfig`/`runtimeConfig` опираются на итерацию `step`.
-2. `step` сейчас identity, поэтому `runtimeConfig_eq_initial`.
-3. `stepCompiled` определяется отдельно (`stepCompiledTruthTable`) и не
-   совпадает с identity-шагом.
+1. `runConfig` / `runtimeConfig` rely on iterating `step`.
+2. `step` is currently identity, hence `runtimeConfig_eq_initial`.
+3. `stepCompiled` is defined separately (`stepCompiledTruthTable`) and
+   does not match the identity step.
 
-Следствие: bridge `RuntimeConfigEqStepCompiled` не закрывается без изменения
-runtime-модели; это напрямую блокирует no-arg closure для inclusion-route.
+Consequence: the `RuntimeConfigEqStepCompiled` bridge cannot be closed
+without changing the runtime model; this directly blocks the no-arg
+closure for the inclusion route.
 
-### B3. `CompiledRuntimeCircuitSizeBound` (архитектурный блокер)
+### B3. `CompiledRuntimeCircuitSizeBound` (architectural blocker)
 
-Для compiled-runtime route текущий one-step assembly идёт через
-`toTreeWire -> compileTree/packFin`, а `ConfigCircuits.stepCircuits` в этой
-версии строится через `truthTableCircuit`.
+For the compiled-runtime route, the current one-step assembly goes
+through `toTreeWire -> compileTree / packFin`, and
+`ConfigCircuits.stepCircuits` is built via `truthTableCircuit` in this
+version.
 
-Следствие: polynomial witness для `runtimeConfigCompiled` не закрывается
-надёжно без смены shape шага.
+Consequence: a polynomial witness for `runtimeConfigCompiled` cannot be
+closed reliably without changing the step shape.
 
-## 5. Приоритеты (что закрывать первым)
+## 5. Priorities (what to close first)
 
-### P0 (новый критический): закрыть size-architecture compiled-runtime шага
+### P0 (new critical): close the size architecture of the compiled-runtime step
 
-Почему first:
+Why first:
 
-1. Это главный блокер runtime-only no-contract closure.
-2. Без него не закрывается `CompiledRuntimeCircuitSizeBound`.
-3. `EvalAgreement` больше не является самым ранним критическим узлом.
+1. This is the main blocker for the runtime-only no-contract closure.
+2. Without it `CompiledRuntimeCircuitSizeBound` does not close.
+3. `EvalAgreement` is no longer the earliest critical node.
 
-### P1: закрыть `EvalAgreement`
+### P1: close `EvalAgreement`
 
-Это still-needed узел, но уже после size-архитектуры.
+Still-needed node, but only after the size architecture.
 
-### P2 (следом): убрать зависимость от `RuntimeConfigEqStepCompiled` через рефактор маршрута
+### P2 (next): remove the dependency on `RuntimeConfigEqStepCompiled` via a route refactor
 
-Вместо прямого доказательства равенства конфигов:
+Instead of proving config equality directly:
 
-1. Сделать route на основе итеративного `stepCompiled` основным.
-2. Собирать компилятор/включение из уже закрытого iterated-runtime witness.
-3. Держать старый `runtimeConfig`-маршрут как legacy-слой совместимости.
+1. Make the route based on iterative `stepCompiled` the main route.
+2. Assemble the compiler / inclusion from the already-closed
+   iterated-runtime witness.
+3. Keep the old `runtimeConfig` route as a legacy compatibility layer.
 
-## 6. Рекомендуемый технический план
+## 6. Recommended technical plan
 
-## Шаг A: size-closure refactor (`stepCompiledLinear`)
+## Step A: size-closure refactor (`stepCompiledLinear`)
 
-1. Ввести DAG-preserving one-step assembly для `StraightConfig`:
-   append-only, без полного tree-recompile.
-2. Доказать one-step gate-growth bound.
-3. Поднять bound на `Nat.iterate` и закрыть:
+1. Introduce a DAG-preserving one-step assembly for `StraightConfig`:
+   append-only, without a full tree recompile.
+2. Prove a one-step gate-growth bound.
+3. Lift the bound to `Nat.iterate` and close:
    `CompiledRuntimeCircuitGateBound -> CompiledRuntimeCircuitSizeBound`.
 
-Подробности зафиксированы в:
+Details are recorded in:
 `pnp3/Docs/CompiledRuntime_SizeClosure_Runbook.md`.
 
-## Шаг B: закрыть `EvalAgreement`
+## Step B: close `EvalAgreement`
 
-1. Добавить bridge-леммы sem→sem:
-   - из `StraightLineAdapter.eval C x` к `DagCircuit.eval (toDag C) x` (уже rfl-side),
-   - из internal `StraightLine.eval` к той же нормальной форме (через `toDag` или эквивалентный intermediate).
-2. Свести обе стороны к одной нормальной форме и закрыть theorem:
+1. Add sem→sem bridge lemmas:
+   - from `StraightLineAdapter.eval C x` to
+     `DagCircuit.eval (toDag C) x` (already rfl-side);
+   - from internal `StraightLine.eval` to the same normal form
+     (through `toDag` or an equivalent intermediate).
+2. Reduce both sides to a single normal form and close the theorem:
    - `evalAgreement_internal : InternalCompiler.EvalAgreement`.
-3. Подключить его в contract bundle helpers как default witness.
+3. Wire it into the contract bundle helpers as a default witness.
 
-## Шаг C: internalize runtime route без `RuntimeConfigEqStepCompiled`
+## Step C: internalise the runtime route without `RuntimeConfigEqStepCompiled`
 
-1. В `Circuit_Compiler` ввести primary theorem/def, опирающийся только на:
-   - `RuntimeSpecProviderIterated`
+1. In `Circuit_Compiler` introduce a primary theorem / def that
+   depends only on:
+   - `RuntimeSpecProviderIterated`;
    - `EvalAgreement`.
-2. Для старого API оставить обёртку через bridge-форму, но не как default source.
-3. Финальные wrappers (`FinalResult`, `Barrier.Bypass`) перевести на новый default bundle.
+2. Keep the old API as a wrapper around the bridge form, but not as
+   the default source.
+3. Move the final wrappers (`FinalResult`, `Barrier.Bypass`) to the
+   new default bundle.
 
-Критерий прохождения шага C:
+Pass criterion for Step C:
 
-1. Появился no-arg `RuntimeSpecProvider` (без `RuntimeConfigEqStepCompiled`).
-2. Появился no-arg endpoint `proved_P_subset_PpolyDAG_internal`.
-3. Default DAG-route больше не требует inclusion-контрактного аргумента.
+1. A no-arg `RuntimeSpecProvider` exists (without
+   `RuntimeConfigEqStepCompiled`).
+2. A no-arg endpoint `proved_P_subset_PpolyDAG_internal` exists.
+3. The default DAG route no longer needs an inclusion-contract
+   argument.
 
-## Шаг D: cleanup интерфейса
+## Step D: interface cleanup
 
-1. Явно отметить в `Interfaces_InternalSource` и финальных wrappers:
-   - default route = iterated internal source.
-2. Свести legacy-пути к compatibility aliases.
+1. Mark explicitly in `Interfaces_InternalSource` and the final
+   wrappers: default route = iterated internal source.
+2. Reduce the legacy paths to compatibility aliases.
 
 ## 7. Definition of Done
 
-Считаем этап закрытым, когда одновременно:
+The stage is considered closed when all of the following hold at once:
 
-1. Есть закрытый внутренний witness `CompiledRuntimeCircuitSizeBound`.
-2. Есть закрытый внутренний witness `EvalAgreement`.
-3. Default DAG-route не требует `RuntimeConfigEqStepCompiled`.
-4. Final wrappers используют internal-source default route.
-5. `lake build` проходит (минимум: ключевые модули + полный build).
-6. Нет новых `axiom/sorry/admit` в этом треке.
+1. There is a closed internal witness `CompiledRuntimeCircuitSizeBound`.
+2. There is a closed internal witness `EvalAgreement`.
+3. The default DAG route does not require
+   `RuntimeConfigEqStepCompiled`.
+4. The final wrappers use the internal-source default route.
+5. `lake build` passes (minimum: the key modules plus a full build).
+6. No new `axiom/sorry/admit` are introduced in this track.
 
-## 8. Риски
+## 8. Risks
 
-1. Риск «скрытой зависимости от старого пути»:
-   - нужен явный grep/audit call-sites после перевода default route.
-2. Риск регрессии интерфейсов:
-   - legacy API оставлять до стабилизации downstream.
-3. Риск расползания статусов по документам:
-   - синхронизировать этот файл с `PsubsetPpoly_Internal_TODO.md`.
+1. Risk of a "hidden dependency on the old path":
+   - an explicit `grep` / audit of call sites is needed after the
+     default route switch.
+2. Interface regression risk:
+   - keep the legacy API until downstream stabilises.
+3. Risk of status drift across documents:
+   - keep this file in sync with `PsubsetPpoly_Internal_TODO.md`.
 
-## 9. Проверки после каждого этапа
+## 9. Checks after each stage
 
 ```bash
 lake build pnp3/Complexity/PsubsetPpolyInternal/TreeToStraight.lean
@@ -232,7 +252,7 @@ lake build pnp3/Magnification/FinalResultCore.lean pnp3/Barrier/Bypass.lean
 lake build
 ```
 
-## 10. Dependency Map
+## 10. Dependency map
 
 ```mermaid
 graph TD
@@ -246,22 +266,23 @@ graph TD
   H --> I["FinalResult/Bypass wrappers"]
 ```
 
-## 11. CI gates (включать после закрытия internal theorem)
+## 11. CI gates (turn on after the internal theorem is closed)
 
-Когда появится безаргументный endpoint, добавить hard-gate:
+Once the no-argument endpoint exists, add a hard gate:
 
-1. `pnp3/Tests/AxiomsAudit.lean` с проверкой наличия:
-   - `#print axioms proved_P_subset_PpolyDAG_internal`
-2. build-gate в CI:
-   - `lake env lean pnp3/Tests/AxiomsAudit.lean`
-3. axiom-surface audit:
-   - `#print axioms proved_P_subset_PpolyDAG_internal`
-   и проверка на неожиданные зависимости.
+1. `pnp3/Tests/AxiomsAudit.lean` with a check for the presence of:
+   - `#print axioms proved_P_subset_PpolyDAG_internal`.
+2. Build gate in CI:
+   - `lake env lean pnp3/Tests/AxiomsAudit.lean`.
+3. Axiom-surface audit:
+   - `#print axioms proved_P_subset_PpolyDAG_internal` and a check for
+     unexpected dependencies.
 
-## 12. Решение по стратегии (фиксируем)
+## 12. Strategy decision (pinned)
 
-Принято для реализации:
+Adopted for implementation:
 
-1. Сначала закрываем size-architecture compiled-runtime шага.
-2. Затем закрываем `EvalAgreement`.
-3. Затем убираем `RuntimeConfigEqStepCompiled` из default-route через итеративный маршрут.
+1. First close the size architecture of the compiled-runtime step.
+2. Then close `EvalAgreement`.
+3. Then remove `RuntimeConfigEqStepCompiled` from the default route
+   via the iterative route.

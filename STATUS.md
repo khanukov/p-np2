@@ -1,6 +1,6 @@
 # Project Status (current)
 
-Updated: 2026-04-23
+Updated: 2026-05-28
 
 Authoritative checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
@@ -27,9 +27,13 @@ Research method boundary:
 - The repository contains substantial DAG endpoint plumbing, including the
   fixed-slice DAG-to-formula bridge
   `Complexity.ppolyFormula_of_ppolyDAG_gapPartialMCSP_fixedSlice`.
-- A separate restricted-model milestone surface now exists at
-  `pnp3/LowerBounds/AC0_GapMCSP.lean`; it exposes the paper-facing fixed-slice
-  AC0 endpoint `gapPartialMCSP_not_in_AC0`.
+- A separate restricted-model surface exists at
+  `pnp3/LowerBounds/AC0_GapMCSP.lean`; it exposes the paper-facing
+  fixed-slice AC0 endpoint `gapPartialMCSP_not_in_AC0`.  This is a
+  side artifact / formalization milestone, not the current P-vs-NP
+  mainline; it is not a planned closure route unless paired with an
+  explicit bridge to `ComplexityInterfaces.NP_not_subset_PpolyDAG`
+  (consistent with `AGENTS.md` and `pnp4/README.md`).
 
 ## Current Audit Result
 
@@ -208,21 +212,22 @@ following precise sense:
 - The iso-strong route is formally refuted by the standalone theorem
   `isoStrong_conclusion_negative_for_canonical`
   (`pnp3/Tests/IsoStrongConclusionProbe.lean:368`).
-- The promise-YES weak and promise-YES certificate routes are not yet
-  exposed as standalone Lean negation theorems.
-- Their closure at `globalWitness_to_hInDag W` follows by pointwise
-  contrapositive of existing route-level implications:
+- The promise-YES weak and promise-YES certificate routes are now also
+  exposed as standalone Lean negation theorems in
+  `pnp3/Tests/PromiseRouteConclusionProbe.lean`:
+  - `promiseYesCertificate_conclusion_negative_for_canonical` and
+  - `promiseYesWeak_conclusion_negative_for_canonical`,
+  each with the same `∀ W : GlobalAsymptoticDAGWitness canonicalAsymptoticHAsym, ¬ ...`
+  shape as the iso-strong companion.  They are corollaries of the
+  iso-strong negation composed with the pointwise versions of the
+  existing route-level implications
   `asymptoticPromiseYesCertificateRoute_of_asymptoticPromiseYesWeakRouteEventually`
-  (`pnp3/Magnification/FinalResultMainline.lean:348`)
-  and
+  (`pnp3/Magnification/FinalResultMainline.lean:348`) and
   `asymptoticIsoStrongRoute_of_asymptoticPromiseYesCertificateRoute`
   (`pnp3/Magnification/FinalResultMainline.lean:400`).
-  Both implication theorems open with `intro hInDag` and operate on the
-  body at that specific `hInDag`, so contrapositive at
-  `hInDag = globalWitness_to_hInDag W` propagates the iso-strong negation
-  to negations of the promise-route bodies.
-- Companion promise-route negation theorems are optional packaging for
-  attribution clarity, not required for the current status correction.
+- This makes the audit chain self-contained in Lean: instead of the
+  closure of the certificate / weak routes living in the prose paragraph
+  above, the closure is now three theorems with the same shape.
 - Inhabitancy caveat: `GlobalAsymptoticDAGWitness canonicalAsymptoticHAsym`
   is referenced only as a universal hypothesis (`∀ W : ...`) in the
   inspected files; no explicit inhabitant is constructed in the current
@@ -231,18 +236,26 @@ following precise sense:
 
 This does **NOT** prove `P ≠ NP` or even `NP ⊄ P/poly`.  It rules
 out the canonical asymptotic track at the canonical `sYES = 1,
-sNO = 2` spec as a route to those endpoints.  Future work must
-either:
+sNO = 2` spec as a route to those endpoints.  Future P-vs-NP mainline
+work must pivot to a different route family:
 
-- Choose a NEW canonical spec with non-trivial `sYES/sNO` where
-  the pigeonhole argument doesn't apply (i.e., `Mof` grows fast
-  enough relative to `tableLen` to invalidate the slack inequality
-  used in `slack_for_D_of_isoStrong_slack`).
-- Pivot to a different route family: pnp4 frontier
-  `SearchMCSPWeakLowerBound` / `VerifiedNPDAGLowerBoundSource`,
-  restricted-model `gapPartialMCSP_not_in_AC0` (already in
-  `pnp3/LowerBounds/AC0_GapMCSP.lean`), or genuinely new
-  research-level mathematics.
+- pnp4 frontier `SearchMCSPWeakLowerBound` /
+  `VerifiedNPDAGLowerBoundSource`;
+- or genuinely new research-level mathematics proving
+  `ResearchGapWitness` directly.
+
+Restricted-model AC0 artifacts such as
+`pnp3/LowerBounds/AC0_GapMCSP.lean::gapPartialMCSP_not_in_AC0` are
+side artifacts / formalization milestones only.  They are not
+treated as the current P-vs-NP mainline and are not a planned
+closure route unless paired with an explicit bridge to
+`ComplexityInterfaces.NP_not_subset_PpolyDAG` (consistent with the
+restricted-track posture recorded in `AGENTS.md` and
+`pnp4/README.md`).  A NEW canonical spec with non-trivial `sYES/sNO`
+where the pigeonhole argument does not apply (i.e., `Mof` grows fast
+enough relative to `tableLen` to invalidate the slack inequality
+used in `slack_for_D_of_isoStrong_slack`) is also an internal
+spec-engineering option, not a publishable route on its own.
 
 **Audit chain summary (11 stages, all kernel-checked).**
 
@@ -263,11 +276,13 @@ either:
 | 13. circuit_count_trace_bound L0 (codex53, c436392) | GREEN_COUNTING_BRICKS_LANDED | `CircuitCountTraceBoundProbe.lean` (~120 LOC) |
 | 14. general_isoStrong_no_go L1 sessions 1-4 (codex53+opus47, 75c5ae0 → 24d51510) | **RED_GENERAL_ISOSTRONG_REFUTED** | `GeneralIsoStrongNoGoProbe.lean` (~460 LOC); `isoStrong_conclusion_negative_general` formally proved over arbitrary `GapSliceFamilyEventually` |
 | 15. general_isoStrong_route_closure (opus47) | **ROUTES_NAMED_AS_CLOSED** | `GeneralIsoStrongRouteClosure.lean` (~120 LOC); four named route-closure theorems |
+| 16. promise_route_conclusion_companions | **CONCLUSION_COMPANIONS_NAMED** | `PromiseRouteConclusionProbe.lean`; `promiseYesCertificate_conclusion_negative_for_canonical` and `promiseYesWeak_conclusion_negative_for_canonical` standalone theorems with the same `∀ W, ¬ ...` shape as `isoStrong_conclusion_negative_for_canonical` |
 
-The canonical asymptotic track is now closed at conclusion side under
-the attribution above (iso-strong via standalone theorem; promise-YES
-weak and certificate routes via pointwise contrapositive of existing
-route-level implications composed with the iso-strong negation).  The
+The canonical asymptotic track is now closed at conclusion side via
+three standalone Lean theorems (iso-strong via
+`isoStrong_conclusion_negative_for_canonical`; promise-YES certificate
+and promise-YES weak via the two companions in
+`PromiseRouteConclusionProbe.lean`).  The
 four major refutations in the post-PR13 chain:
 
 1. `FormulaCertificateProviderPartial → False` (PR 13, formula-side
@@ -316,11 +331,16 @@ reader scanning the route catalogue can identify these three routes
 as closed without re-deriving the meta-argument.
 
 This does **NOT** prove `P ≠ NP` or `NP ⊄ P/poly`.  It closes the
-iso-strong route class as a path to those endpoints; future work
-must pivot to a different route family (pnp4 frontier
-`SearchMCSPWeakLowerBound` / `VerifiedNPDAGLowerBoundSource`,
-restricted-model `gapPartialMCSP_not_in_AC0`, or genuinely new
-research-level mathematics).
+iso-strong route class as a path to those endpoints; future
+P-vs-NP mainline work must pivot to a different route family —
+either the pnp4 frontier (`SearchMCSPWeakLowerBound` /
+`VerifiedNPDAGLowerBoundSource`) or genuinely new research-level
+mathematics proving `ResearchGapWitness`.  Restricted-model AC0
+artifacts such as `gapPartialMCSP_not_in_AC0` are side artifacts /
+formalization milestones only and are not a planned closure route
+unless paired with an explicit bridge to
+`ComplexityInterfaces.NP_not_subset_PpolyDAG` (see `AGENTS.md` /
+`pnp4/README.md`).
 
 ## Fixed-Params Status
 
@@ -386,13 +406,18 @@ hypothesis parameter throughout the magnification mainline.  See
 integration wiring surfaces, including
 `i4_final_wiring_of_formulaCertificate` and
 `NP_not_subset_PpolyDAG_final_of_asymptotic_isoStrongRoute_withAntiChecker`.
-For the canonical conclusion-side closure statement, only
-`isoStrong_conclusion_negative_for_canonical` is currently a standalone
-negation theorem; promise-route closure is presently tracked via the
-route-implication contrapositive chain above.
+The canonical conclusion-side closure is now packaged as three
+standalone negation theorems with the same `∀ W, ¬ ...` shape:
+`isoStrong_conclusion_negative_for_canonical`
+(`pnp3/Tests/IsoStrongConclusionProbe.lean`) and the two companions
+`promiseYesCertificate_conclusion_negative_for_canonical` /
+`promiseYesWeak_conclusion_negative_for_canonical`
+(`pnp3/Tests/PromiseRouteConclusionProbe.lean`).
 
-The single remaining typed-deliverable for the canonical track is the TM
-verifier: see "What Is Still Open" below.
+The single remaining typed-deliverable for the independent canonical
+infrastructure milestone (reusable NP-verifier scaffolding, not a
+P-vs-NP closure route) is the TM verifier: see "What Is Still Open"
+below.
 
 ### Inclusion side
 
@@ -423,10 +448,18 @@ fixed-slice `PpolyDAG` membership:
 
 ## What Is Still Open
 
-### Canonical-track TM-verifier deliverable
+### Canonical-track TM-verifier deliverable (independent infrastructure milestone)
 
-The canonical asymptotic infrastructure reduces the asymptotic-side
-research-gap to a single typed object:
+> **Scope note.**  After the canonical iso-strong / promise-YES
+> conclusion-side refutations recorded above, the canonical asymptotic
+> track is **no longer a P-vs-NP closure route**.  The TM-verifier
+> deliverable below is therefore an independent formalization /
+> infrastructure milestone for the reusable NP-verifier and decider
+> scaffolding.  Finishing it does not reduce the `ResearchGapWitness`
+> gap by itself, and it must not be presented as P-vs-NP progress.
+
+Considered as an isolated infrastructure target, the canonical
+asymptotic infrastructure reduces to a single typed object:
 
 ```
 W : Models.GapPartialMCSP_Asymptotic_TMWitness canonicalAsymptoticSpec
@@ -454,11 +487,13 @@ obligation to a single TM-engineering target.  It contains:
 - `witnessOfComponents : Components → GapPartialMCSP_Asymptotic_TMWitness
   canonicalAsymptoticSpec` — closed bridge.
 
-After this decomposition, the only remaining sub-obligation is to
-construct a TM whose acceptance behaviour matches the (now-defined)
-`decideAsymptotic` function, with polynomial runtime.  All decidability
-and language correctness are closed; the engineering reduces to
-"build a TM that ignores `w` and computes a known Bool function on `x`".
+After this decomposition, the only remaining sub-obligation **for the
+infrastructure milestone** is to construct a TM whose acceptance
+behaviour matches the (now-defined) `decideAsymptotic` function, with
+polynomial runtime.  All decidability and language correctness are
+closed; the engineering reduces to "build a TM that ignores `w` and
+computes a known Bool function on `x`".  Again, this is reusable
+NP-verifier infrastructure, not a P-vs-NP closure step.
 
 **Multi-session plan**: see `pnp3/Docs/TMVerifier_Session_Plan.md` for
 the 7-session decomposition (Variant B NP-style architecture):
@@ -499,7 +534,10 @@ replace the missing lower-bound idea.
 
 ## Repository-Wide Honesty Policy
 
-Any file claiming unconditional `P != NP` is inaccurate until the project has a
-non-vacuous replacement for the false support-bounds/multi-switching source and
-a zero-argument final theorem that does not depend on external provider
-payload.
+Any file claiming unconditional `P != NP` is inaccurate until the
+project has either a non-vacuous replacement for the refuted
+support-bounds / multi-switching source, or a direct method-agnostic
+proof of `ResearchGapWitness` / `ComplexityInterfaces.NP_not_subset_PpolyDAG`
+(algebraic, spectral, finite-field, SOS, Fourier-analytic, or other),
+together with a zero-argument final theorem that does not depend on
+external provider payload.

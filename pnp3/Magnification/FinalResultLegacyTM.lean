@@ -9,26 +9,29 @@ open Complexity
 open ComplexityInterfaces
 
 /-!
-Current DAG endpoint ledger for this file:
+# Legacy `_TM` compatibility wrappers — NOT CLAIMS
 
-- `P_ne_NP_final_dag_only` remains conditional on explicit DAG separation
-  `hNPDag : NP_not_subset_PpolyDAG`.
-- The stable-restriction, certificate-provider, invariant-provider, and
-  support-bounds wrappers below are compiled stronger sufficient routes and
-  compatibility/audit surfaces.
-- The generic accepted-family weak endpoint is now already formalized at the
-  slice level (`AcceptedFamilyCertificateAt`) and at the asymptotic barrier
-  schema level (`SmallDAGImpliesAcceptedFamilyAt` /
-  `SmallDAGImpliesAcceptedFamilyStatement`); the nearer-term chosen mainline
-  theorem target is the one-sided promise-aware schema
-  `SmallDAGImpliesPromiseYesSubcubeAt` /
-  `SmallDAGImpliesPromiseYesSubcubeStatement`, and
-  `YesSubcubeCertificateAt` is wired as a stronger structured producer into
-  that route.
-- This file now exposes thin asymptotic weak-route wrappers (`magnificationStyle*`)
-  consuming eventual accepted-family / promise-YES-subcube statements directly.
-  The remaining open step is the actual DAG-side source theorem producing those
-  eventual statements from strict small-DAG semantics.
+Every final-result endpoint in this module carries an explicit Research
+Constitution Rule 6 quarantine prefix:
+
+* `AuditOnly_*` — `_TM` compatibility wrappers (stable-restriction,
+  certificate-provider, invariant-provider, source-closure, blocker,
+  stable-restriction-payload) that do not consume refuted predicates
+  directly, but are kept off the publishable surface.
+* `RefutedRoute_*_supportBounds_TM` — wrappers that route through the
+  refuted support-bounds predicates.  Vacuous as a path to unconditional
+  closure.
+
+The active public boundary for unconditional work remains
+`Magnification.UnconditionalResearchGap`.  No theorem in this module is
+the public closure boundary.
+
+`P_ne_NP_final_dag_only` remains conditional on explicit DAG separation
+`hNPDag : NP_not_subset_PpolyDAG` and lives in `FinalResultMainline`; it
+is not duplicated here.
+
+Wrappers below are kept compiled solely so that historical `_TM`
+call sites and audit tests continue to type-check.
 -/
 
 /--
@@ -41,7 +44,7 @@ every DAG solver for the fixed `gapPartialMCSP` slice yields a small stable
 restriction for the canonical DAG payload, then the lower-bound layer already
 produces `NP ⊄ PpolyDAG`.
 -/
-theorem NP_not_subset_PpolyDAG_final_of_dag_stableRestriction_TM
+theorem AuditOnly_NP_not_subset_PpolyDAG_final_of_dag_stableRestriction_TM
   {p : GapPartialMCSPParams}
   (W : Models.GapPartialMCSP_TMWitness p)
   (hStable :
@@ -55,12 +58,12 @@ theorem NP_not_subset_PpolyDAG_final_of_dag_stableRestriction_TM
 Final DAG-separation wrapper specialized to the new DAG-native Route-B
 certificate provider.
 
-Compared with `NP_not_subset_PpolyDAG_final_of_dag_stableRestriction_TM`, this
+Compared with `AuditOnly_NP_not_subset_PpolyDAG_final_of_dag_stableRestriction_TM`, this
 form packages the source-side obligation as explicit per-DAG certificates
 (`DAGStableRestrictionCertificate`) instead of raw probe witnesses. It remains
 a stronger optional route rather than the intended theorem-minimal blocker.
 -/
-theorem NP_not_subset_PpolyDAG_final_of_certificateProvider_TM
+theorem AuditOnly_NP_not_subset_PpolyDAG_final_of_certificateProvider_TM
   {p : GapPartialMCSPParams}
   (W : Models.GapPartialMCSP_TMWitness p)
   (hCert : LowerBounds.dagStableRestrictionCertificateProvider p) :
@@ -75,7 +78,7 @@ This remains a stronger compatibility wrapper. The roadmap does not treat the
 producer-side proof of `hStable` as the only honest remaining theorem-level
 blocker.
 -/
-theorem P_ne_NP_final_of_dag_stableRestriction_TM
+theorem AuditOnly_P_ne_NP_final_of_dag_stableRestriction_TM
   {p : GapPartialMCSPParams}
   (W : Models.GapPartialMCSP_TMWitness p)
   (hStable :
@@ -84,25 +87,25 @@ theorem P_ne_NP_final_of_dag_stableRestriction_TM
         (LowerBounds.dagCanonicalPayload hDag)) :
   ComplexityInterfaces.P_ne_NP := by
   exact P_ne_NP_final_dag_only
-    (NP_not_subset_PpolyDAG_final_of_dag_stableRestriction_TM W hStable)
+    (AuditOnly_NP_not_subset_PpolyDAG_final_of_dag_stableRestriction_TM W hStable)
 
 /--
 End-to-end `P ≠ NP` wrapper specialized to the DAG-native Route-B certificate
 provider.
 -/
-theorem P_ne_NP_final_of_certificateProvider_TM
+theorem AuditOnly_P_ne_NP_final_of_certificateProvider_TM
   {p : GapPartialMCSPParams}
   (W : Models.GapPartialMCSP_TMWitness p)
   (hCert : LowerBounds.dagStableRestrictionCertificateProvider p) :
   ComplexityInterfaces.P_ne_NP := by
   exact P_ne_NP_final_dag_only
-    (NP_not_subset_PpolyDAG_final_of_certificateProvider_TM W hCert)
+    (AuditOnly_NP_not_subset_PpolyDAG_final_of_certificateProvider_TM W hCert)
 
 /--
 Final DAG-separation wrapper specialized to a DAG-side locality-invariant
 provider (the stronger Route-B source contract).
 -/
-theorem NP_not_subset_PpolyDAG_final_of_invariantProvider_TM
+theorem AuditOnly_NP_not_subset_PpolyDAG_final_of_invariantProvider_TM
   {p : GapPartialMCSPParams}
   (W : Models.GapPartialMCSP_TMWitness p)
   (hInv : LowerBounds.dagStableRestrictionInvariantProvider p) :
@@ -112,13 +115,13 @@ theorem NP_not_subset_PpolyDAG_final_of_invariantProvider_TM
 /--
 End-to-end `P ≠ NP` wrapper for the same DAG-side locality-invariant provider.
 -/
-theorem P_ne_NP_final_of_invariantProvider_TM
+theorem AuditOnly_P_ne_NP_final_of_invariantProvider_TM
   {p : GapPartialMCSPParams}
   (W : Models.GapPartialMCSP_TMWitness p)
   (hInv : LowerBounds.dagStableRestrictionInvariantProvider p) :
   ComplexityInterfaces.P_ne_NP := by
   exact P_ne_NP_final_dag_only
-    (NP_not_subset_PpolyDAG_final_of_invariantProvider_TM W hInv)
+    (AuditOnly_NP_not_subset_PpolyDAG_final_of_invariantProvider_TM W hInv)
 
 /--
 Final DAG-separation wrapper specialized to the localized Route-B source
@@ -127,7 +130,7 @@ closure package (`LowerBounds.DAGRouteBSourceClosure`).
 This keeps the endpoint surface simple: all source-side DAG work is packaged in
 one structure and consumed here without introducing additional endpoint APIs.
 -/
-theorem NP_not_subset_PpolyDAG_final_of_sourceClosure_TM
+theorem AuditOnly_NP_not_subset_PpolyDAG_final_of_sourceClosure_TM
   {p : GapPartialMCSPParams}
   (W : Models.GapPartialMCSP_TMWitness p)
   (hSrc : LowerBounds.DAGRouteBSourceClosure p) :
@@ -138,13 +141,13 @@ theorem NP_not_subset_PpolyDAG_final_of_sourceClosure_TM
 Companion `P ≠ NP` endpoint for the same localized Route-B source closure
 package.
 -/
-theorem P_ne_NP_final_of_sourceClosure_TM
+theorem AuditOnly_P_ne_NP_final_of_sourceClosure_TM
   {p : GapPartialMCSPParams}
   (W : Models.GapPartialMCSP_TMWitness p)
   (hSrc : LowerBounds.DAGRouteBSourceClosure p) :
   ComplexityInterfaces.P_ne_NP := by
   exact P_ne_NP_final_dag_only
-    (NP_not_subset_PpolyDAG_final_of_sourceClosure_TM W hSrc)
+    (AuditOnly_NP_not_subset_PpolyDAG_final_of_sourceClosure_TM W hSrc)
 
 /--
 Direct final DAG-separation wrapper from the named Route-B blocker gate.
@@ -152,7 +155,7 @@ Direct final DAG-separation wrapper from the named Route-B blocker gate.
 This avoids exposing intermediate source packaging at call sites when one wants
 to state end-to-end implications in blocker-first form.
 -/
-theorem NP_not_subset_PpolyDAG_final_of_blocker_TM
+theorem AuditOnly_NP_not_subset_PpolyDAG_final_of_blocker_TM
   {p : GapPartialMCSPParams}
   (W : Models.GapPartialMCSP_TMWitness p)
   (hBlocker : LowerBounds.dagRouteBSourceBlocker p) :
@@ -162,13 +165,13 @@ theorem NP_not_subset_PpolyDAG_final_of_blocker_TM
 /--
 Companion `P ≠ NP` final wrapper from the same named Route-B blocker gate.
 -/
-theorem P_ne_NP_final_of_blocker_TM
+theorem AuditOnly_P_ne_NP_final_of_blocker_TM
   {p : GapPartialMCSPParams}
   (W : Models.GapPartialMCSP_TMWitness p)
   (hBlocker : LowerBounds.dagRouteBSourceBlocker p) :
   ComplexityInterfaces.P_ne_NP := by
   exact P_ne_NP_final_dag_only
-    (NP_not_subset_PpolyDAG_final_of_blocker_TM W hBlocker)
+    (AuditOnly_NP_not_subset_PpolyDAG_final_of_blocker_TM W hBlocker)
 
 /--
 Final DAG-separation wrapper specialized to the fixed-slice support-bounds route.
@@ -203,7 +206,7 @@ Just like the lower-bound theorem below it, this is only a thin corollary of
 the probe-form final route: packaged payloads are converted back to the single
 probe obligation and the existing final theorem is reused unchanged.
 -/
-theorem NP_not_subset_PpolyDAG_final_of_dag_stableRestrictionPayload_TM
+theorem AuditOnly_NP_not_subset_PpolyDAG_final_of_dag_stableRestrictionPayload_TM
   {p : GapPartialMCSPParams}
   (W : Models.GapPartialMCSP_TMWitness p)
   (hStable :
@@ -213,7 +216,7 @@ theorem NP_not_subset_PpolyDAG_final_of_dag_stableRestrictionPayload_TM
     ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
       (hStable hDag).base = LowerBounds.dagCanonicalPayload hDag) :
   ComplexityInterfaces.NP_not_subset_PpolyDAG := by
-  exact NP_not_subset_PpolyDAG_final_of_dag_stableRestriction_TM W
+  exact AuditOnly_NP_not_subset_PpolyDAG_final_of_dag_stableRestriction_TM W
     (LowerBounds.dag_stableRestrictionGoal_of_stableRestrictionPayload
       hStable hBase)
 
@@ -224,7 +227,7 @@ producer obligation.
 
 Again this is just a thin corollary of the probe-form final route.
 -/
-theorem P_ne_NP_final_of_dag_stableRestrictionPayload_TM
+theorem AuditOnly_P_ne_NP_final_of_dag_stableRestrictionPayload_TM
   {p : GapPartialMCSPParams}
   (W : Models.GapPartialMCSP_TMWitness p)
   (hStable :
@@ -234,7 +237,7 @@ theorem P_ne_NP_final_of_dag_stableRestrictionPayload_TM
     ∀ hDag : ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p),
       (hStable hDag).base = LowerBounds.dagCanonicalPayload hDag) :
   ComplexityInterfaces.P_ne_NP := by
-  exact P_ne_NP_final_of_dag_stableRestriction_TM W
+  exact AuditOnly_P_ne_NP_final_of_dag_stableRestriction_TM W
     (LowerBounds.dag_stableRestrictionGoal_of_stableRestrictionPayload
       hStable hBase)
 

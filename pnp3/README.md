@@ -1,42 +1,44 @@
-# Проект PNP3: активный Lean-код
+# PNP3 project: active Lean code
 
-Обновлено: 2026-04-22
+Updated: 2026-05-28
 
-Канонический чеклист до безусловного `P != NP`:
+Canonical checklist for unconditional `P != NP`:
 `/root/p-np2/CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
-Текущий релизный режим:
+Current release posture:
 `/root/p-np2/RELEASE_RC.md`.
 
-## Что здесь
+## What lives here
 
-Каталог `pnp3/` содержит активный конвейер:
+The `pnp3/` directory carries the active pipeline:
 
-`SAL -> Covering-Power -> anti-checker -> magnification -> DAG-final wrappers`
+`SAL -> Covering-Power -> anti-checker -> magnification -> DAG final wrappers`
 
-## Граница вариантов MCSP
+## MCSP variant boundary
 
-В активном `pnp3/` используется **только Partial MCSP**:
+Active `pnp3/` uses **Partial MCSP only**:
 
-- модель: `Models/Model_PartialMCSP.lean`;
-- язык/обещание: `gapPartialMCSP_Language`, `GapPartialMCSPPromise`.
+- model: `Models/Model_PartialMCSP.lean`;
+- language / promise: `gapPartialMCSP_Language`, `GapPartialMCSPPromise`.
 
-Legacy-модель GapMCSP и другие старые ветки в `archive/` являются
-историческим контекстом, а не источником текущего статуса.
+The legacy GapMCSP model and other older branches under `archive/` are
+historical context, not the source of the current status.
 
-## Текущая граница доказательства
+## Current proof boundary
 
-Репозиторий компилирует большой DAG/magnification каркас:
+The repository compiles a substantial DAG / magnification scaffold:
 
-1. inclusion side уже internalized через `proved_P_subset_PpolyDAG_internal`;
-2. есть fixed-slice bridge `PpolyDAG -> PpolyFormula`;
-3. есть asymptotic, Route-B, `_TM` и support-half wrappers;
-4. есть falsifiability audit для support-bounds предпосылок.
+1. the inclusion side is internalised via
+   `proved_P_subset_PpolyDAG_internal`;
+2. the fixed-slice bridge `PpolyDAG -> PpolyFormula` is in place;
+3. asymptotic, Route-B, `_TM`, and support-half wrappers exist;
+4. the falsifiability audit for the support-bounds hypotheses is in
+   place.
 
-Но безусловного `P != NP` в репозитории нет.
+But no unconditional `P != NP` theorem exists in the repository.
 
-## Главная проблема
+## The main problem
 
-Старый источник support-bounds оказался формально ложным:
+The old support-bounds source turned out to be formally false:
 
 ```text
 FormulaSupportRestrictionBoundsPartial -> False
@@ -45,48 +47,50 @@ MagnificationAssumptions -> False
 FormulaSupportBoundsPartial_fromPipeline -> False
 ```
 
-Поэтому теоремы, проходящие через эти предпосылки, являются vacuous: они
-компилируются, но математически используют "из ложного следует что угодно".
+Therefore theorems routed through those hypotheses are vacuous: they
+compile, but they use "ex falso quodlibet" mathematically.
 
-Причина: truth-table hardwired формула для fixed slice является
-`PpolyFormula`, но имеет носитель по всем переменным. Старые predicates
-требовали полилогарифмический/малый support для слишком широкого класса
-формул.
+Root cause: a truth-table hardwired formula at a fixed slice is a
+`PpolyFormula` but has support over all variables.  The old predicates
+required polylogarithmic / small support for too broad a class of
+formulas.
 
 ## FixedParams
 
-Текущий честный кандидат:
+The current honest candidate is:
 
 ```text
 FormulaSupportBoundsPartial_fromPipeline_fixedParams ac0 sb
 ```
 
-Он фиксирует AC0-параметры снаружи и поэтому блокирует известную singleton
-provider атаку. Но это пока только форма будущего контракта, а не доказанная
-математика.
+It fixes the AC0 parameters externally and therefore blocks the known
+singleton-provider attack.  But this is only the shape of a future
+contract, not a proved theorem.
 
-Важно: `fixedParams + uniformProvenance` снова сводится к старому ложному
-predicate и поэтому противоречиво в текущей формализации.
+Important: `fixedParams + uniformProvenance` again reduces to the old
+false predicate and is therefore inconsistent in the current
+formalisation.
 
-## Один файл для оставшегося гэпа
+## A single file for the remaining gap
 
-Оставшаяся research-граница вынесена в:
+The remaining research boundary lives in:
 
 ```text
 Magnification/UnconditionalResearchGap.lean
 ```
 
-Там определён `ResearchGapWitness` и доказан условный мост
-`P_ne_NP_of_researchGap`.  Будущий безусловный прорыв должен доказать witness
-в этом файле и затем открыть zero-argument theorem из него.
+It defines `ResearchGapWitness` and proves the conditional bridge
+`P_ne_NP_of_researchGap`.  A future unconditional breakthrough must
+prove the witness in this file and then expose the zero-argument
+theorem from it.
 
-## Источник статуса
+## Source of status
 
-Глобальный статус и блокеры проверяются только по:
+The repository-wide status and blockers are checked only against:
 
 - `/root/p-np2/STATUS.md`
 - `/root/p-np2/TODO.md`
 - `/root/p-np2/CHECKLIST_UNCONDITIONAL_P_NE_NP.md`
 
-Локальные исторические заметки и старые roadmap-файлы нужно считать
-неавторитетными, если они расходятся с этими документами.
+Local historical notes and old roadmap files are not authoritative if
+they diverge from those documents.

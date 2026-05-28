@@ -248,7 +248,7 @@ theorem evalGateAt_eq_of_eq_on_supportAt
       classical
       cases hOp : C.gate ⟨i, hi⟩ with
       | const b =>
-          simpa only [DagCircuit.eval.evalGateAt, hOp]
+          simp only [DagCircuit.eval.evalGateAt, hOp]
       | not w =>
           cases w with
           | input j =>
@@ -391,7 +391,7 @@ theorem eval_eq_of_eq_on_support
       have hEq : x j = y j := hxy j hj
       rw [eval, hOut]
       rw [eval, hOut]
-      simpa only [hEq]
+      simp only [hEq]
   | gate j =>
       have hSub : ∀ k ∈ supportAt C j.1 j.2, x k = y k := by
         intro k hk

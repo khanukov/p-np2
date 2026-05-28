@@ -81,7 +81,7 @@ theorem approxClass_does_not_imply_small_mismatch
     have hTle : T.card ≤ B := by
       simpa [hmis] using hcard
     have : B + 1 ≤ B := by
-      simpa [hTcard] using hTle
+      simp [hTcard] at hTle
     omega
 
 end LowerBounds

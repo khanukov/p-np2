@@ -189,10 +189,10 @@ theorem ttFormula_eval : ∀ {n : Nat} (f : Bitstring n → Bool) (x : Bitstring
     -- Case split on x 0.
     cases hx0 : x ⟨0, Nat.zero_lt_succ _⟩ with
     | false =>
-      simp only [hx0, Bool.not_false, Bool.true_and, Bool.false_and, Bool.or_false]
+      simp only [Bool.not_false, Bool.true_and, Bool.false_and, Bool.or_false]
       rw [hx_eq false hx0]
     | true =>
-      simp only [hx0, Bool.not_true, Bool.false_and, Bool.true_and, Bool.false_or]
+      simp only [Bool.not_true, Bool.false_and, Bool.true_and, Bool.false_or]
       rw [hx_eq true hx0]
 
 /-! ### Probe 2: fixed-slice `gapPartialMCSP_Language ∈ PpolyFormula` (truth-table hardwiring) -/
@@ -252,7 +252,7 @@ theorem fixedSlice_gapPartialMCSP_in_PpolyFormula
     intro m x
     by_cases hm : m = n₀
     · subst hm
-      simp only [dif_pos rfl]
+      simp only []
       -- family m = c₀, so eval c₀ x = ttFormula_eval ... gives language value.
       show FormulaCircuit.eval c₀ x = gapPartialMCSP_Language p n₀ x
       exact ttFormula_eval (gapPartialMCSP_Language p n₀) x

@@ -270,7 +270,7 @@ lemma unionClass_perm_fixed_of_perm {m : Nat}
       List.mem_map.mpr ⟨β0, hsub hβ0, rfl⟩
     simpa [hEq] using hstab.subset hβ0'
   · calc
-      permuteFun π g = permuteFun π (fun x => coveredB S x) := by simpa [hgEq]
+      permuteFun π g = permuteFun π (fun x => coveredB S x) := by simp [hgEq]
       _ = fun x => coveredB (List.map (permuteSubcube π.symm) S) x :=
         permute_coveredB π S
 
@@ -965,7 +965,7 @@ lemma approxOnTestset_of_mismatchSet
       (T := mismatchSet (fun x => coveredB S x) f) := by
   refine ⟨fun x => coveredB S x, ?_, ?_⟩
   · exact ⟨S, hlen, hsub, rfl⟩
-  · simpa using (subset_rfl : mismatchSet (fun x => coveredB S x) f ⊆ mismatchSet (fun x => coveredB S x) f)
+  · simp
 
 /--
 For a fixed approximant `g`, asking for some small testset containing the full

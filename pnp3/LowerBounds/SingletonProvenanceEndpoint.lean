@@ -58,9 +58,7 @@ theorem singletonProvenancePackage_of_internal_provider
     k := base.1
     scenario := base.2
     family_eq := by
-      simpa [base] using
-        LowerBounds.scenarioFromAC0_with_polylog_family_eq
-          cert.ac0 cert.F cert.hFam cert.hpolyW
+      simp [base]
   }
   let f : Core.BitVec pack.cert.ac0.n → Bool :=
     fun x => ComplexityInterfaces.FormulaCircuit.eval
@@ -76,8 +74,7 @@ theorem singletonProvenancePackage_of_internal_provider
   · simp [pack, cert, f, Magnification.AC0LocalityBridge.semanticSwitchingCertificate_internal]
     funext x
     rfl
-  · simpa [pack, base] using
-      LowerBounds.scenarioFromAC0_with_polylog_k_eq cert.ac0 cert.F cert.hFam cert.hpolyW
+  · simp [pack, base]
   · intro x
     simp [f]
 
@@ -94,7 +91,7 @@ theorem singletonProvenance_boundedWitness
       Core.listSubset S pkg.pack.scenario.atlas.dict ∧
       Core.errU pkg.f S ≤ pkg.pack.scenario.atlas.epsilon := by
   have hfF : pkg.f ∈ pkg.pack.cert.F := by
-    simpa [pkg.hSingleton]
+    simp [pkg.hSingleton]
   have hfSc : pkg.f ∈ pkg.pack.scenario.family := by
     simpa [pkg.pack.family_eq] using hfF
   rcases pkg.pack.scenario.bounded pkg.f hfSc with ⟨S, hlen, hsub, herr⟩
@@ -115,7 +112,7 @@ theorem linked_function_in_approxClass_of_singletonProvenancePackage
       (k := pkg.pack.scenario.k)
       (ε := pkg.pack.scenario.atlas.epsilon) := by
   have hfF : pkg.f ∈ pkg.pack.cert.F := by
-    simpa [pkg.hSingleton]
+    simp [pkg.hSingleton]
   have hfSc : pkg.f ∈ pkg.pack.scenario.family := by
     simpa [pkg.pack.family_eq] using hfF
   exact
@@ -154,7 +151,7 @@ theorem smallMismatchPackage_of_singletonProvenancePackage_of_mismatch_card_le
     hsub := hsub
     hsmall := ?_
   }⟩
-  · simpa [pkg.hSingleton]
+  · simp [pkg.hSingleton]
   · simpa [S] using hsmall
 
 end LowerBounds

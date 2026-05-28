@@ -422,7 +422,7 @@ theorem semanticSingletonWitness_nonempty_of_exists_true {n : Nat}
   rcases hTrue with ⟨x, hx⟩
   have hCover : Core.coveredB (semanticSingletonWitness f) x = true := by
     simpa [hx] using coveredB_semanticSingletonWitness f x
-  simpa [hNil] using hCover
+  simp [hNil] at hCover
 
 private theorem chosenSubcube_pointTerm_eq_pointSubcube {n : Nat}
     (x : Core.BitVec n) :
@@ -459,7 +459,7 @@ private theorem chosenSubcube_pointTerm_eq_pointSubcube {n : Nat}
       exact False.elim hfalse
   | some b =>
       have hb : x i = b := hxprop i b hβi
-      simp [Core.pointSubcube, hβi, hb]
+      simp [Core.pointSubcube, hb]
 
 /--
 Every subcube appearing in the current singleton semantic witness is already a
@@ -614,14 +614,14 @@ private noncomputable def semanticSingletonPartialCertificate {n : Nat}
         epsilon := (1 : Core.Q) / (params.n + 2)
         trunk_depth_le := by
           have : Core.PDT.depth tree = 0 := by simp [tree, Core.PDT.depth]
-          simpa [this, Core.PartialDT.ofPDT]
+          simp [this, Core.PartialDT.ofPDT]
         selectors := fun g => if g = f then subcubes else []
         selectors_sub := by
           intro g β hg hβ
           have hgEq : g = f := by simpa using hg
           have hβfull : β = ThirdPartyFacts.fullSubcube params.n :=
             ThirdPartyFacts.subcube_eq_full_of_n_zero' hzero β
-          simpa [hgEq, tree, Core.PDT.leaves, hβfull] using hβ
+          simp [tree, Core.PDT.leaves, hβfull]
         err_le := by
           intro g hg
           have hg' : g = f := by simpa using hg
@@ -670,16 +670,16 @@ private noncomputable def semanticMultiSwitchingWitness {n : Nat}
   let F : Core.Family params.n := [f]
   let C := semanticSingletonPartialCertificate f
   have hDepthC : C.depthBound ≤ (semanticCircuit f).subcubes.length := by
-    simpa [C] using le_of_eq (semanticSingletonPartialCertificate_depth_eq f)
+    simp [C]
   have hε : C.epsilon = (1 : Core.Q) / (params.n + 2) := by
-    simpa [params, C] using semanticSingletonPartialCertificate_exact_epsilon f
+    simp [params, C]
   let S : Core.Shrinkage params.n := C.toShrinkage
   have hEvalEq : ThirdPartyFacts.AC0Circuit.eval (semanticCircuit f) = f := by
     funext x
     exact semanticCircuit_computes f x
   have hFamilyEq :
       S.F = F := by
-    simpa [S, F, hEvalEq] using (Core.PartialCertificate.toShrinkage_family C)
+    simp [S, F]
   have hDepthSubcubes :
       S.t ≤ (semanticCircuit f).subcubes.length := by
     have hDepthS : S.t = C.depthBound + 0 := by
@@ -707,7 +707,7 @@ private noncomputable def semanticMultiSwitchingWitness {n : Nat}
       simpa [params] using semanticParams_weak_le_polylog f
   have hEpsNonneg : (0 : Core.Q) ≤ S.ε := by
     have hRewrite : S.ε = C.epsilon := by
-      simpa [S] using (Core.PartialCertificate.toShrinkage_epsilon C)
+      simp [S]
     rw [hRewrite, hε]
     apply div_nonneg
     · norm_num
@@ -716,7 +716,7 @@ private noncomputable def semanticMultiSwitchingWitness {n : Nat}
       exact_mod_cast this
   have hEpsLeInv : S.ε ≤ (1 : Core.Q) / (params.n + 2) := by
     have hRewrite : S.ε = C.epsilon := by
-      simpa [S] using (Core.PartialCertificate.toShrinkage_epsilon C)
+      simp [S]
     rw [hRewrite, hε]
   refine {
     base := by
@@ -744,10 +744,10 @@ private theorem semanticMultiSwitchingWitness_nonempty {n : Nat}
   let params := semanticParams f
   let C := semanticSingletonPartialCertificate f
   have hε : C.epsilon = (1 : Core.Q) / (params.n + 2) := by
-    simpa [params, C] using semanticSingletonPartialCertificate_exact_epsilon f
+    simp [params, C]
   have hRewrite :
       (semanticMultiSwitchingWitness f).shrinkage.ε = C.epsilon := by
-    simp [semanticMultiSwitchingWitness, params, C]
+    simp [semanticMultiSwitchingWitness, C]
   exact hRewrite.trans hε
 
 /--
@@ -811,7 +811,7 @@ theorem semanticSingletonAtlas_exact_epsilon {n : Nat}
           simpa [A, S, Core.Atlas.ofPDT] using (Core.SAL_from_Shrinkage S)
     simpa [A, F, hEvalEq] using hWorks
   · have hSε : S.ε = C.epsilon := by
-      simpa [S] using (Core.PartialCertificate.toShrinkage_epsilon C)
+      simp [S]
     simpa [A, Core.Atlas.ofPDT, hSε] using hε
 
 /--
@@ -959,19 +959,16 @@ theorem current_singleton_commonPDT_exact_epsilon {n : Nat}
       (ThirdPartyFacts.certificate_from_AC0_with_polylog params F hF hpoly).ε
         = (1 : Core.Q) / (params.n + 2) := by
     change hpoly.shrinkage.ε = (1 : Core.Q) / (params.n + 2)
-    simpa [params, hpoly,
-      ThirdPartyFacts.certificate_from_AC0_with_polylog,
+    simp [params, hpoly,
       ThirdPartyFacts.ac0PolylogBoundWitness_of_multi_switching,
-      ThirdPartyFacts.ac0PolylogBoundWitness_by_depth] using
-      semanticMultiSwitchingWitness_exact_epsilon f
+      ThirdPartyFacts.ac0PolylogBoundWitness_by_depth]
   calc
     (Core.CommonPDT.toAtlas C).epsilon
         = C.epsilon := by
           rfl
     _ = (ThirdPartyFacts.certificate_from_AC0_with_polylog params F hF hpoly).ε := by
           unfold C
-          simp [ThirdPartyFacts.commonPDT_from_AC0_with_polylog,
-            ThirdPartyFacts.certificate_from_AC0_with_polylog_family]
+          simp [ThirdPartyFacts.commonPDT_from_AC0_with_polylog]
     _ = (1 : Core.Q) / (params.n + 2) := hε
 
 /--

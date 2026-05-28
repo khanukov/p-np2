@@ -784,7 +784,7 @@ theorem mem_of_apply_factsRestrictionOfSubcube {n : Nat}
     simpa [factsRestrictionOfSubcube_alive] using hnotFree
   have happly := Facts.LocalityLift.Restriction.apply_not_alive
     (factsRestrictionOfSubcube β) x hnotAlive
-  simpa [factsRestrictionOfSubcube, factsAssignmentOfSubcube, hβi] using happly
+  simp [factsRestrictionOfSubcube, factsAssignmentOfSubcube, hβi]
 
 /--
 Source-aware relation: `rFacts` is realized by a semantic switching certificate

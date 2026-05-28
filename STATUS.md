@@ -27,9 +27,13 @@ Research method boundary:
 - The repository contains substantial DAG endpoint plumbing, including the
   fixed-slice DAG-to-formula bridge
   `Complexity.ppolyFormula_of_ppolyDAG_gapPartialMCSP_fixedSlice`.
-- A separate restricted-model milestone surface now exists at
-  `pnp3/LowerBounds/AC0_GapMCSP.lean`; it exposes the paper-facing fixed-slice
-  AC0 endpoint `gapPartialMCSP_not_in_AC0`.
+- A separate restricted-model surface exists at
+  `pnp3/LowerBounds/AC0_GapMCSP.lean`; it exposes the paper-facing
+  fixed-slice AC0 endpoint `gapPartialMCSP_not_in_AC0`.  This is a
+  side artifact / formalization milestone, not the current P-vs-NP
+  mainline; it is not a planned closure route unless paired with an
+  explicit bridge to `ComplexityInterfaces.NP_not_subset_PpolyDAG`
+  (consistent with `AGENTS.md` and `pnp4/README.md`).
 
 ## Current Audit Result
 
@@ -232,18 +236,26 @@ following precise sense:
 
 This does **NOT** prove `P ≠ NP` or even `NP ⊄ P/poly`.  It rules
 out the canonical asymptotic track at the canonical `sYES = 1,
-sNO = 2` spec as a route to those endpoints.  Future work must
-either:
+sNO = 2` spec as a route to those endpoints.  Future P-vs-NP mainline
+work must pivot to a different route family:
 
-- Choose a NEW canonical spec with non-trivial `sYES/sNO` where
-  the pigeonhole argument doesn't apply (i.e., `Mof` grows fast
-  enough relative to `tableLen` to invalidate the slack inequality
-  used in `slack_for_D_of_isoStrong_slack`).
-- Pivot to a different route family: pnp4 frontier
-  `SearchMCSPWeakLowerBound` / `VerifiedNPDAGLowerBoundSource`,
-  restricted-model `gapPartialMCSP_not_in_AC0` (already in
-  `pnp3/LowerBounds/AC0_GapMCSP.lean`), or genuinely new
-  research-level mathematics.
+- pnp4 frontier `SearchMCSPWeakLowerBound` /
+  `VerifiedNPDAGLowerBoundSource`;
+- or genuinely new research-level mathematics proving
+  `ResearchGapWitness` directly.
+
+Restricted-model AC0 artifacts such as
+`pnp3/LowerBounds/AC0_GapMCSP.lean::gapPartialMCSP_not_in_AC0` are
+side artifacts / formalization milestones only.  They are not
+treated as the current P-vs-NP mainline and are not a planned
+closure route unless paired with an explicit bridge to
+`ComplexityInterfaces.NP_not_subset_PpolyDAG` (consistent with the
+restricted-track posture recorded in `AGENTS.md` and
+`pnp4/README.md`).  A NEW canonical spec with non-trivial `sYES/sNO`
+where the pigeonhole argument does not apply (i.e., `Mof` grows fast
+enough relative to `tableLen` to invalidate the slack inequality
+used in `slack_for_D_of_isoStrong_slack`) is also an internal
+spec-engineering option, not a publishable route on its own.
 
 **Audit chain summary (11 stages, all kernel-checked).**
 
@@ -319,11 +331,16 @@ reader scanning the route catalogue can identify these three routes
 as closed without re-deriving the meta-argument.
 
 This does **NOT** prove `P ≠ NP` or `NP ⊄ P/poly`.  It closes the
-iso-strong route class as a path to those endpoints; future work
-must pivot to a different route family (pnp4 frontier
-`SearchMCSPWeakLowerBound` / `VerifiedNPDAGLowerBoundSource`,
-restricted-model `gapPartialMCSP_not_in_AC0`, or genuinely new
-research-level mathematics).
+iso-strong route class as a path to those endpoints; future
+P-vs-NP mainline work must pivot to a different route family —
+either the pnp4 frontier (`SearchMCSPWeakLowerBound` /
+`VerifiedNPDAGLowerBoundSource`) or genuinely new research-level
+mathematics proving `ResearchGapWitness`.  Restricted-model AC0
+artifacts such as `gapPartialMCSP_not_in_AC0` are side artifacts /
+formalization milestones only and are not a planned closure route
+unless paired with an explicit bridge to
+`ComplexityInterfaces.NP_not_subset_PpolyDAG` (see `AGENTS.md` /
+`pnp4/README.md`).
 
 ## Fixed-Params Status
 

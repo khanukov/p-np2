@@ -72,18 +72,15 @@ Interpretation:
    `MagnificationAssumptions`, not `FormulaSupportBoundsFromMultiSwitchingContract`,
    and not any provider payload.
 
-The historical `hMag : MagnificationAssumptions` argument is preserved only
-on the explicit audit wrapper:
-
-```text
-P_ne_NP_final_of_magnification
-  (hMag : MagnificationAssumptions)
-```
-
-This is not the current public default.  `MagnificationAssumptions` is also
-formally refuted by the falsifiability audit
-(`MagnificationAssumptions -> False`), so the audit wrapper is vacuous and
-must not be presented as the canonical path.
+The historical `hMag : MagnificationAssumptions` argument is preserved
+only on quarantined audit wrappers, all of which carry the explicit
+`RefutedRoute_*` prefix (e.g. the `_of_magnification`,
+`_of_asymptoticPullback`, `_of_multiswitchingData` compatibility shapes
+in `pnp3/Magnification/FinalResultAuditRoutes.lean`).  These are not the
+current public default.  `MagnificationAssumptions` is also formally
+refuted by the falsifiability audit (`MagnificationAssumptions -> False`),
+so every `RefutedRoute_*` wrapper above it is vacuous and must not be
+presented as the canonical path.
 
 ## Are we currently using GapMCSP or Partial MCSP in active code?
 

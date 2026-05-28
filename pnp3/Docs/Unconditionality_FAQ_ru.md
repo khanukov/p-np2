@@ -32,12 +32,16 @@ witness внутри `pnp3/Magnification/UnconditionalResearchGap.lean`.
 
 ### 2) Готовые конечные маршруты к этой цели (но с входными предпосылками)
 
-Ветка уже содержит рабочие endpoint-теоремы, например:
+Ветка содержит рабочие endpoint-теоремы под явными audit/quarantine-
+префиксами Research Constitution Rule 6:
 
-- `NP_not_subset_PpolyDAG_final_of_asymptotic_blocker` (асимптотический маршрут),
-- `NP_not_subset_PpolyDAG_final_of_blocker_TM` (конкретный `_TM` маршрут).
+- `RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptotic_blocker`
+  (асимптотический маршрут, потребляет refuted `MagnificationAssumptions`);
+- `AuditOnly_NP_not_subset_PpolyDAG_final_of_blocker_TM`
+  (конкретный `_TM` маршрут, compatibility-обёртка).
 
-То есть «проводка» от source-предпосылки к финальной DAG-сепарации уже собрана.
+То есть «проводка» от source-предпосылки к финальной DAG-сепарации
+по-прежнему собрана, но она помечена как not-a-claim на уровне имени.
 
 ### 3) Почему текущий public final всё ещё не безусловный
 
@@ -48,19 +52,19 @@ witness внутри `pnp3/Magnification/UnconditionalResearchGap.lean`.
 Этот witness содержит ровно оставшийся математический долг:
 `ComplexityInterfaces.NP_not_subset_PpolyDAG`.
 
-Старый multiswitching/asymptotic маршрут всё ещё сохранён, но теперь он явно
-назван как audit/legacy endpoint:
+Старый multiswitching/asymptotic маршрут всё ещё сохранён, но теперь он
+явно помечен `RefutedRoute_*` audit-префиксом:
 
-- `NP_not_subset_PpolyDAG_final_of_multiswitchingData hMS D`,
-- `P_ne_NP_final_of_multiswitchingData hMS D`.
+- `RefutedRoute_NP_not_subset_PpolyDAG_final_of_multiswitchingData hMS D`,
+- `RefutedRoute_P_ne_NP_final_of_multiswitchingData hMS D`.
 
-`D` содержит и asymptotic slice source, и TM-свидетельство NP-membership, поэтому
-`hNPbridge : AsymptoticNPPullback ...` больше не является публичным входом даже
-у legacy mainline-маршрута.
+`D` содержит и asymptotic slice source, и TM-свидетельство NP-membership,
+поэтому `hNPbridge : AsymptoticNPPullback ...` больше не является
+публичным входом даже у legacy mainline-маршрута.
 
-Исторический bundle-аргумент `hMag : MagnificationAssumptions` уже вынесен в
-compatibility wrapper `P_ne_NP_final_of_magnification` и не является
-блокером на default-маршруте.
+Исторический bundle-аргумент `hMag : MagnificationAssumptions` уже вынесен
+в compatibility wrapper `RefutedRoute_P_ne_NP_final_of_magnification`
+(с явным quarantine-префиксом) и не является блокером на default-маршруте.
 
 Дополнительно есть промежуточные closure-шаги, но они больше не маскируются под
 финальный безусловный API.  Если они проходят через refuted support-bounds
@@ -76,9 +80,10 @@ surface, они остаются compatibility/audit plumbing.
 где `gap : ResearchGapWitness`.
 
 Legacy compatibility-маршруты вроде
-`NP_not_subset_PpolyDAG_final_of_multiswitchingData hMS D` и
-`NP_not_subset_PpolyDAG_final_of_magnification hMag` оставлены для аудита и
-обратной совместимости, но не считаются безусловным прогрессом.
+`RefutedRoute_NP_not_subset_PpolyDAG_final_of_multiswitchingData hMS D` и
+`RefutedRoute_NP_not_subset_PpolyDAG_final_of_magnification hMag` оставлены
+для аудита и обратной совместимости, но не считаются безусловным
+прогрессом — quarantine-префикс делает это видимым на уровне имени.
 
 Старый DAG-side audit-маршрут замкнут так:
 
@@ -121,10 +126,11 @@ compatibility/audit wrappers.
   `ComplexityInterfaces.NP_not_subset_PpolyDAG`,
 - `P_ne_NP_final gap` сразу даёт `ComplexityInterfaces.P_ne_NP`.
 
-Старый audit route тоже остаётся условным:
+Старый audit route тоже остаётся условным (и теперь под `RefutedRoute_`-
+префиксом, как и положено quarantine-обёртке):
 
-- `NP_not_subset_PpolyDAG_final_of_multiswitchingData hMS D`,
-- `P_ne_NP_final_of_multiswitchingData hMS D`.
+- `RefutedRoute_NP_not_subset_PpolyDAG_final_of_multiswitchingData hMS D`,
+- `RefutedRoute_P_ne_NP_final_of_multiswitchingData hMS D`.
 
 ### Нет — **безусловно, прямо сейчас**
 

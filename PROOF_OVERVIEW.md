@@ -28,10 +28,13 @@ The compatibility import path for the historical aggregator is
 `pnp3/Magnification/FinalResult.lean`; the implementation aggregator is
 `pnp3/Magnification/FinalResultCore.lean`.
 
-## 2. Final theorem ladder in code
+## 2. Final theorem surface in code
 
-The active ladder has one honest public closure boundary plus several layers
-of explicit compatibility/audit wrappers.
+There is exactly **one** public final endpoint pair.  Everything else in the
+final-result modules is either a conditional anti-checker surface (Mainline)
+or an explicitly quarantined audit-only / refuted-route compatibility
+wrapper (see §2a).  None of the audit surfaces is a publishable closure
+claim.
 
 ### Public default closure boundary
 
@@ -46,46 +49,46 @@ P_ne_NP_final               (gap : ResearchGapWitness)
 The single mathematical input is `ResearchGapWitness.dagSeparation`, of type
 `ComplexityInterfaces.NP_not_subset_PpolyDAG`.
 
-### Audit / legacy wrappers (not the public closure boundary)
+### Conditional anti-checker surfaces (Mainline)
 
-In `pnp3/Magnification/FinalResultAuditRoutes.lean`:
+`pnp3/Magnification/FinalResultMainline.lean` carries the family of
+`_withAntiChecker` conditional theorems that depend on
+`AntiCheckerAssumptions` plus a route-specific structural hypothesis
+(`AsymptoticIsoStrongRoute`, `AsymptoticPromiseYesCertificateRoute`,
+`dagRouteBSourceClosure`, ...).  Their statements are useful for tracking
+the exact data shape a future source theorem must produce, but they are
+not the public closure boundary and they are not unconditional.
 
-1. `P_ne_NP_final_of_magnification (hMag : MagnificationAssumptions)`
-2. `P_ne_NP_final_of_asymptoticPullback (hMS, hAsym, hNPbridge)`
-3. `P_ne_NP_final_of_multiswitchingData (hMS, D)`
-4. fixed-slice / promise-YES / iso-strong route wrappers
-5. various `NP_not_subset_PpolyDAG_final_of_*` companions
+## 2a. Audit-only theorem surfaces — not claims
 
-These all consume assumptions (`MagnificationAssumptions`,
-`FormulaSupportBoundsFromMultiSwitchingContract`,
-`FormulaSupportBoundsPartial_fromPipeline`, ...) that the falsifiability audit
-has formally refuted.  They compile, but they route through inconsistent
-assumptions; they are kept only for import stability and audit attribution.
+All theorems below are quarantined behind explicit name prefixes per
+Research Constitution Rule 6.  They compile, but they consume refuted
+predicates or are kept only for legacy import compatibility.  **None of
+them is a current claim.**
 
-### Additional fixed-slice / asymptotic DAG surfaces
+| Prefix          | Location                                                     | Status                                                       |
+|-----------------|--------------------------------------------------------------|--------------------------------------------------------------|
+| `RefutedRoute_` | `pnp3/Magnification/FinalResultAuditRoutes.lean`             | Consumes a refuted predicate (`MagnificationAssumptions`, `FormulaSupportBoundsFromMultiSwitchingContract`, `FormulaSupportBoundsPartial_fromPipeline`, ...).  Vacuous as a path to unconditional closure. |
+| `RefutedRoute_` | `pnp3/Magnification/FinalResultLegacyTM.lean` (`_supportBounds_TM`) | Same as above, restricted to the `_TM` packaging.            |
+| `AuditOnly_`    | `pnp3/Magnification/FinalResultLegacyTM.lean` (other `_TM`)  | `_TM` compatibility wrapper retained for legacy callers; not consuming refuted predicates directly but kept out of the active publishable surface. |
+| `Vacuous_`      | `pnp3/Magnification/FinalResultAuditRoutes.lean` (provider-shaped) | Vacuous via the typeclass-payload audit channel (`FinalPayloadProvider`, `DefaultFormulaSource`, ...).  Recorded only to make the audit channel concrete. |
 
-In `FinalResultMainline` and related modules:
+Specific endpoint names are intentionally omitted here.  The grep-friendly
+inventory is:
 
-1. `NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse`
-2. `NP_not_subset_PpolyDAG_final_of_asymptotic_dag_stableRestriction`
-3. `NP_not_subset_PpolyDAG_final_of_asymptotic_sourceClosure`
-4. `NP_not_subset_PpolyDAG_final_of_asymptotic_blocker`
-5. companion `P_ne_NP_final_of_*` wrappers for the same fixed-slice routes
+```bash
+rg -nE "^theorem (RefutedRoute_|AuditOnly_|Vacuous_)" \
+  pnp3/Magnification/FinalResultAuditRoutes.lean \
+  pnp3/Magnification/FinalResultLegacyTM.lean
+```
 
-These are conditional theorem surfaces, useful for tracking precise data
-shapes, but they are not the public closure boundary.
+### `FinalResultWeakRoutes`
 
-### Concrete fixed-slice `_TM` DAG surfaces
-
-In `FinalResultLegacyTM` and related modules:
-
-1. `NP_not_subset_PpolyDAG_final_of_blocker_TM`
-2. `P_ne_NP_final_of_blocker_TM`
-3. related `_TM` wrappers from stable restriction / source closure /
-   support-bounds bridges
-
-These are likewise conditional compatibility surfaces, not the public closure
-boundary.
+`pnp3/Magnification/FinalResultWeakRoutes.lean` carries thin
+`noSmallDAG_surface_of_*` / `not_globalPpolyDAG_surface_of_*` wrappers
+around active weak-route schemas (`AcceptedFamilyStatement`,
+`PromiseYesSubcubeStatement`, ...).  These are conditional surfaces, not
+audit-only and not the public closure boundary.
 
 ## 3. Current explicit boundary assumption
 

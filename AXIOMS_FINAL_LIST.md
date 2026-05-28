@@ -39,20 +39,28 @@ public default final theorem.
 
 ## External assumptions on audit / legacy wrappers
 
-These hypotheses are exposed only by explicit audit / compatibility wrappers
-under `_of_*` names (mostly in
-`pnp3/Magnification/FinalResultAuditRoutes.lean`), not by the public default
-endpoints:
+These hypotheses are exposed only by quarantined audit / compatibility
+wrappers in `pnp3/Magnification/FinalResultAuditRoutes.lean` and
+`pnp3/Magnification/FinalResultLegacyTM.lean`, never by the public default
+endpoints.  Per Research Constitution Rule 6, every such endpoint is
+prefixed `RefutedRoute_*`, `Vacuous_*`, or `AuditOnly_*` so that a reader
+scanning the API can identify it as not-a-claim:
 
-1. `MagnificationAssumptions` — on
-   `P_ne_NP_final_of_magnification` / `NP_not_subset_PpolyDAG_final_of_magnification`.
+1. `MagnificationAssumptions` — on `RefutedRoute_*` wrappers around the
+   `_of_magnification` / `_with_magnification` / `_of_asymptotic_*Route` /
+   `_of_asymptotic_blocker` / `_of_asymptotic_sourceClosure` / similar
+   compatibility surfaces.
 2. `FormulaSupportBoundsFromMultiSwitchingContract` (`hMS`) — on
-   `P_ne_NP_final_of_asymptoticPullback`,
-   `P_ne_NP_final_of_multiswitchingData`, and related wrappers.
+   `RefutedRoute_*` wrappers around `_of_asymptoticPullback`,
+   `_of_multiswitchingData`, and related compatibility shapes.
 3. `AsymptoticFormulaTrackHypothesis`, `AsymptoticNPPullback`, provider
-   instances — on additional audit / asymptotic wrappers.
-4. Various fixed-slice `_TM`, source-closure, blocker, and bridge wrappers
-   continue to expose the assumptions appropriate to their theorem surfaces.
+   instances — on additional `Vacuous_*` audit wrappers (e.g.
+   `Vacuous_P_ne_NP_via_FinalPayloadProvider` and siblings).
+4. `_TM` compatibility wrappers (`AuditOnly_*` in
+   `FinalResultLegacyTM.lean`) expose `TMWitness` plus the stable
+   restriction / certificate / invariant / source-closure / blocker
+   shapes; they are not consuming refuted predicates directly but are
+   kept off the publishable surface.
 
 All of `MagnificationAssumptions`,
 `FormulaSupportRestrictionBoundsPartial`,
@@ -60,9 +68,9 @@ All of `MagnificationAssumptions`,
 `FormulaSupportBoundsPartial_fromPipeline`,
 `MagnificationAssumptions_fromPipeline`, and
 `FormulaCertificateProviderPartial` are formally refuted by the
-falsifiability audit: their existence proves `False`.  The audit / legacy
-wrappers above are therefore vacuous as paths to unconditional closure; they
-exist only for import stability and historical attribution.
+falsifiability audit (`-> False`).  Any `RefutedRoute_*` endpoint that
+takes one of them is therefore vacuous; it exists only for import
+stability and audit attribution.
 
 ## Hygiene verification
 

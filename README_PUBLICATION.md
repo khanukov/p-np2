@@ -43,6 +43,26 @@ predicates are formally refuted by the falsifiability audit.
    realizable for realistic AC0 parameters.
 4. A zero-argument final theorem with no external research payload.
 
+## Audit-only theorem surfaces — not claims
+
+The final-result modules also contain quarantined audit / compatibility
+endpoints that compile but do not represent publishable claims.  Per
+Research Constitution Rule 6, every such endpoint carries one of three
+explicit name prefixes:
+
+| Prefix          | Meaning                                                      | Module                                       |
+|-----------------|--------------------------------------------------------------|----------------------------------------------|
+| `RefutedRoute_` | Consumes a refuted predicate (e.g. `MagnificationAssumptions`, `FormulaSupportBoundsFromMultiSwitchingContract`, ...).  Vacuous as a path to unconditional closure. | `FinalResultAuditRoutes.lean`, plus the `_supportBounds_TM` companions in `FinalResultLegacyTM.lean` |
+| `AuditOnly_`    | Legacy `_TM` compatibility wrapper not consuming refuted predicates directly, but kept off the publishable surface. | `FinalResultLegacyTM.lean`                   |
+| `Vacuous_`      | Vacuous via the typeclass-payload audit channel (`FinalPayloadProvider`, `DefaultFormulaSource`, ...).  Records the channel concretely so it cannot quietly come back. | `FinalResultAuditRoutes.lean`                |
+
+These prefixes are enforced visually: no `RefutedRoute_*` /
+`AuditOnly_*` / `Vacuous_*` endpoint should ever be presented as the
+public closure boundary.  Treat them as the analogue of an `audit/`
+directory inside the type-theoretic API: their job is to keep historical
+shapes importable while making it impossible to mistake them for
+unconditional results.
+
 ## How to verify
 
 ```bash

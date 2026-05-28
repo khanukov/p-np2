@@ -50,11 +50,12 @@ They are defined in
 input is `gap.dagSeparation : ComplexityInterfaces.NP_not_subset_PpolyDAG`.
 
 `hMag`, `hMS`, `hAsym`, `hNPbridge`, and provider-backed entry points are
-preserved only as explicit audit / compatibility wrappers under `_of_*`
-names (for example `P_ne_NP_final_of_magnification`,
-`P_ne_NP_final_of_asymptoticPullback`, `P_ne_NP_final_of_multiswitchingData`)
-in `pnp3/Magnification/FinalResultAuditRoutes.lean`.  They are not the
-current public closure boundary.
+preserved only as quarantined audit / compatibility wrappers in
+`pnp3/Magnification/FinalResultAuditRoutes.lean` and
+`pnp3/Magnification/FinalResultLegacyTM.lean`.  Per Research Constitution
+Rule 6, every such endpoint carries the prefix `RefutedRoute_*`,
+`Vacuous_*`, or `AuditOnly_*` so that a reader scanning the API
+immediately sees that it is not the public closure boundary.
 
 ## Not currently claimed
 

@@ -8,16 +8,36 @@ open LowerBounds
 open ComplexityInterfaces
 
 /-!
-# Final-result audit and compatibility routes
+# Final-result audit and compatibility routes — NOT CLAIMS
 
-This module contains legacy final-result wrappers that intentionally route
-through refuted support-bounds/provider-backed surfaces.  They are retained so
-historical call sites and audits keep compiling, while `FinalResultMainline`
-can stay focused on the cleaner anti-checker and DAG integration surfaces.
+This module is the visible quarantine for legacy final-result wrappers.
+Every endpoint here carries one of the Research Constitution Rule 6
+quarantine prefixes:
+
+* `RefutedRoute_*` — consumes a refuted predicate (`MagnificationAssumptions`,
+  `FormulaSupportBoundsFromMultiSwitchingContract`,
+  `FormulaSupportRestrictionBoundsPartial`,
+  `FormulaSupportBoundsPartial_fromPipeline`,
+  `FormulaCertificateProviderPartial`, ...).  Vacuous as a path to
+  unconditional `NP_not_subset_PpolyDAG` or `P_ne_NP`.
+
+* `Vacuous_*` — vacuous via the typeclass-payload audit channel
+  (`FinalPayloadProvider`, `DefaultFormulaSource`, ...).  Recorded only to
+  keep the audit channel concretely visible.
+
+These names are intentional eyesores: any tool, document, or reader
+scanning the API can identify a quarantined endpoint by its prefix without
+reading the proof body.
 
 The active public boundary for unconditional work remains
 `Magnification.UnconditionalResearchGap`, where `P_ne_NP_final` takes a
-`ResearchGapWitness`.
+`ResearchGapWitness`.  No theorem in this module is the public closure
+boundary.
+
+Endpoints here are kept compiled solely so that historical call sites,
+the falsifiability audit, and the route-surface audit tests continue to
+type-check.  Removing them would break audit attribution; renaming them
+without a prefix would let stale wording silently come back.
 -/
 
 /--
@@ -32,7 +52,7 @@ Legacy/audit status: `FormulaSupportRestrictionBoundsPartial` is itself a
 refuted support-bounds surface, so this theorem is not a non-vacuous path to
 unconditional DAG separation.
 -/
-theorem fixedSliceCollapse_of_supportBounds
+theorem RefutedRoute_fixedSliceCollapse_of_supportBounds
   {p : GapPartialMCSPParams}
   (hBounds : FormulaSupportRestrictionBoundsPartial) :
   ComplexityInterfaces.PpolyDAG (gapPartialMCSP_Language p) → False := by
@@ -58,7 +78,7 @@ theorem RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptotic_supportBounds
   apply NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse_withAntiChecker
     (anti := hMag.antiChecker) (n := n) (hn := hn)
   exact
-    fixedSliceCollapse_of_supportBounds
+    RefutedRoute_fixedSliceCollapse_of_supportBounds
       (hBounds := formula_support_bounds_from_multiswitching
         hMag.switching.multiswitching)
 
@@ -95,7 +115,7 @@ refuted switching field, these wrappers live in the audit module rather than in
 -/
 
 /-- Legacy package-shaped wrapper for the canonical eventual DAG route. -/
-theorem NP_not_subset_PpolyDAG_final_of_asymptotic_isoStrongRoute_withMagnification
+theorem RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptotic_isoStrongRoute_withMagnification
   (hMag : MagnificationAssumptions)
   (hIso : AsymptoticIsoStrongRoute hMag.antiChecker.asymptotic) :
   ComplexityInterfaces.NP_not_subset_PpolyDAG := by
@@ -104,7 +124,7 @@ theorem NP_not_subset_PpolyDAG_final_of_asymptotic_isoStrongRoute_withMagnificat
       (anti := hMag.antiChecker) hIso
 
 /-- Legacy package-shaped companion `P ≠ NP` endpoint. -/
-theorem P_ne_NP_final_of_asymptotic_isoStrongRoute
+theorem RefutedRoute_P_ne_NP_final_of_asymptotic_isoStrongRoute
   (hMag : MagnificationAssumptions)
   (hIso : AsymptoticIsoStrongRoute hMag.antiChecker.asymptotic) :
   ComplexityInterfaces.P_ne_NP := by
@@ -113,7 +133,7 @@ theorem P_ne_NP_final_of_asymptotic_isoStrongRoute
       (anti := hMag.antiChecker) hIso
 
 /-- Legacy package-shaped wrapper for the promise-YES-certificate route. -/
-theorem NP_not_subset_PpolyDAG_final_of_asymptotic_promiseYesCertificateRoute_withMagnification
+theorem RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptotic_promiseYesCertificateRoute_withMagnification
   (hMag : MagnificationAssumptions)
   (hRoute : AsymptoticPromiseYesCertificateRoute hMag.antiChecker.asymptotic) :
   ComplexityInterfaces.NP_not_subset_PpolyDAG := by
@@ -122,7 +142,7 @@ theorem NP_not_subset_PpolyDAG_final_of_asymptotic_promiseYesCertificateRoute_wi
       (anti := hMag.antiChecker) hRoute
 
 /-- Legacy package-shaped companion for the promise-YES-certificate route. -/
-theorem P_ne_NP_final_of_asymptotic_promiseYesCertificateRoute
+theorem RefutedRoute_P_ne_NP_final_of_asymptotic_promiseYesCertificateRoute
   (hMag : MagnificationAssumptions)
   (hRoute : AsymptoticPromiseYesCertificateRoute hMag.antiChecker.asymptotic) :
   ComplexityInterfaces.P_ne_NP := by
@@ -131,7 +151,7 @@ theorem P_ne_NP_final_of_asymptotic_promiseYesCertificateRoute
       (anti := hMag.antiChecker) hRoute
 
 /-- Legacy package-shaped wrapper for one fixed-slice collapse. -/
-theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse
+theorem RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
   (hCollapseFixed :
@@ -143,7 +163,7 @@ theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceCollapse
       (anti := hMag.antiChecker) (n := n) (hn := hn) hCollapseFixed
 
 /-- Legacy package-shaped companion for one fixed-slice collapse. -/
-theorem P_ne_NP_final_of_asymptotic_fixedSliceCollapse
+theorem RefutedRoute_P_ne_NP_final_of_asymptotic_fixedSliceCollapse
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
   (hCollapseFixed :
@@ -155,7 +175,7 @@ theorem P_ne_NP_final_of_asymptotic_fixedSliceCollapse
       (anti := hMag.antiChecker) (n := n) (hn := hn) hCollapseFixed
 
 /-- Legacy package-shaped wrapper for the fixed-slice promise-YES route. -/
-theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSlicePromiseYesCertificateRoute
+theorem RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSlicePromiseYesCertificateRoute
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
   (hRoute :
@@ -167,7 +187,7 @@ theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSlicePromiseYesCertifica
       (anti := hMag.antiChecker) (n := n) (hn := hn) hRoute
 
 /-- Legacy package-shaped companion for the fixed-slice promise-YES route. -/
-theorem P_ne_NP_final_of_asymptotic_fixedSlicePromiseYesCertificateRoute
+theorem RefutedRoute_P_ne_NP_final_of_asymptotic_fixedSlicePromiseYesCertificateRoute
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
   (hRoute :
@@ -179,7 +199,7 @@ theorem P_ne_NP_final_of_asymptotic_fixedSlicePromiseYesCertificateRoute
       (anti := hMag.antiChecker) (n := n) (hn := hn) hRoute
 
 /-- Legacy package-shaped wrapper for the promise/value locality route. -/
-theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSlicePromiseValueLocalityRoute
+theorem RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSlicePromiseValueLocalityRoute
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
   (hPkg :
@@ -191,7 +211,7 @@ theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSlicePromiseValueLocalit
       (anti := hMag.antiChecker) (n := n) (hn := hn) hPkg
 
 /-- Legacy package-shaped companion for the promise/value locality route. -/
-theorem P_ne_NP_final_of_asymptotic_fixedSlicePromiseValueLocalityRoute
+theorem RefutedRoute_P_ne_NP_final_of_asymptotic_fixedSlicePromiseValueLocalityRoute
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
   (hPkg :
@@ -203,7 +223,7 @@ theorem P_ne_NP_final_of_asymptotic_fixedSlicePromiseValueLocalityRoute
       (anti := hMag.antiChecker) (n := n) (hn := hn) hPkg
 
 /-- Legacy package-shaped wrapper for support-half/value-supported fallback. -/
-theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceSupportHalfValueSupportedRoute
+theorem RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceSupportHalfValueSupportedRoute
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
   (hRoute :
@@ -215,7 +235,7 @@ theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceSupportHalfValueSup
       (anti := hMag.antiChecker) (n := n) (hn := hn) hRoute
 
 /-- Legacy package-shaped companion for support-half/value-supported fallback. -/
-theorem P_ne_NP_final_of_asymptotic_fixedSliceSupportHalfValueSupportedRoute
+theorem RefutedRoute_P_ne_NP_final_of_asymptotic_fixedSliceSupportHalfValueSupportedRoute
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
   (hRoute :
@@ -227,7 +247,7 @@ theorem P_ne_NP_final_of_asymptotic_fixedSliceSupportHalfValueSupportedRoute
       (anti := hMag.antiChecker) (n := n) (hn := hn) hRoute
 
 /-- Legacy package-shaped wrapper for strong-fallback slack. -/
-theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceDAGStableRestrictionSlackRoute
+theorem RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceDAGStableRestrictionSlackRoute
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
   (hRoute :
@@ -239,7 +259,7 @@ theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceDAGStableRestrictio
       (anti := hMag.antiChecker) (n := n) (hn := hn) hRoute
 
 /-- Legacy package-shaped companion for strong-fallback slack. -/
-theorem P_ne_NP_final_of_asymptotic_fixedSliceDAGStableRestrictionSlackRoute
+theorem RefutedRoute_P_ne_NP_final_of_asymptotic_fixedSliceDAGStableRestrictionSlackRoute
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
   (hRoute :
@@ -251,7 +271,7 @@ theorem P_ne_NP_final_of_asymptotic_fixedSliceDAGStableRestrictionSlackRoute
       (anti := hMag.antiChecker) (n := n) (hn := hn) hRoute
 
 /-- Legacy package-shaped wrapper for shrinkage certificates. -/
-theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceShrinkageCertificateRoute
+theorem RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceShrinkageCertificateRoute
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
   (hRoute :
@@ -263,7 +283,7 @@ theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceShrinkageCertificat
       (anti := hMag.antiChecker) (n := n) (hn := hn) hRoute
 
 /-- Legacy package-shaped companion for shrinkage certificates. -/
-theorem P_ne_NP_final_of_asymptotic_fixedSliceShrinkageCertificateRoute
+theorem RefutedRoute_P_ne_NP_final_of_asymptotic_fixedSliceShrinkageCertificateRoute
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
   (hRoute :
@@ -275,7 +295,7 @@ theorem P_ne_NP_final_of_asymptotic_fixedSliceShrinkageCertificateRoute
       (anti := hMag.antiChecker) (n := n) (hn := hn) hRoute
 
 /-- Legacy package-shaped wrapper for restriction data. -/
-theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceRestrictionDataRoute
+theorem RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceRestrictionDataRoute
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
   (hRoute :
@@ -287,7 +307,7 @@ theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceRestrictionDataRout
       (anti := hMag.antiChecker) (n := n) (hn := hn) hRoute
 
 /-- Legacy package-shaped companion for restriction data. -/
-theorem P_ne_NP_final_of_asymptotic_fixedSliceRestrictionDataRoute
+theorem RefutedRoute_P_ne_NP_final_of_asymptotic_fixedSliceRestrictionDataRoute
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
   (hRoute :
@@ -299,7 +319,7 @@ theorem P_ne_NP_final_of_asymptotic_fixedSliceRestrictionDataRoute
       (anti := hMag.antiChecker) (n := n) (hn := hn) hRoute
 
 /-- Legacy package-shaped wrapper for support-numeric data. -/
-theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceSupportNumericRoute
+theorem RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceSupportNumericRoute
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
   (hRoute :
@@ -311,7 +331,7 @@ theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceSupportNumericRoute
       (anti := hMag.antiChecker) (n := n) (hn := hn) hRoute
 
 /-- Legacy package-shaped companion for support-numeric data. -/
-theorem P_ne_NP_final_of_asymptotic_fixedSliceSupportNumericRoute
+theorem RefutedRoute_P_ne_NP_final_of_asymptotic_fixedSliceSupportNumericRoute
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
   (hRoute :
@@ -323,7 +343,7 @@ theorem P_ne_NP_final_of_asymptotic_fixedSliceSupportNumericRoute
       (anti := hMag.antiChecker) (n := n) (hn := hn) hRoute
 
 /-- Legacy package-shaped wrapper for support-component inequalities. -/
-theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceSupportNumericComponentRoute
+theorem RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceSupportNumericComponentRoute
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
   (hRoute :
@@ -335,7 +355,7 @@ theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceSupportNumericCompo
       (anti := hMag.antiChecker) (n := n) (hn := hn) hRoute
 
 /-- Legacy package-shaped companion for support-component inequalities. -/
-theorem P_ne_NP_final_of_asymptotic_fixedSliceSupportNumericComponentRoute
+theorem RefutedRoute_P_ne_NP_final_of_asymptotic_fixedSliceSupportNumericComponentRoute
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
   (hRoute :
@@ -347,7 +367,7 @@ theorem P_ne_NP_final_of_asymptotic_fixedSliceSupportNumericComponentRoute
       (anti := hMag.antiChecker) (n := n) (hn := hn) hRoute
 
 /-- Legacy package-shaped wrapper for quarter-bounded transfer. -/
-theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceTransferQuarterRoute
+theorem RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceTransferQuarterRoute
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
   (hRoute :
@@ -359,7 +379,7 @@ theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceTransferQuarterRout
       (anti := hMag.antiChecker) (n := n) (hn := hn) hRoute
 
 /-- Legacy package-shaped companion for quarter-bounded transfer. -/
-theorem P_ne_NP_final_of_asymptotic_fixedSliceTransferQuarterRoute
+theorem RefutedRoute_P_ne_NP_final_of_asymptotic_fixedSliceTransferQuarterRoute
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
   (hRoute :
@@ -371,7 +391,7 @@ theorem P_ne_NP_final_of_asymptotic_fixedSliceTransferQuarterRoute
       (anti := hMag.antiChecker) (n := n) (hn := hn) hRoute
 
 /-- Legacy package-shaped wrapper for witness-indexed easy density. -/
-theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceWitnessEasyDensityRoute
+theorem RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceWitnessEasyDensityRoute
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
   (hDensity :
@@ -383,7 +403,7 @@ theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceWitnessEasyDensityR
       (anti := hMag.antiChecker) (n := n) (hn := hn) hDensity
 
 /-- Legacy package-shaped companion for witness-indexed easy density. -/
-theorem P_ne_NP_final_of_asymptotic_fixedSliceWitnessEasyDensityRoute
+theorem RefutedRoute_P_ne_NP_final_of_asymptotic_fixedSliceWitnessEasyDensityRoute
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
   (hDensity :
@@ -395,7 +415,7 @@ theorem P_ne_NP_final_of_asymptotic_fixedSliceWitnessEasyDensityRoute
       (anti := hMag.antiChecker) (n := n) (hn := hn) hDensity
 
 /-- Legacy package-shaped wrapper for witness-uniform lower bounds. -/
-theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceWitnessUniformLowerRoute
+theorem RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceWitnessUniformLowerRoute
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
   (hUniform :
@@ -407,7 +427,7 @@ theorem NP_not_subset_PpolyDAG_final_of_asymptotic_fixedSliceWitnessUniformLower
       (anti := hMag.antiChecker) (n := n) (hn := hn) hUniform
 
 /-- Legacy package-shaped companion for witness-uniform lower bounds. -/
-theorem P_ne_NP_final_of_asymptotic_fixedSliceWitnessUniformLowerRoute
+theorem RefutedRoute_P_ne_NP_final_of_asymptotic_fixedSliceWitnessUniformLowerRoute
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
   (hUniform :
@@ -419,7 +439,7 @@ theorem P_ne_NP_final_of_asymptotic_fixedSliceWitnessUniformLowerRoute
       (anti := hMag.antiChecker) (n := n) (hn := hn) hUniform
 
 /-- Legacy package-shaped wrapper for stable-restriction producers. -/
-theorem NP_not_subset_PpolyDAG_final_of_asymptotic_dag_stableRestriction
+theorem RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptotic_dag_stableRestriction
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
   (hStable :
@@ -431,7 +451,7 @@ theorem NP_not_subset_PpolyDAG_final_of_asymptotic_dag_stableRestriction
       (anti := hMag.antiChecker) (n := n) (hn := hn) hStable
 
 /-- Legacy package-shaped companion for stable-restriction producers. -/
-theorem P_ne_NP_final_of_asymptotic_dag_stableRestriction
+theorem RefutedRoute_P_ne_NP_final_of_asymptotic_dag_stableRestriction
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
   (hStable :
@@ -443,7 +463,7 @@ theorem P_ne_NP_final_of_asymptotic_dag_stableRestriction
       (anti := hMag.antiChecker) (n := n) (hn := hn) hStable
 
 /-- Legacy package-shaped wrapper for source-closure packages. -/
-theorem NP_not_subset_PpolyDAG_final_of_asymptotic_sourceClosure
+theorem RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptotic_sourceClosure
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
   (hSrc : LowerBounds.DAGRouteBSourceClosure (hMag.antiChecker.asymptotic.pAt n hn)) :
@@ -453,7 +473,7 @@ theorem NP_not_subset_PpolyDAG_final_of_asymptotic_sourceClosure
       (anti := hMag.antiChecker) (n := n) (hn := hn) hSrc
 
 /-- Legacy package-shaped companion for source-closure packages. -/
-theorem P_ne_NP_final_of_asymptotic_sourceClosure
+theorem RefutedRoute_P_ne_NP_final_of_asymptotic_sourceClosure
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
   (hSrc : LowerBounds.DAGRouteBSourceClosure (hMag.antiChecker.asymptotic.pAt n hn)) :
@@ -463,7 +483,7 @@ theorem P_ne_NP_final_of_asymptotic_sourceClosure
       (anti := hMag.antiChecker) (n := n) (hn := hn) hSrc
 
 /-- Legacy package-shaped wrapper for Route-B blockers. -/
-theorem NP_not_subset_PpolyDAG_final_of_asymptotic_blocker
+theorem RefutedRoute_NP_not_subset_PpolyDAG_final_of_asymptotic_blocker
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
   (hBlocker :
@@ -474,7 +494,7 @@ theorem NP_not_subset_PpolyDAG_final_of_asymptotic_blocker
       (anti := hMag.antiChecker) (n := n) (hn := hn) hBlocker
 
 /-- Legacy package-shaped companion for Route-B blockers. -/
-theorem P_ne_NP_final_of_asymptotic_blocker
+theorem RefutedRoute_P_ne_NP_final_of_asymptotic_blocker
   (hMag : MagnificationAssumptions)
   (n : Nat) (hn : hMag.antiChecker.asymptotic.N0 ≤ n)
   (hBlocker :

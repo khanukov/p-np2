@@ -29,7 +29,7 @@
 #
 #   The identifier `P_ne_NP_unconditional` itself is NOT in the public-
 #   doc forbidden-phrase list.  Existing public docs (TODO.md,
-#   pnp3/Docs/Unconditionality_FAQ_ru.md, ...) legitimately describe the
+#   pnp3/Docs/Unconditionality_FAQ.md, ...) legitimately describe the
 #   identifier as the absent target, e.g. "expose `P_ne_NP_unconditional`
 #   from that same file".  Mentioning a name is not the same as claiming
 #   completion.  The phantom-axiom check (A) and the existing

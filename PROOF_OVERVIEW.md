@@ -11,8 +11,8 @@ Current interim release posture:
 `RELEASE_RC.md`.
 Route policy lock:
 `pnp3/Docs/CLOSURE_ROUTE_POLICY.md`.
-Russian-language frontier FAQ (more detailed, authoritative narrative source):
-`pnp3/Docs/Unconditionality_FAQ_ru.md`.
+Detailed frontier FAQ (authoritative narrative source):
+`pnp3/Docs/Unconditionality_FAQ.md`.
 
 ## 1. Pipeline shape
 
@@ -181,6 +181,6 @@ Use these files as the active source of truth:
 3. `TODO.md`
 4. `AXIOMS_FINAL_LIST.md`
 5. `pnp3/Docs/CLOSURE_ROUTE_POLICY.md`
-6. `pnp3/Docs/Unconditionality_FAQ_ru.md`
+6. `pnp3/Docs/Unconditionality_FAQ.md`
 
 Historical notes in `archive/` remain non-authoritative.

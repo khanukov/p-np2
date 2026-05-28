@@ -1,21 +1,21 @@
-# PsubsetPpoly Internal Closure TODO (current inclusion-side status)
+# PsubsetPpoly internal closure TODO (current inclusion-side status)
 
-Дата актуализации: 2026-04-03.
+Last refresh: 2026-04-03.
 
-Scope note:
-этот файл описывает только inclusion-side (`P ⊆ PpolyDAG`) и не является
-источником общего DAG/final-blocker статуса проекта.
-Для глобального статуса используйте:
+Scope note: this file covers only the inclusion side (`P ⊆ PpolyDAG`)
+and is not the source of the overall DAG / final-blocker status.
+
+For the global status use:
 - `/root/p-np2/STATUS.md`
 - `/root/p-np2/TODO.md`
 - `/root/p-np2/CHECKLIST_UNCONDITIONAL_P_NE_NP.md`
 
 ## Current route (machine-checked)
 
-Канонический no-arg endpoint:
+Canonical no-arg endpoint:
 - `Complexity.Simulation.proved_P_subset_PpolyDAG_internal : P_subset_PpolyDAG`
 
-Фактическая активная цепочка закрытия:
+The active closure chain:
 1. `proved_P_subset_PpolyDAG_internal`
 2. `proved_P_subset_PpolyDAG_of_compiledRuntimeLinearOutputContracts`
 3. internal trio:
@@ -23,32 +23,35 @@ Scope note:
    `compiledRuntimeCircuitSizeBoundLinear_internal`,
    `compiledRuntimeAcceptCorrectnessLinear_of_stepSpecProvider (...)`
 
-Именно этот endpoint используется финальным слоем:
+This endpoint is what the final layer uses:
 - `pnp3/Magnification/FinalResultCore.lean` (default route;
-  `FinalResult.lean` остаётся compatibility import path)
-- explicit-contract wrappers (`with_provider`, `with_barriers`) используют
-  linear contract bundle
+  `FinalResult.lean` remains a compatibility import path);
+- the explicit-contract wrappers (`with_provider`, `with_barriers`)
+  use the linear contract bundle
   `PsubsetPpolyCompiledRuntimeLinearOutputContracts`
-  (без iterated canonical compatibility chain).
+  (no iterated canonical compatibility chain).
 
 ## Legacy cleanup status
 
-Удалено из кода (больше не active runtime модель):
-- `step = id` ветка (`step`, `runConfig`, `runtimeConfig`, `runtimeConfig_eq_initial`)
-- legacy bridge-контракты между `runtimeConfig` и `stepCompiled` в closure path
+Removed from the code (no longer the active runtime model):
+- the `step = id` branch
+  (`step`, `runConfig`, `runtimeConfig`, `runtimeConfig_eq_initial`);
+- the legacy bridge contracts between `runtimeConfig` and
+  `stepCompiled` in the closure path.
 
-В `Circuit_Compiler.lean` больше нет отдельного compatibility-слоя
-`InternalCompiler/*` и `EvalAgreement`-ветки: active surface сведён к linear-route.
+In `Circuit_Compiler.lean` there is no longer a separate
+compatibility layer `InternalCompiler/*` or `EvalAgreement` branch:
+the active surface is reduced to the linear route.
 
-## Residual blocker (outside P ⊆ PpolyDAG closure)
+## Residual blocker (outside the P ⊆ PpolyDAG closure)
 
-Открытый хвост после закрытия inclusion-side:
-- internalization DAG-separation входа `NP_not_subset_PpolyDAG`
+After closing the inclusion side, one tail remains open:
+- internalisation of the DAG-separation input `NP_not_subset_PpolyDAG`.
 
-Это отдельный слой, не блокирует факт наличия безусловного
-`proved_P_subset_PpolyDAG_internal`.
+This is a separate layer; it does not block the fact that
+`proved_P_subset_PpolyDAG_internal` is unconditional.
 
 ## Audit pointers
 
-Пошаговые машинные проверки собраны в:
+Step-by-step machine checks are collected in:
 - `pnp3/Docs/PsubsetPpoly_AUDITOR_CHECKLIST.md`

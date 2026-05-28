@@ -8,9 +8,8 @@ Current milestone release checklist:
 `RELEASE_RC.md`.
 Route policy lock:
 `pnp3/Docs/CLOSURE_ROUTE_POLICY.md`.
-Russian-language frontier FAQ (longer, treated as authoritative narrative
-source for this English FAQ):
-`pnp3/Docs/Unconditionality_FAQ_ru.md`.
+Detailed frontier FAQ (longer, treated as authoritative narrative source):
+`pnp3/Docs/Unconditionality_FAQ.md`.
 
 ## What is currently proved in code?
 

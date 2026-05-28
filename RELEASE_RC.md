@@ -89,7 +89,7 @@ Confirm docs are aligned (matches the public-doc allowlist enforced by
 - `pnp3/Docs/Unconditional_NP_not_subset_PpolyDAG_Plan.md`
 - `pnp3/Docs/Simulation_FineGrained_Status.md`
 - `pnp3/Docs/Research_Method_Boundary.md`
-- `pnp3/Docs/Unconditionality_FAQ_ru.md`
+- `pnp3/Docs/Unconditionality_FAQ.md`
 
 ## Post-RC Research Plan
 

@@ -20,21 +20,21 @@ that exports the minimal interface required by the magnification pipeline:
   downstream in `LB_GeneralFromLocal`, `PipelineStatements`, and
   `Bridge_to_Magnification`;
 * a wrapper lemma that immediately turns any hypothetical local solver into a
-  contradiction when combined with Step C lower bounds.
+  contradiction when combined with Step C lower bounds.
 
-На текущем этапе пакет предоставляет полный интерфейс и **консервативную
-конструктивную реализацию** теоремы: мы строим явный свидетель локальности
-с одноточечным тест-набором, удовлетворяющим полилогарифмической границе, что
-позволяет устранить явную аксиому из кода.  Это решение служит «заглушкой» до
-момента, когда будет формализовано shrinkage-свидетельство для A.2
-(`shrinkage_for_localCircuit`). Вся инфраструктура для полноценного доказательства
-уже подготовлена — сразу после появления результата шага A можно будет заменить
-базовый свидетель на доказанный через локализацию и мультиплексоры вариант, не
-изменяя интерфейсов.
+At the current stage, the package provides the full interface together with a
+**conservative constructive realisation** of the theorem: we build an explicit
+locality witness using a one-point test set that satisfies the polylogarithmic
+budget, which lets us remove the explicit axiom from the code.  This solution
+acts as a placeholder until a shrinkage witness for A.2
+(`shrinkage_for_localCircuit`) is formalised.  All infrastructure for a full
+proof is already in place — once the result of step A becomes available, the
+base witness can be swapped for the locality / multiplexer version without
+changing any interfaces.
 
-> **Историко-пакетный статус.** Этот standalone-пакет сохраняет собственный
-> roadmap по locality-lift. Он не должен использоваться как описание текущего
-> глобального blocker'а активной ветки `pnp3`.
+> **Historical package status.** This standalone package keeps its own
+> locality-lift roadmap.  It must not be read as a description of the current
+> global blocker on the active `pnp3` branch.
 
 ## Roadmap
 
@@ -44,13 +44,13 @@ that exports the minimal interface required by the magnification pipeline:
    entire `pnp3` repository.  The `Exports` module exposes these declarations
    through a compact namespace.
 2. **Document all numerical constraints.**  The `ProofSketch` folder records the
-   intended proof structure, cross-references to Williams (2014) and
-   Murray–Williams (2018), and lists the quantitative inequalities that must be
+   intended proof structure, cross-references to Williams (2014) and
+   Murray–Williams (2018), and lists the quantitative inequalities that must be
    discharged when the axiom is replaced by a proof.
 3. **Gradually replace the axiom.**  Follow-up work will import the multi-
    switching and shrinkage facts (once they are available as packages of their
    own) and implement the constructive extraction of the local solver, in the
-   style of Theorem 5.1 from Williams’ JACM 2014 paper.
+   style of Theorem 5.1 from Williams' JACM 2014 paper.
 
 ## Repository layout
 
@@ -58,21 +58,21 @@ that exports the minimal interface required by the magnification pipeline:
 Facts/LocalityLift/
 ├── Interface/
 │   ├── Parameters.lean    -- shared numeric parameters for GapMCSP solvers
-│   └── Statement.lean     -- the locality-lift interface (использует свидетель)
+│   └── Statement.lean     -- the locality-lift interface (uses the witness)
 ├── ProofSketch/
 │   └── Outline.lean       -- heavily commented blueprint for the proof
 ├── Proof/
-│   ├── Arithmetic.lean    -- базовые числовые леммы про polylogBudget
-│   ├── TestSet.lean       -- канонический малый тест-набор и его свойства
-│   ├── TestSetExtraction.lean -- преобразование множества «живых» координат в тест-набор
-│   ├── Summary.lean       -- сводка shrinkage-параметров и переход к чертежу
-│   ├── Localization.lean  -- семантическое условие «зависимости только от alive»,
-│   │                         явные операции restrict/extend и локальный эмулятор
-│   ├── Restriction.lean   -- формализация рестрикций (частичных назначений)
-│   ├── Builder.lean       -- линейный бюджет мультиплексоров и `LocalCircuitSkeleton`
-│   │                         (мост от локализационных сертификатов к свидетелям)
-│   ├── Blueprint.lean     -- преобразование числовых чертежей в свидетелей
-│   └── Witness.lean       -- упаковка shrinkage-сертификатов в итоговый свидетель
+│   ├── Arithmetic.lean    -- base numerical lemmas about polylogBudget
+│   ├── TestSet.lean       -- canonical small test-set and its properties
+│   ├── TestSetExtraction.lean -- converting the alive coordinates into a test-set
+│   ├── Summary.lean       -- shrinkage-parameter summary and bridge to the blueprint
+│   ├── Localization.lean  -- the semantic "depends only on alive coordinates" condition,
+│   │                         explicit restrict/extend operations, and the local emulator
+│   ├── Restriction.lean   -- formalisation of restrictions (partial assignments)
+│   ├── Builder.lean       -- linear multiplexer budget and `LocalCircuitSkeleton`
+│   │                         (bridge from localisation certificates to witnesses)
+│   ├── Blueprint.lean     -- turning numerical blueprints into witnesses
+│   └── Witness.lean       -- packaging shrinkage certificates into the final witness
 ├── Exports.lean           -- convenient re-exports for downstream projects
 ├── FactLocalityLift.lean  -- package entry point (imports `Exports`)
 ├── lakefile.lean
@@ -86,7 +86,7 @@ referenced, and how the parameters are expected to transform.
 
 ## Next steps towards verification
 
-* **(Blocked until Step A completes.)** Formalise the shrinkage and
+* **(Blocked until Step A completes.)** Formalise the shrinkage and
   multi-switching lemmas relied upon by Williams and Murray–Williams, ideally in
   separate `Facts/Switching` and `Facts/Shrinkage` packages.  This supplies the
   shrinkage witness for A.2 (`shrinkage_for_localCircuit`) required by the
@@ -105,7 +105,7 @@ referenced, and how the parameters are expected to transform.
 *This package is intended to be fully verified. Until the proof is in place,
 we record the exact external statements the proof will rely on:*
 
-1. **Shrinkage for local circuits (multi-switching for locality).**  
+1. **Shrinkage for local circuits (multi-switching for locality).**
    A Håstad/Williams-style shrinkage lemma specialised to local circuits, as
    currently exposed in `ThirdPartyFacts/Facts_Switching.lean` under the name
    `shrinkage_for_localCircuit`. Intuitively, it asserts that after suitable
@@ -114,9 +114,9 @@ we record the exact external statements the proof will rely on:*
    is available, but it still needs an external `LocalCircuitWitness` packaged
    in `FamilyIsLocalCircuit`.
 
-2. **(No SAL/AC⁰ shrinkage dependency for this lemma.)**  
+2. **(No SAL/AC⁰ shrinkage dependency for this lemma.)**
    The locality-lift proof can be carried out *only* with the local shrinkage
-   fact; the AC⁰ multi-switching is not required here. Likewise, Step C
+   fact; the AC⁰ multi-switching is not required here. Likewise, Step C
    (anti-checker) is orthogonal to this lemma.
 
 These assumptions will be either (i) imported from a verified package once
@@ -136,8 +136,8 @@ M_loc ≤ M_gen * (|T| + 1),
 ℓ_loc ≤ polylogBudget(N),
 depth_loc ≤ depth_gen.
 ```
-This matches Williams (2014)/Murray–Williams (2018) up to constant factors and
-is stable with the existing Step C/Step D code. If a different exponent is ever
+This matches Williams (2014)/Murray–Williams (2018) up to constant factors and
+is stable with the existing Step C/Step D code. If a different exponent is ever
 required, a monotonicity lemma can be added without changing the public API.
 
 ## Test-set invariants (minimal)
@@ -145,10 +145,10 @@ required, a monotonicity lemma can be added without changing the public API.
 For the locality-lift, the test-set `T` only needs:
 * type `Finset (BitVec n)` and the cardinality bound above;
 * the *semantic* role: the constructed local solver depends only on the
-  coordinates indexed by `T` (this is exactly what “locality ℓ = |T|” means).
+  coordinates indexed by `T` (this is exactly what "locality ℓ = |T|" means).
 
 No closure properties of `T` are required here; anti-checker-specific
-requirements (e.g. distinguishing families) belong to Step C and are unrelated
+requirements (e.g. distinguishing families) belong to Step C and are unrelated
 to this lemma.
 
 ## API stability contract
@@ -159,14 +159,14 @@ The following names and signatures are considered stable:
   `LocalityWitness`;
 * `polylogBudget` as defined above;
 * `locality_lift` with the four inequalities on `T`, `M`, `ℓ`, `depth`;
-* the wrapper lemma turning “no local solver” into “no general solver”.
+* the wrapper lemma turning "no local solver" into "no general solver".
 
 Future extensions (e.g. a parametric `polylogBudget_k`) must not break this API.
 
 ## Outstanding work checklist
 
 The table below captures the remaining engineering tasks that block the removal
-of axiom D.5.  Each entry points to the exact Lean modules that will host the
+of axiom D.5.  Each entry points to the exact Lean modules that will host the
 corresponding proof artefacts so that contributors can jump straight to the
 relevant file.
 
@@ -174,11 +174,11 @@ relevant file.
 | --- | --- | --- |
 | ☑ | Formalise the shrinkage witness interface (`ShrinkageWitness`) specialised to GapMCSP solvers and connect it to the blueprint layer.<br/>The module now also provides `ShrinkageCertificate`, a canonical certificate, and the bridge to semantic localisation certificates. | `Proof/Summary.lean`, `Proof/Blueprint.lean`, `Proof/ShrinkageWitness.lean`, `Proof/Witness.lean` |
 | ☑ | Extract the deterministic test-set `T` from a shrinkage certificate and capture the localisation predicate `localizedOn alive general`.<br/>The helper modules now provide canonical test-set constructions for any restriction, glue them to shrinkage summaries, and expose a `localityWitnessOfCertificate` bridge that carries semantic data without unfolding definitions. | `Proof/TestSetExtraction.lean`, `Proof/Restriction.lean`, `Proof/Localization.lean`, `Proof/ShrinkageWitness.lean`, `Proof/Witness.lean` |
-| ◕ | Build the local solver by threading iterative ITE/multiplexer layers through the general solver DAG, keeping the size and depth bounds explicit (linear size budget prepared in `Proof/Builder.lean`).<br/>`LocalCircuitSkeleton` now packages shrinkage summaries together with the local evaluator, supplying immediate bridges to `LocalityCertificate` and `LocalityWitness`.  **Финальный шаг заблокирован до тех пор, пока не будет предоставлен shrinkage-свидетель для A.2 (`shrinkage_for_localCircuit`)**: после появления доказанного shrinkage-свидетельства его нужно подставить вместо канонической заглушки и реализовать мультиплексорную трансформацию. | `ProofSketch/Outline.lean`, `Proof/Builder.lean` |
+| ◕ | Build the local solver by threading iterative ITE/multiplexer layers through the general solver DAG, keeping the size and depth bounds explicit (linear size budget prepared in `Proof/Builder.lean`).<br/>`LocalCircuitSkeleton` now packages shrinkage summaries together with the local evaluator, supplying immediate bridges to `LocalityCertificate` and `LocalityWitness`.  **The final step is blocked until a shrinkage witness for A.2 (`shrinkage_for_localCircuit`) is provided**: once a proved shrinkage witness exists, it must replace the canonical placeholder and the multiplexer transformation must be implemented. | `ProofSketch/Outline.lean`, `Proof/Builder.lean` |
 | ☑ | Replace the axiom `localityWitness` with an explicit construction (baseline witness with a canonical one-point test-set), factoring the conversion through the blueprint helper. | `Proof/TestSet.lean`, `Proof/Blueprint.lean`, `Proof/Witness.lean`, `Interface/Statement.lean` |
 
-Once all four items are checked, Step D in the main repository will depend only
-on the verified shrinkage machinery from Step A.
+Once all four items are checked, Step D in the main repository will depend only
+on the verified shrinkage machinery from Step A.
 
 ## Research questions for subject-matter experts
 
@@ -198,9 +198,9 @@ without consulting the repository.
    * How do we select a single witness `alive` set deterministically from the
      probabilistic shrinkage statement?
    * Which leaves/paths of the partial decision tree must be retained to ensure
-     `T.card ≤ polylogBudget (inputLen p)` (degree 4 in the current definition)?
+     `T.card ≤ polylogBudget (inputLen p)` (degree 4 in the current definition)?
    * Which literature reference should be cited for this extraction step
-     (e.g. Williams 2014, Theorem 5.1; Beame’s switching lemma primer)?
+     (e.g. Williams 2014, Theorem 5.1; Beame's switching lemma primer)?
 
 2. **Size accounting for the local solver.**
    *Context.* The interface requires `loc.params.M ≤ general.params.size * (T.card.succ)`
@@ -210,7 +210,7 @@ without consulting the repository.
    *Question.* Which precise combinatorial bound from the literature justifies
    the linear overhead `(|T| + 1)`?  Please outline how the size of the DAG is
    preserved when each control bit from `T` is threaded through the solver.  A
-   citation to a standard source (e.g. Wegener’s *The Complexity of Boolean
+   citation to a standard source (e.g. Wegener's *The Complexity of Boolean
    Functions*) would let us mirror the argument in Lean.
 
 3. **Depth preservation versus additive overhead.**
@@ -218,7 +218,7 @@ without consulting the repository.
    Some expositions of locality lifting allow an additive `O(1)` blow-up while
    others quote a multiplicative `ℓ` factor.
    *Question.* Which inequality should we formalise to stay faithful to the
-   Williams (2014) / Murray–Williams (2018) pipeline?  Is there a concise
+   Williams (2014) / Murray–Williams (2018) pipeline?  Is there a concise
    argument (or reference) showing that the multiplexer layers can be absorbed
    without increasing depth, or should the interface be relaxed to
    `loc.params.depth ≤ general.params.depth + c` for a small constant `c`?

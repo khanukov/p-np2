@@ -1,29 +1,33 @@
-# Параметр-чейз для шага C
+# Parameter chase for step C
 
-Глобальный чеклист до безусловного `P ≠ NP`:
+Global checklist for unconditional `P ≠ NP`:
 `/root/p-np2/CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
 
-Рабочая численная заметка для шага C.
-Это не источник глобального статуса проекта: финальный статус фиксируется в
-`STATUS.md` и `TODO.md`.
+Working numerical note for step C.  This is not the source of the
+global project status: the final status is recorded in `STATUS.md` and
+`TODO.md`.
 
-В этой заметке собраны численные диапазоны, которые используются при
-согласовании частей A–C.
+This note collects the numerical ranges used to keep parts A–C
+consistent with each other.
 
-- `polylogBudget N = (log₂(N+1)+1)^4` — базовый бюджет, которым ограничены
-  тест-наборы античекера.  Он применяется для Partial MCSP (`N = 2^n`) и для
-  разреженных языков (`N = n`).
-- Для SAL-сценария с параметрами `(dictLen, k)` тестовая ёмкость задаётся как
-  `unionBound dictLen k * 2^{|T|}`.  Именно эта величина сравнивается с размером
-  семейства `Y` в лемме `no_bounded_atlas_on_testset_of_large_family`.
-- Параметры оракулов из `Core.OraclePartialWitness` удовлетворяют двум условиям:
-  глубина хвостов частичного дерева не превосходит `maxArity`, а сам `maxArity`
-  ограничен `polylogBudget (2^n)`.
-- Locality-Lift сохраняет те же бюджеты: тест-наборы античекера остаются
-  ограниченными `polylogBudget (2^n)`, а размер локальной схемы увеличивается
-  лишь на мультипликативный фактор `|T|+1`.  Поэтому запрет локальных схем
-  немедленно переносится на запрет общих схем (см.
-  `general_statement_from_locality` в partial‑версии мостов).
+- `polylogBudget N = (log₂(N+1)+1)^4` — the base budget bounding the
+  anti-checker test sets.  Applied for Partial MCSP (`N = 2^n`) and for
+  sparse languages (`N = n`).
+- For the SAL scenario with parameters `(dictLen, k)`, the test-set
+  capacity is `unionBound dictLen k * 2^{|T|}`.  This is exactly the
+  quantity compared with the size of the family `Y` in the lemma
+  `no_bounded_atlas_on_testset_of_large_family`.
+- The oracle parameters from `Core.OraclePartialWitness` satisfy two
+  conditions: the depth of the partial tree tails does not exceed
+  `maxArity`, and `maxArity` itself is bounded by
+  `polylogBudget (2^n)`.
+- The Locality-Lift preserves the same budgets: the anti-checker test
+  sets stay bounded by `polylogBudget (2^n)`, and the size of the local
+  circuit only grows by a multiplicative factor of `|T|+1`.  Hence a
+  prohibition on local circuits immediately transfers to a prohibition
+  on general circuits (see `general_statement_from_locality` in the
+  partial-track bridges).
 
-Такая фиксация гарантирует, что все используемые оценки остаются в режиме
-`2^{o(N)}` и совместимы с предпосылками CJW’22 и OPS’19.
+Pinning the parameters this way guarantees that all the estimates we
+use stay within the `2^{o(N)}` regime and remain compatible with the
+hypotheses of CJW'22 and OPS'19.

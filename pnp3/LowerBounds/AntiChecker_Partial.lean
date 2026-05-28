@@ -1999,16 +1999,16 @@ theorem antiChecker_testset_incompatibility_local_partial_constructive
   exact antiChecker_testset_incompatibility_local_partial (solver := solver) hAll Ysolver Tsolver
 
 /-!
-  ### Комбинаторная версия «случайной» леммы
+  ### Combinatorial version of the "random" lemma
 
-  Исторически на этом месте просили вероятностную формулировку:
-  случайная partial‑таблица редко согласуется с малой схемой.  Здесь
-  мы фиксируем эквивалентную counting‑форму: если число функций
-  «малого» класса ограничено, то существует partial‑таблица, не
-  согласованная ни с одной из них.  Эта counting-форма уже встроена в
-  Step-C closure infrastructure выше (через
-  `exists_partial_not_consistent_with_family` и его потребителей);
-  отдельная вероятностная формализация не требуется.
+  Historically a probabilistic formulation was requested here:
+  a random partial table is rarely consistent with a small circuit.
+  We fix the equivalent counting form: if the number of functions in
+  the "small" class is bounded, then there exists a partial table
+  inconsistent with all of them.  This counting form is already
+  wired into the Step-C closure infrastructure above (via
+  `exists_partial_not_consistent_with_family` and its consumers); a
+  separate probabilistic formalisation is not required.
 -/
 
 /--

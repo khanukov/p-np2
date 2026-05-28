@@ -94,6 +94,6 @@ done
 | Common questions                        | `FAQ.md`                                     |
 | Verified vs. not-claimed claim table    | `TECHNICAL_CLAIMS.md`                        |
 | Axiom / `sorry` hygiene only            | `AXIOMS_FINAL_LIST.md`                       |
-| Detailed Russian frontier FAQ           | `pnp3/Docs/Unconditionality_FAQ_ru.md`       |
+| Detailed frontier FAQ           | `pnp3/Docs/Unconditionality_FAQ.md`       |
 | Route policy lock                       | `pnp3/Docs/CLOSURE_ROUTE_POLICY.md`          |
 | Release wording guardrail               | `RELEASE_RC.md`                              |

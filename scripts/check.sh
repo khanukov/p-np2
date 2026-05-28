@@ -379,23 +379,86 @@ if ! rg -n "Green CI.*not.*mathematical progress|green CI.*not.*mathematical pro
   exit 1
 fi
 
+# Public-doc surface: a broader list of actively published top-level docs
+# that the external reader encounters before the Lean kernel.  All negative
+# (stale-wording) scans below apply to this broader set, not only to
+# `route_docs`, so that user-facing FAQs and overviews cannot drift back to
+# the pre-ResearchGapWitness picture.
+#
+# Positive route-policy markers (fixed-slice no-go, refuted support-bounds,
+# fixedParams, ...) are still required only on `route_docs`, since they are
+# audit/route policy text rather than user-facing summaries.
+#
+# This is the Tier 1 (strict allowlist) enforcement of
+# `spec/target.toml::[stale_public_endpoint_wording]`: docs here cannot opt
+# out via the `<!-- doc-status: legacy -->` marker.  Tier 2 (repo-wide
+# safety net with opt-out) lives in `scripts/check_doc_honesty.sh`
+# section (D).
+public_docs=(
+  "${route_docs[@]}"
+  "README.md"
+  "README_PUBLICATION.md"
+  "RELEASE_RC.md"
+  "FAQ.md"
+  "PROOF_OVERVIEW.md"
+  "TECHNICAL_CLAIMS.md"
+  "AXIOMS_FINAL_LIST.md"
+)
+
+for f in "${public_docs[@]}"; do
+  if [[ ! -f "${f}" ]]; then
+    echo "Missing required public document: ${f}"
+    exit 1
+  fi
+done
+
 if rg -n -U "Current public provider-shaped endpoint|The active explicit DAG endpoint still has this shape|P_ne_NP_final\\n[[:space:]]*\\(hMS[[:space:]]*:" \
-    "${route_docs[@]}" >/tmp/pnp3_route_stale_public_endpoint_hits.log; then
-  echo "Detected stale public-endpoint wording in canonical docs:"
+    "${public_docs[@]}" >/tmp/pnp3_route_stale_public_endpoint_hits.log; then
+  echo "Detected stale public-endpoint wording in active public docs:"
   cat /tmp/pnp3_route_stale_public_endpoint_hits.log
   exit 1
 fi
 
 # Forbidden legacy wording: these phrases historically pointed to deprecated
-# DAG-side closure prioritization and should not reappear in canonical docs.
+# DAG-side closure prioritization and should not reappear in active public
+# docs.
 if rg -n 'Fastest path to remove `hNPDag`|Pick a fixed slice|prove one fixed-slice DAG source theorem|asymptotic/eventual source theorem|Only one route is still active for true unconditionality|Only API cleanup remains' \
-    "${route_docs[@]}" >/tmp/pnp3_route_legacy_phrase_hits.log; then
-  echo "Detected deprecated fixed-slice closure wording in canonical docs:"
+    "${public_docs[@]}" >/tmp/pnp3_route_legacy_phrase_hits.log; then
+  echo "Detected deprecated fixed-slice closure wording in active public docs:"
   cat /tmp/pnp3_route_legacy_phrase_hits.log
   exit 1
 fi
 
-echo "Route policy docs OK (fixed-slice no-go + refuted support-bounds + fixedParams + simulation + method/DevOps boundaries enforced)."
+# Stale public-endpoint wording: phrases that describe the pre-ResearchGapWitness
+# picture where `P_ne_NP_final` still consumed `MagnificationAssumptions` or
+# where the residual work was "remove hMag" / "formula-side internalization".
+# These are forbidden on every active public doc; see
+# `spec/target.toml::[stale_public_endpoint_wording]` for the source list.
+stale_endpoint_patterns=(
+  'P_ne_NP_final\b\s*\(hMag'
+  'current public default theorem[^\n]*MagnificationAssumptions'
+  'fastest path[^\n]*remove hMag'
+  'only formula-side internalization remains'
+)
+
+for pattern in "${stale_endpoint_patterns[@]}"; do
+  if rg -n -e "${pattern}" "${public_docs[@]}" >/tmp/pnp3_public_stale_endpoint_hits.log; then
+    echo "Detected stale pre-ResearchGapWitness wording in active public docs:"
+    echo "  pattern: ${pattern}"
+    cat /tmp/pnp3_public_stale_endpoint_hits.log
+    echo
+    echo "  Active public docs must reflect the current public default:"
+    echo "    NP_not_subset_PpolyDAG_final (gap : ResearchGapWitness)"
+    echo "    P_ne_NP_final               (gap : ResearchGapWitness)"
+    echo "  Legacy hMag / hMS / support-bounds endpoints are audit/compatibility"
+    echo "  wrappers only, and the support-bounds route is formally refuted."
+    echo "  Move such phrases to archive/, outputs/, or annotate the file with"
+    echo "  '<!-- doc-status: legacy -->' near the top to opt out."
+    exit 1
+  fi
+done
+
+echo "Route policy docs OK (fixed-slice no-go + refuted support-bounds + fixedParams + simulation + method/DevOps boundaries enforced; public docs free of stale ResearchGapWitness-predecessor wording)."
 
 # Agent policy guardrails:
 # Keep the repository-level coding-agent instructions aligned with the current

@@ -50,10 +50,11 @@ Use wording equivalent to:
 
 Avoid wording that says:
 
-1. "DAG separation is fully solved" without mentioning that the current route
-   still relies on false formula-side support-bounds assumptions.
-2. "Only API cleanup remains."
-3. "The remaining work is just formalization."
+1. that DAG separation is fully solved, without mentioning that the legacy
+   route still relies on formally refuted formula-side support-bounds
+   assumptions.
+2. that only API cleanup or wrapper bookkeeping remains.
+3. that the remaining work is just Lean formalization.
 
 ## Release Checklist
 

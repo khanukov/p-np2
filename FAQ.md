@@ -158,15 +158,6 @@ for f in pnp3/Tests/AxiomsAudit.lean \
 done
 ```
 
-## Is there any unconditional formalization result in this repo?
-
-Yes, but at a restricted model, not at full `P ≠ NP`.
-
-`pnp3/LowerBounds/AC0_GapMCSP.lean` exposes the paper-facing fixed-slice AC0
-endpoint `gapPartialMCSP_not_in_AC0`.  This is a standalone restricted-model
-formalization deliverable.  It does not close the `ResearchGapWitness` gap and
-must not be presented as progress toward unconditional `P ≠ NP`.
-
 ## Where is the longer route map?
 
 See `PROOF_OVERVIEW.md`.

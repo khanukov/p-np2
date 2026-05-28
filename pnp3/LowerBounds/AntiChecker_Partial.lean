@@ -694,7 +694,7 @@ lemma exists_partial_outside_if_card_lt_tableLen {n : Nat} (F : Finset (TotalTab
   * the final internalized contradiction is exposed downstream as
     `LB_Formulas_core_partial_closed_internalized` in
     `LowerBounds/LB_Formulas_Core_Partial.lean`, which is what the
-    publishable AC0 endpoint `gapPartialMCSP_no_semantic_AC0_solver`
+    paper-facing AC0 endpoint `gapPartialMCSP_no_semantic_AC0_solver`
     in `LowerBounds/AC0_GapMCSP.lean` ultimately calls.
 
   So `exists_partial_outside_if_card_lt` is preserved here as the

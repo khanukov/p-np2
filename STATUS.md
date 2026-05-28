@@ -414,8 +414,10 @@ standalone negation theorems with the same `∀ W, ¬ ...` shape:
 `promiseYesWeak_conclusion_negative_for_canonical`
 (`pnp3/Tests/PromiseRouteConclusionProbe.lean`).
 
-The single remaining typed-deliverable for the canonical track is the TM
-verifier: see "What Is Still Open" below.
+The single remaining typed-deliverable for the independent canonical
+infrastructure milestone (reusable NP-verifier scaffolding, not a
+P-vs-NP closure route) is the TM verifier: see "What Is Still Open"
+below.
 
 ### Inclusion side
 
@@ -532,7 +534,10 @@ replace the missing lower-bound idea.
 
 ## Repository-Wide Honesty Policy
 
-Any file claiming unconditional `P != NP` is inaccurate until the project has a
-non-vacuous replacement for the false support-bounds/multi-switching source and
-a zero-argument final theorem that does not depend on external provider
-payload.
+Any file claiming unconditional `P != NP` is inaccurate until the
+project has either a non-vacuous replacement for the refuted
+support-bounds / multi-switching source, or a direct method-agnostic
+proof of `ResearchGapWitness` / `ComplexityInterfaces.NP_not_subset_PpolyDAG`
+(algebraic, spectral, finite-field, SOS, Fourier-analytic, or other),
+together with a zero-argument final theorem that does not depend on
+external provider payload.

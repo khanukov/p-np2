@@ -452,8 +452,10 @@ for pattern in "${stale_endpoint_patterns[@]}"; do
     echo "    P_ne_NP_final               (gap : ResearchGapWitness)"
     echo "  Legacy hMag / hMS / support-bounds endpoints are audit/compatibility"
     echo "  wrappers only, and the support-bounds route is formally refuted."
-    echo "  Move such phrases to archive/, outputs/, or annotate the file with"
-    echo "  '<!-- doc-status: legacy -->' near the top to opt out."
+    echo "  Move such phrases to archive/ or outputs/.  This is the Tier 1"
+    echo "  strict-allowlist scan; public_docs cannot opt out via the"
+    echo "  '<!-- doc-status: legacy -->' marker (that opt-out only applies"
+    echo "  to the Tier 2 repo-wide scan in scripts/check_doc_honesty.sh)."
     exit 1
   fi
 done

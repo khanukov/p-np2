@@ -67,8 +67,10 @@ The DAG side has useful plumbing:
 3. Route-B/source-closure/blocker surfaces,
 4. final wrappers exposing the exact assumptions consumed.
 
-This infrastructure is valuable only when paired with a non-vacuous
-formula-side source theorem.
+This infrastructure is valuable when paired with either a non-vacuous
+formula / locality source theorem, or a direct method-agnostic source
+theorem that proves `ResearchGapWitness` /
+`NP_not_subset_PpolyDAG`.
 
 ### Target 2. Replace the false support-bounds source
 

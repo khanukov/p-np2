@@ -2,28 +2,32 @@ import Magnification.FinalResultMainline
 import Magnification.CanonicalAsymptoticTrackData
 import LowerBounds.AsymptoticDAGBarrierTheorems
 import LowerBounds.DAGStableRestrictionProducer
-import «pnp3».Tests.IsoStrongConclusionProbe
-import «pnp3».Tests.GlobalHInDagContractProbe
+import Tests.GeneralIsoStrongNoGoProbe
+import Tests.GlobalHInDagContractProbe
 
 /-!
 # Promise-YES conclusion negation probe (canonical track)
 
-Companion to `Tests/IsoStrongConclusionProbe.lean`.  That file proves the
-canonical-track iso-strong conclusion negation
-`isoStrong_conclusion_negative_for_canonical` per `globalWitness_to_hInDag W`.
-By the existing route-level implications
-`asymptoticIsoStrongRoute_of_asymptoticPromiseYesCertificateRoute` and
+Companion to `Tests/GeneralIsoStrongNoGoProbe.lean`.  That file proves
+the generic per-`hInDag` iso-strong conclusion negation
+`isoStrong_conclusion_negative_general (F) (hInDag) :
+¬ IsoStrongFamilyEventually F hInDag`, which specialises at
+`F := eventualGapSliceFamily_of_asymptotic canonicalAsymptoticHAsym`
+and `hInDag := globalWitness_to_hInDag W` to give the canonical
+conclusion negation per `W`.  By the existing route-level
+implications
+`asymptoticIsoStrongRoute_of_asymptoticPromiseYesCertificateRoute`
+and
 `asymptoticPromiseYesCertificateRoute_of_asymptoticPromiseYesWeakRouteEventually`
 (`pnp3/Magnification/FinalResultMainline.lean:348` and `:400`), the
-promise-YES certificate and promise-YES weak (eventual) routes are closed
-at the same `hInDag = globalWitness_to_hInDag W` by pointwise
+promise-YES certificate and promise-YES weak (eventual) routes are
+closed at the same `hInDag = globalWitness_to_hInDag W` by pointwise
 contrapositive.
 
-`STATUS.md` records that closure as a meta-argument; this file packages it
-as two named conclusion-level negation theorems with the same shape as
-`isoStrong_conclusion_negative_for_canonical`, so a reviewer scanning the
-audit chain for standalone Lean witnesses can read them off the API
-directly:
+`STATUS.md` records that closure as a meta-argument; this file
+packages it as two named conclusion-level negation theorems with the
+same shape, so a reviewer scanning the audit chain for standalone
+Lean witnesses can read them off the API directly:
 
 * `promiseYesCertificate_conclusion_negative_for_canonical`,
 * `promiseYesWeak_conclusion_negative_for_canonical`.
@@ -248,29 +252,26 @@ theorem isoStrongFamilyEventually_of_promiseYesCertificateConclusion
 /-!
 ## Companion negation theorems
 
-These are the canonical-track conclusion negations packaged in the
-same `∀ W, ¬ ...` shape as `isoStrong_conclusion_negative_for_canonical`.
-Each is a direct corollary of `isoStrong_conclusion_negative_for_canonical`
+These are the canonical-track conclusion negations packaged in
+`∀ W, ¬ ...` shape.  Each is a direct corollary of
+`Tests.GeneralIsoStrongNoGoProbe.isoStrong_conclusion_negative_general`
+specialised at the canonical eventual family and per-`W` `hInDag`,
 composed with the pointwise implications above.
 -/
 
-/-- Canonical-track promise-YES certificate conclusion negation.
-
-Companion to `IsoStrongConclusionProbe.isoStrong_conclusion_negative_for_canonical`
-covering the certificate route at the same per-`W` `hInDag`. -/
+/-- Canonical-track promise-YES certificate conclusion negation. -/
 theorem promiseYesCertificate_conclusion_negative_for_canonical :
     ∀ W : GlobalAsymptoticDAGWitness canonicalAsymptoticHAsym,
       ¬ PromiseYesCertificateConclusion canonicalAsymptoticHAsym
           (globalWitness_to_hInDag W) := by
   intro W hCert
-  exact IsoStrongConclusionProbe.isoStrong_conclusion_negative_for_canonical W
+  exact GeneralIsoStrongNoGoProbe.isoStrong_conclusion_negative_general
+    (eventualGapSliceFamily_of_asymptotic canonicalAsymptoticHAsym)
+    (globalWitness_to_hInDag W)
     (isoStrongFamilyEventually_of_promiseYesCertificateConclusion
       canonicalAsymptoticHAsym (globalWitness_to_hInDag W) hCert)
 
-/-- Canonical-track promise-YES weak (eventual) conclusion negation.
-
-Companion to `IsoStrongConclusionProbe.isoStrong_conclusion_negative_for_canonical`
-covering the eventual weak route at the same per-`W` `hInDag`. -/
+/-- Canonical-track promise-YES weak (eventual) conclusion negation. -/
 theorem promiseYesWeak_conclusion_negative_for_canonical :
     ∀ W : GlobalAsymptoticDAGWitness canonicalAsymptoticHAsym,
       ¬ PromiseYesWeakRouteConclusion canonicalAsymptoticHAsym

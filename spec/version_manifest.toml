@@ -35,7 +35,7 @@ last_reviewed    = "2026-05-02"
 # scripts/validate_version_manifest.py enforces equality.
 
 [snapshot]
-target_spec_version              = "0.1.0"
+target_spec_version              = "0.1.2"
 target_spec_path                 = "spec/target.toml"
 known_guards_version             = "0.1.4"
 known_guards_path                = "spec/known_guards.toml"

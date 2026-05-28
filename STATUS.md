@@ -208,21 +208,22 @@ following precise sense:
 - The iso-strong route is formally refuted by the standalone theorem
   `isoStrong_conclusion_negative_for_canonical`
   (`pnp3/Tests/IsoStrongConclusionProbe.lean:368`).
-- The promise-YES weak and promise-YES certificate routes are not yet
-  exposed as standalone Lean negation theorems.
-- Their closure at `globalWitness_to_hInDag W` follows by pointwise
-  contrapositive of existing route-level implications:
+- The promise-YES weak and promise-YES certificate routes are now also
+  exposed as standalone Lean negation theorems in
+  `pnp3/Tests/PromiseRouteConclusionProbe.lean`:
+  - `promiseYesCertificate_conclusion_negative_for_canonical` and
+  - `promiseYesWeak_conclusion_negative_for_canonical`,
+  each with the same `∀ W : GlobalAsymptoticDAGWitness canonicalAsymptoticHAsym, ¬ ...`
+  shape as the iso-strong companion.  They are corollaries of the
+  iso-strong negation composed with the pointwise versions of the
+  existing route-level implications
   `asymptoticPromiseYesCertificateRoute_of_asymptoticPromiseYesWeakRouteEventually`
-  (`pnp3/Magnification/FinalResultMainline.lean:348`)
-  and
+  (`pnp3/Magnification/FinalResultMainline.lean:348`) and
   `asymptoticIsoStrongRoute_of_asymptoticPromiseYesCertificateRoute`
   (`pnp3/Magnification/FinalResultMainline.lean:400`).
-  Both implication theorems open with `intro hInDag` and operate on the
-  body at that specific `hInDag`, so contrapositive at
-  `hInDag = globalWitness_to_hInDag W` propagates the iso-strong negation
-  to negations of the promise-route bodies.
-- Companion promise-route negation theorems are optional packaging for
-  attribution clarity, not required for the current status correction.
+- This makes the audit chain self-contained in Lean: instead of the
+  closure of the certificate / weak routes living in the prose paragraph
+  above, the closure is now three theorems with the same shape.
 - Inhabitancy caveat: `GlobalAsymptoticDAGWitness canonicalAsymptoticHAsym`
   is referenced only as a universal hypothesis (`∀ W : ...`) in the
   inspected files; no explicit inhabitant is constructed in the current
@@ -263,11 +264,13 @@ either:
 | 13. circuit_count_trace_bound L0 (codex53, c436392) | GREEN_COUNTING_BRICKS_LANDED | `CircuitCountTraceBoundProbe.lean` (~120 LOC) |
 | 14. general_isoStrong_no_go L1 sessions 1-4 (codex53+opus47, 75c5ae0 → 24d51510) | **RED_GENERAL_ISOSTRONG_REFUTED** | `GeneralIsoStrongNoGoProbe.lean` (~460 LOC); `isoStrong_conclusion_negative_general` formally proved over arbitrary `GapSliceFamilyEventually` |
 | 15. general_isoStrong_route_closure (opus47) | **ROUTES_NAMED_AS_CLOSED** | `GeneralIsoStrongRouteClosure.lean` (~120 LOC); four named route-closure theorems |
+| 16. promise_route_conclusion_companions | **CONCLUSION_COMPANIONS_NAMED** | `PromiseRouteConclusionProbe.lean`; `promiseYesCertificate_conclusion_negative_for_canonical` and `promiseYesWeak_conclusion_negative_for_canonical` standalone theorems with the same `∀ W, ¬ ...` shape as `isoStrong_conclusion_negative_for_canonical` |
 
-The canonical asymptotic track is now closed at conclusion side under
-the attribution above (iso-strong via standalone theorem; promise-YES
-weak and certificate routes via pointwise contrapositive of existing
-route-level implications composed with the iso-strong negation).  The
+The canonical asymptotic track is now closed at conclusion side via
+three standalone Lean theorems (iso-strong via
+`isoStrong_conclusion_negative_for_canonical`; promise-YES certificate
+and promise-YES weak via the two companions in
+`PromiseRouteConclusionProbe.lean`).  The
 four major refutations in the post-PR13 chain:
 
 1. `FormulaCertificateProviderPartial → False` (PR 13, formula-side
@@ -386,10 +389,13 @@ hypothesis parameter throughout the magnification mainline.  See
 integration wiring surfaces, including
 `i4_final_wiring_of_formulaCertificate` and
 `NP_not_subset_PpolyDAG_final_of_asymptotic_isoStrongRoute_withAntiChecker`.
-For the canonical conclusion-side closure statement, only
-`isoStrong_conclusion_negative_for_canonical` is currently a standalone
-negation theorem; promise-route closure is presently tracked via the
-route-implication contrapositive chain above.
+The canonical conclusion-side closure is now packaged as three
+standalone negation theorems with the same `∀ W, ¬ ...` shape:
+`isoStrong_conclusion_negative_for_canonical`
+(`pnp3/Tests/IsoStrongConclusionProbe.lean`) and the two companions
+`promiseYesCertificate_conclusion_negative_for_canonical` /
+`promiseYesWeak_conclusion_negative_for_canonical`
+(`pnp3/Tests/PromiseRouteConclusionProbe.lean`).
 
 The single remaining typed-deliverable for the canonical track is the TM
 verifier: see "What Is Still Open" below.

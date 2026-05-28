@@ -4393,14 +4393,6 @@ private theorem assignmentIndex_injective {n : Nat} :
       simp [Models.Partial.tableLen])
   exact (Finite.injective_iff_surjective_of_equiv e).2 assignmentIndex_surjective
 
-/--
-Canonical bitvector round-trip through `assignmentIndex`.
--/
-private theorem vecOfNat_assignmentIndex {n : Nat} (x : Core.BitVec n) :
-    Core.vecOfNat n (assignmentIndex x).val = x := by
-  apply assignmentIndex_injective
-  simpa using assignmentIndex_vecOfNat_eq (assignmentIndex x)
-
 /-- Input literal selecting either `x_i` or `¬x_i`. -/
 private def inputLiteral {n : Nat} (i : Fin n) (b : Bool) : Circuit n :=
   if b then Circuit.input i else Circuit.not (Circuit.input i)

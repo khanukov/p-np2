@@ -1,5 +1,12 @@
 # Plan: closing the TM verifier for canonical asymptotic GapPartialMCSP
 
+> **ARCHIVED SCAFFOLD (2026-05-29).** The Lean files this plan targets
+> (`GapMCSPVerifier.lean` and `TuringToolkit/*`) have been moved out of the
+> active build to `archive/pnp3/Complexity/PsubsetPpolyInternal/` (orphaned,
+> incomplete, and unrelated to the `P ⊆ P/poly` inclusion). Paths below refer
+> to the pre-archive locations; restore from `archive/` and re-add the
+> `lakefile.lean` globs to resume.
+
 **Repository:** `/home/user/p-np2/pnp3`
 **Baseline branch:** `claude/audit-hnpbridge-interface-FnO1v` (already
 carries the decoder + components bridge)

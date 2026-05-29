@@ -158,3 +158,29 @@ genuine, machine-checked inclusion is
 A `scripts/check.sh` guardrail forbids re-declaring this degenerate cluster in
 the active `pnp3` tree.  Build, `#print axioms`, smoke, tests and `check.sh`
 were re-verified green after the extraction.
+
+## Later addition (2026-05-29): incomplete NP-verifier scaffold
+
+**Files** (11): `pnp3/Complexity/PsubsetPpolyInternal/GapMCSPVerifier.lean`
+and `pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit/*.lean`
+(`AtomicPrograms`, `BinaryCounter`, `CombineAtOffset`,
+`ConstStatePhasedProgram`, `CopyAtOffset`, `Encoding`, `Foundation`,
+`GateWrappers`, `RowConsistencyCheck`, `UnaryAtOffset`), ~14.9k lines,
+moved to `archive/pnp3/Complexity/PsubsetPpolyInternal/` with their
+`lakefile.lean` globs removed.
+
+**Reason**: this is the (incomplete) scaffold for the canonical GapMCSP
+**NP-verifier TM** — by its own header, "the interface scaffold … correctness
+proofs are TODOs".  Its roots (`GapMCSPVerifier`, `RowConsistencyCheck`) were
+imported by **no** active module (dead in the build), and the whole cluster is
+**unrelated to the `P ⊆ P/poly` inclusion** (which uses
+`Simulation.lean` → straight-line circuits and never imports `TuringToolkit`).
+It lived under `PsubsetPpolyInternal/`, whose name implies the inclusion, which
+hurt clarity.
+
+This is **parked NP-side work in progress**, not erroneous code.  The design
+plans (`pnp3/Docs/PhaseI_Verifier_Design.md`,
+`pnp3/Docs/TMVerifier_Session_Plan.md`) carry an "ARCHIVED SCAFFOLD" banner
+with restore instructions: restore the files from `archive/` and re-add the
+`lakefile.lean` globs.  Build, smoke, tests and `check.sh` were re-verified
+green after the move.

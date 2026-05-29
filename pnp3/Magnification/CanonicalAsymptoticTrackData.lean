@@ -231,7 +231,8 @@ runtime that accepts on `concat x w` iff the asymptotic language is true at
 
 The TM-verifier witness is the **mathematical gap** for closing the canonical
 NP pullback unconditionally.  Building it constructively requires composing
-toolkit primitives in `pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit/`.
+toolkit primitives; an incomplete scaffold for these is parked at
+`archive/pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit/`.
 -/
 
 /-- NP-bridge for the canonical asymptotic spec from a concrete TM witness. -/

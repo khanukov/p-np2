@@ -19,8 +19,9 @@ The mathematical content is split cleanly:
 * **Decidability + correctness of `decideAsymptotic`**: closed
   unconditionally in this module.
 * **Constructing the TM with the matching acceptance behaviour**: the
-  remaining engineering obligation (scaffolded in
-  `pnp3/Complexity/PsubsetPpolyInternal/GapMCSPVerifier.lean`).
+  remaining engineering obligation (an incomplete NP-verifier scaffold is
+  parked at
+  `archive/pnp3/Complexity/PsubsetPpolyInternal/GapMCSPVerifier.lean`).
 
 For `canonicalAsymptoticSpec` (with `sYES n = 1`), the YES-predicate at
 slice `m` is "exists a size-`≤ 1` circuit consistent with the partial

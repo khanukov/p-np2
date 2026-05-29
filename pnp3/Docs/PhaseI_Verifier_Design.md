@@ -1,5 +1,14 @@
 # Phase I detailed design: asymptotic NP verifier (WIP)
 
+> **ARCHIVED SCAFFOLD (2026-05-29).** The Lean scaffold this document plans
+> (`GapMCSPVerifier.lean` and the `TuringToolkit/` directory) has been moved
+> out of the active build to
+> `archive/pnp3/Complexity/PsubsetPpolyInternal/` — it was orphaned (imported
+> by nobody), incomplete, and unrelated to the `P ⊆ P/poly` inclusion proof.
+> This design doc is kept as a plan; file paths below refer to the
+> pre-archive locations. To resume, restore the files from `archive/` and
+> re-add their `lakefile.lean` globs.
+
 **Status**: Phase I of the "max-possible final" plan is approximately
 30% delivered by commits `83c8892 .. b29700a` (sessions 9e-d
 steps 13 – 19).  This file documents the remaining design decisions

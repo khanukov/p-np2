@@ -72,7 +72,7 @@ theorem gapPartialMCSP_ppoly_to_ppolyFormula_of_realization
   hReal
 
 /--
-Any explicit reifier of `InPpoly` witnesses yields a localized realization.
+Any explicit reifier of `PpolyReal` witnesses yields a localized realization.
 -/
 theorem gapPartialMCSP_realization_of_reifier
     (p : GapPartialMCSPParams)

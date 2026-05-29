@@ -450,9 +450,9 @@ def PpolyDAG (L : Language) : Prop := ∃ _ : InPpolyDAG L, True
 /--
 Non-trivial non-uniform witness used by the active magnification bridge.
 
-Unlike the lightweight imported `InPpoly`, this interface fixes concrete
+Unlike a witness-defined evaluator, this interface fixes concrete
 syntax/semantics (`FormulaCircuit.eval`) and concrete size
-(`FormulaCircuit.size`) rather than allowing a witness-defined evaluator.
+(`FormulaCircuit.size`).
 -/
 structure InPpolyReal (L : Language) where
   polyBound : Nat → Nat

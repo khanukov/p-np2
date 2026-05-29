@@ -172,6 +172,22 @@ if rg -n "\\bPpolyLite\\b" -g"*.lean" pnp3 >/tmp/pnp3_legacy_ppolylite_hits.log;
   exit 1
 fi
 
+# Guardrail: the degenerate lightweight `Ppoly` interface (InPpoly / Ppoly /
+# InPpolyStructured / PpolyStructured / complexity_P_subset_Ppoly) was archived
+# to archive/pnp3/Complexity/PsubsetPpolyInternal_Lightweight_Ppoly.lean because
+# it is vacuous: a "circuit" was an arbitrary Boolean function with no size
+# measure, so `complexity_P_subset_Ppoly` proved nothing about polynomial-size
+# circuits.  The canonical non-uniform class is `PpolyDAG` and the genuine
+# inclusion is `proved_P_subset_PpolyDAG_internal`.  Forbid re-declaring the
+# degenerate cluster anywhere in the active pnp3 tree.  Matching is
+# declaration-level so explanatory prose may still mention the names.
+if rg -n "^[[:space:]]*(structure|def|abbrev|theorem)[[:space:]]+(InPpoly|Ppoly|InPpolyStructured|PpolyStructured|complexity_P_subset_Ppoly)\\b" \
+    -g"*.lean" pnp3 >/tmp/pnp3_lightweight_ppoly_revival_hits.log; then
+  echo "Detected revival of the archived degenerate lightweight Ppoly interface in active pnp3 sources:"
+  cat /tmp/pnp3_lightweight_ppoly_revival_hits.log
+  exit 1
+fi
+
 if rg -n "^[[:space:]]*abbrev[[:space:]]+Ppoly[[:space:]]*:" pnp3/Complexity/Interfaces.lean >/tmp/pnp3_legacy_ppoly_alias_hits.log; then
   echo "Detected forbidden alias 'abbrev Ppoly' in Complexity/Interfaces.lean:"
   cat /tmp/pnp3_legacy_ppoly_alias_hits.log

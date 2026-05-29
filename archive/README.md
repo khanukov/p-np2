@@ -131,3 +131,30 @@ The archived files include:
 **Note**: This is a living document. As the proof evolves, more files may be archived or restored as needed.
 
 **See also**: [`ARCHIVED_2026-05_pnp3_periphery.md`](./ARCHIVED_2026-05_pnp3_periphery.md) — a later, dated periphery-cleanup step (2 modules archived, with restore instructions).
+
+---
+
+## Later addition (2026-05-29): degenerate lightweight `Ppoly` interface
+
+**File**: [`pnp3/Complexity/PsubsetPpolyInternal_Lightweight_Ppoly.lean`](./pnp3/Complexity/PsubsetPpolyInternal_Lightweight_Ppoly.lean)
+
+This is a *partial* extraction (not a whole orphan module): the degenerate
+lightweight `P/poly` cluster (`InPpoly`, `Ppoly`, `InPpolyStructured`,
+`PpolyStructured`, the conversions, and the vacuous
+`complexity_P_subset_Ppoly`) was carved out of the still-active
+`pnp3/Complexity/PsubsetPpolyInternal/ComplexityInterfaces.lean`, which retains
+the genuinely-used `Bitstring`, `Language`, `polyTimeDecider`, and `P`.
+
+**Reason**: it was a second, *competing* notion of `P/poly` in which a "circuit"
+was an arbitrary Boolean function (`circuits : ∀ n, Bitstring n → Bool`) with no
+size measure (`polyBound := 0`, `polyBound_poly : True`).  Its
+`complexity_P_subset_Ppoly` is therefore a **vacuous** `P ⊆ P/poly` (it returns
+the decider function as the "circuit") and is not used anywhere in the proof.
+The canonical class is `PpolyDAG` (`pnp3/Complexity/Interfaces.lean`) and the
+genuine, machine-checked inclusion is
+`Complexity.Simulation.proved_P_subset_PpolyDAG_internal`
+(`pnp3/Complexity/Simulation/Circuit_Compiler.lean`).
+
+A `scripts/check.sh` guardrail forbids re-declaring this degenerate cluster in
+the active `pnp3` tree.  Build, `#print axioms`, smoke, tests and `check.sh`
+were re-verified green after the extraction.

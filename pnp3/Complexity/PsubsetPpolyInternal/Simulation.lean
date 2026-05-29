@@ -7452,9 +7452,12 @@ Linear-step switch-point for `StraightConfig`.
 Constructive append-only assembly over one shared circuit:
 `writeBit -> nextTapeAll -> nextHeadAll -> nextStateAll`.
 
-The observable selectors are currently lifted from the input configuration
-through the final shared builder context; this keeps the construction
-append-only while preserving wire well-typedness.
+Correctness is established for all three observables by
+`stepCompiledLinearCandidate{Tape,Head,State}_spec_internal`: after one
+application the tape/head/state selectors evaluate to the next TM
+configuration, i.e. `Spec` is advanced by exactly one `TM.stepConfig`.  The
+append-only shape over a single shared circuit is what yields the per-step gate
+bound `stepCompiledLinearCandidate_gates_le_budgetExpanded`.
 -/
 noncomputable abbrev stepCompiledLinearCandidate (M : TM) {n : Nat} (sc : StraightConfig M n) :
     StraightConfig M n := by
@@ -8072,11 +8075,13 @@ lemma stepCompiledLinearCandidate_gates_le_budgetExpanded (M : TM) {n : Nat} (sc
   exact Nat.le_trans hStages hBudget
 
 /--
-Semantic switch-point for the linear-step route.
+Active one-step builder for the linear compiled-runtime route.
 
-At this stage the canonical semantic behavior is kept aligned with the proven
-truth-table step, while the append-only candidate remains available under
-`stepCompiledLinearCandidate` for size-only development.
+Definitionally equal to `stepCompiledLinearCandidate`: the append-only assembly
+whose full per-step correctness (tape/head/state, via the `*_spec_internal`
+lemmas) and polynomial gate bound (`stepCompiledLinearCandidate_gates_le_budgetExpanded`)
+are proven above.  `Complexity/Simulation/Circuit_Compiler` consumes this step
+through `runtimeConfigCompiledLinear`.
 -/
 noncomputable abbrev stepCompiledLinear (M : TM) {n : Nat} (sc : StraightConfig M n) :
     StraightConfig M n :=

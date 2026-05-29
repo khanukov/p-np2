@@ -129,3 +129,5 @@ The archived files include:
 ---
 
 **Note**: This is a living document. As the proof evolves, more files may be archived or restored as needed.
+
+**See also**: [`ARCHIVED_2026-05_pnp3_periphery.md`](./ARCHIVED_2026-05_pnp3_periphery.md) — a later, dated periphery-cleanup step (2 modules archived, with restore instructions).

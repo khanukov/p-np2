@@ -31,7 +31,7 @@ theorem gapSliceFamily_isEmpty : IsEmpty GapSliceFamily := by
   intro F
   have hIdx : (F.paramsOf 0 (0 : Rat)).n = 0 := F.hIndex 0 0
   have hLarge : 8 ≤ (F.paramsOf 0 (0 : Rat)).n := (F.paramsOf 0 (0 : Rat)).n_large
-  have hImpossible : 8 ≤ 0 := by simpa [hIdx] using hLarge
+  have hImpossible : 8 ≤ 0 := by simp [hIdx] at hLarge
   exact Nat.not_succ_le_zero 7 hImpossible
 
 /-- Convenience corollary: there are no `GapSliceFamily` witnesses. -/

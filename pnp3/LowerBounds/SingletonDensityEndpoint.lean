@@ -57,9 +57,7 @@ theorem singletonDensityPackage_of_internal_provider
     k := base.1
     scenario := base.2
     family_eq := by
-      simpa [base] using
-        LowerBounds.scenarioFromAC0_with_polylog_family_eq
-          cert.ac0 cert.F cert.hFam cert.hpolyW
+      simp [base]
   }
   let f : Core.BitVec pack.cert.ac0.n → Bool :=
     fun x => ComplexityInterfaces.FormulaCircuit.eval
@@ -73,8 +71,7 @@ theorem singletonDensityPackage_of_internal_provider
       funext x
       rfl
     hk := by
-      simpa [pack, base] using
-        LowerBounds.scenarioFromAC0_with_polylog_k_eq cert.ac0 cert.F cert.hFam cert.hpolyW
+      simp [pack, base]
     hEval := by
       intro x
       simp [f]
@@ -220,7 +217,7 @@ theorem old_testset_endpoint_of_singletonDensityPackage_of_testsetCapacity_lt_on
     have hfEq : f = pkg.prov.f := by
       simpa [Y] using hf
     have hfF : pkg.prov.f ∈ pkg.prov.pack.cert.F := by
-      simpa [pkg.prov.hSingleton]
+      simp [pkg.prov.hSingleton]
     have hfSc : pkg.prov.f ∈ pkg.prov.pack.scenario.family := by
       simpa [pkg.prov.pack.family_eq] using hfF
     have hfFin :

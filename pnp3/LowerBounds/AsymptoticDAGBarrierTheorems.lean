@@ -1146,15 +1146,8 @@ theorem isoFamily_withPromise_of_isoStrongFamilyEventually
   rcases hIsoStrong n β hβPos hβLt hn C hSize hCorrect with
     ⟨yYes, hyYes, hyValid, D, hDCard, hForce⟩
   refine ⟨yYes, hyYes, hyValid, D, hDCard, ?_⟩
-  intro z hzPromise hzValid hzAgree
-  have _hzAutoFromAssumption :
-      z ∈ (gapSliceOfParams (F.paramsOf n β)).Yes ∨
-      z ∈ (gapSliceOfParams (F.paramsOf n β)).No := hzPromise
-  have _hzAutoCanonical :
-      z ∈ (gapSliceOfParams (F.paramsOf n β)).Yes ∨
-      z ∈ (gapSliceOfParams (F.paramsOf n β)).No :=
-    mem_yes_or_no_gapSliceOfParams (p := F.paramsOf n β) z
-  -- `hzPromise` is now redundant: the strong forcing hypothesis already ignores it.
+  intro z _hzPromise hzValid hzAgree
+  -- `hzPromise` is redundant here: the strong forcing hypothesis already ignores it.
   exact hForce z hzValid hzAgree
 
 /--
@@ -1558,7 +1551,7 @@ theorem no_dag_solver_of_promise_yes_subcube_at_eventually
       Models.circuitCountBound p.n (p.sNO - 1)
           = Models.circuitCountBound (F.paramsOf n β).n ((F.paramsOf n β).sNO - 1) := by
               simp [p]
-      _ = F.Mof n (F.Tof n β) := by simpa [hMof]
+      _ = F.Mof n (F.Tof n β) := by simp [hMof]
       _ < 2 ^ (GapSliceFamilyEventually.tableLen F n β - S.card) := hSlack
       _ = 2 ^ (Models.Partial.tableLen p.n - S.card) := by
             simp [GapSliceFamilyEventually.tableLen, p, hpn]
@@ -1992,7 +1985,7 @@ theorem false_of_tableForceFamilyEventually_and_sliceConst
   have hFalse :
       gapPartialMCSP_Language p (GapSliceFamilyEventually.encodedLen F n β) y = false := by
     simpa [gapSliceOfParams] using hyNo
-  have hContra : true = false := by simpa [hFalse] using hTrue
+  have hContra : true = false := by simp [hFalse] at hTrue
   exact Bool.noConfusion hContra
 
 /--
@@ -2062,7 +2055,7 @@ theorem false_of_tableForceFamilyEventually_and_slack
     intro i hi
     calc
       Partial.valPart (encodePartial (Models.totalTableToPartial g)) i = g i := by
-        simp [Models.encodeTotalAsPartial, Models.totalTableToPartial,
+        simp [Models.totalTableToPartial,
           Partial.valPart, encodePartial, Partial.valIndex]
       _ = Partial.valPart (encodePartial Ty) i := by
         simpa [values] using hgValues i hi

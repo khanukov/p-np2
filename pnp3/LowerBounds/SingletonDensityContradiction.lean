@@ -79,14 +79,14 @@ theorem nonempty_abstractSingletonDensityPayload_false
         simpa [f] using hg
       subst hgEq
       refine ⟨[], Core.listSubset_nil _, ?_⟩
-      simpa [A, f] using (Core.errU_false_nil (n := n))
+      simp [A, f]
     bounded := by
       intro g hg
       have hgEq : g = f := by
         simpa [f] using hg
       subst hgEq
       refine ⟨[], by simp, Core.listSubset_nil _, ?_⟩
-      simpa [A, f] using (Core.errU_false_nil (n := n))
+      simp [A, f]
   }
   have hInv :
       sc.atlas.epsilon ≤ (1 : Core.Q) / (n + 2) := by
@@ -100,7 +100,7 @@ theorem nonempty_abstractSingletonDensityPayload_false
     S := []
     hlen := by simp [sc]
     hsub := Core.listSubset_nil _
-    herr := by simpa [sc, A, f] using (Core.errU_false_nil (n := n))
+    herr := by simp [sc, A, f]
     hEpsLeInv := hInv
   }⟩
 
@@ -169,14 +169,14 @@ theorem nonempty_abstractTargetedSingletonDensityPayload_false
         simpa [f] using hg
       subst hgEq
       refine ⟨[], Core.listSubset_nil _, ?_⟩
-      simpa [A, f] using (Core.errU_false_nil (n := n))
+      simp [A, f]
     bounded := by
       intro g hg
       have hgEq : g = f := by
         simpa [f] using hg
       subst hgEq
       refine ⟨[], by simp, Core.listSubset_nil _, ?_⟩
-      simpa [A, f] using (Core.errU_false_nil (n := n))
+      simp [A, f]
   }
   have hInv :
       sc.atlas.epsilon ≤ (1 : Core.Q) / (n + 2) := by
@@ -191,7 +191,7 @@ theorem nonempty_abstractTargetedSingletonDensityPayload_false
       S := []
       hlen := by simp [sc]
       hsub := Core.listSubset_nil _
-      herr := by simpa [sc, A, f] using (Core.errU_false_nil (n := n))
+      herr := by simp [sc, A, f]
       hEpsLeInv := hInv
     }
     hLink := by
@@ -801,7 +801,7 @@ theorem exists_covered_point_of_abstractGapWitnessedPayload
   refine ⟨x, ?_⟩
   have hxB : Core.memB β x = true := hx
   have hxCov : Core.coveredB (β :: rest) x = true := by
-    simpa [Core.coveredB_cons, hxB]
+    simp [Core.coveredB_cons, hxB]
   simpa [hEq] using hxCov
 
 /--
@@ -910,7 +910,7 @@ theorem false_of_abstractGapWitnessedPayload_of_cubeYes_and_cubeNo
     False := by
   rcases List.exists_cons_of_ne_nil pkg.hRf_ne with ⟨β, rest, hEq⟩
   have hβ : β ∈ pkg.Rf := by
-    simpa [hEq]
+    simp [hEq]
   rcases hNo β hβ with ⟨x, hxmem, hxfalse⟩
   have hxtrue := hYes β hβ x hxmem
   cases (hxtrue.symm.trans hxfalse)
@@ -1052,7 +1052,7 @@ theorem contradiction_of_abstractGapCubeSoundWitnessPayload_of_cubeRefute
     False := by
   rcases List.exists_cons_of_ne_nil pkg.base.hRf_ne with ⟨β, rest, hEq⟩
   have hβ : β ∈ pkg.base.Rf := by
-    simpa [hEq]
+    simp [hEq]
   rcases hCubeRefute β hβ with ⟨x, hxmem, hxfalse⟩
   have hxtrue :=
     pkg.hCubeSound β hβ x hxmem
@@ -1268,7 +1268,7 @@ def abstractSingletonDensityPayload_of_singletonDensityPackage
   f := pkg.prov.f
   hf := by
     have hfF : pkg.prov.f ∈ pkg.prov.pack.cert.F := by
-      simpa [pkg.prov.hSingleton]
+      simp [pkg.prov.hSingleton]
     simpa [pkg.prov.pack.family_eq] using hfF
   S := pkg.S
   hlen := by

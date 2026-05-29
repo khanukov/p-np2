@@ -60,7 +60,7 @@ private theorem eval_matchingFormula {n : Nat} (a x : Bitstring n) :
     intro i
     exact
       (eval_matchingFormulaAux a x (List.finRange n)).mp h i
-        (by simpa using List.mem_finRange i)
+        (by simp)
   · intro hEq
     cases hEq
     exact (eval_matchingFormulaAux a a (List.finRange n)).2

@@ -660,7 +660,7 @@ noncomputable def smallDAGWitnessRestrictionExtractionAt_of_support
       hStable := ?_ }
   · calc
       rFacts.alive.card = rPartial.alive.card := by
-        simpa [rFacts] using ThirdPartyFacts.castRestriction_alive_card hlen.symm rPartial
+        simp [rFacts]
       _ = alive.card := by
         simp [rPartial]
       _ ≤ alive.card := le_rfl
@@ -1548,7 +1548,7 @@ noncomputable def dagStableRestrictionSlackPackageAt_of_restrictionExtractionAnd
   have hAliveHalf : r.alive.card ≤ Models.Partial.tableLen p.n / 2 := by
     calc
       r.alive.card = E.r.alive.card := by
-        simpa [r] using ThirdPartyFacts.castRestriction_alive_card hlen E.r
+        simp [r]
       _ ≤ E.aliveBound := E.hAliveBound
       _ ≤ Models.Partial.tableLen p.n / 2 := hHalfAliveBound
   have hStable :
@@ -2364,7 +2364,7 @@ def promiseYesDecisionCertificateAt_fullValueCoordinates
     show gapPartialMCSP_Language p (partialInputLen p) yYes = true
     rw [gapPartialMCSP_language_true_iff_yes]
     rw [show decodePartial yYes = totalTableToPartial (fun _ => false) from by
-      simpa [yYes, decodePartial_encodeTotal]]
+      simp [yYes, decodePartial_encodeTotal]]
     refine ⟨Circuit.const false, ?_, ?_⟩
     · simp [Circuit.size]
       exact p.sYES_pos
@@ -2942,10 +2942,10 @@ theorem no_sameSetSlack_of_strictDAGSemantics
         2 ^ (Models.Partial.tableLen p.n - (promiseYesAcceptanceInvariantAt_of_strictDAGSemantics W).S.card) := by
   have hS : (promiseYesAcceptanceInvariantAt_of_strictDAGSemantics W).S.card =
       Models.Partial.tableLen p.n := by
-    simpa [strictDAGSemantics_S_eq_univ_private W]
+    simp [strictDAGSemantics_S_eq_univ_private W]
   have hRhs : 2 ^ (Models.Partial.tableLen p.n -
       (promiseYesAcceptanceInvariantAt_of_strictDAGSemantics W).S.card) = 1 := by
-    simpa [hS]
+    simp [hS]
   intro hSlack
   have hge2 : 2 ≤ Models.circuitCountBound p.n (p.sNO - 1) :=
     circuitCountBound_two_le_of_gapParams p
@@ -2975,7 +2975,7 @@ theorem not_requiredBudget_on_strictDAGSemantics_atWitness
   have hS :
       (promiseYesAcceptanceInvariantAt_of_strictDAGSemantics W).S.card =
         Models.Partial.tableLen p.n := by
-    simpa [strictDAGSemantics_S_eq_univ_private W]
+    simp [strictDAGSemantics_S_eq_univ_private W]
   intro hBudget
   have hReqPos : 1 ≤ requiredComplementBudget p := requiredComplementBudget_pos p
   have hReqZero : requiredComplementBudget p ≤ 0 := by
@@ -3142,9 +3142,9 @@ theorem nontrivialS_of_promiseValueLocalityPackageAt
     cert.S ≠ Finset.univ := by
   intro hUniv
   have hSCard : cert.S.card = Models.Partial.tableLen p.n := by
-    simpa [hUniv]
+    simp [hUniv]
   have hRhs : 2 ^ (Models.Partial.tableLen p.n - cert.S.card) = 1 := by
-    simpa [hSCard]
+    simp [hSCard]
   have hlt1 : Models.circuitCountBound p.n (p.sNO - 1) < 1 := by
     simpa [hRhs] using cert.hSlack
   have hge2 : 2 ≤ Models.circuitCountBound p.n (p.sNO - 1) :=
@@ -3188,7 +3188,7 @@ theorem complementPos_of_promiseValueLocalityPackageAt
   have hZero : Models.Partial.tableLen p.n - cert.S.card = 0 :=
     Nat.eq_zero_of_not_pos hNotPos
   have hNotPowGt1 : ¬ 1 < 2 ^ (Models.Partial.tableLen p.n - cert.S.card) := by
-    simpa [hZero]
+    simp [hZero]
   exact hNotPowGt1 hPowGt1
 
 /--
@@ -4053,7 +4053,7 @@ theorem dagSeedAcceptanceProbOnTotalsOfCircuit_eq_one_of_forall_accept
         = (Finset.univ : Finset (Core.BitVec seedLen)) := by
     ext z
     simp [hAccept z]
-  simpa [dagSeedAcceptanceProbOnTotalsOfCircuit, acceptanceRatioOnFinset, hFilter]
+  simp [dagSeedAcceptanceProbOnTotalsOfCircuit, acceptanceRatioOnFinset, hFilter]
 
 /--
 If a fixed circuit rejects every seed image pointwise, then its seed-image
@@ -4075,7 +4075,7 @@ theorem dagSeedAcceptanceProbOnTotalsOfCircuit_eq_zero_of_forall_reject
         = (∅ : Finset (Core.BitVec seedLen)) := by
     ext z
     simp [hReject z]
-  simpa [dagSeedAcceptanceProbOnTotalsOfCircuit, acceptanceRatioOnFinset, hFilter]
+  simp [dagSeedAcceptanceProbOnTotalsOfCircuit, acceptanceRatioOnFinset, hFilter]
 
 /--
 Canonical evaluator on total truth tables induced by a fixed witness.
@@ -4390,16 +4390,8 @@ private theorem assignmentIndex_injective {n : Nat} :
     Function.Injective (@assignmentIndex n) := by
   let e : Core.BitVec n ≃ Fin (Models.Partial.tableLen n) :=
     Fintype.equivFinOfCardEq (by
-      simpa [Models.Partial.tableLen] using Counting.card_bitvec n)
+      simp [Models.Partial.tableLen])
   exact (Finite.injective_iff_surjective_of_equiv e).2 assignmentIndex_surjective
-
-/--
-Canonical bitvector round-trip through `assignmentIndex`.
--/
-private theorem vecOfNat_assignmentIndex {n : Nat} (x : Core.BitVec n) :
-    Core.vecOfNat n (assignmentIndex x).val = x := by
-  apply assignmentIndex_injective
-  simpa using assignmentIndex_vecOfNat_eq (assignmentIndex x)
 
 /-- Input literal selecting either `x_i` or `¬x_i`. -/
 private def inputLiteral {n : Nat} (i : Fin n) (b : Bool) : Circuit n :=
@@ -4603,8 +4595,8 @@ private theorem patternHardwireCircuit_correct_on_S
         have hjne : j ≠ k := by
           intro hjk
           subst hjk
-          simpa [P, hj, hσ] using hkP
-        simpa [pointSelectorCircuit_eval_false_of_ne (j := k) (k := j) hjne]
+          simp [P, hj, hσ] at hkP
+        simp [pointSelectorCircuit_eval_false_of_ne (j := k) (k := j) hjne]
       have hAny :
           List.any P.toList
               (fun k =>
@@ -4614,7 +4606,7 @@ private theorem patternHardwireCircuit_correct_on_S
       simpa [patternHardwireCircuit, P, hσ, List.any_map] using hAny
   | true =>
       have hjP : j ∈ P := by
-        simpa [P, hj, hσ]
+        simp [P, hj, hσ]
       have hAny :
           List.any P.toList
               (fun k =>
@@ -4668,7 +4660,7 @@ private theorem patternHardwireCircuit_size_le
     _ ≤ 1 + S.card + (3 * p.n + 1) * S.card := hFactorPS
     _ ≤ 1 + (6 * p.n + 10) * S.card := hMain
     _ = hardwireCircuitSize p.n S.card := by
-      simp [hardwireCircuitSize, Nat.add_comm, Nat.add_left_comm]
+      simp [hardwireCircuitSize, Nat.add_comm]
 
 private theorem circuitComputes_circuitToTable {n : Nat} (C : Circuit n) :
     circuitComputes C (Counting.circuitToTable C) := by
@@ -4896,7 +4888,7 @@ theorem canonicalValueAliveSet_card_le_aliveBound
       (canonicalValueAliveSet E).card ≤ rPartial.alive.card := by
     have hImgSub : Finset.image tableValPos (canonicalValueAliveSet E) ⊆ rPartial.alive := by
       intro i hi
-      simp only [canonicalValueAliveSet, hlen, rPartial, Finset.mem_image,
+      simp only [canonicalValueAliveSet, Finset.mem_image,
         Finset.mem_filter, Finset.mem_univ, true_and] at hi
       obtain ⟨j, hj, rfl⟩ := hi
       exact hj
@@ -4909,7 +4901,7 @@ theorem canonicalValueAliveSet_card_le_aliveBound
           (Finset.image tableValPos (canonicalValueAliveSet E)).card := hCardImage
       _ ≤ rPartial.alive.card := Finset.card_le_card hImgSub
   have hAliveEq : rPartial.alive.card = E.r.alive.card := by
-    simpa [rPartial] using ThirdPartyFacts.castRestriction_alive_card hlen E.r
+    simp [rPartial]
   calc
     (canonicalValueAliveSet E).card ≤ rPartial.alive.card := hSCardAlive
     _ = E.r.alive.card := hAliveEq
@@ -4956,12 +4948,12 @@ theorem canonicalEasyRejectProbOnFamilyOfCircuit_eq_zero_of_forall_accept
         (canonicalEasyFamilyFinset p).filter
             (fun t => dagAcceptsTotalTableOfCircuit p D t = false)
           = (∅ : Finset (Core.BitVec (Models.Partial.tableLen p.n))) := by
-      apply Finset.eq_empty_iff_forall_not_mem.mpr
+      apply Finset.eq_empty_iff_forall_notMem.mpr
       intro t ht
       have htMem : t ∈ canonicalEasyFamilyFinset p := (Finset.mem_filter.mp ht).1
       have htRej : dagAcceptsTotalTableOfCircuit p D t = false := (Finset.mem_filter.mp ht).2
       have htAcc : dagAcceptsTotalTableOfCircuit p D t = true := hAccept t htMem
-      exact (by simpa [htAcc] using htRej)
+      exact (by simp [htAcc] at htRej)
     simp [canonicalEasyRejectProbOnFamilyOfCircuit, acceptanceRatioOnFinset, hCard, hFilter]
 
 /--
@@ -5290,7 +5282,7 @@ noncomputable def canonicalWitnessEasyDensitySourceAt_of_supportBudget
     (canonicalValueAliveSet (smallDAGWitnessRestrictionExtractionAt_of_support W)).card ≤
         (smallDAGWitnessRestrictionExtractionAt_of_support W).aliveBound := hSLeAlive
     _ ≤ (DagCircuit.support W.C).card := by
-      simpa [smallDAGWitnessRestrictionExtractionAt_of_support]
+      simp [smallDAGWitnessRestrictionExtractionAt_of_support]
     _ ≤ hardwireBudget := hSupportBudget W
 
 /--
@@ -5424,7 +5416,7 @@ def canonicalEasyDensitySourceAt_of_canonicalEasyHSGSourceAt
   have hSeedZero :
       dagSeedAcceptanceProbOnTotalsOfCircuit p (canonicalEasySampler p) D = 0 :=
     dagSeedAcceptanceProbOnTotalsOfCircuit_eq_zero_of_forall_reject hAllReject
-  simpa [hSeedZero]
+  simp [hSeedZero]
 
 /--
 Compiler: average-case / semantic-sampling source object to canonical
@@ -5518,7 +5510,7 @@ def easyImageTransferAt_of_smallDAGEasyHSGSourceAt
       simpa [dagUniformAcceptanceProbOnTotals] using (lt_of_not_ge hNotLower)
     rcases source.hHitsLargeRejectingSets W.C W.hSize hUniformLow with ⟨z, hzReject⟩
     have hzAccept : dagAcceptsTotalTableOfCircuit p W.C (source.gen z) = true := hAllSeedAccept z
-    have : False := by simpa [hzAccept] using hzReject
+    have : False := by simp [hzAccept] at hzReject
     exact this
   exact
     { seedLen := source.seedLen
@@ -5743,7 +5735,7 @@ theorem dagSeedAcceptanceProbOnTotals_eq_one_of_forall_accept
   have hCardNeNat :
       ((Finset.univ : Finset (Core.BitVec seedLen)).card) ≠ 0 := by
     simp
-  simpa [dagSeedAcceptanceProbOnTotals, dagSeedAcceptanceProbOnTotalsOfCircuit,
+  simp [dagSeedAcceptanceProbOnTotals, dagSeedAcceptanceProbOnTotalsOfCircuit,
     acceptanceRatioOnFinset, hFilter]
 
 /--
@@ -5883,7 +5875,7 @@ theorem dagUniformAcceptanceProbOnTotals_le_countRatio_of_correctWitness
         (2 ^ (Models.Partial.tableLen p.n) : Rat)) := by
     simp
   unfold dagUniformAcceptanceProbOnTotals
-  simp [acceptanceRatioOnFinset]
+  simp
   have hNumRat :
       ((accepted.card : Rat) ≤ (Models.circuitCountBound p.n (p.sNO - 1) : Rat)) := by
     exact_mod_cast hCardLe
@@ -6169,7 +6161,7 @@ theorem quarter_lt_one_sub_countRatio_of_circuit_bound_ok
     let c : Rat := (Models.circuitCountBound p.n (p.sNO - 1) : Rat)
     let d : Rat := ((2 ^ L : Nat) : Rat)
     have hdPos : (0 : Rat) < d := by
-      simpa [d] using hDenPosRat
+      simp [d]
     have hdNe : d ≠ 0 := ne_of_gt hdPos
     have hDivLtOne' : (c * 4) / d < 1 := by
       simpa [c, d, Nat.cast_mul, mul_comm, mul_left_comm, mul_assoc] using hDivLtOne
@@ -7079,7 +7071,7 @@ def easyImagePRGAtProviderOnSlices_of_smallDAGEasyImageFoolingSourceProviderOnSl
     (SizeBound : Nat → Rat → Rat → Nat → Prop)
     (hSource : smallDAGEasyImageFoolingSourceProviderOnSlices F SizeBound) :
     easyImagePRGAtProviderOnSlices F SizeBound :=
-  fun n β ε W =>
+  fun n β _ε W =>
     easyImagePRGAt_of_smallDAGEasyImageFoolingSourceAt
       (source := hSource n β) W
 
@@ -7092,7 +7084,7 @@ def easyImagePRGAtProviderOnSlices_of_smallDAGEasyDistSourceProviderOnSlices
     (SizeBound : Nat → Rat → Rat → Nat → Prop)
     (hSource : smallDAGEasyDistSourceProviderOnSlices F SizeBound) :
     easyImagePRGAtProviderOnSlices F SizeBound :=
-  fun n β ε W =>
+  fun n β _ε W =>
     easyImagePRGAt_of_smallDAGEasyDistSourceAt
       (source := hSource n β) W
 
@@ -7105,7 +7097,7 @@ def easyImageTransferAtProviderOnSlices_of_smallDAGEasyHSGSourceProviderOnSlices
     (SizeBound : Nat → Rat → Rat → Nat → Prop)
     (hSource : smallDAGEasyHSGSourceProviderOnSlices F SizeBound) :
     easyImageTransferAtProviderOnSlices F SizeBound :=
-  fun n β ε W =>
+  fun n β _ε W =>
     easyImageTransferAt_of_smallDAGEasyHSGSourceAt
       (source := hSource n β) W
 
@@ -7118,7 +7110,7 @@ def easyImageTransferAtProviderOnSlices_of_canonicalEasyDensitySourceProviderOnS
     (SizeBound : Nat → Rat → Rat → Nat → Prop)
     (hSource : canonicalSmallDAGEasyDensitySourceProviderOnSlices F SizeBound) :
     easyImageTransferAtProviderOnSlices F SizeBound :=
-  fun n β ε W =>
+  fun n β _ε W =>
     easyImageTransferAt_of_canonicalEasyDensitySourceAt
       (source := hSource n β) W
 

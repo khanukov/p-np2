@@ -2275,9 +2275,7 @@ noncomputable def scenarioBudgetFromAC0
     have hrest₂ := hrest₁.2
     have hdict_raw := hrest₂.1
     have hrest₃ := hrest₂.2
-    have _hε0_raw := hrest₃.1
     have hrest₄ := hrest₃.2
-    have _hε_half_raw := hrest₄.1
     have hrest₅ := hrest₄.2
     have hε_inv_raw := hrest₅.1
     have hfamily' := hfamily_raw
@@ -2319,9 +2317,7 @@ noncomputable def scenarioBudgetFromLocal
     have hrest₂ := hrest₁.2
     have hdict_raw := hrest₂.1
     have hrest₃ := hrest₂.2
-    have _hε0_raw := hrest₃.1
     have hrest₄ := hrest₃.2
-    have _hε_half_raw := hrest₄.1
     have hrest₅ := hrest₄.2
     have hε_inv_raw := hrest₅.1
     have hfamily' := hfamily_raw

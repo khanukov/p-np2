@@ -144,9 +144,7 @@ theorem boundedAtlasScenario_of_semanticSwitchingCertificate
     scenario := base.2
     family_eq := ?_
   }⟩
-  simpa [base] using
-    LowerBounds.scenarioFromAC0_with_polylog_family_eq
-      cert.ac0 cert.F cert.hFam cert.hpolyW
+  simp [base]
 
 /--
 Named bridge: one semantic switching certificate yields one scenario budget.

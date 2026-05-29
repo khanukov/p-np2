@@ -811,7 +811,7 @@ private def partialOfRawEncoding {n : Nat}
 private lemma rawEncodingOfConsistentPartial_maskIndex {n : Nat}
     (f : TotalFunction n) (T : PartialFunction n) (i : Fin (Partial.tableLen n)) :
     rawEncodingOfConsistentPartial f T (Partial.maskIndex i) = !(T i).isSome := by
-  simp [rawEncodingOfConsistentPartial, Partial.maskIndex, maskIndex_lt_tableLen]
+  simp [rawEncodingOfConsistentPartial, Partial.maskIndex]
 
 private lemma rawEncodingOfConsistentPartial_valIndex {n : Nat}
     (f : TotalFunction n) (T : PartialFunction n) (i : Fin (Partial.tableLen n)) :
@@ -821,7 +821,7 @@ private lemma rawEncodingOfConsistentPartial_valIndex {n : Nat}
   have hjNat :
       ((Partial.valIndex i : Fin (Partial.inputLen n)).1 - Partial.tableLen n) = i.1 := by
     simp [Partial.valIndex]
-  simp [rawEncodingOfConsistentPartial, hlt, hjNat, Partial.valIndex]
+  simp [rawEncodingOfConsistentPartial, Partial.valIndex]
 
 private lemma consistentWithTotal_decode_rawEncodingOfConsistentPartial {n : Nat}
     (f : TotalFunction n) (T : PartialFunction n) :
@@ -845,8 +845,8 @@ private lemma partialOfRawEncoding_rawEncodingOfConsistentPartial {n : Nat}
   funext i
   cases hTi : T i with
   | none =>
-      simp [partialOfRawEncoding, Partial.maskPart, Partial.valPart,
-        rawEncodingOfConsistentPartial_maskIndex, rawEncodingOfConsistentPartial_valIndex, hTi]
+      simp [partialOfRawEncoding, Partial.maskPart,
+        rawEncodingOfConsistentPartial_maskIndex, hTi]
   | some b =>
       simp [partialOfRawEncoding, Partial.maskPart, Partial.valPart,
         rawEncodingOfConsistentPartial_maskIndex, rawEncodingOfConsistentPartial_valIndex, hTi]
@@ -900,16 +900,16 @@ private lemma rawEncodingOfConsistentPartial_partialOfRawEncoding {n : Nat}
       calc
         rawEncodingOfConsistentPartial f (partialOfRawEncoding x.1) j
             = f i := by
-                simp [rawEncodingOfConsistentPartial, partialOfRawEncoding, hji, hj, i, hi_eq, hmask]
+                simp [rawEncodingOfConsistentPartial, partialOfRawEncoding, hj, i, hi_eq, hmask]
         _ = Partial.valPart x.1 i := hval.symm
         _ = x.1 (Partial.valIndex i) := rfl
-        _ = x.1 j := by simpa [hji]
+        _ = x.1 j := by simp [hji]
     · calc
         rawEncodingOfConsistentPartial f (partialOfRawEncoding x.1) j
             = Partial.valPart x.1 i := by
-                simp [rawEncodingOfConsistentPartial, partialOfRawEncoding, hji, hj, i, hi_eq, hmask]
+                simp [rawEncodingOfConsistentPartial, partialOfRawEncoding, hj, i, hi_eq, hmask]
         _ = x.1 (Partial.valIndex i) := rfl
-        _ = x.1 j := by simpa [hji]
+        _ = x.1 j := by simp [hji]
 
 /-- Raw encodings consistent with `f` are equivalent to partial tables. -/
 private noncomputable def rawEncodingConsistentEquivPartial {n : Nat}
@@ -962,7 +962,7 @@ theorem card_rawEncodingsConsistentWithTotal_eq_three_pow {n : Nat}
     (rawEncodingsConsistentWithTotal f)
     (by
       intro x
-      simpa [rawEncodingsConsistentWithTotal])).symm
+      simp [rawEncodingsConsistentWithTotal])).symm
 
 /-!
   ### Согласованные тотальные функции

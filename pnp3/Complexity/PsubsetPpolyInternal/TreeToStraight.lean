@@ -15,11 +15,6 @@ structure Compiled (n : Nat) where
   ckt : Circuit n
   out : Fin (n + ckt.gates)
 
-/-- Compiled family indexed by `Fin m` into one shared straight-line circuit. -/
-structure CompiledFin (n m : Nat) where
-  ckt : Circuit n
-  out : Fin m → Fin (n + ckt.gates)
-
 /-- Embed a wire from a suffix circuit into an appended circuit with `g₁` prefix gates. -/
 def liftWireIntoAppend {n g₁ g₂ : Nat} :
     Fin (n + g₂) → Fin (n + (g₁ + g₂)) := by
@@ -381,34 +376,6 @@ noncomputable def compileTree : Boolcube.Circuit n → Compiled n
   have h := evalWireInternal_gate (C := constCircuit n b) (x := x) (j := 0)
     (by simp [constCircuit])
   simpa [evalWire] using h
-
-/-- Pack a finite family of tree circuits into one shared straight-line circuit. -/
-noncomputable def packFin (m : Nat) (f : Fin m → Boolcube.Circuit n) : CompiledFin n m := by
-  induction m with
-  | zero =>
-      exact {
-        ckt := inputCarrier n
-        out := fun i => Fin.elim0 i
-      }
-  | succ m ih =>
-      let pref : CompiledFin n m := ih (fun i => f (Fin.castLT i (Nat.lt_trans i.isLt (Nat.lt_succ_self m))))
-      let lastCompiled : Compiled n := compileTree (f (Fin.last m))
-      let merged : Circuit n := appendCircuit pref.ckt lastCompiled.ckt
-      let lastOut : Fin (n + merged.gates) :=
-        liftWireIntoAppend (n := n) (g₁ := pref.ckt.gates) (g₂ := lastCompiled.ckt.gates) lastCompiled.out
-      refine {
-        ckt := merged
-        out := ?_
-      }
-      intro i
-      by_cases hi : (i : Nat) < m
-      · let i' : Fin m := ⟨i, hi⟩
-        exact leftWireInAppend pref.ckt lastCompiled.ckt (pref.out i')
-      · have hiEq : (i : Nat) = m := by
-          have hle : m ≤ (i : Nat) := Nat.le_of_not_gt hi
-          have hlt : (i : Nat) < m + 1 := i.isLt
-          omega
-        exact lastOut
 
 /-- Contract: compiled output wire computes the source tree circuit semantics. -/
 def CompileTreeWireSemantics : Prop :=

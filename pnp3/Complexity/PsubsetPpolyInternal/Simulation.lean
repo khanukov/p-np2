@@ -27,10 +27,6 @@ open Pnp3.Complexity.StraightLineAdapter
 /-- Cardinality of TM control states (compile-time constant for fixed `M`). -/
 def stateCard (M : TM) : Nat := Fintype.card M.state
 
-/-- Canonical equivalence between machine states and `Fin (stateCard M)`. -/
-noncomputable def stateEquiv (M : TM) : M.state ≃ Fin (stateCard M) :=
-  Fintype.equivFin _
-
 /-- Enumerate all machine states as a list. -/
 noncomputable def stateList (M : TM) : List M.state :=
   (Finset.univ : Finset M.state).toList
@@ -316,110 +312,6 @@ noncomputable def initial (M : TM) (n : Nat) : ConfigCircuits M n where
       Circuit.const true
     else
       Circuit.const false
-
-/-- Decode a head position from one-hot head wires (defaulting to index `0`). -/
-noncomputable def decodeHead (cc : ConfigCircuits M n) (x : Point n) :
-    Fin (M.tapeLength n) :=
-  if h : ∃ i : Fin (M.tapeLength n), evalHead cc x i = true then
-    Classical.choose h
-  else
-    ⟨0, by simpa [TM.tapeLength] using Nat.succ_pos (n + M.runTime n)⟩
-
-/-- Decode a state from one-hot state wires (defaulting to `M.start`). -/
-noncomputable def decodeState (cc : ConfigCircuits M n) (x : Point n) :
-    M.state :=
-  if h : ∃ q : M.state, evalState cc x q = true then
-    Classical.choose h
-  else
-    M.start
-
-/-- Semantic configuration induced by circuit outputs. -/
-noncomputable def decodedConfig (cc : ConfigCircuits M n) (x : Point n) :
-    TM.Configuration (M := M) n where
-  state := decodeState cc x
-  head := decodeHead cc x
-  tape := evalTape cc x
-
-lemma decodeHead_eq_of_spec
-    (cc : ConfigCircuits M n)
-    (f : Point n → TM.Configuration (M := M) n)
-    (hcc : Spec (cc := cc) (f := f))
-    (x : Point n) :
-    decodeHead cc x = (f x).head := by
-  have hExists : ∃ i : Fin (M.tapeLength n), evalHead cc x i = true := by
-    refine ⟨(f x).head, ?_⟩
-    simpa [hcc.head_eq x (f x).head] using (headIndicator_self (c := f x))
-  unfold decodeHead
-  simp [hExists]
-  let i0 : Fin (M.tapeLength n) := Classical.choose hExists
-  have hi0 : evalHead cc x i0 = true := Classical.choose_spec hExists
-  have hInd : headIndicator (f x) i0 = true := by
-    simpa [hcc.head_eq x i0] using hi0
-  have hEq : (f x).head = i0 := (headIndicator_true_iff (c := f x) i0).1 hInd
-  exact hEq.symm
-
-lemma decodeState_eq_of_spec
-    (cc : ConfigCircuits M n)
-    (f : Point n → TM.Configuration (M := M) n)
-    (hcc : Spec (cc := cc) (f := f))
-    (x : Point n) :
-    decodeState cc x = (f x).state := by
-  have hExists : ∃ q : M.state, evalState cc x q = true := by
-    refine ⟨(f x).state, ?_⟩
-    simpa [hcc.state_eq x (f x).state] using (stateIndicator_self (M := M) (c := f x))
-  unfold decodeState
-  simp [hExists]
-  let q0 : M.state := Classical.choose hExists
-  have hq0 : evalState cc x q0 = true := Classical.choose_spec hExists
-  have hInd : stateIndicator M (f x) q0 = true := by
-    simpa [hcc.state_eq x q0] using hq0
-  have hEq : (f x).state = q0 := (stateIndicator_true_iff (M := M) (c := f x) q0).1 hInd
-  exact hEq.symm
-
-/-- Next-step tape bit for cell `i` synthesized from the decoded transition. -/
-noncomputable def nextTapeCircuit (M : TM) {n : Nat}
-    (cc : ConfigCircuits M n) (i : Fin (M.tapeLength n)) : Circuit n :=
-  Boolcube.Circuit.truthTableCircuit (fun x =>
-    (TM.stepConfig (M := M) (decodedConfig cc x)).tape i)
-
-/-- Next-step head indicator at index `j`. -/
-noncomputable def nextHeadCircuit (M : TM) {n : Nat}
-    (cc : ConfigCircuits M n) (j : Fin (M.tapeLength n)) : Circuit n :=
-  Boolcube.Circuit.truthTableCircuit (fun x =>
-    headIndicator (TM.stepConfig (M := M) (decodedConfig cc x)) j)
-
-/-- Next-step state indicator for control state `q`. -/
-noncomputable def nextStateCircuit (M : TM) {n : Nat}
-    (cc : ConfigCircuits M n) (q : M.state) : Circuit n :=
-  Boolcube.Circuit.truthTableCircuit (fun x =>
-    stateIndicator M (TM.stepConfig (M := M) (decodedConfig cc x)) q)
-
-noncomputable def stepCircuitsTruthTable (M : TM) {n : Nat}
-    (cc : ConfigCircuits M n) : ConfigCircuits M n where
-  tape := fun i => nextTapeCircuit M cc i
-  head := fun j => nextHeadCircuit M cc j
-  state := fun q => nextStateCircuit M cc q
-
-/--
-Linear-step switch-point for `ConfigCircuits`.
-
-Currently aliased to the truth-table implementation and intended to be replaced
-by the constructive DAG-preserving assembly.
--/
-noncomputable abbrev stepCircuitsLinear (M : TM) {n : Nat}
-    (cc : ConfigCircuits M n) : ConfigCircuits M n :=
-  stepCircuitsTruthTable M cc
-
-/--
-Current `ConfigCircuits` one-step implementation.
-
-Kept as a stable name for downstream code; this alias currently points to the
-truth-table implementation and is the designated switch-point for the upcoming
-constructive (DAG-preserving) refactor.
--/
-noncomputable abbrev stepCircuits (M : TM) {n : Nat}
-    (cc : ConfigCircuits M n) : ConfigCircuits M n :=
-  stepCircuitsLinear M cc
 
 /-- Circuit returning the bit currently scanned by the head. -/
 noncomputable def symbol (M : TM) {n : Nat}

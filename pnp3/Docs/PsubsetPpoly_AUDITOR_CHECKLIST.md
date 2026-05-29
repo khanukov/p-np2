@@ -29,16 +29,17 @@ Expected: both theorems found.
 ## 3) Check that the final layer uses the no-arg endpoint
 
 ```bash
-rg -n "proved_P_subset_PpolyDAG_internal" pnp3/Magnification/FinalResultCore.lean
+rg -n "proved_P_subset_PpolyDAG_internal" pnp3/Magnification/FinalResultMainline.lean
 ```
 
-Expected: a usage in the default route.
+Expected: a usage in the default route (`P_ne_NP_final_dag_only`).
+`FinalResultCore.lean` only aggregates `FinalResultMainline` by import.
 
 ## 4) Check the explicit-wrapper route (linear, not iterated-legacy)
 
 ```bash
 rg -n "PsubsetPpolyCompiledRuntimeLinearOutputContracts|proved_P_subset_PpolyDAG_of_compiledRuntimeLinearOutputContracts" \
-  pnp3/Magnification/FinalResultCore.lean pnp3/Barrier/Bypass.lean
+  pnp3/Magnification/FinalResultMainline.lean pnp3/Barrier/Bypass.lean
 ```
 
 Expected: `with_provider` / `with_barriers` wired to the linear

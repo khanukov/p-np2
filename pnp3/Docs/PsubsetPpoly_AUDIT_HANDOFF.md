@@ -25,8 +25,9 @@ Machine check:
    `compiledRuntimeAcceptCorrectnessLinear_of_stepSpecProvider (...)`
 
 In the default final wiring:
-- `pnp3/Magnification/FinalResultCore.lean` uses
-  `proved_P_subset_PpolyDAG_internal`.
+- `pnp3/Magnification/FinalResultMainline.lean` uses
+  `proved_P_subset_PpolyDAG_internal` (inside `P_ne_NP_final_dag_only`);
+  `FinalResultCore.lean` aggregates it by import.
 
 In the explicit-wrapper wiring:
 - `with_provider` / `with_barriers` use the linear contract bundle

@@ -24,8 +24,10 @@ The active closure chain:
    `compiledRuntimeAcceptCorrectnessLinear_of_stepSpecProvider (...)`
 
 This endpoint is what the final layer uses:
-- `pnp3/Magnification/FinalResultCore.lean` (default route;
-  `FinalResult.lean` remains a compatibility import path);
+- `pnp3/Magnification/FinalResultMainline.lean` (default route;
+  `P_ne_NP_final_dag_only` calls `proved_P_subset_PpolyDAG_internal`).
+  `FinalResultCore.lean` aggregates `FinalResultMainline` by import, and
+  `FinalResult.lean` remains a compatibility import path;
 - the explicit-contract wrappers (`with_provider`, `with_barriers`)
   use the linear contract bundle
   `PsubsetPpolyCompiledRuntimeLinearOutputContracts`

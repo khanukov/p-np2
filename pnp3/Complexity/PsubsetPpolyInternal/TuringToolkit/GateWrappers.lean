@@ -3789,8 +3789,7 @@ theorem SLProgram_evalAux_prior_prefix {n : Nat} :
 /-- Extract the cons-step structure from evalAux on `g :: rest`. -/
 theorem SLProgram_evalAux_cons_split {n : Nat} (row : Fin n → Bool)
     (g : SLGate n) (rest : List (SLGate n)) (prior vals : List Bool)
-    (h_eval : SLProgram.evalAux row (g :: rest) prior = some (prior ++ vals))
-    (_h_len : vals.length = (g :: rest).length) :
+    (h_eval : SLProgram.evalAux row (g :: rest) prior = some (prior ++ vals)) :
     ∃ (v : Bool) (vals_rest : List Bool),
       g.compute row prior = some v ∧
       vals = v :: vals_rest ∧
@@ -3868,7 +3867,7 @@ theorem circuitEvaluatorCSAt_run_correct_cond_short {n : Nat}
   | [g], _, hv_len =>
     -- Extract v from h_eval.
     obtain ⟨v, vals_rest, h_compute, h_vals_eq, hvr_len, _⟩ :=
-      SLProgram_evalAux_cons_split _ g [] prior vals h_eval hv_len
+      SLProgram_evalAux_cons_split _ g [] prior vals h_eval
     have hvr_empty : vals_rest = [] := List.length_eq_zero_iff.mp hvr_len
     subst hvr_empty
     subst h_vals_eq
@@ -3982,7 +3981,6 @@ theorem cons_any_row_lift_eq_c {n : Nat} (g : SLGate n) (g' : SLGate n)
       (h_row : (lift.head : ℕ) + Δrowbase + i.val < P2.toPhased.toTM.tapeLength N),
       lift.tape ⟨(lift.head : ℕ) + Δrowbase + i.val, h_row⟩ =
         c.tape ⟨(c.head : ℕ) + Δrowbase + i.val, by
-          have _hi := i.isLt
           have h_len_ge : N ≤
               (circuitEvaluatorCSAt (g :: g' :: rest') offset Δrowbase Δscratch hle).toPhased.toTM.tapeLength N := by
             show N ≤ N + _ + 1; omega
@@ -4415,7 +4413,7 @@ theorem CircuitEvaluatorCSAt_CondCorrect_single {n : Nat} (g : SLGate n) :
     prior vals h_prior_len h_prior_match h_vals_len h_eval
   -- Extract v from h_eval.
   obtain ⟨v, vals_rest, h_compute, h_vals_eq, hvr_len, _⟩ :=
-    SLProgram_evalAux_cons_split _ g [] prior vals h_eval h_vals_len
+    SLProgram_evalAux_cons_split _ g [] prior vals h_eval
   have hvr_empty : vals_rest = [] := List.length_eq_zero_iff.mp hvr_len
   subst hvr_empty
   subst h_vals_eq
@@ -4461,7 +4459,7 @@ theorem CircuitEvaluatorCSAt_CondCorrect_cons_multi {n : Nat}
     prior vals h_prior_len h_prior_match h_vals_len h_eval
   -- Step 1: Extract v and vals_rest via cons_split.
   obtain ⟨v, vals_rest, h_compute, h_vals_eq, hvr_len, h_eval_rest⟩ :=
-    SLProgram_evalAux_cons_split _ g (g' :: rest') prior vals h_eval h_vals_len
+    SLProgram_evalAux_cons_split _ g (g' :: rest') prior vals h_eval
   -- Step 2: Get decomposition + lift bindings.
   obtain ⟨hphase_lt, hhead_lt, h_tG_head, hdecomp⟩ :=
     cons_any_nonempty_composite_run_tape_at g g' rest' offset Δrowbase Δscratch hle

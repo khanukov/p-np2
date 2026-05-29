@@ -117,24 +117,6 @@ def evalWireOf {n : Nat} (C : Circuit n) (x : Boolcube.Point n)
     have hj' : j < C.gates := Nat.lt_trans hj hg
     rec j hj hj'
 
-/--
-Bridge lemma: if recursive payloads agree pointwise, the extracted wire values
-agree as well (`toCircuitWireOf` vs `evalWireOf`).
--/
-lemma wireOf_eq {n : Nat} (C : Circuit n) (x : Boolcube.Point n)
-    {g : Nat} (hg : g < C.gates) (i : Fin (n + g))
-    (recTree : ∀ j : Nat, j < g → j < C.gates → Pnp3.Internal.PsubsetPpoly.Boolcube.Circuit n)
-    (recEval : ∀ j : Nat, j < g → j < C.gates → Bool)
-    (hRec : ∀ (j : Nat) (hj : j < g) (hj' : j < C.gates),
-      Pnp3.Internal.PsubsetPpoly.Boolcube.Circuit.eval (recTree j hj hj') x = recEval j hj hj') :
-    Pnp3.Internal.PsubsetPpoly.Boolcube.Circuit.eval (toCircuitWireOf C hg i recTree) x =
-      evalWireOf C x hg i recEval := by
-  unfold toCircuitWireOf evalWireOf
-  by_cases h : (i : Nat) < n
-  · simp [h, Pnp3.Internal.PsubsetPpoly.Boolcube.Circuit.eval]
-  · simp [h]
-    exact hRec _ _ _
-
 /-- Internal whole-circuit semantics. -/
 def evalInternal {n : Nat} (C : Circuit n) (x : Boolcube.Point n) : Bool :=
   if h : (C.output : Nat) < n then

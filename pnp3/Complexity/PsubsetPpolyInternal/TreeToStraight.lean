@@ -131,23 +131,6 @@ lemma liftWire_val_gate
   omega
 
 /--
-Right-branch normal form for lifted wire values.
-
-This is the concrete pointwise normalization used in append-right proofs:
-the lifted wire value is either unchanged (input branch) or shifted by
-`g₁` (gate branch).
--/
-lemma liftWire_val_right
-    {n g₁ g₂ : Nat} (w : Fin (n + g₂)) :
-    ((liftWireIntoAppend (n := n) (g₁ := g₁) (g₂ := g₂) w :
-      Fin (n + (g₁ + g₂))) : Nat) =
-      if (w : Nat) < n then (w : Nat) else (w : Nat) + g₁ := by
-  by_cases hw : (w : Nat) < n
-  · simp [liftWire_val_input (n := n) (g₁ := g₁) (g₂ := g₂) (w := w) hw, hw]
-  · simp [liftWire_val_gate (n := n) (g₁ := g₁) (g₂ := g₂) (w := w) hw, hw]
-
-
-/--
 Arithmetic normal form for the non-input branch of `liftWireIntoAppend`:
 subtracting `n` from the lifted index exposes prefix offset `g₁` explicitly.
 -/
@@ -157,20 +140,6 @@ lemma liftWire_sub_n_gate
       Fin (n + (g₁ + g₂))) : Nat) - n) = g₁ + ((w : Nat) - n) := by
   have hval := liftWire_val_gate (n := n) (g₁ := g₁) (g₂ := g₂) (w := w) h
   omega
-
-/--
-Bounded form of `liftWire_sub_n_gate`: the normalized lifted gate index stays
-below the total appended gate budget.
--/
-lemma liftWire_sub_n_gate_lt
-    {n g₁ g₂ : Nat} (w : Fin (n + g₂)) (h : ¬ ((w : Nat) < n)) :
-    (((liftWireIntoAppend (n := n) (g₁ := g₁) (g₂ := g₂) w :
-      Fin (n + (g₁ + g₂))) : Nat) - n) < g₁ + g₂ := by
-  have hw_lt : (w : Nat) - n < g₂ := by
-    have hw : (w : Nat) < n + g₂ := w.isLt
-    omega
-  rw [liftWire_sub_n_gate (n := n) (g₁ := g₁) (g₂ := g₂) (w := w) h]
-  exact Nat.add_lt_add_left hw_lt g₁
 
 /--
 If two input indices have the same `Nat` value, evaluating a boolean point at
@@ -378,11 +347,6 @@ noncomputable def compileTree : Boolcube.Circuit n → Compiled n
       { ckt := ckt'
         out := Fin.last (n + merged.gates) }
 
-/-- Compile a tree circuit with output redirected to the compiled output wire. -/
-noncomputable def compileTreeCircuit (c : Boolcube.Circuit n) : Circuit n :=
-  let cc := compileTree c
-  { cc.ckt with output := cc.out }
-
 @[simp] lemma eval_constCircuit (n : Nat) (b : Bool) (x : Boolcube.Point n) :
     eval (constCircuit n b) x = b := by
   have hgate := evalWireInternal_gate (C := constCircuit n b) (x := x) (j := 0)
@@ -452,13 +416,6 @@ def CompileTreeWireSemantics : Prop :=
     evalWire (C := (compileTree c).ckt) (x := x) (compileTree c).out =
       Boolcube.Circuit.eval c x
 
-/-- Contract: packed family preserves semantics at every index. -/
-def PackFinWireSemantics : Prop :=
-  ∀ {n m : Nat} (f : Fin m → Boolcube.Circuit n) (x : Boolcube.Point n) (i : Fin m),
-    evalWire (C := (packFin (n := n) (m := m) f).ckt) (x := x)
-      ((packFin (n := n) (m := m) f).out i) =
-        Boolcube.Circuit.eval (f i) x
-
 /-- Contract: append/renumbering preserves source-wire semantics. -/
 def AppendWireSemantics : Prop :=
   (∀ {n : Nat} (C₁ C₂ : Circuit n) (x : Boolcube.Point n) (i : Fin (n + C₁.gates)),
@@ -474,19 +431,6 @@ def AppendWireSemantics : Prop :=
     {n : Nat} {C₁ C₂ : Circuit n} {g : Nat}
     (hg : g < C₁.gates + C₂.gates) (h_not_left : ¬ g < C₁.gates) :
     g - C₁.gates < C₂.gates := by
-  omega
-
-/--
-Normalized right-branch index in `appendCircuit`: if `g` is in the suffix part,
-then `g = C₁.gates + (g - C₁.gates)`.
-
-This is a dedicated arithmetic normal form used to keep append-right proofs
-stable under dependent index casts.
--/
-lemma append_right_index_normalize
-    {n : Nat} {C₁ C₂ : Circuit n} {g : Nat}
-    (_hg : g < C₁.gates + C₂.gates) (h_not_left : ¬ g < C₁.gates) :
-    g = C₁.gates + (g - C₁.gates) := by
   omega
 
 /--
@@ -506,21 +450,6 @@ lemma append_right_not_left_add
     (_hj : j < C₂.gates) :
     ¬ C₁.gates + j < C₁.gates := by
   omega
-
-/--
-`cast_gateIdx_append_right` specialized to additive right-branch indices.
-
-This is the canonical transport shape used in append-right gate proofs.
--/
-lemma cast_gateIdx_append_right_add
-    {n : Nat} {C₁ C₂ : Circuit n} {j : Nat}
-    (hj : j < C₂.gates) :
-    (C₁.gates + j) - C₁.gates < C₂.gates := by
-  exact cast_gateIdx_append_right
-    (C₁ := C₁) (C₂ := C₂)
-    (g := C₁.gates + j)
-    (append_right_shift_lt (C₁ := C₁) (C₂ := C₂) (j := j) hj)
-    (append_right_not_left_add (C₁ := C₁) (C₂ := C₂) (j := j) hj)
 
 /-- Additive right-branch subtraction normal form for append indices. -/
 @[simp] lemma append_right_sub_add_cancel
@@ -571,23 +500,6 @@ lemma append_gate_right_eq
           (C₂.gate ⟨g - C₁.gates, cast_gateIdx_append_right hg h_not_left⟩)) := by
   unfold appendCircuit
   simp [h_not_left]
-
-/--
-Rephrase `append_gate_right_eq` so the cast target uses the normalized index
-equation from `append_right_index_normalize` explicitly.
--/
-lemma append_gate_right_eq_normalized
-    {n : Nat} {C₁ C₂ : Circuit n} {g : Nat}
-    (hg : g < C₁.gates + C₂.gates) (h_not_left : ¬ g < C₁.gates) :
-    (appendCircuit C₁ C₂).gate ⟨g, hg⟩ =
-      cast (by
-        have hnorm : C₁.gates + (g - C₁.gates) = g :=
-          (append_right_index_normalize (C₁ := C₁) (C₂ := C₂)
-            (g := g) hg h_not_left).symm
-        simp [hnorm])
-        (liftOpIntoAppend (n := n) (g₁ := C₁.gates) (g := (g - C₁.gates))
-          (C₂.gate ⟨g - C₁.gates, cast_gateIdx_append_right hg h_not_left⟩)) := by
-  simpa using append_gate_right_eq (C₁ := C₁) (C₂ := C₂) (g := g) hg h_not_left
 
 /--
 Specialized right-branch gate normalization at the concrete shifted index
@@ -1199,73 +1111,11 @@ theorem compileTreeWireSemantics_of_gateContracts
   compileTreeWireSemantics_of_append (appendWireSemantics_of_gateContracts hGate)
 
 /--
-Closed append-wire semantics assembled from the internal gate-level right-branch theorem.
--/
-theorem appendWireSemantics : AppendWireSemantics :=
-  appendWireSemantics_of_gateContracts appendGateRightSemantics
-
-/--
 Closed compile-tree wire semantics assembled from internal append-right closure.
 -/
 theorem compileTreeWireSemantics : CompileTreeWireSemantics :=
   compileTreeWireSemantics_of_gateContracts appendGateRightSemantics
 
-
-theorem packFinWireSemantics_of_contracts
-    (hCompile : CompileTreeWireSemantics)
-    (hAppend : AppendWireSemantics) :
-    PackFinWireSemantics := by
-  intro n m f x i
-  induction m with
-  | zero =>
-      exact Fin.elim0 i
-  | succ m ih =>
-      classical
-      let fPref : Fin m → Boolcube.Circuit n := fun j =>
-        f (Fin.castLT j (Nat.lt_trans j.isLt (Nat.lt_succ_self m)))
-      let pref : CompiledFin n m := packFin (n := n) (m := m) fPref
-      let lastCompiled : Compiled n := compileTree (f (Fin.last m))
-      let merged : Circuit n := appendCircuit pref.ckt lastCompiled.ckt
-      let lastOut : Fin (n + merged.gates) :=
-        liftWireIntoAppend (n := n) (g₁ := pref.ckt.gates) (g₂ := lastCompiled.ckt.gates) lastCompiled.out
-      rcases hAppend with ⟨hLeft, hRight⟩
-      have hPref : ∀ j : Fin m,
-          evalWire (C := pref.ckt) (x := x) (pref.out j) = Boolcube.Circuit.eval (fPref j) x :=
-        by
-          intro j
-          exact ih fPref j
-      unfold packFin
-      simp
-      by_cases hi : (i : Nat) < m
-      · let i' : Fin m := ⟨i, hi⟩
-        let iUp : Fin (m + 1) := Fin.castLT i' (Nat.lt_trans i'.isLt (Nat.lt_succ_self m))
-        have hL :
-            evalWire (C := merged) (x := x)
-              (leftWireInAppend pref.ckt lastCompiled.ckt (pref.out i')) =
-              evalWire (C := pref.ckt) (x := x) (pref.out i') :=
-          hLeft pref.ckt lastCompiled.ckt x (pref.out i')
-        have hP : evalWire (C := pref.ckt) (x := x) (pref.out i') = Boolcube.Circuit.eval (f iUp) x := by
-          simpa [fPref, i'] using hPref i'
-        have hiUpEq : iUp = i := by
-          ext
-          rfl
-        simpa [hi, i', iUp, hiUpEq] using hL.trans hP
-      · have hiEq : (i : Nat) = m := by
-          have hle : m ≤ (i : Nat) := Nat.le_of_not_gt hi
-          have hlt : (i : Nat) < m + 1 := i.isLt
-          omega
-        have hR :
-            evalWire (C := merged) (x := x) lastOut =
-              evalWire (C := lastCompiled.ckt) (x := x) lastCompiled.out := by
-          simpa [lastOut] using hRight pref.ckt lastCompiled.ckt x lastCompiled.out
-        have hC :
-            evalWire (C := lastCompiled.ckt) (x := x) lastCompiled.out =
-              Boolcube.Circuit.eval (f (Fin.last m)) x :=
-          hCompile (f (Fin.last m)) x
-        have hiFin : i = Fin.last m := by
-          ext
-          simp [hiEq]
-        simpa [hi, hiEq, hiFin] using hR.trans hC
 
 end StraightLine
 end PsubsetPpoly

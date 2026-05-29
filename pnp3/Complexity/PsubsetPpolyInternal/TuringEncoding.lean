@@ -72,9 +72,6 @@ reserve `n + runTime n + 1` cells which suffices to cover all visited
 locations. -/
 def tapeLength (n : ℕ) : ℕ := n + M.runTime n + 1
 
-lemma tapeLength_pos (n : ℕ) : 0 < M.tapeLength n := by
-  simp [TM.tapeLength]
-
 /-- Configurations for inputs of length `n`.  The tape is modelled as a
 fixed-length binary vector. -/
 structure Configuration (n : ℕ) where

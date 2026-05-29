@@ -31,10 +31,6 @@ def stateCard (M : TM) : Nat := Fintype.card M.state
 noncomputable def stateEquiv (M : TM) : M.state ≃ Fin (stateCard M) :=
   Fintype.equivFin _
 
-/-- Canonical index of a state in the finite enumeration. -/
-noncomputable def stateIndex (M : TM) (q : M.state) : Fin (stateCard M) :=
-  stateEquiv M q
-
 /-- Enumerate all machine states as a list. -/
 noncomputable def stateList (M : TM) : List M.state :=
   (Finset.univ : Finset M.state).toList
@@ -321,32 +317,6 @@ noncomputable def initial (M : TM) (n : Nat) : ConfigCircuits M n where
     else
       Circuit.const false
 
-lemma initial_spec (M : TM) (n : Nat) :
-    Spec (cc := initial M n) (f := fun x => M.initialConfig x) := by
-  refine ⟨?_, ?_, ?_⟩
-  · intro x i
-    unfold evalTape initial
-    by_cases hi : (i : Nat) < n
-    · simp [TM.initialConfig, hi, Boolcube.Circuit.eval]
-    · simp [TM.initialConfig, hi, Boolcube.Circuit.eval]
-  · intro x i
-    unfold evalHead initial
-    let i0 : Fin (M.tapeLength n) := ⟨0, by
-      have : (0 : Nat) < n + M.runTime n + 1 := Nat.succ_pos _
-      simpa [TM.tapeLength] using this⟩
-    change (if i = i0 then Circuit.const true else Circuit.const false).eval x = decide (i0 = i)
-    by_cases h0 : i = i0
-    · subst h0
-      simp [Boolcube.Circuit.eval, i0]
-    · have h0' : ¬ i0 = i := by exact fun h => h0 h.symm
-      simp [Boolcube.Circuit.eval, h0, h0']
-  · intro x q
-    unfold evalState initial
-    by_cases hs : q = M.start
-    · simp [TM.initialConfig, stateIndicator, hs, Boolcube.Circuit.eval]
-    · have hs' : ¬ M.start = q := by exact fun h => hs h.symm
-      simp [TM.initialConfig, stateIndicator, hs, hs', Boolcube.Circuit.eval]
-
 /-- Decode a head position from one-hot head wires (defaulting to index `0`). -/
 noncomputable def decodeHead (cc : ConfigCircuits M n) (x : Point n) :
     Fin (M.tapeLength n) :=
@@ -406,27 +376,6 @@ lemma decodeState_eq_of_spec
   have hEq : (f x).state = q0 := (stateIndicator_true_iff (M := M) (c := f x) q0).1 hInd
   exact hEq.symm
 
-lemma decodedConfig_eq_of_spec
-    (cc : ConfigCircuits M n)
-    (f : Point n → TM.Configuration (M := M) n)
-    (hcc : Spec (cc := cc) (f := f))
-    (x : Point n) :
-    decodedConfig cc x = f x := by
-  cases hf : f x with
-  | mk st hd tp =>
-      have hst : decodeState cc x = st := by
-        simpa [hf] using decodeState_eq_of_spec (cc := cc) (f := f) hcc x
-      have hhd : decodeHead cc x = hd := by
-        simpa [hf] using decodeHead_eq_of_spec (cc := cc) (f := f) hcc x
-      have htp : evalTape cc x = tp := by
-        funext i
-        simpa [hf] using hcc.tape_eq x i
-      change
-        ({ state := decodeState cc x, head := decodeHead cc x, tape := evalTape cc x } :
-          TM.Configuration (M := M) n) =
-        { state := st, head := hd, tape := tp }
-      simpa [hst, hhd, htp]
-
 /-- Next-step tape bit for cell `i` synthesized from the decoded transition. -/
 noncomputable def nextTapeCircuit (M : TM) {n : Nat}
     (cc : ConfigCircuits M n) (i : Fin (M.tapeLength n)) : Circuit n :=
@@ -472,55 +421,6 @@ noncomputable abbrev stepCircuits (M : TM) {n : Nat}
     (cc : ConfigCircuits M n) : ConfigCircuits M n :=
   stepCircuitsLinear M cc
 
-lemma step_spec
-    (M : TM) {n : Nat}
-    {cc : ConfigCircuits M n}
-    {f : Point n → TM.Configuration (M := M) n}
-    (hcc : Spec (cc := cc) (f := f)) :
-    Spec (cc := stepCircuits M cc) (f := fun x => TM.stepConfig (M := M) (f x)) := by
-  refine ⟨?_, ?_, ?_⟩
-  · intro x i
-    have hdec : decodedConfig cc x = f x := decodedConfig_eq_of_spec (cc := cc) (f := f) hcc x
-    simpa [stepCircuits, nextTapeCircuit, hdec] using
-      (Boolcube.Circuit.eval_truthTableCircuit
-        (f := fun x => (TM.stepConfig (M := M) (decodedConfig cc x)).tape i) x)
-  · intro x j
-    have hdec : decodedConfig cc x = f x := decodedConfig_eq_of_spec (cc := cc) (f := f) hcc x
-    simpa [stepCircuits, nextHeadCircuit, hdec] using
-      (Boolcube.Circuit.eval_truthTableCircuit
-        (f := fun x => headIndicator (TM.stepConfig (M := M) (decodedConfig cc x)) j) x)
-  · intro x q
-    have hdec : decodedConfig cc x = f x := decodedConfig_eq_of_spec (cc := cc) (f := f) hcc x
-    simpa [stepCircuits, nextStateCircuit, hdec] using
-      (Boolcube.Circuit.eval_truthTableCircuit
-        (f := fun x => stateIndicator M (TM.stepConfig (M := M) (decodedConfig cc x)) q) x)
-
-lemma iterate_spec
-    (M : TM) {n : Nat}
-    {cc : ConfigCircuits M n}
-    {f : Point n → TM.Configuration (M := M) n}
-    (hcc : Spec (cc := cc) (f := f)) :
-    ∀ t,
-      Spec (cc := Nat.iterate (stepCircuits M) t cc)
-        (f := fun x => Nat.iterate (TM.stepConfig (M := M)) t (f x)) := by
-  intro t
-  induction t with
-  | zero =>
-      simpa using hcc
-  | succ t ih =>
-      simpa [Function.iterate_succ_apply', Function.comp] using
-        (step_spec (M := M) (cc := Nat.iterate (stepCircuits M) t cc)
-          (f := fun x => Nat.iterate (TM.stepConfig (M := M)) t (f x)) ih)
-
-noncomputable def runtimeCircuits (M : TM) (n : Nat) : ConfigCircuits M n :=
-  Nat.iterate (stepCircuits M) (M.runTime n) (initial M n)
-
-lemma runtime_spec (M : TM) (n : Nat) :
-    Spec (cc := runtimeCircuits M n) (f := fun x => M.run (n := n) x) := by
-  have hIter := iterate_spec (M := M) (cc := initial M n)
-    (f := fun x => M.initialConfig x) (initial_spec M n) (M.runTime n)
-  simpa [runtimeCircuits, TM.run, TM.runConfig] using hIter
-
 /-- Circuit returning the bit currently scanned by the head. -/
 noncomputable def symbol (M : TM) {n : Nat}
     (cc : ConfigCircuits M n) : Circuit n :=
@@ -549,27 +449,6 @@ noncomputable def writeBit (M : TM) {n : Nat}
     (cc : ConfigCircuits M n) : Circuit n :=
   Boolcube.Circuit.bigOr ((stateSymbolPairs M).map fun qs =>
     writeTerm M cc qs)
-
-/-- Acceptance output extracted from the indicator wire of `M.accept`. -/
-noncomputable def acceptCircuit (M : TM) {n : Nat}
-    (cc : ConfigCircuits M n) : Circuit n :=
-  cc.state M.accept
-
-lemma acceptCircuit_spec_of_spec (M : TM) {n : Nat}
-    (cc : ConfigCircuits M n)
-    (f : Point n → TM.Configuration (M := M) n)
-    (hcc : Spec (cc := cc) (f := f))
-    (x : Point n) :
-    Circuit.eval (acceptCircuit M cc) x = decide ((f x).state = M.accept) := by
-  simpa [acceptCircuit, stateIndicator] using hcc.state_eq x M.accept
-
-lemma acceptCircuit_spec_of_runSpec (M : TM) {n : Nat}
-    (cc : ConfigCircuits M n)
-    (hRun : Spec (cc := cc) (f := fun x => M.run (n := n) x))
-    (x : Point n) :
-    Circuit.eval (acceptCircuit M cc) x = TM.accepts (M := M) (n := n) x := by
-  simpa [TM.accepts] using acceptCircuit_spec_of_spec (M := M)
-    (cc := cc) (f := fun x => M.run (n := n) x) hRun x
 
 end ConfigCircuits
 
@@ -833,44 +712,6 @@ lemma buildSymbolAux_gates (sc : StraightConfig M n) :
     Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hAux
 
 /--
-Append-only guard wire for scanned symbol value `b`.
-
-`true` uses the symbol wire itself; `false` uses its negation.
--/
-noncomputable def buildGuardSymbol (sc : StraightConfig M n) (b : Bool) :
-    BuiltWire (n := n) sc.circuit :=
-  if b then
-    buildSymbol (M := M) (n := n) sc
-  else
-    let bwSym := buildSymbol (M := M) (n := n) sc
-    appendNotCurrent (bw := bwSym) bwSym.out
-
-/--
-Append-only branch-indicator wire for transition branch `(q, b)`.
--/
-noncomputable def buildBranchIndicator (sc : StraightConfig M n)
-    (qs : M.state × Bool) :
-    BuiltWire (n := n) sc.circuit := by
-  let bwGuard := buildGuardSymbol (M := M) (n := n) sc qs.2
-  let wState : Fin (n + bwGuard.ctx.circuit.gates) := bwGuard.ctx.liftBase (sc.state qs.1)
-  exact appendAndCurrent (bw := bwGuard) wState bwGuard.out
-
-/--
-Append-only write-term wire for transition branch `(q, b)`.
-
-When the machine writes `false`, this term is constant `false`.
--/
-noncomputable def buildWriteTerm (sc : StraightConfig M n)
-    (qs : M.state × Bool) :
-    BuiltWire (n := n) sc.circuit :=
-  match M.step qs.1 qs.2 with
-  | ⟨_, write, _⟩ =>
-      if write then
-        buildBranchIndicator (M := M) (n := n) sc qs
-      else
-        initFalse (M := M) (n := n) sc
-
-/--
 Builder payload carrying an extra distinguished wire through append operations.
 
 `carry` is typically used for transporting a previously-built accumulator wire
@@ -1014,14 +855,6 @@ noncomputable def buildNextStateAux (sc : StraightConfig M n) (qTarget : M.state
       let bcNext : BuiltCarry (n := n) sc.circuit := ⟨bcOr.bw, bcOr.bw.out⟩
       buildNextStateAux sc qTarget t bcNext
 
-/-- Append-only next-state indicator wire for target state `qTarget`. -/
-noncomputable def buildNextState (sc : StraightConfig M n) (qTarget : M.state) :
-    BuiltWire (n := n) sc.circuit := by
-  let bw0 := initFalse (M := M) (n := n) sc
-  let bc0 : BuiltCarry (n := n) sc.circuit := ⟨bw0, bw0.out⟩
-  let bc := buildNextStateAux (M := M) (n := n) sc qTarget (stateSymbolPairs M) bc0
-  exact bc.bw
-
 /-- Build one head-branch term from carry; output wire is the branch term. -/
 noncomputable def buildHeadTermFromCarry (sc : StraightConfig M n)
     (j : Fin (M.tapeLength n))
@@ -1054,16 +887,6 @@ noncomputable def buildNextHeadAux (sc : StraightConfig M n)
       let bcOr := BuiltCarry.appendOr (bc := bcTerm) bcTerm.carry bcTerm.bw.out
       let bcNext : BuiltCarry (n := n) sc.circuit := ⟨bcOr.bw, bcOr.bw.out⟩
       buildNextHeadAux sc j t bcNext
-
-/-- Append-only next-head indicator wire for target index `j`. -/
-noncomputable def buildNextHead (sc : StraightConfig M n)
-    (j : Fin (M.tapeLength n)) :
-    BuiltWire (n := n) sc.circuit := by
-  let bw0 := initFalse (M := M) (n := n) sc
-  let bc0 : BuiltCarry (n := n) sc.circuit := ⟨bw0, bw0.out⟩
-  let bc := buildNextHeadAux (M := M) (n := n) sc j
-    (headStateSymbolPairs M n) bc0
-  exact bc.bw
 
 /--
 Build next-tape bit for cell `i` from a carry state where `carry` is the
@@ -2371,15 +2194,6 @@ lemma buildWriteBitAux_gates_le (sc : StraightConfig M n) :
   simpa [buildWriteBit, hInit, hLen, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm,
     Nat.mul_assoc, Nat.mul_add, Nat.add_mul] using hAux
 
-/-- Append-only next-tape bit wire for target tape index `i`. -/
-noncomputable def buildNextTape (sc : StraightConfig M n)
-    (i : Fin (M.tapeLength n)) :
-    BuiltWire (n := n) sc.circuit := by
-  let bwWrite := buildWriteBit (M := M) (n := n) sc
-  let bc0 : BuiltCarry (n := n) sc.circuit := ⟨bwWrite, bwWrite.out⟩
-  let bc := buildNextTapeFromCarry (M := M) (n := n) sc i bc0
-  exact bc.bw
-
 lemma buildNextTapeFromCarry_gates_eq
     (sc : StraightConfig M n) (i : Fin (M.tapeLength n))
     (bc : BuiltCarry (n := n) sc.circuit) :
@@ -2525,87 +2339,6 @@ lemma buildNextHeadAux_gates_le
               (2 * (M.tapeLength n) + 5) * iqs.length := by omega
         _ = bc.bw.ctx.circuit.gates + (2 * (M.tapeLength n) + 5) * (List.length (iqs0 :: iqs)) := by
             simp [Nat.mul_add, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
-
-/--
-Blueprint of the constructive linear one-step assembly over a fixed base
-configuration circuit.
-
-All components are expressed as append-only builders rooted at `sc.circuit`.
-This structure is a staging contract for replacing `stepCompiledLinear`.
--/
-structure LinearStepBlueprint (sc : StraightConfig M n) where
-  writeBit : BuiltWire (n := n) sc.circuit
-  nextTape : Fin (M.tapeLength n) → BuiltWire (n := n) sc.circuit
-  nextHead : Fin (M.tapeLength n) → BuiltWire (n := n) sc.circuit
-  nextState : M.state → BuiltWire (n := n) sc.circuit
-
-/-- Constructive blueprint instance populated by current append-only builders. -/
-noncomputable def linearStepBlueprint (sc : StraightConfig M n) :
-    LinearStepBlueprint (M := M) (n := n) sc where
-  writeBit := buildWriteBit (M := M) (n := n) sc
-  nextTape := fun i => buildNextTape (M := M) (n := n) sc i
-  nextHead := fun j => buildNextHead (M := M) (n := n) sc j
-  nextState := fun q => buildNextState (M := M) (n := n) sc q
-
-/--
-Linear-step candidate building block: append-only write-bit wire extracted from
-the current straight configuration.
--/
-noncomputable def linearWriteBitWire (sc : StraightConfig M n) :
-    Fin (n + (BuiltWire.buildWriteBit (M := M) (n := n) sc).ctx.circuit.gates) :=
-  (BuiltWire.buildWriteBit (M := M) (n := n) sc).out
-
-/--
-Linear-step candidate building block: append-only next-state wire for a fixed
-target state.
--/
-noncomputable def linearNextStateWire (sc : StraightConfig M n) (qTarget : M.state) :
-    Fin (n + (BuiltWire.buildNextState (M := M) (n := n) sc qTarget).ctx.circuit.gates) :=
-  (BuiltWire.buildNextState (M := M) (n := n) sc qTarget).out
-
-/--
-Linear-step candidate building block: append-only next-head wire for a fixed
-target head index.
--/
-noncomputable def linearNextHeadWire (sc : StraightConfig M n)
-    (j : Fin (M.tapeLength n)) :
-    Fin (n + (BuiltWire.buildNextHead (M := M) (n := n) sc j).ctx.circuit.gates) :=
-  (BuiltWire.buildNextHead (M := M) (n := n) sc j).out
-
-/--
-Linear-step candidate building block: append-only next-tape wire for a fixed
-target tape index.
--/
-noncomputable def linearNextTapeWire (sc : StraightConfig M n)
-    (i : Fin (M.tapeLength n)) :
-    Fin (n + (BuiltWire.buildNextTape (M := M) (n := n) sc i).ctx.circuit.gates) :=
-  (BuiltWire.buildNextTape (M := M) (n := n) sc i).out
-
-/--
-Readiness witness: the constructive linear-step blueprint is available for any
-straight configuration.
--/
-theorem linearStepBlueprint_ready (sc : StraightConfig M n) :
-    Nonempty (LinearStepBlueprint (M := M) (n := n) sc) :=
-  ⟨linearStepBlueprint (M := M) (n := n) sc⟩
-
-/--
-Audit helper: every component in the constructive linear-step blueprint is an
-extension of the same base circuit `sc.circuit` (append-only monotonicity).
--/
-theorem linearStepBlueprint_base_le (sc : StraightConfig M n) :
-    sc.circuit.gates ≤ (linearStepBlueprint (M := M) (n := n) sc).writeBit.ctx.circuit.gates ∧
-    (∀ i, sc.circuit.gates ≤ ((linearStepBlueprint (M := M) (n := n) sc).nextTape i).ctx.circuit.gates) ∧
-    (∀ j, sc.circuit.gates ≤ ((linearStepBlueprint (M := M) (n := n) sc).nextHead j).ctx.circuit.gates) ∧
-    (∀ q, sc.circuit.gates ≤ ((linearStepBlueprint (M := M) (n := n) sc).nextState q).ctx.circuit.gates) := by
-  refine ⟨?_, ?_, ?_, ?_⟩
-  · exact (linearStepBlueprint (M := M) (n := n) sc).writeBit.base_le
-  · intro i
-    exact ((linearStepBlueprint (M := M) (n := n) sc).nextTape i).base_le
-  · intro j
-    exact ((linearStepBlueprint (M := M) (n := n) sc).nextHead j).base_le
-  · intro q
-    exact ((linearStepBlueprint (M := M) (n := n) sc).nextState q).base_le
 
 /--
 Unified gate-budget candidate for one linear step over a fixed base circuit.
@@ -6402,21 +6135,6 @@ def evalState (sc : StraightConfig M n) (x : Point n) :
     M.state → Bool :=
   fun q => Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire sc.circuit x (sc.state q)
 
-/--
-Lift a straight configuration through an evaluation-preserving builder context.
-
-All observable wires are reindexed with `ctx.liftBase`, so this is a pure
-embedding of the old configuration into the extended circuit.
--/
-noncomputable def liftConfig
-    (sc : StraightConfig M n)
-    (ctx : Pnp3.Internal.PsubsetPpoly.StraightLine.EvalBuildCtx n sc.circuit) :
-    StraightConfig M n where
-  circuit := ctx.circuit
-  tape := fun i => ctx.liftBase (sc.tape i)
-  head := fun i => ctx.liftBase (sc.head i)
-  state := fun q => ctx.liftBase (sc.state q)
-
 /-- Straight-line correctness spec for an abstract configuration family. -/
 structure Spec (sc : StraightConfig M n)
     (f : Point n → TM.Configuration (M := M) n) : Prop where
@@ -7720,68 +7438,6 @@ private lemma tape_mux_eq_stepTape
                   (c := c) (i := c.head) (j := i) (h := hi) (b := wr))
     simpa [hHeadFalse, hTapeOther]
 
-lemma toConfigCircuits_spec_of_spec
-    (sc : StraightConfig M n)
-    (f : Point n → TM.Configuration (M := M) n)
-    (hsc : Spec (sc := sc) (f := f)) :
-    ConfigCircuits.Spec (cc := toConfigCircuits sc) (f := f) := by
-  refine ⟨?_, ?_, ?_⟩
-  · intro x i
-    change Boolcube.Circuit.eval (toTreeWire sc.circuit (sc.tape i)) x = (f x).tape i
-    simpa [toTreeWire, StraightConfig.evalTape] using hsc.tape_eq x i
-  · intro x i
-    change Boolcube.Circuit.eval (toTreeWire sc.circuit (sc.head i)) x = headIndicator (f x) i
-    simpa [toTreeWire, StraightConfig.evalHead] using hsc.head_eq x i
-  · intro x q
-    change Boolcube.Circuit.eval (toTreeWire sc.circuit (sc.state q)) x = stateIndicator M (f x) q
-    simpa [toTreeWire, StraightConfig.evalState] using hsc.state_eq x q
-
-lemma spec_of_toConfigCircuits_spec
-    (sc : StraightConfig M n)
-    (f : Point n → TM.Configuration (M := M) n)
-    (hcc : ConfigCircuits.Spec (cc := toConfigCircuits sc) (f := f)) :
-    Spec (sc := sc) (f := f) := by
-  refine ⟨?_, ?_, ?_⟩
-  · intro x i
-    have hTreeEval :
-        Boolcube.Circuit.eval (toTreeWire sc.circuit (sc.tape i)) x =
-          (f x).tape i := by
-      simpa [toConfigCircuits, ConfigCircuits.evalTape] using hcc.tape_eq x i
-    calc
-      StraightLine.evalWire sc.circuit x (sc.tape i)
-          = Boolcube.Circuit.eval (toTreeWire sc.circuit (sc.tape i)) x := by
-              symm
-              simpa [toTreeWire] using
-                (Pnp3.Internal.PsubsetPpoly.StraightLine.eval_toCircuitWire
-                  (C := sc.circuit) (x := x) (i := sc.tape i))
-      _ = (f x).tape i := hTreeEval
-  · intro x i
-    have hTreeEval :
-        Boolcube.Circuit.eval (toTreeWire sc.circuit (sc.head i)) x =
-          headIndicator (f x) i := by
-      simpa [toConfigCircuits, ConfigCircuits.evalHead] using hcc.head_eq x i
-    calc
-      StraightLine.evalWire sc.circuit x (sc.head i)
-          = Boolcube.Circuit.eval (toTreeWire sc.circuit (sc.head i)) x := by
-              symm
-              simpa [toTreeWire] using
-                (Pnp3.Internal.PsubsetPpoly.StraightLine.eval_toCircuitWire
-                  (C := sc.circuit) (x := x) (i := sc.head i))
-      _ = headIndicator (f x) i := hTreeEval
-  · intro x q
-    have hTreeEval :
-        Boolcube.Circuit.eval (toTreeWire sc.circuit (sc.state q)) x =
-          stateIndicator M (f x) q := by
-      simpa [toConfigCircuits, ConfigCircuits.evalState] using hcc.state_eq x q
-    calc
-      StraightLine.evalWire sc.circuit x (sc.state q)
-          = Boolcube.Circuit.eval (toTreeWire sc.circuit (sc.state q)) x := by
-              symm
-              simpa [toTreeWire] using
-                (Pnp3.Internal.PsubsetPpoly.StraightLine.eval_toCircuitWire
-                  (C := sc.circuit) (x := x) (i := sc.state q))
-      _ = stateIndicator M (f x) q := hTreeEval
-
 /-- Base straight-line circuit with two constants: gate `n` is `false`, gate `n+1` is `true`. -/
 noncomputable def constBaseCircuit (n : Nat) : StraightLineCircuit n where
   gates := 2
@@ -7855,29 +7511,6 @@ lemma constBase_evalWire_true (n : Nat) (x : Point n) :
   simpa [Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire,
     Pnp3.Internal.PsubsetPpoly.StraightLine.evalGateAux, constBaseCircuit] using hgate
 
-lemma constBase_adapter_eval_false (n : Nat) (x : Point n) :
-    Pnp3.Complexity.StraightLineAdapter.eval (constBaseCircuit n) x = false := by
-  unfold Pnp3.Complexity.StraightLineAdapter.eval
-    Pnp3.Complexity.StraightLineAdapter.toDag
-  simp [Pnp3.Complexity.StraightLineAdapter.toDagWire,
-    Pnp3.Complexity.StraightLineAdapter.toDagOp,
-    constBaseCircuit, ComplexityInterfaces.DagCircuit.eval,
-    ComplexityInterfaces.DagCircuit.eval.evalGateAt]
-
-lemma constBase_adapter_eval_true (n : Nat) (x : Point n) :
-    Pnp3.Complexity.StraightLineAdapter.eval
-      (Pnp3.Complexity.StraightLineAdapter.withOutput (constBaseCircuit n)
-        ⟨n + 1, by
-          have : n + 1 < n + 2 := by omega
-          simpa [constBaseCircuit] using this⟩) x = true := by
-  unfold Pnp3.Complexity.StraightLineAdapter.eval
-    Pnp3.Complexity.StraightLineAdapter.toDag
-    Pnp3.Complexity.StraightLineAdapter.withOutput
-  simp [Pnp3.Complexity.StraightLineAdapter.toDagWire,
-    Pnp3.Complexity.StraightLineAdapter.toDagOp,
-    constBaseCircuit, ComplexityInterfaces.DagCircuit.eval,
-    ComplexityInterfaces.DagCircuit.eval.evalGateAt]
-
 lemma initialStraightConfig_spec (M : TM) (n : Nat) :
     StraightConfig.Spec (sc := initialStraightConfig M n)
       (f := fun x => M.initialConfig x) := by
@@ -7920,54 +7553,6 @@ lemma initialStraightConfig_spec (M : TM) (n : Nat) :
         intro h
         exact hs h.symm
       simp [stateIndicator, TM.initialConfig, hs, hs', constBase_evalWire_false]
-
-/--
-One straight-line simulation step.
-
-Current implementation keeps the shared circuit/wire layout stable; semantic
-alignment with `ConfigCircuits.stepCircuits` is established in step 8.
--/
-noncomputable def stepCompiledTruthTable (M : TM) {n : Nat} (sc : StraightConfig M n) :
-    StraightConfig M n := by
-  classical
-  let ccStep : ConfigCircuits M n :=
-    ConfigCircuits.stepCircuits M (toConfigCircuits sc)
-  let tapePack :
-      Pnp3.Internal.PsubsetPpoly.StraightLine.CompiledFin n (M.tapeLength n) :=
-    Pnp3.Internal.PsubsetPpoly.StraightLine.packFin (n := n) (m := M.tapeLength n)
-      (fun i => ccStep.tape i)
-  let headPack :
-      Pnp3.Internal.PsubsetPpoly.StraightLine.CompiledFin n (M.tapeLength n) :=
-    Pnp3.Internal.PsubsetPpoly.StraightLine.packFin (n := n) (m := M.tapeLength n)
-      (fun i => ccStep.head i)
-  let statePack :
-      Pnp3.Internal.PsubsetPpoly.StraightLine.CompiledFin n (stateCard M) :=
-    Pnp3.Internal.PsubsetPpoly.StraightLine.packFin (n := n) (m := stateCard M)
-      (fun i => ccStep.state ((stateEquiv M).symm i))
-  let c01 := Pnp3.Internal.PsubsetPpoly.StraightLine.appendCircuit tapePack.ckt headPack.ckt
-  let cAll := Pnp3.Internal.PsubsetPpoly.StraightLine.appendCircuit c01 statePack.ckt
-  refine {
-    circuit := cAll
-    tape := ?_
-    head := ?_
-    state := ?_
-  }
-  · intro i
-    let w0 := Pnp3.Internal.PsubsetPpoly.StraightLine.leftWireInAppend
-      tapePack.ckt headPack.ckt (tapePack.out i)
-    exact Pnp3.Internal.PsubsetPpoly.StraightLine.leftWireInAppend c01 statePack.ckt w0
-  · intro i
-    let wHead :=
-      Pnp3.Internal.PsubsetPpoly.StraightLine.liftWireIntoAppend
-        (n := n) (g₁ := tapePack.ckt.gates) (g₂ := headPack.ckt.gates)
-        (headPack.out i)
-    exact Pnp3.Internal.PsubsetPpoly.StraightLine.leftWireInAppend c01 statePack.ckt wHead
-  · intro q
-    let wState0 :=
-      Pnp3.Internal.PsubsetPpoly.StraightLine.liftWireIntoAppend
-        (n := n) (g₁ := c01.gates) (g₂ := statePack.ckt.gates)
-        (statePack.out (stateEquiv M q))
-    exact wState0
 
 /--
 Linear-step switch-point for `StraightConfig`.
@@ -8606,241 +8191,6 @@ noncomputable abbrev stepCompiledLinear (M : TM) {n : Nat} (sc : StraightConfig 
   stepCompiledLinearCandidate M sc
 
 /--
-Current one-step compiled simulator.
-
-Kept as stable public name for the semantics-proved route.
--/
-noncomputable abbrev stepCompiled (M : TM) {n : Nat} (sc : StraightConfig M n) :
-    StraightConfig M n :=
-  stepCompiledTruthTable M sc
-
-lemma stepCompiled_spec_of_semantics
-    (M : TM) {n : Nat}
-    (sc : StraightConfig M n)
-    (f : Point n → TM.Configuration (M := M) n)
-    (hsc : Spec (sc := sc) (f := f))
-    (hTape :
-      ∀ x i,
-        Boolcube.Circuit.eval ((toConfigCircuits (stepCompiled M sc)).tape i) x =
-          Boolcube.Circuit.eval ((ConfigCircuits.stepCircuits M (toConfigCircuits sc)).tape i) x)
-    (hHead :
-      ∀ x i,
-        Boolcube.Circuit.eval ((toConfigCircuits (stepCompiled M sc)).head i) x =
-          Boolcube.Circuit.eval ((ConfigCircuits.stepCircuits M (toConfigCircuits sc)).head i) x)
-    (hState :
-      ∀ x q,
-        Boolcube.Circuit.eval ((toConfigCircuits (stepCompiled M sc)).state q) x =
-          Boolcube.Circuit.eval ((ConfigCircuits.stepCircuits M (toConfigCircuits sc)).state q) x) :
-    Spec (sc := stepCompiled M sc) (f := fun x => TM.stepConfig (M := M) (f x)) := by
-  have hTree : ConfigCircuits.Spec (cc := toConfigCircuits sc) (f := f) :=
-    toConfigCircuits_spec_of_spec (sc := sc) (f := f) hsc
-  have hTreeStep :
-      ConfigCircuits.Spec
-        (cc := ConfigCircuits.stepCircuits M (toConfigCircuits sc))
-        (f := fun x => TM.stepConfig (M := M) (f x)) :=
-    ConfigCircuits.step_spec (M := M) (cc := toConfigCircuits sc) (f := f) hTree
-  have hTreeStep' :
-      ConfigCircuits.Spec (cc := toConfigCircuits (stepCompiled M sc))
-        (f := fun x => TM.stepConfig (M := M) (f x)) := by
-    refine ⟨?_, ?_, ?_⟩
-    · intro x i
-      exact (hTape x i).trans (hTreeStep.tape_eq x i)
-    · intro x i
-      exact (hHead x i).trans (hTreeStep.head_eq x i)
-    · intro x q
-      exact (hState x q).trans (hTreeStep.state_eq x q)
-  exact spec_of_toConfigCircuits_spec (sc := stepCompiled M sc)
-    (f := fun x => TM.stepConfig (M := M) (f x)) hTreeStep'
-
-/-- Semantic contract for `stepCompiled` at fixed machine/input length. -/
-def StepCompiledSemantics (M : TM) (n : Nat) : Prop :=
-  ∀ (sc : StraightConfig M n),
-    (∀ x i,
-      Boolcube.Circuit.eval ((toConfigCircuits (stepCompiled M sc)).tape i) x =
-        Boolcube.Circuit.eval ((ConfigCircuits.stepCircuits M (toConfigCircuits sc)).tape i) x) ∧
-    (∀ x i,
-      Boolcube.Circuit.eval ((toConfigCircuits (stepCompiled M sc)).head i) x =
-        Boolcube.Circuit.eval ((ConfigCircuits.stepCircuits M (toConfigCircuits sc)).head i) x) ∧
-    (∀ x q,
-      Boolcube.Circuit.eval ((toConfigCircuits (stepCompiled M sc)).state q) x =
-        Boolcube.Circuit.eval ((ConfigCircuits.stepCircuits M (toConfigCircuits sc)).state q) x)
-
-/-- Semantic contract for `stepCompiledLinearCandidate` at fixed machine/input length. -/
-def StepCompiledLinearCandidateSemantics (M : TM) (n : Nat) : Prop :=
-  ∀ (sc : StraightConfig M n),
-    (∀ x i,
-      Boolcube.Circuit.eval ((toConfigCircuits (stepCompiledLinearCandidate M sc)).tape i) x =
-        Boolcube.Circuit.eval ((ConfigCircuits.stepCircuits M (toConfigCircuits sc)).tape i) x) ∧
-    (∀ x i,
-      Boolcube.Circuit.eval ((toConfigCircuits (stepCompiledLinearCandidate M sc)).head i) x =
-        Boolcube.Circuit.eval ((ConfigCircuits.stepCircuits M (toConfigCircuits sc)).head i) x) ∧
-    (∀ x q,
-      Boolcube.Circuit.eval ((toConfigCircuits (stepCompiledLinearCandidate M sc)).state q) x =
-        Boolcube.Circuit.eval ((ConfigCircuits.stepCircuits M (toConfigCircuits sc)).state q) x)
-
-lemma stepCompiled_semantics_of_contracts
-    (hPack : Pnp3.Internal.PsubsetPpoly.StraightLine.PackFinWireSemantics)
-    (hAppend : Pnp3.Internal.PsubsetPpoly.StraightLine.AppendWireSemantics)
-    (M : TM) (n : Nat) :
-    StepCompiledSemantics M n := by
-  intro sc
-  classical
-  let ccStep : ConfigCircuits M n :=
-    ConfigCircuits.stepCircuits M (toConfigCircuits sc)
-  let tapePack :
-      Pnp3.Internal.PsubsetPpoly.StraightLine.CompiledFin n (M.tapeLength n) :=
-    Pnp3.Internal.PsubsetPpoly.StraightLine.packFin (n := n) (m := M.tapeLength n)
-      (fun i => ccStep.tape i)
-  let headPack :
-      Pnp3.Internal.PsubsetPpoly.StraightLine.CompiledFin n (M.tapeLength n) :=
-    Pnp3.Internal.PsubsetPpoly.StraightLine.packFin (n := n) (m := M.tapeLength n)
-      (fun i => ccStep.head i)
-  let statePack :
-      Pnp3.Internal.PsubsetPpoly.StraightLine.CompiledFin n (stateCard M) :=
-    Pnp3.Internal.PsubsetPpoly.StraightLine.packFin (n := n) (m := stateCard M)
-      (fun i => ccStep.state ((stateEquiv M).symm i))
-  let c01 := Pnp3.Internal.PsubsetPpoly.StraightLine.appendCircuit tapePack.ckt headPack.ckt
-  let cAll := Pnp3.Internal.PsubsetPpoly.StraightLine.appendCircuit c01 statePack.ckt
-  rcases hAppend with ⟨hLeft, hLift⟩
-  refine ⟨?_, ?_, ?_⟩
-  · intro x i
-    let w0 := Pnp3.Internal.PsubsetPpoly.StraightLine.leftWireInAppend
-      tapePack.ckt headPack.ckt (tapePack.out i)
-    have hA :
-        Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
-          (C := cAll) (x := x)
-          (Pnp3.Internal.PsubsetPpoly.StraightLine.leftWireInAppend c01 statePack.ckt w0) =
-          Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire (C := c01) (x := x) w0 :=
-      hLeft c01 statePack.ckt x w0
-    have hB :
-        Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
-          (C := c01) (x := x) w0 =
-          Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
-            (C := tapePack.ckt) (x := x) (tapePack.out i) :=
-      hLeft tapePack.ckt headPack.ckt x (tapePack.out i)
-    have hC :
-        Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
-          (C := tapePack.ckt) (x := x) (tapePack.out i) =
-          Boolcube.Circuit.eval (ccStep.tape i) x :=
-      hPack (fun j => ccStep.tape j) x i
-    simpa [toTreeWire, toConfigCircuits, stepCompiled, ccStep, tapePack, headPack, statePack, c01, cAll, w0]
-      using hA.trans (hB.trans hC)
-  · intro x i
-    let wHead :=
-      Pnp3.Internal.PsubsetPpoly.StraightLine.liftWireIntoAppend
-        (n := n) (g₁ := tapePack.ckt.gates) (g₂ := headPack.ckt.gates) (headPack.out i)
-    have hA :
-        Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
-          (C := cAll) (x := x)
-          (Pnp3.Internal.PsubsetPpoly.StraightLine.leftWireInAppend c01 statePack.ckt wHead) =
-          Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire (C := c01) (x := x) wHead :=
-      hLeft c01 statePack.ckt x wHead
-    have hB :
-        Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
-          (C := c01) (x := x) wHead =
-          Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
-            (C := headPack.ckt) (x := x) (headPack.out i) :=
-      hLift tapePack.ckt headPack.ckt x (headPack.out i)
-    have hC :
-        Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
-          (C := headPack.ckt) (x := x) (headPack.out i) =
-          Boolcube.Circuit.eval (ccStep.head i) x :=
-      hPack (fun j => ccStep.head j) x i
-    simpa [toTreeWire, toConfigCircuits, stepCompiled, ccStep, tapePack, headPack, statePack, c01, cAll, wHead]
-      using hA.trans (hB.trans hC)
-  · intro x q
-    let iq : Fin (stateCard M) := stateEquiv M q
-    let wState0 :=
-      Pnp3.Internal.PsubsetPpoly.StraightLine.liftWireIntoAppend
-        (n := n) (g₁ := c01.gates) (g₂ := statePack.ckt.gates) (statePack.out iq)
-    have hA :
-        Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
-          (C := cAll) (x := x) wState0 =
-          Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
-            (C := statePack.ckt) (x := x) (statePack.out iq) :=
-      hLift c01 statePack.ckt x (statePack.out iq)
-    have hB :
-        Pnp3.Internal.PsubsetPpoly.StraightLine.evalWire
-          (C := statePack.ckt) (x := x) (statePack.out iq) =
-          Boolcube.Circuit.eval (ccStep.state ((stateEquiv M).symm iq)) x :=
-      hPack (fun j => ccStep.state ((stateEquiv M).symm j)) x iq
-    have hq : (stateEquiv M).symm iq = q := by
-      simp [iq]
-    simpa [toTreeWire, toConfigCircuits, stepCompiled, ccStep, tapePack, headPack, statePack, c01, cAll, iq, wState0, hq]
-      using hA.trans hB
-
-lemma stepCompiled_semantics_of_core_contracts
-    (hCompile : Pnp3.Internal.PsubsetPpoly.StraightLine.CompileTreeWireSemantics)
-    (hAppend : Pnp3.Internal.PsubsetPpoly.StraightLine.AppendWireSemantics)
-    (M : TM) (n : Nat) :
-    StepCompiledSemantics M n := by
-  have hPack : Pnp3.Internal.PsubsetPpoly.StraightLine.PackFinWireSemantics :=
-    Pnp3.Internal.PsubsetPpoly.StraightLine.packFinWireSemantics_of_contracts hCompile hAppend
-  exact stepCompiled_semantics_of_contracts hPack hAppend M n
-
-lemma stepCompiled_spec_of_provider
-    (M : TM) {n : Nat}
-    (hSem : StepCompiledSemantics M n)
-    (sc : StraightConfig M n)
-    (f : Point n → TM.Configuration (M := M) n)
-    (hsc : Spec (sc := sc) (f := f)) :
-    Spec (sc := stepCompiled M sc) (f := fun x => TM.stepConfig (M := M) (f x)) := by
-  rcases hSem sc with ⟨hTape, hRest⟩
-  rcases hRest with ⟨hHead, hState⟩
-  exact stepCompiled_spec_of_semantics
-    (M := M) (sc := sc) (f := f) hsc hTape hHead hState
-
-lemma stepCompiledLinearCandidate_spec_of_semantics
-    (M : TM) {n : Nat}
-    (sc : StraightConfig M n)
-    (f : Point n → TM.Configuration (M := M) n)
-    (hsc : Spec (sc := sc) (f := f))
-    (hTape :
-      ∀ x i,
-        Boolcube.Circuit.eval ((toConfigCircuits (stepCompiledLinearCandidate M sc)).tape i) x =
-          Boolcube.Circuit.eval ((ConfigCircuits.stepCircuits M (toConfigCircuits sc)).tape i) x)
-    (hHead :
-      ∀ x i,
-        Boolcube.Circuit.eval ((toConfigCircuits (stepCompiledLinearCandidate M sc)).head i) x =
-          Boolcube.Circuit.eval ((ConfigCircuits.stepCircuits M (toConfigCircuits sc)).head i) x)
-    (hState :
-      ∀ x q,
-        Boolcube.Circuit.eval ((toConfigCircuits (stepCompiledLinearCandidate M sc)).state q) x =
-          Boolcube.Circuit.eval ((ConfigCircuits.stepCircuits M (toConfigCircuits sc)).state q) x) :
-    Spec (sc := stepCompiledLinearCandidate M sc) (f := fun x => TM.stepConfig (M := M) (f x)) := by
-  have hTree : ConfigCircuits.Spec (cc := toConfigCircuits sc) (f := f) :=
-    toConfigCircuits_spec_of_spec (sc := sc) (f := f) hsc
-  have hTreeStep :
-      ConfigCircuits.Spec
-        (cc := ConfigCircuits.stepCircuits M (toConfigCircuits sc))
-        (f := fun x => TM.stepConfig (M := M) (f x)) :=
-    ConfigCircuits.step_spec (M := M) (cc := toConfigCircuits sc) (f := f) hTree
-  have hTreeStep' :
-      ConfigCircuits.Spec (cc := toConfigCircuits (stepCompiledLinearCandidate M sc))
-        (f := fun x => TM.stepConfig (M := M) (f x)) := by
-    refine ⟨?_, ?_, ?_⟩
-    · intro x i
-      exact (hTape x i).trans (hTreeStep.tape_eq x i)
-    · intro x i
-      exact (hHead x i).trans (hTreeStep.head_eq x i)
-    · intro x q
-      exact (hState x q).trans (hTreeStep.state_eq x q)
-  exact spec_of_toConfigCircuits_spec (sc := stepCompiledLinearCandidate M sc)
-    (f := fun x => TM.stepConfig (M := M) (f x)) hTreeStep'
-
-lemma stepCompiledLinearCandidate_spec_of_provider
-    (M : TM) {n : Nat}
-    (hSem : StepCompiledLinearCandidateSemantics M n)
-    (sc : StraightConfig M n)
-    (f : Point n → TM.Configuration (M := M) n)
-    (hsc : Spec (sc := sc) (f := f)) :
-    Spec (sc := stepCompiledLinearCandidate M sc) (f := fun x => TM.stepConfig (M := M) (f x)) := by
-  rcases hSem sc with ⟨hTape, hRest⟩
-  rcases hRest with ⟨hHead, hState⟩
-  exact stepCompiledLinearCandidate_spec_of_semantics
-    (M := M) (sc := sc) (f := f) hsc hTape hHead hState
-
-/--
 One-step spec provider for the linear-candidate compiled step.
 This is the interface consumed by `Complexity/Simulation/Circuit_Compiler`.
 -/
@@ -8947,32 +8297,6 @@ lemma iterate_gates_le_of_next_gates_le
         _ = sc.circuit.gates + (t + 1) * inc := by
               simp [Nat.succ_mul, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
 
-lemma iterated_stepCompiled_gates_le_of_stepCompiled_inc
-    (M : TM) (n inc : Nat)
-    (hStepInc : ∀ sc : StraightConfig M n,
-      (stepCompiled M sc).circuit.gates ≤ sc.circuit.gates + inc) :
-    (Nat.iterate (stepCompiled M) (M.runTime n) (initialStraightConfig M n)).circuit.gates ≤
-      (initialStraightConfig M n).circuit.gates + (M.runTime n) * inc := by
-  exact
-    iterate_gates_le_of_next_gates_le
-      (M := M) (n := n) (next := stepCompiled M) (inc := inc) hStepInc
-      (t := M.runTime n) (sc := initialStraightConfig M n)
-
-lemma iterated_stepCompiled_gates_le_of_stepCompiled_inc'
-    (M : TM) (n inc : Nat)
-    (hStepInc : ∀ sc : StraightConfig M n,
-      (stepCompiled M sc).circuit.gates ≤ sc.circuit.gates + inc) :
-    (Nat.iterate (stepCompiled M) (M.runTime n) (initialStraightConfig M n)).circuit.gates ≤
-      2 + (M.runTime n) * inc := by
-  have hBase :
-      (Nat.iterate (stepCompiled M) (M.runTime n) (initialStraightConfig M n)).circuit.gates ≤
-        (initialStraightConfig M n).circuit.gates + (M.runTime n) * inc :=
-    iterated_stepCompiled_gates_le_of_stepCompiled_inc
-      (M := M) (n := n) (inc := inc) hStepInc
-  have hInit : (initialStraightConfig M n).circuit.gates = 2 := by
-    simp [initialStraightConfig, constBaseCircuit]
-  simpa [hInit] using hBase
-
 lemma runtime_spec_of_next
     (M : TM) (n : Nat)
     (next : StraightConfig M n → StraightConfig M n)
@@ -8990,24 +8314,6 @@ lemma runtime_spec_of_next
     (f := fun x => M.initialConfig x) hInit (M.runTime n)
   simpa [TM.run, TM.runConfig] using hIter
 
-lemma runtime_spec_of_stepCompiledProvider
-    (M : TM) (n : Nat)
-    (hSem : StepCompiledSemantics M n) :
-    Spec (sc := Nat.iterate (stepCompiled M) (M.runTime n) (initialStraightConfig M n))
-      (f := fun x => M.run (n := n) x) := by
-  refine runtime_spec_of_next (M := M) (n := n) (next := stepCompiled M) ?_
-  intro sc f hsc
-  exact stepCompiled_spec_of_provider (M := M) (n := n) hSem sc f hsc
-
-lemma runtime_spec_of_stepCompiledLinearCandidateProvider
-    (M : TM) (n : Nat)
-    (hSem : StepCompiledLinearCandidateSemantics M n) :
-    Spec (sc := Nat.iterate (stepCompiledLinearCandidate M) (M.runTime n) (initialStraightConfig M n))
-      (f := fun x => M.run (n := n) x) := by
-  refine runtime_spec_of_next (M := M) (n := n) (next := stepCompiledLinearCandidate M) ?_
-  intro sc f hsc
-  exact stepCompiledLinearCandidate_spec_of_provider (M := M) (n := n) hSem sc f hsc
-
 lemma runtime_spec_of_stepCompiledLinearCandidateStepSpecProvider
     (M : TM) (n : Nat)
     (hStep : StepCompiledLinearCandidateStepSpecProvider M n) :
@@ -9018,37 +8324,11 @@ lemma runtime_spec_of_stepCompiledLinearCandidateStepSpecProvider
   exact hStep sc f hsc
 
 /--
-Compiled-runtime straight configuration: iterate `stepCompiled` for exactly
-`runTime n` steps from the initial straight configuration.
--/
-noncomputable def runtimeConfigCompiled (M : TM) (n : Nat) : StraightConfig M n :=
-  Nat.iterate (stepCompiled M) (M.runTime n) (initialStraightConfig M n)
-
-/--
 Linear compiled-runtime straight configuration: iterate `stepCompiledLinear`
 for exactly `runTime n` steps from the initial straight configuration.
 -/
 noncomputable def runtimeConfigCompiledLinear (M : TM) (n : Nat) : StraightConfig M n :=
   Nat.iterate (stepCompiledLinear M) (M.runTime n) (initialStraightConfig M n)
-
-lemma runtimeConfigCompiled_gates_le_of_stepCompiled_inc
-    (M : TM) (n inc : Nat)
-    (hStepInc : ∀ sc : StraightConfig M n,
-      (stepCompiled M sc).circuit.gates ≤ sc.circuit.gates + inc) :
-    (runtimeConfigCompiled M n).circuit.gates ≤
-      (initialStraightConfig M n).circuit.gates + (M.runTime n) * inc := by
-  simpa [runtimeConfigCompiled] using
-    iterated_stepCompiled_gates_le_of_stepCompiled_inc
-      (M := M) (n := n) (inc := inc) hStepInc
-
-lemma runtimeConfigCompiled_gates_le_of_stepCompiled_inc'
-    (M : TM) (n inc : Nat)
-    (hStepInc : ∀ sc : StraightConfig M n,
-      (stepCompiled M sc).circuit.gates ≤ sc.circuit.gates + inc) :
-    (runtimeConfigCompiled M n).circuit.gates ≤ 2 + (M.runTime n) * inc := by
-  simpa [runtimeConfigCompiled] using
-    iterated_stepCompiled_gates_le_of_stepCompiled_inc'
-      (M := M) (n := n) (inc := inc) hStepInc
 
 lemma runtimeConfigCompiledLinear_gates_le_budgetExpanded
     (M : TM) (n : Nat) :
@@ -9080,17 +8360,6 @@ noncomputable def acceptCircuitOf (M : TM) {n : Nat}
   withOutput sc.circuit (sc.state M.accept)
 
 /--
-Acceptance circuit extracted from the compiled-runtime straight configuration.
--/
-noncomputable def acceptCircuitCompiled (M : TM) (n : Nat) : StraightLineCircuit n :=
-  acceptCircuitOf M (runtimeConfigCompiled M n)
-
-/-- Gate count is preserved for compiled-runtime acceptance extraction. -/
-lemma acceptCircuitCompiled_gates (M : TM) (n : Nat) :
-    (acceptCircuitCompiled M n).gates = (runtimeConfigCompiled M n).circuit.gates := by
-  simp [acceptCircuitCompiled, acceptCircuitOf, runtimeConfigCompiled, withOutput]
-
-/--
 Straight-line acceptance extraction is correct under a runtime configuration
 specification.
 -/
@@ -9115,18 +8384,6 @@ lemma acceptCircuitOf_spec_of_runSpec (M : TM) (n : Nat)
         TM.accepts (M := M) (n := n) x := by
     simp [TM.accepts, stateIndicator]
   simpa [StraightConfig.evalState] using hEval.trans (hState.trans hIndicator)
-
-/--
-Compiled-runtime acceptance extraction is correct under compiled run-spec.
--/
-lemma acceptCircuitCompiled_spec_of_runSpec (M : TM) (n : Nat)
-    (hRun : Spec (sc := runtimeConfigCompiled M n) (f := fun x => M.run (n := n) x)) :
-    ∀ x,
-      Pnp3.Internal.PsubsetPpoly.StraightLine.eval (acceptCircuitCompiled M n) x =
-        TM.accepts (M := M) (n := n) x := by
-  simpa [acceptCircuitCompiled] using
-    (acceptCircuitOf_spec_of_runSpec (M := M) (n := n)
-      (sc := runtimeConfigCompiled M n) hRun)
 
 end StraightConfig
 

@@ -1,5 +1,14 @@
 # Strategy: Closing internal `P ⊆ PpolyDAG` in `pnp3`
 
+> **STALE NAMES (2026-05-29).** The inclusion is closed
+> (`proved_P_subset_PpolyDAG_internal`), and the compiled-tree / truth-table
+> declarations this strategy analyses (`stepCompiled`, `stepCompiledTruthTable`,
+> `runtimeConfigCompiled`, `appendWireSemantics`, …) have since been **removed
+> as dead code** (superseded by the linear *candidate* route).  This file is
+> retained only as historical strategy notes; for the current inclusion-side
+> status use `PsubsetPpoly_Internal_TODO.md`,
+> `PsubsetPpoly_AUDITOR_CHECKLIST.md`, and `Simulation_FineGrained_Status.md`.
+
 Pinned date: 2026-03-02
 Basis: deep-dive on the branch
 `khanukov/continue-step-10-in-psubsetppoly_internal_todo.md`

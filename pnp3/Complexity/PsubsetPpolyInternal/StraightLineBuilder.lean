@@ -110,24 +110,6 @@ def appendFin_lift (b : BuildCtx n base) (op : Op (n + b.circuit.gates)) :
       evalWire (C := b.circuit) (x := x) w := by
   simp [appendFin_lift, appendFin, append]
 
-def appendConstFin (b : BuildCtx n base) (val : Bool) :
-    BuildCtx n base × Fin (n + (snoc b.circuit (.const val)).gates) :=
-  b.appendFin (.const val)
-
-def appendNotFin (b : BuildCtx n base) (w : Fin (n + b.circuit.gates)) :
-    BuildCtx n base × Fin (n + (snoc b.circuit (.not w)).gates) :=
-  b.appendFin (.not w)
-
-def appendAndFin (b : BuildCtx n base)
-    (u v : Fin (n + b.circuit.gates)) :
-    BuildCtx n base × Fin (n + (snoc b.circuit (.and u v)).gates) :=
-  b.appendFin (.and u v)
-
-def appendOrFin (b : BuildCtx n base)
-    (u v : Fin (n + b.circuit.gates)) :
-    BuildCtx n base × Fin (n + (snoc b.circuit (.or u v)).gates) :=
-  b.appendFin (.or u v)
-
 end BuildCtx
 
 structure EvalBuildCtx (n : Nat) (base : Ckt n) where

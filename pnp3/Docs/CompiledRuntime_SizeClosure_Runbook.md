@@ -1,5 +1,19 @@
 # Compiled runtime size-closure runbook (`P ⊆ PpolyDAG`)
 
+> **STALE NAMES (2026-05-29).** This runbook describes a superseded
+> construction.  The compiled-tree / blueprint declarations it names
+> (`stepCompiled`, `stepCompiledTruthTable`, `runtimeConfigCompiled`,
+> `buildWriteTerm`, `buildNextState`/`Head`/`Tape`, `linearNext*Wire`,
+> `LinearStepBlueprint`, …) have been **removed as dead code**: they were
+> never wired into the active route and were unused.  The live inclusion
+> route is the linear *candidate* route
+> (`runtimeConfigCompiledLinear` / `stepCompiledLinearCandidateStepSpecProvider_internal`),
+> and the no-arg endpoint is `proved_P_subset_PpolyDAG_internal`.  For the
+> current, accurate inclusion-side status use
+> `PsubsetPpoly_Internal_TODO.md`, `PsubsetPpoly_AUDITOR_CHECKLIST.md`, and
+> `Simulation_FineGrained_Status.md`.  The text below is kept only as
+> historical architectural tracing.
+
 Date: 2026-03-02
 Status: active
 

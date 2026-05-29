@@ -1146,15 +1146,8 @@ theorem isoFamily_withPromise_of_isoStrongFamilyEventually
   rcases hIsoStrong n β hβPos hβLt hn C hSize hCorrect with
     ⟨yYes, hyYes, hyValid, D, hDCard, hForce⟩
   refine ⟨yYes, hyYes, hyValid, D, hDCard, ?_⟩
-  intro z hzPromise hzValid hzAgree
-  have _hzAutoFromAssumption :
-      z ∈ (gapSliceOfParams (F.paramsOf n β)).Yes ∨
-      z ∈ (gapSliceOfParams (F.paramsOf n β)).No := hzPromise
-  have _hzAutoCanonical :
-      z ∈ (gapSliceOfParams (F.paramsOf n β)).Yes ∨
-      z ∈ (gapSliceOfParams (F.paramsOf n β)).No :=
-    mem_yes_or_no_gapSliceOfParams (p := F.paramsOf n β) z
-  -- `hzPromise` is now redundant: the strong forcing hypothesis already ignores it.
+  intro z _hzPromise hzValid hzAgree
+  -- `hzPromise` is redundant here: the strong forcing hypothesis already ignores it.
   exact hForce z hzValid hzAgree
 
 /--

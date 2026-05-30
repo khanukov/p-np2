@@ -387,6 +387,96 @@ theorem evalGateAt_append_left {n : Nat} (C₁ C₂ : DagCircuit n) :
                       evalGateAt_append_left C₁ C₂ (Nat.lt_trans j₂.2 hiA) (Nat.lt_trans j₂.2 hi₁) x]
   termination_by i => i
 
+/-- Gate-level agreement on the right part (positions `C₁.gates + j`): the append
+evaluates like `C₂`, with `C₂`'s gate references shifted by `C₁.gates`.  Heavier
+than the left version: a sub-gate `g : Fin j` of `C₂` becomes the global index
+`C₁.gates + g.1`, so the recursive call sits at `C₁.gates + g.1`. -/
+theorem evalGateAt_append_right {n : Nat} (C₁ C₂ : DagCircuit n) :
+    ∀ {j : Nat} (hjA : C₁.gates + j < (appendOutputRight C₁ C₂).gates) (hj₂ : j < C₂.gates)
+      (x : Bitstring n),
+      DagCircuit.eval.evalGateAt (C := appendOutputRight C₁ C₂) (x := x) (C₁.gates + j) hjA =
+        DagCircuit.eval.evalGateAt (C := C₂) (x := x) j hj₂
+  | j, hjA, hj₂, x => by
+      have hgate : (appendOutputRight C₁ C₂).gate ⟨C₁.gates + j, hjA⟩
+            = shiftGateBy C₁.gates (C₂.gate ⟨j, hj₂⟩) :=
+        appendGate_right C₁ C₂ ⟨j, hj₂⟩
+      cases hOp : C₂.gate ⟨j, hj₂⟩ with
+      | const b =>
+          rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+          simp only [hOp, shiftGateBy_const]
+      | not w =>
+          cases w with
+          | input jj =>
+              rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+              simp only [hOp, shiftGateBy_not, shiftWireBy_input]
+          | gate g =>
+              rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+              simp only [hOp, shiftGateBy_not, shiftWireBy_gate, Fin.coe_natAdd]
+              rw [evalGateAt_append_right C₁ C₂
+                    (Nat.add_lt_add_left (Nat.lt_trans g.2 hj₂) C₁.gates)
+                    (Nat.lt_trans g.2 hj₂) x]
+      | and w₁ w₂ =>
+          cases w₁ with
+          | input j₁ =>
+              cases w₂ with
+              | input j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp, shiftGateBy_and, shiftWireBy_input]
+              | gate j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp, shiftGateBy_and, shiftWireBy_input, shiftWireBy_gate, Fin.coe_natAdd]
+                  rw [evalGateAt_append_right C₁ C₂
+                        (Nat.add_lt_add_left (Nat.lt_trans j₂.2 hj₂) C₁.gates)
+                        (Nat.lt_trans j₂.2 hj₂) x]
+          | gate j₁ =>
+              cases w₂ with
+              | input j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp, shiftGateBy_and, shiftWireBy_input, shiftWireBy_gate, Fin.coe_natAdd]
+                  rw [evalGateAt_append_right C₁ C₂
+                        (Nat.add_lt_add_left (Nat.lt_trans j₁.2 hj₂) C₁.gates)
+                        (Nat.lt_trans j₁.2 hj₂) x]
+              | gate j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp, shiftGateBy_and, shiftWireBy_gate, Fin.coe_natAdd]
+                  rw [evalGateAt_append_right C₁ C₂
+                        (Nat.add_lt_add_left (Nat.lt_trans j₁.2 hj₂) C₁.gates)
+                        (Nat.lt_trans j₁.2 hj₂) x,
+                      evalGateAt_append_right C₁ C₂
+                        (Nat.add_lt_add_left (Nat.lt_trans j₂.2 hj₂) C₁.gates)
+                        (Nat.lt_trans j₂.2 hj₂) x]
+      | or w₁ w₂ =>
+          cases w₁ with
+          | input j₁ =>
+              cases w₂ with
+              | input j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp, shiftGateBy_or, shiftWireBy_input]
+              | gate j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp, shiftGateBy_or, shiftWireBy_input, shiftWireBy_gate, Fin.coe_natAdd]
+                  rw [evalGateAt_append_right C₁ C₂
+                        (Nat.add_lt_add_left (Nat.lt_trans j₂.2 hj₂) C₁.gates)
+                        (Nat.lt_trans j₂.2 hj₂) x]
+          | gate j₁ =>
+              cases w₂ with
+              | input j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp, shiftGateBy_or, shiftWireBy_input, shiftWireBy_gate, Fin.coe_natAdd]
+                  rw [evalGateAt_append_right C₁ C₂
+                        (Nat.add_lt_add_left (Nat.lt_trans j₁.2 hj₂) C₁.gates)
+                        (Nat.lt_trans j₁.2 hj₂) x]
+              | gate j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp, shiftGateBy_or, shiftWireBy_gate, Fin.coe_natAdd]
+                  rw [evalGateAt_append_right C₁ C₂
+                        (Nat.add_lt_add_left (Nat.lt_trans j₁.2 hj₂) C₁.gates)
+                        (Nat.lt_trans j₁.2 hj₂) x,
+                      evalGateAt_append_right C₁ C₂
+                        (Nat.add_lt_add_left (Nat.lt_trans j₂.2 hj₂) C₁.gates)
+                        (Nat.lt_trans j₂.2 hj₂) x]
+  termination_by j => j
+
 /-- **Left append correctness.**  `appendOutputLeft C₁ C₂` evaluates like `C₁`. -/
 @[simp] theorem eval_appendOutputLeft {n : Nat} (C₁ C₂ : DagCircuit n)
     (x : Bitstring n) :
@@ -400,6 +490,20 @@ theorem evalGateAt_append_left {n : Nat} (C₁ C₂ : DagCircuit n) :
         simp [appendOutputLeft, weakenWireRight, hout]
       rw [h]
       exact evalGateAt_append_left C₁ C₂ _ g.2 x
+
+/-- **Right append correctness.**  `appendOutputRight C₁ C₂` evaluates like `C₂`. -/
+@[simp] theorem eval_appendOutputRight {n : Nat} (C₁ C₂ : DagCircuit n)
+    (x : Bitstring n) :
+    eval (appendOutputRight C₁ C₂) x = eval C₂ x := by
+  unfold eval
+  cases hout : C₂.output with
+  | input j =>
+      simp [appendOutputRight, shiftWireBy, hout]
+  | gate g =>
+      have h : (appendOutputRight C₁ C₂).output = DagWire.gate (Fin.natAdd C₁.gates g) := by
+        simp [appendOutputRight, shiftWireBy, hout]
+      rw [h]
+      exact evalGateAt_append_right C₁ C₂ _ g.2 x
 
 end DagCircuit
 end ComplexityInterfaces

@@ -119,7 +119,7 @@ catalogue.
 | **NOGO-000008** | syntax-rewrite normalisation filters | (related NoGoLog entry) |
 | **NOGO-000009** | normalisation as a meta-barrier | (related NoGoLog entry) |
 | **Probe 13** | `FormulaCertificateProviderPartial → False` | `pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean` |
-| **isoStrong L1 chain** | `isoStrong_conclusion_negative_for_canonical` and `isoStrong_conclusion_negative_general` | `pnp3/Tests/IsoStrongConclusionProbe.lean`, `pnp3/Tests/GeneralIsoStrongNoGoProbe.lean` |
+| **isoStrong L1 chain** | `isoStrong_conclusion_negative_general` (in-build; subsumes the canonical `isoStrong_conclusion_negative_for_canonical`) | `pnp3/Tests/GeneralIsoStrongNoGoProbe.lean` (canonical staging probe archived under `archive/pnp3/Tests/IsoStrongConclusionProbe.lean`) |
 | **Iso-strong route closures** | three named route Props at canonical asymptotic spec | `pnp3/Tests/GeneralIsoStrongRouteClosure.lean` |
 | **Support-bounds family** | `FormulaSupportRestrictionBoundsPartial → False`, `FormulaSupportBoundsFromMultiSwitchingContract → False`, `FormulaSupportBoundsPartial_fromPipeline → False` | `pnp3/Magnification/FinalResultAuditRoutes.lean` |
 

@@ -119,3 +119,43 @@ active roadmap item, or governance dependency.
   rewritten.
 
 **Date**: 2026-05-30
+
+---
+
+## Test-probe archiving — 2026-05-30 (`IsoStrongConclusionProbe.lean`, subsumed)
+
+`pnp3/Tests/IsoStrongConclusionProbe.lean` (409 LOC) was moved to
+`archive/pnp3/Tests/IsoStrongConclusionProbe.lean`.
+
+Rationale:
+
+- The probe was **not in the build graph** (no `Glob.one` entry in
+  `lakefile.lean`) and is **not `import`ed** by any active Lean module, so CI
+  never compiled it.  Yet `STATUS.md` and `pnp3/Docs/BARRIER_CATALOGUE.md` cited
+  its theorem `isoStrong_conclusion_negative_for_canonical` as a "kernel-checked"
+  in-build witness — an inconsistency.
+- That canonical-specific theorem is **subsumed** by the in-build general
+  theorem `isoStrong_conclusion_negative_general`
+  (`pnp3/Tests/GeneralIsoStrongNoGoProbe.lean`, stage 14 of the STATUS audit
+  chain), which refutes the iso-strong route over arbitrary
+  `GapSliceFamilyEventually` families, not just the canonical `sYES=1, sNO=2`
+  instantiation.
+
+Reference fix-ups (this same change):
+
+- `STATUS.md`: current-state witness pointers repointed to
+  `isoStrong_conclusion_negative_general`; the historical audit-chain stages 9
+  and 11 are **kept** (they record what was proved) but annotated as
+  "staging probe now archived; subsumed by stage 14".
+- `pnp3/Docs/BARRIER_CATALOGUE.md`: row repointed to the general theorem / file.
+- `pnp3/Tests/AxiomsAudit.lean`: a comment that wrongly claimed the canonical
+  theorem was "already audited by the build via its import chain" was corrected
+  to reference the in-build general theorem (the `#print axioms` lines were
+  unchanged — they only ever audited the promise-route companions).
+- `pnp3/Tests/GeneralIsoStrongNoGoProbe.lean`: two stale path comments now point
+  at the archived location.
+- Historical `seed_packs/` references are intentionally **not** rewritten.
+- Move is via `git mv`; the step is fully reversible (re-add the file and a
+  `Glob.one \`Tests.IsoStrongConclusionProbe,` entry to `lakefile.lean`).
+
+**Date**: 2026-05-30

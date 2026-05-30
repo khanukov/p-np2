@@ -177,10 +177,35 @@ def _start_coordinator(stub: Path) -> subprocess.Popen:
 def _http_get(path: str) -> tuple[int, dict]:
     req = urllib.request.Request(COORDINATOR_URL + path, method="GET")
     try:
-        with urllib.request.urlopen(req, timeout=5) as r:
+        with _urlopen_retry(req, timeout=5) as r:
             return r.status, json.loads(r.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
         return e.code, json.loads(e.read().decode("utf-8"))
+
+
+def _urlopen_retry(req, timeout, attempts=5):
+    """Open `req`, retrying only on transient connection-level errors.
+
+    A burst of parallel requests can briefly exceed the server's accept
+    backlog on a loaded host, surfacing as "connection reset by peer"
+    while reading the response.  The /v1/task (leased) and /v1/result
+    (idempotent submit) contracts are retry-safe — this mirrors real
+    worker behaviour, which the coordinator already documents as safe
+    under network errors.  HTTPError (a real 4xx/5xx response) is a
+    subclass of URLError and is re-raised, never retried, so genuine
+    server rejections still surface.
+    """
+    delay = 0.1
+    for attempt in range(attempts):
+        try:
+            return urllib.request.urlopen(req, timeout=timeout)
+        except urllib.error.HTTPError:
+            raise
+        except (urllib.error.URLError, ConnectionError):
+            if attempt == attempts - 1:
+                raise
+            time.sleep(delay)
+            delay *= 2
 
 
 def _http_post(path: str, body: dict) -> tuple[int, dict]:
@@ -192,7 +217,7 @@ def _http_post(path: str, body: dict) -> tuple[int, dict]:
         headers={"Content-Type": "application/json"},
     )
     try:
-        with urllib.request.urlopen(req, timeout=10) as r:
+        with _urlopen_retry(req, timeout=10) as r:
             return r.status, json.loads(r.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
         return e.code, json.loads(e.read().decode("utf-8"))

@@ -855,6 +855,22 @@ class CoordinatorHandler(BaseHTTPRequestHandler):
 # ---------------------------------------------------------------------------
 
 
+class _CoordinatorHTTPServer(ThreadingHTTPServer):
+    """``ThreadingHTTPServer`` with a larger accept backlog.
+
+    The stdlib default ``request_queue_size`` is 5.  A burst of
+    simultaneous clients — real workers, or the N=20 parallel e2e in
+    ``coordinator/test_coordinator.py`` — overflows that accept queue on
+    a loaded host, which the kernel surfaces to clients as sporadic
+    "Connection reset by peer" (seen as flaky CI on check.sh Step 12.e).
+    128 matches a typical ``net.core.somaxconn``.
+    """
+
+    request_queue_size = 128
+    daemon_threads = True
+    allow_reuse_address = True
+
+
 def serve(
     bind_host: str = "127.0.0.1",
     bind_port: int = 8765,
@@ -928,7 +944,7 @@ def serve(
         # inline before reading counts_by_status (v0.4.3 Blocker-3).
         BoundHandler.cost_budget_reaper = reaper
 
-    httpd = ThreadingHTTPServer((bind_host, bind_port), BoundHandler)
+    httpd = _CoordinatorHTTPServer((bind_host, bind_port), BoundHandler)
     thread = threading.Thread(target=httpd.serve_forever, daemon=True)
     thread.start()
     return httpd, thread, store

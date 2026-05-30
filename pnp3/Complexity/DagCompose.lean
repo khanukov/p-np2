@@ -2,29 +2,29 @@ import Complexity.Interfaces
 import Mathlib.Tactic
 
 /-!
-# DAG-circuit composition library (stage 1 of the decision→search extraction)
+# DAG-circuit composition library (for the decision→search extraction)
 
-This module starts the circuit-composition infrastructure that the pnp4
-decision→search *extraction theorem* needs and that the repository currently
-lacks (the `DagCircuit` API previously had only `eval`, `size`, `support`).
+Circuit-composition infrastructure that the pnp4 decision→search *extraction
+theorem* needs and that the repository previously lacked (the `DagCircuit` API
+had only `eval`, `size`, `support`).
 
-Goal of the wider program (honest scope):
+Composition layer — micro-step progress (one reusable primitive per commit):
 
-* stage 1 (**this file, in progress**): composition primitives for the
-  dependent-indexed `DagCircuit` with `eval`- and `size`-lemmas;
-* stage 2: greedy multi-output assembly of a `BoundedSearchSolver` from a
-  prefix-extension-language decider;
-* stage 3: `PpolyDAG (PrefixExtensionLanguage) → BoundedSearchSolver`, and its
-  contrapositive `¬BoundedSearchSolver → ¬PpolyDAG (PrefixExtensionLanguage)`;
-* stage 4: replace the abstract `SearchMCSPMagnificationContract` field by that
-  proven chain (closes the audit hole flagged by the D0 review).
+* step 0 — leaf primitives `inputProj`, `constCircuit` (+ eval/size);  ✓
+* step 1 — `relabelInputs` (input reindexing) with eval/size correctness;  ✓
+* step 2 — index transport `weakenWireRight`/`shiftWireBy` (+ gate versions):
+  the `Fin` arithmetic needed to concatenate gate lists;  ← this commit
+* step 3 — `appendCircuit` / multi-output `DagBundle`;
+* step 4 — `substInputs` (input substitution) with eval/size lemmas.
+
+Downstream (separate files): greedy `BoundedSearchSolver` assembly →
+`PpolyDAG (PrefixExtensionLanguage) → BoundedSearchSolver` and its
+contrapositive → replace the abstract `SearchMCSPMagnificationContract` field
+(closes the audit hole flagged by the D0 review).
 
 This file introduces **no** endpoint, source theorem, `PpolyDAG` bridge, or
 `P ≠ NP` consequence; it is pure circuit plumbing.  The lower bound itself
 (`¬BoundedSearchSolver`) is *not* addressed here and remains the open problem.
-
-Stage-1 milestone 1: leaf primitives (`inputProj`, `constCircuit`) with their
-`eval`/`size` lemmas — the certain base cases of any composition.
 -/
 
 namespace Pnp3
@@ -168,6 +168,63 @@ equals evaluating `C` at the relabelled input `fun j => x (ρ j)`. -/
         simp [relabelInputs, mapWireInputs, hout]
       rw [h]
       exact evalGateAt_relabelInputs ρ C g.2 x
+
+/-! ### Composition layer, step 2: index transport
+
+Two distinct `Fin`-index shifts on wires/gates, kept deliberately separate to
+avoid `k + extra` vs `offset + k` arithmetic fights in `append`/`substInputs`:
+
+* `weakenWireRight extra` embeds `Fin k ↪ Fin (k + extra)` (via `Fin.castAdd`) —
+  keeps the *first* circuit's gate references valid after appending `extra`
+  gates on the right;
+* `shiftWireBy offset` embeds `Fin k ↪ Fin (offset + k)` (via `Fin.natAdd`) —
+  moves the *second* circuit's local gate references to their global positions.
+
+These are purely index transport: wires/gates have no standalone `eval`, so the
+semantic lemmas appear later, with `append`/`substInputs`.
+-/
+
+/-- Keep a wire valid after `extra` gates are appended on the right. -/
+def weakenWireRight {n k : Nat} (extra : Nat) : DagWire n k → DagWire n (k + extra)
+  | .input j => .input j
+  | .gate g => .gate (Fin.castAdd extra g)
+
+@[simp] theorem weakenWireRight_input {n k : Nat} (extra : Nat) (j : Fin n) :
+    weakenWireRight (n := n) (k := k) extra (DagWire.input j) = DagWire.input j := rfl
+
+@[simp] theorem weakenWireRight_gate {n k : Nat} (extra : Nat) (g : Fin k) :
+    weakenWireRight (n := n) extra (DagWire.gate g) = DagWire.gate (Fin.castAdd extra g) := rfl
+
+/-- Shift a wire's gate reference by `offset` (the second circuit in `append`). -/
+def shiftWireBy {n k : Nat} (offset : Nat) : DagWire n k → DagWire n (offset + k)
+  | .input j => .input j
+  | .gate g => .gate (Fin.natAdd offset g)
+
+@[simp] theorem shiftWireBy_input {n k : Nat} (offset : Nat) (j : Fin n) :
+    shiftWireBy (n := n) (k := k) offset (DagWire.input j) = DagWire.input j := rfl
+
+@[simp] theorem shiftWireBy_gate {n k : Nat} (offset : Nat) (g : Fin k) :
+    shiftWireBy (n := n) offset (DagWire.gate g) = DagWire.gate (Fin.natAdd offset g) := rfl
+
+/-- Gate version of `weakenWireRight`. -/
+def weakenGateRight {n k : Nat} (extra : Nat) : DagGate n k → DagGate n (k + extra)
+  | .const b => .const b
+  | .not w => .not (weakenWireRight extra w)
+  | .and w₁ w₂ => .and (weakenWireRight extra w₁) (weakenWireRight extra w₂)
+  | .or w₁ w₂ => .or (weakenWireRight extra w₁) (weakenWireRight extra w₂)
+
+/-- Gate version of `shiftWireBy`. -/
+def shiftGateBy {n k : Nat} (offset : Nat) : DagGate n k → DagGate n (offset + k)
+  | .const b => .const b
+  | .not w => .not (shiftWireBy offset w)
+  | .and w₁ w₂ => .and (shiftWireBy offset w₁) (shiftWireBy offset w₂)
+  | .or w₁ w₂ => .or (shiftWireBy offset w₁) (shiftWireBy offset w₂)
+
+@[simp] theorem weakenGateRight_const {n k : Nat} (extra : Nat) (b : Bool) :
+    weakenGateRight (n := n) (k := k) extra (DagGate.const b) = DagGate.const b := rfl
+
+@[simp] theorem shiftGateBy_const {n k : Nat} (offset : Nat) (b : Bool) :
+    shiftGateBy (n := n) (k := k) offset (DagGate.const b) = DagGate.const b := rfl
 
 end DagCircuit
 end ComplexityInterfaces

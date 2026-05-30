@@ -1,7 +1,7 @@
-import Complexity.PsubsetPpolyInternal.TuringToolkit.Foundation
-import Complexity.PsubsetPpolyInternal.TuringToolkit.AtomicPrograms
-import Complexity.PsubsetPpolyInternal.TuringToolkit.ConstStatePhasedProgram
-import Complexity.PsubsetPpolyInternal.TuringToolkit.BinaryCounter
+import Complexity.TMVerifier.TuringToolkit.Foundation
+import Complexity.TMVerifier.TuringToolkit.AtomicPrograms
+import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgram
+import Complexity.TMVerifier.TuringToolkit.BinaryCounter
 import Models.Model_PartialMCSP
 import Magnification.CanonicalAsymptoticTrackData
 import Magnification.CanonicalAsymptoticDecider

@@ -4,6 +4,13 @@ This note documents a small, **reversible** archiving step taken during a
 periphery-cleanup pass over `pnp3/`. It is separate from the historical
 `archive/README.md` (which describes the 2025-10 critical-path reduction).
 
+> **Update (2026-05-30):** the TM-verifier cluster (`GapMCSPVerifier.lean` plus
+> the `TuringToolkit/` submodules) was relocated out of
+> `Complexity/PsubsetPpolyInternal/` (the `P ⊆ P/poly` internalization) into its
+> own namespace `Complexity/TMVerifier/`, since it implements the GapMCSP
+> NP-verifier roadmap and is not part of the `P ⊆ P/poly` proof cone. All paths
+> in this note already reflect the new `TMVerifier/` home.
+
 ## Summary
 
 A dependency sweep flagged 9 `pnp3/` modules as *unimported* (no active Lean
@@ -16,8 +23,8 @@ Only the **2 modules below** are genuinely peripheral (no active code *and* no
 active/governance doc depends on them), so they remain archived here.
 
 > The 7 restored modules: `Barrier/{Algebrization,NaturalProofs,Relativization}.lean`,
-> `Complexity/PsubsetPpolyInternal/GapMCSPVerifier.lean`,
-> `Complexity/PsubsetPpolyInternal/TuringToolkit/RowConsistencyCheck.lean`,
+> `Complexity/TMVerifier/GapMCSPVerifier.lean`,
+> `Complexity/TMVerifier/TuringToolkit/RowConsistencyCheck.lean`,
 > `LowerBounds/DAGUnconditionalBlocker.lean`,
 > `Magnification/AsymptoticDAGCollapse.lean`. See git history for the move/restore.
 
@@ -27,8 +34,8 @@ active/governance doc depends on them), so they remain archived here.
 
 | | |
 |---|---|
-| **Original path** | `pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit.lean` |
-| **Archived path** | `archive/pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit.lean` |
+| **Original path** | `pnp3/Complexity/TMVerifier/TuringToolkit.lean` |
+| **Archived path** | `archive/pnp3/Complexity/TMVerifier/TuringToolkit.lean` |
 | **Role** | Aggregator that merely re-exported all `TuringToolkit.*` submodules (`Foundation`, `BinaryCounter`, `Encoding`, `AtomicPrograms`, `UnaryAtOffset`, `CopyAtOffset`, `CombineAtOffset`, `GateWrappers`, `ConstStatePhasedProgram`, …) via `import`. |
 | **Why archived** | 0 exact importers. Every submodule it re-exported **stays in active `pnp3/`**, is imported directly by its consumers, and has its own `Glob.one` entry in `lakefile.lean`. The aggregator was pure convenience with no dependents — removing it changes nothing in the build. |
 | **No active/governance doc** references this aggregator path. |
@@ -46,14 +53,14 @@ active/governance doc depends on them), so they remain archived here.
 
 ```bash
 # 1. move the file back into the active tree
-git mv archive/pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit.lean \
-       pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit.lean
+git mv archive/pnp3/Complexity/TMVerifier/TuringToolkit.lean \
+       pnp3/Complexity/TMVerifier/TuringToolkit.lean
 #    (or, for the route alias)
 git mv archive/pnp3/LowerBounds/RouteNextStep_AcceptedFamily.lean \
        pnp3/LowerBounds/RouteNextStep_AcceptedFamily.lean
 
 # 2. re-add the corresponding glob to lakefile.lean (PnP3 lib, srcDir "pnp3"):
-#      Glob.one `Complexity.PsubsetPpolyInternal.TuringToolkit,
+#      Glob.one `Complexity.TMVerifier.TuringToolkit,
 #      Glob.one `LowerBounds.RouteNextStep_AcceptedFamily,
 
 # 3. rebuild + gate

@@ -1,4 +1,4 @@
-import Complexity.PsubsetPpolyInternal.TuringToolkit.AtomicPrograms
+import Complexity.TMVerifier.TuringToolkit.AtomicPrograms
 
 namespace Pnp3
 namespace Internal

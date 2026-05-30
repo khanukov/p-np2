@@ -1,5 +1,5 @@
-import Complexity.PsubsetPpolyInternal.TuringToolkit.CopyAtOffset
-import Complexity.PsubsetPpolyInternal.TuringToolkit.ConstStatePhasedProgram
+import Complexity.TMVerifier.TuringToolkit.CopyAtOffset
+import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgram
 
 namespace Pnp3
 namespace Internal

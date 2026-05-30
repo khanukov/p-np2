@@ -505,6 +505,57 @@ theorem evalGateAt_append_right {n : Nat} (C₁ C₂ : DagCircuit n) :
       rw [h]
       exact evalGateAt_append_right C₁ C₂ _ g.2 x
 
+/-! ### Composition layer, step 4a: multi-output `DagBundle` (definitions)
+
+A `DagBundle n out` is a `DagCircuit`-like object with one shared gate list and
+`out` output wires.  This is the container `substInputs` needs: substituting
+`G₁,…,Gₙ` into a circuit requires keeping *all* their output wires, which a
+single-output `DagCircuit` cannot hold.
+
+`asCircuit`/`evalOutput` bridge back to ordinary circuits so the (already proved)
+append eval lemmas can be reused for the `snocBundle` semantics (next commit).
+This commit is definitions only; the `snoc` eval lemmas follow.
+-/
+
+/-- Multi-output DAG: a shared gate list with `out` output wires. -/
+structure DagBundle (n out : Nat) where
+  gates : Nat
+  gate : (i : Fin gates) → DagGate n i.1
+  output : Fin out → DagWire n gates
+
+/-- View one output of a bundle as an ordinary `DagCircuit`. -/
+def DagBundle.asCircuit {n out : Nat} (B : DagBundle n out) (o : Fin out) : DagCircuit n where
+  gates := B.gates
+  gate := B.gate
+  output := B.output o
+
+/-- Evaluate one output of a bundle. -/
+def DagBundle.evalOutput {n out : Nat} (B : DagBundle n out) (o : Fin out)
+    (x : Bitstring n) : Bool :=
+  eval (B.asCircuit o) x
+
+/-- The empty bundle: no outputs, no gates. -/
+def emptyBundle (n : Nat) : DagBundle n 0 where
+  gates := 0
+  gate := fun i => absurd i.2 (Nat.not_lt_zero i.1)
+  output := fun o => absurd o.2 (Nat.not_lt_zero o.1)
+
+/-- Append circuit `C` as a new (last) output of bundle `B`, concatenating gate
+lists.  Old gate references stay (left part of `Fin.addCases`); `C`'s gates are
+shifted by `B.gates`.  Old output wires are weakened; `C`'s output is shifted. -/
+def snocBundle {n out : Nat} (B : DagBundle n out) (C : DagCircuit n) :
+    DagBundle n (out + 1) where
+  gates := B.gates + C.gates
+  gate := Fin.addCases (motive := fun i => DagGate n i.1)
+    (fun p => B.gate p)
+    (fun j => shiftGateBy B.gates (C.gate j))
+  output := Fin.addCases (motive := fun _ => DagWire n (B.gates + C.gates))
+    (fun o => weakenWireRight C.gates (B.output o))
+    (fun _ => shiftWireBy B.gates C.output)
+
+@[simp] theorem snocBundle_gates {n out : Nat} (B : DagBundle n out) (C : DagCircuit n) :
+    (snocBundle B C).gates = B.gates + C.gates := rfl
+
 end DagCircuit
 end ComplexityInterfaces
 end Pnp3

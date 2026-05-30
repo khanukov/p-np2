@@ -513,8 +513,8 @@ A `DagBundle n out` is a `DagCircuit`-like object with one shared gate list and
 single-output `DagCircuit` cannot hold.
 
 `asCircuit`/`evalOutput` bridge back to ordinary circuits so the (already proved)
-append eval lemmas can be reused for the `snocBundle` semantics (next commit).
-This commit is definitions only; the `snoc` eval lemmas follow.
+append eval lemmas can be reused for the `snocBundle` semantics (the old-output
+eval lemma below); the new (last) output is handled by a direct induction.
 -/
 
 /-- Multi-output DAG: a shared gate list with `out` output wires. -/
@@ -555,6 +555,165 @@ def snocBundle {n out : Nat} (B : DagBundle n out) (C : DagCircuit n) :
 
 @[simp] theorem snocBundle_gates {n out : Nat} (B : DagBundle n out) (C : DagCircuit n) :
     (snocBundle B C).gates = B.gates + C.gates := rfl
+
+/-! ### Composition layer, step 4a (eval): `snocBundle` correctness
+
+First the gate/output characterization on the two `Fin.addCases` branches (left =
+old part, right = the newly appended `C`), then eval-preservation for both outputs:
+
+* the **old** outputs reuse the already-proved `appendOutputLeft` semantics, via the
+  circuit equality `(snocBundle B C).asCircuit (castAdd 1 o) = appendOutputLeft (B.asCircuit o) C`
+  (only the `output` field differs, and `snocBundle_output_old` settles it);
+* the **new** (last) output is proved *directly* by a gate-level induction
+  (`evalGateAt_snocBundle_right`).  There is no `DagCircuit` view of `B` to feed
+  `appendOutputRight` when `out = 0` (a `DagWire n B.gates` need not exist when
+  `n = B.gates = 0`), so no left circuit is fabricated.
+-/
+
+/-- Old (left, `castAdd`) gate positions of `snocBundle` reuse `B`'s gate. -/
+@[simp] theorem snocBundle_gate_left {n out : Nat} (B : DagBundle n out) (C : DagCircuit n)
+    (p : Fin B.gates) :
+    (snocBundle B C).gate (Fin.castAdd C.gates p) = B.gate p := by
+  simp only [snocBundle, Fin.addCases_left]
+
+/-- New (right, `natAdd`) gate positions of `snocBundle` use `C`'s gate shifted by `B.gates`. -/
+@[simp] theorem snocBundle_gate_right {n out : Nat} (B : DagBundle n out) (C : DagCircuit n)
+    (j : Fin C.gates) :
+    (snocBundle B C).gate (Fin.natAdd B.gates j) = shiftGateBy B.gates (C.gate j) := by
+  simp only [snocBundle, Fin.addCases_right]
+
+/-- An old output wire of `snocBundle` is `B`'s output wire, weakened. -/
+@[simp] theorem snocBundle_output_old {n out : Nat} (B : DagBundle n out) (C : DagCircuit n)
+    (o : Fin out) :
+    (snocBundle B C).output (Fin.castAdd 1 o) = weakenWireRight C.gates (B.output o) := by
+  simp only [snocBundle, Fin.addCases_left]
+
+/-- The new (last) output wire of `snocBundle` is `C`'s output wire, shifted by `B.gates`. -/
+@[simp] theorem snocBundle_output_new {n out : Nat} (B : DagBundle n out) (C : DagCircuit n) :
+    (snocBundle B C).output (Fin.natAdd out (0 : Fin 1)) = shiftWireBy B.gates C.output := by
+  simp only [snocBundle, Fin.addCases_right]
+
+/-- **Old-output correctness.**  An old output of `snocBundle B C` evaluates exactly like
+the corresponding output of `B`.  Reuses `eval_appendOutputLeft` through the circuit
+equality `(snocBundle B C).asCircuit (castAdd 1 o) = appendOutputLeft (B.asCircuit o) C`. -/
+@[simp] theorem evalOutput_snocBundle_old {n out : Nat} (B : DagBundle n out) (C : DagCircuit n)
+    (o : Fin out) (x : Bitstring n) :
+    (snocBundle B C).evalOutput (Fin.castAdd 1 o) x = B.evalOutput o x := by
+  have h : (snocBundle B C).asCircuit (Fin.castAdd 1 o) = appendOutputLeft (B.asCircuit o) C := by
+    unfold DagBundle.asCircuit
+    rw [snocBundle_output_old B C o]
+    rfl
+  unfold DagBundle.evalOutput
+  rw [h, eval_appendOutputLeft]
+
+/-- Gate-level agreement for the new (appended) part of `snocBundle`: position
+`B.gates + j` evaluates like `C`'s gate `j`.  Direct analogue of
+`evalGateAt_append_right`, using `snocBundle_gate_right` for the gate lookup — no
+left `DagCircuit` is needed (so `out = 0` is fine). -/
+theorem evalGateAt_snocBundle_right {n out : Nat} (B : DagBundle n out) (C : DagCircuit n) :
+    ∀ {j : Nat} (hjA : B.gates + j < (snocBundle B C).gates) (hjC : j < C.gates)
+      (x : Bitstring n),
+      DagCircuit.eval.evalGateAt
+          (C := (snocBundle B C).asCircuit (Fin.natAdd out (0 : Fin 1)))
+          (x := x) (B.gates + j) hjA =
+        DagCircuit.eval.evalGateAt (C := C) (x := x) j hjC
+  | j, hjA, hjC, x => by
+      have hgate : ((snocBundle B C).asCircuit (Fin.natAdd out (0 : Fin 1))).gate
+            ⟨B.gates + j, hjA⟩ = shiftGateBy B.gates (C.gate ⟨j, hjC⟩) :=
+        snocBundle_gate_right B C ⟨j, hjC⟩
+      cases hOp : C.gate ⟨j, hjC⟩ with
+      | const b =>
+          rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+          simp only [hOp, shiftGateBy_const]
+      | not w =>
+          cases w with
+          | input jj =>
+              rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+              simp only [hOp, shiftGateBy_not, shiftWireBy_input]
+          | gate g =>
+              rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+              simp only [hOp, shiftGateBy_not, shiftWireBy_gate, Fin.coe_natAdd]
+              rw [evalGateAt_snocBundle_right B C
+                    (Nat.add_lt_add_left (Nat.lt_trans g.2 hjC) B.gates)
+                    (Nat.lt_trans g.2 hjC) x]
+      | and w₁ w₂ =>
+          cases w₁ with
+          | input j₁ =>
+              cases w₂ with
+              | input j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp, shiftGateBy_and, shiftWireBy_input]
+              | gate j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp, shiftGateBy_and, shiftWireBy_input, shiftWireBy_gate, Fin.coe_natAdd]
+                  rw [evalGateAt_snocBundle_right B C
+                        (Nat.add_lt_add_left (Nat.lt_trans j₂.2 hjC) B.gates)
+                        (Nat.lt_trans j₂.2 hjC) x]
+          | gate j₁ =>
+              cases w₂ with
+              | input j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp, shiftGateBy_and, shiftWireBy_input, shiftWireBy_gate, Fin.coe_natAdd]
+                  rw [evalGateAt_snocBundle_right B C
+                        (Nat.add_lt_add_left (Nat.lt_trans j₁.2 hjC) B.gates)
+                        (Nat.lt_trans j₁.2 hjC) x]
+              | gate j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp, shiftGateBy_and, shiftWireBy_gate, Fin.coe_natAdd]
+                  rw [evalGateAt_snocBundle_right B C
+                        (Nat.add_lt_add_left (Nat.lt_trans j₁.2 hjC) B.gates)
+                        (Nat.lt_trans j₁.2 hjC) x,
+                      evalGateAt_snocBundle_right B C
+                        (Nat.add_lt_add_left (Nat.lt_trans j₂.2 hjC) B.gates)
+                        (Nat.lt_trans j₂.2 hjC) x]
+      | or w₁ w₂ =>
+          cases w₁ with
+          | input j₁ =>
+              cases w₂ with
+              | input j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp, shiftGateBy_or, shiftWireBy_input]
+              | gate j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp, shiftGateBy_or, shiftWireBy_input, shiftWireBy_gate, Fin.coe_natAdd]
+                  rw [evalGateAt_snocBundle_right B C
+                        (Nat.add_lt_add_left (Nat.lt_trans j₂.2 hjC) B.gates)
+                        (Nat.lt_trans j₂.2 hjC) x]
+          | gate j₁ =>
+              cases w₂ with
+              | input j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp, shiftGateBy_or, shiftWireBy_input, shiftWireBy_gate, Fin.coe_natAdd]
+                  rw [evalGateAt_snocBundle_right B C
+                        (Nat.add_lt_add_left (Nat.lt_trans j₁.2 hjC) B.gates)
+                        (Nat.lt_trans j₁.2 hjC) x]
+              | gate j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp, shiftGateBy_or, shiftWireBy_gate, Fin.coe_natAdd]
+                  rw [evalGateAt_snocBundle_right B C
+                        (Nat.add_lt_add_left (Nat.lt_trans j₁.2 hjC) B.gates)
+                        (Nat.lt_trans j₁.2 hjC) x,
+                      evalGateAt_snocBundle_right B C
+                        (Nat.add_lt_add_left (Nat.lt_trans j₂.2 hjC) B.gates)
+                        (Nat.lt_trans j₂.2 hjC) x]
+  termination_by j => j
+
+/-- **New-output correctness.**  The new (last) output of `snocBundle B C` evaluates
+exactly like `C`.  Proved directly (no fabricated left circuit). -/
+@[simp] theorem evalOutput_snocBundle_new {n out : Nat} (B : DagBundle n out) (C : DagCircuit n)
+    (x : Bitstring n) :
+    (snocBundle B C).evalOutput (Fin.natAdd out (0 : Fin 1)) x = eval C x := by
+  unfold DagBundle.evalOutput
+  unfold eval
+  cases hout : C.output with
+  | input j =>
+      simp [DagBundle.asCircuit, snocBundle_output_new, shiftWireBy, hout]
+  | gate g =>
+      have h : ((snocBundle B C).asCircuit (Fin.natAdd out (0 : Fin 1))).output
+            = DagWire.gate (Fin.natAdd B.gates g) := by
+        simp [DagBundle.asCircuit, snocBundle_output_new, shiftWireBy, hout]
+      rw [h]
+      exact evalGateAt_snocBundle_right B C _ g.2 x
 
 end DagCircuit
 end ComplexityInterfaces

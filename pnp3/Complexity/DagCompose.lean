@@ -226,6 +226,90 @@ def shiftGateBy {n k : Nat} (offset : Nat) : DagGate n k → DagGate n (offset +
 @[simp] theorem shiftGateBy_const {n k : Nat} (offset : Nat) (b : Bool) :
     shiftGateBy (n := n) (k := k) offset (DagGate.const b) = DagGate.const b := rfl
 
+@[simp] theorem weakenGateRight_not {n k : Nat} (extra : Nat) (w : DagWire n k) :
+    weakenGateRight extra (DagGate.not w) = DagGate.not (weakenWireRight extra w) := rfl
+
+@[simp] theorem weakenGateRight_and {n k : Nat} (extra : Nat) (w₁ w₂ : DagWire n k) :
+    weakenGateRight extra (DagGate.and w₁ w₂)
+      = DagGate.and (weakenWireRight extra w₁) (weakenWireRight extra w₂) := rfl
+
+@[simp] theorem weakenGateRight_or {n k : Nat} (extra : Nat) (w₁ w₂ : DagWire n k) :
+    weakenGateRight extra (DagGate.or w₁ w₂)
+      = DagGate.or (weakenWireRight extra w₁) (weakenWireRight extra w₂) := rfl
+
+@[simp] theorem shiftGateBy_not {n k : Nat} (offset : Nat) (w : DagWire n k) :
+    shiftGateBy offset (DagGate.not w) = DagGate.not (shiftWireBy offset w) := rfl
+
+@[simp] theorem shiftGateBy_and {n k : Nat} (offset : Nat) (w₁ w₂ : DagWire n k) :
+    shiftGateBy offset (DagGate.and w₁ w₂)
+      = DagGate.and (shiftWireBy offset w₁) (shiftWireBy offset w₂) := rfl
+
+@[simp] theorem shiftGateBy_or {n k : Nat} (offset : Nat) (w₁ w₂ : DagWire n k) :
+    shiftGateBy offset (DagGate.or w₁ w₂)
+      = DagGate.or (shiftWireBy offset w₁) (shiftWireBy offset w₂) := rfl
+
+/-! ### Composition layer, step 3: single-output append (definitions + size)
+
+`appendOutputLeft`/`appendOutputRight C₁ C₂` concatenate the gate lists of `C₁`
+and `C₂` (`C₁.gates + C₂.gates` gates) and select, respectively, `C₁`'s or `C₂`'s
+output.  Given the dependent-indexed representation, `C₁`'s gates keep their
+positions/references unchanged (no transport); only `C₂`'s gates are shifted by
+`C₁.gates` (`shiftGateBy`).  `C₁`'s output wire is weakened into the larger
+index space (`weakenWireRight`); `C₂`'s output wire is shifted (`shiftWireBy`).
+
+The shared gate function is defined with `Fin.addCases`, avoiding manual
+dependent casts.  This commit is definitions + size only; the `eval`-preservation
+lemmas (the genuine `evalGateAt`-induction with index splitting) follow next.
+-/
+
+/-- Shared concatenated gate function for the append of `C₁` and `C₂`:
+left positions reuse `C₁`'s gates as-is; right positions use `C₂`'s gates with
+references shifted by `C₁.gates`. -/
+def appendGate {n : Nat} (C₁ C₂ : DagCircuit n)
+    (i : Fin (C₁.gates + C₂.gates)) : DagGate n i.1 :=
+  Fin.addCases (motive := fun i => DagGate n i.1)
+    (fun p => C₁.gate p)
+    (fun j => shiftGateBy C₁.gates (C₂.gate j))
+    i
+
+/-- Append `C₂`'s gates after `C₁`'s, keeping `C₁`'s output. -/
+def appendOutputLeft {n : Nat} (C₁ C₂ : DagCircuit n) : DagCircuit n where
+  gates := C₁.gates + C₂.gates
+  gate := appendGate C₁ C₂
+  output := weakenWireRight C₂.gates C₁.output
+
+/-- Append `C₂`'s gates after `C₁`'s, keeping `C₂`'s (shifted) output. -/
+def appendOutputRight {n : Nat} (C₁ C₂ : DagCircuit n) : DagCircuit n where
+  gates := C₁.gates + C₂.gates
+  gate := appendGate C₁ C₂
+  output := shiftWireBy C₁.gates C₂.output
+
+@[simp] theorem size_appendOutputLeft {n : Nat} (C₁ C₂ : DagCircuit n) :
+    size (appendOutputLeft C₁ C₂) = C₁.gates + C₂.gates + 1 := rfl
+
+@[simp] theorem size_appendOutputRight {n : Nat} (C₁ C₂ : DagCircuit n) :
+    size (appendOutputRight C₁ C₂) = C₁.gates + C₂.gates + 1 := rfl
+
+theorem size_appendOutputLeft_le {n : Nat} (C₁ C₂ : DagCircuit n) :
+    size (appendOutputLeft C₁ C₂) ≤ size C₁ + size C₂ := by
+  rw [size_appendOutputLeft]; simp only [size]; omega
+
+theorem size_appendOutputRight_le {n : Nat} (C₁ C₂ : DagCircuit n) :
+    size (appendOutputRight C₁ C₂) ≤ size C₁ + size C₂ := by
+  rw [size_appendOutputRight]; simp only [size]; omega
+
+/-- On a left (`castAdd`) position the append reuses `C₁`'s gate unchanged. -/
+@[simp] theorem appendGate_left {n : Nat} (C₁ C₂ : DagCircuit n) (p : Fin C₁.gates) :
+    appendGate C₁ C₂ (Fin.castAdd C₂.gates p) = C₁.gate p := by
+  unfold appendGate
+  rw [Fin.addCases_left]
+
+/-- On a right (`natAdd`) position the append uses `C₂`'s gate shifted by `C₁.gates`. -/
+@[simp] theorem appendGate_right {n : Nat} (C₁ C₂ : DagCircuit n) (j : Fin C₂.gates) :
+    appendGate C₁ C₂ (Fin.natAdd C₁.gates j) = shiftGateBy C₁.gates (C₂.gate j) := by
+  unfold appendGate
+  rw [Fin.addCases_right]
+
 end DagCircuit
 end ComplexityInterfaces
 end Pnp3

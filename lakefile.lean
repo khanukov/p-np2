@@ -54,6 +54,7 @@ lean_lib PnP3 where
     Glob.one `AC0.MultiSwitching.Main,
     Glob.one `Complexity.Promise,
     Glob.one `Complexity.Interfaces,
+    Glob.one `Complexity.DagCompose,
     Glob.one `Complexity.PsubsetPpolyInternal.Bitstring,
     Glob.one `Complexity.TMVerifier.GapMCSPVerifier,
     Glob.one `Complexity.PsubsetPpolyInternal.TuringEncoding,

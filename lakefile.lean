@@ -194,6 +194,7 @@ lean_lib PnP3 where
     Glob.one `Magnification.AuditRoutes.DistinguisherMatrixProvenance.V_codexd3c.Sharpness,
     Glob.one `Magnification.AuditRoutes.DistinguisherMatrixProvenance.V_locality_d4.ReadSetLocality,
     Glob.one `Magnification.AuditRoutes.DistinguisherMatrixProvenance.V_locality_d5.LocalGateInvariance,
+    Glob.one `Magnification.AuditRoutes.DistinguisherMatrixProvenance.V_locality_d6.PayloadBudgetThreshold,
     Glob.one `ThirdPartyFacts.Facts_Switching,
     -- Partial-track bibliography/lemmas used by final magnification result.
     Glob.one `ThirdPartyFacts.PartialTransport,

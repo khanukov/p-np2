@@ -1,4 +1,4 @@
-import Complexity.PsubsetPpolyInternal.TuringToolkit.Encoding
+import Complexity.TMVerifier.TuringToolkit.Encoding
 
 namespace Pnp3
 namespace Internal

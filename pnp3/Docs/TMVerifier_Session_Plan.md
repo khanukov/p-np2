@@ -56,7 +56,7 @@ will directly use the existential rewrite instead of `trivialCert`.
 ## 3. Per-session plan
 
 ### Session 1 — `seqList_run_full`
-**File:** `pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit/ConstStatePhasedProgram.lean`
+**File:** `pnp3/Complexity/TMVerifier/TuringToolkit/ConstStatePhasedProgram.lean`
 **LOC:** ~350
 **Building blocks:** `runConfig_seq_succ_*` (lines 414–544),
 `seqList` (line 573)
@@ -68,7 +68,7 @@ will directly use the existential rewrite instead of `trivialCert`.
 
 ### Session 2 — `writeVecOfNatProgram`
 **File:** new
-`pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit/RowInputWriter.lean`
+`pnp3/Complexity/TMVerifier/TuringToolkit/RowInputWriter.lean`
 **LOC:** ~300
 **Building blocks:** `incrementProgram_correct`,
 `CopyAtOffset.copyAtOffsetProgram_run_full`
@@ -80,7 +80,7 @@ after `timeBound N` steps, the tape region `[Δrow .. Δrow+m)` equals
 
 ### Session 3 — `mcspCheckAllRows_correct`
 **File:**
-`pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit/RowConsistencyCheck.lean`
+`pnp3/Complexity/TMVerifier/TuringToolkit/RowConsistencyCheck.lean`
 (extension)
 **LOC:** ~450
 **Building blocks:** Session 1 (`seqList_run_full`),
@@ -92,7 +92,7 @@ after `timeBound N` steps, the tape region `[Δrow .. Δrow+m)` equals
 
 ### Session 4 — Witness decoder
 **File:** new
-`pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit/WitnessDecoder.lean`
+`pnp3/Complexity/TMVerifier/TuringToolkit/WitnessDecoder.lean`
 **LOC:** ~250
 **Building blocks:** `Encoding.lean` table layout,
 `CopyAtOffset.copyAtOffsetProgram_run_full`
@@ -105,7 +105,7 @@ into the tape region) +
 
 ### Session 5 — Length probe
 **File:** new
-`pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit/LengthProbe.lean`
+`pnp3/Complexity/TMVerifier/TuringToolkit/LengthProbe.lean`
 **LOC:** ~250
 **Building blocks:** `incrementProgram_correct` (doubling),
 `UnaryAtOffset` for compare
@@ -116,7 +116,7 @@ standard `w` slot and checks `n = 2·2^m` via walk + compare; returns
 
 ### Session 6 — Top-level composition
 **File:** new
-`pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit/CanonicalVerifierTM.lean`
+`pnp3/Complexity/TMVerifier/TuringToolkit/CanonicalVerifierTM.lean`
 **LOC:** ~500
 **Building blocks:** sessions 1–5,
 `decideAsymptotic_at_inputLen`, `decideAsymptotic_of_not_canonical`
@@ -134,7 +134,7 @@ The non-canonical branch rejects via
 - edit `pnp3/Magnification/CanonicalAsymptoticDecider.lean` (struct +
   witness body, Variant B switch);
 - edit
-  `pnp3/Complexity/PsubsetPpolyInternal/GapMCSPVerifier.lean`
+  `pnp3/Complexity/TMVerifier/GapMCSPVerifier.lean`
   (documentation);
 - edit `pnp3/Tests/CanonicalIntegrationTests.lean` (adapt examples to
   the new structure).
@@ -156,17 +156,17 @@ applying `witness` to the new term).
 
 ## 4. Critical files (reusable pieces)
 
-- `pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit/BinaryCounter.lean:1315`
+- `pnp3/Complexity/TMVerifier/TuringToolkit/BinaryCounter.lean:1315`
   — `incrementProgram_correct`
-- `pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit/CombineAtOffset.lean:1037`
+- `pnp3/Complexity/TMVerifier/TuringToolkit/CombineAtOffset.lean:1037`
   — `combineAtOffsetCS_run_full`
-- `pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit/GateWrappers.lean:5034`
+- `pnp3/Complexity/TMVerifier/TuringToolkit/GateWrappers.lean:5034`
   — `circuitEvaluatorCS_run_correct_wf`
-- `pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit/GateWrappers.lean:577`
+- `pnp3/Complexity/TMVerifier/TuringToolkit/GateWrappers.lean:577`
   — `seqList_timeBound_le_uniform`
-- `pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit/ConstStatePhasedProgram.lean:414-544`
+- `pnp3/Complexity/TMVerifier/TuringToolkit/ConstStatePhasedProgram.lean:414-544`
   — `runConfig_seq_succ_*` (for session 1)
-- `pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit/RowConsistencyCheck.lean:69,175,213`
+- `pnp3/Complexity/TMVerifier/TuringToolkit/RowConsistencyCheck.lean:69,175,213`
   — row primitives
 - `pnp3/Magnification/CanonicalAsymptoticDecider.lean:192,206,223,244,271,296`
   — decider + bridge

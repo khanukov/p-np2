@@ -235,7 +235,7 @@ piece that helps Milestones E/F/G uniformly.
 
 ## Verification at each milestone
 
-1. `lake build Complexity.PsubsetPpolyInternal.TuringToolkit` — green.
+1. `lake build Complexity.TMVerifier.TuringToolkit` — green.
 2. `./scripts/check.sh` — all six gates pass.
 3. Axiom audit: `{propext, Classical.choice, Quot.sound}` only.
 4. `#print axioms` for each new theorem — confirm no axiom leaks.
@@ -630,7 +630,7 @@ program and cannot be abstracted uniformly over the rewrite variable.
 **Resolution (Option A, chosen after Option B `rw` attempt failed)**:
 refactor `CircuitEvaluatorCS_RunCorrect` as a **definitional alias**
 of `CircuitEvaluatorCSAt_RunCorrect gates 0`.  In
-`pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit/GateWrappers.lean`:
+`pnp3/Complexity/TMVerifier/TuringToolkit/GateWrappers.lean`:
 
 ```lean
 def CircuitEvaluatorCS_RunCorrect {n : Nat} (gates : List (SLGate n))
@@ -688,7 +688,7 @@ succeeds unconditionally for any prior.  For `.notGate`/`.andGate`/
 on malformed lists.  The F.4 ∃-form for arbitrary gates therefore
 requires a **positional well-formedness** hypothesis.
 
-**New definitions** (in `pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit/GateWrappers.lean`):
+**New definitions** (in `pnp3/Complexity/TMVerifier/TuringToolkit/GateWrappers.lean`):
 
 ```lean
 def SLGate_wfAtLen {n : Nat} (L : Nat) : SLGate n → Prop
@@ -829,7 +829,7 @@ latter.  The previous definition via `seqList ∘ mapIdx` is retained as
 the propositional-equality lemma
 `circuitEvaluatorCSAt_eq_seqList_mapIdx`.
 
-**Edit in `pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit/GateWrappers.lean`**:
+**Edit in `pnp3/Complexity/TMVerifier/TuringToolkit/GateWrappers.lean`**:
 
 ```lean
 -- OLD (session 47 era):
@@ -1095,7 +1095,7 @@ aligned with how the theorem will actually be consumed.
 5. **Public alias** — after the induction is proved, expose
    `theorem circuitEvaluatorCS_run_correct : ∀ gates …, hwf →
    CircuitEvaluatorCS_RunCorrect gates …` in `GateEvalCS` namespace
-   (or a re-export in `Complexity.PsubsetPpolyInternal.TuringToolkit`).
+   (or a re-export in `Complexity.TMVerifier.TuringToolkit`).
 
 **Why this is multi-session work**: the tape-alignment argument (point
 3, tail segment) requires constructing the lifted P2-config, proving
@@ -1416,7 +1416,7 @@ Session 54 will begin Path 1 implementation with
 ## Session 54 — Milestone G: `RowConsistencyCheck.lean` scaffold
 
 Created new file
-`pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit/RowConsistencyCheck.lean`
+`pnp3/Complexity/TMVerifier/TuringToolkit/RowConsistencyCheck.lean`
 implementing Path 1 of Milestone G (see session 53 design note).
 
 **What's in the file** (~215 LOC):
@@ -1477,7 +1477,7 @@ implementing Path 1 of Milestone G (see session 53 design note).
 
 **Files changed**:
 - `lakefile.lean` (+1 line) — added `RowConsistencyCheck` glob.
-- `pnp3/Complexity/PsubsetPpolyInternal/TuringToolkit/RowConsistencyCheck.lean`
+- `pnp3/Complexity/TMVerifier/TuringToolkit/RowConsistencyCheck.lean`
   (new, ~215 LOC).
 
 **Next (session 55)**: per-row semantic correctness for

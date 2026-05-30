@@ -20,7 +20,7 @@ The mathematical content is split cleanly:
   unconditionally in this module.
 * **Constructing the TM with the matching acceptance behaviour**: the
   remaining engineering obligation (scaffolded in
-  `pnp3/Complexity/PsubsetPpolyInternal/GapMCSPVerifier.lean`).
+  `pnp3/Complexity/TMVerifier/GapMCSPVerifier.lean`).
 
 For `canonicalAsymptoticSpec` (with `sYES n = 1`), the YES-predicate at
 slice `m` is "exists a size-`≤ 1` circuit consistent with the partial

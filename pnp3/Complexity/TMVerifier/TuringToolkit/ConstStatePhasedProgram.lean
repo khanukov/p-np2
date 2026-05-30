@@ -1,4 +1,4 @@
-import Complexity.PsubsetPpolyInternal.TuringToolkit.Foundation
+import Complexity.TMVerifier.TuringToolkit.Foundation
 
 namespace Pnp3
 namespace Internal

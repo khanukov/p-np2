@@ -1,19 +1,19 @@
-import Complexity.PsubsetPpolyInternal.TuringToolkit.Foundation
-import Complexity.PsubsetPpolyInternal.TuringToolkit.BinaryCounter
-import Complexity.PsubsetPpolyInternal.TuringToolkit.Encoding
-import Complexity.PsubsetPpolyInternal.TuringToolkit.AtomicPrograms
-import Complexity.PsubsetPpolyInternal.TuringToolkit.UnaryAtOffset
-import Complexity.PsubsetPpolyInternal.TuringToolkit.CopyAtOffset
-import Complexity.PsubsetPpolyInternal.TuringToolkit.CombineAtOffset
-import Complexity.PsubsetPpolyInternal.TuringToolkit.GateWrappers
-import Complexity.PsubsetPpolyInternal.TuringToolkit.ConstStatePhasedProgram
+import Complexity.TMVerifier.TuringToolkit.Foundation
+import Complexity.TMVerifier.TuringToolkit.BinaryCounter
+import Complexity.TMVerifier.TuringToolkit.Encoding
+import Complexity.TMVerifier.TuringToolkit.AtomicPrograms
+import Complexity.TMVerifier.TuringToolkit.UnaryAtOffset
+import Complexity.TMVerifier.TuringToolkit.CopyAtOffset
+import Complexity.TMVerifier.TuringToolkit.CombineAtOffset
+import Complexity.TMVerifier.TuringToolkit.GateWrappers
+import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgram
 
 /-!
 # Turing toolkit — aggregator
 
 This file used to contain the full Turing toolkit in a single 7 000+
 line module.  It has been split into dedicated submodules under
-`Complexity/PsubsetPpolyInternal/TuringToolkit/` for maintainability.
+`Complexity/TMVerifier/TuringToolkit/` for maintainability.
 
 Importing this file re-exports everything the toolkit provides.
 

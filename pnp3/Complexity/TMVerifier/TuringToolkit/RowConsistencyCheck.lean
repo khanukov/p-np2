@@ -1,5 +1,5 @@
-import Complexity.PsubsetPpolyInternal.TuringToolkit.GateWrappers
-import Complexity.PsubsetPpolyInternal.TuringToolkit.CombineAtOffset
+import Complexity.TMVerifier.TuringToolkit.GateWrappers
+import Complexity.TMVerifier.TuringToolkit.CombineAtOffset
 
 /-!
 # Milestone G: Row Consistency Check for MCSP Verifier

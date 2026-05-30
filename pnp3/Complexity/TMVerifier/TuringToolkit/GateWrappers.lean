@@ -1,4 +1,4 @@
-import Complexity.PsubsetPpolyInternal.TuringToolkit.CombineAtOffset
+import Complexity.TMVerifier.TuringToolkit.CombineAtOffset
 
 namespace Pnp3
 namespace Internal

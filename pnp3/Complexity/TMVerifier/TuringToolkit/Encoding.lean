@@ -1,4 +1,4 @@
-import Complexity.PsubsetPpolyInternal.TuringToolkit.BinaryCounter
+import Complexity.TMVerifier.TuringToolkit.BinaryCounter
 
 namespace Pnp3
 namespace Internal

@@ -10,6 +10,14 @@ open Pnp3.ComplexityInterfaces.DagCircuit
 /-!
 # One-step shared-bundle greedy extension
 
+> **Legacy (state-query) surface — not solver-bearing.**  This step queries the
+> decider on the prefix-state `(i, p)`, which a real `PrefixExtensionLanguage`
+> decider answers as "is `p` extendable", *not* "is `p ++ true` extendable".  After
+> the Block 8a semantic-mismatch fix (#1504), the correctness-bearing greedy is the
+> **true-extension** fold `greedyTrueBundleUpTo` / `greedyTrueStepHead`
+> (`TreeMCSPGreedyExtendable.lean`).  This module remains a valid circuit
+> construction but must **not** be used for solver/witness construction.
+
 Block 5 of the downstream decision→search extraction, in the **Option ①**
 architecture (merged in #1498 / #1499).
 

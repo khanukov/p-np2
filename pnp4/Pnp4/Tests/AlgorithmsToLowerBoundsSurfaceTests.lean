@@ -40,6 +40,8 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyBundleStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyBundleFold
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyOutputCircuits
 import Pnp4.Frontier.ContractExpansion.PrefixExtendableSplit
+import Pnp4.Frontier.ContractExpansion.TreeMCSPTrueExtensionQuery
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyExtendable
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -567,6 +569,65 @@ theorem check_witnessPrefixExtendable_snoc_true_of_not_false
   witnessPrefixExtendable_snoc_true_of_not_false n x hi' p hp hnf
 
 end PrefixExtendableSplitSurface
+
+section TreeMCSPGreedyExtendableSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+/-- Block 8a surface: the greedy prefix of length `i` (the bundle outputs on `x`). -/
+def check_greedyPrefix
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n : Nat)
+    (dec : C_DAG.Family (treeMCSPPrefixM codec n))
+    (x : PrefixBitVec (Pnp3.Models.Partial.tableLen n))
+    (i : Nat) (hi : i ≤ codec.witnessBits n) :
+    PrefixBitVec i :=
+  greedyPrefix codec n dec x i hi
+
+/-- Block 8a surface (headline): on a promise instance, with a correct next-bit
+decider, the greedy prefix of every length is extendable to a valid witness. -/
+theorem check_greedyPrefix_extendable
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n : Nat)
+    (dec : C_DAG.Family (treeMCSPPrefixM codec n))
+    (x : PrefixBitVec (Pnp3.Models.Partial.tableLen n))
+    (hpromise : (treeProblem codec).promise n x)
+    (hdec : CorrectNextBitDecider codec n x dec)
+    (i : Nat) (hi : i ≤ codec.witnessBits n) :
+    WitnessPrefixExtendable (problem := treeProblem codec) n x hi
+      (greedyPrefix codec n dec x i hi) :=
+  greedyPrefix_extendable codec n dec x hpromise hdec i hi
+
+/-- Block 8a surface: the true-extension query bit equals the encoded `p ++ true`
+prefix-state query bit (the alignment that makes `CorrectNextBitDecider`
+dischargeable from an ordinary prefix-extension decider). -/
+theorem check_eval_prefixTrueExtensionQueryBitCircuit
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n i : Nat)
+    (hi : i + 1 ≤ codec.witnessBits n)
+    (x : PrefixBitVec (Pnp3.Models.Partial.tableLen n))
+    (p : PrefixBitVec i)
+    (j : Fin (treeMCSPPrefixM codec n)) :
+    C_DAG.eval (prefixTrueExtensionQueryBitCircuit codec n i hi j) (Fin.append x p)
+      = prefixStateQueryValue codec n (i + 1) hi x (Fin.snoc p true) j :=
+  eval_prefixTrueExtensionQueryBitCircuit codec n i hi x p j
+
+/-- Block 8a surface: one true-extension greedy step adds at most `size dec + 2·M(n)`
+gates (feasibility for the corrected greedy). -/
+theorem check_size_greedyTrueStepHead_le
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n i : Nat)
+    (hi : i + 1 ≤ codec.witnessBits n)
+    (dec : C_DAG.Family (treeMCSPPrefixM codec n)) :
+    C_DAG.size (greedyTrueStepHead codec n i hi dec)
+      ≤ C_DAG.size dec + 2 * treeMCSPPrefixM codec n :=
+  size_greedyTrueStepHead_le codec n i hi dec
+
+end TreeMCSPGreedyExtendableSurface
 
 section TreeMCSPZeroPrefixBuilderSurface
 

@@ -26,6 +26,7 @@ import Pnp4.Frontier.ContractExpansion.PrefixParserConvention
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSerializer
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixQueryCircuits
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
+import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
 namespace Pnp4
 namespace Tests
@@ -214,6 +215,13 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.zeroPrefixQueryCircuitBuilder
 #print axioms Pnp4.Frontier.ContractExpansion.treeMCSPZeroPrefixQueryBuilder
 #print axioms Pnp4.Frontier.ContractExpansion.treeMCSPZeroPrefixQueryBuilder_queryValue
+
+#print axioms Pnp4.Frontier.ContractExpansion.geometric_lower_bound
+#print axioms Pnp4.Frontier.ContractExpansion.composeDeciderWithQuery_eq_substInputs
+#print axioms Pnp4.Frontier.ContractExpansion.naiveGreedyModel_size_ge
+#print axioms Pnp4.Frontier.ContractExpansion.naiveGreedyModel_size_ge_pow
+#print axioms Pnp4.Frontier.ContractExpansion.pow_le_of_linear_witnessBits
+#print axioms Pnp4.Frontier.ContractExpansion.pow_quadratic_gt_poly
 
 #print axioms Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage_accepts_iff
 #print axioms Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage_rejects_malformed

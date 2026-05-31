@@ -35,6 +35,7 @@ import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageRuntime
 import Pnp4.Frontier.ContractExpansion.PrefixParserConvention
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSerializer
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixQueryCircuits
+import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixStateQueryCircuits
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -291,6 +292,63 @@ theorem check_size_zeroPrefixQueryBitCircuit_le
   size_zeroPrefixQueryBitCircuit_le codec n j
 
 end TreeMCSPPrefixQueryCircuitsSurface
+
+section TreeMCSPPrefixStateQueryCircuitsSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+/-- Block 4 surface: the prefix-state `(i, p)` query string parses back to a
+prefix-input about `x` at target length `n`. -/
+theorem check_prefixStateQueryValue_parses
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n i : Nat)
+    (hi : i ≤ codec.witnessBits n)
+    (x : PrefixBitVec (Pnp3.Models.Partial.tableLen n))
+    (p : PrefixBitVec i) :
+    ∃ input : PrefixInput
+        (Frontier.treeMCSPSearchProblem threshold
+          (Frontier.TreeMCSPSearchWitnessEncoding.ofCodec codec))
+        (treeMCSPPrefixM codec n),
+      parseTreeMCSPPrefixInput threshold codec (prefixStateQueryValue codec n i hi x p) = some input
+        ∧ input.n = n
+        ∧ HEq input.x x :=
+  prefixStateQueryValue_parses codec n i hi x p
+
+/-- Block 4 surface: the bundle-shape per-bit query circuit, over
+`tableLen n + i` inputs (real instance bits ++ prior bundle outputs). -/
+def check_prefixStateQueryBitCircuit
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n i : Nat)
+    (j : Fin (treeMCSPPrefixM codec n)) :
+    C_DAG.Family (Pnp3.Models.Partial.tableLen n + i) :=
+  prefixStateQueryBitCircuit codec n i j
+
+/-- Block 4 surface: evaluating the per-bit circuit on `Fin.append x p` reproduces
+the canonical prefix-state query bit. -/
+theorem check_eval_prefixStateQueryBitCircuit
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n i : Nat)
+    (hi : i ≤ codec.witnessBits n)
+    (x : PrefixBitVec (Pnp3.Models.Partial.tableLen n))
+    (p : PrefixBitVec i)
+    (j : Fin (treeMCSPPrefixM codec n)) :
+    C_DAG.eval (prefixStateQueryBitCircuit codec n i j) (Fin.append x p) =
+      prefixStateQueryValue codec n i hi x p j :=
+  eval_prefixStateQueryBitCircuit codec n i hi x p j
+
+/-- Block 4 surface: uniform per-bit size bound (`≤ 2`), independent of `i`. -/
+theorem check_size_prefixStateQueryBitCircuit_le
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n i : Nat)
+    (j : Fin (treeMCSPPrefixM codec n)) :
+    C_DAG.size (prefixStateQueryBitCircuit codec n i j) ≤ 2 :=
+  size_prefixStateQueryBitCircuit_le codec n i j
+
+end TreeMCSPPrefixStateQueryCircuitsSurface
 
 section TreeMCSPZeroPrefixBuilderSurface
 

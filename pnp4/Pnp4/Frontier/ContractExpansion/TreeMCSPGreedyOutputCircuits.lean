@@ -10,6 +10,15 @@ open Pnp3.ComplexityInterfaces.DagCircuit
 /-!
 # Final greedy bundle outputs as per-witness-bit C_DAG circuits
 
+> **Legacy (state-query) surface — NOT solver-bearing.**  `greedyOutputCircuit` here
+> projects the *state-query* bundle `fullGreedyBundle` (which queries `(i, p)`), and
+> after the Block 8a semantic-mismatch fix (#1504) that greedy is **not** the one
+> whose bits form a valid witness.  For the solver, use the correctness-bearing
+> `greedyTrueOutputCircuit` / `fullGreedyTrueBundle`
+> (`TreeMCSPGreedyTrueOutputCircuits.lean`), built on the true-extension fold.  These
+> output circuits remain valid (same uniform size bound) but must **not** be used as
+> solver/witness outputs.
+
 Block 7 of the downstream decision→search extraction, in the **Option ①**
 architecture (#1498–#1501).
 

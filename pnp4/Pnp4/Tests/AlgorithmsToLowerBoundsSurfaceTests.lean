@@ -42,6 +42,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyOutputCircuits
 import Pnp4.Frontier.ContractExpansion.PrefixExtendableSplit
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTrueExtensionQuery
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyExtendable
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyTrueOutputCircuits
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -628,6 +629,47 @@ theorem check_size_greedyTrueStepHead_le
   size_greedyTrueStepHead_le codec n i hi dec
 
 end TreeMCSPGreedyExtendableSurface
+
+section TreeMCSPGreedyTrueOutputCircuitsSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+/-- Block 7′ surface: the correctness-bearing per-witness-bit output circuit. -/
+def check_greedyTrueOutputCircuit
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n : Nat)
+    (dec : C_DAG.Family (treeMCSPPrefixM codec n))
+    (i : Fin (codec.witnessBits n)) :
+    C_DAG.Family (Pnp3.Models.Partial.tableLen n) :=
+  greedyTrueOutputCircuit codec n dec i
+
+/-- Block 7′ surface: the `i`-th true-greedy output circuit computes the `i`-th
+true-greedy bit. -/
+theorem check_eval_greedyTrueOutputCircuit
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n : Nat)
+    (dec : C_DAG.Family (treeMCSPPrefixM codec n))
+    (i : Fin (codec.witnessBits n))
+    (x : PrefixBitVec (Pnp3.Models.Partial.tableLen n)) :
+    C_DAG.eval (greedyTrueOutputCircuit codec n dec i) x
+      = (fullGreedyTrueBundle codec n dec).evalOutput i x :=
+  eval_greedyTrueOutputCircuit codec n dec i x
+
+/-- Block 7′ surface (headline): uniform size bound on every true-greedy output
+circuit, independent of `i`. -/
+theorem check_size_greedyTrueOutputCircuit_le
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n : Nat)
+    (dec : C_DAG.Family (treeMCSPPrefixM codec n))
+    (i : Fin (codec.witnessBits n)) :
+    C_DAG.size (greedyTrueOutputCircuit codec n dec i)
+      ≤ codec.witnessBits n * (C_DAG.size dec + 2 * treeMCSPPrefixM codec n) + 1 :=
+  size_greedyTrueOutputCircuit_le codec n dec i
+
+end TreeMCSPGreedyTrueOutputCircuitsSurface
 
 section TreeMCSPZeroPrefixBuilderSurface
 

@@ -10,6 +10,14 @@ open Pnp3.ComplexityInterfaces.DagCircuit
 /-!
 # Recursive shared-bundle greedy fold
 
+> **Legacy (state-query) surface — not solver-bearing.**  This fold iterates the
+> state-query step (`greedyBundleStep`, querying `(i, p)`), which is **not** the
+> correctness-bearing greedy.  Use the true-extension fold `greedyTrueBundleUpTo`
+> (`TreeMCSPGreedyExtendable.lean`) and its outputs `greedyTrueOutputCircuit`
+> (`TreeMCSPGreedyTrueOutputCircuits.lean`) for solver/witness construction.  The
+> definitions here remain valid constructions (with the same linear size bound) but
+> must not be used for correctness.
+
 Block 6 of the downstream decision→search extraction, in the **Option ①**
 architecture (#1498 / #1499 / #1500).
 

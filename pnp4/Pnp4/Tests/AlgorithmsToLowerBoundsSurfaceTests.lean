@@ -27,6 +27,7 @@ import Pnp4.Frontier.CompressionMagnification
 import Pnp4.Frontier.SearchMCSPMagnification
 import Pnp4.Frontier.SearchMCSPConcreteTargets
 import Pnp4.Frontier.ContractExpansion.C_DAG_Adapter
+import Pnp4.Frontier.ContractExpansion.QueryComposition
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageRuntime
 import Pnp4.Frontier.ContractExpansion.PrefixParserConvention
@@ -85,6 +86,36 @@ theorem check_PpolyDAG_decider_as_C_DAG_decider
         ∀ x : AlgorithmsToLowerBounds.BitVec n,
           Pnp4.Frontier.ContractExpansion.C_DAG.eval C x = L n x :=
   Pnp4.Frontier.ContractExpansion.PpolyDAG_decider_as_C_DAG_decider h
+
+section QueryCompositionSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+def check_composeDeciderWithQuery
+    {inputBits queryBits : Nat}
+    (decider : C_DAG.Family queryBits)
+    (queryBit : Fin queryBits → C_DAG.Family inputBits) :
+    C_DAG.Family inputBits :=
+  composeDeciderWithQuery decider queryBit
+
+theorem check_eval_composeDeciderWithQuery
+    {inputBits queryBits : Nat}
+    (decider : C_DAG.Family queryBits)
+    (queryBit : Fin queryBits → C_DAG.Family inputBits)
+    (x : AlgorithmsToLowerBounds.BitVec inputBits) :
+    C_DAG.eval (composeDeciderWithQuery decider queryBit) x =
+      C_DAG.eval decider (fun j => C_DAG.eval (queryBit j) x) :=
+  eval_composeDeciderWithQuery decider queryBit x
+
+theorem check_size_composeDeciderWithQuery_le
+    {inputBits queryBits : Nat}
+    (decider : C_DAG.Family queryBits)
+    (queryBit : Fin queryBits → C_DAG.Family inputBits) :
+    C_DAG.size (composeDeciderWithQuery decider queryBit) ≤
+      C_DAG.size decider + ∑ j, C_DAG.size (queryBit j) :=
+  size_composeDeciderWithQuery_le decider queryBit
+
+end QueryCompositionSurface
 
 section PrefixExtensionLanguageSurface
 

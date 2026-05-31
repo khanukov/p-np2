@@ -36,6 +36,7 @@ import Pnp4.Frontier.ContractExpansion.PrefixParserConvention
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSerializer
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixQueryCircuits
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixStateQueryCircuits
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyBundleStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -351,6 +352,75 @@ theorem check_size_prefixStateQueryBitCircuit_le
   size_prefixStateQueryBitCircuit_le codec n i hi j
 
 end TreeMCSPPrefixStateQueryCircuitsSurface
+
+section TreeMCSPGreedyBundleStepSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+/-- Block 5 surface: the one-step shared-bundle greedy extension. -/
+def check_greedyBundleStep
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n i : Nat)
+    (hi : i ≤ codec.witnessBits n)
+    (dec : C_DAG.Family (treeMCSPPrefixM codec n))
+    (B : Pnp3.ComplexityInterfaces.DagCircuit.DagBundle (Pnp3.Models.Partial.tableLen n) i) :
+    Pnp3.ComplexityInterfaces.DagCircuit.DagBundle (Pnp3.Models.Partial.tableLen n) (i + 1) :=
+  greedyBundleStep codec n i hi dec B
+
+/-- Block 5 surface: the step is additive in gate count (prior bundle shared). -/
+theorem check_gates_greedyBundleStep
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n i : Nat)
+    (hi : i ≤ codec.witnessBits n)
+    (dec : C_DAG.Family (treeMCSPPrefixM codec n))
+    (B : Pnp3.ComplexityInterfaces.DagCircuit.DagBundle (Pnp3.Models.Partial.tableLen n) i) :
+    (greedyBundleStep codec n i hi dec B).gates
+      = B.gates + (greedyStepHead codec n i hi dec).gates :=
+  gates_greedyBundleStep codec n i hi dec B
+
+/-- Block 5 surface: one greedy step adds at most `size dec + 2·M(n)`. -/
+theorem check_size_greedyStepHead_le
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n i : Nat)
+    (hi : i ≤ codec.witnessBits n)
+    (dec : C_DAG.Family (treeMCSPPrefixM codec n)) :
+    C_DAG.size (greedyStepHead codec n i hi dec)
+      ≤ C_DAG.size dec + 2 * treeMCSPPrefixM codec n :=
+  size_greedyStepHead_le codec n i hi dec
+
+/-- Block 5 surface: prior outputs preserved by the step. -/
+theorem check_evalOutput_greedyBundleStep_old
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n i : Nat)
+    (hi : i ≤ codec.witnessBits n)
+    (dec : C_DAG.Family (treeMCSPPrefixM codec n))
+    (B : Pnp3.ComplexityInterfaces.DagCircuit.DagBundle (Pnp3.Models.Partial.tableLen n) i)
+    (o : Fin i)
+    (x : PrefixBitVec (Pnp3.Models.Partial.tableLen n)) :
+    (greedyBundleStep codec n i hi dec B).evalOutput (Fin.castAdd 1 o) x
+      = B.evalOutput o x :=
+  evalOutput_greedyBundleStep_old codec n i hi dec B o x
+
+/-- Block 5 surface: the new bit is the decider run on the prefix-state `(i, p)`
+query, `p` the prior bundle outputs on `x`. -/
+theorem check_evalOutput_greedyBundleStep_new
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n i : Nat)
+    (hi : i ≤ codec.witnessBits n)
+    (dec : C_DAG.Family (treeMCSPPrefixM codec n))
+    (B : Pnp3.ComplexityInterfaces.DagCircuit.DagBundle (Pnp3.Models.Partial.tableLen n) i)
+    (x : PrefixBitVec (Pnp3.Models.Partial.tableLen n)) :
+    (greedyBundleStep codec n i hi dec B).evalOutput (Fin.natAdd i (0 : Fin 1)) x
+      = C_DAG.eval dec
+          (prefixStateQueryValue codec n i hi x (fun k => B.evalOutput k x)) :=
+  evalOutput_greedyBundleStep_new codec n i hi dec B x
+
+end TreeMCSPGreedyBundleStepSurface
 
 section TreeMCSPZeroPrefixBuilderSurface
 

@@ -30,6 +30,7 @@ import Pnp4.Frontier.ContractExpansion.C_DAG_Adapter
 import Pnp4.Frontier.ContractExpansion.QueryComposition
 import Pnp4.Frontier.ContractExpansion.QueryBuilder
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage
+import Pnp4.Frontier.ContractExpansion.PrefixQueryBuilder
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageRuntime
 import Pnp4.Frontier.ContractExpansion.PrefixParserConvention
 
@@ -163,6 +164,59 @@ theorem check_QueryCircuitBuilder_size_compose_le_bound
   builder.size_compose_le_bound n decider
 
 end QueryBuilderSurface
+
+section PrefixQueryBuilderSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+def check_PrefixQueryBuilder
+    (problem : Frontier.SearchMCSPCompressionProblem)
+    (parser : PrefixParser problem) : Type :=
+  PrefixQueryBuilder problem parser
+
+def check_PrefixQueryBuilder_compose
+    {problem : Frontier.SearchMCSPCompressionProblem}
+    {parser : PrefixParser problem}
+    (pqb : PrefixQueryBuilder problem parser)
+    (n : Nat)
+    (decider : C_DAG.Family (parser.M n)) :
+    C_DAG.Family (problem.instanceBits n) :=
+  pqb.compose n decider
+
+theorem check_PrefixQueryBuilder_eval_compose
+    {problem : Frontier.SearchMCSPCompressionProblem}
+    {parser : PrefixParser problem}
+    (pqb : PrefixQueryBuilder problem parser)
+    (n : Nat)
+    (decider : C_DAG.Family (parser.M n))
+    (x : AlgorithmsToLowerBounds.BitVec (problem.instanceBits n)) :
+    C_DAG.eval (pqb.compose n decider) x =
+      C_DAG.eval decider (pqb.queryValue n x) :=
+  pqb.eval_compose n decider x
+
+theorem check_PrefixQueryBuilder_size_compose_le
+    {problem : Frontier.SearchMCSPCompressionProblem}
+    {parser : PrefixParser problem}
+    (pqb : PrefixQueryBuilder problem parser)
+    (n : Nat)
+    (decider : C_DAG.Family (parser.M n)) :
+    C_DAG.size (pqb.compose n decider) ≤
+      C_DAG.size decider + ∑ i, C_DAG.size (pqb.builder.queryBitCircuit n i) :=
+  pqb.size_compose_le n decider
+
+theorem check_PrefixQueryBuilder_queryValue_parses
+    {problem : Frontier.SearchMCSPCompressionProblem}
+    {parser : PrefixParser problem}
+    (pqb : PrefixQueryBuilder problem parser)
+    (n : Nat)
+    (x : AlgorithmsToLowerBounds.BitVec (problem.instanceBits n)) :
+    ∃ input : PrefixInput problem (parser.M n),
+      parsePrefixInput parser (pqb.queryValue n x) = some input
+        ∧ input.n = n
+        ∧ HEq input.x x :=
+  pqb.queryValue_parses n x
+
+end PrefixQueryBuilderSurface
 
 section PrefixExtensionLanguageSurface
 

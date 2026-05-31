@@ -275,6 +275,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageNP,
     Glob.one `Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageRuntime,
     Glob.one `Pnp4.Frontier.ContractExpansion.PrefixParserConvention,
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSerializer,
     Glob.one `Pnp4.Tests.AlgorithmsToLowerBoundsSurfaceTests,
     Glob.one `Pnp4.Tests.AxiomsAudit
   ]

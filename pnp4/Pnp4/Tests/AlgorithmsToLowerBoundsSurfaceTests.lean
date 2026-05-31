@@ -45,6 +45,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyExtendable
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyTrueOutputCircuits
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDeciderCorrect
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedySolves
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBoundedSolver
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -723,6 +724,25 @@ theorem check_greedyTrueOutputCircuit_solves
   greedyTrueOutputCircuit_solves codec n dec x hpromise hdec
 
 end TreeMCSPGreedySolvesSurface
+
+section TreeMCSPBoundedSolverSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+/-- Block 9 surface: a language-correct, size-bounded prefix-extension decider
+family assembles into a `BoundedSearchSolver` for the tree-MCSP search problem. -/
+def check_boundedSearchSolver_of_deciderFamily
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (dec : ∀ n, C_DAG.Family (treeMCSPPrefixM codec n))
+    (decSizeBound : Nat → Nat)
+    (hlang : ∀ n, DecidesPrefixExtensionLanguage codec n (dec n))
+    (hsize : ∀ n, C_DAG.size (dec n) ≤ decSizeBound n) :
+    Frontier.BoundedSearchSolver (treeProblem codec) C_DAG
+      (boundedSolverSizeBound codec decSizeBound) :=
+  boundedSearchSolver_of_deciderFamily codec dec decSizeBound hlang hsize
+
+end TreeMCSPBoundedSolverSurface
 
 section TreeMCSPZeroPrefixBuilderSurface
 

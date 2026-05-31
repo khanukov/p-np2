@@ -289,6 +289,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyTrueOutputCircuits,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPDeciderCorrect,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGreedySolves,
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPBoundedSolver,
     Glob.one `Pnp4.Tests.AlgorithmsToLowerBoundsSurfaceTests,
     Glob.one `Pnp4.Tests.AxiomsAudit
   ]

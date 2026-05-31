@@ -18,7 +18,8 @@ Composition layer — micro-step progress (one reusable primitive per commit):
 * step 4a — multi-output `DagBundle` (`snocBundle`) with eval-preservation;  ✓
 * step 4b — `bundleOfFamily` (fold a family into one bundle) with eval;  ✓
 * step 4c — `substInputs` (input substitution): defs + characterization +
-  structural size;  ← this commit (eval-preservation + `∑ size` bound follow).
+  structural size (✓); the substitution's lower layer = `B` (eval-L) ← this commit;
+  the main substitution induction + top-level eval + `∑ size` bound follow.
 
 Downstream (separate files): greedy `BoundedSearchSolver` assembly →
 `PpolyDAG (PrefixExtensionLanguage) → BoundedSearchSolver` and its
@@ -842,6 +843,94 @@ def substInputs {n m : Nat}
     (D : DagCircuit n) (B : DagBundle m n) (j : Fin D.gates) :
     (substInputsWithBundle D B).gate (Fin.natAdd B.gates j) = substGateWithBundle B (D.gate j) := by
   simp only [substInputsWithBundle, Fin.addCases_right]
+
+/-! ### Composition layer, step 4c (eval-L): the substitution's lower layer is `B`
+
+For positions `< B.gates`, `substInputsWithBundle D B` is just the bundle `B`'s
+gate list, so its gate-level evaluation agrees with any `B.asCircuit o`.  Direct
+analogue of `evalGateAt_append_left` (via `substInputsWithBundle_gate_left`).
+
+The witness `o : Fin n` is only there to name a `DagCircuit` view of `B`; the
+gate evaluation does not depend on the chosen output.  In the input case of the
+main substitution induction (next step) `o` is supplied by the input index `j`,
+which exists precisely because that case provides a `Fin n`.
+-/
+theorem evalGateAt_substInputsWithBundle_left {n m : Nat}
+    (D : DagCircuit n) (B : DagBundle m n) (o : Fin n) :
+    ∀ {i : Nat} (hiA : i < (substInputsWithBundle D B).gates) (hiB : i < B.gates)
+      (x : Bitstring m),
+      DagCircuit.eval.evalGateAt (C := substInputsWithBundle D B) (x := x) i hiA =
+        DagCircuit.eval.evalGateAt (C := B.asCircuit o) (x := x) i hiB
+  | i, hiA, hiB, x => by
+      have hgate : (substInputsWithBundle D B).gate ⟨i, hiA⟩ = (B.asCircuit o).gate ⟨i, hiB⟩ :=
+        substInputsWithBundle_gate_left D B ⟨i, hiB⟩
+      cases hOp : (B.asCircuit o).gate ⟨i, hiB⟩ with
+      | const b =>
+          rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+          simp only [hOp]
+      | not w =>
+          cases w with
+          | input j =>
+              rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+              simp only [hOp]
+          | gate g =>
+              rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+              simp only [hOp]
+              rw [evalGateAt_substInputsWithBundle_left D B o
+                    (Nat.lt_trans g.2 hiA) (Nat.lt_trans g.2 hiB) x]
+      | and w₁ w₂ =>
+          cases w₁ with
+          | input j₁ =>
+              cases w₂ with
+              | input j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp]
+              | gate j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp]
+                  rw [evalGateAt_substInputsWithBundle_left D B o
+                        (Nat.lt_trans j₂.2 hiA) (Nat.lt_trans j₂.2 hiB) x]
+          | gate j₁ =>
+              cases w₂ with
+              | input j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp]
+                  rw [evalGateAt_substInputsWithBundle_left D B o
+                        (Nat.lt_trans j₁.2 hiA) (Nat.lt_trans j₁.2 hiB) x]
+              | gate j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp]
+                  rw [evalGateAt_substInputsWithBundle_left D B o
+                        (Nat.lt_trans j₁.2 hiA) (Nat.lt_trans j₁.2 hiB) x,
+                      evalGateAt_substInputsWithBundle_left D B o
+                        (Nat.lt_trans j₂.2 hiA) (Nat.lt_trans j₂.2 hiB) x]
+      | or w₁ w₂ =>
+          cases w₁ with
+          | input j₁ =>
+              cases w₂ with
+              | input j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp]
+              | gate j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp]
+                  rw [evalGateAt_substInputsWithBundle_left D B o
+                        (Nat.lt_trans j₂.2 hiA) (Nat.lt_trans j₂.2 hiB) x]
+          | gate j₁ =>
+              cases w₂ with
+              | input j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp]
+                  rw [evalGateAt_substInputsWithBundle_left D B o
+                        (Nat.lt_trans j₁.2 hiA) (Nat.lt_trans j₁.2 hiB) x]
+              | gate j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp]
+                  rw [evalGateAt_substInputsWithBundle_left D B o
+                        (Nat.lt_trans j₁.2 hiA) (Nat.lt_trans j₁.2 hiB) x,
+                      evalGateAt_substInputsWithBundle_left D B o
+                        (Nat.lt_trans j₂.2 hiA) (Nat.lt_trans j₂.2 hiB) x]
+  termination_by i => i
 
 end DagCircuit
 end ComplexityInterfaces

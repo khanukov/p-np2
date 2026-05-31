@@ -17,10 +17,12 @@ Composition layer — micro-step progress (one reusable primitive per commit):
 * step 3 — single-output `appendCircuit` (defs + size + eval-preservation);  ✓
 * step 4a — multi-output `DagBundle` (`snocBundle`) with eval-preservation;  ✓
 * step 4b — `bundleOfFamily` (fold a family into one bundle) with eval;  ✓
-* step 4c — `substInputs` (input substitution): defs + characterization +
-  structural size, and full eval-preservation
-  (`eval (substInputs D G) x = eval D (fun j => eval (G j) x)`);  ← this commit
-  completes eval.  A `∑ size (G j)` bound (over the structural size) can follow.
+* step 4c — `substInputs` (input substitution): defs + characterization, full
+  eval-preservation (`eval (substInputs D G) x = eval D (fun j => eval (G j) x)`),
+  and the size bound (`size (substInputs D G) ≤ size D + ∑ j, size (G j)`);  ✓
+
+The composition layer is complete.  Downstream (separate files) the
+decision→search *extraction* assembles a `BoundedSearchSolver` from these pieces.
 
 Downstream (separate files): greedy `BoundedSearchSolver` assembly →
 `PpolyDAG (PrefixExtensionLanguage) → BoundedSearchSolver` and its
@@ -1130,6 +1132,34 @@ the bundle outputs back to the family members through `evalOutput_bundleOfFamily
   unfold substInputs
   rw [eval_substInputsWithBundle]
   simp only [evalOutput_bundleOfFamily]
+
+/-! ### Composition layer, step 4c (size): the `∑` size bound
+
+`bundleOfFamily` concatenates the gate lists, so its gate count is the sum of the
+family's gate counts; hence the substitution's size is bounded by `size D` plus
+the sum of the `size (G j)` (with room to spare, since each `size` over-counts by
+one for output accounting).
+-/
+
+/-- The bundle's gate count is the sum of the family members' gate counts. -/
+theorem bundleOfFamily_gates {n : Nat} :
+    ∀ {out : Nat} (G : Fin out → DagCircuit n),
+      (bundleOfFamily out G).gates = ∑ j, (G j).gates
+  | 0, G => by
+      simp [bundleOfFamily, emptyBundle]
+  | out + 1, G => by
+      simp only [bundleOfFamily, snocBundle_gates]
+      rw [bundleOfFamily_gates (fun o => G (Fin.castAdd 1 o)), Fin.sum_univ_castSucc]
+      rfl
+
+/-- **Substitution size bound.**  `substInputs D G` is no larger than `D` plus the
+total size of the substituted family. -/
+theorem size_substInputs_le {n m : Nat} (D : DagCircuit n) (G : Fin n → DagCircuit m) :
+    size (substInputs D G) ≤ size D + ∑ j, size (G j) := by
+  rw [size_substInputs, bundleOfFamily_gates]
+  simp only [size, Finset.sum_add_distrib, Finset.sum_const, Finset.card_univ,
+    Fintype.card_fin, smul_eq_mul, mul_one]
+  omega
 
 end DagCircuit
 end ComplexityInterfaces

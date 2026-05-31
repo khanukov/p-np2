@@ -29,6 +29,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixStateQueryCircuits
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyBundleStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyBundleFold
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyOutputCircuits
+import Pnp4.Frontier.ContractExpansion.PrefixExtendableSplit
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -233,6 +234,11 @@ end Pnp4
 
 #print axioms Pnp4.Frontier.ContractExpansion.eval_greedyOutputCircuit
 #print axioms Pnp4.Frontier.ContractExpansion.size_greedyOutputCircuit_le
+
+#print axioms Pnp4.Frontier.ContractExpansion.prefixExtendableInput_iff_witnessPrefixExtendable
+#print axioms Pnp4.Frontier.ContractExpansion.witnessPrefixExtendable_split
+#print axioms Pnp4.Frontier.ContractExpansion.witnessPrefixExtendable_snoc_false_of_not_true
+#print axioms Pnp4.Frontier.ContractExpansion.witnessPrefixExtendable_snoc_true_of_not_false
 
 #print axioms Pnp4.Frontier.ContractExpansion.zeroPrefixQueryCircuitBuilder
 #print axioms Pnp4.Frontier.ContractExpansion.treeMCSPZeroPrefixQueryBuilder

@@ -39,6 +39,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixStateQueryCircuits
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyBundleStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyBundleFold
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyOutputCircuits
+import Pnp4.Frontier.ContractExpansion.PrefixExtendableSplit
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -521,6 +522,51 @@ theorem check_size_greedyOutputCircuit_le
   size_greedyOutputCircuit_le codec n dec i
 
 end TreeMCSPGreedyOutputCircuitsSurface
+
+section PrefixExtendableSplitSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+/-- Block 7.5 surface: `PrefixExtendableInput` is `WitnessPrefixExtendable` on the
+parsed `(n, x, i, p)` data. -/
+theorem check_prefixExtendableInput_iff_witnessPrefixExtendable
+    {problem : Frontier.SearchMCSPCompressionProblem} {m : Nat} (input : PrefixInput problem m) :
+    PrefixExtendableInput input ↔
+      WitnessPrefixExtendable input.n input.x input.prefixLength_le input.p :=
+  prefixExtendableInput_iff_witnessPrefixExtendable input
+
+/-- Block 7.5 surface: the greedy split — an extendable prefix has an extendable
+next-bit extension. -/
+theorem check_witnessPrefixExtendable_split
+    {problem : Frontier.SearchMCSPCompressionProblem}
+    (n : Nat) (x : PrefixBitVec (problem.instanceBits n))
+    {i : Nat} (hi' : i + 1 ≤ problem.witnessBits n) (p : PrefixBitVec i)
+    (hp : WitnessPrefixExtendable n x (Nat.le_of_succ_le hi') p) :
+    WitnessPrefixExtendable n x hi' (Fin.snoc p true)
+      ∨ WitnessPrefixExtendable n x hi' (Fin.snoc p false) :=
+  witnessPrefixExtendable_split n x hi' p hp
+
+/-- Block 7.5 surface: the reject branch (false). -/
+theorem check_witnessPrefixExtendable_snoc_false_of_not_true
+    {problem : Frontier.SearchMCSPCompressionProblem}
+    (n : Nat) (x : PrefixBitVec (problem.instanceBits n))
+    {i : Nat} (hi' : i + 1 ≤ problem.witnessBits n) (p : PrefixBitVec i)
+    (hp : WitnessPrefixExtendable n x (Nat.le_of_succ_le hi') p)
+    (hnt : ¬ WitnessPrefixExtendable n x hi' (Fin.snoc p true)) :
+    WitnessPrefixExtendable n x hi' (Fin.snoc p false) :=
+  witnessPrefixExtendable_snoc_false_of_not_true n x hi' p hp hnt
+
+/-- Block 7.5 surface: the reject branch (true). -/
+theorem check_witnessPrefixExtendable_snoc_true_of_not_false
+    {problem : Frontier.SearchMCSPCompressionProblem}
+    (n : Nat) (x : PrefixBitVec (problem.instanceBits n))
+    {i : Nat} (hi' : i + 1 ≤ problem.witnessBits n) (p : PrefixBitVec i)
+    (hp : WitnessPrefixExtendable n x (Nat.le_of_succ_le hi') p)
+    (hnf : ¬ WitnessPrefixExtendable n x hi' (Fin.snoc p false)) :
+    WitnessPrefixExtendable n x hi' (Fin.snoc p true) :=
+  witnessPrefixExtendable_snoc_true_of_not_false n x hi' p hp hnf
+
+end PrefixExtendableSplitSurface
 
 section TreeMCSPZeroPrefixBuilderSurface
 

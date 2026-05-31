@@ -223,6 +223,11 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.pow_le_of_linear_witnessBits
 #print axioms Pnp4.Frontier.ContractExpansion.pow_quadratic_gt_poly
 
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.evalGateAt_congr
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.snocBundleSubst_gates
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.evalOutput_snocBundleSubst_new
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.evalOutput_snocBundleSubst_old
+
 #print axioms Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage_accepts_iff
 #print axioms Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage_rejects_malformed
 #print axioms Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage_accepts_of_parse_and_witness

@@ -1,4 +1,4 @@
-import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyBundleFold
+import Pnp4.Frontier.ContractExpansion.TreeMCSPTrueExtensionQuery
 import Pnp4.Frontier.ContractExpansion.PrefixExtendableSplit
 
 namespace Pnp4
@@ -9,36 +9,28 @@ open AlgorithmsToLowerBounds
 open Pnp3.ComplexityInterfaces.DagCircuit
 
 /-!
-# Greedy extendability invariant
+# Greedy extendability invariant (true-extension query)
 
-Block 8a of the downstream decision→search extraction.  This is the first place
-the circuit plumbing (Blocks 4–7) meets real semantic content (Block 7.5): under an
-explicit **correct-decider** hypothesis, the greedy bundle's outputs form a prefix
-that stays *extendable* on promise inputs.
+Block 8a of the downstream decision→search extraction — the first place the circuit
+plumbing meets real semantic content (Block 7.5).
 
-Concretely, let `dec` be the prefix-extension decider and
-`greedyBundleUpTo … i` the shared greedy bundle (Block 6).  The *greedy prefix*
-`greedyPrefix … i` is the length-`i` bit vector of that bundle's outputs on `x`.
-We prove, by induction on `i`:
+**Correction over the first draft.**  The greedy step must ask the decider
+*"is `p ++ true` extendable?"*, so it runs `dec` on the **true-extension** query
+`prefixTrueExtensionQueryValue` (which encodes the prefix-state `(i+1, p ++ true)`),
+*not* on the `(i, p)` query.  This is what makes the `CorrectNextBitDecider`
+hypothesis dischargeable from an ordinary `PrefixExtensionLanguage` decider: such a
+decider on the encoded `p ++ true` decides extendability of `p ++ true`.
 
-```
-WitnessPrefixExtendable (treeProblem codec) n x hi (greedyPrefix codec n dec x i hi)
-```
-
-i.e. the greedy prefix can always be completed to a valid witness — given
-(1) the promise that `x` is a yes-instance, and (2) `dec` correctly answering the
-next-bit extendability question (`CorrectNextBitDecider`).  The step uses the
-reject-branch split lemmas from #1503.
-
-This is **not** solver correctness: it does not yet conclude that the *full* greedy
-prefix is itself a valid witness, nor assemble a `BoundedSearchSolver`.
+`greedyTrueBundleUpTo` folds the true-extension greedy step (sharing the bundle via
+`snocBundleSubst`), `greedyPrefix` reads off its outputs, and `greedyPrefix_extendable`
+proves — by induction, using the reject-branch split lemma (#1503) — that the greedy
+prefix stays extendable on promise inputs under a correct next-bit decider.
 
 Scope discipline — the extendability invariant only:
 
 * the decider's correctness is an **explicit hypothesis**, not proved here;
 * **no** `BoundedSearchSolver` assembly and **no** `solves` conclusion;
-* **no** `PpolyDAG`/`InPpolyDAG` bridge, endpoint wrapper, or
-  `P ≠ NP` / `NP ⊄ P/poly` consequence.
+* **no** `PpolyDAG`/`InPpolyDAG` bridge, endpoint, or `P ≠ NP` consequence.
 -/
 
 variable {threshold : Nat → Nat}
@@ -47,8 +39,57 @@ variable {threshold : Nat → Nat}
 abbrev treeProblem (codec : TreeCircuitWitnessCodec threshold) : SearchMCSPCompressionProblem :=
   treeMCSPSearchProblem threshold (TreeMCSPSearchWitnessEncoding.ofCodec codec)
 
-/-- The greedy prefix of length `i`: the first `i` greedy bits (the bundle's
-outputs on `x`), as a witness prefix. -/
+/-- The head circuit for one true-extension greedy step: `dec` composed with the
+true-extension query-bit circuits, over `tableLen n + i` inputs. -/
+def greedyTrueStepHead
+    (codec : TreeCircuitWitnessCodec threshold)
+    (n i : Nat) (hi : i + 1 ≤ codec.witnessBits n)
+    (dec : C_DAG.Family (treeMCSPPrefixM codec n)) :
+    C_DAG.Family (Pnp3.Models.Partial.tableLen n + i) :=
+  composeDeciderWithQuery dec (prefixTrueExtensionQueryBitCircuit codec n i hi)
+
+/-- One greedy step adds at most `size dec + 2·M(n)` gates, independent of the prior
+bits. -/
+theorem size_greedyTrueStepHead_le
+    (codec : TreeCircuitWitnessCodec threshold)
+    (n i : Nat) (hi : i + 1 ≤ codec.witnessBits n)
+    (dec : C_DAG.Family (treeMCSPPrefixM codec n)) :
+    C_DAG.size (greedyTrueStepHead codec n i hi dec)
+      ≤ C_DAG.size dec + 2 * treeMCSPPrefixM codec n := by
+  refine le_trans
+    (size_composeDeciderWithQuery_le dec (prefixTrueExtensionQueryBitCircuit codec n i hi)) ?_
+  have hsum : (∑ j, C_DAG.size (prefixTrueExtensionQueryBitCircuit codec n i hi j))
+      ≤ 2 * treeMCSPPrefixM codec n := by
+    calc
+      (∑ j, C_DAG.size (prefixTrueExtensionQueryBitCircuit codec n i hi j))
+          ≤ ∑ _j : Fin (treeMCSPPrefixM codec n), 2 :=
+            Finset.sum_le_sum (fun j _ => size_prefixTrueExtensionQueryBitCircuit_le codec n i hi j)
+      _ = 2 * treeMCSPPrefixM codec n := by
+          simp [Finset.sum_const, Finset.card_univ, Nat.mul_comm]
+  omega
+
+/-- The shared bundle of the first `i` greedy bits, folding the true-extension step. -/
+def greedyTrueBundleUpTo
+    (codec : TreeCircuitWitnessCodec threshold)
+    (n : Nat)
+    (dec : C_DAG.Family (treeMCSPPrefixM codec n)) :
+    (i : Nat) → i ≤ codec.witnessBits n → DagBundle (Pnp3.Models.Partial.tableLen n) i
+  | 0, _ => emptyBundle (Pnp3.Models.Partial.tableLen n)
+  | i + 1, hi =>
+      snocBundleSubst (greedyTrueBundleUpTo codec n dec i (Nat.le_of_succ_le hi))
+        (greedyTrueStepHead codec n i hi dec)
+
+theorem greedyTrueBundleUpTo_succ
+    (codec : TreeCircuitWitnessCodec threshold)
+    (n i : Nat)
+    (dec : C_DAG.Family (treeMCSPPrefixM codec n))
+    (hi : i + 1 ≤ codec.witnessBits n) :
+    greedyTrueBundleUpTo codec n dec (i + 1) hi =
+      snocBundleSubst (greedyTrueBundleUpTo codec n dec i (Nat.le_of_succ_le hi))
+        (greedyTrueStepHead codec n i hi dec) :=
+  rfl
+
+/-- The greedy prefix of length `i`: the first `i` greedy bits on `x`. -/
 def greedyPrefix
     (codec : TreeCircuitWitnessCodec threshold)
     (n : Nat)
@@ -56,25 +97,53 @@ def greedyPrefix
     (x : PrefixBitVec (Pnp3.Models.Partial.tableLen n))
     (i : Nat) (hi : i ≤ codec.witnessBits n) :
     PrefixBitVec i :=
-  fun k => (greedyBundleUpTo codec n dec i hi).evalOutput k x
+  fun k => (greedyTrueBundleUpTo codec n dec i hi).evalOutput k x
 
-/--
-**Correct next-bit decider** (explicit hypothesis).  `dec`, run on the prefix-state
-`(i, p)` query for instance `x`, answers exactly whether the one-bit extension
-`p ++ true` is extendable.  This is the next-bit extendability oracle the greedy
-construction relies on.
--/
-def CorrectNextBitDecider
+/-- Old greedy bits are preserved across a fold step. -/
+theorem evalOutput_greedyTrueBundleUpTo_old
     (codec : TreeCircuitWitnessCodec threshold)
-    (n : Nat)
-    (x : PrefixBitVec (Pnp3.Models.Partial.tableLen n))
-    (dec : C_DAG.Family (treeMCSPPrefixM codec n)) : Prop :=
-  ∀ (i : Nat) (hi : i + 1 ≤ codec.witnessBits n) (p : PrefixBitVec i),
-    C_DAG.eval dec (prefixStateQueryValue codec n i (Nat.le_of_succ_le hi) x p) = true
-      ↔ WitnessPrefixExtendable (problem := treeProblem codec) n x hi (Fin.snoc p true)
+    (n i : Nat)
+    (dec : C_DAG.Family (treeMCSPPrefixM codec n))
+    (hi : i + 1 ≤ codec.witnessBits n)
+    (o : Fin i)
+    (x : PrefixBitVec (Pnp3.Models.Partial.tableLen n)) :
+    (greedyTrueBundleUpTo codec n dec (i + 1) hi).evalOutput (Fin.castAdd 1 o) x
+      = (greedyTrueBundleUpTo codec n dec i (Nat.le_of_succ_le hi)).evalOutput o x := by
+  rw [greedyTrueBundleUpTo_succ]
+  exact evalOutput_snocBundleSubst_old _ (greedyTrueStepHead codec n i hi dec) o x
 
-/-- The greedy prefix grows by one bit per step: the next bit is the decider's
-verdict on the current prefix-state query. -/
+/-- The newest greedy bit is `dec`'s verdict on the true-extension query for the
+previous prefix — i.e. on the prefix-state `(i+1, p ++ true)` query. -/
+theorem evalOutput_greedyTrueBundleUpTo_new
+    (codec : TreeCircuitWitnessCodec threshold)
+    (n i : Nat)
+    (dec : C_DAG.Family (treeMCSPPrefixM codec n))
+    (hi : i + 1 ≤ codec.witnessBits n)
+    (x : PrefixBitVec (Pnp3.Models.Partial.tableLen n)) :
+    (greedyTrueBundleUpTo codec n dec (i + 1) hi).evalOutput (Fin.natAdd i (0 : Fin 1)) x
+      = C_DAG.eval dec
+          (prefixStateQueryValue codec n (i + 1) hi x
+            (Fin.snoc (greedyPrefix codec n dec x i (Nat.le_of_succ_le hi)) true)) := by
+  have hinput :
+      (fun j => (passthroughBundle (greedyTrueBundleUpTo codec n dec i (Nat.le_of_succ_le hi))).evalOutput j x)
+        = Fin.append x (greedyPrefix codec n dec x i (Nat.le_of_succ_le hi)) := by
+    funext j
+    induction j using Fin.addCases <;> simp [greedyPrefix]
+  rw [greedyTrueBundleUpTo_succ, evalOutput_snocBundleSubst_new]
+  show C_DAG.eval (composeDeciderWithQuery dec (prefixTrueExtensionQueryBitCircuit codec n i hi))
+      (fun j => (passthroughBundle (greedyTrueBundleUpTo codec n dec i (Nat.le_of_succ_le hi))).evalOutput j x)
+      = _
+  rw [hinput, eval_composeDeciderWithQuery]
+  have hbits : (fun j => C_DAG.eval (prefixTrueExtensionQueryBitCircuit codec n i hi j)
+          (Fin.append x (greedyPrefix codec n dec x i (Nat.le_of_succ_le hi))))
+        = prefixStateQueryValue codec n (i + 1) hi x
+            (Fin.snoc (greedyPrefix codec n dec x i (Nat.le_of_succ_le hi)) true) := by
+    funext j
+    rw [eval_prefixTrueExtensionQueryBitCircuit, prefixTrueExtensionQueryValue]
+  rw [hbits]
+
+/-- The greedy prefix grows by one bit per step: the next bit is `dec`'s verdict on
+the true-extension query for the current prefix. -/
 theorem greedyPrefix_succ
     (codec : TreeCircuitWitnessCodec threshold)
     (n : Nat)
@@ -84,27 +153,41 @@ theorem greedyPrefix_succ
     greedyPrefix codec n dec x (i + 1) hi'
       = Fin.snoc (greedyPrefix codec n dec x i (Nat.le_of_succ_le hi'))
           (C_DAG.eval dec
-            (prefixStateQueryValue codec n i (Nat.le_of_succ_le hi') x
-              (greedyPrefix codec n dec x i (Nat.le_of_succ_le hi')))) := by
+            (prefixStateQueryValue codec n (i + 1) hi' x
+              (Fin.snoc (greedyPrefix codec n dec x i (Nat.le_of_succ_le hi')) true))) := by
   funext k
   induction k using Fin.lastCases with
   | last =>
       simp only [Fin.snoc_last]
-      exact evalOutput_greedyBundleUpTo_new codec n i dec hi' x
+      exact evalOutput_greedyTrueBundleUpTo_new codec n i dec hi' x
   | cast j =>
       simp only [Fin.snoc_castSucc]
-      exact evalOutput_greedyBundleUpTo_old codec n i dec hi' j x
+      exact evalOutput_greedyTrueBundleUpTo_old codec n i dec hi' j x
+
+/--
+**Correct next-bit decider** (explicit hypothesis).  `dec`, run on the *encoded
+`p ++ true`* query (the prefix-state `(i+1, p ++ true)` query string), answers
+exactly whether `p ++ true` is extendable.  This is dischargeable from an ordinary
+`PrefixExtensionLanguage` decider, which on that query decides extendability of the
+encoded prefix `p ++ true`.
+-/
+def CorrectNextBitDecider
+    (codec : TreeCircuitWitnessCodec threshold)
+    (n : Nat)
+    (x : PrefixBitVec (Pnp3.Models.Partial.tableLen n))
+    (dec : C_DAG.Family (treeMCSPPrefixM codec n)) : Prop :=
+  ∀ (i : Nat) (hi : i + 1 ≤ codec.witnessBits n) (p : PrefixBitVec i),
+    C_DAG.eval dec (prefixStateQueryValue codec n (i + 1) hi x (Fin.snoc p true)) = true
+      ↔ WitnessPrefixExtendable (problem := treeProblem codec) n x hi (Fin.snoc p true)
 
 /--
 **Greedy extendability invariant.**  On a promise (yes-)instance `x`, with a correct
-next-bit decider, the greedy prefix of every length `i ≤ witnessBits n` is
-extendable to a full valid witness.
+next-bit decider, the greedy prefix of every length `i ≤ witnessBits n` is extendable
+to a full valid witness.
 
-Base case: the empty prefix is extendable because the promise instance has a
-witness (`totalOnPromise`).  Step: the new bit is `dec`'s verdict; if it accepts,
-`CorrectNextBitDecider` gives extendability of `p ++ true`; if it rejects, the
-reject-branch lemma (`witnessPrefixExtendable_snoc_false_of_not_true`) gives
-extendability of `p ++ false`.
+Base: the empty prefix is extendable via `totalOnPromise`.  Step: the new bit is
+`dec`'s verdict on the encoded `p ++ true` query; accept gives extendability of
+`p ++ true` directly, reject uses `witnessPrefixExtendable_snoc_false_of_not_true`.
 -/
 theorem greedyPrefix_extendable
     (codec : TreeCircuitWitnessCodec threshold)
@@ -127,7 +210,8 @@ theorem greedyPrefix_extendable
       have hi : i ≤ codec.witnessBits n := Nat.le_of_succ_le hi'
       rw [greedyPrefix_succ]
       by_cases hb : C_DAG.eval dec
-          (prefixStateQueryValue codec n i hi x (greedyPrefix codec n dec x i hi)) = true
+          (prefixStateQueryValue codec n (i + 1) hi' x
+            (Fin.snoc (greedyPrefix codec n dec x i hi) true)) = true
       · rw [hb]
         exact (hdec i hi' (greedyPrefix codec n dec x i hi)).mp hb
       · rw [Bool.not_eq_true] at hb

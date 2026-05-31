@@ -44,6 +44,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPTrueExtensionQuery
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyExtendable
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyTrueOutputCircuits
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDeciderCorrect
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedySolves
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -689,6 +690,39 @@ theorem check_correctNextBitDecider_of_decidesLanguage
   correctNextBitDecider_of_decidesLanguage codec n dec x hdec
 
 end TreeMCSPDeciderCorrectSurface
+
+section TreeMCSPGreedySolvesSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+/-- Block 8c surface: the full true-greedy prefix is a solving witness. -/
+theorem check_greedyPrefix_solves
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n : Nat)
+    (dec : C_DAG.Family (treeMCSPPrefixM codec n))
+    (x : PrefixBitVec (Pnp3.Models.Partial.tableLen n))
+    (hpromise : (treeProblem codec).promise n x)
+    (hdec : CorrectNextBitDecider codec n x dec) :
+    (treeProblem codec).relation n x
+      (greedyPrefix codec n dec x (codec.witnessBits n) (Nat.le_refl _)) :=
+  greedyPrefix_solves codec n dec x hpromise hdec
+
+/-- Block 8c surface (headline): the joint output of the true-greedy output circuits
+satisfies the search relation. -/
+theorem check_greedyTrueOutputCircuit_solves
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n : Nat)
+    (dec : C_DAG.Family (treeMCSPPrefixM codec n))
+    (x : PrefixBitVec (Pnp3.Models.Partial.tableLen n))
+    (hpromise : (treeProblem codec).promise n x)
+    (hdec : CorrectNextBitDecider codec n x dec) :
+    (treeProblem codec).relation n x
+      (Frontier.searchSolverOutput (problem := treeProblem codec) (greedyTrueOutputCircuit codec n dec) x) :=
+  greedyTrueOutputCircuit_solves codec n dec x hpromise hdec
+
+end TreeMCSPGreedySolvesSurface
 
 section TreeMCSPZeroPrefixBuilderSurface
 

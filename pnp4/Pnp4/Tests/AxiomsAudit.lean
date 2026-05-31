@@ -34,6 +34,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPTrueExtensionQuery
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyExtendable
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyTrueOutputCircuits
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDeciderCorrect
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedySolves
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -255,6 +256,10 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.size_greedyTrueOutputCircuit_le
 
 #print axioms Pnp4.Frontier.ContractExpansion.correctNextBitDecider_of_decidesLanguage
+
+#print axioms Pnp4.Frontier.ContractExpansion.greedyPrefix_solves
+#print axioms Pnp4.Frontier.ContractExpansion.searchSolverOutput_greedyTrueOutputCircuit
+#print axioms Pnp4.Frontier.ContractExpansion.greedyTrueOutputCircuit_solves
 
 #print axioms Pnp4.Frontier.ContractExpansion.zeroPrefixQueryCircuitBuilder
 #print axioms Pnp4.Frontier.ContractExpansion.treeMCSPZeroPrefixQueryBuilder

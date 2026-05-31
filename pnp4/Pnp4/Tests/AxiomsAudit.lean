@@ -20,6 +20,9 @@ import Pnp4.Frontier.ContractExpansion.C_DAG_Adapter
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageRuntime
 import Pnp4.Frontier.ContractExpansion.PrefixParserConvention
+import Pnp4.Frontier.Tests.AntiEvalSearchProbe
+import Pnp4.Frontier.Tests.TreeCircuitWitnessCodecProbe
+import Pnp4.Frontier.Tests.TreeMCSPSearchTargetProbe
 
 namespace Pnp4
 namespace Tests
@@ -225,3 +228,14 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_malformed_rejected
 #check Pnp4.Frontier.ContractExpansion.treeMCSPConcretePrefixParser
 #check Pnp4.Frontier.ContractExpansion.treeMCSPRuntimeAwarePrefixParser
+
+#print axioms Pnp4.Frontier.Tests.antiEval_noBoundedSolver_of_selfEncodingCapacity
+
+#print axioms Pnp4.Frontier.Tests.mem_circuitsOfSizeAtMost_threshold
+#print axioms Pnp4.Frontier.Tests.finiteIndexWitnessBits_pos
+
+#print axioms Pnp4.Frontier.Tests.decode_encode_finiteIndex
+#print axioms Pnp4.Frontier.Tests.finiteIndexTreeCircuitWitnessCodec
+
+#print axioms Pnp4.Frontier.Tests.stagingTreeWitnessEncoding
+#print axioms Pnp4.Frontier.Tests.stagingTreeSearchTarget

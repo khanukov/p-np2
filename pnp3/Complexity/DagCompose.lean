@@ -20,6 +20,11 @@ Composition layer — micro-step progress (one reusable primitive per commit):
 * step 4c — `substInputs` (input substitution): defs + characterization, full
   eval-preservation (`eval (substInputs D G) x = eval D (fun j => eval (G j) x)`),
   and the size bound (`size (substInputs D G) ≤ size D + ∑ j, size (G j)`);  ✓
+* step 4d — `snocBundleSubst` (shared-bundle greedy step): extend a `DagBundle`
+  by one output computed from the real inputs *and* the existing outputs, with the
+  bundle **shared** (`gates = B.gates + H.gates`, additive not multiplicative), plus
+  eval-preservation for the old and new outputs.  This is the multi-output sharing a
+  *polynomial-size* greedy extraction needs (Option ①, per the size-feasibility gate).  ✓
 
 The composition layer is complete.  Downstream — in separate files, as a
 separate PR/stage — the decision→search *extraction* uses these pieces: greedy
@@ -1159,6 +1164,210 @@ theorem size_substInputs_le {n m : Nat} (D : DagCircuit n) (G : Fin n → DagCir
   simp only [size, Finset.sum_add_distrib, Finset.sum_const, Finset.card_univ,
     Fintype.card_fin, smul_eq_mul, mul_one]
   omega
+
+/-! ### Composition layer, step 4d: `snocBundleSubst` (shared-bundle greedy step)
+
+`snocBundleSubst B H` extends a bundle `B : DagBundle m out` by one new output,
+computed by a head circuit `H : DagCircuit (m + out)` that reads the `m` real
+inputs *and* the `out` existing bundle outputs.  Unlike re-substituting `B` into
+each new bit, the bundle `B` is **shared**: `(snocBundleSubst B H).gates =
+B.gates + H.gates` (additive in `H`, not multiplicative in the prior bits), so
+iterating it keeps circuit size *linear* in the number of outputs.  This is the
+multi-output sharing the size-feasibility spike requires for a polynomial-size
+greedy extraction (Option ①).
+
+It reuses `substInputsWithBundle H (passthroughBundle B)` for the shared gate
+list, where `passthroughBundle B` exposes the `m` real inputs followed by `B`'s
+`out` outputs over a single shared gate list. -/
+
+/-- `eval.evalGateAt` depends only on a circuit's gate list, not its output wire:
+two circuits whose gate at each shared position agrees have the same gate-level
+evaluation.  This congruence lets a shared gate list be reused under a different
+output (the key to multi-output sharing).  Structure mirrors
+`evalGateAt_substInputsWithBundle_left`. -/
+theorem evalGateAt_congr {n : Nat} (C D : DagCircuit n)
+    (hgate : ∀ (i : Nat) (hC : i < C.gates) (hD : i < D.gates),
+        C.gate ⟨i, hC⟩ = D.gate ⟨i, hD⟩) :
+    ∀ {i : Nat} (hC : i < C.gates) (hD : i < D.gates) (x : Bitstring n),
+      DagCircuit.eval.evalGateAt (C := C) (x := x) i hC =
+        DagCircuit.eval.evalGateAt (C := D) (x := x) i hD
+  | i, hC, hD, x => by
+      have hg : C.gate ⟨i, hC⟩ = D.gate ⟨i, hD⟩ := hgate i hC hD
+      cases hOp : D.gate ⟨i, hD⟩ with
+      | const b =>
+          rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hg]
+          simp only [hOp]
+      | not w =>
+          cases w with
+          | input j =>
+              rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hg]
+              simp only [hOp]
+          | gate g =>
+              rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hg]
+              simp only [hOp]
+              rw [evalGateAt_congr C D hgate (Nat.lt_trans g.2 hC) (Nat.lt_trans g.2 hD) x]
+      | and w₁ w₂ =>
+          cases w₁ with
+          | input j₁ =>
+              cases w₂ with
+              | input j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hg]
+                  simp only [hOp]
+              | gate j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hg]
+                  simp only [hOp]
+                  rw [evalGateAt_congr C D hgate (Nat.lt_trans j₂.2 hC) (Nat.lt_trans j₂.2 hD) x]
+          | gate j₁ =>
+              cases w₂ with
+              | input j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hg]
+                  simp only [hOp]
+                  rw [evalGateAt_congr C D hgate (Nat.lt_trans j₁.2 hC) (Nat.lt_trans j₁.2 hD) x]
+              | gate j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hg]
+                  simp only [hOp]
+                  rw [evalGateAt_congr C D hgate (Nat.lt_trans j₁.2 hC) (Nat.lt_trans j₁.2 hD) x,
+                      evalGateAt_congr C D hgate (Nat.lt_trans j₂.2 hC) (Nat.lt_trans j₂.2 hD) x]
+      | or w₁ w₂ =>
+          cases w₁ with
+          | input j₁ =>
+              cases w₂ with
+              | input j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hg]
+                  simp only [hOp]
+              | gate j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hg]
+                  simp only [hOp]
+                  rw [evalGateAt_congr C D hgate (Nat.lt_trans j₂.2 hC) (Nat.lt_trans j₂.2 hD) x]
+          | gate j₁ =>
+              cases w₂ with
+              | input j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hg]
+                  simp only [hOp]
+                  rw [evalGateAt_congr C D hgate (Nat.lt_trans j₁.2 hC) (Nat.lt_trans j₁.2 hD) x]
+              | gate j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hg]
+                  simp only [hOp]
+                  rw [evalGateAt_congr C D hgate (Nat.lt_trans j₁.2 hC) (Nat.lt_trans j₁.2 hD) x,
+                      evalGateAt_congr C D hgate (Nat.lt_trans j₂.2 hC) (Nat.lt_trans j₂.2 hD) x]
+  termination_by i => i
+
+/-- Replace a circuit's output wire, keeping its gate list intact. -/
+def withOutput {n : Nat} (C : DagCircuit n) (w : DagWire n C.gates) : DagCircuit n where
+  gates := C.gates
+  gate := C.gate
+  output := w
+
+@[simp] theorem eval_withOutput_input {n : Nat} (C : DagCircuit n) (j : Fin n)
+    (x : Bitstring n) :
+    eval (withOutput C (DagWire.input j)) x = x j := by
+  unfold eval; rfl
+
+@[simp] theorem eval_withOutput_gate {n : Nat} (C : DagCircuit n) (g : Fin C.gates)
+    (x : Bitstring n) :
+    eval (withOutput C (DagWire.gate g)) x = eval.evalGateAt (C := C) (x := x) g.1 g.2 := by
+  have hstep : eval (withOutput C (DagWire.gate g)) x
+      = eval.evalGateAt (C := withOutput C (DagWire.gate g)) (x := x) g.1 g.2 := by
+    unfold eval; rfl
+  rw [hstep]
+  exact evalGateAt_congr (withOutput C (DagWire.gate g)) C (fun _ _ _ => rfl) g.2 g.2 x
+
+/-- `B` with `m` real-input "passthrough" outputs prepended: a bundle over `m`
+inputs with `m + out` outputs, sharing `B`'s gate list.  Output `i < m` is the
+real input `i`; output `m + k` is `B`'s output `k`. -/
+def passthroughBundle {m out : Nat} (B : DagBundle m out) : DagBundle m (m + out) where
+  gates := B.gates
+  gate := B.gate
+  output := Fin.addCases (fun i : Fin m => DagWire.input i) (fun k : Fin out => B.output k)
+
+@[simp] theorem passthroughBundle_gates {m out : Nat} (B : DagBundle m out) :
+    (passthroughBundle B).gates = B.gates := rfl
+
+@[simp] theorem evalOutput_passthroughBundle_input {m out : Nat} (B : DagBundle m out)
+    (i : Fin m) (x : Bitstring m) :
+    (passthroughBundle B).evalOutput (Fin.castAdd out i) x = x i := by
+  unfold DagBundle.evalOutput
+  unfold eval
+  simp [DagBundle.asCircuit, passthroughBundle, Fin.addCases_left]
+
+@[simp] theorem evalOutput_passthroughBundle_output {m out : Nat} (B : DagBundle m out)
+    (k : Fin out) (x : Bitstring m) :
+    (passthroughBundle B).evalOutput (Fin.natAdd m k) x = B.evalOutput k x := by
+  have hC : (passthroughBundle B).asCircuit (Fin.natAdd m k) = B.asCircuit k := by
+    unfold DagBundle.asCircuit passthroughBundle
+    simp only [Fin.addCases_right]
+  unfold DagBundle.evalOutput
+  rw [hC]
+
+/-- **Shared-bundle greedy step.**  Append to `B` a new output computed by `H`
+from the real inputs and `B`'s outputs, sharing `B`'s gate list. -/
+def snocBundleSubst {m out : Nat} (B : DagBundle m out) (H : DagCircuit (m + out)) :
+    DagBundle m (out + 1) where
+  gates := B.gates + H.gates
+  gate := (substInputsWithBundle H (passthroughBundle B)).gate
+  output := Fin.addCases
+    (fun o : Fin out => weakenWireRight H.gates (B.output o))
+    (fun _ : Fin 1 => (substInputsWithBundle H (passthroughBundle B)).output)
+
+@[simp] theorem snocBundleSubst_gates {m out : Nat} (B : DagBundle m out)
+    (H : DagCircuit (m + out)) :
+    (snocBundleSubst B H).gates = B.gates + H.gates := rfl
+
+theorem snocBundleSubst_output_new {m out : Nat} (B : DagBundle m out)
+    (H : DagCircuit (m + out)) :
+    (snocBundleSubst B H).output (Fin.natAdd out (0 : Fin 1))
+      = (substInputsWithBundle H (passthroughBundle B)).output := by
+  simp only [snocBundleSubst, Fin.addCases_right]
+
+theorem snocBundleSubst_output_old {m out : Nat} (B : DagBundle m out)
+    (H : DagCircuit (m + out)) (o : Fin out) :
+    (snocBundleSubst B H).output (Fin.castAdd 1 o) = weakenWireRight H.gates (B.output o) := by
+  simp only [snocBundleSubst, Fin.addCases_left]
+
+/-- The new (last) output runs `H` on the real inputs together with `B`'s
+outputs. -/
+@[simp] theorem evalOutput_snocBundleSubst_new {m out : Nat} (B : DagBundle m out)
+    (H : DagCircuit (m + out)) (x : Bitstring m) :
+    (snocBundleSubst B H).evalOutput (Fin.natAdd out (0 : Fin 1)) x
+      = eval H (fun j => (passthroughBundle B).evalOutput j x) := by
+  have hC : (snocBundleSubst B H).asCircuit (Fin.natAdd out (0 : Fin 1))
+      = substInputsWithBundle H (passthroughBundle B) := by
+    unfold DagBundle.asCircuit
+    rw [snocBundleSubst_output_new]
+    rfl
+  change eval ((snocBundleSubst B H).asCircuit (Fin.natAdd out (0 : Fin 1))) x = _
+  rw [hC, eval_substInputsWithBundle]
+
+/-- Each old output is preserved (shares `B`'s gate list, untouched by `H`). -/
+@[simp] theorem evalOutput_snocBundleSubst_old {m out : Nat} (B : DagBundle m out)
+    (H : DagCircuit (m + out)) (o : Fin out) (x : Bitstring m) :
+    (snocBundleSubst B H).evalOutput (Fin.castAdd 1 o) x = B.evalOutput o x := by
+  have hC : (snocBundleSubst B H).asCircuit (Fin.castAdd 1 o)
+      = withOutput (substInputsWithBundle H (passthroughBundle B))
+          (weakenWireRight H.gates (B.output o)) := by
+    unfold DagBundle.asCircuit
+    rw [snocBundleSubst_output_old]
+    rfl
+  change eval ((snocBundleSubst B H).asCircuit (Fin.castAdd 1 o)) x = eval (B.asCircuit o) x
+  rw [hC]
+  cases hb : B.output o with
+  | input j =>
+      rw [weakenWireRight_input, eval_withOutput_input]
+      have hr : eval (B.asCircuit o) x = x j := by
+        unfold eval
+        simp only [show (B.asCircuit o).output = DagWire.input j from hb]
+      rw [hr]
+  | gate g =>
+      rw [weakenWireRight_gate, eval_withOutput_gate]
+      have hr : eval (B.asCircuit o) x
+          = eval.evalGateAt (C := B.asCircuit o) (x := x) g.1 g.2 := by
+        unfold eval
+        simp only [show (B.asCircuit o).output = DagWire.gate g from hb]
+      rw [hr,
+          evalGateAt_substInputsWithBundle_left H (passthroughBundle B)
+            (Fin.natAdd m o) (Fin.castAdd H.gates g).2 g.2 x]
+      exact evalGateAt_congr ((passthroughBundle B).asCircuit (Fin.natAdd m o))
+        (B.asCircuit o) (fun _ _ _ => rfl) g.2 g.2 x
 
 end DagCircuit
 end ComplexityInterfaces

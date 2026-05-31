@@ -24,6 +24,9 @@ import Pnp4.Frontier.ContractExpansion.PrefixQueryBuilder
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageRuntime
 import Pnp4.Frontier.ContractExpansion.PrefixParserConvention
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSerializer
+import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixQueryCircuits
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
+import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
 namespace Pnp4
 namespace Tests
@@ -205,6 +208,25 @@ end Pnp4
 
 #print axioms Pnp4.Frontier.ContractExpansion.parse_zeroPrefixQueryValue
 #print axioms Pnp4.Frontier.ContractExpansion.zeroPrefixQueryValue_parses
+
+#print axioms Pnp4.Frontier.ContractExpansion.eval_zeroPrefixQueryBitCircuit
+#print axioms Pnp4.Frontier.ContractExpansion.size_zeroPrefixQueryBitCircuit_le
+
+#print axioms Pnp4.Frontier.ContractExpansion.zeroPrefixQueryCircuitBuilder
+#print axioms Pnp4.Frontier.ContractExpansion.treeMCSPZeroPrefixQueryBuilder
+#print axioms Pnp4.Frontier.ContractExpansion.treeMCSPZeroPrefixQueryBuilder_queryValue
+
+#print axioms Pnp4.Frontier.ContractExpansion.geometric_lower_bound
+#print axioms Pnp4.Frontier.ContractExpansion.composeDeciderWithQuery_eq_substInputs
+#print axioms Pnp4.Frontier.ContractExpansion.naiveGreedyModel_size_ge
+#print axioms Pnp4.Frontier.ContractExpansion.naiveGreedyModel_size_ge_pow
+#print axioms Pnp4.Frontier.ContractExpansion.pow_le_of_linear_witnessBits
+#print axioms Pnp4.Frontier.ContractExpansion.pow_quadratic_gt_poly
+
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.evalGateAt_congr
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.snocBundleSubst_gates
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.evalOutput_snocBundleSubst_new
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.evalOutput_snocBundleSubst_old
 
 #print axioms Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage_accepts_iff
 #print axioms Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage_rejects_malformed

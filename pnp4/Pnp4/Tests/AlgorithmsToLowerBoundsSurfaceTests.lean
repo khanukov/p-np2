@@ -34,6 +34,9 @@ import Pnp4.Frontier.ContractExpansion.PrefixQueryBuilder
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageRuntime
 import Pnp4.Frontier.ContractExpansion.PrefixParserConvention
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSerializer
+import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixQueryCircuits
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
+import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
 namespace Pnp4
 namespace Tests
@@ -256,6 +259,108 @@ theorem check_zeroPrefixQueryValue_parses
   zeroPrefixQueryValue_parses codec n x
 
 end TreeMCSPPrefixSerializerSurface
+
+section TreeMCSPPrefixQueryCircuitsSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+def check_zeroPrefixQueryBitCircuit
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n : Nat)
+    (j : Fin (treeMCSPPrefixM codec n)) :
+    C_DAG.Family (Pnp3.Models.Partial.tableLen n) :=
+  zeroPrefixQueryBitCircuit codec n j
+
+theorem check_eval_zeroPrefixQueryBitCircuit
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n : Nat)
+    (x : PrefixBitVec (Pnp3.Models.Partial.tableLen n))
+    (j : Fin (treeMCSPPrefixM codec n)) :
+    C_DAG.eval (zeroPrefixQueryBitCircuit codec n j) x =
+      zeroPrefixQueryValue codec n x j :=
+  eval_zeroPrefixQueryBitCircuit codec n x j
+
+theorem check_size_zeroPrefixQueryBitCircuit_le
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n : Nat)
+    (j : Fin (treeMCSPPrefixM codec n)) :
+    C_DAG.size (zeroPrefixQueryBitCircuit codec n j) ≤ 2 :=
+  size_zeroPrefixQueryBitCircuit_le codec n j
+
+end TreeMCSPPrefixQueryCircuitsSurface
+
+section TreeMCSPZeroPrefixBuilderSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+def check_zeroPrefixQueryCircuitBuilder
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold) :
+    QueryCircuitBuilder
+      (fun n => Pnp3.Models.Partial.tableLen n)
+      (fun n => treeMCSPPrefixM codec n) :=
+  zeroPrefixQueryCircuitBuilder codec
+
+def check_treeMCSPZeroPrefixQueryBuilder
+    (threshold : Nat → Nat)
+    (codec : Frontier.TreeCircuitWitnessCodec threshold) :
+    PrefixQueryBuilder
+      (Frontier.treeMCSPSearchProblem threshold
+        (Frontier.TreeMCSPSearchWitnessEncoding.ofCodec codec))
+      (treeMCSPConcretePrefixParser threshold codec) :=
+  treeMCSPZeroPrefixQueryBuilder threshold codec
+
+theorem check_treeMCSPZeroPrefixQueryBuilder_queryValue
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n : Nat)
+    (x : PrefixBitVec (Pnp3.Models.Partial.tableLen n)) :
+    (treeMCSPZeroPrefixQueryBuilder threshold codec).queryValue n x =
+      zeroPrefixQueryValue codec n x :=
+  treeMCSPZeroPrefixQueryBuilder_queryValue codec n x
+
+end TreeMCSPZeroPrefixBuilderSurface
+
+section NaiveGreedySizeSpikeSurface
+
+open Pnp4.Frontier.ContractExpansion
+open Pnp3.ComplexityInterfaces (DagCircuit)
+
+theorem check_geometric_lower_bound (f : Nat → Nat)
+    (hstep : ∀ i, (∑ k ∈ Finset.range (i + 1), f k) ≤ f (i + 1)) (i : Nat) :
+    f 0 * 2 ^ i ≤ f (i + 1) :=
+  geometric_lower_bound f hstep i
+
+theorem check_composeDeciderWithQuery_eq_substInputs
+    {inputBits queryBits : Nat}
+    (decider : C_DAG.Family queryBits)
+    (queryBit : Fin queryBits → C_DAG.Family inputBits) :
+    composeDeciderWithQuery decider queryBit
+      = DagCircuit.substInputs decider queryBit :=
+  composeDeciderWithQuery_eq_substInputs decider queryBit
+
+theorem check_naiveGreedyModel_size_ge (m : Nat) (seed : DagCircuit m)
+    (decider : (q : Nat) → DagCircuit q) (i : Nat) :
+    seed.gates * 2 ^ i ≤ DagCircuit.size (naiveGreedyModel m seed decider (i + 1)) :=
+  naiveGreedyModel_size_ge m seed decider i
+
+theorem check_naiveGreedyModel_size_ge_pow (m : Nat) (seed : DagCircuit m)
+    (decider : (q : Nat) → DagCircuit q) (i : Nat) (hseed : 1 ≤ seed.gates) :
+    2 ^ i ≤ DagCircuit.size (naiveGreedyModel m seed decider (i + 1)) :=
+  naiveGreedyModel_size_ge_pow m seed decider i hseed
+
+theorem check_pow_le_of_linear_witnessBits (W n c : Nat) (h : W ≤ c * n + c) :
+    2 ^ W ≤ (2 ^ n) ^ c * 2 ^ c :=
+  pow_le_of_linear_witnessBits W n c h
+
+theorem check_pow_quadratic_gt_poly (n c : Nat) (hn : 0 < n) (hc : c < n) :
+    (2 ^ n) ^ c < 2 ^ (n * n) :=
+  pow_quadratic_gt_poly n c hn hc
+
+end NaiveGreedySizeSpikeSurface
 
 section PrefixExtensionLanguageSurface
 

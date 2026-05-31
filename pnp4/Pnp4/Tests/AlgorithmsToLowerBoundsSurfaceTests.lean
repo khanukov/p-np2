@@ -43,6 +43,7 @@ import Pnp4.Frontier.ContractExpansion.PrefixExtendableSplit
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTrueExtensionQuery
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyExtendable
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyTrueOutputCircuits
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDeciderCorrect
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -670,6 +671,24 @@ theorem check_size_greedyTrueOutputCircuit_le
   size_greedyTrueOutputCircuit_le codec n dec i
 
 end TreeMCSPGreedyTrueOutputCircuitsSurface
+
+section TreeMCSPDeciderCorrectSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+/-- Block 8b surface: a decider for the prefix-extension language is a correct
+next-bit decider (discharges the Block 8a hypothesis). -/
+theorem check_correctNextBitDecider_of_decidesLanguage
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n : Nat)
+    (dec : C_DAG.Family (treeMCSPPrefixM codec n))
+    (x : PrefixBitVec (Pnp3.Models.Partial.tableLen n))
+    (hdec : DecidesPrefixExtensionLanguage codec n dec) :
+    CorrectNextBitDecider codec n x dec :=
+  correctNextBitDecider_of_decidesLanguage codec n dec x hdec
+
+end TreeMCSPDeciderCorrectSurface
 
 section TreeMCSPZeroPrefixBuilderSurface
 

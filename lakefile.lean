@@ -271,6 +271,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.QueryComposition,
     Glob.one `Pnp4.Frontier.ContractExpansion.QueryBuilder,
     Glob.one `Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage,
+    Glob.one `Pnp4.Frontier.ContractExpansion.PrefixQueryBuilder,
     Glob.one `Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageNP,
     Glob.one `Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageRuntime,
     Glob.one `Pnp4.Frontier.ContractExpansion.PrefixParserConvention,

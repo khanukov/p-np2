@@ -269,6 +269,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.SearchMCSPConcreteTargets,
     Glob.one `Pnp4.Frontier.ContractExpansion.C_DAG_Adapter,
     Glob.one `Pnp4.Frontier.ContractExpansion.QueryComposition,
+    Glob.one `Pnp4.Frontier.ContractExpansion.QueryBuilder,
     Glob.one `Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage,
     Glob.one `Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageNP,
     Glob.one `Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageRuntime,

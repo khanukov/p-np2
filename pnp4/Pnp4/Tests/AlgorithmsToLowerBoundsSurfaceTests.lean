@@ -28,6 +28,7 @@ import Pnp4.Frontier.SearchMCSPMagnification
 import Pnp4.Frontier.SearchMCSPConcreteTargets
 import Pnp4.Frontier.ContractExpansion.C_DAG_Adapter
 import Pnp4.Frontier.ContractExpansion.QueryComposition
+import Pnp4.Frontier.ContractExpansion.QueryBuilder
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageRuntime
 import Pnp4.Frontier.ContractExpansion.PrefixParserConvention
@@ -116,6 +117,52 @@ theorem check_size_composeDeciderWithQuery_le
   size_composeDeciderWithQuery_le decider queryBit
 
 end QueryCompositionSurface
+
+section QueryBuilderSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+def check_QueryCircuitBuilder
+    (inputBits queryBits : Nat → Nat) : Type :=
+  QueryCircuitBuilder inputBits queryBits
+
+def check_QueryCircuitBuilder_compose
+    {inputBits queryBits : Nat → Nat}
+    (builder : QueryCircuitBuilder inputBits queryBits)
+    (n : Nat)
+    (decider : C_DAG.Family (queryBits n)) :
+    C_DAG.Family (inputBits n) :=
+  builder.compose n decider
+
+theorem check_QueryCircuitBuilder_eval_compose
+    {inputBits queryBits : Nat → Nat}
+    (builder : QueryCircuitBuilder inputBits queryBits)
+    (n : Nat)
+    (decider : C_DAG.Family (queryBits n))
+    (x : AlgorithmsToLowerBounds.BitVec (inputBits n)) :
+    C_DAG.eval (builder.compose n decider) x =
+      C_DAG.eval decider (builder.queryValue n x) :=
+  builder.eval_compose n decider x
+
+theorem check_QueryCircuitBuilder_size_compose_le
+    {inputBits queryBits : Nat → Nat}
+    (builder : QueryCircuitBuilder inputBits queryBits)
+    (n : Nat)
+    (decider : C_DAG.Family (queryBits n)) :
+    C_DAG.size (builder.compose n decider) ≤
+      C_DAG.size decider + ∑ i, C_DAG.size (builder.queryBitCircuit n i) :=
+  builder.size_compose_le n decider
+
+theorem check_QueryCircuitBuilder_size_compose_le_bound
+    {inputBits queryBits : Nat → Nat}
+    (builder : QueryCircuitBuilder inputBits queryBits)
+    (n : Nat)
+    (decider : C_DAG.Family (queryBits n)) :
+    C_DAG.size (builder.compose n decider) ≤
+      C_DAG.size decider + (queryBits n) * builder.sizeBound n :=
+  builder.size_compose_le_bound n decider
+
+end QueryBuilderSurface
 
 section PrefixExtensionLanguageSurface
 

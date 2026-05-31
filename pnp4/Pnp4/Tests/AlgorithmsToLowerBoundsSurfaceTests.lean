@@ -37,6 +37,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSerializer
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixQueryCircuits
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixStateQueryCircuits
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyBundleStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyBundleFold
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -421,6 +422,64 @@ theorem check_evalOutput_greedyBundleStep_new
   evalOutput_greedyBundleStep_new codec n i hi dec B x
 
 end TreeMCSPGreedyBundleStepSurface
+
+section TreeMCSPGreedyBundleFoldSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+/-- Block 6 surface: the recursive shared-bundle greedy fold of `i` bits. -/
+def check_greedyBundleUpTo
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n : Nat)
+    (dec : C_DAG.Family (treeMCSPPrefixM codec n))
+    (i : Nat)
+    (hi : i ≤ codec.witnessBits n) :
+    Pnp3.ComplexityInterfaces.DagCircuit.DagBundle (Pnp3.Models.Partial.tableLen n) i :=
+  greedyBundleUpTo codec n dec i hi
+
+/-- Block 6 surface (headline): the fold of `i` greedy bits has at most
+`i · (size dec + 2·M(n))` gates — linear in `i`, the Option ① size payoff. -/
+theorem check_gates_greedyBundleUpTo_le
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n : Nat)
+    (dec : C_DAG.Family (treeMCSPPrefixM codec n))
+    (i : Nat)
+    (hi : i ≤ codec.witnessBits n) :
+    (greedyBundleUpTo codec n dec i hi).gates
+      ≤ i * (C_DAG.size dec + 2 * treeMCSPPrefixM codec n) :=
+  gates_greedyBundleUpTo_le codec n dec i hi
+
+/-- Block 6 surface: old greedy bits preserved across the fold. -/
+theorem check_evalOutput_greedyBundleUpTo_old
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n i : Nat)
+    (dec : C_DAG.Family (treeMCSPPrefixM codec n))
+    (hi : i + 1 ≤ codec.witnessBits n)
+    (o : Fin i)
+    (x : PrefixBitVec (Pnp3.Models.Partial.tableLen n)) :
+    (greedyBundleUpTo codec n dec (i + 1) hi).evalOutput (Fin.castAdd 1 o) x
+      = (greedyBundleUpTo codec n dec i (Nat.le_of_succ_le hi)).evalOutput o x :=
+  evalOutput_greedyBundleUpTo_old codec n i dec hi o x
+
+/-- Block 6 surface: the newest greedy bit = decider run on the prefix-state
+`(i, p)` query, `p` the previous fold's outputs on `x`. -/
+theorem check_evalOutput_greedyBundleUpTo_new
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n i : Nat)
+    (dec : C_DAG.Family (treeMCSPPrefixM codec n))
+    (hi : i + 1 ≤ codec.witnessBits n)
+    (x : PrefixBitVec (Pnp3.Models.Partial.tableLen n)) :
+    (greedyBundleUpTo codec n dec (i + 1) hi).evalOutput (Fin.natAdd i (0 : Fin 1)) x
+      = C_DAG.eval dec
+          (prefixStateQueryValue codec n i (Nat.le_of_succ_le hi) x
+            (fun k => (greedyBundleUpTo codec n dec i (Nat.le_of_succ_le hi)).evalOutput k x)) :=
+  evalOutput_greedyBundleUpTo_new codec n i dec hi x
+
+end TreeMCSPGreedyBundleFoldSurface
 
 section TreeMCSPZeroPrefixBuilderSurface
 

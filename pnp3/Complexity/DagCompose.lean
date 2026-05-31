@@ -13,9 +13,11 @@ Composition layer — micro-step progress (one reusable primitive per commit):
 * step 0 — leaf primitives `inputProj`, `constCircuit` (+ eval/size);  ✓
 * step 1 — `relabelInputs` (input reindexing) with eval/size correctness;  ✓
 * step 2 — index transport `weakenWireRight`/`shiftWireBy` (+ gate versions):
-  the `Fin` arithmetic needed to concatenate gate lists;  ← this commit
-* step 3 — `appendCircuit` / multi-output `DagBundle`;
-* step 4 — `substInputs` (input substitution) with eval/size lemmas.
+  the `Fin` arithmetic needed to concatenate gate lists;  ✓
+* step 3 — single-output `appendCircuit` (defs + size + eval-preservation);  ✓
+* step 4a — multi-output `DagBundle` (`snocBundle`) with eval-preservation;  ✓
+* step 4b — `bundleOfFamily` (fold a family into one bundle) with eval;  ← this commit
+* step 4c — `substInputs` (input substitution) with eval/size lemmas.
 
 Downstream (separate files): greedy `BoundedSearchSolver` assembly →
 `PpolyDAG (PrefixExtensionLanguage) → BoundedSearchSolver` and its
@@ -714,6 +716,46 @@ exactly like `C`.  Proved directly (no fabricated left circuit). -/
         simp [DagBundle.asCircuit, snocBundle_output_new, shiftWireBy, hout]
       rw [h]
       exact evalGateAt_snocBundle_right B C _ g.2 x
+
+/-! ### Composition layer, step 4b: `bundleOfFamily`
+
+Fold a finite family `G : Fin out → DagCircuit n` into one `DagBundle n out` by
+`snocBundle`-ing the circuits left to right (`emptyBundle` base).  The eval lemma
+indexes outputs through `Fin.addCases`, matching the snoc spelling exactly: old
+outputs (`Fin.castAdd 1`) reuse `evalOutput_snocBundle_old`, and the last output
+(`Fin.natAdd out (0 : Fin 1)`) reuses `evalOutput_snocBundle_new`.
+
+This is the per-output container that `substInputs` will plug into a circuit's
+inputs (next step).  No size lemma yet — added with `substInputs`.
+-/
+
+/-- Bundle the outputs of a finite family of circuits into one shared gate list,
+folding left to right with `snocBundle`. -/
+def bundleOfFamily {n : Nat} :
+    (out : Nat) → (Fin out → DagCircuit n) → DagBundle n out
+  | 0, _ => emptyBundle n
+  | out + 1, G =>
+      snocBundle
+        (bundleOfFamily out (fun o => G (Fin.castAdd 1 o)))
+        (G (Fin.natAdd out (0 : Fin 1)))
+
+/-- **`bundleOfFamily` correctness.**  Output `o` of the bundle evaluates exactly
+like the `o`-th family member `G o`. -/
+@[simp] theorem evalOutput_bundleOfFamily {n : Nat} :
+    ∀ {out : Nat} (G : Fin out → DagCircuit n) (o : Fin out) (x : Bitstring n),
+      (bundleOfFamily out G).evalOutput o x = eval (G o) x
+  | 0, _, o, _ => o.elim0
+  | out + 1, G, o, x => by
+      refine Fin.addCases
+        (motive := fun o => (bundleOfFamily (out + 1) G).evalOutput o x = eval (G o) x)
+        ?old ?new o
+      · intro old
+        simp only [bundleOfFamily, evalOutput_snocBundle_old]
+        exact evalOutput_bundleOfFamily (fun i => G (Fin.castAdd 1 i)) old x
+      · intro j
+        have hj : j = (0 : Fin 1) := Subsingleton.elim j 0
+        subst hj
+        simp only [bundleOfFamily, evalOutput_snocBundle_new]
 
 end DagCircuit
 end ComplexityInterfaces

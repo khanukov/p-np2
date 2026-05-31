@@ -123,12 +123,18 @@ This mirrors `encodeTreeMCSPPrefixFields` for general `(i, p)`: tag/gamma/index/
 are constants (the index field is the big-endian code of the *actual* `i`), the
 x-slice reads a real instance bit via `inputProj (Fin.castAdd i ·)`, and the
 witness-prefix payload reads a prior bundle output via
-`inputProj (Fin.natAdd (tableLen n) ·)`.  The circuit itself does not depend on the
-bound `hi`; only the semantic value/parse do.
+`inputProj (Fin.natAdd (tableLen n) ·)`.  The prefix-length bound
+`_hi : i ≤ codec.witnessBits n` is required in the signature so the circuit API
+cannot be instantiated outside the parser/round-trip contract: an out-of-range `i`
+would truncate the `idxWidth`-wide index field and spill payload bits into the
+region the parser treats as mandatory zero padding, yielding a circuit family that
+provably cannot parse as a valid prefix input.  The circuit *body* does not
+otherwise depend on it.
 -/
 def prefixStateQueryBitCircuit
     (codec : TreeCircuitWitnessCodec threshold)
     (n i : Nat)
+    (_hi : i ≤ codec.witnessBits n)
     (j : Fin (treeMCSPPrefixM codec n)) :
     C_DAG.Family (Pnp3.Models.Partial.tableLen n + i) :=
   if hTag : j.1 < tagLen then
@@ -172,7 +178,7 @@ theorem eval_prefixStateQueryBitCircuit
     (x : PrefixBitVec (Pnp3.Models.Partial.tableLen n))
     (p : PrefixBitVec i)
     (j : Fin (treeMCSPPrefixM codec n)) :
-    C_DAG.eval (prefixStateQueryBitCircuit codec n i j) (Fin.append x p) =
+    C_DAG.eval (prefixStateQueryBitCircuit codec n i hi j) (Fin.append x p) =
       prefixStateQueryValue codec n i hi x p j := by
   simp only [prefixStateQueryValue, prefixStateFields, encodeTreeMCSPPrefixFields,
     prefixStateQueryBitCircuit]
@@ -190,8 +196,9 @@ outputs, as required for the shared-bundle greedy step to stay polynomial.
 theorem size_prefixStateQueryBitCircuit_le
     (codec : TreeCircuitWitnessCodec threshold)
     (n i : Nat)
+    (hi : i ≤ codec.witnessBits n)
     (j : Fin (treeMCSPPrefixM codec n)) :
-    C_DAG.size (prefixStateQueryBitCircuit codec n i j) ≤ 2 := by
+    C_DAG.size (prefixStateQueryBitCircuit codec n i hi j) ≤ 2 := by
   simp only [prefixStateQueryBitCircuit]
   split_ifs <;> simp [C_DAG]
 

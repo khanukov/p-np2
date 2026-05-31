@@ -321,9 +321,10 @@ def check_prefixStateQueryBitCircuit
     {threshold : Nat → Nat}
     (codec : Frontier.TreeCircuitWitnessCodec threshold)
     (n i : Nat)
+    (hi : i ≤ codec.witnessBits n)
     (j : Fin (treeMCSPPrefixM codec n)) :
     C_DAG.Family (Pnp3.Models.Partial.tableLen n + i) :=
-  prefixStateQueryBitCircuit codec n i j
+  prefixStateQueryBitCircuit codec n i hi j
 
 /-- Block 4 surface: evaluating the per-bit circuit on `Fin.append x p` reproduces
 the canonical prefix-state query bit. -/
@@ -335,7 +336,7 @@ theorem check_eval_prefixStateQueryBitCircuit
     (x : PrefixBitVec (Pnp3.Models.Partial.tableLen n))
     (p : PrefixBitVec i)
     (j : Fin (treeMCSPPrefixM codec n)) :
-    C_DAG.eval (prefixStateQueryBitCircuit codec n i j) (Fin.append x p) =
+    C_DAG.eval (prefixStateQueryBitCircuit codec n i hi j) (Fin.append x p) =
       prefixStateQueryValue codec n i hi x p j :=
   eval_prefixStateQueryBitCircuit codec n i hi x p j
 
@@ -344,9 +345,10 @@ theorem check_size_prefixStateQueryBitCircuit_le
     {threshold : Nat → Nat}
     (codec : Frontier.TreeCircuitWitnessCodec threshold)
     (n i : Nat)
+    (hi : i ≤ codec.witnessBits n)
     (j : Fin (treeMCSPPrefixM codec n)) :
-    C_DAG.size (prefixStateQueryBitCircuit codec n i j) ≤ 2 :=
-  size_prefixStateQueryBitCircuit_le codec n i j
+    C_DAG.size (prefixStateQueryBitCircuit codec n i hi j) ≤ 2 :=
+  size_prefixStateQueryBitCircuit_le codec n i hi j
 
 end TreeMCSPPrefixStateQueryCircuitsSurface
 

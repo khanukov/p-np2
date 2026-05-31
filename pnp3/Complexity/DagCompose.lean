@@ -16,8 +16,9 @@ Composition layer — micro-step progress (one reusable primitive per commit):
   the `Fin` arithmetic needed to concatenate gate lists;  ✓
 * step 3 — single-output `appendCircuit` (defs + size + eval-preservation);  ✓
 * step 4a — multi-output `DagBundle` (`snocBundle`) with eval-preservation;  ✓
-* step 4b — `bundleOfFamily` (fold a family into one bundle) with eval;  ← this commit
-* step 4c — `substInputs` (input substitution) with eval/size lemmas.
+* step 4b — `bundleOfFamily` (fold a family into one bundle) with eval;  ✓
+* step 4c — `substInputs` (input substitution): defs + characterization +
+  structural size;  ← this commit (eval-preservation + `∑ size` bound follow).
 
 Downstream (separate files): greedy `BoundedSearchSolver` assembly →
 `PpolyDAG (PrefixExtensionLanguage) → BoundedSearchSolver` and its
@@ -756,6 +757,91 @@ like the `o`-th family member `G o`. -/
         have hj : j = (0 : Fin 1) := Subsingleton.elim j 0
         subst hj
         simp only [bundleOfFamily, evalOutput_snocBundle_new]
+
+/-! ### Composition layer, step 4c (defs): `substInputs`
+
+Substitute a family `G : Fin n → DagCircuit m` into the `n` inputs of a circuit
+`D : DagCircuit n`, producing a `DagCircuit m`.  The shared lower layer is
+`bundleOfFamily n G : DagBundle m n` (output `j` computes `eval (G j)`); `D`'s
+gates are layered on top via `Fin.addCases`, with each `D`-wire substituted:
+`.input j ↦ B.output j` (weakened into the joint gate space), `.gate g ↦` the same
+gate shifted past `B.gates`.
+
+Definitions, the constructor/`Fin.addCases` characterization lemmas, and the
+*structural* size equalities (`= B.gates + D.gates + 1`) only.  The eval lemmas
+(`eval (substInputs D G) x = eval D (fun j => eval (G j) x)`) and the
+`∑ size (G j)` bound follow in the next steps.
+-/
+
+/-- Substitute bundle `B`'s outputs for the input wires of a `DagWire` living over
+`D`'s gates: `.input j` becomes `B`'s `j`-th output (weakened into the joint gate
+space), `.gate g` is shifted past `B.gates`. -/
+def substWireWithBundle {n m k : Nat}
+    (B : DagBundle m n) : DagWire n k → DagWire m (B.gates + k)
+  | .input j => weakenWireRight k (B.output j)
+  | .gate g  => DagWire.gate (Fin.natAdd B.gates g)
+
+@[simp] theorem substWireWithBundle_input {n m k : Nat} (B : DagBundle m n) (j : Fin n) :
+    substWireWithBundle (k := k) B (DagWire.input j) = weakenWireRight k (B.output j) := rfl
+
+@[simp] theorem substWireWithBundle_gate {n m k : Nat} (B : DagBundle m n) (g : Fin k) :
+    substWireWithBundle B (DagWire.gate g) = DagWire.gate (Fin.natAdd B.gates g) := rfl
+
+/-- Gate version of `substWireWithBundle`. -/
+def substGateWithBundle {n m k : Nat}
+    (B : DagBundle m n) : DagGate n k → DagGate m (B.gates + k)
+  | .const b   => .const b
+  | .not w     => .not (substWireWithBundle B w)
+  | .and w₁ w₂ => .and (substWireWithBundle B w₁) (substWireWithBundle B w₂)
+  | .or w₁ w₂  => .or (substWireWithBundle B w₁) (substWireWithBundle B w₂)
+
+@[simp] theorem substGateWithBundle_const {n m k : Nat} (B : DagBundle m n) (b : Bool) :
+    substGateWithBundle (k := k) B (DagGate.const b) = DagGate.const b := rfl
+
+@[simp] theorem substGateWithBundle_not {n m k : Nat} (B : DagBundle m n) (w : DagWire n k) :
+    substGateWithBundle B (DagGate.not w) = DagGate.not (substWireWithBundle B w) := rfl
+
+@[simp] theorem substGateWithBundle_and {n m k : Nat} (B : DagBundle m n) (w₁ w₂ : DagWire n k) :
+    substGateWithBundle B (DagGate.and w₁ w₂)
+      = DagGate.and (substWireWithBundle B w₁) (substWireWithBundle B w₂) := rfl
+
+@[simp] theorem substGateWithBundle_or {n m k : Nat} (B : DagBundle m n) (w₁ w₂ : DagWire n k) :
+    substGateWithBundle B (DagGate.or w₁ w₂)
+      = DagGate.or (substWireWithBundle B w₁) (substWireWithBundle B w₂) := rfl
+
+/-- Layer circuit `D` on top of bundle `B`, redirecting `D`'s inputs to `B`'s
+outputs.  Gate list is `B`'s gates followed by `D`'s (substituted) gates. -/
+def substInputsWithBundle {n m : Nat}
+    (D : DagCircuit n) (B : DagBundle m n) : DagCircuit m where
+  gates := B.gates + D.gates
+  gate := Fin.addCases (motive := fun i => DagGate m i.1)
+    (fun p => B.gate p)
+    (fun j => substGateWithBundle B (D.gate j))
+  output := substWireWithBundle B D.output
+
+/-- **Input substitution.**  Replace each input `j` of `D` by the circuit `G j`
+(over the real inputs `Fin m`), via the bundle `bundleOfFamily n G`. -/
+def substInputs {n m : Nat}
+    (D : DagCircuit n) (G : Fin n → DagCircuit m) : DagCircuit m :=
+  substInputsWithBundle D (bundleOfFamily n G)
+
+@[simp] theorem size_substInputsWithBundle {n m : Nat} (D : DagCircuit n) (B : DagBundle m n) :
+    size (substInputsWithBundle D B) = B.gates + D.gates + 1 := rfl
+
+@[simp] theorem size_substInputs {n m : Nat} (D : DagCircuit n) (G : Fin n → DagCircuit m) :
+    size (substInputs D G) = (bundleOfFamily n G).gates + D.gates + 1 := rfl
+
+/-- Old (left, `castAdd`) gate positions of the substitution reuse `B`'s gate. -/
+@[simp] theorem substInputsWithBundle_gate_left {n m : Nat}
+    (D : DagCircuit n) (B : DagBundle m n) (p : Fin B.gates) :
+    (substInputsWithBundle D B).gate (Fin.castAdd D.gates p) = B.gate p := by
+  simp only [substInputsWithBundle, Fin.addCases_left]
+
+/-- New (right, `natAdd`) gate positions of the substitution use `D`'s substituted gate. -/
+@[simp] theorem substInputsWithBundle_gate_right {n m : Nat}
+    (D : DagCircuit n) (B : DagBundle m n) (j : Fin D.gates) :
+    (substInputsWithBundle D B).gate (Fin.natAdd B.gates j) = substGateWithBundle B (D.gate j) := by
+  simp only [substInputsWithBundle, Fin.addCases_right]
 
 end DagCircuit
 end ComplexityInterfaces

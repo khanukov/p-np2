@@ -400,8 +400,9 @@ open Pnp3.Magnification
 #print axioms LowerBounds.antiChecker_testset_incompatibility_local_partial_constructive
 
 -- Companion promise-route conclusion negations at the canonical asymptotic
--- instantiation.  Together with `isoStrong_conclusion_negative_for_canonical`
--- (already audited by the build via its import chain), these close the
--- canonical-track conclusion side at three matching standalone Lean theorems.
+-- instantiation.  Together with the in-build general theorem
+-- `isoStrong_conclusion_negative_general` (in `Tests/GeneralIsoStrongNoGoProbe.lean`,
+-- which subsumes the archived canonical `isoStrong_conclusion_negative_for_canonical`),
+-- these close the canonical-track conclusion side.
 #print axioms Tests.PromiseRouteConclusionProbe.promiseYesCertificate_conclusion_negative_for_canonical
 #print axioms Tests.PromiseRouteConclusionProbe.promiseYesWeak_conclusion_negative_for_canonical

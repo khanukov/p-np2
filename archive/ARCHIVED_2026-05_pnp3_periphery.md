@@ -85,3 +85,77 @@ records). Those are intentionally **not** rewritten: they are historical logs,
 and editing them would falsify the record rather than improve consistency.
 
 **Date**: 2026-05-29
+
+---
+
+## Doc archiving — 2026-05-30 (superseded `pnp3/Docs/` planning notes)
+
+A documentation-hygiene pass moved **3 superseded planning notes** out of
+active `pnp3/Docs/` into `archive/pnp3/Docs/`:
+
+- `Release_2026-03-14_Intermediate.md` — an intermediate release snapshot from
+  2026-03-14, long superseded by `STATUS.md` / `RELEASE_RC.md`.
+- `UnrestrictedDAG_Blocker_Reassessment_2026-03-30.md` — a point-in-time
+  (2026-03-30) blocker reassessment, superseded by the post-PR13 canonical-track
+  refutation chain documented in `STATUS.md`.
+- `MultiSwitching_NextStep.md` — "next step" planning for the multi-switching
+  *contract* route, which is now formally refuted
+  (`FormulaSupportBoundsFromMultiSwitchingContract -> False`).  The live
+  multi-switching combinatorics modules under `pnp3/AC0/MultiSwitching/` are
+  unaffected and remain in the build; only this stale planning note moved.
+
+Selection criterion (consistent with the module pass above): each note is
+referenced **only** by a single historical `seed_packs/` audit report
+(`phase1_20engineer_parallel_dispatch/audit_reports/A10_partial_legacy_markers_codex.md`),
+which itself catalogues legacy markers — i.e. none is a trust-root interface,
+active roadmap item, or governance dependency.
+
+- No active/governance doc and **no `scripts/` check** references these files.
+- The `MultiSwitching_DepthInduction_TODO.md` note (more recent, 2026-05-28) was
+  **kept** in active `pnp3/Docs/`.
+- Files are moved with `git mv`, so history is preserved and the step is fully
+  reversible.
+- As above, the historical `seed_packs/` reference is intentionally **not**
+  rewritten.
+
+**Date**: 2026-05-30
+
+---
+
+## Test-probe archiving — 2026-05-30 (`IsoStrongConclusionProbe.lean`, subsumed)
+
+`pnp3/Tests/IsoStrongConclusionProbe.lean` (409 LOC) was moved to
+`archive/pnp3/Tests/IsoStrongConclusionProbe.lean`.
+
+Rationale:
+
+- The probe was **not in the build graph** (no `Glob.one` entry in
+  `lakefile.lean`) and is **not `import`ed** by any active Lean module, so CI
+  never compiled it.  Yet `STATUS.md` and `pnp3/Docs/BARRIER_CATALOGUE.md` cited
+  its theorem `isoStrong_conclusion_negative_for_canonical` as a "kernel-checked"
+  in-build witness — an inconsistency.
+- That canonical-specific theorem is **subsumed** by the in-build general
+  theorem `isoStrong_conclusion_negative_general`
+  (`pnp3/Tests/GeneralIsoStrongNoGoProbe.lean`, stage 14 of the STATUS audit
+  chain), which refutes the iso-strong route over arbitrary
+  `GapSliceFamilyEventually` families, not just the canonical `sYES=1, sNO=2`
+  instantiation.
+
+Reference fix-ups (this same change):
+
+- `STATUS.md`: current-state witness pointers repointed to
+  `isoStrong_conclusion_negative_general`; the historical audit-chain stages 9
+  and 11 are **kept** (they record what was proved) but annotated as
+  "staging probe now archived; subsumed by stage 14".
+- `pnp3/Docs/BARRIER_CATALOGUE.md`: row repointed to the general theorem / file.
+- `pnp3/Tests/AxiomsAudit.lean`: a comment that wrongly claimed the canonical
+  theorem was "already audited by the build via its import chain" was corrected
+  to reference the in-build general theorem (the `#print axioms` lines were
+  unchanged — they only ever audited the promise-route companions).
+- `pnp3/Tests/GeneralIsoStrongNoGoProbe.lean`: two stale path comments now point
+  at the archived location.
+- Historical `seed_packs/` references are intentionally **not** rewritten.
+- Move is via `git mv`; the step is fully reversible (re-add the file and a
+  `Glob.one \`Tests.IsoStrongConclusionProbe,` entry to `lakefile.lean`).
+
+**Date**: 2026-05-30

@@ -1,6 +1,9 @@
 # P vs NP: Lean Formalization (Honest Status)
 
-Status date: 2026-04-22.
+Status date: 2026-05-30.
+
+`STATUS.md` is the authoritative, most-recently-updated snapshot; this README
+is a stable high-level overview and may lag it by a few days.
 
 Canonical checklist for unconditional readiness:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
@@ -53,6 +56,13 @@ refuted:
 The root cause is fixed-slice truth-table hardwiring.  The old predicates were
 strong enough to apply to arbitrary polynomial-size formula witnesses, including
 hardwired formulas whose support is all variables.
+
+Beyond the formula-side refutation above, the **canonical asymptotic track**
+(the iso-strong and promise-YES route family) is now also formally closed at
+the conclusion level.  The kernel-checked, in-build witness is
+`isoStrong_conclusion_negative_general` in
+`pnp3/Tests/GeneralIsoStrongNoGoProbe.lean`; see `STATUS.md` for the full
+audit chain.  This does not prove `P != NP`; it rules out that route family.
 
 ## Fixed-Params Candidate
 

@@ -54,6 +54,7 @@ lean_lib PnP3 where
     Glob.one `AC0.MultiSwitching.Main,
     Glob.one `Complexity.Promise,
     Glob.one `Complexity.Interfaces,
+    Glob.one `Complexity.DagCompose,
     Glob.one `Complexity.PsubsetPpolyInternal.Bitstring,
     Glob.one `Complexity.TMVerifier.GapMCSPVerifier,
     Glob.one `Complexity.PsubsetPpolyInternal.TuringEncoding,
@@ -185,12 +186,17 @@ lean_lib PnP3 where
     Glob.one `Magnification.AuditRoutes.ArbitraryLogWidthTT.Family,
     Glob.one `Magnification.AuditRoutes.ArbitraryLogWidthTT.Witness,
     Glob.one `Magnification.AuditRoutes.ArbitraryLogWidthTT.Composition,
-    -- fp3b6 distinguisher-matrix provenance audit route (D1/D3 gpt55 + D2 codex).
-    Glob.one `Magnification.AuditRoutes.DistinguisherMatrixProvenance.V_gpt55.MatrixPrimitives,
+    -- fp3b6 distinguisher-matrix provenance audit route (D1/D3 gpt55 + D2 codex,
+    -- D4 read-set locality).
+    -- (`V_gpt55.MatrixPrimitives` is already declared above, near `FinalResult`.)
     Glob.one `Magnification.AuditRoutes.DistinguisherMatrixProvenance.V_gpt55.AntiCollapse,
     Glob.one `Magnification.AuditRoutes.DistinguisherMatrixProvenance.V_codex.ToySeparation,
     Glob.one `Magnification.AuditRoutes.DistinguisherMatrixProvenance.V_codexd3a.AntiCollapsePrime,
     Glob.one `Magnification.AuditRoutes.DistinguisherMatrixProvenance.V_codexd3c.Sharpness,
+    Glob.one `Magnification.AuditRoutes.DistinguisherMatrixProvenance.V_locality_d4.ReadSetLocality,
+    Glob.one `Magnification.AuditRoutes.DistinguisherMatrixProvenance.V_locality_d5.LocalGateInvariance,
+    Glob.one `Magnification.AuditRoutes.DistinguisherMatrixProvenance.V_locality_d6.PayloadBudgetThreshold,
+    Glob.one `Magnification.AuditRoutes.DistinguisherMatrixProvenance.V_locality_d7.DelocalizationCriterion,
     Glob.one `ThirdPartyFacts.Facts_Switching,
     -- Partial-track bibliography/lemmas used by final magnification result.
     Glob.one `ThirdPartyFacts.PartialTransport,

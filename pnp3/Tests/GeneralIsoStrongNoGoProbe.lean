@@ -90,7 +90,7 @@ by `./scripts/check.sh` Step 3/17 source-hygiene scan).
    `CorrectOnPromiseSlice` witness for the family circuit at encoded
    length.  Direct general counterpart of the canonical helper
    `correctOnPromiseSlice_of_InPpolyDAG_family` in
-   `Tests/IsoStrongConclusionProbe.lean`.
+   `archive/pnp3/Tests/IsoStrongConclusionProbe.lean` (now archived).
 
 10. `isoStrong_conclusion_negative_general` — the route-level
     no-go assembly: for any `F : GapSliceFamilyEventually` and any
@@ -414,7 +414,7 @@ Lift an `InPpolyDAG` witness at slice `(n, β)` to the corresponding
 length.
 
 Direct general counterpart of `correctOnPromiseSlice_of_InPpolyDAG_family`
-from `pnp3/Tests/IsoStrongConclusionProbe.lean`.
+from `archive/pnp3/Tests/IsoStrongConclusionProbe.lean` (now archived).
 -/
 lemma correctOnPromiseSlice_of_InPpolyDAG_family_general
     (F : GapSliceFamilyEventually)

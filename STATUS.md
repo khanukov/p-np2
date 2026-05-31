@@ -158,7 +158,8 @@ conclusion level**:
    conclusion-side question needs Lean probe.
 8. `seed_packs/isoStrong_conclusion_L0` (codex, PR #1413):
    `YELLOW_PARTIAL_LANDING` — landed
-   `pnp3/Tests/IsoStrongConclusionProbe.lean` (80 LOC) with `F_Mof =
+   `pnp3/Tests/IsoStrongConclusionProbe.lean` (80 LOC; now archived under
+   `archive/pnp3/Tests/`, subsumed by stage 14) with `F_Mof =
    n+2` simp lemma + `canonical_isoStrong_implies_eventual_strict_slack`
    slack-inequality extraction.  Identified pigeonhole
    z-construction as L1 blocker.
@@ -209,9 +210,13 @@ theorem isoStrong_conclusion_negative_for_canonical :
 `canonicalAsymptoticHAsym` is closed at conclusion level in the
 following precise sense:
 
-- The iso-strong route is formally refuted by the standalone theorem
-  `isoStrong_conclusion_negative_for_canonical`
-  (`pnp3/Tests/IsoStrongConclusionProbe.lean:368`).
+- The iso-strong route is formally refuted.  The in-build kernel-checked
+  witness is the general theorem `isoStrong_conclusion_negative_general`
+  (`pnp3/Tests/GeneralIsoStrongNoGoProbe.lean`, stage 14 below), which
+  subsumes the canonical instance `isoStrong_conclusion_negative_for_canonical`.
+  The original canonical-specific staging probe
+  (`IsoStrongConclusionProbe.lean`, stages 9–11) has been archived to
+  `archive/pnp3/Tests/` now that the general theorem covers it.
 - The promise-YES weak and promise-YES certificate routes are now also
   exposed as standalone Lean negation theorems in
   `pnp3/Tests/PromiseRouteConclusionProbe.lean`:
@@ -269,9 +274,9 @@ spec-engineering option, not a publishable route on its own.
 | 6. global_hInDag_contract_repair_D0 (codex53, #1396) | REPAIR_POSSIBLE_WITH_GLOBAL_WITNESS | markdown audit |
 | 7. global_hInDag_contract_L0 (gpt55, #1404) | RED_GLOBAL_CONTRACT_CORE_LANDED | `GlobalHInDagContractProbe.lean` (116 LOC) |
 | 8. isoStrong_conclusion_audit_D0 (codex53, #1407) | INCONCLUSIVE_NEEDS_LEAN_PROBE | markdown audit |
-| 9. isoStrong_conclusion_L0 (codex, #1413) | YELLOW_PARTIAL_LANDING | `IsoStrongConclusionProbe.lean` (80 LOC) |
+| 9. isoStrong_conclusion_L0 (codex, #1413) | YELLOW_PARTIAL_LANDING | `IsoStrongConclusionProbe.lean` (80 LOC; staging probe now archived under `archive/pnp3/Tests/`, subsumed by stage 14) |
 | 10. isoStrong_conclusion_L1 sessions 1-3 (#1416, #1423, #1427) | YELLOW_PARTIAL chain | extends to 340 LOC |
-| 11. isoStrong_conclusion_L1 session 4 (#1433) | **RED_CONCLUSION_REFUTED** | extends to 409 LOC; `isoStrong_conclusion_negative_for_canonical` formally proved |
+| 11. isoStrong_conclusion_L1 session 4 (#1433) | **RED_CONCLUSION_REFUTED** | extends to 409 LOC; `isoStrong_conclusion_negative_for_canonical` formally proved (staging probe now archived; subsumed by stage 14's general theorem) |
 | 12. general_isoStrong_no_go D0 (codex53, ffd47f6) | NEEDS_LEAN_PROBE | markdown audit |
 | 13. circuit_count_trace_bound L0 (codex53, c436392) | GREEN_COUNTING_BRICKS_LANDED | `CircuitCountTraceBoundProbe.lean` (~120 LOC) |
 | 14. general_isoStrong_no_go L1 sessions 1-4 (codex53+opus47, 75c5ae0 → 24d51510) | **RED_GENERAL_ISOSTRONG_REFUTED** | `GeneralIsoStrongNoGoProbe.lean` (~460 LOC); `isoStrong_conclusion_negative_general` formally proved over arbitrary `GapSliceFamilyEventually` |
@@ -279,9 +284,10 @@ spec-engineering option, not a publishable route on its own.
 | 16. promise_route_conclusion_companions | **CONCLUSION_COMPANIONS_NAMED** | `PromiseRouteConclusionProbe.lean`; `promiseYesCertificate_conclusion_negative_for_canonical` and `promiseYesWeak_conclusion_negative_for_canonical` standalone theorems with the same `∀ W, ¬ ...` shape as `isoStrong_conclusion_negative_for_canonical` |
 
 The canonical asymptotic track is now closed at conclusion side via
-three standalone Lean theorems (iso-strong via
-`isoStrong_conclusion_negative_for_canonical`; promise-YES certificate
-and promise-YES weak via the two companions in
+standalone Lean theorems (iso-strong via the in-build general theorem
+`isoStrong_conclusion_negative_general`, which subsumes the archived
+canonical `isoStrong_conclusion_negative_for_canonical`; promise-YES
+certificate and promise-YES weak via the two companions in
 `PromiseRouteConclusionProbe.lean`).  The
 four major refutations in the post-PR13 chain:
 
@@ -406,13 +412,15 @@ hypothesis parameter throughout the magnification mainline.  See
 integration wiring surfaces, including
 `i4_final_wiring_of_formulaCertificate` and
 `NP_not_subset_PpolyDAG_final_of_asymptotic_isoStrongRoute_withAntiChecker`.
-The canonical conclusion-side closure is now packaged as three
-standalone negation theorems with the same `∀ W, ¬ ...` shape:
-`isoStrong_conclusion_negative_for_canonical`
-(`pnp3/Tests/IsoStrongConclusionProbe.lean`) and the two companions
-`promiseYesCertificate_conclusion_negative_for_canonical` /
+The canonical conclusion-side closure is witnessed in-build by the general
+iso-strong theorem `isoStrong_conclusion_negative_general`
+(`pnp3/Tests/GeneralIsoStrongNoGoProbe.lean`) together with the two canonical
+promise companions `promiseYesCertificate_conclusion_negative_for_canonical` /
 `promiseYesWeak_conclusion_negative_for_canonical`
-(`pnp3/Tests/PromiseRouteConclusionProbe.lean`).
+(`pnp3/Tests/PromiseRouteConclusionProbe.lean`).  The canonical-specific
+iso-strong staging probe (`isoStrong_conclusion_negative_for_canonical`,
+`IsoStrongConclusionProbe.lean`) is archived under `archive/pnp3/Tests/` and is
+subsumed by the general theorem.
 
 The single remaining typed-deliverable for the independent canonical
 infrastructure milestone (reusable NP-verifier scaffolding, not a

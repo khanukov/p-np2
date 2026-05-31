@@ -21,13 +21,12 @@ Composition layer — micro-step progress (one reusable primitive per commit):
   eval-preservation (`eval (substInputs D G) x = eval D (fun j => eval (G j) x)`),
   and the size bound (`size (substInputs D G) ≤ size D + ∑ j, size (G j)`);  ✓
 
-The composition layer is complete.  Downstream (separate files) the
-decision→search *extraction* assembles a `BoundedSearchSolver` from these pieces.
-
-Downstream (separate files): greedy `BoundedSearchSolver` assembly →
-`PpolyDAG (PrefixExtensionLanguage) → BoundedSearchSolver` and its
-contrapositive → replace the abstract `SearchMCSPMagnificationContract` field
-(closes the audit hole flagged by the D0 review).
+The composition layer is complete.  Downstream — in separate files, as a
+separate PR/stage — the decision→search *extraction* uses these pieces: greedy
+`BoundedSearchSolver` assembly → `PpolyDAG (PrefixExtensionLanguage) →
+BoundedSearchSolver` and its contrapositive → replacing the abstract
+`SearchMCSPMagnificationContract` field (closing the audit hole flagged by the
+D0 review).
 
 This file introduces **no** endpoint, source theorem, `PpolyDAG` bridge, or
 `P ≠ NP` consequence; it is pure circuit plumbing.  The lower bound itself

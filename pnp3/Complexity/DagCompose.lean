@@ -18,8 +18,9 @@ Composition layer — micro-step progress (one reusable primitive per commit):
 * step 4a — multi-output `DagBundle` (`snocBundle`) with eval-preservation;  ✓
 * step 4b — `bundleOfFamily` (fold a family into one bundle) with eval;  ✓
 * step 4c — `substInputs` (input substitution): defs + characterization +
-  structural size (✓); lower layer = `B` (eval-L, ✓); the main substitution
-  induction (eval-R) ← this commit; top-level eval + `∑ size` bound follow.
+  structural size, and full eval-preservation
+  (`eval (substInputs D G) x = eval D (fun j => eval (G j) x)`);  ← this commit
+  completes eval.  A `∑ size (G j)` bound (over the structural size) can follow.
 
 Downstream (separate files): greedy `BoundedSearchSolver` assembly →
 `PpolyDAG (PrefixExtensionLanguage) → BoundedSearchSolver` and its
@@ -1092,6 +1093,43 @@ theorem evalGateAt_substInputsWithBundle {n m : Nat} (D : DagCircuit n) (B : Dag
                   · exact evalGateAt_substInputsWithBundle D B
                       (Nat.add_lt_add_left (Nat.lt_trans j₂.2 hiD) B.gates) (Nat.lt_trans j₂.2 hiD) x
   termination_by i => i
+
+/-! ### Composition layer, step 4c (eval-top): `substInputs` correctness
+
+The output-wire dispatch on top of the two gate-level inductions: an output that
+is a `D`-input wire reduces (via `evalGateAt_substInputsWithBundle_left`) to the
+corresponding bundle output, and an output that is a `D`-gate wire reduces (via
+`evalGateAt_substInputsWithBundle`) to `D`'s gate.  Then the public lemma rewrites
+the bundle outputs back to the family members through `evalOutput_bundleOfFamily`.
+-/
+
+@[simp] theorem eval_substInputsWithBundle {n m : Nat} (D : DagCircuit n) (B : DagBundle m n)
+    (x : Bitstring m) :
+    eval (substInputsWithBundle D B) x = eval D (fun j => B.evalOutput j x) := by
+  unfold eval
+  cases hout : D.output with
+  | input j =>
+      have hO : (substInputsWithBundle D B).output = weakenWireRight D.gates (B.output j) := by
+        simp [substInputsWithBundle, substWireWithBundle, hout]
+      rw [hO]
+      cases hb : B.output j with
+      | input i₀ => simp [weakenWireRight_input, DagBundle.evalOutput, eval, DagBundle.asCircuit, hb]
+      | gate g₀ =>
+          simp only [weakenWireRight_gate]
+          rw [evalGateAt_substInputsWithBundle_left D B j (Fin.castAdd D.gates g₀).2 g₀.2 x]
+          simp [DagBundle.evalOutput, eval, DagBundle.asCircuit, hb, Fin.coe_castAdd]
+  | gate g =>
+      have hO : (substInputsWithBundle D B).output = DagWire.gate (Fin.natAdd B.gates g) := by
+        simp [substInputsWithBundle, substWireWithBundle, hout]
+      rw [hO]
+      exact evalGateAt_substInputsWithBundle D B (Nat.add_lt_add_left g.2 B.gates) g.2 x
+
+@[simp] theorem eval_substInputs {n m : Nat} (D : DagCircuit n) (G : Fin n → DagCircuit m)
+    (x : Bitstring m) :
+    eval (substInputs D G) x = eval D (fun j => eval (G j) x) := by
+  unfold substInputs
+  rw [eval_substInputsWithBundle]
+  simp only [evalOutput_bundleOfFamily]
 
 end DagCircuit
 end ComplexityInterfaces

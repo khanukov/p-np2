@@ -18,8 +18,8 @@ Composition layer — micro-step progress (one reusable primitive per commit):
 * step 4a — multi-output `DagBundle` (`snocBundle`) with eval-preservation;  ✓
 * step 4b — `bundleOfFamily` (fold a family into one bundle) with eval;  ✓
 * step 4c — `substInputs` (input substitution): defs + characterization +
-  structural size (✓); the substitution's lower layer = `B` (eval-L) ← this commit;
-  the main substitution induction + top-level eval + `∑ size` bound follow.
+  structural size (✓); lower layer = `B` (eval-L, ✓); the main substitution
+  induction (eval-R) ← this commit; top-level eval + `∑ size` bound follow.
 
 Downstream (separate files): greedy `BoundedSearchSolver` assembly →
 `PpolyDAG (PrefixExtensionLanguage) → BoundedSearchSolver` and its
@@ -930,6 +930,167 @@ theorem evalGateAt_substInputsWithBundle_left {n m : Nat}
                         (Nat.lt_trans j₁.2 hiA) (Nat.lt_trans j₁.2 hiB) x,
                       evalGateAt_substInputsWithBundle_left D B o
                         (Nat.lt_trans j₂.2 hiA) (Nat.lt_trans j₂.2 hiB) x]
+  termination_by i => i
+
+/-! ### Composition layer, step 4c (eval-R): the main substitution induction
+
+For positions `≥ B.gates`, `substInputsWithBundle D B` runs `D`'s gates with each
+`D`-input wire `.input j` redirected to `B`'s output `j` (and `D`'s own gate
+references shifted past `B.gates`).  So gate `B.gates + i` of the substitution
+evaluates exactly like gate `i` of `D` under the substituted input assignment
+`fun j => B.evalOutput j x`.
+
+Structure mirrors `evalGateAt_append_right`, but each `D`-input wire is handled
+by casing `B.output j`: the `.input` subcase is an actual input, the `.gate`
+subcase reuses `evalGateAt_substInputsWithBundle_left` (the witness `o := j`
+exists because we are in an input branch).  `congr 1` splits each `!`/`&&`/`||`
+into single-`Bool` subgoals so input wires and gate wires (recursion) are
+dispatched uniformly.
+-/
+
+theorem evalGateAt_substInputsWithBundle {n m : Nat} (D : DagCircuit n) (B : DagBundle m n) :
+    ∀ {i : Nat} (hiA : B.gates + i < (substInputsWithBundle D B).gates) (hiD : i < D.gates)
+      (x : Bitstring m),
+      DagCircuit.eval.evalGateAt (C := substInputsWithBundle D B) (x := x) (B.gates + i) hiA =
+        DagCircuit.eval.evalGateAt (C := D) (x := fun j => B.evalOutput j x) i hiD
+  | i, hiA, hiD, x => by
+      have hgate : (substInputsWithBundle D B).gate ⟨B.gates + i, hiA⟩
+            = substGateWithBundle B (D.gate ⟨i, hiD⟩) :=
+        substInputsWithBundle_gate_right D B ⟨i, hiD⟩
+      cases hOp : D.gate ⟨i, hiD⟩ with
+      | const b =>
+          rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+          simp only [hOp, substGateWithBundle_const]
+      | not w =>
+          cases w with
+          | input j =>
+              rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+              simp only [hOp, substGateWithBundle_not, substWireWithBundle_input]
+              congr 1
+              cases hb : B.output j with
+              | input i₀ => simp [weakenWireRight_input, DagBundle.evalOutput, eval, DagBundle.asCircuit, hb]
+              | gate g₀ =>
+                  simp only [weakenWireRight_gate]
+                  rw [evalGateAt_substInputsWithBundle_left D B j (Nat.lt_trans (Fin.castAdd i g₀).2 hiA) g₀.2 x]
+                  simp [DagBundle.evalOutput, eval, DagBundle.asCircuit, hb, Fin.coe_castAdd]
+          | gate g =>
+              rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+              simp only [hOp, substGateWithBundle_not, substWireWithBundle_gate, Fin.coe_natAdd]
+              congr 1
+              exact evalGateAt_substInputsWithBundle D B
+                (Nat.add_lt_add_left (Nat.lt_trans g.2 hiD) B.gates) (Nat.lt_trans g.2 hiD) x
+      | and w₁ w₂ =>
+          cases w₁ with
+          | input j₁ =>
+              cases w₂ with
+              | input j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp, substGateWithBundle_and, substWireWithBundle_input]
+                  congr 1
+                  · cases hb : B.output j₁ with
+                    | input i₀ => simp [weakenWireRight_input, DagBundle.evalOutput, eval, DagBundle.asCircuit, hb]
+                    | gate g₀ =>
+                        simp only [weakenWireRight_gate]
+                        rw [evalGateAt_substInputsWithBundle_left D B j₁ (Nat.lt_trans (Fin.castAdd i g₀).2 hiA) g₀.2 x]
+                        simp [DagBundle.evalOutput, eval, DagBundle.asCircuit, hb, Fin.coe_castAdd]
+                  · cases hb : B.output j₂ with
+                    | input i₀ => simp [weakenWireRight_input, DagBundle.evalOutput, eval, DagBundle.asCircuit, hb]
+                    | gate g₀ =>
+                        simp only [weakenWireRight_gate]
+                        rw [evalGateAt_substInputsWithBundle_left D B j₂ (Nat.lt_trans (Fin.castAdd i g₀).2 hiA) g₀.2 x]
+                        simp [DagBundle.evalOutput, eval, DagBundle.asCircuit, hb, Fin.coe_castAdd]
+              | gate j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp, substGateWithBundle_and, substWireWithBundle_input,
+                    substWireWithBundle_gate, Fin.coe_natAdd]
+                  congr 1
+                  · cases hb : B.output j₁ with
+                    | input i₀ => simp [weakenWireRight_input, DagBundle.evalOutput, eval, DagBundle.asCircuit, hb]
+                    | gate g₀ =>
+                        simp only [weakenWireRight_gate]
+                        rw [evalGateAt_substInputsWithBundle_left D B j₁ (Nat.lt_trans (Fin.castAdd i g₀).2 hiA) g₀.2 x]
+                        simp [DagBundle.evalOutput, eval, DagBundle.asCircuit, hb, Fin.coe_castAdd]
+                  · exact evalGateAt_substInputsWithBundle D B
+                      (Nat.add_lt_add_left (Nat.lt_trans j₂.2 hiD) B.gates) (Nat.lt_trans j₂.2 hiD) x
+          | gate j₁ =>
+              cases w₂ with
+              | input j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp, substGateWithBundle_and, substWireWithBundle_input,
+                    substWireWithBundle_gate, Fin.coe_natAdd]
+                  congr 1
+                  · exact evalGateAt_substInputsWithBundle D B
+                      (Nat.add_lt_add_left (Nat.lt_trans j₁.2 hiD) B.gates) (Nat.lt_trans j₁.2 hiD) x
+                  · cases hb : B.output j₂ with
+                    | input i₀ => simp [weakenWireRight_input, DagBundle.evalOutput, eval, DagBundle.asCircuit, hb]
+                    | gate g₀ =>
+                        simp only [weakenWireRight_gate]
+                        rw [evalGateAt_substInputsWithBundle_left D B j₂ (Nat.lt_trans (Fin.castAdd i g₀).2 hiA) g₀.2 x]
+                        simp [DagBundle.evalOutput, eval, DagBundle.asCircuit, hb, Fin.coe_castAdd]
+              | gate j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp, substGateWithBundle_and, substWireWithBundle_gate, Fin.coe_natAdd]
+                  congr 1
+                  · exact evalGateAt_substInputsWithBundle D B
+                      (Nat.add_lt_add_left (Nat.lt_trans j₁.2 hiD) B.gates) (Nat.lt_trans j₁.2 hiD) x
+                  · exact evalGateAt_substInputsWithBundle D B
+                      (Nat.add_lt_add_left (Nat.lt_trans j₂.2 hiD) B.gates) (Nat.lt_trans j₂.2 hiD) x
+      | or w₁ w₂ =>
+          cases w₁ with
+          | input j₁ =>
+              cases w₂ with
+              | input j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp, substGateWithBundle_or, substWireWithBundle_input]
+                  congr 1
+                  · cases hb : B.output j₁ with
+                    | input i₀ => simp [weakenWireRight_input, DagBundle.evalOutput, eval, DagBundle.asCircuit, hb]
+                    | gate g₀ =>
+                        simp only [weakenWireRight_gate]
+                        rw [evalGateAt_substInputsWithBundle_left D B j₁ (Nat.lt_trans (Fin.castAdd i g₀).2 hiA) g₀.2 x]
+                        simp [DagBundle.evalOutput, eval, DagBundle.asCircuit, hb, Fin.coe_castAdd]
+                  · cases hb : B.output j₂ with
+                    | input i₀ => simp [weakenWireRight_input, DagBundle.evalOutput, eval, DagBundle.asCircuit, hb]
+                    | gate g₀ =>
+                        simp only [weakenWireRight_gate]
+                        rw [evalGateAt_substInputsWithBundle_left D B j₂ (Nat.lt_trans (Fin.castAdd i g₀).2 hiA) g₀.2 x]
+                        simp [DagBundle.evalOutput, eval, DagBundle.asCircuit, hb, Fin.coe_castAdd]
+              | gate j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp, substGateWithBundle_or, substWireWithBundle_input,
+                    substWireWithBundle_gate, Fin.coe_natAdd]
+                  congr 1
+                  · cases hb : B.output j₁ with
+                    | input i₀ => simp [weakenWireRight_input, DagBundle.evalOutput, eval, DagBundle.asCircuit, hb]
+                    | gate g₀ =>
+                        simp only [weakenWireRight_gate]
+                        rw [evalGateAt_substInputsWithBundle_left D B j₁ (Nat.lt_trans (Fin.castAdd i g₀).2 hiA) g₀.2 x]
+                        simp [DagBundle.evalOutput, eval, DagBundle.asCircuit, hb, Fin.coe_castAdd]
+                  · exact evalGateAt_substInputsWithBundle D B
+                      (Nat.add_lt_add_left (Nat.lt_trans j₂.2 hiD) B.gates) (Nat.lt_trans j₂.2 hiD) x
+          | gate j₁ =>
+              cases w₂ with
+              | input j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp, substGateWithBundle_or, substWireWithBundle_input,
+                    substWireWithBundle_gate, Fin.coe_natAdd]
+                  congr 1
+                  · exact evalGateAt_substInputsWithBundle D B
+                      (Nat.add_lt_add_left (Nat.lt_trans j₁.2 hiD) B.gates) (Nat.lt_trans j₁.2 hiD) x
+                  · cases hb : B.output j₂ with
+                    | input i₀ => simp [weakenWireRight_input, DagBundle.evalOutput, eval, DagBundle.asCircuit, hb]
+                    | gate g₀ =>
+                        simp only [weakenWireRight_gate]
+                        rw [evalGateAt_substInputsWithBundle_left D B j₂ (Nat.lt_trans (Fin.castAdd i g₀).2 hiA) g₀.2 x]
+                        simp [DagBundle.evalOutput, eval, DagBundle.asCircuit, hb, Fin.coe_castAdd]
+              | gate j₂ =>
+                  rw [DagCircuit.eval.evalGateAt, DagCircuit.eval.evalGateAt, hgate]
+                  simp only [hOp, substGateWithBundle_or, substWireWithBundle_gate, Fin.coe_natAdd]
+                  congr 1
+                  · exact evalGateAt_substInputsWithBundle D B
+                      (Nat.add_lt_add_left (Nat.lt_trans j₁.2 hiD) B.gates) (Nat.lt_trans j₁.2 hiD) x
+                  · exact evalGateAt_substInputsWithBundle D B
+                      (Nat.add_lt_add_left (Nat.lt_trans j₂.2 hiD) B.gates) (Nat.lt_trans j₂.2 hiD) x
   termination_by i => i
 
 end DagCircuit

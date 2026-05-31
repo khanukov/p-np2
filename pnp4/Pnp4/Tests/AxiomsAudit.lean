@@ -25,6 +25,7 @@ import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageRuntime
 import Pnp4.Frontier.ContractExpansion.PrefixParserConvention
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSerializer
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixQueryCircuits
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 
 namespace Pnp4
 namespace Tests
@@ -209,6 +210,10 @@ end Pnp4
 
 #print axioms Pnp4.Frontier.ContractExpansion.eval_zeroPrefixQueryBitCircuit
 #print axioms Pnp4.Frontier.ContractExpansion.size_zeroPrefixQueryBitCircuit_le
+
+#print axioms Pnp4.Frontier.ContractExpansion.zeroPrefixQueryCircuitBuilder
+#print axioms Pnp4.Frontier.ContractExpansion.treeMCSPZeroPrefixQueryBuilder
+#print axioms Pnp4.Frontier.ContractExpansion.treeMCSPZeroPrefixQueryBuilder_queryValue
 
 #print axioms Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage_accepts_iff
 #print axioms Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage_rejects_malformed

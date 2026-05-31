@@ -35,6 +35,7 @@ import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageRuntime
 import Pnp4.Frontier.ContractExpansion.PrefixParserConvention
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSerializer
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixQueryCircuits
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 
 namespace Pnp4
 namespace Tests
@@ -289,6 +290,38 @@ theorem check_size_zeroPrefixQueryBitCircuit_le
   size_zeroPrefixQueryBitCircuit_le codec n j
 
 end TreeMCSPPrefixQueryCircuitsSurface
+
+section TreeMCSPZeroPrefixBuilderSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+def check_zeroPrefixQueryCircuitBuilder
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold) :
+    QueryCircuitBuilder
+      (fun n => Pnp3.Models.Partial.tableLen n)
+      (fun n => treeMCSPPrefixM codec n) :=
+  zeroPrefixQueryCircuitBuilder codec
+
+def check_treeMCSPZeroPrefixQueryBuilder
+    (threshold : Nat → Nat)
+    (codec : Frontier.TreeCircuitWitnessCodec threshold) :
+    PrefixQueryBuilder
+      (Frontier.treeMCSPSearchProblem threshold
+        (Frontier.TreeMCSPSearchWitnessEncoding.ofCodec codec))
+      (treeMCSPConcretePrefixParser threshold codec) :=
+  treeMCSPZeroPrefixQueryBuilder threshold codec
+
+theorem check_treeMCSPZeroPrefixQueryBuilder_queryValue
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n : Nat)
+    (x : PrefixBitVec (Pnp3.Models.Partial.tableLen n)) :
+    (treeMCSPZeroPrefixQueryBuilder threshold codec).queryValue n x =
+      zeroPrefixQueryValue codec n x :=
+  treeMCSPZeroPrefixQueryBuilder_queryValue codec n x
+
+end TreeMCSPZeroPrefixBuilderSurface
 
 section PrefixExtensionLanguageSurface
 

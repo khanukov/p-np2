@@ -18,6 +18,7 @@ import Pnp4.Frontier.SearchMCSPMagnification
 import Pnp4.Frontier.SearchMCSPConcreteTargets
 import Pnp4.Frontier.ContractExpansion.C_DAG_Adapter
 import Pnp4.Frontier.ContractExpansion.QueryComposition
+import Pnp4.Frontier.ContractExpansion.QueryBuilder
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageRuntime
 import Pnp4.Frontier.ContractExpansion.PrefixParserConvention
@@ -191,6 +192,10 @@ end Pnp4
 
 #print axioms Pnp4.Frontier.ContractExpansion.eval_composeDeciderWithQuery
 #print axioms Pnp4.Frontier.ContractExpansion.size_composeDeciderWithQuery_le
+
+#print axioms Pnp4.Frontier.ContractExpansion.QueryCircuitBuilder.eval_compose
+#print axioms Pnp4.Frontier.ContractExpansion.QueryCircuitBuilder.size_compose_le
+#print axioms Pnp4.Frontier.ContractExpansion.QueryCircuitBuilder.size_compose_le_bound
 
 #print axioms Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage_accepts_iff
 #print axioms Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguage_rejects_malformed

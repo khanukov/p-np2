@@ -284,6 +284,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyBundleFold,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyOutputCircuits,
     Glob.one `Pnp4.Frontier.ContractExpansion.PrefixExtendableSplit,
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyExtendable,
     Glob.one `Pnp4.Tests.AlgorithmsToLowerBoundsSurfaceTests,
     Glob.one `Pnp4.Tests.AxiomsAudit
   ]

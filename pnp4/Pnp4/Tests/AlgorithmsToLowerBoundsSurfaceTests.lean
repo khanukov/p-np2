@@ -40,6 +40,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyBundleStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyBundleFold
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyOutputCircuits
 import Pnp4.Frontier.ContractExpansion.PrefixExtendableSplit
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyExtendable
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -567,6 +568,38 @@ theorem check_witnessPrefixExtendable_snoc_true_of_not_false
   witnessPrefixExtendable_snoc_true_of_not_false n x hi' p hp hnf
 
 end PrefixExtendableSplitSurface
+
+section TreeMCSPGreedyExtendableSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+/-- Block 8a surface: the greedy prefix of length `i` (the bundle outputs on `x`). -/
+def check_greedyPrefix
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n : Nat)
+    (dec : C_DAG.Family (treeMCSPPrefixM codec n))
+    (x : PrefixBitVec (Pnp3.Models.Partial.tableLen n))
+    (i : Nat) (hi : i ≤ codec.witnessBits n) :
+    PrefixBitVec i :=
+  greedyPrefix codec n dec x i hi
+
+/-- Block 8a surface (headline): on a promise instance, with a correct next-bit
+decider, the greedy prefix of every length is extendable to a valid witness. -/
+theorem check_greedyPrefix_extendable
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n : Nat)
+    (dec : C_DAG.Family (treeMCSPPrefixM codec n))
+    (x : PrefixBitVec (Pnp3.Models.Partial.tableLen n))
+    (hpromise : (treeProblem codec).promise n x)
+    (hdec : CorrectNextBitDecider codec n x dec)
+    (i : Nat) (hi : i ≤ codec.witnessBits n) :
+    WitnessPrefixExtendable (problem := treeProblem codec) n x hi
+      (greedyPrefix codec n dec x i hi) :=
+  greedyPrefix_extendable codec n dec x hpromise hdec i hi
+
+end TreeMCSPGreedyExtendableSurface
 
 section TreeMCSPZeroPrefixBuilderSurface
 

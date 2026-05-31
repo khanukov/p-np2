@@ -26,6 +26,7 @@ import Pnp4.Frontier.ContractExpansion.PrefixParserConvention
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSerializer
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixQueryCircuits
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixStateQueryCircuits
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyBundleStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -217,6 +218,11 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.prefixStateQueryValue_parses
 #print axioms Pnp4.Frontier.ContractExpansion.eval_prefixStateQueryBitCircuit
 #print axioms Pnp4.Frontier.ContractExpansion.size_prefixStateQueryBitCircuit_le
+
+#print axioms Pnp4.Frontier.ContractExpansion.gates_greedyBundleStep
+#print axioms Pnp4.Frontier.ContractExpansion.size_greedyStepHead_le
+#print axioms Pnp4.Frontier.ContractExpansion.evalOutput_greedyBundleStep_old
+#print axioms Pnp4.Frontier.ContractExpansion.evalOutput_greedyBundleStep_new
 
 #print axioms Pnp4.Frontier.ContractExpansion.zeroPrefixQueryCircuitBuilder
 #print axioms Pnp4.Frontier.ContractExpansion.treeMCSPZeroPrefixQueryBuilder

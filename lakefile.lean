@@ -280,6 +280,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder,
     Glob.one `Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixStateQueryCircuits,
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyBundleStep,
     Glob.one `Pnp4.Tests.AlgorithmsToLowerBoundsSurfaceTests,
     Glob.one `Pnp4.Tests.AxiomsAudit
   ]

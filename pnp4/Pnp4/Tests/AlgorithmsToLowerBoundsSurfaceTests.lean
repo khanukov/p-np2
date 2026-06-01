@@ -48,6 +48,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedySolves
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBoundedSolver
 import Pnp4.Frontier.ContractExpansion.BoundedSolverFromPpoly
 import Pnp4.Frontier.ContractExpansion.NoSolverContrapositive
+import Pnp4.Frontier.ContractExpansion.ExtractedScheduleGrowth
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -783,6 +784,33 @@ theorem check_not_PpolyDAG_prefixExtension_of_noExtractedScheduleSolver
   not_PpolyDAG_prefixExtension_of_noExtractedScheduleSolver codec hNo
 
 end NoSolverContrapositiveSurface
+
+section ExtractedScheduleGrowthSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+/-- Block 9d surface: `BoundedSearchSolver` monotonicity in its size schedule. -/
+theorem check_nonempty_boundedSearchSolver_mono_sizeBound
+    {problem : Frontier.SearchMCSPCompressionProblem} {C : AlgorithmsToLowerBounds.CircuitFamilyClass}
+    {small big : Nat → Nat}
+    (h : Nonempty (Frontier.BoundedSearchSolver problem C small))
+    (hle : ∀ n, small n ≤ big n) :
+    Nonempty (Frontier.BoundedSearchSolver problem C big) :=
+  nonempty_boundedSearchSolver_mono_sizeBound h hle
+
+/-- Block 9d surface (headline): under explicit polynomial growth assumptions, no
+polynomial-size bounded search solver implies the prefix-extension language is not in
+`PpolyDAG`. -/
+theorem check_not_PpolyDAG_prefixExtension_of_noPolynomialBoundedSearchSolver
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (hGrowth : TreeMCSPExtractionGrowthAssumptions codec)
+    (hNoPoly : NoPolynomialBoundedSearchSolver codec) :
+    ¬ Pnp3.ComplexityInterfaces.PpolyDAG
+        (PrefixExtensionLanguage (treeMCSPConcretePrefixParser threshold codec)) :=
+  not_PpolyDAG_prefixExtension_of_noPolynomialBoundedSearchSolver codec hGrowth hNoPoly
+
+end ExtractedScheduleGrowthSurface
 
 section TreeMCSPZeroPrefixBuilderSurface
 

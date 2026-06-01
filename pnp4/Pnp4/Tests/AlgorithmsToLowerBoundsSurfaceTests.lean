@@ -56,6 +56,7 @@ import Pnp4.Frontier.ContractExpansion.ExplicitConditionalSource
 import Pnp4.Frontier.ContractExpansion.ConcreteCodecGap
 import Pnp4.Frontier.ContractExpansion.CircuitTreeBridge
 import Pnp4.Frontier.ContractExpansion.CircuitEncodingLength
+import Pnp4.Frontier.ContractExpansion.CircuitDecodeDepthFree
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -988,6 +989,26 @@ theorem check_length_encodeCircuit_le {n : Nat} (width : Nat) (h_width : n ≤ 2
   length_encodeCircuit_le width h_width c
 
 end CircuitEncodingLengthSurface
+
+section CircuitDecodeDepthFreeSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+/-- Block 12d surface: the native encoding-length lower bound. -/
+theorem check_length_encodeCircuit_ge {n : Nat} (width : Nat) (h_width : n ≤ 2 ^ width)
+    (c : Pnp3.Models.Circuit n) :
+    3 * Pnp3.Models.Circuit.size c ≤ (encodeCircuit width h_width c).length :=
+  length_encodeCircuit_ge width h_width c
+
+/-- Block 12d surface (headline): the depth-free decoder round-trips with no
+`size ≤ d` side condition. -/
+theorem check_decodeCircuitFull_encodeCircuit {n : Nat} (h_pos : 0 < n) (width : Nat)
+    (h_width : n ≤ 2 ^ width) (c : Pnp3.Models.Circuit n) (rest : List Bool) :
+    decodeCircuitFull h_pos width (encodeCircuit width h_width c ++ rest)
+      = some (c, rest) :=
+  decodeCircuitFull_encodeCircuit h_pos width h_width c rest
+
+end CircuitDecodeDepthFreeSurface
 
 section TreeMCSPZeroPrefixBuilderSurface
 

@@ -40,6 +40,7 @@ import Pnp4.Frontier.ContractExpansion.BoundedSolverFromPpoly
 import Pnp4.Frontier.ContractExpansion.NoSolverContrapositive
 import Pnp4.Frontier.ContractExpansion.ExtractedScheduleGrowth
 import Pnp4.Frontier.ContractExpansion.ConditionalVerifiedSource
+import Pnp4.Frontier.ContractExpansion.WitnessGrowthReduction
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -276,6 +277,11 @@ end Pnp4
 
 #print axioms Pnp4.Frontier.ContractExpansion.verifiedSource_of_noPolynomialBoundedSearchSolver
 #print axioms Pnp4.Frontier.ContractExpansion.NP_not_subset_PpolyDAG_of_noPolynomialBoundedSearchSolver
+
+#print axioms Pnp4.Frontier.ContractExpansion.bitLength_le_self
+#print axioms Pnp4.Frontier.ContractExpansion.polyBoundedInTable_treeMCSPPrefixM_of_witnessPoly
+#print axioms Pnp4.Frontier.ContractExpansion.treeMCSPExtractionGrowthAssumptions_of_witnessPoly
+#print axioms Pnp4.Frontier.ContractExpansion.PolynomialWitnessCodec.toGrowthAssumptions
 
 #print axioms Pnp4.Frontier.ContractExpansion.zeroPrefixQueryCircuitBuilder
 #print axioms Pnp4.Frontier.ContractExpansion.treeMCSPZeroPrefixQueryBuilder

@@ -46,6 +46,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyTrueOutputCircuits
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDeciderCorrect
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedySolves
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBoundedSolver
+import Pnp4.Frontier.ContractExpansion.BoundedSolverFromPpoly
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -743,6 +744,28 @@ def check_boundedSearchSolver_of_deciderFamily
   boundedSearchSolver_of_deciderFamily codec dec decSizeBound hlang hsize
 
 end TreeMCSPBoundedSolverSurface
+
+section BoundedSolverFromPpolySurface
+
+open Pnp4.Frontier.ContractExpansion
+
+/-- Block 9b surface: if the prefix-extension language is in `PpolyDAG`, a
+`BoundedSearchSolver` with the extracted size schedule exists. -/
+theorem check_boundedSearchSolver_of_PpolyDAG_prefixExtension
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (hPpoly : Pnp3.ComplexityInterfaces.PpolyDAG
+      (PrefixExtensionLanguage (treeMCSPConcretePrefixParser threshold codec))) :
+    ∃ c : Nat,
+      Nonempty
+        (Frontier.BoundedSearchSolver (treeProblem codec) C_DAG
+          (fun n =>
+            codec.witnessBits n *
+                ((treeMCSPPrefixM codec n) ^ c + c + 2 * treeMCSPPrefixM codec n)
+              + 1)) :=
+  boundedSearchSolver_of_PpolyDAG_prefixExtension codec hPpoly
+
+end BoundedSolverFromPpolySurface
 
 section TreeMCSPZeroPrefixBuilderSurface
 

@@ -540,6 +540,26 @@ mathematical progress toward `NP_not_subset_PpolyDAG` by themselves.  They
 prevent stale or vacuous route claims from re-entering the tree; they do not
 replace the missing lower-bound idea.
 
+### pnp4 conditional decision→search extraction chain (June 2026)
+
+`pnp4/Pnp4/Frontier/ContractExpansion/` now formalizes a verified **conditional**
+chain that replaces the abstract
+`SearchMCSPMagnificationContract.magnifiesToVerifiedDAGSource` jump with explicit,
+machine-checked interfaces: from a `PpolyDAG` membership of the prefix-extension
+language it extracts a bounded search solver, and contrapositively
+`NoPolynomialBoundedSearchSolver + growth ⇒ ¬ PpolyDAG`; combined with an
+NP-membership witness it assembles a `VerifiedNPDAGLowerBoundSource`.
+
+This is **not** unconditional progress: it proves neither `P ≠ NP` nor
+`NP_not_subset_PpolyDAG`.  It only exposes the remaining mathematics as three
+explicit, open inputs — (1) a genuine weak lower bound
+`NoPolynomialBoundedSearchSolver`, (2) a concrete NP verifier witness
+`PrefixExtensionNPWitness`, (3) a concrete witness codec (reduced, after the
+`Circuit ↔ CircuitTree` bridge and encoding-length bound, to final assembly).
+Input (1) is the same research-level lower-bound gap described above.  See
+`pnp4/Pnp4/Frontier/ContractExpansion/README.md` for the full module map and the
+proved-vs-open breakdown.
+
 ## Repository-Wide Honesty Policy
 
 Any file claiming unconditional `P != NP` is inaccurate until the

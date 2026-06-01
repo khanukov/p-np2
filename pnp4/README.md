@@ -195,3 +195,34 @@ Current theorem surface status:
   now codec-shaped: `TreeCircuitWitnessCodec` supplies `encode`, `decode`, and
   `decode_encode`, and `TreeMCSPSearchWitnessEncoding.ofCodec` derives the
   verifier from actual decoded `Pnp3.Models.Circuit` witnesses.
+
+## Downstream decision→search extraction (`Frontier/ContractExpansion/`)
+
+`Frontier/ContractExpansion/` replaces the abstract
+`SearchMCSPMagnificationContract.magnifiesToVerifiedDAGSource` jump with a
+machine-checked **conditional** chain:
+
+```text
+PpolyDAG (PrefixExtensionLanguage (treeMCSPConcretePrefixParser threshold codec))
+  → bounded search solver (greedy query circuits over a shared DAG bundle)
+contrapositive: NoPolynomialBoundedSearchSolver + growth ⇒ ¬ PpolyDAG
+  + NP-membership witness ⇒ VerifiedNPDAGLowerBoundSource ⇒ (conditional) NP ⊄ PpolyDAG
+```
+
+It is strictly conditional: it does **not** prove `P ≠ NP` or `NP ⊄ PpolyDAG`
+unconditionally.  What it does is expose the exact remaining obligations as three
+explicit, clearly-typed inputs:
+
+1. `NoPolynomialBoundedSearchSolver codec` — the genuine weak lower bound (hard,
+   research-level mathematics);
+2. `PrefixExtensionNPWitness parser` — a concrete verifier TM with a polynomial
+   runtime bound and certificate correctness (the NP / runtime track);
+3. the concrete `TreeCircuitWitnessCodec` final assembly — reduced (by the
+   `Circuit ↔ CircuitTree` bridge, the native encoder round-trip, and the
+   encoding-length upper bound) to choosing a width schedule, eliminating the
+   decoder's depth budget, and supplying `PolyBoundedInTable codec.witnessBits`.
+
+The capstone `verifiedSource_of_explicit_interfaces` packages the three inputs into
+`VerifiedNPDAGLowerBoundSource`.  See
+`Frontier/ContractExpansion/README.md` for the full module map and the
+proved-vs-open breakdown.

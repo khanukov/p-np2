@@ -50,6 +50,7 @@ import Pnp4.Frontier.ContractExpansion.CircuitDecodeDepthFree
 import Pnp4.Frontier.ContractExpansion.ConcreteTreeCodec
 import Pnp4.Frontier.ContractExpansion.ConcreteTreeCodecSource
 import Pnp4.Frontier.ContractExpansion.ThresholdGrowth
+import Pnp4.Frontier.ContractExpansion.ConsolidatedTreeSeparation
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -321,6 +322,9 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.polyBoundedInTable_thresholdLinear
 #print axioms Pnp4.Frontier.ContractExpansion.polyBoundedInTable_thresholdQuadratic
 #print axioms Pnp4.Frontier.ContractExpansion.polyBoundedInTable_thresholdPoly
+
+#print axioms Pnp4.Frontier.ContractExpansion.verifiedSource_treePoly
+#print axioms Pnp4.Frontier.ContractExpansion.NP_not_subset_PpolyDAG_treePoly
 
 #print axioms Pnp4.Frontier.ContractExpansion.zeroPrefixQueryCircuitBuilder
 #print axioms Pnp4.Frontier.ContractExpansion.treeMCSPZeroPrefixQueryBuilder

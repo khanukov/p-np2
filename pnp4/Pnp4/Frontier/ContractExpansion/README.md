@@ -150,18 +150,39 @@ NP ⊄ PpolyDAG     (and thence  P ≠ NP)        — both kept strictly conditi
 - the assembly of `VerifiedNPDAGLowerBoundSource` (hence conditional `NP ⊄ PpolyDAG`)
   from three explicit interfaces;
 - the growth reduction (two growth premises → one);
-- the concrete-codec packing reduction, the `Circuit ↔ CircuitTree` bridge with
-  round-trip, and the encoding-length upper bound.
+- the concrete-codec packing reduction, the `Circuit ↔ CircuitTree` bridge with an
+  **all-`n`** round-trip, and matching encoding-length upper and lower bounds;
+- the **first concrete `TreeCircuitWitnessCodec`** (`treeCircuitWitnessCodec`,
+  `ConcreteTreeCodec.lean`) — closing the "no concrete codec" gap — and its
+  instantiation of the conditional source (`ConcreteTreeCodecSource.lean`);
+- `PolyBoundedInTable` for the canonical polynomial thresholds
+  (`thresholdLinear/Quadratic/Poly`, `ThresholdGrowth.lean`), which **discharges**
+  the growth leg for those thresholds;
+- the **consolidated** conditional separation at a concrete polynomial threshold
+  (`verifiedSource_treePoly` / `NP_not_subset_PpolyDAG_treePoly`,
+  `ConsolidatedTreeSeparation.lean`): at `thresholdPoly k` only the two genuinely-hard
+  inputs below remain as hypotheses.
 
-**Open — the three explicit remaining inputs:**
-1. **`NoPolynomialBoundedSearchSolver codec`** — the genuine weak lower bound. This
-   is the hard, research-level mathematics; it is *not* a Lean engineering task.
-2. **`PrefixExtensionNPWitness parser`** — a concrete verifier Turing machine with a
-   polynomial runtime bound and certificate correctness (the NP / runtime track).
-3. **Concrete codec final assembly** — after Blocks 12a–12c the codec gap is reduced
-   to *final assembly*: choose a width / `witnessBits` schedule, eliminate the
-   decoder's depth budget, build a `SelfDelimitingCircuitCode`, apply
-   `.toCodec`, and supply `PolyBoundedInTable codec.witnessBits`.
+**Open — for a concrete polynomial threshold, exactly two inputs:**
+1. **`NoPolynomialBoundedSearchSolver (treeCircuitWitnessCodec (thresholdPoly k))`** —
+   a genuine `P/poly` circuit lower bound for the concrete tree-MCSP search problem.
+   The hard, research-level mathematics; **not** a Lean engineering task.
+2. **`PrefixExtensionNPWitness (treeMCSPConcretePrefixParser …)`** — a concrete
+   verifier Turing machine with a polynomial runtime bound and certificate
+   correctness (the NP / runtime track; engineering-heavy but in-principle closable).
+
+(For an *arbitrary* threshold there is a third input, `PolyBoundedInTable threshold`;
+it is proved for the canonical polynomial thresholds, so it disappears there.)
+
+### Honest caveat — this is a reduction, not a magnification win
+
+The decision→search extraction proves the **equivalence**
+`PpolyDAG(prefix-extension language) ⟺ polynomial-size search solver`.  Because the
+instance length is `tableLen n = 2^n`, the no-solver input is the **full-strength**
+lower bound — "this concrete NP language is not in `P/poly`" — **not** a weak/local
+bound amplified by a hardness-*magnification* theorem.  The chain makes the target
+precise, concrete, and verified-conditional; it does **not** make the open
+mathematics easier, and **no** magnification theorem is formalized here.
 
 This directory adds **no** unconditional claim, does **not** modify
 `SearchMCSPMagnificationContract`, and adds **no** `P ≠ NP` endpoint wrapper.

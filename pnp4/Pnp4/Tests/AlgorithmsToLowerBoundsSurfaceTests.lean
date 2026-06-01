@@ -60,6 +60,7 @@ import Pnp4.Frontier.ContractExpansion.CircuitDecodeDepthFree
 import Pnp4.Frontier.ContractExpansion.ConcreteTreeCodec
 import Pnp4.Frontier.ContractExpansion.ConcreteTreeCodecSource
 import Pnp4.Frontier.ContractExpansion.ThresholdGrowth
+import Pnp4.Frontier.ContractExpansion.ConsolidatedTreeSeparation
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -1080,6 +1081,32 @@ theorem check_polyBoundedInTable_thresholdPoly (k : Nat) :
   polyBoundedInTable_thresholdPoly k
 
 end ThresholdGrowthSurface
+
+section ConsolidatedTreeSeparationSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+/-- Block 13b surface: at a concrete polynomial threshold, the verified source rests
+on only the two genuinely-hard inputs (lower bound + NP witness). -/
+noncomputable def check_verifiedSource_treePoly
+    (k : Nat)
+    (hNoPoly : NoPolynomialBoundedSearchSolver (treeCircuitWitnessCodec (thresholdPoly k)))
+    (hNPWit : PrefixExtensionNPWitness
+        (treeMCSPConcretePrefixParser (thresholdPoly k) (treeCircuitWitnessCodec (thresholdPoly k)))) :
+    AlgorithmsToLowerBounds.VerifiedNPDAGLowerBoundSource :=
+  verifiedSource_treePoly k hNoPoly hNPWit
+
+/-- Block 13b surface (headline): the consolidated conditional `NP ⊄ PpolyDAG` at a
+concrete polynomial threshold. -/
+theorem check_NP_not_subset_PpolyDAG_treePoly
+    (k : Nat)
+    (hNoPoly : NoPolynomialBoundedSearchSolver (treeCircuitWitnessCodec (thresholdPoly k)))
+    (hNPWit : PrefixExtensionNPWitness
+        (treeMCSPConcretePrefixParser (thresholdPoly k) (treeCircuitWitnessCodec (thresholdPoly k)))) :
+    Pnp3.ComplexityInterfaces.NP_not_subset_PpolyDAG :=
+  NP_not_subset_PpolyDAG_treePoly k hNoPoly hNPWit
+
+end ConsolidatedTreeSeparationSurface
 
 section TreeMCSPZeroPrefixBuilderSurface
 

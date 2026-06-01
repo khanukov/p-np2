@@ -53,6 +53,7 @@ import Pnp4.Frontier.ContractExpansion.ConditionalVerifiedSource
 import Pnp4.Frontier.ContractExpansion.WitnessGrowthReduction
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionNPWitness
 import Pnp4.Frontier.ContractExpansion.ExplicitConditionalSource
+import Pnp4.Frontier.ContractExpansion.ConcreteCodecGap
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -927,6 +928,27 @@ theorem check_NP_not_subset_PpolyDAG_of_explicit_interfaces
   NP_not_subset_PpolyDAG_of_explicit_interfaces wcodec hNoPoly hNPWit
 
 end ExplicitConditionalSourceSurface
+
+section ConcreteCodecGapSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+/-- Block 12a surface: the fixed-width packing round-trip (read-back recovers the
+list plus a `false` pad). -/
+theorem check_ofFn_listToFixedBitVec
+    (l : List Bool) (L : Nat) (hL : l.length ≤ L) :
+    List.ofFn (listToFixedBitVec l L) = l ++ List.replicate (L - l.length) false :=
+  ofFn_listToFixedBitVec l L hL
+
+/-- Block 12a surface (headline): a self-delimiting circuit code with a width bound
+yields a concrete `TreeCircuitWitnessCodec` (the proved padding reduction). -/
+def check_SelfDelimitingCircuitCode_toCodec
+    {threshold : Nat → Nat}
+    (S : SelfDelimitingCircuitCode threshold) :
+    Frontier.TreeCircuitWitnessCodec threshold :=
+  S.toCodec
+
+end ConcreteCodecGapSurface
 
 section TreeMCSPZeroPrefixBuilderSurface
 

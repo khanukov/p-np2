@@ -50,6 +50,7 @@ import Pnp4.Frontier.ContractExpansion.BoundedSolverFromPpoly
 import Pnp4.Frontier.ContractExpansion.NoSolverContrapositive
 import Pnp4.Frontier.ContractExpansion.ExtractedScheduleGrowth
 import Pnp4.Frontier.ContractExpansion.ConditionalVerifiedSource
+import Pnp4.Frontier.ContractExpansion.WitnessGrowthReduction
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -845,6 +846,42 @@ theorem check_NP_not_subset_PpolyDAG_of_noPolynomialBoundedSearchSolver
   NP_not_subset_PpolyDAG_of_noPolynomialBoundedSearchSolver codec hGrowth hNoPoly hNP
 
 end ConditionalVerifiedSourceSurface
+
+section WitnessGrowthReductionSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+/-- Block 10a surface: `bitLength m ≤ m`. -/
+theorem check_bitLength_le_self (m : Nat) : bitLength m ≤ m :=
+  bitLength_le_self m
+
+/-- Block 10a surface: the concrete ambient length is poly-bounded in the
+truth-table length given only the witness-length assumption. -/
+theorem check_polyBoundedInTable_treeMCSPPrefixM_of_witnessPoly
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (hW : PolyBoundedInTable codec.witnessBits) :
+    PolyBoundedInTable (treeMCSPPrefixM codec) :=
+  polyBoundedInTable_treeMCSPPrefixM_of_witnessPoly codec hW
+
+/-- Block 10a surface (headline): the full extraction growth assumptions follow
+from the single witness-length assumption. -/
+theorem check_treeMCSPExtractionGrowthAssumptions_of_witnessPoly
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (hW : PolyBoundedInTable codec.witnessBits) :
+    TreeMCSPExtractionGrowthAssumptions codec :=
+  treeMCSPExtractionGrowthAssumptions_of_witnessPoly codec hW
+
+/-- Block 10a surface: the minimal `PolynomialWitnessCodec` interface yields the
+extraction growth assumptions. -/
+theorem check_PolynomialWitnessCodec_toGrowthAssumptions
+    {threshold : Nat → Nat}
+    (P : PolynomialWitnessCodec threshold) :
+    TreeMCSPExtractionGrowthAssumptions P.codec :=
+  P.toGrowthAssumptions
+
+end WitnessGrowthReductionSurface
 
 section TreeMCSPZeroPrefixBuilderSurface
 

@@ -26,22 +26,24 @@ always covers the size, so the round-trip survives.
 * `decodeCircuitFull_encodeCircuit` — its round-trip, with no `size ≤ d` side
   condition.
 
-## Remaining obstacle to a full `∀ n` `SelfDelimitingCircuitCode`
+## The `n = 0` obstacle is now resolved
 
-`decodeCircuitFull` (like the underlying `decodeCircuitTreeAtDepth`) still requires
-`h_pos : 0 < n`.  That parameter is **vestigial** — the pnp3 decoder never uses it
-(the `input` branch guards on a runtime `i_fin.val < n` check) — but it makes the
-decoder *uncallable* at `n = 0`, while `SelfDelimitingCircuitCode.dec` / the eventual
-`TreeCircuitWitnessCodec.decode` are quantified over **all** `n`.  So the encoder, the
-`n ≥ 1` decoder, and both length bounds are now in hand; the only piece left for the
-full assembly is an `n = 0` decoder (equivalently, dropping the unused `h_pos` in the
-pnp3 `Encoding.lean` decoder).  That step is intentionally **not** taken here.
+Earlier this decoder (via the pnp3 `decodeCircuitTreeAtDepth`) carried a vestigial
+`h_pos : 0 < n` that made it *uncallable* at `n = 0`, even though the body never used
+it (the `input` branch guards on a runtime `i_fin.val < n` check).  That parameter has
+since been removed: the pnp3 decoder now takes `n` as a plain explicit argument, so
+`decodeCircuit` / `decodeCircuitFull` decode for **all** `n`, including `n = 0`.
 
-Scope discipline — depth elimination only:
+Together with the encoder, the round-trip, and both length bounds (upper #1518, lower
+here), every *encoder-level* ingredient for a full `∀ n` `SelfDelimitingCircuitCode`
+is now in hand.  Only the **final assembly** — choosing a width / `witnessBits`
+schedule and packaging via `SelfDelimitingCircuitCode.toCodec` — remains, and is left
+to a separate PR.
+
+Scope discipline — depth elimination + lower bound only:
 
 * **no** full `SelfDelimitingCircuitCode` / `TreeCircuitWitnessCodec` is assembled
-  (blocked by the `n = 0` decoder above);
-* **no** change to the pnp3 `Encoding.lean` decoder;
+  (final assembly is a separate PR);
 * **no** lower-bound proof, **no** NP-verifier construction, **no**
   `SearchMCSPMagnificationContract` change, **no** endpoint.
 -/
@@ -57,9 +59,9 @@ theorem length_encodeCircuit_ge {n : Nat} (width : Nat) (h_width : n ≤ 2 ^ wid
   exact encodeCircuitTree_length_ge width h_width (toTree c)
 
 /-- Depth-free native decoder: use the input length itself as the depth budget. -/
-def decodeCircuitFull {n : Nat} (h_pos : 0 < n) (width : Nat)
+def decodeCircuitFull (n : Nat) (width : Nat)
     (bits : List Bool) : Option (Pnp3.Models.Circuit n × List Bool) :=
-  decodeCircuit h_pos width bits.length bits
+  decodeCircuit n width bits.length bits
 
 /--
 **Depth-free round-trip.**  With the budget taken to be the input length, decoding
@@ -67,9 +69,9 @@ the native encoding (followed by any tail) recovers the circuit and the untouche
 tail — with **no** `size ≤ d` side condition, because `(encodeCircuit … c ++ rest).length
 ≥ 3 · size c ≥ size c`.
 -/
-theorem decodeCircuitFull_encodeCircuit {n : Nat} (h_pos : 0 < n) (width : Nat)
+theorem decodeCircuitFull_encodeCircuit (n : Nat) (width : Nat)
     (h_width : n ≤ 2 ^ width) (c : Pnp3.Models.Circuit n) (rest : List Bool) :
-    decodeCircuitFull h_pos width (encodeCircuit width h_width c ++ rest)
+    decodeCircuitFull n width (encodeCircuit width h_width c ++ rest)
       = some (c, rest) := by
   unfold decodeCircuitFull
   have hge : 3 * Pnp3.Models.Circuit.size c ≤ (encodeCircuit width h_width c).length :=
@@ -77,7 +79,7 @@ theorem decodeCircuitFull_encodeCircuit {n : Nat} (h_pos : 0 < n) (width : Nat)
   have hlen : Pnp3.Models.Circuit.size c
       ≤ (encodeCircuit width h_width c ++ rest).length := by
     rw [List.length_append]; omega
-  exact decodeCircuit_encodeCircuit h_pos width h_width c
+  exact decodeCircuit_encodeCircuit n width h_width c
     (encodeCircuit width h_width c ++ rest).length hlen rest
 
 end ContractExpansion

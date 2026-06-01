@@ -967,13 +967,14 @@ theorem check_size_toTree {n : Nat} (c : Pnp3.Models.Circuit n) :
     (toTree c).size = Pnp3.Models.Circuit.size c :=
   size_toTree c
 
-/-- Block 12b surface (headline): the native `Circuit` encoder/decoder round-trips. -/
-theorem check_decodeCircuit_encodeCircuit {n : Nat} (h_pos : 0 < n) (width : Nat)
+/-- Block 12b surface (headline): the native `Circuit` encoder/decoder round-trips
+(for all `n`, including `n = 0`). -/
+theorem check_decodeCircuit_encodeCircuit (n : Nat) (width : Nat)
     (h_width : n ≤ 2 ^ width) (c : Pnp3.Models.Circuit n)
     (d : Nat) (h_d : Pnp3.Models.Circuit.size c ≤ d) (rest : List Bool) :
-    decodeCircuit h_pos width d (encodeCircuit width h_width c ++ rest)
+    decodeCircuit n width d (encodeCircuit width h_width c ++ rest)
       = some (c, rest) :=
-  decodeCircuit_encodeCircuit h_pos width h_width c d h_d rest
+  decodeCircuit_encodeCircuit n width h_width c d h_d rest
 
 end CircuitTreeBridgeSurface
 
@@ -1001,12 +1002,12 @@ theorem check_length_encodeCircuit_ge {n : Nat} (width : Nat) (h_width : n ≤ 2
   length_encodeCircuit_ge width h_width c
 
 /-- Block 12d surface (headline): the depth-free decoder round-trips with no
-`size ≤ d` side condition. -/
-theorem check_decodeCircuitFull_encodeCircuit {n : Nat} (h_pos : 0 < n) (width : Nat)
+`size ≤ d` side condition (for all `n`, including `n = 0`). -/
+theorem check_decodeCircuitFull_encodeCircuit (n : Nat) (width : Nat)
     (h_width : n ≤ 2 ^ width) (c : Pnp3.Models.Circuit n) (rest : List Bool) :
-    decodeCircuitFull h_pos width (encodeCircuit width h_width c ++ rest)
+    decodeCircuitFull n width (encodeCircuit width h_width c ++ rest)
       = some (c, rest) :=
-  decodeCircuitFull_encodeCircuit h_pos width h_width c rest
+  decodeCircuitFull_encodeCircuit n width h_width c rest
 
 end CircuitDecodeDepthFreeSurface
 

@@ -93,22 +93,22 @@ def encodeCircuit {n : Nat} (width : Nat) (h_width : n ≤ 2 ^ width)
 
 /-- Native prefix-free (depth-budgeted) decoder for `Pnp3.Models.Circuit`, via the
 bridge. -/
-def decodeCircuit {n : Nat} (h_pos : 0 < n) (width : Nat) (d : Nat)
+def decodeCircuit (n : Nat) (width : Nat) (d : Nat)
     (bits : List Bool) : Option (Pnp3.Models.Circuit n × List Bool) :=
-  (decodeCircuitTreeAtDepth h_pos width d bits).map (fun p => (fromTree p.1, p.2))
+  (decodeCircuitTreeAtDepth n width d bits).map (fun p => (fromTree p.1, p.2))
 
 /--
 **Native round-trip.**  Decoding the native encoding of a circuit (followed by any
 tail) recovers the circuit and the untouched tail, provided the depth budget covers
 its size.  Inherited from the `CircuitTree` round-trip through the bridge.
 -/
-theorem decodeCircuit_encodeCircuit {n : Nat} (h_pos : 0 < n) (width : Nat)
+theorem decodeCircuit_encodeCircuit (n : Nat) (width : Nat)
     (h_width : n ≤ 2 ^ width) (c : Pnp3.Models.Circuit n)
     (d : Nat) (h_d : Pnp3.Models.Circuit.size c ≤ d) (rest : List Bool) :
-    decodeCircuit h_pos width d (encodeCircuit width h_width c ++ rest)
+    decodeCircuit n width d (encodeCircuit width h_width c ++ rest)
       = some (c, rest) := by
   unfold decodeCircuit encodeCircuit
-  rw [decodeCircuitTreeAtDepth_encodeCircuitTree h_pos width h_width (toTree c) d
+  rw [decodeCircuitTreeAtDepth_encodeCircuitTree width h_width (toTree c) d
         (by rw [size_toTree c]; exact h_d) rest]
   simp [fromTree_toTree]
 

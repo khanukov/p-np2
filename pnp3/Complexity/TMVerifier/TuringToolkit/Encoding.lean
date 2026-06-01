@@ -171,7 +171,7 @@ is always enough since the tree depth is bounded by its size.
 The round-trip theorem shows `decodeCircuitTreeAtDepth` (at depth
 `c.size`) recovers `c` and leaves any tail unchanged:
 
-  decodeCircuitTreeAtDepth (h_pos : 0 < n) width c.size
+  decodeCircuitTreeAtDepth n width c.size
       (encodeCircuitTree width h_width c ++ rest)
     = some (c, rest).
 -/
@@ -179,7 +179,7 @@ The round-trip theorem shows `decodeCircuitTreeAtDepth` (at depth
 /-- Recursive decoder with a structural depth budget.  Returns the
 parsed tree plus the remaining bit list, or `none` on malformed
 input. -/
-def decodeCircuitTreeAtDepth {n : Nat} (h_pos : 0 < n) (width : Nat) :
+def decodeCircuitTreeAtDepth (n : Nat) (width : Nat) :
     Nat → List Bool → Option (CircuitTree n × List Bool)
   | 0, _ => none
   | _ + 1, [] => none
@@ -199,21 +199,21 @@ def decodeCircuitTreeAtDepth {n : Nat} (h_pos : 0 < n) (width : Nat) :
   | _ + 1, false :: false :: true :: b :: rest =>
     some (CircuitTree.const b, rest)
   | d + 1, false :: true :: false :: rest =>
-    match decodeCircuitTreeAtDepth h_pos width d rest with
+    match decodeCircuitTreeAtDepth n width d rest with
     | none => none
     | some (c, remainder) => some (CircuitTree.not c, remainder)
   | d + 1, false :: true :: true :: rest =>
-    match decodeCircuitTreeAtDepth h_pos width d rest with
+    match decodeCircuitTreeAtDepth n width d rest with
     | none => none
     | some (c1, rest1) =>
-      match decodeCircuitTreeAtDepth h_pos width d rest1 with
+      match decodeCircuitTreeAtDepth n width d rest1 with
       | none => none
       | some (c2, rest2) => some (CircuitTree.and c1 c2, rest2)
   | d + 1, true :: false :: false :: rest =>
-    match decodeCircuitTreeAtDepth h_pos width d rest with
+    match decodeCircuitTreeAtDepth n width d rest with
     | none => none
     | some (c1, rest1) =>
-      match decodeCircuitTreeAtDepth h_pos width d rest1 with
+      match decodeCircuitTreeAtDepth n width d rest1 with
       | none => none
       | some (c2, rest2) => some (CircuitTree.or c1 c2, rest2)
   | _ + 1, _ :: _ :: _ :: _ => none
@@ -234,23 +234,23 @@ are reserved for Session 8f so the current commit keeps its
 scope tight and its individual proofs readable.
 -/
 
-theorem decode_encode_const {n : Nat} (h_pos : 0 < n) (width : Nat)
+theorem decode_encode_const {n : Nat} (width : Nat)
     (h_width : n ≤ 2 ^ width) (b : Bool) (d : Nat) (hd : 1 ≤ d)
     (rest : List Bool) :
-    decodeCircuitTreeAtDepth h_pos width d
+    decodeCircuitTreeAtDepth n width d
         (encodeCircuitTree width h_width (CircuitTree.const b) ++ rest) =
       some (CircuitTree.const b, rest) := by
   obtain ⟨d', rfl⟩ : ∃ d', d = d' + 1 := ⟨d - 1, by omega⟩
   simp [encodeCircuitTree, decodeCircuitTreeAtDepth]
 
-theorem decode_encode_not {n : Nat} (h_pos : 0 < n) (width : Nat)
+theorem decode_encode_not {n : Nat} (width : Nat)
     (h_width : n ≤ 2 ^ width) (c : CircuitTree n) (d : Nat)
     (hd : c.size + 1 ≤ d)
     (rest : List Bool)
     (ih : ∀ (d' : Nat), c.size ≤ d' → ∀ (r : List Bool),
-      decodeCircuitTreeAtDepth h_pos width d'
+      decodeCircuitTreeAtDepth n width d'
           (encodeCircuitTree width h_width c ++ r) = some (c, r)) :
-    decodeCircuitTreeAtDepth h_pos width d
+    decodeCircuitTreeAtDepth n width d
         (encodeCircuitTree width h_width (CircuitTree.not c) ++ rest) =
       some (CircuitTree.not c, rest) := by
   obtain ⟨d', rfl⟩ : ∃ d', d = d' + 1 := ⟨d - 1, by omega⟩
@@ -259,17 +259,17 @@ theorem decode_encode_not {n : Nat} (h_pos : 0 < n) (width : Nat)
              decodeCircuitTreeAtDepth]
   rw [ih d' hd' rest]
 
-theorem decode_encode_and {n : Nat} (h_pos : 0 < n) (width : Nat)
+theorem decode_encode_and {n : Nat} (width : Nat)
     (h_width : n ≤ 2 ^ width) (c1 c2 : CircuitTree n) (d : Nat)
     (hd : c1.size + c2.size + 1 ≤ d)
     (rest : List Bool)
     (ih1 : ∀ (d' : Nat), c1.size ≤ d' → ∀ (r : List Bool),
-      decodeCircuitTreeAtDepth h_pos width d'
+      decodeCircuitTreeAtDepth n width d'
           (encodeCircuitTree width h_width c1 ++ r) = some (c1, r))
     (ih2 : ∀ (d' : Nat), c2.size ≤ d' → ∀ (r : List Bool),
-      decodeCircuitTreeAtDepth h_pos width d'
+      decodeCircuitTreeAtDepth n width d'
           (encodeCircuitTree width h_width c2 ++ r) = some (c2, r)) :
-    decodeCircuitTreeAtDepth h_pos width d
+    decodeCircuitTreeAtDepth n width d
         (encodeCircuitTree width h_width (CircuitTree.and c1 c2) ++ rest) =
       some (CircuitTree.and c1 c2, rest) := by
   obtain ⟨d', rfl⟩ : ∃ d', d = d' + 1 := ⟨d - 1, by omega⟩
@@ -280,17 +280,17 @@ theorem decode_encode_and {n : Nat} (h_pos : 0 < n) (width : Nat)
              ih1 d' hd1 (encodeCircuitTree width h_width c2 ++ rest),
              ih2 d' hd2 rest]
 
-theorem decode_encode_or {n : Nat} (h_pos : 0 < n) (width : Nat)
+theorem decode_encode_or {n : Nat} (width : Nat)
     (h_width : n ≤ 2 ^ width) (c1 c2 : CircuitTree n) (d : Nat)
     (hd : c1.size + c2.size + 1 ≤ d)
     (rest : List Bool)
     (ih1 : ∀ (d' : Nat), c1.size ≤ d' → ∀ (r : List Bool),
-      decodeCircuitTreeAtDepth h_pos width d'
+      decodeCircuitTreeAtDepth n width d'
           (encodeCircuitTree width h_width c1 ++ r) = some (c1, r))
     (ih2 : ∀ (d' : Nat), c2.size ≤ d' → ∀ (r : List Bool),
-      decodeCircuitTreeAtDepth h_pos width d'
+      decodeCircuitTreeAtDepth n width d'
           (encodeCircuitTree width h_width c2 ++ r) = some (c2, r)) :
-    decodeCircuitTreeAtDepth h_pos width d
+    decodeCircuitTreeAtDepth n width d
         (encodeCircuitTree width h_width (CircuitTree.or c1 c2) ++ rest) =
       some (CircuitTree.or c1 c2, rest) := by
   obtain ⟨d', rfl⟩ : ∃ d', d = d' + 1 := ⟨d - 1, by omega⟩
@@ -301,10 +301,10 @@ theorem decode_encode_or {n : Nat} (h_pos : 0 < n) (width : Nat)
              ih1 d' hd1 (encodeCircuitTree width h_width c2 ++ rest),
              ih2 d' hd2 rest]
 
-theorem decode_encode_input {n : Nat} (h_pos : 0 < n) (width : Nat)
+theorem decode_encode_input {n : Nat} (width : Nat)
     (h_width : n ≤ 2 ^ width) (i : Fin n) (d : Nat) (hd : 1 ≤ d)
     (rest : List Bool) :
-    decodeCircuitTreeAtDepth h_pos width d
+    decodeCircuitTreeAtDepth n width d
         (encodeCircuitTree width h_width (CircuitTree.input i) ++ rest) =
       some (CircuitTree.input i, rest) := by
   obtain ⟨d', rfl⟩ : ∃ d', d = d' + 1 := ⟨d - 1, by omega⟩
@@ -324,7 +324,7 @@ theorem decode_encode_input {n : Nat} (h_pos : 0 < n) (width : Nat)
     simp
   have hvlt : ifin.val < n := by rw [hifin]; exact i.isLt
   -- Reduce the goal to the exposed decoder-match form.
-  show decodeCircuitTreeAtDepth h_pos width (d' + 1)
+  show decodeCircuitTreeAtDepth n width (d' + 1)
       (false :: false :: false :: (encodeFin width ifin ++ rest)) =
     some (CircuitTree.input i, rest)
   unfold decodeCircuitTreeAtDepth
@@ -346,32 +346,32 @@ theorem decode_encode_input {n : Nat} (h_pos : 0 < n) (width : Nat)
 /-- Full round-trip: combines all five constructor-level lemmas
 into a single induction on the circuit tree. -/
 theorem decodeCircuitTreeAtDepth_encodeCircuitTree
-    {n : Nat} (h_pos : 0 < n) (width : Nat)
+    {n : Nat} (width : Nat)
     (h_width : n ≤ 2 ^ width) (c : CircuitTree n) :
     ∀ (d : Nat), c.size ≤ d →
     ∀ (rest : List Bool),
-      decodeCircuitTreeAtDepth h_pos width d
+      decodeCircuitTreeAtDepth n width d
           (encodeCircuitTree width h_width c ++ rest) = some (c, rest) := by
   induction c with
   | input i =>
     intro d h_d rest
-    exact decode_encode_input h_pos width h_width i d
+    exact decode_encode_input width h_width i d
       (by simpa [CircuitTree.size] using h_d) rest
   | const b =>
     intro d h_d rest
-    exact decode_encode_const h_pos width h_width b d
+    exact decode_encode_const width h_width b d
       (by simpa [CircuitTree.size] using h_d) rest
   | not c ih =>
     intro d h_d rest
-    exact decode_encode_not h_pos width h_width c d
+    exact decode_encode_not width h_width c d
       (by simpa [CircuitTree.size] using h_d) rest ih
   | and c1 c2 ih1 ih2 =>
     intro d h_d rest
-    exact decode_encode_and h_pos width h_width c1 c2 d
+    exact decode_encode_and width h_width c1 c2 d
       (by simpa [CircuitTree.size] using h_d) rest ih1 ih2
   | or c1 c2 ih1 ih2 =>
     intro d h_d rest
-    exact decode_encode_or h_pos width h_width c1 c2 d
+    exact decode_encode_or width h_width c1 c2 d
       (by simpa [CircuitTree.size] using h_d) rest ih1 ih2
 
 /-!

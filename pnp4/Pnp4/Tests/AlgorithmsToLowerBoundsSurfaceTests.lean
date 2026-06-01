@@ -51,6 +51,7 @@ import Pnp4.Frontier.ContractExpansion.NoSolverContrapositive
 import Pnp4.Frontier.ContractExpansion.ExtractedScheduleGrowth
 import Pnp4.Frontier.ContractExpansion.ConditionalVerifiedSource
 import Pnp4.Frontier.ContractExpansion.WitnessGrowthReduction
+import Pnp4.Frontier.ContractExpansion.PrefixExtensionNPWitness
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -882,6 +883,21 @@ theorem check_PolynomialWitnessCodec_toGrowthAssumptions
   P.toGrowthAssumptions
 
 end WitnessGrowthReductionSurface
+
+section PrefixExtensionNPWitnessSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+/-- Block 11a surface (headline): a concrete TM-witness package yields NP-membership
+of the prefix-extension language. -/
+theorem check_prefixExtensionLanguage_in_NP_of_witness
+    {problem : Frontier.SearchMCSPCompressionProblem}
+    (parser : PrefixParser problem)
+    (W : PrefixExtensionNPWitness parser) :
+    Pnp3.ComplexityInterfaces.NP (PrefixExtensionLanguage parser) :=
+  prefixExtensionLanguage_in_NP_of_witness parser W
+
+end PrefixExtensionNPWitnessSurface
 
 section TreeMCSPZeroPrefixBuilderSurface
 

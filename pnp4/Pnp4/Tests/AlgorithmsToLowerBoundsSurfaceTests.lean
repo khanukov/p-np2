@@ -47,6 +47,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPDeciderCorrect
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedySolves
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBoundedSolver
 import Pnp4.Frontier.ContractExpansion.BoundedSolverFromPpoly
+import Pnp4.Frontier.ContractExpansion.NoSolverContrapositive
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -766,6 +767,22 @@ theorem check_boundedSearchSolver_of_PpolyDAG_prefixExtension
   boundedSearchSolver_of_PpolyDAG_prefixExtension codec hPpoly
 
 end BoundedSolverFromPpolySurface
+
+section NoSolverContrapositiveSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+/-- Block 9c surface: if no bounded solver exists at any extracted schedule, the
+prefix-extension language is not in `PpolyDAG`. -/
+theorem check_not_PpolyDAG_prefixExtension_of_noExtractedScheduleSolver
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (hNo : NoExtractedScheduleSolver codec) :
+    ¬ Pnp3.ComplexityInterfaces.PpolyDAG
+        (PrefixExtensionLanguage (treeMCSPConcretePrefixParser threshold codec)) :=
+  not_PpolyDAG_prefixExtension_of_noExtractedScheduleSolver codec hNo
+
+end NoSolverContrapositiveSurface
 
 section TreeMCSPZeroPrefixBuilderSurface
 

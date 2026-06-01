@@ -58,6 +58,7 @@ import Pnp4.Frontier.ContractExpansion.CircuitTreeBridge
 import Pnp4.Frontier.ContractExpansion.CircuitEncodingLength
 import Pnp4.Frontier.ContractExpansion.CircuitDecodeDepthFree
 import Pnp4.Frontier.ContractExpansion.ConcreteTreeCodec
+import Pnp4.Frontier.ContractExpansion.ConcreteTreeCodecSource
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -1030,6 +1031,36 @@ def check_treePolynomialWitnessCodec (threshold : Nat → Nat)
   treePolynomialWitnessCodec threshold hT
 
 end ConcreteTreeCodecSurface
+
+section ConcreteTreeCodecSourceSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+/-- Block 12f surface: the concrete-codec verified source from the three explicit
+interfaces (threshold growth, no-poly solver, NP TM-witness). -/
+noncomputable def check_verifiedSource_of_treeCodec_noPolynomialBoundedSearchSolver
+    (threshold : Nat → Nat)
+    (hThresholdPoly : PolyBoundedInTable threshold)
+    (hNoPoly : NoPolynomialBoundedSearchSolver (treeCircuitWitnessCodec threshold))
+    (hNPWit : PrefixExtensionNPWitness
+        (treeMCSPConcretePrefixParser threshold (treeCircuitWitnessCodec threshold))) :
+    AlgorithmsToLowerBounds.VerifiedNPDAGLowerBoundSource :=
+  verifiedSource_of_treeCodec_noPolynomialBoundedSearchSolver
+    threshold hThresholdPoly hNoPoly hNPWit
+
+/-- Block 12f surface (headline): the concrete-codec conditional `NP ⊄ PpolyDAG`
+separation. -/
+theorem check_NP_not_subset_PpolyDAG_of_treeCodec_interfaces
+    (threshold : Nat → Nat)
+    (hThresholdPoly : PolyBoundedInTable threshold)
+    (hNoPoly : NoPolynomialBoundedSearchSolver (treeCircuitWitnessCodec threshold))
+    (hNPWit : PrefixExtensionNPWitness
+        (treeMCSPConcretePrefixParser threshold (treeCircuitWitnessCodec threshold))) :
+    Pnp3.ComplexityInterfaces.NP_not_subset_PpolyDAG :=
+  NP_not_subset_PpolyDAG_of_treeCodec_interfaces
+    threshold hThresholdPoly hNoPoly hNPWit
+
+end ConcreteTreeCodecSourceSurface
 
 section TreeMCSPZeroPrefixBuilderSurface
 

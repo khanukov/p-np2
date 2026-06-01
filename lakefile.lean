@@ -302,6 +302,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.CircuitEncodingLength,
     Glob.one `Pnp4.Frontier.ContractExpansion.CircuitDecodeDepthFree,
     Glob.one `Pnp4.Frontier.ContractExpansion.ConcreteTreeCodec,
+    Glob.one `Pnp4.Frontier.ContractExpansion.ConcreteTreeCodecSource,
     Glob.one `Pnp4.Tests.AlgorithmsToLowerBoundsSurfaceTests,
     Glob.one `Pnp4.Tests.AxiomsAudit
   ]

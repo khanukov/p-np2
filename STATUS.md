@@ -551,14 +551,27 @@ language it extracts a bounded search solver, and contrapositively
 NP-membership witness it assembles a `VerifiedNPDAGLowerBoundSource`.
 
 This is **not** unconditional progress: it proves neither `P ≠ NP` nor
-`NP_not_subset_PpolyDAG`.  It only exposes the remaining mathematics as three
-explicit, open inputs — (1) a genuine weak lower bound
-`NoPolynomialBoundedSearchSolver`, (2) a concrete NP verifier witness
-`PrefixExtensionNPWitness`, (3) a concrete witness codec (reduced, after the
-`Circuit ↔ CircuitTree` bridge and encoding-length bound, to final assembly).
-Input (1) is the same research-level lower-bound gap described above.  See
-`pnp4/Pnp4/Frontier/ContractExpansion/README.md` for the full module map and the
-proved-vs-open breakdown.
+`NP_not_subset_PpolyDAG`.  The codec/growth machinery is now concrete: the **first
+concrete `TreeCircuitWitnessCodec`** is constructed (`ConcreteTreeCodec.lean`), and
+`PolyBoundedInTable` is proved for the canonical polynomial thresholds
+(`ThresholdGrowth.lean`).  So at a concrete polynomial threshold the consolidated
+theorem (`ConsolidatedTreeSeparation.lean`,
+`verifiedSource_treePoly` / `NP_not_subset_PpolyDAG_treePoly`) reduces the whole chain
+to **exactly two** explicit open inputs:
+
+1. `NoPolynomialBoundedSearchSolver (treeCircuitWitnessCodec (thresholdPoly k))` — a
+   genuine `P/poly` circuit lower bound for the concrete tree-MCSP search problem
+   (the same research-level lower-bound gap described above);
+2. `PrefixExtensionNPWitness (…)` — a concrete NP verifier (TM + runtime + certificate
+   correctness).
+
+**Honest caveat.**  The decision→search extraction is an *equivalence*
+(`PpolyDAG(prefix-extension language) ⟺ polynomial-size search solver`); since the
+instance length is `2^n`, input (1) is the **full-strength** `P/poly` lower bound,
+**not** a weak/local bound amplified by hardness magnification.  No magnification
+theorem is formalized — the chain makes the target precise and verified-conditional,
+not easier.  See `pnp4/Pnp4/Frontier/ContractExpansion/README.md` for the full module
+map and proved-vs-open breakdown.
 
 ## Repository-Wide Honesty Policy
 

@@ -54,6 +54,7 @@ import Pnp4.Frontier.ContractExpansion.WitnessGrowthReduction
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionNPWitness
 import Pnp4.Frontier.ContractExpansion.ExplicitConditionalSource
 import Pnp4.Frontier.ContractExpansion.ConcreteCodecGap
+import Pnp4.Frontier.ContractExpansion.CircuitTreeBridge
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -949,6 +950,30 @@ def check_SelfDelimitingCircuitCode_toCodec
   S.toCodec
 
 end ConcreteCodecGapSurface
+
+section CircuitTreeBridgeSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+/-- Block 12b surface: the bridge is a left inverse. -/
+theorem check_fromTree_toTree {n : Nat} (c : Pnp3.Models.Circuit n) :
+    fromTree (toTree c) = c :=
+  fromTree_toTree c
+
+/-- Block 12b surface: the bridge preserves gate count. -/
+theorem check_size_toTree {n : Nat} (c : Pnp3.Models.Circuit n) :
+    (toTree c).size = Pnp3.Models.Circuit.size c :=
+  size_toTree c
+
+/-- Block 12b surface (headline): the native `Circuit` encoder/decoder round-trips. -/
+theorem check_decodeCircuit_encodeCircuit {n : Nat} (h_pos : 0 < n) (width : Nat)
+    (h_width : n ≤ 2 ^ width) (c : Pnp3.Models.Circuit n)
+    (d : Nat) (h_d : Pnp3.Models.Circuit.size c ≤ d) (rest : List Bool) :
+    decodeCircuit h_pos width d (encodeCircuit width h_width c ++ rest)
+      = some (c, rest) :=
+  decodeCircuit_encodeCircuit h_pos width h_width c d h_d rest
+
+end CircuitTreeBridgeSurface
 
 section TreeMCSPZeroPrefixBuilderSurface
 

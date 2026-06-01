@@ -267,6 +267,8 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.CompressionMagnification,
     Glob.one `Pnp4.Frontier.SearchMCSPMagnification,
     Glob.one `Pnp4.Frontier.SearchMCSPConcreteTargets,
+    Glob.one `Pnp4.Frontier.SignSkeletonRectangleLowerBound,
+    Glob.one `Pnp4.Frontier.RandomSkeletonCoverNumber,
     Glob.one `Pnp4.Frontier.ContractExpansion.C_DAG_Adapter,
     Glob.one `Pnp4.Frontier.ContractExpansion.QueryComposition,
     Glob.one `Pnp4.Frontier.ContractExpansion.QueryBuilder,

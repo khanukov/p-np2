@@ -57,6 +57,7 @@ import Pnp4.Frontier.ContractExpansion.ConcreteCodecGap
 import Pnp4.Frontier.ContractExpansion.CircuitTreeBridge
 import Pnp4.Frontier.ContractExpansion.CircuitEncodingLength
 import Pnp4.Frontier.ContractExpansion.CircuitDecodeDepthFree
+import Pnp4.Frontier.ContractExpansion.ConcreteTreeCodec
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -1010,6 +1011,25 @@ theorem check_decodeCircuitFull_encodeCircuit (n : Nat) (width : Nat)
   decodeCircuitFull_encodeCircuit n width h_width c rest
 
 end CircuitDecodeDepthFreeSurface
+
+section ConcreteTreeCodecSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+/-- Block 12e surface (headline): a concrete `TreeCircuitWitnessCodec` exists for
+every `threshold`. -/
+def check_treeCircuitWitnessCodec (threshold : Nat → Nat) :
+    Frontier.TreeCircuitWitnessCodec threshold :=
+  treeCircuitWitnessCodec threshold
+
+/-- Block 12e surface: under the single threshold-growth premise, the concrete codec
+packages as a `PolynomialWitnessCodec`. -/
+def check_treePolynomialWitnessCodec (threshold : Nat → Nat)
+    (hT : PolyBoundedInTable threshold) :
+    PolynomialWitnessCodec threshold :=
+  treePolynomialWitnessCodec threshold hT
+
+end ConcreteTreeCodecSurface
 
 section TreeMCSPZeroPrefixBuilderSurface
 

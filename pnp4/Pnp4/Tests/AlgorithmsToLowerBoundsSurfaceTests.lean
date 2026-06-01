@@ -59,6 +59,7 @@ import Pnp4.Frontier.ContractExpansion.CircuitEncodingLength
 import Pnp4.Frontier.ContractExpansion.CircuitDecodeDepthFree
 import Pnp4.Frontier.ContractExpansion.ConcreteTreeCodec
 import Pnp4.Frontier.ContractExpansion.ConcreteTreeCodecSource
+import Pnp4.Frontier.ContractExpansion.ThresholdGrowth
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -1061,6 +1062,24 @@ theorem check_NP_not_subset_PpolyDAG_of_treeCodec_interfaces
     threshold hThresholdPoly hNoPoly hNPWit
 
 end ConcreteTreeCodecSourceSurface
+
+section ThresholdGrowthSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+/-- Block 13a surface: the quadratic threshold is polynomially bounded in the
+truth-table length. -/
+theorem check_polyBoundedInTable_thresholdQuadratic :
+    PolyBoundedInTable thresholdQuadratic :=
+  polyBoundedInTable_thresholdQuadratic
+
+/-- Block 13a surface (headline): every fixed polynomial threshold `nᵏ + k` is
+polynomially bounded in the truth-table length. -/
+theorem check_polyBoundedInTable_thresholdPoly (k : Nat) :
+    PolyBoundedInTable (thresholdPoly k) :=
+  polyBoundedInTable_thresholdPoly k
+
+end ThresholdGrowthSurface
 
 section TreeMCSPZeroPrefixBuilderSurface
 

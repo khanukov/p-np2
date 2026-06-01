@@ -39,6 +39,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBoundedSolver
 import Pnp4.Frontier.ContractExpansion.BoundedSolverFromPpoly
 import Pnp4.Frontier.ContractExpansion.NoSolverContrapositive
 import Pnp4.Frontier.ContractExpansion.ExtractedScheduleGrowth
+import Pnp4.Frontier.ContractExpansion.ConditionalVerifiedSource
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -272,6 +273,9 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.nonempty_boundedSearchSolver_mono_sizeBound
 #print axioms Pnp4.Frontier.ContractExpansion.noExtractedScheduleSolver_of_noPolynomial
 #print axioms Pnp4.Frontier.ContractExpansion.not_PpolyDAG_prefixExtension_of_noPolynomialBoundedSearchSolver
+
+#print axioms Pnp4.Frontier.ContractExpansion.verifiedSource_of_noPolynomialBoundedSearchSolver
+#print axioms Pnp4.Frontier.ContractExpansion.NP_not_subset_PpolyDAG_of_noPolynomialBoundedSearchSolver
 
 #print axioms Pnp4.Frontier.ContractExpansion.zeroPrefixQueryCircuitBuilder
 #print axioms Pnp4.Frontier.ContractExpansion.treeMCSPZeroPrefixQueryBuilder

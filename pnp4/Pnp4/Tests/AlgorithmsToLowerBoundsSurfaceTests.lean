@@ -49,6 +49,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBoundedSolver
 import Pnp4.Frontier.ContractExpansion.BoundedSolverFromPpoly
 import Pnp4.Frontier.ContractExpansion.NoSolverContrapositive
 import Pnp4.Frontier.ContractExpansion.ExtractedScheduleGrowth
+import Pnp4.Frontier.ContractExpansion.ConditionalVerifiedSource
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -811,6 +812,39 @@ theorem check_not_PpolyDAG_prefixExtension_of_noPolynomialBoundedSearchSolver
   not_PpolyDAG_prefixExtension_of_noPolynomialBoundedSearchSolver codec hGrowth hNoPoly
 
 end ExtractedScheduleGrowthSurface
+
+section ConditionalVerifiedSourceSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+/-- Block 9e surface: under explicit growth assumptions, the open polynomial weak
+lower bound, and an explicit `NP`-membership hypothesis, assemble a
+`VerifiedNPDAGLowerBoundSource`. -/
+noncomputable def check_verifiedSource_of_noPolynomialBoundedSearchSolver
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (hGrowth : TreeMCSPExtractionGrowthAssumptions codec)
+    (hNoPoly : NoPolynomialBoundedSearchSolver codec)
+    (hNP :
+      Pnp3.ComplexityInterfaces.NP
+        (PrefixExtensionLanguage (treeMCSPConcretePrefixParser threshold codec))) :
+    AlgorithmsToLowerBounds.VerifiedNPDAGLowerBoundSource :=
+  verifiedSource_of_noPolynomialBoundedSearchSolver codec hGrowth hNoPoly hNP
+
+/-- Block 9e surface (headline): the same three explicit hypotheses yield the
+conditional `NP ⊄ PpolyDAG` separation. -/
+theorem check_NP_not_subset_PpolyDAG_of_noPolynomialBoundedSearchSolver
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (hGrowth : TreeMCSPExtractionGrowthAssumptions codec)
+    (hNoPoly : NoPolynomialBoundedSearchSolver codec)
+    (hNP :
+      Pnp3.ComplexityInterfaces.NP
+        (PrefixExtensionLanguage (treeMCSPConcretePrefixParser threshold codec))) :
+    Pnp3.ComplexityInterfaces.NP_not_subset_PpolyDAG :=
+  NP_not_subset_PpolyDAG_of_noPolynomialBoundedSearchSolver codec hGrowth hNoPoly hNP
+
+end ConditionalVerifiedSourceSurface
 
 section TreeMCSPZeroPrefixBuilderSurface
 

@@ -110,6 +110,7 @@ lean_lib PnP3 where
     Glob.one `LowerBounds.LB_Formulas_Core_Partial,
     Glob.one `LowerBounds.AC0_GapMCSP_Final,
     Glob.one `LowerBounds.AC0_GapMCSP,
+    Glob.one `LowerBounds.TraceSetAntiChecker,
     Glob.one `Magnification.LocalityInterfaces_Partial,
     Glob.one `Magnification.Facts_Magnification_Partial,
     Glob.one `Magnification.PipelineStatements_Partial,
@@ -178,6 +179,7 @@ lean_lib PnP3 where
     Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_B_gpt55.Sketch,
     Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_C_GPT55.Sketch,
     Glob.one `Magnification.AuditRoutes.ProvenanceFilterV2.V2_D_GPT55.Sketch,
+    Glob.one `Magnification.AuditRoutes.TraceSetHardnessBridge,
     -- fp3b2 arbitrary-payload strengthening (post-NOGO-000005 follow-up).
     -- T1..T6 of the 6-slot decomposition, ending in the composition theorem.
     Glob.one `Magnification.AuditRoutes.ArbitraryLogWidthTT.AllEssential,

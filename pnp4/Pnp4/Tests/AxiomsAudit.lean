@@ -36,6 +36,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedyTrueOutputCircuits
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDeciderCorrect
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGreedySolves
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBoundedSolver
+import Pnp4.Frontier.ContractExpansion.BoundedSolverFromPpoly
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -263,6 +264,7 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.greedyTrueOutputCircuit_solves
 
 #print axioms Pnp4.Frontier.ContractExpansion.boundedSearchSolver_of_deciderFamily
+#print axioms Pnp4.Frontier.ContractExpansion.boundedSearchSolver_of_PpolyDAG_prefixExtension
 
 #print axioms Pnp4.Frontier.ContractExpansion.zeroPrefixQueryCircuitBuilder
 #print axioms Pnp4.Frontier.ContractExpansion.treeMCSPZeroPrefixQueryBuilder

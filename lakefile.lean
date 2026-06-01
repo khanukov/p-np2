@@ -296,6 +296,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.ConditionalVerifiedSource,
     Glob.one `Pnp4.Frontier.ContractExpansion.WitnessGrowthReduction,
     Glob.one `Pnp4.Frontier.ContractExpansion.PrefixExtensionNPWitness,
+    Glob.one `Pnp4.Frontier.ContractExpansion.ExplicitConditionalSource,
     Glob.one `Pnp4.Tests.AlgorithmsToLowerBoundsSurfaceTests,
     Glob.one `Pnp4.Tests.AxiomsAudit
   ]

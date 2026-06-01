@@ -48,6 +48,7 @@ import Pnp4.Frontier.ContractExpansion.CircuitTreeBridge
 import Pnp4.Frontier.ContractExpansion.CircuitEncodingLength
 import Pnp4.Frontier.ContractExpansion.CircuitDecodeDepthFree
 import Pnp4.Frontier.ContractExpansion.ConcreteTreeCodec
+import Pnp4.Frontier.ContractExpansion.ConcreteTreeCodecSource
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -312,6 +313,9 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.treeCircuitWitnessCodec
 #print axioms Pnp4.Frontier.ContractExpansion.polyBoundedInTable_treeWitnessBits_of_thresholdPoly
 #print axioms Pnp4.Frontier.ContractExpansion.treePolynomialWitnessCodec
+
+#print axioms Pnp4.Frontier.ContractExpansion.verifiedSource_of_treeCodec_noPolynomialBoundedSearchSolver
+#print axioms Pnp4.Frontier.ContractExpansion.NP_not_subset_PpolyDAG_of_treeCodec_interfaces
 
 #print axioms Pnp4.Frontier.ContractExpansion.zeroPrefixQueryCircuitBuilder
 #print axioms Pnp4.Frontier.ContractExpansion.treeMCSPZeroPrefixQueryBuilder

@@ -45,6 +45,7 @@ import Pnp4.Frontier.ContractExpansion.PrefixExtensionNPWitness
 import Pnp4.Frontier.ContractExpansion.ExplicitConditionalSource
 import Pnp4.Frontier.ContractExpansion.ConcreteCodecGap
 import Pnp4.Frontier.ContractExpansion.CircuitTreeBridge
+import Pnp4.Frontier.ContractExpansion.CircuitEncodingLength
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -299,6 +300,9 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.toTree_fromTree
 #print axioms Pnp4.Frontier.ContractExpansion.size_toTree
 #print axioms Pnp4.Frontier.ContractExpansion.decodeCircuit_encodeCircuit
+
+#print axioms Pnp4.Frontier.ContractExpansion.length_encodeCircuitTree_le
+#print axioms Pnp4.Frontier.ContractExpansion.length_encodeCircuit_le
 
 #print axioms Pnp4.Frontier.ContractExpansion.zeroPrefixQueryCircuitBuilder
 #print axioms Pnp4.Frontier.ContractExpansion.treeMCSPZeroPrefixQueryBuilder

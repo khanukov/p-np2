@@ -52,6 +52,7 @@ import Pnp4.Frontier.ContractExpansion.ExtractedScheduleGrowth
 import Pnp4.Frontier.ContractExpansion.ConditionalVerifiedSource
 import Pnp4.Frontier.ContractExpansion.WitnessGrowthReduction
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionNPWitness
+import Pnp4.Frontier.ContractExpansion.ExplicitConditionalSource
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -898,6 +899,34 @@ theorem check_prefixExtensionLanguage_in_NP_of_witness
   prefixExtensionLanguage_in_NP_of_witness parser W
 
 end PrefixExtensionNPWitnessSurface
+
+section ExplicitConditionalSourceSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+/-- Capstone surface: the three explicit interfaces (growth-witness codec, no-poly
+solver, NP TM-witness) assemble a `VerifiedNPDAGLowerBoundSource`. -/
+noncomputable def check_verifiedSource_of_explicit_interfaces
+    {threshold : Nat → Nat}
+    (wcodec : PolynomialWitnessCodec threshold)
+    (hNoPoly : NoPolynomialBoundedSearchSolver wcodec.codec)
+    (hNPWit : PrefixExtensionNPWitness
+        (treeMCSPConcretePrefixParser threshold wcodec.codec)) :
+    AlgorithmsToLowerBounds.VerifiedNPDAGLowerBoundSource :=
+  verifiedSource_of_explicit_interfaces wcodec hNoPoly hNPWit
+
+/-- Capstone surface (headline): the three explicit interfaces yield the conditional
+`NP ⊄ PpolyDAG` separation. -/
+theorem check_NP_not_subset_PpolyDAG_of_explicit_interfaces
+    {threshold : Nat → Nat}
+    (wcodec : PolynomialWitnessCodec threshold)
+    (hNoPoly : NoPolynomialBoundedSearchSolver wcodec.codec)
+    (hNPWit : PrefixExtensionNPWitness
+        (treeMCSPConcretePrefixParser threshold wcodec.codec)) :
+    Pnp3.ComplexityInterfaces.NP_not_subset_PpolyDAG :=
+  NP_not_subset_PpolyDAG_of_explicit_interfaces wcodec hNoPoly hNPWit
+
+end ExplicitConditionalSourceSurface
 
 section TreeMCSPZeroPrefixBuilderSurface
 

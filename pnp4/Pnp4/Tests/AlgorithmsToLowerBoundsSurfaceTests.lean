@@ -55,6 +55,7 @@ import Pnp4.Frontier.ContractExpansion.PrefixExtensionNPWitness
 import Pnp4.Frontier.ContractExpansion.ExplicitConditionalSource
 import Pnp4.Frontier.ContractExpansion.ConcreteCodecGap
 import Pnp4.Frontier.ContractExpansion.CircuitTreeBridge
+import Pnp4.Frontier.ContractExpansion.CircuitEncodingLength
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 
@@ -974,6 +975,19 @@ theorem check_decodeCircuit_encodeCircuit {n : Nat} (h_pos : 0 < n) (width : Nat
   decodeCircuit_encodeCircuit h_pos width h_width c d h_d rest
 
 end CircuitTreeBridgeSurface
+
+section CircuitEncodingLengthSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+/-- Block 12c surface (headline): the native `Circuit` encoding has length at most
+`(width + 4) · size c`. -/
+theorem check_length_encodeCircuit_le {n : Nat} (width : Nat) (h_width : n ≤ 2 ^ width)
+    (c : Pnp3.Models.Circuit n) :
+    (encodeCircuit width h_width c).length ≤ (width + 4) * Pnp3.Models.Circuit.size c :=
+  length_encodeCircuit_le width h_width c
+
+end CircuitEncodingLengthSurface
 
 section TreeMCSPZeroPrefixBuilderSurface
 

@@ -72,8 +72,11 @@ theorem witnessBits_le_treeMCSPPrefixM
   unfold treeMCSPPrefixM
   omega
 
-/-- Prefix agreement is decidable: it is a finite `∀` over `Fin input.i`. -/
-instance instDecidablePrefixAgrees
+/-- Prefix agreement is decidable: it is a finite `∀` over `Fin input.i`.
+
+`local` so that importing this verifier module does **not** alter project-wide typeclass search;
+it is only needed to define `prefixAgreesBool` below via `decide`. -/
+local instance instDecidablePrefixAgrees
     {problem : SearchMCSPCompressionProblem} {m : Nat}
     {input : PrefixInput problem m}
     {w : PrefixBitVec (problem.witnessBits input.n)} :
@@ -95,9 +98,9 @@ theorem prefixAgreesBool_eq_true_iff
     prefixAgreesBool input w = true ↔ input.prefixAgrees w := by
   simp only [prefixAgreesBool, decide_eq_true_eq]
 
-/-- Codec verification is decidable (reusing `verifiesDecidable`); registered as an
-instance so the `Bool` checker stays `Classical`-free. -/
-instance instDecidableCodecVerifies
+/-- Codec verification is decidable (reusing `verifiesDecidable`); registered as a
+`local` instance so the `Bool` checker resolves it without exporting it to importers. -/
+local instance instDecidableCodecVerifies
     {threshold : Nat → Nat} {codec : TreeCircuitWitnessCodec threshold}
     {n : Nat} {tt : TruthTable n} {w : PrefixBitVec (codec.witnessBits n)} :
     Decidable (codec.verifies n tt w) :=

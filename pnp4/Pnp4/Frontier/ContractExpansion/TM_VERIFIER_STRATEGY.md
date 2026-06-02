@@ -369,6 +369,22 @@ algorithm (not just §6b's candidates), built on the verified primitives:
 read body above — the body preserves cells `≤ head`, i.e. the counter region, and writes only the
 scratch `n`-register), then the shift-accumulate read body + its per-instance hypothesis discharge.
 
+**Built so far (this session) and a re-check caveat for the next pass.**  The counter materialization is
+done: `gammaSelfLoopFill` (standalone + seqP2) and `tagCheckThenGammaFill_runConfig` (tag verify ▸ fill,
+on the composed machine) turn the gamma leading zeros into a length-`z` block of `1`s in place.
+**However**, re-checking its downstream use exposed a design constraint: the fill makes
+`[tagLen, p_term]` *contiguous* `1`s (the `z` filled zeros **and** the terminator `1` merge), which
+**erases the terminator boundary** between counter and payload.  A two-pointer shuttle that needs to
+*locate* the payload from a counter cell can no longer find that boundary by scanning.  So the shuttle's
+counter representation must be settled first — options: (a) keep the terminator as a boundary (don't fill
+*over* it; the fill already stops *at* it, so the boundary 1 is intact — the issue is only that the
+filled zeros are now also 1s, indistinguishable from the terminator when scanning rightward); (b) use a
+*symmetric* two-pointer anchored at the (still-known) terminator position `p_term = tagLen + z` rather
+than scanning for it (the counter cell `p_term − j` and payload cell `p_term + j` are symmetric, and `j`
+is tracked by the combinator's consumed-count); (c) materialize the counter in scratch instead of in
+place.  `gammaSelfLoopFill` remains a correct, reusable primitive regardless; this caveat only governs
+how the *shuttle* consumes it.  Settling (a)/(b)/(c) is the design step before the payload-read body.
+
 ## 7. Runtime accounting
 
 With `threshold n = thresholdPoly k n = n^k + k`, `witnessBits n = (bitLength n + 4) · threshold n`,

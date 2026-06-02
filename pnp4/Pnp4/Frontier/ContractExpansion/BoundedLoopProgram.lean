@@ -63,6 +63,17 @@ theorem repeatProgram_run_succ (body : ConstStatePhasedProgram S) (k : Nat) {n :
   simp only [repeatProgram, List.replicate_succ] at c ⊢
   exact seqList_run_decomp body (List.replicate k body) c
 
+/-- Base case: zero iterations leave the configuration unchanged.  Together with
+`repeatProgram_run_succ` this is the base/step pair for a loop invariant by induction on `k`. -/
+theorem repeatProgram_run_zero (body : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := (repeatProgram body 0).toPhased.toTM) n) :
+    TM.runConfig (M := (repeatProgram body 0).toPhased.toTM) c
+        ((repeatProgram body 0).timeBound n) = c := by
+  have h0 : (repeatProgram body 0).timeBound n = 0 := by
+    rw [repeatProgram_timeBound]; simp
+  rw [h0]
+  rfl
+
 end ConstStatePhasedProgram
 end TM
 end PsubsetPpoly

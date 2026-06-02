@@ -528,6 +528,153 @@ theorem selfLoopDecrement_seq_runConfig_counterValue (P2 : ConstStatePhasedProgr
     simp only [Nat.zero_add] at hb ⊢
     rw [htp ⟨i, hb⟩, if_neg (show ¬ i < j by omega), if_neg (show ¬ i = j by omega)]
 
+/-! ## Lifting the increment into the P2 region (a non-first phase)
+
+In `seqList [p₁, p₂, …] = seq p₁ (seq p₂ …)` every phase but the first runs in a **P2-region** (control
+phase `≥ P1.numPhases`).  These lemmas re-derive the increment's carry/stop steps when it is the second
+component `seq P1 selfLoopIncrement` (generic `P1`), via the toolkit's `seq_stepConfig_P2_*` (phase
+shifted up by `P1.numPhases`).  Together with the P1-region lemmas above, the increment is now
+single-step characterized in *either* `seq` position — the backbone for composing a counter as a
+non-first phase of the assembled `M`. -/
+
+/-- Carry step as a non-first phase (composition phase `P1.numPhases`, bit `1`): the phase stays at
+`P1.numPhases` (the self-loop re-entry, shifted into P2's block). -/
+theorem selfLoopIncrement_seqP2_stepConfig_carry_phase (P1 : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq P1 selfLoopIncrement).toPhased.toTM) L)
+    {i : Fin (seq P1 selfLoopIncrement).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = true) :
+    ((TM.stepConfig (M := (seq P1 selfLoopIncrement).toPhased.toTM) c).state).fst.val
+      = P1.numPhases := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_phase P1 selfLoopIncrement c
+      (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+  simp [selfLoopIncrement, hsub, hbit]
+
+/-- Carry step as a non-first phase (bit `1`): the head advances right. -/
+theorem selfLoopIncrement_seqP2_stepConfig_carry_head (P1 : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq P1 selfLoopIncrement).toPhased.toTM) L)
+    {i : Fin (seq P1 selfLoopIncrement).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = true) :
+    (TM.stepConfig (M := (seq P1 selfLoopIncrement).toPhased.toTM) c).head
+      = Configuration.moveHead (c := c) Move.right := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_head P1 selfLoopIncrement c
+      (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+  simp [selfLoopIncrement, hsub, hbit]
+
+/-- Carry step as a non-first phase (bit `1`): the read `1` is flipped to `0`. -/
+theorem selfLoopIncrement_seqP2_stepConfig_carry_tape (P1 : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq P1 selfLoopIncrement).toPhased.toTM) L)
+    {i : Fin (seq P1 selfLoopIncrement).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = true) :
+    (TM.stepConfig (M := (seq P1 selfLoopIncrement).toPhased.toTM) c).tape
+      = c.write c.head false := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_tape P1 selfLoopIncrement c
+      (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+  simp [selfLoopIncrement, hsub, hbit]
+
+/-- Stop step as a non-first phase (bit `0`): the phase becomes `P1.numPhases + 1` (the increment's
+accept phase, shifted — which for `seq P1 selfLoopIncrement` is the composition's own accept phase). -/
+theorem selfLoopIncrement_seqP2_stepConfig_stop_phase (P1 : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq P1 selfLoopIncrement).toPhased.toTM) L)
+    {i : Fin (seq P1 selfLoopIncrement).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = false) :
+    ((TM.stepConfig (M := (seq P1 selfLoopIncrement).toPhased.toTM) c).state).fst.val
+      = P1.numPhases + 1 := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_phase P1 selfLoopIncrement c
+      (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+  simp [selfLoopIncrement, hsub, hbit]
+
+/-- Stop step as a non-first phase (bit `0`): the head stays put. -/
+theorem selfLoopIncrement_seqP2_stepConfig_stop_head (P1 : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq P1 selfLoopIncrement).toPhased.toTM) L)
+    {i : Fin (seq P1 selfLoopIncrement).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = false) :
+    (TM.stepConfig (M := (seq P1 selfLoopIncrement).toPhased.toTM) c).head = c.head := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_head P1 selfLoopIncrement c
+      (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+  simp [selfLoopIncrement, hsub, hbit, Configuration.moveHead]
+
+/-- Stop step as a non-first phase (bit `0`): the read `0` is flipped to `1`. -/
+theorem selfLoopIncrement_seqP2_stepConfig_stop_tape (P1 : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq P1 selfLoopIncrement).toPhased.toTM) L)
+    {i : Fin (seq P1 selfLoopIncrement).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = false) :
+    (TM.stepConfig (M := (seq P1 selfLoopIncrement).toPhased.toTM) c).tape
+      = c.write c.head true := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_tape P1 selfLoopIncrement c
+      (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+  simp [selfLoopIncrement, hsub, hbit]
+
+/-- Carry-ripple as a non-first phase, **from an arbitrary start configuration**.  When the increment
+runs as `P2` it begins not at `initialConfig` but wherever the preceding phase(s) left control — at
+composition phase `P1.numPhases`, with the head at some `c0.head`.  So the invariant is stated from a
+generic `c0`: if `c0` is at phase `P1.numPhases` and the counter window `[c0.head, c0.head + k)` is all
+`1`, then after `k` steps the phase still rests at `P1.numPhases`, the head has advanced to
+`c0.head + k`, and exactly those `k` cells have been cleared to `0`.  This is the offset-aware,
+non-first-phase analogue of `selfLoopIncrement_seq_runConfig_carry`, and the form needed to chain a
+counter after an earlier phase. -/
+theorem selfLoopIncrement_seqP2_runConfig_carry (P1 : ConstStatePhasedProgram Unit) {L : Nat}
+    (c0 : Configuration (M := (seq P1 selfLoopIncrement).toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = P1.numPhases) :
+    ∀ k : Nat, (c0.head : Nat) + k ≤ L →
+      (∀ p : Fin ((seq P1 selfLoopIncrement).toPhased.toTM.tapeLength L),
+        (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + k → c0.tape p = true) →
+      (((TM.runConfig (M := (seq P1 selfLoopIncrement).toPhased.toTM) c0 k).state).fst : Nat)
+          = P1.numPhases
+      ∧ ((TM.runConfig (M := (seq P1 selfLoopIncrement).toPhased.toTM) c0 k).head : Nat)
+          = (c0.head : Nat) + k
+      ∧ ∀ p : Fin ((seq P1 selfLoopIncrement).toPhased.toTM.tapeLength L),
+          (TM.runConfig (M := (seq P1 selfLoopIncrement).toPhased.toTM) c0 k).tape p
+            = (if (c0.head : Nat) ≤ (p : Nat) ∧ (p : Nat) < (c0.head : Nat) + k
+                then false else c0.tape p) := by
+  intro k
+  induction k with
+  | zero =>
+      intro _ _
+      refine ⟨hphase, by simp, ?_⟩
+      intro p
+      have hfalse : ¬ ((c0.head : Nat) ≤ (p : Nat) ∧ (p : Nat) < (c0.head : Nat) + 0) := by omega
+      show c0.tape p
+          = if (c0.head : Nat) ≤ (p : Nat) ∧ (p : Nat) < (c0.head : Nat) + 0 then false else c0.tape p
+      rw [if_neg hfalse]
+  | succ k ih =>
+      intro hk h1
+      obtain ⟨hph, hhd, htp⟩ := ih (by omega) (fun p hp1 hp2 => h1 p hp1 (by omega))
+      rw [TM.runConfig_succ]
+      set c := TM.runConfig (M := (seq P1 selfLoopIncrement).toPhased.toTM) c0 k with hc
+      have hbnd : (c.head : Nat) + 1 < (seq P1 selfLoopIncrement).toPhased.toTM.tapeLength L := by
+        rw [hhd]; show (c0.head : Nat) + k + 1 < L + (P1.timeBound L + L + 1) + 1; omega
+      have hbit : c.tape c.head = true := by
+        rw [htp]
+        rw [if_neg (by rw [hhd]; omega)]
+        exact h1 c.head (by rw [hhd]; omega) (by rw [hhd]; omega)
+      refine ⟨?_, ?_, ?_⟩
+      · exact selfLoopIncrement_seqP2_stepConfig_carry_phase P1 c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit
+      · rw [selfLoopIncrement_seqP2_stepConfig_carry_head P1 c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+        simp only [Configuration.moveHead, dif_pos hbnd]
+        omega
+      · rw [selfLoopIncrement_seqP2_stepConfig_carry_tape P1 c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+        intro p
+        by_cases hp : p = c.head
+        · subst hp
+          rw [Configuration.write_self,
+            if_pos (by constructor <;> (rw [hhd]; omega))]
+        · rw [Configuration.write_other c hp false, htp p]
+          have hpc : (p : Nat) ≠ (c0.head : Nat) + k := by
+            intro h; exact hp (Fin.ext (by rw [hhd]; exact h))
+          by_cases hin : (c0.head : Nat) ≤ (p : Nat) ∧ (p : Nat) < (c0.head : Nat) + k
+          · rw [if_pos hin, if_pos ⟨hin.1, by omega⟩]
+          · rw [if_neg hin, if_neg (by
+              intro hcon; exact hin ⟨hcon.1, by omega⟩)]
+
 end ContractExpansion
 end Frontier
 end Pnp4

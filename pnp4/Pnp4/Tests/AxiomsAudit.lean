@@ -520,3 +520,7 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_runConfig_borrow
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_runConfig_stop
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_runConfig_counterValue
+-- Increment as a non-first (P2-region) phase, arbitrary start; structural TM reasoning.
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seqP2_stepConfig_carry_tape
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seqP2_stepConfig_stop_tape
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seqP2_runConfig_carry

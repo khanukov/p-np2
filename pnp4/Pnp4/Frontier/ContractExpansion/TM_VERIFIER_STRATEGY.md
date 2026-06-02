@@ -280,23 +280,31 @@ inequality `timeBound(L) ≤ L^c + c` for a concrete `c` derived from the assemb
    every self-loop primitive (scan, increment, decrement) is proven to retain its run behaviour when
    embedded as a `seq` phase — as the **first** component (P1-region: carry/borrow-ripple,
    `counterValue ± 1`, terminator-locate, and the P1→P2 handoff) **and** as a **non-first** component
-   from an arbitrary start configuration at an arbitrary tape offset (P2-region, increment & decrement).
-   Plus the **state-lifting** combinator `liftUnitProgram` (`BoundedLoopProgram.lean`) and the first
-   **heterogeneous-state** assembly: `mSkeletonDemo` (`TreeMCSPSkeletonComposition.lean`) composes the
-   `Bool`-state tag check with the lifted `Unit`-state self-loops into one well-typed program that is
-   never-left and polynomially time-bounded (`mSkeletonDemo_{neverMovesLeft,timeBound_le}`).  **Remaining
-   for full assembly:** transfer the lifted self-loops' *run behaviour* across `liftUnitProgram` (a
-   state-component bisimulation), then re-use the P1/P2 composition lemmas on the lifted phases (or,
-   alternatively, settle on a `Unit` common state by phase-encoding the tag check).  (See §6's
-   correction for what straight-line composition does *not* cover — the data-dependent loops still need
-   the comparison layer below.)
+   from an arbitrary start configuration at an arbitrary tape offset (P2-region — now **all three**:
+   increment, decrement **and** scan, `gammaSelfLoopScan_seqP2_runConfig_scanning`).  So every self-loop
+   composes in **either** `seq` position.  Plus the **state-lifting** combinator `liftUnitProgram`
+   (`BoundedLoopProgram.lean`) and the first **heterogeneous-state** assembly: `mSkeletonDemo`
+   (`TreeMCSPSkeletonComposition.lean`).  **Resolution of the leading-phase run-behaviour transfer:** we
+   took the **`Unit`-common-state route** (native `Unit` tag check `tagCheckProgramU`, §6a) rather than
+   the `liftUnitProgram` bisimulation (which is therefore **off the critical path**).  The tag check's
+   *run behaviour as `M`'s first phase* is now **DONE** (`TreeMCSPTagCheckComposition.lean`:
+   `tagCheckProgramU_seq_runConfig_inv` re-derives the standalone invariant in the P1-region, plus the
+   P1→P2 handoff `tagCheckProgramU_seq_runConfig_handoff`), and **`M`'s first two phases chain**
+   (`TreeMCSPLeadingPhasesChain.lean`: `tagCheckThenGammaScan_runConfig` splices the tag-check handoff
+   with the gamma-scan P2-region invariant via `TM.runConfig_add` — tag verify ▸ handoff ▸ gamma
+   zero-scan on one composed machine).  **Remaining:** chain the *full* nested `seqList` of `mSkeletonU`
+   (the explicit 2-phase `seq` is done), and — past the scan — the data-dependent loops still need the
+   comparison layer below (see §6's correction).
 2. **Parse-on-tape** — *tag check **DONE*** (`TreeMCSPTagCheckProgram.lean`: program, `timeBound`,
    `neverMovesLeft`, single-step lemmas, `runConfig_scan`, accept-iff, matched-state, semantic
    correctness `accepts ⇔ leading bits = tag`, Prop characterization) — valid for `M` since
-   `tagLen` is a true constant.  Gamma layout/range bounds done.  The count-zeros scan (locate +
+   `tagLen` is a true constant.  The tag check also now runs correctly **as the first phase of a `seq`**
+   (`TreeMCSPTagCheckComposition.lean`, brick 1) and **chains into the gamma scan**
+   (`TreeMCSPLeadingPhasesChain.lean`).  Gamma layout/range bounds done.  The count-zeros scan (locate +
    decode the unary-prefix length) is done **both** as a `maxIters` reasoning device
    (`gammaZeroScanProgram`) **and**, crucially, as the `M`-compatible **self-loop** `gammaSelfLoopScan`
-   (brick 0) — so the gamma unary-prefix decode now has the right structure for `M`.
+   (brick 0), composing in either `seq` position — so the gamma unary-prefix decode now has the right
+   structure for `M`.
    **Remaining:** gamma payload-read (recover `n` from the `z` payload bits — needs a counted read),
    length-convention check.
 3. **Witness slice + prefix-agreement compare** (bounded scan; `combineAtOffset` per-bit) — *remaining;

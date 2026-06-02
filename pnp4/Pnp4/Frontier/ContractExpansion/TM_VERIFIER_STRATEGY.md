@@ -202,22 +202,28 @@ inequality `timeBound(L) ≤ L^c + c` for a concrete `c` derived from the assemb
    on tape — tape-based counting via the now-proven `incrementProgram_correct`), length-convention
    check.
 3. **Witness slice + prefix-agreement compare** (bounded scan; `combineAtOffset` per-bit) — *remaining*.
-4. **On-tape circuit decode + single-row evaluation** — single-row eval is the proven
-   `circuitEvaluatorCS`; the open piece is realizing **this codec's** decoder on tape, or proving it
-   agrees with `Encoding.CircuitTree` (the §9 codec caveat) — *remaining, hardest single risk*.
+4. **On-tape circuit decode + single-row evaluation** — single-row eval is `circuitEvaluatorCS`, but
+   only its *single-gate* run-correctness is proven; the **full multi-gate `circuitEvaluatorCS_run_correct`
+   is upstream toolkit future-work** (§9).  Plus the open piece of realizing **this codec's** decoder
+   on tape, or proving it agrees with `Encoding.CircuitTree` (the §9 codec caveat) — *remaining,
+   hardest single risk; partly upstream-blocked*.
 5. **Row-iteration verification** — the `2^n`-row loop; `mcspCheckAllRows`/`RowConsistencyCheck`
    supply the per-row body + `timeBound`; the open piece is the **loop correctness invariant**
-   (`repeatProgram_run_succ` peel-by-peel) — *remaining*.
+   (`repeatProgram_run_succ` peel-by-peel) — *remaining, **blocked on brick 4's
+   `circuitEvaluatorCS_run_correct`***.
 6. **Assemble `M`**, prove the bridge (★), discharge `runTime_poly`, build the
    `PrefixExtensionNPWitness`, and feed it to `verifiedSource_treePoly`'s second hypothesis — *remaining*.
 
 > **Toolkit status (verified, do not rebuild):** atomics, `seq`/`seqList`, gate evaluators
-> (`GateWrappers`), single-row `circuitEvaluatorCS`, `CircuitTree` encode/decode round-trips, the
-> binary counter **incl. `incrementProgram_correct`** (carry propagation — proven; the stale
-> "Session 7c will prove" comment notwithstanding), `RowConsistencyCheck`/`mcspCheckAllRows`
-> `timeBound`.  The NP-verifier track adds §6/§6a (bounded loop + composition layer) and the
-> tag-check phase.  The genuinely missing core is the gamma-decode/parse orchestration, the row-loop
-> *correctness* invariant, the codec-layout reconciliation (§9), and the final assembly.
+> (`GateWrappers`, **0 `sorry`**), `circuitEvaluatorCS` *single-gate* run-correctness + boundary
+> lemmas (the *full multi-gate* `circuitEvaluatorCS_run_correct` is **upstream future-work**, §9),
+> `CircuitTree` encode/decode round-trips, the binary counter **incl. `incrementProgram_correct`**
+> (carry propagation — proven; the stale "Session 7c will prove" comment notwithstanding),
+> `RowConsistencyCheck`/`mcspCheckAllRows` `timeBound`.  The NP-verifier track adds §6/§6a (bounded
+> loop + composition layer), the tag-check phase, and the gamma count-zeros scan (locate + decode the
+> unary-prefix length).  The genuinely missing core is the gamma payload-read/parse orchestration, the
+> upstream single-row `circuitEvaluatorCS_run_correct`, the row-loop *correctness* invariant (blocked
+> on it), the codec-layout reconciliation (§9), and the final assembly.
 
 ## 9. Existing parallel scaffolding, and a codec-encoding caveat
 
@@ -236,9 +242,16 @@ Takeaways: (1) the proven assembly pattern is `components` (with an `accepts_eq`
 be mirrored here once a TM exists; (2) a concrete verifier TM is the **project-wide engineering
 frontier**, not unique to this track.
 
-Reusable beyond §3: `circuitEvaluatorCS` (`GateWrappers.lean:569`) is a **complete, proven** evaluator
-of a gate list at offsets, and `alwaysAccept`/`alwaysReject` are complete TMs. So *single-row* circuit
-evaluation is already built; the genuinely missing piece is the **row loop** (§6).
+Reusable beyond §3: `circuitEvaluatorCS` (`GateWrappers.lean:569`) is defined and has its
+*single-gate* run-correctness proven (`circuitEvaluatorCSAt_{const,input}_run_correct`, the
+`nil` case, and boundary lemmas), and `alwaysAccept`/`alwaysReject` are complete TMs.  **Correction
+(re-verified this session):** the *full multi-gate* `circuitEvaluatorCS_run_correct` is **not yet
+proven** — it is explicitly marked toolkit future-work ("Milestone F.4 target statement", "future
+session", `GateWrappers.lean:1043+`), though `GateWrappers` carries **0 `sorry`** (the composite
+theorem is simply unstated, not holed).  So *single-row* circuit evaluation is **partially** built,
+and the **row loop (brick 5) is blocked on the toolkit finishing `circuitEvaluatorCS_run_correct`** —
+this is an upstream dependency, not work this track can complete alone.  The genuinely missing pieces
+are therefore: the full single-row evaluator correctness (upstream), then the **row loop** (§6).
 
 **Codec-encoding caveat (this track is harder than the canonical one).** The toolkit's circuit codec is
 `Encoding.CircuitTree` / `decodeCircuitTreeAtDepth`. But `treeCircuitWitnessCodec` (this track's codec)

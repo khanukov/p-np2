@@ -74,6 +74,21 @@ theorem repeatProgram_run_zero (body : ConstStatePhasedProgram S) {n : Nat}
   rw [h0]
   rfl
 
+/--
+General closed form for the `timeBound` of a sequential composition: the sum of the components'
+time bounds plus one handoff per component.  The verifier TM is assembled as a `seqList` of phase
+programs, so this is the shape its polynomial `runTime` bound is proved against (generalizing the
+toolkit's explicit `seqList_timeBound_singleton`/`_two`/`_three`).
+-/
+theorem seqList_timeBound_sum (ps : List (ConstStatePhasedProgram S)) (n : Nat) :
+    (seqList ps).timeBound n = (ps.map (fun p => p.timeBound n)).sum + ps.length := by
+  induction ps with
+  | nil => simp
+  | cons p rest ih =>
+      rw [seqList_timeBound_cons, ih]
+      simp only [List.map_cons, List.sum_cons, List.length_cons]
+      omega
+
 end ConstStatePhasedProgram
 end TM
 end PsubsetPpoly

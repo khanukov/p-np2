@@ -251,12 +251,22 @@ single-step lemmas are *transition-generic* (they never assume `TMNeverMovesLeft
 scan composes as a `seq` phase exactly as the rightward one — `selfLoopScanLeft_seqP2_runConfig_scanning`
 and `selfLoopScanLeft_seqP2_runConfig_terminator` give it **full composition-API parity** with
 `gammaSelfLoopScan` (standalone scanning+terminator, composed scanning+terminator).  So the bidirectional
-*motion* layer is built.  **Remaining for the layer:** the head **lower-bound / runtime accounting** for
-two-way motion (the right-only confinement arguments assumed monotone-right head travel — `neverMovesLeft`
-is genuinely false for leftward phases, so a `0 ≤ head ≤ tapeLength` two-sided invariant replaces it),
-then the **data-dependent algorithms** (counted payload read; prefix compare) built atop both
-directions — these are the design-first pieces (§6b's two candidate realizations) to settle and prove
-next.
+*motion* layer is built.
+
+**Two-sided head accounting is also DONE** (`TreeMCSPBidirHeadBounds.lean`): the head moves by at most
+one cell per step in *either* direction, so `runConfig_head_val_ge` (`c.head − j ≤ head`, the
+direction-agnostic lower bound, no `neverMovesLeft`) and `runConfig_head_dist_le`
+(`c.head − j ≤ head ≤ c.head + j`) replace the right-only monotone-head confinement.  So the entire
+bidirectional **foundation** — motion primitives (both directions, composing) **plus** the kinematic
+head budget — is now built and verified.
+
+**Remaining is the data-dependent core (design-first):** the **counted payload read** (recover `n`) and
+the **prefix-agreement compare**, built atop both directions of motion + the counters (`selfLoopIncrement`
+/`Decrement`) + the head budget.  These are the §6b candidate realizations to settle (layout: where the
+scratch counter lives in the `tapeLength = inputLen + runTime + 1` budget; how the read head and counter
+interleave) and prove next — design-first, since a wrong high-level program is worse than an honest
+pause.  Then the row loop (separately upstream-blocked on `circuitEvaluatorCS_run_correct`) and final
+assembly.
 
 **Two candidate realizations** (decide and prove one next session; do *not* commit a program before
 the design is settled — a wrong artifact is worse than an honest pause):

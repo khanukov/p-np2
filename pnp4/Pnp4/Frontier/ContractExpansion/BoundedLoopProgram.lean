@@ -126,6 +126,65 @@ theorem seqList_timeBound_le (ps : List (ConstStatePhasedProgram S)) (n B : Nat)
   rw [seqList_timeBound_sum]
   omega
 
+/-!
+## Compositional `TMNeverMovesLeft`
+
+The assembled verifier is a `seqList` of phase programs, and head-position tracking (offsets staying
+within `tapeLength`) relies on the machine never moving left.  Rather than re-prove `neverMovesLeft`
+monolithically for each composed program, these lemmas thread it through `seq` / `seqList`: a
+composition of right-only/stay programs is itself right-only/stay.  The compiled-TM step's move is
+definitionally the transition's move, and the toolkit's `seq_transition_*_move` lemmas characterize
+each region (P1-normal mirrors P1, the P1-accept handoff is `Move.stay`, P2-region mirrors P2).
+-/
+
+/-- Transition-level never-left for `seq`: if both components' transition functions never move left,
+neither does `seq P1 P2`'s. -/
+theorem seq_transition_neverLeft (P1 P2 : ConstStatePhasedProgram S)
+    (hP1 : ∀ (i : Fin P1.numPhases) (q : S) (b : Bool), (P1.transition i q b).2.2.2 ≠ Move.left)
+    (hP2 : ∀ (i : Fin P2.numPhases) (q : S) (b : Bool), (P2.transition i q b).2.2.2 ≠ Move.left)
+    (i : Fin (seq P1 P2).numPhases) (q : S) (b : Bool) :
+    ((seq P1 P2).transition i q b).2.2.2 ≠ Move.left := by
+  by_cases h1 : i.val < P1.numPhases
+  · by_cases hacc : i.val = P1.acceptPhase.val
+    · rw [seq_transition_P1_accept_move P1 P2 h1 hacc q b]; simp
+    · rw [seq_transition_P1_normal_move P1 P2 h1 hacc q b]; exact hP1 ⟨i.val, h1⟩ q b
+  · have h2 : P1.numPhases ≤ i.val := Nat.le_of_not_lt h1
+    have hiLt : i.val < P1.numPhases + P2.numPhases := i.isLt
+    have hlt : i.val - P1.numPhases < P2.numPhases := by omega
+    rw [seq_transition_P2_move P1 P2 h2 hlt q b]; exact hP2 ⟨i.val - P1.numPhases, hlt⟩ q b
+
+/-- `seq` preserves `TMNeverMovesLeft` (lifts `seq_transition_neverLeft` through `toPhased`/`toTM`). -/
+theorem seq_neverMovesLeft (P1 P2 : ConstStatePhasedProgram S)
+    (hP1 : TMNeverMovesLeft (P1.toPhased.toTM))
+    (hP2 : TMNeverMovesLeft (P2.toPhased.toTM)) :
+    TMNeverMovesLeft ((seq P1 P2).toPhased.toTM) := by
+  intro st b
+  obtain ⟨i, q⟩ := st
+  exact seq_transition_neverLeft P1 P2
+    (fun i q b => hP1 ⟨i, q⟩ b) (fun i q b => hP2 ⟨i, q⟩ b) i q b
+
+/-- The idle program never moves left (it always stays). -/
+theorem idleCS_neverMovesLeft : TMNeverMovesLeft ((idleCS (S := S)).toPhased.toTM) := by
+  intro st b
+  obtain ⟨i, q⟩ := st
+  show ((idleCS (S := S)).transition i q b).2.2.2 ≠ Move.left
+  simp [idleCS]
+
+/-- `seqList` preserves `TMNeverMovesLeft`: if every component is right-only/stay, so is their
+sequential composition.  Induction on the list (`seq_neverMovesLeft` at each cons,
+`idleCS_neverMovesLeft` at the base).  This is the head-bound-tracking ingredient for the assembled
+verifier, which is a `seqList` of phase programs. -/
+theorem seqList_neverMovesLeft (ps : List (ConstStatePhasedProgram S))
+    (h : ∀ p ∈ ps, TMNeverMovesLeft (p.toPhased.toTM)) :
+    TMNeverMovesLeft ((seqList ps).toPhased.toTM) := by
+  induction ps with
+  | nil => exact idleCS_neverMovesLeft
+  | cons p rest ih =>
+      rw [seqList_cons]
+      exact seq_neverMovesLeft p (seqList rest)
+        (h p (List.mem_cons.mpr (Or.inl rfl)))
+        (ih (fun q hq => h q (List.mem_cons.mpr (Or.inr hq))))
+
 end ConstStatePhasedProgram
 end TM
 end PsubsetPpoly

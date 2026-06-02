@@ -3637,6 +3637,10 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.repeatProgram_run_zero
 #check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seqList_timeBound_sum
 #check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seqList_timeBound_le
+-- Compositional never-moves-left (head-bound tracking for the assembled seqList verifier).
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_neverMovesLeft
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.idleCS_neverMovesLeft
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seqList_neverMovesLeft
 #check @Pnp3.Internal.PsubsetPpoly.TM.PhasedProgram.accepts_toTM
 -- First verifier parse-phase program (NP-verifier track).
 #check @Pnp4.Frontier.ContractExpansion.tagCheckProgram

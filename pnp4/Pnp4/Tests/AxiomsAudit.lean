@@ -414,6 +414,10 @@ end Pnp4
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.repeatProgram_run_zero
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seqList_timeBound_sum
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seqList_timeBound_le
+-- Compositional never-moves-left (head-bound tracking); structural TM reasoning.
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_neverMovesLeft
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.idleCS_neverMovesLeft
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seqList_neverMovesLeft
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.PhasedProgram.accepts_toTM
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_transition_move
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_neverMovesLeft

@@ -305,11 +305,19 @@ inequality `timeBound(L) ≤ L^c + c` for a concrete `c` derived from the assemb
    *run behaviour as `M`'s first phase* is now **DONE** (`TreeMCSPTagCheckComposition.lean`:
    `tagCheckProgramU_seq_runConfig_inv` re-derives the standalone invariant in the P1-region, plus the
    P1→P2 handoff `tagCheckProgramU_seq_runConfig_handoff`), and **`M`'s first two phases chain**
-   (`TreeMCSPLeadingPhasesChain.lean`: `tagCheckThenGammaScan_runConfig` splices the tag-check handoff
-   with the gamma-scan P2-region invariant via `TM.runConfig_add` — tag verify ▸ handoff ▸ gamma
-   zero-scan on one composed machine).  **Remaining:** chain the *full* nested `seqList` of `mSkeletonU`
-   (the explicit 2-phase `seq` is done), and — past the scan — the data-dependent loops still need the
-   comparison layer below (see §6's correction).
+   (`TreeMCSPLeadingPhasesChain.lean`: `tagCheckThenGammaScan_runConfig` and
+   `tagCheckThenGammaScanTerminator_runConfig` splice the tag-check handoff with the gamma-scan
+   P2-region scan/terminator invariants via `TM.runConfig_add` — tag verify ▸ handoff ▸ gamma zero-scan
+   ▸ stop *on the gamma terminator* on one composed machine).  This also lands on the **assembled**
+   skeleton: `mSkeletonU_tagCheck_handoff` (`TreeMCSPSkeletonComposition.lean`) instantiates the generic
+   handoff at `P2 := seqList […]`, so `mSkeletonU` itself (not a toy 2-phase `seq`) verifies the tag and
+   hands off after `tagLen + 1` steps.  **Remaining (right-only):** the *one* tractable next brick is
+   **transitively-nested composition** — the gamma scan in the doubly-nested *P2∘P1* position (it is P1
+   of the inner `seq gammaSelfLoopScan R` which is P2 of the outer `seq tagCheckProgramU …`), via
+   `seq_stepConfig_P2_*` composed with `seq_transition_P1_normal_*`; this proves the composition lemmas
+   chain to *any* depth (`seqList` length ≥ 3) and completes "`mSkeletonU` runs tag ▸ gamma-scan".  Past
+   the scan, the data-dependent loops need the comparison/bidirectional layer below (see §6's correction
+   and §6b's right-only-ceiling analysis).
 2. **Parse-on-tape** — *tag check **DONE*** (`TreeMCSPTagCheckProgram.lean`: program, `timeBound`,
    `neverMovesLeft`, single-step lemmas, `runConfig_scan`, accept-iff, matched-state, semantic
    correctness `accepts ⇔ leading bits = tag`, Prop characterization) — valid for `M` since

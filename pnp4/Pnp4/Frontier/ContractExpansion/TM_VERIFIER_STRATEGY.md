@@ -284,6 +284,45 @@ the design is settled — a wrong artifact is worse than an honest pause):
 Either path is multi-brick (program + `timeBound` + `neverMovesLeft` + single-step + scan invariant +
 correctness against `decodeGamma?`), mirroring the tag-check's ~10-lemma build but harder.
 
+### 6c. Counted read / row loop — the shared bottleneck, with the bidirectional toolkit complete
+
+The bidirectional foundation is now built: rightward scan (`gammaSelfLoopScan`) **and** leftward scan
+(`selfLoopScanLeft`), both with full P1/P2 composition parity; variable-width binary increment/decrement;
+and direction-agnostic head-displacement bounds (`TreeMCSPBidirHeadBounds`: `|head − c.head| ≤ j`).
+Working the counted payload read through against these primitives surfaces a precise architectural
+conclusion:
+
+* **Scratch region.** `tapeLength L = L + runTime L + 1`, so positions `[L, tapeLength)` are blank in
+  the initial config (`initial_tape_blank`) and untouched by the parse phases (their tape-unchanged
+  lemmas). With `L = Θ(2^n)` and `runTime L = Θ(L)`, the scratch is `Θ(2^n)` cells — large enough to
+  hold the row count `2^n` itself.
+* **Both remaining data-dependent items reduce to one construct.** The counted payload read (read `z`
+  bits, `z` = the implicit head offset) and the row loop (iterate `2^n` times) are both a **bounded
+  body-reentry loop**: run a multi-phase body, decrement a counter, test the counter against `0`, and
+  re-enter the body on non-zero (the phased model permits the back-edge — the body's last phase jumps
+  to its first). The counter *step* (±1) is proven (`selfLoop{Increment,Decrement}`); the missing
+  pieces are the **counter-zero test** and the back-edge wiring.
+* **The counter-zero test is the genuine crux (marker-free binary alphabet).** Testing whether a
+  *binary* counter is `0` requires scanning its bits — but delimiting a *variable-width* binary counter
+  needs an end marker, which the binary alphabet lacks; a fixed machine cannot hardcode the width
+  (it must serve all `n`). This is the same self-delimiting wall as the gamma field.
+  - **Promising direction: unary counters in scratch.** A **unary** counter (a block of `1`s followed
+    by blanks) is marker-free: zero-test = "leftmost cell is `0`" (one read), decrement = "flip the
+    rightmost `1`" (a leftward scan to the first `1`, already built). The row count `2^n` fits in the
+    `Θ(2^n)` scratch, so a unary row counter is feasible and sidesteps the width-delimiting problem.
+    The cost is the `Θ(2^n)`-length counter, but the row loop is already `Θ(2^n)` iterations, so this
+    is within the intended `poly(L)` budget.
+* **Next concrete brick (design now settled enough to start):** a **bounded unary-counter loop**
+  combinator — given a body program `B`, a unary counter region, and a proven per-iteration body
+  behaviour, run `B` exactly `K` times where `K` is the counter's initial value, with the back-edge
+  and the (trivial) unary zero-test. This single combinator unblocks **both** the counted payload read
+  and the row-loop control flow; the row loop's *body* (single-row circuit evaluation) remains
+  separately blocked on the upstream `circuitEvaluatorCS_run_correct` (§9).
+
+This is the point to start coding next: the unary-counter loop combinator, built like the self-loops
+(program + `timeBound` + `neverMovesLeft` + single-step + run-`K`-times invariant), is the smallest
+verified brick that advances both remaining data-dependent items.
+
 ## 7. Runtime accounting
 
 With `threshold n = thresholdPoly k n = n^k + k`, `witnessBits n = (bitLength n + 4) · threshold n`,

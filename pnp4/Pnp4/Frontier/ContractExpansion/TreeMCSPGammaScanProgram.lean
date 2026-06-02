@@ -551,6 +551,39 @@ theorem gammaSelfLoopScan_runConfig_done {L : Nat}
           (s := (TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM) c j).state.snd) hph rfl
       exact ⟨hph2, by rw [hhd2, hhd], by rw [htp2, htp]⟩
 
+/-- Full-runtime correctness of the self-loop scan: running it for its entire declared runtime
+(`timeBound L = L` steps via `TM.run`) on a gamma-prefixed input (leading `gammaLen n` cells equal
+`gammaBit n`, with `bitLength (n+1) ≤ L`) leaves the head resting on the unary terminator
+(`head = bitLength (n+1) − 1`) in the done phase (`1`).  Combines the terminator-locating result at
+step `z+1` with done-phase idle stability for the remaining `L − (z+1)` steps (via `runConfig_add`).
+This is the self-loop scan's headline theorem — the gamma unary-prefix decode realized on a single
+fixed-`M`-compatible Turing machine, correct over its whole run. -/
+theorem gammaSelfLoopScan_run_locates_terminator {L : Nat} (n : Nat) (x : Boolcube.Point L)
+    (hz : bitLength (n + 1) ≤ L)
+    (hgamma : ∀ p : Fin (gammaSelfLoopScan.toPhased.toTM.tapeLength L),
+      ∀ h : (p : Nat) < gammaLen n,
+      (gammaSelfLoopScan.toPhased.toTM.initialConfig x).tape p = gammaBit n ⟨p.val, h⟩) :
+    ((TM.run (M := gammaSelfLoopScan.toPhased.toTM) (n := L) x).head : Nat) = bitLength (n + 1) - 1
+    ∧ ((TM.run (M := gammaSelfLoopScan.toPhased.toTM) (n := L) x).state.fst : Nat) = 1 := by
+  have hb : 1 ≤ bitLength (n + 1) := bitLength_pos_of_pos (Nat.succ_pos n)
+  obtain ⟨h1, h2⟩ := gammaSelfLoopScan_locates_gamma_terminator n x (by omega) hgamma
+  have hrun : TM.run (M := gammaSelfLoopScan.toPhased.toTM) (n := L) x
+      = TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM)
+          (gammaSelfLoopScan.toPhased.toTM.initialConfig x) L := rfl
+  have hadd : TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM)
+        (gammaSelfLoopScan.toPhased.toTM.initialConfig x) L
+      = TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM)
+          (TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM)
+            (gammaSelfLoopScan.toPhased.toTM.initialConfig x) (bitLength (n + 1) - 1 + 1))
+          (L - (bitLength (n + 1) - 1 + 1)) := by
+    rw [← TM.runConfig_add]; congr 1; omega
+  obtain ⟨hph, hhd, _⟩ := gammaSelfLoopScan_runConfig_done
+    (TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM)
+      (gammaSelfLoopScan.toPhased.toTM.initialConfig x) (bitLength (n + 1) - 1 + 1))
+    h1 (L - (bitLength (n + 1) - 1 + 1))
+  rw [hrun, hadd]
+  exact ⟨by rw [hhd]; exact h2, hph⟩
+
 end ContractExpansion
 end Frontier
 end Pnp4

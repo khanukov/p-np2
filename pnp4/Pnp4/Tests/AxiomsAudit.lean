@@ -56,6 +56,7 @@ import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout
 import Pnp4.Frontier.ContractExpansion.BoundedLoopProgram
+import Pnp4.Frontier.ContractExpansion.PhasedProgramAccepts
 
 namespace Pnp4
 namespace Tests
@@ -408,3 +409,4 @@ end Pnp4
 -- Bounded-loop primitive (NP-verifier track); Classical-free arithmetic/structural.
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.repeatProgram_timeBound
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.repeatProgram_run_succ
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.PhasedProgram.accepts_toTM

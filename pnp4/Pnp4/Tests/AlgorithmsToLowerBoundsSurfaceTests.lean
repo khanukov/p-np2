@@ -66,6 +66,7 @@ import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout
 import Pnp4.Frontier.ContractExpansion.BoundedLoopProgram
+import Pnp4.Frontier.ContractExpansion.PhasedProgramAccepts
 
 namespace Pnp4
 namespace Tests
@@ -3631,6 +3632,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.repeatProgram_succ
 #check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.repeatProgram_timeBound
 #check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.repeatProgram_run_succ
+#check @Pnp3.Internal.PsubsetPpoly.TM.PhasedProgram.accepts_toTM
 
 end Tests
 end Pnp4

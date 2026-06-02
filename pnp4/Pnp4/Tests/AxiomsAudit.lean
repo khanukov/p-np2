@@ -490,3 +490,13 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_runConfig_counterValue
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_runConfig_done
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_run_counterValue
+-- Self-loop binary decrement (dual down-counter step); dual bit-flip arithmetic + structural TM reasoning.
+#print axioms Pnp4.Frontier.ContractExpansion.counterValue_first_one_diff
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_neverMovesLeft
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_stepConfig_borrow_tape
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_stepConfig_stop_tape
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_runConfig_borrow
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_runConfig_stop
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_runConfig_counterValue
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_runConfig_done
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_run_counterValue

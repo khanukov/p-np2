@@ -3729,6 +3729,23 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_stepConfig_done
 #check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_runConfig_done
 #check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_run_counterValue
+-- Self-loop binary decrement (brick 0: dual down-counter step).
+#check @Pnp4.Frontier.ContractExpansion.counterValue_first_one_diff
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_timeBound
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_neverMovesLeft
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_stepConfig_borrow_phase
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_stepConfig_borrow_head
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_stepConfig_borrow_tape
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_stepConfig_stop_phase
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_stepConfig_stop_head
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_stepConfig_stop_tape
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_runConfig_borrow
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_runConfig_stop
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_runConfig_counterValue
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_stepConfig_done
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_runConfig_done
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_run_counterValue
 
 end Tests
 end Pnp4

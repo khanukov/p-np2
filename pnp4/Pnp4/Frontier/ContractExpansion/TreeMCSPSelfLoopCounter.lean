@@ -189,6 +189,51 @@ theorem selfLoopIncrement_runConfig_carry {L : Nat} (x : Boolcube.Point L) :
           have hpc : (p : Nat) ≠ k := fun h => hp (Fin.ext (by rw [hhd]; exact h))
           split_ifs <;> first | rfl | (exfalso; omega)
 
+/-- After-increment configuration: if the first `j` counter cells are `1` and cell `j` is `0`
+(`j ≤ L`), then after `j + 1` steps the increment is done — phase `1`, head on cell `j`, and the tape
+has cells `[0, j)` cleared to `0`, cell `j` set to `1`, and everything beyond unchanged.  Combines
+the carry-ripple invariant at `j` with one terminating "stop" step (the read `0` is flipped to `1`).
+This is the increment's result configuration, feeding the `counterValue + 1` correctness. -/
+theorem selfLoopIncrement_runConfig_stop {L : Nat} (x : Boolcube.Point L) (j : Nat) (hj : j ≤ L)
+    (h_ones : ∀ p : Fin (selfLoopIncrement.toPhased.toTM.tapeLength L),
+      (p : Nat) < j → (selfLoopIncrement.toPhased.toTM.initialConfig x).tape p = true)
+    (h_zero : ∀ hb : j < selfLoopIncrement.toPhased.toTM.tapeLength L,
+      (selfLoopIncrement.toPhased.toTM.initialConfig x).tape ⟨j, hb⟩ = false) :
+    (((TM.runConfig (M := selfLoopIncrement.toPhased.toTM)
+        (selfLoopIncrement.toPhased.toTM.initialConfig x) (j + 1)).state).fst : Nat) = 1
+      ∧ ((TM.runConfig (M := selfLoopIncrement.toPhased.toTM)
+          (selfLoopIncrement.toPhased.toTM.initialConfig x) (j + 1)).head : Nat) = j
+      ∧ ∀ p : Fin (selfLoopIncrement.toPhased.toTM.tapeLength L),
+          (TM.runConfig (M := selfLoopIncrement.toPhased.toTM)
+            (selfLoopIncrement.toPhased.toTM.initialConfig x) (j + 1)).tape p
+            = (if (p : Nat) < j then false
+                else if (p : Nat) = j then true
+                else (selfLoopIncrement.toPhased.toTM.initialConfig x).tape p) := by
+  obtain ⟨hph, hhd, htp⟩ := selfLoopIncrement_runConfig_carry x j hj h_ones
+  rw [TM.runConfig_succ]
+  set c := TM.runConfig (M := selfLoopIncrement.toPhased.toTM)
+    (selfLoopIncrement.toPhased.toTM.initialConfig x) j with hc
+  have hhead_eq : c.head = ⟨j, by rw [← hhd]; exact c.head.isLt⟩ := Fin.ext hhd
+  have hbit : c.tape c.head = false := by
+    rw [htp, if_neg (show ¬ (c.head : Nat) < j by rw [hhd]; omega), hhead_eq]
+    exact h_zero _
+  refine ⟨?_, ?_, ?_⟩
+  · exact selfLoopIncrement_stepConfig_stop_phase c
+      (i := c.state.fst) (s := c.state.snd) hph rfl hbit
+  · rw [selfLoopIncrement_stepConfig_stop_head c
+      (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+    exact hhd
+  · rw [selfLoopIncrement_stepConfig_stop_tape c
+      (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+    intro p
+    by_cases hp : p = c.head
+    · subst hp
+      rw [Configuration.write_self]
+      simp [hhd]
+    · rw [Configuration.write_other c hp true, htp p]
+      have hpc : (p : Nat) ≠ j := fun h => hp (by rw [hhead_eq]; exact Fin.ext h)
+      split_ifs <;> rfl
+
 end ContractExpansion
 end Frontier
 end Pnp4

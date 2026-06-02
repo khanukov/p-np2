@@ -496,6 +496,20 @@ its `timeBound`, (iv) the run-`z`-times correctness via `iterate'`, (v) the accu
 matches `decodeGamma?`.  Then length-convention check, prefix-agreement compare (same paradigm, counter =
 prefix length), the row loop (upstream-blocked on `circuitEvaluatorCS_run_correct`), and final assembly.
 
+**Accumulator constraint (from the `selfLoopIncrement` contract).**  The shift-accumulate in (i) reuses
+`selfLoopIncrement`, whose `timeBound = n` is *exact only when the carry is absorbed in-window*
+(`selfLoopIncrement_run_counterValue` requires the first `0` at `j < k ≤ L`; the all-`1`s saturating
+pattern needing `L+1` is out of contract — `TreeMCSPSelfLoopCounter.lean:34`).  So the `n`-register must
+carry a **spare high `0` bit** at every accumulate, or the read would inherit exactly that off-by-one
+over-run.  `n` is `Θ(log N)` wide and the work region above the counter has room, so the spare bit is
+free.  (This is the load-bearing fact behind the recurring Qodo "increment off-by-one" false positive:
+the bound is right *given the contract*; the body must honour the contract.)
+
+**Layout preconditions landed** (`TreeMCSPPrefixVerifierLayout.lean`): `gammaZeros n` (`= z = K`),
+`gammaTermOffset n` (`= p_term`), and `gammaMirror_mem` (the mirror cell `2·p_term − c` of a counter
+cell `c ∈ [tagLen, p_term)` is a genuine in-query payload cell) — the geometric facts the body program
+consumes, proved `Classical`-free.
+
 ## 7. Runtime accounting
 
 With `threshold n = thresholdPoly k n = n^k + k`, `witnessBits n = (bitLength n + 4) · threshold n`,

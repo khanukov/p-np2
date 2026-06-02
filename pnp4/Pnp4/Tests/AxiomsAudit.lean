@@ -425,6 +425,11 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.queryXOffset_le_treeMCSPPrefixM
 #print axioms Pnp4.Frontier.ContractExpansion.gammaLen_le_treeMCSPPrefixM
 #print axioms Pnp4.Frontier.ContractExpansion.instanceSize_lt_treeMCSPPrefixM
+-- Gamma payload-read geometry (§6f scheme); Classical-free arithmetic.
+#print axioms Pnp4.Frontier.ContractExpansion.gammaLen_eq_two_mul_gammaZeros_add_one
+#print axioms Pnp4.Frontier.ContractExpansion.gammaTermOffset_lt_queryXOffset
+#print axioms Pnp4.Frontier.ContractExpansion.gammaTermOffset_le_treeMCSPPrefixM
+#print axioms Pnp4.Frontier.ContractExpansion.gammaMirror_mem
 
 -- Bounded-loop primitive (NP-verifier track); Classical-free arithmetic/structural.
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.repeatProgram_timeBound

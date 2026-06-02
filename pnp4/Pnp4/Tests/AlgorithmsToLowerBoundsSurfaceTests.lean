@@ -3646,6 +3646,13 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.queryIdxOffset_le_treeMCSPPrefixM
 #check @Pnp4.Frontier.ContractExpansion.gammaLen_le_treeMCSPPrefixM
 #check @Pnp4.Frontier.ContractExpansion.instanceSize_lt_treeMCSPPrefixM
+-- Gamma payload-read geometry (§6f counter-representation scheme).
+#check @Pnp4.Frontier.ContractExpansion.gammaZeros
+#check @Pnp4.Frontier.ContractExpansion.gammaTermOffset
+#check @Pnp4.Frontier.ContractExpansion.gammaLen_eq_two_mul_gammaZeros_add_one
+#check @Pnp4.Frontier.ContractExpansion.gammaTermOffset_lt_queryXOffset
+#check @Pnp4.Frontier.ContractExpansion.gammaTermOffset_le_treeMCSPPrefixM
+#check @Pnp4.Frontier.ContractExpansion.gammaMirror_mem
 
 -- Bounded-loop primitive (NP-verifier track, the row-iteration construct).
 #check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.repeatProgram

@@ -185,6 +185,71 @@ theorem instanceSize_lt_treeMCSPPrefixM
     exact Nat.lt_two_pow_self
   omega
 
+/-!
+### Gamma payload-read geometry (the §6f counter-representation scheme)
+
+`TM_VERIFIER_STRATEGY.md` §6f fixes the data-dependent gamma read as a **localized decoupled unary
+countdown**: the `z = bitLength (n+1) − 1` leading zeros of the Elias-gamma block (filled to `1`s) are
+the loop counter `K`, driving `repeatBody`; each iteration reads the payload bit **mirror** to the
+consumed counter cell across the (fixed) terminator at `tagLen + z`.  These offsets and the
+mirror-position fit lemma are the layout preconditions that body program consumes — proved here,
+`Classical`-free, alongside the rest of the query-field geometry.
+-/
+
+/-- Leading-zero count of the Elias-gamma block for `n`: `z = bitLength (n+1) − 1`.  Equals the payload
+width and (per §6f) the loop count `K` the payload read drives `repeatBody` with. -/
+def gammaZeros (n : Nat) : Nat := bitLength (n + 1) - 1
+
+/-- Offset of the Elias-gamma unary terminator: the lone `1` at `tagLen + z` separating the `z` leading
+zeros from the `z`-bit payload.  The §6f read anchors symmetrically here. -/
+def gammaTermOffset (n : Nat) : Nat := tagLen + gammaZeros n
+
+/-- The gamma field length is `2 z + 1` (the `z` zeros, the terminator, the `z` payload bits). -/
+theorem gammaLen_eq_two_mul_gammaZeros_add_one (n : Nat) :
+    gammaLen n = 2 * gammaZeros n + 1 := by
+  unfold gammaLen gammaZeros
+  -- `bitLength (n+1) ≥ 1` proved inline (the Mathlib `bitLength_pos_of_pos` pulls `Classical.choice`;
+  -- unfolding keeps this whole layout family genuinely `Classical`-free).
+  have hpos : 0 < bitLength (n + 1) := by
+    unfold bitLength
+    rw [if_neg (by omega : ¬ (n + 1 = 0))]
+    omega
+  omega
+
+/-- The terminator lies strictly inside the gamma field (before the truth-table field). -/
+theorem gammaTermOffset_lt_queryXOffset (n : Nat) :
+    gammaTermOffset n < queryXOffset n := by
+  have h := gammaLen_eq_two_mul_gammaZeros_add_one n
+  unfold gammaTermOffset queryXOffset
+  omega
+
+/-- The terminator offset lies within the query block. -/
+theorem gammaTermOffset_le_treeMCSPPrefixM
+    {threshold : Nat → Nat} (codec : TreeCircuitWitnessCodec threshold) (n : Nat) :
+    gammaTermOffset n ≤ treeMCSPPrefixM codec n := by
+  have h1 := gammaTermOffset_lt_queryXOffset n
+  have h2 := queryXOffset_le_treeMCSPPrefixM codec n
+  omega
+
+/-- **Mirror-read position validity** (the §6f payload read's core geometric precondition).  For a
+leading-zero / counter cell at offset `c` (`tagLen ≤ c < gammaTermOffset n`), its mirror across the
+terminator, `2 · gammaTermOffset n − c`, is a genuine payload cell: strictly above the terminator and
+strictly inside the gamma field, hence within the query block.  So the body's read head never leaves
+the query while reading the bit paired with the consumed counter cell. -/
+theorem gammaMirror_mem
+    {threshold : Nat → Nat} (codec : TreeCircuitWitnessCodec threshold) (n c : Nat)
+    (hlo : tagLen ≤ c) (hhi : c < gammaTermOffset n) :
+    gammaTermOffset n < 2 * gammaTermOffset n - c
+      ∧ 2 * gammaTermOffset n - c < queryXOffset n
+      ∧ 2 * gammaTermOffset n - c < treeMCSPPrefixM codec n := by
+  have h := gammaLen_eq_two_mul_gammaZeros_add_one n
+  -- expose the offsets as `tagLen + …` (defeq) so `omega` sees `c` through the truncated subtraction
+  have hpt : gammaTermOffset n = tagLen + gammaZeros n := rfl
+  have hqx : queryXOffset n = tagLen + gammaLen n := rfl
+  have hc1 : gammaTermOffset n < 2 * gammaTermOffset n - c := by omega
+  have hc2 : 2 * gammaTermOffset n - c < queryXOffset n := by omega
+  exact ⟨hc1, hc2, Nat.lt_of_lt_of_le hc2 (queryXOffset_le_treeMCSPPrefixM codec n)⟩
+
 end ContractExpansion
 end Frontier
 end Pnp4

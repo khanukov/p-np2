@@ -544,6 +544,37 @@ buildable unit is the **navigate+read shuttle** above (steps 1–5, emitting the
 (α)/(β) decision is forced by the (unblocked) row-loop work.  This keeps the verified surface honest and
 avoids committing the accumulate mechanism before its consumer exists.
 
+### 6h. Re-check (supersedes §6g's "next unit") — the accumulate body is *not* separable, and may be unnecessary
+
+Re-checking the §6g shuttle against `repeatBody`'s **actual** interface (`def repeatBody
+(B : ConstStatePhasedProgram Unit)`, `TreeMCSPRepeatBody.lean:35`) before writing it caught a real flaw —
+the value of design-first over a wrong artifact:
+
+* **The body is `Unit`-state and iterations share only the tape.**  `repeatBody`'s body is
+  `ConstStatePhasedProgram Unit`; the `iterate'` body hypothesis is purely a `runConfig` on the shared
+  TM from `B.start` to `B.accept`.  A read bit can still be *branched on via phases* (finite control is
+  fine), but it **cannot be carried out of the body** — anything the body computes must be deposited on
+  the **tape inside the body**.  So §6g's "emit the bit in state, layer the accumulate later" is wrong:
+  the accumulate is **intrinsic**, and the (α)/(β) target is **not** deferrable.
+* **The navigation medium and the register collide.**  The walked all-zero gap `[p_term−t, p_term+t)`
+  must stay all-`0` for the scans to locate the terminator; it therefore cannot double as the
+  `n`-register, and a separate register reintroduces the data-dependent region-navigation wall.
+* **The deeper reframe: a shift-accumulate body may be unnecessary.**  After `gammaSelfLoopFill`
+  establishes `z` (the loop count `K`), the value `n+1 = 1·b₁…b_z` already sits **in situ** in the gamma
+  field `[p_term, p_term + 1 + z)`.  Nothing has to *move* it.  The §6d/§6f/§6g "shift-accumulate
+  `n`-register" assumed a copy that downstream may not need.  What downstream *actually* needs is (1) the
+  **length-convention check** `L = treeMCSPPrefixM codec n` and (2) the **row loop's `2^n`** — and the
+  honest open question is whether each can read `n` *in situ* from the gamma field, or genuinely needs a
+  relocated copy (the reachable-scratch question the row loop faces anyway).
+
+**Consequence for the roadmap.**  The plan item "gamma payload-read body" should **not** be built as a
+standalone accumulate brick yet — its necessity and shape depend on the downstream tape-access pattern,
+which is entangled with the row loop (upstream-blocked on `circuitEvaluatorCS_run_correct`).  The honest
+next design step is to pin **what the length-check needs from the gamma field** (in-situ read vs. copy),
+since that is buildable independently of the blocked row loop and determines whether any payload *copy*
+body is needed at all.  Verified geometry (§6f layout lemmas) stands regardless; no body program is
+committed until its consumer is fixed.
+
 ## 7. Runtime accounting
 
 With `threshold n = thresholdPoly k n = n^k + k`, `witnessBits n = (bitLength n + 4) · threshold n`,

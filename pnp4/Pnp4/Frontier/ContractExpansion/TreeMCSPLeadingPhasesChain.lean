@@ -1,5 +1,6 @@
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillComposition
 
 namespace Pnp4
 namespace Frontier
@@ -173,6 +174,55 @@ theorem tagCheckThenNestedGammaScan_runConfig (R : ConstStatePhasedProgram Unit)
   · rw [hsp, tagCheckProgramU_numPhases]
   · rw [hsh, hhd1]
   · rw [hst, htp1]
+
+/-- Tag check ▸ gamma fill on `seq tagCheckProgramU gammaSelfLoopFill`: the genuine first two leading
+phases of `M` in the counter-materializing variant.  If the first `tagLen` cells match the tag and the
+next `k` cells (`tagLen .. tagLen + k`) are `0`, then after `(tagLen + 1) + k` steps control rests in
+the fill phase (`tagLen + 2`), the head has advanced to `tagLen + k`, and the window `[tagLen, tagLen+k)`
+has been **filled with `1`** in place (rest of tape unchanged) — i.e. a length-`k` unary counter is now
+materialized just past the tag.  The fill-tape analogue of `tagCheckThenGammaScan_runConfig`: verify the
+tag, then turn the gamma leading-zero block into the loop counter the `repeatBody` combinator consumes
+for the payload read. -/
+theorem tagCheckThenGammaFill_runConfig {L : Nat} (x : Boolcube.Point L)
+    (hmatch : tagMatchPrefix x tagLen = true)
+    (k : Nat) (hk : tagLen + k ≤ L)
+    (hzeros : ∀ p : Fin ((seq tagCheckProgramU gammaSelfLoopFill).toPhased.toTM.tapeLength L),
+      tagLen ≤ (p : Nat) → (p : Nat) < tagLen + k →
+      ((seq tagCheckProgramU gammaSelfLoopFill).toPhased.toTM.initialConfig x).tape p = false) :
+    (((TM.runConfig (M := (seq tagCheckProgramU gammaSelfLoopFill).toPhased.toTM)
+        ((seq tagCheckProgramU gammaSelfLoopFill).toPhased.toTM.initialConfig x)
+        ((tagLen + 1) + k)).state).fst : Nat) = tagLen + 2
+      ∧ ((TM.runConfig (M := (seq tagCheckProgramU gammaSelfLoopFill).toPhased.toTM)
+          ((seq tagCheckProgramU gammaSelfLoopFill).toPhased.toTM.initialConfig x)
+          ((tagLen + 1) + k)).head : Nat) = tagLen + k
+      ∧ ∀ p : Fin ((seq tagCheckProgramU gammaSelfLoopFill).toPhased.toTM.tapeLength L),
+          (TM.runConfig (M := (seq tagCheckProgramU gammaSelfLoopFill).toPhased.toTM)
+            ((seq tagCheckProgramU gammaSelfLoopFill).toPhased.toTM.initialConfig x)
+            ((tagLen + 1) + k)).tape p
+            = (if tagLen ≤ (p : Nat) ∧ (p : Nat) < tagLen + k
+                then true
+                else ((seq tagCheckProgramU gammaSelfLoopFill).toPhased.toTM.initialConfig x).tape p) := by
+  obtain ⟨hph1, hhd1, htp1⟩ := tagCheckProgramU_seq_runConfig_handoff gammaSelfLoopFill x hmatch
+  rw [TM.runConfig_add]
+  revert hph1 hhd1 htp1
+  generalize TM.runConfig (M := (seq tagCheckProgramU gammaSelfLoopFill).toPhased.toTM)
+    ((seq tagCheckProgramU gammaSelfLoopFill).toPhased.toTM.initialConfig x) (tagLen + 1) = c1
+  intro hph1 hhd1 htp1
+  have hphase : (c1.state.fst : Nat) = tagCheckProgramU.numPhases := by
+    rw [hph1]; simp [gammaSelfLoopFill_startPhase_val, tagCheckProgramU_numPhases]
+  obtain ⟨hfp, hfh, hft⟩ :=
+    gammaSelfLoopFill_seqP2_runConfig_fill tagCheckProgramU c1 hphase k
+      (by rw [hhd1]; exact hk)
+      (by
+        intro p hp1 hp2
+        rw [htp1]
+        rw [hhd1] at hp1 hp2
+        exact hzeros p hp1 hp2)
+  refine ⟨?_, ?_, ?_⟩
+  · rw [hfp, tagCheckProgramU_numPhases]
+  · rw [hfh, hhd1]
+  · intro p
+    rw [hft p, hhd1, htp1]
 
 end ContractExpansion
 end Frontier

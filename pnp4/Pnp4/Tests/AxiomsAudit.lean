@@ -592,4 +592,5 @@ end Pnp4
 -- M's first two leading phases run in sequence on one composed machine.
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckThenGammaScan_runConfig
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckThenGammaScanTerminator_runConfig
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckThenGammaFill_runConfig
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckThenNestedGammaScan_runConfig

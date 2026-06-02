@@ -3891,6 +3891,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- M's first two leading phases (tag check then gamma scan) run in sequence on one composed machine.
 #check @Pnp4.Frontier.ContractExpansion.tagCheckThenGammaScan_runConfig
 #check @Pnp4.Frontier.ContractExpansion.tagCheckThenGammaScanTerminator_runConfig
+#check @Pnp4.Frontier.ContractExpansion.tagCheckThenGammaFill_runConfig
 -- Transitively-nested chain + capstone on the assembled mSkeletonU.
 #check @Pnp4.Frontier.ContractExpansion.tagCheckThenNestedGammaScan_runConfig
 

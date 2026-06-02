@@ -89,6 +89,32 @@ theorem seqList_timeBound_sum (ps : List (ConstStatePhasedProgram S)) (n : Nat) 
       simp only [List.map_cons, List.sum_cons, List.length_cons]
       omega
 
+/--
+Uniform polynomial bound for a sequential composition: if every phase runs within `B` steps, the
+whole `seqList` runs within `ps.length * (B + 1)` steps.  The verifier's `runTime_poly` obligation
+instantiates this with `B` a polynomial bound common to its (constantly many) phases.
+-/
+theorem seqList_timeBound_le (ps : List (ConstStatePhasedProgram S)) (n B : Nat)
+    (hB : ∀ p ∈ ps, p.timeBound n ≤ B) :
+    (seqList ps).timeBound n ≤ ps.length * (B + 1) := by
+  have hsum : ∀ (qs : List (ConstStatePhasedProgram S)),
+      (∀ p ∈ qs, p.timeBound n ≤ B) →
+      (qs.map (fun p => p.timeBound n)).sum ≤ qs.length * B := by
+    intro qs
+    induction qs with
+    | nil => intro _; simp
+    | cons p rest ih =>
+        intro h
+        have hp : p.timeBound n ≤ B := h p (List.mem_cons.mpr (Or.inl rfl))
+        have hrest := ih (fun q hq => h q (List.mem_cons.mpr (Or.inr hq)))
+        have e1 : (rest.length + 1) * B = rest.length * B + B := Nat.succ_mul rest.length B
+        simp only [List.map_cons, List.sum_cons, List.length_cons]
+        omega
+  have hs := hsum ps hB
+  have e2 : ps.length * (B + 1) = ps.length * B + ps.length := Nat.mul_succ ps.length B
+  rw [seqList_timeBound_sum]
+  omega
+
 end ConstStatePhasedProgram
 end TM
 end PsubsetPpoly

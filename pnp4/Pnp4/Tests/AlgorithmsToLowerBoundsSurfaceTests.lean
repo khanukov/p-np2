@@ -69,6 +69,7 @@ import Pnp4.Frontier.ContractExpansion.BoundedLoopProgram
 import Pnp4.Frontier.ContractExpansion.PhasedProgramAccepts
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaScanProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPSelfLoopCounter
 
 namespace Pnp4
 namespace Tests
@@ -3712,6 +3713,16 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_stepConfig_done
 #check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_runConfig_done
 #check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_run_locates_terminator
+-- Self-loop binary increment (brick 0: variable-width counter machinery).
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_timeBound
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_neverMovesLeft
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_stepConfig_carry_phase
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_stepConfig_carry_head
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_stepConfig_carry_tape
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_stepConfig_stop_phase
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_stepConfig_stop_head
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_stepConfig_stop_tape
 
 end Tests
 end Pnp4

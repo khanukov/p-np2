@@ -278,6 +278,34 @@ theorem tagCheckProgram_accepts_eq_tagMatch {L : Nat} (x : Boolcube.Point L) :
   rw [hrun]
   exact tagCheckProgram_runConfig_matched x tagLen (Nat.le_refl tagLen)
 
+/-- The accumulated-match spec as a `Prop`: `tagMatchPrefix x k` holds iff every one of the first
+`k` input cells equals the corresponding tag bit.  This is the form the downstream parser bridge
+consumes (the tag field is accepted exactly when all `tagLen` leading bits match).  Classical-free. -/
+theorem tagMatchPrefix_eq_true_iff {L : Nat} (x : Boolcube.Point L) (k : Nat) :
+    tagMatchPrefix x k = true ↔ ∀ j, j < k → tagCheckInputBit x j = tagBitAt j := by
+  induction k with
+  | zero =>
+      simp only [tagMatchPrefix_zero, true_iff]
+      intro j hj
+      exact absurd hj (Nat.not_lt_zero j)
+  | succ k ih =>
+      rw [tagMatchPrefix_succ, Bool.and_eq_true, beq_iff_eq, ih]
+      constructor
+      · rintro ⟨hlt, hk⟩ j hj
+        rcases Nat.lt_succ_iff_lt_or_eq.mp hj with h | h
+        · exact hlt j h
+        · exact h ▸ hk
+      · intro h
+        exact ⟨fun j hj => h j (Nat.lt_succ_of_lt hj), h k (Nat.lt_succ_self k)⟩
+
+/-- End-to-end tag-check correctness in `Prop` form: the phase accepts iff the input's leading
+`tagLen` cells equal `treePrefixTag` bit-for-bit.  Combines `tagCheckProgram_accepts_eq_tagMatch`
+with `tagMatchPrefix_eq_true_iff`. -/
+theorem tagCheckProgram_accepts_iff {L : Nat} (x : Boolcube.Point L) :
+    TM.accepts (M := tagCheckProgram.toPhased.toTM) (n := L) x = true
+      ↔ ∀ j, j < tagLen → tagCheckInputBit x j = tagBitAt j := by
+  rw [tagCheckProgram_accepts_eq_tagMatch, tagMatchPrefix_eq_true_iff]
+
 end ContractExpansion
 end Frontier
 end Pnp4

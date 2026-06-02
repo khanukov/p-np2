@@ -3657,6 +3657,8 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_tape_read
 #check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_runConfig_matched
 #check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_accepts_eq_tagMatch
+#check @Pnp4.Frontier.ContractExpansion.tagMatchPrefix_eq_true_iff
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_accepts_iff
 
 end Tests
 end Pnp4

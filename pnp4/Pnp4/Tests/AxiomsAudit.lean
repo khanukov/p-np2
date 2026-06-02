@@ -430,3 +430,6 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_tape_read
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_runConfig_matched
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_accepts_eq_tagMatch
+-- Prop characterization (tagMatchPrefix_eq_true_iff Classical-free; accepts_iff inherits TM triple).
+#print axioms Pnp4.Frontier.ContractExpansion.tagMatchPrefix_eq_true_iff
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_accepts_iff

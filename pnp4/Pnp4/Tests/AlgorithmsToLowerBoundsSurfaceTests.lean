@@ -71,6 +71,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaScanProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSelfLoopCounter
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterComposition
+import Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition
 
 namespace Pnp4
 namespace Tests
@@ -3764,6 +3765,19 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_stepConfig_handoff_head
 #check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_stepConfig_handoff_tape
 #check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_runConfig_handoff
+-- Lifting the self-loop gamma scan into a composition (assembly milestone).
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_stepConfig_scan_zero_phase
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_stepConfig_scan_zero_head
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_stepConfig_scan_zero_tape
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_stepConfig_scan_one_phase
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_stepConfig_scan_one_head
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_stepConfig_scan_one_tape
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_runConfig_scanning
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_runConfig_terminator
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_stepConfig_handoff_phase
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_stepConfig_handoff_head
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_stepConfig_handoff_tape
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_runConfig_handoff
 
 end Tests
 end Pnp4

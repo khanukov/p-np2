@@ -61,6 +61,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaScanProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSelfLoopCounter
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterComposition
+import Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition
 
 namespace Pnp4
 namespace Tests
@@ -509,3 +510,9 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_runConfig_counterValue
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_stepConfig_handoff_tape
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_runConfig_handoff
+-- Lifting the self-loop gamma scan into a composition (assembly milestone); structural TM reasoning.
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_stepConfig_scan_zero_tape
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_stepConfig_scan_one_tape
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_runConfig_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_runConfig_terminator
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_runConfig_handoff

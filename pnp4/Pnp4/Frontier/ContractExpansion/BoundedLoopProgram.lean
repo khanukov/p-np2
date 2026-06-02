@@ -411,6 +411,59 @@ theorem seq_stepConfig_P2_head (P1 P2 : ConstStatePhasedProgram S) {L : Nat}
   simp only [ConstStatePhasedProgram.toPhased]
   rw [seq_transition_P2_move P1 P2 h2 hlt q (c.tape c.head)]
 
+/-!
+## State lifting for heterogeneous-state assembly
+
+`seq`/`seqList` require a *single* state type `S` shared by all components, but the assembled verifier
+`M` mixes phases of different state types — e.g. the tag check is `ConstStatePhasedProgram Bool` (it
+accumulates "prefix matches tag so far") while the self-loops are `ConstStatePhasedProgram Unit`.
+Since the self-loops *ignore* their state component (`transition := fun i _ b => …`), a `Unit`-state
+program can be reinterpreted over any inhabited `S`, carrying the `S` component inertly.
+
+`liftUnitProgram` does exactly that.  This is the first step of the state-uniformity resolution
+recorded in `TM_VERIFIER_STRATEGY.md` §6a: the structural facts (phase count, time bound, never-left)
+transfer immediately, so a `seqList` mixing a lifted self-loop with a genuine `S`-state phase is
+well-typed and inherits the polynomial-`timeBound`/never-left guarantees.  The *run-behaviour*
+correspondence (a bisimulation on the inert state component, transferring the proven counter/scan run
+invariants to the lifted versions) is the documented follow-up.
+-/
+
+/-- Reinterpret a state-agnostic `Unit`-state phased program over any inhabited state type `S`,
+carrying the `S` component through each transition unchanged.  Phase index, written bit, and head move
+are inherited verbatim from the `Unit` program. -/
+def liftUnitProgram (P : ConstStatePhasedProgram Unit) : ConstStatePhasedProgram S where
+  numPhases := P.numPhases
+  startPhase := P.startPhase
+  startState := default
+  acceptPhase := P.acceptPhase
+  acceptState := default
+  transition := fun i s b =>
+    let r := P.transition i () b
+    (r.1, s, r.2.2.1, r.2.2.2)
+  timeBound := P.timeBound
+
+@[simp] theorem liftUnitProgram_numPhases (P : ConstStatePhasedProgram Unit) :
+    (liftUnitProgram (S := S) P).numPhases = P.numPhases := rfl
+
+@[simp] theorem liftUnitProgram_timeBound (P : ConstStatePhasedProgram Unit) (n : Nat) :
+    (liftUnitProgram (S := S) P).timeBound n = P.timeBound n := rfl
+
+@[simp] theorem liftUnitProgram_startPhase (P : ConstStatePhasedProgram Unit) :
+    (liftUnitProgram (S := S) P).startPhase = P.startPhase := rfl
+
+@[simp] theorem liftUnitProgram_acceptPhase (P : ConstStatePhasedProgram Unit) :
+    (liftUnitProgram (S := S) P).acceptPhase = P.acceptPhase := rfl
+
+/-- The lifted program inherits the `Unit` program's head moves verbatim, so it never moves left
+whenever the original does — letting a lifted self-loop sit in a `seqList` with the head-tracking
+guarantees intact. -/
+theorem liftUnitProgram_neverMovesLeft (P : ConstStatePhasedProgram Unit)
+    (hP : TMNeverMovesLeft (P.toPhased.toTM)) :
+    TMNeverMovesLeft ((liftUnitProgram (S := S) P).toPhased.toTM) := by
+  intro st b
+  obtain ⟨i, s⟩ := st
+  exact hP ⟨i, ()⟩ b
+
 end ConstStatePhasedProgram
 end TM
 end PsubsetPpoly

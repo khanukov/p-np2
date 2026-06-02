@@ -72,6 +72,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaScanProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSelfLoopCounter
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition
+import Pnp4.Frontier.ContractExpansion.TreeMCSPSkeletonComposition
 
 namespace Pnp4
 namespace Tests
@@ -3806,6 +3807,12 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_stepConfig_stop_head
 #check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_stepConfig_stop_tape
 #check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_runConfig_borrow
+-- State lifting + heterogeneous-state skeleton composition (assembly milestone).
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_neverMovesLeft
+#check @Pnp4.Frontier.ContractExpansion.mSkeletonDemo
+#check @Pnp4.Frontier.ContractExpansion.mSkeletonDemo_neverMovesLeft
+#check @Pnp4.Frontier.ContractExpansion.mSkeletonDemo_timeBound_le
 
 end Tests
 end Pnp4

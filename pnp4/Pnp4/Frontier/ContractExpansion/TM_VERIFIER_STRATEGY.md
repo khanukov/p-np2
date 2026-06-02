@@ -399,6 +399,40 @@ payload-read body built on it — remains the next focused brick, now with compl
 *(Landed via the stacked workflow: branch `claude/npv-gamma-payload-shuttle-design` → PR into the
 `claude/elegant-noether-CnlU5` staging branch, not direct-pushed.)*
 
+### 6e. Payload-read mechanism analysis (this pass) — the walking-terminator read and the count/read interdependency
+
+Re-checking the payload read against the now-complete four-way scan vocabulary surfaced one clean
+mechanism and one precise obstruction, both worth recording before the next build (a wrong artifact is
+worse than an honest design note — §6b):
+
+* **Walking-terminator read (clean, rightward-only; no leftward shift).**  The payload can be read
+  **left-to-right** by *walking the terminator* through it: at the terminator `q` (a `1`), read the
+  payload bit at `q+1`, then write `0` at `q` and `1` at `q+1` — the terminator advances one cell,
+  leaving a `0` behind.  After `j` steps the tape is `0^{z+j} 1 (b_{j+1}…b_z) …`: still a `0^k 1 …`
+  structure, terminator at `p_term+j`, and the read head sits at the **clean boundary** immediately
+  right of the terminator every iteration.  This is a 2-phase `Bool`-state self-loop (advance ▸ read)
+  and it removes the O(z) full-payload leftward shift the "shift-accumulator" framing implied — each
+  bit is read at a findable boundary, rightward only.
+
+* **The irreducible obstruction: stop/count and read contend for the terminator.**  The read must
+  **stop after exactly `z` bits**, and the only marker-free source of `z` is the leading-zero block
+  `[tagLen, p_term)`, whose countdown is naturally bounded by the **terminator at `p_term`**
+  (`repeatBody`/`selfLoopCountdownLeft` consume the block and stop when the next cell is the terminator
+  `1`).  But the walking-terminator read **moves that very terminator**, destroying the countdown's stop
+  marker; conversely, a body that keeps the terminator fixed must reach payload bit `j` at `p_term+j` —
+  a data-dependent move *past already-read payload bits that cannot be marked* (arbitrary `0/1` data —
+  the 2-symbol wall).  So **read, stop, count and accumulate are interlocked**: they do not separate
+  into independent verified bricks, which is precisely why the next step is one cohesive construction,
+  not another incremental primitive.
+
+* **Consequence for the scheme decision.**  This favors a design that **decouples the count from the
+  read terminator** — e.g. (c) a separate countdown counter, but only once the *reachable-scratch*
+  location problem is solved via a reliable landmark (position `0` through a clamped rewind, or the
+  **constant** `tagLen`), or a **2-track / reserved-marker tape encoding** giving the payload region a
+  markable frontier.  Both are genuine design commitments (the latter a model extension), not mirrors of
+  existing primitives — so the (a)/(b)/(c)/encoding decision, and the cohesive read+count+accumulate
+  build on it, are the next focused pass, deferred to an explicit scheme choice.
+
 ## 7. Runtime accounting
 
 With `threshold n = thresholdPoly k n = n^k + k`, `witnessBits n = (bitLength n + 4) · threshold n`,

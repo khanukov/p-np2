@@ -510,6 +510,40 @@ the bound is right *given the contract*; the body must honour the contract.)
 cell `c ∈ [tagLen, p_term)` is a genuine in-query payload cell) — the geometric facts the body program
 consumes, proved `Classical`-free.
 
+### 6g. Body navigation — walking-terminator read + four-way scans (re-checked against the built primitives)
+
+The §6f body's *internal* motion is now worked out against the built scans (so the body program is
+unambiguous to write).  One `repeatBody` iteration runs with the head on the current counter cell
+`h = p_term − 1 − t` (descending, `t = 0 … z−1`); the read uses a **walking terminator** on the payload
+side, kept decoupled from the count (which is `repeatBody`'s `K = z`, the leading-zero countdown).
+
+* **Tape invariant after `t` walking-reads.**  The consumed-counter window and the walked-over payload
+  prefix merge into one all-zero gap `[p_term − t, p_term + t)`, with the walking terminator (`1`) at
+  `p_term + t`; the unconsumed counter `[tagLen, h]` is still ones, and `h = p_term − 1 − t` is its top.
+* **One iteration (head `h` → … → head `h`).**  (1) step right to `h + 1 = p_term − t`; (2)
+  `gammaSelfLoopScan` (right over `0`s) lands on the walking terminator at `p_term + t`; (3) read the
+  payload bit at `p_term + t + 1 = 2·p_term − h = mirror(h)` (in-query by `gammaMirror_mem`); (4) **walk**
+  it: write `0` at `p_term + t`, `1` at `p_term + t + 1`; (5) `selfLoopScanLeft` (left over `0`s) returns
+  to the first `1` on the left, which is `h`.  Head is back at `h` and `[tagLen, h]` is untouched — so it
+  discharges `repeatBody_one_iteration'`'s body hypothesis (accept phase + head returned + counter region
+  `≤ h` preserved).  Each scan distance is `2t ≤ 2z`, so head travel is `O(z)`/iteration, `O(z²)` total.
+* **Why the scans suffice.**  Every frontier the body must find is a `1`/`0` boundary reachable by the
+  four-way vocabulary: the terminator is "first `1` right of the zero gap", the return is "first `1` left
+  of it".  No data-dependent counting *inside* the body, no marker beyond the lone walking `1` — the
+  2-symbol wall is never hit, exactly because count and read are decoupled (§6e).
+
+**Open sub-point, deliberately deferred — the accumulate target.**  *Where* the read bit is accumulated
+is **not** yet fixed: (α) shift-accumulate `n+1` into a fresh **scratch** register (§6d), or (β) leave
+`n+1` **in situ** in the gamma field and have downstream read it in place.  (β) keeps the §6f
+localization (no far-scratch shuttle) but pushes the materialization of `n` to whoever needs it; (α)
+centralizes `n` but reintroduces the reachable-scratch problem.  This choice is **entangled with the row
+loop's `2^n`-in-scratch setup** (the doubling loop that reads `n`), which is itself **upstream-blocked on
+`circuitEvaluatorCS_run_correct`** — so resolving (α)/(β) now would be premature.  Therefore the next
+buildable unit is the **navigate+read shuttle** above (steps 1–5, emitting the read bit in the body's
+`Bool` state), proven against `repeatBody_one_iteration'`; the accumulate wrapper is layered on once the
+(α)/(β) decision is forced by the (unblocked) row-loop work.  This keeps the verified surface honest and
+avoids committing the accumulate mechanism before its consumer exists.
+
 ## 7. Runtime accounting
 
 With `threshold n = thresholdPoly k n = n^k + k`, `witnessBits n = (bitLength n + 4) · threshold n`,

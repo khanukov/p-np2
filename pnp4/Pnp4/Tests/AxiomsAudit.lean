@@ -423,6 +423,15 @@ end Pnp4
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_normal_state
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_normal_tape
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_normal_head
+-- Handoff + P2-region single-step seq simulation; structural TM reasoning.
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_accept_phase
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_accept_state
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_accept_tape
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_accept_head
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P2_phase
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P2_state
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P2_tape
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P2_head
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.PhasedProgram.accepts_toTM
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_transition_move
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_neverMovesLeft

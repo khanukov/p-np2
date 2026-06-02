@@ -3646,6 +3646,15 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_normal_state
 #check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_normal_tape
 #check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_normal_head
+-- Handoff (P1→P2) and P2-region single-step simulation (completes seq single-step characterization).
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_accept_phase
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_accept_state
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_accept_tape
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_accept_head
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P2_phase
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P2_state
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P2_tape
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P2_head
 #check @Pnp3.Internal.PsubsetPpoly.TM.PhasedProgram.accepts_toTM
 -- First verifier parse-phase program (NP-verifier track).
 #check @Pnp4.Frontier.ContractExpansion.tagCheckProgram

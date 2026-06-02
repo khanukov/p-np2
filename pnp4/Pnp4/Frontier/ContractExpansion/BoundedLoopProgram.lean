@@ -258,6 +258,146 @@ theorem seq_stepConfig_P1_normal_head (P1 P2 : ConstStatePhasedProgram S) {L : N
   simp only [ConstStatePhasedProgram.toPhased]
   rw [seq_transition_P1_normal_move P1 P2 h1 hne q (c.tape c.head)]
 
+/-!
+## Single-step simulation of `seq`: the P1→P2 handoff
+
+When the control phase reaches P1's accept phase, one step performs the handoff: the phase jumps to
+P2's start (shifted by `P1.numPhases`), the local state is (re)initialized to `P2.startState`, and —
+since the handoff writes back the scanned bit and stays put — the tape and head are unchanged.  These
+are the single-step lemmas for that distinguished boundary step.
+-/
+
+omit [Inhabited S] in
+/-- The handoff step jumps the phase to P2's (shifted) start phase. -/
+theorem seq_stepConfig_P1_accept_phase (P1 P2 : ConstStatePhasedProgram S) {L : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) L)
+    {i : Fin (seq P1 P2).numPhases} {q : S}
+    (h1 : i.val < P1.numPhases) (hacc : i.val = P1.acceptPhase.val)
+    (hstate : c.state = ⟨i, q⟩) :
+    ((TM.stepConfig (M := (seq P1 P2).toPhased.toTM) c).state).fst.val
+      = P1.numPhases + P2.startPhase.val := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp only [ConstStatePhasedProgram.toPhased]
+  rw [seq_transition_P1_accept_phase P1 P2 h1 hacc q (c.tape c.head)]
+
+omit [Inhabited S] in
+/-- The handoff step (re)initializes the local state to `P2.startState`. -/
+theorem seq_stepConfig_P1_accept_state (P1 P2 : ConstStatePhasedProgram S) {L : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) L)
+    {i : Fin (seq P1 P2).numPhases} {q : S}
+    (h1 : i.val < P1.numPhases) (hacc : i.val = P1.acceptPhase.val)
+    (hstate : c.state = ⟨i, q⟩) :
+    ((TM.stepConfig (M := (seq P1 P2).toPhased.toTM) c).state).snd = P2.startState := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp only [ConstStatePhasedProgram.toPhased]
+  rw [seq_transition_P1_accept_state P1 P2 h1 hacc q (c.tape c.head)]
+
+omit [Inhabited S] in
+/-- The handoff step leaves the tape unchanged (it writes back the scanned bit). -/
+theorem seq_stepConfig_P1_accept_tape (P1 P2 : ConstStatePhasedProgram S) {L : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) L)
+    {i : Fin (seq P1 P2).numPhases} {q : S}
+    (h1 : i.val < P1.numPhases) (hacc : i.val = P1.acceptPhase.val)
+    (hstate : c.state = ⟨i, q⟩) :
+    (TM.stepConfig (M := (seq P1 P2).toPhased.toTM) c).tape = c.tape := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp only [ConstStatePhasedProgram.toPhased]
+  rw [seq_transition_P1_accept_bit P1 P2 h1 hacc q (c.tape c.head)]
+  funext j
+  by_cases hj : j = c.head
+  · subst hj; simp [Configuration.write]
+  · simp [Configuration.write, hj]
+
+omit [Inhabited S] in
+/-- The handoff step leaves the head unchanged (it stays). -/
+theorem seq_stepConfig_P1_accept_head (P1 P2 : ConstStatePhasedProgram S) {L : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) L)
+    {i : Fin (seq P1 P2).numPhases} {q : S}
+    (h1 : i.val < P1.numPhases) (hacc : i.val = P1.acceptPhase.val)
+    (hstate : c.state = ⟨i, q⟩) :
+    (TM.stepConfig (M := (seq P1 P2).toPhased.toTM) c).head = c.head := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp only [ConstStatePhasedProgram.toPhased]
+  rw [seq_transition_P1_accept_move P1 P2 h1 hacc q (c.tape c.head)]
+  simp [Configuration.moveHead]
+
+/-!
+## Single-step simulation of `seq` in the P2 region
+
+Once the phase has crossed into P2's block (`≥ P1.numPhases`), each step follows P2's transition
+function on the shifted phase index `i.val - P1.numPhases` — phase (shifted up by `P1.numPhases`),
+local state, written bit, and head move.  Together with the P1-normal and handoff lemmas these give a
+complete single-step characterization of `seq P1 P2` across all three regions.
+-/
+
+omit [Inhabited S] in
+/-- One step in the P2 region advances the phase as P2's transition does (shifted up). -/
+theorem seq_stepConfig_P2_phase (P1 P2 : ConstStatePhasedProgram S) {L : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) L)
+    {i : Fin (seq P1 P2).numPhases} {q : S}
+    (h2 : P1.numPhases ≤ i.val) (hlt : i.val - P1.numPhases < P2.numPhases)
+    (hstate : c.state = ⟨i, q⟩) :
+    ((TM.stepConfig (M := (seq P1 P2).toPhased.toTM) c).state).fst.val
+      = P1.numPhases + (P2.transition ⟨i.val - P1.numPhases, hlt⟩ q (c.tape c.head)).fst.val := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp only [ConstStatePhasedProgram.toPhased]
+  rw [seq_transition_P2_phase P1 P2 h2 hlt q (c.tape c.head)]
+
+omit [Inhabited S] in
+/-- One step in the P2 region updates the local state as P2's transition does. -/
+theorem seq_stepConfig_P2_state (P1 P2 : ConstStatePhasedProgram S) {L : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) L)
+    {i : Fin (seq P1 P2).numPhases} {q : S}
+    (h2 : P1.numPhases ≤ i.val) (hlt : i.val - P1.numPhases < P2.numPhases)
+    (hstate : c.state = ⟨i, q⟩) :
+    ((TM.stepConfig (M := (seq P1 P2).toPhased.toTM) c).state).snd
+      = (P2.transition ⟨i.val - P1.numPhases, hlt⟩ q (c.tape c.head)).snd.fst := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp only [ConstStatePhasedProgram.toPhased]
+  rw [seq_transition_P2_state P1 P2 h2 hlt q (c.tape c.head)]
+
+omit [Inhabited S] in
+/-- One step in the P2 region writes the bit P2's transition would write. -/
+theorem seq_stepConfig_P2_tape (P1 P2 : ConstStatePhasedProgram S) {L : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) L)
+    {i : Fin (seq P1 P2).numPhases} {q : S}
+    (h2 : P1.numPhases ≤ i.val) (hlt : i.val - P1.numPhases < P2.numPhases)
+    (hstate : c.state = ⟨i, q⟩) :
+    (TM.stepConfig (M := (seq P1 P2).toPhased.toTM) c).tape
+      = c.write c.head (P2.transition ⟨i.val - P1.numPhases, hlt⟩ q (c.tape c.head)).snd.snd.fst := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp only [ConstStatePhasedProgram.toPhased]
+  rw [seq_transition_P2_bit P1 P2 h2 hlt q (c.tape c.head)]
+
+omit [Inhabited S] in
+/-- One step in the P2 region moves the head as P2's transition directs. -/
+theorem seq_stepConfig_P2_head (P1 P2 : ConstStatePhasedProgram S) {L : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) L)
+    {i : Fin (seq P1 P2).numPhases} {q : S}
+    (h2 : P1.numPhases ≤ i.val) (hlt : i.val - P1.numPhases < P2.numPhases)
+    (hstate : c.state = ⟨i, q⟩) :
+    (TM.stepConfig (M := (seq P1 P2).toPhased.toTM) c).head
+      = c.moveHead (P2.transition ⟨i.val - P1.numPhases, hlt⟩ q (c.tape c.head)).snd.snd.snd := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp only [ConstStatePhasedProgram.toPhased]
+  rw [seq_transition_P2_move P1 P2 h2 hlt q (c.tape c.head)]
+
 end ConstStatePhasedProgram
 end TM
 end PsubsetPpoly

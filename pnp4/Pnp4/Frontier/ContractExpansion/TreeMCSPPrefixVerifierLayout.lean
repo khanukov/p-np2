@@ -111,6 +111,41 @@ theorem verifierTape_right {n m : Nat} (M : Pnp3.Internal.PsubsetPpoly.TM)
         (Pnp3.ComplexityInterfaces.concatBitstring x w) hj2]
   exact concatBitstring_right x w ⟨(j : Nat), hj2⟩ hj1
 
+/-!
+### Query field offsets
+
+The canonical query block (length `treeMCSPPrefixM codec n`) is laid out as
+`tag ++ gamma(n) ++ x ++ idx ++ (prefix ++ pad)`.  These offsets name the start of each field, so a
+parse-phase program can seek to the right tape position.  They partition the query block exactly
+(`queryPrefixOffset + witnessBits = treeMCSPPrefixM`).
+-/
+
+/-- Start of the truth-table (`x`) field: after the tag and the Elias-gamma block for `n`. -/
+def queryXOffset (n : Nat) : Nat := tagLen + gammaLen n
+
+/-- Start of the prefix-length index field: after `x`. -/
+def queryIdxOffset (n : Nat) : Nat :=
+  queryXOffset n + Pnp3.Models.Partial.tableLen n
+
+/-- Start of the witness-prefix field: after the index. -/
+def queryPrefixOffset {threshold : Nat → Nat} (codec : TreeCircuitWitnessCodec threshold)
+    (n : Nat) : Nat :=
+  queryIdxOffset n + idxWidth codec.witnessBits n
+
+/-- The witness-prefix field runs to the end of the query block. -/
+theorem queryPrefixOffset_add_witnessBits
+    {threshold : Nat → Nat} (codec : TreeCircuitWitnessCodec threshold) (n : Nat) :
+    queryPrefixOffset codec n + codec.witnessBits n = treeMCSPPrefixM codec n := by
+  unfold queryPrefixOffset queryIdxOffset queryXOffset treeMCSPPrefixM
+  omega
+
+/-- Every query-field offset lies within the query block. -/
+theorem queryPrefixOffset_le
+    {threshold : Nat → Nat} (codec : TreeCircuitWitnessCodec threshold) (n : Nat) :
+    queryPrefixOffset codec n ≤ treeMCSPPrefixM codec n := by
+  have := queryPrefixOffset_add_witnessBits codec n
+  omega
+
 end ContractExpansion
 end Frontier
 end Pnp4

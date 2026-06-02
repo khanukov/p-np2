@@ -401,3 +401,5 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.concatBitstring_right
 #print axioms Pnp4.Frontier.ContractExpansion.verifierTape_left
 #print axioms Pnp4.Frontier.ContractExpansion.verifierTape_right
+#print axioms Pnp4.Frontier.ContractExpansion.queryPrefixOffset_add_witnessBits
+#print axioms Pnp4.Frontier.ContractExpansion.queryPrefixOffset_le

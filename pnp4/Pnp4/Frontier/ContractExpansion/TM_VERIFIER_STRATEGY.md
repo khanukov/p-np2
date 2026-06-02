@@ -145,6 +145,40 @@ have different `runTime`, hence different `tapeLength`, hence different `Configu
 *own* intrinsic invariant on the composed TM, consuming the single-step lemmas region-by-region (the
 tag-check's `runConfig_scan`/`accepts_eq_tagMatch` is the worked template).
 
+### 6b. Gamma-scan TM — design analysis (next-session entry point)
+
+The gamma field at `[tagLen, tagLen + gammaLen n)` is `0^z 1 b₁…b_z` with `z = bitLength(n+1) − 1`
+and `gammaLen n = 2z + 1`; the suffix `1 b₁…b_z` is the `(z+1)`-bit big-endian of `n+1`.  The *pure*
+decode is fully proven (`decodeGamma_gammaBit`, fuel-sufficient `decodeGammaAux_gammaBit_from_at`,
+`gammaBit_zero_prefix`/`_terminator`/`_payload_eq_natBitBE`); the open work is realizing it on the TM.
+
+**Preconditions now in place** (this session): `gammaLen_le_treeMCSPPrefixM`
+(`tagLen + gammaLen n ≤ N`, so the scan stays in the query), `queryXOffset_le`/`queryIdxOffset_le`,
+and `instanceSize_lt_treeMCSPPrefixM` (`n < N`, with `2^n ≤ N` ⇒ **`n` logarithmic in `N`**, so a
+candidate `n` and a `bitLength N`-bit counter fit in the input).  Loop primitive (`repeatProgram`),
+proven counter (`incrementProgram_correct`), and composition single-step layer (§6a) all ready.
+
+**Core difficulty.**  The model is *single-tape, binary alphabet* (no marker symbols).  The balanced
+`0^z 1 · payload(z)` structure makes the field end (`tagLen + 2z + 1`) depend on the data-dependent
+`z`, and locating it/reading the `z`-bit payload needs counting with data-dependent head travel —
+the one genuinely awkward point (cf. recognizing `0ⁿ1ⁿ` on one tape).
+
+**Two candidate realizations** (decide and prove one next session; do *not* commit a program before
+the design is settled — a wrong artifact is worse than an honest pause):
+
+1. **Candidate-search** over `m ∈ [0, N)` (loop bound `N` via `repeatProgram`, justified by
+   `instanceSize_lt`): a scratch counter holds the candidate `m` (incremented per iteration by the
+   proven `incrementProgram`); the body tests whether the gamma block equals `gammaBit m` for all
+   `gammaLen m` cells, recording the first match.  *Pro:* each per-candidate comparison is against a
+   counter-known value; *con:* computing `gammaBit m` on tape from the counter is itself a sub-build.
+2. **Head-carried scan + counter:** scan the unary zeros keeping the head at the scan position (so
+   `z = head − tagLen` is *implicit* in the head); a scratch counter mirrors `z`; then read the
+   `z`-bit payload.  *Pro:* direct; *con:* the payload read and field-end location need
+   data-dependent seeks between scan and counter regions.
+
+Either path is multi-brick (program + `timeBound` + `neverMovesLeft` + single-step + scan invariant +
+correctness against `decodeGamma?`), mirroring the tag-check's ~10-lemma build but harder.
+
 ## 7. Runtime accounting
 
 With `threshold n = thresholdPoly k n = n^k + k`, `witnessBits n = (bitLength n + 4) · threshold n`,

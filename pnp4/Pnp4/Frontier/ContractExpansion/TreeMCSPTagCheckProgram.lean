@@ -103,6 +103,40 @@ theorem tagCheckProgram_stepConfig_tape {L : Nat}
   · subst hj; simp [Configuration.write]
   · simp [Configuration.write, hj]
 
+/--
+Scan invariant: after `k ≤ tagLen` steps of the tag-check TM from the initial configuration, the
+control phase index and the head are both at position `k`, and the tape is unchanged.  Proved by
+induction on `k`, applying the single-step phase/head/tape lemmas (with `i`/`s` taken as the state
+projections and `hstate := rfl` by Sigma-eta).
+-/
+theorem tagCheckProgram_runConfig_scan {L : Nat} (x : Boolcube.Point L) :
+    ∀ k : Nat, k ≤ tagLen →
+      (((TM.runConfig (M := tagCheckProgram.toPhased.toTM)
+          (tagCheckProgram.toPhased.toTM.initialConfig x) k).state).fst : Nat) = k
+      ∧ ((TM.runConfig (M := tagCheckProgram.toPhased.toTM)
+          (tagCheckProgram.toPhased.toTM.initialConfig x) k).head : Nat) = k
+      ∧ (TM.runConfig (M := tagCheckProgram.toPhased.toTM)
+          (tagCheckProgram.toPhased.toTM.initialConfig x) k).tape
+          = (tagCheckProgram.toPhased.toTM.initialConfig x).tape := by
+  intro k
+  induction k with
+  | zero => intro _; exact ⟨rfl, rfl, rfl⟩
+  | succ k ih =>
+      intro hk
+      obtain ⟨hph, hhd, htp⟩ := ih (by omega)
+      have hi : (((TM.runConfig (M := tagCheckProgram.toPhased.toTM)
+          (tagCheckProgram.toPhased.toTM.initialConfig x) k).state).fst : Nat) < tagLen := by
+        rw [hph]; omega
+      have hbnd : ((TM.runConfig (M := tagCheckProgram.toPhased.toTM)
+          (tagCheckProgram.toPhased.toTM.initialConfig x) k).head : Nat) + 1
+          < tagCheckProgram.toPhased.toTM.tapeLength L := by
+        rw [hhd]; show k + 1 < L + tagLen + 1; omega
+      rw [TM.runConfig_succ]
+      refine ⟨?_, ?_, ?_⟩
+      · rw [tagCheckProgram_stepConfig_phase _ hi rfl, hph]
+      · rw [tagCheckProgram_stepConfig_head _ hi rfl hbnd, hhd]
+      · rw [tagCheckProgram_stepConfig_tape _ hi rfl, htp]
+
 end ContractExpansion
 end Frontier
 end Pnp4

@@ -68,6 +68,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout
 import Pnp4.Frontier.ContractExpansion.BoundedLoopProgram
 import Pnp4.Frontier.ContractExpansion.PhasedProgramAccepts
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaScanProgram
 
 namespace Pnp4
 namespace Tests
@@ -3683,6 +3684,11 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_accepts_eq_tagMatch
 #check @Pnp4.Frontier.ContractExpansion.tagMatchPrefix_eq_true_iff
 #check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_accepts_iff
+-- Gamma-decode phase, first brick: count-zeros scan program (locate the unary terminator).
+#check @Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram
+#check @Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_timeBound
+#check @Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_transition_move
+#check @Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_neverMovesLeft
 
 end Tests
 end Pnp4

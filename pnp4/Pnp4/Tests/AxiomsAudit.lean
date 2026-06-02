@@ -58,6 +58,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout
 import Pnp4.Frontier.ContractExpansion.BoundedLoopProgram
 import Pnp4.Frontier.ContractExpansion.PhasedProgramAccepts
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaScanProgram
 
 namespace Pnp4
 namespace Tests
@@ -457,3 +458,6 @@ end Pnp4
 -- Prop characterization (tagMatchPrefix_eq_true_iff Classical-free; accepts_iff inherits TM triple).
 #print axioms Pnp4.Frontier.ContractExpansion.tagMatchPrefix_eq_true_iff
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_accepts_iff
+-- Gamma-decode phase, first brick: count-zeros scan structural lemmas; structural TM reasoning.
+#print axioms Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_transition_move
+#print axioms Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_neverMovesLeft

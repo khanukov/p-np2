@@ -343,6 +343,32 @@ The control infrastructure is done; the next coding is the per-instance body dis
 data-dependent bodies (the writing-body tape generalisation of the combinator is the smallest next
 brick, then a concrete body).
 
+### 6d. Concrete gamma-payload-read pipeline (settled this session, grounded in the built primitives)
+
+The data-dependent core's first item — recover `n` from the gamma field — now has a *concrete*
+algorithm (not just §6b's candidates), built on the verified primitives:
+
+* **Layout.** After `gammaSelfLoopScan` the head rests on the terminator `p_term = tagLen + z`; the `z`
+  leading zeros occupy `[tagLen, p_term)` and the `z` payload bits `[p_term+1, p_term+1+z)`, with
+  `n + 1 = 2^z + payload` (big-endian).  `tagLen` is a **constant** (so position `tagLen` is markable by
+  a fixed-phase counter), and `gammaLen_le_treeMCSPPrefixM` keeps the whole field in-bounds.
+* **Two-pointer read (`O(z²)`, polynomial since `z = Θ(log L)`).** The `z` leading zeros are themselves
+  a unary count of `z` — use them as the loop counter.  Loop body (driven by `repeatBody`, one pass per
+  leading zero): from the left pointer (a leading zero), scan **right** (`gammaSelfLoopScan`-style) to
+  the next unread payload bit, read it, shift-accumulate it into an `n`-register in scratch
+  `[L, tapeLength)` (the increment/decrement counters do the `×2 + bit`), then scan **left**
+  (`selfLoopScanLeft`) back to the next leading zero (consumed via `selfLoopCountdownLeft`).  Head travel
+  per pass is `O(z)`, total `O(z²)` — well within `poly(L)`.  This is the **writing body** that motivates
+  the combinator's tape-clause generalisation (the body writes the `n`-register; it preserves the
+  leading-zero counter region).
+* **Downstream pipeline** (each a later brick): `n → 2^n` row counter by a **doubling loop** (`n`
+  passes, each doubles a unary block in scratch — `O(2^n) = O(L)` total), then the **row loop**
+  (`repeatBody` over the `2^n` counter) whose *body* is the upstream-blocked single-row circuit eval.
+
+**First concrete brick:** the combinator's writing-body tape generalisation (now well-specified by the
+read body above — the body preserves cells `≤ head`, i.e. the counter region, and writes only the
+scratch `n`-register), then the shift-accumulate read body + its per-instance hypothesis discharge.
+
 ## 7. Runtime accounting
 
 With `threshold n = thresholdPoly k n = n^k + k`, `witnessBits n = (bitLength n + 4) · threshold n`,

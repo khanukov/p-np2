@@ -474,3 +474,4 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_stepConfig_scan_zero_phase
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_stepConfig_scan_zero_head
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_stepConfig_scan_zero_tape
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_runConfig_scanning

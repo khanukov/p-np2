@@ -336,6 +336,47 @@ theorem gammaSelfLoopScan_stepConfig_scan_zero_tape {L : Nat}
   · subst hj; simp [Configuration.write, hbit]
   · simp [Configuration.write, hj]
 
+/-- Self-loop scanning invariant (the back-edge loop's correctness): if the first `k` cells are all
+`0`, then after `k ≤ L` steps from the initial configuration the machine is still in the scan phase
+`0` with the head advanced to `k` and the tape unchanged.  Proved by induction using the back-edge
+single-step lemmas; the phase is held **constant** at `0` across the loop (the self-loop re-entry),
+in contrast to the straight-line `maxIters` version where the phase counts up.  This is the
+`M`-compatible analogue of `gammaZeroScanProgram_runConfig_scanning`. -/
+theorem gammaSelfLoopScan_runConfig_scanning {L : Nat} (x : Boolcube.Point L) :
+    ∀ k : Nat, k ≤ L →
+      (∀ p : Fin (gammaSelfLoopScan.toPhased.toTM.tapeLength L),
+        (p : Nat) < k →
+        (gammaSelfLoopScan.toPhased.toTM.initialConfig x).tape p = false) →
+      (((TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM)
+          (gammaSelfLoopScan.toPhased.toTM.initialConfig x) k).state).fst : Nat) = 0
+      ∧ ((TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM)
+          (gammaSelfLoopScan.toPhased.toTM.initialConfig x) k).head : Nat) = k
+      ∧ (TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM)
+          (gammaSelfLoopScan.toPhased.toTM.initialConfig x) k).tape
+          = (gammaSelfLoopScan.toPhased.toTM.initialConfig x).tape := by
+  intro k
+  induction k with
+  | zero => intro _ _; exact ⟨rfl, rfl, rfl⟩
+  | succ k ih =>
+      intro hk h0
+      obtain ⟨hph, hhd, htp⟩ := ih (by omega) (fun p hp => h0 p (by omega))
+      rw [TM.runConfig_succ]
+      set c := TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM)
+        (gammaSelfLoopScan.toPhased.toTM.initialConfig x) k with hc
+      have hbit : c.tape c.head = false := by
+        rw [htp]; exact h0 c.head (by rw [hhd]; omega)
+      have hbnd : (c.head : Nat) + 1 < gammaSelfLoopScan.toPhased.toTM.tapeLength L := by
+        rw [hhd]; show k + 1 < L + L + 1; omega
+      refine ⟨?_, ?_, ?_⟩
+      · exact gammaSelfLoopScan_stepConfig_scan_zero_phase c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit
+      · rw [gammaSelfLoopScan_stepConfig_scan_zero_head c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+        simp only [Configuration.moveHead, dif_pos hbnd]
+        omega
+      · rw [gammaSelfLoopScan_stepConfig_scan_zero_tape c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit, htp]
+
 end ContractExpansion
 end Frontier
 end Pnp4

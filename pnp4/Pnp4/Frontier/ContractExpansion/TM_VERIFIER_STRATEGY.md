@@ -104,25 +104,24 @@ a non-accept sink phase that idles):
 Step 6's per-row work reuses `GateWrappers` (one gate program per circuit gate, chained by `seqList`);
 the row loop and the gamma scan are the parts the current toolkit does **not** yet support.
 
-## 6. Critical-path missing infrastructure: a bounded loop
+## 6. Bounded-loop primitive — **BUILT** (`BoundedLoopProgram.lean`)
 
-`seq`/`seqList` are **straight-line** (no back-edges) and `numPhases` is a literal `Nat`; there is no
-way to iterate a block `2^n` times for symbolic `n` by unrolling. The missing primitive is a
+`seq`/`seqList` are straight-line (no back-edges) and `numPhases` is a literal `Nat`.  The key
+realization (vs. the original plan, which assumed a hard back-edge construct was required): a loop
+over a **symbolic** count `k` (e.g. `k = 2^n`) needs **no** back-edge — `seqList (List.replicate k body)`
+is a well-typed `ConstStatePhasedProgram` for any `k`, and the toolkit's existing `seqList`
+recurrences already give its time and run behaviour.  Built as:
 
-```
-boundedLoopProgram (body : ConstStatePhasedProgram S) (control : …) : ConstStatePhasedProgram S
-```
+* `ConstStatePhasedProgram.repeatProgram body k := seqList (List.replicate k body)`;
+* `repeatProgram_timeBound : (repeatProgram body k).timeBound n = k * body.timeBound n + k`
+  — polynomial-composable: with `k = 2^n` and `body.timeBound n = poly(n)`, the loop costs
+  `poly(2^n) = poly(L)`;
+* `repeatProgram_succ` (one peel, `rfl`) and `repeatProgram_run_succ` (per-iteration run
+  decomposition, inherited from `seqList_run_decomp`) — the inductive backbone for the loop invariant.
 
-whose `transition` has a **back-edge**: a control phase that, based on a counter/done flag, either
-re-enters `body.startPhase` or exits to the accept phase. Required deliverables for it:
-
-* a `runConfig` invariant: after the loop, the configuration equals `body` applied `K` times, for the
-  intended iteration count `K` (proved by induction on `K`);
-* a `timeBound`: `K · (body.timeBound + control) + overhead`. **`K` may be `2^n`** (exponential in `n`,
-  polynomial in the input length `L = Θ(2^n)`), which is acceptable for `runTime`.
-
-This single primitive gates steps 2, 5, and 6. It is the largest new piece and should be built and
-verified **first**, in isolation.
+So step 6's `2^n`-row evaluation loop is expressible with existing infrastructure.  What remains for
+the loop is a *concrete* invariant proved against the specific row-evaluation body, applying
+`repeatProgram_run_succ` peel-by-peel together with the tape-position lemmas of §4–5.
 
 ## 7. Runtime accounting
 

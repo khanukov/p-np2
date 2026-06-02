@@ -61,6 +61,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckUnit
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaScanProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBidirHeadBounds
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSelfLoopCounter
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition
@@ -495,6 +496,8 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_runConfig_terminator
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seqP2_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seqP2_runConfig_terminator
+#print axioms Pnp4.Frontier.ContractExpansion.runConfig_head_val_ge
+#print axioms Pnp4.Frontier.ContractExpansion.runConfig_head_dist_le
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_locates_gamma_terminator
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_runConfig_done
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_run_locates_terminator

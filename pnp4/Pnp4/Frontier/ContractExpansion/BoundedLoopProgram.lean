@@ -47,6 +47,17 @@ theorem repeatProgram_timeBound (body : ConstStatePhasedProgram S) (k n : Nat) :
         Nat.succ_mul k (body.timeBound n)
       omega
 
+/-- Uniform polynomial bound for the bounded loop: if the body runs within `B` steps, `k` iterations
+run within `k * (B + 1)` steps.  This is the row loop's runtime-accounting shape — with `k = 2 ^ n`
+and `B = poly n` it gives `2 ^ n * (poly n + 1) = poly L`, the form the eventual `runTime_poly`
+obligation is discharged against. -/
+theorem repeatProgram_timeBound_le (body : ConstStatePhasedProgram S) (k n B : Nat)
+    (hB : body.timeBound n ≤ B) :
+    (repeatProgram body k).timeBound n ≤ k * (B + 1) := by
+  have hmul : k * body.timeBound n ≤ k * B := Nat.mul_le_mul (Nat.le_refl k) hB
+  rw [repeatProgram_timeBound, Nat.mul_succ]
+  omega
+
 /--
 Per-iteration run decomposition: running `repeatProgram body (k+1)` for its full `timeBound`
 equals running the body once (its own `timeBound` steps) and then running the remaining `k` copies

@@ -409,6 +409,7 @@ end Pnp4
 
 -- Bounded-loop primitive (NP-verifier track); Classical-free arithmetic/structural.
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.repeatProgram_timeBound
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.repeatProgram_timeBound_le
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.repeatProgram_run_succ
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.repeatProgram_run_zero
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seqList_timeBound_sum

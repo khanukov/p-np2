@@ -54,6 +54,7 @@ import Pnp4.Frontier.ContractExpansion.ConsolidatedTreeSeparation
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSemanticVerifier
+import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout
 
 namespace Pnp4
 namespace Tests
@@ -392,3 +393,7 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.extractWitness_eq
 #print axioms Pnp4.Frontier.ContractExpansion.treePrefixSemanticAccepts_rejects_malformed
 #print axioms Pnp4.Frontier.ContractExpansion.treePrefixSemanticAccepts_correct
+
+-- Verifier input-tape layout (NP-verifier track, Phase 6); Classical-free.
+#print axioms Pnp4.Frontier.ContractExpansion.prefixVerifierInputLen_eq
+#print axioms Pnp4.Frontier.ContractExpansion.prefixVerifierWitnessRegion_within_input

@@ -64,6 +64,7 @@ import Pnp4.Frontier.ContractExpansion.ConsolidatedTreeSeparation
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSemanticVerifier
+import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout
 
 namespace Pnp4
 namespace Tests
@@ -3609,6 +3610,12 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.prefixAgreesBool
 #check @Pnp4.Frontier.ContractExpansion.verifiesBool
 #check @Pnp4.Frontier.ContractExpansion.extractWitness?
+
+-- Verifier input-tape layout (NP-verifier track, Phase 6).
+#check @Pnp4.Frontier.ContractExpansion.prefixVerifierInputLen
+#check @Pnp4.Frontier.ContractExpansion.prefixVerifierInputLen_eq
+#check @Pnp4.Frontier.ContractExpansion.prefixVerifierCertStart
+#check @Pnp4.Frontier.ContractExpansion.prefixVerifierWitnessRegion_within_input
 
 end Tests
 end Pnp4

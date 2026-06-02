@@ -132,6 +132,63 @@ theorem selfLoopIncrement_stepConfig_stop_tape {L : Nat}
   simp only [PhasedProgram.toTM_step]
   simp [ConstStatePhasedProgram.toPhased, selfLoopIncrement, hi, hbit]
 
+/-- Carry-ripple invariant (structural backbone of the increment): if the first `k` counter cells are
+all `1`, then after `k ≤ L` steps from the initial configuration the carry is still propagating —
+phase `0`, head at `k`, and the tape has exactly cells `[0, k)` flipped to `0` (the rest unchanged).
+Proved by induction with the carry single-step lemmas; the back-edge fires because every read so far
+was a `1`.  This tracks the *evolving* tape (unlike the tape-preserving gamma scan), and is the step
+toward the `counterValue + 1` correctness. -/
+theorem selfLoopIncrement_runConfig_carry {L : Nat} (x : Boolcube.Point L) :
+    ∀ k : Nat, k ≤ L →
+      (∀ p : Fin (selfLoopIncrement.toPhased.toTM.tapeLength L),
+        (p : Nat) < k →
+        (selfLoopIncrement.toPhased.toTM.initialConfig x).tape p = true) →
+      (((TM.runConfig (M := selfLoopIncrement.toPhased.toTM)
+          (selfLoopIncrement.toPhased.toTM.initialConfig x) k).state).fst : Nat) = 0
+      ∧ ((TM.runConfig (M := selfLoopIncrement.toPhased.toTM)
+          (selfLoopIncrement.toPhased.toTM.initialConfig x) k).head : Nat) = k
+      ∧ ∀ p : Fin (selfLoopIncrement.toPhased.toTM.tapeLength L),
+          (TM.runConfig (M := selfLoopIncrement.toPhased.toTM)
+            (selfLoopIncrement.toPhased.toTM.initialConfig x) k).tape p
+            = (if (p : Nat) < k then false
+                else (selfLoopIncrement.toPhased.toTM.initialConfig x).tape p) := by
+  intro k
+  induction k with
+  | zero =>
+      intro _ _
+      refine ⟨rfl, rfl, ?_⟩
+      intro p; simp
+  | succ k ih =>
+      intro hk h1
+      obtain ⟨hph, hhd, htp⟩ := ih (by omega) (fun p hp => h1 p (by omega))
+      rw [TM.runConfig_succ]
+      set c := TM.runConfig (M := selfLoopIncrement.toPhased.toTM)
+        (selfLoopIncrement.toPhased.toTM.initialConfig x) k with hc
+      have hbnd : (c.head : Nat) + 1 < selfLoopIncrement.toPhased.toTM.tapeLength L := by
+        rw [hhd]; show k + 1 < L + L + 1; omega
+      have hbit : c.tape c.head = true := by
+        rw [htp]
+        have hlt : ¬ (c.head : Nat) < k := by rw [hhd]; omega
+        rw [if_neg hlt]
+        exact h1 c.head (by rw [hhd]; omega)
+      refine ⟨?_, ?_, ?_⟩
+      · exact selfLoopIncrement_stepConfig_carry_phase c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit
+      · rw [selfLoopIncrement_stepConfig_carry_head c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+        simp only [Configuration.moveHead, dif_pos hbnd]
+        omega
+      · rw [selfLoopIncrement_stepConfig_carry_tape c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+        intro p
+        by_cases hp : p = c.head
+        · subst hp
+          rw [Configuration.write_self,
+            if_pos (show (c.head : Nat) < k + 1 by rw [hhd]; omega)]
+        · rw [Configuration.write_other c hp false, htp p]
+          have hpc : (p : Nat) ≠ k := fun h => hp (Fin.ext (by rw [hhd]; exact h))
+          split_ifs <;> first | rfl | (exfalso; omega)
+
 end ContractExpansion
 end Frontier
 end Pnp4

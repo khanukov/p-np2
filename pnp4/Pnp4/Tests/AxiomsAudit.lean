@@ -485,3 +485,4 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_neverMovesLeft
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_stepConfig_carry_tape
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_stepConfig_stop_tape
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_runConfig_carry

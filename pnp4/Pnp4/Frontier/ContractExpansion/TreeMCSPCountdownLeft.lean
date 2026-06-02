@@ -311,6 +311,62 @@ theorem selfLoopCountdownLeft_seqP2_runConfig_consume (P1 : ConstStatePhasedProg
           rw [hhd] at hpc
           split_ifs <;> first | rfl | (exfalso; omega)
 
+/-- Stop step as a non-first phase (bit `0`): the counter is empty — jump to the shifted done phase
+`P1.numPhases + 1`. -/
+theorem selfLoopCountdownLeft_seqP2_stepConfig_stop_phase (P1 : ConstStatePhasedProgram Unit)
+    {L : Nat} (c : Configuration (M := (seq P1 selfLoopCountdownLeft).toPhased.toTM) L)
+    {i : Fin (seq P1 selfLoopCountdownLeft).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = false) :
+    ((TM.stepConfig (M := (seq P1 selfLoopCountdownLeft).toPhased.toTM) c).state).fst.val
+      = P1.numPhases + 1 := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_phase P1 selfLoopCountdownLeft c
+      (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+  simp [selfLoopCountdownLeft, hsub, hbit]
+
+/-- Stop step as a non-first phase (bit `0`): the head stays put. -/
+theorem selfLoopCountdownLeft_seqP2_stepConfig_stop_head (P1 : ConstStatePhasedProgram Unit)
+    {L : Nat} (c : Configuration (M := (seq P1 selfLoopCountdownLeft).toPhased.toTM) L)
+    {i : Fin (seq P1 selfLoopCountdownLeft).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = false) :
+    (TM.stepConfig (M := (seq P1 selfLoopCountdownLeft).toPhased.toTM) c).head = c.head := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_head P1 selfLoopCountdownLeft c
+      (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+  simp [selfLoopCountdownLeft, hsub, hbit, Configuration.moveHead]
+
+/-- Countdown-to-empty as a non-first phase, from an arbitrary start `c0` at phase `P1.numPhases`: a
+`j`-block of `1`s above a `0` at `c0.head − j` is consumed and the loop exits to the shifted done phase
+`P1.numPhases + 1` (head on the `0` boundary) after `j + 1` steps.  Completes the countdown's
+composition-API parity (seqP2 `consume` *and* `empty`), giving the loop combinator both the body-running
+and the exit-detecting halves on the composed machine. -/
+theorem selfLoopCountdownLeft_seqP2_runConfig_empty (P1 : ConstStatePhasedProgram Unit) {L : Nat}
+    (c0 : Configuration (M := (seq P1 selfLoopCountdownLeft).toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = P1.numPhases) (j : Nat) (hj : j ≤ (c0.head : Nat))
+    (hones : ∀ p : Fin ((seq P1 selfLoopCountdownLeft).toPhased.toTM.tapeLength L),
+      (c0.head : Nat) - j < (p : Nat) → (p : Nat) ≤ (c0.head : Nat) → c0.tape p = true)
+    (hzero : ∀ p : Fin ((seq P1 selfLoopCountdownLeft).toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) - j → c0.tape p = false) :
+    (((TM.runConfig (M := (seq P1 selfLoopCountdownLeft).toPhased.toTM) c0 (j + 1)).state).fst : Nat)
+        = P1.numPhases + 1
+      ∧ ((TM.runConfig (M := (seq P1 selfLoopCountdownLeft).toPhased.toTM) c0 (j + 1)).head : Nat)
+          = (c0.head : Nat) - j := by
+  obtain ⟨hph, hhd, htp⟩ := selfLoopCountdownLeft_seqP2_runConfig_consume P1 c0 hphase j hj hones
+  rw [TM.runConfig_succ]
+  set c := TM.runConfig (M := (seq P1 selfLoopCountdownLeft).toPhased.toTM) c0 j with hc
+  have hbit : c.tape c.head = false := by
+    rw [htp c.head]
+    have hlt : ¬ ((c0.head : Nat) - j < (c.head : Nat) ∧ (c.head : Nat) ≤ (c0.head : Nat)) := by
+      rw [hhd]; omega
+    rw [if_neg hlt]
+    exact hzero c.head hhd
+  refine ⟨?_, ?_⟩
+  · exact selfLoopCountdownLeft_seqP2_stepConfig_stop_phase P1 c
+      (i := c.state.fst) (s := c.state.snd) hph rfl hbit
+  · rw [selfLoopCountdownLeft_seqP2_stepConfig_stop_head P1 c
+      (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+    exact hhd
+
 end ContractExpansion
 end Frontier
 end Pnp4

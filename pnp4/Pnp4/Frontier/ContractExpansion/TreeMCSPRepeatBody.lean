@@ -223,6 +223,72 @@ theorem repeatBody_runConfig_one_iteration (B : ConstStatePhasedProgram Unit) {L
     · subst hj; simp [Configuration.write]
     · simp [Configuration.write, hj, hcd_tp']
 
+/-- Run-`K`-times correctness: with the intrinsic head/tape-preserving body hypothesis `hbody`, if a
+unary counter of `K` ticks sits at and to the left of the head (cells `(head − K, head]` all `1`, and
+`K ≤ head`), then after `K · (sB + 2)` steps the loop has run the body `K` times — control is back at
+`B`'s start phase, the head has retreated `K` cells, and those `K` ticks are cleared to `0` (rest of
+tape unchanged).  Proved by induction on `K`, peeling one iteration (`repeatBody_runConfig_one_iteration`)
+per step via `TM.runConfig_add`.  This is the combinator's headline behaviour — the bounded loop runs a
+data-dependent (`K`) number of iterations on a fixed machine. -/
+theorem repeatBody_runConfig_iterate (B : ConstStatePhasedProgram Unit) {L : Nat} (sB : Nat)
+    (hbody : ∀ d : Configuration (M := (repeatBody B).toPhased.toTM) L,
+      (d.state.fst : Nat) = B.startPhase.val →
+      ((TM.runConfig (M := (repeatBody B).toPhased.toTM) d sB).state.fst : Nat) = B.acceptPhase.val
+      ∧ (TM.runConfig (M := (repeatBody B).toPhased.toTM) d sB).head = d.head
+      ∧ (TM.runConfig (M := (repeatBody B).toPhased.toTM) d sB).tape = d.tape) :
+    ∀ K : Nat, ∀ c : Configuration (M := (repeatBody B).toPhased.toTM) L,
+      (c.state.fst : Nat) = B.startPhase.val → K ≤ (c.head : Nat) →
+      (∀ p : Fin ((repeatBody B).toPhased.toTM.tapeLength L),
+        (c.head : Nat) - K < (p : Nat) → (p : Nat) ≤ (c.head : Nat) → c.tape p = true) →
+      ((TM.runConfig (M := (repeatBody B).toPhased.toTM) c (K * (sB + 2))).state.fst : Nat)
+          = B.startPhase.val
+      ∧ ((TM.runConfig (M := (repeatBody B).toPhased.toTM) c (K * (sB + 2))).head : Nat)
+          = (c.head : Nat) - K
+      ∧ ∀ p : Fin ((repeatBody B).toPhased.toTM.tapeLength L),
+          (TM.runConfig (M := (repeatBody B).toPhased.toTM) c (K * (sB + 2))).tape p
+            = (if (c.head : Nat) - K < (p : Nat) ∧ (p : Nat) ≤ (c.head : Nat)
+                then false else c.tape p) := by
+  intro K
+  induction K with
+  | zero =>
+      intro c hstart _ _
+      rw [Nat.zero_mul]
+      have hrc : TM.runConfig (M := (repeatBody B).toPhased.toTM) c 0 = c := rfl
+      rw [hrc]
+      refine ⟨hstart, by omega, ?_⟩
+      intro p
+      rw [if_neg (show ¬ ((c.head : Nat) - 0 < (p : Nat) ∧ (p : Nat) ≤ (c.head : Nat)) by omega)]
+  | succ K ih =>
+      intro c hstart hK hones
+      have hcell : c.tape c.head = true := hones c.head (by omega) (le_refl _)
+      have hpos : (c.head : Nat) ≠ 0 := by omega
+      obtain ⟨h1ph, h1hd, h1tp⟩ := repeatBody_runConfig_one_iteration B sB hbody c hstart hcell hpos
+      set c' := TM.runConfig (M := (repeatBody B).toPhased.toTM) c (sB + 2) with hc'
+      have hc'K : K ≤ (c'.head : Nat) := by rw [h1hd]; omega
+      have hc'ones : ∀ p : Fin ((repeatBody B).toPhased.toTM.tapeLength L),
+          (c'.head : Nat) - K < (p : Nat) → (p : Nat) ≤ (c'.head : Nat) → c'.tape p = true := by
+        intro p hp1 hp2
+        rw [h1hd] at hp1 hp2
+        have hpne : p ≠ c.head := Fin.ne_of_val_ne (by omega)
+        rw [h1tp, Configuration.write_other c hpne false]
+        exact hones p (by omega) (by omega)
+      obtain ⟨hIph, hIhd, hItp⟩ := ih c' h1ph hc'K hc'ones
+      have hsplit : (K + 1) * (sB + 2) = (sB + 2) + K * (sB + 2) := by rw [Nat.succ_mul]; omega
+      rw [hsplit, TM.runConfig_add, ← hc']
+      refine ⟨hIph, ?_, ?_⟩
+      · rw [hIhd, h1hd]; omega
+      · intro p
+        rw [hItp p, h1hd]
+        by_cases hpc : (p : Nat) = (c.head : Nat)
+        · have hpfin : p = c.head := Fin.ext hpc
+          subst hpfin
+          rw [if_neg (by omega), h1tp, Configuration.write_self, if_pos (by omega)]
+        · have hpfin : p ≠ c.head := Fin.ne_of_val_ne hpc
+          rw [h1tp, Configuration.write_other c hpfin false]
+          by_cases hcond : (c.head : Nat) - 1 - K < (p : Nat) ∧ (p : Nat) ≤ (c.head : Nat) - 1
+          · rw [if_pos hcond, if_pos (by omega)]
+          · rw [if_neg hcond, if_neg (by omega)]
+
 end ContractExpansion
 end Frontier
 end Pnp4

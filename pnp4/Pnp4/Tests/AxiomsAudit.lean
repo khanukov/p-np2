@@ -507,6 +507,7 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.repeatBody_stepConfig_halt_phase
 #print axioms Pnp4.Frontier.ContractExpansion.repeatBody_stepConfig_handoff_phase
 #print axioms Pnp4.Frontier.ContractExpansion.repeatBody_runConfig_one_iteration
+#print axioms Pnp4.Frontier.ContractExpansion.repeatBody_runConfig_iterate
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seqP2_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seqP2_runConfig_terminator
 #print axioms Pnp4.Frontier.ContractExpansion.runConfig_head_val_ge

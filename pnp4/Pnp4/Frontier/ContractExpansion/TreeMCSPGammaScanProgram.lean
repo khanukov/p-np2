@@ -128,6 +128,51 @@ theorem gammaZeroScanProgram_stepConfig_head {L maxIters : Nat}
   simp only [PhasedProgram.toTM_step]
   simp only [ConstStatePhasedProgram.toPhased, gammaZeroScanProgram, dif_pos hi]
 
+/-- Scanning-regime invariant: if the first `k` cells are all `0`, then after `k ≤ maxIters` steps
+from the initial configuration the scan is still in progress — the phase and head are both at `k`,
+the "still scanning" flag is `true`, and the tape is unchanged.  Proved by induction on `k` using the
+single-step lemmas; the conditional head advance fires because every scanned bit is `0`.  (This is the
+analogue of `tagCheckProgram_runConfig_scan`; the next brick handles reaching the terminator.) -/
+theorem gammaZeroScanProgram_runConfig_scanning {L maxIters : Nat} (x : Boolcube.Point L) :
+    ∀ k : Nat, k ≤ maxIters →
+      (∀ p : Fin ((gammaZeroScanProgram maxIters).toPhased.toTM.tapeLength L),
+        (p : Nat) < k →
+        ((gammaZeroScanProgram maxIters).toPhased.toTM.initialConfig x).tape p = false) →
+      (((TM.runConfig (M := (gammaZeroScanProgram maxIters).toPhased.toTM)
+          ((gammaZeroScanProgram maxIters).toPhased.toTM.initialConfig x) k).state).fst : Nat) = k
+      ∧ ((TM.runConfig (M := (gammaZeroScanProgram maxIters).toPhased.toTM)
+          ((gammaZeroScanProgram maxIters).toPhased.toTM.initialConfig x) k).state).snd = true
+      ∧ ((TM.runConfig (M := (gammaZeroScanProgram maxIters).toPhased.toTM)
+          ((gammaZeroScanProgram maxIters).toPhased.toTM.initialConfig x) k).head : Nat) = k
+      ∧ (TM.runConfig (M := (gammaZeroScanProgram maxIters).toPhased.toTM)
+          ((gammaZeroScanProgram maxIters).toPhased.toTM.initialConfig x) k).tape
+          = ((gammaZeroScanProgram maxIters).toPhased.toTM.initialConfig x).tape := by
+  intro k
+  induction k with
+  | zero => intro _ _; exact ⟨rfl, rfl, rfl, rfl⟩
+  | succ k ih =>
+      intro hk h0
+      obtain ⟨hph, hsnd, hhd, htp⟩ := ih (by omega) (fun p hp => h0 p (by omega))
+      rw [TM.runConfig_succ]
+      set c := TM.runConfig (M := (gammaZeroScanProgram maxIters).toPhased.toTM)
+        ((gammaZeroScanProgram maxIters).toPhased.toTM.initialConfig x) k with hc
+      have hi : (c.state.fst : Nat) < maxIters := by rw [hph]; omega
+      have hread : c.tape c.head = false := by
+        rw [htp]; exact h0 c.head (by rw [hhd]; omega)
+      have hcond : (c.state.snd && !(c.tape c.head)) = true := by simp [hsnd, hread]
+      have hbnd : (c.head : Nat) + 1
+          < (gammaZeroScanProgram maxIters).toPhased.toTM.tapeLength L := by
+        rw [hhd]; show k + 1 < L + maxIters + 1; omega
+      refine ⟨?_, ?_, ?_, ?_⟩
+      · rw [gammaZeroScanProgram_stepConfig_phase c (i := c.state.fst) (s := c.state.snd) hi rfl, hph]
+      · rw [gammaZeroScanProgram_stepConfig_state c (i := c.state.fst) (s := c.state.snd) hi rfl]
+        exact hcond
+      · rw [gammaZeroScanProgram_stepConfig_head c (i := c.state.fst) (s := c.state.snd) hi rfl,
+          hcond]
+        simp only [cond_true, Configuration.moveHead, dif_pos hbnd]
+        omega
+      · rw [gammaZeroScanProgram_stepConfig_tape c (i := c.state.fst) (s := c.state.snd) hi rfl, htp]
+
 end ContractExpansion
 end Frontier
 end Pnp4

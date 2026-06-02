@@ -72,6 +72,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckUnit
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaScanProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCountdownLeft
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRepeatBody
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBidirHeadBounds
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSelfLoopCounter
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterComposition
@@ -3742,6 +3743,11 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_runConfig_empty
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_seqP2_runConfig_consume
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_seqP2_runConfig_empty
+-- Bounded body-reentry loop combinator: the back-edge control structure (loop-control single-steps).
+#check @Pnp4.Frontier.ContractExpansion.repeatBody
+#check @Pnp4.Frontier.ContractExpansion.repeatBody_stepConfig_consume_phase
+#check @Pnp4.Frontier.ContractExpansion.repeatBody_stepConfig_halt_phase
+#check @Pnp4.Frontier.ContractExpansion.repeatBody_stepConfig_handoff_phase
 -- Two-sided head-displacement bound (bidirectional accounting foundation).
 #check @Pnp4.Frontier.ContractExpansion.runConfig_head_val_ge
 #check @Pnp4.Frontier.ContractExpansion.runConfig_head_dist_le

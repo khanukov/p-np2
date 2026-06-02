@@ -422,3 +422,11 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_stepConfig_state
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_runConfig_scan
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_accepts_eq_state
+-- Tag-check semantic characterization (NP-verifier track).  The pure bit/spec lemmas are
+-- Classical-free ([propext]); the TM-execution lemmas carry the standard [propext, Classical.choice,
+-- Quot.sound] of the rest of the tag-check TM layer (no new axioms beyond the toolkit's).
+#print axioms Pnp4.Frontier.ContractExpansion.natBitBE_tag_eq
+#print axioms Pnp4.Frontier.ContractExpansion.tagMatchPrefix_succ
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_tape_read
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_runConfig_matched
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_accepts_eq_tagMatch

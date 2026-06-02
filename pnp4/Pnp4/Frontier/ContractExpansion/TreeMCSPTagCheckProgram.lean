@@ -16,9 +16,15 @@ corresponding big-endian bit of `treePrefixTag`, advancing the head one cell per
 `tagLen` steps the accept phase is reached with state `true` iff every tag bit matched — i.e. the
 input carries the correct version tag.
 
-This module establishes the program definition, its `timeBound`, and the structural fact that its
-transition never moves the head left (the ingredient the later head-tracking correctness proof
-needs).  The semantic correctness (`runConfig` behaviour ⇔ tag match) is the next brick.
+This module establishes the program definition, its `timeBound`, the structural fact that its
+transition never moves the head left, the single-step `runConfig` lemmas, the scan invariant
+(phase/head reach `k`, tape unchanged), the accept-iff (`accepts = final matched Bool`), and the
+end-to-end semantic correctness `tagCheckProgram_accepts_eq_tagMatch`: the phase accepts iff the
+input's leading `tagLen` cells equal `treePrefixTag` bit-for-bit (`tagMatchPrefix x tagLen`).
+
+This is one parse phase of the eventual verifier TM; on its own it is not the verifier and proves
+no separation result.  The next bricks decode the remaining parser fields (gamma length, instance,
+index, prefix) and the witness/circuit relation.
 -/
 
 /-- Scan-and-compare program for the `tagLen`-bit version tag. -/
@@ -175,6 +181,102 @@ theorem tagCheckProgram_accepts_eq_state {L : Nat} (x : Boolcube.Point L) :
   generalize (TM.runConfig (M := tagCheckProgram.toPhased.toTM)
     (tagCheckProgram.toPhased.toTM.initialConfig x) tagLen).state.snd = b
   cases b <;> rfl
+
+/-! ## Semantic characterization of the accumulated-match Bool
+
+The accept-iff (`tagCheckProgram_accepts_eq_state`) reduces acceptance to the final value of the
+accumulated-match Bool.  This section pins that Bool down *semantically*: it is exactly the
+conjunction, over the first `tagLen` input cells, of "this cell equals the corresponding big-endian
+tag bit".  That makes the tag-check phase a verified bit-by-bit equality test of the input's leading
+`tagLen` bits against `treePrefixTag`. -/
+
+/-- Big-endian bit `j` of the version tag `treePrefixTag`, as a total `Nat`-indexed `Bool`
+(the `Fin`-free form of `natBitBE treePrefixTag tagLen`). -/
+def tagBitAt (j : Nat) : Bool :=
+  decide (treePrefixTag / 2 ^ (tagLen - 1 - j) % 2 = 1)
+
+/-- `tagBitAt` agrees with `natBitBE treePrefixTag tagLen` on every in-range index (`rfl`: both are
+`decide (treePrefixTag / 2 ^ (tagLen - 1 - j) % 2 = 1)`). -/
+theorem natBitBE_tag_eq (j : Fin tagLen) :
+    natBitBE treePrefixTag tagLen j = tagBitAt j.1 := rfl
+
+/-- The bit the verifier reads at the `j`-th input cell of `x` (the initial-tape value at position
+`j`, total in `j`: blank `false` past the input length). -/
+def tagCheckInputBit {L : Nat} (x : Boolcube.Point L) (j : Nat) : Bool :=
+  if h : j < L then x ⟨j, h⟩ else false
+
+/-- Specification of the tag-check accumulator after `k` scan steps: the conjunction over the first
+`k` input cells that each equals the corresponding big-endian tag bit. -/
+def tagMatchPrefix {L : Nat} (x : Boolcube.Point L) : Nat → Bool
+  | 0 => true
+  | k + 1 => tagMatchPrefix x k && (tagCheckInputBit x k == tagBitAt k)
+
+@[simp] theorem tagMatchPrefix_zero {L : Nat} (x : Boolcube.Point L) :
+    tagMatchPrefix x 0 = true := rfl
+
+theorem tagMatchPrefix_succ {L : Nat} (x : Boolcube.Point L) (k : Nat) :
+    tagMatchPrefix x (k + 1)
+      = (tagMatchPrefix x k && (tagCheckInputBit x k == tagBitAt k)) := rfl
+
+/-- The bit read at the head equals the corresponding total input bit, whenever the tape is the
+initial tape and the head sits at position `k`.  (The head value determines the cell; out-of-input
+positions read blank `false`, matching `tagCheckInputBit`.) -/
+theorem tagCheckProgram_tape_read {L : Nat} (x : Boolcube.Point L)
+    (c : Configuration (M := tagCheckProgram.toPhased.toTM) L) (k : Nat)
+    (htp : c.tape = (tagCheckProgram.toPhased.toTM.initialConfig x).tape)
+    (hhd : (c.head : Nat) = k) :
+    c.tape c.head = tagCheckInputBit x k := by
+  rw [htp]
+  unfold tagCheckInputBit
+  by_cases hkL : k < L
+  · have hlt : (c.head : Nat) < L := by rw [hhd]; exact hkL
+    rw [TM.initial_tape_input (M := tagCheckProgram.toPhased.toTM) x hlt, dif_pos hkL]
+    exact congrArg x (Fin.ext hhd)
+  · have hge : L ≤ (c.head : Nat) := by rw [hhd]; omega
+    rw [TM.initial_tape_blank (M := tagCheckProgram.toPhased.toTM) x hge, dif_neg hkL]
+
+/--
+Matched-state invariant: after `k ≤ tagLen` scan steps the accumulated-match Bool equals
+`tagMatchPrefix x k` — the bitwise equality of the first `k` input cells against the tag.  Proved by
+induction on `k`: the base case is the start state `true`, and the step combines the single-step
+state-update lemma with the scan invariant (head at `k`, tape unchanged) and `natBitBE_tag_eq`.
+-/
+theorem tagCheckProgram_runConfig_matched {L : Nat} (x : Boolcube.Point L) :
+    ∀ k : Nat, k ≤ tagLen →
+      ((TM.runConfig (M := tagCheckProgram.toPhased.toTM)
+          (tagCheckProgram.toPhased.toTM.initialConfig x) k).state).snd
+        = tagMatchPrefix x k := by
+  intro k
+  induction k with
+  | zero => intro _; rfl
+  | succ k ih =>
+      intro hk
+      obtain ⟨hph, hhd, htp⟩ := tagCheckProgram_runConfig_scan x k (by omega)
+      rw [TM.runConfig_succ]
+      set c := TM.runConfig (M := tagCheckProgram.toPhased.toTM)
+        (tagCheckProgram.toPhased.toTM.initialConfig x) k with hc
+      have hi : (c.state.fst : Nat) < tagLen := by rw [hph]; omega
+      have hstep := tagCheckProgram_stepConfig_state c
+        (i := c.state.fst) (s := c.state.snd) hi rfl
+      have htag : natBitBE treePrefixTag tagLen ⟨c.state.fst.val, hi⟩ = tagBitAt k := by
+        rw [natBitBE_tag_eq]; exact congrArg tagBitAt hph
+      have hbit : c.tape c.head = tagCheckInputBit x k :=
+        tagCheckProgram_tape_read x c k htp hhd
+      have hsnd : c.state.snd = tagMatchPrefix x k := ih (by omega)
+      rw [hstep, htag, hbit, hsnd, tagMatchPrefix_succ]
+
+/-- End-to-end semantic correctness of the tag-check phase: it accepts iff the first `tagLen` cells
+of the input match `treePrefixTag` bit-for-bit.  Combines the accept-iff with the matched-state
+invariant at the final step `k = tagLen` (the program's `runTime`). -/
+theorem tagCheckProgram_accepts_eq_tagMatch {L : Nat} (x : Boolcube.Point L) :
+    TM.accepts (M := tagCheckProgram.toPhased.toTM) (n := L) x
+      = tagMatchPrefix x tagLen := by
+  rw [tagCheckProgram_accepts_eq_state]
+  have hrun : TM.run (M := tagCheckProgram.toPhased.toTM) (n := L) x
+      = TM.runConfig (M := tagCheckProgram.toPhased.toTM)
+          (tagCheckProgram.toPhased.toTM.initialConfig x) tagLen := rfl
+  rw [hrun]
+  exact tagCheckProgram_runConfig_matched x tagLen (Nat.le_refl tagLen)
 
 end ContractExpansion
 end Frontier

@@ -3648,6 +3648,15 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_stepConfig_state
 #check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_runConfig_scan
 #check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_accepts_eq_state
+-- Tag-check semantic characterization (NP-verifier track): accepts ⇔ leading bits match the tag.
+#check @Pnp4.Frontier.ContractExpansion.tagBitAt
+#check @Pnp4.Frontier.ContractExpansion.natBitBE_tag_eq
+#check @Pnp4.Frontier.ContractExpansion.tagCheckInputBit
+#check @Pnp4.Frontier.ContractExpansion.tagMatchPrefix
+#check @Pnp4.Frontier.ContractExpansion.tagMatchPrefix_succ
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_tape_read
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_runConfig_matched
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_accepts_eq_tagMatch
 
 end Tests
 end Pnp4

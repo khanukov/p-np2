@@ -65,6 +65,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout
+import Pnp4.Frontier.ContractExpansion.BoundedLoopProgram
 
 namespace Pnp4
 namespace Tests
@@ -3624,6 +3625,11 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.queryIdxOffset
 #check @Pnp4.Frontier.ContractExpansion.queryPrefixOffset
 #check @Pnp4.Frontier.ContractExpansion.queryPrefixOffset_add_witnessBits
+
+-- Bounded-loop primitive (NP-verifier track, the row-iteration construct).
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.repeatProgram
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.repeatProgram_succ
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.repeatProgram_timeBound
 
 end Tests
 end Pnp4

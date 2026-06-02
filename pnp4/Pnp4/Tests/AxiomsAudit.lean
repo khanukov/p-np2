@@ -55,6 +55,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout
+import Pnp4.Frontier.ContractExpansion.BoundedLoopProgram
 
 namespace Pnp4
 namespace Tests
@@ -403,3 +404,6 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.verifierTape_right
 #print axioms Pnp4.Frontier.ContractExpansion.queryPrefixOffset_add_witnessBits
 #print axioms Pnp4.Frontier.ContractExpansion.queryPrefixOffset_le
+
+-- Bounded-loop primitive (NP-verifier track); Classical-free arithmetic/structural.
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.repeatProgram_timeBound

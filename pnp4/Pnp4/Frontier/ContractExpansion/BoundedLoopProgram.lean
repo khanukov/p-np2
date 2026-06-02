@@ -1,0 +1,54 @@
+import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgram
+
+namespace Pnp3
+namespace Internal
+namespace PsubsetPpoly
+namespace TM
+namespace ConstStatePhasedProgram
+
+open Pnp3.Internal.PsubsetPpoly.TM
+
+universe v
+variable {S : Type v} [Fintype S] [DecidableEq S] [Inhabited S]
+
+/-!
+# Bounded loop for uniform-state phased programs
+
+NP-verifier track (Phase 6 → 5/6): the missing control-flow primitive identified in
+`TM_VERIFIER_STRATEGY.md`.
+
+The Turing-machine model runs a program for a *fixed* number of steps (`runTime n`) and the toolkit's
+`seq` / `seqList` are straight-line (no back-edges).  Iterating a body `k` times for a **symbolic** `k`
+(e.g. `k = 2 ^ n`, the number of truth-table rows) is nonetheless expressible: `seqList` of
+`List.replicate k body` is a well-typed `ConstStatePhasedProgram` for any `k : Nat`, and its
+`timeBound` / run behaviour follow from the existing `seqList` recurrences by induction on `k`.  No new
+back-edge machinery is needed — this is the verifier's row-iteration loop.
+-/
+
+/-- Run `body` sequentially `k` times (straight-line repetition, valid for symbolic `k`). -/
+def repeatProgram (body : ConstStatePhasedProgram S) (k : Nat) : ConstStatePhasedProgram S :=
+  seqList (List.replicate k body)
+
+@[simp] theorem repeatProgram_zero (body : ConstStatePhasedProgram S) :
+    repeatProgram body 0 = idleCS := rfl
+
+/-- One iteration peels off the front (this is `rfl`, since `List.replicate (k+1)` is a cons). -/
+theorem repeatProgram_succ (body : ConstStatePhasedProgram S) (k : Nat) :
+    repeatProgram body (k + 1) = seq body (repeatProgram body k) := rfl
+
+/-- Closed-form `timeBound`: `k` copies of the body plus one handoff per copy. -/
+theorem repeatProgram_timeBound (body : ConstStatePhasedProgram S) (k n : Nat) :
+    (repeatProgram body k).timeBound n = k * body.timeBound n + k := by
+  induction k with
+  | zero => simp [repeatProgram_zero]
+  | succ k ih =>
+      rw [repeatProgram_succ, seq_timeBound, ih]
+      have hmul : (k + 1) * body.timeBound n = k * body.timeBound n + body.timeBound n :=
+        Nat.succ_mul k (body.timeBound n)
+      omega
+
+end ConstStatePhasedProgram
+end TM
+end PsubsetPpoly
+end Internal
+end Pnp3

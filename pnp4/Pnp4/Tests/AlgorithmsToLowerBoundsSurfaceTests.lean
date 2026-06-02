@@ -3810,6 +3810,10 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- State lifting + heterogeneous-state skeleton composition (assembly milestone).
 #check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram
 #check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_neverMovesLeft
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_stepConfig_phase
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_stepConfig_state
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_stepConfig_head
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_stepConfig_tape
 #check @Pnp4.Frontier.ContractExpansion.mSkeletonDemo
 #check @Pnp4.Frontier.ContractExpansion.mSkeletonDemo_neverMovesLeft
 #check @Pnp4.Frontier.ContractExpansion.mSkeletonDemo_timeBound_le

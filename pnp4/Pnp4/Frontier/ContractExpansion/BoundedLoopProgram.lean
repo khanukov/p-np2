@@ -464,6 +464,56 @@ theorem liftUnitProgram_neverMovesLeft (P : ConstStatePhasedProgram Unit)
   obtain ⟨i, s⟩ := st
   exact hP ⟨i, ()⟩ b
 
+/-! ### Single-step characterization of `liftUnitProgram`
+
+One `stepConfig` of `(liftUnitProgram P).toTM`, entirely in terms of `P`'s transition (on the unit
+state `()`): the phase index, written bit, and head move are exactly `P`'s, while the lifted state
+component is carried through **unchanged**.  These are the backbone for transferring the run behaviour
+of a lifted self-loop across `liftUnitProgram` (the state-component bisimulation). -/
+
+/-- A lifted step advances the phase exactly as `P`'s transition does. -/
+theorem liftUnitProgram_stepConfig_phase (P : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (liftUnitProgram (S := S) P).toPhased.toTM) L)
+    {i : Fin (liftUnitProgram (S := S) P).numPhases} {s : S} (hstate : c.state = ⟨i, s⟩) :
+    ((TM.stepConfig (M := (liftUnitProgram (S := S) P).toPhased.toTM) c).state).fst.val
+      = (P.transition i () (c.tape c.head)).fst.val := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp only [ConstStatePhasedProgram.toPhased, liftUnitProgram]
+
+/-- A lifted step carries the state component through unchanged (the program is state-agnostic). -/
+theorem liftUnitProgram_stepConfig_state (P : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (liftUnitProgram (S := S) P).toPhased.toTM) L)
+    {i : Fin (liftUnitProgram (S := S) P).numPhases} {s : S} (hstate : c.state = ⟨i, s⟩) :
+    ((TM.stepConfig (M := (liftUnitProgram (S := S) P).toPhased.toTM) c).state).snd = s := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp only [ConstStatePhasedProgram.toPhased, liftUnitProgram]
+
+/-- A lifted step moves the head exactly as `P`'s transition directs. -/
+theorem liftUnitProgram_stepConfig_head (P : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (liftUnitProgram (S := S) P).toPhased.toTM) L)
+    {i : Fin (liftUnitProgram (S := S) P).numPhases} {s : S} (hstate : c.state = ⟨i, s⟩) :
+    (TM.stepConfig (M := (liftUnitProgram (S := S) P).toPhased.toTM) c).head
+      = c.moveHead (P.transition i () (c.tape c.head)).2.2.2 := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp only [ConstStatePhasedProgram.toPhased, liftUnitProgram]
+
+/-- A lifted step writes exactly the bit `P`'s transition would write. -/
+theorem liftUnitProgram_stepConfig_tape (P : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (liftUnitProgram (S := S) P).toPhased.toTM) L)
+    {i : Fin (liftUnitProgram (S := S) P).numPhases} {s : S} (hstate : c.state = ⟨i, s⟩) :
+    (TM.stepConfig (M := (liftUnitProgram (S := S) P).toPhased.toTM) c).tape
+      = c.write c.head (P.transition i () (c.tape c.head)).2.2.1 := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp only [ConstStatePhasedProgram.toPhased, liftUnitProgram]
+
 end ConstStatePhasedProgram
 end TM
 end PsubsetPpoly

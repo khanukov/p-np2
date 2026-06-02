@@ -312,35 +312,36 @@ conclusion:
     `Θ(2^n)` scratch, so a unary row counter is feasible and sidesteps the width-delimiting problem.
     The cost is the `Θ(2^n)`-length counter, but the row loop is already `Θ(2^n)` iterations, so this
     is within the intended `poly(L)` budget.
-* **Next concrete brick (design now settled enough to start):** a **bounded unary-counter loop**
-  combinator — given a body program `B`, a unary counter region, and a proven per-iteration body
-  behaviour, run `B` exactly `K` times where `K` is the counter's initial value, with the back-edge
-  and the (trivial) unary zero-test. This single combinator unblocks **both** the counted payload read
-  and the row-loop control flow; the row loop's *body* (single-row circuit evaluation) remains
-  separately blocked on the upstream `circuitEvaluatorCS_run_correct` (§9).
+* **Bounded body-reentry loop combinator — now BUILT** (`TreeMCSPRepeatBody.lean`): `repeatBody B`
+  wraps a body `B` with a conditional **back-edge** (the toolkit's first back-edge to a *multi-phase*
+  body), and `repeatBody_runConfig_iterate` proves it runs `B` exactly `K` times where `K` is a unary
+  counter's value — control returns to `B`'s start, the head retreats `K` cells, and the `K` ticks
+  clear to `0`.  Decomposed and verified as: definition + loop-control single-steps (consume / halt /
+  handoff) + `repeatBody_runConfig_one_iteration` (the inductive step) + the `K`-fold
+  `repeatBody_runConfig_iterate`.  The body's behaviour enters as an **intrinsic** hypothesis on
+  `(repeatBody B).toTM` (`sB` steps from `B.start` reach `B.accept`, head/tape-preserving) — so no
+  cross-instance bisimulation with `B.toTM`; a caller discharges it per-instance.  Resolves the
+  positioning question via **option 1** (head-preserving body; the counter cell is the body's start
+  cell, read at the decide phase).  The counter half it rests on (`selfLoopCountdownLeft`) is likewise
+  complete.  **So the entire bounded-loop control infrastructure — counter + combinator — is built and
+  verified.**
 
-  **Settled this session — the combinator's one open design decision is *positioning*, not counting.**
-  The counter (consume/zero-test) is now fully built (`selfLoopCountdownLeft`, standalone **and** seqP2
-  composable: `_runConfig_{consume,empty}` and `_seqP2_runConfig_{consume,empty}`).  The remaining
-  design choice is the head/counter geometry across a back-edge: after one body iteration the head sits
-  wherever the body left it, but the per-iteration zero-test/decrement must act *on the counter cell*.
-  On the marker-free binary alphabet "seek to the counter" is itself a counting problem (no fixed
-  position is markable), so the clean options are:
-  1. **Body head-preserving + counter at the cursor** — require the body to return the head to a fixed
-     cursor co-located with (the boundary of) the counter; cheapest, but constrains every body.
-  2. **Re-scan each iteration** — re-derive position by scanning from a tape end per iteration; needs no
-     body constraint and stays polynomial (`Θ(2^n)` iterations × `Θ(2^n)` scan = `Θ(2^{2n}) = Θ(L²)`,
-     within the `poly(L)` budget the row loop already incurs), at the cost of a quadratic factor.
-  The recommended first build is option 1 with an explicit *head-preserving body* hypothesis (the row
-  body can be made head-preserving by a closing rewind via `selfLoopScanLeft`), proving the combinator
-  by induction on the counter value `K`: each iteration = run `B` (per-iteration hypothesis) ▸ test ▸
-  consume one tick ▸ back-edge.  The two-sided head bounds (`TreeMCSPBidirHeadBounds`) supply the
-  kinematic accounting.  This is the focused next-session entry point; the counter half it rests on is
-  done.
+  **Remaining to *use* the combinator** (the data-dependent core proper):
+  - discharge the intrinsic body hypothesis **per-instance** for a concrete body (re-derive `B`'s
+    `sB`-step run-through on `(repeatBody B).toTM`), and **generalise the tape clause** for a *writing*
+    body (the current run-`K`-times assumes a tape-preserving / read-only body; an accumulating body
+    changes the work region too);
+  - the two real bodies — the **counted gamma-payload read** (recover `n`) and the **prefix-agreement
+    compare** — each a body program + its per-iteration behaviour, plus materialising the loop counter
+    (the leading-zero count `z`, resp. the prefix length) as a unary block in scratch;
+  - the **row-loop body** (single-row circuit evaluation) stays separately upstream-blocked on
+    `circuitEvaluatorCS_run_correct` (§9);
+  - then the final **assembly** of `M`, its `runTime_poly`, the `accepts = treePrefixSemanticAccepts`
+    bridge, and the `PrefixExtensionNPWitness`.
 
-This is the point to start coding next: the unary-counter loop combinator, built like the self-loops
-(program + `timeBound` + `neverMovesLeft` + single-step + run-`K`-times invariant), is the smallest
-verified brick that advances both remaining data-dependent items.
+The control infrastructure is done; the next coding is the per-instance body discharge + the real
+data-dependent bodies (the writing-body tape generalisation of the combinator is the smallest next
+brick, then a concrete body).
 
 ## 7. Runtime accounting
 

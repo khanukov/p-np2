@@ -3647,6 +3647,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_stepConfig_tape
 #check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_stepConfig_state
 #check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_runConfig_scan
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_accepts_eq_state
 
 end Tests
 end Pnp4

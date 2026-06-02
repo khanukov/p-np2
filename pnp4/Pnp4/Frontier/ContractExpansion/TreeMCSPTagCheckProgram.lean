@@ -150,6 +150,32 @@ theorem tagCheckProgram_runConfig_scan {L : Nat} (x : Boolcube.Point L) :
       · rw [tagCheckProgram_stepConfig_head _ hi rfl hbnd, hhd]
       · rw [tagCheckProgram_stepConfig_tape _ hi rfl, htp]
 
+/-- The tag-check TM accepts iff, after its `tagLen` scan steps, the accumulated-match Bool is set.
+Combines `runConfig_scan` (the phase reaches `tagLen` = the accept phase) with the acceptance
+definition. -/
+theorem tagCheckProgram_accepts_eq_state {L : Nat} (x : Boolcube.Point L) :
+    TM.accepts (M := tagCheckProgram.toPhased.toTM) (n := L) x
+      = (TM.run (M := tagCheckProgram.toPhased.toTM) (n := L) x).state.snd := by
+  obtain ⟨hph, _, _⟩ := tagCheckProgram_runConfig_scan x tagLen (Nat.le_refl tagLen)
+  have hrun : TM.run (M := tagCheckProgram.toPhased.toTM) (n := L) x
+      = TM.runConfig (M := tagCheckProgram.toPhased.toTM)
+          (tagCheckProgram.toPhased.toTM.initialConfig x) tagLen := rfl
+  have key : ((TM.runConfig (M := tagCheckProgram.toPhased.toTM)
+        (tagCheckProgram.toPhased.toTM.initialConfig x) tagLen).state
+        = (tagCheckProgram.toPhased.toTM).accept)
+      ↔ (TM.runConfig (M := tagCheckProgram.toPhased.toTM)
+          (tagCheckProgram.toPhased.toTM.initialConfig x) tagLen).state.snd = true := by
+    constructor
+    · intro h; rw [h]; rfl
+    · intro h
+      exact Sigma.ext (Fin.ext (hph.trans rfl)) (heq_of_eq h)
+  unfold TM.accepts
+  rw [hrun]
+  simp only [key]
+  generalize (TM.runConfig (M := tagCheckProgram.toPhased.toTM)
+    (tagCheckProgram.toPhased.toTM.initialConfig x) tagLen).state.snd = b
+  cases b <;> rfl
+
 end ContractExpansion
 end Frontier
 end Pnp4

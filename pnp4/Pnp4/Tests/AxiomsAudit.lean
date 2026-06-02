@@ -421,3 +421,4 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_stepConfig_tape
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_stepConfig_state
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_runConfig_scan
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_accepts_eq_state

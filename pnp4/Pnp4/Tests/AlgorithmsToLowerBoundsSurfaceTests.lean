@@ -71,6 +71,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckUnit
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaScanProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCountdownLeft
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBidirHeadBounds
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSelfLoopCounter
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterComposition
@@ -3735,6 +3736,10 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_runConfig_terminator
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seqP2_runConfig_scanning
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seqP2_runConfig_terminator
+-- Unary countdown self-loop (marker-free counter; §6c brick toward the row loop).
+#check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft
+#check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_runConfig_consume
+#check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_runConfig_empty
 -- Two-sided head-displacement bound (bidirectional accounting foundation).
 #check @Pnp4.Frontier.ContractExpansion.runConfig_head_val_ge
 #check @Pnp4.Frontier.ContractExpansion.runConfig_head_dist_le

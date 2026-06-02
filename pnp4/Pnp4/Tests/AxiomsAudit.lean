@@ -61,6 +61,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckUnit
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaScanProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCountdownLeft
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBidirHeadBounds
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSelfLoopCounter
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterComposition
@@ -495,6 +496,9 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_stepConfig_scan_zero_head_clamp
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_runConfig_terminator
+-- Unary countdown self-loop (marker-free counter).
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_runConfig_consume
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_runConfig_empty
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seqP2_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seqP2_runConfig_terminator
 #print axioms Pnp4.Frontier.ContractExpansion.runConfig_head_val_ge

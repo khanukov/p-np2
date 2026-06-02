@@ -235,6 +235,20 @@ two-way motion) — a sizeable new toolkit, on par with the right-only layer thi
 the gamma payload read, the prefix compare, and (separately, upstream) the row loop remain open.  This
 is the documented `0ⁿ1ⁿ`-on-one-tape awkwardness, made precise.
 
+**First bidirectional brick DONE:** `selfLoopScanLeft` (`TreeMCSPScanLeftProgram.lean`) — the
+fundamental *leftward motion* primitive, the exact dual of `gammaSelfLoopScan` (scan **left** over
+`0`s, stop on the first `1`; `Move.left` decrements the head, clamped at `0`).  Fully proven through
+its run behaviour: `selfLoopScanLeft_runConfig_scanning` (leftward scanning invariant, `j ≤ c0.head` so
+each step genuinely decrements) and `selfLoopScanLeft_runConfig_terminator` (a verified "return left to
+the nearest `1`-marker": from head `h`, an all-`0` window `(k, h]` with a `1` at `k` stops the scan on
+the marker after `(h − k) + 1` steps).  It never moves *right* (`selfLoopScanLeft_transition_move`, the
+dual confinement).  This is a low-level motion primitive (not a premature decode program — §6b's
+warning is about committing a high-level *gamma-decode program* before its design is settled, not about
+basic motion), and is the first verified building block of the bidirectional layer.  **Remaining for
+the layer:** a bidirectional *composition* reasoning layer (the right-only `seq`/`seqList`
+single-step + `neverMovesLeft` machinery does not cover leftward phases), then the data-dependent
+algorithms (counted payload read; prefix compare) built atop both directions.
+
 **Two candidate realizations** (decide and prove one next session; do *not* commit a program before
 the design is settled — a wrong artifact is worse than an honest pause):
 

@@ -55,6 +55,18 @@ theorem tagCheckProgram_neverMovesLeft :
   obtain ⟨i, s⟩ := st
   exact tagCheckProgram_transition_move i s b
 
+/-- One scanning step from a phase `i < tagLen` advances the phase index to `i + 1`.
+Single-step building block for the tag-check `runConfig` invariant. -/
+theorem tagCheckProgram_stepConfig_phase {L : Nat}
+    (c : Configuration (M := tagCheckProgram.toPhased.toTM) L)
+    {i : Fin (tagLen + 1)} {s : Bool} (hi : i.val < tagLen)
+    (hstate : c.state = ⟨i, s⟩) :
+    ((TM.stepConfig (M := tagCheckProgram.toPhased.toTM) c).state).fst.val = i.val + 1 := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp only [ConstStatePhasedProgram.toPhased, tagCheckProgram, dif_pos hi]
+
 end ContractExpansion
 end Frontier
 end Pnp4

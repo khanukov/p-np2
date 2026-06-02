@@ -416,3 +416,4 @@ end Pnp4
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.PhasedProgram.accepts_toTM
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_transition_move
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_neverMovesLeft
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_stepConfig_phase

@@ -250,6 +250,104 @@ theorem gammaSelfLoopScan_seq_runConfig_handoff (P2 : ConstStatePhasedProgram Un
       (i := c1.state.fst) (s := c1.state.snd) hph1 rfl]
     exact htp1
 
+/-! ## Lifting the gamma scan into the P2 region (a non-first phase)
+
+Mirrors the counter P2-region lifts for the scan: when `gammaSelfLoopScan` is the *second* component
+`seq P1 gammaSelfLoopScan`, phase `P1.numPhases` is its scan phase, governed by `seq_stepConfig_P2_*`.
+Completes the self-loop family's composition coverage — every self-loop now composes in *either* `seq`
+position. -/
+
+/-- Scan step as a non-first phase (composition phase `P1.numPhases`, bit `0`): the phase stays. -/
+theorem gammaSelfLoopScan_seqP2_stepConfig_scan_zero_phase (P1 : ConstStatePhasedProgram Unit)
+    {L : Nat} (c : Configuration (M := (seq P1 gammaSelfLoopScan).toPhased.toTM) L)
+    {i : Fin (seq P1 gammaSelfLoopScan).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = false) :
+    ((TM.stepConfig (M := (seq P1 gammaSelfLoopScan).toPhased.toTM) c).state).fst.val
+      = P1.numPhases := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_phase P1 gammaSelfLoopScan c
+      (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+  simp [gammaSelfLoopScan, hsub, hbit]
+
+/-- Scan step as a non-first phase (bit `0`): the head advances right. -/
+theorem gammaSelfLoopScan_seqP2_stepConfig_scan_zero_head (P1 : ConstStatePhasedProgram Unit)
+    {L : Nat} (c : Configuration (M := (seq P1 gammaSelfLoopScan).toPhased.toTM) L)
+    {i : Fin (seq P1 gammaSelfLoopScan).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = false) :
+    (TM.stepConfig (M := (seq P1 gammaSelfLoopScan).toPhased.toTM) c).head
+      = Configuration.moveHead (c := c) Move.right := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_head P1 gammaSelfLoopScan c
+      (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+  simp [gammaSelfLoopScan, hsub, hbit]
+
+/-- Scan step as a non-first phase (bit `0`): the tape is unchanged (the `0` is written back). -/
+theorem gammaSelfLoopScan_seqP2_stepConfig_scan_zero_tape (P1 : ConstStatePhasedProgram Unit)
+    {L : Nat} (c : Configuration (M := (seq P1 gammaSelfLoopScan).toPhased.toTM) L)
+    {i : Fin (seq P1 gammaSelfLoopScan).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = false) :
+    (TM.stepConfig (M := (seq P1 gammaSelfLoopScan).toPhased.toTM) c).tape = c.tape := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  have hwrite : (TM.stepConfig (M := (seq P1 gammaSelfLoopScan).toPhased.toTM) c).tape
+      = c.write c.head false := by
+    rw [seq_stepConfig_P2_tape P1 gammaSelfLoopScan c
+        (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+    simp [gammaSelfLoopScan, hsub, hbit]
+  rw [hwrite]
+  funext j
+  by_cases hj : j = c.head
+  · subst hj; simp [Configuration.write, hbit]
+  · simp [Configuration.write, hj]
+
+/-- Terminator step as a non-first phase (bit `1`): jump to the shifted accept phase. -/
+theorem gammaSelfLoopScan_seqP2_stepConfig_scan_one_phase (P1 : ConstStatePhasedProgram Unit)
+    {L : Nat} (c : Configuration (M := (seq P1 gammaSelfLoopScan).toPhased.toTM) L)
+    {i : Fin (seq P1 gammaSelfLoopScan).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = true) :
+    ((TM.stepConfig (M := (seq P1 gammaSelfLoopScan).toPhased.toTM) c).state).fst.val
+      = P1.numPhases + 1 := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_phase P1 gammaSelfLoopScan c
+      (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+  simp [gammaSelfLoopScan, hsub, hbit]
+
+/-- Scanning invariant as a non-first phase, from an arbitrary start `c0` (phase `P1.numPhases`): if
+the window `[c0.head, c0.head + k)` is all `0`, then after `k` steps the phase still rests at
+`P1.numPhases`, the head has advanced to `c0.head + k`, and the tape is unchanged.  Offset/non-first
+analogue of `gammaSelfLoopScan_seq_runConfig_scanning`. -/
+theorem gammaSelfLoopScan_seqP2_runConfig_scanning (P1 : ConstStatePhasedProgram Unit) {L : Nat}
+    (c0 : Configuration (M := (seq P1 gammaSelfLoopScan).toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = P1.numPhases) :
+    ∀ k : Nat, (c0.head : Nat) + k ≤ L →
+      (∀ p : Fin ((seq P1 gammaSelfLoopScan).toPhased.toTM.tapeLength L),
+        (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + k → c0.tape p = false) →
+      (((TM.runConfig (M := (seq P1 gammaSelfLoopScan).toPhased.toTM) c0 k).state).fst : Nat)
+          = P1.numPhases
+      ∧ ((TM.runConfig (M := (seq P1 gammaSelfLoopScan).toPhased.toTM) c0 k).head : Nat)
+          = (c0.head : Nat) + k
+      ∧ (TM.runConfig (M := (seq P1 gammaSelfLoopScan).toPhased.toTM) c0 k).tape = c0.tape := by
+  intro k
+  induction k with
+  | zero => intro _ _; exact ⟨hphase, by simp, rfl⟩
+  | succ k ih =>
+      intro hk h0
+      obtain ⟨hph, hhd, htp⟩ := ih (by omega) (fun p hp1 hp2 => h0 p hp1 (by omega))
+      rw [TM.runConfig_succ]
+      set c := TM.runConfig (M := (seq P1 gammaSelfLoopScan).toPhased.toTM) c0 k with hc
+      have hbnd : (c.head : Nat) + 1 < (seq P1 gammaSelfLoopScan).toPhased.toTM.tapeLength L := by
+        rw [hhd]; show (c0.head : Nat) + k + 1 < L + (P1.timeBound L + L + 1) + 1; omega
+      have hbit : c.tape c.head = false := by
+        rw [htp]; exact h0 c.head (by rw [hhd]; omega) (by rw [hhd]; omega)
+      refine ⟨?_, ?_, ?_⟩
+      · exact gammaSelfLoopScan_seqP2_stepConfig_scan_zero_phase P1 c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit
+      · rw [gammaSelfLoopScan_seqP2_stepConfig_scan_zero_head P1 c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+        simp only [Configuration.moveHead, dif_pos hbnd]
+        omega
+      · rw [gammaSelfLoopScan_seqP2_stepConfig_scan_zero_tape P1 c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit, htp]
+
 end ContractExpansion
 end Frontier
 end Pnp4

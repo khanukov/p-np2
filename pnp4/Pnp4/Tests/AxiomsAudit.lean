@@ -523,6 +523,9 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_runConfig_terminator
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_runConfig_handoff
+-- Gamma scan in the P2 region (non-first phase).
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seqP2_stepConfig_scan_zero_tape
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seqP2_runConfig_scanning
 -- Decrement composition lift (down-counter survives seq).
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_runConfig_borrow
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_runConfig_stop

@@ -215,10 +215,25 @@ and `instanceSize_lt_treeMCSPPrefixM` (`n < N`, with `2^n ≤ N` ⇒ **`n` logar
 candidate `n` and a `bitLength N`-bit counter fit in the input).  Loop primitive (`repeatProgram`),
 proven counter (`incrementProgram_correct`), and composition single-step layer (§6a) all ready.
 
-**Core difficulty.**  The model is *single-tape, binary alphabet* (no marker symbols).  The balanced
-`0^z 1 · payload(z)` structure makes the field end (`tagLen + 2z + 1`) depend on the data-dependent
-`z`, and locating it/reading the `z`-bit payload needs counting with data-dependent head travel —
-the one genuinely awkward point (cf. recognizing `0ⁿ1ⁿ` on one tape).
+**Status (this session): the gamma terminator is now *located within the full chain*.**
+`tagCheckThenGammaScanTerminator_runConfig` (`TreeMCSPLeadingPhasesChain.lean`) runs
+`seq tagCheckProgramU gammaSelfLoopScan` from the initial config through tag-verify ▸ handoff ▸
+zero-scan ▸ terminator, leaving the head resting *exactly on the gamma terminator* (`tagLen + z`),
+phase `tagLen + 3`, tape unchanged.  That is the launch point for the payload read — so the
+right-only composition infrastructure is complete *up to* the terminator.
+
+**Core difficulty (the right-only ceiling).**  The model is *single-tape, binary alphabet* (no marker
+symbols).  Reading the `z`-bit payload (`readNatBE y (offset+z+1) z` in `decodeGammaAux?`) means
+stopping after *exactly* `z` bits, where `z` is data-dependent and unbounded — impossible with finite
+state and a right-only head: the machine would have to either re-read the consumed zero-prefix
+(**leftward** travel) or hold `z` in its state (unbounded).  The *same* ceiling blocks the
+**prefix-agreement compare** (it must interleave reads of the instance's prefix `p` and the
+certificate's witness `w`, which sit in *separate* tape regions → back-and-forth).  So the next major
+investment is **bidirectional head primitives** (relax `neverMovesLeft`; add a left-scan / rewind with
+a `0`-floored head and a lower-bound head-position invariant; re-derive the composition layer for
+two-way motion) — a sizeable new toolkit, on par with the right-only layer this PR built.  Until then
+the gamma payload read, the prefix compare, and (separately, upstream) the row loop remain open.  This
+is the documented `0ⁿ1ⁿ`-on-one-tape awkwardness, made precise.
 
 **Two candidate realizations** (decide and prove one next session; do *not* commit a program before
 the design is settled — a wrong artifact is worse than an honest pause):

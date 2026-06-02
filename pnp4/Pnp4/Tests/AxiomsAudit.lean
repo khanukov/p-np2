@@ -399,3 +399,5 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.prefixVerifierWitnessRegion_within_input
 #print axioms Pnp4.Frontier.ContractExpansion.concatBitstring_left
 #print axioms Pnp4.Frontier.ContractExpansion.concatBitstring_right
+#print axioms Pnp4.Frontier.ContractExpansion.verifierTape_left
+#print axioms Pnp4.Frontier.ContractExpansion.verifierTape_right

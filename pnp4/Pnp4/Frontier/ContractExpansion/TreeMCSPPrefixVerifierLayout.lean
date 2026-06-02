@@ -81,6 +81,36 @@ theorem concatBitstring_right {n m : Nat}
   have hspec := Classical.choose_spec (Nat.exists_eq_add_of_le (Nat.le_of_not_gt hnlt))
   omega
 
+/-!
+### Tape reading at the start of a verifier run
+
+Composing the existing `@[simp]` lemma `TM.initial_tape_input` with the projections above: when any
+Turing machine `M` is started on `concatBitstring x w`, a tape cell in the left block reads the
+instance `x` and a cell in the right block reads the certificate `w`.  These are the exact statements
+a per-phase verifier program will use to relate a read bit back to `query` / `cert`.
+-/
+
+/-- A left-block tape cell, at the start of a run on `concatBitstring x w`, reads the instance. -/
+theorem verifierTape_left {n m : Nat} (M : Pnp3.Internal.PsubsetPpoly.TM)
+    (x : Pnp3.ComplexityInterfaces.Bitstring n) (w : Pnp3.ComplexityInterfaces.Bitstring m)
+    (j : Fin (M.tapeLength (n + m))) (hj : (j : Nat) < n) :
+    (M.initialConfig (Pnp3.ComplexityInterfaces.concatBitstring x w)).tape j
+      = x ⟨(j : Nat), hj⟩ := by
+  have hlt : (j : Nat) < n + m := by omega
+  rw [Pnp3.Internal.PsubsetPpoly.TM.initial_tape_input (M := M)
+        (Pnp3.ComplexityInterfaces.concatBitstring x w) hlt]
+  exact concatBitstring_left x w ⟨(j : Nat), hlt⟩ hj
+
+/-- A right-block tape cell, at the start of a run on `concatBitstring x w`, reads the certificate. -/
+theorem verifierTape_right {n m : Nat} (M : Pnp3.Internal.PsubsetPpoly.TM)
+    (x : Pnp3.ComplexityInterfaces.Bitstring n) (w : Pnp3.ComplexityInterfaces.Bitstring m)
+    (j : Fin (M.tapeLength (n + m))) (hj1 : n ≤ (j : Nat)) (hj2 : (j : Nat) < n + m) :
+    (M.initialConfig (Pnp3.ComplexityInterfaces.concatBitstring x w)).tape j
+      = w ⟨(j : Nat) - n, by omega⟩ := by
+  rw [Pnp3.Internal.PsubsetPpoly.TM.initial_tape_input (M := M)
+        (Pnp3.ComplexityInterfaces.concatBitstring x w) hj2]
+  exact concatBitstring_right x w ⟨(j : Nat), hj2⟩ hj1
+
 end ContractExpansion
 end Frontier
 end Pnp4

@@ -65,6 +65,69 @@ theorem gammaZeroScanProgram_neverMovesLeft (maxIters : Nat) :
   obtain ⟨i, s⟩ := st
   exact gammaZeroScanProgram_transition_move maxIters i s b
 
+/-! ## Single-step behaviour (phase < maxIters)
+
+The per-step lemmas for an active scan phase, mirroring the tag-check program's single-step lemmas:
+the phase advances by one; the accumulated "still scanning" flag becomes `s && !(read bit)`; the tape
+is unchanged (the read bit is written back); and the head moves according to
+`cond (s && !(read bit)) right stay` (advance while scanning a `0`, stay otherwise).  These feed the
+forthcoming scan invariant. -/
+
+/-- One active step advances the phase index by one. -/
+theorem gammaZeroScanProgram_stepConfig_phase {L maxIters : Nat}
+    (c : Configuration (M := (gammaZeroScanProgram maxIters).toPhased.toTM) L)
+    {i : Fin (maxIters + 1)} {s : Bool} (hi : i.val < maxIters)
+    (hstate : c.state = ⟨i, s⟩) :
+    ((TM.stepConfig (M := (gammaZeroScanProgram maxIters).toPhased.toTM) c).state).fst.val
+      = i.val + 1 := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp only [ConstStatePhasedProgram.toPhased, gammaZeroScanProgram, dif_pos hi]
+
+/-- One active step updates the "still scanning" flag to `s && !(read bit)`. -/
+theorem gammaZeroScanProgram_stepConfig_state {L maxIters : Nat}
+    (c : Configuration (M := (gammaZeroScanProgram maxIters).toPhased.toTM) L)
+    {i : Fin (maxIters + 1)} {s : Bool} (hi : i.val < maxIters)
+    (hstate : c.state = ⟨i, s⟩) :
+    ((TM.stepConfig (M := (gammaZeroScanProgram maxIters).toPhased.toTM) c).state).snd
+      = (s && !(c.tape c.head)) := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp only [ConstStatePhasedProgram.toPhased, gammaZeroScanProgram, dif_pos hi]
+
+/-- One active step leaves the tape unchanged (it writes back the bit it read). -/
+theorem gammaZeroScanProgram_stepConfig_tape {L maxIters : Nat}
+    (c : Configuration (M := (gammaZeroScanProgram maxIters).toPhased.toTM) L)
+    {i : Fin (maxIters + 1)} {s : Bool} (hi : i.val < maxIters)
+    (hstate : c.state = ⟨i, s⟩) :
+    (TM.stepConfig (M := (gammaZeroScanProgram maxIters).toPhased.toTM) c).tape = c.tape := by
+  have hwrite : (TM.stepConfig (M := (gammaZeroScanProgram maxIters).toPhased.toTM) c).tape
+      = c.write c.head (c.tape c.head) := by
+    unfold TM.stepConfig
+    rw [hstate]
+    simp only [PhasedProgram.toTM_step]
+    simp only [ConstStatePhasedProgram.toPhased, gammaZeroScanProgram, dif_pos hi]
+  rw [hwrite]
+  funext j
+  by_cases hj : j = c.head
+  · subst hj; simp [Configuration.write]
+  · simp [Configuration.write, hj]
+
+/-- One active step moves the head by `cond (s && !(read bit)) right stay`: it advances right while
+still scanning a `0`, and stays once it reads a `1` (or has stopped). -/
+theorem gammaZeroScanProgram_stepConfig_head {L maxIters : Nat}
+    (c : Configuration (M := (gammaZeroScanProgram maxIters).toPhased.toTM) L)
+    {i : Fin (maxIters + 1)} {s : Bool} (hi : i.val < maxIters)
+    (hstate : c.state = ⟨i, s⟩) :
+    (TM.stepConfig (M := (gammaZeroScanProgram maxIters).toPhased.toTM) c).head
+      = Configuration.moveHead (c := c) (cond (s && !(c.tape c.head)) Move.right Move.stay) := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp only [ConstStatePhasedProgram.toPhased, gammaZeroScanProgram, dif_pos hi]
+
 end ContractExpansion
 end Frontier
 end Pnp4

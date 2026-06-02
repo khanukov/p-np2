@@ -461,3 +461,7 @@ end Pnp4
 -- Gamma-decode phase, first brick: count-zeros scan structural lemmas; structural TM reasoning.
 #print axioms Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_transition_move
 #print axioms Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_neverMovesLeft
+#print axioms Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_stepConfig_phase
+#print axioms Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_stepConfig_state
+#print axioms Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_stepConfig_tape
+#print axioms Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_stepConfig_head

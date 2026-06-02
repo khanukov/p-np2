@@ -3689,6 +3689,10 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_timeBound
 #check @Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_transition_move
 #check @Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_neverMovesLeft
+#check @Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_stepConfig_phase
+#check @Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_stepConfig_state
+#check @Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_stepConfig_tape
+#check @Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_stepConfig_head
 
 end Tests
 end Pnp4

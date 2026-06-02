@@ -104,24 +104,37 @@ a non-accept sink phase that idles):
 Step 6's per-row work reuses `GateWrappers` (one gate program per circuit gate, chained by `seqList`);
 the row loop and the gamma scan are the parts the current toolkit does **not** yet support.
 
-## 6. Bounded-loop primitive — **BUILT** (`BoundedLoopProgram.lean`)
+## 6. Bounded-loop primitive `repeatProgram` — **BUILT** (`BoundedLoopProgram.lean`), but see the correction
 
-`seq`/`seqList` are straight-line (no back-edges) and `numPhases` is a literal `Nat`.  The key
-realization (vs. the original plan, which assumed a hard back-edge construct was required): a loop
-over a **symbolic** count `k` (e.g. `k = 2^n`) needs **no** back-edge — `seqList (List.replicate k body)`
-is a well-typed `ConstStatePhasedProgram` for any `k`, and the toolkit's existing `seqList`
-recurrences already give its time and run behaviour.  Built as:
+`seq`/`seqList` are straight-line (no back-edges) and `numPhases` is a literal `Nat`.  Built as:
 
 * `ConstStatePhasedProgram.repeatProgram body k := seqList (List.replicate k body)`;
-* `repeatProgram_timeBound : (repeatProgram body k).timeBound n = k * body.timeBound n + k`
-  — polynomial-composable: with `k = 2^n` and `body.timeBound n = poly(n)`, the loop costs
-  `poly(2^n) = poly(L)`;
-* `repeatProgram_succ` (one peel, `rfl`) and `repeatProgram_run_succ` (per-iteration run
-  decomposition, inherited from `seqList_run_decomp`) — the inductive backbone for the loop invariant.
+* `repeatProgram_timeBound : (repeatProgram body k).timeBound n = k * body.timeBound n + k`;
+* `repeatProgram_succ` (one peel, `rfl`), `repeatProgram_run_succ` (per-iteration run decomposition),
+  `repeatProgram_timeBound_le` (uniform bound).
 
-So step 6's `2^n`-row evaluation loop is expressible with existing infrastructure.  What remains for
-the loop is a *concrete* invariant proved against the specific row-evaluation body, applying
-`repeatProgram_run_succ` peel-by-peel together with the tape-position lemmas of §4–5.
+> **Critical correction (re-derived this session — supersedes the earlier "no back-edge needed"
+> claim).** `repeatProgram body k` has `numPhases = k · |body|` *phases*, so `k` must be a literal
+> fixed at **program-definition time**.  The verifier `M : Pnp3.…TM.{0}` is **one fixed TM** (fixed
+> finite state set), quantified *outside* `correct : ∀ n, …`; its row loop must iterate `2^m` times
+> where `m` is **decoded from the input at runtime**.  You therefore *cannot* write
+> `repeatProgram body (2^m)` inside `M` — `2^m` is not known at definition time, and a fixed `M`
+> cannot have an input-dependent phase count.  **Input-dependent iteration in a single fixed TM
+> requires a genuine back-edge** (a fixed loop-body block re-entered via a transition that reads a
+> tape counter / row index, terminating when it reaches `2^m`), i.e. a transition mapping a phase
+> *backward*.  The same applies to *variable-length scans*: the gamma block length `gammaLen m`
+> grows (slowly) without bound in the input, so the gamma scan in `M` must be a **self-loop** (one
+> scan phase re-entering while it reads `0`), not a fixed-`maxIters` straight-line program.
+>
+> **What this does and does not invalidate.**  `repeatProgram` and the `maxIters`-parameterized
+> `gammaZeroScanProgram` are *correct programs* with *correct* lemmas, and they directly serve any
+> processing whose width is a **true compile-time constant** — e.g. the tag check (`tagLen = 8`).
+> They are also valid *reasoning devices* for a fixed unrolling.  But they do **not** compose into the
+> single fixed `M` for the **data-dependent** fields/loops (gamma length, `2^m` truth-table rows).
+> The genuinely missing fundamental primitive is a **back-edge / self-loop loop construct** (fixed
+> phase count, runtime-counted iteration) — neither the toolkit's straight-line combinators
+> (`seq`/`seqList`/`seekRight`/`repeatProgram`) nor anything built so far provides it.  Bricks 2
+> (gamma), 5 (rows), and the parse orchestration depend on building it first.
 
 ### 6a. Composition reasoning layer — **BUILT** (`BoundedLoopProgram.lean`)
 
@@ -194,22 +207,30 @@ inequality `timeBound(L) ≤ L^c + c` for a concrete `c` derived from the assemb
 
 ## 8. Recommended brick order (each a separate verified commit)
 
-1. **`boundedLoopProgram`** + composition reasoning layer (§6, §6a) — **DONE**.
+0. **Back-edge / self-loop loop construct** — the prerequisite surfaced in §6's correction (fixed
+   phase count, runtime-counted iteration).  **Not built** (the toolkit and `repeatProgram` are all
+   straight-line).  Required by bricks 2-gamma, 5, and the parse orchestration.  *(largest single
+   missing primitive; build first.)*
+1. **`boundedLoopProgram`** + composition reasoning layer (§6, §6a) — **DONE** (serves
+   *constant-width* processing and fixed unrollings; see §6's correction for what it does *not* cover).
 2. **Parse-on-tape** — *tag check **DONE*** (`TreeMCSPTagCheckProgram.lean`: program, `timeBound`,
    `neverMovesLeft`, single-step lemmas, `runConfig_scan`, accept-iff, matched-state, semantic
-   correctness `accepts ⇔ leading bits = tag`, Prop characterization).  **Remaining:** gamma-decode
-   `n` (variable-length scan; the pure spec `decodeGamma?` is already proven, so this realizes it
-   on tape — tape-based counting via the now-proven `incrementProgram_correct`), length-convention
-   check.
-3. **Witness slice + prefix-agreement compare** (bounded scan; `combineAtOffset` per-bit) — *remaining*.
+   correctness `accepts ⇔ leading bits = tag`, Prop characterization) — valid for `M` since
+   `tagLen` is a true constant.  Gamma layout/range bounds + the **count-zeros scan** (locate +
+   decode the unary-prefix length, `TreeMCSPGammaScanProgram.lean`) **done as a `maxIters`-program /
+   reasoning device**; the gamma scan *inside `M`* must be re-cast as a **self-loop** (brick 0).
+   **Remaining:** gamma payload-read + the self-loop recasting, length-convention check.
+3. **Witness slice + prefix-agreement compare** (bounded scan; `combineAtOffset` per-bit) — *remaining;
+   the per-bit loop over `i` cells needs brick 0*.
 4. **On-tape circuit decode + single-row evaluation** — single-row eval is `circuitEvaluatorCS`, but
    only its *single-gate* run-correctness is proven; the **full multi-gate `circuitEvaluatorCS_run_correct`
    is upstream toolkit future-work** (§9).  Plus the open piece of realizing **this codec's** decoder
    on tape, or proving it agrees with `Encoding.CircuitTree` (the §9 codec caveat) — *remaining,
    hardest single risk; partly upstream-blocked*.
-5. **Row-iteration verification** — the `2^n`-row loop; `mcspCheckAllRows`/`RowConsistencyCheck`
-   supply the per-row body + `timeBound`; the open piece is the **loop correctness invariant**
-   (`repeatProgram_run_succ` peel-by-peel) — *remaining, **blocked on brick 4's
+5. **Row-iteration verification** — the `2^m`-row loop; `mcspCheckAllRows`/`RowConsistencyCheck`
+   supply the per-row body + `timeBound`, but as a *per-`m` unrolling*, not a single-`M` loop.  The
+   open piece is the **back-edge loop** (brick 0) over the per-row body with the row index on a tape
+   counter — *remaining, **blocked on both brick 0 (back-edge) and brick 4's
    `circuitEvaluatorCS_run_correct`***.
 6. **Assemble `M`**, prove the bridge (★), discharge `runTime_poly`, build the
    `PrefixExtensionNPWitness`, and feed it to `verifiedSource_treePoly`'s second hypothesis — *remaining*.

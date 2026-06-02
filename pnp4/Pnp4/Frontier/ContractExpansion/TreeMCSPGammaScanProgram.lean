@@ -496,6 +496,61 @@ theorem gammaSelfLoopScan_locates_gamma_terminator {L : Nat} (n : Nat)
     gammaSelfLoopScan_runConfig_terminator x (bitLength (n + 1) - 1) hz hzeros hterm
   exact ⟨h1, h2⟩
 
+/-! ### Done-phase stability (idle after the terminator)
+
+Once the self-loop scan reaches the done phase (`1`), every further step preserves the entire
+configuration — the head stays on the terminator and the tape is unchanged.  This pins the scan's
+configuration after its full allotted runtime (needed when it is composed into `M` and idles until
+the next phase begins), analogous to the binary counter's accepting-phase stability. -/
+
+/-- A single step from the done phase (`1`) preserves the phase, head, and tape. -/
+theorem gammaSelfLoopScan_stepConfig_done {L : Nat}
+    (c : Configuration (M := gammaSelfLoopScan.toPhased.toTM) L)
+    {i : Fin 2} {s : Unit} (hi : i.val = 1) (hstate : c.state = ⟨i, s⟩) :
+    ((TM.stepConfig (M := gammaSelfLoopScan.toPhased.toTM) c).state).fst.val = 1
+    ∧ (TM.stepConfig (M := gammaSelfLoopScan.toPhased.toTM) c).head = c.head
+    ∧ (TM.stepConfig (M := gammaSelfLoopScan.toPhased.toTM) c).tape = c.tape := by
+  refine ⟨?_, ?_, ?_⟩
+  · unfold TM.stepConfig
+    rw [hstate]
+    simp only [PhasedProgram.toTM_step]
+    simp [ConstStatePhasedProgram.toPhased, gammaSelfLoopScan, hi]
+  · unfold TM.stepConfig
+    rw [hstate]
+    simp only [PhasedProgram.toTM_step]
+    simp [ConstStatePhasedProgram.toPhased, gammaSelfLoopScan, hi, Configuration.moveHead]
+  · have hwrite : (TM.stepConfig (M := gammaSelfLoopScan.toPhased.toTM) c).tape
+        = c.write c.head (c.tape c.head) := by
+      unfold TM.stepConfig
+      rw [hstate]
+      simp only [PhasedProgram.toTM_step]
+      simp [ConstStatePhasedProgram.toPhased, gammaSelfLoopScan, hi]
+    rw [hwrite]
+    funext j
+    by_cases hj : j = c.head
+    · subst hj; simp [Configuration.write]
+    · simp [Configuration.write, hj]
+
+/-- Iterated done-phase stability: from a done configuration (phase `1`), running any number of
+steps leaves the phase at `1`, the head fixed, and the tape unchanged. -/
+theorem gammaSelfLoopScan_runConfig_done {L : Nat}
+    (c : Configuration (M := gammaSelfLoopScan.toPhased.toTM) L)
+    (hdone : (c.state.fst : Nat) = 1) (j : Nat) :
+    ((TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM) c j).state.fst : Nat) = 1
+    ∧ (TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM) c j).head = c.head
+    ∧ (TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM) c j).tape = c.tape := by
+  induction j with
+  | zero => exact ⟨hdone, rfl, rfl⟩
+  | succ j ih =>
+      obtain ⟨hph, hhd, htp⟩ := ih
+      rw [TM.runConfig_succ]
+      obtain ⟨hph2, hhd2, htp2⟩ :=
+        gammaSelfLoopScan_stepConfig_done
+          (TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM) c j)
+          (i := (TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM) c j).state.fst)
+          (s := (TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM) c j).state.snd) hph rfl
+      exact ⟨hph2, by rw [hhd2, hhd], by rw [htp2, htp]⟩
+
 end ContractExpansion
 end Frontier
 end Pnp4

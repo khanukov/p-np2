@@ -76,6 +76,58 @@ theorem tagCheckThenGammaScan_runConfig {L : Nat} (x : Boolcube.Point L)
   · rw [hsh, hhd1]
   · rw [hst, htp1]
 
+/-- Tag check ▸ gamma scan ▸ terminator on `seq tagCheckProgramU gammaSelfLoopScan`: if the first
+`tagLen` cells match the tag, the next `z` cells (positions `tagLen .. tagLen + z`) are `0`, and the
+cell at `tagLen + z` is `1` (the gamma terminator), then after `(tagLen + 1) + (z + 1)` steps the scan
+has stopped at the gamma scan's shifted accept phase (`tagLen + 3`), the head rests **exactly on the
+gamma terminator** (`tagLen + z`), and the tape is unchanged.  Extends `tagCheckThenGammaScan_runConfig`
+by one terminator step: this pins the head at the launch point for the gamma payload decode (the next,
+genuinely data-dependent, phase of `M`). -/
+theorem tagCheckThenGammaScanTerminator_runConfig {L : Nat} (x : Boolcube.Point L)
+    (hmatch : tagMatchPrefix x tagLen = true)
+    (z : Nat) (hz : tagLen + z ≤ L)
+    (hzeros : ∀ p : Fin ((seq tagCheckProgramU gammaSelfLoopScan).toPhased.toTM.tapeLength L),
+      tagLen ≤ (p : Nat) → (p : Nat) < tagLen + z →
+      ((seq tagCheckProgramU gammaSelfLoopScan).toPhased.toTM.initialConfig x).tape p = false)
+    (hterm : ∀ p : Fin ((seq tagCheckProgramU gammaSelfLoopScan).toPhased.toTM.tapeLength L),
+      (p : Nat) = tagLen + z →
+      ((seq tagCheckProgramU gammaSelfLoopScan).toPhased.toTM.initialConfig x).tape p = true) :
+    (((TM.runConfig (M := (seq tagCheckProgramU gammaSelfLoopScan).toPhased.toTM)
+        ((seq tagCheckProgramU gammaSelfLoopScan).toPhased.toTM.initialConfig x)
+        ((tagLen + 1) + (z + 1))).state).fst : Nat) = tagLen + 3
+      ∧ ((TM.runConfig (M := (seq tagCheckProgramU gammaSelfLoopScan).toPhased.toTM)
+          ((seq tagCheckProgramU gammaSelfLoopScan).toPhased.toTM.initialConfig x)
+          ((tagLen + 1) + (z + 1))).head : Nat) = tagLen + z
+      ∧ (TM.runConfig (M := (seq tagCheckProgramU gammaSelfLoopScan).toPhased.toTM)
+          ((seq tagCheckProgramU gammaSelfLoopScan).toPhased.toTM.initialConfig x)
+          ((tagLen + 1) + (z + 1))).tape
+          = ((seq tagCheckProgramU gammaSelfLoopScan).toPhased.toTM.initialConfig x).tape := by
+  obtain ⟨hph1, hhd1, htp1⟩ := tagCheckProgramU_seq_runConfig_handoff gammaSelfLoopScan x hmatch
+  rw [TM.runConfig_add]
+  revert hph1 hhd1 htp1
+  generalize TM.runConfig (M := (seq tagCheckProgramU gammaSelfLoopScan).toPhased.toTM)
+    ((seq tagCheckProgramU gammaSelfLoopScan).toPhased.toTM.initialConfig x) (tagLen + 1) = c1
+  intro hph1 hhd1 htp1
+  have hphase : (c1.state.fst : Nat) = tagCheckProgramU.numPhases := by
+    rw [hph1]; simp [gammaSelfLoopScan_startPhase_val, tagCheckProgramU_numPhases]
+  obtain ⟨hsp, hsh, hst⟩ :=
+    gammaSelfLoopScan_seqP2_runConfig_terminator tagCheckProgramU c1 hphase z
+      (by rw [hhd1]; exact hz)
+      (by
+        intro p hp1 hp2
+        rw [htp1]
+        rw [hhd1] at hp1 hp2
+        exact hzeros p hp1 hp2)
+      (by
+        intro p hp
+        rw [htp1]
+        rw [hhd1] at hp
+        exact hterm p hp)
+  refine ⟨?_, ?_, ?_⟩
+  · rw [hsp, tagCheckProgramU_numPhases]
+  · rw [hsh, hhd1]
+  · rw [hst, htp1]
+
 end ContractExpansion
 end Frontier
 end Pnp4

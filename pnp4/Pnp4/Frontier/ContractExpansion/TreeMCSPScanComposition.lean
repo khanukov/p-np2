@@ -311,6 +311,35 @@ theorem gammaSelfLoopScan_seqP2_stepConfig_scan_one_phase (P1 : ConstStatePhased
       (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
   simp [gammaSelfLoopScan, hsub, hbit]
 
+/-- Terminator step as a non-first phase (bit `1`): the head stays put. -/
+theorem gammaSelfLoopScan_seqP2_stepConfig_scan_one_head (P1 : ConstStatePhasedProgram Unit)
+    {L : Nat} (c : Configuration (M := (seq P1 gammaSelfLoopScan).toPhased.toTM) L)
+    {i : Fin (seq P1 gammaSelfLoopScan).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = true) :
+    (TM.stepConfig (M := (seq P1 gammaSelfLoopScan).toPhased.toTM) c).head = c.head := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_head P1 gammaSelfLoopScan c
+      (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+  simp [gammaSelfLoopScan, hsub, hbit, Configuration.moveHead]
+
+/-- Terminator step as a non-first phase (bit `1`): the tape is unchanged. -/
+theorem gammaSelfLoopScan_seqP2_stepConfig_scan_one_tape (P1 : ConstStatePhasedProgram Unit)
+    {L : Nat} (c : Configuration (M := (seq P1 gammaSelfLoopScan).toPhased.toTM) L)
+    {i : Fin (seq P1 gammaSelfLoopScan).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = true) :
+    (TM.stepConfig (M := (seq P1 gammaSelfLoopScan).toPhased.toTM) c).tape = c.tape := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  have hwrite : (TM.stepConfig (M := (seq P1 gammaSelfLoopScan).toPhased.toTM) c).tape
+      = c.write c.head true := by
+    rw [seq_stepConfig_P2_tape P1 gammaSelfLoopScan c
+        (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+    simp [gammaSelfLoopScan, hsub, hbit]
+  rw [hwrite]
+  funext j
+  by_cases hj : j = c.head
+  · subst hj; simp [Configuration.write, hbit]
+  · simp [Configuration.write, hj]
+
 /-- Scanning invariant as a non-first phase, from an arbitrary start `c0` (phase `P1.numPhases`): if
 the window `[c0.head, c0.head + k)` is all `0`, then after `k` steps the phase still rests at
 `P1.numPhases`, the head has advanced to `c0.head + k`, and the tape is unchanged.  Offset/non-first
@@ -347,6 +376,36 @@ theorem gammaSelfLoopScan_seqP2_runConfig_scanning (P1 : ConstStatePhasedProgram
         omega
       · rw [gammaSelfLoopScan_seqP2_stepConfig_scan_zero_tape P1 c
           (i := c.state.fst) (s := c.state.snd) hph rfl hbit, htp]
+
+/-- Terminator-locating run as a non-first phase, from an arbitrary start `c0` (phase `P1.numPhases`):
+if the window `[c0.head, c0.head + z)` is all `0` and the cell at `c0.head + z` is `1`, then after
+`z + 1` steps the scan has stopped at phase `P1.numPhases + 1` (the gamma scan's shifted accept phase),
+the head rests on the terminator (`c0.head + z`), and the tape is unchanged.  Offset/non-first analogue
+of `gammaSelfLoopScan_seq_runConfig_terminator`. -/
+theorem gammaSelfLoopScan_seqP2_runConfig_terminator (P1 : ConstStatePhasedProgram Unit) {L : Nat}
+    (c0 : Configuration (M := (seq P1 gammaSelfLoopScan).toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = P1.numPhases) (z : Nat) (hz : (c0.head : Nat) + z ≤ L)
+    (hzeros : ∀ p : Fin ((seq P1 gammaSelfLoopScan).toPhased.toTM.tapeLength L),
+      (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + z → c0.tape p = false)
+    (hterm : ∀ p : Fin ((seq P1 gammaSelfLoopScan).toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) + z → c0.tape p = true) :
+    (((TM.runConfig (M := (seq P1 gammaSelfLoopScan).toPhased.toTM) c0 (z + 1)).state).fst : Nat)
+        = P1.numPhases + 1
+      ∧ ((TM.runConfig (M := (seq P1 gammaSelfLoopScan).toPhased.toTM) c0 (z + 1)).head : Nat)
+          = (c0.head : Nat) + z
+      ∧ (TM.runConfig (M := (seq P1 gammaSelfLoopScan).toPhased.toTM) c0 (z + 1)).tape = c0.tape := by
+  obtain ⟨hph, hhd, htp⟩ := gammaSelfLoopScan_seqP2_runConfig_scanning P1 c0 hphase z hz hzeros
+  rw [TM.runConfig_succ]
+  set c := TM.runConfig (M := (seq P1 gammaSelfLoopScan).toPhased.toTM) c0 z with hc
+  have hbit : c.tape c.head = true := by rw [htp]; exact hterm c.head hhd
+  refine ⟨?_, ?_, ?_⟩
+  · exact gammaSelfLoopScan_seqP2_stepConfig_scan_one_phase P1 c
+      (i := c.state.fst) (s := c.state.snd) hph rfl hbit
+  · rw [gammaSelfLoopScan_seqP2_stepConfig_scan_one_head P1 c
+      (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+    exact hhd
+  · rw [gammaSelfLoopScan_seqP2_stepConfig_scan_one_tape P1 c
+      (i := c.state.fst) (s := c.state.snd) hph rfl hbit, htp]
 
 end ContractExpansion
 end Frontier

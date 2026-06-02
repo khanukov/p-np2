@@ -3794,6 +3794,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seqP2_stepConfig_scan_zero_tape
 #check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seqP2_stepConfig_scan_one_phase
 #check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seqP2_runConfig_scanning
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seqP2_runConfig_terminator
 -- Decrement composition lift (down-counter survives seq).
 #check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_stepConfig_borrow_phase
 #check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_stepConfig_borrow_head
@@ -3848,6 +3849,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.tagCheckProgramU_seq_runConfig_handoff
 -- M's first two leading phases (tag check then gamma scan) run in sequence on one composed machine.
 #check @Pnp4.Frontier.ContractExpansion.tagCheckThenGammaScan_runConfig
+#check @Pnp4.Frontier.ContractExpansion.tagCheckThenGammaScanTerminator_runConfig
 
 end Tests
 end Pnp4

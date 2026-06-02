@@ -244,10 +244,19 @@ the nearest `1`-marker": from head `h`, an all-`0` window `(k, h]` with a `1` at
 the marker after `(h − k) + 1` steps).  It never moves *right* (`selfLoopScanLeft_transition_move`, the
 dual confinement).  This is a low-level motion primitive (not a premature decode program — §6b's
 warning is about committing a high-level *gamma-decode program* before its design is settled, not about
-basic motion), and is the first verified building block of the bidirectional layer.  **Remaining for
-the layer:** a bidirectional *composition* reasoning layer (the right-only `seq`/`seqList`
-single-step + `neverMovesLeft` machinery does not cover leftward phases), then the data-dependent
-algorithms (counted payload read; prefix compare) built atop both directions.
+basic motion), and is the first verified building block of the bidirectional layer.
+
+**Straight-line composition of leftward phases already works** (no new toolkit): the `seq_stepConfig_*`
+single-step lemmas are *transition-generic* (they never assume `TMNeverMovesLeft`), so the leftward
+scan composes as a `seq` phase exactly as the rightward one — `selfLoopScanLeft_seqP2_runConfig_scanning`
+and `selfLoopScanLeft_seqP2_runConfig_terminator` give it **full composition-API parity** with
+`gammaSelfLoopScan` (standalone scanning+terminator, composed scanning+terminator).  So the bidirectional
+*motion* layer is built.  **Remaining for the layer:** the head **lower-bound / runtime accounting** for
+two-way motion (the right-only confinement arguments assumed monotone-right head travel — `neverMovesLeft`
+is genuinely false for leftward phases, so a `0 ≤ head ≤ tapeLength` two-sided invariant replaces it),
+then the **data-dependent algorithms** (counted payload read; prefix compare) built atop both
+directions — these are the design-first pieces (§6b's two candidate realizations) to settle and prove
+next.
 
 **Two candidate realizations** (decide and prove one next session; do *not* commit a program before
 the design is settled — a wrong artifact is worse than an honest pause):

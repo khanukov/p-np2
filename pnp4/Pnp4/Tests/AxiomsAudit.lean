@@ -492,6 +492,7 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_stepConfig_scan_one_head
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_runConfig_terminator
 -- Leftward scan-to-marker (first bidirectional primitive).
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_stepConfig_scan_zero_head_clamp
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_runConfig_terminator
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seqP2_runConfig_scanning

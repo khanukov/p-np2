@@ -146,6 +146,19 @@ theorem selfLoopScanLeft_stepConfig_scan_one_tape {L : Nat}
   · subst hj; simp [Configuration.write, hbit]
   · simp [Configuration.write, hj]
 
+/-- Boundary characterization (the `Move.left` clamp): at head `0`, a scan step on a `0` leaves the
+head at `0` — the scan cannot retreat past the left end of the tape, it clamps.  This makes the
+`j ≤ c0.head` / `k < c0.head` preconditions of the run lemmas below necessary: from `head = 0` the
+primitive makes no leftward progress (it would spin in place).  Explicit clamping lemma for
+completeness (per the head-boundary semantics of `Configuration.moveHead Move.left`). -/
+theorem selfLoopScanLeft_stepConfig_scan_zero_head_clamp {L : Nat}
+    (c : Configuration (M := selfLoopScanLeft.toPhased.toTM) L)
+    {i : Fin 2} {s : Unit} (hi : i.val = 0) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = false) (hhead0 : (c.head : Nat) = 0) :
+    ((TM.stepConfig (M := selfLoopScanLeft.toPhased.toTM) c).head : Nat) = 0 := by
+  rw [selfLoopScanLeft_stepConfig_scan_zero_head c hi hstate hbit]
+  simp [Configuration.moveHead, hhead0]
+
 /-! ### Leftward scanning run invariant and terminator -/
 
 /-- Leftward scanning invariant: from a start `c0` in scan phase `0`, if the `j` cells just to the left

@@ -3730,6 +3730,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- Leftward scan-to-marker (first bidirectional primitive; dual of the rightward scan).
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeft
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_transition_move
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_stepConfig_scan_zero_head_clamp
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_runConfig_scanning
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_runConfig_terminator
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seqP2_runConfig_scanning

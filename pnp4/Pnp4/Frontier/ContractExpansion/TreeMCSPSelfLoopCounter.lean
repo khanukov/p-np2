@@ -328,6 +328,40 @@ theorem selfLoopIncrement_runConfig_done {L : Nat}
           (s := (TM.runConfig (M := selfLoopIncrement.toPhased.toTM) c j).state.snd) hph rfl
       exact ⟨hph2, by rw [hhd2, hhd], by rw [htp2, htp]⟩
 
+/-- Full-runtime correctness of the self-loop increment: running it for its entire declared runtime
+(`TM.run`, `= L` steps) on a counter window `[0, k)` with first-zero at `j` (`j < k ≤ L`) increases
+the little-endian value by exactly one.  Combines the `counterValue + 1` result at step `j + 1` with
+done-phase idle stability (which preserves the tape, hence the counter value) for the remaining
+`L − (j+1)` steps, via `runConfig_add` and `counterValue_eq_of_tape_eq`.  This is the variable-width
+counter's headline theorem — a single fixed-`M`-compatible increment correct over its whole run. -/
+theorem selfLoopIncrement_run_counterValue {L : Nat} (x : Boolcube.Point L) (j k : Nat)
+    (hjk : j < k) (hk : k ≤ L)
+    (h_ones : ∀ p : Fin (selfLoopIncrement.toPhased.toTM.tapeLength L),
+      (p : Nat) < j → (selfLoopIncrement.toPhased.toTM.initialConfig x).tape p = true)
+    (h_zero : ∀ hb : j < selfLoopIncrement.toPhased.toTM.tapeLength L,
+      (selfLoopIncrement.toPhased.toTM.initialConfig x).tape ⟨j, hb⟩ = false) :
+    counterValue (TM.run (M := selfLoopIncrement.toPhased.toTM) (n := L) x) 0 k
+      = counterValue (selfLoopIncrement.toPhased.toTM.initialConfig x) 0 k + 1 := by
+  obtain ⟨hph_stop, _, _⟩ := selfLoopIncrement_runConfig_stop x j (by omega) h_ones h_zero
+  have hrun : TM.run (M := selfLoopIncrement.toPhased.toTM) (n := L) x
+      = TM.runConfig (M := selfLoopIncrement.toPhased.toTM)
+          (selfLoopIncrement.toPhased.toTM.initialConfig x) L := rfl
+  have hadd : TM.runConfig (M := selfLoopIncrement.toPhased.toTM)
+        (selfLoopIncrement.toPhased.toTM.initialConfig x) L
+      = TM.runConfig (M := selfLoopIncrement.toPhased.toTM)
+          (TM.runConfig (M := selfLoopIncrement.toPhased.toTM)
+            (selfLoopIncrement.toPhased.toTM.initialConfig x) (j + 1)) (L - (j + 1)) := by
+    rw [← TM.runConfig_add]; congr 1; omega
+  obtain ⟨_, _, htp_idle⟩ := selfLoopIncrement_runConfig_done
+    (TM.runConfig (M := selfLoopIncrement.toPhased.toTM)
+      (selfLoopIncrement.toPhased.toTM.initialConfig x) (j + 1)) hph_stop (L - (j + 1))
+  rw [hrun, hadd,
+    counterValue_eq_of_tape_eq _
+      (TM.runConfig (M := selfLoopIncrement.toPhased.toTM)
+        (selfLoopIncrement.toPhased.toTM.initialConfig x) (j + 1)) 0 k
+      (fun p _ _ => congrFun htp_idle p)]
+  exact selfLoopIncrement_runConfig_counterValue x j k hjk hk h_ones h_zero
+
 end ContractExpansion
 end Frontier
 end Pnp4

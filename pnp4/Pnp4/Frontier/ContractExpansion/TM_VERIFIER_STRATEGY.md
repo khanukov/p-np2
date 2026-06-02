@@ -123,6 +123,28 @@ So step 6's `2^n`-row evaluation loop is expressible with existing infrastructur
 the loop is a *concrete* invariant proved against the specific row-evaluation body, applying
 `repeatProgram_run_succ` peel-by-peel together with the tape-position lemmas of §4–5.
 
+### 6a. Composition reasoning layer — **BUILT** (`BoundedLoopProgram.lean`)
+
+The toolkit proved each composed program (`combineAtOffsetProgram`, …) *monolithically*; the generic
+seam was missing.  Now built (NP-verifier track), feeding the loop/assembly invariants:
+
+* `repeatProgram_timeBound_le` — uniform per-iteration bound `≤ k·(B+1)` (the `k=2^n`, `B=poly n`
+  ⇒ `poly L` shape `runTime_poly` is discharged against);
+* `seq_neverMovesLeft` / `seqList_neverMovesLeft` (+ `idleCS`) — `TMNeverMovesLeft` is preserved by
+  composition, so a `seqList` of right-only/stay phases is right-only/stay;
+* `seqList_runConfig_head_bounds` — head stays in `[c.head, c.head+j]` during a composed run
+  (offset-validity within the `tapeLength` budget);
+* **complete single-step `seq` simulation** `seq_stepConfig_{P1_normal,P1_accept,P2}_{phase,state,tape,head}`
+  — one `stepConfig` of `seq P1 P2` described entirely by the component transitions, across all three
+  regions (P1-normal, the P1→P2 handoff, P2).  This is the per-step backbone a concrete composed
+  program uses to prove its intrinsic run invariant.
+
+**Cross-type caveat (why there is no *generic* run-simulation).**  `(seq P1 P2).toTM` and `P1.toTM`
+have different `runTime`, hence different `tapeLength`, hence different `Configuration` types — so
+"seq's run = P1's run" is not even type-correct to state.  Each concrete phase therefore proves its
+*own* intrinsic invariant on the composed TM, consuming the single-step lemmas region-by-region (the
+tag-check's `runConfig_scan`/`accepts_eq_tagMatch` is the worked template).
+
 ## 7. Runtime accounting
 
 With `threshold n = thresholdPoly k n = n^k + k`, `witnessBits n = (bitLength n + 4) · threshold n`,
@@ -138,14 +160,30 @@ inequality `timeBound(L) ≤ L^c + c` for a concrete `c` derived from the assemb
 
 ## 8. Recommended brick order (each a separate verified commit)
 
-1. **`boundedLoopProgram`** — the loop primitive: definition, `runConfig` iteration invariant,
-   `timeBound`. *(largest; build first, in isolation)*
-2. **Parse-on-tape** — tag check, gamma decode, length check (uses the loop for the gamma scan).
-3. **Witness slice + prefix-agreement compare** (uses the loop).
-4. **On-tape circuit decode + single-row evaluation** (reuses `GateWrappers`).
-5. **Row-iteration verification** (the loop over `2^n` rows wrapping step 4).
+1. **`boundedLoopProgram`** + composition reasoning layer (§6, §6a) — **DONE**.
+2. **Parse-on-tape** — *tag check **DONE*** (`TreeMCSPTagCheckProgram.lean`: program, `timeBound`,
+   `neverMovesLeft`, single-step lemmas, `runConfig_scan`, accept-iff, matched-state, semantic
+   correctness `accepts ⇔ leading bits = tag`, Prop characterization).  **Remaining:** gamma-decode
+   `n` (variable-length scan; the pure spec `decodeGamma?` is already proven, so this realizes it
+   on tape — tape-based counting via the now-proven `incrementProgram_correct`), length-convention
+   check.
+3. **Witness slice + prefix-agreement compare** (bounded scan; `combineAtOffset` per-bit) — *remaining*.
+4. **On-tape circuit decode + single-row evaluation** — single-row eval is the proven
+   `circuitEvaluatorCS`; the open piece is realizing **this codec's** decoder on tape, or proving it
+   agrees with `Encoding.CircuitTree` (the §9 codec caveat) — *remaining, hardest single risk*.
+5. **Row-iteration verification** — the `2^n`-row loop; `mcspCheckAllRows`/`RowConsistencyCheck`
+   supply the per-row body + `timeBound`; the open piece is the **loop correctness invariant**
+   (`repeatProgram_run_succ` peel-by-peel) — *remaining*.
 6. **Assemble `M`**, prove the bridge (★), discharge `runTime_poly`, build the
-   `PrefixExtensionNPWitness`, and feed it to `verifiedSource_treePoly`'s second hypothesis.
+   `PrefixExtensionNPWitness`, and feed it to `verifiedSource_treePoly`'s second hypothesis — *remaining*.
+
+> **Toolkit status (verified, do not rebuild):** atomics, `seq`/`seqList`, gate evaluators
+> (`GateWrappers`), single-row `circuitEvaluatorCS`, `CircuitTree` encode/decode round-trips, the
+> binary counter **incl. `incrementProgram_correct`** (carry propagation — proven; the stale
+> "Session 7c will prove" comment notwithstanding), `RowConsistencyCheck`/`mcspCheckAllRows`
+> `timeBound`.  The NP-verifier track adds §6/§6a (bounded loop + composition layer) and the
+> tag-check phase.  The genuinely missing core is the gamma-decode/parse orchestration, the row-loop
+> *correctness* invariant, the codec-layout reconciliation (§9), and the final assembly.
 
 ## 9. Existing parallel scaffolding, and a codec-encoding caveat
 

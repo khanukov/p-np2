@@ -3828,6 +3828,9 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.mSkeletonDemo
 #check @Pnp4.Frontier.ContractExpansion.mSkeletonDemo_neverMovesLeft
 #check @Pnp4.Frontier.ContractExpansion.mSkeletonDemo_timeBound_le
+#check @Pnp4.Frontier.ContractExpansion.mSkeletonU
+#check @Pnp4.Frontier.ContractExpansion.mSkeletonU_neverMovesLeft
+#check @Pnp4.Frontier.ContractExpansion.mSkeletonU_timeBound_le
 
 end Tests
 end Pnp4

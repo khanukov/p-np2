@@ -1,4 +1,5 @@
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckUnit
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaScanProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSelfLoopCounter
 import Pnp4.Frontier.ContractExpansion.BoundedLoopProgram
@@ -62,6 +63,45 @@ theorem mSkeletonDemo_timeBound_le (n : Nat) (hn : tagLen ≤ n) :
       simp only [List.mem_cons, List.not_mem_nil, or_false] at hp
       rcases hp with h | h | h
       · subst h; rw [tagCheckProgram_timeBound]; exact hn
+      · subst h; simp
+      · subst h; simp)
+  rw [h3] at hbound
+  exact hbound
+
+/-! ### Native `Unit`-state skeleton (no lifting)
+
+With the `Unit`-state tag check (`tagCheckProgramU`), the common state of `M` can simply be `Unit`, so
+the leading phases compose **natively** — no `liftUnitProgram`/bisimulation required.  `mSkeletonU` is
+the genuine M-leading-phases skeleton over `Unit`: tag check, then gamma scan and a counter.  It
+inherits the same structural guarantees (never-left, polynomial `timeBound`) directly from the `Unit`
+`seqList` machinery, superseding the lifted `mSkeletonDemo` as the assembly route. -/
+def mSkeletonU : ConstStatePhasedProgram Unit :=
+  seqList [tagCheckProgramU, gammaSelfLoopScan, selfLoopIncrement]
+
+/-- The native-`Unit` skeleton never moves its head left (each phase is right-only/stay; `seqList`
+preserves it). -/
+theorem mSkeletonU_neverMovesLeft : TMNeverMovesLeft (mSkeletonU.toPhased.toTM) := by
+  apply seqList_neverMovesLeft
+  intro p hp
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at hp
+  rcases hp with h | h | h
+  · subst h; exact tagCheckProgramU_neverMovesLeft
+  · subst h; exact gammaSelfLoopScan_neverMovesLeft
+  · subst h; exact selfLoopIncrement_neverMovesLeft
+
+/-- The native-`Unit` skeleton's `timeBound` is polynomially bounded: with all three phases within `n`
+steps (for `n ≥ tagLen`), the composition runs within `3 · (n + 1)`.  The `runTime_poly`-shaped
+guarantee for the genuine `Unit` assembly. -/
+theorem mSkeletonU_timeBound_le (n : Nat) (hn : tagLen ≤ n) :
+    mSkeletonU.timeBound n ≤ 3 * (n + 1) := by
+  have h3 : ([tagCheckProgramU, gammaSelfLoopScan, selfLoopIncrement].length : Nat) = 3 := rfl
+  have hbound := seqList_timeBound_le
+    [tagCheckProgramU, gammaSelfLoopScan, selfLoopIncrement] n n
+    (by
+      intro p hp
+      simp only [List.mem_cons, List.not_mem_nil, or_false] at hp
+      rcases hp with h | h | h
+      · subst h; rw [tagCheckProgramU_timeBound]; exact hn
       · subst h; simp
       · subst h; simp)
   rw [h3] at hbound

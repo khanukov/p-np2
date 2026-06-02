@@ -189,6 +189,19 @@ match state).  The self-loops ignore their state component (`transition := fun i
 are natural — but this is a genuine design decision, recorded here for the next assembly step (not
 rushed).
 
+**State-uniformity — RESOLVED via option (c)** (`TreeMCSPTagCheckUnit.lean`).  The common state is fixed
+to **`Unit`**, and the tag check is re-expressed over `Unit` by *phase-encoding* the match state:
+`tagCheckProgramU` advances on a match, jumps to a dedicated **reject sink** phase `tagLen + 1` on a
+mismatch, and idles at the accept phase `tagLen` / the sink.  Fully proven: `timeBound`, never-left,
+single-steps, a unified run invariant (phase `= k` iff `tagMatchPrefix x k`, else sink), and the
+end-to-end `tagCheckProgramU_accepts_iff` (accepts ⟺ leading `tagLen` cells match `treePrefixTag`,
+reusing the `Bool` version's `tagMatchPrefix_eq_true_iff`).  Consequently **all phases are native
+`Unit`** and compose directly: `mSkeletonU` (`TreeMCSPSkeletonComposition.lean`) is the genuine
+M-leading-phases skeleton (tag check ; gamma scan ; counter) over `Unit`, never-left and
+polynomially-time-bounded with **no lifting/bisimulation**.  This supersedes the lifted route
+(`liftUnitProgram`/`mSkeletonDemo`, retained as a demonstration); the run-bisimulation is no longer on
+the critical path.
+
 ### 6b. Gamma-scan TM — design analysis (next-session entry point)
 
 The gamma field at `[tagLen, tagLen + gammaLen n)` is `0^z 1 b₁…b_z` with `z = bitLength(n+1) − 1`

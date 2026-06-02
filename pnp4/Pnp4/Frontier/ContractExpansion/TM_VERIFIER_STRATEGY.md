@@ -385,6 +385,20 @@ is tracked by the combinator's consumed-count); (c) materialize the counter in s
 place.  `gammaSelfLoopFill` remains a correct, reusable primitive regardless; this caveat only governs
 how the *shuttle* consumes it.  Settling (a)/(b)/(c) is the design step before the payload-read body.
 
+**Motion vocabulary completed this pass (`TreeMCSPScanLeftOneProgram.lean`).**  Independent of which
+of (a)/(b)/(c) wins, every candidate shuttle must traverse **`1`-blocks** (a filled or consumed
+loop-counter), not just the `0`-blocks the existing scans cover — e.g. re-anchoring at the left
+boundary of a `gammaSelfLoopFill`-materialized counter means travelling *left over `1`s* to the first
+`0`.  `selfLoopScanLeftOne` supplies exactly that: the bit-dual of `selfLoopScanLeft` (self-loop **left
+over `1`s**, stop on the first `0`), proven to full run-behaviour + P1/P2 composition parity
+(`selfLoopScanLeftOne_runConfig_{scanning,terminator}` and the `seqP2` analogues).  Together with
+`gammaSelfLoopScan` (right/`0`), `selfLoopScanLeft` (left/`0`) and the rightward fill, this gives the
+bidirectional layer the full **four-way scan vocabulary** (`{0,1}` × {left, right}) the data-dependent
+shuttle needs.  This deliberately does **not** commit to (a)/(b)/(c): the scheme selection — and the
+payload-read body built on it — remains the next focused brick, now with complete motion primitives.
+*(Landed via the stacked workflow: branch `claude/npv-gamma-payload-shuttle-design` → PR into the
+`claude/elegant-noether-CnlU5` staging branch, not direct-pushed.)*
+
 ## 7. Runtime accounting
 
 With `threshold n = thresholdPoly k n = n^k + k`, `witnessBits n = (bitLength n + 4) · threshold n`,

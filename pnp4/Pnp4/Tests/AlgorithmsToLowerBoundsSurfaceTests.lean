@@ -71,6 +71,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckUnit
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaScanProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftOneProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCountdownLeft
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillComposition
@@ -3739,6 +3740,15 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_runConfig_terminator
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seqP2_runConfig_scanning
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seqP2_runConfig_terminator
+-- Leftward scan-over-`1`s (bit-dual of the scan-left; traverse a filled/consumed counter to its
+-- left boundary — completes the four-way scan vocabulary for the bidirectional shuttle).
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_transition_move
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_stepConfig_scan_one_head_clamp
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_runConfig_scanning
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_runConfig_terminator
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqP2_runConfig_scanning
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqP2_runConfig_terminator
 -- Unary countdown self-loop (marker-free counter; §6c brick toward the row loop).
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_runConfig_consume

@@ -315,6 +315,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillProgram,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillComposition,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftProgram,
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftOneProgram,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPCountdownLeft,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPRepeatBody,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPBidirHeadBounds,

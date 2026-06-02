@@ -319,6 +319,25 @@ conclusion:
   and the row-loop control flow; the row loop's *body* (single-row circuit evaluation) remains
   separately blocked on the upstream `circuitEvaluatorCS_run_correct` (§9).
 
+  **Settled this session — the combinator's one open design decision is *positioning*, not counting.**
+  The counter (consume/zero-test) is now fully built (`selfLoopCountdownLeft`, standalone **and** seqP2
+  composable: `_runConfig_{consume,empty}` and `_seqP2_runConfig_{consume,empty}`).  The remaining
+  design choice is the head/counter geometry across a back-edge: after one body iteration the head sits
+  wherever the body left it, but the per-iteration zero-test/decrement must act *on the counter cell*.
+  On the marker-free binary alphabet "seek to the counter" is itself a counting problem (no fixed
+  position is markable), so the clean options are:
+  1. **Body head-preserving + counter at the cursor** — require the body to return the head to a fixed
+     cursor co-located with (the boundary of) the counter; cheapest, but constrains every body.
+  2. **Re-scan each iteration** — re-derive position by scanning from a tape end per iteration; needs no
+     body constraint and stays polynomial (`Θ(2^n)` iterations × `Θ(2^n)` scan = `Θ(2^{2n}) = Θ(L²)`,
+     within the `poly(L)` budget the row loop already incurs), at the cost of a quadratic factor.
+  The recommended first build is option 1 with an explicit *head-preserving body* hypothesis (the row
+  body can be made head-preserving by a closing rewind via `selfLoopScanLeft`), proving the combinator
+  by induction on the counter value `K`: each iteration = run `B` (per-iteration hypothesis) ▸ test ▸
+  consume one tick ▸ back-edge.  The two-sided head bounds (`TreeMCSPBidirHeadBounds`) supply the
+  kinematic accounting.  This is the focused next-session entry point; the counter half it rests on is
+  done.
+
 This is the point to start coding next: the unary-counter loop combinator, built like the self-loops
 (program + `timeBound` + `neverMovesLeft` + single-step + run-`K`-times invariant), is the smallest
 verified brick that advances both remaining data-dependent items.

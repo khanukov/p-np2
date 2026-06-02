@@ -103,6 +103,19 @@ theorem tagCheckProgram_stepConfig_tape {L : Nat}
   · subst hj; simp [Configuration.write]
   · simp [Configuration.write, hj]
 
+/-- One scanning step updates the accumulated-match state: it ANDs in whether the scanned bit
+equals the corresponding tag bit.  Companion to the phase/head/tape single-step lemmas. -/
+theorem tagCheckProgram_stepConfig_state {L : Nat}
+    (c : Configuration (M := tagCheckProgram.toPhased.toTM) L)
+    {i : Fin (tagLen + 1)} {s : Bool} (hi : i.val < tagLen)
+    (hstate : c.state = ⟨i, s⟩) :
+    ((TM.stepConfig (M := tagCheckProgram.toPhased.toTM) c).state).snd
+      = (s && (c.tape c.head == natBitBE treePrefixTag tagLen ⟨i.val, hi⟩)) := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp only [ConstStatePhasedProgram.toPhased, tagCheckProgram, dif_pos hi]
+
 /--
 Scan invariant: after `k ≤ tagLen` steps of the tag-check TM from the initial configuration, the
 control phase index and the head are both at position `k`, and the tape is unchanged.  Proved by

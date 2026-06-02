@@ -137,6 +137,7 @@ definitionally the transition's move, and the toolkit's `seq_transition_*_move` 
 each region (P1-normal mirrors P1, the P1-accept handoff is `Move.stay`, P2-region mirrors P2).
 -/
 
+omit [Inhabited S] in
 /-- Transition-level never-left for `seq`: if both components' transition functions never move left,
 neither does `seq P1 P2`'s. -/
 theorem seq_transition_neverLeft (P1 P2 : ConstStatePhasedProgram S)
@@ -153,6 +154,7 @@ theorem seq_transition_neverLeft (P1 P2 : ConstStatePhasedProgram S)
     have hlt : i.val - P1.numPhases < P2.numPhases := by omega
     rw [seq_transition_P2_move P1 P2 h2 hlt q b]; exact hP2 ⟨i.val - P1.numPhases, hlt⟩ q b
 
+omit [Inhabited S] in
 /-- `seq` preserves `TMNeverMovesLeft` (lifts `seq_transition_neverLeft` through `toPhased`/`toTM`). -/
 theorem seq_neverMovesLeft (P1 P2 : ConstStatePhasedProgram S)
     (hP1 : TMNeverMovesLeft (P1.toPhased.toTM))
@@ -184,6 +186,77 @@ theorem seqList_neverMovesLeft (ps : List (ConstStatePhasedProgram S))
       exact seq_neverMovesLeft p (seqList rest)
         (h p (List.mem_cons.mpr (Or.inl rfl)))
         (ih (fun q hq => h q (List.mem_cons.mpr (Or.inr hq))))
+
+/-!
+## Single-step simulation of `seq` in the P1 region
+
+These lemmas characterize one `stepConfig` of `(seq P1 P2).toTM` when the control phase lies in P1's
+normal region (`< P1.numPhases`, not at P1's accept phase) entirely in terms of P1's transition
+function — the phase index, accumulated local state, written bit (tape), and head move all follow
+P1.  They are the single-step backbone for a run-level simulation of the first component inside a
+composition (the analogue, for generic `seq`, of the tag-check program's `stepConfig` lemmas), built
+from the toolkit's per-transition `seq_transition_P1_normal_*` characterizations.
+-/
+
+omit [Inhabited S] in
+/-- One step in P1's normal region advances the phase exactly as P1's transition does. -/
+theorem seq_stepConfig_P1_normal_phase (P1 P2 : ConstStatePhasedProgram S) {L : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) L)
+    {i : Fin (seq P1 P2).numPhases} {q : S}
+    (h1 : i.val < P1.numPhases) (hne : i.val ≠ P1.acceptPhase.val)
+    (hstate : c.state = ⟨i, q⟩) :
+    ((TM.stepConfig (M := (seq P1 P2).toPhased.toTM) c).state).fst.val
+      = (P1.transition ⟨i.val, h1⟩ q (c.tape c.head)).fst.val := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp only [ConstStatePhasedProgram.toPhased]
+  rw [seq_transition_P1_normal_phase P1 P2 h1 hne q (c.tape c.head)]
+
+omit [Inhabited S] in
+/-- One step in P1's normal region updates the local state exactly as P1's transition does. -/
+theorem seq_stepConfig_P1_normal_state (P1 P2 : ConstStatePhasedProgram S) {L : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) L)
+    {i : Fin (seq P1 P2).numPhases} {q : S}
+    (h1 : i.val < P1.numPhases) (hne : i.val ≠ P1.acceptPhase.val)
+    (hstate : c.state = ⟨i, q⟩) :
+    ((TM.stepConfig (M := (seq P1 P2).toPhased.toTM) c).state).snd
+      = (P1.transition ⟨i.val, h1⟩ q (c.tape c.head)).snd.fst := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp only [ConstStatePhasedProgram.toPhased]
+  rw [seq_transition_P1_normal_state P1 P2 h1 hne q (c.tape c.head)]
+
+omit [Inhabited S] in
+/-- One step in P1's normal region writes the bit P1's transition would write. -/
+theorem seq_stepConfig_P1_normal_tape (P1 P2 : ConstStatePhasedProgram S) {L : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) L)
+    {i : Fin (seq P1 P2).numPhases} {q : S}
+    (h1 : i.val < P1.numPhases) (hne : i.val ≠ P1.acceptPhase.val)
+    (hstate : c.state = ⟨i, q⟩) :
+    (TM.stepConfig (M := (seq P1 P2).toPhased.toTM) c).tape
+      = c.write c.head (P1.transition ⟨i.val, h1⟩ q (c.tape c.head)).snd.snd.fst := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp only [ConstStatePhasedProgram.toPhased]
+  rw [seq_transition_P1_normal_bit P1 P2 h1 hne q (c.tape c.head)]
+
+omit [Inhabited S] in
+/-- One step in P1's normal region moves the head as P1's transition directs. -/
+theorem seq_stepConfig_P1_normal_head (P1 P2 : ConstStatePhasedProgram S) {L : Nat}
+    (c : Configuration (M := (seq P1 P2).toPhased.toTM) L)
+    {i : Fin (seq P1 P2).numPhases} {q : S}
+    (h1 : i.val < P1.numPhases) (hne : i.val ≠ P1.acceptPhase.val)
+    (hstate : c.state = ⟨i, q⟩) :
+    (TM.stepConfig (M := (seq P1 P2).toPhased.toTM) c).head
+      = c.moveHead (P1.transition ⟨i.val, h1⟩ q (c.tape c.head)).snd.snd.snd := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp only [ConstStatePhasedProgram.toPhased]
+  rw [seq_transition_P1_normal_move P1 P2 h1 hne q (c.tape c.head)]
 
 end ConstStatePhasedProgram
 end TM

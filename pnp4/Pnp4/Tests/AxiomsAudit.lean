@@ -418,6 +418,11 @@ end Pnp4
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_neverMovesLeft
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.idleCS_neverMovesLeft
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seqList_neverMovesLeft
+-- Single-step seq simulation (P1 region); structural TM reasoning.
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_normal_phase
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_normal_state
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_normal_tape
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_normal_head
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.PhasedProgram.accepts_toTM
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_transition_move
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_neverMovesLeft

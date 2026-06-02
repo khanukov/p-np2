@@ -3641,6 +3641,11 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_neverMovesLeft
 #check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.idleCS_neverMovesLeft
 #check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seqList_neverMovesLeft
+-- Single-step simulation of seq in the P1 region (run-simulation backbone for composition).
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_normal_phase
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_normal_state
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_normal_tape
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_normal_head
 #check @Pnp3.Internal.PsubsetPpoly.TM.PhasedProgram.accepts_toTM
 -- First verifier parse-phase program (NP-verifier track).
 #check @Pnp4.Frontier.ContractExpansion.tagCheckProgram

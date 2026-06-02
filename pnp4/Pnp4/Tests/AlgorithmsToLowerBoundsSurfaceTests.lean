@@ -3696,6 +3696,10 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_runConfig_scanning
 #check @Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_runConfig_terminator
 #check @Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_locates_gamma_terminator
+-- M-compatible self-loop scan (back-edge construct, brick 0): fixed 2-phase structure.
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_timeBound
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_neverMovesLeft
 
 end Tests
 end Pnp4

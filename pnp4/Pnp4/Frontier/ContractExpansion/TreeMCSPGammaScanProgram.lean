@@ -241,6 +241,55 @@ theorem gammaZeroScanProgram_locates_gamma_terminator {L maxIters : Nat} (n : Na
     rw [hcongr]
     exact gammaBit_terminator n
 
+/-!
+## M-compatible self-loop scan (the back-edge construct; corrects the straight-line `maxIters` version)
+
+The `maxIters`-parameterized program above has an *input-dependent* phase count and so cannot be part
+of the single fixed verifier `M` for a data-dependent gamma length (see `TM_VERIFIER_STRATEGY.md` §6's
+correction).  The structure `M` actually needs is a **self-loop**: one scan phase that re-enters
+itself (a back-edge) while reading `0`, advancing the head, and exits to a "done" phase on the first
+`1`.  This has a **fixed** phase count (2), independent of the input, yet iterates a data-dependent
+number of times — the first concrete instance of the back-edge primitive (brick 0).  The remaining
+work is the self-loop's run invariant (phase stays `0`, head advances) and terminator, analogous to
+the `maxIters` version but with the phase held constant across the loop.
+-/
+
+/-- Self-loop count-zeros scan: phase `0` re-enters itself (advancing right) while reading `0`, and
+jumps to the "done" phase `1` (staying put) on the first `1`.  Fixed 2-phase structure — suitable for
+the single fixed verifier `M` (unlike the straight-line `maxIters` program). -/
+def gammaSelfLoopScan : ConstStatePhasedProgram Unit where
+  numPhases := 2
+  startPhase := ⟨0, by omega⟩
+  startState := ()
+  acceptPhase := ⟨1, by omega⟩
+  acceptState := ()
+  transition := fun i _ b =>
+    if i.val = 0 then
+      if b then (⟨1, by omega⟩, (), b, Move.stay)
+      else (⟨0, by omega⟩, (), b, Move.right)
+    else
+      (⟨1, by omega⟩, (), b, Move.stay)
+  timeBound := fun n => n
+
+@[simp] theorem gammaSelfLoopScan_timeBound (n : Nat) :
+    gammaSelfLoopScan.timeBound n = n := rfl
+
+/-- The self-loop scan never moves the head left: it advances right while scanning a `0`, otherwise
+stays (on the terminator, or in the done phase). -/
+theorem gammaSelfLoopScan_transition_move (i : Fin 2) (s : Unit) (b : Bool) :
+    (gammaSelfLoopScan.transition i s b).2.2.2 ≠ Move.left := by
+  unfold gammaSelfLoopScan
+  dsimp only
+  split_ifs <;> simp
+
+/-- The compiled self-loop scan TM never moves its head left (lifts the transition fact through
+`toPhased`/`toTM`; composes via `seqList_neverMovesLeft`). -/
+theorem gammaSelfLoopScan_neverMovesLeft :
+    TMNeverMovesLeft (gammaSelfLoopScan.toPhased.toTM) := by
+  intro st b
+  obtain ⟨i, s⟩ := st
+  exact gammaSelfLoopScan_transition_move i s b
+
 end ContractExpansion
 end Frontier
 end Pnp4

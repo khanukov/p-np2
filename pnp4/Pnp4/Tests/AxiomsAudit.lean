@@ -468,3 +468,6 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_runConfig_terminator
 #print axioms Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_locates_gamma_terminator
+-- M-compatible self-loop scan (back-edge construct); structural TM reasoning.
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_transition_move
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_neverMovesLeft

@@ -311,13 +311,18 @@ inequality `timeBound(L) ≤ L^c + c` for a concrete `c` derived from the assemb
    ▸ stop *on the gamma terminator* on one composed machine).  This also lands on the **assembled**
    skeleton: `mSkeletonU_tagCheck_handoff` (`TreeMCSPSkeletonComposition.lean`) instantiates the generic
    handoff at `P2 := seqList […]`, so `mSkeletonU` itself (not a toy 2-phase `seq`) verifies the tag and
-   hands off after `tagLen + 1` steps.  **Remaining (right-only):** the *one* tractable next brick is
-   **transitively-nested composition** — the gamma scan in the doubly-nested *P2∘P1* position (it is P1
-   of the inner `seq gammaSelfLoopScan R` which is P2 of the outer `seq tagCheckProgramU …`), via
-   `seq_stepConfig_P2_*` composed with `seq_transition_P1_normal_*`; this proves the composition lemmas
-   chain to *any* depth (`seqList` length ≥ 3) and completes "`mSkeletonU` runs tag ▸ gamma-scan".  Past
-   the scan, the data-dependent loops need the comparison/bidirectional layer below (see §6's correction
-   and §6b's right-only-ceiling analysis).
+   hands off after `tagLen + 1` steps.  **Transitively-nested composition is now also DONE:** the gamma
+   scan is re-derived in the doubly-nested *P2∘P1* position (P1 of the inner `seq gammaSelfLoopScan R`,
+   itself P2 of the outer `seq tagCheckProgramU …`) via `seq_stepConfig_P2_*` ∘ `seq_transition_P1_normal_*`
+   (`gammaSelfLoopScan_seqNested_*`, `TreeMCSPScanComposition.lean`), the generic nested chain
+   `tagCheckThenNestedGammaScan_runConfig` (`TreeMCSPLeadingPhasesChain.lean`) splices it onto the
+   tag-check handoff, and `mSkeletonU_tagCheck_then_scan` lands it on the **assembled** skeleton: the
+   real `mSkeletonU` runs **tag check ▸ gamma zero-scan** end-to-end.  This proves the per-phase
+   composition lemmas chain to *any* `seqList` depth — so the **right-only composition layer is now
+   structurally complete** (both positions, transitive nesting, real-assembly capstone).  **Remaining
+   is no longer right-only:** past the scan, the data-dependent loops (gamma payload read, prefix
+   compare) need the **bidirectional** layer (see §6's correction and §6b's right-only-ceiling
+   analysis), and the row loop additionally needs upstream `circuitEvaluatorCS_run_correct`.
 2. **Parse-on-tape** — *tag check **DONE*** (`TreeMCSPTagCheckProgram.lean`: program, `timeBound`,
    `neverMovesLeft`, single-step lemmas, `runConfig_scan`, accept-iff, matched-state, semantic
    correctness `accepts ⇔ leading bits = tag`, Prop characterization) — valid for `M` since

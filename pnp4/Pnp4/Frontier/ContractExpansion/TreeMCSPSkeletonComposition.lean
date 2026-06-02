@@ -3,6 +3,8 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckUnit
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaScanProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSelfLoopCounter
+import Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition
+import Pnp4.Frontier.ContractExpansion.TreeMCSPLeadingPhasesChain
 import Pnp4.Frontier.ContractExpansion.BoundedLoopProgram
 
 namespace Pnp4
@@ -130,6 +132,28 @@ theorem mSkeletonU_tagCheck_handoff {L : Nat} (x : Boolcube.Point L)
   have hM : mSkeletonU = seq tagCheckProgramU (seqList [gammaSelfLoopScan, selfLoopIncrement]) := rfl
   rw [hM]
   exact tagCheckProgramU_seq_runConfig_handoff (seqList [gammaSelfLoopScan, selfLoopIncrement]) x hmatch
+
+/-- The **assembled** skeleton `mSkeletonU` runs its first two real phases — tag check ▸ gamma
+zero-scan — on one machine.  Since `mSkeletonU = seq tagCheckProgramU (seq gammaSelfLoopScan (seqList
+[selfLoopIncrement]))` definitionally, the transitively-nested chain
+`tagCheckThenNestedGammaScan_runConfig` (with `R := seqList [selfLoopIncrement]`) applies: on a matching
+tag and an all-zero gamma prefix of length `k`, after `(tagLen + 1) + k` steps `mSkeletonU` rests in the
+gamma-scan phase (`tagLen + 2`), the head advanced to `tagLen + k`, the tape unchanged.  The capstone
+run-behaviour fact for the real assembled skeleton (the count `(tagLen + 1) + k` is non-constant, so it
+typechecks directly against the nested chain up to the `seqList`-unfolding defeq). -/
+theorem mSkeletonU_tagCheck_then_scan {L : Nat} (x : Boolcube.Point L)
+    (hmatch : tagMatchPrefix x tagLen = true) (k : Nat) (hk : tagLen + k ≤ L)
+    (hzeros : ∀ p : Fin (mSkeletonU.toPhased.toTM.tapeLength L),
+      tagLen ≤ (p : Nat) → (p : Nat) < tagLen + k →
+      (mSkeletonU.toPhased.toTM.initialConfig x).tape p = false) :
+    (((TM.runConfig (M := mSkeletonU.toPhased.toTM)
+        (mSkeletonU.toPhased.toTM.initialConfig x) ((tagLen + 1) + k)).state).fst : Nat) = tagLen + 2
+      ∧ ((TM.runConfig (M := mSkeletonU.toPhased.toTM)
+          (mSkeletonU.toPhased.toTM.initialConfig x) ((tagLen + 1) + k)).head : Nat) = tagLen + k
+      ∧ (TM.runConfig (M := mSkeletonU.toPhased.toTM)
+          (mSkeletonU.toPhased.toTM.initialConfig x) ((tagLen + 1) + k)).tape
+          = (mSkeletonU.toPhased.toTM.initialConfig x).tape :=
+  tagCheckThenNestedGammaScan_runConfig (seqList [selfLoopIncrement]) x hmatch k hk hzeros
 
 end ContractExpansion
 end Frontier

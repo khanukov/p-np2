@@ -128,6 +128,52 @@ theorem tagCheckThenGammaScanTerminator_runConfig {L : Nat} (x : Boolcube.Point 
   · rw [hsh, hhd1]
   · rw [hst, htp1]
 
+/-- **Transitively-nested** chain (`seqList` length ≥ 3): tag check ▸ handoff ▸ gamma zero-scan, where
+the gamma scan sits in the *doubly-nested* P2∘P1 position `seq tagCheckProgramU (seq gammaSelfLoopScan
+R)` (the shape of `mSkeletonU`'s first two phases, with `R` carrying the remaining phases).  On a
+matching tag and an all-zero gamma prefix of length `k`, after `(tagLen + 1) + k` steps the machine
+rests in the gamma-scan phase (`tagLen + 2`), head advanced to `tagLen + k`, tape unchanged.  Splices
+the tag-check handoff (`P2 := seq gammaSelfLoopScan R`) with the nested scanning invariant via
+`TM.runConfig_add`, proving the per-phase composition lemmas chain to *any* `seqList` depth. -/
+theorem tagCheckThenNestedGammaScan_runConfig (R : ConstStatePhasedProgram Unit) {L : Nat}
+    (x : Boolcube.Point L) (hmatch : tagMatchPrefix x tagLen = true)
+    (k : Nat) (hk : tagLen + k ≤ L)
+    (hzeros : ∀ p : Fin ((seq tagCheckProgramU (seq gammaSelfLoopScan R)).toPhased.toTM.tapeLength L),
+      tagLen ≤ (p : Nat) → (p : Nat) < tagLen + k →
+      ((seq tagCheckProgramU (seq gammaSelfLoopScan R)).toPhased.toTM.initialConfig x).tape p = false) :
+    (((TM.runConfig (M := (seq tagCheckProgramU (seq gammaSelfLoopScan R)).toPhased.toTM)
+        ((seq tagCheckProgramU (seq gammaSelfLoopScan R)).toPhased.toTM.initialConfig x)
+        ((tagLen + 1) + k)).state).fst : Nat) = tagLen + 2
+      ∧ ((TM.runConfig (M := (seq tagCheckProgramU (seq gammaSelfLoopScan R)).toPhased.toTM)
+          ((seq tagCheckProgramU (seq gammaSelfLoopScan R)).toPhased.toTM.initialConfig x)
+          ((tagLen + 1) + k)).head : Nat) = tagLen + k
+      ∧ (TM.runConfig (M := (seq tagCheckProgramU (seq gammaSelfLoopScan R)).toPhased.toTM)
+          ((seq tagCheckProgramU (seq gammaSelfLoopScan R)).toPhased.toTM.initialConfig x)
+          ((tagLen + 1) + k)).tape
+          = ((seq tagCheckProgramU (seq gammaSelfLoopScan R)).toPhased.toTM.initialConfig x).tape := by
+  obtain ⟨hph1, hhd1, htp1⟩ :=
+    tagCheckProgramU_seq_runConfig_handoff (seq gammaSelfLoopScan R) x hmatch
+  rw [TM.runConfig_add]
+  revert hph1 hhd1 htp1
+  generalize TM.runConfig (M := (seq tagCheckProgramU (seq gammaSelfLoopScan R)).toPhased.toTM)
+    ((seq tagCheckProgramU (seq gammaSelfLoopScan R)).toPhased.toTM.initialConfig x) (tagLen + 1) = c1
+  intro hph1 hhd1 htp1
+  have hphase : (c1.state.fst : Nat) = tagCheckProgramU.numPhases := by
+    rw [hph1]
+    simp [seq_startPhase_val, gammaSelfLoopScan_startPhase_val, tagCheckProgramU_numPhases]
+  obtain ⟨hsp, hsh, hst⟩ :=
+    gammaSelfLoopScan_seqNested_runConfig_scanning tagCheckProgramU R c1 hphase k
+      (by rw [hhd1]; exact hk)
+      (by
+        intro p hp1 hp2
+        rw [htp1]
+        rw [hhd1] at hp1 hp2
+        exact hzeros p hp1 hp2)
+  refine ⟨?_, ?_, ?_⟩
+  · rw [hsp, tagCheckProgramU_numPhases]
+  · rw [hsh, hhd1]
+  · rw [hst, htp1]
+
 end ContractExpansion
 end Frontier
 end Pnp4

@@ -529,6 +529,7 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seqP2_stepConfig_scan_zero_tape
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seqP2_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seqP2_runConfig_terminator
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seqNested_runConfig_scanning
 -- Decrement composition lift (down-counter survives seq).
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_runConfig_borrow
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_runConfig_stop
@@ -555,9 +556,11 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.mSkeletonU_neverMovesLeft
 #print axioms Pnp4.Frontier.ContractExpansion.mSkeletonU_timeBound_le
 #print axioms Pnp4.Frontier.ContractExpansion.mSkeletonU_tagCheck_handoff
+#print axioms Pnp4.Frontier.ContractExpansion.mSkeletonU_tagCheck_then_scan
 -- Tag check run behaviour inside the P1 region of a `seq` (invariant + handoff consumer).
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgramU_seq_runConfig_inv
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgramU_seq_runConfig_handoff
 -- M's first two leading phases run in sequence on one composed machine.
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckThenGammaScan_runConfig
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckThenGammaScanTerminator_runConfig
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckThenNestedGammaScan_runConfig

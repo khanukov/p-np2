@@ -3795,6 +3795,8 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seqP2_stepConfig_scan_one_phase
 #check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seqP2_runConfig_scanning
 #check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seqP2_runConfig_terminator
+-- Gamma scan in the doubly-nested P2∘P1 position (transitive composition, seqList depth ≥ 3).
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seqNested_runConfig_scanning
 -- Decrement composition lift (down-counter survives seq).
 #check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_stepConfig_borrow_phase
 #check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_stepConfig_borrow_head
@@ -3840,8 +3842,10 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.mSkeletonU
 #check @Pnp4.Frontier.ContractExpansion.mSkeletonU_neverMovesLeft
 #check @Pnp4.Frontier.ContractExpansion.mSkeletonU_timeBound_le
--- Run behaviour of the assembled skeleton: its tag-check phase verifies and hands off.
+-- Run behaviour of the assembled skeleton: its tag-check phase verifies and hands off,
+-- then the gamma scan runs (tag ▸ gamma zero-scan on the real mSkeletonU).
 #check @Pnp4.Frontier.ContractExpansion.mSkeletonU_tagCheck_handoff
+#check @Pnp4.Frontier.ContractExpansion.mSkeletonU_tagCheck_then_scan
 -- Tag check (M's first phase) run behaviour inside the P1 region of a `seq`.
 #check @Pnp4.Frontier.ContractExpansion.tagCheckProgramU_seq_stepConfig_match_phase
 #check @Pnp4.Frontier.ContractExpansion.tagCheckProgramU_seq_stepConfig_mismatch_phase
@@ -3852,6 +3856,8 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- M's first two leading phases (tag check then gamma scan) run in sequence on one composed machine.
 #check @Pnp4.Frontier.ContractExpansion.tagCheckThenGammaScan_runConfig
 #check @Pnp4.Frontier.ContractExpansion.tagCheckThenGammaScanTerminator_runConfig
+-- Transitively-nested chain + capstone on the assembled mSkeletonU.
+#check @Pnp4.Frontier.ContractExpansion.tagCheckThenNestedGammaScan_runConfig
 
 end Tests
 end Pnp4

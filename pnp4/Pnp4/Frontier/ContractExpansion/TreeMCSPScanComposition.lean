@@ -407,6 +407,116 @@ theorem gammaSelfLoopScan_seqP2_runConfig_terminator (P1 : ConstStatePhasedProgr
   · rw [gammaSelfLoopScan_seqP2_stepConfig_scan_one_tape P1 c
       (i := c.state.fst) (s := c.state.snd) hph rfl hbit, htp]
 
+/-! ## Transitively-nested composition: the gamma scan in the P2∘P1 position
+
+For `seqList` of length ≥ 3 the gamma scan sits in a *doubly-nested* position: it is the first
+component (P1) of an inner `seq gammaSelfLoopScan R`, which is itself the non-first component (P2) of
+an outer `seq P1 (seq gammaSelfLoopScan R)`.  (E.g. `mSkeletonU = seq tagCheckProgramU (seqList
+[gammaSelfLoopScan, selfLoopIncrement])` and `seqList [gammaSelfLoopScan, selfLoopIncrement] = seq
+gammaSelfLoopScan (seqList [selfLoopIncrement])`.)  A step there is the outer P2-region step
+(`seq_stepConfig_P2_*`) feeding the inner P1-normal transition (`seq_transition_P1_normal_*`).  These
+lemmas re-derive the scan in that position, proving the composition layer chains to *any* depth. -/
+
+/-- Nested scan step (outer phase `P1.numPhases`, inner gamma-scan phase `0`, bit `0`): the phase
+stays `P1.numPhases`. -/
+theorem gammaSelfLoopScan_seqNested_stepConfig_scan_zero_phase
+    (P1 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq P1 (seq gammaSelfLoopScan R)).toPhased.toTM) L)
+    {i : Fin (seq P1 (seq gammaSelfLoopScan R)).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = false) :
+    ((TM.stepConfig (M := (seq P1 (seq gammaSelfLoopScan R)).toPhased.toTM) c).state).fst.val
+      = P1.numPhases := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_phase P1 (seq gammaSelfLoopScan R) c
+      (h2 := hi.ge) (hlt := by rw [hsub, seq_numPhases, gammaSelfLoopScan_numPhases]; omega) hstate]
+  simp [seq, gammaSelfLoopScan, hsub, hbit]
+
+/-- Nested scan step (bit `0`): the head advances right. -/
+theorem gammaSelfLoopScan_seqNested_stepConfig_scan_zero_head
+    (P1 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq P1 (seq gammaSelfLoopScan R)).toPhased.toTM) L)
+    {i : Fin (seq P1 (seq gammaSelfLoopScan R)).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = false) :
+    (TM.stepConfig (M := (seq P1 (seq gammaSelfLoopScan R)).toPhased.toTM) c).head
+      = Configuration.moveHead (c := c) Move.right := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_head P1 (seq gammaSelfLoopScan R) c
+      (h2 := hi.ge) (hlt := by rw [hsub, seq_numPhases, gammaSelfLoopScan_numPhases]; omega) hstate]
+  simp [seq, gammaSelfLoopScan, hsub, hbit]
+
+/-- Nested scan step (bit `0`): the tape is unchanged (the `0` is written back). -/
+theorem gammaSelfLoopScan_seqNested_stepConfig_scan_zero_tape
+    (P1 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq P1 (seq gammaSelfLoopScan R)).toPhased.toTM) L)
+    {i : Fin (seq P1 (seq gammaSelfLoopScan R)).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = false) :
+    (TM.stepConfig (M := (seq P1 (seq gammaSelfLoopScan R)).toPhased.toTM) c).tape = c.tape := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  have hwrite : (TM.stepConfig (M := (seq P1 (seq gammaSelfLoopScan R)).toPhased.toTM) c).tape
+      = c.write c.head false := by
+    rw [seq_stepConfig_P2_tape P1 (seq gammaSelfLoopScan R) c
+        (h2 := hi.ge) (hlt := by rw [hsub, seq_numPhases, gammaSelfLoopScan_numPhases]; omega) hstate]
+    simp [seq, gammaSelfLoopScan, hsub, hbit]
+  rw [hwrite]
+  funext j
+  by_cases hj : j = c.head
+  · subst hj; simp [Configuration.write, hbit]
+  · simp [Configuration.write, hj]
+
+/-- Nested terminator step (bit `1`): jump to the inner gamma scan's shifted accept phase
+`P1.numPhases + 1`. -/
+theorem gammaSelfLoopScan_seqNested_stepConfig_scan_one_phase
+    (P1 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq P1 (seq gammaSelfLoopScan R)).toPhased.toTM) L)
+    {i : Fin (seq P1 (seq gammaSelfLoopScan R)).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = true) :
+    ((TM.stepConfig (M := (seq P1 (seq gammaSelfLoopScan R)).toPhased.toTM) c).state).fst.val
+      = P1.numPhases + 1 := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_phase P1 (seq gammaSelfLoopScan R) c
+      (h2 := hi.ge) (hlt := by rw [hsub, seq_numPhases, gammaSelfLoopScan_numPhases]; omega) hstate]
+  simp [seq, gammaSelfLoopScan, hsub, hbit]
+
+/-- Nested scanning invariant from an arbitrary start `c0` (outer phase `P1.numPhases`): if the window
+`[c0.head, c0.head + k)` is all `0`, then after `k` steps the phase still rests at `P1.numPhases`, the
+head has advanced to `c0.head + k`, and the tape is unchanged.  The doubly-nested (P2∘P1) analogue of
+`gammaSelfLoopScan_seqP2_runConfig_scanning` — confirming the scan composes at depth ≥ 2. -/
+theorem gammaSelfLoopScan_seqNested_runConfig_scanning (P1 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c0 : Configuration (M := (seq P1 (seq gammaSelfLoopScan R)).toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = P1.numPhases) :
+    ∀ k : Nat, (c0.head : Nat) + k ≤ L →
+      (∀ p : Fin ((seq P1 (seq gammaSelfLoopScan R)).toPhased.toTM.tapeLength L),
+        (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + k → c0.tape p = false) →
+      (((TM.runConfig (M := (seq P1 (seq gammaSelfLoopScan R)).toPhased.toTM) c0 k).state).fst : Nat)
+          = P1.numPhases
+      ∧ ((TM.runConfig (M := (seq P1 (seq gammaSelfLoopScan R)).toPhased.toTM) c0 k).head : Nat)
+          = (c0.head : Nat) + k
+      ∧ (TM.runConfig (M := (seq P1 (seq gammaSelfLoopScan R)).toPhased.toTM) c0 k).tape = c0.tape := by
+  intro k
+  induction k with
+  | zero => intro _ _; exact ⟨hphase, by simp, rfl⟩
+  | succ k ih =>
+      intro hk h0
+      obtain ⟨hph, hhd, htp⟩ := ih (by omega) (fun p hp1 hp2 => h0 p hp1 (by omega))
+      rw [TM.runConfig_succ]
+      set c := TM.runConfig (M := (seq P1 (seq gammaSelfLoopScan R)).toPhased.toTM) c0 k with hc
+      have hbnd : (c.head : Nat) + 1
+          < (seq P1 (seq gammaSelfLoopScan R)).toPhased.toTM.tapeLength L := by
+        rw [hhd]
+        show (c0.head : Nat) + k + 1 < L + (P1.timeBound L + (L + R.timeBound L + 1) + 1) + 1
+        omega
+      have hbit : c.tape c.head = false := by
+        rw [htp]; exact h0 c.head (by rw [hhd]; omega) (by rw [hhd]; omega)
+      refine ⟨?_, ?_, ?_⟩
+      · exact gammaSelfLoopScan_seqNested_stepConfig_scan_zero_phase P1 R c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit
+      · rw [gammaSelfLoopScan_seqNested_stepConfig_scan_zero_head P1 R c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+        simp only [Configuration.moveHead, dif_pos hbnd]
+        omega
+      · rw [gammaSelfLoopScan_seqNested_stepConfig_scan_zero_tape P1 R c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit, htp]
+
 end ContractExpansion
 end Frontier
 end Pnp4

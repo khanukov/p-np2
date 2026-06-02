@@ -415,3 +415,4 @@ end Pnp4
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seqList_timeBound_le
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.PhasedProgram.accepts_toTM
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_transition_move
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_neverMovesLeft

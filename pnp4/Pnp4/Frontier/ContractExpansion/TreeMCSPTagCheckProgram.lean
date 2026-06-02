@@ -46,6 +46,15 @@ theorem tagCheckProgram_transition_move (i : Fin (tagLen + 1)) (s b : Bool) :
   dsimp only
   split <;> simp
 
+/-- The compiled tag-check Turing machine never moves its head left (it only scans rightward),
+lifting `tagCheckProgram_transition_move` through `toPhased`/`toTM`.  This underpins head-position
+tracking in the forthcoming semantic-correctness proof. -/
+theorem tagCheckProgram_neverMovesLeft :
+    TMNeverMovesLeft (tagCheckProgram.toPhased.toTM) := by
+  intro st b
+  obtain ⟨i, s⟩ := st
+  exact tagCheckProgram_transition_move i s b
+
 end ContractExpansion
 end Frontier
 end Pnp4

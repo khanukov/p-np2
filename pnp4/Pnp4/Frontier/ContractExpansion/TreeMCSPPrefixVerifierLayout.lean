@@ -171,6 +171,20 @@ theorem gammaLen_le_treeMCSPPrefixM
     tagLen + gammaLen n ≤ treeMCSPPrefixM codec n :=
   queryXOffset_le_treeMCSPPrefixM codec n
 
+/-- The instance size is strictly smaller than the query length: the `x` field has `2 ^ n` cells and
+`n < 2 ^ n`, so `n < treeMCSPPrefixM codec n`.  Equivalently, the instance size is logarithmic in the
+query length (`2 ^ n ≤ N`).  This bounds the gamma-decode design's search/counter range — a candidate
+`n`, and its `bitLength N`-bit binary counter, fit within the input. -/
+theorem instanceSize_lt_treeMCSPPrefixM
+    {threshold : Nat → Nat} (codec : TreeCircuitWitnessCodec threshold) (n : Nat) :
+    n < treeMCSPPrefixM codec n := by
+  have h1 : Pnp3.Models.Partial.tableLen n ≤ treeMCSPPrefixM codec n :=
+    tableLen_le_treeMCSPPrefixM codec n
+  have h2 : n < Pnp3.Models.Partial.tableLen n := by
+    unfold Pnp3.Models.Partial.tableLen
+    exact Nat.lt_two_pow_self
+  omega
+
 end ContractExpansion
 end Frontier
 end Pnp4

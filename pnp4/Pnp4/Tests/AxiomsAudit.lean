@@ -409,6 +409,7 @@ end Pnp4
 -- Gamma/x field-fit bounds (gamma-decode phase layout preconditions); Classical-free arithmetic.
 #print axioms Pnp4.Frontier.ContractExpansion.queryXOffset_le_treeMCSPPrefixM
 #print axioms Pnp4.Frontier.ContractExpansion.gammaLen_le_treeMCSPPrefixM
+#print axioms Pnp4.Frontier.ContractExpansion.instanceSize_lt_treeMCSPPrefixM
 
 -- Bounded-loop primitive (NP-verifier track); Classical-free arithmetic/structural.
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.repeatProgram_timeBound

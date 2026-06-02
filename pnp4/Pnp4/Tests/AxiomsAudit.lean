@@ -499,6 +499,7 @@ end Pnp4
 -- Unary countdown self-loop (marker-free counter).
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_runConfig_consume
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_runConfig_empty
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_seqP2_runConfig_consume
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seqP2_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seqP2_runConfig_terminator
 #print axioms Pnp4.Frontier.ContractExpansion.runConfig_head_val_ge

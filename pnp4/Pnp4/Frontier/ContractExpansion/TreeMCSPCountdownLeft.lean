@@ -5,6 +5,7 @@ namespace Frontier
 namespace ContractExpansion
 
 open Pnp3.Internal.PsubsetPpoly Pnp3.Internal.PsubsetPpoly.TM
+open Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram
 
 /-!
 # Unary countdown self-loop (NP-verifier track — marker-free counter, brick toward the row loop)
@@ -209,6 +210,106 @@ theorem selfLoopCountdownLeft_runConfig_empty {L : Nat}
   · rw [selfLoopCountdownLeft_stepConfig_stop_head c
       (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
     exact hhd
+
+/-! ### Composition lift: the countdown as a non-first (P2-region) phase
+
+For the loop combinator the countdown runs as a `seq` component, so — per the cross-instance caveat —
+we re-derive its consume behaviour on the composed machine `seq P1 selfLoopCountdownLeft` (the countdown
+occupies P2, governed by `seq_stepConfig_P2_*`).  Mirrors `selfLoopScanLeft`'s seqP2 lift, but the tape
+*evolves* (each consumed `1` becomes `0`), so the run invariant carries the conditional-tape clause. -/
+
+/-- Consume step as a non-first phase (bit `1`): the phase stays at `P1.numPhases`. -/
+theorem selfLoopCountdownLeft_seqP2_stepConfig_consume_phase (P1 : ConstStatePhasedProgram Unit)
+    {L : Nat} (c : Configuration (M := (seq P1 selfLoopCountdownLeft).toPhased.toTM) L)
+    {i : Fin (seq P1 selfLoopCountdownLeft).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = true) :
+    ((TM.stepConfig (M := (seq P1 selfLoopCountdownLeft).toPhased.toTM) c).state).fst.val
+      = P1.numPhases := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_phase P1 selfLoopCountdownLeft c
+      (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+  simp [selfLoopCountdownLeft, hsub, hbit]
+
+/-- Consume step as a non-first phase (bit `1`): the head moves left. -/
+theorem selfLoopCountdownLeft_seqP2_stepConfig_consume_head (P1 : ConstStatePhasedProgram Unit)
+    {L : Nat} (c : Configuration (M := (seq P1 selfLoopCountdownLeft).toPhased.toTM) L)
+    {i : Fin (seq P1 selfLoopCountdownLeft).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = true) :
+    (TM.stepConfig (M := (seq P1 selfLoopCountdownLeft).toPhased.toTM) c).head
+      = Configuration.moveHead (c := c) Move.left := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_head P1 selfLoopCountdownLeft c
+      (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+  simp [selfLoopCountdownLeft, hsub, hbit]
+
+/-- Consume step as a non-first phase (bit `1`): the consumed `1` becomes `0`. -/
+theorem selfLoopCountdownLeft_seqP2_stepConfig_consume_tape (P1 : ConstStatePhasedProgram Unit)
+    {L : Nat} (c : Configuration (M := (seq P1 selfLoopCountdownLeft).toPhased.toTM) L)
+    {i : Fin (seq P1 selfLoopCountdownLeft).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = true) :
+    (TM.stepConfig (M := (seq P1 selfLoopCountdownLeft).toPhased.toTM) c).tape
+      = c.write c.head false := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_tape P1 selfLoopCountdownLeft c
+      (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+  simp [selfLoopCountdownLeft, hsub, hbit]
+
+/-- Countdown consume invariant as a non-first phase, from an arbitrary start `c0` at phase
+`P1.numPhases`: a `j`-block of `1`s at/left of the head clears to `0` in exactly `j` steps, the phase
+stays at `P1.numPhases`, and the head retreats to `c0.head − j`.  Offset/non-first analogue of
+`selfLoopCountdownLeft_runConfig_consume` — the countdown's composition-API parity for the loop. -/
+theorem selfLoopCountdownLeft_seqP2_runConfig_consume (P1 : ConstStatePhasedProgram Unit) {L : Nat}
+    (c0 : Configuration (M := (seq P1 selfLoopCountdownLeft).toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = P1.numPhases) :
+    ∀ j : Nat, j ≤ (c0.head : Nat) →
+      (∀ p : Fin ((seq P1 selfLoopCountdownLeft).toPhased.toTM.tapeLength L),
+        (c0.head : Nat) - j < (p : Nat) → (p : Nat) ≤ (c0.head : Nat) → c0.tape p = true) →
+      (((TM.runConfig (M := (seq P1 selfLoopCountdownLeft).toPhased.toTM) c0 j).state).fst : Nat)
+          = P1.numPhases
+      ∧ ((TM.runConfig (M := (seq P1 selfLoopCountdownLeft).toPhased.toTM) c0 j).head : Nat)
+          = (c0.head : Nat) - j
+      ∧ ∀ p : Fin ((seq P1 selfLoopCountdownLeft).toPhased.toTM.tapeLength L),
+          (TM.runConfig (M := (seq P1 selfLoopCountdownLeft).toPhased.toTM) c0 j).tape p
+            = (if (c0.head : Nat) - j < (p : Nat) ∧ (p : Nat) ≤ (c0.head : Nat)
+                then false else c0.tape p) := by
+  intro j
+  induction j with
+  | zero =>
+      intro _ _
+      refine ⟨hphase, by simp, ?_⟩
+      intro p
+      have h0 : (TM.runConfig (M := (seq P1 selfLoopCountdownLeft).toPhased.toTM) c0 0) = c0 := rfl
+      rw [h0, if_neg (show ¬ ((c0.head : Nat) - 0 < (p : Nat) ∧ (p : Nat) ≤ (c0.head : Nat)) by omega)]
+  | succ j ih =>
+      intro hj h1
+      obtain ⟨hph, hhd, htp⟩ := ih (by omega) (fun p hp1 hp2 => h1 p (by omega) hp2)
+      rw [TM.runConfig_succ]
+      set c := TM.runConfig (M := (seq P1 selfLoopCountdownLeft).toPhased.toTM) c0 j with hc
+      have hheadne : ¬ (c.head : Nat) = 0 := by rw [hhd]; omega
+      have hbit : c.tape c.head = true := by
+        rw [htp c.head]
+        have hlt : ¬ ((c0.head : Nat) - j < (c.head : Nat) ∧ (c.head : Nat) ≤ (c0.head : Nat)) := by
+          rw [hhd]; omega
+        rw [if_neg hlt]
+        exact h1 c.head (by rw [hhd]; omega) (by rw [hhd]; omega)
+      refine ⟨?_, ?_, ?_⟩
+      · exact selfLoopCountdownLeft_seqP2_stepConfig_consume_phase P1 c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit
+      · rw [selfLoopCountdownLeft_seqP2_stepConfig_consume_head P1 c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+        simp only [Configuration.moveHead, dif_neg hheadne]
+        rw [hhd]; omega
+      · rw [selfLoopCountdownLeft_seqP2_stepConfig_consume_tape P1 c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+        intro p
+        by_cases hp : p = c.head
+        · subst hp
+          rw [Configuration.write_self,
+            if_pos (by rw [hhd]; constructor <;> omega)]
+        · rw [Configuration.write_other c hp false, htp p]
+          have hpc : (p : Nat) ≠ (c.head : Nat) := fun h => hp (Fin.ext h)
+          rw [hhd] at hpc
+          split_ifs <;> first | rfl | (exfalso; omega)
 
 end ContractExpansion
 end Frontier

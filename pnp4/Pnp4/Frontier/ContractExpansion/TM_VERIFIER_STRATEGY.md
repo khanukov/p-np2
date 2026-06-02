@@ -208,18 +208,25 @@ inequality `timeBound(L) ≤ L^c + c` for a concrete `c` derived from the assemb
 ## 8. Recommended brick order (each a separate verified commit)
 
 0. **Back-edge / self-loop loop construct** — the prerequisite surfaced in §6's correction (fixed
-   phase count, runtime-counted iteration).  **Not built** (the toolkit and `repeatProgram` are all
-   straight-line).  Required by bricks 2-gamma, 5, and the parse orchestration.  *(largest single
-   missing primitive; build first.)*
+   phase count, runtime-counted iteration).  **Self-loop case DONE** — `gammaSelfLoopScan`
+   (`TreeMCSPGammaScanProgram.lean`): a fixed 2-phase program whose scan phase re-enters itself (the
+   back-edge) while reading `0`, fully proven (program, both single-step regimes, scanning invariant
+   with the phase held *constant*, terminator, and the gamma-encoding decode
+   `gammaSelfLoopScan_locates_gamma_terminator`).  This demonstrates the back-edge primitive on a
+   real parse sub-task with the structure `M` requires.  **Remaining:** the general *body-reentry*
+   loop (re-enter a multi-phase body block with a row-index tape counter, terminating at `2^m`) for
+   the row loop (brick 5).
 1. **`boundedLoopProgram`** + composition reasoning layer (§6, §6a) — **DONE** (serves
    *constant-width* processing and fixed unrollings; see §6's correction for what it does *not* cover).
 2. **Parse-on-tape** — *tag check **DONE*** (`TreeMCSPTagCheckProgram.lean`: program, `timeBound`,
    `neverMovesLeft`, single-step lemmas, `runConfig_scan`, accept-iff, matched-state, semantic
    correctness `accepts ⇔ leading bits = tag`, Prop characterization) — valid for `M` since
-   `tagLen` is a true constant.  Gamma layout/range bounds + the **count-zeros scan** (locate +
-   decode the unary-prefix length, `TreeMCSPGammaScanProgram.lean`) **done as a `maxIters`-program /
-   reasoning device**; the gamma scan *inside `M`* must be re-cast as a **self-loop** (brick 0).
-   **Remaining:** gamma payload-read + the self-loop recasting, length-convention check.
+   `tagLen` is a true constant.  Gamma layout/range bounds done.  The count-zeros scan (locate +
+   decode the unary-prefix length) is done **both** as a `maxIters` reasoning device
+   (`gammaZeroScanProgram`) **and**, crucially, as the `M`-compatible **self-loop** `gammaSelfLoopScan`
+   (brick 0) — so the gamma unary-prefix decode now has the right structure for `M`.
+   **Remaining:** gamma payload-read (recover `n` from the `z` payload bits — needs a counted read),
+   length-convention check.
 3. **Witness slice + prefix-agreement compare** (bounded scan; `combineAtOffset` per-bit) — *remaining;
    the per-bit loop over `i` cells needs brick 0*.
 4. **On-tape circuit decode + single-row evaluation** — single-row eval is `circuitEvaluatorCS`, but

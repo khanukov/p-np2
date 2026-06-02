@@ -3840,6 +3840,8 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.mSkeletonU
 #check @Pnp4.Frontier.ContractExpansion.mSkeletonU_neverMovesLeft
 #check @Pnp4.Frontier.ContractExpansion.mSkeletonU_timeBound_le
+-- Run behaviour of the assembled skeleton: its tag-check phase verifies and hands off.
+#check @Pnp4.Frontier.ContractExpansion.mSkeletonU_tagCheck_handoff
 -- Tag check (M's first phase) run behaviour inside the P1 region of a `seq`.
 #check @Pnp4.Frontier.ContractExpansion.tagCheckProgramU_seq_stepConfig_match_phase
 #check @Pnp4.Frontier.ContractExpansion.tagCheckProgramU_seq_stepConfig_mismatch_phase

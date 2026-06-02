@@ -1,5 +1,6 @@
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckUnit
+import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaScanProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSelfLoopCounter
 import Pnp4.Frontier.ContractExpansion.BoundedLoopProgram
@@ -106,6 +107,29 @@ theorem mSkeletonU_timeBound_le (n : Nat) (hn : tagLen ≤ n) :
       · subst h; simp)
   rw [h3] at hbound
   exact hbound
+
+/-- Run behaviour of the **assembled** skeleton `mSkeletonU` (not a toy 2-phase `seq`): its tag-check
+phase verifies and hands off correctly.  Since `mSkeletonU = seq tagCheckProgramU (seqList […])`
+definitionally, the generic `tagCheckProgramU_seq_runConfig_handoff` (parametric over `P2`) applies
+directly with `P2 := seqList [gammaSelfLoopScan, selfLoopIncrement]`: on a matching tag, after
+`tagLen + 1` steps `mSkeletonU` reaches phase `tagLen + 2` (the start of the gamma-scan sub-program,
+`tagCheckProgramU.numPhases + P2.startPhase = tagCheckProgramU.numPhases`), with the head at `tagLen`
+and the tape unchanged.  Completes `mSkeletonU`'s run-level characterization alongside
+`mSkeletonU_{neverMovesLeft,timeBound_le}`. -/
+theorem mSkeletonU_tagCheck_handoff {L : Nat} (x : Boolcube.Point L)
+    (hmatch : tagMatchPrefix x tagLen = true) :
+    (((TM.runConfig (M := mSkeletonU.toPhased.toTM)
+        (mSkeletonU.toPhased.toTM.initialConfig x) (tagLen + 1)).state).fst : Nat) = tagLen + 2
+      ∧ ((TM.runConfig (M := mSkeletonU.toPhased.toTM)
+          (mSkeletonU.toPhased.toTM.initialConfig x) (tagLen + 1)).head : Nat) = tagLen
+      ∧ (TM.runConfig (M := mSkeletonU.toPhased.toTM)
+          (mSkeletonU.toPhased.toTM.initialConfig x) (tagLen + 1)).tape
+          = (mSkeletonU.toPhased.toTM.initialConfig x).tape := by
+  -- `mSkeletonU` is definitionally `seq tagCheckProgramU (seqList […])`; rewrite it *syntactically*
+  -- so the machines match without the defeq checker unfolding the concrete `tagLen+1`-fold `runConfig`.
+  have hM : mSkeletonU = seq tagCheckProgramU (seqList [gammaSelfLoopScan, selfLoopIncrement]) := rfl
+  rw [hM]
+  exact tagCheckProgramU_seq_runConfig_handoff (seqList [gammaSelfLoopScan, selfLoopIncrement]) x hmatch
 
 end ContractExpansion
 end Frontier

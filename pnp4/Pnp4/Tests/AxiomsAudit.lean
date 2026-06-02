@@ -554,6 +554,7 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.mSkeletonDemo_timeBound_le
 #print axioms Pnp4.Frontier.ContractExpansion.mSkeletonU_neverMovesLeft
 #print axioms Pnp4.Frontier.ContractExpansion.mSkeletonU_timeBound_le
+#print axioms Pnp4.Frontier.ContractExpansion.mSkeletonU_tagCheck_handoff
 -- Tag check run behaviour inside the P1 region of a `seq` (invariant + handoff consumer).
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgramU_seq_runConfig_inv
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgramU_seq_runConfig_handoff

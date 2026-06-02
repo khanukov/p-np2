@@ -3748,6 +3748,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.repeatBody_stepConfig_consume_phase
 #check @Pnp4.Frontier.ContractExpansion.repeatBody_stepConfig_halt_phase
 #check @Pnp4.Frontier.ContractExpansion.repeatBody_stepConfig_handoff_phase
+#check @Pnp4.Frontier.ContractExpansion.repeatBody_runConfig_one_iteration
 -- Two-sided head-displacement bound (bidirectional accounting foundation).
 #check @Pnp4.Frontier.ContractExpansion.runConfig_head_val_ge
 #check @Pnp4.Frontier.ContractExpansion.runConfig_head_dist_le

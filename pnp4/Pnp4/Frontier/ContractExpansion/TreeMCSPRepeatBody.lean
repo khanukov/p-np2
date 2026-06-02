@@ -158,6 +158,71 @@ theorem repeatBody_stepConfig_handoff_tape (B : ConstStatePhasedProgram Unit) {L
   · subst hj; simp [Configuration.write]
   · simp [Configuration.write, hj]
 
+/-! ### One loop iteration (the inductive step toward run-`K`-times correctness)
+
+The body's behaviour enters as an **intrinsic** hypothesis on `(repeatBody B).toTM` (from any config at
+`B`'s start phase, `sB` steps reach `B`'s accept phase, head- and tape-preserving) — stated directly on
+the composed machine, so no cross-instance bisimulation with `B.toTM` is needed; a caller discharges it
+per-instance.  (Tape-preserving = a read-only body, the clean first case; writing bodies generalise the
+tape clause.) -/
+
+/-- One loop iteration: from `B`'s start phase with a counter tick (`1`) under the head (`head ≠ 0`),
+after `sB + 2` steps (`sB` body ▸ 1 handoff ▸ 1 consume) control is back at `B`'s start phase, the head
+has retreated one cell, and that tick is cleared to `0` (rest of tape unchanged).  This is the inductive
+step of the run-`K`-times correctness; it composes the intrinsic body hypothesis with the handoff and
+consume single-step lemmas. -/
+theorem repeatBody_runConfig_one_iteration (B : ConstStatePhasedProgram Unit) {L : Nat} (sB : Nat)
+    (hbody : ∀ d : Configuration (M := (repeatBody B).toPhased.toTM) L,
+      (d.state.fst : Nat) = B.startPhase.val →
+      ((TM.runConfig (M := (repeatBody B).toPhased.toTM) d sB).state.fst : Nat) = B.acceptPhase.val
+      ∧ (TM.runConfig (M := (repeatBody B).toPhased.toTM) d sB).head = d.head
+      ∧ (TM.runConfig (M := (repeatBody B).toPhased.toTM) d sB).tape = d.tape)
+    (c : Configuration (M := (repeatBody B).toPhased.toTM) L)
+    (hstart : (c.state.fst : Nat) = B.startPhase.val)
+    (hcell : c.tape c.head = true) (hpos : (c.head : Nat) ≠ 0) :
+    ((TM.runConfig (M := (repeatBody B).toPhased.toTM) c (sB + 2)).state.fst : Nat)
+        = B.startPhase.val
+      ∧ ((TM.runConfig (M := (repeatBody B).toPhased.toTM) c (sB + 2)).head : Nat)
+          = (c.head : Nat) - 1
+      ∧ (TM.runConfig (M := (repeatBody B).toPhased.toTM) c (sB + 2)).tape
+          = c.write c.head false := by
+  obtain ⟨hbph, hbhd, hbtp⟩ := hbody c hstart
+  set cb := TM.runConfig (M := (repeatBody B).toPhased.toTM) c sB with hcb
+  -- Handoff step (cb is at B's accept phase).
+  have hlt : (cb.state.fst : Nat) < B.numPhases := by rw [hbph]; exact B.acceptPhase.isLt
+  have hcd_ph : ((TM.stepConfig (M := (repeatBody B).toPhased.toTM) cb).state.fst : Nat)
+      = B.numPhases :=
+    repeatBody_stepConfig_handoff_phase B cb (i := cb.state.fst) (s := cb.state.snd) hlt hbph rfl
+  have hcd_hd : (TM.stepConfig (M := (repeatBody B).toPhased.toTM) cb).head = cb.head :=
+    repeatBody_stepConfig_handoff_head B cb (i := cb.state.fst) (s := cb.state.snd) hlt hbph rfl
+  have hcd_tp : (TM.stepConfig (M := (repeatBody B).toPhased.toTM) cb).tape = cb.tape :=
+    repeatBody_stepConfig_handoff_tape B cb (i := cb.state.fst) (s := cb.state.snd) hlt hbph rfl
+  set cd := TM.stepConfig (M := (repeatBody B).toPhased.toTM) cb with hcd
+  -- The result config is one more (consume) step from cd.
+  have hrun : TM.runConfig (M := (repeatBody B).toPhased.toTM) c (sB + 2)
+      = TM.stepConfig (M := (repeatBody B).toPhased.toTM) cd := by
+    rw [hcd, hcb, show sB + 2 = (sB + 1) + 1 from rfl, TM.runConfig_succ, TM.runConfig_succ]
+  -- cd reads the counter tick (tape and head carried through body + handoff).
+  have hcd_bit : cd.tape cd.head = true := by
+    rw [hcd, hcd_tp, hbtp, hcd_hd, hbhd]; exact hcell
+  rw [hrun]
+  refine ⟨?_, ?_, ?_⟩
+  · exact repeatBody_stepConfig_consume_phase B cd
+      (i := cd.state.fst) (s := cd.state.snd) (by rw [hcd, hcd_ph]) rfl hcd_bit
+  · rw [repeatBody_stepConfig_consume_head B cd
+      (i := cd.state.fst) (s := cd.state.snd) (by rw [hcd, hcd_ph]) rfl hcd_bit]
+    have hcd_hd' : (cd.head : Nat) = (c.head : Nat) := by rw [hcd, hcd_hd, hbhd]
+    rw [Configuration.moveHead_left_val_of_pos cd (by rw [hcd_hd']; omega), hcd_hd']
+  · rw [repeatBody_stepConfig_consume_tape B cd
+      (i := cd.state.fst) (s := cd.state.snd) (by rw [hcd, hcd_ph]) rfl hcd_bit]
+    have hcd_hd' : cd.head = c.head := by rw [hcd, hcd_hd, hbhd]
+    have hcd_tp' : cd.tape = c.tape := by rw [hcd, hcd_tp, hbtp]
+    rw [hcd_hd']
+    funext j
+    by_cases hj : j = c.head
+    · subst hj; simp [Configuration.write]
+    · simp [Configuration.write, hj, hcd_tp']
+
 end ContractExpansion
 end Frontier
 end Pnp4

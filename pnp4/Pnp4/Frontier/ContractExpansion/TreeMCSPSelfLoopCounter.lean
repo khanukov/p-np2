@@ -1,10 +1,12 @@
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgram
+import Complexity.TMVerifier.TuringToolkit.BinaryCounter
 
 namespace Pnp4
 namespace Frontier
 namespace ContractExpansion
 
 open Pnp3.Internal.PsubsetPpoly Pnp3.Internal.PsubsetPpoly.TM
+open Pnp3.Internal.PsubsetPpoly.TM.BinaryCounter
 
 /-!
 # Self-loop binary increment (NP-verifier track, brick 0 — variable-width counter machinery)
@@ -233,6 +235,43 @@ theorem selfLoopIncrement_runConfig_stop {L : Nat} (x : Boolcube.Point L) (j : N
     · rw [Configuration.write_other c hp true, htp p]
       have hpc : (p : Nat) ≠ j := fun h => hp (by rw [hhead_eq]; exact Fin.ext h)
       split_ifs <;> rfl
+
+/-- Semantic correctness of the self-loop increment: if the counter window `[0, k)` has its first `j`
+cells `1` and cell `j` is `0` (`j < k ≤ L`), then after `j + 1` steps its little-endian value has
+increased by exactly one.  A direct plug-in of the after-stop tape characterization
+(`selfLoopIncrement_runConfig_stop`) into the toolkit's generic bit-flip arithmetic
+(`counterValue_first_zero_diff`).  This is the variable-width counter's payoff — the structure the
+single fixed verifier `M` needs to drive its data-dependent loops. -/
+theorem selfLoopIncrement_runConfig_counterValue {L : Nat} (x : Boolcube.Point L) (j k : Nat)
+    (hjk : j < k) (hk : k ≤ L)
+    (h_ones : ∀ p : Fin (selfLoopIncrement.toPhased.toTM.tapeLength L),
+      (p : Nat) < j → (selfLoopIncrement.toPhased.toTM.initialConfig x).tape p = true)
+    (h_zero : ∀ hb : j < selfLoopIncrement.toPhased.toTM.tapeLength L,
+      (selfLoopIncrement.toPhased.toTM.initialConfig x).tape ⟨j, hb⟩ = false) :
+    counterValue (TM.runConfig (M := selfLoopIncrement.toPhased.toTM)
+        (selfLoopIncrement.toPhased.toTM.initialConfig x) (j + 1)) 0 k
+      = counterValue (selfLoopIncrement.toPhased.toTM.initialConfig x) 0 k + 1 := by
+  obtain ⟨_, _, htp⟩ := selfLoopIncrement_runConfig_stop x j (by omega) h_ones h_zero
+  refine counterValue_first_zero_diff
+    (selfLoopIncrement.toPhased.toTM.initialConfig x)
+    (TM.runConfig (M := selfLoopIncrement.toPhased.toTM)
+      (selfLoopIncrement.toPhased.toTM.initialConfig x) (j + 1)) 0 j k hjk
+    (by show (0 : Nat) + k ≤ L + L + 1; omega) ?_ ?_ ?_ ?_ ?_
+  · intro i hij hb
+    simp only [Nat.zero_add] at hb ⊢
+    exact h_ones ⟨i, hb⟩ hij
+  · intro hb
+    simp only [Nat.zero_add] at hb ⊢
+    exact h_zero hb
+  · intro i hij hb
+    simp only [Nat.zero_add] at hb ⊢
+    rw [htp ⟨i, hb⟩, if_pos hij]
+  · intro hb
+    simp only [Nat.zero_add] at hb ⊢
+    rw [htp ⟨j, hb⟩, if_neg (Nat.lt_irrefl j), if_pos rfl]
+  · intro i hji hik hb
+    simp only [Nat.zero_add] at hb ⊢
+    rw [htp ⟨i, hb⟩, if_neg (show ¬ i < j by omega), if_neg (show ¬ i = j by omega)]
 
 end ContractExpansion
 end Frontier

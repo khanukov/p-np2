@@ -3725,6 +3725,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_stepConfig_stop_tape
 #check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_runConfig_carry
 #check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_runConfig_stop
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_runConfig_counterValue
 
 end Tests
 end Pnp4

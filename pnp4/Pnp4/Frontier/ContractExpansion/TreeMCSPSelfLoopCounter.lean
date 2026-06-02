@@ -29,7 +29,16 @@ the toolkit's `counterValue` and is the next brick.  This builds no verifier and
 
 /-- Self-loop binary increment of a little-endian tape counter at the head.  Carry phase `0`
 re-enters itself (writing `0`, advancing) while reading `1`; on reading `0` it writes `1` and stops
-(phase `1`).  Fixed 2-phase structure, variable-width operation. -/
+(phase `1`).  Fixed 2-phase structure, variable-width operation.
+
+`timeBound := fun n => n` is *exact* for this brick's contract, **not** an off-by-one under-count: the
+correctness theorem `selfLoopIncrement_run_counterValue` requires the carry to be absorbed within the
+counter window (`j < k ≤ L`, with the first `0` at position `j`).  That precondition forces the
+stop-step `j + 1 ≤ L = timeBound L`, so the machine reaches — and then idles in — the accept phase
+within `timeBound L` steps.  The "all-ones, first `0` at the blank `j = L`" pattern (which would need
+`L + 1` steps) is *outside* the contract: it is a saturating counter with no spare cell to absorb the
+carry-out, and the intended uses (e.g. a row-index counter) always allocate a spare high `0` bit so
+`j < k ≤ L` holds.  Hence `n`, not `n + 1`. -/
 def selfLoopIncrement : ConstStatePhasedProgram Unit where
   numPhases := 2
   startPhase := ⟨0, by omega⟩
@@ -453,7 +462,13 @@ theorem counterValue_first_one_diff {M : TM.{0}} {n : Nat}
 /-- Self-loop binary decrement of a little-endian tape counter at the head (dual of
 `selfLoopIncrement`).  Borrow phase `0` re-enters itself (writing `1`, advancing) while reading `0`;
 on reading the first `1` it writes `0` and stops (phase `1`).  Fixed 2-phase structure, variable-width
-operation; correct when the counter value is positive. -/
+operation; correct when the counter value is positive.
+
+As for the increment, `timeBound := fun n => n` is *exact*, not an off-by-one under-count:
+`selfLoopDecrement_run_counterValue` requires the borrow to terminate within the window
+(`j < k ≤ L`, first `1` at position `j`), forcing the stop-step `j + 1 ≤ L = timeBound L`.  The
+"all-zeros until the blank `j = L`" pattern that would need `L + 1` steps is outside the contract (a
+counter value of `0`, no `1` to terminate the borrow); positive counters always have `j < k ≤ L`. -/
 def selfLoopDecrement : ConstStatePhasedProgram Unit where
   numPhases := 2
   startPhase := ⟨0, by omega⟩

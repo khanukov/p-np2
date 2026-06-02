@@ -63,6 +63,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaScanProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSelfLoopCounter
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition
+import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSkeletonComposition
 
 namespace Pnp4
@@ -551,3 +552,6 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.mSkeletonDemo_timeBound_le
 #print axioms Pnp4.Frontier.ContractExpansion.mSkeletonU_neverMovesLeft
 #print axioms Pnp4.Frontier.ContractExpansion.mSkeletonU_timeBound_le
+-- Tag check run behaviour inside the P1 region of a `seq` (invariant + handoff consumer).
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgramU_seq_runConfig_inv
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgramU_seq_runConfig_handoff

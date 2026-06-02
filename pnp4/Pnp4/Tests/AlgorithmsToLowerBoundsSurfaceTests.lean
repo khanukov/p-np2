@@ -73,6 +73,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaScanProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSelfLoopCounter
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition
+import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSkeletonComposition
 
 namespace Pnp4
@@ -3837,6 +3838,13 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.mSkeletonU
 #check @Pnp4.Frontier.ContractExpansion.mSkeletonU_neverMovesLeft
 #check @Pnp4.Frontier.ContractExpansion.mSkeletonU_timeBound_le
+-- Tag check (M's first phase) run behaviour inside the P1 region of a `seq`.
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgramU_seq_stepConfig_match_phase
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgramU_seq_stepConfig_mismatch_phase
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgramU_seq_stepConfig_sink_phase
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgramU_seq_stepConfig_handoff_phase
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgramU_seq_runConfig_inv
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgramU_seq_runConfig_handoff
 
 end Tests
 end Pnp4

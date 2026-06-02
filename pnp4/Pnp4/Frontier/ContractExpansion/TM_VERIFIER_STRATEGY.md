@@ -262,8 +262,21 @@ inequality `timeBound(L) ≤ L^c + c` for a concrete `c` derived from the assemb
    require width-bounded comparison/scan machinery on the single-tape binary model) for the row loop
    (brick 5).  The two counter *steps* (±1) are proven; closing them into a *loop* needs that
    comparison layer.
-1. **`boundedLoopProgram`** + composition reasoning layer (§6, §6a) — **DONE** (serves
-   *constant-width* processing and fixed unrollings; see §6's correction for what it does *not* cover).
+1. **`boundedLoopProgram`** + composition reasoning layer (§6, §6a) — **DONE**, and now **extended to
+   full self-loop composition-survival** (`TreeMCSPCounterComposition.lean`, `TreeMCSPScanComposition.lean`):
+   every self-loop primitive (scan, increment, decrement) is proven to retain its run behaviour when
+   embedded as a `seq` phase — as the **first** component (P1-region: carry/borrow-ripple,
+   `counterValue ± 1`, terminator-locate, and the P1→P2 handoff) **and** as a **non-first** component
+   from an arbitrary start configuration at an arbitrary tape offset (P2-region, increment & decrement).
+   Plus the **state-lifting** combinator `liftUnitProgram` (`BoundedLoopProgram.lean`) and the first
+   **heterogeneous-state** assembly: `mSkeletonDemo` (`TreeMCSPSkeletonComposition.lean`) composes the
+   `Bool`-state tag check with the lifted `Unit`-state self-loops into one well-typed program that is
+   never-left and polynomially time-bounded (`mSkeletonDemo_{neverMovesLeft,timeBound_le}`).  **Remaining
+   for full assembly:** transfer the lifted self-loops' *run behaviour* across `liftUnitProgram` (a
+   state-component bisimulation), then re-use the P1/P2 composition lemmas on the lifted phases (or,
+   alternatively, settle on a `Unit` common state by phase-encoding the tag check).  (See §6's
+   correction for what straight-line composition does *not* cover — the data-dependent loops still need
+   the comparison layer below.)
 2. **Parse-on-tape** — *tag check **DONE*** (`TreeMCSPTagCheckProgram.lean`: program, `timeBound`,
    `neverMovesLeft`, single-step lemmas, `runConfig_scan`, accept-iff, matched-state, semantic
    correctness `accepts ⇔ leading bits = tag`, Prop characterization) — valid for `M` since

@@ -64,6 +64,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPSelfLoopCounter
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition
+import Pnp4.Frontier.ContractExpansion.TreeMCSPLeadingPhasesChain
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSkeletonComposition
 
 namespace Pnp4
@@ -555,3 +556,5 @@ end Pnp4
 -- Tag check run behaviour inside the P1 region of a `seq` (invariant + handoff consumer).
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgramU_seq_runConfig_inv
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgramU_seq_runConfig_handoff
+-- M's first two leading phases run in sequence on one composed machine.
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckThenGammaScan_runConfig

@@ -74,6 +74,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPSelfLoopCounter
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition
+import Pnp4.Frontier.ContractExpansion.TreeMCSPLeadingPhasesChain
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSkeletonComposition
 
 namespace Pnp4
@@ -3845,6 +3846,8 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.tagCheckProgramU_seq_stepConfig_handoff_phase
 #check @Pnp4.Frontier.ContractExpansion.tagCheckProgramU_seq_runConfig_inv
 #check @Pnp4.Frontier.ContractExpansion.tagCheckProgramU_seq_runConfig_handoff
+-- M's first two leading phases (tag check then gamma scan) run in sequence on one composed machine.
+#check @Pnp4.Frontier.ContractExpansion.tagCheckThenGammaScan_runConfig
 
 end Tests
 end Pnp4

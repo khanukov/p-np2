@@ -316,6 +316,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPCounterComposition,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition,
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPLeadingPhasesChain,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPSkeletonComposition,
     Glob.one `Pnp4.Tests.AlgorithmsToLowerBoundsSurfaceTests,
     Glob.one `Pnp4.Tests.AxiomsAudit

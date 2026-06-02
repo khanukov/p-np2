@@ -433,6 +433,69 @@ worse than an honest design note — §6b):
   existing primitives — so the (a)/(b)/(c)/encoding decision, and the cohesive read+count+accumulate
   build on it, are the next focused pass, deferred to an explicit scheme choice.
 
+### 6f. Scheme decision — **localized decoupled unary countdown** (the filled leading-zero block *is* the loop counter)
+
+The §6d (a)/(b)/(c)/encoding fork is now **settled**, after evaluating all four against the *actual*
+layout (§4) and the *proven* loop convention (`repeatBody_runConfig_iterate'`, now built for **writing**
+bodies — `TreeMCSPRepeatBody.lean:364`).  The decision and the reasoning that rules each alternative
+in or out:
+
+**Chosen: a decoupled unary countdown, materialized *in place* as the filled leading-zero block,
+driving `repeatBody`; the payload bit is read by symmetric anchoring at the (fixed) terminator.**
+This is option (c)'s *decoupling* — the count is carried by the combinator's `K`, **not** by the read
+terminator (exactly what §6e's interlock demanded) — but realized **locally inside the gamma field**,
+which is what makes it work without §6e's unreachable far-scratch problem (see "Why not (c)-in-scratch"
+below).  It borrows (b)'s fixed-terminator anchor for *positioning* the read.
+
+**Exact mapping onto the proven combinator.**  `repeatBody_runConfig_iterate'` consumes a unary counter
+of `K` **ones ending at the start head**, walking leftward (head retreats one cell per iteration, cells
+`≤ head − K` preserved, the body writing freely *above* the head).  Map:
+* `K := z` (one iteration per leading zero / per payload bit; `z = Θ(log N)`, so the whole read is cheap).
+* **Counter := the gamma leading-zero block filled to ones** by the *built* `gammaSelfLoopFill`
+  (`[tagLen, p_term)` → `z` ones), with the **loop start head at `p_term − 1`**.  Then the counter
+  window `(p_term − 1 − z, p_term − 1] = [tagLen, p_term)` is exactly the `z` ones the theorem wants.
+* **The §6d terminator-merge caveat is neutralized, not fought.**  The fill merges the filled zeros with
+  the terminator `1` at `p_term`, but the countdown head starts at `p_term − 1` and only ever touches
+  cells `≤ p_term − 1`; the merged terminator sits at `p_term > head`, i.e. in the body's *work region*,
+  irrelevant to the count.  The boundary erasure that blocked a *scanning* shuttle simply does not arise
+  for a *counted* one.
+* **Body (writing, counter-region-preserving):** read the payload bit symmetric to the consumed zero
+  across `p_term`, shift-accumulate it into the `n`-register placed in the work region (`≥ p_term`,
+  over the payload it has already read), return the head to the iteration's start cell.  The count/stop
+  is the combinator's (`K = z` exhausted ⇒ loop exit), so read and count no longer contend.
+
+**Why not the alternatives:**
+* **(a) keep the terminator as boundary, no fill** — *rejected*: leaves the count tied to the terminator,
+  and §6e showed any scanning read either moves it (kills the stop) or must cross unmarkable already-read
+  payload (the 2-symbol wall).  Weakest.
+* **(c) countdown counter in *far scratch* `[2N+1, …)`** — *rejected as the realization, kept as the idea*:
+  the gamma field sits to the **left** of the `Θ(2^n)` x-field, scratch to the **right** of everything,
+  so a per-bit shuttle between a far-scratch counter and the gamma payload crosses arbitrary `x`/cert data
+  with **no content-findable landmark** (position 0 is input, not scratch; "first blank" is ambiguous —
+  input cells may be `0`).  This is §6e's "reachable-scratch problem", and the layout makes it real.
+  Localizing the counter *into the gamma field* (above) removes the shuttle entirely.
+* **2-track / reserved-marker encoding** — *rejected*: it gives the cleanest local stop (a genuine third
+  symbol), but it **mutates the foundational `TM` type** (binary alphabet, `tapeLength`/`runTime`, the
+  pnp3 bridge, and *every* existing toolkit proof).  Enormous blast radius, and it forfeits the
+  minimal-single-tape-binary cleanliness that gives the NP-membership claim its value.  Last resort, and
+  not needed once the count is localized.
+
+**Consistency with the row loop.**  The *same* `repeatBody` + unary-countdown paradigm serves the row
+loop (`2^n` iterations) — there the counter genuinely lives in the `Θ(2^n)` scratch, and the
+co-located per-row work (decoded circuit + gate registers, all in scratch) means no cross-arbitrary-data
+shuttle arises.  So one coherent control architecture covers both loops; only the *counter placement*
+differs (gamma field vs scratch), dictated by where each loop's work region lies.
+
+**Concrete next brick (now unblocked).**  The control infra is complete (`repeatBody` read-only **and**
+writing; `gammaSelfLoopFill`; the four-way scan vocabulary; `selfLoopCountdownLeft`; bidirectional head
+bounds).  The next coding is the single per-instance **gamma-payload-read body** `B :
+ConstStatePhasedProgram Unit` and its discharge against `repeatBody_runConfig_iterate'`: (i) the body
+program (advance/read at the symmetric payload cell ▸ shift-accumulate ▸ return head), (ii) its `sB`-step
+intrinsic `runConfig` behaviour (accept phase, head returned, counter region `≤ head` preserved), (iii)
+its `timeBound`, (iv) the run-`z`-times correctness via `iterate'`, (v) the accumulated `n`-register
+matches `decodeGamma?`.  Then length-convention check, prefix-agreement compare (same paradigm, counter =
+prefix length), the row loop (upstream-blocked on `circuitEvaluatorCS_run_correct`), and final assembly.
+
 ## 7. Runtime accounting
 
 With `threshold n = thresholdPoly k n = n^k + k`, `witnessBits n = (bitLength n + 4) · threshold n`,

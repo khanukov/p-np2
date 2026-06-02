@@ -1,4 +1,5 @@
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgram
+import Pnp4.Frontier.ContractExpansion.PrefixParserConvention
 
 namespace Pnp4
 namespace Frontier
@@ -208,6 +209,37 @@ theorem gammaZeroScanProgram_runConfig_terminator {L maxIters : Nat} (x : Boolcu
   · rw [gammaZeroScanProgram_stepConfig_state c (i := c.state.fst) (s := c.state.snd) hi rfl]
     exact hcond
   · rw [gammaZeroScanProgram_stepConfig_tape c (i := c.state.fst) (s := c.state.snd) hi rfl, htp]
+
+/-- Connecting the abstract scan to the Elias-gamma encoding: if the input's leading `gammaLen n`
+cells are exactly `gammaBit n` (the gamma code of `n`, here at offset `0`), then after
+`bitLength (n+1)` steps the head rests at `bitLength (n+1) − 1` — the gamma code's leading-zero
+count.  Instantiates the terminator brick with `z := bitLength (n+1) − 1`, discharging the
+all-zeros / terminator hypotheses from `gammaBit_zero_prefix` / `gammaBit_terminator`.  This is the
+count-zeros scan's semantic payoff: it reads off the unary-prefix length of a gamma-encoded value. -/
+theorem gammaZeroScanProgram_locates_gamma_terminator {L maxIters : Nat} (n : Nat)
+    (x : Boolcube.Point L) (hz : bitLength (n + 1) - 1 < maxIters)
+    (hgamma : ∀ p : Fin ((gammaZeroScanProgram maxIters).toPhased.toTM.tapeLength L),
+      ∀ h : (p : Nat) < gammaLen n,
+      ((gammaZeroScanProgram maxIters).toPhased.toTM.initialConfig x).tape p
+        = gammaBit n ⟨p.val, h⟩) :
+    ((TM.runConfig (M := (gammaZeroScanProgram maxIters).toPhased.toTM)
+        ((gammaZeroScanProgram maxIters).toPhased.toTM.initialConfig x)
+        (bitLength (n + 1) - 1 + 1)).head : Nat) = bitLength (n + 1) - 1 := by
+  have hzlt : bitLength (n + 1) - 1 < gammaLen n := by
+    rw [gammaLen_eq_two_mul_zeros_add_one]; omega
+  refine (gammaZeroScanProgram_runConfig_terminator x (bitLength (n + 1) - 1) hz ?_ ?_).1
+  · intro p hp
+    have hglt : (p : Nat) < gammaLen n := by omega
+    rw [hgamma p hglt]
+    exact gammaBit_zero_prefix n hp
+  · intro p hp
+    have hglt : (p : Nat) < gammaLen n := by omega
+    rw [hgamma p hglt]
+    have hcongr : gammaBit n ⟨(p : Nat), hglt⟩ = gammaBit n ⟨bitLength (n + 1) - 1, hzlt⟩ := by
+      congr 1
+      exact Fin.ext hp
+    rw [hcongr]
+    exact gammaBit_terminator n
 
 end ContractExpansion
 end Frontier

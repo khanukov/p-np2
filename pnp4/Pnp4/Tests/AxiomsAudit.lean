@@ -467,3 +467,4 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_stepConfig_head
 #print axioms Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_runConfig_terminator
+#print axioms Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_locates_gamma_terminator

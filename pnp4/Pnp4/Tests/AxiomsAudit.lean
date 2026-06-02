@@ -471,3 +471,6 @@ end Pnp4
 -- M-compatible self-loop scan (back-edge construct); structural TM reasoning.
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_transition_move
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_neverMovesLeft
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_stepConfig_scan_zero_phase
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_stepConfig_scan_zero_head
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_stepConfig_scan_zero_tape

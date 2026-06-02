@@ -3700,6 +3700,9 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan
 #check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_timeBound
 #check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_neverMovesLeft
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_stepConfig_scan_zero_phase
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_stepConfig_scan_zero_head
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_stepConfig_scan_zero_tape
 
 end Tests
 end Pnp4

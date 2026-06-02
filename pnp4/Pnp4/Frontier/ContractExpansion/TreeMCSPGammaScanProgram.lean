@@ -290,6 +290,52 @@ theorem gammaSelfLoopScan_neverMovesLeft :
   obtain ⟨i, s⟩ := st
   exact gammaSelfLoopScan_transition_move i s b
 
+/-! ### Self-loop single-step lemmas
+
+The back-edge step: in the scan phase (`0`) reading a `0`, the self-loop re-enters phase `0`,
+advances the head right, and leaves the tape unchanged (it writes the `0` back). -/
+
+/-- Scan-phase step on a `0`: the phase stays `0` (the self-loop / back-edge). -/
+theorem gammaSelfLoopScan_stepConfig_scan_zero_phase {L : Nat}
+    (c : Configuration (M := gammaSelfLoopScan.toPhased.toTM) L)
+    {i : Fin 2} {s : Unit} (hi : i.val = 0) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = false) :
+    ((TM.stepConfig (M := gammaSelfLoopScan.toPhased.toTM) c).state).fst.val = 0 := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp [ConstStatePhasedProgram.toPhased, gammaSelfLoopScan, hi, hbit]
+
+/-- Scan-phase step on a `0`: the head advances right (the head-carried scan progresses). -/
+theorem gammaSelfLoopScan_stepConfig_scan_zero_head {L : Nat}
+    (c : Configuration (M := gammaSelfLoopScan.toPhased.toTM) L)
+    {i : Fin 2} {s : Unit} (hi : i.val = 0) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = false) :
+    (TM.stepConfig (M := gammaSelfLoopScan.toPhased.toTM) c).head
+      = Configuration.moveHead (c := c) Move.right := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp [ConstStatePhasedProgram.toPhased, gammaSelfLoopScan, hi, hbit]
+
+/-- Scan-phase step on a `0`: the tape is unchanged (the `0` is written back). -/
+theorem gammaSelfLoopScan_stepConfig_scan_zero_tape {L : Nat}
+    (c : Configuration (M := gammaSelfLoopScan.toPhased.toTM) L)
+    {i : Fin 2} {s : Unit} (hi : i.val = 0) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = false) :
+    (TM.stepConfig (M := gammaSelfLoopScan.toPhased.toTM) c).tape = c.tape := by
+  have hwrite : (TM.stepConfig (M := gammaSelfLoopScan.toPhased.toTM) c).tape
+      = c.write c.head false := by
+    unfold TM.stepConfig
+    rw [hstate]
+    simp only [PhasedProgram.toTM_step]
+    simp [ConstStatePhasedProgram.toPhased, gammaSelfLoopScan, hi, hbit]
+  rw [hwrite]
+  funext j
+  by_cases hj : j = c.head
+  · subst hj; simp [Configuration.write, hbit]
+  · simp [Configuration.write, hj]
+
 end ContractExpansion
 end Frontier
 end Pnp4

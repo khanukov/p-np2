@@ -575,6 +575,32 @@ since that is buildable independently of the blocked row loop and determines whe
 body is needed at all.  Verified geometry (§6f layout lemmas) stands regardless; no body program is
 committed until its consumer is fixed.
 
+### 6i. Correction — the per-row evaluator is **proven** (`_wf`); the row loop is *unbuilt*, not proof-blocked
+
+Re-checking the "row loop is upstream-blocked on `circuitEvaluatorCS_run_correct`" claim that §6b/§6c/§9
+(and §6h) repeat — **against the actual toolkit** — shows it is **stale/overstated**:
+
+* **`circuitEvaluatorCS_run_correct_wf` is proven, `sorry`-free** (`GateWrappers.lean:5032`, via
+  `circuitEvaluatorCSAt_RunCorrect_wf_unconditional` at `:4967`).  The whole file has **no
+  `sorry`/`admit`/`axiom`/`native_decide`** and builds clean.  It gives full whole-circuit evaluator
+  correctness — every scratch slot `i` ends holding gate `i`'s value, matching `SLProgram.evalAux` —
+  **under a well-formedness hypothesis** `hwf : SLProgram_wfFromOffset gates 0`.
+* Only the **bare** (non-`_wf`) `circuitEvaluatorCS_run_correct` is future-work (a packaged `Prop`,
+  `:1047`) — the *unconditional* version for arbitrary, possibly-malformed gate lists.
+* **The NP verifier does not need the bare version.**  A verifier *rejects* an ill-formed witness/circuit
+  (well-formedness `SLProgram_wfFromOffset` is decidable, and the malformed case routes to the reject
+  sink); it only ever runs the evaluator on **well-formed** gate lists — exactly where `_wf` applies.
+
+**Conclusion.**  Item (3)'s per-row evaluation is **not blocked on a missing proof**: the needed
+correctness (`_wf`) exists and is axiom-clean.  What remains for the row loop is *construction*, sharing
+the same TM-build difficulties as items (1)/(2): a tape-level **well-formedness guard** (decode + check
+`SLProgram_wfFromOffset`, route malformed → sink), the **`2^n` unary counter** (the doubling loop
+materialising `2^n` in scratch), the **reachable-scratch navigation**, and the `repeatBody` row loop
+whose body invokes `circuitEvaluatorCS_run_correct_wf` then compares the output bit to `x`.  These are
+hard but *buildable* — none waits on an unproven upstream lemma.  All prior "upstream-blocked" wording in
+this document is corrected accordingly: the dependency is the **proven** `_wf` evaluator plus a decidable
+wf-guard.
+
 ## 7. Runtime accounting
 
 With `threshold n = thresholdPoly k n = n^k + k`, `witnessBits n = (bitLength n + 4) · threshold n`,

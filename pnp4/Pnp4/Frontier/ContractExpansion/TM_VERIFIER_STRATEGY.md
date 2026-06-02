@@ -208,14 +208,19 @@ inequality `timeBound(L) ≤ L^c + c` for a concrete `c` derived from the assemb
 ## 8. Recommended brick order (each a separate verified commit)
 
 0. **Back-edge / self-loop loop construct** — the prerequisite surfaced in §6's correction (fixed
-   phase count, runtime-counted iteration).  **Self-loop case DONE** — `gammaSelfLoopScan`
-   (`TreeMCSPGammaScanProgram.lean`): a fixed 2-phase program whose scan phase re-enters itself (the
-   back-edge) while reading `0`, fully proven (program, both single-step regimes, scanning invariant
-   with the phase held *constant*, terminator, and the gamma-encoding decode
-   `gammaSelfLoopScan_locates_gamma_terminator`).  This demonstrates the back-edge primitive on a
-   real parse sub-task with the structure `M` requires.  **Remaining:** the general *body-reentry*
-   loop (re-enter a multi-phase body block with a row-index tape counter, terminating at `2^m`) for
-   the row loop (brick 5).
+   phase count, runtime-counted iteration).  **Two proven instances DONE:**
+   * *Scanning* — `gammaSelfLoopScan` (`TreeMCSPGammaScanProgram.lean`): a fixed 2-phase scan phase
+     re-entering while reading `0`, fully proven through end-to-end `TM.run` correctness
+     (`gammaSelfLoopScan_run_locates_terminator`: decodes the gamma unary-prefix length).
+   * *Counting* — `selfLoopIncrement` (`TreeMCSPSelfLoopCounter.lean`): a fixed 2-phase
+     **variable-width** binary increment (carry self-loop), fully proven through `counterValue + 1`
+     correctness (`selfLoopIncrement_runConfig_counterValue`, via the toolkit's
+     `counterValue_first_zero_diff`).  This is the data-dependent-width counter the fixed `M` needs,
+     where the toolkit's fixed-`k` `incrementProgram` cannot serve.
+
+   So the back-edge primitive is demonstrated for **both** scanning and counting.  **Remaining:** the
+   general *body-reentry* loop (re-enter a multi-phase body with the proven counter as the row index,
+   terminating at `2^m`) for the row loop (brick 5).
 1. **`boundedLoopProgram`** + composition reasoning layer (§6, §6a) — **DONE** (serves
    *constant-width* processing and fixed unrollings; see §6's correction for what it does *not* cover).
 2. **Parse-on-tape** — *tag check **DONE*** (`TreeMCSPTagCheckProgram.lean`: program, `timeBound`,

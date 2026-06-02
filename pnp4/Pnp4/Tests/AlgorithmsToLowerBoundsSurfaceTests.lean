@@ -3627,6 +3627,9 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.queryIdxOffset
 #check @Pnp4.Frontier.ContractExpansion.queryPrefixOffset
 #check @Pnp4.Frontier.ContractExpansion.queryPrefixOffset_add_witnessBits
+#check @Pnp4.Frontier.ContractExpansion.queryXOffset_le_treeMCSPPrefixM
+#check @Pnp4.Frontier.ContractExpansion.queryIdxOffset_le_treeMCSPPrefixM
+#check @Pnp4.Frontier.ContractExpansion.gammaLen_le_treeMCSPPrefixM
 
 -- Bounded-loop primitive (NP-verifier track, the row-iteration construct).
 #check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.repeatProgram

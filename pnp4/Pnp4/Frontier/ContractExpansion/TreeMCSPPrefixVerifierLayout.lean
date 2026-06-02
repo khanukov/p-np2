@@ -146,6 +146,31 @@ theorem queryPrefixOffset_le
   have := queryPrefixOffset_add_witnessBits codec n
   omega
 
+/-- The gamma field occupies `[tagLen, queryXOffset n)` and its end (`= tagLen + gammaLen n`) lies
+within the query block.  This is the layout precondition for the gamma-decode phase: the head stays
+inside the query while scanning the Elias-gamma block for `n`. -/
+theorem queryXOffset_le_treeMCSPPrefixM
+    {threshold : Nat → Nat} (codec : TreeCircuitWitnessCodec threshold) (n : Nat) :
+    queryXOffset n ≤ treeMCSPPrefixM codec n := by
+  unfold queryXOffset treeMCSPPrefixM
+  omega
+
+/-- The truth-table (`x`) field ends at `queryIdxOffset codec n`, which lies within the query block —
+the layout precondition for the (later) instance-reading phase. -/
+theorem queryIdxOffset_le_treeMCSPPrefixM
+    {threshold : Nat → Nat} (codec : TreeCircuitWitnessCodec threshold) (n : Nat) :
+    queryIdxOffset n ≤ treeMCSPPrefixM codec n := by
+  unfold queryIdxOffset queryXOffset treeMCSPPrefixM
+  omega
+
+/-- The Elias-gamma block for `n` (length `gammaLen n`, starting at offset `tagLen`) fits entirely
+within the query block.  Restatement of `queryXOffset_le_treeMCSPPrefixM` in terms of the raw field
+length, matching the `tableLen_le_treeMCSPPrefixM` / `witnessBits_le_treeMCSPPrefixM` family. -/
+theorem gammaLen_le_treeMCSPPrefixM
+    {threshold : Nat → Nat} (codec : TreeCircuitWitnessCodec threshold) (n : Nat) :
+    tagLen + gammaLen n ≤ treeMCSPPrefixM codec n :=
+  queryXOffset_le_treeMCSPPrefixM codec n
+
 end ContractExpansion
 end Frontier
 end Pnp4

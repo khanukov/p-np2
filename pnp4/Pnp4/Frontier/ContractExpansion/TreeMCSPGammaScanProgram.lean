@@ -455,6 +455,47 @@ theorem gammaSelfLoopScan_runConfig_terminator {L : Nat} (x : Boolcube.Point L)
   · rw [gammaSelfLoopScan_stepConfig_scan_one_tape c
       (i := c.state.fst) (s := c.state.snd) hph rfl hbit, htp]
 
+/-- The self-loop scan's `M`-compatible semantic payoff: on an input whose leading `gammaLen n`
+cells are `gammaBit n` (the gamma code of `n` at offset `0`), after `bitLength (n+1)` steps the
+machine has reached the done phase `1` with the head resting at `bitLength (n+1) − 1` — the gamma
+code's unary-prefix length.  Instantiates the self-loop terminator with `z := bitLength (n+1) − 1`,
+discharging the all-zeros / terminator hypotheses from `gammaBit_zero_prefix` / `gammaBit_terminator`.
+This is the fixed-`M` analogue of `gammaZeroScanProgram_locates_gamma_terminator`. -/
+theorem gammaSelfLoopScan_locates_gamma_terminator {L : Nat} (n : Nat)
+    (x : Boolcube.Point L) (hz : bitLength (n + 1) - 1 ≤ L)
+    (hgamma : ∀ p : Fin (gammaSelfLoopScan.toPhased.toTM.tapeLength L),
+      ∀ h : (p : Nat) < gammaLen n,
+      (gammaSelfLoopScan.toPhased.toTM.initialConfig x).tape p = gammaBit n ⟨p.val, h⟩) :
+    (((TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM)
+        (gammaSelfLoopScan.toPhased.toTM.initialConfig x)
+        (bitLength (n + 1) - 1 + 1)).state).fst : Nat) = 1
+      ∧ ((TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM)
+          (gammaSelfLoopScan.toPhased.toTM.initialConfig x)
+          (bitLength (n + 1) - 1 + 1)).head : Nat) = bitLength (n + 1) - 1 := by
+  have hzlt : bitLength (n + 1) - 1 < gammaLen n := by
+    rw [gammaLen_eq_two_mul_zeros_add_one]; omega
+  have hzeros : ∀ p : Fin (gammaSelfLoopScan.toPhased.toTM.tapeLength L),
+      (p : Nat) < bitLength (n + 1) - 1 →
+      (gammaSelfLoopScan.toPhased.toTM.initialConfig x).tape p = false := by
+    intro p hp
+    have hglt : (p : Nat) < gammaLen n := by omega
+    rw [hgamma p hglt]
+    exact gammaBit_zero_prefix n hp
+  have hterm : ∀ p : Fin (gammaSelfLoopScan.toPhased.toTM.tapeLength L),
+      (p : Nat) = bitLength (n + 1) - 1 →
+      (gammaSelfLoopScan.toPhased.toTM.initialConfig x).tape p = true := by
+    intro p hp
+    have hglt : (p : Nat) < gammaLen n := by omega
+    rw [hgamma p hglt]
+    have hcongr : gammaBit n ⟨(p : Nat), hglt⟩ = gammaBit n ⟨bitLength (n + 1) - 1, hzlt⟩ := by
+      congr 1
+      exact Fin.ext hp
+    rw [hcongr]
+    exact gammaBit_terminator n
+  obtain ⟨h1, h2, _⟩ :=
+    gammaSelfLoopScan_runConfig_terminator x (bitLength (n + 1) - 1) hz hzeros hterm
+  exact ⟨h1, h2⟩
+
 end ContractExpansion
 end Frontier
 end Pnp4

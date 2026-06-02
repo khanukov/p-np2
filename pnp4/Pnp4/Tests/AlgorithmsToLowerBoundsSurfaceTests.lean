@@ -67,6 +67,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout
 import Pnp4.Frontier.ContractExpansion.BoundedLoopProgram
 import Pnp4.Frontier.ContractExpansion.PhasedProgramAccepts
+import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckProgram
 
 namespace Pnp4
 namespace Tests
@@ -3636,6 +3637,10 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seqList_timeBound_sum
 #check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seqList_timeBound_le
 #check @Pnp3.Internal.PsubsetPpoly.TM.PhasedProgram.accepts_toTM
+-- First verifier parse-phase program (NP-verifier track).
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgram
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_timeBound
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_transition_move
 
 end Tests
 end Pnp4

@@ -309,6 +309,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout,
     Glob.one `Pnp4.Frontier.ContractExpansion.BoundedLoopProgram,
     Glob.one `Pnp4.Frontier.ContractExpansion.PhasedProgramAccepts,
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckProgram,
     Glob.one `Pnp4.Tests.AlgorithmsToLowerBoundsSurfaceTests,
     Glob.one `Pnp4.Tests.AxiomsAudit
   ]

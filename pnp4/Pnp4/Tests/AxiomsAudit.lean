@@ -57,6 +57,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout
 import Pnp4.Frontier.ContractExpansion.BoundedLoopProgram
 import Pnp4.Frontier.ContractExpansion.PhasedProgramAccepts
+import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckProgram
 
 namespace Pnp4
 namespace Tests
@@ -413,3 +414,4 @@ end Pnp4
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seqList_timeBound_sum
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seqList_timeBound_le
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.PhasedProgram.accepts_toTM
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_transition_move

@@ -158,6 +158,17 @@ have different `runTime`, hence different `tapeLength`, hence different `Configu
 *own* intrinsic invariant on the composed TM, consuming the single-step lemmas region-by-region (the
 tag-check's `runConfig_scan`/`accepts_eq_tagMatch` is the worked template).
 
+**Composition-survival worked for a self-loop — DONE** (`TreeMCSPCounterComposition.lean`).  The
+per-instance lift is now demonstrated end-to-end for the **increment as the first component** of a
+composition `seq selfLoopIncrement P2` (generic `P2`): the composition single-step carry/stop/handoff
+lemmas, the carry-ripple run invariant (`selfLoopIncrement_seq_runConfig_carry`), the `counterValue + 1`
+correctness at the completion step (`selfLoopIncrement_seq_runConfig_counterValue`), and the run-level
+P1→P2 handoff (`selfLoopIncrement_seq_runConfig_handoff`: after `j+2` steps control sits at `P2`'s
+shifted start with the counter incremented and the tape stable).  This is concrete evidence that a
+proven self-loop primitive *retains its semantics when embedded as a `seqList` phase*, plus the
+reusable template (mirror the standalone proof, swap in the `seq_stepConfig_*` single-steps, adjust the
+now-`P2`-dependent `tapeLength` arithmetic) for lifting the scan and decrement the same way.
+
 ### 6b. Gamma-scan TM — design analysis (next-session entry point)
 
 The gamma field at `[tagLen, tagLen + gammaLen n)` is `0^z 1 b₁…b_z` with `z = bitLength(n+1) − 1`

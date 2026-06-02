@@ -169,6 +169,26 @@ proven self-loop primitive *retains its semantics when embedded as a `seqList` p
 reusable template (mirror the standalone proof, swap in the `seq_stepConfig_*` single-steps, adjust the
 now-`P2`-dependent `tapeLength` arithmetic) for lifting the scan and decrement the same way.
 
+The template is now applied to the **whole self-loop family** (`TreeMCSPCounterComposition.lean`,
+`TreeMCSPScanComposition.lean`): the increment (carry-ripple + `counterValue+1` + handoff), the
+**scan** (`gammaSelfLoopScan_seq_runConfig_{scanning,terminator,handoff}` — a *different* shape:
+no-write scan + locate), and the **decrement** (borrow-ripple + `counterValue = after+1` via the dual
+`counterValue_first_one_diff`).  So every self-loop `M` needs is proven to survive composition as a
+`seq`'s first phase, with control handed to `P2` carrying the right tape.
+
+**State-type-uniformity finding (key open assembly point).**  `seq`/`seqList` are parameterized by a
+*single fixed* state type `S` (both components must share it), and the toolkit ships **no** state-lift /
+state-relabel combinator.  But `M`'s phases do **not** currently share `S`: the tag check is
+`ConstStatePhasedProgram Bool` (it tracks "prefix matches tag so far"), while the self-loops are
+`ConstStatePhasedProgram Unit`.  So before the phases can actually be `seqList`-composed into `M`, one
+of: (a) pick a common `S` for all phases (e.g. carry the tag-check's `Bool`, or a richer record) and
+define each phase over it; (b) add a `mapState`/`relabel` combinator
+(`(S → S') → ConstStatePhasedProgram S → ConstStatePhasedProgram S'`) with a proved `toTM`
+simulation, then lift each phase; or (c) re-express the tag check over `Unit` (phase-encoding the
+match state).  The self-loops ignore their state component (`transition := fun i _ b => …`), so (a)/(b)
+are natural — but this is a genuine design decision, recorded here for the next assembly step (not
+rushed).
+
 ### 6b. Gamma-scan TM — design analysis (next-session entry point)
 
 The gamma field at `[tagLen, tagLen + gammaLen n)` is `0^z 1 b₁…b_z` with `z = bitLength(n+1) − 1`

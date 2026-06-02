@@ -3778,6 +3778,16 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_stepConfig_handoff_head
 #check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_stepConfig_handoff_tape
 #check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_runConfig_handoff
+-- Decrement composition lift (down-counter survives seq).
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_stepConfig_borrow_phase
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_stepConfig_borrow_head
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_stepConfig_borrow_tape
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_stepConfig_stop_phase
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_stepConfig_stop_head
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_stepConfig_stop_tape
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_runConfig_borrow
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_runConfig_stop
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_runConfig_counterValue
 
 end Tests
 end Pnp4

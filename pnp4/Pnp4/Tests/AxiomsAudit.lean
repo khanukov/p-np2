@@ -516,3 +516,7 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_runConfig_terminator
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_runConfig_handoff
+-- Decrement composition lift (down-counter survives seq).
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_runConfig_borrow
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_runConfig_stop
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_runConfig_counterValue

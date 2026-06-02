@@ -471,6 +471,12 @@ def selfLoopDecrement : ConstStatePhasedProgram Unit where
 @[simp] theorem selfLoopDecrement_timeBound (n : Nat) :
     selfLoopDecrement.timeBound n = n := rfl
 
+@[simp] theorem selfLoopDecrement_numPhases : selfLoopDecrement.numPhases = 2 := rfl
+
+@[simp] theorem selfLoopDecrement_acceptPhase_val : selfLoopDecrement.acceptPhase.val = 1 := rfl
+
+@[simp] theorem selfLoopDecrement_startPhase_val : selfLoopDecrement.startPhase.val = 0 := rfl
+
 /-- The decrement never moves the head left: the borrow advances right, otherwise stays. -/
 theorem selfLoopDecrement_transition_move (i : Fin 2) (s : Unit) (b : Bool) :
     (selfLoopDecrement.transition i s b).2.2.2 ≠ Move.left := by

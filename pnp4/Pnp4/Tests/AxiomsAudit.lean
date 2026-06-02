@@ -417,3 +417,4 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_transition_move
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_neverMovesLeft
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_stepConfig_phase
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_stepConfig_head

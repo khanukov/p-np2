@@ -67,6 +67,23 @@ theorem tagCheckProgram_stepConfig_phase {L : Nat}
   simp only [PhasedProgram.toTM_step]
   simp only [ConstStatePhasedProgram.toPhased, tagCheckProgram, dif_pos hi]
 
+/-- One scanning step from a phase `i < tagLen` advances the head by one cell (it moves right),
+provided the next cell is within the tape.  Companion to `tagCheckProgram_stepConfig_phase`. -/
+theorem tagCheckProgram_stepConfig_head {L : Nat}
+    (c : Configuration (M := tagCheckProgram.toPhased.toTM) L)
+    {i : Fin (tagLen + 1)} {s : Bool} (hi : i.val < tagLen)
+    (hstate : c.state = ⟨i, s⟩)
+    (hbound : (c.head : Nat) + 1 < tagCheckProgram.toPhased.toTM.tapeLength L) :
+    ((TM.stepConfig (M := tagCheckProgram.toPhased.toTM) c).head : Nat) = (c.head : Nat) + 1 := by
+  have hmove : (TM.stepConfig (M := tagCheckProgram.toPhased.toTM) c).head
+      = Configuration.moveHead (c := c) Move.right := by
+    unfold TM.stepConfig
+    rw [hstate]
+    simp only [PhasedProgram.toTM_step]
+    simp only [ConstStatePhasedProgram.toPhased, tagCheckProgram, dif_pos hi]
+  rw [hmove]
+  simp only [Configuration.moveHead, dif_pos hbound]
+
 end ContractExpansion
 end Frontier
 end Pnp4

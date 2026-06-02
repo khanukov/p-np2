@@ -3798,6 +3798,14 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seqP2_runConfig_carry
 #check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seqP2_runConfig_stop
 #check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seqP2_runConfig_counterValue
+-- Decrement as a non-first (P2-region) phase, arbitrary start.
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_stepConfig_borrow_phase
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_stepConfig_borrow_head
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_stepConfig_borrow_tape
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_stepConfig_stop_phase
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_stepConfig_stop_head
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_stepConfig_stop_tape
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_runConfig_borrow
 
 end Tests
 end Pnp4

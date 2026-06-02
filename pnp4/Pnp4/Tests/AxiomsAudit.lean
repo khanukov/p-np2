@@ -526,3 +526,7 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seqP2_runConfig_carry
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seqP2_runConfig_stop
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seqP2_runConfig_counterValue
+-- Decrement as a non-first (P2-region) phase, arbitrary start.
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_stepConfig_borrow_tape
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_stepConfig_stop_tape
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_runConfig_borrow

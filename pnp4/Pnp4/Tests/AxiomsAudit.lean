@@ -60,6 +60,7 @@ import Pnp4.Frontier.ContractExpansion.PhasedProgramAccepts
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaScanProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSelfLoopCounter
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterComposition
 
 namespace Pnp4
 namespace Tests
@@ -500,3 +501,7 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_runConfig_counterValue
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_runConfig_done
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_run_counterValue
+-- Lifting the self-loop counter into a composition (assembly milestone); structural TM reasoning.
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_stepConfig_carry_tape
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_stepConfig_stop_tape
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_runConfig_carry

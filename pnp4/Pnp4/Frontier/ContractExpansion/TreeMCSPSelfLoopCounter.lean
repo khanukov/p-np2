@@ -47,6 +47,12 @@ def selfLoopIncrement : ConstStatePhasedProgram Unit where
 @[simp] theorem selfLoopIncrement_timeBound (n : Nat) :
     selfLoopIncrement.timeBound n = n := rfl
 
+@[simp] theorem selfLoopIncrement_numPhases : selfLoopIncrement.numPhases = 2 := rfl
+
+@[simp] theorem selfLoopIncrement_acceptPhase_val : selfLoopIncrement.acceptPhase.val = 1 := rfl
+
+@[simp] theorem selfLoopIncrement_startPhase_val : selfLoopIncrement.startPhase.val = 0 := rfl
+
 /-- The increment never moves the head left: the carry advances right, otherwise stays. -/
 theorem selfLoopIncrement_transition_move (i : Fin 2) (s : Unit) (b : Bool) :
     (selfLoopIncrement.transition i s b).2.2.2 ≠ Move.left := by

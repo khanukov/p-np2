@@ -3760,6 +3760,10 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_runConfig_carry
 #check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_runConfig_stop
 #check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_runConfig_counterValue
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_stepConfig_handoff_phase
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_stepConfig_handoff_head
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_stepConfig_handoff_tape
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_runConfig_handoff
 
 end Tests
 end Pnp4

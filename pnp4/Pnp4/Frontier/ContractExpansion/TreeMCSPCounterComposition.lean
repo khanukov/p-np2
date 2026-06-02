@@ -251,6 +251,81 @@ theorem selfLoopIncrement_seq_runConfig_counterValue (P2 : ConstStatePhasedProgr
     simp only [Nat.zero_add] at hb ⊢
     rw [htp ⟨i, hb⟩, if_neg (show ¬ i < j by omega), if_neg (show ¬ i = j by omega)]
 
+/-! ### The P1→P2 handoff after the increment
+
+Once the increment reaches its accept phase `1`, the *next* step of `seq selfLoopIncrement P2` is the
+distinguished handoff: the phase jumps to `P2`'s (shifted) start phase, while the tape and head are
+preserved (the handoff writes back the scanned bit and stays).  These lemmas specialize the toolkit's
+`seq_stepConfig_P1_accept_*` to `selfLoopIncrement` at phase `1`, then chain them into the run-level
+"increment, then hand off to `P2`" fact — the glue that lets the next phase begin with the counter
+already incremented. -/
+
+/-- Handoff step (phase `1`): the phase jumps to `P2`'s shifted start. -/
+theorem selfLoopIncrement_seq_stepConfig_handoff_phase (P2 : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq selfLoopIncrement P2).toPhased.toTM) L)
+    {i : Fin (seq selfLoopIncrement P2).numPhases} {s : Unit}
+    (hi : i.val = 1) (hstate : c.state = ⟨i, s⟩) :
+    ((TM.stepConfig (M := (seq selfLoopIncrement P2).toPhased.toTM) c).state).fst.val
+      = 2 + P2.startPhase.val := by
+  rw [seq_stepConfig_P1_accept_phase selfLoopIncrement P2 c
+      (h1 := by rw [hi]; decide) (hacc := by rw [hi]; decide) hstate,
+    selfLoopIncrement_numPhases]
+
+/-- Handoff step (phase `1`): the head is unchanged. -/
+theorem selfLoopIncrement_seq_stepConfig_handoff_head (P2 : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq selfLoopIncrement P2).toPhased.toTM) L)
+    {i : Fin (seq selfLoopIncrement P2).numPhases} {s : Unit}
+    (hi : i.val = 1) (hstate : c.state = ⟨i, s⟩) :
+    (TM.stepConfig (M := (seq selfLoopIncrement P2).toPhased.toTM) c).head = c.head := by
+  rw [seq_stepConfig_P1_accept_head selfLoopIncrement P2 c
+      (h1 := by rw [hi]; decide) (hacc := by rw [hi]; decide) hstate]
+
+/-- Handoff step (phase `1`): the tape is unchanged. -/
+theorem selfLoopIncrement_seq_stepConfig_handoff_tape (P2 : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq selfLoopIncrement P2).toPhased.toTM) L)
+    {i : Fin (seq selfLoopIncrement P2).numPhases} {s : Unit}
+    (hi : i.val = 1) (hstate : c.state = ⟨i, s⟩) :
+    (TM.stepConfig (M := (seq selfLoopIncrement P2).toPhased.toTM) c).tape = c.tape := by
+  rw [seq_stepConfig_P1_accept_tape selfLoopIncrement P2 c
+      (h1 := by rw [hi]; decide) (hacc := by rw [hi]; decide) hstate]
+
+/-- Increment-then-handoff on the composed machine: after `j + 2` steps of `seq selfLoopIncrement P2`
+(`j + 1` for the increment, one for the handoff), control sits at `P2`'s shifted start phase, the head
+is back on cell `j`, and the counter value over the window `[0, k)` has increased by exactly one
+(preserved across the tape-stable handoff).  This is the complete "first phase done, next phase begins
+with the counter incremented" composition unit. -/
+theorem selfLoopIncrement_seq_runConfig_handoff (P2 : ConstStatePhasedProgram Unit) {L : Nat}
+    (x : Boolcube.Point L) (j k : Nat) (hjk : j < k) (hk : k ≤ L)
+    (h_ones : ∀ p : Fin ((seq selfLoopIncrement P2).toPhased.toTM.tapeLength L),
+      (p : Nat) < j → ((seq selfLoopIncrement P2).toPhased.toTM.initialConfig x).tape p = true)
+    (h_zero : ∀ hb : j < (seq selfLoopIncrement P2).toPhased.toTM.tapeLength L,
+      ((seq selfLoopIncrement P2).toPhased.toTM.initialConfig x).tape ⟨j, hb⟩ = false) :
+    (((TM.runConfig (M := (seq selfLoopIncrement P2).toPhased.toTM)
+        ((seq selfLoopIncrement P2).toPhased.toTM.initialConfig x) (j + 2)).state).fst : Nat)
+        = 2 + P2.startPhase.val
+      ∧ ((TM.runConfig (M := (seq selfLoopIncrement P2).toPhased.toTM)
+          ((seq selfLoopIncrement P2).toPhased.toTM.initialConfig x) (j + 2)).head : Nat) = j
+      ∧ counterValue (TM.runConfig (M := (seq selfLoopIncrement P2).toPhased.toTM)
+          ((seq selfLoopIncrement P2).toPhased.toTM.initialConfig x) (j + 2)) 0 k
+        = counterValue ((seq selfLoopIncrement P2).toPhased.toTM.initialConfig x) 0 k + 1 := by
+  obtain ⟨hph1, hhd1, _⟩ := selfLoopIncrement_seq_runConfig_stop P2 x j (by omega) h_ones h_zero
+  have hcv1 := selfLoopIncrement_seq_runConfig_counterValue P2 x j k hjk hk h_ones h_zero
+  have hsucc : j + 2 = (j + 1) + 1 := by omega
+  rw [hsucc, TM.runConfig_succ]
+  set c1 := TM.runConfig (M := (seq selfLoopIncrement P2).toPhased.toTM)
+    ((seq selfLoopIncrement P2).toPhased.toTM.initialConfig x) (j + 1) with hc1
+  have htape : (TM.stepConfig (M := (seq selfLoopIncrement P2).toPhased.toTM) c1).tape = c1.tape :=
+    selfLoopIncrement_seq_stepConfig_handoff_tape P2 c1
+      (i := c1.state.fst) (s := c1.state.snd) hph1 rfl
+  refine ⟨?_, ?_, ?_⟩
+  · exact selfLoopIncrement_seq_stepConfig_handoff_phase P2 c1
+      (i := c1.state.fst) (s := c1.state.snd) hph1 rfl
+  · rw [selfLoopIncrement_seq_stepConfig_handoff_head P2 c1
+      (i := c1.state.fst) (s := c1.state.snd) hph1 rfl]
+    exact hhd1
+  · rw [counterValue_eq_of_tape_eq _ c1 0 k (fun p _ _ => congrFun htape p)]
+    exact hcv1
+
 end ContractExpansion
 end Frontier
 end Pnp4

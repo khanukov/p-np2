@@ -507,3 +507,5 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_runConfig_carry
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_runConfig_stop
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_runConfig_counterValue
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_stepConfig_handoff_tape
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_runConfig_handoff

@@ -273,6 +273,61 @@ theorem selfLoopIncrement_runConfig_counterValue {L : Nat} (x : Boolcube.Point L
     simp only [Nat.zero_add] at hb ⊢
     rw [htp ⟨i, hb⟩, if_neg (show ¬ i < j by omega), if_neg (show ¬ i = j by omega)]
 
+/-! ### Done-phase stability (idle after the increment)
+
+Once the increment reaches the done phase (`1`), every further step preserves the entire
+configuration (the done-phase transition writes the scanned bit back and stays).  This pins the
+counter's configuration after its full allotted runtime — needed when the increment is composed into
+`M` and idles until the next phase begins. -/
+
+/-- A single step from the done phase (`1`) preserves the phase, head, and tape. -/
+theorem selfLoopIncrement_stepConfig_done {L : Nat}
+    (c : Configuration (M := selfLoopIncrement.toPhased.toTM) L)
+    {i : Fin 2} {s : Unit} (hi : i.val = 1) (hstate : c.state = ⟨i, s⟩) :
+    ((TM.stepConfig (M := selfLoopIncrement.toPhased.toTM) c).state).fst.val = 1
+    ∧ (TM.stepConfig (M := selfLoopIncrement.toPhased.toTM) c).head = c.head
+    ∧ (TM.stepConfig (M := selfLoopIncrement.toPhased.toTM) c).tape = c.tape := by
+  refine ⟨?_, ?_, ?_⟩
+  · unfold TM.stepConfig
+    rw [hstate]
+    simp only [PhasedProgram.toTM_step]
+    simp [ConstStatePhasedProgram.toPhased, selfLoopIncrement, hi]
+  · unfold TM.stepConfig
+    rw [hstate]
+    simp only [PhasedProgram.toTM_step]
+    simp [ConstStatePhasedProgram.toPhased, selfLoopIncrement, hi, Configuration.moveHead]
+  · have hwrite : (TM.stepConfig (M := selfLoopIncrement.toPhased.toTM) c).tape
+        = c.write c.head (c.tape c.head) := by
+      unfold TM.stepConfig
+      rw [hstate]
+      simp only [PhasedProgram.toTM_step]
+      simp [ConstStatePhasedProgram.toPhased, selfLoopIncrement, hi]
+    rw [hwrite]
+    funext j
+    by_cases hj : j = c.head
+    · subst hj; simp [Configuration.write]
+    · simp [Configuration.write, hj]
+
+/-- Iterated done-phase stability: from a done configuration (phase `1`), running any number of steps
+keeps the phase at `1`, the head fixed, and the tape unchanged. -/
+theorem selfLoopIncrement_runConfig_done {L : Nat}
+    (c : Configuration (M := selfLoopIncrement.toPhased.toTM) L)
+    (hdone : (c.state.fst : Nat) = 1) (j : Nat) :
+    ((TM.runConfig (M := selfLoopIncrement.toPhased.toTM) c j).state.fst : Nat) = 1
+    ∧ (TM.runConfig (M := selfLoopIncrement.toPhased.toTM) c j).head = c.head
+    ∧ (TM.runConfig (M := selfLoopIncrement.toPhased.toTM) c j).tape = c.tape := by
+  induction j with
+  | zero => exact ⟨hdone, rfl, rfl⟩
+  | succ j ih =>
+      obtain ⟨hph, hhd, htp⟩ := ih
+      rw [TM.runConfig_succ]
+      obtain ⟨hph2, hhd2, htp2⟩ :=
+        selfLoopIncrement_stepConfig_done
+          (TM.runConfig (M := selfLoopIncrement.toPhased.toTM) c j)
+          (i := (TM.runConfig (M := selfLoopIncrement.toPhased.toTM) c j).state.fst)
+          (s := (TM.runConfig (M := selfLoopIncrement.toPhased.toTM) c j).state.snd) hph rfl
+      exact ⟨hph2, by rw [hhd2, hhd], by rw [htp2, htp]⟩
+
 end ContractExpansion
 end Frontier
 end Pnp4

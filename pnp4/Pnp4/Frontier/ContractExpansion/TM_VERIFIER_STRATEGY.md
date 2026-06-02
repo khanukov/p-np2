@@ -212,15 +212,25 @@ inequality `timeBound(L) ≤ L^c + c` for a concrete `c` derived from the assemb
    * *Scanning* — `gammaSelfLoopScan` (`TreeMCSPGammaScanProgram.lean`): a fixed 2-phase scan phase
      re-entering while reading `0`, fully proven through end-to-end `TM.run` correctness
      (`gammaSelfLoopScan_run_locates_terminator`: decodes the gamma unary-prefix length).
-   * *Counting* — `selfLoopIncrement` (`TreeMCSPSelfLoopCounter.lean`): a fixed 2-phase
+   * *Counting (up)* — `selfLoopIncrement` (`TreeMCSPSelfLoopCounter.lean`): a fixed 2-phase
      **variable-width** binary increment (carry self-loop), fully proven through `counterValue + 1`
      correctness (`selfLoopIncrement_runConfig_counterValue`, via the toolkit's
      `counterValue_first_zero_diff`).  This is the data-dependent-width counter the fixed `M` needs,
      where the toolkit's fixed-`k` `incrementProgram` cannot serve.
+   * *Counting (down)* — `selfLoopDecrement` (`TreeMCSPSelfLoopCounter.lean`): the exact dual, a fixed
+     2-phase variable-width binary **decrement** (borrow self-loop), fully proven through
+     `counterValue = after + 1` correctness (`selfLoopDecrement_run_counterValue`) via a locally-proven
+     dual of the toolkit arithmetic (`counterValue_first_one_diff`; the toolkit ships only the increment
+     direction).  Correct when the counter is positive — the natural termination mechanism for
+     countdown-style bounded loops.
 
-   So the back-edge primitive is demonstrated for **both** scanning and counting.  **Remaining:** the
-   general *body-reentry* loop (re-enter a multi-phase body with the proven counter as the row index,
-   terminating at `2^m`) for the row loop (brick 5).
+   So the back-edge primitive is demonstrated for **scanning** and **counting in both directions**.
+   **Remaining:** the general *body-reentry* loop (re-enter a multi-phase body with a proven counter as
+   the loop index, terminating at a data-dependent target — for the up-counter this is a comparison
+   against `2^m`; for the down-counter, zero-detection over a data-dependent width — note both still
+   require width-bounded comparison/scan machinery on the single-tape binary model) for the row loop
+   (brick 5).  The two counter *steps* (±1) are proven; closing them into a *loop* needs that
+   comparison layer.
 1. **`boundedLoopProgram`** + composition reasoning layer (§6, §6a) — **DONE** (serves
    *constant-width* processing and fixed unrollings; see §6's correction for what it does *not* cover).
 2. **Parse-on-tape** — *tag check **DONE*** (`TreeMCSPTagCheckProgram.lean`: program, `timeBound`,

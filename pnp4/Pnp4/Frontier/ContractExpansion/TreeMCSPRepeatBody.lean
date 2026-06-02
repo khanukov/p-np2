@@ -354,6 +354,64 @@ theorem repeatBody_runConfig_one_iteration' (B : ConstStatePhasedProgram Unit) {
     · rw [Configuration.write_other cd (Fin.ne_of_val_ne hpc) false, if_neg hpc, hcd, hcd_tp]
       exact hbtp p hp
 
+/-- Run-`K`-times correctness for a **writing** body (counter-region-preserving): a `K`-tick unary
+counter drives exactly `K` body iterations, and the cells **strictly below the final head**
+(`p ≤ c.head − K`) are preserved (`= c.tape`).  Those cells are never consumed and lie below every
+iteration's head, so every (counter-region-preserving) body leaves them untouched.  The consumed window
+and the work region above are the body's business (a writing body may overwrite already-consumed cells
+in later iterations, so they are *not* claimed cleared — the honest invariant).  Generalizes
+`repeatBody_runConfig_iterate` to writing bodies, via `repeatBody_runConfig_one_iteration'`. -/
+theorem repeatBody_runConfig_iterate' (B : ConstStatePhasedProgram Unit) {L : Nat} (sB : Nat)
+    (hbody : ∀ d : Configuration (M := (repeatBody B).toPhased.toTM) L,
+      (d.state.fst : Nat) = B.startPhase.val →
+      ((TM.runConfig (M := (repeatBody B).toPhased.toTM) d sB).state.fst : Nat) = B.acceptPhase.val
+      ∧ (TM.runConfig (M := (repeatBody B).toPhased.toTM) d sB).head = d.head
+      ∧ ∀ p : Fin ((repeatBody B).toPhased.toTM.tapeLength L), (p : Nat) ≤ (d.head : Nat) →
+          (TM.runConfig (M := (repeatBody B).toPhased.toTM) d sB).tape p = d.tape p) :
+    ∀ K : Nat, ∀ c : Configuration (M := (repeatBody B).toPhased.toTM) L,
+      (c.state.fst : Nat) = B.startPhase.val → K ≤ (c.head : Nat) →
+      (∀ p : Fin ((repeatBody B).toPhased.toTM.tapeLength L),
+        (c.head : Nat) - K < (p : Nat) → (p : Nat) ≤ (c.head : Nat) → c.tape p = true) →
+      ((TM.runConfig (M := (repeatBody B).toPhased.toTM) c (K * (sB + 2))).state.fst : Nat)
+          = B.startPhase.val
+      ∧ ((TM.runConfig (M := (repeatBody B).toPhased.toTM) c (K * (sB + 2))).head : Nat)
+          = (c.head : Nat) - K
+      ∧ ∀ p : Fin ((repeatBody B).toPhased.toTM.tapeLength L), (p : Nat) ≤ (c.head : Nat) - K →
+          (TM.runConfig (M := (repeatBody B).toPhased.toTM) c (K * (sB + 2))).tape p = c.tape p := by
+  intro K
+  induction K with
+  | zero =>
+      intro c hstart _ _
+      rw [Nat.zero_mul]
+      have hrc : TM.runConfig (M := (repeatBody B).toPhased.toTM) c 0 = c := rfl
+      rw [hrc]
+      exact ⟨hstart, by omega, fun p _ => rfl⟩
+  | succ K ih =>
+      intro c hstart hK hones
+      have hcell : c.tape c.head = true := hones c.head (by omega) (le_refl _)
+      have hpos : (c.head : Nat) ≠ 0 := by omega
+      obtain ⟨h1ph, h1hd, h1tp⟩ := repeatBody_runConfig_one_iteration' B sB hbody c hstart hcell hpos
+      set c' := TM.runConfig (M := (repeatBody B).toPhased.toTM) c (sB + 2) with hc'
+      have hc'K : K ≤ (c'.head : Nat) := by rw [h1hd]; omega
+      have hc'ones : ∀ p : Fin ((repeatBody B).toPhased.toTM.tapeLength L),
+          (c'.head : Nat) - K < (p : Nat) → (p : Nat) ≤ (c'.head : Nat) → c'.tape p = true := by
+        intro p hp1 hp2
+        rw [h1hd] at hp1 hp2
+        have hple : (p : Nat) ≤ (c.head : Nat) := by omega
+        have hpne : (p : Nat) ≠ (c.head : Nat) := by omega
+        rw [h1tp p hple, if_neg hpne]
+        exact hones p (by omega) (by omega)
+      obtain ⟨hIph, hIhd, hItp⟩ := ih c' h1ph hc'K hc'ones
+      have hsplit : (K + 1) * (sB + 2) = (sB + 2) + K * (sB + 2) := by rw [Nat.succ_mul]; omega
+      rw [hsplit, TM.runConfig_add, ← hc']
+      refine ⟨hIph, ?_, ?_⟩
+      · rw [hIhd, h1hd]; omega
+      · intro p hp
+        have hple : (p : Nat) ≤ (c'.head : Nat) - K := by rw [h1hd]; omega
+        have hple2 : (p : Nat) ≤ (c.head : Nat) := by omega
+        have hpne : (p : Nat) ≠ (c.head : Nat) := by omega
+        rw [hItp p hple, h1tp p hple2, if_neg hpne]
+
 end ContractExpansion
 end Frontier
 end Pnp4

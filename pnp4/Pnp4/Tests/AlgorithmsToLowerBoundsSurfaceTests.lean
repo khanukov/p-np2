@@ -3644,6 +3644,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_neverMovesLeft
 #check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_stepConfig_phase
 #check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_stepConfig_head
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_stepConfig_tape
 
 end Tests
 end Pnp4

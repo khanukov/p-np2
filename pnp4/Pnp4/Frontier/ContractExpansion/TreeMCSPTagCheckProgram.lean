@@ -84,6 +84,25 @@ theorem tagCheckProgram_stepConfig_head {L : Nat}
   rw [hmove]
   simp only [Configuration.moveHead, dif_pos hbound]
 
+/-- One scanning step leaves the tape unchanged: it writes back exactly the bit it read.
+Companion to the phase/head single-step lemmas. -/
+theorem tagCheckProgram_stepConfig_tape {L : Nat}
+    (c : Configuration (M := tagCheckProgram.toPhased.toTM) L)
+    {i : Fin (tagLen + 1)} {s : Bool} (hi : i.val < tagLen)
+    (hstate : c.state = ⟨i, s⟩) :
+    (TM.stepConfig (M := tagCheckProgram.toPhased.toTM) c).tape = c.tape := by
+  have hwrite : (TM.stepConfig (M := tagCheckProgram.toPhased.toTM) c).tape
+      = c.write c.head (c.tape c.head) := by
+    unfold TM.stepConfig
+    rw [hstate]
+    simp only [PhasedProgram.toTM_step]
+    simp only [ConstStatePhasedProgram.toPhased, tagCheckProgram, dif_pos hi]
+  rw [hwrite]
+  funext j
+  by_cases hj : j = c.head
+  · subst hj; simp [Configuration.write]
+  · simp [Configuration.write, hj]
+
 end ContractExpansion
 end Frontier
 end Pnp4

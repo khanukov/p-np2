@@ -397,3 +397,5 @@ end Pnp4
 -- Verifier input-tape layout (NP-verifier track, Phase 6); Classical-free.
 #print axioms Pnp4.Frontier.ContractExpansion.prefixVerifierInputLen_eq
 #print axioms Pnp4.Frontier.ContractExpansion.prefixVerifierWitnessRegion_within_input
+#print axioms Pnp4.Frontier.ContractExpansion.concatBitstring_left
+#print axioms Pnp4.Frontier.ContractExpansion.concatBitstring_right

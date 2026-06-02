@@ -3616,6 +3616,8 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.prefixVerifierInputLen_eq
 #check @Pnp4.Frontier.ContractExpansion.prefixVerifierCertStart
 #check @Pnp4.Frontier.ContractExpansion.prefixVerifierWitnessRegion_within_input
+#check @Pnp4.Frontier.ContractExpansion.concatBitstring_left
+#check @Pnp4.Frontier.ContractExpansion.concatBitstring_right
 
 end Tests
 end Pnp4

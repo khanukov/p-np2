@@ -48,6 +48,39 @@ theorem prefixVerifierWitnessRegion_within_input
   have h := witnessBits_le_certificateLength codec n N hM
   omega
 
+/-!
+## Reading the concatenated verifier input
+
+The verifier TM is run on `concatBitstring query cert`; `initialConfig` loads that string onto the
+tape, so reading tape cell `j` returns `query j` for `j < N` and `cert (j - N)` for `N ≤ j`.  These
+projection lemmas characterize `concatBitstring` bit-by-bit.  Because `concatBitstring` is
+`noncomputable` (its right half is defined via `Classical.choose`), the projections are *not*
+definitional and must be proved; they are the foundation of any future
+`accepts M (concatBitstring x w) = …` reasoning.
+-/
+
+/-- On the left block, the concatenation reads as the instance `x`. -/
+theorem concatBitstring_left {n m : Nat}
+    (x : Pnp3.ComplexityInterfaces.Bitstring n) (w : Pnp3.ComplexityInterfaces.Bitstring m)
+    (i : Fin (n + m)) (h : (i : Nat) < n) :
+    Pnp3.ComplexityInterfaces.concatBitstring x w i = x ⟨(i : Nat), h⟩ := by
+  unfold Pnp3.ComplexityInterfaces.concatBitstring
+  rw [dif_pos h]
+
+/-- On the right block, the concatenation reads as the certificate `w`. -/
+theorem concatBitstring_right {n m : Nat}
+    (x : Pnp3.ComplexityInterfaces.Bitstring n) (w : Pnp3.ComplexityInterfaces.Bitstring m)
+    (i : Fin (n + m)) (h : n ≤ (i : Nat)) :
+    Pnp3.ComplexityInterfaces.concatBitstring x w i
+      = w ⟨(i : Nat) - n, by omega⟩ := by
+  have hnlt : ¬ (i : Nat) < n := by omega
+  unfold Pnp3.ComplexityInterfaces.concatBitstring
+  rw [dif_neg hnlt]
+  refine congrArg w (Fin.ext ?_)
+  show Classical.choose (Nat.exists_eq_add_of_le (Nat.le_of_not_gt hnlt)) = (i : Nat) - n
+  have hspec := Classical.choose_spec (Nat.exists_eq_add_of_le (Nat.le_of_not_gt hnlt))
+  omega
+
 end ContractExpansion
 end Frontier
 end Pnp4

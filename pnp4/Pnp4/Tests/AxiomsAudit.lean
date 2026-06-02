@@ -536,5 +536,7 @@ end Pnp4
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_stepConfig_phase
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_stepConfig_state
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_stepConfig_tape
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.toTM_stepConfig_phase
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.toTM_stepConfig_tape
 #print axioms Pnp4.Frontier.ContractExpansion.mSkeletonDemo_neverMovesLeft
 #print axioms Pnp4.Frontier.ContractExpansion.mSkeletonDemo_timeBound_le

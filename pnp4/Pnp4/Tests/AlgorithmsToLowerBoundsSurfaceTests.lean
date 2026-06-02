@@ -3814,6 +3814,10 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_stepConfig_state
 #check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_stepConfig_head
 #check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_stepConfig_tape
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.toTM_stepConfig_phase
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.toTM_stepConfig_state
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.toTM_stepConfig_head
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.toTM_stepConfig_tape
 #check @Pnp4.Frontier.ContractExpansion.mSkeletonDemo
 #check @Pnp4.Frontier.ContractExpansion.mSkeletonDemo_neverMovesLeft
 #check @Pnp4.Frontier.ContractExpansion.mSkeletonDemo_timeBound_le

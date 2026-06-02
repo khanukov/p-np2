@@ -464,6 +464,60 @@ theorem liftUnitProgram_neverMovesLeft (P : ConstStatePhasedProgram Unit)
   obtain ⟨i, s⟩ := st
   exact hP ⟨i, ()⟩ b
 
+/-! ### Generic single-step characterization of any `ConstStatePhasedProgram`
+
+The toolkit's single-step lemmas are `seq`-specific; this is the *generic* one — a single `stepConfig`
+of `Q.toTM`, for any uniform-state program `Q`, expressed entirely via `Q.transition`.  (Reusable
+beyond this track; here it serves both sides of the `liftUnitProgram` bisimulation.) -/
+
+omit [Inhabited S] in
+/-- One step advances the phase as `Q`'s transition does. -/
+theorem toTM_stepConfig_phase (Q : ConstStatePhasedProgram S) {L : Nat}
+    (c : Configuration (M := Q.toPhased.toTM) L) {i : Fin Q.numPhases} {q : S}
+    (hstate : c.state = ⟨i, q⟩) :
+    ((TM.stepConfig (M := Q.toPhased.toTM) c).state).fst.val
+      = (Q.transition i q (c.tape c.head)).fst.val := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp only [ConstStatePhasedProgram.toPhased]
+
+omit [Inhabited S] in
+/-- One step updates the local state as `Q`'s transition does. -/
+theorem toTM_stepConfig_state (Q : ConstStatePhasedProgram S) {L : Nat}
+    (c : Configuration (M := Q.toPhased.toTM) L) {i : Fin Q.numPhases} {q : S}
+    (hstate : c.state = ⟨i, q⟩) :
+    ((TM.stepConfig (M := Q.toPhased.toTM) c).state).snd
+      = (Q.transition i q (c.tape c.head)).snd.fst := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp only [ConstStatePhasedProgram.toPhased]
+
+omit [Inhabited S] in
+/-- One step moves the head as `Q`'s transition directs. -/
+theorem toTM_stepConfig_head (Q : ConstStatePhasedProgram S) {L : Nat}
+    (c : Configuration (M := Q.toPhased.toTM) L) {i : Fin Q.numPhases} {q : S}
+    (hstate : c.state = ⟨i, q⟩) :
+    (TM.stepConfig (M := Q.toPhased.toTM) c).head
+      = c.moveHead (Q.transition i q (c.tape c.head)).2.2.2 := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp only [ConstStatePhasedProgram.toPhased]
+
+omit [Inhabited S] in
+/-- One step writes the bit `Q`'s transition would write. -/
+theorem toTM_stepConfig_tape (Q : ConstStatePhasedProgram S) {L : Nat}
+    (c : Configuration (M := Q.toPhased.toTM) L) {i : Fin Q.numPhases} {q : S}
+    (hstate : c.state = ⟨i, q⟩) :
+    (TM.stepConfig (M := Q.toPhased.toTM) c).tape
+      = c.write c.head (Q.transition i q (c.tape c.head)).2.2.1 := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp only [ConstStatePhasedProgram.toPhased]
+
 /-! ### Single-step characterization of `liftUnitProgram`
 
 One `stepConfig` of `(liftUnitProgram P).toTM`, entirely in terms of `P`'s transition (on the unit

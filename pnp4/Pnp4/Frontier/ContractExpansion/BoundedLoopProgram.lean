@@ -187,6 +187,19 @@ theorem seqList_neverMovesLeft (ps : List (ConstStatePhasedProgram S))
         (h p (List.mem_cons.mpr (Or.inl rfl)))
         (ih (fun q hq => h q (List.mem_cons.mpr (Or.inr hq))))
 
+/-- Head confinement for a composed run: if every component of a `seqList` is right-only/stay, then
+running it for `j` steps from `c` keeps the head in `[c.head, c.head + j]`.  The lower bound is
+head-monotonicity (via `seqList_neverMovesLeft`); the upper bound is the generic one-cell-per-step
+fact.  This is the offset-validity ingredient for the assembled verifier (scratch offsets stay
+within the `tapeLength = inputLen + runTime + 1` budget). -/
+theorem seqList_runConfig_head_bounds (ps : List (ConstStatePhasedProgram S))
+    (hmoves : ∀ p ∈ ps, TMNeverMovesLeft (p.toPhased.toTM)) {L : Nat}
+    (c : Configuration (M := (seqList ps).toPhased.toTM) L) (j : Nat) :
+    (c.head : ℕ) ≤ ((TM.runConfig (M := (seqList ps).toPhased.toTM) c j).head : ℕ)
+      ∧ ((TM.runConfig (M := (seqList ps).toPhased.toTM) c j).head : ℕ) ≤ (c.head : ℕ) + j :=
+  ⟨runConfig_head_val_ge_of_never_left c j (seqList_neverMovesLeft ps hmoves),
+   runConfig_head_val_le c j⟩
+
 /-!
 ## Single-step simulation of `seq` in the P1 region
 

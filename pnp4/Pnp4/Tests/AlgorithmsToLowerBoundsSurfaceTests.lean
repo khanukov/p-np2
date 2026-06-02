@@ -3731,6 +3731,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_transition_move
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_runConfig_scanning
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_runConfig_terminator
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seqP2_runConfig_scanning
 -- Self-loop binary increment (brick 0: variable-width counter machinery).
 #check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement
 #check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_timeBound

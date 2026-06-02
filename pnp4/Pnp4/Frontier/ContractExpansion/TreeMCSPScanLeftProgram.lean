@@ -1,10 +1,12 @@
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgram
+import Pnp4.Frontier.ContractExpansion.BoundedLoopProgram
 
 namespace Pnp4
 namespace Frontier
 namespace ContractExpansion
 
 open Pnp3.Internal.PsubsetPpoly Pnp3.Internal.PsubsetPpoly.TM
+open Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram
 
 /-!
 # Leftward scan-to-marker primitive (NP-verifier track — first bidirectional brick)
@@ -215,6 +217,92 @@ theorem selfLoopScanLeft_runConfig_terminator {L : Nat}
     exact hhdk
   · rw [selfLoopScanLeft_stepConfig_scan_one_tape c
       (i := c.state.fst) (s := c.state.snd) hph rfl hbit, htp]
+
+/-! ### Composition: the leftward scan as a non-first (P2-region) phase
+
+The right-only `seq`/`seqList` single-step lemmas (`seq_stepConfig_P2_*`) are *transition-generic* — they
+do not assume `TMNeverMovesLeft` — so the leftward scan composes as a `seq` phase exactly as the
+rightward scan does, with the head now *decreasing*.  This is the first composition fact of the
+bidirectional layer (no new composition toolkit needed for straight-line composition; only the
+direction of motion differs). -/
+
+/-- Leftward scan step as a non-first phase (composition phase `P1.numPhases`, bit `0`): the phase
+stays. -/
+theorem selfLoopScanLeft_seqP2_stepConfig_scan_zero_phase (P1 : ConstStatePhasedProgram Unit)
+    {L : Nat} (c : Configuration (M := (seq P1 selfLoopScanLeft).toPhased.toTM) L)
+    {i : Fin (seq P1 selfLoopScanLeft).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = false) :
+    ((TM.stepConfig (M := (seq P1 selfLoopScanLeft).toPhased.toTM) c).state).fst.val = P1.numPhases := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_phase P1 selfLoopScanLeft c
+      (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+  simp [selfLoopScanLeft, hsub, hbit]
+
+/-- Leftward scan step as a non-first phase (bit `0`): the head moves left. -/
+theorem selfLoopScanLeft_seqP2_stepConfig_scan_zero_head (P1 : ConstStatePhasedProgram Unit)
+    {L : Nat} (c : Configuration (M := (seq P1 selfLoopScanLeft).toPhased.toTM) L)
+    {i : Fin (seq P1 selfLoopScanLeft).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = false) :
+    (TM.stepConfig (M := (seq P1 selfLoopScanLeft).toPhased.toTM) c).head
+      = Configuration.moveHead (c := c) Move.left := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_head P1 selfLoopScanLeft c
+      (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+  simp [selfLoopScanLeft, hsub, hbit]
+
+/-- Leftward scan step as a non-first phase (bit `0`): the tape is unchanged. -/
+theorem selfLoopScanLeft_seqP2_stepConfig_scan_zero_tape (P1 : ConstStatePhasedProgram Unit)
+    {L : Nat} (c : Configuration (M := (seq P1 selfLoopScanLeft).toPhased.toTM) L)
+    {i : Fin (seq P1 selfLoopScanLeft).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = false) :
+    (TM.stepConfig (M := (seq P1 selfLoopScanLeft).toPhased.toTM) c).tape = c.tape := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  have hwrite : (TM.stepConfig (M := (seq P1 selfLoopScanLeft).toPhased.toTM) c).tape
+      = c.write c.head false := by
+    rw [seq_stepConfig_P2_tape P1 selfLoopScanLeft c
+        (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+    simp [selfLoopScanLeft, hsub, hbit]
+  rw [hwrite]
+  funext j
+  by_cases hj : j = c.head
+  · subst hj; simp [Configuration.write, hbit]
+  · simp [Configuration.write, hj]
+
+/-- Leftward scanning invariant as a non-first phase, from an arbitrary start `c0` (phase
+`P1.numPhases`): if the window `(c0.head − k, c0.head]` is all `0`, then after `k ≤ c0.head` steps the
+phase still rests at `P1.numPhases`, the head has retreated to `c0.head − k`, and the tape is
+unchanged.  Offset/non-first analogue of `selfLoopScanLeft_runConfig_scanning`. -/
+theorem selfLoopScanLeft_seqP2_runConfig_scanning (P1 : ConstStatePhasedProgram Unit) {L : Nat}
+    (c0 : Configuration (M := (seq P1 selfLoopScanLeft).toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = P1.numPhases) :
+    ∀ k : Nat, k ≤ (c0.head : Nat) →
+      (∀ p : Fin ((seq P1 selfLoopScanLeft).toPhased.toTM.tapeLength L),
+        (c0.head : Nat) - k < (p : Nat) → (p : Nat) ≤ (c0.head : Nat) → c0.tape p = false) →
+      (((TM.runConfig (M := (seq P1 selfLoopScanLeft).toPhased.toTM) c0 k).state).fst : Nat)
+          = P1.numPhases
+      ∧ ((TM.runConfig (M := (seq P1 selfLoopScanLeft).toPhased.toTM) c0 k).head : Nat)
+          = (c0.head : Nat) - k
+      ∧ (TM.runConfig (M := (seq P1 selfLoopScanLeft).toPhased.toTM) c0 k).tape = c0.tape := by
+  intro k
+  induction k with
+  | zero => intro _ _; exact ⟨hphase, by simp, rfl⟩
+  | succ k ih =>
+      intro hk h0
+      obtain ⟨hph, hhd, htp⟩ := ih (by omega) (fun p hp1 hp2 => h0 p (by omega) hp2)
+      rw [TM.runConfig_succ]
+      set c := TM.runConfig (M := (seq P1 selfLoopScanLeft).toPhased.toTM) c0 k with hc
+      have hbit : c.tape c.head = false := by
+        rw [htp]; exact h0 c.head (by rw [hhd]; omega) (by rw [hhd]; omega)
+      have hheadne : ¬ (c.head : Nat) = 0 := by rw [hhd]; omega
+      refine ⟨?_, ?_, ?_⟩
+      · exact selfLoopScanLeft_seqP2_stepConfig_scan_zero_phase P1 c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit
+      · rw [selfLoopScanLeft_seqP2_stepConfig_scan_zero_head P1 c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+        simp only [Configuration.moveHead, dif_neg hheadne]
+        rw [hhd]; omega
+      · rw [selfLoopScanLeft_seqP2_stepConfig_scan_zero_tape P1 c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit, htp]
 
 end ContractExpansion
 end Frontier

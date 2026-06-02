@@ -3693,6 +3693,8 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.tagCheckProgramU
 #check @Pnp4.Frontier.ContractExpansion.tagCheckProgramU_timeBound
 #check @Pnp4.Frontier.ContractExpansion.tagCheckProgramU_neverMovesLeft
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgramU_runConfig_inv
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgramU_accepts_iff
 -- Gamma-decode phase, first brick: count-zeros scan program (locate the unary terminator).
 #check @Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram
 #check @Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_timeBound

@@ -466,6 +466,8 @@ end Pnp4
 -- Unit-state tag check (common-state assembly variant); structural TM reasoning.
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgramU_transition_move
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgramU_neverMovesLeft
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgramU_runConfig_inv
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgramU_accepts_iff
 -- Gamma-decode phase, first brick: count-zeros scan structural lemmas; structural TM reasoning.
 #print axioms Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_transition_move
 #print axioms Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_neverMovesLeft

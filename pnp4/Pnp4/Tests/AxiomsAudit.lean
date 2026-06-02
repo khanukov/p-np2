@@ -53,6 +53,7 @@ import Pnp4.Frontier.ContractExpansion.ThresholdGrowth
 import Pnp4.Frontier.ContractExpansion.ConsolidatedTreeSeparation
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
+import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSemanticVerifier
 
 namespace Pnp4
 namespace Tests
@@ -379,3 +380,15 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_malformed_rejected
 #check Pnp4.Frontier.ContractExpansion.treeMCSPConcretePrefixParser
 #check Pnp4.Frontier.ContractExpansion.treeMCSPRuntimeAwarePrefixParser
+
+-- Semantic verifier for the prefix-extension language (NP-verifier track, PR 1).
+-- Standard axiom set [propext, Classical.choice, Quot.sound] throughout.  The arithmetic /
+-- prefix-agreement helpers are Classical-free; the codec-verification path inherits
+-- Classical.choice from the pre-existing verifiesDecidable, and the headline equivalence
+-- additionally from the classical PrefixExtensionLanguage wrapper.
+#print axioms Pnp4.Frontier.ContractExpansion.witnessBits_le_treeMCSPPrefixM
+#print axioms Pnp4.Frontier.ContractExpansion.prefixAgreesBool_eq_true_iff
+#print axioms Pnp4.Frontier.ContractExpansion.verifiesBool_eq_true_iff
+#print axioms Pnp4.Frontier.ContractExpansion.extractWitness_eq
+#print axioms Pnp4.Frontier.ContractExpansion.treePrefixSemanticAccepts_rejects_malformed
+#print axioms Pnp4.Frontier.ContractExpansion.treePrefixSemanticAccepts_correct

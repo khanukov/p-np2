@@ -63,6 +63,7 @@ import Pnp4.Frontier.ContractExpansion.ThresholdGrowth
 import Pnp4.Frontier.ContractExpansion.ConsolidatedTreeSeparation
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
+import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSemanticVerifier
 
 namespace Pnp4
 namespace Tests
@@ -3599,6 +3600,15 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms Pnp4.Frontier.ContractExpansion.parse_encodeTreeMCSPPrefixFields
 #print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_length_convention
 #check Pnp4.Frontier.ContractExpansion.treeMCSPRuntimeAwarePrefixParser
+
+-- Semantic verifier for the prefix-extension language (NP-verifier track, PR 1).
+#check @Pnp4.Frontier.ContractExpansion.treePrefixSemanticAccepts
+#check @Pnp4.Frontier.ContractExpansion.treePrefixSemanticAccepts_correct
+#check @Pnp4.Frontier.ContractExpansion.treePrefixSemanticAccepts_rejects_malformed
+#check @Pnp4.Frontier.ContractExpansion.witnessBits_le_treeMCSPPrefixM
+#check @Pnp4.Frontier.ContractExpansion.prefixAgreesBool
+#check @Pnp4.Frontier.ContractExpansion.verifiesBool
+#check @Pnp4.Frontier.ContractExpansion.extractWitness?
 
 end Tests
 end Pnp4

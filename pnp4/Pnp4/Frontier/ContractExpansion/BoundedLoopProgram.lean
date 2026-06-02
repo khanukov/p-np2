@@ -47,6 +47,22 @@ theorem repeatProgram_timeBound (body : ConstStatePhasedProgram S) (k n : Nat) :
         Nat.succ_mul k (body.timeBound n)
       omega
 
+/--
+Per-iteration run decomposition: running `repeatProgram body (k+1)` for its full `timeBound`
+equals running the body once (its own `timeBound` steps) and then running the remaining `k` copies
+(for `(repeatProgram body k).timeBound + 1` steps).  Inherited from `seqList_run_decomp`; this is the
+inductive backbone for the eventual loop invariant.
+-/
+theorem repeatProgram_run_succ (body : ConstStatePhasedProgram S) (k : Nat) {n : Nat}
+    (c : Configuration (M := (repeatProgram body (k + 1)).toPhased.toTM) n) :
+    TM.runConfig (M := (repeatProgram body (k + 1)).toPhased.toTM) c
+        ((repeatProgram body (k + 1)).timeBound n)
+      = TM.runConfig (M := (repeatProgram body (k + 1)).toPhased.toTM)
+          (TM.runConfig (M := (repeatProgram body (k + 1)).toPhased.toTM) c (body.timeBound n))
+          ((repeatProgram body k).timeBound n + 1) := by
+  simp only [repeatProgram, List.replicate_succ] at c ⊢
+  exact seqList_run_decomp body (List.replicate k body) c
+
 end ConstStatePhasedProgram
 end TM
 end PsubsetPpoly

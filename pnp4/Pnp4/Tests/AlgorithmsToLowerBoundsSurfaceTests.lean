@@ -3788,9 +3788,31 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.gateTagDispatch_neverMovesLeft
 #check @Pnp4.Frontier.ContractExpansion.gateTagDispatch_runConfig_scanning
 #check @Pnp4.Frontier.ContractExpansion.gateTagDispatch_runConfig_dispatch
--- Monolithic one-gate-record decoder (decoder brick D1b part 2, §6k): foundation (def + structural).
+-- Monolithic one-gate-record decoder (decoder brick D1b part 2, §6k): full run behaviour +
+-- decodeGateRecord correspondence.
 #check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder
 #check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_neverMovesLeft
+-- tag-read behaviour: scan, 5-way dispatch, malformed sink.
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_tagscan
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_dispatch
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_dispatch_or
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_malformed
+-- operand self-loop field invariants.
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_field_acc
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_field8
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_field10
+-- per-tag full-record traversal (reaches accept 12, head advanced by gateRecordSize).
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_input
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_const
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_not
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_and
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_or
+-- decodeGateRecord correspondence (traversed bits decode back to the gate).
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_decodes_input
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_decodes_const
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_decodes_not
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_decodes_and
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_decodes_or
 -- Unary countdown self-loop (marker-free counter; §6c brick toward the row loop).
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_runConfig_consume

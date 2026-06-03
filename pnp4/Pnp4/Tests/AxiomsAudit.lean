@@ -66,6 +66,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPScanRightOneProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordLayout
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCountdownLeft
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillComposition
@@ -549,6 +550,15 @@ end Pnp4
 -- Gate-tag dispatcher (D1b part 1): scanning invariant + dispatch run-behaviour.
 #print axioms Pnp4.Frontier.ContractExpansion.gateTagDispatch_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.gateTagDispatch_runConfig_dispatch
+-- Monolithic one-gate-record decoder (D1b part 2): per-tag traversal + decodeGateRecord correspondence.
+#print axioms Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_input
+#print axioms Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_and
+#print axioms Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_or
+#print axioms Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_decodes_input
+#print axioms Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_decodes_const
+#print axioms Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_decodes_not
+#print axioms Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_decodes_and
+#print axioms Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_decodes_or
 #print axioms Pnp4.Frontier.ContractExpansion.runConfig_head_val_ge
 #print axioms Pnp4.Frontier.ContractExpansion.runConfig_head_dist_le
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_locates_gamma_terminator

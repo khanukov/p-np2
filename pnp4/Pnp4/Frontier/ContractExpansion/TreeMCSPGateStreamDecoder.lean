@@ -29,7 +29,7 @@ namespace Pnp4
 namespace Frontier
 namespace ContractExpansion
 
-open Pnp3.Internal.PsubsetPpoly Pnp3.Internal.PsubsetPpoly.TM
+open Pnp3.Internal.PsubsetPpoly Pnp3.Internal.PsubsetPpoly.TM Pnp3.Internal.PsubsetPpoly.TM.Encoding
 
 /-- The on-tape gate-record stream decoder: the head-advancing loop over the one-record decoder,
 halting at its malformed sink (phase `13`), which doubles as the end-of-stream marker. -/
@@ -546,6 +546,50 @@ theorem gateStreamDecoder_runConfig_field10 {L : Nat}
       hbnd1]
     omega
   · rw [gateStreamDecoder_stepConfig_tape c (i := c.state.fst) (s := c.state.snd) rfl, htp]
+
+/-! ### Per-tag full-record traversal on the stream-decoder machine
+
+Each composes the dispatch + operand-field invariants via `TM.runConfig_add` (the generalize/runConfig_add
+idiom), concluding that from phase `0` with the tape holding `encodeGateRecord g`, after `gateRecordSize g`
+steps the stream decoder reaches accept `12`, head at the next record's start.  These discharge
+`loopUntilSink_reachesSink`'s per-record obligation. -/
+
+/-- `input idx`: dispatch ▸ field_acc(5) ⇒ accept `12` after `gateRecordSize (input idx)` steps. -/
+theorem gateStreamDecoder_runConfig_input {L : Nat} {n : Nat} (idx : Fin n)
+    (c0 : Configuration (M := gateStreamDecoder.toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = 0)
+    (hb : (c0.head : Nat) + gateRecordSize (SLGate.input idx)
+        < gateStreamDecoder.toPhased.toTM.tapeLength L)
+    (htag : ∀ p : Fin (gateStreamDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) → c0.tape p = false)
+    (hones : ∀ p : Fin (gateStreamDecoder.toPhased.toTM.tapeLength L),
+      (c0.head : Nat) + 1 ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + 1 + idx.val → c0.tape p = true)
+    (hterm : ∀ p : Fin (gateStreamDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) + 1 + idx.val → c0.tape p = false) :
+    (((TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0
+        (gateRecordSize (SLGate.input idx))).state).fst : Nat) = 12
+      ∧ ((TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0
+          (gateRecordSize (SLGate.input idx))).head : Nat)
+          = (c0.head : Nat) + gateRecordSize (SLGate.input idx)
+      ∧ (TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0
+          (gateRecordSize (SLGate.input idx))).tape = c0.tape := by
+  have hsz : gateRecordSize (SLGate.input idx) = (0 + 1) + (idx.val + 1) := by
+    simp only [gateRecordSize]; omega
+  rw [hsz] at hb ⊢
+  obtain ⟨hph1, hhd1, htp1⟩ := gateStreamDecoder_runConfig_dispatch c0 hphase 0 (by omega)
+    (by omega) (fun p ha hb' => absurd hb' (by omega)) (fun p hp => htag p (by omega))
+  rw [TM.runConfig_add]
+  revert hph1 hhd1 htp1
+  generalize TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 (0 + 1) = c1
+  intro hph1 hhd1 htp1
+  obtain ⟨hph2, hhd2, htp2⟩ := gateStreamDecoder_runConfig_field_acc c1
+    (Or.inl (by rw [hph1])) idx.val (by rw [hhd1]; omega)
+    (by intro p hp1 hp2; rw [htp1]; rw [hhd1] at hp1 hp2; exact hones p (by omega) (by omega))
+    (by intro p hp1; rw [htp1]; rw [hhd1] at hp1; exact hterm p (by omega))
+  refine ⟨?_, ?_, ?_⟩
+  · rw [hph2]
+  · rw [hhd2, hhd1]; omega
+  · rw [htp2, htp1]
 
 end ContractExpansion
 end Frontier

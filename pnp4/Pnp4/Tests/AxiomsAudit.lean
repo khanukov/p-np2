@@ -71,6 +71,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPGateStreamLayout
 import Pnp4.Frontier.ContractExpansion.TreeMCSPLoopUntilSink
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateStreamDecoder
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateStreamReachesSink
+import Pnp4.Frontier.ContractExpansion.TreeMCSPTreeTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCountdownLeft
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillComposition
@@ -588,6 +589,10 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_record
 #print axioms Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_marker
 #print axioms Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_reachesSink
+#print axioms Pnp4.Frontier.ContractExpansion.treeTagDispatch_neverMovesLeft
+#print axioms Pnp4.Frontier.ContractExpansion.treeTagDispatch_runConfig_input
+#print axioms Pnp4.Frontier.ContractExpansion.treeTagDispatch_runConfig_or
+#print axioms Pnp4.Frontier.ContractExpansion.treeTagDispatch_runConfig_malformed
 #print axioms Pnp4.Frontier.ContractExpansion.runConfig_head_val_ge
 #print axioms Pnp4.Frontier.ContractExpansion.runConfig_head_dist_le
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_locates_gamma_terminator

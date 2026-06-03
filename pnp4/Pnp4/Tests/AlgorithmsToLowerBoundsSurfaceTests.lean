@@ -81,6 +81,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPGateStreamLayout
 import Pnp4.Frontier.ContractExpansion.TreeMCSPLoopUntilSink
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateStreamDecoder
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateStreamReachesSink
+import Pnp4.Frontier.ContractExpansion.TreeMCSPTreeTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCountdownLeft
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillComposition
@@ -3869,6 +3870,15 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_record
 #check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_marker
 #check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_reachesSink
+-- D2 transcoder (parser entry, §11): CircuitTree 3-bit binary-tag dispatcher (depth-3 trie).
+#check @Pnp4.Frontier.ContractExpansion.treeTagDispatch
+#check @Pnp4.Frontier.ContractExpansion.treeTagDispatch_neverMovesLeft
+#check @Pnp4.Frontier.ContractExpansion.treeTagDispatch_runConfig_input
+#check @Pnp4.Frontier.ContractExpansion.treeTagDispatch_runConfig_const
+#check @Pnp4.Frontier.ContractExpansion.treeTagDispatch_runConfig_not
+#check @Pnp4.Frontier.ContractExpansion.treeTagDispatch_runConfig_and
+#check @Pnp4.Frontier.ContractExpansion.treeTagDispatch_runConfig_or
+#check @Pnp4.Frontier.ContractExpansion.treeTagDispatch_runConfig_malformed
 -- Unary countdown self-loop (marker-free counter; §6c brick toward the row loop).
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_runConfig_consume

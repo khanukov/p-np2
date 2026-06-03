@@ -1,4 +1,5 @@
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordLayout
+import Pnp4.Frontier.ContractExpansion.CircuitTreeBridge
 
 /-!
 # On-tape gate-record **stream** layout (NP-verifier track — decoder brick D2, spec foundation)
@@ -131,6 +132,36 @@ theorem decodeGateStream_flatten {n : Nat} (c : CircuitTree n) (rest : List Bool
     decodeGateStream n (encodeGateStream (CircuitTree.flatten c).gates ++ rest)
       = some ((CircuitTree.flatten c).gates, rest) :=
   decodeGateStream_encodeGateStream (CircuitTree.flatten c).gates rest
+
+/-! ### Capstone: faithfulness from the actual `Circuit` the witness decodes to
+
+The certificate decodes (via `treeCircuitWitnessCodec` / `decodeCircuitFull`) to a `Pnp3.Models.Circuit`.
+Bridging `Circuit` to `CircuitTree` (`toTree`, structural) and reusing the flatten + stream chain shows
+the self-delimiting record stream of `flatten (toTree c)` decodes to a straight-line program computing
+the **circuit's** function `Circuit.eval c`.  This closes the spec chain from the real circuit to the
+interpreter's gate-record format; the remaining D2 work is the *on-tape* realisation of this chain. -/
+
+/-- `Circuit`-to-`CircuitTree` evaluation bridge: the structural translation preserves the value. -/
+theorem evalCircuitTree_toTree {n : Nat} (c : Pnp3.Models.Circuit n) (x : Fin n → Bool) :
+    evalCircuitTree (toTree c) x = Pnp3.Models.Circuit.eval c x := by
+  induction c with
+  | input i => simp only [toTree, evalCircuitTree, Pnp3.Models.Circuit.eval]
+  | const b => simp only [toTree, evalCircuitTree, Pnp3.Models.Circuit.eval]
+  | not c ih => simp only [toTree, evalCircuitTree, Pnp3.Models.Circuit.eval, ih]
+  | and a b iha ihb => simp only [toTree, evalCircuitTree, Pnp3.Models.Circuit.eval, iha, ihb]
+  | or a b iha ihb => simp only [toTree, evalCircuitTree, Pnp3.Models.Circuit.eval, iha, ihb]
+
+/-- **Capstone faithfulness**: for the `Circuit` `c` a certificate decodes to, the self-delimiting record
+stream of `flatten (toTree c)` decodes back to a straight-line program whose value is `Circuit.eval c x`. -/
+theorem decodeGateStream_circuit_eval {n : Nat} (c : Pnp3.Models.Circuit n) (x : Fin n → Bool)
+    (rest : List Bool) :
+    ∃ gates : List (SLGate n),
+      decodeGateStream n (encodeGateStream (CircuitTree.flatten (toTree c)).gates ++ rest)
+          = some (gates, rest)
+      ∧ SLProgram.eval ⟨gates⟩ x = some (Pnp3.Models.Circuit.eval c x) := by
+  refine ⟨(CircuitTree.flatten (toTree c)).gates, decodeGateStream_flatten (toTree c) rest, ?_⟩
+  rw [← evalCircuitTree_toTree c x]
+  exact CircuitTree.flatten_eval (toTree c) x
 
 end ContractExpansion
 end Frontier

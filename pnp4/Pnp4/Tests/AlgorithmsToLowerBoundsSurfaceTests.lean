@@ -3830,6 +3830,9 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- D2 self-delimiting stream: unary gate-count prefix + records (the on-tape decoder reads the count).
 #check @Pnp4.Frontier.ContractExpansion.decodeGateStream_encodeGateStream
 #check @Pnp4.Frontier.ContractExpansion.decodeGateStream_flatten
+-- D2 capstone: stream of flatten(toTree c) computes the actual Circuit.eval c (full spec chain closed).
+#check @Pnp4.Frontier.ContractExpansion.evalCircuitTree_toTree
+#check @Pnp4.Frontier.ContractExpansion.decodeGateStream_circuit_eval
 -- Unary countdown self-loop (marker-free counter; §6c brick toward the row loop).
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_runConfig_consume

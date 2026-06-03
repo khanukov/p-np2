@@ -3813,6 +3813,13 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_decodes_not
 #check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_decodes_and
 #check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_decodes_or
+-- composition: the decoder as a non-first `seq` phase (P2-region), phase shifted by P1.numPhases.
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_safe
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_seqP2_runConfig_input
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_seqP2_runConfig_const
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_seqP2_runConfig_not
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_seqP2_runConfig_and
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_seqP2_runConfig_or
 -- Unary countdown self-loop (marker-free counter; §6c brick toward the row loop).
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_runConfig_consume

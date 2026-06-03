@@ -559,6 +559,10 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_decodes_not
 #print axioms Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_decodes_and
 #print axioms Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_decodes_or
+-- D1b part 2 composition: decoder as a non-first seq phase (P2-region).
+#print axioms Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_seqP2_runConfig_input
+#print axioms Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_seqP2_runConfig_and
+#print axioms Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_seqP2_runConfig_or
 #print axioms Pnp4.Frontier.ContractExpansion.runConfig_head_val_ge
 #print axioms Pnp4.Frontier.ContractExpansion.runConfig_head_dist_le
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_locates_gamma_terminator

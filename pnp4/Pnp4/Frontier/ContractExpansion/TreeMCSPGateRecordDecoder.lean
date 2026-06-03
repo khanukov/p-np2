@@ -2,6 +2,7 @@ import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgram
 import Pnp4.Frontier.ContractExpansion.BoundedLoopProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordLayout
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBidirHeadBounds
 
 /-!
 # Monolithic one-gate-record on-tape decoder (NP-verifier track — decoder brick D1b, part 2)
@@ -38,6 +39,7 @@ namespace Frontier
 namespace ContractExpansion
 
 open Pnp3.Internal.PsubsetPpoly Pnp3.Internal.PsubsetPpoly.TM Pnp3.Internal.PsubsetPpoly.TM.Encoding
+open Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram
 
 /-- The monolithic one-gate-record decoder (see the module header for the phase layout). -/
 def gateOneRecordDecoder : ConstStatePhasedProgram Unit where
@@ -645,23 +647,23 @@ theorem gateOneRecordDecoder_runConfig_input {L : Nat} {n : Nat} (idx : Fin n)
   · rw [htp2, htp1]
 
 /-- `const b` (tag `1`): record `1^1 0 · b` (a unary tag `1`, then one literal bit, value unconstrained). -/
-theorem gateOneRecordDecoder_runConfig_const {L : Nat} (b : Bool)
+theorem gateOneRecordDecoder_runConfig_const {L : Nat} {n : Nat} (b : Bool)
     (c0 : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
     (hphase : (c0.state.fst : Nat) = 0)
-    (hb : (c0.head : Nat) + gateRecordSize (SLGate.const (n := 0) b)
+    (hb : (c0.head : Nat) + gateRecordSize (SLGate.const (n := n) b)
         < gateOneRecordDecoder.toPhased.toTM.tapeLength L)
     (hone : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
       (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + 1 → c0.tape p = true)
     (hterm : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
       (p : Nat) = (c0.head : Nat) + 1 → c0.tape p = false) :
     (((TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0
-        (gateRecordSize (SLGate.const (n := 0) b))).state).fst : Nat) = 12
+        (gateRecordSize (SLGate.const (n := n) b))).state).fst : Nat) = 12
       ∧ ((TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0
-          (gateRecordSize (SLGate.const (n := 0) b))).head : Nat)
-          = (c0.head : Nat) + gateRecordSize (SLGate.const (n := 0) b)
+          (gateRecordSize (SLGate.const (n := n) b))).head : Nat)
+          = (c0.head : Nat) + gateRecordSize (SLGate.const (n := n) b)
       ∧ (TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0
-          (gateRecordSize (SLGate.const (n := 0) b))).tape = c0.tape := by
-  have hsz : gateRecordSize (SLGate.const (n := 0) b) = (1 + 1) + 1 := by
+          (gateRecordSize (SLGate.const (n := n) b))).tape = c0.tape := by
+  have hsz : gateRecordSize (SLGate.const (n := n) b) = (1 + 1) + 1 := by
     simp only [gateRecordSize]
   rw [hsz] at hb ⊢
   obtain ⟨hph1, hhd1, htp1⟩ := gateOneRecordDecoder_runConfig_dispatch c0 hphase 1 (by omega)
@@ -682,10 +684,10 @@ theorem gateOneRecordDecoder_runConfig_const {L : Nat} (b : Bool)
   · rw [gateOneRecordDecoder_stepConfig_tape c1 (i := c1.state.fst) (s := c1.state.snd) rfl, htp1]
 
 /-- `notGate k` (tag `2`): record `1^2 0 · 1^k 0`. -/
-theorem gateOneRecordDecoder_runConfig_not {L : Nat} (k : Nat)
+theorem gateOneRecordDecoder_runConfig_not {L : Nat} {n : Nat} (k : Nat)
     (c0 : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
     (hphase : (c0.state.fst : Nat) = 0)
-    (hb : (c0.head : Nat) + gateRecordSize (SLGate.notGate (n := 0) k)
+    (hb : (c0.head : Nat) + gateRecordSize (SLGate.notGate (n := n) k)
         < gateOneRecordDecoder.toPhased.toTM.tapeLength L)
     (htagones : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
       (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + 2 → c0.tape p = true)
@@ -696,13 +698,13 @@ theorem gateOneRecordDecoder_runConfig_not {L : Nat} (k : Nat)
     (hrefterm : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
       (p : Nat) = (c0.head : Nat) + 3 + k → c0.tape p = false) :
     (((TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0
-        (gateRecordSize (SLGate.notGate (n := 0) k))).state).fst : Nat) = 12
+        (gateRecordSize (SLGate.notGate (n := n) k))).state).fst : Nat) = 12
       ∧ ((TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0
-          (gateRecordSize (SLGate.notGate (n := 0) k))).head : Nat)
-          = (c0.head : Nat) + gateRecordSize (SLGate.notGate (n := 0) k)
+          (gateRecordSize (SLGate.notGate (n := n) k))).head : Nat)
+          = (c0.head : Nat) + gateRecordSize (SLGate.notGate (n := n) k)
       ∧ (TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0
-          (gateRecordSize (SLGate.notGate (n := 0) k))).tape = c0.tape := by
-  have hsz : gateRecordSize (SLGate.notGate (n := 0) k) = (2 + 1) + (k + 1) := by
+          (gateRecordSize (SLGate.notGate (n := n) k))).tape = c0.tape := by
+  have hsz : gateRecordSize (SLGate.notGate (n := n) k) = (2 + 1) + (k + 1) := by
     simp only [gateRecordSize]; omega
   rw [hsz] at hb ⊢
   obtain ⟨hph1, hhd1, htp1⟩ := gateOneRecordDecoder_runConfig_dispatch c0 hphase 2 (by omega)
@@ -721,10 +723,10 @@ theorem gateOneRecordDecoder_runConfig_not {L : Nat} (k : Nat)
   · rw [htp2, htp1]
 
 /-- `andGate k l` (tag `3`): record `1^3 0 · 1^k 0 · 1^l 0`. -/
-theorem gateOneRecordDecoder_runConfig_and {L : Nat} (k l : Nat)
+theorem gateOneRecordDecoder_runConfig_and {L : Nat} {n : Nat} (k l : Nat)
     (c0 : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
     (hphase : (c0.state.fst : Nat) = 0)
-    (hb : (c0.head : Nat) + gateRecordSize (SLGate.andGate (n := 0) k l)
+    (hb : (c0.head : Nat) + gateRecordSize (SLGate.andGate (n := n) k l)
         < gateOneRecordDecoder.toPhased.toTM.tapeLength L)
     (htagones : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
       (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + 3 → c0.tape p = true)
@@ -739,13 +741,13 @@ theorem gateOneRecordDecoder_runConfig_and {L : Nat} (k l : Nat)
     (href2term : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
       (p : Nat) = (c0.head : Nat) + 5 + k + l → c0.tape p = false) :
     (((TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0
-        (gateRecordSize (SLGate.andGate (n := 0) k l))).state).fst : Nat) = 12
+        (gateRecordSize (SLGate.andGate (n := n) k l))).state).fst : Nat) = 12
       ∧ ((TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0
-          (gateRecordSize (SLGate.andGate (n := 0) k l))).head : Nat)
-          = (c0.head : Nat) + gateRecordSize (SLGate.andGate (n := 0) k l)
+          (gateRecordSize (SLGate.andGate (n := n) k l))).head : Nat)
+          = (c0.head : Nat) + gateRecordSize (SLGate.andGate (n := n) k l)
       ∧ (TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0
-          (gateRecordSize (SLGate.andGate (n := 0) k l))).tape = c0.tape := by
-  have hsz : gateRecordSize (SLGate.andGate (n := 0) k l) = (3 + 1) + ((k + 1) + (l + 1)) := by
+          (gateRecordSize (SLGate.andGate (n := n) k l))).tape = c0.tape := by
+  have hsz : gateRecordSize (SLGate.andGate (n := n) k l) = (3 + 1) + ((k + 1) + (l + 1)) := by
     simp only [gateRecordSize]; omega
   rw [hsz] at hb ⊢
   obtain ⟨hph1, hhd1, htp1⟩ := gateOneRecordDecoder_runConfig_dispatch c0 hphase 3 (by omega)
@@ -773,10 +775,10 @@ theorem gateOneRecordDecoder_runConfig_and {L : Nat} (k l : Nat)
   · rw [htp3, htp2, htp1]
 
 /-- `orGate k l` (tag `4`): record `1^4 0 · 1^k 0 · 1^l 0`. -/
-theorem gateOneRecordDecoder_runConfig_or {L : Nat} (k l : Nat)
+theorem gateOneRecordDecoder_runConfig_or {L : Nat} {n : Nat} (k l : Nat)
     (c0 : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
     (hphase : (c0.state.fst : Nat) = 0)
-    (hb : (c0.head : Nat) + gateRecordSize (SLGate.orGate (n := 0) k l)
+    (hb : (c0.head : Nat) + gateRecordSize (SLGate.orGate (n := n) k l)
         < gateOneRecordDecoder.toPhased.toTM.tapeLength L)
     (htagones : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
       (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + 4 → c0.tape p = true)
@@ -791,13 +793,13 @@ theorem gateOneRecordDecoder_runConfig_or {L : Nat} (k l : Nat)
     (href2term : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
       (p : Nat) = (c0.head : Nat) + 6 + k + l → c0.tape p = false) :
     (((TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0
-        (gateRecordSize (SLGate.orGate (n := 0) k l))).state).fst : Nat) = 12
+        (gateRecordSize (SLGate.orGate (n := n) k l))).state).fst : Nat) = 12
       ∧ ((TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0
-          (gateRecordSize (SLGate.orGate (n := 0) k l))).head : Nat)
-          = (c0.head : Nat) + gateRecordSize (SLGate.orGate (n := 0) k l)
+          (gateRecordSize (SLGate.orGate (n := n) k l))).head : Nat)
+          = (c0.head : Nat) + gateRecordSize (SLGate.orGate (n := n) k l)
       ∧ (TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0
-          (gateRecordSize (SLGate.orGate (n := 0) k l))).tape = c0.tape := by
-  have hsz : gateRecordSize (SLGate.orGate (n := 0) k l) = (4 + 1) + ((k + 1) + (l + 1)) := by
+          (gateRecordSize (SLGate.orGate (n := n) k l))).tape = c0.tape := by
+  have hsz : gateRecordSize (SLGate.orGate (n := n) k l) = (4 + 1) + ((k + 1) + (l + 1)) := by
     simp only [gateRecordSize]; omega
   rw [hsz] at hb ⊢
   obtain ⟨hph1, hhd1, htp1⟩ := gateOneRecordDecoder_runConfig_dispatch_or c0 hphase (by omega)
@@ -990,6 +992,215 @@ theorem gateOneRecordDecoder_decodes_const {L : Nat} {n : Nat} (b : Bool)
     simp [tapeReadList, encodeGateRecord]
   rw [htape]
   simpa using decodeGateRecord_encodeGateRecord (n := n) (SLGate.const b) []
+
+/-! ### Composition: the decoder as a non-first `seq` phase (P2-region)
+
+When `gateOneRecordDecoder` runs as the second component of `seq P1 gateOneRecordDecoder` from an
+embedded start configuration (`embedSeqP2Config`), its run behaviour transfers verbatim with the phase
+shifted by `P1.numPhases` — so the decoder is `seq`-composable into the verifier `M`.  The lift uses the
+toolkit simulation `embedSeqP2Config_runConfig_eq`, whose per-step safety obligation is discharged by the
+generic head-distance bound `runConfig_head_dist_le` (the phase bound is free from `Fin 14`).  (The
+`decodeGateRecord` correspondence lemmas above are already configuration-generic, so they apply directly
+to the embedded configuration with no separate P2 version.) -/
+
+/-- The decoder's per-step safety obligation over a record region of `m` cells (head stays in bounds;
+phase is always `< 14`).  Feeds `embedSeqP2Config_runConfig_eq`. -/
+theorem gateOneRecordDecoder_runConfig_safe {L : Nat}
+    (c : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L) (m : Nat)
+    (hb : (c.head : Nat) + m < gateOneRecordDecoder.toPhased.toTM.tapeLength L) :
+    ∀ s, s < m →
+      (TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c s).state.fst.val
+          < gateOneRecordDecoder.numPhases ∧
+      ((gateOneRecordDecoder.toPhased.toTM.step
+          (TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c s).state
+          ((TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c s).tape
+            (TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c s).head)).snd.snd = Move.right →
+        (TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c s).head.val + 1
+            < gateOneRecordDecoder.toPhased.toTM.tapeLength L) := by
+  intro s hs
+  refine ⟨(TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c s).state.fst.isLt, fun _ => ?_⟩
+  have hle := (runConfig_head_dist_le c s).2
+  omega
+
+/-- `input idx` traversal as a P2-region phase of `seq P1 gateOneRecordDecoder`. -/
+theorem gateOneRecordDecoder_seqP2_runConfig_input (P1 : ConstStatePhasedProgram Unit) {L : Nat}
+    {n : Nat} (idx : Fin n) (c : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    (hphase : (c.state.fst : Nat) = 0)
+    (hb : (c.head : Nat) + gateRecordSize (SLGate.input idx)
+        < gateOneRecordDecoder.toPhased.toTM.tapeLength L)
+    (htag : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c.head : Nat) → c.tape p = false)
+    (hones : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (c.head : Nat) + 1 ≤ (p : Nat) → (p : Nat) < (c.head : Nat) + 1 + idx.val → c.tape p = true)
+    (hterm : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c.head : Nat) + 1 + idx.val → c.tape p = false) :
+    (((TM.runConfig (M := (seq P1 gateOneRecordDecoder).toPhased.toTM)
+        (embedSeqP2Config P1 gateOneRecordDecoder c)
+        (gateRecordSize (SLGate.input idx))).state).fst : Nat) = P1.numPhases + 12
+      ∧ ((TM.runConfig (M := (seq P1 gateOneRecordDecoder).toPhased.toTM)
+          (embedSeqP2Config P1 gateOneRecordDecoder c)
+          (gateRecordSize (SLGate.input idx))).head : Nat)
+          = (c.head : Nat) + gateRecordSize (SLGate.input idx)
+      ∧ (TM.runConfig (M := (seq P1 gateOneRecordDecoder).toPhased.toTM)
+          (embedSeqP2Config P1 gateOneRecordDecoder c)
+          (gateRecordSize (SLGate.input idx))).tape
+          = (embedSeqP2Config P1 gateOneRecordDecoder c).tape := by
+  obtain ⟨hph, hhd, htp⟩ := gateOneRecordDecoder_runConfig_input idx c hphase hb htag hones hterm
+  rw [embedSeqP2Config_runConfig_eq P1 gateOneRecordDecoder c _
+    (gateOneRecordDecoder_runConfig_safe c _ hb)]
+  refine ⟨?_, ?_, ?_⟩
+  · rw [embedSeqP2Config_state_fst_val, hph]
+  · rw [embedSeqP2Config_head_val, hhd]
+  · funext i
+    simp only [embedSeqP2Config]
+    rw [htp]
+
+/-- `const b` traversal as a P2-region phase of `seq P1 gateOneRecordDecoder`. -/
+theorem gateOneRecordDecoder_seqP2_runConfig_const (P1 : ConstStatePhasedProgram Unit) {L : Nat}
+    {n : Nat} (b : Bool) (c : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    (hphase : (c.state.fst : Nat) = 0)
+    (hb : (c.head : Nat) + gateRecordSize (SLGate.const (n := n) b)
+        < gateOneRecordDecoder.toPhased.toTM.tapeLength L)
+    (hone : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (c.head : Nat) ≤ (p : Nat) → (p : Nat) < (c.head : Nat) + 1 → c.tape p = true)
+    (hterm : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c.head : Nat) + 1 → c.tape p = false) :
+    (((TM.runConfig (M := (seq P1 gateOneRecordDecoder).toPhased.toTM)
+        (embedSeqP2Config P1 gateOneRecordDecoder c)
+        (gateRecordSize (SLGate.const (n := n) b))).state).fst : Nat) = P1.numPhases + 12
+      ∧ ((TM.runConfig (M := (seq P1 gateOneRecordDecoder).toPhased.toTM)
+          (embedSeqP2Config P1 gateOneRecordDecoder c)
+          (gateRecordSize (SLGate.const (n := n) b))).head : Nat)
+          = (c.head : Nat) + gateRecordSize (SLGate.const (n := n) b)
+      ∧ (TM.runConfig (M := (seq P1 gateOneRecordDecoder).toPhased.toTM)
+          (embedSeqP2Config P1 gateOneRecordDecoder c)
+          (gateRecordSize (SLGate.const (n := n) b))).tape
+          = (embedSeqP2Config P1 gateOneRecordDecoder c).tape := by
+  obtain ⟨hph, hhd, htp⟩ := gateOneRecordDecoder_runConfig_const b c hphase hb hone hterm
+  rw [embedSeqP2Config_runConfig_eq P1 gateOneRecordDecoder c _
+    (gateOneRecordDecoder_runConfig_safe c _ hb)]
+  refine ⟨?_, ?_, ?_⟩
+  · rw [embedSeqP2Config_state_fst_val, hph]
+  · rw [embedSeqP2Config_head_val, hhd]
+  · funext i
+    simp only [embedSeqP2Config]
+    rw [htp]
+
+/-- `notGate k` traversal as a P2-region phase of `seq P1 gateOneRecordDecoder`. -/
+theorem gateOneRecordDecoder_seqP2_runConfig_not (P1 : ConstStatePhasedProgram Unit) {L : Nat}
+    {n : Nat} (k : Nat) (c : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    (hphase : (c.state.fst : Nat) = 0)
+    (hb : (c.head : Nat) + gateRecordSize (SLGate.notGate (n := n) k)
+        < gateOneRecordDecoder.toPhased.toTM.tapeLength L)
+    (htagones : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (c.head : Nat) ≤ (p : Nat) → (p : Nat) < (c.head : Nat) + 2 → c.tape p = true)
+    (htagterm : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c.head : Nat) + 2 → c.tape p = false)
+    (hrefones : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (c.head : Nat) + 3 ≤ (p : Nat) → (p : Nat) < (c.head : Nat) + 3 + k → c.tape p = true)
+    (hrefterm : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c.head : Nat) + 3 + k → c.tape p = false) :
+    (((TM.runConfig (M := (seq P1 gateOneRecordDecoder).toPhased.toTM)
+        (embedSeqP2Config P1 gateOneRecordDecoder c)
+        (gateRecordSize (SLGate.notGate (n := n) k))).state).fst : Nat) = P1.numPhases + 12
+      ∧ ((TM.runConfig (M := (seq P1 gateOneRecordDecoder).toPhased.toTM)
+          (embedSeqP2Config P1 gateOneRecordDecoder c)
+          (gateRecordSize (SLGate.notGate (n := n) k))).head : Nat)
+          = (c.head : Nat) + gateRecordSize (SLGate.notGate (n := n) k)
+      ∧ (TM.runConfig (M := (seq P1 gateOneRecordDecoder).toPhased.toTM)
+          (embedSeqP2Config P1 gateOneRecordDecoder c)
+          (gateRecordSize (SLGate.notGate (n := n) k))).tape
+          = (embedSeqP2Config P1 gateOneRecordDecoder c).tape := by
+  obtain ⟨hph, hhd, htp⟩ := gateOneRecordDecoder_runConfig_not k c hphase hb htagones htagterm
+    hrefones hrefterm
+  rw [embedSeqP2Config_runConfig_eq P1 gateOneRecordDecoder c _
+    (gateOneRecordDecoder_runConfig_safe c _ hb)]
+  refine ⟨?_, ?_, ?_⟩
+  · rw [embedSeqP2Config_state_fst_val, hph]
+  · rw [embedSeqP2Config_head_val, hhd]
+  · funext i
+    simp only [embedSeqP2Config]
+    rw [htp]
+
+/-- `andGate k l` traversal as a P2-region phase of `seq P1 gateOneRecordDecoder`. -/
+theorem gateOneRecordDecoder_seqP2_runConfig_and (P1 : ConstStatePhasedProgram Unit) {L : Nat}
+    {n : Nat} (k l : Nat) (c : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    (hphase : (c.state.fst : Nat) = 0)
+    (hb : (c.head : Nat) + gateRecordSize (SLGate.andGate (n := n) k l)
+        < gateOneRecordDecoder.toPhased.toTM.tapeLength L)
+    (htagones : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (c.head : Nat) ≤ (p : Nat) → (p : Nat) < (c.head : Nat) + 3 → c.tape p = true)
+    (htagterm : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c.head : Nat) + 3 → c.tape p = false)
+    (href1ones : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (c.head : Nat) + 4 ≤ (p : Nat) → (p : Nat) < (c.head : Nat) + 4 + k → c.tape p = true)
+    (href1term : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c.head : Nat) + 4 + k → c.tape p = false)
+    (href2ones : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (c.head : Nat) + 5 + k ≤ (p : Nat) → (p : Nat) < (c.head : Nat) + 5 + k + l → c.tape p = true)
+    (href2term : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c.head : Nat) + 5 + k + l → c.tape p = false) :
+    (((TM.runConfig (M := (seq P1 gateOneRecordDecoder).toPhased.toTM)
+        (embedSeqP2Config P1 gateOneRecordDecoder c)
+        (gateRecordSize (SLGate.andGate (n := n) k l))).state).fst : Nat) = P1.numPhases + 12
+      ∧ ((TM.runConfig (M := (seq P1 gateOneRecordDecoder).toPhased.toTM)
+          (embedSeqP2Config P1 gateOneRecordDecoder c)
+          (gateRecordSize (SLGate.andGate (n := n) k l))).head : Nat)
+          = (c.head : Nat) + gateRecordSize (SLGate.andGate (n := n) k l)
+      ∧ (TM.runConfig (M := (seq P1 gateOneRecordDecoder).toPhased.toTM)
+          (embedSeqP2Config P1 gateOneRecordDecoder c)
+          (gateRecordSize (SLGate.andGate (n := n) k l))).tape
+          = (embedSeqP2Config P1 gateOneRecordDecoder c).tape := by
+  obtain ⟨hph, hhd, htp⟩ := gateOneRecordDecoder_runConfig_and k l c hphase hb htagones htagterm
+    href1ones href1term href2ones href2term
+  rw [embedSeqP2Config_runConfig_eq P1 gateOneRecordDecoder c _
+    (gateOneRecordDecoder_runConfig_safe c _ hb)]
+  refine ⟨?_, ?_, ?_⟩
+  · rw [embedSeqP2Config_state_fst_val, hph]
+  · rw [embedSeqP2Config_head_val, hhd]
+  · funext i
+    simp only [embedSeqP2Config]
+    rw [htp]
+
+/-- `orGate k l` traversal as a P2-region phase of `seq P1 gateOneRecordDecoder`. -/
+theorem gateOneRecordDecoder_seqP2_runConfig_or (P1 : ConstStatePhasedProgram Unit) {L : Nat}
+    {n : Nat} (k l : Nat) (c : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    (hphase : (c.state.fst : Nat) = 0)
+    (hb : (c.head : Nat) + gateRecordSize (SLGate.orGate (n := n) k l)
+        < gateOneRecordDecoder.toPhased.toTM.tapeLength L)
+    (htagones : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (c.head : Nat) ≤ (p : Nat) → (p : Nat) < (c.head : Nat) + 4 → c.tape p = true)
+    (htagterm : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c.head : Nat) + 4 → c.tape p = false)
+    (href1ones : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (c.head : Nat) + 5 ≤ (p : Nat) → (p : Nat) < (c.head : Nat) + 5 + k → c.tape p = true)
+    (href1term : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c.head : Nat) + 5 + k → c.tape p = false)
+    (href2ones : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (c.head : Nat) + 6 + k ≤ (p : Nat) → (p : Nat) < (c.head : Nat) + 6 + k + l → c.tape p = true)
+    (href2term : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c.head : Nat) + 6 + k + l → c.tape p = false) :
+    (((TM.runConfig (M := (seq P1 gateOneRecordDecoder).toPhased.toTM)
+        (embedSeqP2Config P1 gateOneRecordDecoder c)
+        (gateRecordSize (SLGate.orGate (n := n) k l))).state).fst : Nat) = P1.numPhases + 12
+      ∧ ((TM.runConfig (M := (seq P1 gateOneRecordDecoder).toPhased.toTM)
+          (embedSeqP2Config P1 gateOneRecordDecoder c)
+          (gateRecordSize (SLGate.orGate (n := n) k l))).head : Nat)
+          = (c.head : Nat) + gateRecordSize (SLGate.orGate (n := n) k l)
+      ∧ (TM.runConfig (M := (seq P1 gateOneRecordDecoder).toPhased.toTM)
+          (embedSeqP2Config P1 gateOneRecordDecoder c)
+          (gateRecordSize (SLGate.orGate (n := n) k l))).tape
+          = (embedSeqP2Config P1 gateOneRecordDecoder c).tape := by
+  obtain ⟨hph, hhd, htp⟩ := gateOneRecordDecoder_runConfig_or k l c hphase hb htagones htagterm
+    href1ones href1term href2ones href2term
+  rw [embedSeqP2Config_runConfig_eq P1 gateOneRecordDecoder c _
+    (gateOneRecordDecoder_runConfig_safe c _ hb)]
+  refine ⟨?_, ?_, ?_⟩
+  · rw [embedSeqP2Config_state_fst_val, hph]
+  · rw [embedSeqP2Config_head_val, hhd]
+  · funext i
+    simp only [embedSeqP2Config]
+    rw [htp]
 
 end ContractExpansion
 end Frontier

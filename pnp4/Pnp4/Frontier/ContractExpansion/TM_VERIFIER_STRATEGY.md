@@ -834,6 +834,26 @@ decoder on the tape, or (b) prove the toolkit `CircuitTree` encoding agrees with
 `treeCircuitWitnessCodec.decode`. The "re-check after each step" discipline must include confirming the
 on-tape decoder matches `codec.decode` exactly, or the bridge (★) breaks.
 
+> **Concrete layout finding (verified by reading `Encoding.lean:120` `encodeCircuitTree`).** The two
+> layouts are not just "different bytes" — they are *structurally* different, which scopes D2 precisely:
+> * **Witness layout (`encodeCircuitTree`, what the certificate actually is):** a **recursive tree** with
+>   **3-bit binary tags** — `input = 000 ++ encodeFin width i` (a fixed-`width` **binary** index),
+>   `const = 001 ++ b`, `not = 010 ++ ‹subtree›`, `and = 011 ++ ‹sub1›‹sub2›`, `or = 100 ++ ‹sub1›‹sub2›`.
+>   Subtrees are **inlined** (no sharing); decoded by `decodeCircuitTreeAtDepth` with a depth budget.
+> * **Interpreter layout (D0 `encodeGateRecord`, what D1b/D2-spec decode):** a **flat stream** of records
+>   with **unary** tags `1^t 0`, **unary** operand fields, and **back-reference distances** (chosen so a
+>   single-tape head can follow a reference by scanning over `1`s — §6k).
+> * **Consequence:** D1b's decoder does **not** read the witness; the D0/D1b/D2-spec line is the
+>   interpreter's *internal* format. **D2's real content is a transcoder** `witness (recursive CircuitTree,
+>   3-bit tags, binary indices) → flat unary-record stream with back-references`: parse the recursive tree
+>   on tape (a stack/depth discipline on a single tape), assign gate indices in a linearisation order,
+>   compute each reference as a back-distance, and convert binary indices to unary. This is the hardest
+>   single brick and a multi-session sub-project; the D2 **spec** side now exists
+>   (`TreeMCSPGateStreamLayout.lean`: `encodeGateRecordStream`/`decodeGateRecordStream` + round-trip), but
+>   the CircuitTree→records **flattening spec** (with a semantics-preservation proof) and its on-tape
+>   realisation are open. (Option (b) — proving the two encodings *agree* — is therefore **not** available:
+>   they genuinely disagree; only option (a), an on-tape transcoder/decoder, can close the bridge.)
+
 **Honesty baseline (must be preserved).** The entire `pnp3`/`pnp4` tree currently has **0 `sorry`, 0
 `admit`, 0 custom `axiom`, 0 `native_decide`**. Every TM brick must keep this — no proof holes, only the
 standard `[propext, Classical.choice, Quot.sound]`.

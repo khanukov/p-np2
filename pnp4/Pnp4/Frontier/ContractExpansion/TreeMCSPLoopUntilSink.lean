@@ -160,6 +160,25 @@ theorem loopUntilSink_runConfig_oneIter (B : ConstStatePhasedProgram Unit) (sink
     rw [hmove]
     simp [Configuration.moveHead]
 
+/-- **Halt is absorbing.**  Once the loop is at the `sink` phase, it stays there for any number of
+further steps — the loop has terminated.  (The other outcome the run-`K`-records induction needs,
+dual to `loopUntilSink_runConfig_oneIter`.) -/
+theorem loopUntilSink_runConfig_halt_stays (B : ConstStatePhasedProgram Unit) (sink : Fin B.numPhases)
+    (hne : sink ≠ B.acceptPhase) {L : Nat}
+    (c : Configuration (M := (loopUntilSink B sink).toPhased.toTM) L)
+    (hc : (c.state.fst : Nat) = sink.val) :
+    ∀ t : Nat,
+      ((TM.runConfig (M := (loopUntilSink B sink).toPhased.toTM) c t).state).fst.val = sink.val := by
+  intro t
+  induction t with
+  | zero => exact hc
+  | succ t ih =>
+      rw [TM.runConfig_succ]
+      set d := TM.runConfig (M := (loopUntilSink B sink).toPhased.toTM) c t with hd
+      have hdf : d.state.fst = sink := Fin.ext ih
+      rw [ConstStatePhasedProgram.toTM_stepConfig_phase (loopUntilSink B sink) d (rfl), hdf,
+        loopUntilSink_transition_halt B sink hne]
+
 end ContractExpansion
 end Frontier
 end Pnp4

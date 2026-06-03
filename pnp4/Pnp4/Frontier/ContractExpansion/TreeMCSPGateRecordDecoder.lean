@@ -117,6 +117,487 @@ theorem gateOneRecordDecoder_stepConfig_tape {L : Nat}
   · subst hj; simp [Configuration.write]
   · simp [Configuration.write, hj]
 
+/-! ### Single-step lemmas — tag-read phases (`0..4`)
+
+These mirror the `gateTagDispatch` single-step lemmas, specialised to the decoder's transition: phases
+`0..3` advance on a `1` and dispatch on a `0`; phase `4` routes a `1` to the malformed sink `13` and a
+`0` to the `or` operand-entry phase `10`. -/
+
+/-- Tag-read `1` at phase `i < 4`: advance to phase `i + 1`. -/
+theorem gateOneRecordDecoder_stepConfig_tag_one_phase {L : Nat}
+    (c : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    {i : Fin 14} {s : Unit} (hi : i.val < 4) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = true) :
+    ((TM.stepConfig (M := gateOneRecordDecoder.toPhased.toTM) c).state).fst.val = i.val + 1 := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_phase gateOneRecordDecoder c hstate]
+  simp only [gateOneRecordDecoder, dif_pos hi, hbit, if_true]
+
+/-- Tag-read `1` at phase `i < 4`: advance the head by one. -/
+theorem gateOneRecordDecoder_stepConfig_tag_one_head {L : Nat}
+    (c : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    {i : Fin 14} {s : Unit} (hi : i.val < 4) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = true)
+    (hbound : (c.head : Nat) + 1 < gateOneRecordDecoder.toPhased.toTM.tapeLength L) :
+    ((TM.stepConfig (M := gateOneRecordDecoder.toPhased.toTM) c).head : Nat) = (c.head : Nat) + 1 := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_head gateOneRecordDecoder c hstate]
+  have hmove : (gateOneRecordDecoder.transition i s (c.tape c.head)).2.2.2 = Move.right := by
+    simp only [gateOneRecordDecoder, dif_pos hi, hbit, if_true]
+  rw [hmove]
+  simp only [Configuration.moveHead, dif_pos hbound]
+
+/-- Tag-read `0` at phase `i < 4`: dispatch to operand-entry phase `5 + i` (`= 5/6/7/8` for tags
+`0/1/2/3`). -/
+theorem gateOneRecordDecoder_stepConfig_tag_zero_phase {L : Nat}
+    (c : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    {i : Fin 14} {s : Unit} (hi : i.val < 4) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = false) :
+    ((TM.stepConfig (M := gateOneRecordDecoder.toPhased.toTM) c).state).fst.val = 5 + i.val := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_phase gateOneRecordDecoder c hstate]
+  rcases (by omega : i.val = 0 ∨ i.val = 1 ∨ i.val = 2 ∨ i.val = 3) with h | h | h | h <;>
+    simp [gateOneRecordDecoder, hbit, h]
+
+/-- Tag-read `0` at phase `i < 4`: advance the head by one (past the terminator). -/
+theorem gateOneRecordDecoder_stepConfig_tag_zero_head {L : Nat}
+    (c : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    {i : Fin 14} {s : Unit} (hi : i.val < 4) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = false)
+    (hbound : (c.head : Nat) + 1 < gateOneRecordDecoder.toPhased.toTM.tapeLength L) :
+    ((TM.stepConfig (M := gateOneRecordDecoder.toPhased.toTM) c).head : Nat) = (c.head : Nat) + 1 := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_head gateOneRecordDecoder c hstate]
+  have hmove : (gateOneRecordDecoder.transition i s (c.tape c.head)).2.2.2 = Move.right := by
+    simp [gateOneRecordDecoder, dif_pos hi, hbit]
+  rw [hmove]
+  simp only [Configuration.moveHead, dif_pos hbound]
+
+/-- Phase-`4` read `1` (a sixth-or-later `1`, i.e. tag `t ≥ 5`): route to the malformed sink `13`. -/
+theorem gateOneRecordDecoder_stepConfig_phase4_one_phase {L : Nat}
+    (c : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    {i : Fin 14} {s : Unit} (hi : i.val = 4) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = true) :
+    ((TM.stepConfig (M := gateOneRecordDecoder.toPhased.toTM) c).state).fst.val = 13 := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_phase gateOneRecordDecoder c hstate]
+  simp only [gateOneRecordDecoder, dif_neg (show ¬ i.val < 4 by omega), if_pos hi, hbit, if_true]
+
+/-- Phase-`4` read `0`: dispatch to the `or` operand-entry phase `10` (tag `4`). -/
+theorem gateOneRecordDecoder_stepConfig_phase4_zero_phase {L : Nat}
+    (c : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    {i : Fin 14} {s : Unit} (hi : i.val = 4) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = false) :
+    ((TM.stepConfig (M := gateOneRecordDecoder.toPhased.toTM) c).state).fst.val = 10 := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_phase gateOneRecordDecoder c hstate]
+  simp [gateOneRecordDecoder, dif_neg (show ¬ i.val < 4 by omega), if_pos hi, hbit]
+
+/-- Phase-`4` step (either bit): advance the head by one. -/
+theorem gateOneRecordDecoder_stepConfig_phase4_head {L : Nat}
+    (c : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    {i : Fin 14} {s : Unit} (hi : i.val = 4) (hstate : c.state = ⟨i, s⟩)
+    (hbound : (c.head : Nat) + 1 < gateOneRecordDecoder.toPhased.toTM.tapeLength L) :
+    ((TM.stepConfig (M := gateOneRecordDecoder.toPhased.toTM) c).head : Nat) = (c.head : Nat) + 1 := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_head gateOneRecordDecoder c hstate]
+  have hmove : (gateOneRecordDecoder.transition i s (c.tape c.head)).2.2.2 = Move.right := by
+    cases c.tape c.head <;>
+      simp [gateOneRecordDecoder, dif_neg (show ¬ i.val < 4 by omega), if_pos hi]
+  rw [hmove]
+  simp only [Configuration.moveHead, dif_pos hbound]
+
+/-! ### Tag-scan invariant and dispatch -/
+
+/-- Scanning invariant for the tag-read phases: from a start `c0` in phase `0`, if the `j` cells from
+the head are all `1` (`j ≤ 4`, in bounds), then after `j` steps the phase is `j`, the head has advanced
+to `c0.head + j`, and the tape is unchanged. -/
+theorem gateOneRecordDecoder_runConfig_tagscan {L : Nat}
+    (c0 : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = 0) :
+    ∀ j : Nat, j ≤ 4 → (c0.head : Nat) + j < gateOneRecordDecoder.toPhased.toTM.tapeLength L →
+      (∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+        (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + j → c0.tape p = true) →
+      (((TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 j).state).fst : Nat) = j
+      ∧ ((TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 j).head : Nat) = (c0.head : Nat) + j
+      ∧ (TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 j).tape = c0.tape := by
+  intro j
+  induction j with
+  | zero => intro _ _ _; exact ⟨hphase, by simp, rfl⟩
+  | succ j ih =>
+      intro hj hb h1
+      obtain ⟨hph, hhd, htp⟩ := ih (by omega) (by omega) (fun p hp1 hp2 => h1 p hp1 (by omega))
+      rw [TM.runConfig_succ]
+      set c := TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 j with hc
+      have hi4 : (c.state.fst : Nat) < 4 := by rw [hph]; omega
+      have hbit : c.tape c.head = true := by
+        rw [htp]; exact h1 c.head (by rw [hhd]; omega) (by rw [hhd]; omega)
+      have hbnd : (c.head : Nat) + 1 < gateOneRecordDecoder.toPhased.toTM.tapeLength L := by
+        rw [hhd]; omega
+      refine ⟨?_, ?_, ?_⟩
+      · rw [gateOneRecordDecoder_stepConfig_tag_one_phase c (i := c.state.fst) (s := c.state.snd) hi4 rfl
+          hbit, hph]
+      · rw [gateOneRecordDecoder_stepConfig_tag_one_head c (i := c.state.fst) (s := c.state.snd) hi4 rfl
+          hbit hbnd]
+        omega
+      · rw [gateOneRecordDecoder_stepConfig_tape c (i := c.state.fst) (s := c.state.snd) rfl, htp]
+
+/-- **Dispatch (tags `0..3`).** From a start `c0` in phase `0` whose head sits at a unary tag `1^t 0`
+(`t ≤ 3`), after `t + 1` steps the decoder is at operand-entry phase `5 + t`, the head has advanced past
+the terminator, and the tape is unchanged. -/
+theorem gateOneRecordDecoder_runConfig_dispatch {L : Nat}
+    (c0 : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = 0) (t : Nat) (ht : t ≤ 3)
+    (hb : (c0.head : Nat) + t + 1 < gateOneRecordDecoder.toPhased.toTM.tapeLength L)
+    (hones : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + t → c0.tape p = true)
+    (hterm : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) + t → c0.tape p = false) :
+    (((TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 (t + 1)).state).fst : Nat) = 5 + t
+      ∧ ((TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 (t + 1)).head : Nat)
+          = (c0.head : Nat) + t + 1
+      ∧ (TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 (t + 1)).tape = c0.tape := by
+  obtain ⟨hph, hhd, htp⟩ := gateOneRecordDecoder_runConfig_tagscan c0 hphase t (by omega) (by omega) hones
+  rw [TM.runConfig_succ]
+  set c := TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 t with hc
+  have hi4 : (c.state.fst : Nat) < 4 := by rw [hph]; omega
+  have hbit : c.tape c.head = false := by rw [htp]; exact hterm c.head (by rw [hhd])
+  have hbnd : (c.head : Nat) + 1 < gateOneRecordDecoder.toPhased.toTM.tapeLength L := by rw [hhd]; omega
+  refine ⟨?_, ?_, ?_⟩
+  · rw [gateOneRecordDecoder_stepConfig_tag_zero_phase c (i := c.state.fst) (s := c.state.snd) hi4 rfl
+      hbit, hph]
+  · rw [gateOneRecordDecoder_stepConfig_tag_zero_head c (i := c.state.fst) (s := c.state.snd) hi4 rfl
+      hbit hbnd]
+    omega
+  · rw [gateOneRecordDecoder_stepConfig_tape c (i := c.state.fst) (s := c.state.snd) rfl, htp]
+
+/-- **Dispatch (tag `4`, `or`).** From phase `0` at a unary tag `1^4 0`, after `5` steps the decoder is
+at the `or` operand-entry phase `10`, head advanced past the terminator, tape unchanged. -/
+theorem gateOneRecordDecoder_runConfig_dispatch_or {L : Nat}
+    (c0 : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = 0)
+    (hb : (c0.head : Nat) + 4 + 1 < gateOneRecordDecoder.toPhased.toTM.tapeLength L)
+    (hones : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + 4 → c0.tape p = true)
+    (hterm : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) + 4 → c0.tape p = false) :
+    (((TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 (4 + 1)).state).fst : Nat) = 10
+      ∧ ((TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 (4 + 1)).head : Nat)
+          = (c0.head : Nat) + 4 + 1
+      ∧ (TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 (4 + 1)).tape = c0.tape := by
+  obtain ⟨hph, hhd, htp⟩ := gateOneRecordDecoder_runConfig_tagscan c0 hphase 4 (by omega) (by omega) hones
+  rw [TM.runConfig_succ]
+  set c := TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 4 with hc
+  have hi4 : (c.state.fst : Nat) = 4 := by rw [hph]
+  have hbit : c.tape c.head = false := by rw [htp]; exact hterm c.head (by rw [hhd])
+  have hbnd : (c.head : Nat) + 1 < gateOneRecordDecoder.toPhased.toTM.tapeLength L := by rw [hhd]; omega
+  refine ⟨?_, ?_, ?_⟩
+  · rw [gateOneRecordDecoder_stepConfig_phase4_zero_phase c (i := c.state.fst) (s := c.state.snd) hi4 rfl
+      hbit]
+  · rw [gateOneRecordDecoder_stepConfig_phase4_head c (i := c.state.fst) (s := c.state.snd) hi4 rfl hbnd]
+    omega
+  · rw [gateOneRecordDecoder_stepConfig_tape c (i := c.state.fst) (s := c.state.snd) rfl, htp]
+
+/-- **Malformed tag.** From phase `0` at `1^5` (five leading `1`s — a tag `t ≥ 5`), after `5` steps the
+decoder is in the malformed sink phase `13`. -/
+theorem gateOneRecordDecoder_runConfig_malformed {L : Nat}
+    (c0 : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = 0)
+    (hb : (c0.head : Nat) + 4 + 1 < gateOneRecordDecoder.toPhased.toTM.tapeLength L)
+    (hones : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + 5 → c0.tape p = true) :
+    (((TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 (4 + 1)).state).fst : Nat) = 13 := by
+  obtain ⟨hph, hhd, htp⟩ := gateOneRecordDecoder_runConfig_tagscan c0 hphase 4 (by omega) (by omega)
+    (fun p hp1 hp2 => hones p hp1 (by omega))
+  rw [TM.runConfig_succ]
+  set c := TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 4 with hc
+  have hi4 : (c.state.fst : Nat) = 4 := by rw [hph]
+  have hbit : c.tape c.head = true := by
+    rw [htp]; exact hones c.head (by rw [hhd]; omega) (by rw [hhd]; omega)
+  rw [gateOneRecordDecoder_stepConfig_phase4_one_phase c (i := c.state.fst) (s := c.state.snd) hi4 rfl
+    hbit]
+
+/-! ### Single-step lemmas — operand-read phases (`5..11`)
+
+Phases `5/7/9/11` are the single/last unary-field self-loops (`1` → self, `0` → accept `12`); phase `6`
+is the one-cell `const` literal (any bit → accept `12`); phases `8`/`10` are the and/or first-operand
+self-loops (`1` → self, `0` → second operand `9`/`11`). -/
+
+/-- Self-loop `1` step at a "to-accept" field phase (`5/7/9/11`): stay in the same phase. -/
+theorem gateOneRecordDecoder_stepConfig_loopAcc_one {L : Nat}
+    (c : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    {i : Fin 14} {s : Unit}
+    (hp : i.val = 5 ∨ i.val = 7 ∨ i.val = 9 ∨ i.val = 11) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = true) :
+    ((TM.stepConfig (M := gateOneRecordDecoder.toPhased.toTM) c).state).fst.val = i.val := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_phase gateOneRecordDecoder c hstate]
+  rcases hp with h | h | h | h <;> simp [gateOneRecordDecoder, h, hbit]
+
+/-- Self-loop `0` step at a "to-accept" field phase (`5/7/9/11`): exit to the common accept phase `12`. -/
+theorem gateOneRecordDecoder_stepConfig_loopAcc_zero {L : Nat}
+    (c : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    {i : Fin 14} {s : Unit}
+    (hp : i.val = 5 ∨ i.val = 7 ∨ i.val = 9 ∨ i.val = 11) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = false) :
+    ((TM.stepConfig (M := gateOneRecordDecoder.toPhased.toTM) c).state).fst.val = 12 := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_phase gateOneRecordDecoder c hstate]
+  rcases hp with h | h | h | h <;> simp [gateOneRecordDecoder, h, hbit]
+
+/-- Either-bit step at a "to-accept" field phase (`5/7/9/11`): advance the head by one. -/
+theorem gateOneRecordDecoder_stepConfig_loopAcc_head {L : Nat}
+    (c : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    {i : Fin 14} {s : Unit}
+    (hp : i.val = 5 ∨ i.val = 7 ∨ i.val = 9 ∨ i.val = 11) (hstate : c.state = ⟨i, s⟩)
+    (hbound : (c.head : Nat) + 1 < gateOneRecordDecoder.toPhased.toTM.tapeLength L) :
+    ((TM.stepConfig (M := gateOneRecordDecoder.toPhased.toTM) c).head : Nat) = (c.head : Nat) + 1 := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_head gateOneRecordDecoder c hstate]
+  have hmove : (gateOneRecordDecoder.transition i s (c.tape c.head)).2.2.2 = Move.right := by
+    rcases hp with h | h | h | h <;> cases c.tape c.head <;>
+      simp [gateOneRecordDecoder, h]
+  rw [hmove]
+  simp only [Configuration.moveHead, dif_pos hbound]
+
+/-- `const` literal step (phase `6`, either bit): consume one cell, exit to accept `12`. -/
+theorem gateOneRecordDecoder_stepConfig_const_phase {L : Nat}
+    (c : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    {i : Fin 14} {s : Unit} (hi : i.val = 6) (hstate : c.state = ⟨i, s⟩) :
+    ((TM.stepConfig (M := gateOneRecordDecoder.toPhased.toTM) c).state).fst.val = 12 := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_phase gateOneRecordDecoder c hstate]
+  simp [gateOneRecordDecoder, hi]
+
+/-- `const` literal step (phase `6`): advance the head by one. -/
+theorem gateOneRecordDecoder_stepConfig_const_head {L : Nat}
+    (c : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    {i : Fin 14} {s : Unit} (hi : i.val = 6) (hstate : c.state = ⟨i, s⟩)
+    (hbound : (c.head : Nat) + 1 < gateOneRecordDecoder.toPhased.toTM.tapeLength L) :
+    ((TM.stepConfig (M := gateOneRecordDecoder.toPhased.toTM) c).head : Nat) = (c.head : Nat) + 1 := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_head gateOneRecordDecoder c hstate]
+  have hmove : (gateOneRecordDecoder.transition i s (c.tape c.head)).2.2.2 = Move.right := by
+    cases c.tape c.head <;> simp [gateOneRecordDecoder, hi]
+  rw [hmove]
+  simp only [Configuration.moveHead, dif_pos hbound]
+
+/-- `and` first-operand self-loop `1` step (phase `8`): stay in phase `8`. -/
+theorem gateOneRecordDecoder_stepConfig_loop8_one {L : Nat}
+    (c : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    {i : Fin 14} {s : Unit} (hi : i.val = 8) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = true) :
+    ((TM.stepConfig (M := gateOneRecordDecoder.toPhased.toTM) c).state).fst.val = 8 := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_phase gateOneRecordDecoder c hstate]
+  simp [gateOneRecordDecoder, hi, hbit]
+
+/-- `and` first-operand self-loop `0` step (phase `8`): advance to the second operand (phase `9`). -/
+theorem gateOneRecordDecoder_stepConfig_loop8_zero {L : Nat}
+    (c : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    {i : Fin 14} {s : Unit} (hi : i.val = 8) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = false) :
+    ((TM.stepConfig (M := gateOneRecordDecoder.toPhased.toTM) c).state).fst.val = 9 := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_phase gateOneRecordDecoder c hstate]
+  simp [gateOneRecordDecoder, hi, hbit]
+
+/-- `and` first-operand step (phase `8`, either bit): advance the head by one. -/
+theorem gateOneRecordDecoder_stepConfig_loop8_head {L : Nat}
+    (c : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    {i : Fin 14} {s : Unit} (hi : i.val = 8) (hstate : c.state = ⟨i, s⟩)
+    (hbound : (c.head : Nat) + 1 < gateOneRecordDecoder.toPhased.toTM.tapeLength L) :
+    ((TM.stepConfig (M := gateOneRecordDecoder.toPhased.toTM) c).head : Nat) = (c.head : Nat) + 1 := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_head gateOneRecordDecoder c hstate]
+  have hmove : (gateOneRecordDecoder.transition i s (c.tape c.head)).2.2.2 = Move.right := by
+    cases c.tape c.head <;> simp [gateOneRecordDecoder, hi]
+  rw [hmove]
+  simp only [Configuration.moveHead, dif_pos hbound]
+
+/-- `or` first-operand self-loop `1` step (phase `10`): stay in phase `10`. -/
+theorem gateOneRecordDecoder_stepConfig_loop10_one {L : Nat}
+    (c : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    {i : Fin 14} {s : Unit} (hi : i.val = 10) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = true) :
+    ((TM.stepConfig (M := gateOneRecordDecoder.toPhased.toTM) c).state).fst.val = 10 := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_phase gateOneRecordDecoder c hstate]
+  simp [gateOneRecordDecoder, hi, hbit]
+
+/-- `or` first-operand self-loop `0` step (phase `10`): advance to the second operand (phase `11`). -/
+theorem gateOneRecordDecoder_stepConfig_loop10_zero {L : Nat}
+    (c : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    {i : Fin 14} {s : Unit} (hi : i.val = 10) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = false) :
+    ((TM.stepConfig (M := gateOneRecordDecoder.toPhased.toTM) c).state).fst.val = 11 := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_phase gateOneRecordDecoder c hstate]
+  simp [gateOneRecordDecoder, hi, hbit]
+
+/-- `or` first-operand step (phase `10`, either bit): advance the head by one. -/
+theorem gateOneRecordDecoder_stepConfig_loop10_head {L : Nat}
+    (c : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    {i : Fin 14} {s : Unit} (hi : i.val = 10) (hstate : c.state = ⟨i, s⟩)
+    (hbound : (c.head : Nat) + 1 < gateOneRecordDecoder.toPhased.toTM.tapeLength L) :
+    ((TM.stepConfig (M := gateOneRecordDecoder.toPhased.toTM) c).head : Nat) = (c.head : Nat) + 1 := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_head gateOneRecordDecoder c hstate]
+  have hmove : (gateOneRecordDecoder.transition i s (c.tape c.head)).2.2.2 = Move.right := by
+    cases c.tape c.head <;> simp [gateOneRecordDecoder, hi]
+  rw [hmove]
+  simp only [Configuration.moveHead, dif_pos hbound]
+
+/-! ### Operand self-loop field invariants
+
+Each operand field is a unary block `1^k 0`.  A "to-accept" field (phases `5/7/9/11`) self-loops over
+the `1`s and exits to the common accept phase `12`; the and/or first-operand fields (phases `8`/`10`)
+exit to the second-operand phase `9`/`11`.  All advance the head past the terminator. -/
+
+/-- **To-accept field read** (phases `5/7/9/11`). From a start `c0` at one of these phases whose head
+sits at a unary field `1^k 0`, after `k + 1` steps the decoder is at the common accept phase `12`, the
+head has advanced past the terminator, and the tape is unchanged. -/
+theorem gateOneRecordDecoder_runConfig_field_acc {L : Nat}
+    (c0 : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    (hp : (c0.state.fst : Nat) = 5 ∨ (c0.state.fst : Nat) = 7 ∨ (c0.state.fst : Nat) = 9
+        ∨ (c0.state.fst : Nat) = 11) (k : Nat)
+    (hb : (c0.head : Nat) + k + 1 < gateOneRecordDecoder.toPhased.toTM.tapeLength L)
+    (hones : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + k → c0.tape p = true)
+    (hterm : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) + k → c0.tape p = false) :
+    (((TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 (k + 1)).state).fst : Nat) = 12
+      ∧ ((TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 (k + 1)).head : Nat)
+          = (c0.head : Nat) + k + 1
+      ∧ (TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 (k + 1)).tape = c0.tape := by
+  have scan : ∀ j : Nat, j ≤ k →
+      (c0.head : Nat) + j < gateOneRecordDecoder.toPhased.toTM.tapeLength L →
+      (∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+        (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + j → c0.tape p = true) →
+      (((TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 j).state).fst : Nat)
+          = (c0.state.fst : Nat)
+      ∧ ((TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 j).head : Nat) = (c0.head : Nat) + j
+      ∧ (TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 j).tape = c0.tape := by
+    intro j
+    induction j with
+    | zero => intro _ _ _; exact ⟨rfl, by simp, rfl⟩
+    | succ j ih =>
+        intro hj hbnd h1
+        obtain ⟨hph, hhd, htp⟩ := ih (by omega) (by omega) (fun p a b => h1 p a (by omega))
+        rw [TM.runConfig_succ]
+        set c := TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 j with hc
+        have hpp : (c.state.fst : Nat) = 5 ∨ (c.state.fst : Nat) = 7 ∨ (c.state.fst : Nat) = 9
+            ∨ (c.state.fst : Nat) = 11 := by rw [hph]; exact hp
+        have hbit : c.tape c.head = true := by
+          rw [htp]; exact h1 c.head (by rw [hhd]; omega) (by rw [hhd]; omega)
+        have hbnd1 : (c.head : Nat) + 1 < gateOneRecordDecoder.toPhased.toTM.tapeLength L := by
+          rw [hhd]; omega
+        refine ⟨?_, ?_, ?_⟩
+        · rw [gateOneRecordDecoder_stepConfig_loopAcc_one c (i := c.state.fst) (s := c.state.snd) hpp rfl
+            hbit, hph]
+        · rw [gateOneRecordDecoder_stepConfig_loopAcc_head c (i := c.state.fst) (s := c.state.snd) hpp rfl
+            hbnd1]
+          omega
+        · rw [gateOneRecordDecoder_stepConfig_tape c (i := c.state.fst) (s := c.state.snd) rfl, htp]
+  obtain ⟨hph, hhd, htp⟩ := scan k (le_refl k) (by omega) hones
+  rw [TM.runConfig_succ]
+  set c := TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 k with hc
+  have hpp : (c.state.fst : Nat) = 5 ∨ (c.state.fst : Nat) = 7 ∨ (c.state.fst : Nat) = 9
+      ∨ (c.state.fst : Nat) = 11 := by rw [hph]; exact hp
+  have hbit : c.tape c.head = false := by rw [htp]; exact hterm c.head (by rw [hhd])
+  have hbnd1 : (c.head : Nat) + 1 < gateOneRecordDecoder.toPhased.toTM.tapeLength L := by rw [hhd]; omega
+  refine ⟨?_, ?_, ?_⟩
+  · rw [gateOneRecordDecoder_stepConfig_loopAcc_zero c (i := c.state.fst) (s := c.state.snd) hpp rfl hbit]
+  · rw [gateOneRecordDecoder_stepConfig_loopAcc_head c (i := c.state.fst) (s := c.state.snd) hpp rfl
+      hbnd1]
+    omega
+  · rw [gateOneRecordDecoder_stepConfig_tape c (i := c.state.fst) (s := c.state.snd) rfl, htp]
+
+/-- **`and` first-operand field read** (phase `8`). From phase `8` at `1^k 0`, after `k + 1` steps the
+decoder is at the second-operand phase `9`, head advanced past the terminator, tape unchanged. -/
+theorem gateOneRecordDecoder_runConfig_field8 {L : Nat}
+    (c0 : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    (hp : (c0.state.fst : Nat) = 8) (k : Nat)
+    (hb : (c0.head : Nat) + k + 1 < gateOneRecordDecoder.toPhased.toTM.tapeLength L)
+    (hones : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + k → c0.tape p = true)
+    (hterm : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) + k → c0.tape p = false) :
+    (((TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 (k + 1)).state).fst : Nat) = 9
+      ∧ ((TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 (k + 1)).head : Nat)
+          = (c0.head : Nat) + k + 1
+      ∧ (TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 (k + 1)).tape = c0.tape := by
+  have scan : ∀ j : Nat, j ≤ k →
+      (c0.head : Nat) + j < gateOneRecordDecoder.toPhased.toTM.tapeLength L →
+      (∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+        (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + j → c0.tape p = true) →
+      (((TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 j).state).fst : Nat) = 8
+      ∧ ((TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 j).head : Nat) = (c0.head : Nat) + j
+      ∧ (TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 j).tape = c0.tape := by
+    intro j
+    induction j with
+    | zero => intro _ _ _; exact ⟨hp, by simp, rfl⟩
+    | succ j ih =>
+        intro hj hbnd h1
+        obtain ⟨hph, hhd, htp⟩ := ih (by omega) (by omega) (fun p a b => h1 p a (by omega))
+        rw [TM.runConfig_succ]
+        set c := TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 j with hc
+        have hbit : c.tape c.head = true := by
+          rw [htp]; exact h1 c.head (by rw [hhd]; omega) (by rw [hhd]; omega)
+        have hbnd1 : (c.head : Nat) + 1 < gateOneRecordDecoder.toPhased.toTM.tapeLength L := by
+          rw [hhd]; omega
+        refine ⟨?_, ?_, ?_⟩
+        · rw [gateOneRecordDecoder_stepConfig_loop8_one c (i := c.state.fst) (s := c.state.snd) hph rfl
+            hbit]
+        · rw [gateOneRecordDecoder_stepConfig_loop8_head c (i := c.state.fst) (s := c.state.snd) hph rfl
+            hbnd1]
+          omega
+        · rw [gateOneRecordDecoder_stepConfig_tape c (i := c.state.fst) (s := c.state.snd) rfl, htp]
+  obtain ⟨hph, hhd, htp⟩ := scan k (le_refl k) (by omega) hones
+  rw [TM.runConfig_succ]
+  set c := TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 k with hc
+  have hbit : c.tape c.head = false := by rw [htp]; exact hterm c.head (by rw [hhd])
+  have hbnd1 : (c.head : Nat) + 1 < gateOneRecordDecoder.toPhased.toTM.tapeLength L := by rw [hhd]; omega
+  refine ⟨?_, ?_, ?_⟩
+  · rw [gateOneRecordDecoder_stepConfig_loop8_zero c (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+  · rw [gateOneRecordDecoder_stepConfig_loop8_head c (i := c.state.fst) (s := c.state.snd) hph rfl hbnd1]
+    omega
+  · rw [gateOneRecordDecoder_stepConfig_tape c (i := c.state.fst) (s := c.state.snd) rfl, htp]
+
+/-- **`or` first-operand field read** (phase `10`). From phase `10` at `1^k 0`, after `k + 1` steps the
+decoder is at the second-operand phase `11`, head advanced past the terminator, tape unchanged. -/
+theorem gateOneRecordDecoder_runConfig_field10 {L : Nat}
+    (c0 : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    (hp : (c0.state.fst : Nat) = 10) (k : Nat)
+    (hb : (c0.head : Nat) + k + 1 < gateOneRecordDecoder.toPhased.toTM.tapeLength L)
+    (hones : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + k → c0.tape p = true)
+    (hterm : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) + k → c0.tape p = false) :
+    (((TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 (k + 1)).state).fst : Nat) = 11
+      ∧ ((TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 (k + 1)).head : Nat)
+          = (c0.head : Nat) + k + 1
+      ∧ (TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 (k + 1)).tape = c0.tape := by
+  have scan : ∀ j : Nat, j ≤ k →
+      (c0.head : Nat) + j < gateOneRecordDecoder.toPhased.toTM.tapeLength L →
+      (∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+        (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + j → c0.tape p = true) →
+      (((TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 j).state).fst : Nat) = 10
+      ∧ ((TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 j).head : Nat) = (c0.head : Nat) + j
+      ∧ (TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 j).tape = c0.tape := by
+    intro j
+    induction j with
+    | zero => intro _ _ _; exact ⟨hp, by simp, rfl⟩
+    | succ j ih =>
+        intro hj hbnd h1
+        obtain ⟨hph, hhd, htp⟩ := ih (by omega) (by omega) (fun p a b => h1 p a (by omega))
+        rw [TM.runConfig_succ]
+        set c := TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 j with hc
+        have hbit : c.tape c.head = true := by
+          rw [htp]; exact h1 c.head (by rw [hhd]; omega) (by rw [hhd]; omega)
+        have hbnd1 : (c.head : Nat) + 1 < gateOneRecordDecoder.toPhased.toTM.tapeLength L := by
+          rw [hhd]; omega
+        refine ⟨?_, ?_, ?_⟩
+        · rw [gateOneRecordDecoder_stepConfig_loop10_one c (i := c.state.fst) (s := c.state.snd) hph rfl
+            hbit]
+        · rw [gateOneRecordDecoder_stepConfig_loop10_head c (i := c.state.fst) (s := c.state.snd) hph rfl
+            hbnd1]
+          omega
+        · rw [gateOneRecordDecoder_stepConfig_tape c (i := c.state.fst) (s := c.state.snd) rfl, htp]
+  obtain ⟨hph, hhd, htp⟩ := scan k (le_refl k) (by omega) hones
+  rw [TM.runConfig_succ]
+  set c := TM.runConfig (M := gateOneRecordDecoder.toPhased.toTM) c0 k with hc
+  have hbit : c.tape c.head = false := by rw [htp]; exact hterm c.head (by rw [hhd])
+  have hbnd1 : (c.head : Nat) + 1 < gateOneRecordDecoder.toPhased.toTM.tapeLength L := by rw [hhd]; omega
+  refine ⟨?_, ?_, ?_⟩
+  · rw [gateOneRecordDecoder_stepConfig_loop10_zero c (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+  · rw [gateOneRecordDecoder_stepConfig_loop10_head c (i := c.state.fst) (s := c.state.snd) hph rfl
+      hbnd1]
+    omega
+  · rw [gateOneRecordDecoder_stepConfig_tape c (i := c.state.fst) (s := c.state.snd) rfl, htp]
+
 end ContractExpansion
 end Frontier
 end Pnp4

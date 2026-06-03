@@ -3824,6 +3824,9 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- D2 spec foundation: the record-stream encode/decode round-trip + size (D0-analogue for a stream).
 #check @Pnp4.Frontier.ContractExpansion.decodeGateRecordStream_encodeGateRecordStream
 #check @Pnp4.Frontier.ContractExpansion.encodeGateRecordStream_length
+-- D2 faithfulness bridge: a flattened circuit's record stream decodes to gates computing the circuit.
+#check @Pnp4.Frontier.ContractExpansion.decodeGateRecordStream_flatten
+#check @Pnp4.Frontier.ContractExpansion.decodeGateRecordStream_flatten_eval
 -- Unary countdown self-loop (marker-free counter; §6c brick toward the row loop).
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_runConfig_consume

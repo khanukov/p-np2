@@ -72,6 +72,36 @@ theorem decodeGateRecordStream_encodeGateRecordStream {n : Nat} (gs : List (SLGa
       simp only [encodeGateRecordStream, List.map_cons, List.sum_cons, List.length_append,
         encodeGateRecord_length, ih]
 
+/-! ### Bridge to the circuit codec: a flattened circuit's record stream is faithful
+
+Connecting the stream layout to the **real** circuit semantics via the toolkit's verified
+`CircuitTree.flatten` (`Encoding.lean`): flatten a circuit tree to a straight-line gate list, encode
+that list as a record stream, decode it back — the recovered gate list **computes the circuit's
+function** (`CircuitTree.flatten_eval`).  This is the spec-level faithfulness the D2 on-tape transcoder
+must realise (the §9 witness→records step: the witness is a recursive `CircuitTree`; flattening +
+re-encoding as unary records is the interpreter's internal format). -/
+
+/-- Decoding the record stream of a flattened circuit recovers exactly the flattened gate list
+(`c.size` records). -/
+theorem decodeGateRecordStream_flatten {n : Nat} (c : CircuitTree n) (rest : List Bool) :
+    decodeGateRecordStream n c.size
+        (encodeGateRecordStream (CircuitTree.flatten c).gates ++ rest)
+      = some ((CircuitTree.flatten c).gates, rest) := by
+  have h := decodeGateRecordStream_encodeGateRecordStream (CircuitTree.flatten c).gates rest
+  rwa [CircuitTree.flatten_length] at h
+
+/-- **Faithfulness**: the gate list recovered from a flattened circuit's record stream evaluates (as a
+straight-line program) to the circuit's value — tying the D2 stream layout to `evalCircuitTree` through
+the toolkit's verified flattening (`CircuitTree.flatten_eval`). -/
+theorem decodeGateRecordStream_flatten_eval {n : Nat} (c : CircuitTree n) (x : Fin n → Bool)
+    (rest : List Bool) :
+    ∃ gates : List (SLGate n),
+      decodeGateRecordStream n c.size
+          (encodeGateRecordStream (CircuitTree.flatten c).gates ++ rest) = some (gates, rest)
+      ∧ SLProgram.eval ⟨gates⟩ x = some (evalCircuitTree c x) := by
+  refine ⟨(CircuitTree.flatten c).gates, decodeGateRecordStream_flatten c rest, ?_⟩
+  exact CircuitTree.flatten_eval c x
+
 end ContractExpansion
 end Frontier
 end Pnp4

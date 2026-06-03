@@ -1,6 +1,7 @@
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgram
 import Pnp4.Frontier.ContractExpansion.BoundedLoopProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordLayout
+import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 
 /-!
 # Monolithic one-gate-record on-tape decoder (NP-verifier track — decoder brick D1b, part 2)
@@ -822,6 +823,173 @@ theorem gateOneRecordDecoder_runConfig_or {L : Nat} (k l : Nat)
   · rw [hph3]
   · rw [hhd3, hhd2, hhd1]; omega
   · rw [htp3, htp2, htp1]
+
+/-! ### Correspondence to the D0 spec `decodeGateRecord`
+
+The bits the decoder traverses over a record region equal `encodeGateRecord g` (via the D1a tape↔list
+bridge `tapeReadList_eq_unaryField` applied per field), hence decode back to `g` by the D0 round-trip
+`decodeGateRecord_encodeGateRecord`.  This is the D1b deliverable: the on-tape traversal realises the
+D0 spec for the gate it identifies. -/
+
+/-- Splitting a tape read across a concatenation of lengths. -/
+theorem tapeReadList_add {M : TM} {L : Nat} (c : Configuration (M := M) L) (h a b : Nat) :
+    tapeReadList c h (a + b) = tapeReadList c h a ++ tapeReadList c (h + a) b := by
+  induction a generalizing h with
+  | zero => simp [tapeReadList]
+  | succ a ih =>
+      rw [show (a + 1) + b = (a + b) + 1 from by omega, tapeReadList_succ, ih (h + 1),
+        tapeReadList_succ c h a, List.cons_append, show h + (a + 1) = h + 1 + a from by omega]
+
+/-- `input idx` (tag `0`): the traversed bits decode to `input idx`. -/
+theorem gateOneRecordDecoder_decodes_input {L : Nat} {n : Nat} (idx : Fin n)
+    (c0 : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    (hb : (c0.head : Nat) + gateRecordSize (SLGate.input idx)
+        < gateOneRecordDecoder.toPhased.toTM.tapeLength L)
+    (htag : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) → c0.tape p = false)
+    (hones : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (c0.head : Nat) + 1 ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + 1 + idx.val → c0.tape p = true)
+    (hterm : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) + 1 + idx.val → c0.tape p = false) :
+    decodeGateRecord n (tapeReadList c0 (c0.head : Nat) (gateRecordSize (SLGate.input idx)))
+      = some (SLGate.input idx, []) := by
+  simp only [gateRecordSize] at hb
+  have htape : tapeReadList c0 (c0.head : Nat) (gateRecordSize (SLGate.input idx))
+      = encodeGateRecord (SLGate.input idx) := by
+    rw [show gateRecordSize (SLGate.input idx) = (0 + 1) + (idx.val + 1) from by
+        simp only [gateRecordSize]; omega, tapeReadList_add,
+      tapeReadList_eq_unaryField c0 (c0.head : Nat) 0 (by omega)
+        (fun p ha hb' => absurd hb' (by omega)) (fun p hp => htag p (by omega)),
+      tapeReadList_eq_unaryField c0 ((c0.head : Nat) + (0 + 1)) idx.val (by omega)
+        (fun p ha hb' => hones p (by omega) (by omega)) (fun p hp => hterm p (by omega))]
+    simp [encodeGateRecord]
+  rw [htape]
+  simpa using decodeGateRecord_encodeGateRecord (n := n) (SLGate.input idx) []
+
+/-- `notGate k` (tag `2`): the traversed bits decode to `notGate k`. -/
+theorem gateOneRecordDecoder_decodes_not {L : Nat} {n : Nat} (k : Nat)
+    (c0 : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    (hb : (c0.head : Nat) + gateRecordSize (SLGate.notGate (n := n) k)
+        < gateOneRecordDecoder.toPhased.toTM.tapeLength L)
+    (htagones : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + 2 → c0.tape p = true)
+    (htagterm : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) + 2 → c0.tape p = false)
+    (hrefones : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (c0.head : Nat) + 3 ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + 3 + k → c0.tape p = true)
+    (hrefterm : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) + 3 + k → c0.tape p = false) :
+    decodeGateRecord n (tapeReadList c0 (c0.head : Nat) (gateRecordSize (SLGate.notGate (n := n) k)))
+      = some (SLGate.notGate k, []) := by
+  simp only [gateRecordSize] at hb
+  have htape : tapeReadList c0 (c0.head : Nat) (gateRecordSize (SLGate.notGate (n := n) k))
+      = encodeGateRecord (SLGate.notGate (n := n) k) := by
+    rw [show gateRecordSize (SLGate.notGate (n := n) k) = (2 + 1) + (k + 1) from by
+        simp only [gateRecordSize]; omega, tapeReadList_add,
+      tapeReadList_eq_unaryField c0 (c0.head : Nat) 2 (by omega)
+        (fun p ha hb' => htagones p (by omega) (by omega)) (fun p hp => htagterm p (by omega)),
+      tapeReadList_eq_unaryField c0 ((c0.head : Nat) + (2 + 1)) k (by omega)
+        (fun p ha hb' => hrefones p (by omega) (by omega)) (fun p hp => hrefterm p (by omega))]
+    simp [encodeGateRecord]
+  rw [htape]
+  simpa using decodeGateRecord_encodeGateRecord (n := n) (SLGate.notGate k) []
+
+/-- `andGate k l` (tag `3`): the traversed bits decode to `andGate k l`. -/
+theorem gateOneRecordDecoder_decodes_and {L : Nat} {n : Nat} (k l : Nat)
+    (c0 : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    (hb : (c0.head : Nat) + gateRecordSize (SLGate.andGate (n := n) k l)
+        < gateOneRecordDecoder.toPhased.toTM.tapeLength L)
+    (htagones : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + 3 → c0.tape p = true)
+    (htagterm : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) + 3 → c0.tape p = false)
+    (href1ones : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (c0.head : Nat) + 4 ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + 4 + k → c0.tape p = true)
+    (href1term : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) + 4 + k → c0.tape p = false)
+    (href2ones : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (c0.head : Nat) + 5 + k ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + 5 + k + l → c0.tape p = true)
+    (href2term : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) + 5 + k + l → c0.tape p = false) :
+    decodeGateRecord n (tapeReadList c0 (c0.head : Nat) (gateRecordSize (SLGate.andGate (n := n) k l)))
+      = some (SLGate.andGate k l, []) := by
+  simp only [gateRecordSize] at hb
+  have htape : tapeReadList c0 (c0.head : Nat) (gateRecordSize (SLGate.andGate (n := n) k l))
+      = encodeGateRecord (SLGate.andGate (n := n) k l) := by
+    rw [show gateRecordSize (SLGate.andGate (n := n) k l) = (3 + 1) + ((k + 1) + (l + 1)) from by
+        simp only [gateRecordSize]; omega, tapeReadList_add,
+      tapeReadList_eq_unaryField c0 (c0.head : Nat) 3 (by omega)
+        (fun p ha hb' => htagones p (by omega) (by omega)) (fun p hp => htagterm p (by omega)),
+      tapeReadList_add,
+      tapeReadList_eq_unaryField c0 ((c0.head : Nat) + (3 + 1)) k (by omega)
+        (fun p ha hb' => href1ones p (by omega) (by omega)) (fun p hp => href1term p (by omega)),
+      tapeReadList_eq_unaryField c0 ((c0.head : Nat) + (3 + 1) + (k + 1)) l (by omega)
+        (fun p ha hb' => href2ones p (by omega) (by omega)) (fun p hp => href2term p (by omega))]
+    simp [encodeGateRecord]
+  rw [htape]
+  simpa using decodeGateRecord_encodeGateRecord (n := n) (SLGate.andGate k l) []
+
+/-- `orGate k l` (tag `4`): the traversed bits decode to `orGate k l`. -/
+theorem gateOneRecordDecoder_decodes_or {L : Nat} {n : Nat} (k l : Nat)
+    (c0 : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    (hb : (c0.head : Nat) + gateRecordSize (SLGate.orGate (n := n) k l)
+        < gateOneRecordDecoder.toPhased.toTM.tapeLength L)
+    (htagones : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + 4 → c0.tape p = true)
+    (htagterm : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) + 4 → c0.tape p = false)
+    (href1ones : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (c0.head : Nat) + 5 ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + 5 + k → c0.tape p = true)
+    (href1term : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) + 5 + k → c0.tape p = false)
+    (href2ones : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (c0.head : Nat) + 6 + k ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + 6 + k + l → c0.tape p = true)
+    (href2term : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) + 6 + k + l → c0.tape p = false) :
+    decodeGateRecord n (tapeReadList c0 (c0.head : Nat) (gateRecordSize (SLGate.orGate (n := n) k l)))
+      = some (SLGate.orGate k l, []) := by
+  simp only [gateRecordSize] at hb
+  have htape : tapeReadList c0 (c0.head : Nat) (gateRecordSize (SLGate.orGate (n := n) k l))
+      = encodeGateRecord (SLGate.orGate (n := n) k l) := by
+    rw [show gateRecordSize (SLGate.orGate (n := n) k l) = (4 + 1) + ((k + 1) + (l + 1)) from by
+        simp only [gateRecordSize]; omega, tapeReadList_add,
+      tapeReadList_eq_unaryField c0 (c0.head : Nat) 4 (by omega)
+        (fun p ha hb' => htagones p (by omega) (by omega)) (fun p hp => htagterm p (by omega)),
+      tapeReadList_add,
+      tapeReadList_eq_unaryField c0 ((c0.head : Nat) + (4 + 1)) k (by omega)
+        (fun p ha hb' => href1ones p (by omega) (by omega)) (fun p hp => href1term p (by omega)),
+      tapeReadList_eq_unaryField c0 ((c0.head : Nat) + (4 + 1) + (k + 1)) l (by omega)
+        (fun p ha hb' => href2ones p (by omega) (by omega)) (fun p hp => href2term p (by omega))]
+    simp [encodeGateRecord]
+  rw [htape]
+  simpa using decodeGateRecord_encodeGateRecord (n := n) (SLGate.orGate k l) []
+
+/-- `const b` (tag `1`): the traversed bits decode to `const b` (the literal cell at `head + 2`). -/
+theorem gateOneRecordDecoder_decodes_const {L : Nat} {n : Nat} (b : Bool)
+    (c0 : Configuration (M := gateOneRecordDecoder.toPhased.toTM) L)
+    (hb : (c0.head : Nat) + gateRecordSize (SLGate.const (n := n) b)
+        < gateOneRecordDecoder.toPhased.toTM.tapeLength L)
+    (hone : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + 1 → c0.tape p = true)
+    (htagterm : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) + 1 → c0.tape p = false)
+    (hbit : ∀ p : Fin (gateOneRecordDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) + 2 → c0.tape p = b) :
+    decodeGateRecord n (tapeReadList c0 (c0.head : Nat) (gateRecordSize (SLGate.const (n := n) b)))
+      = some (SLGate.const b, []) := by
+  simp only [gateRecordSize] at hb
+  have hlt : (c0.head : Nat) + (1 + 1) < gateOneRecordDecoder.toPhased.toTM.tapeLength L := by omega
+  have htape : tapeReadList c0 (c0.head : Nat) (gateRecordSize (SLGate.const (n := n) b))
+      = encodeGateRecord (SLGate.const (n := n) b) := by
+    rw [show gateRecordSize (SLGate.const (n := n) b) = (1 + 1) + (0 + 1) from by
+        simp only [gateRecordSize], tapeReadList_add,
+      tapeReadList_eq_unaryField c0 (c0.head : Nat) 1 (by omega)
+        (fun p ha hb' => hone p (by omega) (by omega)) (fun p hp => htagterm p (by omega)),
+      tapeReadList_succ c0 ((c0.head : Nat) + (1 + 1)) 0, dif_pos hlt,
+      hbit ⟨(c0.head : Nat) + (1 + 1), hlt⟩ (by simp)]
+    simp [tapeReadList, encodeGateRecord]
+  rw [htape]
+  simpa using decodeGateRecord_encodeGateRecord (n := n) (SLGate.const b) []
 
 end ContractExpansion
 end Frontier

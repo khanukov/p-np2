@@ -3854,6 +3854,12 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- The transition bridge: at body phases the stream decoder runs the one-record decoder (run-correctness seed).
 #check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_transition_body
 #check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_stepConfig_tag_one_phase
+-- Stream-decoder per-tag full-record traversals (reach accept 12, head at next record) on the composed machine.
+#check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_input
+#check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_const
+#check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_not
+#check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_and
+#check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_or
 -- Unary countdown self-loop (marker-free counter; §6c brick toward the row loop).
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_runConfig_consume

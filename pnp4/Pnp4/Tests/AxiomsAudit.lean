@@ -579,6 +579,9 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.loopUntilSink_reachesSink
 #print axioms Pnp4.Frontier.ContractExpansion.gateStreamDecoder_neverMovesLeft
 #print axioms Pnp4.Frontier.ContractExpansion.gateStreamDecoder_transition_body
+#print axioms Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_input
+#print axioms Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_and
+#print axioms Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_or
 #print axioms Pnp4.Frontier.ContractExpansion.runConfig_head_val_ge
 #print axioms Pnp4.Frontier.ContractExpansion.runConfig_head_dist_le
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_locates_gamma_terminator

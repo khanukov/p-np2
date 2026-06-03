@@ -19,9 +19,23 @@ Phase layout (`numPhases = 11`): `0..4` read the unary tag (phase `i` = "seen `i
 phase `i` dispatch to phase `5 + i` (tag `= i`); a `1` at phase `4` is a sixth-or-later `1` (`t ≥ 5`,
 malformed) routing to the sink phase `10`; phases `5..10` idle. This part proves the dispatcher's run
 behaviour (reads `1^t 0` in `t + 1` steps, lands in phase `5 + t`, head advanced `t + 1`, tape
-unchanged) and its correspondence to D0's `decodeUnaryField` on the tag field. Operand consumption and
-the full `decodeGateRecord` correspondence are part 2.
--/
+unchanged). Operand consumption and the full `decodeGateRecord` correspondence are part 2.
+
+**Progress classification (AGENTS.md): Infrastructure** — toolkit toward the NP-membership leg of
+`VerifiedNPDAGLowerBoundSource`; it does not itself reduce a source obligation and is **not**
+reportable as `P ≠ NP` mainline progress.
+
+**Composition note (why per-tag exit phases, not `seq`).** Per the repo's all-`Unit`
+state-uniformity discipline (§6a), control is **phase-encoded**, not state-carried (every self-loop
+brick is `ConstStatePhasedProgram Unit`). `ConstStatePhasedProgram.seq` hands off at a *single*
+`acceptPhase` **and resets the state to `startState`**, so it cannot carry a 5-way tag branch — neither
+via phases (one handoff phase) nor via state (reset, and a non-`Unit` tag state would break uniformity
+with the self-loops). The five dispatch phases `5..9` are therefore **internal entrypoints** for the
+per-tag operand sub-sequences of the *monolithic* one-record decoder (D1b part 2), reached by
+phase-routing **within one program**, not by `seq`. Accordingly `acceptPhase` here is a **nominal
+placeholder** (the malformed sink `10`, a non-dispatch phase); the dispatcher's real API is its
+`runConfig` phase-position lemmas below, and the genuine single accept phase is the convergence point of
+the part-2 decoder. -/
 
 namespace Pnp4
 namespace Frontier
@@ -35,7 +49,7 @@ def gateTagDispatch : ConstStatePhasedProgram Unit where
   numPhases := 11
   startPhase := ⟨0, by omega⟩
   startState := ()
-  acceptPhase := ⟨5, by omega⟩
+  acceptPhase := ⟨10, by omega⟩  -- nominal (the malformed sink); see the composition note above
   acceptState := ()
   transition := fun i _ b =>
     if h5 : i.val < 5 then

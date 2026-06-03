@@ -134,6 +134,32 @@ theorem loopUntilSink_stepConfig_halt_phase (B : ConstStatePhasedProgram Unit) (
   rw [ConstStatePhasedProgram.toTM_stepConfig_phase (loopUntilSink B sink) c hstate]
   simp [loopUntilSink_transition_halt B sink hne]
 
+/-! ### Run-level: the loop's one-iteration re-entry -/
+
+/-- **One iteration of the loop.**  If the body, run inside the loop for `sB` steps from `d`, reaches
+`B`'s accept phase, then one further step takes the head-advancing back-edge: after `sB + 1` steps the
+loop is back at `B`'s start phase, with the head left where the body finished (the re-entry is a
+`Move.stay`).  This is the reusable unit the run-`K`-records induction iterates (the body hypothesis
+`hbody` is discharged per body — e.g. by `gateOneRecordDecoder`'s per-tag traversal reaching accept). -/
+theorem loopUntilSink_runConfig_oneIter (B : ConstStatePhasedProgram Unit) (sink : Fin B.numPhases)
+    {L : Nat} (sB : Nat) (d : Configuration (M := (loopUntilSink B sink).toPhased.toTM) L)
+    (hbody : (TM.runConfig (M := (loopUntilSink B sink).toPhased.toTM) d sB).state.fst
+        = B.acceptPhase) :
+    ((TM.runConfig (M := (loopUntilSink B sink).toPhased.toTM) d (sB + 1)).state).fst.val
+        = B.startPhase.val
+      ∧ (TM.runConfig (M := (loopUntilSink B sink).toPhased.toTM) d (sB + 1)).head
+        = (TM.runConfig (M := (loopUntilSink B sink).toPhased.toTM) d sB).head := by
+  rw [TM.runConfig_succ]
+  set c := TM.runConfig (M := (loopUntilSink B sink).toPhased.toTM) d sB with hc
+  refine ⟨?_, ?_⟩
+  · rw [ConstStatePhasedProgram.toTM_stepConfig_phase (loopUntilSink B sink) c (rfl), hbody,
+      loopUntilSink_transition_loop]
+  · rw [ConstStatePhasedProgram.toTM_stepConfig_head (loopUntilSink B sink) c (rfl)]
+    have hmove : ((loopUntilSink B sink).transition c.state.fst c.state.snd
+        (c.tape c.head)).2.2.2 = Move.stay := by rw [hbody, loopUntilSink_transition_loop]
+    rw [hmove]
+    simp [Configuration.moveHead]
+
 end ContractExpansion
 end Frontier
 end Pnp4

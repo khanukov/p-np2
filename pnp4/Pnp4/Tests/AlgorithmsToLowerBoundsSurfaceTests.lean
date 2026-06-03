@@ -75,6 +75,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftOneProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanRightOneProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordLayout
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCountdownLeft
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillComposition
@@ -3781,6 +3782,11 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_readsUnaryField
 #check @Pnp4.Frontier.ContractExpansion.decodeUnaryField_tapeReadList_of_reads
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_readsUnaryField_seqP2
+-- Gate-tag dispatcher (decoder brick D1b part 1, §6k): read unary tag 1^t 0, dispatch to per-tag phase.
+#check @Pnp4.Frontier.ContractExpansion.gateTagDispatch
+#check @Pnp4.Frontier.ContractExpansion.gateTagDispatch_neverMovesLeft
+#check @Pnp4.Frontier.ContractExpansion.gateTagDispatch_runConfig_scanning
+#check @Pnp4.Frontier.ContractExpansion.gateTagDispatch_runConfig_dispatch
 -- Unary countdown self-loop (marker-free counter; §6c brick toward the row loop).
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_runConfig_consume

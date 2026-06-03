@@ -575,6 +575,7 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.loopUntilSink_neverMovesLeft
 #print axioms Pnp4.Frontier.ContractExpansion.loopUntilSink_runConfig_oneIter
 #print axioms Pnp4.Frontier.ContractExpansion.loopUntilSink_runConfig_halt_stays
+#print axioms Pnp4.Frontier.ContractExpansion.loopUntilSink_reachesSink
 #print axioms Pnp4.Frontier.ContractExpansion.runConfig_head_val_ge
 #print axioms Pnp4.Frontier.ContractExpansion.runConfig_head_dist_le
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_locates_gamma_terminator

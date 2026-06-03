@@ -179,6 +179,40 @@ theorem loopUntilSink_runConfig_halt_stays (B : ConstStatePhasedProgram Unit) (s
       rw [ConstStatePhasedProgram.toTM_stepConfig_phase (loopUntilSink B sink) d (rfl), hdf,
         loopUntilSink_transition_halt B sink hne]
 
+/-- **Run-`K` termination via a measure.**  If a measure `μ` on configurations strictly decreases on
+each loop iteration — from any start-phase config with `μ ≠ 0`, after some `sB + 1` steps the loop is
+back at the start phase with smaller `μ` (one record consumed) — and reaches the `sink` at `μ = 0` (the
+end-of-stream marker), then the loop reaches `sink` from any start-phase config.  Strong induction on
+`μ`; the existential step count absorbs the variable per-record strides.  The stream decoder discharges
+`hstep` from `gateOneRecordDecoder`'s per-tag traversal (`oneIter`) and `hbase` from its malformed-sink
+behaviour. -/
+theorem loopUntilSink_reachesSink (B : ConstStatePhasedProgram Unit) (sink : Fin B.numPhases)
+    {L : Nat} (μ : Configuration (M := (loopUntilSink B sink).toPhased.toTM) L → Nat)
+    (hstep : ∀ c, (c.state.fst : Nat) = B.startPhase.val → μ c ≠ 0 →
+        ∃ sB, ((TM.runConfig (M := (loopUntilSink B sink).toPhased.toTM) c (sB + 1)).state).fst.val
+                = B.startPhase.val
+          ∧ μ (TM.runConfig (M := (loopUntilSink B sink).toPhased.toTM) c (sB + 1)) < μ c)
+    (hbase : ∀ c, (c.state.fst : Nat) = B.startPhase.val → μ c = 0 →
+        ∃ sE, ((TM.runConfig (M := (loopUntilSink B sink).toPhased.toTM) c sE).state).fst.val
+              = sink.val)
+    (c : Configuration (M := (loopUntilSink B sink).toPhased.toTM) L)
+    (hc : (c.state.fst : Nat) = B.startPhase.val) :
+    ∃ t, ((TM.runConfig (M := (loopUntilSink B sink).toPhased.toTM) c t).state).fst.val = sink.val := by
+  suffices H : ∀ m c, (c.state.fst : Nat) = B.startPhase.val → μ c = m →
+      ∃ t, ((TM.runConfig (M := (loopUntilSink B sink).toPhased.toTM) c t).state).fst.val
+        = sink.val by
+    exact H (μ c) c hc rfl
+  intro m
+  induction m using Nat.strong_induction_on with
+  | _ m ih =>
+    intro c hc hm
+    rcases Nat.eq_zero_or_pos m with hm0 | hmpos
+    · exact hbase c hc (hm.trans hm0)
+    · obtain ⟨sB, hreenter, hdec⟩ := hstep c hc (by omega)
+      set d := TM.runConfig (M := (loopUntilSink B sink).toPhased.toTM) c (sB + 1) with hd
+      obtain ⟨t, ht⟩ := ih (μ d) (by omega) d hreenter rfl
+      exact ⟨(sB + 1) + t, by rw [TM.runConfig_add]; exact ht⟩
+
 end ContractExpansion
 end Frontier
 end Pnp4

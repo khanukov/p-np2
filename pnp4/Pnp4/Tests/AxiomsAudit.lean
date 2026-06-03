@@ -68,6 +68,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateStreamLayout
+import Pnp4.Frontier.ContractExpansion.TreeMCSPLoopUntilSink
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCountdownLeft
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillComposition
@@ -570,6 +571,8 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.decodeGateStream_encodeGateStream
 #print axioms Pnp4.Frontier.ContractExpansion.decodeGateStream_circuit_eval
 #print axioms Pnp4.Frontier.ContractExpansion.transcodeWitness_faithful
+-- Head-advancing self-terminating loop combinator (control structure).
+#print axioms Pnp4.Frontier.ContractExpansion.loopUntilSink_neverMovesLeft
 #print axioms Pnp4.Frontier.ContractExpansion.runConfig_head_val_ge
 #print axioms Pnp4.Frontier.ContractExpansion.runConfig_head_dist_le
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_locates_gamma_terminator

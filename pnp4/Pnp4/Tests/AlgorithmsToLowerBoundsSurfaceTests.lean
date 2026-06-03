@@ -78,6 +78,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateStreamLayout
+import Pnp4.Frontier.ContractExpansion.TreeMCSPLoopUntilSink
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCountdownLeft
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillComposition
@@ -3836,6 +3837,11 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- D2 transcoder spec: certificate bits → record stream; end-to-end faithfulness (the §9 on-tape target).
 #check @Pnp4.Frontier.ContractExpansion.transcodeWitness
 #check @Pnp4.Frontier.ContractExpansion.transcodeWitness_faithful
+-- Head-advancing self-terminating loop combinator (control for D2 stream decode / I1; head advances per pass).
+#check @Pnp4.Frontier.ContractExpansion.loopUntilSink
+#check @Pnp4.Frontier.ContractExpansion.loopUntilSink_transition_loop
+#check @Pnp4.Frontier.ContractExpansion.loopUntilSink_transition_halt
+#check @Pnp4.Frontier.ContractExpansion.loopUntilSink_neverMovesLeft
 -- Unary countdown self-loop (marker-free counter; §6c brick toward the row loop).
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_runConfig_consume

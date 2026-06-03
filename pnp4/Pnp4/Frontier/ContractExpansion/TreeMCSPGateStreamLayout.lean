@@ -1,5 +1,6 @@
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordLayout
 import Pnp4.Frontier.ContractExpansion.CircuitTreeBridge
+import Pnp4.Frontier.ContractExpansion.CircuitDecodeDepthFree
 
 /-!
 # On-tape gate-record **stream** layout (NP-verifier track — decoder brick D2, spec foundation)
@@ -162,6 +163,37 @@ theorem decodeGateStream_circuit_eval {n : Nat} (c : Pnp3.Models.Circuit n) (x :
   refine ⟨(CircuitTree.flatten (toTree c)).gates, decodeGateStream_flatten (toTree c) rest, ?_⟩
   rw [← evalCircuitTree_toTree c x]
   exact CircuitTree.flatten_eval (toTree c) x
+
+/-! ### The transcoder spec: certificate bits → self-delimiting record stream
+
+The pure function the §9 **on-tape transcoder** (D2's hardest part) must compute: decode the certificate
+to a `Circuit` (via the native codec `decodeCircuitFull`), then emit the self-delimiting record stream of
+its flattening.  `transcodeWitness_faithful` proves this is faithful end-to-end — the emitted stream
+decodes back to a straight-line program computing the certificate's circuit `Circuit.eval c`.  This is
+the precise correctness statement the on-tape transcoder TM is then obligated to match. -/
+
+/-- Decode a certificate to a circuit, then emit the self-delimiting gate-record stream of its
+flattening — the pure spec of D2's on-tape transcoder. -/
+def transcodeWitness (n width : Nat) (cert : List Bool) : Option (List Bool) :=
+  match decodeCircuitFull n width cert with
+  | none => none
+  | some (c, _) => some (encodeGateStream (CircuitTree.flatten (toTree c)).gates)
+
+/-- **Transcoder faithfulness (end-to-end §9 spec).** For a certificate that is `encodeCircuit … c`
+(followed by any tail), the transcoder emits a record stream that decodes back to a straight-line program
+computing `Circuit.eval c`. -/
+theorem transcodeWitness_faithful {n width : Nat} (h_width : n ≤ 2 ^ width)
+    (c : Pnp3.Models.Circuit n) (x : Fin n → Bool) (tail : List Bool) :
+    ∃ (stream : List Bool) (gates : List (SLGate n)),
+      transcodeWitness n width (encodeCircuit width h_width c ++ tail) = some stream
+      ∧ decodeGateStream n stream = some (gates, [])
+      ∧ SLProgram.eval ⟨gates⟩ x = some (Pnp3.Models.Circuit.eval c x) := by
+  refine ⟨encodeGateStream (CircuitTree.flatten (toTree c)).gates,
+    (CircuitTree.flatten (toTree c)).gates, ?_, ?_, ?_⟩
+  · simp only [transcodeWitness, decodeCircuitFull_encodeCircuit]
+  · simpa using decodeGateStream_encodeGateStream (CircuitTree.flatten (toTree c)).gates []
+  · rw [← evalCircuitTree_toTree c x]
+    exact CircuitTree.flatten_eval (toTree c) x
 
 end ContractExpansion
 end Frontier

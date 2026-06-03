@@ -3833,6 +3833,9 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- D2 capstone: stream of flatten(toTree c) computes the actual Circuit.eval c (full spec chain closed).
 #check @Pnp4.Frontier.ContractExpansion.evalCircuitTree_toTree
 #check @Pnp4.Frontier.ContractExpansion.decodeGateStream_circuit_eval
+-- D2 transcoder spec: certificate bits → record stream; end-to-end faithfulness (the §9 on-tape target).
+#check @Pnp4.Frontier.ContractExpansion.transcodeWitness
+#check @Pnp4.Frontier.ContractExpansion.transcodeWitness_faithful
 -- Unary countdown self-loop (marker-free counter; §6c brick toward the row loop).
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_runConfig_consume

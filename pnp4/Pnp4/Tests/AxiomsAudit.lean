@@ -569,6 +569,7 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.decodeGateRecordStream_flatten_eval
 #print axioms Pnp4.Frontier.ContractExpansion.decodeGateStream_encodeGateStream
 #print axioms Pnp4.Frontier.ContractExpansion.decodeGateStream_circuit_eval
+#print axioms Pnp4.Frontier.ContractExpansion.transcodeWitness_faithful
 #print axioms Pnp4.Frontier.ContractExpansion.runConfig_head_val_ge
 #print axioms Pnp4.Frontier.ContractExpansion.runConfig_head_dist_le
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_locates_gamma_terminator

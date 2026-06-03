@@ -73,6 +73,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaScanProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftOneProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanRightOneProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordLayout
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCountdownLeft
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillComposition
@@ -3766,6 +3767,13 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_runConfig_terminator
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_seqP2_runConfig_scanning
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_seqP2_runConfig_terminator
+-- On-tape gate-record layout + unary back-reference distances (decoder brick D0, §6k).
+#check @Pnp4.Frontier.ContractExpansion.unaryField
+#check @Pnp4.Frontier.ContractExpansion.decodeUnaryField_unaryField
+#check @Pnp4.Frontier.ContractExpansion.encodeGateRecord
+#check @Pnp4.Frontier.ContractExpansion.decodeGateRecord
+#check @Pnp4.Frontier.ContractExpansion.decodeGateRecord_encodeGateRecord
+#check @Pnp4.Frontier.ContractExpansion.encodeGateRecord_length
 -- Unary countdown self-loop (marker-free counter; §6c brick toward the row loop).
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_runConfig_consume

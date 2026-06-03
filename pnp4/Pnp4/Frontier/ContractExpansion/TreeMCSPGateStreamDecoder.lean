@@ -48,6 +48,49 @@ theorem gateStreamDecoder_neverMovesLeft : TMNeverMovesLeft (gateStreamDecoder.t
   loopUntilSink_neverMovesLeft gateOneRecordDecoder ⟨13, by simp⟩
     gateOneRecordDecoder_transition_move
 
+/-! ### Transition bridge: the stream decoder runs the one-record decoder at body phases
+
+At any phase `< 12` (i.e. not the one-record decoder's accept `12` or its sink `13`), the stream
+decoder's transition is exactly the one-record decoder's — the loop only intercepts the accept/sink
+phases.  This bridges D1b's transition behaviour onto `gateStreamDecoder`, so its run behaviour can be
+re-derived on the composed machine (the `Configuration` types of the two `toTM`s are not defeq, so D1b's
+lemmas cannot transfer directly; this bridge re-derives them at the transition level instead). -/
+theorem gateStreamDecoder_transition_body (i : Fin 14) (s : Unit) (b : Bool) (hi : i.val < 12) :
+    gateStreamDecoder.transition i s b = gateOneRecordDecoder.transition i s b := by
+  have h1 : i ≠ gateOneRecordDecoder.acceptPhase :=
+    Fin.ne_of_val_ne (by rw [gateOneRecordDecoder_acceptPhase_val]; omega)
+  have h2 : i ≠ (⟨13, by simp⟩ : Fin gateOneRecordDecoder.numPhases) :=
+    Fin.ne_of_val_ne (by simp; omega)
+  exact loopUntilSink_transition_body gateOneRecordDecoder ⟨13, by simp⟩ h1 h2 s b
+
+/-! ### Re-derived single-step lemmas (tag-read phases) via the bridge
+
+Each is the `gateStreamDecoder` analogue of the corresponding `gateOneRecordDecoder` single-step,
+obtained by `toTM_stepConfig_*` + the transition bridge + D1b's transition reduction.  These seed the
+run-behaviour re-derivation (scanning / dispatch / per-tag traversal) on the composed machine. -/
+
+/-- Tag-read `1` at phase `i < 4`: advance to phase `i + 1`. -/
+theorem gateStreamDecoder_stepConfig_tag_one_phase {L : Nat}
+    (c : Configuration (M := gateStreamDecoder.toPhased.toTM) L) {i : Fin 14} {s : Unit}
+    (hi : i.val < 4) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = true) :
+    ((TM.stepConfig (M := gateStreamDecoder.toPhased.toTM) c).state).fst.val = i.val + 1 := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_phase gateStreamDecoder c hstate,
+    gateStreamDecoder_transition_body i s (c.tape c.head) (by omega)]
+  simp only [gateOneRecordDecoder, dif_pos hi, hbit, if_true]
+
+/-- Tag-read `1` at phase `i < 4`: advance the head by one. -/
+theorem gateStreamDecoder_stepConfig_tag_one_head {L : Nat}
+    (c : Configuration (M := gateStreamDecoder.toPhased.toTM) L) {i : Fin 14} {s : Unit}
+    (hi : i.val < 4) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = true)
+    (hbound : (c.head : Nat) + 1 < gateStreamDecoder.toPhased.toTM.tapeLength L) :
+    ((TM.stepConfig (M := gateStreamDecoder.toPhased.toTM) c).head : Nat) = (c.head : Nat) + 1 := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_head gateStreamDecoder c hstate]
+  have hmove : (gateStreamDecoder.transition i s (c.tape c.head)).2.2.2 = Move.right := by
+    rw [gateStreamDecoder_transition_body i s (c.tape c.head) (by omega)]
+    simp only [gateOneRecordDecoder, dif_pos hi, hbit, if_true]
+  rw [hmove]
+  simp only [Configuration.moveHead, dif_pos hbound]
+
 end ContractExpansion
 end Frontier
 end Pnp4

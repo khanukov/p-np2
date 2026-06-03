@@ -3851,6 +3851,9 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- The on-tape gate-record STREAM decoder (D2): loopUntilSink over D1b, halting at the end-of-stream sink.
 #check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder
 #check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_neverMovesLeft
+-- The transition bridge: at body phases the stream decoder runs the one-record decoder (run-correctness seed).
+#check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_transition_body
+#check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_stepConfig_tag_one_phase
 -- Unary countdown self-loop (marker-free counter; §6c brick toward the row loop).
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_runConfig_consume

@@ -72,6 +72,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckUnit
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaScanProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftOneProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPScanRightOneProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCountdownLeft
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillComposition
@@ -3756,6 +3757,15 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_runConfig_terminator
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqP2_runConfig_scanning
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqP2_runConfig_terminator
+-- Rightward scan-over-`1`s (the genuine fourth scan as a pure traversal; marker-free unary-distance
+-- rightward seek for the on-tape interpreter, §6k).
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_transition_move
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_neverMovesLeft
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_runConfig_scanning
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_runConfig_terminator
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_seqP2_runConfig_scanning
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_seqP2_runConfig_terminator
 -- Unary countdown self-loop (marker-free counter; §6c brick toward the row loop).
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_runConfig_consume

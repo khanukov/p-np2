@@ -601,6 +601,93 @@ hard but *buildable* — none waits on an unproven upstream lemma.  All prior "u
 this document is corrected accordingly: the dependency is the **proven** `_wf` evaluator plus a decidable
 wf-guard.
 
+### 6j. Resolution — α/β settled (**β, in situ**); the standalone read-body is unnecessary; the real crux is *reachable-scratch*
+
+Re-checking §6g's walking-terminator read against §6h's (α)/(β) accumulate targets forces the decision the
+earlier notes deferred, and it comes out cleanly:
+
+* **§6g's read is *destructive*, so (α) "read+accumulate" and (β) "leave `n+1` in situ" are mutually
+  exclusive.**  The walking terminator overwrites each payload cell as it passes (write `0` at the old
+  terminator, `1` at the read cell), so after the `z` reads the gamma payload `[p_term, p_term+1+z)` is no
+  longer `1·b₁…b_z` but `0^z 1` — the in-situ value of `n+1` is **gone**.  A read that consumes the payload
+  cannot also preserve it.
+* **(β) dominates (α).**  Both ultimately need `n` reachable where it is *used* — the length check and the
+  row loop's `2^n`-doubling counter (in scratch).  (α) pays the **reachable-scratch** cost *and* destroys
+  the in-situ copy; (β) keeps `[tagLen, p_term+1+z)` intact (read in place whenever needed) and pays
+  reachable-scratch only where a consumer genuinely needs a *relocated* count.  Neither escapes
+  reachable-scratch, so the destructive copy of (α) buys nothing.  **Choose (β).**
+* **Consequence: the "gamma payload-read body" (plan item 1) is *not* a standalone brick — it dissolves.**
+  Under (β) nothing moves the payload; there is no shuttle/accumulate program to write.  `gammaSelfLoopFill`
+  is therefore **not** on the (β) path either (it was only the counter materialization for a *consuming*
+  loop): the leading zeros stay zeros, `n+1` stays readable in situ.  This confirms §6h's "may be
+  unnecessary" as a definite **unnecessary**, and retires §6f's filled-counter mechanism for this purpose.
+
+**The genuine remaining crux, now isolated: reachable-scratch on a 2-symbol single tape.**  Every
+*purely-local* loop is already covered — `repeatBody` keeps the head on its counter and a local body works
+beside it (the gamma field is self-contained; the row loop's counter and per-row work both live in
+scratch).  What is *not* solved is any **cross-region transfer**, and exactly two are needed: (T1) seed the
+`2^n`-doubling loop with a count derived from `n` (gamma field → scratch), and (T2) compare input bit
+`x[r]` (in the query) against the evaluator's output bit (in scratch) for a data-dependent `r`.  Both must
+land the head at a *data-dependent* position in a different region with **no marker** to aim at.  Candidate
+landmarks, and why each fails:
+
+| Candidate landmark | Why it fails on the 2-symbol model |
+|---|---|
+| Position `0` via clamped left-rewind (`selfLoopScanLeft` floors at `0`) | reliable, but `0` is the *input* region; scratch starts at `2N+1` (data-dependent), not a constant offset from `0` |
+| "First blank" by scanning right to the first `0` | input/cert cells may be `0` (= blank), so the scan stops *inside* the input — the input/scratch boundary is not content-findable |
+| Write a sentinel at the scratch frontier, then home on it | needs a 3rd symbol; the binary alphabet has none (this is the 2-track model extension already rejected in §6f) |
+
+**Honest status.**  Navigation and counter representation for the gamma read are fully settled (and the
+read-body is now provably unnecessary under (β)).  No standalone shuttle brick will be built.  The next
+real construction problem is a **reachable-scratch addressing scheme** for the cross-region transfers
+(T1)/(T2) — the shared prerequisite of the length check and the row loop — which has no clean primitive on
+the present model and is therefore the next *design* decision (not another motion primitive).  Documented
+here rather than half-built, per the standing design-first discipline.
+
+### 6k. The proven evaluator is an *unrolling*, not a loop — `M` needs an on-tape interpreter; unary-distance addressing resolves §6j's crux
+
+Re-checking the toolkit `circuitEvaluatorCS` against what a *fixed* `M` can use (the central question for
+items 3–5) settles two things the earlier notes left fuzzy:
+
+* **`circuitEvaluatorCSAt` is recursion on the gate `List`** (`GateWrappers.lean:502`, `match gates with
+  | [] => idleCS | g :: rest => seqCS (evalOneGateCS …) (circuitEvaluatorCSAt rest …)`).  So
+  `circuitEvaluatorCS gates` is a **different program per `gates`**, with `numPhases` growing in the gate
+  count — the same "per-instance unrolling" status as `repeatProgram` (§6's correction).  Its proven
+  `_wf` correctness (§6i) is therefore a **spec / reasoning device**, *not* a body `M` can embed: the fixed
+  `M` has one finite control and cannot pick an input-dependent program.  This sharpens §6i: item (3) is
+  not proof-blocked, but neither is it "just call the evaluator" — `M` needs a **from-scratch on-tape gate
+  interpreter**.
+* **Shape of the interpreter.**  A back-edge loop (`repeatBody`) over a **unary gate-count** counter; the
+  body reads one **fixed-width gate record** from a decoded-circuit scratch region (fixed strides — the
+  record width is a compile-time constant), dispatches on the opcode (finite control), and writes the gate
+  value into the next scratch slot.  The row loop is the analogous outer `repeatBody` over the `2^n`
+  counter.  Both loop *counts* are data-dependent (handled by the unary counter); all *motion within a
+  body* is fixed-stride **except** operand fetch.
+
+* **Operand fetch is the §6j crux, and unary-distance addressing solves it.**  A gate back-references an
+  earlier gate's output slot at a **runtime** index `j`; reaching slot `j` is a data-dependent seek with no
+  marker.  **Scheme: the decoder stores each back-reference as a *unary distance* (a `1`-block) in the gate
+  record**, and the fetch follows it by **scanning over the `1`-block** — `selfLoopScanRightOne` /
+  `selfLoopScanLeftOne`, stopping at the bounding `0`.  This is marker-free, uses only the four-way scan
+  vocabulary, and stays within the polynomial budget (distances are `≤ #gates = poly(n)`, so unary is
+  poly-size).  It **resolves** §6j's "no clean primitive" status for the interpreter: the primitive is
+  *scan-over-a-unary-distance*, and the cost is paid once, in the decoder, converting binary refs to unary.
+  The same unary-distance technique services the (T2) `x[r]`-vs-output compare relative to the row counter.
+
+* **`selfLoopScanRightOne` (this PR) is the missing piece of that vocabulary** — pure rightward traversal
+  over `1`s (the earlier "rightward `1`" slot was only `gammaSelfLoopFill`, which *writes*).  Built with
+  full run-behaviour (`selfLoopScanRightOne_runConfig_{scanning,terminator}`), it is the rightward
+  marker-free unary-distance seek.
+
+**Roadmap consequence.**  The named bricks ahead are now: (D) the **on-tape decoder** `witness → contiguous
+gate records with unary back-reference distances` (the §9 codec-layout reconciliation lands here, and it is
+the hardest single brick); (I) the **gate interpreter** `repeatBody` body (read record ▸ unary-seek
+operands ▸ dispatch ▸ write slot); (R) the **row loop** `repeatBody` over `2^n` whose body runs (I) then
+compares the output to `x[r]`; (P) the **prefix-agreement compare** (a smaller instance of the same
+unary-distance compare); (A) **assembly** + `runTime_poly` + the `accepts = treePrefixSemanticAccepts`
+bridge. The control combinators, counters, and now the full four-way *traversal* vocabulary are all built;
+the remaining work is (D)/(I)/(R)/(P)/(A), in that dependency order.
+
 ## 7. Runtime accounting
 
 With `threshold n = thresholdPoly k n = n^k + k`, `witnessBits n = (bitLength n + 4) · threshold n`,

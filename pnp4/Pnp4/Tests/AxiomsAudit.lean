@@ -567,6 +567,7 @@ end Pnp4
 -- D2 spec foundation: gate-record stream round-trip + circuit-codec faithfulness bridge.
 #print axioms Pnp4.Frontier.ContractExpansion.decodeGateRecordStream_encodeGateRecordStream
 #print axioms Pnp4.Frontier.ContractExpansion.decodeGateRecordStream_flatten_eval
+#print axioms Pnp4.Frontier.ContractExpansion.decodeGateStream_encodeGateStream
 #print axioms Pnp4.Frontier.ContractExpansion.runConfig_head_val_ge
 #print axioms Pnp4.Frontier.ContractExpansion.runConfig_head_dist_le
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_locates_gamma_terminator

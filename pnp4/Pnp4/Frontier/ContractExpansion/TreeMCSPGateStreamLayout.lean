@@ -102,6 +102,36 @@ theorem decodeGateRecordStream_flatten_eval {n : Nat} (c : CircuitTree n) (x : F
   refine ⟨(CircuitTree.flatten c).gates, decodeGateRecordStream_flatten c rest, ?_⟩
   exact CircuitTree.flatten_eval c x
 
+/-! ### Self-delimiting stream: a unary gate-count prefix
+
+The on-tape stream decoder must learn *how many* records to read; prefixing the record stream with the
+gate count as a unary field `1^count 0` makes the stream self-delimiting (the count is read first, by
+the same `decodeUnaryField`/`selfLoopScanRightOne` the records use).  This is the D2 gate-count field. -/
+
+/-- A self-delimiting gate stream: the gate count as a unary prefix, then the record stream. -/
+def encodeGateStream {n : Nat} (gs : List (SLGate n)) : List Bool :=
+  unaryField gs.length ++ encodeGateRecordStream gs
+
+/-- Decode a self-delimiting gate stream: read the unary gate-count prefix, then that many records. -/
+def decodeGateStream (n : Nat) (bs : List Bool) : Option (List (SLGate n) × List Bool) :=
+  match decodeUnaryField bs with
+  | none => none
+  | some (count, rest) => decodeGateRecordStream n count rest
+
+/-- **Self-delimiting round-trip**: a count-prefixed gate stream decodes back to the gate list, leaving
+the suffix untouched (no external count needed — it is read from the prefix). -/
+theorem decodeGateStream_encodeGateStream {n : Nat} (gs : List (SLGate n)) (rest : List Bool) :
+    decodeGateStream n (encodeGateStream gs ++ rest) = some (gs, rest) := by
+  simp only [decodeGateStream, encodeGateStream, List.append_assoc, decodeUnaryField_unaryField,
+    decodeGateRecordStream_encodeGateRecordStream]
+
+/-- The self-delimiting stream of a flattened circuit decodes back to the flattened gate list — the
+gate count is recovered from the prefix as `c.size`. -/
+theorem decodeGateStream_flatten {n : Nat} (c : CircuitTree n) (rest : List Bool) :
+    decodeGateStream n (encodeGateStream (CircuitTree.flatten c).gates ++ rest)
+      = some ((CircuitTree.flatten c).gates, rest) :=
+  decodeGateStream_encodeGateStream (CircuitTree.flatten c).gates rest
+
 end ContractExpansion
 end Frontier
 end Pnp4

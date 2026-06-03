@@ -3827,6 +3827,9 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- D2 faithfulness bridge: a flattened circuit's record stream decodes to gates computing the circuit.
 #check @Pnp4.Frontier.ContractExpansion.decodeGateRecordStream_flatten
 #check @Pnp4.Frontier.ContractExpansion.decodeGateRecordStream_flatten_eval
+-- D2 self-delimiting stream: unary gate-count prefix + records (the on-tape decoder reads the count).
+#check @Pnp4.Frontier.ContractExpansion.decodeGateStream_encodeGateStream
+#check @Pnp4.Frontier.ContractExpansion.decodeGateStream_flatten
 -- Unary countdown self-loop (marker-free counter; §6c brick toward the row loop).
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_runConfig_consume

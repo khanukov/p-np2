@@ -67,6 +67,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordLayout
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGateStreamLayout
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCountdownLeft
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillComposition
@@ -563,6 +564,8 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_seqP2_runConfig_input
 #print axioms Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_seqP2_runConfig_and
 #print axioms Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_seqP2_runConfig_or
+-- D2 spec foundation: gate-record stream round-trip.
+#print axioms Pnp4.Frontier.ContractExpansion.decodeGateRecordStream_encodeGateRecordStream
 #print axioms Pnp4.Frontier.ContractExpansion.runConfig_head_val_ge
 #print axioms Pnp4.Frontier.ContractExpansion.runConfig_head_dist_le
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_locates_gamma_terminator

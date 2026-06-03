@@ -77,6 +77,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordLayout
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGateStreamLayout
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCountdownLeft
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillComposition
@@ -3820,6 +3821,9 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_seqP2_runConfig_not
 #check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_seqP2_runConfig_and
 #check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_seqP2_runConfig_or
+-- D2 spec foundation: the record-stream encode/decode round-trip + size (D0-analogue for a stream).
+#check @Pnp4.Frontier.ContractExpansion.decodeGateRecordStream_encodeGateRecordStream
+#check @Pnp4.Frontier.ContractExpansion.encodeGateRecordStream_length
 -- Unary countdown self-loop (marker-free counter; §6c brick toward the row loop).
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_runConfig_consume

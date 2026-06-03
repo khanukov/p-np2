@@ -3867,6 +3867,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.TapeHoldsAt_append
 #check @Pnp4.Frontier.ContractExpansion.TapeHoldsAt_unaryField
 #check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_record
+#check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_marker
 #check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_reachesSink
 -- Unary countdown self-loop (marker-free counter; §6c brick toward the row loop).
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft

@@ -190,15 +190,48 @@ theorem gateStreamDecoder_runConfig_record {L : Nat} {n : Nat} (g : SLGate n)
       · intro p hp1 hp2; exact h2ones p (by omega) (by omega)
       · intro p hp; exact h2term p (by omega)
 
+/-- **End-of-stream marker.**  Five leading `1`s (`1^5`) at the start phase drive the tag scan to phase
+`4` and then route to the sink phase `13`, advancing the head by exactly `5` and leaving the tape
+unchanged.  The full run-behaviour version of `gateStreamDecoder_runConfig_malformed` (adds the head and
+tape clauses), used as the `nil` base of the stream induction. -/
+theorem gateStreamDecoder_runConfig_marker {L : Nat}
+    (c₀ : Configuration (M := gateStreamDecoder.toPhased.toTM) L)
+    (hphase : (c₀.state.fst : Nat) = 0)
+    (hb : (c₀.head : Nat) + 4 + 1 < gateStreamDecoder.toPhased.toTM.tapeLength L)
+    (hones : ∀ p : Fin (gateStreamDecoder.toPhased.toTM.tapeLength L),
+      (c₀.head : Nat) ≤ (p : Nat) → (p : Nat) < (c₀.head : Nat) + 5 → c₀.tape p = true) :
+    (((TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c₀ (4 + 1)).state).fst : Nat) = 13
+      ∧ ((TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c₀ (4 + 1)).head : Nat)
+          = (c₀.head : Nat) + 5
+      ∧ (TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c₀ (4 + 1)).tape = c₀.tape := by
+  obtain ⟨hph, hhd, htp⟩ := gateStreamDecoder_runConfig_tagscan c₀ hphase 4 (by omega) (by omega)
+    (fun p hp1 hp2 => hones p hp1 (by omega))
+  rw [TM.runConfig_succ]
+  set c := TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c₀ 4 with hc
+  have hi4 : (c.state.fst : Nat) = 4 := by rw [hph]
+  have hbit : c.tape c.head = true := by
+    rw [htp]; exact hones c.head (by rw [hhd]; omega) (by rw [hhd]; omega)
+  have hbnd : (c.head : Nat) + 1 < gateStreamDecoder.toPhased.toTM.tapeLength L := by
+    rw [hhd]; omega
+  refine ⟨?_, ?_, ?_⟩
+  · rw [gateStreamDecoder_stepConfig_phase4_one_phase c (i := c.state.fst) (s := c.state.snd) hi4 rfl
+      hbit]
+  · rw [gateStreamDecoder_stepConfig_phase4_head c (i := c.state.fst) (s := c.state.snd) hi4 rfl hbnd]
+    omega
+  · rw [gateStreamDecoder_stepConfig_tape c (i := c.state.fst) (s := c.state.snd) rfl, htp]
+
 /-! ### Capstone: the loop reaches its sink on a well-formed stream + marker -/
 
 /-- **Stream-decoder termination.**  If the tape from `c₀.head` holds `encodeGateRecordStream gs` followed
 by the end-of-stream marker `1^5` (`List.replicate 5 true`), and `c₀` is at the start phase `0`, then the
 stream decoder reaches its sink phase `13` after some number of steps — it consumes one record per loop
-pass and halts at the marker.  Discharges the `loopUntilSink.reachesSink` obligation for the concrete D2
-stream encoding.  Induction on the gate list: the `cons` step is one per-record traversal
-(`gateStreamDecoder_runConfig_record`) plus one loop re-entry (`loopUntilSink_runConfig_oneIter`); the
-`nil` base meets the marker (`gateStreamDecoder_runConfig_malformed`). -/
+pass and halts at the marker — with the head at exactly the end of the consumed stream
+(`c₀.head + |encodeGateRecordStream gs| + 5`, the `+5` for the marker scan) and the tape unchanged (the
+decoder is read-only).  Discharges the `loopUntilSink.reachesSink` obligation for the concrete D2 stream
+encoding, to the toolkit's full run-behaviour standard (phase + head + tape).  Induction on the gate
+list: the `cons` step is one per-record traversal (`gateStreamDecoder_runConfig_record`) plus one loop
+re-entry (`loopUntilSink_runConfig_oneIter`); the `nil` base meets the marker
+(`gateStreamDecoder_runConfig_marker`). -/
 theorem gateStreamDecoder_runConfig_reachesSink {L : Nat} {n : Nat} (gs : List (SLGate n))
     (c₀ : Configuration (M := gateStreamDecoder.toPhased.toTM) L)
     (hphase : (c₀.state.fst : Nat) = 0)
@@ -206,15 +239,19 @@ theorem gateStreamDecoder_runConfig_reachesSink {L : Nat} {n : Nat} (gs : List (
         < gateStreamDecoder.toPhased.toTM.tapeLength L)
     (htape : TapeHoldsAt c₀ (c₀.head : Nat)
         (encodeGateRecordStream gs ++ List.replicate 5 true)) :
-    ∃ t, (((TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c₀ t).state).fst : Nat) = 13 := by
+    ∃ t, (((TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c₀ t).state).fst : Nat) = 13
+      ∧ ((TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c₀ t).head : Nat)
+          = (c₀.head : Nat) + (encodeGateRecordStream gs).length + 5
+      ∧ (TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c₀ t).tape = c₀.tape := by
   induction gs generalizing c₀ with
   | nil =>
-      refine ⟨4 + 1, ?_⟩
       have ht5 : TapeHoldsAt c₀ (c₀.head : Nat) (List.replicate 5 true) := by
         simpa [encodeGateRecordStream] using htape
-      refine gateStreamDecoder_runConfig_malformed c₀ hphase ?_
-        (TapeHoldsAt_replicate_true c₀ 5 _ ht5)
-      simp only [encodeGateRecordStream, List.length_nil] at hb; omega
+      have hbm : (c₀.head : Nat) + 4 + 1 < gateStreamDecoder.toPhased.toTM.tapeLength L := by
+        simp only [encodeGateRecordStream, List.length_nil] at hb; omega
+      obtain ⟨hmp, hmh, hmt⟩ :=
+        gateStreamDecoder_runConfig_marker c₀ hphase hbm (TapeHoldsAt_replicate_true c₀ 5 _ ht5)
+      exact ⟨4 + 1, hmp, by rw [hmh]; simp [encodeGateRecordStream], hmt⟩
   | cons g gs ih =>
       simp only [encodeGateRecordStream, List.length_append, encodeGateRecord_length] at hb
       -- `hb : c₀.head + (gateRecordSize g + (encodeGateRecordStream gs).length) + 5 < tapeLength`
@@ -262,9 +299,14 @@ theorem gateStreamDecoder_runConfig_reachesSink {L : Nat} {n : Nat} (gs : List (
           (encodeGateRecordStream gs ++ List.replicate 5 true) := by
         rw [hoff]
         exact (TapeHoldsAt_tape_congr _ c₀ _ _ htc1).mpr htape_rest
-      obtain ⟨t, ht⟩ := ih (TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c₀ (gateRecordSize g + 1))
-        hphase_c1 hb_c1 htape_c1
-      exact ⟨(gateRecordSize g + 1) + t, by rw [TM.runConfig_add]; exact ht⟩
+      obtain ⟨t, htp13, hthead, httape⟩ :=
+        ih (TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c₀ (gateRecordSize g + 1))
+          hphase_c1 hb_c1 htape_c1
+      refine ⟨(gateRecordSize g + 1) + t, ?_, ?_, ?_⟩
+      · rw [TM.runConfig_add]; exact htp13
+      · rw [TM.runConfig_add, hthead, hoff, encodeGateRecord_length]
+        simp only [encodeGateRecordStream, List.length_append, encodeGateRecord_length]; omega
+      · rw [TM.runConfig_add, httape]; exact htc1
 
 end ContractExpansion
 end Frontier

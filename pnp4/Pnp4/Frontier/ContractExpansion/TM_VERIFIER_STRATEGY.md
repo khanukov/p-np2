@@ -848,11 +848,19 @@ on-tape decoder matches `codec.decode` exactly, or the bridge (★) breaks.
 >   3-bit tags, binary indices) → flat unary-record stream with back-references`: parse the recursive tree
 >   on tape (a stack/depth discipline on a single tape), assign gate indices in a linearisation order,
 >   compute each reference as a back-distance, and convert binary indices to unary. This is the hardest
->   single brick and a multi-session sub-project; the D2 **spec** side now exists
->   (`TreeMCSPGateStreamLayout.lean`: `encodeGateRecordStream`/`decodeGateRecordStream` + round-trip), but
->   the CircuitTree→records **flattening spec** (with a semantics-preservation proof) and its on-tape
->   realisation are open. (Option (b) — proving the two encodings *agree* — is therefore **not** available:
->   they genuinely disagree; only option (a), an on-tape transcoder/decoder, can close the bridge.)
+>   single brick and a multi-session sub-project. The D2 **spec** side is now **complete**
+>   (`TreeMCSPGateStreamLayout.lean`): `encodeGateRecordStream`/`decodeGateRecordStream` + round-trip, the
+>   CircuitTree→records **flattening spec with semantics preservation** (`decodeGateRecordStream_flatten_eval`,
+>   `decodeGateStream_circuit_eval` via the toolkit's `CircuitTree.flatten_eval` + `evalCircuitTree_toTree`),
+>   and the end-to-end transcoder spec `transcodeWitness` + `transcodeWitness_faithful` (the emitted record
+>   stream decodes to a straight-line program computing `Circuit.eval c`). What remains open is purely the
+>   **on-tape realisation** of that transcoder. (Option (b) — proving the two encodings *agree* — is **not**
+>   available: they genuinely disagree; only option (a), an on-tape transcoder/decoder, can close the bridge.)
+>   The on-tape difficulty is concrete: the witness's `encodeFin width i` indices are **fixed-width binary
+>   with no terminator** (not self-delimiting), so reading one on a single 2-symbol tape needs a **counter in
+>   tape scratch** — exactly what the unary-record layout (terminator-delimited) was designed to avoid. So the
+>   transcoder, the interpreter, the row loop, and the prefix compare all require tape scratch-arithmetic;
+>   there is no scratch-free shortcut, which is what makes the remainder a multi-session build (§10).
 >
 > **D2 loop control — DONE (`TreeMCSPGateStreamReachesSink.lean`).** The *record-stream* side of D2 (the
 > head-advancing loop over D1b, halting at the malformed sink reused as the end-of-stream marker `1^5`) is

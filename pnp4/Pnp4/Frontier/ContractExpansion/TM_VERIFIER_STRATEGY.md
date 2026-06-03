@@ -644,6 +644,50 @@ real construction problem is a **reachable-scratch addressing scheme** for the c
 the present model and is therefore the next *design* decision (not another motion primitive).  Documented
 here rather than half-built, per the standing design-first discipline.
 
+### 6k. The proven evaluator is an *unrolling*, not a loop — `M` needs an on-tape interpreter; unary-distance addressing resolves §6j's crux
+
+Re-checking the toolkit `circuitEvaluatorCS` against what a *fixed* `M` can use (the central question for
+items 3–5) settles two things the earlier notes left fuzzy:
+
+* **`circuitEvaluatorCSAt` is recursion on the gate `List`** (`GateWrappers.lean:502`, `match gates with
+  | [] => idleCS | g :: rest => seqCS (evalOneGateCS …) (circuitEvaluatorCSAt rest …)`).  So
+  `circuitEvaluatorCS gates` is a **different program per `gates`**, with `numPhases` growing in the gate
+  count — the same "per-instance unrolling" status as `repeatProgram` (§6's correction).  Its proven
+  `_wf` correctness (§6i) is therefore a **spec / reasoning device**, *not* a body `M` can embed: the fixed
+  `M` has one finite control and cannot pick an input-dependent program.  This sharpens §6i: item (3) is
+  not proof-blocked, but neither is it "just call the evaluator" — `M` needs a **from-scratch on-tape gate
+  interpreter**.
+* **Shape of the interpreter.**  A back-edge loop (`repeatBody`) over a **unary gate-count** counter; the
+  body reads one **fixed-width gate record** from a decoded-circuit scratch region (fixed strides — the
+  record width is a compile-time constant), dispatches on the opcode (finite control), and writes the gate
+  value into the next scratch slot.  The row loop is the analogous outer `repeatBody` over the `2^n`
+  counter.  Both loop *counts* are data-dependent (handled by the unary counter); all *motion within a
+  body* is fixed-stride **except** operand fetch.
+
+* **Operand fetch is the §6j crux, and unary-distance addressing solves it.**  A gate back-references an
+  earlier gate's output slot at a **runtime** index `j`; reaching slot `j` is a data-dependent seek with no
+  marker.  **Scheme: the decoder stores each back-reference as a *unary distance* (a `1`-block) in the gate
+  record**, and the fetch follows it by **scanning over the `1`-block** — `selfLoopScanRightOne` /
+  `selfLoopScanLeftOne`, stopping at the bounding `0`.  This is marker-free, uses only the four-way scan
+  vocabulary, and stays within the polynomial budget (distances are `≤ #gates = poly(n)`, so unary is
+  poly-size).  It **resolves** §6j's "no clean primitive" status for the interpreter: the primitive is
+  *scan-over-a-unary-distance*, and the cost is paid once, in the decoder, converting binary refs to unary.
+  The same unary-distance technique services the (T2) `x[r]`-vs-output compare relative to the row counter.
+
+* **`selfLoopScanRightOne` (this PR) is the missing piece of that vocabulary** — pure rightward traversal
+  over `1`s (the earlier "rightward `1`" slot was only `gammaSelfLoopFill`, which *writes*).  Built with
+  full run-behaviour (`selfLoopScanRightOne_runConfig_{scanning,terminator}`), it is the rightward
+  marker-free unary-distance seek.
+
+**Roadmap consequence.**  The named bricks ahead are now: (D) the **on-tape decoder** `witness → contiguous
+gate records with unary back-reference distances` (the §9 codec-layout reconciliation lands here, and it is
+the hardest single brick); (I) the **gate interpreter** `repeatBody` body (read record ▸ unary-seek
+operands ▸ dispatch ▸ write slot); (R) the **row loop** `repeatBody` over `2^n` whose body runs (I) then
+compares the output to `x[r]`; (P) the **prefix-agreement compare** (a smaller instance of the same
+unary-distance compare); (A) **assembly** + `runTime_poly` + the `accepts = treePrefixSemanticAccepts`
+bridge. The control combinators, counters, and now the full four-way *traversal* vocabulary are all built;
+the remaining work is (D)/(I)/(R)/(P)/(A), in that dependency order.
+
 ## 7. Runtime accounting
 
 With `threshold n = thresholdPoly k n = n^k + k`, `witnessBits n = (bitLength n + 4) · threshold n`,

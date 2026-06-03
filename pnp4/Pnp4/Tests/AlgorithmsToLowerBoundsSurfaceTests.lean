@@ -74,6 +74,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftOneProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanRightOneProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordLayout
+import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCountdownLeft
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillComposition
@@ -3774,6 +3775,12 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.decodeGateRecord
 #check @Pnp4.Frontier.ContractExpansion.decodeGateRecord_encodeGateRecord
 #check @Pnp4.Frontier.ContractExpansion.encodeGateRecord_length
+-- Tape-level unary-field reader (decoder brick D1a, §6k): reads 1^len 0 and bridges to the D0 spec.
+#check @Pnp4.Frontier.ContractExpansion.tapeReadList
+#check @Pnp4.Frontier.ContractExpansion.tapeReadList_eq_unaryField
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_readsUnaryField
+#check @Pnp4.Frontier.ContractExpansion.decodeUnaryField_tapeReadList_of_reads
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_readsUnaryField_seqP2
 -- Unary countdown self-loop (marker-free counter; §6c brick toward the row loop).
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_runConfig_consume

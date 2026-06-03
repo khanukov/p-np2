@@ -99,6 +99,19 @@ theorem loopUntilSink_transition_move (B : ConstStatePhasedProgram Unit) (sink :
   · simp
   · exact hB i () b
 
+/-- Every step writes back the scanned bit (when the body does), so the loop leaves the tape unchanged.
+The control steps (back-edge, halt) write the bit verbatim; the body steps inherit it from `B`. -/
+theorem loopUntilSink_transition_bit (B : ConstStatePhasedProgram Unit) (sink : Fin B.numPhases)
+    (hB : ∀ (i : Fin B.numPhases) (s : Unit) (b : Bool), (B.transition i s b).2.2.1 = b)
+    (i : Fin B.numPhases) (s : Unit) (b : Bool) :
+    ((loopUntilSink B sink).transition i s b).2.2.1 = b := by
+  unfold loopUntilSink
+  dsimp only
+  split_ifs
+  · rfl
+  · rfl
+  · exact hB i () b
+
 theorem loopUntilSink_neverMovesLeft (B : ConstStatePhasedProgram Unit) (sink : Fin B.numPhases)
     (hB : ∀ (i : Fin B.numPhases) (s : Unit) (b : Bool), (B.transition i s b).2.2.2 ≠ Move.left) :
     TMNeverMovesLeft ((loopUntilSink B sink).toPhased.toTM) := by

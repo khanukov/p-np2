@@ -48,6 +48,24 @@ theorem gateStreamDecoder_neverMovesLeft : TMNeverMovesLeft (gateStreamDecoder.t
   loopUntilSink_neverMovesLeft gateOneRecordDecoder ⟨13, by simp⟩
     gateOneRecordDecoder_transition_move
 
+/-- Every step writes back the scanned bit (inherited from D1b through the loop combinator). -/
+theorem gateStreamDecoder_transition_bit (i : Fin 14) (s : Unit) (b : Bool) :
+    (gateStreamDecoder.transition i s b).2.2.1 = b :=
+  loopUntilSink_transition_bit gateOneRecordDecoder ⟨13, by simp⟩
+    gateOneRecordDecoder_transition_bit i s b
+
+/-- The stream decoder leaves the tape unchanged each step (it only ever reads). -/
+theorem gateStreamDecoder_stepConfig_tape {L : Nat}
+    (c : Configuration (M := gateStreamDecoder.toPhased.toTM) L) {i : Fin 14} {s : Unit}
+    (hstate : c.state = ⟨i, s⟩) :
+    (TM.stepConfig (M := gateStreamDecoder.toPhased.toTM) c).tape = c.tape := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_tape gateStreamDecoder c hstate,
+    gateStreamDecoder_transition_bit]
+  funext j
+  by_cases hj : j = c.head
+  · subst hj; simp [Configuration.write]
+  · simp [Configuration.write, hj]
+
 /-! ### Transition bridge: the stream decoder runs the one-record decoder at body phases
 
 At any phase `< 12` (i.e. not the one-record decoder's accept `12` or its sink `13`), the stream
@@ -264,6 +282,66 @@ theorem gateStreamDecoder_stepConfig_loop10_head {L : Nat}
     cases c.tape c.head <;> simp [gateOneRecordDecoder, hi]
   rw [hmove]
   simp only [Configuration.moveHead, dif_pos hbound]
+
+/-! ### Re-derived tag-read run invariants (scan / dispatch / malformed) via the single-steps -/
+
+/-- Tag-scan invariant: from phase `0`, `j ≤ 4` leading `1`s ⇒ after `j` steps phase `j`, head `+ j`. -/
+theorem gateStreamDecoder_runConfig_tagscan {L : Nat}
+    (c0 : Configuration (M := gateStreamDecoder.toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = 0) :
+    ∀ j : Nat, j ≤ 4 → (c0.head : Nat) + j < gateStreamDecoder.toPhased.toTM.tapeLength L →
+      (∀ p : Fin (gateStreamDecoder.toPhased.toTM.tapeLength L),
+        (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + j → c0.tape p = true) →
+      (((TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 j).state).fst : Nat) = j
+      ∧ ((TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 j).head : Nat) = (c0.head : Nat) + j
+      ∧ (TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 j).tape = c0.tape := by
+  intro j
+  induction j with
+  | zero => intro _ _ _; exact ⟨hphase, by simp, rfl⟩
+  | succ j ih =>
+      intro hj hb h1
+      obtain ⟨hph, hhd, htp⟩ := ih (by omega) (by omega) (fun p hp1 hp2 => h1 p hp1 (by omega))
+      rw [TM.runConfig_succ]
+      set c := TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 j with hc
+      have hi4 : (c.state.fst : Nat) < 4 := by rw [hph]; omega
+      have hbit : c.tape c.head = true := by
+        rw [htp]; exact h1 c.head (by rw [hhd]; omega) (by rw [hhd]; omega)
+      have hbnd : (c.head : Nat) + 1 < gateStreamDecoder.toPhased.toTM.tapeLength L := by
+        rw [hhd]; omega
+      refine ⟨?_, ?_, ?_⟩
+      · rw [gateStreamDecoder_stepConfig_tag_one_phase c (i := c.state.fst) (s := c.state.snd) hi4 rfl
+          hbit, hph]
+      · rw [gateStreamDecoder_stepConfig_tag_one_head c (i := c.state.fst) (s := c.state.snd) hi4 rfl
+          hbit hbnd]
+        omega
+      · rw [gateStreamDecoder_stepConfig_tape c (i := c.state.fst) (s := c.state.snd) rfl, htp]
+
+/-- Dispatch (tags `0..3`): `1^t 0` (`t ≤ 3`) ⇒ after `t+1` steps phase `5+t`, head past the terminator. -/
+theorem gateStreamDecoder_runConfig_dispatch {L : Nat}
+    (c0 : Configuration (M := gateStreamDecoder.toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = 0) (t : Nat) (ht : t ≤ 3)
+    (hb : (c0.head : Nat) + t + 1 < gateStreamDecoder.toPhased.toTM.tapeLength L)
+    (hones : ∀ p : Fin (gateStreamDecoder.toPhased.toTM.tapeLength L),
+      (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + t → c0.tape p = true)
+    (hterm : ∀ p : Fin (gateStreamDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) + t → c0.tape p = false) :
+    (((TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 (t + 1)).state).fst : Nat) = 5 + t
+      ∧ ((TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 (t + 1)).head : Nat)
+          = (c0.head : Nat) + t + 1
+      ∧ (TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 (t + 1)).tape = c0.tape := by
+  obtain ⟨hph, hhd, htp⟩ := gateStreamDecoder_runConfig_tagscan c0 hphase t (by omega) (by omega) hones
+  rw [TM.runConfig_succ]
+  set c := TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 t with hc
+  have hi4 : (c.state.fst : Nat) < 4 := by rw [hph]; omega
+  have hbit : c.tape c.head = false := by rw [htp]; exact hterm c.head (by rw [hhd])
+  have hbnd : (c.head : Nat) + 1 < gateStreamDecoder.toPhased.toTM.tapeLength L := by rw [hhd]; omega
+  refine ⟨?_, ?_, ?_⟩
+  · rw [gateStreamDecoder_stepConfig_tag_zero_phase c (i := c.state.fst) (s := c.state.snd) hi4 rfl
+      hbit, hph]
+  · rw [gateStreamDecoder_stepConfig_tag_zero_head c (i := c.state.fst) (s := c.state.snd) hi4 rfl
+      hbit hbnd]
+    omega
+  · rw [gateStreamDecoder_stepConfig_tape c (i := c.state.fst) (s := c.state.snd) rfl, htp]
 
 end ContractExpansion
 end Frontier

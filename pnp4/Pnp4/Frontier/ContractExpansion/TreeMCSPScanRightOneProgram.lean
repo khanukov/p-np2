@@ -232,6 +232,168 @@ theorem selfLoopScanRightOne_runConfig_terminator {L : Nat}
   · rw [selfLoopScanRightOne_stepConfig_stop_zero_tape c
       (i := c.state.fst) (s := c.state.snd) hph rfl hbit, htp]
 
+/-! ### Composition: the rightward scan-over-`1`s as a non-first (P2-region) phase
+
+The right-only `seq`/`seqList` single-step lemmas (`seq_stepConfig_P2_*`) are transition-generic, so this
+rightward scan composes as a `seq` phase exactly as `gammaSelfLoopScan` does, giving full composition-API
+parity with the rest of the scan family — needed to embed it in `M`'s phase chain (`§6k` interpreter). -/
+
+/-- Scan-over-`1`s step as a non-first phase (composition phase `P1.numPhases`, bit `1`): phase stays. -/
+theorem selfLoopScanRightOne_seqP2_stepConfig_scan_one_phase (P1 : ConstStatePhasedProgram Unit)
+    {L : Nat} (c : Configuration (M := (seq P1 selfLoopScanRightOne).toPhased.toTM) L)
+    {i : Fin (seq P1 selfLoopScanRightOne).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = true) :
+    ((TM.stepConfig (M := (seq P1 selfLoopScanRightOne).toPhased.toTM) c).state).fst.val
+      = P1.numPhases := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_phase P1 selfLoopScanRightOne c
+      (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+  simp [selfLoopScanRightOne, hsub, hbit]
+
+/-- Scan-over-`1`s step as a non-first phase (bit `1`): the head moves right. -/
+theorem selfLoopScanRightOne_seqP2_stepConfig_scan_one_head (P1 : ConstStatePhasedProgram Unit)
+    {L : Nat} (c : Configuration (M := (seq P1 selfLoopScanRightOne).toPhased.toTM) L)
+    {i : Fin (seq P1 selfLoopScanRightOne).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = true) :
+    (TM.stepConfig (M := (seq P1 selfLoopScanRightOne).toPhased.toTM) c).head
+      = Configuration.moveHead (c := c) Move.right := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_head P1 selfLoopScanRightOne c
+      (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+  simp [selfLoopScanRightOne, hsub, hbit]
+
+/-- Scan-over-`1`s step as a non-first phase (bit `1`): the tape is unchanged. -/
+theorem selfLoopScanRightOne_seqP2_stepConfig_scan_one_tape (P1 : ConstStatePhasedProgram Unit)
+    {L : Nat} (c : Configuration (M := (seq P1 selfLoopScanRightOne).toPhased.toTM) L)
+    {i : Fin (seq P1 selfLoopScanRightOne).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = true) :
+    (TM.stepConfig (M := (seq P1 selfLoopScanRightOne).toPhased.toTM) c).tape = c.tape := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  have hwrite : (TM.stepConfig (M := (seq P1 selfLoopScanRightOne).toPhased.toTM) c).tape
+      = c.write c.head true := by
+    rw [seq_stepConfig_P2_tape P1 selfLoopScanRightOne c
+        (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+    simp [selfLoopScanRightOne, hsub, hbit]
+  rw [hwrite]
+  funext j
+  by_cases hj : j = c.head
+  · subst hj; simp [Configuration.write, hbit]
+  · simp [Configuration.write, hj]
+
+/-- Rightward scanning invariant as a non-first phase, from an arbitrary start `c0` (phase
+`P1.numPhases`): if the window `[c0.head, c0.head + k)` is all `1`, then after `k` steps (with
+`c0.head + k` in bounds) the phase still rests at `P1.numPhases`, the head has advanced to `c0.head + k`,
+and the tape is unchanged.  Offset/non-first analogue of `selfLoopScanRightOne_runConfig_scanning`. -/
+theorem selfLoopScanRightOne_seqP2_runConfig_scanning (P1 : ConstStatePhasedProgram Unit) {L : Nat}
+    (c0 : Configuration (M := (seq P1 selfLoopScanRightOne).toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = P1.numPhases) :
+    ∀ k : Nat, (c0.head : Nat) + k < (seq P1 selfLoopScanRightOne).toPhased.toTM.tapeLength L →
+      (∀ p : Fin ((seq P1 selfLoopScanRightOne).toPhased.toTM.tapeLength L),
+        (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + k → c0.tape p = true) →
+      (((TM.runConfig (M := (seq P1 selfLoopScanRightOne).toPhased.toTM) c0 k).state).fst : Nat)
+          = P1.numPhases
+      ∧ ((TM.runConfig (M := (seq P1 selfLoopScanRightOne).toPhased.toTM) c0 k).head : Nat)
+          = (c0.head : Nat) + k
+      ∧ (TM.runConfig (M := (seq P1 selfLoopScanRightOne).toPhased.toTM) c0 k).tape = c0.tape := by
+  intro k
+  induction k with
+  | zero => intro _ _; exact ⟨hphase, by simp, rfl⟩
+  | succ k ih =>
+      intro hk h1
+      obtain ⟨hph, hhd, htp⟩ := ih (by omega) (fun p hp1 hp2 => h1 p hp1 (by omega))
+      rw [TM.runConfig_succ]
+      set c := TM.runConfig (M := (seq P1 selfLoopScanRightOne).toPhased.toTM) c0 k with hc
+      have hbit : c.tape c.head = true := by
+        rw [htp]; exact h1 c.head (by rw [hhd]; omega) (by rw [hhd]; omega)
+      have hbnd : (c.head : Nat) + 1 < (seq P1 selfLoopScanRightOne).toPhased.toTM.tapeLength L := by
+        rw [hhd]; omega
+      refine ⟨?_, ?_, ?_⟩
+      · exact selfLoopScanRightOne_seqP2_stepConfig_scan_one_phase P1 c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit
+      · rw [selfLoopScanRightOne_seqP2_stepConfig_scan_one_head P1 c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+        simp only [Configuration.moveHead, dif_pos hbnd]
+        omega
+      · rw [selfLoopScanRightOne_seqP2_stepConfig_scan_one_tape P1 c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit, htp]
+
+/-- Terminator step as a non-first phase (bit `0`): jump to the shifted done phase `P1.numPhases + 1`. -/
+theorem selfLoopScanRightOne_seqP2_stepConfig_stop_zero_phase (P1 : ConstStatePhasedProgram Unit)
+    {L : Nat} (c : Configuration (M := (seq P1 selfLoopScanRightOne).toPhased.toTM) L)
+    {i : Fin (seq P1 selfLoopScanRightOne).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = false) :
+    ((TM.stepConfig (M := (seq P1 selfLoopScanRightOne).toPhased.toTM) c).state).fst.val
+      = P1.numPhases + 1 := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_phase P1 selfLoopScanRightOne c
+      (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+  simp [selfLoopScanRightOne, hsub, hbit]
+
+/-- Terminator step as a non-first phase (bit `0`): the head stays put. -/
+theorem selfLoopScanRightOne_seqP2_stepConfig_stop_zero_head (P1 : ConstStatePhasedProgram Unit)
+    {L : Nat} (c : Configuration (M := (seq P1 selfLoopScanRightOne).toPhased.toTM) L)
+    {i : Fin (seq P1 selfLoopScanRightOne).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = false) :
+    (TM.stepConfig (M := (seq P1 selfLoopScanRightOne).toPhased.toTM) c).head = c.head := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_head P1 selfLoopScanRightOne c
+      (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+  simp [selfLoopScanRightOne, hsub, hbit, Configuration.moveHead]
+
+/-- Terminator step as a non-first phase (bit `0`): the tape is unchanged. -/
+theorem selfLoopScanRightOne_seqP2_stepConfig_stop_zero_tape (P1 : ConstStatePhasedProgram Unit)
+    {L : Nat} (c : Configuration (M := (seq P1 selfLoopScanRightOne).toPhased.toTM) L)
+    {i : Fin (seq P1 selfLoopScanRightOne).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = false) :
+    (TM.stepConfig (M := (seq P1 selfLoopScanRightOne).toPhased.toTM) c).tape = c.tape := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  have hwrite : (TM.stepConfig (M := (seq P1 selfLoopScanRightOne).toPhased.toTM) c).tape
+      = c.write c.head false := by
+    rw [seq_stepConfig_P2_tape P1 selfLoopScanRightOne c
+        (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+    simp [selfLoopScanRightOne, hsub, hbit]
+  rw [hwrite]
+  funext j
+  by_cases hj : j = c.head
+  · subst hj; simp [Configuration.write, hbit]
+  · simp [Configuration.write, hj]
+
+/-- Rightward terminator-locating run as a non-first phase, from an arbitrary start `c0` (phase
+`P1.numPhases`): if the window `[c0.head, k)` is all `1` and cell `k` is `0` (`c0.head ≤ k`, `k` in
+bounds), then after `(k − c0.head) + 1` steps the scan has stopped at the shifted done phase
+`P1.numPhases + 1`, the head rests on the marker (`k`), and the tape is unchanged.  Full composition-API
+parity (seqP2 scanning *and* terminator) for the rightward unary-distance seek. -/
+theorem selfLoopScanRightOne_seqP2_runConfig_terminator (P1 : ConstStatePhasedProgram Unit) {L : Nat}
+    (c0 : Configuration (M := (seq P1 selfLoopScanRightOne).toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = P1.numPhases) (k : Nat) (hk : (c0.head : Nat) ≤ k)
+    (hkb : k < (seq P1 selfLoopScanRightOne).toPhased.toTM.tapeLength L)
+    (hones : ∀ p : Fin ((seq P1 selfLoopScanRightOne).toPhased.toTM.tapeLength L),
+      (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < k → c0.tape p = true)
+    (hterm : ∀ p : Fin ((seq P1 selfLoopScanRightOne).toPhased.toTM.tapeLength L),
+      (p : Nat) = k → c0.tape p = false) :
+    (((TM.runConfig (M := (seq P1 selfLoopScanRightOne).toPhased.toTM) c0
+        ((k - (c0.head : Nat)) + 1)).state).fst : Nat) = P1.numPhases + 1
+      ∧ ((TM.runConfig (M := (seq P1 selfLoopScanRightOne).toPhased.toTM) c0
+          ((k - (c0.head : Nat)) + 1)).head : Nat) = k
+      ∧ (TM.runConfig (M := (seq P1 selfLoopScanRightOne).toPhased.toTM) c0
+          ((k - (c0.head : Nat)) + 1)).tape = c0.tape := by
+  obtain ⟨hph, hhd, htp⟩ :=
+    selfLoopScanRightOne_seqP2_runConfig_scanning P1 c0 hphase (k - (c0.head : Nat)) (by omega)
+      (fun p hp1 hp2 => hones p hp1 (by omega))
+  rw [TM.runConfig_succ]
+  set c := TM.runConfig (M := (seq P1 selfLoopScanRightOne).toPhased.toTM) c0 (k - (c0.head : Nat))
+    with hc
+  have hhdk : (c.head : Nat) = k := by rw [hhd]; omega
+  have hbit : c.tape c.head = false := by rw [htp]; exact hterm c.head hhdk
+  refine ⟨?_, ?_, ?_⟩
+  · exact selfLoopScanRightOne_seqP2_stepConfig_stop_zero_phase P1 c
+      (i := c.state.fst) (s := c.state.snd) hph rfl hbit
+  · rw [selfLoopScanRightOne_seqP2_stepConfig_stop_zero_head P1 c
+      (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+    exact hhdk
+  · rw [selfLoopScanRightOne_seqP2_stepConfig_stop_zero_tape P1 c
+      (i := c.state.fst) (s := c.state.snd) hph rfl hbit, htp]
+
 end ContractExpansion
 end Frontier
 end Pnp4

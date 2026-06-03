@@ -532,6 +532,8 @@ end Pnp4
 -- Rightward scan-over-`1`s (pure-traversal fourth scan; marker-free unary-distance seek, §6k).
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_runConfig_terminator
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_seqP2_runConfig_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_seqP2_runConfig_terminator
 #print axioms Pnp4.Frontier.ContractExpansion.runConfig_head_val_ge
 #print axioms Pnp4.Frontier.ContractExpansion.runConfig_head_dist_le
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_locates_gamma_terminator

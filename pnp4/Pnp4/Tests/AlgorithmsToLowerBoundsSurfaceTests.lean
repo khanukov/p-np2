@@ -3764,6 +3764,8 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_neverMovesLeft
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_runConfig_scanning
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_runConfig_terminator
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_seqP2_runConfig_scanning
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_seqP2_runConfig_terminator
 -- Unary countdown self-loop (marker-free counter; §6c brick toward the row loop).
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_runConfig_consume

@@ -76,6 +76,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPScanRightOneProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordLayout
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCountdownLeft
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillComposition
@@ -3787,6 +3788,9 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.gateTagDispatch_neverMovesLeft
 #check @Pnp4.Frontier.ContractExpansion.gateTagDispatch_runConfig_scanning
 #check @Pnp4.Frontier.ContractExpansion.gateTagDispatch_runConfig_dispatch
+-- Monolithic one-gate-record decoder (decoder brick D1b part 2, §6k): foundation (def + structural).
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_neverMovesLeft
 -- Unary countdown self-loop (marker-free counter; §6c brick toward the row loop).
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_runConfig_consume

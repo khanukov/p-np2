@@ -320,6 +320,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordLayout,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch,
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPCountdownLeft,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPRepeatBody,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPBidirHeadBounds,

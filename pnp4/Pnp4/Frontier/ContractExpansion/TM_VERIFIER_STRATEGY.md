@@ -853,6 +853,17 @@ on-tape decoder matches `codec.decode` exactly, or the bridge (★) breaks.
 >   the CircuitTree→records **flattening spec** (with a semantics-preservation proof) and its on-tape
 >   realisation are open. (Option (b) — proving the two encodings *agree* — is therefore **not** available:
 >   they genuinely disagree; only option (a), an on-tape transcoder/decoder, can close the bridge.)
+>
+> **D2 loop control — DONE (`TreeMCSPGateStreamReachesSink.lean`).** The *record-stream* side of D2 (the
+> head-advancing loop over D1b, halting at the malformed sink reused as the end-of-stream marker `1^5`) is
+> now closed at the termination level: `gateStreamDecoder_runConfig_reachesSink` proves that a tape holding
+> `encodeGateRecordStream gs ++ 1^5` drives the loop `loopUntilSink gateOneRecordDecoder ⟨13⟩` to its sink
+> phase `13` — one record consumed per pass (the per-tag traversal), re-entered via the back-edge
+> (`loopUntilSink_runConfig_oneIter`), halting at the marker (`gateStreamDecoder_runConfig_malformed`). The
+> bridge from "tape window = bit list" to the traversals' per-cell predicates is `TapeHoldsAt` (splits along
+> `++` exactly as the record layout concatenates unary fields). This discharges `loopUntilSink`'s
+> `reachesSink` obligation for the concrete encoding; it operates on the interpreter's *internal* unary-record
+> format, so the **transcoder** above (recursive `CircuitTree` → records) remains the open D2 sub-project.
 
 **Honesty baseline (must be preserved).** The entire `pnp3`/`pnp4` tree currently has **0 `sorry`, 0
 `admit`, 0 custom `axiom`, 0 `native_decide`**. Every TM brick must keep this — no proof holes, only the

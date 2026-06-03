@@ -80,6 +80,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateStreamLayout
 import Pnp4.Frontier.ContractExpansion.TreeMCSPLoopUntilSink
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateStreamDecoder
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGateStreamReachesSink
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCountdownLeft
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillComposition
@@ -3860,6 +3861,13 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_not
 #check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_and
 #check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_or
+-- D2 capstone: the stream decoder reaches its sink on a well-formed record stream + end marker (`1^5`).
+-- `TapeHoldsAt` bridges "tape window = bit list" to the traversals' per-cell predicates (splits along `++`).
+#check @Pnp4.Frontier.ContractExpansion.TapeHoldsAt
+#check @Pnp4.Frontier.ContractExpansion.TapeHoldsAt_append
+#check @Pnp4.Frontier.ContractExpansion.TapeHoldsAt_unaryField
+#check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_record
+#check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_reachesSink
 -- Unary countdown self-loop (marker-free counter; §6c brick toward the row loop).
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft
 #check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_runConfig_consume

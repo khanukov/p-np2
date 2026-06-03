@@ -1,4 +1,5 @@
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgram
+import Pnp4.Frontier.ContractExpansion.BoundedLoopProgram
 
 /-!
 # Self-terminating body-reentry loop combinator (NP-verifier track — head-advancing control)
@@ -104,6 +105,34 @@ theorem loopUntilSink_neverMovesLeft (B : ConstStatePhasedProgram Unit) (sink : 
   intro st b
   obtain ⟨i, s⟩ := st
   exact loopUntilSink_transition_move B sink hB i s b
+
+/-! ### Config-level loop control (the back-edge and halt steps) -/
+
+/-- Config-level **back-edge**: a step from `B`'s accept phase lands at `B`'s start phase. -/
+theorem loopUntilSink_stepConfig_loop_phase (B : ConstStatePhasedProgram Unit) (sink : Fin B.numPhases)
+    {L : Nat} (c : Configuration (M := (loopUntilSink B sink).toPhased.toTM) L) {s : Unit}
+    (hstate : c.state = ⟨B.acceptPhase, s⟩) :
+    ((TM.stepConfig (M := (loopUntilSink B sink).toPhased.toTM) c).state).fst.val
+      = B.startPhase.val := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_phase (loopUntilSink B sink) c hstate]
+  simp [loopUntilSink_transition_loop]
+
+/-- The back-edge step leaves the head unchanged (the re-entry is a `Move.stay`). -/
+theorem loopUntilSink_stepConfig_loop_head (B : ConstStatePhasedProgram Unit) (sink : Fin B.numPhases)
+    {L : Nat} (c : Configuration (M := (loopUntilSink B sink).toPhased.toTM) L) {s : Unit}
+    (hstate : c.state = ⟨B.acceptPhase, s⟩) :
+    (TM.stepConfig (M := (loopUntilSink B sink).toPhased.toTM) c).head = c.head := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_head (loopUntilSink B sink) c hstate]
+  simp [loopUntilSink_transition_loop, Configuration.moveHead]
+
+/-- Config-level **halt**: a step from the `sink` phase stays at `sink`. -/
+theorem loopUntilSink_stepConfig_halt_phase (B : ConstStatePhasedProgram Unit) (sink : Fin B.numPhases)
+    (hne : sink ≠ B.acceptPhase) {L : Nat}
+    (c : Configuration (M := (loopUntilSink B sink).toPhased.toTM) L) {s : Unit}
+    (hstate : c.state = ⟨sink, s⟩) :
+    ((TM.stepConfig (M := (loopUntilSink B sink).toPhased.toTM) c).state).fst.val = sink.val := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_phase (loopUntilSink B sink) c hstate]
+  simp [loopUntilSink_transition_halt B sink hne]
 
 end ContractExpansion
 end Frontier

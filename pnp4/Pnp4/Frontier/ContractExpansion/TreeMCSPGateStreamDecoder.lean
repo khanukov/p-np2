@@ -343,6 +343,210 @@ theorem gateStreamDecoder_runConfig_dispatch {L : Nat}
     omega
   · rw [gateStreamDecoder_stepConfig_tape c (i := c.state.fst) (s := c.state.snd) rfl, htp]
 
+/-- Dispatch (tag `4`, `or`): `1^4 0` ⇒ after `5` steps the `or` operand-entry phase `10`. -/
+theorem gateStreamDecoder_runConfig_dispatch_or {L : Nat}
+    (c0 : Configuration (M := gateStreamDecoder.toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = 0)
+    (hb : (c0.head : Nat) + 4 + 1 < gateStreamDecoder.toPhased.toTM.tapeLength L)
+    (hones : ∀ p : Fin (gateStreamDecoder.toPhased.toTM.tapeLength L),
+      (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + 4 → c0.tape p = true)
+    (hterm : ∀ p : Fin (gateStreamDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) + 4 → c0.tape p = false) :
+    (((TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 (4 + 1)).state).fst : Nat) = 10
+      ∧ ((TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 (4 + 1)).head : Nat)
+          = (c0.head : Nat) + 4 + 1
+      ∧ (TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 (4 + 1)).tape = c0.tape := by
+  obtain ⟨hph, hhd, htp⟩ := gateStreamDecoder_runConfig_tagscan c0 hphase 4 (by omega) (by omega) hones
+  rw [TM.runConfig_succ]
+  set c := TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 4 with hc
+  have hi4 : (c.state.fst : Nat) = 4 := by rw [hph]
+  have hbit : c.tape c.head = false := by rw [htp]; exact hterm c.head (by rw [hhd])
+  have hbnd : (c.head : Nat) + 1 < gateStreamDecoder.toPhased.toTM.tapeLength L := by rw [hhd]; omega
+  refine ⟨?_, ?_, ?_⟩
+  · rw [gateStreamDecoder_stepConfig_phase4_zero_phase c (i := c.state.fst) (s := c.state.snd) hi4 rfl
+      hbit]
+  · rw [gateStreamDecoder_stepConfig_phase4_head c (i := c.state.fst) (s := c.state.snd) hi4 rfl hbnd]
+    omega
+  · rw [gateStreamDecoder_stepConfig_tape c (i := c.state.fst) (s := c.state.snd) rfl, htp]
+
+/-- Malformed tag: `1^5` (five leading `1`s) ⇒ after `5` steps the malformed sink phase `13`. -/
+theorem gateStreamDecoder_runConfig_malformed {L : Nat}
+    (c0 : Configuration (M := gateStreamDecoder.toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = 0)
+    (hb : (c0.head : Nat) + 4 + 1 < gateStreamDecoder.toPhased.toTM.tapeLength L)
+    (hones : ∀ p : Fin (gateStreamDecoder.toPhased.toTM.tapeLength L),
+      (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + 5 → c0.tape p = true) :
+    (((TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 (4 + 1)).state).fst : Nat) = 13 := by
+  obtain ⟨hph, hhd, htp⟩ := gateStreamDecoder_runConfig_tagscan c0 hphase 4 (by omega) (by omega)
+    (fun p hp1 hp2 => hones p hp1 (by omega))
+  rw [TM.runConfig_succ]
+  set c := TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 4 with hc
+  have hi4 : (c.state.fst : Nat) = 4 := by rw [hph]
+  have hbit : c.tape c.head = true := by
+    rw [htp]; exact hones c.head (by rw [hhd]; omega) (by rw [hhd]; omega)
+  rw [gateStreamDecoder_stepConfig_phase4_one_phase c (i := c.state.fst) (s := c.state.snd) hi4 rfl
+    hbit]
+
+/-! ### Re-derived operand field invariants -/
+
+/-- To-accept field read (phases `5/7/9/11`): `1^k 0` ⇒ after `k+1` steps accept `12`, head past term. -/
+theorem gateStreamDecoder_runConfig_field_acc {L : Nat}
+    (c0 : Configuration (M := gateStreamDecoder.toPhased.toTM) L)
+    (hp : (c0.state.fst : Nat) = 5 ∨ (c0.state.fst : Nat) = 7 ∨ (c0.state.fst : Nat) = 9
+        ∨ (c0.state.fst : Nat) = 11) (k : Nat)
+    (hb : (c0.head : Nat) + k + 1 < gateStreamDecoder.toPhased.toTM.tapeLength L)
+    (hones : ∀ p : Fin (gateStreamDecoder.toPhased.toTM.tapeLength L),
+      (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + k → c0.tape p = true)
+    (hterm : ∀ p : Fin (gateStreamDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) + k → c0.tape p = false) :
+    (((TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 (k + 1)).state).fst : Nat) = 12
+      ∧ ((TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 (k + 1)).head : Nat)
+          = (c0.head : Nat) + k + 1
+      ∧ (TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 (k + 1)).tape = c0.tape := by
+  have scan : ∀ j : Nat, j ≤ k →
+      (c0.head : Nat) + j < gateStreamDecoder.toPhased.toTM.tapeLength L →
+      (∀ p : Fin (gateStreamDecoder.toPhased.toTM.tapeLength L),
+        (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + j → c0.tape p = true) →
+      (((TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 j).state).fst : Nat)
+          = (c0.state.fst : Nat)
+      ∧ ((TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 j).head : Nat) = (c0.head : Nat) + j
+      ∧ (TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 j).tape = c0.tape := by
+    intro j
+    induction j with
+    | zero => intro _ _ _; exact ⟨rfl, by simp, rfl⟩
+    | succ j ih =>
+        intro hj hbnd h1
+        obtain ⟨hph, hhd, htp⟩ := ih (by omega) (by omega) (fun p a b => h1 p a (by omega))
+        rw [TM.runConfig_succ]
+        set c := TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 j with hc
+        have hpp : (c.state.fst : Nat) = 5 ∨ (c.state.fst : Nat) = 7 ∨ (c.state.fst : Nat) = 9
+            ∨ (c.state.fst : Nat) = 11 := by rw [hph]; exact hp
+        have hbit : c.tape c.head = true := by
+          rw [htp]; exact h1 c.head (by rw [hhd]; omega) (by rw [hhd]; omega)
+        have hbnd1 : (c.head : Nat) + 1 < gateStreamDecoder.toPhased.toTM.tapeLength L := by
+          rw [hhd]; omega
+        refine ⟨?_, ?_, ?_⟩
+        · rw [gateStreamDecoder_stepConfig_loopAcc_one c (i := c.state.fst) (s := c.state.snd) hpp rfl
+            hbit, hph]
+        · rw [gateStreamDecoder_stepConfig_loopAcc_head c (i := c.state.fst) (s := c.state.snd) hpp rfl
+            hbnd1]
+          omega
+        · rw [gateStreamDecoder_stepConfig_tape c (i := c.state.fst) (s := c.state.snd) rfl, htp]
+  obtain ⟨hph, hhd, htp⟩ := scan k (le_refl k) (by omega) hones
+  rw [TM.runConfig_succ]
+  set c := TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 k with hc
+  have hpp : (c.state.fst : Nat) = 5 ∨ (c.state.fst : Nat) = 7 ∨ (c.state.fst : Nat) = 9
+      ∨ (c.state.fst : Nat) = 11 := by rw [hph]; exact hp
+  have hbit : c.tape c.head = false := by rw [htp]; exact hterm c.head (by rw [hhd])
+  have hbnd1 : (c.head : Nat) + 1 < gateStreamDecoder.toPhased.toTM.tapeLength L := by rw [hhd]; omega
+  refine ⟨?_, ?_, ?_⟩
+  · rw [gateStreamDecoder_stepConfig_loopAcc_zero c (i := c.state.fst) (s := c.state.snd) hpp rfl hbit]
+  · rw [gateStreamDecoder_stepConfig_loopAcc_head c (i := c.state.fst) (s := c.state.snd) hpp rfl
+      hbnd1]
+    omega
+  · rw [gateStreamDecoder_stepConfig_tape c (i := c.state.fst) (s := c.state.snd) rfl, htp]
+
+/-- `and` first-operand field (phase `8`): `1^k 0` ⇒ after `k+1` steps second operand `9`. -/
+theorem gateStreamDecoder_runConfig_field8 {L : Nat}
+    (c0 : Configuration (M := gateStreamDecoder.toPhased.toTM) L)
+    (hp : (c0.state.fst : Nat) = 8) (k : Nat)
+    (hb : (c0.head : Nat) + k + 1 < gateStreamDecoder.toPhased.toTM.tapeLength L)
+    (hones : ∀ p : Fin (gateStreamDecoder.toPhased.toTM.tapeLength L),
+      (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + k → c0.tape p = true)
+    (hterm : ∀ p : Fin (gateStreamDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) + k → c0.tape p = false) :
+    (((TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 (k + 1)).state).fst : Nat) = 9
+      ∧ ((TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 (k + 1)).head : Nat)
+          = (c0.head : Nat) + k + 1
+      ∧ (TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 (k + 1)).tape = c0.tape := by
+  have scan : ∀ j : Nat, j ≤ k →
+      (c0.head : Nat) + j < gateStreamDecoder.toPhased.toTM.tapeLength L →
+      (∀ p : Fin (gateStreamDecoder.toPhased.toTM.tapeLength L),
+        (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + j → c0.tape p = true) →
+      (((TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 j).state).fst : Nat) = 8
+      ∧ ((TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 j).head : Nat) = (c0.head : Nat) + j
+      ∧ (TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 j).tape = c0.tape := by
+    intro j
+    induction j with
+    | zero => intro _ _ _; exact ⟨hp, by simp, rfl⟩
+    | succ j ih =>
+        intro hj hbnd h1
+        obtain ⟨hph, hhd, htp⟩ := ih (by omega) (by omega) (fun p a b => h1 p a (by omega))
+        rw [TM.runConfig_succ]
+        set c := TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 j with hc
+        have hbit : c.tape c.head = true := by
+          rw [htp]; exact h1 c.head (by rw [hhd]; omega) (by rw [hhd]; omega)
+        have hbnd1 : (c.head : Nat) + 1 < gateStreamDecoder.toPhased.toTM.tapeLength L := by
+          rw [hhd]; omega
+        refine ⟨?_, ?_, ?_⟩
+        · rw [gateStreamDecoder_stepConfig_loop8_one c (i := c.state.fst) (s := c.state.snd) hph rfl
+            hbit]
+        · rw [gateStreamDecoder_stepConfig_loop8_head c (i := c.state.fst) (s := c.state.snd) hph rfl
+            hbnd1]
+          omega
+        · rw [gateStreamDecoder_stepConfig_tape c (i := c.state.fst) (s := c.state.snd) rfl, htp]
+  obtain ⟨hph, hhd, htp⟩ := scan k (le_refl k) (by omega) hones
+  rw [TM.runConfig_succ]
+  set c := TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 k with hc
+  have hbit : c.tape c.head = false := by rw [htp]; exact hterm c.head (by rw [hhd])
+  have hbnd1 : (c.head : Nat) + 1 < gateStreamDecoder.toPhased.toTM.tapeLength L := by rw [hhd]; omega
+  refine ⟨?_, ?_, ?_⟩
+  · rw [gateStreamDecoder_stepConfig_loop8_zero c (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+  · rw [gateStreamDecoder_stepConfig_loop8_head c (i := c.state.fst) (s := c.state.snd) hph rfl hbnd1]
+    omega
+  · rw [gateStreamDecoder_stepConfig_tape c (i := c.state.fst) (s := c.state.snd) rfl, htp]
+
+/-- `or` first-operand field (phase `10`): `1^k 0` ⇒ after `k+1` steps second operand `11`. -/
+theorem gateStreamDecoder_runConfig_field10 {L : Nat}
+    (c0 : Configuration (M := gateStreamDecoder.toPhased.toTM) L)
+    (hp : (c0.state.fst : Nat) = 10) (k : Nat)
+    (hb : (c0.head : Nat) + k + 1 < gateStreamDecoder.toPhased.toTM.tapeLength L)
+    (hones : ∀ p : Fin (gateStreamDecoder.toPhased.toTM.tapeLength L),
+      (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + k → c0.tape p = true)
+    (hterm : ∀ p : Fin (gateStreamDecoder.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) + k → c0.tape p = false) :
+    (((TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 (k + 1)).state).fst : Nat) = 11
+      ∧ ((TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 (k + 1)).head : Nat)
+          = (c0.head : Nat) + k + 1
+      ∧ (TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 (k + 1)).tape = c0.tape := by
+  have scan : ∀ j : Nat, j ≤ k →
+      (c0.head : Nat) + j < gateStreamDecoder.toPhased.toTM.tapeLength L →
+      (∀ p : Fin (gateStreamDecoder.toPhased.toTM.tapeLength L),
+        (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + j → c0.tape p = true) →
+      (((TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 j).state).fst : Nat) = 10
+      ∧ ((TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 j).head : Nat) = (c0.head : Nat) + j
+      ∧ (TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 j).tape = c0.tape := by
+    intro j
+    induction j with
+    | zero => intro _ _ _; exact ⟨hp, by simp, rfl⟩
+    | succ j ih =>
+        intro hj hbnd h1
+        obtain ⟨hph, hhd, htp⟩ := ih (by omega) (by omega) (fun p a b => h1 p a (by omega))
+        rw [TM.runConfig_succ]
+        set c := TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 j with hc
+        have hbit : c.tape c.head = true := by
+          rw [htp]; exact h1 c.head (by rw [hhd]; omega) (by rw [hhd]; omega)
+        have hbnd1 : (c.head : Nat) + 1 < gateStreamDecoder.toPhased.toTM.tapeLength L := by
+          rw [hhd]; omega
+        refine ⟨?_, ?_, ?_⟩
+        · rw [gateStreamDecoder_stepConfig_loop10_one c (i := c.state.fst) (s := c.state.snd) hph rfl
+            hbit]
+        · rw [gateStreamDecoder_stepConfig_loop10_head c (i := c.state.fst) (s := c.state.snd) hph rfl
+            hbnd1]
+          omega
+        · rw [gateStreamDecoder_stepConfig_tape c (i := c.state.fst) (s := c.state.snd) rfl, htp]
+  obtain ⟨hph, hhd, htp⟩ := scan k (le_refl k) (by omega) hones
+  rw [TM.runConfig_succ]
+  set c := TM.runConfig (M := gateStreamDecoder.toPhased.toTM) c0 k with hc
+  have hbit : c.tape c.head = false := by rw [htp]; exact hterm c.head (by rw [hhd])
+  have hbnd1 : (c.head : Nat) + 1 < gateStreamDecoder.toPhased.toTM.tapeLength L := by rw [hhd]; omega
+  refine ⟨?_, ?_, ?_⟩
+  · rw [gateStreamDecoder_stepConfig_loop10_zero c (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+  · rw [gateStreamDecoder_stepConfig_loop10_head c (i := c.state.fst) (s := c.state.snd) hph rfl
+      hbnd1]
+    omega
+  · rw [gateStreamDecoder_stepConfig_tape c (i := c.state.fst) (s := c.state.snd) rfl, htp]
+
 end ContractExpansion
 end Frontier
 end Pnp4

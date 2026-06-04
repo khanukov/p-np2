@@ -583,8 +583,14 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterStepLeft5
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterStepLeft5Handoff
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterAppend6
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterAppend6Handoff
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterScanRight7
+-- D2t-3c-γ: the one-pass HOME→HOME headline (the assembled binary→unary loop body).
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_onePass
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqNested3_stepConfig_handoff_phase
 #print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested4_stepConfig_handoff_phase
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqNested5_stepConfig_handoff_phase
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_seqNested6_stepConfig_handoff_phase
 -- Rightward scan-over-`1`s (pure-traversal fourth scan; marker-free unary-distance seek, §6k).
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_runConfig_terminator

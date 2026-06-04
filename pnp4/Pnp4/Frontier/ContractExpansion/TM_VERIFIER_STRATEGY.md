@@ -1140,10 +1140,21 @@ landed: the two nested accept-handoff boundary lemmas
 > depth-5 `stepLeftOnce_seqNested4_stepConfig_handoff_*` (in `TreeMCSPStepLeftProgram.lean`); composed as
 > `scan(u) + append-stop(1)` to cover `u = 0` (empty `U`, first iteration); preconditions `hUfit`/`hU`
 > (the `1^u` block) / `hUboundary` (its left `0`).  The append-stop's tape write is reconciled with the
-> `if`-form tape via `Configuration.write_self` / `write` + `dif_neg`.  **Remaining:** the element-6→7
-> handoff + element 7 (`selfLoopScanRightOne_seqNested6_*` scan-home, needing the depth-6
-> `_stepConfig_handoff_*`), then the terminator handoff into `idleCS`, culminating in the one-pass
-> HOME→HOME headline (`counterValue B − 1`, `|U| + 1`, head back at HOME).
+> `if`-form tape via `Configuration.write_self` / `write` + `dif_neg`.  **Element-6→7 handoff + element 7
+> (`selfLoopScanRightOne`, scan-home) + the terminator handoff into `idleCS` composed ✅ — THE ONE-PASS
+> HEADLINE IS DONE:** `binToUnaryBody_runConfig_afterAppend6Handoff` (phase `12`),
+> `binToUnaryBody_runConfig_afterScanRight7` (phase `13`, head back at HOME) and
+> **`binToUnaryBody_runConfig_onePass`** (phase `14`, the `idleCS` sink).  Needed the new depth-6
+> `selfLoopAppendLeftOne_seqNested5_stepConfig_handoff_*` and depth-7
+> `selfLoopScanRightOne_seqNested6_stepConfig_handoff_*`.  The headline: from HOME with `(B, 1^u)`, after
+> `2 + (j+1) + 1 + 1 + 1 + (j+1) + 1 + 1 + 1 + (u+1) + 1 + (u+1+1) + 1` steps the body reaches its
+> `idleCS` sink (phase `14`) with the head back at HOME, `B` decremented by one, and `U` extended to
+> `1^(u+1)` — i.e. one pass turns `(B, 1^u)` ↦ `(B − 1, 1^(u+1))`.  (The scanRight upper-bound `head + k <
+> tapeLength` is discharged via `show … bodyFull.…tapeLength …` to avoid the abbrev/unfolded `omega`
+> atomization.)  **Remaining (δ/ε/ζ):** δ (`bZeroTest`, a `gammaSelfLoopScan` over `B` deciding `B = 0`),
+> ε (`loopUntilSink binToUnaryBody`, iterating `onePass` `value(B)` times — combinator +
+> `loopUntilSink_reachesSink` already exist), ζ (the correctness bridge `|U| = value(B) =
+> (decodeFin …).val`).
 
 **Then:** δ (`bZeroTest` — a `gammaSelfLoopScan` over `B`), ε (`loopUntilSink binToUnaryBody` — the
 combinator and `loopUntilSink_reachesSink` already exist), ζ (bridge `|U| = value(B) = (decodeFin …).val`).

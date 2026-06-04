@@ -540,6 +540,7 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_runConfig_scan
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_runConfig_append
 #print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_runConfig_one
+#print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqP2_runConfig_one
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seqP2_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seqP2_runConfig_terminator
 -- Leftward scan-over-`1`s (bit-dual; completes the four-way scan vocabulary).

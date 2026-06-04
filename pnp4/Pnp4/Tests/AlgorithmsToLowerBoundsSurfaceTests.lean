@@ -3915,6 +3915,8 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- D2t-3c-β building block: single leftward step (off the decrement's cleared cell, before the scan).
 #check @Pnp4.Frontier.ContractExpansion.stepLeftOnce
 #check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_runConfig_one
+#check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_stepConfig_head_clamp
+#check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqP2_runConfig_one
 -- Two-sided head-displacement bound (bidirectional accounting foundation).
 #check @Pnp4.Frontier.ContractExpansion.runConfig_head_val_ge
 #check @Pnp4.Frontier.ContractExpansion.runConfig_head_dist_le

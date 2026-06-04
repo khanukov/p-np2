@@ -550,6 +550,8 @@ end Pnp4
 -- D2t-3c-γ: stepLeftOnce at chain-depth 3 (element 3 of the flattened binToUnaryBody chain).
 #print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested2_stepConfig_phase
 #print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested2_runConfig_one
+-- D2t-3c-γ: the stepLeftOnce→successor depth-3 handoff step.
+#print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested2_stepConfig_handoff_phase
 -- D2t-3c-β: the binary→unary home-seek run behaviour.
 #print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterDecrement_runConfig_lead2
 #print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterDecrement_runConfig_home

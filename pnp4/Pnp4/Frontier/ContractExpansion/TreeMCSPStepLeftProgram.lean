@@ -397,6 +397,66 @@ theorem stepLeftOnce_seqNested4_runConfig_one (P1 Q Q2 Q3 R : ConstStatePhasedPr
   · exact stepLeftOnce_seqNested4_stepConfig_tape P1 Q Q2 Q3 R c
       (i := c.state.fst) (s := c.state.snd) hphase rfl
 
+/-! ### Depth-3 accept handoff: stepLeftOnce → successor (element-3→element-4 boundary)
+
+After `stepLeftOnce` (element 3) takes its move step it rests at its shifted accept phase
+`P1.numPhases + Q.numPhases + 1`; the next step is the inner `seq`'s handoff from `stepLeftOnce` to its
+successor `R` (in the binary→unary body, the `selfLoopScanLeftOne` of the home-seek).  These lemmas
+characterize that handoff on `seq P1 (seq Q (seq stepLeftOnce R))`. -/
+
+/-- Depth-3 handoff (phase `P1.numPhases + Q.numPhases + 1`): advance to the successor's shifted start. -/
+theorem stepLeftOnce_seqNested2_stepConfig_handoff_phase
+    (P1 Q R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq P1 (seq Q (seq stepLeftOnce R))).toPhased.toTM) L)
+    {i : Fin (seq P1 (seq Q (seq stepLeftOnce R))).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases + Q.numPhases + 1) (hstate : c.state = ⟨i, s⟩) :
+    ((TM.stepConfig (M := (seq P1 (seq Q (seq stepLeftOnce R))).toPhased.toTM) c).state).fst.val
+      = P1.numPhases + (Q.numPhases + (stepLeftOnce.numPhases + R.startPhase.val)) := by
+  have hsub : (i.val : Nat) - P1.numPhases = Q.numPhases + 1 := by omega
+  have hc1 : ¬ (Q.numPhases + 1 < Q.numPhases) := by omega
+  have hsub2 : Q.numPhases + 1 - Q.numPhases = 1 := by omega
+  rw [seq_stepConfig_P2_phase P1 (seq Q (seq stepLeftOnce R)) c
+      (h2 := by omega)
+      (hlt := by simp only [seq_numPhases, stepLeftOnce_numPhases]; omega) hstate]
+  simp [seq, stepLeftOnce, hsub, hc1, hsub2]
+
+/-- Depth-3 handoff: the head is unchanged (handoff stays put). -/
+theorem stepLeftOnce_seqNested2_stepConfig_handoff_head
+    (P1 Q R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq P1 (seq Q (seq stepLeftOnce R))).toPhased.toTM) L)
+    {i : Fin (seq P1 (seq Q (seq stepLeftOnce R))).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases + Q.numPhases + 1) (hstate : c.state = ⟨i, s⟩) :
+    (TM.stepConfig (M := (seq P1 (seq Q (seq stepLeftOnce R))).toPhased.toTM) c).head = c.head := by
+  have hsub : (i.val : Nat) - P1.numPhases = Q.numPhases + 1 := by omega
+  have hc1 : ¬ (Q.numPhases + 1 < Q.numPhases) := by omega
+  have hsub2 : Q.numPhases + 1 - Q.numPhases = 1 := by omega
+  rw [seq_stepConfig_P2_head P1 (seq Q (seq stepLeftOnce R)) c
+      (h2 := by omega)
+      (hlt := by simp only [seq_numPhases, stepLeftOnce_numPhases]; omega) hstate]
+  simp [seq, stepLeftOnce, hsub, hc1, hsub2, Configuration.moveHead]
+
+/-- Depth-3 handoff: the tape is unchanged (scanned bit written back). -/
+theorem stepLeftOnce_seqNested2_stepConfig_handoff_tape
+    (P1 Q R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq P1 (seq Q (seq stepLeftOnce R))).toPhased.toTM) L)
+    {i : Fin (seq P1 (seq Q (seq stepLeftOnce R))).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases + Q.numPhases + 1) (hstate : c.state = ⟨i, s⟩) :
+    (TM.stepConfig (M := (seq P1 (seq Q (seq stepLeftOnce R))).toPhased.toTM) c).tape = c.tape := by
+  have hsub : (i.val : Nat) - P1.numPhases = Q.numPhases + 1 := by omega
+  have hc1 : ¬ (Q.numPhases + 1 < Q.numPhases) := by omega
+  have hsub2 : Q.numPhases + 1 - Q.numPhases = 1 := by omega
+  have hwrite : (TM.stepConfig (M := (seq P1 (seq Q (seq stepLeftOnce R))).toPhased.toTM) c).tape
+      = c.write c.head (c.tape c.head) := by
+    rw [seq_stepConfig_P2_tape P1 (seq Q (seq stepLeftOnce R)) c
+        (h2 := by omega)
+        (hlt := by simp only [seq_numPhases, stepLeftOnce_numPhases]; omega) hstate]
+    simp [seq, stepLeftOnce, hsub, hc1, hsub2]
+  rw [hwrite]
+  funext j
+  by_cases hj : j = c.head
+  · subst hj; simp [Configuration.write]
+  · simp [Configuration.write, hj]
+
 end ContractExpansion
 end Frontier
 end Pnp4

@@ -3949,6 +3949,10 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested2_stepConfig_head
 #check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested2_stepConfig_tape
 #check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested2_runConfig_one
+-- D2t-3c-γ: the stepLeftOnce→successor depth-3 handoff (element-3→element-4 boundary).
+#check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested2_stepConfig_handoff_phase
+#check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested2_stepConfig_handoff_head
+#check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested2_stepConfig_handoff_tape
 -- D2t-3c-β: the binary→unary home-seek (stepLeftOnce ; selfLoopScanLeftOne) returns the head to HOME.
 #check @Pnp4.Frontier.ContractExpansion.seekHomeAfterDecrement_runConfig_lead2
 #check @Pnp4.Frontier.ContractExpansion.seekHomeAfterDecrement_runConfig_home

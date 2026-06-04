@@ -1,6 +1,8 @@
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgram
 import Pnp4.Frontier.ContractExpansion.BoundedLoopProgram
-import Pnp4.Frontier.ContractExpansion.CircuitTreeBridge
+-- `BoundedLoopProgram` supplies the `ConstStatePhasedProgram.toTM_stepConfig_{phase,head,tape}` lemmas
+-- used throughout (referenced via the `ConstStatePhasedProgram.` namespace, so the module name does not
+-- appear literally below).
 
 /-!
 # CircuitTree 3-bit tag dispatcher (NP-verifier track — D2 transcoder, parser entry layer)
@@ -31,6 +33,19 @@ Phase layout (`numPhases = 12`), reading bits `b0 b1 b2` left-to-right (head adv
 `101/110/111`). After the valid 3-bit tag the dispatcher lands in `6..10`, head advanced by `3`, tape
 unchanged.
 
+**Composition note (the nominal `acceptPhase`; `TM.accepts` is NOT this dispatcher's API).** Per the
+repo's all-`Unit` state-uniformity discipline (§6a), control is **phase-encoded**, not state-carried, and
+a 5-way tag branch cannot be `seq`-composed (`ConstStatePhasedProgram.seq` hands off at one `acceptPhase`
+and resets the state). So — exactly as in D1b's `gateTagDispatch` — the five dispatch phases `6..10` are
+**internal entrypoints** for the per-tag continuations (read a binary index / a literal / recurse),
+reached by phase-routing **within one program**, not by `seq`. The structure's single `acceptPhase` is
+therefore a **nominal placeholder** set to the reject sink `11`; consequently the compiled
+`treeTagDispatch.toPhased.toTM` has `TM.accepts ↔ reached phase 11` (a *malformed*-tag halt), which is
+**not** a "valid tag recognised" predicate. Downstream code must use the dispatcher's real API — the
+`runConfig` phase-position lemmas below (`treeTagDispatch_runConfig_{input,const,not,and,or}` land in
+`6..10`; `_malformed` lands in `11`) — and must **not** read `TM.accepts (treeTagDispatch.toPhased.toTM)`
+as tag recognition.
+
 **Progress classification (AGENTS.md): Infrastructure** — toolkit toward the NP-membership leg of
 `VerifiedNPDAGLowerBoundSource`; it builds no verifier and proves no separation. All surfaces carry only
 the standard `[propext, Classical.choice, Quot.sound]`.
@@ -58,7 +73,8 @@ def treeTagDispatch : ConstStatePhasedProgram Unit where
   numPhases := 12
   startPhase := ⟨0, by omega⟩
   startState := ()
-  acceptPhase := ⟨11, by omega⟩  -- nominal (the reject sink); the real per-tag accepts are 6..10
+  acceptPhase := ⟨11, by omega⟩  -- nominal placeholder = reject sink; see the composition note above:
+                                  -- `TM.accepts` is NOT tag recognition — the API is the runConfig lemmas
   acceptState := ()
   transition := fun i _ b =>
     if i.val = 0 then ((if b then ⟨2, by omega⟩ else ⟨1, by omega⟩ : Fin 12), (), b, Move.right)
@@ -213,8 +229,8 @@ theorem treeTagDispatch_runConfig_input {L : Nat}
       ∧ ((TM.runConfig (M := treeTagDispatch.toPhased.toTM) c0 3).head : Nat) = (c0.head : Nat) + 3
       ∧ (TM.runConfig (M := treeTagDispatch.toPhased.toTM) c0 3).tape = c0.tape := by
   obtain ⟨hp, hh, ht⟩ := treeTagDispatch_runConfig_three c0 false false false hphase
-    (by norm_num [treeTagDispatchNext]) (by norm_num [treeTagDispatchNext]) hb h0 h1 h2
-  exact ⟨by rw [hp]; norm_num [treeTagDispatchNext], hh, ht⟩
+    (by decide) (by decide) hb h0 h1 h2
+  exact ⟨by rw [hp]; decide, hh, ht⟩
 
 /-- `const` tag `001` ⇒ accept phase `7`. -/
 theorem treeTagDispatch_runConfig_const {L : Nat}
@@ -231,8 +247,8 @@ theorem treeTagDispatch_runConfig_const {L : Nat}
       ∧ ((TM.runConfig (M := treeTagDispatch.toPhased.toTM) c0 3).head : Nat) = (c0.head : Nat) + 3
       ∧ (TM.runConfig (M := treeTagDispatch.toPhased.toTM) c0 3).tape = c0.tape := by
   obtain ⟨hp, hh, ht⟩ := treeTagDispatch_runConfig_three c0 false false true hphase
-    (by norm_num [treeTagDispatchNext]) (by norm_num [treeTagDispatchNext]) hb h0 h1 h2
-  exact ⟨by rw [hp]; norm_num [treeTagDispatchNext], hh, ht⟩
+    (by decide) (by decide) hb h0 h1 h2
+  exact ⟨by rw [hp]; decide, hh, ht⟩
 
 /-- `not` tag `010` ⇒ accept phase `8`. -/
 theorem treeTagDispatch_runConfig_not {L : Nat}
@@ -249,8 +265,8 @@ theorem treeTagDispatch_runConfig_not {L : Nat}
       ∧ ((TM.runConfig (M := treeTagDispatch.toPhased.toTM) c0 3).head : Nat) = (c0.head : Nat) + 3
       ∧ (TM.runConfig (M := treeTagDispatch.toPhased.toTM) c0 3).tape = c0.tape := by
   obtain ⟨hp, hh, ht⟩ := treeTagDispatch_runConfig_three c0 false true false hphase
-    (by norm_num [treeTagDispatchNext]) (by norm_num [treeTagDispatchNext]) hb h0 h1 h2
-  exact ⟨by rw [hp]; norm_num [treeTagDispatchNext], hh, ht⟩
+    (by decide) (by decide) hb h0 h1 h2
+  exact ⟨by rw [hp]; decide, hh, ht⟩
 
 /-- `and` tag `011` ⇒ accept phase `9`. -/
 theorem treeTagDispatch_runConfig_and {L : Nat}
@@ -267,8 +283,8 @@ theorem treeTagDispatch_runConfig_and {L : Nat}
       ∧ ((TM.runConfig (M := treeTagDispatch.toPhased.toTM) c0 3).head : Nat) = (c0.head : Nat) + 3
       ∧ (TM.runConfig (M := treeTagDispatch.toPhased.toTM) c0 3).tape = c0.tape := by
   obtain ⟨hp, hh, ht⟩ := treeTagDispatch_runConfig_three c0 false true true hphase
-    (by norm_num [treeTagDispatchNext]) (by norm_num [treeTagDispatchNext]) hb h0 h1 h2
-  exact ⟨by rw [hp]; norm_num [treeTagDispatchNext], hh, ht⟩
+    (by decide) (by decide) hb h0 h1 h2
+  exact ⟨by rw [hp]; decide, hh, ht⟩
 
 /-- `or` tag `100` ⇒ accept phase `10`. -/
 theorem treeTagDispatch_runConfig_or {L : Nat}
@@ -285,8 +301,8 @@ theorem treeTagDispatch_runConfig_or {L : Nat}
       ∧ ((TM.runConfig (M := treeTagDispatch.toPhased.toTM) c0 3).head : Nat) = (c0.head : Nat) + 3
       ∧ (TM.runConfig (M := treeTagDispatch.toPhased.toTM) c0 3).tape = c0.tape := by
   obtain ⟨hp, hh, ht⟩ := treeTagDispatch_runConfig_three c0 true false false hphase
-    (by norm_num [treeTagDispatchNext]) (by norm_num [treeTagDispatchNext]) hb h0 h1 h2
-  exact ⟨by rw [hp]; norm_num [treeTagDispatchNext], hh, ht⟩
+    (by decide) (by decide) hb h0 h1 h2
+  exact ⟨by rw [hp]; decide, hh, ht⟩
 
 /-! ### Malformed-tag reject
 
@@ -318,10 +334,10 @@ theorem treeTagDispatch_runConfig_malformed {L : Nat}
     (TM.runConfig (M := treeTagDispatch.toPhased.toTM) c0 1)
     (i := (TM.runConfig (M := treeTagDispatch.toPhased.toTM) c0 1).state.fst)
     (s := (TM.runConfig (M := treeTagDispatch.toPhased.toTM) c0 1).state.snd)
-    (by rw [s1p]; norm_num [treeTagDispatchNext]) rfl (by rw [s1h]; omega)
+    (by rw [s1p]; decide) rfl (by rw [s1h]; omega)
   rw [s1p, hbit1] at s2p
   rw [← e2] at s2p
-  rw [s2p]; norm_num [treeTagDispatchNext]
+  rw [s2p]; decide
 
 end ContractExpansion
 end Frontier

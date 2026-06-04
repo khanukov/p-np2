@@ -984,3 +984,65 @@ Each emit brick is proven against the **pure** spec it realises (`decodeFin`, `e
 `transcodeWitness` faithfulness, which `transcodeWitness_faithful` already lifts to `Circuit.eval`. No
 `P ≠ NP` claim; headline stays conditional; honesty baseline (0 holes, standard triple) preserved
 throughout.
+
+## 12. D2t iteration plan — small finishable stages
+
+The remaining transcoder (D2t-3c…D2t-6) is closed by **small, individually-completable iterations**,
+each a single self-loop or a short `seq`/`loopUntilSink` composition with a proven `runConfig`
+behaviour and only the standard axiom triple — the same brick discipline that closed D0…D2t-3b.
+
+### D2t-3c — binary→unary loop (the navigation crux, resolved)
+
+**Layout that makes the body navigation uniform** (the key design decision): place the unary output
+`U` to the **left** of the binary counter `B`, with a `0` **sentinel** between them, and a `1`
+**right-marker** just past `B`:
+```
+[ … blank | U = 1^|U| | sentinel(0) | B = b_0 b_1 … b_{w-1} | rightMarker(1) | … ]
+                         ^HOME            (little-endian, b_0 next to sentinel)
+```
+Because the loop only ever scans over **uniform** stretches — `B`'s just-flipped low `1`s, or `U`'s
+`1`s — it **never crosses `B`'s mixed high bits**, which was the blocker. Iterations:
+
+* **D2t-3c-α — `selfLoopAppendLeftOne`** (leftward unary single-append): scan **left** over `U`'s `1`s,
+  write one `1` at `U`'s left `0`-end (`U` grows leftward). Mirror of `selfLoopAppendOne` with
+  `Move.left`. Standalone run-behaviour + `seqP2` lift. *(first iteration — clean mirror)*
+* **D2t-3c-β — `seekHomeAfterDecrement`**: from the post-`decrement` config (cells `0..j-1 = 1`, cell
+  `j = 0`, head at `j`), one `Move.left` then `selfLoopScanLeftOne` over the flipped `1`s lands the head
+  on the sentinel (HOME); the `j = 0` edge collapses to the same target. A short `seq`/run lemma.
+* **D2t-3c-γ — `binToUnaryBody`**: `seq`-compose one pass — `[ stepRight ; selfLoopDecrement ;
+  seekHomeAfterDecrement ; stepLeft ; selfLoopAppendLeftOne ; selfLoopScanRightOne ]` — proving from HOME
+  with `B > 0`: `counterValue B − 1`, `|U| + 1`, head back at HOME, all via the `seqP2`-offset lemmas.
+* **D2t-3c-δ — `bZeroTest`**: from HOME decide `B = 0` vs `B > 0` (a `gammaSelfLoopScan` over `B` whose
+  stop cell is the right-marker iff `B = 0`); supplies `loopUntilSink`'s `hstep`/`hbase`.
+* **D2t-3c-ε — the loop**: `loopUntilSink binToUnaryBody (sink := done)`; `loopUntilSink_reachesSink`
+  with measure `counterValue B`, giving `|U| = value(B)` after termination.
+* **D2t-3c-ζ — correctness**: bridge `|U| = value(B) = (decodeFin w …).val`, i.e. the produced block is
+  `unaryField (decodeFin …)`.
+
+(Tiny helpers `stepRight`/`stepLeft` — unconditional one-cell moves — are 1-phase sub-bricks, or folded
+into the adjacent `seq`.)
+
+### D2t-4 — leaf emit (iterations)
+* **D2t-4a — `emitConstRecord`**: from the `const` dispatch phase, read the literal bit and write the
+  fixed 3-cell record `1 0 b` into WORK (uses the U-left write discipline; fixed width, no loop).
+* **D2t-4b — `emitInputRecord`**: `D2t-3c` (binary→unary of the index) then frame it as
+  `unaryField 0 ++ unaryField i`. Each leaf pushes its WORK index onto STACK (feeds D2t-5).
+
+### D2t-5 — the preorder→postorder tape stack (the research-grade core; its own iterations)
+* **D2t-5a — frame format + `pushFrame` / `popFrame`** (each a bounded self-loop over a fixed frame
+  layout: pending-child count + the gate tag + accumulated child WORK-indices).
+* **D2t-5b — the recursion driver**: on `not/and/or` push a frame (children pending); on a completed
+  subtree pop, compute the back-reference **distances** from the child indices, append the gate record
+  to WORK, and decrement the parent's pending count. Driven by `loopUntilSink` with the stack-empty sink.
+* **D2t-5c — correctness**: the emitted WORK equals `encodeGateRecordStream (flatten (toTree c)).gates`
+  (the postorder linearisation), by induction on the tree via `flattenAt`'s index arithmetic.
+
+### D2t-6 — assembly
+* **D2t-6a**: prepend the unary gate-count (`encodeGateStream`); **D2t-6b**: compose the whole transcoder
+  TM and prove its output `= transcodeWitness …` (lifting D2t-1…D2t-5), closing §9 against
+  `transcodeWitness_faithful`.
+
+**Discipline (every iteration):** new module / lemmas under `Frontier/ContractExpansion/`; register in
+`lakefile.lean`; extend surface tests + `AxiomsAudit`; `lake build PnP3 Pnp4` + `./scripts/check.sh`
+green; standard triple only; small stacked PR into staging, Qodo-reviewed, merged; **no `sorry`/holes**,
+no `P ≠ NP` claim.

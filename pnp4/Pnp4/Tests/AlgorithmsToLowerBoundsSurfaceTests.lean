@@ -89,6 +89,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPRepeatBody
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBidirHeadBounds
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSelfLoopCounter
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryAppendProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryAppendLeftProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition
@@ -3906,6 +3907,10 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.selfLoopAppendOne_runConfig_done
 #check @Pnp4.Frontier.ContractExpansion.selfLoopAppendOne_seqP2_runConfig_scan
 #check @Pnp4.Frontier.ContractExpansion.selfLoopAppendOne_seqP2_runConfig_stop
+-- D2t-3c-α: leftward unary single-append (grows U leftward — the navigation-uniform direction).
+#check @Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne
+#check @Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_runConfig_scan
+#check @Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_runConfig_append
 -- Two-sided head-displacement bound (bidirectional accounting foundation).
 #check @Pnp4.Frontier.ContractExpansion.runConfig_head_val_ge
 #check @Pnp4.Frontier.ContractExpansion.runConfig_head_dist_le

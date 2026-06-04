@@ -78,6 +78,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRepeatBody
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBidirHeadBounds
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSelfLoopCounter
+import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryAppendProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition
@@ -530,6 +531,10 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.repeatBody_runConfig_iterate'
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopFill_runConfig_fill
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopFill_seqP2_runConfig_fill
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendOne_runConfig_scan
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendOne_runConfig_stop
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendOne_seqP2_runConfig_scan
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendOne_seqP2_runConfig_stop
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seqP2_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seqP2_runConfig_terminator
 -- Leftward scan-over-`1`s (bit-dual; completes the four-way scan vocabulary).

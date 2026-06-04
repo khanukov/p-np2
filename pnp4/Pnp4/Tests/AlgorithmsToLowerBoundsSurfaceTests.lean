@@ -88,6 +88,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRepeatBody
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBidirHeadBounds
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSelfLoopCounter
+import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryAppendProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition
@@ -3897,6 +3898,14 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopFill
 #check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopFill_runConfig_fill
 #check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopFill_seqP2_runConfig_fill
+-- D2 transcoder building block (§11, D2t-3): unary single-append (scan over `1`s, append one `1`).
+#check @Pnp4.Frontier.ContractExpansion.selfLoopAppendOne
+#check @Pnp4.Frontier.ContractExpansion.selfLoopAppendOne_neverMovesLeft
+#check @Pnp4.Frontier.ContractExpansion.selfLoopAppendOne_runConfig_scan
+#check @Pnp4.Frontier.ContractExpansion.selfLoopAppendOne_runConfig_stop
+#check @Pnp4.Frontier.ContractExpansion.selfLoopAppendOne_runConfig_done
+#check @Pnp4.Frontier.ContractExpansion.selfLoopAppendOne_seqP2_runConfig_scan
+#check @Pnp4.Frontier.ContractExpansion.selfLoopAppendOne_seqP2_runConfig_stop
 -- Two-sided head-displacement bound (bidirectional accounting foundation).
 #check @Pnp4.Frontier.ContractExpansion.runConfig_head_val_ge
 #check @Pnp4.Frontier.ContractExpansion.runConfig_head_dist_le

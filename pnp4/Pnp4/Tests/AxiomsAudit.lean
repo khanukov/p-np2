@@ -650,6 +650,8 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_stepConfig_borrow_tape
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_stepConfig_stop_tape
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_runConfig_borrow
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_runConfig_stop
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_runConfig_counterValue
 -- State lifting + heterogeneous-state skeleton composition (assembly milestone).
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_neverMovesLeft
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_stepConfig_phase

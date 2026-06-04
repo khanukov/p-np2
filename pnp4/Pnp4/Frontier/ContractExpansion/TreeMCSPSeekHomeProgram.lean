@@ -174,9 +174,13 @@ theorem seekHomeAfterDecrement_runConfig_home {L : Nat}
         exact hones p (by omega) (by omega))
   set c3 := TM.runConfig (M := (seq stepLeftOnce selfLoopScanLeftOne).toPhased.toTM) c2
     ((c2.head : Nat) - sentinel) with hc3
-  -- Rewrite the total step count as `2 + (scan + 1)` and peel the final terminator step.
-  have htot : ((c0.head : Nat) - sentinel) + 2 = 2 + (((c2.head : Nat) - sentinel) + 1) := by omega
-  have hc3head : (c3.head : Nat) = sentinel := by omega
+  -- The two leading steps land one cell left of the start (`hh2`)…
+  have hc2head : (c2.head : Nat) = (c0.head : Nat) - 1 := hh2
+  -- …and the leftward scan then retreats from there to the sentinel (`hsh`).
+  have hc3head : (c3.head : Nat) = sentinel := by rw [hsh, hc2head]; omega
+  -- Total step count = the two leading steps + (scan + terminator); reshape it via `hc2head`.
+  have htot : ((c0.head : Nat) - sentinel) + 2 = 2 + (((c2.head : Nat) - sentinel) + 1) := by
+    rw [hc2head]; omega
   have hi3 : (c3.state.fst).val = stepLeftOnce.numPhases := hsp
   have hbit3 : c3.tape c3.head = false := by
     rw [hst, ht2]; exact hsent c3.head hc3head

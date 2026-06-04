@@ -674,6 +674,9 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_runConfig_borrow
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_runConfig_stop
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_runConfig_counterValue
+-- D2t-3c-γ rung (element 2, depth-2): decrement borrow/stop/counterValue in the nested position.
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_runConfig_stop
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_runConfig_counterValue
 -- State lifting + heterogeneous-state skeleton composition (assembly milestone).
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_neverMovesLeft
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_stepConfig_phase

@@ -4035,6 +4035,9 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_runConfig_borrow
 #check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_runConfig_stop
 #check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_runConfig_counterValue
+-- D2t-3c-γ rung (element 2, depth-2): decrement borrow/stop/counterValue in the nested position.
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_runConfig_stop
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_runConfig_counterValue
 -- State lifting + heterogeneous-state skeleton composition (assembly milestone).
 #check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram
 #check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_neverMovesLeft

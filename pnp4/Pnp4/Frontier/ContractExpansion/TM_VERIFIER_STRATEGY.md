@@ -890,3 +890,65 @@ unavoidable. Until all bricks land with no `sorry` and only the standard axioms,
 `PrefixExtensionNPWitness` for the tree-MCSP prefix parser remains an open (engineering) obligation,
 and `verifiedSource_treePoly` stays conditional on it — alongside the genuinely open circuit lower
 bound `NoPolynomialBoundedSearchSolver`, which this track does **not** address.
+
+## 11. D2 on-tape transcoder — design + sub-brick decomposition (multi-session)
+
+The D2 *decoder* line (D0→D1a→D1b→D2: `gateStreamDecoder` + `reachesSink`) is complete, but it reads the
+interpreter's **internal** unary-record format. The **transcoder** is the missing bridge: on-tape, it
+must turn the certificate (a recursive `CircuitTree` in `encodeCircuitTree` form) into the unary-record
+stream `encodeGateStream (flatten (toTree c)).gates` that the decoder/interpreter consume. Its pure spec
+(`transcodeWitness`) and end-to-end faithfulness (`transcodeWitness_faithful`) are already proven; what
+remains is the **on-tape realisation**, which is genuinely a multi-session sub-project. This section fixes
+its design and decomposition so the bricks can land one at a time, each hole-free.
+
+### Why it is hard (the irreducible core)
+
+* **Preorder in, postorder out.** `encodeCircuitTree` is a **preorder** serialisation: `tag(root) ++
+  encode(child₁) ++ encode(child₂)` with subtrees **inlined** (no length headers, no sharing).
+  `flattenAt` (the output's structure) is **postorder**: `flatten(child₁) ++ flatten(child₂) ++
+  [gate(root)]`, and the root gate's operands are **absolute indices** `offset + |sub₁| − 1`,
+  `offset + |sub₁| + |sub₂| − 1`. Converting preorder→postorder is prefix→postfix: it **requires a
+  stack**. A fixed-phase machine cannot have depth-many phases, so the stack must live in **tape
+  scratch** — there is no scratch-free shortcut (confirmed against `CircuitTree.flattenAt`,
+  `Encoding.lean:545`).
+* **Binary, non-self-delimiting indices.** Input indices are `encodeFin width i` — **fixed-width little-
+  endian binary with no terminator** (`Encoding.lean:12`). Reading one needs a **width counter** in
+  scratch; emitting it as the record's unary field needs **binary→unary** conversion (a doubling loop).
+* **No scratch primitives yet.** The toolkit has `selfLoopIncrement` (binary +1), `selfLoopCountdownLeft`
+  / `repeatBody` (consume a unary counter). It has **no** tape-region copy, no unary-block writer, no
+  binary→unary, no stack. These must be built.
+
+### Tape layout (proposed)
+
+```
+[ input x | certificate (encodeCircuitTree) | WORK: output record stream | STACK | scratch counters ]
+```
+The transcoder reads left-to-right over the certificate, pushing/popping frames on STACK, appending
+completed records to WORK; the row-loop interpreter then runs over WORK (the existing decoder line).
+
+### Sub-brick decomposition (each a separate hole-free PR into staging)
+
+* **D2t-1 — tag dispatcher (DONE, this PR).** `treeTagDispatch` (`TreeMCSPTreeTagDispatch.lean`): the
+  3-bit binary-tag trie in finite control; reads the tag, dispatches `input/const/not/and/or`, rejects
+  `101/110/111`. Scratch-free; per-tag run-behaviour proven (head +3, tape unchanged).
+* **D2t-2 — scratch primitives.** A tape-region **copy** (`1^k`-block copier) and a **unary-block
+  writer**, with run-behaviour lemmas. The reusable write/scratch layer the rest depends on.
+* **D2t-3 — binary→unary.** Read `encodeFin width i` (width-counter-bounded), emit `unaryField i` into
+  WORK via a doubling loop (`acc := 2·acc + bit`, MSB→LSB), proven against `decodeFin`.
+* **D2t-4 — leaf emit.** `input`: D2t-3 then write `unaryField 0 ++ unaryField i`. `const`: read the
+  literal bit, write `unaryField 1 ++ [b]`. (Leaves push an index onto STACK.)
+* **D2t-5 — the stack discipline (the core).** Internal-node handling: on `not/and/or`, recurse via a
+  tape STACK (push the pending node + child indices; on completion pop, compute the back-reference
+  distances from the child indices, and append the gate record to WORK). This is the prefix→postfix
+  engine; the largest brick.
+* **D2t-6 — count prefix + assembly.** Prepend the unary gate-count to WORK (`encodeGateStream`), prove
+  the whole machine's output equals `encodeGateStream (flatten (toTree c)).gates` (matching
+  `transcodeWitness`), and bound its runtime polynomially.
+
+### Correctness seam
+
+Each emit brick is proven against the **pure** spec it realises (`decodeFin`, `encodeGateRecord`,
+`flattenAt`'s index arithmetic), exactly as D0/D1a/D1b separated spec from tape. D2t-6 composes them into
+`transcodeWitness` faithfulness, which `transcodeWitness_faithful` already lifts to `Circuit.eval`. No
+`P ≠ NP` claim; headline stays conditional; honesty baseline (0 holes, standard triple) preserved
+throughout.

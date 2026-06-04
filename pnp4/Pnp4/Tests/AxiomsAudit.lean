@@ -577,6 +577,8 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterDecrement
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterDecrHandoff
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterStepLeft3
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterStepLeft3Handoff
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterScanLeft4
 -- Rightward scan-over-`1`s (pure-traversal fourth scan; marker-free unary-distance seek, §6k).
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_runConfig_terminator

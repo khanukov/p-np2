@@ -1117,11 +1117,21 @@ landed: the two nested accept-handoff boundary lemmas
 > `binToUnaryBody_runConfig_afterStepLeft3` — after `2 + (j+1) + 1 + 1` steps, phase `5`, head one cell
 > left at `head+j`, tape the decremented pattern unchanged.  (One subtlety surfaced and is handled: the
 > abbrev-vs-unfolded `tapeLength` mismatch makes `omega` atomize the two forms differently; discharge
-> such bounds with `exact hb` / defeq rather than `omega`.)  **Remaining:** chain elements 4–7's segment
-> lemmas on `bodyFull` (`selfLoopScanLeftOne_seqNested3_*` home-seek, `stepLeftOnce_seqNested4_*`,
-> `selfLoopAppendLeftOne_seqNested5_*` U-append, `selfLoopScanRightOne_seqNested6_*` scan-home, then the
-> terminator handoff into `idleCS`) with the U-left layout-window bookkeeping, culminating in the
-> one-pass HOME→HOME headline (`counterValue B − 1`, `|U| + 1`, head back at HOME).
+> such bounds with `exact hb` / defeq rather than `omega`.)  **Element-3→4 handoff + element 4
+> (`selfLoopScanLeftOne`) composed ✅:** `binToUnaryBody_runConfig_afterStepLeft3Handoff` (phase `6`) and
+> `binToUnaryBody_runConfig_afterScanLeft4` — after `2 + (j+1) + 1 + 1 + 1 + (j+1)` steps the leftward
+> scan has retraced `B`'s flipped `1`-run and stopped on the sentinel at phase `7` with the **head back at
+> HOME** (`c0.head`).  Note **each element occupies 2 phases**, so a handoff step separates every element's
+> accept from the next element's start; element 4 is composed as `scanning (j steps) + stop_zero (1 step)`
+> rather than the bundled `_terminator`, whose `k < head` precondition excludes `j = 0` (`B` odd), and a
+> new `h_sentinel : c0.tape c0.head = false` precondition records that HOME holds the sentinel `0`.  Each
+> bundled segment lemma's output is in the unfolded form; bridge it to `bodyFull` with
+> `have h : <bodyFull-form> := <unfolded fact>` (one cheap abbrev delta).  **Remaining:** chain elements
+> 5–7 on `bodyFull` (`stepLeftOnce_seqNested4_*` step-left onto `U`, `selfLoopAppendLeftOne_seqNested5_*`
+> U-append, `selfLoopScanRightOne_seqNested6_*` scan-home, with a handoff step between each, then the
+> terminator handoff into `idleCS`) with the U-region tape invariant (the `1^|U|` block + its left
+> `0`-boundary), culminating in the one-pass HOME→HOME headline (`counterValue B − 1`, `|U| + 1`, head
+> back at HOME).
 
 **Then:** δ (`bZeroTest` — a `gammaSelfLoopScan` over `B`), ε (`loopUntilSink binToUnaryBody` — the
 combinator and `loopUntilSink_reachesSink` already exist), ζ (bridge `|U| = value(B) = (decodeFin …).val`).

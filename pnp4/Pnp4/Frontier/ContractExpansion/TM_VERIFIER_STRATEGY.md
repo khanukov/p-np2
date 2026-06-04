@@ -1016,8 +1016,31 @@ Because the loop only ever scans over **uniform** stretches — `B`'s just-flipp
   primitive at a single nesting depth).  Prove from HOME with `B > 0`: `counterValue B − 1`, `|U| + 1`,
   head back at HOME.  **This is the substantial assembly phase — see the composition-toolkit status note
   below for the exact remaining bricks.**
-* **D2t-3c-δ — `bZeroTest`**: from HOME decide `B = 0` vs `B > 0` (a `gammaSelfLoopScan` over `B` whose
-  stop cell is the right-marker iff `B = 0`); supplies `loopUntilSink`'s `hstep`/`hbase`.
+* **D2t-3c-δ — `bZeroTest` (zero-test routing RESOLVED — width counter).** From the body's start decide
+  `B = 0` vs `B > 0` and route: `B = 0` → the loop `sink` (halt); `B > 0` → fall through to the pass
+  (reaching the body's accept ⇒ `loopUntilSink` re-entry).  This supplies `loopUntilSink_reachesSink`'s
+  `hbase` (`μ = counterValue B = 0` ⇒ reach `sink`) and `hstep` (`μ ≠ 0` ⇒ one pass, `μ` decreases).
+  - **Why the `gammaSelfLoopScan`-on-the-right-marker sketch (lines 963–966) does NOT suffice.** That
+    scan gives only the *position* outcome — the head halts on the boundary `1` iff `B = 0`, strictly
+    before it iff `B > 0`.  But routing **halt vs continue needs a phase difference**, and on the
+    *single-tape, binary alphabet* the boundary marker `1` and a `B`-set-bit `1` are **indistinguishable
+    by a local read**, so the scan reaches the *same* accept phase either way.  There is no sound local
+    position→phase conversion — this is exactly the "genuine crux (marker-free binary alphabet)" flagged
+    at the top of this section.
+  - **Sound resolution (width counter, per the "fixed-width binary, no terminator ⇒ needs a width
+    counter" analysis above).** Carry a **unary width counter `1^w`** alongside `B`.  Scan `B` rightward
+    while **decrementing the width counter in lockstep**:
+    - encountering a `1` in `B` mid-scan ⇒ `B > 0` ⇒ route to the *continue* phase (a clean phase route,
+      the `tagCheckProgramU` mismatch→sink pattern);
+    - the width counter reaching `0` first — the **marker-free unary zero-test "leftmost cell `= 0`",
+      one read** — ⇒ all `w` cells of `B` were `0` ⇒ `B = 0` ⇒ route to the *halt* (`sink`) phase.
+    Both exits are genuine distinct phases, so the routing is sound.  Cost: the layout gains a `1^w`
+    width-counter region, and the zero-test is a **two-region lockstep** (head shuttles `B` ↔ width
+    counter per cell) — a real construction, not a single existing primitive; build it as its own
+    sub-bricks (program + structural facts → lockstep run-behaviour → the `counterValue B = 0 ↔ width
+    exhausted` bridge).  This is a **layout addition** that the γ `binToUnaryBody` (built on
+    `[U | sentinel | B | rightMarker]`, no width counter) does not yet carry, so δ also re-wires γ's
+    HOME/`B`-region preconditions to the width-counter layout.
 * **D2t-3c-ε — the loop**: `loopUntilSink binToUnaryBody (sink := done)`; `loopUntilSink_reachesSink`
   with measure `counterValue B`, giving `|U| = value(B)` after termination.
 * **D2t-3c-ζ — correctness**: bridge `|U| = value(B) = (decodeFin w …).val`, i.e. the produced block is

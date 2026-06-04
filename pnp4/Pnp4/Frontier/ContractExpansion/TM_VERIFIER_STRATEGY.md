@@ -931,8 +931,18 @@ completed records to WORK; the row-loop interpreter then runs over WORK (the exi
 * **D2t-1 — tag dispatcher (DONE, this PR).** `treeTagDispatch` (`TreeMCSPTreeTagDispatch.lean`): the
   3-bit binary-tag trie in finite control; reads the tag, dispatches `input/const/not/and/or`, rejects
   `101/110/111`. Scratch-free; per-tag run-behaviour proven (head +3, tape unchanged).
-* **D2t-2 — scratch primitives.** A tape-region **copy** (`1^k`-block copier) and a **unary-block
-  writer**, with run-behaviour lemmas. The reusable write/scratch layer the rest depends on.
+* **D2t-2 — scratch primitives (LARGELY ALREADY PRESENT — recon).** The reusable write/scratch layer
+  mostly exists and must be **reused, not rebuilt**: the unary-block **writer** is `gammaSelfLoopFill`
+  (pnp4, proven, with its `seqP2` lift); **counters both directions** are `selfLoopIncrement` /
+  `selfLoopDecrement` (pnp4, with `counterValue ± 1` correctness); the **countdown/consume** is
+  `selfLoopCountdownLeft`; and a **cell-copier** `copyAtOffsetProgram` exists in the pnp3 toolkit
+  (a `PhasedProgram`, not yet in the pnp4 `ConstStatePhasedProgram Unit` lineage). The *gap* this
+  brick closed: the down-counter's `seqP2` composition lift was incomplete (only `borrow` + the `stop`
+  single-steps) — `selfLoopDecrement_seqP2_runConfig_{stop,counterValue}` now complete it, so the
+  down-counter composes as a non-first phase (needed for binary→unary and the parser's pending-subtree
+  scan). What remains genuinely missing is a **pnp4-style copier** (or a `PhasedProgram`→`seq` bridge)
+  for the doubling step of D2t-3 — but every binary→unary path needs cross-region head shuttling, which
+  is the real cost from here on.
 * **D2t-3 — binary→unary.** Read `encodeFin width i` (width-counter-bounded), emit `unaryField i` into
   WORK via a doubling loop (`acc := 2·acc + bit`, MSB→LSB), proven against `decodeFin`.
 * **D2t-4 — leaf emit.** `input`: D2t-3 then write `unaryField 0 ++ unaryField i`. `const`: read the

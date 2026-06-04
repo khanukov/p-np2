@@ -84,6 +84,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryAppendLeftProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStepLeftProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSeekHomeProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterComposition
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryBody
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPLeadingPhasesChain
@@ -680,6 +681,9 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_runConfig_borrow
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_runConfig_stop
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_runConfig_counterValue
+-- D2t-3c-γ: the left-nested binary→unary loop body (structural facts; run behaviour TBD).
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_numPhases
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_acceptPhase_val
 -- State lifting + heterogeneous-state skeleton composition (assembly milestone).
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_neverMovesLeft
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_stepConfig_phase

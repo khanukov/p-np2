@@ -1,11 +1,13 @@
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgram
 import Complexity.TMVerifier.TuringToolkit.BinaryCounter
+import Pnp4.Frontier.ContractExpansion.BoundedLoopProgram
 
 namespace Pnp4
 namespace Frontier
 namespace ContractExpansion
 
 open Pnp3.Internal.PsubsetPpoly Pnp3.Internal.PsubsetPpoly.TM
+open Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram
 
 /-!
 # Self-loop unary-append (NP-verifier track — D2 transcoder, binary→unary building block)
@@ -266,6 +268,171 @@ theorem selfLoopAppendOne_runConfig_done {L : Nat}
           (i := (TM.runConfig (M := selfLoopAppendOne.toPhased.toTM) c j).state.fst)
           (s := (TM.runConfig (M := selfLoopAppendOne.toPhased.toTM) c j).state.snd) hph rfl
       exact ⟨hph2, by rw [hhd2, hhd], by rw [htp2, htp]⟩
+
+/-! ### Composition lift: append as a non-first phase (`seqP2`)
+
+So the append composes as the second component of `seq P1 selfLoopAppendOne` (phase offset
+`P1.numPhases`).  The scan steps mirror `selfLoopScanRightOne`'s `seqP2` lift verbatim; the terminator
+step differs only in that it **writes a `1`** (the append) rather than the scanned bit. -/
+
+/-- Scan step as a non-first phase (bit `1`): the phase stays at `P1.numPhases`. -/
+theorem selfLoopAppendOne_seqP2_stepConfig_scan_phase (P1 : ConstStatePhasedProgram Unit)
+    {L : Nat} (c : Configuration (M := (seq P1 selfLoopAppendOne).toPhased.toTM) L)
+    {i : Fin (seq P1 selfLoopAppendOne).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = true) :
+    ((TM.stepConfig (M := (seq P1 selfLoopAppendOne).toPhased.toTM) c).state).fst.val
+      = P1.numPhases := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_phase P1 selfLoopAppendOne c
+      (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+  simp [selfLoopAppendOne, hsub, hbit]
+
+/-- Scan step as a non-first phase (bit `1`): the head moves right. -/
+theorem selfLoopAppendOne_seqP2_stepConfig_scan_head (P1 : ConstStatePhasedProgram Unit)
+    {L : Nat} (c : Configuration (M := (seq P1 selfLoopAppendOne).toPhased.toTM) L)
+    {i : Fin (seq P1 selfLoopAppendOne).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = true) :
+    (TM.stepConfig (M := (seq P1 selfLoopAppendOne).toPhased.toTM) c).head
+      = Configuration.moveHead (c := c) Move.right := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_head P1 selfLoopAppendOne c
+      (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+  simp [selfLoopAppendOne, hsub, hbit]
+
+/-- Scan step as a non-first phase (bit `1`): the tape is unchanged (the `1` is written back). -/
+theorem selfLoopAppendOne_seqP2_stepConfig_scan_tape (P1 : ConstStatePhasedProgram Unit)
+    {L : Nat} (c : Configuration (M := (seq P1 selfLoopAppendOne).toPhased.toTM) L)
+    {i : Fin (seq P1 selfLoopAppendOne).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = true) :
+    (TM.stepConfig (M := (seq P1 selfLoopAppendOne).toPhased.toTM) c).tape = c.tape := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  have hwrite : (TM.stepConfig (M := (seq P1 selfLoopAppendOne).toPhased.toTM) c).tape
+      = c.write c.head true := by
+    rw [seq_stepConfig_P2_tape P1 selfLoopAppendOne c
+        (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+    simp [selfLoopAppendOne, hsub, hbit]
+  rw [hwrite]
+  funext j
+  by_cases hj : j = c.head
+  · subst hj; simp [Configuration.write, hbit]
+  · simp [Configuration.write, hj]
+
+/-- Append/terminator step as a non-first phase (bit `0`): jump to the shifted done phase
+`P1.numPhases + 1`. -/
+theorem selfLoopAppendOne_seqP2_stepConfig_stop_phase (P1 : ConstStatePhasedProgram Unit)
+    {L : Nat} (c : Configuration (M := (seq P1 selfLoopAppendOne).toPhased.toTM) L)
+    {i : Fin (seq P1 selfLoopAppendOne).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = false) :
+    ((TM.stepConfig (M := (seq P1 selfLoopAppendOne).toPhased.toTM) c).state).fst.val
+      = P1.numPhases + 1 := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_phase P1 selfLoopAppendOne c
+      (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+  simp [selfLoopAppendOne, hsub, hbit]
+
+/-- Append/terminator step as a non-first phase (bit `0`): the head stays put. -/
+theorem selfLoopAppendOne_seqP2_stepConfig_stop_head (P1 : ConstStatePhasedProgram Unit)
+    {L : Nat} (c : Configuration (M := (seq P1 selfLoopAppendOne).toPhased.toTM) L)
+    {i : Fin (seq P1 selfLoopAppendOne).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = false) :
+    (TM.stepConfig (M := (seq P1 selfLoopAppendOne).toPhased.toTM) c).head = c.head := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_head P1 selfLoopAppendOne c
+      (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+  simp [selfLoopAppendOne, hsub, hbit, Configuration.moveHead]
+
+/-- Append/terminator step as a non-first phase (bit `0`): the terminating `0` is overwritten with `1`. -/
+theorem selfLoopAppendOne_seqP2_stepConfig_stop_tape (P1 : ConstStatePhasedProgram Unit)
+    {L : Nat} (c : Configuration (M := (seq P1 selfLoopAppendOne).toPhased.toTM) L)
+    {i : Fin (seq P1 selfLoopAppendOne).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = false) :
+    (TM.stepConfig (M := (seq P1 selfLoopAppendOne).toPhased.toTM) c).tape = c.write c.head true := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_tape P1 selfLoopAppendOne c
+      (h2 := hi.ge) (hlt := by rw [hsub]; decide) hstate]
+  simp [selfLoopAppendOne, hsub, hbit]
+
+/-- Scan invariant as a non-first phase, from an arbitrary start `c0` (phase `P1.numPhases`): over a
+`1^k` window the phase rests at `P1.numPhases`, head advances to `c0.head + k`, tape unchanged.  Offset
+analogue of `selfLoopAppendOne_runConfig_scan`. -/
+theorem selfLoopAppendOne_seqP2_runConfig_scan (P1 : ConstStatePhasedProgram Unit) {L : Nat}
+    (c0 : Configuration (M := (seq P1 selfLoopAppendOne).toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = P1.numPhases) :
+    ∀ k : Nat, (c0.head : Nat) + k < (seq P1 selfLoopAppendOne).toPhased.toTM.tapeLength L →
+      (∀ p : Fin ((seq P1 selfLoopAppendOne).toPhased.toTM.tapeLength L),
+        (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + k → c0.tape p = true) →
+      (((TM.runConfig (M := (seq P1 selfLoopAppendOne).toPhased.toTM) c0 k).state).fst : Nat)
+          = P1.numPhases
+      ∧ ((TM.runConfig (M := (seq P1 selfLoopAppendOne).toPhased.toTM) c0 k).head : Nat)
+          = (c0.head : Nat) + k
+      ∧ (TM.runConfig (M := (seq P1 selfLoopAppendOne).toPhased.toTM) c0 k).tape = c0.tape := by
+  intro k
+  induction k with
+  | zero => intro _ _; exact ⟨hphase, by simp, rfl⟩
+  | succ k ih =>
+      intro hk h1
+      obtain ⟨hph, hhd, htp⟩ := ih (by omega) (fun p hp1 hp2 => h1 p hp1 (by omega))
+      rw [TM.runConfig_succ]
+      set c := TM.runConfig (M := (seq P1 selfLoopAppendOne).toPhased.toTM) c0 k with hc
+      have hbit : c.tape c.head = true := by
+        rw [htp]; exact h1 c.head (by rw [hhd]; omega) (by rw [hhd]; omega)
+      have hbnd : (c.head : Nat) + 1 < (seq P1 selfLoopAppendOne).toPhased.toTM.tapeLength L := by
+        rw [hhd]; omega
+      refine ⟨?_, ?_, ?_⟩
+      · exact selfLoopAppendOne_seqP2_stepConfig_scan_phase P1 c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit
+      · rw [selfLoopAppendOne_seqP2_stepConfig_scan_head P1 c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+        simp only [Configuration.moveHead, dif_pos hbnd]
+        omega
+      · rw [selfLoopAppendOne_seqP2_stepConfig_scan_tape P1 c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit, htp]
+
+/-- Append run as a non-first phase, from an arbitrary start `c0` (phase `P1.numPhases`): if the window
+`[c0.head, k)` is all `1` and cell `k` is `0`, then after `(k − c0.head) + 1` steps the append has
+landed at the shifted done phase `P1.numPhases + 1`, the head rests on `k`, and cell `k` is now `1`
+(everything else unchanged) — the unary block grew by one.  Offset analogue of
+`selfLoopAppendOne_runConfig_stop`. -/
+theorem selfLoopAppendOne_seqP2_runConfig_stop (P1 : ConstStatePhasedProgram Unit) {L : Nat}
+    (c0 : Configuration (M := (seq P1 selfLoopAppendOne).toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = P1.numPhases) (k : Nat) (hk : (c0.head : Nat) ≤ k)
+    (hkb : k < (seq P1 selfLoopAppendOne).toPhased.toTM.tapeLength L)
+    (hones : ∀ p : Fin ((seq P1 selfLoopAppendOne).toPhased.toTM.tapeLength L),
+      (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < k → c0.tape p = true)
+    (hterm : ∀ p : Fin ((seq P1 selfLoopAppendOne).toPhased.toTM.tapeLength L),
+      (p : Nat) = k → c0.tape p = false) :
+    (((TM.runConfig (M := (seq P1 selfLoopAppendOne).toPhased.toTM) c0
+        ((k - (c0.head : Nat)) + 1)).state).fst : Nat) = P1.numPhases + 1
+      ∧ ((TM.runConfig (M := (seq P1 selfLoopAppendOne).toPhased.toTM) c0
+          ((k - (c0.head : Nat)) + 1)).head : Nat) = k
+      ∧ ∀ p : Fin ((seq P1 selfLoopAppendOne).toPhased.toTM.tapeLength L),
+          (TM.runConfig (M := (seq P1 selfLoopAppendOne).toPhased.toTM) c0
+            ((k - (c0.head : Nat)) + 1)).tape p
+            = (if (p : Nat) = k then true else c0.tape p) := by
+  obtain ⟨hph, hhd, htp⟩ :=
+    selfLoopAppendOne_seqP2_runConfig_scan P1 c0 hphase (k - (c0.head : Nat)) (by omega)
+      (fun p hp1 hp2 => hones p hp1 (by omega))
+  rw [TM.runConfig_succ]
+  set c := TM.runConfig (M := (seq P1 selfLoopAppendOne).toPhased.toTM) c0 (k - (c0.head : Nat))
+    with hc
+  have hhdk : (c.head : Nat) = k := by rw [hhd]; omega
+  have hhead_eq : c.head = ⟨k, by rw [← hhdk]; exact c.head.isLt⟩ := Fin.ext hhdk
+  have hbit : c.tape c.head = false := by rw [htp]; exact hterm c.head hhdk
+  refine ⟨?_, ?_, ?_⟩
+  · exact selfLoopAppendOne_seqP2_stepConfig_stop_phase P1 c
+      (i := c.state.fst) (s := c.state.snd) hph rfl hbit
+  · rw [selfLoopAppendOne_seqP2_stepConfig_stop_head P1 c
+      (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+    exact hhdk
+  · rw [selfLoopAppendOne_seqP2_stepConfig_stop_tape P1 c
+      (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+    intro p
+    by_cases hp : p = c.head
+    · subst hp
+      rw [Configuration.write_self, if_pos hhdk]
+    · rw [Configuration.write_other c hp true, congrFun htp p]
+      have hpc : (p : Nat) ≠ k := fun h => hp (by rw [hhead_eq]; exact Fin.ext h)
+      rw [if_neg hpc]
 
 end ContractExpansion
 end Frontier

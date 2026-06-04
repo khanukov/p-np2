@@ -1064,9 +1064,23 @@ Element 4 (`selfLoopScanLeftOne`, chain-depth 4) re-derivation ✅ — `selfLoop
 terminator-locating run lemmas on `seq P1 (seq Q (seq Q2 (seq selfLoopScanLeftOne R)))`, generic in
 `P1`/`Q`/`Q2`/`R`); the depth-4 navigation supplies the middle `¬(Q.numPhases + Q2.numPhases <
 Q.numPhases)` fact to `simp` (depth 3 closed via `lt_self_iff_false` alone), confirming the self-loop
-nesting scales past depth 2.  Remaining per-element re-derivations: `stepLeftOnce` (depth 5),
-`selfLoopAppendLeftOne` (depth 6), `selfLoopScanRightOne` (depth 7) — each a mechanical mirror at one
-further depth — then the final assembly brick.
+nesting scales past depth 2.
+
+**All seven per-element re-derivations are now complete ✅** (element 1 = the outermost P1, handled by
+the generic single-step `seq_stepConfig_P1_*` lemmas, needs no bundled lemma):
+* element 5 — `stepLeftOnce` at depth 5: `stepLeftOnce_seqNested4_*` (`TreeMCSPStepLeftProgram.lean`);
+* element 6 — `selfLoopAppendLeftOne` at depth 6: `selfLoopAppendLeftOne_seqNested5_*`
+  (`TreeMCSPUnaryAppendLeftProgram.lean`);
+* element 7 — `selfLoopScanRightOne` at depth 7: `selfLoopScanRightOne_seqNested6_*`
+  (`TreeMCSPScanRightOneProgram.lean`).
+
+For depth ≥ 5 the navigation supplies the successive middle subtraction facts `hsubᵢ : (a + b + …) − a =
+…` explicitly (since `Nat.add_sub_cancel_left` only matches the immediate `a + m − a` shape) alongside
+the non-self comparison negations.  **Remaining for γ: the final assembly brick** — define
+`binToUnaryBody := seqList [stepRightOnce, selfLoopDecrement, stepLeftOnce, selfLoopScanLeftOne,
+stepLeftOnce, selfLoopAppendLeftOne, selfLoopScanRightOne]` and compose its one-pass run behaviour from
+HOME via `seqList_run_seven` + the seven per-element segment lemmas above (head/tape windows tracked
+against the U-left layout), giving `counterValue B − 1`, `|U| + 1`, head back at HOME.
 
 **Then:** δ (`bZeroTest` — a `gammaSelfLoopScan` over `B`), ε (`loopUntilSink binToUnaryBody` — the
 combinator and `loopUntilSink_reachesSink` already exist), ζ (bridge `|U| = value(B) = (decodeFin …).val`).

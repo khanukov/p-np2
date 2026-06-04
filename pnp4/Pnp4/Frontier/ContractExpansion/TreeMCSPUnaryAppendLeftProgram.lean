@@ -375,6 +375,250 @@ theorem selfLoopAppendLeftOne_seqP2_runConfig_append (P1 : ConstStatePhasedProgr
       have hpc : (p : Nat) ≠ k := fun h => hp (by rw [hhead_eq]; exact Fin.ext h)
       rw [if_neg hpc]
 
+/-! ### Depth-6 composition lift: leftward unary append as element 6 (`seqNested5`)
+
+The *sixth* element of the flattened binary→unary loop body is `selfLoopAppendLeftOne`, at chain-depth 6
+(`seq P1 (seq Q (seq Q2 (seq Q3 (seq Q4 (seq selfLoopAppendLeftOne R)))))`).  The navigation peels five
+`seq` levels; the successive middle subtractions and the non-self comparison negations are supplied to
+`simp` as explicit `hcᵢ` / `hsubᵢ` facts. -/
+
+private abbrev appM6 (P1 Q Q2 Q3 Q4 R : ConstStatePhasedProgram Unit) :=
+  (seq P1 (seq Q (seq Q2 (seq Q3 (seq Q4 (seq selfLoopAppendLeftOne R)))))).toPhased.toTM
+
+/-- Depth-6 scan step (bit `1`): the phase stays at `P1.numPhases + Q + Q2 + Q3 + Q4`. -/
+theorem selfLoopAppendLeftOne_seqNested5_stepConfig_scan_phase
+    (P1 Q Q2 Q3 Q4 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := appM6 P1 Q Q2 Q3 Q4 R) L)
+    {i : Fin (seq P1 (seq Q (seq Q2 (seq Q3 (seq Q4 (seq selfLoopAppendLeftOne R)))))).numPhases}
+    {s : Unit}
+    (hi : i.val = P1.numPhases + Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases)
+    (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = true) :
+    ((TM.stepConfig (M := appM6 P1 Q Q2 Q3 Q4 R) c).state).fst.val
+      = P1.numPhases + Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases := by
+  have hsub : (i.val : Nat) - P1.numPhases
+      = Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases := by omega
+  have hc1 : ¬ (Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases < Q.numPhases) := by omega
+  have hc2 : ¬ (Q2.numPhases + Q3.numPhases + Q4.numPhases < Q2.numPhases) := by omega
+  have hc3 : ¬ (Q3.numPhases + Q4.numPhases < Q3.numPhases) := by omega
+  have hsub1 : Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases - Q.numPhases
+      = Q2.numPhases + Q3.numPhases + Q4.numPhases := by omega
+  have hsub2 : Q2.numPhases + Q3.numPhases + Q4.numPhases - Q2.numPhases
+      = Q3.numPhases + Q4.numPhases := by omega
+  have hsub3 : Q3.numPhases + Q4.numPhases - Q3.numPhases = Q4.numPhases := by omega
+  rw [seq_stepConfig_P2_phase P1 (seq Q (seq Q2 (seq Q3 (seq Q4 (seq selfLoopAppendLeftOne R))))) c
+      (h2 := by omega)
+      (hlt := by simp only [seq_numPhases, selfLoopAppendLeftOne_numPhases]; omega) hstate]
+  simp [seq, selfLoopAppendLeftOne, hsub, hc1, hc2, hc3, hsub1, hsub2, hsub3, hbit]
+  omega
+
+/-- Depth-6 scan step (bit `1`): the head moves left. -/
+theorem selfLoopAppendLeftOne_seqNested5_stepConfig_scan_head
+    (P1 Q Q2 Q3 Q4 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := appM6 P1 Q Q2 Q3 Q4 R) L)
+    {i : Fin (seq P1 (seq Q (seq Q2 (seq Q3 (seq Q4 (seq selfLoopAppendLeftOne R)))))).numPhases}
+    {s : Unit}
+    (hi : i.val = P1.numPhases + Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases)
+    (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = true) :
+    (TM.stepConfig (M := appM6 P1 Q Q2 Q3 Q4 R) c).head = Configuration.moveHead (c := c) Move.left := by
+  have hsub : (i.val : Nat) - P1.numPhases
+      = Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases := by omega
+  have hc1 : ¬ (Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases < Q.numPhases) := by omega
+  have hc2 : ¬ (Q2.numPhases + Q3.numPhases + Q4.numPhases < Q2.numPhases) := by omega
+  have hc3 : ¬ (Q3.numPhases + Q4.numPhases < Q3.numPhases) := by omega
+  have hsub1 : Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases - Q.numPhases
+      = Q2.numPhases + Q3.numPhases + Q4.numPhases := by omega
+  have hsub2 : Q2.numPhases + Q3.numPhases + Q4.numPhases - Q2.numPhases
+      = Q3.numPhases + Q4.numPhases := by omega
+  have hsub3 : Q3.numPhases + Q4.numPhases - Q3.numPhases = Q4.numPhases := by omega
+  rw [seq_stepConfig_P2_head P1 (seq Q (seq Q2 (seq Q3 (seq Q4 (seq selfLoopAppendLeftOne R))))) c
+      (h2 := by omega)
+      (hlt := by simp only [seq_numPhases, selfLoopAppendLeftOne_numPhases]; omega) hstate]
+  simp [seq, selfLoopAppendLeftOne, hsub, hc1, hc2, hc3, hsub1, hsub2, hsub3, hbit]
+
+/-- Depth-6 scan step (bit `1`): the tape is unchanged. -/
+theorem selfLoopAppendLeftOne_seqNested5_stepConfig_scan_tape
+    (P1 Q Q2 Q3 Q4 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := appM6 P1 Q Q2 Q3 Q4 R) L)
+    {i : Fin (seq P1 (seq Q (seq Q2 (seq Q3 (seq Q4 (seq selfLoopAppendLeftOne R)))))).numPhases}
+    {s : Unit}
+    (hi : i.val = P1.numPhases + Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases)
+    (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = true) :
+    (TM.stepConfig (M := appM6 P1 Q Q2 Q3 Q4 R) c).tape = c.tape := by
+  have hsub : (i.val : Nat) - P1.numPhases
+      = Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases := by omega
+  have hc1 : ¬ (Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases < Q.numPhases) := by omega
+  have hc2 : ¬ (Q2.numPhases + Q3.numPhases + Q4.numPhases < Q2.numPhases) := by omega
+  have hc3 : ¬ (Q3.numPhases + Q4.numPhases < Q3.numPhases) := by omega
+  have hsub1 : Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases - Q.numPhases
+      = Q2.numPhases + Q3.numPhases + Q4.numPhases := by omega
+  have hsub2 : Q2.numPhases + Q3.numPhases + Q4.numPhases - Q2.numPhases
+      = Q3.numPhases + Q4.numPhases := by omega
+  have hsub3 : Q3.numPhases + Q4.numPhases - Q3.numPhases = Q4.numPhases := by omega
+  have hwrite : (TM.stepConfig (M := appM6 P1 Q Q2 Q3 Q4 R) c).tape = c.write c.head true := by
+    rw [seq_stepConfig_P2_tape P1 (seq Q (seq Q2 (seq Q3 (seq Q4 (seq selfLoopAppendLeftOne R))))) c
+        (h2 := by omega)
+        (hlt := by simp only [seq_numPhases, selfLoopAppendLeftOne_numPhases]; omega) hstate]
+    simp [seq, selfLoopAppendLeftOne, hsub, hc1, hc2, hc3, hsub1, hsub2, hsub3, hbit]
+  rw [hwrite]
+  funext j
+  by_cases hj : j = c.head
+  · subst hj; simp [Configuration.write, hbit]
+  · simp [Configuration.write, hj]
+
+/-- Depth-6 leftward scan invariant from an arbitrary start `c0` (phase
+`P1 + Q + Q2 + Q3 + Q4`): the head retreats over a `1`-run, phase/tape preserved.  Depth-6 analogue of
+`selfLoopAppendLeftOne_seqP2_runConfig_scan`. -/
+theorem selfLoopAppendLeftOne_seqNested5_runConfig_scan
+    (P1 Q Q2 Q3 Q4 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c0 : Configuration (M := appM6 P1 Q Q2 Q3 Q4 R) L)
+    (hphase : (c0.state.fst : Nat)
+      = P1.numPhases + Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases) :
+    ∀ j : Nat, j ≤ (c0.head : Nat) →
+      (∀ p : Fin ((appM6 P1 Q Q2 Q3 Q4 R).tapeLength L),
+        (c0.head : Nat) - j < (p : Nat) → (p : Nat) ≤ (c0.head : Nat) → c0.tape p = true) →
+      (((TM.runConfig (M := appM6 P1 Q Q2 Q3 Q4 R) c0 j).state).fst : Nat)
+          = P1.numPhases + Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases
+      ∧ ((TM.runConfig (M := appM6 P1 Q Q2 Q3 Q4 R) c0 j).head : Nat) = (c0.head : Nat) - j
+      ∧ (TM.runConfig (M := appM6 P1 Q Q2 Q3 Q4 R) c0 j).tape = c0.tape := by
+  intro j
+  induction j with
+  | zero => intro _ _; exact ⟨hphase, by simp, rfl⟩
+  | succ j ih =>
+      intro hj h1
+      obtain ⟨hph, hhd, htp⟩ := ih (by omega) (fun p hp1 hp2 => h1 p (by omega) hp2)
+      rw [TM.runConfig_succ]
+      set c := TM.runConfig (M := appM6 P1 Q Q2 Q3 Q4 R) c0 j with hc
+      have hbit : c.tape c.head = true := by
+        rw [htp]; exact h1 c.head (by rw [hhd]; omega) (by rw [hhd]; omega)
+      have hheadne : ¬ (c.head : Nat) = 0 := by rw [hhd]; omega
+      refine ⟨?_, ?_, ?_⟩
+      · exact selfLoopAppendLeftOne_seqNested5_stepConfig_scan_phase P1 Q Q2 Q3 Q4 R c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit
+      · rw [selfLoopAppendLeftOne_seqNested5_stepConfig_scan_head P1 Q Q2 Q3 Q4 R c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+        simp only [Configuration.moveHead, dif_neg hheadne]
+        rw [hhd]; omega
+      · rw [selfLoopAppendLeftOne_seqNested5_stepConfig_scan_tape P1 Q Q2 Q3 Q4 R c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit, htp]
+
+/-- Depth-6 append step (bit `0`): jump to the shifted done phase. -/
+theorem selfLoopAppendLeftOne_seqNested5_stepConfig_stop_phase
+    (P1 Q Q2 Q3 Q4 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := appM6 P1 Q Q2 Q3 Q4 R) L)
+    {i : Fin (seq P1 (seq Q (seq Q2 (seq Q3 (seq Q4 (seq selfLoopAppendLeftOne R)))))).numPhases}
+    {s : Unit}
+    (hi : i.val = P1.numPhases + Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases)
+    (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = false) :
+    ((TM.stepConfig (M := appM6 P1 Q Q2 Q3 Q4 R) c).state).fst.val
+      = P1.numPhases + Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + 1 := by
+  have hsub : (i.val : Nat) - P1.numPhases
+      = Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases := by omega
+  have hc1 : ¬ (Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases < Q.numPhases) := by omega
+  have hc2 : ¬ (Q2.numPhases + Q3.numPhases + Q4.numPhases < Q2.numPhases) := by omega
+  have hc3 : ¬ (Q3.numPhases + Q4.numPhases < Q3.numPhases) := by omega
+  have hsub1 : Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases - Q.numPhases
+      = Q2.numPhases + Q3.numPhases + Q4.numPhases := by omega
+  have hsub2 : Q2.numPhases + Q3.numPhases + Q4.numPhases - Q2.numPhases
+      = Q3.numPhases + Q4.numPhases := by omega
+  have hsub3 : Q3.numPhases + Q4.numPhases - Q3.numPhases = Q4.numPhases := by omega
+  rw [seq_stepConfig_P2_phase P1 (seq Q (seq Q2 (seq Q3 (seq Q4 (seq selfLoopAppendLeftOne R))))) c
+      (h2 := by omega)
+      (hlt := by simp only [seq_numPhases, selfLoopAppendLeftOne_numPhases]; omega) hstate]
+  simp [seq, selfLoopAppendLeftOne, hsub, hc1, hc2, hc3, hsub1, hsub2, hsub3, hbit]
+  omega
+
+/-- Depth-6 append step (bit `0`): the head stays put. -/
+theorem selfLoopAppendLeftOne_seqNested5_stepConfig_stop_head
+    (P1 Q Q2 Q3 Q4 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := appM6 P1 Q Q2 Q3 Q4 R) L)
+    {i : Fin (seq P1 (seq Q (seq Q2 (seq Q3 (seq Q4 (seq selfLoopAppendLeftOne R)))))).numPhases}
+    {s : Unit}
+    (hi : i.val = P1.numPhases + Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases)
+    (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = false) :
+    (TM.stepConfig (M := appM6 P1 Q Q2 Q3 Q4 R) c).head = c.head := by
+  have hsub : (i.val : Nat) - P1.numPhases
+      = Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases := by omega
+  have hc1 : ¬ (Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases < Q.numPhases) := by omega
+  have hc2 : ¬ (Q2.numPhases + Q3.numPhases + Q4.numPhases < Q2.numPhases) := by omega
+  have hc3 : ¬ (Q3.numPhases + Q4.numPhases < Q3.numPhases) := by omega
+  have hsub1 : Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases - Q.numPhases
+      = Q2.numPhases + Q3.numPhases + Q4.numPhases := by omega
+  have hsub2 : Q2.numPhases + Q3.numPhases + Q4.numPhases - Q2.numPhases
+      = Q3.numPhases + Q4.numPhases := by omega
+  have hsub3 : Q3.numPhases + Q4.numPhases - Q3.numPhases = Q4.numPhases := by omega
+  rw [seq_stepConfig_P2_head P1 (seq Q (seq Q2 (seq Q3 (seq Q4 (seq selfLoopAppendLeftOne R))))) c
+      (h2 := by omega)
+      (hlt := by simp only [seq_numPhases, selfLoopAppendLeftOne_numPhases]; omega) hstate]
+  simp [seq, selfLoopAppendLeftOne, hsub, hc1, hc2, hc3, hsub1, hsub2, hsub3, hbit,
+    Configuration.moveHead]
+
+/-- Depth-6 append step (bit `0`): the terminating `0` is overwritten with `1`. -/
+theorem selfLoopAppendLeftOne_seqNested5_stepConfig_stop_tape
+    (P1 Q Q2 Q3 Q4 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := appM6 P1 Q Q2 Q3 Q4 R) L)
+    {i : Fin (seq P1 (seq Q (seq Q2 (seq Q3 (seq Q4 (seq selfLoopAppendLeftOne R)))))).numPhases}
+    {s : Unit}
+    (hi : i.val = P1.numPhases + Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases)
+    (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = false) :
+    (TM.stepConfig (M := appM6 P1 Q Q2 Q3 Q4 R) c).tape = c.write c.head true := by
+  have hsub : (i.val : Nat) - P1.numPhases
+      = Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases := by omega
+  have hc1 : ¬ (Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases < Q.numPhases) := by omega
+  have hc2 : ¬ (Q2.numPhases + Q3.numPhases + Q4.numPhases < Q2.numPhases) := by omega
+  have hc3 : ¬ (Q3.numPhases + Q4.numPhases < Q3.numPhases) := by omega
+  have hsub1 : Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases - Q.numPhases
+      = Q2.numPhases + Q3.numPhases + Q4.numPhases := by omega
+  have hsub2 : Q2.numPhases + Q3.numPhases + Q4.numPhases - Q2.numPhases
+      = Q3.numPhases + Q4.numPhases := by omega
+  have hsub3 : Q3.numPhases + Q4.numPhases - Q3.numPhases = Q4.numPhases := by omega
+  rw [seq_stepConfig_P2_tape P1 (seq Q (seq Q2 (seq Q3 (seq Q4 (seq selfLoopAppendLeftOne R))))) c
+      (h2 := by omega)
+      (hlt := by simp only [seq_numPhases, selfLoopAppendLeftOne_numPhases]; omega) hstate]
+  simp [seq, selfLoopAppendLeftOne, hsub, hc1, hc2, hc3, hsub1, hsub2, hsub3, hbit]
+
+/-- Depth-6 leftward append run from `c0` (phase `P1 + Q + Q2 + Q3 + Q4`): if `(k, c0.head]` are all `1`
+and cell `k` is `0` (`k < c0.head`), then after `(c0.head − k) + 1` steps the head rests on `k` at the
+shifted done phase, cell `k` set to `1`, everything else unchanged.  Depth-6 analogue of
+`selfLoopAppendLeftOne_seqP2_runConfig_append`. -/
+theorem selfLoopAppendLeftOne_seqNested5_runConfig_append
+    (P1 Q Q2 Q3 Q4 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c0 : Configuration (M := appM6 P1 Q Q2 Q3 Q4 R) L)
+    (hphase : (c0.state.fst : Nat)
+      = P1.numPhases + Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases)
+    (k : Nat) (hk : k < (c0.head : Nat))
+    (hones : ∀ p : Fin ((appM6 P1 Q Q2 Q3 Q4 R).tapeLength L),
+      k < (p : Nat) → (p : Nat) ≤ (c0.head : Nat) → c0.tape p = true)
+    (hterm : ∀ p : Fin ((appM6 P1 Q Q2 Q3 Q4 R).tapeLength L), (p : Nat) = k → c0.tape p = false) :
+    (((TM.runConfig (M := appM6 P1 Q Q2 Q3 Q4 R) c0 (((c0.head : Nat) - k) + 1)).state).fst : Nat)
+        = P1.numPhases + Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + 1
+      ∧ ((TM.runConfig (M := appM6 P1 Q Q2 Q3 Q4 R) c0 (((c0.head : Nat) - k) + 1)).head : Nat) = k
+      ∧ ∀ p : Fin ((appM6 P1 Q Q2 Q3 Q4 R).tapeLength L),
+          (TM.runConfig (M := appM6 P1 Q Q2 Q3 Q4 R) c0 (((c0.head : Nat) - k) + 1)).tape p
+            = (if (p : Nat) = k then true else c0.tape p) := by
+  obtain ⟨hph, hhd, htp⟩ :=
+    selfLoopAppendLeftOne_seqNested5_runConfig_scan P1 Q Q2 Q3 Q4 R c0 hphase ((c0.head : Nat) - k)
+      (by omega) (fun p hp1 hp2 => hones p (by omega) hp2)
+  rw [TM.runConfig_succ]
+  set c := TM.runConfig (M := appM6 P1 Q Q2 Q3 Q4 R) c0 ((c0.head : Nat) - k) with hc
+  have hhdk : (c.head : Nat) = k := by rw [hhd]; omega
+  have hhead_eq : c.head = ⟨k, by rw [← hhdk]; exact c.head.isLt⟩ := Fin.ext hhdk
+  have hbit : c.tape c.head = false := by rw [htp]; exact hterm c.head hhdk
+  refine ⟨?_, ?_, ?_⟩
+  · exact selfLoopAppendLeftOne_seqNested5_stepConfig_stop_phase P1 Q Q2 Q3 Q4 R c
+      (i := c.state.fst) (s := c.state.snd) hph rfl hbit
+  · rw [selfLoopAppendLeftOne_seqNested5_stepConfig_stop_head P1 Q Q2 Q3 Q4 R c
+      (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+    exact hhdk
+  · rw [selfLoopAppendLeftOne_seqNested5_stepConfig_stop_tape P1 Q Q2 Q3 Q4 R c
+      (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+    intro p
+    by_cases hp : p = c.head
+    · subst hp
+      rw [Configuration.write_self, if_pos hhdk]
+    · rw [Configuration.write_other c hp true, congrFun htp p]
+      have hpc : (p : Nat) ≠ k := fun h => hp (by rw [hhead_eq]; exact Fin.ext h)
+      rw [if_neg hpc]
+
 end ContractExpansion
 end Frontier
 end Pnp4

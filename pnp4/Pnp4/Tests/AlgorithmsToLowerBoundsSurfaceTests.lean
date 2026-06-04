@@ -3774,6 +3774,12 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- D2t-3c-γ: leftward scan-over-1s at chain-depth 4 (element 4 of the flattened binToUnaryBody chain).
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqNested3_runConfig_scanning
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqNested3_runConfig_terminator
+-- D2t-3c-γ: elements 5/6/7 of the flattened binToUnaryBody chain (depths 5/6/7).
+#check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested4_runConfig_one
+#check @Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqNested5_runConfig_scan
+#check @Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqNested5_runConfig_append
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_seqNested6_runConfig_scanning
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_seqNested6_runConfig_terminator
 -- Rightward scan-over-`1`s (the genuine fourth scan as a pure traversal; marker-free unary-distance
 -- rightward seek for the on-tape interpreter, §6k).
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne

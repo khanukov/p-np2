@@ -394,6 +394,271 @@ theorem selfLoopScanRightOne_seqP2_runConfig_terminator (P1 : ConstStatePhasedPr
   · rw [selfLoopScanRightOne_seqP2_stepConfig_stop_zero_tape P1 c
       (i := c.state.fst) (s := c.state.snd) hph rfl hbit, htp]
 
+/-! ### Depth-7 composition lift: rightward scan-over-`1`s as element 7 (`seqNested6`)
+
+The *seventh* (last) element of the flattened binary→unary loop body is `selfLoopScanRightOne`, at
+chain-depth 7 (`seq P1 (seq Q (seq Q2 (seq Q3 (seq Q4 (seq Q5 (seq selfLoopScanRightOne R))))))`).  The
+navigation peels six `seq` levels, supplying the four non-self comparison negations `hcᵢ` and the four
+middle subtraction facts `hsubᵢ` to `simp`. -/
+
+private abbrev scanM7 (P1 Q Q2 Q3 Q4 Q5 R : ConstStatePhasedProgram Unit) :=
+  (seq P1 (seq Q (seq Q2 (seq Q3 (seq Q4 (seq Q5 (seq selfLoopScanRightOne R))))))).toPhased.toTM
+
+/-- Depth-7 scan-over-`1`s step (bit `1`): the phase stays. -/
+theorem selfLoopScanRightOne_seqNested6_stepConfig_scan_one_phase
+    (P1 Q Q2 Q3 Q4 Q5 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := scanM7 P1 Q Q2 Q3 Q4 Q5 R) L)
+    {i : Fin (seq P1 (seq Q (seq Q2 (seq Q3 (seq Q4 (seq Q5 (seq selfLoopScanRightOne R))))))).numPhases}
+    {s : Unit}
+    (hi : i.val = P1.numPhases + Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases)
+    (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = true) :
+    ((TM.stepConfig (M := scanM7 P1 Q Q2 Q3 Q4 Q5 R) c).state).fst.val
+      = P1.numPhases + Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases := by
+  have hsub : (i.val : Nat) - P1.numPhases
+      = Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases := by omega
+  have hc1 : ¬ (Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases < Q.numPhases) := by
+    omega
+  have hc2 : ¬ (Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases < Q2.numPhases) := by omega
+  have hc3 : ¬ (Q3.numPhases + Q4.numPhases + Q5.numPhases < Q3.numPhases) := by omega
+  have hc4 : ¬ (Q4.numPhases + Q5.numPhases < Q4.numPhases) := by omega
+  have hsub1 : Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases - Q.numPhases
+      = Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases := by omega
+  have hsub2 : Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases - Q2.numPhases
+      = Q3.numPhases + Q4.numPhases + Q5.numPhases := by omega
+  have hsub3 : Q3.numPhases + Q4.numPhases + Q5.numPhases - Q3.numPhases
+      = Q4.numPhases + Q5.numPhases := by omega
+  have hsub4 : Q4.numPhases + Q5.numPhases - Q4.numPhases = Q5.numPhases := by omega
+  rw [seq_stepConfig_P2_phase P1 (seq Q (seq Q2 (seq Q3 (seq Q4 (seq Q5 (seq selfLoopScanRightOne R)))))) c
+      (h2 := by omega)
+      (hlt := by simp only [seq_numPhases, selfLoopScanRightOne_numPhases]; omega) hstate]
+  simp [seq, selfLoopScanRightOne, hsub, hc1, hc2, hc3, hc4, hsub1, hsub2, hsub3, hsub4, hbit]
+  omega
+
+/-- Depth-7 scan-over-`1`s step (bit `1`): the head moves right. -/
+theorem selfLoopScanRightOne_seqNested6_stepConfig_scan_one_head
+    (P1 Q Q2 Q3 Q4 Q5 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := scanM7 P1 Q Q2 Q3 Q4 Q5 R) L)
+    {i : Fin (seq P1 (seq Q (seq Q2 (seq Q3 (seq Q4 (seq Q5 (seq selfLoopScanRightOne R))))))).numPhases}
+    {s : Unit}
+    (hi : i.val = P1.numPhases + Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases)
+    (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = true) :
+    (TM.stepConfig (M := scanM7 P1 Q Q2 Q3 Q4 Q5 R) c).head
+      = Configuration.moveHead (c := c) Move.right := by
+  have hsub : (i.val : Nat) - P1.numPhases
+      = Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases := by omega
+  have hc1 : ¬ (Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases < Q.numPhases) := by
+    omega
+  have hc2 : ¬ (Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases < Q2.numPhases) := by omega
+  have hc3 : ¬ (Q3.numPhases + Q4.numPhases + Q5.numPhases < Q3.numPhases) := by omega
+  have hc4 : ¬ (Q4.numPhases + Q5.numPhases < Q4.numPhases) := by omega
+  have hsub1 : Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases - Q.numPhases
+      = Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases := by omega
+  have hsub2 : Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases - Q2.numPhases
+      = Q3.numPhases + Q4.numPhases + Q5.numPhases := by omega
+  have hsub3 : Q3.numPhases + Q4.numPhases + Q5.numPhases - Q3.numPhases
+      = Q4.numPhases + Q5.numPhases := by omega
+  have hsub4 : Q4.numPhases + Q5.numPhases - Q4.numPhases = Q5.numPhases := by omega
+  rw [seq_stepConfig_P2_head P1 (seq Q (seq Q2 (seq Q3 (seq Q4 (seq Q5 (seq selfLoopScanRightOne R)))))) c
+      (h2 := by omega)
+      (hlt := by simp only [seq_numPhases, selfLoopScanRightOne_numPhases]; omega) hstate]
+  simp [seq, selfLoopScanRightOne, hsub, hc1, hc2, hc3, hc4, hsub1, hsub2, hsub3, hsub4, hbit]
+
+/-- Depth-7 scan-over-`1`s step (bit `1`): the tape is unchanged. -/
+theorem selfLoopScanRightOne_seqNested6_stepConfig_scan_one_tape
+    (P1 Q Q2 Q3 Q4 Q5 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := scanM7 P1 Q Q2 Q3 Q4 Q5 R) L)
+    {i : Fin (seq P1 (seq Q (seq Q2 (seq Q3 (seq Q4 (seq Q5 (seq selfLoopScanRightOne R))))))).numPhases}
+    {s : Unit}
+    (hi : i.val = P1.numPhases + Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases)
+    (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = true) :
+    (TM.stepConfig (M := scanM7 P1 Q Q2 Q3 Q4 Q5 R) c).tape = c.tape := by
+  have hsub : (i.val : Nat) - P1.numPhases
+      = Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases := by omega
+  have hc1 : ¬ (Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases < Q.numPhases) := by
+    omega
+  have hc2 : ¬ (Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases < Q2.numPhases) := by omega
+  have hc3 : ¬ (Q3.numPhases + Q4.numPhases + Q5.numPhases < Q3.numPhases) := by omega
+  have hc4 : ¬ (Q4.numPhases + Q5.numPhases < Q4.numPhases) := by omega
+  have hsub1 : Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases - Q.numPhases
+      = Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases := by omega
+  have hsub2 : Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases - Q2.numPhases
+      = Q3.numPhases + Q4.numPhases + Q5.numPhases := by omega
+  have hsub3 : Q3.numPhases + Q4.numPhases + Q5.numPhases - Q3.numPhases
+      = Q4.numPhases + Q5.numPhases := by omega
+  have hsub4 : Q4.numPhases + Q5.numPhases - Q4.numPhases = Q5.numPhases := by omega
+  have hwrite : (TM.stepConfig (M := scanM7 P1 Q Q2 Q3 Q4 Q5 R) c).tape = c.write c.head true := by
+    rw [seq_stepConfig_P2_tape P1 (seq Q (seq Q2 (seq Q3 (seq Q4 (seq Q5 (seq selfLoopScanRightOne R)))))) c
+        (h2 := by omega)
+        (hlt := by simp only [seq_numPhases, selfLoopScanRightOne_numPhases]; omega) hstate]
+    simp [seq, selfLoopScanRightOne, hsub, hc1, hc2, hc3, hc4, hsub1, hsub2, hsub3, hsub4, hbit]
+  rw [hwrite]
+  funext j
+  by_cases hj : j = c.head
+  · subst hj; simp [Configuration.write, hbit]
+  · simp [Configuration.write, hj]
+
+/-- Depth-7 rightward scanning invariant from an arbitrary start `c0` (phase
+`P1 + Q + Q2 + Q3 + Q4 + Q5`): the head advances over a `1`-run, phase/tape preserved.  Depth-7 analogue
+of `selfLoopScanRightOne_seqP2_runConfig_scanning`. -/
+theorem selfLoopScanRightOne_seqNested6_runConfig_scanning
+    (P1 Q Q2 Q3 Q4 Q5 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c0 : Configuration (M := scanM7 P1 Q Q2 Q3 Q4 Q5 R) L)
+    (hphase : (c0.state.fst : Nat)
+      = P1.numPhases + Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases) :
+    ∀ k : Nat, (c0.head : Nat) + k < (scanM7 P1 Q Q2 Q3 Q4 Q5 R).tapeLength L →
+      (∀ p : Fin ((scanM7 P1 Q Q2 Q3 Q4 Q5 R).tapeLength L),
+        (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + k → c0.tape p = true) →
+      (((TM.runConfig (M := scanM7 P1 Q Q2 Q3 Q4 Q5 R) c0 k).state).fst : Nat)
+          = P1.numPhases + Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases
+      ∧ ((TM.runConfig (M := scanM7 P1 Q Q2 Q3 Q4 Q5 R) c0 k).head : Nat) = (c0.head : Nat) + k
+      ∧ (TM.runConfig (M := scanM7 P1 Q Q2 Q3 Q4 Q5 R) c0 k).tape = c0.tape := by
+  intro k
+  induction k with
+  | zero => intro _ _; exact ⟨hphase, by simp, rfl⟩
+  | succ k ih =>
+      intro hk h1
+      obtain ⟨hph, hhd, htp⟩ := ih (by omega) (fun p hp1 hp2 => h1 p hp1 (by omega))
+      rw [TM.runConfig_succ]
+      set c := TM.runConfig (M := scanM7 P1 Q Q2 Q3 Q4 Q5 R) c0 k with hc
+      have hbit : c.tape c.head = true := by
+        rw [htp]; exact h1 c.head (by rw [hhd]; omega) (by rw [hhd]; omega)
+      have hbnd : (c.head : Nat) + 1 < (scanM7 P1 Q Q2 Q3 Q4 Q5 R).tapeLength L := by rw [hhd]; omega
+      refine ⟨?_, ?_, ?_⟩
+      · exact selfLoopScanRightOne_seqNested6_stepConfig_scan_one_phase P1 Q Q2 Q3 Q4 Q5 R c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit
+      · rw [selfLoopScanRightOne_seqNested6_stepConfig_scan_one_head P1 Q Q2 Q3 Q4 Q5 R c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+        simp only [Configuration.moveHead, dif_pos hbnd]
+        omega
+      · rw [selfLoopScanRightOne_seqNested6_stepConfig_scan_one_tape P1 Q Q2 Q3 Q4 Q5 R c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit, htp]
+
+/-- Depth-7 terminator step (bit `0`): jump to the shifted done phase. -/
+theorem selfLoopScanRightOne_seqNested6_stepConfig_stop_zero_phase
+    (P1 Q Q2 Q3 Q4 Q5 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := scanM7 P1 Q Q2 Q3 Q4 Q5 R) L)
+    {i : Fin (seq P1 (seq Q (seq Q2 (seq Q3 (seq Q4 (seq Q5 (seq selfLoopScanRightOne R))))))).numPhases}
+    {s : Unit}
+    (hi : i.val = P1.numPhases + Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases)
+    (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = false) :
+    ((TM.stepConfig (M := scanM7 P1 Q Q2 Q3 Q4 Q5 R) c).state).fst.val
+      = P1.numPhases + Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases + 1 := by
+  have hsub : (i.val : Nat) - P1.numPhases
+      = Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases := by omega
+  have hc1 : ¬ (Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases < Q.numPhases) := by
+    omega
+  have hc2 : ¬ (Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases < Q2.numPhases) := by omega
+  have hc3 : ¬ (Q3.numPhases + Q4.numPhases + Q5.numPhases < Q3.numPhases) := by omega
+  have hc4 : ¬ (Q4.numPhases + Q5.numPhases < Q4.numPhases) := by omega
+  have hsub1 : Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases - Q.numPhases
+      = Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases := by omega
+  have hsub2 : Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases - Q2.numPhases
+      = Q3.numPhases + Q4.numPhases + Q5.numPhases := by omega
+  have hsub3 : Q3.numPhases + Q4.numPhases + Q5.numPhases - Q3.numPhases
+      = Q4.numPhases + Q5.numPhases := by omega
+  have hsub4 : Q4.numPhases + Q5.numPhases - Q4.numPhases = Q5.numPhases := by omega
+  rw [seq_stepConfig_P2_phase P1 (seq Q (seq Q2 (seq Q3 (seq Q4 (seq Q5 (seq selfLoopScanRightOne R)))))) c
+      (h2 := by omega)
+      (hlt := by simp only [seq_numPhases, selfLoopScanRightOne_numPhases]; omega) hstate]
+  simp [seq, selfLoopScanRightOne, hsub, hc1, hc2, hc3, hc4, hsub1, hsub2, hsub3, hsub4, hbit]
+  omega
+
+/-- Depth-7 terminator step (bit `0`): the head stays put. -/
+theorem selfLoopScanRightOne_seqNested6_stepConfig_stop_zero_head
+    (P1 Q Q2 Q3 Q4 Q5 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := scanM7 P1 Q Q2 Q3 Q4 Q5 R) L)
+    {i : Fin (seq P1 (seq Q (seq Q2 (seq Q3 (seq Q4 (seq Q5 (seq selfLoopScanRightOne R))))))).numPhases}
+    {s : Unit}
+    (hi : i.val = P1.numPhases + Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases)
+    (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = false) :
+    (TM.stepConfig (M := scanM7 P1 Q Q2 Q3 Q4 Q5 R) c).head = c.head := by
+  have hsub : (i.val : Nat) - P1.numPhases
+      = Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases := by omega
+  have hc1 : ¬ (Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases < Q.numPhases) := by
+    omega
+  have hc2 : ¬ (Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases < Q2.numPhases) := by omega
+  have hc3 : ¬ (Q3.numPhases + Q4.numPhases + Q5.numPhases < Q3.numPhases) := by omega
+  have hc4 : ¬ (Q4.numPhases + Q5.numPhases < Q4.numPhases) := by omega
+  have hsub1 : Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases - Q.numPhases
+      = Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases := by omega
+  have hsub2 : Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases - Q2.numPhases
+      = Q3.numPhases + Q4.numPhases + Q5.numPhases := by omega
+  have hsub3 : Q3.numPhases + Q4.numPhases + Q5.numPhases - Q3.numPhases
+      = Q4.numPhases + Q5.numPhases := by omega
+  have hsub4 : Q4.numPhases + Q5.numPhases - Q4.numPhases = Q5.numPhases := by omega
+  rw [seq_stepConfig_P2_head P1 (seq Q (seq Q2 (seq Q3 (seq Q4 (seq Q5 (seq selfLoopScanRightOne R)))))) c
+      (h2 := by omega)
+      (hlt := by simp only [seq_numPhases, selfLoopScanRightOne_numPhases]; omega) hstate]
+  simp [seq, selfLoopScanRightOne, hsub, hc1, hc2, hc3, hc4, hsub1, hsub2, hsub3, hsub4, hbit,
+    Configuration.moveHead]
+
+/-- Depth-7 terminator step (bit `0`): the tape is unchanged. -/
+theorem selfLoopScanRightOne_seqNested6_stepConfig_stop_zero_tape
+    (P1 Q Q2 Q3 Q4 Q5 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := scanM7 P1 Q Q2 Q3 Q4 Q5 R) L)
+    {i : Fin (seq P1 (seq Q (seq Q2 (seq Q3 (seq Q4 (seq Q5 (seq selfLoopScanRightOne R))))))).numPhases}
+    {s : Unit}
+    (hi : i.val = P1.numPhases + Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases)
+    (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = false) :
+    (TM.stepConfig (M := scanM7 P1 Q Q2 Q3 Q4 Q5 R) c).tape = c.tape := by
+  have hsub : (i.val : Nat) - P1.numPhases
+      = Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases := by omega
+  have hc1 : ¬ (Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases < Q.numPhases) := by
+    omega
+  have hc2 : ¬ (Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases < Q2.numPhases) := by omega
+  have hc3 : ¬ (Q3.numPhases + Q4.numPhases + Q5.numPhases < Q3.numPhases) := by omega
+  have hc4 : ¬ (Q4.numPhases + Q5.numPhases < Q4.numPhases) := by omega
+  have hsub1 : Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases - Q.numPhases
+      = Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases := by omega
+  have hsub2 : Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases - Q2.numPhases
+      = Q3.numPhases + Q4.numPhases + Q5.numPhases := by omega
+  have hsub3 : Q3.numPhases + Q4.numPhases + Q5.numPhases - Q3.numPhases
+      = Q4.numPhases + Q5.numPhases := by omega
+  have hsub4 : Q4.numPhases + Q5.numPhases - Q4.numPhases = Q5.numPhases := by omega
+  have hwrite : (TM.stepConfig (M := scanM7 P1 Q Q2 Q3 Q4 Q5 R) c).tape = c.write c.head false := by
+    rw [seq_stepConfig_P2_tape P1 (seq Q (seq Q2 (seq Q3 (seq Q4 (seq Q5 (seq selfLoopScanRightOne R)))))) c
+        (h2 := by omega)
+        (hlt := by simp only [seq_numPhases, selfLoopScanRightOne_numPhases]; omega) hstate]
+    simp [seq, selfLoopScanRightOne, hsub, hc1, hc2, hc3, hc4, hsub1, hsub2, hsub3, hsub4, hbit]
+  rw [hwrite]
+  funext j
+  by_cases hj : j = c.head
+  · subst hj; simp [Configuration.write, hbit]
+  · simp [Configuration.write, hj]
+
+/-- Depth-7 rightward terminator-locating run from `c0` (phase `P1 + Q + Q2 + Q3 + Q4 + Q5`): if
+`[c0.head, k)` are all `1` and cell `k` is `0` (`c0.head ≤ k`, `k` in bounds), then after
+`(k − c0.head) + 1` steps the scan has stopped at the shifted done phase, the head rests on the marker
+`k`, and the tape is unchanged.  Depth-7 analogue of `selfLoopScanRightOne_seqP2_runConfig_terminator`. -/
+theorem selfLoopScanRightOne_seqNested6_runConfig_terminator
+    (P1 Q Q2 Q3 Q4 Q5 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c0 : Configuration (M := scanM7 P1 Q Q2 Q3 Q4 Q5 R) L)
+    (hphase : (c0.state.fst : Nat)
+      = P1.numPhases + Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases)
+    (k : Nat) (hk : (c0.head : Nat) ≤ k) (hkb : k < (scanM7 P1 Q Q2 Q3 Q4 Q5 R).tapeLength L)
+    (hones : ∀ p : Fin ((scanM7 P1 Q Q2 Q3 Q4 Q5 R).tapeLength L),
+      (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < k → c0.tape p = true)
+    (hterm : ∀ p : Fin ((scanM7 P1 Q Q2 Q3 Q4 Q5 R).tapeLength L), (p : Nat) = k → c0.tape p = false) :
+    (((TM.runConfig (M := scanM7 P1 Q Q2 Q3 Q4 Q5 R) c0 ((k - (c0.head : Nat)) + 1)).state).fst : Nat)
+        = P1.numPhases + Q.numPhases + Q2.numPhases + Q3.numPhases + Q4.numPhases + Q5.numPhases + 1
+      ∧ ((TM.runConfig (M := scanM7 P1 Q Q2 Q3 Q4 Q5 R) c0 ((k - (c0.head : Nat)) + 1)).head : Nat) = k
+      ∧ (TM.runConfig (M := scanM7 P1 Q Q2 Q3 Q4 Q5 R) c0 ((k - (c0.head : Nat)) + 1)).tape = c0.tape := by
+  obtain ⟨hph, hhd, htp⟩ :=
+    selfLoopScanRightOne_seqNested6_runConfig_scanning P1 Q Q2 Q3 Q4 Q5 R c0 hphase
+      (k - (c0.head : Nat)) (by omega) (fun p hp1 hp2 => hones p hp1 (by omega))
+  rw [TM.runConfig_succ]
+  set c := TM.runConfig (M := scanM7 P1 Q Q2 Q3 Q4 Q5 R) c0 (k - (c0.head : Nat)) with hc
+  have hhdk : (c.head : Nat) = k := by rw [hhd]; omega
+  have hbit : c.tape c.head = false := by rw [htp]; exact hterm c.head hhdk
+  refine ⟨?_, ?_, ?_⟩
+  · exact selfLoopScanRightOne_seqNested6_stepConfig_stop_zero_phase P1 Q Q2 Q3 Q4 Q5 R c
+      (i := c.state.fst) (s := c.state.snd) hph rfl hbit
+  · rw [selfLoopScanRightOne_seqNested6_stepConfig_stop_zero_head P1 Q Q2 Q3 Q4 Q5 R c
+      (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+    exact hhdk
+  · rw [selfLoopScanRightOne_seqNested6_stepConfig_stop_zero_tape P1 Q Q2 Q3 Q4 Q5 R c
+      (i := c.state.fst) (s := c.state.snd) hph rfl hbit, htp]
+
 end ContractExpansion
 end Frontier
 end Pnp4

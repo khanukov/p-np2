@@ -300,6 +300,103 @@ theorem stepLeftOnce_seqNested2_runConfig_one (P1 Q R : ConstStatePhasedProgram 
   · exact stepLeftOnce_seqNested2_stepConfig_tape P1 Q R c
       (i := c.state.fst) (s := c.state.snd) hphase rfl
 
+/-! ### Depth-5 composition lift: the single left step as element 5 (`seqNested4`)
+
+The *fifth* element of the flattened binary→unary loop body is again `stepLeftOnce`, at chain-depth 5
+(`seq P1 (seq Q (seq Q2 (seq Q3 (seq stepLeftOnce R))))`).  The navigation peels four `seq` levels;
+beyond depth 3 the successive middle subtractions `(a + b + …) − a` are supplied to `simp` as explicit
+`hsubᵢ` facts (`Nat.add_sub_cancel_left` only matches the immediate `a + m − a` shape) together with the
+non-self `¬(… < …)` comparison negations. -/
+
+/-- Depth-5 left step: advance to `P1.numPhases + Q.numPhases + Q2.numPhases + Q3.numPhases + 1`. -/
+theorem stepLeftOnce_seqNested4_stepConfig_phase (P1 Q Q2 Q3 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq P1 (seq Q (seq Q2 (seq Q3 (seq stepLeftOnce R))))).toPhased.toTM) L)
+    {i : Fin (seq P1 (seq Q (seq Q2 (seq Q3 (seq stepLeftOnce R))))).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases + Q.numPhases + Q2.numPhases + Q3.numPhases) (hstate : c.state = ⟨i, s⟩) :
+    ((TM.stepConfig (M := (seq P1 (seq Q (seq Q2 (seq Q3 (seq stepLeftOnce R))))).toPhased.toTM) c).state).fst.val
+      = P1.numPhases + Q.numPhases + Q2.numPhases + Q3.numPhases + 1 := by
+  have hsub : (i.val : Nat) - P1.numPhases = Q.numPhases + Q2.numPhases + Q3.numPhases := by omega
+  have hc1 : ¬ (Q.numPhases + Q2.numPhases + Q3.numPhases < Q.numPhases) := by omega
+  have hc2 : ¬ (Q2.numPhases + Q3.numPhases < Q2.numPhases) := by omega
+  have hsub1 : Q.numPhases + Q2.numPhases + Q3.numPhases - Q.numPhases = Q2.numPhases + Q3.numPhases := by
+    omega
+  have hsub2 : Q2.numPhases + Q3.numPhases - Q2.numPhases = Q3.numPhases := by omega
+  rw [seq_stepConfig_P2_phase P1 (seq Q (seq Q2 (seq Q3 (seq stepLeftOnce R)))) c
+      (h2 := by omega)
+      (hlt := by simp only [seq_numPhases, stepLeftOnce_numPhases]; omega) hstate]
+  simp [seq, stepLeftOnce, hsub, hc1, hc2, hsub1, hsub2]
+  omega
+
+/-- Depth-5 left step: the head moves left by one (when not at the left end). -/
+theorem stepLeftOnce_seqNested4_stepConfig_head (P1 Q Q2 Q3 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq P1 (seq Q (seq Q2 (seq Q3 (seq stepLeftOnce R))))).toPhased.toTM) L)
+    {i : Fin (seq P1 (seq Q (seq Q2 (seq Q3 (seq stepLeftOnce R))))).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases + Q.numPhases + Q2.numPhases + Q3.numPhases) (hstate : c.state = ⟨i, s⟩)
+    (hhead : 0 < (c.head : Nat)) :
+    ((TM.stepConfig (M := (seq P1 (seq Q (seq Q2 (seq Q3 (seq stepLeftOnce R))))).toPhased.toTM) c).head : Nat)
+      = (c.head : Nat) - 1 := by
+  have hsub : (i.val : Nat) - P1.numPhases = Q.numPhases + Q2.numPhases + Q3.numPhases := by omega
+  have hc1 : ¬ (Q.numPhases + Q2.numPhases + Q3.numPhases < Q.numPhases) := by omega
+  have hc2 : ¬ (Q2.numPhases + Q3.numPhases < Q2.numPhases) := by omega
+  have hsub1 : Q.numPhases + Q2.numPhases + Q3.numPhases - Q.numPhases = Q2.numPhases + Q3.numPhases := by
+    omega
+  have hsub2 : Q2.numPhases + Q3.numPhases - Q2.numPhases = Q3.numPhases := by omega
+  have hmove : (TM.stepConfig (M := (seq P1 (seq Q (seq Q2 (seq Q3 (seq stepLeftOnce R))))).toPhased.toTM) c).head
+      = Configuration.moveHead (c := c) Move.left := by
+    rw [seq_stepConfig_P2_head P1 (seq Q (seq Q2 (seq Q3 (seq stepLeftOnce R)))) c
+        (h2 := by omega)
+        (hlt := by simp only [seq_numPhases, stepLeftOnce_numPhases]; omega) hstate]
+    simp [seq, stepLeftOnce, hsub, hc1, hc2, hsub1, hsub2]
+  rw [hmove]
+  have hne : ¬ (c.head : Nat) = 0 := by omega
+  simp only [Configuration.moveHead, dif_neg hne]
+
+/-- Depth-5 left step: the tape is unchanged (the scanned bit is written back). -/
+theorem stepLeftOnce_seqNested4_stepConfig_tape (P1 Q Q2 Q3 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq P1 (seq Q (seq Q2 (seq Q3 (seq stepLeftOnce R))))).toPhased.toTM) L)
+    {i : Fin (seq P1 (seq Q (seq Q2 (seq Q3 (seq stepLeftOnce R))))).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases + Q.numPhases + Q2.numPhases + Q3.numPhases) (hstate : c.state = ⟨i, s⟩) :
+    (TM.stepConfig (M := (seq P1 (seq Q (seq Q2 (seq Q3 (seq stepLeftOnce R))))).toPhased.toTM) c).tape
+      = c.tape := by
+  have hsub : (i.val : Nat) - P1.numPhases = Q.numPhases + Q2.numPhases + Q3.numPhases := by omega
+  have hc1 : ¬ (Q.numPhases + Q2.numPhases + Q3.numPhases < Q.numPhases) := by omega
+  have hc2 : ¬ (Q2.numPhases + Q3.numPhases < Q2.numPhases) := by omega
+  have hsub1 : Q.numPhases + Q2.numPhases + Q3.numPhases - Q.numPhases = Q2.numPhases + Q3.numPhases := by
+    omega
+  have hsub2 : Q2.numPhases + Q3.numPhases - Q2.numPhases = Q3.numPhases := by omega
+  have hwrite : (TM.stepConfig (M := (seq P1 (seq Q (seq Q2 (seq Q3 (seq stepLeftOnce R))))).toPhased.toTM) c).tape
+      = c.write c.head (c.tape c.head) := by
+    rw [seq_stepConfig_P2_tape P1 (seq Q (seq Q2 (seq Q3 (seq stepLeftOnce R)))) c
+        (h2 := by omega)
+        (hlt := by simp only [seq_numPhases, stepLeftOnce_numPhases]; omega) hstate]
+    simp [seq, stepLeftOnce, hsub, hc1, hc2, hsub1, hsub2]
+  rw [hwrite]
+  funext j
+  by_cases hj : j = c.head
+  · subst hj; simp [Configuration.write]
+  · simp [Configuration.write, hj]
+
+/-- Depth-5 one-step run behaviour (element 5): phase advances by one, head moves one cell left, tape
+unchanged.  Depth-5 analogue of `stepLeftOnce_seqNested2_runConfig_one`. -/
+theorem stepLeftOnce_seqNested4_runConfig_one (P1 Q Q2 Q3 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq P1 (seq Q (seq Q2 (seq Q3 (seq stepLeftOnce R))))).toPhased.toTM) L)
+    (hphase : (c.state.fst : Nat) = P1.numPhases + Q.numPhases + Q2.numPhases + Q3.numPhases)
+    (hhead : 0 < (c.head : Nat)) :
+    (((TM.runConfig (M := (seq P1 (seq Q (seq Q2 (seq Q3 (seq stepLeftOnce R))))).toPhased.toTM) c 1).state).fst : Nat)
+        = P1.numPhases + Q.numPhases + Q2.numPhases + Q3.numPhases + 1
+      ∧ ((TM.runConfig (M := (seq P1 (seq Q (seq Q2 (seq Q3 (seq stepLeftOnce R))))).toPhased.toTM) c 1).head : Nat)
+          = (c.head : Nat) - 1
+      ∧ (TM.runConfig (M := (seq P1 (seq Q (seq Q2 (seq Q3 (seq stepLeftOnce R))))).toPhased.toTM) c 1).tape
+          = c.tape := by
+  rw [TM.runConfig_one]
+  refine ⟨?_, ?_, ?_⟩
+  · exact stepLeftOnce_seqNested4_stepConfig_phase P1 Q Q2 Q3 R c
+      (i := c.state.fst) (s := c.state.snd) hphase rfl
+  · exact stepLeftOnce_seqNested4_stepConfig_head P1 Q Q2 Q3 R c
+      (i := c.state.fst) (s := c.state.snd) hphase rfl hhead
+  · exact stepLeftOnce_seqNested4_stepConfig_tape P1 Q Q2 Q3 R c
+      (i := c.state.fst) (s := c.state.snd) hphase rfl
+
 end ContractExpansion
 end Frontier
 end Pnp4

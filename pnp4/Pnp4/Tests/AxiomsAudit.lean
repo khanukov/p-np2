@@ -81,6 +81,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPSelfLoopCounter
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryAppendProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryAppendLeftProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStepLeftProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPSeekHomeProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition
@@ -541,6 +542,9 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_runConfig_append
 #print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_runConfig_one
 #print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqP2_runConfig_one
+-- D2t-3c-β: the binary→unary home-seek run behaviour.
+#print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterDecrement_runConfig_lead2
+#print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterDecrement_runConfig_home
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seqP2_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seqP2_runConfig_terminator
 -- Leftward scan-over-`1`s (bit-dual; completes the four-way scan vocabulary).

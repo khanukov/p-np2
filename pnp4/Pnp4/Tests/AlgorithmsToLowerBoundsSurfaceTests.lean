@@ -91,6 +91,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPSelfLoopCounter
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryAppendProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryAppendLeftProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStepLeftProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPSeekHomeProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition
@@ -3917,6 +3918,9 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_runConfig_one
 #check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_stepConfig_head_clamp
 #check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqP2_runConfig_one
+-- D2t-3c-β: the binary→unary home-seek (stepLeftOnce ; selfLoopScanLeftOne) returns the head to HOME.
+#check @Pnp4.Frontier.ContractExpansion.seekHomeAfterDecrement_runConfig_lead2
+#check @Pnp4.Frontier.ContractExpansion.seekHomeAfterDecrement_runConfig_home
 -- Two-sided head-displacement bound (bidirectional accounting foundation).
 #check @Pnp4.Frontier.ContractExpansion.runConfig_head_val_ge
 #check @Pnp4.Frontier.ContractExpansion.runConfig_head_dist_le

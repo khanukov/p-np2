@@ -32,6 +32,12 @@ Builds no verifier and proves no separation; standard `[propext, Classical.choic
 **No `P ≠ NP` claim.**
 -/
 
+/-- The one-pass `runConfig` step count — the argument `binToUnaryBody_runConfig_onePass` runs for
+(the per-element step tally of the seven-element body).  Factored out so the statements below don't
+repeat the literal; each proof `unfold`s it to the form the engine theorem returns. -/
+abbrev onePassSteps (j u : Nat) : Nat :=
+  2 + (j + 1) + 1 + 1 + 1 + (j + 1) + 1 + 1 + 1 + (u + 1) + 1 + (u + 1 + 1) + 1
+
 /-- **One-pass measure-decrease.**  From HOME with `B > 0` (lowest set bit at `head+1+j`), one pass of
 `binToUnaryBody` drops the little-endian counter value of the width-`w` block `[head+1, head+1+w)` by
 exactly one: `counterValue (after) + 1 = counterValue (before)`.  This is the strict measure decrease
@@ -54,15 +60,15 @@ theorem binToUnaryBody_onePass_counterValue {L : Nat}
       c0.tape ⟨(c0.head : Nat) - u - 1, hb⟩ = false)
     (w : Nat) (hjw : j < w)
     (hwfit : (c0.head : Nat) + 1 + w ≤ bodyFull.toPhased.toTM.tapeLength L) :
-    counterValue (TM.runConfig (M := bodyFull.toPhased.toTM) c0
-          (2 + (j + 1) + 1 + 1 + 1 + (j + 1) + 1 + 1 + 1 + (u + 1) + 1 + (u + 1 + 1) + 1))
+    counterValue (TM.runConfig (M := bodyFull.toPhased.toTM) c0 (onePassSteps j u))
           ((c0.head : Nat) + 1) w + 1
       = counterValue c0 ((c0.head : Nat) + 1) w := by
+  unfold onePassSteps
   obtain ⟨_, _, hTape⟩ :=
     binToUnaryBody_runConfig_onePass c0 hphase j hj hbnd h_zeros h_one h_sentinel hHOME u hUfit hU
       hUboundary
   set cF := TM.runConfig (M := bodyFull.toPhased.toTM) c0
-    (2 + (j + 1) + 1 + 1 + 1 + (j + 1) + 1 + 1 + 1 + (u + 1) + 1 + (u + 1 + 1) + 1) with hcF
+    (2 + (j + 1) + 1 + 1 + 1 + (j + 1) + 1 + 1 + 1 + (u + 1) + 1 + (u + 1 + 1) + 1)
   refine (counterValue_first_zero_diff cF c0 ((c0.head : Nat) + 1) j w hjw hwfit
     ?_ ?_ ?_ ?_ ?_).symm
   · -- after: low block `[head+1, head+1+j)` is all `1` (the borrow filled it in).
@@ -112,9 +118,9 @@ theorem binToUnaryBody_onePass_appendedBit {L : Nat}
     (hUboundary : ∀ hb : (c0.head : Nat) - u - 1 < bodyFull.toPhased.toTM.tapeLength L,
       c0.tape ⟨(c0.head : Nat) - u - 1, hb⟩ = false)
     (hb : (c0.head : Nat) - u - 1 < bodyFull.toPhased.toTM.tapeLength L) :
-    (TM.runConfig (M := bodyFull.toPhased.toTM) c0
-        (2 + (j + 1) + 1 + 1 + 1 + (j + 1) + 1 + 1 + 1 + (u + 1) + 1 + (u + 1 + 1) + 1)).tape
+    (TM.runConfig (M := bodyFull.toPhased.toTM) c0 (onePassSteps j u)).tape
         ⟨(c0.head : Nat) - u - 1, hb⟩ = true := by
+  unfold onePassSteps
   obtain ⟨_, _, hTape⟩ :=
     binToUnaryBody_runConfig_onePass c0 hphase j hj hbnd h_zeros h_one h_sentinel hHOME u hUfit hU
       hUboundary

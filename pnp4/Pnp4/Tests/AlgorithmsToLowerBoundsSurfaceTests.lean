@@ -97,6 +97,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryBody
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryMeasure
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroTest
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCellBranch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPLeadingPhasesChain
@@ -3812,6 +3813,11 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- D2t-3 routing: the distinguishable-marker discriminating read (read past scan-stop = 1 iff B = 0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRoute_zero_reads_one
 #check @Pnp4.Frontier.ContractExpansion.bZeroRoute_pos_reads_zero
+-- D2t-3c-δ groundwork: the single-cell read-and-branch atom (the "read, then branch" half of the
+-- distinguishable-marker discriminating-read routing wiring).
+#check @Pnp4.Frontier.ContractExpansion.cellBranch
+#check @Pnp4.Frontier.ContractExpansion.cellBranch_runConfig_one
+#check @Pnp4.Frontier.ContractExpansion.cellBranch_neverMovesLeft
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqNested3_stepConfig_handoff_phase
 #check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested4_stepConfig_handoff_phase
 #check @Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqNested5_stepConfig_handoff_phase

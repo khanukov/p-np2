@@ -1126,12 +1126,17 @@ landed: the two nested accept-handoff boundary lemmas
 > rather than the bundled `_terminator`, whose `k < head` precondition excludes `j = 0` (`B` odd), and a
 > new `h_sentinel : c0.tape c0.head = false` precondition records that HOME holds the sentinel `0`.  Each
 > bundled segment lemma's output is in the unfolded form; bridge it to `bodyFull` with
-> `have h : <bodyFull-form> := <unfolded fact>` (one cheap abbrev delta).  **Remaining:** chain elements
-> 5–7 on `bodyFull` (`stepLeftOnce_seqNested4_*` step-left onto `U`, `selfLoopAppendLeftOne_seqNested5_*`
-> U-append, `selfLoopScanRightOne_seqNested6_*` scan-home, with a handoff step between each, then the
-> terminator handoff into `idleCS`) with the U-region tape invariant (the `1^|U|` block + its left
-> `0`-boundary), culminating in the one-pass HOME→HOME headline (`counterValue B − 1`, `|U| + 1`, head
-> back at HOME).
+> `have h : <bodyFull-form> := <unfolded fact>` (one cheap abbrev delta).  **Element-4→5 handoff + element
+> 5 (`stepLeftOnce`) composed ✅:** `binToUnaryBody_runConfig_afterScanLeft4Handoff` (phase `8`) and
+> `binToUnaryBody_runConfig_afterStepLeft5` — after `2 + (j+1) + 1 + 1 + 1 + (j+1) + 1 + 1` steps the
+> second home-seek `stepLeftOnce` has stepped left off the sentinel onto `U`'s right end (`c0.head − 1`)
+> at phase `9` (new precondition `hHOME : 0 < c0.head`).  The element-4→5 handoff needed a new depth-4
+> `selfLoopScanLeftOne_seqNested3_stepConfig_handoff_*` (now in `TreeMCSPScanLeftOneProgram.lean`, modeled
+> on the depth-3 `stepLeftOnce` handoff).  **Remaining:** chain elements 6–7 on `bodyFull`
+> (`selfLoopAppendLeftOne_seqNested5_*` U-append, `selfLoopScanRightOne_seqNested6_*` scan-home, with a
+> handoff step before each — needing the depth-5/6 `_stepConfig_handoff_*` analogues — then the terminator
+> handoff into `idleCS`) with the U-region tape invariant (the `1^|U|` block + its left `0`-boundary),
+> culminating in the one-pass HOME→HOME headline (`counterValue B − 1`, `|U| + 1`, head back at HOME).
 
 **Then:** δ (`bZeroTest` — a `gammaSelfLoopScan` over `B`), ε (`loopUntilSink binToUnaryBody` — the
 combinator and `loopUntilSink_reachesSink` already exist), ζ (bridge `|U| = value(B) = (decodeFin …).val`).

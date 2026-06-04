@@ -3794,6 +3794,9 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterStepLeft3
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterStepLeft3Handoff
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterScanLeft4
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterScanLeft4Handoff
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterStepLeft5
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqNested3_stepConfig_handoff_phase
 -- Rightward scan-over-`1`s (the genuine fourth scan as a pure traversal; marker-free unary-distance
 -- rightward seek for the on-tape interpreter, §6k).
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne

@@ -435,16 +435,112 @@ theorem binToUnaryBody_runConfig_afterScanLeft4 {L : Nat}
         rfl hbit, hsct']
     exact hHt p
 
-/-! ### Next: elements 5–7 and the one-pass headline
+/-- Run composition through the element 4→5 handoff: after `2 + (j+1) + 1 + 1 + 1 + (j+1) + 1` steps the
+inner `seq` has handed off out of `selfLoopScanLeftOne` (element 4, accept phase `7`) to element 5
+(`stepLeftOnce`, start phase `8`); head still at HOME (`c0.head`), tape the decremented pattern.  Composes
+`binToUnaryBody_runConfig_afterScanLeft4` with `selfLoopScanLeftOne_seqNested3_stepConfig_handoff_*`. -/
+theorem binToUnaryBody_runConfig_afterScanLeft4Handoff {L : Nat}
+    (c0 : Configuration (M := bodyFull.toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = 0) (j : Nat)
+    (hj : (c0.head : Nat) + 1 + j ≤ L)
+    (hbnd : (c0.head : Nat) + 1 < bodyFull.toPhased.toTM.tapeLength L)
+    (h_zeros : ∀ p : Fin (bodyFull.toPhased.toTM.tapeLength L),
+      (c0.head : Nat) + 1 ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + 1 + j → c0.tape p = false)
+    (h_one : ∀ hb : (c0.head : Nat) + 1 + j < bodyFull.toPhased.toTM.tapeLength L,
+      c0.tape ⟨(c0.head : Nat) + 1 + j, hb⟩ = true)
+    (h_sentinel : c0.tape c0.head = false) :
+    (((TM.runConfig (M := bodyFull.toPhased.toTM) c0 (2 + (j + 1) + 1 + 1 + 1 + (j + 1) + 1)).state).fst : Nat)
+        = 8
+      ∧ ((TM.runConfig (M := bodyFull.toPhased.toTM) c0 (2 + (j + 1) + 1 + 1 + 1 + (j + 1) + 1)).head : Nat)
+          = (c0.head : Nat)
+      ∧ ∀ p : Fin (bodyFull.toPhased.toTM.tapeLength L),
+          (TM.runConfig (M := bodyFull.toPhased.toTM) c0 (2 + (j + 1) + 1 + 1 + 1 + (j + 1) + 1)).tape p
+            = (if (c0.head : Nat) + 1 ≤ (p : Nat) ∧ (p : Nat) < (c0.head : Nat) + 1 + j then true
+                else if (p : Nat) = (c0.head : Nat) + 1 + j then false else c0.tape p) := by
+  obtain ⟨h4p, h4h, h4t⟩ :=
+    binToUnaryBody_runConfig_afterScanLeft4 c0 hphase j hj hbnd h_zeros h_one h_sentinel
+  rw [TM.runConfig_add, TM.runConfig_one]
+  set cS := TM.runConfig (M := bodyFull.toPhased.toTM) c0 (2 + (j + 1) + 1 + 1 + 1 + (j + 1)) with hcS
+  refine ⟨?_, ?_, ?_⟩
+  · rw [selfLoopScanLeftOne_seqNested3_stepConfig_handoff_phase stepRightOnce selfLoopDecrement
+        stepLeftOnce _ cS (i := cS.state.fst) (s := cS.state.snd)
+        (by rw [stepRightOnce_numPhases, selfLoopDecrement_numPhases, stepLeftOnce_numPhases]; exact h4p)
+        rfl]
+    simp [seq_startPhase_val, stepLeftOnce_startPhase_val, stepRightOnce_numPhases,
+      selfLoopDecrement_numPhases, stepLeftOnce_numPhases, selfLoopScanLeftOne_numPhases]
+  · rw [selfLoopScanLeftOne_seqNested3_stepConfig_handoff_head stepRightOnce selfLoopDecrement
+        stepLeftOnce _ cS (i := cS.state.fst) (s := cS.state.snd)
+        (by rw [stepRightOnce_numPhases, selfLoopDecrement_numPhases, stepLeftOnce_numPhases]; exact h4p)
+        rfl]
+    exact h4h
+  · intro p
+    rw [selfLoopScanLeftOne_seqNested3_stepConfig_handoff_tape stepRightOnce selfLoopDecrement
+        stepLeftOnce _ cS (i := cS.state.fst) (s := cS.state.snd)
+        (by rw [stepRightOnce_numPhases, selfLoopDecrement_numPhases, stepLeftOnce_numPhases]; exact h4p)
+        rfl]
+    exact h4t p
 
-`afterScanLeft4` returns the head to HOME (the sentinel) at phase `6`, with `B` decremented and the head
-poised for element 5 (`stepLeftOnce`, depth 5) to step left off the sentinel onto `U`'s right end.  The
-remaining segment lemmas — `stepLeftOnce_seqNested4_*` (element 5), `selfLoopAppendLeftOne_seqNested5_*`
-(element 6, which appends one `1` to `U`), `selfLoopScanRightOne_seqNested6_*` (element 7, scan-home),
-and the final terminator handoff into `idleCS` — chain on the same `bodyFull` form via `TM.runConfig_add`,
-each consuming the previous checkpoint.  Elements 5–7 read/modify the U-region (the `1^|U|` block), so
-they require the U-left tape invariant for `U`; that is the next brick, culminating in the one-pass
-HOME→HOME headline (`counterValue B − 1`, `|U| + 1`, head back at HOME). -/
+/-- Run composition through element 5 (`stepLeftOnce`): from HOME the second home-seek `stepLeftOnce`
+steps left off the sentinel onto `U`'s right end.  After `2 + (j+1) + 1 + 1 + 1 + (j+1) + 1 + 1` steps the
+machine is at phase `9` (element 5's accept), head at `c0.head − 1` (the right end of `U`), tape the same
+decremented pattern.  Requires `0 < c0.head` (HOME is not the leftmost cell — there is at least a blank to
+its left), the U-left layout invariant.  Composes `binToUnaryBody_runConfig_afterScanLeft4Handoff` with
+`stepLeftOnce_seqNested4_stepConfig_*`. -/
+theorem binToUnaryBody_runConfig_afterStepLeft5 {L : Nat}
+    (c0 : Configuration (M := bodyFull.toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = 0) (j : Nat)
+    (hj : (c0.head : Nat) + 1 + j ≤ L)
+    (hbnd : (c0.head : Nat) + 1 < bodyFull.toPhased.toTM.tapeLength L)
+    (h_zeros : ∀ p : Fin (bodyFull.toPhased.toTM.tapeLength L),
+      (c0.head : Nat) + 1 ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + 1 + j → c0.tape p = false)
+    (h_one : ∀ hb : (c0.head : Nat) + 1 + j < bodyFull.toPhased.toTM.tapeLength L,
+      c0.tape ⟨(c0.head : Nat) + 1 + j, hb⟩ = true)
+    (h_sentinel : c0.tape c0.head = false) (hHOME : 0 < (c0.head : Nat)) :
+    (((TM.runConfig (M := bodyFull.toPhased.toTM) c0
+          (2 + (j + 1) + 1 + 1 + 1 + (j + 1) + 1 + 1)).state).fst : Nat) = 9
+      ∧ ((TM.runConfig (M := bodyFull.toPhased.toTM) c0
+            (2 + (j + 1) + 1 + 1 + 1 + (j + 1) + 1 + 1)).head : Nat) = (c0.head : Nat) - 1
+      ∧ ∀ p : Fin (bodyFull.toPhased.toTM.tapeLength L),
+          (TM.runConfig (M := bodyFull.toPhased.toTM) c0
+              (2 + (j + 1) + 1 + 1 + 1 + (j + 1) + 1 + 1)).tape p
+            = (if (c0.head : Nat) + 1 ≤ (p : Nat) ∧ (p : Nat) < (c0.head : Nat) + 1 + j then true
+                else if (p : Nat) = (c0.head : Nat) + 1 + j then false else c0.tape p) := by
+  obtain ⟨hHp, hHh, hHt⟩ :=
+    binToUnaryBody_runConfig_afterScanLeft4Handoff c0 hphase j hj hbnd h_zeros h_one h_sentinel
+  rw [TM.runConfig_add, TM.runConfig_one]
+  set cS := TM.runConfig (M := bodyFull.toPhased.toTM) c0 (2 + (j + 1) + 1 + 1 + 1 + (j + 1) + 1) with hcS
+  refine ⟨?_, ?_, ?_⟩
+  · rw [stepLeftOnce_seqNested4_stepConfig_phase stepRightOnce selfLoopDecrement stepLeftOnce
+        selfLoopScanLeftOne _ cS (i := cS.state.fst) (s := cS.state.snd)
+        (by rw [stepRightOnce_numPhases, selfLoopDecrement_numPhases, stepLeftOnce_numPhases,
+          selfLoopScanLeftOne_numPhases]; exact hHp) rfl]
+    rw [stepRightOnce_numPhases, selfLoopDecrement_numPhases, stepLeftOnce_numPhases,
+      selfLoopScanLeftOne_numPhases]
+  · rw [stepLeftOnce_seqNested4_stepConfig_head stepRightOnce selfLoopDecrement stepLeftOnce
+        selfLoopScanLeftOne _ cS (i := cS.state.fst) (s := cS.state.snd)
+        (by rw [stepRightOnce_numPhases, selfLoopDecrement_numPhases, stepLeftOnce_numPhases,
+          selfLoopScanLeftOne_numPhases]; exact hHp) rfl (by rw [hHh]; exact hHOME)]
+    rw [hHh]
+  · intro p
+    rw [stepLeftOnce_seqNested4_stepConfig_tape stepRightOnce selfLoopDecrement stepLeftOnce
+        selfLoopScanLeftOne _ cS (i := cS.state.fst) (s := cS.state.snd)
+        (by rw [stepRightOnce_numPhases, selfLoopDecrement_numPhases, stepLeftOnce_numPhases,
+          selfLoopScanLeftOne_numPhases]; exact hHp) rfl]
+    exact hHt p
+
+/-! ### Next: elements 6–7 and the one-pass headline
+
+`afterStepLeft5` places the head on `U`'s right end (`c0.head − 1`) at phase `9`, poised for element 6
+(`selfLoopAppendLeftOne`, depth 6) to scan left over `U`'s `1`s and append one `1` at `U`'s left
+`0`-boundary.  The remaining segment lemmas — `selfLoopAppendLeftOne_seqNested5_*` (element 6, with a
+preceding element 5→6 handoff), `selfLoopScanRightOne_seqNested6_*` (element 7, scan-home, with a
+preceding handoff), and the final terminator handoff into `idleCS` — chain on the same `bodyFull` form via
+`TM.runConfig_add`, each consuming the previous checkpoint.  Elements 6–7 read/modify the U-region (the
+`1^|U|` block and its left `0`-boundary), so they require the U-left tape invariant for `U`; that is the
+next brick, culminating in the one-pass HOME→HOME headline (`counterValue B − 1`, `|U| + 1`, head back at
+HOME).  (The element 4/5/… handoffs need depth-`d` `_stepConfig_handoff_*` lemmas; the depth-4 one for
+`selfLoopScanLeftOne` is now in `TreeMCSPScanLeftOneProgram.lean`; elements 5/6/7 will need the
+depth-5/6/7 analogues.) -/
 
 end ContractExpansion
 end Frontier

@@ -1076,11 +1076,16 @@ the generic single-step `seq_stepConfig_P1_*` lemmas, needs no bundled lemma):
 
 For depth ≥ 5 the navigation supplies the successive middle subtraction facts `hsubᵢ : (a + b + …) − a =
 …` explicitly (since `Nat.add_sub_cancel_left` only matches the immediate `a + m − a` shape) alongside
-the non-self comparison negations.  **Remaining for γ: the final assembly brick** — define
-`binToUnaryBody := seqList [stepRightOnce, selfLoopDecrement, stepLeftOnce, selfLoopScanLeftOne,
-stepLeftOnce, selfLoopAppendLeftOne, selfLoopScanRightOne]` and compose its one-pass run behaviour from
-HOME via `seqList_run_seven` + the seven per-element segment lemmas above (head/tape windows tracked
-against the U-left layout), giving `counterValue B − 1`, `|U| + 1`, head back at HOME.
+the non-self comparison negations.  **γ definition committed ✅** — `binToUnaryBody := seqList [stepRightOnce, selfLoopDecrement,
+stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne, selfLoopScanRightOne]`
+(`TreeMCSPBinToUnaryBody.lean`), with its structural facts: `binToUnaryBody_eq_seq` (the
+`seq stepRightOnce (seq selfLoopDecrement R)` shape the decrement's `_seqNested_` lemma consumes),
+`binToUnaryBody_numPhases = 15`, and the closed-form `binToUnaryBody_timeBound n = 4·n + 10` (via
+`seqList_timeBound_seven`).  **Remaining for γ: the one-pass run-behaviour composition** — from HOME with
+`B > 0`, compose the seven per-element segment lemmas above (element 1 = `stepRightOnce` via the generic
+`seq_stepConfig_P1_*`; elements 2–7 via their `_seqNested…_` lemmas) along the `seqList_run_seven` time
+skeleton with `TM.runConfig_add` at each boundary, tracking head/tape windows against the U-left layout,
+to obtain `counterValue B − 1`, `|U| + 1`, head back at HOME.
 
 **Then:** δ (`bZeroTest` — a `gammaSelfLoopScan` over `B`), ε (`loopUntilSink binToUnaryBody` — the
 combinator and `loopUntilSink_reachesSink` already exist), ζ (bridge `|U| = value(B) = (decodeFin …).val`).

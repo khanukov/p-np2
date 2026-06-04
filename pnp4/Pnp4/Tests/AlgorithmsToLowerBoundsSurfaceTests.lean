@@ -94,6 +94,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryAppendLeftProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStepLeftProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSeekHomeProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterComposition
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryBody
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPLeadingPhasesChain
@@ -3780,6 +3781,11 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqNested5_runConfig_append
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_seqNested6_runConfig_scanning
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_seqNested6_runConfig_terminator
+-- D2t-3c-γ: the assembled binary→unary loop body (definition + structural facts).
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryBody
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_eq_seq
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_numPhases
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_timeBound
 -- Rightward scan-over-`1`s (the genuine fourth scan as a pure traversal; marker-free unary-distance
 -- rightward seek for the on-tape interpreter, §6k).
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne

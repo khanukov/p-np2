@@ -84,6 +84,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryAppendLeftProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStepLeftProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSeekHomeProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterComposition
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryBody
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPLeadingPhasesChain
@@ -567,6 +568,8 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested4_runConfig_one
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqNested5_runConfig_append
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_seqNested6_runConfig_terminator
+-- D2t-3c-γ: the assembled binary→unary loop body's structural timeBound.
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_timeBound
 -- Rightward scan-over-`1`s (pure-traversal fourth scan; marker-free unary-distance seek, §6k).
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_runConfig_terminator

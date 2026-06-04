@@ -1054,9 +1054,15 @@ toolkit shape it:
 lemmas plus the borrow-ripple, after-decrement, and `counterValue − 1` run lemmas on
 `seq P1 (seq selfLoopDecrement R)`, generic in `P1`/`R`).  This is the decrement analogue of
 `gammaSelfLoopScan_seqNested_*` and exactly element 2's segment behaviour for `seqList_run_seven`
-(`binToUnaryBody`'s decrement sits as `seq stepRightOnce (seq selfLoopDecrement R)`).  Remaining
-per-element re-derivations: `stepLeftOnce` / `selfLoopScanLeftOne` / `selfLoopAppendLeftOne` /
-`selfLoopScanRightOne` at their deeper chain depths, then the final assembly brick.
+(`binToUnaryBody`'s decrement sits as `seq stepRightOnce (seq selfLoopDecrement R)`).  Element 3
+(`stepLeftOnce`, chain-depth 3) re-derivation ✅ — `stepLeftOnce_seqNested2_*`
+(`TreeMCSPStepLeftProgram.lean`: phase/head/tape single-step lemmas + the one-step run lemma on
+`seq P1 (seq Q (seq stepLeftOnce R))`, generic in `P1`/`Q`/`R`), proven by chaining the outer
+`seq_stepConfig_P2_*` into a `simp [seq, stepLeftOnce, hsub]` that navigates both inner `seq` levels.
+Remaining per-element re-derivations: `selfLoopScanLeftOne` (depth 4), `stepLeftOnce` (depth 5),
+`selfLoopAppendLeftOne` (depth 6), `selfLoopScanRightOne` (depth 7) — the depth-≥4 navigation also
+needs the middle `¬(a + b < a)` comparison facts supplied to `simp` (depth 3 closes via
+`lt_self_iff_false` alone) — then the final assembly brick.
 
 **Then:** δ (`bZeroTest` — a `gammaSelfLoopScan` over `B`), ε (`loopUntilSink binToUnaryBody` — the
 combinator and `loopUntilSink_reachesSink` already exist), ζ (bridge `|U| = value(B) = (decodeFin …).val`).

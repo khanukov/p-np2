@@ -218,6 +218,88 @@ theorem stepLeftOnce_seqP2_runConfig_one (P1 : ConstStatePhasedProgram Unit) {L 
   · exact stepLeftOnce_seqP2_stepConfig_head P1 c (i := c.state.fst) (s := c.state.snd) hphase rfl hhead
   · exact stepLeftOnce_seqP2_stepConfig_tape P1 c (i := c.state.fst) (s := c.state.snd) hphase rfl
 
+/-! ### Depth-3 composition lift: the single left step as the inner-inner P1 (`seqNested2`)
+
+In the flattened binary→unary loop body `seqList [stepRightOnce, selfLoopDecrement, stepLeftOnce, …]`
+the *third* element `stepLeftOnce` sits at chain-depth 3: it is the first component of the innermost
+`seq stepLeftOnce R`, which is the second component of `seq Q (seq stepLeftOnce R)`, itself the second
+component of `seq P1 (seq Q (seq stepLeftOnce R))`.  A step there is the outer P2-region step feeding
+the middle P2-region transition feeding `stepLeftOnce`'s P1-normal transition — chained via
+`seq_stepConfig_P2_*` then `seq_transition_P2_*` then `seq_transition_P1_normal_*`.  These lemmas are
+the depth-3 analogue of `stepLeftOnce_seqP2_*`, generic in the two outer prefixes `P1`, `Q` and the
+suffix `R`. -/
+
+/-- Depth-3 left step: advance to the shifted done phase `P1.numPhases + Q.numPhases + 1`. -/
+theorem stepLeftOnce_seqNested2_stepConfig_phase (P1 Q R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq P1 (seq Q (seq stepLeftOnce R))).toPhased.toTM) L)
+    {i : Fin (seq P1 (seq Q (seq stepLeftOnce R))).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases + Q.numPhases) (hstate : c.state = ⟨i, s⟩) :
+    ((TM.stepConfig (M := (seq P1 (seq Q (seq stepLeftOnce R))).toPhased.toTM) c).state).fst.val
+      = P1.numPhases + Q.numPhases + 1 := by
+  have hsub : (i.val : Nat) - P1.numPhases = Q.numPhases := by omega
+  rw [seq_stepConfig_P2_phase P1 (seq Q (seq stepLeftOnce R)) c
+      (h2 := by omega)
+      (hlt := by simp only [seq_numPhases, stepLeftOnce_numPhases]; omega) hstate]
+  simp [seq, stepLeftOnce, hsub]
+  omega
+
+/-- Depth-3 left step: the head moves left by one (when not at the left end). -/
+theorem stepLeftOnce_seqNested2_stepConfig_head (P1 Q R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq P1 (seq Q (seq stepLeftOnce R))).toPhased.toTM) L)
+    {i : Fin (seq P1 (seq Q (seq stepLeftOnce R))).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases + Q.numPhases) (hstate : c.state = ⟨i, s⟩) (hhead : 0 < (c.head : Nat)) :
+    ((TM.stepConfig (M := (seq P1 (seq Q (seq stepLeftOnce R))).toPhased.toTM) c).head : Nat)
+      = (c.head : Nat) - 1 := by
+  have hsub : (i.val : Nat) - P1.numPhases = Q.numPhases := by omega
+  have hmove : (TM.stepConfig (M := (seq P1 (seq Q (seq stepLeftOnce R))).toPhased.toTM) c).head
+      = Configuration.moveHead (c := c) Move.left := by
+    rw [seq_stepConfig_P2_head P1 (seq Q (seq stepLeftOnce R)) c
+        (h2 := by omega)
+        (hlt := by simp only [seq_numPhases, stepLeftOnce_numPhases]; omega) hstate]
+    simp [seq, stepLeftOnce, hsub]
+  rw [hmove]
+  have hne : ¬ (c.head : Nat) = 0 := by omega
+  simp only [Configuration.moveHead, dif_neg hne]
+
+/-- Depth-3 left step: the tape is unchanged (the scanned bit is written back). -/
+theorem stepLeftOnce_seqNested2_stepConfig_tape (P1 Q R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq P1 (seq Q (seq stepLeftOnce R))).toPhased.toTM) L)
+    {i : Fin (seq P1 (seq Q (seq stepLeftOnce R))).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases + Q.numPhases) (hstate : c.state = ⟨i, s⟩) :
+    (TM.stepConfig (M := (seq P1 (seq Q (seq stepLeftOnce R))).toPhased.toTM) c).tape = c.tape := by
+  have hsub : (i.val : Nat) - P1.numPhases = Q.numPhases := by omega
+  have hwrite : (TM.stepConfig (M := (seq P1 (seq Q (seq stepLeftOnce R))).toPhased.toTM) c).tape
+      = c.write c.head (c.tape c.head) := by
+    rw [seq_stepConfig_P2_tape P1 (seq Q (seq stepLeftOnce R)) c
+        (h2 := by omega)
+        (hlt := by simp only [seq_numPhases, stepLeftOnce_numPhases]; omega) hstate]
+    simp [seq, stepLeftOnce, hsub]
+  rw [hwrite]
+  funext j
+  by_cases hj : j = c.head
+  · subst hj; simp [Configuration.write]
+  · simp [Configuration.write, hj]
+
+/-- Depth-3 one-step run behaviour: from outer phase `P1.numPhases + Q.numPhases` with `0 < c.head`,
+after one step the phase is `P1.numPhases + Q.numPhases + 1`, the head has moved one cell left, and the
+tape is unchanged.  The depth-3 analogue of `stepLeftOnce_seqP2_runConfig_one`. -/
+theorem stepLeftOnce_seqNested2_runConfig_one (P1 Q R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq P1 (seq Q (seq stepLeftOnce R))).toPhased.toTM) L)
+    (hphase : (c.state.fst : Nat) = P1.numPhases + Q.numPhases) (hhead : 0 < (c.head : Nat)) :
+    (((TM.runConfig (M := (seq P1 (seq Q (seq stepLeftOnce R))).toPhased.toTM) c 1).state).fst : Nat)
+        = P1.numPhases + Q.numPhases + 1
+      ∧ ((TM.runConfig (M := (seq P1 (seq Q (seq stepLeftOnce R))).toPhased.toTM) c 1).head : Nat)
+          = (c.head : Nat) - 1
+      ∧ (TM.runConfig (M := (seq P1 (seq Q (seq stepLeftOnce R))).toPhased.toTM) c 1).tape = c.tape := by
+  rw [TM.runConfig_one]
+  refine ⟨?_, ?_, ?_⟩
+  · exact stepLeftOnce_seqNested2_stepConfig_phase P1 Q R c
+      (i := c.state.fst) (s := c.state.snd) hphase rfl
+  · exact stepLeftOnce_seqNested2_stepConfig_head P1 Q R c
+      (i := c.state.fst) (s := c.state.snd) hphase rfl hhead
+  · exact stepLeftOnce_seqNested2_stepConfig_tape P1 Q R c
+      (i := c.state.fst) (s := c.state.snd) hphase rfl
+
 end ContractExpansion
 end Frontier
 end Pnp4

@@ -4067,6 +4067,10 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_runConfig_borrow
 #check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_runConfig_stop
 #check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_runConfig_counterValue
+-- D2t-3c-γ: the decrement→successor nested handoff (the inner seq boundary after the decrement).
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_stepConfig_handoff_phase
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_stepConfig_handoff_head
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_stepConfig_handoff_tape
 -- State lifting + heterogeneous-state skeleton composition (assembly milestone).
 #check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram
 #check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_neverMovesLeft

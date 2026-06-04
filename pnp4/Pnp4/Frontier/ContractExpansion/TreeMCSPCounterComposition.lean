@@ -1247,6 +1247,63 @@ theorem selfLoopDecrement_seqNested_runConfig_counterValue (P1 R : ConstStatePha
         = (c0.head : Nat) + i := rfl
     rw [htp ⟨(c0.head : Nat) + i, hb⟩, hv, if_neg (by omega), if_neg (by omega)]
 
+/-! ### Nested handoff out of the decrement (the decrement→successor `seq` handoff at depth 1)
+
+After the decrement stops it rests at the shifted accept phase `P1.numPhases + 1`; the next step is the
+**inner** `seq`'s handoff from `selfLoopDecrement` to its successor `R`.  These lemmas characterize that
+handoff step on `seq P1 (seq selfLoopDecrement R)` — the boundary the binary→unary loop body crosses
+between its decrement element and the home-seek that follows. -/
+
+/-- Nested handoff step (outer phase `P1.numPhases + 1` = the shifted decrement accept): the phase
+advances to `P1.numPhases + (selfLoopDecrement.numPhases + R.startPhase.val)` (the successor `R`'s shifted
+start). -/
+theorem selfLoopDecrement_seqNested_stepConfig_handoff_phase
+    (P1 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) L)
+    {i : Fin (seq P1 (seq selfLoopDecrement R)).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases + 1) (hstate : c.state = ⟨i, s⟩) :
+    ((TM.stepConfig (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) c).state).fst.val
+      = P1.numPhases + (selfLoopDecrement.numPhases + R.startPhase.val) := by
+  have hsub : i.val - P1.numPhases = 1 := by omega
+  rw [seq_stepConfig_P2_phase P1 (seq selfLoopDecrement R) c
+      (h2 := by omega)
+      (hlt := by rw [hsub, seq_numPhases, selfLoopDecrement_numPhases]; omega) hstate]
+  simp [seq, selfLoopDecrement, hsub]
+
+/-- Nested handoff step (outer phase `P1.numPhases + 1`): the head is unchanged (handoff stays put). -/
+theorem selfLoopDecrement_seqNested_stepConfig_handoff_head
+    (P1 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) L)
+    {i : Fin (seq P1 (seq selfLoopDecrement R)).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases + 1) (hstate : c.state = ⟨i, s⟩) :
+    (TM.stepConfig (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) c).head = c.head := by
+  have hsub : i.val - P1.numPhases = 1 := by omega
+  rw [seq_stepConfig_P2_head P1 (seq selfLoopDecrement R) c
+      (h2 := by omega)
+      (hlt := by rw [hsub, seq_numPhases, selfLoopDecrement_numPhases]; omega) hstate]
+  simp [seq, selfLoopDecrement, hsub, Configuration.moveHead]
+
+/-- Nested handoff step (outer phase `P1.numPhases + 1`): the tape is unchanged (scanned bit written
+back). -/
+theorem selfLoopDecrement_seqNested_stepConfig_handoff_tape
+    (P1 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) L)
+    {i : Fin (seq P1 (seq selfLoopDecrement R)).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases + 1) (hstate : c.state = ⟨i, s⟩) :
+    (TM.stepConfig (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) c).tape = c.tape := by
+  have hsub : i.val - P1.numPhases = 1 := by omega
+  have hwrite : (TM.stepConfig (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) c).tape
+      = c.write c.head (c.tape c.head) := by
+    rw [seq_stepConfig_P2_tape P1 (seq selfLoopDecrement R) c
+        (h2 := by omega)
+        (hlt := by rw [hsub, seq_numPhases, selfLoopDecrement_numPhases]; omega) hstate]
+    simp [seq, selfLoopDecrement, hsub]
+  rw [hwrite]
+  funext j
+  by_cases hj : j = c.head
+  · subst hj; simp [Configuration.write]
+  · simp [Configuration.write, hj]
+
 end ContractExpansion
 end Frontier
 end Pnp4

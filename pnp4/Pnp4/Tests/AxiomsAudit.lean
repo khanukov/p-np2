@@ -695,6 +695,8 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_runConfig_borrow
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_runConfig_stop
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_runConfig_counterValue
+-- D2t-3c-γ: the decrement→successor nested handoff step.
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_stepConfig_handoff_phase
 -- State lifting + heterogeneous-state skeleton composition (assembly milestone).
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_neverMovesLeft
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_stepConfig_phase

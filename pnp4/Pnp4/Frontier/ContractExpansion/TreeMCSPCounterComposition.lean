@@ -998,6 +998,255 @@ theorem selfLoopDecrement_seqP2_runConfig_counterValue (P1 : ConstStatePhasedPro
       rfl
     rw [htp ⟨(c0.head : Nat) + i, hb⟩, hv, if_neg (by omega), if_neg (by omega)]
 
+/-! ## Transitively-nested composition: the decrement in the P2∘P1 position
+
+For a `seqList` of length ≥ 3 with the decrement as a non-first component, it sits in a *doubly-nested*
+position: it is the first component (P1) of an inner `seq selfLoopDecrement R`, which is itself the
+non-first component (P2) of an outer `seq P1 (seq selfLoopDecrement R)`.  (E.g. the binary→unary loop
+body `seqList [stepRightOnce, selfLoopDecrement, …] = seq stepRightOnce (seq selfLoopDecrement …)`.)
+A step there is the outer P2-region step (`seq_stepConfig_P2_*`) feeding the inner P1-normal
+transition of the decrement.  These lemmas re-derive the borrow/stop behaviour in that position,
+extending the down-counter's composition lift to depth ≥ 2 — the decrement analogue of
+`gammaSelfLoopScan_seqNested_*`. -/
+
+/-- Nested borrow step (outer phase `P1.numPhases`, inner decrement phase `0`, bit `0`): the phase
+stays `P1.numPhases`. -/
+theorem selfLoopDecrement_seqNested_stepConfig_borrow_phase
+    (P1 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) L)
+    {i : Fin (seq P1 (seq selfLoopDecrement R)).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = false) :
+    ((TM.stepConfig (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) c).state).fst.val
+      = P1.numPhases := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_phase P1 (seq selfLoopDecrement R) c
+      (h2 := hi.ge) (hlt := by rw [hsub, seq_numPhases, selfLoopDecrement_numPhases]; omega) hstate]
+  simp [seq, selfLoopDecrement, hsub, hbit]
+
+/-- Nested borrow step (bit `0`): the head advances right. -/
+theorem selfLoopDecrement_seqNested_stepConfig_borrow_head
+    (P1 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) L)
+    {i : Fin (seq P1 (seq selfLoopDecrement R)).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = false) :
+    (TM.stepConfig (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) c).head
+      = Configuration.moveHead (c := c) Move.right := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_head P1 (seq selfLoopDecrement R) c
+      (h2 := hi.ge) (hlt := by rw [hsub, seq_numPhases, selfLoopDecrement_numPhases]; omega) hstate]
+  simp [seq, selfLoopDecrement, hsub, hbit]
+
+/-- Nested borrow step (bit `0`): the read `0` is flipped to `1`. -/
+theorem selfLoopDecrement_seqNested_stepConfig_borrow_tape
+    (P1 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) L)
+    {i : Fin (seq P1 (seq selfLoopDecrement R)).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = false) :
+    (TM.stepConfig (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) c).tape
+      = c.write c.head true := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_tape P1 (seq selfLoopDecrement R) c
+      (h2 := hi.ge) (hlt := by rw [hsub, seq_numPhases, selfLoopDecrement_numPhases]; omega) hstate]
+  simp [seq, selfLoopDecrement, hsub, hbit]
+
+/-- Nested stop step (bit `1`): the phase becomes `P1.numPhases + 1` (the inner decrement's shifted
+accept phase — the inner seq's own handoff point). -/
+theorem selfLoopDecrement_seqNested_stepConfig_stop_phase
+    (P1 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) L)
+    {i : Fin (seq P1 (seq selfLoopDecrement R)).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = true) :
+    ((TM.stepConfig (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) c).state).fst.val
+      = P1.numPhases + 1 := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_phase P1 (seq selfLoopDecrement R) c
+      (h2 := hi.ge) (hlt := by rw [hsub, seq_numPhases, selfLoopDecrement_numPhases]; omega) hstate]
+  simp [seq, selfLoopDecrement, hsub, hbit]
+
+/-- Nested stop step (bit `1`): the head stays put. -/
+theorem selfLoopDecrement_seqNested_stepConfig_stop_head
+    (P1 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) L)
+    {i : Fin (seq P1 (seq selfLoopDecrement R)).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = true) :
+    (TM.stepConfig (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) c).head = c.head := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_head P1 (seq selfLoopDecrement R) c
+      (h2 := hi.ge) (hlt := by rw [hsub, seq_numPhases, selfLoopDecrement_numPhases]; omega) hstate]
+  simp [seq, selfLoopDecrement, hsub, hbit, Configuration.moveHead]
+
+/-- Nested stop step (bit `1`): the read `1` is flipped to `0`. -/
+theorem selfLoopDecrement_seqNested_stepConfig_stop_tape
+    (P1 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) L)
+    {i : Fin (seq P1 (seq selfLoopDecrement R)).numPhases} {s : Unit}
+    (hi : i.val = P1.numPhases) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = true) :
+    (TM.stepConfig (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) c).tape
+      = c.write c.head false := by
+  have hsub : i.val - P1.numPhases = 0 := by omega
+  rw [seq_stepConfig_P2_tape P1 (seq selfLoopDecrement R) c
+      (h2 := hi.ge) (hlt := by rw [hsub, seq_numPhases, selfLoopDecrement_numPhases]; omega) hstate]
+  simp [seq, selfLoopDecrement, hsub, hbit]
+
+/-- Nested borrow-ripple invariant from an arbitrary start `c0` (outer phase `P1.numPhases`): if the
+window `[c0.head, c0.head + k)` is all `0`, then after `k` steps the phase still rests at
+`P1.numPhases`, the head has advanced to `c0.head + k`, and exactly those `k` cells have been set to
+`1`.  The doubly-nested (P2∘P1) analogue of `selfLoopDecrement_seqP2_runConfig_borrow`. -/
+theorem selfLoopDecrement_seqNested_runConfig_borrow (P1 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c0 : Configuration (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = P1.numPhases) :
+    ∀ k : Nat, (c0.head : Nat) + k ≤ L →
+      (∀ p : Fin ((seq P1 (seq selfLoopDecrement R)).toPhased.toTM.tapeLength L),
+        (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + k → c0.tape p = false) →
+      (((TM.runConfig (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) c0 k).state).fst : Nat)
+          = P1.numPhases
+      ∧ ((TM.runConfig (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) c0 k).head : Nat)
+          = (c0.head : Nat) + k
+      ∧ ∀ p : Fin ((seq P1 (seq selfLoopDecrement R)).toPhased.toTM.tapeLength L),
+          (TM.runConfig (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) c0 k).tape p
+            = (if (c0.head : Nat) ≤ (p : Nat) ∧ (p : Nat) < (c0.head : Nat) + k
+                then true else c0.tape p) := by
+  intro k
+  induction k with
+  | zero =>
+      intro _ _
+      refine ⟨hphase, by simp, ?_⟩
+      intro p
+      have hfalse : ¬ ((c0.head : Nat) ≤ (p : Nat) ∧ (p : Nat) < (c0.head : Nat) + 0) := by omega
+      show c0.tape p
+          = if (c0.head : Nat) ≤ (p : Nat) ∧ (p : Nat) < (c0.head : Nat) + 0 then true else c0.tape p
+      rw [if_neg hfalse]
+  | succ k ih =>
+      intro hk h1
+      obtain ⟨hph, hhd, htp⟩ := ih (by omega) (fun p hp1 hp2 => h1 p hp1 (by omega))
+      rw [TM.runConfig_succ]
+      set c := TM.runConfig (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) c0 k with hc
+      have hbnd : (c.head : Nat) + 1
+          < (seq P1 (seq selfLoopDecrement R)).toPhased.toTM.tapeLength L := by
+        rw [hhd]
+        show (c0.head : Nat) + k + 1 < L + (P1.timeBound L + (L + R.timeBound L + 1) + 1) + 1
+        omega
+      have hbit : c.tape c.head = false := by
+        rw [htp]
+        rw [if_neg (by rw [hhd]; omega)]
+        exact h1 c.head (by rw [hhd]; omega) (by rw [hhd]; omega)
+      refine ⟨?_, ?_, ?_⟩
+      · exact selfLoopDecrement_seqNested_stepConfig_borrow_phase P1 R c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit
+      · rw [selfLoopDecrement_seqNested_stepConfig_borrow_head P1 R c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+        simp only [Configuration.moveHead, dif_pos hbnd]
+        omega
+      · rw [selfLoopDecrement_seqNested_stepConfig_borrow_tape P1 R c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+        intro p
+        by_cases hp : p = c.head
+        · subst hp
+          rw [Configuration.write_self,
+            if_pos (by constructor <;> (rw [hhd]; omega))]
+        · rw [Configuration.write_other c hp true, htp p]
+          have hpc : (p : Nat) ≠ (c0.head : Nat) + k := by
+            intro h; exact hp (Fin.ext (by rw [hhd]; exact h))
+          by_cases hin : (c0.head : Nat) ≤ (p : Nat) ∧ (p : Nat) < (c0.head : Nat) + k
+          · rw [if_pos hin, if_pos ⟨hin.1, by omega⟩]
+          · rw [if_neg hin, if_neg (by
+              intro hcon; exact hin ⟨hcon.1, by omega⟩)]
+
+/-- After-decrement configuration in the nested position, from an arbitrary start `c0` (outer phase
+`P1.numPhases`, head `c0.head`): if the window `[c0.head, c0.head + j)` is all `0` and cell
+`c0.head + j` is `1`, then after `j + 1` steps the phase is `P1.numPhases + 1`, head `c0.head + j`,
+cells `[c0.head, c0.head + j)` set and cell `c0.head + j` cleared.  Doubly-nested analogue of
+`selfLoopDecrement_seqP2_runConfig_stop`. -/
+theorem selfLoopDecrement_seqNested_runConfig_stop (P1 R : ConstStatePhasedProgram Unit) {L : Nat}
+    (c0 : Configuration (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = P1.numPhases) (j : Nat) (hj : (c0.head : Nat) + j ≤ L)
+    (h_zeros : ∀ p : Fin ((seq P1 (seq selfLoopDecrement R)).toPhased.toTM.tapeLength L),
+      (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + j → c0.tape p = false)
+    (h_one : ∀ hb : (c0.head : Nat) + j < (seq P1 (seq selfLoopDecrement R)).toPhased.toTM.tapeLength L,
+      c0.tape ⟨(c0.head : Nat) + j, hb⟩ = true) :
+    (((TM.runConfig (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) c0 (j + 1)).state).fst : Nat)
+        = P1.numPhases + 1
+      ∧ ((TM.runConfig (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) c0 (j + 1)).head : Nat)
+          = (c0.head : Nat) + j
+      ∧ ∀ p : Fin ((seq P1 (seq selfLoopDecrement R)).toPhased.toTM.tapeLength L),
+          (TM.runConfig (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) c0 (j + 1)).tape p
+            = (if (c0.head : Nat) ≤ (p : Nat) ∧ (p : Nat) < (c0.head : Nat) + j then true
+                else if (p : Nat) = (c0.head : Nat) + j then false
+                else c0.tape p) := by
+  obtain ⟨hph, hhd, htp⟩ := selfLoopDecrement_seqNested_runConfig_borrow P1 R c0 hphase j hj h_zeros
+  rw [TM.runConfig_succ]
+  set c := TM.runConfig (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) c0 j with hc
+  have hhead_eq : c.head = ⟨(c0.head : Nat) + j, by rw [← hhd]; exact c.head.isLt⟩ := Fin.ext hhd
+  have hbit : c.tape c.head = true := by
+    rw [htp, if_neg (by rw [hhd]; omega), hhead_eq]
+    exact h_one _
+  refine ⟨?_, ?_, ?_⟩
+  · exact selfLoopDecrement_seqNested_stepConfig_stop_phase P1 R c
+      (i := c.state.fst) (s := c.state.snd) hph rfl hbit
+  · rw [selfLoopDecrement_seqNested_stepConfig_stop_head P1 R c
+      (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+    exact hhd
+  · rw [selfLoopDecrement_seqNested_stepConfig_stop_tape P1 R c
+      (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+    intro p
+    by_cases hp : p = c.head
+    · subst hp
+      rw [Configuration.write_self]
+      have h1 : ¬ ((c0.head : Nat) ≤ (c.head : Nat) ∧ (c.head : Nat) < (c0.head : Nat) + j) := by
+        rw [hhd]; omega
+      rw [if_neg h1, if_pos (by rw [hhd])]
+    · rw [Configuration.write_other c hp false, htp p]
+      have hpc : (p : Nat) ≠ (c0.head : Nat) + j := by
+        intro h; exact hp (Fin.ext (by rw [hhd]; exact h))
+      by_cases hin : (c0.head : Nat) ≤ (p : Nat) ∧ (p : Nat) < (c0.head : Nat) + j
+      · rw [if_pos hin, if_pos hin]
+      · rw [if_neg hin, if_neg hin, if_neg hpc]
+
+/-- Decrement `counterValue` (`before = after + 1`) survives composition in the nested position: on
+`seq P1 (seq selfLoopDecrement R)` from an arbitrary start `c0` (outer phase `P1.numPhases`), if the
+window `[c0.head, c0.head + k)` has first-one at offset `j` (`j < k`, `c0.head + k ≤ L`, so the value
+is positive), then after `j + 1` steps the little-endian value over that window has decreased by
+exactly one.  Doubly-nested analogue of `selfLoopDecrement_seqP2_runConfig_counterValue` — the
+down-counter's depth-≥2 composition lift. -/
+theorem selfLoopDecrement_seqNested_runConfig_counterValue (P1 R : ConstStatePhasedProgram Unit)
+    {L : Nat}
+    (c0 : Configuration (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = P1.numPhases) (j k : Nat) (hjk : j < k)
+    (hk : (c0.head : Nat) + k ≤ L)
+    (h_zeros : ∀ p : Fin ((seq P1 (seq selfLoopDecrement R)).toPhased.toTM.tapeLength L),
+      (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + j → c0.tape p = false)
+    (h_one : ∀ hb : (c0.head : Nat) + j < (seq P1 (seq selfLoopDecrement R)).toPhased.toTM.tapeLength L,
+      c0.tape ⟨(c0.head : Nat) + j, hb⟩ = true) :
+    counterValue c0 (c0.head : Nat) k
+      = counterValue (TM.runConfig (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) c0 (j + 1))
+          (c0.head : Nat) k + 1 := by
+  obtain ⟨_, _, htp⟩ :=
+    selfLoopDecrement_seqNested_runConfig_stop P1 R c0 hphase j (by omega) h_zeros h_one
+  refine counterValue_first_one_diff c0
+    (TM.runConfig (M := (seq P1 (seq selfLoopDecrement R)).toPhased.toTM) c0 (j + 1))
+    (c0.head : Nat) j k hjk (by
+      show (c0.head : Nat) + k ≤ L + (P1.timeBound L + (L + R.timeBound L + 1) + 1) + 1; omega)
+    ?_ ?_ ?_ ?_ ?_
+  · intro i hij hb
+    exact h_zeros ⟨(c0.head : Nat) + i, hb⟩ (Nat.le_add_right _ _) (Nat.add_lt_add_left hij _)
+  · intro hb
+    exact h_one hb
+  · intro i hij hb
+    have hv : ((⟨(c0.head : Nat) + i, hb⟩ :
+        Fin ((seq P1 (seq selfLoopDecrement R)).toPhased.toTM.tapeLength L)) : Nat)
+        = (c0.head : Nat) + i := rfl
+    rw [htp ⟨(c0.head : Nat) + i, hb⟩, hv, if_pos (by omega)]
+  · intro hb
+    have hv : ((⟨(c0.head : Nat) + j, hb⟩ :
+        Fin ((seq P1 (seq selfLoopDecrement R)).toPhased.toTM.tapeLength L)) : Nat)
+        = (c0.head : Nat) + j := rfl
+    rw [htp ⟨(c0.head : Nat) + j, hb⟩, hv, if_neg (by omega), if_pos rfl]
+  · intro i hji hik hb
+    have hv : ((⟨(c0.head : Nat) + i, hb⟩ :
+        Fin ((seq P1 (seq selfLoopDecrement R)).toPhased.toTM.tapeLength L)) : Nat)
+        = (c0.head : Nat) + i := rfl
+    rw [htp ⟨(c0.head : Nat) + i, hb⟩, hv, if_neg (by omega), if_neg (by omega)]
+
 end ContractExpansion
 end Frontier
 end Pnp4

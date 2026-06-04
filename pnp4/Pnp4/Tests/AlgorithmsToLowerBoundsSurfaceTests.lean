@@ -4035,6 +4035,16 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_runConfig_borrow
 #check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_runConfig_stop
 #check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_runConfig_counterValue
+-- Decrement in the doubly-nested P2∘P1 position (transitive composition, seqList depth ≥ 3).
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_stepConfig_borrow_phase
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_stepConfig_borrow_head
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_stepConfig_borrow_tape
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_stepConfig_stop_phase
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_stepConfig_stop_head
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_stepConfig_stop_tape
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_runConfig_borrow
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_runConfig_stop
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_runConfig_counterValue
 -- State lifting + heterogeneous-state skeleton composition (assembly milestone).
 #check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram
 #check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_neverMovesLeft

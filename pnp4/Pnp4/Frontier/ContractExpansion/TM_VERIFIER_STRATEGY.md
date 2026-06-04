@@ -1049,6 +1049,15 @@ toolkit shape it:
   run inductions mirror the standalone ones).  This is ~one brick per element, then a final assembly brick
   composing them via `seqList_run_seven` with head/tape windows tracked against the U-left layout.
 
+**Progress (this stack):** `seqList_run_{six,seven}` ✅ (#1544).  Decrement's depth-2 re-derivation ✅ —
+`selfLoopDecrement_seqNested_*` (`TreeMCSPCounterComposition.lean`: the six borrow/stop single-step
+lemmas plus the borrow-ripple, after-decrement, and `counterValue − 1` run lemmas on
+`seq P1 (seq selfLoopDecrement R)`, generic in `P1`/`R`).  This is the decrement analogue of
+`gammaSelfLoopScan_seqNested_*` and exactly element 2's segment behaviour for `seqList_run_seven`
+(`binToUnaryBody`'s decrement sits as `seq stepRightOnce (seq selfLoopDecrement R)`).  Remaining
+per-element re-derivations: `stepLeftOnce` / `selfLoopScanLeftOne` / `selfLoopAppendLeftOne` /
+`selfLoopScanRightOne` at their deeper chain depths, then the final assembly brick.
+
 **Then:** δ (`bZeroTest` — a `gammaSelfLoopScan` over `B`), ε (`loopUntilSink binToUnaryBody` — the
 combinator and `loopUntilSink_reachesSink` already exist), ζ (bridge `|U| = value(B) = (decodeFin …).val`).
 

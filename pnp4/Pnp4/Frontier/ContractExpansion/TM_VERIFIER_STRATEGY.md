@@ -1095,8 +1095,26 @@ cell right, tape unchanged — exactly `selfLoopDecrement_seqNested_runConfig_*`
 `B`'s low cells `[head+1, head+1+j)` all `0` and cell `head+1+j` set, after `2 + (j+1)` steps the machine
 is at phase `3` (decrement done), head on the cleared cell `head+1+j`, with `B`'s low `j` cells flipped
 to `1` and cell `head+1+j` cleared (composes `lead2` with `selfLoopDecrement_seqNested_runConfig_stop`
-via `TM.runConfig_add`).  Remaining: chain elements 3–7's segment lemmas onward (the home-seek scan back
-to the sentinel, then the U-left append and scan-home) with the growing layout-window bookkeeping.
+via `TM.runConfig_add`).  **Decrement→element-3 handoff composed ✅:**
+`binToUnaryBody_runConfig_afterDecrHandoff` (after `2 + (j+1) + 1` steps, phase `4`; the handoff's `R`
+is the `seqList` tail, so it matches the loop-body machine syntactically — no defeq friction).  Also
+landed: the two nested accept-handoff boundary lemmas
+`selfLoopDecrement_seqNested_stepConfig_handoff_*` and `stepLeftOnce_seqNested2_stepConfig_handoff_*`.
+
+> **⚠ Architectural blocker found (record for the next session).** Continuing the manual
+> handoff-chaining *past* the handoff — i.e. applying `stepLeftOnce_seqNested2_*` for element 3's move —
+> hits a **`whnf` heartbeat timeout**: the loop-body machine stores element 3 as the head of a `seqList`
+> (`seq … (seqList [stepLeftOnce, …])`) while `stepLeftOnce_seqNested2_*` expects the unfolded
+> `seq … (seq stepLeftOnce …)`.  These are defeq (one `seqList_cons`), but bridging them
+> (`have h : <seqList-form> := <seq-form lemma>`, or `show`/`rw`) forces Lean to check defeq between two
+> large `…toPhased.toTM` terms, exceeding `maxHeartbeats` (and it worsens for elements 5–7).  A
+> `maxHeartbeats` bump is a non-scaling hack.  **Resolution for the next session:** don't hand-chain
+> nested-`seq` element lemmas across the `seqList` boundary — instead drive the composition with
+> `seqList_run_seven` (which decomposes the run *in the `seqList` representation*, keeping each element's
+> segment in a form its `_seqNested…_` lemma matches without a full-machine defeq), or define
+> `binToUnaryBody` and all run lemmas on one consistent fully-unfolded `seq` representation from the
+> start.  Remaining: chain elements 3–7's segment lemmas via that mechanism (home-seek back to the
+> sentinel, then U-left append and scan-home) with the layout-window bookkeeping.
 
 **Then:** δ (`bZeroTest` — a `gammaSelfLoopScan` over `B`), ε (`loopUntilSink binToUnaryBody` — the
 combinator and `loopUntilSink_reachesSink` already exist), ζ (bridge `|U| = value(B) = (decodeFin …).val`).

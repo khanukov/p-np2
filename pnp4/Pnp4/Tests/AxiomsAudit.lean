@@ -541,6 +541,9 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendOne_seqP2_runConfig_stop
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_runConfig_scan
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_runConfig_append
+-- D2t-3c: leftward unary-append seqP2 lift (non-first phase).
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqP2_runConfig_scan
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqP2_runConfig_append
 #print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_runConfig_one
 #print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqP2_runConfig_one
 -- D2t-3c-β: the binary→unary home-seek run behaviour.

@@ -1132,11 +1132,18 @@ landed: the two nested accept-handoff boundary lemmas
 > second home-seek `stepLeftOnce` has stepped left off the sentinel onto `U`'s right end (`c0.head − 1`)
 > at phase `9` (new precondition `hHOME : 0 < c0.head`).  The element-4→5 handoff needed a new depth-4
 > `selfLoopScanLeftOne_seqNested3_stepConfig_handoff_*` (now in `TreeMCSPScanLeftOneProgram.lean`, modeled
-> on the depth-3 `stepLeftOnce` handoff).  **Remaining:** chain elements 6–7 on `bodyFull`
-> (`selfLoopAppendLeftOne_seqNested5_*` U-append, `selfLoopScanRightOne_seqNested6_*` scan-home, with a
-> handoff step before each — needing the depth-5/6 `_stepConfig_handoff_*` analogues — then the terminator
-> handoff into `idleCS`) with the U-region tape invariant (the `1^|U|` block + its left `0`-boundary),
-> culminating in the one-pass HOME→HOME headline (`counterValue B − 1`, `|U| + 1`, head back at HOME).
+> on the depth-3 `stepLeftOnce` handoff).  **Element-5→6 handoff + element 6 (`selfLoopAppendLeftOne`,
+> the U-append) composed ✅:** `binToUnaryBody_runConfig_afterStepLeft5Handoff` (phase `10`) and
+> `binToUnaryBody_runConfig_afterAppend6` — after `2 + (j+1) + 1 + 1 + 1 + (j+1) + 1 + 1 + 1 + (u+1)` steps
+> (`u = |U|`) the append has scanned left over `U`'s `u` `1`s and **written one fresh `1` at `U`'s left
+> `0`-boundary** (`c0.head − u − 1`), extending the unary output to `u + 1`, at phase `11`.  Needed the new
+> depth-5 `stepLeftOnce_seqNested4_stepConfig_handoff_*` (in `TreeMCSPStepLeftProgram.lean`); composed as
+> `scan(u) + append-stop(1)` to cover `u = 0` (empty `U`, first iteration); preconditions `hUfit`/`hU`
+> (the `1^u` block) / `hUboundary` (its left `0`).  The append-stop's tape write is reconciled with the
+> `if`-form tape via `Configuration.write_self` / `write` + `dif_neg`.  **Remaining:** the element-6→7
+> handoff + element 7 (`selfLoopScanRightOne_seqNested6_*` scan-home, needing the depth-6
+> `_stepConfig_handoff_*`), then the terminator handoff into `idleCS`, culminating in the one-pass
+> HOME→HOME headline (`counterValue B − 1`, `|U| + 1`, head back at HOME).
 
 **Then:** δ (`bZeroTest` — a `gammaSelfLoopScan` over `B`), ε (`loopUntilSink binToUnaryBody` — the
 combinator and `loopUntilSink_reachesSink` already exist), ζ (bridge `|U| = value(B) = (decodeFin …).val`).

@@ -1,5 +1,4 @@
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgram
-import Complexity.TMVerifier.TuringToolkit.BinaryCounter
 
 namespace Pnp4
 namespace Frontier

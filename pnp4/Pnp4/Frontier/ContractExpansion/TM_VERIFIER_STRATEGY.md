@@ -1101,20 +1101,27 @@ is the `seqList` tail, so it matches the loop-body machine syntactically — no 
 landed: the two nested accept-handoff boundary lemmas
 `selfLoopDecrement_seqNested_stepConfig_handoff_*` and `stepLeftOnce_seqNested2_stepConfig_handoff_*`.
 
-> **⚠ Architectural blocker found (record for the next session).** Continuing the manual
-> handoff-chaining *past* the handoff — i.e. applying `stepLeftOnce_seqNested2_*` for element 3's move —
-> hits a **`whnf` heartbeat timeout**: the loop-body machine stores element 3 as the head of a `seqList`
-> (`seq … (seqList [stepLeftOnce, …])`) while `stepLeftOnce_seqNested2_*` expects the unfolded
-> `seq … (seq stepLeftOnce …)`.  These are defeq (one `seqList_cons`), but bridging them
-> (`have h : <seqList-form> := <seq-form lemma>`, or `show`/`rw`) forces Lean to check defeq between two
-> large `…toPhased.toTM` terms, exceeding `maxHeartbeats` (and it worsens for elements 5–7).  A
-> `maxHeartbeats` bump is a non-scaling hack.  **Resolution for the next session:** don't hand-chain
-> nested-`seq` element lemmas across the `seqList` boundary — instead drive the composition with
-> `seqList_run_seven` (which decomposes the run *in the `seqList` representation*, keeping each element's
-> segment in a form its `_seqNested…_` lemma matches without a full-machine defeq), or define
-> `binToUnaryBody` and all run lemmas on one consistent fully-unfolded `seq` representation from the
-> start.  Remaining: chain elements 3–7's segment lemmas via that mechanism (home-seek back to the
-> sentinel, then U-left append and scan-home) with the layout-window bookkeeping.
+> **✅ Architectural blocker RESOLVED (`bodyFull` fully-unfolded representation).** The earlier manual
+> hand-chaining *past* the handoff hit a `whnf` heartbeat timeout because the loop-body machine stored
+> elements `3…7` buried inside one `seqList [stepLeftOnce, …]` literal while `stepLeftOnce_seqNested2_*`
+> (and the deeper element lemmas) expect the *fully `seq`-nested* form `seq … (seq stepLeftOnce …)`; the
+> previous attempt bridged them with `have h : <seqList-form> := <seq-form lemma>`, which forced Lean to
+> defeq-check two large `…toPhased.toTM` terms.  **Fix (the documented second option): drive the whole
+> composition on one consistent fully-unfolded `seq` representation.**  `bodyFull` is that representation
+> (`seq stepRightOnce (seq selfLoopDecrement (seq stepLeftOnce (… (seq selfLoopScanRightOne (seqList [])))))`),
+> with `binToUnaryBody_eq_bodyFull : binToUnaryBody = bodyFull := rfl` (axioms `[propext, Quot.sound]`,
+> Classical-free) as the cheap bridge.  On `bodyFull` every element appears as an explicit `seq` head, so
+> each `_seqNested…_` lemma `rw`-fires by **structural unification through the reducible abbrev** (one
+> abbrev delta, no whnf blow-up) — empirically fast.  The leading-steps / decrement / decrement-handoff
+> lemmas were restated on `bodyFull`, and **element 3 (`stepLeftOnce`) is now composed ✅:**
+> `binToUnaryBody_runConfig_afterStepLeft3` — after `2 + (j+1) + 1 + 1` steps, phase `5`, head one cell
+> left at `head+j`, tape the decremented pattern unchanged.  (One subtlety surfaced and is handled: the
+> abbrev-vs-unfolded `tapeLength` mismatch makes `omega` atomize the two forms differently; discharge
+> such bounds with `exact hb` / defeq rather than `omega`.)  **Remaining:** chain elements 4–7's segment
+> lemmas on `bodyFull` (`selfLoopScanLeftOne_seqNested3_*` home-seek, `stepLeftOnce_seqNested4_*`,
+> `selfLoopAppendLeftOne_seqNested5_*` U-append, `selfLoopScanRightOne_seqNested6_*` scan-home, then the
+> terminator handoff into `idleCS`) with the U-left layout-window bookkeeping, culminating in the
+> one-pass HOME→HOME headline (`counterValue B − 1`, `|U| + 1`, head back at HOME).
 
 **Then:** δ (`bZeroTest` — a `gammaSelfLoopScan` over `B`), ε (`loopUntilSink binToUnaryBody` — the
 combinator and `loopUntilSink_reachesSink` already exist), ζ (bridge `|U| = value(B) = (decodeFin …).val`).

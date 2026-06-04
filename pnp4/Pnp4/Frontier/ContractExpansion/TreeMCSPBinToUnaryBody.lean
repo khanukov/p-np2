@@ -35,11 +35,10 @@ unary output `U`, returning the head to HOME.  The seven steps are:
 6. `selfLoopAppendLeftOne`— scan left over `U`'s `1`s and append one `1` at its left `0`-end;
 7. `selfLoopScanRightOne` — scan right over `U`'s `1`s back to the sentinel (HOME).
 
-This module fixes the **definition** and its structural facts (`numPhases`, `timeBound`).  The seven
-per-element run-behaviour segment lemmas (the depth-1…depth-7 `_seqNested…_` re-derivations) are already
-proven in the element modules; the one-pass run-behaviour composition (via `seqList_run_seven`) is the
-next brick.  This builds no verifier and proves no separation; all surfaces carry only the standard
-`[propext, Classical.choice, Quot.sound]` triple.  **No `P ≠ NP` claim.**
+This module fixes the **definition** and its structural facts (`numPhases`, `timeBound`), and assembles
+the one-pass run-behaviour composition out of the per-element `_seqNested…_` segment lemmas (proven in
+the element modules).  This builds no verifier and proves no separation; all surfaces carry only the
+standard `[propext, Classical.choice, Quot.sound]` triple.  **No `P ≠ NP` claim.**
 -/
 
 /-- One pass of the binary→unary conversion loop body, as a flattened atomic 7-element `seqList`
@@ -72,14 +71,34 @@ stepLeft 1 + append n + scanRight n`, plus the seven `seqList` handoff steps).  
     selfLoopScanLeftOne_timeBound, selfLoopAppendLeftOne_timeBound, selfLoopScanRightOne_timeBound]
   omega
 
+/-! ### The fully-nested `seq` unfolding `bodyFull`
+
+The per-element segment lemmas (`stepLeftOnce_seqNested2_*`, `selfLoopScanLeftOne_seqNested3_*`, …)
+are stated on the *fully `seq`-nested* form `seq P1 (seq Q (seq … (seq elem R)))`, in which the element
+under analysis appears as an explicit `seq` head.  The defining `seqList` form keeps elements `3…7`
+buried inside one `seqList [stepLeftOnce, …]` literal, where those lemmas cannot `rw`-fire (the literal
+is not syntactically `seq stepLeftOnce …`).  `bodyFull` is the fully-nested unfolding; it is
+**`rfl`-equal** to `binToUnaryBody` (the unfolding is purely `seqList_cons`/`seqList_nil`), so the
+run-composition runs on `bodyFull` (where every element matches its lemma structurally) and transfers
+to `binToUnaryBody` via `binToUnaryBody_eq_bodyFull`.  The `rfl` bridge and the per-element `rw`
+matching through the abbrev were both verified to be fast (one abbrev delta, no whnf blow-up). -/
+abbrev bodyFull : ConstStatePhasedProgram Unit :=
+  seq stepRightOnce (seq selfLoopDecrement (seq stepLeftOnce
+    (seq selfLoopScanLeftOne (seq stepLeftOnce (seq selfLoopAppendLeftOne
+      (seq selfLoopScanRightOne (seqList [])))))))
+
+/-- `binToUnaryBody` and its fully-nested unfolding `bodyFull` are definitionally equal (the seven-fold
+`seqList_cons`/`seqList_nil` unfolding).  The run-composition is stated on `bodyFull`; this bridge
+transfers it to `binToUnaryBody` for the loop. -/
+theorem binToUnaryBody_eq_bodyFull : binToUnaryBody = bodyFull := rfl
+
 /-! ### Leading two steps: `stepRightOnce`'s move, then the handoff into the decrement
 
-`stepRightOnce` is the outermost P1 of `binToUnaryBody = seq stepRightOnce P2` (any `P2`).  These
-single-step lemmas re-derive its move/handoff via the generic `seq_stepConfig_P1_*` lemmas (bound phase
-parameter `i` with `hi`, the proven `seekHomeAfterDecrement` pattern), and `binToUnaryBody_runConfig_lead2`
-composes the two steps for the concrete `P2 = seq selfLoopDecrement (seqList …)`: after `2` steps the
-machine is at phase `2` (the decrement's shifted start), head advanced one cell right, tape unchanged —
-exactly `selfLoopDecrement_seqNested_runConfig_*`'s precondition (`P1 := stepRightOnce`). -/
+`stepRightOnce` is the outermost P1 of `bodyFull = seq stepRightOnce P2` (any `P2`).  These single-step
+lemmas re-derive its move/handoff via the generic `seq_stepConfig_P1_*` lemmas (bound phase parameter
+`i` with `hi`), and `binToUnaryBody_runConfig_lead2` composes the two steps: after `2` steps the machine
+is at phase `2` (the decrement's shifted start), head advanced one cell right, tape unchanged — exactly
+`selfLoopDecrement_seqNested_runConfig_*`'s precondition (`P1 := stepRightOnce`). -/
 
 /-- Move step (phase `0`): the phase advances to `1`. -/
 theorem binToUnaryBody_step1_phase (P2 : ConstStatePhasedProgram Unit) {L : Nat}
@@ -149,72 +168,31 @@ theorem binToUnaryBody_step2_tape (P2 : ConstStatePhasedProgram Unit) {L : Nat}
   seq_stepConfig_P1_accept_tape stepRightOnce P2 c
     (h1 := by rw [hi]; decide) (hacc := by rw [hi]; decide) hstate
 
-/-- The two leading steps as one run, on the explicit `seq` form of `binToUnaryBody`
-(`binToUnaryBody_eq_seq`, `= rfl`): from start phase `0` with `head + 1` in bounds, after `2` steps the
-phase is `2`, the head has advanced one cell right, and the tape is unchanged. -/
+/-- The two leading steps as one run, on the fully-nested `bodyFull` form: from start phase `0` with
+`head + 1` in bounds, after `2` steps the phase is `2`, the head has advanced one cell right, and the
+tape is unchanged. -/
 theorem binToUnaryBody_runConfig_lead2 {L : Nat}
-    (c0 : Configuration (M := (seq stepRightOnce
-      (seq selfLoopDecrement
-        (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
-          selfLoopScanRightOne]))).toPhased.toTM) L)
+    (c0 : Configuration (M := bodyFull.toPhased.toTM) L)
     (hphase : (c0.state.fst : Nat) = 0)
-    (hhead : (c0.head : Nat) + 1 < (seq stepRightOnce
-      (seq selfLoopDecrement
-        (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
-          selfLoopScanRightOne]))).toPhased.toTM.tapeLength L) :
-    (((TM.runConfig (M := (seq stepRightOnce
-        (seq selfLoopDecrement
-          (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
-            selfLoopScanRightOne]))).toPhased.toTM) c0 2).state).fst : Nat) = 2
-      ∧ ((TM.runConfig (M := (seq stepRightOnce
-          (seq selfLoopDecrement
-            (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
-              selfLoopScanRightOne]))).toPhased.toTM) c0 2).head : Nat) = (c0.head : Nat) + 1
-      ∧ (TM.runConfig (M := (seq stepRightOnce
-          (seq selfLoopDecrement
-            (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
-              selfLoopScanRightOne]))).toPhased.toTM) c0 2).tape = c0.tape := by
-  have e2 : TM.runConfig (M := (seq stepRightOnce
-        (seq selfLoopDecrement (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce,
-          selfLoopAppendLeftOne, selfLoopScanRightOne]))).toPhased.toTM) c0 2
-      = TM.stepConfig (M := (seq stepRightOnce
-          (seq selfLoopDecrement (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce,
-            selfLoopAppendLeftOne, selfLoopScanRightOne]))).toPhased.toTM)
-          (TM.stepConfig (M := (seq stepRightOnce
-            (seq selfLoopDecrement (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce,
-              selfLoopAppendLeftOne, selfLoopScanRightOne]))).toPhased.toTM) c0) := by
+    (hhead : (c0.head : Nat) + 1 < bodyFull.toPhased.toTM.tapeLength L) :
+    (((TM.runConfig (M := bodyFull.toPhased.toTM) c0 2).state).fst : Nat) = 2
+      ∧ ((TM.runConfig (M := bodyFull.toPhased.toTM) c0 2).head : Nat) = (c0.head : Nat) + 1
+      ∧ (TM.runConfig (M := bodyFull.toPhased.toTM) c0 2).tape = c0.tape := by
+  have e2 : TM.runConfig (M := bodyFull.toPhased.toTM) c0 2
+      = TM.stepConfig (M := bodyFull.toPhased.toTM)
+          (TM.stepConfig (M := bodyFull.toPhased.toTM) c0) := by
     rw [show (2 : Nat) = 1 + 1 from rfl, runConfig_add, runConfig_one, runConfig_one]
-  have h1p := binToUnaryBody_step1_phase
-    (seq selfLoopDecrement (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce,
-      selfLoopAppendLeftOne, selfLoopScanRightOne])) c0
-    (i := c0.state.fst) (s := c0.state.snd) hphase rfl
-  have h1h := binToUnaryBody_step1_head
-    (seq selfLoopDecrement (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce,
-      selfLoopAppendLeftOne, selfLoopScanRightOne])) c0
-    (i := c0.state.fst) (s := c0.state.snd) hphase rfl hhead
-  have h1t := binToUnaryBody_step1_tape
-    (seq selfLoopDecrement (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce,
-      selfLoopAppendLeftOne, selfLoopScanRightOne])) c0
-    (i := c0.state.fst) (s := c0.state.snd) hphase rfl
+  have h1p := binToUnaryBody_step1_phase _ c0 (i := c0.state.fst) (s := c0.state.snd) hphase rfl
+  have h1h := binToUnaryBody_step1_head _ c0 (i := c0.state.fst) (s := c0.state.snd) hphase rfl hhead
+  have h1t := binToUnaryBody_step1_tape _ c0 (i := c0.state.fst) (s := c0.state.snd) hphase rfl
   rw [e2]
-  set c1 := TM.stepConfig (M := (seq stepRightOnce
-    (seq selfLoopDecrement (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce,
-      selfLoopAppendLeftOne, selfLoopScanRightOne]))).toPhased.toTM) c0 with hc1
+  set c1 := TM.stepConfig (M := bodyFull.toPhased.toTM) c0 with hc1
   refine ⟨?_, ?_, ?_⟩
-  · have h2 := binToUnaryBody_step2_phase
-      (seq selfLoopDecrement (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce,
-        selfLoopAppendLeftOne, selfLoopScanRightOne])) c1
-      (i := c1.state.fst) (s := c1.state.snd) h1p rfl
+  · have h2 := binToUnaryBody_step2_phase _ c1 (i := c1.state.fst) (s := c1.state.snd) h1p rfl
     rw [h2]; simp [seq_startPhase_val, selfLoopDecrement_startPhase_val]
-  · rw [binToUnaryBody_step2_head
-      (seq selfLoopDecrement (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce,
-        selfLoopAppendLeftOne, selfLoopScanRightOne])) c1
-      (i := c1.state.fst) (s := c1.state.snd) h1p rfl]
+  · rw [binToUnaryBody_step2_head _ c1 (i := c1.state.fst) (s := c1.state.snd) h1p rfl]
     exact h1h
-  · rw [binToUnaryBody_step2_tape
-      (seq selfLoopDecrement (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce,
-        selfLoopAppendLeftOne, selfLoopScanRightOne])) c1
-      (i := c1.state.fst) (s := c1.state.snd) h1p rfl]
+  · rw [binToUnaryBody_step2_tape _ c1 (i := c1.state.fst) (s := c1.state.snd) h1p rfl]
     exact h1t
 
 /-- Run composition through element 2 (the decrement): from HOME (phase `0`, head on the sentinel) with
@@ -224,54 +202,25 @@ rests on the just-cleared cell `head+1+j`, and `B`'s low `j` cells are flipped t
 `head+1+j` cleared.  Composes `binToUnaryBody_runConfig_lead2` (the leading 2 steps) with
 `selfLoopDecrement_seqNested_runConfig_stop` (`P1 := stepRightOnce`) via `TM.runConfig_add`. -/
 theorem binToUnaryBody_runConfig_afterDecrement {L : Nat}
-    (c0 : Configuration (M := (seq stepRightOnce
-      (seq selfLoopDecrement
-        (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
-          selfLoopScanRightOne]))).toPhased.toTM) L)
+    (c0 : Configuration (M := bodyFull.toPhased.toTM) L)
     (hphase : (c0.state.fst : Nat) = 0) (j : Nat)
     (hj : (c0.head : Nat) + 1 + j ≤ L)
-    (hbnd : (c0.head : Nat) + 1 < (seq stepRightOnce
-      (seq selfLoopDecrement
-        (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
-          selfLoopScanRightOne]))).toPhased.toTM.tapeLength L)
-    (h_zeros : ∀ p : Fin ((seq stepRightOnce
-        (seq selfLoopDecrement
-          (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
-            selfLoopScanRightOne]))).toPhased.toTM.tapeLength L),
+    (hbnd : (c0.head : Nat) + 1 < bodyFull.toPhased.toTM.tapeLength L)
+    (h_zeros : ∀ p : Fin (bodyFull.toPhased.toTM.tapeLength L),
       (c0.head : Nat) + 1 ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + 1 + j → c0.tape p = false)
-    (h_one : ∀ hb : (c0.head : Nat) + 1 + j < (seq stepRightOnce
-        (seq selfLoopDecrement
-          (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
-            selfLoopScanRightOne]))).toPhased.toTM.tapeLength L,
+    (h_one : ∀ hb : (c0.head : Nat) + 1 + j < bodyFull.toPhased.toTM.tapeLength L,
       c0.tape ⟨(c0.head : Nat) + 1 + j, hb⟩ = true) :
-    (((TM.runConfig (M := (seq stepRightOnce
-        (seq selfLoopDecrement
-          (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
-            selfLoopScanRightOne]))).toPhased.toTM) c0 (2 + (j + 1))).state).fst : Nat) = 3
-      ∧ ((TM.runConfig (M := (seq stepRightOnce
-          (seq selfLoopDecrement
-            (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
-              selfLoopScanRightOne]))).toPhased.toTM) c0 (2 + (j + 1))).head : Nat)
+    (((TM.runConfig (M := bodyFull.toPhased.toTM) c0 (2 + (j + 1))).state).fst : Nat) = 3
+      ∧ ((TM.runConfig (M := bodyFull.toPhased.toTM) c0 (2 + (j + 1))).head : Nat)
           = (c0.head : Nat) + 1 + j
-      ∧ ∀ p : Fin ((seq stepRightOnce
-          (seq selfLoopDecrement
-            (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
-              selfLoopScanRightOne]))).toPhased.toTM.tapeLength L),
-          (TM.runConfig (M := (seq stepRightOnce
-            (seq selfLoopDecrement
-              (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
-                selfLoopScanRightOne]))).toPhased.toTM) c0 (2 + (j + 1))).tape p
+      ∧ ∀ p : Fin (bodyFull.toPhased.toTM.tapeLength L),
+          (TM.runConfig (M := bodyFull.toPhased.toTM) c0 (2 + (j + 1))).tape p
             = (if (c0.head : Nat) + 1 ≤ (p : Nat) ∧ (p : Nat) < (c0.head : Nat) + 1 + j then true
                 else if (p : Nat) = (c0.head : Nat) + 1 + j then false else c0.tape p) := by
   obtain ⟨hp2, hh2, ht2⟩ := binToUnaryBody_runConfig_lead2 c0 hphase hbnd
   rw [TM.runConfig_add]
-  set c2 := TM.runConfig (M := (seq stepRightOnce
-    (seq selfLoopDecrement
-      (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
-        selfLoopScanRightOne]))).toPhased.toTM) c0 2 with hc2
-  obtain ⟨hsp, hsh, hst⟩ := selfLoopDecrement_seqNested_runConfig_stop stepRightOnce
-    (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
-      selfLoopScanRightOne]) c2
+  set c2 := TM.runConfig (M := bodyFull.toPhased.toTM) c0 2 with hc2
+  obtain ⟨hsp, hsh, hst⟩ := selfLoopDecrement_seqNested_runConfig_stop stepRightOnce _ c2
     (by rw [stepRightOnce_numPhases]; exact hp2) j (by rw [hh2]; exact hj)
     (by
       intro p hp1 hp2'
@@ -280,12 +229,11 @@ theorem binToUnaryBody_runConfig_afterDecrement {L : Nat}
     (by
       intro hb
       rw [ht2]
-      have hb2 : (c0.head : Nat) + 1 + j < (seq stepRightOnce
-          (seq selfLoopDecrement
-            (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
-              selfLoopScanRightOne]))).toPhased.toTM.tapeLength L := by omega
+      have hcjj : (c2.head : Nat) + j = (c0.head : Nat) + 1 + j := by omega
+      have hb2 : (c0.head : Nat) + 1 + j < bodyFull.toPhased.toTM.tapeLength L := by
+        rw [← hcjj]; exact hb
       rw [show (⟨(c2.head : Nat) + j, hb⟩ : Fin _) = (⟨(c0.head : Nat) + 1 + j, hb2⟩ : Fin _)
-        from Fin.ext (by show (c2.head : Nat) + j = (c0.head : Nat) + 1 + j; omega)]
+        from Fin.ext hcjj]
       exact h_one hb2)
   refine ⟨?_, ?_, ?_⟩
   · rw [hsp, stepRightOnce_numPhases]
@@ -298,78 +246,90 @@ offset `j`, after `2 + (j+1) + 1` steps the inner `seq` has handed off out of th
 pattern.  Composes `binToUnaryBody_runConfig_afterDecrement` with
 `selfLoopDecrement_seqNested_stepConfig_handoff_*`. -/
 theorem binToUnaryBody_runConfig_afterDecrHandoff {L : Nat}
-    (c0 : Configuration (M := (seq stepRightOnce
-      (seq selfLoopDecrement
-        (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
-          selfLoopScanRightOne]))).toPhased.toTM) L)
+    (c0 : Configuration (M := bodyFull.toPhased.toTM) L)
     (hphase : (c0.state.fst : Nat) = 0) (j : Nat)
     (hj : (c0.head : Nat) + 1 + j ≤ L)
-    (hbnd : (c0.head : Nat) + 1 < (seq stepRightOnce
-      (seq selfLoopDecrement
-        (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
-          selfLoopScanRightOne]))).toPhased.toTM.tapeLength L)
-    (h_zeros : ∀ p : Fin ((seq stepRightOnce
-        (seq selfLoopDecrement
-          (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
-            selfLoopScanRightOne]))).toPhased.toTM.tapeLength L),
+    (hbnd : (c0.head : Nat) + 1 < bodyFull.toPhased.toTM.tapeLength L)
+    (h_zeros : ∀ p : Fin (bodyFull.toPhased.toTM.tapeLength L),
       (c0.head : Nat) + 1 ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + 1 + j → c0.tape p = false)
-    (h_one : ∀ hb : (c0.head : Nat) + 1 + j < (seq stepRightOnce
-        (seq selfLoopDecrement
-          (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
-            selfLoopScanRightOne]))).toPhased.toTM.tapeLength L,
+    (h_one : ∀ hb : (c0.head : Nat) + 1 + j < bodyFull.toPhased.toTM.tapeLength L,
       c0.tape ⟨(c0.head : Nat) + 1 + j, hb⟩ = true) :
-    (((TM.runConfig (M := (seq stepRightOnce
-        (seq selfLoopDecrement
-          (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
-            selfLoopScanRightOne]))).toPhased.toTM) c0 (2 + (j + 1) + 1)).state).fst : Nat) = 4
-      ∧ ((TM.runConfig (M := (seq stepRightOnce
-          (seq selfLoopDecrement
-            (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
-              selfLoopScanRightOne]))).toPhased.toTM) c0 (2 + (j + 1) + 1)).head : Nat)
+    (((TM.runConfig (M := bodyFull.toPhased.toTM) c0 (2 + (j + 1) + 1)).state).fst : Nat) = 4
+      ∧ ((TM.runConfig (M := bodyFull.toPhased.toTM) c0 (2 + (j + 1) + 1)).head : Nat)
           = (c0.head : Nat) + 1 + j
-      ∧ ∀ p : Fin ((seq stepRightOnce
-          (seq selfLoopDecrement
-            (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
-              selfLoopScanRightOne]))).toPhased.toTM.tapeLength L),
-          (TM.runConfig (M := (seq stepRightOnce
-            (seq selfLoopDecrement
-              (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
-                selfLoopScanRightOne]))).toPhased.toTM) c0 (2 + (j + 1) + 1)).tape p
+      ∧ ∀ p : Fin (bodyFull.toPhased.toTM.tapeLength L),
+          (TM.runConfig (M := bodyFull.toPhased.toTM) c0 (2 + (j + 1) + 1)).tape p
             = (if (c0.head : Nat) + 1 ≤ (p : Nat) ∧ (p : Nat) < (c0.head : Nat) + 1 + j then true
                 else if (p : Nat) = (c0.head : Nat) + 1 + j then false else c0.tape p) := by
   obtain ⟨hap, hah, hat⟩ := binToUnaryBody_runConfig_afterDecrement c0 hphase j hj hbnd h_zeros h_one
   rw [show (2 + (j + 1) + 1) = (2 + (j + 1)) + 1 from by omega, TM.runConfig_add, TM.runConfig_one]
-  set cD := TM.runConfig (M := (seq stepRightOnce
-    (seq selfLoopDecrement
-      (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
-        selfLoopScanRightOne]))).toPhased.toTM) c0 (2 + (j + 1)) with hcD
+  set cD := TM.runConfig (M := bodyFull.toPhased.toTM) c0 (2 + (j + 1)) with hcD
   refine ⟨?_, ?_, ?_⟩
-  · rw [selfLoopDecrement_seqNested_stepConfig_handoff_phase stepRightOnce
-        (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
-          selfLoopScanRightOne]) cD (i := cD.state.fst) (s := cD.state.snd)
+  · rw [selfLoopDecrement_seqNested_stepConfig_handoff_phase stepRightOnce _ cD
+        (i := cD.state.fst) (s := cD.state.snd)
         (by rw [stepRightOnce_numPhases]; exact hap) rfl]
     simp [seq_startPhase_val, stepLeftOnce_startPhase_val]
-  · rw [selfLoopDecrement_seqNested_stepConfig_handoff_head stepRightOnce
-        (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
-          selfLoopScanRightOne]) cD (i := cD.state.fst) (s := cD.state.snd)
+  · rw [selfLoopDecrement_seqNested_stepConfig_handoff_head stepRightOnce _ cD
+        (i := cD.state.fst) (s := cD.state.snd)
         (by rw [stepRightOnce_numPhases]; exact hap) rfl]
     exact hah
   · intro p
-    rw [selfLoopDecrement_seqNested_stepConfig_handoff_tape stepRightOnce
-        (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
-          selfLoopScanRightOne]) cD (i := cD.state.fst) (s := cD.state.snd)
+    rw [selfLoopDecrement_seqNested_stepConfig_handoff_tape stepRightOnce _ cD
+        (i := cD.state.fst) (s := cD.state.snd)
         (by rw [stepRightOnce_numPhases]; exact hap) rfl]
     exact hat p
 
-/-! ### Next: the one-pass run composition
+/-- Run composition through element 3 (`stepLeftOnce`): from HOME with `B`'s lowest set bit at offset
+`j`, after `2 + (j+1) + 1 + 1` steps the machine has taken element 3's single left step, reaching phase
+`5`; the head has moved one cell left to `head+j` (off the just-cleared cell), and the tape is the same
+decremented pattern (a left step writes the scanned bit back).  Composes
+`binToUnaryBody_runConfig_afterDecrHandoff` with `stepLeftOnce_seqNested2_stepConfig_*`
+(`P1 := stepRightOnce`, `Q := selfLoopDecrement`) via `TM.runConfig_add`/`runConfig_one`. -/
+theorem binToUnaryBody_runConfig_afterStepLeft3 {L : Nat}
+    (c0 : Configuration (M := bodyFull.toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = 0) (j : Nat)
+    (hj : (c0.head : Nat) + 1 + j ≤ L)
+    (hbnd : (c0.head : Nat) + 1 < bodyFull.toPhased.toTM.tapeLength L)
+    (h_zeros : ∀ p : Fin (bodyFull.toPhased.toTM.tapeLength L),
+      (c0.head : Nat) + 1 ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + 1 + j → c0.tape p = false)
+    (h_one : ∀ hb : (c0.head : Nat) + 1 + j < bodyFull.toPhased.toTM.tapeLength L,
+      c0.tape ⟨(c0.head : Nat) + 1 + j, hb⟩ = true) :
+    (((TM.runConfig (M := bodyFull.toPhased.toTM) c0 (2 + (j + 1) + 1 + 1)).state).fst : Nat) = 5
+      ∧ ((TM.runConfig (M := bodyFull.toPhased.toTM) c0 (2 + (j + 1) + 1 + 1)).head : Nat)
+          = (c0.head : Nat) + j
+      ∧ ∀ p : Fin (bodyFull.toPhased.toTM.tapeLength L),
+          (TM.runConfig (M := bodyFull.toPhased.toTM) c0 (2 + (j + 1) + 1 + 1)).tape p
+            = (if (c0.head : Nat) + 1 ≤ (p : Nat) ∧ (p : Nat) < (c0.head : Nat) + 1 + j then true
+                else if (p : Nat) = (c0.head : Nat) + 1 + j then false else c0.tape p) := by
+  obtain ⟨hap, hah, hat⟩ := binToUnaryBody_runConfig_afterDecrHandoff c0 hphase j hj hbnd h_zeros h_one
+  rw [show (2 + (j + 1) + 1 + 1) = (2 + (j + 1) + 1) + 1 from rfl, TM.runConfig_add, TM.runConfig_one]
+  set cS := TM.runConfig (M := bodyFull.toPhased.toTM) c0 (2 + (j + 1) + 1) with hcS
+  refine ⟨?_, ?_, ?_⟩
+  · rw [stepLeftOnce_seqNested2_stepConfig_phase stepRightOnce selfLoopDecrement _ cS
+        (i := cS.state.fst) (s := cS.state.snd)
+        (by rw [stepRightOnce_numPhases, selfLoopDecrement_numPhases]; exact hap) rfl]
+    rw [stepRightOnce_numPhases, selfLoopDecrement_numPhases]
+  · rw [stepLeftOnce_seqNested2_stepConfig_head stepRightOnce selfLoopDecrement _ cS
+        (i := cS.state.fst) (s := cS.state.snd)
+        (by rw [stepRightOnce_numPhases, selfLoopDecrement_numPhases]; exact hap) rfl
+        (by rw [hah]; omega)]
+    rw [hah]; omega
+  · intro p
+    rw [stepLeftOnce_seqNested2_stepConfig_tape stepRightOnce selfLoopDecrement _ cS
+        (i := cS.state.fst) (s := cS.state.snd)
+        (by rw [stepRightOnce_numPhases, selfLoopDecrement_numPhases]; exact hap) rfl]
+    exact hat p
 
-The seven per-element segment lemmas (`stepRightOnce` as the outermost P1 via `seq_stepConfig_P1_*`,
-then `selfLoopDecrement_seqNested_*`, `stepLeftOnce_seqNested2_*`, `selfLoopScanLeftOne_seqNested3_*`,
-`stepLeftOnce_seqNested4_*`, `selfLoopAppendLeftOne_seqNested5_*`, `selfLoopScanRightOne_seqNested6_*`)
-compose — via `seqList_run_seven` for the time skeleton and `TM.runConfig_add` at each element boundary
-— into the one-pass HOME→HOME run behaviour (`counterValue B − 1`, `|U| + 1`, head back at HOME) on the
-U-left layout.  That composition is the next brick; this module fixes the definition and the structural
-facts it consumes. -/
+/-! ### Next: elements 4–7 and the one-pass headline
+
+`afterStepLeft3` lands the head on `B`'s flipped `1`-run at phase `5`, ready for element 4
+(`selfLoopScanLeftOne`, depth 4) to scan left over that run back to the sentinel (HOME).  The remaining
+segment lemmas — `selfLoopScanLeftOne_seqNested3_*` (element 4), `stepLeftOnce_seqNested4_*` (element 5),
+`selfLoopAppendLeftOne_seqNested5_*` (element 6), `selfLoopScanRightOne_seqNested6_*` (element 7), and
+the final terminator handoff into `idleCS` — chain on the same `bodyFull` form via `TM.runConfig_add`,
+each consuming the previous checkpoint.  Their preconditions read the U-region (the `1^|U|` block and
+the sentinel), so they require the full U-left tape invariant; that is the next brick, culminating in the
+one-pass HOME→HOME headline (`counterValue B − 1`, `|U| + 1`, head back at HOME). -/
 
 end ContractExpansion
 end Frontier

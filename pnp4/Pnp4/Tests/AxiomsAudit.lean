@@ -560,6 +560,9 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_runConfig_terminator
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqP2_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqP2_runConfig_terminator
+-- D2t-3c-γ: leftward scan-over-1s at chain-depth 4 (element 4 of the flattened binToUnaryBody chain).
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqNested3_runConfig_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqNested3_runConfig_terminator
 -- Rightward scan-over-`1`s (pure-traversal fourth scan; marker-free unary-distance seek, §6k).
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_runConfig_terminator

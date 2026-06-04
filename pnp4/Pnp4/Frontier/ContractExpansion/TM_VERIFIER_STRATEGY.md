@@ -1059,10 +1059,14 @@ lemmas plus the borrow-ripple, after-decrement, and `counterValue − 1` run lem
 (`TreeMCSPStepLeftProgram.lean`: phase/head/tape single-step lemmas + the one-step run lemma on
 `seq P1 (seq Q (seq stepLeftOnce R))`, generic in `P1`/`Q`/`R`), proven by chaining the outer
 `seq_stepConfig_P2_*` into a `simp [seq, stepLeftOnce, hsub]` that navigates both inner `seq` levels.
-Remaining per-element re-derivations: `selfLoopScanLeftOne` (depth 4), `stepLeftOnce` (depth 5),
-`selfLoopAppendLeftOne` (depth 6), `selfLoopScanRightOne` (depth 7) — the depth-≥4 navigation also
-needs the middle `¬(a + b < a)` comparison facts supplied to `simp` (depth 3 closes via
-`lt_self_iff_false` alone) — then the final assembly brick.
+Element 4 (`selfLoopScanLeftOne`, chain-depth 4) re-derivation ✅ — `selfLoopScanLeftOne_seqNested3_*`
+(`TreeMCSPScanLeftOneProgram.lean`: the scan/stop single-step lemmas + the scanning invariant and
+terminator-locating run lemmas on `seq P1 (seq Q (seq Q2 (seq selfLoopScanLeftOne R)))`, generic in
+`P1`/`Q`/`Q2`/`R`); the depth-4 navigation supplies the middle `¬(Q.numPhases + Q2.numPhases <
+Q.numPhases)` fact to `simp` (depth 3 closed via `lt_self_iff_false` alone), confirming the self-loop
+nesting scales past depth 2.  Remaining per-element re-derivations: `stepLeftOnce` (depth 5),
+`selfLoopAppendLeftOne` (depth 6), `selfLoopScanRightOne` (depth 7) — each a mechanical mirror at one
+further depth — then the final assembly brick.
 
 **Then:** δ (`bZeroTest` — a `gammaSelfLoopScan` over `B`), ε (`loopUntilSink binToUnaryBody` — the
 combinator and `loopUntilSink_reachesSink` already exist), ζ (bridge `|U| = value(B) = (decodeFin …).val`).

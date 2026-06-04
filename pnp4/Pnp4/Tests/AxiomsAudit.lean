@@ -571,6 +571,7 @@ end Pnp4
 -- D2t-3c-γ: the assembled binary→unary loop body's structural timeBound + run-composition leading steps.
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_timeBound
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_lead2
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterDecrement
 -- Rightward scan-over-`1`s (pure-traversal fourth scan; marker-free unary-distance seek, §6k).
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_runConfig_terminator

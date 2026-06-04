@@ -1091,7 +1091,12 @@ composition `binToUnaryBody_runConfig_lead2` (`TreeMCSPBinToUnaryBody.lean`) —
 `P2`, the proven `seekHomeAfterDecrement` bound-`i` pattern): from start phase `0` with `head + 1` in
 bounds, after `2` steps the machine is at phase `2` (the decrement's shifted start), head advanced one
 cell right, tape unchanged — exactly `selfLoopDecrement_seqNested_runConfig_*`'s precondition.
-Remaining: chain elements 2–7's segment lemmas onward with the layout-window bookkeeping.
+**Element 2 (decrement) segment composed ✅:** `binToUnaryBody_runConfig_afterDecrement` — from HOME with
+`B`'s low cells `[head+1, head+1+j)` all `0` and cell `head+1+j` set, after `2 + (j+1)` steps the machine
+is at phase `3` (decrement done), head on the cleared cell `head+1+j`, with `B`'s low `j` cells flipped
+to `1` and cell `head+1+j` cleared (composes `lead2` with `selfLoopDecrement_seqNested_runConfig_stop`
+via `TM.runConfig_add`).  Remaining: chain elements 3–7's segment lemmas onward (the home-seek scan back
+to the sentinel, then the U-left append and scan-home) with the growing layout-window bookkeeping.
 
 **Then:** δ (`bZeroTest` — a `gammaSelfLoopScan` over `B`), ε (`loopUntilSink binToUnaryBody` — the
 combinator and `loopUntilSink_reachesSink` already exist), ζ (bridge `|U| = value(B) = (decodeFin …).val`).

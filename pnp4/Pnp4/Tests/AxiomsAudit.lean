@@ -85,6 +85,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPStepLeftProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSeekHomeProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryBody
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryMeasure
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPLeadingPhasesChain
@@ -587,6 +588,9 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterScanRight7
 -- D2t-3c-γ: the one-pass HOME→HOME headline (the assembled binary→unary loop body).
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_onePass
+-- D2t-3c-ε ingredient: one-pass measure-decrease (counterValue − 1) + output bit (|U| + 1).
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_onePass_counterValue
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_onePass_appendedBit
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqNested3_stepConfig_handoff_phase
 #print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested4_stepConfig_handoff_phase
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqNested5_stepConfig_handoff_phase

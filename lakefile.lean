@@ -337,6 +337,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPSeekHomeProgram,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPCounterComposition,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryBody,
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryMeasure,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPLeadingPhasesChain,

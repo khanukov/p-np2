@@ -72,6 +72,151 @@ stepLeft 1 + append n + scanRight n`, plus the seven `seqList` handoff steps).  
     selfLoopScanLeftOne_timeBound, selfLoopAppendLeftOne_timeBound, selfLoopScanRightOne_timeBound]
   omega
 
+/-! ### Leading two steps: `stepRightOnce`'s move, then the handoff into the decrement
+
+`stepRightOnce` is the outermost P1 of `binToUnaryBody = seq stepRightOnce P2` (any `P2`).  These
+single-step lemmas re-derive its move/handoff via the generic `seq_stepConfig_P1_*` lemmas (bound phase
+parameter `i` with `hi`, the proven `seekHomeAfterDecrement` pattern), and `binToUnaryBody_runConfig_lead2`
+composes the two steps for the concrete `P2 = seq selfLoopDecrement (seqList …)`: after `2` steps the
+machine is at phase `2` (the decrement's shifted start), head advanced one cell right, tape unchanged —
+exactly `selfLoopDecrement_seqNested_runConfig_*`'s precondition (`P1 := stepRightOnce`). -/
+
+/-- Move step (phase `0`): the phase advances to `1`. -/
+theorem binToUnaryBody_step1_phase (P2 : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq stepRightOnce P2).toPhased.toTM) L)
+    {i : Fin (seq stepRightOnce P2).numPhases} {s : Unit}
+    (hi : i.val = 0) (hstate : c.state = ⟨i, s⟩) :
+    ((TM.stepConfig (M := (seq stepRightOnce P2).toPhased.toTM) c).state).fst.val = 1 := by
+  rw [seq_stepConfig_P1_normal_phase stepRightOnce P2 c
+      (h1 := by rw [hi]; decide) (hne := by rw [hi]; decide) hstate]
+  simp [stepRightOnce, hi]
+
+/-- Move step (phase `0`): the head moves right by one (when in bounds). -/
+theorem binToUnaryBody_step1_head (P2 : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq stepRightOnce P2).toPhased.toTM) L)
+    {i : Fin (seq stepRightOnce P2).numPhases} {s : Unit}
+    (hi : i.val = 0) (hstate : c.state = ⟨i, s⟩)
+    (hhead : (c.head : Nat) + 1 < (seq stepRightOnce P2).toPhased.toTM.tapeLength L) :
+    ((TM.stepConfig (M := (seq stepRightOnce P2).toPhased.toTM) c).head : Nat) = (c.head : Nat) + 1 := by
+  have hmove : (TM.stepConfig (M := (seq stepRightOnce P2).toPhased.toTM) c).head
+      = Configuration.moveHead (c := c) Move.right := by
+    rw [seq_stepConfig_P1_normal_head stepRightOnce P2 c
+        (h1 := by rw [hi]; decide) (hne := by rw [hi]; decide) hstate]
+    simp [stepRightOnce, hi]
+  rw [hmove, Configuration.moveHead_right_lt c hhead]
+
+/-- Move step (phase `0`): the tape is unchanged (the scanned bit is written back). -/
+theorem binToUnaryBody_step1_tape (P2 : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq stepRightOnce P2).toPhased.toTM) L)
+    {i : Fin (seq stepRightOnce P2).numPhases} {s : Unit}
+    (hi : i.val = 0) (hstate : c.state = ⟨i, s⟩) :
+    (TM.stepConfig (M := (seq stepRightOnce P2).toPhased.toTM) c).tape = c.tape := by
+  have hwrite : (TM.stepConfig (M := (seq stepRightOnce P2).toPhased.toTM) c).tape
+      = c.write c.head (c.tape c.head) := by
+    rw [seq_stepConfig_P1_normal_tape stepRightOnce P2 c
+        (h1 := by rw [hi]; decide) (hne := by rw [hi]; decide) hstate]
+    simp [stepRightOnce, hi]
+  rw [hwrite]; funext j
+  by_cases hj : j = c.head
+  · subst hj; simp [Configuration.write]
+  · simp [Configuration.write, hj]
+
+/-- Handoff step (phase `1` = `stepRightOnce`'s accept): the phase jumps to `P2`'s shifted start. -/
+theorem binToUnaryBody_step2_phase (P2 : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq stepRightOnce P2).toPhased.toTM) L)
+    {i : Fin (seq stepRightOnce P2).numPhases} {s : Unit}
+    (hi : i.val = 1) (hstate : c.state = ⟨i, s⟩) :
+    ((TM.stepConfig (M := (seq stepRightOnce P2).toPhased.toTM) c).state).fst.val
+      = stepRightOnce.numPhases + P2.startPhase.val :=
+  seq_stepConfig_P1_accept_phase stepRightOnce P2 c
+    (h1 := by rw [hi]; decide) (hacc := by rw [hi]; decide) hstate
+
+/-- Handoff step (phase `1`): the head is unchanged. -/
+theorem binToUnaryBody_step2_head (P2 : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq stepRightOnce P2).toPhased.toTM) L)
+    {i : Fin (seq stepRightOnce P2).numPhases} {s : Unit}
+    (hi : i.val = 1) (hstate : c.state = ⟨i, s⟩) :
+    (TM.stepConfig (M := (seq stepRightOnce P2).toPhased.toTM) c).head = c.head :=
+  seq_stepConfig_P1_accept_head stepRightOnce P2 c
+    (h1 := by rw [hi]; decide) (hacc := by rw [hi]; decide) hstate
+
+/-- Handoff step (phase `1`): the tape is unchanged. -/
+theorem binToUnaryBody_step2_tape (P2 : ConstStatePhasedProgram Unit) {L : Nat}
+    (c : Configuration (M := (seq stepRightOnce P2).toPhased.toTM) L)
+    {i : Fin (seq stepRightOnce P2).numPhases} {s : Unit}
+    (hi : i.val = 1) (hstate : c.state = ⟨i, s⟩) :
+    (TM.stepConfig (M := (seq stepRightOnce P2).toPhased.toTM) c).tape = c.tape :=
+  seq_stepConfig_P1_accept_tape stepRightOnce P2 c
+    (h1 := by rw [hi]; decide) (hacc := by rw [hi]; decide) hstate
+
+/-- The two leading steps as one run, on the explicit `seq` form of `binToUnaryBody`
+(`binToUnaryBody_eq_seq`, `= rfl`): from start phase `0` with `head + 1` in bounds, after `2` steps the
+phase is `2`, the head has advanced one cell right, and the tape is unchanged. -/
+theorem binToUnaryBody_runConfig_lead2 {L : Nat}
+    (c0 : Configuration (M := (seq stepRightOnce
+      (seq selfLoopDecrement
+        (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
+          selfLoopScanRightOne]))).toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = 0)
+    (hhead : (c0.head : Nat) + 1 < (seq stepRightOnce
+      (seq selfLoopDecrement
+        (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
+          selfLoopScanRightOne]))).toPhased.toTM.tapeLength L) :
+    (((TM.runConfig (M := (seq stepRightOnce
+        (seq selfLoopDecrement
+          (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
+            selfLoopScanRightOne]))).toPhased.toTM) c0 2).state).fst : Nat) = 2
+      ∧ ((TM.runConfig (M := (seq stepRightOnce
+          (seq selfLoopDecrement
+            (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
+              selfLoopScanRightOne]))).toPhased.toTM) c0 2).head : Nat) = (c0.head : Nat) + 1
+      ∧ (TM.runConfig (M := (seq stepRightOnce
+          (seq selfLoopDecrement
+            (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne,
+              selfLoopScanRightOne]))).toPhased.toTM) c0 2).tape = c0.tape := by
+  have e2 : TM.runConfig (M := (seq stepRightOnce
+        (seq selfLoopDecrement (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce,
+          selfLoopAppendLeftOne, selfLoopScanRightOne]))).toPhased.toTM) c0 2
+      = TM.stepConfig (M := (seq stepRightOnce
+          (seq selfLoopDecrement (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce,
+            selfLoopAppendLeftOne, selfLoopScanRightOne]))).toPhased.toTM)
+          (TM.stepConfig (M := (seq stepRightOnce
+            (seq selfLoopDecrement (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce,
+              selfLoopAppendLeftOne, selfLoopScanRightOne]))).toPhased.toTM) c0) := by
+    rw [show (2 : Nat) = 1 + 1 from rfl, runConfig_add, runConfig_one, runConfig_one]
+  have h1p := binToUnaryBody_step1_phase
+    (seq selfLoopDecrement (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce,
+      selfLoopAppendLeftOne, selfLoopScanRightOne])) c0
+    (i := c0.state.fst) (s := c0.state.snd) hphase rfl
+  have h1h := binToUnaryBody_step1_head
+    (seq selfLoopDecrement (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce,
+      selfLoopAppendLeftOne, selfLoopScanRightOne])) c0
+    (i := c0.state.fst) (s := c0.state.snd) hphase rfl hhead
+  have h1t := binToUnaryBody_step1_tape
+    (seq selfLoopDecrement (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce,
+      selfLoopAppendLeftOne, selfLoopScanRightOne])) c0
+    (i := c0.state.fst) (s := c0.state.snd) hphase rfl
+  rw [e2]
+  set c1 := TM.stepConfig (M := (seq stepRightOnce
+    (seq selfLoopDecrement (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce,
+      selfLoopAppendLeftOne, selfLoopScanRightOne]))).toPhased.toTM) c0 with hc1
+  refine ⟨?_, ?_, ?_⟩
+  · have h2 := binToUnaryBody_step2_phase
+      (seq selfLoopDecrement (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce,
+        selfLoopAppendLeftOne, selfLoopScanRightOne])) c1
+      (i := c1.state.fst) (s := c1.state.snd) h1p rfl
+    rw [h2]; simp [seq_startPhase_val, selfLoopDecrement_startPhase_val]
+  · rw [binToUnaryBody_step2_head
+      (seq selfLoopDecrement (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce,
+        selfLoopAppendLeftOne, selfLoopScanRightOne])) c1
+      (i := c1.state.fst) (s := c1.state.snd) h1p rfl]
+    exact h1h
+  · rw [binToUnaryBody_step2_tape
+      (seq selfLoopDecrement (seqList [stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce,
+        selfLoopAppendLeftOne, selfLoopScanRightOne])) c1
+      (i := c1.state.fst) (s := c1.state.snd) h1p rfl]
+    exact h1t
+
 /-! ### Next: the one-pass run composition
 
 The seven per-element segment lemmas (`stepRightOnce` as the outermost P1 via `seq_stepConfig_P1_*`,

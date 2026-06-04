@@ -1085,7 +1085,13 @@ stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce, selfLoopAppendLeftOne, selfLoop
 `B > 0`, compose the seven per-element segment lemmas above (element 1 = `stepRightOnce` via the generic
 `seq_stepConfig_P1_*`; elements 2–7 via their `_seqNested…_` lemmas) along the `seqList_run_seven` time
 skeleton with `TM.runConfig_add` at each boundary, tracking head/tape windows against the U-left layout,
-to obtain `counterValue B − 1`, `|U| + 1`, head back at HOME.
+to obtain `counterValue B − 1`, `|U| + 1`, head back at HOME.  **Started ✅:** the leading-steps
+composition `binToUnaryBody_runConfig_lead2` (`TreeMCSPBinToUnaryBody.lean`) — element 1
+(`stepRightOnce`, the outermost P1) via per-`P2` step lemmas `binToUnaryBody_step1/2_*` (generic in
+`P2`, the proven `seekHomeAfterDecrement` bound-`i` pattern): from start phase `0` with `head + 1` in
+bounds, after `2` steps the machine is at phase `2` (the decrement's shifted start), head advanced one
+cell right, tape unchanged — exactly `selfLoopDecrement_seqNested_runConfig_*`'s precondition.
+Remaining: chain elements 2–7's segment lemmas onward with the layout-window bookkeeping.
 
 **Then:** δ (`bZeroTest` — a `gammaSelfLoopScan` over `B`), ε (`loopUntilSink binToUnaryBody` — the
 combinator and `loopUntilSink_reachesSink` already exist), ζ (bridge `|U| = value(B) = (decodeFin …).val`).

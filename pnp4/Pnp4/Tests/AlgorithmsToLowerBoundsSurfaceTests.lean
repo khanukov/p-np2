@@ -73,6 +73,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaScanProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftOneProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanRightOneProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPStepRightProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordLayout
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
@@ -3778,6 +3779,11 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_runConfig_terminator
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_seqP2_runConfig_scanning
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_seqP2_runConfig_terminator
+-- D2t-3c: deterministic single rightward move (mirror of stepLeftOnce) + its seqP2 lift.
+#check @Pnp4.Frontier.ContractExpansion.stepRightOnce
+#check @Pnp4.Frontier.ContractExpansion.stepRightOnce_runConfig_one
+#check @Pnp4.Frontier.ContractExpansion.stepRightOnce_stepConfig_head_clamp
+#check @Pnp4.Frontier.ContractExpansion.stepRightOnce_seqP2_runConfig_one
 -- On-tape gate-record layout + unary back-reference distances (decoder brick D0, §6k).
 #check @Pnp4.Frontier.ContractExpansion.unaryField
 #check @Pnp4.Frontier.ContractExpansion.decodeUnaryField_unaryField

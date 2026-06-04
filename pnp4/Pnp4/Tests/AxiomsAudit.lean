@@ -63,6 +63,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaScanProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftOneProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanRightOneProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPStepRightProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordLayout
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
@@ -554,6 +555,9 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_runConfig_terminator
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_seqP2_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_seqP2_runConfig_terminator
+-- D2t-3c: deterministic single rightward move (mirror of stepLeftOnce).
+#print axioms Pnp4.Frontier.ContractExpansion.stepRightOnce_runConfig_one
+#print axioms Pnp4.Frontier.ContractExpansion.stepRightOnce_seqP2_runConfig_one
 -- Gate-record layout decoder (D0): round-trip + size, expected Classical-free.
 #print axioms Pnp4.Frontier.ContractExpansion.decodeUnaryField_unaryField
 #print axioms Pnp4.Frontier.ContractExpansion.decodeGateRecord_encodeGateRecord

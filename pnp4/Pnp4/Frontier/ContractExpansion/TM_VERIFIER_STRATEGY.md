@@ -1009,9 +1009,13 @@ Because the loop only ever scans over **uniform** stretches — `B`'s just-flipp
 * **D2t-3c-β — `seekHomeAfterDecrement`**: from the post-`decrement` config (cells `0..j-1 = 1`, cell
   `j = 0`, head at `j`), one `Move.left` then `selfLoopScanLeftOne` over the flipped `1`s lands the head
   on the sentinel (HOME); the `j = 0` edge collapses to the same target. A short `seq`/run lemma.
-* **D2t-3c-γ — `binToUnaryBody`**: `seq`-compose one pass — `[ stepRight ; selfLoopDecrement ;
-  seekHomeAfterDecrement ; stepLeft ; selfLoopAppendLeftOne ; selfLoopScanRightOne ]` — proving from HOME
-  with `B > 0`: `counterValue B − 1`, `|U| + 1`, head back at HOME, all via the `seqP2`-offset lemmas.
+* **D2t-3c-γ — `binToUnaryBody`**: one pass over the **flattened atomic** chain `binToUnaryBody :=
+  seqList [stepRightOnce, selfLoopDecrement, stepLeftOnce, selfLoopScanLeftOne, stepLeftOnce,
+  selfLoopAppendLeftOne, selfLoopScanRightOne]` (the home-seek `seq stepLeftOnce selfLoopScanLeftOne`
+  is inlined rather than nested as the `seekHomeAfterDecrement` composite, to keep each element a single
+  primitive at a single nesting depth).  Prove from HOME with `B > 0`: `counterValue B − 1`, `|U| + 1`,
+  head back at HOME.  **This is the substantial assembly phase — see the composition-toolkit status note
+  below for the exact remaining bricks.**
 * **D2t-3c-δ — `bZeroTest`**: from HOME decide `B = 0` vs `B > 0` (a `gammaSelfLoopScan` over `B` whose
   stop cell is the right-marker iff `B = 0`); supplies `loopUntilSink`'s `hstep`/`hbase`.
 * **D2t-3c-ε — the loop**: `loopUntilSink binToUnaryBody (sink := done)`; `loopUntilSink_reachesSink`
@@ -1021,6 +1025,37 @@ Because the loop only ever scans over **uniform** stretches — `B`'s just-flipp
 
 (Tiny helpers `stepRight`/`stepLeft` — unconditional one-cell moves — are 1-phase sub-bricks, or folded
 into the adjacent `seq`.)
+
+#### Composition-toolkit status (the loop-body vocabulary is complete; γ is the remaining assembly)
+
+**Done — the per-primitive run-behaviour + composition lifts the loop body needs are all merged:**
+`stepLeftOnce` (#1539) and `stepRightOnce` (#1541) with their `seqP2` lifts; `seekHomeAfterDecrement`
+standalone home-seek (#1540, `= seq stepLeftOnce selfLoopScanLeftOne`); `selfLoopAppendLeftOne` standalone
+(#1538) **and** its `seqP2` lift (#1542); plus the pre-existing `selfLoopDecrement` / `selfLoopScanLeftOne`
+/ `selfLoopScanRightOne` / `gammaSelfLoopScan` standalone + `seqP2` lifts.  Every navigation step of the
+binary→unary pass is thus an individually-verified primitive carrying only the standard axiom triple.
+
+**The γ assembly is the next (laborious-but-mechanical) phase.**  Two facts about the `seq`/`seqList`
+toolkit shape it:
+* The run-decomposition lemmas `seqList_run_{two,three,four,five}` peel a `seqList` into per-element
+  `runConfig` segments — but currently only up to **length 5**, while the flattened `binToUnaryBody` has
+  **7** elements.  → first brick: add `seqList_run_{six,seven}` (mechanical mirrors).
+* `seq` does **not** reassociate (`seq A (seq B C) ≠ seq (seq A B) C` as routed programs), so a primitive
+  at chain-depth `d` is reached only through `d−1` nested `seq_stepConfig_P2_*` unfolds.  The existing
+  `_seqP2_` lemmas cover depth 1 and the `_seqNested_` lemmas (e.g. `gammaSelfLoopScan_seqNested_*`) cover
+  depth 2; the deepest chain run to completion so far is depth 2.  → γ needs each of the 7 elements
+  re-derived at **its own depth** (depth-1 `stepRightOnce` … depth-7 `selfLoopScanRightOne`), each a fresh
+  mirror of the `gammaSelfLoopScan_seqNested` pattern (the per-step lemmas are `decide`/`simp`-routine; the
+  run inductions mirror the standalone ones).  This is ~one brick per element, then a final assembly brick
+  composing them via `seqList_run_seven` with head/tape windows tracked against the U-left layout.
+
+**Then:** δ (`bZeroTest` — a `gammaSelfLoopScan` over `B`), ε (`loopUntilSink binToUnaryBody` — the
+combinator and `loopUntilSink_reachesSink` already exist), ζ (bridge `|U| = value(B) = (decodeFin …).val`).
+
+(An alternative to the nesting ladder is a **monolithic** `binToUnaryBody` phased program — one ~12-phase
+machine with every step inlined, proven directly à la `gateOneRecordDecoder` — which sidesteps the
+non-reassociativity entirely at the cost of not reusing the `seqP2` lifts.  The ladder above is preferred
+for reusing the already-merged, individually-verified vocabulary.)
 
 ### D2t-4 — leaf emit (iterations)
 * **D2t-4a — `emitConstRecord`**: from the `const` dispatch phase, read the literal bit and write the

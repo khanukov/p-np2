@@ -3919,6 +3919,9 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne
 #check @Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_runConfig_scan
 #check @Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_runConfig_append
+-- D2t-3c: leftward unary-append as a non-first phase (seqP2 lift) — for the loop-body composition.
+#check @Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqP2_runConfig_scan
+#check @Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqP2_runConfig_append
 -- D2t-3c-β building block: single leftward step (off the decrement's cleared cell, before the scan).
 #check @Pnp4.Frontier.ContractExpansion.stepLeftOnce
 #check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_runConfig_one

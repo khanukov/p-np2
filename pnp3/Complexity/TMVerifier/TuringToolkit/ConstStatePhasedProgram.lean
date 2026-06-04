@@ -731,6 +731,53 @@ theorem seqList_run_five
           p5.timeBound n + 5) := by
   rw [seqList_run_decomp p1 [p2, p3, p4, p5] c, seqList_timeBound_four]
 
+/-- Total timeBound for a 6-element seqList. -/
+theorem seqList_timeBound_six
+    (p1 p2 p3 p4 p5 p6 : ConstStatePhasedProgram S) (n : Nat) :
+    (seqList [p1, p2, p3, p4, p5, p6]).timeBound n =
+      p1.timeBound n + p2.timeBound n + p3.timeBound n +
+        p4.timeBound n + p5.timeBound n + p6.timeBound n + 6 := by
+  rw [seqList_timeBound_cons, seqList_timeBound_five]
+  omega
+
+/-- Decomposed run for a 6-element seqList. -/
+theorem seqList_run_six
+    (p1 p2 p3 p4 p5 p6 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := (seqList [p1, p2, p3, p4, p5, p6]).toPhased.toTM) n) :
+    TM.runConfig (M := (seqList [p1, p2, p3, p4, p5, p6]).toPhased.toTM) c
+        ((seqList [p1, p2, p3, p4, p5, p6]).timeBound n) =
+      TM.runConfig (M := (seqList [p1, p2, p3, p4, p5, p6]).toPhased.toTM)
+        (TM.runConfig (M := (seqList [p1, p2, p3, p4, p5, p6]).toPhased.toTM) c
+          (p1.timeBound n))
+        (p2.timeBound n + p3.timeBound n + p4.timeBound n +
+          p5.timeBound n + p6.timeBound n + 6) := by
+  rw [seqList_run_decomp p1 [p2, p3, p4, p5, p6] c, seqList_timeBound_five]
+
+/-- Total timeBound for a 7-element seqList (the length of the binary→unary loop body
+`binToUnaryBody`, `TM_VERIFIER_STRATEGY.md` §12 D2t-3c-γ). -/
+theorem seqList_timeBound_seven
+    (p1 p2 p3 p4 p5 p6 p7 : ConstStatePhasedProgram S) (n : Nat) :
+    (seqList [p1, p2, p3, p4, p5, p6, p7]).timeBound n =
+      p1.timeBound n + p2.timeBound n + p3.timeBound n + p4.timeBound n +
+        p5.timeBound n + p6.timeBound n + p7.timeBound n + 7 := by
+  rw [seqList_timeBound_cons, seqList_timeBound_six]
+  omega
+
+/-- Decomposed run for a 7-element seqList: peel off `p1`'s segment, then run the remaining six
+elements' segment.  Extends the `seqList_run_{two..five}` family to the length the flattened
+binary→unary loop body needs (`TM_VERIFIER_STRATEGY.md` §12 D2t-3c-γ). -/
+theorem seqList_run_seven
+    (p1 p2 p3 p4 p5 p6 p7 : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := (seqList [p1, p2, p3, p4, p5, p6, p7]).toPhased.toTM) n) :
+    TM.runConfig (M := (seqList [p1, p2, p3, p4, p5, p6, p7]).toPhased.toTM) c
+        ((seqList [p1, p2, p3, p4, p5, p6, p7]).timeBound n) =
+      TM.runConfig (M := (seqList [p1, p2, p3, p4, p5, p6, p7]).toPhased.toTM)
+        (TM.runConfig (M := (seqList [p1, p2, p3, p4, p5, p6, p7]).toPhased.toTM) c
+          (p1.timeBound n))
+        (p2.timeBound n + p3.timeBound n + p4.timeBound n +
+          p5.timeBound n + p6.timeBound n + p7.timeBound n + 7) := by
+  rw [seqList_run_decomp p1 [p2, p3, p4, p5, p6, p7] c, seqList_timeBound_six]
+
 end IdleSeqList
 
 /-! ### Embedding from P1's TM into the composed `seq P1 P2` TM

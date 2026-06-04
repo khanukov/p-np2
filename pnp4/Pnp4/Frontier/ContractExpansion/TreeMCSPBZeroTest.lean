@@ -115,8 +115,10 @@ construction are the follow-up assembly.  Still no routing program is built here
 /-- **`B = 0`: the cell past the scan-stop is the marker's second `1`.**  Under *spread B + double
 marker* — counter cells `[0, w)` all `0`, marker cells `w` and `w + 1` both `1` — `gammaSelfLoopScan`
 stops on the marker (`head = w`) and the cell `head + 1 = w + 1` reads `true`.  The discriminating read
-sees `1`. -/
-theorem bZeroRoute_zero_reads_one {L : Nat} (x : Boolcube.Point L) (w : Nat) (hw1 : w + 1 ≤ L)
+sees `1`.  The bound is `w + 1 < L` (not merely `≤ L`): the second marker cell `w + 1` must lie in the
+input region `[0, L)` for `hmark2` to be realizable from `initialConfig` — at `w + 1 = L` the cell is
+definitionally `false` (input bits live only on `[0, L)`), which would make the hypothesis vacuous. -/
+theorem bZeroRoute_zero_reads_one {L : Nat} (x : Boolcube.Point L) (w : Nat) (hw1 : w + 1 < L)
     (hzeros : ∀ p : Fin (gammaSelfLoopScan.toPhased.toTM.tapeLength L),
       (p : Nat) < w → (gammaSelfLoopScan.toPhased.toTM.initialConfig x).tape p = false)
     (hmark1 : ∀ p : Fin (gammaSelfLoopScan.toPhased.toTM.tapeLength L),

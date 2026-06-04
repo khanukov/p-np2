@@ -95,6 +95,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPStepLeftProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSeekHomeProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryBody
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryMeasure
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPLeadingPhasesChain
@@ -3801,6 +3802,9 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterAppend6Handoff
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterScanRight7
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_onePass
+-- D2t-3c-ε ingredient: one-pass measure-decrease (counterValue − 1) + output bit (|U| + 1).
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_onePass_counterValue
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_onePass_appendedBit
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqNested3_stepConfig_handoff_phase
 #check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested4_stepConfig_handoff_phase
 #check @Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqNested5_stepConfig_handoff_phase

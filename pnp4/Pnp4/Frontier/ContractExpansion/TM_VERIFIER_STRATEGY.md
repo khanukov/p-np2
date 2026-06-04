@@ -940,9 +940,10 @@ completed records to WORK; the row-loop interpreter then runs over WORK (the exi
   brick closed: the down-counter's `seqP2` composition lift was incomplete (only `borrow` + the `stop`
   single-steps) — `selfLoopDecrement_seqP2_runConfig_{stop,counterValue}` now complete it, so the
   down-counter composes as a non-first phase (needed for binary→unary and the parser's pending-subtree
-  scan). What remains genuinely missing is a **pnp4-style copier** (or a `PhasedProgram`→`seq` bridge)
-  for the doubling step of D2t-3 — but every binary→unary path needs cross-region head shuttling, which
-  is the real cost from here on.
+  scan). The chosen D2t-3 design (the **decrement loop** below) **avoids the copier entirely**; a
+  pnp4-style copier (or a `PhasedProgram`→`seq` bridge) would only be needed for the *doubling-loop*
+  variant, which we do **not** pursue. The real remaining cost from here on is the cross-region
+  head-shuttling **composition** (D2t-3c), not any missing primitive.
 * **D2t-3 — binary→unary.** Read `encodeFin width i` (width-counter-bounded), emit `unaryField i`.
   **Primitive groundwork DONE** (D2t-3a/b merged): the per-step pieces all exist in pnp4 with
   run-behaviour *and* `seqP2` lifts — `selfLoopDecrement` (`counterValue−1`), `selfLoopAppendOne`
@@ -959,7 +960,10 @@ completed records to WORK; the row-loop interpreter then runs over WORK (the exi
     marker** at the `B|U` boundary — each body pass returns the head to the marker by a marker-seek, and
     the decrement / append / zero-test run at known offsets from it via the `seqP2`-offset lemmas
     (`…_seqP2_runConfig_*`, which take an arbitrary start `c0` at phase `P1.numPhases`).  The
-    `B = 0` test is `gammaSelfLoopScan` over `B` reaching the boundary marker without hitting a `1`.
+    `B = 0` test runs `gammaSelfLoopScan` from `B`'s low end — recall it advances right over `0`s and
+    **halts on the first `1`**.  The boundary marker placed at `B|U` is a `1`, so it *is* that
+    terminating `1`: the scan halts **on the marker** iff `B` held no `1` before it (so `B = 0`), and
+    halts **strictly before** the marker iff some bit of `B` is set (so `B > 0`).
   - **Sub-bricks:** D2t-3c-1 body (one pass: `counterValue B − 1` ∧ `|U| + 1` ∧ head back at the
     marker) → D2t-3c-2 the `loopUntilSink` wrapper + the `counterValue`-induction → D2t-3c-3 the bridge
     to `decodeFin` / `unaryField`.

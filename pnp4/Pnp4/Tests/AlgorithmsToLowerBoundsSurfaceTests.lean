@@ -3817,6 +3817,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.stepRightThenBranch_neverMovesLeft
 #check @Pnp4.Frontier.ContractExpansion.stepRightThenBranch_runConfig_branch_true
 #check @Pnp4.Frontier.ContractExpansion.stepRightThenBranch_runConfig_branch_false
+#check @Pnp4.Frontier.ContractExpansion.stepRightThenBranch_runConfig_terminal
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqNested3_stepConfig_handoff_phase
 #check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested4_stepConfig_handoff_phase
 #check @Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqNested5_stepConfig_handoff_phase

@@ -603,6 +603,7 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.stepRightThenBranch_neverMovesLeft
 #print axioms Pnp4.Frontier.ContractExpansion.stepRightThenBranch_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.stepRightThenBranch_runConfig_branch_false
+#print axioms Pnp4.Frontier.ContractExpansion.stepRightThenBranch_runConfig_terminal
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqNested3_stepConfig_handoff_phase
 #print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested4_stepConfig_handoff_phase
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqNested5_stepConfig_handoff_phase

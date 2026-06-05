@@ -47,10 +47,14 @@ def stepRightThenBranch : ConstStatePhasedProgram Unit where
     else if i.val = 1 then
       (if b then ⟨2, by omega⟩ else ⟨3, by omega⟩, (), b, Move.stay)
     else (i, (), b, Move.stay)
-  timeBound := fun n => n
+  timeBound := fun n => n + 2
 
+/-- The fragment needs `2` steps to reach a branch target (`0 → 1 → 2/3`), so `timeBound` is `n + 2`,
+never below `2` — under the `runTime := timeBound` whole-run semantics (`TM.run`/`TM.accepts`) the
+branch is always reachable, including for `n < 2`.  (The `runConfig` lemmas below take explicit step
+counts and are independent of this bound.) -/
 @[simp] theorem stepRightThenBranch_timeBound (n : Nat) :
-    stepRightThenBranch.timeBound n = n := rfl
+    stepRightThenBranch.timeBound n = n + 2 := rfl
 
 /-- The fragment never moves the head left: phase `0` steps right, all other phases stay. -/
 theorem stepRightThenBranch_transition_move (i : Fin 4) (s : Unit) (b : Bool) :
@@ -221,6 +225,62 @@ theorem stepRightThenBranch_runConfig_branch_false {L : Nat}
     rw [hbranchhead, hc1head]
   · show (TM.stepConfig (M := stepRightThenBranch.toPhased.toTM) c1).tape = c.tape
     rw [hbranchtape, h1tape]
+
+/-! ### Terminal-phase stability (the branch targets idle)
+
+Phases `2` and `3` (the two branch targets) are terminal self-loops.  A composition that runs the
+fragment for more than its `2` branch steps (e.g. padding to a fixed `timeBound`) needs the target
+phase to **persist** — these are the analogue of `gammaSelfLoopScan_runConfig_done`. -/
+
+/-- One step at a terminal phase (`val ∉ {0, 1}`, i.e. `2`/`3`) keeps the phase, head, and tape
+fixed (it writes the scanned bit back and stays). -/
+theorem stepRightThenBranch_stepConfig_terminal {L : Nat}
+    (c : Configuration (M := stepRightThenBranch.toPhased.toTM) L)
+    {i : Fin 4} {s : Unit} (hne0 : i.val ≠ 0) (hne1 : i.val ≠ 1) (hstate : c.state = ⟨i, s⟩) :
+    ((TM.stepConfig (M := stepRightThenBranch.toPhased.toTM) c).state).fst.val = i.val
+    ∧ (TM.stepConfig (M := stepRightThenBranch.toPhased.toTM) c).head = c.head
+    ∧ (TM.stepConfig (M := stepRightThenBranch.toPhased.toTM) c).tape = c.tape := by
+  refine ⟨?_, ?_, ?_⟩
+  · unfold TM.stepConfig
+    rw [hstate]
+    simp only [PhasedProgram.toTM_step]
+    simp [ConstStatePhasedProgram.toPhased, stepRightThenBranch, hne0, hne1]
+  · unfold TM.stepConfig
+    rw [hstate]
+    simp only [PhasedProgram.toTM_step]
+    simp [ConstStatePhasedProgram.toPhased, stepRightThenBranch, hne0, hne1, Configuration.moveHead]
+  · have hwrite : (TM.stepConfig (M := stepRightThenBranch.toPhased.toTM) c).tape
+        = c.write c.head (c.tape c.head) := by
+      unfold TM.stepConfig
+      rw [hstate]
+      simp only [PhasedProgram.toTM_step]
+      simp [ConstStatePhasedProgram.toPhased, stepRightThenBranch, hne0, hne1]
+    rw [hwrite]
+    funext j
+    by_cases hj : j = c.head
+    · subst hj; simp [Configuration.write]
+    · simp [Configuration.write, hj]
+
+/-- Iterated terminal stability: from a branch-target config (phase `val ∉ {0, 1}`), running any
+number of steps leaves the phase, head, and tape fixed. -/
+theorem stepRightThenBranch_runConfig_terminal {L : Nat}
+    (c : Configuration (M := stepRightThenBranch.toPhased.toTM) L)
+    (hne0 : (c.state.fst : Nat) ≠ 0) (hne1 : (c.state.fst : Nat) ≠ 1) (k : Nat) :
+    ((TM.runConfig (M := stepRightThenBranch.toPhased.toTM) c k).state.fst : Nat) = (c.state.fst : Nat)
+    ∧ (TM.runConfig (M := stepRightThenBranch.toPhased.toTM) c k).head = c.head
+    ∧ (TM.runConfig (M := stepRightThenBranch.toPhased.toTM) c k).tape = c.tape := by
+  induction k with
+  | zero => exact ⟨rfl, rfl, rfl⟩
+  | succ k ih =>
+      obtain ⟨hph, hhd, htp⟩ := ih
+      rw [TM.runConfig_succ]
+      obtain ⟨hph2, hhd2, htp2⟩ :=
+        stepRightThenBranch_stepConfig_terminal
+          (TM.runConfig (M := stepRightThenBranch.toPhased.toTM) c k)
+          (i := (TM.runConfig (M := stepRightThenBranch.toPhased.toTM) c k).state.fst)
+          (s := (TM.runConfig (M := stepRightThenBranch.toPhased.toTM) c k).state.snd)
+          (by rw [hph]; exact hne0) (by rw [hph]; exact hne1) rfl
+      exact ⟨by rw [hph2, hph], by rw [hhd2, hhd], by rw [htp2, htp]⟩
 
 end ContractExpansion
 end Frontier

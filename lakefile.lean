@@ -344,6 +344,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRoute,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRun,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunP1,
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunCompose,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPLeadingPhasesChain,

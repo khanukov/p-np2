@@ -175,6 +175,40 @@ theorem bZeroRouteProgram_P1_runConfig_terminator {L : Nat} (x : Boolcube.Point 
       · simp [Configuration.write, hj]
     rw [hself, htp]
 
+/-- Handoff step: from the P1-accept (phase `1`, reached by the terminator after `z + 1` steps), one
+more step hands off into `stepRightThenBranch`'s start (composed phase `2`), head and tape preserved.
+So after `z + 1 + 1` steps the routing program is in phase `2`, head on the marker (`= z`), tape
+unchanged — exactly the entry point for the P2-region run-through (`bZeroRouteProgram_P2_*`).  Uses the
+terminator plus `runConfig_seq_succ_P1_boundary`. -/
+theorem bZeroRouteProgram_P1_runConfig_handoff {L : Nat} (x : Boolcube.Point L) (z : Nat)
+    (hz : z < (seq gammaSelfLoopScan stepRightThenBranch).toPhased.toTM.tapeLength L)
+    (hzeros : ∀ p : Fin ((seq gammaSelfLoopScan stepRightThenBranch).toPhased.toTM.tapeLength L),
+      (p : Nat) < z →
+      ((seq gammaSelfLoopScan stepRightThenBranch).toPhased.toTM.initialConfig x).tape p = false)
+    (hterm : ∀ p : Fin ((seq gammaSelfLoopScan stepRightThenBranch).toPhased.toTM.tapeLength L),
+      (p : Nat) = z →
+      ((seq gammaSelfLoopScan stepRightThenBranch).toPhased.toTM.initialConfig x).tape p = true) :
+    (((TM.runConfig (M := (seq gammaSelfLoopScan stepRightThenBranch).toPhased.toTM)
+        ((seq gammaSelfLoopScan stepRightThenBranch).toPhased.toTM.initialConfig x) (z + 1 + 1)).state).fst : Nat) = 2
+      ∧ ((TM.runConfig (M := (seq gammaSelfLoopScan stepRightThenBranch).toPhased.toTM)
+          ((seq gammaSelfLoopScan stepRightThenBranch).toPhased.toTM.initialConfig x) (z + 1 + 1)).head : Nat) = z
+      ∧ (TM.runConfig (M := (seq gammaSelfLoopScan stepRightThenBranch).toPhased.toTM)
+          ((seq gammaSelfLoopScan stepRightThenBranch).toPhased.toTM.initialConfig x) (z + 1 + 1)).tape
+          = ((seq gammaSelfLoopScan stepRightThenBranch).toPhased.toTM.initialConfig x).tape := by
+  obtain ⟨hph, hhd, htp⟩ := bZeroRouteProgram_P1_runConfig_terminator x z hz hzeros hterm
+  have h1 : (((TM.runConfig (M := (seq gammaSelfLoopScan stepRightThenBranch).toPhased.toTM)
+      ((seq gammaSelfLoopScan stepRightThenBranch).toPhased.toTM.initialConfig x) (z + 1)).state).fst : Nat)
+      < gammaSelfLoopScan.numPhases := by rw [hph]; decide
+  have heq : (((TM.runConfig (M := (seq gammaSelfLoopScan stepRightThenBranch).toPhased.toTM)
+      ((seq gammaSelfLoopScan stepRightThenBranch).toPhased.toTM.initialConfig x) (z + 1)).state).fst : Nat)
+      = gammaSelfLoopScan.acceptPhase.val := by rw [hph]; decide
+  obtain ⟨hph2, _, hhd2, htp2⟩ := runConfig_seq_succ_P1_boundary gammaSelfLoopScan stepRightThenBranch
+    ((seq gammaSelfLoopScan stepRightThenBranch).toPhased.toTM.initialConfig x) (z + 1) h1 heq
+  refine ⟨?_, ?_, ?_⟩
+  · rw [hph2]; decide
+  · rw [hhd2]; exact hhd
+  · rw [htp2]; exact htp
+
 end ContractExpansion
 end Frontier
 end Pnp4

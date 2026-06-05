@@ -93,6 +93,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRoute
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunP1
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunCompose
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunRealizable
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPLeadingPhasesChain
@@ -624,6 +625,9 @@ end Pnp4
 -- D2t-3 routing run-through, FULL compose: bZeroRouteProgram reaches phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_runConfig_decide_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_runConfig_decide_false
+-- D2t-3 routing run-through: realizability witnesses (the full decision is non-vacuously instantiable).
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_decide_true_realizable
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_decide_false_realizable
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqNested3_stepConfig_handoff_phase
 #print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested4_stepConfig_handoff_phase
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqNested5_stepConfig_handoff_phase

@@ -88,6 +88,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryBody
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryMeasure
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroTest
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStepRightBranch
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRealizable
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPLeadingPhasesChain
@@ -604,6 +605,9 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.stepRightThenBranch_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.stepRightThenBranch_runConfig_branch_false
 #print axioms Pnp4.Frontier.ContractExpansion.stepRightThenBranch_runConfig_terminal
+-- D2t-3 routing: realizability witnesses (the spread + double-marker layout is non-vacuously instantiable).
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroRoute_zero_realizable
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroRoute_pos_realizable
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqNested3_stepConfig_handoff_phase
 #print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested4_stepConfig_handoff_phase
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqNested5_stepConfig_handoff_phase

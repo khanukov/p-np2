@@ -341,6 +341,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroTest,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPStepRightBranch,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRealizable,
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRoute,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPLeadingPhasesChain,

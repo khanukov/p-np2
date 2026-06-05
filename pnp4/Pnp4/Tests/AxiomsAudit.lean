@@ -87,6 +87,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryBody
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryMeasure
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroTest
+import Pnp4.Frontier.ContractExpansion.TreeMCSPStepRightBranch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPLeadingPhasesChain
@@ -598,6 +599,11 @@ end Pnp4
 -- D2t-3 routing: the distinguishable-marker discriminating read (read past scan-stop = 1 iff B = 0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRoute_zero_reads_one
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRoute_pos_reads_zero
+-- D2t-3 routing: stepRightThenBranch (read-the-next-cell branch primitive: after 2 steps, phase 2/3 by the bit).
+#print axioms Pnp4.Frontier.ContractExpansion.stepRightThenBranch_neverMovesLeft
+#print axioms Pnp4.Frontier.ContractExpansion.stepRightThenBranch_runConfig_branch_true
+#print axioms Pnp4.Frontier.ContractExpansion.stepRightThenBranch_runConfig_branch_false
+#print axioms Pnp4.Frontier.ContractExpansion.stepRightThenBranch_runConfig_terminal
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqNested3_stepConfig_handoff_phase
 #print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested4_stepConfig_handoff_phase
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqNested5_stepConfig_handoff_phase

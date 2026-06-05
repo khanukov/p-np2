@@ -100,6 +100,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroTest
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStepRightBranch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRealizable
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRoute
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPLeadingPhasesChain
@@ -3825,6 +3826,9 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.bZeroRoute_pos_realizable
 -- D2t-3 routing: the composed routing program (seq scan ; stepRightThenBranch) — structural layer.
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_neverMovesLeft
+-- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
+#check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
+#check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqNested3_stepConfig_handoff_phase
 #check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested4_stepConfig_handoff_phase
 #check @Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqNested5_stepConfig_handoff_phase

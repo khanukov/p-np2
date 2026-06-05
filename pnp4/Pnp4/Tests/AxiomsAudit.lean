@@ -618,6 +618,7 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false
 -- D2t-3 routing run-through (P1 region): scan stays in phase 0, head advances, tape unchanged (seq sim).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P1_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P1_runConfig_terminator
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqNested3_stepConfig_handoff_phase
 #print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested4_stepConfig_handoff_phase
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqNested5_stepConfig_handoff_phase

@@ -1016,31 +1016,33 @@ Because the loop only ever scans over **uniform** stretches — `B`'s just-flipp
   primitive at a single nesting depth).  Prove from HOME with `B > 0`: `counterValue B − 1`, `|U| + 1`,
   head back at HOME.  **This is the substantial assembly phase — see the composition-toolkit status note
   below for the exact remaining bricks.**
-* **D2t-3c-δ — `bZeroTest` (zero-test routing RESOLVED — width counter).** From the body's start decide
-  `B = 0` vs `B > 0` and route: `B = 0` → the loop `sink` (halt); `B > 0` → fall through to the pass
-  (reaching the body's accept ⇒ `loopUntilSink` re-entry).  This supplies `loopUntilSink_reachesSink`'s
-  `hbase` (`μ = counterValue B = 0` ⇒ reach `sink`) and `hstep` (`μ ≠ 0` ⇒ one pass, `μ` decreases).
-  - **Why the `gammaSelfLoopScan`-on-the-right-marker sketch (lines 963–966) does NOT suffice.** That
-    scan gives only the *position* outcome — the head halts on the boundary `1` iff `B = 0`, strictly
-    before it iff `B > 0`.  But routing **halt vs continue needs a phase difference**, and on the
-    *single-tape, binary alphabet* the boundary marker `1` and a `B`-set-bit `1` are **indistinguishable
-    by a local read**, so the scan reaches the *same* accept phase either way.  There is no sound local
-    position→phase conversion — this is exactly the "genuine crux (marker-free binary alphabet)" flagged
-    at the top of this section.
-  - **Sound resolution (width counter, per the "fixed-width binary, no terminator ⇒ needs a width
-    counter" analysis above).** Carry a **unary width counter `1^w`** alongside `B`.  Scan `B` rightward
-    while **decrementing the width counter in lockstep**:
-    - encountering a `1` in `B` mid-scan ⇒ `B > 0` ⇒ route to the *continue* phase (a clean phase route,
-      the `tagCheckProgramU` mismatch→sink pattern);
-    - the width counter reaching `0` first — the **marker-free unary zero-test "leftmost cell `= 0`",
-      one read** — ⇒ all `w` cells of `B` were `0` ⇒ `B = 0` ⇒ route to the *halt* (`sink`) phase.
-    Both exits are genuine distinct phases, so the routing is sound.  Cost: the layout gains a `1^w`
-    width-counter region, and the zero-test is a **two-region lockstep** (head shuttles `B` ↔ width
-    counter per cell) — a real construction, not a single existing primitive; build it as its own
-    sub-bricks (program + structural facts → lockstep run-behaviour → the `counterValue B = 0 ↔ width
-    exhausted` bridge).  This is a **layout addition** that the γ `binToUnaryBody` (built on
-    `[U | sentinel | B | rightMarker]`, no width counter) does not yet carry, so δ also re-wires γ's
-    HOME/`B`-region preconditions to the width-counter layout.
+* **D2t-3c-δ — `bZeroTest` (zero-test routing RESOLVED — distinguishable end-marker).** From the body's
+  start decide `B = 0` vs `B > 0` and route: `B = 0` → the loop `sink` (halt); `B > 0` → fall through to
+  the pass (reaching the body's accept ⇒ `loopUntilSink` re-entry).  This supplies
+  `loopUntilSink_reachesSink`'s `hbase` (`μ = counterValue B = 0` ⇒ reach `sink`) and `hstep` (`μ ≠ 0`
+  ⇒ one pass, `μ` decreases).
+  - **Semantic core (DONE — `TreeMCSPBZeroTest.lean`).** `bZeroTest_zero_halts_on_marker` /
+    `bZeroTest_pos_halts_before_marker`: `gammaSelfLoopScan` over `B` halts **on** the rightMarker (head
+    `= w`) iff `B = 0`, and **strictly before** it (head `= j < w`) iff `B > 0`.
+  - **Why a naive read does NOT route.** That scan gives only the *position* outcome; on the single-tape
+    binary alphabet the marker `1` and a `B`-set-bit `1` are indistinguishable by a local read, so the
+    scan reaches the *same* accept phase either way — the "genuine crux" flagged above.
+  - **Chosen resolution (the maintainer's *distinguishable end-marker*; routing core DONE —
+    `bZeroRoute_zero_reads_one` / `bZeroRoute_pos_reads_zero`).** Layout invariant *spread B + double
+    marker*: terminate the counter window with a **double `1`** (cells `w` and `w+1`), and **separate**
+    `B`'s set bits (the lowest set bit `j` is followed by a `0` at `j+1`).  Then the cell **one past the
+    scan-stop** decides in a single fixed-phase read: `read(stop+1) = 1 ⟺ B = 0` (the marker's second
+    `1`) vs `= 0 ⟺ B > 0` (a separator).  Both `bZeroRoute_*` lemmas read this off the scan terminator's
+    tape-invariance, stating the layout as hypotheses (routing-agnostic).
+  - **Routing atom (DONE — `cellBranch`, `TreeMCSPCellBranch.lean`).** The single-cell read-and-branch
+    program (read head cell → phase `1` if `1`, phase `2` if `0`; no move, no write) — the "read, then
+    branch" half of the discriminating-read wiring.
+  - **Remaining for δ:** the **routing program wiring** (a phase that moves one cell right, then
+    `cellBranch`-reads-and-branches: `1` → sink, `0` → body-entry) and the **concrete spread-B layout
+    construction** (materialize the double-marker + separated bits).  *(A `1^w` **width-counter** lockstep
+    — scan `B` ↔ `1^w`, routing on "found a `1`" vs "counter exhausted" — was considered as an
+    alternative resolution but **not** chosen; the distinguishable end-marker needs no extra region and
+    routes by one local read.)*
 * **D2t-3c-ε — the loop**: `loopUntilSink binToUnaryBody (sink := done)`; `loopUntilSink_reachesSink`
   with measure `counterValue B`, giving `|U| = value(B)` after termination.
 * **D2t-3c-ζ — correctness**: bridge `|U| = value(B) = (decodeFin w …).val`, i.e. the produced block is

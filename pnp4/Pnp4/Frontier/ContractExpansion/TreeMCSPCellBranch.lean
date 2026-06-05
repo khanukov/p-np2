@@ -11,18 +11,19 @@ open Pnp3.Internal.PsubsetPpoly Pnp3.Internal.PsubsetPpoly.TM
 
 `cellBranch` reads the cell under the head **once** and routes to one of two distinct terminal phases:
 phase `1` (the accept phase) iff the cell is `1`, phase `2` iff the cell is `0`.  It never moves the head
-and never writes.  This is the marker-free routing atom the binary→unary loop's zero-test (`bZeroTest`,
-D2t-3c-δ) needs:
+and never writes.  This is the **read-and-branch atom** for the binary→unary loop's zero-test routing
+(`bZeroTest`, D2t-3c-δ) — the "read, then branch" half of the maintainer's *distinguishable end-marker*
+wiring (`TM_VERIFIER_STRATEGY.md` §12).  In that scheme `gammaSelfLoopScan` halts on the first `1` and the
+cell **one past the scan-stop** is the discriminating read (`bZeroRoute_zero_reads_one` /
+`bZeroRoute_pos_reads_zero`): the marker's second `1` iff `B = 0`, a separator `0` iff `B > 0`.  Feeding
+that cell to `cellBranch` routes the loop:
 
-* applied to a `B`-cell, "`1` ⇒ phase `1`" is the *found-a-set-bit* route (`B > 0`);
-* applied to the unary width counter's leftmost cell, "`0` ⇒ phase `2`" is the **marker-free unary
-  zero-test "leftmost cell `= 0`"** (the width counter is *exhausted* ⇒ all `w` scanned cells of `B` were
-  `0` ⇒ `B = 0`), per `TM_VERIFIER_STRATEGY.md` §12 (the width-counter resolution of the documented
-  zero-test crux).
+* `1` ⇒ phase `1` ⇒ `B = 0` ⇒ the loop `sink` (halt);
+* `0` ⇒ phase `2` ⇒ `B > 0` ⇒ body-entry (run one more `binToUnaryBody` pass).
 
 Unlike `gammaSelfLoopScan` (which self-loops over `0`s), `cellBranch` takes **exactly one step** and has
-**two** terminal phases, so it is a pure local branch — the building block for the zero-test's routing
-(it does not itself perform the lockstep scan).  **Progress classification: Infrastructure** — control
+**two** terminal phases, so it is a pure local branch — independent of the surrounding layout, hence
+reusable for any one-cell read-and-route decision.  **Progress classification: Infrastructure** — control
 toolkit toward the NP-membership leg; builds no verifier and proves no separation.  All surfaces carry
 only the standard `[propext, Classical.choice, Quot.sound]` triple.  **No `P ≠ NP` claim.**
 -/

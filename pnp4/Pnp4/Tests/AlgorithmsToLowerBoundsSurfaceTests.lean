@@ -3833,6 +3833,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- D2t-3 routing run-through (P1 region): scan stays in phase 0, head advances, tape unchanged (seq sim).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P1_scanning
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P1_runConfig_terminator
+#check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P1_runConfig_handoff
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqNested3_stepConfig_handoff_phase
 #check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested4_stepConfig_handoff_phase
 #check @Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqNested5_stepConfig_handoff_phase

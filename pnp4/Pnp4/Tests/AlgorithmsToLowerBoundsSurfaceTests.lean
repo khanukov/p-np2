@@ -3809,6 +3809,9 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- D2t-3c-δ: the bZeroTest loop-exit decision (scan halts on rightMarker iff B = 0; routing deferred).
 #check @Pnp4.Frontier.ContractExpansion.bZeroTest_zero_halts_on_marker
 #check @Pnp4.Frontier.ContractExpansion.bZeroTest_pos_halts_before_marker
+-- D2t-3 routing: the distinguishable-marker discriminating read (read past scan-stop = 1 iff B = 0).
+#check @Pnp4.Frontier.ContractExpansion.bZeroRoute_zero_reads_one
+#check @Pnp4.Frontier.ContractExpansion.bZeroRoute_pos_reads_zero
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqNested3_stepConfig_handoff_phase
 #check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested4_stepConfig_handoff_phase
 #check @Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqNested5_stepConfig_handoff_phase

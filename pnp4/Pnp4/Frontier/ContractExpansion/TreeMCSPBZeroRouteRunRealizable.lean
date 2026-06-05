@@ -29,12 +29,15 @@ open Pnp3.Internal.PsubsetPpoly Pnp3.Internal.PsubsetPpoly.TM
 open Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram
 
 /-- The composed `B = 0` decision is realizable: a concrete double-marker input reaches phase `4`. -/
-theorem bZeroRouteProgram_decide_true_realizable {L : Nat} (w : Nat) (hwL : w + 1 < L)
-    (hwt : w + 1 < (seq gammaSelfLoopScan stepRightThenBranch).toPhased.toTM.tapeLength L) :
+theorem bZeroRouteProgram_decide_true_realizable {L : Nat} (w : Nat) (hwL : w + 1 < L) :
     ∃ x : Boolcube.Point L,
       (((TM.runConfig (M := (seq gammaSelfLoopScan stepRightThenBranch).toPhased.toTM)
           ((seq gammaSelfLoopScan stepRightThenBranch).toPhased.toTM.initialConfig x)
           (w + 1 + 1 + 1 + 1)).state).fst : Nat) = 4 := by
+  have hwt : w + 1 < (seq gammaSelfLoopScan stepRightThenBranch).toPhased.toTM.tapeLength L := by
+    have hLe : L ≤ (seq gammaSelfLoopScan stepRightThenBranch).toPhased.toTM.tapeLength L := by
+      simp only [TM.tapeLength]; omega
+    omega
   refine ⟨fun j => decide ((j : Nat) = w ∨ (j : Nat) = w + 1), ?_⟩
   apply bZeroRouteProgram_runConfig_decide_true _ w hwt
   · intro p hp
@@ -48,12 +51,15 @@ theorem bZeroRouteProgram_decide_true_realizable {L : Nat} (w : Nat) (hwL : w + 
     simp only [initialConfig]; rw [dif_pos hpL]; simp only [decide_eq_true_eq]; omega
 
 /-- The composed `B > 0` decision is realizable: a concrete single-set-bit input reaches phase `5`. -/
-theorem bZeroRouteProgram_decide_false_realizable {L : Nat} (j : Nat) (hjL : j + 1 < L)
-    (hjt : j + 1 < (seq gammaSelfLoopScan stepRightThenBranch).toPhased.toTM.tapeLength L) :
+theorem bZeroRouteProgram_decide_false_realizable {L : Nat} (j : Nat) (hjL : j + 1 < L) :
     ∃ x : Boolcube.Point L,
       (((TM.runConfig (M := (seq gammaSelfLoopScan stepRightThenBranch).toPhased.toTM)
           ((seq gammaSelfLoopScan stepRightThenBranch).toPhased.toTM.initialConfig x)
           (j + 1 + 1 + 1 + 1)).state).fst : Nat) = 5 := by
+  have hjt : j + 1 < (seq gammaSelfLoopScan stepRightThenBranch).toPhased.toTM.tapeLength L := by
+    have hLe : L ≤ (seq gammaSelfLoopScan stepRightThenBranch).toPhased.toTM.tapeLength L := by
+      simp only [TM.tapeLength]; omega
+    omega
   refine ⟨fun q => decide ((q : Nat) = j), ?_⟩
   apply bZeroRouteProgram_runConfig_decide_false _ j hjt
   · intro p hp

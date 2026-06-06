@@ -114,6 +114,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeHstep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeSeekHomeRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeBodyStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeBodyRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeMeasure
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoop
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRoutePeel
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopHbase
@@ -3891,6 +3892,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step28
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_runConfig_afterStepLeft5Handoff
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_runConfig_onePass
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_onePass_counterValue
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoop_runConfig_hbase
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoop_hbase_realizable
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoop_runConfig_decide_false

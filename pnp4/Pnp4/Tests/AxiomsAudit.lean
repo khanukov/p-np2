@@ -95,6 +95,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunP1
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunCompose
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunRealizable
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSeekHomeAfterRoute
+import Pnp4.Frontier.ContractExpansion.TreeMCSPSeekHomeAfterRouteRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoop
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRoutePeel
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopHbase
@@ -637,6 +638,9 @@ end Pnp4
 -- D2t-3 ε home-seek after the route (scaffolding): returns the head to the HOME sentinel for hstep.
 #print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_numPhases
 #print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_acceptPhase_val
+-- D2t-3 ε home-seek run-through (leading two steps, depth-1): step lemmas toward the sentinel reach.
+#print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_step1_phase
+#print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_step2_phase
 -- D2t-3 ε (loop scaffolding): binToUnaryLoop = loopUntilSink (route ; binToUnaryBody), sink phase 4.
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_transition_route
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_numPhases

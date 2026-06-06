@@ -24,7 +24,8 @@ This is the classic Turing-machine *return-to-home without an endmarker symbol* 
 "marking"/checking-off technique; the standard fix is a reserved boundary symbol — forbidden here by the
 binary-alphabet, all-`Unit`-state discipline, `TM_VERIFIER_STRATEGY.md` §6f).  The binary-alphabet
 realization is a **permanent unary sentinel**: keep `U` non-empty (seed one `1`), so the left scan always
-terminates on `U`'s `1`.  Under that invariant the home-seek is the deterministic 4-step composite
+terminates on `U`'s `1`.  Under that invariant the home-seek is the deterministic **four-sub-program**
+composite (four sub-programs, *not* four TM steps — see the step-count note below)
 
   `seekHomeAfterRoute := seqList [stepLeftOnce, stepLeftOnce, selfLoopScanLeft, stepRightOnce]`
 
@@ -33,6 +34,11 @@ into `B`'s `0`-block, **scan left over the contiguous `0`s** (`B`'s `j` zeros an
 first `1` (`U`'s rightmost cell at `s − 1`), then **step right** back onto the sentinel `s`.  Net head
 move `−(j + 2)`, tape unchanged; the `j = 0` edge (no interior zeros) is absorbed by the scan's
 zero-length-admitting invariant.
+
+**Step count.**  `seqList` folds into nested `seq` over a trailing `idleCS`, so the program has `9` phases
+(4 × 2-phase bricks + the `idleCS`) and its `timeBound` includes the per-`seq` handoff steps plus the
+*variable* `selfLoopScanLeft` cost — the executed run is `(j + 1) + 3` head moves plus handoffs, not a
+literal `4` TM steps.
 
 This brick ships the **definition + phase-count facts**.  The run behaviour (reaching the sentinel from
 the discriminator config), the `binToUnaryLoopBody` revision `seq route (seq seekHomeAfterRoute body)`,

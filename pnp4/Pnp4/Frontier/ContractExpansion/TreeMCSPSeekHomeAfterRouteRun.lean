@@ -527,7 +527,10 @@ theorem seekHomeAfterRoute_runConfig_home {L : Nat}
         : Nat) = 8
       ∧ ((TM.runConfig (M := (seq stepLeftOnce
           (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM) c0 (m + 8)).head : Nat)
-          = (c0.head : Nat) - 1 - m := by
+          = (c0.head : Nat) - 1 - m
+      ∧ (TM.runConfig (M := (seq stepLeftOnce
+          (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM) c0 (m + 8)).tape
+          = c0.tape := by
   obtain ⟨hp4, hh4, ht4⟩ := seekHomeAfterRoute_runConfig_lead4 c0 hstart (by omega)
   -- scanning m steps from `runConfig c0 4`
   obtain ⟨hpS, hhS, htS⟩ := seekHomeAfterRoute_runConfig_scanning
@@ -565,8 +568,8 @@ theorem seekHomeAfterRoute_runConfig_home {L : Nat}
   set c7 := TM.stepConfig (M := (seq stepLeftOnce
     (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM) c6 with hc7
   clear_value c7
-  obtain ⟨q8p, q8h, _⟩ := seekHomeAfterRoute_step8 c7 (i := c7.state.fst) (s := c7.state.snd) q7 rfl
-  exact ⟨q8p, by rw [q8h, h7h, h6h, h5h, hhS']; omega⟩
+  obtain ⟨q8p, q8h, q8t⟩ := seekHomeAfterRoute_step8 c7 (i := c7.state.fst) (s := c7.state.snd) q7 rfl
+  exact ⟨q8p, by rw [q8h, h7h, h6h, h5h, hhS']; omega, by rw [q8t, h7t, h6t, h5t, htS']⟩
 
 end ContractExpansion
 end Frontier

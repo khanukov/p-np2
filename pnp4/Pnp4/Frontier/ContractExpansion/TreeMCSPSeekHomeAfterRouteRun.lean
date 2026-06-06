@@ -352,6 +352,112 @@ theorem seekHomeAfterRoute_runConfig_scanning {L : Nat}
         (i := c.state.fst) (s := c.state.snd) hph rfl hbit hhead
       exact ⟨sp, by rw [sh, hhd]; omega, by rw [st, htp]⟩
 
+/-! ### Steps 6–8: scan-accept handoff, the rightward step, and the final handoff -/
+
+set_option linter.unusedSimpArgs false in
+/-- Step 6 (phase `5` = `selfLoopScanLeft`'s accept): handoff to phase `6` (the `stepRightOnce` start),
+head and tape unchanged. -/
+theorem seekHomeAfterRoute_step6 {L : Nat}
+    (c : Configuration
+      (M := (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM) L)
+    {i : Fin (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).numPhases}
+    {s : Unit} (hi : i.val = 5) (hstate : c.state = ⟨i, s⟩) :
+    ((TM.stepConfig
+        (M := (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM)
+        c).state).fst.val = 6
+      ∧ (TM.stepConfig
+          (M := (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM)
+          c).head = c.head
+      ∧ (TM.stepConfig
+          (M := (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM)
+          c).tape = c.tape := by
+  refine ⟨?_, ?_, ?_⟩
+  · rw [seq_stepConfig_P2_phase stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce]) c
+        (h2 := by rw [hi]; decide) (hlt := by rw [hi]; decide) hstate]
+    simp [seqList, seq, selfLoopScanLeft, stepRightOnce, hi]
+  · have hmove : (TM.stepConfig
+        (M := (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM)
+        c).head = Configuration.moveHead (c := c) Move.stay := by
+      rw [seq_stepConfig_P2_head stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce]) c
+          (h2 := by rw [hi]; decide) (hlt := by rw [hi]; decide) hstate]
+      simp [seqList, seq, selfLoopScanLeft, stepRightOnce, hi]
+    rw [hmove]; simp [Configuration.moveHead]
+  · rw [seq_stepConfig_P2_tape stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce]) c
+        (h2 := by rw [hi]; decide) (hlt := by rw [hi]; decide) hstate]
+    funext j; by_cases hj : j = c.head
+    · subst hj; simp [seqList, seq, selfLoopScanLeft, stepRightOnce, hi, Configuration.write]
+    · simp [Configuration.write, hj]
+
+set_option linter.unusedSimpArgs false in
+/-- Step 7 (phase `6` = `stepRightOnce`'s move): step one cell right (back onto the sentinel), reaching
+phase `7`; tape unchanged. -/
+theorem seekHomeAfterRoute_step7 {L : Nat}
+    (c : Configuration
+      (M := (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM) L)
+    {i : Fin (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).numPhases}
+    {s : Unit} (hi : i.val = 6) (hstate : c.state = ⟨i, s⟩)
+    (hbnd : (c.head : Nat) + 1 < (seq stepLeftOnce
+      (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM.tapeLength L) :
+    ((TM.stepConfig
+        (M := (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM)
+        c).state).fst.val = 7
+      ∧ ((TM.stepConfig
+          (M := (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM)
+          c).head : Nat) = (c.head : Nat) + 1
+      ∧ (TM.stepConfig
+          (M := (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM)
+          c).tape = c.tape := by
+  refine ⟨?_, ?_, ?_⟩
+  · rw [seq_stepConfig_P2_phase stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce]) c
+        (h2 := by rw [hi]; decide) (hlt := by rw [hi]; decide) hstate]
+    simp [seqList, seq, selfLoopScanLeft, stepRightOnce, hi]
+  · have hmove : (TM.stepConfig
+        (M := (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM)
+        c).head = Configuration.moveHead (c := c) Move.right := by
+      rw [seq_stepConfig_P2_head stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce]) c
+          (h2 := by rw [hi]; decide) (hlt := by rw [hi]; decide) hstate]
+      simp [seqList, seq, selfLoopScanLeft, stepRightOnce, hi]
+    rw [hmove]; simp only [Configuration.moveHead, dif_pos hbnd]
+  · rw [seq_stepConfig_P2_tape stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce]) c
+        (h2 := by rw [hi]; decide) (hlt := by rw [hi]; decide) hstate]
+    funext j; by_cases hj : j = c.head
+    · subst hj; simp [seqList, seq, selfLoopScanLeft, stepRightOnce, hi, Configuration.write]
+    · simp [Configuration.write, hj]
+
+set_option linter.unusedSimpArgs false in
+/-- Step 8 (phase `7` = `stepRightOnce`'s accept): handoff to the trailing `idleCS` (phase `8`, the
+accept), head and tape unchanged. -/
+theorem seekHomeAfterRoute_step8 {L : Nat}
+    (c : Configuration
+      (M := (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM) L)
+    {i : Fin (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).numPhases}
+    {s : Unit} (hi : i.val = 7) (hstate : c.state = ⟨i, s⟩) :
+    ((TM.stepConfig
+        (M := (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM)
+        c).state).fst.val = 8
+      ∧ (TM.stepConfig
+          (M := (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM)
+          c).head = c.head
+      ∧ (TM.stepConfig
+          (M := (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM)
+          c).tape = c.tape := by
+  refine ⟨?_, ?_, ?_⟩
+  · rw [seq_stepConfig_P2_phase stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce]) c
+        (h2 := by rw [hi]; decide) (hlt := by rw [hi]; decide) hstate]
+    simp [seqList, seq, selfLoopScanLeft, stepRightOnce, hi]
+  · have hmove : (TM.stepConfig
+        (M := (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM)
+        c).head = Configuration.moveHead (c := c) Move.stay := by
+      rw [seq_stepConfig_P2_head stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce]) c
+          (h2 := by rw [hi]; decide) (hlt := by rw [hi]; decide) hstate]
+      simp [seqList, seq, selfLoopScanLeft, stepRightOnce, hi]
+    rw [hmove]; simp [Configuration.moveHead]
+  · rw [seq_stepConfig_P2_tape stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce]) c
+        (h2 := by rw [hi]; decide) (hlt := by rw [hi]; decide) hstate]
+    funext j; by_cases hj : j = c.head
+    · subst hj; simp [seqList, seq, selfLoopScanLeft, stepRightOnce, hi, Configuration.write]
+    · simp [Configuration.write, hj]
+
 end ContractExpansion
 end Frontier
 end Pnp4

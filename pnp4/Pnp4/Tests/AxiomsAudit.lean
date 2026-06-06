@@ -94,6 +94,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunP1
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunCompose
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunRealizable
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoop
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPLeadingPhasesChain
@@ -628,6 +629,9 @@ end Pnp4
 -- D2t-3 routing run-through: realizability witnesses (the full decision is non-vacuously instantiable).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_decide_true_realizable
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_decide_false_realizable
+-- D2t-3 ε (loop scaffolding): binToUnaryLoop = loopUntilSink (route ; binToUnaryBody), sink phase 4.
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_numPhases
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_acceptPhase
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqNested3_stepConfig_handoff_phase
 #print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested4_stepConfig_handoff_phase
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqNested5_stepConfig_handoff_phase

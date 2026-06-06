@@ -102,6 +102,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeHbase
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeDecideFalse
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeHstep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeSeekHomeRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeBodyStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoop
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRoutePeel
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopHbase
@@ -684,6 +685,26 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_seek_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_seek_runConfig_lead4
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_seek_runConfig_home
+-- D2t-3 ε hstep body lift single steps (rehome machine, phases 15→28): binToUnaryBody re-derived on the
+-- loop machine at offset +15 (3 moves, 7 handoffs, 4 bit-conditional scans split read-1/read-0).
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step15
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step16
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step17_one
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step17_zero
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step18
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step19
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step20
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step21_one
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step21_zero
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step22
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step23
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step24
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step25_one
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step25_zero
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step26
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step27_one
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step27_zero
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step28
 -- D2t-3 ε `hbase`: from a B=0 HOME config the loop reaches the sink phase 4 (the clean loop-exit half).
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_runConfig_hbase

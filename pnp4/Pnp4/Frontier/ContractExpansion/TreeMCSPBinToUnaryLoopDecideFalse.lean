@@ -74,6 +74,33 @@ theorem binToUnaryLoop_runConfig_decide_false {L : Nat}
   exact binToUnaryLoop_stepConfig_branch0 c
     (i := c.state.fst) (s := c.state.snd) hph rfl hbit
 
+/-- `initialConfig` places the loop machine's head at cell `0`. -/
+private theorem binToUnaryLoop_initialConfig_head_val {L : Nat} (x : Boolcube.Point L) :
+    ((binToUnaryLoop.toPhased.toTM.initialConfig x).head : Nat) = 0 := rfl
+
+/-- The `B > 0` route decision is realizable: a concrete **single-marker** input (cell `z` set, all else
+`0`, so the discriminator `z + 1` is `0`) drives `binToUnaryLoop` from `initialConfig` to phase `5` after
+`z + 4` steps — the `B > 0` analogue of `binToUnaryLoop_hbase_realizable`. -/
+theorem binToUnaryLoop_decide_false_realizable {L : Nat} (z : Nat) (hzL : z + 1 < L) :
+    ∃ x : Boolcube.Point L,
+      (((TM.runConfig (M := binToUnaryLoop.toPhased.toTM)
+          (binToUnaryLoop.toPhased.toTM.initialConfig x) (z + 1 + 1 + 1 + 1)).state).fst : Nat) = 5 := by
+  refine ⟨fun j => decide ((j : Nat) = z), ?_⟩
+  apply binToUnaryLoop_runConfig_decide_false _ rfl z
+  · rw [binToUnaryLoop_initialConfig_head_val]; simp only [TM.tapeLength]; omega
+  · intro p hp1 hp2
+    rw [binToUnaryLoop_initialConfig_head_val] at hp2
+    have hpL : (p : Nat) < L := by omega
+    simp only [initialConfig]; rw [dif_pos hpL]; simp only [decide_eq_false_iff_not]; omega
+  · intro p hp
+    rw [binToUnaryLoop_initialConfig_head_val] at hp
+    have hpL : (p : Nat) < L := by omega
+    simp only [initialConfig]; rw [dif_pos hpL]; simp only [decide_eq_true_eq]; omega
+  · intro p hp
+    rw [binToUnaryLoop_initialConfig_head_val] at hp
+    have hpL : (p : Nat) < L := by omega
+    simp only [initialConfig]; rw [dif_pos hpL]; simp only [decide_eq_false_iff_not]; omega
+
 end ContractExpansion
 end Frontier
 end Pnp4

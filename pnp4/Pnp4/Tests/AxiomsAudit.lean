@@ -644,6 +644,7 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_hbase_realizable
 -- D2t-3 ε route decision, B>0 branch (loop machine): reaches phase 5, the body-handoff point.
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_runConfig_decide_false
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_decide_false_realizable
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqNested3_stepConfig_handoff_phase
 #print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested4_stepConfig_handoff_phase
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqNested5_stepConfig_handoff_phase

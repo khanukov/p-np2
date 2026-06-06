@@ -348,6 +348,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunRealizable,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoop,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopHbase,
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopHbaseRealizable,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPLeadingPhasesChain,

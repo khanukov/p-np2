@@ -106,6 +106,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunCompose
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunRealizable
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoop
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopHbase
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopHbaseRealizable
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPLeadingPhasesChain
@@ -3848,6 +3849,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoop_numPhases
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoop_acceptPhase
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoop_runConfig_hbase
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoop_hbase_realizable
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqNested3_stepConfig_handoff_phase
 #check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested4_stepConfig_handoff_phase
 #check @Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqNested5_stepConfig_handoff_phase

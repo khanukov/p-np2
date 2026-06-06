@@ -667,6 +667,7 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_numPhases
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_acceptPhase
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_transition_route
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopBodyRehome_acceptPhase_val
 -- D2t-3 ε hbase on the rehome machine (B=0 → sink phase 4), mirroring the merged binToUnaryLoop hbase.
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_runConfig_hbase

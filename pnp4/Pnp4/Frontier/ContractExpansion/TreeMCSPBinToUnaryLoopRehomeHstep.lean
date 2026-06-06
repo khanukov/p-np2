@@ -25,19 +25,17 @@ namespace ContractExpansion
 open Pnp3.Internal.PsubsetPpoly Pnp3.Internal.PsubsetPpoly.TM
 open Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram
 
-/-- The rehome loop body's accept phase is `29`; the sink is `4`. -/
-private theorem accV : (binToUnaryLoopBodyRehome.acceptPhase : Nat) = 29 := by decide
-
 /-- Away from the loop body's accept (`29`) and the sink (`4`), the loop's transition is the body's
-transition (here for the route-accept phase `5`, outside the route region `i < 4`). -/
+transition (here for the route-accept phase `5`, outside the route region `i < 4`).  Reuses the shared
+`binToUnaryLoopBodyRehome_acceptPhase_val` (from the route peel module) for the accept-index disequality. -/
 private theorem peel5 {L : Nat}
     (c : Configuration (M := binToUnaryLoopRehome.toPhased.toTM) L) {i : Fin binToUnaryLoopRehome.numPhases}
     (s : Unit) (hi : i.val = 5) :
     binToUnaryLoopRehome.transition i s (c.tape c.head)
       = binToUnaryLoopBodyRehome.transition i () (c.tape c.head) :=
   loopUntilSink_transition_body binToUnaryLoopBodyRehome ⟨4, by decide⟩
-    (Fin.ne_of_val_ne (by rw [accV]; omega)) (Fin.ne_of_val_ne (show (i : Nat) ≠ 4 by omega))
-    s (c.tape c.head)
+    (Fin.ne_of_val_ne (by rw [binToUnaryLoopBodyRehome_acceptPhase_val]; omega))
+    (Fin.ne_of_val_ne (show (i : Nat) ≠ 4 by omega)) s (c.tape c.head)
 
 /-- **Handoff `5 → 6`** (route accept → `seekHomeAfterRoute` start): the outer `seq`'s P1-accept handoff.
 Phase advances to `6`; head and tape unchanged. -/
@@ -80,8 +78,8 @@ private theorem peel14 {L : Nat}
     binToUnaryLoopRehome.transition i s (c.tape c.head)
       = binToUnaryLoopBodyRehome.transition i () (c.tape c.head) :=
   loopUntilSink_transition_body binToUnaryLoopBodyRehome ⟨4, by decide⟩
-    (Fin.ne_of_val_ne (by rw [accV]; omega)) (Fin.ne_of_val_ne (show (i : Nat) ≠ 4 by omega))
-    s (c.tape c.head)
+    (Fin.ne_of_val_ne (by rw [binToUnaryLoopBodyRehome_acceptPhase_val]; omega))
+    (Fin.ne_of_val_ne (show (i : Nat) ≠ 4 by omega)) s (c.tape c.head)
 
 /-- **Handoff `14 → 15`** (`seekHomeAfterRoute` accept → `binToUnaryBody` start): the inner `seq`'s
 P1-accept handoff, reached through the outer `seq`'s P2.  Phase advances to `15`; head and tape

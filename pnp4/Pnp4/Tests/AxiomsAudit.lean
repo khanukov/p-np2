@@ -97,6 +97,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunRealizable
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoop
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopHbase
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopHbaseRealizable
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopDecideFalse
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPLeadingPhasesChain
@@ -639,6 +640,8 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_runConfig_hbase
 -- D2t-3 ε `hbase` realizability: a concrete B=0 input reaches the sink phase 4 from initialConfig.
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_hbase_realizable
+-- D2t-3 ε route decision, B>0 branch (loop machine): reaches phase 5, the body-handoff point.
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_runConfig_decide_false
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqNested3_stepConfig_handoff_phase
 #print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested4_stepConfig_handoff_phase
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqNested5_stepConfig_handoff_phase

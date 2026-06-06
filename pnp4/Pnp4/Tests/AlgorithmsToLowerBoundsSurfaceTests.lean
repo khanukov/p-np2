@@ -105,6 +105,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunP1
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunCompose
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunRealizable
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSeekHomeAfterRoute
+import Pnp4.Frontier.ContractExpansion.TreeMCSPSeekHomeAfterRouteRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoop
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRoutePeel
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopHbase
@@ -3850,6 +3851,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_decide_false_realizable
 -- D2t-3 ε (loop scaffolding): binToUnaryLoop = loopUntilSink (route ; binToUnaryBody), sink phase 4.
 #check @Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_numPhases
+#check @Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_step1_phase
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoop_transition_route
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoop_numPhases
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoop_acceptPhase

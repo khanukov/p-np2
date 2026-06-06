@@ -25,7 +25,7 @@ open Pnp3.Internal.PsubsetPpoly Pnp3.Internal.PsubsetPpoly.TM
 open Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram
 
 /-- The rehome loop body's accept phase: route `6` + seek-HOME `9` + `binToUnaryBody`'s `idleCS` accept
-`14` `= 29` — distinct from the route region (`0..5`) and the sink (`4`). -/
+`14` `= 29` — well past the peel's route region (`i < 4`) and the sink (`4`), so neither equals it. -/
 private theorem binToUnaryLoopBodyRehome_acceptPhase_val :
     (binToUnaryLoopBodyRehome.acceptPhase : Nat) = 29 := by decide
 

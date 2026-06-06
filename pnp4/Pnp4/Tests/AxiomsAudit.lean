@@ -96,6 +96,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunCompose
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunRealizable
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSeekHomeAfterRoute
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSeekHomeAfterRouteRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehome
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoop
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRoutePeel
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopHbase
@@ -658,6 +659,9 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_transition_route
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_numPhases
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_acceptPhase
+-- D2t-3 ε seek-HOME loop (revised body with re-homing): binToUnaryLoopRehome = loopUntilSink (route ; seekHome ; body).
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_numPhases
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_acceptPhase
 -- D2t-3 ε `hbase`: from a B=0 HOME config the loop reaches the sink phase 4 (the clean loop-exit half).
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_runConfig_hbase

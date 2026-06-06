@@ -106,6 +106,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunCompose
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunRealizable
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSeekHomeAfterRoute
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSeekHomeAfterRouteRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehome
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoop
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRoutePeel
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopHbase
@@ -3866,6 +3867,8 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoop_transition_route
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoop_numPhases
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoop_acceptPhase
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_numPhases
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_acceptPhase
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoop_runConfig_hbase
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoop_hbase_realizable
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoop_runConfig_decide_false

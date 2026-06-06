@@ -95,6 +95,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunP1
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunCompose
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunRealizable
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoop
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRoutePeel
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopHbase
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopHbaseRealizable
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopDecideFalse
@@ -633,6 +634,7 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_decide_true_realizable
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_decide_false_realizable
 -- D2t-3 ε (loop scaffolding): binToUnaryLoop = loopUntilSink (route ; binToUnaryBody), sink phase 4.
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_transition_route
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_numPhases
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_acceptPhase
 -- D2t-3 ε `hbase`: from a B=0 HOME config the loop reaches the sink phase 4 (the clean loop-exit half).

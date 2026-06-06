@@ -1,4 +1,5 @@
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoop
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRoutePeel
 
 /-!
 # `binToUnaryLoop` base case `hbase` — `B = 0` drives the loop to its sink (NP-verifier track — D2t-3 `ε`)
@@ -32,23 +33,10 @@ namespace ContractExpansion
 open Pnp3.Internal.PsubsetPpoly Pnp3.Internal.PsubsetPpoly.TM
 open Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram
 
-/-- The loop body's accept phase (the `idleCS` of `binToUnaryBody`, embedded past the `6`-phase route) is
-`20` — distinct from the route region (`0..5`) and the sink (`4`). -/
-private theorem binToUnaryLoopBody_acceptPhase_val :
-    (binToUnaryLoopBody.acceptPhase : Nat) = 20 := by decide
-
-/-- In the route region (`i < 4`) the loop's transition is the body's transition: the head is neither at
-the loop body's accept phase (`20`) nor at the sink (`4`), so `loopUntilSink` runs `binToUnaryLoopBody`
-verbatim.  This peels the `loopUntilSink` layer (whose guards are *Fin* equalities), leaving the `seq`
-layers for `simp`. -/
-private theorem bul_trans_route {i : Fin binToUnaryLoop.numPhases} (hlt : (i : Nat) < 4)
-    (s : Unit) (b : Bool) :
-    binToUnaryLoop.transition i s b = binToUnaryLoopBody.transition i () b :=
-  loopUntilSink_transition_body binToUnaryLoopBody ⟨4, by decide⟩
-    (Fin.ne_of_val_ne (by rw [binToUnaryLoopBody_acceptPhase_val]; omega))
-    (Fin.ne_of_val_ne (show (i : Nat) ≠ 4 by omega)) s b
-
 /-! ### Single-step `stepConfig` lemmas (route region of the loop machine)
+
+The route-region transition peel (`binToUnaryLoop_transition_route`, shared with the `decide_false` and
+`hstep` bricks) lives in `TreeMCSPBinToUnaryLoopRoutePeel.lean`.
 
 Each evaluates one step of `binToUnaryLoop`'s machine via `toTM_stepConfig_{phase,head,tape}`, peels the
 `loopUntilSink` layer with `bul_trans_route`, then an isolated `simp` over the `seq` layers.  The route
@@ -65,18 +53,18 @@ theorem binToUnaryLoop_stepConfig_scan {L : Nat}
       ∧ (TM.stepConfig (M := binToUnaryLoop.toPhased.toTM) c).tape = c.tape := by
   refine ⟨?_, ?_, ?_⟩
   · rw [ConstStatePhasedProgram.toTM_stepConfig_phase binToUnaryLoop c hstate,
-      bul_trans_route (by rw [hi]; omega) s (c.tape c.head), hbit]
+      binToUnaryLoop_transition_route (by rw [hi]; omega) s (c.tape c.head), hbit]
     simp [binToUnaryLoopBody, binToUnaryRouteBody, bZeroRouteProgram, seq, gammaSelfLoopScan,
       stepRightThenBranch, hi]
   · rw [ConstStatePhasedProgram.toTM_stepConfig_head binToUnaryLoop c hstate]
     have hmove : (binToUnaryLoop.transition i s (c.tape c.head)).2.2.2 = Move.right := by
-      rw [bul_trans_route (by rw [hi]; omega) s (c.tape c.head), hbit]
+      rw [binToUnaryLoop_transition_route (by rw [hi]; omega) s (c.tape c.head), hbit]
       simp [binToUnaryLoopBody, binToUnaryRouteBody, bZeroRouteProgram, seq, gammaSelfLoopScan,
         stepRightThenBranch, hi]
     rw [hmove]; simp only [Configuration.moveHead, dif_pos hbnd]
   · rw [ConstStatePhasedProgram.toTM_stepConfig_tape binToUnaryLoop c hstate]
     have hbw : (binToUnaryLoop.transition i s (c.tape c.head)).2.2.1 = c.tape c.head := by
-      rw [bul_trans_route (by rw [hi]; omega) s (c.tape c.head), hbit]
+      rw [binToUnaryLoop_transition_route (by rw [hi]; omega) s (c.tape c.head), hbit]
       simp [binToUnaryLoopBody, binToUnaryRouteBody, bZeroRouteProgram, seq, gammaSelfLoopScan,
         stepRightThenBranch, hi]
     rw [hbw]; funext j; by_cases hj : j = c.head
@@ -93,18 +81,18 @@ theorem binToUnaryLoop_stepConfig_stop {L : Nat}
       ∧ (TM.stepConfig (M := binToUnaryLoop.toPhased.toTM) c).tape = c.tape := by
   refine ⟨?_, ?_, ?_⟩
   · rw [ConstStatePhasedProgram.toTM_stepConfig_phase binToUnaryLoop c hstate,
-      bul_trans_route (by rw [hi]; omega) s (c.tape c.head), hbit]
+      binToUnaryLoop_transition_route (by rw [hi]; omega) s (c.tape c.head), hbit]
     simp [binToUnaryLoopBody, binToUnaryRouteBody, bZeroRouteProgram, seq, gammaSelfLoopScan,
       stepRightThenBranch, hi]
   · rw [ConstStatePhasedProgram.toTM_stepConfig_head binToUnaryLoop c hstate]
     have hmove : (binToUnaryLoop.transition i s (c.tape c.head)).2.2.2 = Move.stay := by
-      rw [bul_trans_route (by rw [hi]; omega) s (c.tape c.head), hbit]
+      rw [binToUnaryLoop_transition_route (by rw [hi]; omega) s (c.tape c.head), hbit]
       simp [binToUnaryLoopBody, binToUnaryRouteBody, bZeroRouteProgram, seq, gammaSelfLoopScan,
         stepRightThenBranch, hi]
     rw [hmove]; simp [Configuration.moveHead]
   · rw [ConstStatePhasedProgram.toTM_stepConfig_tape binToUnaryLoop c hstate]
     have hbw : (binToUnaryLoop.transition i s (c.tape c.head)).2.2.1 = c.tape c.head := by
-      rw [bul_trans_route (by rw [hi]; omega) s (c.tape c.head), hbit]
+      rw [binToUnaryLoop_transition_route (by rw [hi]; omega) s (c.tape c.head), hbit]
       simp [binToUnaryLoopBody, binToUnaryRouteBody, bZeroRouteProgram, seq, gammaSelfLoopScan,
         stepRightThenBranch, hi]
     rw [hbw]; funext j; by_cases hj : j = c.head
@@ -121,18 +109,18 @@ theorem binToUnaryLoop_stepConfig_handoff {L : Nat}
       ∧ (TM.stepConfig (M := binToUnaryLoop.toPhased.toTM) c).tape = c.tape := by
   refine ⟨?_, ?_, ?_⟩
   · rw [ConstStatePhasedProgram.toTM_stepConfig_phase binToUnaryLoop c hstate,
-      bul_trans_route (by rw [hi]; omega) s (c.tape c.head)]
+      binToUnaryLoop_transition_route (by rw [hi]; omega) s (c.tape c.head)]
     simp [binToUnaryLoopBody, binToUnaryRouteBody, bZeroRouteProgram, seq, gammaSelfLoopScan,
       stepRightThenBranch, hi]
   · rw [ConstStatePhasedProgram.toTM_stepConfig_head binToUnaryLoop c hstate]
     have hmove : (binToUnaryLoop.transition i s (c.tape c.head)).2.2.2 = Move.stay := by
-      rw [bul_trans_route (by rw [hi]; omega) s (c.tape c.head)]
+      rw [binToUnaryLoop_transition_route (by rw [hi]; omega) s (c.tape c.head)]
       simp [binToUnaryLoopBody, binToUnaryRouteBody, bZeroRouteProgram, seq, gammaSelfLoopScan,
         stepRightThenBranch, hi]
     rw [hmove]; simp [Configuration.moveHead]
   · rw [ConstStatePhasedProgram.toTM_stepConfig_tape binToUnaryLoop c hstate]
     have hbw : (binToUnaryLoop.transition i s (c.tape c.head)).2.2.1 = c.tape c.head := by
-      rw [bul_trans_route (by rw [hi]; omega) s (c.tape c.head)]
+      rw [binToUnaryLoop_transition_route (by rw [hi]; omega) s (c.tape c.head)]
       simp [binToUnaryLoopBody, binToUnaryRouteBody, bZeroRouteProgram, seq, gammaSelfLoopScan,
         stepRightThenBranch, hi]
     rw [hbw]; funext j; by_cases hj : j = c.head
@@ -150,18 +138,18 @@ theorem binToUnaryLoop_stepConfig_right {L : Nat}
       ∧ (TM.stepConfig (M := binToUnaryLoop.toPhased.toTM) c).tape = c.tape := by
   refine ⟨?_, ?_, ?_⟩
   · rw [ConstStatePhasedProgram.toTM_stepConfig_phase binToUnaryLoop c hstate,
-      bul_trans_route (by rw [hi]; omega) s (c.tape c.head)]
+      binToUnaryLoop_transition_route (by rw [hi]; omega) s (c.tape c.head)]
     simp [binToUnaryLoopBody, binToUnaryRouteBody, bZeroRouteProgram, seq, gammaSelfLoopScan,
       stepRightThenBranch, hi]
   · rw [ConstStatePhasedProgram.toTM_stepConfig_head binToUnaryLoop c hstate]
     have hmove : (binToUnaryLoop.transition i s (c.tape c.head)).2.2.2 = Move.right := by
-      rw [bul_trans_route (by rw [hi]; omega) s (c.tape c.head)]
+      rw [binToUnaryLoop_transition_route (by rw [hi]; omega) s (c.tape c.head)]
       simp [binToUnaryLoopBody, binToUnaryRouteBody, bZeroRouteProgram, seq, gammaSelfLoopScan,
         stepRightThenBranch, hi]
     rw [hmove]; simp only [Configuration.moveHead, dif_pos hbnd]
   · rw [ConstStatePhasedProgram.toTM_stepConfig_tape binToUnaryLoop c hstate]
     have hbw : (binToUnaryLoop.transition i s (c.tape c.head)).2.2.1 = c.tape c.head := by
-      rw [bul_trans_route (by rw [hi]; omega) s (c.tape c.head)]
+      rw [binToUnaryLoop_transition_route (by rw [hi]; omega) s (c.tape c.head)]
       simp [binToUnaryLoopBody, binToUnaryRouteBody, bZeroRouteProgram, seq, gammaSelfLoopScan,
         stepRightThenBranch, hi]
     rw [hbw]; funext j; by_cases hj : j = c.head
@@ -174,7 +162,7 @@ theorem binToUnaryLoop_stepConfig_branch1 {L : Nat}
     {s : Unit} (hi : i.val = 3) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = true) :
     ((TM.stepConfig (M := binToUnaryLoop.toPhased.toTM) c).state).fst.val = 4 := by
   rw [ConstStatePhasedProgram.toTM_stepConfig_phase binToUnaryLoop c hstate,
-    bul_trans_route (by rw [hi]; omega) s (c.tape c.head), hbit]
+    binToUnaryLoop_transition_route (by rw [hi]; omega) s (c.tape c.head), hbit]
   simp [binToUnaryLoopBody, binToUnaryRouteBody, bZeroRouteProgram, seq, gammaSelfLoopScan,
     stepRightThenBranch, hi]
 

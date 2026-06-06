@@ -1,4 +1,5 @@
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopHbase
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRoutePeel
 
 /-!
 # `binToUnaryLoop` — the `B > 0` route decision reaches the body-handoff phase (NP-verifier track — D2t-3 `ε`)
@@ -37,27 +38,15 @@ namespace ContractExpansion
 open Pnp3.Internal.PsubsetPpoly Pnp3.Internal.PsubsetPpoly.TM
 open Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram
 
-/-- (Local copy of the route-region transition peel; the `hbase` module's is private.)  The loop body's
-accept phase is `20`. -/
-private theorem bul_acceptPhase_val' : (binToUnaryLoopBody.acceptPhase : Nat) = 20 := by decide
-
-/-- In the route region (`i < 4`) the loop's transition is the body's transition (head at neither the loop
-body's accept `20` nor the sink `4`). -/
-private theorem bul_trans_route' {i : Fin binToUnaryLoop.numPhases} (hlt : (i : Nat) < 4)
-    (s : Unit) (b : Bool) :
-    binToUnaryLoop.transition i s b = binToUnaryLoopBody.transition i () b :=
-  loopUntilSink_transition_body binToUnaryLoopBody ⟨4, by decide⟩
-    (Fin.ne_of_val_ne (by rw [bul_acceptPhase_val']; omega))
-    (Fin.ne_of_val_ne (show (i : Nat) ≠ 4 by omega)) s b
-
 /-- **Branch read-`0`** (phase `3`, reading `0`): jump to phase `5` — `binToUnaryRouteBody`'s accept, the
-`B > 0` body-handoff target. -/
+`B > 0` body-handoff target.  (The route-region transition peel `binToUnaryLoop_transition_route` is
+shared from `TreeMCSPBinToUnaryLoopRoutePeel.lean`.) -/
 theorem binToUnaryLoop_stepConfig_branch0 {L : Nat}
     (c : Configuration (M := binToUnaryLoop.toPhased.toTM) L) {i : Fin binToUnaryLoop.numPhases}
     {s : Unit} (hi : i.val = 3) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = false) :
     ((TM.stepConfig (M := binToUnaryLoop.toPhased.toTM) c).state).fst.val = 5 := by
   rw [ConstStatePhasedProgram.toTM_stepConfig_phase binToUnaryLoop c hstate,
-    bul_trans_route' (by rw [hi]; omega) s (c.tape c.head), hbit]
+    binToUnaryLoop_transition_route (by rw [hi]; omega) s (c.tape c.head), hbit]
   simp [binToUnaryLoopBody, binToUnaryRouteBody, bZeroRouteProgram, seq, gammaSelfLoopScan,
     stepRightThenBranch, hi]
 

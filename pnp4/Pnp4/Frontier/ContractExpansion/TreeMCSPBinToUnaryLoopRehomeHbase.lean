@@ -22,6 +22,14 @@ equalities — refuted via the rehome body's accept index `29` and the sink `4`)
 whose guards are *value* comparisons that `simp` resolves from the phase hypothesis.  Those `simp`s stay
 out of the `runConfig` goal.
 
+**Maintenance note.**  Every step/run lemma here is a line-for-line mirror of its namesake in
+`TreeMCSPBinToUnaryLoopHbase` (`binToUnaryLoop_*` ↔ `binToUnaryLoopRehome_*`), differing only in the
+machine and the peel (`*_transition_route`) — because the route region is provably identical (shared P1
+`binToUnaryRouteBody`).  Any change to the route-region run-through in one file must be applied to the
+other.  (A future cleanup may abstract the shared run-through over the loop machine / body / peel and
+re-instantiate both; deferred until the `decide_false` mirrors also exist, so all four consolidate at
+once.)
+
 **Progress classification (AGENTS.md): Infrastructure** — the `B = 0` loop-exit behaviour toward the
 NP-membership leg; it proves no separation.  Standard `[propext, Classical.choice, Quot.sound]` triple
 only.  **No `P ≠ NP` claim.**

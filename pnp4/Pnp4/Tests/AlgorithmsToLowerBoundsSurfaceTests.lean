@@ -110,6 +110,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehome
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeRoutePeel
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeHbase
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeDecideFalse
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeHstep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoop
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRoutePeel
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopHbase
@@ -3873,9 +3874,12 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_numPhases
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_acceptPhase
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_transition_route
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopBodyRehome_acceptPhase_val
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_runConfig_hbase
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_runConfig_decide_false
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_decide_false_realizable
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_stepConfig_handoff5
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_stepConfig_handoff14
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoop_runConfig_hbase
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoop_hbase_realizable
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoop_runConfig_decide_false

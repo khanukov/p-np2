@@ -100,6 +100,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehome
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeRoutePeel
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeHbase
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeDecideFalse
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeHstep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoop
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRoutePeel
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopHbase
@@ -666,12 +667,16 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_numPhases
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_acceptPhase
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_transition_route
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopBodyRehome_acceptPhase_val
 -- D2t-3 ε hbase on the rehome machine (B=0 → sink phase 4), mirroring the merged binToUnaryLoop hbase.
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_runConfig_hbase
 -- D2t-3 ε decide_false on the rehome machine (B>0 → phase 5, the seekHomeAfterRoute handoff) + realizable.
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_runConfig_decide_false
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_decide_false_realizable
+-- D2t-3 ε hstep seq-handoffs (rehome machine): route→seekHome (5→6) and seekHome→body (14→15).
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_stepConfig_handoff5
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_stepConfig_handoff14
 -- D2t-3 ε `hbase`: from a B=0 HOME config the loop reaches the sink phase 4 (the clean loop-exit half).
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_runConfig_hbase

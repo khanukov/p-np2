@@ -105,6 +105,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeHstep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeSeekHomeRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeBodyStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeBodyRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeMeasure
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoop
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRoutePeel
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopHbase
@@ -719,6 +720,8 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_runConfig_afterStepLeft5Handoff
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_runConfig_afterScanRight7
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_runConfig_onePass
+-- D2t-3 ε hstep measure ingredient (rehome machine): one body pass drops counterValue B by exactly one.
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_onePass_counterValue
 -- D2t-3 ε `hbase`: from a B=0 HOME config the loop reaches the sink phase 4 (the clean loop-exit half).
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_runConfig_hbase

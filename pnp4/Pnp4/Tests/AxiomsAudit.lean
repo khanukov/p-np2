@@ -100,6 +100,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehome
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeRoutePeel
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeHbase
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeDecideFalse
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeDecideFalseHead
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeHstep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeSeekHomeRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeBodyStep
@@ -676,6 +677,9 @@ end Pnp4
 -- D2t-3 ε decide_false on the rehome machine (B>0 → phase 5, the seekHomeAfterRoute handoff) + realizable.
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_runConfig_decide_false
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_decide_false_realizable
+-- D2t-3 ε decide_false with head/tape tracking (head on the discriminator c0.head+z+1) — hstep's first leg.
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_stepConfig_branch0_full
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_runConfig_decide_false_head
 -- D2t-3 ε hstep seq-handoffs (rehome machine): route→seekHome (5→6) and seekHome→body (14→15).
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_stepConfig_handoff5
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_stepConfig_handoff14

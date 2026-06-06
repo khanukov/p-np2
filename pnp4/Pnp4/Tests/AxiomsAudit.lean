@@ -652,6 +652,8 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_step6
 #print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_step7
 #print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_step8
+#print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_runConfig_lead4
+#print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_runConfig_home
 -- D2t-3 ε (loop scaffolding): binToUnaryLoop = loopUntilSink (route ; binToUnaryBody), sink phase 4.
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_transition_route
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_numPhases

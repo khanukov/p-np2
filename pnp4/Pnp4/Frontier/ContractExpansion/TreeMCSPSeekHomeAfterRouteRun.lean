@@ -458,6 +458,116 @@ theorem seekHomeAfterRoute_step8 {L : Nat}
     · subst hj; simp [seqList, seq, selfLoopScanLeft, stepRightOnce, hi, Configuration.write]
     · simp [Configuration.write, hj]
 
+/-! ### Headline: re-home from the discriminator to the sentinel
+
+Composing the single-steps and the scanning invariant: from the discriminator (phase `0`, head `H₀`),
+the run reaches the accept phase `8` with the head back on the sentinel. -/
+
+/-- The leading four steps (phases `0→4`): from phase `0` with `2 ≤ head`, after `4` steps the program is
+in phase `4`, the head has moved two cells left, and the tape is unchanged. -/
+theorem seekHomeAfterRoute_runConfig_lead4 {L : Nat}
+    (c0 : Configuration
+      (M := (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM) L)
+    (hstart : (c0.state.fst : Nat) = 0) (hH0 : 2 ≤ (c0.head : Nat)) :
+    (((TM.runConfig (M := (seq stepLeftOnce
+          (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM) c0 4).state).fst
+        : Nat) = 4
+      ∧ ((TM.runConfig (M := (seq stepLeftOnce
+          (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM) c0 4).head : Nat)
+          = (c0.head : Nat) - 2
+      ∧ (TM.runConfig (M := (seq stepLeftOnce
+          (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM) c0 4).tape
+          = c0.tape := by
+  rw [show (4 : Nat) = 1 + 1 + 1 + 1 from rfl, TM.runConfig_succ, TM.runConfig_succ, TM.runConfig_succ,
+    TM.runConfig_one]
+  -- s1 = stepConfig c0 (phase 1, head H0-1)
+  have hp1 := seekHomeAfterRoute_step1_phase c0 (i := c0.state.fst) (s := c0.state.snd) hstart rfl
+  have hh1 := seekHomeAfterRoute_step1_head c0 (i := c0.state.fst) (s := c0.state.snd) hstart rfl
+    (by omega)
+  have ht1 := seekHomeAfterRoute_step1_tape c0 (i := c0.state.fst) (s := c0.state.snd) hstart rfl
+  set c1 := TM.stepConfig (M := (seq stepLeftOnce
+    (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM) c0 with hc1
+  clear_value c1
+  have hp2 := seekHomeAfterRoute_step2_phase c1 (i := c1.state.fst) (s := c1.state.snd) hp1 rfl
+  have hh2 := seekHomeAfterRoute_step2_head c1 (i := c1.state.fst) (s := c1.state.snd) hp1 rfl
+  have ht2 := seekHomeAfterRoute_step2_tape c1 (i := c1.state.fst) (s := c1.state.snd) hp1 rfl
+  set c2 := TM.stepConfig (M := (seq stepLeftOnce
+    (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM) c1 with hc2
+  clear_value c2
+  have hp3 := seekHomeAfterRoute_step3_phase c2 (i := c2.state.fst) (s := c2.state.snd) hp2 rfl
+  have hh3 := seekHomeAfterRoute_step3_head c2 (i := c2.state.fst) (s := c2.state.snd) hp2 rfl
+    (by rw [hh2, hh1]; omega)
+  have ht3 := seekHomeAfterRoute_step3_tape c2 (i := c2.state.fst) (s := c2.state.snd) hp2 rfl
+  set c3 := TM.stepConfig (M := (seq stepLeftOnce
+    (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM) c2 with hc3
+  clear_value c3
+  refine ⟨seekHomeAfterRoute_step4_phase c3 (i := c3.state.fst) (s := c3.state.snd) hp3 rfl, ?_, ?_⟩
+  · rw [seekHomeAfterRoute_step4_head c3 (i := c3.state.fst) (s := c3.state.snd) hp3 rfl,
+      hh3, hh2, hh1]; omega
+  · rw [seekHomeAfterRoute_step4_tape c3 (i := c3.state.fst) (s := c3.state.snd) hp3 rfl, ht3, ht2, ht1]
+
+/-- **Headline.**  From the discriminator (phase `0`, head `H₀ ≥ m + 2`) with the `m` cells
+`(H₀ − 2 − m, H₀ − 2]` all `0` (the sentinel + `B`'s zeros being scanned) and a `1` at `H₀ − 2 − m`
+(the stopping cell = `U`'s rightmost / sentinel − 1), the run reaches the **accept phase `8`** after
+`m + 8` steps with the head back on the **sentinel** `H₀ − 1 − m`, tape unchanged. -/
+theorem seekHomeAfterRoute_runConfig_home {L : Nat}
+    (c0 : Configuration
+      (M := (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM) L)
+    (hstart : (c0.state.fst : Nat) = 0) (m : Nat) (hm : m + 2 ≤ (c0.head : Nat))
+    (hzeros : ∀ p : Fin ((seq stepLeftOnce
+        (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM.tapeLength L),
+      (c0.head : Nat) - 2 - m < (p : Nat) → (p : Nat) ≤ (c0.head : Nat) - 2 → c0.tape p = false)
+    (hstop : ∀ p : Fin ((seq stepLeftOnce
+        (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) - 2 - m → c0.tape p = true)
+    (hbnd : (c0.head : Nat) - 2 - m + 1 < (seq stepLeftOnce
+      (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM.tapeLength L) :
+    (((TM.runConfig (M := (seq stepLeftOnce
+          (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM) c0 (m + 8)).state).fst
+        : Nat) = 8
+      ∧ ((TM.runConfig (M := (seq stepLeftOnce
+          (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM) c0 (m + 8)).head : Nat)
+          = (c0.head : Nat) - 1 - m := by
+  obtain ⟨hp4, hh4, ht4⟩ := seekHomeAfterRoute_runConfig_lead4 c0 hstart (by omega)
+  -- scanning m steps from `runConfig c0 4`
+  obtain ⟨hpS, hhS, htS⟩ := seekHomeAfterRoute_runConfig_scanning
+    (TM.runConfig (M := (seq stepLeftOnce
+      (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM) c0 4)
+    hp4 m (by rw [hh4]; omega)
+    (by
+      intro p hp1 hp2; rw [ht4]
+      exact hzeros p (by rw [hh4] at hp1; omega) (by rw [hh4] at hp2; omega)) m (le_refl m)
+  rw [show (m + 8) = 4 + m + 1 + 1 + 1 + 1 from by omega,
+    TM.runConfig_succ, TM.runConfig_succ, TM.runConfig_succ, TM.runConfig_succ, TM.runConfig_add]
+  -- `cS = runConfig c0 (4 + m)` is at phase 4, head H0-2-m, tape c0.tape
+  set cS := TM.runConfig (M := (seq stepLeftOnce
+    (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM)
+      (TM.runConfig (M := (seq stepLeftOnce
+        (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM) c0 4) m with hcS
+  have hpS' : (cS.state.fst : Nat) = 4 := hpS
+  have hhS' : (cS.head : Nat) = (c0.head : Nat) - 2 - m := by rw [hcS, hhS, hh4]
+  have htS' : cS.tape = c0.tape := by rw [hcS, htS, ht4]
+  clear_value cS
+  have hbitS : cS.tape cS.head = true := by rw [htS']; exact hstop _ hhS'
+  obtain ⟨q5, h5h, h5t⟩ := seekHomeAfterRoute_scan_stop cS
+    (i := cS.state.fst) (s := cS.state.snd) hpS' rfl hbitS
+  set c5 := TM.stepConfig (M := (seq stepLeftOnce
+    (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM) cS with hc5
+  clear_value c5
+  obtain ⟨q6, h6h, h6t⟩ := seekHomeAfterRoute_step6 c5 (i := c5.state.fst) (s := c5.state.snd) q5 rfl
+  set c6 := TM.stepConfig (M := (seq stepLeftOnce
+    (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM) c5 with hc6
+  clear_value c6
+  have hbnd6 : ((c6.head : Nat)) + 1 < (seq stepLeftOnce
+      (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM.tapeLength L := by
+    rw [h6h, h5h, hhS']; exact hbnd
+  obtain ⟨q7, h7h, h7t⟩ := seekHomeAfterRoute_step7 c6 (i := c6.state.fst) (s := c6.state.snd) q6 rfl hbnd6
+  set c7 := TM.stepConfig (M := (seq stepLeftOnce
+    (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM) c6 with hc7
+  clear_value c7
+  obtain ⟨q8p, q8h, _⟩ := seekHomeAfterRoute_step8 c7 (i := c7.state.fst) (s := c7.state.snd) q7 rfl
+  exact ⟨q8p, by rw [q8h, h7h, h6h, h5h, hhS']; omega⟩
+
 end ContractExpansion
 end Frontier
 end Pnp4

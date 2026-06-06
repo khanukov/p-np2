@@ -3862,6 +3862,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_step6
 #check @Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_step7
 #check @Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_step8
+#check @Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_runConfig_home
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoop_transition_route
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoop_numPhases
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoop_acceptPhase

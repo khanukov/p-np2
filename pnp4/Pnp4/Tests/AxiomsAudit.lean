@@ -643,6 +643,7 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_step2_phase
 -- depth-2: the second stepLeftOnce's move (phase 2 → 3) via nested seq_stepConfig_P2 navigation.
 #print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_step3_phase
+#print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_step4_phase
 -- D2t-3 ε (loop scaffolding): binToUnaryLoop = loopUntilSink (route ; binToUnaryBody), sink phase 4.
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_transition_route
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_numPhases

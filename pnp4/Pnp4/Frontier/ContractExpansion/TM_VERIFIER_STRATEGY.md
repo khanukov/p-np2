@@ -1065,6 +1065,51 @@ shared peel (`binToUnaryLoop_transition_route`) consumer.  The seek-HOME primiti
 loop back-edge, `counterValue − 1`) is the next brick, and the floor-vs-fusion choice should be settled
 jointly with the `binToUnaryBody` layout owner so the U-boundary invariant stays consistent.
 
+#### ε `B = 0` test — SOUNDNESS FINDING and the corrected (full-width-scan) design
+
+**Finding (session `wizardly-hypatia`, while attempting to close `hstep`/`reachesSink`).**  The route's
+`B = 0` test `bZeroRouteProgram = seq gammaSelfLoopScan stepRightThenBranch` — *scan right to the first
+`1`, then read the next cell (the discriminator): `disc = 1 → B = 0` (sink), `disc = 0 → B > 0` (body)* —
+is **not a sound `B = 0` test on a raw little-endian binary counter**.  For `B > 0` it silently requires
+the cell *after* the lowest set bit to be `0`, which binary **decrement does not preserve** (a borrow
+fills a `1`-run at the bottom).  Concrete counterexample: `B = 3 = "11"` (`b₀ = 1, b₁ = 1`).  With the
+sentinel `0` at HOME and `B` at `[HOME+1, …]`, the tape from HOME is `0 1 1`, which matches
+`binToUnaryLoopRehome_runConfig_hbase`'s pattern at `z = 1` (cells `[HOME, HOME+1) = 0`, `HOME+1 = 1`,
+`HOME+2 = 1`) — so the loop routes `B = 3` to the **sink** and terminates early, emitting `unaryField 0`
+instead of `unaryField 3`.  (`decide_false`'s `B > 0` branch needs `HOME+2 = 0`, which fails here, so
+`B = 3` matches *only* the sink branch.)
+
+This is **not a bug in any merged proof**: `hbase`/`decide_false`/`onePass`/seek/measure are all *sound
+conditional theorems* about explicit tape patterns.  The gap is in the route's **test design** — no
+cross-iteration invariant can make `disc` track `value B = 0` for arbitrary binary `B` — so the intended
+`reachesSink`/`ζ` is **not provable on the as-merged loop**.  Literature confirms a correct binary-counter
+zero-test inspects **all** counter bits at the counter's fixed bit-length (Seiferas, *Counting Is Easy*,
+arXiv `cs/0110038`; counter-machine constructions), the first-`1`+next-cell shortcut is unsound.
+
+**Corrected design (chosen: full-width zero scan).**  Replace the `disc` test with a **width-`w`
+full-scan**: scan the entire fixed-width `B`-window `[HOME+1, HOME+1+w)` and accept `B = 0` iff every bit
+is `0`.  As a `w`-parameterised program (phase count grows with `w`, like `gammaZeroScanProgram`'s
+`maxIters`), it uses the **known width `w`** as the scan bound — sidestepping the binary-alphabet
+delimiting wall (§6: a content-findable delimiter is impossible since `B`'s `1`s mimic any fixed marker).
+
+**Entanglements (why this is a multi-brick milestone, not a local swap).**
+* The full-scan leaves the head at `B`'s **right end** (`HOME + w`), not on a discriminator one-past the
+  lowest set bit.  `seekHomeAfterRoute`'s left-scan assumes the cells between its start and HOME are all
+  `0`, which **fails when `B > 0` has `1`s** — so re-homing from the right end needs a left-scan over `B`'s
+  `1`s (different from the merged seek), or the scan should re-home as it goes.
+* The body (`binToUnaryBody`/`onePass`, binary decrement + U-append), the `counterValue − 1` measure, and
+  the seed-`U` landmark are **unchanged and reusable**.
+* So corrected ε = new `bZeroFullScan w` (sound zero-test) + a re-home matching its exit + re-lifted
+  `hbase`/`decide_false` analogues against it + the existing body/measure, then `reachesSink` (induction
+  on `value B`) + `ζ`.  Scope ≈ the route-legs stack (#1559–#1576) redone for the new zero-test, plus the
+  assembly — a focused next milestone.
+
+**Reusable progress (session `wizardly-hypatia`).**  Per-leg ingredients all merged/landing and reused
+under the corrected design: seek-HOME lift (#1577), body single-steps (#1578), body `onePass` (#1579),
+`decide_false`+head (#1580), one-pass measure decrease (#1581).  The disc-test route *deciders*
+(`hbase`/`decide_false` as `B=0`/`B>0` branches) are **superseded** by the full-scan and must not be wired
+into the final `reachesSink`.
+
 #### Composition-toolkit status (the loop-body vocabulary is complete; γ is the remaining assembly)
 
 **Done — the per-primitive run-behaviour + composition lifts the loop body needs are all merged:**

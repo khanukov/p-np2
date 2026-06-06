@@ -101,6 +101,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeRoutePeel
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeHbase
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeDecideFalse
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeHstep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeSeekHomeRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoop
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRoutePeel
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopHbase
@@ -677,6 +678,12 @@ end Pnp4
 -- D2t-3 ε hstep seq-handoffs (rehome machine): route→seekHome (5→6) and seekHome→body (14→15).
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_stepConfig_handoff5
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_stepConfig_handoff14
+-- D2t-3 ε hstep seek-HOME lift (rehome machine, phases 6→14): seekHomeAfterRoute_runConfig_home re-derived
+-- on the loop machine, plus the shared body-region transition peel (i ∉ {29, 4}).
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_transition_body
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_seek_runConfig_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_seek_runConfig_lead4
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_seek_runConfig_home
 -- D2t-3 ε `hbase`: from a B=0 HOME config the loop reaches the sink phase 4 (the clean loop-exit half).
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_runConfig_hbase

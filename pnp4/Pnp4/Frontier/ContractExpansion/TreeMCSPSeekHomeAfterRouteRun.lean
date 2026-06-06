@@ -17,10 +17,6 @@ namespace ContractExpansion
 open Pnp3.Internal.PsubsetPpoly Pnp3.Internal.PsubsetPpoly.TM
 open Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram
 
--- The depth-navigation `simp` sets vary per phase/component; some carry a redundant unfold lemma.
--- This is a proof-engineering convenience, not a soundness concern; silence the style linter here.
-set_option linter.unusedSimpArgs false
-
 /-- `seekHomeAfterRoute` is `seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])` —
 the shape the depth-1 `seq_stepConfig_P1_*` lemmas consume. -/
 theorem seekHomeAfterRoute_eq_seq :
@@ -124,7 +120,9 @@ Phase `2` is the start of the trailing `seqList`'s P2 region (`P1.numPhases = 2`
 `stepLeftOnce`'s phase `0`.  Its behaviour is the outer `seq_stepConfig_P2_*` (shift by `2`) composed with
 the inner `seqList`'s P1-normal transition. -/
 
-/-- Step 3 (phase `2`, the second `stepLeftOnce`'s move): the phase advances to `3`. -/
+set_option linter.unusedSimpArgs false in
+/-- Step 3 (phase `2`, the second `stepLeftOnce`'s move): the phase advances to `3`.  (The nested-`seq`
+`simp` carries a redundant unfold lemma; the style linter is scoped off for this proof only.) -/
 theorem seekHomeAfterRoute_step3_phase {L : Nat}
     (c : Configuration
       (M := (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM) L)
@@ -137,6 +135,7 @@ theorem seekHomeAfterRoute_step3_phase {L : Nat}
       (h2 := by rw [hi]; decide) (hlt := by rw [hi]; decide) hstate]
   simp [seqList, seq, stepLeftOnce, hi]
 
+set_option linter.unusedSimpArgs false in
 /-- Step 3 (phase `2`): the head moves one cell left (when not at the left end). -/
 theorem seekHomeAfterRoute_step3_head {L : Nat}
     (c : Configuration
@@ -156,6 +155,7 @@ theorem seekHomeAfterRoute_step3_head {L : Nat}
   have hne : ¬ (c.head : Nat) = 0 := by omega
   simp only [Configuration.moveHead, dif_neg hne]
 
+set_option linter.unusedSimpArgs false in
 /-- Step 3 (phase `2`): the tape is unchanged. -/
 theorem seekHomeAfterRoute_step3_tape {L : Nat}
     (c : Configuration

@@ -95,6 +95,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunP1
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunCompose
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunRealizable
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoop
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopHbase
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPLeadingPhasesChain
@@ -632,6 +633,9 @@ end Pnp4
 -- D2t-3 ε (loop scaffolding): binToUnaryLoop = loopUntilSink (route ; binToUnaryBody), sink phase 4.
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_numPhases
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_acceptPhase
+-- D2t-3 ε `hbase`: from a B=0 HOME config the loop reaches the sink phase 4 (the clean loop-exit half).
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_runConfig_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_runConfig_hbase
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqNested3_stepConfig_handoff_phase
 #print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested4_stepConfig_handoff_phase
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqNested5_stepConfig_handoff_phase

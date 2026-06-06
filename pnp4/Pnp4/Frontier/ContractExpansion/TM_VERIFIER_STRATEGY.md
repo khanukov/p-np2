@@ -1026,6 +1026,45 @@ Because the loop only ever scans over **uniform** stretches — `B`'s just-flipp
 (Tiny helpers `stepRight`/`stepLeft` — unconditional one-cell moves — are 1-phase sub-bricks, or folded
 into the adjacent `seq`.)
 
+#### ε `hstep` navigation — the route→body re-homing crux (analysis; resolution needs body-session coordination)
+
+The loop machine is now assembled (`binToUnaryLoop = loopUntilSink binToUnaryLoopBody ⟨4⟩`, #1559) and both
+route decisions are lifted into it: `hbase` (`B=0 → sink phase 4`, #1561) and `decide_false`
+(`B>0 → phase 5`, #1563).  Closing `hstep` (`B>0 → re-enter at phase 0` with `counterValue` strictly
+decreasing) requires bridging the **route exit** to the **body entry**, and that bridge is not present in
+the as-merged `binToUnaryLoopBody := seq binToUnaryRouteBody binToUnaryBody`:
+
+* **Route exit (`decide_false`, B>0):** phase `5`, head at the **discriminator** `head₀ + z + 1`
+  (`z = j+1`, so `j+2` cells *right* of the sentinel), tape unchanged.  Under the outer `seq`, phase `5`
+  hands off to phase `6` = `binToUnaryBody`'s start.
+* **Body entry (`binToUnaryBody_runConfig_onePass`):** head **on the sentinel** (`tape head = false`,
+  `0 < head`), with `U = 1^u` immediately *left* (`hUboundary`: cell `head-u-1 = 0`) and `B = 0^j 1`
+  immediately *right*.  The body opens with `stepRightOnce`, i.e. it assumes it already sits on the
+  sentinel.
+
+So phase `6` is reached `j+2` cells too far right; the body would misread the tape.  A seek-HOME step is
+needed between route and body.
+
+**Why seek-HOME is *not* a self-contained in-track add-on.**  Re-homing means *finding the sentinel while
+scanning left*.  The sentinel is a `0`; to its right are `B`'s `0`s (indistinguishable) and to its left is
+`U` (`1`s) — so the only structural landmark that locates the sentinel is `U`'s rightmost `1`.  **But `U`
+is empty on the first iteration (`u = 0`)**: then `hUboundary` makes the sentinel's left neighbour also a
+`0`, and a left-scan-over-`0`s overshoots into the scratch region with no `1` to stop at (the binary
+alphabet + all-`Unit` state offer no other marker).  The fixes both touch the **parallel body session**'s
+layout invariant:
+  * **(a) permanent left floor-marker** — write a `1` just left of where `U` grows, as a fixed landmark;
+    seek-HOME then stops on it.  Changes `binToUnaryBody`'s `hUboundary` (left-of-`U` becomes `1`, not `0`)
+    and shifts the `ζ` bridge `|U| = value(B)` by the floor cell.
+  * **(b) guarded-decrement / scan-fusion** — restructure so the route's rightward scan *is* the body's
+    first scan, so no head ever leaves a known landmark; changes `binToUnaryBody`'s opening
+    (`stepRightOnce` + `selfLoopDecrement`).
+
+**Status:** `decide_false` (#1563, reaching phase `5`) is the half that holds under either fix and is the
+shared peel (`binToUnaryLoop_transition_route`) consumer.  The seek-HOME primitive + the
+`binToUnaryLoopBody` definitional revision + the `hstep` run-through (route → re-home → body one-pass →
+loop back-edge, `counterValue − 1`) is the next brick, and the floor-vs-fusion choice should be settled
+jointly with the `binToUnaryBody` layout owner so the U-boundary invariant stays consistent.
+
 #### Composition-toolkit status (the loop-body vocabulary is complete; γ is the remaining assembly)
 
 **Done — the per-primitive run-behaviour + composition lifts the loop body needs are all merged:**

@@ -103,6 +103,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeDecideFalse
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeHstep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeSeekHomeRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeBodyStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeBodyRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoop
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRoutePeel
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopHbase
@@ -705,6 +706,15 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step27_one
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step27_zero
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step28
+-- D2t-3 ε hstep body lift run-through (rehome machine, phases 15→29): the 4 scan inductions + the
+-- onePass HOME→HOME engine (decrement B, re-home, append 1 to U, re-home → loop body accept 29).
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_decrement_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_scanLeft_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_append_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_scanRight_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_runConfig_afterStepLeft5Handoff
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_runConfig_afterScanRight7
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_runConfig_onePass
 -- D2t-3 ε `hbase`: from a B=0 HOME config the loop reaches the sink phase 4 (the clean loop-exit half).
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_runConfig_hbase

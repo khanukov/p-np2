@@ -232,6 +232,48 @@ theorem seekHomeAfterRoute_step4_tape {L : Nat}
   · subst hj; simp [Configuration.write]
   · simp [Configuration.write, hj]
 
+/-! ### Step 5: the `selfLoopScanLeft` scan-step (depth-3, phase `4`)
+
+Phase `4` is `selfLoopScanLeft`'s phase `0`, reached through two nested `P2` descents (composed
+`P1.numPhases + P1'.numPhases = 4`).  Reading `0` it stays in phase `4` and moves the head one cell left
+(scanning over the contiguous `0`-block); reading `1` it stops at phase `5`. -/
+
+set_option linter.unusedSimpArgs false in
+/-- Scan-step (phase `4`, reading `0`): stay in phase `4`, head one cell left, tape unchanged. -/
+theorem seekHomeAfterRoute_scan_step {L : Nat}
+    (c : Configuration
+      (M := (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM) L)
+    {i : Fin (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).numPhases}
+    {s : Unit} (hi : i.val = 4) (hstate : c.state = ⟨i, s⟩) (hbit : c.tape c.head = false)
+    (hhead : 0 < (c.head : Nat)) :
+    ((TM.stepConfig
+        (M := (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM)
+        c).state).fst.val = 4
+      ∧ ((TM.stepConfig
+          (M := (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM)
+          c).head : Nat) = (c.head : Nat) - 1
+      ∧ (TM.stepConfig
+          (M := (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM)
+          c).tape = c.tape := by
+  refine ⟨?_, ?_, ?_⟩
+  · rw [seq_stepConfig_P2_phase stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce]) c
+        (h2 := by rw [hi]; decide) (hlt := by rw [hi]; decide) hstate, hbit]
+    simp [seqList, seq, selfLoopScanLeft, hi]
+  · have hmove : (TM.stepConfig
+        (M := (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM)
+        c).head = Configuration.moveHead (c := c) Move.left := by
+      rw [seq_stepConfig_P2_head stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce]) c
+          (h2 := by rw [hi]; decide) (hlt := by rw [hi]; decide) hstate, hbit]
+      simp [seqList, seq, selfLoopScanLeft, hi]
+    rw [hmove]
+    have hne : ¬ (c.head : Nat) = 0 := by omega
+    simp only [Configuration.moveHead, dif_neg hne]
+  · rw [seq_stepConfig_P2_tape stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce]) c
+        (h2 := by rw [hi]; decide) (hlt := by rw [hi]; decide) hstate]
+    funext j; by_cases hj : j = c.head
+    · subst hj; rw [hbit]; simp [seqList, seq, selfLoopScanLeft, hi, Configuration.write]
+    · simp [Configuration.write, hj]
+
 end ContractExpansion
 end Frontier
 end Pnp4

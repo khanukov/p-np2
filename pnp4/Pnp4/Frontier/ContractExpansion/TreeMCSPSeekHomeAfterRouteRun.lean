@@ -175,6 +175,63 @@ theorem seekHomeAfterRoute_step3_tape {L : Nat}
   · subst hj; simp [Configuration.write]
   · simp [Configuration.write, hj]
 
+/-! ### Step 4: the second `stepLeftOnce`'s accept handoff (depth-2, phase `3`)
+
+Phase `3` is the second `stepLeftOnce`'s accept (composed `P1.numPhases + stepLeftOnce.acceptPhase = 3`);
+the inner `seqList`'s P1-accept handoff jumps to the start of `selfLoopScanLeft` (phase `4`). -/
+
+set_option linter.unusedSimpArgs false in
+/-- Step 4 (phase `3`, handoff): jump to phase `4` (the `selfLoopScanLeft` start). -/
+theorem seekHomeAfterRoute_step4_phase {L : Nat}
+    (c : Configuration
+      (M := (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM) L)
+    {i : Fin (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).numPhases}
+    {s : Unit} (hi : i.val = 3) (hstate : c.state = ⟨i, s⟩) :
+    ((TM.stepConfig
+        (M := (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM)
+        c).state).fst.val = 4 := by
+  rw [seq_stepConfig_P2_phase stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce]) c
+      (h2 := by rw [hi]; decide) (hlt := by rw [hi]; decide) hstate]
+  simp [seqList, seq, stepLeftOnce, hi]
+
+set_option linter.unusedSimpArgs false in
+/-- Step 4 (phase `3`, handoff): the head stays put. -/
+theorem seekHomeAfterRoute_step4_head {L : Nat}
+    (c : Configuration
+      (M := (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM) L)
+    {i : Fin (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).numPhases}
+    {s : Unit} (hi : i.val = 3) (hstate : c.state = ⟨i, s⟩) :
+    (TM.stepConfig
+        (M := (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM)
+        c).head = c.head := by
+  have hmove : (TM.stepConfig
+      (M := (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM)
+      c).head = Configuration.moveHead (c := c) Move.stay := by
+    rw [seq_stepConfig_P2_head stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce]) c
+        (h2 := by rw [hi]; decide) (hlt := by rw [hi]; decide) hstate]
+    simp [seqList, seq, stepLeftOnce, hi]
+  rw [hmove]; simp [Configuration.moveHead]
+
+set_option linter.unusedSimpArgs false in
+/-- Step 4 (phase `3`, handoff): the tape is unchanged. -/
+theorem seekHomeAfterRoute_step4_tape {L : Nat}
+    (c : Configuration
+      (M := (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM) L)
+    {i : Fin (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).numPhases}
+    {s : Unit} (hi : i.val = 3) (hstate : c.state = ⟨i, s⟩) :
+    (TM.stepConfig
+        (M := (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM)
+        c).tape = c.tape := by
+  have hwrite : (TM.stepConfig
+      (M := (seq stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce])).toPhased.toTM)
+      c).tape = c.write c.head (c.tape c.head) := by
+    rw [seq_stepConfig_P2_tape stepLeftOnce (seqList [stepLeftOnce, selfLoopScanLeft, stepRightOnce]) c
+        (h2 := by rw [hi]; decide) (hlt := by rw [hi]; decide) hstate]
+    simp [seqList, seq, stepLeftOnce, hi]
+  rw [hwrite]; funext j; by_cases hj : j = c.head
+  · subst hj; simp [Configuration.write]
+  · simp [Configuration.write, hj]
+
 end ContractExpansion
 end Frontier
 end Pnp4

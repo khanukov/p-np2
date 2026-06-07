@@ -96,6 +96,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanScan
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanHbase
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanPos
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanBodyBridge
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanBodyRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStepRightBranch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRealizable
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRoute
@@ -673,6 +674,14 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopBodyFullScan_atBody_phase
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopBodyFullScan_atBody_bit
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopBodyFullScan_atBody_move
+-- D2t-3 ε body one-pass: `binToUnaryBody`'s HOME→HOME engine re-derived on the sound loop (phases
+-- w+15..w+29) via the body bridge — decrement B, re-home, append 1 to U, re-home, reach the body accept
+-- w+29.  The four scan inductions + the `onePass` headline (per-iteration engine `hstep` iterates).
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_body_decrement_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_body_scanLeft_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_body_append_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_body_scanRight_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_body_runConfig_onePass
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

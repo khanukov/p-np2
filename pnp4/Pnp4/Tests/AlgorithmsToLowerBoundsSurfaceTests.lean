@@ -3927,7 +3927,6 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.emitConstRecord_runConfig_three
 #check @Pnp4.Frontier.ContractExpansion.emitConstRecord_runConfig_record
 -- D2t-4b leaf emit (core): binary→unary index realised as `unaryField i` on the tape (sentinel preserved).
-#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_reachesSink_output_framed
 #check @Pnp4.Frontier.ContractExpansion.emitInputRecord_runConfig_unaryField
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true

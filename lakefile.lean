@@ -348,6 +348,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanHbase,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanPos,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanStep2,
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanSeek,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPStepRightBranch,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRealizable,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRoute,

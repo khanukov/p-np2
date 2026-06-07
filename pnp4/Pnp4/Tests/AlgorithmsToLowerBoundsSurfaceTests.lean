@@ -80,6 +80,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitInputRecord
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStackFlatten
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStackFlattenValueStack
 import Pnp4.Frontier.ContractExpansion.TreeMCSPNatStack
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCtrlFrameStack
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStack
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
@@ -3942,6 +3943,8 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.transcodeStreamViaStack_faithful
 -- D2t-5a: on-tape value-stack format (unary-field stack) round-trip against the abstract `List Nat`.
 #check @Pnp4.Frontier.ContractExpansion.decodeNatStack_encodeNatStack
+-- D2t-5a: on-tape control-stack format (pending `(tag, remaining)` frames) round-trip.
+#check @Pnp4.Frontier.ContractExpansion.decodeCtrlStack_encodeCtrlStack
 -- D2t-5b: preorder-streaming driver (control + value stacks) produces the postorder flatten.
 #check @Pnp4.Frontier.ContractExpansion.driveWORK_eq_flatten
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).

@@ -70,6 +70,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitInputRecord
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStackFlatten
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStackFlattenValueStack
 import Pnp4.Frontier.ContractExpansion.TreeMCSPNatStack
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCtrlFrameStack
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStack
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
@@ -744,6 +745,9 @@ end Pnp4
 -- D2t-5a: the on-tape value-stack format — child indices as self-delimiting unary fields; pop = field
 -- read, round-trip against the abstract `List Nat`.
 #print axioms Pnp4.Frontier.ContractExpansion.decodeNatStack_encodeNatStack
+-- D2t-5a: the on-tape control-stack format — pending `(tag, remaining)` frames as unary fields; round-trip
+-- against the abstract `List (ITag × Nat)` (completes the D2t-5a tape formats with the value stack).
+#print axioms Pnp4.Frontier.ContractExpansion.decodeCtrlStack_encodeCtrlStack
 -- D2t-5b: the preorder-streaming driver (control + value stacks, settle cascade) produces the postorder
 -- flatten — the pure spec the on-tape D2t-5b loop realises.
 #print axioms Pnp4.Frontier.ContractExpansion.driveWORK_eq_flatten

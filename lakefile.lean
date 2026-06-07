@@ -324,6 +324,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPStackFlatten,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPStackFlattenValueStack,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPNatStack,
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPCtrlFrameStack,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStack,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch,

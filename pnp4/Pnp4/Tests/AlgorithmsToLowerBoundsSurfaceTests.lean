@@ -97,6 +97,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryBody
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryMeasure
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroTest
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroFullScan
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStepRightBranch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRealizable
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRoute
@@ -3846,6 +3847,12 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.bZeroRoute_pos_realizable
 -- D2t-3 routing: the composed routing program (seq scan ; stepRightThenBranch) — structural layer.
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_neverMovesLeft
+-- D2t-3 δ: the corrected SOUND width-`w` B=0 test (full-width scan).
+#check @Pnp4.Frontier.ContractExpansion.bZeroFullScan
+#check @Pnp4.Frontier.ContractExpansion.bZeroFullScan_neverMovesLeft
+#check @Pnp4.Frontier.ContractExpansion.bZeroFullScan_transition_move
+#check @Pnp4.Frontier.ContractExpansion.bZeroFullScan_transition_bit
+#check @Pnp4.Frontier.ContractExpansion.counterValue_eq_zero_imp_all_false
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

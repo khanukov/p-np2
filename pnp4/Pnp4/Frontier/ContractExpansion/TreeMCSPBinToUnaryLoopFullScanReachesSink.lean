@@ -53,6 +53,62 @@ theorem loopUntilSink_stepConfig_loop_tape (B : ConstStatePhasedProgram Unit) (s
   · subst hj; simp [Configuration.write]
   · simp [Configuration.write, hj]
 
+/-! ### The back-edge on the sound loop machine, directly (avoiding the expensive `loopUntilSink` defeq)
+
+The generic `loopUntilSink_stepConfig_loop_*` lemmas can be applied to a `binToUnaryLoopFullScan` config
+only through the `binToUnaryLoopFullScan ≡ loopUntilSink …` defeq, whose `whnf` blows up (it unfolds the
+loop's transition, which contains `bZeroFullScan`'s `2^i`).  These FullScan-specific versions instead use
+the cheap one-`delta` unfold at the *transition* level (`binToUnaryLoopFullScan_transition_backedge`) plus
+the `binToUnaryLoopFullScan`-stated `toTM_stepConfig_*`, exactly the device of
+`binToUnaryLoopFullScan_transition_body`. -/
+
+/-- **Transition-level back-edge.**  At the loop body's accept phase `w + 29`, the loop jumps to the body's
+start phase (writing the scanned bit back, head stay). -/
+theorem binToUnaryLoopFullScan_transition_backedge (w : Nat)
+    {i : Fin (binToUnaryLoopFullScan w).numPhases} (hi : (i : Nat) = w + 29) (s : Unit) (b : Bool) :
+    (binToUnaryLoopFullScan w).transition i s b
+      = ((binToUnaryLoopBodyFullScan w).startPhase, (), b, Move.stay) := by
+  have hacc : i = (binToUnaryLoopBodyFullScan w).acceptPhase :=
+    Fin.ext (by rw [hi, binToUnaryLoopBodyFullScan_acceptPhase_val])
+  rw [hacc]
+  exact loopUntilSink_transition_loop (binToUnaryLoopBodyFullScan w)
+    ⟨w + 2, by rw [binToUnaryLoopBodyFullScan_numPhases]; omega⟩ s b
+
+/-- **Back-edge step, phase.**  From phase `w + 29` the loop re-enters at the start phase `0`. -/
+theorem binToUnaryLoopFullScan_backedge_phase (w : Nat) {L : Nat}
+    (cF : Configuration (M := (binToUnaryLoopFullScan w).toPhased.toTM) L)
+    {i : Fin (binToUnaryLoopFullScan w).numPhases} {s : Unit}
+    (hi : (i : Nat) = w + 29) (hstate : cF.state = ⟨i, s⟩) :
+    ((TM.stepConfig (M := (binToUnaryLoopFullScan w).toPhased.toTM) cF).state).fst.val = 0 := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_phase (binToUnaryLoopFullScan w) cF hstate,
+      binToUnaryLoopFullScan_transition_backedge w hi s (cF.tape cF.head)]
+  show ((binToUnaryLoopBodyFullScan w).startPhase : Nat) = 0
+  exact binToUnaryLoopFullScan_startPhase_val w
+
+/-- **Back-edge step, head.**  The re-entry leaves the head where the body finished (a `Move.stay`). -/
+theorem binToUnaryLoopFullScan_backedge_head (w : Nat) {L : Nat}
+    (cF : Configuration (M := (binToUnaryLoopFullScan w).toPhased.toTM) L)
+    {i : Fin (binToUnaryLoopFullScan w).numPhases} {s : Unit}
+    (hi : (i : Nat) = w + 29) (hstate : cF.state = ⟨i, s⟩) :
+    (TM.stepConfig (M := (binToUnaryLoopFullScan w).toPhased.toTM) cF).head = cF.head := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_head (binToUnaryLoopFullScan w) cF hstate]
+  have hmove : ((binToUnaryLoopFullScan w).transition i s (cF.tape cF.head)).2.2.2 = Move.stay := by
+    rw [binToUnaryLoopFullScan_transition_backedge w hi s (cF.tape cF.head)]
+  rw [hmove]; simp [Configuration.moveHead]
+
+/-- **Back-edge step, tape.**  The re-entry writes the scanned bit back, leaving the tape unchanged. -/
+theorem binToUnaryLoopFullScan_backedge_tape (w : Nat) {L : Nat}
+    (cF : Configuration (M := (binToUnaryLoopFullScan w).toPhased.toTM) L)
+    {i : Fin (binToUnaryLoopFullScan w).numPhases} {s : Unit}
+    (hi : (i : Nat) = w + 29) (hstate : cF.state = ⟨i, s⟩) :
+    (TM.stepConfig (M := (binToUnaryLoopFullScan w).toPhased.toTM) cF).tape = cF.tape := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_tape (binToUnaryLoopFullScan w) cF hstate]
+  have hbit : ((binToUnaryLoopFullScan w).transition i s (cF.tape cF.head)).2.2.1 = cF.tape cF.head := by
+    rw [binToUnaryLoopFullScan_transition_backedge w hi s (cF.tape cF.head)]
+  rw [hbit]; funext j; by_cases hj : j = cF.head
+  · subst hj; simp [Configuration.write]
+  · simp [Configuration.write, hj]
+
 /-- **The loop layout invariant.**  At the loop start phase `0` with the head on the sentinel `HOME`,
 `U = 1^u` occupying `[HOME-u, HOME)` (`u ≥ 1`, the permanent endmarker seed is the rightmost `U` cell),
 everything strictly left of `U` blank, the width-`w` counter window fitting, and the **room invariant**

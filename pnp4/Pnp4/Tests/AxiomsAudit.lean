@@ -696,8 +696,11 @@ end Pnp4
 -- D2t-3 ε hstep support: a nonzero little-endian counter has a lowest set bit (the j the body pass needs).
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.BinaryCounter.counterValue_pos_imp_lowestBit
 -- D2t-3 ε reachesSink scaffolding: the loop back-edge preserves the tape (per-iteration counter is the
--- body pass's output); the LoopLayout invariant the bespoke termination induction carries.
+-- body pass's output); the LoopLayout invariant the bespoke termination induction carries; the
+-- FullScan-specific back-edge (phase w+29 → start 0) avoiding the expensive loopUntilSink defeq.
 #print axioms Pnp4.Frontier.ContractExpansion.loopUntilSink_stepConfig_loop_tape
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_transition_backedge
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_backedge_phase
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

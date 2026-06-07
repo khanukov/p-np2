@@ -321,6 +321,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordLayout,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPEmitConstRecord,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPEmitInputRecord,
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPStackFlatten,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder,

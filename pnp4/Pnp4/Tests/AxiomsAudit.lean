@@ -102,6 +102,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanHstep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterLowestBit
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterDecodeFin
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanReachesSink
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanCorrect
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanOutput
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStepRightBranch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRealizable
@@ -712,6 +713,8 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_reachesSink_output
 -- D2t-3 ζ bridge: counterValue agrees with the formal decoder — counterValue = (decodeFin w …).val.
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.BinaryCounter.decodeFin_tapeBits
+-- D2t-3 capstone: the sound transcoder halts and emits a unary block of length value(B) = (decodeFin …).val.
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_transcoder_correct
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

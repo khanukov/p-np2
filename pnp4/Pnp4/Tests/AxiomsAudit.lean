@@ -67,6 +67,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPStepRightProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordLayout
 import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitConstRecord
 import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitInputRecord
+import Pnp4.Frontier.ContractExpansion.TreeMCSPStackFlatten
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -726,6 +727,10 @@ end Pnp4
 -- window `[HOME-i, HOME]` (sentinel preserved via the strengthened reachesSink/output), the substance of
 -- an `input i` record.
 #print axioms Pnp4.Frontier.ContractExpansion.emitInputRecord_runConfig_unaryField
+-- D2t-5 pure core: the preorder→postorder stack linearization (`runSteps (toSteps c) []`) equals the
+-- structural postorder flatten `flattenAt 0 c` — the on-tape STACK machine's correctness target.
+#print axioms Pnp4.Frontier.ContractExpansion.flattenStack_eq_flattenAt
+#print axioms Pnp4.Frontier.ContractExpansion.encodeGateRecordStream_flattenStack
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

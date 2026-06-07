@@ -101,6 +101,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanMeasure
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanHstep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterLowestBit
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanReachesSink
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanOutput
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStepRightBranch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRealizable
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRoute
@@ -705,6 +706,9 @@ end Pnp4
 -- reaches its sink w+2 on every valid layout (bespoke strong induction on counterValue B).
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_oneIteration
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_reachesSink
+-- D2t-3 ζ core: the loop produces a unary block of length u₀ + value(B) at the sink (|U| = value B).
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_hbase_tape
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_reachesSink_output
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

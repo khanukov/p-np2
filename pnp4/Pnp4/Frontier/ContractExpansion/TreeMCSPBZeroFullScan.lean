@@ -262,6 +262,40 @@ theorem bZeroFullScan_runConfig_pos (w : Nat) {L : Nat}
     exact hhd
   · rw [bZeroFullScan_stepConfig_tape w c (i := c.state.fst) (s := c.state.snd) rfl, htp]
 
+/-! ## Composition wrapper — the route-body (re-pointed accept for `seq`)
+
+`bZeroFullScan`'s standalone accept phase is `w` (the `B = 0` outcome), which is the right *meaning*
+("accept iff `B = 0`") but the wrong wiring for `seq`: `ConstStatePhasedProgram.seq` performs the
+P1→P2 handoff only at `P1.acceptPhase`, so `seq (bZeroFullScan w) rest` would hand off on `B = 0`
+(phase `w`) rather than on `B > 0` (phase `w+1`).  For the conversion loop we want the opposite: on
+`B > 0` flow into the body, and leave `B = 0` (phase `w`) terminal for the `loopUntilSink` sink.
+
+`bZeroFullScanRouteBody` re-points the accept phase to `w + 1` (the `B > 0` branch) — exactly mirroring
+`binToUnaryRouteBody := { bZeroRouteProgram with acceptPhase := ⟨5⟩ }`.  The transition is unchanged, so
+the run-through lemmas above transfer verbatim; only the `seq` handoff target moves.  This is the
+ε-assembly entry point. -/
+def bZeroFullScanRouteBody (w : Nat) : ConstStatePhasedProgram Unit :=
+  { bZeroFullScan w with acceptPhase := ⟨w + 1, by show w + 1 < w + 2; omega⟩ }
+
+@[simp] theorem bZeroFullScanRouteBody_numPhases (w : Nat) :
+    (bZeroFullScanRouteBody w).numPhases = w + 2 := rfl
+
+@[simp] theorem bZeroFullScanRouteBody_startPhase_val (w : Nat) :
+    ((bZeroFullScanRouteBody w).startPhase : Nat) = 0 := rfl
+
+/-- The route-body's accept phase is `w + 1` (the `B > 0` branch), so `seq` hands off into the body on
+`B > 0` and leaves `B = 0` (phase `w`) terminal for the loop sink. -/
+@[simp] theorem bZeroFullScanRouteBody_acceptPhase_val (w : Nat) :
+    ((bZeroFullScanRouteBody w).acceptPhase : Nat) = w + 1 := rfl
+
+/-- The route-body shares `bZeroFullScan`'s transition (only the accept phase moved), so it too never
+moves the head left — it composes under `seq`/`loopUntilSink`. -/
+theorem bZeroFullScanRouteBody_neverMovesLeft (w : Nat) :
+    TMNeverMovesLeft ((bZeroFullScanRouteBody w).toPhased.toTM) := by
+  intro st b
+  obtain ⟨i, s⟩ := st
+  exact bZeroFullScan_transition_move w i s b
+
 end ContractExpansion
 end Frontier
 end Pnp4

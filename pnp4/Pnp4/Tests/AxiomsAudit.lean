@@ -642,6 +642,9 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroFullScan_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroFullScan_runConfig_zero
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroFullScan_runConfig_pos
+-- D2t-3 ε entry: the seq-composition route-body (accept re-pointed to the B>0 branch, phase w+1).
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroFullScanRouteBody_acceptPhase_val
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroFullScanRouteBody_neverMovesLeft
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

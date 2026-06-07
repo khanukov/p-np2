@@ -62,7 +62,14 @@ def toSteps {n : Nat} : CircuitTree n → List (FlattenStep n)
 
 /-- Execute a step program against the WORK accumulator `out`, appending one gate per step.  The next
 gate's index is `out.length`; binary operands are read off as `out.length - 1` (the previous gate) and
-`out.length - 1 - s₂` (its left sibling, `s₂` gates back).  Structurally recursive on the program. -/
+`out.length - 1 - s₂` (its left sibling, `s₂` gates back).  Structurally recursive on the program.
+
+This is a **propositional spec** (used only inside proofs, never executed), mirroring `flattenAt`'s own
+`offset + |sub| - 1` truncating-`Nat` index arithmetic.  The truncating subtractions are exact — operands
+land in range — precisely for well-formed programs, and the **only** intended caller is `flattenStack`
+(`runSteps (toSteps c) []`), for which `flattenStack_eq_flattenAt` proves the result equals `flattenAt 0 c`
+gate-for-gate (indices included).  Running an arbitrary, hand-built `FlattenStep` program carries no such
+guarantee and is not a supported use. -/
 def runSteps {n : Nat} : List (FlattenStep n) → List (SLGate n) → List (SLGate n)
   | [], out => out
   | FlattenStep.leaf g :: w, out => runSteps w (out ++ [g])

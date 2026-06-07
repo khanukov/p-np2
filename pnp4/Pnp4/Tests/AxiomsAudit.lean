@@ -68,6 +68,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordLayout
 import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitConstRecord
 import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitInputRecord
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStackFlatten
+import Pnp4.Frontier.ContractExpansion.TreeMCSPNatStack
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -731,6 +732,9 @@ end Pnp4
 -- structural postorder flatten `flattenAt 0 c` — the on-tape STACK machine's correctness target.
 #print axioms Pnp4.Frontier.ContractExpansion.flattenStack_eq_flattenAt
 #print axioms Pnp4.Frontier.ContractExpansion.encodeGateRecordStream_flattenStack
+-- D2t-5a: the on-tape value-stack format — child indices as self-delimiting unary fields; pop = field
+-- read, round-trip against the abstract `List Nat`.
+#print axioms Pnp4.Frontier.ContractExpansion.decodeNatStack_encodeNatStack
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

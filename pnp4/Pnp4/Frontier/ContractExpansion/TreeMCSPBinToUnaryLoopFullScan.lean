@@ -1,5 +1,8 @@
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroFullScan
-import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehome
+import Pnp4.Frontier.ContractExpansion.TreeMCSPLoopUntilSink
+import Pnp4.Frontier.ContractExpansion.TreeMCSPStepRightProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPSeekHomeAfterRoute
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryBody
 
 /-!
 # `binToUnaryLoopFullScan` — the binary→unary loop on the SOUND zero-test (NP-verifier track — D2t-3 `ε`)

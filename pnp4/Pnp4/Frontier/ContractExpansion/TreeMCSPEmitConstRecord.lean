@@ -34,11 +34,11 @@ def emitConstRecord (b : Bool) : ConstStatePhasedProgram Unit where
   startState := ()
   acceptPhase := ⟨3, by omega⟩
   acceptState := ()
-  transition := fun i _ _ =>
+  transition := fun i _ scan =>
     if i.val = 0 then (⟨1, by omega⟩, (), true, Move.right)
     else if i.val = 1 then (⟨2, by omega⟩, (), false, Move.right)
     else if i.val = 2 then (⟨3, by omega⟩, (), b, Move.right)
-    else (⟨3, by omega⟩, (), false, Move.stay)
+    else (⟨3, by omega⟩, (), scan, Move.stay)  -- accept phase: idle (write the scanned bit back, stay)
   timeBound := fun _ => 3
 
 @[simp] theorem emitConstRecord_numPhases (b : Bool) : (emitConstRecord b).numPhases = 4 := rfl
@@ -96,6 +96,29 @@ theorem emitConstRecord_step2 {L : Nat} (b : Bool)
       ∧ (TM.stepConfig (M := (emitConstRecord b).toPhased.toTM) c).tape = c.write c.head b :=
   stepGen b c 3 b hstate hhead (by simp [emitConstRecord, hi]) (by simp [emitConstRecord, hi])
     (by simp [emitConstRecord, hi])
+
+/-- **Accept-phase (`3`) idle.**  A step from the accept phase preserves phase, head, and tape (the
+accept branch writes the scanned bit back and stays) — done-phase stability for `runConfig_add`-style
+composition. -/
+theorem emitConstRecord_stepConfig_done {L : Nat} (b : Bool)
+    (c : Configuration (M := (emitConstRecord b).toPhased.toTM) L)
+    {i : Fin (emitConstRecord b).numPhases} {s : Unit} (hi : (i : Nat) = 3) (hstate : c.state = ⟨i, s⟩) :
+    ((TM.stepConfig (M := (emitConstRecord b).toPhased.toTM) c).state).fst.val = 3
+      ∧ (TM.stepConfig (M := (emitConstRecord b).toPhased.toTM) c).head = c.head
+      ∧ (TM.stepConfig (M := (emitConstRecord b).toPhased.toTM) c).tape = c.tape := by
+  refine ⟨?_, ?_, ?_⟩
+  · rw [ConstStatePhasedProgram.toTM_stepConfig_phase (emitConstRecord b) c hstate]
+    simp [emitConstRecord, hi]
+  · rw [ConstStatePhasedProgram.toTM_stepConfig_head (emitConstRecord b) c hstate]
+    have hmove : ((emitConstRecord b).transition i s (c.tape c.head)).2.2.2 = Move.stay := by
+      simp [emitConstRecord, hi]
+    rw [hmove]; simp [Configuration.moveHead]
+  · rw [ConstStatePhasedProgram.toTM_stepConfig_tape (emitConstRecord b) c hstate]
+    have hbit : ((emitConstRecord b).transition i s (c.tape c.head)).2.2.1 = c.tape c.head := by
+      simp [emitConstRecord, hi]
+    rw [hbit]; funext j; by_cases hj : j = c.head
+    · subst hj; simp [Configuration.write]
+    · simp [Configuration.write, hj]
 
 /-- **`emitConstRecord` run-through.**  From the write head at `p = c.head` (phase `0`) with `3` cells of
 room, after `3` steps the program is at the accept phase `3`, the head rests at `p + 3`, and the cells

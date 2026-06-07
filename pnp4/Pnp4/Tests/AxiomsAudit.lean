@@ -716,7 +716,9 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.decodeFin_tapeBits
 -- D2t-3 capstone: the sound transcoder halts and emits a unary block of length value(B) = (decodeFin …).val.
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_transcoder_correct
--- D2t-4a leaf emit: emitConstRecord writes the fixed `const b` record `1 0 b` (= encodeGateRecord).
+-- D2t-4a leaf emit: emitConstRecord writes the fixed `const b` record `1 0 b` (= encodeGateRecord);
+-- accept phase is tape/head-idle (writes the scanned bit back) for runConfig_add composition.
+#print axioms Pnp4.Frontier.ContractExpansion.emitConstRecord_stepConfig_done
 #print axioms Pnp4.Frontier.ContractExpansion.emitConstRecord_runConfig_three
 #print axioms Pnp4.Frontier.ContractExpansion.emitConstRecord_runConfig_record
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).

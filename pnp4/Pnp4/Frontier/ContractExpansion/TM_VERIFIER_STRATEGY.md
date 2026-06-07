@@ -1110,6 +1110,48 @@ under the corrected design: seek-HOME lift (#1577), body single-steps (#1578), b
 (`hbase`/`decide_false` as `B=0`/`B>0` branches) are **superseded** by the full-scan and must not be wired
 into the final `reachesSink`.
 
+##### δ BUILT — `bZeroFullScan` (the sound width-`w` zero-test), with run-through
+
+The corrected design is now realised in `TreeMCSPBZeroFullScan.lean` (`bZeroFullScan w :
+ConstStatePhasedProgram Unit`, `numPhases = w + 2`): phases `0 .. w-1` read each cell of the `w`-window
+(`0` → step right, next phase; `1` → phase `w+1` = `B > 0`); phase `w` is the accept (`B = 0`), phase
+`w+1` the `B > 0` branch.  Proven this stack:
+* **Structural** — `numPhases`/`startPhase`/`acceptPhase`/`timeBound`, `neverMovesLeft`,
+  `transition_move`/`transition_bit` (so it composes under `seq`/`loopUntilSink`).
+* **Spec foundation** — `counterValue_eq_zero_imp_all_false`: a zero counter value forces every cell of
+  the width-`w` window to `false` (the converse of the toolkit's `counterValue_of_all_false`).  This is
+  the fact the `B = 0` path consumes (the loop's `hbase` hypothesis is `μ = counterValue B = 0`).
+* **Run-through** (mirroring `gateTagDispatch`'s phase-scanner template) — `..._runConfig_scanning`
+  (induction on step count: `j ≤ w` leading `0`s ⇒ after `j` steps phase `j`, head `+ j`, tape
+  unchanged), `..._runConfig_zero` (all `w` cells `0` ⇒ after `w` steps the accept phase `w` = `B = 0`),
+  `..._runConfig_pos` (low `j` cells `0`, cell `j` set, `j < w` ⇒ after `j + 1` steps phase `w+1` =
+  `B > 0`, head on the set bit).
+
+All surfaces carry the standard `[propext, Classical.choice, Quot.sound]` triple (or fewer); audited in
+`AxiomsAudit`, surfaced in `AlgorithmsToLowerBoundsSurfaceTests`.
+
+**Remaining for ε/ζ (the focused next milestone, on the new sound test).**  Because `bZeroFullScan` is
+`w`-parameterised, its loop assembly is `w`-parameterised too, so the route-leg phase arithmetic must be
+re-expressed with `w`-dependent indices (this is the bulk of the redo `≈` #1564–#1581, now against a
+*sound* decider):
+1. **ε-seqP2** — lift `bZeroFullScan`'s run-through into the `seq` P2-region (re-derive `_runConfig_zero`
+   / `_runConfig_pos` from an arbitrary start `c0` at phase `P1.numPhases`), the analogue of
+   `gammaSelfLoopScan_seqP2_runConfig_*`, so the scan composes as a non-first phase.
+2. **ε-assembly** — `binToUnaryLoopFullScan w := loopUntilSink (seq stepRightOnce (seq (bZeroFullScan w
+   re-pointed to the `B>0` phase) (seq seekHome binToUnaryBody))) ⟨sink = the `B=0` accept⟩`; ship the
+   phase-count facts.  (`stepRightOnce` moves HOME→`B`'s low end so the scan window is exactly
+   `[HOME+1, HOME+1+w)`, matching the `counterValue` measure.)
+3. **ε-hbase** — `B = 0` ⇒ sink: `counterValue = 0` →(δ1)→ all-`0` window →(ε-seqP2 `zero`)→ the scan
+   reaches the sink phase.  (Does **not** need the re-home.)
+4. **ε-rehome** — a fresh seek-HOME matching `bZeroFullScan`'s `B>0` exit (head on the lowest set bit at
+   `HOME+1+j`, left of it all `0` to the sentinel, then the seed-`U` `1`): a fixed-phase
+   scan-left-over-`0`s + step-right, the analogue of `seekHomeAfterRoute` at the new offset.
+5. **ε-hstep** — `B > 0` ⇒ one pass: scan `pos` → re-home → `binToUnaryBody_runConfig_onePass` →
+   loop back-edge, with `counterValue B` dropping by one (reuse `binToUnaryBody_onePass_counterValue`).
+6. **ε-reachesSink** — feed `hstep`/`hbase` to `loopUntilSink_reachesSink` with `μ := counterValue B`.
+7. **ζ** — the output bridge `|U| = value B = (decodeFin width …).val` (induction on `counterValue`,
+   each pass `|U| + 1` via `binToUnaryBody_onePass_appendedBit`), closing D2t-3 against `unaryField`.
+
 #### Composition-toolkit status (the loop-body vocabulary is complete; γ is the remaining assembly)
 
 **Done — the per-primitive run-behaviour + composition lifts the loop body needs are all merged:**

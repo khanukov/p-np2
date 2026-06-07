@@ -87,6 +87,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterComposition
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryBody
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryMeasure
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroTest
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroFullScan
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStepRightBranch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRealizable
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRoute
@@ -632,6 +633,18 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRoute_pos_realizable
 -- D2t-3 routing: the composed routing program (seq scan ; stepRightThenBranch) — structural layer.
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_neverMovesLeft
+-- D2t-3 δ: the corrected SOUND width-`w` B=0 test (full-width scan) — structural layer + spec foundation.
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroFullScan_neverMovesLeft
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroFullScan_transition_move
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroFullScan_transition_bit
+#print axioms Pnp4.Frontier.ContractExpansion.counterValue_eq_zero_imp_all_false
+-- D2t-3 δ run-through: the scan reaches the B=0 accept phase (w) / diverts to the B>0 branch (w+1).
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroFullScan_runConfig_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroFullScan_runConfig_zero
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroFullScan_runConfig_pos
+-- D2t-3 ε entry: the seq-composition route-body (accept re-pointed to the B>0 branch, phase w+1).
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroFullScanRouteBody_acceptPhase_val
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroFullScanRouteBody_neverMovesLeft
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

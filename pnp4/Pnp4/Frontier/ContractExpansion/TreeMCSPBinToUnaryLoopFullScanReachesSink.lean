@@ -24,7 +24,7 @@ combinator `loopUntilSink_reachesSink` cannot be applied directly — it quantif
 strong induction on `counterValue B`** carrying `LoopLayout`, discharging the `B = 0` base from
 `binToUnaryLoopFullScan_runConfig_hbase` and the `B > 0` step from `…_bodyPass` + the back-edge tools here.
 
-This brick ships the tools + the invariant (everything below is `sorry`-free and axiom-clean); the
+This brick ships the tools + the invariant (everything below is hole-free and axiom-clean); the
 termination induction and the `ζ` correctness bridge (`|U| = value B`) are the remaining follow-ups.
 
 **Progress classification (AGENTS.md): Infrastructure.**  Standard `[propext, Classical.choice,

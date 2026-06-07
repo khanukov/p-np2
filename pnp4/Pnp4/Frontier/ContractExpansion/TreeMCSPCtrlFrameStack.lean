@@ -1,4 +1,5 @@
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStack
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordLayout
 
 /-!
 # `encodeCtrlStack` — D2t-5a: the on-tape control-stack format

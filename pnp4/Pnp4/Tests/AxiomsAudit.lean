@@ -701,6 +701,10 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.loopUntilSink_stepConfig_loop_tape
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_transition_backedge
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_backedge_phase
+-- D2t-3 ε loop-termination, PROVEN: one layout-preserving iteration (counterValue B − 1), and the loop
+-- reaches its sink w+2 on every valid layout (bespoke strong induction on counterValue B).
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_oneIteration
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_reachesSink
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

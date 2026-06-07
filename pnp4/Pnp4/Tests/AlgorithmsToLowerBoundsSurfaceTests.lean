@@ -78,6 +78,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordLayout
 import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitConstRecord
 import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitInputRecord
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStackFlatten
+import Pnp4.Frontier.ContractExpansion.TreeMCSPStackFlattenValueStack
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStack
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
@@ -3933,6 +3934,11 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- D2t-5 pure core: stack linearization `runSteps (toSteps c) []` = structural `flattenAt 0 c`.
 #check @Pnp4.Frontier.ContractExpansion.flattenStack_eq_flattenAt
 #check @Pnp4.Frontier.ContractExpansion.encodeGateRecordStream_flattenStack
+-- D2t-5b foundation: value-stack execution model `runStack` (driver loop invariant) = flatten.
+#check @Pnp4.Frontier.ContractExpansion.flattenStackVS_eq_flatten
+#check @Pnp4.Frontier.ContractExpansion.flattenStackVS_eq_flattenStack
+-- D2t-5 pure capstone: the stack-linearization transcoder is faithful (stream decodes to the circuit).
+#check @Pnp4.Frontier.ContractExpansion.transcodeStreamViaStack_faithful
 -- D2t-5b: preorder-streaming driver (control + value stacks) produces the postorder flatten.
 #check @Pnp4.Frontier.ContractExpansion.driveWORK_eq_flatten
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).

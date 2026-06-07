@@ -68,6 +68,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordLayout
 import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitConstRecord
 import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitInputRecord
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStackFlatten
+import Pnp4.Frontier.ContractExpansion.TreeMCSPStackFlattenValueStack
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStack
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
@@ -732,6 +733,13 @@ end Pnp4
 -- structural postorder flatten `flattenAt 0 c` — the on-tape STACK machine's correctness target.
 #print axioms Pnp4.Frontier.ContractExpansion.flattenStack_eq_flattenAt
 #print axioms Pnp4.Frontier.ContractExpansion.encodeGateRecordStream_flattenStack
+-- D2t-5b foundation: the value-stack execution model (`runStack`, the on-tape driver's loop invariant)
+-- produces the flattened gate list; agrees with the size-carrying `flattenStack`.
+#print axioms Pnp4.Frontier.ContractExpansion.flattenStackVS_eq_flatten
+#print axioms Pnp4.Frontier.ContractExpansion.flattenStackVS_eq_flattenStack
+-- D2t-5 pure capstone: the stack-linearization transcoder is faithful — its count-prefixed stream decodes
+-- to a straight-line program computing the circuit (the §9 spec, realised via the stack algorithm).
+#print axioms Pnp4.Frontier.ContractExpansion.transcodeStreamViaStack_faithful
 -- D2t-5b: the preorder-streaming driver (control + value stacks, settle cascade) produces the postorder
 -- flatten — the pure spec the on-tape D2t-5b loop realises.
 #print axioms Pnp4.Frontier.ContractExpansion.driveWORK_eq_flatten

@@ -54,7 +54,13 @@ inductive PreToken (n : Nat) where
 /-- **Settle** the completion cascade.  Called when a subtree has just completed (its root index sits on
 top of the value stack `val`): decrement the top control frame; when its last child has arrived
 (`remaining = 1`), pop it, emit the internal gate with the children's indices (off `val`), push the new
-gate's index `out.length`, and recurse to the next parent.  Structurally recursive on the control stack. -/
+gate's index `out.length`, and recurse to the next parent.  Structurally recursive on the control stack.
+
+Like `runStack` (#1590), this is a **propositional spec** (used only inside proofs, never executed); the
+`out ++ [·]` accumulation is immaterial to its role.  The `rem = 1` value-stack underflow arm halts with
+the state **unchanged** (the full control stack `(tag, rem) :: ctrl` preserved, no gate emitted); on the
+only intended caller `drive (preorder c) ([], [], [])` that arm is unreachable — `drive_preorder` shows the
+value stack always carries the children — so the spec is exact there. -/
 def settle {n : Nat} (out : List (SLGate n)) :
     List (ITag × Nat) → List Nat → (List (SLGate n) × List (ITag × Nat) × List Nat)
   | [], val => (out, [], val)
@@ -64,7 +70,7 @@ def settle {n : Nat} (out : List (SLGate n)) :
       | ITag.tnot, i :: vs => settle (out ++ [SLGate.notGate i]) ctrl (out.length :: vs)
       | ITag.tand, i2 :: i1 :: vs => settle (out ++ [SLGate.andGate i1 i2]) ctrl (out.length :: vs)
       | ITag.tor, i2 :: i1 :: vs => settle (out ++ [SLGate.orGate i1 i2]) ctrl (out.length :: vs)
-      | _, val => (out, ctrl, val)
+      | _, val => (out, (tag, rem) :: ctrl, val)
     else
       (out, (tag, rem - 1) :: ctrl, val)
 

@@ -78,6 +78,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordLayout
 import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitConstRecord
 import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitInputRecord
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStackFlatten
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStack
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -3932,6 +3933,8 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- D2t-5 pure core: stack linearization `runSteps (toSteps c) []` = structural `flattenAt 0 c`.
 #check @Pnp4.Frontier.ContractExpansion.flattenStack_eq_flattenAt
 #check @Pnp4.Frontier.ContractExpansion.encodeGateRecordStream_flattenStack
+-- D2t-5b: preorder-streaming driver (control + value stacks) produces the postorder flatten.
+#check @Pnp4.Frontier.ContractExpansion.driveWORK_eq_flatten
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

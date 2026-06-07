@@ -15,13 +15,12 @@ forces every counted cell to `0`), proved by the same per-bit induction.
 no run behaviour.  Standard `[propext, Classical.choice, Quot.sound]` triple only.  **No `P ≠ NP` claim.**
 -/
 
-namespace Pnp3
-namespace Internal
-namespace PsubsetPpoly
-namespace TM
-namespace BinaryCounter
+namespace Pnp4
+namespace Frontier
+namespace ContractExpansion
 
 open Pnp3.Internal.PsubsetPpoly Pnp3.Internal.PsubsetPpoly.TM
+open Pnp3.Internal.PsubsetPpoly.TM.BinaryCounter
 
 /-- `counterValue = 0` forces every counted cell to be `false` (the converse of
 `counterValue_of_all_false`). -/
@@ -81,8 +80,6 @@ theorem counterValue_pos_imp_lowestBit {M : TM.{u}} {n : Nat}
       · obtain ⟨j, hj, hz, ho⟩ := ih hcw
         exact ⟨j, Nat.lt_succ_of_lt hj, hz, ho⟩
 
-end BinaryCounter
-end TM
-end PsubsetPpoly
-end Internal
-end Pnp3
+end ContractExpansion
+end Frontier
+end Pnp4

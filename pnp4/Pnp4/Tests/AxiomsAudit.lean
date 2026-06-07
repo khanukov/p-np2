@@ -697,7 +697,7 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_pos_tape
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_bodyPass
 -- D2t-3 ε hstep support: a nonzero little-endian counter has a lowest set bit (the j the body pass needs).
-#print axioms Pnp3.Internal.PsubsetPpoly.TM.BinaryCounter.counterValue_pos_imp_lowestBit
+#print axioms Pnp4.Frontier.ContractExpansion.counterValue_pos_imp_lowestBit
 -- D2t-3 ε reachesSink scaffolding: the loop back-edge preserves the tape (per-iteration counter is the
 -- body pass's output); the LoopLayout invariant the bespoke termination induction carries; the
 -- FullScan-specific back-edge (phase w+29 → start 0) avoiding the expensive loopUntilSink defeq.
@@ -712,7 +712,7 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_hbase_tape
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_reachesSink_output
 -- D2t-3 ζ bridge: counterValue agrees with the formal decoder — counterValue = (decodeFin w …).val.
-#print axioms Pnp3.Internal.PsubsetPpoly.TM.BinaryCounter.decodeFin_tapeBits
+#print axioms Pnp4.Frontier.ContractExpansion.decodeFin_tapeBits
 -- D2t-3 capstone: the sound transcoder halts and emits a unary block of length value(B) = (decodeFin …).val.
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_transcoder_correct
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).

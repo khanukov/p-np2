@@ -3908,7 +3908,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_pos_tape
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_bodyPass
 -- D2t-3 ε hstep support: lowest-set-bit existence for a nonzero little-endian counter.
-#check @Pnp3.Internal.PsubsetPpoly.TM.BinaryCounter.counterValue_pos_imp_lowestBit
+#check @Pnp4.Frontier.ContractExpansion.counterValue_pos_imp_lowestBit
 -- D2t-3 ε loop-termination (PROVEN): back-edge + LoopLayout invariant, one iteration, reachesSink.
 #check @Pnp4.Frontier.ContractExpansion.loopUntilSink_stepConfig_loop_tape
 #check @Pnp4.Frontier.ContractExpansion.LoopLayout
@@ -3917,7 +3917,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- D2t-3 ζ core: the produced unary block has length value(B).
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_reachesSink_output
 -- D2t-3 ζ bridge: counterValue = (decodeFin w …).val.
-#check @Pnp3.Internal.PsubsetPpoly.TM.BinaryCounter.decodeFin_tapeBits
+#check @Pnp4.Frontier.ContractExpansion.decodeFin_tapeBits
 -- D2t-3 capstone: transcoder correctness (|U| = value(B) = (decodeFin …).val).
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_transcoder_correct
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).

@@ -18,13 +18,12 @@ machine/run content.
 Quot.sound]` triple only.  **No `P ≠ NP` claim.**
 -/
 
-namespace Pnp3
-namespace Internal
-namespace PsubsetPpoly
-namespace TM
-namespace BinaryCounter
+namespace Pnp4
+namespace Frontier
+namespace ContractExpansion
 
 open Pnp3.Internal.PsubsetPpoly Pnp3.Internal.PsubsetPpoly.TM Pnp3.Internal.PsubsetPpoly.TM.Encoding
+open Pnp3.Internal.PsubsetPpoly.TM.BinaryCounter
 
 /-- Little-endian LSB-shift for `counterValue`: the value of the width-`w+1` window at `start` is the low
 bit at `start` plus twice the value of the width-`w` window at `start+1`. -/
@@ -74,8 +73,6 @@ theorem decodeFin_tapeBits {M : TM.{u}} {n : Nat}
       · rw [dif_pos hd, dif_pos hd]
       · rw [dif_neg hd, dif_neg hd]; simp
 
-end BinaryCounter
-end TM
-end PsubsetPpoly
-end Internal
-end Pnp3
+end ContractExpansion
+end Frontier
+end Pnp4

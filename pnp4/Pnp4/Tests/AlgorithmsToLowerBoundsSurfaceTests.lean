@@ -99,6 +99,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryMeasure
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroTest
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroFullScan
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroFullScanComposition
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScan
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStepRightBranch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRealizable
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRoute
@@ -3866,6 +3867,11 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.bZeroFullScan_seqP2_runConfig_scanning
 #check @Pnp4.Frontier.ContractExpansion.bZeroFullScan_seqP2_runConfig_zero
 #check @Pnp4.Frontier.ContractExpansion.bZeroFullScan_seqP2_runConfig_pos
+-- D2t-3 ε assembly: the sound binary→unary loop on bZeroFullScan (structural skeleton).
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopBodyFullScan
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_numPhases
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_acceptPhase_val
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

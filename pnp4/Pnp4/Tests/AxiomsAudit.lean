@@ -95,6 +95,15 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanPeel
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanScan
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanHbase
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanPos
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanBodyBridge
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanBodyRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanMeasure
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanHstep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterLowestBit
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterDecodeFin
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanReachesSink
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanCorrect
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanOutput
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStepRightBranch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRealizable
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRoute
@@ -666,6 +675,46 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_hbase
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_pos
+-- D2t-3 ε body bridge: collapse the depth-4 nesting of binToUnaryBody (phases w+15..w+29) to its
+-- local transition at phase k (phase shifted by w+15; bit/move inherited) — the symbolic-w analogue of
+-- the Rehome body's per-step simp, the foundation for the FullScan body one-pass run-through.
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopBodyFullScan_atBody_phase
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopBodyFullScan_atBody_bit
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopBodyFullScan_atBody_move
+-- D2t-3 ε body one-pass: `binToUnaryBody`'s HOME→HOME engine re-derived on the sound loop (phases
+-- w+15..w+29) via the body bridge — decrement B, re-home, append 1 to U, re-home, reach the body accept
+-- w+29.  The four scan inductions + the `onePass` headline (per-iteration engine `hstep` iterates).
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_body_decrement_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_body_scanLeft_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_body_append_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_body_scanRight_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_body_runConfig_onePass
+-- D2t-3 ε measure: one body pass drops counterValue B by exactly one (the strict decrease
+-- `loopUntilSink_reachesSink`'s hstep consumes, with μ := counterValue B).
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_body_onePass_counterValue
+-- D2t-3 ε hstep core: one B>0 body pass (pos→postDivert→seek→onePass) reaches the body accept w+29 with
+-- the head back at HOME and counterValue B strictly decreased — the per-iteration work hstep iterates.
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_pos_tape
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_bodyPass
+-- D2t-3 ε hstep support: a nonzero little-endian counter has a lowest set bit (the j the body pass needs).
+#print axioms Pnp4.Frontier.ContractExpansion.counterValue_pos_imp_lowestBit
+-- D2t-3 ε reachesSink scaffolding: the loop back-edge preserves the tape (per-iteration counter is the
+-- body pass's output); the LoopLayout invariant the bespoke termination induction carries; the
+-- FullScan-specific back-edge (phase w+29 → start 0) avoiding the expensive loopUntilSink defeq.
+#print axioms Pnp4.Frontier.ContractExpansion.loopUntilSink_stepConfig_loop_tape
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_transition_backedge
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_backedge_phase
+-- D2t-3 ε loop-termination, PROVEN: one layout-preserving iteration (counterValue B − 1), and the loop
+-- reaches its sink w+2 on every valid layout (bespoke strong induction on counterValue B).
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_oneIteration
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_reachesSink
+-- D2t-3 ζ core: the loop produces a unary block of length u₀ + value(B) at the sink (|U| = value B).
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_hbase_tape
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_reachesSink_output
+-- D2t-3 ζ bridge: counterValue agrees with the formal decoder — counterValue = (decodeFin w …).val.
+#print axioms Pnp4.Frontier.ContractExpansion.decodeFin_tapeBits
+-- D2t-3 capstone: the sound transcoder halts and emits a unary block of length value(B) = (decodeFin …).val.
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_transcoder_correct
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

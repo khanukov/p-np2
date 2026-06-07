@@ -105,6 +105,15 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanPeel
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanScan
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanHbase
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanPos
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanBodyBridge
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanBodyRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanMeasure
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanHstep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterLowestBit
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterDecodeFin
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanReachesSink
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanCorrect
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanOutput
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStepRightBranch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRealizable
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRoute
@@ -3883,6 +3892,34 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_scanning
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_hbase
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_pos
+-- D2t-3 ε body bridge: loop body transition at phase w+15+k = binToUnaryBody transition at phase k.
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopBodyFullScan_atBody_phase
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopBodyFullScan_atBody_bit
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopBodyFullScan_atBody_move
+-- D2t-3 ε body one-pass on the sound loop (phases w+15..w+29): the four scan inductions + onePass.
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_body_decrement_scanning
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_body_scanLeft_scanning
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_body_append_scanning
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_body_scanRight_scanning
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_body_runConfig_onePass
+-- D2t-3 ε measure: one body pass drops counterValue B by exactly one.
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_body_onePass_counterValue
+-- D2t-3 ε hstep core: one B>0 body pass reaches the body accept w+29, head at HOME, counterValue B − 1.
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_pos_tape
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_bodyPass
+-- D2t-3 ε hstep support: lowest-set-bit existence for a nonzero little-endian counter.
+#check @Pnp4.Frontier.ContractExpansion.counterValue_pos_imp_lowestBit
+-- D2t-3 ε loop-termination (PROVEN): back-edge + LoopLayout invariant, one iteration, reachesSink.
+#check @Pnp4.Frontier.ContractExpansion.loopUntilSink_stepConfig_loop_tape
+#check @Pnp4.Frontier.ContractExpansion.LoopLayout
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_oneIteration
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_reachesSink
+-- D2t-3 ζ core: the produced unary block has length value(B).
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_reachesSink_output
+-- D2t-3 ζ bridge: counterValue = (decodeFin w …).val.
+#check @Pnp4.Frontier.ContractExpansion.decodeFin_tapeBits
+-- D2t-3 capstone: transcoder correctness (|U| = value(B) = (decodeFin …).val).
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_transcoder_correct
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

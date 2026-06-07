@@ -10,8 +10,8 @@ operands, so a popped index copies straight into a record's operand field with n
 
 This module fixes that format and proves the stack operations against the abstract `List Nat`:
 
-* `encodeNatStack S` — the bottom-to-top stack `S` as `unaryField`s concatenated left-to-right; `push`
-  (cons) is prepending one field.
+* `encodeNatStack S` — the stack `S` listed **top-first** (the head is the top) as `unaryField`s
+  concatenated left-to-right, so the top field is leftmost; `push` (cons) prepends one field.
 * `decodeUnaryField_encodeNatStack_cons` — **pop**: reading one unary field off the encoded stack returns
   the top index and the encoded tail (so the on-tape `selfLoopScanRightOne`/field-read realises a pop).
 * `decodeNatStack_encodeNatStack` — full round-trip: `S.length` pops recover `S` and leave the suffix.
@@ -31,8 +31,8 @@ namespace ContractExpansion
 
 open Pnp3.Internal.PsubsetPpoly.TM.Encoding
 
-/-- The value stack `S` (bottom-to-top) encoded as concatenated self-delimiting unary fields `1^v 0`.
-`push v` is prepending `unaryField v` (the top sits at the front). -/
+/-- The value stack `S` listed **top-first** (the head is the top of the stack) encoded as concatenated
+self-delimiting unary fields `1^v 0`, the top field leftmost.  `push v` prepends `unaryField v`. -/
 def encodeNatStack : List Nat → List Bool
   | [] => []
   | v :: rest => unaryField v ++ encodeNatStack rest
@@ -74,7 +74,7 @@ theorem decodeNatStack_encodeNatStack (S : List Nat) (rest : List Bool) :
     decodeNatStack S.length (encodeNatStack S ++ rest) = some (S, rest) := by
   induction S generalizing rest with
   | nil => simp
-  | cons v rest ih =>
+  | cons v tail ih =>
       simp only [encodeNatStack, List.length_cons, List.append_assoc, decodeNatStack,
         decodeUnaryField_unaryField, ih]
 

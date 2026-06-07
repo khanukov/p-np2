@@ -66,6 +66,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPScanRightOneProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStepRightProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordLayout
 import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitConstRecord
+import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitInputRecord
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -721,6 +722,10 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.emitConstRecord_stepConfig_done
 #print axioms Pnp4.Frontier.ContractExpansion.emitConstRecord_runConfig_three
 #print axioms Pnp4.Frontier.ContractExpansion.emitConstRecord_runConfig_record
+-- D2t-4b leaf emit (core): the loop's binary→unary of the index realises `unaryField i` on the tape
+-- window `[HOME-i, HOME]` (sentinel preserved), the substance of an `input i` record.
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_reachesSink_output_framed
+#print axioms Pnp4.Frontier.ContractExpansion.emitInputRecord_runConfig_unaryField
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

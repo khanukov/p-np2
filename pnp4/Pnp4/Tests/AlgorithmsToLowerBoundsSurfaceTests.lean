@@ -109,6 +109,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanBodyBridge
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanBodyRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanMeasure
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanHstep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterLowestBit
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStepRightBranch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRealizable
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRoute
@@ -3902,6 +3903,8 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- D2t-3 ε hstep core: one B>0 body pass reaches the body accept w+29, head at HOME, counterValue B − 1.
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_pos_tape
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_bodyPass
+-- D2t-3 ε hstep support: lowest-set-bit existence for a nonzero little-endian counter.
+#check @Pnp3.Internal.PsubsetPpoly.TM.BinaryCounter.counterValue_pos_imp_lowestBit
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

@@ -638,6 +638,10 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroFullScan_transition_move
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroFullScan_transition_bit
 #print axioms Pnp4.Frontier.ContractExpansion.counterValue_eq_zero_imp_all_false
+-- D2t-3 δ run-through: the scan reaches the B=0 accept phase (w) / diverts to the B>0 branch (w+1).
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroFullScan_runConfig_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroFullScan_runConfig_zero
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroFullScan_runConfig_pos
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

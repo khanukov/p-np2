@@ -129,6 +129,139 @@ theorem bZeroFullScan_transition_bit (w : Nat) (i : Fin (w + 2)) (s : Unit) (b :
   dsimp only
   split_ifs <;> rfl
 
+/-! ## Single-step behaviour -/
+
+/-- Every step writes the scanned bit back, so the tape is unchanged after one step. -/
+theorem bZeroFullScan_stepConfig_tape (w : Nat) {L : Nat}
+    (c : Configuration (M := (bZeroFullScan w).toPhased.toTM) L)
+    {i : Fin (w + 2)} {s : Unit} (hstate : c.state = ⟨i, s⟩) :
+    (TM.stepConfig (M := (bZeroFullScan w).toPhased.toTM) c).tape = c.tape := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_tape (bZeroFullScan w) c hstate,
+    bZeroFullScan_transition_bit]
+  funext j
+  by_cases hj : j = c.head
+  · subst hj; simp [Configuration.write]
+  · simp [Configuration.write, hj]
+
+/-- **Scan step (read `0`).**  At a scan phase `i < w` reading `0`, advance to phase `i + 1`. -/
+theorem bZeroFullScan_stepConfig_scan_phase (w : Nat) {L : Nat}
+    (c : Configuration (M := (bZeroFullScan w).toPhased.toTM) L)
+    {i : Fin (w + 2)} {s : Unit} (hi : (i : Nat) < w) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = false) :
+    ((TM.stepConfig (M := (bZeroFullScan w).toPhased.toTM) c).state).fst.val = (i : Nat) + 1 := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_phase (bZeroFullScan w) c hstate]
+  simp [bZeroFullScan, dif_pos hi, hbit]
+
+/-- **Scan step (read `0`).**  At a scan phase `i < w` reading `0`, advance the head by one. -/
+theorem bZeroFullScan_stepConfig_scan_head (w : Nat) {L : Nat}
+    (c : Configuration (M := (bZeroFullScan w).toPhased.toTM) L)
+    {i : Fin (w + 2)} {s : Unit} (hi : (i : Nat) < w) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = false)
+    (hbound : (c.head : Nat) + 1 < (bZeroFullScan w).toPhased.toTM.tapeLength L) :
+    ((TM.stepConfig (M := (bZeroFullScan w).toPhased.toTM) c).head : Nat) = (c.head : Nat) + 1 := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_head (bZeroFullScan w) c hstate]
+  have hmove : ((bZeroFullScan w).transition i s (c.tape c.head)).2.2.2 = Move.right := by
+    simp [bZeroFullScan, dif_pos hi, hbit]
+  rw [hmove]
+  simp only [Configuration.moveHead, dif_pos hbound]
+
+/-- **Divert step (read `1`).**  At a scan phase `i < w` reading `1`, jump to phase `w + 1` (`B > 0`). -/
+theorem bZeroFullScan_stepConfig_divert_phase (w : Nat) {L : Nat}
+    (c : Configuration (M := (bZeroFullScan w).toPhased.toTM) L)
+    {i : Fin (w + 2)} {s : Unit} (hi : (i : Nat) < w) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = true) :
+    ((TM.stepConfig (M := (bZeroFullScan w).toPhased.toTM) c).state).fst.val = w + 1 := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_phase (bZeroFullScan w) c hstate]
+  simp [bZeroFullScan, dif_pos hi, hbit]
+
+/-- **Divert step (read `1`).**  At a scan phase `i < w` reading `1`, the head stays put (on the set
+bit). -/
+theorem bZeroFullScan_stepConfig_divert_head (w : Nat) {L : Nat}
+    (c : Configuration (M := (bZeroFullScan w).toPhased.toTM) L)
+    {i : Fin (w + 2)} {s : Unit} (hi : (i : Nat) < w) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = true) :
+    (TM.stepConfig (M := (bZeroFullScan w).toPhased.toTM) c).head = c.head := by
+  rw [ConstStatePhasedProgram.toTM_stepConfig_head (bZeroFullScan w) c hstate]
+  have hmove : ((bZeroFullScan w).transition i s (c.tape c.head)).2.2.2 = Move.stay := by
+    simp [bZeroFullScan, dif_pos hi, hbit]
+  rw [hmove]
+  simp [Configuration.moveHead]
+
+/-! ## Run-through: the scan reaches the `B = 0` accept phase / the `B > 0` branch -/
+
+/-- **Scanning invariant.**  From a start `c0` in phase `0`, if the `j` cells from the head are all `0`
+(`j ≤ w`, in bounds), then after `j` steps the phase is `j`, the head has advanced to `c0.head + j`, and
+the tape is unchanged. -/
+theorem bZeroFullScan_runConfig_scanning (w : Nat) {L : Nat}
+    (c0 : Configuration (M := (bZeroFullScan w).toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = 0) :
+    ∀ j : Nat, j ≤ w → (c0.head : Nat) + j < (bZeroFullScan w).toPhased.toTM.tapeLength L →
+      (∀ p : Fin ((bZeroFullScan w).toPhased.toTM.tapeLength L),
+        (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + j → c0.tape p = false) →
+      (((TM.runConfig (M := (bZeroFullScan w).toPhased.toTM) c0 j).state).fst : Nat) = j
+      ∧ ((TM.runConfig (M := (bZeroFullScan w).toPhased.toTM) c0 j).head : Nat) = (c0.head : Nat) + j
+      ∧ (TM.runConfig (M := (bZeroFullScan w).toPhased.toTM) c0 j).tape = c0.tape := by
+  intro j
+  induction j with
+  | zero => intro _ _ _; exact ⟨hphase, by simp, rfl⟩
+  | succ j ih =>
+      intro hj hb h0
+      obtain ⟨hph, hhd, htp⟩ := ih (by omega) (by omega) (fun p hp1 hp2 => h0 p hp1 (by omega))
+      rw [TM.runConfig_succ]
+      set c := TM.runConfig (M := (bZeroFullScan w).toPhased.toTM) c0 j with hc
+      have hiw : (c.state.fst : Nat) < w := by rw [hph]; omega
+      have hbit : c.tape c.head = false := by
+        rw [htp]; exact h0 c.head (by rw [hhd]; omega) (by rw [hhd]; omega)
+      have hbnd : (c.head : Nat) + 1 < (bZeroFullScan w).toPhased.toTM.tapeLength L := by
+        rw [hhd]; omega
+      refine ⟨?_, ?_, ?_⟩
+      · rw [bZeroFullScan_stepConfig_scan_phase w c (i := c.state.fst) (s := c.state.snd) hiw rfl hbit,
+          hph]
+      · rw [bZeroFullScan_stepConfig_scan_head w c (i := c.state.fst) (s := c.state.snd) hiw rfl hbit
+          hbnd]
+        omega
+      · rw [bZeroFullScan_stepConfig_tape w c (i := c.state.fst) (s := c.state.snd) rfl, htp]
+
+/-- **`B = 0` run-through.**  If all `w` cells of `B` (from the head) are `0`, after `w` steps the scan
+rests at the accept phase `w` (`B = 0`), with the head at `c0.head + w` and the tape unchanged. -/
+theorem bZeroFullScan_runConfig_zero (w : Nat) {L : Nat}
+    (c0 : Configuration (M := (bZeroFullScan w).toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = 0)
+    (hb : (c0.head : Nat) + w < (bZeroFullScan w).toPhased.toTM.tapeLength L)
+    (hzeros : ∀ p : Fin ((bZeroFullScan w).toPhased.toTM.tapeLength L),
+      (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + w → c0.tape p = false) :
+    (((TM.runConfig (M := (bZeroFullScan w).toPhased.toTM) c0 w).state).fst : Nat) = w
+      ∧ ((TM.runConfig (M := (bZeroFullScan w).toPhased.toTM) c0 w).head : Nat) = (c0.head : Nat) + w
+      ∧ (TM.runConfig (M := (bZeroFullScan w).toPhased.toTM) c0 w).tape = c0.tape :=
+  bZeroFullScan_runConfig_scanning w c0 hphase w (le_refl w) hb hzeros
+
+/-- **`B > 0` run-through.**  If `B`'s low `j` cells are `0` and cell `c0.head + j` is `1` (`j < w`),
+after `j + 1` steps the scan has diverted to phase `w + 1` (`B > 0`), with the head on the set bit
+(`c0.head + j`) and the tape unchanged. -/
+theorem bZeroFullScan_runConfig_pos (w : Nat) {L : Nat}
+    (c0 : Configuration (M := (bZeroFullScan w).toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = 0) (j : Nat) (hjw : j < w)
+    (hb : (c0.head : Nat) + j < (bZeroFullScan w).toPhased.toTM.tapeLength L)
+    (hzeros : ∀ p : Fin ((bZeroFullScan w).toPhased.toTM.tapeLength L),
+      (c0.head : Nat) ≤ (p : Nat) → (p : Nat) < (c0.head : Nat) + j → c0.tape p = false)
+    (hone : ∀ p : Fin ((bZeroFullScan w).toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) + j → c0.tape p = true) :
+    (((TM.runConfig (M := (bZeroFullScan w).toPhased.toTM) c0 (j + 1)).state).fst : Nat) = w + 1
+      ∧ ((TM.runConfig (M := (bZeroFullScan w).toPhased.toTM) c0 (j + 1)).head : Nat)
+          = (c0.head : Nat) + j
+      ∧ (TM.runConfig (M := (bZeroFullScan w).toPhased.toTM) c0 (j + 1)).tape = c0.tape := by
+  obtain ⟨hph, hhd, htp⟩ :=
+    bZeroFullScan_runConfig_scanning w c0 hphase j (le_of_lt hjw) hb hzeros
+  rw [TM.runConfig_succ]
+  set c := TM.runConfig (M := (bZeroFullScan w).toPhased.toTM) c0 j with hc
+  have hiw : (c.state.fst : Nat) < w := by rw [hph]; exact hjw
+  have hbit : c.tape c.head = true := by rw [htp]; exact hone c.head (by rw [hhd])
+  refine ⟨?_, ?_, ?_⟩
+  · rw [bZeroFullScan_stepConfig_divert_phase w c (i := c.state.fst) (s := c.state.snd) hiw rfl hbit]
+  · rw [bZeroFullScan_stepConfig_divert_head w c (i := c.state.fst) (s := c.state.snd) hiw rfl hbit]
+    exact hhd
+  · rw [bZeroFullScan_stepConfig_tape w c (i := c.state.fst) (s := c.state.snd) rfl, htp]
+
 end ContractExpansion
 end Frontier
 end Pnp4

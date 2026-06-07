@@ -222,6 +222,38 @@ theorem binToUnaryLoopFullScan_seek_scan1 (w : Nat) {L : Nat}
     · subst hj; simp [Configuration.write, hbit]
     · simp [Configuration.write, hj]
 
+/-- **Leftward scanning invariant.**  From `c0` at composition phase `w + 10`, if the `k` cells
+`(c0.head - k, c0.head]` are all `0` (and `k ≤ c0.head`), then after `k` steps the loop is still at
+phase `w + 10`, the head has moved left to `c0.head - k`, and the tape is unchanged. -/
+theorem binToUnaryLoopFullScan_seek_scanLeft_run (w : Nat) {L : Nat}
+    (c0 : Configuration (M := (binToUnaryLoopFullScan w).toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = w + 10) :
+    ∀ k : Nat, k ≤ (c0.head : Nat) →
+      (∀ q : Fin ((binToUnaryLoopFullScan w).toPhased.toTM.tapeLength L),
+        (c0.head : Nat) - k < (q : Nat) → (q : Nat) ≤ (c0.head : Nat) → c0.tape q = false) →
+      (((TM.runConfig (M := (binToUnaryLoopFullScan w).toPhased.toTM) c0 k).state).fst : Nat) = w + 10
+      ∧ ((TM.runConfig (M := (binToUnaryLoopFullScan w).toPhased.toTM) c0 k).head : Nat)
+          = (c0.head : Nat) - k
+      ∧ (TM.runConfig (M := (binToUnaryLoopFullScan w).toPhased.toTM) c0 k).tape = c0.tape := by
+  intro k
+  induction k with
+  | zero => intro _ _; exact ⟨by simpa using hphase, by simp, rfl⟩
+  | succ k ih =>
+      intro hk h0
+      obtain ⟨hph, hhd, htp⟩ := ih (by omega) (fun q hq1 hq2 => h0 q (by omega) hq2)
+      rw [TM.runConfig_succ]
+      set c := TM.runConfig (M := (binToUnaryLoopFullScan w).toPhased.toTM) c0 k with hc
+      have hhd' : (c.head : Nat) = (c0.head : Nat) - k := hhd
+      have hheadpos : 0 < (c.head : Nat) := by rw [hhd']; omega
+      have hbit : c.tape c.head = false := by
+        rw [htp]; exact h0 c.head (by rw [hhd']; omega) (by rw [hhd']; omega)
+      have hiph : (c.state.fst : Nat) = w + 10 := hph
+      obtain ⟨sp, sh, st⟩ := binToUnaryLoopFullScan_seek_scan0 w c
+        (i := c.state.fst) (s := c.state.snd) hiph rfl hbit hheadpos
+      refine ⟨sp, ?_, ?_⟩
+      · rw [sh, hhd']; omega
+      · rw [st, htp]
+
 /-- **Seek step (phase `w+11`)** = `selfLoopScanLeft` → `stepRightOnce` handoff: phase `w + 12`;
 head/tape unchanged. -/
 theorem binToUnaryLoopFullScan_seek_w11 (w : Nat) {L : Nat}

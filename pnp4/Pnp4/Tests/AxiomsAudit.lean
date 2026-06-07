@@ -100,6 +100,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanBodyRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanMeasure
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanHstep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterLowestBit
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanReachesSink
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStepRightBranch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRealizable
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRoute
@@ -694,6 +695,9 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_bodyPass
 -- D2t-3 ε hstep support: a nonzero little-endian counter has a lowest set bit (the j the body pass needs).
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.BinaryCounter.counterValue_pos_imp_lowestBit
+-- D2t-3 ε reachesSink scaffolding: the loop back-edge preserves the tape (per-iteration counter is the
+-- body pass's output); the LoopLayout invariant the bespoke termination induction carries.
+#print axioms Pnp4.Frontier.ContractExpansion.loopUntilSink_stepConfig_loop_tape
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

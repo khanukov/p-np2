@@ -66,6 +66,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPScanRightOneProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStepRightProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordLayout
 import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitConstRecord
+import Pnp4.Frontier.ContractExpansion.TreeMCSPWriteBits
 import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitInputRecord
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStackFlatten
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStackFlattenValueStack
@@ -727,6 +728,9 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.emitConstRecord_stepConfig_done
 #print axioms Pnp4.Frontier.ContractExpansion.emitConstRecord_runConfig_three
 #print axioms Pnp4.Frontier.ContractExpansion.emitConstRecord_runConfig_record
+-- D2t-5a machine: `writeBits` — the fixed-width tape writer (generalizes the const-record write); after
+-- `bs.length` steps the window holds `bs`. Foundation for the control-frame `pushFrame` on-tape machine.
+#print axioms Pnp4.Frontier.ContractExpansion.writeBits_runConfig
 -- D2t-4b leaf emit (core): the loop's binary→unary of the index realises `unaryField i` on the tape
 -- window `[HOME-i, HOME]` (sentinel preserved via the strengthened reachesSink/output), the substance of
 -- an `input i` record.

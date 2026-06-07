@@ -1314,3 +1314,48 @@ for reusing the already-merged, individually-verified vocabulary.)
 `lakefile.lean`; extend surface tests + `AxiomsAudit`; `lake build PnP3 Pnp4` + `./scripts/check.sh`
 green; standard triple only; small stacked PR into staging, Qodo-reviewed, merged; **no `sorry`/holes**,
 no `P ≠ NP` claim.
+
+### D2t-5 status — pure foundation COMPLETE; on-tape realization is the remaining (multi-session) core
+
+The **pure layer of D2t-5 is fully proven** (against the verified `CircuitTree.flattenAt`, standard axioms
+only) — these are the settled specs the on-tape machine must realise:
+
+* `TreeMCSPStackFlatten.lean` — `toSteps`/`runSteps`, `flattenStack_eq_flattenAt`: the postorder step
+  linearisation equals `flattenAt 0`, **absolute-index arithmetic included**.
+* `TreeMCSPStackFlattenValueStack.lean` — `runStack`, `flattenStackVS_eq_flatten`,
+  `transcodeStreamViaStack_faithful`: the **value-stack** execution equals `flatten`, and the
+  count-prefixed stream is a **faithful transcoder** (decodes to a straight-line program computing
+  `Circuit.eval`).
+* `TreeMCSPNatStack.lean` — `encodeNatStack` / `decodeNatStack_encodeNatStack`: the **on-tape value-stack
+  format** (indices as self-delimiting unary fields) ↔ the abstract `List Nat`, with single-field pop.
+* `TreeMCSPDriveStack.lean` — `drive` / `settle` / `driveWORK_eq_flatten`: the **preorder-streaming
+  driver** (control stack of `(tag, remaining)` frames + value stack + settle cascade) produces the
+  postorder `flatten`.  *This is the exact algorithm the on-tape loop runs.*
+
+**Concrete on-tape design (the remaining bricks).**  Tape regions, left→right:
+`[ input x | certificate (encodeCircuitTree) | WORK | STACK_val | STACK_ctrl | scratch ]`.  The driver is
+`loopUntilSink driverBody (sink := certificate fully consumed ∧ STACK_ctrl empty)`, where `driverBody`
+realises one `drive`/`processToken` step:
+  - `treeTagDispatch` (D2t-1) reads the next 3-bit tag; on a **leaf**, `emitConstRecord` / `emitInputRecord`
+    (D2t-4a/4b) append the record to WORK, then `pushFrame` the new index onto `STACK_val` and run
+    `settle`; on `not/and/or`, `pushFrame (tag, arity)` onto `STACK_ctrl`.
+  - `settle` is a bounded inner loop: decrement `STACK_ctrl`'s top; on reaching `0`, pop it, read the
+    children's indices off `STACK_val` (the `NatStack` pop = `selfLoopScanLeftOne`-style field read),
+    append the internal gate record to WORK with those operands, push the new index, and repeat.
+
+* **D2t-5a** — `pushFrame` / `popFrame` machines over `STACK_val` (NatStack format) and `STACK_ctrl`
+  (control-frame format), each a `ConstStatePhasedProgram` with a `*_runConfig_*` lemma realising the
+  list push/pop against the `decodeNatStack`-style codecs.  *(The control-frame codec is the immediate
+  next brick, the `(tag, remaining)` analogue of `NatStack`, building on `ITag` from `TreeMCSPDriveStack`.)*
+* **D2t-5b** — `driverBody` assembled via `seq` from the above; `loopUntilSink_reachesSink` with the
+  **two-stack loop invariant** "after consuming a certificate prefix, the tape `(WORK, STACK_val,
+  STACK_ctrl)` encodes the corresponding `drive` configuration", discharged by `drive_preorder` (tree
+  induction).
+* **D2t-5c** — at the sink (whole certificate consumed, `STACK_ctrl` empty), WORK `= driveWORK (toTree c)
+  = (flatten (toTree c)).gates` by `driveWORK_eq_flatten`; prepend the unary count (D2t-6a) for the full
+  `encodeGateStream`, matching `transcodeWitness`.
+
+This on-tape core is the largest remaining brick (comparable to the D2t-3 loop, a multi-session effort),
+but every machine piece is now proven against a **settled pure spec** (`drive` / `driveWORK_eq_flatten`
+plus the two stack-format codecs), so it decomposes into individually hole-free `ConstStatePhasedProgram`
+iterations.

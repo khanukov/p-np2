@@ -100,6 +100,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanBodyRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanMeasure
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanHstep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterLowestBit
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterDecodeFin
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanReachesSink
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanOutput
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStepRightBranch
@@ -709,6 +710,8 @@ end Pnp4
 -- D2t-3 ζ core: the loop produces a unary block of length u₀ + value(B) at the sink (|U| = value B).
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_hbase_tape
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_reachesSink_output
+-- D2t-3 ζ bridge: counterValue agrees with the formal decoder — counterValue = (decodeFin w …).val.
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.BinaryCounter.decodeFin_tapeBits
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

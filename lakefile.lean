@@ -350,6 +350,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanMeasure,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanHstep,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPCounterLowestBit,
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPCounterDecodeFin,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanReachesSink,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanOutput,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanScan,

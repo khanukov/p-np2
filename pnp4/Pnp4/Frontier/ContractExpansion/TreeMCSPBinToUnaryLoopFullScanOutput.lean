@@ -69,45 +69,54 @@ theorem binToUnaryLoopFullScan_runConfig_hbase_tape (w : Nat) {L : Nat}
   rw [this, hst, h2t]
 
 
-/-- **ζ core — the produced unary block.**  From a `LoopLayout w c u` config, the loop reaches its sink
-and the cells `[HOME - (u + counterValue B), HOME)` are all `1`: the unary block of length
-`u + counterValue B = u₀ + value(B)`.  (With the seed `u₀`, the produced answer block has length
-`value(B)`.)  Bespoke strong induction on `counterValue B`, base `B = 0` (head scans to the sink, `U`
-untouched, length `u`), step `B > 0` (one pass appends a `1`, `u ↦ u+1`, `counterValue ↦ counterValue-1`,
-the block length `u + counterValue` preserved). -/
+/-- **ζ core — the produced unary block (+ sentinel).**  From a `LoopLayout w c u` config, the loop
+reaches its sink and the cells `[HOME - (u + counterValue B), HOME)` are all `1`: the unary block of
+length `u + counterValue B = u₀ + value(B)`.  (With the seed `u₀`, the produced answer block has length
+`value(B)`.)  The **sentinel** cell `HOME` still holds `0` at the sink — it is part of the `LoopLayout`
+invariant, preserved by every `B > 0` iteration (`oneIteration` re-establishes the layout) and by the
+`B = 0` base path (`hbase_tape` leaves the tape unchanged); downstream `unaryField`/record framing reads
+it as the field terminator.  Bespoke strong induction on `counterValue B`, base `B = 0` (head scans to the
+sink, `U` untouched, length `u`), step `B > 0` (one pass appends a `1`, `u ↦ u+1`,
+`counterValue ↦ counterValue-1`, the block length `u + counterValue` preserved). -/
 theorem binToUnaryLoopFullScan_reachesSink_output (w : Nat) {L : Nat} :
     ∀ (m : Nat) (c : Configuration (M := (binToUnaryLoopFullScan w).toPhased.toTM) L) (u : Nat),
       LoopLayout w c u → counterValue c ((c.head : Nat) + 1) w = m →
       ∃ t, ((TM.runConfig (M := (binToUnaryLoopFullScan w).toPhased.toTM) c t).state.fst : Nat) = w + 2
         ∧ (∀ q : Fin ((binToUnaryLoopFullScan w).toPhased.toTM.tapeLength L),
             (c.head : Nat) - (u + m) ≤ (q : Nat) → (q : Nat) < (c.head : Nat) →
-            (TM.runConfig (M := (binToUnaryLoopFullScan w).toPhased.toTM) c t).tape q = true) := by
+            (TM.runConfig (M := (binToUnaryLoopFullScan w).toPhased.toTM) c t).tape q = true)
+        ∧ (TM.runConfig (M := (binToUnaryLoopFullScan w).toPhased.toTM) c t).tape c.head = false := by
   intro m
   induction m using Nat.strong_induction_on with
   | _ m ih =>
     intro c u hL hm
     obtain ⟨hph0, hu1, hHOME1, hbound, hsent, hUlay, hblank, hroom⟩ := hL
     rcases Nat.eq_zero_or_pos m with hm0 | hmpos
-    · refine ⟨2 + w, binToUnaryLoopFullScan_runConfig_hbase w c hph0 (by omega) (by rw [hm]; exact hm0), ?_⟩
-      intro q hq1 hq2
-      rw [binToUnaryLoopFullScan_runConfig_hbase_tape w c hph0 (by omega) (by rw [hm]; exact hm0)]
-      exact hUlay q (by omega) hq2
+    · refine ⟨2 + w, binToUnaryLoopFullScan_runConfig_hbase w c hph0 (by omega) (by rw [hm]; exact hm0),
+        ?_, ?_⟩
+      · intro q hq1 hq2
+        rw [binToUnaryLoopFullScan_runConfig_hbase_tape w c hph0 (by omega) (by rw [hm]; exact hm0)]
+        exact hUlay q (by omega) hq2
+      · rw [binToUnaryLoopFullScan_runConfig_hbase_tape w c hph0 (by omega) (by rw [hm]; exact hm0)]
+        exact hsent
     · obtain ⟨sB, _, hhd, hLnext, hdec⟩ :=
         binToUnaryLoopFullScan_oneIteration w c u
           ⟨hph0, hu1, hHOME1, hbound, hsent, hUlay, hblank, hroom⟩ (by rw [hm]; omega)
       set d := TM.runConfig (M := (binToUnaryLoopFullScan w).toPhased.toTM) c (sB + 1) with hddef
       have hmlt : counterValue d ((d.head : Nat) + 1) w < m := by
         rw [show (d.head : Nat) = (c.head : Nat) from hhd]; omega
-      obtain ⟨t, htsink, htU⟩ :=
+      obtain ⟨t, htsink, htU, htsent⟩ :=
         ih (counterValue d ((d.head : Nat) + 1) w) hmlt d (u + 1) hLnext rfl
-      refine ⟨(sB + 1) + t, by rw [TM.runConfig_add, ← hddef]; exact htsink, ?_⟩
-      intro q hq1 hq2
-      rw [TM.runConfig_add, ← hddef]
-      have hdc : counterValue d ((d.head : Nat) + 1) w + 1 = m := by
-        rw [show (d.head : Nat) = (c.head : Nat) from hhd]; omega
-      apply htU q
-      · rw [show (d.head : Nat) = (c.head : Nat) from hhd]; omega
-      · rw [show (d.head : Nat) = (c.head : Nat) from hhd]; omega
+      refine ⟨(sB + 1) + t, by rw [TM.runConfig_add, ← hddef]; exact htsink, ?_, ?_⟩
+      · intro q hq1 hq2
+        rw [TM.runConfig_add, ← hddef]
+        have hdc : counterValue d ((d.head : Nat) + 1) w + 1 = m := by
+          rw [show (d.head : Nat) = (c.head : Nat) from hhd]; omega
+        apply htU q
+        · rw [show (d.head : Nat) = (c.head : Nat) from hhd]; omega
+        · rw [show (d.head : Nat) = (c.head : Nat) from hhd]; omega
+      · rw [TM.runConfig_add, ← hddef, show c.head = d.head from Fin.ext (by rw [hhd])]
+        exact htsent
 
 end ContractExpansion
 end Frontier

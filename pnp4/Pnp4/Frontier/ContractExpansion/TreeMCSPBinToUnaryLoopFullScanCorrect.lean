@@ -43,7 +43,7 @@ theorem binToUnaryLoopFullScan_transcoder_correct (w : Nat) {L : Nat}
           (c.head : Nat) - (u + i.val) ≤ (q : Nat) → (q : Nat) < (c.head : Nat) →
           (TM.runConfig (M := (binToUnaryLoopFullScan w).toPhased.toTM) c t).tape q = true) := by
   have hlt : counterValue c ((c.head : Nat) + 1) w < 2 ^ w := counterValue_lt_two_pow c _ w
-  obtain ⟨t, hsink, hU⟩ :=
+  obtain ⟨t, hsink, hU, _⟩ :=
     binToUnaryLoopFullScan_reachesSink_output w (counterValue c ((c.head : Nat) + 1) w) c u hL rfl
   refine ⟨t, ⟨counterValue c ((c.head : Nat) + 1) w, hlt⟩, hsink,
     decodeFin_tapeBits c ((c.head : Nat) + 1) w hlt, ?_⟩

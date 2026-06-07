@@ -75,6 +75,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftOneProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanRightOneProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStepRightProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordLayout
+import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitConstRecord
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -3920,6 +3921,10 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.decodeFin_tapeBits
 -- D2t-3 capstone: transcoder correctness (|U| = value(B) = (decodeFin …).val).
 #check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_transcoder_correct
+-- D2t-4a leaf emit: emitConstRecord writes the fixed `const b` record `1 0 b`; accept phase idle.
+#check @Pnp4.Frontier.ContractExpansion.emitConstRecord_stepConfig_done
+#check @Pnp4.Frontier.ContractExpansion.emitConstRecord_runConfig_three
+#check @Pnp4.Frontier.ContractExpansion.emitConstRecord_runConfig_record
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

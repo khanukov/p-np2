@@ -3936,6 +3936,8 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- D2t-5b foundation: value-stack execution model `runStack` (driver loop invariant) = flatten.
 #check @Pnp4.Frontier.ContractExpansion.flattenStackVS_eq_flatten
 #check @Pnp4.Frontier.ContractExpansion.flattenStackVS_eq_flattenStack
+-- D2t-5 pure capstone: the stack-linearization transcoder is faithful (stream decodes to the circuit).
+#check @Pnp4.Frontier.ContractExpansion.transcodeStreamViaStack_faithful
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

@@ -39,9 +39,15 @@ open Pnp3.Internal.PsubsetPpoly.TM.Encoding
 completed-subtree root indices.  A leaf / unary / binary step appends one gate at index `out.length` and
 pushes that index; binary steps first **pop** their two operand indices off `S` (so the gate's operands
 are exactly the children's indices — read off the stack, never computed by subtraction).  The size carried
-by `mkAnd`/`mkOr` is ignored here (the stack supplies the operands).  Malformed states (a `mk*` step with
-too few stacked indices) halt unchanged; they never arise from a `toSteps`-produced program run from the
-empty stack. -/
+by `mkAnd`/`mkOr` is ignored here (the stack supplies the operands).
+
+This is a **propositional spec** (used only inside proofs, never executed), so the per-step `out ++ [·]`
+accumulation and the malformed-state halt are immaterial to its role: the only intended caller is
+`flattenStackVS` (`runStack (toSteps c) ([], [])`), and `runStack_toSteps` establishes that such a run is
+well-formed (the value stack never underflows) and equals `flattenAt 0 c`.  A `mk*` step with too few
+stacked indices simply halts unchanged (the catch-all) — that state never arises from a `toSteps`-produced
+program run from the empty stack, so it is unreachable on the proven path; running an arbitrary, hand-built
+program is not a supported use. -/
 def runStack {n : Nat} :
     List (FlattenStep n) → List (SLGate n) × List Nat → List (SLGate n) × List Nat
   | [], st => st
@@ -123,6 +129,35 @@ through the on-tape driver's value-stack discipline. -/
 theorem encodeGateRecordStream_flattenStackVS {n : Nat} (c : CircuitTree n) :
     encodeGateRecordStream (flattenStackVS c) = encodeGateRecordStream (CircuitTree.flatten c).gates := by
   rw [flattenStackVS_eq_flatten]
+
+/-! ### Pure D2t-5 capstone: the stack algorithm is a faithful transcoder
+
+Packaging the value-stack linearization with the self-delimiting gate-count prefix gives the full
+**stack-based transcoder output**; decoding it recovers a straight-line program computing the circuit.
+This connects the D2t-5 *algorithm* (not just `flatten` abstractly) to the §9 transcoder faithfulness
+(`transcodeWitness_faithful`), and is the pure correctness statement the on-tape driver (D2t-5b/c) must
+realise: its WORK + gate-count prefix equals this stream. -/
+
+/-- The stack-based transcoder output: the count-prefixed gate-record stream produced by the D2t-5
+value-stack linearization algorithm. -/
+def transcodeStreamViaStack {n : Nat} (c : CircuitTree n) : List Bool :=
+  encodeGateStream (flattenStackVS c)
+
+/-- The stack transcoder stream equals the self-delimiting stream of the flattened circuit. -/
+theorem transcodeStreamViaStack_eq {n : Nat} (c : CircuitTree n) :
+    transcodeStreamViaStack c = encodeGateStream (CircuitTree.flatten c).gates := by
+  rw [transcodeStreamViaStack, flattenStackVS_eq_flatten]
+
+/-- **D2t-5 algorithm faithfulness (pure).**  The value-stack transcoder of a circuit's tree yields a
+self-delimiting stream that decodes to a straight-line program computing the circuit's value — the stack
+algorithm realises the §9 transcoder spec end-to-end (cf. `transcodeWitness_faithful`, which routes
+through `flatten` directly). -/
+theorem transcodeStreamViaStack_faithful {n : Nat} (c : Pnp3.Models.Circuit n) (x : Fin n → Bool) :
+    ∃ gates : List (SLGate n),
+      decodeGateStream n (transcodeStreamViaStack (toTree c)) = some (gates, [])
+      ∧ SLProgram.eval ⟨gates⟩ x = some (Pnp3.Models.Circuit.eval c x) := by
+  rw [transcodeStreamViaStack_eq]
+  simpa using decodeGateStream_circuit_eval c x []
 
 end ContractExpansion
 end Frontier

@@ -736,6 +736,9 @@ end Pnp4
 -- produces the flattened gate list; agrees with the size-carrying `flattenStack`.
 #print axioms Pnp4.Frontier.ContractExpansion.flattenStackVS_eq_flatten
 #print axioms Pnp4.Frontier.ContractExpansion.flattenStackVS_eq_flattenStack
+-- D2t-5 pure capstone: the stack-linearization transcoder is faithful — its count-prefixed stream decodes
+-- to a straight-line program computing the circuit (the §9 spec, realised via the stack algorithm).
+#print axioms Pnp4.Frontier.ContractExpansion.transcodeStreamViaStack_faithful
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

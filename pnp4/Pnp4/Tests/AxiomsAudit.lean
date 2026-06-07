@@ -98,6 +98,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanPos
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanBodyBridge
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanBodyRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanMeasure
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanHstep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStepRightBranch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRealizable
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRoute
@@ -686,6 +687,10 @@ end Pnp4
 -- D2t-3 ε measure: one body pass drops counterValue B by exactly one (the strict decrease
 -- `loopUntilSink_reachesSink`'s hstep consumes, with μ := counterValue B).
 #print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_body_onePass_counterValue
+-- D2t-3 ε hstep core: one B>0 body pass (pos→postDivert→seek→onePass) reaches the body accept w+29 with
+-- the head back at HOME and counterValue B strictly decreased — the per-iteration work hstep iterates.
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_pos_tape
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_bodyPass
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

@@ -321,6 +321,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordLayout,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPEmitConstRecord,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPWriteBits,
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPPushCtrlFrame,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPEmitInputRecord,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPStackFlatten,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPStackFlattenValueStack,

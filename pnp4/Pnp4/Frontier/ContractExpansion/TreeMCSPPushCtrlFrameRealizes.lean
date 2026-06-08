@@ -31,10 +31,13 @@ open Pnp3.Internal.PsubsetPpoly Pnp3.Internal.PsubsetPpoly.TM
 open Pnp3.Internal.PsubsetPpoly.TM.Encoding
 
 /-- The cells `[base, base + bs.length)` of tape `t` spell out the bit list `bs` (read left-to-right;
-positions outside the window are unconstrained). -/
+positions outside the window are unconstrained).  The `base + bs.length ≤ L'` conjunct guarantees the whole
+window lies on the (finite) tape — without it the predicate would say nothing about the part of `bs` that
+runs past the tape end. -/
 def windowSpells {L' : Nat} (t : Fin L' → Bool) (base : Nat) (bs : List Bool) : Prop :=
-  ∀ q : Fin L', base ≤ (q : Nat) → (q : Nat) < base + bs.length →
-    t q = bs.getD ((q : Nat) - base) false
+  base + bs.length ≤ L' ∧
+    ∀ q : Fin L', base ≤ (q : Nat) → (q : Nat) < base + bs.length →
+      t q = bs.getD ((q : Nat) - base) false
 
 /-- **`pushCtrlFrame` realises the control-stack push.**  If, before the push, the region just past where
 the frame will land (`[p + frameLen, …)`) spells `encodeCtrlStack S`, then after running `pushCtrlFrame tag`
@@ -54,24 +57,28 @@ theorem pushCtrlFrame_extends_ctrlStack {L : Nat} (tag : ITag)
           (encodeCtrlFrame (tag, tag.arity)).length).tape
         (c.head : Nat) (encodeCtrlStack ((tag, tag.arity) :: S)) := by
   obtain ⟨_, _, htape⟩ := pushCtrlFrame_runConfig tag c hphase hroom
+  obtain ⟨hfit, hcells⟩ := hrest
   have hcons : encodeCtrlStack ((tag, tag.arity) :: S)
       = encodeCtrlFrame (tag, tag.arity) ++ encodeCtrlStack S := rfl
-  intro q hlo hhi
-  rw [hcons] at hhi ⊢
-  rw [htape q]
-  rw [List.length_append] at hhi
-  by_cases hq : (q : Nat) < (c.head : Nat) + (encodeCtrlFrame (tag, tag.arity)).length
-  · -- inside the freshly-written frame window
-    rw [if_pos ⟨hlo, hq⟩,
-      List.getD_append (encodeCtrlFrame (tag, tag.arity)) (encodeCtrlStack S) false
-        ((q : Nat) - (c.head : Nat)) (by omega)]
-  · -- past the frame: the cell is untouched, so use the prior stack content `hrest`
-    rw [if_neg (fun h => hq h.2),
-      List.getD_append_right (encodeCtrlFrame (tag, tag.arity)) (encodeCtrlStack S) false
-        ((q : Nat) - (c.head : Nat)) (by omega)]
-    rw [hrest q (by omega) (by omega)]
-    congr 1
-    omega
+  refine ⟨?_, ?_⟩
+  · -- the combined window fits: its tail's fit is exactly `hfit`
+    rw [hcons, List.length_append]; omega
+  · intro q hlo hhi
+    rw [hcons] at hhi ⊢
+    rw [htape q]
+    rw [List.length_append] at hhi
+    by_cases hq : (q : Nat) < (c.head : Nat) + (encodeCtrlFrame (tag, tag.arity)).length
+    · -- inside the freshly-written frame window
+      rw [if_pos ⟨hlo, hq⟩,
+        List.getD_append (encodeCtrlFrame (tag, tag.arity)) (encodeCtrlStack S) false
+          ((q : Nat) - (c.head : Nat)) (by omega)]
+    · -- past the frame: the cell is untouched, so use the prior stack content `hcells`
+      rw [if_neg (fun h => hq h.2),
+        List.getD_append_right (encodeCtrlFrame (tag, tag.arity)) (encodeCtrlStack S) false
+          ((q : Nat) - (c.head : Nat)) (by omega)]
+      rw [hcells q (by omega) (by omega)]
+      congr 1
+      omega
 
 end ContractExpansion
 end Frontier

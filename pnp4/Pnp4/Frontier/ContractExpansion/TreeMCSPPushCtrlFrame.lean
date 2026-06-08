@@ -12,8 +12,8 @@ Because the tag is known from the dispatch branch, that frame's encoding `encode
 is a **fixed bit list**, so the push is a fixed-width write — `pushCtrlFrame tag := writeBits …`.  Its
 correctness is therefore a direct corollary of `writeBits_runConfig`: from the stack-top pointer `p`, after
 `(encodeCtrlFrame (tag, tag.arity)).length` steps the window `[p, p + …)` holds exactly the control frame's
-bits and the pointer rests just past it (so the new frame sits at the head of `encodeCtrlStack`, via the
-merged `encodeCtrlStack_cons`).
+bits and the pointer rests just past it (so the new frame sits at the head of `encodeCtrlStack`, since
+`encodeCtrlStack (f :: rest)` prepends `encodeCtrlFrame f` by definition).
 
 `pushCtrlFrame_frameLen_*` give the concrete per-tag frame widths (`not` ↦ 3, `and` ↦ 5, `or` ↦ 6 cells),
 for the driver's room bounds.

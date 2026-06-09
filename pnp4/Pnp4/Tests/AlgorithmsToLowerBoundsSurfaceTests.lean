@@ -3968,12 +3968,14 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- D2t-5a: on-tape control-stack format (pending `(tag, remaining)` frames) round-trip.
 #check @Pnp4.Frontier.ContractExpansion.decodeCtrlStack_encodeCtrlStack
 -- D2t-5b: preorder-streaming driver (control + value stacks) produces the postorder flatten.
+#check @Pnp4.Frontier.ContractExpansion.drive_preorder
 #check @Pnp4.Frontier.ContractExpansion.driveWORK_eq_flatten
 -- D2t-5b: small-step driver semantics — `step` iterated reproduces `settle`/`drive`/`flatten`, with a
 -- strictly-decreasing termination measure (the `μ` for the on-tape `loopUntilSink` driver).
 #check @Pnp4.Frontier.ContractExpansion.step_iterate_settle
 #check @Pnp4.Frontier.ContractExpansion.step_iterate_processToken
 #check @Pnp4.Frontier.ContractExpansion.step_iterate_drive
+#check @Pnp4.Frontier.ContractExpansion.driveStep_drive
 #check @Pnp4.Frontier.ContractExpansion.driveStep_out_eq_flatten
 #check @Pnp4.Frontier.ContractExpansion.DriveState.step_terminal
 #check @Pnp4.Frontier.ContractExpansion.DriveState.mu_step_lt

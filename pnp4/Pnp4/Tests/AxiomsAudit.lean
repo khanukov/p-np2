@@ -85,6 +85,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPCertTokens
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverStrongInv
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDrivePending
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryTransferRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverCorridor
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -863,6 +864,19 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.unaryTransfer_pass_more
 #print axioms Pnp4.Frontier.ContractExpansion.unaryTransfer_pass_last
 #print axioms Pnp4.Frontier.ContractExpansion.unaryTransfer_transfers
+-- D2t-5b (Block A3): the corridor layout — right-anchored stack codecs (top rightmost, every field's
+-- right edge a 1, base sentinels), and the corridor strong invariant: every inter-region hop is a
+-- 0-scan onto a pinned 1 anchor (cursor marker / frontier marker / stack tops); no hop crosses WORK.
+#print axioms Pnp4.Frontier.ContractExpansion.encodeNatEntryR_length
+#print axioms Pnp4.Frontier.ContractExpansion.encodeNatStackR_nil
+#print axioms Pnp4.Frontier.ContractExpansion.encodeNatStackR_cons
+#print axioms Pnp4.Frontier.ContractExpansion.encodeNatStackR_getLast_true
+#print axioms Pnp4.Frontier.ContractExpansion.encodeNatStackR_length
+#print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlFrameR_length
+#print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_nil
+#print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_cons
+#print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_getLast_true
+#print axioms Pnp4.Frontier.ContractExpansion.driverCorridorInv_init
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

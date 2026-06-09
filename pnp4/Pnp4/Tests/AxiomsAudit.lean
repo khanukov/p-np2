@@ -92,6 +92,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkFull
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorRoutes
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRight
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRightRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRightFull
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -928,6 +929,17 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_block_segment
 #print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_entry
 #print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_exit
+-- D2t-5b (Block A4w): the FULL rightward traversal — inner bottom-first induction + the bridging
+-- identity (walkZone ++ [0] = [1,0] ++ innerSpell reverse) + entry; done on the second dead cell.
+#print axioms Pnp4.Frontier.ContractExpansion.innerSpell_nil
+#print axioms Pnp4.Frontier.ContractExpansion.innerSpell_cons
+#print axioms Pnp4.Frontier.ContractExpansion.innerSpell_length
+#print axioms Pnp4.Frontier.ContractExpansion.walkZone_append_false
+#print axioms Pnp4.Frontier.ContractExpansion.innerSteps_cons
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_inner
+#print axioms Pnp4.Frontier.ContractExpansion.windowSpells_snoc_false
+#print axioms Pnp4.Frontier.ContractExpansion.walkZoneStepsR_eq
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_walkZone
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

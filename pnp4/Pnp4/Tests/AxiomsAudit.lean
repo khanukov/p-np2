@@ -90,6 +90,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalk
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkFull
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorRoutes
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRight
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -912,6 +913,14 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_scan_to_valTop
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_walk_val
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_scan_to_FM
+-- D2t-5b (Block A4w): the RIGHTWARD zone walker (return legs) — step semantics; the two-dead-cell
+-- inter-zone gaps let one peek distinguish a block boundary (0,1) from the zone exit (0,0).
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p0_phase
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p1_zero_phase
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p2_one_phase
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p2_zero_phase
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p3_one_phase
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p3_zero_phase
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

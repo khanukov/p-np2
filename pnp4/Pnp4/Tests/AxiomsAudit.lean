@@ -78,6 +78,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPNatStack
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCtrlFrameStack
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStack
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStepTerminates
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -782,6 +783,18 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.driveStep_out_eq_flatten
 #print axioms Pnp4.Frontier.ContractExpansion.DriveState.step_terminal
 #print axioms Pnp4.Frontier.ContractExpansion.DriveState.mu_step_lt
+-- D2t-5b: the small-step driver terminates — iterating `step` reaches a terminal state (the pure mirror
+-- of `loopUntilSink_reachesSink`), halting with the postorder flatten in WORK.
+#print axioms Pnp4.Frontier.ContractExpansion.step_reachesTerminal
+#print axioms Pnp4.Frontier.ContractExpansion.driveStep_halts_with_flatten
+-- D2t-5b: explicit step-count bound — the driver halts within `3 · c.size` micro-steps with the postorder
+-- flatten in WORK (the polynomial runtime witness the on-tape `loopUntilSink` driver inherits).
+#print axioms Pnp4.Frontier.ContractExpansion.DriveState.step_terminal_state_stays
+#print axioms Pnp4.Frontier.ContractExpansion.DriveState.step_after_terminal
+#print axioms Pnp4.Frontier.ContractExpansion.DriveState.step_terminal_at_mu
+#print axioms Pnp4.Frontier.ContractExpansion.preorder_length
+#print axioms Pnp4.Frontier.ContractExpansion.mu_init
+#print axioms Pnp4.Frontier.ContractExpansion.driveStep_halts_bound
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

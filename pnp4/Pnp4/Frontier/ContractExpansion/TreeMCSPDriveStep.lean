@@ -216,8 +216,13 @@ theorem driveStep_out_eq_flatten {n : Nat} (c : CircuitTree n) :
 
 /-! ### Termination measure (the `μ` for the on-tape `loopUntilSink` driver) -/
 
-/-- A state is **terminal** when the tokens are exhausted and we are not settling — the loop's halt
-condition (the certificate has been fully transcoded). -/
+/-- A state is **terminal** when the tokens are exhausted and we are not settling — the loop's
+**halt/idle** condition: `step` fixes exactly these states (`step_terminal`).  This is the *raw control*
+condition and deliberately does **not** constrain `ctrl`/`val`, so a malformed-input "stuck" state with
+pending frames (the `settle` underflow arm of `TreeMCSPDriveStack`, unreachable on real certificates)
+also counts as terminal.  On states reachable from `⟨preorder c, [], [], [], false⟩` it coincides with
+**full transcoding** — the control/value stacks are resolved and WORK holds the postorder flatten
+(`driveStep_halts_with_flatten`). -/
 def DriveState.terminal {n : Nat} (s : DriveState n) : Prop :=
   s.settling = false ∧ s.toks = []
 

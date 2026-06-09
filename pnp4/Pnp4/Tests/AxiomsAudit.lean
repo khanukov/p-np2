@@ -88,6 +88,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryTransferRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverCorridor
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalk
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkFull
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -892,6 +893,16 @@ end Pnp4
 -- lands at the next block's rightmost cell) and the terminating sentinel pass (φ0→φ1, 2 steps, done).
 #print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_runConfig_sentinel
 #print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_runConfig_field_segment
+-- D2t-5b (Block A4w): the FULL zone walk — multi-block traversal by induction (Σ(kᵢ+3)+2 steps, done
+-- on the dead 0 left of the sentinel, tape unchanged), with both stack codecs as walkZone instances.
+#print axioms Pnp4.Frontier.ContractExpansion.walkZone_nil
+#print axioms Pnp4.Frontier.ContractExpansion.walkZone_cons
+#print axioms Pnp4.Frontier.ContractExpansion.walkZone_length
+#print axioms Pnp4.Frontier.ContractExpansion.encodeNatStackR_eq_walkZone
+#print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_eq_walkZone
+#print axioms Pnp4.Frontier.ContractExpansion.walkZoneSteps_cons
+#print axioms Pnp4.Frontier.ContractExpansion.getD_replicate_of_lt
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_runConfig_walkZone
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

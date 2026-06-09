@@ -17,6 +17,14 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ripgrep jq
       - name: Get mathlib cache
         run: lake exe cache get
+      # Incremental cache of this project's own build dir (see ci.yml for rationale).
+      - uses: actions/cache@v4
+        with:
+          path: .lake/build
+          # Toolchain/manifest-namespaced cache key (see ci.yml for rationale).
+          key: ${{ runner.os }}-lake-${{ hashFiles('lean-toolchain', 'lake-manifest.json') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-lake-${{ hashFiles('lean-toolchain', 'lake-manifest.json') }}-
       - name: Build project
         run: lake build PnP3 Pnp4
       - name: Run smoke test

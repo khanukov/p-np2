@@ -69,6 +69,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitConstRecord
 import Pnp4.Frontier.ContractExpansion.TreeMCSPWriteBits
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPushCtrlFrame
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPushCtrlFrameRealizes
+import Pnp4.Frontier.ContractExpansion.TreeMCSPWriteNatField
 import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitInputRecord
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStackFlatten
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStackFlattenValueStack
@@ -739,6 +740,9 @@ end Pnp4
 -- D2t-5a→5b bridge: `pushCtrlFrame` realises the control-stack push — a region spelling
 -- `encodeCtrlStack S` becomes `encodeCtrlStack ((tag, tag.arity) :: S)` after the machine runs.
 #print axioms Pnp4.Frontier.ContractExpansion.pushCtrlFrame_extends_ctrlStack
+-- D2t-5a value-stack write + bridge: `writeNatField` writes a known index's unary field and realises the
+-- value-stack push (window spells `encodeNatStack (v :: S)`).
+#print axioms Pnp4.Frontier.ContractExpansion.writeNatField_extends_natStack
 -- D2t-4b leaf emit (core): the loop's binary→unary of the index realises `unaryField i` on the tape
 -- window `[HOME-i, HOME]` (sentinel preserved via the strengthened reachesSink/output), the substance of
 -- an `input i` record.

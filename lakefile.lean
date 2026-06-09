@@ -339,6 +339,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGateStreamReachesSink,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPTreeTagDispatch,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPReadCtrlFrameTag,
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPReadCtrlFrameRemaining,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPCountdownLeft,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPRepeatBody,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPLoopUntilSink,

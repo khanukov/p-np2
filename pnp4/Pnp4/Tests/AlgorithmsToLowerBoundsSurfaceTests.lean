@@ -101,6 +101,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkFull
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorRoutes
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRight
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRightRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -4098,6 +4099,11 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p2_one_phase
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p2_zero_phase
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p3_one_phase
+-- D2t-5b (Block A4w): the rightward run segments (ones-scan / block pass / entry / exit).
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_p3_scanning
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_block_segment
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_entry
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_exit
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p3_zero_phase
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true

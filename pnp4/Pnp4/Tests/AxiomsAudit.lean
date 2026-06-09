@@ -80,6 +80,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStack
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStepTerminates
 import Pnp4.Frontier.ContractExpansion.TreeMCSPEncodePreorder
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverTapeInv
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -802,6 +803,10 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.encodePreorder_cons
 #print axioms Pnp4.Frontier.ContractExpansion.encodePreorder_append
 #print axioms Pnp4.Frontier.ContractExpansion.encodePreorder_preorder
+-- D2t-5b: the driver configuration's tape-layout invariant (cert / WORK / value / control regions spell
+-- their codec images) and its initial-state lemma (the invariant holds at start).
+#print axioms Pnp4.Frontier.ContractExpansion.windowSpells_nil
+#print axioms Pnp4.Frontier.ContractExpansion.driverTapeInv_init
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

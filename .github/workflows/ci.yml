@@ -1,6 +1,17 @@
 name: CI
 
-on: [push, pull_request]
+# Run on every PR (any base) and on pushes to the integration branches.
+# Scoping `push` to integration branches removes the duplicate run that
+# `on: [push, pull_request]` produced on every feature-branch PR (the push
+# and the pull_request events both fired on the same commit).
+# Policy (intentional): all work reaches the integration/main branches via
+# PRs, and every PR is fully verified by this workflow, so direct pushes to
+# non-listed branches are deliberately NOT CI'd on push — open a PR to get
+# verification. (Add a branch here if it ever needs push-time CI without a PR.)
+on:
+  push:
+    branches: [main, master, claude/elegant-noether-CnlU5]
+  pull_request:
 
 jobs:
   build:
@@ -25,11 +36,27 @@ jobs:
       - name: Get prebuilt mathlib cache
         run: lake exe cache get
 
-      # 4. Cache .lake between runs.
-      - uses: actions/cache@v3
+      # 4. Cache this project's own build dir between runs (incremental).
+      #    Mathlib comes from `lake exe cache get` above; here we cache only
+      #    `.lake/build` (this project's oleans), keyed per-commit with a
+      #    prefix `restore-keys` fallback so that even on a key miss the most
+      #    recent build is restored and only changed modules + their dependents
+      #    recompile — instead of rebuilding the whole project every run.
+      #    (The previous key hashed `lakefile.lean`, which every brick edits,
+      #    so the cache missed on every PR and the full track was rebuilt.)
+      #    Safe: Lean's build is input-hash-based, so a restored `.lake` only
+      #    reuses artifacts whose inputs still match — a stale cache can never
+      #    yield an incorrect build, only redundant recompilation.
+      - uses: actions/cache@v4
         with:
-          path: .lake
-          key: ${{ runner.os }}-lake-${{ hashFiles('lakefile.lean') }}
+          path: .lake/build
+          # Namespace the cache by toolchain + dependency manifest so a Lean
+          # bump or `lake-manifest.json` change automatically starts a fresh
+          # cache lineage (no cross-toolchain restores); within a namespace the
+          # per-commit key + prefix `restore-keys` gives incremental reuse.
+          key: ${{ runner.os }}-lake-${{ hashFiles('lean-toolchain', 'lake-manifest.json') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-lake-${{ hashFiles('lean-toolchain', 'lake-manifest.json') }}-
 
       # 5. Build both libraries explicitly.
       #    `lake build` without args only compiles the @[default_target]

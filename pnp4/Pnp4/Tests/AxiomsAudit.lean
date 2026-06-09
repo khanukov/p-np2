@@ -81,6 +81,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStepTerminates
 import Pnp4.Frontier.ContractExpansion.TreeMCSPEncodePreorder
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverTapeInv
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCertTokens
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -807,6 +808,12 @@ end Pnp4
 -- their codec images) and its initial-state lemma (the invariant holds at start).
 #print axioms Pnp4.Frontier.ContractExpansion.windowSpells_nil
 #print axioms Pnp4.Frontier.ContractExpansion.driverTapeInv_init
+-- D2t-5b: certificate-token validity — closes the `encodePreToken` lossiness gap (valid tokens encode to
+-- ≥ 1 cell, so the cert clause of `driverTapeInv` is non-vacuous exactly when an unread token remains).
+#print axioms Pnp4.Frontier.ContractExpansion.validCertToken_one_le_length
+#print axioms Pnp4.Frontier.ContractExpansion.validCertTokens_preorder
+#print axioms Pnp4.Frontier.ContractExpansion.validCertTokens_length_le
+#print axioms Pnp4.Frontier.ContractExpansion.validCertTokens_encodePreorder_eq_nil_iff
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

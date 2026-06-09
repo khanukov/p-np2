@@ -95,6 +95,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPCertTokens
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverStrongInv
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDrivePending
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryTransferRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverCorridor
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -4050,6 +4051,18 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.unaryTransfer_pass_more
 #check @Pnp4.Frontier.ContractExpansion.unaryTransfer_pass_last
 #check @Pnp4.Frontier.ContractExpansion.unaryTransfer_transfers
+-- D2t-5b (Block A3): the corridor layout — right-anchored stack codecs + the corridor strong invariant
+-- (every inter-region hop a 0-scan onto a pinned 1 anchor; no hop crosses WORK).
+#check @Pnp4.Frontier.ContractExpansion.encodeNatEntryR_length
+#check @Pnp4.Frontier.ContractExpansion.encodeNatStackR_nil
+#check @Pnp4.Frontier.ContractExpansion.encodeNatStackR_cons
+#check @Pnp4.Frontier.ContractExpansion.encodeNatStackR_getLast_true
+#check @Pnp4.Frontier.ContractExpansion.encodeNatStackR_length
+#check @Pnp4.Frontier.ContractExpansion.encodeCtrlFrameR_length
+#check @Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_nil
+#check @Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_cons
+#check @Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_getLast_true
+#check @Pnp4.Frontier.ContractExpansion.driverCorridorInv_init
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

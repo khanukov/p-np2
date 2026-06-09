@@ -161,13 +161,15 @@ structure DriverCorridor where
   certBase : Nat
   certEnd : Nat
 
-/-- Corridor zone-chain well-formedness: `outBase < workBase < workEnd ≤ valBase < valEnd ≤ ctrlBase <
-ctrlEnd < certBase ≤ certEnd ≤ L` (`ctrlEnd < certBase` leaves the cell `certBase − 1` for the initial
-cursor marker; `outBase < workBase` the count terminator cell; `workBase < workEnd` the frontier
-marker even with empty WORK). -/
+/-- Corridor zone-chain well-formedness: `outBase < workBase < workEnd < valBase < valEnd < ctrlBase <
+ctrlEnd ∧ ctrlEnd + 1 < certBase ≤ certEnd ≤ L`.  The **strict** inter-zone links guarantee at least
+one dead `0` cell between any zone's content capacity and the next zone's content (and between the
+control zone and the cursor-marker slot `certBase − 1`) — so every inter-zone hop scan starts on a
+guaranteed-dead cell, with no zero-gap edge cases.  (`outBase < workBase` keeps the count terminator
+cell; `workBase < workEnd` the frontier marker even with empty WORK.) -/
 def DriverCorridor.WellFormed (z : DriverCorridor) (L : Nat) : Prop :=
-  z.outBase < z.workBase ∧ z.workBase < z.workEnd ∧ z.workEnd ≤ z.valBase ∧ z.valBase < z.valEnd
-    ∧ z.valEnd ≤ z.ctrlBase ∧ z.ctrlBase < z.ctrlEnd ∧ z.ctrlEnd < z.certBase
+  z.outBase < z.workBase ∧ z.workBase < z.workEnd ∧ z.workEnd < z.valBase ∧ z.valBase < z.valEnd
+    ∧ z.valEnd < z.ctrlBase ∧ z.ctrlBase < z.ctrlEnd ∧ z.ctrlEnd + 1 < z.certBase
     ∧ z.certBase ≤ z.certEnd ∧ z.certEnd ≤ L
 
 /-- **The corridor strong invariant.**  Live anchors derived from the abstract state (`cursor :=

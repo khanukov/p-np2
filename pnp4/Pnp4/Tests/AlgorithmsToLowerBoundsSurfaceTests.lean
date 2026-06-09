@@ -99,6 +99,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverCorridor
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalk
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkFull
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorRoutes
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -4083,6 +4084,13 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.walkZoneSteps
 #check @Pnp4.Frontier.ContractExpansion.getD_replicate_of_lt
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkLeft_runConfig_walkZone
+-- D2t-5b (Block A4r): the leftward cross-zone route (five instantiated legs).
+#check @Pnp4.Frontier.ContractExpansion.windowSpells_getLast_true
+#check @Pnp4.Frontier.ContractExpansion.corridor_scan_M_to_ctrlTop
+#check @Pnp4.Frontier.ContractExpansion.corridor_walk_ctrl
+#check @Pnp4.Frontier.ContractExpansion.corridor_scan_to_valTop
+#check @Pnp4.Frontier.ContractExpansion.corridor_walk_val
+#check @Pnp4.Frontier.ContractExpansion.corridor_scan_to_FM
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

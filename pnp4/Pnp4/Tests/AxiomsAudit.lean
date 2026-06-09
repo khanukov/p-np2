@@ -93,6 +93,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorRoutes
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRight
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRightRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRightFull
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorRoutesBack
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -940,6 +941,15 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.windowSpells_snoc_false
 #print axioms Pnp4.Frontier.ContractExpansion.walkZoneStepsR_eq
 #print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_walkZone
+-- D2t-5b (Block A4r): the return route FM→val→ctrl→M — arbitrary-config rightward 0-scan lemmas +
+-- five instantiated legs (the ctrl→cert gap widened to keep the walker's exit off the M slot).
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_runConfigFrom_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_runConfigFrom_terminator
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_valSentinel
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_back_walk_val
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_ctrlSentinel
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_back_walk_ctrl
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_M
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

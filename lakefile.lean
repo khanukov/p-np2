@@ -348,6 +348,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRight,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRightRun,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRightFull,
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorRoutesBack,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder,

@@ -1359,3 +1359,48 @@ This on-tape core is the largest remaining brick (comparable to the D2t-3 loop, 
 but every machine piece is now proven against a **settled pure spec** (`drive` / `driveWORK_eq_flatten`
 plus the two stack-format codecs), so it decomposes into individually hole-free `ConstStatePhasedProgram`
 iterations.
+
+### D2t-5 progress update (NPV #1600–#1605): frame reads, small-step driver, cert codec, tape invariant
+
+Since the section above was written, the **spec/spine layer expanded considerably** — all merged, standard
+`[propext, Classical.choice, Quot.sound]` triple only, `./scripts/check.sh` 17/17 throughout.  This
+*refines* (does not replace) the D2t-5a/5b/5c plan above.
+
+* **Control-frame codec + reads (D2t-5a, #1600/#1601).**  `encodeCtrlStack` /
+  `decodeCtrlStack_encodeCtrlStack` fix the `(tag, remaining)` frame format; `readCtrlFrameTag` (#1600) and
+  `readCtrlFrameRemaining`
+  (#1601) are the settling-branch reads — fixed-phase **unary tries** (≤ 3 cells, head-advancing, tape
+  unchanged), the control-frame analogue of `treeTagDispatch`.  *(So "the control-frame codec is the
+  immediate next brick" / "`pushFrame`/`popFrame` … reads" above are now DONE on the read side; the value
+  push is `writeNatField` and the frame push is `pushCtrlFrame`, both with `*_extends_*` realisation
+  bridges.)*
+* **Small-step driver semantics (`DriveState.step`, #1602).**  The big-step `drive` runs an unbounded
+  `settle` cascade per leaf; the on-tape loop runs **one primitive action per iteration**.
+  `DriveState.step` is that micro-step; `step_iterate_settle` / `step_iterate_processToken` /
+  `step_iterate_drive` prove iterating it reproduces `settle` / `processToken` / `drive`, and
+  **`driveStep_out_eq_flatten`** that from the empty start
+  it leaves `(flatten c).gates` in WORK.  Measure `DriveState.mu` with `mu_step_lt` (strict decrease off
+  terminal) + `step_terminal` (terminal is fixed).
+* **Termination + explicit bound (#1603).**  `step_reachesTerminal`, `step_terminal_at_mu` (terminal after
+  exactly `mu` steps — the pure mirror of `loopUntilSink_reachesSink`), and **`driveStep_halts_bound`**:
+  within **`3·c.size`** micro-steps the driver halts with WORK `= (flatten c).gates` (`preorder_length`:
+  `|preorder c| = c.size`) — the polynomial runtime witness the on-tape loop inherits.
+* **Certificate codec (#1604).**  `encodePreToken`/`encodePreorder` + **`encodePreorder_preorder`**:
+  `encodePreorder (preorder c) = encodeCircuitTree c`, i.e. the certificate **is** the encoded preorder
+  token stream, so the driver's abstract unread-token list decodes the on-tape certificate cell-for-cell.
+* **Driver tape-layout invariant (#1605).**  `DriverLayout` (region base offsets) + `DriverLayout.WellFormed`
+  (region ordering `certBase ≤ workBase ≤ valBase ≤ ctrlBase ≤ L`) + **`driverTapeInv`** (cert-from-cursor /
+  WORK / `STACK_val` / `STACK_ctrl` regions spell `encodePreorder` / `encodeGateRecordStream` /
+  `encodeNatStack` / `encodeCtrlStack` of the `DriveState` fields) + `driverTapeInv_init` (holds at start).
+  This is the concrete **"two-stack loop invariant"** the D2t-5b plan named, stated machine-agnostically
+  (over a bare `tape`/`cursor`) so it is well-typed before the driver TM exists.
+
+**Remaining (unchanged in spirit — the multi-session machine core):**
+1. the on-tape **`driverBody`** realising one `DriveState.step` under `driverTapeInv` (settling/reading
+   dispatch over the merged read/write/push bricks);
+2. the **cross-region head seeks** between cert / WORK / `STACK_val` / `STACK_ctrl` (genuine `reachesSink`
+   loops, à la the `BinToUnaryLoop*` family);
+3. the **`loopUntilSink_reachesSink` discharge** at the `Configuration` level — `driverTapeInv` + the
+   head/`settling`-flag coupling, with `μ := DriveState.mu ∘ decode` (the pure `step_terminal_at_mu` already
+   discharges the abstract termination).  The length-aware region non-overlap (`DriverLayout` capacities) is
+   added when (1)–(2) first need it.

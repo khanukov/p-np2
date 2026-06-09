@@ -87,6 +87,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPDrivePending
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryTransferRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverCorridor
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalk
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -887,6 +888,10 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_stepConfig_p2_zero_phase
 #print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_stepConfig_p3_phase
 #print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_runConfig_p2_scanning
+-- D2t-5b (Block A4w): the zone-walk run segments — one field-block pass (φ0→φ1→φ2→φ3, m+4 steps,
+-- lands at the next block's rightmost cell) and the terminating sentinel pass (φ0→φ1, 2 steps, done).
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_runConfig_sentinel
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_runConfig_field_segment
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

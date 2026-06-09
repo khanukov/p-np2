@@ -42,7 +42,12 @@ def encodePreToken {n : Nat} (width : Nat) (h_width : n ≤ 2 ^ width) : PreToke
   | .leaf (SLGate.input i) =>
       [false, false, false] ++ encodeFin width ⟨i.val, lt_of_lt_of_le i.isLt h_width⟩
   | .leaf (SLGate.const b) => [false, false, true, b]
-  | .leaf _ => []
+  -- `notGate`/`andGate`/`orGate` leaves never occur in a `preorder` stream (they are produced by `settle`,
+  -- not read from the certificate).  Listed explicitly (rather than a wildcard) so a future `SLGate`
+  -- constructor forces an exhaustiveness error here instead of silently encoding as `[]`.
+  | .leaf (SLGate.notGate _) => []
+  | .leaf (SLGate.andGate _ _) => []
+  | .leaf (SLGate.orGate _ _) => []
 
 /-- The tape image of a preorder token list: the tokens' images concatenated. -/
 def encodePreorder {n : Nat} (width : Nat) (h_width : n ≤ 2 ^ width) : List (PreToken n) → List Bool

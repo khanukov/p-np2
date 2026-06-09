@@ -92,6 +92,8 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStepTerminates
 import Pnp4.Frontier.ContractExpansion.TreeMCSPEncodePreorder
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverTapeInv
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCertTokens
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverStrongInv
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDrivePending
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -4004,6 +4006,38 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.validCertTokens_preorder
 #check @Pnp4.Frontier.ContractExpansion.validCertTokens_length_le
 #check @Pnp4.Frontier.ContractExpansion.validCertTokens_encodePreorder_eq_nil_iff
+-- D2t-5b (Block A1a): the strong driver tape invariant — derived dynamic anchors, encodeGateStream-shaped
+-- output window (D2t-6a count prefix maintained in-band), length-aware zone fits, settling coherence.
+#check @Pnp4.Frontier.ContractExpansion.encodeNatStack1_nil
+#check @Pnp4.Frontier.ContractExpansion.encodeNatStack1_cons
+#check @Pnp4.Frontier.ContractExpansion.decodeUnaryField_encodeNatStack1_cons
+#check @Pnp4.Frontier.ContractExpansion.encodeNatStack1_head_true
+#check @Pnp4.Frontier.ContractExpansion.encodeCtrlStack1_nil
+#check @Pnp4.Frontier.ContractExpansion.encodeCtrlStack1_cons
+#check @Pnp4.Frontier.ContractExpansion.encodeCtrlStack1_head_true
+#check @Pnp4.Frontier.ContractExpansion.windowSpells_append_left
+#check @Pnp4.Frontier.ContractExpansion.windowSpells_append_right
+#check @Pnp4.Frontier.ContractExpansion.driverStrongInv_out_encodeGateStream
+#check @Pnp4.Frontier.ContractExpansion.driverStrongInv_count_window
+#check @Pnp4.Frontier.ContractExpansion.driverStrongInv_records_window
+#check @Pnp4.Frontier.ContractExpansion.DriveState.step_preserves_settling_val
+#check @Pnp4.Frontier.ContractExpansion.driverStrongInv_init
+-- D2t-5b (Block A1b): the reachable-state coherence invariant (pending-forest decomposition) — preserved
+-- by every micro-step; sink soundness + sink existence (within 3·c.size steps, flatten in WORK); frame
+-- width bounds for the on-tape settle decrement.
+#check @Pnp4.Frontier.ContractExpansion.preorderForest_nil
+#check @Pnp4.Frontier.ContractExpansion.preorderForest_cons
+#check @Pnp4.Frontier.ContractExpansion.preorder_ne_nil
+#check @Pnp4.Frontier.ContractExpansion.append_left_ne_nil
+#check @Pnp4.Frontier.ContractExpansion.pending_init
+#check @Pnp4.Frontier.ContractExpansion.pending_reading_node
+#check @Pnp4.Frontier.ContractExpansion.pending_step
+#check @Pnp4.Frontier.ContractExpansion.pending_iterate
+#check @Pnp4.Frontier.ContractExpansion.driver_sink_sound
+#check @Pnp4.Frontier.ContractExpansion.driver_sink_val_ne_nil
+#check @Pnp4.Frontier.ContractExpansion.pendingFrames_rem_bounds
+#check @Pnp4.Frontier.ContractExpansion.pending_pre_terminal
+#check @Pnp4.Frontier.ContractExpansion.driver_sink_exists
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

@@ -82,6 +82,8 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStepTerminates
 import Pnp4.Frontier.ContractExpansion.TreeMCSPEncodePreorder
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverTapeInv
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCertTokens
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverStrongInv
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDrivePending
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -816,6 +818,38 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.validCertTokens_preorder
 #print axioms Pnp4.Frontier.ContractExpansion.validCertTokens_length_le
 #print axioms Pnp4.Frontier.ContractExpansion.validCertTokens_encodePreorder_eq_nil_iff
+-- D2t-5b (Block A1a): the strong driver tape invariant — derived dynamic anchors (cursor / count / stack
+-- tops), encodeGateStream-shaped output window, length-aware zone fits, pointwise settling coherence.
+#print axioms Pnp4.Frontier.ContractExpansion.encodeNatStack1_nil
+#print axioms Pnp4.Frontier.ContractExpansion.encodeNatStack1_cons
+#print axioms Pnp4.Frontier.ContractExpansion.decodeUnaryField_encodeNatStack1_cons
+#print axioms Pnp4.Frontier.ContractExpansion.encodeNatStack1_head_true
+#print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStack1_nil
+#print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStack1_cons
+#print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStack1_head_true
+#print axioms Pnp4.Frontier.ContractExpansion.windowSpells_append_left
+#print axioms Pnp4.Frontier.ContractExpansion.windowSpells_append_right
+#print axioms Pnp4.Frontier.ContractExpansion.driverStrongInv_out_encodeGateStream
+#print axioms Pnp4.Frontier.ContractExpansion.driverStrongInv_count_window
+#print axioms Pnp4.Frontier.ContractExpansion.driverStrongInv_records_window
+#print axioms Pnp4.Frontier.ContractExpansion.DriveState.step_preserves_settling_val
+#print axioms Pnp4.Frontier.ContractExpansion.driverStrongInv_init
+-- D2t-5b (Block A1b): the reachable-state coherence invariant — the pending-forest decomposition is
+-- preserved by every micro-step; sink soundness ("settling ∧ ctrl = [] → toks = []"), the sink is reached
+-- within 3·c.size steps with the flatten in WORK, and below-top frames are fixed-width (rem ≤ arity).
+#print axioms Pnp4.Frontier.ContractExpansion.preorderForest_nil
+#print axioms Pnp4.Frontier.ContractExpansion.preorderForest_cons
+#print axioms Pnp4.Frontier.ContractExpansion.preorder_ne_nil
+#print axioms Pnp4.Frontier.ContractExpansion.append_left_ne_nil
+#print axioms Pnp4.Frontier.ContractExpansion.pending_init
+#print axioms Pnp4.Frontier.ContractExpansion.pending_reading_node
+#print axioms Pnp4.Frontier.ContractExpansion.pending_step
+#print axioms Pnp4.Frontier.ContractExpansion.pending_iterate
+#print axioms Pnp4.Frontier.ContractExpansion.driver_sink_sound
+#print axioms Pnp4.Frontier.ContractExpansion.driver_sink_val_ne_nil
+#print axioms Pnp4.Frontier.ContractExpansion.pendingFrames_rem_bounds
+#print axioms Pnp4.Frontier.ContractExpansion.pending_pre_terminal
+#print axioms Pnp4.Frontier.ContractExpansion.driver_sink_exists
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

@@ -16,7 +16,7 @@ terminator `0` lands in the tag's phase with the head just past the field (at th
 composes directly with the next reader.
 
 Phase layout (`numPhases = 7`): `0,1,2` read the field; `3`=tnot, `4`=tand, `5`=tor are the per-tag accept
-phases; `6` = reject sink (tag code `> 2`, i.e. a 4th `1` — malformed).
+phases; `6` = reject sink (a `1` in the 3rd cell, i.e. tag code `≥ 3` with no terminator — malformed).
 
 * `readCtrlFrameTag_runConfig_tnot/tand/tor` — from the frame's tag field at the head (phase `0`), after
   `tagCode + 1` steps the program lands in the tag's phase, head advanced by `tagCode + 1` (past the

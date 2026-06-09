@@ -4138,6 +4138,8 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.treeTagDispatch_runConfig_and
 #check @Pnp4.Frontier.ContractExpansion.treeTagDispatch_runConfig_or
 -- D2t-5b: control-frame tag reader (unary trie; settle/pop entry).
+#check @Pnp4.Frontier.ContractExpansion.readCtrlFrameTag_runConfig_tnot
+#check @Pnp4.Frontier.ContractExpansion.readCtrlFrameTag_runConfig_tand
 #check @Pnp4.Frontier.ContractExpansion.readCtrlFrameTag_runConfig_tor
 #check @Pnp4.Frontier.ContractExpansion.treeTagDispatch_runConfig_malformed
 -- Unary countdown self-loop (marker-free counter; §6c brick toward the row loop).

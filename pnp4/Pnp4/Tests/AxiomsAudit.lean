@@ -933,6 +933,8 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.treeTagDispatch_runConfig_or
 -- D2t-5b: control-frame tag reader (settle/pop entry) — a fixed-phase unary trie dispatching on the top
 -- frame's tag (`tnot`/`tand`/`tor`), the control-frame analogue of `treeTagDispatch`.
+#print axioms Pnp4.Frontier.ContractExpansion.readCtrlFrameTag_runConfig_tnot
+#print axioms Pnp4.Frontier.ContractExpansion.readCtrlFrameTag_runConfig_tand
 #print axioms Pnp4.Frontier.ContractExpansion.readCtrlFrameTag_runConfig_tor
 #print axioms Pnp4.Frontier.ContractExpansion.treeTagDispatch_runConfig_malformed
 #print axioms Pnp4.Frontier.ContractExpansion.runConfig_head_val_ge

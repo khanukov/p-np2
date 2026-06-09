@@ -84,6 +84,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverTapeInv
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCertTokens
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverStrongInv
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDrivePending
+import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryTransferRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -850,6 +851,18 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.pendingFrames_rem_bounds
 #print axioms Pnp4.Frontier.ContractExpansion.pending_pre_terminal
 #print axioms Pnp4.Frontier.ContractExpansion.driver_sink_exists
+-- D2t-5b (Block A2): the generic unary-block transfer loop — one unit per pass across a blank gap
+-- (append at the destination, erase-and-peek at the source); reaches the sink with the block moved,
+-- the source zone zeroed, and the rest of the tape untouched, within (m−j)·(2(d+m)+2γ+8) steps.
+#print axioms Pnp4.Frontier.ContractExpansion.write_self_eq
+#print axioms Pnp4.Frontier.ContractExpansion.unaryTransfer_runConfig_one
+#print axioms Pnp4.Frontier.ContractExpansion.unaryTransfer_run_phi0_walk
+#print axioms Pnp4.Frontier.ContractExpansion.unaryTransfer_run_phi1_scan
+#print axioms Pnp4.Frontier.ContractExpansion.unaryTransfer_run_phi4_scan
+#print axioms Pnp4.Frontier.ContractExpansion.unaryTransfer_run_phi5_walk
+#print axioms Pnp4.Frontier.ContractExpansion.unaryTransfer_pass_more
+#print axioms Pnp4.Frontier.ContractExpansion.unaryTransfer_pass_last
+#print axioms Pnp4.Frontier.ContractExpansion.unaryTransfer_transfers
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

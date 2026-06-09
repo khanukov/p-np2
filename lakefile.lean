@@ -333,6 +333,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStack,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStep,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStepTerminates,
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPEncodePreorder,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder,

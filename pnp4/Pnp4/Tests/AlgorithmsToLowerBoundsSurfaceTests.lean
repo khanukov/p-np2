@@ -89,6 +89,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPCtrlFrameStack
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStack
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStepTerminates
+import Pnp4.Frontier.ContractExpansion.TreeMCSPEncodePreorder
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -3985,6 +3986,12 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.preorder_length
 #check @Pnp4.Frontier.ContractExpansion.mu_init
 #check @Pnp4.Frontier.ContractExpansion.driveStep_halts_bound
+-- D2t-5b: the certificate is the encoded preorder token stream (`encodePreorder (preorder c)
+-- = encodeCircuitTree c`) — the cert-region codec for the driver configuration invariant.
+#check @Pnp4.Frontier.ContractExpansion.encodePreorder_nil
+#check @Pnp4.Frontier.ContractExpansion.encodePreorder_cons
+#check @Pnp4.Frontier.ContractExpansion.encodePreorder_append
+#check @Pnp4.Frontier.ContractExpansion.encodePreorder_preorder
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

@@ -22,8 +22,9 @@ scan over a guaranteed-all-`0` corridor onto a guaranteed-`1` anchor**:
   exactly on the next stack's top; each stack carries a permanent **base sentinel `1`** at its base
   cell, so the same scan is sound when the stack is empty — and "control stack empty" (the A1b sink
   test) becomes *land on a `1`, peek one cell left: a `0` means the base sentinel* (frame tag blocks
-  carry **`tagCode + 2 ≥ 2` ones** and value blocks **`v + 2 ≥ 2` ones**, so during a zone walk a
-  field edge is never confused with the single-`1` sentinel);
+  carry **`tagCode + 2 ≥ 2` ones**, frame remaining-count blocks **`rem + 1 ≥ 2` ones**, and value
+  blocks **`v + 2 ≥ 2` ones**, so during a zone walk no block edge is ever confused with the
+  single-`1` sentinel);
 * the **WORK frontier marker** `FM` is a single `1` just past the last record: the hop val → frontier
   is a leftward 0-scan onto `FM`; a record append overwrites `FM` and re-plants it at the new
   frontier.  Inside a record, the A2 transfer's home delimiters come for free: every operand field is
@@ -96,14 +97,18 @@ theorem encodeNatStackR_length (S : List Nat) :
   | nil => rfl
   | cons v rest ih => rw [encodeNatStackR_cons]; simp [encodeNatEntryR, ih]; omega
 
-/-- A right-anchored control frame: `[0] ++ 1^rem ++ [0] ++ 1^(tagCode+2)` — read right-to-left: the
-tag block (**≥ 2 ones**, distinguishing a frame's right edge from the single-`1` base sentinel), a `0`
-separator, the remaining-count block, the left `0` delimiter. -/
+/-- A right-anchored control frame: `[0] ++ 1^(rem+1) ++ [0] ++ 1^(tagCode+2)` — read right-to-left:
+the tag block, a `0` separator, the remaining-count block, the left `0` delimiter.  **Both** blocks
+carry `≥ 2` ones (`tagCode + 2 ≥ 2`; `rem + 1 ≥ 2` since reachable `rem ≥ 1`), so during a zone walk
+*neither* edge of a frame is ever confused with the single-`1` base sentinel — the `rem` block with
+`rem = 1` (every `tnot` frame; `tand`/`tor` before the pop) would otherwise be a bare `1` and stop the
+walker mid-zone. -/
 def encodeCtrlFrameR : ITag × Nat → List Bool
-  | (tag, rem) => false :: (List.replicate rem true ++ (false :: List.replicate (tag.tagCode + 2) true))
+  | (tag, rem) =>
+      false :: (List.replicate (rem + 1) true ++ (false :: List.replicate (tag.tagCode + 2) true))
 
 @[simp] theorem encodeCtrlFrameR_length (tag : ITag) (rem : Nat) :
-    (encodeCtrlFrameR (tag, rem)).length = rem + tag.tagCode + 4 := by
+    (encodeCtrlFrameR (tag, rem)).length = rem + tag.tagCode + 5 := by
   simp [encodeCtrlFrameR]; omega
 
 /-- The right-anchored control stack: base sentinel `1`, then the frames bottom-to-top left-to-right
@@ -129,7 +134,8 @@ theorem encodeCtrlStackR_getLast_true (S : List (ITag × Nat)) :
       rw [encodeCtrlStackR_cons, List.getLast?_append_of_ne_nil]
       · show (encodeCtrlFrameR (tag, rem)).getLast? = some true
         rw [show encodeCtrlFrameR (tag, rem)
-            = ([false] ++ List.replicate rem true) ++ ([false] ++ List.replicate (tag.tagCode + 2) true)
+            = ([false] ++ List.replicate (rem + 1) true)
+              ++ ([false] ++ List.replicate (tag.tagCode + 2) true)
             from by simp [encodeCtrlFrameR]]
         rw [List.getLast?_append_of_ne_nil]
         · rw [List.getLast?_append_of_ne_nil]

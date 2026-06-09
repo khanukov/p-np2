@@ -3978,6 +3978,13 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- postorder flatten in WORK.
 #check @Pnp4.Frontier.ContractExpansion.step_reachesTerminal
 #check @Pnp4.Frontier.ContractExpansion.driveStep_halts_with_flatten
+-- D2t-5b: explicit step-count bound — driver halts within `3 · c.size` steps with the flatten in WORK.
+#check @Pnp4.Frontier.ContractExpansion.DriveState.step_terminal_state_stays
+#check @Pnp4.Frontier.ContractExpansion.DriveState.step_after_terminal
+#check @Pnp4.Frontier.ContractExpansion.DriveState.step_terminal_at_mu
+#check @Pnp4.Frontier.ContractExpansion.preorder_length
+#check @Pnp4.Frontier.ContractExpansion.mu_init
+#check @Pnp4.Frontier.ContractExpansion.driveStep_halts_bound
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

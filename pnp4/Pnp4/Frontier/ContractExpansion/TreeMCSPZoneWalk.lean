@@ -98,6 +98,312 @@ theorem zoneWalkLeft_t4_zero :
 theorem zoneWalkLeft_t5 (b : Bool) :
     zoneWalkLeft.transition ⟨5, by decide⟩ () b = (⟨5, by decide⟩, (), b, Move.stay) := rfl
 
+/-! ### `stepConfig` lemmas (one machine step per phase/bit) -/
+
+/-- φ0 (enter block): the phase advances to `1`. -/
+theorem zoneWalkLeft_stepConfig_p0_phase {L : Nat}
+    (c : Configuration (M := zoneWalkLeft.toPhased.toTM) L)
+    {i : Fin 6} {s : Unit} (hi : i.val = 0) (hstate : c.state = ⟨i, s⟩) :
+    ((TM.stepConfig (M := zoneWalkLeft.toPhased.toTM) c).state).fst.val = 1 := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp [ConstStatePhasedProgram.toPhased, zoneWalkLeft, hi]
+
+/-- φ0: the head moves left. -/
+theorem zoneWalkLeft_stepConfig_p0_head {L : Nat}
+    (c : Configuration (M := zoneWalkLeft.toPhased.toTM) L)
+    {i : Fin 6} {s : Unit} (hi : i.val = 0) (hstate : c.state = ⟨i, s⟩) :
+    (TM.stepConfig (M := zoneWalkLeft.toPhased.toTM) c).head
+      = Configuration.moveHead (c := c) Move.left := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp [ConstStatePhasedProgram.toPhased, zoneWalkLeft, hi]
+
+/-- φ0: the tape is unchanged (the read bit is written back). -/
+theorem zoneWalkLeft_stepConfig_p0_tape {L : Nat}
+    (c : Configuration (M := zoneWalkLeft.toPhased.toTM) L)
+    {i : Fin 6} {s : Unit} (hi : i.val = 0) (hstate : c.state = ⟨i, s⟩) :
+    (TM.stepConfig (M := zoneWalkLeft.toPhased.toTM) c).tape = c.tape := by
+  have hwrite : (TM.stepConfig (M := zoneWalkLeft.toPhased.toTM) c).tape
+      = c.write c.head (c.tape c.head) := by
+    unfold TM.stepConfig
+    rw [hstate]
+    simp only [PhasedProgram.toTM_step]
+    simp [ConstStatePhasedProgram.toPhased, zoneWalkLeft, hi]
+  rw [hwrite]
+  funext j
+  by_cases hj : j = c.head
+  · subst hj; simp [Configuration.write]
+  · simp [Configuration.write, hj]
+
+/-- φ1 (peek) on a `1`: a field block — advance to `2`, head stays, tape unchanged. -/
+theorem zoneWalkLeft_stepConfig_p1_one_phase {L : Nat}
+    (c : Configuration (M := zoneWalkLeft.toPhased.toTM) L)
+    {i : Fin 6} {s : Unit} (hi : i.val = 1) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = true) :
+    ((TM.stepConfig (M := zoneWalkLeft.toPhased.toTM) c).state).fst.val = 2 := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp [ConstStatePhasedProgram.toPhased, zoneWalkLeft, hi, hbit]
+
+theorem zoneWalkLeft_stepConfig_p1_one_head {L : Nat}
+    (c : Configuration (M := zoneWalkLeft.toPhased.toTM) L)
+    {i : Fin 6} {s : Unit} (hi : i.val = 1) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = true) :
+    (TM.stepConfig (M := zoneWalkLeft.toPhased.toTM) c).head = c.head := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp [ConstStatePhasedProgram.toPhased, zoneWalkLeft, hi, hbit, Configuration.moveHead]
+
+/-- φ1 (peek) on a `0`: the base sentinel — advance to the done phase `5`, head stays. -/
+theorem zoneWalkLeft_stepConfig_p1_zero_phase {L : Nat}
+    (c : Configuration (M := zoneWalkLeft.toPhased.toTM) L)
+    {i : Fin 6} {s : Unit} (hi : i.val = 1) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = false) :
+    ((TM.stepConfig (M := zoneWalkLeft.toPhased.toTM) c).state).fst.val = 5 := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp [ConstStatePhasedProgram.toPhased, zoneWalkLeft, hi, hbit]
+
+theorem zoneWalkLeft_stepConfig_p1_zero_head {L : Nat}
+    (c : Configuration (M := zoneWalkLeft.toPhased.toTM) L)
+    {i : Fin 6} {s : Unit} (hi : i.val = 1) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = false) :
+    (TM.stepConfig (M := zoneWalkLeft.toPhased.toTM) c).head = c.head := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp [ConstStatePhasedProgram.toPhased, zoneWalkLeft, hi, hbit, Configuration.moveHead]
+
+/-- φ1 (peek), either bit: the tape is unchanged. -/
+theorem zoneWalkLeft_stepConfig_p1_tape {L : Nat}
+    (c : Configuration (M := zoneWalkLeft.toPhased.toTM) L)
+    {i : Fin 6} {s : Unit} (hi : i.val = 1) (hstate : c.state = ⟨i, s⟩) :
+    (TM.stepConfig (M := zoneWalkLeft.toPhased.toTM) c).tape = c.tape := by
+  have hwrite : (TM.stepConfig (M := zoneWalkLeft.toPhased.toTM) c).tape
+      = c.write c.head (c.tape c.head) := by
+    unfold TM.stepConfig
+    rw [hstate]
+    simp only [PhasedProgram.toTM_step]
+    simp [ConstStatePhasedProgram.toPhased, zoneWalkLeft, hi]
+    cases c.tape c.head <;> simp
+  rw [hwrite]
+  funext j
+  by_cases hj : j = c.head
+  · subst hj; simp [Configuration.write]
+  · simp [Configuration.write, hj]
+
+/-- φ2 (walk a field's ones) on a `1`: the phase stays `2`, the head moves left. -/
+theorem zoneWalkLeft_stepConfig_p2_one_phase {L : Nat}
+    (c : Configuration (M := zoneWalkLeft.toPhased.toTM) L)
+    {i : Fin 6} {s : Unit} (hi : i.val = 2) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = true) :
+    ((TM.stepConfig (M := zoneWalkLeft.toPhased.toTM) c).state).fst.val = 2 := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp [ConstStatePhasedProgram.toPhased, zoneWalkLeft, hi, hbit]
+
+theorem zoneWalkLeft_stepConfig_p2_one_head {L : Nat}
+    (c : Configuration (M := zoneWalkLeft.toPhased.toTM) L)
+    {i : Fin 6} {s : Unit} (hi : i.val = 2) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = true) :
+    (TM.stepConfig (M := zoneWalkLeft.toPhased.toTM) c).head
+      = Configuration.moveHead (c := c) Move.left := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp [ConstStatePhasedProgram.toPhased, zoneWalkLeft, hi, hbit]
+
+theorem zoneWalkLeft_stepConfig_p2_one_tape {L : Nat}
+    (c : Configuration (M := zoneWalkLeft.toPhased.toTM) L)
+    {i : Fin 6} {s : Unit} (hi : i.val = 2) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = true) :
+    (TM.stepConfig (M := zoneWalkLeft.toPhased.toTM) c).tape = c.tape := by
+  have hwrite : (TM.stepConfig (M := zoneWalkLeft.toPhased.toTM) c).tape
+      = c.write c.head true := by
+    unfold TM.stepConfig
+    rw [hstate]
+    simp only [PhasedProgram.toTM_step]
+    simp [ConstStatePhasedProgram.toPhased, zoneWalkLeft, hi, hbit]
+  rw [hwrite]
+  funext j
+  by_cases hj : j = c.head
+  · subst hj; simp [Configuration.write, hbit]
+  · simp [Configuration.write, hj]
+
+/-- φ2 on a `0`: the field's left delimiter — advance to `3`, head stays. -/
+theorem zoneWalkLeft_stepConfig_p2_zero_phase {L : Nat}
+    (c : Configuration (M := zoneWalkLeft.toPhased.toTM) L)
+    {i : Fin 6} {s : Unit} (hi : i.val = 2) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = false) :
+    ((TM.stepConfig (M := zoneWalkLeft.toPhased.toTM) c).state).fst.val = 3 := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp [ConstStatePhasedProgram.toPhased, zoneWalkLeft, hi, hbit]
+
+theorem zoneWalkLeft_stepConfig_p2_zero_head {L : Nat}
+    (c : Configuration (M := zoneWalkLeft.toPhased.toTM) L)
+    {i : Fin 6} {s : Unit} (hi : i.val = 2) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = false) :
+    (TM.stepConfig (M := zoneWalkLeft.toPhased.toTM) c).head = c.head := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp [ConstStatePhasedProgram.toPhased, zoneWalkLeft, hi, hbit, Configuration.moveHead]
+
+theorem zoneWalkLeft_stepConfig_p2_zero_tape {L : Nat}
+    (c : Configuration (M := zoneWalkLeft.toPhased.toTM) L)
+    {i : Fin 6} {s : Unit} (hi : i.val = 2) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = false) :
+    (TM.stepConfig (M := zoneWalkLeft.toPhased.toTM) c).tape = c.tape := by
+  have hwrite : (TM.stepConfig (M := zoneWalkLeft.toPhased.toTM) c).tape
+      = c.write c.head false := by
+    unfold TM.stepConfig
+    rw [hstate]
+    simp only [PhasedProgram.toTM_step]
+    simp [ConstStatePhasedProgram.toPhased, zoneWalkLeft, hi, hbit]
+  rw [hwrite]
+  funext j
+  by_cases hj : j = c.head
+  · subst hj; simp [Configuration.write, hbit]
+  · simp [Configuration.write, hj]
+
+/-- φ3 (step off the delimiter): advance to `4`, head moves left, tape unchanged. -/
+theorem zoneWalkLeft_stepConfig_p3_phase {L : Nat}
+    (c : Configuration (M := zoneWalkLeft.toPhased.toTM) L)
+    {i : Fin 6} {s : Unit} (hi : i.val = 3) (hstate : c.state = ⟨i, s⟩) :
+    ((TM.stepConfig (M := zoneWalkLeft.toPhased.toTM) c).state).fst.val = 4 := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp [ConstStatePhasedProgram.toPhased, zoneWalkLeft, hi]
+
+theorem zoneWalkLeft_stepConfig_p3_head {L : Nat}
+    (c : Configuration (M := zoneWalkLeft.toPhased.toTM) L)
+    {i : Fin 6} {s : Unit} (hi : i.val = 3) (hstate : c.state = ⟨i, s⟩) :
+    (TM.stepConfig (M := zoneWalkLeft.toPhased.toTM) c).head
+      = Configuration.moveHead (c := c) Move.left := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp [ConstStatePhasedProgram.toPhased, zoneWalkLeft, hi]
+
+theorem zoneWalkLeft_stepConfig_p3_tape {L : Nat}
+    (c : Configuration (M := zoneWalkLeft.toPhased.toTM) L)
+    {i : Fin 6} {s : Unit} (hi : i.val = 3) (hstate : c.state = ⟨i, s⟩) :
+    (TM.stepConfig (M := zoneWalkLeft.toPhased.toTM) c).tape = c.tape := by
+  have hwrite : (TM.stepConfig (M := zoneWalkLeft.toPhased.toTM) c).tape
+      = c.write c.head (c.tape c.head) := by
+    unfold TM.stepConfig
+    rw [hstate]
+    simp only [PhasedProgram.toTM_step]
+    simp [ConstStatePhasedProgram.toPhased, zoneWalkLeft, hi]
+  rw [hwrite]
+  funext j
+  by_cases hj : j = c.head
+  · subst hj; simp [Configuration.write]
+  · simp [Configuration.write, hj]
+
+/-- φ4 (confirm next block) on a `1`: re-enter the peek loop at `1`, head moves left. -/
+theorem zoneWalkLeft_stepConfig_p4_one_phase {L : Nat}
+    (c : Configuration (M := zoneWalkLeft.toPhased.toTM) L)
+    {i : Fin 6} {s : Unit} (hi : i.val = 4) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = true) :
+    ((TM.stepConfig (M := zoneWalkLeft.toPhased.toTM) c).state).fst.val = 1 := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp [ConstStatePhasedProgram.toPhased, zoneWalkLeft, hi, hbit]
+
+theorem zoneWalkLeft_stepConfig_p4_one_head {L : Nat}
+    (c : Configuration (M := zoneWalkLeft.toPhased.toTM) L)
+    {i : Fin 6} {s : Unit} (hi : i.val = 4) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = true) :
+    (TM.stepConfig (M := zoneWalkLeft.toPhased.toTM) c).head
+      = Configuration.moveHead (c := c) Move.left := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp [ConstStatePhasedProgram.toPhased, zoneWalkLeft, hi, hbit]
+
+/-- φ4 on a `0`: the sentinel reached via the confirm path — advance to the done phase `5`, head stays. -/
+theorem zoneWalkLeft_stepConfig_p4_zero_phase {L : Nat}
+    (c : Configuration (M := zoneWalkLeft.toPhased.toTM) L)
+    {i : Fin 6} {s : Unit} (hi : i.val = 4) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = false) :
+    ((TM.stepConfig (M := zoneWalkLeft.toPhased.toTM) c).state).fst.val = 5 := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp [ConstStatePhasedProgram.toPhased, zoneWalkLeft, hi, hbit]
+
+theorem zoneWalkLeft_stepConfig_p4_zero_head {L : Nat}
+    (c : Configuration (M := zoneWalkLeft.toPhased.toTM) L)
+    {i : Fin 6} {s : Unit} (hi : i.val = 4) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = false) :
+    (TM.stepConfig (M := zoneWalkLeft.toPhased.toTM) c).head = c.head := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp [ConstStatePhasedProgram.toPhased, zoneWalkLeft, hi, hbit, Configuration.moveHead]
+
+theorem zoneWalkLeft_stepConfig_p4_tape {L : Nat}
+    (c : Configuration (M := zoneWalkLeft.toPhased.toTM) L)
+    {i : Fin 6} {s : Unit} (hi : i.val = 4) (hstate : c.state = ⟨i, s⟩) :
+    (TM.stepConfig (M := zoneWalkLeft.toPhased.toTM) c).tape = c.tape := by
+  have hwrite : (TM.stepConfig (M := zoneWalkLeft.toPhased.toTM) c).tape
+      = c.write c.head (c.tape c.head) := by
+    unfold TM.stepConfig
+    rw [hstate]
+    simp only [PhasedProgram.toTM_step]
+    simp [ConstStatePhasedProgram.toPhased, zoneWalkLeft, hi]
+    cases c.tape c.head <;> simp
+  rw [hwrite]
+  funext j
+  by_cases hj : j = c.head
+  · subst hj; simp [Configuration.write]
+  · simp [Configuration.write, hj]
+
+/-! ### The field sub-scan: φ2 walks a block's `1`s leftward (the inner loop)
+
+The reusable inner step of the walk: from φ2 sitting on the rightmost `1` of a field block whose `j`
+cells `(head − j, head]` are all `1`, after `j` steps φ2 has retreated `j` cells (still in φ2), tape
+unchanged — the exact `selfLoopScanLeftOne`-shaped invariant, specialised to `zoneWalkLeft`'s φ2. -/
+theorem zoneWalkLeft_runConfig_p2_scanning {L : Nat}
+    (c0 : Configuration (M := zoneWalkLeft.toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = 2) :
+    ∀ j : Nat, j ≤ (c0.head : Nat) →
+      (∀ p : Fin (zoneWalkLeft.toPhased.toTM.tapeLength L),
+        (c0.head : Nat) - j < (p : Nat) → (p : Nat) ≤ (c0.head : Nat) → c0.tape p = true) →
+      (((TM.runConfig (M := zoneWalkLeft.toPhased.toTM) c0 j).state).fst : Nat) = 2
+      ∧ ((TM.runConfig (M := zoneWalkLeft.toPhased.toTM) c0 j).head : Nat) = (c0.head : Nat) - j
+      ∧ (TM.runConfig (M := zoneWalkLeft.toPhased.toTM) c0 j).tape = c0.tape := by
+  intro j
+  induction j with
+  | zero => intro _ _; exact ⟨hphase, by simp, rfl⟩
+  | succ j ih =>
+      intro hj h1
+      obtain ⟨hph, hhd, htp⟩ := ih (by omega) (fun p hp1 hp2 => h1 p (by omega) hp2)
+      rw [TM.runConfig_succ]
+      set c := TM.runConfig (M := zoneWalkLeft.toPhased.toTM) c0 j with hc
+      have hbit : c.tape c.head = true := by
+        rw [htp]; exact h1 c.head (by rw [hhd]; omega) (by rw [hhd]; omega)
+      have hheadne : ¬ (c.head : Nat) = 0 := by rw [hhd]; omega
+      have hstate : c.state = ⟨c.state.fst, c.state.snd⟩ := rfl
+      refine ⟨?_, ?_, ?_⟩
+      · exact zoneWalkLeft_stepConfig_p2_one_phase c hph hstate hbit
+      · rw [zoneWalkLeft_stepConfig_p2_one_head c hph hstate hbit]
+        simp only [Configuration.moveHead, dif_neg hheadne]
+        rw [hhd]; omega
+      · rw [zoneWalkLeft_stepConfig_p2_one_tape c hph hstate hbit, htp]
+
 end ContractExpansion
 end Frontier
 end Pnp4

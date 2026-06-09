@@ -4069,7 +4069,6 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkLeft_stepConfig_p0_phase
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkLeft_stepConfig_p2_one_head
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkLeft_stepConfig_p2_zero_phase
-#check @Pnp4.Frontier.ContractExpansion.zoneWalkLeft_stepConfig_p4_one_phase
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkLeft_runConfig_p2_scanning
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true

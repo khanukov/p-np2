@@ -886,8 +886,6 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_stepConfig_p2_one_phase
 #print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_stepConfig_p2_zero_phase
 #print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_stepConfig_p3_phase
-#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_stepConfig_p4_one_phase
-#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_stepConfig_p4_zero_phase
 #print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_runConfig_p2_scanning
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true

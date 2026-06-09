@@ -77,6 +77,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPStackFlattenValueStack
 import Pnp4.Frontier.ContractExpansion.TreeMCSPNatStack
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCtrlFrameStack
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStack
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -773,6 +774,14 @@ end Pnp4
 -- D2t-5b: the preorder-streaming driver (control + value stacks, settle cascade) produces the postorder
 -- flatten — the pure spec the on-tape D2t-5b loop realises.
 #print axioms Pnp4.Frontier.ContractExpansion.driveWORK_eq_flatten
+-- D2t-5b: small-step (one-micro-step) driver semantics — iterating `step` reproduces `settle`/`drive`,
+-- leaves the postorder flatten in WORK, and a measure that strictly decreases off terminal states.
+#print axioms Pnp4.Frontier.ContractExpansion.step_iterate_settle
+#print axioms Pnp4.Frontier.ContractExpansion.step_iterate_processToken
+#print axioms Pnp4.Frontier.ContractExpansion.step_iterate_drive
+#print axioms Pnp4.Frontier.ContractExpansion.driveStep_out_eq_flatten
+#print axioms Pnp4.Frontier.ContractExpansion.DriveState.step_terminal
+#print axioms Pnp4.Frontier.ContractExpansion.DriveState.mu_step_lt
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

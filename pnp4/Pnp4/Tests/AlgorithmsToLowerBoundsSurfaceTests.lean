@@ -87,6 +87,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPStackFlattenValueStack
 import Pnp4.Frontier.ContractExpansion.TreeMCSPNatStack
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCtrlFrameStack
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStack
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -3964,6 +3965,14 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.decodeCtrlStack_encodeCtrlStack
 -- D2t-5b: preorder-streaming driver (control + value stacks) produces the postorder flatten.
 #check @Pnp4.Frontier.ContractExpansion.driveWORK_eq_flatten
+-- D2t-5b: small-step driver semantics — `step` iterated reproduces `settle`/`drive`/`flatten`, with a
+-- strictly-decreasing termination measure (the `μ` for the on-tape `loopUntilSink` driver).
+#check @Pnp4.Frontier.ContractExpansion.step_iterate_settle
+#check @Pnp4.Frontier.ContractExpansion.step_iterate_processToken
+#check @Pnp4.Frontier.ContractExpansion.step_iterate_drive
+#check @Pnp4.Frontier.ContractExpansion.driveStep_out_eq_flatten
+#check @Pnp4.Frontier.ContractExpansion.DriveState.step_terminal
+#check @Pnp4.Frontier.ContractExpansion.DriveState.mu_step_lt
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

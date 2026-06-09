@@ -85,6 +85,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPLoopUntilSink
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateStreamDecoder
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateStreamReachesSink
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTreeTagDispatch
+import Pnp4.Frontier.ContractExpansion.TreeMCSPReadCtrlFrameTag
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCountdownLeft
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillComposition
@@ -930,6 +931,11 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.treeTagDispatch_neverMovesLeft
 #print axioms Pnp4.Frontier.ContractExpansion.treeTagDispatch_runConfig_input
 #print axioms Pnp4.Frontier.ContractExpansion.treeTagDispatch_runConfig_or
+-- D2t-5b: control-frame tag reader (settle/pop entry) — a fixed-phase unary trie dispatching on the top
+-- frame's tag (`tnot`/`tand`/`tor`), the control-frame analogue of `treeTagDispatch`.
+#print axioms Pnp4.Frontier.ContractExpansion.readCtrlFrameTag_runConfig_tnot
+#print axioms Pnp4.Frontier.ContractExpansion.readCtrlFrameTag_runConfig_tand
+#print axioms Pnp4.Frontier.ContractExpansion.readCtrlFrameTag_runConfig_tor
 #print axioms Pnp4.Frontier.ContractExpansion.treeTagDispatch_runConfig_malformed
 #print axioms Pnp4.Frontier.ContractExpansion.runConfig_head_val_ge
 #print axioms Pnp4.Frontier.ContractExpansion.runConfig_head_dist_le

@@ -86,6 +86,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverStrongInv
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDrivePending
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryTransferRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverCorridor
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalk
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -877,6 +878,15 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_cons
 #print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_getLast_true
 #print axioms Pnp4.Frontier.ContractExpansion.driverCorridorInv_init
+-- D2t-5b (Block A4w): the corridor zone walker — step semantics for every phase + the inner field
+-- sub-scan (φ2 walks a block's 1s leftward), the reusable foundation of the cross-zone routes.
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_stepConfig_p0_phase
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_stepConfig_p1_one_phase
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_stepConfig_p1_zero_phase
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_stepConfig_p2_one_phase
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_stepConfig_p2_zero_phase
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_stepConfig_p3_phase
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_runConfig_p2_scanning
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

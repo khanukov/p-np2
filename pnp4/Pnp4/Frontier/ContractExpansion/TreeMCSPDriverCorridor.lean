@@ -22,7 +22,8 @@ scan over a guaranteed-all-`0` corridor onto a guaranteed-`1` anchor**:
   exactly on the next stack's top; each stack carries a permanent **base sentinel `1`** at its base
   cell, so the same scan is sound when the stack is empty — and "control stack empty" (the A1b sink
   test) becomes *land on a `1`, peek one cell left: a `0` means the base sentinel* (frame tag blocks
-  are stored with **`tagCode + 2 ≥ 2` ones**, so a frame's right edge always has two `1`s);
+  carry **`tagCode + 2 ≥ 2` ones** and value blocks **`v + 2 ≥ 2` ones**, so during a zone walk a
+  field edge is never confused with the single-`1` sentinel);
 * the **WORK frontier marker** `FM` is a single `1` just past the last record: the hop val → frontier
   is a leftward 0-scan onto `FM`; a record append overwrites `FM` and re-plants it at the new
   frontier.  Inside a record, the A2 transfer's home delimiters come for free: every operand field is
@@ -47,12 +48,14 @@ open Pnp3.Internal.PsubsetPpoly.TM.Encoding
 
 /-! ### Right-anchored (corridor) stack codecs -/
 
-/-- A right-anchored value entry: `[0] ++ 1^(v+1)` — the left `0` delimits, the field is read
-right-to-left, and the **rightmost cell is a `1`** (the scan anchor), index `0` included. -/
+/-- A right-anchored value entry: `[0] ++ 1^(v+2)` — the left `0` delimits, the field is read
+right-to-left, and the **rightmost cell is a `1`** (the scan anchor), index `0` included.  The block
+carries `v + 2 ≥ 2` ones so that during a zone walk a value field is never confused with the
+**single-`1` base sentinel** (the same `≥ 2` discipline as the control frames' tag blocks). -/
 def encodeNatEntryR (v : Nat) : List Bool :=
-  false :: List.replicate (v + 1) true
+  false :: List.replicate (v + 2) true
 
-@[simp] theorem encodeNatEntryR_length (v : Nat) : (encodeNatEntryR v).length = v + 2 := by
+@[simp] theorem encodeNatEntryR_length (v : Nat) : (encodeNatEntryR v).length = v + 3 := by
   simp [encodeNatEntryR]
 
 /-- The right-anchored value stack: a permanent base sentinel `1` at the base cell, then the entries
@@ -79,16 +82,16 @@ theorem encodeNatStackR_getLast_true (S : List Nat) :
   | cons v rest =>
       rw [encodeNatStackR_cons, List.getLast?_append_of_ne_nil]
       · show (encodeNatEntryR v).getLast? = some true
-        rw [show encodeNatEntryR v = [false] ++ List.replicate (v + 1) true from rfl]
+        rw [show encodeNatEntryR v = [false] ++ List.replicate (v + 2) true from rfl]
         rw [List.getLast?_append_of_ne_nil]
         · rw [List.getLast?_replicate]
           simp
         · simp
       · simp [encodeNatEntryR]
 
-/-- Exact length of the right-anchored value stack: `1 + Σ (vᵢ + 2)`. -/
+/-- Exact length of the right-anchored value stack: `1 + Σ (vᵢ + 3)`. -/
 theorem encodeNatStackR_length (S : List Nat) :
-    (encodeNatStackR S).length = 1 + (S.map (· + 2)).sum := by
+    (encodeNatStackR S).length = 1 + (S.map (· + 3)).sum := by
   induction S with
   | nil => rfl
   | cons v rest ih => rw [encodeNatStackR_cons]; simp [encodeNatEntryR, ih]; omega

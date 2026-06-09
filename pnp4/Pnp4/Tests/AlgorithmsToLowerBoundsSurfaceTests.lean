@@ -80,6 +80,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPWriteBits
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPushCtrlFrame
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPushCtrlFrameRealizes
 import Pnp4.Frontier.ContractExpansion.TreeMCSPWriteNatField
+import Pnp4.Frontier.ContractExpansion.TreeMCSPWriteBitsExtends
 import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitInputRecord
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStackFlatten
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStackFlattenValueStack
@@ -3943,6 +3944,8 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.pushCtrlFrame_extends_ctrlStack
 -- D2t-5a value-stack write + bridge: writeNatField realises the value-stack push (encodeNatStack cons).
 #check @Pnp4.Frontier.ContractExpansion.writeNatField_extends_natStack
+-- D2t-5a: generic write-extends-window lemma (reusable across all fixed-width driver writes).
+#check @Pnp4.Frontier.ContractExpansion.writeBits_extends_windowSpells
 -- D2t-4b leaf emit (core): binary→unary index realised as `unaryField i` on the tape (sentinel preserved).
 #check @Pnp4.Frontier.ContractExpansion.emitInputRecord_runConfig_unaryField
 -- D2t-5 pure core: stack linearization `runSteps (toSteps c) []` = structural `flattenAt 0 c`.

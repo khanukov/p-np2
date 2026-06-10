@@ -144,6 +144,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPCtrlTopWalk
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRemWalk
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDecIterProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDecIterRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCertTrie
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -4301,6 +4302,9 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.decIter_run_tnot
 #check @Pnp4.Frontier.ContractExpansion.decIter_run_tand
 #check @Pnp4.Frontier.ContractExpansion.decIter_run_tor
+-- D2t-5b (Block A5m-5a): the certificate tag trie and its verdict hops.
+#check @Pnp4.Frontier.ContractExpansion.certTrie
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_certTrie_not_hop
 #check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_rem_pop_hop
 #check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_rem_dec_hop
 #check @Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_remBlock_true

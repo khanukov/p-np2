@@ -108,6 +108,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPEraseLeftMark
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorPushFrame
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorNodeStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitTape
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -4141,6 +4142,11 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- D2t-5b (Block A4a): the node-arm keystone (tape transformer re-establishes the invariant).
 #check @Pnp4.Frontier.ContractExpansion.nodeStepTape
 #check @Pnp4.Frontier.ContractExpansion.corridorInv_nodeStep
+-- D2t-5b (Block A4a): the leaf-emit output-region helper (count increment + record append).
+#check @Pnp4.Frontier.ContractExpansion.emitTape
+#check @Pnp4.Frontier.ContractExpansion.gateStream_emit_eq
+#check @Pnp4.Frontier.ContractExpansion.emitTape_output_window
+#check @Pnp4.Frontier.ContractExpansion.emitTape_FM
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p3_zero_phase
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true

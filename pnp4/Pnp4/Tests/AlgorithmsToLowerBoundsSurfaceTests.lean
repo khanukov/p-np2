@@ -4293,6 +4293,8 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_tagSep_false
 -- D2t-5b (Block A5m-4b): the rem-block walk component and its codec facts.
 #check @Pnp4.Frontier.ContractExpansion.remWalk
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_rem_pop_hop
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_rem_dec_hop
 #check @Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_remBlock_true
 #check @Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_frameBase_false
 -- D2t-5b (Block A5m-4a, hops): the four ctrlTopWalk verdict hops.

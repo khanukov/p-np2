@@ -1174,6 +1174,8 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_tagSep_false
 -- D2t-5b (Block A5m-4b): remWalk -- the rem-block read from the separator to the frame base
 -- (2 ones = rem 1 / pop, 3 ones = rem 2 / dec), with the rem-block / frame-base codec facts.
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_rem_pop_hop
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_rem_dec_hop
 #print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_remBlock_true
 #print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_frameBase_false
 -- D2t-5b (Block A5m-4a, hops): the four host-generic ctrlTopWalk verdict hops -- empty (3 steps),

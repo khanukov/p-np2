@@ -118,6 +118,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftSeqP1
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanRoundTrip
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverRealization
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTranscoderCapstone
+import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbe
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -1091,6 +1092,12 @@ end Pnp4
 -- Circuit.eval c on every input -- the end-to-end transcoder capstone shape.
 #print axioms Pnp4.Frontier.ContractExpansion.DriverRealization.transcodes
 #print axioms Pnp4.Frontier.ContractExpansion.DriverRealization.transcodes_faithful
+-- D2t-5b (Block A5m-2): the settle probe -- the control-stack empty test at the top anchor (peek
+-- left: a frame's tag block is all-1, the lone base sentinel is followed left by the dead corridor),
+-- with the two 2-step verdict runs under driverCorridorInv.
+#print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_penultimate_true
+#print axioms Pnp4.Frontier.ContractExpansion.settleProbe_runConfig_frame
+#print axioms Pnp4.Frontier.ContractExpansion.settleProbe_runConfig_empty
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

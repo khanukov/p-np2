@@ -1480,8 +1480,13 @@ The **semantic (tape-level) half of the A5 loop discharge is settled**:
    (`mu_step_lt` / `step_terminal_at_mu`), and the coupling "machine tape after `j` iterations
    `= driverTapes … j`" — at which point `driverTapes_terminal_output` pins the final tape;
 4. **capacity discharge** — `DriverStepFits` at every reachable step from zone sizing (reachable-state
-   bounds: `out` is a prefix of `(flatten c).gates`, stack widths bounded by `c.size`), turning the
-   `hfits` hypotheses into theorems for a corridor sized polynomially in the certificate.
+   bounds), turning the `hfits` hypotheses into theorems for a corridor sized polynomially in the
+   certificate.  **Part 1 landed** (`TreeMCSPDriverReachBound.lean`): `reachable_outLen_le_size`
+   (`out` never outgrows `(flatten c).gates`, so `out.length ≤ c.size` along the run — `out`-length
+   monotone under `step`, pinned by `driveStep_halts_bound`) and `reachable_valEntry_lt_size` (every
+   value-stack index is a valid back-reference `< c.size`, via the step-invariant
+   `ValEntriesBounded`).  Remaining: the operand/record-size bound (`gateRecordSize` via SLP validity)
+   and the stack-depth bounds, then assembling `DriverStepFits` for a polynomially-sized corridor.
 
 All keystones and cores are kernel-checked, standard `[propext, Classical.choice, Quot.sound]` triple
 only.  This is **Infrastructure** for the NP-verifier track (input (2) of `verifiedSource_treePoly`); it

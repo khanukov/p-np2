@@ -1514,6 +1514,19 @@ verdict runs under the invariant), and A5m-3a (`TreeMCSPAtomSeqP1.lean` — `ste
 `stepRightOnce` / probe-empty as P1 legs with handoff).  **The one remaining input to D2t-6b is a
 `DriverRealization` instance** (the arms + dispatch).
 
+**Assembly pivot (A5m-U1, landed).**  Per-arm `seq` pipelines cannot merge into one *branching*
+machine (`seq` is linear), so the driver instance is assembled instead as a **region union**: one
+program whose phase space hosts the merged components at offsets, each region obeying the
+`RegionEmbedded` contract (`TreeMCSPRegionEmbed.lean` — host transition = component's, shifted,
+accept **redirected** to the successor region; six generic `stepConfig` transfer lemmas mirror the
+`seq` P1-simulation).  Branching is free: regions redirect to different successors, and the probes'
+two verdict phases route to different arms.  Per-segment run inductions are re-run on the host via
+the generic step lemmas (the established ~30-line pattern, no configuration transport).  The
+remaining assembly: define the driver as the region union of `treeTagDispatch` /
+`settleProbe(Frame)` / the scans / the writers, prove the per-region run segments, the per-iteration
+home-to-home theorem, and instantiate `DriverRealization` — at which point
+`DriverRealization.transcodes(_faithful)` close D2t-6b unconditionally.
+
 **Next brick (A5m-3, the clear arm)** — pipeline
 `seq stepLeftOnce (seq selfLoopScanLeft (seq settleProbe (seq stepRightOnce (seq stepRightOnce
 gammaSelfLoopScan))))` under `driverCorridorInv` with `st.ctrl = []`: home `M` → step left → scan

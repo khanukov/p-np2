@@ -131,6 +131,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPTranscoderCapstone
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbe
 import Pnp4.Frontier.ContractExpansion.TreeMCSPAtomSeqP1
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbeFrame
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionEmbed
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -4249,6 +4250,10 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- D2t-5b (Block A5m-3b): the frame-accepting probe and its P1 leg.
 #check @Pnp4.Frontier.ContractExpansion.settleProbeFrame
 #check @Pnp4.Frontier.ContractExpansion.settleProbeFrame_seq_runConfig_frame_handoff
+-- D2t-5b (Block A5m-U1): the generic region contract and its step transfers.
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbedded
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbedded.stepConfig_normal_phase
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbedded.stepConfig_accept_phase
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p3_zero_phase
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true

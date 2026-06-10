@@ -143,6 +143,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionWriteSegment
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCtrlTopWalk
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRemWalk
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDecIterProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDecIterRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -4296,6 +4297,8 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.remWalk
 #check @Pnp4.Frontier.ContractExpansion.decIterProgram
 #check @Pnp4.Frontier.ContractExpansion.decIter_region_ctrlTopWalk
+-- D2t-5b (Block A5m-4 run): the dec iteration end to end (tnot).
+#check @Pnp4.Frontier.ContractExpansion.decIter_run_tnot
 #check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_rem_pop_hop
 #check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_rem_dec_hop
 #check @Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_remBlock_true

@@ -109,6 +109,9 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorSettleClear
 import Pnp4.Frontier.ContractExpansion.TreeMCSPValReplaceTop
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorPopStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorTerminalStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorLeafLast
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverStepTape
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverTapes
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -1034,6 +1037,20 @@ end Pnp4
 -- D2t-5b (Block A4f): the terminal no-op keystone — toks = [], not settling; step is the identity,
 -- the invariant transports verbatim.  Completes Block A4 (all DriveState.step branches covered).
 #print axioms Pnp4.Frontier.ContractExpansion.corridorInv_terminalStep
+-- D2t-5b (Block A5a): totality gap-fillers — the generic flag drop (covers the unreachable
+-- operand-underflow / rem = 0 settle branches) and the last-leaf keystone (every valid preorder
+-- ends with a leaf; the reading keystones all required a nonempty tail).
+#print axioms Pnp4.Frontier.ContractExpansion.corridorInv_clearFlag
+#print axioms Pnp4.Frontier.ContractExpansion.corridorInv_leafStep_last
+-- D2t-5b (Block A5b): the total one-step tape dispatcher — driverStepTape (the branch-dispatched
+-- tape transformer mirroring DriveState.step), DriverStepFits (zone-capacity side conditions), and
+-- the dispatcher keystone: the invariant is preserved from st to st.step across driverStepTape.
+#print axioms Pnp4.Frontier.ContractExpansion.corridorInv_driverStep
+-- D2t-5b (Block A5c): the iterated tape run — the loop-invariant induction at the tape level, and
+-- the transcoder's semantic endpoint: after 3·c.size micro-steps the output window spells
+-- encodeGateStream (flatten c).gates (the count-prefixed postorder stream the interpreter reads).
+#print axioms Pnp4.Frontier.ContractExpansion.corridorInv_driverTapes
+#print axioms Pnp4.Frontier.ContractExpansion.driverTapes_terminal_output
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

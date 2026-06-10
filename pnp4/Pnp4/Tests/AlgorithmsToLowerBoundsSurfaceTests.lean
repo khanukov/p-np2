@@ -119,6 +119,9 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorSettleClear
 import Pnp4.Frontier.ContractExpansion.TreeMCSPValReplaceTop
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorPopStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorTerminalStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorLeafLast
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverStepTape
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverTapes
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -4192,6 +4195,17 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.getD_replicate_false
 -- D2t-5b (Block A4f): the terminal no-op keystone (toks = [], step = id) — completes Block A4.
 #check @Pnp4.Frontier.ContractExpansion.corridorInv_terminalStep
+-- D2t-5b (Block A5a): totality gap-fillers — generic flag drop + the last-leaf keystone.
+#check @Pnp4.Frontier.ContractExpansion.corridorInv_clearFlag
+#check @Pnp4.Frontier.ContractExpansion.corridorInv_leafStep_last
+-- D2t-5b (Block A5b): the total one-step tape dispatcher and its keystone.
+#check @Pnp4.Frontier.ContractExpansion.driverStepTape
+#check @Pnp4.Frontier.ContractExpansion.DriverStepFits
+#check @Pnp4.Frontier.ContractExpansion.corridorInv_driverStep
+-- D2t-5b (Block A5c): the iterated tape run, its invariant, and the transcoder's semantic endpoint.
+#check @Pnp4.Frontier.ContractExpansion.driverTapes
+#check @Pnp4.Frontier.ContractExpansion.corridorInv_driverTapes
+#check @Pnp4.Frontier.ContractExpansion.driverTapes_terminal_output
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p3_zero_phase
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true

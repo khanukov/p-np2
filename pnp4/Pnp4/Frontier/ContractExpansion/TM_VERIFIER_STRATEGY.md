@@ -1444,6 +1444,45 @@ residual machine work is Block A5: the on-tape `driverBody` (assemble each arm's
 components and equate its final tape with the keystone transformer), the cross-region seeks, and the
 `loopUntilSink_reachesSink` discharge (items 1–3 above), now stated against `driverCorridorInv`.
 
+### D2t-5b Block A5 — semantic spine LANDED (A5a–A5c); machine half remaining
+
+The **semantic (tape-level) half of the A5 loop discharge is settled**:
+
+* **A5a — totality gap-fillers** (`TreeMCSPCorridorLeafLast.lean`).  Assembling the total dispatcher
+  surfaced two keystone-layer gaps: every reading keystone required a **nonempty tail**, yet every
+  valid preorder *ends* with a leaf — `corridorInv_leafStep_last` covers the final token,
+  generically over the leaf gate; and `corridorInv_clearFlag` transports the invariant across any
+  `settling := true → false` flip on the same tape (covering the unreachable operand-underflow and
+  `rem = 0` settle branches; generalises `corridorInv_settleClearStep`).
+* **A5b — the total one-step dispatcher** (`TreeMCSPDriverStepTape.lean`).  `driverStepTape` is the
+  branch-dispatched tape transformer mirroring `DriveState.step`'s match structure (emit/dec/leaf/
+  node arms; identity on flag-only and terminal branches); `DriverStepFits` packages each branch's
+  zone-capacity side conditions; `corridorInv_driverStep` proves invariant preservation `st → st.step`
+  across it, for **every** state — the per-iteration fact the loop induction consumes.  Invalid leaf
+  tokens are refuted from the invariant's own `ValidCertTokens` clause.
+* **A5c — the iterated run + terminal output** (`TreeMCSPDriverTapes.lean`).  `driverTapes` iterates
+  the dispatcher along the abstract run; `corridorInv_driverTapes` is the loop-invariant induction;
+  and **`driverTapes_terminal_output`**: from the `driverCorridorInv_init` layout, after `3 · c.size`
+  micro-steps (`driveStep_halts_bound`) the output window spells
+  **`encodeGateStream (flatten c).gates`** — the transcoder's semantic endpoint at tape level.
+
+**Remaining for A5 (the machine half, multi-session):**
+
+1. **arm realisation** — per branch, a composed `ConstStatePhasedProgram` (the navigation legs
+   `corridor_scan_*` / `corridor_walk_*` / `corridor_back_*`, the reads `treeTagDispatch` /
+   `readCtrlFrameTag` / `readCtrlFrameRemaining`, the writes `writeBits` / `pushCtrlFrame` /
+   `unaryTransfer` are all merged) whose run-from-home effects exactly `driverStepTape st` and
+   returns the head home — the `seq`/`seqP2` transfer layer is the cost;
+2. **dispatch** — the branch decision at home (settling flag in finite control; sentinel-empty peek;
+   `readCtrlFrameRemaining` 1-vs-≥2; the tag trie), entering the matching arm;
+3. **the `Configuration`-level loop** — `loopUntilSink driverBody` with sink soundness/existence
+   (A1b `driver_sink_sound` / `driver_sink_exists`), measure `μ := DriveState.mu ∘ decode`
+   (`mu_step_lt` / `step_terminal_at_mu`), and the coupling "machine tape after `j` iterations
+   `= driverTapes … j`" — at which point `driverTapes_terminal_output` pins the final tape;
+4. **capacity discharge** — `DriverStepFits` at every reachable step from zone sizing (reachable-state
+   bounds: `out` is a prefix of `(flatten c).gates`, stack widths bounded by `c.size`), turning the
+   `hfits` hypotheses into theorems for a corridor sized polynomially in the certificate.
+
 All keystones and cores are kernel-checked, standard `[propext, Classical.choice, Quot.sound]` triple
 only.  This is **Infrastructure** for the NP-verifier track (input (2) of `verifiedSource_treePoly`); it
 builds no machine yet and proves no separation.  **No `P ≠ NP` claim.**

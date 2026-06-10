@@ -132,6 +132,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPClearIterRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionWriteSegment
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCtrlTopWalk
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRemWalk
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDecIterProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -1178,6 +1179,12 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_rem_dec_hop
 #print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_remBlock_true
 #print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_frameBase_false
+-- D2t-5b (Block A5m-4 machine): the settle-dec iteration machine (69 phases; navigation +
+-- ctrlTopWalk + per-tag remWalks + per-tag frame rewrites + the shared return scan), with all ten
+-- region contracts by one instantiation each.
+#print axioms Pnp4.Frontier.ContractExpansion.decIter_region_ctrlTopWalk
+#print axioms Pnp4.Frontier.ContractExpansion.decIter_region_writeNot
+#print axioms Pnp4.Frontier.ContractExpansion.decIter_region_scanRight
 -- D2t-5b (Block A5m-4a, hops): the four host-generic ctrlTopWalk verdict hops -- empty (3 steps),
 -- tnot (4), tand (5), tor (6) -- each landing at its verdict's redirect target with the head on the
 -- separator (resp. the dead cell), tape unchanged.

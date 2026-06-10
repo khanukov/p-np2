@@ -87,6 +87,20 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPDrivePending
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryTransferRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverCorridor
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalk
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkFull
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorRoutes
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRight
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRightRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRightFull
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorRoutesBack
+import Pnp4.Frontier.ContractExpansion.TreeMCSPEraseLeftMark
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorPushFrame
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorDispatch
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorNodeStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitTape
+import Pnp4.Frontier.ContractExpansion.TreeMCSPValPush
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCursorStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -887,6 +901,94 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_stepConfig_p2_zero_phase
 #print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_stepConfig_p3_phase
 #print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_runConfig_p2_scanning
+-- D2t-5b (Block A4w): the zone-walk run segments — one field-block pass (φ0→φ1→φ2→φ3, m+4 steps,
+-- lands at the next block's rightmost cell) and the terminating sentinel pass (φ0→φ1, 2 steps, done).
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_runConfig_sentinel
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_runConfig_field_segment
+-- D2t-5b (Block A4w): the FULL zone walk — multi-block traversal by induction (Σ(kᵢ+3)+2 steps, done
+-- on the dead 0 left of the sentinel, tape unchanged), with both stack codecs as walkZone instances.
+#print axioms Pnp4.Frontier.ContractExpansion.walkZone_nil
+#print axioms Pnp4.Frontier.ContractExpansion.walkZone_cons
+#print axioms Pnp4.Frontier.ContractExpansion.walkZone_length
+#print axioms Pnp4.Frontier.ContractExpansion.encodeNatStackR_eq_walkZone
+#print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_eq_walkZone
+#print axioms Pnp4.Frontier.ContractExpansion.walkZoneSteps_cons
+#print axioms Pnp4.Frontier.ContractExpansion.getD_replicate_of_lt
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_runConfig_walkZone
+-- D2t-5b (Block A4r): the leftward cross-zone route — five legs (scan M→ctrl-top, walk ctrl, scan
+-- →val-top, walk val, scan →FM), each instantiated against driverCorridorInv's clauses.
+#print axioms Pnp4.Frontier.ContractExpansion.windowSpells_getLast_true
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_scan_M_to_ctrlTop
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_walk_ctrl
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_scan_to_valTop
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_walk_val
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_scan_to_FM
+-- D2t-5b (Block A4w): the RIGHTWARD zone walker (return legs) — step semantics; the two-dead-cell
+-- inter-zone gaps let one peek distinguish a block boundary (0,1) from the zone exit (0,0).
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p0_phase
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p1_zero_phase
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p2_one_phase
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p2_zero_phase
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p3_one_phase
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p3_zero_phase
+-- D2t-5b (Block A4w): the rightward run segments — φ3 ones-scan, one block pass (k+2 steps), the
+-- 2-step entry off the sentinel, and the 1-step exit on the second dead cell.
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_p3_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_block_segment
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_entry
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_exit
+-- D2t-5b (Block A4w): the FULL rightward traversal — inner bottom-first induction + the bridging
+-- identity (walkZone ++ [0] = [1,0] ++ innerSpell reverse) + entry; done on the second dead cell.
+#print axioms Pnp4.Frontier.ContractExpansion.innerSpell_nil
+#print axioms Pnp4.Frontier.ContractExpansion.innerSpell_cons
+#print axioms Pnp4.Frontier.ContractExpansion.innerSpell_length
+#print axioms Pnp4.Frontier.ContractExpansion.walkZone_append_false
+#print axioms Pnp4.Frontier.ContractExpansion.innerSteps_cons
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_inner
+#print axioms Pnp4.Frontier.ContractExpansion.windowSpells_snoc_false
+#print axioms Pnp4.Frontier.ContractExpansion.walkZoneStepsR_eq
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_walkZone
+-- D2t-5b (Block A4r): the return route FM→val→ctrl→M — arbitrary-config rightward 0-scan lemmas +
+-- five instantiated legs (the ctrl→cert gap widened to keep the walker's exit off the M slot).
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_runConfigFrom_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_runConfigFrom_terminator
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_valSentinel
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_back_walk_val
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_ctrlSentinel
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_back_walk_ctrl
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_M
+-- D2t-5b (Block A4a): eraseLeftMark — plant the new cursor marker and erase the consumed token
+-- (w+1 steps; exact final tape map: marker 1 at p, zeros on [p−w, p), all else untouched).
+#print axioms Pnp4.Frontier.ContractExpansion.eraseLeftMark_runConfig
+-- D2t-5b (Block A4a): the corridor control-frame push — writeBits appends to a spelled window;
+-- the grown window spells the pushed stack (the codec's cons equation), everything else untouched.
+#print axioms Pnp4.Frontier.ContractExpansion.writeBits_appends_window
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_push_ctrl_frame
+-- D2t-5b (Block A4a): the corridor token dispatch — the D2t-1 trie's cell hypotheses discharged from
+-- the invariant's certificate clause (windowSpells_cell; tail-nonemptiness gives the strict room).
+#print axioms Pnp4.Frontier.ContractExpansion.windowSpells_cell
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_dispatch_tnot
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_dispatch_tand
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_dispatch_tor
+-- D2t-5b (Block A4a): the node-arm KEYSTONE — the explicit six-leg tape transformer re-establishes
+-- driverCorridorInv for the stepped state (node branch of DriveState.step realised on tape).
+#print axioms Pnp4.Frontier.ContractExpansion.corridorInv_nodeStep
+-- D2t-5b (Block A4a): the leaf-emit output-region helper — count increment + record append at FM is
+-- exactly the new encodeGateStream window (reused by both the const and input keystones).
+#print axioms Pnp4.Frontier.ContractExpansion.gateStream_emit_eq
+#print axioms Pnp4.Frontier.ContractExpansion.emitTape_output_window
+#print axioms Pnp4.Frontier.ContractExpansion.emitTape_FM
+-- D2t-5b (Block A4a): the value-stack push as a written-block append (windowSpells extends by the new
+-- top entry); reused by both leaf arms and the settle pop-emit.
+#print axioms Pnp4.Frontier.ContractExpansion.windowSpells_writeAppend
+#print axioms Pnp4.Frontier.ContractExpansion.writeBlockTape_below
+#print axioms Pnp4.Frontier.ContractExpansion.writeBlockTape_above
+#print axioms Pnp4.Frontier.ContractExpansion.valPush_window
+-- D2t-5b (Block A4a): the cursor re-anchoring keystone — consuming a tlen-cell token re-establishes
+-- the four certificate-region clauses for the tail (the shared spine of all reading/settle keystones).
+#print axioms Pnp4.Frontier.ContractExpansion.windowSpells_congr
+#print axioms Pnp4.Frontier.ContractExpansion.cursorStepTape_off
+#print axioms Pnp4.Frontier.ContractExpansion.cursorStepTape_cert
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

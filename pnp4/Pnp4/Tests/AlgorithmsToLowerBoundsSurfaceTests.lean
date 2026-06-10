@@ -97,6 +97,20 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPDrivePending
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryTransferRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverCorridor
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalk
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkFull
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorRoutes
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRight
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRightRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRightFull
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorRoutesBack
+import Pnp4.Frontier.ContractExpansion.TreeMCSPEraseLeftMark
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorPushFrame
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorDispatch
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorNodeStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitTape
+import Pnp4.Frontier.ContractExpansion.TreeMCSPValPush
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCursorStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -4070,6 +4084,80 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkLeft_stepConfig_p2_one_head
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkLeft_stepConfig_p2_zero_phase
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkLeft_runConfig_p2_scanning
+-- D2t-5b (Block A4w): the zone-walk run segments (field-block pass + terminating sentinel pass).
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkLeft_runConfig_sentinel
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkLeft_runConfig_field_segment
+-- D2t-5b (Block A4w): the FULL zone walk (multi-block traversal) + codec instantiations.
+#check @Pnp4.Frontier.ContractExpansion.walkZone
+#check @Pnp4.Frontier.ContractExpansion.walkZone_length
+#check @Pnp4.Frontier.ContractExpansion.encodeNatStackR_eq_walkZone
+#check @Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_eq_walkZone
+#check @Pnp4.Frontier.ContractExpansion.walkZoneSteps
+#check @Pnp4.Frontier.ContractExpansion.getD_replicate_of_lt
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkLeft_runConfig_walkZone
+-- D2t-5b (Block A4r): the leftward cross-zone route (five instantiated legs).
+#check @Pnp4.Frontier.ContractExpansion.windowSpells_getLast_true
+#check @Pnp4.Frontier.ContractExpansion.corridor_scan_M_to_ctrlTop
+#check @Pnp4.Frontier.ContractExpansion.corridor_walk_ctrl
+#check @Pnp4.Frontier.ContractExpansion.corridor_scan_to_valTop
+#check @Pnp4.Frontier.ContractExpansion.corridor_walk_val
+#check @Pnp4.Frontier.ContractExpansion.corridor_scan_to_FM
+-- D2t-5b (Block A4w): the RIGHTWARD zone walker (return legs) — program + step semantics.
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkRight
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p0_phase
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p2_one_phase
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p2_zero_phase
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p3_one_phase
+-- D2t-5b (Block A4w): the rightward run segments (ones-scan / block pass / entry / exit).
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_p3_scanning
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_block_segment
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_entry
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_exit
+-- D2t-5b (Block A4w): the FULL rightward traversal (inner induction + bridge + entry).
+#check @Pnp4.Frontier.ContractExpansion.innerSpell
+#check @Pnp4.Frontier.ContractExpansion.innerSpell_length
+#check @Pnp4.Frontier.ContractExpansion.walkZone_append_false
+#check @Pnp4.Frontier.ContractExpansion.innerSteps
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_inner
+#check @Pnp4.Frontier.ContractExpansion.windowSpells_snoc_false
+#check @Pnp4.Frontier.ContractExpansion.walkZoneStepsR
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_walkZone
+-- D2t-5b (Block A4r): the return route (five instantiated rightward legs).
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_runConfigFrom_scanning
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_runConfigFrom_terminator
+#check @Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_valSentinel
+#check @Pnp4.Frontier.ContractExpansion.corridor_back_walk_val
+#check @Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_ctrlSentinel
+#check @Pnp4.Frontier.ContractExpansion.corridor_back_walk_ctrl
+#check @Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_M
+-- D2t-5b (Block A4a): eraseLeftMark (cursor advance: plant marker + erase consumed token).
+#check @Pnp4.Frontier.ContractExpansion.eraseLeftMark
+#check @Pnp4.Frontier.ContractExpansion.eraseLeftMark_runConfig
+-- D2t-5b (Block A4a): the corridor control-frame push (writeBits window append).
+#check @Pnp4.Frontier.ContractExpansion.writeBits_appends_window
+#check @Pnp4.Frontier.ContractExpansion.corridor_push_ctrl_frame
+-- D2t-5b (Block A4a): the corridor token dispatch (trie cell hypotheses from the cert clause).
+#check @Pnp4.Frontier.ContractExpansion.windowSpells_cell
+#check @Pnp4.Frontier.ContractExpansion.corridor_dispatch_tnot
+#check @Pnp4.Frontier.ContractExpansion.corridor_dispatch_tand
+#check @Pnp4.Frontier.ContractExpansion.corridor_dispatch_tor
+-- D2t-5b (Block A4a): the node-arm keystone (tape transformer re-establishes the invariant).
+#check @Pnp4.Frontier.ContractExpansion.nodeStepTape
+#check @Pnp4.Frontier.ContractExpansion.corridorInv_nodeStep
+-- D2t-5b (Block A4a): the leaf-emit output-region helper (count increment + record append).
+#check @Pnp4.Frontier.ContractExpansion.emitTape
+#check @Pnp4.Frontier.ContractExpansion.gateStream_emit_eq
+#check @Pnp4.Frontier.ContractExpansion.emitTape_output_window
+#check @Pnp4.Frontier.ContractExpansion.emitTape_FM
+-- D2t-5b (Block A4a): the value-stack push as a written-block append.
+#check @Pnp4.Frontier.ContractExpansion.writeBlockTape
+#check @Pnp4.Frontier.ContractExpansion.windowSpells_writeAppend
+#check @Pnp4.Frontier.ContractExpansion.valPush_window
+-- D2t-5b (Block A4a): the cursor re-anchoring keystone (shared cert spine of the reading/settle arms).
+#check @Pnp4.Frontier.ContractExpansion.windowSpells_congr
+#check @Pnp4.Frontier.ContractExpansion.cursorStepTape
+#check @Pnp4.Frontier.ContractExpansion.cursorStepTape_cert
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p3_zero_phase
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

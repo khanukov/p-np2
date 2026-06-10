@@ -119,6 +119,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPScanRoundTrip
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverRealization
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTranscoderCapstone
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbe
+import Pnp4.Frontier.ContractExpansion.TreeMCSPAtomSeqP1
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -1098,6 +1099,11 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_penultimate_true
 #print axioms Pnp4.Frontier.ContractExpansion.settleProbe_runConfig_frame
 #print axioms Pnp4.Frontier.ContractExpansion.settleProbe_runConfig_empty
+-- D2t-5b (Block A5m-3a): the atomic movers as the FIRST seq phase -- single-cell left/right steps
+-- and the probe's empty path, each with the handoff into P2's shifted start, tape unchanged.
+#print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_seq_runConfig_handoff
+#print axioms Pnp4.Frontier.ContractExpansion.stepRightOnce_seq_runConfig_handoff
+#print axioms Pnp4.Frontier.ContractExpansion.settleProbe_seq_runConfig_empty_handoff
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

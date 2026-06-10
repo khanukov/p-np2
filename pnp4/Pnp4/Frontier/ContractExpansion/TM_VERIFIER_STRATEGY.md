@@ -1493,6 +1493,52 @@ The **semantic (tape-level) half of the A5 loop discharge is settled**:
    `driverCorridorInv_init` layout on a sized corridor, after `3 · c.size` micro-steps the output
    window spells `encodeGateStream (flatten c).gates`.
 
+### D2t-5b Block A5m — the machine half: brick decomposition (fixed plan)
+
+With the semantic spine (A5a–c) and the capacity discharge (A5d) settled, the remaining transcoder
+work is purely mechanical TM assembly.  Architecture: the driver is **one** composed program whose
+loop is realised by phase back-edges (the `zoneWalkLeft` idiom — no `loopUntilSink` combinator
+exists or is needed); each iteration runs `dispatch ; arm ; re-home`, and the assembled machine's
+per-iteration tape map is equated with `driverStepTape` (A5b), so `corridorInv_driverTapes` /
+`driverTapes_terminal_output_sized` pin the run.  Bricks, each a hole-free PR:
+
+* **A5m-1 — scan round-trip** (`seq selfLoopScanLeft gammaSelfLoopScan`): the M → ctrl-top →
+  M navigation pair under `driverCorridorInv`, splicing `corridor_scan_M_to_ctrlTop` (P1 side:
+  `selfLoopScanLeft_runConfig_terminator` re-proved inside `seq` via the §6a P1-normal single-step
+  simulation + one `seq_stepConfig_P1_accept_*` handoff) with `corridor_back_scan_to_M` (P2 side:
+  `gammaSelfLoopScan_runConfigFrom_*` are already arbitrary-start).  Pattern:
+  `tagCheckThenGammaScan_runConfig` (`TreeMCSPLeadingPhasesChain.lean`).
+* **A5m-2 — the settle dispatch read**: at ctrl-top, the empty test (peek left: `0` = base sentinel)
+  and `readCtrlFrameRemaining` (1 vs ≥ 2), as one branch program (the `stepRightThenBranch` /
+  `bZeroRouteProgram` idiom), with run lemmas under the invariant.
+* **A5m-3 — the clear arm**: round-trip + empty-test + flag flip (no tape writes);
+  per-iteration lemma `= driverStepTape` on the settling/`[]` branch.
+* **A5m-4 — the dec arm**: navigate, `readCtrlFrameRemaining`, in-place frame rewrite
+  (`writeBits` at the frame base with the decremented frame + pad), re-home;
+  `= driverStepTape` on the `rem ≥ 2` branch (the `corridorInv_decStep` transformer).
+* **A5m-5 — the node arm**: `corridor_dispatch_{tnot,tand,tor}` (built) + `eraseLeftMark 3` +
+  ctrl-zone hop + `pushCtrlFrame`/`writeBits_appends_window` (built) + re-home;
+  `= driverStepTape` on the node branch (`nodeStepTape`).
+* **A5m-6 — the const arm**: dispatch read of the literal + `emitConstRecord` (built) + val push
+  (`writeNatField`, built) + cursor re-mark; `= leafStepTape` with the 4-cell token.
+* **A5m-7 — the input arm**: the D2t-3 `binToUnaryLoopFullScan` (built, correct) framed as the
+  record emit + val push + cursor re-mark; `= leafStepTape` with the `(3+width)`-cell token.
+* **A5m-8 — the pop arm** (largest): navigate, pop the operand fields (`zoneWalkLeft` sub-scans,
+  built), `unaryTransfer` the operands into the WORK record (A2, built), write the new val entry,
+  erase the frame, re-home; `= popStepTape`.
+* **A5m-9 — dispatch + loop assembly**: the branch decision at home (settling flag in finite
+  control; `treeTagDispatch` on reading; A5m-2 on settling), phase back-edges to home, the composed
+  `driverProgram`; per-iteration theorem: from the home configuration of abstract state `st`, one
+  iteration reaches the home configuration of `st.step` with tape `driverStepTape … st`, in a
+  bounded step count.
+* **A5m-10 — the run discharge**: iterate A5m-9 (`3 · c.size` times, `driveStep_halts_bound`),
+  coupling with `driverTapes`; conclude the machine's final tape via
+  `driverTapes_terminal_output_sized`.  This is **D2t-5c at the `Configuration` level**.
+* **D2t-6b — the whole-transcoder capstone**: package A5m-10 against `transcodeWitness` faithfulness
+  (`driveWORK_eq_flatten` / `transcodeStreamViaStack_faithful` already bridge the stream to
+  `Circuit.eval`), with the polynomial step bound (`3 · c.size` iterations × the per-iteration
+  bound, all zone widths polynomial via `CorridorSized`).
+
 All keystones and cores are kernel-checked, standard `[propext, Classical.choice, Quot.sound]` triple
 only.  This is **Infrastructure** for the NP-verifier track (input (2) of `verifiedSource_treePoly`); it
 builds no machine yet and proves no separation.  **No `P ≠ NP` claim.**

@@ -105,6 +105,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRightRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRightFull
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorRoutesBack
 import Pnp4.Frontier.ContractExpansion.TreeMCSPEraseLeftMark
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorPushFrame
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -4127,6 +4128,9 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- D2t-5b (Block A4a): eraseLeftMark (cursor advance: plant marker + erase consumed token).
 #check @Pnp4.Frontier.ContractExpansion.eraseLeftMark
 #check @Pnp4.Frontier.ContractExpansion.eraseLeftMark_runConfig
+-- D2t-5b (Block A4a): the corridor control-frame push (writeBits window append).
+#check @Pnp4.Frontier.ContractExpansion.writeBits_appends_window
+#check @Pnp4.Frontier.ContractExpansion.corridor_push_ctrl_frame
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p3_zero_phase
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true

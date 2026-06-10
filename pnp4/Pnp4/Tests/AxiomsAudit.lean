@@ -94,6 +94,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRight
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRightRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRightFull
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorRoutesBack
+import Pnp4.Frontier.ContractExpansion.TreeMCSPEraseLeftMark
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -950,6 +951,9 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_ctrlSentinel
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_back_walk_ctrl
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_M
+-- D2t-5b (Block A4a): eraseLeftMark — plant the new cursor marker and erase the consumed token
+-- (w+1 steps; exact final tape map: marker 1 at p, zeros on [p−w, p), all else untouched).
+#print axioms Pnp4.Frontier.ContractExpansion.eraseLeftMark_runConfig
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

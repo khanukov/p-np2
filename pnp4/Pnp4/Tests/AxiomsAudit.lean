@@ -114,6 +114,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverStepTape
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverTapes
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverReachBound
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverFits
+import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftSeqP1
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -1069,6 +1070,10 @@ end Pnp4
 -- becomes hypothesis-free modulo sizing.
 #print axioms Pnp4.Frontier.ContractExpansion.reachable_driverStepFits
 #print axioms Pnp4.Frontier.ContractExpansion.driverTapes_terminal_output_sized
+-- D2t-5b (Block A5m-1a): the leftward scan as the FIRST seq phase — P1-region scanning and the
+-- terminator + handoff leg (lands at P2's shifted start, head on the marker, tape unchanged).
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seq_runConfig_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seq_runConfig_terminator_handoff
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

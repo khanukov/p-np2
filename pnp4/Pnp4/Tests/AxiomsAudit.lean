@@ -126,6 +126,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionEmbedMulti
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionScanSegments
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionRunTransfer
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionUnion
+import Pnp4.Frontier.ContractExpansion.TreeMCSPClearIterProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -1140,6 +1141,12 @@ end Pnp4
 -- D2t-5b (Block A5m-U5): the region-union machine builder -- a machine from a phase assignment,
 -- with the single generic theorem turning a consistent assignment into the region contract.
 #print axioms Pnp4.Frontier.ContractExpansion.unionProgram_embedded
+-- D2t-5b (Block A5m-3 machine): the settle-clear iteration as a region union -- the first concrete
+-- machine on the U-stack (16 phases; home -> probe -> return -> read-home; frame verdict to stuck),
+-- with the Multi->Single downgrade and every region contract by one instantiation.
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.toSingle
+#print axioms Pnp4.Frontier.ContractExpansion.clearIter_region_probe
+#print axioms Pnp4.Frontier.ContractExpansion.clearIter_region_scanRight
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

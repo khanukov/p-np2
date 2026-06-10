@@ -381,6 +381,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPRegionScanSegments,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPRegionRunTransfer,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPRegionUnion,
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPClearIterProgram,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder,

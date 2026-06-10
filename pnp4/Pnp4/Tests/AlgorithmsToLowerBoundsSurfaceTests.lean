@@ -115,6 +115,8 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPConstStepTape
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorConstStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorInputStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorDecStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorSettleClear
+import Pnp4.Frontier.ContractExpansion.TreeMCSPValReplaceTop
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -4178,6 +4180,10 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- D2t-5b (Block A4b): the settle-decrement keystone.
 #check @Pnp4.Frontier.ContractExpansion.encodeCtrlFrameR_dec_length
 #check @Pnp4.Frontier.ContractExpansion.corridorInv_decStep
+-- D2t-5b (Block A4c): the settle-clear keystone (empty control stack, no tape write).
+#check @Pnp4.Frontier.ContractExpansion.corridorInv_settleClearStep
+-- D2t-5b (Block A4d): the value-stack pop-then-push window core (settle-emit operand rewrite).
+#check @Pnp4.Frontier.ContractExpansion.valReplaceTop_window
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p3_zero_phase
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true

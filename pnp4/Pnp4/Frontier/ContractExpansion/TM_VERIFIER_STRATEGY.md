@@ -1404,3 +1404,48 @@ Since the section above was written, the **spec/spine layer expanded considerabl
    head/`settling`-flag coupling, with `μ := DriveState.mu ∘ decode` (the pure `step_terminal_at_mu` already
    discharges the abstract termination).  The length-aware region non-overlap (`DriverLayout` capacities) is
    added when (1)–(2) first need it.
+
+### D2t-5b corridor keystone layer (A1–A4, PRs #1610–#1615) + settle-clear / value-core (A4c/A4d)
+
+After the `driverTapeInv` spine above, the on-tape realisation was re-based onto a **corridor layout**
+that makes every driver head-hop a scan over a guaranteed-all-`0` corridor onto a guaranteed-`1`
+anchor (`TreeMCSPDriverCorridor`, A3), revising the left-cert `driverTapeInv` into the right-cert
+`driverCorridorInv` (certificate rightmost; right-anchored stacks `encodeNatStackR` / `encodeCtrlStackR`
+in fixed zones between WORK and the certificate).  Against that invariant, the **per-`DriveState.step`
+keystones** — each "given the right bounded tape rewrite, `driverCorridorInv` is preserved across one
+`step`" — have now landed for **four of the five** `step` branches:
+
+* `corridorInv_nodeStep` (A4) — reading a `node tag`: push a control frame (`nodeStepTape`).
+* `corridorInv_constStep` / `corridorInv_inputStep` (A4a) — reading a `leaf`: emit the record
+  (`emitTape`), push the value index (`valPush_window`), advance the cursor marker (`cursorStepTape`),
+  composed as `leafStepTape`.
+* `corridorInv_decStep` (A4b) — settling, top frame `rem ≥ 2`: one `writeBlockTape` (decremented
+  frame + a one-cell zero pad).
+* **`corridorInv_settleClearStep` (A4c, this brick)** — settling, control stack **empty**: the cascade
+  is finished; the machine writes **nothing** (only the finite-control `settling` flag flips), so the
+  invariant transports verbatim and its settling-coherence clause becomes vacuous.
+
+The **sole remaining** `step` branch is the settling, top-frame `rem = 1` **settle-EMIT** keystone
+(`not` / `and` / `or`): emit the gate record over the value-stack operands, pop the frame, push the new
+index, stay settling.  On tape it composes three **disjoint** region rewrites (WORK < VAL < CTRL, cursor
+untouched): WORK emit (reuse `emitTape`, exactly as the leaf arms, with record `encodeGateRecord
+(notGate i)` etc.), CTRL top-frame zeroing (a full-frame `writeBlockTape`-false, the `decStep` pattern),
+and the value-stack **pop-k-push-1** rewrite, whose window half is now factored as:
+
+* **`valReplaceTop_window` (A4d, this brick)** — overwrite the popped operand block `oldTop` (one entry
+  for `not`, two for `and` / `or`) by the single new entry `encodeNatEntryR out.length`, padded with
+  `replicate (oldTop.length − newLen) false` so one `writeBlockTape` covers the `max` of the two widths;
+  the result window spells `encodeNatStackR (out.length :: vs)` over the untouched suffix `vs`.  (The
+  companion dead-corridor blanking past the new content is discharged in the consuming keystone from the
+  pad's trailing `false`s + the old corridor.)
+
+So the settle-emit keystone reduces to assembling `emitTape` (WORK) + `valReplaceTop_window` (VAL) +
+top-frame zeroing (CTRL) and re-establishing the 17 `driverCorridorInv` clauses for the three arms — the
+same shape as `corridorInv_inputStep`, with a CTRL pop in place of the cursor advance.  Once it lands,
+**all five** `DriveState.step` branches have a corridor keystone, and the residual machine work is the
+on-tape `driverBody` / cross-region seeks / `loopUntilSink_reachesSink` discharge (items 1–3 above),
+now stated against `driverCorridorInv`.
+
+All keystones and cores are kernel-checked, standard `[propext, Classical.choice, Quot.sound]` triple
+only.  This is **Infrastructure** for the NP-verifier track (input (2) of `verifiedSource_treePoly`); it
+builds no machine yet and proves no separation.  **No `P ≠ NP` claim.**

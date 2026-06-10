@@ -964,6 +964,8 @@ end Pnp4
 -- the invariant's certificate clause (windowSpells_cell; tail-nonemptiness gives the strict room).
 #print axioms Pnp4.Frontier.ContractExpansion.windowSpells_cell
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_dispatch_tnot
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_dispatch_tand
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_dispatch_tor
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

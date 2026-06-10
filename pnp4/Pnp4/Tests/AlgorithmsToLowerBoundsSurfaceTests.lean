@@ -4135,6 +4135,8 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- D2t-5b (Block A4a): the corridor token dispatch (trie cell hypotheses from the cert clause).
 #check @Pnp4.Frontier.ContractExpansion.windowSpells_cell
 #check @Pnp4.Frontier.ContractExpansion.corridor_dispatch_tnot
+#check @Pnp4.Frontier.ContractExpansion.corridor_dispatch_tand
+#check @Pnp4.Frontier.ContractExpansion.corridor_dispatch_tor
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p3_zero_phase
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true

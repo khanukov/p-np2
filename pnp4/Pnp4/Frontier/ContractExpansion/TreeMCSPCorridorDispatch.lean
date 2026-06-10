@@ -96,6 +96,118 @@ theorem corridor_dispatch_tnot {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ wi
     rw [this, hbits]
     rfl
 
+/-- Sibling of `corridor_dispatch_tand` for `tand`: accept phase `9`. -/
+theorem corridor_dispatch_tand {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width)
+    (z : DriverCorridor) (toks : List (PreToken n)) (out : List (SLGate n))
+    (ctrl : List (ITag × Nat)) (val : List Nat)
+    (c0 : Configuration (M := treeTagDispatch.toPhased.toTM) L)
+    (hinv : driverCorridorInv width h_width z c0.tape
+      (⟨PreToken.node ITag.tand :: toks, out, ctrl, val, false⟩ : DriveState n))
+    (htoks : toks ≠ [])
+    (hphase : (c0.state.fst : Nat) = 0)
+    (hhead : (c0.head : Nat) = z.certEnd
+      - (encodePreorder width h_width (PreToken.node ITag.tand :: toks)).length) :
+    (((TM.runConfig (M := treeTagDispatch.toPhased.toTM) c0 3).state).fst : Nat) = 9
+      ∧ ((TM.runConfig (M := treeTagDispatch.toPhased.toTM) c0 3).head : Nat) = (c0.head : Nat) + 3
+      ∧ (TM.runConfig (M := treeTagDispatch.toPhased.toTM) c0 3).tape = c0.tape := by
+  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
+    hctrl, hcfit2, hvalid, hcoh⟩ := hinv
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9⟩ := hwf
+  replace hcert : windowSpells c0.tape
+      (z.certEnd - (encodePreorder width h_width (PreToken.node ITag.tand :: toks)).length)
+      (encodePreorder width h_width (PreToken.node ITag.tand :: toks)) := hcert
+  replace hvalid : ValidCertTokens (PreToken.node ITag.tand :: toks) := hvalid
+  -- The certificate window's first three cells are the tag bits [0,1,0].
+  have hbits : encodePreorder width h_width (PreToken.node ITag.tand :: toks)
+      = [false, true, true] ++ encodePreorder width h_width toks := by
+    rw [encodePreorder_cons]
+    rfl
+  have hlen : 3 ≤ (encodePreorder width h_width (PreToken.node ITag.tand :: toks)).length := by
+    rw [hbits]; simp
+  have hfit := hcert.1
+  -- The tail is nonempty (the node's child follows), giving strict room past the tag cells.
+  have htail : 1 ≤ (encodePreorder width h_width toks).length := by
+    have hv : ValidCertTokens toks := fun t ht => hvalid t (List.mem_cons_of_mem _ ht)
+    have := validCertTokens_length_le width h_width hv
+    have hne : 1 ≤ toks.length := by
+      cases toks with
+      | nil => exact absurd rfl htoks
+      | cons a l => simp
+    omega
+  have henc : (encodePreorder width h_width (PreToken.node ITag.tand :: toks)).length
+      = 3 + (encodePreorder width h_width toks).length := by
+    rw [hbits, List.length_append]
+    rfl
+  apply treeTagDispatch_runConfig_and c0 hphase (by omega)
+  · intro p hp
+    have := windowSpells_cell c0.tape _ _ hcert 0 (by omega) p (by omega)
+    rw [this, hbits]
+    rfl
+  · intro p hp
+    have := windowSpells_cell c0.tape _ _ hcert 1 (by omega) p (by omega)
+    rw [this, hbits]
+    rfl
+  · intro p hp
+    have := windowSpells_cell c0.tape _ _ hcert 2 (by omega) p (by omega)
+    rw [this, hbits]
+    rfl
+
+/-- Sibling of `corridor_dispatch_tor` for `tor`: accept phase `10`. -/
+theorem corridor_dispatch_tor {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width)
+    (z : DriverCorridor) (toks : List (PreToken n)) (out : List (SLGate n))
+    (ctrl : List (ITag × Nat)) (val : List Nat)
+    (c0 : Configuration (M := treeTagDispatch.toPhased.toTM) L)
+    (hinv : driverCorridorInv width h_width z c0.tape
+      (⟨PreToken.node ITag.tor :: toks, out, ctrl, val, false⟩ : DriveState n))
+    (htoks : toks ≠ [])
+    (hphase : (c0.state.fst : Nat) = 0)
+    (hhead : (c0.head : Nat) = z.certEnd
+      - (encodePreorder width h_width (PreToken.node ITag.tor :: toks)).length) :
+    (((TM.runConfig (M := treeTagDispatch.toPhased.toTM) c0 3).state).fst : Nat) = 10
+      ∧ ((TM.runConfig (M := treeTagDispatch.toPhased.toTM) c0 3).head : Nat) = (c0.head : Nat) + 3
+      ∧ (TM.runConfig (M := treeTagDispatch.toPhased.toTM) c0 3).tape = c0.tape := by
+  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
+    hctrl, hcfit2, hvalid, hcoh⟩ := hinv
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9⟩ := hwf
+  replace hcert : windowSpells c0.tape
+      (z.certEnd - (encodePreorder width h_width (PreToken.node ITag.tor :: toks)).length)
+      (encodePreorder width h_width (PreToken.node ITag.tor :: toks)) := hcert
+  replace hvalid : ValidCertTokens (PreToken.node ITag.tor :: toks) := hvalid
+  -- The certificate window's first three cells are the tag bits [0,1,0].
+  have hbits : encodePreorder width h_width (PreToken.node ITag.tor :: toks)
+      = [true, false, false] ++ encodePreorder width h_width toks := by
+    rw [encodePreorder_cons]
+    rfl
+  have hlen : 3 ≤ (encodePreorder width h_width (PreToken.node ITag.tor :: toks)).length := by
+    rw [hbits]; simp
+  have hfit := hcert.1
+  -- The tail is nonempty (the node's child follows), giving strict room past the tag cells.
+  have htail : 1 ≤ (encodePreorder width h_width toks).length := by
+    have hv : ValidCertTokens toks := fun t ht => hvalid t (List.mem_cons_of_mem _ ht)
+    have := validCertTokens_length_le width h_width hv
+    have hne : 1 ≤ toks.length := by
+      cases toks with
+      | nil => exact absurd rfl htoks
+      | cons a l => simp
+    omega
+  have henc : (encodePreorder width h_width (PreToken.node ITag.tor :: toks)).length
+      = 3 + (encodePreorder width h_width toks).length := by
+    rw [hbits, List.length_append]
+    rfl
+  apply treeTagDispatch_runConfig_or c0 hphase (by omega)
+  · intro p hp
+    have := windowSpells_cell c0.tape _ _ hcert 0 (by omega) p (by omega)
+    rw [this, hbits]
+    rfl
+  · intro p hp
+    have := windowSpells_cell c0.tape _ _ hcert 1 (by omega) p (by omega)
+    rw [this, hbits]
+    rfl
+  · intro p hp
+    have := windowSpells_cell c0.tape _ _ hcert 2 (by omega) p (by omega)
+    rw [this, hbits]
+    rfl
+
 end ContractExpansion
 end Frontier
 end Pnp4

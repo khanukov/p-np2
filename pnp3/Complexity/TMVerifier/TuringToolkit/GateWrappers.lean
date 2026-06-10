@@ -4878,6 +4878,26 @@ def SLProgram_wfFromOffset {n : Nat} :
   | g :: rest, offset =>
     SLGate_wfAtLen offset g ∧ SLProgram_wfFromOffset rest (offset + 1)
 
+/-- Single-gate positional well-formedness is decidable (each case is `True` or a
+conjunction of `Nat <` tests).  Placed next to the predicate (not in a downstream module)
+so the instance is canonical and `Classical`-free. -/
+instance SLGate_wfAtLen_decidable {n : Nat} (L : Nat) (g : SLGate n) :
+    Decidable (SLGate_wfAtLen L g) := by
+  cases g <;> (unfold SLGate_wfAtLen; infer_instance)
+
+/-- Gate-list positional well-formedness is decidable, by structural recursion on the list
+(each step is an `And` of the decidable single-gate check and the decidable tail).  This is the
+spec-layer well-formedness guard the NP verifier uses to reject ill-formed circuits before
+invoking `circuitEvaluatorCS_run_correct_wf` (its `hwf` hypothesis). -/
+instance decSLProgram_wfFromOffset {n : Nat} :
+    (gates : List (SLGate n)) → (offset : Nat) → Decidable (SLProgram_wfFromOffset gates offset)
+  | [], _ => isTrue trivial
+  | g :: rest, offset =>
+    match SLGate_wfAtLen_decidable offset g, decSLProgram_wfFromOffset rest (offset + 1) with
+    | isTrue hg, isTrue hr => isTrue ⟨hg, hr⟩
+    | isFalse hg, _ => isFalse (fun h => hg h.1)
+    | _, isFalse hr => isFalse (fun h => hr h.2)
+
 /-- **Key existence lemma**: any well-formed gate list admits a
 successful `evalAux` computation with any prior of matching length.
 Used to build the `h_eval` hypothesis for `CondCorrect_all` in the

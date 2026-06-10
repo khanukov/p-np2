@@ -1,0 +1,589 @@
+import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgram
+import Pnp4.Frontier.ContractExpansion.PrefixParserConvention
+
+namespace Pnp4
+namespace Frontier
+namespace ContractExpansion
+
+open Pnp3.Internal.PsubsetPpoly Pnp3.Internal.PsubsetPpoly.TM
+
+/-!
+# Count-zeros scan program (NP-verifier track, gamma-decode phase — first brick)
+
+The Elias-gamma block decoded by the parser is `0^z 1 b₁…b_z` with `z = bitLength (n+1) − 1`; the
+first step of decoding it on the tape is to **locate the unary terminator** (the first `1`) by
+scanning rightward over the leading zeros.  This module builds that scan as a uniform-state phased
+program and establishes its structural facts (`timeBound`, never-moves-left); the semantic invariant
+(after the scan the head rests on the terminator, so the leading-zero count `z` equals
+`head − scanStart`) is the next brick.
+
+Design (see `TM_VERIFIER_STRATEGY.md` §6b, approach 2, "head-carried scan"): the control state is a
+single `Bool` — `true` = "still scanning for the terminator".  Each active step keeps scanning iff it
+was scanning *and* read a `0`; the new state is therefore `s && !b`, and the head advances (`right`)
+exactly when scanning continues, otherwise it stays.  So on the first `1` (or once stopped) the
+machine freezes in place — the head is left on the terminator cell and `z` is read off as a head
+offset, with no separate counter.  The scan runs for a fixed `maxIters` steps (an upper bound on the
+gamma length, e.g. `bitLength N`); `maxIters ≥ z + 1` suffices for the head to reach the terminator.
+
+This is one sub-step of one parse phase; on its own it builds no verifier and proves no separation.
+-/
+
+/-- Scan rightward to the first `1`-cell.  State `Bool` = "still scanning"; while scanning and the
+read bit is `0`, advance right (keep scanning); on a `1` (or once stopped) stay and stop. -/
+def gammaZeroScanProgram (maxIters : Nat) : ConstStatePhasedProgram Bool where
+  numPhases := maxIters + 1
+  startPhase := ⟨0, by omega⟩
+  startState := true
+  acceptPhase := ⟨maxIters, by omega⟩
+  acceptState := false
+  transition := fun i s b =>
+    if h : i.val < maxIters then
+      (⟨i.val + 1, by omega⟩, s && !b, b, cond (s && !b) Move.right Move.stay)
+    else
+      (⟨maxIters, by omega⟩, s, b, Move.stay)
+  timeBound := fun _ => maxIters
+
+@[simp] theorem gammaZeroScanProgram_timeBound (maxIters n : Nat) :
+    (gammaZeroScanProgram maxIters).timeBound n = maxIters := rfl
+
+/-- The count-zeros scan never moves the head left: it advances right while scanning, otherwise
+stays. -/
+theorem gammaZeroScanProgram_transition_move (maxIters : Nat)
+    (i : Fin (maxIters + 1)) (s b : Bool) :
+    ((gammaZeroScanProgram maxIters).transition i s b).2.2.2 ≠ Move.left := by
+  unfold gammaZeroScanProgram
+  dsimp only
+  split
+  · cases s <;> cases b <;> simp
+  · simp
+
+/-- The compiled count-zeros scan TM never moves its head left, lifting
+`gammaZeroScanProgram_transition_move` through `toPhased`/`toTM`.  Feeds head-position tracking in the
+forthcoming scan invariant (and `seqList_neverMovesLeft` when this phase is composed). -/
+theorem gammaZeroScanProgram_neverMovesLeft (maxIters : Nat) :
+    TMNeverMovesLeft ((gammaZeroScanProgram maxIters).toPhased.toTM) := by
+  intro st b
+  obtain ⟨i, s⟩ := st
+  exact gammaZeroScanProgram_transition_move maxIters i s b
+
+/-! ## Single-step behaviour (phase < maxIters)
+
+The per-step lemmas for an active scan phase, mirroring the tag-check program's single-step lemmas:
+the phase advances by one; the accumulated "still scanning" flag becomes `s && !(read bit)`; the tape
+is unchanged (the read bit is written back); and the head moves according to
+`cond (s && !(read bit)) right stay` (advance while scanning a `0`, stay otherwise).  These feed the
+forthcoming scan invariant. -/
+
+/-- One active step advances the phase index by one. -/
+theorem gammaZeroScanProgram_stepConfig_phase {L maxIters : Nat}
+    (c : Configuration (M := (gammaZeroScanProgram maxIters).toPhased.toTM) L)
+    {i : Fin (maxIters + 1)} {s : Bool} (hi : i.val < maxIters)
+    (hstate : c.state = ⟨i, s⟩) :
+    ((TM.stepConfig (M := (gammaZeroScanProgram maxIters).toPhased.toTM) c).state).fst.val
+      = i.val + 1 := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp only [ConstStatePhasedProgram.toPhased, gammaZeroScanProgram, dif_pos hi]
+
+/-- One active step updates the "still scanning" flag to `s && !(read bit)`. -/
+theorem gammaZeroScanProgram_stepConfig_state {L maxIters : Nat}
+    (c : Configuration (M := (gammaZeroScanProgram maxIters).toPhased.toTM) L)
+    {i : Fin (maxIters + 1)} {s : Bool} (hi : i.val < maxIters)
+    (hstate : c.state = ⟨i, s⟩) :
+    ((TM.stepConfig (M := (gammaZeroScanProgram maxIters).toPhased.toTM) c).state).snd
+      = (s && !(c.tape c.head)) := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp only [ConstStatePhasedProgram.toPhased, gammaZeroScanProgram, dif_pos hi]
+
+/-- One active step leaves the tape unchanged (it writes back the bit it read). -/
+theorem gammaZeroScanProgram_stepConfig_tape {L maxIters : Nat}
+    (c : Configuration (M := (gammaZeroScanProgram maxIters).toPhased.toTM) L)
+    {i : Fin (maxIters + 1)} {s : Bool} (hi : i.val < maxIters)
+    (hstate : c.state = ⟨i, s⟩) :
+    (TM.stepConfig (M := (gammaZeroScanProgram maxIters).toPhased.toTM) c).tape = c.tape := by
+  have hwrite : (TM.stepConfig (M := (gammaZeroScanProgram maxIters).toPhased.toTM) c).tape
+      = c.write c.head (c.tape c.head) := by
+    unfold TM.stepConfig
+    rw [hstate]
+    simp only [PhasedProgram.toTM_step]
+    simp only [ConstStatePhasedProgram.toPhased, gammaZeroScanProgram, dif_pos hi]
+  rw [hwrite]
+  funext j
+  by_cases hj : j = c.head
+  · subst hj; simp [Configuration.write]
+  · simp [Configuration.write, hj]
+
+/-- One active step moves the head by `cond (s && !(read bit)) right stay`: it advances right while
+still scanning a `0`, and stays once it reads a `1` (or has stopped). -/
+theorem gammaZeroScanProgram_stepConfig_head {L maxIters : Nat}
+    (c : Configuration (M := (gammaZeroScanProgram maxIters).toPhased.toTM) L)
+    {i : Fin (maxIters + 1)} {s : Bool} (hi : i.val < maxIters)
+    (hstate : c.state = ⟨i, s⟩) :
+    (TM.stepConfig (M := (gammaZeroScanProgram maxIters).toPhased.toTM) c).head
+      = Configuration.moveHead (c := c) (cond (s && !(c.tape c.head)) Move.right Move.stay) := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp only [ConstStatePhasedProgram.toPhased, gammaZeroScanProgram, dif_pos hi]
+
+/-- Scanning-regime invariant: if the first `k` cells are all `0`, then after `k ≤ maxIters` steps
+from the initial configuration the scan is still in progress — the phase and head are both at `k`,
+the "still scanning" flag is `true`, and the tape is unchanged.  Proved by induction on `k` using the
+single-step lemmas; the conditional head advance fires because every scanned bit is `0`.  (This is the
+analogue of `tagCheckProgram_runConfig_scan`; the next brick handles reaching the terminator.) -/
+theorem gammaZeroScanProgram_runConfig_scanning {L maxIters : Nat} (x : Boolcube.Point L) :
+    ∀ k : Nat, k ≤ maxIters →
+      (∀ p : Fin ((gammaZeroScanProgram maxIters).toPhased.toTM.tapeLength L),
+        (p : Nat) < k →
+        ((gammaZeroScanProgram maxIters).toPhased.toTM.initialConfig x).tape p = false) →
+      (((TM.runConfig (M := (gammaZeroScanProgram maxIters).toPhased.toTM)
+          ((gammaZeroScanProgram maxIters).toPhased.toTM.initialConfig x) k).state).fst : Nat) = k
+      ∧ ((TM.runConfig (M := (gammaZeroScanProgram maxIters).toPhased.toTM)
+          ((gammaZeroScanProgram maxIters).toPhased.toTM.initialConfig x) k).state).snd = true
+      ∧ ((TM.runConfig (M := (gammaZeroScanProgram maxIters).toPhased.toTM)
+          ((gammaZeroScanProgram maxIters).toPhased.toTM.initialConfig x) k).head : Nat) = k
+      ∧ (TM.runConfig (M := (gammaZeroScanProgram maxIters).toPhased.toTM)
+          ((gammaZeroScanProgram maxIters).toPhased.toTM.initialConfig x) k).tape
+          = ((gammaZeroScanProgram maxIters).toPhased.toTM.initialConfig x).tape := by
+  intro k
+  induction k with
+  | zero => intro _ _; exact ⟨rfl, rfl, rfl, rfl⟩
+  | succ k ih =>
+      intro hk h0
+      obtain ⟨hph, hsnd, hhd, htp⟩ := ih (by omega) (fun p hp => h0 p (by omega))
+      rw [TM.runConfig_succ]
+      set c := TM.runConfig (M := (gammaZeroScanProgram maxIters).toPhased.toTM)
+        ((gammaZeroScanProgram maxIters).toPhased.toTM.initialConfig x) k with hc
+      have hi : (c.state.fst : Nat) < maxIters := by rw [hph]; omega
+      have hread : c.tape c.head = false := by
+        rw [htp]; exact h0 c.head (by rw [hhd]; omega)
+      have hcond : (c.state.snd && !(c.tape c.head)) = true := by simp [hsnd, hread]
+      have hbnd : (c.head : Nat) + 1
+          < (gammaZeroScanProgram maxIters).toPhased.toTM.tapeLength L := by
+        rw [hhd]; show k + 1 < L + maxIters + 1; omega
+      refine ⟨?_, ?_, ?_, ?_⟩
+      · rw [gammaZeroScanProgram_stepConfig_phase c (i := c.state.fst) (s := c.state.snd) hi rfl, hph]
+      · rw [gammaZeroScanProgram_stepConfig_state c (i := c.state.fst) (s := c.state.snd) hi rfl]
+        exact hcond
+      · rw [gammaZeroScanProgram_stepConfig_head c (i := c.state.fst) (s := c.state.snd) hi rfl,
+          hcond]
+        simp only [cond_true, Configuration.moveHead, dif_pos hbnd]
+        omega
+      · rw [gammaZeroScanProgram_stepConfig_tape c (i := c.state.fst) (s := c.state.snd) hi rfl, htp]
+
+/-- Reaching the unary terminator: if the first `z` cells are `0` and cell `z` is `1`
+(`z < maxIters`), then after `z + 1` steps the head rests on the terminator (`head = z`), the
+"still scanning" flag has cleared (`false`), and the tape is unchanged.  Combines the scanning-regime
+invariant at `z` with one more step that reads the `1` (so the conditional head advance does *not*
+fire — the head stays).  This pins the leading-zero count as a head offset: `z = head − scanStart`. -/
+theorem gammaZeroScanProgram_runConfig_terminator {L maxIters : Nat} (x : Boolcube.Point L)
+    (z : Nat) (hz : z < maxIters)
+    (hzeros : ∀ p : Fin ((gammaZeroScanProgram maxIters).toPhased.toTM.tapeLength L),
+      (p : Nat) < z →
+      ((gammaZeroScanProgram maxIters).toPhased.toTM.initialConfig x).tape p = false)
+    (hterm : ∀ p : Fin ((gammaZeroScanProgram maxIters).toPhased.toTM.tapeLength L),
+      (p : Nat) = z →
+      ((gammaZeroScanProgram maxIters).toPhased.toTM.initialConfig x).tape p = true) :
+    ((TM.runConfig (M := (gammaZeroScanProgram maxIters).toPhased.toTM)
+        ((gammaZeroScanProgram maxIters).toPhased.toTM.initialConfig x) (z + 1)).head : Nat) = z
+      ∧ ((TM.runConfig (M := (gammaZeroScanProgram maxIters).toPhased.toTM)
+          ((gammaZeroScanProgram maxIters).toPhased.toTM.initialConfig x) (z + 1)).state).snd = false
+      ∧ (TM.runConfig (M := (gammaZeroScanProgram maxIters).toPhased.toTM)
+          ((gammaZeroScanProgram maxIters).toPhased.toTM.initialConfig x) (z + 1)).tape
+          = ((gammaZeroScanProgram maxIters).toPhased.toTM.initialConfig x).tape := by
+  obtain ⟨hph, hsnd, hhd, htp⟩ :=
+    gammaZeroScanProgram_runConfig_scanning x z (by omega) hzeros
+  rw [TM.runConfig_succ]
+  set c := TM.runConfig (M := (gammaZeroScanProgram maxIters).toPhased.toTM)
+    ((gammaZeroScanProgram maxIters).toPhased.toTM.initialConfig x) z with hc
+  have hi : (c.state.fst : Nat) < maxIters := by rw [hph]; omega
+  have hread : c.tape c.head = true := by rw [htp]; exact hterm c.head hhd
+  have hcond : (c.state.snd && !(c.tape c.head)) = false := by simp [hsnd, hread]
+  refine ⟨?_, ?_, ?_⟩
+  · rw [gammaZeroScanProgram_stepConfig_head c (i := c.state.fst) (s := c.state.snd) hi rfl, hcond]
+    simp only [cond_false, Configuration.moveHead]
+    exact hhd
+  · rw [gammaZeroScanProgram_stepConfig_state c (i := c.state.fst) (s := c.state.snd) hi rfl]
+    exact hcond
+  · rw [gammaZeroScanProgram_stepConfig_tape c (i := c.state.fst) (s := c.state.snd) hi rfl, htp]
+
+/-- Connecting the abstract scan to the Elias-gamma encoding: if the input's leading `gammaLen n`
+cells are exactly `gammaBit n` (the gamma code of `n`, here at offset `0`), then after
+`bitLength (n+1)` steps the head rests at `bitLength (n+1) − 1` — the gamma code's leading-zero
+count.  Instantiates the terminator brick with `z := bitLength (n+1) − 1`, discharging the
+all-zeros / terminator hypotheses from `gammaBit_zero_prefix` / `gammaBit_terminator`.  This is the
+count-zeros scan's semantic payoff: it reads off the unary-prefix length of a gamma-encoded value. -/
+theorem gammaZeroScanProgram_locates_gamma_terminator {L maxIters : Nat} (n : Nat)
+    (x : Boolcube.Point L) (hz : bitLength (n + 1) - 1 < maxIters)
+    (hgamma : ∀ p : Fin ((gammaZeroScanProgram maxIters).toPhased.toTM.tapeLength L),
+      ∀ h : (p : Nat) < gammaLen n,
+      ((gammaZeroScanProgram maxIters).toPhased.toTM.initialConfig x).tape p
+        = gammaBit n ⟨p.val, h⟩) :
+    ((TM.runConfig (M := (gammaZeroScanProgram maxIters).toPhased.toTM)
+        ((gammaZeroScanProgram maxIters).toPhased.toTM.initialConfig x)
+        (bitLength (n + 1) - 1 + 1)).head : Nat) = bitLength (n + 1) - 1 := by
+  have hzlt : bitLength (n + 1) - 1 < gammaLen n := by
+    rw [gammaLen_eq_two_mul_zeros_add_one]; omega
+  refine (gammaZeroScanProgram_runConfig_terminator x (bitLength (n + 1) - 1) hz ?_ ?_).1
+  · intro p hp
+    have hglt : (p : Nat) < gammaLen n := by omega
+    rw [hgamma p hglt]
+    exact gammaBit_zero_prefix n hp
+  · intro p hp
+    have hglt : (p : Nat) < gammaLen n := by omega
+    rw [hgamma p hglt]
+    have hcongr : gammaBit n ⟨(p : Nat), hglt⟩ = gammaBit n ⟨bitLength (n + 1) - 1, hzlt⟩ := by
+      congr 1
+      exact Fin.ext hp
+    rw [hcongr]
+    exact gammaBit_terminator n
+
+/-!
+## M-compatible self-loop scan (the back-edge construct; corrects the straight-line `maxIters` version)
+
+The `maxIters`-parameterized program above has an *input-dependent* phase count and so cannot be part
+of the single fixed verifier `M` for a data-dependent gamma length (see `TM_VERIFIER_STRATEGY.md` §6's
+correction).  The structure `M` actually needs is a **self-loop**: one scan phase that re-enters
+itself (a back-edge) while reading `0`, advancing the head, and exits to a "done" phase on the first
+`1`.  This has a **fixed** phase count (2), independent of the input, yet iterates a data-dependent
+number of times — the first concrete instance of the back-edge primitive (brick 0).  The remaining
+work is the self-loop's run invariant (phase stays `0`, head advances) and terminator, analogous to
+the `maxIters` version but with the phase held constant across the loop.
+-/
+
+/-- Self-loop count-zeros scan: phase `0` re-enters itself (advancing right) while reading `0`, and
+jumps to the "done" phase `1` (staying put) on the first `1`.  Fixed 2-phase structure — suitable for
+the single fixed verifier `M` (unlike the straight-line `maxIters` program). -/
+def gammaSelfLoopScan : ConstStatePhasedProgram Unit where
+  numPhases := 2
+  startPhase := ⟨0, by omega⟩
+  startState := ()
+  acceptPhase := ⟨1, by omega⟩
+  acceptState := ()
+  transition := fun i _ b =>
+    if i.val = 0 then
+      if b then (⟨1, by omega⟩, (), b, Move.stay)
+      else (⟨0, by omega⟩, (), b, Move.right)
+    else
+      (⟨1, by omega⟩, (), b, Move.stay)
+  timeBound := fun n => n
+
+@[simp] theorem gammaSelfLoopScan_timeBound (n : Nat) :
+    gammaSelfLoopScan.timeBound n = n := rfl
+
+/-- The self-loop scan never moves the head left: it advances right while scanning a `0`, otherwise
+stays (on the terminator, or in the done phase). -/
+theorem gammaSelfLoopScan_transition_move (i : Fin 2) (s : Unit) (b : Bool) :
+    (gammaSelfLoopScan.transition i s b).2.2.2 ≠ Move.left := by
+  unfold gammaSelfLoopScan
+  dsimp only
+  split_ifs <;> simp
+
+/-- The compiled self-loop scan TM never moves its head left (lifts the transition fact through
+`toPhased`/`toTM`; composes via `seqList_neverMovesLeft`). -/
+theorem gammaSelfLoopScan_neverMovesLeft :
+    TMNeverMovesLeft (gammaSelfLoopScan.toPhased.toTM) := by
+  intro st b
+  obtain ⟨i, s⟩ := st
+  exact gammaSelfLoopScan_transition_move i s b
+
+/-! ### Self-loop single-step lemmas
+
+The back-edge step: in the scan phase (`0`) reading a `0`, the self-loop re-enters phase `0`,
+advances the head right, and leaves the tape unchanged (it writes the `0` back). -/
+
+/-- Scan-phase step on a `0`: the phase stays `0` (the self-loop / back-edge). -/
+theorem gammaSelfLoopScan_stepConfig_scan_zero_phase {L : Nat}
+    (c : Configuration (M := gammaSelfLoopScan.toPhased.toTM) L)
+    {i : Fin 2} {s : Unit} (hi : i.val = 0) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = false) :
+    ((TM.stepConfig (M := gammaSelfLoopScan.toPhased.toTM) c).state).fst.val = 0 := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp [ConstStatePhasedProgram.toPhased, gammaSelfLoopScan, hi, hbit]
+
+/-- Scan-phase step on a `0`: the head advances right (the head-carried scan progresses). -/
+theorem gammaSelfLoopScan_stepConfig_scan_zero_head {L : Nat}
+    (c : Configuration (M := gammaSelfLoopScan.toPhased.toTM) L)
+    {i : Fin 2} {s : Unit} (hi : i.val = 0) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = false) :
+    (TM.stepConfig (M := gammaSelfLoopScan.toPhased.toTM) c).head
+      = Configuration.moveHead (c := c) Move.right := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp [ConstStatePhasedProgram.toPhased, gammaSelfLoopScan, hi, hbit]
+
+/-- Scan-phase step on a `0`: the tape is unchanged (the `0` is written back). -/
+theorem gammaSelfLoopScan_stepConfig_scan_zero_tape {L : Nat}
+    (c : Configuration (M := gammaSelfLoopScan.toPhased.toTM) L)
+    {i : Fin 2} {s : Unit} (hi : i.val = 0) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = false) :
+    (TM.stepConfig (M := gammaSelfLoopScan.toPhased.toTM) c).tape = c.tape := by
+  have hwrite : (TM.stepConfig (M := gammaSelfLoopScan.toPhased.toTM) c).tape
+      = c.write c.head false := by
+    unfold TM.stepConfig
+    rw [hstate]
+    simp only [PhasedProgram.toTM_step]
+    simp [ConstStatePhasedProgram.toPhased, gammaSelfLoopScan, hi, hbit]
+  rw [hwrite]
+  funext j
+  by_cases hj : j = c.head
+  · subst hj; simp [Configuration.write, hbit]
+  · simp [Configuration.write, hj]
+
+/-- Self-loop scanning invariant (the back-edge loop's correctness): if the first `k` cells are all
+`0`, then after `k ≤ L` steps from the initial configuration the machine is still in the scan phase
+`0` with the head advanced to `k` and the tape unchanged.  Proved by induction using the back-edge
+single-step lemmas; the phase is held **constant** at `0` across the loop (the self-loop re-entry),
+in contrast to the straight-line `maxIters` version where the phase counts up.  This is the
+`M`-compatible analogue of `gammaZeroScanProgram_runConfig_scanning`. -/
+theorem gammaSelfLoopScan_runConfig_scanning {L : Nat} (x : Boolcube.Point L) :
+    ∀ k : Nat, k ≤ L →
+      (∀ p : Fin (gammaSelfLoopScan.toPhased.toTM.tapeLength L),
+        (p : Nat) < k →
+        (gammaSelfLoopScan.toPhased.toTM.initialConfig x).tape p = false) →
+      (((TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM)
+          (gammaSelfLoopScan.toPhased.toTM.initialConfig x) k).state).fst : Nat) = 0
+      ∧ ((TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM)
+          (gammaSelfLoopScan.toPhased.toTM.initialConfig x) k).head : Nat) = k
+      ∧ (TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM)
+          (gammaSelfLoopScan.toPhased.toTM.initialConfig x) k).tape
+          = (gammaSelfLoopScan.toPhased.toTM.initialConfig x).tape := by
+  intro k
+  induction k with
+  | zero => intro _ _; exact ⟨rfl, rfl, rfl⟩
+  | succ k ih =>
+      intro hk h0
+      obtain ⟨hph, hhd, htp⟩ := ih (by omega) (fun p hp => h0 p (by omega))
+      rw [TM.runConfig_succ]
+      set c := TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM)
+        (gammaSelfLoopScan.toPhased.toTM.initialConfig x) k with hc
+      have hbit : c.tape c.head = false := by
+        rw [htp]; exact h0 c.head (by rw [hhd]; omega)
+      have hbnd : (c.head : Nat) + 1 < gammaSelfLoopScan.toPhased.toTM.tapeLength L := by
+        rw [hhd]; show k + 1 < L + L + 1; omega
+      refine ⟨?_, ?_, ?_⟩
+      · exact gammaSelfLoopScan_stepConfig_scan_zero_phase c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit
+      · rw [gammaSelfLoopScan_stepConfig_scan_zero_head c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+        simp only [Configuration.moveHead, dif_pos hbnd]
+        omega
+      · rw [gammaSelfLoopScan_stepConfig_scan_zero_tape c
+          (i := c.state.fst) (s := c.state.snd) hph rfl hbit, htp]
+
+/-! ### Self-loop terminator step (reading the first `1`)
+
+The exit step: in the scan phase (`0`) reading a `1`, the machine jumps to the done phase (`1`) and
+stays put (the head rests on the terminator).  These are the single-step lemmas, then the terminator
+milestone analogous to `gammaZeroScanProgram_runConfig_terminator`. -/
+
+/-- Scan-phase step on a `1`: the phase jumps to the done phase `1`. -/
+theorem gammaSelfLoopScan_stepConfig_scan_one_phase {L : Nat}
+    (c : Configuration (M := gammaSelfLoopScan.toPhased.toTM) L)
+    {i : Fin 2} {s : Unit} (hi : i.val = 0) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = true) :
+    ((TM.stepConfig (M := gammaSelfLoopScan.toPhased.toTM) c).state).fst.val = 1 := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp [ConstStatePhasedProgram.toPhased, gammaSelfLoopScan, hi, hbit]
+
+/-- Scan-phase step on a `1`: the head stays put (rests on the terminator). -/
+theorem gammaSelfLoopScan_stepConfig_scan_one_head {L : Nat}
+    (c : Configuration (M := gammaSelfLoopScan.toPhased.toTM) L)
+    {i : Fin 2} {s : Unit} (hi : i.val = 0) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = true) :
+    (TM.stepConfig (M := gammaSelfLoopScan.toPhased.toTM) c).head = c.head := by
+  unfold TM.stepConfig
+  rw [hstate]
+  simp only [PhasedProgram.toTM_step]
+  simp [ConstStatePhasedProgram.toPhased, gammaSelfLoopScan, hi, hbit, Configuration.moveHead]
+
+/-- Scan-phase step on a `1`: the tape is unchanged (the `1` is written back). -/
+theorem gammaSelfLoopScan_stepConfig_scan_one_tape {L : Nat}
+    (c : Configuration (M := gammaSelfLoopScan.toPhased.toTM) L)
+    {i : Fin 2} {s : Unit} (hi : i.val = 0) (hstate : c.state = ⟨i, s⟩)
+    (hbit : c.tape c.head = true) :
+    (TM.stepConfig (M := gammaSelfLoopScan.toPhased.toTM) c).tape = c.tape := by
+  have hwrite : (TM.stepConfig (M := gammaSelfLoopScan.toPhased.toTM) c).tape
+      = c.write c.head true := by
+    unfold TM.stepConfig
+    rw [hstate]
+    simp only [PhasedProgram.toTM_step]
+    simp [ConstStatePhasedProgram.toPhased, gammaSelfLoopScan, hi, hbit]
+  rw [hwrite]
+  funext j
+  by_cases hj : j = c.head
+  · subst hj; simp [Configuration.write, hbit]
+  · simp [Configuration.write, hj]
+
+/-- Self-loop terminator: if the first `z` cells are `0` and cell `z` is `1` (`z ≤ L`), then after
+`z + 1` steps the machine has reached the done phase `1` with the head resting on the terminator
+(`head = z`) and the tape unchanged.  Combines the self-loop scanning invariant at `z` with one
+terminator step.  This pins the leading-zero count as a head offset and marks scan completion via the
+phase — the `M`-compatible analogue of `gammaZeroScanProgram_runConfig_terminator`. -/
+theorem gammaSelfLoopScan_runConfig_terminator {L : Nat} (x : Boolcube.Point L)
+    (z : Nat) (hz : z ≤ L)
+    (hzeros : ∀ p : Fin (gammaSelfLoopScan.toPhased.toTM.tapeLength L),
+      (p : Nat) < z → (gammaSelfLoopScan.toPhased.toTM.initialConfig x).tape p = false)
+    (hterm : ∀ p : Fin (gammaSelfLoopScan.toPhased.toTM.tapeLength L),
+      (p : Nat) = z → (gammaSelfLoopScan.toPhased.toTM.initialConfig x).tape p = true) :
+    (((TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM)
+        (gammaSelfLoopScan.toPhased.toTM.initialConfig x) (z + 1)).state).fst : Nat) = 1
+      ∧ ((TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM)
+          (gammaSelfLoopScan.toPhased.toTM.initialConfig x) (z + 1)).head : Nat) = z
+      ∧ (TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM)
+          (gammaSelfLoopScan.toPhased.toTM.initialConfig x) (z + 1)).tape
+          = (gammaSelfLoopScan.toPhased.toTM.initialConfig x).tape := by
+  obtain ⟨hph, hhd, htp⟩ := gammaSelfLoopScan_runConfig_scanning x z hz hzeros
+  rw [TM.runConfig_succ]
+  set c := TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM)
+    (gammaSelfLoopScan.toPhased.toTM.initialConfig x) z with hc
+  have hbit : c.tape c.head = true := by rw [htp]; exact hterm c.head hhd
+  refine ⟨?_, ?_, ?_⟩
+  · exact gammaSelfLoopScan_stepConfig_scan_one_phase c
+      (i := c.state.fst) (s := c.state.snd) hph rfl hbit
+  · rw [gammaSelfLoopScan_stepConfig_scan_one_head c
+      (i := c.state.fst) (s := c.state.snd) hph rfl hbit]
+    exact hhd
+  · rw [gammaSelfLoopScan_stepConfig_scan_one_tape c
+      (i := c.state.fst) (s := c.state.snd) hph rfl hbit, htp]
+
+/-- The self-loop scan's `M`-compatible semantic payoff: on an input whose leading `gammaLen n`
+cells are `gammaBit n` (the gamma code of `n` at offset `0`), after `bitLength (n+1)` steps the
+machine has reached the done phase `1` with the head resting at `bitLength (n+1) − 1` — the gamma
+code's unary-prefix length.  Instantiates the self-loop terminator with `z := bitLength (n+1) − 1`,
+discharging the all-zeros / terminator hypotheses from `gammaBit_zero_prefix` / `gammaBit_terminator`.
+This is the fixed-`M` analogue of `gammaZeroScanProgram_locates_gamma_terminator`. -/
+theorem gammaSelfLoopScan_locates_gamma_terminator {L : Nat} (n : Nat)
+    (x : Boolcube.Point L) (hz : bitLength (n + 1) - 1 ≤ L)
+    (hgamma : ∀ p : Fin (gammaSelfLoopScan.toPhased.toTM.tapeLength L),
+      ∀ h : (p : Nat) < gammaLen n,
+      (gammaSelfLoopScan.toPhased.toTM.initialConfig x).tape p = gammaBit n ⟨p.val, h⟩) :
+    (((TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM)
+        (gammaSelfLoopScan.toPhased.toTM.initialConfig x)
+        (bitLength (n + 1) - 1 + 1)).state).fst : Nat) = 1
+      ∧ ((TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM)
+          (gammaSelfLoopScan.toPhased.toTM.initialConfig x)
+          (bitLength (n + 1) - 1 + 1)).head : Nat) = bitLength (n + 1) - 1 := by
+  have hzlt : bitLength (n + 1) - 1 < gammaLen n := by
+    rw [gammaLen_eq_two_mul_zeros_add_one]; omega
+  have hzeros : ∀ p : Fin (gammaSelfLoopScan.toPhased.toTM.tapeLength L),
+      (p : Nat) < bitLength (n + 1) - 1 →
+      (gammaSelfLoopScan.toPhased.toTM.initialConfig x).tape p = false := by
+    intro p hp
+    have hglt : (p : Nat) < gammaLen n := by omega
+    rw [hgamma p hglt]
+    exact gammaBit_zero_prefix n hp
+  have hterm : ∀ p : Fin (gammaSelfLoopScan.toPhased.toTM.tapeLength L),
+      (p : Nat) = bitLength (n + 1) - 1 →
+      (gammaSelfLoopScan.toPhased.toTM.initialConfig x).tape p = true := by
+    intro p hp
+    have hglt : (p : Nat) < gammaLen n := by omega
+    rw [hgamma p hglt]
+    have hcongr : gammaBit n ⟨(p : Nat), hglt⟩ = gammaBit n ⟨bitLength (n + 1) - 1, hzlt⟩ := by
+      congr 1
+      exact Fin.ext hp
+    rw [hcongr]
+    exact gammaBit_terminator n
+  obtain ⟨h1, h2, _⟩ :=
+    gammaSelfLoopScan_runConfig_terminator x (bitLength (n + 1) - 1) hz hzeros hterm
+  exact ⟨h1, h2⟩
+
+/-! ### Done-phase stability (idle after the terminator)
+
+Once the self-loop scan reaches the done phase (`1`), every further step preserves the entire
+configuration — the head stays on the terminator and the tape is unchanged.  This pins the scan's
+configuration after its full allotted runtime (needed when it is composed into `M` and idles until
+the next phase begins), analogous to the binary counter's accepting-phase stability. -/
+
+/-- A single step from the done phase (`1`) preserves the phase, head, and tape. -/
+theorem gammaSelfLoopScan_stepConfig_done {L : Nat}
+    (c : Configuration (M := gammaSelfLoopScan.toPhased.toTM) L)
+    {i : Fin 2} {s : Unit} (hi : i.val = 1) (hstate : c.state = ⟨i, s⟩) :
+    ((TM.stepConfig (M := gammaSelfLoopScan.toPhased.toTM) c).state).fst.val = 1
+    ∧ (TM.stepConfig (M := gammaSelfLoopScan.toPhased.toTM) c).head = c.head
+    ∧ (TM.stepConfig (M := gammaSelfLoopScan.toPhased.toTM) c).tape = c.tape := by
+  refine ⟨?_, ?_, ?_⟩
+  · unfold TM.stepConfig
+    rw [hstate]
+    simp only [PhasedProgram.toTM_step]
+    simp [ConstStatePhasedProgram.toPhased, gammaSelfLoopScan, hi]
+  · unfold TM.stepConfig
+    rw [hstate]
+    simp only [PhasedProgram.toTM_step]
+    simp [ConstStatePhasedProgram.toPhased, gammaSelfLoopScan, hi, Configuration.moveHead]
+  · have hwrite : (TM.stepConfig (M := gammaSelfLoopScan.toPhased.toTM) c).tape
+        = c.write c.head (c.tape c.head) := by
+      unfold TM.stepConfig
+      rw [hstate]
+      simp only [PhasedProgram.toTM_step]
+      simp [ConstStatePhasedProgram.toPhased, gammaSelfLoopScan, hi]
+    rw [hwrite]
+    funext j
+    by_cases hj : j = c.head
+    · subst hj; simp [Configuration.write]
+    · simp [Configuration.write, hj]
+
+/-- Iterated done-phase stability: from a done configuration (phase `1`), running any number of
+steps leaves the phase at `1`, the head fixed, and the tape unchanged. -/
+theorem gammaSelfLoopScan_runConfig_done {L : Nat}
+    (c : Configuration (M := gammaSelfLoopScan.toPhased.toTM) L)
+    (hdone : (c.state.fst : Nat) = 1) (j : Nat) :
+    ((TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM) c j).state.fst : Nat) = 1
+    ∧ (TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM) c j).head = c.head
+    ∧ (TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM) c j).tape = c.tape := by
+  induction j with
+  | zero => exact ⟨hdone, rfl, rfl⟩
+  | succ j ih =>
+      obtain ⟨hph, hhd, htp⟩ := ih
+      rw [TM.runConfig_succ]
+      obtain ⟨hph2, hhd2, htp2⟩ :=
+        gammaSelfLoopScan_stepConfig_done
+          (TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM) c j)
+          (i := (TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM) c j).state.fst)
+          (s := (TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM) c j).state.snd) hph rfl
+      exact ⟨hph2, by rw [hhd2, hhd], by rw [htp2, htp]⟩
+
+/-- Full-runtime correctness of the self-loop scan: running it for its entire declared runtime
+(`timeBound L = L` steps via `TM.run`) on a gamma-prefixed input (leading `gammaLen n` cells equal
+`gammaBit n`, with `bitLength (n+1) ≤ L`) leaves the head resting on the unary terminator
+(`head = bitLength (n+1) − 1`) in the done phase (`1`).  Combines the terminator-locating result at
+step `z+1` with done-phase idle stability for the remaining `L − (z+1)` steps (via `runConfig_add`).
+This is the self-loop scan's headline theorem — the gamma unary-prefix decode realized on a single
+fixed-`M`-compatible Turing machine, correct over its whole run. -/
+theorem gammaSelfLoopScan_run_locates_terminator {L : Nat} (n : Nat) (x : Boolcube.Point L)
+    (hz : bitLength (n + 1) ≤ L)
+    (hgamma : ∀ p : Fin (gammaSelfLoopScan.toPhased.toTM.tapeLength L),
+      ∀ h : (p : Nat) < gammaLen n,
+      (gammaSelfLoopScan.toPhased.toTM.initialConfig x).tape p = gammaBit n ⟨p.val, h⟩) :
+    ((TM.run (M := gammaSelfLoopScan.toPhased.toTM) (n := L) x).head : Nat) = bitLength (n + 1) - 1
+    ∧ ((TM.run (M := gammaSelfLoopScan.toPhased.toTM) (n := L) x).state.fst : Nat) = 1 := by
+  have hb : 1 ≤ bitLength (n + 1) := bitLength_pos_of_pos (Nat.succ_pos n)
+  obtain ⟨h1, h2⟩ := gammaSelfLoopScan_locates_gamma_terminator n x (by omega) hgamma
+  have hrun : TM.run (M := gammaSelfLoopScan.toPhased.toTM) (n := L) x
+      = TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM)
+          (gammaSelfLoopScan.toPhased.toTM.initialConfig x) L := rfl
+  have hadd : TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM)
+        (gammaSelfLoopScan.toPhased.toTM.initialConfig x) L
+      = TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM)
+          (TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM)
+            (gammaSelfLoopScan.toPhased.toTM.initialConfig x) (bitLength (n + 1) - 1 + 1))
+          (L - (bitLength (n + 1) - 1 + 1)) := by
+    rw [← TM.runConfig_add]; congr 1; omega
+  obtain ⟨hph, hhd, _⟩ := gammaSelfLoopScan_runConfig_done
+    (TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM)
+      (gammaSelfLoopScan.toPhased.toTM.initialConfig x) (bitLength (n + 1) - 1 + 1))
+    h1 (L - (bitLength (n + 1) - 1 + 1))
+  rw [hrun, hadd]
+  exact ⟨by rw [hhd]; exact h2, hph⟩
+
+end ContractExpansion
+end Frontier
+end Pnp4

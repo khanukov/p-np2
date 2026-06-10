@@ -53,6 +53,127 @@ import Pnp4.Frontier.ContractExpansion.ThresholdGrowth
 import Pnp4.Frontier.ContractExpansion.ConsolidatedTreeSeparation
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
+import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSemanticVerifier
+import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout
+import Pnp4.Frontier.ContractExpansion.BoundedLoopProgram
+import Pnp4.Frontier.ContractExpansion.PhasedProgramAccepts
+import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckUnit
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaScanProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftOneProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPScanRightOneProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPStepRightProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordLayout
+import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitConstRecord
+import Pnp4.Frontier.ContractExpansion.TreeMCSPWriteBits
+import Pnp4.Frontier.ContractExpansion.TreeMCSPPushCtrlFrame
+import Pnp4.Frontier.ContractExpansion.TreeMCSPPushCtrlFrameRealizes
+import Pnp4.Frontier.ContractExpansion.TreeMCSPWriteNatField
+import Pnp4.Frontier.ContractExpansion.TreeMCSPWriteBitsExtends
+import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitInputRecord
+import Pnp4.Frontier.ContractExpansion.TreeMCSPStackFlatten
+import Pnp4.Frontier.ContractExpansion.TreeMCSPStackFlattenValueStack
+import Pnp4.Frontier.ContractExpansion.TreeMCSPNatStack
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCtrlFrameStack
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStack
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStepTerminates
+import Pnp4.Frontier.ContractExpansion.TreeMCSPEncodePreorder
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverTapeInv
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCertTokens
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverStrongInv
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDrivePending
+import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryTransferRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverCorridor
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalk
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkFull
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorRoutes
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRight
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRightRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRightFull
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorRoutesBack
+import Pnp4.Frontier.ContractExpansion.TreeMCSPEraseLeftMark
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorPushFrame
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorDispatch
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorNodeStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitTape
+import Pnp4.Frontier.ContractExpansion.TreeMCSPValPush
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCursorStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPConstStepTape
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorConstStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorInputStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorDecStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGateStreamLayout
+import Pnp4.Frontier.ContractExpansion.TreeMCSPLoopUntilSink
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGateStreamDecoder
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGateStreamReachesSink
+import Pnp4.Frontier.ContractExpansion.TreeMCSPTreeTagDispatch
+import Pnp4.Frontier.ContractExpansion.TreeMCSPReadCtrlFrameTag
+import Pnp4.Frontier.ContractExpansion.TreeMCSPReadCtrlFrameRemaining
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCountdownLeft
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillComposition
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRepeatBody
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBidirHeadBounds
+import Pnp4.Frontier.ContractExpansion.TreeMCSPSelfLoopCounter
+import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryAppendProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryAppendLeftProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPStepLeftProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPSeekHomeProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterComposition
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryBody
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryMeasure
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroTest
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroFullScan
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroFullScanComposition
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScan
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroFullScanNested
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanPeel
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanScan
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanHbase
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanPos
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanBodyBridge
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanBodyRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanMeasure
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanHstep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterLowestBit
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterDecodeFin
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanReachesSink
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanCorrect
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanOutput
+import Pnp4.Frontier.ContractExpansion.TreeMCSPStepRightBranch
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRealizable
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRoute
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunP1
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunCompose
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunRealizable
+import Pnp4.Frontier.ContractExpansion.TreeMCSPSeekHomeAfterRoute
+import Pnp4.Frontier.ContractExpansion.TreeMCSPSeekHomeAfterRouteRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehome
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeRoutePeel
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeHbase
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeDecideFalse
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeDecideFalseHead
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeHstep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeSeekHomeRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeBodyStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeBodyRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeMeasure
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoop
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRoutePeel
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopHbase
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopHbaseRealizable
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopDecideFalse
+import Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition
+import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition
+import Pnp4.Frontier.ContractExpansion.TreeMCSPLeadingPhasesChain
+import Pnp4.Frontier.ContractExpansion.TreeMCSPSkeletonComposition
 
 namespace Pnp4
 namespace Tests
@@ -379,3 +500,774 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_malformed_rejected
 #check Pnp4.Frontier.ContractExpansion.treeMCSPConcretePrefixParser
 #check Pnp4.Frontier.ContractExpansion.treeMCSPRuntimeAwarePrefixParser
+
+-- Semantic verifier for the prefix-extension language (NP-verifier track, PR 1).
+-- Standard axiom set [propext, Classical.choice, Quot.sound] throughout.  The arithmetic /
+-- prefix-agreement helpers are Classical-free; the codec-verification path inherits
+-- Classical.choice from the pre-existing verifiesDecidable, and the headline equivalence
+-- additionally from the classical PrefixExtensionLanguage wrapper.
+#print axioms Pnp4.Frontier.ContractExpansion.witnessBits_le_treeMCSPPrefixM
+#print axioms Pnp4.Frontier.ContractExpansion.prefixAgreesBool_eq_true_iff
+#print axioms Pnp4.Frontier.ContractExpansion.verifiesBool_eq_true_iff
+#print axioms Pnp4.Frontier.ContractExpansion.extractWitness_eq
+#print axioms Pnp4.Frontier.ContractExpansion.treePrefixSemanticAccepts_rejects_malformed
+#print axioms Pnp4.Frontier.ContractExpansion.treePrefixSemanticAccepts_correct
+
+-- Verifier input-tape layout (NP-verifier track, Phase 6); Classical-free.
+#print axioms Pnp4.Frontier.ContractExpansion.prefixVerifierInputLen_eq
+#print axioms Pnp4.Frontier.ContractExpansion.prefixVerifierWitnessRegion_within_input
+#print axioms Pnp4.Frontier.ContractExpansion.concatBitstring_left
+#print axioms Pnp4.Frontier.ContractExpansion.concatBitstring_right
+#print axioms Pnp4.Frontier.ContractExpansion.verifierTape_left
+#print axioms Pnp4.Frontier.ContractExpansion.verifierTape_right
+#print axioms Pnp4.Frontier.ContractExpansion.queryPrefixOffset_add_witnessBits
+#print axioms Pnp4.Frontier.ContractExpansion.queryPrefixOffset_le
+-- Gamma/x field-fit bounds (gamma-decode phase layout preconditions); Classical-free arithmetic.
+#print axioms Pnp4.Frontier.ContractExpansion.queryXOffset_le_treeMCSPPrefixM
+#print axioms Pnp4.Frontier.ContractExpansion.gammaLen_le_treeMCSPPrefixM
+#print axioms Pnp4.Frontier.ContractExpansion.instanceSize_lt_treeMCSPPrefixM
+-- Gamma payload-read geometry (§6f scheme); Classical-free arithmetic.
+#print axioms Pnp4.Frontier.ContractExpansion.gammaLen_eq_two_mul_gammaZeros_add_one
+#print axioms Pnp4.Frontier.ContractExpansion.gammaTermOffset_lt_queryXOffset
+#print axioms Pnp4.Frontier.ContractExpansion.gammaTermOffset_le_treeMCSPPrefixM
+#print axioms Pnp4.Frontier.ContractExpansion.gammaMirror_mem
+
+-- Bounded-loop primitive (NP-verifier track); Classical-free arithmetic/structural.
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.repeatProgram_timeBound
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.repeatProgram_timeBound_le
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.repeatProgram_run_succ
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.repeatProgram_run_zero
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seqList_timeBound_sum
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seqList_timeBound_le
+-- Compositional never-moves-left (head-bound tracking); structural TM reasoning.
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_neverMovesLeft
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.idleCS_neverMovesLeft
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seqList_neverMovesLeft
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seqList_runConfig_head_bounds
+-- Single-step seq simulation (P1 region); structural TM reasoning.
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_normal_phase
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_normal_state
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_normal_tape
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_normal_head
+-- Handoff + P2-region single-step seq simulation; structural TM reasoning.
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_accept_phase
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_accept_state
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_accept_tape
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_accept_head
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P2_phase
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P2_state
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P2_tape
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P2_head
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.PhasedProgram.accepts_toTM
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_transition_move
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_neverMovesLeft
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_stepConfig_phase
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_stepConfig_head
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_stepConfig_tape
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_stepConfig_state
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_runConfig_scan
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_accepts_eq_state
+-- Tag-check semantic characterization (NP-verifier track).  The pure bit/spec lemmas are
+-- Classical-free ([propext]); the TM-execution lemmas carry the standard [propext, Classical.choice,
+-- Quot.sound] of the rest of the tag-check TM layer (no new axioms beyond the toolkit's).
+#print axioms Pnp4.Frontier.ContractExpansion.natBitBE_tag_eq
+#print axioms Pnp4.Frontier.ContractExpansion.tagMatchPrefix_succ
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_tape_read
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_runConfig_matched
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_accepts_eq_tagMatch
+-- Prop characterization (tagMatchPrefix_eq_true_iff Classical-free; accepts_iff inherits TM triple).
+#print axioms Pnp4.Frontier.ContractExpansion.tagMatchPrefix_eq_true_iff
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgram_accepts_iff
+-- Unit-state tag check (common-state assembly variant); structural TM reasoning.
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgramU_transition_move
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgramU_neverMovesLeft
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgramU_runConfig_inv
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgramU_accepts_iff
+-- Gamma-decode phase, first brick: count-zeros scan structural lemmas; structural TM reasoning.
+#print axioms Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_transition_move
+#print axioms Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_neverMovesLeft
+#print axioms Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_stepConfig_phase
+#print axioms Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_stepConfig_state
+#print axioms Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_stepConfig_tape
+#print axioms Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_stepConfig_head
+#print axioms Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_runConfig_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_runConfig_terminator
+#print axioms Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_locates_gamma_terminator
+-- M-compatible self-loop scan (back-edge construct); structural TM reasoning.
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_transition_move
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_neverMovesLeft
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_stepConfig_scan_zero_phase
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_stepConfig_scan_zero_head
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_stepConfig_scan_zero_tape
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_runConfig_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_stepConfig_scan_one_head
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_runConfig_terminator
+-- Leftward scan-to-marker (first bidirectional primitive).
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_stepConfig_scan_zero_head_clamp
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_runConfig_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_runConfig_terminator
+-- Unary countdown self-loop (marker-free counter).
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_runConfig_consume
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_runConfig_empty
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_seqP2_runConfig_consume
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_seqP2_runConfig_empty
+-- Bounded body-reentry loop combinator (loop-control single-steps).
+#print axioms Pnp4.Frontier.ContractExpansion.repeatBody_stepConfig_consume_phase
+#print axioms Pnp4.Frontier.ContractExpansion.repeatBody_stepConfig_halt_phase
+#print axioms Pnp4.Frontier.ContractExpansion.repeatBody_stepConfig_handoff_phase
+#print axioms Pnp4.Frontier.ContractExpansion.repeatBody_runConfig_one_iteration
+#print axioms Pnp4.Frontier.ContractExpansion.repeatBody_runConfig_iterate
+#print axioms Pnp4.Frontier.ContractExpansion.repeatBody_runConfig_one_iteration'
+#print axioms Pnp4.Frontier.ContractExpansion.repeatBody_runConfig_iterate'
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopFill_runConfig_fill
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopFill_seqP2_runConfig_fill
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendOne_runConfig_scan
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendOne_runConfig_stop
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendOne_seqP2_runConfig_scan
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendOne_seqP2_runConfig_stop
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_runConfig_scan
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_runConfig_append
+-- D2t-3c: leftward unary-append seqP2 lift (non-first phase).
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqP2_runConfig_scan
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqP2_runConfig_append
+#print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_runConfig_one
+#print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqP2_runConfig_one
+-- D2t-3c-γ: stepLeftOnce at chain-depth 3 (element 3 of the flattened binToUnaryBody chain).
+#print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested2_stepConfig_phase
+#print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested2_runConfig_one
+-- D2t-3c-γ: the stepLeftOnce→successor depth-3 handoff step.
+#print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested2_stepConfig_handoff_phase
+-- D2t-3c-β: the binary→unary home-seek run behaviour.
+#print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterDecrement_runConfig_lead2
+#print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterDecrement_runConfig_home
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seqP2_runConfig_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seqP2_runConfig_terminator
+-- Leftward scan-over-`1`s (bit-dual; completes the four-way scan vocabulary).
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_stepConfig_scan_one_head_clamp
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_runConfig_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_runConfig_terminator
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqP2_runConfig_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqP2_runConfig_terminator
+-- D2t-3c-γ: leftward scan-over-1s at chain-depth 4 (element 4 of the flattened binToUnaryBody chain).
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqNested3_runConfig_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqNested3_runConfig_terminator
+-- D2t-3c-γ: elements 5/6/7 of the flattened binToUnaryBody chain (depths 5/6/7).
+#print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested4_runConfig_one
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqNested5_runConfig_append
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_seqNested6_runConfig_terminator
+-- D2t-3c-γ: the assembled binary→unary loop body's structural timeBound + run-composition leading steps.
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_timeBound
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_eq_bodyFull
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_lead2
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterDecrement
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterDecrHandoff
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterStepLeft3
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterStepLeft3Handoff
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterScanLeft4
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterScanLeft4Handoff
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterStepLeft5
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterStepLeft5Handoff
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterAppend6
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterAppend6Handoff
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterScanRight7
+-- D2t-3c-γ: the one-pass HOME→HOME headline (the assembled binary→unary loop body).
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_onePass
+-- D2t-3c-ε ingredient: one-pass measure-decrease (counterValue − 1) + output bit (|U| + 1).
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_onePass_counterValue
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryBody_onePass_appendedBit
+-- D2t-3c-δ: the bZeroTest loop-exit decision (scan halts on rightMarker iff B = 0; routing deferred).
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroTest_zero_halts_on_marker
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroTest_pos_halts_before_marker
+-- D2t-3 routing: the distinguishable-marker discriminating read (read past scan-stop = 1 iff B = 0).
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroRoute_zero_reads_one
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroRoute_pos_reads_zero
+-- D2t-3 routing: stepRightThenBranch (read-the-next-cell branch primitive: after 2 steps, phase 2/3 by the bit).
+#print axioms Pnp4.Frontier.ContractExpansion.stepRightThenBranch_neverMovesLeft
+#print axioms Pnp4.Frontier.ContractExpansion.stepRightThenBranch_runConfig_branch_true
+#print axioms Pnp4.Frontier.ContractExpansion.stepRightThenBranch_runConfig_branch_false
+#print axioms Pnp4.Frontier.ContractExpansion.stepRightThenBranch_runConfig_terminal
+-- D2t-3 routing: realizability witnesses (the spread + double-marker layout is non-vacuously instantiable).
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroRoute_zero_realizable
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroRoute_pos_realizable
+-- D2t-3 routing: the composed routing program (seq scan ; stepRightThenBranch) — structural layer.
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_neverMovesLeft
+-- D2t-3 δ: the corrected SOUND width-`w` B=0 test (full-width scan) — structural layer + spec foundation.
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroFullScan_neverMovesLeft
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroFullScan_transition_move
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroFullScan_transition_bit
+#print axioms Pnp4.Frontier.ContractExpansion.counterValue_eq_zero_imp_all_false
+-- D2t-3 δ run-through: the scan reaches the B=0 accept phase (w) / diverts to the B>0 branch (w+1).
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroFullScan_runConfig_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroFullScan_runConfig_zero
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroFullScan_runConfig_pos
+-- D2t-3 ε entry: the seq-composition route-body (accept re-pointed to the B>0 branch, phase w+1).
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroFullScanRouteBody_acceptPhase_val
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroFullScanRouteBody_neverMovesLeft
+-- D2t-3 ε seqP2 lift: bZeroFullScan's run-through as a non-first seq phase (offset by P1.numPhases).
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroFullScan_seqP2_runConfig_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroFullScan_seqP2_runConfig_zero
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroFullScan_seqP2_runConfig_pos
+-- D2t-3 ε assembly: the sound binary→unary loop on bZeroFullScan (structural skeleton).
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopBodyFullScan_numPhases
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_numPhases
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_acceptPhase_val
+-- D2t-3 ε closure: sound-loop scan run-through + hbase (B=0 -> sink) + B>0 scan-to-divert.
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroFullScanRouteBody_seqNested_runConfig_zero
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopBodyFullScan_acceptPhase_val
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_hbase
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_pos
+-- D2t-3 ε body bridge: collapse the depth-4 nesting of binToUnaryBody (phases w+15..w+29) to its
+-- local transition at phase k (phase shifted by w+15; bit/move inherited) — the symbolic-w analogue of
+-- the Rehome body's per-step simp, the foundation for the FullScan body one-pass run-through.
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopBodyFullScan_atBody_phase
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopBodyFullScan_atBody_bit
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopBodyFullScan_atBody_move
+-- D2t-3 ε body one-pass: `binToUnaryBody`'s HOME→HOME engine re-derived on the sound loop (phases
+-- w+15..w+29) via the body bridge — decrement B, re-home, append 1 to U, re-home, reach the body accept
+-- w+29.  The four scan inductions + the `onePass` headline (per-iteration engine `hstep` iterates).
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_body_decrement_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_body_scanLeft_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_body_append_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_body_scanRight_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_body_runConfig_onePass
+-- D2t-3 ε measure: one body pass drops counterValue B by exactly one (the strict decrease
+-- `loopUntilSink_reachesSink`'s hstep consumes, with μ := counterValue B).
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_body_onePass_counterValue
+-- D2t-3 ε hstep core: one B>0 body pass (pos→postDivert→seek→onePass) reaches the body accept w+29 with
+-- the head back at HOME and counterValue B strictly decreased — the per-iteration work hstep iterates.
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_pos_tape
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_bodyPass
+-- D2t-3 ε hstep support: a nonzero little-endian counter has a lowest set bit (the j the body pass needs).
+#print axioms Pnp4.Frontier.ContractExpansion.counterValue_pos_imp_lowestBit
+-- D2t-3 ε reachesSink scaffolding: the loop back-edge preserves the tape (per-iteration counter is the
+-- body pass's output); the LoopLayout invariant the bespoke termination induction carries; the
+-- FullScan-specific back-edge (phase w+29 → start 0) avoiding the expensive loopUntilSink defeq.
+#print axioms Pnp4.Frontier.ContractExpansion.loopUntilSink_stepConfig_loop_tape
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_transition_backedge
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_backedge_phase
+-- D2t-3 ε loop-termination, PROVEN: one layout-preserving iteration (counterValue B − 1), and the loop
+-- reaches its sink w+2 on every valid layout (bespoke strong induction on counterValue B).
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_oneIteration
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_reachesSink
+-- D2t-3 ζ core: the loop produces a unary block of length u₀ + value(B) at the sink (|U| = value B).
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_hbase_tape
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_reachesSink_output
+-- D2t-3 ζ bridge: counterValue agrees with the formal decoder — counterValue = (decodeFin w …).val.
+#print axioms Pnp4.Frontier.ContractExpansion.decodeFin_tapeBits
+-- D2t-3 capstone: the sound transcoder halts and emits a unary block of length value(B) = (decodeFin …).val.
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_transcoder_correct
+-- D2t-4a leaf emit: emitConstRecord writes the fixed `const b` record `1 0 b` (= encodeGateRecord);
+-- accept phase is tape/head-idle (writes the scanned bit back) for runConfig_add composition.
+#print axioms Pnp4.Frontier.ContractExpansion.emitConstRecord_stepConfig_done
+#print axioms Pnp4.Frontier.ContractExpansion.emitConstRecord_runConfig_three
+#print axioms Pnp4.Frontier.ContractExpansion.emitConstRecord_runConfig_record
+-- D2t-5a machine: `writeBits` — the fixed-width tape writer (generalizes the const-record write); after
+-- `bs.length` steps the window holds `bs`. Foundation for the control-frame `pushFrame` on-tape machine.
+#print axioms Pnp4.Frontier.ContractExpansion.writeBits_runConfig
+-- D2t-5a machine: `pushCtrlFrame` — the control-stack push (writeBits on the fixed per-tag frame); the
+-- written window holds `encodeCtrlFrame (tag, tag.arity)`.
+#print axioms Pnp4.Frontier.ContractExpansion.pushCtrlFrame_runConfig
+-- D2t-5a→5b bridge: `pushCtrlFrame` realises the control-stack push — a region spelling
+-- `encodeCtrlStack S` becomes `encodeCtrlStack ((tag, tag.arity) :: S)` after the machine runs.
+#print axioms Pnp4.Frontier.ContractExpansion.pushCtrlFrame_extends_ctrlStack
+-- D2t-5a value-stack write + bridge: `writeNatField` writes a known index's unary field and realises the
+-- value-stack push (window spells `encodeNatStack (v :: S)`).
+#print axioms Pnp4.Frontier.ContractExpansion.writeNatField_extends_natStack
+-- D2t-5a: generic write-extends-window lemma (factors the stack-write bridge pattern; every fixed-width
+-- driver write gets its invariant-maintenance step as a corollary).
+#print axioms Pnp4.Frontier.ContractExpansion.writeBits_extends_windowSpells
+-- D2t-4b leaf emit (core): the loop's binary→unary of the index realises `unaryField i` on the tape
+-- window `[HOME-i, HOME]` (sentinel preserved via the strengthened reachesSink/output), the substance of
+-- an `input i` record.
+#print axioms Pnp4.Frontier.ContractExpansion.emitInputRecord_runConfig_unaryField
+-- D2t-5 pure core: the preorder→postorder stack linearization (`runSteps (toSteps c) []`) equals the
+-- structural postorder flatten `flattenAt 0 c` — the on-tape STACK machine's correctness target.
+#print axioms Pnp4.Frontier.ContractExpansion.flattenStack_eq_flattenAt
+#print axioms Pnp4.Frontier.ContractExpansion.encodeGateRecordStream_flattenStack
+-- D2t-5b foundation: the value-stack execution model (`runStack`, the on-tape driver's loop invariant)
+-- produces the flattened gate list; agrees with the size-carrying `flattenStack`.
+#print axioms Pnp4.Frontier.ContractExpansion.flattenStackVS_eq_flatten
+#print axioms Pnp4.Frontier.ContractExpansion.flattenStackVS_eq_flattenStack
+-- D2t-5 pure capstone: the stack-linearization transcoder is faithful — its count-prefixed stream decodes
+-- to a straight-line program computing the circuit (the §9 spec, realised via the stack algorithm).
+#print axioms Pnp4.Frontier.ContractExpansion.transcodeStreamViaStack_faithful
+-- D2t-5a: the on-tape value-stack format — child indices as self-delimiting unary fields; pop = field
+-- read, round-trip against the abstract `List Nat`.
+#print axioms Pnp4.Frontier.ContractExpansion.decodeNatStack_encodeNatStack
+-- D2t-5a: the on-tape control-stack format — pending `(tag, remaining)` frames as unary fields; round-trip
+-- against the abstract `List (ITag × Nat)` (completes the D2t-5a tape formats with the value stack).
+#print axioms Pnp4.Frontier.ContractExpansion.decodeCtrlStack_encodeCtrlStack
+-- D2t-5b: the preorder-streaming driver (control + value stacks, settle cascade) produces the postorder
+-- flatten — the pure spec the on-tape D2t-5b loop realises.
+#print axioms Pnp4.Frontier.ContractExpansion.drive_preorder
+#print axioms Pnp4.Frontier.ContractExpansion.driveWORK_eq_flatten
+-- D2t-5b: small-step (one-micro-step) driver semantics — iterating `step` reproduces `settle`/`drive`,
+-- leaves the postorder flatten in WORK, and a measure that strictly decreases off terminal states.
+#print axioms Pnp4.Frontier.ContractExpansion.step_iterate_settle
+#print axioms Pnp4.Frontier.ContractExpansion.step_iterate_processToken
+#print axioms Pnp4.Frontier.ContractExpansion.step_iterate_drive
+#print axioms Pnp4.Frontier.ContractExpansion.driveStep_drive
+#print axioms Pnp4.Frontier.ContractExpansion.driveStep_out_eq_flatten
+#print axioms Pnp4.Frontier.ContractExpansion.DriveState.step_terminal
+#print axioms Pnp4.Frontier.ContractExpansion.DriveState.mu_step_lt
+-- D2t-5b: the small-step driver terminates — iterating `step` reaches a terminal state (the pure mirror
+-- of `loopUntilSink_reachesSink`), halting with the postorder flatten in WORK.
+#print axioms Pnp4.Frontier.ContractExpansion.step_reachesTerminal
+#print axioms Pnp4.Frontier.ContractExpansion.driveStep_halts_with_flatten
+-- D2t-5b: explicit step-count bound — the driver halts within `3 · c.size` micro-steps with the postorder
+-- flatten in WORK (the polynomial runtime witness the on-tape `loopUntilSink` driver inherits).
+#print axioms Pnp4.Frontier.ContractExpansion.DriveState.step_terminal_state_stays
+#print axioms Pnp4.Frontier.ContractExpansion.DriveState.step_after_terminal
+#print axioms Pnp4.Frontier.ContractExpansion.DriveState.step_terminal_at_mu
+#print axioms Pnp4.Frontier.ContractExpansion.preorder_length
+#print axioms Pnp4.Frontier.ContractExpansion.mu_init
+#print axioms Pnp4.Frontier.ContractExpansion.driveStep_halts_bound
+-- D2t-5b: the certificate is the encoded preorder token stream — `encodePreorder (preorder c)
+-- = encodeCircuitTree c` (the cert-region codec for the driver configuration invariant).
+#print axioms Pnp4.Frontier.ContractExpansion.encodePreorder_nil
+#print axioms Pnp4.Frontier.ContractExpansion.encodePreorder_cons
+#print axioms Pnp4.Frontier.ContractExpansion.encodePreorder_append
+#print axioms Pnp4.Frontier.ContractExpansion.encodePreorder_preorder
+-- D2t-5b: the driver configuration's tape-layout invariant (cert / WORK / value / control regions spell
+-- their codec images) and its initial-state lemma (the invariant holds at start).
+#print axioms Pnp4.Frontier.ContractExpansion.windowSpells_nil
+#print axioms Pnp4.Frontier.ContractExpansion.driverTapeInv_init
+-- D2t-5b: certificate-token validity — closes the `encodePreToken` lossiness gap (valid tokens encode to
+-- ≥ 1 cell, so the cert clause of `driverTapeInv` is non-vacuous exactly when an unread token remains).
+#print axioms Pnp4.Frontier.ContractExpansion.validCertToken_one_le_length
+#print axioms Pnp4.Frontier.ContractExpansion.validCertTokens_preorder
+#print axioms Pnp4.Frontier.ContractExpansion.validCertTokens_length_le
+#print axioms Pnp4.Frontier.ContractExpansion.validCertTokens_encodePreorder_eq_nil_iff
+-- D2t-5b (Block A1a): the strong driver tape invariant — derived dynamic anchors (cursor / count / stack
+-- tops), encodeGateStream-shaped output window, length-aware zone fits, pointwise settling coherence.
+#print axioms Pnp4.Frontier.ContractExpansion.encodeNatStack1_nil
+#print axioms Pnp4.Frontier.ContractExpansion.encodeNatStack1_cons
+#print axioms Pnp4.Frontier.ContractExpansion.decodeUnaryField_encodeNatStack1_cons
+#print axioms Pnp4.Frontier.ContractExpansion.encodeNatStack1_head_true
+#print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStack1_nil
+#print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStack1_cons
+#print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStack1_head_true
+#print axioms Pnp4.Frontier.ContractExpansion.windowSpells_append_left
+#print axioms Pnp4.Frontier.ContractExpansion.windowSpells_append_right
+#print axioms Pnp4.Frontier.ContractExpansion.driverStrongInv_out_encodeGateStream
+#print axioms Pnp4.Frontier.ContractExpansion.driverStrongInv_count_window
+#print axioms Pnp4.Frontier.ContractExpansion.driverStrongInv_records_window
+#print axioms Pnp4.Frontier.ContractExpansion.DriveState.step_preserves_settling_val
+#print axioms Pnp4.Frontier.ContractExpansion.driverStrongInv_init
+-- D2t-5b (Block A1b): the reachable-state coherence invariant — the pending-forest decomposition is
+-- preserved by every micro-step; sink soundness ("settling ∧ ctrl = [] → toks = []"), the sink is reached
+-- within 3·c.size steps with the flatten in WORK, and below-top frames are fixed-width (rem ≤ arity).
+#print axioms Pnp4.Frontier.ContractExpansion.preorderForest_nil
+#print axioms Pnp4.Frontier.ContractExpansion.preorderForest_cons
+#print axioms Pnp4.Frontier.ContractExpansion.preorder_ne_nil
+#print axioms Pnp4.Frontier.ContractExpansion.append_left_ne_nil
+#print axioms Pnp4.Frontier.ContractExpansion.pending_init
+#print axioms Pnp4.Frontier.ContractExpansion.pending_reading_node
+#print axioms Pnp4.Frontier.ContractExpansion.pending_step
+#print axioms Pnp4.Frontier.ContractExpansion.pending_iterate
+#print axioms Pnp4.Frontier.ContractExpansion.driver_sink_sound
+#print axioms Pnp4.Frontier.ContractExpansion.driver_sink_val_ne_nil
+#print axioms Pnp4.Frontier.ContractExpansion.pendingFrames_rem_bounds
+#print axioms Pnp4.Frontier.ContractExpansion.pending_pre_terminal
+#print axioms Pnp4.Frontier.ContractExpansion.driver_sink_exists
+-- D2t-5b (Block A2): the generic unary-block transfer loop — one unit per pass across a blank gap
+-- (append at the destination, erase-and-peek at the source); reaches the sink with the block moved,
+-- the source zone zeroed, and the rest of the tape untouched, within (m−j)·(2(d+m)+2γ+8) steps.
+#print axioms Pnp4.Frontier.ContractExpansion.write_self_eq
+#print axioms Pnp4.Frontier.ContractExpansion.unaryTransfer_runConfig_one
+#print axioms Pnp4.Frontier.ContractExpansion.unaryTransfer_run_phi0_walk
+#print axioms Pnp4.Frontier.ContractExpansion.unaryTransfer_run_phi1_scan
+#print axioms Pnp4.Frontier.ContractExpansion.unaryTransfer_run_phi4_scan
+#print axioms Pnp4.Frontier.ContractExpansion.unaryTransfer_run_phi5_walk
+#print axioms Pnp4.Frontier.ContractExpansion.unaryTransfer_pass_more
+#print axioms Pnp4.Frontier.ContractExpansion.unaryTransfer_pass_last
+#print axioms Pnp4.Frontier.ContractExpansion.unaryTransfer_transfers
+-- D2t-5b (Block A3): the corridor layout — right-anchored stack codecs (top rightmost, every field's
+-- right edge a 1, base sentinels), and the corridor strong invariant: every inter-region hop is a
+-- 0-scan onto a pinned 1 anchor (cursor marker / frontier marker / stack tops); no hop crosses WORK.
+#print axioms Pnp4.Frontier.ContractExpansion.encodeNatEntryR_length
+#print axioms Pnp4.Frontier.ContractExpansion.encodeNatStackR_nil
+#print axioms Pnp4.Frontier.ContractExpansion.encodeNatStackR_cons
+#print axioms Pnp4.Frontier.ContractExpansion.encodeNatStackR_getLast_true
+#print axioms Pnp4.Frontier.ContractExpansion.encodeNatStackR_length
+#print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlFrameR_length
+#print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_nil
+#print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_cons
+#print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_getLast_true
+#print axioms Pnp4.Frontier.ContractExpansion.driverCorridorInv_init
+-- D2t-5b (Block A4w): the corridor zone walker — step semantics for every phase + the inner field
+-- sub-scan (φ2 walks a block's 1s leftward), the reusable foundation of the cross-zone routes.
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_stepConfig_p0_phase
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_stepConfig_p1_one_phase
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_stepConfig_p1_zero_phase
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_stepConfig_p2_one_phase
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_stepConfig_p2_zero_phase
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_stepConfig_p3_phase
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_runConfig_p2_scanning
+-- D2t-5b (Block A4w): the zone-walk run segments — one field-block pass (φ0→φ1→φ2→φ3, m+4 steps,
+-- lands at the next block's rightmost cell) and the terminating sentinel pass (φ0→φ1, 2 steps, done).
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_runConfig_sentinel
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_runConfig_field_segment
+-- D2t-5b (Block A4w): the FULL zone walk — multi-block traversal by induction (Σ(kᵢ+3)+2 steps, done
+-- on the dead 0 left of the sentinel, tape unchanged), with both stack codecs as walkZone instances.
+#print axioms Pnp4.Frontier.ContractExpansion.walkZone_nil
+#print axioms Pnp4.Frontier.ContractExpansion.walkZone_cons
+#print axioms Pnp4.Frontier.ContractExpansion.walkZone_length
+#print axioms Pnp4.Frontier.ContractExpansion.encodeNatStackR_eq_walkZone
+#print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_eq_walkZone
+#print axioms Pnp4.Frontier.ContractExpansion.walkZoneSteps_cons
+#print axioms Pnp4.Frontier.ContractExpansion.getD_replicate_of_lt
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_runConfig_walkZone
+-- D2t-5b (Block A4r): the leftward cross-zone route — five legs (scan M→ctrl-top, walk ctrl, scan
+-- →val-top, walk val, scan →FM), each instantiated against driverCorridorInv's clauses.
+#print axioms Pnp4.Frontier.ContractExpansion.windowSpells_getLast_true
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_scan_M_to_ctrlTop
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_walk_ctrl
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_scan_to_valTop
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_walk_val
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_scan_to_FM
+-- D2t-5b (Block A4w): the RIGHTWARD zone walker (return legs) — step semantics; the two-dead-cell
+-- inter-zone gaps let one peek distinguish a block boundary (0,1) from the zone exit (0,0).
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p0_phase
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p1_zero_phase
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p2_one_phase
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p2_zero_phase
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p3_one_phase
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p3_zero_phase
+-- D2t-5b (Block A4w): the rightward run segments — φ3 ones-scan, one block pass (k+2 steps), the
+-- 2-step entry off the sentinel, and the 1-step exit on the second dead cell.
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_p3_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_block_segment
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_entry
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_exit
+-- D2t-5b (Block A4w): the FULL rightward traversal — inner bottom-first induction + the bridging
+-- identity (walkZone ++ [0] = [1,0] ++ innerSpell reverse) + entry; done on the second dead cell.
+#print axioms Pnp4.Frontier.ContractExpansion.innerSpell_nil
+#print axioms Pnp4.Frontier.ContractExpansion.innerSpell_cons
+#print axioms Pnp4.Frontier.ContractExpansion.innerSpell_length
+#print axioms Pnp4.Frontier.ContractExpansion.walkZone_append_false
+#print axioms Pnp4.Frontier.ContractExpansion.innerSteps_cons
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_inner
+#print axioms Pnp4.Frontier.ContractExpansion.windowSpells_snoc_false
+#print axioms Pnp4.Frontier.ContractExpansion.walkZoneStepsR_eq
+#print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_walkZone
+-- D2t-5b (Block A4r): the return route FM→val→ctrl→M — arbitrary-config rightward 0-scan lemmas +
+-- five instantiated legs (the ctrl→cert gap widened to keep the walker's exit off the M slot).
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_runConfigFrom_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_runConfigFrom_terminator
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_valSentinel
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_back_walk_val
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_ctrlSentinel
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_back_walk_ctrl
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_M
+-- D2t-5b (Block A4a): eraseLeftMark — plant the new cursor marker and erase the consumed token
+-- (w+1 steps; exact final tape map: marker 1 at p, zeros on [p−w, p), all else untouched).
+#print axioms Pnp4.Frontier.ContractExpansion.eraseLeftMark_runConfig
+-- D2t-5b (Block A4a): the corridor control-frame push — writeBits appends to a spelled window;
+-- the grown window spells the pushed stack (the codec's cons equation), everything else untouched.
+#print axioms Pnp4.Frontier.ContractExpansion.writeBits_appends_window
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_push_ctrl_frame
+-- D2t-5b (Block A4a): the corridor token dispatch — the D2t-1 trie's cell hypotheses discharged from
+-- the invariant's certificate clause (windowSpells_cell; tail-nonemptiness gives the strict room).
+#print axioms Pnp4.Frontier.ContractExpansion.windowSpells_cell
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_dispatch_tnot
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_dispatch_tand
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_dispatch_tor
+-- D2t-5b (Block A4a): the node-arm KEYSTONE — the explicit six-leg tape transformer re-establishes
+-- driverCorridorInv for the stepped state (node branch of DriveState.step realised on tape).
+#print axioms Pnp4.Frontier.ContractExpansion.corridorInv_nodeStep
+-- D2t-5b (Block A4a): the leaf-emit output-region helper — count increment + record append at FM is
+-- exactly the new encodeGateStream window (reused by both the const and input keystones).
+#print axioms Pnp4.Frontier.ContractExpansion.gateStream_emit_eq
+#print axioms Pnp4.Frontier.ContractExpansion.emitTape_output_window
+#print axioms Pnp4.Frontier.ContractExpansion.emitTape_FM
+-- D2t-5b (Block A4a): the value-stack push as a written-block append (windowSpells extends by the new
+-- top entry); reused by both leaf arms and the settle pop-emit.
+#print axioms Pnp4.Frontier.ContractExpansion.windowSpells_writeAppend
+#print axioms Pnp4.Frontier.ContractExpansion.writeBlockTape_below
+#print axioms Pnp4.Frontier.ContractExpansion.writeBlockTape_above
+#print axioms Pnp4.Frontier.ContractExpansion.valPush_window
+-- D2t-5b (Block A4a): the cursor re-anchoring keystone — consuming a tlen-cell token re-establishes
+-- the four certificate-region clauses for the tail (the shared spine of all reading/settle keystones).
+#print axioms Pnp4.Frontier.ContractExpansion.windowSpells_congr
+#print axioms Pnp4.Frontier.ContractExpansion.cursorStepTape_off
+#print axioms Pnp4.Frontier.ContractExpansion.cursorStepTape_cert
+-- D2t-5b (Block A4a, part 2): the const-arm off-factory — the composed transformer equals exactly
+-- the owning transformer on each disjoint region (the keystone routes clauses through these).
+#print axioms Pnp4.Frontier.ContractExpansion.emitTape_off
+#print axioms Pnp4.Frontier.ContractExpansion.constStepTape_eq_id
+#print axioms Pnp4.Frontier.ContractExpansion.constStepTape_eq_cursor
+#print axioms Pnp4.Frontier.ContractExpansion.constStepTape_eq_emit
+#print axioms Pnp4.Frontier.ContractExpansion.constStepTape_eq_write
+-- D2t-5b (Block A4a, part 2): the const-leaf KEYSTONE — constStepTape re-establishes
+-- driverCorridorInv for the stepped state (DriveState.step's const branch realised on tape).
+#print axioms Pnp4.Frontier.ContractExpansion.encodeGateRecordStream_snoc
+#print axioms Pnp4.Frontier.ContractExpansion.corridorInv_constStep
+-- D2t-5b (Block A4a, part 2): the input-leaf KEYSTONE — leafStepTape (token-length-generic
+-- off-factory) re-establishes driverCorridorInv for the stepped state (the input branch on tape).
+#print axioms Pnp4.Frontier.ContractExpansion.leafStepTape_eq_id
+#print axioms Pnp4.Frontier.ContractExpansion.leafStepTape_eq_cursor
+#print axioms Pnp4.Frontier.ContractExpansion.leafStepTape_eq_emit
+#print axioms Pnp4.Frontier.ContractExpansion.leafStepTape_eq_write
+#print axioms Pnp4.Frontier.ContractExpansion.corridorInv_inputStep
+-- D2t-5b (Block A4b): the settle-DECREMENT keystone — one writeBlockTape (decremented frame + zero
+-- pad) re-establishes the invariant for (toks, out, (tag, rem-1) :: ctrl', val, false).
+#print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlFrameR_dec_length
+#print axioms Pnp4.Frontier.ContractExpansion.corridorInv_decStep
+-- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false
+-- D2t-3 routing run-through (P1 region): scan stays in phase 0, head advances, tape unchanged (seq sim).
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P1_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P1_runConfig_terminator
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P1_runConfig_handoff
+-- D2t-3 routing run-through, FULL compose: bZeroRouteProgram reaches phase 4 (B=0) / 5 (B>0).
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_runConfig_decide_true
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_runConfig_decide_false
+-- D2t-3 routing run-through: realizability witnesses (the full decision is non-vacuously instantiable).
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_decide_true_realizable
+#print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_decide_false_realizable
+-- D2t-3 ε home-seek after the route (scaffolding): returns the head to the HOME sentinel for hstep.
+#print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_numPhases
+#print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_acceptPhase_val
+-- D2t-3 ε home-seek run-through (leading two steps, depth-1): step lemmas toward the sentinel reach.
+#print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_step1_phase
+#print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_step2_phase
+-- depth-2: the second stepLeftOnce's move (phase 2 → 3) via nested seq_stepConfig_P2 navigation.
+#print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_step3_phase
+#print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_step4_phase
+#print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_step4_head
+#print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_step4_tape
+#print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_scan_step
+#print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_scan_stop
+#print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_runConfig_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_step6
+#print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_step7
+#print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_step8
+#print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_runConfig_lead4
+#print axioms Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_runConfig_home
+-- D2t-3 ε (loop scaffolding): binToUnaryLoop = loopUntilSink (route ; binToUnaryBody), sink phase 4.
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_transition_route
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_numPhases
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_acceptPhase
+-- D2t-3 ε seek-HOME loop (revised body with re-homing): binToUnaryLoopRehome = loopUntilSink (route ; seekHome ; body).
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_numPhases
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_acceptPhase
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_transition_route
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopBodyRehome_acceptPhase_val
+-- D2t-3 ε hbase on the rehome machine (B=0 → sink phase 4), mirroring the merged binToUnaryLoop hbase.
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_runConfig_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_runConfig_hbase
+-- D2t-3 ε decide_false on the rehome machine (B>0 → phase 5, the seekHomeAfterRoute handoff) + realizable.
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_runConfig_decide_false
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_decide_false_realizable
+-- D2t-3 ε decide_false with head/tape tracking (head on the discriminator c0.head+z+1) — hstep's first leg.
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_stepConfig_branch0_full
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_runConfig_decide_false_head
+-- D2t-3 ε hstep seq-handoffs (rehome machine): route→seekHome (5→6) and seekHome→body (14→15).
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_stepConfig_handoff5
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_stepConfig_handoff14
+-- D2t-3 ε hstep seek-HOME lift (rehome machine, phases 6→14): seekHomeAfterRoute_runConfig_home re-derived
+-- on the loop machine, plus the shared body-region transition peel (i ∉ {29, 4}).
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_transition_body
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_seek_runConfig_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_seek_runConfig_lead4
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_seek_runConfig_home
+-- D2t-3 ε hstep body lift single steps (rehome machine, phases 15→28): binToUnaryBody re-derived on the
+-- loop machine at offset +15 (3 moves, 7 handoffs, 4 bit-conditional scans split read-1/read-0).
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step15
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step16
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step17_one
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step17_zero
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step18
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step19
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step20
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step21_one
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step21_zero
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step22
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step23
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step24
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step25_one
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step25_zero
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step26
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step27_one
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step27_zero
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step28
+-- D2t-3 ε hstep body lift run-through (rehome machine, phases 15→29): the 4 scan inductions + the
+-- onePass HOME→HOME engine (decrement B, re-home, append 1 to U, re-home → loop body accept 29).
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_decrement_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_scanLeft_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_append_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_scanRight_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_runConfig_afterStepLeft5Handoff
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_runConfig_afterScanRight7
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_runConfig_onePass
+-- D2t-3 ε hstep measure ingredient (rehome machine): one body pass drops counterValue B by exactly one.
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_onePass_counterValue
+-- D2t-3 ε `hbase`: from a B=0 HOME config the loop reaches the sink phase 4 (the clean loop-exit half).
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_runConfig_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_runConfig_hbase
+-- D2t-3 ε `hbase` realizability: a concrete B=0 input reaches the sink phase 4 from initialConfig.
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_hbase_realizable
+-- D2t-3 ε route decision, B>0 branch (loop machine): reaches phase 5, the body-handoff point.
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_runConfig_decide_false
+#print axioms Pnp4.Frontier.ContractExpansion.binToUnaryLoop_decide_false_realizable
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqNested3_stepConfig_handoff_phase
+#print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested4_stepConfig_handoff_phase
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqNested5_stepConfig_handoff_phase
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_seqNested6_stepConfig_handoff_phase
+-- Rightward scan-over-`1`s (pure-traversal fourth scan; marker-free unary-distance seek, §6k).
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_runConfig_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_runConfig_terminator
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_seqP2_runConfig_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_seqP2_runConfig_terminator
+-- D2t-3c: deterministic single rightward move (mirror of stepLeftOnce).
+#print axioms Pnp4.Frontier.ContractExpansion.stepRightOnce_runConfig_one
+#print axioms Pnp4.Frontier.ContractExpansion.stepRightOnce_seqP2_runConfig_one
+-- Gate-record layout decoder (D0): round-trip + size, expected Classical-free.
+#print axioms Pnp4.Frontier.ContractExpansion.decodeUnaryField_unaryField
+#print axioms Pnp4.Frontier.ContractExpansion.decodeGateRecord_encodeGateRecord
+#print axioms Pnp4.Frontier.ContractExpansion.encodeGateRecord_length
+-- Tape-level unary-field reader (D1a): tape↔spec bridge + reader correctness.
+#print axioms Pnp4.Frontier.ContractExpansion.tapeReadList_eq_unaryField
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_readsUnaryField
+#print axioms Pnp4.Frontier.ContractExpansion.decodeUnaryField_tapeReadList_of_reads
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_readsUnaryField_seqP2
+-- Gate-tag dispatcher (D1b part 1): scanning invariant + dispatch run-behaviour.
+#print axioms Pnp4.Frontier.ContractExpansion.gateTagDispatch_runConfig_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.gateTagDispatch_runConfig_dispatch
+-- Monolithic one-gate-record decoder (D1b part 2): per-tag traversal + decodeGateRecord correspondence.
+#print axioms Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_input
+#print axioms Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_and
+#print axioms Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_or
+#print axioms Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_decodes_input
+#print axioms Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_decodes_const
+#print axioms Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_decodes_not
+#print axioms Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_decodes_and
+#print axioms Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_decodes_or
+-- D1b part 2 composition: decoder as a non-first seq phase (P2-region).
+#print axioms Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_seqP2_runConfig_input
+#print axioms Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_seqP2_runConfig_and
+#print axioms Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_seqP2_runConfig_or
+-- D2 spec foundation: gate-record stream round-trip + circuit-codec faithfulness bridge.
+#print axioms Pnp4.Frontier.ContractExpansion.decodeGateRecordStream_encodeGateRecordStream
+#print axioms Pnp4.Frontier.ContractExpansion.decodeGateRecordStream_flatten_eval
+#print axioms Pnp4.Frontier.ContractExpansion.decodeGateStream_encodeGateStream
+#print axioms Pnp4.Frontier.ContractExpansion.decodeGateStream_circuit_eval
+#print axioms Pnp4.Frontier.ContractExpansion.transcodeWitness_faithful
+-- Head-advancing self-terminating loop combinator (control structure).
+#print axioms Pnp4.Frontier.ContractExpansion.loopUntilSink_neverMovesLeft
+#print axioms Pnp4.Frontier.ContractExpansion.loopUntilSink_runConfig_oneIter
+#print axioms Pnp4.Frontier.ContractExpansion.loopUntilSink_runConfig_halt_stays
+#print axioms Pnp4.Frontier.ContractExpansion.loopUntilSink_reachesSink
+#print axioms Pnp4.Frontier.ContractExpansion.gateStreamDecoder_neverMovesLeft
+#print axioms Pnp4.Frontier.ContractExpansion.gateStreamDecoder_transition_body
+#print axioms Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_input
+#print axioms Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_and
+#print axioms Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_or
+#print axioms Pnp4.Frontier.ContractExpansion.TapeHoldsAt_append
+#print axioms Pnp4.Frontier.ContractExpansion.TapeHoldsAt_unaryField
+#print axioms Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_record
+#print axioms Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_marker
+#print axioms Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_reachesSink
+#print axioms Pnp4.Frontier.ContractExpansion.treeTagDispatch_neverMovesLeft
+#print axioms Pnp4.Frontier.ContractExpansion.treeTagDispatch_runConfig_input
+#print axioms Pnp4.Frontier.ContractExpansion.treeTagDispatch_runConfig_or
+-- D2t-5b: control-frame tag reader (settle/pop entry) — a fixed-phase unary trie dispatching on the top
+-- frame's tag (`tnot`/`tand`/`tor`), the control-frame analogue of `treeTagDispatch`.
+#print axioms Pnp4.Frontier.ContractExpansion.readCtrlFrameTag_runConfig_tnot
+#print axioms Pnp4.Frontier.ContractExpansion.readCtrlFrameTag_runConfig_tand
+#print axioms Pnp4.Frontier.ContractExpansion.readCtrlFrameTag_runConfig_tor
+-- D2t-5b: control-frame `remaining` reader (the settle decision) — emit (rem 1) vs decrement (rem 2).
+#print axioms Pnp4.Frontier.ContractExpansion.readCtrlFrameRemaining_runConfig_rem1
+#print axioms Pnp4.Frontier.ContractExpansion.readCtrlFrameRemaining_runConfig_rem2
+#print axioms Pnp4.Frontier.ContractExpansion.treeTagDispatch_runConfig_malformed
+#print axioms Pnp4.Frontier.ContractExpansion.runConfig_head_val_ge
+#print axioms Pnp4.Frontier.ContractExpansion.runConfig_head_dist_le
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_locates_gamma_terminator
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_runConfig_done
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_run_locates_terminator
+-- Self-loop binary increment (variable-width counter machinery); structural TM reasoning.
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_neverMovesLeft
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_stepConfig_carry_tape
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_stepConfig_stop_tape
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_runConfig_carry
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_runConfig_stop
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_runConfig_counterValue
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_runConfig_done
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_run_counterValue
+-- Self-loop binary decrement (dual down-counter step); dual bit-flip arithmetic + structural TM reasoning.
+#print axioms Pnp4.Frontier.ContractExpansion.counterValue_first_one_diff
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_neverMovesLeft
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_stepConfig_borrow_tape
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_stepConfig_stop_tape
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_runConfig_borrow
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_runConfig_stop
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_runConfig_counterValue
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_runConfig_done
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_run_counterValue
+-- Lifting the self-loop counter into a composition (assembly milestone); structural TM reasoning.
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_stepConfig_carry_tape
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_stepConfig_stop_tape
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_runConfig_carry
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_runConfig_stop
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_runConfig_counterValue
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_stepConfig_handoff_tape
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_runConfig_handoff
+-- Lifting the self-loop gamma scan into a composition (assembly milestone); structural TM reasoning.
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_stepConfig_scan_zero_tape
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_stepConfig_scan_one_tape
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_runConfig_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_runConfig_terminator
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_runConfig_handoff
+-- Gamma scan in the P2 region (non-first phase).
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seqP2_stepConfig_scan_zero_tape
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seqP2_runConfig_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seqP2_runConfig_terminator
+#print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seqNested_runConfig_scanning
+-- Decrement composition lift (down-counter survives seq).
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_runConfig_borrow
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_runConfig_stop
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_runConfig_counterValue
+-- Increment as a non-first (P2-region) phase, arbitrary start; structural TM reasoning.
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seqP2_stepConfig_carry_tape
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seqP2_stepConfig_stop_tape
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seqP2_runConfig_carry
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seqP2_runConfig_stop
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seqP2_runConfig_counterValue
+-- Decrement as a non-first (P2-region) phase, arbitrary start.
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_stepConfig_borrow_tape
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_stepConfig_stop_tape
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_runConfig_borrow
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_runConfig_stop
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_runConfig_counterValue
+-- Decrement in the doubly-nested P2∘P1 position (transitive composition, seqList depth ≥ 3).
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_stepConfig_borrow_tape
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_stepConfig_stop_tape
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_runConfig_borrow
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_runConfig_stop
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_runConfig_counterValue
+-- D2t-3c-γ: the decrement→successor nested handoff step.
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_stepConfig_handoff_phase
+-- State lifting + heterogeneous-state skeleton composition (assembly milestone).
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_neverMovesLeft
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_stepConfig_phase
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_stepConfig_state
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_stepConfig_tape
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.toTM_stepConfig_phase
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.toTM_stepConfig_tape
+#print axioms Pnp4.Frontier.ContractExpansion.mSkeletonDemo_neverMovesLeft
+#print axioms Pnp4.Frontier.ContractExpansion.mSkeletonDemo_timeBound_le
+#print axioms Pnp4.Frontier.ContractExpansion.mSkeletonU_neverMovesLeft
+#print axioms Pnp4.Frontier.ContractExpansion.mSkeletonU_timeBound_le
+#print axioms Pnp4.Frontier.ContractExpansion.mSkeletonU_tagCheck_handoff
+#print axioms Pnp4.Frontier.ContractExpansion.mSkeletonU_tagCheck_then_scan
+-- Tag check run behaviour inside the P1 region of a `seq` (invariant + handoff consumer).
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgramU_seq_runConfig_inv
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckProgramU_seq_runConfig_handoff
+-- M's first two leading phases run in sequence on one composed machine.
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckThenGammaScan_runConfig
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckThenGammaScanTerminator_runConfig
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckThenGammaFill_runConfig
+#print axioms Pnp4.Frontier.ContractExpansion.tagCheckThenNestedGammaScan_runConfig

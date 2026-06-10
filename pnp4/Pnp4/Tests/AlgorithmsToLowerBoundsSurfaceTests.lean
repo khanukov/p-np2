@@ -63,6 +63,127 @@ import Pnp4.Frontier.ContractExpansion.ThresholdGrowth
 import Pnp4.Frontier.ContractExpansion.ConsolidatedTreeSeparation
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
+import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSemanticVerifier
+import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout
+import Pnp4.Frontier.ContractExpansion.BoundedLoopProgram
+import Pnp4.Frontier.ContractExpansion.PhasedProgramAccepts
+import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckUnit
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaScanProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftOneProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPScanRightOneProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPStepRightProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordLayout
+import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitConstRecord
+import Pnp4.Frontier.ContractExpansion.TreeMCSPWriteBits
+import Pnp4.Frontier.ContractExpansion.TreeMCSPPushCtrlFrame
+import Pnp4.Frontier.ContractExpansion.TreeMCSPPushCtrlFrameRealizes
+import Pnp4.Frontier.ContractExpansion.TreeMCSPWriteNatField
+import Pnp4.Frontier.ContractExpansion.TreeMCSPWriteBitsExtends
+import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitInputRecord
+import Pnp4.Frontier.ContractExpansion.TreeMCSPStackFlatten
+import Pnp4.Frontier.ContractExpansion.TreeMCSPStackFlattenValueStack
+import Pnp4.Frontier.ContractExpansion.TreeMCSPNatStack
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCtrlFrameStack
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStack
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriveStepTerminates
+import Pnp4.Frontier.ContractExpansion.TreeMCSPEncodePreorder
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverTapeInv
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCertTokens
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverStrongInv
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDrivePending
+import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryTransferRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverCorridor
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalk
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkFull
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorRoutes
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRight
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRightRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRightFull
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorRoutesBack
+import Pnp4.Frontier.ContractExpansion.TreeMCSPEraseLeftMark
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorPushFrame
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorDispatch
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorNodeStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitTape
+import Pnp4.Frontier.ContractExpansion.TreeMCSPValPush
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCursorStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPConstStepTape
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorConstStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorInputStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorDecStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGateStreamLayout
+import Pnp4.Frontier.ContractExpansion.TreeMCSPLoopUntilSink
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGateStreamDecoder
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGateStreamReachesSink
+import Pnp4.Frontier.ContractExpansion.TreeMCSPTreeTagDispatch
+import Pnp4.Frontier.ContractExpansion.TreeMCSPReadCtrlFrameTag
+import Pnp4.Frontier.ContractExpansion.TreeMCSPReadCtrlFrameRemaining
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCountdownLeft
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaFillComposition
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRepeatBody
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBidirHeadBounds
+import Pnp4.Frontier.ContractExpansion.TreeMCSPSelfLoopCounter
+import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryAppendProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryAppendLeftProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPStepLeftProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPSeekHomeProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterComposition
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryBody
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryMeasure
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroTest
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroFullScan
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroFullScanComposition
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScan
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroFullScanNested
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanPeel
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanScan
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanHbase
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanPos
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanBodyBridge
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanBodyRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanMeasure
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanHstep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterLowestBit
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCounterDecodeFin
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanReachesSink
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanCorrect
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopFullScanOutput
+import Pnp4.Frontier.ContractExpansion.TreeMCSPStepRightBranch
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRealizable
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRoute
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunP1
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunCompose
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBZeroRouteRunRealizable
+import Pnp4.Frontier.ContractExpansion.TreeMCSPSeekHomeAfterRoute
+import Pnp4.Frontier.ContractExpansion.TreeMCSPSeekHomeAfterRouteRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehome
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeRoutePeel
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeHbase
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeDecideFalse
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeDecideFalseHead
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeHstep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeSeekHomeRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeBodyStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeBodyRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRehomeMeasure
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoop
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopRoutePeel
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopHbase
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopHbaseRealizable
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBinToUnaryLoopDecideFalse
+import Pnp4.Frontier.ContractExpansion.TreeMCSPScanComposition
+import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckComposition
+import Pnp4.Frontier.ContractExpansion.TreeMCSPLeadingPhasesChain
+import Pnp4.Frontier.ContractExpansion.TreeMCSPSkeletonComposition
 
 namespace Pnp4
 namespace Tests
@@ -3599,6 +3720,850 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms Pnp4.Frontier.ContractExpansion.parse_encodeTreeMCSPPrefixFields
 #print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_length_convention
 #check Pnp4.Frontier.ContractExpansion.treeMCSPRuntimeAwarePrefixParser
+
+-- Semantic verifier for the prefix-extension language (NP-verifier track, PR 1).
+#check @Pnp4.Frontier.ContractExpansion.treePrefixSemanticAccepts
+#check @Pnp4.Frontier.ContractExpansion.treePrefixSemanticAccepts_correct
+#check @Pnp4.Frontier.ContractExpansion.treePrefixSemanticAccepts_rejects_malformed
+#check @Pnp4.Frontier.ContractExpansion.witnessBits_le_treeMCSPPrefixM
+#check @Pnp4.Frontier.ContractExpansion.prefixAgreesBool
+#check @Pnp4.Frontier.ContractExpansion.verifiesBool
+#check @Pnp4.Frontier.ContractExpansion.extractWitness?
+
+-- Verifier input-tape layout (NP-verifier track, Phase 6).
+#check @Pnp4.Frontier.ContractExpansion.prefixVerifierInputLen
+#check @Pnp4.Frontier.ContractExpansion.prefixVerifierInputLen_eq
+#check @Pnp4.Frontier.ContractExpansion.prefixVerifierCertStart
+#check @Pnp4.Frontier.ContractExpansion.prefixVerifierWitnessRegion_within_input
+#check @Pnp4.Frontier.ContractExpansion.concatBitstring_left
+#check @Pnp4.Frontier.ContractExpansion.concatBitstring_right
+#check @Pnp4.Frontier.ContractExpansion.verifierTape_left
+#check @Pnp4.Frontier.ContractExpansion.verifierTape_right
+#check @Pnp4.Frontier.ContractExpansion.queryXOffset
+#check @Pnp4.Frontier.ContractExpansion.queryIdxOffset
+#check @Pnp4.Frontier.ContractExpansion.queryPrefixOffset
+#check @Pnp4.Frontier.ContractExpansion.queryPrefixOffset_add_witnessBits
+#check @Pnp4.Frontier.ContractExpansion.queryXOffset_le_treeMCSPPrefixM
+#check @Pnp4.Frontier.ContractExpansion.queryIdxOffset_le_treeMCSPPrefixM
+#check @Pnp4.Frontier.ContractExpansion.gammaLen_le_treeMCSPPrefixM
+#check @Pnp4.Frontier.ContractExpansion.instanceSize_lt_treeMCSPPrefixM
+-- Gamma payload-read geometry (§6f counter-representation scheme).
+#check @Pnp4.Frontier.ContractExpansion.gammaZeros
+#check @Pnp4.Frontier.ContractExpansion.gammaTermOffset
+#check @Pnp4.Frontier.ContractExpansion.gammaLen_eq_two_mul_gammaZeros_add_one
+#check @Pnp4.Frontier.ContractExpansion.gammaTermOffset_lt_queryXOffset
+#check @Pnp4.Frontier.ContractExpansion.gammaTermOffset_le_treeMCSPPrefixM
+#check @Pnp4.Frontier.ContractExpansion.gammaMirror_mem
+
+-- Bounded-loop primitive (NP-verifier track, the row-iteration construct).
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.repeatProgram
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.repeatProgram_succ
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.repeatProgram_timeBound
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.repeatProgram_timeBound_le
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.repeatProgram_run_succ
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.repeatProgram_run_zero
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seqList_timeBound_sum
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seqList_timeBound_le
+-- Compositional never-moves-left (head-bound tracking for the assembled seqList verifier).
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_neverMovesLeft
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.idleCS_neverMovesLeft
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seqList_neverMovesLeft
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seqList_runConfig_head_bounds
+-- Single-step simulation of seq in the P1 region (run-simulation backbone for composition).
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_normal_phase
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_normal_state
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_normal_tape
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_normal_head
+-- Handoff (P1→P2) and P2-region single-step simulation (completes seq single-step characterization).
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_accept_phase
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_accept_state
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_accept_tape
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P1_accept_head
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P2_phase
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P2_state
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P2_tape
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_stepConfig_P2_head
+#check @Pnp3.Internal.PsubsetPpoly.TM.PhasedProgram.accepts_toTM
+-- First verifier parse-phase program (NP-verifier track).
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgram
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_timeBound
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_transition_move
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_neverMovesLeft
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_stepConfig_phase
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_stepConfig_head
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_stepConfig_tape
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_stepConfig_state
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_runConfig_scan
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_accepts_eq_state
+-- Tag-check semantic characterization (NP-verifier track): accepts ⇔ leading bits match the tag.
+#check @Pnp4.Frontier.ContractExpansion.tagBitAt
+#check @Pnp4.Frontier.ContractExpansion.natBitBE_tag_eq
+#check @Pnp4.Frontier.ContractExpansion.tagCheckInputBit
+#check @Pnp4.Frontier.ContractExpansion.tagMatchPrefix
+#check @Pnp4.Frontier.ContractExpansion.tagMatchPrefix_succ
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_tape_read
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_runConfig_matched
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_accepts_eq_tagMatch
+#check @Pnp4.Frontier.ContractExpansion.tagMatchPrefix_eq_true_iff
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgram_accepts_iff
+-- Unit-state tag check (common-state assembly variant).
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgramU
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgramU_timeBound
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgramU_neverMovesLeft
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgramU_runConfig_inv
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgramU_accepts_iff
+-- Gamma-decode phase, first brick: count-zeros scan program (locate the unary terminator).
+#check @Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram
+#check @Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_timeBound
+#check @Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_transition_move
+#check @Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_neverMovesLeft
+#check @Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_stepConfig_phase
+#check @Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_stepConfig_state
+#check @Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_stepConfig_tape
+#check @Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_stepConfig_head
+#check @Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_runConfig_scanning
+#check @Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_runConfig_terminator
+#check @Pnp4.Frontier.ContractExpansion.gammaZeroScanProgram_locates_gamma_terminator
+-- M-compatible self-loop scan (back-edge construct, brick 0): fixed 2-phase structure.
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_timeBound
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_neverMovesLeft
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_stepConfig_scan_zero_phase
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_stepConfig_scan_zero_head
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_stepConfig_scan_zero_tape
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_runConfig_scanning
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_stepConfig_scan_one_phase
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_stepConfig_scan_one_head
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_stepConfig_scan_one_tape
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_runConfig_terminator
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_locates_gamma_terminator
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_stepConfig_done
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_runConfig_done
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_run_locates_terminator
+-- Leftward scan-to-marker (first bidirectional primitive; dual of the rightward scan).
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeft
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_transition_move
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_stepConfig_scan_zero_head_clamp
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_runConfig_scanning
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_runConfig_terminator
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seqP2_runConfig_scanning
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seqP2_runConfig_terminator
+-- Leftward scan-over-`1`s (bit-dual of the scan-left; traverse a filled/consumed counter to its
+-- left boundary — completes the four-way scan vocabulary for the bidirectional shuttle).
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_transition_move
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_stepConfig_scan_one_head_clamp
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_runConfig_scanning
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_runConfig_terminator
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqP2_runConfig_scanning
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqP2_runConfig_terminator
+-- D2t-3c-γ: leftward scan-over-1s at chain-depth 4 (element 4 of the flattened binToUnaryBody chain).
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqNested3_runConfig_scanning
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqNested3_runConfig_terminator
+-- D2t-3c-γ: elements 5/6/7 of the flattened binToUnaryBody chain (depths 5/6/7).
+#check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested4_runConfig_one
+#check @Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqNested5_runConfig_scan
+#check @Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqNested5_runConfig_append
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_seqNested6_runConfig_scanning
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_seqNested6_runConfig_terminator
+-- D2t-3c-γ: the assembled binary→unary loop body (definition + structural facts).
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryBody
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_eq_seq
+#check @Pnp4.Frontier.ContractExpansion.bodyFull
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_eq_bodyFull
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_numPhases
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_timeBound
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_lead2
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterDecrement
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterDecrHandoff
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterStepLeft3
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterStepLeft3Handoff
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterScanLeft4
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterScanLeft4Handoff
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterStepLeft5
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterStepLeft5Handoff
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterAppend6
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterAppend6Handoff
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_afterScanRight7
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_runConfig_onePass
+-- D2t-3c-ε ingredient: one-pass measure-decrease (counterValue − 1) + output bit (|U| + 1).
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_onePass_counterValue
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryBody_onePass_appendedBit
+-- D2t-3c-δ: the bZeroTest loop-exit decision (scan halts on rightMarker iff B = 0; routing deferred).
+#check @Pnp4.Frontier.ContractExpansion.bZeroTest_zero_halts_on_marker
+#check @Pnp4.Frontier.ContractExpansion.bZeroTest_pos_halts_before_marker
+-- D2t-3 routing: the distinguishable-marker discriminating read (read past scan-stop = 1 iff B = 0).
+#check @Pnp4.Frontier.ContractExpansion.bZeroRoute_zero_reads_one
+#check @Pnp4.Frontier.ContractExpansion.bZeroRoute_pos_reads_zero
+-- D2t-3 routing: stepRightThenBranch (read-the-next-cell branch primitive: after 2 steps, phase 2/3 by the bit).
+#check @Pnp4.Frontier.ContractExpansion.stepRightThenBranch_neverMovesLeft
+#check @Pnp4.Frontier.ContractExpansion.stepRightThenBranch_runConfig_branch_true
+#check @Pnp4.Frontier.ContractExpansion.stepRightThenBranch_runConfig_branch_false
+#check @Pnp4.Frontier.ContractExpansion.stepRightThenBranch_runConfig_terminal
+-- D2t-3 routing: realizability witnesses (the spread + double-marker layout is non-vacuously instantiable).
+#check @Pnp4.Frontier.ContractExpansion.bZeroRoute_zero_realizable
+#check @Pnp4.Frontier.ContractExpansion.bZeroRoute_pos_realizable
+-- D2t-3 routing: the composed routing program (seq scan ; stepRightThenBranch) — structural layer.
+#check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_neverMovesLeft
+-- D2t-3 δ: the corrected SOUND width-`w` B=0 test (full-width scan).
+#check @Pnp4.Frontier.ContractExpansion.bZeroFullScan
+#check @Pnp4.Frontier.ContractExpansion.bZeroFullScan_neverMovesLeft
+#check @Pnp4.Frontier.ContractExpansion.bZeroFullScan_transition_move
+#check @Pnp4.Frontier.ContractExpansion.bZeroFullScan_transition_bit
+#check @Pnp4.Frontier.ContractExpansion.counterValue_eq_zero_imp_all_false
+-- D2t-3 δ run-through: the scan reaches the B=0 accept phase (w) / diverts to the B>0 branch (w+1).
+#check @Pnp4.Frontier.ContractExpansion.bZeroFullScan_runConfig_scanning
+#check @Pnp4.Frontier.ContractExpansion.bZeroFullScan_runConfig_zero
+#check @Pnp4.Frontier.ContractExpansion.bZeroFullScan_runConfig_pos
+-- D2t-3 ε entry: the seq-composition route-body (accept re-pointed to the B>0 branch, phase w+1).
+#check @Pnp4.Frontier.ContractExpansion.bZeroFullScanRouteBody
+#check @Pnp4.Frontier.ContractExpansion.bZeroFullScanRouteBody_acceptPhase_val
+#check @Pnp4.Frontier.ContractExpansion.bZeroFullScanRouteBody_neverMovesLeft
+-- D2t-3 ε seqP2 lift: bZeroFullScan's run-through as a non-first seq phase (offset by P1.numPhases).
+#check @Pnp4.Frontier.ContractExpansion.bZeroFullScan_seqP2_runConfig_scanning
+#check @Pnp4.Frontier.ContractExpansion.bZeroFullScan_seqP2_runConfig_zero
+#check @Pnp4.Frontier.ContractExpansion.bZeroFullScan_seqP2_runConfig_pos
+-- D2t-3 ε assembly: the sound binary→unary loop on bZeroFullScan (structural skeleton).
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopBodyFullScan
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_numPhases
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_acceptPhase_val
+-- D2t-3 ε closure: sound-loop scan run-through + hbase (B=0 -> sink) + B>0 scan-to-divert.
+#check @Pnp4.Frontier.ContractExpansion.bZeroFullScanRouteBody_seqNested_runConfig_zero
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_transition_body
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_scanning
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_hbase
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_pos
+-- D2t-3 ε body bridge: loop body transition at phase w+15+k = binToUnaryBody transition at phase k.
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopBodyFullScan_atBody_phase
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopBodyFullScan_atBody_bit
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopBodyFullScan_atBody_move
+-- D2t-3 ε body one-pass on the sound loop (phases w+15..w+29): the four scan inductions + onePass.
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_body_decrement_scanning
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_body_scanLeft_scanning
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_body_append_scanning
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_body_scanRight_scanning
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_body_runConfig_onePass
+-- D2t-3 ε measure: one body pass drops counterValue B by exactly one.
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_body_onePass_counterValue
+-- D2t-3 ε hstep core: one B>0 body pass reaches the body accept w+29, head at HOME, counterValue B − 1.
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_pos_tape
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_runConfig_bodyPass
+-- D2t-3 ε hstep support: lowest-set-bit existence for a nonzero little-endian counter.
+#check @Pnp4.Frontier.ContractExpansion.counterValue_pos_imp_lowestBit
+-- D2t-3 ε loop-termination (PROVEN): back-edge + LoopLayout invariant, one iteration, reachesSink.
+#check @Pnp4.Frontier.ContractExpansion.loopUntilSink_stepConfig_loop_tape
+#check @Pnp4.Frontier.ContractExpansion.LoopLayout
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_oneIteration
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_reachesSink
+-- D2t-3 ζ core: the produced unary block has length value(B).
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_reachesSink_output
+-- D2t-3 ζ bridge: counterValue = (decodeFin w …).val.
+#check @Pnp4.Frontier.ContractExpansion.decodeFin_tapeBits
+-- D2t-3 capstone: transcoder correctness (|U| = value(B) = (decodeFin …).val).
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopFullScan_transcoder_correct
+-- D2t-4a leaf emit: emitConstRecord writes the fixed `const b` record `1 0 b`; accept phase idle.
+#check @Pnp4.Frontier.ContractExpansion.emitConstRecord_stepConfig_done
+#check @Pnp4.Frontier.ContractExpansion.emitConstRecord_runConfig_three
+#check @Pnp4.Frontier.ContractExpansion.emitConstRecord_runConfig_record
+-- D2t-5a machine: `writeBits` fixed-width tape writer — window holds `bs` after `bs.length` steps.
+#check @Pnp4.Frontier.ContractExpansion.writeBits_runConfig
+-- D2t-5a machine: `pushCtrlFrame` control-stack push — window holds the per-tag control frame.
+#check @Pnp4.Frontier.ContractExpansion.pushCtrlFrame_runConfig
+-- D2t-5a→5b bridge: pushCtrlFrame realises the control-stack push (window spells encodeCtrlStack cons).
+#check @Pnp4.Frontier.ContractExpansion.pushCtrlFrame_extends_ctrlStack
+-- D2t-5a value-stack write + bridge: writeNatField realises the value-stack push (encodeNatStack cons).
+#check @Pnp4.Frontier.ContractExpansion.writeNatField_extends_natStack
+-- D2t-5a: generic write-extends-window lemma (reusable across all fixed-width driver writes).
+#check @Pnp4.Frontier.ContractExpansion.writeBits_extends_windowSpells
+-- D2t-4b leaf emit (core): binary→unary index realised as `unaryField i` on the tape (sentinel preserved).
+#check @Pnp4.Frontier.ContractExpansion.emitInputRecord_runConfig_unaryField
+-- D2t-5 pure core: stack linearization `runSteps (toSteps c) []` = structural `flattenAt 0 c`.
+#check @Pnp4.Frontier.ContractExpansion.flattenStack_eq_flattenAt
+#check @Pnp4.Frontier.ContractExpansion.encodeGateRecordStream_flattenStack
+-- D2t-5b foundation: value-stack execution model `runStack` (driver loop invariant) = flatten.
+#check @Pnp4.Frontier.ContractExpansion.flattenStackVS_eq_flatten
+#check @Pnp4.Frontier.ContractExpansion.flattenStackVS_eq_flattenStack
+-- D2t-5 pure capstone: the stack-linearization transcoder is faithful (stream decodes to the circuit).
+#check @Pnp4.Frontier.ContractExpansion.transcodeStreamViaStack_faithful
+-- D2t-5a: on-tape value-stack format (unary-field stack) round-trip against the abstract `List Nat`.
+#check @Pnp4.Frontier.ContractExpansion.decodeNatStack_encodeNatStack
+-- D2t-5a: on-tape control-stack format (pending `(tag, remaining)` frames) round-trip.
+#check @Pnp4.Frontier.ContractExpansion.decodeCtrlStack_encodeCtrlStack
+-- D2t-5b: preorder-streaming driver (control + value stacks) produces the postorder flatten.
+#check @Pnp4.Frontier.ContractExpansion.drive_preorder
+#check @Pnp4.Frontier.ContractExpansion.driveWORK_eq_flatten
+-- D2t-5b: small-step driver semantics — `step` iterated reproduces `settle`/`drive`/`flatten`, with a
+-- strictly-decreasing termination measure (the `μ` for the on-tape `loopUntilSink` driver).
+#check @Pnp4.Frontier.ContractExpansion.step_iterate_settle
+#check @Pnp4.Frontier.ContractExpansion.step_iterate_processToken
+#check @Pnp4.Frontier.ContractExpansion.step_iterate_drive
+#check @Pnp4.Frontier.ContractExpansion.driveStep_drive
+#check @Pnp4.Frontier.ContractExpansion.driveStep_out_eq_flatten
+#check @Pnp4.Frontier.ContractExpansion.DriveState.step_terminal
+#check @Pnp4.Frontier.ContractExpansion.DriveState.mu_step_lt
+-- D2t-5b: the small-step driver terminates (pure mirror of `loopUntilSink_reachesSink`) — halts with the
+-- postorder flatten in WORK.
+#check @Pnp4.Frontier.ContractExpansion.step_reachesTerminal
+#check @Pnp4.Frontier.ContractExpansion.driveStep_halts_with_flatten
+-- D2t-5b: explicit step-count bound — driver halts within `3 · c.size` steps with the flatten in WORK.
+#check @Pnp4.Frontier.ContractExpansion.DriveState.step_terminal_state_stays
+#check @Pnp4.Frontier.ContractExpansion.DriveState.step_after_terminal
+#check @Pnp4.Frontier.ContractExpansion.DriveState.step_terminal_at_mu
+#check @Pnp4.Frontier.ContractExpansion.preorder_length
+#check @Pnp4.Frontier.ContractExpansion.mu_init
+#check @Pnp4.Frontier.ContractExpansion.driveStep_halts_bound
+-- D2t-5b: the certificate is the encoded preorder token stream (`encodePreorder (preorder c)
+-- = encodeCircuitTree c`) — the cert-region codec for the driver configuration invariant.
+#check @Pnp4.Frontier.ContractExpansion.encodePreorder_nil
+#check @Pnp4.Frontier.ContractExpansion.encodePreorder_cons
+#check @Pnp4.Frontier.ContractExpansion.encodePreorder_append
+#check @Pnp4.Frontier.ContractExpansion.encodePreorder_preorder
+-- D2t-5b: the driver configuration's tape-layout invariant + its initial-state lemma.
+#check @Pnp4.Frontier.ContractExpansion.windowSpells_nil
+#check @Pnp4.Frontier.ContractExpansion.driverTapeInv_init
+-- D2t-5b: certificate-token validity — closes the `encodePreToken` lossiness gap (non-vacuity of the cert clause).
+#check @Pnp4.Frontier.ContractExpansion.validCertToken_one_le_length
+#check @Pnp4.Frontier.ContractExpansion.validCertTokens_preorder
+#check @Pnp4.Frontier.ContractExpansion.validCertTokens_length_le
+#check @Pnp4.Frontier.ContractExpansion.validCertTokens_encodePreorder_eq_nil_iff
+-- D2t-5b (Block A1a): the strong driver tape invariant — derived dynamic anchors, encodeGateStream-shaped
+-- output window (D2t-6a count prefix maintained in-band), length-aware zone fits, settling coherence.
+#check @Pnp4.Frontier.ContractExpansion.encodeNatStack1_nil
+#check @Pnp4.Frontier.ContractExpansion.encodeNatStack1_cons
+#check @Pnp4.Frontier.ContractExpansion.decodeUnaryField_encodeNatStack1_cons
+#check @Pnp4.Frontier.ContractExpansion.encodeNatStack1_head_true
+#check @Pnp4.Frontier.ContractExpansion.encodeCtrlStack1_nil
+#check @Pnp4.Frontier.ContractExpansion.encodeCtrlStack1_cons
+#check @Pnp4.Frontier.ContractExpansion.encodeCtrlStack1_head_true
+#check @Pnp4.Frontier.ContractExpansion.windowSpells_append_left
+#check @Pnp4.Frontier.ContractExpansion.windowSpells_append_right
+#check @Pnp4.Frontier.ContractExpansion.driverStrongInv_out_encodeGateStream
+#check @Pnp4.Frontier.ContractExpansion.driverStrongInv_count_window
+#check @Pnp4.Frontier.ContractExpansion.driverStrongInv_records_window
+#check @Pnp4.Frontier.ContractExpansion.DriveState.step_preserves_settling_val
+#check @Pnp4.Frontier.ContractExpansion.driverStrongInv_init
+-- D2t-5b (Block A1b): the reachable-state coherence invariant (pending-forest decomposition) — preserved
+-- by every micro-step; sink soundness + sink existence (within 3·c.size steps, flatten in WORK); frame
+-- width bounds for the on-tape settle decrement.
+#check @Pnp4.Frontier.ContractExpansion.preorderForest_nil
+#check @Pnp4.Frontier.ContractExpansion.preorderForest_cons
+#check @Pnp4.Frontier.ContractExpansion.preorder_ne_nil
+#check @Pnp4.Frontier.ContractExpansion.append_left_ne_nil
+#check @Pnp4.Frontier.ContractExpansion.pending_init
+#check @Pnp4.Frontier.ContractExpansion.pending_reading_node
+#check @Pnp4.Frontier.ContractExpansion.pending_step
+#check @Pnp4.Frontier.ContractExpansion.pending_iterate
+#check @Pnp4.Frontier.ContractExpansion.driver_sink_sound
+#check @Pnp4.Frontier.ContractExpansion.driver_sink_val_ne_nil
+#check @Pnp4.Frontier.ContractExpansion.pendingFrames_rem_bounds
+#check @Pnp4.Frontier.ContractExpansion.pending_pre_terminal
+#check @Pnp4.Frontier.ContractExpansion.driver_sink_exists
+-- D2t-5b (Block A2): the generic unary-block transfer loop (one unit per pass across a blank gap);
+-- sink reached with the block moved, the source zone zeroed, the rest of the tape untouched.
+#check @Pnp4.Frontier.ContractExpansion.write_self_eq
+#check @Pnp4.Frontier.ContractExpansion.unaryTransfer_runConfig_one
+#check @Pnp4.Frontier.ContractExpansion.unaryTransfer_run_phi0_walk
+#check @Pnp4.Frontier.ContractExpansion.unaryTransfer_run_phi1_scan
+#check @Pnp4.Frontier.ContractExpansion.unaryTransfer_run_phi4_scan
+#check @Pnp4.Frontier.ContractExpansion.unaryTransfer_run_phi5_walk
+#check @Pnp4.Frontier.ContractExpansion.unaryTransfer_pass_more
+#check @Pnp4.Frontier.ContractExpansion.unaryTransfer_pass_last
+#check @Pnp4.Frontier.ContractExpansion.unaryTransfer_transfers
+-- D2t-5b (Block A3): the corridor layout — right-anchored stack codecs + the corridor strong invariant
+-- (every inter-region hop a 0-scan onto a pinned 1 anchor; no hop crosses WORK).
+#check @Pnp4.Frontier.ContractExpansion.encodeNatEntryR_length
+#check @Pnp4.Frontier.ContractExpansion.encodeNatStackR_nil
+#check @Pnp4.Frontier.ContractExpansion.encodeNatStackR_cons
+#check @Pnp4.Frontier.ContractExpansion.encodeNatStackR_getLast_true
+#check @Pnp4.Frontier.ContractExpansion.encodeNatStackR_length
+#check @Pnp4.Frontier.ContractExpansion.encodeCtrlFrameR_length
+#check @Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_nil
+#check @Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_cons
+#check @Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_getLast_true
+#check @Pnp4.Frontier.ContractExpansion.driverCorridorInv_init
+-- D2t-5b (Block A4w): the corridor zone walker — step semantics + the inner field sub-scan.
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkLeft
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkLeft_stepConfig_p0_phase
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkLeft_stepConfig_p2_one_head
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkLeft_stepConfig_p2_zero_phase
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkLeft_runConfig_p2_scanning
+-- D2t-5b (Block A4w): the zone-walk run segments (field-block pass + terminating sentinel pass).
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkLeft_runConfig_sentinel
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkLeft_runConfig_field_segment
+-- D2t-5b (Block A4w): the FULL zone walk (multi-block traversal) + codec instantiations.
+#check @Pnp4.Frontier.ContractExpansion.walkZone
+#check @Pnp4.Frontier.ContractExpansion.walkZone_length
+#check @Pnp4.Frontier.ContractExpansion.encodeNatStackR_eq_walkZone
+#check @Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_eq_walkZone
+#check @Pnp4.Frontier.ContractExpansion.walkZoneSteps
+#check @Pnp4.Frontier.ContractExpansion.getD_replicate_of_lt
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkLeft_runConfig_walkZone
+-- D2t-5b (Block A4r): the leftward cross-zone route (five instantiated legs).
+#check @Pnp4.Frontier.ContractExpansion.windowSpells_getLast_true
+#check @Pnp4.Frontier.ContractExpansion.corridor_scan_M_to_ctrlTop
+#check @Pnp4.Frontier.ContractExpansion.corridor_walk_ctrl
+#check @Pnp4.Frontier.ContractExpansion.corridor_scan_to_valTop
+#check @Pnp4.Frontier.ContractExpansion.corridor_walk_val
+#check @Pnp4.Frontier.ContractExpansion.corridor_scan_to_FM
+-- D2t-5b (Block A4w): the RIGHTWARD zone walker (return legs) — program + step semantics.
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkRight
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p0_phase
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p2_one_phase
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p2_zero_phase
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p3_one_phase
+-- D2t-5b (Block A4w): the rightward run segments (ones-scan / block pass / entry / exit).
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_p3_scanning
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_block_segment
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_entry
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_exit
+-- D2t-5b (Block A4w): the FULL rightward traversal (inner induction + bridge + entry).
+#check @Pnp4.Frontier.ContractExpansion.innerSpell
+#check @Pnp4.Frontier.ContractExpansion.innerSpell_length
+#check @Pnp4.Frontier.ContractExpansion.walkZone_append_false
+#check @Pnp4.Frontier.ContractExpansion.innerSteps
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_inner
+#check @Pnp4.Frontier.ContractExpansion.windowSpells_snoc_false
+#check @Pnp4.Frontier.ContractExpansion.walkZoneStepsR
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_walkZone
+-- D2t-5b (Block A4r): the return route (five instantiated rightward legs).
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_runConfigFrom_scanning
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_runConfigFrom_terminator
+#check @Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_valSentinel
+#check @Pnp4.Frontier.ContractExpansion.corridor_back_walk_val
+#check @Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_ctrlSentinel
+#check @Pnp4.Frontier.ContractExpansion.corridor_back_walk_ctrl
+#check @Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_M
+-- D2t-5b (Block A4a): eraseLeftMark (cursor advance: plant marker + erase consumed token).
+#check @Pnp4.Frontier.ContractExpansion.eraseLeftMark
+#check @Pnp4.Frontier.ContractExpansion.eraseLeftMark_runConfig
+-- D2t-5b (Block A4a): the corridor control-frame push (writeBits window append).
+#check @Pnp4.Frontier.ContractExpansion.writeBits_appends_window
+#check @Pnp4.Frontier.ContractExpansion.corridor_push_ctrl_frame
+-- D2t-5b (Block A4a): the corridor token dispatch (trie cell hypotheses from the cert clause).
+#check @Pnp4.Frontier.ContractExpansion.windowSpells_cell
+#check @Pnp4.Frontier.ContractExpansion.corridor_dispatch_tnot
+#check @Pnp4.Frontier.ContractExpansion.corridor_dispatch_tand
+#check @Pnp4.Frontier.ContractExpansion.corridor_dispatch_tor
+-- D2t-5b (Block A4a): the node-arm keystone (tape transformer re-establishes the invariant).
+#check @Pnp4.Frontier.ContractExpansion.nodeStepTape
+#check @Pnp4.Frontier.ContractExpansion.corridorInv_nodeStep
+-- D2t-5b (Block A4a): the leaf-emit output-region helper (count increment + record append).
+#check @Pnp4.Frontier.ContractExpansion.emitTape
+#check @Pnp4.Frontier.ContractExpansion.gateStream_emit_eq
+#check @Pnp4.Frontier.ContractExpansion.emitTape_output_window
+#check @Pnp4.Frontier.ContractExpansion.emitTape_FM
+-- D2t-5b (Block A4a): the value-stack push as a written-block append.
+#check @Pnp4.Frontier.ContractExpansion.writeBlockTape
+#check @Pnp4.Frontier.ContractExpansion.windowSpells_writeAppend
+#check @Pnp4.Frontier.ContractExpansion.valPush_window
+-- D2t-5b (Block A4a): the cursor re-anchoring keystone (shared cert spine of the reading/settle arms).
+#check @Pnp4.Frontier.ContractExpansion.windowSpells_congr
+#check @Pnp4.Frontier.ContractExpansion.cursorStepTape
+#check @Pnp4.Frontier.ContractExpansion.cursorStepTape_cert
+-- D2t-5b (Block A4a, part 2): the const-arm off-factory.
+#check @Pnp4.Frontier.ContractExpansion.constStepTape
+#check @Pnp4.Frontier.ContractExpansion.emitTape_off
+#check @Pnp4.Frontier.ContractExpansion.constStepTape_eq_id
+#check @Pnp4.Frontier.ContractExpansion.constStepTape_eq_cursor
+#check @Pnp4.Frontier.ContractExpansion.constStepTape_eq_emit
+#check @Pnp4.Frontier.ContractExpansion.constStepTape_eq_write
+-- D2t-5b (Block A4a, part 2): the const-leaf keystone.
+#check @Pnp4.Frontier.ContractExpansion.encodeGateRecordStream_snoc
+#check @Pnp4.Frontier.ContractExpansion.corridorInv_constStep
+-- D2t-5b (Block A4a, part 2): the input-leaf keystone (token-length-generic leafStepTape).
+#check @Pnp4.Frontier.ContractExpansion.leafStepTape
+#check @Pnp4.Frontier.ContractExpansion.leafStepTape_eq_id
+#check @Pnp4.Frontier.ContractExpansion.corridorInv_inputStep
+-- D2t-5b (Block A4b): the settle-decrement keystone.
+#check @Pnp4.Frontier.ContractExpansion.encodeCtrlFrameR_dec_length
+#check @Pnp4.Frontier.ContractExpansion.corridorInv_decStep
+#check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p3_zero_phase
+-- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
+#check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
+#check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false
+-- D2t-3 routing run-through (P1 region): scan stays in phase 0, head advances, tape unchanged (seq sim).
+#check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P1_scanning
+#check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P1_runConfig_terminator
+#check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P1_runConfig_handoff
+-- D2t-3 routing run-through, FULL compose: bZeroRouteProgram reaches phase 4 (B=0) / 5 (B>0).
+#check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_runConfig_decide_true
+#check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_runConfig_decide_false
+-- D2t-3 routing run-through: realizability witnesses (the full decision is non-vacuously instantiable).
+#check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_decide_true_realizable
+#check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_decide_false_realizable
+-- D2t-3 ε (loop scaffolding): binToUnaryLoop = loopUntilSink (route ; binToUnaryBody), sink phase 4.
+#check @Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_numPhases
+#check @Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_step1_phase
+#check @Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_step3_phase
+#check @Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_step4_phase
+#check @Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_step4_head
+#check @Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_step4_tape
+#check @Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_scan_step
+#check @Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_scan_stop
+#check @Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_runConfig_scanning
+#check @Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_step6
+#check @Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_step7
+#check @Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_step8
+#check @Pnp4.Frontier.ContractExpansion.seekHomeAfterRoute_runConfig_home
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoop_transition_route
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoop_numPhases
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoop_acceptPhase
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_numPhases
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_acceptPhase
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_transition_route
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopBodyRehome_acceptPhase_val
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_runConfig_hbase
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_runConfig_decide_false
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_decide_false_realizable
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_runConfig_decide_false_head
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_stepConfig_handoff5
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_stepConfig_handoff14
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_transition_body
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_seek_runConfig_home
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step15
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step17_one
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step25_zero
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_step28
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_runConfig_afterStepLeft5Handoff
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_runConfig_onePass
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoopRehome_body_onePass_counterValue
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoop_runConfig_hbase
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoop_hbase_realizable
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoop_runConfig_decide_false
+#check @Pnp4.Frontier.ContractExpansion.binToUnaryLoop_decide_false_realizable
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeftOne_seqNested3_stepConfig_handoff_phase
+#check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested4_stepConfig_handoff_phase
+#check @Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqNested5_stepConfig_handoff_phase
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_seqNested6_stepConfig_handoff_phase
+-- Rightward scan-over-`1`s (the genuine fourth scan as a pure traversal; marker-free unary-distance
+-- rightward seek for the on-tape interpreter, §6k).
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_transition_move
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_neverMovesLeft
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_runConfig_scanning
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_runConfig_terminator
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_seqP2_runConfig_scanning
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_seqP2_runConfig_terminator
+-- D2t-3c: deterministic single rightward move (mirror of stepLeftOnce) + its seqP2 lift.
+#check @Pnp4.Frontier.ContractExpansion.stepRightOnce
+#check @Pnp4.Frontier.ContractExpansion.stepRightOnce_runConfig_one
+#check @Pnp4.Frontier.ContractExpansion.stepRightOnce_stepConfig_head_clamp
+#check @Pnp4.Frontier.ContractExpansion.stepRightOnce_seqP2_runConfig_one
+-- On-tape gate-record layout + unary back-reference distances (decoder brick D0, §6k).
+#check @Pnp4.Frontier.ContractExpansion.unaryField
+#check @Pnp4.Frontier.ContractExpansion.decodeUnaryField_unaryField
+#check @Pnp4.Frontier.ContractExpansion.encodeGateRecord
+#check @Pnp4.Frontier.ContractExpansion.decodeGateRecord
+#check @Pnp4.Frontier.ContractExpansion.decodeGateRecord_encodeGateRecord
+#check @Pnp4.Frontier.ContractExpansion.encodeGateRecord_length
+-- Tape-level unary-field reader (decoder brick D1a, §6k): reads 1^len 0 and bridges to the D0 spec.
+#check @Pnp4.Frontier.ContractExpansion.tapeReadList
+#check @Pnp4.Frontier.ContractExpansion.tapeReadList_eq_unaryField
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_readsUnaryField
+#check @Pnp4.Frontier.ContractExpansion.decodeUnaryField_tapeReadList_of_reads
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanRightOne_readsUnaryField_seqP2
+-- Gate-tag dispatcher (decoder brick D1b part 1, §6k): read unary tag 1^t 0, dispatch to per-tag phase.
+#check @Pnp4.Frontier.ContractExpansion.gateTagDispatch
+#check @Pnp4.Frontier.ContractExpansion.gateTagDispatch_neverMovesLeft
+#check @Pnp4.Frontier.ContractExpansion.gateTagDispatch_runConfig_scanning
+#check @Pnp4.Frontier.ContractExpansion.gateTagDispatch_runConfig_dispatch
+-- Monolithic one-gate-record decoder (decoder brick D1b part 2, §6k): full run behaviour +
+-- decodeGateRecord correspondence.
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_neverMovesLeft
+-- tag-read behaviour: scan, 5-way dispatch, malformed sink.
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_tagscan
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_dispatch
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_dispatch_or
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_malformed
+-- operand self-loop field invariants.
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_field_acc
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_field8
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_field10
+-- per-tag full-record traversal (reaches accept 12, head advanced by gateRecordSize).
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_input
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_const
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_not
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_and
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_or
+-- decodeGateRecord correspondence (traversed bits decode back to the gate).
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_decodes_input
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_decodes_const
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_decodes_not
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_decodes_and
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_decodes_or
+-- composition: the decoder as a non-first `seq` phase (P2-region), phase shifted by P1.numPhases.
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_runConfig_safe
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_seqP2_runConfig_input
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_seqP2_runConfig_const
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_seqP2_runConfig_not
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_seqP2_runConfig_and
+#check @Pnp4.Frontier.ContractExpansion.gateOneRecordDecoder_seqP2_runConfig_or
+-- D2 spec foundation: the record-stream encode/decode round-trip + size (D0-analogue for a stream).
+#check @Pnp4.Frontier.ContractExpansion.decodeGateRecordStream_encodeGateRecordStream
+#check @Pnp4.Frontier.ContractExpansion.encodeGateRecordStream_length
+-- D2 faithfulness bridge: a flattened circuit's record stream decodes to gates computing the circuit.
+#check @Pnp4.Frontier.ContractExpansion.decodeGateRecordStream_flatten
+#check @Pnp4.Frontier.ContractExpansion.decodeGateRecordStream_flatten_eval
+-- D2 self-delimiting stream: unary gate-count prefix + records (the on-tape decoder reads the count).
+#check @Pnp4.Frontier.ContractExpansion.decodeGateStream_encodeGateStream
+#check @Pnp4.Frontier.ContractExpansion.decodeGateStream_flatten
+-- D2 capstone: stream of flatten(toTree c) computes the actual Circuit.eval c (full spec chain closed).
+#check @Pnp4.Frontier.ContractExpansion.evalCircuitTree_toTree
+#check @Pnp4.Frontier.ContractExpansion.decodeGateStream_circuit_eval
+-- D2 transcoder spec: certificate bits → record stream; end-to-end faithfulness (the §9 on-tape target).
+#check @Pnp4.Frontier.ContractExpansion.transcodeWitness
+#check @Pnp4.Frontier.ContractExpansion.transcodeWitness_faithful
+-- Head-advancing self-terminating loop combinator (control for D2 stream decode / I1; head advances per pass).
+#check @Pnp4.Frontier.ContractExpansion.loopUntilSink
+#check @Pnp4.Frontier.ContractExpansion.loopUntilSink_transition_loop
+#check @Pnp4.Frontier.ContractExpansion.loopUntilSink_transition_halt
+#check @Pnp4.Frontier.ContractExpansion.loopUntilSink_neverMovesLeft
+#check @Pnp4.Frontier.ContractExpansion.loopUntilSink_stepConfig_loop_phase
+#check @Pnp4.Frontier.ContractExpansion.loopUntilSink_stepConfig_halt_phase
+#check @Pnp4.Frontier.ContractExpansion.loopUntilSink_runConfig_oneIter
+#check @Pnp4.Frontier.ContractExpansion.loopUntilSink_runConfig_halt_stays
+#check @Pnp4.Frontier.ContractExpansion.loopUntilSink_reachesSink
+-- The on-tape gate-record STREAM decoder (D2): loopUntilSink over D1b, halting at the end-of-stream sink.
+#check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder
+#check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_neverMovesLeft
+-- The transition bridge: at body phases the stream decoder runs the one-record decoder (run-correctness seed).
+#check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_transition_body
+#check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_stepConfig_tag_one_phase
+-- Stream-decoder per-tag full-record traversals (reach accept 12, head at next record) on the composed machine.
+#check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_input
+#check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_const
+#check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_not
+#check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_and
+#check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_or
+-- D2 capstone: the stream decoder reaches its sink on a well-formed record stream + end marker (`1^5`).
+-- `TapeHoldsAt` bridges "tape window = bit list" to the traversals' per-cell predicates (splits along `++`).
+#check @Pnp4.Frontier.ContractExpansion.TapeHoldsAt
+#check @Pnp4.Frontier.ContractExpansion.TapeHoldsAt_append
+#check @Pnp4.Frontier.ContractExpansion.TapeHoldsAt_unaryField
+#check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_record
+#check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_marker
+#check @Pnp4.Frontier.ContractExpansion.gateStreamDecoder_runConfig_reachesSink
+-- D2 transcoder (parser entry, §11): CircuitTree 3-bit binary-tag dispatcher (depth-3 trie).
+#check @Pnp4.Frontier.ContractExpansion.treeTagDispatch
+#check @Pnp4.Frontier.ContractExpansion.treeTagDispatch_neverMovesLeft
+#check @Pnp4.Frontier.ContractExpansion.treeTagDispatch_runConfig_input
+#check @Pnp4.Frontier.ContractExpansion.treeTagDispatch_runConfig_const
+#check @Pnp4.Frontier.ContractExpansion.treeTagDispatch_runConfig_not
+#check @Pnp4.Frontier.ContractExpansion.treeTagDispatch_runConfig_and
+#check @Pnp4.Frontier.ContractExpansion.treeTagDispatch_runConfig_or
+-- D2t-5b: control-frame tag reader (unary trie; settle/pop entry).
+#check @Pnp4.Frontier.ContractExpansion.readCtrlFrameTag_runConfig_tnot
+#check @Pnp4.Frontier.ContractExpansion.readCtrlFrameTag_runConfig_tand
+#check @Pnp4.Frontier.ContractExpansion.readCtrlFrameTag_runConfig_tor
+-- D2t-5b: control-frame `remaining` reader (settle decision: emit rem1 / decrement rem2).
+#check @Pnp4.Frontier.ContractExpansion.readCtrlFrameRemaining_runConfig_rem1
+#check @Pnp4.Frontier.ContractExpansion.readCtrlFrameRemaining_runConfig_rem2
+#check @Pnp4.Frontier.ContractExpansion.treeTagDispatch_runConfig_malformed
+-- Unary countdown self-loop (marker-free counter; §6c brick toward the row loop).
+#check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft
+#check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_runConfig_consume
+#check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_runConfig_empty
+#check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_seqP2_runConfig_consume
+#check @Pnp4.Frontier.ContractExpansion.selfLoopCountdownLeft_seqP2_runConfig_empty
+-- Bounded body-reentry loop combinator: the back-edge control structure (loop-control single-steps).
+#check @Pnp4.Frontier.ContractExpansion.repeatBody
+#check @Pnp4.Frontier.ContractExpansion.repeatBody_stepConfig_consume_phase
+#check @Pnp4.Frontier.ContractExpansion.repeatBody_stepConfig_halt_phase
+#check @Pnp4.Frontier.ContractExpansion.repeatBody_stepConfig_handoff_phase
+#check @Pnp4.Frontier.ContractExpansion.repeatBody_runConfig_one_iteration
+#check @Pnp4.Frontier.ContractExpansion.repeatBody_runConfig_iterate
+#check @Pnp4.Frontier.ContractExpansion.repeatBody_runConfig_one_iteration'
+#check @Pnp4.Frontier.ContractExpansion.repeatBody_runConfig_iterate'
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopFill
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopFill_runConfig_fill
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopFill_seqP2_runConfig_fill
+-- D2 transcoder building block (§11, D2t-3): unary single-append (scan over `1`s, append one `1`).
+#check @Pnp4.Frontier.ContractExpansion.selfLoopAppendOne
+#check @Pnp4.Frontier.ContractExpansion.selfLoopAppendOne_neverMovesLeft
+#check @Pnp4.Frontier.ContractExpansion.selfLoopAppendOne_runConfig_scan
+#check @Pnp4.Frontier.ContractExpansion.selfLoopAppendOne_runConfig_stop
+#check @Pnp4.Frontier.ContractExpansion.selfLoopAppendOne_runConfig_done
+#check @Pnp4.Frontier.ContractExpansion.selfLoopAppendOne_seqP2_runConfig_scan
+#check @Pnp4.Frontier.ContractExpansion.selfLoopAppendOne_seqP2_runConfig_stop
+-- D2t-3c-α: leftward unary single-append (grows U leftward — the navigation-uniform direction).
+#check @Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne
+#check @Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_runConfig_scan
+#check @Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_runConfig_append
+-- D2t-3c: leftward unary-append as a non-first phase (seqP2 lift) — for the loop-body composition.
+#check @Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqP2_runConfig_scan
+#check @Pnp4.Frontier.ContractExpansion.selfLoopAppendLeftOne_seqP2_runConfig_append
+-- D2t-3c-β building block: single leftward step (off the decrement's cleared cell, before the scan).
+#check @Pnp4.Frontier.ContractExpansion.stepLeftOnce
+#check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_runConfig_one
+#check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_stepConfig_head_clamp
+#check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqP2_runConfig_one
+-- D2t-3c-γ: stepLeftOnce at chain-depth 3 (element 3 of the flattened binToUnaryBody chain).
+#check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested2_stepConfig_phase
+#check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested2_stepConfig_head
+#check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested2_stepConfig_tape
+#check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested2_runConfig_one
+-- D2t-3c-γ: the stepLeftOnce→successor depth-3 handoff (element-3→element-4 boundary).
+#check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested2_stepConfig_handoff_phase
+#check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested2_stepConfig_handoff_head
+#check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_seqNested2_stepConfig_handoff_tape
+-- D2t-3c-β: the binary→unary home-seek (stepLeftOnce ; selfLoopScanLeftOne) returns the head to HOME.
+#check @Pnp4.Frontier.ContractExpansion.seekHomeAfterDecrement_runConfig_lead2
+#check @Pnp4.Frontier.ContractExpansion.seekHomeAfterDecrement_runConfig_home
+-- Two-sided head-displacement bound (bidirectional accounting foundation).
+#check @Pnp4.Frontier.ContractExpansion.runConfig_head_val_ge
+#check @Pnp4.Frontier.ContractExpansion.runConfig_head_dist_le
+-- Self-loop binary increment (brick 0: variable-width counter machinery).
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_timeBound
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_neverMovesLeft
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_stepConfig_carry_phase
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_stepConfig_carry_head
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_stepConfig_carry_tape
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_stepConfig_stop_phase
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_stepConfig_stop_head
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_stepConfig_stop_tape
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_runConfig_carry
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_runConfig_stop
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_runConfig_counterValue
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_stepConfig_done
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_runConfig_done
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_run_counterValue
+-- Self-loop binary decrement (brick 0: dual down-counter step).
+#check @Pnp4.Frontier.ContractExpansion.counterValue_first_one_diff
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_timeBound
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_neverMovesLeft
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_stepConfig_borrow_phase
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_stepConfig_borrow_head
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_stepConfig_borrow_tape
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_stepConfig_stop_phase
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_stepConfig_stop_head
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_stepConfig_stop_tape
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_runConfig_borrow
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_runConfig_stop
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_runConfig_counterValue
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_stepConfig_done
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_runConfig_done
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_run_counterValue
+-- Lifting the self-loop counter into a composition (assembly milestone).
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_numPhases
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_acceptPhase_val
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_startPhase_val
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_stepConfig_carry_phase
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_stepConfig_carry_head
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_stepConfig_carry_tape
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_stepConfig_stop_phase
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_stepConfig_stop_head
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_stepConfig_stop_tape
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_runConfig_carry
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_runConfig_stop
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_runConfig_counterValue
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_stepConfig_handoff_phase
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_stepConfig_handoff_head
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_stepConfig_handoff_tape
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seq_runConfig_handoff
+-- Lifting the self-loop gamma scan into a composition (assembly milestone).
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_stepConfig_scan_zero_phase
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_stepConfig_scan_zero_head
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_stepConfig_scan_zero_tape
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_stepConfig_scan_one_phase
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_stepConfig_scan_one_head
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_stepConfig_scan_one_tape
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_runConfig_scanning
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_runConfig_terminator
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_stepConfig_handoff_phase
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_stepConfig_handoff_head
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_stepConfig_handoff_tape
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seq_runConfig_handoff
+-- Gamma scan in the P2 region (non-first phase): completes both-position coverage.
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seqP2_stepConfig_scan_zero_phase
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seqP2_stepConfig_scan_zero_head
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seqP2_stepConfig_scan_zero_tape
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seqP2_stepConfig_scan_one_phase
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seqP2_runConfig_scanning
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seqP2_runConfig_terminator
+-- Gamma scan in the doubly-nested P2∘P1 position (transitive composition, seqList depth ≥ 3).
+#check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_seqNested_runConfig_scanning
+-- Decrement composition lift (down-counter survives seq).
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_stepConfig_borrow_phase
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_stepConfig_borrow_head
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_stepConfig_borrow_tape
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_stepConfig_stop_phase
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_stepConfig_stop_head
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_stepConfig_stop_tape
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_runConfig_borrow
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_runConfig_stop
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seq_runConfig_counterValue
+-- Increment as a non-first (P2-region) phase, arbitrary start.
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seqP2_stepConfig_carry_phase
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seqP2_stepConfig_carry_head
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seqP2_stepConfig_carry_tape
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seqP2_stepConfig_stop_phase
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seqP2_stepConfig_stop_head
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seqP2_stepConfig_stop_tape
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seqP2_runConfig_carry
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seqP2_runConfig_stop
+#check @Pnp4.Frontier.ContractExpansion.selfLoopIncrement_seqP2_runConfig_counterValue
+-- Decrement as a non-first (P2-region) phase, arbitrary start.
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_stepConfig_borrow_phase
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_stepConfig_borrow_head
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_stepConfig_borrow_tape
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_stepConfig_stop_phase
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_stepConfig_stop_head
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_stepConfig_stop_tape
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_runConfig_borrow
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_runConfig_stop
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqP2_runConfig_counterValue
+-- Decrement in the doubly-nested P2∘P1 position (transitive composition, seqList depth ≥ 3).
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_stepConfig_borrow_phase
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_stepConfig_borrow_head
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_stepConfig_borrow_tape
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_stepConfig_stop_phase
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_stepConfig_stop_head
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_stepConfig_stop_tape
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_runConfig_borrow
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_runConfig_stop
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_runConfig_counterValue
+-- D2t-3c-γ: the decrement→successor nested handoff (the inner seq boundary after the decrement).
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_stepConfig_handoff_phase
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_stepConfig_handoff_head
+#check @Pnp4.Frontier.ContractExpansion.selfLoopDecrement_seqNested_stepConfig_handoff_tape
+-- State lifting + heterogeneous-state skeleton composition (assembly milestone).
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_neverMovesLeft
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_stepConfig_phase
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_stepConfig_state
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_stepConfig_head
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftUnitProgram_stepConfig_tape
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.toTM_stepConfig_phase
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.toTM_stepConfig_state
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.toTM_stepConfig_head
+#check @Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.toTM_stepConfig_tape
+#check @Pnp4.Frontier.ContractExpansion.mSkeletonDemo
+#check @Pnp4.Frontier.ContractExpansion.mSkeletonDemo_neverMovesLeft
+#check @Pnp4.Frontier.ContractExpansion.mSkeletonDemo_timeBound_le
+#check @Pnp4.Frontier.ContractExpansion.mSkeletonU
+#check @Pnp4.Frontier.ContractExpansion.mSkeletonU_neverMovesLeft
+#check @Pnp4.Frontier.ContractExpansion.mSkeletonU_timeBound_le
+-- Run behaviour of the assembled skeleton: its tag-check phase verifies and hands off,
+-- then the gamma scan runs (tag ▸ gamma zero-scan on the real mSkeletonU).
+#check @Pnp4.Frontier.ContractExpansion.mSkeletonU_tagCheck_handoff
+#check @Pnp4.Frontier.ContractExpansion.mSkeletonU_tagCheck_then_scan
+-- Tag check (M's first phase) run behaviour inside the P1 region of a `seq`.
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgramU_seq_stepConfig_match_phase
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgramU_seq_stepConfig_mismatch_phase
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgramU_seq_stepConfig_sink_phase
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgramU_seq_stepConfig_handoff_phase
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgramU_seq_runConfig_inv
+#check @Pnp4.Frontier.ContractExpansion.tagCheckProgramU_seq_runConfig_handoff
+-- M's first two leading phases (tag check then gamma scan) run in sequence on one composed machine.
+#check @Pnp4.Frontier.ContractExpansion.tagCheckThenGammaScan_runConfig
+#check @Pnp4.Frontier.ContractExpansion.tagCheckThenGammaScanTerminator_runConfig
+#check @Pnp4.Frontier.ContractExpansion.tagCheckThenGammaFill_runConfig
+-- Transitively-nested chain + capstone on the assembled mSkeletonU.
+#check @Pnp4.Frontier.ContractExpansion.tagCheckThenNestedGammaScan_runConfig
 
 end Tests
 end Pnp4

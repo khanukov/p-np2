@@ -120,6 +120,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverRealization
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTranscoderCapstone
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbe
 import Pnp4.Frontier.ContractExpansion.TreeMCSPAtomSeqP1
+import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbeFrame
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -1104,6 +1105,9 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_seq_runConfig_handoff
 #print axioms Pnp4.Frontier.ContractExpansion.stepRightOnce_seq_runConfig_handoff
 #print axioms Pnp4.Frontier.ContractExpansion.settleProbe_seq_runConfig_empty_handoff
+-- D2t-5b (Block A5m-3b): the frame-accepting probe (acceptPhase = the frame verdict), the dec/pop
+-- arms' pipeline entry; on the empty branch it idles and the pipeline never continues.
+#print axioms Pnp4.Frontier.ContractExpansion.settleProbeFrame_seq_runConfig_frame_handoff
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

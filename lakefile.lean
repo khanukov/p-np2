@@ -375,6 +375,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPTranscoderCapstone,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbe,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPAtomSeqP1,
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbeFrame,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder,

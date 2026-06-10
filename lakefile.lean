@@ -362,6 +362,8 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorDecStep,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorSettleClear,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPValReplaceTop,
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorPopStep,
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorTerminalStep,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder,

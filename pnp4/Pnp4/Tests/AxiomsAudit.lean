@@ -107,6 +107,8 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorInputStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorDecStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorSettleClear
 import Pnp4.Frontier.ContractExpansion.TreeMCSPValReplaceTop
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorPopStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorTerminalStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -1023,6 +1025,15 @@ end Pnp4
 -- D2t-5b (Block A4d): the value-stack pop-then-push window core — the settle-emit operand rewrite
 -- (pop k operand entries, push the new index) as one padded writeBlockTape over encodeNatStackR.
 #print axioms Pnp4.Frontier.ContractExpansion.valReplaceTop_window
+-- D2t-5b (Block A4e): the settle-POP-EMIT keystone — top control frame rem = 1; emit the gate
+-- record, pop the operands and push the new index, erase the completed frame; re-establishes the
+-- invariant for (toks, out ++ [gate], ctrl', out.length :: vs, true).
+#print axioms Pnp4.Frontier.ContractExpansion.corridorInv_popStep
+#print axioms Pnp4.Frontier.ContractExpansion.encodeNatStackR_append
+#print axioms Pnp4.Frontier.ContractExpansion.getD_replicate_false
+-- D2t-5b (Block A4f): the terminal no-op keystone — toks = [], not settling; step is the identity,
+-- the invariant transports verbatim.  Completes Block A4 (all DriveState.step branches covered).
+#print axioms Pnp4.Frontier.ContractExpansion.corridorInv_terminalStep
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

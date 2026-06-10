@@ -117,6 +117,8 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorInputStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorDecStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorSettleClear
 import Pnp4.Frontier.ContractExpansion.TreeMCSPValReplaceTop
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorPopStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorTerminalStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -4184,6 +4186,12 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.corridorInv_settleClearStep
 -- D2t-5b (Block A4d): the value-stack pop-then-push window core (settle-emit operand rewrite).
 #check @Pnp4.Frontier.ContractExpansion.valReplaceTop_window
+-- D2t-5b (Block A4e): the settle-pop-emit keystone (top frame rem = 1; emit + value pop/push + frame erase).
+#check @Pnp4.Frontier.ContractExpansion.corridorInv_popStep
+#check @Pnp4.Frontier.ContractExpansion.encodeNatStackR_append
+#check @Pnp4.Frontier.ContractExpansion.getD_replicate_false
+-- D2t-5b (Block A4f): the terminal no-op keystone (toks = [], step = id) — completes Block A4.
+#check @Pnp4.Frontier.ContractExpansion.corridorInv_terminalStep
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p3_zero_phase
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true

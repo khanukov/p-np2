@@ -131,6 +131,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionAtomHops
 import Pnp4.Frontier.ContractExpansion.TreeMCSPClearIterRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionWriteSegment
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCtrlTopWalk
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRemWalk
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -1171,6 +1172,10 @@ end Pnp4
 -- separator codec facts; in-host step primitives are private to the module.
 #print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_tagBlock_true
 #print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_tagSep_false
+-- D2t-5b (Block A5m-4b): remWalk -- the rem-block read from the separator to the frame base
+-- (2 ones = rem 1 / pop, 3 ones = rem 2 / dec), with the rem-block / frame-base codec facts.
+#print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_remBlock_true
+#print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_frameBase_false
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

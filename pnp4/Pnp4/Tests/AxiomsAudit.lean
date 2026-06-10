@@ -123,6 +123,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPAtomSeqP1
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbeFrame
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionEmbed
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionEmbedMulti
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionScanSegments
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -1124,6 +1125,11 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.stepConfig_normal_phase
 #print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.stepConfig_redirect_phase
 #print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.stepConfig_redirect_tape
+-- D2t-5b (Block A5m-U3): the corridor hops host-generic -- any machine hosting the leftward /
+-- rightward scan as a region performs the full hop (scan, read the anchor, hand off) in
+-- distance + 2 steps, tape untouched; every arm hop instantiates these at its region base.
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_scanLeft_hop
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_scanRight_hop
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

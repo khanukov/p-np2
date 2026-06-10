@@ -96,6 +96,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRightFull
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorRoutesBack
 import Pnp4.Frontier.ContractExpansion.TreeMCSPEraseLeftMark
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorPushFrame
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -959,6 +960,10 @@ end Pnp4
 -- the grown window spells the pushed stack (the codec's cons equation), everything else untouched.
 #print axioms Pnp4.Frontier.ContractExpansion.writeBits_appends_window
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_push_ctrl_frame
+-- D2t-5b (Block A4a): the corridor token dispatch — the D2t-1 trie's cell hypotheses discharged from
+-- the invariant's certificate clause (windowSpells_cell; tail-nonemptiness gives the strict room).
+#print axioms Pnp4.Frontier.ContractExpansion.windowSpells_cell
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_dispatch_tnot
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

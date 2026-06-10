@@ -102,6 +102,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitTape
 import Pnp4.Frontier.ContractExpansion.TreeMCSPValPush
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCursorStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPConstStepTape
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorConstStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -997,6 +998,10 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.constStepTape_eq_cursor
 #print axioms Pnp4.Frontier.ContractExpansion.constStepTape_eq_emit
 #print axioms Pnp4.Frontier.ContractExpansion.constStepTape_eq_write
+-- D2t-5b (Block A4a, part 2): the const-leaf KEYSTONE — constStepTape re-establishes
+-- driverCorridorInv for the stepped state (DriveState.step's const branch realised on tape).
+#print axioms Pnp4.Frontier.ContractExpansion.encodeGateRecordStream_snoc
+#print axioms Pnp4.Frontier.ContractExpansion.corridorInv_constStep
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

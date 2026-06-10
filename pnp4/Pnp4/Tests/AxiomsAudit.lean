@@ -116,6 +116,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverReachBound
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverFits
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftSeqP1
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanRoundTrip
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverRealization
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -1078,6 +1079,12 @@ end Pnp4
 -- D2t-5b (Block A5m-1b): the corridor scan round trip — left leg + handoff + right leg spliced on
 -- one composed machine (seq selfLoopScanLeft gammaSelfLoopScan), tape untouched end-to-end.
 #print axioms Pnp4.Frontier.ContractExpansion.scanRoundTrip_runConfig
+-- D2t-5b (Block A5m-9/10 skeleton): the DriverRealization interface (machine + home coupling +
+-- per-iteration run field) and the Configuration-level loop discharge: run_simulates couples the
+-- machine with driverTapes; terminal_output is the Configuration-level D2t-5c, conditional only on
+-- the interface instance (the A5m-2..8 arms construct it).
+#print axioms Pnp4.Frontier.ContractExpansion.DriverRealization.run_simulates
+#print axioms Pnp4.Frontier.ContractExpansion.DriverRealization.terminal_output
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

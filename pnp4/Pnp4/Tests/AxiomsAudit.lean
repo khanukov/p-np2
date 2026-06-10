@@ -136,6 +136,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPDecIterProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDecIterRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCertTrie
 import Pnp4.Frontier.ContractExpansion.TreeMCSPNodeIterProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPNodeIterRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -1212,6 +1213,13 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.nodeIter_region_And_frame
 #print axioms Pnp4.Frontier.ContractExpansion.nodeIter_region_Or_frame
 #print axioms Pnp4.Frontier.ContractExpansion.nodeIter_region_scanRight
+-- D2t-5b (Block A5m-5, run): the node iteration end to end -- the two block writes compose to
+-- corridorInv_nodeStep's transformer nodeStepTape, and the machine runs home-to-home onto the new
+-- marker within 2*certEnd + 40 steps.
+#print axioms Pnp4.Frontier.ContractExpansion.writeMarkFrame_eq_nodeStepTape
+#print axioms Pnp4.Frontier.ContractExpansion.nodeIter_run_tnot
+#print axioms Pnp4.Frontier.ContractExpansion.nodeIter_run_tand
+#print axioms Pnp4.Frontier.ContractExpansion.nodeIter_run_tor
 -- D2t-5b (Block A5m-4a, hops): the four host-generic ctrlTopWalk verdict hops -- empty (3 steps),
 -- tnot (4), tand (5), tor (6) -- each landing at its verdict's redirect target with the head on the
 -- separator (resp. the dead cell), tape unchanged.

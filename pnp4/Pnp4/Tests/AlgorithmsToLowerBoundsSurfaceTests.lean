@@ -146,6 +146,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPDecIterProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDecIterRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCertTrie
 import Pnp4.Frontier.ContractExpansion.TreeMCSPNodeIterProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPNodeIterRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -4313,6 +4314,11 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.nodeIter_region_certTrie
 #check @Pnp4.Frontier.ContractExpansion.nodeIter_region_Not_frame
 #check @Pnp4.Frontier.ContractExpansion.nodeIter_region_scanRight
+-- D2t-5b (Block A5m-5, run): the node iteration end to end.
+#check @Pnp4.Frontier.ContractExpansion.writeMarkFrame_eq_nodeStepTape
+#check @Pnp4.Frontier.ContractExpansion.nodeIter_run_tnot
+#check @Pnp4.Frontier.ContractExpansion.nodeIter_run_tand
+#check @Pnp4.Frontier.ContractExpansion.nodeIter_run_tor
 #check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_rem_pop_hop
 #check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_rem_dec_hop
 #check @Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_remBlock_true

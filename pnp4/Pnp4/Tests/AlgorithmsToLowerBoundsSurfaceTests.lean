@@ -113,6 +113,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPValPush
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCursorStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPConstStepTape
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorConstStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorInputStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -4169,6 +4170,10 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- D2t-5b (Block A4a, part 2): the const-leaf keystone.
 #check @Pnp4.Frontier.ContractExpansion.encodeGateRecordStream_snoc
 #check @Pnp4.Frontier.ContractExpansion.corridorInv_constStep
+-- D2t-5b (Block A4a, part 2): the input-leaf keystone (token-length-generic leafStepTape).
+#check @Pnp4.Frontier.ContractExpansion.leafStepTape
+#check @Pnp4.Frontier.ContractExpansion.leafStepTape_eq_id
+#check @Pnp4.Frontier.ContractExpansion.corridorInv_inputStep
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p3_zero_phase
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true

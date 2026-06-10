@@ -139,6 +139,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionUnion
 import Pnp4.Frontier.ContractExpansion.TreeMCSPClearIterProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionAtomHops
 import Pnp4.Frontier.ContractExpansion.TreeMCSPClearIterRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionWriteSegment
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -4282,6 +4283,8 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_probe_empty_hop
 -- D2t-5b (Block A5m-3 run): the clear iteration end to end.
 #check @Pnp4.Frontier.ContractExpansion.clearIter_run
+-- D2t-5b (Block A5m-U6): the host-generic write segment (tape = writeBlockTape).
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_writeBits_hop
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p3_zero_phase
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true

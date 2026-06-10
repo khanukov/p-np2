@@ -129,6 +129,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionUnion
 import Pnp4.Frontier.ContractExpansion.TreeMCSPClearIterProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionAtomHops
 import Pnp4.Frontier.ContractExpansion.TreeMCSPClearIterRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionWriteSegment
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -1160,6 +1161,10 @@ end Pnp4
 -- head back on the marker, tape untouched (= driverStepTape on the clear branch), <= 2*certEnd+13
 -- steps.  The per-iteration fact of the eventual DriverRealization instance, clear arm.
 #print axioms Pnp4.Frontier.ContractExpansion.clearIter_run
+-- D2t-5b (Block A5m-U6): the write segment -- any machine hosting writeBits bs as a region performs
+-- the block write in |bs|+1 steps, tape exactly writeBlockTape tape h bs (the keystones' write
+-- transformer); one instantiation per fixed-block write (dec/node frames, const record).
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_writeBits_hop
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

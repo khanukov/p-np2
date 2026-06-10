@@ -390,6 +390,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPDecIterProgram,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPDecIterRun,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPCertTrie,
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPNodeIterProgram,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder,

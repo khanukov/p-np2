@@ -135,6 +135,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPRemWalk
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDecIterProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDecIterRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCertTrie
+import Pnp4.Frontier.ContractExpansion.TreeMCSPNodeIterProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -1201,6 +1202,16 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_certTrie_not_hop
 #print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_certTrie_and_hop
 #print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_certTrie_or_hop
+-- D2t-5b (Block A5m-5, machine): nodeIterProgram -- the node iteration as a region union (116
+-- phases: stepRight, certTrie dispatch, per-tag marker rewrite + frame push chains, return scan)
+-- with its region contracts.
+#print axioms Pnp4.Frontier.ContractExpansion.nodeIterProgram
+#print axioms Pnp4.Frontier.ContractExpansion.nodeIter_region_certTrie
+#print axioms Pnp4.Frontier.ContractExpansion.nodeIter_region_Not_mark
+#print axioms Pnp4.Frontier.ContractExpansion.nodeIter_region_Not_frame
+#print axioms Pnp4.Frontier.ContractExpansion.nodeIter_region_And_frame
+#print axioms Pnp4.Frontier.ContractExpansion.nodeIter_region_Or_frame
+#print axioms Pnp4.Frontier.ContractExpansion.nodeIter_region_scanRight
 -- D2t-5b (Block A5m-4a, hops): the four host-generic ctrlTopWalk verdict hops -- empty (3 steps),
 -- tnot (4), tand (5), tor (6) -- each landing at its verdict's redirect target with the head on the
 -- separator (resp. the dead cell), tape unchanged.

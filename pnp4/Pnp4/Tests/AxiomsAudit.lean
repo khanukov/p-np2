@@ -99,6 +99,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorPushFrame
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorNodeStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitTape
+import Pnp4.Frontier.ContractExpansion.TreeMCSPValPush
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -976,6 +977,12 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.gateStream_emit_eq
 #print axioms Pnp4.Frontier.ContractExpansion.emitTape_output_window
 #print axioms Pnp4.Frontier.ContractExpansion.emitTape_FM
+-- D2t-5b (Block A4a): the value-stack push as a written-block append (windowSpells extends by the new
+-- top entry); reused by both leaf arms and the settle pop-emit.
+#print axioms Pnp4.Frontier.ContractExpansion.windowSpells_writeAppend
+#print axioms Pnp4.Frontier.ContractExpansion.writeBlockTape_below
+#print axioms Pnp4.Frontier.ContractExpansion.writeBlockTape_above
+#print axioms Pnp4.Frontier.ContractExpansion.valPush_window
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

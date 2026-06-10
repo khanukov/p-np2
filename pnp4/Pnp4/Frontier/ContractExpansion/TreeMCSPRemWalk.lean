@@ -9,8 +9,8 @@ distinguishes the reachable cases — `2` ones = `rem 1` (**pop**), `3` ones = `
 with the head landing on the frame's **base `0`**, exactly where the dec arm's frame rewrite
 (`run_writeBits_hop`) begins.
 
-* `φ0` — step left off the separator (onto the rem block's last `1`); `φ1`–`φ3` — count, branching;
-* verdicts `φ4` (`rem = 1`, pop), `φ5` (`rem = 2`, dec) idle; `φ6` rejects.
+* `φ0` — step left off the separator (onto the rem block's last `1`); `φ1`–`φ4` — count, branching;
+* verdicts `φ5` (`rem = 1`, pop), `φ6` (`rem = 2`, dec) idle; `φ7` rejects.
 
 The codec facts `encodeCtrlStackR_remBlock_true` / `encodeCtrlStackR_frameBase_false` pin the rem
 block's cells and the frame base.
@@ -89,25 +89,27 @@ theorem encodeCtrlStackR_frameBase_false (tag : ITag) (rem : Nat) (rest : List (
 
 /-! ### The walking component -/
 
-/-- **The rem-block walk** (7 phases): step left off the separator, count the ones — verdicts:
-`2` ones = `rem 1` (**pop**, `φ4`); `3` ones = `rem 2` (**dec**, `φ5`); a fourth one rejects
-(`φ6`).  The verdicts land on the frame's base `0`. -/
+/-- **The rem-block walk** (8 phases): step left off the separator, count the ones — verdicts:
+`2` ones = `rem 1` (**pop**, `φ5`); `3` ones = `rem 2` (**dec**, `φ6`); zero or one ones are
+unreachable and a fourth one rejects (`φ7`).  The verdicts land on the frame's base `0`. -/
 def remWalk : ConstStatePhasedProgram Unit where
-  numPhases := 7
+  numPhases := 8
   startPhase := ⟨0, by omega⟩
   startState := ()
-  acceptPhase := ⟨4, by omega⟩
+  acceptPhase := ⟨5, by omega⟩
   acceptState := ()
   transition := fun i _ b =>
     if i.val = 0 then (⟨1, by omega⟩, (), b, Move.left)
     else if i.val = 1 then
-      if b then (⟨2, by omega⟩, (), b, Move.left) else (⟨6, by omega⟩, (), b, Move.stay)
+      if b then (⟨2, by omega⟩, (), b, Move.left) else (⟨7, by omega⟩, (), b, Move.stay)
     else if i.val = 2 then
-      if b then (⟨3, by omega⟩, (), b, Move.left) else (⟨4, by omega⟩, (), b, Move.stay)
+      if b then (⟨3, by omega⟩, (), b, Move.left) else (⟨7, by omega⟩, (), b, Move.stay)
     else if i.val = 3 then
-      if b then (⟨6, by omega⟩, (), b, Move.stay) else (⟨5, by omega⟩, (), b, Move.stay)
+      if b then (⟨4, by omega⟩, (), b, Move.left) else (⟨5, by omega⟩, (), b, Move.stay)
+    else if i.val = 4 then
+      if b then (⟨7, by omega⟩, (), b, Move.stay) else (⟨6, by omega⟩, (), b, Move.stay)
     else (⟨i.val, i.isLt⟩, (), b, Move.stay)
-  timeBound := fun _ => 4
+  timeBound := fun _ => 5
 
 end ContractExpansion
 end Frontier

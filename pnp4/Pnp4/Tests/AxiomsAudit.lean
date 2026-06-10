@@ -1176,6 +1176,13 @@ end Pnp4
 -- (2 ones = rem 1 / pop, 3 ones = rem 2 / dec), with the rem-block / frame-base codec facts.
 #print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_remBlock_true
 #print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_frameBase_false
+-- D2t-5b (Block A5m-4a, hops): the four host-generic ctrlTopWalk verdict hops -- empty (3 steps),
+-- tnot (4), tand (5), tor (6) -- each landing at its verdict's redirect target with the head on the
+-- separator (resp. the dead cell), tape unchanged.
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_ctrlTop_empty_hop
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_ctrlTop_tnot_hop
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_ctrlTop_tand_hop
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_ctrlTop_tor_hop
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

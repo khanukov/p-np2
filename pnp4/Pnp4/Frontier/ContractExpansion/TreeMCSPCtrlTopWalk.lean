@@ -181,7 +181,7 @@ private theorem ctrlTopWalk_open_step (hUP : RegionEmbeddedMulti U ctrlTopWalk b
 tape unchanged. -/
 private theorem ctrlTopWalk_verdict_step (hUP : RegionEmbeddedMulti U ctrlTopWalk base redirect)
     {L : Nat} (c : Configuration (M := U.toPhased.toTM) L) (k : Nat)
-    (hk : 1 ≤ k ∧ k ≤ 3) (hred : redirect k = none)
+    (hk : 1 ≤ k ∧ k ≤ 4) (hred : redirect k = none)
     (hphase : (c.state.fst : Nat) = base + k) (hbit : c.tape c.head = false) :
     (((TM.stepConfig (M := U.toPhased.toTM) c).state).fst : Nat) = base + (4 + k)
       ∧ ((TM.stepConfig (M := U.toPhased.toTM) c).head : Nat) = (c.head : Nat)
@@ -224,6 +224,168 @@ private theorem ctrlTopWalk_redirect_step (hUP : RegionEmbeddedMulti U ctrlTopWa
   · exact hUP.stepConfig_redirect_phase c rfl _ hij hred
   · rw [hUP.stepConfig_redirect_head c rfl _ hij hred]
   · rw [hUP.stepConfig_redirect_tape c rfl _ hij hred]
+
+/-- **The empty hop**: one counted one (the lone sentinel) — `3` steps end at the empty verdict's
+redirect target, head one left of the start (the dead cell), tape unchanged. -/
+theorem run_ctrlTop_empty_hop (hUP : RegionEmbeddedMulti U ctrlTopWalk base redirect)
+    {L : Nat} (hred0 : redirect 0 = none) (hred1 : redirect 1 = none)
+    {nxt : Nat} (hred5 : redirect 5 = some nxt)
+    (c0 : Configuration (M := U.toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = base) (hpos : 1 ≤ (c0.head : Nat))
+    (hpeek : ∀ p : Fin (U.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) - 1 → c0.tape p = false) :
+    (((TM.runConfig (M := U.toPhased.toTM) c0 3).state).fst : Nat) = nxt
+      ∧ ((TM.runConfig (M := U.toPhased.toTM) c0 3).head : Nat) = (c0.head : Nat) - 1
+      ∧ (TM.runConfig (M := U.toPhased.toTM) c0 3).tape = c0.tape := by
+  rw [show (3 : Nat) = (1 + 1) + 1 from rfl, TM.runConfig_add, TM.runConfig_add,
+    TM.runConfig_one, TM.runConfig_one, TM.runConfig_one]
+  set c1 := TM.stepConfig (M := U.toPhased.toTM) c0 with hc1
+  obtain ⟨hp1, hh1, ht1⟩ := ctrlTopWalk_open_step hUP c0 hred0 hphase hpos
+  rw [← hc1] at hp1 hh1 ht1
+  set c2 := TM.stepConfig (M := U.toPhased.toTM) c1 with hc2
+  have hb1 : c1.tape c1.head = false := by
+    rw [ht1]; exact hpeek c1.head (by omega)
+  obtain ⟨hp2, hh2, ht2⟩ := ctrlTopWalk_verdict_step hUP c1 1 (by omega) hred1 hp1 hb1
+  rw [← hc2] at hp2 hh2 ht2
+  obtain ⟨hp3, hh3, ht3⟩ := ctrlTopWalk_redirect_step hUP c2 5 (by omega) hred5
+    (by rw [hp2])
+  refine ⟨hp3, ?_, ?_⟩
+  · rw [hh3, hh2, hh1]
+  · rw [ht3, ht2, ht1]
+
+/-- **The tnot hop**: two counted ones — `4` steps end at the tnot verdict's redirect target, head
+two left of the start (the separator), tape unchanged. -/
+theorem run_ctrlTop_tnot_hop (hUP : RegionEmbeddedMulti U ctrlTopWalk base redirect)
+    {L : Nat} (hred0 : redirect 0 = none) (hred1 : redirect 1 = none)
+    (hred2 : redirect 2 = none) {nxt : Nat} (hred6 : redirect 6 = some nxt)
+    (c0 : Configuration (M := U.toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = base) (hpos : 2 ≤ (c0.head : Nat))
+    (hone1 : ∀ p : Fin (U.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) - 1 → c0.tape p = true)
+    (hsep : ∀ p : Fin (U.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) - 2 → c0.tape p = false) :
+    (((TM.runConfig (M := U.toPhased.toTM) c0 4).state).fst : Nat) = nxt
+      ∧ ((TM.runConfig (M := U.toPhased.toTM) c0 4).head : Nat) = (c0.head : Nat) - 2
+      ∧ (TM.runConfig (M := U.toPhased.toTM) c0 4).tape = c0.tape := by
+  rw [show (4 : Nat) = ((1 + 1) + 1) + 1 from rfl, TM.runConfig_add, TM.runConfig_add,
+    TM.runConfig_add, TM.runConfig_one, TM.runConfig_one, TM.runConfig_one, TM.runConfig_one]
+  set c1 := TM.stepConfig (M := U.toPhased.toTM) c0 with hc1
+  obtain ⟨hp1, hh1, ht1⟩ := ctrlTopWalk_open_step hUP c0 hred0 hphase (by omega)
+  rw [← hc1] at hp1 hh1 ht1
+  set c2 := TM.stepConfig (M := U.toPhased.toTM) c1 with hc2
+  have hb1 : c1.tape c1.head = true := by
+    rw [ht1]; exact hone1 c1.head (by omega)
+  obtain ⟨hp2, hh2, ht2⟩ := ctrlTopWalk_one_step hUP c1 1 (by omega) hred1 hp1 hb1 (by omega)
+  rw [← hc2] at hp2 hh2 ht2
+  set c3 := TM.stepConfig (M := U.toPhased.toTM) c2 with hc3
+  have hb2 : c2.tape c2.head = false := by
+    rw [ht2, ht1]; exact hsep c2.head (by omega)
+  obtain ⟨hp3, hh3, ht3⟩ := ctrlTopWalk_verdict_step hUP c2 2 (by omega) hred2 hp2 hb2
+  rw [← hc3] at hp3 hh3 ht3
+  obtain ⟨hp4, hh4, ht4⟩ := ctrlTopWalk_redirect_step hUP c3 6 (by omega) hred6
+    (by rw [hp3])
+  refine ⟨hp4, ?_, ?_⟩
+  · rw [hh4, hh3, hh2, hh1]
+    omega
+  · rw [ht4, ht3, ht2, ht1]
+
+/-- **The tand hop**: three counted ones — `5` steps end at the tand verdict's redirect target,
+head three left of the start (the separator), tape unchanged. -/
+theorem run_ctrlTop_tand_hop (hUP : RegionEmbeddedMulti U ctrlTopWalk base redirect)
+    {L : Nat} (hred0 : redirect 0 = none) (hred1 : redirect 1 = none)
+    (hred2 : redirect 2 = none) (hred3 : redirect 3 = none)
+    {nxt : Nat} (hred7 : redirect 7 = some nxt)
+    (c0 : Configuration (M := U.toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = base) (hpos : 3 ≤ (c0.head : Nat))
+    (hone1 : ∀ p : Fin (U.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) - 1 → c0.tape p = true)
+    (hone2 : ∀ p : Fin (U.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) - 2 → c0.tape p = true)
+    (hsep : ∀ p : Fin (U.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) - 3 → c0.tape p = false) :
+    (((TM.runConfig (M := U.toPhased.toTM) c0 5).state).fst : Nat) = nxt
+      ∧ ((TM.runConfig (M := U.toPhased.toTM) c0 5).head : Nat) = (c0.head : Nat) - 3
+      ∧ (TM.runConfig (M := U.toPhased.toTM) c0 5).tape = c0.tape := by
+  rw [show (5 : Nat) = (((1 + 1) + 1) + 1) + 1 from rfl, TM.runConfig_add, TM.runConfig_add,
+    TM.runConfig_add, TM.runConfig_add, TM.runConfig_one, TM.runConfig_one, TM.runConfig_one,
+    TM.runConfig_one, TM.runConfig_one]
+  set c1 := TM.stepConfig (M := U.toPhased.toTM) c0 with hc1
+  obtain ⟨hp1, hh1, ht1⟩ := ctrlTopWalk_open_step hUP c0 hred0 hphase (by omega)
+  rw [← hc1] at hp1 hh1 ht1
+  set c2 := TM.stepConfig (M := U.toPhased.toTM) c1 with hc2
+  have hb1 : c1.tape c1.head = true := by
+    rw [ht1]; exact hone1 c1.head (by omega)
+  obtain ⟨hp2, hh2, ht2⟩ := ctrlTopWalk_one_step hUP c1 1 (by omega) hred1 hp1 hb1 (by omega)
+  rw [← hc2] at hp2 hh2 ht2
+  set c3 := TM.stepConfig (M := U.toPhased.toTM) c2 with hc3
+  have hb2 : c2.tape c2.head = true := by
+    rw [ht2, ht1]; exact hone2 c2.head (by omega)
+  obtain ⟨hp3, hh3, ht3⟩ := ctrlTopWalk_one_step hUP c2 2 (by omega) hred2 hp2 hb2 (by omega)
+  rw [← hc3] at hp3 hh3 ht3
+  set c4 := TM.stepConfig (M := U.toPhased.toTM) c3 with hc4
+  have hb3 : c3.tape c3.head = false := by
+    rw [ht3, ht2, ht1]; exact hsep c3.head (by omega)
+  obtain ⟨hp4, hh4, ht4⟩ := ctrlTopWalk_verdict_step hUP c3 3 (by omega) hred3 hp3 hb3
+  rw [← hc4] at hp4 hh4 ht4
+  obtain ⟨hp5, hh5, ht5⟩ := ctrlTopWalk_redirect_step hUP c4 7 (by omega) hred7
+    (by rw [hp4])
+  refine ⟨hp5, ?_, ?_⟩
+  · rw [hh5, hh4, hh3, hh2, hh1]
+    omega
+  · rw [ht5, ht4, ht3, ht2, ht1]
+
+/-- **The tor hop**: four counted ones — `6` steps end at the tor verdict's redirect target, head
+four left of the start (the separator), tape unchanged. -/
+theorem run_ctrlTop_tor_hop (hUP : RegionEmbeddedMulti U ctrlTopWalk base redirect)
+    {L : Nat} (hred0 : redirect 0 = none) (hred1 : redirect 1 = none)
+    (hred2 : redirect 2 = none) (hred3 : redirect 3 = none) (hred4 : redirect 4 = none)
+    {nxt : Nat} (hred8 : redirect 8 = some nxt)
+    (c0 : Configuration (M := U.toPhased.toTM) L)
+    (hphase : (c0.state.fst : Nat) = base) (hpos : 4 ≤ (c0.head : Nat))
+    (hone1 : ∀ p : Fin (U.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) - 1 → c0.tape p = true)
+    (hone2 : ∀ p : Fin (U.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) - 2 → c0.tape p = true)
+    (hone3 : ∀ p : Fin (U.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) - 3 → c0.tape p = true)
+    (hsep : ∀ p : Fin (U.toPhased.toTM.tapeLength L),
+      (p : Nat) = (c0.head : Nat) - 4 → c0.tape p = false) :
+    (((TM.runConfig (M := U.toPhased.toTM) c0 6).state).fst : Nat) = nxt
+      ∧ ((TM.runConfig (M := U.toPhased.toTM) c0 6).head : Nat) = (c0.head : Nat) - 4
+      ∧ (TM.runConfig (M := U.toPhased.toTM) c0 6).tape = c0.tape := by
+  rw [show (6 : Nat) = ((((1 + 1) + 1) + 1) + 1) + 1 from rfl, TM.runConfig_add,
+    TM.runConfig_add, TM.runConfig_add, TM.runConfig_add, TM.runConfig_add,
+    TM.runConfig_one, TM.runConfig_one, TM.runConfig_one, TM.runConfig_one,
+    TM.runConfig_one, TM.runConfig_one]
+  set c1 := TM.stepConfig (M := U.toPhased.toTM) c0 with hc1
+  obtain ⟨hp1, hh1, ht1⟩ := ctrlTopWalk_open_step hUP c0 hred0 hphase (by omega)
+  rw [← hc1] at hp1 hh1 ht1
+  set c2 := TM.stepConfig (M := U.toPhased.toTM) c1 with hc2
+  have hb1 : c1.tape c1.head = true := by
+    rw [ht1]; exact hone1 c1.head (by omega)
+  obtain ⟨hp2, hh2, ht2⟩ := ctrlTopWalk_one_step hUP c1 1 (by omega) hred1 hp1 hb1 (by omega)
+  rw [← hc2] at hp2 hh2 ht2
+  set c3 := TM.stepConfig (M := U.toPhased.toTM) c2 with hc3
+  have hb2 : c2.tape c2.head = true := by
+    rw [ht2, ht1]; exact hone2 c2.head (by omega)
+  obtain ⟨hp3, hh3, ht3⟩ := ctrlTopWalk_one_step hUP c2 2 (by omega) hred2 hp2 hb2 (by omega)
+  rw [← hc3] at hp3 hh3 ht3
+  set c4 := TM.stepConfig (M := U.toPhased.toTM) c3 with hc4
+  have hb3 : c3.tape c3.head = true := by
+    rw [ht3, ht2, ht1]; exact hone3 c3.head (by omega)
+  obtain ⟨hp4, hh4, ht4⟩ := ctrlTopWalk_one_step hUP c3 3 (by omega) hred3 hp3 hb3 (by omega)
+  rw [← hc4] at hp4 hh4 ht4
+  set c5 := TM.stepConfig (M := U.toPhased.toTM) c4 with hc5
+  have hb4 : c4.tape c4.head = false := by
+    rw [ht4, ht3, ht2, ht1]; exact hsep c4.head (by omega)
+  obtain ⟨hp5, hh5, ht5⟩ := ctrlTopWalk_verdict_step hUP c4 4 (by omega) hred4 hp4 hb4
+  rw [← hc5] at hp5 hh5 ht5
+  obtain ⟨hp6, hh6, ht6⟩ := ctrlTopWalk_redirect_step hUP c5 8 (by omega) hred8
+    (by rw [hp5])
+  refine ⟨hp6, ?_, ?_⟩
+  · rw [hh6, hh5, hh4, hh3, hh2, hh1]
+    omega
+  · rw [ht6, ht5, ht4, ht3, ht2, ht1]
 
 end RegionEmbeddedMulti
 

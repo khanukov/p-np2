@@ -125,6 +125,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverTapes
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverReachBound
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverFits
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftSeqP1
+import Pnp4.Frontier.ContractExpansion.TreeMCSPScanRoundTrip
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -4223,6 +4224,8 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- D2t-5b (Block A5m-1a): the leftward scan as the first seq phase (P1 leg + handoff).
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seq_runConfig_scanning
 #check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seq_runConfig_terminator_handoff
+-- D2t-5b (Block A5m-1b): the corridor scan round trip on one composed machine.
+#check @Pnp4.Frontier.ContractExpansion.scanRoundTrip_runConfig
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p3_zero_phase
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true

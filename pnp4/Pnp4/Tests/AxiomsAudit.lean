@@ -115,6 +115,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverTapes
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverReachBound
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverFits
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftSeqP1
+import Pnp4.Frontier.ContractExpansion.TreeMCSPScanRoundTrip
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -1074,6 +1075,9 @@ end Pnp4
 -- terminator + handoff leg (lands at P2's shifted start, head on the marker, tape unchanged).
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seq_runConfig_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seq_runConfig_terminator_handoff
+-- D2t-5b (Block A5m-1b): the corridor scan round trip — left leg + handoff + right leg spliced on
+-- one composed machine (seq selfLoopScanLeft gammaSelfLoopScan), tape untouched end-to-end.
+#print axioms Pnp4.Frontier.ContractExpansion.scanRoundTrip_runConfig
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

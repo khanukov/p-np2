@@ -123,6 +123,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorLeafLast
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverStepTape
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverTapes
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverReachBound
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverFits
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -4211,6 +4212,13 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.reachable_outLen_le_size
 #check @Pnp4.Frontier.ContractExpansion.reachable_valEntry_lt_size
 #check @Pnp4.Frontier.ContractExpansion.reachable_valLen_le_size
+#check @Pnp4.Frontier.ContractExpansion.reachable_ctrlRem
+#check @Pnp4.Frontier.ContractExpansion.reachable_ctrlLen_le_size
+#check @Pnp4.Frontier.ContractExpansion.reachable_node_tail_ne_nil
+-- D2t-5b (Block A5d, completion): the capacity discharge and the hypothesis-free terminal output.
+#check @Pnp4.Frontier.ContractExpansion.CorridorSized
+#check @Pnp4.Frontier.ContractExpansion.reachable_driverStepFits
+#check @Pnp4.Frontier.ContractExpansion.driverTapes_terminal_output_sized
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p3_zero_phase
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true

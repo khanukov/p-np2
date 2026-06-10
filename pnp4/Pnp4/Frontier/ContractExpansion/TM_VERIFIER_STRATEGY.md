@@ -1479,18 +1479,19 @@ The **semantic (tape-level) half of the A5 loop discharge is settled**:
    (A1b `driver_sink_sound` / `driver_sink_exists`), measure `μ := DriveState.mu ∘ decode`
    (`mu_step_lt` / `step_terminal_at_mu`), and the coupling "machine tape after `j` iterations
    `= driverTapes … j`" — at which point `driverTapes_terminal_output` pins the final tape;
-4. **capacity discharge** — `DriverStepFits` at every reachable step from zone sizing (reachable-state
-   bounds), turning the `hfits` hypotheses into theorems for a corridor sized polynomially in the
-   certificate.  **Part 1 landed** (`TreeMCSPDriverReachBound.lean`): `reachable_outLen_le_size`
-   (`out` never outgrows `(flatten c).gates`, so `out.length ≤ c.size` along the run — `out`-length
-   monotone under `step`, pinned by `driveStep_halts_bound`) and `reachable_valEntry_lt_size` (every
-   value-stack index is a valid back-reference `< c.size`, via the step-invariant
-   `ValEntriesBounded`); plus `reachable_valLen_le_size` (the value-stack depth bound
-   `val.length ≤ c.size + 1`, via the step-invariant `ValDepthBounded : val.length ≤ out.length + 1`).
-   The value stack is therefore fully bounded (entries `< c.size`, depth `≤ c.size + 1`), which sizes
-   the right-anchored `encodeNatStackR` window.  Remaining: the operand/record-size bound
-   (`gateRecordSize` via SLP validity, sizing the WORK record stream) and the control-stack depth
-   bound, then assembling `DriverStepFits` for a polynomially-sized corridor.
+4. **capacity discharge — COMPLETE** (`TreeMCSPDriverReachBound.lean` + `TreeMCSPDriverFits.lean`).
+   The reachable-state bounds: `reachable_outLen_le_size` (`out.length ≤ c.size`, monotone, pinned by
+   `driveStep_halts_bound`); `reachable_valEntry_lt_size` / `reachable_valLen_le_size` (value stack:
+   entries `< c.size`, depth `≤ c.size + 1`); `reachable_streamLen_le` (the record stream never
+   outgrows `encodeGateRecordStream (flatten c).gates`); `reachable_ctrlRem` /
+   `reachable_ctrlLen_le_size` (control stack: every frame `rem ≤ 2`, depth `≤ c.size` via the
+   `ctrl + toks` conservation); and `reachable_node_tail_ne_nil` (`toks` is a suffix of the initial
+   preorder, and a preorder always ends with a leaf — so a node read never has an empty tail).
+   `CorridorSized` (four concrete zone-size inequalities) then discharges `DriverStepFits` at every
+   reachable step (`reachable_driverStepFits`), and the capstone
+   **`driverTapes_terminal_output_sized`** needs **no per-step hypotheses**: from the
+   `driverCorridorInv_init` layout on a sized corridor, after `3 · c.size` micro-steps the output
+   window spells `encodeGateStream (flatten c).gates`.
 
 All keystones and cores are kernel-checked, standard `[propext, Classical.choice, Quot.sound]` triple
 only.  This is **Infrastructure** for the NP-verifier track (input (2) of `verifiedSource_treePoly`); it

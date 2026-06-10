@@ -368,6 +368,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPDriverStepTape,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPDriverTapes,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPDriverReachBound,
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPDriverFits,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder,

@@ -113,6 +113,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorLeafLast
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverStepTape
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverTapes
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverReachBound
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverFits
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -1058,6 +1059,16 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.reachable_valEntry_lt_size
 -- value-stack depth bound: val.length ≤ out.length + 1 (step-invariant), hence ≤ c.size + 1 reachable.
 #print axioms Pnp4.Frontier.ContractExpansion.reachable_valLen_le_size
+-- control-stack bounds (rem ≤ 2 invariant; depth ≤ c.size via ctrl+toks conservation), the unread
+-- suffix facts (toks is a suffix; preorder ends with a leaf; a reachable node read has a tail).
+#print axioms Pnp4.Frontier.ContractExpansion.reachable_ctrlRem
+#print axioms Pnp4.Frontier.ContractExpansion.reachable_ctrlLen_le_size
+#print axioms Pnp4.Frontier.ContractExpansion.reachable_node_tail_ne_nil
+-- D2t-5b (Block A5d, completion): the capacity discharge — CorridorSized (four zone-size
+-- inequalities) discharges DriverStepFits at every reachable step; the terminal output theorem
+-- becomes hypothesis-free modulo sizing.
+#print axioms Pnp4.Frontier.ContractExpansion.reachable_driverStepFits
+#print axioms Pnp4.Frontier.ContractExpansion.driverTapes_terminal_output_sized
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

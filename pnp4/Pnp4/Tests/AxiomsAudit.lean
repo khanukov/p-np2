@@ -130,6 +130,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPClearIterProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionAtomHops
 import Pnp4.Frontier.ContractExpansion.TreeMCSPClearIterRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionWriteSegment
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCtrlTopWalk
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -1165,6 +1166,11 @@ end Pnp4
 -- the block write in |bs|+1 steps, tape exactly writeBlockTape tape h bs (the keystones' write
 -- transformer); one instantiation per fixed-block write (dec/node frames, const record).
 #print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_writeBits_hop
+-- D2t-5b (Block A5m-4a): ctrlTopWalk -- the settle dispatch read as one walking component (count
+-- the ones left of the control top: 1 = empty sentinel, 2/3/4 = the tag), with the tag-block /
+-- separator codec facts; in-host step primitives are private to the module.
+#print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_tagBlock_true
+#print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_tagSep_false
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

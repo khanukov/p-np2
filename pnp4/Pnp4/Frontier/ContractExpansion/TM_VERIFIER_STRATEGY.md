@@ -1502,6 +1502,31 @@ exists or is needed); each iteration runs `dispatch ; arm ; re-home`, and the as
 per-iteration tape map is equated with `driverStepTape` (A5b), so `corridorInv_driverTapes` /
 `driverTapes_terminal_output_sized` pin the run.  Bricks, each a hole-free PR:
 
+**A5m progress (landed):** A5m-1a (`TreeMCSPScanLeftSeqP1.lean` — the leftward scan as the first
+`seq` phase, P1 leg + handoff), A5m-1b (`TreeMCSPScanRoundTrip.lean` — the round trip on
+`seq selfLoopScanLeft gammaSelfLoopScan`), the **A5m-9/10 skeleton** (`TreeMCSPDriverRealization.lean`
+— the `DriverRealization` interface + `run_simulates` + `terminal_output`, the Configuration-level
+D2t-5c conditional on the instance), the **D2t-6b conditional capstone**
+(`TreeMCSPTranscoderCapstone.lean` — `DriverRealization.transcodes` / `transcodes_faithful`: the
+machine's output window spells the `transcodeWitness` stream, decoding to a program computing
+`Circuit.eval c` on every input), A5m-2 (`TreeMCSPSettleProbe.lean` — the empty test with both
+verdict runs under the invariant), and A5m-3a (`TreeMCSPAtomSeqP1.lean` — `stepLeftOnce` /
+`stepRightOnce` / probe-empty as P1 legs with handoff).  **The one remaining input to D2t-6b is a
+`DriverRealization` instance** (the arms + dispatch).
+
+**Next brick (A5m-3, the clear arm)** — pipeline
+`seq stepLeftOnce (seq selfLoopScanLeft (seq settleProbe (seq stepRightOnce (seq stepRightOnce
+gammaSelfLoopScan))))` under `driverCorridorInv` with `st.ctrl = []`: home `M` → step left → scan
+left onto the ctrl sentinel → probe (empty) → two right steps over the sentinel → scan right onto
+`M`; tape unchanged end-to-end (= `driverStepTape` on the clear branch).  The splice needs the
+**nested-`seq` embedding**: each leg's P1-lemma is generic in `P2` (landed), but transferring the
+*inner* composite's run into the outer requires `embedSeqP2Config_runConfig_eq` (pnp3), whose
+`h_safe_all` side condition wants **stepwise** facts (phase < inner `numPhases`; right-moves have
+head-room) — so each leg needs a small *stepwise-safety companion* (derivable from the leg lemmas'
+inductions), OR each leg is restated at its P2-offset on the outer machine via the generic
+`seq_stepConfig_P2_*` single-step lemmas (the `gammaSelfLoopScan_seqP2_*` pattern, one level
+deeper).  Either route is mechanical; the offsets for the clear arm are `2 / 4 / 8 / 10 / 12`.
+
 * **A5m-1 — scan round-trip** (`seq selfLoopScanLeft gammaSelfLoopScan`): the M → ctrl-top →
   M navigation pair under `driverCorridorInv`, splicing `corridor_scan_M_to_ctrlTop` (P1 side:
   `selfLoopScanLeft_runConfig_terminator` re-proved inside `seq` via the §6a P1-normal single-step

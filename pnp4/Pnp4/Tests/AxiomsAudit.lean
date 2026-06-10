@@ -104,6 +104,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPCursorStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPConstStepTape
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorConstStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorInputStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorDecStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -1010,6 +1011,10 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.leafStepTape_eq_emit
 #print axioms Pnp4.Frontier.ContractExpansion.leafStepTape_eq_write
 #print axioms Pnp4.Frontier.ContractExpansion.corridorInv_inputStep
+-- D2t-5b (Block A4b): the settle-DECREMENT keystone — one writeBlockTape (decremented frame + zero
+-- pad) re-establishes the invariant for (toks, out, (tag, rem-1) :: ctrl', val, false).
+#print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlFrameR_dec_length
+#print axioms Pnp4.Frontier.ContractExpansion.corridorInv_decStep
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

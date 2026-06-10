@@ -111,6 +111,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorNodeStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPEmitTape
 import Pnp4.Frontier.ContractExpansion.TreeMCSPValPush
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCursorStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPConstStepTape
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -4157,6 +4158,13 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.windowSpells_congr
 #check @Pnp4.Frontier.ContractExpansion.cursorStepTape
 #check @Pnp4.Frontier.ContractExpansion.cursorStepTape_cert
+-- D2t-5b (Block A4a, part 2): the const-arm off-factory.
+#check @Pnp4.Frontier.ContractExpansion.constStepTape
+#check @Pnp4.Frontier.ContractExpansion.emitTape_off
+#check @Pnp4.Frontier.ContractExpansion.constStepTape_eq_id
+#check @Pnp4.Frontier.ContractExpansion.constStepTape_eq_cursor
+#check @Pnp4.Frontier.ContractExpansion.constStepTape_eq_emit
+#check @Pnp4.Frontier.ContractExpansion.constStepTape_eq_write
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p3_zero_phase
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true

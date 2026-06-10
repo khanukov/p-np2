@@ -124,6 +124,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbeFrame
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionEmbed
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionEmbedMulti
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionScanSegments
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionRunTransfer
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -1130,6 +1131,11 @@ end Pnp4
 -- distance + 2 steps, tape untouched; every arm hop instantiates these at its region base.
 #print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_scanLeft_hop
 #print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_scanRight_hop
+-- D2t-5b (Block A5m-U4): whole-run transfer -- a native component run transports into the host
+-- region (phase offset, equal heads, value-wise tape agreement) under trace safety (no visited
+-- phase redirect-mapped; no clamping); native capstones become host-level run facts wholesale.
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.step_track
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_track
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

@@ -122,6 +122,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbe
 import Pnp4.Frontier.ContractExpansion.TreeMCSPAtomSeqP1
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbeFrame
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionEmbed
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionEmbedMulti
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -1118,6 +1119,11 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.stepConfig_accept_phase
 #print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.stepConfig_accept_head
 #print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.stepConfig_accept_tape
+-- D2t-5b (Block A5m-U2): the multi-exit region contract (redirect MAP over the component's phases:
+-- branching components route each verdict phase to a different successor region) + its transfers.
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.stepConfig_normal_phase
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.stepConfig_redirect_phase
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.stepConfig_redirect_tape
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

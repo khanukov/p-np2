@@ -132,6 +132,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbe
 import Pnp4.Frontier.ContractExpansion.TreeMCSPAtomSeqP1
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbeFrame
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionEmbed
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionEmbedMulti
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -4254,6 +4255,9 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.RegionEmbedded
 #check @Pnp4.Frontier.ContractExpansion.RegionEmbedded.stepConfig_normal_phase
 #check @Pnp4.Frontier.ContractExpansion.RegionEmbedded.stepConfig_accept_phase
+-- D2t-5b (Block A5m-U2): the multi-exit region contract.
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.stepConfig_redirect_phase
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p3_zero_phase
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true

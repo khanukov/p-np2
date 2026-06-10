@@ -127,6 +127,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionScanSegments
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionRunTransfer
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionUnion
 import Pnp4.Frontier.ContractExpansion.TreeMCSPClearIterProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionAtomHops
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -1147,6 +1148,12 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.toSingle
 #print axioms Pnp4.Frontier.ContractExpansion.clearIter_region_probe
 #print axioms Pnp4.Frontier.ContractExpansion.clearIter_region_scanRight
+-- D2t-5b (Block A5m-3a'): the host-generic atom hops -- single-cell movers (2 steps) and the
+-- probe's two verdict branches (3 steps), each ending at its redirect target, tape unchanged.
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_stepLeft_hop
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_stepRight_hop
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_probe_empty_hop
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_probe_frame_hop
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

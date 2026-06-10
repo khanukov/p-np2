@@ -4210,6 +4210,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- D2t-5b (Block A5d, part 1): reachable-state WORK-length and value-entry bounds.
 #check @Pnp4.Frontier.ContractExpansion.reachable_outLen_le_size
 #check @Pnp4.Frontier.ContractExpansion.reachable_valEntry_lt_size
+#check @Pnp4.Frontier.ContractExpansion.reachable_valLen_le_size
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p3_zero_phase
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true

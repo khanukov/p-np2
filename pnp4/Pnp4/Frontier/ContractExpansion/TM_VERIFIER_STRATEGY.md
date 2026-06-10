@@ -1485,8 +1485,12 @@ The **semantic (tape-level) half of the A5 loop discharge is settled**:
    (`out` never outgrows `(flatten c).gates`, so `out.length ≤ c.size` along the run — `out`-length
    monotone under `step`, pinned by `driveStep_halts_bound`) and `reachable_valEntry_lt_size` (every
    value-stack index is a valid back-reference `< c.size`, via the step-invariant
-   `ValEntriesBounded`).  Remaining: the operand/record-size bound (`gateRecordSize` via SLP validity)
-   and the stack-depth bounds, then assembling `DriverStepFits` for a polynomially-sized corridor.
+   `ValEntriesBounded`); plus `reachable_valLen_le_size` (the value-stack depth bound
+   `val.length ≤ c.size + 1`, via the step-invariant `ValDepthBounded : val.length ≤ out.length + 1`).
+   The value stack is therefore fully bounded (entries `< c.size`, depth `≤ c.size + 1`), which sizes
+   the right-anchored `encodeNatStackR` window.  Remaining: the operand/record-size bound
+   (`gateRecordSize` via SLP validity, sizing the WORK record stream) and the control-stack depth
+   bound, then assembling `DriverStepFits` for a polynomially-sized corridor.
 
 All keystones and cores are kernel-checked, standard `[propext, Classical.choice, Quot.sound]` triple
 only.  This is **Infrastructure** for the NP-verifier track (input (2) of `verifiedSource_treePoly`); it

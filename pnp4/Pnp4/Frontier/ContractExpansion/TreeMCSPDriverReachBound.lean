@@ -191,6 +191,88 @@ theorem reachable_valEntry_lt_size {n : Nat} (c : CircuitTree n) {j : Nat} (hj :
   have hout := reachable_outLen_le_size c hj
   omega
 
+/-! ### Value-stack depth bound
+
+The value stack never holds more entries than `out.length + 1`: a leaf read grows both by one, a
+settle-emit pops `k ≥ 1` and pushes one (so the stack shrinks or stays while `out` grows), and the
+other branches touch neither.  Combined with the WORK-length bound this gives `val.length ≤ c.size + 1`
+— the stack-depth bound the right-anchored `encodeNatStackR` length needs. -/
+
+/-- Invariant: the value stack is no deeper than `out.length + 1`. -/
+def ValDepthBounded {n : Nat} (s : DriveState n) : Prop :=
+  s.val.length ≤ s.out.length + 1
+
+/-- The value-depth bound is preserved by one `DriveState.step`. -/
+theorem valDepth_step {n : Nat} (s : DriveState n) (h : ValDepthBounded s) :
+    ValDepthBounded s.step := by
+  obtain ⟨toks, out, ctrl, val, settling⟩ := s
+  simp only [ValDepthBounded] at h ⊢
+  cases settling with
+  | true =>
+      cases ctrl with
+      | nil => simpa [DriveState.step] using h
+      | cons f ctrl' =>
+          obtain ⟨tag, rem⟩ := f
+          by_cases hrem : rem = 1
+          · subst hrem
+            cases tag with
+            | tnot =>
+                cases val with
+                | nil => simpa [DriveState.step] using h
+                | cons i vs =>
+                    show (out.length :: vs).length ≤ (out ++ [SLGate.notGate i]).length + 1
+                    simp only [List.length_cons, List.length_append, List.length_nil] at h ⊢
+                    omega
+            | tand =>
+                cases val with
+                | nil => simpa [DriveState.step] using h
+                | cons i2 rest =>
+                    cases rest with
+                    | nil => simpa [DriveState.step] using h
+                    | cons i1 vs =>
+                        show (out.length :: vs).length ≤ (out ++ [SLGate.andGate i1 i2]).length + 1
+                        simp only [List.length_cons, List.length_append, List.length_nil] at h ⊢
+                        omega
+            | tor =>
+                cases val with
+                | nil => simpa [DriveState.step] using h
+                | cons i2 rest =>
+                    cases rest with
+                    | nil => simpa [DriveState.step] using h
+                    | cons i1 vs =>
+                        show (out.length :: vs).length ≤ (out ++ [SLGate.orGate i1 i2]).length + 1
+                        simp only [List.length_cons, List.length_append, List.length_nil] at h ⊢
+                        omega
+          · simpa [DriveState.step, hrem] using h
+  | false =>
+      cases toks with
+      | nil => simpa [DriveState.step] using h
+      | cons tok toks' =>
+          cases tok with
+          | leaf g =>
+              show (out.length :: val).length ≤ (out ++ [g]).length + 1
+              simp only [List.length_cons, List.length_append, List.length_nil] at h ⊢
+              omega
+          | node tag => simpa [DriveState.step] using h
+
+/-- The value-depth bound holds at every iterate (it holds at the empty start and is step-preserved). -/
+theorem valDepth_iterate {n : Nat} (s0 : DriveState n) (h0 : ValDepthBounded s0) (j : Nat) :
+    ValDepthBounded (DriveState.step^[j] s0) := by
+  induction j with
+  | zero => simpa using h0
+  | succ j ih => rw [Function.iterate_succ_apply']; exact valDepth_step _ ih
+
+/-- **The reachable value-depth bound.**  Every state reachable within the driver run for `c`
+(`j ≤ 3 · c.size` steps) has `val.length ≤ c.size + 1` — combining the depth invariant
+`val.length ≤ out.length + 1` with the WORK-length bound `out.length ≤ c.size`. -/
+theorem reachable_valLen_le_size {n : Nat} (c : CircuitTree n) {j : Nat} (hj : j ≤ 3 * c.size) :
+    (DriveState.step^[j] (⟨preorder c, [], [], [], false⟩ : DriveState n)).val.length
+      ≤ c.size + 1 := by
+  have hdepth := valDepth_iterate (⟨preorder c, [], [], [], false⟩ : DriveState n) (by simp [ValDepthBounded]) j
+  have hout := reachable_outLen_le_size c hj
+  simp only [ValDepthBounded] at hdepth
+  omega
+
 end ContractExpansion
 end Frontier
 end Pnp4

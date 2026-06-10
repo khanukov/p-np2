@@ -352,6 +352,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPEraseLeftMark,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorPushFrame,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorDispatch,
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorNodeStep,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder,

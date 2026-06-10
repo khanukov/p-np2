@@ -97,6 +97,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorRoutesBack
 import Pnp4.Frontier.ContractExpansion.TreeMCSPEraseLeftMark
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorPushFrame
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorDispatch
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorNodeStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -966,6 +967,9 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_dispatch_tnot
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_dispatch_tand
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_dispatch_tor
+-- D2t-5b (Block A4a): the node-arm KEYSTONE — the explicit six-leg tape transformer re-establishes
+-- driverCorridorInv for the stepped state (node branch of DriveState.step realised on tape).
+#print axioms Pnp4.Frontier.ContractExpansion.corridorInv_nodeStep
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

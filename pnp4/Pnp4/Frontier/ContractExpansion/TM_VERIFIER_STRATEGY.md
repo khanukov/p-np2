@@ -1554,21 +1554,43 @@ deeper).  Either route is mechanical; the offsets for the clear arm are `2 / 4 /
 * **A5m-4 — the dec arm**: navigate, `readCtrlFrameRemaining`, in-place frame rewrite
   (`writeBits` at the frame base with the decremented frame + pad), re-home;
   `= driverStepTape` on the `rem ≥ 2` branch (the `corridorInv_decStep` transformer).
-* **A5m-5 — the node arm**: `corridor_dispatch_{tnot,tand,tor}` (built) + `eraseLeftMark 3` +
-  ctrl-zone hop + `pushCtrlFrame`/`writeBits_appends_window` (built) + re-home;
-  `= driverStepTape` on the node branch (`nodeStepTape`).
-* **A5m-6 — the const arm**: dispatch read of the literal + `emitConstRecord` (built) + val push
-  (`writeNatField`, built) + cursor re-mark; `= leafStepTape` with the 4-cell token.
-* **A5m-7 — the input arm**: the D2t-3 `binToUnaryLoopFullScan` (built, correct) framed as the
-  record emit + val push + cursor re-mark; `= leafStepTape` with the `(3+width)`-cell token.
+* **A5m-5 — the node arm** ✅ **DONE** (`TreeMCSPNodeIterProgram.lean` + `TreeMCSPNodeIterRun.lean`):
+  `nodeIterProgram` (116-phase region union: stepRight, `certTrie` dispatch, per-tag marker rewrite
+  + frame push chains, return scan) and `nodeIter_run_{tnot,tand,tor}` — end-to-end, tape **exactly**
+  `nodeStepTape` (`corridorInv_nodeStep`'s transformer); the bridge `writeMarkFrame_eq_nodeStepTape`
+  composes the two block writes.  This is `driverStepTape`'s node branch.
+* **A5m-6 — the const arm**: dispatch read of the literal + emit (record `encodeGateRecord (const b)
+  = [1,0,b]` is **fixed-length**, so a plain `writeBits` + count-tick) + **value push** + cursor
+  re-mark; `= leafStepTape` with the 4-cell token.  ⚠️ **Blocked on A5m-V** (below): the value entry
+  `encodeNatEntryR out.length` has **runtime** length, so `writeNatField` (a *fixed-`v*` `writeBits`)
+  cannot write it — the const arm needs the content-dependent value-push primitive.
+* **A5m-7 — the input arm**: the D2t-3 `binToUnaryLoopFullScan` (built, correct) writes the
+  content-dependent index field of the record; framed as the record emit + **value push** (A5m-V) +
+  cursor re-mark; `= leafStepTape` with the `(3+width)`-cell token.
 * **A5m-8 — the pop arm** (largest): navigate, pop the operand fields (`zoneWalkLeft` sub-scans,
-  built), `unaryTransfer` the operands into the WORK record (A2, built), write the new val entry,
+  built), `unaryTransfer` the operands into the WORK record (A2, built), **value push** (A5m-V),
   erase the frame, re-home; `= popStepTape`.
+* **A5m-V — the value-push primitive** (NEW; shared by A5m-6/7/8, the real blocker uncovered while
+  assembling the leaf arm): a single fixed machine that, reading the gate count `k = out.length` from
+  the COUNT field, writes the value entry `encodeNatEntryR k = 0 ++ 1^(k+2)` at the value-zone top
+  **leaving COUNT intact**.  Non-destructiveness is forced by the keystone: `leafStepTape` /
+  `constStepTape` / `popStepTape` write the value block onto the *original* tape (`writeBlockTape tape
+  vtop ventry`) and only then `emitTape` bumps the count by **one** `1`, so the machine must preserve
+  COUNT's existing `k` ones.  `unaryTransfer` (A2) is *destructive*, so it cannot copy COUNT directly.
+  Cleanest realisation: a **fan-out transfer** body (per pass: erase one COUNT unit, append a `1` to
+  *both* the value frontier *and* a scratch block) draining COUNT → (value ∪ scratch), then one plain
+  `unaryTransfer` scratch → COUNT to restore COUNT; net effect a non-destructive duplicate.  Headline
+  shape (mirroring `unaryTransfer_transfers`): from the count layout, reach a sink in `poly(k)` steps
+  with the value-zone window spelling `unaryField k` at `vtop` and the COUNT window unchanged —
+  i.e. the tape is exactly `writeBlockTape tape vtop (encodeNatEntryR k)` after the framing `0`/`+2`
+  ones are added.  (Program-half is a `loopUntilSink` body like `unaryTransferBody`; the run-half is a
+  strong induction on `k` reusing the `unaryTransfer` headline for the restore pass.)
 * **A5m-9 — dispatch + loop assembly**: the branch decision at home (settling flag in finite
   control; `treeTagDispatch` on reading; A5m-2 on settling), phase back-edges to home, the composed
   `driverProgram`; per-iteration theorem: from the home configuration of abstract state `st`, one
   iteration reaches the home configuration of `st.step` with tape `driverStepTape … st`, in a
-  bounded step count.
+  bounded step count.  This is exactly the `DriverRealization.step_run` field
+  (`TreeMCSPDriverRealization.lean`); the arms above are its branch cases.
 * **A5m-10 — the run discharge**: iterate A5m-9 (`3 · c.size` times, `driveStep_halts_bound`),
   coupling with `driverTapes`; conclude the machine's final tape via
   `driverTapes_terminal_output_sized`.  This is **D2t-5c at the `Configuration` level**.

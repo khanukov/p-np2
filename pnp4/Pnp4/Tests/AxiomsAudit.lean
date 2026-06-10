@@ -1190,6 +1190,8 @@ end Pnp4
 -- (two ones) -> rem read (three ones, dec verdict) -> in-place frame rewrite -> home; tape exactly
 -- corridorInv_decStep's transformer, <= 2*certEnd+30 steps.
 #print axioms Pnp4.Frontier.ContractExpansion.decIter_run_tnot
+#print axioms Pnp4.Frontier.ContractExpansion.decIter_run_tand
+#print axioms Pnp4.Frontier.ContractExpansion.decIter_run_tor
 -- D2t-5b (Block A5m-4a, hops): the four host-generic ctrlTopWalk verdict hops -- empty (3 steps),
 -- tnot (4), tand (5), tor (6) -- each landing at its verdict's redirect target with the head on the
 -- separator (resp. the dead cell), tape unchanged.

@@ -4299,6 +4299,8 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.decIter_region_ctrlTopWalk
 -- D2t-5b (Block A5m-4 run): the dec iteration end to end (tnot).
 #check @Pnp4.Frontier.ContractExpansion.decIter_run_tnot
+#check @Pnp4.Frontier.ContractExpansion.decIter_run_tand
+#check @Pnp4.Frontier.ContractExpansion.decIter_run_tor
 #check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_rem_pop_hop
 #check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_rem_dec_hop
 #check @Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_remBlock_true

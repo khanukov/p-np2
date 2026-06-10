@@ -127,6 +127,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverFits
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftSeqP1
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanRoundTrip
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverRealization
+import Pnp4.Frontier.ContractExpansion.TreeMCSPTranscoderCapstone
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -4231,6 +4232,9 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.DriverRealization
 #check @Pnp4.Frontier.ContractExpansion.DriverRealization.run_simulates
 #check @Pnp4.Frontier.ContractExpansion.DriverRealization.terminal_output
+-- D2t-6b (conditional on the instance): the transcoder capstone shape.
+#check @Pnp4.Frontier.ContractExpansion.DriverRealization.transcodes
+#check @Pnp4.Frontier.ContractExpansion.DriverRealization.transcodes_faithful
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p3_zero_phase
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true

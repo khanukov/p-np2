@@ -117,6 +117,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverFits
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftSeqP1
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanRoundTrip
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverRealization
+import Pnp4.Frontier.ContractExpansion.TreeMCSPTranscoderCapstone
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -1085,6 +1086,11 @@ end Pnp4
 -- the interface instance (the A5m-2..8 arms construct it).
 #print axioms Pnp4.Frontier.ContractExpansion.DriverRealization.run_simulates
 #print axioms Pnp4.Frontier.ContractExpansion.DriverRealization.terminal_output
+-- D2t-6b (conditional on the DriverRealization instance): the machine's output window spells
+-- exactly the transcodeWitness stream, and that stream decodes to a straight-line program computing
+-- Circuit.eval c on every input -- the end-to-end transcoder capstone shape.
+#print axioms Pnp4.Frontier.ContractExpansion.DriverRealization.transcodes
+#print axioms Pnp4.Frontier.ContractExpansion.DriverRealization.transcodes_faithful
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

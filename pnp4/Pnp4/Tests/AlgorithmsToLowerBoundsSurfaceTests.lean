@@ -135,6 +135,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionEmbed
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionEmbedMulti
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionScanSegments
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionRunTransfer
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionUnion
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -4266,6 +4267,9 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- D2t-5b (Block A5m-U4): the whole-run transfer into a host region.
 #check @Pnp4.Frontier.ContractExpansion.TapeAgree
 #check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_track
+-- D2t-5b (Block A5m-U5): the region-union machine builder and its contract theorem.
+#check @Pnp4.Frontier.ContractExpansion.unionProgram
+#check @Pnp4.Frontier.ContractExpansion.unionProgram_embedded
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p3_zero_phase
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true

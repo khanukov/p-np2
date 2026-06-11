@@ -129,6 +129,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionEmbed
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionEmbedMulti
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionScanSegments
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionOnesScanHops
+import Pnp4.Frontier.ContractExpansion.TreeMCSPValuePushProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionRunTransfer
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionUnion
 import Pnp4.Frontier.ContractExpansion.TreeMCSPClearIterProgram
@@ -1174,6 +1175,11 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_scanRightOnes_hop
 #print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_stepRightBranch_hop_one
 #print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_stepRightBranch_hop_zero
+-- M1 (A5m-V) machine: the value-push duplicator as a region union (81 phases).
+#print axioms Pnp4.Frontier.ContractExpansion.valuePushProgram
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_region_homeBranch
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_region_relocBranch
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_sink_idle
 #print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_scanRight_hop
 -- D2t-5b (Block A5m-U4): whole-run transfer -- a native component run transports into the host
 -- region (phase offset, equal heads, value-wise tape agreement) under trace safety (no visited

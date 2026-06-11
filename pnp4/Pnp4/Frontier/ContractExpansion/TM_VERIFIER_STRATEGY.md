@@ -1645,9 +1645,16 @@ p+pad]`; **(2)** decode/transcode the certificate circuit (the driver, D2t); **(
 SLP on **all 2^n** rows comparing to `x` (`verifiesBool`) and **(4)** compare the prefix `p` against the
 witness on `i` positions (`prefixAgreesBool`) — accept iff all pass, else reject.
 
-**k = 1 simplifications (verified).** `certificateLength n 1 = n+1`; `thresholdPoly 1 n = n+1` ⇒ the
-size check "#gates ≤ n+1" is a **trivial unary comparison** (the unary `n` comes from gamma).  All work
-is polynomial in the input length (the `2^n`-bit table is part of the query, so `2^n` evaluations = poly).
+**The two `k`s (re-verified — do not conflate).**  The *witness field* `k` is the **certificate-length**
+exponent and is pinned to `1` by the proven semantic layer (`treePrefixSemanticAccepts` is typed at
+`certificateLength N 1 = N+1`; `witnessBits_le_certificateLength` already reconciles the slice).  The
+*chain parameter* `k` in `verifiedSource_treePoly k` is the **threshold** exponent (`thresholdPoly k n =
+n^k + k`) and `verifiesBool` is generic in the threshold — so the machine should be built as a **family
+`M k`** (one fixed machine per meta-level `k`), keeping input (1) free to be stated at whatever threshold
+regime the open mathematics wants.  Cost of genericity: the on-tape size check "#gates ≤ n^k + k" needs a
+unary `n^k` builder (a k-fold multiply loop, M8); at `k = 1` it degenerates to the trivial "≤ n+1" unary
+comparison.  All work is polynomial in the input length (the `2^n`-bit table is part of the query, so
+`2^n` evaluations = poly).
 
 ### 12.2 Inventory (verified by code-read; see also §11 for the driver bricks)
 
@@ -1675,17 +1682,31 @@ Each milestone: content · run-lemma validation · est · unblocks.
 
 **Driver branch (→ unconditional D2t-6b):**
 
-* **M1 — A5m-V value-push primitive** (~1–2 sessions).  Non-destructive content-dependent copy of the
-  COUNT (k = `out.length` ones) into the value entry `encodeNatEntryR k = 0·1^(k+2)` at the value-zone
-  top, **leaving COUNT intact**.  Conservation forces a *fan-out* (2k ones from k ⇒ ones must be
-  created), and the value-entry ones must originate **right of the WORK record stream** (all-zero-gap
-  loops cannot cross the record `1`s).  **Recommended design: a fan-out loop whose value deposit crosses
-  the record stream by *structured traversal*** (the stream is self-delimiting via unary fields,
-  traversable by the same field-readers the checker uses), restoring COUNT **in place** (meet-in-the-
-  middle) — **no invariant change**.  *Fallback:* a shadow-count zone `SHW` added to `driverCorridorInv`
-  + `driverStepTape` + the 7 keystones + `DriverStepFits`/`CorridorSized`/init (mechanical but wide).
-  Validation: a headline lemma shaped like `unaryTransfer_transfers` (strong induction on k), conclusion
-  `tape = writeBlockTape tape vtop (encodeNatEntryR k)`.  **Unblocks M2/M3.**
+* **M1 — A5m-V value-push primitive** (~2–4 sessions).  Non-destructive content-dependent copy of the
+  gate count (k = `out.length` ones) into the value entry `encodeNatEntryR k = 0·1^(k+2)` at the
+  value-zone top, **leaving the count intact**.  Conservation forces a *fan-out* (2k ones from k ⇒ ones
+  must be created), and the value-entry ones must originate **right of the WORK record stream**.
+  **Re-verified, precise reason the records can't serve as the source:** a fan-out needs a
+  **re-traversable** unary source (the head returns to it each pass).  A *forward* structured parse of the
+  stream is sound (`decodeGateRecord` is exactly that), but the fan-out also needs to come *back*, and the
+  record stream is neither **backward-parseable** (record boundaries aren't detectable right-to-left —
+  operand counts vary and `unaryField 0 = [0]` / `const = [1,0,b]` create `0,0` runs *inside* the stream,
+  so a blind leftward scan is ambiguous) nor **markable** (a progress mark would corrupt the output that
+  must survive verbatim).  Hence the recommended design is a **dedicated shadow-count zone `SHW`**: a new
+  sentinel-anchored zone between `valEnd` and `ctrlBase` (zone chain extended; one extra
+  `driverCorridorInv` window clause `SHW spells 1·1^out.length`), maintained by a per-emit tick and added
+  to `driverStepTape`'s emit branches + the leaf/const/pop keystones + `DriverStepFits`/`CorridorSized`/
+  init — wide but mechanical churn.  The value push is then a fan-out from `SHW` to the **adjacent** value
+  frontier (the only gap crossed is the all-zero `[val-content-end, shwBase)` dead corridor), restoring
+  `SHW` **in place** (meet-in-the-middle: consume from one end, rebuild from the other, blocks meet at the
+  original anchor — full cleanup, exactly `driverStepTape`'s image, as `step_run` demands).  The
+  **left-side count tick** (`emitTape`'s `1` at `oc−1`) is navigated by a **left-wall walk** (the
+  `moveHead`-at-0-stays bounce detects cell 0; a home clause pins `[0, oc)` all-zero so the first `1`
+  right of the wall is the count's left end), with the `c = 0` ambiguity (empty count vs FM) resolved by a
+  **one-bit `SHW`-emptiness peek carried in finite control** before the walk.  Validation: a headline
+  lemma shaped like `unaryTransfer_transfers` (strong induction on k), conclusion
+  `tape = writeBlockTape tape vtop (encodeNatEntryR k)` with the `SHW`/count windows restored.
+  **Unblocks M2/M3.**
 * **M2 — const + input arm** (~2–3 sessions).  const: fixed record `[1,0,b]` + count-tick (`writeBits`)
   + **M1** + cursor re-mark, assembled like `nodeIter` (region union + hops).  input: record
   `unaryField 0 ++ unaryField i.val`, index `i` decoded from the certificate via `binToUnaryLoopFullScan`
@@ -1707,11 +1728,15 @@ Each milestone: content · run-lemma validation · est · unblocks.
 **Verifier branch (parallel to the driver; → full input (2)):**
 
 * **M5 — init-bridge machine** (~2–3 sessions, parallelisable).  From `initialConfig (x++w)` (input in
-  `[0,n+wlen)`, rest blank) to the corridor layout: zones to the right of the input, the certificate in
-  `[certBase,certEnd)` (a relocation loop — per-cell move with two markers; *or* leave the cert in place
-  and parametrise `z` by the input length — `z`'s fields are free `Nat`s, `M` is still one machine, the
-  run lemmas quantify over `z`), FM/sentinels/cursor-marker planted, corridors zeroed.  Validation: the
-  machine establishes the hypotheses of `driverCorridorInv_init` ⇒ `driverCorridorInv`.
+  `[0,n+wlen)`, rest blank) to the corridor layout.  **Re-verified: relocation is *required*** — the
+  corridor's zone order puts everything left of the certificate, and the zones cannot overlap the query
+  (the checker must still read it), so the certificate must move from its input position to the corridor's
+  right end in the blank scratch.  Mechanism: a **two-escort-marker copy loop** consumed right-to-left —
+  after each copied bit the source cell is zeroed, so both escort markers (one flanking the source
+  position, one flanking the destination frontier) live in consumed/zeroed territory and every inter-marker
+  walk is over guaranteed zeros (sound, marker-free ambiguity avoided).  Then FM/sentinels/cursor-marker
+  planted, corridors zeroed.  Validation: the machine establishes the hypotheses of
+  `driverCorridorInv_init` ⇒ `driverCorridorInv`.
 * **M6 — parse completion** (~1–2 sessions).  Gamma payload read (in-situ design settled), length-
   convention check (`L = treeMCSPPrefixM codec n`), witness-slice location.  Starts from the built
   tagCheck+gammaScan composite.  Decide the T2 reachable-scratch scheme needed by M8.
@@ -1723,13 +1748,23 @@ Each milestone: content · run-lemma validation · est · unblocks.
 * **M8 — checker: row loop + comparisons** (~4–6 sessions, the biggest single piece).  A `2^n` unary
   counter (n doublings — a doubling loop, unbuilt) driving a `repeatBody`.  Per row r: circuit inputs =
   bits of a binary row counter (`selfLoopIncrement` built); evaluate (**M7**); compare to `x[r]`.  **T2
-  resolution:** a *home-drift* `repeatBody` (the row-loop home advances +1 per row along the `x` table) so
-  `x[r]` is read **at home** and the bit travels in finite control.  Threshold (k=1 ⇒ ≤ n+1, trivial
-  unary) and prefix-agreement compare (`i` positions of `p` vs witness).  Validation: a pass =
+  status (re-verified): NOT dissolved — design-first.**  A naive home-drift return crosses arbitrary
+  `x`-bits (unsound, same crossing problem); two candidate schemes, to be settled before code: (a)
+  **consumed-prefix normalisation** — rows are processed in order and `x[r']` for `r' < r` is never needed
+  again, so each read `x` cell is overwritten with a uniform pattern, making the read frontier scannable
+  from a planted boundary anchor; (b) **offset-ruler walks** — a unary row-offset block applied from a
+  fixed anchor, its per-row refresh provided by the **M1 duplicator reused** (the same non-destructive
+  copy primitive, different layout).  The threshold check compares the gate count against a unary
+  `n^k + k` block built by a **k-fold multiply loop** (new brick; degenerate at k=1 to "≤ n+1") and the
+  prefix-agreement compare (`i` positions of `p` vs witness) shares the T2 scheme.  Validation: a pass =
   `verifiesBool && prefixAgreesBool`.
 * **M9 — reject completeness** (~1–2 sessions).  Guards: parse-fail / decode-fail (certTrie reject +
   structural) / size-exceed / mismatch → the reject sink.  Completeness: for every `w` with
-  `treePrefixSemanticAccepts = false`, `M` rejects.  Validation: per-guard lemmas.
+  `treePrefixSemanticAccepts = false`, `M` rejects.  **Eased by the sink asymmetry (re-verified):**
+  `accepts` reads "state = accept" after *exactly* `runTime` steps, so **any** non-accept terminal
+  behaviour — the reject sink, a stuck scan, a wall-bounce loop — already rejects; stabilisation proofs
+  are needed **only for accepting runs** (M10), and reject paths only need "never reach the accept
+  state".  Validation: per-guard lemmas.
 
 **Assembly:**
 
@@ -1738,23 +1773,31 @@ Each milestone: content · run-lemma validation · est · unblocks.
   phase capstones through `PhasedProgram.accepts_toTM`.  Validation: (★) as a theorem.
 * **M11 — `runTime_poly` + final term** (~1–2 sessions).  Ledger: sum of the phase `timeBound`s ≤
   `(n + certificateLength n 1)^c + c` for an explicit `c`.  `correct = treePrefixSemanticAccepts_correct ∘
-  exists_congr (★)`, `k := 1`.  The term `prefixExtensionNPWitness_treePoly`; instantiate
-  `verifiedSource_treePoly 1 hNoPoly _`.  **Input (2) is closed**; the conditional chain now hangs only on
-  input (1).
+  exists_congr (★)`; witness field `k := 1` (certificate length).  The term, **generic in the threshold
+  exponent**: `prefixExtensionNPWitness_treePoly (k : Nat) : PrefixExtensionNPWitness
+  (treeMCSPConcretePrefixParser (thresholdPoly k) …)`; instantiating `verifiedSource_treePoly k hNoPoly _`
+  then works **for every k**.  **Input (2) is closed**; the conditional chain now hangs only on input (1).
 
-**Total estimate:** ~20–33 sessions, ~5–9k LOC.  Heaviest: M8 (row loop), M7 (evaluator), M3 (pop arm).
+**Total estimate:** ~22–36 sessions, ~5–9k LOC.  Heaviest: M8 (row loop), M7 (evaluator), M3 (pop arm),
+M1 (value-push + invariant churn).
 
 ### 12.4 Risks / unknowns (with mitigations)
 
-* **A5m-V design** (record-crossing traversal vs `SHW`-in-invariant) — the one genuinely non-mechanical
-  choice.  → prototype the record-crossing version on a small layout first; `SHW` as fallback.
-* **T2 reachable-scratch** (prefix-compare; row `x[r]`) — the row case is dissolved by home-drift; prefix-
-  compare may need its own scheme.  → design-first before committing artifacts.
+* **A5m-V / `SHW` churn breadth** — the shadow-count zone touches `driverCorridorInv`, `driverStepTape`,
+  the leaf/const/pop keystones, `DriverStepFits`/`CorridorSized`/init: wide but mechanical; the per-edit
+  pattern is "one extra `writeBlockTape` layer + one window clause".  → land the invariant change as its
+  own green commit before the fan-out machine; keystone edits template-generated like the arm mirrors.
+  (The "reuse the records as the count source" alternative was **re-checked and rejected**: forward parse
+  is sound but the fan-out needs a re-traversable source, and records are neither backward-parseable nor
+  markable without corrupting the output — so a dedicated `SHW` is required, not optional.)
+* **T2 reachable-scratch** (row `x[r]`; prefix-compare) — open *design* choice (consumed-prefix
+  normalisation vs offset-ruler + M1 reuse).  → design-first before code; both candidates sketched in M8.
 * **`loopUntilSink` as a `unionProgram` region** (input arm) — check the embedding early.  → an early
   smoke check / bridging lemma.
-* **`witnessBits` vs `certificateLength n 1 = n+1` at k=1** — the slice arithmetic.  → already consistent
-  at the spec level (`treePrefixSemanticAccepts_correct` holds at k=1); mirror it.
 * **Volume / step budget** — a uniform polynomial bound covering the `O(L²)`-ish copies.  → a generous `c`.
+
+*(Retired risk: the `witnessBits` vs `certificateLength n 1` slice arithmetic — already a proven lemma,
+`witnessBits_le_certificateLength`.)*
 
 All of §12 is **Infrastructure** for the NP-verifier track (input (2)); it builds toward the witness term
 and proves no separation.  **No `P ≠ NP` claim.**

@@ -1680,6 +1680,18 @@ and cannot write a runtime-length entry), const/input/pop arms, dispatch+instanc
 
 Each milestone: content · run-lemma validation · est · unblocks.
 
+**Shared arithmetic (early, parallelisable with the driver branch):**
+
+* **M0-arith — unary doubling + multiply loops** (~1–2 sessions).  Two `loopUntilSink` bricks: a
+  **doubling loop** (unary `m ↦ 2m`, iterated `n` times for `2^n`) and a **multiply loop** (unary
+  `a, b ↦ a·b` by repeated addition).  **Dependency fact (double-checked):** these are needed *before*
+  the checker — every query-field boundary right of `x` requires unary `2^n` on tape (`tableLen n = 2^n`,
+  `PartialTruthTable.lean:35`), and the witness width is `witnessBits n = (bitLength n + 4) · threshold n`
+  (`ConcreteTreeCodec.lean:54`), so **M5 (cert location) and M6 (slice/length check) consume M0**, not
+  just M8 (threshold `n^k + k`).  The gamma field materialises `bitLength (n+1)` for free.  Validation:
+  headline lemmas shaped like `unaryTransfer_transfers` (output block = `1^(2m)` / `1^(a·b)`, layout
+  restored).  **Unblocks M5/M6/M8.**
+
 **Driver branch (→ unconditional D2t-6b):**
 
 * **M1 — A5m-V value-push primitive** (~2–4 sessions).  Non-destructive content-dependent copy of the
@@ -1696,7 +1708,12 @@ Each milestone: content · run-lemma validation · est · unblocks.
   sentinel-anchored zone between `valEnd` and `ctrlBase` (zone chain extended; one extra
   `driverCorridorInv` window clause `SHW spells 1·1^out.length`), maintained by a per-emit tick and added
   to `driverStepTape`'s emit branches + the leaf/const/pop keystones + `DriverStepFits`/`CorridorSized`/
-  init — wide but mechanical churn.  The value push is then a fan-out from `SHW` to the **adjacent** value
+  init — wide but mechanical churn, now **quantified**: the 17-clause invariant is destructured at
+  **27 sites across 13 files** (`grep "hcfit2, hvalid, hcoh⟩"`), each gaining one binder; the split
+  val→ctrl dead-corridor clause must be re-routed in the three **existing** arm runs
+  (`clearIter`/`decIter`/`nodeIter` cite `hvzeros` for their probes/scans); and the A5 spine + the
+  D2t-6b capstone re-elaborate against the new `driverStepTape`.  Budget the invariant change as its
+  own full-session green commit *before* the fan-out machine.  The value push is then a fan-out from `SHW` to the **adjacent** value
   frontier (the only gap crossed is the all-zero `[val-content-end, shwBase)` dead corridor), restoring
   `SHW` **in place** (meet-in-the-middle: consume from one end, rebuild from the other, blocks meet at the
   original anchor — full cleanup, exactly `driverStepTape`'s image, as `step_run` demands).  The
@@ -1710,9 +1727,11 @@ Each milestone: content · run-lemma validation · est · unblocks.
 * **M2 — const + input arm** (~2–3 sessions).  const: fixed record `[1,0,b]` + count-tick (`writeBits`)
   + **M1** + cursor re-mark, assembled like `nodeIter` (region union + hops).  input: record
   `unaryField 0 ++ unaryField i.val`, index `i` decoded from the certificate via `binToUnaryLoopFullScan`
-  embedded in the arm.  *Risk check:* a `loopUntilSink` machine as a `unionProgram` region — verify the
-  embedding or add a bridging lemma.  Validation: `constIter_run` / `inputIter_run`, tape = `leafStepTape`
-  (the `corridorInv_constStep` / `inputStep` transformer).
+  embedded in the arm.  *Risk check (downgraded after double-check):* `unionProgram` consults the
+  redirect map **at the designated local phase slot** (`TreeMCSPRegionUnion.lean`, `match redirect jloc`),
+  so a `loopUntilSink` region exits cleanly via a redirect on its sink slot — structurally confirmed;
+  what remains is a one-off smoke contract.  Validation: `constIter_run` / `inputIter_run`, tape =
+  `leafStepTape` (the `corridorInv_constStep` / `inputStep` transformer).
 * **M3 — pop arm** (largest driver arm, ~2–3 sessions).  Read tag/rem (built), pop operands val→record by
   `unaryTransfer` (right-to-left direction ✓; gap = dead corridor after temporarily erasing FM), write the
   new value entry (**M1**), erase the frame, count-tick, re-home.  Validation: `popIter_run` ×3 tags, tape
@@ -1735,10 +1754,12 @@ Each milestone: content · run-lemma validation · est · unblocks.
   after each copied bit the source cell is zeroed, so both escort markers (one flanking the source
   position, one flanking the destination frontier) live in consumed/zeroed territory and every inter-marker
   walk is over guaranteed zeros (sound, marker-free ambiguity avoided).  Then FM/sentinels/cursor-marker
-  planted, corridors zeroed.  Validation: the machine establishes the hypotheses of
-  `driverCorridorInv_init` ⇒ `driverCorridorInv`.
+  planted, corridors zeroed.  **Consumes M0-arith**: locating the certificate requires the query-field
+  boundaries, i.e. unary `2^n` (= `tableLen n`) and `witnessBits n = (bitLength n + 4) · threshold n`.
+  Validation: the machine establishes the hypotheses of `driverCorridorInv_init` ⇒ `driverCorridorInv`.
 * **M6 — parse completion** (~1–2 sessions).  Gamma payload read (in-situ design settled), length-
-  convention check (`L = treeMCSPPrefixM codec n`), witness-slice location.  Starts from the built
+  convention check (`L = treeMCSPPrefixM codec n`), witness-slice location — the boundary arithmetic
+  **consumes M0-arith** (same `2^n` / `witnessBits` builders as M5).  Starts from the built
   tagCheck+gammaScan composite.  Decide the T2 reachable-scratch scheme needed by M8.
 * **M7 — checker: gate-stream evaluator** (~3–5 sessions).  Fixed-body gate loop (`repeatBody` over a
   unary gate-count counter); body: read one record (field-readers built) → dispatch (GateTagDispatch
@@ -1746,7 +1767,7 @@ Each milestone: content · run-lemma validation · est · unblocks.
   Built on `circuitEvaluatorCS_run_correct_wf` (malformed → reject guard).  Validation: one pass =
   `SLProgram.eval` of a row.
 * **M8 — checker: row loop + comparisons** (~4–6 sessions, the biggest single piece).  A `2^n` unary
-  counter (n doublings — a doubling loop, unbuilt) driving a `repeatBody`.  Per row r: circuit inputs =
+  counter (**from M0-arith**) driving a `repeatBody`.  Per row r: circuit inputs =
   bits of a binary row counter (`selfLoopIncrement` built); evaluate (**M7**); compare to `x[r]`.  **T2
   status (re-verified): NOT dissolved — design-first.**  A naive home-drift return crosses arbitrary
   `x`-bits (unsound, same crossing problem); two candidate schemes, to be settled before code: (a)
@@ -1755,7 +1776,7 @@ Each milestone: content · run-lemma validation · est · unblocks.
   from a planted boundary anchor; (b) **offset-ruler walks** — a unary row-offset block applied from a
   fixed anchor, its per-row refresh provided by the **M1 duplicator reused** (the same non-destructive
   copy primitive, different layout).  The threshold check compares the gate count against a unary
-  `n^k + k` block built by a **k-fold multiply loop** (new brick; degenerate at k=1 to "≤ n+1") and the
+  `n^k + k` block built by the **M0-arith multiply loop** (degenerate at k=1 to "≤ n+1") and the
   prefix-agreement compare (`i` positions of `p` vs witness) shares the T2 scheme.  Validation: a pass =
   `verifiesBool && prefixAgreesBool`.
 * **M9 — reject completeness** (~1–2 sessions).  Guards: parse-fail / decode-fail (certTrie reject +
@@ -1768,9 +1789,13 @@ Each milestone: content · run-lemma validation · est · unblocks.
 
 **Assembly:**
 
-* **M10 — assemble `M` + bridge (★)** (~2–3 sessions).  `M := parse ; init ; transcode ; check ; verdict`
-  (`seq` composition; `timeBound` adds).  Sink-safety (accept/reject idle).  (★) by composing the per-
-  phase capstones through `PhasedProgram.accepts_toTM`.  Validation: (★) as a theorem.
+* **M10 — assemble `M` + bridge (★)** (~2–3 sessions).  `M := parse ; init ; transcode ; check ; verdict`.
+  **Assembly mechanism — both are proven options, decide here:** `seq` composition (`timeBound` adds; the
+  tagCheck ▸ gammaScan chain is the proven pattern) *or* one outer `unionProgram` with the phases as
+  regions (all the complex inner machines already carry region contracts, and the redirect-at-phase
+  semantics is confirmed) — slight preference for the outer `unionProgram` since the run-transfer
+  machinery is already host-generic.  Sink-safety (accept/reject idle).  (★) by composing the per-phase
+  capstones through `PhasedProgram.accepts_toTM`.  Validation: (★) as a theorem.
 * **M11 — `runTime_poly` + final term** (~1–2 sessions).  Ledger: sum of the phase `timeBound`s ≤
   `(n + certificateLength n 1)^c + c` for an explicit `c`.  `correct = treePrefixSemanticAccepts_correct ∘
   exists_congr (★)`; witness field `k := 1` (certificate length).  The term, **generic in the threshold
@@ -1778,8 +1803,11 @@ Each milestone: content · run-lemma validation · est · unblocks.
   (treeMCSPConcretePrefixParser (thresholdPoly k) …)`; instantiating `verifiedSource_treePoly k hNoPoly _`
   then works **for every k**.  **Input (2) is closed**; the conditional chain now hangs only on input (1).
 
-**Total estimate:** ~22–36 sessions, ~5–9k LOC.  Heaviest: M8 (row loop), M7 (evaluator), M3 (pop arm),
-M1 (value-push + invariant churn).
+**Total estimate:** ~23–38 sessions, ~5–9k LOC (M0-arith added).  Heaviest: M8 (row loop), M7
+(evaluator), M3 (pop arm), M1 (value-push + invariant churn).
+
+**Dependency graph (double-checked, acyclic):** M0 → {M5, M6, M8}; M1 → {M2, M3} → M4 (⇒ D2t-6b
+unconditional); {M4, M5, M6, M7, M8, M9} → M10 → M11 (⇒ input (2) closed).
 
 ### 12.4 Risks / unknowns (with mitigations)
 
@@ -1792,12 +1820,14 @@ M1 (value-push + invariant churn).
   markable without corrupting the output — so a dedicated `SHW` is required, not optional.)
 * **T2 reachable-scratch** (row `x[r]`; prefix-compare) — open *design* choice (consumed-prefix
   normalisation vs offset-ruler + M1 reuse).  → design-first before code; both candidates sketched in M8.
-* **`loopUntilSink` as a `unionProgram` region** (input arm) — check the embedding early.  → an early
-  smoke check / bridging lemma.
 * **Volume / step budget** — a uniform polynomial bound covering the `O(L²)`-ish copies.  → a generous `c`.
 
-*(Retired risk: the `witnessBits` vs `certificateLength n 1` slice arithmetic — already a proven lemma,
-`witnessBits_le_certificateLength`.)*
+*(Retired risks: the `witnessBits` vs `certificateLength n 1` slice arithmetic — already a proven lemma,
+`witnessBits_le_certificateLength`; the `loopUntilSink`-as-`unionProgram`-region embedding — structurally
+confirmed by the redirect-at-phase semantics, only a smoke contract remains (folded into M2).  Also
+double-checked: `treeCircuitWitnessCodec` is a **concrete `def`** (`ConcreteTreeCodec.lean:67`, the
+packing reduction of the self-delimiting code) — no hidden hypotheses, so input (2) genuinely closes as
+a term.)*
 
 All of §12 is **Infrastructure** for the NP-verifier track (input (2)); it builds toward the witness term
 and proves no separation.  **No `P ≠ NP` claim.**

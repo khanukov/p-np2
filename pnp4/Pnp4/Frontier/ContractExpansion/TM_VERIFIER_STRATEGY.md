@@ -1831,3 +1831,97 @@ a term.)*
 
 All of §12 is **Infrastructure** for the NP-verifier track (input (2)); it builds toward the witness term
 and proves no separation.  **No `P ≠ NP` claim.**
+
+---
+
+## 13. CRITICAL OBSTRUCTION — the length-blindness wall (found in review, verified against the code)
+
+**This invalidates the `(★)` bridge for the verifier branch (M5–M11) as formulated in §12.  The driver
+branch M1–M4 (D2t-6b) is internal to the transcoder, has no input-length dependence, and is
+unaffected — it proceeds.  The language formulation must be decided BEFORE building verifier
+periphery, or significant work lands under an unprovable `correct`.**
+
+### 13.1 The obstruction
+
+Three already-fixed decisions collide (each verified against the code):
+
+1. **TM model is length-blind** (`pnp3/.../TuringEncoding.lean`): alphabet `Bool`, blank = `false`;
+   `accepts n x = decide ((runConfig (initialConfig x) (runTime n)).state = accept)` — the verdict is
+   the control state at **exactly** `runTime n` steps; `initialConfig` loads `x` in `[0,n)` with **no
+   end-marker**, the rest blank `false`; the head reaches at most `runTime n < tapeLength n`, never the
+   right boundary.  Consequence: an input whose **data ends in `0`** is, as an infinite blank-padded
+   word, **bit-for-bit identical** to the same input with more trailing `0`s — the machine cannot
+   observe its own input length `N`.
+2. **The language is gated on physical length** (`PrefixExtensionLanguage.lean` +
+   `PrefixParserConvention.lean:1142`): `PrefixExtensionLanguage … y = if PrefixExtendable y then true
+   else false`; `PrefixExtendable y = ∃ input, parse y = some input ∧ …`; and
+   `parseTreeMCSPPrefixInput` contains `if _hlen : m = treeMCSPPrefixM codec n then … else none`.
+   Membership at physical length `m` **requires** `m = M(n)` for the gamma-decoded `n`.
+3. **Accept is absorbing** (§2, §12, all of TuringToolkit + every run lemma of the form
+   `∃ t ≤ B, … = accept ∧ idle`): the design reaches the accept phase and idles there.
+
+**Counterexample to `correct`.**  Let `x₀` (length `m₀ = M(n')`) be accepted with witness `w₀`.  Put
+`x₁ := x₀ ++ w₀ ++ 0…0` padded to `m₁ = M(n'')` for a larger target `n''`, and `w₁ := 0^{certLen m₁}`.
+Then `concatBitstring x₁ w₁` and `concatBitstring x₀ w₀`, blank-padded, are the **same infinite word**
+(`x₀w₀` then all-`0`), so the two trajectories coincide step-for-step.  The machine reaches accept by
+`t* ≤ runTime N₀` and (idle-sink) stays; since `N₁ = m₁ + certLen ≥ 2^{n''}` forces `runTime N₁ ≥ N₁ >
+runTime N₀ ≥ t*` (honest `n''`-instances at this length must read a `2^{n''}`-bit table), the state at
+`runTime N₁` is still accept ⇒ `accepts M (concatBitstring x₁ w₁) = true`.  But the language:
+`parse x₁` decodes header `n'`, checks `m₁ = M(n')` → `M(n'') = M(n')` → false ⇒ `Language m₁ x₁ =
+false`.  So `correct` would demand `false ↔ true`.  ∎
+
+The machine *can* read content by the header's `n'` (read `M(n')` cells as the query), but it *cannot*
+verify the **physical** input length equals `M(n')` (that needs the unobservable `N`).  The parser's
+`m = M(n)` gate is exactly the unreplicable predicate.  No non-exotic escape: dodging requires a
+**non-absorbing** accept that toggles on a schedule keyed to the header's `n'` plus a number-theoretic
+`runTime` — incompatible with every `∃ t ≤ B, … accept ∧ idle` run lemma and the whole toolkit.
+Corroboration: the repository has **no proven `NP_TM` instance** (`FinalResultMainline.lean:84` is a
+structure *field*/hypothesis, not a term), consistent with nobody having reached this wall.
+
+*(Scope: the wall is specific to physical-length-**sensitive** languages.  Always-true / always-false
+languages are idle-sink-decidable; the prefix-extension language is length-sensitive precisely via the
+`m = M(n)` gate.)*
+
+### 13.2 Secondary: the "equivalence" interpretation is formalised only one way
+
+`ConsolidatedTreeSeparation.lean` (prose) states the extraction proves the *equivalence*
+`PpolyDAG(language) ⟺ poly search solver`, hence `NoPolynomialBoundedSearchSolver` is "full-strength".
+But `BoundedSolverFromPpoly.lean:28` explicitly proves only `PpolyDAG → solver` (and notes it "does
+**not** prove the contrapositive"); the **converse `solver → PpolyDAG` is nowhere** and is non-trivial
+(a solver yields one witness for `x`, not a decision of arbitrary-prefix extendability).  The chain's
+*correctness* is unaffected (it uses only `¬solver → ¬PpolyDAG`), but the "full-strength / not
+magnification" reading is an **unformalised meta-claim** — either prove the converse or soften the prose.
+
+### 13.3 Recommended resolution (localised to pnp4; decide before M5)
+
+Redefine the ambient language to a **content-truthful** variant `L'`: membership at *any* physical
+length `m` := "∃ certificate completing the window **computed from content** (the header's `n`, fields
+read by offset from the front), **without** the `m = M(n)` gate".  Then:
+
+* **NP-membership (input 2) becomes idle-sink-provable** — `M` reads the header `n`, reads the content
+  window by computed offsets, verifies, accepts; it never needs `N`.  `(★)` holds.
+* **¬PpolyDAG (input 1) transfers** — `L'` coincides with the current `L` on convention lengths
+  `m = M(n)` (a coincidence lemma), and the decision→search extraction only ever queries the decider at
+  convention lengths (`composeDeciderWithQuery` is typed at `treeMCSPPrefixM codec n`), so a
+  `PpolyDAG(L')` family yields the same solver and contradicts `hNoPoly`.
+
+**Obligations (non-trivial — this touches a foundational definition):** (a) PR 1
+(`treePrefixSemanticAccepts_correct`) and `verifiedSource_treePoly` consume the language definition —
+re-derive the semantic correctness + the extraction transfer on `L'`, or route through the coincidence
+lemma; (b) prove `L' (M(n)) = L (M(n))`; (c) M9 gains a **write-before-read scratch-hygiene invariant**
+(in the padded-collision scenarios, cells the layout treats as "clean scratch" hold foreign bits —
+`initial_tape_blank` does not protect).  Most of M6's "length-convention check" **dissolves** (it was
+physically unrealisable).  Heavier alternative: make `concatBitstring`/`NP_TM` self-delimiting (a unary
+length prefix) — pnp3-core surgery, not recommended.
+
+### 13.4 Plan impact
+* **M5–M11 BLOCKED** pending the language decision; **M6** "length-convention check" is removed (it was
+  unrealisable); **M9** is enlarged (reject-completeness + scratch hygiene; the earlier "1–2 sessions"
+  underestimates it).
+* **M1–M4 (driver / D2t-6b) UNAFFECTED** — internal to the transcoder, no input-length dependence.
+* Honest correction to §12's framing: for the **verifier branch**, "the remaining work is pure
+  mechanics" was wrong — there is a genuine specification obstruction to resolve first.  (The driver
+  branch framing stands.)
+
+This obstruction note is **Infrastructure / specification analysis**; it builds no machine and makes no
+`P ≠ NP` claim.

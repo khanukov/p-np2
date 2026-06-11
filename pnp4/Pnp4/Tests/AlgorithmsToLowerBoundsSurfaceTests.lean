@@ -99,6 +99,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPCertTokens
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverStrongInv
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDrivePending
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryTransferRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPValuePushHeadline
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverCorridor
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalk
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRun
@@ -4127,6 +4128,22 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.unaryTransfer_pass_more
 #check @Pnp4.Frontier.ContractExpansion.unaryTransfer_pass_last
 #check @Pnp4.Frontier.ContractExpansion.unaryTransfer_transfers
+-- A5m-V (M1): the non-destructive value-push machine (program, layout, loop states, headline).
+#check @Pnp4.Frontier.ContractExpansion.valuePushProgram
+#check @Pnp4.Frontier.ContractExpansion.ValuePushLayout
+#check @Pnp4.Frontier.ContractExpansion.DrainState
+#check @Pnp4.Frontier.ContractExpansion.CloneState
+#check @Pnp4.Frontier.ContractExpansion.ParkReady
+#check @Pnp4.Frontier.ContractExpansion.valuePush_prologue
+#check @Pnp4.Frontier.ContractExpansion.valuePush_prologue_k0
+#check @Pnp4.Frontier.ContractExpansion.valuePush_drain_mid
+#check @Pnp4.Frontier.ContractExpansion.valuePush_drain_final
+#check @Pnp4.Frontier.ContractExpansion.valuePush_drain_all
+#check @Pnp4.Frontier.ContractExpansion.valuePush_clone_mid
+#check @Pnp4.Frontier.ContractExpansion.valuePush_clone_last
+#check @Pnp4.Frontier.ContractExpansion.valuePush_clone_all
+#check @Pnp4.Frontier.ContractExpansion.valuePush_park
+#check @Pnp4.Frontier.ContractExpansion.valuePush_pushes
 -- D2t-5b (Block A3): the corridor layout — right-anchored stack codecs + the corridor strong invariant
 -- (every inter-region hop a 0-scan onto a pinned 1 anchor; no hop crosses WORK).
 #check @Pnp4.Frontier.ContractExpansion.encodeNatEntryR_length

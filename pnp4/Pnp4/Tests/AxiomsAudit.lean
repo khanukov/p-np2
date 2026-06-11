@@ -89,6 +89,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPCertTokens
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverStrongInv
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDrivePending
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryTransferRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPValuePushHeadline
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverCorridor
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalk
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRun
@@ -941,6 +942,18 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.unaryTransfer_pass_more
 #print axioms Pnp4.Frontier.ContractExpansion.unaryTransfer_pass_last
 #print axioms Pnp4.Frontier.ContractExpansion.unaryTransfer_transfers
+-- A5m-V (M1): the non-destructive value-push machine and its headline.
+#print axioms Pnp4.Frontier.ContractExpansion.valuePushProgram
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_prologue
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_prologue_k0
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_drain_mid
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_drain_final
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_drain_all
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_clone_mid
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_clone_last
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_clone_all
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_park
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_pushes
 -- D2t-5b (Block A3): the corridor layout — right-anchored stack codecs (top rightmost, every field's
 -- right edge a 1, base sentinels), and the corridor strong invariant: every inter-region hop is a
 -- 0-scan onto a pinned 1 anchor (cursor marker / frontier marker / stack tops); no hop crosses WORK.

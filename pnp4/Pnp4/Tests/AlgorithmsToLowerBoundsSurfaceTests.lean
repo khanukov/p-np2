@@ -52,6 +52,7 @@ import Pnp4.Frontier.ContractExpansion.ExtractedScheduleGrowth
 import Pnp4.Frontier.ContractExpansion.ConditionalVerifiedSource
 import Pnp4.Frontier.ContractExpansion.WitnessGrowthReduction
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionNPWitness
+import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
 import Pnp4.Frontier.ContractExpansion.ExplicitConditionalSource
 import Pnp4.Frontier.ContractExpansion.ConcreteCodecGap
 import Pnp4.Frontier.ContractExpansion.CircuitTreeBridge
@@ -1060,6 +1061,17 @@ theorem check_prefixExtensionLanguage_in_NP_of_witness
   prefixExtensionLanguage_in_NP_of_witness parser W
 
 end PrefixExtensionNPWitnessSurface
+
+section ContentPrefixExtensionSurface
+-- §13 repair (R1/R2): the content-truthful language and its NP-witness interface.
+#check @Pnp4.Frontier.ContractExpansion.padRead
+#check @Pnp4.Frontier.ContractExpansion.contentHeader?
+#check @Pnp4.Frontier.ContractExpansion.contentInput?
+#check @Pnp4.Frontier.ContractExpansion.ContentAccepts
+#check @Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionLanguage
+#check @Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNPWitness
+#check @Pnp4.Frontier.ContractExpansion.contentPrefixExtensionLanguage_in_NP_of_witness
+end ContentPrefixExtensionSurface
 
 section ExplicitConditionalSourceSurface
 

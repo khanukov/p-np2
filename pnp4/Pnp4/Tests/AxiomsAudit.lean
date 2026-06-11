@@ -42,6 +42,7 @@ import Pnp4.Frontier.ContractExpansion.ExtractedScheduleGrowth
 import Pnp4.Frontier.ContractExpansion.ConditionalVerifiedSource
 import Pnp4.Frontier.ContractExpansion.WitnessGrowthReduction
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionNPWitness
+import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
 import Pnp4.Frontier.ContractExpansion.ExplicitConditionalSource
 import Pnp4.Frontier.ContractExpansion.ConcreteCodecGap
 import Pnp4.Frontier.ContractExpansion.CircuitTreeBridge
@@ -447,6 +448,12 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.PolynomialWitnessCodec.toGrowthAssumptions
 
 #print axioms Pnp4.Frontier.ContractExpansion.prefixExtensionLanguage_in_NP_of_witness
+-- §13 repair (brick R1/R2): the content-truthful prefix-extension language L' -- membership read at
+-- content-computed offsets through the blank padding (no physical-length gate) -- and its NP-witness
+-- interface (the repaired input (2) target).
+#print axioms Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionLanguage
+#print axioms Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionLanguage_accepts_iff
+#print axioms Pnp4.Frontier.ContractExpansion.contentPrefixExtensionLanguage_in_NP_of_witness
 
 #print axioms Pnp4.Frontier.ContractExpansion.verifiedSource_of_explicit_interfaces
 #print axioms Pnp4.Frontier.ContractExpansion.NP_not_subset_PpolyDAG_of_explicit_interfaces

@@ -55,6 +55,7 @@ import Pnp4.Frontier.ContractExpansion.PrefixExtensionNPWitness
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionTransfer
+import Pnp4.Frontier.ContractExpansion.ContentConsolidatedSource
 import Pnp4.Frontier.ContractExpansion.ExplicitConditionalSource
 import Pnp4.Frontier.ContractExpansion.ConcreteCodecGap
 import Pnp4.Frontier.ContractExpansion.CircuitTreeBridge
@@ -1080,6 +1081,9 @@ section ContentPrefixExtensionSurface
 #check @Pnp4.Frontier.ContractExpansion.DecidesContentPrefixExtensionLanguage
 #check @Pnp4.Frontier.ContractExpansion.boundedSearchSolver_of_PpolyDAG_contentPrefixExtension
 #check @Pnp4.Frontier.ContractExpansion.not_PpolyDAG_contentPrefixExtension_of_noPolynomialBoundedSearchSolver
+-- §13 repair (R5): the consolidated CT source and conditional separation.
+#check @Pnp4.Frontier.ContractExpansion.verifiedSourceCT_treePoly
+#check @Pnp4.Frontier.ContractExpansion.NP_not_subset_PpolyDAG_treePolyCT
 end ContentPrefixExtensionSurface
 
 section ExplicitConditionalSourceSurface

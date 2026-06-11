@@ -299,6 +299,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtension,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionTransfer,
+    Glob.one `Pnp4.Frontier.ContractExpansion.ContentConsolidatedSource,
     Glob.one `Pnp4.Frontier.ContractExpansion.ExplicitConditionalSource,
     Glob.one `Pnp4.Frontier.ContractExpansion.ConcreteCodecGap,
     Glob.one `Pnp4.Frontier.ContractExpansion.CircuitTreeBridge,

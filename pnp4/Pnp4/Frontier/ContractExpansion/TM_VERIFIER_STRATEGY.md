@@ -1892,7 +1892,19 @@ But `BoundedSolverFromPpoly.lean:28` explicitly proves only `PpolyDAG → solver
 *correctness* is unaffected (it uses only `¬solver → ¬PpolyDAG`), but the "full-strength / not
 magnification" reading is an **unformalised meta-claim** — either prove the converse or soften the prose.
 
-### 13.3 Recommended resolution (localised to pnp4; decide before M5)
+### 13.3 Recommended resolution (localised to pnp4; decide before M5) — **EXECUTED (R1–R5 DONE)**
+
+> **Status.**  The repair is **landed and green**: `ContentPrefixExtension.lean` (R1/R2 — `padRead`/
+> `padWord`, `contentHeader?`/`contentInput?`/`contentWitness`, `ContentAccepts`,
+> `ContentPrefixExtensionLanguage`, the CT NP-witness interface), `ContentPrefixExtensionCoincidence
+> .lean` (R3 — reader monotonicity, parse inversion, `ContentPrefixExtensionLanguage_eq_of_parse`),
+> `ContentPrefixExtensionTransfer.lean` (R4 — the extraction transferred:
+> `not_PpolyDAG_contentPrefixExtension_of_noPolynomialBoundedSearchSolver`), and
+> `ContentConsolidatedSource.lean` (R5 — `verifiedSourceCT_treePoly` /
+> `NP_not_subset_PpolyDAG_treePolyCT`).  **The machine track (M5–M11) now targets
+> `ContentPrefixExtensionNPWitness`**; M5–M11 are UNBLOCKED.  Remaining spec-side nicety (deferred to
+> the (★′) bridge milestone): the padding-stability lemma for `ContentAccepts` (the spec mirror of
+> machine length-blindness — needed when proving (★′), not for the chain).
 
 Redefine the ambient language to a **content-truthful** variant `L'`: membership at *any* physical
 length `m` := "∃ certificate completing the window **computed from content** (the header's `n`, fields

@@ -52,6 +52,10 @@ import Pnp4.Frontier.ContractExpansion.ExtractedScheduleGrowth
 import Pnp4.Frontier.ContractExpansion.ConditionalVerifiedSource
 import Pnp4.Frontier.ContractExpansion.WitnessGrowthReduction
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionNPWitness
+import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
+import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence
+import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionTransfer
+import Pnp4.Frontier.ContractExpansion.ContentConsolidatedSource
 import Pnp4.Frontier.ContractExpansion.ExplicitConditionalSource
 import Pnp4.Frontier.ContractExpansion.ConcreteCodecGap
 import Pnp4.Frontier.ContractExpansion.CircuitTreeBridge
@@ -115,6 +119,38 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPConstStepTape
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorConstStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorInputStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorDecStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorSettleClear
+import Pnp4.Frontier.ContractExpansion.TreeMCSPValReplaceTop
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorPopStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorTerminalStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorLeafLast
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverStepTape
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverTapes
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverReachBound
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverFits
+import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftSeqP1
+import Pnp4.Frontier.ContractExpansion.TreeMCSPScanRoundTrip
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverRealization
+import Pnp4.Frontier.ContractExpansion.TreeMCSPTranscoderCapstone
+import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbe
+import Pnp4.Frontier.ContractExpansion.TreeMCSPAtomSeqP1
+import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbeFrame
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionEmbed
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionEmbedMulti
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionScanSegments
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionRunTransfer
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionUnion
+import Pnp4.Frontier.ContractExpansion.TreeMCSPClearIterProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionAtomHops
+import Pnp4.Frontier.ContractExpansion.TreeMCSPClearIterRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionWriteSegment
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCtrlTopWalk
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRemWalk
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDecIterProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDecIterRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCertTrie
+import Pnp4.Frontier.ContractExpansion.TreeMCSPNodeIterProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPNodeIterRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -1028,6 +1064,27 @@ theorem check_prefixExtensionLanguage_in_NP_of_witness
   prefixExtensionLanguage_in_NP_of_witness parser W
 
 end PrefixExtensionNPWitnessSurface
+
+section ContentPrefixExtensionSurface
+-- §13 repair (R1/R2): the content-truthful language and its NP-witness interface.
+#check @Pnp4.Frontier.ContractExpansion.padRead
+#check @Pnp4.Frontier.ContractExpansion.contentHeader?
+#check @Pnp4.Frontier.ContractExpansion.contentInput?
+#check @Pnp4.Frontier.ContractExpansion.ContentAccepts
+#check @Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionLanguage
+#check @Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNPWitness
+#check @Pnp4.Frontier.ContractExpansion.contentPrefixExtensionLanguage_in_NP_of_witness
+-- §13 repair (R3): the coincidence lemma.
+#check @Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_inversion
+#check @Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionLanguage_eq_of_parse
+-- §13 repair (R4): the extraction transfer.
+#check @Pnp4.Frontier.ContractExpansion.DecidesContentPrefixExtensionLanguage
+#check @Pnp4.Frontier.ContractExpansion.boundedSearchSolver_of_PpolyDAG_contentPrefixExtension
+#check @Pnp4.Frontier.ContractExpansion.not_PpolyDAG_contentPrefixExtension_of_noPolynomialBoundedSearchSolver
+-- §13 repair (R5): the consolidated CT source and conditional separation.
+#check @Pnp4.Frontier.ContractExpansion.verifiedSourceCT_treePoly
+#check @Pnp4.Frontier.ContractExpansion.NP_not_subset_PpolyDAG_treePolyCT
+end ContentPrefixExtensionSurface
 
 section ExplicitConditionalSourceSurface
 
@@ -4178,6 +4235,122 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- D2t-5b (Block A4b): the settle-decrement keystone.
 #check @Pnp4.Frontier.ContractExpansion.encodeCtrlFrameR_dec_length
 #check @Pnp4.Frontier.ContractExpansion.corridorInv_decStep
+-- D2t-5b (Block A4c): the settle-clear keystone (empty control stack, no tape write).
+#check @Pnp4.Frontier.ContractExpansion.corridorInv_settleClearStep
+-- D2t-5b (Block A4d): the value-stack pop-then-push window core (settle-emit operand rewrite).
+#check @Pnp4.Frontier.ContractExpansion.valReplaceTop_window
+-- D2t-5b (Block A4e): the settle-pop-emit keystone (top frame rem = 1; emit + value pop/push + frame erase).
+#check @Pnp4.Frontier.ContractExpansion.corridorInv_popStep
+#check @Pnp4.Frontier.ContractExpansion.encodeNatStackR_append
+#check @Pnp4.Frontier.ContractExpansion.getD_replicate_false
+-- D2t-5b (Block A4f): the terminal no-op keystone (toks = [], step = id) — completes Block A4.
+#check @Pnp4.Frontier.ContractExpansion.corridorInv_terminalStep
+-- D2t-5b (Block A5a): totality gap-fillers — generic flag drop + the last-leaf keystone.
+#check @Pnp4.Frontier.ContractExpansion.corridorInv_clearFlag
+#check @Pnp4.Frontier.ContractExpansion.corridorInv_leafStep_last
+-- D2t-5b (Block A5b): the total one-step tape dispatcher and its keystone.
+#check @Pnp4.Frontier.ContractExpansion.driverStepTape
+#check @Pnp4.Frontier.ContractExpansion.DriverStepFits
+#check @Pnp4.Frontier.ContractExpansion.corridorInv_driverStep
+-- D2t-5b (Block A5c): the iterated tape run, its invariant, and the transcoder's semantic endpoint.
+#check @Pnp4.Frontier.ContractExpansion.driverTapes
+#check @Pnp4.Frontier.ContractExpansion.corridorInv_driverTapes
+#check @Pnp4.Frontier.ContractExpansion.driverTapes_terminal_output
+-- D2t-5b (Block A5d, part 1): reachable-state WORK-length and value-entry bounds.
+#check @Pnp4.Frontier.ContractExpansion.reachable_outLen_le_size
+#check @Pnp4.Frontier.ContractExpansion.reachable_valEntry_lt_size
+#check @Pnp4.Frontier.ContractExpansion.reachable_valLen_le_size
+#check @Pnp4.Frontier.ContractExpansion.reachable_ctrlRem
+#check @Pnp4.Frontier.ContractExpansion.reachable_ctrlLen_le_size
+#check @Pnp4.Frontier.ContractExpansion.reachable_node_tail_ne_nil
+-- D2t-5b (Block A5d, completion): the capacity discharge and the hypothesis-free terminal output.
+#check @Pnp4.Frontier.ContractExpansion.CorridorSized
+#check @Pnp4.Frontier.ContractExpansion.reachable_driverStepFits
+#check @Pnp4.Frontier.ContractExpansion.driverTapes_terminal_output_sized
+-- D2t-5b (Block A5m-1a): the leftward scan as the first seq phase (P1 leg + handoff).
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seq_runConfig_scanning
+#check @Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seq_runConfig_terminator_handoff
+-- D2t-5b (Block A5m-1b): the corridor scan round trip on one composed machine.
+#check @Pnp4.Frontier.ContractExpansion.scanRoundTrip_runConfig
+-- D2t-5b (Block A5m-9/10 skeleton): the DriverRealization interface + the loop discharge.
+#check @Pnp4.Frontier.ContractExpansion.DriverRealization
+#check @Pnp4.Frontier.ContractExpansion.DriverRealization.run_simulates
+#check @Pnp4.Frontier.ContractExpansion.DriverRealization.terminal_output
+-- D2t-6b (conditional on the instance): the transcoder capstone shape.
+#check @Pnp4.Frontier.ContractExpansion.DriverRealization.transcodes
+#check @Pnp4.Frontier.ContractExpansion.DriverRealization.transcodes_faithful
+-- D2t-5b (Block A5m-2): the settle probe and its two verdict runs.
+#check @Pnp4.Frontier.ContractExpansion.settleProbe
+#check @Pnp4.Frontier.ContractExpansion.settleProbe_runConfig_frame
+#check @Pnp4.Frontier.ContractExpansion.settleProbe_runConfig_empty
+-- D2t-5b (Block A5m-3a): the atomic movers as the first seq phase (with handoff).
+#check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_seq_runConfig_handoff
+#check @Pnp4.Frontier.ContractExpansion.stepRightOnce_seq_runConfig_handoff
+#check @Pnp4.Frontier.ContractExpansion.settleProbe_seq_runConfig_empty_handoff
+-- D2t-5b (Block A5m-3b): the frame-accepting probe and its P1 leg.
+#check @Pnp4.Frontier.ContractExpansion.settleProbeFrame
+#check @Pnp4.Frontier.ContractExpansion.settleProbeFrame_seq_runConfig_frame_handoff
+-- D2t-5b (Block A5m-U1): the generic region contract and its step transfers.
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbedded
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbedded.stepConfig_normal_phase
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbedded.stepConfig_accept_phase
+-- D2t-5b (Block A5m-U2): the multi-exit region contract.
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.stepConfig_redirect_phase
+-- D2t-5b (Block A5m-U3): the host-generic corridor hops.
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_scanLeft_hop
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_scanRight_hop
+-- D2t-5b (Block A5m-U4): the whole-run transfer into a host region.
+#check @Pnp4.Frontier.ContractExpansion.TapeAgree
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_track
+-- D2t-5b (Block A5m-U5): the region-union machine builder and its contract theorem.
+#check @Pnp4.Frontier.ContractExpansion.unionProgram
+#check @Pnp4.Frontier.ContractExpansion.unionProgram_embedded
+-- D2t-5b (Block A5m-3 machine): the settle-clear iteration machine and its region contracts.
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.toSingle
+#check @Pnp4.Frontier.ContractExpansion.clearIterProgram
+#check @Pnp4.Frontier.ContractExpansion.clearIter_region_probe
+-- D2t-5b (Block A5m-3a'): the host-generic atom hops.
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_stepLeft_hop
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_probe_empty_hop
+-- D2t-5b (Block A5m-3 run): the clear iteration end to end.
+#check @Pnp4.Frontier.ContractExpansion.clearIter_run
+-- D2t-5b (Block A5m-U6): the host-generic write segment (tape = writeBlockTape).
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_writeBits_hop
+-- D2t-5b (Block A5m-4a): the control-top walk component and its codec facts.
+#check @Pnp4.Frontier.ContractExpansion.ctrlTopWalk
+#check @Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_tagBlock_true
+#check @Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_tagSep_false
+-- D2t-5b (Block A5m-4b): the rem-block walk component and its codec facts.
+#check @Pnp4.Frontier.ContractExpansion.remWalk
+#check @Pnp4.Frontier.ContractExpansion.decIterProgram
+#check @Pnp4.Frontier.ContractExpansion.decIter_region_ctrlTopWalk
+-- D2t-5b (Block A5m-4 run): the dec iteration end to end (tnot).
+#check @Pnp4.Frontier.ContractExpansion.decIter_run_tnot
+#check @Pnp4.Frontier.ContractExpansion.decIter_run_tand
+#check @Pnp4.Frontier.ContractExpansion.decIter_run_tor
+-- D2t-5b (Block A5m-5a): the certificate tag trie and its verdict hops.
+#check @Pnp4.Frontier.ContractExpansion.certTrie
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_certTrie_not_hop
+-- D2t-5b (Block A5m-5, machine): the node iteration machine and its region contracts.
+#check @Pnp4.Frontier.ContractExpansion.nodeIterProgram
+#check @Pnp4.Frontier.ContractExpansion.nodeMarkBlock
+#check @Pnp4.Frontier.ContractExpansion.nodeFrame
+#check @Pnp4.Frontier.ContractExpansion.nodeIter_region_certTrie
+#check @Pnp4.Frontier.ContractExpansion.nodeIter_region_Not_frame
+#check @Pnp4.Frontier.ContractExpansion.nodeIter_region_scanRight
+-- D2t-5b (Block A5m-5, run): the node iteration end to end.
+#check @Pnp4.Frontier.ContractExpansion.writeMarkFrame_eq_nodeStepTape
+#check @Pnp4.Frontier.ContractExpansion.nodeIter_run_tnot
+#check @Pnp4.Frontier.ContractExpansion.nodeIter_run_tand
+#check @Pnp4.Frontier.ContractExpansion.nodeIter_run_tor
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_rem_pop_hop
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_rem_dec_hop
+#check @Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_remBlock_true
+#check @Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_frameBase_false
+-- D2t-5b (Block A5m-4a, hops): the four ctrlTopWalk verdict hops.
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_ctrlTop_empty_hop
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_ctrlTop_tor_hop
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_stepConfig_p3_zero_phase
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #check @Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true

@@ -42,6 +42,10 @@ import Pnp4.Frontier.ContractExpansion.ExtractedScheduleGrowth
 import Pnp4.Frontier.ContractExpansion.ConditionalVerifiedSource
 import Pnp4.Frontier.ContractExpansion.WitnessGrowthReduction
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionNPWitness
+import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
+import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence
+import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionTransfer
+import Pnp4.Frontier.ContractExpansion.ContentConsolidatedSource
 import Pnp4.Frontier.ContractExpansion.ExplicitConditionalSource
 import Pnp4.Frontier.ContractExpansion.ConcreteCodecGap
 import Pnp4.Frontier.ContractExpansion.CircuitTreeBridge
@@ -105,6 +109,38 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPConstStepTape
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorConstStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorInputStep
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorDecStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorSettleClear
+import Pnp4.Frontier.ContractExpansion.TreeMCSPValReplaceTop
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorPopStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorTerminalStep
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCorridorLeafLast
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverStepTape
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverTapes
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverReachBound
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverFits
+import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftSeqP1
+import Pnp4.Frontier.ContractExpansion.TreeMCSPScanRoundTrip
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverRealization
+import Pnp4.Frontier.ContractExpansion.TreeMCSPTranscoderCapstone
+import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbe
+import Pnp4.Frontier.ContractExpansion.TreeMCSPAtomSeqP1
+import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbeFrame
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionEmbed
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionEmbedMulti
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionScanSegments
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionRunTransfer
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionUnion
+import Pnp4.Frontier.ContractExpansion.TreeMCSPClearIterProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionAtomHops
+import Pnp4.Frontier.ContractExpansion.TreeMCSPClearIterRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionWriteSegment
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCtrlTopWalk
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRemWalk
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDecIterProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPDecIterRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPCertTrie
+import Pnp4.Frontier.ContractExpansion.TreeMCSPNodeIterProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPNodeIterRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -415,6 +451,28 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.PolynomialWitnessCodec.toGrowthAssumptions
 
 #print axioms Pnp4.Frontier.ContractExpansion.prefixExtensionLanguage_in_NP_of_witness
+-- §13 repair (brick R1/R2): the content-truthful prefix-extension language L' -- membership read at
+-- content-computed offsets through the blank padding (no physical-length gate) -- and its NP-witness
+-- interface (the repaired input (2) target).
+#print axioms Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionLanguage
+#print axioms Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionLanguage_accepts_iff
+#print axioms Pnp4.Frontier.ContractExpansion.contentPrefixExtensionLanguage_in_NP_of_witness
+-- §13 repair (brick R3): the coincidence lemma -- on every parseable query at its convention
+-- length, L' agrees with the length-gated language (reader monotonicity + parse inversion +
+-- the window computations on a concatenated word).
+#print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_inversion
+#print axioms Pnp4.Frontier.ContractExpansion.contentInput?_concat_of_parse
+#print axioms Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionLanguage_eq_of_parse
+-- §13 repair (brick R4): the extraction transfer -- an L'-decider drives the same greedy machinery
+-- (coincidence at the constructed queries), so the same open no-solver hypotheses pin L' outside
+-- PpolyDAG.
+#print axioms Pnp4.Frontier.ContractExpansion.correctNextBitDecider_of_decidesContentLanguage
+#print axioms Pnp4.Frontier.ContractExpansion.boundedSearchSolver_of_PpolyDAG_contentPrefixExtension
+#print axioms Pnp4.Frontier.ContractExpansion.not_PpolyDAG_contentPrefixExtension_of_noPolynomialBoundedSearchSolver
+-- §13 repair (brick R5): the consolidated CT source -- the conditional chain re-routed through L';
+-- the two genuinely-open inputs are input (1) unchanged and the CONTENT-TRUTHFUL NP witness.
+#print axioms Pnp4.Frontier.ContractExpansion.verifiedSourceCT_treePoly
+#print axioms Pnp4.Frontier.ContractExpansion.NP_not_subset_PpolyDAG_treePolyCT
 
 #print axioms Pnp4.Frontier.ContractExpansion.verifiedSource_of_explicit_interfaces
 #print axioms Pnp4.Frontier.ContractExpansion.NP_not_subset_PpolyDAG_of_explicit_interfaces
@@ -1015,6 +1073,186 @@ end Pnp4
 -- pad) re-establishes the invariant for (toks, out, (tag, rem-1) :: ctrl', val, false).
 #print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlFrameR_dec_length
 #print axioms Pnp4.Frontier.ContractExpansion.corridorInv_decStep
+-- D2t-5b (Block A4c): the settle-CLEAR keystone — empty control stack, no tape write, only the
+-- settling flag flips; re-establishes the invariant for (toks, out, [], val, false).
+#print axioms Pnp4.Frontier.ContractExpansion.corridorInv_settleClearStep
+-- D2t-5b (Block A4d): the value-stack pop-then-push window core — the settle-emit operand rewrite
+-- (pop k operand entries, push the new index) as one padded writeBlockTape over encodeNatStackR.
+#print axioms Pnp4.Frontier.ContractExpansion.valReplaceTop_window
+-- D2t-5b (Block A4e): the settle-POP-EMIT keystone — top control frame rem = 1; emit the gate
+-- record, pop the operands and push the new index, erase the completed frame; re-establishes the
+-- invariant for (toks, out ++ [gate], ctrl', out.length :: vs, true).
+#print axioms Pnp4.Frontier.ContractExpansion.corridorInv_popStep
+#print axioms Pnp4.Frontier.ContractExpansion.encodeNatStackR_append
+#print axioms Pnp4.Frontier.ContractExpansion.getD_replicate_false
+-- D2t-5b (Block A4f): the terminal no-op keystone — toks = [], not settling; step is the identity,
+-- the invariant transports verbatim.  Completes Block A4 (all DriveState.step branches covered).
+#print axioms Pnp4.Frontier.ContractExpansion.corridorInv_terminalStep
+-- D2t-5b (Block A5a): totality gap-fillers — the generic flag drop (covers the unreachable
+-- operand-underflow / rem = 0 settle branches) and the last-leaf keystone (every valid preorder
+-- ends with a leaf; the reading keystones all required a nonempty tail).
+#print axioms Pnp4.Frontier.ContractExpansion.corridorInv_clearFlag
+#print axioms Pnp4.Frontier.ContractExpansion.corridorInv_leafStep_last
+-- D2t-5b (Block A5b): the total one-step tape dispatcher — driverStepTape (the branch-dispatched
+-- tape transformer mirroring DriveState.step), DriverStepFits (zone-capacity side conditions), and
+-- the dispatcher keystone: the invariant is preserved from st to st.step across driverStepTape.
+#print axioms Pnp4.Frontier.ContractExpansion.corridorInv_driverStep
+-- D2t-5b (Block A5c): the iterated tape run — the loop-invariant induction at the tape level, and
+-- the transcoder's semantic endpoint: after 3·c.size micro-steps the output window spells
+-- encodeGateStream (flatten c).gates (the count-prefixed postorder stream the interpreter reads).
+#print axioms Pnp4.Frontier.ContractExpansion.corridorInv_driverTapes
+#print axioms Pnp4.Frontier.ContractExpansion.driverTapes_terminal_output
+-- D2t-5b (Block A5d, part 1): the reachable-state WORK-length and value-entry bounds — out never
+-- outgrows the final flatten (≤ c.size); every value-stack index is a valid back-reference (< c.size).
+#print axioms Pnp4.Frontier.ContractExpansion.reachable_outLen_le_size
+#print axioms Pnp4.Frontier.ContractExpansion.reachable_valEntry_lt_size
+-- value-stack depth bound: val.length ≤ out.length + 1 (step-invariant), hence ≤ c.size + 1 reachable.
+#print axioms Pnp4.Frontier.ContractExpansion.reachable_valLen_le_size
+-- control-stack bounds (rem ≤ 2 invariant; depth ≤ c.size via ctrl+toks conservation), the unread
+-- suffix facts (toks is a suffix; preorder ends with a leaf; a reachable node read has a tail).
+#print axioms Pnp4.Frontier.ContractExpansion.reachable_ctrlRem
+#print axioms Pnp4.Frontier.ContractExpansion.reachable_ctrlLen_le_size
+#print axioms Pnp4.Frontier.ContractExpansion.reachable_node_tail_ne_nil
+-- D2t-5b (Block A5d, completion): the capacity discharge — CorridorSized (four zone-size
+-- inequalities) discharges DriverStepFits at every reachable step; the terminal output theorem
+-- becomes hypothesis-free modulo sizing.
+#print axioms Pnp4.Frontier.ContractExpansion.reachable_driverStepFits
+#print axioms Pnp4.Frontier.ContractExpansion.driverTapes_terminal_output_sized
+-- D2t-5b (Block A5m-1a): the leftward scan as the FIRST seq phase — P1-region scanning and the
+-- terminator + handoff leg (lands at P2's shifted start, head on the marker, tape unchanged).
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seq_runConfig_scanning
+#print axioms Pnp4.Frontier.ContractExpansion.selfLoopScanLeft_seq_runConfig_terminator_handoff
+-- D2t-5b (Block A5m-1b): the corridor scan round trip — left leg + handoff + right leg spliced on
+-- one composed machine (seq selfLoopScanLeft gammaSelfLoopScan), tape untouched end-to-end.
+#print axioms Pnp4.Frontier.ContractExpansion.scanRoundTrip_runConfig
+-- D2t-5b (Block A5m-9/10 skeleton): the DriverRealization interface (machine + home coupling +
+-- per-iteration run field) and the Configuration-level loop discharge: run_simulates couples the
+-- machine with driverTapes; terminal_output is the Configuration-level D2t-5c, conditional only on
+-- the interface instance (the A5m-2..8 arms construct it).
+#print axioms Pnp4.Frontier.ContractExpansion.DriverRealization.run_simulates
+#print axioms Pnp4.Frontier.ContractExpansion.DriverRealization.terminal_output
+-- D2t-6b (conditional on the DriverRealization instance): the machine's output window spells
+-- exactly the transcodeWitness stream, and that stream decodes to a straight-line program computing
+-- Circuit.eval c on every input -- the end-to-end transcoder capstone shape.
+#print axioms Pnp4.Frontier.ContractExpansion.DriverRealization.transcodes
+#print axioms Pnp4.Frontier.ContractExpansion.DriverRealization.transcodes_faithful
+-- D2t-5b (Block A5m-2): the settle probe -- the control-stack empty test at the top anchor (peek
+-- left: a frame's tag block is all-1, the lone base sentinel is followed left by the dead corridor),
+-- with the two 2-step verdict runs under driverCorridorInv.
+#print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_penultimate_true
+#print axioms Pnp4.Frontier.ContractExpansion.settleProbe_runConfig_frame
+#print axioms Pnp4.Frontier.ContractExpansion.settleProbe_runConfig_empty
+-- D2t-5b (Block A5m-3a): the atomic movers as the FIRST seq phase -- single-cell left/right steps
+-- and the probe's empty path, each with the handoff into P2's shifted start, tape unchanged.
+#print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_seq_runConfig_handoff
+#print axioms Pnp4.Frontier.ContractExpansion.stepRightOnce_seq_runConfig_handoff
+#print axioms Pnp4.Frontier.ContractExpansion.settleProbe_seq_runConfig_empty_handoff
+-- D2t-5b (Block A5m-3b): the frame-accepting probe (acceptPhase = the frame verdict), the dec/pop
+-- arms' pipeline entry; on the empty branch it idles and the pipeline never continues.
+#print axioms Pnp4.Frontier.ContractExpansion.settleProbeFrame_seq_runConfig_frame_handoff
+-- D2t-5b (Block A5m-U1): generic phase-region embedding -- the region contract (host transition =
+-- component's, shifted, accept redirected) and the six stepConfig transfer lemmas; the branching
+-- driver machine is assembled as a region union of the merged components.
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.stepConfig_normal_phase
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.stepConfig_normal_head
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.stepConfig_normal_tape
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.stepConfig_accept_phase
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.stepConfig_accept_head
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.stepConfig_accept_tape
+-- D2t-5b (Block A5m-U2): the multi-exit region contract (redirect MAP over the component's phases:
+-- branching components route each verdict phase to a different successor region) + its transfers.
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.stepConfig_normal_phase
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.stepConfig_redirect_phase
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.stepConfig_redirect_tape
+-- D2t-5b (Block A5m-U3): the corridor hops host-generic -- any machine hosting the leftward /
+-- rightward scan as a region performs the full hop (scan, read the anchor, hand off) in
+-- distance + 2 steps, tape untouched; every arm hop instantiates these at its region base.
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_scanLeft_hop
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_scanRight_hop
+-- D2t-5b (Block A5m-U4): whole-run transfer -- a native component run transports into the host
+-- region (phase offset, equal heads, value-wise tape agreement) under trace safety (no visited
+-- phase redirect-mapped; no clamping); native capstones become host-level run facts wholesale.
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.step_track
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_track
+-- D2t-5b (Block A5m-U5): the region-union machine builder -- a machine from a phase assignment,
+-- with the single generic theorem turning a consistent assignment into the region contract.
+#print axioms Pnp4.Frontier.ContractExpansion.unionProgram_embedded
+-- D2t-5b (Block A5m-3 machine): the settle-clear iteration as a region union -- the first concrete
+-- machine on the U-stack (16 phases; home -> probe -> return -> read-home; frame verdict to stuck),
+-- with the Multi->Single downgrade and every region contract by one instantiation.
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.toSingle
+#print axioms Pnp4.Frontier.ContractExpansion.clearIter_region_probe
+#print axioms Pnp4.Frontier.ContractExpansion.clearIter_region_scanRight
+-- D2t-5b (Block A5m-3a'): the host-generic atom hops -- single-cell movers (2 steps) and the
+-- probe's two verdict branches (3 steps), each ending at its redirect target, tape unchanged.
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_stepLeft_hop
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_stepRight_hop
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_probe_empty_hop
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_probe_frame_hop
+-- D2t-5b (Block A5m-3 run): the clear iteration END TO END on clearIterProgram -- from the settle
+-- home on the cursor marker, hop to the control top, probe (empty), return, scan home: phase 14,
+-- head back on the marker, tape untouched (= driverStepTape on the clear branch), <= 2*certEnd+13
+-- steps.  The per-iteration fact of the eventual DriverRealization instance, clear arm.
+#print axioms Pnp4.Frontier.ContractExpansion.clearIter_run
+-- D2t-5b (Block A5m-U6): the write segment -- any machine hosting writeBits bs as a region performs
+-- the block write in |bs|+1 steps, tape exactly writeBlockTape tape h bs (the keystones' write
+-- transformer); one instantiation per fixed-block write (dec/node frames, const record).
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_writeBits_hop
+-- D2t-5b (Block A5m-4a): ctrlTopWalk -- the settle dispatch read as one walking component (count
+-- the ones left of the control top: 1 = empty sentinel, 2/3/4 = the tag), with the tag-block /
+-- separator codec facts; in-host step primitives are private to the module.
+#print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_tagBlock_true
+#print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_tagSep_false
+-- D2t-5b (Block A5m-4b): remWalk -- the rem-block read from the separator to the frame base
+-- (2 ones = rem 1 / pop, 3 ones = rem 2 / dec), with the rem-block / frame-base codec facts.
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_rem_pop_hop
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_rem_dec_hop
+#print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_remBlock_true
+#print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_frameBase_false
+-- D2t-5b (Block A5m-4 machine): the settle-dec iteration machine (69 phases; navigation +
+-- ctrlTopWalk + per-tag remWalks + per-tag frame rewrites + the shared return scan), with all ten
+-- region contracts by one instantiation each.
+#print axioms Pnp4.Frontier.ContractExpansion.decIter_region_ctrlTopWalk
+#print axioms Pnp4.Frontier.ContractExpansion.decIter_region_writeNot
+#print axioms Pnp4.Frontier.ContractExpansion.decIter_region_scanRight
+-- D2t-5b (Block A5m-4 run): the dec iteration END TO END (tnot) -- home -> control top -> tag read
+-- (two ones) -> rem read (three ones, dec verdict) -> in-place frame rewrite -> home; tape exactly
+-- corridorInv_decStep's transformer, <= 2*certEnd+30 steps.
+#print axioms Pnp4.Frontier.ContractExpansion.decIter_run_tnot
+#print axioms Pnp4.Frontier.ContractExpansion.decIter_run_tand
+#print axioms Pnp4.Frontier.ContractExpansion.decIter_run_tor
+-- D2t-5b (Block A5m-5a): certTrie -- the certificate tag trie (the read dispatch: 000 input,
+-- 001 const, 010 not, 011 and, 100 or) with the five host-generic 4-step verdict hops, each ending
+-- three cells right of the cursor, tape unchanged.
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_certTrie_input_hop
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_certTrie_const_hop
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_certTrie_not_hop
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_certTrie_and_hop
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_certTrie_or_hop
+-- D2t-5b (Block A5m-5, machine): nodeIterProgram -- the node iteration as a region union (116
+-- phases: stepRight, certTrie dispatch, per-tag marker rewrite + frame push chains, return scan)
+-- with its region contracts.
+#print axioms Pnp4.Frontier.ContractExpansion.nodeIterProgram
+#print axioms Pnp4.Frontier.ContractExpansion.nodeIter_region_certTrie
+#print axioms Pnp4.Frontier.ContractExpansion.nodeIter_region_Not_mark
+#print axioms Pnp4.Frontier.ContractExpansion.nodeIter_region_Not_frame
+#print axioms Pnp4.Frontier.ContractExpansion.nodeIter_region_And_frame
+#print axioms Pnp4.Frontier.ContractExpansion.nodeIter_region_Or_frame
+#print axioms Pnp4.Frontier.ContractExpansion.nodeIter_region_scanRight
+-- D2t-5b (Block A5m-5, run): the node iteration end to end -- the two block writes compose to
+-- corridorInv_nodeStep's transformer nodeStepTape, and the machine runs home-to-home onto the new
+-- marker within 2*certEnd + 40 steps.
+#print axioms Pnp4.Frontier.ContractExpansion.writeMarkFrame_eq_nodeStepTape
+#print axioms Pnp4.Frontier.ContractExpansion.nodeIter_run_tnot
+#print axioms Pnp4.Frontier.ContractExpansion.nodeIter_run_tand
+#print axioms Pnp4.Frontier.ContractExpansion.nodeIter_run_tor
+-- D2t-5b (Block A5m-4a, hops): the four host-generic ctrlTopWalk verdict hops -- empty (3 steps),
+-- tnot (4), tand (5), tor (6) -- each landing at its verdict's redirect target with the head on the
+-- separator (resp. the dead cell), tape unchanged.
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_ctrlTop_empty_hop
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_ctrlTop_tnot_hop
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_ctrlTop_tand_hop
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_ctrlTop_tor_hop
 -- D2t-3 routing run-through (P2 region): scan→branch reaches composed phase 4 (B=0) / 5 (B>0).
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_true
 #print axioms Pnp4.Frontier.ContractExpansion.bZeroRouteProgram_P2_runConfig_branch_false

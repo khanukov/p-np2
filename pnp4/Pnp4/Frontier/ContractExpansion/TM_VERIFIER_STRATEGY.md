@@ -1404,3 +1404,536 @@ Since the section above was written, the **spec/spine layer expanded considerabl
    head/`settling`-flag coupling, with `μ := DriveState.mu ∘ decode` (the pure `step_terminal_at_mu` already
    discharges the abstract termination).  The length-aware region non-overlap (`DriverLayout` capacities) is
    added when (1)–(2) first need it.
+
+### D2t-5b corridor keystone layer (A1–A4, PRs #1610–#1615) — **Block A4 COMPLETE** (A4a–A4f)
+
+After the `driverTapeInv` spine above, the on-tape realisation was re-based onto a **corridor layout**
+that makes every driver head-hop a scan over a guaranteed-all-`0` corridor onto a guaranteed-`1`
+anchor (`TreeMCSPDriverCorridor`, A3), revising the left-cert `driverTapeInv` into the right-cert
+`driverCorridorInv` (certificate rightmost; right-anchored stacks `encodeNatStackR` / `encodeCtrlStackR`
+in fixed zones between WORK and the certificate).  Against that invariant, the **per-`DriveState.step`
+keystones** — each "given the right bounded tape rewrite, `driverCorridorInv` is preserved across one
+`step`" — have now landed for **every** `step` branch (Block A4 complete):
+
+* `corridorInv_nodeStep` (A4) — reading a `node tag`: push a control frame (`nodeStepTape`).
+* `corridorInv_constStep` / `corridorInv_inputStep` (A4a) — reading a `leaf`: emit the record
+  (`emitTape`), push the value index (`valPush_window`), advance the cursor marker (`cursorStepTape`),
+  composed as `leafStepTape`.
+* `corridorInv_decStep` (A4b) — settling, top frame `rem ≥ 2`: one `writeBlockTape` (decremented
+  frame + a one-cell zero pad).
+* **`corridorInv_settleClearStep` (A4c, this brick)** — settling, control stack **empty**: the cascade
+  is finished; the machine writes **nothing** (only the finite-control `settling` flag flips), so the
+  invariant transports verbatim and its settling-coherence clause becomes vacuous.
+
+* **`valReplaceTop_window` (A4d)** — the value-stack **pop-k-push-1** window core: overwrite the popped
+  operand block `oldTop` (one entry for `not`, two for `and` / `or`) by the single new entry
+  `encodeNatEntryR out.length`, padded with `replicate (oldTop.length − newLen) false` so one
+  `writeBlockTape` covers the `max` of the two widths; the result window spells
+  `encodeNatStackR (out.length :: vs)` over the untouched suffix `vs`.
+* **`corridorInv_popStep` (A4e)** — the settling, top-frame `rem = 1` **settle-EMIT** keystone
+  (generic over `tag` / `gate` / `vpop`): three **disjoint** region rewrites (WORK < VAL < CTRL, cert
+  untouched) composed as `popStepTape` — WORK emit (`emitTape`, with record `encodeGateRecord gate`),
+  VAL pop-k-push-1 (`valReplaceTop_window`), CTRL top-frame zeroing (full-frame `writeBlockTape`-false,
+  the `decStep` pattern) — re-establishing all 16 `driverCorridorInv` clauses, the same shape as
+  `corridorInv_inputStep` with a CTRL pop in place of the cursor advance.
+* **`corridorInv_terminalStep` (A4f)** — the terminal branch (`toks = []`, not settling): `step` is the
+  identity (`DriveState.step_terminal`), so the invariant transports verbatim.
+
+With these, **every** `DriveState.step` branch has a corridor keystone (**Block A4 complete**), and the
+residual machine work is Block A5: the on-tape `driverBody` (assemble each arm's `seqList` of merged
+components and equate its final tape with the keystone transformer), the cross-region seeks, and the
+`loopUntilSink_reachesSink` discharge (items 1–3 above), now stated against `driverCorridorInv`.
+
+### D2t-5b Block A5 — semantic spine LANDED (A5a–A5c); machine half remaining
+
+The **semantic (tape-level) half of the A5 loop discharge is settled**:
+
+* **A5a — totality gap-fillers** (`TreeMCSPCorridorLeafLast.lean`).  Assembling the total dispatcher
+  surfaced two keystone-layer gaps: every reading keystone required a **nonempty tail**, yet every
+  valid preorder *ends* with a leaf — `corridorInv_leafStep_last` covers the final token,
+  generically over the leaf gate; and `corridorInv_clearFlag` transports the invariant across any
+  `settling := true → false` flip on the same tape (covering the unreachable operand-underflow and
+  `rem = 0` settle branches; generalises `corridorInv_settleClearStep`).
+* **A5b — the total one-step dispatcher** (`TreeMCSPDriverStepTape.lean`).  `driverStepTape` is the
+  branch-dispatched tape transformer mirroring `DriveState.step`'s match structure (emit/dec/leaf/
+  node arms; identity on flag-only and terminal branches); `DriverStepFits` packages each branch's
+  zone-capacity side conditions; `corridorInv_driverStep` proves invariant preservation `st → st.step`
+  across it, for **every** state — the per-iteration fact the loop induction consumes.  Invalid leaf
+  tokens are refuted from the invariant's own `ValidCertTokens` clause.
+* **A5c — the iterated run + terminal output** (`TreeMCSPDriverTapes.lean`).  `driverTapes` iterates
+  the dispatcher along the abstract run; `corridorInv_driverTapes` is the loop-invariant induction;
+  and **`driverTapes_terminal_output`**: from the `driverCorridorInv_init` layout, after `3 · c.size`
+  micro-steps (`driveStep_halts_bound`) the output window spells
+  **`encodeGateStream (flatten c).gates`** — the transcoder's semantic endpoint at tape level.
+
+**Remaining for A5 (the machine half, multi-session):**
+
+1. **arm realisation** — per branch, a composed `ConstStatePhasedProgram` (the navigation legs
+   `corridor_scan_*` / `corridor_walk_*` / `corridor_back_*`, the reads `treeTagDispatch` /
+   `readCtrlFrameTag` / `readCtrlFrameRemaining`, the writes `writeBits` / `pushCtrlFrame` /
+   `unaryTransfer` are all merged) whose run-from-home effects exactly `driverStepTape st` and
+   returns the head home — the `seq`/`seqP2` transfer layer is the cost;
+2. **dispatch** — the branch decision at home (settling flag in finite control; sentinel-empty peek;
+   `readCtrlFrameRemaining` 1-vs-≥2; the tag trie), entering the matching arm;
+3. **the `Configuration`-level loop** — `loopUntilSink driverBody` with sink soundness/existence
+   (A1b `driver_sink_sound` / `driver_sink_exists`), measure `μ := DriveState.mu ∘ decode`
+   (`mu_step_lt` / `step_terminal_at_mu`), and the coupling "machine tape after `j` iterations
+   `= driverTapes … j`" — at which point `driverTapes_terminal_output` pins the final tape;
+4. **capacity discharge — COMPLETE** (`TreeMCSPDriverReachBound.lean` + `TreeMCSPDriverFits.lean`).
+   The reachable-state bounds: `reachable_outLen_le_size` (`out.length ≤ c.size`, monotone, pinned by
+   `driveStep_halts_bound`); `reachable_valEntry_lt_size` / `reachable_valLen_le_size` (value stack:
+   entries `< c.size`, depth `≤ c.size + 1`); `reachable_streamLen_le` (the record stream never
+   outgrows `encodeGateRecordStream (flatten c).gates`); `reachable_ctrlRem` /
+   `reachable_ctrlLen_le_size` (control stack: every frame `rem ≤ 2`, depth `≤ c.size` via the
+   `ctrl + toks` conservation); and `reachable_node_tail_ne_nil` (`toks` is a suffix of the initial
+   preorder, and a preorder always ends with a leaf — so a node read never has an empty tail).
+   `CorridorSized` (four concrete zone-size inequalities) then discharges `DriverStepFits` at every
+   reachable step (`reachable_driverStepFits`), and the capstone
+   **`driverTapes_terminal_output_sized`** needs **no per-step hypotheses**: from the
+   `driverCorridorInv_init` layout on a sized corridor, after `3 · c.size` micro-steps the output
+   window spells `encodeGateStream (flatten c).gates`.
+
+### D2t-5b Block A5m — the machine half: brick decomposition (fixed plan)
+
+> **Note (§12).** A5m below is the *driver* half only; in the full input-(2) roadmap (§12) it is
+> milestones **M1–M4** (value-push primitive → const/input/pop arms → dispatch + `DriverRealization`
+> instance ⇒ unconditional D2t-6b).  The verifier phases beyond the driver (parse, init-bridge,
+> checker, assembly, the (★) bridge, runtime) are **M5–M11** in §12.
+
+With the semantic spine (A5a–c) and the capacity discharge (A5d) settled, the remaining transcoder
+work is purely mechanical TM assembly.  Architecture: the driver is **one** composed program whose
+loop is realised by phase back-edges (the `zoneWalkLeft` idiom — no `loopUntilSink` combinator
+exists or is needed); each iteration runs `dispatch ; arm ; re-home`, and the assembled machine's
+per-iteration tape map is equated with `driverStepTape` (A5b), so `corridorInv_driverTapes` /
+`driverTapes_terminal_output_sized` pin the run.  Bricks, each a hole-free PR:
+
+**A5m progress (landed):** A5m-1a (`TreeMCSPScanLeftSeqP1.lean` — the leftward scan as the first
+`seq` phase, P1 leg + handoff), A5m-1b (`TreeMCSPScanRoundTrip.lean` — the round trip on
+`seq selfLoopScanLeft gammaSelfLoopScan`), the **A5m-9/10 skeleton** (`TreeMCSPDriverRealization.lean`
+— the `DriverRealization` interface + `run_simulates` + `terminal_output`, the Configuration-level
+D2t-5c conditional on the instance), the **D2t-6b conditional capstone**
+(`TreeMCSPTranscoderCapstone.lean` — `DriverRealization.transcodes` / `transcodes_faithful`: the
+machine's output window spells the `transcodeWitness` stream, decoding to a program computing
+`Circuit.eval c` on every input), A5m-2 (`TreeMCSPSettleProbe.lean` — the empty test with both
+verdict runs under the invariant), and A5m-3a (`TreeMCSPAtomSeqP1.lean` — `stepLeftOnce` /
+`stepRightOnce` / probe-empty as P1 legs with handoff).  **The one remaining input to D2t-6b is a
+`DriverRealization` instance** (the arms + dispatch).
+
+**Assembly pivot (A5m-U1, landed).**  Per-arm `seq` pipelines cannot merge into one *branching*
+machine (`seq` is linear), so the driver instance is assembled instead as a **region union**: one
+program whose phase space hosts the merged components at offsets, each region obeying the
+`RegionEmbedded` contract (`TreeMCSPRegionEmbed.lean` — host transition = component's, shifted,
+accept **redirected** to the successor region; six generic `stepConfig` transfer lemmas mirror the
+`seq` P1-simulation).  Branching is free: regions redirect to different successors, and the probes'
+two verdict phases route to different arms.  Per-segment run inductions are re-run on the host via
+the generic step lemmas (the established ~30-line pattern, no configuration transport).  The
+remaining assembly: define the driver as the region union of `treeTagDispatch` /
+`settleProbe(Frame)` / the scans / the writers, prove the per-region run segments, the per-iteration
+home-to-home theorem, and instantiate `DriverRealization` — at which point
+`DriverRealization.transcodes(_faithful)` close D2t-6b unconditionally.
+
+**Next brick (A5m-3, the clear arm)** — pipeline
+`seq stepLeftOnce (seq selfLoopScanLeft (seq settleProbe (seq stepRightOnce (seq stepRightOnce
+gammaSelfLoopScan))))` under `driverCorridorInv` with `st.ctrl = []`: home `M` → step left → scan
+left onto the ctrl sentinel → probe (empty) → two right steps over the sentinel → scan right onto
+`M`; tape unchanged end-to-end (= `driverStepTape` on the clear branch).  The splice needs the
+**nested-`seq` embedding**: each leg's P1-lemma is generic in `P2` (landed), but transferring the
+*inner* composite's run into the outer requires `embedSeqP2Config_runConfig_eq` (pnp3), whose
+`h_safe_all` side condition wants **stepwise** facts (phase < inner `numPhases`; right-moves have
+head-room) — so each leg needs a small *stepwise-safety companion* (derivable from the leg lemmas'
+inductions), OR each leg is restated at its P2-offset on the outer machine via the generic
+`seq_stepConfig_P2_*` single-step lemmas (the `gammaSelfLoopScan_seqP2_*` pattern, one level
+deeper).  Either route is mechanical; the offsets for the clear arm are `2 / 4 / 8 / 10 / 12`.
+
+* **A5m-1 — scan round-trip** (`seq selfLoopScanLeft gammaSelfLoopScan`): the M → ctrl-top →
+  M navigation pair under `driverCorridorInv`, splicing `corridor_scan_M_to_ctrlTop` (P1 side:
+  `selfLoopScanLeft_runConfig_terminator` re-proved inside `seq` via the §6a P1-normal single-step
+  simulation + one `seq_stepConfig_P1_accept_*` handoff) with `corridor_back_scan_to_M` (P2 side:
+  `gammaSelfLoopScan_runConfigFrom_*` are already arbitrary-start).  Pattern:
+  `tagCheckThenGammaScan_runConfig` (`TreeMCSPLeadingPhasesChain.lean`).
+* **A5m-2 — the settle dispatch read**: at ctrl-top, the empty test (peek left: `0` = base sentinel)
+  and `readCtrlFrameRemaining` (1 vs ≥ 2), as one branch program (the `stepRightThenBranch` /
+  `bZeroRouteProgram` idiom), with run lemmas under the invariant.
+* **A5m-3 — the clear arm**: round-trip + empty-test + flag flip (no tape writes);
+  per-iteration lemma `= driverStepTape` on the settling/`[]` branch.
+* **A5m-4 — the dec arm**: navigate, `readCtrlFrameRemaining`, in-place frame rewrite
+  (`writeBits` at the frame base with the decremented frame + pad), re-home;
+  `= driverStepTape` on the `rem ≥ 2` branch (the `corridorInv_decStep` transformer).
+* **A5m-5 — the node arm** ✅ **DONE** (`TreeMCSPNodeIterProgram.lean` + `TreeMCSPNodeIterRun.lean`):
+  `nodeIterProgram` (116-phase region union: stepRight, `certTrie` dispatch, per-tag marker rewrite
+  + frame push chains, return scan) and `nodeIter_run_{tnot,tand,tor}` — end-to-end, tape **exactly**
+  `nodeStepTape` (`corridorInv_nodeStep`'s transformer); the bridge `writeMarkFrame_eq_nodeStepTape`
+  composes the two block writes.  This is `driverStepTape`'s node branch.
+* **A5m-6 — the const arm**: dispatch read of the literal + emit (record `encodeGateRecord (const b)
+  = [1,0,b]` is **fixed-length**, so a plain `writeBits` + count-tick) + **value push** + cursor
+  re-mark; `= leafStepTape` with the 4-cell token.  ⚠️ **Blocked on A5m-V** (below): the value entry
+  `encodeNatEntryR out.length` has **runtime** length, so `writeNatField` (a *fixed-`v*` `writeBits`)
+  cannot write it — the const arm needs the content-dependent value-push primitive.
+* **A5m-7 — the input arm**: the D2t-3 `binToUnaryLoopFullScan` (built, correct) writes the
+  content-dependent index field of the record; framed as the record emit + **value push** (A5m-V) +
+  cursor re-mark; `= leafStepTape` with the `(3+width)`-cell token.
+* **A5m-8 — the pop arm** (largest): navigate, pop the operand fields (`zoneWalkLeft` sub-scans,
+  built), `unaryTransfer` the operands into the WORK record (A2, built), **value push** (A5m-V),
+  erase the frame, re-home; `= popStepTape`.
+* **A5m-V — the value-push primitive** (NEW; shared by A5m-6/7/8, the real blocker uncovered while
+  assembling the leaf arm): a single fixed machine that, reading the gate count `k = out.length` from
+  the COUNT field, writes the value entry `encodeNatEntryR k = 0 ++ 1^(k+2)` at the value-zone top
+  **leaving COUNT intact**.  Non-destructiveness is forced by the keystone: `leafStepTape` /
+  `constStepTape` / `popStepTape` write the value block onto the *original* tape (`writeBlockTape tape
+  vtop ventry`) and only then `emitTape` bumps the count by **one** `1`, so the machine must preserve
+  COUNT's existing `k` ones.  `unaryTransfer` (A2) is *destructive*, so it cannot copy COUNT directly.
+  Cleanest realisation: a **fan-out transfer** body (per pass: erase one COUNT unit, append a `1` to
+  *both* the value frontier *and* a scratch block) draining COUNT → (value ∪ scratch), then one plain
+  `unaryTransfer` scratch → COUNT to restore COUNT; net effect a non-destructive duplicate.  Headline
+  shape (mirroring `unaryTransfer_transfers`): from the count layout, reach a sink in `poly(k)` steps
+  with the value-zone window spelling `unaryField k` at `vtop` and the COUNT window unchanged —
+  i.e. the tape is exactly `writeBlockTape tape vtop (encodeNatEntryR k)` after the framing `0`/`+2`
+  ones are added.  (Program-half is a `loopUntilSink` body like `unaryTransferBody`; the run-half is a
+  strong induction on `k` reusing the `unaryTransfer` headline for the restore pass.)
+* **A5m-9 — dispatch + loop assembly**: the branch decision at home (settling flag in finite
+  control; `treeTagDispatch` on reading; A5m-2 on settling), phase back-edges to home, the composed
+  `driverProgram`; per-iteration theorem: from the home configuration of abstract state `st`, one
+  iteration reaches the home configuration of `st.step` with tape `driverStepTape … st`, in a
+  bounded step count.  This is exactly the `DriverRealization.step_run` field
+  (`TreeMCSPDriverRealization.lean`); the arms above are its branch cases.
+* **A5m-10 — the run discharge**: iterate A5m-9 (`3 · c.size` times, `driveStep_halts_bound`),
+  coupling with `driverTapes`; conclude the machine's final tape via
+  `driverTapes_terminal_output_sized`.  This is **D2t-5c at the `Configuration` level**.
+* **D2t-6b — the whole-transcoder capstone**: package A5m-10 against `transcodeWitness` faithfulness
+  (`driveWORK_eq_flatten` / `transcodeStreamViaStack_faithful` already bridge the stream to
+  `Circuit.eval`), with the polynomial step bound (`3 · c.size` iterations × the per-iteration
+  bound, all zone widths polynomial via `CorridorSized`).
+
+All keystones and cores are kernel-checked, standard `[propext, Classical.choice, Quot.sound]` triple
+only.  This is **Infrastructure** for the NP-verifier track (input (2) of `verifiedSource_treePoly`); it
+builds no machine yet and proves no separation.  **No `P ≠ NP` claim.**
+
+---
+
+## 12. Full input-(2) closure roadmap (M1…M11) — what remains and how
+
+**Honest frame (unchanged).** Closing input (2) = `PrefixExtensionNPWitness` is a **verified-engineering**
+milestone.  It does **not** establish `P ≠ NP`: the conditional chain `verifiedSource_treePoly k`
+(`ConsolidatedTreeSeparation.lean`) keeps hanging on the **single remaining** hypothesis — input (1)
+`NoPolynomialBoundedSearchSolver` (full-strength `NP ⊄ P/poly` for the concrete language), which is open
+mathematics and out of scope for the TM track.  **No `P ≠ NP` claim anywhere.**  Discipline: 0
+`sorry`/`admit`/axiom; standard `[propext, Classical.choice, Quot.sound]` triple; every commit green
+(`./scripts/check.sh` 17/17); **every machine validated by its run lemma** (the broken-`remWalk` lesson —
+never commit an unvalidated body blind); register in lakefile + AxiomsAudit + SurfaceTests.
+
+### 12.1 What input (2) requires (the precise target)
+
+`PrefixExtensionNPWitness (treeMCSPConcretePrefixParser (thresholdPoly k) (treeCircuitWitnessCodec …))`
+(`PrefixExtensionNPWitness.lean:58`): fields `M : TM.{0}`, `c k : Nat`, `runTime_poly`, `correct`.  PR 1
+(`treePrefixSemanticAccepts_correct`, k=1) already gives the semantic equivalence; the **only** remaining
+math content of `correct` is the bridge
+
+> (★)  `accepts M (concatBitstring x w) = treePrefixSemanticAccepts codec n x w`
+
+after which `correct = treePrefixSemanticAccepts_correct ∘ exists_congr (★)`, `k := 1`.  `M` is **one
+fixed** `ConstStatePhasedProgram Unit` compiled `toPhased.toTM` (`runTime := timeBound`, freely chosen
+polynomial); `M = parse ; init ; transcode ; check ; verdict`.  `PhasedProgram.accepts_toTM`
+(`PhasedProgramAccepts.lean`) unfolds `accepts` to "control state = accept-phase after `timeBound` steps"
+— the shape (★) reasons against.  TM model runs **exactly** `runTime n` steps ⇒ `M` must reach an **idle
+verdict sink** (accept/reject) and the obligation is "the computation has stabilised in the sink by
+`p(L)`".
+
+`treePrefixSemanticAccepts` (`TreeMCSPPrefixSemanticVerifier.lean:181`) =
+`parseTreeMCSPPrefixInput query ▸ extractWitness? cert ▸ (prefixAgreesBool input w && verifiesBool codec
+input.n input.x w)`.  So `M` must: **(1)** parse the query `[tag 8b | gamma(n) | x = 2^n-bit table | i |
+p+pad]`; **(2)** decode/transcode the certificate circuit (the driver, D2t); **(3)** evaluate the decoded
+SLP on **all 2^n** rows comparing to `x` (`verifiesBool`) and **(4)** compare the prefix `p` against the
+witness on `i` positions (`prefixAgreesBool`) — accept iff all pass, else reject.
+
+**The two `k`s (re-verified — do not conflate).**  The *witness field* `k` is the **certificate-length**
+exponent and is pinned to `1` by the proven semantic layer (`treePrefixSemanticAccepts` is typed at
+`certificateLength N 1 = N+1`; `witnessBits_le_certificateLength` already reconciles the slice).  The
+*chain parameter* `k` in `verifiedSource_treePoly k` is the **threshold** exponent (`thresholdPoly k n =
+n^k + k`) and `verifiesBool` is generic in the threshold — so the machine should be built as a **family
+`M k`** (one fixed machine per meta-level `k`), keeping input (1) free to be stated at whatever threshold
+regime the open mathematics wants.  Cost of genericity: the on-tape size check "#gates ≤ n^k + k" needs a
+unary `n^k` builder (a k-fold multiply loop, M8); at `k = 1` it degenerates to the trivial "≤ n+1" unary
+comparison.  All work is polynomial in the input length (the `2^n`-bit table is part of the query, so
+`2^n` evaluations = poly).
+
+### 12.2 Inventory (verified by code-read; see also §11 for the driver bricks)
+
+**DONE.**  Spec layer: `treePrefixSemanticAccepts(_correct)`, `transcodeWitness(_faithful)`, all codecs.
+Driver (D2t): 17-clause `driverCorridorInv` + `driverCorridorInv_init` (spec lemma), **all 7 A4
+keystones**, semantic spine (`driverStepTape`, `corridorInv_driverStep`, `driverTapes`, `CorridorSized`,
+`reachable_driverStepFits`, `driverTapes_terminal_output_sized`), `DriverRealization` interface +
+`run_simulates` + `terminal_output` + **D2t-6b `transcodes`/`transcodes_faithful` (proven, conditional on
+the instance)**; arms **clearIter / decIter / nodeIter** with run lemmas; region-union + all host-generic
+hops.  Loop machines: `unaryTransfer`, `binToUnaryLoopFullScan`, `loopUntilSink`, `repeatBody`,
+`bZeroFullScan`, four-way scan vocabulary, `UnaryFieldReader`.  Verifier periphery: tagCheck + gammaScan
+built **and composed** on one machine; `seq` composition + self-loop survival; `circuitEvaluatorCS_run_-
+correct_wf` (per-row evaluator, well-formed-gated).  Final wiring `verifiedSource_treePoly` /
+`NP_not_subset_PpolyDAG_treePoly` — ready, await `hNPWit`.
+
+**MISSING.**  Driver: the **value-push primitive** (M1, the real blocker — `writeNatField` is fixed-`v`
+and cannot write a runtime-length entry), const/input/pop arms, dispatch+instance.  Verifier: init-bridge
+**machine** (spec lemma exists), parse completion (payload read / length / prefix-compare), the **checker**
+(fixed-body gate evaluator loop + 2^n row loop + threshold + prefix compare), reject guards, assembly + (★)
++ runtime ledger + the witness term.
+
+### 12.3 Milestones (dependency-ordered)
+
+Each milestone: content · run-lemma validation · est · unblocks.
+
+**Shared arithmetic (early, parallelisable with the driver branch):**
+
+* **M0-arith — unary doubling + multiply loops** (~1–2 sessions).  Two `loopUntilSink` bricks: a
+  **doubling loop** (unary `m ↦ 2m`, iterated `n` times for `2^n`) and a **multiply loop** (unary
+  `a, b ↦ a·b` by repeated addition).  **Dependency fact (double-checked):** these are needed *before*
+  the checker — every query-field boundary right of `x` requires unary `2^n` on tape (`tableLen n = 2^n`,
+  `PartialTruthTable.lean:35`), and the witness width is `witnessBits n = (bitLength n + 4) · threshold n`
+  (`ConcreteTreeCodec.lean:54`), so **M5 (cert location) and M6 (slice/length check) consume M0**, not
+  just M8 (threshold `n^k + k`).  The gamma field materialises `bitLength (n+1)` for free.  Validation:
+  headline lemmas shaped like `unaryTransfer_transfers` (output block = `1^(2m)` / `1^(a·b)`, layout
+  restored).  **Unblocks M5/M6/M8.**
+
+**Driver branch (→ unconditional D2t-6b):**
+
+* **M1 — A5m-V value-push primitive** (~2–4 sessions).  Non-destructive content-dependent copy of the
+  gate count (k = `out.length` ones) into the value entry `encodeNatEntryR k = 0·1^(k+2)` at the
+  value-zone top, **leaving the count intact**.  Conservation forces a *fan-out* (2k ones from k ⇒ ones
+  must be created), and the value-entry ones must originate **right of the WORK record stream**.
+  **Re-verified, precise reason the records can't serve as the source:** a fan-out needs a
+  **re-traversable** unary source (the head returns to it each pass).  A *forward* structured parse of the
+  stream is sound (`decodeGateRecord` is exactly that), but the fan-out also needs to come *back*, and the
+  record stream is neither **backward-parseable** (record boundaries aren't detectable right-to-left —
+  operand counts vary and `unaryField 0 = [0]` / `const = [1,0,b]` create `0,0` runs *inside* the stream,
+  so a blind leftward scan is ambiguous) nor **markable** (a progress mark would corrupt the output that
+  must survive verbatim).  Hence the recommended design is a **dedicated shadow-count zone `SHW`**: a new
+  sentinel-anchored zone between `valEnd` and `ctrlBase` (zone chain extended; one extra
+  `driverCorridorInv` window clause `SHW spells 1·1^out.length`), maintained by a per-emit tick and added
+  to `driverStepTape`'s emit branches + the leaf/const/pop keystones + `DriverStepFits`/`CorridorSized`/
+  init — wide but mechanical churn, now **quantified**: the 17-clause invariant is destructured at
+  **27 sites across 13 files** (`grep "hcfit2, hvalid, hcoh⟩"`), each gaining one binder; the split
+  val→ctrl dead-corridor clause must be re-routed in the three **existing** arm runs
+  (`clearIter`/`decIter`/`nodeIter` cite `hvzeros` for their probes/scans); and the A5 spine + the
+  D2t-6b capstone re-elaborate against the new `driverStepTape`.  Budget the invariant change as its
+  own full-session green commit *before* the fan-out machine.  The value push is then a fan-out from `SHW` to the **adjacent** value
+  frontier (the only gap crossed is the all-zero `[val-content-end, shwBase)` dead corridor), restoring
+  `SHW` **in place** (meet-in-the-middle: consume from one end, rebuild from the other, blocks meet at the
+  original anchor — full cleanup, exactly `driverStepTape`'s image, as `step_run` demands).  The
+  **left-side count tick** (`emitTape`'s `1` at `oc−1`) is navigated by a **left-wall walk** (the
+  `moveHead`-at-0-stays bounce detects cell 0; a home clause pins `[0, oc)` all-zero so the first `1`
+  right of the wall is the count's left end), with the `c = 0` ambiguity (empty count vs FM) resolved by a
+  **one-bit `SHW`-emptiness peek carried in finite control** before the walk.  Validation: a headline
+  lemma shaped like `unaryTransfer_transfers` (strong induction on k), conclusion
+  `tape = writeBlockTape tape vtop (encodeNatEntryR k)` with the `SHW`/count windows restored.
+  **Unblocks M2/M3.**
+* **M2 — const + input arm** (~2–3 sessions).  const: fixed record `[1,0,b]` + count-tick (`writeBits`)
+  + **M1** + cursor re-mark, assembled like `nodeIter` (region union + hops).  input: record
+  `unaryField 0 ++ unaryField i.val`, index `i` decoded from the certificate via `binToUnaryLoopFullScan`
+  embedded in the arm.  *Risk check (downgraded after double-check):* `unionProgram` consults the
+  redirect map **at the designated local phase slot** (`TreeMCSPRegionUnion.lean`, `match redirect jloc`),
+  so a `loopUntilSink` region exits cleanly via a redirect on its sink slot — structurally confirmed;
+  what remains is a one-off smoke contract.  Validation: `constIter_run` / `inputIter_run`, tape =
+  `leafStepTape` (the `corridorInv_constStep` / `inputStep` transformer).
+* **M3 — pop arm** (largest driver arm, ~2–3 sessions).  Read tag/rem (built), pop operands val→record by
+  `unaryTransfer` (right-to-left direction ✓; gap = dead corridor after temporarily erasing FM), write the
+  new value entry (**M1**), erase the frame, count-tick, re-home.  Validation: `popIter_run` ×3 tags, tape
+  = `popStepTape` (the `corridorInv_popStep` transformer).
+* **M4 — dispatch (A5m-9) + `DriverRealization` instance** (~1–2 sessions) ⇒ **UNCONDITIONAL D2t-6b**.
+  One `unionProgram` driver: two homes (reading `HR` / settling `HS` — same head position (the cursor
+  marker), different phase; verified consistent with `DriveState.step`: clear/dec/node → `HR`, leaf/pop →
+  `HS`).  Branch reads are built (certTrie 5 verdicts, ctrlTopWalk, remWalk, settleProbe); `home` cases on
+  `st.settling`.  Per-iteration theorem: case on `DriveState.step`, each branch = its arm run +
+  keystone tape equality = `driverStepTape`.  The instance term makes `transcodes`/`transcodes_faithful`
+  unconditional — **the transcode phase is closed.**
+
+**Verifier branch (parallel to the driver; → full input (2)):**
+
+* **M5 — init-bridge machine** (~2–3 sessions, parallelisable).  From `initialConfig (x++w)` (input in
+  `[0,n+wlen)`, rest blank) to the corridor layout.  **Re-verified: relocation is *required*** — the
+  corridor's zone order puts everything left of the certificate, and the zones cannot overlap the query
+  (the checker must still read it), so the certificate must move from its input position to the corridor's
+  right end in the blank scratch.  Mechanism: a **two-escort-marker copy loop** consumed right-to-left —
+  after each copied bit the source cell is zeroed, so both escort markers (one flanking the source
+  position, one flanking the destination frontier) live in consumed/zeroed territory and every inter-marker
+  walk is over guaranteed zeros (sound, marker-free ambiguity avoided).  Then FM/sentinels/cursor-marker
+  planted, corridors zeroed.  **Consumes M0-arith**: locating the certificate requires the query-field
+  boundaries, i.e. unary `2^n` (= `tableLen n`) and `witnessBits n = (bitLength n + 4) · threshold n`.
+  Validation: the machine establishes the hypotheses of `driverCorridorInv_init` ⇒ `driverCorridorInv`.
+* **M6 — parse completion** (~1–2 sessions).  Gamma payload read (in-situ design settled), length-
+  convention check (`L = treeMCSPPrefixM codec n`), witness-slice location — the boundary arithmetic
+  **consumes M0-arith** (same `2^n` / `witnessBits` builders as M5).  Starts from the built
+  tagCheck+gammaScan composite.  Decide the T2 reachable-scratch scheme needed by M8.
+* **M7 — checker: gate-stream evaluator** (~3–5 sessions).  Fixed-body gate loop (`repeatBody` over a
+  unary gate-count counter); body: read one record (field-readers built) → dispatch (GateTagDispatch
+  built) → fetch operands by **unary back-distance** (§6k; four-way scans built) → write the wire value.
+  Built on `circuitEvaluatorCS_run_correct_wf` (malformed → reject guard).  Validation: one pass =
+  `SLProgram.eval` of a row.
+* **M8 — checker: row loop + comparisons** (~4–6 sessions, the biggest single piece).  A `2^n` unary
+  counter (**from M0-arith**) driving a `repeatBody`.  Per row r: circuit inputs =
+  bits of a binary row counter (`selfLoopIncrement` built); evaluate (**M7**); compare to `x[r]`.  **T2
+  status (re-verified): NOT dissolved — design-first.**  A naive home-drift return crosses arbitrary
+  `x`-bits (unsound, same crossing problem); two candidate schemes, to be settled before code: (a)
+  **consumed-prefix normalisation** — rows are processed in order and `x[r']` for `r' < r` is never needed
+  again, so each read `x` cell is overwritten with a uniform pattern, making the read frontier scannable
+  from a planted boundary anchor; (b) **offset-ruler walks** — a unary row-offset block applied from a
+  fixed anchor, its per-row refresh provided by the **M1 duplicator reused** (the same non-destructive
+  copy primitive, different layout).  The threshold check compares the gate count against a unary
+  `n^k + k` block built by the **M0-arith multiply loop** (degenerate at k=1 to "≤ n+1") and the
+  prefix-agreement compare (`i` positions of `p` vs witness) shares the T2 scheme.  Validation: a pass =
+  `verifiesBool && prefixAgreesBool`.
+* **M9 — reject completeness** (~1–2 sessions).  Guards: parse-fail / decode-fail (certTrie reject +
+  structural) / size-exceed / mismatch → the reject sink.  Completeness: for every `w` with
+  `treePrefixSemanticAccepts = false`, `M` rejects.  **Eased by the sink asymmetry (re-verified):**
+  `accepts` reads "state = accept" after *exactly* `runTime` steps, so **any** non-accept terminal
+  behaviour — the reject sink, a stuck scan, a wall-bounce loop — already rejects; stabilisation proofs
+  are needed **only for accepting runs** (M10), and reject paths only need "never reach the accept
+  state".  Validation: per-guard lemmas.
+
+**Assembly:**
+
+* **M10 — assemble `M` + bridge (★)** (~2–3 sessions).  `M := parse ; init ; transcode ; check ; verdict`.
+  **Assembly mechanism — both are proven options, decide here:** `seq` composition (`timeBound` adds; the
+  tagCheck ▸ gammaScan chain is the proven pattern) *or* one outer `unionProgram` with the phases as
+  regions (all the complex inner machines already carry region contracts, and the redirect-at-phase
+  semantics is confirmed) — slight preference for the outer `unionProgram` since the run-transfer
+  machinery is already host-generic.  Sink-safety (accept/reject idle).  (★) by composing the per-phase
+  capstones through `PhasedProgram.accepts_toTM`.  Validation: (★) as a theorem.
+* **M11 — `runTime_poly` + final term** (~1–2 sessions).  Ledger: sum of the phase `timeBound`s ≤
+  `(n + certificateLength n 1)^c + c` for an explicit `c`.  `correct = treePrefixSemanticAccepts_correct ∘
+  exists_congr (★)`; witness field `k := 1` (certificate length).  The term, **generic in the threshold
+  exponent**: `prefixExtensionNPWitness_treePoly (k : Nat) : PrefixExtensionNPWitness
+  (treeMCSPConcretePrefixParser (thresholdPoly k) …)`; instantiating `verifiedSource_treePoly k hNoPoly _`
+  then works **for every k**.  **Input (2) is closed**; the conditional chain now hangs only on input (1).
+
+**Total estimate:** ~23–38 sessions, ~5–9k LOC (M0-arith added).  Heaviest: M8 (row loop), M7
+(evaluator), M3 (pop arm), M1 (value-push + invariant churn).
+
+**Dependency graph (double-checked, acyclic):** M0 → {M5, M6, M8}; M1 → {M2, M3} → M4 (⇒ D2t-6b
+unconditional); {M4, M5, M6, M7, M8, M9} → M10 → M11 (⇒ input (2) closed).
+
+### 12.4 Risks / unknowns (with mitigations)
+
+* **A5m-V / `SHW` churn breadth** — the shadow-count zone touches `driverCorridorInv`, `driverStepTape`,
+  the leaf/const/pop keystones, `DriverStepFits`/`CorridorSized`/init: wide but mechanical; the per-edit
+  pattern is "one extra `writeBlockTape` layer + one window clause".  → land the invariant change as its
+  own green commit before the fan-out machine; keystone edits template-generated like the arm mirrors.
+  (The "reuse the records as the count source" alternative was **re-checked and rejected**: forward parse
+  is sound but the fan-out needs a re-traversable source, and records are neither backward-parseable nor
+  markable without corrupting the output — so a dedicated `SHW` is required, not optional.)
+* **T2 reachable-scratch** (row `x[r]`; prefix-compare) — open *design* choice (consumed-prefix
+  normalisation vs offset-ruler + M1 reuse).  → design-first before code; both candidates sketched in M8.
+* **Volume / step budget** — a uniform polynomial bound covering the `O(L²)`-ish copies.  → a generous `c`.
+
+*(Retired risks: the `witnessBits` vs `certificateLength n 1` slice arithmetic — already a proven lemma,
+`witnessBits_le_certificateLength`; the `loopUntilSink`-as-`unionProgram`-region embedding — structurally
+confirmed by the redirect-at-phase semantics, only a smoke contract remains (folded into M2).  Also
+double-checked: `treeCircuitWitnessCodec` is a **concrete `def`** (`ConcreteTreeCodec.lean:67`, the
+packing reduction of the self-delimiting code) — no hidden hypotheses, so input (2) genuinely closes as
+a term.)*
+
+All of §12 is **Infrastructure** for the NP-verifier track (input (2)); it builds toward the witness term
+and proves no separation.  **No `P ≠ NP` claim.**
+
+---
+
+## 13. CRITICAL OBSTRUCTION — the length-blindness wall (found in review, verified against the code)
+
+**This invalidates the `(★)` bridge for the verifier branch (M5–M11) as formulated in §12.  The driver
+branch M1–M4 (D2t-6b) is internal to the transcoder, has no input-length dependence, and is
+unaffected — it proceeds.  The language formulation must be decided BEFORE building verifier
+periphery, or significant work lands under an unprovable `correct`.**
+
+### 13.1 The obstruction
+
+Three already-fixed decisions collide (each verified against the code):
+
+1. **TM model is length-blind** (`pnp3/.../TuringEncoding.lean`): alphabet `Bool`, blank = `false`;
+   `accepts n x = decide ((runConfig (initialConfig x) (runTime n)).state = accept)` — the verdict is
+   the control state at **exactly** `runTime n` steps; `initialConfig` loads `x` in `[0,n)` with **no
+   end-marker**, the rest blank `false`; the head reaches at most `runTime n < tapeLength n`, never the
+   right boundary.  Consequence: an input whose **data ends in `0`** is, as an infinite blank-padded
+   word, **bit-for-bit identical** to the same input with more trailing `0`s — the machine cannot
+   observe its own input length `N`.
+2. **The language is gated on physical length** (`PrefixExtensionLanguage.lean` +
+   `PrefixParserConvention.lean:1142`): `PrefixExtensionLanguage … y = if PrefixExtendable y then true
+   else false`; `PrefixExtendable y = ∃ input, parse y = some input ∧ …`; and
+   `parseTreeMCSPPrefixInput` contains `if _hlen : m = treeMCSPPrefixM codec n then … else none`.
+   Membership at physical length `m` **requires** `m = M(n)` for the gamma-decoded `n`.
+3. **Accept is absorbing** (§2, §12, all of TuringToolkit + every run lemma of the form
+   `∃ t ≤ B, … = accept ∧ idle`): the design reaches the accept phase and idles there.
+
+**Counterexample to `correct`.**  Let `x₀` (length `m₀ = M(n')`) be accepted with witness `w₀`.  Put
+`x₁ := x₀ ++ w₀ ++ 0…0` padded to `m₁ = M(n'')` for a larger target `n''`, and `w₁ := 0^{certLen m₁}`.
+Then `concatBitstring x₁ w₁` and `concatBitstring x₀ w₀`, blank-padded, are the **same infinite word**
+(`x₀w₀` then all-`0`), so the two trajectories coincide step-for-step.  The machine reaches accept by
+`t* ≤ runTime N₀` and (idle-sink) stays; since `N₁ = m₁ + certLen ≥ 2^{n''}` forces `runTime N₁ ≥ N₁ >
+runTime N₀ ≥ t*` (honest `n''`-instances at this length must read a `2^{n''}`-bit table), the state at
+`runTime N₁` is still accept ⇒ `accepts M (concatBitstring x₁ w₁) = true`.  But the language:
+`parse x₁` decodes header `n'`, checks `m₁ = M(n')` → `M(n'') = M(n')` → false ⇒ `Language m₁ x₁ =
+false`.  So `correct` would demand `false ↔ true`.  ∎
+
+The machine *can* read content by the header's `n'` (read `M(n')` cells as the query), but it *cannot*
+verify the **physical** input length equals `M(n')` (that needs the unobservable `N`).  The parser's
+`m = M(n)` gate is exactly the unreplicable predicate.  No non-exotic escape: dodging requires a
+**non-absorbing** accept that toggles on a schedule keyed to the header's `n'` plus a number-theoretic
+`runTime` — incompatible with every `∃ t ≤ B, … accept ∧ idle` run lemma and the whole toolkit.
+Corroboration: the repository has **no proven `NP_TM` instance** (`FinalResultMainline.lean:84` is a
+structure *field*/hypothesis, not a term), consistent with nobody having reached this wall.
+
+*(Scope: the wall is specific to physical-length-**sensitive** languages.  Always-true / always-false
+languages are idle-sink-decidable; the prefix-extension language is length-sensitive precisely via the
+`m = M(n)` gate.)*
+
+### 13.2 Secondary: the "equivalence" interpretation is formalised only one way
+
+`ConsolidatedTreeSeparation.lean` (prose) states the extraction proves the *equivalence*
+`PpolyDAG(language) ⟺ poly search solver`, hence `NoPolynomialBoundedSearchSolver` is "full-strength".
+But `BoundedSolverFromPpoly.lean:28` explicitly proves only `PpolyDAG → solver` (and notes it "does
+**not** prove the contrapositive"); the **converse `solver → PpolyDAG` is nowhere** and is non-trivial
+(a solver yields one witness for `x`, not a decision of arbitrary-prefix extendability).  The chain's
+*correctness* is unaffected (it uses only `¬solver → ¬PpolyDAG`), but the "full-strength / not
+magnification" reading is an **unformalised meta-claim** — either prove the converse or soften the prose.
+
+### 13.3 Recommended resolution (localised to pnp4; decide before M5) — **EXECUTED (R1–R5 DONE)**
+
+> **Status.**  The repair is **landed and green**: `ContentPrefixExtension.lean` (R1/R2 — `padRead`/
+> `padWord`, `contentHeader?`/`contentInput?`/`contentWitness`, `ContentAccepts`,
+> `ContentPrefixExtensionLanguage`, the CT NP-witness interface), `ContentPrefixExtensionCoincidence
+> .lean` (R3 — reader monotonicity, parse inversion, `ContentPrefixExtensionLanguage_eq_of_parse`),
+> `ContentPrefixExtensionTransfer.lean` (R4 — the extraction transferred:
+> `not_PpolyDAG_contentPrefixExtension_of_noPolynomialBoundedSearchSolver`), and
+> `ContentConsolidatedSource.lean` (R5 — `verifiedSourceCT_treePoly` /
+> `NP_not_subset_PpolyDAG_treePolyCT`).  **The machine track (M5–M11) now targets
+> `ContentPrefixExtensionNPWitness`**; M5–M11 are UNBLOCKED.  Remaining spec-side nicety (deferred to
+> the (★′) bridge milestone): the padding-stability lemma for `ContentAccepts` (the spec mirror of
+> machine length-blindness — needed when proving (★′), not for the chain).
+
+Redefine the ambient language to a **content-truthful** variant `L'`: membership at *any* physical
+length `m` := "∃ certificate completing the window **computed from content** (the header's `n`, fields
+read by offset from the front), **without** the `m = M(n)` gate".  Then:
+
+* **NP-membership (input 2) becomes idle-sink-provable** — `M` reads the header `n`, reads the content
+  window by computed offsets, verifies, accepts; it never needs `N`.  `(★)` holds.
+* **¬PpolyDAG (input 1) transfers** — `L'` coincides with the current `L` on convention lengths
+  `m = M(n)` (a coincidence lemma), and the decision→search extraction only ever queries the decider at
+  convention lengths (`composeDeciderWithQuery` is typed at `treeMCSPPrefixM codec n`), so a
+  `PpolyDAG(L')` family yields the same solver and contradicts `hNoPoly`.
+
+**Obligations (non-trivial — this touches a foundational definition):** (a) PR 1
+(`treePrefixSemanticAccepts_correct`) and `verifiedSource_treePoly` consume the language definition —
+re-derive the semantic correctness + the extraction transfer on `L'`, or route through the coincidence
+lemma; (b) prove `L' (M(n)) = L (M(n))`; (c) M9 gains a **write-before-read scratch-hygiene invariant**
+(in the padded-collision scenarios, cells the layout treats as "clean scratch" hold foreign bits —
+`initial_tape_blank` does not protect).  Most of M6's "length-convention check" **dissolves** (it was
+physically unrealisable).  Heavier alternative: make `concatBitstring`/`NP_TM` self-delimiting (a unary
+length prefix) — pnp3-core surgery, not recommended.
+
+### 13.4 Plan impact
+* **M5–M11 BLOCKED** pending the language decision; **M6** "length-convention check" is removed (it was
+  unrealisable); **M9** is enlarged (reject-completeness + scratch hygiene; the earlier "1–2 sessions"
+  underestimates it).
+* **M1–M4 (driver / D2t-6b) UNAFFECTED** — internal to the transcoder, no input-length dependence.
+* Honest correction to §12's framing: for the **verifier branch**, "the remaining work is pure
+  mechanics" was wrong — there is a genuine specification obstruction to resolve first.  (The driver
+  branch framing stands.)
+
+This obstruction note is **Infrastructure / specification analysis**; it builds no machine and makes no
+`P ≠ NP` claim.

@@ -43,6 +43,7 @@ import Pnp4.Frontier.ContractExpansion.ConditionalVerifiedSource
 import Pnp4.Frontier.ContractExpansion.WitnessGrowthReduction
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionNPWitness
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
+import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence
 import Pnp4.Frontier.ContractExpansion.ExplicitConditionalSource
 import Pnp4.Frontier.ContractExpansion.ConcreteCodecGap
 import Pnp4.Frontier.ContractExpansion.CircuitTreeBridge
@@ -454,6 +455,12 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionLanguage
 #print axioms Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionLanguage_accepts_iff
 #print axioms Pnp4.Frontier.ContractExpansion.contentPrefixExtensionLanguage_in_NP_of_witness
+-- §13 repair (brick R3): the coincidence lemma -- on every parseable query at its convention
+-- length, L' agrees with the length-gated language (reader monotonicity + parse inversion +
+-- the window computations on a concatenated word).
+#print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_inversion
+#print axioms Pnp4.Frontier.ContractExpansion.contentInput?_concat_of_parse
+#print axioms Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionLanguage_eq_of_parse
 
 #print axioms Pnp4.Frontier.ContractExpansion.verifiedSource_of_explicit_interfaces
 #print axioms Pnp4.Frontier.ContractExpansion.NP_not_subset_PpolyDAG_of_explicit_interfaces

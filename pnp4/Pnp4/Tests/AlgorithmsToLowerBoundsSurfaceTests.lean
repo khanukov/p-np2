@@ -54,6 +54,7 @@ import Pnp4.Frontier.ContractExpansion.WitnessGrowthReduction
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionNPWitness
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence
+import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionTransfer
 import Pnp4.Frontier.ContractExpansion.ExplicitConditionalSource
 import Pnp4.Frontier.ContractExpansion.ConcreteCodecGap
 import Pnp4.Frontier.ContractExpansion.CircuitTreeBridge
@@ -1075,6 +1076,10 @@ section ContentPrefixExtensionSurface
 -- §13 repair (R3): the coincidence lemma.
 #check @Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_inversion
 #check @Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionLanguage_eq_of_parse
+-- §13 repair (R4): the extraction transfer.
+#check @Pnp4.Frontier.ContractExpansion.DecidesContentPrefixExtensionLanguage
+#check @Pnp4.Frontier.ContractExpansion.boundedSearchSolver_of_PpolyDAG_contentPrefixExtension
+#check @Pnp4.Frontier.ContractExpansion.not_PpolyDAG_contentPrefixExtension_of_noPolynomialBoundedSearchSolver
 end ContentPrefixExtensionSurface
 
 section ExplicitConditionalSourceSurface

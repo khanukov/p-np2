@@ -128,6 +128,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbeFrame
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionEmbed
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionEmbedMulti
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionScanSegments
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionOnesScanHops
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionRunTransfer
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionUnion
 import Pnp4.Frontier.ContractExpansion.TreeMCSPClearIterProgram
@@ -1168,6 +1169,11 @@ end Pnp4
 -- rightward scan as a region performs the full hop (scan, read the anchor, hand off) in
 -- distance + 2 steps, tape untouched; every arm hop instantiates these at its region base.
 #print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_scanLeft_hop
+-- M1 (A5m-V) prep: region hops for the 1-run scanners and the right-step branch.
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_scanLeftOnes_hop
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_scanRightOnes_hop
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_stepRightBranch_hop_one
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_stepRightBranch_hop_zero
 #print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_scanRight_hop
 -- D2t-5b (Block A5m-U4): whole-run transfer -- a native component run transports into the host
 -- region (phase offset, equal heads, value-wise tape agreement) under trace safety (no visited

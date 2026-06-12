@@ -4419,6 +4419,10 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- D2t-5b (Block A5m-6, run, part 1): the const arm's shared tail (12 legs).
 #check @Pnp4.Frontier.ContractExpansion.walkZoneStepsR_le
 #check @Pnp4.Frontier.ContractExpansion.constIter_run_tail
+-- D2t-5b (Block A5m-6, run): the const iteration end to end.
+#check @Pnp4.Frontier.ContractExpansion.walkZoneSteps_le
+#check @Pnp4.Frontier.ContractExpansion.constIter_run_front
+#check @Pnp4.Frontier.ContractExpansion.constIter_run
 -- D2t-5b (Block A5m-6, run algebra): the three block writes compose to constStepTape.
 #check @Pnp4.Frontier.ContractExpansion.writeConstChain_eq_constStepTape
 -- D2t-5b (Block A5m-5, run): the node iteration end to end.

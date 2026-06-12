@@ -1323,6 +1323,12 @@ end Pnp4
 -- value-push region, the SHW tick, and the scan home onto the new marker (12 legs).
 #print axioms Pnp4.Frontier.ContractExpansion.walkZoneStepsR_le
 #print axioms Pnp4.Frontier.ContractExpansion.constIter_run_tail
+-- D2t-5b (Block A5m-6, run): the const iteration end to end — front (tag read, b-probe,
+-- marker rewrite, six leftward legs, record write) + tail, tape = corridorInv_constStep's
+-- transformer (constStepTape + the SHW tick), explicit polynomial budget.
+#print axioms Pnp4.Frontier.ContractExpansion.walkZoneSteps_le
+#print axioms Pnp4.Frontier.ContractExpansion.constIter_run_front
+#print axioms Pnp4.Frontier.ContractExpansion.constIter_run
 -- D2t-5b (Block A5m-6, run algebra): the three block writes compose to constStepTape.
 #print axioms Pnp4.Frontier.ContractExpansion.writeConstChain_eq_constStepTape
 -- D2t-5b (Block A5m-5, run): the node iteration end to end -- the two block writes compose to

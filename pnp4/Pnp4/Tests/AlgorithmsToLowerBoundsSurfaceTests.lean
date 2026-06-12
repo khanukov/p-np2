@@ -159,6 +159,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPDecIterRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCertTrie
 import Pnp4.Frontier.ContractExpansion.TreeMCSPNodeIterProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPNodeIterRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPConstIterProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -4405,6 +4406,14 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.nodeIter_region_certTrie
 #check @Pnp4.Frontier.ContractExpansion.nodeIter_region_Not_frame
 #check @Pnp4.Frontier.ContractExpansion.nodeIter_region_scanRight
+-- D2t-5b (Block A5m-6, machine): the const-leaf iteration machine and its region contracts.
+#check @Pnp4.Frontier.ContractExpansion.constIterProgram
+#check @Pnp4.Frontier.ContractExpansion.constMarkBlock
+#check @Pnp4.Frontier.ContractExpansion.constRecBlock
+#check @Pnp4.Frontier.ContractExpansion.constIter_region_trie_2
+#check @Pnp4.Frontier.ContractExpansion.constIter_region_probe_14
+#check @Pnp4.Frontier.ContractExpansion.constIter_region_vpush_113
+#check @Pnp4.Frontier.ContractExpansion.constIter_region_tick_156
 -- D2t-5b (Block A5m-5, run): the node iteration end to end.
 #check @Pnp4.Frontier.ContractExpansion.writeMarkFrame_eq_nodeStepTape
 #check @Pnp4.Frontier.ContractExpansion.nodeIter_run_tnot

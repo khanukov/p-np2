@@ -150,6 +150,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPCertTrie
 import Pnp4.Frontier.ContractExpansion.TreeMCSPNodeIterProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPNodeIterRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPConstIterProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPConstWriteChain
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -1317,6 +1318,8 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.constIter_region_rec1_98
 #print axioms Pnp4.Frontier.ContractExpansion.constIter_region_vpush_113
 #print axioms Pnp4.Frontier.ContractExpansion.constIter_region_tick_156
+-- D2t-5b (Block A5m-6, run algebra): the three block writes compose to constStepTape.
+#print axioms Pnp4.Frontier.ContractExpansion.writeConstChain_eq_constStepTape
 -- D2t-5b (Block A5m-5, run): the node iteration end to end -- the two block writes compose to
 -- corridorInv_nodeStep's transformer nodeStepTape, and the machine runs home-to-home onto the new
 -- marker within 2*certEnd + 40 steps.

@@ -322,6 +322,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftOneProgram,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPScanRightOneProgram,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPScanOnes,
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPBitProbe,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPStepRightProgram,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordLayout,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPEmitConstRecord,

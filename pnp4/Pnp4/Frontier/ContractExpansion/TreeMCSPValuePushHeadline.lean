@@ -1900,3 +1900,386 @@ theorem valuePush_clone_mid_confined {L : Nat}
 end ContractExpansion
 end Frontier
 end Pnp4
+
+namespace Pnp4
+namespace Frontier
+namespace ContractExpansion
+
+open Pnp3.Internal.PsubsetPpoly Pnp3.Internal.PsubsetPpoly.TM
+open Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram
+
+set_option maxHeartbeats 4000000 in
+/-- **Last restore-round confinement** (`j = k − 1`): along the `2k + 4` steps the phase never
+reaches the accept and the head stays ≤ `aPos + 2k + 2` — additive companion to
+`valuePush_clone_last`. -/
+theorem valuePush_clone_last_confined {L : Nat}
+    (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
+    (opBase aPos k : Nat) (hcs : CloneState c opBase aPos k (k - 1)) (hk : 0 < k) :
+    ∀ s : Nat, s < 2 * k + 4 →
+      (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).state).fst : Nat) ≠ 34
+      ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).head : Nat)
+          ≤ aPos + 2 * k + 2 := by
+  obtain ⟨hphase, hhead, hgeom, hbound, _, hhome, hentry, hgapL, hdst, hgap, hscr,
+    hbeyond⟩ := hcs
+  obtain ⟨h1p, h1h, h1t⟩ := valuePush_run_walkR1 22 (by omega) rfl c hphase k
+    (by omega)
+    (fun p hp1 hp2 => by
+      exact hdst p (by omega) (by omega))
+  set c1 := TM.runConfig (M := valuePushProgram.toPhased.toTM) c k with hc1
+  have h1h' : (c1.head : Nat) = aPos + k := by omega
+  have hb1 : c1.tape c1.head = false := by
+    rw [h1t]
+    exact hgap c1.head (by omega) (by omega)
+  obtain ⟨h2p, h2h, h2t⟩ := valuePush_step c1 (valuePush_state_eta c1 (by omega) h1p)
+    (by rw [hb1]; exact valuePushProgram_t22_zero)
+  set c2 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c1 with hc2
+  have h2p' : ((c2.state).fst : Nat) = 23 := h2p
+  have h2h' : (c2.head : Nat) = aPos + 1 + k := by
+    rw [hc2, h2h]
+    simp only [Configuration.moveHead, dif_pos (show (c1.head : Nat) + 1
+      < valuePushProgram.toPhased.toTM.tapeLength L by omega)]
+    omega
+  have h2t' : ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
+      c2.tape p = if (p : Nat) = aPos + k then true else c.tape p := by
+    intro p
+    rw [hc2, h2t, valuePush_write_char c1 true h1h' p, h1t]
+  obtain ⟨h3p, h3h, h3t⟩ := valuePush_run_scanR0 23 (by omega) rfl c2 h2p k
+    (by omega)
+    (fun p hp1 hp2 => by
+      rw [h2t' p, if_neg (by omega)]
+      exact hgap p (by omega) (by omega))
+  set c3 := TM.runConfig (M := valuePushProgram.toPhased.toTM) c2 k with hc3
+  have h3h' : (c3.head : Nat) = aPos + 2 * k + 1 := by omega
+  have hb3 : c3.tape c3.head = true := by
+    rw [h3t, h2t' c3.head, if_neg (by omega)]
+    exact hscr c3.head (by omega) (by omega)
+  obtain ⟨h4p, h4h, h4t⟩ := valuePush_step c3 (valuePush_state_eta c3 (by omega) h3p)
+    (by rw [hb3]; exact valuePushProgram_t23_one)
+  set c4 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c3 with hc4
+  have h4p' : ((c4.state).fst : Nat) = 24 := h4p
+  have h4h' : (c4.head : Nat) = aPos + 2 * k + 1 := by
+    rw [hc4, h4h, Configuration.moveHead_stay]
+    exact h3h'
+  have hwf3 : c3.write c3.head true = c3.tape := by
+    rw [← hb3]; exact write_self_eq c3
+  have h4t' : ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
+      c4.tape p = if (p : Nat) = aPos + k then true else c.tape p := by
+    intro p
+    rw [hc4, h4t, hwf3, h3t, h2t' p]
+  obtain ⟨h5p, h5h, h5t⟩ := valuePush_step c4 (valuePush_state_eta c4 (by omega) h4p)
+    (valuePushProgram_t24 (c4.tape c4.head))
+  set c5 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c4 with hc5
+  have h5p' : ((c5.state).fst : Nat) = 25 := h5p
+  have h5h' : (c5.head : Nat) = aPos + 2 * k + 2 := by
+    rw [hc5, h5h]
+    simp only [Configuration.moveHead, dif_pos (show (c4.head : Nat) + 1
+      < valuePushProgram.toPhased.toTM.tapeLength L by omega)]
+    omega
+  have hcfg1 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c k = c1 := hc1.symm
+  have hcfg2 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (k + 1) = c2 := by
+    rw [TM.runConfig_succ, hcfg1, ← hc2]
+  have hcfg3 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (k + 1 + k) = c3 := by
+    rw [TM.runConfig_add, hcfg2, ← hc3]
+  have hcfg4 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (k + 1 + k + 1) = c4 := by
+    rw [TM.runConfig_succ, hcfg3, ← hc4]
+  have hcfg5 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (k + 1 + k + 2) = c5 := by
+    rw [show k + 1 + k + 2 = k + 1 + k + 1 + 1 from by omega,
+      TM.runConfig_succ, hcfg4, ← hc5]
+  intro s hs
+  by_cases hA : s < k
+  · obtain ⟨hrp, hrh, _⟩ := valuePush_run_walkR1 22 (by omega) rfl c hphase s
+      (by omega)
+      (fun p hp1 hp2 => by
+        exact hdst p (by omega) (by omega))
+    exact ⟨by omega, by omega⟩
+  by_cases hB : s = k
+  · subst hB
+    rw [hcfg1]
+    exact ⟨by omega, by omega⟩
+  by_cases hC : s < k + 1 + k
+  · obtain ⟨hrp, hrh, _⟩ := valuePush_run_scanR0 23 (by omega) rfl c2 h2p (s - (k + 1))
+      (by omega)
+      (fun p hp1 hp2 => by
+        rw [h2t' p, if_neg (by omega)]
+        exact hgap p (by omega) (by omega))
+    rw [show s = (k + 1) + (s - (k + 1)) from by omega, TM.runConfig_add, hcfg2]
+    exact ⟨by omega, by omega⟩
+  by_cases hD : s = k + 1 + k
+  · subst hD
+    rw [hcfg3]
+    exact ⟨by omega, by omega⟩
+  by_cases hE : s = k + 1 + k + 1
+  · subst hE
+    rw [hcfg4]
+    exact ⟨by omega, by omega⟩
+  -- s = 2k + 3 (φ25 on the empty zone, the park hand-off step)
+  · have hF : s = k + 1 + k + 2 := by omega
+    subst hF
+    rw [hcfg5]
+    exact ⟨by omega, by omega⟩
+
+set_option maxHeartbeats 4000000 in
+/-- **Empty-source prologue confinement** (`k = 0`): along the `aPos − opBase + 2` steps the phase
+never reaches the accept and the head stays ≤ `aPos + 2` — additive companion to
+`valuePush_prologue_k0`. -/
+theorem valuePush_prologue_k0_confined {L : Nat}
+    (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
+    (opBase aPos : Nat) (hlay : ValuePushLayout c opBase aPos 0) :
+    ∀ s : Nat, s < aPos - opBase + 2 →
+      (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).state).fst : Nat) ≠ 34
+      ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).head : Nat)
+          ≤ aPos + 2 * 0 + 2 := by
+  obtain ⟨hphase, hhead, hgeom, hbound, hzeroL, hanchor, hsrc, hzeroR⟩ := hlay
+  obtain ⟨h1p, h1h, h1t⟩ := valuePush_step c (valuePush_state_eta c (by omega) hphase)
+    (valuePushProgram_t0 (c.tape c.head))
+  set c1 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c with hc1
+  have h1p' : ((c1.state).fst : Nat) = 1 := h1p
+  have h1h' : (c1.head : Nat) = opBase + 1 := by
+    rw [hc1, h1h]
+    simp only [Configuration.moveHead, dif_pos (show (c.head : Nat) + 1
+      < valuePushProgram.toPhased.toTM.tapeLength L by omega)]
+    omega
+  have h1t' : c1.tape = c.tape := by
+    rw [hc1, h1t, write_self_eq]
+  obtain ⟨h2p, h2h, h2t⟩ := valuePush_step c1 (valuePush_state_eta c1 (by omega) h1p)
+    (valuePushProgram_t1 (c1.tape c1.head))
+  set c2 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c1 with hc2
+  have h2p' : ((c2.state).fst : Nat) = 2 := h2p
+  have h2h' : (c2.head : Nat) = opBase + 2 := by
+    rw [hc2, h2h]
+    simp only [Configuration.moveHead, dif_pos (show (c1.head : Nat) + 1
+      < valuePushProgram.toPhased.toTM.tapeLength L by omega)]
+    omega
+  have h2t' : ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
+      c2.tape p = if (p : Nat) = opBase + 1 then true else c.tape p := by
+    intro p
+    rw [hc2, h2t, valuePush_write_char c1 true h1h' p, h1t']
+  obtain ⟨h3p, h3h, h3t⟩ := valuePush_step c2 (valuePush_state_eta c2 (by omega) h2p)
+    (valuePushProgram_t2 (c2.tape c2.head))
+  set c3 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c2 with hc3
+  have h3p' : ((c3.state).fst : Nat) = 3 := h3p
+  have h3h' : (c3.head : Nat) = opBase + 3 := by
+    rw [hc3, h3h]
+    simp only [Configuration.moveHead, dif_pos (show (c2.head : Nat) + 1
+      < valuePushProgram.toPhased.toTM.tapeLength L by omega)]
+    omega
+  have h3t' : ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
+      c3.tape p = if (p : Nat) = opBase + 2 then true
+        else if (p : Nat) = opBase + 1 then true else c.tape p := by
+    intro p
+    rw [hc3, h3t, valuePush_write_char c2 true h2h' p, h2t' p]
+  have hcfg1 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c 1 = c1 := by
+    rw [valuePush_runConfig_one, ← hc1]
+  have hcfg2 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c 2 = c2 := by
+    rw [show (2 : Nat) = 1 + 1 from rfl, TM.runConfig_add, hcfg1,
+      valuePush_runConfig_one, ← hc2]
+  have hcfg3 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c 3 = c3 := by
+    rw [show (3 : Nat) = 2 + 1 from rfl, TM.runConfig_add, hcfg2,
+      valuePush_runConfig_one, ← hc3]
+  intro s hs
+  by_cases hs0 : s = 0
+  · subst hs0
+    rw [TM.runConfig_zero]
+    exact ⟨by omega, by omega⟩
+  by_cases hs1 : s = 1
+  · subst hs1
+    rw [hcfg1]
+    exact ⟨by omega, by omega⟩
+  by_cases hs2 : s = 2
+  · subst hs2
+    rw [hcfg2]
+    exact ⟨by omega, by omega⟩
+  have hs3 : 3 ≤ s := by omega
+  by_cases hslast : s = aPos - opBase + 1
+  · obtain ⟨h4p, h4h, h4t⟩ := valuePush_run_scanR0 3 (by omega) rfl c3 h3p
+      (aPos - opBase - 3)
+      (by omega)
+      (fun p hp1 hp2 => by
+        rw [h3t' p, if_neg (by omega), if_neg (by omega)]
+        exact hzeroL p (by omega) (by omega))
+    set c4 := TM.runConfig (M := valuePushProgram.toPhased.toTM) c3 (aPos - opBase - 3) with hc4
+    have h4h' : (c4.head : Nat) = aPos := by omega
+    have hb4 : c4.tape c4.head = true := by
+      rw [h4t, h3t' c4.head, if_neg (by omega), if_neg (by omega)]
+      exact hanchor c4.head (by omega)
+    obtain ⟨h5p, h5h, _⟩ := valuePush_step c4 (valuePush_state_eta c4 (by omega) h4p)
+      (by rw [hb4]; exact valuePushProgram_t3_one)
+    set c5 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c4 with hc5
+    have h5p' : ((c5.state).fst : Nat) = 4 := h5p
+    have h5h' : (c5.head : Nat) = aPos + 1 := by
+      rw [hc5, h5h]
+      simp only [Configuration.moveHead, dif_pos (show (c4.head : Nat) + 1
+        < valuePushProgram.toPhased.toTM.tapeLength L by omega)]
+      omega
+    have hcfg4 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (aPos - opBase) = c4 := by
+      rw [show aPos - opBase = 3 + (aPos - opBase - 3) from by omega, TM.runConfig_add, hcfg3,
+        ← hc4]
+    have hcfg5 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (aPos - opBase + 1)
+        = c5 := by
+      rw [TM.runConfig_succ, hcfg4, ← hc5]
+    rw [hslast, hcfg5]
+    exact ⟨by omega, by omega⟩
+  · have hsr : s = 3 + (s - 3) := by omega
+    obtain ⟨hrp, hrh, _⟩ := valuePush_run_scanR0 3 (by omega) rfl c3 h3p
+      (s - 3)
+      (by omega)
+      (fun p hp1 hp2 => by
+        rw [h3t' p, if_neg (by omega), if_neg (by omega)]
+        exact hzeroL p (by omega) (by omega))
+    rw [hsr, TM.runConfig_add, hcfg3]
+    exact ⟨by omega, by omega⟩
+
+set_option maxHeartbeats 4000000 in
+/-- **Park-chain confinement**: along the `(p0 − aPos − k) + (aPos − opBase) + k + 2` steps the
+phase never reaches the accept and the head stays ≤ `p0` — additive companion to
+`valuePush_park` (the accept is entered only at the final step). -/
+theorem valuePush_park_confined {L : Nat}
+    (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
+    (opBase aPos k p0 : Nat) (hpr : ParkReady c opBase aPos k p0) :
+    ∀ s : Nat, s < (p0 - aPos - k) + (aPos - opBase) + k + 2 →
+      (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).state).fst : Nat) ≠ 34
+      ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).head : Nat) ≤ p0 := by
+  obtain ⟨hphase, hhead, hp0l, hp0r, hgeom, hbound, hhome, hentry, hgapL, hblk, hz⟩ := hpr
+  obtain ⟨h1p, h1h, h1t⟩ := valuePush_run_scanL0 30 (by omega) rfl c hphase
+    (p0 - aPos - k)
+    (by omega)
+    (fun p hp1 hp2 => by
+      exact hz p (by omega) (by omega))
+  set c1 := TM.runConfig (M := valuePushProgram.toPhased.toTM) c (p0 - aPos - k) with hc1
+  have h1h' : (c1.head : Nat) = aPos + k := by omega
+  have hb1 : c1.tape c1.head = true := by
+    rw [h1t]
+    exact hblk c1.head (by omega) (by omega)
+  obtain ⟨h2p, h2h, h2t⟩ := valuePush_step c1 (valuePush_state_eta c1 (by omega) h1p)
+    (by rw [hb1]; exact valuePushProgram_t30_one)
+  set c2 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c1 with hc2
+  have h2p' : ((c2.state).fst : Nat) = 31 := h2p
+  have h2h' : (c2.head : Nat) = aPos + k - 1 := by
+    rw [hc2, h2h, Configuration.moveHead_left_val_of_pos c1 (by omega)]
+    omega
+  have hwf1 : c1.write c1.head true = c1.tape := by
+    rw [← hb1]; exact write_self_eq c1
+  have h2t' : c2.tape = c.tape := by
+    rw [hc2, h2t, hwf1, h1t]
+  obtain ⟨h3p, h3h, h3t⟩ := valuePush_run_walkL1 31 (by omega) rfl c2 h2p k
+    (by omega)
+    (fun p hp1 hp2 => by
+      rw [h2t']
+      exact hblk p (by omega) (by omega))
+  set c3 := TM.runConfig (M := valuePushProgram.toPhased.toTM) c2 k with hc3
+  have h3h' : (c3.head : Nat) = aPos - 1 := by omega
+  have hb3 : c3.tape c3.head = false := by
+    rw [h3t, h2t']
+    exact hgapL c3.head (by omega) (by omega)
+  obtain ⟨h4p, h4h, h4t⟩ := valuePush_step c3 (valuePush_state_eta c3 (by omega) h3p)
+    (by rw [hb3]; exact valuePushProgram_t31_zero)
+  set c4 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c3 with hc4
+  have h4p' : ((c4.state).fst : Nat) = 32 := h4p
+  have h4h' : (c4.head : Nat) = aPos - 1 := by
+    rw [hc4, h4h, Configuration.moveHead_stay]
+    exact h3h'
+  have hwf3 : c3.write c3.head false = c3.tape := by
+    rw [← hb3]; exact write_self_eq c3
+  have h4t' : c4.tape = c.tape := by
+    rw [hc4, h4t, hwf3, h3t, h2t']
+  obtain ⟨h5p, h5h, h5t⟩ := valuePush_run_scanL0 32 (by omega) rfl c4 h4p
+    (aPos - opBase - k - 3)
+    (by omega)
+    (fun p hp1 hp2 => by
+      rw [h4t']
+      exact hgapL p (by omega) (by omega))
+  set c5 := TM.runConfig (M := valuePushProgram.toPhased.toTM) c4 (aPos - opBase - k - 3)
+    with hc5
+  have h5h' : (c5.head : Nat) = opBase + 2 + k := by omega
+  have hb5 : c5.tape c5.head = true := by
+    rw [h5t, h4t']
+    exact hentry c5.head (by omega) (by omega)
+  obtain ⟨h6p, h6h, h6t⟩ := valuePush_step c5 (valuePush_state_eta c5 (by omega) h5p)
+    (by rw [hb5]; exact valuePushProgram_t32_one)
+  set c6 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c5 with hc6
+  have h6p' : ((c6.state).fst : Nat) = 33 := h6p
+  have h6h' : (c6.head : Nat) = opBase + 1 + k := by
+    rw [hc6, h6h, Configuration.moveHead_left_val_of_pos c5 (by omega)]
+    omega
+  have hwf5 : c5.write c5.head true = c5.tape := by
+    rw [← hb5]; exact write_self_eq c5
+  have h6t' : c6.tape = c.tape := by
+    rw [hc6, h6t, hwf5, h5t, h4t']
+  obtain ⟨h7p, h7h, h7t⟩ := valuePush_run_walkL1 33 (by omega) rfl c6 h6p (k + 1)
+    (by omega)
+    (fun p hp1 hp2 => by
+      rw [h6t']
+      exact hentry p (by omega) (by omega))
+  set c7 := TM.runConfig (M := valuePushProgram.toPhased.toTM) c6 (k + 1) with hc7
+  have h7h' : (c7.head : Nat) = opBase := by omega
+  have hcfg1 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (p0 - aPos - k) = c1 :=
+    hc1.symm
+  have hcfg2 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (p0 - aPos - k + 1)
+      = c2 := by
+    rw [TM.runConfig_succ, hcfg1, ← hc2]
+  have hcfg3 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (p0 - aPos - k + 1 + k)
+      = c3 := by
+    rw [TM.runConfig_add, hcfg2, ← hc3]
+  have hcfg4 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (p0 - aPos - k + 1 + k + 1)
+      = c4 := by
+    rw [TM.runConfig_succ, hcfg3, ← hc4]
+  have hcfg5 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c
+      (p0 - aPos - k + 1 + k + 1 + (aPos - opBase - k - 3)) = c5 := by
+    rw [TM.runConfig_add, hcfg4, ← hc5]
+  have hcfg6 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c
+      (p0 - aPos - k + 1 + k + 1 + (aPos - opBase - k - 3) + 1) = c6 := by
+    rw [TM.runConfig_succ, hcfg5, ← hc6]
+  intro s hs
+  by_cases hA : s < p0 - aPos - k
+  · obtain ⟨hrp, hrh, _⟩ := valuePush_run_scanL0 30 (by omega) rfl c hphase s
+      (by omega)
+      (fun p hp1 hp2 => by
+        exact hz p (by omega) (by omega))
+    exact ⟨by omega, by omega⟩
+  by_cases hB : s = p0 - aPos - k
+  · subst hB
+    rw [hcfg1]
+    exact ⟨by omega, by omega⟩
+  by_cases hC : s < p0 - aPos - k + 1 + k
+  · obtain ⟨hrp, hrh, _⟩ := valuePush_run_walkL1 31 (by omega) rfl c2 h2p
+      (s - (p0 - aPos - k + 1))
+      (by omega)
+      (fun p hp1 hp2 => by
+        rw [h2t']
+        exact hblk p (by omega) (by omega))
+    rw [show s = (p0 - aPos - k + 1) + (s - (p0 - aPos - k + 1)) from by omega,
+      TM.runConfig_add, hcfg2]
+    exact ⟨by omega, by omega⟩
+  by_cases hD : s = p0 - aPos - k + 1 + k
+  · subst hD
+    rw [hcfg3]
+    exact ⟨by omega, by omega⟩
+  by_cases hE : s < p0 - aPos - k + 1 + k + 1 + (aPos - opBase - k - 3)
+  · obtain ⟨hrp, hrh, _⟩ := valuePush_run_scanL0 32 (by omega) rfl c4 h4p
+      (s - (p0 - aPos - k + 1 + k + 1))
+      (by omega)
+      (fun p hp1 hp2 => by
+        rw [h4t']
+        exact hgapL p (by omega) (by omega))
+    rw [show s = (p0 - aPos - k + 1 + k + 1) + (s - (p0 - aPos - k + 1 + k + 1)) from by omega,
+      TM.runConfig_add, hcfg4]
+    exact ⟨by omega, by omega⟩
+  by_cases hF : s = p0 - aPos - k + 1 + k + 1 + (aPos - opBase - k - 3)
+  · subst hF
+    rw [hcfg5]
+    exact ⟨by omega, by omega⟩
+  -- φ33 entry walk left, r := s − (… + 1) ≤ k + 1
+  · obtain ⟨hrp, hrh, _⟩ := valuePush_run_walkL1 33 (by omega) rfl c6 h6p
+      (s - (p0 - aPos - k + 1 + k + 1 + (aPos - opBase - k - 3) + 1))
+      (by omega)
+      (fun p hp1 hp2 => by
+        rw [h6t']
+        exact hentry p (by omega) (by omega))
+    rw [show s = (p0 - aPos - k + 1 + k + 1 + (aPos - opBase - k - 3) + 1)
+        + (s - (p0 - aPos - k + 1 + k + 1 + (aPos - opBase - k - 3) + 1)) from by omega,
+      TM.runConfig_add, hcfg6]
+    exact ⟨by omega, by omega⟩
+
+end ContractExpansion
+end Frontier
+end Pnp4

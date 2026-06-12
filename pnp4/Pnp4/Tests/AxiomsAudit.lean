@@ -954,6 +954,9 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.valuePush_drain_final_A_confined
 #print axioms Pnp4.Frontier.ContractExpansion.valuePush_drain_final_B_confined
 #print axioms Pnp4.Frontier.ContractExpansion.valuePush_clone_mid_confined
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_clone_last_confined
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_prologue_k0_confined
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_park_confined
 #print axioms Pnp4.Frontier.ContractExpansion.valuePush_prologue_k0
 #print axioms Pnp4.Frontier.ContractExpansion.valuePush_drain_mid
 #print axioms Pnp4.Frontier.ContractExpansion.valuePush_drain_final

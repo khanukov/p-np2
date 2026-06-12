@@ -4144,6 +4144,9 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.valuePush_drain_final_A_confined
 #check @Pnp4.Frontier.ContractExpansion.valuePush_drain_final_B_confined
 #check @Pnp4.Frontier.ContractExpansion.valuePush_clone_mid_confined
+#check @Pnp4.Frontier.ContractExpansion.valuePush_clone_last_confined
+#check @Pnp4.Frontier.ContractExpansion.valuePush_prologue_k0_confined
+#check @Pnp4.Frontier.ContractExpansion.valuePush_park_confined
 #check @Pnp4.Frontier.ContractExpansion.valuePush_prologue_k0
 #check @Pnp4.Frontier.ContractExpansion.valuePush_drain_mid
 #check @Pnp4.Frontier.ContractExpansion.valuePush_drain_final

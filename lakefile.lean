@@ -347,6 +347,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryTransferRun,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPValuePushProgram,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPValuePushRun,
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPValuePushConfined,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPValuePushHeadline,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPDriverCorridor,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalk,

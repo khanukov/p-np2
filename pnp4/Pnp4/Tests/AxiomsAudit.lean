@@ -954,6 +954,7 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.valuePush_clone_all
 #print axioms Pnp4.Frontier.ContractExpansion.valuePush_park
 #print axioms Pnp4.Frontier.ContractExpansion.valuePush_pushes
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_pushes_writeBlock
 -- D2t-5b (Block A3): the corridor layout — right-anchored stack codecs (top rightmost, every field's
 -- right edge a 1, base sentinels), and the corridor strong invariant: every inter-region hop is a
 -- 0-scan onto a pinned 1 anchor (cursor marker / frontier marker / stack tops); no hop crosses WORK.

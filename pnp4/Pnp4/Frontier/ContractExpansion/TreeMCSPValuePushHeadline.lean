@@ -1,5 +1,6 @@
 import Pnp4.Frontier.ContractExpansion.TreeMCSPValuePushRun
 import Mathlib.Tactic.Ring
+import Pnp4.Frontier.ContractExpansion.TreeMCSPValPush
 import Mathlib.Tactic.Ring
 
 /-!
@@ -1297,6 +1298,81 @@ theorem valuePush_pushes {L : Nat}
         exact hPR.hentry p hin.1 hin.2
       · rw [if_neg hin]
         exact hOutP p (by omega)
+
+end ContractExpansion
+end Frontier
+end Pnp4
+
+namespace Pnp4
+namespace Frontier
+namespace ContractExpansion
+
+open Pnp3.Internal.PsubsetPpoly Pnp3.Internal.PsubsetPpoly.TM
+open Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram
+
+/-- **The M1 headline in the §12.3 contract shape**: the final tape **is**
+`writeBlockTape c.tape opBase (encodeNatEntryR k)` — the value entry `0 ++ 1^(k+2)` written at the
+value-zone top (its leading `0` coincides with the layout's untouched `opBase` cell), everything
+else verbatim.  This is the tape transformer the leaf/pop keystones consume. -/
+theorem valuePush_pushes_writeBlock {L : Nat}
+    (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
+    (opBase aPos k : Nat) (hlay : ValuePushLayout c opBase aPos k) :
+    ∃ t ≤ (k + 2) * (2 * (aPos - opBase) + 6 * k + 20),
+      (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c t).state).fst : Nat) = 34
+      ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c t).head : Nat) = opBase
+      ∧ (TM.runConfig (M := valuePushProgram.toPhased.toTM) c t).tape
+          = writeBlockTape c.tape opBase (encodeNatEntryR k) := by
+  obtain ⟨t, ht, hp, hh, htape⟩ := valuePush_pushes c opBase aPos k hlay
+  have hgeom := hlay.hgeom
+  refine ⟨t, ht, hp, hh, funext fun p => ?_⟩
+  rw [htape p]
+  unfold writeBlockTape
+  have hlen : (encodeNatEntryR k).length = k + 3 := encodeNatEntryR_length k
+  by_cases hin : opBase + 1 ≤ (p : Nat) ∧ (p : Nat) < opBase + 3 + k
+  · rw [if_pos hin, if_pos (by omega)]
+    -- the written cell is one of the k+2 ones of the entry
+    obtain ⟨i, hi⟩ : ∃ i, (p : Nat) - opBase = i + 1 := ⟨(p : Nat) - opBase - 1, by omega⟩
+    rw [hi]
+    show true = (false :: List.replicate (k + 2) true).getD (i + 1) false
+    rw [List.getD_cons_succ]
+    have hilt : i < k + 2 := by omega
+    rw [List.getD_eq_getElem?_getD, List.getElem?_replicate, if_pos hilt]
+    rfl
+  · rw [if_neg hin]
+    by_cases hbase : (p : Nat) = opBase
+    · rw [if_pos (by omega)]
+      have h0 : (p : Nat) - opBase = 0 := by omega
+      rw [h0]
+      show c.tape p = (false :: List.replicate (k + 2) true).getD 0 false
+      rw [List.getD_cons_zero]
+      exact hlay.hzeroL p (by omega) (by omega)
+    · rw [if_neg (by omega)]
+
+/-! ## Directed regression check: the layout is satisfiable
+
+A concrete configuration (ambient length `20`, entry base `0`, anchor at `5`, a single source
+unit) inhabits `ValuePushLayout` — the headline is not vacuous. -/
+
+example : ∃ c : Configuration (M := valuePushProgram.toPhased.toTM) 20,
+    ValuePushLayout c 0 5 1 := by
+  refine ⟨⟨⟨⟨0, by decide⟩, ()⟩, ⟨0, by decide⟩,
+    fun q => decide ((q : Nat) = 5 ∨ (q : Nat) = 6)⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · rfl
+  · rfl
+  · decide
+  · decide
+  · intro p hp1 hp2
+    simp only [decide_eq_false_iff_not]
+    omega
+  · intro p hp
+    simp only [decide_eq_true_eq]
+    omega
+  · intro p hp1 hp2
+    simp only [decide_eq_true_eq]
+    omega
+  · intro p hp1 hp2
+    simp only [decide_eq_false_iff_not]
+    omega
 
 end ContractExpansion
 end Frontier

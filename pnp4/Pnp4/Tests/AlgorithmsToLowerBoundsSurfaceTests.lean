@@ -4144,6 +4144,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.valuePush_clone_all
 #check @Pnp4.Frontier.ContractExpansion.valuePush_park
 #check @Pnp4.Frontier.ContractExpansion.valuePush_pushes
+#check @Pnp4.Frontier.ContractExpansion.valuePush_pushes_writeBlock
 -- D2t-5b (Block A3): the corridor layout — right-anchored stack codecs + the corridor strong invariant
 -- (every inter-region hop a 0-scan onto a pinned 1 anchor; no hop crosses WORK).
 #check @Pnp4.Frontier.ContractExpansion.encodeNatEntryR_length

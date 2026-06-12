@@ -33,15 +33,11 @@ open Pnp3.Internal.PsubsetPpoly.TM.Encoding
 
 /-! ### Codec fact: a nonempty control stack's penultimate cell is `1` -/
 
-/-- `getD` into an all-`true` block is `true` at every in-range index. -/
+/-- `getD` into an all-`true` block is `true` at every in-range index (alias of the generic
+`getD_replicate_of_lt`, kept for the established call sites). -/
 theorem getD_replicate_true (m i : Nat) (h : i < m) :
-    (List.replicate m true).getD i false = true := by
-  induction m generalizing i with
-  | zero => omega
-  | succ m ih =>
-      cases i with
-      | zero => rfl
-      | succ i => rw [List.replicate_succ, List.getD_cons_succ]; exact ih i (by omega)
+    (List.replicate m true).getD i false = true :=
+  getD_replicate_of_lt true false h
 
 /-- **A nonempty control stack's penultimate cell is `1`**: the rightmost block is the top frame's
 tag block, which carries `tagCode + 2 ≥ 2` ones. -/

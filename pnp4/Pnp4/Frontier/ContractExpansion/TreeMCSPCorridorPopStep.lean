@@ -195,11 +195,10 @@ theorem corridorInv_popStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width
       = encodeNatStackR vs ++ vpop.reverse.flatMap encodeNatEntryR := encodeNatStackR_append vpop vs
   have hnewval : encodeNatStackR (out.length :: vs)
       = encodeNatStackR vs ++ encodeNatEntryR out.length := encodeNatStackR_cons out.length vs
-  have hrecstream := encodeGateRecordStream_snoc out gate
   have hlen1 : (out ++ [gate]).length = out.length + 1 := by simp
   have hstreamlen : (encodeGateRecordStream (out ++ [gate])).length
       = (encodeGateRecordStream out).length + (encodeGateRecord gate).length := by
-    rw [hrecstream, List.length_append]
+      exact encodeGateRecordStream_snoc_length out _
   have hventrylen : (encodeNatEntryR out.length).length = out.length + 3 :=
     encodeNatEntryR_length out.length
   have hcblocklen : (List.replicate (encodeCtrlFrameR (tag, 1)).length false).length
@@ -230,35 +229,26 @@ theorem corridorInv_popStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width
       + (List.replicate (encodeCtrlFrameR (tag, 1)).length false).length ≤ z.ctrlEnd := by
     rw [hcblocklen]; omega
   -- The shadow-count tick peels: below / above the single written cell.
-  have htickB : ∀ (T : Fin L → Bool) (q : Fin L), (q : Nat) < z.shwBase + out.length + 1 →
-      writeBlockTape T (z.shwBase + out.length + 1) [true] q = T q :=
-    fun T q hq => writeBlockTape_below T _ _ q hq
-  have htickA : ∀ (T : Fin L → Bool) (q : Fin L), z.shwBase + out.length + 2 ≤ (q : Nat) →
-      writeBlockTape T (z.shwBase + out.length + 1) [true] q = T q := by
-    intro T q hq
-    apply writeBlockTape_above
-    simp only [List.length_singleton]
-    omega
   dsimp only [driverCorridorInv]
   refine ⟨⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
     ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   -- 1. cert suffix window (untouched: cert is right of every write).
   · refine windowSpells_congr _ _ _ _ hcert (fun q hlo hhi => ?_)
     have hqlo : z.certBase ≤ (q : Nat) := by have := hcert.1; omega
-    rw [htickA _ q (by omega)]
+    rw [writeBlockTape_tick_above _ _ q (by omega)]
     exact popStepTape_eq_id tape _ _ _ _ _ _ q
       (by omega) (by omega) (by omega) (by omega)
   -- 2. cert fit (toks unchanged).
   · exact hcfit
   -- 3. cursor marker (untouched).
   · intro p hp
-    rw [htickA _ p (by omega),
+    rw [writeBlockTape_tick_above _ _ p (by omega),
       popStepTape_eq_id tape _ _ _ _ _ _ p
       (by omega) (by omega) (by omega) (by omega)]
     exact hmark p hp
   -- 4. consumed/dead corridor (new ctrl'); freed top-frame cells now read 0.
   · intro p hlo hhi
-    rw [htickA _ p (by omega)]
+    rw [writeBlockTape_tick_above _ _ p (by omega)]
     by_cases hframe : (p : Nat) < z.ctrlBase + (encodeCtrlStackR ctrl').length
         + (encodeCtrlFrameR (tag, 1)).length
     · -- inside the erased frame zone: ctrl write, block all-false.
@@ -283,12 +273,12 @@ theorem corridorInv_popStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width
     rw [hocfm] at hemit
     refine windowSpells_congr _ _ _ _ hemit (fun q hlo hhi => ?_)
     rw [List.length_append, unaryField_length, hstreamlen] at hhi
-    rw [htickB _ q (by omega)]
+    rw [writeBlockTape_tick_below _ _ q (by omega)]
     exact popStepTape_eq_emit tape _ _ _ _ _ _ q (by omega) (by omega)
   -- 6. new frontier marker.
   · intro p hp
     rw [hstreamlen] at hp
-    rw [htickB _ p (by omega),
+    rw [writeBlockTape_tick_below _ _ p (by omega),
       popStepTape_eq_emit tape _ _ _ _ _ _ p (by omega) (by omega)]
     exact emitTape_FM tape _ _ p (by omega)
   -- 7. frontier fit.
@@ -296,7 +286,7 @@ theorem corridorInv_popStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width
   -- 9. FM→val dead corridor.
   · intro p hlo hhi
     rw [hstreamlen] at hlo
-    rw [htickB _ p (by omega),
+    rw [writeBlockTape_tick_below _ _ p (by omega),
       popStepTape_eq_id tape _ _ _ _ _ _ p
       (by omega) (by omega) (by omega) (by omega)]
     exact hfzeros p (by omega) hhi
@@ -307,14 +297,14 @@ theorem corridorInv_popStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width
     rw [hventrylen] at hvw
     refine windowSpells_congr _ _ _ _ hvw (fun q hlo hhi => ?_)
     rw [hnewval, List.length_append, hventrylen] at hhi
-    rw [htickB _ q (by omega)]
+    rw [writeBlockTape_tick_below _ _ q (by omega)]
     exact popStepTape_eq_valwrite tape _ _ _ _ _ _ q (by omega) (by omega) (by omega)
   -- 11. value fit.
   · rw [hnewval, List.length_append, hventrylen]; omega
   -- 12. val→SHW dead corridor.
   · intro p hlo hhi
     rw [hnewval, List.length_append, hventrylen] at hlo
-    rw [htickB _ p (by omega)]
+    rw [writeBlockTape_tick_below _ _ p (by omega)]
     by_cases hpv : (p : Nat) < z.valBase + (encodeNatStackR vs).length
         + (encodeNatEntryR out.length
           ++ List.replicate ((vpop.reverse.flatMap encodeNatEntryR).length - (out.length + 3)) false).length
@@ -354,7 +344,7 @@ theorem corridorInv_popStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width
   -- 12c. SHW→ctrl dead corridor (right of the ticked cell).
   · intro p hlo hhi
     rw [hlen1] at hlo
-    rw [htickA _ p (by omega),
+    rw [writeBlockTape_tick_above _ _ p (by omega),
       popStepTape_eq_id tape _ _ _ _ _ _ p
       (by omega) (by omega) (by omega) (by omega)]
     exact hszeros p (by omega) hhi
@@ -364,7 +354,7 @@ theorem corridorInv_popStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width
     refine windowSpells_congr _ _ _ _ hpre (fun q hlo hhi => ?_)
     have hqend : (q : Nat) < z.ctrlBase + (encodeCtrlStackR ctrl').length := by
       have := hpre.1; omega
-    rw [htickA _ q (by omega)]
+    rw [writeBlockTape_tick_above _ _ q (by omega)]
     exact popStepTape_eq_id tape _ _ _ _ _ _ q
       (by omega) (by omega) (by omega) (by omega)
   -- 14. control fit.

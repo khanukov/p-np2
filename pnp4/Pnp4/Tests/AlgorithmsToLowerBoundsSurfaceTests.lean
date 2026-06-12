@@ -4131,6 +4131,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.unaryTransfer_pass_last
 #check @Pnp4.Frontier.ContractExpansion.unaryTransfer_transfers
 -- A5m-V (M1): the non-destructive value-push machine (program, layout, loop states, headline).
+#check @Pnp3.Internal.PsubsetPpoly.TM.runConfig_safe_append
 #check @Pnp4.Frontier.ContractExpansion.valuePushProgram
 #check @Pnp4.Frontier.ContractExpansion.ValuePushLayout
 #check @Pnp4.Frontier.ContractExpansion.DrainState
@@ -4186,7 +4187,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.walkZoneSteps
 #check @Pnp4.Frontier.ContractExpansion.getD_replicate_of_lt
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkLeft_runConfig_walkZone
--- D2t-5b (Block A4r): the leftward cross-zone route (five instantiated legs).
+-- D2t-5b (Block A4r): the leftward cross-zone route (six instantiated legs around the SHW zone).
 #check @Pnp4.Frontier.ContractExpansion.windowSpells_getLast_true
 #check @Pnp4.Frontier.ContractExpansion.corridor_scan_M_to_ctrlTop
 #check @Pnp4.Frontier.ContractExpansion.corridor_walk_ctrl
@@ -4216,7 +4217,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.windowSpells_snoc_false
 #check @Pnp4.Frontier.ContractExpansion.walkZoneStepsR
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_walkZone
--- D2t-5b (Block A4r): the return route (five instantiated rightward legs).
+-- D2t-5b (Block A4r): the return route (six instantiated rightward legs around the SHW zone).
 #check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_runConfigFrom_scanning
 #check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_runConfigFrom_terminator
 #check @Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_valSentinel
@@ -4242,11 +4243,14 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- D2t-5b (Block A4a): the leaf-emit output-region helper (count increment + record append).
 #check @Pnp4.Frontier.ContractExpansion.emitTape
 #check @Pnp4.Frontier.ContractExpansion.encodeGateRecordStream_snoc
+#check @Pnp4.Frontier.ContractExpansion.encodeGateRecordStream_snoc_length
 #check @Pnp4.Frontier.ContractExpansion.emitTape_output_window
 #check @Pnp4.Frontier.ContractExpansion.emitTape_FM
 -- D2t-5b (Block A4a): the value-stack push as a written-block append.
 #check @Pnp4.Frontier.ContractExpansion.writeBlockTape
 #check @Pnp4.Frontier.ContractExpansion.windowSpells_writeAppend
+#check @Pnp4.Frontier.ContractExpansion.writeBlockTape_tick_below
+#check @Pnp4.Frontier.ContractExpansion.writeBlockTape_tick_above
 #check @Pnp4.Frontier.ContractExpansion.valPush_window
 -- D2t-5b (Block A4a): the cursor re-anchoring keystone (shared cert spine of the reading/settle arms).
 #check @Pnp4.Frontier.ContractExpansion.windowSpells_congr

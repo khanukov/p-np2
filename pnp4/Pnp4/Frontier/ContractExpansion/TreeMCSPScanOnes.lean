@@ -1,6 +1,7 @@
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftOneProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanRightOneProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverCorridor
+import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkFull
 
 /-!
 # Crossing the `SHW` block — D2t-5b (Block A4r, connectors): the ones-scanners on the corridor
@@ -34,17 +35,6 @@ open Pnp3.Internal.PsubsetPpoly Pnp3.Internal.PsubsetPpoly.TM
 open Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram
 open Pnp3.Internal.PsubsetPpoly.TM.Encoding
 
-/-- `getD` into an all-`true` block is `true` at every in-range index (local form; the
-`SettleProbe` copy lives far downstream of this module). -/
-private theorem scanOnes_getD_replicate_true (m i : Nat) (h : i < m) :
-    (List.replicate m true).getD i false = true := by
-  induction m generalizing i with
-  | zero => omega
-  | succ m ih =>
-      cases i with
-      | zero => rfl
-      | succ i => rw [List.replicate_succ, List.getD_cons_succ]; exact ih i (by omega)
-
 /-- **The `SHW` block, crossed leftward.**  From its top `1` (`shwBase + |out|`),
 `selfLoopScanLeftOne` lands on the dead cell `shwBase − 1` in `|out| + 2` steps, tape unchanged —
 the connector between `corridor_scan_to_shwTop` and `corridor_scan_to_valTop`. -/
@@ -63,13 +53,12 @@ theorem corridor_cross_shw_left {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ w
   obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
     hshw, hsfit, hszeros, hctrl, hcfit2, hvalid, hcoh⟩ := hinv
   obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hwf
-  have hvfit' : z.valBase + (encodeNatStackR st.val).length ≤ z.valEnd := hvfit
   have hones : ∀ p : Fin (selfLoopScanLeftOne.toPhased.toTM.tapeLength L),
       z.shwBase - 1 < (p : Nat) → (p : Nat) ≤ (c0.head : Nat) → c0.tape p = true := by
     intro p hp1 hp2
     have := hshw.2 p (by omega) (by rw [List.length_replicate]; omega)
     rw [this]
-    exact scanOnes_getD_replicate_true _ _ (by omega)
+    exact getD_replicate_of_lt true false (by omega)
   have hterm : ∀ p : Fin (selfLoopScanLeftOne.toPhased.toTM.tapeLength L),
       (p : Nat) = z.shwBase - 1 → c0.tape p = false := by
     intro p hp
@@ -105,7 +94,7 @@ theorem corridor_cross_shw_right {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ 
     intro p hp1 hp2
     have := hshw.2 p (by omega) (by rw [List.length_replicate]; omega)
     rw [this]
-    exact scanOnes_getD_replicate_true _ _ (by omega)
+    exact getD_replicate_of_lt true false (by omega)
   have hterm : ∀ p : Fin (selfLoopScanRightOne.toPhased.toTM.tapeLength L),
       (p : Nat) = z.shwBase + st.out.length + 1 → c0.tape p = false := by
     intro p hp

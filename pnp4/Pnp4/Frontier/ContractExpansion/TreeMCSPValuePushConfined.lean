@@ -16,6 +16,11 @@ memory budget (the monolithic replay of all twenty legs exceeds it — the same 
   companion to `valuePush_drain_mid` that the region-embedding transfer
   (`RegionEmbeddedMulti.run_track`) consumes.
 
+The streamed safety predicate is `phase ≠ 34 ∧ head ≤ aPos + 2k + 2`: φ34 is `valuePush`'s
+**only** exit phase (the region embedding redirects exactly `exitAt 34`), so `phase ≠ 34` per
+step is precisely `run_track`'s "no early exit" obligation — if `valuePush` ever grew a second
+exit phase, every `_confined` stream here and in the Headline would need the extra disjunct.
+
 **Progress classification (AGENTS.md): Infrastructure** — per-step safety facts for a staging
 machine's verified run; proves no separation.  Standard `[propext, Classical.choice, Quot.sound]`
 triple only.  **No `P ≠ NP` claim.**

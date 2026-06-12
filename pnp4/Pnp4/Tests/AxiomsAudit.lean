@@ -945,6 +945,7 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.unaryTransfer_pass_last
 #print axioms Pnp4.Frontier.ContractExpansion.unaryTransfer_transfers
 -- A5m-V (M1): the non-destructive value-push machine and its headline.
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.runConfig_safe_append
 #print axioms Pnp4.Frontier.ContractExpansion.valuePushProgram
 #print axioms Pnp4.Frontier.ContractExpansion.valuePush_prologue
 #print axioms Pnp4.Frontier.ContractExpansion.valuePush_prologue_confined
@@ -1003,8 +1004,9 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.walkZoneSteps_cons
 #print axioms Pnp4.Frontier.ContractExpansion.getD_replicate_of_lt
 #print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_runConfig_walkZone
--- D2t-5b (Block A4r): the leftward cross-zone route — five legs (scan M→ctrl-top, walk ctrl, scan
--- →val-top, walk val, scan →FM), each instantiated against driverCorridorInv's clauses.
+-- D2t-5b (Block A4r): the leftward cross-zone route — six legs around the SHW zone (scan M→ctrl-top,
+-- walk ctrl, scan →SHW-top, scan →val-top from shwBase−1, walk val, scan →FM) plus the two
+-- scan-over-ones SHW connectors, each instantiated against driverCorridorInv's clauses.
 #print axioms Pnp4.Frontier.ContractExpansion.windowSpells_getLast_true
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_scan_M_to_ctrlTop
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_walk_ctrl
@@ -1040,7 +1042,7 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.walkZoneStepsR_eq
 #print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_walkZone
 -- D2t-5b (Block A4r): the return route FM→val→ctrl→M — arbitrary-config rightward 0-scan lemmas +
--- five instantiated legs (the ctrl→cert gap widened to keep the walker's exit off the M slot).
+-- six instantiated legs around the SHW zone (the ctrl→cert gap widened to keep the walker's exit off the M slot).
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_runConfigFrom_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_runConfigFrom_terminator
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_valSentinel
@@ -1068,6 +1070,7 @@ end Pnp4
 -- D2t-5b (Block A4a): the leaf-emit output-region helper — count increment + record append at FM is
 -- exactly the new encodeGateStream window (reused by both the const and input keystones).
 #print axioms Pnp4.Frontier.ContractExpansion.encodeGateRecordStream_snoc
+#print axioms Pnp4.Frontier.ContractExpansion.encodeGateRecordStream_snoc_length
 #print axioms Pnp4.Frontier.ContractExpansion.emitTape_output_window
 #print axioms Pnp4.Frontier.ContractExpansion.emitTape_FM
 -- D2t-5b (Block A4a): the value-stack push as a written-block append (windowSpells extends by the new
@@ -1075,6 +1078,8 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.windowSpells_writeAppend
 #print axioms Pnp4.Frontier.ContractExpansion.writeBlockTape_below
 #print axioms Pnp4.Frontier.ContractExpansion.writeBlockTape_above
+#print axioms Pnp4.Frontier.ContractExpansion.writeBlockTape_tick_below
+#print axioms Pnp4.Frontier.ContractExpansion.writeBlockTape_tick_above
 #print axioms Pnp4.Frontier.ContractExpansion.valPush_window
 -- D2t-5b (Block A4a): the cursor re-anchoring keystone — consuming a tlen-cell token re-establishes
 -- the four certificate-region clauses for the tail (the shared spine of all reading/settle keystones).

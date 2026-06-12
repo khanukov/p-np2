@@ -37,6 +37,12 @@ theorem encodeGateRecordStream_snoc {n : Nat} (out : List (SLGate n)) (g : SLGat
   | nil => simp [encodeGateRecordStream]
   | cons a l ih => simp only [List.cons_append, encodeGateRecordStream, ih, List.append_assoc]
 
+/-- The record stream's length over a snoc. -/
+theorem encodeGateRecordStream_snoc_length {n : Nat} (out : List (SLGate n)) (g : SLGate n) :
+    (encodeGateRecordStream (out ++ [g])).length
+      = (encodeGateRecordStream out).length + (encodeGateRecord g).length := by
+  rw [encodeGateRecordStream_snoc, List.length_append]
+
 /-- The output-region transformer of a gate emit: the new record `rec` at the old frontier
 `[fm, fm + |rec|)`; the new frontier marker `1` at `fm + |rec|`; else unchanged.  (The unary count
 prefix is static — see the module docstring.) -/

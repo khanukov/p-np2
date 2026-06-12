@@ -569,6 +569,23 @@ theorem liftUnitProgram_stepConfig_tape (P : ConstStatePhasedProgram Unit) {L : 
   simp only [ConstStatePhasedProgram.toPhased, liftUnitProgram]
 
 end ConstStatePhasedProgram
+
+/-- **Safety-stream concatenation.**  Per-step facts about a run compose across a split point:
+a stream for the first `t₁` steps and a stream for the next `t₂` steps (stated from the
+intermediate configuration) give the stream for all `t₁ + t₂` steps.  This is the glue every
+trajectory-confinement proof needs at each leg/round boundary (the manual form is a
+`by_cases`/`runConfig_add` dance repeated at every split). -/
+theorem runConfig_safe_append {M : TM} {L : Nat} (Safe : Configuration (M := M) L → Prop)
+    (c : Configuration (M := M) L) (t₁ t₂ : Nat)
+    (h₁ : ∀ s, s < t₁ → Safe (TM.runConfig (M := M) c s))
+    (h₂ : ∀ s, s < t₂ → Safe (TM.runConfig (M := M) (TM.runConfig (M := M) c t₁) s)) :
+    ∀ s, s < t₁ + t₂ → Safe (TM.runConfig (M := M) c s) := by
+  intro s hs
+  by_cases h : s < t₁
+  · exact h₁ s h
+  · have hstep := h₂ (s - t₁) (by omega)
+    rwa [← TM.runConfig_add, show t₁ + (s - t₁) = s from by omega] at hstep
+
 end TM
 end PsubsetPpoly
 end Internal

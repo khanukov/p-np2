@@ -114,21 +114,11 @@ theorem corridorInv_leafStep_last {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^
     rw [encodePreorder_cons, encodePreorder_nil, List.append_nil]
   have hventrylen : (encodeNatEntryR out.length).length = out.length + 3 :=
     encodeNatEntryR_length out.length
-  have hrecstream := encodeGateRecordStream_snoc out g
   have hlen1 : (out ++ [g]).length = out.length + 1 := by simp
   have hstreamlen : (encodeGateRecordStream (out ++ [g])).length
       = (encodeGateRecordStream out).length + (encodeGateRecord g).length := by
-    rw [hrecstream, List.length_append]
+      exact encodeGateRecordStream_snoc_length out _
   -- The shadow-count tick peels: below / above the single written cell.
-  have htickB : ∀ (T : Fin L → Bool) (q : Fin L), (q : Nat) < z.shwBase + out.length + 1 →
-      writeBlockTape T (z.shwBase + out.length + 1) [true] q = T q :=
-    fun T q hq => writeBlockTape_below T _ _ q hq
-  have htickA : ∀ (T : Fin L → Bool) (q : Fin L), z.shwBase + out.length + 2 ≤ (q : Nat) →
-      writeBlockTape T (z.shwBase + out.length + 1) [true] q = T q := by
-    intro T q hq
-    apply writeBlockTape_above
-    simp only [List.length_singleton]
-    omega
   dsimp only [driverCorridorInv]
   refine ⟨⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
     ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
@@ -144,13 +134,13 @@ theorem corridorInv_leafStep_last {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^
   -- 3. new marker at certEnd - 1 (the consumed token's last cell).
   · intro p hp
     simp only [encodePreorder_nil, List.length_nil, Nat.sub_zero] at hp
-    rw [htickA _ p (by omega)]
+    rw [writeBlockTape_tick_above _ _ p (by omega)]
     unfold leafStepTape cursorStepTape
     rw [if_pos (by omega)]
   -- 4. consumed/dead corridor up to certEnd - 1.
   · intro p hlo hhi
     simp only [encodePreorder_nil, List.length_nil, Nat.sub_zero] at hhi
-    rw [htickA _ p (by omega)]
+    rw [writeBlockTape_tick_above _ _ p (by omega)]
     unfold leafStepTape cursorStepTape
     rw [if_neg (by omega)]
     by_cases hband : z.certEnd - (encodePreorder width h_width [PreToken.leaf g]).length - 1
@@ -178,13 +168,13 @@ theorem corridorInv_leafStep_last {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^
     rw [hocfm] at hemit
     refine windowSpells_congr _ _ _ _ hemit (fun q hlo hhi => ?_)
     rw [List.length_append, unaryField_length, hstreamlen] at hhi
-    rw [htickB _ q (by omega),
+    rw [writeBlockTape_tick_below _ _ q (by omega),
       leafStepTape_eq_emit tape _ _ _ _ _ _ q
       (by omega) (by omega) (by rw [hventrylen]; omega)]
   -- 6. new frontier marker.
   · intro p hp
     rw [hstreamlen] at hp
-    rw [htickB _ p (by omega),
+    rw [writeBlockTape_tick_below _ _ p (by omega),
       leafStepTape_eq_emit tape _ _ _ _ _ _ p
       (by omega) (by omega) (by rw [hventrylen]; omega)]
     exact emitTape_FM tape _ _ p (by omega)
@@ -194,7 +184,7 @@ theorem corridorInv_leafStep_last {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^
   -- 9. FM→val dead corridor.
   · intro p hlo hhi
     rw [hstreamlen] at hlo
-    rw [htickB _ p (by omega),
+    rw [writeBlockTape_tick_below _ _ p (by omega),
       leafStepTape_eq_id tape _ _ _ _ _ _ p
       (by omega) (by omega) (by omega) (by omega)
       (by rw [hventrylen]; omega)]
@@ -204,7 +194,7 @@ theorem corridorInv_leafStep_last {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^
       (by rw [encodeNatEntryR_length]; omega)
     refine windowSpells_congr _ _ _ _ hvw (fun q hlo hhi => ?_)
     rw [encodeNatStackR_cons, List.length_append, encodeNatEntryR_length] at hhi
-    rw [htickB _ q (by omega),
+    rw [writeBlockTape_tick_below _ _ q (by omega),
       leafStepTape_eq_write tape _ _ _ _ _ _ q
       (by omega) (by omega) (by omega) (by omega)]
   -- 11. value fit.
@@ -213,7 +203,7 @@ theorem corridorInv_leafStep_last {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^
   -- 12. val→SHW dead corridor.
   · intro p hlo hhi
     rw [encodeNatStackR_cons, List.length_append, encodeNatEntryR_length] at hlo
-    rw [htickB _ p (by omega),
+    rw [writeBlockTape_tick_below _ _ p (by omega),
       leafStepTape_eq_id tape _ _ _ _ _ _ p
       (by omega) (by omega) (by omega) (by omega)
       (by rw [hventrylen]; omega)]
@@ -246,7 +236,7 @@ theorem corridorInv_leafStep_last {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^
   -- 12c. SHW→ctrl dead corridor (right of the ticked cell).
   · intro p hlo hhi
     rw [hlen1] at hlo
-    rw [htickA _ p (by omega),
+    rw [writeBlockTape_tick_above _ _ p (by omega),
       leafStepTape_eq_id tape _ _ _ _ _ _ p
       (by omega) (by omega) (by omega) (by omega)
       (by rw [hventrylen]; omega)]
@@ -254,7 +244,7 @@ theorem corridorInv_leafStep_last {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^
   -- 13. control window (untouched).
   · refine windowSpells_congr _ _ _ _ hctrl (fun q hlo hhi => ?_)
     have hq : (q : Nat) < z.ctrlEnd := by have := hctrl.1; omega
-    rw [htickA _ q (by omega),
+    rw [writeBlockTape_tick_above _ _ q (by omega),
       leafStepTape_eq_id tape _ _ _ _ _ _ q
       (by omega) (by omega) (by omega) (by omega)
       (by rw [hventrylen]; omega)]

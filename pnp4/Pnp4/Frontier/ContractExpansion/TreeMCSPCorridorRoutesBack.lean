@@ -137,8 +137,6 @@ theorem corridor_back_scan_to_valSentinel {n L : Nat} (width : Nat) (h_width : n
     have : encodeNatStackR st.val = true :: st.val.reverse.flatMap encodeNatEntryR := rfl
     rw [this]
     rfl
-  have hm : z.valBase - (c0.head : Nat) = z.valBase - z.workBase
-      - (encodeGateRecordStream st.out).length - 1 := by omega
   exact (by
     have := gammaSelfLoopScan_runConfigFrom_terminator c0 hphase (z.valBase - (c0.head : Nat))
       (by omega)

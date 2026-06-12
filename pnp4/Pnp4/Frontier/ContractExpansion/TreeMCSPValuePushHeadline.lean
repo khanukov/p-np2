@@ -2276,7 +2276,14 @@ open Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram
 /-- **The M1 headline in the §12.3 contract shape**: the final tape **is**
 `writeBlockTape c.tape opBase (encodeNatEntryR k)` — the value entry `0 ++ 1^(k+2)` written at the
 value-zone top (its leading `0` coincides with the layout's untouched `opBase` cell), everything
-else verbatim.  This is the tape transformer the leaf/pop keystones consume. -/
+else verbatim.  This is the tape transformer the leaf/pop keystones consume.
+
+**`run_track` strictness note.**  The streamed head bound is `head ≤ aPos + 2k + 2` and the
+layout only guarantees `aPos + 2k + 3 ≤ tapeLength` (`hbound`), which yields the *non-strict*
+`head + 1 ≤ tapeLength` — while `RegionEmbeddedMulti.run_track` checks the *strict*
+`head + 1 < native tapeLength`.  The embedding consumer must close that one-cell gap from the
+corridor geometry it instantiates the layout with (`aPos + 2k + 2 < ctrlBase ≤ tapeLength − 1`,
+say), not from `ValuePushLayout` alone. -/
 theorem valuePush_pushes_writeBlock {L : Nat}
     (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
     (opBase aPos k : Nat) (hlay : ValuePushLayout c opBase aPos k) :

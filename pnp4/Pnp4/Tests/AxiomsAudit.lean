@@ -127,6 +127,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverRealization
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTranscoderCapstone
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBitProbe
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionBitProbeHop
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionScanOnesSegments
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbe
 import Pnp4.Frontier.ContractExpansion.TreeMCSPAtomSeqP1
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbeFrame
@@ -1240,6 +1241,9 @@ end Pnp4
 -- D2t-5b (Block A5m-6a, transfer): the in-place bit-probe hops (the leaf arms' b-branch).
 #print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_bitProbe_zero_hop
 #print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_bitProbe_one_hop
+-- D2t-5b (Block A5m-6a, transfer): the SHW crossers in a union (ones-scan segments + hops).
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_scanLeftOne_hop
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_scanRightOne_hop
 -- D2t-5b (Block A5m-3 run): the clear iteration END TO END on clearIterProgram -- from the settle
 -- home on the cursor marker, hop to the control top, probe (empty), return, scan home: phase 14,
 -- head back on the marker, tape untouched (= driverStepTape on the clear branch), <= 2*certEnd+13

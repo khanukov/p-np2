@@ -137,6 +137,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverRealization
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTranscoderCapstone
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBitProbe
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionBitProbeHop
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionScanOnesSegments
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbe
 import Pnp4.Frontier.ContractExpansion.TreeMCSPAtomSeqP1
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbeFrame
@@ -4364,6 +4365,11 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- D2t-5b (Block A5m-3a'): the host-generic atom hops.
 #check @Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_stepLeft_hop
 #check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_probe_empty_hop
+-- D2t-5b (Block A5m-6a, transfer): the in-place bit-probe hops and the SHW ones-scan hops.
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_bitProbe_zero_hop
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_bitProbe_one_hop
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_scanLeftOne_hop
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_scanRightOne_hop
 -- D2t-5b (Block A5m-3 run): the clear iteration end to end.
 #check @Pnp4.Frontier.ContractExpansion.clearIter_run
 -- D2t-5b (Block A5m-U6): the host-generic write segment (tape = writeBlockTape).

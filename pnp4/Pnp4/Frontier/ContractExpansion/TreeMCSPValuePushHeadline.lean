@@ -77,18 +77,24 @@ structure DrainFinalCut {L : Nat}
   hbeyond : ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
     aPos + 2 + 2 * k ≤ (p : Nat) → (p : Nat) ≤ aPos + 2 * k + 2 → c.tape p = false
 
-set_option maxHeartbeats 4000000 in
-/-- **Final round, first half** (from `DrainState (k-1)`): erase the last unit, deposit the `k`-th
-scratch one, walk back onto the source zone — `2·k + 2` steps to the cut state. -/
-theorem valuePush_drain_final_A {L : Nat}
+set_option maxHeartbeats 8000000 in
+/-- **Final round, first half** (from `DrainState (k-1)`): erase the last unit, deposit the
+`k`-th scratch one, walk back onto the source zone — `2·k + 2` steps to the cut state — with
+the per-step confinement stream along the way.  Single replay behind
+`valuePush_drain_final_A` (`.1`) and `valuePush_drain_final_A_confined` (`.2`). -/
+theorem valuePush_drain_final_A_full {L : Nat}
     (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
     (opBase aPos k : Nat) (hds : DrainState c opBase aPos k (k - 1)) (hk : 0 < k) :
-    DrainFinalCut
+    (DrainFinalCut
       (TM.runConfig (M := valuePushProgram.toPhased.toTM) c (2 * k + 2))
       opBase aPos k
     ∧ ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
         ((p : Nat) < opBase ∨ aPos + 2 * k + 2 < (p : Nat)) →
-        (TM.runConfig (M := valuePushProgram.toPhased.toTM) c (2 * k + 2)).tape p = c.tape p := by
+        (TM.runConfig (M := valuePushProgram.toPhased.toTM) c (2 * k + 2)).tape p = c.tape p)
+    ∧ ∀ s : Nat, s < 2 * k + 2 →
+      (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).state).fst : Nat) ≠ 34
+      ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).head : Nat)
+          ≤ aPos + 2 * k + 2 := by
   obtain ⟨hphase, hhead, hgeom, hbound, _, hhome, hentry, hgapL, hanchor, hpre, hrest,
     hterm, hscr, hzr⟩ := hds
   have hhead' : (c.head : Nat) = aPos + k := by omega
@@ -229,23 +235,96 @@ theorem valuePush_drain_final_A {L : Nat}
       ((p : Nat) < opBase ∨ aPos + 2 * k + 2 < (p : Nat)) → c6.tape p = c.tape p := by
     intro p hp
     rw [h6t' p, if_neg (by omega), if_neg (by omega)]
-  rw [htotal]
-  exact ⟨hcut, hOut⟩
+  have h1p' : ((c1.state).fst : Nat) = 6 := h1p
+  have h2p' : ((c2.state).fst : Nat) = 16 := h2p
+  have h4p' : ((c4.state).fst : Nat) = 17 := h4p
+  have hcfg1 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c 1 = c1 := by
+    rw [valuePush_runConfig_one, ← hc1]
+  have hcfg2 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c 2 = c2 := by
+    rw [show (2 : Nat) = 1 + 1 from rfl, TM.runConfig_add, hcfg1,
+      valuePush_runConfig_one, ← hc2]
+  have hcfg3 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (2 + (k - 1)) = c3 := by
+    rw [TM.runConfig_add, hcfg2, ← hc3]
+  have hcfg4 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (2 + (k - 1) + 1) = c4 := by
+    rw [TM.runConfig_succ, hcfg3, ← hc4]
+  refine ⟨by rw [htotal]; exact ⟨hcut, hOut⟩, ?_⟩
+  intro s hs
+  by_cases hA : s = 0
+  · subst hA
+    rw [TM.runConfig_zero]
+    exact ⟨by omega, by omega⟩
+  by_cases hB : s = 1
+  · subst hB
+    rw [hcfg1]
+    exact ⟨by omega, by omega⟩
+  by_cases hC : s < 2 + (k - 1)
+  · -- φ16 scratch walk right, r := s − 2
+    obtain ⟨hrp, hrh, _⟩ := valuePush_run_walkR1 16 (by omega) rfl c2 h2p (s - 2)
+      (by omega)
+      (fun p hp1 hp2 => by
+        rw [h2t' p, if_neg (by omega)]
+        exact hscr p (by omega) (by omega))
+    rw [show s = 2 + (s - 2) from by omega, TM.runConfig_add, hcfg2]
+    exact ⟨by omega, by omega⟩
+  by_cases hD : s = 2 + (k - 1)
+  · subst hD
+    rw [hcfg3]
+    exact ⟨by omega, by omega⟩
+  -- φ17 scratch walk left, r := s − (2 + (k − 1) + 1) ≤ k − 1
+  · obtain ⟨hrp, hrh, _⟩ := valuePush_run_walkL1 17 (by omega) rfl c4 h4p
+      (s - (2 + (k - 1) + 1))
+      (by omega)
+      (fun p hp1 hp2 => by
+        rw [h4t' p, if_neg (by omega), if_neg (by omega)]
+        exact hscr p (by omega) (by omega))
+    rw [show s = (2 + (k - 1) + 1) + (s - (2 + (k - 1) + 1)) from by omega,
+      TM.runConfig_add, hcfg4]
+    exact ⟨by omega, by omega⟩
 
-set_option maxHeartbeats 4000000 in
-/-- **Final round, second half** (from the cut): cross the anchor, deposit the `k`-th entry one,
-return onto the anchor in the restore phase — `2·(aPos − opBase) − k − 1` steps. -/
-theorem valuePush_drain_final_B {L : Nat}
+/-- **Final round, first half** (from `DrainState (k-1)`): erase the last unit, deposit the `k`-th
+scratch one, walk back onto the source zone — `2·k + 2` steps to the cut state. -/
+theorem valuePush_drain_final_A {L : Nat}
+    (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
+    (opBase aPos k : Nat) (hds : DrainState c opBase aPos k (k - 1)) (hk : 0 < k) :
+    DrainFinalCut
+      (TM.runConfig (M := valuePushProgram.toPhased.toTM) c (2 * k + 2))
+      opBase aPos k
+    ∧ ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
+        ((p : Nat) < opBase ∨ aPos + 2 * k + 2 < (p : Nat)) →
+        (TM.runConfig (M := valuePushProgram.toPhased.toTM) c (2 * k + 2)).tape p = c.tape p :=
+  (valuePush_drain_final_A_full c opBase aPos k hds hk).1
+
+/-- **Final-round first-half confinement**: along the `2k + 2` steps the phase never reaches the
+accept and the head stays ≤ `aPos + 2k + 2` — additive companion to `valuePush_drain_final_A`. -/
+theorem valuePush_drain_final_A_confined {L : Nat}
+    (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
+    (opBase aPos k : Nat) (hds : DrainState c opBase aPos k (k - 1)) (hk : 0 < k) :
+    ∀ s : Nat, s < 2 * k + 2 →
+      (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).state).fst : Nat) ≠ 34
+      ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).head : Nat)
+          ≤ aPos + 2 * k + 2 :=
+  (valuePush_drain_final_A_full c opBase aPos k hds hk).2
+
+set_option maxHeartbeats 8000000 in
+/-- **Final round, second half** (from the cut): cross the anchor, deposit the `k`-th entry
+one, return onto the anchor in the restore phase — `2·(aPos − opBase) − k − 1` steps — with
+the per-step confinement stream along the way.  Single replay behind
+`valuePush_drain_final_B` (`.1`) and `valuePush_drain_final_B_confined` (`.2`). -/
+theorem valuePush_drain_final_B_full {L : Nat}
     (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
     (opBase aPos k : Nat) (hcut : DrainFinalCut c opBase aPos k) :
-    CloneState
+    (CloneState
       (TM.runConfig (M := valuePushProgram.toPhased.toTM) c
         (2 * (aPos - opBase) - k - 1))
       opBase aPos k 0
     ∧ ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
         ((p : Nat) < opBase ∨ aPos + 2 * k + 2 < (p : Nat)) →
         (TM.runConfig (M := valuePushProgram.toPhased.toTM) c
-          (2 * (aPos - opBase) - k - 1)).tape p = c.tape p := by
+          (2 * (aPos - opBase) - k - 1)).tape p = c.tape p)
+    ∧ ∀ s : Nat, s < 2 * (aPos - opBase) - k - 1 →
+      (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).state).fst : Nat) ≠ 34
+      ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).head : Nat)
+          ≤ aPos + 2 * k + 2 := by
   obtain ⟨hphase, hhead, hgeom, hbound, hk, hhome, hentry, hgapL, hanchor, hsrcz,
     hscr, hbeyond⟩ := hcut
   -- φ18 scan the zeroed source left onto the anchor, hop over it
@@ -388,8 +467,91 @@ theorem valuePush_drain_final_B {L : Nat}
       ((p : Nat) < opBase ∨ aPos + 2 * k + 2 < (p : Nat)) → c13.tape p = c.tape p := by
     intro p hp
     rw [h13t' p, if_neg (by omega)]
-  rw [htotal]
-  exact ⟨hCS, hOut⟩
+  have h8p' : ((c8.state).fst : Nat) = 19 := h8p
+  have h10p' : ((c10.state).fst : Nat) = 20 := h10p
+  have h11p' : ((c11.state).fst : Nat) = 21 := h11p
+  have hcfg7 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c k = c7 := hc7.symm
+  have hcfg8 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (k + 1) = c8 := by
+    rw [TM.runConfig_succ, hcfg7, ← hc8]
+  have hcfg9 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c
+      (k + 1 + (aPos - opBase - k - 2)) = c9 := by
+    rw [TM.runConfig_add, hcfg8, ← hc9]
+  have hcfg10 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c
+      (k + 1 + (aPos - opBase - k - 2) + 1) = c10 := by
+    rw [TM.runConfig_succ, hcfg9, ← hc10]
+  have hcfg11 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c
+      (k + 1 + (aPos - opBase - k - 2) + 2) = c11 := by
+    rw [show k + 1 + (aPos - opBase - k - 2) + 2
+        = k + 1 + (aPos - opBase - k - 2) + 1 + 1 from by omega,
+      TM.runConfig_succ, hcfg10, ← hc11]
+  refine ⟨by rw [htotal]; exact ⟨hCS, hOut⟩, ?_⟩
+  intro s hs
+  by_cases hA : s < k
+  · -- φ18 zeroed-source scan left, r := s
+    obtain ⟨hrp, hrh, _⟩ := valuePush_run_scanL0 18 (by omega) rfl c hphase s
+      (by omega)
+      (fun p hp1 hp2 => by
+        exact hsrcz p (by omega) (by omega))
+    exact ⟨by omega, by omega⟩
+  by_cases hB : s = k
+  · subst hB
+    rw [hcfg7]
+    exact ⟨by omega, by omega⟩
+  by_cases hC : s < k + 1 + (aPos - opBase - k - 2)
+  · -- φ19 gap scan left, r := s − (k + 1)
+    obtain ⟨hrp, hrh, _⟩ := valuePush_run_scanL0 19 (by omega) rfl c8 h8p (s - (k + 1))
+      (by omega)
+      (fun p hp1 hp2 => by
+        rw [h8t']
+        exact hgapL p (by omega) (by omega))
+    rw [show s = (k + 1) + (s - (k + 1)) from by omega, TM.runConfig_add, hcfg8]
+    exact ⟨by omega, by omega⟩
+  by_cases hD : s = k + 1 + (aPos - opBase - k - 2)
+  · subst hD
+    rw [hcfg9]
+    exact ⟨by omega, by omega⟩
+  by_cases hE : s = k + 1 + (aPos - opBase - k - 2) + 1
+  · subst hE
+    rw [hcfg10]
+    exact ⟨by omega, by omega⟩
+  -- φ21 gap scan right, r := s − (k + 1 + (aPos − opBase − k − 2) + 2)
+  · obtain ⟨hrp, hrh, _⟩ := valuePush_run_scanR0 21 (by omega) rfl c11 h11p
+      (s - (k + 1 + (aPos - opBase - k - 2) + 2))
+      (by omega)
+      (fun p hp1 hp2 => by
+        rw [h11t' p, if_neg (by omega)]
+        exact hgapL p (by omega) (by omega))
+    rw [show s = (k + 1 + (aPos - opBase - k - 2) + 2)
+        + (s - (k + 1 + (aPos - opBase - k - 2) + 2)) from by omega,
+      TM.runConfig_add, hcfg11]
+    exact ⟨by omega, by omega⟩
+
+/-- **Final round, second half** (from the cut): cross the anchor, deposit the `k`-th entry one,
+return onto the anchor in the restore phase — `2·(aPos − opBase) − k − 1` steps. -/
+theorem valuePush_drain_final_B {L : Nat}
+    (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
+    (opBase aPos k : Nat) (hcut : DrainFinalCut c opBase aPos k) :
+    CloneState
+      (TM.runConfig (M := valuePushProgram.toPhased.toTM) c
+        (2 * (aPos - opBase) - k - 1))
+      opBase aPos k 0
+    ∧ ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
+        ((p : Nat) < opBase ∨ aPos + 2 * k + 2 < (p : Nat)) →
+        (TM.runConfig (M := valuePushProgram.toPhased.toTM) c
+          (2 * (aPos - opBase) - k - 1)).tape p = c.tape p :=
+  (valuePush_drain_final_B_full c opBase aPos k hcut).1
+
+/-- **Final-round second-half confinement**: along the `2·(aPos − opBase) − k − 1` steps the phase
+never reaches the accept and the head stays ≤ `aPos + 2k + 2` — additive companion to
+`valuePush_drain_final_B`. -/
+theorem valuePush_drain_final_B_confined {L : Nat}
+    (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
+    (opBase aPos k : Nat) (hcut : DrainFinalCut c opBase aPos k) :
+    ∀ s : Nat, s < 2 * (aPos - opBase) - k - 1 →
+      (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).state).fst : Nat) ≠ 34
+      ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).head : Nat)
+          ≤ aPos + 2 * k + 2 :=
+  (valuePush_drain_final_B_full c opBase aPos k hcut).2
 
 /-- **The final drain round** (from `DrainState (k-1)`): the two halves combined — exactly
 `2·(aPos − opBase) + k + 1` steps to the restore HOME. -/
@@ -427,20 +589,26 @@ namespace ContractExpansion
 open Pnp3.Internal.PsubsetPpoly Pnp3.Internal.PsubsetPpoly.TM
 open Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram
 
-set_option maxHeartbeats 4000000 in
-/-- **One mid restore round** (`j + 1 < k`): append a restored unit at the destination frontier,
-erase the scratch's leftmost one, return to the anchor — `CloneState j` steps to
-`CloneState (j+1)` in exactly `2·j + 2·k + 12` steps, with the tape touched only inside the zone. -/
-theorem valuePush_clone_mid {L : Nat}
+set_option maxHeartbeats 8000000 in
+/-- **One mid restore round** (`j + 1 < k`): append a restored unit at the destination
+frontier, erase the scratch's leftmost one, return to the anchor — `CloneState j` steps to
+`CloneState (j+1)` in exactly `2·j + 2·k + 12` steps — with the per-step confinement stream
+along the way.  Single replay behind `valuePush_clone_mid` (`.1`) and
+`valuePush_clone_mid_confined` (`.2`). -/
+theorem valuePush_clone_mid_full {L : Nat}
     (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
     (opBase aPos k j : Nat) (hcs : CloneState c opBase aPos k j) (hj2 : j + 1 < k) :
-    CloneState
+    (CloneState
       (TM.runConfig (M := valuePushProgram.toPhased.toTM) c (2 * j + 2 * k + 12))
       opBase aPos k (j + 1)
     ∧ ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
         ((p : Nat) < opBase ∨ aPos + 2 * k + 2 < (p : Nat)) →
         (TM.runConfig (M := valuePushProgram.toPhased.toTM) c
-          (2 * j + 2 * k + 12)).tape p = c.tape p := by
+          (2 * j + 2 * k + 12)).tape p = c.tape p)
+    ∧ ∀ s : Nat, s < 2 * j + 2 * k + 12 →
+      (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).state).fst : Nat) ≠ 34
+      ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).head : Nat)
+          ≤ aPos + 2 * k + 2 := by
   obtain ⟨hphase, hhead, hgeom, hbound, _, hhome, hentry, hgapL, hdst, hgap, hscr,
     hbeyond⟩ := hcs
   -- φ22 walk the destination ones (anchor + j restored) onto the frontier, write, move on
@@ -666,8 +834,153 @@ theorem valuePush_clone_mid {L : Nat}
       ((p : Nat) < opBase ∨ aPos + 2 * k + 2 < (p : Nat)) → c12.tape p = c.tape p := by
     intro p hp
     rw [h12t' p, if_neg (by omega), if_neg (by omega)]
-  rw [htotal]
-  exact ⟨hCS, hOut⟩
+  have h2p' : ((c2.state).fst : Nat) = 23 := h2p
+  have h4p' : ((c4.state).fst : Nat) = 24 := h4p
+  have h5p' : ((c5.state).fst : Nat) = 25 := h5p
+  have h6p' : ((c6.state).fst : Nat) = 26 := h6p
+  have h8p' : ((c8.state).fst : Nat) = 27 := h8p
+  have h10p' : ((c10.state).fst : Nat) = 28 := h10p
+  have h11p' : ((c11.state).fst : Nat) = 29 := h11p
+  have hcfg1 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (1 + j) = c1 := hc1.symm
+  have hcfg2 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (1 + j + 1) = c2 := by
+    rw [TM.runConfig_succ, hcfg1, ← hc2]
+  have hcfg3 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (1 + j + 1 + k) = c3 := by
+    rw [TM.runConfig_add, hcfg2, ← hc3]
+  have hcfg4 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (1 + j + 1 + k + 1)
+      = c4 := by
+    rw [TM.runConfig_succ, hcfg3, ← hc4]
+  have hcfg5 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (1 + j + 1 + k + 2)
+      = c5 := by
+    rw [show 1 + j + 1 + k + 2 = 1 + j + 1 + k + 1 + 1 from by omega,
+      TM.runConfig_succ, hcfg4, ← hc5]
+  have hcfg6 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (1 + j + 1 + k + 3)
+      = c6 := by
+    rw [show 1 + j + 1 + k + 3 = 1 + j + 1 + k + 2 + 1 from by omega,
+      TM.runConfig_succ, hcfg5, ← hc6]
+  have hcfg7 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c
+      (1 + j + 1 + k + 3 + (k + 1)) = c7 := by
+    rw [TM.runConfig_add, hcfg6, ← hc7]
+  have hcfg8 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c
+      (1 + j + 1 + k + 3 + (k + 1) + 1) = c8 := by
+    rw [TM.runConfig_succ, hcfg7, ← hc8]
+  have hcfg9 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c
+      (1 + j + 1 + k + 3 + (k + 1) + 1 + (j + 2)) = c9 := by
+    rw [TM.runConfig_add, hcfg8, ← hc9]
+  have hcfg10 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c
+      (1 + j + 1 + k + 3 + (k + 1) + 1 + (j + 2) + 1) = c10 := by
+    rw [TM.runConfig_succ, hcfg9, ← hc10]
+  have hcfg11 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c
+      (1 + j + 1 + k + 3 + (k + 1) + 1 + (j + 2) + 2) = c11 := by
+    rw [show 1 + j + 1 + k + 3 + (k + 1) + 1 + (j + 2) + 2
+        = 1 + j + 1 + k + 3 + (k + 1) + 1 + (j + 2) + 1 + 1 from by omega,
+      TM.runConfig_succ, hcfg10, ← hc11]
+  refine ⟨by rw [htotal]; exact ⟨hCS, hOut⟩, ?_⟩
+  intro s hs
+  by_cases hA : s < 1 + j
+  · -- φ22 destination walk right, r := s
+    obtain ⟨hrp, hrh, _⟩ := valuePush_run_walkR1 22 (by omega) rfl c hphase s
+      (by omega)
+      (fun p hp1 hp2 => by
+        exact hdst p (by omega) (by omega))
+    exact ⟨by omega, by omega⟩
+  by_cases hB : s = 1 + j
+  · subst hB
+    rw [hcfg1]
+    exact ⟨by omega, by omega⟩
+  by_cases hC : s < 1 + j + 1 + k
+  · -- φ23 sliding-gap scan right, r := s − (1 + j + 1)
+    obtain ⟨hrp, hrh, _⟩ := valuePush_run_scanR0 23 (by omega) rfl c2 h2p (s - (1 + j + 1))
+      (by omega)
+      (fun p hp1 hp2 => by
+        rw [h2t' p, if_neg (by omega)]
+        exact hgap p (by omega) (by omega))
+    rw [show s = (1 + j + 1) + (s - (1 + j + 1)) from by omega, TM.runConfig_add, hcfg2]
+    exact ⟨by omega, by omega⟩
+  by_cases hD : s = 1 + j + 1 + k
+  · subst hD
+    rw [hcfg3]
+    exact ⟨by omega, by omega⟩
+  by_cases hE : s = 1 + j + 1 + k + 1
+  · subst hE
+    rw [hcfg4]
+    exact ⟨by omega, by omega⟩
+  by_cases hF : s = 1 + j + 1 + k + 2
+  · subst hF
+    rw [hcfg5]
+    exact ⟨by omega, by omega⟩
+  by_cases hG : s < 1 + j + 1 + k + 3 + (k + 1)
+  · -- φ26 slid-gap scan left, r := s − (1 + j + 1 + k + 3)
+    obtain ⟨hrp, hrh, _⟩ := valuePush_run_scanL0 26 (by omega) rfl c6 h6p
+      (s - (1 + j + 1 + k + 3))
+      (by omega)
+      (fun p hp1 hp2 => by
+        rw [h6t' p]
+        by_cases hq : (p : Nat) = aPos + 2 + j + k
+        · rw [if_pos hq]
+        · rw [if_neg hq, if_neg (by omega)]
+          exact hgap p (by omega) (by omega))
+    rw [show s = (1 + j + 1 + k + 3) + (s - (1 + j + 1 + k + 3)) from by omega,
+      TM.runConfig_add, hcfg6]
+    exact ⟨by omega, by omega⟩
+  by_cases hH : s = 1 + j + 1 + k + 3 + (k + 1)
+  · subst hH
+    rw [hcfg7]
+    exact ⟨by omega, by omega⟩
+  by_cases hI : s < 1 + j + 1 + k + 3 + (k + 1) + 1 + (j + 2)
+  · -- φ27 destination walk left, r := s − (1 + j + 1 + k + 3 + (k + 1) + 1)
+    obtain ⟨hrp, hrh, _⟩ := valuePush_run_walkL1 27 (by omega) rfl c8 h8p
+      (s - (1 + j + 1 + k + 3 + (k + 1) + 1))
+      (by omega)
+      (fun p hp1 hp2 => by
+        rw [h8t' p, if_neg (by omega)]
+        by_cases hq : (p : Nat) = aPos + 1 + j
+        · rw [if_pos hq]
+        · rw [if_neg hq]
+          exact hdst p (by omega) (by omega))
+    rw [show s = (1 + j + 1 + k + 3 + (k + 1) + 1)
+        + (s - (1 + j + 1 + k + 3 + (k + 1) + 1)) from by omega,
+      TM.runConfig_add, hcfg8]
+    exact ⟨by omega, by omega⟩
+  by_cases hJ : s = 1 + j + 1 + k + 3 + (k + 1) + 1 + (j + 2)
+  · subst hJ
+    rw [hcfg9]
+    exact ⟨by omega, by omega⟩
+  by_cases hK : s = 1 + j + 1 + k + 3 + (k + 1) + 1 + (j + 2) + 1
+  · subst hK
+    rw [hcfg10]
+    exact ⟨by omega, by omega⟩
+  -- s = … + 2 (φ29, the back-edge step)
+  · have hKK : s = 1 + j + 1 + k + 3 + (k + 1) + 1 + (j + 2) + 2 := by omega
+    subst hKK
+    rw [hcfg11]
+    exact ⟨by omega, by omega⟩
+
+/-- **One mid restore round** (`j + 1 < k`): append a restored unit at the destination frontier,
+erase the scratch's leftmost one, return to the anchor — `CloneState j` steps to
+`CloneState (j+1)` in exactly `2·j + 2·k + 12` steps, with the tape touched only inside the zone. -/
+theorem valuePush_clone_mid {L : Nat}
+    (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
+    (opBase aPos k j : Nat) (hcs : CloneState c opBase aPos k j) (hj2 : j + 1 < k) :
+    CloneState
+      (TM.runConfig (M := valuePushProgram.toPhased.toTM) c (2 * j + 2 * k + 12))
+      opBase aPos k (j + 1)
+    ∧ ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
+        ((p : Nat) < opBase ∨ aPos + 2 * k + 2 < (p : Nat)) →
+        (TM.runConfig (M := valuePushProgram.toPhased.toTM) c
+          (2 * j + 2 * k + 12)).tape p = c.tape p :=
+  (valuePush_clone_mid_full c opBase aPos k j hcs hj2).1
+
+/-- **Mid restore-round confinement** (`j + 1 < k`): along the round's `2j + 2k + 12` steps the
+phase never reaches the accept and the head stays ≤ `aPos + 2k + 2` — additive companion to
+`valuePush_clone_mid`. -/
+theorem valuePush_clone_mid_confined {L : Nat}
+    (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
+    (opBase aPos k j : Nat) (hcs : CloneState c opBase aPos k j) (hj2 : j + 1 < k) :
+    ∀ s : Nat, s < 2 * j + 2 * k + 12 →
+      (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).state).fst : Nat) ≠ 34
+      ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).head : Nat)
+          ≤ aPos + 2 * k + 2 :=
+  (valuePush_clone_mid_full c opBase aPos k j hcs hj2).2
 
 end ContractExpansion
 end Frontier
@@ -702,19 +1015,25 @@ structure ParkReady {L : Nat}
   hz : ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
     aPos + k < (p : Nat) → (p : Nat) ≤ aPos + 2 * k + 2 → c.tape p = false
 
-set_option maxHeartbeats 4000000 in
+set_option maxHeartbeats 8000000 in
 /-- **The last restore round** (`j = k - 1`): append the final restored unit, erase the last
-scratch one, and exit to the park chain — `2·k + 4` steps. -/
-theorem valuePush_clone_last {L : Nat}
+scratch one, and exit to the park chain — `2·k + 4` steps — with the per-step confinement
+stream along the way.  Single replay behind `valuePush_clone_last` (`.1`) and
+`valuePush_clone_last_confined` (`.2`). -/
+theorem valuePush_clone_last_full {L : Nat}
     (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
     (opBase aPos k : Nat) (hcs : CloneState c opBase aPos k (k - 1)) (hk : 0 < k) :
-    ParkReady
+    (ParkReady
       (TM.runConfig (M := valuePushProgram.toPhased.toTM) c (2 * k + 4))
       opBase aPos k (aPos + 2 * k + 1)
     ∧ ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
         ((p : Nat) < opBase ∨ aPos + 2 * k + 2 < (p : Nat)) →
         (TM.runConfig (M := valuePushProgram.toPhased.toTM) c
-          (2 * k + 4)).tape p = c.tape p := by
+          (2 * k + 4)).tape p = c.tape p)
+    ∧ ∀ s : Nat, s < 2 * k + 4 →
+      (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).state).fst : Nat) ≠ 34
+      ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).head : Nat)
+          ≤ aPos + 2 * k + 2 := by
   obtain ⟨hphase, hhead, hgeom, hbound, _, hhome, hentry, hgapL, hdst, hgap, hscr,
     hbeyond⟩ := hcs
   -- φ22 walk the destination (anchor + (k−1) restored) onto the frontier, write the k-th unit
@@ -838,22 +1157,98 @@ theorem valuePush_clone_last {L : Nat}
       ((p : Nat) < opBase ∨ aPos + 2 * k + 2 < (p : Nat)) → c6.tape p = c.tape p := by
     intro p hp
     rw [h6t' p, if_neg (by omega), if_neg (by omega)]
-  rw [htotal]
-  exact ⟨hPR, hOut⟩
+  have h2p' : ((c2.state).fst : Nat) = 23 := h2p
+  have h4p' : ((c4.state).fst : Nat) = 24 := h4p
+  have h5p' : ((c5.state).fst : Nat) = 25 := h5p
+  have hcfg1 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c k = c1 := hc1.symm
+  have hcfg2 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (k + 1) = c2 := by
+    rw [TM.runConfig_succ, hcfg1, ← hc2]
+  have hcfg3 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (k + 1 + k) = c3 := by
+    rw [TM.runConfig_add, hcfg2, ← hc3]
+  have hcfg4 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (k + 1 + k + 1) = c4 := by
+    rw [TM.runConfig_succ, hcfg3, ← hc4]
+  have hcfg5 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (k + 1 + k + 2) = c5 := by
+    rw [show k + 1 + k + 2 = k + 1 + k + 1 + 1 from by omega,
+      TM.runConfig_succ, hcfg4, ← hc5]
+  refine ⟨by rw [htotal]; exact ⟨hPR, hOut⟩, ?_⟩
+  intro s hs
+  by_cases hA : s < k
+  · obtain ⟨hrp, hrh, _⟩ := valuePush_run_walkR1 22 (by omega) rfl c hphase s
+      (by omega)
+      (fun p hp1 hp2 => by
+        exact hdst p (by omega) (by omega))
+    exact ⟨by omega, by omega⟩
+  by_cases hB : s = k
+  · subst hB
+    rw [hcfg1]
+    exact ⟨by omega, by omega⟩
+  by_cases hC : s < k + 1 + k
+  · obtain ⟨hrp, hrh, _⟩ := valuePush_run_scanR0 23 (by omega) rfl c2 h2p (s - (k + 1))
+      (by omega)
+      (fun p hp1 hp2 => by
+        rw [h2t' p, if_neg (by omega)]
+        exact hgap p (by omega) (by omega))
+    rw [show s = (k + 1) + (s - (k + 1)) from by omega, TM.runConfig_add, hcfg2]
+    exact ⟨by omega, by omega⟩
+  by_cases hD : s = k + 1 + k
+  · subst hD
+    rw [hcfg3]
+    exact ⟨by omega, by omega⟩
+  by_cases hE : s = k + 1 + k + 1
+  · subst hE
+    rw [hcfg4]
+    exact ⟨by omega, by omega⟩
+  -- s = 2k + 3 (φ25 on the empty zone, the park hand-off step)
+  · have hF : s = k + 1 + k + 2 := by omega
+    subst hF
+    rw [hcfg5]
+    exact ⟨by omega, by omega⟩
 
-set_option maxHeartbeats 1000000 in
-/-- **Prologue, empty source** (`k = 0`): the probe sees the terminator and exits directly to the
-park chain — `aPos − opBase + 2` steps, the two framing ones written. -/
-theorem valuePush_prologue_k0 {L : Nat}
+/-- **The last restore round** (`j = k - 1`): append the final restored unit, erase the last
+scratch one, and exit to the park chain — `2·k + 4` steps. -/
+theorem valuePush_clone_last {L : Nat}
+    (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
+    (opBase aPos k : Nat) (hcs : CloneState c opBase aPos k (k - 1)) (hk : 0 < k) :
+    ParkReady
+      (TM.runConfig (M := valuePushProgram.toPhased.toTM) c (2 * k + 4))
+      opBase aPos k (aPos + 2 * k + 1)
+    ∧ ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
+        ((p : Nat) < opBase ∨ aPos + 2 * k + 2 < (p : Nat)) →
+        (TM.runConfig (M := valuePushProgram.toPhased.toTM) c
+          (2 * k + 4)).tape p = c.tape p :=
+  (valuePush_clone_last_full c opBase aPos k hcs hk).1
+
+/-- **Last restore-round confinement** (`j = k − 1`): along the `2k + 4` steps the phase never
+reaches the accept and the head stays ≤ `aPos + 2k + 2` — additive companion to
+`valuePush_clone_last`. -/
+theorem valuePush_clone_last_confined {L : Nat}
+    (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
+    (opBase aPos k : Nat) (hcs : CloneState c opBase aPos k (k - 1)) (hk : 0 < k) :
+    ∀ s : Nat, s < 2 * k + 4 →
+      (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).state).fst : Nat) ≠ 34
+      ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).head : Nat)
+          ≤ aPos + 2 * k + 2 :=
+  (valuePush_clone_last_full c opBase aPos k hcs hk).2
+
+set_option maxHeartbeats 8000000 in
+/-- **Prologue, empty source** (`k = 0`): the probe sees the terminator and exits directly to
+the park chain — `aPos − opBase + 2` steps, the two framing ones written — with the per-step
+confinement stream along the way.  Single replay behind `valuePush_prologue_k0` (`.1`) and
+`valuePush_prologue_k0_confined` (`.2`). -/
+theorem valuePush_prologue_k0_full {L : Nat}
     (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
     (opBase aPos : Nat) (hlay : ValuePushLayout c opBase aPos 0) :
-    ParkReady
+    (ParkReady
       (TM.runConfig (M := valuePushProgram.toPhased.toTM) c (aPos - opBase + 2))
       opBase aPos 0 (aPos + 1)
     ∧ ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
         ¬ (opBase + 1 ≤ (p : Nat) ∧ (p : Nat) < opBase + 3) →
         (TM.runConfig (M := valuePushProgram.toPhased.toTM) c (aPos - opBase + 2)).tape p
-          = c.tape p := by
+          = c.tape p)
+    ∧ ∀ s : Nat, s < aPos - opBase + 2 →
+      (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).state).fst : Nat) ≠ 34
+      ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).head : Nat)
+          ≤ aPos + 2 * 0 + 2 := by
   obtain ⟨hphase, hhead, hgeom, hbound, hzeroL, hanchor, hsrc, hzeroR⟩ := hlay
   obtain ⟨h1p, h1h, h1t⟩ := valuePush_step c (valuePush_state_eta c (by omega) hphase)
     (valuePushProgram_t0 (c.tape c.head))
@@ -973,8 +1368,77 @@ theorem valuePush_prologue_k0 {L : Nat}
       ¬ (opBase + 1 ≤ (p : Nat) ∧ (p : Nat) < opBase + 3) → c6.tape p = c.tape p := by
     intro p hp
     rw [h6t' p, if_neg (by omega), if_neg (by omega)]
-  rw [htotal]
-  exact ⟨hPR, hOut⟩
+  have h1p' : ((c1.state).fst : Nat) = 1 := h1p
+  have h2p' : ((c2.state).fst : Nat) = 2 := h2p
+  have h3p' : ((c3.state).fst : Nat) = 3 := h3p
+  have hcfg1 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c 1 = c1 := by
+    rw [valuePush_runConfig_one, ← hc1]
+  have hcfg2 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c 2 = c2 := by
+    rw [show (2 : Nat) = 1 + 1 from rfl, TM.runConfig_add, hcfg1,
+      valuePush_runConfig_one, ← hc2]
+  have hcfg3 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c 3 = c3 := by
+    rw [show (3 : Nat) = 2 + 1 from rfl, TM.runConfig_add, hcfg2,
+      valuePush_runConfig_one, ← hc3]
+  refine ⟨by rw [htotal]; exact ⟨hPR, hOut⟩, ?_⟩
+  intro s hs
+  by_cases hs0 : s = 0
+  · subst hs0
+    rw [TM.runConfig_zero]
+    exact ⟨by omega, by omega⟩
+  by_cases hs1 : s = 1
+  · subst hs1
+    rw [hcfg1]
+    exact ⟨by omega, by omega⟩
+  by_cases hs2 : s = 2
+  · subst hs2
+    rw [hcfg2]
+    exact ⟨by omega, by omega⟩
+  have hs3 : 3 ≤ s := by omega
+  by_cases hslast : s = aPos - opBase + 1
+  · have hcfg4 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (aPos - opBase) = c4 := by
+      rw [show aPos - opBase = 3 + (aPos - opBase - 3) from by omega, TM.runConfig_add, hcfg3,
+        ← hc4]
+    have hcfg5 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (aPos - opBase + 1)
+        = c5 := by
+      rw [TM.runConfig_succ, hcfg4, ← hc5]
+    have h5p' : ((c5.state).fst : Nat) = 4 := h5p
+    rw [hslast, hcfg5]
+    exact ⟨by omega, by omega⟩
+  · have hsr : s = 3 + (s - 3) := by omega
+    obtain ⟨hrp, hrh, _⟩ := valuePush_run_scanR0 3 (by omega) rfl c3 h3p
+      (s - 3)
+      (by omega)
+      (fun p hp1 hp2 => by
+        rw [h3t' p, if_neg (by omega), if_neg (by omega)]
+        exact hzeroL p (by omega) (by omega))
+    rw [hsr, TM.runConfig_add, hcfg3]
+    exact ⟨by omega, by omega⟩
+
+/-- **Prologue, empty source** (`k = 0`): the probe sees the terminator and exits directly to the
+park chain — `aPos − opBase + 2` steps, the two framing ones written. -/
+theorem valuePush_prologue_k0 {L : Nat}
+    (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
+    (opBase aPos : Nat) (hlay : ValuePushLayout c opBase aPos 0) :
+    ParkReady
+      (TM.runConfig (M := valuePushProgram.toPhased.toTM) c (aPos - opBase + 2))
+      opBase aPos 0 (aPos + 1)
+    ∧ ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
+        ¬ (opBase + 1 ≤ (p : Nat) ∧ (p : Nat) < opBase + 3) →
+        (TM.runConfig (M := valuePushProgram.toPhased.toTM) c (aPos - opBase + 2)).tape p
+          = c.tape p :=
+  (valuePush_prologue_k0_full c opBase aPos hlay).1
+
+/-- **Empty-source prologue confinement** (`k = 0`): along the `aPos − opBase + 2` steps the phase
+never reaches the accept and the head stays ≤ `aPos + 2` — additive companion to
+`valuePush_prologue_k0`. -/
+theorem valuePush_prologue_k0_confined {L : Nat}
+    (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
+    (opBase aPos : Nat) (hlay : ValuePushLayout c opBase aPos 0) :
+    ∀ s : Nat, s < aPos - opBase + 2 →
+      (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).state).fst : Nat) ≠ 34
+      ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).head : Nat)
+          ≤ aPos + 2 * 0 + 2 :=
+  (valuePush_prologue_k0_full c opBase aPos hlay).2
 
 end ContractExpansion
 end Frontier
@@ -987,19 +1451,24 @@ namespace ContractExpansion
 open Pnp3.Internal.PsubsetPpoly Pnp3.Internal.PsubsetPpoly.TM
 open Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram
 
-set_option maxHeartbeats 4000000 in
-/-- **The park chain**: from `ParkReady`, walk home left across the restored zone and idle in the
-accept phase φ34 with the head back at `opBase` — `(p0 − aPos − k) + (aPos − opBase) + k + 2`
-steps, the tape untouched. -/
-theorem valuePush_park {L : Nat}
+set_option maxHeartbeats 8000000 in
+/-- **The park chain**: from `ParkReady`, walk home left across the restored zone and idle in
+the accept phase φ34 with the head back at `opBase` — `(p0 − aPos − k) + (aPos − opBase) + k
++ 2` steps, the tape untouched — with the per-step confinement stream (the accept only at the
+final step).  Single replay behind `valuePush_park` (`.1`) and `valuePush_park_confined`
+(`.2`). -/
+theorem valuePush_park_full {L : Nat}
     (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
     (opBase aPos k p0 : Nat) (hpr : ParkReady c opBase aPos k p0) :
-    (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c
+    ((((TM.runConfig (M := valuePushProgram.toPhased.toTM) c
         ((p0 - aPos - k) + (aPos - opBase) + k + 2)).state).fst : Nat) = 34
     ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c
         ((p0 - aPos - k) + (aPos - opBase) + k + 2)).head : Nat) = opBase
     ∧ (TM.runConfig (M := valuePushProgram.toPhased.toTM) c
-        ((p0 - aPos - k) + (aPos - opBase) + k + 2)).tape = c.tape := by
+        ((p0 - aPos - k) + (aPos - opBase) + k + 2)).tape = c.tape)
+    ∧ ∀ s : Nat, s < (p0 - aPos - k) + (aPos - opBase) + k + 2 →
+      (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).state).fst : Nat) ≠ 34
+      ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).head : Nat) ≤ p0 := by
   obtain ⟨hphase, hhead, hp0l, hp0r, hgeom, hbound, hhome, hentry, hgapL, hblk, hz⟩ := hpr
   -- φ30 scan the zeros left onto the block's rightmost one
   obtain ⟨h1p, h1h, h1t⟩ := valuePush_run_scanL0 30 (by omega) rfl c hphase
@@ -1101,827 +1570,9 @@ theorem valuePush_park {L : Nat}
       TM.runConfig_add, valuePush_runConfig_one, ← hc6,
       TM.runConfig_add, ← hc7,
       valuePush_runConfig_one, ← hc8]
-  rw [htotal]
-  exact ⟨h8p, h8h', h8t'⟩
-
-open Pnp3.Internal.PsubsetPpoly Pnp3.Internal.PsubsetPpoly.TM
-open Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram
-
-set_option maxHeartbeats 4000000 in
-/-- **Final-round first-half confinement**: along the `2k + 2` steps the phase never reaches the
-accept and the head stays ≤ `aPos + 2k + 2` — additive companion to `valuePush_drain_final_A`. -/
-theorem valuePush_drain_final_A_confined {L : Nat}
-    (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
-    (opBase aPos k : Nat) (hds : DrainState c opBase aPos k (k - 1)) (hk : 0 < k) :
-    ∀ s : Nat, s < 2 * k + 2 →
-      (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).state).fst : Nat) ≠ 34
-      ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).head : Nat)
-          ≤ aPos + 2 * k + 2 := by
-  obtain ⟨hphase, hhead, hgeom, hbound, _, hhome, hentry, hgapL, hanchor, hpre, hrest,
-    hterm, hscr, hzr⟩ := hds
-  have hhead' : (c.head : Nat) = aPos + k := by omega
-  obtain ⟨h1p, h1h, h1t⟩ := valuePush_step c (valuePush_state_eta c (by omega) hphase)
-    (valuePushProgram_t5 (c.tape c.head))
-  set c1 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c with hc1
-  have h1p' : ((c1.state).fst : Nat) = 6 := h1p
-  have h1h' : (c1.head : Nat) = aPos + 1 + k := by
-    rw [hc1, h1h]
-    simp only [Configuration.moveHead, dif_pos (show (c.head : Nat) + 1
-      < valuePushProgram.toPhased.toTM.tapeLength L by omega)]
-    omega
-  have h1t' : ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
-      c1.tape p = if (p : Nat) = aPos + k then false else c.tape p := by
-    intro p
-    rw [hc1, h1t]
-    exact valuePush_write_char c false hhead' p
-  have hb1 : c1.tape c1.head = false := by
-    rw [h1t' c1.head, if_neg (by omega)]
-    exact hterm c1.head (by omega)
-  obtain ⟨h2p, h2h, h2t⟩ := valuePush_step c1 (valuePush_state_eta c1 (by omega) h1p)
-    (by rw [hb1]; exact valuePushProgram_t6_zero)
-  set c2 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c1 with hc2
-  have h2p' : ((c2.state).fst : Nat) = 16 := h2p
-  have h2h' : (c2.head : Nat) = aPos + 2 + k := by
-    rw [hc2, h2h]
-    simp only [Configuration.moveHead, dif_pos (show (c1.head : Nat) + 1
-      < valuePushProgram.toPhased.toTM.tapeLength L by omega)]
-    omega
-  have hwf1 : c1.write c1.head false = c1.tape := by
-    rw [← hb1]; exact write_self_eq c1
-  have h2t' : ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
-      c2.tape p = if (p : Nat) = aPos + k then false else c.tape p := by
-    intro p
-    rw [hc2, h2t, hwf1, h1t' p]
-  obtain ⟨h3p, h3h, h3t⟩ := valuePush_run_walkR1 16 (by omega) rfl c2 h2p (k - 1)
-    (by omega)
-    (fun p hp1 hp2 => by
-      rw [h2t' p, if_neg (by omega)]
-      exact hscr p (by omega) (by omega))
-  set c3 := TM.runConfig (M := valuePushProgram.toPhased.toTM) c2 (k - 1) with hc3
-  have h3h' : (c3.head : Nat) = aPos + 1 + 2 * k := by omega
-  have hb3 : c3.tape c3.head = false := by
-    rw [h3t, h2t' c3.head, if_neg (by omega)]
-    exact hzr c3.head (by omega) (by omega)
-  obtain ⟨h4p, h4h, h4t⟩ := valuePush_step c3 (valuePush_state_eta c3 (by omega) h3p)
-    (by rw [hb3]; exact valuePushProgram_t16_zero)
-  set c4 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c3 with hc4
-  have h4p' : ((c4.state).fst : Nat) = 17 := h4p
-  have h4h' : (c4.head : Nat) = aPos + 2 * k := by
-    rw [hc4, h4h, Configuration.moveHead_left_val_of_pos c3 (by omega)]
-    omega
-  have h4t' : ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
-      c4.tape p = if (p : Nat) = aPos + 1 + 2 * k then true
-        else if (p : Nat) = aPos + k then false else c.tape p := by
-    intro p
-    rw [hc4, h4t, valuePush_write_char c3 true h3h' p, h3t, h2t' p]
-  have hcfg1 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c 1 = c1 := by
-    rw [valuePush_runConfig_one, ← hc1]
-  have hcfg2 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c 2 = c2 := by
-    rw [show (2 : Nat) = 1 + 1 from rfl, TM.runConfig_add, hcfg1,
-      valuePush_runConfig_one, ← hc2]
-  have hcfg3 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (2 + (k - 1)) = c3 := by
-    rw [TM.runConfig_add, hcfg2, ← hc3]
-  have hcfg4 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (2 + (k - 1) + 1) = c4 := by
-    rw [TM.runConfig_succ, hcfg3, ← hc4]
-  intro s hs
-  by_cases hA : s = 0
-  · subst hA
-    rw [TM.runConfig_zero]
-    exact ⟨by omega, by omega⟩
-  by_cases hB : s = 1
-  · subst hB
-    rw [hcfg1]
-    exact ⟨by omega, by omega⟩
-  by_cases hC : s < 2 + (k - 1)
-  · -- φ16 scratch walk right, r := s − 2
-    obtain ⟨hrp, hrh, _⟩ := valuePush_run_walkR1 16 (by omega) rfl c2 h2p (s - 2)
-      (by omega)
-      (fun p hp1 hp2 => by
-        rw [h2t' p, if_neg (by omega)]
-        exact hscr p (by omega) (by omega))
-    rw [show s = 2 + (s - 2) from by omega, TM.runConfig_add, hcfg2]
-    exact ⟨by omega, by omega⟩
-  by_cases hD : s = 2 + (k - 1)
-  · subst hD
-    rw [hcfg3]
-    exact ⟨by omega, by omega⟩
-  -- φ17 scratch walk left, r := s − (2 + (k − 1) + 1) ≤ k − 1
-  · obtain ⟨hrp, hrh, _⟩ := valuePush_run_walkL1 17 (by omega) rfl c4 h4p
-      (s - (2 + (k - 1) + 1))
-      (by omega)
-      (fun p hp1 hp2 => by
-        rw [h4t' p, if_neg (by omega), if_neg (by omega)]
-        exact hscr p (by omega) (by omega))
-    rw [show s = (2 + (k - 1) + 1) + (s - (2 + (k - 1) + 1)) from by omega,
-      TM.runConfig_add, hcfg4]
-    exact ⟨by omega, by omega⟩
-
-set_option maxHeartbeats 4000000 in
-/-- **Final-round second-half confinement**: along the `2·(aPos − opBase) − k − 1` steps the phase
-never reaches the accept and the head stays ≤ `aPos + 2k + 2` — additive companion to
-`valuePush_drain_final_B`. -/
-theorem valuePush_drain_final_B_confined {L : Nat}
-    (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
-    (opBase aPos k : Nat) (hcut : DrainFinalCut c opBase aPos k) :
-    ∀ s : Nat, s < 2 * (aPos - opBase) - k - 1 →
-      (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).state).fst : Nat) ≠ 34
-      ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).head : Nat)
-          ≤ aPos + 2 * k + 2 := by
-  obtain ⟨hphase, hhead, hgeom, hbound, hk, hhome, hentry, hgapL, hanchor, hsrcz,
-    hscr, hbeyond⟩ := hcut
-  obtain ⟨h7p, h7h, h7t⟩ := valuePush_run_scanL0 18 (by omega) rfl c hphase k
-    (by omega)
-    (fun p hp1 hp2 => by
-      exact hsrcz p (by omega) (by omega))
-  set c7 := TM.runConfig (M := valuePushProgram.toPhased.toTM) c k with hc7
-  have h7h' : (c7.head : Nat) = aPos := by omega
-  have hb7 : c7.tape c7.head = true := by
-    rw [h7t]
-    exact hanchor c7.head (by omega)
-  obtain ⟨h8p, h8h, h8t⟩ := valuePush_step c7 (valuePush_state_eta c7 (by omega) h7p)
-    (by rw [hb7]; exact valuePushProgram_t18_one)
-  set c8 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c7 with hc8
-  have h8p' : ((c8.state).fst : Nat) = 19 := h8p
-  have h8h' : (c8.head : Nat) = aPos - 1 := by
-    rw [hc8, h8h, Configuration.moveHead_left_val_of_pos c7 (by omega)]
-    omega
-  have hwf7 : c7.write c7.head true = c7.tape := by
-    rw [← hb7]; exact write_self_eq c7
-  have h8t' : c8.tape = c.tape := by
-    rw [hc8, h8t, hwf7, h7t]
-  obtain ⟨h9p, h9h, h9t⟩ := valuePush_run_scanL0 19 (by omega) rfl c8 h8p
-    (aPos - opBase - k - 2)
-    (by omega)
-    (fun p hp1 hp2 => by
-      rw [h8t']
-      exact hgapL p (by omega) (by omega))
-  set c9 := TM.runConfig (M := valuePushProgram.toPhased.toTM) c8 (aPos - opBase - k - 2)
-    with hc9
-  have h9h' : (c9.head : Nat) = opBase + 1 + k := by omega
-  have hb9 : c9.tape c9.head = true := by
-    rw [h9t, h8t']
-    exact hentry c9.head (by omega) (by omega)
-  obtain ⟨h10p, h10h, h10t⟩ := valuePush_step c9 (valuePush_state_eta c9 (by omega) h9p)
-    (by rw [hb9]; exact valuePushProgram_t19_one)
-  set c10 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c9 with hc10
-  have h10p' : ((c10.state).fst : Nat) = 20 := h10p
-  have h10h' : (c10.head : Nat) = opBase + 2 + k := by
-    rw [hc10, h10h]
-    simp only [Configuration.moveHead, dif_pos (show (c9.head : Nat) + 1
-      < valuePushProgram.toPhased.toTM.tapeLength L by omega)]
-    omega
-  have hwf9 : c9.write c9.head true = c9.tape := by
-    rw [← hb9]; exact write_self_eq c9
-  have h10t' : c10.tape = c.tape := by
-    rw [hc10, h10t, hwf9, h9t, h8t']
-  obtain ⟨h11p, h11h, h11t⟩ := valuePush_step c10 (valuePush_state_eta c10 (by omega) h10p)
-    (valuePushProgram_t20 (c10.tape c10.head))
-  set c11 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c10 with hc11
-  have h11p' : ((c11.state).fst : Nat) = 21 := h11p
-  have h11h' : (c11.head : Nat) = opBase + 3 + k := by
-    rw [hc11, h11h]
-    simp only [Configuration.moveHead, dif_pos (show (c10.head : Nat) + 1
-      < valuePushProgram.toPhased.toTM.tapeLength L by omega)]
-    omega
-  have h11t' : ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
-      c11.tape p = if (p : Nat) = opBase + 2 + k then true else c.tape p := by
-    intro p
-    rw [hc11, h11t, valuePush_write_char c10 true h10h' p, h10t']
-  have hcfg7 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c k = c7 := hc7.symm
-  have hcfg8 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (k + 1) = c8 := by
-    rw [TM.runConfig_succ, hcfg7, ← hc8]
-  have hcfg9 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c
-      (k + 1 + (aPos - opBase - k - 2)) = c9 := by
-    rw [TM.runConfig_add, hcfg8, ← hc9]
-  have hcfg10 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c
-      (k + 1 + (aPos - opBase - k - 2) + 1) = c10 := by
-    rw [TM.runConfig_succ, hcfg9, ← hc10]
-  have hcfg11 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c
-      (k + 1 + (aPos - opBase - k - 2) + 2) = c11 := by
-    rw [show k + 1 + (aPos - opBase - k - 2) + 2
-        = k + 1 + (aPos - opBase - k - 2) + 1 + 1 from by omega,
-      TM.runConfig_succ, hcfg10, ← hc11]
-  intro s hs
-  by_cases hA : s < k
-  · -- φ18 zeroed-source scan left, r := s
-    obtain ⟨hrp, hrh, _⟩ := valuePush_run_scanL0 18 (by omega) rfl c hphase s
-      (by omega)
-      (fun p hp1 hp2 => by
-        exact hsrcz p (by omega) (by omega))
-    exact ⟨by omega, by omega⟩
-  by_cases hB : s = k
-  · subst hB
-    rw [hcfg7]
-    exact ⟨by omega, by omega⟩
-  by_cases hC : s < k + 1 + (aPos - opBase - k - 2)
-  · -- φ19 gap scan left, r := s − (k + 1)
-    obtain ⟨hrp, hrh, _⟩ := valuePush_run_scanL0 19 (by omega) rfl c8 h8p (s - (k + 1))
-      (by omega)
-      (fun p hp1 hp2 => by
-        rw [h8t']
-        exact hgapL p (by omega) (by omega))
-    rw [show s = (k + 1) + (s - (k + 1)) from by omega, TM.runConfig_add, hcfg8]
-    exact ⟨by omega, by omega⟩
-  by_cases hD : s = k + 1 + (aPos - opBase - k - 2)
-  · subst hD
-    rw [hcfg9]
-    exact ⟨by omega, by omega⟩
-  by_cases hE : s = k + 1 + (aPos - opBase - k - 2) + 1
-  · subst hE
-    rw [hcfg10]
-    exact ⟨by omega, by omega⟩
-  -- φ21 gap scan right, r := s − (k + 1 + (aPos − opBase − k − 2) + 2)
-  · obtain ⟨hrp, hrh, _⟩ := valuePush_run_scanR0 21 (by omega) rfl c11 h11p
-      (s - (k + 1 + (aPos - opBase - k - 2) + 2))
-      (by omega)
-      (fun p hp1 hp2 => by
-        rw [h11t' p, if_neg (by omega)]
-        exact hgapL p (by omega) (by omega))
-    rw [show s = (k + 1 + (aPos - opBase - k - 2) + 2)
-        + (s - (k + 1 + (aPos - opBase - k - 2) + 2)) from by omega,
-      TM.runConfig_add, hcfg11]
-    exact ⟨by omega, by omega⟩
-
-
-
-open Pnp3.Internal.PsubsetPpoly Pnp3.Internal.PsubsetPpoly.TM
-open Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram
-
-set_option maxHeartbeats 4000000 in
-/-- **Mid restore-round confinement** (`j + 1 < k`): along the round's `2j + 2k + 12` steps the
-phase never reaches the accept and the head stays ≤ `aPos + 2k + 2` — additive companion to
-`valuePush_clone_mid`. -/
-theorem valuePush_clone_mid_confined {L : Nat}
-    (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
-    (opBase aPos k j : Nat) (hcs : CloneState c opBase aPos k j) (hj2 : j + 1 < k) :
-    ∀ s : Nat, s < 2 * j + 2 * k + 12 →
-      (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).state).fst : Nat) ≠ 34
-      ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).head : Nat)
-          ≤ aPos + 2 * k + 2 := by
-  obtain ⟨hphase, hhead, hgeom, hbound, _, hhome, hentry, hgapL, hdst, hgap, hscr,
-    hbeyond⟩ := hcs
-  obtain ⟨h1p, h1h, h1t⟩ := valuePush_run_walkR1 22 (by omega) rfl c hphase (1 + j)
-    (by omega)
-    (fun p hp1 hp2 => by
-      exact hdst p (by omega) (by omega))
-  set c1 := TM.runConfig (M := valuePushProgram.toPhased.toTM) c (1 + j) with hc1
-  have h1h' : (c1.head : Nat) = aPos + 1 + j := by omega
-  have hb1 : c1.tape c1.head = false := by
-    rw [h1t]
-    exact hgap c1.head (by omega) (by omega)
-  obtain ⟨h2p, h2h, h2t⟩ := valuePush_step c1 (valuePush_state_eta c1 (by omega) h1p)
-    (by rw [hb1]; exact valuePushProgram_t22_zero)
-  set c2 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c1 with hc2
-  have h2p' : ((c2.state).fst : Nat) = 23 := h2p
-  have h2h' : (c2.head : Nat) = aPos + 2 + j := by
-    rw [hc2, h2h]
-    simp only [Configuration.moveHead, dif_pos (show (c1.head : Nat) + 1
-      < valuePushProgram.toPhased.toTM.tapeLength L by omega)]
-    omega
-  have h2t' : ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
-      c2.tape p = if (p : Nat) = aPos + 1 + j then true else c.tape p := by
-    intro p
-    rw [hc2, h2t, valuePush_write_char c1 true h1h' p, h1t]
-  obtain ⟨h3p, h3h, h3t⟩ := valuePush_run_scanR0 23 (by omega) rfl c2 h2p k
-    (by omega)
-    (fun p hp1 hp2 => by
-      rw [h2t' p, if_neg (by omega)]
-      exact hgap p (by omega) (by omega))
-  set c3 := TM.runConfig (M := valuePushProgram.toPhased.toTM) c2 k with hc3
-  have h3h' : (c3.head : Nat) = aPos + 2 + j + k := by omega
-  have hb3 : c3.tape c3.head = true := by
-    rw [h3t, h2t' c3.head, if_neg (by omega)]
-    exact hscr c3.head (by omega) (by omega)
-  obtain ⟨h4p, h4h, h4t⟩ := valuePush_step c3 (valuePush_state_eta c3 (by omega) h3p)
-    (by rw [hb3]; exact valuePushProgram_t23_one)
-  set c4 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c3 with hc4
-  have h4p' : ((c4.state).fst : Nat) = 24 := h4p
-  have h4h' : (c4.head : Nat) = aPos + 2 + j + k := by
-    rw [hc4, h4h, Configuration.moveHead_stay]
-    exact h3h'
-  have hwf3 : c3.write c3.head true = c3.tape := by
-    rw [← hb3]; exact write_self_eq c3
-  have h4t' : ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
-      c4.tape p = if (p : Nat) = aPos + 1 + j then true else c.tape p := by
-    intro p
-    rw [hc4, h4t, hwf3, h3t, h2t' p]
-  obtain ⟨h5p, h5h, h5t⟩ := valuePush_step c4 (valuePush_state_eta c4 (by omega) h4p)
-    (valuePushProgram_t24 (c4.tape c4.head))
-  set c5 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c4 with hc5
-  have h5p' : ((c5.state).fst : Nat) = 25 := h5p
-  have h5h' : (c5.head : Nat) = aPos + 3 + j + k := by
-    rw [hc5, h5h]
-    simp only [Configuration.moveHead, dif_pos (show (c4.head : Nat) + 1
-      < valuePushProgram.toPhased.toTM.tapeLength L by omega)]
-    omega
-  have h5t' : ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
-      c5.tape p = if (p : Nat) = aPos + 2 + j + k then false
-        else if (p : Nat) = aPos + 1 + j then true else c.tape p := by
-    intro p
-    rw [hc5, h5t, valuePush_write_char c4 false h4h' p, h4t' p]
-  have hb5 : c5.tape c5.head = true := by
-    rw [h5t' c5.head, if_neg (by omega), if_neg (by omega)]
-    exact hscr c5.head (by omega) (by omega)
-  obtain ⟨h6p, h6h, h6t⟩ := valuePush_step c5 (valuePush_state_eta c5 (by omega) h5p)
-    (by rw [hb5]; exact valuePushProgram_t25_one)
-  set c6 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c5 with hc6
-  have h6p' : ((c6.state).fst : Nat) = 26 := h6p
-  have h6h' : (c6.head : Nat) = aPos + 2 + j + k := by
-    rw [hc6, h6h, Configuration.moveHead_left_val_of_pos c5 (by omega)]
-    omega
-  have hwf5 : c5.write c5.head true = c5.tape := by
-    rw [← hb5]; exact write_self_eq c5
-  have h6t' : ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
-      c6.tape p = if (p : Nat) = aPos + 2 + j + k then false
-        else if (p : Nat) = aPos + 1 + j then true else c.tape p := by
-    intro p
-    rw [hc6, h6t, hwf5, h5t' p]
-  obtain ⟨h7p, h7h, h7t⟩ := valuePush_run_scanL0 26 (by omega) rfl c6 h6p (k + 1)
-    (by omega)
-    (fun p hp1 hp2 => by
-      rw [h6t' p]
-      by_cases hq : (p : Nat) = aPos + 2 + j + k
-      · rw [if_pos hq]
-      · rw [if_neg hq, if_neg (by omega)]
-        exact hgap p (by omega) (by omega))
-  set c7 := TM.runConfig (M := valuePushProgram.toPhased.toTM) c6 (k + 1) with hc7
-  have h7h' : (c7.head : Nat) = aPos + 1 + j := by omega
-  have hb7 : c7.tape c7.head = true := by
-    rw [h7t, h6t' c7.head, if_neg (by omega)]
-    rw [if_pos (show ((c7.head : Fin (valuePushProgram.toPhased.toTM.tapeLength L)) : Nat)
-      = aPos + 1 + j by omega)]
-  obtain ⟨h8p, h8h, h8t⟩ := valuePush_step c7 (valuePush_state_eta c7 (by omega) h7p)
-    (by rw [hb7]; exact valuePushProgram_t26_one)
-  set c8 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c7 with hc8
-  have h8p' : ((c8.state).fst : Nat) = 27 := h8p
-  have h8h' : (c8.head : Nat) = aPos + 1 + j := by
-    rw [hc8, h8h, Configuration.moveHead_stay]
-    exact h7h'
-  have hwf7 : c7.write c7.head true = c7.tape := by
-    rw [← hb7]; exact write_self_eq c7
-  have h8t' : ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
-      c8.tape p = if (p : Nat) = aPos + 2 + j + k then false
-        else if (p : Nat) = aPos + 1 + j then true else c.tape p := by
-    intro p
-    rw [hc8, h8t, hwf7, h7t, h6t' p]
-  obtain ⟨h9p, h9h, h9t⟩ := valuePush_run_walkL1 27 (by omega) rfl c8 h8p (j + 2)
-    (by omega)
-    (fun p hp1 hp2 => by
-      rw [h8t' p, if_neg (by omega)]
-      by_cases hq : (p : Nat) = aPos + 1 + j
-      · rw [if_pos hq]
-      · rw [if_neg hq]
-        exact hdst p (by omega) (by omega))
-  set c9 := TM.runConfig (M := valuePushProgram.toPhased.toTM) c8 (j + 2) with hc9
-  have h9h' : (c9.head : Nat) = aPos - 1 := by omega
-  have hb9 : c9.tape c9.head = false := by
-    rw [h9t, h8t' c9.head, if_neg (by omega), if_neg (by omega)]
-    exact hgapL c9.head (by omega) (by omega)
-  obtain ⟨h10p, h10h, h10t⟩ := valuePush_step c9 (valuePush_state_eta c9 (by omega) h9p)
-    (by rw [hb9]; exact valuePushProgram_t27_zero)
-  set c10 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c9 with hc10
-  have h10p' : ((c10.state).fst : Nat) = 28 := h10p
-  have h10h' : (c10.head : Nat) = aPos - 1 := by
-    rw [hc10, h10h, Configuration.moveHead_stay]
-    exact h9h'
-  have hwf9 : c9.write c9.head false = c9.tape := by
-    rw [← hb9]; exact write_self_eq c9
-  have h10t' : ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
-      c10.tape p = if (p : Nat) = aPos + 2 + j + k then false
-        else if (p : Nat) = aPos + 1 + j then true else c.tape p := by
-    intro p
-    rw [hc10, h10t, hwf9, h9t, h8t' p]
-  obtain ⟨h11p, h11h, h11t⟩ := valuePush_step c10 (valuePush_state_eta c10 (by omega) h10p)
-    (valuePushProgram_t28 (c10.tape c10.head))
-  set c11 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c10 with hc11
-  have h11p' : ((c11.state).fst : Nat) = 29 := h11p
-  have h11h' : (c11.head : Nat) = aPos := by
-    rw [hc11, h11h]
-    simp only [Configuration.moveHead, dif_pos (show (c10.head : Nat) + 1
-      < valuePushProgram.toPhased.toTM.tapeLength L by omega)]
-    omega
-  have hcfg1 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (1 + j) = c1 := hc1.symm
-  have hcfg2 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (1 + j + 1) = c2 := by
-    rw [TM.runConfig_succ, hcfg1, ← hc2]
-  have hcfg3 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (1 + j + 1 + k) = c3 := by
-    rw [TM.runConfig_add, hcfg2, ← hc3]
-  have hcfg4 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (1 + j + 1 + k + 1)
-      = c4 := by
-    rw [TM.runConfig_succ, hcfg3, ← hc4]
-  have hcfg5 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (1 + j + 1 + k + 2)
-      = c5 := by
-    rw [show 1 + j + 1 + k + 2 = 1 + j + 1 + k + 1 + 1 from by omega,
-      TM.runConfig_succ, hcfg4, ← hc5]
-  have hcfg6 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (1 + j + 1 + k + 3)
-      = c6 := by
-    rw [show 1 + j + 1 + k + 3 = 1 + j + 1 + k + 2 + 1 from by omega,
-      TM.runConfig_succ, hcfg5, ← hc6]
-  have hcfg7 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c
-      (1 + j + 1 + k + 3 + (k + 1)) = c7 := by
-    rw [TM.runConfig_add, hcfg6, ← hc7]
-  have hcfg8 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c
-      (1 + j + 1 + k + 3 + (k + 1) + 1) = c8 := by
-    rw [TM.runConfig_succ, hcfg7, ← hc8]
-  have hcfg9 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c
-      (1 + j + 1 + k + 3 + (k + 1) + 1 + (j + 2)) = c9 := by
-    rw [TM.runConfig_add, hcfg8, ← hc9]
-  have hcfg10 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c
-      (1 + j + 1 + k + 3 + (k + 1) + 1 + (j + 2) + 1) = c10 := by
-    rw [TM.runConfig_succ, hcfg9, ← hc10]
-  have hcfg11 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c
-      (1 + j + 1 + k + 3 + (k + 1) + 1 + (j + 2) + 2) = c11 := by
-    rw [show 1 + j + 1 + k + 3 + (k + 1) + 1 + (j + 2) + 2
-        = 1 + j + 1 + k + 3 + (k + 1) + 1 + (j + 2) + 1 + 1 from by omega,
-      TM.runConfig_succ, hcfg10, ← hc11]
-  intro s hs
-  by_cases hA : s < 1 + j
-  · -- φ22 destination walk right, r := s
-    obtain ⟨hrp, hrh, _⟩ := valuePush_run_walkR1 22 (by omega) rfl c hphase s
-      (by omega)
-      (fun p hp1 hp2 => by
-        exact hdst p (by omega) (by omega))
-    exact ⟨by omega, by omega⟩
-  by_cases hB : s = 1 + j
-  · subst hB
-    rw [hcfg1]
-    exact ⟨by omega, by omega⟩
-  by_cases hC : s < 1 + j + 1 + k
-  · -- φ23 sliding-gap scan right, r := s − (1 + j + 1)
-    obtain ⟨hrp, hrh, _⟩ := valuePush_run_scanR0 23 (by omega) rfl c2 h2p (s - (1 + j + 1))
-      (by omega)
-      (fun p hp1 hp2 => by
-        rw [h2t' p, if_neg (by omega)]
-        exact hgap p (by omega) (by omega))
-    rw [show s = (1 + j + 1) + (s - (1 + j + 1)) from by omega, TM.runConfig_add, hcfg2]
-    exact ⟨by omega, by omega⟩
-  by_cases hD : s = 1 + j + 1 + k
-  · subst hD
-    rw [hcfg3]
-    exact ⟨by omega, by omega⟩
-  by_cases hE : s = 1 + j + 1 + k + 1
-  · subst hE
-    rw [hcfg4]
-    exact ⟨by omega, by omega⟩
-  by_cases hF : s = 1 + j + 1 + k + 2
-  · subst hF
-    rw [hcfg5]
-    exact ⟨by omega, by omega⟩
-  by_cases hG : s < 1 + j + 1 + k + 3 + (k + 1)
-  · -- φ26 slid-gap scan left, r := s − (1 + j + 1 + k + 3)
-    obtain ⟨hrp, hrh, _⟩ := valuePush_run_scanL0 26 (by omega) rfl c6 h6p
-      (s - (1 + j + 1 + k + 3))
-      (by omega)
-      (fun p hp1 hp2 => by
-        rw [h6t' p]
-        by_cases hq : (p : Nat) = aPos + 2 + j + k
-        · rw [if_pos hq]
-        · rw [if_neg hq, if_neg (by omega)]
-          exact hgap p (by omega) (by omega))
-    rw [show s = (1 + j + 1 + k + 3) + (s - (1 + j + 1 + k + 3)) from by omega,
-      TM.runConfig_add, hcfg6]
-    exact ⟨by omega, by omega⟩
-  by_cases hH : s = 1 + j + 1 + k + 3 + (k + 1)
-  · subst hH
-    rw [hcfg7]
-    exact ⟨by omega, by omega⟩
-  by_cases hI : s < 1 + j + 1 + k + 3 + (k + 1) + 1 + (j + 2)
-  · -- φ27 destination walk left, r := s − (1 + j + 1 + k + 3 + (k + 1) + 1)
-    obtain ⟨hrp, hrh, _⟩ := valuePush_run_walkL1 27 (by omega) rfl c8 h8p
-      (s - (1 + j + 1 + k + 3 + (k + 1) + 1))
-      (by omega)
-      (fun p hp1 hp2 => by
-        rw [h8t' p, if_neg (by omega)]
-        by_cases hq : (p : Nat) = aPos + 1 + j
-        · rw [if_pos hq]
-        · rw [if_neg hq]
-          exact hdst p (by omega) (by omega))
-    rw [show s = (1 + j + 1 + k + 3 + (k + 1) + 1)
-        + (s - (1 + j + 1 + k + 3 + (k + 1) + 1)) from by omega,
-      TM.runConfig_add, hcfg8]
-    exact ⟨by omega, by omega⟩
-  by_cases hJ : s = 1 + j + 1 + k + 3 + (k + 1) + 1 + (j + 2)
-  · subst hJ
-    rw [hcfg9]
-    exact ⟨by omega, by omega⟩
-  by_cases hK : s = 1 + j + 1 + k + 3 + (k + 1) + 1 + (j + 2) + 1
-  · subst hK
-    rw [hcfg10]
-    exact ⟨by omega, by omega⟩
-  -- s = … + 2 (φ29, the back-edge step)
-  · have hKK : s = 1 + j + 1 + k + 3 + (k + 1) + 1 + (j + 2) + 2 := by omega
-    subst hKK
-    rw [hcfg11]
-    exact ⟨by omega, by omega⟩
-
-
-
-open Pnp3.Internal.PsubsetPpoly Pnp3.Internal.PsubsetPpoly.TM
-open Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram
-
-set_option maxHeartbeats 4000000 in
-/-- **Last restore-round confinement** (`j = k − 1`): along the `2k + 4` steps the phase never
-reaches the accept and the head stays ≤ `aPos + 2k + 2` — additive companion to
-`valuePush_clone_last`. -/
-theorem valuePush_clone_last_confined {L : Nat}
-    (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
-    (opBase aPos k : Nat) (hcs : CloneState c opBase aPos k (k - 1)) (hk : 0 < k) :
-    ∀ s : Nat, s < 2 * k + 4 →
-      (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).state).fst : Nat) ≠ 34
-      ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).head : Nat)
-          ≤ aPos + 2 * k + 2 := by
-  obtain ⟨hphase, hhead, hgeom, hbound, _, hhome, hentry, hgapL, hdst, hgap, hscr,
-    hbeyond⟩ := hcs
-  obtain ⟨h1p, h1h, h1t⟩ := valuePush_run_walkR1 22 (by omega) rfl c hphase k
-    (by omega)
-    (fun p hp1 hp2 => by
-      exact hdst p (by omega) (by omega))
-  set c1 := TM.runConfig (M := valuePushProgram.toPhased.toTM) c k with hc1
-  have h1h' : (c1.head : Nat) = aPos + k := by omega
-  have hb1 : c1.tape c1.head = false := by
-    rw [h1t]
-    exact hgap c1.head (by omega) (by omega)
-  obtain ⟨h2p, h2h, h2t⟩ := valuePush_step c1 (valuePush_state_eta c1 (by omega) h1p)
-    (by rw [hb1]; exact valuePushProgram_t22_zero)
-  set c2 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c1 with hc2
-  have h2p' : ((c2.state).fst : Nat) = 23 := h2p
-  have h2h' : (c2.head : Nat) = aPos + 1 + k := by
-    rw [hc2, h2h]
-    simp only [Configuration.moveHead, dif_pos (show (c1.head : Nat) + 1
-      < valuePushProgram.toPhased.toTM.tapeLength L by omega)]
-    omega
-  have h2t' : ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
-      c2.tape p = if (p : Nat) = aPos + k then true else c.tape p := by
-    intro p
-    rw [hc2, h2t, valuePush_write_char c1 true h1h' p, h1t]
-  obtain ⟨h3p, h3h, h3t⟩ := valuePush_run_scanR0 23 (by omega) rfl c2 h2p k
-    (by omega)
-    (fun p hp1 hp2 => by
-      rw [h2t' p, if_neg (by omega)]
-      exact hgap p (by omega) (by omega))
-  set c3 := TM.runConfig (M := valuePushProgram.toPhased.toTM) c2 k with hc3
-  have h3h' : (c3.head : Nat) = aPos + 2 * k + 1 := by omega
-  have hb3 : c3.tape c3.head = true := by
-    rw [h3t, h2t' c3.head, if_neg (by omega)]
-    exact hscr c3.head (by omega) (by omega)
-  obtain ⟨h4p, h4h, h4t⟩ := valuePush_step c3 (valuePush_state_eta c3 (by omega) h3p)
-    (by rw [hb3]; exact valuePushProgram_t23_one)
-  set c4 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c3 with hc4
-  have h4p' : ((c4.state).fst : Nat) = 24 := h4p
-  have h4h' : (c4.head : Nat) = aPos + 2 * k + 1 := by
-    rw [hc4, h4h, Configuration.moveHead_stay]
-    exact h3h'
-  have hwf3 : c3.write c3.head true = c3.tape := by
-    rw [← hb3]; exact write_self_eq c3
-  have h4t' : ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
-      c4.tape p = if (p : Nat) = aPos + k then true else c.tape p := by
-    intro p
-    rw [hc4, h4t, hwf3, h3t, h2t' p]
-  obtain ⟨h5p, h5h, h5t⟩ := valuePush_step c4 (valuePush_state_eta c4 (by omega) h4p)
-    (valuePushProgram_t24 (c4.tape c4.head))
-  set c5 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c4 with hc5
-  have h5p' : ((c5.state).fst : Nat) = 25 := h5p
-  have h5h' : (c5.head : Nat) = aPos + 2 * k + 2 := by
-    rw [hc5, h5h]
-    simp only [Configuration.moveHead, dif_pos (show (c4.head : Nat) + 1
-      < valuePushProgram.toPhased.toTM.tapeLength L by omega)]
-    omega
-  have hcfg1 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c k = c1 := hc1.symm
-  have hcfg2 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (k + 1) = c2 := by
-    rw [TM.runConfig_succ, hcfg1, ← hc2]
-  have hcfg3 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (k + 1 + k) = c3 := by
-    rw [TM.runConfig_add, hcfg2, ← hc3]
-  have hcfg4 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (k + 1 + k + 1) = c4 := by
-    rw [TM.runConfig_succ, hcfg3, ← hc4]
-  have hcfg5 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (k + 1 + k + 2) = c5 := by
-    rw [show k + 1 + k + 2 = k + 1 + k + 1 + 1 from by omega,
-      TM.runConfig_succ, hcfg4, ← hc5]
-  intro s hs
-  by_cases hA : s < k
-  · obtain ⟨hrp, hrh, _⟩ := valuePush_run_walkR1 22 (by omega) rfl c hphase s
-      (by omega)
-      (fun p hp1 hp2 => by
-        exact hdst p (by omega) (by omega))
-    exact ⟨by omega, by omega⟩
-  by_cases hB : s = k
-  · subst hB
-    rw [hcfg1]
-    exact ⟨by omega, by omega⟩
-  by_cases hC : s < k + 1 + k
-  · obtain ⟨hrp, hrh, _⟩ := valuePush_run_scanR0 23 (by omega) rfl c2 h2p (s - (k + 1))
-      (by omega)
-      (fun p hp1 hp2 => by
-        rw [h2t' p, if_neg (by omega)]
-        exact hgap p (by omega) (by omega))
-    rw [show s = (k + 1) + (s - (k + 1)) from by omega, TM.runConfig_add, hcfg2]
-    exact ⟨by omega, by omega⟩
-  by_cases hD : s = k + 1 + k
-  · subst hD
-    rw [hcfg3]
-    exact ⟨by omega, by omega⟩
-  by_cases hE : s = k + 1 + k + 1
-  · subst hE
-    rw [hcfg4]
-    exact ⟨by omega, by omega⟩
-  -- s = 2k + 3 (φ25 on the empty zone, the park hand-off step)
-  · have hF : s = k + 1 + k + 2 := by omega
-    subst hF
-    rw [hcfg5]
-    exact ⟨by omega, by omega⟩
-
-set_option maxHeartbeats 4000000 in
-/-- **Empty-source prologue confinement** (`k = 0`): along the `aPos − opBase + 2` steps the phase
-never reaches the accept and the head stays ≤ `aPos + 2` — additive companion to
-`valuePush_prologue_k0`. -/
-theorem valuePush_prologue_k0_confined {L : Nat}
-    (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
-    (opBase aPos : Nat) (hlay : ValuePushLayout c opBase aPos 0) :
-    ∀ s : Nat, s < aPos - opBase + 2 →
-      (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).state).fst : Nat) ≠ 34
-      ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).head : Nat)
-          ≤ aPos + 2 * 0 + 2 := by
-  obtain ⟨hphase, hhead, hgeom, hbound, hzeroL, hanchor, hsrc, hzeroR⟩ := hlay
-  obtain ⟨h1p, h1h, h1t⟩ := valuePush_step c (valuePush_state_eta c (by omega) hphase)
-    (valuePushProgram_t0 (c.tape c.head))
-  set c1 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c with hc1
-  have h1p' : ((c1.state).fst : Nat) = 1 := h1p
-  have h1h' : (c1.head : Nat) = opBase + 1 := by
-    rw [hc1, h1h]
-    simp only [Configuration.moveHead, dif_pos (show (c.head : Nat) + 1
-      < valuePushProgram.toPhased.toTM.tapeLength L by omega)]
-    omega
-  have h1t' : c1.tape = c.tape := by
-    rw [hc1, h1t, write_self_eq]
-  obtain ⟨h2p, h2h, h2t⟩ := valuePush_step c1 (valuePush_state_eta c1 (by omega) h1p)
-    (valuePushProgram_t1 (c1.tape c1.head))
-  set c2 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c1 with hc2
-  have h2p' : ((c2.state).fst : Nat) = 2 := h2p
-  have h2h' : (c2.head : Nat) = opBase + 2 := by
-    rw [hc2, h2h]
-    simp only [Configuration.moveHead, dif_pos (show (c1.head : Nat) + 1
-      < valuePushProgram.toPhased.toTM.tapeLength L by omega)]
-    omega
-  have h2t' : ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
-      c2.tape p = if (p : Nat) = opBase + 1 then true else c.tape p := by
-    intro p
-    rw [hc2, h2t, valuePush_write_char c1 true h1h' p, h1t']
-  obtain ⟨h3p, h3h, h3t⟩ := valuePush_step c2 (valuePush_state_eta c2 (by omega) h2p)
-    (valuePushProgram_t2 (c2.tape c2.head))
-  set c3 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c2 with hc3
-  have h3p' : ((c3.state).fst : Nat) = 3 := h3p
-  have h3h' : (c3.head : Nat) = opBase + 3 := by
-    rw [hc3, h3h]
-    simp only [Configuration.moveHead, dif_pos (show (c2.head : Nat) + 1
-      < valuePushProgram.toPhased.toTM.tapeLength L by omega)]
-    omega
-  have h3t' : ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
-      c3.tape p = if (p : Nat) = opBase + 2 then true
-        else if (p : Nat) = opBase + 1 then true else c.tape p := by
-    intro p
-    rw [hc3, h3t, valuePush_write_char c2 true h2h' p, h2t' p]
-  have hcfg1 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c 1 = c1 := by
-    rw [valuePush_runConfig_one, ← hc1]
-  have hcfg2 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c 2 = c2 := by
-    rw [show (2 : Nat) = 1 + 1 from rfl, TM.runConfig_add, hcfg1,
-      valuePush_runConfig_one, ← hc2]
-  have hcfg3 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c 3 = c3 := by
-    rw [show (3 : Nat) = 2 + 1 from rfl, TM.runConfig_add, hcfg2,
-      valuePush_runConfig_one, ← hc3]
-  intro s hs
-  by_cases hs0 : s = 0
-  · subst hs0
-    rw [TM.runConfig_zero]
-    exact ⟨by omega, by omega⟩
-  by_cases hs1 : s = 1
-  · subst hs1
-    rw [hcfg1]
-    exact ⟨by omega, by omega⟩
-  by_cases hs2 : s = 2
-  · subst hs2
-    rw [hcfg2]
-    exact ⟨by omega, by omega⟩
-  have hs3 : 3 ≤ s := by omega
-  by_cases hslast : s = aPos - opBase + 1
-  · obtain ⟨h4p, h4h, h4t⟩ := valuePush_run_scanR0 3 (by omega) rfl c3 h3p
-      (aPos - opBase - 3)
-      (by omega)
-      (fun p hp1 hp2 => by
-        rw [h3t' p, if_neg (by omega), if_neg (by omega)]
-        exact hzeroL p (by omega) (by omega))
-    set c4 := TM.runConfig (M := valuePushProgram.toPhased.toTM) c3 (aPos - opBase - 3) with hc4
-    have h4h' : (c4.head : Nat) = aPos := by omega
-    have hb4 : c4.tape c4.head = true := by
-      rw [h4t, h3t' c4.head, if_neg (by omega), if_neg (by omega)]
-      exact hanchor c4.head (by omega)
-    obtain ⟨h5p, h5h, _⟩ := valuePush_step c4 (valuePush_state_eta c4 (by omega) h4p)
-      (by rw [hb4]; exact valuePushProgram_t3_one)
-    set c5 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c4 with hc5
-    have h5p' : ((c5.state).fst : Nat) = 4 := h5p
-    have h5h' : (c5.head : Nat) = aPos + 1 := by
-      rw [hc5, h5h]
-      simp only [Configuration.moveHead, dif_pos (show (c4.head : Nat) + 1
-        < valuePushProgram.toPhased.toTM.tapeLength L by omega)]
-      omega
-    have hcfg4 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (aPos - opBase) = c4 := by
-      rw [show aPos - opBase = 3 + (aPos - opBase - 3) from by omega, TM.runConfig_add, hcfg3,
-        ← hc4]
-    have hcfg5 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (aPos - opBase + 1)
-        = c5 := by
-      rw [TM.runConfig_succ, hcfg4, ← hc5]
-    rw [hslast, hcfg5]
-    exact ⟨by omega, by omega⟩
-  · have hsr : s = 3 + (s - 3) := by omega
-    obtain ⟨hrp, hrh, _⟩ := valuePush_run_scanR0 3 (by omega) rfl c3 h3p
-      (s - 3)
-      (by omega)
-      (fun p hp1 hp2 => by
-        rw [h3t' p, if_neg (by omega), if_neg (by omega)]
-        exact hzeroL p (by omega) (by omega))
-    rw [hsr, TM.runConfig_add, hcfg3]
-    exact ⟨by omega, by omega⟩
-
-set_option maxHeartbeats 4000000 in
-/-- **Park-chain confinement**: along the `(p0 − aPos − k) + (aPos − opBase) + k + 2` steps the
-phase never reaches the accept and the head stays ≤ `p0` — additive companion to
-`valuePush_park` (the accept is entered only at the final step). -/
-theorem valuePush_park_confined {L : Nat}
-    (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
-    (opBase aPos k p0 : Nat) (hpr : ParkReady c opBase aPos k p0) :
-    ∀ s : Nat, s < (p0 - aPos - k) + (aPos - opBase) + k + 2 →
-      (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).state).fst : Nat) ≠ 34
-      ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).head : Nat) ≤ p0 := by
-  obtain ⟨hphase, hhead, hp0l, hp0r, hgeom, hbound, hhome, hentry, hgapL, hblk, hz⟩ := hpr
-  obtain ⟨h1p, h1h, h1t⟩ := valuePush_run_scanL0 30 (by omega) rfl c hphase
-    (p0 - aPos - k)
-    (by omega)
-    (fun p hp1 hp2 => by
-      exact hz p (by omega) (by omega))
-  set c1 := TM.runConfig (M := valuePushProgram.toPhased.toTM) c (p0 - aPos - k) with hc1
-  have h1h' : (c1.head : Nat) = aPos + k := by omega
-  have hb1 : c1.tape c1.head = true := by
-    rw [h1t]
-    exact hblk c1.head (by omega) (by omega)
-  obtain ⟨h2p, h2h, h2t⟩ := valuePush_step c1 (valuePush_state_eta c1 (by omega) h1p)
-    (by rw [hb1]; exact valuePushProgram_t30_one)
-  set c2 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c1 with hc2
   have h2p' : ((c2.state).fst : Nat) = 31 := h2p
-  have h2h' : (c2.head : Nat) = aPos + k - 1 := by
-    rw [hc2, h2h, Configuration.moveHead_left_val_of_pos c1 (by omega)]
-    omega
-  have hwf1 : c1.write c1.head true = c1.tape := by
-    rw [← hb1]; exact write_self_eq c1
-  have h2t' : c2.tape = c.tape := by
-    rw [hc2, h2t, hwf1, h1t]
-  obtain ⟨h3p, h3h, h3t⟩ := valuePush_run_walkL1 31 (by omega) rfl c2 h2p k
-    (by omega)
-    (fun p hp1 hp2 => by
-      rw [h2t']
-      exact hblk p (by omega) (by omega))
-  set c3 := TM.runConfig (M := valuePushProgram.toPhased.toTM) c2 k with hc3
-  have h3h' : (c3.head : Nat) = aPos - 1 := by omega
-  have hb3 : c3.tape c3.head = false := by
-    rw [h3t, h2t']
-    exact hgapL c3.head (by omega) (by omega)
-  obtain ⟨h4p, h4h, h4t⟩ := valuePush_step c3 (valuePush_state_eta c3 (by omega) h3p)
-    (by rw [hb3]; exact valuePushProgram_t31_zero)
-  set c4 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c3 with hc4
   have h4p' : ((c4.state).fst : Nat) = 32 := h4p
-  have h4h' : (c4.head : Nat) = aPos - 1 := by
-    rw [hc4, h4h, Configuration.moveHead_stay]
-    exact h3h'
-  have hwf3 : c3.write c3.head false = c3.tape := by
-    rw [← hb3]; exact write_self_eq c3
-  have h4t' : c4.tape = c.tape := by
-    rw [hc4, h4t, hwf3, h3t, h2t']
-  obtain ⟨h5p, h5h, h5t⟩ := valuePush_run_scanL0 32 (by omega) rfl c4 h4p
-    (aPos - opBase - k - 3)
-    (by omega)
-    (fun p hp1 hp2 => by
-      rw [h4t']
-      exact hgapL p (by omega) (by omega))
-  set c5 := TM.runConfig (M := valuePushProgram.toPhased.toTM) c4 (aPos - opBase - k - 3)
-    with hc5
-  have h5h' : (c5.head : Nat) = opBase + 2 + k := by omega
-  have hb5 : c5.tape c5.head = true := by
-    rw [h5t, h4t']
-    exact hentry c5.head (by omega) (by omega)
-  obtain ⟨h6p, h6h, h6t⟩ := valuePush_step c5 (valuePush_state_eta c5 (by omega) h5p)
-    (by rw [hb5]; exact valuePushProgram_t32_one)
-  set c6 := TM.stepConfig (M := valuePushProgram.toPhased.toTM) c5 with hc6
   have h6p' : ((c6.state).fst : Nat) = 33 := h6p
-  have h6h' : (c6.head : Nat) = opBase + 1 + k := by
-    rw [hc6, h6h, Configuration.moveHead_left_val_of_pos c5 (by omega)]
-    omega
-  have hwf5 : c5.write c5.head true = c5.tape := by
-    rw [← hb5]; exact write_self_eq c5
-  have h6t' : c6.tape = c.tape := by
-    rw [hc6, h6t, hwf5, h5t, h4t']
-  obtain ⟨h7p, h7h, h7t⟩ := valuePush_run_walkL1 33 (by omega) rfl c6 h6p (k + 1)
-    (by omega)
-    (fun p hp1 hp2 => by
-      rw [h6t']
-      exact hentry p (by omega) (by omega))
-  set c7 := TM.runConfig (M := valuePushProgram.toPhased.toTM) c6 (k + 1) with hc7
-  have h7h' : (c7.head : Nat) = opBase := by omega
   have hcfg1 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (p0 - aPos - k) = c1 :=
     hc1.symm
   have hcfg2 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c (p0 - aPos - k + 1)
@@ -1939,6 +1590,7 @@ theorem valuePush_park_confined {L : Nat}
   have hcfg6 : TM.runConfig (M := valuePushProgram.toPhased.toTM) c
       (p0 - aPos - k + 1 + k + 1 + (aPos - opBase - k - 3) + 1) = c6 := by
     rw [TM.runConfig_succ, hcfg5, ← hc6]
+  refine ⟨by rw [htotal]; exact ⟨h8p, h8h', h8t'⟩, ?_⟩
   intro s hs
   by_cases hA : s < p0 - aPos - k
   · obtain ⟨hrp, hrh, _⟩ := valuePush_run_scanL0 30 (by omega) rfl c hphase s
@@ -1989,6 +1641,31 @@ theorem valuePush_park_confined {L : Nat}
         + (s - (p0 - aPos - k + 1 + k + 1 + (aPos - opBase - k - 3) + 1)) from by omega,
       TM.runConfig_add, hcfg6]
     exact ⟨by omega, by omega⟩
+
+/-- **The park chain**: from `ParkReady`, walk home left across the restored zone and idle in the
+accept phase φ34 with the head back at `opBase` — `(p0 − aPos − k) + (aPos − opBase) + k + 2`
+steps, the tape untouched. -/
+theorem valuePush_park {L : Nat}
+    (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
+    (opBase aPos k p0 : Nat) (hpr : ParkReady c opBase aPos k p0) :
+    (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c
+        ((p0 - aPos - k) + (aPos - opBase) + k + 2)).state).fst : Nat) = 34
+    ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c
+        ((p0 - aPos - k) + (aPos - opBase) + k + 2)).head : Nat) = opBase
+    ∧ (TM.runConfig (M := valuePushProgram.toPhased.toTM) c
+        ((p0 - aPos - k) + (aPos - opBase) + k + 2)).tape = c.tape :=
+  (valuePush_park_full c opBase aPos k p0 hpr).1
+
+/-- **Park-chain confinement**: along the `(p0 − aPos − k) + (aPos − opBase) + k + 2` steps the
+phase never reaches the accept and the head stays ≤ `p0` — additive companion to
+`valuePush_park` (the accept is entered only at the final step). -/
+theorem valuePush_park_confined {L : Nat}
+    (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
+    (opBase aPos k p0 : Nat) (hpr : ParkReady c opBase aPos k p0) :
+    ∀ s : Nat, s < (p0 - aPos - k) + (aPos - opBase) + k + 2 →
+      (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).state).fst : Nat) ≠ 34
+      ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).head : Nat) ≤ p0 :=
+  (valuePush_park_full c opBase aPos k p0 hpr).2
 
 /-- **The drain loop, discharged**: from any `DrainState e` the machine reaches the restore HOME
 (`CloneState 0`) within `(k−e)·(2·(aPos−opBase)+2·k+3) + 2·(aPos−opBase)+k+1` steps. -/

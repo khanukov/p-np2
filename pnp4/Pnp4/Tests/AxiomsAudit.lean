@@ -135,6 +135,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPValuePushDrain
 import Pnp4.Frontier.ContractExpansion.TreeMCSPValuePushPrehop
 import Pnp4.Frontier.ContractExpansion.TreeMCSPValuePushRelocate
 import Pnp4.Frontier.ContractExpansion.TreeMCSPValuePushEpilogue
+import Pnp4.Frontier.ContractExpansion.TreeMCSPValuePushCorrect
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionRunTransfer
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionUnion
 import Pnp4.Frontier.ContractExpansion.TreeMCSPClearIterProgram
@@ -1197,6 +1198,8 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.valuePush_drain_to_reloc
 #print axioms Pnp4.Frontier.ContractExpansion.valuePush_reloc_to_epilogue
 #print axioms Pnp4.Frontier.ContractExpansion.valuePush_epilogue
+-- M1 (A5m-V) HEADLINE: value-push correctness end to end (the keystone's writeBlockTape image).
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_correct
 #print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_scanRight_hop
 -- D2t-5b (Block A5m-U4): whole-run transfer -- a native component run transports into the host
 -- region (phase offset, equal heads, value-wise tape agreement) under trace safety (no visited

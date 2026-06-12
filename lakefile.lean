@@ -390,6 +390,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPValuePushPrehop,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPValuePushRelocate,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPValuePushEpilogue,
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPValuePushCorrect,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPRegionRunTransfer,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPRegionUnion,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPClearIterProgram,

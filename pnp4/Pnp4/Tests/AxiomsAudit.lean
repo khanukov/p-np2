@@ -131,6 +131,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionScanSegments
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionOnesScanHops
 import Pnp4.Frontier.ContractExpansion.TreeMCSPValuePushProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPValuePushPass
+import Pnp4.Frontier.ContractExpansion.TreeMCSPValuePushDrain
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionRunTransfer
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionUnion
 import Pnp4.Frontier.ContractExpansion.TreeMCSPClearIterProgram
@@ -1183,6 +1184,8 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.valuePush_sink_idle
 -- M1 (A5m-V) run: one fan-out pass validated end to end (the broken-remWalk gate).
 #print axioms Pnp4.Frontier.ContractExpansion.valuePush_pass
+-- M1 (A5m-V) run II: the drain induction (iterates the fan-out pass i -> k).
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_drain
 #print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_scanRight_hop
 -- D2t-5b (Block A5m-U4): whole-run transfer -- a native component run transports into the host
 -- region (phase offset, equal heads, value-wise tape agreement) under trace safety (no visited

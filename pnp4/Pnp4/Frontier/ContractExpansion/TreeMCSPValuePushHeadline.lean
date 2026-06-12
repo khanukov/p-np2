@@ -1,4 +1,5 @@
 import Pnp4.Frontier.ContractExpansion.TreeMCSPValuePushRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPValuePushConfined
 import Mathlib.Tactic.Ring
 import Pnp4.Frontier.ContractExpansion.TreeMCSPValPush
 import Mathlib.Tactic.Ring
@@ -1103,285 +1104,6 @@ theorem valuePush_park {L : Nat}
   rw [htotal]
   exact ⟨h8p, h8h', h8t'⟩
 
-/-- **The drain loop, discharged**: from any `DrainState e` the machine reaches the restore HOME
-(`CloneState 0`) within `(k−e)·(2·(aPos−opBase)+2·k+3) + 2·(aPos−opBase)+k+1` steps. -/
-theorem valuePush_drain_all {L : Nat}
-    (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
-    (opBase aPos k e : Nat) (hds : DrainState c opBase aPos k e) (hk : 0 < k) :
-    ∃ t ≤ (k - e) * (2 * (aPos - opBase) + 2 * k + 3) + (2 * (aPos - opBase) + k + 1),
-      CloneState (TM.runConfig (M := valuePushProgram.toPhased.toTM) c t) opBase aPos k 0
-      ∧ ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
-          ((p : Nat) < opBase ∨ aPos + 2 * k + 2 < (p : Nat)) →
-          (TM.runConfig (M := valuePushProgram.toPhased.toTM) c t).tape p = c.tape p := by
-  suffices H : ∀ n (c : Configuration (M := valuePushProgram.toPhased.toTM) L) (e : Nat),
-      DrainState c opBase aPos k e → k - e = n →
-      ∃ t ≤ (k - e) * (2 * (aPos - opBase) + 2 * k + 3) + (2 * (aPos - opBase) + k + 1),
-        CloneState (TM.runConfig (M := valuePushProgram.toPhased.toTM) c t) opBase aPos k 0
-        ∧ ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
-            ((p : Nat) < opBase ∨ aPos + 2 * k + 2 < (p : Nat)) →
-            (TM.runConfig (M := valuePushProgram.toPhased.toTM) c t).tape p = c.tape p by
-    exact H (k - e) c e hds rfl
-  intro n
-  induction n using Nat.strong_induction_on with
-  | _ n ih =>
-    intro c e hds hn
-    have he := hds.he
-    by_cases hlast : e + 1 = k
-    · -- the final round
-      have hds' : DrainState c opBase aPos k (k - 1) := by
-        have : e = k - 1 := by omega
-        rwa [this] at hds
-      obtain ⟨hCS, hOut⟩ := valuePush_drain_final c opBase aPos k hds' hk
-      exact ⟨2 * (aPos - opBase) + k + 1, by omega, hCS, hOut⟩
-    · -- a mid round, then the induction hypothesis
-      have he2 : e + 1 < k := by omega
-      obtain ⟨hds', hOut1⟩ := valuePush_drain_mid c opBase aPos k e hds he2
-      set c' := TM.runConfig (M := valuePushProgram.toPhased.toTM) c
-        (2 * (aPos - opBase) + 2 * k + 3) with hc'
-      obtain ⟨t', ht'le, hCS, hOut'⟩ := ih (k - (e + 1)) (by omega) c' (e + 1) hds' rfl
-      refine ⟨(2 * (aPos - opBase) + 2 * k + 3) + t', ?_, ?_, ?_⟩
-      · have h2 : k - e = (k - (e + 1)) + 1 := by omega
-        have hs : ((k - (e + 1)) + 1) * (2 * (aPos - opBase) + 2 * k + 3)
-            = (k - (e + 1)) * (2 * (aPos - opBase) + 2 * k + 3)
-              + (2 * (aPos - opBase) + 2 * k + 3) := Nat.succ_mul _ _
-        rw [h2, hs]
-        omega
-      · rw [TM.runConfig_add, ← hc']
-        exact hCS
-      · intro p hp
-        rw [TM.runConfig_add, ← hc', hOut' p hp]
-        exact hOut1 p hp
-
-/-- **The restore loop, discharged**: from any `CloneState j` the machine reaches the park entry
-within `(k−j)·(4·k+12) + 2·k+4` steps. -/
-theorem valuePush_clone_all {L : Nat}
-    (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
-    (opBase aPos k j : Nat) (hcs : CloneState c opBase aPos k j) (hjk : j < k) :
-    ∃ t ≤ (k - j) * (4 * k + 12) + (2 * k + 4),
-      ParkReady (TM.runConfig (M := valuePushProgram.toPhased.toTM) c t) opBase aPos k
-        (aPos + 2 * k + 1)
-      ∧ ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
-          ((p : Nat) < opBase ∨ aPos + 2 * k + 2 < (p : Nat)) →
-          (TM.runConfig (M := valuePushProgram.toPhased.toTM) c t).tape p = c.tape p := by
-  suffices H : ∀ n (c : Configuration (M := valuePushProgram.toPhased.toTM) L) (j : Nat),
-      CloneState c opBase aPos k j → j < k → k - j = n →
-      ∃ t ≤ (k - j) * (4 * k + 12) + (2 * k + 4),
-        ParkReady (TM.runConfig (M := valuePushProgram.toPhased.toTM) c t) opBase aPos k
-          (aPos + 2 * k + 1)
-        ∧ ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
-            ((p : Nat) < opBase ∨ aPos + 2 * k + 2 < (p : Nat)) →
-            (TM.runConfig (M := valuePushProgram.toPhased.toTM) c t).tape p = c.tape p by
-    exact H (k - j) c j hcs hjk rfl
-  intro n
-  induction n using Nat.strong_induction_on with
-  | _ n ih =>
-    intro c j hcs hjk hn
-    by_cases hlast : j + 1 = k
-    · have hcs' : CloneState c opBase aPos k (k - 1) := by
-        have : j = k - 1 := by omega
-        rwa [this] at hcs
-      obtain ⟨hPR, hOut⟩ := valuePush_clone_last c opBase aPos k hcs' (by omega)
-      exact ⟨2 * k + 4, by omega, hPR, hOut⟩
-    · have hj2 : j + 1 < k := by omega
-      obtain ⟨hcs', hOut1⟩ := valuePush_clone_mid c opBase aPos k j hcs hj2
-      set c' := TM.runConfig (M := valuePushProgram.toPhased.toTM) c
-        (2 * j + 2 * k + 12) with hc'
-      obtain ⟨t', ht'le, hPR, hOut'⟩ := ih (k - (j + 1)) (by omega) c' (j + 1) hcs' hj2 rfl
-      refine ⟨(2 * j + 2 * k + 12) + t', ?_, ?_, ?_⟩
-      · have h2 : k - j = (k - (j + 1)) + 1 := by omega
-        have hs : ((k - (j + 1)) + 1) * (4 * k + 12)
-            = (k - (j + 1)) * (4 * k + 12) + (4 * k + 12) := Nat.succ_mul _ _
-        rw [h2, hs]
-        omega
-      · rw [TM.runConfig_add, ← hc']
-        exact hPR
-      · intro p hp
-        rw [TM.runConfig_add, ← hc', hOut' p hp]
-        exact hOut1 p hp
-
-set_option maxHeartbeats 1000000 in
-/-- **The M1 headline (§12, A5m-V).**  From a `ValuePushLayout` — source `1^k` anchored at `aPos`
-with an all-zero entry/gap/scratch neighbourhood — the machine reaches its accept phase within
-`(k+2)·(2·(aPos−opBase)+6·k+20)` steps, with the head back at HOME and the tape changed **exactly**
-by the freshly minted value entry: `true` on `[opBase+1, opBase+3+k)` (the `1^(k+2)` of
-`encodeNatEntryR k`, whose leading `0` is the untouched `opBase` cell), and **unchanged everywhere
-else** — in particular the source block is intact. -/
-theorem valuePush_pushes {L : Nat}
-    (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
-    (opBase aPos k : Nat) (hlay : ValuePushLayout c opBase aPos k) :
-    ∃ t ≤ (k + 2) * (2 * (aPos - opBase) + 6 * k + 20),
-      (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c t).state).fst : Nat) = 34
-      ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c t).head : Nat) = opBase
-      ∧ ∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
-          (TM.runConfig (M := valuePushProgram.toPhased.toTM) c t).tape p
-            = if opBase + 1 ≤ (p : Nat) ∧ (p : Nat) < opBase + 3 + k then true
-              else c.tape p := by
-  have hgeom := hlay.hgeom
-  have hzeroL := hlay.hzeroL
-  have hanchor := hlay.hanchor
-  have hsrc := hlay.hsrc
-  have hzeroR := hlay.hzeroR
-  by_cases hk : 0 < k
-  · -- k ≥ 1: prologue, drain, restore, park
-    obtain ⟨hds, hOutP⟩ := valuePush_prologue c opBase aPos k hlay hk
-    set c1 := TM.runConfig (M := valuePushProgram.toPhased.toTM) c (aPos - opBase + 2)
-      with hc1
-    obtain ⟨t1, ht1, hCS, hOutD⟩ := valuePush_drain_all c1 opBase aPos k 0 hds hk
-    set c2 := TM.runConfig (M := valuePushProgram.toPhased.toTM) c1 t1 with hc2
-    obtain ⟨t2, ht2, hPR, hOutC⟩ := valuePush_clone_all c2 opBase aPos k 0 hCS hk
-    set c3 := TM.runConfig (M := valuePushProgram.toPhased.toTM) c2 t2 with hc3
-    obtain ⟨hp4, hh4, ht4⟩ := valuePush_park c3 opBase aPos k (aPos + 2 * k + 1) hPR
-    refine ⟨(aPos - opBase + 2) + (t1 + (t2 + ((aPos + 2 * k + 1 - aPos - k)
-      + (aPos - opBase) + k + 2))), ?_, ?_, ?_, ?_⟩
-    · have hk0 : k - 0 = k := by omega
-      rw [hk0] at ht1 ht2
-      have hb1 : t1 ≤ k * (2 * (aPos - opBase)) + 2 * (k * k) + 3 * k
-          + (2 * (aPos - opBase) + k + 1) := by
-        calc t1 ≤ k * (2 * (aPos - opBase) + 2 * k + 3)
-              + (2 * (aPos - opBase) + k + 1) := ht1
-          _ = k * (2 * (aPos - opBase)) + 2 * (k * k) + 3 * k
-              + (2 * (aPos - opBase) + k + 1) := by ring
-      have hb2 : t2 ≤ 4 * (k * k) + 12 * k + (2 * k + 4) := by
-        calc t2 ≤ k * (4 * k + 12) + (2 * k + 4) := ht2
-          _ = 4 * (k * k) + 12 * k + (2 * k + 4) := by ring
-      have hrhs : (k + 2) * (2 * (aPos - opBase) + 6 * k + 20)
-          = k * (2 * (aPos - opBase)) + 6 * (k * k) + 20 * k
-            + (4 * (aPos - opBase) + 12 * k + 40) := by ring
-      rw [hrhs]
-      omega
-    · rw [TM.runConfig_add, ← hc1, TM.runConfig_add, ← hc2, TM.runConfig_add, ← hc3]
-      exact hp4
-    · rw [TM.runConfig_add, ← hc1, TM.runConfig_add, ← hc2, TM.runConfig_add, ← hc3]
-      exact hh4
-    · rw [TM.runConfig_add, ← hc1, TM.runConfig_add, ← hc2, TM.runConfig_add, ← hc3]
-      intro p
-      rw [ht4]
-      by_cases hin : opBase + 1 ≤ (p : Nat) ∧ (p : Nat) < opBase + 3 + k
-      · rw [if_pos hin]
-        exact hPR.hentry p hin.1 hin.2
-      · rw [if_neg hin]
-        by_cases hout : (p : Nat) < opBase ∨ aPos + 2 * k + 2 < (p : Nat)
-        · rw [hOutC p hout, hOutD p hout, hc1, hOutP p (by omega)]
-        · -- inside the zone but outside the entry: reconstruct from the restored windows
-          by_cases hq1 : (p : Nat) = opBase
-          · rw [hPR.hhome p hq1]
-            exact (hzeroL p (by omega) (by omega)).symm
-          · by_cases hq2 : opBase + 3 + k ≤ (p : Nat) ∧ (p : Nat) < aPos
-            · rw [hPR.hgapL p hq2.1 hq2.2]
-              exact (hzeroL p (by omega) (by omega)).symm
-            · by_cases hq3 : (p : Nat) = aPos
-              · rw [hPR.hblk p (by omega) (by omega)]
-                exact (hanchor p hq3).symm
-              · by_cases hq4 : aPos < (p : Nat) ∧ (p : Nat) ≤ aPos + k
-                · rw [hPR.hblk p (by omega) (by omega)]
-                  exact (hsrc p hq4.1 hq4.2).symm
-                · rw [hPR.hz p (by omega) (by omega)]
-                  exact (hzeroR p (by omega) (by omega)).symm
-  · -- k = 0: prologue straight to the park chain
-    have hk0 : k = 0 := by omega
-    subst hk0
-    obtain ⟨hPR, hOutP⟩ := valuePush_prologue_k0 c opBase aPos hlay
-    set c1 := TM.runConfig (M := valuePushProgram.toPhased.toTM) c (aPos - opBase + 2)
-      with hc1
-    obtain ⟨hp4, hh4, ht4⟩ := valuePush_park c1 opBase aPos 0 (aPos + 1) hPR
-    refine ⟨(aPos - opBase + 2) + ((aPos + 1 - aPos - 0) + (aPos - opBase) + 0 + 2),
-      by omega, ?_, ?_, ?_⟩
-    · rw [TM.runConfig_add, ← hc1]
-      exact hp4
-    · rw [TM.runConfig_add, ← hc1]
-      exact hh4
-    · rw [TM.runConfig_add, ← hc1]
-      intro p
-      rw [ht4]
-      by_cases hin : opBase + 1 ≤ (p : Nat) ∧ (p : Nat) < opBase + 3 + 0
-      · rw [if_pos hin]
-        exact hPR.hentry p hin.1 hin.2
-      · rw [if_neg hin]
-        exact hOutP p (by omega)
-
-end ContractExpansion
-end Frontier
-end Pnp4
-
-namespace Pnp4
-namespace Frontier
-namespace ContractExpansion
-
-open Pnp3.Internal.PsubsetPpoly Pnp3.Internal.PsubsetPpoly.TM
-open Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram
-
-/-- **The M1 headline in the §12.3 contract shape**: the final tape **is**
-`writeBlockTape c.tape opBase (encodeNatEntryR k)` — the value entry `0 ++ 1^(k+2)` written at the
-value-zone top (its leading `0` coincides with the layout's untouched `opBase` cell), everything
-else verbatim.  This is the tape transformer the leaf/pop keystones consume. -/
-theorem valuePush_pushes_writeBlock {L : Nat}
-    (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
-    (opBase aPos k : Nat) (hlay : ValuePushLayout c opBase aPos k) :
-    ∃ t ≤ (k + 2) * (2 * (aPos - opBase) + 6 * k + 20),
-      (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c t).state).fst : Nat) = 34
-      ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c t).head : Nat) = opBase
-      ∧ (TM.runConfig (M := valuePushProgram.toPhased.toTM) c t).tape
-          = writeBlockTape c.tape opBase (encodeNatEntryR k) := by
-  obtain ⟨t, ht, hp, hh, htape⟩ := valuePush_pushes c opBase aPos k hlay
-  have hgeom := hlay.hgeom
-  refine ⟨t, ht, hp, hh, funext fun p => ?_⟩
-  rw [htape p]
-  unfold writeBlockTape
-  have hlen : (encodeNatEntryR k).length = k + 3 := encodeNatEntryR_length k
-  by_cases hin : opBase + 1 ≤ (p : Nat) ∧ (p : Nat) < opBase + 3 + k
-  · rw [if_pos hin, if_pos (by omega)]
-    -- the written cell is one of the k+2 ones of the entry
-    obtain ⟨i, hi⟩ : ∃ i, (p : Nat) - opBase = i + 1 := ⟨(p : Nat) - opBase - 1, by omega⟩
-    rw [hi]
-    show true = (false :: List.replicate (k + 2) true).getD (i + 1) false
-    rw [List.getD_cons_succ]
-    have hilt : i < k + 2 := by omega
-    rw [List.getD_eq_getElem?_getD, List.getElem?_replicate, if_pos hilt]
-    rfl
-  · rw [if_neg hin]
-    by_cases hbase : (p : Nat) = opBase
-    · rw [if_pos (by omega)]
-      have h0 : (p : Nat) - opBase = 0 := by omega
-      rw [h0]
-      show c.tape p = (false :: List.replicate (k + 2) true).getD 0 false
-      rw [List.getD_cons_zero]
-      exact hlay.hzeroL p (by omega) (by omega)
-    · rw [if_neg (by omega)]
-
-/-! ## Directed regression check: the layout is satisfiable
-
-A concrete configuration (ambient length `20`, entry base `0`, anchor at `5`, a single source
-unit) inhabits `ValuePushLayout` — the headline is not vacuous. -/
-
-example : ∃ c : Configuration (M := valuePushProgram.toPhased.toTM) 20,
-    ValuePushLayout c 0 5 1 := by
-  refine ⟨⟨⟨⟨0, by decide⟩, ()⟩, ⟨0, by decide⟩,
-    fun q => decide ((q : Nat) = 5 ∨ (q : Nat) = 6)⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
-  · rfl
-  · rfl
-  · decide
-  · decide
-  · intro p hp1 hp2
-    simp only [decide_eq_false_iff_not]
-    omega
-  · intro p hp
-    simp only [decide_eq_true_eq]
-    omega
-  · intro p hp1 hp2
-    simp only [decide_eq_true_eq]
-    omega
-  · intro p hp1 hp2
-    simp only [decide_eq_false_iff_not]
-    omega
-
-end ContractExpansion
-end Frontier
-end Pnp4
-
-namespace Pnp4
-namespace Frontier
-namespace ContractExpansion
-
 open Pnp3.Internal.PsubsetPpoly Pnp3.Internal.PsubsetPpoly.TM
 open Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram
 
@@ -1620,13 +1342,7 @@ theorem valuePush_drain_final_B_confined {L : Nat}
       TM.runConfig_add, hcfg11]
     exact ⟨by omega, by omega⟩
 
-end ContractExpansion
-end Frontier
-end Pnp4
 
-namespace Pnp4
-namespace Frontier
-namespace ContractExpansion
 
 open Pnp3.Internal.PsubsetPpoly Pnp3.Internal.PsubsetPpoly.TM
 open Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram
@@ -1897,13 +1613,7 @@ theorem valuePush_clone_mid_confined {L : Nat}
     rw [hcfg11]
     exact ⟨by omega, by omega⟩
 
-end ContractExpansion
-end Frontier
-end Pnp4
 
-namespace Pnp4
-namespace Frontier
-namespace ContractExpansion
 
 open Pnp3.Internal.PsubsetPpoly Pnp3.Internal.PsubsetPpoly.TM
 open Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram
@@ -2279,6 +1989,357 @@ theorem valuePush_park_confined {L : Nat}
         + (s - (p0 - aPos - k + 1 + k + 1 + (aPos - opBase - k - 3) + 1)) from by omega,
       TM.runConfig_add, hcfg6]
     exact ⟨by omega, by omega⟩
+
+/-- **The drain loop, discharged**: from any `DrainState e` the machine reaches the restore HOME
+(`CloneState 0`) within `(k−e)·(2·(aPos−opBase)+2·k+3) + 2·(aPos−opBase)+k+1` steps. -/
+theorem valuePush_drain_all {L : Nat}
+    (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
+    (opBase aPos k e : Nat) (hds : DrainState c opBase aPos k e) (hk : 0 < k) :
+    ∃ t ≤ (k - e) * (2 * (aPos - opBase) + 2 * k + 3) + (2 * (aPos - opBase) + k + 1),
+      CloneState (TM.runConfig (M := valuePushProgram.toPhased.toTM) c t) opBase aPos k 0
+      ∧ (∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
+          ((p : Nat) < opBase ∨ aPos + 2 * k + 2 < (p : Nat)) →
+          (TM.runConfig (M := valuePushProgram.toPhased.toTM) c t).tape p = c.tape p)
+      ∧ ∀ s : Nat, s < t →
+          (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).state).fst : Nat) ≠ 34
+          ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).head : Nat)
+              ≤ aPos + 2 * k + 2 := by
+  suffices H : ∀ n (c : Configuration (M := valuePushProgram.toPhased.toTM) L) (e : Nat),
+      DrainState c opBase aPos k e → k - e = n →
+      ∃ t ≤ (k - e) * (2 * (aPos - opBase) + 2 * k + 3) + (2 * (aPos - opBase) + k + 1),
+        CloneState (TM.runConfig (M := valuePushProgram.toPhased.toTM) c t) opBase aPos k 0
+        ∧ (∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
+            ((p : Nat) < opBase ∨ aPos + 2 * k + 2 < (p : Nat)) →
+            (TM.runConfig (M := valuePushProgram.toPhased.toTM) c t).tape p = c.tape p)
+        ∧ ∀ s : Nat, s < t →
+            (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).state).fst : Nat) ≠ 34
+            ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).head : Nat)
+                ≤ aPos + 2 * k + 2 by
+    exact H (k - e) c e hds rfl
+  intro n
+  induction n using Nat.strong_induction_on with
+  | _ n ih =>
+    intro c e hds hn
+    have he := hds.he
+    by_cases hlast : e + 1 = k
+    · -- the final round
+      have hds' : DrainState c opBase aPos k (k - 1) := by
+        have : e = k - 1 := by omega
+        rwa [this] at hds
+      obtain ⟨hCS, hOut⟩ := valuePush_drain_final c opBase aPos k hds' hk
+      have hgeom := hds'.hgeom
+      refine ⟨2 * (aPos - opBase) + k + 1, by omega, hCS, hOut, ?_⟩
+      intro s hs
+      by_cases hsA : s < 2 * k + 2
+      · exact valuePush_drain_final_A_confined c opBase aPos k hds' hk s hsA
+      · obtain ⟨hcut, _⟩ := valuePush_drain_final_A c opBase aPos k hds' hk
+        have hback := valuePush_drain_final_B_confined _ opBase aPos k hcut
+          (s - (2 * k + 2)) (by omega)
+        rw [show s = (2 * k + 2) + (s - (2 * k + 2)) from by omega, TM.runConfig_add]
+        exact hback
+    · -- a mid round, then the induction hypothesis
+      have he2 : e + 1 < k := by omega
+      obtain ⟨hds', hOut1⟩ := valuePush_drain_mid c opBase aPos k e hds he2
+      set c' := TM.runConfig (M := valuePushProgram.toPhased.toTM) c
+        (2 * (aPos - opBase) + 2 * k + 3) with hc'
+      obtain ⟨t', ht'le, hCS, hOut', hsafe'⟩ := ih (k - (e + 1)) (by omega) c' (e + 1) hds' rfl
+      refine ⟨(2 * (aPos - opBase) + 2 * k + 3) + t', ?_, ?_, ?_, ?_⟩
+      · have h2 : k - e = (k - (e + 1)) + 1 := by omega
+        have hs : ((k - (e + 1)) + 1) * (2 * (aPos - opBase) + 2 * k + 3)
+            = (k - (e + 1)) * (2 * (aPos - opBase) + 2 * k + 3)
+              + (2 * (aPos - opBase) + 2 * k + 3) := Nat.succ_mul _ _
+        rw [h2, hs]
+        omega
+      · rw [TM.runConfig_add, ← hc']
+        exact hCS
+      · intro p hp
+        rw [TM.runConfig_add, ← hc', hOut' p hp]
+        exact hOut1 p hp
+      · intro s hs
+        by_cases hsA : s < 2 * (aPos - opBase) + 2 * k + 3
+        · exact valuePush_drain_mid_confined c opBase aPos k e hds he2 s hsA
+        · have hrest := hsafe' (s - (2 * (aPos - opBase) + 2 * k + 3)) (by omega)
+          rw [show s = (2 * (aPos - opBase) + 2 * k + 3)
+              + (s - (2 * (aPos - opBase) + 2 * k + 3)) from by omega,
+            TM.runConfig_add, ← hc']
+          exact hrest
+
+/-- **The restore loop, discharged**: from any `CloneState j` the machine reaches the park entry
+within `(k−j)·(4·k+12) + 2·k+4` steps. -/
+theorem valuePush_clone_all {L : Nat}
+    (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
+    (opBase aPos k j : Nat) (hcs : CloneState c opBase aPos k j) (hjk : j < k) :
+    ∃ t ≤ (k - j) * (4 * k + 12) + (2 * k + 4),
+      ParkReady (TM.runConfig (M := valuePushProgram.toPhased.toTM) c t) opBase aPos k
+        (aPos + 2 * k + 1)
+      ∧ (∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
+          ((p : Nat) < opBase ∨ aPos + 2 * k + 2 < (p : Nat)) →
+          (TM.runConfig (M := valuePushProgram.toPhased.toTM) c t).tape p = c.tape p)
+      ∧ ∀ s : Nat, s < t →
+          (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).state).fst : Nat) ≠ 34
+          ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).head : Nat)
+              ≤ aPos + 2 * k + 2 := by
+  suffices H : ∀ n (c : Configuration (M := valuePushProgram.toPhased.toTM) L) (j : Nat),
+      CloneState c opBase aPos k j → j < k → k - j = n →
+      ∃ t ≤ (k - j) * (4 * k + 12) + (2 * k + 4),
+        ParkReady (TM.runConfig (M := valuePushProgram.toPhased.toTM) c t) opBase aPos k
+          (aPos + 2 * k + 1)
+        ∧ (∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
+            ((p : Nat) < opBase ∨ aPos + 2 * k + 2 < (p : Nat)) →
+            (TM.runConfig (M := valuePushProgram.toPhased.toTM) c t).tape p = c.tape p)
+        ∧ ∀ s : Nat, s < t →
+            (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).state).fst : Nat) ≠ 34
+            ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).head : Nat)
+                ≤ aPos + 2 * k + 2 by
+    exact H (k - j) c j hcs hjk rfl
+  intro n
+  induction n using Nat.strong_induction_on with
+  | _ n ih =>
+    intro c j hcs hjk hn
+    by_cases hlast : j + 1 = k
+    · have hcs' : CloneState c opBase aPos k (k - 1) := by
+        have : j = k - 1 := by omega
+        rwa [this] at hcs
+      obtain ⟨hPR, hOut⟩ := valuePush_clone_last c opBase aPos k hcs' (by omega)
+      refine ⟨2 * k + 4, by omega, hPR, hOut, ?_⟩
+      intro s hs
+      exact valuePush_clone_last_confined c opBase aPos k hcs' (by omega) s hs
+    · have hj2 : j + 1 < k := by omega
+      obtain ⟨hcs', hOut1⟩ := valuePush_clone_mid c opBase aPos k j hcs hj2
+      set c' := TM.runConfig (M := valuePushProgram.toPhased.toTM) c
+        (2 * j + 2 * k + 12) with hc'
+      obtain ⟨t', ht'le, hPR, hOut', hsafe'⟩ := ih (k - (j + 1)) (by omega) c' (j + 1) hcs' hj2 rfl
+      refine ⟨(2 * j + 2 * k + 12) + t', ?_, ?_, ?_, ?_⟩
+      · have h2 : k - j = (k - (j + 1)) + 1 := by omega
+        have hs : ((k - (j + 1)) + 1) * (4 * k + 12)
+            = (k - (j + 1)) * (4 * k + 12) + (4 * k + 12) := Nat.succ_mul _ _
+        rw [h2, hs]
+        omega
+      · rw [TM.runConfig_add, ← hc']
+        exact hPR
+      · intro p hp
+        rw [TM.runConfig_add, ← hc', hOut' p hp]
+        exact hOut1 p hp
+      · intro s hs
+        by_cases hsA : s < 2 * j + 2 * k + 12
+        · exact valuePush_clone_mid_confined c opBase aPos k j hcs hj2 s hsA
+        · have hrest := hsafe' (s - (2 * j + 2 * k + 12)) (by omega)
+          rw [show s = (2 * j + 2 * k + 12) + (s - (2 * j + 2 * k + 12)) from by omega,
+            TM.runConfig_add, ← hc']
+          exact hrest
+
+set_option maxHeartbeats 1000000 in
+/-- **The M1 headline (§12, A5m-V).**  From a `ValuePushLayout` — source `1^k` anchored at `aPos`
+with an all-zero entry/gap/scratch neighbourhood — the machine reaches its accept phase within
+`(k+2)·(2·(aPos−opBase)+6·k+20)` steps, with the head back at HOME and the tape changed **exactly**
+by the freshly minted value entry: `true` on `[opBase+1, opBase+3+k)` (the `1^(k+2)` of
+`encodeNatEntryR k`, whose leading `0` is the untouched `opBase` cell), and **unchanged everywhere
+else** — in particular the source block is intact. -/
+theorem valuePush_pushes {L : Nat}
+    (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
+    (opBase aPos k : Nat) (hlay : ValuePushLayout c opBase aPos k) :
+    ∃ t ≤ (k + 2) * (2 * (aPos - opBase) + 6 * k + 20),
+      (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c t).state).fst : Nat) = 34
+      ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c t).head : Nat) = opBase
+      ∧ (∀ p : Fin (valuePushProgram.toPhased.toTM.tapeLength L),
+          (TM.runConfig (M := valuePushProgram.toPhased.toTM) c t).tape p
+            = if opBase + 1 ≤ (p : Nat) ∧ (p : Nat) < opBase + 3 + k then true
+              else c.tape p)
+      ∧ ∀ s : Nat, s < t →
+          (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).state).fst : Nat) ≠ 34
+          ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).head : Nat)
+              ≤ aPos + 2 * k + 2 := by
+  have hgeom := hlay.hgeom
+  have hzeroL := hlay.hzeroL
+  have hanchor := hlay.hanchor
+  have hsrc := hlay.hsrc
+  have hzeroR := hlay.hzeroR
+  by_cases hk : 0 < k
+  · -- k ≥ 1: prologue, drain, restore, park
+    obtain ⟨hds, hOutP⟩ := valuePush_prologue c opBase aPos k hlay hk
+    set c1 := TM.runConfig (M := valuePushProgram.toPhased.toTM) c (aPos - opBase + 2)
+      with hc1
+    obtain ⟨t1, ht1, hCS, hOutD, hsafeD⟩ := valuePush_drain_all c1 opBase aPos k 0 hds hk
+    set c2 := TM.runConfig (M := valuePushProgram.toPhased.toTM) c1 t1 with hc2
+    obtain ⟨t2, ht2, hPR, hOutC, hsafeC⟩ := valuePush_clone_all c2 opBase aPos k 0 hCS hk
+    set c3 := TM.runConfig (M := valuePushProgram.toPhased.toTM) c2 t2 with hc3
+    obtain ⟨hp4, hh4, ht4⟩ := valuePush_park c3 opBase aPos k (aPos + 2 * k + 1) hPR
+    refine ⟨(aPos - opBase + 2) + (t1 + (t2 + ((aPos + 2 * k + 1 - aPos - k)
+      + (aPos - opBase) + k + 2))), ?_, ?_, ?_, ?_, ?_⟩
+    · have hk0 : k - 0 = k := by omega
+      rw [hk0] at ht1 ht2
+      have hb1 : t1 ≤ k * (2 * (aPos - opBase)) + 2 * (k * k) + 3 * k
+          + (2 * (aPos - opBase) + k + 1) := by
+        calc t1 ≤ k * (2 * (aPos - opBase) + 2 * k + 3)
+              + (2 * (aPos - opBase) + k + 1) := ht1
+          _ = k * (2 * (aPos - opBase)) + 2 * (k * k) + 3 * k
+              + (2 * (aPos - opBase) + k + 1) := by ring
+      have hb2 : t2 ≤ 4 * (k * k) + 12 * k + (2 * k + 4) := by
+        calc t2 ≤ k * (4 * k + 12) + (2 * k + 4) := ht2
+          _ = 4 * (k * k) + 12 * k + (2 * k + 4) := by ring
+      have hrhs : (k + 2) * (2 * (aPos - opBase) + 6 * k + 20)
+          = k * (2 * (aPos - opBase)) + 6 * (k * k) + 20 * k
+            + (4 * (aPos - opBase) + 12 * k + 40) := by ring
+      rw [hrhs]
+      omega
+    · rw [TM.runConfig_add, ← hc1, TM.runConfig_add, ← hc2, TM.runConfig_add, ← hc3]
+      exact hp4
+    · rw [TM.runConfig_add, ← hc1, TM.runConfig_add, ← hc2, TM.runConfig_add, ← hc3]
+      exact hh4
+    · rw [TM.runConfig_add, ← hc1, TM.runConfig_add, ← hc2, TM.runConfig_add, ← hc3]
+      intro p
+      rw [ht4]
+      by_cases hin : opBase + 1 ≤ (p : Nat) ∧ (p : Nat) < opBase + 3 + k
+      · rw [if_pos hin]
+        exact hPR.hentry p hin.1 hin.2
+      · rw [if_neg hin]
+        by_cases hout : (p : Nat) < opBase ∨ aPos + 2 * k + 2 < (p : Nat)
+        · rw [hOutC p hout, hOutD p hout, hc1, hOutP p (by omega)]
+        · -- inside the zone but outside the entry: reconstruct from the restored windows
+          by_cases hq1 : (p : Nat) = opBase
+          · rw [hPR.hhome p hq1]
+            exact (hzeroL p (by omega) (by omega)).symm
+          · by_cases hq2 : opBase + 3 + k ≤ (p : Nat) ∧ (p : Nat) < aPos
+            · rw [hPR.hgapL p hq2.1 hq2.2]
+              exact (hzeroL p (by omega) (by omega)).symm
+            · by_cases hq3 : (p : Nat) = aPos
+              · rw [hPR.hblk p (by omega) (by omega)]
+                exact (hanchor p hq3).symm
+              · by_cases hq4 : aPos < (p : Nat) ∧ (p : Nat) ≤ aPos + k
+                · rw [hPR.hblk p (by omega) (by omega)]
+                  exact (hsrc p hq4.1 hq4.2).symm
+                · rw [hPR.hz p (by omega) (by omega)]
+                  exact (hzeroR p (by omega) (by omega)).symm
+    · -- the safety stream: prologue ∪ drain ∪ restore ∪ park, at the round offsets
+      intro s hs
+      by_cases hsP : s < aPos - opBase + 2
+      · exact valuePush_prologue_confined c opBase aPos k hlay hk s hsP
+      · by_cases hsD : s < (aPos - opBase + 2) + t1
+        · have hstep := hsafeD (s - (aPos - opBase + 2)) (by omega)
+          rw [show s = (aPos - opBase + 2) + (s - (aPos - opBase + 2)) from by omega,
+            TM.runConfig_add, ← hc1]
+          exact hstep
+        · by_cases hsC : s < (aPos - opBase + 2) + t1 + t2
+          · have hstep := hsafeC (s - ((aPos - opBase + 2) + t1)) (by omega)
+            rw [show s = ((aPos - opBase + 2) + t1) + (s - ((aPos - opBase + 2) + t1))
+                from by omega,
+              TM.runConfig_add, TM.runConfig_add, ← hc1, ← hc2]
+            exact hstep
+          · have hstep := valuePush_park_confined c3 opBase aPos k (aPos + 2 * k + 1) hPR
+              (s - ((aPos - opBase + 2) + t1 + t2)) (by omega)
+            rw [show s = ((aPos - opBase + 2) + t1 + t2)
+                + (s - ((aPos - opBase + 2) + t1 + t2)) from by omega,
+              TM.runConfig_add, TM.runConfig_add, TM.runConfig_add, ← hc1, ← hc2, ← hc3]
+            exact ⟨hstep.1, by have := hstep.2; omega⟩
+  · -- k = 0: prologue straight to the park chain
+    have hk0 : k = 0 := by omega
+    subst hk0
+    obtain ⟨hPR, hOutP⟩ := valuePush_prologue_k0 c opBase aPos hlay
+    set c1 := TM.runConfig (M := valuePushProgram.toPhased.toTM) c (aPos - opBase + 2)
+      with hc1
+    obtain ⟨hp4, hh4, ht4⟩ := valuePush_park c1 opBase aPos 0 (aPos + 1) hPR
+    refine ⟨(aPos - opBase + 2) + ((aPos + 1 - aPos - 0) + (aPos - opBase) + 0 + 2),
+      by omega, ?_, ?_, ?_, ?_⟩
+    · rw [TM.runConfig_add, ← hc1]
+      exact hp4
+    · rw [TM.runConfig_add, ← hc1]
+      exact hh4
+    · rw [TM.runConfig_add, ← hc1]
+      intro p
+      rw [ht4]
+      by_cases hin : opBase + 1 ≤ (p : Nat) ∧ (p : Nat) < opBase + 3 + 0
+      · rw [if_pos hin]
+        exact hPR.hentry p hin.1 hin.2
+      · rw [if_neg hin]
+        exact hOutP p (by omega)
+    · -- the safety stream: the k = 0 prologue ∪ park
+      intro s hs
+      by_cases hsP : s < aPos - opBase + 2
+      · exact valuePush_prologue_k0_confined c opBase aPos hlay s hsP
+      · have hstep := valuePush_park_confined c1 opBase aPos 0 (aPos + 1) hPR
+          (s - (aPos - opBase + 2)) (by omega)
+        rw [show s = (aPos - opBase + 2) + (s - (aPos - opBase + 2)) from by omega,
+          TM.runConfig_add, ← hc1]
+        exact ⟨hstep.1, by have := hstep.2; omega⟩
+
+end ContractExpansion
+end Frontier
+end Pnp4
+
+namespace Pnp4
+namespace Frontier
+namespace ContractExpansion
+
+open Pnp3.Internal.PsubsetPpoly Pnp3.Internal.PsubsetPpoly.TM
+open Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram
+
+/-- **The M1 headline in the §12.3 contract shape**: the final tape **is**
+`writeBlockTape c.tape opBase (encodeNatEntryR k)` — the value entry `0 ++ 1^(k+2)` written at the
+value-zone top (its leading `0` coincides with the layout's untouched `opBase` cell), everything
+else verbatim.  This is the tape transformer the leaf/pop keystones consume. -/
+theorem valuePush_pushes_writeBlock {L : Nat}
+    (c : Configuration (M := valuePushProgram.toPhased.toTM) L)
+    (opBase aPos k : Nat) (hlay : ValuePushLayout c opBase aPos k) :
+    ∃ t ≤ (k + 2) * (2 * (aPos - opBase) + 6 * k + 20),
+      (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c t).state).fst : Nat) = 34
+      ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c t).head : Nat) = opBase
+      ∧ (TM.runConfig (M := valuePushProgram.toPhased.toTM) c t).tape
+          = writeBlockTape c.tape opBase (encodeNatEntryR k)
+      ∧ ∀ s : Nat, s < t →
+          (((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).state).fst : Nat) ≠ 34
+          ∧ ((TM.runConfig (M := valuePushProgram.toPhased.toTM) c s).head : Nat)
+              ≤ aPos + 2 * k + 2 := by
+  obtain ⟨t, ht, hp, hh, htape, hsafe⟩ := valuePush_pushes c opBase aPos k hlay
+  have hgeom := hlay.hgeom
+  refine ⟨t, ht, hp, hh, funext fun p => ?_, hsafe⟩
+  rw [htape p]
+  unfold writeBlockTape
+  have hlen : (encodeNatEntryR k).length = k + 3 := encodeNatEntryR_length k
+  by_cases hin : opBase + 1 ≤ (p : Nat) ∧ (p : Nat) < opBase + 3 + k
+  · rw [if_pos hin, if_pos (by omega)]
+    -- the written cell is one of the k+2 ones of the entry
+    obtain ⟨i, hi⟩ : ∃ i, (p : Nat) - opBase = i + 1 := ⟨(p : Nat) - opBase - 1, by omega⟩
+    rw [hi]
+    show true = (false :: List.replicate (k + 2) true).getD (i + 1) false
+    rw [List.getD_cons_succ]
+    have hilt : i < k + 2 := by omega
+    rw [List.getD_eq_getElem?_getD, List.getElem?_replicate, if_pos hilt]
+    rfl
+  · rw [if_neg hin]
+    by_cases hbase : (p : Nat) = opBase
+    · rw [if_pos (by omega)]
+      have h0 : (p : Nat) - opBase = 0 := by omega
+      rw [h0]
+      show c.tape p = (false :: List.replicate (k + 2) true).getD 0 false
+      rw [List.getD_cons_zero]
+      exact hlay.hzeroL p (by omega) (by omega)
+    · rw [if_neg (by omega)]
+
+/-! ## Directed regression check: the layout is satisfiable
+
+A concrete configuration (ambient length `20`, entry base `0`, anchor at `5`, a single source
+unit) inhabits `ValuePushLayout` — the headline is not vacuous. -/
+
+example : ∃ c : Configuration (M := valuePushProgram.toPhased.toTM) 20,
+    ValuePushLayout c 0 5 1 := by
+  refine ⟨⟨⟨⟨0, by decide⟩, ()⟩, ⟨0, by decide⟩,
+    fun q => decide ((q : Nat) = 5 ∨ (q : Nat) = 6)⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · rfl
+  · rfl
+  · decide
+  · decide
+  · intro p hp1 hp2
+    simp only [decide_eq_false_iff_not]
+    omega
+  · intro p hp
+    simp only [decide_eq_true_eq]
+    omega
+  · intro p hp1 hp2
+    simp only [decide_eq_true_eq]
+    omega
+  · intro p hp1 hp2
+    simp only [decide_eq_false_iff_not]
+    omega
 
 end ContractExpansion
 end Frontier

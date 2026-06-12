@@ -107,7 +107,7 @@ theorem corridor_walk_ctrl {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width)
   have hlen : (encodeCtrlStackR st.ctrl).length
       = (walkZone (st.ctrl.flatMap fun f => [f.1.tagCode + 2, f.2 + 1])).length := by
     rw [encodeCtrlStackR_eq_walkZone]
-  exact zoneWalkLeft_runConfig_walkZone c0
+  obtain ⟨hw1, hw2, hw3, _⟩ := zoneWalkLeft_runConfig_walkZone c0
     (st.ctrl.flatMap fun f => [f.1.tagCode + 2, f.2 + 1])
     (by
       intro k hk
@@ -123,6 +123,7 @@ theorem corridor_walk_ctrl {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width)
     (by rw [hhead, hlen])
     (by rw [← encodeCtrlStackR_eq_walkZone]; exact hctrl)
     (fun p hp => hszeros p (by omega) (by omega))
+  exact ⟨hw1, hw2, hw3⟩
 
 /-- **Leg 3 (scan → the shadow-count top).**  From the dead cell `ctrlBase − 1`, the leftward 0-scan
 stops on the `SHW` window's rightmost `1` (`shwBase + |out|`), tape unchanged.  (Crossing the `SHW`
@@ -209,7 +210,7 @@ theorem corridor_walk_val {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width)
   obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hwf
   have hlen : (encodeNatStackR st.val).length = (walkZone (st.val.map (· + 2))).length := by
     rw [encodeNatStackR_eq_walkZone]
-  exact zoneWalkLeft_runConfig_walkZone c0 (st.val.map (· + 2))
+  obtain ⟨hw1, hw2, hw3, _⟩ := zoneWalkLeft_runConfig_walkZone c0 (st.val.map (· + 2))
     (by
       intro k hk
       rw [List.mem_map] at hk
@@ -219,6 +220,7 @@ theorem corridor_walk_val {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width)
     (by rw [hhead, hlen])
     (by rw [← encodeNatStackR_eq_walkZone]; exact hval)
     (fun p hp => hfzeros p (by omega) (by omega))
+  exact ⟨hw1, hw2, hw3⟩
 
 /-- **Leg 5 (scan → the WORK frontier marker).**  From the dead cell `valBase − 1`, the leftward
 0-scan stops exactly on `FM` (the `1` just past the last record), tape unchanged. -/

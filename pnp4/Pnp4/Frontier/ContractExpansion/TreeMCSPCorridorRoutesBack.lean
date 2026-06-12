@@ -164,7 +164,7 @@ theorem corridor_back_walk_val {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ wi
   obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hwf
   have hlen : (encodeNatStackR st.val).length = (walkZone (st.val.map (· + 2))).length := by
     rw [encodeNatStackR_eq_walkZone]
-  obtain ⟨hf1, hf2, hf3⟩ := zoneWalkRight_runConfig_walkZone c0 (st.val.map (· + 2))
+  obtain ⟨hf1, hf2, hf3, _⟩ := zoneWalkRight_runConfig_walkZone c0 (st.val.map (· + 2))
     (by
       intro k hk
       rw [List.mem_map] at hk
@@ -274,7 +274,7 @@ theorem corridor_back_walk_ctrl {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ w
   have hlen : (encodeCtrlStackR st.ctrl).length
       = (walkZone (st.ctrl.flatMap fun f => [f.1.tagCode + 2, f.2 + 1])).length := by
     rw [encodeCtrlStackR_eq_walkZone]
-  obtain ⟨hf1, hf2, hf3⟩ := zoneWalkRight_runConfig_walkZone c0
+  obtain ⟨hf1, hf2, hf3, _⟩ := zoneWalkRight_runConfig_walkZone c0
     (st.ctrl.flatMap fun f => [f.1.tagCode + 2, f.2 + 1])
     (by
       intro k hk

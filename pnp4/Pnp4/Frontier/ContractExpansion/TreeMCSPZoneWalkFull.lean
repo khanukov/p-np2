@@ -1,4 +1,5 @@
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRun
+import Pnp4.Frontier.ContractExpansion.BoundedLoopProgram
 
 /-!
 # `zoneWalkLeft` full-zone walk — D2t-5b (Block A4w): the multi-block traversal
@@ -96,7 +97,8 @@ theorem getD_replicate_of_lt {α : Type _} (a d : α) {i n : Nat} (h : i < n) :
 /-- **The full-zone walk.**  If the window `[base, base + |walkZone ks|)` spells `walkZone ks` (every
 block `≥ 2` ones), the cell `base − 1` is the dead `0` (and `1 ≤ base`), and the walker starts at φ0 on
 the zone's rightmost content cell, then after `walkZoneSteps ks` steps it is **done** (φ4) with the
-head on `base − 1`, tape unchanged. -/
+head on `base − 1`, tape unchanged — with the per-step stream (phase below the done phase, head at
+or below the start) the region-embedding transfer consumes. -/
 theorem zoneWalkLeft_runConfig_walkZone {L : Nat}
     (c0 : Configuration (M := zoneWalkLeft.toPhased.toTM) L) :
     ∀ (ks : List Nat), (∀ k ∈ ks, 2 ≤ k) → ∀ (base : Nat), 1 ≤ base →
@@ -108,7 +110,11 @@ theorem zoneWalkLeft_runConfig_walkZone {L : Nat}
       (((TM.runConfig (M := zoneWalkLeft.toPhased.toTM) c0 (walkZoneSteps ks)).state).fst : Nat) = 4
       ∧ ((TM.runConfig (M := zoneWalkLeft.toPhased.toTM) c0 (walkZoneSteps ks)).head : Nat)
           = base - 1
-      ∧ (TM.runConfig (M := zoneWalkLeft.toPhased.toTM) c0 (walkZoneSteps ks)).tape = c0.tape := by
+      ∧ (TM.runConfig (M := zoneWalkLeft.toPhased.toTM) c0 (walkZoneSteps ks)).tape = c0.tape
+      ∧ ∀ s : Nat, s < walkZoneSteps ks →
+          (((TM.runConfig (M := zoneWalkLeft.toPhased.toTM) c0 s).state).fst : Nat) < 4
+          ∧ ((TM.runConfig (M := zoneWalkLeft.toPhased.toTM) c0 s).head : Nat)
+              ≤ (c0.head : Nat) := by
   intro ks
   induction ks generalizing c0 with
   | nil =>
@@ -117,9 +123,9 @@ theorem zoneWalkLeft_runConfig_walkZone {L : Nat}
       have hh : (c0.head : Nat) = base := by
         simpa [walkZone_nil] using hhead
       rw [walkZoneSteps_nil]
-      obtain ⟨h1, h2, h3⟩ := zoneWalkLeft_runConfig_sentinel c0 hphase (by omega)
+      obtain ⟨h1, h2, h3, h4⟩ := zoneWalkLeft_runConfig_sentinel c0 hphase (by omega)
         (fun p hp => hdead p (by omega))
-      exact ⟨h1, by rw [h2, hh], h3⟩
+      exact ⟨h1, by rw [h2, hh], h3, h4⟩
   | cons k ks ih =>
       intro hge base hbase hphase hhead hwin hdead
       have hk : 2 ≤ k := hge k (List.mem_cons_self)
@@ -151,7 +157,7 @@ theorem zoneWalkLeft_runConfig_walkZone {L : Nat}
         have hd : (p : Nat) - (base + (walkZone ks).length) = 0 := by omega
         rw [hd, List.getD_cons_zero]
       -- The top block's pass: k + 3 steps land at φ0 on the prefix zone's rightmost cell.
-      obtain ⟨hps, hhs, hts⟩ := zoneWalkLeft_runConfig_field_segment c0 hphase (k - 1)
+      obtain ⟨hps, hhs, hts, hseg⟩ := zoneWalkLeft_runConfig_field_segment c0 hphase (k - 1)
         (by omega) (by omega)
         (fun p hp1 hp2 => hones p hp1 hp2)
         (fun p hp => hdelim p hp)
@@ -166,11 +172,24 @@ theorem zoneWalkLeft_runConfig_walkZone {L : Nat}
           (p : Nat) = base - 1 → c1.tape p = false := by
         intro p hp
         rw [hc1, hts]; exact hdead p hp
-      obtain ⟨hf1, hf2, hf3⟩ :=
+      obtain ⟨hf1, hf2, hf3, hf4⟩ :=
         ih c1 (fun k hk => hge k (List.mem_cons_of_mem _ hk)) base hbase hps hh1 hwin1 hdead1
-      refine ⟨hf1, hf2, ?_⟩
-      rw [hf3, hc1]
-      exact hts
+      refine ⟨hf1, hf2, ?_, ?_⟩
+      · rw [hf3, hc1]
+        exact hts
+      · -- The stream: the top block's pass, then the remaining walk from `c1`, spliced.
+        have hc1head : (c1.head : Nat) ≤ (c0.head : Nat) := by
+          rw [hh1]
+          omega
+        exact TM.runConfig_safe_append
+          (fun cfg : Configuration (M := zoneWalkLeft.toPhased.toTM) L =>
+            ((cfg.state).fst : Nat) < 4 ∧ ((cfg.head : Nat)) ≤ (c0.head : Nat))
+          c0 ((k - 1) + 4) (walkZoneSteps ks)
+          (fun s hs => hseg s hs)
+          (fun s hs => by
+            have hstep := hf4 s hs
+            rw [← hc1]
+            exact ⟨hstep.1, le_trans hstep.2 hc1head⟩)
 
 end ContractExpansion
 end Frontier

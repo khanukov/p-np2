@@ -45,8 +45,8 @@ theorem corridorInv_decStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width
         (encodeCtrlFrameR (tag, rem - 1) ++ [false]))
       (⟨toks, out, (tag, rem - 1) :: ctrl', val, false⟩ : DriveState n) := by
   obtain ⟨hwf, hcert, hcfit, hmark, hcorr, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
-    hctrl, hcfit2, hvalid, hcoh⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9⟩ := hwf
+    hshw, hsfit, hszeros, hctrl, hcfit2, hvalid, hcoh⟩ := hinv
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11⟩ := hwf
   replace hcert : windowSpells tape
       (z.certEnd - (encodePreorder width h_width toks).length)
       (encodePreorder width h_width toks) := hcert
@@ -70,7 +70,11 @@ theorem corridorInv_decStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width
   replace hval : windowSpells tape z.valBase (encodeNatStackR val) := hval
   replace hvfit : z.valBase + (encodeNatStackR val).length ≤ z.valEnd := hvfit
   replace hvzeros : ∀ p : Fin L, z.valBase + (encodeNatStackR val).length ≤ (p : Nat) →
-      (p : Nat) < z.ctrlBase → tape p = false := hvzeros
+      (p : Nat) < z.shwBase → tape p = false := hvzeros
+  replace hshw : windowSpells tape z.shwBase (List.replicate (out.length + 1) true) := hshw
+  replace hsfit : z.shwBase + out.length + 1 ≤ z.shwEnd := hsfit
+  replace hszeros : ∀ p : Fin L, z.shwBase + out.length + 1 ≤ (p : Nat) →
+      (p : Nat) < z.ctrlBase → tape p = false := hszeros
   replace hctrl : windowSpells tape z.ctrlBase (encodeCtrlStackR ((tag, rem) :: ctrl')) := hctrl
   replace hcfit2 : z.ctrlBase + (encodeCtrlStackR ((tag, rem) :: ctrl')).length
       ≤ z.ctrlEnd := hcfit2
@@ -104,8 +108,8 @@ theorem corridorInv_decStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width
     apply writeBlockTape_above
     rw [hblocklen]; omega
   dsimp only [driverCorridorInv]
-  refine ⟨⟨h1, h2, h3, h4, h5, h6, h7, h8, h9⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
-    ?_, ?_, ?_, ?_⟩
+  refine ⟨⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
+    ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   -- 1. cert suffix (untouched: cert region right of ctrlEnd).
   · refine windowSpells_congr _ _ _ _ hcert (fun q hlo hhi => ?_)
     exact hoff_above q (by omega)
@@ -153,10 +157,20 @@ theorem corridorInv_decStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width
     omega
   -- 11. value fit.
   · exact hvfit
-  -- 12. val→ctrl corridor (untouched).
+  -- 12. val→SHW corridor (untouched).
   · intro p hlo hhi
     rw [hoff_below p (by omega)]
     exact hvzeros p hlo hhi
+  -- 12a. SHW window (untouched; no emit on the decrement branch).
+  · refine windowSpells_congr _ _ _ _ hshw (fun q hlo hhi => ?_)
+    rw [List.length_replicate] at hhi
+    exact hoff_below q (by omega)
+  -- 12b. SHW fit (out unchanged).
+  · exact hsfit
+  -- 12c. SHW→ctrl dead corridor (untouched; the rewrite zone starts at the ctrl content).
+  · intro p hlo hhi
+    rw [hoff_below p (by omega)]
+    exact hszeros p hlo hhi
   -- 13. control window: the prefix is untouched; the frame cells come from the written block.
   · rw [encodeCtrlStackR_cons]
     have hpre := windowSpells_append_left tape z.ctrlBase _ _

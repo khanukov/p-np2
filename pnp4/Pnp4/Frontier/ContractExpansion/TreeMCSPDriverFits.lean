@@ -128,12 +128,15 @@ theorem encodeCtrlStackR_length_le (S : List (ITag × Nat)) (hS : ∀ f ∈ S, f
 
 /-- **The corridor sizing** for a certificate `c`: concrete zone-room inequalities covering every
 reachable state's needs — output room for `c.size` gates, WORK room for the full final record
-stream, value room for `c.size + 1` entries of width `< c.size`, control room for `c.size` frames of
-width `≤ 9` plus one pushed frame. -/
+stream, value room for `c.size + 1` entries of width `< c.size`, shadow-count room for the full
+unary count **plus the A5m-V fan-out scratch** (`2 · c.size + 3` cells past the base sentinel — the
+value-push machine's restore loop works in `[shwBase, shwBase + 2·|out| + 3)`), control room for
+`c.size` frames of width `≤ 9` plus one pushed frame. -/
 def CorridorSized {n : Nat} (z : DriverCorridor) (c : CircuitTree n) : Prop :=
   z.outBase + c.size + 2 ≤ z.workBase
   ∧ z.workBase + (encodeGateRecordStream (CircuitTree.flatten c).gates).length + 1 ≤ z.workEnd
   ∧ z.valBase + (1 + (c.size + 1) * (c.size + 2)) + (c.size + 3) ≤ z.valEnd
+  ∧ z.shwBase + 2 * c.size + 3 ≤ z.shwEnd
   ∧ z.ctrlBase + (1 + 9 * c.size) + 9 ≤ z.ctrlEnd
 
 /-- **The branch side conditions from state bounds.**  For any state whose components satisfy the
@@ -150,7 +153,7 @@ theorem driverStepFits_of_bounds {n : Nat} (z : DriverCorridor) (c : CircuitTree
     (h4 : ∀ f ∈ s.ctrl, f.2 ≤ 2)
     (h5 : s.ctrl.length ≤ c.size) :
     DriverStepFits z s := by
-  obtain ⟨hzo, hzw, hzv, hzc⟩ := hz
+  obtain ⟨hzo, hzw, hzv, hzs, hzc⟩ := hz
   obtain ⟨toks, out, ctrl, val, settling⟩ := s
   dsimp only at h1 h3a h3b h4 h5
   cases settling with
@@ -171,7 +174,7 @@ theorem driverStepFits_of_bounds {n : Nat} (z : DriverCorridor) (c : CircuitTree
                         ≤ (encodeGateRecordStream (CircuitTree.flatten c).gates).length := h2
                     rw [encodeGateRecordStream_snoc, List.length_append] at h2'
                     simp only [DriverStepFits, if_true]
-                    refine ⟨by omega, by omega, ?_⟩
+                    refine ⟨by omega, by omega, ?_, by omega⟩
                     have henc := encodeNatStackR_length_le_of_lt vs c.size
                       (fun v hv => h3a v (List.mem_cons_of_mem _ hv))
                     have hlen : vs.length ≤ c.size + 1 := by
@@ -194,7 +197,7 @@ theorem driverStepFits_of_bounds {n : Nat} (z : DriverCorridor) (c : CircuitTree
                                 (CircuitTree.flatten c).gates).length := h2
                         rw [encodeGateRecordStream_snoc, List.length_append] at h2'
                         simp only [DriverStepFits, if_true]
-                        refine ⟨by omega, by omega, ?_⟩
+                        refine ⟨by omega, by omega, ?_, by omega⟩
                         have henc := encodeNatStackR_length_le_of_lt vs c.size
                           (fun v hv => h3a v
                             (List.mem_cons_of_mem _ (List.mem_cons_of_mem _ hv)))
@@ -218,7 +221,7 @@ theorem driverStepFits_of_bounds {n : Nat} (z : DriverCorridor) (c : CircuitTree
                                 (CircuitTree.flatten c).gates).length := h2
                         rw [encodeGateRecordStream_snoc, List.length_append] at h2'
                         simp only [DriverStepFits, if_true]
-                        refine ⟨by omega, by omega, ?_⟩
+                        refine ⟨by omega, by omega, ?_, by omega⟩
                         have henc := encodeNatStackR_length_le_of_lt vs c.size
                           (fun v hv => h3a v
                             (List.mem_cons_of_mem _ (List.mem_cons_of_mem _ hv)))
@@ -241,7 +244,7 @@ theorem driverStepFits_of_bounds {n : Nat} (z : DriverCorridor) (c : CircuitTree
                   ≤ (encodeGateRecordStream (CircuitTree.flatten c).gates).length := h2
               rw [encodeGateRecordStream_snoc, List.length_append] at h2'
               simp only [DriverStepFits]
-              refine ⟨by omega, by omega, ?_⟩
+              refine ⟨by omega, by omega, ?_, by omega⟩
               have henc := encodeNatStackR_length_le_of_lt val c.size h3a
               have hmul : val.length * (c.size + 2) ≤ (c.size + 1) * (c.size + 2) :=
                 Nat.mul_le_mul_right _ h3b

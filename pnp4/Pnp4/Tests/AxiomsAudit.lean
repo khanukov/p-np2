@@ -996,6 +996,7 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.windowSpells_getLast_true
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_scan_M_to_ctrlTop
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_walk_ctrl
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_scan_to_shwTop
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_scan_to_valTop
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_walk_val
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_scan_to_FM
@@ -1030,6 +1031,7 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_runConfigFrom_terminator
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_valSentinel
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_back_walk_val
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_shwBase
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_ctrlSentinel
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_back_walk_ctrl
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_M

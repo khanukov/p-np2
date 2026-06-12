@@ -54,8 +54,8 @@ theorem corridorInv_nodeStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ widt
         (encodeCtrlFrameR (tag, tag.arity)))
       (⟨toks', out, (tag, tag.arity) :: ctrl, val, false⟩ : DriveState n) := by
   obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
-    hctrl, hcfit2, hvalid, hcoh⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9⟩ := hwf
+    hshw, hsfit, hszeros, hctrl, hcfit2, hvalid, hcoh⟩ := hinv
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11⟩ := hwf
   replace hcert : windowSpells tape
       (z.certEnd - (encodePreorder width h_width (PreToken.node tag :: toks')).length)
       (encodePreorder width h_width (PreToken.node tag :: toks')) := hcert
@@ -84,7 +84,11 @@ theorem corridorInv_nodeStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ widt
   replace hvfit : z.valBase + (encodeNatStackR val).length ≤ z.valEnd := hvfit
   replace hvzeros : ∀ p : Fin L,
       z.valBase + (encodeNatStackR val).length ≤ (p : Nat) →
-      (p : Nat) < z.ctrlBase → tape p = false := hvzeros
+      (p : Nat) < z.shwBase → tape p = false := hvzeros
+  replace hshw : windowSpells tape z.shwBase (List.replicate (out.length + 1) true) := hshw
+  replace hsfit : z.shwBase + out.length + 1 ≤ z.shwEnd := hsfit
+  replace hszeros : ∀ p : Fin L, z.shwBase + out.length + 1 ≤ (p : Nat) →
+      (p : Nat) < z.ctrlBase → tape p = false := hszeros
   replace hctrl : windowSpells tape z.ctrlBase (encodeCtrlStackR ctrl) := hctrl
   replace hcfit2 : z.ctrlBase + (encodeCtrlStackR ctrl).length ≤ z.ctrlEnd := hcfit2
   -- Notation: the old cursor, the encoded lengths, the frame base.
@@ -118,11 +122,11 @@ theorem corridorInv_nodeStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ widt
     rw [hfr, encodeCtrlFrameR_length]
   have hfrR : fb + fr.length ≤ z.ctrlEnd := by rw [hfb, hfr]; exact hcap
   have hsep : fb + fr.length < cur - 1 := by
-    have : z.ctrlEnd + 2 < z.certBase := h7
+    have : z.ctrlEnd + 2 < z.certBase := h9
     omega
   dsimp only [driverCorridorInv]
-  refine ⟨⟨h1, h2, h3, h4, h5, h6, h7, h8, h9⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
-    ?_, ?_, ?_, ?_⟩
+  refine ⟨⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
+    ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   -- 1. The certificate suffix window at the new cursor (cur + 3), untouched by the update.
   · have hsuf := windowSpells_append_right tape cur _ _ (by rw [← hbits]; exact hcert)
     rw [htag3] at hsuf
@@ -194,9 +198,26 @@ theorem corridorInv_nodeStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ widt
     rw [if_neg (by omega), if_neg (by omega), if_neg (by omega)]
   -- 11. The value fit.
   · exact hvfit
-  -- 12. The val→ctrl dead corridor (val unchanged; the frame sits inside the ctrl zone).
+  -- 12. The val→SHW dead corridor (val unchanged; the frame sits inside the ctrl zone).
   · intro p hp1 hp2
     have := hvzeros p hp1 hp2
+    rw [← this]
+    show nodeStepTape tape cur fb fr p = tape p
+    unfold nodeStepTape
+    rw [if_neg (by omega), if_neg (by omega), if_neg (by omega)]
+  -- 12a. The SHW window (untouched; no emit on the node branch).
+  · refine ⟨hshw.1, fun q hlo hhi => ?_⟩
+    have hq := hshw.2 q hlo hhi
+    rw [List.length_replicate] at hhi
+    rw [← hq]
+    show nodeStepTape tape cur fb fr q = tape q
+    unfold nodeStepTape
+    rw [if_neg (by omega), if_neg (by omega), if_neg (by omega)]
+  -- 12b. The SHW fit (out unchanged).
+  · exact hsfit
+  -- 12c. The SHW→ctrl dead corridor (the frame sits inside the ctrl zone, right of it).
+  · intro p hp1 hp2
+    have := hszeros p hp1 hp2
     rw [← this]
     show nodeStepTape tape cur fb fr p = tape p
     unfold nodeStepTape

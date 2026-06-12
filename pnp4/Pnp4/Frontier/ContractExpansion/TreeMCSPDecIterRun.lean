@@ -41,8 +41,8 @@ theorem decIter_run_tnot {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width)
           = writeBlockTape c0.tape (z.ctrlBase + (encodeCtrlStackR rest).length)
               (decBlock ITag.tnot) := by
   obtain ⟨hwf, hcert, hcfit, hmark, hcorr, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
-    hctrlw, hcfit2, hvalid, hcoh⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9⟩ := hwf
+    hshw, hsfit, hszeros, hctrlw, hcfit2, hvalid, hcoh⟩ := hinv
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11⟩ := hwf
   replace hmark : ∀ p : Fin (decIterProgram.toPhased.toTM.tapeLength L),
       (p : Nat) = z.certEnd - (encodePreorder width h_width st.toks).length - 1 →
       c0.tape p = true := hmark
@@ -215,8 +215,8 @@ theorem decIter_run_tand {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width)
           = writeBlockTape c0.tape (z.ctrlBase + (encodeCtrlStackR rest).length)
               (decBlock ITag.tand) := by
   obtain ⟨hwf, hcert, hcfit, hmark, hcorr, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
-    hctrlw, hcfit2, hvalid, hcoh⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9⟩ := hwf
+    hshw, hsfit, hszeros, hctrlw, hcfit2, hvalid, hcoh⟩ := hinv
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11⟩ := hwf
   replace hmark : ∀ p : Fin (decIterProgram.toPhased.toTM.tapeLength L),
       (p : Nat) = z.certEnd - (encodePreorder width h_width st.toks).length - 1 →
       c0.tape p = true := hmark
@@ -386,8 +386,8 @@ theorem decIter_run_tor {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width)
           = writeBlockTape c0.tape (z.ctrlBase + (encodeCtrlStackR rest).length)
               (decBlock ITag.tor) := by
   obtain ⟨hwf, hcert, hcfit, hmark, hcorr, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
-    hctrlw, hcfit2, hvalid, hcoh⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9⟩ := hwf
+    hshw, hsfit, hszeros, hctrlw, hcfit2, hvalid, hcoh⟩ := hinv
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11⟩ := hwf
   replace hmark : ∀ p : Fin (decIterProgram.toPhased.toTM.tapeLength L),
       (p : Nat) = z.certEnd - (encodePreorder width h_width st.toks).length - 1 →
       c0.tape p = true := hmark

@@ -46,10 +46,10 @@ theorem corridorInv_settleClearStep {n L : Nat} (width : Nat) (h_width : n ≤ 2
     driverCorridorInv width h_width z tape
       (⟨toks, out, [], val, false⟩ : DriveState n) := by
   obtain ⟨hwf, hcert, hcfit, hmark, hcorr, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
-    hctrl, hcfit2, hvalid, _hcoh⟩ := hinv
+    hshw, hsfit, hszeros, hctrl, hcfit2, hvalid, _hcoh⟩ := hinv
   dsimp only [driverCorridorInv]
   refine ⟨hwf, hcert, hcfit, hmark, hcorr, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
-    hctrl, hcfit2, hvalid, ?_⟩
+    hshw, hsfit, hszeros, hctrl, hcfit2, hvalid, ?_⟩
   intro hs; cases hs
 
 end ContractExpansion

@@ -4178,6 +4178,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.windowSpells_getLast_true
 #check @Pnp4.Frontier.ContractExpansion.corridor_scan_M_to_ctrlTop
 #check @Pnp4.Frontier.ContractExpansion.corridor_walk_ctrl
+#check @Pnp4.Frontier.ContractExpansion.corridor_scan_to_shwTop
 #check @Pnp4.Frontier.ContractExpansion.corridor_scan_to_valTop
 #check @Pnp4.Frontier.ContractExpansion.corridor_walk_val
 #check @Pnp4.Frontier.ContractExpansion.corridor_scan_to_FM
@@ -4206,6 +4207,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_runConfigFrom_terminator
 #check @Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_valSentinel
 #check @Pnp4.Frontier.ContractExpansion.corridor_back_walk_val
+#check @Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_shwBase
 #check @Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_ctrlSentinel
 #check @Pnp4.Frontier.ContractExpansion.corridor_back_walk_ctrl
 #check @Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_M

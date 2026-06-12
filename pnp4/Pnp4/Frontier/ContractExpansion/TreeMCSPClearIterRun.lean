@@ -43,8 +43,8 @@ theorem clearIter_run {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width)
           = z.certEnd - (encodePreorder width h_width st.toks).length - 1
       ∧ (TM.runConfig (M := clearIterProgram.toPhased.toTM) c0 T).tape = c0.tape := by
   obtain ⟨hwf, hcert, hcfit, hmark, hcorr, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
-    hctrlw, hcfit2, hvalid, hcoh⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9⟩ := hwf
+    hshw, hsfit, hszeros, hctrlw, hcfit2, hvalid, hcoh⟩ := hinv
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11⟩ := hwf
   replace hmark : ∀ p : Fin (clearIterProgram.toPhased.toTM.tapeLength L),
       (p : Nat) = z.certEnd - (encodePreorder width h_width st.toks).length - 1 →
       c0.tape p = true := hmark
@@ -52,10 +52,10 @@ theorem clearIter_run {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width)
       z.ctrlBase + (encodeCtrlStackR st.ctrl).length ≤ (p : Nat) →
       (p : Nat) < z.certEnd - (encodePreorder width h_width st.toks).length - 1 →
       c0.tape p = false := hcorr
-  replace hvfit : z.valBase + (encodeNatStackR st.val).length ≤ z.valEnd := hvfit
-  replace hvzeros : ∀ p : Fin (clearIterProgram.toPhased.toTM.tapeLength L),
-      z.valBase + (encodeNatStackR st.val).length ≤ (p : Nat) →
-      (p : Nat) < z.ctrlBase → c0.tape p = false := hvzeros
+  replace hsfit : z.shwBase + st.out.length + 1 ≤ z.shwEnd := hsfit
+  replace hszeros : ∀ p : Fin (clearIterProgram.toPhased.toTM.tapeLength L),
+      z.shwBase + st.out.length + 1 ≤ (p : Nat) →
+      (p : Nat) < z.ctrlBase → c0.tape p = false := hszeros
   replace hctrlw : windowSpells c0.tape z.ctrlBase (encodeCtrlStackR st.ctrl) := hctrlw
   replace hcfit : z.certBase + (encodePreorder width h_width st.toks).length ≤ z.certEnd := hcfit
   -- The marker position and the empty-stack geometry.
@@ -88,7 +88,7 @@ theorem clearIter_run {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width)
     (by rfl) (by rfl) (by rfl) c2 hp2 (by omega)
     (fun p hp => by
       rw [ht2, ht1]
-      exact hvzeros p (by omega) (by omega))
+      exact hszeros p (by omega) (by omega))
   -- Leg 4 (phases 8–9): step right onto the sentinel.
   set c3 := TM.runConfig (M := clearIterProgram.toPhased.toTM) c2 3 with hc3
   obtain ⟨hp4, hh4, ht4⟩ := clearIter_region_stepRight1.run_stepRight_hop c3 hp3

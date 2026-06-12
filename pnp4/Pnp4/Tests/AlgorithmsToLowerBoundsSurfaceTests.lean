@@ -160,6 +160,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPCertTrie
 import Pnp4.Frontier.ContractExpansion.TreeMCSPNodeIterProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPNodeIterRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPConstIterProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPConstIterRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPConstWriteChain
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
@@ -4415,6 +4416,9 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.constIter_region_probe_14
 #check @Pnp4.Frontier.ContractExpansion.constIter_region_vpush_113
 #check @Pnp4.Frontier.ContractExpansion.constIter_region_tick_156
+-- D2t-5b (Block A5m-6, run, part 1): the const arm's shared tail (12 legs).
+#check @Pnp4.Frontier.ContractExpansion.walkZoneStepsR_le
+#check @Pnp4.Frontier.ContractExpansion.constIter_run_tail
 -- D2t-5b (Block A5m-6, run algebra): the three block writes compose to constStepTape.
 #check @Pnp4.Frontier.ContractExpansion.writeConstChain_eq_constStepTape
 -- D2t-5b (Block A5m-5, run): the node iteration end to end.

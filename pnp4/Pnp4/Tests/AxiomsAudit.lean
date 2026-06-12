@@ -150,6 +150,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPCertTrie
 import Pnp4.Frontier.ContractExpansion.TreeMCSPNodeIterProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPNodeIterRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPConstIterProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPConstIterRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPConstWriteChain
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
@@ -1318,6 +1319,10 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.constIter_region_rec1_98
 #print axioms Pnp4.Frontier.ContractExpansion.constIter_region_vpush_113
 #print axioms Pnp4.Frontier.ContractExpansion.constIter_region_tick_156
+-- D2t-5b (Block A5m-6, run, part 1): the const arm's shared tail — value frontier, the whole
+-- value-push region, the SHW tick, and the scan home onto the new marker (12 legs).
+#print axioms Pnp4.Frontier.ContractExpansion.walkZoneStepsR_le
+#print axioms Pnp4.Frontier.ContractExpansion.constIter_run_tail
 -- D2t-5b (Block A5m-6, run algebra): the three block writes compose to constStepTape.
 #print axioms Pnp4.Frontier.ContractExpansion.writeConstChain_eq_constStepTape
 -- D2t-5b (Block A5m-5, run): the node iteration end to end -- the two block writes compose to

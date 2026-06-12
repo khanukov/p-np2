@@ -134,6 +134,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPValuePushPass
 import Pnp4.Frontier.ContractExpansion.TreeMCSPValuePushDrain
 import Pnp4.Frontier.ContractExpansion.TreeMCSPValuePushPrehop
 import Pnp4.Frontier.ContractExpansion.TreeMCSPValuePushRelocate
+import Pnp4.Frontier.ContractExpansion.TreeMCSPValuePushEpilogue
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionRunTransfer
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionUnion
 import Pnp4.Frontier.ContractExpansion.TreeMCSPClearIterProgram
@@ -1192,6 +1193,10 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.valuePush_prehop
 -- M1 (A5m-V) run IV: the relocate loop (restores SHW = [1]·1^k in place).
 #print axioms Pnp4.Frontier.ContractExpansion.valuePush_relocate
+-- M1 (A5m-V) run V: branch transitions + epilogue (the entry's second framing 1).
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_drain_to_reloc
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_reloc_to_epilogue
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_epilogue
 #print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_scanRight_hop
 -- D2t-5b (Block A5m-U4): whole-run transfer -- a native component run transports into the host
 -- region (phase offset, equal heads, value-wise tape agreement) under trace safety (no visited

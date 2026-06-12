@@ -43,7 +43,8 @@ namespace RegionEmbeddedMulti
 variable {U P : ConstStatePhasedProgram Unit} {base : Nat} {redirect : Nat → Option Nat}
 
 /-- **One coupled step.**  With the host at the (unmapped) offset phase, equal heads, and agreeing
-tapes — and the native head clear of its tape's last cell — one step preserves the coupling. -/
+tapes — and the native head clear of its tape's last cell — one step preserves the coupling, and
+the host tape above the native range is untouched (the coupled head writes below it). -/
 theorem step_track (hUP : RegionEmbeddedMulti U P base redirect) {L : Nat}
     (hlen : P.toPhased.toTM.tapeLength L ≤ U.toPhased.toTM.tapeLength L)
     (ch : Configuration (M := U.toPhased.toTM) L) (cn : Configuration (M := P.toPhased.toTM) L)
@@ -57,7 +58,10 @@ theorem step_track (hUP : RegionEmbeddedMulti U P base redirect) {L : Nat}
       ∧ ((TM.stepConfig (M := U.toPhased.toTM) ch).head : Nat)
           = ((TM.stepConfig (M := P.toPhased.toTM) cn).head : Nat)
       ∧ TapeAgree (TM.stepConfig (M := U.toPhased.toTM) ch)
-          (TM.stepConfig (M := P.toPhased.toTM) cn) := by
+          (TM.stepConfig (M := P.toPhased.toTM) cn)
+      ∧ ∀ qh : Fin (U.toPhased.toTM.tapeLength L),
+          P.toPhased.toTM.tapeLength L ≤ (qh : Nat) →
+          (TM.stepConfig (M := U.toPhased.toTM) ch).tape qh = ch.tape qh := by
   -- The native phase, as a Fin of P.numPhases.
   have hnlt : (cn.state.fst : Nat) < P.numPhases := by
     have := cn.state.fst.isLt
@@ -94,7 +98,7 @@ theorem step_track (hUP : RegionEmbeddedMulti U P base redirect) {L : Nat}
   have hhhead := hUP.stepConfig_normal_head ch rfl j hijval hredj
   have hhtape := hUP.stepConfig_normal_tape ch rfl j hijval hredj
   rw [hbit] at hhphase hhhead hhtape
-  refine ⟨?_, ?_, ?_⟩
+  refine ⟨?_, ?_, ?_, ?_⟩
   · rw [hhphase, hnphase]
   · rw [hhhead, hnhead]
     -- Equal heads move equally (the native never clamps; the host has at least as much room).
@@ -126,10 +130,19 @@ theorem step_track (hUP : RegionEmbeddedMulti U P base redirect) {L : Nat}
       simp only [Configuration.write]
       rw [dif_neg hqh, dif_neg hqn]
       exact htape qh qn hq
+  · intro qh hqh
+    rw [hhtape]
+    have hne : qh ≠ ch.head := by
+      intro hc
+      have : (qh : Nat) = (ch.head : Nat) := by rw [hc]
+      omega
+    simp only [Configuration.write]
+    rw [dif_neg hne]
 
 /-- **Whole-run transfer.**  If the host couples to the native start, and along the native run no
 visited phase is redirect-mapped and the head stays clear of the native tape's last cell, the
-coupling persists for `t` steps: host phase = `base +` native phase, equal heads, agreeing tapes. -/
+coupling persists for `t` steps: host phase = `base +` native phase, equal heads, agreeing tapes —
+and the host tape above the native range is untouched (the coupled head writes below it). -/
 theorem run_track (hUP : RegionEmbeddedMulti U P base redirect) {L : Nat}
     (hlen : P.toPhased.toTM.tapeLength L ≤ U.toPhased.toTM.tapeLength L)
     (ch0 : Configuration (M := U.toPhased.toTM) L) (cn0 : Configuration (M := P.toPhased.toTM) L)
@@ -146,14 +159,18 @@ theorem run_track (hUP : RegionEmbeddedMulti U P base redirect) {L : Nat}
       ∧ ((TM.runConfig (M := U.toPhased.toTM) ch0 t).head : Nat)
           = ((TM.runConfig (M := P.toPhased.toTM) cn0 t).head : Nat)
       ∧ TapeAgree (TM.runConfig (M := U.toPhased.toTM) ch0 t)
-          (TM.runConfig (M := P.toPhased.toTM) cn0 t) := by
+          (TM.runConfig (M := P.toPhased.toTM) cn0 t)
+      ∧ ∀ qh : Fin (U.toPhased.toTM.tapeLength L),
+          P.toPhased.toTM.tapeLength L ≤ (qh : Nat) →
+          (TM.runConfig (M := U.toPhased.toTM) ch0 t).tape qh = ch0.tape qh := by
   induction t with
-  | zero => exact ⟨hphase0, hhead0, htape0⟩
+  | zero => exact ⟨hphase0, hhead0, htape0, fun _ _ => rfl⟩
   | succ t ih =>
-      obtain ⟨hph, hhd, htp⟩ := ih (fun s hs => hsafe s (by omega))
+      obtain ⟨hph, hhd, htp, hhi⟩ := ih (fun s hs => hsafe s (by omega))
       obtain ⟨hred, hroom⟩ := hsafe t (by omega)
       rw [TM.runConfig_succ, TM.runConfig_succ]
-      exact step_track hUP hlen _ _ hph hhd htp hred hroom
+      obtain ⟨hph', hhd', htp', hhi'⟩ := step_track hUP hlen _ _ hph hhd htp hred hroom
+      exact ⟨hph', hhd', htp', fun qh hqh => (hhi' qh hqh).trans (hhi qh hqh)⟩
 
 end RegionEmbeddedMulti
 

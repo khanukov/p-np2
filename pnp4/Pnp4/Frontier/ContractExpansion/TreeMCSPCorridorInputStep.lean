@@ -22,73 +22,70 @@ open Pnp3.Internal.PsubsetPpoly.TM.Encoding
 
 /-- The leaf-arm tape transformer, generic over the consumed token's length `tlen`: value push
 (inner), output emit (middle), cursor-marker update (outer). -/
-def leafStepTape {L : Nat} (tape : Fin L → Bool) (cur tlen vtop oc fm : Nat)
+def leafStepTape {L : Nat} (tape : Fin L → Bool) (cur tlen vtop fm : Nat)
     (ventry rec : List Bool) : Fin L → Bool :=
-  cursorStepTape (emitTape (writeBlockTape tape vtop ventry) oc fm rec) cur tlen
+  cursorStepTape (emitTape (writeBlockTape tape vtop ventry) fm rec) cur tlen
 
 /-- Off all three regions, `leafStepTape` is the identity. -/
-theorem leafStepTape_eq_id {L : Nat} (tape : Fin L → Bool) (cur tlen vtop oc fm : Nat)
+theorem leafStepTape_eq_id {L : Nat} (tape : Fin L → Bool) (cur tlen vtop fm : Nat)
     (ventry rec : List Bool) (q : Fin L)
     (hc1 : (q : Nat) ≠ cur + tlen - 1)
     (hc2 : ¬ (cur - 1 ≤ (q : Nat) ∧ (q : Nat) < cur + tlen - 1))
-    (he1 : (q : Nat) ≠ oc - 1) (he2 : ¬ (fm ≤ (q : Nat) ∧ (q : Nat) < fm + rec.length))
+    (he2 : ¬ (fm ≤ (q : Nat) ∧ (q : Nat) < fm + rec.length))
     (he3 : (q : Nat) ≠ fm + rec.length)
     (hw : ¬ (vtop ≤ (q : Nat) ∧ (q : Nat) < vtop + ventry.length)) :
-    leafStepTape tape cur tlen vtop oc fm ventry rec q = tape q := by
+    leafStepTape tape cur tlen vtop fm ventry rec q = tape q := by
   unfold leafStepTape
-  rw [cursorStepTape_off _ _ _ q hc1 hc2, emitTape_off _ _ _ _ q he1 he2 he3]
+  rw [cursorStepTape_off _ _ _ q hc1 hc2, emitTape_off _ _ _ q he2 he3]
   unfold writeBlockTape
   rw [if_neg hw]
 
 /-- On the cursor area, `leafStepTape` is `cursorStepTape` of the original tape. -/
-theorem leafStepTape_eq_cursor {L : Nat} (tape : Fin L → Bool) (cur tlen vtop oc fm : Nat)
+theorem leafStepTape_eq_cursor {L : Nat} (tape : Fin L → Bool) (cur tlen vtop fm : Nat)
     (ventry rec : List Bool) (q : Fin L)
-    (he1 : (q : Nat) ≠ oc - 1) (he2 : ¬ (fm ≤ (q : Nat) ∧ (q : Nat) < fm + rec.length))
+    (he2 : ¬ (fm ≤ (q : Nat) ∧ (q : Nat) < fm + rec.length))
     (he3 : (q : Nat) ≠ fm + rec.length)
     (hw : ¬ (vtop ≤ (q : Nat) ∧ (q : Nat) < vtop + ventry.length)) :
-    leafStepTape tape cur tlen vtop oc fm ventry rec q = cursorStepTape tape cur tlen q := by
+    leafStepTape tape cur tlen vtop fm ventry rec q = cursorStepTape tape cur tlen q := by
   unfold leafStepTape cursorStepTape
   by_cases hq1 : (q : Nat) = cur + tlen - 1
   · rw [if_pos hq1, if_pos hq1]
   · rw [if_neg hq1, if_neg hq1]
     by_cases hq2 : cur - 1 ≤ (q : Nat) ∧ (q : Nat) < cur + tlen - 1
     · rw [if_pos hq2, if_pos hq2]
-    · rw [if_neg hq2, if_neg hq2, emitTape_off _ _ _ _ q he1 he2 he3]
+    · rw [if_neg hq2, if_neg hq2, emitTape_off _ _ _ q he2 he3]
       unfold writeBlockTape
       rw [if_neg hw]
 
 /-- On the output region, `leafStepTape` is `emitTape` of the original tape. -/
-theorem leafStepTape_eq_emit {L : Nat} (tape : Fin L → Bool) (cur tlen vtop oc fm : Nat)
+theorem leafStepTape_eq_emit {L : Nat} (tape : Fin L → Bool) (cur tlen vtop fm : Nat)
     (ventry rec : List Bool) (q : Fin L)
     (hc1 : (q : Nat) ≠ cur + tlen - 1)
     (hc2 : ¬ (cur - 1 ≤ (q : Nat) ∧ (q : Nat) < cur + tlen - 1))
     (hw : ¬ (vtop ≤ (q : Nat) ∧ (q : Nat) < vtop + ventry.length)) :
-    leafStepTape tape cur tlen vtop oc fm ventry rec q = emitTape tape oc fm rec q := by
+    leafStepTape tape cur tlen vtop fm ventry rec q = emitTape tape fm rec q := by
   unfold leafStepTape
   rw [cursorStepTape_off _ _ _ q hc1 hc2]
   unfold emitTape
-  by_cases hq1 : (q : Nat) = oc - 1
-  · rw [if_pos hq1, if_pos hq1]
-  · rw [if_neg hq1, if_neg hq1]
-    by_cases hq2 : fm ≤ (q : Nat) ∧ (q : Nat) < fm + rec.length
-    · rw [if_pos hq2, if_pos hq2]
-    · rw [if_neg hq2, if_neg hq2]
-      by_cases hq3 : (q : Nat) = fm + rec.length
-      · rw [if_pos hq3, if_pos hq3]
-      · rw [if_neg hq3, if_neg hq3]
-        unfold writeBlockTape
-        rw [if_neg hw]
+  by_cases hq2 : fm ≤ (q : Nat) ∧ (q : Nat) < fm + rec.length
+  · rw [if_pos hq2, if_pos hq2]
+  · rw [if_neg hq2, if_neg hq2]
+    by_cases hq3 : (q : Nat) = fm + rec.length
+    · rw [if_pos hq3, if_pos hq3]
+    · rw [if_neg hq3, if_neg hq3]
+      unfold writeBlockTape
+      rw [if_neg hw]
 
 /-- On the value block, `leafStepTape` is `writeBlockTape` of the original tape. -/
-theorem leafStepTape_eq_write {L : Nat} (tape : Fin L → Bool) (cur tlen vtop oc fm : Nat)
+theorem leafStepTape_eq_write {L : Nat} (tape : Fin L → Bool) (cur tlen vtop fm : Nat)
     (ventry rec : List Bool) (q : Fin L)
     (hc1 : (q : Nat) ≠ cur + tlen - 1)
     (hc2 : ¬ (cur - 1 ≤ (q : Nat) ∧ (q : Nat) < cur + tlen - 1))
-    (he1 : (q : Nat) ≠ oc - 1) (he2 : ¬ (fm ≤ (q : Nat) ∧ (q : Nat) < fm + rec.length))
+    (he2 : ¬ (fm ≤ (q : Nat) ∧ (q : Nat) < fm + rec.length))
     (he3 : (q : Nat) ≠ fm + rec.length) :
-    leafStepTape tape cur tlen vtop oc fm ventry rec q = writeBlockTape tape vtop ventry q := by
+    leafStepTape tape cur tlen vtop fm ventry rec q = writeBlockTape tape vtop ventry q := by
   unfold leafStepTape
-  rw [cursorStepTape_off _ _ _ q hc1 hc2, emitTape_off _ _ _ _ q he1 he2 he3]
+  rw [cursorStepTape_off _ _ _ q hc1 hc2, emitTape_off _ _ _ q he2 he3]
 
 /-- **The input-leaf keystone.**  For a reading state whose next token is `leaf (input i)` (tail
 nonempty), with output, value-zone and shadow-count capacity, `leafStepTape` (token length
@@ -100,7 +97,6 @@ theorem corridorInv_inputStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ wid
     (hinv : driverCorridorInv width h_width z tape
       (⟨PreToken.leaf (SLGate.input i) :: toks', out, ctrl, val, false⟩ : DriveState n))
     (htoks : toks' ≠ [])
-    (hocap : z.outBase + out.length + 2 ≤ z.workBase)
     (hwcap : z.workBase + (encodeGateRecordStream out).length
         + (encodeGateRecord (SLGate.input i : SLGate n)).length + 1 ≤ z.workEnd)
     (hvcap : z.valBase + (encodeNatStackR val).length + (out.length + 3) ≤ z.valEnd)
@@ -112,15 +108,14 @@ theorem corridorInv_inputStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ wid
             (PreToken.leaf (SLGate.input i) :: toks')).length)
           (3 + width)
           (z.valBase + (encodeNatStackR val).length)
-          (z.workBase - 1 - out.length)
           (z.workBase + (encodeGateRecordStream out).length)
           (encodeNatEntryR out.length)
           (encodeGateRecord (SLGate.input i : SLGate n)))
         (z.shwBase + out.length + 1) [true])
       (⟨toks', out ++ [SLGate.input i], ctrl, out.length :: val, true⟩ : DriveState n) := by
-  obtain ⟨hwf, hcert, hcfit, hmark, hcorr, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
+  obtain ⟨hwf, hcert, hcfit, hmark, hcorr, hout, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
     hshw, hsfit, hszeros, hctrl, hcfit2, hvalid, hcoh⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11⟩ := hwf
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hwf
   replace hcert : windowSpells tape
       (z.certEnd - (encodePreorder width h_width (PreToken.leaf (SLGate.input i) :: toks')).length)
       (encodePreorder width h_width (PreToken.leaf (SLGate.input i) :: toks')) := hcert
@@ -131,9 +126,8 @@ theorem corridorInv_inputStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ wid
       (p : Nat) < z.certEnd
         - (encodePreorder width h_width (PreToken.leaf (SLGate.input i) :: toks')).length - 1 →
       tape p = false := hcorr
-  replace hout : windowSpells tape (z.workBase - 1 - out.length)
-      (unaryField out.length ++ encodeGateRecordStream out) := hout
-  replace hofit : z.outBase + out.length + 1 ≤ z.workBase := hofit
+  replace hout : windowSpells tape (z.workBase - 1 - z.outCount)
+      (unaryField z.outCount ++ encodeGateRecordStream out) := hout
   replace hffit : z.workBase + (encodeGateRecordStream out).length + 1 ≤ z.workEnd := hffit
   replace hfzeros : ∀ p : Fin L,
       z.workBase + (encodeGateRecordStream out).length + 1 ≤ (p : Nat) →
@@ -194,8 +188,8 @@ theorem corridorInv_inputStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ wid
     simp only [List.length_singleton]
     omega
   dsimp only [driverCorridorInv]
-  refine ⟨⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
-    ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  refine ⟨⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
+    ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   -- 1. cert suffix window.
   · obtain ⟨hc1, _, _, _⟩ := cursorStepTape_cert width h_width tape z.certEnd
       (z.ctrlBase + (encodeCtrlStackR ctrl).length) (3 + width) (PreToken.leaf (SLGate.input i))
@@ -205,8 +199,8 @@ theorem corridorInv_inputStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ wid
             (PreToken.leaf (SLGate.input i) :: toks')).length + (3 + width) from by omega]
     refine windowSpells_congr _ _ _ _ hc1 (fun q hlo hhi => ?_)
     rw [htickA _ q (by omega),
-      leafStepTape_eq_cursor tape _ _ _ _ _ _ _ q
-      (by omega) (by rw [hreclen]; omega) (by rw [hreclen]; omega)
+      leafStepTape_eq_cursor tape _ _ _ _ _ _ q
+      (by rw [hreclen]; omega) (by rw [hreclen]; omega)
       (by rw [hventrylen]; omega)]
   -- 2. cert fit.
   · omega
@@ -216,8 +210,8 @@ theorem corridorInv_inputStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ wid
         = z.certEnd - (encodePreorder width h_width
             (PreToken.leaf (SLGate.input i) :: toks')).length + (3 + width) - 1 from by omega] at hp
     rw [htickA _ p (by omega),
-      leafStepTape_eq_cursor tape _ _ _ _ _ _ _ p
-      (by omega) (by rw [hreclen]; omega) (by rw [hreclen]; omega)
+      leafStepTape_eq_cursor tape _ _ _ _ _ _ p
+      (by rw [hreclen]; omega) (by rw [hreclen]; omega)
       (by rw [hventrylen]; omega)]
     unfold cursorStepTape
     rw [if_pos hp]
@@ -228,8 +222,8 @@ theorem corridorInv_inputStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ wid
             (PreToken.leaf (SLGate.input i) :: toks')).length + (3 + width) - 1 from by omega]
       at hhi
     rw [htickA _ p (by omega),
-      leafStepTape_eq_cursor tape _ _ _ _ _ _ _ p
-      (by omega) (by rw [hreclen]; omega) (by rw [hreclen]; omega)
+      leafStepTape_eq_cursor tape _ _ _ _ _ _ p
+      (by rw [hreclen]; omega) (by rw [hreclen]; omega)
       (by rw [hventrylen]; omega)]
     unfold cursorStepTape
     rw [if_neg (by omega)]
@@ -240,48 +234,41 @@ theorem corridorInv_inputStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ wid
     · rw [if_pos hband]
     · rw [if_neg hband]
       exact hcorr p hlo (by omega)
-  -- 5. output window.
-  · have hemit := emitTape_output_window tape (z.workBase - 1 - out.length) out
-      (SLGate.input i : SLGate n) (by omega) hout
-      (by rw [List.length_append, unaryField_length]; omega)
+  -- 5. output window (the static prefix + the appended record).
+  · have hemit := emitTape_output_window tape (z.workBase - 1 - z.outCount) z.outCount out
+      (SLGate.input i : SLGate n) hout
       (by
         rw [List.length_append, unaryField_length, hreclen]
         have := hval.1
         omega)
-    rw [hlen1, show z.workBase - 1 - (out.length + 1)
-        = z.workBase - 1 - out.length - 1 from by omega]
-    have hocfm : z.workBase - 1 - out.length
-        + (unaryField out.length ++ encodeGateRecordStream out).length
+    have hocfm : z.workBase - 1 - z.outCount
+        + (unaryField z.outCount ++ encodeGateRecordStream out).length
         = z.workBase + (encodeGateRecordStream out).length := by
       rw [List.length_append, unaryField_length]; omega
-    rw [show z.workBase - 1 - out.length - 1 + 1 = z.workBase - 1 - out.length from by omega,
-      hocfm] at hemit
+    rw [hocfm] at hemit
     refine windowSpells_congr _ _ _ _ hemit (fun q hlo hhi => ?_)
     rw [htickB _ q (by rw [List.length_append, unaryField_length, hstreamlen] at hhi; omega),
-      leafStepTape_eq_emit tape _ _ _ _ _ _ _ q
+      leafStepTape_eq_emit tape _ _ _ _ _ _ q
       (by rw [List.length_append, unaryField_length, hstreamlen] at hhi; omega)
       (by rw [List.length_append, unaryField_length, hstreamlen] at hhi; omega)
       (by rw [List.length_append, unaryField_length, hstreamlen] at hhi
           rw [hventrylen]; omega)]
-  -- 6. output left fit.
-  · rw [hlen1]
-    omega
-  -- 7. new frontier marker.
+  -- 6. new frontier marker.
   · intro p hp
     rw [hstreamlen] at hp
     rw [htickB _ p (by omega),
-      leafStepTape_eq_emit tape _ _ _ _ _ _ _ p
+      leafStepTape_eq_emit tape _ _ _ _ _ _ p
       (by omega) (by omega) (by rw [hventrylen]; omega)]
-    exact emitTape_FM tape _ _ _ (by omega) p (by rw [hreclen]; omega)
-  -- 8. frontier fit.
+    exact emitTape_FM tape _ _ p (by rw [hreclen]; omega)
+  -- 7. frontier fit.
   · rw [hstreamlen]
     omega
   -- 9. FM→val dead corridor.
   · intro p hlo hhi
     rw [hstreamlen] at hlo
     rw [htickB _ p (by omega),
-      leafStepTape_eq_id tape _ _ _ _ _ _ _ p
-      (by omega) (by omega) (by omega) (by rw [hreclen]; omega) (by rw [hreclen]; omega)
+      leafStepTape_eq_id tape _ _ _ _ _ _ p
+      (by omega) (by omega) (by rw [hreclen]; omega) (by rw [hreclen]; omega)
       (by rw [hventrylen]; omega)]
     exact hfzeros p (by omega) hhi
   -- 10. value window.
@@ -290,8 +277,8 @@ theorem corridorInv_inputStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ wid
     refine windowSpells_congr _ _ _ _ hvw (fun q hlo hhi => ?_)
     rw [encodeNatStackR_cons, List.length_append, encodeNatEntryR_length] at hhi
     rw [htickB _ q (by omega),
-      leafStepTape_eq_write tape _ _ _ _ _ _ _ q
-      (by omega) (by omega) (by omega) (by rw [hreclen]; omega) (by rw [hreclen]; omega)]
+      leafStepTape_eq_write tape _ _ _ _ _ _ q
+      (by omega) (by omega) (by rw [hreclen]; omega) (by rw [hreclen]; omega)]
   -- 11. value fit.
   · rw [encodeNatStackR_cons, List.length_append, encodeNatEntryR_length]
     omega
@@ -299,8 +286,8 @@ theorem corridorInv_inputStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ wid
   · intro p hlo hhi
     rw [encodeNatStackR_cons, List.length_append, encodeNatEntryR_length] at hlo
     rw [htickB _ p (by omega),
-      leafStepTape_eq_id tape _ _ _ _ _ _ _ p
-      (by omega) (by omega) (by omega) (by rw [hreclen]; omega) (by rw [hreclen]; omega)
+      leafStepTape_eq_id tape _ _ _ _ _ _ p
+      (by omega) (by omega) (by rw [hreclen]; omega) (by rw [hreclen]; omega)
       (by rw [hventrylen]; omega)]
     exact hvzeros p (by omega) hhi
   -- 12a. SHW window: the tick appends one `1` to the spelled `1`-block.
@@ -312,15 +299,14 @@ theorem corridorInv_inputStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ wid
             (PreToken.leaf (SLGate.input i) :: toks')).length)
           (3 + width)
           (z.valBase + (encodeNatStackR val).length)
-          (z.workBase - 1 - out.length)
           (z.workBase + (encodeGateRecordStream out).length)
           (encodeNatEntryR out.length)
           (encodeGateRecord (SLGate.input i : SLGate n)))
         z.shwBase (List.replicate (out.length + 1) true) := by
       refine windowSpells_congr _ _ _ _ hshw (fun q hlo hhi => ?_)
       rw [List.length_replicate] at hhi
-      rw [leafStepTape_eq_id tape _ _ _ _ _ _ _ q
-        (by omega) (by omega) (by omega) (by rw [hreclen]; omega) (by rw [hreclen]; omega)
+      rw [leafStepTape_eq_id tape _ _ _ _ _ _ q
+        (by omega) (by omega) (by rw [hreclen]; omega) (by rw [hreclen]; omega)
         (by rw [hventrylen]; omega)]
     have happ := windowSpells_writeAppend _ z.shwBase (List.replicate (out.length + 1) true)
       [true] hshw' (by rw [List.length_replicate, List.length_singleton]; omega)
@@ -334,16 +320,16 @@ theorem corridorInv_inputStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ wid
   · intro p hlo hhi
     rw [hlen1] at hlo
     rw [htickA _ p (by omega),
-      leafStepTape_eq_id tape _ _ _ _ _ _ _ p
-      (by omega) (by omega) (by omega) (by rw [hreclen]; omega) (by rw [hreclen]; omega)
+      leafStepTape_eq_id tape _ _ _ _ _ _ p
+      (by omega) (by omega) (by rw [hreclen]; omega) (by rw [hreclen]; omega)
       (by rw [hventrylen]; omega)]
     exact hszeros p (by omega) hhi
   -- 13. control window (untouched).
   · refine windowSpells_congr _ _ _ _ hctrl (fun q hlo hhi => ?_)
     have hq : (q : Nat) < z.ctrlEnd := by have := hctrl.1; omega
     rw [htickA _ q (by omega),
-      leafStepTape_eq_id tape _ _ _ _ _ _ _ q
-      (by omega) (by omega) (by omega) (by rw [hreclen]; omega) (by rw [hreclen]; omega)
+      leafStepTape_eq_id tape _ _ _ _ _ _ q
+      (by omega) (by omega) (by rw [hreclen]; omega) (by rw [hreclen]; omega)
       (by rw [hventrylen]; omega)]
   -- 14. control fit.
   · exact hcfit2

@@ -69,52 +69,49 @@ theorem encodeNatStackR_append (a b : List Nat) :
 
 /-- The settle-emit tape transformer over explicit anchors: control-frame erase (innermost, block
 `cblock` at `cfb`), value pop-then-push (middle, block `vblock` at `pb`), output emit (outermost,
-count cell `oc − 1`, record `rec` at `fm`). -/
+record `rec` at `fm`, `FM` replant). -/
 def popStepTape {L : Nat} (tape : Fin L → Bool) (cfb : Nat) (cblock : List Bool)
-    (pb : Nat) (vblock : List Bool) (oc fm : Nat) (rec : List Bool) : Fin L → Bool :=
-  emitTape (writeBlockTape (writeBlockTape tape cfb cblock) pb vblock) oc fm rec
+    (pb : Nat) (vblock : List Bool) (fm : Nat) (rec : List Bool) : Fin L → Bool :=
+  emitTape (writeBlockTape (writeBlockTape tape cfb cblock) pb vblock) fm rec
 
 /-- Off all three regions, `popStepTape` is the identity. -/
 theorem popStepTape_eq_id {L : Nat} (tape : Fin L → Bool) (cfb : Nat) (cblock : List Bool)
-    (pb : Nat) (vblock : List Bool) (oc fm : Nat) (rec : List Bool) (q : Fin L)
-    (he1 : (q : Nat) ≠ oc - 1) (he2 : ¬ (fm ≤ (q : Nat) ∧ (q : Nat) < fm + rec.length))
+    (pb : Nat) (vblock : List Bool) (fm : Nat) (rec : List Bool) (q : Fin L)
+    (he2 : ¬ (fm ≤ (q : Nat) ∧ (q : Nat) < fm + rec.length))
     (he3 : (q : Nat) ≠ fm + rec.length)
     (hv : ¬ (pb ≤ (q : Nat) ∧ (q : Nat) < pb + vblock.length))
     (hc : ¬ (cfb ≤ (q : Nat) ∧ (q : Nat) < cfb + cblock.length)) :
-    popStepTape tape cfb cblock pb vblock oc fm rec q = tape q := by
+    popStepTape tape cfb cblock pb vblock fm rec q = tape q := by
   unfold popStepTape
-  rw [emitTape_off _ _ _ _ q he1 he2 he3]
+  rw [emitTape_off _ _ _ q he2 he3]
   unfold writeBlockTape
   rw [if_neg hv, if_neg hc]
 
 /-- On the output region, `popStepTape` is `emitTape` of the original tape. -/
 theorem popStepTape_eq_emit {L : Nat} (tape : Fin L → Bool) (cfb : Nat) (cblock : List Bool)
-    (pb : Nat) (vblock : List Bool) (oc fm : Nat) (rec : List Bool) (q : Fin L)
+    (pb : Nat) (vblock : List Bool) (fm : Nat) (rec : List Bool) (q : Fin L)
     (hv : ¬ (pb ≤ (q : Nat) ∧ (q : Nat) < pb + vblock.length))
     (hc : ¬ (cfb ≤ (q : Nat) ∧ (q : Nat) < cfb + cblock.length)) :
-    popStepTape tape cfb cblock pb vblock oc fm rec q = emitTape tape oc fm rec q := by
+    popStepTape tape cfb cblock pb vblock fm rec q = emitTape tape fm rec q := by
   unfold popStepTape emitTape
-  by_cases hq1 : (q : Nat) = oc - 1
-  · rw [if_pos hq1, if_pos hq1]
-  · rw [if_neg hq1, if_neg hq1]
-    by_cases hq2 : fm ≤ (q : Nat) ∧ (q : Nat) < fm + rec.length
-    · rw [if_pos hq2, if_pos hq2]
-    · rw [if_neg hq2, if_neg hq2]
-      by_cases hq3 : (q : Nat) = fm + rec.length
-      · rw [if_pos hq3, if_pos hq3]
-      · rw [if_neg hq3, if_neg hq3]
-        unfold writeBlockTape
-        rw [if_neg hv, if_neg hc]
+  by_cases hq2 : fm ≤ (q : Nat) ∧ (q : Nat) < fm + rec.length
+  · rw [if_pos hq2, if_pos hq2]
+  · rw [if_neg hq2, if_neg hq2]
+    by_cases hq3 : (q : Nat) = fm + rec.length
+    · rw [if_pos hq3, if_pos hq3]
+    · rw [if_neg hq3, if_neg hq3]
+      unfold writeBlockTape
+      rw [if_neg hv, if_neg hc]
 
 /-- On the value block, `popStepTape` is the value `writeBlockTape` of the original tape. -/
 theorem popStepTape_eq_valwrite {L : Nat} (tape : Fin L → Bool) (cfb : Nat) (cblock : List Bool)
-    (pb : Nat) (vblock : List Bool) (oc fm : Nat) (rec : List Bool) (q : Fin L)
-    (he1 : (q : Nat) ≠ oc - 1) (he2 : ¬ (fm ≤ (q : Nat) ∧ (q : Nat) < fm + rec.length))
+    (pb : Nat) (vblock : List Bool) (fm : Nat) (rec : List Bool) (q : Fin L)
+    (he2 : ¬ (fm ≤ (q : Nat) ∧ (q : Nat) < fm + rec.length))
     (he3 : (q : Nat) ≠ fm + rec.length)
     (hc : ¬ (cfb ≤ (q : Nat) ∧ (q : Nat) < cfb + cblock.length)) :
-    popStepTape tape cfb cblock pb vblock oc fm rec q = writeBlockTape tape pb vblock q := by
+    popStepTape tape cfb cblock pb vblock fm rec q = writeBlockTape tape pb vblock q := by
   unfold popStepTape
-  rw [emitTape_off _ _ _ _ q he1 he2 he3]
+  rw [emitTape_off _ _ _ q he2 he3]
   unfold writeBlockTape
   by_cases hq : pb ≤ (q : Nat) ∧ (q : Nat) < pb + vblock.length
   · rw [if_pos hq, if_pos hq]
@@ -122,13 +119,13 @@ theorem popStepTape_eq_valwrite {L : Nat} (tape : Fin L → Bool) (cfb : Nat) (c
 
 /-- On the control block, `popStepTape` is the control `writeBlockTape` of the original tape. -/
 theorem popStepTape_eq_ctrlwrite {L : Nat} (tape : Fin L → Bool) (cfb : Nat) (cblock : List Bool)
-    (pb : Nat) (vblock : List Bool) (oc fm : Nat) (rec : List Bool) (q : Fin L)
-    (he1 : (q : Nat) ≠ oc - 1) (he2 : ¬ (fm ≤ (q : Nat) ∧ (q : Nat) < fm + rec.length))
+    (pb : Nat) (vblock : List Bool) (fm : Nat) (rec : List Bool) (q : Fin L)
+    (he2 : ¬ (fm ≤ (q : Nat) ∧ (q : Nat) < fm + rec.length))
     (he3 : (q : Nat) ≠ fm + rec.length)
     (hv : ¬ (pb ≤ (q : Nat) ∧ (q : Nat) < pb + vblock.length)) :
-    popStepTape tape cfb cblock pb vblock oc fm rec q = writeBlockTape tape cfb cblock q := by
+    popStepTape tape cfb cblock pb vblock fm rec q = writeBlockTape tape cfb cblock q := by
   unfold popStepTape
-  rw [emitTape_off _ _ _ _ q he1 he2 he3]
+  rw [emitTape_off _ _ _ q he2 he3]
   unfold writeBlockTape
   rw [if_neg hv]
 
@@ -145,7 +142,6 @@ theorem corridorInv_popStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width
     (tape : Fin L → Bool)
     (hinv : driverCorridorInv width h_width z tape
       (⟨toks, out, (tag, 1) :: ctrl', vpop ++ vs, true⟩ : DriveState n))
-    (hocap : z.outBase + out.length + 2 ≤ z.workBase)
     (hwcap : z.workBase + (encodeGateRecordStream out).length
         + (encodeGateRecord gate).length + 1 ≤ z.workEnd)
     (hvcap : z.valBase + (encodeNatStackR vs).length + (out.length + 3) ≤ z.valEnd)
@@ -158,14 +154,13 @@ theorem corridorInv_popStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width
           (z.valBase + (encodeNatStackR vs).length)
           (encodeNatEntryR out.length
             ++ List.replicate ((vpop.reverse.flatMap encodeNatEntryR).length - (out.length + 3)) false)
-          (z.workBase - 1 - out.length)
           (z.workBase + (encodeGateRecordStream out).length)
           (encodeGateRecord gate))
         (z.shwBase + out.length + 1) [true])
       (⟨toks, out ++ [gate], ctrl', out.length :: vs, true⟩ : DriveState n) := by
-  obtain ⟨hwf, hcert, hcfit, hmark, hcorr, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
+  obtain ⟨hwf, hcert, hcfit, hmark, hcorr, hout, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
     hshw, hsfit, hszeros, hctrl, hcfit2, hvalid, hcoh⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11⟩ := hwf
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hwf
   replace hcert : windowSpells tape
       (z.certEnd - (encodePreorder width h_width toks).length)
       (encodePreorder width h_width toks) := hcert
@@ -176,9 +171,8 @@ theorem corridorInv_popStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width
       z.ctrlBase + (encodeCtrlStackR ((tag, 1) :: ctrl')).length ≤ (p : Nat) →
       (p : Nat) < z.certEnd - (encodePreorder width h_width toks).length - 1 →
       tape p = false := hcorr
-  replace hout : windowSpells tape (z.workBase - 1 - out.length)
-      (unaryField out.length ++ encodeGateRecordStream out) := hout
-  replace hofit : z.outBase + out.length + 1 ≤ z.workBase := hofit
+  replace hout : windowSpells tape (z.workBase - 1 - z.outCount)
+      (unaryField z.outCount ++ encodeGateRecordStream out) := hout
   replace hFM : ∀ p : Fin L,
       (p : Nat) = z.workBase + (encodeGateRecordStream out).length → tape p = true := hFM
   replace hffit : z.workBase + (encodeGateRecordStream out).length + 1 ≤ z.workEnd := hffit
@@ -246,21 +240,21 @@ theorem corridorInv_popStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width
     simp only [List.length_singleton]
     omega
   dsimp only [driverCorridorInv]
-  refine ⟨⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
-    ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  refine ⟨⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
+    ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   -- 1. cert suffix window (untouched: cert is right of every write).
   · refine windowSpells_congr _ _ _ _ hcert (fun q hlo hhi => ?_)
     have hqlo : z.certBase ≤ (q : Nat) := by have := hcert.1; omega
     rw [htickA _ q (by omega)]
-    exact popStepTape_eq_id tape _ _ _ _ _ _ _ q
-      (by omega) (by omega) (by omega) (by omega) (by omega)
+    exact popStepTape_eq_id tape _ _ _ _ _ _ q
+      (by omega) (by omega) (by omega) (by omega)
   -- 2. cert fit (toks unchanged).
   · exact hcfit
   -- 3. cursor marker (untouched).
   · intro p hp
     rw [htickA _ p (by omega),
-      popStepTape_eq_id tape _ _ _ _ _ _ _ p
-      (by omega) (by omega) (by omega) (by omega) (by omega)]
+      popStepTape_eq_id tape _ _ _ _ _ _ p
+      (by omega) (by omega) (by omega) (by omega)]
     exact hmark p hp
   -- 4. consumed/dead corridor (new ctrl'); freed top-frame cells now read 0.
   · intro p hlo hhi
@@ -268,48 +262,43 @@ theorem corridorInv_popStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width
     by_cases hframe : (p : Nat) < z.ctrlBase + (encodeCtrlStackR ctrl').length
         + (encodeCtrlFrameR (tag, 1)).length
     · -- inside the erased frame zone: ctrl write, block all-false.
-      rw [popStepTape_eq_ctrlwrite tape _ _ _ _ _ _ _ p
-        (by omega) (by omega) (by omega) (by omega)]
+      rw [popStepTape_eq_ctrlwrite tape _ _ _ _ _ _ p
+        (by omega) (by omega) (by omega)]
       unfold writeBlockTape
       rw [if_pos ⟨by omega, by rw [hcblocklen]; omega⟩]
       exact getD_replicate_false _ _
     · -- at or past the old frame end: untouched, old hcorr.
-      rw [popStepTape_eq_id tape _ _ _ _ _ _ _ p
-        (by omega) (by omega) (by omega) (by omega) (by rw [hcblocklen]; omega)]
+      rw [popStepTape_eq_id tape _ _ _ _ _ _ p
+        (by omega) (by omega) (by omega) (by rw [hcblocklen]; omega)]
       exact hcorr p (by rw [holdctrllen]; omega) hhi
-  -- 5. output window (emit).
-  · have hemit := emitTape_output_window tape (z.workBase - 1 - out.length) out gate (by omega) hout
-      (by rw [List.length_append, unaryField_length]; omega)
+  -- 5. output window (emit; the static prefix + the appended record).
+  · have hemit := emitTape_output_window tape (z.workBase - 1 - z.outCount) z.outCount out gate
+      hout
       (by rw [List.length_append, unaryField_length]
           have := hval.1; rw [holdvallen] at this; omega)
-    rw [hlen1, show z.workBase - 1 - (out.length + 1)
-        = z.workBase - 1 - out.length - 1 from by omega]
-    have hocfm : z.workBase - 1 - out.length
-        + (unaryField out.length ++ encodeGateRecordStream out).length
+    have hocfm : z.workBase - 1 - z.outCount
+        + (unaryField z.outCount ++ encodeGateRecordStream out).length
         = z.workBase + (encodeGateRecordStream out).length := by
       rw [List.length_append, unaryField_length]; omega
-    rw [show z.workBase - 1 - out.length - 1 + 1 = z.workBase - 1 - out.length from by omega,
-      hocfm] at hemit
+    rw [hocfm] at hemit
     refine windowSpells_congr _ _ _ _ hemit (fun q hlo hhi => ?_)
     rw [List.length_append, unaryField_length, hstreamlen] at hhi
     rw [htickB _ q (by omega)]
-    exact popStepTape_eq_emit tape _ _ _ _ _ _ _ q (by omega) (by omega)
-  -- 6. output left fit.
-  · rw [hlen1]; omega
-  -- 7. new frontier marker.
+    exact popStepTape_eq_emit tape _ _ _ _ _ _ q (by omega) (by omega)
+  -- 6. new frontier marker.
   · intro p hp
     rw [hstreamlen] at hp
     rw [htickB _ p (by omega),
-      popStepTape_eq_emit tape _ _ _ _ _ _ _ p (by omega) (by omega)]
-    exact emitTape_FM tape _ _ _ (by omega) p (by omega)
-  -- 8. frontier fit.
+      popStepTape_eq_emit tape _ _ _ _ _ _ p (by omega) (by omega)]
+    exact emitTape_FM tape _ _ p (by omega)
+  -- 7. frontier fit.
   · rw [hstreamlen]; omega
   -- 9. FM→val dead corridor.
   · intro p hlo hhi
     rw [hstreamlen] at hlo
     rw [htickB _ p (by omega),
-      popStepTape_eq_id tape _ _ _ _ _ _ _ p
-      (by omega) (by omega) (by omega) (by omega) (by omega)]
+      popStepTape_eq_id tape _ _ _ _ _ _ p
+      (by omega) (by omega) (by omega) (by omega)]
     exact hfzeros p (by omega) hhi
   -- 10. value window (pop + push).
   · have hvw := valReplaceTop_window tape z.valBase vs (vpop.reverse.flatMap encodeNatEntryR)
@@ -319,7 +308,7 @@ theorem corridorInv_popStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width
     refine windowSpells_congr _ _ _ _ hvw (fun q hlo hhi => ?_)
     rw [hnewval, List.length_append, hventrylen] at hhi
     rw [htickB _ q (by omega)]
-    exact popStepTape_eq_valwrite tape _ _ _ _ _ _ _ q (by omega) (by omega) (by omega) (by omega)
+    exact popStepTape_eq_valwrite tape _ _ _ _ _ _ q (by omega) (by omega) (by omega)
   -- 11. value fit.
   · rw [hnewval, List.length_append, hventrylen]; omega
   -- 12. val→SHW dead corridor.
@@ -330,13 +319,13 @@ theorem corridorInv_popStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width
         + (encodeNatEntryR out.length
           ++ List.replicate ((vpop.reverse.flatMap encodeNatEntryR).length - (out.length + 3)) false).length
     · -- inside the written block, past the new entry: the pad reads 0.
-      rw [popStepTape_eq_valwrite tape _ _ _ _ _ _ _ p (by omega) (by omega) (by omega) (by omega)]
+      rw [popStepTape_eq_valwrite tape _ _ _ _ _ _ p (by omega) (by omega) (by omega)]
       unfold writeBlockTape
       rw [if_pos ⟨by omega, by omega⟩,
         List.getD_append_right _ _ _ _ (by rw [hventrylen]; omega), getD_replicate_false]
     · -- past the written block: untouched, old hvzeros.
-      rw [popStepTape_eq_id tape _ _ _ _ _ _ _ p
-        (by omega) (by omega) (by omega) (by omega) (by omega)]
+      rw [popStepTape_eq_id tape _ _ _ _ _ _ p
+        (by omega) (by omega) (by omega) (by omega)]
       exact hvzeros p (by rw [holdvallen]; omega) hhi
   -- 12a. SHW window: the tick appends one `1` to the spelled `1`-block.
   · rw [hlen1, show List.replicate (out.length + 1 + 1) true
@@ -348,14 +337,13 @@ theorem corridorInv_popStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width
           (z.valBase + (encodeNatStackR vs).length)
           (encodeNatEntryR out.length
             ++ List.replicate ((vpop.reverse.flatMap encodeNatEntryR).length - (out.length + 3)) false)
-          (z.workBase - 1 - out.length)
           (z.workBase + (encodeGateRecordStream out).length)
           (encodeGateRecord gate))
         z.shwBase (List.replicate (out.length + 1) true) := by
       refine windowSpells_congr _ _ _ _ hshw (fun q hlo hhi => ?_)
       rw [List.length_replicate] at hhi
-      exact popStepTape_eq_id tape _ _ _ _ _ _ _ q
-        (by omega) (by omega) (by omega) (by omega) (by omega)
+      exact popStepTape_eq_id tape _ _ _ _ _ _ q
+        (by omega) (by omega) (by omega) (by omega)
     have happ := windowSpells_writeAppend _ z.shwBase (List.replicate (out.length + 1) true)
       [true] hshw' (by rw [List.length_replicate, List.length_singleton]; omega)
     rw [List.length_replicate,
@@ -367,8 +355,8 @@ theorem corridorInv_popStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width
   · intro p hlo hhi
     rw [hlen1] at hlo
     rw [htickA _ p (by omega),
-      popStepTape_eq_id tape _ _ _ _ _ _ _ p
-      (by omega) (by omega) (by omega) (by omega) (by omega)]
+      popStepTape_eq_id tape _ _ _ _ _ _ p
+      (by omega) (by omega) (by omega) (by omega)]
     exact hszeros p (by omega) hhi
   -- 13. control window (shrunk to ctrl').
   · have hpre := windowSpells_append_left tape z.ctrlBase (encodeCtrlStackR ctrl')
@@ -377,8 +365,8 @@ theorem corridorInv_popStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width
     have hqend : (q : Nat) < z.ctrlBase + (encodeCtrlStackR ctrl').length := by
       have := hpre.1; omega
     rw [htickA _ q (by omega)]
-    exact popStepTape_eq_id tape _ _ _ _ _ _ _ q
-      (by omega) (by omega) (by omega) (by omega) (by omega)
+    exact popStepTape_eq_id tape _ _ _ _ _ _ q
+      (by omega) (by omega) (by omega) (by omega)
   -- 14. control fit.
   · omega
   -- 15. validity (toks unchanged).

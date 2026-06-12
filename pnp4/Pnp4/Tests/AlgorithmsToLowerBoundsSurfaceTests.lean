@@ -4227,7 +4227,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.corridorInv_nodeStep
 -- D2t-5b (Block A4a): the leaf-emit output-region helper (count increment + record append).
 #check @Pnp4.Frontier.ContractExpansion.emitTape
-#check @Pnp4.Frontier.ContractExpansion.gateStream_emit_eq
+#check @Pnp4.Frontier.ContractExpansion.encodeGateRecordStream_snoc
 #check @Pnp4.Frontier.ContractExpansion.emitTape_output_window
 #check @Pnp4.Frontier.ContractExpansion.emitTape_FM
 -- D2t-5b (Block A4a): the value-stack push as a written-block append.

@@ -1053,7 +1053,7 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.corridorInv_nodeStep
 -- D2t-5b (Block A4a): the leaf-emit output-region helper — count increment + record append at FM is
 -- exactly the new encodeGateStream window (reused by both the const and input keystones).
-#print axioms Pnp4.Frontier.ContractExpansion.gateStream_emit_eq
+#print axioms Pnp4.Frontier.ContractExpansion.encodeGateRecordStream_snoc
 #print axioms Pnp4.Frontier.ContractExpansion.emitTape_output_window
 #print axioms Pnp4.Frontier.ContractExpansion.emitTape_FM
 -- D2t-5b (Block A4a): the value-stack push as a written-block append (windowSpells extends by the new

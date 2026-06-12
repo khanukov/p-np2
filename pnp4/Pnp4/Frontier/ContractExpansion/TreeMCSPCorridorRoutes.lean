@@ -70,9 +70,9 @@ theorem corridor_scan_M_to_ctrlTop {n L : Nat} (width : Nat) (h_width : n ≤ 2 
     ∧ (TM.runConfig (M := selfLoopScanLeft.toPhased.toTM) c0
         (((c0.head : Nat) - (z.ctrlBase + (encodeCtrlStackR st.ctrl).length - 1)) + 1)).tape
         = c0.tape := by
-  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
+  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
     hshw, hsfit, hszeros, hctrl, hcfit2, hvalid, hcoh⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11⟩ := hwf
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hwf
   have hlen1 : 1 ≤ (encodeCtrlStackR st.ctrl).length := by
     have := encodeCtrlStackR_getLast_true st.ctrl
     cases hctrl' : encodeCtrlStackR st.ctrl with
@@ -101,9 +101,9 @@ theorem corridor_walk_ctrl {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width)
         = z.ctrlBase - 1
     ∧ (TM.runConfig (M := zoneWalkLeft.toPhased.toTM) c0
         (walkZoneSteps (st.ctrl.flatMap fun f => [f.1.tagCode + 2, f.2 + 1]))).tape = c0.tape := by
-  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
+  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
     hshw, hsfit, hszeros, hctrl, hcfit2, hvalid, hcoh⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11⟩ := hwf
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hwf
   have hlen : (encodeCtrlStackR st.ctrl).length
       = (walkZone (st.ctrl.flatMap fun f => [f.1.tagCode + 2, f.2 + 1])).length := by
     rw [encodeCtrlStackR_eq_walkZone]
@@ -140,9 +140,9 @@ theorem corridor_scan_to_shwTop {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ w
         = z.shwBase + st.out.length
     ∧ (TM.runConfig (M := selfLoopScanLeft.toPhased.toTM) c0
         (((c0.head : Nat) - (z.shwBase + st.out.length)) + 1)).tape = c0.tape := by
-  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
+  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
     hshw, hsfit, hszeros, hctrl, hcfit2, hvalid, hcoh⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11⟩ := hwf
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hwf
   have hterm : ∀ p : Fin (selfLoopScanLeft.toPhased.toTM.tapeLength L),
       (p : Nat) = z.shwBase + st.out.length → c0.tape p = true := by
     have := windowSpells_getLast_true c0.tape z.shwBase _ hshw (by
@@ -174,9 +174,9 @@ theorem corridor_scan_to_valTop {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ w
     ∧ (TM.runConfig (M := selfLoopScanLeft.toPhased.toTM) c0
         (((c0.head : Nat) - (z.valBase + (encodeNatStackR st.val).length - 1)) + 1)).tape
         = c0.tape := by
-  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
+  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
     hshw, hsfit, hszeros, hctrl, hcfit2, hvalid, hcoh⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11⟩ := hwf
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hwf
   have hlen1 : 1 ≤ (encodeNatStackR st.val).length := by
     cases hv : encodeNatStackR st.val with
     | nil =>
@@ -204,9 +204,9 @@ theorem corridor_walk_val {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width)
         (walkZoneSteps (st.val.map (· + 2)))).head : Nat) = z.valBase - 1
     ∧ (TM.runConfig (M := zoneWalkLeft.toPhased.toTM) c0
         (walkZoneSteps (st.val.map (· + 2)))).tape = c0.tape := by
-  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
+  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
     hshw, hsfit, hszeros, hctrl, hcfit2, hvalid, hcoh⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11⟩ := hwf
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hwf
   have hlen : (encodeNatStackR st.val).length = (walkZone (st.val.map (· + 2))).length := by
     rw [encodeNatStackR_eq_walkZone]
   exact zoneWalkLeft_runConfig_walkZone c0 (st.val.map (· + 2))
@@ -237,9 +237,9 @@ theorem corridor_scan_to_FM {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width
     ∧ (TM.runConfig (M := selfLoopScanLeft.toPhased.toTM) c0
         (((c0.head : Nat) - (z.workBase + (encodeGateRecordStream st.out).length)) + 1)).tape
         = c0.tape := by
-  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
+  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
     hshw, hsfit, hszeros, hctrl, hcfit2, hvalid, hcoh⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11⟩ := hwf
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hwf
   exact selfLoopScanLeft_runConfig_terminator c0 hphase
     (z.workBase + (encodeGateRecordStream st.out).length)
     (by omega)

@@ -61,7 +61,6 @@ def driverStepTape {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width) (z : Dr
                     (encodeNatEntryR out.length
                       ++ List.replicate ((([i] : List Nat).reverse.flatMap encodeNatEntryR).length
                           - (out.length + 3)) false)
-                    (z.workBase - 1 - out.length)
                     (z.workBase + (encodeGateRecordStream out).length)
                     (encodeGateRecord (SLGate.notGate i : SLGate n)))
                   (z.shwBase + out.length + 1) [true]
@@ -73,7 +72,6 @@ def driverStepTape {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width) (z : Dr
                     (encodeNatEntryR out.length
                       ++ List.replicate ((([i2, i1] : List Nat).reverse.flatMap encodeNatEntryR).length
                           - (out.length + 3)) false)
-                    (z.workBase - 1 - out.length)
                     (z.workBase + (encodeGateRecordStream out).length)
                     (encodeGateRecord (SLGate.andGate i1 i2 : SLGate n)))
                   (z.shwBase + out.length + 1) [true]
@@ -85,7 +83,6 @@ def driverStepTape {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width) (z : Dr
                     (encodeNatEntryR out.length
                       ++ List.replicate ((([i2, i1] : List Nat).reverse.flatMap encodeNatEntryR).length
                           - (out.length + 3)) false)
-                    (z.workBase - 1 - out.length)
                     (z.workBase + (encodeGateRecordStream out).length)
                     (encodeGateRecord (SLGate.orGate i1 i2 : SLGate n)))
                   (z.shwBase + out.length + 1) [true]
@@ -101,7 +98,6 @@ def driverStepTape {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width) (z : Dr
           (z.certEnd - (encodePreorder width h_width (PreToken.leaf g :: toks')).length)
           (encodePreToken width h_width (PreToken.leaf g)).length
           (z.valBase + (encodeNatStackR val).length)
-          (z.workBase - 1 - out.length)
           (z.workBase + (encodeGateRecordStream out).length)
           (encodeNatEntryR out.length)
           (encodeGateRecord g))
@@ -126,20 +122,17 @@ def DriverStepFits {n : Nat} (z : DriverCorridor) (st : DriveState n) : Prop :=
           if rem = 1 then
             match tag, val with
             | ITag.tnot, i :: vs =>
-                z.outBase + out.length + 2 ≤ z.workBase
-                ∧ z.workBase + (encodeGateRecordStream out).length
+                z.workBase + (encodeGateRecordStream out).length
                     + (encodeGateRecord (SLGate.notGate i : SLGate n)).length + 1 ≤ z.workEnd
                 ∧ z.valBase + (encodeNatStackR vs).length + (out.length + 3) ≤ z.valEnd
                 ∧ z.shwBase + out.length + 2 ≤ z.shwEnd
             | ITag.tand, i2 :: i1 :: vs =>
-                z.outBase + out.length + 2 ≤ z.workBase
-                ∧ z.workBase + (encodeGateRecordStream out).length
+                z.workBase + (encodeGateRecordStream out).length
                     + (encodeGateRecord (SLGate.andGate i1 i2 : SLGate n)).length + 1 ≤ z.workEnd
                 ∧ z.valBase + (encodeNatStackR vs).length + (out.length + 3) ≤ z.valEnd
                 ∧ z.shwBase + out.length + 2 ≤ z.shwEnd
             | ITag.tor, i2 :: i1 :: vs =>
-                z.outBase + out.length + 2 ≤ z.workBase
-                ∧ z.workBase + (encodeGateRecordStream out).length
+                z.workBase + (encodeGateRecordStream out).length
                     + (encodeGateRecord (SLGate.orGate i1 i2 : SLGate n)).length + 1 ≤ z.workEnd
                 ∧ z.valBase + (encodeNatStackR vs).length + (out.length + 3) ≤ z.valEnd
                 ∧ z.shwBase + out.length + 2 ≤ z.shwEnd
@@ -147,8 +140,7 @@ def DriverStepFits {n : Nat} (z : DriverCorridor) (st : DriveState n) : Prop :=
           else True
   | ⟨[], _, _, _, false⟩ => True
   | ⟨PreToken.leaf g :: _, out, _, val, false⟩ =>
-      z.outBase + out.length + 2 ≤ z.workBase
-      ∧ z.workBase + (encodeGateRecordStream out).length
+      z.workBase + (encodeGateRecordStream out).length
           + (encodeGateRecord g).length + 1 ≤ z.workEnd
       ∧ z.valBase + (encodeNatStackR val).length + (out.length + 3) ≤ z.valEnd
       ∧ z.shwBase + out.length + 2 ≤ z.shwEnd
@@ -185,7 +177,7 @@ theorem corridorInv_driverStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ wi
                 | cons i vs =>
                     simp only [driverStepTape, DriveState.step, DriverStepFits] at hfits ⊢
                     exact corridorInv_popStep width h_width z ITag.tnot (SLGate.notGate i)
-                      [i] vs toks out ctrl' tape hinv hfits.1 hfits.2.1 hfits.2.2.1 hfits.2.2.2
+                      [i] vs toks out ctrl' tape hinv hfits.1 hfits.2.1 hfits.2.2
             | tand =>
                 cases val with
                 | nil =>
@@ -200,7 +192,7 @@ theorem corridorInv_driverStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ wi
                         simp only [driverStepTape, DriveState.step, DriverStepFits] at hfits ⊢
                         exact corridorInv_popStep width h_width z ITag.tand
                           (SLGate.andGate i1 i2) [i2, i1] vs toks out ctrl' tape hinv
-                          hfits.1 hfits.2.1 hfits.2.2.1 hfits.2.2.2
+                          hfits.1 hfits.2.1 hfits.2.2
             | tor =>
                 cases val with
                 | nil =>
@@ -215,7 +207,7 @@ theorem corridorInv_driverStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ wi
                         simp only [driverStepTape, DriveState.step, DriverStepFits] at hfits ⊢
                         exact corridorInv_popStep width h_width z ITag.tor
                           (SLGate.orGate i1 i2) [i2, i1] vs toks out ctrl' tape hinv
-                          hfits.1 hfits.2.1 hfits.2.2.1 hfits.2.2.2
+                          hfits.1 hfits.2.1 hfits.2.2
           · by_cases h2 : 2 ≤ rem
             · simp only [driverStepTape, DriveState.step, if_neg hrem, if_pos h2]
               exact corridorInv_decStep width h_width z tag rem h2 toks out ctrl' val tape hinv
@@ -232,12 +224,12 @@ theorem corridorInv_driverStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ wi
           cases tok with
           | leaf g =>
               simp only [DriverStepFits] at hfits
-              obtain ⟨hocap, hwcap, hvcap, hscap⟩ := hfits
+              obtain ⟨hwcap, hvcap, hscap⟩ := hfits
               cases toks' with
               | nil =>
                   simp only [driverStepTape, DriveState.step]
                   exact corridorInv_leafStep_last width h_width z g out ctrl val tape hinv
-                    hocap hwcap hvcap hscap
+                    hwcap hvcap hscap
               | cons t ts =>
                   cases g with
                   | input i =>
@@ -250,7 +242,7 @@ theorem corridorInv_driverStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ wi
                         rw [List.length_append, encodeFin_length]
                         rfl]
                       exact corridorInv_inputStep width h_width z i (t :: ts) out ctrl val tape
-                        hinv (List.cons_ne_nil t ts) hocap hwcap hvcap hscap
+                        hinv (List.cons_ne_nil t ts) hwcap hvcap hscap
                   | const b =>
                       have hwcap4 : z.workBase + (encodeGateRecordStream out).length + 4
                           ≤ z.workEnd := by
@@ -259,19 +251,19 @@ theorem corridorInv_driverStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ wi
                         omega
                       simp only [driverStepTape, DriveState.step]
                       exact corridorInv_constStep width h_width z b (t :: ts) out ctrl val tape
-                        hinv (List.cons_ne_nil t ts) hocap hwcap4 hvcap hscap
+                        hinv (List.cons_ne_nil t ts) hwcap4 hvcap hscap
                   | notGate k =>
-                      obtain ⟨_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, hvalid, _⟩
+                      obtain ⟨_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, hvalid, _⟩
                         := hinv
                       have h := hvalid _ (List.mem_cons_self ..)
                       simp only [ValidCertToken] at h
                   | andGate k l =>
-                      obtain ⟨_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, hvalid, _⟩
+                      obtain ⟨_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, hvalid, _⟩
                         := hinv
                       have h := hvalid _ (List.mem_cons_self ..)
                       simp only [ValidCertToken] at h
                   | orGate k l =>
-                      obtain ⟨_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, hvalid, _⟩
+                      obtain ⟨_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, hvalid, _⟩
                         := hinv
                       have h := hvalid _ (List.mem_cons_self ..)
                       simp only [ValidCertToken] at h

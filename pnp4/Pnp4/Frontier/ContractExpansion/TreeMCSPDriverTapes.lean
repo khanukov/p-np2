@@ -62,11 +62,13 @@ theorem corridorInv_driverTapes {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ w
         (ih (fun j hj => hfits j (by omega))) (hfits k (by omega))
 
 /-- **The transcoder's semantic endpoint.**  Starting from the initial corridor layout for the
-certificate `c` (the `driverCorridorInv_init` configuration), with every step's zone capacities,
+certificate `c` (the `driverCorridorInv_init` configuration, with the static count prefix planted
+at the final gate count `z.outCount = |(flatten c).gates|`), with every step's zone capacities,
 after `3 · c.size` micro-steps the output window spells `encodeGateStream (flatten c).gates` — the
 count-prefixed postorder gate stream, exactly the decoder/interpreter input format. -/
 theorem driverTapes_terminal_output {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width)
     (z : DriverCorridor) (c : CircuitTree n) (tape0 : Fin L → Bool)
+    (hN : z.outCount = (CircuitTree.flatten c).gates.length)
     (hinv0 : driverCorridorInv width h_width z tape0
       (⟨preorder c, [], [], [], false⟩ : DriveState n))
     (hfits : ∀ j, j < 3 * c.size →
@@ -79,7 +81,7 @@ theorem driverTapes_terminal_output {n L : Nat} (width : Nat) (h_width : n ≤ 2
   have hinv := corridorInv_driverTapes width h_width z _ tape0 (3 * c.size) hinv0 hfits
   obtain ⟨_hterm, hout_eq⟩ := driveStep_halts_bound (n := n) c
   obtain ⟨_, _, _, _, _, hout, _⟩ := hinv
-  rw [hout_eq] at hout
+  rw [hout_eq, hN] at hout
   simpa [encodeGateStream] using hout
 
 end ContractExpansion

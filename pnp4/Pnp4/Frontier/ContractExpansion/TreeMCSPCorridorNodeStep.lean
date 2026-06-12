@@ -53,9 +53,9 @@ theorem corridorInv_nodeStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ widt
         (z.ctrlBase + (encodeCtrlStackR ctrl).length)
         (encodeCtrlFrameR (tag, tag.arity)))
       (⟨toks', out, (tag, tag.arity) :: ctrl, val, false⟩ : DriveState n) := by
-  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
+  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
     hshw, hsfit, hszeros, hctrl, hcfit2, hvalid, hcoh⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11⟩ := hwf
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hwf
   replace hcert : windowSpells tape
       (z.certEnd - (encodePreorder width h_width (PreToken.node tag :: toks')).length)
       (encodePreorder width h_width (PreToken.node tag :: toks')) := hcert
@@ -71,9 +71,8 @@ theorem corridorInv_nodeStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ widt
       (p : Nat) < z.certEnd
         - (encodePreorder width h_width (PreToken.node tag :: toks')).length - 1 →
       tape p = false := hczeros
-  replace hout : windowSpells tape (z.workBase - 1 - out.length)
-      (unaryField out.length ++ encodeGateRecordStream out) := hout
-  replace hofit : z.outBase + out.length + 1 ≤ z.workBase := hofit
+  replace hout : windowSpells tape (z.workBase - 1 - z.outCount)
+      (unaryField z.outCount ++ encodeGateRecordStream out) := hout
   replace hFM : ∀ p : Fin L,
       (p : Nat) = z.workBase + (encodeGateRecordStream out).length → tape p = true := hFM
   replace hffit : z.workBase + (encodeGateRecordStream out).length + 1 ≤ z.workEnd := hffit
@@ -125,8 +124,8 @@ theorem corridorInv_nodeStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ widt
     have : z.ctrlEnd + 2 < z.certBase := h9
     omega
   dsimp only [driverCorridorInv]
-  refine ⟨⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
-    ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  refine ⟨⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
+    ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   -- 1. The certificate suffix window at the new cursor (cur + 3), untouched by the update.
   · have hsuf := windowSpells_append_right tape cur _ _ (by rw [← hbits]; exact hcert)
     rw [htag3] at hsuf
@@ -165,14 +164,12 @@ theorem corridorInv_nodeStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ widt
     rw [← this]
     show nodeStepTape tape cur fb fr q = tape q
     unfold nodeStepTape
-    have hlist : (unaryField out.length ++ encodeGateRecordStream out).length
-        = out.length + 1 + (encodeGateRecordStream out).length := by
+    have hlist : (unaryField z.outCount ++ encodeGateRecordStream out).length
+        = z.outCount + 1 + (encodeGateRecordStream out).length := by
       rw [List.length_append, unaryField_length]
     rw [hlist] at hhi
     rw [if_neg (by omega), if_neg (by omega), if_neg (by omega)]
-  -- 6. The output left fit.
-  · exact hofit
-  -- 7. The frontier marker, untouched.
+  -- 6. The frontier marker, untouched.
   · intro p hp
     have := hFM p hp
     rw [← this]

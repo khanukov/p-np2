@@ -197,8 +197,8 @@ theorem settleProbe_runConfig_frame {n L : Nat} (width : Nat) (h_width : n ≤ 2
     (((TM.runConfig (M := settleProbe.toPhased.toTM) c0 2).state).fst : Nat) = 2
       ∧ ((TM.runConfig (M := settleProbe.toPhased.toTM) c0 2).head : Nat) = (c0.head : Nat) - 1
       ∧ (TM.runConfig (M := settleProbe.toPhased.toTM) c0 2).tape = c0.tape := by
-  obtain ⟨hwf, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, hctrlw, hcfit2, _, _⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11⟩ := hwf
+  obtain ⟨hwf, _, _, _, _, _, _, _, _, _, _, _, _, _, _, hctrlw, hcfit2, _, _⟩ := hinv
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hwf
   replace hctrlw : windowSpells c0.tape z.ctrlBase (encodeCtrlStackR st.ctrl) := hctrlw
   replace hcfit2 : z.ctrlBase + (encodeCtrlStackR st.ctrl).length ≤ z.ctrlEnd := hcfit2
   -- The encoded stack has ≥ 2 cells (sentinel + a frame's ≥ 8 cells).
@@ -261,8 +261,8 @@ theorem settleProbe_runConfig_empty {n L : Nat} (width : Nat) (h_width : n ≤ 2
     (((TM.runConfig (M := settleProbe.toPhased.toTM) c0 2).state).fst : Nat) = 3
       ∧ ((TM.runConfig (M := settleProbe.toPhased.toTM) c0 2).head : Nat) = z.ctrlBase - 1
       ∧ (TM.runConfig (M := settleProbe.toPhased.toTM) c0 2).tape = c0.tape := by
-  obtain ⟨hwf, _, _, _, _, _, _, _, _, _, _, _, _, _, hsfit, hszeros, _, _, _, _⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11⟩ := hwf
+  obtain ⟨hwf, _, _, _, _, _, _, _, _, _, _, _, _, hsfit, hszeros, _, _, _, _⟩ := hinv
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hwf
   replace hsfit : z.shwBase + st.out.length + 1 ≤ z.shwEnd := hsfit
   replace hszeros : ∀ p : Fin (settleProbe.toPhased.toTM.tapeLength L),
       z.shwBase + st.out.length + 1 ≤ (p : Nat) →

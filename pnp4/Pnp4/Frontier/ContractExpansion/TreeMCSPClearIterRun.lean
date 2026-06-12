@@ -42,9 +42,9 @@ theorem clearIter_run {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width)
       ∧ ((TM.runConfig (M := clearIterProgram.toPhased.toTM) c0 T).head : Nat)
           = z.certEnd - (encodePreorder width h_width st.toks).length - 1
       ∧ (TM.runConfig (M := clearIterProgram.toPhased.toTM) c0 T).tape = c0.tape := by
-  obtain ⟨hwf, hcert, hcfit, hmark, hcorr, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
+  obtain ⟨hwf, hcert, hcfit, hmark, hcorr, hout, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
     hshw, hsfit, hszeros, hctrlw, hcfit2, hvalid, hcoh⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11⟩ := hwf
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hwf
   replace hmark : ∀ p : Fin (clearIterProgram.toPhased.toTM.tapeLength L),
       (p : Nat) = z.certEnd - (encodePreorder width h_width st.toks).length - 1 →
       c0.tape p = true := hmark

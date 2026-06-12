@@ -164,6 +164,11 @@ structure DriverCorridor where
   ctrlEnd : Nat
   certBase : Nat
   certEnd : Nat
+  /-- The **static** unary gate-count prefix: the *final* gate count, planted once by the init
+  bridge.  The count field lies left of the record stream, which is not backward-parseable, so no
+  sound machine route from the driver's home can reach the count cells once a record exists — the
+  count is therefore written before the run and never touched by the arms. -/
+  outCount : Nat
 
 /-- Corridor zone-chain well-formedness: `outBase < workBase < workEnd ∧ workEnd + 1 < valBase <
 valEnd ∧ valEnd + 1 < shwBase < shwEnd ∧ shwEnd + 1 < ctrlBase < ctrlEnd ∧ ctrlEnd + 2 < certBase ≤
@@ -177,6 +182,7 @@ def DriverCorridor.WellFormed (z : DriverCorridor) (L : Nat) : Prop :=
     ∧ z.valBase < z.valEnd ∧ z.valEnd + 1 < z.shwBase ∧ z.shwBase < z.shwEnd
     ∧ z.shwEnd + 1 < z.ctrlBase ∧ z.ctrlBase < z.ctrlEnd
     ∧ z.ctrlEnd + 2 < z.certBase ∧ z.certBase ≤ z.certEnd ∧ z.certEnd ≤ L
+    ∧ z.outBase + z.outCount + 1 ≤ z.workBase
 
 /-- **The corridor strong invariant.**  Live anchors derived from the abstract state (`cursor :=
 certEnd − |enc toks|`); every inter-region corridor is pinned all-`0` and every landing anchor is a
@@ -184,8 +190,10 @@ pinned `1`:
 
 * certificate suffix at the cursor + the **cursor marker** `1` at `cursor − 1` + consumed/dead zeros
   from the control stack's content end up to the marker;
-* output window `encodeGateStream st.out` (count + records, as A1) + the **frontier marker** `1` just
-  past the records + zeros from past the marker up to the value zone;
+* output window `unaryField z.outCount ++ encodeGateRecordStream st.out` (the **static** final-count
+  prefix — planted by init, unreachable hence untouched during the run — plus the records so far) +
+  the **frontier marker** `1` just past the records + zeros from past the marker up to the value
+  zone;
 * right-anchored stack windows at their fixed bases + zeros between the stacks' content ends and the
   next zone;
 * the **shadow-count window** `SHW` spells `1^(|out| + 1)` (the base sentinel plus one `1` per
@@ -205,10 +213,9 @@ def driverCorridorInv {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width)
   ∧ (∀ p : Fin L,
       z.ctrlBase + (encodeCtrlStackR st.ctrl).length ≤ (p : Nat) →
       (p : Nat) < z.certEnd - (encodePreorder width h_width st.toks).length - 1 → tape p = false)
-  -- output: encodeGateStream window (count + records) + frontier marker + dead corridor to VAL
-  ∧ windowSpells tape (z.workBase - 1 - st.out.length)
-      (unaryField st.out.length ++ encodeGateRecordStream st.out)
-  ∧ z.outBase + st.out.length + 1 ≤ z.workBase
+  -- output: the static count prefix + the records so far + frontier marker + dead corridor to VAL
+  ∧ windowSpells tape (z.workBase - 1 - z.outCount)
+      (unaryField z.outCount ++ encodeGateRecordStream st.out)
   ∧ (∀ p : Fin L,
       (p : Nat) = z.workBase + (encodeGateRecordStream st.out).length → tape p = true)
   ∧ z.workBase + (encodeGateRecordStream st.out).length + 1 ≤ z.workEnd
@@ -235,9 +242,11 @@ def driverCorridorInv {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width)
   ∧ (st.settling = true → st.val ≠ [])
 
 /-- **The corridor invariant holds at the start.**  Hypotheses: the zone chain; the certificate laid
-out at `certBase` ending at `certEnd`; the initial cursor marker at `certBase − 1`; the count
-terminator cell; the frontier marker at `workBase`; the two stack base sentinels and the
-shadow-count base sentinel; and the four dead corridors zeroed.  The certificate clause is
+out at `certBase` ending at `certEnd`; the initial cursor marker at `certBase − 1`; the **full
+static count prefix** `unaryField z.outCount` (the init bridge counts the certificate's tokens and
+plants the final gate count up front — the count field is unreachable once records exist, so it
+must be written before the run); the frontier marker at `workBase`; the two stack base sentinels
+and the shadow-count base sentinel; and the four dead corridors zeroed.  The certificate clause is
 `encodePreorder_preorder`; validity is `validCertTokens_preorder`. -/
 theorem driverCorridorInv_init {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width)
     (z : DriverCorridor) (tape : Fin L → Bool) (c : CircuitTree n)
@@ -245,7 +254,7 @@ theorem driverCorridorInv_init {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ wi
     (hcert : windowSpells tape z.certBase (encodeCircuitTree width h_width c))
     (hlen : z.certBase + (encodeCircuitTree width h_width c).length = z.certEnd)
     (hM : ∀ p : Fin L, (p : Nat) = z.certBase - 1 → tape p = true)
-    (hcount0 : windowSpells tape (z.workBase - 1) [false])
+    (hcount : windowSpells tape (z.workBase - 1 - z.outCount) (unaryField z.outCount))
     (hFM : ∀ p : Fin L, (p : Nat) = z.workBase → tape p = true)
     (hvalS : windowSpells tape z.valBase [true])
     (hshwS : windowSpells tape z.shwBase [true])
@@ -255,11 +264,11 @@ theorem driverCorridorInv_init {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ wi
     (hdead3 : ∀ p : Fin L, z.shwBase + 1 ≤ (p : Nat) → (p : Nat) < z.ctrlBase → tape p = false)
     (hdead4 : ∀ p : Fin L, z.ctrlBase + 1 ≤ (p : Nat) → (p : Nat) < z.certBase - 1 → tape p = false) :
     driverCorridorInv width h_width z tape (⟨preorder c, [], [], [], false⟩ : DriveState n) := by
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11⟩ := hwf
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hwf
   have hcur : z.certEnd - (encodePreorder width h_width (preorder c)).length = z.certBase := by
     rw [encodePreorder_preorder]; omega
-  refine ⟨⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
-    ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  refine ⟨⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
+    ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · show windowSpells tape (z.certEnd - (encodePreorder width h_width (preorder c)).length)
       (encodePreorder width h_width (preorder c))
     rw [hcur, encodePreorder_preorder]
@@ -272,10 +281,9 @@ theorem driverCorridorInv_init {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ wi
     rw [hcur] at hp2
     simp only [encodeCtrlStackR_nil, List.length_singleton] at hp1
     exact hdead4 p (by omega) (by omega)
-  · show windowSpells tape (z.workBase - 1 - List.length ([] : List (SLGate n)))
-      (unaryField (List.length ([] : List (SLGate n))) ++ encodeGateRecordStream ([] : List (SLGate n)))
-    simpa [unaryField, encodeGateRecordStream] using hcount0
-  · simp only [List.length_nil]; omega
+  · show windowSpells tape (z.workBase - 1 - z.outCount)
+      (unaryField z.outCount ++ encodeGateRecordStream ([] : List (SLGate n)))
+    simpa [encodeGateRecordStream] using hcount
   · intro p hp
     simp only [encodeGateRecordStream, List.length_nil, Nat.add_zero] at hp
     exact hFM p hp

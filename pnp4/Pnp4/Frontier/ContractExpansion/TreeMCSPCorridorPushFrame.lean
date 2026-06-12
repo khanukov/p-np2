@@ -82,9 +82,9 @@ theorem corridor_push_ctrl_frame {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ 
           ∨ z.ctrlBase + (encodeCtrlStackR ((tag, tag.arity) :: st.ctrl)).length ≤ (q : Nat)) →
         (TM.runConfig (M := (writeBits (encodeCtrlFrameR (tag, tag.arity))).toPhased.toTM) c
           (encodeCtrlFrameR (tag, tag.arity)).length).tape q = c.tape q := by
-  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
+  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
     hshw, hsfit, hszeros, hctrl, hcfit2, hvalid, hcoh⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11⟩ := hwf
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hwf
   have hlen : (encodeCtrlStackR ((tag, tag.arity) :: st.ctrl)).length
       = (encodeCtrlStackR st.ctrl).length + (encodeCtrlFrameR (tag, tag.arity)).length := by
     rw [encodeCtrlStackR_cons, List.length_append]

@@ -1,4 +1,5 @@
 import Pnp4.AlgorithmsToLowerBounds.BasicCircuitClasses
+import Pnp4.AlgorithmsToLowerBounds.DagShannonCounting
 import Pnp4.AlgorithmsToLowerBounds.Growth
 import Pnp4.AlgorithmsToLowerBounds.SuperPolynomialBridge
 import Pnp4.AlgorithmsToLowerBounds.AC0pSuperPolynomialBridge
@@ -4564,6 +4565,47 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.tagCheckThenGammaFill_runConfig
 -- Transitively-nested chain + capstone on the assembled mSkeletonU.
 #check @Pnp4.Frontier.ContractExpansion.tagCheckThenNestedGammaScan_runConfig
+
+section DagShannonCountingSurface
+
+open Pnp3.ComplexityInterfaces
+
+/-- Surface check: the explicit DAG description-count bound. -/
+def check_dagCodeBound (n g : Nat) : Nat :=
+  AlgorithmsToLowerBounds.dagCodeBound n g
+
+/-- Surface check: Shannon escape against a fixed DAG gate budget. -/
+theorem check_exists_hard_function_for_dag_gates (n g : Nat)
+    (hcount : AlgorithmsToLowerBounds.dagCodeBound n g < 2 ^ (2 ^ n)) :
+    ∃ f : Bitstring n → Bool,
+      ∀ C : DagCircuit n, C.gates ≤ g → DagCircuit.eval C ≠ f :=
+  AlgorithmsToLowerBounds.exists_hard_function_for_dag_gates n g hcount
+
+/-- Surface check: the diagonal hard language. -/
+noncomputable def check_dagHardLanguage : Language :=
+  AlgorithmsToLowerBounds.dagHardLanguage
+
+/-- Surface check: unconditional `PpolyDAG` lower bound for the diagonal language. -/
+theorem check_dagHardLanguage_not_PpolyDAG :
+    ¬ PpolyDAG AlgorithmsToLowerBounds.dagHardLanguage :=
+  AlgorithmsToLowerBounds.dagHardLanguage_not_PpolyDAG
+
+/-- Surface check: unconditional existence of a language outside `PpolyDAG`. -/
+theorem check_exists_language_not_PpolyDAG : ∃ L : Language, ¬ PpolyDAG L :=
+  AlgorithmsToLowerBounds.exists_language_not_PpolyDAG
+
+/-- Surface check: superpolynomial coverage of the per-length hardness budget. -/
+theorem check_dagHardBudget_superPolynomial (c : Nat) :
+    ∃ n : Nat, 2 ≤ n ∧ n ^ c + c ≤ AlgorithmsToLowerBounds.dagHardBudget n :=
+  AlgorithmsToLowerBounds.dagHardBudget_superPolynomial c
+
+/-- Surface check: honesty marker isolating the remaining NP-membership gap. -/
+theorem check_NP_not_subset_PpolyDAG_of_NP_dagHardLanguage
+    (h : NP AlgorithmsToLowerBounds.dagHardLanguage) :
+    NP_not_subset_PpolyDAG :=
+  AlgorithmsToLowerBounds.NP_not_subset_PpolyDAG_of_NP_dagHardLanguage h
+
+end DagShannonCountingSurface
 
 end Tests
 end Pnp4

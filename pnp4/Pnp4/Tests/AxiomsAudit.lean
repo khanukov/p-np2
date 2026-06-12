@@ -1,4 +1,5 @@
 import Pnp4.AlgorithmsToLowerBounds.AC0pAsymptoticBridge
+import Pnp4.AlgorithmsToLowerBounds.DagShannonCounting
 import Pnp4.AlgorithmsToLowerBounds.AC0pSuperPolynomialBridge
 import Pnp4.AlgorithmsToLowerBounds.MCSP_AC0p_Final
 import Pnp4.AlgorithmsToLowerBounds.MCSP_AC0p_Quantitative
@@ -1271,3 +1272,12 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckThenGammaScanTerminator_runConfig
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckThenGammaFill_runConfig
 #print axioms Pnp4.Frontier.ContractExpansion.tagCheckThenNestedGammaScan_runConfig
+
+-- Unconditional Shannon counting against `PpolyDAG` (DagShannonCounting).
+#print axioms Pnp4.AlgorithmsToLowerBounds.gateValueFuel_encodeCircuit
+#print axioms Pnp4.AlgorithmsToLowerBounds.codeEval_encodeCircuit
+#print axioms Pnp4.AlgorithmsToLowerBounds.exists_hard_function_for_dag_gates
+#print axioms Pnp4.AlgorithmsToLowerBounds.dagHardLanguage_not_PpolyDAG
+#print axioms Pnp4.AlgorithmsToLowerBounds.exists_language_not_PpolyDAG
+#print axioms Pnp4.AlgorithmsToLowerBounds.dagHardBudget_superPolynomial
+#print axioms Pnp4.AlgorithmsToLowerBounds.NP_not_subset_PpolyDAG_of_NP_dagHardLanguage

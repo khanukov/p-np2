@@ -72,6 +72,17 @@ Current theorem surface status:
 - `BasicCircuitClasses.lean`: minimal non-uniform circuit-class interface plus
   the input-masking operator `maskVec` and `ClosedUnderInputMasking`, the class
   closure condition needed for the masking/averaging translation proof.
+- `DagShannonCounting.lean`: unconditional Shannon-counting layer at the exact
+  `PpolyDAG` endpoint of the final bridge.  It proves an explicit
+  description-count bound for the functions computed by `DagCircuit` families,
+  the diagonal language `dagHardLanguage` with an outright
+  `¬ PpolyDAG dagHardLanguage` theorem, the unconditional existence theorem
+  `exists_language_not_PpolyDAG`, and superpolynomial coverage of the
+  self-calibrating per-length hardness budget `dagHardBudget`.  Honest scope:
+  this settles the hardness half of the research-gap target unconditionally
+  and isolates the remaining gap as NP-membership of a hard language; it does
+  not by itself reduce the `VerifiedNPDAGLowerBoundSource` obligation, whose
+  open half is the NP-membership of such a language.
 - `CoinProblem.lean`: exact finite-distribution semantics for the coin problem,
   monotonicity and complement laws for acceptance probabilities, total-mass
   normalization for product Bernoulli weights, and the reusable probability-gap

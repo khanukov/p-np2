@@ -946,6 +946,7 @@ end Pnp4
 -- A5m-V (M1): the non-destructive value-push machine and its headline.
 #print axioms Pnp4.Frontier.ContractExpansion.valuePushProgram
 #print axioms Pnp4.Frontier.ContractExpansion.valuePush_prologue
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_prologue_confined
 #print axioms Pnp4.Frontier.ContractExpansion.valuePush_prologue_k0
 #print axioms Pnp4.Frontier.ContractExpansion.valuePush_drain_mid
 #print axioms Pnp4.Frontier.ContractExpansion.valuePush_drain_final

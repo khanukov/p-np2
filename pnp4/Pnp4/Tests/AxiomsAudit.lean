@@ -129,6 +129,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPBitProbe
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionBitProbeHop
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionScanOnesSegments
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionZoneWalkHop
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionValuePushHop
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbe
 import Pnp4.Frontier.ContractExpansion.TreeMCSPAtomSeqP1
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbeFrame
@@ -1251,6 +1252,9 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.trackStart_tapeAgree
 #print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_walkZoneLeft_hop
 #print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_walkZoneRight_hop
+-- D2t-5b (Block A5m-6a, transfer): the M1 value-push fan-out in a union — the confinement
+-- stream discharges run_track, the strict corridor room closes the clamp-edge check.
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_valuePush_hop
 -- D2t-5b (Block A5m-3 run): the clear iteration END TO END on clearIterProgram -- from the settle
 -- home on the cursor marker, hop to the control top, probe (empty), return, scan home: phase 14,
 -- head back on the marker, tape untouched (= driverStepTape on the clear branch), <= 2*certEnd+13

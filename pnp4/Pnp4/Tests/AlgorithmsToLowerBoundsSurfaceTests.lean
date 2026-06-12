@@ -136,6 +136,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPScanRoundTrip
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverRealization
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTranscoderCapstone
 import Pnp4.Frontier.ContractExpansion.TreeMCSPBitProbe
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionBitProbeHop
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbe
 import Pnp4.Frontier.ContractExpansion.TreeMCSPAtomSeqP1
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbeFrame

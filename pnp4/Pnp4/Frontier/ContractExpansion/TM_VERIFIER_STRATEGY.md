@@ -1694,7 +1694,27 @@ Each milestone: content · run-lemma validation · est · unblocks.
 
 **Driver branch (→ unconditional D2t-6b):**
 
-* **M1 — A5m-V value-push primitive** (~2–4 sessions).  Non-destructive content-dependent copy of the
+* **M1 — A5m-V value-push primitive.**
+
+  > **STATUS — the value-push PRIMITIVE is CLOSED** (branch `claude/m1-value-push`, base
+  > `claude/gallant-goldberg-iqjsx0`; 8 commits; `check.sh` 17/17; standard `[propext,
+  > Classical.choice, Quot.sound]` triple; no `sorry`).  The standalone machine and its end-to-end
+  > run lemma are done and **validated by the run lemma** (broken-`remWalk` gate honoured):
+  > * `valuePushProgram` — the duplicator as an 81-phase `unionProgram` (`TreeMCSPValuePushProgram`);
+  > * `valuePush_pass` / `valuePush_drain` — the fan-out pass + drain induction (`…Pass`, `…Drain`);
+  > * `valuePush_prehop` / `valuePush_relocate` / `valuePush_epilogue` + the two branch transitions
+  >   (`…Prehop`, `…Relocate`, `…Epilogue`);
+  > * **headline `valuePush_correct`** (`…Correct`): from `ValuePushStart`, the machine reaches the
+  >   sink with `tape = writeBlockTape c0.tape (vend+1) (encodeNatEntryR k)` — the value entry written
+  >   at the value frontier with **everything else (the shadow count included) restored byte-for-byte**.
+  >   This is exactly the `writeBlockTape` image the leaf/const/pop keystones demand.
+  >
+  > **Remaining for the full driver wiring of M1 (the M1→M2 bridge, NOT the primitive):** the `SHW`-zone
+  > integration into `driverCorridorInv` (add the zone clause + per-emit tick; update the keystones /
+  > `driverStepTape` / `CorridorSized` / init — the 27-site churn below).  This is invasive to proven
+  > code and is the bridge by which the arms (M2) *call* the now-proven primitive.
+
+  *(Original plan, retained.)*  Non-destructive content-dependent copy of the
   gate count (k = `out.length` ones) into the value entry `encodeNatEntryR k = 0·1^(k+2)` at the
   value-zone top, **leaving the count intact**.  Conservation forces a *fan-out* (2k ones from k ⇒ ones
   must be created), and the value-entry ones must originate **right of the WORK record stream**.

@@ -3,6 +3,7 @@ import Pnp4.AlgorithmsToLowerBounds.DagShannonCounting
 import Pnp4.AlgorithmsToLowerBounds.SparseWitnessPruning
 import Pnp4.AlgorithmsToLowerBounds.SymmetricWitnessPruning
 import Pnp4.AlgorithmsToLowerBounds.ParityNPLowerBound
+import Pnp4.AlgorithmsToLowerBounds.CubeCoverPruning
 import Pnp4.AlgorithmsToLowerBounds.AC0pSuperPolynomialBridge
 import Pnp4.AlgorithmsToLowerBounds.MCSP_AC0p_Final
 import Pnp4.AlgorithmsToLowerBounds.MCSP_AC0p_Quantitative
@@ -1316,3 +1317,14 @@ end Pnp4
 #print axioms Pnp4.AlgorithmsToLowerBounds.evenParity_size_lower_bound
 #print axioms Pnp4.AlgorithmsToLowerBounds.exists_NP_language_with_linear_dag_lower_bound
 #print axioms Pnp4.AlgorithmsToLowerBounds.evenParityLanguage_in_PpolyDAG
+
+-- Cube-cover pruning (CubeCoverPruning).
+#print axioms Pnp4.AlgorithmsToLowerBounds.PpolyDAG_of_dnfBounded
+#print axioms Pnp4.AlgorithmsToLowerBounds.PpolyDAG_of_cnfBounded
+#print axioms Pnp4.AlgorithmsToLowerBounds.dnfBounded_of_polySparse
+#print axioms Pnp4.AlgorithmsToLowerBounds.not_dnfBounded_of_not_PpolyDAG
+#print axioms Pnp4.AlgorithmsToLowerBounds.not_cnfBounded_of_not_PpolyDAG
+#print axioms Pnp4.AlgorithmsToLowerBounds.VerifiedNPDAGLowerBoundSource.not_dnfBounded
+#print axioms Pnp4.AlgorithmsToLowerBounds.VerifiedNPDAGLowerBoundSource.not_cnfBounded
+#print axioms Pnp4.AlgorithmsToLowerBounds.dagHardLanguage_not_dnfBounded
+#print axioms Pnp4.AlgorithmsToLowerBounds.dagHardLanguage_not_cnfBounded

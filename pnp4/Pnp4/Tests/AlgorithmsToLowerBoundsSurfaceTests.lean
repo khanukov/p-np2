@@ -3,6 +3,7 @@ import Pnp4.AlgorithmsToLowerBounds.DagShannonCounting
 import Pnp4.AlgorithmsToLowerBounds.SparseWitnessPruning
 import Pnp4.AlgorithmsToLowerBounds.SymmetricWitnessPruning
 import Pnp4.AlgorithmsToLowerBounds.ParityNPLowerBound
+import Pnp4.AlgorithmsToLowerBounds.CubeCoverPruning
 import Pnp4.AlgorithmsToLowerBounds.Growth
 import Pnp4.AlgorithmsToLowerBounds.SuperPolynomialBridge
 import Pnp4.AlgorithmsToLowerBounds.AC0pSuperPolynomialBridge
@@ -4732,6 +4733,40 @@ theorem check_card_support_le {n : Nat} (C : DagCircuit n) :
   AlgorithmsToLowerBounds.card_support_le C
 
 end ParityNPLowerBoundSurface
+
+section CubeCoverPruningSurface
+
+open Pnp3.ComplexityInterfaces
+
+/-- Surface check: poly-DNF languages lie in `PpolyDAG`. -/
+theorem check_PpolyDAG_of_dnfBounded {L : Language}
+    (h : AlgorithmsToLowerBounds.DNFBounded L) : PpolyDAG L :=
+  AlgorithmsToLowerBounds.PpolyDAG_of_dnfBounded h
+
+/-- Surface check: poly-CNF languages lie in `PpolyDAG`. -/
+theorem check_PpolyDAG_of_cnfBounded {L : Language}
+    (h : AlgorithmsToLowerBounds.CNFBounded L) : PpolyDAG L :=
+  AlgorithmsToLowerBounds.PpolyDAG_of_cnfBounded h
+
+/-- Surface check: sparse languages are DNF-bounded (subsumption). -/
+theorem check_dnfBounded_of_polySparse {L : Language}
+    (h : AlgorithmsToLowerBounds.PolySparse L) :
+    AlgorithmsToLowerBounds.DNFBounded L :=
+  AlgorithmsToLowerBounds.dnfBounded_of_polySparse h
+
+/-- Surface check: witnesses need superpolynomial DNF complexity. -/
+theorem check_verifiedSource_not_dnfBounded
+    (src : AlgorithmsToLowerBounds.VerifiedNPDAGLowerBoundSource) :
+    ¬ AlgorithmsToLowerBounds.DNFBounded src.L :=
+  src.not_dnfBounded
+
+/-- Surface check: witnesses need superpolynomial CNF complexity. -/
+theorem check_verifiedSource_not_cnfBounded
+    (src : AlgorithmsToLowerBounds.VerifiedNPDAGLowerBoundSource) :
+    ¬ AlgorithmsToLowerBounds.CNFBounded src.L :=
+  src.not_cnfBounded
+
+end CubeCoverPruningSurface
 
 end Tests
 end Pnp4

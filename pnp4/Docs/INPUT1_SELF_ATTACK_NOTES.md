@@ -174,6 +174,39 @@ exists_NP_language_with_linear_dag_lower_bound :
    `n` coordinates to read).  Crossing from linear to superpolynomial is
    precisely where natural proofs, relativization, and locality stand.
 
+## Attack line 7: depth-2 structured witnesses, and the core ladder
+
+Continuation order: attack the open problem itself, leveraging machine
+strengths.  Two outputs.
+
+**(a) Cube-cover ratchet (provable, landed).**  The sparse pruning
+generalizes strictly: any language whose slices admit polynomial-size
+DNFs (unions of `n^c + c` subcubes) or polynomial-size CNFs lies in
+`PpolyDAG` (`PpolyDAG_of_dnfBounded`, `PpolyDAG_of_cnfBounded`,
+subsumption `dnfBounded_of_polySparse`).  A valid witness therefore needs
+superpolynomial depth-2 complexity on both sides — the structured corner
+of the witness space is now closed out to depth 2.
+
+**(b) The core ladder, stated exactly (where new mathematics begins).**
+For the mainline class (general DAG circuits) the machine-verified
+frontier and the human frontier are now both *linear*:
+
+1. in-repo: `n ≤ 2·gates + 1` for parity (support counting; this
+   session's `ParityNPLowerBound`);
+2. next rung, formalizable (connectivity / `V ≤ E + 1` over the reached
+   sub-DAG): `support ≤ gates + 1`, giving `gates ≥ n − 1` — the optimal
+   reading bound; requires a spanning-graph induction, not yet landed;
+3. human record (gate elimination, Schnorr 1974 → FGHK 2016): `≈ 3n` for
+   explicit functions — formalizable in principle (restriction +
+   elimination case analysis), multi-session;
+4. **beyond any constant times `n`: no proof exists in mathematics.**
+   Every known technique for general circuits stops at rung 3; natural
+   proofs, relativization and locality are theorems explaining *why* the
+   known technique classes stop.  An AI is bound by these exactly as a
+   human is: they constrain the space of proofs, not the species of the
+   prover.  What a machine adds is speed along rungs 1–3 and a
+   permanently verified record of where rung 4 begins.
+
 ## Net assessment after this session
 
 The boxed-in map after three working sessions:
@@ -185,7 +218,9 @@ The boxed-in map after three working sessions:
 4. (`ParityNPLowerBound`) the statement shape `NP ∧ lower bound` is
    achieved unconditionally at linear strength, with the first concrete
    `NP_TM` witness;
-5. (faithfulness audit) the statement offers no definitional slack.
+5. (`CubeCoverPruning`) the witness needs superpolynomial DNF and CNF
+   complexity — the depth-2 structured corner is closed;
+6. (faithfulness audit) the statement offers no definitional slack.
 
 The residual target is an `NP` verifier whose language is dense, co-dense,
 weight-asymmetric, and provably complex.  Every self-generated route to

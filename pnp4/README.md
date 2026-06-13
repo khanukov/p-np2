@@ -112,6 +112,13 @@ Current theorem surface status:
   language has `O(n²)` circuits, so the remaining distance from this theorem
   to `NP_not_subset_PpolyDAG` is exactly the quantitative jump from linear
   to superpolynomial.
+- `CubeCoverPruning.lean`: third structural ratchet, strictly generalizing
+  the sparse pruning.  Languages whose slices have polynomial-size DNFs
+  (unions of `n^c + c` subcubes) or polynomial-size CNFs lie in `PpolyDAG`
+  (`PpolyDAG_of_dnfBounded` / `PpolyDAG_of_cnfBounded`), so any valid
+  witness must have superpolynomial DNF and CNF complexity
+  (`VerifiedNPDAGLowerBoundSource.not_dnfBounded` / `.not_cnfBounded`);
+  sparse languages are formally subsumed (`dnfBounded_of_polySparse`).
 - `CoinProblem.lean`: exact finite-distribution semantics for the coin problem,
   monotonicity and complement laws for acceptance probabilities, total-mass
   normalization for product Bernoulli weights, and the reusable probability-gap

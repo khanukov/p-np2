@@ -2,6 +2,7 @@ import Pnp4.AlgorithmsToLowerBounds.AC0pAsymptoticBridge
 import Pnp4.AlgorithmsToLowerBounds.DagShannonCounting
 import Pnp4.AlgorithmsToLowerBounds.SparseWitnessPruning
 import Pnp4.AlgorithmsToLowerBounds.SymmetricWitnessPruning
+import Pnp4.AlgorithmsToLowerBounds.ParityNPLowerBound
 import Pnp4.AlgorithmsToLowerBounds.AC0pSuperPolynomialBridge
 import Pnp4.AlgorithmsToLowerBounds.MCSP_AC0p_Final
 import Pnp4.AlgorithmsToLowerBounds.MCSP_AC0p_Quantitative
@@ -1305,3 +1306,13 @@ end Pnp4
 #print axioms Pnp4.AlgorithmsToLowerBounds.not_weightDetermined_of_not_PpolyDAG
 #print axioms Pnp4.AlgorithmsToLowerBounds.VerifiedNPDAGLowerBoundSource.not_weightDetermined
 #print axioms Pnp4.AlgorithmsToLowerBounds.dagHardLanguage_not_weightDetermined
+
+-- NP-language linear DAG lower bound (ParityNPLowerBound).
+#print axioms Pnp4.AlgorithmsToLowerBounds.evenParityLanguage_NP
+#print axioms Pnp4.AlgorithmsToLowerBounds.parityTM_accepts_eq
+#print axioms Pnp4.AlgorithmsToLowerBounds.card_support_le
+#print axioms Pnp4.AlgorithmsToLowerBounds.support_full_of_computes_evenParity
+#print axioms Pnp4.AlgorithmsToLowerBounds.evenParity_linear_dag_lower_bound
+#print axioms Pnp4.AlgorithmsToLowerBounds.evenParity_size_lower_bound
+#print axioms Pnp4.AlgorithmsToLowerBounds.exists_NP_language_with_linear_dag_lower_bound
+#print axioms Pnp4.AlgorithmsToLowerBounds.evenParityLanguage_in_PpolyDAG

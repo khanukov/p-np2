@@ -100,6 +100,18 @@ Current theorem surface status:
   parity, and all other weight-determined candidates are formally excluded
   from the witness space (`VerifiedNPDAGLowerBoundSource.not_weightDetermined`).
   Also records the endpoint complement-closure law (`PpolyDAG_compl_iff`).
+- `ParityNPLowerBound.lean`: the first theorem in the repository with the
+  exact statement shape of the final research gap, at linear strength:
+  `exists_NP_language_with_linear_dag_lower_bound` exhibits a language with
+  a concrete `NP_TM` verifier (`evenParityLanguage_NP` — the first concrete
+  `NP_TM` membership in the repository, via the run-length trick that stops
+  the sweep at the instance/certificate boundary) and an unconditional
+  linear lower bound against every correct `DagCircuit`
+  (support counting: `card_support_le`, `evenParity_linear_dag_lower_bound`).
+  The companion upper bound `evenParityLanguage_in_PpolyDAG` shows the same
+  language has `O(n²)` circuits, so the remaining distance from this theorem
+  to `NP_not_subset_PpolyDAG` is exactly the quantitative jump from linear
+  to superpolynomial.
 - `CoinProblem.lean`: exact finite-distribution semantics for the coin problem,
   monotonicity and complement laws for acceptance probabilities, total-mass
   normalization for product Bernoulli weights, and the reusable probability-gap

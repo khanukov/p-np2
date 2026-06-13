@@ -2,6 +2,7 @@ import Pnp4.AlgorithmsToLowerBounds.BasicCircuitClasses
 import Pnp4.AlgorithmsToLowerBounds.DagShannonCounting
 import Pnp4.AlgorithmsToLowerBounds.SparseWitnessPruning
 import Pnp4.AlgorithmsToLowerBounds.SymmetricWitnessPruning
+import Pnp4.AlgorithmsToLowerBounds.ParityNPLowerBound
 import Pnp4.AlgorithmsToLowerBounds.Growth
 import Pnp4.AlgorithmsToLowerBounds.SuperPolynomialBridge
 import Pnp4.AlgorithmsToLowerBounds.AC0pSuperPolynomialBridge
@@ -4695,6 +4696,42 @@ theorem check_weightBundle_gates_le (n : Nat) :
   AlgorithmsToLowerBounds.weightBundle_gates_le n
 
 end SymmetricWitnessPruningSurface
+
+section ParityNPLowerBoundSurface
+
+open Pnp3.ComplexityInterfaces
+
+/-- Surface check: the first concrete `NP_TM` membership in the repository. -/
+theorem check_evenParityLanguage_NP :
+    NP AlgorithmsToLowerBounds.evenParityLanguage :=
+  AlgorithmsToLowerBounds.evenParityLanguage_NP
+
+/-- Surface check: the linear DAG lower bound for even parity. -/
+theorem check_evenParity_linear_dag_lower_bound {n : Nat} (C : DagCircuit n)
+    (hC : ∀ x, DagCircuit.eval C x
+      = AlgorithmsToLowerBounds.evenParityLanguage n x) :
+    n ≤ 2 * C.gates + 1 :=
+  AlgorithmsToLowerBounds.evenParity_linear_dag_lower_bound C hC
+
+/-- Surface check: the input-1-shaped statement with a linear bound. -/
+theorem check_exists_NP_language_with_linear_dag_lower_bound :
+    ∃ L : Language, NP L ∧
+      ∀ (n : Nat) (C : DagCircuit n),
+        (∀ x : Bitstring n, DagCircuit.eval C x = L n x) →
+          n ≤ 2 * C.gates + 1 :=
+  AlgorithmsToLowerBounds.exists_NP_language_with_linear_dag_lower_bound
+
+/-- Surface check: the companion upper bound — parity is in `PpolyDAG`. -/
+theorem check_evenParityLanguage_in_PpolyDAG :
+    PpolyDAG AlgorithmsToLowerBounds.evenParityLanguage :=
+  AlgorithmsToLowerBounds.evenParityLanguage_in_PpolyDAG
+
+/-- Surface check: the reusable support-counting bound. -/
+theorem check_card_support_le {n : Nat} (C : DagCircuit n) :
+    (DagCircuit.support C).card ≤ 2 * C.gates + 1 :=
+  AlgorithmsToLowerBounds.card_support_le C
+
+end ParityNPLowerBoundSurface
 
 end Tests
 end Pnp4

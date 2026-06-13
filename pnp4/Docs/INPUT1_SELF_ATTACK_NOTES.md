@@ -142,15 +142,50 @@ Together with the complement-closure law (`PpolyDAG_compl_iff`, proved en
 route), the witness space is closed under complement and excludes the
 sparse, co-sparse, and weight-determined corners.
 
+## Attack line 6: strike at the statement shape itself (third salvage)
+
+Direct order for this session: stop perimeter work and hit the goal's own
+statement.  The full statement (`∃ L, NP L ∧ ¬ PpolyDAG L`) requires a
+superpolynomial bound; the *shape* was achieved unconditionally at linear
+strength, and both halves were new for the repository:
+
+```text
+evenParityLanguage_NP : NP evenParityLanguage
+exists_NP_language_with_linear_dag_lower_bound :
+  ∃ L, NP L ∧ ∀ n C, (∀ x, eval C x = L n x) → n ≤ 2 * C.gates + 1
+```
+
+1. The `NP` half is the **first concrete `NP_TM` membership ever proved
+   in this repository** (the pnp4 TM-verifier programme had none).  The
+   unlock: the strict model's `runTime : ℕ → ℕ` may depend on input
+   length, so `parityTM` (a two-state XOR sweep with
+   `runTime m = m - 1`) halts exactly at the instance/certificate
+   boundary; no end-marker machinery is needed.  This makes every
+   one-pass finite-state language cheaply `NP_TM`-certifiable — reusable
+   for the verifier programme.
+2. The lower-bound half is a support-counting argument at the endpoint
+   model: a `DagCircuit` with `g` gates reads at most `2g + 1`
+   coordinates (`card_support_le`), while parity provably reads all `n`
+   (via the in-repo `eval_eq_of_eq_on_support`).
+3. The honest ceiling of this line is also formal: the same language has
+   `O(n²)` circuits (`evenParityLanguage_in_PpolyDAG`, from attack
+   line 5's machinery), so this witness can never close input 1; and the
+   support argument can never give more than `n` (a function only has
+   `n` coordinates to read).  Crossing from linear to superpolynomial is
+   precisely where natural proofs, relativization, and locality stand.
+
 ## Net assessment after this session
 
-The boxed-in map after the second session:
+The boxed-in map after three working sessions:
 
 1. (`DagShannonCounting`) hardness exists unconditionally at the endpoint;
 2. (`SparseWitnessPruning`) the witness is dense and co-dense;
 3. (`SymmetricWitnessPruning`) the witness is not weight-determined, and
    hardness is complement-symmetric;
-4. (faithfulness audit) the statement offers no definitional slack.
+4. (`ParityNPLowerBound`) the statement shape `NP ∧ lower bound` is
+   achieved unconditionally at linear strength, with the first concrete
+   `NP_TM` witness;
+5. (faithfulness audit) the statement offers no definitional slack.
 
 The residual target is an `NP` verifier whose language is dense, co-dense,
 weight-asymmetric, and provably complex.  Every self-generated route to

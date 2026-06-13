@@ -327,6 +327,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPRegionScanOnesSegments,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPRegionZoneWalkHop,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPRegionValuePushHop,
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPRegionUnaryTransferHop,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPConstIterProgram,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPConstIterRun,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPConstWriteChain,

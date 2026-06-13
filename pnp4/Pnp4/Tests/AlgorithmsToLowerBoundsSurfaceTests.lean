@@ -140,6 +140,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionBitProbeHop
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionScanOnesSegments
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionZoneWalkHop
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionValuePushHop
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionUnaryTransferHop
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbe
 import Pnp4.Frontier.ContractExpansion.TreeMCSPAtomSeqP1
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbeFrame
@@ -4382,6 +4383,8 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_walkZoneRight_hop
 -- D2t-5b (Block A5m-6a, transfer): the M1 value-push fan-out in a union.
 #check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_valuePush_hop
+-- D2t-5b (Block A5m-2, transfer): the unary-block mover in a union.
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_unaryTransfer_hop
 -- D2t-5b (Block A5m-3 run): the clear iteration end to end.
 #check @Pnp4.Frontier.ContractExpansion.clearIter_run
 -- D2t-5b (Block A5m-U6): the host-generic write segment (tape = writeBlockTape).

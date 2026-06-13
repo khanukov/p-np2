@@ -1270,8 +1270,8 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.popIter_region_ctop_4
 #print axioms Pnp4.Frontier.ContractExpansion.popIter_region_rem_14
 #print axioms Pnp4.Frontier.ContractExpansion.popIter_region_probe_185
-#print axioms Pnp4.Frontier.ContractExpansion.popIter_region_transfer_248
-#print axioms Pnp4.Frontier.ContractExpansion.popIter_region_vpush_363
+#print axioms Pnp4.Frontier.ContractExpansion.popIter_region_transfer_252
+#print axioms Pnp4.Frontier.ContractExpansion.popIter_region_vpush_371
 -- D2t-5b (Block A5m-3 run): the clear iteration END TO END on clearIterProgram -- from the settle
 -- home on the cursor marker, hop to the control top, probe (empty), return, scan home: phase 14,
 -- head back on the marker, tape untouched (= driverStepTape on the clear branch), <= 2*certEnd+13

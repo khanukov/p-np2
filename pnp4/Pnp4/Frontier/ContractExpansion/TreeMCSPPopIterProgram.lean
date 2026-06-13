@@ -20,10 +20,10 @@ the same navigation serves every field).  `tnot` runs one pipeline, `tand`/`tor`
 finish replants `FM`, runs the **A5m-V value-push region** at the new value frontier, writes the
 `SHW` tick, and 0-scans home onto the (unmoved) cursor marker.
 
-Phase layout (`N = 420`): `0–37` entry (stepLeft · 0-scan · `ctrlTopWalk` (tags ↦ the three
+Phase layout (`N = 428`): `0–37` entry (stepLeft · 0-scan · `ctrlTopWalk` (tags ↦ the three
 `remWalk`s) · 3×`remWalk` (`rem = 1` ↦ the tag track, else ↦ stuck)) · tracks `38`/`83`/`131`
-(frame erase · descent · tag write · ascent) · `181` PIPE1 · `257` re-ascent · `269` PIPE2 ·
-`345` finish (FM · value push `363–397` · tick · rehome) · `418` out · `419` stuck.
+(frame erase · descent · tag write · ascent) · `181` PIPE1 · `261` re-ascent · `273` PIPE2 ·
+`353` finish (FM · value push `371–405` · tick · rehome) · `426` out · `427` stuck.
 
 **Progress classification (AGENTS.md): Infrastructure** — a staging machine and its region
 contracts; proves no separation.  Standard `[propext, Classical.choice, Quot.sound]` triple only.
@@ -39,14 +39,15 @@ open Pnp3.Internal.PsubsetPpoly.TM.Encoding
 
 /-- The ctrlTopWalk redirect map of the pop machine: tags enter their `remWalk`s. -/
 def popCtrlTopRedirect : Nat → Option Nat :=
-  fun j => if j = 5 then some 419 else if j = 6 then some 14 else if j = 7 then some 22
-    else if j = 8 then some 30 else if j = 9 then some 419 else none
+  fun j => if j = 5 then some 427 else if j = 6 then some 14 else if j = 7 then some 22
+    else if j = 8 then some 30 else if j = 9 then some 427 else none
 
 /-- The per-tag remWalk redirect maps (`rem = 1` ↦ the tag track, dec/reject ↦ stuck). -/
 def popRemRedirect (tbase : Nat) : Nat → Option Nat :=
-  fun j => if j = 5 then some tbase else if j = 6 then some 419 else if j = 7 then some 419
+  fun j => if j = 5 then some tbase else if j = 6 then some 427 else if j = 7 then some 427
     else none
 
+set_option maxRecDepth 8192 in
 /-- The pop-iteration phase assignment (see the layout table in the module docstring). -/
 def popIterAssign : Nat → RegionAction := fun i =>
   if i < 2 then .run stepLeftOnce 0 (i - 0) (exitAt 1 2)
@@ -67,7 +68,7 @@ def popIterAssign : Nat → RegionAction := fun i =>
   else if i < 73 then .run gammaSelfLoopScan 71 (i - 71) (exitAt 1 73)
   else if i < 79 then .run zoneWalkRight 73 (i - 73) (exitAt 4 79)
   else if i < 81 then .run stepLeftOnce 79 (i - 79) (exitAt 1 81)
-  else if i < 83 then .run stepLeftOnce 81 (i - 81) (exitAt 1 269)
+  else if i < 83 then .run stepLeftOnce 81 (i - 81) (exitAt 1 273)
   else if i < 94 then .run (writeBits (List.replicate 10 false)) 83 (i - 83) (exitAt 10 94)
   else if i < 96 then .run selfLoopScanLeft 94 (i - 94) (exitAt 1 96)
   else if i < 101 then .run zoneWalkLeft 96 (i - 96) (exitAt 4 101)
@@ -96,91 +97,97 @@ def popIterAssign : Nat → RegionAction := fun i =>
   else if i < 181 then .run stepLeftOnce 179 (i - 179) (exitAt 1 181)
   else if i < 183 then .run stepLeftOnce 181 (i - 181) (exitAt 1 183)
   else if i < 185 then .run stepLeftOnce 183 (i - 183) (exitAt 1 185)
-  else if i < 188 then .run bitProbe 185 (i - 185) (fun j => if j = 1 then some 221 else if j = 2 then some 188 else none)
+  else if i < 188 then .run bitProbe 185 (i - 185) (fun j => if j = 1 then some 223 else if j = 2 then some 188 else none)
   else if i < 190 then .run stepRightOnce 188 (i - 188) (exitAt 1 190)
   else if i < 192 then .run stepRightOnce 190 (i - 190) (exitAt 1 192)
   else if i < 194 then .run (writeBits [false]) 192 (i - 192) (exitAt 1 194)
   else if i < 196 then .run stepLeftOnce 194 (i - 194) (exitAt 1 196)
   else if i < 198 then .run stepLeftOnce 196 (i - 196) (exitAt 1 198)
   else if i < 203 then .run zoneWalkLeft 198 (i - 198) (exitAt 4 203)
-  else if i < 205 then .run selfLoopScanLeftOne 203 (i - 203) (exitAt 1 205)
-  else if i < 207 then .run (writeBits [true]) 205 (i - 205) (exitAt 1 207)
-  else if i < 209 then .run selfLoopScanRightOne 207 (i - 207) (exitAt 1 209)
-  else if i < 211 then .run stepRightOnce 209 (i - 209) (exitAt 1 211)
-  else if i < 217 then .run zoneWalkRight 211 (i - 211) (exitAt 4 217)
-  else if i < 219 then .run stepLeftOnce 217 (i - 217) (exitAt 1 219)
-  else if i < 221 then .run stepLeftOnce 219 (i - 219) (exitAt 1 181)
-  else if i < 223 then .run stepRightOnce 221 (i - 221) (exitAt 1 223)
+  else if i < 205 then .run stepLeftOnce 203 (i - 203) (exitAt 1 205)
+  else if i < 207 then .run selfLoopScanLeftOne 205 (i - 205) (exitAt 1 207)
+  else if i < 209 then .run (writeBits [true]) 207 (i - 207) (exitAt 1 209)
+  else if i < 211 then .run selfLoopScanRightOne 209 (i - 209) (exitAt 1 211)
+  else if i < 213 then .run stepRightOnce 211 (i - 211) (exitAt 1 213)
+  else if i < 219 then .run zoneWalkRight 213 (i - 213) (exitAt 4 219)
+  else if i < 221 then .run stepLeftOnce 219 (i - 219) (exitAt 1 221)
+  else if i < 223 then .run stepLeftOnce 221 (i - 221) (exitAt 1 181)
   else if i < 225 then .run stepRightOnce 223 (i - 223) (exitAt 1 225)
-  else if i < 227 then .run (writeBits [false]) 225 (i - 225) (exitAt 1 227)
-  else if i < 229 then .run stepLeftOnce 227 (i - 227) (exitAt 1 229)
+  else if i < 227 then .run stepRightOnce 225 (i - 225) (exitAt 1 227)
+  else if i < 229 then .run (writeBits [false]) 227 (i - 227) (exitAt 1 229)
   else if i < 231 then .run stepLeftOnce 229 (i - 229) (exitAt 1 231)
-  else if i < 233 then .run (writeBits [false]) 231 (i - 231) (exitAt 1 233)
-  else if i < 235 then .run selfLoopScanLeft 233 (i - 233) (exitAt 1 235)
-  else if i < 240 then .run zoneWalkLeft 235 (i - 235) (exitAt 4 240)
-  else if i < 242 then .run selfLoopScanLeftOne 240 (i - 240) (exitAt 1 242)
-  else if i < 244 then .run selfLoopScanLeft 242 (i - 242) (exitAt 1 244)
-  else if i < 246 then .run stepRightOnce 244 (i - 244) (exitAt 1 246)
-  else if i < 248 then .run stepRightOnce 246 (i - 246) (exitAt 1 248)
-  else if i < 257 then .run unaryTransfer 248 (i - 248) (exitAt 8 257)
-  else if i < 259 then .run stepRightOnce 257 (i - 257) (exitAt 1 259)
-  else if i < 265 then .run zoneWalkRight 259 (i - 259) (exitAt 4 265)
-  else if i < 267 then .run stepLeftOnce 265 (i - 265) (exitAt 1 267)
-  else if i < 269 then .run stepLeftOnce 267 (i - 267) (exitAt 1 269)
+  else if i < 233 then .run stepLeftOnce 231 (i - 231) (exitAt 1 233)
+  else if i < 235 then .run (writeBits [false]) 233 (i - 233) (exitAt 1 235)
+  else if i < 237 then .run selfLoopScanLeft 235 (i - 235) (exitAt 1 237)
+  else if i < 242 then .run zoneWalkLeft 237 (i - 237) (exitAt 4 242)
+  else if i < 244 then .run stepLeftOnce 242 (i - 242) (exitAt 1 244)
+  else if i < 246 then .run selfLoopScanLeftOne 244 (i - 244) (exitAt 1 246)
+  else if i < 248 then .run selfLoopScanLeft 246 (i - 246) (exitAt 1 248)
+  else if i < 250 then .run stepRightOnce 248 (i - 248) (exitAt 1 250)
+  else if i < 252 then .run stepRightOnce 250 (i - 250) (exitAt 1 252)
+  else if i < 261 then .run unaryTransfer 252 (i - 252) (exitAt 8 261)
+  else if i < 263 then .run stepRightOnce 261 (i - 261) (exitAt 1 263)
+  else if i < 269 then .run zoneWalkRight 263 (i - 263) (exitAt 4 269)
   else if i < 271 then .run stepLeftOnce 269 (i - 269) (exitAt 1 271)
   else if i < 273 then .run stepLeftOnce 271 (i - 271) (exitAt 1 273)
-  else if i < 276 then .run bitProbe 273 (i - 273) (fun j => if j = 1 then some 309 else if j = 2 then some 276 else none)
-  else if i < 278 then .run stepRightOnce 276 (i - 276) (exitAt 1 278)
-  else if i < 280 then .run stepRightOnce 278 (i - 278) (exitAt 1 280)
-  else if i < 282 then .run (writeBits [false]) 280 (i - 280) (exitAt 1 282)
-  else if i < 284 then .run stepLeftOnce 282 (i - 282) (exitAt 1 284)
-  else if i < 286 then .run stepLeftOnce 284 (i - 284) (exitAt 1 286)
-  else if i < 291 then .run zoneWalkLeft 286 (i - 286) (exitAt 4 291)
-  else if i < 293 then .run selfLoopScanLeftOne 291 (i - 291) (exitAt 1 293)
-  else if i < 295 then .run (writeBits [true]) 293 (i - 293) (exitAt 1 295)
-  else if i < 297 then .run selfLoopScanRightOne 295 (i - 295) (exitAt 1 297)
-  else if i < 299 then .run stepRightOnce 297 (i - 297) (exitAt 1 299)
-  else if i < 305 then .run zoneWalkRight 299 (i - 299) (exitAt 4 305)
-  else if i < 307 then .run stepLeftOnce 305 (i - 305) (exitAt 1 307)
-  else if i < 309 then .run stepLeftOnce 307 (i - 307) (exitAt 1 269)
-  else if i < 311 then .run stepRightOnce 309 (i - 309) (exitAt 1 311)
-  else if i < 313 then .run stepRightOnce 311 (i - 311) (exitAt 1 313)
-  else if i < 315 then .run (writeBits [false]) 313 (i - 313) (exitAt 1 315)
-  else if i < 317 then .run stepLeftOnce 315 (i - 315) (exitAt 1 317)
-  else if i < 319 then .run stepLeftOnce 317 (i - 317) (exitAt 1 319)
+  else if i < 275 then .run stepLeftOnce 273 (i - 273) (exitAt 1 275)
+  else if i < 277 then .run stepLeftOnce 275 (i - 275) (exitAt 1 277)
+  else if i < 280 then .run bitProbe 277 (i - 277) (fun j => if j = 1 then some 315 else if j = 2 then some 280 else none)
+  else if i < 282 then .run stepRightOnce 280 (i - 280) (exitAt 1 282)
+  else if i < 284 then .run stepRightOnce 282 (i - 282) (exitAt 1 284)
+  else if i < 286 then .run (writeBits [false]) 284 (i - 284) (exitAt 1 286)
+  else if i < 288 then .run stepLeftOnce 286 (i - 286) (exitAt 1 288)
+  else if i < 290 then .run stepLeftOnce 288 (i - 288) (exitAt 1 290)
+  else if i < 295 then .run zoneWalkLeft 290 (i - 290) (exitAt 4 295)
+  else if i < 297 then .run stepLeftOnce 295 (i - 295) (exitAt 1 297)
+  else if i < 299 then .run selfLoopScanLeftOne 297 (i - 297) (exitAt 1 299)
+  else if i < 301 then .run (writeBits [true]) 299 (i - 299) (exitAt 1 301)
+  else if i < 303 then .run selfLoopScanRightOne 301 (i - 301) (exitAt 1 303)
+  else if i < 305 then .run stepRightOnce 303 (i - 303) (exitAt 1 305)
+  else if i < 311 then .run zoneWalkRight 305 (i - 305) (exitAt 4 311)
+  else if i < 313 then .run stepLeftOnce 311 (i - 311) (exitAt 1 313)
+  else if i < 315 then .run stepLeftOnce 313 (i - 313) (exitAt 1 273)
+  else if i < 317 then .run stepRightOnce 315 (i - 315) (exitAt 1 317)
+  else if i < 319 then .run stepRightOnce 317 (i - 317) (exitAt 1 319)
   else if i < 321 then .run (writeBits [false]) 319 (i - 319) (exitAt 1 321)
-  else if i < 323 then .run selfLoopScanLeft 321 (i - 321) (exitAt 1 323)
-  else if i < 328 then .run zoneWalkLeft 323 (i - 323) (exitAt 4 328)
-  else if i < 330 then .run selfLoopScanLeftOne 328 (i - 328) (exitAt 1 330)
-  else if i < 332 then .run selfLoopScanLeft 330 (i - 330) (exitAt 1 332)
-  else if i < 334 then .run stepRightOnce 332 (i - 332) (exitAt 1 334)
-  else if i < 336 then .run stepRightOnce 334 (i - 334) (exitAt 1 336)
-  else if i < 345 then .run unaryTransfer 336 (i - 336) (exitAt 8 345)
-  else if i < 347 then .run selfLoopScanLeft 345 (i - 345) (exitAt 1 347)
-  else if i < 349 then .run stepRightOnce 347 (i - 347) (exitAt 1 349)
-  else if i < 351 then .run stepRightOnce 349 (i - 349) (exitAt 1 351)
-  else if i < 353 then .run (writeBits [true]) 351 (i - 351) (exitAt 1 353)
-  else if i < 355 then .run gammaSelfLoopScan 353 (i - 353) (exitAt 1 355)
-  else if i < 361 then .run zoneWalkRight 355 (i - 355) (exitAt 4 361)
-  else if i < 363 then .run stepLeftOnce 361 (i - 361) (exitAt 1 363)
-  else if i < 398 then .run valuePushProgram 363 (i - 363) (exitAt 34 398)
-  else if i < 400 then .run stepRightOnce 398 (i - 398) (exitAt 1 400)
-  else if i < 402 then .run selfLoopScanRightOne 400 (i - 400) (exitAt 1 402)
-  else if i < 404 then .run gammaSelfLoopScan 402 (i - 402) (exitAt 1 404)
-  else if i < 406 then .run selfLoopScanRightOne 404 (i - 404) (exitAt 1 406)
-  else if i < 408 then .run (writeBits [true]) 406 (i - 406) (exitAt 1 408)
-  else if i < 410 then .run gammaSelfLoopScan 408 (i - 408) (exitAt 1 410)
-  else if i < 416 then .run zoneWalkRight 410 (i - 410) (exitAt 4 416)
+  else if i < 323 then .run stepLeftOnce 321 (i - 321) (exitAt 1 323)
+  else if i < 325 then .run stepLeftOnce 323 (i - 323) (exitAt 1 325)
+  else if i < 327 then .run (writeBits [false]) 325 (i - 325) (exitAt 1 327)
+  else if i < 329 then .run selfLoopScanLeft 327 (i - 327) (exitAt 1 329)
+  else if i < 334 then .run zoneWalkLeft 329 (i - 329) (exitAt 4 334)
+  else if i < 336 then .run stepLeftOnce 334 (i - 334) (exitAt 1 336)
+  else if i < 338 then .run selfLoopScanLeftOne 336 (i - 336) (exitAt 1 338)
+  else if i < 340 then .run selfLoopScanLeft 338 (i - 338) (exitAt 1 340)
+  else if i < 342 then .run stepRightOnce 340 (i - 340) (exitAt 1 342)
+  else if i < 344 then .run stepRightOnce 342 (i - 342) (exitAt 1 344)
+  else if i < 353 then .run unaryTransfer 344 (i - 344) (exitAt 8 353)
+  else if i < 355 then .run selfLoopScanLeft 353 (i - 353) (exitAt 1 355)
+  else if i < 357 then .run stepRightOnce 355 (i - 355) (exitAt 1 357)
+  else if i < 359 then .run stepRightOnce 357 (i - 357) (exitAt 1 359)
+  else if i < 361 then .run (writeBits [true]) 359 (i - 359) (exitAt 1 361)
+  else if i < 363 then .run gammaSelfLoopScan 361 (i - 361) (exitAt 1 363)
+  else if i < 369 then .run zoneWalkRight 363 (i - 363) (exitAt 4 369)
+  else if i < 371 then .run stepLeftOnce 369 (i - 369) (exitAt 1 371)
+  else if i < 406 then .run valuePushProgram 371 (i - 371) (exitAt 34 406)
+  else if i < 408 then .run stepRightOnce 406 (i - 406) (exitAt 1 408)
+  else if i < 410 then .run selfLoopScanRightOne 408 (i - 408) (exitAt 1 410)
+  else if i < 412 then .run gammaSelfLoopScan 410 (i - 410) (exitAt 1 412)
+  else if i < 414 then .run selfLoopScanRightOne 412 (i - 412) (exitAt 1 414)
+  else if i < 416 then .run (writeBits [true]) 414 (i - 414) (exitAt 1 416)
   else if i < 418 then .run gammaSelfLoopScan 416 (i - 416) (exitAt 1 418)
+  else if i < 424 then .run zoneWalkRight 418 (i - 418) (exitAt 4 424)
+  else if i < 426 then .run gammaSelfLoopScan 424 (i - 424) (exitAt 1 426)
   else .idle
 
-/-- **The pop iteration machine** (420 phases; start at the settle home `0`, nominal accept at
-the home out `418`). -/
+set_option maxRecDepth 8192 in
+/-- **The pop iteration machine** (428 phases; start at the settle home `0`, nominal accept at
+the home out `426`). -/
 def popIterProgram : ConstStatePhasedProgram Unit :=
-  unionProgram 420 (by omega) ⟨0, by omega⟩ ⟨418, by omega⟩ popIterAssign
+  unionProgram 428 (by omega) ⟨0, by omega⟩ ⟨426, by omega⟩ popIterAssign
 
 /-! ### The region contracts -/
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_sL_0 :
     RegionEmbedded popIterProgram stepLeftOnce 0 2 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -194,6 +201,7 @@ theorem popIter_region_sL_0 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_scanL_2 :
     RegionEmbedded popIterProgram selfLoopScanLeft 2 4 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -207,6 +215,7 @@ theorem popIter_region_scanL_2 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_ctop_4 :
     RegionEmbeddedMulti popIterProgram ctrlTopWalk 4 (popCtrlTopRedirect) := by
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [ctrlTopWalk]) ?_
@@ -227,6 +236,7 @@ theorem popIter_region_ctop_4 :
             · cases h; omega
             · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_rem_14 :
     RegionEmbeddedMulti popIterProgram remWalk 14 (popRemRedirect 38) := by
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [remWalk]) ?_
@@ -243,6 +253,7 @@ theorem popIter_region_rem_14 :
         · cases h; omega
         · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_rem_22 :
     RegionEmbeddedMulti popIterProgram remWalk 22 (popRemRedirect 83) := by
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [remWalk]) ?_
@@ -259,6 +270,7 @@ theorem popIter_region_rem_22 :
         · cases h; omega
         · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_rem_30 :
     RegionEmbeddedMulti popIterProgram remWalk 30 (popRemRedirect 131) := by
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [remWalk]) ?_
@@ -275,6 +287,7 @@ theorem popIter_region_rem_30 :
         · cases h; omega
         · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_wb_38 :
     RegionEmbedded popIterProgram (writeBits (List.replicate 8 false)) 38 47 := by
   have hacc : ((writeBits (List.replicate 8 false)).acceptPhase : Nat) = 8 := by
@@ -300,6 +313,7 @@ theorem popIter_region_wb_38 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_scanL_47 :
     RegionEmbedded popIterProgram selfLoopScanLeft 47 49 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -313,6 +327,7 @@ theorem popIter_region_scanL_47 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_walkL_49 :
     RegionEmbeddedMulti popIterProgram zoneWalkLeft 49 (exitAt 4 54) := by
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [zoneWalkLeft]) ?_
@@ -325,6 +340,7 @@ theorem popIter_region_walkL_49 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_scanL_54 :
     RegionEmbedded popIterProgram selfLoopScanLeft 54 56 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -338,6 +354,7 @@ theorem popIter_region_scanL_54 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_scanL1_56 :
     RegionEmbedded popIterProgram selfLoopScanLeftOne 56 58 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -351,6 +368,7 @@ theorem popIter_region_scanL1_56 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_scanL_58 :
     RegionEmbedded popIterProgram selfLoopScanLeft 58 60 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -364,6 +382,7 @@ theorem popIter_region_scanL_58 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_walkL_60 :
     RegionEmbeddedMulti popIterProgram zoneWalkLeft 60 (exitAt 4 65) := by
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [zoneWalkLeft]) ?_
@@ -376,6 +395,7 @@ theorem popIter_region_walkL_60 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_scanL_65 :
     RegionEmbedded popIterProgram selfLoopScanLeft 65 67 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -389,6 +409,7 @@ theorem popIter_region_scanL_65 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_wb_67 :
     RegionEmbedded popIterProgram (writeBits (List.replicate 2 true ++ [false])) 67 71 := by
   have hacc : ((writeBits (List.replicate 2 true ++ [false])).acceptPhase : Nat) = 3 := by
@@ -414,6 +435,7 @@ theorem popIter_region_wb_67 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_scanR_71 :
     RegionEmbedded popIterProgram gammaSelfLoopScan 71 73 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -427,6 +449,7 @@ theorem popIter_region_scanR_71 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_walkR_73 :
     RegionEmbeddedMulti popIterProgram zoneWalkRight 73 (exitAt 4 79) := by
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [zoneWalkRight]) ?_
@@ -439,6 +462,7 @@ theorem popIter_region_walkR_73 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_sL_79 :
     RegionEmbedded popIterProgram stepLeftOnce 79 81 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -452,8 +476,9 @@ theorem popIter_region_sL_79 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_sL_81 :
-    RegionEmbedded popIterProgram stepLeftOnce 81 269 := by
+    RegionEmbedded popIterProgram stepLeftOnce 81 273 := by
   refine RegionEmbeddedMulti.toSingle ?_
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepLeftOnce]) ?_
   · intro k hk
@@ -465,6 +490,7 @@ theorem popIter_region_sL_81 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_wb_83 :
     RegionEmbedded popIterProgram (writeBits (List.replicate 10 false)) 83 94 := by
   have hacc : ((writeBits (List.replicate 10 false)).acceptPhase : Nat) = 10 := by
@@ -490,6 +516,7 @@ theorem popIter_region_wb_83 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_scanL_94 :
     RegionEmbedded popIterProgram selfLoopScanLeft 94 96 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -503,6 +530,7 @@ theorem popIter_region_scanL_94 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_walkL_96 :
     RegionEmbeddedMulti popIterProgram zoneWalkLeft 96 (exitAt 4 101) := by
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [zoneWalkLeft]) ?_
@@ -515,6 +543,7 @@ theorem popIter_region_walkL_96 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_scanL_101 :
     RegionEmbedded popIterProgram selfLoopScanLeft 101 103 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -528,6 +557,7 @@ theorem popIter_region_scanL_101 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_scanL1_103 :
     RegionEmbedded popIterProgram selfLoopScanLeftOne 103 105 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -541,6 +571,7 @@ theorem popIter_region_scanL1_103 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_scanL_105 :
     RegionEmbedded popIterProgram selfLoopScanLeft 105 107 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -554,6 +585,7 @@ theorem popIter_region_scanL_105 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_walkL_107 :
     RegionEmbeddedMulti popIterProgram zoneWalkLeft 107 (exitAt 4 112) := by
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [zoneWalkLeft]) ?_
@@ -566,6 +598,7 @@ theorem popIter_region_walkL_107 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_scanL_112 :
     RegionEmbedded popIterProgram selfLoopScanLeft 112 114 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -579,6 +612,7 @@ theorem popIter_region_scanL_112 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_wb_114 :
     RegionEmbedded popIterProgram (writeBits (List.replicate 3 true ++ [false])) 114 119 := by
   have hacc : ((writeBits (List.replicate 3 true ++ [false])).acceptPhase : Nat) = 4 := by
@@ -604,6 +638,7 @@ theorem popIter_region_wb_114 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_scanR_119 :
     RegionEmbedded popIterProgram gammaSelfLoopScan 119 121 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -617,6 +652,7 @@ theorem popIter_region_scanR_119 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_walkR_121 :
     RegionEmbeddedMulti popIterProgram zoneWalkRight 121 (exitAt 4 127) := by
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [zoneWalkRight]) ?_
@@ -629,6 +665,7 @@ theorem popIter_region_walkR_121 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_sL_127 :
     RegionEmbedded popIterProgram stepLeftOnce 127 129 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -642,6 +679,7 @@ theorem popIter_region_sL_127 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_sL_129 :
     RegionEmbedded popIterProgram stepLeftOnce 129 181 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -655,6 +693,7 @@ theorem popIter_region_sL_129 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_wb_131 :
     RegionEmbedded popIterProgram (writeBits (List.replicate 11 false)) 131 143 := by
   have hacc : ((writeBits (List.replicate 11 false)).acceptPhase : Nat) = 11 := by
@@ -680,6 +719,7 @@ theorem popIter_region_wb_131 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_scanL_143 :
     RegionEmbedded popIterProgram selfLoopScanLeft 143 145 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -693,6 +733,7 @@ theorem popIter_region_scanL_143 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_walkL_145 :
     RegionEmbeddedMulti popIterProgram zoneWalkLeft 145 (exitAt 4 150) := by
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [zoneWalkLeft]) ?_
@@ -705,6 +746,7 @@ theorem popIter_region_walkL_145 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_scanL_150 :
     RegionEmbedded popIterProgram selfLoopScanLeft 150 152 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -718,6 +760,7 @@ theorem popIter_region_scanL_150 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_scanL1_152 :
     RegionEmbedded popIterProgram selfLoopScanLeftOne 152 154 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -731,6 +774,7 @@ theorem popIter_region_scanL1_152 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_scanL_154 :
     RegionEmbedded popIterProgram selfLoopScanLeft 154 156 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -744,6 +788,7 @@ theorem popIter_region_scanL_154 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_walkL_156 :
     RegionEmbeddedMulti popIterProgram zoneWalkLeft 156 (exitAt 4 161) := by
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [zoneWalkLeft]) ?_
@@ -756,6 +801,7 @@ theorem popIter_region_walkL_156 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_scanL_161 :
     RegionEmbedded popIterProgram selfLoopScanLeft 161 163 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -769,6 +815,7 @@ theorem popIter_region_scanL_161 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_wb_163 :
     RegionEmbedded popIterProgram (writeBits (List.replicate 4 true ++ [false])) 163 169 := by
   have hacc : ((writeBits (List.replicate 4 true ++ [false])).acceptPhase : Nat) = 5 := by
@@ -794,6 +841,7 @@ theorem popIter_region_wb_163 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_scanR_169 :
     RegionEmbedded popIterProgram gammaSelfLoopScan 169 171 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -807,6 +855,7 @@ theorem popIter_region_scanR_169 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_walkR_171 :
     RegionEmbeddedMulti popIterProgram zoneWalkRight 171 (exitAt 4 177) := by
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [zoneWalkRight]) ?_
@@ -819,6 +868,7 @@ theorem popIter_region_walkR_171 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_sL_177 :
     RegionEmbedded popIterProgram stepLeftOnce 177 179 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -832,6 +882,7 @@ theorem popIter_region_sL_177 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_sL_179 :
     RegionEmbedded popIterProgram stepLeftOnce 179 181 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -845,6 +896,7 @@ theorem popIter_region_sL_179 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_sL_181 :
     RegionEmbedded popIterProgram stepLeftOnce 181 183 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -858,6 +910,7 @@ theorem popIter_region_sL_181 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_sL_183 :
     RegionEmbedded popIterProgram stepLeftOnce 183 185 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -871,9 +924,10 @@ theorem popIter_region_sL_183 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_probe_185 :
     RegionEmbeddedMulti popIterProgram bitProbe 185
-      (fun j => if j = 1 then some 221 else if j = 2 then some 188 else none) := by
+      (fun j => if j = 1 then some 223 else if j = 2 then some 188 else none) := by
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [bitProbe]) ?_
   · intro k hk
     have hk' : k < 3 := hk
@@ -885,6 +939,7 @@ theorem popIter_region_probe_185 :
       · cases h; omega
       · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_sR_188 :
     RegionEmbedded popIterProgram stepRightOnce 188 190 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -898,6 +953,7 @@ theorem popIter_region_sR_188 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_sR_190 :
     RegionEmbedded popIterProgram stepRightOnce 190 192 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -911,6 +967,7 @@ theorem popIter_region_sR_190 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_wb_192 :
     RegionEmbedded popIterProgram (writeBits [false]) 192 194 := by
   have hacc : ((writeBits [false]).acceptPhase : Nat) = 1 := by
@@ -936,6 +993,7 @@ theorem popIter_region_wb_192 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_sL_194 :
     RegionEmbedded popIterProgram stepLeftOnce 194 196 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -949,6 +1007,7 @@ theorem popIter_region_sL_194 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_sL_196 :
     RegionEmbedded popIterProgram stepLeftOnce 196 198 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -962,6 +1021,7 @@ theorem popIter_region_sL_196 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_walkL_198 :
     RegionEmbeddedMulti popIterProgram zoneWalkLeft 198 (exitAt 4 203) := by
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [zoneWalkLeft]) ?_
@@ -974,8 +1034,23 @@ theorem popIter_region_walkL_198 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_scanL1_203 :
-    RegionEmbedded popIterProgram selfLoopScanLeftOne 203 205 := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_sL_203 :
+    RegionEmbedded popIterProgram stepLeftOnce 203 205 := by
+  refine RegionEmbeddedMulti.toSingle ?_
+  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepLeftOnce]) ?_
+  · intro k hk
+    have hk' : k < 2 := hk
+    interval_cases k <;> rfl
+  · intro j nxt h
+    unfold exitAt at h
+    split at h
+    · cases h; omega
+    · cases h
+
+set_option maxRecDepth 8192 in
+theorem popIter_region_scanL1_205 :
+    RegionEmbedded popIterProgram selfLoopScanLeftOne 205 207 := by
   refine RegionEmbeddedMulti.toSingle ?_
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [selfLoopScanLeftOne]) ?_
   · intro k hk
@@ -987,13 +1062,14 @@ theorem popIter_region_scanL1_203 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_wb_205 :
-    RegionEmbedded popIterProgram (writeBits [true]) 205 207 := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_wb_207 :
+    RegionEmbedded popIterProgram (writeBits [true]) 207 209 := by
   have hacc : ((writeBits [true]).acceptPhase : Nat) = 1 := by
     simp [writeBits]
   refine RegionEmbeddedMulti.toSingle ?_
   rw [show (fun j => if j = (((writeBits [true])).acceptPhase : Nat)
-      then some 207 else none) = exitAt 1 207 from by
+      then some 209 else none) = exitAt 1 209 from by
     funext j; rw [hacc]; rfl]
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_
     (by simp only [unionProgram_numPhases, writeBits_numPhases, List.length_replicate,
@@ -1012,8 +1088,9 @@ theorem popIter_region_wb_205 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_scanR1_207 :
-    RegionEmbedded popIterProgram selfLoopScanRightOne 207 209 := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_scanR1_209 :
+    RegionEmbedded popIterProgram selfLoopScanRightOne 209 211 := by
   refine RegionEmbeddedMulti.toSingle ?_
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [selfLoopScanRightOne]) ?_
   · intro k hk
@@ -1025,8 +1102,9 @@ theorem popIter_region_scanR1_207 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_sR_209 :
-    RegionEmbedded popIterProgram stepRightOnce 209 211 := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_sR_211 :
+    RegionEmbedded popIterProgram stepRightOnce 211 213 := by
   refine RegionEmbeddedMulti.toSingle ?_
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepRightOnce]) ?_
   · intro k hk
@@ -1038,8 +1116,9 @@ theorem popIter_region_sR_209 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_walkR_211 :
-    RegionEmbeddedMulti popIterProgram zoneWalkRight 211 (exitAt 4 217) := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_walkR_213 :
+    RegionEmbeddedMulti popIterProgram zoneWalkRight 213 (exitAt 4 219) := by
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [zoneWalkRight]) ?_
   · intro k hk
     have hk' : k < 6 := hk
@@ -1050,21 +1129,9 @@ theorem popIter_region_walkR_211 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_sL_217 :
-    RegionEmbedded popIterProgram stepLeftOnce 217 219 := by
-  refine RegionEmbeddedMulti.toSingle ?_
-  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepLeftOnce]) ?_
-  · intro k hk
-    have hk' : k < 2 := hk
-    interval_cases k <;> rfl
-  · intro j nxt h
-    unfold exitAt at h
-    split at h
-    · cases h; omega
-    · cases h
-
+set_option maxRecDepth 8192 in
 theorem popIter_region_sL_219 :
-    RegionEmbedded popIterProgram stepLeftOnce 219 181 := by
+    RegionEmbedded popIterProgram stepLeftOnce 219 221 := by
   refine RegionEmbeddedMulti.toSingle ?_
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepLeftOnce]) ?_
   · intro k hk
@@ -1076,10 +1143,11 @@ theorem popIter_region_sL_219 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_sR_221 :
-    RegionEmbedded popIterProgram stepRightOnce 221 223 := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_sL_221 :
+    RegionEmbedded popIterProgram stepLeftOnce 221 181 := by
   refine RegionEmbeddedMulti.toSingle ?_
-  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepRightOnce]) ?_
+  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepLeftOnce]) ?_
   · intro k hk
     have hk' : k < 2 := hk
     interval_cases k <;> rfl
@@ -1089,6 +1157,7 @@ theorem popIter_region_sR_221 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_sR_223 :
     RegionEmbedded popIterProgram stepRightOnce 223 225 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -1102,13 +1171,28 @@ theorem popIter_region_sR_223 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_wb_225 :
-    RegionEmbedded popIterProgram (writeBits [false]) 225 227 := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_sR_225 :
+    RegionEmbedded popIterProgram stepRightOnce 225 227 := by
+  refine RegionEmbeddedMulti.toSingle ?_
+  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepRightOnce]) ?_
+  · intro k hk
+    have hk' : k < 2 := hk
+    interval_cases k <;> rfl
+  · intro j nxt h
+    unfold exitAt at h
+    split at h
+    · cases h; omega
+    · cases h
+
+set_option maxRecDepth 8192 in
+theorem popIter_region_wb_227 :
+    RegionEmbedded popIterProgram (writeBits [false]) 227 229 := by
   have hacc : ((writeBits [false]).acceptPhase : Nat) = 1 := by
     simp [writeBits]
   refine RegionEmbeddedMulti.toSingle ?_
   rw [show (fun j => if j = (((writeBits [false])).acceptPhase : Nat)
-      then some 227 else none) = exitAt 1 227 from by
+      then some 229 else none) = exitAt 1 229 from by
     funext j; rw [hacc]; rfl]
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_
     (by simp only [unionProgram_numPhases, writeBits_numPhases, List.length_replicate,
@@ -1127,19 +1211,7 @@ theorem popIter_region_wb_225 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_sL_227 :
-    RegionEmbedded popIterProgram stepLeftOnce 227 229 := by
-  refine RegionEmbeddedMulti.toSingle ?_
-  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepLeftOnce]) ?_
-  · intro k hk
-    have hk' : k < 2 := hk
-    interval_cases k <;> rfl
-  · intro j nxt h
-    unfold exitAt at h
-    split at h
-    · cases h; omega
-    · cases h
-
+set_option maxRecDepth 8192 in
 theorem popIter_region_sL_229 :
     RegionEmbedded popIterProgram stepLeftOnce 229 231 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -1153,13 +1225,28 @@ theorem popIter_region_sL_229 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_wb_231 :
-    RegionEmbedded popIterProgram (writeBits [false]) 231 233 := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_sL_231 :
+    RegionEmbedded popIterProgram stepLeftOnce 231 233 := by
+  refine RegionEmbeddedMulti.toSingle ?_
+  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepLeftOnce]) ?_
+  · intro k hk
+    have hk' : k < 2 := hk
+    interval_cases k <;> rfl
+  · intro j nxt h
+    unfold exitAt at h
+    split at h
+    · cases h; omega
+    · cases h
+
+set_option maxRecDepth 8192 in
+theorem popIter_region_wb_233 :
+    RegionEmbedded popIterProgram (writeBits [false]) 233 235 := by
   have hacc : ((writeBits [false]).acceptPhase : Nat) = 1 := by
     simp [writeBits]
   refine RegionEmbeddedMulti.toSingle ?_
   rw [show (fun j => if j = (((writeBits [false])).acceptPhase : Nat)
-      then some 233 else none) = exitAt 1 233 from by
+      then some 235 else none) = exitAt 1 235 from by
     funext j; rw [hacc]; rfl]
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_
     (by simp only [unionProgram_numPhases, writeBits_numPhases, List.length_replicate,
@@ -1178,8 +1265,9 @@ theorem popIter_region_wb_231 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_scanL_233 :
-    RegionEmbedded popIterProgram selfLoopScanLeft 233 235 := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_scanL_235 :
+    RegionEmbedded popIterProgram selfLoopScanLeft 235 237 := by
   refine RegionEmbeddedMulti.toSingle ?_
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [selfLoopScanLeft]) ?_
   · intro k hk
@@ -1191,8 +1279,9 @@ theorem popIter_region_scanL_233 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_walkL_235 :
-    RegionEmbeddedMulti popIterProgram zoneWalkLeft 235 (exitAt 4 240) := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_walkL_237 :
+    RegionEmbeddedMulti popIterProgram zoneWalkLeft 237 (exitAt 4 242) := by
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [zoneWalkLeft]) ?_
   · intro k hk
     have hk' : k < 5 := hk
@@ -1203,8 +1292,23 @@ theorem popIter_region_walkL_235 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_scanL1_240 :
-    RegionEmbedded popIterProgram selfLoopScanLeftOne 240 242 := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_sL_242 :
+    RegionEmbedded popIterProgram stepLeftOnce 242 244 := by
+  refine RegionEmbeddedMulti.toSingle ?_
+  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepLeftOnce]) ?_
+  · intro k hk
+    have hk' : k < 2 := hk
+    interval_cases k <;> rfl
+  · intro j nxt h
+    unfold exitAt at h
+    split at h
+    · cases h; omega
+    · cases h
+
+set_option maxRecDepth 8192 in
+theorem popIter_region_scanL1_244 :
+    RegionEmbedded popIterProgram selfLoopScanLeftOne 244 246 := by
   refine RegionEmbeddedMulti.toSingle ?_
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [selfLoopScanLeftOne]) ?_
   · intro k hk
@@ -1216,8 +1320,9 @@ theorem popIter_region_scanL1_240 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_scanL_242 :
-    RegionEmbedded popIterProgram selfLoopScanLeft 242 244 := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_scanL_246 :
+    RegionEmbedded popIterProgram selfLoopScanLeft 246 248 := by
   refine RegionEmbeddedMulti.toSingle ?_
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [selfLoopScanLeft]) ?_
   · intro k hk
@@ -1229,8 +1334,9 @@ theorem popIter_region_scanL_242 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_sR_244 :
-    RegionEmbedded popIterProgram stepRightOnce 244 246 := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_sR_248 :
+    RegionEmbedded popIterProgram stepRightOnce 248 250 := by
   refine RegionEmbeddedMulti.toSingle ?_
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepRightOnce]) ?_
   · intro k hk
@@ -1242,8 +1348,9 @@ theorem popIter_region_sR_244 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_sR_246 :
-    RegionEmbedded popIterProgram stepRightOnce 246 248 := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_sR_250 :
+    RegionEmbedded popIterProgram stepRightOnce 250 252 := by
   refine RegionEmbeddedMulti.toSingle ?_
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepRightOnce]) ?_
   · intro k hk
@@ -1255,8 +1362,9 @@ theorem popIter_region_sR_246 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_transfer_248 :
-    RegionEmbeddedMulti popIterProgram unaryTransfer 248 (exitAt 8 257) := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_transfer_252 :
+    RegionEmbeddedMulti popIterProgram unaryTransfer 252 (exitAt 8 261) := by
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [unaryTransfer]) ?_
   · intro k hk
     have hk' : k < 9 := hk
@@ -1267,8 +1375,9 @@ theorem popIter_region_transfer_248 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_sR_257 :
-    RegionEmbedded popIterProgram stepRightOnce 257 259 := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_sR_261 :
+    RegionEmbedded popIterProgram stepRightOnce 261 263 := by
   refine RegionEmbeddedMulti.toSingle ?_
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepRightOnce]) ?_
   · intro k hk
@@ -1280,8 +1389,9 @@ theorem popIter_region_sR_257 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_walkR_259 :
-    RegionEmbeddedMulti popIterProgram zoneWalkRight 259 (exitAt 4 265) := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_walkR_263 :
+    RegionEmbeddedMulti popIterProgram zoneWalkRight 263 (exitAt 4 269) := by
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [zoneWalkRight]) ?_
   · intro k hk
     have hk' : k < 6 := hk
@@ -1292,32 +1402,7 @@ theorem popIter_region_walkR_259 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_sL_265 :
-    RegionEmbedded popIterProgram stepLeftOnce 265 267 := by
-  refine RegionEmbeddedMulti.toSingle ?_
-  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepLeftOnce]) ?_
-  · intro k hk
-    have hk' : k < 2 := hk
-    interval_cases k <;> rfl
-  · intro j nxt h
-    unfold exitAt at h
-    split at h
-    · cases h; omega
-    · cases h
-
-theorem popIter_region_sL_267 :
-    RegionEmbedded popIterProgram stepLeftOnce 267 269 := by
-  refine RegionEmbeddedMulti.toSingle ?_
-  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepLeftOnce]) ?_
-  · intro k hk
-    have hk' : k < 2 := hk
-    interval_cases k <;> rfl
-  · intro j nxt h
-    unfold exitAt at h
-    split at h
-    · cases h; omega
-    · cases h
-
+set_option maxRecDepth 8192 in
 theorem popIter_region_sL_269 :
     RegionEmbedded popIterProgram stepLeftOnce 269 271 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -1331,6 +1416,7 @@ theorem popIter_region_sL_269 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
 theorem popIter_region_sL_271 :
     RegionEmbedded popIterProgram stepLeftOnce 271 273 := by
   refine RegionEmbeddedMulti.toSingle ?_
@@ -1344,9 +1430,38 @@ theorem popIter_region_sL_271 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_probe_273 :
-    RegionEmbeddedMulti popIterProgram bitProbe 273
-      (fun j => if j = 1 then some 309 else if j = 2 then some 276 else none) := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_sL_273 :
+    RegionEmbedded popIterProgram stepLeftOnce 273 275 := by
+  refine RegionEmbeddedMulti.toSingle ?_
+  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepLeftOnce]) ?_
+  · intro k hk
+    have hk' : k < 2 := hk
+    interval_cases k <;> rfl
+  · intro j nxt h
+    unfold exitAt at h
+    split at h
+    · cases h; omega
+    · cases h
+
+set_option maxRecDepth 8192 in
+theorem popIter_region_sL_275 :
+    RegionEmbedded popIterProgram stepLeftOnce 275 277 := by
+  refine RegionEmbeddedMulti.toSingle ?_
+  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepLeftOnce]) ?_
+  · intro k hk
+    have hk' : k < 2 := hk
+    interval_cases k <;> rfl
+  · intro j nxt h
+    unfold exitAt at h
+    split at h
+    · cases h; omega
+    · cases h
+
+set_option maxRecDepth 8192 in
+theorem popIter_region_probe_277 :
+    RegionEmbeddedMulti popIterProgram bitProbe 277
+      (fun j => if j = 1 then some 315 else if j = 2 then some 280 else none) := by
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [bitProbe]) ?_
   · intro k hk
     have hk' : k < 3 := hk
@@ -1358,8 +1473,9 @@ theorem popIter_region_probe_273 :
       · cases h; omega
       · cases h
 
-theorem popIter_region_sR_276 :
-    RegionEmbedded popIterProgram stepRightOnce 276 278 := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_sR_280 :
+    RegionEmbedded popIterProgram stepRightOnce 280 282 := by
   refine RegionEmbeddedMulti.toSingle ?_
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepRightOnce]) ?_
   · intro k hk
@@ -1371,8 +1487,9 @@ theorem popIter_region_sR_276 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_sR_278 :
-    RegionEmbedded popIterProgram stepRightOnce 278 280 := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_sR_282 :
+    RegionEmbedded popIterProgram stepRightOnce 282 284 := by
   refine RegionEmbeddedMulti.toSingle ?_
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepRightOnce]) ?_
   · intro k hk
@@ -1384,13 +1501,14 @@ theorem popIter_region_sR_278 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_wb_280 :
-    RegionEmbedded popIterProgram (writeBits [false]) 280 282 := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_wb_284 :
+    RegionEmbedded popIterProgram (writeBits [false]) 284 286 := by
   have hacc : ((writeBits [false]).acceptPhase : Nat) = 1 := by
     simp [writeBits]
   refine RegionEmbeddedMulti.toSingle ?_
   rw [show (fun j => if j = (((writeBits [false])).acceptPhase : Nat)
-      then some 282 else none) = exitAt 1 282 from by
+      then some 286 else none) = exitAt 1 286 from by
     funext j; rw [hacc]; rfl]
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_
     (by simp only [unionProgram_numPhases, writeBits_numPhases, List.length_replicate,
@@ -1409,8 +1527,9 @@ theorem popIter_region_wb_280 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_sL_282 :
-    RegionEmbedded popIterProgram stepLeftOnce 282 284 := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_sL_286 :
+    RegionEmbedded popIterProgram stepLeftOnce 286 288 := by
   refine RegionEmbeddedMulti.toSingle ?_
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepLeftOnce]) ?_
   · intro k hk
@@ -1422,8 +1541,9 @@ theorem popIter_region_sL_282 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_sL_284 :
-    RegionEmbedded popIterProgram stepLeftOnce 284 286 := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_sL_288 :
+    RegionEmbedded popIterProgram stepLeftOnce 288 290 := by
   refine RegionEmbeddedMulti.toSingle ?_
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepLeftOnce]) ?_
   · intro k hk
@@ -1435,8 +1555,9 @@ theorem popIter_region_sL_284 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_walkL_286 :
-    RegionEmbeddedMulti popIterProgram zoneWalkLeft 286 (exitAt 4 291) := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_walkL_290 :
+    RegionEmbeddedMulti popIterProgram zoneWalkLeft 290 (exitAt 4 295) := by
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [zoneWalkLeft]) ?_
   · intro k hk
     have hk' : k < 5 := hk
@@ -1447,8 +1568,23 @@ theorem popIter_region_walkL_286 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_scanL1_291 :
-    RegionEmbedded popIterProgram selfLoopScanLeftOne 291 293 := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_sL_295 :
+    RegionEmbedded popIterProgram stepLeftOnce 295 297 := by
+  refine RegionEmbeddedMulti.toSingle ?_
+  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepLeftOnce]) ?_
+  · intro k hk
+    have hk' : k < 2 := hk
+    interval_cases k <;> rfl
+  · intro j nxt h
+    unfold exitAt at h
+    split at h
+    · cases h; omega
+    · cases h
+
+set_option maxRecDepth 8192 in
+theorem popIter_region_scanL1_297 :
+    RegionEmbedded popIterProgram selfLoopScanLeftOne 297 299 := by
   refine RegionEmbeddedMulti.toSingle ?_
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [selfLoopScanLeftOne]) ?_
   · intro k hk
@@ -1460,13 +1596,14 @@ theorem popIter_region_scanL1_291 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_wb_293 :
-    RegionEmbedded popIterProgram (writeBits [true]) 293 295 := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_wb_299 :
+    RegionEmbedded popIterProgram (writeBits [true]) 299 301 := by
   have hacc : ((writeBits [true]).acceptPhase : Nat) = 1 := by
     simp [writeBits]
   refine RegionEmbeddedMulti.toSingle ?_
   rw [show (fun j => if j = (((writeBits [true])).acceptPhase : Nat)
-      then some 295 else none) = exitAt 1 295 from by
+      then some 301 else none) = exitAt 1 301 from by
     funext j; rw [hacc]; rfl]
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_
     (by simp only [unionProgram_numPhases, writeBits_numPhases, List.length_replicate,
@@ -1485,8 +1622,9 @@ theorem popIter_region_wb_293 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_scanR1_295 :
-    RegionEmbedded popIterProgram selfLoopScanRightOne 295 297 := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_scanR1_301 :
+    RegionEmbedded popIterProgram selfLoopScanRightOne 301 303 := by
   refine RegionEmbeddedMulti.toSingle ?_
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [selfLoopScanRightOne]) ?_
   · intro k hk
@@ -1498,8 +1636,9 @@ theorem popIter_region_scanR1_295 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_sR_297 :
-    RegionEmbedded popIterProgram stepRightOnce 297 299 := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_sR_303 :
+    RegionEmbedded popIterProgram stepRightOnce 303 305 := by
   refine RegionEmbeddedMulti.toSingle ?_
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepRightOnce]) ?_
   · intro k hk
@@ -1511,8 +1650,9 @@ theorem popIter_region_sR_297 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_walkR_299 :
-    RegionEmbeddedMulti popIterProgram zoneWalkRight 299 (exitAt 4 305) := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_walkR_305 :
+    RegionEmbeddedMulti popIterProgram zoneWalkRight 305 (exitAt 4 311) := by
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [zoneWalkRight]) ?_
   · intro k hk
     have hk' : k < 6 := hk
@@ -1523,8 +1663,9 @@ theorem popIter_region_walkR_299 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_sL_305 :
-    RegionEmbedded popIterProgram stepLeftOnce 305 307 := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_sL_311 :
+    RegionEmbedded popIterProgram stepLeftOnce 311 313 := by
   refine RegionEmbeddedMulti.toSingle ?_
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepLeftOnce]) ?_
   · intro k hk
@@ -1536,8 +1677,9 @@ theorem popIter_region_sL_305 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_sL_307 :
-    RegionEmbedded popIterProgram stepLeftOnce 307 269 := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_sL_313 :
+    RegionEmbedded popIterProgram stepLeftOnce 313 273 := by
   refine RegionEmbeddedMulti.toSingle ?_
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepLeftOnce]) ?_
   · intro k hk
@@ -1549,8 +1691,9 @@ theorem popIter_region_sL_307 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_sR_309 :
-    RegionEmbedded popIterProgram stepRightOnce 309 311 := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_sR_315 :
+    RegionEmbedded popIterProgram stepRightOnce 315 317 := by
   refine RegionEmbeddedMulti.toSingle ?_
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepRightOnce]) ?_
   · intro k hk
@@ -1562,8 +1705,9 @@ theorem popIter_region_sR_309 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_sR_311 :
-    RegionEmbedded popIterProgram stepRightOnce 311 313 := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_sR_317 :
+    RegionEmbedded popIterProgram stepRightOnce 317 319 := by
   refine RegionEmbeddedMulti.toSingle ?_
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepRightOnce]) ?_
   · intro k hk
@@ -1575,57 +1719,7 @@ theorem popIter_region_sR_311 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_wb_313 :
-    RegionEmbedded popIterProgram (writeBits [false]) 313 315 := by
-  have hacc : ((writeBits [false]).acceptPhase : Nat) = 1 := by
-    simp [writeBits]
-  refine RegionEmbeddedMulti.toSingle ?_
-  rw [show (fun j => if j = (((writeBits [false])).acceptPhase : Nat)
-      then some 315 else none) = exitAt 1 315 from by
-    funext j; rw [hacc]; rfl]
-  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_
-    (by simp only [unionProgram_numPhases, writeBits_numPhases, List.length_replicate,
-          List.length_append, List.length_singleton]
-        omega) ?_
-  · intro k hk
-    have hk' : k < 2 := by
-      have := hk
-      simp only [writeBits_numPhases, List.length_replicate, List.length_append,
-        List.length_singleton] at this
-      omega
-    interval_cases k <;> rfl
-  · intro j nxt h
-    unfold exitAt at h
-    split at h
-    · cases h; omega
-    · cases h
-
-theorem popIter_region_sL_315 :
-    RegionEmbedded popIterProgram stepLeftOnce 315 317 := by
-  refine RegionEmbeddedMulti.toSingle ?_
-  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepLeftOnce]) ?_
-  · intro k hk
-    have hk' : k < 2 := hk
-    interval_cases k <;> rfl
-  · intro j nxt h
-    unfold exitAt at h
-    split at h
-    · cases h; omega
-    · cases h
-
-theorem popIter_region_sL_317 :
-    RegionEmbedded popIterProgram stepLeftOnce 317 319 := by
-  refine RegionEmbeddedMulti.toSingle ?_
-  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepLeftOnce]) ?_
-  · intro k hk
-    have hk' : k < 2 := hk
-    interval_cases k <;> rfl
-  · intro j nxt h
-    unfold exitAt at h
-    split at h
-    · cases h; omega
-    · cases h
-
+set_option maxRecDepth 8192 in
 theorem popIter_region_wb_319 :
     RegionEmbedded popIterProgram (writeBits [false]) 319 321 := by
   have hacc : ((writeBits [false]).acceptPhase : Nat) = 1 := by
@@ -1651,186 +1745,9 @@ theorem popIter_region_wb_319 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_scanL_321 :
-    RegionEmbedded popIterProgram selfLoopScanLeft 321 323 := by
-  refine RegionEmbeddedMulti.toSingle ?_
-  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [selfLoopScanLeft]) ?_
-  · intro k hk
-    have hk' : k < 2 := hk
-    interval_cases k <;> rfl
-  · intro j nxt h
-    unfold exitAt at h
-    split at h
-    · cases h; omega
-    · cases h
-
-theorem popIter_region_walkL_323 :
-    RegionEmbeddedMulti popIterProgram zoneWalkLeft 323 (exitAt 4 328) := by
-  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [zoneWalkLeft]) ?_
-  · intro k hk
-    have hk' : k < 5 := hk
-    interval_cases k <;> rfl
-  · intro j nxt h
-    unfold exitAt at h
-    split at h
-    · cases h; omega
-    · cases h
-
-theorem popIter_region_scanL1_328 :
-    RegionEmbedded popIterProgram selfLoopScanLeftOne 328 330 := by
-  refine RegionEmbeddedMulti.toSingle ?_
-  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [selfLoopScanLeftOne]) ?_
-  · intro k hk
-    have hk' : k < 2 := hk
-    interval_cases k <;> rfl
-  · intro j nxt h
-    unfold exitAt at h
-    split at h
-    · cases h; omega
-    · cases h
-
-theorem popIter_region_scanL_330 :
-    RegionEmbedded popIterProgram selfLoopScanLeft 330 332 := by
-  refine RegionEmbeddedMulti.toSingle ?_
-  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [selfLoopScanLeft]) ?_
-  · intro k hk
-    have hk' : k < 2 := hk
-    interval_cases k <;> rfl
-  · intro j nxt h
-    unfold exitAt at h
-    split at h
-    · cases h; omega
-    · cases h
-
-theorem popIter_region_sR_332 :
-    RegionEmbedded popIterProgram stepRightOnce 332 334 := by
-  refine RegionEmbeddedMulti.toSingle ?_
-  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepRightOnce]) ?_
-  · intro k hk
-    have hk' : k < 2 := hk
-    interval_cases k <;> rfl
-  · intro j nxt h
-    unfold exitAt at h
-    split at h
-    · cases h; omega
-    · cases h
-
-theorem popIter_region_sR_334 :
-    RegionEmbedded popIterProgram stepRightOnce 334 336 := by
-  refine RegionEmbeddedMulti.toSingle ?_
-  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepRightOnce]) ?_
-  · intro k hk
-    have hk' : k < 2 := hk
-    interval_cases k <;> rfl
-  · intro j nxt h
-    unfold exitAt at h
-    split at h
-    · cases h; omega
-    · cases h
-
-theorem popIter_region_transfer_336 :
-    RegionEmbeddedMulti popIterProgram unaryTransfer 336 (exitAt 8 345) := by
-  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [unaryTransfer]) ?_
-  · intro k hk
-    have hk' : k < 9 := hk
-    interval_cases k <;> rfl
-  · intro j nxt h
-    unfold exitAt at h
-    split at h
-    · cases h; omega
-    · cases h
-
-theorem popIter_region_scanL_345 :
-    RegionEmbedded popIterProgram selfLoopScanLeft 345 347 := by
-  refine RegionEmbeddedMulti.toSingle ?_
-  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [selfLoopScanLeft]) ?_
-  · intro k hk
-    have hk' : k < 2 := hk
-    interval_cases k <;> rfl
-  · intro j nxt h
-    unfold exitAt at h
-    split at h
-    · cases h; omega
-    · cases h
-
-theorem popIter_region_sR_347 :
-    RegionEmbedded popIterProgram stepRightOnce 347 349 := by
-  refine RegionEmbeddedMulti.toSingle ?_
-  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepRightOnce]) ?_
-  · intro k hk
-    have hk' : k < 2 := hk
-    interval_cases k <;> rfl
-  · intro j nxt h
-    unfold exitAt at h
-    split at h
-    · cases h; omega
-    · cases h
-
-theorem popIter_region_sR_349 :
-    RegionEmbedded popIterProgram stepRightOnce 349 351 := by
-  refine RegionEmbeddedMulti.toSingle ?_
-  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepRightOnce]) ?_
-  · intro k hk
-    have hk' : k < 2 := hk
-    interval_cases k <;> rfl
-  · intro j nxt h
-    unfold exitAt at h
-    split at h
-    · cases h; omega
-    · cases h
-
-theorem popIter_region_wb_351 :
-    RegionEmbedded popIterProgram (writeBits [true]) 351 353 := by
-  have hacc : ((writeBits [true]).acceptPhase : Nat) = 1 := by
-    simp [writeBits]
-  refine RegionEmbeddedMulti.toSingle ?_
-  rw [show (fun j => if j = (((writeBits [true])).acceptPhase : Nat)
-      then some 353 else none) = exitAt 1 353 from by
-    funext j; rw [hacc]; rfl]
-  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_
-    (by simp only [unionProgram_numPhases, writeBits_numPhases, List.length_replicate,
-          List.length_append, List.length_singleton]
-        omega) ?_
-  · intro k hk
-    have hk' : k < 2 := by
-      have := hk
-      simp only [writeBits_numPhases, List.length_replicate, List.length_append,
-        List.length_singleton] at this
-      omega
-    interval_cases k <;> rfl
-  · intro j nxt h
-    unfold exitAt at h
-    split at h
-    · cases h; omega
-    · cases h
-
-theorem popIter_region_scanR_353 :
-    RegionEmbedded popIterProgram gammaSelfLoopScan 353 355 := by
-  refine RegionEmbeddedMulti.toSingle ?_
-  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [gammaSelfLoopScan]) ?_
-  · intro k hk
-    have hk' : k < 2 := hk
-    interval_cases k <;> rfl
-  · intro j nxt h
-    unfold exitAt at h
-    split at h
-    · cases h; omega
-    · cases h
-
-theorem popIter_region_walkR_355 :
-    RegionEmbeddedMulti popIterProgram zoneWalkRight 355 (exitAt 4 361) := by
-  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [zoneWalkRight]) ?_
-  · intro k hk
-    have hk' : k < 6 := hk
-    interval_cases k <;> rfl
-  · intro j nxt h
-    unfold exitAt at h
-    split at h
-    · cases h; omega
-    · cases h
-
-theorem popIter_region_sL_361 :
-    RegionEmbedded popIterProgram stepLeftOnce 361 363 := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_sL_321 :
+    RegionEmbedded popIterProgram stepLeftOnce 321 323 := by
   refine RegionEmbeddedMulti.toSingle ?_
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepLeftOnce]) ?_
   · intro k hk
@@ -1842,22 +1759,11 @@ theorem popIter_region_sL_361 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_vpush_363 :
-    RegionEmbeddedMulti popIterProgram valuePushProgram 363 (exitAt 34 398) := by
-  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [valuePushProgram]) ?_
-  · intro k hk
-    have hk' : k < 35 := hk
-    interval_cases k <;> rfl
-  · intro j nxt h
-    unfold exitAt at h
-    split at h
-    · cases h; omega
-    · cases h
-
-theorem popIter_region_sR_398 :
-    RegionEmbedded popIterProgram stepRightOnce 398 400 := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_sL_323 :
+    RegionEmbedded popIterProgram stepLeftOnce 323 325 := by
   refine RegionEmbeddedMulti.toSingle ?_
-  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepRightOnce]) ?_
+  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepLeftOnce]) ?_
   · intro k hk
     have hk' : k < 2 := hk
     interval_cases k <;> rfl
@@ -1867,52 +1773,14 @@ theorem popIter_region_sR_398 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_scanR1_400 :
-    RegionEmbedded popIterProgram selfLoopScanRightOne 400 402 := by
-  refine RegionEmbeddedMulti.toSingle ?_
-  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [selfLoopScanRightOne]) ?_
-  · intro k hk
-    have hk' : k < 2 := hk
-    interval_cases k <;> rfl
-  · intro j nxt h
-    unfold exitAt at h
-    split at h
-    · cases h; omega
-    · cases h
-
-theorem popIter_region_scanR_402 :
-    RegionEmbedded popIterProgram gammaSelfLoopScan 402 404 := by
-  refine RegionEmbeddedMulti.toSingle ?_
-  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [gammaSelfLoopScan]) ?_
-  · intro k hk
-    have hk' : k < 2 := hk
-    interval_cases k <;> rfl
-  · intro j nxt h
-    unfold exitAt at h
-    split at h
-    · cases h; omega
-    · cases h
-
-theorem popIter_region_scanR1_404 :
-    RegionEmbedded popIterProgram selfLoopScanRightOne 404 406 := by
-  refine RegionEmbeddedMulti.toSingle ?_
-  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [selfLoopScanRightOne]) ?_
-  · intro k hk
-    have hk' : k < 2 := hk
-    interval_cases k <;> rfl
-  · intro j nxt h
-    unfold exitAt at h
-    split at h
-    · cases h; omega
-    · cases h
-
-theorem popIter_region_wb_406 :
-    RegionEmbedded popIterProgram (writeBits [true]) 406 408 := by
-  have hacc : ((writeBits [true]).acceptPhase : Nat) = 1 := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_wb_325 :
+    RegionEmbedded popIterProgram (writeBits [false]) 325 327 := by
+  have hacc : ((writeBits [false]).acceptPhase : Nat) = 1 := by
     simp [writeBits]
   refine RegionEmbeddedMulti.toSingle ?_
-  rw [show (fun j => if j = (((writeBits [true])).acceptPhase : Nat)
-      then some 408 else none) = exitAt 1 408 from by
+  rw [show (fun j => if j = (((writeBits [false])).acceptPhase : Nat)
+      then some 327 else none) = exitAt 1 327 from by
     funext j; rw [hacc]; rfl]
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_
     (by simp only [unionProgram_numPhases, writeBits_numPhases, List.length_replicate,
@@ -1931,8 +1799,187 @@ theorem popIter_region_wb_406 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_scanR_408 :
-    RegionEmbedded popIterProgram gammaSelfLoopScan 408 410 := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_scanL_327 :
+    RegionEmbedded popIterProgram selfLoopScanLeft 327 329 := by
+  refine RegionEmbeddedMulti.toSingle ?_
+  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [selfLoopScanLeft]) ?_
+  · intro k hk
+    have hk' : k < 2 := hk
+    interval_cases k <;> rfl
+  · intro j nxt h
+    unfold exitAt at h
+    split at h
+    · cases h; omega
+    · cases h
+
+set_option maxRecDepth 8192 in
+theorem popIter_region_walkL_329 :
+    RegionEmbeddedMulti popIterProgram zoneWalkLeft 329 (exitAt 4 334) := by
+  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [zoneWalkLeft]) ?_
+  · intro k hk
+    have hk' : k < 5 := hk
+    interval_cases k <;> rfl
+  · intro j nxt h
+    unfold exitAt at h
+    split at h
+    · cases h; omega
+    · cases h
+
+set_option maxRecDepth 8192 in
+theorem popIter_region_sL_334 :
+    RegionEmbedded popIterProgram stepLeftOnce 334 336 := by
+  refine RegionEmbeddedMulti.toSingle ?_
+  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepLeftOnce]) ?_
+  · intro k hk
+    have hk' : k < 2 := hk
+    interval_cases k <;> rfl
+  · intro j nxt h
+    unfold exitAt at h
+    split at h
+    · cases h; omega
+    · cases h
+
+set_option maxRecDepth 8192 in
+theorem popIter_region_scanL1_336 :
+    RegionEmbedded popIterProgram selfLoopScanLeftOne 336 338 := by
+  refine RegionEmbeddedMulti.toSingle ?_
+  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [selfLoopScanLeftOne]) ?_
+  · intro k hk
+    have hk' : k < 2 := hk
+    interval_cases k <;> rfl
+  · intro j nxt h
+    unfold exitAt at h
+    split at h
+    · cases h; omega
+    · cases h
+
+set_option maxRecDepth 8192 in
+theorem popIter_region_scanL_338 :
+    RegionEmbedded popIterProgram selfLoopScanLeft 338 340 := by
+  refine RegionEmbeddedMulti.toSingle ?_
+  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [selfLoopScanLeft]) ?_
+  · intro k hk
+    have hk' : k < 2 := hk
+    interval_cases k <;> rfl
+  · intro j nxt h
+    unfold exitAt at h
+    split at h
+    · cases h; omega
+    · cases h
+
+set_option maxRecDepth 8192 in
+theorem popIter_region_sR_340 :
+    RegionEmbedded popIterProgram stepRightOnce 340 342 := by
+  refine RegionEmbeddedMulti.toSingle ?_
+  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepRightOnce]) ?_
+  · intro k hk
+    have hk' : k < 2 := hk
+    interval_cases k <;> rfl
+  · intro j nxt h
+    unfold exitAt at h
+    split at h
+    · cases h; omega
+    · cases h
+
+set_option maxRecDepth 8192 in
+theorem popIter_region_sR_342 :
+    RegionEmbedded popIterProgram stepRightOnce 342 344 := by
+  refine RegionEmbeddedMulti.toSingle ?_
+  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepRightOnce]) ?_
+  · intro k hk
+    have hk' : k < 2 := hk
+    interval_cases k <;> rfl
+  · intro j nxt h
+    unfold exitAt at h
+    split at h
+    · cases h; omega
+    · cases h
+
+set_option maxRecDepth 8192 in
+theorem popIter_region_transfer_344 :
+    RegionEmbeddedMulti popIterProgram unaryTransfer 344 (exitAt 8 353) := by
+  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [unaryTransfer]) ?_
+  · intro k hk
+    have hk' : k < 9 := hk
+    interval_cases k <;> rfl
+  · intro j nxt h
+    unfold exitAt at h
+    split at h
+    · cases h; omega
+    · cases h
+
+set_option maxRecDepth 8192 in
+theorem popIter_region_scanL_353 :
+    RegionEmbedded popIterProgram selfLoopScanLeft 353 355 := by
+  refine RegionEmbeddedMulti.toSingle ?_
+  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [selfLoopScanLeft]) ?_
+  · intro k hk
+    have hk' : k < 2 := hk
+    interval_cases k <;> rfl
+  · intro j nxt h
+    unfold exitAt at h
+    split at h
+    · cases h; omega
+    · cases h
+
+set_option maxRecDepth 8192 in
+theorem popIter_region_sR_355 :
+    RegionEmbedded popIterProgram stepRightOnce 355 357 := by
+  refine RegionEmbeddedMulti.toSingle ?_
+  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepRightOnce]) ?_
+  · intro k hk
+    have hk' : k < 2 := hk
+    interval_cases k <;> rfl
+  · intro j nxt h
+    unfold exitAt at h
+    split at h
+    · cases h; omega
+    · cases h
+
+set_option maxRecDepth 8192 in
+theorem popIter_region_sR_357 :
+    RegionEmbedded popIterProgram stepRightOnce 357 359 := by
+  refine RegionEmbeddedMulti.toSingle ?_
+  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepRightOnce]) ?_
+  · intro k hk
+    have hk' : k < 2 := hk
+    interval_cases k <;> rfl
+  · intro j nxt h
+    unfold exitAt at h
+    split at h
+    · cases h; omega
+    · cases h
+
+set_option maxRecDepth 8192 in
+theorem popIter_region_wb_359 :
+    RegionEmbedded popIterProgram (writeBits [true]) 359 361 := by
+  have hacc : ((writeBits [true]).acceptPhase : Nat) = 1 := by
+    simp [writeBits]
+  refine RegionEmbeddedMulti.toSingle ?_
+  rw [show (fun j => if j = (((writeBits [true])).acceptPhase : Nat)
+      then some 361 else none) = exitAt 1 361 from by
+    funext j; rw [hacc]; rfl]
+  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_
+    (by simp only [unionProgram_numPhases, writeBits_numPhases, List.length_replicate,
+          List.length_append, List.length_singleton]
+        omega) ?_
+  · intro k hk
+    have hk' : k < 2 := by
+      have := hk
+      simp only [writeBits_numPhases, List.length_replicate, List.length_append,
+        List.length_singleton] at this
+      omega
+    interval_cases k <;> rfl
+  · intro j nxt h
+    unfold exitAt at h
+    split at h
+    · cases h; omega
+    · cases h
+
+set_option maxRecDepth 8192 in
+theorem popIter_region_scanR_361 :
+    RegionEmbedded popIterProgram gammaSelfLoopScan 361 363 := by
   refine RegionEmbeddedMulti.toSingle ?_
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [gammaSelfLoopScan]) ?_
   · intro k hk
@@ -1944,8 +1991,9 @@ theorem popIter_region_scanR_408 :
     · cases h; omega
     · cases h
 
-theorem popIter_region_walkR_410 :
-    RegionEmbeddedMulti popIterProgram zoneWalkRight 410 (exitAt 4 416) := by
+set_option maxRecDepth 8192 in
+theorem popIter_region_walkR_363 :
+    RegionEmbeddedMulti popIterProgram zoneWalkRight 363 (exitAt 4 369) := by
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [zoneWalkRight]) ?_
   · intro k hk
     have hk' : k < 6 := hk
@@ -1956,8 +2004,145 @@ theorem popIter_region_walkR_410 :
     · cases h; omega
     · cases h
 
+set_option maxRecDepth 8192 in
+theorem popIter_region_sL_369 :
+    RegionEmbedded popIterProgram stepLeftOnce 369 371 := by
+  refine RegionEmbeddedMulti.toSingle ?_
+  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepLeftOnce]) ?_
+  · intro k hk
+    have hk' : k < 2 := hk
+    interval_cases k <;> rfl
+  · intro j nxt h
+    unfold exitAt at h
+    split at h
+    · cases h; omega
+    · cases h
+
+set_option maxRecDepth 8192 in
+theorem popIter_region_vpush_371 :
+    RegionEmbeddedMulti popIterProgram valuePushProgram 371 (exitAt 34 406) := by
+  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [valuePushProgram]) ?_
+  · intro k hk
+    have hk' : k < 35 := hk
+    interval_cases k <;> rfl
+  · intro j nxt h
+    unfold exitAt at h
+    split at h
+    · cases h; omega
+    · cases h
+
+set_option maxRecDepth 8192 in
+theorem popIter_region_sR_406 :
+    RegionEmbedded popIterProgram stepRightOnce 406 408 := by
+  refine RegionEmbeddedMulti.toSingle ?_
+  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [stepRightOnce]) ?_
+  · intro k hk
+    have hk' : k < 2 := hk
+    interval_cases k <;> rfl
+  · intro j nxt h
+    unfold exitAt at h
+    split at h
+    · cases h; omega
+    · cases h
+
+set_option maxRecDepth 8192 in
+theorem popIter_region_scanR1_408 :
+    RegionEmbedded popIterProgram selfLoopScanRightOne 408 410 := by
+  refine RegionEmbeddedMulti.toSingle ?_
+  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [selfLoopScanRightOne]) ?_
+  · intro k hk
+    have hk' : k < 2 := hk
+    interval_cases k <;> rfl
+  · intro j nxt h
+    unfold exitAt at h
+    split at h
+    · cases h; omega
+    · cases h
+
+set_option maxRecDepth 8192 in
+theorem popIter_region_scanR_410 :
+    RegionEmbedded popIterProgram gammaSelfLoopScan 410 412 := by
+  refine RegionEmbeddedMulti.toSingle ?_
+  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [gammaSelfLoopScan]) ?_
+  · intro k hk
+    have hk' : k < 2 := hk
+    interval_cases k <;> rfl
+  · intro j nxt h
+    unfold exitAt at h
+    split at h
+    · cases h; omega
+    · cases h
+
+set_option maxRecDepth 8192 in
+theorem popIter_region_scanR1_412 :
+    RegionEmbedded popIterProgram selfLoopScanRightOne 412 414 := by
+  refine RegionEmbeddedMulti.toSingle ?_
+  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [selfLoopScanRightOne]) ?_
+  · intro k hk
+    have hk' : k < 2 := hk
+    interval_cases k <;> rfl
+  · intro j nxt h
+    unfold exitAt at h
+    split at h
+    · cases h; omega
+    · cases h
+
+set_option maxRecDepth 8192 in
+theorem popIter_region_wb_414 :
+    RegionEmbedded popIterProgram (writeBits [true]) 414 416 := by
+  have hacc : ((writeBits [true]).acceptPhase : Nat) = 1 := by
+    simp [writeBits]
+  refine RegionEmbeddedMulti.toSingle ?_
+  rw [show (fun j => if j = (((writeBits [true])).acceptPhase : Nat)
+      then some 416 else none) = exitAt 1 416 from by
+    funext j; rw [hacc]; rfl]
+  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_
+    (by simp only [unionProgram_numPhases, writeBits_numPhases, List.length_replicate,
+          List.length_append, List.length_singleton]
+        omega) ?_
+  · intro k hk
+    have hk' : k < 2 := by
+      have := hk
+      simp only [writeBits_numPhases, List.length_replicate, List.length_append,
+        List.length_singleton] at this
+      omega
+    interval_cases k <;> rfl
+  · intro j nxt h
+    unfold exitAt at h
+    split at h
+    · cases h; omega
+    · cases h
+
+set_option maxRecDepth 8192 in
 theorem popIter_region_scanR_416 :
     RegionEmbedded popIterProgram gammaSelfLoopScan 416 418 := by
+  refine RegionEmbeddedMulti.toSingle ?_
+  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [gammaSelfLoopScan]) ?_
+  · intro k hk
+    have hk' : k < 2 := hk
+    interval_cases k <;> rfl
+  · intro j nxt h
+    unfold exitAt at h
+    split at h
+    · cases h; omega
+    · cases h
+
+set_option maxRecDepth 8192 in
+theorem popIter_region_walkR_418 :
+    RegionEmbeddedMulti popIterProgram zoneWalkRight 418 (exitAt 4 424) := by
+  refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [zoneWalkRight]) ?_
+  · intro k hk
+    have hk' : k < 6 := hk
+    interval_cases k <;> rfl
+  · intro j nxt h
+    unfold exitAt at h
+    split at h
+    · cases h; omega
+    · cases h
+
+set_option maxRecDepth 8192 in
+theorem popIter_region_scanR_424 :
+    RegionEmbedded popIterProgram gammaSelfLoopScan 424 426 := by
   refine RegionEmbeddedMulti.toSingle ?_
   refine unionProgram_embedded _ _ _ _ _ _ _ _ ?_ (by simp [gammaSelfLoopScan]) ?_
   · intro k hk

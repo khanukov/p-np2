@@ -4391,8 +4391,8 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.popCtrlTopRedirect
 #check @Pnp4.Frontier.ContractExpansion.popRemRedirect
 #check @Pnp4.Frontier.ContractExpansion.popIter_region_ctop_4
-#check @Pnp4.Frontier.ContractExpansion.popIter_region_transfer_248
-#check @Pnp4.Frontier.ContractExpansion.popIter_region_vpush_363
+#check @Pnp4.Frontier.ContractExpansion.popIter_region_transfer_252
+#check @Pnp4.Frontier.ContractExpansion.popIter_region_vpush_371
 -- D2t-5b (Block A5m-3 run): the clear iteration end to end.
 #check @Pnp4.Frontier.ContractExpansion.clearIter_run
 -- D2t-5b (Block A5m-U6): the host-generic write segment (tape = writeBlockTape).

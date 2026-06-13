@@ -16,8 +16,10 @@ The mirror of `TreeMCSPCorridorRoutes`: after an emit at the WORK frontier the h
   cell past the zone's content — where the next scan starts.
 
 Legs: `corridor_back_scan_to_valSentinel` (from the cell right of `FM`),
-`corridor_back_walk_val`, `corridor_back_scan_to_ctrlSentinel`, `corridor_back_walk_ctrl`,
-`corridor_back_scan_to_M`.
+`corridor_back_walk_val`, `corridor_back_scan_to_shwBase` (landing on the shadow-count zone's
+base `1`), `corridor_back_scan_to_ctrlSentinel` (from the dead cell right of the `SHW` content;
+crossing the `SHW` `1`-block rightward is a scan-over-ones connector, supplied with the pop arm),
+`corridor_back_walk_ctrl`, `corridor_back_scan_to_M`.
 
 **Progress classification (AGENTS.md): Infrastructure** — verifier machine run-throughs; build no
 verifier and prove no separation.  Standard `[propext, Classical.choice, Quot.sound]` triple only.
@@ -114,9 +116,9 @@ theorem corridor_back_scan_to_valSentinel {n L : Nat} (width : Nat) (h_width : n
         ((z.valBase - (c0.head : Nat)) + 1)).head : Nat) = z.valBase
     ∧ (TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM) c0
         ((z.valBase - (c0.head : Nat)) + 1)).tape = c0.tape := by
-  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
-    hctrl, hcfit2, hvalid, hcoh⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9⟩ := hwf
+  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
+    hshw, hsfit, hszeros, hctrl, hcfit2, hvalid, hcoh⟩ := hinv
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hwf
   have hsent : ∀ p : Fin (gammaSelfLoopScan.toPhased.toTM.tapeLength L),
       (p : Nat) = z.valBase → c0.tape p = true := by
     intro p hp
@@ -135,8 +137,6 @@ theorem corridor_back_scan_to_valSentinel {n L : Nat} (width : Nat) (h_width : n
     have : encodeNatStackR st.val = true :: st.val.reverse.flatMap encodeNatEntryR := rfl
     rw [this]
     rfl
-  have hm : z.valBase - (c0.head : Nat) = z.valBase - z.workBase
-      - (encodeGateRecordStream st.out).length - 1 := by omega
   exact (by
     have := gammaSelfLoopScan_runConfigFrom_terminator c0 hphase (z.valBase - (c0.head : Nat))
       (by omega)
@@ -159,12 +159,12 @@ theorem corridor_back_walk_val {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ wi
         = z.valBase + (encodeNatStackR st.val).length + 1
     ∧ (TM.runConfig (M := zoneWalkRight.toPhased.toTM) c0
         (walkZoneStepsR (st.val.map (· + 2)))).tape = c0.tape := by
-  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
-    hctrl, hcfit2, hvalid, hcoh⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9⟩ := hwf
+  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
+    hshw, hsfit, hszeros, hctrl, hcfit2, hvalid, hcoh⟩ := hinv
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hwf
   have hlen : (encodeNatStackR st.val).length = (walkZone (st.val.map (· + 2))).length := by
     rw [encodeNatStackR_eq_walkZone]
-  obtain ⟨hf1, hf2, hf3⟩ := zoneWalkRight_runConfig_walkZone c0 (st.val.map (· + 2))
+  obtain ⟨hf1, hf2, hf3, _⟩ := zoneWalkRight_runConfig_walkZone c0 (st.val.map (· + 2))
     (by
       intro k hk
       rw [List.mem_map] at hk
@@ -177,22 +177,59 @@ theorem corridor_back_walk_val {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ wi
     (fun p hp => hvzeros p (by rw [← hlen] at hp; omega) (by rw [← hlen] at hp; omega))
   exact ⟨hf1, by rw [hf2, ← hlen], hf3⟩
 
-/-- **Return leg 3 (scan → the control zone's base sentinel).** -/
-theorem corridor_back_scan_to_ctrlSentinel {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width)
+/-- **Return leg 3 (scan → the shadow-count zone's base `1`).**  From the dead cell right of the
+value content (`valBase + |encodeNatStackR st.val| + 1`), the rightward 0-scan stops on `shwBase`
+(the `SHW` window's leftmost cell, always a `1`).  (Crossing the `SHW` `1`-block rightward is a
+scan-over-ones connector, supplied with the pop arm.) -/
+theorem corridor_back_scan_to_shwBase {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width)
     (z : DriverCorridor) (st : DriveState n)
     (c0 : Configuration (M := gammaSelfLoopScan.toPhased.toTM) L)
     (hinv : driverCorridorInv width h_width z c0.tape st)
     (hphase : (c0.state.fst : Nat) = 0)
     (hhead : (c0.head : Nat) = z.valBase + (encodeNatStackR st.val).length + 1) :
     (((TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM) c0
+        ((z.shwBase - (c0.head : Nat)) + 1)).state).fst : Nat) = 1
+    ∧ ((TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM) c0
+        ((z.shwBase - (c0.head : Nat)) + 1)).head : Nat) = z.shwBase
+    ∧ (TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM) c0
+        ((z.shwBase - (c0.head : Nat)) + 1)).tape = c0.tape := by
+  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
+    hshw, hsfit, hszeros, hctrl, hcfit2, hvalid, hcoh⟩ := hinv
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hwf
+  have hsent : ∀ p : Fin (gammaSelfLoopScan.toPhased.toTM.tapeLength L),
+      (p : Nat) = z.shwBase → c0.tape p = true := by
+    intro p hp
+    obtain ⟨hf, hc⟩ := hshw
+    have := hc p (by omega) (by rw [List.length_replicate]; omega)
+    rw [this]
+    have hidx : (p : Nat) - z.shwBase = 0 := by omega
+    rw [hidx]
+    rfl
+  have hvfit' : z.valBase + (encodeNatStackR st.val).length ≤ z.valEnd := hvfit
+  have := gammaSelfLoopScan_runConfigFrom_terminator c0 hphase (z.shwBase - (c0.head : Nat))
+    (by omega)
+    (fun p hp1 hp2 => hvzeros p (by omega) (by omega))
+    (fun p hp => hsent p (by omega))
+  rwa [show (c0.head : Nat) + (z.shwBase - (c0.head : Nat)) = z.shwBase from by omega] at this
+
+/-- **Return leg 3′ (scan → the control zone's base sentinel).**  From the dead cell right of the
+`SHW` content (`shwBase + |out| + 1`), the rightward 0-scan stops on the control sentinel at
+`ctrlBase`. -/
+theorem corridor_back_scan_to_ctrlSentinel {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width)
+    (z : DriverCorridor) (st : DriveState n)
+    (c0 : Configuration (M := gammaSelfLoopScan.toPhased.toTM) L)
+    (hinv : driverCorridorInv width h_width z c0.tape st)
+    (hphase : (c0.state.fst : Nat) = 0)
+    (hhead : (c0.head : Nat) = z.shwBase + st.out.length + 1) :
+    (((TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM) c0
         ((z.ctrlBase - (c0.head : Nat)) + 1)).state).fst : Nat) = 1
     ∧ ((TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM) c0
         ((z.ctrlBase - (c0.head : Nat)) + 1)).head : Nat) = z.ctrlBase
     ∧ (TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM) c0
         ((z.ctrlBase - (c0.head : Nat)) + 1)).tape = c0.tape := by
-  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
-    hctrl, hcfit2, hvalid, hcoh⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9⟩ := hwf
+  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
+    hshw, hsfit, hszeros, hctrl, hcfit2, hvalid, hcoh⟩ := hinv
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hwf
   have hsent : ∀ p : Fin (gammaSelfLoopScan.toPhased.toTM.tapeLength L),
       (p : Nat) = z.ctrlBase → c0.tape p = true := by
     intro p hp
@@ -212,7 +249,7 @@ theorem corridor_back_scan_to_ctrlSentinel {n L : Nat} (width : Nat) (h_width : 
     rfl
   have := gammaSelfLoopScan_runConfigFrom_terminator c0 hphase (z.ctrlBase - (c0.head : Nat))
     (by omega)
-    (fun p hp1 hp2 => hvzeros p (by omega) (by omega))
+    (fun p hp1 hp2 => hszeros p (by omega) (by omega))
     (fun p hp => hsent p (by omega))
   rwa [show (c0.head : Nat) + (z.ctrlBase - (c0.head : Nat)) = z.ctrlBase from by omega] at this
 
@@ -231,13 +268,13 @@ theorem corridor_back_walk_ctrl {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ w
         = z.ctrlBase + (encodeCtrlStackR st.ctrl).length + 1
     ∧ (TM.runConfig (M := zoneWalkRight.toPhased.toTM) c0
         (walkZoneStepsR (st.ctrl.flatMap fun f => [f.1.tagCode + 2, f.2 + 1]))).tape = c0.tape := by
-  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
-    hctrl, hcfit2, hvalid, hcoh⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9⟩ := hwf
+  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
+    hshw, hsfit, hszeros, hctrl, hcfit2, hvalid, hcoh⟩ := hinv
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hwf
   have hlen : (encodeCtrlStackR st.ctrl).length
       = (walkZone (st.ctrl.flatMap fun f => [f.1.tagCode + 2, f.2 + 1])).length := by
     rw [encodeCtrlStackR_eq_walkZone]
-  obtain ⟨hf1, hf2, hf3⟩ := zoneWalkRight_runConfig_walkZone c0
+  obtain ⟨hf1, hf2, hf3, _⟩ := zoneWalkRight_runConfig_walkZone c0
     (st.ctrl.flatMap fun f => [f.1.tagCode + 2, f.2 + 1])
     (by
       intro k hk
@@ -272,9 +309,9 @@ theorem corridor_back_scan_to_M {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ w
     ∧ (TM.runConfig (M := gammaSelfLoopScan.toPhased.toTM) c0
         ((z.certEnd - (encodePreorder width h_width st.toks).length - 1 - (c0.head : Nat)) + 1)).tape
         = c0.tape := by
-  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
-    hctrl, hcfit2, hvalid, hcoh⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9⟩ := hwf
+  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
+    hshw, hsfit, hszeros, hctrl, hcfit2, hvalid, hcoh⟩ := hinv
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hwf
   have := gammaSelfLoopScan_runConfigFrom_terminator c0 hphase
     (z.certEnd - (encodePreorder width h_width st.toks).length - 1 - (c0.head : Nat))
     (by omega)

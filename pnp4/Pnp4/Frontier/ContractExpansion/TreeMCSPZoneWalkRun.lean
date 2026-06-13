@@ -30,7 +30,8 @@ open Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram
 
 /-- **The terminating pass.**  From φ0 on the single-`1` base sentinel (`head > 0`, with a `0` at
 `head − 1`), after `2` steps the walker is in the done phase `4` with the head on that `0`
-(`head − 1`), tape unchanged. -/
+(`head − 1`), tape unchanged — and along the way the phase stays below the done phase and the head
+at or below the start (the per-step stream the region-embedding transfer consumes). -/
 theorem zoneWalkLeft_runConfig_sentinel {L : Nat}
     (c0 : Configuration (M := zoneWalkLeft.toPhased.toTM) L)
     (hphase : (c0.state.fst : Nat) = 0) (hh : 0 < (c0.head : Nat))
@@ -38,7 +39,11 @@ theorem zoneWalkLeft_runConfig_sentinel {L : Nat}
       (p : Nat) = (c0.head : Nat) - 1 → c0.tape p = false) :
     (((TM.runConfig (M := zoneWalkLeft.toPhased.toTM) c0 2).state).fst : Nat) = 4
     ∧ ((TM.runConfig (M := zoneWalkLeft.toPhased.toTM) c0 2).head : Nat) = (c0.head : Nat) - 1
-    ∧ (TM.runConfig (M := zoneWalkLeft.toPhased.toTM) c0 2).tape = c0.tape := by
+    ∧ (TM.runConfig (M := zoneWalkLeft.toPhased.toTM) c0 2).tape = c0.tape
+    ∧ ∀ s : Nat, s < 2 →
+        (((TM.runConfig (M := zoneWalkLeft.toPhased.toTM) c0 s).state).fst : Nat) < 4
+        ∧ ((TM.runConfig (M := zoneWalkLeft.toPhased.toTM) c0 s).head : Nat)
+            ≤ (c0.head : Nat) := by
   rw [show (2 : Nat) = 1 + 1 from rfl, TM.runConfig_add, TM.runConfig_one, TM.runConfig_one]
   set c1 := TM.stepConfig (M := zoneWalkLeft.toPhased.toTM) c0 with hc1
   have hst0 : c0.state = ⟨c0.state.fst, c0.state.snd⟩ := rfl
@@ -52,10 +57,19 @@ theorem zoneWalkLeft_runConfig_sentinel {L : Nat}
   have hst1 : c1.state = ⟨c1.state.fst, c1.state.snd⟩ := rfl
   have hbit : c1.tape c1.head = false := by
     rw [h1tp]; exact hdead c1.head (by rw [h1hd])
-  refine ⟨?_, ?_, ?_⟩
+  refine ⟨?_, ?_, ?_, ?_⟩
   · exact zoneWalkLeft_stepConfig_p1_zero_phase c1 h1ph hst1 hbit
   · rw [zoneWalkLeft_stepConfig_p1_zero_head c1 h1ph hst1 hbit, h1hd]
   · rw [zoneWalkLeft_stepConfig_p1_tape c1 h1ph hst1, h1tp]
+  · intro s hs
+    by_cases hs0 : s = 0
+    · subst hs0
+      rw [TM.runConfig_zero]
+      exact ⟨by omega, by omega⟩
+    · have hs1 : s = 1 := by omega
+      subst hs1
+      rw [TM.runConfig_one, ← hc1]
+      exact ⟨by omega, by omega⟩
 
 /-- **One field-block pass.**  From φ0 on a field block's rightmost cell (`head`), with `m ≥ 1` ones at
 `[head − m, head − 1]` and the delimiter `0` at `head − m − 1` (and `head ≥ m + 2` so no move clamps),
@@ -72,7 +86,11 @@ theorem zoneWalkLeft_runConfig_field_segment {L : Nat}
     (((TM.runConfig (M := zoneWalkLeft.toPhased.toTM) c0 (m + 4)).state).fst : Nat) = 0
     ∧ ((TM.runConfig (M := zoneWalkLeft.toPhased.toTM) c0 (m + 4)).head : Nat)
         = (c0.head : Nat) - m - 2
-    ∧ (TM.runConfig (M := zoneWalkLeft.toPhased.toTM) c0 (m + 4)).tape = c0.tape := by
+    ∧ (TM.runConfig (M := zoneWalkLeft.toPhased.toTM) c0 (m + 4)).tape = c0.tape
+    ∧ ∀ s : Nat, s < m + 4 →
+        (((TM.runConfig (M := zoneWalkLeft.toPhased.toTM) c0 s).state).fst : Nat) < 4
+        ∧ ((TM.runConfig (M := zoneWalkLeft.toPhased.toTM) c0 s).head : Nat)
+            ≤ (c0.head : Nat) := by
   -- Split m + 4 = 2 + (m + 2): the (φ0,φ1) entry, the φ2 scan of m ones, the (φ2-stop, φ3) exit.
   have hsplit : m + 4 = 2 + (m + 2) := by omega
   rw [hsplit, TM.runConfig_add]
@@ -121,12 +139,48 @@ theorem zoneWalkLeft_runConfig_field_segment {L : Nat}
   have h4tp : c4.tape = c0.tape := by
     rw [hc4, zoneWalkLeft_stepConfig_p2_zero_tape c3 h3ph hst3 hbit3, h3tp, h2tp]
   have hst4 : c4.state = ⟨c4.state.fst, c4.state.snd⟩ := rfl
-  refine ⟨?_, ?_, ?_⟩
+  -- The truncated chains for the per-step stream.
+  have hcfg1 : TM.runConfig (M := zoneWalkLeft.toPhased.toTM) c0 1 = c1 := by
+    rw [TM.runConfig_one, ← hc1]
+  have hcfg2 : TM.runConfig (M := zoneWalkLeft.toPhased.toTM) c0 2 = c2 := hc2.symm
+  have hcfg3 : TM.runConfig (M := zoneWalkLeft.toPhased.toTM) c0 (2 + m) = c3 := by
+    rw [TM.runConfig_add, hcfg2, ← hc3]
+  have hcfg4 : TM.runConfig (M := zoneWalkLeft.toPhased.toTM) c0 (2 + m + 1) = c4 := by
+    rw [TM.runConfig_succ, hcfg3, ← hc4]
+  refine ⟨?_, ?_, ?_, ?_⟩
   · exact zoneWalkLeft_stepConfig_p3_phase c4 h4ph hst4
   · rw [zoneWalkLeft_stepConfig_p3_head c4 h4ph hst4]
     simp only [Configuration.moveHead, dif_neg (by rw [h4hd]; omega : ¬ (c4.head : Nat) = 0)]
     rw [h4hd]; omega
   · rw [zoneWalkLeft_stepConfig_p3_tape c4 h4ph hst4, h4tp]
+  · intro s hs
+    by_cases hs0 : s = 0
+    · subst hs0
+      rw [TM.runConfig_zero]
+      exact ⟨by omega, by omega⟩
+    by_cases hs1 : s = 1
+    · subst hs1
+      rw [hcfg1]
+      exact ⟨by omega, by omega⟩
+    by_cases hsm : s < 2 + m
+    · -- inside the φ2 ones-scan, r := s − 2
+      obtain ⟨hrp, hrh, _⟩ :=
+        zoneWalkLeft_runConfig_p2_scanning c2 h2ph (s - 2) (by rw [h2hd]; omega)
+          (fun p hp1 hp2 => by
+            rw [h2hd] at hp1 hp2
+            rw [h2tp]
+            exact hones p (by omega) (by omega))
+      rw [show s = 2 + (s - 2) from by omega, TM.runConfig_add, hcfg2]
+      rw [h2hd] at hrh
+      exact ⟨by omega, by omega⟩
+    by_cases hsm2 : s = 2 + m
+    · subst hsm2
+      rw [hcfg3]
+      exact ⟨by omega, by omega⟩
+    · have hsm3 : s = 2 + m + 1 := by omega
+      subst hsm3
+      rw [hcfg4]
+      exact ⟨by omega, by omega⟩
 
 end ContractExpansion
 end Frontier

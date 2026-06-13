@@ -33,15 +33,11 @@ open Pnp3.Internal.PsubsetPpoly.TM.Encoding
 
 /-! ### Codec fact: a nonempty control stack's penultimate cell is `1` -/
 
-/-- `getD` into an all-`true` block is `true` at every in-range index. -/
+/-- `getD` into an all-`true` block is `true` at every in-range index (alias of the generic
+`getD_replicate_of_lt`, kept for the established call sites). -/
 theorem getD_replicate_true (m i : Nat) (h : i < m) :
-    (List.replicate m true).getD i false = true := by
-  induction m generalizing i with
-  | zero => omega
-  | succ m ih =>
-      cases i with
-      | zero => rfl
-      | succ i => rw [List.replicate_succ, List.getD_cons_succ]; exact ih i (by omega)
+    (List.replicate m true).getD i false = true :=
+  getD_replicate_of_lt true false h
 
 /-- **A nonempty control stack's penultimate cell is `1`**: the rightmost block is the top frame's
 tag block, which carries `tagCode + 2 ≥ 2` ones. -/
@@ -197,8 +193,8 @@ theorem settleProbe_runConfig_frame {n L : Nat} (width : Nat) (h_width : n ≤ 2
     (((TM.runConfig (M := settleProbe.toPhased.toTM) c0 2).state).fst : Nat) = 2
       ∧ ((TM.runConfig (M := settleProbe.toPhased.toTM) c0 2).head : Nat) = (c0.head : Nat) - 1
       ∧ (TM.runConfig (M := settleProbe.toPhased.toTM) c0 2).tape = c0.tape := by
-  obtain ⟨hwf, _, _, _, _, _, _, _, _, _, _, _, _, hctrlw, hcfit2, _, _⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9⟩ := hwf
+  obtain ⟨hwf, _, _, _, _, _, _, _, _, _, _, _, _, _, _, hctrlw, hcfit2, _, _⟩ := hinv
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hwf
   replace hctrlw : windowSpells c0.tape z.ctrlBase (encodeCtrlStackR st.ctrl) := hctrlw
   replace hcfit2 : z.ctrlBase + (encodeCtrlStackR st.ctrl).length ≤ z.ctrlEnd := hcfit2
   -- The encoded stack has ≥ 2 cells (sentinel + a frame's ≥ 8 cells).
@@ -250,7 +246,7 @@ theorem settleProbe_runConfig_frame {n L : Nat} (width : Nat) (h_width : n ≤ 2
 
 /-- **The empty verdict.**  For a settling state with an **empty** control stack, from `φ0` on the
 base sentinel, two steps land in the **empty** outcome phase (`3`), head one left of the sentinel,
-tape unchanged.  (The peeked cell is the dead val→ctrl corridor.) -/
+tape unchanged.  (The peeked cell is the dead SHW→ctrl corridor.) -/
 theorem settleProbe_runConfig_empty {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width)
     (z : DriverCorridor) (st : DriveState n)
     (c0 : Configuration (M := settleProbe.toPhased.toTM) L)
@@ -261,13 +257,12 @@ theorem settleProbe_runConfig_empty {n L : Nat} (width : Nat) (h_width : n ≤ 2
     (((TM.runConfig (M := settleProbe.toPhased.toTM) c0 2).state).fst : Nat) = 3
       ∧ ((TM.runConfig (M := settleProbe.toPhased.toTM) c0 2).head : Nat) = z.ctrlBase - 1
       ∧ (TM.runConfig (M := settleProbe.toPhased.toTM) c0 2).tape = c0.tape := by
-  obtain ⟨hwf, _, _, _, _, _, _, _, _, _, hval, hvfit, hvzeros, _, _, _, _⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9⟩ := hwf
-  replace hval : windowSpells c0.tape z.valBase (encodeNatStackR st.val) := hval
-  replace hvfit : z.valBase + (encodeNatStackR st.val).length ≤ z.valEnd := hvfit
-  replace hvzeros : ∀ p : Fin (settleProbe.toPhased.toTM.tapeLength L),
-      z.valBase + (encodeNatStackR st.val).length ≤ (p : Nat) →
-      (p : Nat) < z.ctrlBase → c0.tape p = false := hvzeros
+  obtain ⟨hwf, _, _, _, _, _, _, _, _, _, _, _, _, hsfit, hszeros, _, _, _, _⟩ := hinv
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hwf
+  replace hsfit : z.shwBase + st.out.length + 1 ≤ z.shwEnd := hsfit
+  replace hszeros : ∀ p : Fin (settleProbe.toPhased.toTM.tapeLength L),
+      z.shwBase + st.out.length + 1 ≤ (p : Nat) →
+      (p : Nat) < z.ctrlBase → c0.tape p = false := hszeros
   have hpos : 1 ≤ (c0.head : Nat) := by omega
   have hne : ¬ (c0.head : Nat) = 0 := by omega
   rw [show (2 : Nat) = 1 + 1 from rfl, TM.runConfig_add, TM.runConfig_one]
@@ -282,10 +277,10 @@ theorem settleProbe_runConfig_empty {n L : Nat} (width : Nat) (h_width : n ≤ 2
     rw [hhd1]
     simp only [Configuration.moveHead, dif_neg hne]
     omega
-  -- The peeked cell is the dead val→ctrl corridor.
+  -- The peeked cell is the dead SHW→ctrl corridor.
   have hbit1 : c1.tape c1.head = false := by
     rw [htp1]
-    exact hvzeros c1.head (by omega) (by omega)
+    exact hszeros c1.head (by omega) (by omega)
   rw [TM.runConfig_one]
   refine ⟨?_, ?_, ?_⟩
   · exact settleProbe_stepConfig_p1_zero_phase c1 (i := c1.state.fst) (s := c1.state.snd)

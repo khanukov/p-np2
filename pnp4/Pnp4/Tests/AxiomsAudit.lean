@@ -66,6 +66,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckUnit
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaScanProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftOneProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPScanOnes
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanRightOneProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStepRightProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordLayout
@@ -89,6 +90,8 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPCertTokens
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverStrongInv
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDrivePending
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryTransferRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPValuePushHeadline
+import Pnp4.Frontier.ContractExpansion.TreeMCSPValuePushConfined
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverCorridor
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalk
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRun
@@ -122,6 +125,13 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftSeqP1
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanRoundTrip
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverRealization
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTranscoderCapstone
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBitProbe
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionBitProbeHop
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionScanOnesSegments
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionZoneWalkHop
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionValuePushHop
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionUnaryTransferHop
+import Pnp4.Frontier.ContractExpansion.TreeMCSPPopIterProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbe
 import Pnp4.Frontier.ContractExpansion.TreeMCSPAtomSeqP1
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbeFrame
@@ -141,6 +151,9 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPDecIterRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCertTrie
 import Pnp4.Frontier.ContractExpansion.TreeMCSPNodeIterProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPNodeIterRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPConstIterProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPConstIterRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPConstWriteChain
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -941,6 +954,37 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.unaryTransfer_pass_more
 #print axioms Pnp4.Frontier.ContractExpansion.unaryTransfer_pass_last
 #print axioms Pnp4.Frontier.ContractExpansion.unaryTransfer_transfers
+-- A5m-V (M1): the non-destructive value-push machine and its headline.
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.runConfig_safe_append
+#print axioms Pnp4.Frontier.ContractExpansion.valuePushProgram
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_prologue_full
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_prologue
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_prologue_confined
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_drain_mid_cut
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_drain_mid_back_confined
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_drain_mid_confined
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_drain_final_A_full
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_drain_final_B_full
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_clone_mid_full
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_clone_last_full
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_prologue_k0_full
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_park_full
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_drain_final_A_confined
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_drain_final_B_confined
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_clone_mid_confined
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_clone_last_confined
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_prologue_k0_confined
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_park_confined
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_prologue_k0
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_drain_mid
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_drain_final
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_drain_all
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_clone_mid
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_clone_last
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_clone_all
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_park
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_pushes
+#print axioms Pnp4.Frontier.ContractExpansion.valuePush_pushes_writeBlock
 -- D2t-5b (Block A3): the corridor layout — right-anchored stack codecs (top rightmost, every field's
 -- right edge a 1, base sentinels), and the corridor strong invariant: every inter-region hop is a
 -- 0-scan onto a pinned 1 anchor (cursor marker / frontier marker / stack tops); no hop crosses WORK.
@@ -977,11 +1021,15 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.walkZoneSteps_cons
 #print axioms Pnp4.Frontier.ContractExpansion.getD_replicate_of_lt
 #print axioms Pnp4.Frontier.ContractExpansion.zoneWalkLeft_runConfig_walkZone
--- D2t-5b (Block A4r): the leftward cross-zone route — five legs (scan M→ctrl-top, walk ctrl, scan
--- →val-top, walk val, scan →FM), each instantiated against driverCorridorInv's clauses.
+-- D2t-5b (Block A4r): the leftward cross-zone route — six legs around the SHW zone (scan M→ctrl-top,
+-- walk ctrl, scan →SHW-top, scan →val-top from shwBase−1, walk val, scan →FM) plus the two
+-- scan-over-ones SHW connectors, each instantiated against driverCorridorInv's clauses.
 #print axioms Pnp4.Frontier.ContractExpansion.windowSpells_getLast_true
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_scan_M_to_ctrlTop
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_walk_ctrl
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_scan_to_shwTop
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_cross_shw_left
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_cross_shw_right
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_scan_to_valTop
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_walk_val
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_scan_to_FM
@@ -1011,11 +1059,12 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.walkZoneStepsR_eq
 #print axioms Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_walkZone
 -- D2t-5b (Block A4r): the return route FM→val→ctrl→M — arbitrary-config rightward 0-scan lemmas +
--- five instantiated legs (the ctrl→cert gap widened to keep the walker's exit off the M slot).
+-- six instantiated legs around the SHW zone (the ctrl→cert gap widened to keep the walker's exit off the M slot).
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_runConfigFrom_scanning
 #print axioms Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_runConfigFrom_terminator
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_valSentinel
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_back_walk_val
+#print axioms Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_shwBase
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_ctrlSentinel
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_back_walk_ctrl
 #print axioms Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_M
@@ -1037,7 +1086,8 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.corridorInv_nodeStep
 -- D2t-5b (Block A4a): the leaf-emit output-region helper — count increment + record append at FM is
 -- exactly the new encodeGateStream window (reused by both the const and input keystones).
-#print axioms Pnp4.Frontier.ContractExpansion.gateStream_emit_eq
+#print axioms Pnp4.Frontier.ContractExpansion.encodeGateRecordStream_snoc
+#print axioms Pnp4.Frontier.ContractExpansion.encodeGateRecordStream_snoc_length
 #print axioms Pnp4.Frontier.ContractExpansion.emitTape_output_window
 #print axioms Pnp4.Frontier.ContractExpansion.emitTape_FM
 -- D2t-5b (Block A4a): the value-stack push as a written-block append (windowSpells extends by the new
@@ -1045,6 +1095,8 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.windowSpells_writeAppend
 #print axioms Pnp4.Frontier.ContractExpansion.writeBlockTape_below
 #print axioms Pnp4.Frontier.ContractExpansion.writeBlockTape_above
+#print axioms Pnp4.Frontier.ContractExpansion.writeBlockTape_tick_below
+#print axioms Pnp4.Frontier.ContractExpansion.writeBlockTape_tick_above
 #print axioms Pnp4.Frontier.ContractExpansion.valPush_window
 -- D2t-5b (Block A4a): the cursor re-anchoring keystone — consuming a tlen-cell token re-establishes
 -- the four certificate-region clauses for the tail (the shared spine of all reading/settle keystones).
@@ -1142,6 +1194,10 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.encodeCtrlStackR_penultimate_true
 #print axioms Pnp4.Frontier.ContractExpansion.settleProbe_runConfig_frame
 #print axioms Pnp4.Frontier.ContractExpansion.settleProbe_runConfig_empty
+-- D2t-5b (Block A5m-6a): the in-place bit prober (the leaf arms' value/index-bit branch).
+#print axioms Pnp4.Frontier.ContractExpansion.bitProbe
+#print axioms Pnp4.Frontier.ContractExpansion.bitProbe_runConfig_zero
+#print axioms Pnp4.Frontier.ContractExpansion.bitProbe_runConfig_one
 -- D2t-5b (Block A5m-3a): the atomic movers as the FIRST seq phase -- single-cell left/right steps
 -- and the probe's empty path, each with the handoff into P2's shifted start, tape unchanged.
 #print axioms Pnp4.Frontier.ContractExpansion.stepLeftOnce_seq_runConfig_handoff
@@ -1189,6 +1245,33 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_stepRight_hop
 #print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_probe_empty_hop
 #print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_probe_frame_hop
+-- D2t-5b (Block A5m-6a, transfer): the in-place bit-probe hops (the leaf arms' b-branch).
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_bitProbe_zero_hop
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_bitProbe_one_hop
+-- D2t-5b (Block A5m-6a, transfer): the SHW crossers in a union (ones-scan segments + hops).
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_scanLeftOne_hop
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_scanRightOne_hop
+-- D2t-5b (Block A5m-6a, transfer): the full-zone walkers in a union, via run_track + the
+-- walker streams (trackStart builds the coupled native start).
+#print axioms Pnp4.Frontier.ContractExpansion.trackStart
+#print axioms Pnp4.Frontier.ContractExpansion.trackStart_tapeAgree
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_walkZoneLeft_hop
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_walkZoneRight_hop
+-- D2t-5b (Block A5m-6a, transfer): the M1 value-push fan-out in a union — the confinement
+-- stream discharges run_track, the strict corridor room closes the clamp-edge check.
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_valuePush_hop
+-- D2t-5b (Block A5m-2, transfer): the unary-block mover in a union (the pop arm's
+-- VAL→record operand transport), via run_track + the transfer streams.
+#print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_unaryTransfer_hop
+-- D2t-5b (Block A5m-8, machine): popIterProgram -- the settle-pop-emit iteration as a region
+-- union (420 phases: ctrlTopWalk/remWalk dispatch, per-tag frame-erase + descent + tag write,
+-- the shared shuttle/transfer field pipelines, value push, SHW tick, rehome).
+#print axioms Pnp4.Frontier.ContractExpansion.popIterProgram
+#print axioms Pnp4.Frontier.ContractExpansion.popIter_region_ctop_4
+#print axioms Pnp4.Frontier.ContractExpansion.popIter_region_rem_14
+#print axioms Pnp4.Frontier.ContractExpansion.popIter_region_probe_185
+#print axioms Pnp4.Frontier.ContractExpansion.popIter_region_transfer_252
+#print axioms Pnp4.Frontier.ContractExpansion.popIter_region_vpush_371
 -- D2t-5b (Block A5m-3 run): the clear iteration END TO END on clearIterProgram -- from the settle
 -- home on the cursor marker, hop to the control top, probe (empty), return, scan home: phase 14,
 -- head back on the marker, tape untouched (= driverStepTape on the clear branch), <= 2*certEnd+13
@@ -1239,6 +1322,29 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.nodeIter_region_And_frame
 #print axioms Pnp4.Frontier.ContractExpansion.nodeIter_region_Or_frame
 #print axioms Pnp4.Frontier.ContractExpansion.nodeIter_region_scanRight
+-- D2t-5b (Block A5m-6, machine): constIterProgram -- the const-leaf iteration as a region
+-- union (170 phases: stepRight, certTrie dispatch, bitProbe b-branch, two marker+route+record
+-- chains, shared value-push + SHW-tick return) with its region contracts.
+#print axioms Pnp4.Frontier.ContractExpansion.constIterProgram
+#print axioms Pnp4.Frontier.ContractExpansion.constIter_region_trie_2
+#print axioms Pnp4.Frontier.ContractExpansion.constIter_region_probe_14
+#print axioms Pnp4.Frontier.ContractExpansion.constIter_region_mark_25
+#print axioms Pnp4.Frontier.ContractExpansion.constIter_region_rec0_55
+#print axioms Pnp4.Frontier.ContractExpansion.constIter_region_rec1_98
+#print axioms Pnp4.Frontier.ContractExpansion.constIter_region_vpush_113
+#print axioms Pnp4.Frontier.ContractExpansion.constIter_region_tick_156
+-- D2t-5b (Block A5m-6, run, part 1): the const arm's shared tail — value frontier, the whole
+-- value-push region, the SHW tick, and the scan home onto the new marker (12 legs).
+#print axioms Pnp4.Frontier.ContractExpansion.walkZoneStepsR_le
+#print axioms Pnp4.Frontier.ContractExpansion.constIter_run_tail
+-- D2t-5b (Block A5m-6, run): the const iteration end to end — front (tag read, b-probe,
+-- marker rewrite, six leftward legs, record write) + tail, tape = corridorInv_constStep's
+-- transformer (constStepTape + the SHW tick), explicit polynomial budget.
+#print axioms Pnp4.Frontier.ContractExpansion.walkZoneSteps_le
+#print axioms Pnp4.Frontier.ContractExpansion.constIter_run_front
+#print axioms Pnp4.Frontier.ContractExpansion.constIter_run
+-- D2t-5b (Block A5m-6, run algebra): the three block writes compose to constStepTape.
+#print axioms Pnp4.Frontier.ContractExpansion.writeConstChain_eq_constStepTape
 -- D2t-5b (Block A5m-5, run): the node iteration end to end -- the two block writes compose to
 -- corridorInv_nodeStep's transformer nodeStepTape, and the machine runs home-to-home onto the new
 -- marker within 2*certEnd + 40 steps.

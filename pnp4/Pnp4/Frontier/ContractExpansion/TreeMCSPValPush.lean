@@ -66,6 +66,18 @@ theorem valPush_window {L : Nat} (tape : Fin L → Bool) (valBase v : Nat) (val 
   rw [encodeNatStackR_cons]
   exact windowSpells_writeAppend tape valBase (encodeNatStackR val) (encodeNatEntryR v) hwin hfit
 
+/-- A single-cell tick (`[true]` at `pos`) read strictly below the written cell. -/
+theorem writeBlockTape_tick_below {L : Nat} (tape : Fin L → Bool) (pos : Nat) (q : Fin L)
+    (hq : (q : Nat) < pos) : writeBlockTape tape pos [true] q = tape q :=
+  writeBlockTape_below tape pos [true] q hq
+
+/-- A single-cell tick (`[true]` at `pos`) read strictly above the written cell. -/
+theorem writeBlockTape_tick_above {L : Nat} (tape : Fin L → Bool) (pos : Nat) (q : Fin L)
+    (hq : pos + 1 ≤ (q : Nat)) : writeBlockTape tape pos [true] q = tape q := by
+  apply writeBlockTape_above
+  simp only [List.length_singleton]
+  omega
+
 end ContractExpansion
 end Frontier
 end Pnp4

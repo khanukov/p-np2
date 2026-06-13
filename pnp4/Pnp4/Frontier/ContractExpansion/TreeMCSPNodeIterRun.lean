@@ -73,9 +73,9 @@ theorem nodeIter_run_tnot {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width)
               (z.certEnd - (encodePreorder width h_width st.toks).length)
               (z.ctrlBase + (encodeCtrlStackR st.ctrl).length)
               (encodeCtrlFrameR (ITag.tnot, ITag.tnot.arity)) := by
-  obtain ⟨hwf, hcert, hcfit, hmark, hcorr, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
-    hctrlw, hcfit2, hvalid, hcoh⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9⟩ := hwf
+  obtain ⟨hwf, hcert, hcfit, hmark, hcorr, hout, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
+    hshw, hsfit, hszeros, hctrlw, hcfit2, hvalid, hcoh⟩ := hinv
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hwf
   replace hcert : windowSpells c0.tape
       (z.certEnd - (encodePreorder width h_width st.toks).length)
       (encodePreorder width h_width st.toks) := hcert
@@ -323,9 +323,9 @@ theorem nodeIter_run_tand {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width)
               (z.certEnd - (encodePreorder width h_width st.toks).length)
               (z.ctrlBase + (encodeCtrlStackR st.ctrl).length)
               (encodeCtrlFrameR (ITag.tand, ITag.tand.arity)) := by
-  obtain ⟨hwf, hcert, hcfit, hmark, hcorr, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
-    hctrlw, hcfit2, hvalid, hcoh⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9⟩ := hwf
+  obtain ⟨hwf, hcert, hcfit, hmark, hcorr, hout, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
+    hshw, hsfit, hszeros, hctrlw, hcfit2, hvalid, hcoh⟩ := hinv
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hwf
   replace hcert : windowSpells c0.tape
       (z.certEnd - (encodePreorder width h_width st.toks).length)
       (encodePreorder width h_width st.toks) := hcert
@@ -573,9 +573,9 @@ theorem nodeIter_run_tor {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width)
               (z.certEnd - (encodePreorder width h_width st.toks).length)
               (z.ctrlBase + (encodeCtrlStackR st.ctrl).length)
               (encodeCtrlFrameR (ITag.tor, ITag.tor.arity)) := by
-  obtain ⟨hwf, hcert, hcfit, hmark, hcorr, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
-    hctrlw, hcfit2, hvalid, hcoh⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9⟩ := hwf
+  obtain ⟨hwf, hcert, hcfit, hmark, hcorr, hout, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
+    hshw, hsfit, hszeros, hctrlw, hcfit2, hvalid, hcoh⟩ := hinv
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hwf
   replace hcert : windowSpells c0.tape
       (z.certEnd - (encodePreorder width h_width st.toks).length)
       (encodePreorder width h_width st.toks) := hcert

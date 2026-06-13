@@ -54,9 +54,9 @@ theorem corridor_dispatch_tnot {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ wi
     (((TM.runConfig (M := treeTagDispatch.toPhased.toTM) c0 3).state).fst : Nat) = 8
       ∧ ((TM.runConfig (M := treeTagDispatch.toPhased.toTM) c0 3).head : Nat) = (c0.head : Nat) + 3
       ∧ (TM.runConfig (M := treeTagDispatch.toPhased.toTM) c0 3).tape = c0.tape := by
-  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
-    hctrl, hcfit2, hvalid, hcoh⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9⟩ := hwf
+  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
+    hshw, hsfit, hszeros, hctrl, hcfit2, hvalid, hcoh⟩ := hinv
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hwf
   replace hcert : windowSpells c0.tape
       (z.certEnd - (encodePreorder width h_width (PreToken.node ITag.tnot :: toks)).length)
       (encodePreorder width h_width (PreToken.node ITag.tnot :: toks)) := hcert
@@ -110,9 +110,9 @@ theorem corridor_dispatch_tand {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ wi
     (((TM.runConfig (M := treeTagDispatch.toPhased.toTM) c0 3).state).fst : Nat) = 9
       ∧ ((TM.runConfig (M := treeTagDispatch.toPhased.toTM) c0 3).head : Nat) = (c0.head : Nat) + 3
       ∧ (TM.runConfig (M := treeTagDispatch.toPhased.toTM) c0 3).tape = c0.tape := by
-  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
-    hctrl, hcfit2, hvalid, hcoh⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9⟩ := hwf
+  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
+    hshw, hsfit, hszeros, hctrl, hcfit2, hvalid, hcoh⟩ := hinv
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hwf
   replace hcert : windowSpells c0.tape
       (z.certEnd - (encodePreorder width h_width (PreToken.node ITag.tand :: toks)).length)
       (encodePreorder width h_width (PreToken.node ITag.tand :: toks)) := hcert
@@ -166,9 +166,9 @@ theorem corridor_dispatch_tor {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ wid
     (((TM.runConfig (M := treeTagDispatch.toPhased.toTM) c0 3).state).fst : Nat) = 10
       ∧ ((TM.runConfig (M := treeTagDispatch.toPhased.toTM) c0 3).head : Nat) = (c0.head : Nat) + 3
       ∧ (TM.runConfig (M := treeTagDispatch.toPhased.toTM) c0 3).tape = c0.tape := by
-  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hofit, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
-    hctrl, hcfit2, hvalid, hcoh⟩ := hinv
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9⟩ := hwf
+  obtain ⟨hwf, hcert, hcfit, hM, hczeros, hout, hFM, hffit, hfzeros, hval, hvfit, hvzeros,
+    hshw, hsfit, hszeros, hctrl, hcfit2, hvalid, hcoh⟩ := hinv
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12⟩ := hwf
   replace hcert : windowSpells c0.tape
       (z.certEnd - (encodePreorder width h_width (PreToken.node ITag.tor :: toks)).length)
       (encodePreorder width h_width (PreToken.node ITag.tor :: toks)) := hcert

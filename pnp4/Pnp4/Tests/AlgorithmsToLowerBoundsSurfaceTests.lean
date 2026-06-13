@@ -76,6 +76,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPTagCheckUnit
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGammaScanProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftOneProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPScanOnes
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanRightOneProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPStepRightProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordLayout
@@ -99,6 +100,8 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPCertTokens
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverStrongInv
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDrivePending
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryTransferRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPValuePushHeadline
+import Pnp4.Frontier.ContractExpansion.TreeMCSPValuePushConfined
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverCorridor
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalk
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRun
@@ -132,6 +135,13 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPScanLeftSeqP1
 import Pnp4.Frontier.ContractExpansion.TreeMCSPScanRoundTrip
 import Pnp4.Frontier.ContractExpansion.TreeMCSPDriverRealization
 import Pnp4.Frontier.ContractExpansion.TreeMCSPTranscoderCapstone
+import Pnp4.Frontier.ContractExpansion.TreeMCSPBitProbe
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionBitProbeHop
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionScanOnesSegments
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionZoneWalkHop
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionValuePushHop
+import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionUnaryTransferHop
+import Pnp4.Frontier.ContractExpansion.TreeMCSPPopIterProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbe
 import Pnp4.Frontier.ContractExpansion.TreeMCSPAtomSeqP1
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbeFrame
@@ -151,6 +161,9 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPDecIterRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPCertTrie
 import Pnp4.Frontier.ContractExpansion.TreeMCSPNodeIterProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPNodeIterRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPConstIterProgram
+import Pnp4.Frontier.ContractExpansion.TreeMCSPConstIterRun
+import Pnp4.Frontier.ContractExpansion.TreeMCSPConstWriteChain
 import Pnp4.Frontier.ContractExpansion.TreeMCSPUnaryFieldReader
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateTagDispatch
 import Pnp4.Frontier.ContractExpansion.TreeMCSPGateRecordDecoder
@@ -4127,6 +4140,41 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.unaryTransfer_pass_more
 #check @Pnp4.Frontier.ContractExpansion.unaryTransfer_pass_last
 #check @Pnp4.Frontier.ContractExpansion.unaryTransfer_transfers
+-- A5m-V (M1): the non-destructive value-push machine (program, layout, loop states, headline).
+#check @Pnp3.Internal.PsubsetPpoly.TM.runConfig_safe_append
+#check @Pnp4.Frontier.ContractExpansion.valuePushProgram
+#check @Pnp4.Frontier.ContractExpansion.ValuePushLayout
+#check @Pnp4.Frontier.ContractExpansion.DrainState
+#check @Pnp4.Frontier.ContractExpansion.CloneState
+#check @Pnp4.Frontier.ContractExpansion.ParkReady
+#check @Pnp4.Frontier.ContractExpansion.valuePush_prologue_full
+#check @Pnp4.Frontier.ContractExpansion.valuePush_prologue
+#check @Pnp4.Frontier.ContractExpansion.valuePush_prologue_confined
+#check @Pnp4.Frontier.ContractExpansion.valuePush_drain_mid_cut
+#check @Pnp4.Frontier.ContractExpansion.valuePush_drain_mid_back_confined
+#check @Pnp4.Frontier.ContractExpansion.valuePush_drain_mid_confined
+#check @Pnp4.Frontier.ContractExpansion.valuePush_drain_final_A_full
+#check @Pnp4.Frontier.ContractExpansion.valuePush_drain_final_B_full
+#check @Pnp4.Frontier.ContractExpansion.valuePush_clone_mid_full
+#check @Pnp4.Frontier.ContractExpansion.valuePush_clone_last_full
+#check @Pnp4.Frontier.ContractExpansion.valuePush_prologue_k0_full
+#check @Pnp4.Frontier.ContractExpansion.valuePush_park_full
+#check @Pnp4.Frontier.ContractExpansion.valuePush_drain_final_A_confined
+#check @Pnp4.Frontier.ContractExpansion.valuePush_drain_final_B_confined
+#check @Pnp4.Frontier.ContractExpansion.valuePush_clone_mid_confined
+#check @Pnp4.Frontier.ContractExpansion.valuePush_clone_last_confined
+#check @Pnp4.Frontier.ContractExpansion.valuePush_prologue_k0_confined
+#check @Pnp4.Frontier.ContractExpansion.valuePush_park_confined
+#check @Pnp4.Frontier.ContractExpansion.valuePush_prologue_k0
+#check @Pnp4.Frontier.ContractExpansion.valuePush_drain_mid
+#check @Pnp4.Frontier.ContractExpansion.valuePush_drain_final
+#check @Pnp4.Frontier.ContractExpansion.valuePush_drain_all
+#check @Pnp4.Frontier.ContractExpansion.valuePush_clone_mid
+#check @Pnp4.Frontier.ContractExpansion.valuePush_clone_last
+#check @Pnp4.Frontier.ContractExpansion.valuePush_clone_all
+#check @Pnp4.Frontier.ContractExpansion.valuePush_park
+#check @Pnp4.Frontier.ContractExpansion.valuePush_pushes
+#check @Pnp4.Frontier.ContractExpansion.valuePush_pushes_writeBlock
 -- D2t-5b (Block A3): the corridor layout — right-anchored stack codecs + the corridor strong invariant
 -- (every inter-region hop a 0-scan onto a pinned 1 anchor; no hop crosses WORK).
 #check @Pnp4.Frontier.ContractExpansion.encodeNatEntryR_length
@@ -4156,10 +4204,13 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.walkZoneSteps
 #check @Pnp4.Frontier.ContractExpansion.getD_replicate_of_lt
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkLeft_runConfig_walkZone
--- D2t-5b (Block A4r): the leftward cross-zone route (five instantiated legs).
+-- D2t-5b (Block A4r): the leftward cross-zone route (six instantiated legs around the SHW zone).
 #check @Pnp4.Frontier.ContractExpansion.windowSpells_getLast_true
 #check @Pnp4.Frontier.ContractExpansion.corridor_scan_M_to_ctrlTop
 #check @Pnp4.Frontier.ContractExpansion.corridor_walk_ctrl
+#check @Pnp4.Frontier.ContractExpansion.corridor_scan_to_shwTop
+#check @Pnp4.Frontier.ContractExpansion.corridor_cross_shw_left
+#check @Pnp4.Frontier.ContractExpansion.corridor_cross_shw_right
 #check @Pnp4.Frontier.ContractExpansion.corridor_scan_to_valTop
 #check @Pnp4.Frontier.ContractExpansion.corridor_walk_val
 #check @Pnp4.Frontier.ContractExpansion.corridor_scan_to_FM
@@ -4183,11 +4234,12 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.windowSpells_snoc_false
 #check @Pnp4.Frontier.ContractExpansion.walkZoneStepsR
 #check @Pnp4.Frontier.ContractExpansion.zoneWalkRight_runConfig_walkZone
--- D2t-5b (Block A4r): the return route (five instantiated rightward legs).
+-- D2t-5b (Block A4r): the return route (six instantiated rightward legs around the SHW zone).
 #check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_runConfigFrom_scanning
 #check @Pnp4.Frontier.ContractExpansion.gammaSelfLoopScan_runConfigFrom_terminator
 #check @Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_valSentinel
 #check @Pnp4.Frontier.ContractExpansion.corridor_back_walk_val
+#check @Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_shwBase
 #check @Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_ctrlSentinel
 #check @Pnp4.Frontier.ContractExpansion.corridor_back_walk_ctrl
 #check @Pnp4.Frontier.ContractExpansion.corridor_back_scan_to_M
@@ -4207,12 +4259,15 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.corridorInv_nodeStep
 -- D2t-5b (Block A4a): the leaf-emit output-region helper (count increment + record append).
 #check @Pnp4.Frontier.ContractExpansion.emitTape
-#check @Pnp4.Frontier.ContractExpansion.gateStream_emit_eq
+#check @Pnp4.Frontier.ContractExpansion.encodeGateRecordStream_snoc
+#check @Pnp4.Frontier.ContractExpansion.encodeGateRecordStream_snoc_length
 #check @Pnp4.Frontier.ContractExpansion.emitTape_output_window
 #check @Pnp4.Frontier.ContractExpansion.emitTape_FM
 -- D2t-5b (Block A4a): the value-stack push as a written-block append.
 #check @Pnp4.Frontier.ContractExpansion.writeBlockTape
 #check @Pnp4.Frontier.ContractExpansion.windowSpells_writeAppend
+#check @Pnp4.Frontier.ContractExpansion.writeBlockTape_tick_below
+#check @Pnp4.Frontier.ContractExpansion.writeBlockTape_tick_above
 #check @Pnp4.Frontier.ContractExpansion.valPush_window
 -- D2t-5b (Block A4a): the cursor re-anchoring keystone (shared cert spine of the reading/settle arms).
 #check @Pnp4.Frontier.ContractExpansion.windowSpells_congr
@@ -4283,6 +4338,10 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.settleProbe
 #check @Pnp4.Frontier.ContractExpansion.settleProbe_runConfig_frame
 #check @Pnp4.Frontier.ContractExpansion.settleProbe_runConfig_empty
+-- D2t-5b (Block A5m-6a): the in-place bit prober (the leaf arms' value/index-bit branch).
+#check @Pnp4.Frontier.ContractExpansion.bitProbe
+#check @Pnp4.Frontier.ContractExpansion.bitProbe_runConfig_zero
+#check @Pnp4.Frontier.ContractExpansion.bitProbe_runConfig_one
 -- D2t-5b (Block A5m-3a): the atomic movers as the first seq phase (with handoff).
 #check @Pnp4.Frontier.ContractExpansion.stepLeftOnce_seq_runConfig_handoff
 #check @Pnp4.Frontier.ContractExpansion.stepRightOnce_seq_runConfig_handoff
@@ -4313,6 +4372,27 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 -- D2t-5b (Block A5m-3a'): the host-generic atom hops.
 #check @Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_stepLeft_hop
 #check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_probe_empty_hop
+-- D2t-5b (Block A5m-6a, transfer): the in-place bit-probe hops and the SHW ones-scan hops.
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_bitProbe_zero_hop
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_bitProbe_one_hop
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_scanLeftOne_hop
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbedded.run_scanRightOne_hop
+-- D2t-5b (Block A5m-6a, transfer): the full-zone walkers in a union, via run_track.
+#check @Pnp4.Frontier.ContractExpansion.trackStart
+#check @Pnp4.Frontier.ContractExpansion.trackStart_tapeAgree
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_walkZoneLeft_hop
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_walkZoneRight_hop
+-- D2t-5b (Block A5m-6a, transfer): the M1 value-push fan-out in a union.
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_valuePush_hop
+-- D2t-5b (Block A5m-2, transfer): the unary-block mover in a union.
+#check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_unaryTransfer_hop
+-- D2t-5b (Block A5m-8, machine): the pop iteration machine and its region contracts.
+#check @Pnp4.Frontier.ContractExpansion.popIterProgram
+#check @Pnp4.Frontier.ContractExpansion.popCtrlTopRedirect
+#check @Pnp4.Frontier.ContractExpansion.popRemRedirect
+#check @Pnp4.Frontier.ContractExpansion.popIter_region_ctop_4
+#check @Pnp4.Frontier.ContractExpansion.popIter_region_transfer_252
+#check @Pnp4.Frontier.ContractExpansion.popIter_region_vpush_371
 -- D2t-5b (Block A5m-3 run): the clear iteration end to end.
 #check @Pnp4.Frontier.ContractExpansion.clearIter_run
 -- D2t-5b (Block A5m-U6): the host-generic write segment (tape = writeBlockTape).
@@ -4339,6 +4419,23 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.nodeIter_region_certTrie
 #check @Pnp4.Frontier.ContractExpansion.nodeIter_region_Not_frame
 #check @Pnp4.Frontier.ContractExpansion.nodeIter_region_scanRight
+-- D2t-5b (Block A5m-6, machine): the const-leaf iteration machine and its region contracts.
+#check @Pnp4.Frontier.ContractExpansion.constIterProgram
+#check @Pnp4.Frontier.ContractExpansion.constMarkBlock
+#check @Pnp4.Frontier.ContractExpansion.constRecBlock
+#check @Pnp4.Frontier.ContractExpansion.constIter_region_trie_2
+#check @Pnp4.Frontier.ContractExpansion.constIter_region_probe_14
+#check @Pnp4.Frontier.ContractExpansion.constIter_region_vpush_113
+#check @Pnp4.Frontier.ContractExpansion.constIter_region_tick_156
+-- D2t-5b (Block A5m-6, run, part 1): the const arm's shared tail (12 legs).
+#check @Pnp4.Frontier.ContractExpansion.walkZoneStepsR_le
+#check @Pnp4.Frontier.ContractExpansion.constIter_run_tail
+-- D2t-5b (Block A5m-6, run): the const iteration end to end.
+#check @Pnp4.Frontier.ContractExpansion.walkZoneSteps_le
+#check @Pnp4.Frontier.ContractExpansion.constIter_run_front
+#check @Pnp4.Frontier.ContractExpansion.constIter_run
+-- D2t-5b (Block A5m-6, run algebra): the three block writes compose to constStepTape.
+#check @Pnp4.Frontier.ContractExpansion.writeConstChain_eq_constStepTape
 -- D2t-5b (Block A5m-5, run): the node iteration end to end.
 #check @Pnp4.Frontier.ContractExpansion.writeMarkFrame_eq_nodeStepTape
 #check @Pnp4.Frontier.ContractExpansion.nodeIter_run_tnot

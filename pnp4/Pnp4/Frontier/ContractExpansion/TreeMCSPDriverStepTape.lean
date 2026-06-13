@@ -40,7 +40,10 @@ open Pnp3.Internal.PsubsetPpoly.TM.Encoding
 
 /-- **The total one-step tape transformer.**  By cases on the state's `DriveState.step` branch, the
 tape rewrite that branch's machine arm performs; identity on the branches that only flip the
-`settling` flag (empty control stack, operand underflow, `rem = 0`) or idle (terminal). -/
+`settling` flag (empty control stack, operand underflow, `rem = 0`) or idle (terminal).  Every
+**emit** branch (leaf read, settle-pop) additionally performs the **shadow-count tick**: one `1`
+appended at the SHW window's right end (`shwBase + |out| + 1`), keeping `SHW` spelling
+`1^(|out| + 1)` along the run. -/
 def driverStepTape {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width) (z : DriverCorridor)
     (st : DriveState n) (tape : Fin L → Bool) : Fin L → Bool :=
   match st with
@@ -51,35 +54,38 @@ def driverStepTape {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width) (z : Dr
           if rem = 1 then
             match tag, val with
             | ITag.tnot, i :: vs =>
-                popStepTape tape (z.ctrlBase + (encodeCtrlStackR ctrl').length)
-                  (List.replicate (encodeCtrlFrameR (ITag.tnot, 1)).length false)
-                  (z.valBase + (encodeNatStackR vs).length)
-                  (encodeNatEntryR out.length
-                    ++ List.replicate ((([i] : List Nat).reverse.flatMap encodeNatEntryR).length
-                        - (out.length + 3)) false)
-                  (z.workBase - 1 - out.length)
-                  (z.workBase + (encodeGateRecordStream out).length)
-                  (encodeGateRecord (SLGate.notGate i : SLGate n))
+                writeBlockTape
+                  (popStepTape tape (z.ctrlBase + (encodeCtrlStackR ctrl').length)
+                    (List.replicate (encodeCtrlFrameR (ITag.tnot, 1)).length false)
+                    (z.valBase + (encodeNatStackR vs).length)
+                    (encodeNatEntryR out.length
+                      ++ List.replicate ((([i] : List Nat).reverse.flatMap encodeNatEntryR).length
+                          - (out.length + 3)) false)
+                    (z.workBase + (encodeGateRecordStream out).length)
+                    (encodeGateRecord (SLGate.notGate i : SLGate n)))
+                  (z.shwBase + out.length + 1) [true]
             | ITag.tand, i2 :: i1 :: vs =>
-                popStepTape tape (z.ctrlBase + (encodeCtrlStackR ctrl').length)
-                  (List.replicate (encodeCtrlFrameR (ITag.tand, 1)).length false)
-                  (z.valBase + (encodeNatStackR vs).length)
-                  (encodeNatEntryR out.length
-                    ++ List.replicate ((([i2, i1] : List Nat).reverse.flatMap encodeNatEntryR).length
-                        - (out.length + 3)) false)
-                  (z.workBase - 1 - out.length)
-                  (z.workBase + (encodeGateRecordStream out).length)
-                  (encodeGateRecord (SLGate.andGate i1 i2 : SLGate n))
+                writeBlockTape
+                  (popStepTape tape (z.ctrlBase + (encodeCtrlStackR ctrl').length)
+                    (List.replicate (encodeCtrlFrameR (ITag.tand, 1)).length false)
+                    (z.valBase + (encodeNatStackR vs).length)
+                    (encodeNatEntryR out.length
+                      ++ List.replicate ((([i2, i1] : List Nat).reverse.flatMap encodeNatEntryR).length
+                          - (out.length + 3)) false)
+                    (z.workBase + (encodeGateRecordStream out).length)
+                    (encodeGateRecord (SLGate.andGate i1 i2 : SLGate n)))
+                  (z.shwBase + out.length + 1) [true]
             | ITag.tor, i2 :: i1 :: vs =>
-                popStepTape tape (z.ctrlBase + (encodeCtrlStackR ctrl').length)
-                  (List.replicate (encodeCtrlFrameR (ITag.tor, 1)).length false)
-                  (z.valBase + (encodeNatStackR vs).length)
-                  (encodeNatEntryR out.length
-                    ++ List.replicate ((([i2, i1] : List Nat).reverse.flatMap encodeNatEntryR).length
-                        - (out.length + 3)) false)
-                  (z.workBase - 1 - out.length)
-                  (z.workBase + (encodeGateRecordStream out).length)
-                  (encodeGateRecord (SLGate.orGate i1 i2 : SLGate n))
+                writeBlockTape
+                  (popStepTape tape (z.ctrlBase + (encodeCtrlStackR ctrl').length)
+                    (List.replicate (encodeCtrlFrameR (ITag.tor, 1)).length false)
+                    (z.valBase + (encodeNatStackR vs).length)
+                    (encodeNatEntryR out.length
+                      ++ List.replicate ((([i2, i1] : List Nat).reverse.flatMap encodeNatEntryR).length
+                          - (out.length + 3)) false)
+                    (z.workBase + (encodeGateRecordStream out).length)
+                    (encodeGateRecord (SLGate.orGate i1 i2 : SLGate n)))
+                  (z.shwBase + out.length + 1) [true]
             | _, _ => tape
           else if 2 ≤ rem then
             writeBlockTape tape (z.ctrlBase + (encodeCtrlStackR ctrl').length)
@@ -87,14 +93,15 @@ def driverStepTape {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width) (z : Dr
           else tape
   | ⟨[], _, _, _, false⟩ => tape
   | ⟨PreToken.leaf g :: toks', out, _, val, false⟩ =>
-      leafStepTape tape
-        (z.certEnd - (encodePreorder width h_width (PreToken.leaf g :: toks')).length)
-        (encodePreToken width h_width (PreToken.leaf g)).length
-        (z.valBase + (encodeNatStackR val).length)
-        (z.workBase - 1 - out.length)
-        (z.workBase + (encodeGateRecordStream out).length)
-        (encodeNatEntryR out.length)
-        (encodeGateRecord g)
+      writeBlockTape
+        (leafStepTape tape
+          (z.certEnd - (encodePreorder width h_width (PreToken.leaf g :: toks')).length)
+          (encodePreToken width h_width (PreToken.leaf g)).length
+          (z.valBase + (encodeNatStackR val).length)
+          (z.workBase + (encodeGateRecordStream out).length)
+          (encodeNatEntryR out.length)
+          (encodeGateRecord g))
+        (z.shwBase + out.length + 1) [true]
   | ⟨PreToken.node tag :: toks', _, ctrl, _, false⟩ =>
       nodeStepTape tape
         (z.certEnd - (encodePreorder width h_width (PreToken.node tag :: toks')).length)
@@ -102,9 +109,10 @@ def driverStepTape {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ width) (z : Dr
         (encodeCtrlFrameR (tag, tag.arity))
 
 /-- **The branch side conditions** for `corridorInv_driverStep`: zone capacities for the write
-branches (settle-emit, leaf emit, node frame push) and tail-nonemptiness for the node branch (a node
-token is never last in a well-formed stream).  `True` on the identity and settle-decrement branches.
-Discharged later from zone sizing + reachable-state bounds. -/
+branches (settle-emit, leaf emit, node frame push — the emit branches also need one shadow-count
+cell of room for the tick) and tail-nonemptiness for the node branch (a node token is never last in
+a well-formed stream).  `True` on the identity and settle-decrement branches.  Discharged later from
+zone sizing + reachable-state bounds. -/
 def DriverStepFits {n : Nat} (z : DriverCorridor) (st : DriveState n) : Prop :=
   match st with
   | ⟨_, out, ctrl, val, true⟩ =>
@@ -114,28 +122,28 @@ def DriverStepFits {n : Nat} (z : DriverCorridor) (st : DriveState n) : Prop :=
           if rem = 1 then
             match tag, val with
             | ITag.tnot, i :: vs =>
-                z.outBase + out.length + 2 ≤ z.workBase
-                ∧ z.workBase + (encodeGateRecordStream out).length
+                z.workBase + (encodeGateRecordStream out).length
                     + (encodeGateRecord (SLGate.notGate i : SLGate n)).length + 1 ≤ z.workEnd
                 ∧ z.valBase + (encodeNatStackR vs).length + (out.length + 3) ≤ z.valEnd
+                ∧ z.shwBase + out.length + 2 ≤ z.shwEnd
             | ITag.tand, i2 :: i1 :: vs =>
-                z.outBase + out.length + 2 ≤ z.workBase
-                ∧ z.workBase + (encodeGateRecordStream out).length
+                z.workBase + (encodeGateRecordStream out).length
                     + (encodeGateRecord (SLGate.andGate i1 i2 : SLGate n)).length + 1 ≤ z.workEnd
                 ∧ z.valBase + (encodeNatStackR vs).length + (out.length + 3) ≤ z.valEnd
+                ∧ z.shwBase + out.length + 2 ≤ z.shwEnd
             | ITag.tor, i2 :: i1 :: vs =>
-                z.outBase + out.length + 2 ≤ z.workBase
-                ∧ z.workBase + (encodeGateRecordStream out).length
+                z.workBase + (encodeGateRecordStream out).length
                     + (encodeGateRecord (SLGate.orGate i1 i2 : SLGate n)).length + 1 ≤ z.workEnd
                 ∧ z.valBase + (encodeNatStackR vs).length + (out.length + 3) ≤ z.valEnd
+                ∧ z.shwBase + out.length + 2 ≤ z.shwEnd
             | _, _ => True
           else True
   | ⟨[], _, _, _, false⟩ => True
   | ⟨PreToken.leaf g :: _, out, _, val, false⟩ =>
-      z.outBase + out.length + 2 ≤ z.workBase
-      ∧ z.workBase + (encodeGateRecordStream out).length
+      z.workBase + (encodeGateRecordStream out).length
           + (encodeGateRecord g).length + 1 ≤ z.workEnd
       ∧ z.valBase + (encodeNatStackR val).length + (out.length + 3) ≤ z.valEnd
+      ∧ z.shwBase + out.length + 2 ≤ z.shwEnd
   | ⟨PreToken.node tag :: toks', _, ctrl, _, false⟩ =>
       toks' ≠ []
       ∧ z.ctrlBase + (encodeCtrlStackR ctrl).length
@@ -216,12 +224,12 @@ theorem corridorInv_driverStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ wi
           cases tok with
           | leaf g =>
               simp only [DriverStepFits] at hfits
-              obtain ⟨hocap, hwcap, hvcap⟩ := hfits
+              obtain ⟨hwcap, hvcap, hscap⟩ := hfits
               cases toks' with
               | nil =>
                   simp only [driverStepTape, DriveState.step]
                   exact corridorInv_leafStep_last width h_width z g out ctrl val tape hinv
-                    hocap hwcap hvcap
+                    hwcap hvcap hscap
               | cons t ts =>
                   cases g with
                   | input i =>
@@ -234,7 +242,7 @@ theorem corridorInv_driverStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ wi
                         rw [List.length_append, encodeFin_length]
                         rfl]
                       exact corridorInv_inputStep width h_width z i (t :: ts) out ctrl val tape
-                        hinv (List.cons_ne_nil t ts) hocap hwcap hvcap
+                        hinv (List.cons_ne_nil t ts) hwcap hvcap hscap
                   | const b =>
                       have hwcap4 : z.workBase + (encodeGateRecordStream out).length + 4
                           ≤ z.workEnd := by
@@ -243,17 +251,20 @@ theorem corridorInv_driverStep {n L : Nat} (width : Nat) (h_width : n ≤ 2 ^ wi
                         omega
                       simp only [driverStepTape, DriveState.step]
                       exact corridorInv_constStep width h_width z b (t :: ts) out ctrl val tape
-                        hinv (List.cons_ne_nil t ts) hocap hwcap4 hvcap
+                        hinv (List.cons_ne_nil t ts) hwcap4 hvcap hscap
                   | notGate k =>
-                      obtain ⟨_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, hvalid, _⟩ := hinv
+                      obtain ⟨_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, hvalid, _⟩
+                        := hinv
                       have h := hvalid _ (List.mem_cons_self ..)
                       simp only [ValidCertToken] at h
                   | andGate k l =>
-                      obtain ⟨_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, hvalid, _⟩ := hinv
+                      obtain ⟨_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, hvalid, _⟩
+                        := hinv
                       have h := hvalid _ (List.mem_cons_self ..)
                       simp only [ValidCertToken] at h
                   | orGate k l =>
-                      obtain ⟨_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, hvalid, _⟩ := hinv
+                      obtain ⟨_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, hvalid, _⟩
+                        := hinv
                       have h := hvalid _ (List.mem_cons_self ..)
                       simp only [ValidCertToken] at h
           | node tag =>

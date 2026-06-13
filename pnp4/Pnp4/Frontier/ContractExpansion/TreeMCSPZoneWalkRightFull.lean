@@ -1,5 +1,6 @@
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkRightRun
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZoneWalkFull
+import Pnp4.Frontier.ContractExpansion.BoundedLoopProgram
 
 /-!
 # `zoneWalkRight` full traversal — D2t-5b (Block A4w): the rightward multi-block walk
@@ -90,16 +91,20 @@ theorem zoneWalkRight_runConfig_inner {L : Nat}
       (((TM.runConfig (M := zoneWalkRight.toPhased.toTM) c0 (innerSteps bs)).state).fst : Nat) = 4
       ∧ ((TM.runConfig (M := zoneWalkRight.toPhased.toTM) c0 (innerSteps bs)).head : Nat)
           = (c0.head : Nat) + (innerSpell bs).length
-      ∧ (TM.runConfig (M := zoneWalkRight.toPhased.toTM) c0 (innerSteps bs)).tape = c0.tape := by
+      ∧ (TM.runConfig (M := zoneWalkRight.toPhased.toTM) c0 (innerSteps bs)).tape = c0.tape
+      ∧ ∀ s : Nat, s < innerSteps bs →
+          (((TM.runConfig (M := zoneWalkRight.toPhased.toTM) c0 s).state).fst : Nat) < 4
+          ∧ ((TM.runConfig (M := zoneWalkRight.toPhased.toTM) c0 s).head : Nat)
+              ≤ (c0.head : Nat) + (innerSpell bs).length := by
   intro bs
   induction bs generalizing c0 with
   | nil =>
       intro _ hphase hfit hwin hdead
       rw [innerSteps_nil]
       simp only [innerSpell_nil, List.length_nil, Nat.add_zero] at hdead ⊢
-      obtain ⟨h1, h2, h3⟩ := zoneWalkRight_runConfig_exit c0 hphase
+      obtain ⟨h1, h2, h3, h4⟩ := zoneWalkRight_runConfig_exit c0 hphase
         (hdead c0.head rfl)
-      exact ⟨h1, h2, h3⟩
+      exact ⟨h1, h2, h3, h4⟩
   | cons k bs ih =>
       intro hge hphase hfit hwin hdead
       have hk : 2 ≤ k := hge k (List.mem_cons_self)
@@ -125,7 +130,7 @@ theorem zoneWalkRight_runConfig_inner {L : Nat}
         rw [this, List.getD_append_right _ _ _ _ (by simp; omega)]
         simp [hp]
       -- The block pass, then the IH on the rest.
-      obtain ⟨hps, hhs, hts⟩ := zoneWalkRight_runConfig_block_segment c0 hphase k (by omega)
+      obtain ⟨hps, hhs, hts, hseg⟩ := zoneWalkRight_runConfig_block_segment c0 hphase k (by omega)
         (by omega) hones hdelim
       rw [innerSteps_cons, TM.runConfig_add]
       set c1 := TM.runConfig (M := zoneWalkRight.toPhased.toTM) c0 (k + 2) with hc1
@@ -142,13 +147,31 @@ theorem zoneWalkRight_runConfig_inner {L : Nat}
         intro p hp
         rw [hc1, hts]
         exact hdead p (by rw [hh1] at hp; omega)
-      obtain ⟨hf1, hf2, hf3⟩ := ih c1 (fun x hx => hge x (List.mem_cons_of_mem _ hx))
+      obtain ⟨hf1, hf2, hf3, hf4⟩ := ih c1 (fun x hx => hge x (List.mem_cons_of_mem _ hx))
         hps hfit1 hwin1 hdead1
-      refine ⟨hf1, ?_, ?_⟩
+      have hlenc : (innerSpell (k :: bs)).length = (k + 1) + (innerSpell bs).length := by
+        rw [innerSpell_cons, List.length_append, List.length_append,
+          List.length_replicate, List.length_singleton]
+      refine ⟨hf1, ?_, ?_, ?_⟩
       · rw [hf2, hh1, innerSpell_cons, List.length_append, List.length_append,
           List.length_replicate, List.length_singleton]
         omega
       · rw [hf3, hc1]; exact hts
+      · -- The stream: the block pass, then the inner traversal from `c1`, spliced.
+        exact TM.runConfig_safe_append
+          (fun cfg : Configuration (M := zoneWalkRight.toPhased.toTM) L =>
+            ((cfg.state).fst : Nat) < 4
+            ∧ ((cfg.head : Nat)) ≤ (c0.head : Nat) + (innerSpell (k :: bs)).length)
+          c0 (k + 2) (innerSteps bs)
+          (fun s hs => by
+            have hstep := hseg s hs
+            exact ⟨hstep.1, by omega⟩)
+          (fun s hs => by
+            have hstep := hf4 s hs
+            rw [← hc1]
+            refine ⟨hstep.1, ?_⟩
+            rw [hh1] at hstep
+            omega)
 
 /-- Extending a spelled window by one pinned dead cell. -/
 theorem windowSpells_snoc_false {L : Nat} (tape : Fin L → Bool) (base : Nat) (bits : List Bool)
@@ -192,7 +215,11 @@ theorem zoneWalkRight_runConfig_walkZone {L : Nat}
     (((TM.runConfig (M := zoneWalkRight.toPhased.toTM) c0 (walkZoneStepsR ks)).state).fst : Nat) = 4
     ∧ ((TM.runConfig (M := zoneWalkRight.toPhased.toTM) c0 (walkZoneStepsR ks)).head : Nat)
         = base + (walkZone ks).length + 1
-    ∧ (TM.runConfig (M := zoneWalkRight.toPhased.toTM) c0 (walkZoneStepsR ks)).tape = c0.tape := by
+    ∧ (TM.runConfig (M := zoneWalkRight.toPhased.toTM) c0 (walkZoneStepsR ks)).tape = c0.tape
+    ∧ ∀ s : Nat, s < walkZoneStepsR ks →
+        (((TM.runConfig (M := zoneWalkRight.toPhased.toTM) c0 s).state).fst : Nat) < 4
+        ∧ ((TM.runConfig (M := zoneWalkRight.toPhased.toTM) c0 s).head : Nat)
+            ≤ base + (walkZone ks).length + 1 := by
   -- Extend the window by the first dead cell and re-anchor it bottom-first.
   have hwin' := windowSpells_snoc_false c0.tape base (walkZone ks) hwin (by omega) hdead1
   rw [walkZone_append_false] at hwin'
@@ -216,13 +243,13 @@ theorem zoneWalkRight_runConfig_walkZone {L : Nat}
       (by simpa using hwin')
     simpa using this
   -- Entry: 2 steps to φ2 on `base + 2`.
-  obtain ⟨heph, hehd, hetp⟩ := zoneWalkRight_runConfig_entry c0 hphase
+  obtain ⟨heph, hehd, hetp, hent⟩ := zoneWalkRight_runConfig_entry c0 hphase
     (by omega) (fun p hp => hcell1 p (by omega))
   rw [walkZoneStepsR_eq, TM.runConfig_add]
   set c1 := TM.runConfig (M := zoneWalkRight.toPhased.toTM) c0 2 with hc1
   have hh1 : (c1.head : Nat) = base + 2 := by rw [hc1, hehd, hhead]
   -- Inner traversal from `base + 2`.
-  obtain ⟨hf1, hf2, hf3⟩ := zoneWalkRight_runConfig_inner c1 ks.reverse
+  obtain ⟨hf1, hf2, hf3, hf4⟩ := zoneWalkRight_runConfig_inner c1 ks.reverse
     (fun k hk => hge k (List.mem_reverse.mp hk))
     heph
     (by rw [hh1]; omega)
@@ -231,9 +258,26 @@ theorem zoneWalkRight_runConfig_walkZone {L : Nat}
       intro p hp
       rw [hc1, hetp]
       exact hdead2 p (by rw [hh1] at hp; omega))
-  refine ⟨hf1, ?_, ?_⟩
+  refine ⟨hf1, ?_, ?_, ?_⟩
   · rw [hf2, hh1]; omega
   · rw [hf3, hc1]; exact hetp
+  · -- The stream: the 2-step entry, then the inner traversal from `c1`, spliced.
+    exact TM.runConfig_safe_append
+      (fun cfg : Configuration (M := zoneWalkRight.toPhased.toTM) L =>
+        ((cfg.state).fst : Nat) < 4
+        ∧ ((cfg.head : Nat)) ≤ base + (walkZone ks).length + 1)
+      c0 2 (innerSteps ks.reverse)
+      (fun s hs => by
+        have hstep := hent s hs
+        refine ⟨hstep.1, ?_⟩
+        rw [hhead] at hstep
+        omega)
+      (fun s hs => by
+        have hstep := hf4 s hs
+        rw [← hc1]
+        refine ⟨hstep.1, ?_⟩
+        rw [hh1] at hstep
+        omega)
 
 end ContractExpansion
 end Frontier

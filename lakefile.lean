@@ -241,6 +241,7 @@ lean_lib Pnp4 where
   globs := #[
     Glob.one `Pnp4.AlgorithmsToLowerBounds.BasicCircuitClasses,
     Glob.one `Pnp4.AlgorithmsToLowerBounds.DagShannonCounting,
+    Glob.one `Pnp4.AlgorithmsToLowerBounds.SparseWitnessPruning,
     Glob.one `Pnp4.AlgorithmsToLowerBounds.Growth,
     Glob.one `Pnp4.AlgorithmsToLowerBounds.SuperPolynomialBridge,
     Glob.one `Pnp4.AlgorithmsToLowerBounds.AC0pSuperPolynomialBridge,

@@ -1,5 +1,6 @@
 import Pnp4.AlgorithmsToLowerBounds.AC0pAsymptoticBridge
 import Pnp4.AlgorithmsToLowerBounds.DagShannonCounting
+import Pnp4.AlgorithmsToLowerBounds.SparseWitnessPruning
 import Pnp4.AlgorithmsToLowerBounds.AC0pSuperPolynomialBridge
 import Pnp4.AlgorithmsToLowerBounds.MCSP_AC0p_Final
 import Pnp4.AlgorithmsToLowerBounds.MCSP_AC0p_Quantitative
@@ -1281,3 +1282,15 @@ end Pnp4
 #print axioms Pnp4.AlgorithmsToLowerBounds.exists_language_not_PpolyDAG
 #print axioms Pnp4.AlgorithmsToLowerBounds.dagHardBudget_superPolynomial
 #print axioms Pnp4.AlgorithmsToLowerBounds.NP_not_subset_PpolyDAG_of_NP_dagHardLanguage
+
+-- Sparse witness pruning (SparseWitnessPruning).
+#print axioms Pnp4.AlgorithmsToLowerBounds.PpolyDAG_of_polySparse
+#print axioms Pnp4.AlgorithmsToLowerBounds.PpolyDAG_of_polyCosparse
+#print axioms Pnp4.AlgorithmsToLowerBounds.not_polySparse_of_not_PpolyDAG
+#print axioms Pnp4.AlgorithmsToLowerBounds.not_polyCosparse_of_not_PpolyDAG
+#print axioms Pnp4.AlgorithmsToLowerBounds.VerifiedNPDAGLowerBoundSource.not_polySparse
+#print axioms Pnp4.AlgorithmsToLowerBounds.VerifiedNPDAGLowerBoundSource.not_polyCosparse
+#print axioms Pnp4.AlgorithmsToLowerBounds.dagHardLanguage_not_polySparse
+#print axioms Pnp4.AlgorithmsToLowerBounds.dagHardLanguage_not_polyCosparse
+#print axioms Pnp4.AlgorithmsToLowerBounds.eval_dnfCircuit_iff
+#print axioms Pnp4.AlgorithmsToLowerBounds.size_dnfCircuit_le

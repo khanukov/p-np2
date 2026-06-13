@@ -1,5 +1,6 @@
 import Pnp4.AlgorithmsToLowerBounds.BasicCircuitClasses
 import Pnp4.AlgorithmsToLowerBounds.DagShannonCounting
+import Pnp4.AlgorithmsToLowerBounds.SparseWitnessPruning
 import Pnp4.AlgorithmsToLowerBounds.Growth
 import Pnp4.AlgorithmsToLowerBounds.SuperPolynomialBridge
 import Pnp4.AlgorithmsToLowerBounds.AC0pSuperPolynomialBridge
@@ -4606,6 +4607,53 @@ theorem check_NP_not_subset_PpolyDAG_of_NP_dagHardLanguage
   AlgorithmsToLowerBounds.NP_not_subset_PpolyDAG_of_NP_dagHardLanguage h
 
 end DagShannonCountingSurface
+
+section SparseWitnessPruningSurface
+
+open Pnp3.ComplexityInterfaces
+
+/-- Surface check: polynomially sparse languages lie in `PpolyDAG`. -/
+theorem check_PpolyDAG_of_polySparse {L : Language}
+    (h : AlgorithmsToLowerBounds.PolySparse L) : PpolyDAG L :=
+  AlgorithmsToLowerBounds.PpolyDAG_of_polySparse h
+
+/-- Surface check: polynomially co-sparse languages lie in `PpolyDAG`. -/
+theorem check_PpolyDAG_of_polyCosparse {L : Language}
+    (h : AlgorithmsToLowerBounds.PolyCosparse L) : PpolyDAG L :=
+  AlgorithmsToLowerBounds.PpolyDAG_of_polyCosparse h
+
+/-- Surface check: any verified source witness is dense on the accepted side. -/
+theorem check_verifiedSource_not_polySparse
+    (src : AlgorithmsToLowerBounds.VerifiedNPDAGLowerBoundSource) :
+    ¬ AlgorithmsToLowerBounds.PolySparse src.L :=
+  src.not_polySparse
+
+/-- Surface check: any verified source witness is dense on the rejected side. -/
+theorem check_verifiedSource_not_polyCosparse
+    (src : AlgorithmsToLowerBounds.VerifiedNPDAGLowerBoundSource) :
+    ¬ AlgorithmsToLowerBounds.PolyCosparse src.L :=
+  src.not_polyCosparse
+
+/-- Surface check: the diagonal hard language is dense on both sides. -/
+theorem check_dagHardLanguage_dense :
+    ¬ AlgorithmsToLowerBounds.PolySparse AlgorithmsToLowerBounds.dagHardLanguage ∧
+    ¬ AlgorithmsToLowerBounds.PolyCosparse AlgorithmsToLowerBounds.dagHardLanguage :=
+  ⟨AlgorithmsToLowerBounds.dagHardLanguage_not_polySparse,
+   AlgorithmsToLowerBounds.dagHardLanguage_not_polyCosparse⟩
+
+/-- Surface check: the reusable DNF builder with its semantic law. -/
+theorem check_eval_dnfCircuit_iff {n : Nat} (A : Finset (Bitstring n))
+    (x : Bitstring n) :
+    DagCircuit.eval (AlgorithmsToLowerBounds.dnfCircuit A) x = true ↔ x ∈ A :=
+  AlgorithmsToLowerBounds.eval_dnfCircuit_iff A x
+
+/-- Surface check: the DNF size law. -/
+theorem check_size_dnfCircuit_le {n : Nat} (A : Finset (Bitstring n)) :
+    DagCircuit.size (AlgorithmsToLowerBounds.dnfCircuit A)
+      ≤ 2 + A.card * (5 * n + 4) :=
+  AlgorithmsToLowerBounds.size_dnfCircuit_le A
+
+end SparseWitnessPruningSurface
 
 end Tests
 end Pnp4

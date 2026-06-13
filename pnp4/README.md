@@ -83,6 +83,15 @@ Current theorem surface status:
   and isolates the remaining gap as NP-membership of a hard language; it does
   not by itself reduce the `VerifiedNPDAGLowerBoundSource` obligation, whose
   open half is the NP-membership of such a language.
+- `SparseWitnessPruning.lean`: route-pruning upper bounds at the `PpolyDAG`
+  endpoint.  Polynomially sparse and polynomially co-sparse languages are
+  proved to lie in `PpolyDAG` (explicit DNF construction on top of new
+  reusable `notC`/`andC`/`orC`/`andList`/`orList`/`eqCircuit`/`dnfCircuit`
+  combinators with eval/size laws), so any valid
+  `VerifiedNPDAGLowerBoundSource` witness must be dense on both the accepted
+  and rejected sides (`VerifiedNPDAGLowerBoundSource.not_polySparse` /
+  `.not_polyCosparse`).  This formally eliminates unary/tally-style witness
+  candidates; see `pnp4/Docs/INPUT1_SELF_ATTACK_NOTES.md`.
 - `CoinProblem.lean`: exact finite-distribution semantics for the coin problem,
   monotonicity and complement laws for acceptance probabilities, total-mass
   normalization for product Bernoulli weights, and the reusable probability-gap

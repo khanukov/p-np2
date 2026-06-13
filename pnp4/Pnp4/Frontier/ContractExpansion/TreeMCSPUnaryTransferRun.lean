@@ -442,6 +442,7 @@ structure TransferLayout {L : Nat} (c : Configuration (M := unaryTransfer.toPhas
   hterm : ∀ p : Fin (unaryTransfer.toPhased.toTM.tapeLength L),
     (p : Nat) = opBase + d + γ + m → c.tape p = false
 
+set_option maxHeartbeats 1600000 in
 /-- **One more-pass** (`j + 1 < m`): exactly `2(d+j) + 2γ + 8` steps later the layout holds at
 `j + 1`, and the tape outside `[opBase, opBase+d+γ+m]` is untouched. -/
 theorem unaryTransfer_pass_more {L : Nat}
@@ -450,10 +451,14 @@ theorem unaryTransfer_pass_more {L : Nat}
     TransferLayout
         (TM.runConfig (M := unaryTransfer.toPhased.toTM) c (2 * (d + j) + 2 * γ + 8))
         opBase d (j + 1) γ m
-    ∧ ∀ p : Fin (unaryTransfer.toPhased.toTM.tapeLength L),
+    ∧ (∀ p : Fin (unaryTransfer.toPhased.toTM.tapeLength L),
         ((p : Nat) < opBase ∨ opBase + d + γ + m ≤ (p : Nat)) →
         (TM.runConfig (M := unaryTransfer.toPhased.toTM) c (2 * (d + j) + 2 * γ + 8)).tape p
-          = c.tape p := by
+          = c.tape p)
+    ∧ ∀ s : Nat, s < 2 * (d + j) + 2 * γ + 8 →
+        (((TM.runConfig (M := unaryTransfer.toPhased.toTM) c s).state).fst : Nat) < 8
+        ∧ ((TM.runConfig (M := unaryTransfer.toPhased.toTM) c s).head : Nat)
+            ≤ opBase + d + γ + m := by
   obtain ⟨hphase, hhead, hopPos, hg1, hjm, hbound, hdelim, hdst, hgap, hsrc, hterm⟩ := hlay
   obtain ⟨g1, hg⟩ : ∃ g1, γ = g1 + 1 := ⟨γ - 1, by omega⟩
   -- φ0 walk over the d+j destination ones
@@ -649,8 +654,38 @@ theorem unaryTransfer_pass_more {L : Nat}
       TM.runConfig_add, ← hc9,
       TM.runConfig_add, unaryTransfer_runConfig_one, ← hc10,
       TM.runConfig_succ, unaryTransfer_runConfig_one, ← hc11, ← hc12]
+  have hcfg1 : TM.runConfig (M := unaryTransfer.toPhased.toTM) c (d + j) = c1 := hc1.symm
+  have hcfg2 : TM.runConfig (M := unaryTransfer.toPhased.toTM) c (d + j + 1) = c2 := by
+    rw [TM.runConfig_succ, hcfg1, ← hc2]
+  have hcfg3 : TM.runConfig (M := unaryTransfer.toPhased.toTM) c (d + j + 1 + g1) = c3 := by
+    rw [TM.runConfig_add, hcfg2, ← hc3]
+  have hcfg4 : TM.runConfig (M := unaryTransfer.toPhased.toTM) c (d + j + 1 + g1 + 1) = c4 := by
+    rw [TM.runConfig_succ, hcfg3, ← hc4]
+  have hcfg5 : TM.runConfig (M := unaryTransfer.toPhased.toTM) c (d + j + 1 + g1 + 2) = c5 := by
+    rw [show d + j + 1 + g1 + 2 = d + j + 1 + g1 + 1 + 1 from by omega,
+      TM.runConfig_succ, hcfg4, ← hc5]
+  have hcfg6 : TM.runConfig (M := unaryTransfer.toPhased.toTM) c (d + j + 1 + g1 + 3) = c6 := by
+    rw [show d + j + 1 + g1 + 3 = d + j + 1 + g1 + 2 + 1 from by omega,
+      TM.runConfig_succ, hcfg5, ← hc6]
+  have hcfg7 : TM.runConfig (M := unaryTransfer.toPhased.toTM) c (d + j + 1 + g1 + 3 + γ)
+      = c7 := by
+    rw [TM.runConfig_add, hcfg6, ← hc7]
+  have hcfg8 : TM.runConfig (M := unaryTransfer.toPhased.toTM) c (d + j + 1 + g1 + 3 + γ + 1)
+      = c8 := by
+    rw [TM.runConfig_succ, hcfg7, ← hc8]
+  have hcfg9 : TM.runConfig (M := unaryTransfer.toPhased.toTM) c
+      (d + j + 1 + g1 + 3 + γ + 1 + (d + j + 1)) = c9 := by
+    rw [TM.runConfig_add, hcfg8, ← hc9]
+  have hcfg10 : TM.runConfig (M := unaryTransfer.toPhased.toTM) c
+      (d + j + 1 + g1 + 3 + γ + 1 + (d + j + 1) + 1) = c10 := by
+    rw [TM.runConfig_succ, hcfg9, ← hc10]
+  have hcfg11 : TM.runConfig (M := unaryTransfer.toPhased.toTM) c
+      (d + j + 1 + g1 + 3 + γ + 1 + (d + j + 1) + 2) = c11 := by
+    rw [show d + j + 1 + g1 + 3 + γ + 1 + (d + j + 1) + 2
+        = d + j + 1 + g1 + 3 + γ + 1 + (d + j + 1) + 1 + 1 from by omega,
+      TM.runConfig_succ, hcfg10, ← hc11]
   rw [htotal]
-  constructor
+  refine ⟨?_, ?_, ?_⟩
   · exact {
       hphase := h12p
       hhead := h12h'
@@ -681,7 +716,69 @@ theorem unaryTransfer_pass_more {L : Nat}
         exact hterm p hp }
   · intro p hp
     rw [h12t', if_neg (by omega), if_neg (by omega)]
+  · intro s hs
+    by_cases hA : s < d + j
+    · obtain ⟨hrp, hrh, _⟩ := unaryTransfer_run_phi0_walk c hphase s
+        (by omega) (fun p hp1 hp2 => hdst p (by omega) (by omega))
+      exact ⟨by omega, by omega⟩
+    by_cases hB : s = d + j
+    · subst hB; rw [hcfg1]; exact ⟨by omega, by omega⟩
+    by_cases hC : s = d + j + 1
+    · subst hC; rw [hcfg2]; exact ⟨by omega, by omega⟩
+    by_cases hD : s < d + j + 1 + g1
+    · obtain ⟨hrp, hrh, _⟩ := unaryTransfer_run_phi1_scan c2 h2p (s - (d + j + 1))
+        (by omega)
+        (fun p hp1 hp2 => by
+          rw [h2t', if_neg (by omega : ¬ (p : Nat) = opBase + d + j)]
+          exact hgap p (by omega) (by omega))
+      rw [show s = (d + j + 1) + (s - (d + j + 1)) from by omega, TM.runConfig_add, hcfg2]
+      exact ⟨by omega, by omega⟩
+    by_cases hE : s = d + j + 1 + g1
+    · subst hE; rw [hcfg3]; exact ⟨by omega, by omega⟩
+    by_cases hF : s = d + j + 1 + g1 + 1
+    · subst hF; rw [hcfg4]; exact ⟨by omega, by omega⟩
+    by_cases hG : s = d + j + 1 + g1 + 2
+    · subst hG; rw [hcfg5]; exact ⟨by omega, by omega⟩
+    by_cases hH : s = d + j + 1 + g1 + 3
+    · subst hH; rw [hcfg6]; exact ⟨by omega, by omega⟩
+    by_cases hI : s < d + j + 1 + g1 + 3 + γ
+    · obtain ⟨hrp, hrh, _⟩ := unaryTransfer_run_phi4_scan c6 h6p
+        (s - (d + j + 1 + g1 + 3))
+        (by omega)
+        (fun p hp1 hp2 => by
+          rw [h6t']
+          by_cases hpe : (p : Nat) = opBase + d + γ + j
+          · rw [if_pos hpe]
+          · rw [if_neg hpe, if_neg (by omega : ¬ (p : Nat) = opBase + d + j)]
+            exact hgap p (by omega) (by omega))
+      rw [show s = (d + j + 1 + g1 + 3) + (s - (d + j + 1 + g1 + 3)) from by omega,
+        TM.runConfig_add, hcfg6]
+      exact ⟨by omega, by omega⟩
+    by_cases hJ : s = d + j + 1 + g1 + 3 + γ
+    · subst hJ; rw [hcfg7]; exact ⟨by omega, by omega⟩
+    by_cases hK : s = d + j + 1 + g1 + 3 + γ + 1
+    · subst hK; rw [hcfg8]; exact ⟨by omega, by omega⟩
+    by_cases hM : s < d + j + 1 + g1 + 3 + γ + 1 + (d + j + 1)
+    · obtain ⟨hrp, hrh, _⟩ := unaryTransfer_run_phi5_walk c8 h8p
+        (s - (d + j + 1 + g1 + 3 + γ + 1))
+        (by omega)
+        (fun p hp1 hp2 => by
+          rw [h8t', if_neg (by omega : ¬ (p : Nat) = opBase + d + γ + j)]
+          by_cases h2 : (p : Nat) = opBase + d + j
+          · rw [if_pos h2]
+          · rw [if_neg h2]
+            exact hdst p (by omega) (by omega))
+      rw [show s = (d + j + 1 + g1 + 3 + γ + 1) + (s - (d + j + 1 + g1 + 3 + γ + 1))
+          from by omega, TM.runConfig_add, hcfg8]
+      exact ⟨by omega, by omega⟩
+    by_cases hN : s = d + j + 1 + g1 + 3 + γ + 1 + (d + j + 1)
+    · subst hN; rw [hcfg9]; exact ⟨by omega, by omega⟩
+    by_cases hO : s = d + j + 1 + g1 + 3 + γ + 1 + (d + j + 1) + 1
+    · subst hO; rw [hcfg10]; exact ⟨by omega, by omega⟩
+    · have hP : s = d + j + 1 + g1 + 3 + γ + 1 + (d + j + 1) + 2 := by omega
+      subst hP; rw [hcfg11]; exact ⟨by omega, by omega⟩
 
+set_option maxHeartbeats 1600000 in
 /-- **The last pass** (`j + 1 = m`): exactly `d + j + γ + 3` steps later the loop is **in the sink φ8**
 with the head on the source terminator, the destination block complete (`1^(d+m)`), the former
 gap+source zone all `0`, and the tape outside `[opBase, opBase+d+γ+m]` untouched. -/
@@ -699,7 +796,11 @@ theorem unaryTransfer_pass_last {L : Nat}
         (TM.runConfig (M := unaryTransfer.toPhased.toTM) c (d + j + γ + 3)).tape p = false)
     ∧ (∀ p : Fin (unaryTransfer.toPhased.toTM.tapeLength L),
         ((p : Nat) < opBase ∨ opBase + d + γ + m < (p : Nat)) →
-        (TM.runConfig (M := unaryTransfer.toPhased.toTM) c (d + j + γ + 3)).tape p = c.tape p) := by
+        (TM.runConfig (M := unaryTransfer.toPhased.toTM) c (d + j + γ + 3)).tape p = c.tape p)
+    ∧ ∀ s : Nat, s < d + j + γ + 3 →
+        (((TM.runConfig (M := unaryTransfer.toPhased.toTM) c s).state).fst : Nat) < 8
+        ∧ ((TM.runConfig (M := unaryTransfer.toPhased.toTM) c s).head : Nat)
+            ≤ opBase + d + γ + m := by
   obtain ⟨hphase, hhead, hopPos, hg1, hjm, hbound, hdelim, hdst, hgap, hsrc, hterm⟩ := hlay
   obtain ⟨g1, hg⟩ : ∃ g1, γ = g1 + 1 := ⟨γ - 1, by omega⟩
   -- φ0 walk over the d+j destination ones
@@ -805,8 +906,18 @@ theorem unaryTransfer_pass_last {L : Nat}
       TM.runConfig_add, ← hc3,
       TM.runConfig_add, unaryTransfer_runConfig_one, ← hc4,
       TM.runConfig_succ, unaryTransfer_runConfig_one, ← hc5, ← hc6]
+  have hcfg1 : TM.runConfig (M := unaryTransfer.toPhased.toTM) c (d + j) = c1 := hc1.symm
+  have hcfg2 : TM.runConfig (M := unaryTransfer.toPhased.toTM) c (d + j + 1) = c2 := by
+    rw [TM.runConfig_succ, hcfg1, ← hc2]
+  have hcfg3 : TM.runConfig (M := unaryTransfer.toPhased.toTM) c (d + j + 1 + g1) = c3 := by
+    rw [TM.runConfig_add, hcfg2, ← hc3]
+  have hcfg4 : TM.runConfig (M := unaryTransfer.toPhased.toTM) c (d + j + 1 + g1 + 1) = c4 := by
+    rw [TM.runConfig_succ, hcfg3, ← hc4]
+  have hcfg5 : TM.runConfig (M := unaryTransfer.toPhased.toTM) c (d + j + 1 + g1 + 2) = c5 := by
+    rw [show d + j + 1 + g1 + 2 = d + j + 1 + g1 + 1 + 1 from by omega,
+      TM.runConfig_succ, hcfg4, ← hc5]
   rw [htotal]
-  refine ⟨h6p, h6h', ?_, ?_, ?_⟩
+  refine ⟨h6p, h6h', ?_, ?_, ?_, ?_⟩
   · intro p hp1 hp2
     rw [h6t']
     by_cases h2 : (p : Nat) = opBase + d + j
@@ -823,7 +934,32 @@ theorem unaryTransfer_pass_last {L : Nat}
       · exact hterm p (by omega)
   · intro p hp
     rw [h6t', if_neg (by omega), if_neg (by omega)]
+  · intro s hs
+    by_cases hA : s < d + j
+    · obtain ⟨hrp, hrh, _⟩ := unaryTransfer_run_phi0_walk c hphase s
+        (by omega) (fun p hp1 hp2 => hdst p (by omega) (by omega))
+      exact ⟨by omega, by omega⟩
+    by_cases hB : s = d + j
+    · subst hB; rw [hcfg1]; exact ⟨by omega, by omega⟩
+    by_cases hC : s = d + j + 1
+    · subst hC; rw [hcfg2]; exact ⟨by omega, by omega⟩
+    by_cases hD : s < d + j + 1 + g1
+    · obtain ⟨hrp, hrh, _⟩ := unaryTransfer_run_phi1_scan c2 h2p (s - (d + j + 1))
+        (by omega)
+        (fun p hp1 hp2 => by
+          rw [h2t', if_neg (by omega : ¬ (p : Nat) = opBase + d + j)]
+          exact hgap p (by omega) (by omega))
+      rw [show s = (d + j + 1) + (s - (d + j + 1)) from by omega, TM.runConfig_add, hcfg2]
+      exact ⟨by omega, by omega⟩
+    by_cases hE : s = d + j + 1 + g1
+    · subst hE; rw [hcfg3]; exact ⟨by omega, by omega⟩
+    by_cases hF : s = d + j + 1 + g1 + 1
+    · subst hF; rw [hcfg4]; exact ⟨by omega, by omega⟩
+    · have hG : s = d + j + 1 + g1 + 2 := by omega
+      subst hG; rw [hcfg5]; exact ⟨by omega, by omega⟩
 
+
+set_option maxHeartbeats 1600000 in
 /-- **The transfer headline.**  From any `TransferLayout` with at least one source unit, the loop reaches
 the sink φ8 within `(m − j) · (2(d+m) + 2γ + 8)` steps, with the head on the source terminator, the
 destination block complete (`1^(d+m)`), the former gap+source zone all `0`, and the tape outside
@@ -842,7 +978,11 @@ theorem unaryTransfer_transfers {L : Nat}
           (TM.runConfig (M := unaryTransfer.toPhased.toTM) c t).tape p = false)
       ∧ (∀ p : Fin (unaryTransfer.toPhased.toTM.tapeLength L),
           ((p : Nat) < opBase ∨ opBase + d + γ + m < (p : Nat)) →
-          (TM.runConfig (M := unaryTransfer.toPhased.toTM) c t).tape p = c.tape p) := by
+          (TM.runConfig (M := unaryTransfer.toPhased.toTM) c t).tape p = c.tape p)
+      ∧ ∀ s : Nat, s < t →
+          (((TM.runConfig (M := unaryTransfer.toPhased.toTM) c s).state).fst : Nat) < 8
+          ∧ ((TM.runConfig (M := unaryTransfer.toPhased.toTM) c s).head : Nat)
+              ≤ opBase + d + γ + m := by
   -- strong induction on the remaining units m − j
   suffices H : ∀ n (c : Configuration (M := unaryTransfer.toPhased.toTM) L) (j : Nat),
       TransferLayout c opBase d j γ m → j < m → m - j = n →
@@ -857,7 +997,11 @@ theorem unaryTransfer_transfers {L : Nat}
             (TM.runConfig (M := unaryTransfer.toPhased.toTM) c t).tape p = false)
         ∧ (∀ p : Fin (unaryTransfer.toPhased.toTM.tapeLength L),
             ((p : Nat) < opBase ∨ opBase + d + γ + m < (p : Nat)) →
-            (TM.runConfig (M := unaryTransfer.toPhased.toTM) c t).tape p = c.tape p) by
+            (TM.runConfig (M := unaryTransfer.toPhased.toTM) c t).tape p = c.tape p)
+        ∧ ∀ s : Nat, s < t →
+            (((TM.runConfig (M := unaryTransfer.toPhased.toTM) c s).state).fst : Nat) < 8
+            ∧ ((TM.runConfig (M := unaryTransfer.toPhased.toTM) c s).head : Nat)
+                ≤ opBase + d + γ + m by
     exact H (m - j) c j hlay hjm rfl
   intro n
   induction n using Nat.strong_induction_on with
@@ -865,17 +1009,18 @@ theorem unaryTransfer_transfers {L : Nat}
     intro c j hlay hjm hn
     by_cases hlast : j + 1 = m
     · -- the last pass: straight to the sink
-      obtain ⟨hp8, hhd, hdst', hzero', hout'⟩ := unaryTransfer_pass_last c opBase d j γ m hlay hlast
+      obtain ⟨hp8, hhd, hdst', hzero', hout', hstr⟩ :=
+        unaryTransfer_pass_last c opBase d j γ m hlay hlast
       have hmj : m - j = 1 := by omega
-      refine ⟨d + j + γ + 3, by rw [hmj, one_mul]; omega, hp8, hhd, hdst', hzero', hout'⟩
+      exact ⟨d + j + γ + 3, by rw [hmj, one_mul]; omega, hp8, hhd, hdst', hzero', hout', hstr⟩
     · -- a more-pass, then the induction hypothesis
       have hjm1 : j + 1 < m := by omega
-      obtain ⟨hlay', hout1⟩ := unaryTransfer_pass_more c opBase d j γ m hlay hjm1
+      obtain ⟨hlay', hout1, hstr1⟩ := unaryTransfer_pass_more c opBase d j γ m hlay hjm1
       set c' := TM.runConfig (M := unaryTransfer.toPhased.toTM) c (2 * (d + j) + 2 * γ + 8)
         with hc'
-      obtain ⟨t', ht'le, hp8, hhd, hdst', hzero', hout'⟩ :=
+      obtain ⟨t', ht'le, hp8, hhd, hdst', hzero', hout', hstr'⟩ :=
         ih (m - (j + 1)) (by omega) c' (j + 1) hlay' hjm1 rfl
-      refine ⟨(2 * (d + j) + 2 * γ + 8) + t', ?_, ?_, ?_, ?_, ?_, ?_⟩
+      refine ⟨(2 * (d + j) + 2 * γ + 8) + t', ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
       · have h2 : m - j = (m - (j + 1)) + 1 := by omega
         have hs : ((m - (j + 1)) + 1) * (2 * (d + m) + 2 * γ + 8)
             = (m - (j + 1)) * (2 * (d + m) + 2 * γ + 8) + (2 * (d + m) + 2 * γ + 8) :=
@@ -892,6 +1037,11 @@ theorem unaryTransfer_transfers {L : Nat}
         rw [TM.runConfig_add, ← hc']
         rw [hout' p hp]
         exact hout1 p (by omega)
+      · exact TM.runConfig_safe_append
+          (fun cfg : Configuration (M := unaryTransfer.toPhased.toTM) L =>
+            ((cfg.state).fst : Nat) < 8 ∧ ((cfg.head : Nat)) ≤ opBase + d + γ + m)
+          c (2 * (d + j) + 2 * γ + 8) t' hstr1
+          (fun s hs => by rw [← hc']; exact hstr' s hs)
 
 end ContractExpansion
 end Frontier

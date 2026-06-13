@@ -164,7 +164,7 @@ theorem size_orList_le {n : Nat} (l : List (DagCircuit n)) :
       omega
 
 /-- Sum of a mapped list under a uniform per-element bound. -/
-private lemma sum_map_le_of_forall_le {α : Type*} (l : List α) (f : α → Nat)
+lemma sum_map_le_of_forall_le {α : Type*} (l : List α) (f : α → Nat)
     (b : Nat) (h : ∀ a ∈ l, f a ≤ b) : (l.map f).sum ≤ l.length * b := by
   induction l with
   | nil => simp

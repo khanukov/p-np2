@@ -1,6 +1,7 @@
 import Pnp4.AlgorithmsToLowerBounds.BasicCircuitClasses
 import Pnp4.AlgorithmsToLowerBounds.DagShannonCounting
 import Pnp4.AlgorithmsToLowerBounds.SparseWitnessPruning
+import Pnp4.AlgorithmsToLowerBounds.SymmetricWitnessPruning
 import Pnp4.AlgorithmsToLowerBounds.Growth
 import Pnp4.AlgorithmsToLowerBounds.SuperPolynomialBridge
 import Pnp4.AlgorithmsToLowerBounds.AC0pSuperPolynomialBridge
@@ -4654,6 +4655,46 @@ theorem check_size_dnfCircuit_le {n : Nat} (A : Finset (Bitstring n)) :
   AlgorithmsToLowerBounds.size_dnfCircuit_le A
 
 end SparseWitnessPruningSurface
+
+section SymmetricWitnessPruningSurface
+
+open Pnp3.ComplexityInterfaces
+
+/-- Surface check: weight-determined (symmetric) languages lie in `PpolyDAG`. -/
+theorem check_PpolyDAG_of_weightDetermined {L : Language}
+    (h : AlgorithmsToLowerBounds.WeightDetermined L) : PpolyDAG L :=
+  AlgorithmsToLowerBounds.PpolyDAG_of_weightDetermined h
+
+/-- Surface check: `PpolyDAG` is closed under complement. -/
+theorem check_PpolyDAG_compl_iff (L : Language) :
+    PpolyDAG (AlgorithmsToLowerBounds.complLanguage L) ↔ PpolyDAG L :=
+  AlgorithmsToLowerBounds.PpolyDAG_compl_iff L
+
+/-- Surface check: any verified source witness is not weight-determined. -/
+theorem check_verifiedSource_not_weightDetermined
+    (src : AlgorithmsToLowerBounds.VerifiedNPDAGLowerBoundSource) :
+    ¬ AlgorithmsToLowerBounds.WeightDetermined src.L :=
+  src.not_weightDetermined
+
+/-- Surface check: the diagonal hard language is not weight-determined. -/
+theorem check_dagHardLanguage_not_weightDetermined :
+    ¬ AlgorithmsToLowerBounds.WeightDetermined
+        AlgorithmsToLowerBounds.dagHardLanguage :=
+  AlgorithmsToLowerBounds.dagHardLanguage_not_weightDetermined
+
+/-- Surface check: the verified exact-weight indicator bundle. -/
+theorem check_weightBundle_eval (n : Nat) (x : Bitstring n) (o : Fin (n + 1)) :
+    (AlgorithmsToLowerBounds.weightBundle n).evalOutput o x
+      = decide (AlgorithmsToLowerBounds.hammingWeight x = o.1) :=
+  AlgorithmsToLowerBounds.weightBundle_eval n x o
+
+/-- Surface check: the weight bundle is quadratic-size. -/
+theorem check_weightBundle_gates_le (n : Nat) :
+    (AlgorithmsToLowerBounds.weightBundle n).gates
+      ≤ (n + 1) + 14 * (n + 1) * n :=
+  AlgorithmsToLowerBounds.weightBundle_gates_le n
+
+end SymmetricWitnessPruningSurface
 
 end Tests
 end Pnp4

@@ -92,6 +92,14 @@ Current theorem surface status:
   and rejected sides (`VerifiedNPDAGLowerBoundSource.not_polySparse` /
   `.not_polyCosparse`).  This formally eliminates unary/tally-style witness
   candidates; see `pnp4/Docs/INPUT1_SELF_ATTACK_NOTES.md`.
+- `SymmetricWitnessPruning.lean`: second route-pruning theorem.  A verified
+  shared dynamic program for prefix weights (`weightBundle`, `O(n²)` gates,
+  built on `DagBundle`/`snocBundleSubst` with the new `remapOutputs`
+  primitive) shows every weight-determined (symmetric) language lies in
+  `PpolyDAG` (`PpolyDAG_of_weightDetermined`), so MAJORITY-style, threshold,
+  parity, and all other weight-determined candidates are formally excluded
+  from the witness space (`VerifiedNPDAGLowerBoundSource.not_weightDetermined`).
+  Also records the endpoint complement-closure law (`PpolyDAG_compl_iff`).
 - `CoinProblem.lean`: exact finite-distribution semantics for the coin problem,
   monotonicity and complement laws for acceptance probabilities, total-mass
   normalization for product Bernoulli weights, and the reusable probability-gap

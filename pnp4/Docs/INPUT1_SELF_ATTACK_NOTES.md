@@ -109,20 +109,53 @@ sets, and their complements are formally out, regardless of how clever
 their `NP` verifiers are.  As a sanity check, the unconditional diagonal
 witness of `DagShannonCounting` is provably dense on both sides.
 
+## Attack line 5: structured witnesses — symmetry (second salvage)
+
+Idea: perhaps a *combinatorially structured* dense language can witness the
+gap — weight-based predicates (MAJORITY, thresholds, parity, exact-weight
+and mod-counting tests) are dense, co-dense, and trivially in `NP`/`P`,
+and "look hard" to weak models.
+
+This line also dies provably.  The classical shared dynamic program for
+prefix weights was formalized on the repository's `DagBundle` layer
+(`weightBundle`: cell `(i, j)` decides "the first `i` bits have weight
+exactly `j`"; `O(n²)` gates, additive growth via `snocBundleSubst`, plus a
+new zero-cost `remapOutputs` primitive).  Its semantic law
+
+```text
+weightBundle_eval : (weightBundle n).evalOutput w x
+                  = decide (hammingWeight x = w)
+```
+
+yields:
+
+```text
+PpolyDAG_of_weightDetermined :
+  (∀ n x y, hammingWeight x = hammingWeight y → L n x = L n y) → PpolyDAG L
+VerifiedNPDAGLowerBoundSource.not_weightDetermined
+dagHardLanguage_not_weightDetermined
+```
+
+So **no symmetric language can witness input 1**: density alone is not
+enough; the witness must break weight-symmetry in an essential way.
+Together with the complement-closure law (`PpolyDAG_compl_iff`, proved en
+route), the witness space is closed under complement and excludes the
+sparse, co-sparse, and weight-determined corners.
+
 ## Net assessment after this session
 
-The residual target is now boxed in from three formal directions:
+The boxed-in map after the second session:
 
-1. (`DagShannonCounting`) hard languages exist unconditionally at the
-   endpoint class — hardness alone is not the obstruction;
-2. (`SparseWitnessPruning`) the witness cannot be thin on either side —
-   structural simplicity of the accepted set is not available;
-3. (faithfulness audit, session 1) the statement itself offers no
-   definitional slack.
+1. (`DagShannonCounting`) hardness exists unconditionally at the endpoint;
+2. (`SparseWitnessPruning`) the witness is dense and co-dense;
+3. (`SymmetricWitnessPruning`) the witness is not weight-determined, and
+   hardness is complement-symmetric;
+4. (faithfulness audit) the statement offers no definitional slack.
 
-What remains is exactly the classical difficulty: an `NP` verifier whose
-language is *dense, co-dense, and provably complex*.  No proof of that
-was found in this session, and the lines above record precisely where
-each self-generated approach stops.  Per the Research Constitution this
-file claims no more than what compiles: two new unconditional upper-bound
-theorems, four pruning corollaries, and a sharper map of the gap.
+The residual target is an `NP` verifier whose language is dense, co-dense,
+weight-asymmetric, and provably complex.  Every self-generated route to
+*provable complexity* for an `NP` language still terminates at the
+classical obstruction recorded in attack lines 1–3; what this session
+added is that two more natural witness families are now theorem-level
+dead ends rather than informal expectations.  No claim beyond what
+compiles is made.

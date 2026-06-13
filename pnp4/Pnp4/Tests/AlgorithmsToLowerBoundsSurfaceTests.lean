@@ -141,6 +141,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionScanOnesSegments
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionZoneWalkHop
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionValuePushHop
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionUnaryTransferHop
+import Pnp4.Frontier.ContractExpansion.TreeMCSPPopIterProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbe
 import Pnp4.Frontier.ContractExpansion.TreeMCSPAtomSeqP1
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbeFrame
@@ -4385,6 +4386,13 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_valuePush_hop
 -- D2t-5b (Block A5m-2, transfer): the unary-block mover in a union.
 #check @Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_unaryTransfer_hop
+-- D2t-5b (Block A5m-8, machine): the pop iteration machine and its region contracts.
+#check @Pnp4.Frontier.ContractExpansion.popIterProgram
+#check @Pnp4.Frontier.ContractExpansion.popCtrlTopRedirect
+#check @Pnp4.Frontier.ContractExpansion.popRemRedirect
+#check @Pnp4.Frontier.ContractExpansion.popIter_region_ctop_4
+#check @Pnp4.Frontier.ContractExpansion.popIter_region_transfer_248
+#check @Pnp4.Frontier.ContractExpansion.popIter_region_vpush_363
 -- D2t-5b (Block A5m-3 run): the clear iteration end to end.
 #check @Pnp4.Frontier.ContractExpansion.clearIter_run
 -- D2t-5b (Block A5m-U6): the host-generic write segment (tape = writeBlockTape).

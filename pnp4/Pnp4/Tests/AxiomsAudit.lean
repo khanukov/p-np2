@@ -131,6 +131,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionScanOnesSegments
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionZoneWalkHop
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionValuePushHop
 import Pnp4.Frontier.ContractExpansion.TreeMCSPRegionUnaryTransferHop
+import Pnp4.Frontier.ContractExpansion.TreeMCSPPopIterProgram
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbe
 import Pnp4.Frontier.ContractExpansion.TreeMCSPAtomSeqP1
 import Pnp4.Frontier.ContractExpansion.TreeMCSPSettleProbeFrame
@@ -1262,6 +1263,15 @@ end Pnp4
 -- D2t-5b (Block A5m-2, transfer): the unary-block mover in a union (the pop arm's
 -- VAL→record operand transport), via run_track + the transfer streams.
 #print axioms Pnp4.Frontier.ContractExpansion.RegionEmbeddedMulti.run_unaryTransfer_hop
+-- D2t-5b (Block A5m-8, machine): popIterProgram -- the settle-pop-emit iteration as a region
+-- union (420 phases: ctrlTopWalk/remWalk dispatch, per-tag frame-erase + descent + tag write,
+-- the shared shuttle/transfer field pipelines, value push, SHW tick, rehome).
+#print axioms Pnp4.Frontier.ContractExpansion.popIterProgram
+#print axioms Pnp4.Frontier.ContractExpansion.popIter_region_ctop_4
+#print axioms Pnp4.Frontier.ContractExpansion.popIter_region_rem_14
+#print axioms Pnp4.Frontier.ContractExpansion.popIter_region_probe_185
+#print axioms Pnp4.Frontier.ContractExpansion.popIter_region_transfer_248
+#print axioms Pnp4.Frontier.ContractExpansion.popIter_region_vpush_363
 -- D2t-5b (Block A5m-3 run): the clear iteration END TO END on clearIterProgram -- from the settle
 -- home on the cursor marker, hop to the control top, probe (empty), return, scan home: phase 14,
 -- head back on the marker, tape untouched (= driverStepTape on the clear branch), <= 2*certEnd+13

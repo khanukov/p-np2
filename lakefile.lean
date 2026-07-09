@@ -305,6 +305,8 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.ConcreteTreeCodecSource,
     Glob.one `Pnp4.Frontier.ContractExpansion.ThresholdGrowth,
     Glob.one `Pnp4.Frontier.ContractExpansion.ConsolidatedTreeSeparation,
+    Glob.one `Pnp4.Frontier.OneTapeMagnification.OneTapeMachine,
+    Glob.one `Pnp4.Frontier.OneTapeMagnification.RandomizedSemantics,
     Glob.one `Pnp4.Tests.AlgorithmsToLowerBoundsSurfaceTests,
     Glob.one `Pnp4.Tests.AxiomsAudit
   ]

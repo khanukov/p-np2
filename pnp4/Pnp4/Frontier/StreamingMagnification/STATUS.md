@@ -1,6 +1,6 @@
 # Streaming magnification status
 
-Status: **MODEL/DEFINITION BLOCKER; FINITE REFERENCE LAYERS COMPLETE; NO MMW UPPER THEOREM OR CAPSTONE**
+Status: **SEPARATE OPERATIONAL MODEL ADDED; MAINLINE NORMALIZATION/PH/COMPILER BLOCKERS; NO MMW UPPER THEOREM OR CAPSTONE**
 
 Base: `main@5d8ee5f80e1dbc4fb7bd0c725fa98f1a999770d0`
 
@@ -14,11 +14,12 @@ Primary sources:
 
 ## Result classification
 
-The primary result of this branch is a **model/definition blocker**, not a
+The primary result of this branch remains a **model/definition audit**, not a
 streaming lower bound and not a proof of `P != NP`.  The finite objects needed
-to state and test the MMW construction are now concrete, but the repository's
-current definition of `P` does not supply the operational uniformity needed to
-extract a single streaming program from a `P = NP` hypothesis.
+to state and test the MMW construction are concrete.  A separate operational
+uniformity track is now available, but the repository's canonical `P` and
+`NP` still do not supply the normalization needed to enter that track from an
+old `P = NP` hypothesis.
 
 Under the repository governance policy, the completed work is infrastructure.
 It does not reduce `SearchMCSPWeakLowerBound` or
@@ -33,10 +34,12 @@ field, axiom, or hidden existence assumption:
 | Layer | What is now formalized | Deliberate boundary |
 | --- | --- | --- |
 | Standard DAG MCSP | A list-backed, topologically ordered shared Boolean DAG; exact conversion to and from the frozen `DagCircuit`; gate-count reconciliation; explicit lexicographic truth-table order | The structural carrier includes constant gates only to round-trip the frozen repository representation.  The target predicate `UsesOnlyAndOrNot` filters every MCSP witness and Stream-Merge candidate to the paper's exact `AND`/`OR`/`NOT` basis. |
+| Local DAG evaluation trace | A Boolean value for every shared-DAG gate, a checker using the current gate, at most one external-input bit, and strictly earlier trace entries, canonical-trace existence, uniqueness, and exact equivalence to `DagCircuit.eval` / `FlatCircuit.eval` | This proves the semantic local-verifier layer.  A self-delimiting query codec and polynomial bit-length/accounting theorem are still required before assigning a uniform complexity class. |
 | Fixed DAG codec | A fixed-length circuit body, canonical padding, executable encode/decode, exact round trips and injectivity, finite enumeration, and an explicit `O(s log(n+s))` code-length bound | The codec can represent the broader structural carrier; successful target search additionally checks `UsesOnlyAndOrNot`. |
 | Total search-MCSP | A genuine tagged `found`/`noCircuit` result with soundness and completeness in both directions; an executable exhaustive reference solver and exact decision bridge | This is finite reference computation, not a streaming-time algorithm. |
 | Streaming RAM | One fixed length-aware one-pass bit program, explicit input cursor and next-bit requests, finite bit-local instruction palette, indirect addressing, write-only output/report phase, and trace-derived space, maximum update-gap, and report-time measures | This is the operational machine model.  No polynomial-resource Stream-Merge implementation has been constructed in it. |
 | Stream-Merge reference | Executable finite size-then-physical-lex minimization, malformed-request semantics, exact final partial blocks, `blockLength > 2^n`, prefix agreement, optimality, and final `found`/`noCircuit` equivalences | The reference search may enumerate the entire code cube and evaluate whole tables, so it proves no RAM resource bound. |
+| Search-free choice/output graph | `selectCode = some code` is equivalent to successful canonical decoding, merge consistency, minimum gate count, and first serialized-lex body; `noCircuit` is equivalent to universal failure of every fixed-length code; one true output bit is decomposed exactly into those two branches | For a decoded paper-basis candidate, failure of `Fits` is equivalent to one explicit unequal prefix coordinate carrying complete locally checked candidate/prior DAG traces.  These dependent trace witnesses still need one fixed-length codec and prenex packaging into the paper's encoded `exists-forall-exists` matrix. |
 | Block driver | A generic positive-block-length driver with exact last partial block, immediate propagation of genuine `noCircuit`, an induction invariant, and final `found iff HasCircuit` / `noCircuit iff not HasCircuit` endpoints | `paperBlockLength c s = c * s * ceil(log_2(s+2))` is defined separately and is positive for positive `c,s`; the generic driver can be instantiated with it.  This does not supply the paper's oracle algorithm. |
 | Result wire | A collision-free fixed-length Stream-Merge result wire with five semantic tags, a canonical empty body on non-circuit cases, and total/functional per-position output-bit graphs | The output-bit surface is only a finite semantic graph.  No finite-PH membership theorem is claimed for those bits. |
 | Concrete MMW problem | The exact tagged total-search output is connected to completed operational runs, including full input consumption and both YES and NO semantics | This closes the problem specification, not existence of a solver. |
@@ -100,19 +103,69 @@ noncomputability or cardinality theorem.  The blocker is specifically the
 missing operational content of the definitions currently used by this
 repository.
 
+## Separate operational-uniformity repair
+
+`OperationalUniformity.lean` introduces an additive repaired track without
+changing the repository-wide classes:
+
+- `OperationalTM` keeps one finite transition system and one exponent and has
+  no `Nat -> Nat` field; its execution clock is `n^c + c` by definition and
+  its Boolean output is a function
+  of the final finite state, so deterministic complement changes only that
+  output map and is proved by `uniformP_complement`;
+- `UniformP` and `UniformNP` quantify over one such fixed program/verifier;
+- `concatBitstring` is now the executable `Fin.addCases` construction rather
+  than a `noncomputable` choice of the right-hand index;
+- `CanonicalClockTM` is an explicitly numbered finite syntax with no
+  `Nat -> Nat` field.  Its deterministic and verifier variants have proved
+  one-way bridges into the old repository `P` and `NP`.
+
+There is deliberately no theorem `UniformP subset repository-P` for arbitrary
+Boolean output maps, no converse bridge from old witnesses, and no equality
+between repaired and old classes.  There is also no bridge from
+`CanonicalUniformP` / `CanonicalUniformNP` into the repaired classes.  The exact
+assumption relevant to a future MMW reconstruction is
+`forall L, UniformNP L -> UniformP L`, not the current repository equality.
+
+The repaired classes also use an exact canonical clock and observe the final
+state after exactly that many steps.  Equivalence with a conventional
+early-halting machine padded by absorbing accept/reject states has not yet been
+formalized.  `OperationalTM.ofRepoCore` only copies finite control while
+discarding the old runtime field; it intentionally does not assert correctness
+at the replacement clock.
+
 ## What remains unproved
 
-There is no formal finite polynomial-hierarchy hierarchy in this route, no
-proof that Stream-Merge or Circuit-Min-Merge output bits lie in the required
-finite-PH level, no finite-PH collapse under `P = NP`, no reconstruction of
-the paper's oracle calls as a uniform RAM program, and no polynomial
+There is no proof yet that the single encoded Stream-Merge output-bit language
+has the required `exists-forall-exists` verifier with polynomially bounded
+query blocks, no bounded-quantifier collapse under repaired
+`UniformNP subset UniformP`, no reconstruction of the paper's sequential
+oracle calls as one `StreamingRAM.Program`, and no polynomial
 space/update/report analysis of such a program.  Consequently this branch
 contains neither the MMW upper direction nor its contrapositive capstone.
 
 The single minimal open theorem signature is retained **in prose only**:
-for every `k >= 1`, repository-uniform `P = NP` should imply
+for every `k >= 1`, repaired `UniformNP subset UniformP` should imply
 `PolyStreamingSearchMCSPSolvable k`.  Before attempting that theorem, the
-repository must use a genuinely operational uniform definition or prove the
-missing normalization/extraction bridge.  This open statement must not be
+finite output-bit verifier and the operational TM-to-streaming-RAM compiler
+must be proved.  Connecting the result back to the old mainline additionally
+requires a normalization/extraction bridge.  These open statements must not be
 encoded as an axiom, typeclass, `Contract`, `Source`, `Provider`, structure
 field, or implicit instance.
+
+## Later-literature check (through 2026-07-09)
+
+- [Chen--Jin--Santhanam--Williams, Lemma 3.2](https://theoretics.episciences.org/12881/pdf)
+  gives a clean constructive/one-sided-error specialization of the same merge
+  route, but still relies on Circuit-Min-Merge and PH collapse.
+- [Williams, ECCC TR25-017, Theorem 1.1](https://eccc.weizmann.ac.il/report/2025/017/download/)
+  simulates multitape time in square-root space; Remark 1.6 does not extend it
+  to arbitrary random-access models.  It is not an operational extraction
+  theorem for the present `P` interface.
+- Recent conditional MCSP-hardness results concern different targets and do
+  not supply the missing output-bit verifier, uniform normalization, or RAM
+  compiler for the MMW streaming construction.
+
+No primary source found in this audit supersedes MMW Theorem 1.3 or closes the
+exact model and operational gaps above.  This literature finding is not a
+complexity lower bound.

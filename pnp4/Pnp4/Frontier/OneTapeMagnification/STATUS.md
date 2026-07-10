@@ -120,7 +120,19 @@ instance.
 
 - The [journal version of CHMY](https://link.springer.com/article/10.1007/s00224-022-10113-9) retains the large-threshold one-tape result and the same Appendix-A magnification direction; it does not supply a small-threshold lower bound.
 - [ECCC TR25-017](https://eccc.weizmann.ac.il/report/2025/017/) develops a square-root-space simulation for multitape time, not the local HSG/PRG needed here.
-- [ECCC TR26-064, revision 3](https://eccc.weizmann.ac.il/report/2026/064/) improves read-once branching-program pseudorandomness parameters but does not remove the square-root-in-time exponent in the Viola-to-CHMY route.
+- [Cheng--Wu, ECCC TR25-027, Theorems 1.5 and 1.7](https://eccc.weizmann.ac.il/report/2025/027/revision/4/download)
+  and [Ta-Shma--Chen, ECCC TR25-067, Theorem 1.1](https://eccc.weizmann.ac.il/report/2025/067/download)
+  improve WPRGs for standard-order or regular ROBPs.  Their bounds retain a
+  `log(width)` dependence and do not cover the general unknown-order CHMY
+  branching programs or the required circuit-locality statement.
+- [Lee--Viola, ECCC TR25-071, Theorem 5](https://eccc.weizmann.ac.il/report/2025/071/revision/1/download)
+  is a genuine any-order near miss, but only for permutation ROBPs over a
+  fixed `p`-group; CHMY Lemma 20 produces general exponential-width ROBPs.
+- [Chen--Cohen--Doron--Khaskelberg--Ta-Shma, ECCC TR26-064, revision 3](https://eccc.weizmann.ac.il/report/2026/064/revision/3/download)
+  improves WPRG error reduction while preserving the base seed and its
+  `log(width)` dependence.  It is standard-order, weighted pseudorandomness
+  and supplies neither a uniform-seed local HSG nor the CHMY locality needed
+  here.
 
 No primary source found in this check closes the magnification-admissible
 small-`mu` one-tape frontier.  This negative literature finding is not itself

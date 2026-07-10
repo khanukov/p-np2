@@ -15,10 +15,13 @@ in the rejecting state and performs one transition to the accepting state
 exactly when `A n = true`.
 
 This is a model audit theorem.  It does not assert an unformalized
-noncomputability or cardinality result.  It records why membership in the
-current repository `P` cannot, by itself, be treated as a callable uniform
-`StreamingRAM.Program`: such a program has finite operational code, whereas
-the `runTime` field below contains the whole arbitrary length-indexed sequence.
+noncomputability or cardinality result.  It proves that membership in the
+current repository `P` does not itself expose a callable uniform
+`StreamingRAM.Program`: the witness below stores the arbitrary
+length-indexed sequence in its `runTime` field.  A separate normalization or
+extraction theorem would therefore be needed before such membership could be
+used operationally; no impossibility theorem for every conceivable compiler
+is claimed here.
 -/
 
 namespace Pnp4

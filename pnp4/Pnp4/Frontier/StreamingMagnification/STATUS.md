@@ -1,6 +1,6 @@
 # Streaming magnification status
 
-Status: **GLOBAL EAE BRIDGE AND FIXED DYNAMIC SCAN ADDED; ROW-TM/COUNTER/NORMALIZATION/COMPILER BLOCKERS; NO MMW UPPER THEOREM OR CAPSTONE**
+Status: **GLOBAL EAE BRIDGE AND FIXED GAMMA FRONT END ADDED; ROW-TM/GLOBAL PARSER/NORMALIZATION/COMPILER BLOCKERS; NO MMW UPPER THEOREM OR CAPSTONE**
 
 Base: `main@5d8ee5f80e1dbc4fb7bd0c725fa98f1a999770d0`
 
@@ -44,7 +44,7 @@ field, axiom, or hidden existence assumption:
 | Certificate-length EAE padding | Explicit zero-extension embeds the three fixed wires into the successive lengths `certificateLength m 64`, `certificateLength (m + cert(m)) 64`, and `certificateLength (m + cert(m) + cert(m + cert(m))) 64`.  Canonical outer/inner suffixes and vacuous noncanonical universal rows preserve the complete E-A-E shell exactly. | This is a semantic carrier conversion.  It does not make the padded matrix operationally polynomial-time. |
 | Global self-delimiting output-bit/EAE language | An executable exact-length codec serializes tag, canonical gamma-coded `n,s,blockLength`, fixed-width start, full prior DAG code, exact final block, and output position.  The parser rejects malformed fields and every wrong ambient length; `parse (encode r) = some r`, and parsed `n,s` are bounded by ambient length.  A bounded, unique base-length recovery and exact suffix unpacker define one real malformed-false `GlobalPaddedRowLanguage`, and `OutputBitLanguage = FinitePHClosure.EAEProject 64 64 64 GlobalPaddedRowLanguage` is proved as an equality of languages. | The parser, length recovery, and padded row are executable Lean definitions, not one constructed `OperationalTM`; no polynomial clock or repaired finite-PH membership theorem follows from executability alone.  Invalid-prior/malformed Stream-Merge result bits are rejected rather than included in this valid-call language. |
 | Repaired finite-quantifier closure | `ExistsProject` has exact fixed-bitstring semantics and maps an operational `UniformP` matrix into `UniformNP`; complement gives the universal projection; under the explicit repaired-class equality `UniformP = UniformNP`, an E-A-E projection of a `UniformP` matrix is again in `UniformP`.  Applying the global language equality yields explicit capstones from `UniformP GlobalPaddedRowLanguage` (or its canonical variant) plus repaired-class equality to `UniformP OutputBitLanguage`. | Both premises remain explicit.  This is not a bridge from conventional repository `P = NP`, and it still requires an operational decider for the global padded matrix row. |
-| Fixed-control dynamic scan | One two-state `OperationalTM`, independent of input length, scans zeroes to the first `true` bit at the exact `n+1` clock.  Zero-step, first-one, absorbing-done, all-zero, and arbitrary-prefix runs are proved; it decides the contains-one language in `UniformP`. | The head position records where the terminator was found only during that run.  No fixed-control tape-backed counter yet preserves an unbounded zero-prefix length for reading the equally long payload of a canonical gamma code. |
+| Fixed-control dynamic scan | One two-state `OperationalTM`, independent of input length, scans zeroes to the first `true` bit at the exact `n+1` clock.  Zero-step, first-one, absorbing-done, all-zero, and arbitrary-prefix runs are proved; it decides the contains-one language in `UniformP`. | The scan itself records the terminator only in its final head position.  The standalone gamma counter described below now preserves the prefix length on tape, but is destructive; global value-preserving parser composition remains open. |
 | Block driver | A generic positive-block-length driver with exact last partial block, immediate propagation of genuine `noCircuit`, an induction invariant, and final `found iff HasCircuit` / `noCircuit iff not HasCircuit` endpoints | `paperBlockLength c s = c * s * ceil(log_2(s+2))` is defined separately and is positive for positive `c,s`; the generic driver can be instantiated with it.  This does not supply the paper's oracle algorithm. |
 | Result wire | A collision-free fixed-length Stream-Merge result wire with five semantic tags, a canonical empty body on non-circuit cases, and total/functional per-position output-bit graphs | The output-bit surface is only a finite semantic graph.  No finite-PH membership theorem is claimed for those bits. |
 | Concrete MMW problem | The exact tagged total-search output is connected to completed operational runs, including full input consumption and both YES and NO semantics | This closes the problem specification, not existence of a solver. |
@@ -145,18 +145,48 @@ at the replacement clock.
 `OperationalDynamicScan.lean` closes the first concrete input-uniform loop:
 the same two-state controller handles every input length, its done state is
 fully absorbing, and it accepts exactly the bitstrings containing a `true`
-bit.  The next parser-level step is no longer merely "add a loop"; it is a
-fixed-control tape representation and update proof for the unbounded length of
-the zero prefix, so the gamma payload can be consumed at exactly that length.
+bit.
+
+`OperationalGammaPrefix.lean` now supplies the next complete operational
+checkpoint.  One fixed 12-state Boolean-tape controller converts a standalone
+`0^k 1 payload[k]` field into a unary moving-marker trace and is proved to
+reach its finished configuration after `1` useful step for `k = 0` and
+`2*k^2 + 7*k` for positive `k`; it then
+absorbs inside the canonical cubic clock.  The natural-coordinate trace is
+proved equal to the repository `TM` execution; canonical `gammaBit` inputs end
+with the head at `gammaLen`.  This first machine is deliberately destructive
+and uses the physical left clamp at cell zero.  It also has an explicit theorem
+showing that a truncated all-zero payload is accepted from blank work cells,
+so it is not presented as a full parser.
+
+`OperationalGammaZipper.lean` removes the payload-destruction obstacle at the
+finite-control level.  Its fixed 57-state sentinel machine uses alternating
+pairs: the proved local kernels implement `b,0 -> 0,b`, move the delimiter,
+and implement `x,0,b -> b,0,x`.  Initial, cycle, and final frames have the same
+`2*k+2` footprint.  The last pair ends in `1`, preserving the last payload bit
+while providing the sentinel for the next gamma word.  The remaining precise
+proof obligation is the global induction composing those local kernels over
+an arbitrary processed-bit list.
+
+`OperationalTaggedGamma.lean` is a fixed 181-state front end that validates
+the real byte `179 = 10110011`, reuses tag bit seven as the first sentinel, and
+delegates three consecutive gamma fields to the same zipper controller.  The
+phase handoffs, constant state count, quartic clock, codec tag equality, and
+length-preserving three-field frame algebra are proved.  No global run theorem
+is claimed before the zipper induction and an exact ambient-length check are
+available.
 
 ## What remains unproved
 
 The valid-call output-bit problem is now exactly one literal repaired-model
 `EAEProject` over a global decidable padded row, as a language equality rather
 than only a valid-request slice theorem.  There is still no `OperationalTM`
-deciding that global row with proved polynomial bounds.  The first concrete
-parser sub-block exists, but its fixed-control tape-backed gamma counter does
-not.  There is also no bridge from conventional `P = NP` to equality of the
+deciding that global row with proved polynomial bounds.  The fixed-control
+zero-prefix counter, value-preserving two-symbol zipper, and executable
+tag-plus-three-gamma wrapper now exist, but the zipper's arbitrary-list run
+induction, exact finite-input/end check, decoded-value operations, remaining
+request fields, DAG row evaluation, and full parser composition are still
+open.  There is also no bridge from conventional `P = NP` to equality of the
 repaired classes, no reconstruction of the paper's sequential
 oracle calls as one `StreamingRAM.Program`, and no polynomial
 space/update/report analysis of such a program.  Consequently this branch
@@ -165,6 +195,7 @@ contains neither the MMW upper direction nor its contrapositive capstone.
 The single minimal open theorem signature is retained **in prose only**:
 for every `k >= 1`, repaired `UniformNP subset UniformP` should imply
 `PolyStreamingSearchMCSPSolvable k`.  Before attempting that theorem, the
+zipper induction and ambient-length discipline must be completed, then the
 global parser and padded row must be decided by one `OperationalTM` with a
 proved polynomial clock, and the operational TM-to-streaming-RAM compiler
 must be constructed.  Connecting the repaired

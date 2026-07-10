@@ -57,6 +57,9 @@ import Pnp4.Frontier.StreamingMagnification.MMWProblem
 import Pnp4.Frontier.StreamingMagnification.RuntimeAdviceBarrier
 import Pnp4.Frontier.StreamingMagnification.OperationalUniformity
 import Pnp4.Frontier.StreamingMagnification.OperationalDynamicScan
+import Pnp4.Frontier.StreamingMagnification.OperationalGammaPrefix
+import Pnp4.Frontier.StreamingMagnification.OperationalGammaZipper
+import Pnp4.Frontier.StreamingMagnification.OperationalTaggedGamma
 import Pnp4.Frontier.StreamingMagnification.FinitePHClosure
 import Pnp4.Frontier.StreamingMagnification.DAGEvalTrace
 import Pnp4.Frontier.StreamingMagnification.StreamMergeChoice
@@ -451,6 +454,29 @@ open Frontier.StreamingMagnification
 #print axioms OperationalDynamicScan.runConfig_first_one
 #print axioms OperationalDynamicScan.accepts_eq_true_iff
 #print axioms OperationalDynamicScan.containsOneLanguage_in_uniformP
+#print axioms OperationalGammaPrefix.gammaPrefixWalker_state_card
+#print axioms OperationalGammaPrefix.natRun_progress_round
+#print axioms OperationalGammaPrefix.run_eq_finished_of_zero_prefix
+#print axioms OperationalGammaPrefix.accepts_eq_false_of_all_zero
+#print axioms OperationalGammaPrefix.accepts_truncated_zero_payload
+#print axioms OperationalGammaPrefix.accepts_canonical_gammaBit
+#print axioms OperationalGammaPrefix.canonical_gammaBit_run_head_eq_gammaLen
+#print axioms OperationalGammaZipper.gammaZipper_state_card
+#print axioms OperationalGammaZipper.cycleFrame_length_eq_total
+#print axioms OperationalGammaZipper.remaining_eq_one_iff_unprocessed_nil
+#print axioms OperationalGammaZipper.natRun_backwardPair
+#print axioms OperationalGammaZipper.natRun_shiftDelimiter
+#print axioms OperationalGammaZipper.natRun_forwardBubble
+#print axioms OperationalGammaZipper.natRun_finalC
+#print axioms OperationalTaggedGamma.taggedGamma_state_card
+#print axioms OperationalTaggedGamma.requestTagList_eq_codec
+#print axioms OperationalTaggedGamma.step_first_finalC
+#print axioms OperationalTaggedGamma.step_second_finalC
+#print axioms OperationalTaggedGamma.step_third_finalC
+#print axioms OperationalTaggedGamma.tripleInitialFrame_length
+#print axioms OperationalTaggedGamma.tripleFinalFrame_length
+#print axioms OperationalTaggedGamma.afterFirst_drop
+#print axioms OperationalTaggedGamma.afterSecond_drop
 #print axioms FinitePHClosure.existsProject_eq_true_iff
 #print axioms FinitePHClosure.uniformP_existsProject
 #print axioms FinitePHClosure.forallProject_eq_true_iff

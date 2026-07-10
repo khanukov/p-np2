@@ -53,6 +53,12 @@ import Pnp4.Frontier.ContractExpansion.ThresholdGrowth
 import Pnp4.Frontier.ContractExpansion.ConsolidatedTreeSeparation
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
+import Pnp4.Frontier.StreamingMagnification.MMWProblem
+import Pnp4.Frontier.StreamingMagnification.RuntimeAdviceBarrier
+import Pnp4.Frontier.StreamingMagnification.StreamMergeDriverCorrectness
+import Pnp4.Frontier.StreamingMagnification.StreamMergeWire
+import Pnp4.Frontier.OneTapeMagnification.LocalPRGToMCSP
+import Pnp4.Frontier.OneTapeMagnification.PublishedSeedBarrier
 
 namespace Pnp4
 namespace Tests
@@ -379,3 +385,64 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_malformed_rejected
 #check Pnp4.Frontier.ContractExpansion.treeMCSPConcretePrefixParser
 #check Pnp4.Frontier.ContractExpansion.treeMCSPRuntimeAwarePrefixParser
+
+namespace Pnp4
+
+section StreamingAndOneTapeMagnificationAxioms
+
+open Frontier.StreamingMagnification
+
+#print axioms StandardDAG.FlatCircuit.UsesOnlyAndOrNot
+#print axioms StandardDAG.FlatCircuit.toDag_ofDag
+#print axioms StandardDAG.FlatCircuit.ofDag_toDag
+#print axioms StandardDAG.FlatCircuit.gateCount_le_iff_toDag_size_le_succ
+
+#print axioms DAGCodec.decode_encode
+#print axioms DAGCodec.encode_injective
+#print axioms DAGCodec.codeLength_le
+#print axioms DAGCodec.card_code
+
+#print axioms EncodedTotalSearch.referenceSolver_found_sound
+#print axioms EncodedTotalSearch.referenceSolver_found_complete
+#print axioms EncodedTotalSearch.referenceSolver_noCircuit_sound
+#print axioms EncodedTotalSearch.referenceSolver_noCircuit_complete
+#print axioms EncodedTotalSearch.referenceDecision_eq_true_iff
+
+#print axioms StreamingRAM.firstReadBoundaryGap
+#print axioms StreamingRAM.consecutiveReadBoundaryGap
+#print axioms StreamingRAM.immediateReportBoundaryGap
+#print axioms StreamingRAM.closedGap_le_extendedMaximum
+#print axioms StreamingRAM.cursor_mono_step
+#print axioms StreamingRAM.cursor_step_le_succ
+#print axioms PolynomialBounds.polyStreamingSolvable_iff
+#print axioms PolynomialBounds.noPolyStreamingSolver_iff
+#print axioms MMWProblem.completedRun_decision_iff
+#print axioms RuntimeAdviceBarrier.lengthAdviceLanguage_in_repo_P
+
+#print axioms StreamMerge.paperBlockLength_pos
+#print axioms StreamMerge.referenceStreamMerge_found_optimal
+#print axioms StreamMerge.referenceStreamMerge_found_prefixAgreement
+#print axioms StreamMerge.referenceStreamMerge_final_found_iff_hasCircuit
+#print axioms StreamMerge.referenceStreamMerge_final_noCircuit_iff
+#print axioms StreamMergeDriver.referenceStreamDriver_found_iff_hasCircuit
+#print axioms StreamMergeDriver.referenceStreamDriver_noCircuit_iff
+#print axioms StreamMergeWire.parse_serialize
+#print axioms StreamMergeWire.serialize_injective
+#print axioms StreamMergeWire.outputBitGraph_functional
+#print axioms StreamMergeWire.referenceOutputBitGraph_functional
+
+#print axioms Frontier.OneTapeMagnification.inputHead_le_runFrom
+#print axioms Frontier.OneTapeMagnification.readOnlyHeads_le_randomizedRunFrom
+#print axioms Frontier.OneTapeMagnification.acceptanceProbability_mem_unitInterval
+#print axioms Frontier.OneTapeMagnification.localGenerator_acceptance_gap_gt_one_sixth
+#print axioms Frontier.OneTapeMagnification.not_foolsWithin_one_sixth_of_localGenerator_gap
+#print axioms Frontier.OneTapeMagnification.Counting.card_easyTablesByCode_le
+#print axioms Frontier.OneTapeMagnification.Counting.four_mul_card_easyTablesByCode_lt
+#print axioms Frontier.OneTapeMagnification.Counting.uniformMachineAcceptance_lt_half_of_code_count
+#print axioms Frontier.OneTapeMagnification.localGenerator_fooling_excludes_boundedErrorMCSP
+#print axioms Frontier.OneTapeMagnification.published_viola_chmy_square_root_time_exponent
+#print axioms Frontier.OneTapeMagnification.published_viola_chmy_parameters_do_not_certify_small_threshold
+
+end StreamingAndOneTapeMagnificationAxioms
+
+end Pnp4

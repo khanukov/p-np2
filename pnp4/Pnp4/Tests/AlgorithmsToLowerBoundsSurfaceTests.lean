@@ -63,6 +63,12 @@ import Pnp4.Frontier.ContractExpansion.ThresholdGrowth
 import Pnp4.Frontier.ContractExpansion.ConsolidatedTreeSeparation
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
+import Pnp4.Frontier.StreamingMagnification.MMWProblem
+import Pnp4.Frontier.StreamingMagnification.RuntimeAdviceBarrier
+import Pnp4.Frontier.StreamingMagnification.StreamMergeDriverCorrectness
+import Pnp4.Frontier.StreamingMagnification.StreamMergeWire
+import Pnp4.Frontier.OneTapeMagnification.LocalPRGToMCSP
+import Pnp4.Frontier.OneTapeMagnification.PublishedSeedBarrier
 
 namespace Pnp4
 namespace Tests
@@ -3599,6 +3605,89 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms Pnp4.Frontier.ContractExpansion.parse_encodeTreeMCSPPrefixFields
 #print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_length_convention
 #check Pnp4.Frontier.ContractExpansion.treeMCSPRuntimeAwarePrefixParser
+
+section StreamingAndOneTapeMagnificationSurface
+
+open Frontier.StreamingMagnification
+
+/-! Exact standard-DAG carrier, paper-basis filter, and frozen-DAG conversion. -/
+#check StandardDAG.FlatGate.InPaperBasis
+#check StandardDAG.FlatCircuit.UsesOnlyAndOrNot
+#check StandardDAG.FlatCircuit.toDag_ofDag
+#check StandardDAG.FlatCircuit.ofDag_toDag
+#check StandardDAG.FlatCircuit.gateCount_le_iff_toDag_size_le_succ
+
+/-! Canonical fixed-length DAG codec. -/
+#check DAGCodec.decode_encode
+#check DAGCodec.encode_injective
+#check DAGCodec.codeLength_le
+#check DAGCodec.card_code
+
+/-! Executable total search: both directions for both result branches. -/
+#check EncodedTotalSearch.referenceSolver_found_sound
+#check EncodedTotalSearch.referenceSolver_found_complete
+#check EncodedTotalSearch.referenceSolver_noCircuit_sound
+#check EncodedTotalSearch.referenceSolver_noCircuit_complete
+#check EncodedTotalSearch.referenceDecision_eq_true_iff
+
+/-! Operational streaming boundaries, accounting, and exact eventual normal form. -/
+#check StreamingRAM.firstReadBoundaryGap
+#check StreamingRAM.consecutiveReadBoundaryGap
+#check StreamingRAM.immediateReportBoundaryGap
+#check StreamingRAM.closedGap_le_extendedMaximum
+#check StreamingRAM.CompletedRun.spaceUsed
+#check StreamingRAM.CompletedRun.maxUpdateGap
+#check StreamingRAM.CompletedRun.reportTime
+#check PolynomialBounds.polyStreamingSolvable_iff
+#check PolynomialBounds.noPolyStreamingSolver_iff
+#check MMWProblem.completedRun_decision_iff
+#check RuntimeAdviceBarrier.lengthAdviceLanguage_in_repo_P
+
+/-! Stream-Merge block semantics, invariant, driver, and result wire. -/
+#check StreamMerge.paperBlockLength_pos
+#check StreamMerge.referenceStreamMerge_found_optimal
+#check StreamMerge.referenceStreamMerge_found_prefixAgreement
+#check StreamMerge.referenceStreamMerge_final_found_iff_hasCircuit
+#check StreamMerge.referenceStreamMerge_final_noCircuit_iff
+#check StreamMergeDriver.referenceStreamDriver_found_iff_hasCircuit
+#check StreamMergeDriver.referenceStreamDriver_noCircuit_iff
+#check StreamMergeWire.parse_serialize
+#check StreamMergeWire.serialize_injective
+#check StreamMergeWire.outputBitGraph_functional
+#check StreamMergeWire.referenceOutputBitGraph_functional
+
+/-! Concrete one-tape/random-tape semantics and the finite local-HSG route. -/
+#check Frontier.OneTapeMagnification.inputHead_le_runFrom
+#check Frontier.OneTapeMagnification.readOnlyHeads_le_randomizedRunFrom
+#check Frontier.OneTapeMagnification.acceptanceProbability_mem_unitInterval
+#check Frontier.OneTapeMagnification.localGenerator_acceptance_gap_gt_one_sixth
+#check Frontier.OneTapeMagnification.not_foolsWithin_one_sixth_of_localGenerator_gap
+#check Frontier.OneTapeMagnification.Counting.card_easyTablesByCode_le
+#check Frontier.OneTapeMagnification.Counting.four_mul_card_easyTablesByCode_lt
+#check Frontier.OneTapeMagnification.Counting.uniformMachineAcceptance_lt_half_of_code_count
+#check Frontier.OneTapeMagnification.localGenerator_fooling_excludes_boundedErrorMCSP
+#check Frontier.OneTapeMagnification.published_viola_chmy_square_root_time_exponent
+#check Frontier.OneTapeMagnification.published_viola_chmy_parameters_do_not_certify_small_threshold
+
+/-! Small reducible computations pin down the integer and final-block conventions. -/
+example : DAGCodec.codeLength 0 0 = 2 := by
+  norm_num [DAGCodec.codeLength, DAGCodec.slotWidth, DAGCodec.wordWidth]
+
+example : StreamMerge.expectedLength 2 10 0 = 4 := by rfl
+
+example : StreamMerge.expectedLength 2 3 3 = 1 := by rfl
+
+example : StreamMerge.paperBlockLength 2 1 = 4 := by
+  norm_num [StreamMerge.paperBlockLength]
+
+example :
+    StreamMergeWire.parse
+        (StreamMergeWire.serialize
+          (StreamMerge.Result.noCircuit : StreamMerge.Result 0 0)) =
+      some StreamMerge.Result.noCircuit := by
+  simp
+
+end StreamingAndOneTapeMagnificationSurface
 
 end Tests
 end Pnp4

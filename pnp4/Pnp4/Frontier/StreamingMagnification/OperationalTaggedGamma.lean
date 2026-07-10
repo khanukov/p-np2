@@ -19,10 +19,11 @@ length, input offset, or ambient input length occurs in the finite control.
 
 The exact frame definitions below record how the zipper's trailing `C = 1`
 is shared as the sentinel immediately to the left of the next gamma word.
-They do not claim full-machine correctness.  That theorem still needs (i) the
-global induction from a valid gamma frame to the zipper's final frame, which
-is intentionally not postulated here, and (ii) a final exact ambient-length
-check so that an accepted request cannot ignore a suffix.
+The zipper induction and shifted first-hit theorem are now proved in the
+separate `OperationalGammaZipperGlobal`/`Context` modules, and the one-sided
+canonical-prefix composition lives in `OperationalTaggedGammaGlobal`.  A
+final exact ambient-length check is still absent, so no parser-soundness
+converse may be inferred from this prefix-closed machine.
 -/
 
 namespace Pnp4
@@ -122,8 +123,9 @@ def taggedGamma : OperationalTM where
   set_option maxRecDepth 100000 in
     decide
 
-/-- The chosen quartic canonical clock.  Its slack over the fully composed
-three-field run will follow only after the global zipper induction. -/
+/-- The chosen quartic canonical clock.  The exact useful zipper clock is now
+proved separately; the tagged composition and its honest prefix-only scope
+live in `OperationalTaggedGammaGlobal`. -/
 @[simp] theorem taggedGamma_clock (inputLength : Nat) :
     taggedGamma.executionTM.runTime inputLength = inputLength ^ 4 + 4 :=
   rfl
@@ -449,13 +451,12 @@ theorem afterSecond_drop {k₁ k₂ : Nat} {payload₁ payload₂ : List Bool}
   simp
 
 /-!
-The preceding length and drop theorems are the strongest unconditional
-composition facts currently available: in the defined intermediate frames,
-the next raw gamma body begins at the stated offset and no cell is inserted or
-lost.  They are frame algebra, not a machine-run theorem.  A run theorem from
-`tripleInitialFrame` to `tripleFinalFrame` is not stated conditionally.  Its
-honest next obligations are the missing global zipper induction and, after the
-third handoff, exact comparison with the ambient finite input length.
+The preceding theorems are the frame-algebra layer: in every intermediate
+frame the next raw gamma body begins at the stated offset and no cell is
+inserted or lost.  Exact run composition is developed in
+`OperationalTaggedGammaGlobal`; an exact ambient-end check remains a separate
+architectural obligation and must not be inferred from this prefix-closed
+transition table.
 -/
 
 end OperationalTaggedGamma

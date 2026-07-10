@@ -34,12 +34,16 @@ field, axiom, or hidden existence assumption:
 | Layer | What is now formalized | Deliberate boundary |
 | --- | --- | --- |
 | Standard DAG MCSP | A list-backed, topologically ordered shared Boolean DAG; exact conversion to and from the frozen `DagCircuit`; gate-count reconciliation; explicit lexicographic truth-table order | The structural carrier includes constant gates only to round-trip the frozen repository representation.  The target predicate `UsesOnlyAndOrNot` filters every MCSP witness and Stream-Merge candidate to the paper's exact `AND`/`OR`/`NOT` basis. |
-| Local DAG evaluation trace | A Boolean value for every shared-DAG gate, a checker using the current gate, at most one external-input bit, and strictly earlier trace entries, canonical-trace existence, uniqueness, and exact equivalence to `DagCircuit.eval` / `FlatCircuit.eval` | This proves the semantic local-verifier layer.  A self-delimiting query codec and polynomial bit-length/accounting theorem are still required before assigning a uniform complexity class. |
+| Local DAG evaluation trace | A Boolean value for every shared-DAG gate, a checker using the current gate, at most one external-input bit, and strictly earlier trace entries, canonical-trace existence, uniqueness, exact equivalence to `DagCircuit.eval` / `FlatCircuit.eval`, and a canonical zero-padded `s`-bit form | This proves the semantic local-verifier layer.  An operational polynomial checker is still required before assigning a uniform complexity class. |
 | Fixed DAG codec | A fixed-length circuit body, canonical padding, executable encode/decode, exact round trips and injectivity, finite enumeration, and an explicit `O(s log(n+s))` code-length bound | The codec can represent the broader structural carrier; successful target search additionally checks `UsesOnlyAndOrNot`. |
 | Total search-MCSP | A genuine tagged `found`/`noCircuit` result with soundness and completeness in both directions; an executable exhaustive reference solver and exact decision bridge | This is finite reference computation, not a streaming-time algorithm. |
 | Streaming RAM | One fixed length-aware one-pass bit program, explicit input cursor and next-bit requests, finite bit-local instruction palette, indirect addressing, write-only output/report phase, and trace-derived space, maximum update-gap, and report-time measures | This is the operational machine model.  No polynomial-resource Stream-Merge implementation has been constructed in it. |
 | Stream-Merge reference | Executable finite size-then-physical-lex minimization, malformed-request semantics, exact final partial blocks, `blockLength > 2^n`, prefix agreement, optimality, and final `found`/`noCircuit` equivalences | The reference search may enumerate the entire code cube and evaluate whole tables, so it proves no RAM resource bound. |
-| Search-free choice/output graph | `selectCode = some code` is equivalent to successful canonical decoding, merge consistency, minimum gate count, and first serialized-lex body; `noCircuit` is equivalent to universal failure of every fixed-length code; one true output bit is decomposed exactly into those two branches | For a decoded paper-basis candidate, failure of `Fits` is equivalent to one explicit unequal prefix coordinate carrying complete locally checked candidate/prior DAG traces.  These dependent trace witnesses still need one fixed-length codec and prenex packaging into the paper's encoded `exists-forall-exists` matrix. |
+| Search-free choice/output graph | `selectCode = some code` is equivalent to successful canonical decoding, merge consistency, minimum gate count, and first serialized-lex body; `noCircuit` is equivalent to universal failure of every fixed-length code; one true output bit is decomposed exactly into those two branches | Candidate failure now has one `n + 2s`-bit witness covering decode failure, wrong basis, or one locally checked mismatch.  This is a semantic replacement for exhaustive search, not yet an operational running-time theorem. |
+| Fixed-slice EAE output-bit shell | For a valid prior and well-formed block, `referenceOutputBit = true` is equivalent to `exists choice, forall query, exists inner, OutputBitMatrix`; the three carriers have exact lengths `1 + codeLength n s`, `1 + n + codeLength n s`, and `n + 2s`, and an interpreter-tested reflected Bool checker.  Their common length is at most `14(m+1)^2`, and hence at most `certificateLength m 64`, whenever `n,s <= m`. | The row still contains executable bounded `Fin` loops, and no operational polynomial-time bound for them is proved.  The theorem also keeps `n`, `s`, `start`, the block, and its proof as Lean parameters, so it is not yet one self-delimiting `Sigma_3` language. |
+| Certificate-length EAE padding | Explicit zero-extension embeds the three fixed wires into the successive lengths `certificateLength m 64`, `certificateLength (m + cert(m)) 64`, and `certificateLength (m + cert(m) + cert(m + cert(m))) 64`.  Canonical outer/inner suffixes and vacuous noncanonical universal rows preserve the complete E-A-E shell exactly. | This is a semantic carrier conversion.  It does not make the padded matrix operationally polynomial-time. |
+| Global self-delimiting output-bit language | An executable exact-length codec serializes tag, canonical gamma-coded `n,s,blockLength`, fixed-width start, full prior DAG code, exact final block, and output position.  The parser rejects malformed fields and every wrong ambient length; `parse (encode r) = some r`, parsed `n,s` are bounded by ambient length, and the parameter-free `OutputBitLanguage` is exactly equivalent on every string to a deterministic-parser match followed by the successive-certificate E-A-E shell. | The parser and padded row are executable Lean definitions, not one constructed `OperationalTM`; no polynomial clock or `Sigma_3` membership theorem is claimed.  Invalid-prior/malformed Stream-Merge result bits are rejected rather than included in this valid-call language. |
+| Repaired finite-quantifier closure | `ExistsProject` has exact fixed-bitstring semantics and maps an operational `UniformP` matrix into `UniformNP`; complement gives the universal projection; under the explicit repaired-class equality `UniformP = UniformNP`, an E-A-E projection of a `UniformP` matrix is again in `UniformP` | This is the generic inside-out collapse only.  It is not a bridge from conventional repository `P = NP`, and it still requires an operational decider for the global padded matrix row. |
 | Block driver | A generic positive-block-length driver with exact last partial block, immediate propagation of genuine `noCircuit`, an induction invariant, and final `found iff HasCircuit` / `noCircuit iff not HasCircuit` endpoints | `paperBlockLength c s = c * s * ceil(log_2(s+2))` is defined separately and is positive for positive `c,s`; the generic driver can be instantiated with it.  This does not supply the paper's oracle algorithm. |
 | Result wire | A collision-free fixed-length Stream-Merge result wire with five semantic tags, a canonical empty body on non-circuit cases, and total/functional per-position output-bit graphs | The output-bit surface is only a finite semantic graph.  No finite-PH membership theorem is claimed for those bits. |
 | Concrete MMW problem | The exact tagged total-search output is connected to completed operational runs, including full input consumption and both YES and NO semantics | This closes the problem specification, not existence of a solver. |
@@ -136,10 +140,11 @@ at the replacement clock.
 
 ## What remains unproved
 
-There is no proof yet that the single encoded Stream-Merge output-bit language
-has the required `exists-forall-exists` verifier with polynomially bounded
-query blocks, no bounded-quantifier collapse under repaired
-`UniformNP subset UniformP`, no reconstruction of the paper's sequential
+The valid-call output-bit problem now has one exact self-delimiting request
+language and a successive-certificate `exists-forall-exists` shell over a
+decidable padded row.  There is still no `OperationalTM` deciding the parser
+and matrix row with proved polynomial bounds, no bridge from conventional `P = NP` to equality of the
+repaired classes, no reconstruction of the paper's sequential
 oracle calls as one `StreamingRAM.Program`, and no polynomial
 space/update/report analysis of such a program.  Consequently this branch
 contains neither the MMW upper direction nor its contrapositive capstone.
@@ -147,8 +152,10 @@ contains neither the MMW upper direction nor its contrapositive capstone.
 The single minimal open theorem signature is retained **in prose only**:
 for every `k >= 1`, repaired `UniformNP subset UniformP` should imply
 `PolyStreamingSearchMCSPSolvable k`.  Before attempting that theorem, the
-finite output-bit verifier and the operational TM-to-streaming-RAM compiler
-must be proved.  Connecting the result back to the old mainline additionally
+global parser and padded row must be decided by one `OperationalTM` with a
+proved polynomial clock, and the operational TM-to-streaming-RAM compiler
+must be constructed.  Connecting the repaired
+class equality back to the old mainline additionally
 requires a normalization/extraction bridge.  These open statements must not be
 encoded as an axiom, typeclass, `Contract`, `Source`, `Provider`, structure
 field, or implicit instance.

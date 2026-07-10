@@ -323,6 +323,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.StreamingMagnification.StreamMergePrenexWire,
     Glob.one `Pnp4.Frontier.StreamingMagnification.StreamMergePrenexBounds,
     Glob.one `Pnp4.Frontier.StreamingMagnification.StreamMergeEncodedPrenex,
+    Glob.one `Pnp4.Frontier.StreamingMagnification.StreamMergeCertificatePadding,
     Glob.one `Pnp4.Frontier.StreamingMagnification.StreamMergeDriver,
     Glob.one `Pnp4.Frontier.StreamingMagnification.StreamMergeDriverCorrectness,
     Glob.one `Pnp4.Frontier.StreamingMagnification.StreamMergeWire,

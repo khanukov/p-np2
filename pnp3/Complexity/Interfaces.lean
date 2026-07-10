@@ -525,21 +525,19 @@ def certificateLength (n k : Nat) : Nat := n ^ k + k
 оставшиеся `m` — из `w`. Такая кодировка позволяет передать вход и
 сертификат в одном слове для верификатора.
 -/
-noncomputable def concatBitstring {n m : Nat} (x : Bitstring n) (w : Bitstring m) :
-    Bitstring (n + m) := fun i =>
-  by
-    classical
-    by_cases h : (i : Nat) < n
-    · exact x ⟨i, h⟩
-    · have hge : n ≤ (i : Nat) := Nat.le_of_not_gt h
-      let t := Classical.choose (Nat.exists_eq_add_of_le hge)
-      have ht : (i : Nat) = n + t :=
-        Classical.choose_spec (Nat.exists_eq_add_of_le hge)
-      have ht_lt : t < m := by
-        have : n + t < n + m := by
-          simpa [ht] using i.isLt
-        exact (Nat.add_lt_add_iff_left).1 this
-      exact w ⟨t, ht_lt⟩
+def concatBitstring {n m : Nat} (x : Bitstring n) (w : Bitstring m) :
+    Bitstring (n + m) :=
+  Fin.addCases x w
+
+@[simp] theorem concatBitstring_castAdd {n m : Nat}
+    (x : Bitstring n) (w : Bitstring m) (index : Fin n) :
+    concatBitstring x w (Fin.castAdd m index) = x index := by
+  simp [concatBitstring]
+
+@[simp] theorem concatBitstring_natAdd {n m : Nat}
+    (x : Bitstring n) (w : Bitstring m) (index : Fin m) :
+    concatBitstring x w (Fin.natAdd n index) = w index := by
+  simp [concatBitstring]
 
 /-!
 ### TM-мост для `NP`

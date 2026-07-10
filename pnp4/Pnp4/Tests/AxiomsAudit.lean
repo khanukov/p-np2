@@ -55,8 +55,14 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 import Pnp4.Frontier.StreamingMagnification.MMWProblem
 import Pnp4.Frontier.StreamingMagnification.RuntimeAdviceBarrier
+import Pnp4.Frontier.StreamingMagnification.OperationalUniformity
+import Pnp4.Frontier.StreamingMagnification.DAGEvalTrace
+import Pnp4.Frontier.StreamingMagnification.StreamMergeChoice
+import Pnp4.Frontier.StreamingMagnification.StreamMergeAgreement
+import Pnp4.Frontier.StreamingMagnification.StreamMergeTracedCounterexample
 import Pnp4.Frontier.StreamingMagnification.StreamMergeDriverCorrectness
 import Pnp4.Frontier.StreamingMagnification.StreamMergeWire
+import Pnp4.Frontier.StreamingMagnification.StreamMergeOutputFormula
 import Pnp4.Frontier.OneTapeMagnification.LocalPRGToMCSP
 import Pnp4.Frontier.OneTapeMagnification.PublishedSeedBarrier
 
@@ -396,6 +402,11 @@ open Frontier.StreamingMagnification
 #print axioms StandardDAG.FlatCircuit.toDag_ofDag
 #print axioms StandardDAG.FlatCircuit.ofDag_toDag
 #print axioms StandardDAG.FlatCircuit.gateCount_le_iff_toDag_size_le_succ
+#print axioms DAGEvalTrace.check_eq_true_iff
+#print axioms DAGEvalTrace.canonicalValues_isTrace
+#print axioms DAGEvalTrace.isTrace_unique
+#print axioms DAGEvalTrace.outputValue_eq_eval_of_isTrace
+#print axioms DAGEvalTrace.flat_exists_isTrace_and_outputValue_eq_iff
 
 #print axioms DAGCodec.decode_encode
 #print axioms DAGCodec.encode_injective
@@ -418,18 +429,36 @@ open Frontier.StreamingMagnification
 #print axioms PolynomialBounds.noPolyStreamingSolver_iff
 #print axioms MMWProblem.completedRun_decision_iff
 #print axioms RuntimeAdviceBarrier.lengthAdviceLanguage_in_repo_P
+#print axioms Pnp3.ComplexityInterfaces.concatBitstring_castAdd
+#print axioms Pnp3.ComplexityInterfaces.concatBitstring_natAdd
+#print axioms OperationalUniformity.OperationalTM.complement_accepts
+#print axioms OperationalUniformity.uniformP_complement
+#print axioms OperationalUniformity.canonicalUniformP_subset_repoP
+#print axioms OperationalUniformity.canonicalUniformNP_subset_repoNP
+#print axioms OperationalUniformity.constantLanguage_in_uniformP
 
 #print axioms StreamMerge.paperBlockLength_pos
 #print axioms StreamMerge.referenceStreamMerge_found_optimal
 #print axioms StreamMerge.referenceStreamMerge_found_prefixAgreement
 #print axioms StreamMerge.referenceStreamMerge_final_found_iff_hasCircuit
 #print axioms StreamMerge.referenceStreamMerge_final_noCircuit_iff
+#print axioms StreamMergeChoice.selectCode_eq_some_iff_isOptimal
+#print axioms StreamMergeChoice.referenceStreamMerge_found_iff_isOptimal
+#print axioms StreamMergeChoice.referenceStreamMerge_noCircuit_iff_forall_not_codeFits
+#print axioms StreamMergeAgreement.expectedBit_prefix
+#print axioms StreamMergeAgreement.expectedBit_block
+#print axioms StreamMergeAgreement.fits_iff_usesOnlyAndOrNot_and_pointwiseAgreement
+#print axioms StreamMergeAgreement.not_fits_iff_exists_counterexample
+#print axioms StreamMergeTracedCounterexample.flatOutputValue_eq_candidateBit_of_isTrace
+#print axioms StreamMergeTracedCounterexample.tracedExpectedBit_eq_expectedBit_of_isTrace
+#print axioms StreamMergeTracedCounterexample.not_fits_iff_hasTracedCounterexample
 #print axioms StreamMergeDriver.referenceStreamDriver_found_iff_hasCircuit
 #print axioms StreamMergeDriver.referenceStreamDriver_noCircuit_iff
 #print axioms StreamMergeWire.parse_serialize
 #print axioms StreamMergeWire.serialize_injective
 #print axioms StreamMergeWire.outputBitGraph_functional
 #print axioms StreamMergeWire.referenceOutputBitGraph_functional
+#print axioms StreamMergeOutputFormula.referenceOutputBit_eq_true_iff
 
 #print axioms Frontier.OneTapeMagnification.inputHead_le_runFrom
 #print axioms Frontier.OneTapeMagnification.readOnlyHeads_le_randomizedRunFrom

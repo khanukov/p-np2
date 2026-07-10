@@ -65,8 +65,14 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 import Pnp4.Frontier.StreamingMagnification.MMWProblem
 import Pnp4.Frontier.StreamingMagnification.RuntimeAdviceBarrier
+import Pnp4.Frontier.StreamingMagnification.OperationalUniformity
+import Pnp4.Frontier.StreamingMagnification.DAGEvalTrace
+import Pnp4.Frontier.StreamingMagnification.StreamMergeChoice
+import Pnp4.Frontier.StreamingMagnification.StreamMergeAgreement
+import Pnp4.Frontier.StreamingMagnification.StreamMergeTracedCounterexample
 import Pnp4.Frontier.StreamingMagnification.StreamMergeDriverCorrectness
 import Pnp4.Frontier.StreamingMagnification.StreamMergeWire
+import Pnp4.Frontier.StreamingMagnification.StreamMergeOutputFormula
 import Pnp4.Frontier.OneTapeMagnification.LocalPRGToMCSP
 import Pnp4.Frontier.OneTapeMagnification.PublishedSeedBarrier
 
@@ -3617,6 +3623,13 @@ open Frontier.StreamingMagnification
 #check StandardDAG.FlatCircuit.ofDag_toDag
 #check StandardDAG.FlatCircuit.gateCount_le_iff_toDag_size_le_succ
 
+/-! Local shared-DAG evaluation traces for the future Sigma-3 matrix. -/
+#check DAGEvalTrace.check_eq_true_iff
+#check DAGEvalTrace.canonicalValues_isTrace
+#check DAGEvalTrace.isTrace_unique
+#check DAGEvalTrace.outputValue_eq_eval_of_isTrace
+#check DAGEvalTrace.flat_exists_isTrace_and_outputValue_eq_iff
+
 /-! Canonical fixed-length DAG codec. -/
 #check DAGCodec.decode_encode
 #check DAGCodec.encode_injective
@@ -3642,6 +3655,15 @@ open Frontier.StreamingMagnification
 #check PolynomialBounds.noPolyStreamingSolver_iff
 #check MMWProblem.completedRun_decision_iff
 #check RuntimeAdviceBarrier.lengthAdviceLanguage_in_repo_P
+#check Pnp3.ComplexityInterfaces.concatBitstring_castAdd
+#check Pnp3.ComplexityInterfaces.concatBitstring_natAdd
+#check OperationalUniformity.OperationalTM.complement_accepts
+#check OperationalUniformity.OperationalTM.ofRepoCore
+#check OperationalUniformity.CanonicalClockTM.toRepoTM_runTime
+#check OperationalUniformity.uniformP_complement
+#check OperationalUniformity.canonicalUniformP_subset_repoP
+#check OperationalUniformity.canonicalUniformNP_subset_repoNP
+#check OperationalUniformity.constantLanguage_in_uniformP
 
 /-! Stream-Merge block semantics, invariant, driver, and result wire. -/
 #check StreamMerge.paperBlockLength_pos
@@ -3649,12 +3671,23 @@ open Frontier.StreamingMagnification
 #check StreamMerge.referenceStreamMerge_found_prefixAgreement
 #check StreamMerge.referenceStreamMerge_final_found_iff_hasCircuit
 #check StreamMerge.referenceStreamMerge_final_noCircuit_iff
+#check StreamMergeChoice.selectCode_eq_some_iff_isOptimal
+#check StreamMergeChoice.referenceStreamMerge_found_iff_isOptimal
+#check StreamMergeChoice.referenceStreamMerge_noCircuit_iff_forall_not_codeFits
+#check StreamMergeAgreement.expectedBit_prefix
+#check StreamMergeAgreement.expectedBit_block
+#check StreamMergeAgreement.fits_iff_usesOnlyAndOrNot_and_pointwiseAgreement
+#check StreamMergeAgreement.not_fits_iff_exists_counterexample
+#check StreamMergeTracedCounterexample.flatOutputValue_eq_candidateBit_of_isTrace
+#check StreamMergeTracedCounterexample.tracedExpectedBit_eq_expectedBit_of_isTrace
+#check StreamMergeTracedCounterexample.not_fits_iff_hasTracedCounterexample
 #check StreamMergeDriver.referenceStreamDriver_found_iff_hasCircuit
 #check StreamMergeDriver.referenceStreamDriver_noCircuit_iff
 #check StreamMergeWire.parse_serialize
 #check StreamMergeWire.serialize_injective
 #check StreamMergeWire.outputBitGraph_functional
 #check StreamMergeWire.referenceOutputBitGraph_functional
+#check StreamMergeOutputFormula.referenceOutputBit_eq_true_iff
 
 /-! Concrete one-tape/random-tape semantics and the finite local-HSG route. -/
 #check Frontier.OneTapeMagnification.inputHead_le_runFrom

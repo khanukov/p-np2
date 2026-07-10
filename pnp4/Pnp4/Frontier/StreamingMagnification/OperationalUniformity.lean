@@ -15,10 +15,10 @@ the program, while the output map makes deterministic complement literal and
 executable.
 
 The resulting `UniformP` and `UniformNP` are additive infrastructure.  A
-separate canonical, explicitly numbered presentation embeds into the old
-repository classes.  No bridge from that presentation to the repaired classes,
-converse normalization theorem, PH collapse, streaming upper bound, or
-`P != NP` theorem is claimed here.
+separate canonical, explicitly numbered presentation embeds both into the old
+repository classes and into the repaired classes.  No converse normalization
+theorem, bridge from the old unrestricted-runtime classes, streaming upper
+bound, or `P != NP` theorem is claimed here.
 -/
 
 namespace Pnp4
@@ -182,11 +182,130 @@ def toRepoTM (machine : CanonicalClockTM) : RepoTM where
   step := machine.step
   runTime := machine.clock
 
+/--
+The same canonical transition table as a repaired operational program.
+Acceptance is observed after the run instead of being stored in the execution
+carrier's otherwise irrelevant `accept` field.
+-/
+def toOperationalTM (machine : CanonicalClockTM) : OperationalTM where
+  state := Fin machine.stateCount
+  stateFintype := inferInstance
+  stateDecEq := inferInstance
+  start := machine.start
+  step := machine.step
+  exponent := machine.exponent
+  output := fun state => decide (state = machine.accept)
+
+/-- A copy of a canonical machine with only the observational accept state
+changed.  Execution does not inspect this field. -/
+private def withAccept (machine : CanonicalClockTM)
+    (accept : Fin machine.stateCount) : RepoTM where
+  state := Fin machine.stateCount
+  stateFintype := inferInstance
+  stateDecEq := inferInstance
+  start := machine.start
+  accept := accept
+  step := machine.step
+  runTime := machine.clock
+
+/-- Pointwise agreement between configurations of machines that differ only
+in their observational accept state. -/
+private def ConfigAgree (machine : CanonicalClockTM)
+    (left right : Fin machine.stateCount) {inputLength : Nat}
+    (leftConfig : Pnp3.Internal.PsubsetPpoly.TM.Configuration
+      (M := withAccept machine left) inputLength)
+    (rightConfig : Pnp3.Internal.PsubsetPpoly.TM.Configuration
+      (M := withAccept machine right) inputLength) : Prop :=
+  leftConfig.state = rightConfig.state ∧
+    leftConfig.head = rightConfig.head ∧
+      leftConfig.tape = rightConfig.tape
+
+private theorem initialAgree (machine : CanonicalClockTM)
+    (left right : Fin machine.stateCount) {inputLength : Nat}
+    (input : Bitstring inputLength) :
+    ConfigAgree machine left right
+      ((withAccept machine left).initialConfig input)
+      ((withAccept machine right).initialConfig input) := by
+  exact ⟨rfl, rfl, rfl⟩
+
+private theorem stepAgree (machine : CanonicalClockTM)
+    (left right : Fin machine.stateCount) {inputLength : Nat}
+    {leftConfig : Pnp3.Internal.PsubsetPpoly.TM.Configuration
+      (M := withAccept machine left) inputLength}
+    {rightConfig : Pnp3.Internal.PsubsetPpoly.TM.Configuration
+      (M := withAccept machine right) inputLength}
+    (hagrees : ConfigAgree machine left right leftConfig rightConfig) :
+    ConfigAgree machine left right
+      ((withAccept machine left).stepConfig leftConfig)
+      ((withAccept machine right).stepConfig rightConfig) := by
+  rcases hagrees with ⟨hstate, hhead, htape⟩
+  unfold ConfigAgree
+  unfold Pnp3.Internal.PsubsetPpoly.TM.stepConfig
+  simp only [withAccept]
+  rw [hstate, hhead, htape]
+  refine ⟨rfl, ?_, ?_⟩
+  · unfold Pnp3.Internal.PsubsetPpoly.TM.Configuration.moveHead
+    simp only [Pnp3.Internal.PsubsetPpoly.TM.tapeLength, withAccept]
+    split <;> simp_all
+  · unfold Pnp3.Internal.PsubsetPpoly.TM.Configuration.write
+    funext index
+    split <;> simp_all
+
+private theorem runConfigAgree (machine : CanonicalClockTM)
+    (left right : Fin machine.stateCount) {inputLength : Nat}
+    {leftConfig : Pnp3.Internal.PsubsetPpoly.TM.Configuration
+      (M := withAccept machine left) inputLength}
+    {rightConfig : Pnp3.Internal.PsubsetPpoly.TM.Configuration
+      (M := withAccept machine right) inputLength}
+    (hagrees : ConfigAgree machine left right leftConfig rightConfig)
+    (steps : Nat) :
+    ConfigAgree machine left right
+      ((withAccept machine left).runConfig leftConfig steps)
+      ((withAccept machine right).runConfig rightConfig steps) := by
+  induction steps with
+  | zero => exact hagrees
+  | succ steps ih =>
+      rw [Pnp3.Internal.PsubsetPpoly.TM.runConfig]
+      rw [Function.iterate_succ_apply']
+      rw [Pnp3.Internal.PsubsetPpoly.TM.runConfig]
+      rw [Function.iterate_succ_apply']
+      exact stepAgree machine left right ih
+
+private theorem runState_withAccept
+    (machine : CanonicalClockTM)
+    (left right : Fin machine.stateCount)
+    (inputLength : Nat) (input : Bitstring inputLength) :
+    ((withAccept machine left).run input).state =
+      ((withAccept machine right).run input).state := by
+  unfold Pnp3.Internal.PsubsetPpoly.TM.run
+  exact (runConfigAgree machine left right
+    (initialAgree machine left right input)
+    (machine.clock inputLength)).1
+
 @[simp] theorem toRepoTM_runTime
     (machine : CanonicalClockTM) (inputLength : Nat) :
     machine.toRepoTM.runTime inputLength =
       inputLength ^ machine.exponent + machine.exponent :=
   rfl
+
+/-- The operational and repository observations of a canonical machine agree
+exactly.  Both executions use the same start state, transition table, and
+definitional clock; the repository `accept` field is only inspected here. -/
+@[simp] theorem toOperationalTM_accepts
+    (machine : CanonicalClockTM) (inputLength : Nat)
+    (input : Bitstring inputLength) :
+    machine.toOperationalTM.accepts inputLength input =
+      Pnp3.Internal.PsubsetPpoly.TM.accepts
+        (M := machine.toRepoTM) (n := inputLength) input :=
+  by
+    unfold OperationalTM.accepts
+      Pnp3.Internal.PsubsetPpoly.TM.accepts
+    simp only [toOperationalTM]
+    congr 2
+    change ((withAccept machine machine.start).run input).state =
+      ((withAccept machine machine.accept).run input).state
+    exact runState_withAccept machine machine.start machine.accept
+      inputLength input
 
 end CanonicalClockTM
 
@@ -221,12 +340,31 @@ theorem canonicalUniformP_subset_repoP {language : Language} :
   intro inputLength
   simp
 
+/-- Every explicitly canonical deterministic machine is already a repaired
+operational machine; no runtime normalization hypothesis is needed. -/
+theorem canonicalUniformP_subset_uniformP {language : Language} :
+    CanonicalUniformP language -> UniformP language := by
+  rintro ⟨machine, hcorrect⟩
+  refine ⟨machine.toOperationalTM, ?_⟩
+  intro inputLength input
+  simpa using hcorrect inputLength input
+
 theorem canonicalUniformNP_subset_repoNP {language : Language} :
     CanonicalUniformNP language -> NP language := by
   rintro ⟨machine, witnessExponent, hcorrect⟩
   refine ⟨machine.toRepoTM, machine.exponent, witnessExponent, ?_, hcorrect⟩
   intro inputLength
   simp
+
+/-- The same exact compilation transports canonical verifiers and their
+unchanged polynomial witness lengths into the repaired nondeterministic class.
+-/
+theorem canonicalUniformNP_subset_uniformNP {language : Language} :
+    CanonicalUniformNP language -> UniformNP language := by
+  rintro ⟨machine, witnessExponent, hcorrect⟩
+  refine ⟨machine.toOperationalTM, witnessExponent, ?_⟩
+  intro inputLength input
+  simpa using hcorrect inputLength input
 
 /-! ## Executable sanity witnesses -/
 
@@ -291,4 +429,6 @@ end Pnp4
 #print axioms Pnp4.Frontier.StreamingMagnification.OperationalUniformity.uniformP_complement
 #print axioms Pnp4.Frontier.StreamingMagnification.OperationalUniformity.canonicalUniformP_subset_repoP
 #print axioms Pnp4.Frontier.StreamingMagnification.OperationalUniformity.canonicalUniformNP_subset_repoNP
+#print axioms Pnp4.Frontier.StreamingMagnification.OperationalUniformity.canonicalUniformP_subset_uniformP
+#print axioms Pnp4.Frontier.StreamingMagnification.OperationalUniformity.canonicalUniformNP_subset_uniformNP
 #print axioms Pnp4.Frontier.StreamingMagnification.OperationalUniformity.constantLanguage_in_uniformP

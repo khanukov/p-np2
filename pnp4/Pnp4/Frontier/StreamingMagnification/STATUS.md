@@ -198,6 +198,19 @@ tape agreeing cell-for-cell with the transformed gamma prefix plus the
 untouched four-field tail.  This is a canonical-request handoff theorem, not a
 parser for that tail or a sound acceptance theorem.
 
+`OperationalTaggedGammaShapeBarrier.lean` records a separate information-loss
+boundary at that handoff.  The concatenations
+`zippedBody [] ++ zippedBody [true]` and
+`zippedBody [true] ++ zippedBody []` are identical.  Swapping these first two
+payload shapes also preserves the aggregate footprint, exact useful time, and
+the complete transformed natural handoff configuration when the third payload
+and suffix are fixed.  Consequently no function of the transformed triple
+frame alone can recover the ordered first two widths on every input.  This is
+not a collision of two full canonical Stream-Merge requests: a redesigned
+wrapper can retain the three zero-width flags in eight fixed control variants,
+or use additional tail information.  The theorem rules out only silent
+post-hoc width recovery from the present transformed prefix.
+
 `OperationalClockBoundary.lean` rules out a tempting local workaround at the
 model level.  For every repository TM, the head still has strict room for a
 right move before each transition of its canonical run, so the physical right
@@ -209,6 +222,17 @@ through the externally chosen final sampling time.  Thus, for distinguishing
 an input from an all-zero extension in the present model, the remaining
 ambient-length channel is clock scheduling, not scanning a blank or probing
 the finite-tape clamp.
+
+`OperationalLeftClampProbe.lean` supplies the first tape-backed timer
+primitive on the other boundary.  One fixed 19-state Boolean controller uses
+the complement of the saved right-neighbour bit as a temporary marker.  In
+exactly six steps it distinguishes `head = 0` from `head > 0`, returns the
+head to its original `Fin` coordinate, and restores the whole tape
+extensionally.  The actual finite-tape theorem needs only the sharp one-cell
+premise `head + 1 < tapeLength`, rather than a coarse
+six-cell reserve.  This detects the fixed physical origin, not the ambient
+input end, and is therefore a navigation kernel for a future tape timer rather
+than an end-of-request test.
 
 `OperationalTaggedGammaPulse.lean` now closes the smallest end-sensitive
 experiment without changing the parser's finite control: `done` is a one-tick
@@ -263,11 +287,13 @@ requires a normalization/extraction bridge.  These open statements must not be
 encoded as an axiom, typeclass, `Contract`, `Source`, `Provider`, structure
 field, or implicit instance.
 
-The next constructive object is correspondingly precise: a fixed-state,
-tape-backed equalizer/timer that physically realizes the proved transition
-counts, together with a nonterminal continuation state at the now-proved
-`startOffset` handoff.  It may not put `kᵢ`, the delay, or the ambient length
-in the control state.  The three gamma fields are only the beginning of an
+The next constructive object is correspondingly precise: compose the proved
+left-clamp probe into a fixed-state, tape-backed walk/equalizer/timer that
+physically realizes the proved transition counts, together with a nonterminal
+continuation state at the now-proved `startOffset` handoff which retains the
+bounded gamma-shape flags before the present wrapper collapses to `done`.  It
+may not put `kᵢ`, the delay, or the ambient length in the control state.  The
+three gamma fields are only the beginning of an
 actual Stream-Merge request: the four tail fields are preserved and their
 starting coordinate is now proved exactly, but `start`, `prior`, `block`, and
 `position` still have to be operationally parsed.

@@ -197,6 +197,131 @@ must use.
   `T / b`.  Adjacent selected boundaries are strictly ordered and less than
   `2b` positions apart.  This closes the combinatorial scale core, not the
   machine-to-ROBP simulation.
+- `WorkHeadCrossings.lean` and `CanonicalBlockGaps.lean`: instantiate that
+  abstract charging argument on the actual blank-start trajectory.  Stay
+  moves, halted stuttering, and the clamped left move at cell zero cross no
+  boundary; each other step crosses at most one, so the total is at most `T`
+  and the selected total is at most `T / b`.  When a full bucket exists, the
+  first cut is before `b`, every adjacent gap is below `2b`, and the final tail
+  is below `2b`.  These are trajectory and metric facts only, not local
+  validators or a width bound.
+- `CanonicalWorkBlocks.lean`: turns the ordered cuts into an explicit rank
+  classifier with `T / b + 1` consecutive block labels.  Every represented
+  work cell belongs to exactly one block, any two cells in one block are less
+  than `2b` apart (also when `T / b = 0`), and a legal one-step move changes
+  labels exactly when it crosses a selected canonical cut.  The resulting
+  actual-run classifier has the precise type needed by the input-event layer,
+  but is still input-dependent.
+- `CanonicalCrossingRecords.lean`: attaches the bucket index, physical cut,
+  crossing direction, post-transition control state, and bounded input-head
+  position to every actual selected-cut crossing.  It separately stores all
+  physical cuts, including zero-crossing cuts.  The number of extracted
+  records is exactly the selected crossing sum and therefore at most `T / b`.
+  An ambient payload vector has exactly
+  `(2 * |Q| * (T + 1))^(T / b)` possibilities, while the full ambient
+  cut-plus-fixed-payload carrier has
+  `T^(T / b) * (2 * |Q| * (T + 1))^(T / b)` possibilities.  These are carrier
+  counts, not reachable-count bounds, and the fixed payload word is not
+  identified with the variable-length extracted list.  This choice-derived
+  enumeration is not chronological; the later chronological extractor fixes
+  that order, while fixed-transcript validation and gluing remain unproved.
+- `CanonicalCutOffsets.lean`: uses bucket membership to encode every physical
+  cut by its unique `Fin b` offset and reconstructs the complete cut vector
+  exactly.  The offset carrier has size `b^(T / b)`, refining the coarse
+  `T^(T / b)` cut factor; paired with the fixed payload word, the ambient size
+  is exactly
+  `b^(T / b) * (2 * |Q| * (T + 1))^(T / b)`.  This still does not encode the
+  length of the variable crossing list or assert local validity.
+- `PaddedCanonicalAlpha.lean`: closes that finite-encoding gap without a
+  fake default record.  A bucket-labelled crossing token is stored in an
+  optional prefix slot, decoding exactly recovers every list of length at most
+  `T / b`, and the physical cut is recovered from the retained offsets.  The
+  complete offsets-plus-padded-word carrier has exact size
+  `b^(T / b) * (1 + (T / b) * (2 * |Q| * (T + 1)))^(T / b)`.  This is now a
+  faithful finite carrier for any bounded token list.  The older
+  Finset-derived extractor does not by itself supply chronological order, and
+  membership in this carrier is not a local-validity theorem.
+- `ChronologicalCanonicalAlpha.lean`: removes that ordering caveat for the
+  concrete run.  Every retained crossing time has a unique selected bucket;
+  the timed entries project exactly to the strictly increasing filtered time
+  list, and the resulting record/token list has length at most `T / b`.
+  Physical cuts are reconstructed from the canonical offset vector, while
+  prefix decoding exactly recovers the chronological tokens.  This is an
+  input-dependent extraction theorem, not a local validator or
+  input-independent advice construction.
+- `LowRunInputOrder.lean`, `ActualRunInputOrder.lean`, and
+  `StableGroupingPermutation.lean`: stable grouping by occupied work blocks
+  preserves chronological order inside each block.  The concrete one-way run
+  has nondecreasing raw head positions, while its advancing positions are
+  strictly increasing; hence the grouped query order is a concatenation of at
+  most `K + 1` strict runs.  Grouping is proved to be a permutation of the
+  original events and fresh coordinates, so the complete grouped fresh order
+  is globally duplicate-free, not merely duplicate-free within each run.
+  Ignored stay events are removed exactly, and the cached-input transition on
+  a simulated stay is independent of the next unread physical symbol.  The
+  actual classifier is now supplied by `CanonicalWorkBlocks.lean`, but its
+  dependence on the run does not by itself give the fixed order of one
+  guessed transcript or a Viola simulation.
+- `CrossingScheduleInputOrder.lean`: at the abstract schedule level, a fixed
+  `alpha` with chained input-head endpoints determines each segment's
+  half-open fresh interval.  Chronological concatenation is one interval;
+  stable work-block grouping is a permutation of it and therefore gives one
+  fixed duplicate-free order.  The actual-run modules below connect the true
+  extracted schedule to machine replay.  What remains is to derive and check
+  those endpoints and replay interfaces from one fixed guessed `alpha`, not a
+  further combinatorial read-once argument.
+- `ActualCrossingSchedule.lean`: extracts the chronological selected-crossing
+  times of the concrete run and proves there are at most `T / b` of them.  It
+  splits all transition times into maximal consecutive same-block runs,
+  proves there are at most `T / b + 1` such runs and schedule segments,
+  constructs a chained `FixedCrossingSchedule` from their actual input-head
+  endpoints, and proves that its chronological query interval is exactly the
+  actual advancing-position list.  Stable work-block replay merely permutes
+  that list.  The schedule is still extracted from one input-dependent run;
+  local validation from a fixed guessed `alpha` is not yet proved.
+- `CanonicalPathTranscript.lean`: extracts a finite bounded transcript from a
+  deterministic run, records optional crossed boundaries and the canonical
+  cut in every full bucket, and proves both the global and selected crossing
+  budgets.  The fiber defined by exact canonical extraction is a singleton,
+  including on accepting runs.  This is not yet local unambiguity: the current
+  snapshots expose the scanned work symbol, not enough boundary-relevant tape
+  valuation to validate and glue block computations independently.
+- `BoundaryTapeInterface.lean`: proves the exact coarse repair.  After `T`
+  blank-start steps, every cell at index at least `T` is still blank, so the
+  first `T + 1` work cells, the state, and both heads reconstruct the whole
+  configuration and deterministically glue every suffix.  The tape carrier
+  has exactly `2^(T+1)` elements and the full carrier has
+  `|Q| * (T+1)^2 * 2^(T+1)` elements.  This is a carrier count, not a lower
+  bound on reachable interfaces; it shows that the proved lossless repair is
+  far too coarse for the desired small-width program.
+- `LocalBlockReplay.lean`: restricts a work tape to a consecutive finite slab
+  and proves exact write compatibility.  Agreement on state, heads, the
+  current input observation, and the slab containing the scanned cell is
+  preserved by one deterministic step; an explicit per-time inside-slab and
+  input-observation invariant lifts this to a finite replay, with the final
+  step allowed to exit.  This supplies the local determinism lemma consumed
+  by the actual-segment replay below; by itself it does not validate guessed
+  crossing records or give a complete program-width bound.
+- `CanonicalBlockSlabs.lean`: supplies that spatial connection.  Every
+  canonical block has explicit lower and upper-exclusive endpoints, positive
+  width at most `2b`, and exact equivalence between its rank label and
+  `WorkCellInSlab`.  A trajectory carrying a block label therefore satisfies
+  the precise inside-slab premise of local replay.
+- `ActualSegmentSlabReplay.lean`: packages each maximal same-block group as
+  its exact consecutive time interval, proves its label is constant, and
+  places every pre-transition work head in the corresponding canonical slab,
+  including the last step before a possible exit.  Any alternative entry
+  configuration agreeing with the actual entry on state, both heads, and that
+  slab replays the whole group on the same immutable input and agrees again at
+  the exit.  This connects actual segments to local replay, but it assumes the
+  true entry interface and does not check a guessed chronological `alpha`,
+  canonical-cut minimality, or consistency between different block visits.
+- `LocalBlockStateCount.lean`: the finite state already justified by slab
+  replay has exact size `|Q| * (T + 1) * w * 2^w`; for a canonical slab this
+  is at most `|Q| * (T + 1) * (2b) * 2^(2b)`.  This is a pre-step local
+  carrier, not the full program width: the final crossing may leave the slab,
+  and boundary-minimality counters, schedule phase, and validator state are
+  deliberately absent.
 - `SeparatorScaleBarrier.lean`: for every single-scale accounting satisfying
   `time <= blockCost * transcriptCost`, one common budget that dominates both
   costs must have square at least `time`.  A budget below square-root capacity
@@ -276,9 +401,31 @@ object is narrower:
 > `N^mu`, and its error/hitting guarantee must apply to the aggregate predicate
 > directly, without an `epsilon / |A|` union bound over transcripts.
 
-The canonical-boundary selection and its exact `T / b` crossing charge are now
-formal.  Completing the remaining machine-to-path-program construction at
-block scale `b` should give approximately
+The canonical-boundary selection, its instantiation on actual runs, exact
+endpoint gaps, chronological padded crossing data, maximal-run schedule, and
+same-slab replay of every actual segment are now formal.  A lossless finite
+suffix-gluing interface is also formal, but it carries all `T + 1` reachable
+tape bits and is exponentially large.
+
+The immediate lower-layer gap is now the **validator-and-glue theorem**.  For
+one fixed chronological `alpha`, construct a finite local block validator
+which:
+
+1. starts from the blank tape and replays every visit assigned to a block in
+   the order recorded by `alpha`;
+2. checks every entry/exit state, input-head position, direction, and shared
+   boundary observation against the neighboring crossing records;
+3. certifies that every advertised cut is the leftmost minimum-crossing
+   boundary of its bucket, including the required per-candidate counters;
+4. accepts exactly the true canonical transcript, so the accepted local
+   pieces have a unique global glue; and
+5. keeps the complete live carrier, including phase and validation data,
+   within `2^{O(b * log(tq))}`.
+
+The current segment-replay theorem proves the deterministic core needed by
+item 1 once the true entry interface is supplied; it proves none of items
+2--5 for a guessed transcript.  Completing this machine-to-path-program
+construction at block scale `b` should give approximately
 
 ```text
 log(width) = O(b * log(tq)),
@@ -288,10 +435,13 @@ log(number of transcripts) = O((t / b) * log(tq)).
 Balancing the two reproduces `sqrt(t)`.  A collective construction that pays
 for the first term but not the transcript count could choose
 `b = N^mu / polylog(N)` and reach the required threshold.  The
-scale-parameterized machine-to-path-program theorem and the collective HSG are
-not yet formalized.  `CanonicalBoundarySelection.lean` proves the exact
-low-crossing cut selection, while `SeparatorScaleBarrier.lean` proves the
-remaining numerical single-scale tradeoff.
+scale-parameterized validator-and-unique-glue theorem and the collective HSG
+are not yet formalized.  Even a successful validator would still leave the
+separate generator problem stated above: fool or hit the coherent disjoint
+union directly without paying `epsilon / |A|` over transcripts.
+`BoundaryTapeInterface.lean` identifies the exact lossless-but-exponential
+fallback, while `SeparatorScaleBarrier.lean` proves the numerical single-scale
+tradeoff.
 
 The remaining direct alternative is an adaptive many-cut YES/NO splicing
 lemma for low-circuit truth tables.  The fixed-bipartition row theorem shows

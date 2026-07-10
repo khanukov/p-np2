@@ -183,6 +183,41 @@ prefix-closure theorem then proves that every arbitrary finite suffix is
 preserved literally and accepted.  Hence exact ambient-length soundness is
 false for the present absorbing-`done` design, not merely an unfinished proof.
 
+`OperationalClockBoundary.lean` rules out a tempting local workaround at the
+model level.  For every repository TM, the head still has strict room for a
+right move before each transition of its canonical run, so the physical right
+clamp cannot reveal the ambient input boundary.  Cross-length simulation also
+proves that an input and any all-zero extension have exactly the same state,
+numeric head, and common tape cells throughout the shorter canonical trace.
+A two-state toggle witness confirms that length is nevertheless observable
+through the externally chosen final sampling time.  Thus, for distinguishing
+an input from an all-zero extension in the present model, the remaining
+ambient-length channel is clock scheduling, not scanning a blank or probing
+the finite-tape clamp.
+
+`OperationalTaggedGammaPulse.lean` now closes the smallest end-sensitive
+experiment without changing the parser's finite control: `done` is a one-tick
+accepting pulse followed by absorbing `reject`.  A new composed first-hit
+theorem proves that the tag-plus-three-gamma run visits neither terminal state
+before its exact useful endpoint, and a second finite-tape bridge transfers the
+pulse trace to the actual repository semantics.  The result is a sharp no-go:
+the immediate pulse rejects even the exact canonical triple, as well as every
+finite continuation, because the useful trace ends strictly before the
+quartic observation clock.
+
+The missing delay is no longer implicit.  For
+`S = k₁ + k₂ + k₃` and
+`C = k₁*k₂ + k₁*k₃ + k₂*k₃`, it is exactly
+`16*S^4 + 352*S^3 + 2899*S^2 + 10644*S + 14634 + 10*C`.
+The file proves positivity, equality with `runTime - taggedTripleTime`, and
+the decomposition into a distribution equalizer `10*C` followed by a
+length-only quartic filler.  It also proves the cubic filler identity.  A
+concrete counterexample, `(2,0,0)` versus `(1,1,0)`, shows that no additive
+post-parse delay which depends only on the aggregate footprint can align the
+unmodified traces.
+These are arithmetic targets for a future fixed-control tape timer, not a
+timer supplied as advice or an assumed implementation.
+
 ## What remains unproved
 
 The valid-call output-bit problem is now exactly one literal repaired-model
@@ -210,6 +245,16 @@ class equality back to the old mainline additionally
 requires a normalization/extraction bridge.  These open statements must not be
 encoded as an axiom, typeclass, `Contract`, `Source`, `Provider`, structure
 field, or implicit instance.
+
+The next constructive object is correspondingly precise: a fixed-state,
+tape-backed equalizer/timer that physically realizes the proved transition
+counts.  It may not put `kᵢ`, the delay, or the ambient length in the control
+state.  Moreover the three gamma fields are only the beginning of an actual
+Stream-Merge request: `start`, `prior`, `block`, and `position` still follow.
+The unique acceptance pulse for the final machine must therefore be scheduled
+only after those fields and the row check, against the full
+`requestLength n s blockLength start`; the triple-level pulse in the barrier
+module is deliberately not presented as a repaired request parser.
 
 ## Later-literature check (through 2026-07-10)
 

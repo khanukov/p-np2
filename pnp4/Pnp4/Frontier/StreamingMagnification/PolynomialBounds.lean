@@ -5,8 +5,9 @@ import Pnp4.Frontier.StreamingMagnification.StreamingRAM
 
 This module records the quantifier order needed by the MMW lower-bound
 antecedent.  There is one uniform `Program`, followed by existential resource
-exponents, constants, and an eventual cutoff.  Correctness and termination
-hold at every length and on every input.  Only resource bounds are eventual.
+exponents, constants, and one eventual cutoff.  At every length at or above
+that same cutoff, correctness/termination hold for every input and all three
+resource bounds hold.  No finite-length patching theorem is hidden here.
 
 The correctness argument is deliberately an explicit predicate on completed
 operational runs.  It can later be instantiated with tagged total search-MCSP
@@ -42,8 +43,8 @@ abbrev CompletedRunSpecification (inputLength : Nat -> Nat) :=
   (input : Input (inputLength n)) ->
   CompletedRun program input -> Prop
 
-/-- Correctness and successful explicit completion at every length, including
-the finitely many lengths below an eventual resource cutoff. -/
+/-- Strong auxiliary predicate: correctness at every length.  The exact MMW
+predicate below deliberately uses `EventuallyCorrect` instead. -/
 def CorrectAtAllLengths
     (inputLength : Nat -> Nat)
     (correct : CompletedRunSpecification inputLength)
@@ -51,6 +52,16 @@ def CorrectAtAllLengths
   forall n (input : Input (inputLength n)),
     exists completed : CompletedRun program input,
       correct program n input completed
+
+/-- Correctness and successful completion at every length from `cutoff` on. -/
+def EventuallyCorrect
+    (inputLength : Nat -> Nat)
+    (correct : CompletedRunSpecification inputLength)
+    (program : Program) (cutoff : Nat) : Prop :=
+  forall n, cutoff <= n ->
+    forall input : Input (inputLength n),
+      exists completed : CompletedRun program input,
+        correct program n input completed
 
 /-- Eventual resource bounds for every table and every completion witness.
 Runs are deterministic and terminal configurations stutter without changing
@@ -72,14 +83,14 @@ def EventuallyPolynomialResources
           polynomialEnvelope reportConstant updateExponent (threshold n)
 
 /-- Exact positive predicate: one uniform program, then existential polynomial
-parameters, then all-length correctness plus eventual worst-case resources. -/
+parameters and one cutoff, then eventual correctness and worst-case resources. -/
 def PolyStreamingSolvable
     (inputLength threshold : Nat -> Nat)
     (correct : CompletedRunSpecification inputLength) : Prop :=
   exists program : Program,
   exists spaceExponent updateExponent : Nat,
   exists spaceConstant updateConstant reportConstant cutoff : Nat,
-    CorrectAtAllLengths inputLength correct program /\
+    EventuallyCorrect inputLength correct program cutoff /\
       EventuallyPolynomialResources inputLength threshold program
         spaceExponent updateExponent
         spaceConstant updateConstant reportConstant cutoff
@@ -100,9 +111,10 @@ theorem polyStreamingSolvable_iff
       exists program : Program,
       exists spaceExponent updateExponent : Nat,
       exists spaceConstant updateConstant reportConstant cutoff : Nat,
-        (forall n (input : Input (inputLength n)),
-          exists completed : CompletedRun program input,
-            correct program n input completed) /\
+        (forall n, cutoff <= n ->
+          forall input : Input (inputLength n),
+            exists completed : CompletedRun program input,
+              correct program n input completed) /\
         (forall n, cutoff <= n ->
           forall (input : Input (inputLength n))
             (completed : CompletedRun program input),
@@ -124,9 +136,10 @@ theorem noPolyStreamingSolver_iff
         exists program : Program,
         exists spaceExponent updateExponent : Nat,
         exists spaceConstant updateConstant reportConstant cutoff : Nat,
-          (forall n (input : Input (inputLength n)),
-            exists completed : CompletedRun program input,
-              correct program n input completed) /\
+          (forall n, cutoff <= n ->
+            forall input : Input (inputLength n),
+              exists completed : CompletedRun program input,
+                correct program n input completed) /\
           (forall n, cutoff <= n ->
             forall (input : Input (inputLength n))
               (completed : CompletedRun program input),

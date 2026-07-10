@@ -56,6 +56,7 @@ import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 import Pnp4.Frontier.StreamingMagnification.MMWProblem
 import Pnp4.Frontier.StreamingMagnification.RuntimeAdviceBarrier
 import Pnp4.Frontier.StreamingMagnification.OperationalUniformity
+import Pnp4.Frontier.StreamingMagnification.FinitePHClosure
 import Pnp4.Frontier.StreamingMagnification.DAGEvalTrace
 import Pnp4.Frontier.StreamingMagnification.StreamMergeChoice
 import Pnp4.Frontier.StreamingMagnification.StreamMergeAgreement
@@ -63,6 +64,8 @@ import Pnp4.Frontier.StreamingMagnification.StreamMergeTracedCounterexample
 import Pnp4.Frontier.StreamingMagnification.StreamMergeDriverCorrectness
 import Pnp4.Frontier.StreamingMagnification.StreamMergeWire
 import Pnp4.Frontier.StreamingMagnification.StreamMergeOutputFormula
+import Pnp4.Frontier.StreamingMagnification.StreamMergeEncodedPrenex
+import Pnp4.Frontier.StreamingMagnification.StreamMergePrenexBounds
 import Pnp4.Frontier.OneTapeMagnification.LocalPRGToMCSP
 import Pnp4.Frontier.OneTapeMagnification.PublishedSeedBarrier
 
@@ -436,6 +439,14 @@ open Frontier.StreamingMagnification
 #print axioms OperationalUniformity.canonicalUniformP_subset_repoP
 #print axioms OperationalUniformity.canonicalUniformNP_subset_repoNP
 #print axioms OperationalUniformity.constantLanguage_in_uniformP
+#print axioms FinitePHClosure.existsProject_eq_true_iff
+#print axioms FinitePHClosure.uniformP_existsProject
+#print axioms FinitePHClosure.forallProject_eq_true_iff
+#print axioms FinitePHClosure.uniformNPCollapse_of_class_eq
+#print axioms FinitePHClosure.uniformP_existsProject_of_collapse
+#print axioms FinitePHClosure.uniformP_forallProject_of_collapse
+#print axioms FinitePHClosure.uniformP_eaeProject_of_collapse
+#print axioms FinitePHClosure.uniformP_eaeProject_of_class_eq
 
 #print axioms StreamMerge.paperBlockLength_pos
 #print axioms StreamMerge.referenceStreamMerge_found_optimal
@@ -452,6 +463,25 @@ open Frontier.StreamingMagnification
 #print axioms StreamMergeTracedCounterexample.flatOutputValue_eq_candidateBit_of_isTrace
 #print axioms StreamMergeTracedCounterexample.tracedExpectedBit_eq_expectedBit_of_isTrace
 #print axioms StreamMergeTracedCounterexample.not_fits_iff_hasTracedCounterexample
+#print axioms FixedBitstringCodec.unrank_rank
+#print axioms FixedBitstringCodec.rank_unrank
+#print axioms FixedBitstringCodec.unrank_eq_lexInput
+#print axioms PaddedDAGEvalTrace.check_eq_true_iff
+#print axioms PaddedDAGEvalTrace.exists_isPaddedTrace_and_outputValue_eq_iff
+#print axioms StreamMergeFailureMatrix.check_eq_true_iff
+#print axioms StreamMergeFailureMatrix.not_codeFits_iff_exists_failureWitness
+#print axioms StreamMergeAgreementMatrix.fits_iff_usesOnlyAndOrNot_and_forall_exists_agreementMatrix
+#print axioms StreamMergeOptimalityMatrix.forall_exists_competitorMatrix_iff_minimality
+#print axioms StreamMergePrenexBounds.codeLength_le_coarseCodeBound
+#print axioms StreamMergePrenexBounds.three_mul_le_codeLength
+#print axioms StreamMergePrenexBounds.choiceLength_le_commonWireBound
+#print axioms StreamMergePrenexBounds.queryLength_le_commonWireBound
+#print axioms StreamMergePrenexBounds.innerLength_le_commonWireBound
+#print axioms StreamMergePrenexBounds.commonWireBound_le_of_parameters_le
+#print axioms StreamMergePrenexBounds.commonWireBound_le_certificateLength
+#print axioms StreamMergeEncodedPrenex.check_eq_true_iff
+#print axioms StreamMergeEncodedPrenex.referenceOutputBit_eq_true_iff_encodedEAEShell
+#print axioms StreamMergeEncodedPrenex.referenceOutputBit_eq_true_iff_encodedEAECheck
 #print axioms StreamMergeDriver.referenceStreamDriver_found_iff_hasCircuit
 #print axioms StreamMergeDriver.referenceStreamDriver_noCircuit_iff
 #print axioms StreamMergeWire.parse_serialize

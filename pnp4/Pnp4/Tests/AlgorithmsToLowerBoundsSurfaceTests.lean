@@ -66,6 +66,7 @@ import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 import Pnp4.Frontier.StreamingMagnification.MMWProblem
 import Pnp4.Frontier.StreamingMagnification.RuntimeAdviceBarrier
 import Pnp4.Frontier.StreamingMagnification.OperationalUniformity
+import Pnp4.Frontier.StreamingMagnification.FinitePHClosure
 import Pnp4.Frontier.StreamingMagnification.DAGEvalTrace
 import Pnp4.Frontier.StreamingMagnification.StreamMergeChoice
 import Pnp4.Frontier.StreamingMagnification.StreamMergeAgreement
@@ -73,6 +74,8 @@ import Pnp4.Frontier.StreamingMagnification.StreamMergeTracedCounterexample
 import Pnp4.Frontier.StreamingMagnification.StreamMergeDriverCorrectness
 import Pnp4.Frontier.StreamingMagnification.StreamMergeWire
 import Pnp4.Frontier.StreamingMagnification.StreamMergeOutputFormula
+import Pnp4.Frontier.StreamingMagnification.StreamMergeEncodedPrenex
+import Pnp4.Frontier.StreamingMagnification.StreamMergePrenexBounds
 import Pnp4.Frontier.OneTapeMagnification.LocalPRGToMCSP
 import Pnp4.Frontier.OneTapeMagnification.PublishedSeedBarrier
 
@@ -3629,6 +3632,11 @@ open Frontier.StreamingMagnification
 #check DAGEvalTrace.isTrace_unique
 #check DAGEvalTrace.outputValue_eq_eval_of_isTrace
 #check DAGEvalTrace.flat_exists_isTrace_and_outputValue_eq_iff
+#check FixedBitstringCodec.unrank_rank
+#check FixedBitstringCodec.rank_unrank
+#check FixedBitstringCodec.unrank_eq_lexInput
+#check PaddedDAGEvalTrace.check_eq_true_iff
+#check PaddedDAGEvalTrace.exists_isPaddedTrace_and_outputValue_eq_iff
 
 /-! Canonical fixed-length DAG codec. -/
 #check DAGCodec.decode_encode
@@ -3664,6 +3672,14 @@ open Frontier.StreamingMagnification
 #check OperationalUniformity.canonicalUniformP_subset_repoP
 #check OperationalUniformity.canonicalUniformNP_subset_repoNP
 #check OperationalUniformity.constantLanguage_in_uniformP
+#check FinitePHClosure.existsProject_eq_true_iff
+#check FinitePHClosure.uniformP_existsProject
+#check FinitePHClosure.forallProject_eq_true_iff
+#check FinitePHClosure.uniformNPCollapse_of_class_eq
+#check FinitePHClosure.uniformP_existsProject_of_collapse
+#check FinitePHClosure.uniformP_forallProject_of_collapse
+#check FinitePHClosure.uniformP_eaeProject_of_collapse
+#check FinitePHClosure.uniformP_eaeProject_of_class_eq
 
 /-! Stream-Merge block semantics, invariant, driver, and result wire. -/
 #check StreamMerge.paperBlockLength_pos
@@ -3681,6 +3697,43 @@ open Frontier.StreamingMagnification
 #check StreamMergeTracedCounterexample.flatOutputValue_eq_candidateBit_of_isTrace
 #check StreamMergeTracedCounterexample.tracedExpectedBit_eq_expectedBit_of_isTrace
 #check StreamMergeTracedCounterexample.not_fits_iff_hasTracedCounterexample
+#check StreamMergeFailureMatrix.check_eq_true_iff
+#check StreamMergeFailureMatrix.not_codeFits_iff_exists_failureWitness
+
+/-! Interpreter regression: the logical `FailureMatrix` contains a dependent
+branch, but its reflected checker must compile and execute without referring
+to a private generated splitter. -/
+private def failureCheckSmokeData : StandardDAG.FlatCircuitData :=
+  { gateCount := 0, gates := [], output := 0 }
+
+private def failureCheckSmokeCircuit : StandardDAG.FlatCircuit 1 :=
+  Subtype.mk failureCheckSmokeData (by decide)
+
+private def failureCheckSmokeBounded : DAGCodec.BoundedCircuit 1 0 :=
+  Subtype.mk failureCheckSmokeCircuit (by decide)
+
+private def failureCheckSmokeWindow :
+    StreamMerge.WindowWellFormed 1 0 0 [] := by decide
+
+#eval StreamMergeFailureMatrix.check failureCheckSmokeBounded []
+  failureCheckSmokeWindow (DAGCodec.encode failureCheckSmokeBounded)
+  (StreamMergeFailureMatrix.zeroWitness 1 0)
+
+#check StreamMergeAgreementMatrix.fits_iff_usesOnlyAndOrNot_and_forall_exists_agreementMatrix
+#check StreamMergeOptimalityMatrix.forall_exists_competitorMatrix_iff_minimality
+#check StreamMergePrenexWire.queryTag_packQuery
+#check StreamMergePrenexWire.queryCoordinate_packQuery
+#check StreamMergePrenexWire.queryCode_packQuery
+#check StreamMergePrenexBounds.codeLength_le_coarseCodeBound
+#check StreamMergePrenexBounds.three_mul_le_codeLength
+#check StreamMergePrenexBounds.choiceLength_le_commonWireBound
+#check StreamMergePrenexBounds.queryLength_le_commonWireBound
+#check StreamMergePrenexBounds.innerLength_le_commonWireBound
+#check StreamMergePrenexBounds.commonWireBound_le_of_parameters_le
+#check StreamMergePrenexBounds.commonWireBound_le_certificateLength
+#check StreamMergeEncodedPrenex.check_eq_true_iff
+#check StreamMergeEncodedPrenex.referenceOutputBit_eq_true_iff_encodedEAEShell
+#check StreamMergeEncodedPrenex.referenceOutputBit_eq_true_iff_encodedEAECheck
 #check StreamMergeDriver.referenceStreamDriver_found_iff_hasCircuit
 #check StreamMergeDriver.referenceStreamDriver_noCircuit_iff
 #check StreamMergeWire.parse_serialize

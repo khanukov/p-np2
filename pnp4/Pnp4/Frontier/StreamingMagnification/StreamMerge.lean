@@ -78,6 +78,20 @@ def circuitBits {n : Nat} (circuit : FlatCircuit n) : List Bool :=
     (circuitBits circuit).length = 2 ^ n := by
   simp [circuitBits]
 
+/-- The nominal MMW block-size schedule, including its explicit integer
+rounding convention.  `Nat.clog 2 (s + 2)` is `ceil(log₂(s + 2))`; the `+ 2`
+also makes the logarithm total at the small thresholds `s = 0, 1`. -/
+def paperBlockLength (constant threshold : Nat) : Nat :=
+  constant * threshold * Nat.clog 2 (threshold + 2)
+
+theorem paperBlockLength_pos {constant threshold : Nat}
+    (hconstant : 0 < constant) (hthreshold : 0 < threshold) :
+    0 < paperBlockLength constant threshold := by
+  unfold paperBlockLength
+  have hlog : 0 < Nat.clog 2 (threshold + 2) :=
+    Nat.clog_pos (by omega) (by omega)
+  positivity
+
 /-- Exact number of bits supplied by the next merge request. -/
 def expectedLength (n blockLength start : Nat) : Nat :=
   min blockLength (2 ^ n - start)
@@ -100,13 +114,17 @@ def targetPrefix {n s : Nat} (prior : DAGCodec.BoundedCircuit n s)
     (start : Nat) (block : List Bool) : List Bool :=
   (circuitBits prior.val).take start ++ block
 
-/-- A bounded candidate satisfies exactly the combined old-prefix/new-block
-constraint.  Under `WindowWellFormed`, this is equivalent to the two literal
-MMW agreement conditions. -/
+/-- A bounded candidate is a circuit in the exact MMW target basis and
+satisfies the combined old-prefix/new-block constraint.  The structural DAG
+carrier also has constant gates so that it can round-trip the repository's
+frozen circuit type; this predicate deliberately excludes them from the
+search problem.  Under `WindowWellFormed`, the equality is equivalent to the
+two literal MMW agreement conditions. -/
 def Fits {n s : Nat} (prior candidate : DAGCodec.BoundedCircuit n s)
     (start : Nat) (block : List Bool) : Prop :=
-  (circuitBits candidate.val).take (start + block.length) =
-    targetPrefix prior start block
+  candidate.val.UsesOnlyAndOrNot /\
+    (circuitBits candidate.val).take (start + block.length) =
+      targetPrefix prior start block
 
 instance instDecidableFits {n s : Nat}
     (prior candidate : DAGCodec.BoundedCircuit n s)
@@ -164,14 +182,16 @@ inductive MalformedReason where
   | wrongBlockLength
   deriving DecidableEq, Repr
 
-/-- Collision-free result tag.  In particular `noCircuit` is not encoded as
-an all-zero circuit body. -/
+/-- Collision-free proof-level result tag.  In particular `noCircuit` is not
+identified with an all-zero circuit body.  A fixed-length bit serialization
+and its output-bit reconstruction belong to the later PH/operational layer;
+this inductive type does not claim to provide that wire codec. -/
 inductive Result (n s : Nat) where
   | found (code : DAGCodec.Code n s)
   | noCircuit
   | malformed (reason : MalformedReason)
 
-/-- Wire-level executable reference Stream-Merge.
+/-- Encoded-circuit executable reference Stream-Merge.
 
 Validation order is prior code, start bound, and then exact block length. -/
 def referenceStreamMerge {n s : Nat}

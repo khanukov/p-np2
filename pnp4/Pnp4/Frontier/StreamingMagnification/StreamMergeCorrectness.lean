@@ -548,23 +548,26 @@ theorem fits_iff_priorPrefix_and_block
     (prior candidate : DAGCodec.BoundedCircuit n s)
     (hwindow : WindowWellFormed n blockLength start block) :
     Fits prior candidate start block <->
-      (circuitBits candidate.val).take start =
-          (circuitBits prior.val).take start /\
-        ((circuitBits candidate.val).drop start).take block.length = block := by
+      candidate.val.UsesOnlyAndOrNot /\
+        (circuitBits candidate.val).take start =
+            (circuitBits prior.val).take start /\
+          ((circuitBits candidate.val).drop start).take block.length = block := by
   have hstart : start <= 2 ^ n := hwindow.1
   have hpriorLength :
       ((circuitBits prior.val).take start).length = start := by
     simp [List.length_take, circuitBits_length, hstart]
   constructor
   · intro hfits
-    unfold Fits targetPrefix at hfits
+    rcases hfits with ⟨hbasis, hfits⟩
+    unfold targetPrefix at hfits
     have hprefix := congrArg (List.take start) hfits
     have hblock := congrArg (List.drop start) hfits
-    constructor
+    refine ⟨hbasis, ?_, ?_⟩
     · simpa [List.take_take, hpriorLength] using hprefix
     · simpa [List.drop_take, hpriorLength] using hblock
-  · rintro ⟨hprefix, hblock⟩
-    unfold Fits targetPrefix
+  · rintro ⟨hbasis, hprefix, hblock⟩
+    refine ⟨hbasis, ?_⟩
+    unfold targetPrefix
     rw [List.take_add, hprefix, hblock]
 
 /-- A correct prior prefix and literal next block identify the combined
@@ -597,17 +600,18 @@ theorem hasCandidate_iff_prefixExtension
     (hblock : block = tableBlock table start block.length) :
     HasCandidate prior start block <->
       Exists fun candidate : DAGCodec.BoundedCircuit n s =>
-        PrefixAgreement candidate.val table (start + block.length) := by
+        candidate.val.UsesOnlyAndOrNot /\
+          PrefixAgreement candidate.val table (start + block.length) := by
   have htarget := targetPrefix_eq_tablePrefix
     prior table start block hprior hblock
   constructor
   · rintro ⟨candidate, hfits⟩
-    refine ⟨candidate, ?_⟩
-    unfold Fits PrefixAgreement at *
-    simpa only [htarget] using hfits
-  · rintro ⟨candidate, hagree⟩
-    refine ⟨candidate, ?_⟩
-    unfold Fits PrefixAgreement at *
+    refine ⟨candidate, hfits.1, ?_⟩
+    unfold PrefixAgreement
+    simpa only [htarget] using hfits.2
+  · rintro ⟨candidate, hbasis, hagree⟩
+    refine ⟨candidate, hbasis, ?_⟩
+    unfold PrefixAgreement at hagree
     simpa only [htarget] using hagree
 
 /-- On a well-formed request, a found tag exists exactly when the longer
@@ -625,7 +629,8 @@ theorem referenceStreamMerge_found_iff_prefixExtension
       referenceStreamMerge priorCode blockLength start block =
         Result.found code) <->
       Exists fun candidate : DAGCodec.BoundedCircuit n s =>
-        PrefixAgreement candidate.val table (start + block.length) := by
+        candidate.val.UsesOnlyAndOrNot /\
+          PrefixAgreement candidate.val table (start + block.length) := by
   exact (referenceStreamMerge_found_exists_iff
     block priorCode prior hdecode hwindow).trans
       (hasCandidate_iff_prefixExtension prior table start block hprior hblock)
@@ -643,7 +648,8 @@ theorem referenceStreamMerge_noCircuit_iff_noPrefixExtension
     (hblock : block = tableBlock table start block.length) :
     referenceStreamMerge priorCode blockLength start block = Result.noCircuit <->
       Not (Exists fun candidate : DAGCodec.BoundedCircuit n s =>
-        PrefixAgreement candidate.val table (start + block.length)) := by
+        candidate.val.UsesOnlyAndOrNot /\
+          PrefixAgreement candidate.val table (start + block.length)) := by
   rw [referenceStreamMerge_noCircuit_iff
     block priorCode prior hdecode hwindow]
   exact not_congr
@@ -664,14 +670,15 @@ theorem referenceStreamMerge_found_prefixAgreement
       Result.found code) :
     Exists fun candidate : DAGCodec.BoundedCircuit n s =>
       DAGCodec.decode code = some candidate /\
-        PrefixAgreement candidate.val table (start + block.length) := by
+        candidate.val.UsesOnlyAndOrNot /\
+          PrefixAgreement candidate.val table (start + block.length) := by
   rcases referenceStreamMerge_found_sound hdecode hwindow hmerge with
     ⟨candidate, hcandidateDecode, hfits⟩
-  refine ⟨candidate, hcandidateDecode, ?_⟩
+  refine ⟨candidate, hcandidateDecode, hfits.1, ?_⟩
   have htarget := targetPrefix_eq_tablePrefix
     prior table start block hprior hblock
-  unfold Fits PrefixAgreement at *
-  simpa only [htarget] using hfits
+  unfold PrefixAgreement
+  simpa only [htarget] using hfits.2
 
 /-! ## Full-table endpoints -/
 
@@ -685,12 +692,13 @@ theorem prefixAgreement_full_iff_computes
 theorem boundedComputes_iff_hasCircuit
     {n s : Nat} (table : TruthTable n) :
     (Exists fun circuit : DAGCodec.BoundedCircuit n s =>
-      Computes circuit.val table) <-> HasCircuit n s table := by
+      circuit.val.UsesOnlyAndOrNot /\ Computes circuit.val table) <->
+      HasCircuit n s table := by
   constructor
-  · rintro ⟨circuit, hcomputes⟩
-    exact ⟨circuit.val, circuit.property, hcomputes⟩
-  · rintro ⟨circuit, hsize, hcomputes⟩
-    exact ⟨⟨circuit, hsize⟩, hcomputes⟩
+  · rintro ⟨circuit, hbasis, hcomputes⟩
+    exact ⟨circuit.val, circuit.property, hbasis, hcomputes⟩
+  · rintro ⟨circuit, hsize, hbasis, hcomputes⟩
+    exact ⟨⟨circuit, hsize⟩, hbasis, hcomputes⟩
 
 theorem referenceStreamMerge_final_found_iff_hasCircuit
     {n s blockLength start : Nat} (block : List Bool)
@@ -771,11 +779,12 @@ theorem referenceStreamMerge_final_found_sound
     (hmerge : referenceStreamMerge priorCode blockLength start block =
       Result.found code) :
     Exists fun candidate : DAGCodec.BoundedCircuit n s =>
-      DAGCodec.decode code = some candidate /\ Computes candidate.val table := by
+      DAGCodec.decode code = some candidate /\
+        candidate.val.UsesOnlyAndOrNot /\ Computes candidate.val table := by
   rcases referenceStreamMerge_found_prefixAgreement
     hdecode hwindow hprior hblock hmerge with
-    ⟨candidate, hcandidateDecode, hagree⟩
-  refine ⟨candidate, hcandidateDecode, ?_⟩
+    ⟨candidate, hcandidateDecode, hbasis, hagree⟩
+  refine ⟨candidate, hcandidateDecode, hbasis, ?_⟩
   apply (prefixAgreement_full_iff_computes candidate.val table).mp
   simpa only [hfinal] using hagree
 

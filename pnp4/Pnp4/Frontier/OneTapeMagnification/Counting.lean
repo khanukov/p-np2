@@ -52,7 +52,7 @@ theorem mem_easyTablesByCode_of_hasCircuit
     {n threshold : Nat} {table : TruthTable n}
     (hEasy : HasCircuit n threshold table) :
     table ∈ easyTablesByCode n threshold := by
-  rcases hEasy with ⟨circuit, hSize, hComputes⟩
+  rcases hEasy with ⟨circuit, hSize, _hBasis, hComputes⟩
   let bounded : DAGCodec.BoundedCircuit n threshold := ⟨circuit, hSize⟩
   apply Finset.mem_image.mpr
   refine ⟨DAGCodec.encode bounded, Finset.mem_univ _, ?_⟩

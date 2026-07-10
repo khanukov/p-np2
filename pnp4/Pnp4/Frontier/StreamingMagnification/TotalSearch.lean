@@ -49,7 +49,8 @@ def Computes {n : Nat} (circuit : FlatCircuit n) (table : TruthTable n) : Prop :
 /-- Exact DAG-MCSP YES predicate at an internal-gate threshold. -/
 def HasCircuit (n threshold : Nat) (table : TruthTable n) : Prop :=
   Exists fun circuit : FlatCircuit n =>
-    circuit.gateCount <= threshold /\ Computes circuit table
+    circuit.gateCount <= threshold /\
+      circuit.UsesOnlyAndOrNot /\ Computes circuit table
 
 /-- A valid standard DAG bundled with the paper's internal-gate bound. -/
 abbrev BoundedCircuit (n threshold : Nat) :=
@@ -68,7 +69,7 @@ inductive MCSPResult (n threshold : Nat) where
 /-- Exact total-search correctness, including the NO branch. -/
 def Correct {n threshold : Nat} (table : TruthTable n) :
     MCSPResult n threshold -> Prop
-  | .found circuit => Computes circuit.val table
+  | .found circuit => circuit.val.UsesOnlyAndOrNot /\ Computes circuit.val table
   | .noCircuit => Not (HasCircuit n threshold table)
 
 /-- A found result contains a valid bounded DAG computing the whole table. -/
@@ -76,7 +77,8 @@ theorem found_sound
     {n threshold : Nat} {table : TruthTable n}
     {circuit : BoundedCircuit n threshold}
     (hCorrect : Correct table (.found circuit)) :
-    circuit.val.gateCount <= threshold /\ Computes circuit.val table :=
+    circuit.val.gateCount <= threshold /\
+      circuit.val.UsesOnlyAndOrNot /\ Computes circuit.val table :=
   ⟨circuit.property, hCorrect⟩
 
 /-- If a suitable circuit exists, a correct total result cannot be NO. -/
@@ -107,7 +109,7 @@ theorem noCircuit_complete
     result = .noCircuit := by
   cases result with
   | found circuit =>
-      exact (hNone ⟨circuit.val, circuit.property, hCorrect⟩).elim
+      exact (hNone ⟨circuit.val, circuit.property, hCorrect.1, hCorrect.2⟩).elim
   | noCircuit => rfl
 
 /-- The decision bit read from a tagged total-search result. -/
@@ -125,7 +127,7 @@ theorem decisionBit_eq_true_iff
   | found circuit =>
       constructor
       · intro _
-        exact ⟨circuit.val, circuit.property, hCorrect⟩
+        exact ⟨circuit.val, circuit.property, hCorrect.1, hCorrect.2⟩
       · intro _
         rfl
   | noCircuit =>

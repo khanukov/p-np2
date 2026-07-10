@@ -212,18 +212,21 @@ def tableMatches {n s : Nat} (table : TotalSearch.TruthTable n)
       TotalSearch.Computes circuit.val table := by
   simp [tableMatches, TotalSearch.Computes, List.ofFn_inj]
 
-/-- A code works exactly when it decodes and computes the supplied table. -/
+/-- A code works exactly when it decodes to the paper AND/OR/NOT basis and
+computes the supplied table. -/
 def codeWorks {n s : Nat} (table : TotalSearch.TruthTable n)
     (code : DAGCodec.Code n s) : Bool :=
   match DAGCodec.decode code with
   | none => false
-  | some circuit => tableMatches table circuit
+  | some circuit =>
+      decide circuit.val.UsesOnlyAndOrNot && tableMatches table circuit
 
 theorem codeWorks_eq_true_iff {n s : Nat}
     (table : TotalSearch.TruthTable n) (code : DAGCodec.Code n s) :
     codeWorks table code = true <->
       ∃ circuit : DAGCodec.BoundedCircuit n s,
         DAGCodec.decode code = some circuit /\
+          circuit.val.UsesOnlyAndOrNot /\
           TotalSearch.Computes circuit.val table := by
   unfold codeWorks
   cases hdecode : DAGCodec.decode code with
@@ -234,7 +237,8 @@ theorem codeWorks_eq_true_iff {n s : Nat}
     (table : TotalSearch.TruthTable n)
     (circuit : DAGCodec.BoundedCircuit n s) :
     codeWorks table (DAGCodec.encode circuit) = true <->
-      TotalSearch.Computes circuit.val table := by
+      circuit.val.UsesOnlyAndOrNot /\
+        TotalSearch.Computes circuit.val table := by
   simp [codeWorks]
 
 /-- Deterministically select the first working canonical body, if any. -/
@@ -247,6 +251,7 @@ theorem firstWorkingCode_some_sound {n s : Nat}
     (hfound : firstWorkingCode table = some code) :
     ∃ circuit : DAGCodec.BoundedCircuit n s,
       DAGCodec.decode code = some circuit /\
+        circuit.val.UsesOnlyAndOrNot /\
         TotalSearch.Computes circuit.val table := by
   apply (codeWorks_eq_true_iff table code).mp
   exact List.find?_some hfound
@@ -259,17 +264,17 @@ theorem firstWorkingCode_eq_none_iff {n s : Nat}
   rw [List.find?_eq_none]
   constructor
   · intro hNoFound hHas
-    rcases hHas with ⟨circuit, hsize, hcomputes⟩
+    rcases hHas with ⟨circuit, hsize, hbasis, hcomputes⟩
     let bounded : DAGCodec.BoundedCircuit n s := ⟨circuit, hsize⟩
     have hworks :
         codeWorks table (DAGCodec.encode bounded) = true :=
-      (codeWorks_encode_eq_true_iff table bounded).2 hcomputes
+      (codeWorks_encode_eq_true_iff table bounded).2 ⟨hbasis, hcomputes⟩
     exact hNoFound (DAGCodec.encode bounded)
       (encode_mem_candidateCodes bounded) hworks
   · intro hNone code _hmem hworks
     rcases (codeWorks_eq_true_iff table code).mp hworks with
-      ⟨circuit, _hdecode, hcomputes⟩
-    exact hNone ⟨circuit.val, circuit.property, hcomputes⟩
+      ⟨circuit, _hdecode, hbasis, hcomputes⟩
+    exact hNone ⟨circuit.val, circuit.property, hbasis, hcomputes⟩
 
 /-- The finite reference result before its fixed-length serialization. -/
 def referenceResult {n s : Nat} (table : TotalSearch.TruthTable n) :
@@ -293,6 +298,7 @@ theorem reference_found_sound {n s : Nat}
       DAGCodec.decode code = some circuit /\
         circuit.val.val.Valid n /\
         circuit.val.gateCount <= s /\
+        circuit.val.UsesOnlyAndOrNot /\
         TotalSearch.Computes circuit.val table := by
   unfold referenceResult at hresult
   cases hfound : firstWorkingCode (s := s) table with
@@ -302,9 +308,9 @@ theorem reference_found_sound {n s : Nat}
         simpa [hfound] using hresult
       subst code
       rcases firstWorkingCode_some_sound hfound with
-        ⟨circuit, hdecode, hcomputes⟩
+        ⟨circuit, hdecode, hbasis, hcomputes⟩
       exact ⟨circuit, hdecode, circuit.val.property, circuit.property,
-        hcomputes⟩
+        hbasis, hcomputes⟩
 
 /-- Existence of a suitable DAG forces the exhaustive result to be found. -/
 theorem reference_found_complete {n s : Nat}
@@ -314,15 +320,16 @@ theorem reference_found_complete {n s : Nat}
       ∃ circuit : DAGCodec.BoundedCircuit n s,
         referenceResult (s := s) table = .found code /\
         DAGCodec.decode code = some circuit /\
+        circuit.val.UsesOnlyAndOrNot /\
         TotalSearch.Computes circuit.val table := by
   cases hfound : firstWorkingCode (s := s) table with
   | none =>
       exact ((firstWorkingCode_eq_none_iff table).mp hfound hHas).elim
   | some code =>
       rcases firstWorkingCode_some_sound hfound with
-        ⟨circuit, hdecode, hcomputes⟩
+        ⟨circuit, hdecode, hbasis, hcomputes⟩
       exact ⟨code, circuit, by simp [referenceResult, hfound], hdecode,
-        hcomputes⟩
+        hbasis, hcomputes⟩
 
 /-- A negative exhaustive result proves genuine non-existence. -/
 theorem reference_noCircuit_sound {n s : Nat}
@@ -357,11 +364,11 @@ theorem reference_decodes_correct {n s : Nat}
       · exact (firstWorkingCode_eq_none_iff table).mp hfound
   | some code =>
       rcases firstWorkingCode_some_sound hfound with
-        ⟨circuit, hdecode, hcomputes⟩
+        ⟨circuit, hdecode, hbasis, hcomputes⟩
       refine ⟨TotalSearch.MCSPResult.found circuit, ?_, ?_⟩
       · simp [referenceSolver, referenceResult, hfound, decodeSemantic,
           validate, hdecode]
-      · exact hcomputes
+      · exact ⟨hbasis, hcomputes⟩
 
 /-- Any semantic result decoded from the reference wire is correct. -/
 theorem reference_decode_correct {n s : Nat}
@@ -384,6 +391,7 @@ theorem referenceSolver_found_sound {n s : Nat}
     (hdecode : decodeSemantic (referenceSolver (s := s) table) =
       some (TotalSearch.MCSPResult.found circuit)) :
     circuit.val.gateCount <= s /\
+      circuit.val.UsesOnlyAndOrNot /\
       TotalSearch.Computes circuit.val table :=
   TotalSearch.found_sound (reference_decode_correct hdecode)
 

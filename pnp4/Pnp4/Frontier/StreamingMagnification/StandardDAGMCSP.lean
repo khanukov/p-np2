@@ -47,6 +47,23 @@ instance instDecidableValid (gate : FlatGate) (n i : Nat) :
     Decidable (gate.Valid n i) := by
   cases gate <;> simp [Valid] <;> infer_instance
 
+/-- The exact oracle-free MMW basis contains only `NOT`, fan-in-two `AND`,
+and fan-in-two `OR`.  Constants remain in the structural carrier solely so
+that it stays exactly equivalent to the frozen repository `DagCircuit`; the
+target MCSP predicate below filters them out explicitly. -/
+def InPaperBasis (gate : FlatGate) : Prop :=
+  match gate with
+  | .const _ => False
+  | .notGate _ | .andGate _ _ | .orGate _ _ => True
+
+instance instDecidableInPaperBasis (gate : FlatGate) :
+    Decidable gate.InPaperBasis := by
+  cases gate with
+  | const _ => exact isFalse (fun h => h.elim)
+  | notGate _ => exact isTrue trivial
+  | andGate _ _ => exact isTrue trivial
+  | orGate _ _ => exact isTrue trivial
+
 end FlatGate
 
 /-- Raw list-backed circuit data.  Validity is kept separately so decoding can
@@ -78,6 +95,16 @@ instance instDecidableValid (circuit : FlatCircuitData) (n : Nat) :
     Fintype.decidableForallFintype
   infer_instance
 
+/-- Every active internal gate belongs to the exact AND/OR/NOT paper basis. -/
+def UsesOnlyAndOrNot (circuit : FlatCircuitData) : Prop :=
+  forall i : Fin circuit.gates.length,
+    (circuit.gates.get i).InPaperBasis
+
+instance instDecidableUsesOnlyAndOrNot (circuit : FlatCircuitData) :
+    Decidable circuit.UsesOnlyAndOrNot := by
+  unfold UsesOnlyAndOrNot
+  exact Fintype.decidableForallFintype
+
 end FlatCircuitData
 
 /-- A standard fan-in-two, topologically ordered Boolean DAG on `n` external
@@ -90,6 +117,14 @@ namespace FlatCircuit
 /-- Conventional circuit size used by MMW: the number of internal gates. -/
 def gateCount {n : Nat} (circuit : FlatCircuit n) : Nat :=
   circuit.val.gateCount
+
+/-- Exact target-basis predicate used by standard-DAG MCSP. -/
+def UsesOnlyAndOrNot {n : Nat} (circuit : FlatCircuit n) : Prop :=
+  circuit.val.UsesOnlyAndOrNot
+
+instance instDecidableUsesOnlyAndOrNot {n : Nat} (circuit : FlatCircuit n) :
+    Decidable circuit.UsesOnlyAndOrNot :=
+  FlatCircuitData.instDecidableUsesOnlyAndOrNot circuit.val
 
 @[simp] theorem gates_length {n : Nat} (circuit : FlatCircuit n) :
     circuit.val.gates.length = circuit.gateCount :=

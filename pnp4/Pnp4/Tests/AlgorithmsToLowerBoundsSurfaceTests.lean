@@ -77,6 +77,7 @@ import Pnp4.Frontier.StreamingMagnification.StreamMergeOutputFormula
 import Pnp4.Frontier.StreamingMagnification.StreamMergeEncodedPrenex
 import Pnp4.Frontier.StreamingMagnification.StreamMergePrenexBounds
 import Pnp4.Frontier.StreamingMagnification.StreamMergeCertificatePadding
+import Pnp4.Frontier.StreamingMagnification.StreamMergeRequestCodec
 import Pnp4.Frontier.OneTapeMagnification.LocalPRGToMCSP
 import Pnp4.Frontier.OneTapeMagnification.PublishedSeedBarrier
 
@@ -3746,6 +3747,34 @@ private def failureCheckSmokeWindow :
 #check StreamMergeCertificatePadding.exists_forall_exists_outputBitMatrix_iff_padded
 #check StreamMergeCertificatePadding.encodedEAEShell_iff_paddedCertificateEAEShell
 #check StreamMergeCertificatePadding.referenceOutputBit_eq_true_iff_paddedCertificateEAEShell
+
+private def requestCodecSmoke : StreamMergeRequestCodec.RequestFields where
+  n := 1
+  s := 0
+  blockLength := 0
+  start := 0
+  start_le := by norm_num
+  priorCode := DAGCodec.encode failureCheckSmokeBounded
+  prior := failureCheckSmokeBounded
+  prior_decode := DAGCodec.decode_encode failureCheckSmokeBounded
+  blockBits := fun _ => false
+  position := ⟨0, by
+    unfold StreamMergeWire.wireLength
+    omega⟩
+
+#eval
+  (StreamMergeRequestCodec.parseRequest
+    (StreamMergeRequestCodec.encodeRequest requestCodecSmoke)).isSome
+
+#check StreamMergeRequestCodec.n_le_requestLength
+#check StreamMergeRequestCodec.s_le_requestLength
+#check StreamMergeRequestCodec.parse_encodeRequest
+#check StreamMergeRequestCodec.parseRequest_length_exact
+#check StreamMergeRequestCodec.outputBitLanguage_rejects_parse_failure
+#check StreamMergeRequestCodec.outputBitLanguage_eq_true_iff_encodedEAEShell_of_parse
+#check StreamMergeRequestCodec.outputBitLanguage_eq_true_iff_encodedEAECheck_of_parse
+#check StreamMergeRequestCodec.outputBitLanguage_eq_true_iff_paddedCertificateEAEShell_of_parse
+#check StreamMergeRequestCodec.outputBitLanguage_eq_true_iff_globalPaddedEAEShell
 #check StreamMergeDriver.referenceStreamDriver_found_iff_hasCircuit
 #check StreamMergeDriver.referenceStreamDriver_noCircuit_iff
 #check StreamMergeWire.parse_serialize

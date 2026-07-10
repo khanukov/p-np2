@@ -309,6 +309,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.StreamingMagnification.DAGCodec,
     Glob.one `Pnp4.Frontier.StreamingMagnification.TotalSearch,
     Glob.one `Pnp4.Frontier.StreamingMagnification.EncodedTotalSearch,
+    Glob.one `Pnp4.Frontier.StreamingMagnification.StreamMerge,
     Glob.one `Pnp4.Frontier.StreamingMagnification.StreamingRAM,
     Glob.one `Pnp4.Frontier.StreamingMagnification.PolynomialBounds,
     Glob.one `Pnp4.Frontier.StreamingMagnification.MMWProblem,

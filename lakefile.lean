@@ -307,6 +307,8 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.ConsolidatedTreeSeparation,
     Glob.one `Pnp4.Frontier.StreamingMagnification.StandardDAGMCSP,
     Glob.one `Pnp4.Frontier.StreamingMagnification.TotalSearch,
+    Glob.one `Pnp4.Frontier.StreamingMagnification.StreamingRAM,
+    Glob.one `Pnp4.Frontier.StreamingMagnification.PolynomialBounds,
     Glob.one `Pnp4.Frontier.StreamingMagnification.RuntimeAdviceBarrier,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.OneTapeMachine,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.RandomizedSemantics,

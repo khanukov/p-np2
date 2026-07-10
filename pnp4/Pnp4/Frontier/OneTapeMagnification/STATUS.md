@@ -249,6 +249,15 @@ must use.
   prefix decoding exactly recovers the chronological tokens.  This is an
   input-dependent extraction theorem, not a local validator or
   input-independent advice construction.
+- `TimedCanonicalAlpha.lean`: retains each chronological crossing's source
+  time and a bounded terminal `(state, inputHead, workHead)` endpoint.  The
+  timed list still has length at most `T / b`, its source times remain strictly
+  increasing, and prefix decoding is exact.  The full ambient carrier has
+  exact size
+  `b^(T/b) * (1 + T * ((T/b) * (2*|Q|*(T+1))))^(T/b) * (|Q|*(T+1)^2)`.
+  This closes the finite duration/terminal metadata gap only
+  by paying the displayed transcript factor; the carrier includes invalid and
+  unreachable values and supplies no slab glue or local validity.
 - `LowRunInputOrder.lean`, `ActualRunInputOrder.lean`, and
   `StableGroupingPermutation.lean`: stable grouping by occupied work blocks
   preserves chronological order inside each block.  The concrete one-way run
@@ -279,6 +288,17 @@ must use.
   actual advancing-position list.  Stable work-block replay merely permutes
   that list.  The schedule is still extracted from one input-dependent run;
   local validation from a fixed guessed `alpha` is not yet proved.
+- `ActualCrossingSegmentAlignment.lean`: proves the exact set-level
+  correspondence between cumulative proper maximal-group stops and
+  chronological selected-crossing post-times.  It handles `T = 0` and the
+  terminal convention explicitly: a crossing on transition `T - 1` has
+  post-time `T` but creates no following nonempty group.  Direction is
+  characterized both by the two work-head endpoints and by the adjacent block
+  labels; record post-state/post-input-head fields equal the aligned segment
+  exit, consecutive schedule endpoints agree, and the fixed initial/terminal
+  endpoints are exposed.  A literal equality of newly packaged stop lists is
+  not claimed; the proved bidirectional membership theorem is the semantic
+  alignment needed here.  All of it remains actual-run extraction.
 - `CanonicalPathTranscript.lean`: extracts a finite bounded transcript from a
   deterministic run, records optional crossed boundaries and the canonical
   cut in every full bucket, and proves both the global and selected crossing
@@ -302,6 +322,18 @@ must use.
   step allowed to exit.  This supplies the local determinism lemma consumed
   by the actual-segment replay below; by itself it does not validate guessed
   crossing records or give a complete program-width bound.
+- `WorkSlabPersistence.lean`: proves the complementary locality fact.  A slab
+  is unchanged while every pre-transition work head stays outside it, even if
+  the last transition enters it.  For two locally synchronized runs, equality
+  of a disjoint protected slab is therefore preserved automatically while the
+  visited slab is replayed.  The theorem still needs that protected-slab
+  equality at entry; it does not yet construct the across-revisit invariant.
+- `LocalBlockReplayComposition.lean`: composes two same-input slab replays.
+  State and both heads at the second entry follow from the first replay, while
+  equality of the destination slab at the midpoint remains an explicit and
+  necessary premise of the current interface.  A stronger two-slab midpoint
+  hypothesis supplies it as a corollary.  This isolates the exact glue datum
+  rather than hiding it in a global configuration assumption.
 - `CanonicalBlockSlabs.lean`: supplies that spatial connection.  Every
   canonical block has explicit lower and upper-exclusive endpoints, positive
   width at most `2b`, and exact equivalence between its rank label and
@@ -423,9 +455,17 @@ which:
    within `2^{O(b * log(tq))}`.
 
 The current segment-replay theorem proves the deterministic core needed by
-item 1 once the true entry interface is supplied; it proves none of items
-2--5 for a guessed transcript.  Completing this machine-to-path-program
-construction at block scale `b` should give approximately
+item 1 once the true entry interface is supplied.  Timed alpha now supplies
+durations and a terminal endpoint at an explicit transcript cost, and slab
+persistence transports an already equal disjoint slab across another block's
+visit.  Actual crossing records are now aligned exactly with the corresponding
+proper segment exits and the separate terminal convention.  What is still
+missing is the block-grouped persistent-slab invariant
+that derives the required destination equality from the blank start and all
+earlier visits without storing every slab in global alpha.  None of items
+2--5 is yet proved for a guessed transcript.  Completing this
+machine-to-path-program construction at block scale `b` should give
+approximately
 
 ```text
 log(width) = O(b * log(tq)),

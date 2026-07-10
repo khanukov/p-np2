@@ -1,6 +1,6 @@
 # Streaming magnification status
 
-Status: **GLOBAL EAE BRIDGE AND EXACT FIXED GAMMA/TRIPLE-PREFIX RUNS ADDED; AMBIENT-END/ROW-TM/GLOBAL PARSER/NORMALIZATION/COMPILER BLOCKERS; NO MMW UPPER THEOREM OR CAPSTONE**
+Status: **GLOBAL EAE BRIDGE, EXACT FIXED GAMMA/TRIPLE RUNS, AND REAL-CODEC `startOffset` HANDOFF ADDED; AMBIENT-END/TAIL-PARSER/ROW-TM/NORMALIZATION/COMPILER BLOCKERS; NO MMW UPPER THEOREM OR CAPSTONE**
 
 Base: `main@5d8ee5f80e1dbc4fb7bd0c725fa98f1a999770d0`
 
@@ -183,6 +183,21 @@ prefix-closure theorem then proves that every arbitrary finite suffix is
 preserved literally and accepted.  Hence exact ambient-length soundness is
 false for the present absorbing-`done` design, not merely an unfinished proof.
 
+`OperationalRequestHandoff.lean` now connects that front end to the literal
+`StreamMergeRequestCodec.encodeRequest`, rather than only to an abstract
+three-word frame.  It proves that each codec gamma word is exactly a zipper
+body with width `bitLength(value + 1) - 1`, and that the encoded request is
+literally
+`tripleInitialFrame ++ start ++ prior ++ block ++ position`.  The three
+operational field starts coincide with `tagLen`, `sOffset`, and
+`blockLengthOffset`; most importantly,
+`tripleFootprint = startOffset`.  A direct step-for-step theorem for
+`runConfig (initialConfig (encodeRequest request))` reaches `done` at the exact
+three-field time with its head on the first `start` bit and its actual finite
+tape agreeing cell-for-cell with the transformed gamma prefix plus the
+untouched four-field tail.  This is a canonical-request handoff theorem, not a
+parser for that tail or a sound acceptance theorem.
+
 `OperationalClockBoundary.lean` rules out a tempting local workaround at the
 model level.  For every repository TM, the head still has strict room for a
 right move before each transition of its canonical run, so the physical right
@@ -224,10 +239,12 @@ The valid-call output-bit problem is now exactly one literal repaired-model
 `EAEProject` over a global decidable padded row, as a language equality rather
 than only a valid-request slice theorem.  There is still no `OperationalTM`
 deciding that global row with proved polynomial bounds.  The fixed-control
-zero-prefix counter, globally composed value-preserving zipper, and exact
-tag-plus-three-gamma canonical-prefix run now exist, but a redesigned
+zero-prefix counter, globally composed value-preserving zipper, exact
+tag-plus-three-gamma canonical-prefix run, and direct handoff at the real
+encoded request's `startOffset` now exist, but a redesigned
 finite-input/end check, malformed-input rejection, decoded-value operations,
-remaining request fields, DAG row evaluation, and full parser composition are still
+operational parsers for `start`, `prior`, `block`, and `position`, DAG row
+evaluation, and full parser composition are still
 open.  There is also no bridge from conventional `P = NP` to equality of the
 repaired classes, no reconstruction of the paper's sequential
 oracle calls as one `StreamingRAM.Program`, and no polynomial
@@ -248,9 +265,12 @@ field, or implicit instance.
 
 The next constructive object is correspondingly precise: a fixed-state,
 tape-backed equalizer/timer that physically realizes the proved transition
-counts.  It may not put `kᵢ`, the delay, or the ambient length in the control
-state.  Moreover the three gamma fields are only the beginning of an actual
-Stream-Merge request: `start`, `prior`, `block`, and `position` still follow.
+counts, together with a nonterminal continuation state at the now-proved
+`startOffset` handoff.  It may not put `kᵢ`, the delay, or the ambient length
+in the control state.  The three gamma fields are only the beginning of an
+actual Stream-Merge request: the four tail fields are preserved and their
+starting coordinate is now proved exactly, but `start`, `prior`, `block`, and
+`position` still have to be operationally parsed.
 The unique acceptance pulse for the final machine must therefore be scheduled
 only after those fields and the row check, against the full
 `requestLength n s blockLength start`; the triple-level pulse in the barrier

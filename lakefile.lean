@@ -347,6 +347,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.StreamingMagnification.OperationalTaggedGammaGlobal,
     Glob.one `Pnp4.Frontier.StreamingMagnification.OperationalTaggedGammaActual,
     Glob.one `Pnp4.Frontier.StreamingMagnification.OperationalTaggedGammaPrefixClosure,
+    Glob.one `Pnp4.Frontier.StreamingMagnification.OperationalRequestHandoff,
     Glob.one `Pnp4.Frontier.StreamingMagnification.OperationalTaggedGammaPulse,
     Glob.one `Pnp4.Frontier.StreamingMagnification.FinitePHClosure,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.OneTapeMachine,

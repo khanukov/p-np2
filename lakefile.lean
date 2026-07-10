@@ -310,6 +310,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.StreamingMagnification.RuntimeAdviceBarrier,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.OneTapeMachine,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.RandomizedSemantics,
+    Glob.one `Pnp4.Frontier.OneTapeMagnification.LocalPRG,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.PublishedSeedBarrier,
     Glob.one `Pnp4.Tests.AlgorithmsToLowerBoundsSurfaceTests,
     Glob.one `Pnp4.Tests.AxiomsAudit

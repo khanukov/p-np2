@@ -268,6 +268,11 @@ def AcceptsWithin (machine : DeterministicMachine) (input : List Bool)
     (steps : Nat) : Prop :=
   ∃ first : Nat, first ≤ steps ∧ IsAccepting machine (run machine input first)
 
+/-- The run has reached a rejecting configuration no later than `steps`. -/
+def RejectsWithin (machine : DeterministicMachine) (input : List Bool)
+    (steps : Nat) : Prop :=
+  ∃ first : Nat, first ≤ steps ∧ IsRejecting machine (run machine input first)
+
 /-- `steps` is the first step at which the run is halted. -/
 def HaltsExactlyAt (machine : DeterministicMachine) (input : List Bool)
     (steps : Nat) : Prop :=

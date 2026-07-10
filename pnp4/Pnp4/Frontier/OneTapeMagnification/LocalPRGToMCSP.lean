@@ -1,7 +1,7 @@
 import Pnp4.Frontier.OneTapeMagnification.Counting
 
 /-!
-# Finite local-HSG exclusion for standard-DAG MCSP
+# Finite local-PRG exclusion for standard-DAG MCSP
 
 This file composes the two proved finite ingredients:
 

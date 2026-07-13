@@ -239,9 +239,17 @@ cat >"${POS_DIR}/critic_report_fail.md" <<'FAIL_RPT'
 - **next_recommended_action:** `Synthetic positive control; do not act.`
 FAIL_RPT
 
-# Compute the repo-relative path for the JSONL entries.  validate_jsonl.py
-# resolves critic_report_path relative to the repo root.
-POS_DIR_REL="$(realpath --relative-to="${ROOT_DIR}" "${POS_DIR}")"
+# Compute a path that the Python runtime can resolve.  Under Git Bash with a
+# native Windows Python, `realpath --relative-to` may describe MSYS `/tmp` as
+# `../../../../../../tmp/...`; Windows then resolves that spelling as `C:/tmp`
+# instead of the actual `%TEMP%` directory.  A mixed-style absolute path avoids
+# that mount-boundary ambiguity while preserving the repo-relative convention
+# on Unix.
+if python3 -c 'import os, sys; sys.exit(0 if os.name == "nt" else 1)'; then
+  POS_DIR_REL="$(cygpath -m "${POS_DIR}")"
+else
+  POS_DIR_REL="$(realpath --relative-to="${ROOT_DIR}" "${POS_DIR}")"
+fi
 
 # ---------------------------------------------------------------------------
 # Positive case A: critic_status=pass + completed non-template report.

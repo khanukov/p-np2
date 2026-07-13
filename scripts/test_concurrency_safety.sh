@@ -15,7 +15,7 @@
 #   5. the lockfile sibling (outputs/<log>.lock) was created and
 #      no half-written line exists in the JSONL.
 #
-# This test exercises the fcntl.flock-protected ID assignment and
+# This test exercises the platform-native lock-protected ID assignment and
 # append paths added in MVP-0.1.8.  Without those locks, two
 # concurrent invocations would produce duplicate ids or interleaved
 # JSON bytes mid-line.
@@ -67,6 +67,7 @@ stage_stub_repo() {
   # stub's sys.path entry that the writers add.
   cp "${ROOT_DIR}/scripts/validate_jsonl.py"          "${stub}/scripts/"
   cp "${ROOT_DIR}/scripts/validate_critic_report.py"  "${stub}/scripts/"
+  cp "${ROOT_DIR}/scripts/ledger_file_lock.py"        "${stub}/scripts/"
   cp "${ROOT_DIR}/scripts/attempts_append.py"         "${stub}/scripts/"
   cp "${ROOT_DIR}/scripts/nogolog_append.py"          "${stub}/scripts/"
   cp "${ROOT_DIR}/spec/nogolog_schema.json"           "${stub}/spec/"

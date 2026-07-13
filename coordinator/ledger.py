@@ -7,7 +7,7 @@ accepts a result submission, it:
   1. Validates the AttemptLedgerEntry payload via
      `scripts/validate_jsonl.py::validate_attempt`.
   2. Pipes the payload through `scripts/attempts_append.py` (which
-     applies the MVP-0.1.8 Phase A flock and assigns the
+     applies the MVP-0.1.8 Phase A native file lock and assigns the
      ATT-NNNNNN id atomically).
   3. If the submission carries a NoGoLogEntry (critic_status=fail),
      pipes it through `scripts/nogolog_append.py`.
@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -34,7 +35,7 @@ APPEND_SURVIVOR = ROOT / "scripts" / "survivor_append.py"
 
 class LedgerWriteError(RuntimeError):
     """Raised when a canonical-ledger append fails (validation,
-    flock conflict, etc.).  The HTTP layer translates this into
+    file-lock conflict, etc.).  The HTTP layer translates this into
     a 4xx/5xx response."""
 
     def __init__(self, kind: str, stderr: str) -> None:
@@ -63,7 +64,7 @@ def _append_via(script: Path, payload: dict, kind: str) -> str:
     if not script.exists():
         raise LedgerWriteError(kind, f"writer script missing: {script}")
     proc = subprocess.run(
-        ["python3", str(script)],
+        [sys.executable, str(script)],
         input=json.dumps(payload).encode("utf-8"),
         capture_output=True,
         timeout=60,

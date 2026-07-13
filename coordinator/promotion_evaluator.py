@@ -20,7 +20,7 @@ override but every use:
      coordinator" wording on every coordinator start;
   3. appends a forced-promotion record to
      `outputs/wave_promotion_audit.jsonl` (an append-only file with
-     its own Phase-A flock sibling).
+     its own Phase-A native-lock sibling).
 
 `scripts/check.sh` Step 12.k asserts the audit file is empty (or
 contains only test-marked entries) during CI.
@@ -28,7 +28,6 @@ contains only test-marked entries) during CI.
 
 from __future__ import annotations
 
-import fcntl
 import json
 import os
 import sys
@@ -36,13 +35,20 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+from scripts.ledger_file_lock import (  # noqa: E402
+    acquire_exclusive_lock,
+    release_exclusive_lock,
+)
+
 try:
     import tomllib  # type: ignore[import]
 except ModuleNotFoundError:  # pragma: no cover
     tomllib = None  # type: ignore[assignment]
 
 
-ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_THRESHOLDS_PATH = ROOT / "spec" / "wave_gate_thresholds.toml"
 DEFAULT_ATTEMPTS_PATH = ROOT / "outputs" / "attempts.jsonl"
 DEFAULT_NOGOLOG_PATH = ROOT / "outputs" / "nogolog.jsonl"
@@ -222,7 +228,7 @@ def append_forced_promotion_audit_record(
 ) -> None:
     """Append a record to the wave_promotion_audit.jsonl ledger
     every time AUTORESEARCH_PROMOTION_FORCE is consumed.  Phase-A
-    flock-protected via the `.lock` sibling.
+    protected by the platform-native lock on the `.lock` sibling.
 
     The record schema is documented in
     `spec/wave_promotion_audit_schema.json`.
@@ -238,12 +244,12 @@ def append_forced_promotion_audit_record(
     audit_path.parent.mkdir(parents=True, exist_ok=True)
     lock_path = audit_path.with_suffix(audit_path.suffix + ".lock")
     with lock_path.open("a") as lockf:
+        acquire_exclusive_lock(lockf)
         try:
-            fcntl.flock(lockf.fileno(), fcntl.LOCK_EX)
             with audit_path.open("a", encoding="utf-8") as f:
                 f.write(json.dumps(entry, sort_keys=True) + "\n")
         finally:
-            fcntl.flock(lockf.fileno(), fcntl.LOCK_UN)
+            release_exclusive_lock(lockf)
 
 
 def emit_force_warning(target_wave: int, unmet: list[str]) -> None:

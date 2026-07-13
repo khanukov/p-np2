@@ -51,6 +51,7 @@ def _stage_stub(tmp: Path) -> Path:
     (stub / "coordinator").mkdir(parents=True, exist_ok=True)
     for name in (
         "attempts_append.py", "validate_jsonl.py", "validate_critic_report.py",
+        "ledger_file_lock.py",
         "nogolog_append.py", "survivor_append.py",
     ):
         shutil.copy2(ROOT / "scripts" / name, stub / "scripts" / name)
@@ -92,7 +93,8 @@ def run_test_reaper_auto_fails_overdue(stub: Path) -> None:
         # via the canonical attempts_append.py.
         def _stub_append(payload: dict) -> str:
             proc = subprocess.run(
-                ["python3", str(stub / "scripts" / "attempts_append.py")],
+                [sys.executable,
+                 str(stub / "scripts" / "attempts_append.py")],
                 input=json.dumps(payload).encode("utf-8"),
                 capture_output=True, cwd=stub, timeout=30,
             )
@@ -154,7 +156,7 @@ def run_test_validator_rejects_fail_timeout_without_timeout_class(stub: Path) ->
     bad_path = bad_dir / "attempts.jsonl"
     bad_path.write_text(json.dumps(bad) + "\n")
     proc = subprocess.run(
-        ["python3", str(ROOT / "scripts" / "validate_jsonl.py"),
+        [sys.executable, str(ROOT / "scripts" / "validate_jsonl.py"),
          str(bad_path)],
         capture_output=True, cwd=stub, timeout=30,
     )

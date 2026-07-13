@@ -41,6 +41,7 @@ from __future__ import annotations
 
 import json
 import os
+import signal
 import shutil
 import subprocess
 import sys
@@ -65,6 +66,7 @@ def _stage_stub_repo(tmp: Path) -> Path:
     for name in (
         "attempts_append.py", "nogolog_append.py", "survivor_append.py",
         "validate_jsonl.py", "validate_critic_report.py",
+        "ledger_file_lock.py",
     ):
         shutil.copy2(ROOT / "scripts" / name, stub / "scripts" / name)
     for name in (
@@ -400,7 +402,7 @@ def run_test_principal_identity_rejects_same_principal(stub: Path) -> None:
     report_dir = stub / "synthetic_critic_reports"
     report_dir.mkdir(parents=True, exist_ok=True)
     report_path = report_dir / "synthetic_role_gate_principal.md"
-    report_path.write_text(_SYNTHETIC_PASS_REPORT)
+    report_path.write_text(_SYNTHETIC_PASS_REPORT, encoding="utf-8")
     rel_report = report_path.relative_to(stub).as_posix()
     # Step 1: gen-grace generates.
     gen_task = _take_task("gen", "gen-grace")
@@ -444,7 +446,7 @@ def run_test_gen_then_crit_different_worker_accepted(stub: Path) -> None:
     report_dir = stub / "synthetic_critic_reports"
     report_dir.mkdir(parents=True, exist_ok=True)
     report_path = report_dir / "synthetic_role_gate_pass.md"
-    report_path.write_text(_SYNTHETIC_PASS_REPORT)
+    report_path.write_text(_SYNTHETIC_PASS_REPORT, encoding="utf-8")
     # validate_attempt resolves critic_report_path RELATIVE to the
     # repo root (which for the subprocess coordinator is `stub`).
     rel_report = report_path.relative_to(stub).as_posix()
@@ -505,7 +507,13 @@ def main() -> int:
             # principal even when prefix differs.
             run_test_principal_identity_rejects_same_principal(stub)
         finally:
-            proc.send_signal(2)  # SIGINT
+            if proc.poll() is None:
+                if os.name == "nt":
+                    # Windows subprocesses do not support POSIX SIGINT.
+                    proc.terminate()
+                else:
+                    # Preserve the server's graceful cleanup on POSIX.
+                    proc.send_signal(signal.SIGINT)
             try:
                 proc.wait(timeout=5)
             except subprocess.TimeoutExpired:

@@ -28,8 +28,8 @@ with the optional `supersedes` field pointing to the original.
 Concurrency model (MVP-0.1.8 / Phase A):
 
   Multiple workers MAY invoke this script concurrently.  The
-  read-then-write next-id allocation is wrapped in an exclusive
-  fcntl.flock(LOCK_EX) on a sibling lockfile
+  read-then-write next-id allocation is wrapped in a platform-native
+  exclusive advisory lock on a sibling lockfile
   `outputs/attempts.jsonl.lock` so two simultaneous calls do NOT
   produce duplicate ATT-NNNNNN ids.  The lock is held for the
   full critical section (re-scan max id -> validate -> append),
@@ -39,7 +39,6 @@ Concurrency model (MVP-0.1.8 / Phase A):
 
 from __future__ import annotations
 
-import fcntl
 import json
 import sys
 from datetime import datetime, timezone
@@ -49,6 +48,10 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
 from validate_jsonl import validate_attempt  # noqa: E402
+from ledger_file_lock import (  # noqa: E402
+    acquire_exclusive_lock,
+    release_exclusive_lock,
+)
 
 LOG_PATH = ROOT / "outputs" / "attempts.jsonl"
 LOCK_PATH = ROOT / "outputs" / "attempts.jsonl.lock"
@@ -100,7 +103,7 @@ def main() -> int:
     # created on first use; never deleted (open creates if missing).
     LOCK_PATH.touch(exist_ok=True)
     with LOCK_PATH.open("a+", encoding="utf-8") as lockf:
-        fcntl.flock(lockf.fileno(), fcntl.LOCK_EX)
+        acquire_exclusive_lock(lockf)
         try:
             # Re-scan max id INSIDE the lock; another worker may have
             # appended between the time this process started and now.
@@ -123,7 +126,7 @@ def main() -> int:
                 f.write(json.dumps(data, ensure_ascii=False,
                                    sort_keys=True) + "\n")
         finally:
-            fcntl.flock(lockf.fileno(), fcntl.LOCK_UN)
+            release_exclusive_lock(lockf)
 
     print(data["id"])
     return 0

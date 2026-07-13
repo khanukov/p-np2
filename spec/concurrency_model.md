@@ -19,7 +19,7 @@ Every script under `scripts/` falls into one of four categories:
 | - | ------------------------------ | ---------------------- | ------------------------- | ------------------- |
 | 1 | Read-only (validators)         | YES                    | not needed                | none                |
 | 2 | Per-candidate writers          | YES (worker-scoped)    | YES (`VERIFY_TMP_DIR`)    | none                |
-| 3 | Append-only ledger writers     | YES via fcntl.flock    | not needed                | shares lockfile     |
+| 3 | Append-only ledger writers     | YES via native file lock | not needed              | shares lockfile     |
 | 4 | Coordinator-mediated (Phase B) | YES                    | YES                       | YES (HTTP)          |
 
 The MVP-0.1.8 hardening (this document's primary subject) brought
@@ -27,7 +27,7 @@ categories 2 and 3 to "YES" by:
 
 * category 3: `attempts_append.py` / `nogolog_append.py` /
   `survivor_append.py` wrap their critical sections in
-  `fcntl.flock(LOCK_EX)` on a sibling lockfile
+  a platform-native exclusive advisory lock on a sibling lockfile
   (`outputs/<log>.jsonl.lock`);
 * category 2: `verify_candidate.sh` writes all per-stage logs into
   a per-worker `${VERIFY_TMP_DIR}` directory unique per (PID,
@@ -44,9 +44,9 @@ categories 2 and 3 to "YES" by:
 | `validate_critic_report.py`            | 1   | read-only                                                            |
 | `validate_version_manifest.py`         | 1   | read-only                                                            |
 | `audit_bootstrap.sh`                   | 1   | read-only; writes only to `mktemp -d`                                |
-| `attempts_append.py`                   | 3   | flock on `outputs/attempts.jsonl.lock` (MVP-0.1.8)                   |
-| `nogolog_append.py`                    | 3   | flock on `outputs/nogolog.jsonl.lock` (MVP-0.1.8)                    |
-| `survivor_append.py`                   | 3   | flock on `outputs/survivor_history.jsonl.lock` (MVP-0.1.8)           |
+| `attempts_append.py`                   | 3   | native lock on `outputs/attempts.jsonl.lock` (MVP-0.1.8)             |
+| `nogolog_append.py`                    | 3   | native lock on `outputs/nogolog.jsonl.lock` (MVP-0.1.8)              |
+| `survivor_append.py`                   | 3   | native lock on `outputs/survivor_history.jsonl.lock` (MVP-0.1.8)     |
 | `verify_candidate.sh`                  | 2   | per-worker `${VERIFY_TMP_DIR}` (MVP-0.1.8); EXIT trap cleans up      |
 | `check_candidate_kernel.sh`            | 2   | per-candidate; uses `lake env lean` (see §4 build-cache)             |
 | `check_barrier_certificate.sh`         | 2   | per-candidate read-only                                              |
@@ -68,20 +68,23 @@ categories 2 and 3 to "YES" by:
 Every Category-3 writer follows the same template:
 
 ```python
-import fcntl
+from ledger_file_lock import acquire_exclusive_lock, release_exclusive_lock
 LOG_PATH  = ROOT / "outputs" / "<name>.jsonl"
 LOCK_PATH = ROOT / "outputs" / "<name>.jsonl.lock"
 
 LOCK_PATH.touch(exist_ok=True)
 with LOCK_PATH.open("a+", encoding="utf-8") as lockf:
-    fcntl.flock(lockf.fileno(), fcntl.LOCK_EX)
+    acquire_exclusive_lock(lockf)
     try:
         # 1. re-scan max id INSIDE the lock
         # 2. validate the entry
         # 3. append to LOG_PATH
     finally:
-        fcntl.flock(lockf.fileno(), fcntl.LOCK_UN)
+        release_exclusive_lock(lockf)
 ```
+
+`ledger_file_lock.py` implements this contract with `fcntl.flock` on Unix and
+`msvcrt.locking` on byte zero of the same sibling lockfile on native Windows.
 
 Invariants:
 
@@ -93,8 +96,8 @@ Invariants:
   unrelated writes; conversely, multiple lockfiles per ledger
   would not serialise at all.
 * **The lockfile is `.gitignore`d.**  It carries no canonical
-  content; it exists only as a kernel handle for `flock`.
-* **`LOCK_EX` is an advisory lock**, not mandatory.  Code paths
+  content; it exists only as a kernel locking handle.
+* **The exclusive lock is advisory**, not mandatory.  Code paths
   that WRITE to the JSONL files MUST go through these scripts;
   a future direct-write script would silently bypass the lock.
   The discipline is enforced by code review and by
@@ -144,7 +147,7 @@ HTTP-mediated:
   permitted only for governance / audit work outside the
   worker-cycle path.
 
-The Phase A flock contract continues to hold inside the
+The Phase A ledger-lock contract continues to hold inside the
 Coordinator: when the Coordinator writes the canonical ledger, it
 uses the same `attempts_append.py` / `nogolog_append.py`
 machinery, just from a single process instead of N parallel ones.
@@ -173,7 +176,7 @@ N real verifier workers can run concurrently on one host:
   `AUTORESEARCH_PROMOTION_FORCE` override is preserved as a LOUD
   emergency exit (stderr WARN + audit log append +
   `scripts/check.sh` Step 12.k assertion).
-* `outputs/attempts.jsonl.lock` (Phase A flock) prevents ledger
+* `outputs/attempts.jsonl.lock` (Phase A native lock) prevents ledger
   corruption from N parallel writers; it does NOT throttle the
   workers' upstream (verifier / Lean kernel / build cache).
 
@@ -226,7 +229,7 @@ If you are building infrastructure (Phase B–F):
   `.gitignore` entry).
 * If you add a new shared-state path (any file outside
   per-worker scratch), document it here under §2 with a category
-  classification, and either add it to the Phase A flock pattern
+  classification, and either add it to the Phase A ledger-lock pattern
   or to a Phase B Coordinator endpoint.
 
 If you are running research-side work (a seed pack worker):

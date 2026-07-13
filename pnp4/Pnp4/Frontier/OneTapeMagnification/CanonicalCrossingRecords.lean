@@ -47,7 +47,7 @@ structure CrossingRecordPayload (State : Type) (T : Nat) where
   direction : WorkCrossingDirection
   postState : State
   postInputHead : Fin (T + 1)
-deriving Fintype
+deriving DecidableEq, Fintype
 
 /-- One crossing payload together with the identity and physical position of
 its selected cut.

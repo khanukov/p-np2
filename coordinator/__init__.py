@@ -7,7 +7,7 @@ canonical append-only JSONL ledgers under outputs/.
 Scope (MVP-0.2 / Phase B):
     * one host, sqlite state, 1K worker ceiling
     * no auth, no quota, no metrics
-    * Phase A flock primitives are reused for canonical ledger writes
+    * Phase A native file-lock primitives are reused for ledger writes
     * Generator/Critic role separation enforced at protocol level only
       (Phase D moves it to infrastructure level)
 

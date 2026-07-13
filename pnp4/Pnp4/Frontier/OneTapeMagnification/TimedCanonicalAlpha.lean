@@ -32,7 +32,7 @@ crossing occurs. -/
 structure TimedCanonicalCrossingToken (State : Type) (T b : Nat) where
   sourceTime : Fin T
   token : CanonicalCrossingToken State T b
-deriving Fintype
+deriving DecidableEq, Fintype
 
 /-- The timed token is exactly the displayed product. -/
 def timedCanonicalCrossingTokenEquiv (State : Type) (T b : Nat) :
@@ -60,7 +60,7 @@ structure BoundedTerminalEndpoint (State : Type) (T : Nat) where
   state : State
   inputHead : Fin (T + 1)
   workHead : Fin (T + 1)
-deriving Fintype
+deriving DecidableEq, Fintype
 
 /-- The terminal endpoint is exactly the product of its three finite fields. -/
 def boundedTerminalEndpointEquiv (State : Type) (T : Nat) :

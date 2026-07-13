@@ -178,7 +178,7 @@ if rg -n "^[[:space:]]*abbrev[[:space:]]+Ppoly[[:space:]]*:" pnp3/Complexity/Int
   exit 1
 fi
 
-if rg -n -U "^[[:space:]]*(def|abbrev)[[:space:]]+NP([[:space:]_(]|$)[^\n]*\n?[[:space:]]*:=\s*True\b" pnp3/Complexity/Interfaces.lean >/tmp/pnp3_np_true_hits.log; then
+if rg -n -U "^[[:space:]]*(def|abbrev)[[:space:]]+NP([[:space:]_(]|$)[^\r\n]*(?:\r?\n)?[[:space:]]*:=\s*True\b" pnp3/Complexity/Interfaces.lean >/tmp/pnp3_np_true_hits.log; then
   echo "Detected forbidden placeholder definition of NP as True:"
   cat /tmp/pnp3_np_true_hits.log
   exit 1
@@ -226,13 +226,13 @@ if [[ "${UNCONDITIONAL:-0}" != "1" ]]; then
   # `RefutedRoute_*`.  We require the renamed forms to exist for audit
   # continuity.  Reintroduction of the unprefixed names is blocked by
   # `scripts/check_refuted_route_quarantine.sh` (Step 6/11).
-  if ! rg -n -U "theorem[[:space:]]+RefutedRoute_NP_not_subset_PpolyFormula_final\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
+  if ! rg -n -U "theorem[[:space:]]+RefutedRoute_NP_not_subset_PpolyFormula_final\\r?\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
       "${final_result_surface_files[@]}" >/tmp/pnp3_formula_final_pkg_sig_hits.log; then
     echo "Detected non-package signature for RefutedRoute_NP_not_subset_PpolyFormula_final (expected hMag : MagnificationAssumptions)."
     exit 1
   fi
 
-  if ! rg -n -U "theorem[[:space:]]+RefutedRoute_NP_not_subset_PpolyReal_final\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
+  if ! rg -n -U "theorem[[:space:]]+RefutedRoute_NP_not_subset_PpolyReal_final\\r?\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
       "${final_result_surface_files[@]}" >/tmp/pnp3_real_final_pkg_sig_hits.log; then
     echo "Detected non-package signature for RefutedRoute_NP_not_subset_PpolyReal_final (expected hMag : MagnificationAssumptions)."
     exit 1
@@ -243,14 +243,14 @@ if [[ "${UNCONDITIONAL:-0}" != "1" ]]; then
   # hMS/asymptotic-pullback routes must stay under explicit audit/compatibility
   # names such as `*_of_multiswitchingData` and `*_of_asymptoticPullback`.
   if ! rg -n -U \
-      "theorem[[:space:]]+NP_not_subset_PpolyDAG_final\\n[[:space:]]*\\(gap[[:space:]]*:[[:space:]]*ResearchGapWitness\\)" \
+      "theorem[[:space:]]+NP_not_subset_PpolyDAG_final\\r?\\n[[:space:]]*\\(gap[[:space:]]*:[[:space:]]*ResearchGapWitness\\)" \
       "${final_result_surface_files[@]}" >/tmp/pnp3_npdag_final_gap_sig_hits.log; then
     echo "Detected invalid signature for NP_not_subset_PpolyDAG_final (expected gap : ResearchGapWitness)."
     exit 1
   fi
 
   if ! rg -n -U \
-      "theorem[[:space:]]+P_ne_NP_final\\n[[:space:]]*\\(gap[[:space:]]*:[[:space:]]*ResearchGapWitness\\)" \
+      "theorem[[:space:]]+P_ne_NP_final\\r?\\n[[:space:]]*\\(gap[[:space:]]*:[[:space:]]*ResearchGapWitness\\)" \
       "${final_result_surface_files[@]}" >/tmp/pnp3_pnenp_final_gap_sig_hits.log; then
     echo "Detected invalid signature for P_ne_NP_final (expected gap : ResearchGapWitness)."
     exit 1
@@ -281,7 +281,7 @@ fi
 
 if [[ "${UNCONDITIONAL:-0}" != "1" ]]; then
   if rg -n -U \
-      "theorem[[:space:]]+NP_not_subset_PpolyDAG_final\\n[[:space:]]*\\(hMS[[:space:]]*:[[:space:]]*AC0LocalityBridge\\.FormulaSupportBoundsFromMultiSwitchingContract\\)" \
+      "theorem[[:space:]]+NP_not_subset_PpolyDAG_final\\r?\\n[[:space:]]*\\(hMS[[:space:]]*:[[:space:]]*AC0LocalityBridge\\.FormulaSupportBoundsFromMultiSwitchingContract\\)" \
       "${final_result_surface_files[@]}" >/tmp/pnp3_npdag_final_hms_sig_hits.log; then
     echo "Detected forbidden legacy signature for NP_not_subset_PpolyDAG_final (use *_of_multiswitchingData / *_of_asymptoticPullback):"
     cat /tmp/pnp3_npdag_final_hms_sig_hits.log
@@ -289,21 +289,21 @@ if [[ "${UNCONDITIONAL:-0}" != "1" ]]; then
   fi
 
   if rg -n -U \
-      "theorem[[:space:]]+P_ne_NP_final\\n[[:space:]]*\\(hMS[[:space:]]*:[[:space:]]*AC0LocalityBridge\\.FormulaSupportBoundsFromMultiSwitchingContract\\)" \
+      "theorem[[:space:]]+P_ne_NP_final\\r?\\n[[:space:]]*\\(hMS[[:space:]]*:[[:space:]]*AC0LocalityBridge\\.FormulaSupportBoundsFromMultiSwitchingContract\\)" \
       "${final_result_surface_files[@]}" >/tmp/pnp3_pnenp_final_hms_sig_hits.log; then
     echo "Detected forbidden legacy signature for P_ne_NP_final (use *_of_multiswitchingData / *_of_asymptoticPullback):"
     cat /tmp/pnp3_pnenp_final_hms_sig_hits.log
     exit 1
   fi
 
-  if rg -n -U "theorem[[:space:]]+P_ne_NP_final\\n[[:space:]]*\\(hNPDag[[:space:]]*:[[:space:]]*ComplexityInterfaces\\.NP_not_subset_PpolyDAG\\)" \
+  if rg -n -U "theorem[[:space:]]+P_ne_NP_final\\r?\\n[[:space:]]*\\(hNPDag[[:space:]]*:[[:space:]]*ComplexityInterfaces\\.NP_not_subset_PpolyDAG\\)" \
       "${final_result_surface_files[@]}" >/tmp/pnp3_pnenp_final_legacy_sig_hits.log; then
     echo "Detected forbidden legacy signature for P_ne_NP_final (missing MagnificationAssumptions):"
     cat /tmp/pnp3_pnenp_final_legacy_sig_hits.log
     exit 1
   fi
 
-  if rg -n -U "theorem[[:space:]]+(NP_not_subset_PpolyDAG_final|P_ne_NP_final)_of_asymptotic[^\\n]*\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
+  if rg -n -U "theorem[[:space:]]+(NP_not_subset_PpolyDAG_final|P_ne_NP_final)_of_asymptotic[^\\r\\n]*\\r?\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
       pnp3/Magnification/FinalResultMainline.lean >/tmp/pnp3_mainline_hmag_dag_route_hits.log; then
     echo "Detected package-shaped DAG route in FinalResultMainline; move legacy hMag wrappers to FinalResultAuditRoutes:"
     cat /tmp/pnp3_mainline_hmag_dag_route_hits.log
@@ -412,7 +412,7 @@ for f in "${public_docs[@]}"; do
   fi
 done
 
-if rg -n -U "Current public provider-shaped endpoint|The active explicit DAG endpoint still has this shape|P_ne_NP_final\\n[[:space:]]*\\(hMS[[:space:]]*:" \
+if rg -n -U "Current public provider-shaped endpoint|The active explicit DAG endpoint still has this shape|P_ne_NP_final\\r?\\n[[:space:]]*\\(hMS[[:space:]]*:" \
     "${public_docs[@]}" >/tmp/pnp3_route_stale_public_endpoint_hits.log; then
   echo "Detected stale public-endpoint wording in active public docs:"
   cat /tmp/pnp3_route_stale_public_endpoint_hits.log
@@ -568,8 +568,8 @@ echo "[check] Step 13/17: verify_candidate.sh --full smoke (Research Governance 
   --json /tmp/verify_template_result.json
 # The smoke run must produce PASS_SHAPE_ONLY on the noop template
 # AND the kernel check must have run (i.e. not SKIPPED, not FAIL).
-result_status="$(python3 -c 'import json; print(json.load(open("/tmp/verify_template_result.json"))["status"])')"
-kernel_status="$(python3 -c 'import json; print(json.load(open("/tmp/verify_template_result.json"))["checks"].get("candidate_kernel_elaboration", "ABSENT"))')"
+result_status="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["status"])' /tmp/verify_template_result.json)"
+kernel_status="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["checks"].get("candidate_kernel_elaboration", "ABSENT"))' /tmp/verify_template_result.json)"
 if [[ "${result_status}" != "PASS_SHAPE_ONLY" ]]; then
   echo "[check] FAIL: verify_candidate.sh on _template returned status=${result_status} (expected PASS_SHAPE_ONLY)"
   exit 1
@@ -666,14 +666,14 @@ if [[ "${UNCONDITIONAL:-0}" == "1" ]]; then
   # endpoints.  The unconditional P != NP gate is the existence of a real
   # compiled zero-argument theorem, not the removal of every conditional helper.
 
-  if rg -n -U "theorem[[:space:]]+P_ne_NP_final\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
+  if rg -n -U "theorem[[:space:]]+P_ne_NP_final\\r?\\n[[:space:]]*\\(hMag[[:space:]]*:[[:space:]]*MagnificationAssumptions\\)" \
       "${final_result_surface_files[@]}" >/tmp/pnp3_unconditional_pnenp_pkg_hits.log; then
     echo "Unconditional gate failed: canonical P_ne_NP final still depends on MagnificationAssumptions:"
     cat /tmp/pnp3_unconditional_pnenp_pkg_hits.log
     exit 1
   fi
 
-  if rg -n -U "theorem[[:space:]]+P_ne_NP_final\\n(?:[[:space:]]*\\([^\\n]*\\)\\n)*[[:space:]]*\\(hNPDag[[:space:]]*:[[:space:]]*(?:ComplexityInterfaces\\.)?NP_not_subset_PpolyDAG\\)" \
+  if rg -n -U "theorem[[:space:]]+P_ne_NP_final\\r?\\n(?:[[:space:]]*\\([^\\r\\n]*\\)\\r?\\n)*[[:space:]]*\\(hNPDag[[:space:]]*:[[:space:]]*(?:ComplexityInterfaces\\.)?NP_not_subset_PpolyDAG\\)" \
       "${final_result_surface_files[@]}" >/tmp/pnp3_unconditional_pnenp_dag_hits.log; then
     echo "Unconditional gate failed: canonical P_ne_NP final still depends on NP_not_subset_PpolyDAG:"
     cat /tmp/pnp3_unconditional_pnenp_dag_hits.log

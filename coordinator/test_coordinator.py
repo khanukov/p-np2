@@ -39,6 +39,7 @@ from __future__ import annotations
 
 import json
 import os
+import signal
 import shutil
 import subprocess
 import sys
@@ -73,6 +74,7 @@ def _stage_stub_repo(tmp: Path) -> Path:
     for name in (
         "attempts_append.py", "nogolog_append.py", "survivor_append.py",
         "validate_jsonl.py", "validate_critic_report.py",
+        "ledger_file_lock.py",
     ):
         shutil.copy2(ROOT / "scripts" / name, stub / "scripts" / name)
     # Copy spec files (the validators need nogolog_schema.json and
@@ -868,7 +870,13 @@ def main() -> int:
             # 1 wrong-worker (rejected, no merge) = 21 entries.
             run_test_ledger_persisted(stub, expected_min=20)
         finally:
-            proc.send_signal(2)  # SIGINT
+            if proc.poll() is None:
+                if os.name == "nt":
+                    # Windows subprocesses do not support POSIX SIGINT.
+                    proc.terminate()
+                else:
+                    # Preserve the server's graceful cleanup on POSIX.
+                    proc.send_signal(signal.SIGINT)
             try:
                 proc.wait(timeout=5)
             except subprocess.TimeoutExpired:

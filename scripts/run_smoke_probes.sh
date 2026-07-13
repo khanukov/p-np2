@@ -56,6 +56,8 @@ fail_log=()
 # ---------------------------------------------------------------------------
 
 while IFS= read -r line; do
+  # Native Windows jq writes CRLF even when consumed from Git Bash.
+  line="${line%$'\r'}"
   total=$((total + 1))
   case_id="$(echo "${line}" | jq -r '.case_id')"
   probe_file="$(echo "${line}" | jq -r '.probe_file')"
@@ -130,6 +132,8 @@ done < <(jq -c '.probes[] | select(.kind == "rejected")' "${probes_json}")
 # ---------------------------------------------------------------------------
 
 while IFS= read -r line; do
+  # Keep the JSONL record portable across LF and CRLF-producing jq builds.
+  line="${line%$'\r'}"
   total=$((total + 1))
   case_id="$(echo "${line}" | jq -r '.case_id')"
   probe_file="$(echo "${line}" | jq -r '.probe_file')"
@@ -146,6 +150,8 @@ while IFS= read -r line; do
 
   all_clean=1
   while IFS= read -r guard; do
+    # `read` removes the LF delimiter but preserves jq's preceding CR.
+    guard="${guard%$'\r'}"
     if [[ ! -x "${guard}" ]]; then
       echo "[smoke]   FAIL: guard ${guard} is not executable"
       all_clean=0

@@ -220,7 +220,7 @@ The coordinator:
    the JSONL validator.  This status is normally synthesised by
    the cost-budget reaper, not by external workers.
 8. Calls `scripts/attempts_append.py` to validate + append
-   atomically (the Phase A flock primitive applies).
+   atomically (the Phase A native file-lock primitive applies).
 9. If `nogolog_entry` is present, calls
    `scripts/nogolog_append.py` similarly.
 10. If `survivor_entry` is present, calls
@@ -316,9 +316,10 @@ new lease gets a fresh `assignment_id`.
 
 The coordinator runs on ONE process per host.  All canonical-ledger
 writes go through `scripts/attempts_append.py` /
-`nogolog_append.py` / `survivor_append.py`, which hold an
-`fcntl.flock(LOCK_EX)` on the matching `outputs/<name>.jsonl.lock`
-sibling lockfile (Phase A contract; see `spec/concurrency_model.md`).
+`nogolog_append.py` / `survivor_append.py`, which hold the
+platform-native exclusive advisory lock on the matching
+`outputs/<name>.jsonl.lock` sibling lockfile (Phase A contract; see
+`spec/concurrency_model.md`).
 
 A direct write to `outputs/*.jsonl` from outside this protocol is a
 contract violation.  No worker, neither Generator nor Critic, may
@@ -357,7 +358,7 @@ The coordinator does NOT:
 * Touch `pnp3/Candidates/<real-id>/` files.
 * Issue assignments outside the `seed_packs/` registry.
 * Generate `attempt_id` itself — that's the responsibility of
-  `scripts/attempts_append.py`'s flocked critical section.
+  `scripts/attempts_append.py`'s lock-protected critical section.
 
 ## 7. Worker checklist (interaction with this protocol)
 

@@ -341,6 +341,69 @@ must use.
   reflexive, while `T = 0` and a terminal crossing cannot fabricate a second
   nonempty visit.  The theorem consumes the true group decomposition and does
   not validate a guessed transcript.
+- `TimedAlphaWordValidity.lean`: separates syntactic transcript validation
+  from actual-run extraction.  It gives an executable Boolean check that the
+  padded word is exactly an encoded prefix and that decoded source times are
+  strict.  The true chronological timed alpha passes this check.  This does
+  not yet say that an arbitrary syntactically valid word has realizable
+  crossing directions or endpoints.
+- `AdvertisedCutBlockSlabs.lean`: constructs the complete consecutive slab
+  partition directly from an arbitrary alpha's advertised offsets, without
+  inspecting a run.  Every represented work cell has a unique owner, distinct
+  slabs are disjoint, and every width is at most `2b` when `0 < b`.  The actual
+  canonical offsets specialize definitionally to the earlier slabs.  An
+  arbitrary advertised offset is still not certified as the leftmost minimum
+  of its bucket.
+- `FixedAlphaBlockVisitReplay.lean`: defines a positive-duration visit and an
+  executable Boolean local replay checker for one advertised block.  It checks
+  every pre-transition head, the exact exit state and both heads, carries the
+  computed slab contents into the next visit, requires strict separation of
+  visits, and has forward and converse concrete-run interfaces.  The checker
+  is alpha-relative only through the advertised geometry; it does not by
+  itself bind visits to decoded crossing tokens, directions, or cut
+  minimality.
+- `AdvertisedCrossingEndpoints.lean` and
+  `ActualAdvertisedCrossingEndpoints.lean`: reconstruct the physical cut,
+  source/destination blocks, pre/post work heads, and post endpoint from each
+  timed token.  The endpoints lie in the advertised source/destination slabs,
+  and every token extracted from the true run matches the corresponding
+  actual cut, state, and both head positions exactly.  No theorem here equates
+  a token endpoint with the full work tape.  This per-crossing bridge does not give
+  list-level actual completeness; the advertised chaining relation is supplied
+  by the next module.
+- `TimedAlphaVisitSchedule.lean`: folds the decoded strict timed-token word
+  into an advertised-only chronological visit schedule.  A cursor enforces
+  source/destination block transitions and exact post-endpoint chaining; the
+  two terminal cases forbid a fabricated zero-duration final visit.  Stable
+  per-block filtering is proved to give the strict visit separation required
+  by the replay checker.  This is a relational schedule specification rather
+  than an executable schedule constructor; actual completeness is supplied by
+  the next module.
+- `ActualTimedAlphaVisitSchedule.lean`: upgrades the earlier set-level
+  group-stop/crossing correspondence to equality of the uniquely ordered
+  lists, then folds the true timed tokens through all actual maximal groups.
+  The extracted timed alpha always has a valid advertised schedule.  The proof
+  handles `T = 0`, a last-transition crossing token (which closes the final
+  nonempty group without adding a zero visit), and the no-terminal-crossing
+  case (which adds exactly one positive final visit).  This closes actual-run
+  completeness of the schedule relation, not arbitrary-alpha replay soundness
+  or an executable checker.
+- `ActualGroupFixedAlphaVisit.lean` and
+  `ActualFixedAlphaBlockVisitCarry.lean`: turn a true maximal same-block group
+  into a valid fixed-alpha visit.  For two successive visits to one target
+  block, actual persistence now proves exact first-output/second-entry slab
+  equality, strict temporal separation, acceptance by the recursive/list
+  replay checker, and equality of the final fold with the actual second-exit
+  slab.  These are completeness bridges for the true decomposition, not a
+  soundness theorem for arbitrary advertised visit lists.
+- `ActualAllFixedAlphaBlockVisits.lean`: removes the two-visit restriction.
+  One strengthened schedule witness is proved to be exactly the ordered list
+  of every actual maximal group, in both terminal conventions.  For every
+  advertised block, stable filtering of that same witness is chronological,
+  is accepted by the carried local replay checker from one literal blank
+  slab, and folds to the exact actual block slab at time `T`.  This closes
+  all-visit replay completeness for the true transcript; it does not prove
+  global soundness for an arbitrary advertised alpha.
 - `LocalBlockReplayComposition.lean`: composes two same-input slab replays.
   State and both heads at the second entry follow from the first replay, while
   equality of the destination slab at the midpoint remains an explicit and
@@ -448,39 +511,51 @@ object is narrower:
 
 The canonical-boundary selection, its instantiation on actual runs, exact
 endpoint gaps, chronological padded crossing data, maximal-run schedule, and
-same-slab replay of every actual segment are now formal.  A lossless finite
-suffix-gluing interface is also formal, but it carries all `T + 1` reachable
-tape bits and is exponentially large.
+same-slab replay of every actual segment are now formal.  Arbitrary advertised
+offsets now determine a proved slab partition, the padded timed word has an
+executable syntactic checker, and a supplied per-block visit list has an
+executable replay checker that carries slab contents between visits.  The true
+run supplies one exact schedule witness whose filtered list for every block is
+accepted from blank and reconstructs that block's exact final slab.  A
+lossless finite suffix-gluing interface is also formal, but it carries all
+`T + 1` reachable tape bits and is exponentially large.
 
 The immediate lower-layer gap is now the **validator-and-glue theorem**.  For
-one fixed chronological `alpha`, construct a finite local block validator
-which:
+one fixed chronological `alpha`, finish a finite local block validator which:
 
-1. starts from the blank tape and replays every visit assigned to a block in
-   the order recorded by `alpha`;
-2. checks every entry/exit state, input-head position, direction, and shared
-   boundary observation against the neighboring crossing records;
-3. certifies that every advertised cut is the leftmost minimum-crossing
+1. exposes an executable constructor/checker for the deterministic
+   decoded-token schedule relation and proves its equivalence to the current
+   relational specification;
+2. composes the token-forced visit intervals and endpoints with every
+   per-block local replay check, including state, input-head position,
+   direction, physical cut, and the shared boundary observation;
+3. proves that simultaneous acceptance of all arbitrary advertised block
+   lists has one globally coherent glue and one global computation;
+4. certifies that every advertised cut is the leftmost minimum-crossing
    boundary of its bucket, including the required per-candidate counters;
-4. accepts exactly the true canonical transcript, so the accepted local
-   pieces have a unique global glue; and
-5. keeps the complete live carrier, including phase and validation data,
+5. accepts exactly the true canonical transcript; and
+6. keeps the complete live carrier, including phase and validation data,
    within `2^{O(b * log(tq))}`.
 
-The current segment-replay theorem proves the deterministic core needed by
-item 1 once the true entry interface is supplied.  Timed alpha now supplies
-durations and a terminal endpoint at an explicit transcript cost, and slab
-persistence transports an already equal disjoint slab across another block's
-visit.  Actual crossing records are now aligned exactly with the corresponding
-proper segment exits and the separate terminal convention.  For the true run,
-the target slab is also proved unchanged across every interval of non-target
-groups between two visits.  What is still missing is the validator-side lift:
-define one persistent local tape state per processed block, initialize it from
-blank, order its visits from a fixed guessed alpha, and prove that every
-accepted collection of local replays supplies the required entry restrictions
-and one unique global glue.  The current persistence theorem assumes the true
-group decomposition and its actual non-target labels.  None of items 2--5 is
-yet proved for a guessed transcript.  Completing this
+The current checker closes the deterministic replay core once a visit list is
+supplied: it initializes a slab, executes each visit, checks the exact local
+exit interface, and feeds the resulting slab into the next visit.  Timed alpha
+supplies strict decoded times and token endpoints, while slab persistence
+transports the target contents across true intervening non-target groups.  For
+the true run this is now connected through all repeated visits of every block,
+using one schedule witness and one literal blank initialization per block.
+The advertised-word schedule relation constructs all visits from decoded
+tokens and forces their endpoint/direction chain, including both terminal
+shapes; the true extracted alpha is now proved to satisfy it by an ordered
+correspondence with every actual maximal group.  What is still missing is the
+global soundness induction: expose the deterministic fold as an executable
+check, compose every arbitrary filtered block list with local replay, and show
+that simultaneous acceptance yields one unique global computation.  The current all-group
+schedule completeness theorem is still about the true extracted run, while
+the standalone local Bool checker can accept a locally realizable visit list
+unrelated to `alpha.word` unless it is paired with the schedule relation.
+Items 1--6 are therefore not yet collectively proved for an arbitrary guessed
+transcript.  Completing this
 machine-to-path-program construction at block scale `b` should give
 approximately
 
@@ -509,7 +584,7 @@ This question remains prose only.  It must not be represented by an axiom,
 typeclass, `Contract`, `Source`, `Provider`, structure field, or implicit
 instance.
 
-## Later-literature check (through 2026-07-10)
+## Later-literature check (through 2026-07-13)
 
 - The [journal version of CHMY](https://link.springer.com/article/10.1007/s00224-022-10113-9) retains the large-threshold one-tape result and the same Appendix-A magnification direction; it does not supply a small-threshold lower bound.
 - [ECCC TR25-017](https://eccc.weizmann.ac.il/report/2025/017/) develops a square-root-space simulation for multitape time, not the local HSG/PRG needed here.
@@ -535,6 +610,15 @@ instance.
   genuine WPRG advantage relies on negative weights.  Negative weights are
   compatible with the proved support endpoint, but the paper does not supply
   the missing one-tape aggregate construction or fixed-seed DAG locality.
+- [Volk, ECCC TR26-115](https://eccc.weizmann.ac.il/report/2026/115/)
+  proves an improved lower bound for read-once *parity* branching programs.
+  It is a model-specific lower bound, not a PRG/HSG for general unknown-order
+  Boolean ROBPs, and does not provide the CHMY fixed-seed locality statement.
+- The latest checked ECCC revision,
+  [Ren--Williams, TR26-118](https://eccc.weizmann.ac.il/report/2026/118/),
+  proves near-maximum circuit lower bounds for exponential time with
+  promise-MA queries.  It does not address one-tape MCSP, ROBP
+  pseudorandomness, or the validator-and-glue construction here.
 - Targeted searches for Boolean PRGs/HSGs for unambiguous branching programs,
   disjoint rectangle unions, and unambiguous DNFs found results only for
   substantially different restrictions (bounded width, known/regular/

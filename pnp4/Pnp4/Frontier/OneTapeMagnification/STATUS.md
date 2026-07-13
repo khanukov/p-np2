@@ -328,6 +328,19 @@ must use.
   of a disjoint protected slab is therefore preserved automatically while the
   visited slab is replayed.  The theorem still needs that protected-slab
   equality at entry; it does not yet construct the across-revisit invariant.
+- `CanonicalSlabPersistence.lean`: instantiates that fact on the selected-cut
+  geometry.  Canonical upper endpoints stay within `T + 1`, distinct block
+  labels have disjoint slabs, and the no-full-bucket and zero-time cases are
+  explicit.  Replaying one actual maximal group preserves an already equal
+  restriction of every other canonical block, including the final exit step.
+- `ActualBlockVisitPersistence.lean`: closes the corresponding actual-run
+  across-revisit fact.  A consecutive slice of maximal groups is proved to be
+  its exact half-open time interval; if every intervening group has a
+  non-target label, the target slab restriction after the first visit equals
+  its restriction at the second entry.  Empty intervening slices are
+  reflexive, while `T = 0` and a terminal crossing cannot fabricate a second
+  nonempty visit.  The theorem consumes the true group decomposition and does
+  not validate a guessed transcript.
 - `LocalBlockReplayComposition.lean`: composes two same-input slab replays.
   State and both heads at the second entry follow from the first replay, while
   equality of the destination slab at the midpoint remains an explicit and
@@ -459,11 +472,15 @@ item 1 once the true entry interface is supplied.  Timed alpha now supplies
 durations and a terminal endpoint at an explicit transcript cost, and slab
 persistence transports an already equal disjoint slab across another block's
 visit.  Actual crossing records are now aligned exactly with the corresponding
-proper segment exits and the separate terminal convention.  What is still
-missing is the block-grouped persistent-slab invariant
-that derives the required destination equality from the blank start and all
-earlier visits without storing every slab in global alpha.  None of items
-2--5 is yet proved for a guessed transcript.  Completing this
+proper segment exits and the separate terminal convention.  For the true run,
+the target slab is also proved unchanged across every interval of non-target
+groups between two visits.  What is still missing is the validator-side lift:
+define one persistent local tape state per processed block, initialize it from
+blank, order its visits from a fixed guessed alpha, and prove that every
+accepted collection of local replays supplies the required entry restrictions
+and one unique global glue.  The current persistence theorem assumes the true
+group decomposition and its actual non-target labels.  None of items 2--5 is
+yet proved for a guessed transcript.  Completing this
 machine-to-path-program construction at block scale `b` should give
 approximately
 

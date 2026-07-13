@@ -387,6 +387,8 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.OneTapeMagnification.CanonicalBlockSlabs,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.ActualSegmentSlabReplay,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.ActualCrossingSegmentAlignment,
+    Glob.one `Pnp4.Frontier.OneTapeMagnification.CanonicalSlabPersistence,
+    Glob.one `Pnp4.Frontier.OneTapeMagnification.ActualBlockVisitPersistence,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.LocalBlockStateCount,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.SeparatorScaleBarrier,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.PublishedSeedBarrier,

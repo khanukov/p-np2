@@ -1,6 +1,6 @@
 # One-tape small-threshold status
 
-Status: **LOWER-LAYER BARRIERS AND DETERMINISTIC LOCAL-HSG CAPSTONE PROVED; NO REQUIRED GENERATOR OR SMALL-THRESHOLD LOWER BOUND**
+Status: **EXECUTABLE CANONICAL-TRANSCRIPT UNIQUENESS PROVED; VALIDATOR-WIDTH, GENERATOR, AND SMALL-THRESHOLD LOWER-BOUND BRIDGES OPEN**
 
 Primary sources:
 
@@ -404,6 +404,64 @@ must use.
   slab, and folds to the exact actual block slab at time `T`.  This closes
   all-visit replay completeness for the true transcript; it does not prove
   global soundness for an arbitrary advertised alpha.
+- `ExecutableTimedAlphaVisitChecker.lean`: makes the advertised token fold and
+  terminal finish executable, proves exact `Option`/relation reflection, and
+  combines schedule validity with every stable per-block replay check from a
+  literal blank slab in one Boolean predicate.  The actual extracted alpha has
+  one schedule accepted by this combined checker.  No reachability premise is
+  hidden in its reflection theorem.
+- `ArbitraryAlphaGlobalGlue.lean` and
+  `ExecutableTimedAlphaGlobalGlue.lean`: close arbitrary-alpha computation
+  soundness.  The per-block carried replay folds are interleaved through one
+  dependent slab store; one accepted visit updates its source slab and leaves
+  every disjoint slab unchanged, including when its last transition enters the
+  destination block.  Therefore simultaneous blank-start acceptance realizes
+  every visit on one deterministic global run, and the advertised terminal
+  endpoint is exactly the run endpoint at time `T`.  The executable corollary
+  needs only the combined Boolean checker.  This theorem is about computation
+  soundness for advertised geometry; it does not alone establish canonical
+  cut selection or equality of the padded token word.
+- `AdvertisedCutMinimalityChecker.lean`: gives exact Bool/Prop reflection for
+  minimum crossing count plus the leftmost tie-break in every full bucket.
+  Against the actual blank-start crossing profile, acceptance is equivalent to
+  `alpha.offsets = canonicalCutOffsets`, and equivalently to equality of the
+  reconstructed physical cuts with `canonicalCutDescription`.  This closes the
+  semantic cut-selection property, but the present specialized checker directly
+  evaluates the real run's candidate counts; it is not yet the compact
+  per-block counter implementation or its complete live-width bound.
+- `FixedAlphaCutCounterReplay.lean`: removes that semantic dependence on a
+  precomputed global trajectory.  A recursive streaming counter follows each
+  locally materialized visit; it is additive, equals the existing finite-sum
+  crossing count, and is invariant under the same-on-slab replay relation.
+  Interleaving all accepted visits from the blank slab store yields exactly the
+  complete actual crossing profile.  Consequently a replay-based combined
+  Boolean checkpoint accepts exactly a valid all-block schedule whose offsets
+  are `canonicalCutOffsets`.  For one full bucket the state exposed is exactly
+  `Fin b -> Nat`, and every one of its `b` counters is at most `T`.  This proves
+  the information needed for a future bounded representation, but does not yet
+  encode the counters as bits, build their update circuit, establish a
+  read-once branching program, or prove the complete width bound.
+- `CutCounterStateCount.lean`: replaces those `b` bounded natural values by
+  the explicit carrier `Fin b -> Fin (T + 1)`, of exact cardinality
+  `(T + 1)^b`, and pairs it with the already justified local replay state.
+  The product carrier has exact size
+  `(|Q| * (T + 1) * w * 2^w) * (T + 1)^b`; for a canonical slab it is bounded
+  by `(|Q| * (T + 1) * (2b) * 2^(2b)) * (T + 1)^b`.  Accepted replay counters
+  are embedded in this carrier and retain exact equality with the actual
+  candidate counts.  This is a finite-state cardinal checkpoint, not yet a
+  transition circuit, read-once program, or full validator-width theorem.
+- `ExecutableTimedAlphaCanonicality.lean`: closes exact transcript
+  canonicality for the lower checker.  An accepted fold accounts for every
+  selected-boundary crossing and no other token; the terminal visit cannot
+  hide a final crossing.  Prefix shape then recovers the whole padded word,
+  global glue fixes the terminal endpoint, and the replayed leftmost-minimum
+  counters fix every offset.  Hence the combined replay-only checker accepts
+  only `chronologicalTimedCanonicalAlpha`, and any two accepted ambient alphas
+  are equal (possibly with different exposed schedules).  Together with the
+  existing completeness witness, this gives existence and uniqueness of the
+  canonical run transcript, including `T = 0`.  It does not yet compile the
+  checker into a bounded-width read-once branching program or prove an
+  acceptance lower bound for a language.
 - `LocalBlockReplayComposition.lean`: composes two same-input slab replays.
   State and both heads at the second entry follow from the first replay, while
   equality of the destination slab at the midpoint remains an explicit and
@@ -498,9 +556,30 @@ not by itself prove `NP not_subset P/poly`.
 ## Exact open frontier
 
 No one-tape lower bound at the required small threshold and no generator with
-the required seed/locality exponent has been proved.  The deterministic finite
-capstone is now closed conditional on dense hitting; the missing mathematical
-object is narrower:
+the required seed/locality exponent has been proved.  The lower certificate
+layer is nevertheless substantially sharper than before: the executable
+schedule/all-block/replayed-cut checker has an actual-run completeness witness,
+and acceptance of any advertised `alpha` forces equality with the unique
+chronological canonical transcript.  This authenticates the deterministic run;
+it does not by itself require that the terminal state accepts a language.
+
+The immediate lower-layer implementation theorem still missing is:
+
+> Compile the combined canonical-transcript checker into one deterministic
+> adaptive read-once branching program (or an equally explicit local path
+> program), including schedule phase, slab replay, terminal handling, and
+> leftmost-minimum counter updates, and prove that its complete live carrier is
+> at most `2^{O(b * log(Tq))}`.
+
+The present Lean checker is executable and extensionally exact, but its list
+recursions, filtered per-block passes, dependent slab store, and natural-number
+counter updates have not been compiled into that read-once state machine.
+`CutCounterStateCount.lean` counts one justified slab/counter carrier; it does
+not yet account for every phase and control component of the whole validator or
+prove an exact transition/update circuit.  In particular, one cannot simply
+infer the desired width bound from executability.
+
+After that implementation theorem, the central generator object is:
 
 > Construct a circuit-local HSG, or a signed WPRG whose support is such an HSG,
 > for the **canonical coherent union of path-transcript programs** produced by
@@ -509,83 +588,69 @@ object is narrower:
 > `N^mu`, and its error/hitting guarantee must apply to the aggregate predicate
 > directly, without an `epsilon / |A|` union bound over transcripts.
 
-The canonical-boundary selection, its instantiation on actual runs, exact
-endpoint gaps, chronological padded crossing data, maximal-run schedule, and
-same-slab replay of every actual segment are now formal.  Arbitrary advertised
-offsets now determine a proved slab partition, the padded timed word has an
-executable syntactic checker, and a supplied per-block visit list has an
-executable replay checker that carries slab contents between visits.  The true
-run supplies one exact schedule witness whose filtered list for every block is
-accepted from blank and reconstructs that block's exact final slab.  A
-lossless finite suffix-gluing interface is also formal, but it carries all
-`T + 1` reachable tape bits and is exponentially large.
+Canonical boundary selection, schedule construction, every local replay,
+arbitrary-alpha global glue, streamed cut counts, leftmost tie-breaking, exact
+decoded-word recovery, and full accepted-alpha uniqueness are now formal.  The
+combined replay-only checker does not call the semantic actual-run profile in
+its definition; the actual run appears only in its soundness/completeness
+proofs.  A lossless finite suffix-gluing fallback is also formal, but carries
+all `T + 1` reachable tape bits and is exponentially large.
 
-The immediate lower-layer gap is now the **validator-and-glue theorem**.  For
-one fixed chronological `alpha`, finish a finite local block validator which:
-
-1. exposes an executable constructor/checker for the deterministic
-   decoded-token schedule relation and proves its equivalence to the current
-   relational specification;
-2. composes the token-forced visit intervals and endpoints with every
-   per-block local replay check, including state, input-head position,
-   direction, physical cut, and the shared boundary observation;
-3. proves that simultaneous acceptance of all arbitrary advertised block
-   lists has one globally coherent glue and one global computation;
-4. certifies that every advertised cut is the leftmost minimum-crossing
-   boundary of its bucket, including the required per-candidate counters;
-5. accepts exactly the true canonical transcript; and
-6. keeps the complete live carrier, including phase and validation data,
-   within `2^{O(b * log(tq))}`.
-
-The current checker closes the deterministic replay core once a visit list is
-supplied: it initializes a slab, executes each visit, checks the exact local
-exit interface, and feeds the resulting slab into the next visit.  Timed alpha
-supplies strict decoded times and token endpoints, while slab persistence
-transports the target contents across true intervening non-target groups.  For
-the true run this is now connected through all repeated visits of every block,
-using one schedule witness and one literal blank initialization per block.
-The advertised-word schedule relation constructs all visits from decoded
-tokens and forces their endpoint/direction chain, including both terminal
-shapes; the true extracted alpha is now proved to satisfy it by an ordered
-correspondence with every actual maximal group.  What is still missing is the
-global soundness induction: expose the deterministic fold as an executable
-check, compose every arbitrary filtered block list with local replay, and show
-that simultaneous acceptance yields one unique global computation.  The current all-group
-schedule completeness theorem is still about the true extracted run, while
-the standalone local Bool checker can accept a locally realizable visit list
-unrelated to `alpha.word` unless it is paired with the schedule relation.
-Items 1--6 are therefore not yet collectively proved for an arbitrary guessed
-transcript.  Completing this
-machine-to-path-program construction at block scale `b` should give
-approximately
+At block scale `b`, the intended compiled bounds remain approximately
 
 ```text
 log(width) = O(b * log(tq)),
 log(number of transcripts) = O((t / b) * log(tq)).
 ```
 
-Balancing the two reproduces `sqrt(t)`.  A collective construction that pays
-for the first term but not the transcript count could choose
-`b = N^mu / polylog(N)` and reach the required threshold.  The
-scale-parameterized validator-and-unique-glue theorem and the collective HSG
-are not yet formalized.  Even a successful validator would still leave the
-separate generator problem stated above: fool or hit the coherent disjoint
-union directly without paying `epsilon / |A|` over transcripts.
+Balancing both terms reproduces the published `sqrt(t)` loss.  Uniqueness makes
+the coherent union unambiguous, but generic unambiguity does not imply a
+small deterministic FBDD.  A successful route must exploit one-tape geometry
+to pay for the first term without materializing the transcript-count term, or
+construct a generator that hits/fools the unambiguous aggregate directly.
+Only then could one choose `b = N^mu / polylog(N)` at the magnification scale.
 `BoundaryTapeInterface.lean` identifies the exact lossless-but-exponential
 fallback, while `SeparatorScaleBarrier.lean` proves the numerical single-scale
 tradeoff.
+
+Even a generator theorem would still need its fixed-seed output tables proved
+to have standard-DAG complexity at most `N^mu`, followed by an explicit bridge
+from the resulting one-tape lower bound into the repository's `PpolyDAG` /
+`VerifiedNPDAGLowerBoundSource` main line.  None of these open statements is an
+axiom, contract, provider, or hidden instance.
 
 The remaining direct alternative is an adaptive many-cut YES/NO splicing
 lemma for low-circuit truth tables.  The fixed-bipartition row theorem shows
 why a standard one-cut communication lower bound cannot be that lemma, but it
 does not exclude adaptive crossing signatures.
 
-This question remains prose only.  It must not be represented by an axiom,
-typeclass, `Contract`, `Source`, `Provider`, structure field, or implicit
-instance.
+This alternative also remains prose only.
 
 ## Later-literature check (through 2026-07-13)
 
+- [Viola, Theory of Computing 2022, Theorem 2.2 and Section 3](https://theoryofcomputing.org/articles/v018a010/v018a010.pdf)
+  confirms that the paper-level lower validator is intended to accept exactly
+  one transcript on an accepting run: block replay checks the crossing data,
+  and per-boundary counters enforce the minimum count with the smallest cut on
+  ties.  Thus arbitrary-alpha global glue is not a new paper-level assumption;
+  the formal contribution here is its exact executable realization and edge-
+  case audit in the repository's machine convention.
+- [Chen--Lyu--Tal--Wu, ICALP 2023, Theorem 7](https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.ICALP.2023.39)
+  is the strongest directly relevant structural lead found: it fools width-`w`
+  deterministic adaptive read-once branching programs with seed
+  `O(log n * log^2(nw/epsilon))`.  It would avoid a transcript union bound if
+  the canonical coherent union could first be compiled into one deterministic
+  adaptive program at acceptable width and with the required fixed-seed
+  locality.  Neither compilation is currently proved here or in that paper.
+- Generic unambiguity does not supply that compilation.  [Amarilli--Capelli--
+  Monet--Senellart, Theory of Computing Systems 2019, Proposition 3.1](https://pierre.senellart.com/publications/amarilli2019connecting.pdf)
+  gives an exponential separation between unambiguous FBDDs and deterministic
+  FBDDs.  Therefore any deterministic-adaptive reduction must exploit the
+  special canonical one-tape geometry rather than invoke uniqueness alone.
+- CHMY's [Theorem 23 and Lemma 27](https://eccc.weizmann.ac.il/report/2020/103/revision/1/download/)
+  instead decompose a nondeterministic ROBP into rectangles and choose error
+  inversely proportional to the number of components.  That is exactly the
+  aggregate union-bound loss whose square-root-scale cost remains open here.
 - The [journal version of CHMY](https://link.springer.com/article/10.1007/s00224-022-10113-9) retains the large-threshold one-tape result and the same Appendix-A magnification direction; it does not supply a small-threshold lower bound.
 - [ECCC TR25-017](https://eccc.weizmann.ac.il/report/2025/017/) develops a square-root-space simulation for multitape time, not the local HSG/PRG needed here.
 - [Cheng--Wu, ECCC TR25-027, Theorems 1.5 and 1.7](https://eccc.weizmann.ac.il/report/2025/027/revision/4/download)
@@ -614,6 +679,11 @@ instance.
   proves an improved lower bound for read-once *parity* branching programs.
   It is a model-specific lower bound, not a PRG/HSG for general unknown-order
   Boolean ROBPs, and does not provide the CHMY fixed-seed locality statement.
+- [Dermer--Shaltiel, ECCC TR26-017, revision 1](https://eccc.weizmann.ac.il/report/2026/017/)
+  gives strong multiplicative PRGs for nondeterministic circuits only under an
+  exponential nondeterministic-circuit lower-bound assumption for `E`.  It is
+  therefore a conditional hardness-vs-randomness route, not an unconditional
+  way around the present aggregate-generator barrier.
 - The latest checked ECCC revision,
   [Ren--Williams, TR26-118](https://eccc.weizmann.ac.il/report/2026/118/),
   proves near-maximum circuit lower bounds for exponential time with

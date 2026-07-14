@@ -176,6 +176,24 @@ must use.
   |Table|`, that predicate is nonempty, and its exact accepted-set cardinality
   and the lower bound `|Table| - |Seed|` are proved.  Therefore an HSG theorem
   cannot quantify over an unrestricted predicate class.
+- `DenseSupportAvoidanceBarrier.lean` makes the same obstruction match the
+  actual `> 1/2` hitting threshold.  Universal dense hitting forces the image
+  to contain at least half of all truth tables and therefore forces almost
+  full truth-table-length seed, `2^n <= seedBits + 1`.  Short seed is possible
+  only after restricting the predicate class.
+- `FiniteCheckpointToPpolyDAGBridge.lean` closes the constructive fixed-seed
+  hardwiring subproblem.  A constant-free standard DAG on joint `(seed,x)`
+  inputs becomes, for every fixed seed and every `n>0`, an AND/OR/NOT standard
+  DAG on `x` with exact gate count
+  `uniform.gateCount + 2*seedBits`; the two extra gates per seed bit implement
+  a Boolean constant from `x_0` without adding constant gates.  This directly
+  builds `DAGLocalGenerator.image_easy`.  The same file states the remaining
+  finite `PpolyDAG -> BoundedErrorMCSPBehavior` extraction arrow and proves the
+  explicit conditional asymptotic implication from `C_DAG`-fooling slices at
+  every polynomial exponent to `NP_not_subset_PpolyDAG` and `P != NP`.  It
+  derives neither that extraction arrow nor either pseudorandomness hypothesis;
+  the asymptotic endpoint also keeps the all-length slice identity and NP
+  membership as visible assumptions.
 - `UnambiguousFamilyBarrier.lean`: every Boolean predicate is exactly the
   disjoint union of singleton components, with one accepting component on
   each accepted input and none on rejected inputs.  Abstract unambiguity alone
@@ -673,12 +691,25 @@ must use.
   Boolean is exactly the conjunction of that fold's two flags.  There is no
   existential reached-state or rolling-completion residual left.
 - `GuardedFiniteCachedAllBlocksInPlaceCompiler.lean` puts the exact fused
-  verifier behind the total master guard.  It is unconditionally read-once,
-  has the explicit homogeneous width and power-of-two bounds, and its accepted
-  canonical query trace is exactly the schedule master.  For a valid accepted
-  schedule, the guard is observationally invisible and the guarded compiled
-  evaluation equals `timedAlphaInPlaceTwoWindowFoldCheck` directly; neither a
-  reflection, follows-master, nor fused-fold premise remains.
+  verifier behind the total master guard.  It is unconditionally read-once.
+  Under the stated block, valid-schedule, and monotonicity hypotheses it has
+  explicit homogeneous width and power-of-two bounds; on a valid accepted
+  schedule its canonical query trace is exactly the schedule master.  There
+  the guard is observationally invisible and the guarded compiled evaluation
+  equals `timedAlphaInPlaceTwoWindowFoldCheck` directly; neither a reflection,
+  follows-master, nor fused-fold premise remains.
+- `GuardedCanonicalAggregateEndpoint.lean` now takes the finite OR of all
+  in-place accepting timed-alpha components by an explicit executable
+  `Finset.univ.fold` and proves it pointwise equal to bounded deterministic
+  one-tape acceptance.  For the cache-normalized machine, aggregate `true` is
+  exactly existence of a certificate containing a valid schedule, every
+  blank-start replay, the actual total master-guarded compiled evaluation,
+  and an accepting terminal state; every such certificate has the unique
+  chronological canonical alpha.  A single signed weighted approximation of
+  this one aggregate, with one scalar error below `1/2`, reaches the finite
+  MCSP contradiction without any per-alpha premise or union bound.  The file
+  does not construct that weighted generator or prove the aggregate belongs
+  to a small generator-friendly class.
 - `LocalBlockReplayComposition.lean`: composes two same-input slab replays.
   State and both heads at the second entry follow from the first replay, while
   equality of the destination slab at the midpoint remains an explicit and
@@ -714,6 +745,41 @@ must use.
   no cancellation beyond the triangle inequality.  These are black-box
   barriers only; a successful route may still exploit shared one-tape
   transition geometry in a bounded-state online canonicalizer.
+- `OnlineCanonicalCutExtraction.lean` exploits that geometry on the
+  trajectory side.  An executable left-to-right `argmin` over `b` bounded
+  counters returns exactly the canonical cut of one bucket.  One fused
+  chronological transition updates every bucket simultaneously, its decoded
+  vector is exactly `canonicalCutOffsets`, and an accepted component's cut
+  field is exactly this output, without querying a black-box OR over alphas.
+  A one-bucket auxiliary carrier has `(T+1)^b` states.  Literal lossless
+  retention of every bucket's exact counters has
+  `(T+1)^(b*(T/b))` states, and any left-invertible encoding of that entire
+  literal carrier is at least as large.  This is not a lower bound against a
+  compressed reachable-state representation, and the configuration needed
+  to generate the work-head trajectory is not included in either width claim.
+- `WorkHeadCrossingFlowCompression.lean` proves the first exact
+  geometry-aware compression of that literal carrier.  For every boundary,
+  the crossing count is
+  `2 * leftReturnCount + [boundary < finalHead]`; hence the final head fixes
+  the entire parity profile.  All distinct full-bucket counters also have
+  total mass at most `T`.  Endpoint plus half-counters losslessly encodes every
+  parity-consistent state inside
+  `(T+1) * (T/2+1)^(b*(T/b))` possibilities, while a stars-and-bars encoding
+  of the global mass gives `choose (T + b*(T/b)) T`; the proved combined bound
+  is their minimum and in particular at most `2^(2T)`, and the actual one-pass
+  vector inhabits that subtype.
+  This removes the vast collection of independent impossible counter states,
+  but still retains information indexed by all full-bucket boundaries and
+  still omits the trajectory-generating work-tape configuration.
+- `DenseSupportAvoidanceBarrier.lean` sharpens the unrestricted-predicate
+  obstruction at the density actually used by the HSG endpoint.  If a
+  generator image occupies less than half of the truth-table cube, its
+  explicit support complement is dense above one half and is missed by every
+  seed.  Hence hitting every dense truth-table predicate forces the distinct
+  image to cover at least half the cube and forces
+  `2^n <= seedBits + 1`.  The avoiding predicate depends on the generator and
+  is not shown to be a small one-tape predicate; the theorem proves that a
+  successful short-seed result must exploit the structured aggregate class.
 - `SeparatorScaleBarrier.lean`: for every single-scale accounting satisfying
   `time <= blockCost * transcriptCost`, one common budget that dominates both
   costs must have square at least `time`.  A budget below square-root capacity
@@ -724,9 +790,12 @@ must use.
 Together with the fixed-split row bound, these lemmas rule out six overly
 coarse mechanisms: unrestricted predicates, bare unambiguity, black-box
 component search, cancellation from disjointness alone, independent
-single-scale charging, and one fixed communication cut.  They do not rule out
-a geometry-aware coherent HSG, bounded-state online canonicalizer, or adaptive
-many-cut splicing argument.
+single-scale charging, and one fixed communication cut.  The new online
+extractor positively removes black-box selection for the cut offsets once a
+trajectory is available, but does not yet generate that trajectory in small
+state.  These results do not rule out a geometry-aware coherent HSG, a
+compressed bounded-state online canonicalizer, or an adaptive many-cut
+splicing argument.
 
 ## Proved published-parameter barrier
 
@@ -806,26 +875,40 @@ complexity assumption:
   established in-place fold under the replay certificates extracted by the
   outer Boolean;
 - the fused dependent state embeds injectively into the homogeneous counted
-  carrier, and its compiled width has an explicit power-of-two bound equal to
-  the existing state budget plus the layer-fuel `clog`;
+  carrier, and on the valid schedule branch its compiled width has an explicit
+  power-of-two bound whose exponent is the fixed-alpha state budget plus the
+  layer-fuel and master-cursor `clog` terms;
 - the literal fused execution reaches exactly
   `inPlaceTwoWindowBlockFold`, so its compiled evaluation is the exact fold
   Boolean rather than merely the flags of an existential reached state.
 
 Thus the lower finite validator can be packaged as one canonical guarded
-read-once component with exact accepted-input semantics and counted
-`2^{O(b * log(Tq))}` width.  The raw unguarded verifier is deliberately not
-claimed read-once on malformed rejecting paths; the total master guard handles
-those paths without changing canonical accepted executions.
+read-once component with exact accepted-input semantics and an explicit
+power-of-two width bound on the valid schedule branch.  Its exponent is the
+displayed state budget plus the two cursor terms; the intended
+`O(b * log(Tq))` shape still requires the standard parameter inequalities and
+cursor-length estimates and is not claimed here as a proved asymptotic theorem.
+The raw unguarded verifier is deliberately not claimed read-once on malformed
+rejecting paths; the total master guard handles those paths without changing
+canonical accepted executions.
+
+The finite aggregate endpoint is now equally explicit.  The executable OR of
+all canonical components equals bounded one-tape acceptance, and the
+cache-normalized aggregate equals existence of a genuine total
+master-guarded fused accepting certificate.  Therefore one signed-WPRG
+approximation of this single Boolean aggregate reaches the local-HSG/MCSP
+contradiction with one error parameter.  The transcript-count union bound is
+not a logical requirement of the endpoint anymore; it reappears only in the
+currently known componentwise constructions.
 
 After that implementation theorem, the central generator object is:
 
-> Construct a circuit-local HSG, or a signed WPRG whose support is such an HSG,
-> for the **canonical coherent union of path-transcript programs** produced by
-> the Viola simulation of a deterministic one-tape machine.  Its seed and
-> fixed-seed DAG complexity must be at most the magnification-admissible
-> `N^mu`, and its error/hitting guarantee must apply to the aggregate predicate
-> directly, without an `epsilon / |A|` union bound over transcripts.
+> Construct a circuit-local HSG, or a signed WPRG whose nonzero support is such
+> an HSG, for the **single executable cache-normalized master-guarded canonical
+> aggregate** now defined in Lean.  Its seed and fixed-seed DAG complexity must
+> be at most the magnification-admissible `N^mu`, and its one approximation or
+> hitting guarantee must apply directly to that aggregate, without replacing
+> it by an `epsilon / |A|` family of componentwise guarantees.
 
 Canonical boundary selection, schedule construction, every local replay,
 arbitrary-alpha global glue, streamed cut counts, leftmost tie-breaking, exact
@@ -834,6 +917,30 @@ combined replay-only checker does not call the semantic actual-run profile in
 its definition; the actual run appears only in its soundness/completeness
 proofs.  A lossless finite suffix-gluing fallback is also formal, but carries
 all `T + 1` reachable tape bits and is exponentially large.
+
+There is now a second, trajectory-side construction that computes all
+canonical cut offsets directly and executably in one chronological pass, so
+cut selection itself no longer requires enumerating alpha components.  Its
+literal simultaneous state retains one counter for every candidate boundary,
+however, and the actual configuration driving the trajectory still contains
+the work tape.  The remaining online-canonicalizer problem is to combine
+local replay with a compressed cross-bucket summary while preserving the
+selected timed crossing tokens and terminal semantics; replaying or storing
+the full trajectory would lose the desired width.
+
+The one-dimensional flow law now removes another false obstruction: actual
+counter vectors are not arbitrary points of `(T+1)^(b*(T/b))`.  Their parities
+form the prefix determined by the final head and their coordinate sum is at
+most `T`, yielding the explicit combined cardinal upper bound
+`min (choose (T + b*(T/b)) T)
+     ((T+1)*(T/2+1)^(b*(T/b)))`.
+It is in particular at most `2^(2T)`, replacing the literal
+independent-counter product bound by an explicit `O(T)`-bit carrier bound.
+This is a substantial reachable-profile compression, but it
+is still indexed by essentially every boundary.  The missing step is a
+sufficient statistic whose state count is controlled by the local `b` scale
+while supporting online updates and later recovery of all selected timed
+tokens.
 
 At block scale `b`, the intended compiled bounds remain approximately
 
@@ -847,20 +954,30 @@ the coherent union unambiguous, but generic unambiguity does not imply a
 small deterministic FBDD.  The formal black-box selector bound shows that an
 adaptive OR of component bits still needs to inspect every alpha, and the
 two-component example shows that disjointness alone gives no error
-cancellation.  A successful route must therefore exploit shared one-tape
-geometry in a bounded-state online canonicalizer, or construct a generator
-that hits/fools the unambiguous aggregate directly.
+cancellation.  The new fused cut extractor shows that shared one-tape geometry
+does beat that black-box selector for the cut field, but its literal
+all-boundary state has no magnification-admissible local-width bound and its
+trajectory driver is not local.  A successful route must compress and locally
+drive this canonicalizer, or construct a generator that hits/fools the single
+aggregate directly.
 Only then could one choose `b = N^mu / polylog(N)` at the magnification scale.
 `BoundaryTapeInterface.lean` identifies the exact lossless-but-exponential
 fallback, `UnambiguousAggregateSelectorBarrier.lean` rules out the two
 black-box shortcuts, and `SeparatorScaleBarrier.lean` proves the numerical
 single-scale tradeoff.
 
-Even a generator theorem would still need its fixed-seed output tables proved
-to have standard-DAG complexity at most `N^mu`, followed by an explicit bridge
-from the resulting one-tape lower bound into the repository's `PpolyDAG` /
-`VerifiedNPDAGLowerBoundSource` main line.  None of these open statements is an
-axiom, contract, provider, or hidden instance.
+The fixed-seed locality *transformation* is no longer open: one joint
+constant-free generator DAG on `(seed,x)` hardwires to a paper-basis output DAG
+with exact additive cost `2*seedBits`.  What remains is to construct that
+joint DAG at total size at most the magnification threshold for the actual
+  aggregate generator.  At the `PpolyDAG` interface, the finite checkpoint now exposes
+the precise missing behavior-extraction arrow
+`PpolyDAG L -> BoundedErrorMCSPBehavior ...`; independently, an explicit
+asymptotic theorem shows that `C_DAG`-fooling local-PRG slices for every
+polynomial exponent, together with a single NP slice language, imply
+`NP_not_subset_PpolyDAG` and `P != NP`.  Neither the extraction arrow nor the
+quantified fooling family is derived by the present one-tape compiler.  None
+of these open statements is an axiom, contract, provider, or hidden instance.
 
 The remaining direct alternative is an adaptive many-cut YES/NO splicing
 lemma for low-circuit truth tables.  The fixed-bipartition row theorem shows
@@ -869,7 +986,7 @@ does not exclude adaptive crossing signatures.
 
 This alternative also remains prose only.
 
-## Later-literature check (through 2026-07-13)
+## Later-literature check (through 2026-07-14)
 
 - [Viola, Theory of Computing 2022, Theorem 2.2 and Section 3](https://theoryofcomputing.org/articles/v018a010/v018a010.pdf)
   confirms that the paper-level lower validator is intended to accept exactly
@@ -893,7 +1010,10 @@ This alternative also remains prose only.
 - CHMY's [Theorem 23 and Lemma 27](https://eccc.weizmann.ac.il/report/2020/103/revision/1/download/)
   instead decompose a nondeterministic ROBP into rectangles and choose error
   inversely proportional to the number of components.  That is exactly the
-  aggregate union-bound loss whose square-root-scale cost remains open here.
+  componentwise construction loss whose square-root-scale cost remains open
+  here.  The new single-aggregate endpoint proves that this loss is not needed
+  after an aggregate approximation has already been obtained; constructing
+  that approximation is the unresolved step.
 - The [journal version of CHMY](https://link.springer.com/article/10.1007/s00224-022-10113-9) retains the large-threshold one-tape result and the same Appendix-A magnification direction; it does not supply a small-threshold lower bound.
 - [ECCC TR25-017](https://eccc.weizmann.ac.il/report/2025/017/) develops a square-root-space simulation for multitape time, not the local HSG/PRG needed here.
 - [Cheng--Wu, ECCC TR25-027, Theorems 1.5 and 1.7](https://eccc.weizmann.ac.il/report/2025/027/revision/4/download)

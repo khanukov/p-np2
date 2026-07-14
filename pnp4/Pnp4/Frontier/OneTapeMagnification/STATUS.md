@@ -1,6 +1,6 @@
 # One-tape small-threshold status
 
-Status: **EXECUTABLE CANONICAL-TRANSCRIPT UNIQUENESS PROVED; VALIDATOR-WIDTH, GENERATOR, AND SMALL-THRESHOLD LOWER-BOUND BRIDGES OPEN**
+Status: **THE FINITE ONE-TAPE VALIDATOR IS EXACT THROUGH THE GUARDED, COUNTED, READ-ONCE FUSED COMPILER. THE AGGREGATE GENERATOR, ITS FIXED-SEED DAG LOCALITY, AND THE SMALL-THRESHOLD LOWER BOUND REMAIN OPEN**
 
 Primary sources:
 
@@ -462,6 +462,223 @@ must use.
   canonical run transcript, including `T = 0`.  It does not yet compile the
   checker into a bounded-width read-once branching program or prove an
   acceptance lower bound for a language.
+- `ExecutableTimedAlphaComponent.lean` and `SelectedCutMultiplicity.lean`:
+  remove the externally supplied schedule from the public component check.
+  The schedule is built internally, the accepted alpha is exactly the unique
+  chronological canonical alpha, accepting and rejecting components are
+  disjoint, and the finite sum of accepting-component indicators is exactly
+  the machine acceptance bit.  For an accepted canonical component, decoded
+  bucket-token multiplicity equals the selected boundary's actual crossing
+  count.  These are exact component semantics, not an aggregate PRG theorem.
+- `TimedAlphaFixedQueryOrder.lean`, `TimedAlphaInputPermutation.lean`, and
+  `ExecutableTimedAlphaQueryOrder.lean`: derive the query order from fixed
+  machine/alpha advice without consulting the input.  Acceptance proves that
+  the natural order is a duplicate-free permutation of the advertised fresh
+  interval.  Clipping to `Fin n` and appending a canonical dummy suffix gives
+  a complete permutation of `List.finRange n`, including `n = 0`, `T = 0`,
+  and terminal heads on either side of `n`.  Thus an individual valid alpha
+  has a genuinely fixed finite input order; selecting the valid alpha for the
+  coherent union is still open.
+- `OnePassBoundaryCounterVector.lean`, `OnePassFixedAlphaVisit.lean`,
+  `OnePassFixedAlphaBlockList.lean`, `AdvertisedBlockCandidateGeometry.lean`,
+  `OneSidedCutMinimumCheck.lean`, and
+  `OnePassAdvertisedBlockCutCheck.lean`: fuse local replay and all named
+  boundary counters into one traversal.  One slab and one bounded vector are
+  threaded across every visit of one block without reset, with exact
+  coordinate values and total advertised duration at most `T`.  The two
+  `b`-windows are exactly the candidate boundaries adjacent to the block;
+  asymmetric strict/non-strict comparisons are equivalent to the required
+  leftmost tie-breaking, including edge blocks.
+- `InPlaceTwoWindowBlockFold.lean`, `BlockGroupedCrossingProfile.lean`,
+  `NonadjacentBlockCrossingZero.lean`, and
+  `InPlaceTwoWindowScheduleClosure.lean`: give the rolling global counter
+  core and close its schedule-level semantics.
+  Processing blocks left-to-right starts the first half with the previous
+  block's right-window contribution, adds the current block's left-window
+  contribution in place, checks the now-complete bucket exactly once, moves
+  the current right half left, and clears the other half.  A sharp
+  nonsaturation theorem keeps the horizon at `T`, so the live carrier remains
+  `Fin (b + b) -> Fin (T + 1)`.  The block-grouped sum is proved equal to the
+  chronological actual profile, and every nonadjacent source block is proved
+  to contribute zero.  Consequently the existing executable schedule/all-
+  block check now implies an unconditional exact equivalence between the
+  combined rolling-fold flags and actual leftmost-minimum cut validity.
+- `ExecutableInPlaceTimedAlphaComponent.lean` installs that rolling fold in a
+  schedule-free canonical component.  The resulting executable Boolean
+  accepts exactly the unique chronological alpha, and the coherent union of
+  its acceptance-gated components is exactly deterministic acceptance.  This
+  removes the full replayed crossing-profile checkpoint from the component's
+  semantic interface; it does not yet package all visits and the fold into one
+  finite branching-program state.
+- `FullBlockValidatorStateCount.lean` corrects the former one-vector
+  undercount.  With cached control, a padded `2b` slab, and both counter
+  windows, the exact live carrier is
+  `((1+3|Q|)(H+1)(2b)2^(2b))(H+1)^(2b)`; a reject sink adds one state.
+  `PaddedLocalReplayState.lean` supplies the lossless embedding of every
+  heterogeneous advertised slab into that common width, preserving reads,
+  writes, full materialization, ordinary inside steps, and the permitted
+  final exit.
+- `FixedAlphaMultiVisitStateCount.lean` adds the previously omitted control
+  coordinates: block, visit, and phase cursors, the complete cached streaming
+  phase (including completed endpoints and failures), two rolling flags,
+  `2b` bounded counters, and the sink.  It gives exact cardinalities, an
+  injective padding of every advertised streaming phase into the homogeneous
+  `2b` carrier, and an explicit `Nat.clog 2` budget with
+  `card <= 2^fixedAlphaMultiVisitValidatorBitBudget`.  Under the standard
+  parameter inequalities this has the intended `O(b * log(Tq))` shape.  This
+  counts the full carrier; a global transition using every coordinate is a
+  separate theorem.
+- `FiniteLocalCachedStep.lean`, `FiniteCachedVisitReplay.lean`, and
+  `FiniteCachedVisitStreamingVerifier.lean`: replace the full `WorkTape` /
+  `Configuration` live object by a genuinely finite cached local state.
+  Intermediate steps must remain in the slab; the last step retains the
+  absolute endpoint even when it exits.  The finite visit certificate is
+  equivalent to the old `FixedAlphaBlockVisitValid`, and the phase machine
+  has exact cardinality, consumes a query exactly on an in-range fresh-input
+  move, treats cached stays and right-end symbols as input-free, and handles
+  halted stuttering.  Its supplied-order branching program has exact trace,
+  read-once behavior, and exact width.
+- `FixedVisitOrderRealization.lean` and `FixedVisitFreshPrefixSync.lean`
+  strengthen and close the single-visit scheduling interface.  The
+  chronological clipped interval is a literal prefix of a canonical full
+  `Fin n` permutation; the remaining dummy suffix is inert, including the
+  empty-suffix case, and the comparison target is terminal without assuming
+  visit validity.  An exact-fresh-trace invariant now derives the corrected
+  post-prefix silent closure from `FixedAlphaBlockVisitValid`, so every valid
+  visit satisfies `FixedOrderRealizesFiniteCachedVisit` and its compiled fixed
+  query program evaluates to true.  Raw equality before silent closure would
+  be false in the presence of trailing stay steps.  The converse direction,
+  reconstructing visit validity solely from compiled acceptance, is not yet
+  proved.
+- `FixedVisitCompilerCorrectness.lean` rules out the simplest source of false
+  acceptance in that converse.  Input-head reachability is monotone through
+  every microstep, silent closure, compiled query, dummy suffix, and terminal
+  closure; rejection is absorbing; and a genuine query strictly advances the
+  head.  In particular, consuming a fresh query at the advertised exit head
+  precludes later acceptance, and canonical compiled acceptance implies
+  `entry.inputHead <= exit.inputHead`.  The remaining soundness lemma must
+  reconstruct, symbol by symbol, `FiniteCachedVisitSymbolsAgree` and the exact
+  streaming trace from the accepted canonical driver; head monotonicity alone
+  does not perform that reconstruction.
+- `LayeredQueryProgram.lean` and `SilentStepQueryCollapse.lean` formalize the
+  target finite program model and close the generic epsilon-transition issue.
+  Bounded input-free microsteps are collapsed between hardwired input queries;
+  the compiled program has exactly the supplied query trace, is read-once for
+  a duplicate-free order, and has exact width `(H + 1) * |State|`.  Known
+  right-end symbols are completed input-free after the finite Boolean input.
+  This generic collapse does not by itself instantiate the full multi-visit
+  canonical component.
+- `AdaptiveSilentStepQueryCollapse.lean`,
+  `AdaptiveCachedVisitReadOnce.lean`, and
+  `AdaptiveCachedVisitCorrectness.lean` give the corresponding adaptive route.
+  The generic compiler selects its next query from the current silently
+  closed state, with exact query, prefix, final-state, evaluation, and width
+  equations.  For the cached fixed-alpha visit, a phase-rank invariant proves
+  that every genuine query is strictly below the post-query rank and every
+  later query is at least that rank.  Consequently the specialized adaptive
+  program is unconditionally read-once, without a supplied order or trace
+  premise.  An input-driven execution bridge also constructs the agreeing
+  unread trace internally and proves the unconditional exact equivalence
+  `eval = true <-> FixedAlphaBlockVisitValid`.  Thus single-visit scheduling,
+  soundness, and completeness are closed for the adaptive compiler.
+- `FiniteCachedBlockVisitListCompiler.lean`,
+  `AdaptiveCachedBlockVisitListReadOnce.lean`, and
+  `TimedAlphaBlockVisitInputOrder.lean` lift the finite state to every visit of
+  one fixed block.  The executable list state carries a cursor, one cached
+  phase, and the current slab; completion passes exactly `final.workSlab` to
+  the next visit.  Its fuel is at most `2T`, its width is exact, and a recursive
+  finite streaming certificate is equivalent to the old accepted visit-list
+  fold, including the blank-slab specialization.  Chained timed schedules and
+  accepted visit lists imply the required cross-visit input-head order, so the
+  corresponding compiled per-block adaptive program is read-once without an
+  external order premise.
+- `AdaptiveCachedBlockVisitListCorrectness.lean`,
+  `AdaptiveCachedBlockVisitListSegmentCorrectness.lean`,
+  `AdaptiveCachedBlockVisitListSoundness.lean`, and
+  `AdaptiveCachedBlockVisitListPrefixLiveness.lean` close that operational
+  induction in both directions.  Prepending a visit commutes with the
+  halted/request/query interfaces, every streaming step (including the slab
+  carry boundary), and the full input-driven core.  A certified head reaches
+  its completed active phase in exactly `visit.steps`; recursive certificates
+  reach global completion in the exact list fuel; every strict certified
+  prefix remains live; and compiled acceptance is now exactly equivalent to
+  `FixedAlphaBlockVisitReplayAccepted`.  Thus per-block list soundness,
+  completeness, exact fuel, and premature-terminal exclusion are closed.
+- `FiniteCachedAllBlocksOuterCompiler.lean` constructs a total,
+  input-independent finite outer program over all blocks.  A decidable geometry
+  check sends bad advertised entries directly to rejection; valid blocks run
+  their list verifiers in sequence, with each new block reset to the literal
+  blank slab.  The outer carrier, width, and evaluation equations are exact.
+  Exact prefix fuel plus per-block liveness prove unconditional advancement of
+  each accepted block.  Conversely, the first nonaccepted block forces the
+  outer execution to reject.  Consequently global completion at the sum fuel
+  is exactly equivalent to simultaneous blank-start replay acceptance, and the
+  total compiled program has the same exact `eval = true` iff.  For a valid
+  timed schedule this removes the former reflection premise entirely: the
+  compiled schedule program equals the existing all-block Boolean, and the
+  canonical in-place checkpoint theorems are unconditional.
+- `FiniteCachedAllBlocksReadOnce.lean`,
+  `GuardedFiniteCachedAllBlocksReadOnce.lean`, and
+  `AcceptedMasterOrderExecution.lean` isolate the global query-order issue.
+  The stable grouped schedule order is duplicate-free, but malformed rejecting
+  paths of the raw adaptive outer machine need not follow it.  A total master
+  guard therefore enforces an order prefix and is unconditionally read-once on
+  every schedule and input.  Its evaluation is equal to the base program once
+  `ExecutionQueriesFollowMaster` is proved.  An exact adaptive-query trace
+  calculus now derives every accepted visit and block trace literally from its
+  certificate, and the schedule master is literally the blockwise
+  concatenation of those traces.
+- `AcceptedAllBlocksMasterOrderExecution.lean` carries those exact traces
+  through every silent outer boundary.  On the canonical accepted input, the
+  raw all-block query trace equals the static master order, discharging
+  `ExecutionQueriesFollowMaster`; consequently the total guarded program
+  preserves the base evaluation without either the former `hreflect` or
+  `hfollows` premise.  The separate all-input raw trace-refinement proposition
+  remains relevant only if one insists that the unguarded rejecting program
+  itself be read-once; the guarded route does not need it.
+- `FiniteCachedVisitRollingCounters.lean` and
+  `FiniteCachedBlockVisitListRollingCounters.lean`,
+  `FiniteCachedAllBlocksRollingCounters.lean`, and
+  `FiniteCachedAllBlocksInPlaceRollingFold.lean` put the bounded crossing
+  vector in the live finite transition.  Every inside/final/halted branch has
+  an exact global bump equation; the executable visit runner equals
+  `onePassFixedAlphaVisitFromCounters`; and the recursive list runner preserves
+  the vector across silent visit boundaries and equals
+  `onePassFixedAlphaBlockListFrom` under the already-proved replay certificate.
+  Across all blocks, the live dependent state performs the closing-bucket
+  check, shifts the right window left, clears the new right window, and
+  accumulates both global flags in the same boundary transition.  Under
+  simultaneous blank-start replay acceptance, its entire final state—not only
+  the counter projection—is exactly `inPlaceTwoWindowBlockFold`.
+- `FiniteCachedAllBlocksInPlaceCanonicalCheck.lean` combines the total outer
+  compiled replay gate with that full finite-cached fold.  For every valid
+  schedule it is extensionally equal to the established in-place canonical
+  checker and therefore has the same exact canonical-cut `true` iff, without a
+  reflection premise.
+- `FiniteCachedAllBlocksHomogeneousEmbedding.lean` gives an explicit injective
+  encoding of the dependent outer state together with the rolling fold state
+  into the already-counted homogeneous carrier.  Hence the carrier-embedding
+  obligation for the outer-plus-fold data is closed.
+- `FiniteCachedAllBlocksInPlaceCompiler.lean` identifies the live fused state
+  with that outer-plus-fold carrier, gives its finite instance and injective
+  schedule embedding, and compiles a total bad-geometry-rejecting adaptive
+  verifier with an exact width equation.  Erasure commutes with start, step,
+  and the full input-driven core.
+- `FiniteCachedBlockVisitListRollingOperational.lean` and
+  `FiniteCachedAllBlocksInPlaceOperational.lean` close the former reached-fold
+  gap.  Exact head, prefix, and outer inductions carry the live slab and
+  crossing vector through every visit and block boundary.  Accepted
+  blank-start certificates therefore make the actual fused input-driven core
+  complete with exactly `inPlaceTwoWindowBlockFold`, and the compiled fused
+  Boolean is exactly the conjunction of that fold's two flags.  There is no
+  existential reached-state or rolling-completion residual left.
+- `GuardedFiniteCachedAllBlocksInPlaceCompiler.lean` puts the exact fused
+  verifier behind the total master guard.  It is unconditionally read-once,
+  has the explicit homogeneous width and power-of-two bounds, and its accepted
+  canonical query trace is exactly the schedule master.  For a valid accepted
+  schedule, the guard is observationally invisible and the guarded compiled
+  evaluation equals `timedAlphaInPlaceTwoWindowFoldCheck` directly; neither a
+  reflection, follows-master, nor fused-fold premise remains.
 - `LocalBlockReplayComposition.lean`: composes two same-input slab replays.
   State and both heads at the second entry follow from the first replay, while
   equality of the destination slab at the midpoint remains an explicit and
@@ -488,6 +705,15 @@ must use.
   carrier, not the full program width: the final crossing may leave the slab,
   and boundary-minimality counters, schedule phase, and validator state are
   deliberately absent.
+- `UnambiguousAggregateSelectorBarrier.lean` makes two aggregate no-go facts
+  exact.  A deterministic adaptive tree that sees only component acceptance
+  bits and computes OR on the Hamming-weight-at-most-one promise has depth at
+  least the number of components: on the all-zero path it must query every
+  `alpha`.  Separately, two disjoint singleton components and a normalized
+  generator attain aggregate error `1/2 = 1/4 + 1/4`, so disjointness supplies
+  no cancellation beyond the triangle inequality.  These are black-box
+  barriers only; a successful route may still exploit shared one-tape
+  transition geometry in a bounded-state online canonicalizer.
 - `SeparatorScaleBarrier.lean`: for every single-scale accounting satisfying
   `time <= blockCost * transcriptCost`, one common budget that dominates both
   costs must have square at least `time`.  A budget below square-root capacity
@@ -495,10 +721,12 @@ must use.
   independently charging the two costs, not a lower bound against collective
   PRGs/HSGs.
 
-Together with the fixed-split row bound, these lemmas rule out four overly
-coarse targets: unrestricted predicates, bare unambiguity, independent
+Together with the fixed-split row bound, these lemmas rule out six overly
+coarse mechanisms: unrestricted predicates, bare unambiguity, black-box
+component search, cancellation from disjointness alone, independent
 single-scale charging, and one fixed communication cut.  They do not rule out
-a coherent aggregate HSG or an adaptive many-cut splicing argument.
+a geometry-aware coherent HSG, bounded-state online canonicalizer, or adaptive
+many-cut splicing argument.
 
 ## Proved published-parameter barrier
 
@@ -563,21 +791,32 @@ and acceptance of any advertised `alpha` forces equality with the unique
 chronological canonical transcript.  This authenticates the deterministic run;
 it does not by itself require that the terminal state accepts a language.
 
-The immediate lower-layer implementation theorem still missing is:
+The former transition and reached-fold gaps are closed.  The following lower
+finite-validator layer is executable and has no residual proposition or
+complexity assumption:
 
-> Compile the combined canonical-transcript checker into one deterministic
-> adaptive read-once branching program (or an equally explicit local path
-> program), including schedule phase, slab replay, terminal handling, and
-> leftmost-minimum counter updates, and prove that its complete live carrier is
-> at most `2^{O(b * log(Tq))}`.
+- adaptive evaluation is an exact iff for one visit, one block list, and the
+  total all-block replay machine;
+- strict-prefix liveness excludes premature terminal states;
+- valid schedules remove the former outer reflection premise;
+- a total master guard is globally read-once on every input, including bad
+  schedules and rejecting branches;
+- the `2b` crossing vector is updated on the live microstep, closed and shifted
+  at the same block boundary, and the full finite-cached fold equals the
+  established in-place fold under the replay certificates extracted by the
+  outer Boolean;
+- the fused dependent state embeds injectively into the homogeneous counted
+  carrier, and its compiled width has an explicit power-of-two bound equal to
+  the existing state budget plus the layer-fuel `clog`;
+- the literal fused execution reaches exactly
+  `inPlaceTwoWindowBlockFold`, so its compiled evaluation is the exact fold
+  Boolean rather than merely the flags of an existential reached state.
 
-The present Lean checker is executable and extensionally exact, but its list
-recursions, filtered per-block passes, dependent slab store, and natural-number
-counter updates have not been compiled into that read-once state machine.
-`CutCounterStateCount.lean` counts one justified slab/counter carrier; it does
-not yet account for every phase and control component of the whole validator or
-prove an exact transition/update circuit.  In particular, one cannot simply
-infer the desired width bound from executability.
+Thus the lower finite validator can be packaged as one canonical guarded
+read-once component with exact accepted-input semantics and counted
+`2^{O(b * log(Tq))}` width.  The raw unguarded verifier is deliberately not
+claimed read-once on malformed rejecting paths; the total master guard handles
+those paths without changing canonical accepted executions.
 
 After that implementation theorem, the central generator object is:
 
@@ -605,13 +844,17 @@ log(number of transcripts) = O((t / b) * log(tq)).
 
 Balancing both terms reproduces the published `sqrt(t)` loss.  Uniqueness makes
 the coherent union unambiguous, but generic unambiguity does not imply a
-small deterministic FBDD.  A successful route must exploit one-tape geometry
-to pay for the first term without materializing the transcript-count term, or
-construct a generator that hits/fools the unambiguous aggregate directly.
+small deterministic FBDD.  The formal black-box selector bound shows that an
+adaptive OR of component bits still needs to inspect every alpha, and the
+two-component example shows that disjointness alone gives no error
+cancellation.  A successful route must therefore exploit shared one-tape
+geometry in a bounded-state online canonicalizer, or construct a generator
+that hits/fools the unambiguous aggregate directly.
 Only then could one choose `b = N^mu / polylog(N)` at the magnification scale.
 `BoundaryTapeInterface.lean` identifies the exact lossless-but-exponential
-fallback, while `SeparatorScaleBarrier.lean` proves the numerical single-scale
-tradeoff.
+fallback, `UnambiguousAggregateSelectorBarrier.lean` rules out the two
+black-box shortcuts, and `SeparatorScaleBarrier.lean` proves the numerical
+single-scale tradeoff.
 
 Even a generator theorem would still need its fixed-seed output tables proved
 to have standard-DAG complexity at most `N^mu`, followed by an explicit bridge

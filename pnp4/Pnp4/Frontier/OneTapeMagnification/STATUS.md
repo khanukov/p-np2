@@ -1,6 +1,6 @@
 # One-tape small-threshold status
 
-Status: **THE FINITE ONE-TAPE VALIDATOR, EACH TOTAL FIXED-CERTIFICATE REJECTING-GUARD COMPONENT, THE FINITE ALPHA FAMILY, AND ONE EXACT SYNTACTICALLY READ-ONCE UNAMBIGUOUS FBDD WITH COMPLETE QUERY TRACES, A FILTERED FOURIER CUT FACTORIZATION, AND EXACT NO-BLOWUP CLOSURE UNDER PARTIAL ASSIGNMENTS ARE FORMALIZED. ITS SIZE IS STILL THE EXPLICIT DISJOINT SUM. A SMALL SHARED AGGREGATE, THE QUANTITATIVE MOMENT/FOOLING BOUND, THE ONE-SIDED AVERAGE-CASE MCSP INTERSECTION, AND THE SMALL-THRESHOLD LOWER BOUND REMAIN OPEN**
+Status: **THE FINITE ONE-TAPE VALIDATOR, EACH TOTAL FIXED-CERTIFICATE REJECTING-GUARD COMPONENT, THE FINITE ALPHA FAMILY, AND ONE EXACT SYNTACTICALLY READ-ONCE UNAMBIGUOUS FBDD WITH COMPLETE QUERY TRACES, A FILTERED FOURIER CUT FACTORIZATION, EXACT NO-BLOWUP CLOSURE UNDER PARTIAL ASSIGNMENTS, AND THE EXACT FINITE HOMOGENEOUS RESTRICTION SQUARE-MOMENT CORE ARE FORMALIZED. ITS SIZE IS STILL THE EXPLICIT DISJOINT SUM. A SMALL SHARED AGGREGATE, THE FULL PROGRAM-LEVEL ONE-ROUND/FOOLING BOUND, THE ONE-SIDED AVERAGE-CASE MCSP INTERSECTION, AND THE SMALL-THRESHOLD LOWER BOUND REMAIN OPEN**
 
 Primary sources:
 
@@ -888,6 +888,16 @@ must use.
   must bound this vertex sum, and the current exact vertex count can be too
   large.  Exact no-blowup restriction closure is supplied by
   `FiniteUnambiguousFBDDRestriction.lean`.
+- `FiniteBooleanRestrictionMoment.lean` formalizes exact rational finite
+  averaging for masked Walsh characters.  Under explicit degree-`k`
+  orthogonality of the `D` source and exact degree-`k` mask-survival moments
+  for `T`, it proves the diagonal Gram identity, the exact second moment
+  `p^k * sum_alpha coefficient(alpha)^2`, and the corresponding squared
+  average-absolute-value upper bound.  This closes only the abstract finite
+  Claim-18 calculation.  It does not yet prove the Parseval/Bessel
+  coefficient-mass estimate for the prefix/suffix factors, the required
+  homogeneous-slice/Laplacian bound, the sum over vertices, or the full
+  one-round fooling theorem.
 - `GuardedCanonicalAggregateEndpoint.lean` now takes the finite OR of all
   in-place accepting timed-alpha components by an explicit executable
   `Finset.univ.fold` and proves it pointwise equal to bounded deterministic
@@ -1307,10 +1317,15 @@ This alternative also remains prose only.
   `UnambiguousFBDDIndicatorLocality.lean`, `FiniteBooleanFourier.lean`, and
   `UnambiguousFBDDFourierFactorization.lean`; exact restriction semantics and
   preservation of read-once/unambiguity are formalized in
-  `FiniteUnambiguousFBDDRestriction.lean`.  The quantitative one-round
-  estimate remains to be proved.  The inferred
-  one-round error still
-  contains the explicit vertex factor `S*2^(-k/2)`.  Even if that extension is
+  `FiniteUnambiguousFBDDRestriction.lean`.  The exact finite degree-`k` Gram
+  and square-moment calculation is now formalized in
+  `FiniteBooleanRestrictionMoment.lean`.  The full quantitative one-round
+  estimate remains: the factorized vertex contributions must still be split
+  into homogeneous slices, bounded by Parseval/Bessel or the corresponding
+  Laplacian estimate, converted from the squared bound to the per-vertex
+  `p^(k/2)` scale, and summed over all actual vertices.  The inferred
+  one-round error still contains the explicit vertex factor
+  `S*2^(-k/2)`.  Even if that extension is
   correct, the stated
   seed depends
   quadratically on `log(nw/epsilon)`.  With the current coherent aggregate's
@@ -1365,15 +1380,15 @@ This alternative also remains prose only.
   explicit factor, so both conditioning on fixed `v` and averaging back over
   `v` are now internal to the formal statement.  Thus the paper's `(1-p)^L`
   term follows immediately once the supplied primitive has exact marginal
-  `rho = 1-p`.  The development does not yet construct the DPTW
-  finite-field primitives or formalize the size-dependent restriction bound
-  of Lemma 4.15.
-  Consequently both coordinate composition and the finite product-average
-  cost of deleting `v` are no longer hidden steps, while an aggregate-class
-  theorem (either a deterministic AOBP compilation or the quantitative
-  square-moment extension to this unambiguous FBDD) and the honest
-  size-dependent fooling analysis remain blockers.  Structural restriction
-  closure itself is now proved with exact vertex-card preservation.
+  `rho = 1-p`.  The development does not yet construct the DPTW finite-field
+  primitives or instantiate the abstract moment theorem with the
+  program-level homogeneous coefficient bounds and vertex sum required by
+  Lemma 4.15.  Consequently coordinate composition, the finite
+  product-average cost of deleting `v`, structural restriction closure, and
+  the abstract square-moment core are no longer hidden steps, while an
+  aggregate-class theorem (either a deterministic AOBP compilation or the
+  full quantitative extension to this unambiguous FBDD) and the honest
+  size-dependent fooling analysis remain blockers.
 - Generic unambiguity does not supply that compilation.  [Amarilli--Capelli--
   Monet--Senellart, Theory of Computing Systems 2019, Proposition 3.1](https://pierre.senellart.com/publications/amarilli2019connecting.pdf)
   gives an exponential separation between unambiguous FBDDs and deterministic

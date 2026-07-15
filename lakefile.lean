@@ -471,6 +471,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.OneTapeMagnification.UnambiguousFBDDIndicatorCut,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.UnambiguousFBDDIndicatorLocality,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteBooleanFourier,
+    Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteBooleanRestrictionMoment,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.UnambiguousFBDDFourierFactorization,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.RejectingGuardedCanonicalAggregateEndpoint,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteRejectingGuardedCanonicalFamily,

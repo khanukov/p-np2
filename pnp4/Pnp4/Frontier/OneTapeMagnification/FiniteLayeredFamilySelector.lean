@@ -16,9 +16,9 @@ Every other nonsink vertex is tagged by the chosen component, a boundary
 layer, and that component's live state.  Optional query-free program layers
 become singleton silent choices.
 
-The construction below gives a sound forward realization of existential
-acceptance.  The converse path-decoding theorem is not asserted here.  No
-syntactic read-once claim is made either: the source family API only assumes
+The construction below gives an exact realization of existential family
+acceptance: every accepting selector path decodes to an accepting component.
+No syntactic read-once claim is made: the source family API only assumes
 read-once on consistent Boolean executions, whereas
 `FiniteUnambiguousFBDD` quantifies over all formal graph paths.
 -/
@@ -469,12 +469,26 @@ theorem selectorFBDD_accepts_of_eval_eq_true {n : Nat}
   exact selectorFBDD_accepts_of_component_eval_true
     family input index hindex
 
-/-
-The converse is deliberately not part of this checkpoint.  Its natural proof
-decodes an indexed `Walk` from the root, but direct dependent elimination on
-the fixed, definitionally distinct endpoints currently triggers Lean's
-`mkElimApp` failure.  Keeping the forward theorem above avoids hiding that
-remaining proof-engineering obligation.
+/-! ## Converse path decoding -/
+
+/-- Endpoint-generalized sink decoder.  Keeping both endpoints as variables
+avoids dependent elimination on definitionally distinct fixed vertices. -/
+theorem selectorSink_walk_to_accept_eq_true_aux {n : Nat}
+    (family : FiniteLayeredQueryProgramFamily n) (value : Bool)
+    {source target : (family.selectorFBDD).Vertex}
+    (hsource : source = selectorSink value)
+    (htarget : target = (family.selectorFBDD).accept)
+    (walk : (family.selectorFBDD).Walk source target) :
+    value = true := by
+  cases walk with
+  | nil vertex =>
+      have heq : selectorSink value = (family.selectorFBDD).accept :=
+        hsource.symm.trans htarget
+      simpa [selectorFBDD, selectorSink] using heq
+  | @cons _ middle _ edge tail =>
+      rw [hsource] at edge
+      simp [FiniteUnambiguousFBDD.Edge, selectorFBDD, selectorNode,
+        selectorSink, FiniteUFBDDNode.HasChild] at edge
 
 /-- A walk cannot leave a selector sink; hence a sink which reaches the
 accepting sink is itself the accepting sink. -/
@@ -482,12 +496,133 @@ theorem selectorSink_walk_to_accept_eq_true {n : Nat}
     (family : FiniteLayeredQueryProgramFamily n) (value : Bool)
     (walk : (family.selectorFBDD).Walk (selectorSink value)
       (family.selectorFBDD).accept) :
-    value = true := by
-  cases walk with
-  | nil => rfl
-  | cons edge tail =>
-      simp [FiniteUnambiguousFBDD.Edge, selectorFBDD, selectorNode,
-        selectorSink, FiniteUFBDDNode.HasChild] at edge
+    value = true :=
+  selectorSink_walk_to_accept_eq_true_aux family value rfl rfl walk
+
+/-- Endpoint-generalized component decoder.  Its source and target equalities
+make induction on the indexed walk robust while retaining the exact suffix
+semantics. -/
+theorem selectorComponentWalk_to_accept_implies_suffix_true_aux {n : Nat}
+    (family : FiniteLayeredQueryProgramFamily n) (input : Fin n → Bool)
+    (index : family.Index)
+    (fuel physical : Nat) (hphysical : physical + fuel = family.layers index)
+    (state : (family.program index).State)
+    {source target : (family.selectorFBDD).Vertex}
+    (hsource : source = selectorComponent index
+      ⟨physical, by omega⟩ state)
+    (htarget : target = (family.selectorFBDD).accept)
+    (walk : (family.selectorFBDD).Walk source target)
+    (hcompatible : walk.Compatible input) :
+    (family.program index).output
+      (LayeredQueryProgram.executePhysicalStateFrom
+        (family.program index) input fuel physical hphysical state) = true := by
+  induction fuel generalizing physical state source target with
+  | zero =>
+      have hnot : ¬physical < family.layers index := by omega
+      cases walk with
+      | nil vertex =>
+          have heq : selectorComponent index ⟨physical, by omega⟩ state =
+              (family.selectorFBDD).accept := hsource.symm.trans htarget
+          simp [selectorComponent, selectorFBDD, selectorSink] at heq
+      | @cons _ middle _ edge tail =>
+          have hfirst : (family.selectorFBDD).CompatibleEdge input
+              (selectorComponent index ⟨physical, by omega⟩ state) middle := by
+            simpa [hsource] using hcompatible.1
+          have hmiddle : middle =
+              selectorSink ((family.program index).output state) := by
+            simpa [FiniteUnambiguousFBDD.CompatibleEdge, selectorFBDD,
+              selectorNode, selectorComponent, selectorSink, hnot] using
+                hfirst
+          have hsink := selectorSink_walk_to_accept_eq_true_aux family
+            ((family.program index).output state) hmiddle htarget tail
+          simpa [LayeredQueryProgram.executePhysicalStateFrom] using hsink
+  | succ fuel ih =>
+      have hlt : physical < family.layers index := by omega
+      let layer : Fin (family.layers index) := ⟨physical, hlt⟩
+      cases hquery : (family.program index).query? layer state with
+      | none =>
+          cases walk with
+          | nil vertex =>
+              have heq :
+                  selectorComponent index ⟨physical, by omega⟩ state =
+                    (family.selectorFBDD).accept := hsource.symm.trans htarget
+              simp [selectorComponent, selectorFBDD, selectorSink] at heq
+          | @cons _ middle _ edge tail =>
+              have hfirst : (family.selectorFBDD).CompatibleEdge input
+                  (selectorComponent index ⟨physical, by omega⟩ state)
+                    middle := by
+                simpa [hsource] using hcompatible.1
+              have hmiddle : middle = selectorComponent index
+                  ⟨physical + 1, by omega⟩
+                  ((family.program index).next layer state none) := by
+                simpa [FiniteUnambiguousFBDD.CompatibleEdge, selectorFBDD,
+                  selectorNode, selectorComponent, selectorSink, hlt, layer,
+                  hquery, selectorNextBoundary] using hfirst
+              have htail := ih (physical := physical + 1)
+                (hphysical := by omega)
+                (state := (family.program index).next layer state none)
+                (source := middle) (target := target) hmiddle htarget tail
+                hcompatible.2
+              simpa [LayeredQueryProgram.executePhysicalStateFrom, layer,
+                hquery] using htail
+      | some queryIndex =>
+          cases hbit : input queryIndex with
+          | false =>
+              cases walk with
+              | nil vertex =>
+                  have heq :
+                      selectorComponent index ⟨physical, by omega⟩ state =
+                        (family.selectorFBDD).accept :=
+                    hsource.symm.trans htarget
+                  simp [selectorComponent, selectorFBDD, selectorSink] at heq
+              | @cons _ middle _ edge tail =>
+                  have hfirst : (family.selectorFBDD).CompatibleEdge input
+                      (selectorComponent index ⟨physical, by omega⟩ state)
+                        middle := by
+                    simpa [hsource] using hcompatible.1
+                  have hmiddle : middle = selectorComponent index
+                      ⟨physical + 1, by omega⟩
+                      ((family.program index).next layer state
+                        (some false)) := by
+                    simpa [FiniteUnambiguousFBDD.CompatibleEdge, selectorFBDD,
+                      selectorNode, selectorComponent, selectorSink, hlt,
+                      layer, hquery, hbit, selectorNextBoundary] using hfirst
+                  have htail := ih (physical := physical + 1)
+                    (hphysical := by omega)
+                    (state := (family.program index).next layer state
+                      (some false))
+                    (source := middle) (target := target) hmiddle htarget tail
+                    hcompatible.2
+                  simpa [LayeredQueryProgram.executePhysicalStateFrom, layer,
+                    hquery, hbit] using htail
+          | true =>
+              cases walk with
+              | nil vertex =>
+                  have heq :
+                      selectorComponent index ⟨physical, by omega⟩ state =
+                        (family.selectorFBDD).accept :=
+                    hsource.symm.trans htarget
+                  simp [selectorComponent, selectorFBDD, selectorSink] at heq
+              | @cons _ middle _ edge tail =>
+                  have hfirst : (family.selectorFBDD).CompatibleEdge input
+                      (selectorComponent index ⟨physical, by omega⟩ state)
+                        middle := by
+                    simpa [hsource] using hcompatible.1
+                  have hmiddle : middle = selectorComponent index
+                      ⟨physical + 1, by omega⟩
+                      ((family.program index).next layer state
+                        (some true)) := by
+                    simpa [FiniteUnambiguousFBDD.CompatibleEdge, selectorFBDD,
+                      selectorNode, selectorComponent, selectorSink, hlt,
+                      layer, hquery, hbit, selectorNextBoundary] using hfirst
+                  have htail := ih (physical := physical + 1)
+                    (hphysical := by omega)
+                    (state := (family.program index).next layer state
+                      (some true))
+                    (source := middle) (target := target) hmiddle htarget tail
+                    hcompatible.2
+                  simpa [LayeredQueryProgram.executePhysicalStateFrom, layer,
+                    hquery, hbit] using htail
 
 /-- Any compatible component-to-accept walk forces the deterministic suffix
 execution of that component to accept. -/
@@ -502,79 +637,102 @@ theorem selectorComponentWalk_to_accept_implies_suffix_true {n : Nat}
     (hcompatible : walk.Compatible input) :
     (family.program index).output
       (LayeredQueryProgram.executePhysicalStateFrom
-        (family.program index) input fuel physical hphysical state) = true := by
-  induction fuel generalizing physical state with
-  | zero =>
-      have hnot : ¬physical < family.layers index := by omega
-      cases walk with
-      | cons (middle := middle) edge tail =>
-          have hfirst := hcompatible.1
-          have hmiddle : middle =
-              selectorSink ((family.program index).output state) := by
-            simpa [FiniteUnambiguousFBDD.CompatibleEdge, selectorFBDD,
-              selectorNode, selectorComponent, selectorSink, hnot] using
-                hfirst
-          subst middle
-          have hsink := selectorSink_walk_to_accept_eq_true family
-            ((family.program index).output state) tail
-          simpa [LayeredQueryProgram.executePhysicalStateFrom] using hsink
-  | succ fuel ih =>
-      have hlt : physical < family.layers index := by omega
-      let layer : Fin (family.layers index) := ⟨physical, hlt⟩
-      cases hquery : (family.program index).query? layer state with
-      | none =>
-          cases walk with
-          | cons (middle := middle) edge tail =>
-              have hfirst := hcompatible.1
-              have hmiddle : middle = selectorComponent index
-                  ⟨physical + 1, by omega⟩
-                  ((family.program index).next layer state none) := by
-                simpa [FiniteUnambiguousFBDD.CompatibleEdge, selectorFBDD,
-                  selectorNode, selectorComponent, selectorSink, hlt, layer,
-                  hquery, selectorNextBoundary] using hfirst
-              subst middle
-              have htail := ih (physical + 1) (by omega)
-                ((family.program index).next layer state none) tail
-                hcompatible.2
-              simpa [LayeredQueryProgram.executePhysicalStateFrom, layer,
-                hquery] using htail
-      | some queryIndex =>
-          cases hbit : input queryIndex with
-          | false =>
-              cases walk with
-              | cons (middle := middle) edge tail =>
-                  have hfirst := hcompatible.1
-                  have hmiddle : middle = selectorComponent index
-                      ⟨physical + 1, by omega⟩
-                      ((family.program index).next layer state
-                        (some false)) := by
-                    simpa [FiniteUnambiguousFBDD.CompatibleEdge, selectorFBDD,
-                      selectorNode, selectorComponent, selectorSink, hlt,
-                      layer, hquery, hbit, selectorNextBoundary] using hfirst
-                  subst middle
-                  have htail := ih (physical + 1) (by omega)
-                    ((family.program index).next layer state (some false))
-                    tail hcompatible.2
-                  simpa [LayeredQueryProgram.executePhysicalStateFrom, layer,
-                    hquery, hbit] using htail
-          | true =>
-              cases walk with
-              | cons (middle := middle) edge tail =>
-                  have hfirst := hcompatible.1
-                  have hmiddle : middle = selectorComponent index
-                      ⟨physical + 1, by omega⟩
-                      ((family.program index).next layer state
-                        (some true)) := by
-                    simpa [FiniteUnambiguousFBDD.CompatibleEdge, selectorFBDD,
-                      selectorNode, selectorComponent, selectorSink, hlt,
-                      layer, hquery, hbit, selectorNextBoundary] using hfirst
-                  subst middle
-                  have htail := ih (physical + 1) (by omega)
-                    ((family.program index).next layer state (some true))
-                    tail hcompatible.2
-                  simpa [LayeredQueryProgram.executePhysicalStateFrom, layer,
-                    hquery, hbit] using htail
--/
+        (family.program index) input fuel physical hphysical state) = true :=
+  selectorComponentWalk_to_accept_implies_suffix_true_aux family input index
+    fuel physical hphysical state rfl rfl walk hcompatible
+
+/-- Decoding a compatible walk from a component start recovers ordinary
+component acceptance. -/
+theorem selectorComponentWalk_to_accept_implies_eval_true {n : Nat}
+    (family : FiniteLayeredQueryProgramFamily n) (input : Fin n → Bool)
+    (index : family.Index)
+    (walk : (family.selectorFBDD).Walk
+      (selectorComponent index ⟨0, Nat.zero_lt_succ _⟩
+        (family.program index).start)
+      (family.selectorFBDD).accept)
+    (hcompatible : walk.Compatible input) :
+    (family.program index).eval input = true := by
+  have hsuffix := selectorComponentWalk_to_accept_implies_suffix_true
+    family input index (family.layers index) 0 (by omega)
+      (family.program index).start walk hcompatible
+  have hfinal := LayeredQueryProgram.executePhysicalStateFrom_executePrefix
+    (family.program index) input (family.layers index) 0 (by omega)
+  have hfinal' :
+      LayeredQueryProgram.executePhysicalStateFrom
+          (family.program index) input (family.layers index) 0 (by omega)
+            (family.program index).start =
+        ((family.program index).executePrefix input
+          (family.layers index) le_rfl).1 := by
+    simpa [LayeredQueryProgram.executePrefix] using hfinal
+  unfold LayeredQueryProgram.eval LayeredQueryProgram.finalState
+  rw [← hfinal']
+  exact hsuffix
+
+/-- Endpoint-generalized root decoder.  The first silent edge identifies a
+finite family component; the remaining compatible walk is then decoded by
+the component theorem above. -/
+theorem selectorRootWalk_to_accept_implies_exists_component_eval_true_aux
+    {n : Nat} (family : FiniteLayeredQueryProgramFamily n)
+    (input : Fin n → Bool)
+    {source target : (family.selectorFBDD).Vertex}
+    (hsource : source = selectorRoot)
+    (htarget : target = (family.selectorFBDD).accept)
+    (walk : (family.selectorFBDD).Walk source target)
+    (hcompatible : walk.Compatible input) :
+    exists index, (family.program index).eval input = true := by
+  classical
+  letI : Fintype family.Index := family.indexFintype
+  cases walk with
+  | nil vertex =>
+      have heq : (selectorRoot : family.SelectorVertex) =
+          (family.selectorFBDD).accept := hsource.symm.trans htarget
+      simp [selectorRoot, selectorFBDD, selectorSink] at heq
+  | @cons _ middle _ edge tail =>
+      have hfirst : (family.selectorFBDD).CompatibleEdge input
+          selectorRoot middle := by
+        simpa [hsource] using hcompatible.1
+      have hmem : middle ∈ family.selectorStartChildren := by
+        simpa [FiniteUnambiguousFBDD.CompatibleEdge, selectorFBDD,
+          selectorNode, selectorRoot] using hfirst
+      simp only [selectorStartChildren, List.mem_map] at hmem
+      obtain ⟨index, _hindex, hmiddle⟩ := hmem
+      have hsuffix :=
+        selectorComponentWalk_to_accept_implies_suffix_true_aux family input
+          index (family.layers index) 0 (by omega)
+            (family.program index).start hmiddle.symm htarget tail
+              hcompatible.2
+      have hfinal := LayeredQueryProgram.executePhysicalStateFrom_executePrefix
+        (family.program index) input (family.layers index) 0 (by omega)
+      have hfinal' :
+          LayeredQueryProgram.executePhysicalStateFrom
+              (family.program index) input (family.layers index) 0 (by omega)
+                (family.program index).start =
+            ((family.program index).executePrefix input
+              (family.layers index) le_rfl).1 := by
+        simpa [LayeredQueryProgram.executePrefix] using hfinal
+      refine ⟨index, ?_⟩
+      unfold LayeredQueryProgram.eval LayeredQueryProgram.finalState
+      rw [← hfinal']
+      exact hsuffix
+
+/-- Selector acceptance cannot arise spuriously: it decodes to an accepting
+component of the finite family. -/
+theorem selectorFBDD_eval_eq_true_of_accepts {n : Nat}
+    (family : FiniteLayeredQueryProgramFamily n) (input : Fin n → Bool)
+    (haccepts : (family.selectorFBDD).Accepts input) :
+    family.eval input = true := by
+  obtain ⟨acceptingPath⟩ := haccepts
+  have hexists :=
+    selectorRootWalk_to_accept_implies_exists_component_eval_true_aux
+      family input rfl rfl acceptingPath.walk acceptingPath.compatible
+  exact (eval_eq_true_iff family input).2 hexists
+
+/-- Exact existential semantics of the finite silent selector. -/
+theorem selectorFBDD_accepts_iff_eval_eq_true {n : Nat}
+    (family : FiniteLayeredQueryProgramFamily n) (input : Fin n → Bool) :
+    (family.selectorFBDD).Accepts input <-> family.eval input = true :=
+  ⟨selectorFBDD_eval_eq_true_of_accepts family input,
+    selectorFBDD_accepts_of_eval_eq_true family input⟩
 
 end FiniteLayeredQueryProgramFamily
 end OneTapeMagnification

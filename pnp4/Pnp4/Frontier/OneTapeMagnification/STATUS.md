@@ -1,6 +1,6 @@
 # One-tape small-threshold status
 
-Status: **THE FINITE ONE-TAPE VALIDATOR, EACH TOTAL FIXED-CERTIFICATE REJECTING-GUARD READ-ONCE COMPONENT, THE FINITE ALPHA-INDEXED UNAMBIGUOUS FAMILY, ITS FINITE RANKED SELECTOR'S EXACT SIZE AND FORWARD REALIZATION, THE DIRECT DENSE/EASY STANDARD-DAG REDUCTION, THE CODEC-IMAGE AVOIDER, AND FINITE DPTW ZERO-TAIL JOINT LOCALITY/SURVIVOR BOOKKEEPING ARE EXACT. A SINGLE SMALL SYNTACTIC AGGREGATE CLASS, THE ONE-SIDED AVERAGE-CASE MCSP INTERSECTION, ITS RESTRICTION/FOOLING ANALYSIS, AND THE SMALL-THRESHOLD LOWER BOUND REMAIN OPEN**
+Status: **THE FINITE ONE-TAPE VALIDATOR, EACH TOTAL FIXED-CERTIFICATE REJECTING-GUARD COMPONENT, THE FINITE ALPHA FAMILY, AND ONE EXACT SYNTACTICALLY READ-ONCE UNAMBIGUOUS FBDD WITH COMPLETE QUERY TRACES AND A FILTERED FOURIER CUT FACTORIZATION ARE FORMALIZED. ITS SIZE IS STILL THE EXPLICIT DISJOINT SUM. A SMALL SHARED AGGREGATE, THE QUANTITATIVE RESTRICTION/FOOLING BOUND, THE ONE-SIDED AVERAGE-CASE MCSP INTERSECTION, AND THE SMALL-THRESHOLD LOWER BOUND REMAIN OPEN**
 
 Primary sources:
 
@@ -811,18 +811,35 @@ must use.
   the naive disjoint layered presentation is explicitly the **sum** of all
   component state-slot counts rather than their maximum.  Thus no unbounded
   `List` enumeration remains.  What remains is substantive: the explicit
-  disjoint-union sum can be superpolynomial.  This file therefore does not
-  call the aggregate a uFBDD and does not place it in the DPTW or CLTW classes.
+  disjoint-union sum can be superpolynomial.  This family file alone does not
+  build the graph; the selector modules below do so without changing that
+  honest sum.
 - `FiniteLayeredFamilySelector.lean` supplies a concrete finite ranked graph
   for any such dependent family.  A silent root chooses a component, silent
   singleton edges realize query-free layers, and the graph has exactly
-  `layeredStateSlotCount + 3` vertices.  Every accepting component evaluation
-  gives an input-compatible accepting path, so family acceptance has a proved
-  forward realization.  The converse path-decoding theorem is not yet proved,
-  and the family-level read-once premise covers consistent executions rather
-  than every formal graph path.  Accordingly this checkpoint claims neither
-  exact selector semantics nor syntactic read-once/unambiguity; it also does
-  not improve the honest sum-size bound.
+  `layeredStateSlotCount + 3` vertices.  Endpoint-generalized path decoders
+  prove the exact two-way semantics
+  `selectorFBDD.Accepts input <-> family.eval input = true`; accepting graph
+  paths cannot arise spuriously.  `FiniteLayeredFamilySelectorUnambiguity.lean`
+  additionally proves that pointwise uniqueness of an accepting family member
+  lifts to uniqueness of the whole compatible accepting walk.
+- `MandatoryCanonicalSelectorProperties.lean`,
+  `MandatoryCanonicalSelectorCompleteness.lean`, and
+  `MandatoryCanonicalUFBDD.lean` close the syntactic classification for the
+  canonical family.  The mandatory collapse queries a fixed duplicate-free
+  completed order at every layer.  Hence every formal root path is read-once,
+  and every formal root-to-accept walk queries the full `Fin n` universe,
+  exactly once.  For `b > 0`, the resulting single finite graph has exactly
+  cached one-tape acceptance semantics and is unambiguous.  Its exact vertex
+  count remains
+  `3 + sum_index (n+1) * componentWidth(index)`; no sharing or polynomial
+  estimate is hidden in the uFBDD name.
+- `FiniteLayeredFamilyProductivePruning.lean` removes exactly the components
+  which reject every input, preserves the Boolean union and all componentwise
+  read-once/unambiguity facts, and proves that an unambiguous family has at
+  most `2^n` productive members by injecting each one into a chosen accepting
+  input.  This is a safe cleanup, not the needed compression: `2^n` is still
+  exponential and the selector size is still the sum of surviving widths.
 - `FiniteUnambiguousFBDD.lean` introduces the missing finite syntactic graph
   language without conflating it with deterministic layered programs.  It has
   ranked query/choice/sink DAGs, forward walks, input compatibility, accepting
@@ -837,12 +854,29 @@ must use.
   local prefix with `alpha ∩ preVars(v)`, and proves existence and uniqueness
   of a cut vertex satisfying the mandatory support condition
   `α ⊆ Pre(v) ∪ Post(v)`.  The theorem assumes that the selected accepting
-  path reads all of `α`; it does not yet cover an arbitrary Fourier support.
+  path reads all of `α`; this is automatic for the mandatory canonical
+  selector because its accepting traces query all coordinates.
   This pathwise theorem needs syntactic read-once but not unambiguity;
-  unambiguity enters the still-unproved accepting-indicator factorization.
-  Reverse selector semantics, syntactic read-once/unambiguity, Fourier
-  cancellation, restriction closure, and size/error analysis remain next
-  steps.
+  unambiguity enters the accepting-indicator factorization.
+- `UnambiguousFBDDIndicatorCut.lean` and
+  `UnambiguousFBDDIndicatorLocality.lean` turn that pathwise cut into a
+  path-independent predicate with compatible prefix and accepting suffix.
+  On a supported accepting input exactly one vertex contributes, the natural
+  indicators sum to one, prefix and suffix depend only on `preVars` and
+  `postVars`, and the cut indicator factors pointwise as
+  `prefix * suffix * staticFilter`.
+- `FiniteBooleanFourier.lean` and
+  `UnambiguousFBDDFourierFactorization.lean` provide exact rational Walsh
+  coefficients, flip cancellation outside a dependency set, and product
+  factorization on disjoint supports.  They prove the corrected Claim-15-style
+  identity: every acceptance coefficient is a sum over vertices of the
+  mandatory static support filter times the prefix coefficient on
+  `alpha inter preVars(v)` and the suffix coefficient on
+  `alpha inter postVars(v)`.  The mandatory canonical specialization has no
+  external path-support premise; `b > 0` is used only for unambiguity.  The
+  remaining CLTW step is quantitative: restriction closure and the
+  one-round/error analysis must bound this vertex sum, and the current exact
+  vertex count can be too large.
 - `GuardedCanonicalAggregateEndpoint.lean` now takes the finite OR of all
   in-place accepting timed-alpha components by an explicit executable
   `Finset.univ.fold` and proves it pointwise equal to bounded deterministic
@@ -1255,10 +1289,14 @@ This alternative also remains prose only.
   unambiguous* nondeterministic program: the pre/post variable sets are
   disjoint, the filtered products cover the unique accepting path, and
   restrictions preserve unambiguity.  This is our inference, not a theorem in
-  the paper.  The filtered path-cut identity is now formalized in
-  `UnambiguousFBDDPathCut.lean`; the accepting-indicator/Fourier
-  factorization, restriction invariant, and size accounting remain to be
-  proved.  The inferred one-round error still
+  the paper.  The filtered path cut, path-independent indicator, dependency
+  locality, exact rational Fourier algebra, and the full filtered
+  prefix/suffix coefficient factorization are now formalized in
+  `UnambiguousFBDDPathCut.lean`, `UnambiguousFBDDIndicatorCut.lean`,
+  `UnambiguousFBDDIndicatorLocality.lean`, `FiniteBooleanFourier.lean`, and
+  `UnambiguousFBDDFourierFactorization.lean`.  The restriction invariant and
+  quantitative one-round estimate remain to be proved.  The inferred
+  one-round error still
   contains the explicit vertex factor `S*2^(-k/2)`.  Even if that extension is
   correct, the stated
   seed depends
@@ -1280,11 +1318,11 @@ This alternative also remains prose only.
   not a theorem stated in the paper.  Here `S` is the actual AOBP vertex count,
   and replacing it by the input length `N` is invalid.  Even a fully formal
   zero-tail coordinate-DAG compiler would therefore cover deterministic AOBPs
-  only.  The canonical aggregate now has an exact finite alpha-indexed
-  unambiguous family and a finite ranked selector with exact size and forward
-  acceptance realization, but not yet proved converse semantics or membership
-  in the syntactic uFBDD class, nor a deterministic AOBP.  Its honest
-  disjoint-union cost is a sum over all useful
+  only.  The canonical aggregate now has an exact finite alpha-indexed family
+  and a single finite ranked selector with exact two-way semantics.  For
+  `b > 0` it is a syntactically read-once unambiguous FBDD, and every accepting
+  path queries all coordinates.  It is still not a deterministic AOBP.  Its
+  honest disjoint-union cost is a sum over all useful
   alphas, not the width of one component.  That sum, and even an individual
   guarded width, can be superpolynomial in `N`.  In that regime the DPTW
   seed/locality cost does not fit `N^mu`.

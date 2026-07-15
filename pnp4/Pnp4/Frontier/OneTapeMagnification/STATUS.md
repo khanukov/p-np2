@@ -1,6 +1,6 @@
 # One-tape small-threshold status
 
-Status: **THE FINITE ONE-TAPE VALIDATOR, EACH TOTAL FIXED-CERTIFICATE REJECTING-GUARD COMPONENT, THE FINITE ALPHA FAMILY, AND ONE EXACT SYNTACTICALLY READ-ONCE UNAMBIGUOUS FBDD WITH COMPLETE QUERY TRACES AND A FILTERED FOURIER CUT FACTORIZATION ARE FORMALIZED. ITS SIZE IS STILL THE EXPLICIT DISJOINT SUM. A SMALL SHARED AGGREGATE, THE QUANTITATIVE RESTRICTION/FOOLING BOUND, THE ONE-SIDED AVERAGE-CASE MCSP INTERSECTION, AND THE SMALL-THRESHOLD LOWER BOUND REMAIN OPEN**
+Status: **THE FINITE ONE-TAPE VALIDATOR, EACH TOTAL FIXED-CERTIFICATE REJECTING-GUARD COMPONENT, THE FINITE ALPHA FAMILY, AND ONE EXACT SYNTACTICALLY READ-ONCE UNAMBIGUOUS FBDD WITH COMPLETE QUERY TRACES, A FILTERED FOURIER CUT FACTORIZATION, AND EXACT NO-BLOWUP CLOSURE UNDER PARTIAL ASSIGNMENTS ARE FORMALIZED. ITS SIZE IS STILL THE EXPLICIT DISJOINT SUM. A SMALL SHARED AGGREGATE, THE QUANTITATIVE MOMENT/FOOLING BOUND, THE ONE-SIDED AVERAGE-CASE MCSP INTERSECTION, AND THE SMALL-THRESHOLD LOWER BOUND REMAIN OPEN**
 
 Primary sources:
 
@@ -847,6 +847,16 @@ must use.
   unambiguity, and the CLTW-oriented `preVars`/`postVars` convention.  The
   syntactic read-once predicate proves these two variable sets disjoint at
   every vertex, including across silent choice nodes.
+- `FiniteUnambiguousFBDDRestriction.lean` proves exact closure under partial
+  assignments.  A fixed query is replaced by a silent singleton choice to its
+  selected child; the vertex type, rank, start, accept, and therefore vertex
+  count are unchanged.  Restricted acceptance is exactly original acceptance
+  on the overridden input.  Restricted query traces are the original traces
+  filtered to free coordinates, so syntactic read-once is preserved;
+  injectivity of the walk-forgetting map transfers unambiguity.  Restricted
+  `preVars` and `postVars` lie in the corresponding original sets intersected
+  with the free coordinates.  Thus restriction closure is no longer part of
+  the open CLTW-style step.
 - `UnambiguousFBDDPathCut.lean` proves the corrected CLTW combinatorial cut,
   rather than importing Claim 15 outside its exactly-once model.  It filters a
   walk's query events by `alpha`, splits the dependent walk at the unique
@@ -874,9 +884,10 @@ must use.
   `alpha inter preVars(v)` and the suffix coefficient on
   `alpha inter postVars(v)`.  The mandatory canonical specialization has no
   external path-support premise; `b > 0` is used only for unambiguity.  The
-  remaining CLTW step is quantitative: restriction closure and the
-  one-round/error analysis must bound this vertex sum, and the current exact
-  vertex count can be too large.
+  remaining CLTW step is quantitative: the square-moment/one-round analysis
+  must bound this vertex sum, and the current exact vertex count can be too
+  large.  Exact no-blowup restriction closure is supplied by
+  `FiniteUnambiguousFBDDRestriction.lean`.
 - `GuardedCanonicalAggregateEndpoint.lean` now takes the finite OR of all
   in-place accepting timed-alpha components by an explicit executable
   `Finset.univ.fold` and proves it pointwise equal to bounded deterministic
@@ -1287,15 +1298,17 @@ This alternative also remains prose only.
   `α ⊆ Pre(v) ∪ Post(v)`.  With this filter, a line-by-line audit
   suggests a potentially useful extension to a *syntactically read-once,
   unambiguous* nondeterministic program: the pre/post variable sets are
-  disjoint, the filtered products cover the unique accepting path, and
-  restrictions preserve unambiguity.  This is our inference, not a theorem in
-  the paper.  The filtered path cut, path-independent indicator, dependency
+  disjoint and the filtered products cover the unique accepting path.  This
+  extension is our inference, not a theorem in the paper.  The filtered path
+  cut, path-independent indicator, dependency
   locality, exact rational Fourier algebra, and the full filtered
   prefix/suffix coefficient factorization are now formalized in
   `UnambiguousFBDDPathCut.lean`, `UnambiguousFBDDIndicatorCut.lean`,
   `UnambiguousFBDDIndicatorLocality.lean`, `FiniteBooleanFourier.lean`, and
-  `UnambiguousFBDDFourierFactorization.lean`.  The restriction invariant and
-  quantitative one-round estimate remain to be proved.  The inferred
+  `UnambiguousFBDDFourierFactorization.lean`; exact restriction semantics and
+  preservation of read-once/unambiguity are formalized in
+  `FiniteUnambiguousFBDDRestriction.lean`.  The quantitative one-round
+  estimate remains to be proved.  The inferred
   one-round error still
   contains the explicit vertex factor `S*2^(-k/2)`.  Even if that extension is
   correct, the stated
@@ -1303,7 +1316,8 @@ This alternative also remains prose only.
   quadratically on `log(nw/epsilon)`.  With the current coherent aggregate's
   transcript-size term it does not reach the small-`mu` easy-support scale,
   and the paper supplies no fixed-seed `N^mu` joint-coordinate DAG.
-- [Doron--Pyne--Tell--Williams, ECCC TR25-077, Theorem 4.14 and Definition 3.9](https://eccc.weizmann.ac.il/report/2025/077/)
+- [Doron--Pyne--Tell--Williams, ECCC TR25-077, Definition 3.9, Theorem 4.14,
+  and Lemma 4.15](https://eccc.weizmann.ac.il/report/2025/077/)
   give a strongly explicit generator with seed `n^epsilon` and error `1/n^2`
   for deterministic adaptive-order read-once branching programs described as
   having size `n`.  Definition 3.9 itself has `n+1` layers of width `w` and
@@ -1312,8 +1326,11 @@ This alternative also remains prose only.
   statement is Lemma 4.15 with the actual vertex count `S`.
   A coordinate is computable in `O(epsilon * log n)` workspace with read-only
   seed access and catalytic access to the output index.  If Theorem 4.14 is
-  modified by fixing its final packed tail `v` to zero, Lemma 4.15 plus the
-  union bound for coordinates surviving all levels suggests the honest error
+  modified by fixing its final packed tail `v` to zero, Lemma 4.15's
+  one-round estimate for a size-`S` deterministic AOBP is
+  `S*p^(k/2)` under its stated `2k`-wise source and biased-mask hypotheses;
+  Definition 3.9 counts all vertices, not only input layers.  Combining this
+  with the union bound for coordinates surviving all levels suggests the honest error
   `L*S*p^(k/2) + N*(1-p)^L`, not automatically `1/N^2`; this is an inference,
   not a theorem stated in the paper.  Here `S` is the actual AOBP vertex count,
   and replacing it by the input length `N` is invalid.  Even a fully formal
@@ -1353,9 +1370,10 @@ This alternative also remains prose only.
   of Lemma 4.15.
   Consequently both coordinate composition and the finite product-average
   cost of deleting `v` are no longer hidden steps, while an aggregate-class
-  theorem (either a
-  deterministic AOBP compilation or a proved unambiguous-FBDD extension) and
-  the honest size-dependent restriction/fooling analysis remain blockers.
+  theorem (either a deterministic AOBP compilation or the quantitative
+  square-moment extension to this unambiguous FBDD) and the honest
+  size-dependent fooling analysis remain blockers.  Structural restriction
+  closure itself is now proved with exact vertex-card preservation.
 - Generic unambiguity does not supply that compilation.  [Amarilli--Capelli--
   Monet--Senellart, Theory of Computing Systems 2019, Proposition 3.1](https://pierre.senellart.com/publications/amarilli2019connecting.pdf)
   gives an exponential separation between unambiguous FBDDs and deterministic
@@ -1465,6 +1483,17 @@ This alternative also remains prose only.
   proves near-maximum circuit lower bounds for exponential time with
   promise-MA queries.  It does not address one-tape MCSP, ROBP
   pseudorandomness, or the validator-and-glue construction here.
+- Cheng--Wu, [*Weighted Pseudorandom Generators for Read-Once Branching
+  Programs via Weighted Pseudorandom Reductions*](https://arxiv.org/abs/2502.08272),
+  revised 10 July 2026, improves weighted generators for standard and
+  permutation ROBPs.  It does not cover an adaptive-order unambiguous selector
+  with silent nondeterministic choices, and applying it componentwise retains
+  the outer component-count loss.
+- Volk, [*A Lower Bound for Read-Once Parity Branching
+  Programs*](https://arxiv.org/abs/2607.05944), 7 July 2026, proves a
+  near-quadratic lower bound in the parity-query model via algebraic circuit
+  complexity.  That model and bound do not yield the required Boolean
+  one-tape MCSP aggregate or the missing small-threshold separation.
 - Targeted searches for Boolean PRGs/HSGs for unambiguous branching programs,
   disjoint rectangle unions, and unambiguous DNFs found results only for
   substantially different restrictions (bounded width, known/regular/

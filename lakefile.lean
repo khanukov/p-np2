@@ -466,6 +466,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.OneTapeMagnification.ExactMasterGuardedCanonicalComponent,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.MandatoryFixedOrderQueryCollapse,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteUnambiguousFBDD,
+    Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteUnambiguousFBDDRestriction,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.UnambiguousFBDDPathCut,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.UnambiguousFBDDIndicatorCut,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.UnambiguousFBDDIndicatorLocality,

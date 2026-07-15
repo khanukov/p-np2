@@ -16,9 +16,10 @@ observation.  Positive weights reduce the whole signed off-diagonal form to
 weighted row charges, with no factor depending on the number of supports.
 For the selector-sensitive version, negative coefficient-product edges are
 first discarded (they only lower the signed form), and the Schur test is
-applied only to the active positive-edge graph `E_f`.  The stronger test on
-the full kernel is retained for reference but is subject to the known clique
-obstruction.
+applied only to the active positive-edge graph `E_f`.  This is a valid
+sufficient condition, but it is still a uniform spectral condition: a point
+mass can make `E_f` itself contain an obstructing clique.  The stronger test
+on the full kernel is retained for reference.
 
 The final theorems specialize the criterion to
 `structuredRankWeightedDualFarPairCorrelation`.  They do **not** construct
@@ -412,9 +413,10 @@ theorem structuredRankWeightedDualFarPairCorrelation_le_positivePairSum
         (highDegreeSupports (2 ^ n) cutoff) (coefficient f)
           (structuredPositivePairKernel n m tailBits hn htail f)
 
-/-- Selector-sensitive weighted-charge reduction on the positive Fourier
-edge graph `E_f`.  Unlike the full-kernel criterion below, its premise charges
-neither zero coefficients nor negative coefficient-product edges. -/
+/-- Weighted-charge reduction on the positive Fourier edge graph `E_f`.
+Unlike the full-kernel criterion below, its premise charges neither zero
+coefficients nor negative coefficient-product edges.  It remains stronger
+than the coefficient-vector bound because every active row shares one budget. -/
 theorem structuredRankWeightedDualFarPairCorrelation_le_of_positiveRowCharge
     (n m tailBits cutoff : Nat) (hn : 0 < n) (htail : tailBits ≤ n)
     (f : (Fin (2 ^ n) → Bool) → Rat)
@@ -506,8 +508,9 @@ theorem structuredDualFarPairCorrelation_le_positiveRowBudget
 
 /-- Stronger full-kernel weighted-charge reduction.  It is mathematically
 valid, but charges every dual-rank edge irrespective of coefficient sign.
-The known large same-kernel cliques obstruct this premise in general; the
-positive-edge theorem above is the selector-sensitive target. -/
+Large same-kernel cliques obstruct this premise in general.  Restricting to
+positive edges helps but does not eliminate every clique; the downstream
+coefficient-sensitive local-budget theorem avoids the uniform spectral norm. -/
 theorem structuredRankWeightedDualFarPairCorrelation_le_of_rowCharge
     (n m tailBits cutoff : Nat) (hn : 0 < n) (htail : tailBits ≤ n)
     (f : (Fin (2 ^ n) → Bool) → Rat)

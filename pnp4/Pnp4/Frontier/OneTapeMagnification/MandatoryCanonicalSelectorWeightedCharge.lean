@@ -16,8 +16,11 @@ small-seed selector-pair correlation target.
 
 No weights are constructed here, and no machine-semantic argument for the
 row inequality is assumed.  The result isolates that selector-specific
-obligation without turning it into an opaque hypothesis or claiming an
-unconditional correlation bound.
+uniform sufficient condition without turning it into an opaque hypothesis or
+claiming an unconditional correlation bound.  A downstream point-mass clique
+shows that this uniform row condition is not a viable universal target; the
+coefficient-sensitive energy and residual-mass modules retain the useful
+implication while replacing the overstrong premise.
 -/
 
 noncomputable section

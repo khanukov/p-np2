@@ -109,10 +109,10 @@ depths `r < L`, not for arbitrary affine restrictions or irrelevant later
 depths.  These implications are unconditional, but the general-tail premise
 itself remains open.
 
-`DPTWStructuredWeightedCharge.lean` sharpens that open premise to a
-selector-dependent finite Schur test.  It deletes zero Fourier coefficients,
-keeps only dual-rank edges with positive coefficient product, and proves that
-positive weights `w` satisfying the explicit row inequalities
+`DPTWStructuredWeightedCharge.lean` gives a selector-dependent finite Schur
+test.  It deletes zero Fourier coefficients, keeps only dual-rank edges with
+positive coefficient product, and proves that positive weights `w` satisfying
+the explicit row inequalities
 
 ```text
 sum_{R : (S,R) in E_f} 2^(-rank(S union R)) * w(R)
@@ -121,12 +121,57 @@ sum_{R : (S,R) in E_f} 2^(-rank(S union R)) * w(R)
 
 imply the required signed far bound with no cardinality factor.
 `MandatoryCanonicalSelectorWeightedCharge.lean` applies this criterion to
-each actually generated prefix: prefix-dependent existential weights imply
-`GeneratedPrefixDualFarBoundUpTo` and hence the exact `L*p^m` telescope.  No
-such weights are constructed here.  Charging the full unsigned dual graph is
-provably too strong because of the same-kernel clique obstruction; the
-positive-edge graph `E_f` is the precise selector-sensitive target left for a
-last-common-prefix/residual-mass argument.
+each actually generated prefix.
+
+That uniform row criterion is now known to be too strong, even after deleting
+negative edges.  `FiniteWeightedChargeCliqueObstruction.lean` proves that a
+positive clique of cardinality `q` and edge floor `a` forces
+`(q-1)*a <= budget` under every positive diagonal scaling.
+`DPTWStructuredPointMassCliqueObstruction.lean` instantiates this on four
+Boolean coordinates for the all-false point mass: four explicit active
+supports form a positive structured clique with edge floor `1/4`, whereas the
+requested row budget is `1/2`.  Hence no positive row weights exist.  The
+machine-level corollary keeps the equality with that point-mass selector as an
+explicit semantic premise; no canonical machine realization is hidden.  In
+contrast, the same module proves that the point mass's actual signed dual-far
+correlation is at most `225/512 < 1/2`.  Thus the counterexample invalidates
+the uniform certificate, not the desired correlation inequality.
+
+`FiniteWeightedChargeSpectral.lean` replaces this false uniform goal by a
+coefficient-sensitive one.  For local budgets `beta(S)`, weighted Schur gives
+
+```text
+quadratic <= sum_S beta(S) * coefficient(f,S)^2.
+```
+
+For the canonical weights `w(S)=|coefficient(f,S)|`, the right side is exactly
+the positive-edge quadratic, with
+
+```text
+beta(S) = (K * |coefficient(f,.)|)(S) / |coefficient(f,S)|.
+```
+
+Thus large graph charge is allowed on supports carrying little Fourier
+energy; no uniform Perron bound is required.  The only relaxation left in
+this version is deletion of negative coefficient-product edges.
+`MandatoryCanonicalSelectorEnergyCharge.lean` proves that the resulting
+energy-weighted bound at every generated prefix implies
+`GeneratedPrefixDualFarBoundUpTo` and the exact `L*p^m` telescope.
+
+`FiniteLayeredFamilyResidualModelMass.lean` gives the complementary semantic
+form.  For an arbitrary finite uFBDD, the masked conditional acceptance
+probability is exactly the sum of the residual masses of its accepted inputs,
+and its high Fourier tail is exactly
+
+```text
+residual accepted mass - degree-<=2m conditional predictor.
+```
+
+`MandatoryCanonicalSelectorResidualMass.lean` proves that an `L2` bound
+`<= p^(2m)` for this deviation at the generated prefixes is sufficient for
+the same one-round `p^m` and multi-round `L*p^m` estimates.  This formulation
+retains the coefficient magnitudes and all signed cancellation, so it is the
+honest insertion surface for a last-common-prefix/residual-splice argument.
 
 The requested correlation lemma is proved unconditionally in the
 full-coordinate regime.  `DPTWStructuredFullFieldCorrelation.lean` factors
@@ -152,18 +197,25 @@ seed and fixed-seed joint DAG become near-linear rather than `N^mu` for every
 small `mu`.
 
 The exact remaining mathematical problem is the partial-coordinate case,
-where the ranks vary across pairs and the common factor used above disappears.
-A pure PSD/Loewner or dual-code weight-enumerator argument cannot be
-size-free: one dual coset can contain exponentially many large supports with
-the same saturated constraint space, producing an unbounded clique
-eigenvalue after diagonal normalization.  Likewise, without a quantitative
-restriction on the machine, a universal selector statement is false by a
-support-counting distinguisher.  The viable target must therefore exploit the
-fixed small-machine/near-linear transition geometry, most plausibly through a
-last-common-prefix residual-mass charge whose weights offset the exact
-`2^(-rank)` factors.  The corrected Meel--de Colnet derivation-path analysis
-motivates that charge shape, but does not supply this Walsh-correlation
-theorem.
+where the ranks vary across pairs and the common signed factor used above
+disappears.  A pure PSD/Loewner, uniform Perron-weight, or dual-code
+weight-enumerator argument cannot be size-free: one dual coset can contain
+exponentially many large supports with the same saturated constraint space,
+and the explicit point-mass clique already refutes the proposed uniform row
+budget.  Likewise, without a quantitative restriction on the machine, a
+universal selector statement is false by a support-counting distinguisher.
+
+The viable target must therefore exploit fixed small-machine/near-linear
+transition geometry while retaining coefficient mass or signed cancellation.
+Concretely, one must either bound the canonical energy-weighted positive-edge
+sum by `(1-p)*p^(2m)`, or directly prove that residual accepted mass has
+`L2` deviation at most `p^(2m)` from its low-degree predictor after every
+generated prefix.  A last-common-prefix grouping must additionally telescope
+its path-position charges (or gain at least `log N` extra rank per bucket),
+because a plain sum over all `N` query positions loses the required size-free
+scale.  The corrected Meel--de Colnet derivation-path analysis motivates the
+residual-model grouping, but does not supply the needed Walsh/rank correlation
+or cancellation theorem.
 
 ## Closed operational and finite layers
 

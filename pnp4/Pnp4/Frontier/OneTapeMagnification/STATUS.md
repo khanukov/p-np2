@@ -1,6 +1,6 @@
 # One-tape small-threshold status
 
-Status: **THE FINITE ONE-TAPE VALIDATOR, EACH TOTAL FIXED-CERTIFICATE REJECTING-GUARD COMPONENT, THE FINITE ALPHA FAMILY, AND ONE EXACT SYNTACTICALLY READ-ONCE UNAMBIGUOUS FBDD WITH COMPLETE QUERY TRACES, A FILTERED FOURIER CUT FACTORIZATION, EXACT NO-BLOWUP CLOSURE UNDER PARTIAL ASSIGNMENTS, THE EXACT FINITE HOMOGENEOUS RESTRICTION SQUARE-MOMENT CORE, ITS STANDARD CYLINDER-LAW BOUNDED-INDEPENDENCE INSTANTIATION, THE PREFIX PARSEVAL/BESSEL ENERGY STEP, EXACT MASKED PRODUCT FACTORIZATION, THE EXACT BOUNDED SUFFIX COORDINATE-LAPLACIAN, THE EXACT HIGH-DEGREE VERTEX REGROUPING, THE SQUARED PER-VERTEX PREFIX-TIMES-SUFFIX RESTRICTION BOUND, ITS EVEN-DEGREE `p^m` UNSQUARING, THE HONEST CARDINALITY-WEIGHTED VERTEX SUM, EXACT LOW-DEGREE CANCELLATION, THE FULL PROGRAM-LEVEL ONE-ROUND FOOLING BOUND, AFFINE RESTRICTION-STABLE ROUND CLOSURE, AND THE SCALAR TELESCOPING BOUND ARE FORMALIZED. ITS SIZE IS STILL THE EXPLICIT DISJOINT SUM. THE CONCRETE NESTED-AVERAGE MULTI-ROUND HYBRID, A SMALL SHARED AGGREGATE, THE ONE-SIDED AVERAGE-CASE MCSP INTERSECTION, AND THE SMALL-THRESHOLD LOWER BOUND REMAIN OPEN**
+Status: **THE FINITE ONE-TAPE VALIDATOR, EACH TOTAL FIXED-CERTIFICATE REJECTING-GUARD COMPONENT, THE FINITE ALPHA FAMILY, AND ONE EXACT SYNTACTICALLY READ-ONCE UNAMBIGUOUS FBDD WITH COMPLETE QUERY TRACES, A FILTERED FOURIER CUT FACTORIZATION, EXACT NO-BLOWUP CLOSURE UNDER PARTIAL ASSIGNMENTS, THE EXACT FINITE HOMOGENEOUS RESTRICTION SQUARE-MOMENT CORE, ITS STANDARD CYLINDER-LAW BOUNDED-INDEPENDENCE INSTANTIATION, THE PREFIX PARSEVAL/BESSEL ENERGY STEP, EXACT MASKED PRODUCT FACTORIZATION, THE EXACT BOUNDED SUFFIX COORDINATE-LAPLACIAN, THE EXACT HIGH-DEGREE VERTEX REGROUPING, THE SQUARED PER-VERTEX PREFIX-TIMES-SUFFIX RESTRICTION BOUND, ITS EVEN-DEGREE `p^m` UNSQUARING, THE HONEST CARDINALITY-WEIGHTED VERTEX SUM, EXACT LOW-DEGREE CANCELLATION, THE FULL PROGRAM-LEVEL ONE-ROUND FOOLING BOUND, AFFINE RESTRICTION-STABLE ROUND CLOSURE, THE CONCRETE NESTED-AVERAGE MULTI-ROUND HYBRID, AND ITS DPTW-SHAPED TELESCOPING COMPOSITION ARE FORMALIZED. ITS SIZE IS STILL THE EXPLICIT DISJOINT SUM. THE EXACT NESTED-TO-PACKED DPTW SEED REINDEXING, A SMALL SHARED AGGREGATE, THE ONE-SIDED AVERAGE-CASE MCSP INTERSECTION, AND THE SMALL-THRESHOLD LOWER BOUND REMAIN OPEN**
 
 Primary sources:
 
@@ -1008,9 +1008,22 @@ must use.
   ```
 
   from adjacent hybrid bounds and a terminal zero-tail cost.  The remaining
-  formal bookkeeping is to define the concrete nested finite-average hybrid
-  `value r`, derive each adjacent step by conditioning on its fixed prefix,
-  and connect the final value to the existing DPTW zero-tail survivor bound.
+  concrete finite-average bookkeeping is supplied by the next module.
+- `UnambiguousFBDDConcreteMultiRoundHybrid.lean` defines the depth-`r` seed
+  space and the actual nested finite-average hybrid `value r`.  Its successor
+  identity conditions on the old fixed prefix and exposes exactly one fresh
+  affine round.  Averaging the fixed-prefix theorem proves
+
+  ```text
+  |value (r+1) - value r| <= card(Vertex) * p^m,
+  ```
+
+  and finite telescoping gives the full `L`-round contribution.  The module
+  composes this with the existing independent-survival theorem to obtain the
+  DPTW-shaped terminal bound.  Its sole remaining representation premise
+  `hPacked` identifies the nested product of primitive seed pairs with the
+  equivalent flat DPTW seed tape; no probabilistic conditioning step remains
+  informal.
 - **Audited global-energy boundary (not yet kernel-formalized).**  A tempting
   attempt to remove the vertex factor is invalid even for deterministic
   ordered read-once branching programs.  A depth-`d` prefix decision tree
@@ -1494,10 +1507,11 @@ This alternative also remains prose only.
   `S*2^(-m)`, equivalently the paper scale `S*2^(-k/2)` at cutoff `k=2m`.
   Affine round composition, the one-round theorem after every fixed affine
   prefix, and the scalar telescoping inequality are now formalized in
-  `UnambiguousFBDDAffineRestrictionIteration.lean`.  The remaining bookkeeping
-  is to construct the concrete nested finite-average hybrids, derive their
-  adjacent-step bounds by averaging the fixed-prefix theorem, and connect the
-  terminal hybrid to the existing zero-tail survivor theorem.
+  `UnambiguousFBDDAffineRestrictionIteration.lean`, and
+  `UnambiguousFBDDConcreteMultiRoundHybrid.lean` now constructs the nested
+  finite-average hybrids and derives every adjacent step by averaging that
+  fixed-prefix theorem.  Its DPTW terminal composition is exact modulo the
+  explicit `hPacked` equality between nested and flat seed layouts.
   The stated CLTW seed depends
   quadratically on `log(nw/epsilon)`.  With the current coherent aggregate's
   transcript-size term it does not reach the small-`mu` easy-support scale,
@@ -1555,8 +1569,8 @@ This alternative also remains prose only.
   primitives.  The program-level one-round theorem for the canonical
   unambiguous FBDD, its affine fixed-prefix closure, and the scalar
   telescoping estimate are now internal.  The remaining quantitative
-  bookkeeping is the concrete nested-average hybrid and its terminal
-  zero-tail connection.  The structural blocker is still the selector's
+  bookkeeping is now only the exact nested-to-packed DPTW seed-layout
+  reindexing.  The structural blocker is still the selector's
   honest size/easy-support cost, which must be compressed using special
   canonical geometry rather than generic unambiguity.
 - Generic unambiguity does not supply that compilation.  [Amarilli--Capelli--

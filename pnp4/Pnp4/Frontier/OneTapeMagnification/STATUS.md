@@ -10,6 +10,8 @@ Primary sources:
 - Santhanam, [*Pseudorandomness and the Minimum Circuit Size Problem*](https://eccc.weizmann.ac.il/report/2019/155/), ECCC TR19-155, Proposition 3 and Corollary 1, for the same easy-supported hitting-set/average-case MCSP pattern with their asymptotic quantifiers and parameter slack.
 - Hirahara, [*Non-Disjoint Promise Problems from Meta-Computational View of Pseudorandom Generator Constructions*](https://theoryofcomputing.org/articles/v019a004/), Theory of Computing 2023, for characterizations connecting HSGs to meta-computational circuit lower-bound problems.
 - Doron, Pyne, Tell, Williams, [*When Connectivity Is Hard, Random Walks Are Easy With Non-Determinism*](https://eccc.weizmann.ac.il/report/2025/077/), ECCC TR25-077, especially Claim 3.11, Definition 3.9, and Theorem 4.14 for biased bounded independence, adaptive-order read-once branching programs, and the Forbes--Kelley generator.
+- Chen, Lyu, Tal, Wu, [*New PRGs for Unbounded-Width/Adaptive-Order Read-Once Branching Programs*](https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.ICALP.2023.39), ICALP 2023, for the direct adaptive-order Forbes--Kelley analysis.  Its seed length retains an explicit dependence on the branching-program width, so it does not provide the cardinality-free selector aggregate needed here.
+- Meel, de Colnet, [*An FPRAS for Model Counting for Non-Deterministic Read-Once Branching Programs*](https://arxiv.org/abs/2406.16515v3), arXiv v3 (2 December 2025), for edge-labelled reverse derivation paths, last-common-prefix grouping, and residual-model splice counting.  Its sampling correlation analysis is algorithm-specific and is not a Walsh-correlation theorem.
 - Chen, Cohen, Doron, Khaskelberg, Ta-Shma, [*Improved Error Reduction for Weighted PRGs*](https://eccc.weizmann.ac.il/report/2026/064/), ECCC TR26-064 revision 3, for the current weighted-PRG frontier for standard read-once branching programs.  Its model does not include the unambiguous adaptive uFBDD used here.
 - Amarilli, Capelli, Monet, Senellart, [*Connecting Knowledge Compilation Classes and Width Parameters*](https://doi.org/10.1007/s00224-019-09930-2), Theory of Computing Systems 64 (2020), Theorem 4.4, for compilation of a circuit supplied with a width-`k` path decomposition into a complete uOBDD of width at most `2^(2(k+1))`.
 - Kinnersley, [*The Vertex Separation Number of a Graph Equals Its Path-Width*](https://doi.org/10.1016/0020-0190(92)90234-M), Information Processing Letters 42 (1992), for equality of vertex separation and pathwidth.
@@ -31,106 +33,137 @@ bounded standard-DAG predicate accepts a threshold-easy truth table.  The
 all-exponent intersection statement is not proved, so no unconditional source
 or capstone follows.
 
-## Aggregate restriction endpoint and exact remaining correlation gap (July 2026)
+## Small-seed selector-pair correlation checkpoint (July 2026)
 
-Three new axiom-free modules sharpen the lower Fourier/restriction layer.
+The lower Fourier layer is now reduced to an explicit dual-code and
+linear-rank calculation for the actual structured short seed.  This remains a
+restricted one-tape side track under the repository policy: none of the
+results in this section reduces `VerifiedNPDAGLowerBoundSource` or
+`SearchMCSPWeakLowerBound`.
 
-`UnambiguousFBDDGlobalEnergyHighDegreeBound.lean` closes a composition seam
-left explicit by the preceding checkpoint.  It rewrites the actual signed
-masked high-degree average of a full-read read-once unambiguous FBDD as the
-sum of its vertex restriction contributions and applies the global prefix
-energy theorem.  Both the second-moment and squared absolute-moment bounds,
-including mandatory-canonical specializations, now compile.  The
-result still contains `Fintype.card B.Vertex`; it does not pretend that the
-existing Cauchy step is size-free.
+`FiniteBooleanBoundedIndependenceFarTail.lean` proves the exact high-tail
+second-moment split into a diagonal term and a signed far-pair residual.  For
+cutoff `2m` and independence `4m+1`, the diagonal is at most `p^(2m+1)` for
+every pointwise bounded function.  A generic absolute estimate on the far
+term still costs Fourier `L1` mass; it is recorded as a diagnostic, not used
+as a size-free selector bound.
 
-`FiniteLayeredFamilyComponentDecomposition.lean` moves the prospective
-selector attack to the coarser and correct interface.  For an unambiguous
-finite family it proves pointwise
-
-```text
-selector.ratAcceptanceIndicator
-  = sum index, ratComponentAcceptanceIndicator index,
-```
-
-commutes this sum through high-degree Fourier projection and masked uniform
-averaging, and proves the exact identity
+`DPTWStructuredUnbiasedDualCode.lean` identifies the real unbiased source as
+a binary linear evaluation code.  Its Walsh character average is exactly the
+indicator that the support lies in the dual code.  The dual condition is also
+proved equivalent to the explicit parity-check system
 
 ```text
-E (selector high-tail average)^2
-  = sum left, sum right, E (componentTail left * componentTail right).
+forall exponent < 4m+1,
+  sum_{index in support} node(index)^exponent = 0 in GF(2^n).
 ```
 
-No triangle or vertex-cardinality inequality occurs in that identity.  It is
-the formal insertion surface for a last-common-prefix / first-divergence
-charge.  The remaining theorem is a quantitative bound on this signed pair
-sum for the mandatory canonical selector, stable under the DPTW affine
-restriction rounds.
+Thus every non-dual far pair vanishes exactly; no pseudorandom approximation
+or hidden source hypothesis is used.
 
-`FiniteBooleanFullIndependenceRestriction.lean` proves the ideal aggregate
-endpoint without decomposing the function at all.  Under independently
-sampled full `n`-wise unbiasedness of the base source and full `n`-wise
-false-biased product laws for the mask, the exact all-degree Gram calculation is
+`DPTWStructuredMaskRank.lean` gives the complementary exact mask law.  For a
+union support `U`, mask survival is
 
 ```text
-E (highTail_{>k}(f) after restriction)^2
-  = sum_{|alpha|>k} p^|alpha| * coefficient(f,alpha)^2.
+Pr[U is frozen] = 2^(-rank(U)),
 ```
 
-For `0 <= p <= 1` and pointwise `|f| <= 1`, Parseval gives the
-cardinality-free conditional high-tail bound `<= p^k`.  This is the
-nontrivial aggregate statement and shows that the earlier program-size factor
-is not inherent after sufficiently strong all-support orthogonality is
-available.  The fully averaged one-round output is even exactly uniform, not
-merely within `p^m`: full `n`-wise unbiasedness already makes the base source
-the uniform cube distribution, and XOR with the independently sampled
-mask/fill preserves it.  This exact-zero corollary is therefore a long-seed
-diagnostic, not PRG progress.
+where `rank(U)` is the rank over `ZMod 2` of the displayed prefix-coordinate
+evaluation map.  If `|U| >= 4m+1`, then
+`rank(U) >= (4m+1)*tailBits`.  With `tailBits = n`, the rank saturates the
+whole coefficient seed and survival is exactly
+`(2^-n)^(4m+1)`.
 
-The same module proves explicit lower bounds on the seed price rather than
-hiding it in a source contract.  Every fully `n`-wise-unbiased finite base
-source is surjective onto the whole `n`-bit cube, hence
+`DPTWStructuredRankWeightedDualCorrelation.lean` combines the two exact laws.
+The remaining far term for general `tailBits` is literally
 
 ```text
-2^n <= card Seed.
+sum_{S,R high; S != R; S symmetric-difference R dual}
+  coefficient(f,S) * coefficient(f,R) * 2^(-rank(S union R)).
 ```
 
-If the base seed itself consists of `seedBits` Boolean bits, then
-`n <= seedBits`.  At an interior bias `0 < p < 1`, the full mask law also
-forces its source to be surjective.  Because the theorem samples the two
-sources independently, the joint seed type has at least `2^(2*n)` states;
-rational probability denominators can require more.  Thus full independence
-cannot serve as the magnification-admissible small local HSG/PRG.  The real
-open bridge is now sharper: replace full all-support orthogonality by a
-selector-specific, residual-model-mass-normalized bound on the displayed
-component cross terms while retaining small seed and fixed-seed DAG locality.
+This is a signed identity.  No triangle inequality, component count, vertex
+count, or Fourier-`L1` relaxation occurs in the rewrite.
 
-A targeted self-attack also identifies why the diagonal/frame route cannot
-provide that replacement.  The two-bit XNOR fixed-order deterministic OBDD
-already has two cut terms whose projected prefix signs and suffix-Laplacian
-signs cancel each other, making the terms identical.  A depth-`t` parity-leaf
-version has `2^t` identical cut terms and exactly saturates Cauchy.  The
-two-function Fourier instance is kernel-checked in
-`GlobalEnergyProjectionBarrier.lean`; the explicit OBDD realization and its
-unbounded family are currently a verified mathematical audit, not yet a
-separate Lean construction.  Consequently unambiguity, read-once/full-read,
-fixed variable order, disjoint accepting fibers, productive pruning, and
-right-functionality do not by themselves imply a size-free diagonal prefix
-energy estimate.  This does not refute the aggregate-first pair-sum target.
+`FiniteLayeredFamilyAcceptedInputPairDecomposition.lean` independently moves
+the mandatory selector to accepted-input pairs, and
+`FiniteLayeredFamilyAcceptedInputFourier.lean` proves that one accepted point
+has coefficient magnitude `2^-N` and Parseval energy `2^-N` on an `N`-bit
+cube.  `FiniteLayeredFamilyFirstDivergenceCharge.lean` retains the sharp
+finite residual-fiber arithmetic.  It deliberately does not claim to have
+constructed a canonical reverse trace, first-divergence bucket, or splice
+injection.
 
-The Meel--de Colnet derivation-path analysis suggests the correct shape of a
-possible repair: charge assignment pairs at their last common prefix using
-residual model counts.  However, their correlation bound is produced by a
-node-aware randomized thinning/model-counting algorithm whose runtime is
-polynomial in the explicit nFBDD.  The present DPTW bounded-independence laws
-control only low-cardinality patterns.  In the exact pathwise Fourier formula,
-component cross terms involve arbitrary high supports and symmetric
-differences, so the required signed joint-survival estimate does not follow
-from the current refined Lean `2k`-wise base and `k`-wise mask APIs (the DPTW
-paper itself states `2k`-wise laws for both sources).  A successful next step
-must prove such a residual-mass-normalized DPTW correlation law from the
-concrete source, or construct a new path-aware small local source; a pair-count
-lemma alone is insufficient.
+`MandatoryCanonicalSelectorPairCorrelation.lean` states the exact remaining
+general-tail obligation.  For `p = 2^-tailBits`, the signed far term need only
+satisfy
+
+```text
+Far <= (1-p) * p^(2m).
+```
+
+Together with the diagonal this gives second moment `<= p^(2m)`, one-round
+error `<= p^m`, and an `L*p^m` telescope with no selector-size factor.  For a
+fixed `L`, the premise is required only for concrete prefixes generated at
+depths `r < L`, not for arbitrary affine restrictions or irrelevant later
+depths.  These implications are unconditional, but the general-tail premise
+itself remains open.
+
+`DPTWStructuredWeightedCharge.lean` sharpens that open premise to a
+selector-dependent finite Schur test.  It deletes zero Fourier coefficients,
+keeps only dual-rank edges with positive coefficient product, and proves that
+positive weights `w` satisfying the explicit row inequalities
+
+```text
+sum_{R : (S,R) in E_f} 2^(-rank(S union R)) * w(R)
+  <= (1-p) * p^(2m) * w(S)
+```
+
+imply the required signed far bound with no cardinality factor.
+`MandatoryCanonicalSelectorWeightedCharge.lean` applies this criterion to
+each actually generated prefix: prefix-dependent existential weights imply
+`GeneratedPrefixDualFarBoundUpTo` and hence the exact `L*p^m` telescope.  No
+such weights are constructed here.  Charging the full unsigned dual graph is
+provably too strong because of the same-kernel clique obstruction; the
+positive-edge graph `E_f` is the precise selector-sensitive target left for a
+last-common-prefix/residual-mass argument.
+
+The requested correlation lemma is proved unconditionally in the
+full-coordinate regime.  `DPTWStructuredFullFieldCorrelation.lean` factors
+the common far-pair mask weight, bounds the remaining signed base-code energy
+by four, and proves for every `|f| <= 1` and positive `m,n`
+
+```text
+|Far| <= 4 * (2^-n)^(4m+1)
+      <= (1-2^-n) * (2^-n)^(2m),
+secondMoment <= (2^-n)^(2m),
+oneRoundError <= (2^-n)^m.
+```
+
+`MandatoryCanonicalSelectorFullFieldCorrelation.lean` instantiates this for
+every generated prefix of the actual mandatory selector and obtains the
+cardinality-free `L*(2^-n)^m` multi-round Fourier error.
+
+This full-field success is not yet magnification-admissible.  Its freeze
+probability is `p = 2^-n = 1/N`, so one mask round leaves a coordinate alive
+with marginal `1-1/N`.  Making the independent terminal-survivor term small
+therefore requires on the order of `N log(N/epsilon)` rounds, and the packed
+seed and fixed-seed joint DAG become near-linear rather than `N^mu` for every
+small `mu`.
+
+The exact remaining mathematical problem is the partial-coordinate case,
+where the ranks vary across pairs and the common factor used above disappears.
+A pure PSD/Loewner or dual-code weight-enumerator argument cannot be
+size-free: one dual coset can contain exponentially many large supports with
+the same saturated constraint space, producing an unbounded clique
+eigenvalue after diagonal normalization.  Likewise, without a quantitative
+restriction on the machine, a universal selector statement is false by a
+support-counting distinguisher.  The viable target must therefore exploit the
+fixed small-machine/near-linear transition geometry, most plausibly through a
+last-common-prefix residual-mass charge whose weights offset the exact
+`2^(-rank)` factors.  The corrected Meel--de Colnet derivation-path analysis
+motivates that charge shape, but does not supply this Walsh-correlation
+theorem.
 
 ## Closed operational and finite layers
 

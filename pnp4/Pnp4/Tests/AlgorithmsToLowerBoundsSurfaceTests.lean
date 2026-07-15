@@ -208,6 +208,7 @@ import Pnp4.Frontier.OneTapeMagnification.GuardedCanonicalAggregateEndpoint
 import Pnp4.Frontier.OneTapeMagnification.SignedDAGLocalGeneratorTransfer
 import Pnp4.Frontier.OneTapeMagnification.ReverseOneSidedFoolingSupportEquivalence
 import Pnp4.Frontier.OneTapeMagnification.CircuitRecognizableSupportAvoidanceBarrier
+import Pnp4.Frontier.OneTapeMagnification.DPTWZeroTailJointLocality
 import Pnp4.Frontier.OneTapeMagnification.SelectedCutMultiplicity
 import Pnp4.Frontier.OneTapeMagnification.ExecutableTimedAlphaQueryOrder
 import Pnp4.Frontier.OneTapeMagnification.OneSidedCutMinimumCheck
@@ -4518,6 +4519,21 @@ private def requestCodecSmoke : StreamMergeRequestCodec.RequestFields where
 #check Frontier.OneTapeMagnification.not_allExponent_hitsDense_of_codeLength_linear
 #check Frontier.OneTapeMagnification.not_allExponent_everyDenseDAGPredicateAcceptsEasyTable_of_codeLength_linear
 #check Frontier.OneTapeMagnification.not_allExponent_everyDenseDAGPredicateAcceptsEasyTable_of_codeLength_eventuallyLinear
+#check Frontier.OneTapeMagnification.DPTWCoordinatePrimitive
+#check Frontier.OneTapeMagnification.dptwZeroTailLevelHead
+#check Frontier.OneTapeMagnification.eval_dptwZeroTailLevelHead
+#check Frontier.OneTapeMagnification.dptwZeroTailGenerate
+#check Frontier.OneTapeMagnification.dptwZeroTailGenerate_final
+#check Frontier.OneTapeMagnification.dptwZeroTailGenerate_step
+#check Frontier.OneTapeMagnification.dptwZeroTailJointCircuit
+#check Frontier.OneTapeMagnification.dptwZeroTailJointCircuit_eval
+#check Frontier.OneTapeMagnification.dptwZeroTailJointCircuit_gateCount
+#check Frontier.OneTapeMagnification.dptwZeroTailJointCircuit_usesOnlyAndOrNot
+#check Frontier.OneTapeMagnification.dptwZeroTailHardwired_gateCount
+#check Frontier.OneTapeMagnification.dptwZeroTailDAGLocalGenerator
+#check Frontier.OneTapeMagnification.dptwZeroTailDAGLocalGenerator_threshold_eq
+#check Frontier.OneTapeMagnification.dptwZeroTailDAGLocalGenerator_seedBits
+#check Frontier.OneTapeMagnification.dptwZeroTailDAGLocalGenerator_generate
 
 /-! Small reducible computations pin down the integer and final-block conventions. -/
 example : DAGCodec.codeLength 0 0 = 2 := by

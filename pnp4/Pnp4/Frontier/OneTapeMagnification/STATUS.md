@@ -1,6 +1,6 @@
 # One-tape small-threshold status
 
-Status: **THE FINITE ONE-TAPE VALIDATOR, THE DIRECT DENSE/EASY STANDARD-DAG REDUCTION, AND A CODEC-IMAGE AVOIDANCE BARRIER ARE EXACT. THE ONE-SIDED AVERAGE-CASE MCSP INTERSECTION, THE AGGREGATE CONSTRUCTION, AND THE SMALL-THRESHOLD LOWER BOUND REMAIN OPEN**
+Status: **THE FINITE ONE-TAPE VALIDATOR, THE DIRECT DENSE/EASY STANDARD-DAG REDUCTION, THE CODEC-IMAGE AVOIDER, AND FINITE DPTW ZERO-TAIL JOINT LOCALITY ARE EXACT. THE ONE-SIDED AVERAGE-CASE MCSP INTERSECTION, A DETERMINISTIC-AOBP AGGREGATE, ITS FOOLING ANALYSIS, AND THE SMALL-THRESHOLD LOWER BOUND REMAIN OPEN**
 
 Primary sources:
 
@@ -94,6 +94,17 @@ The following ingredients are now formalized:
   `EveryDenseDAGPredicateAcceptsEasyTable` under the same inequalities, and
   an all-exponent corollary handles every eventually linear codec length by
   absorbing its finite prefix into one explicit exponent budget.
+- A finite joint-locality compiler for the zero-tail modification of the DPTW
+  Forbes--Kelley recursion.  Given actual paper-basis joint-coordinate
+  circuits `A` and `B`, `L = levelsAfterFirst + 1` levels compile to one
+  constant-free joint DAG with seed length `L*(s+s)` and exact internal-gate
+  count `L*(gA+gB) + 5*(L-1)`.  The final semantically dead `B` block remains
+  explicitly bundled and counted.  For `0 < n`, fixed-seed hardwiring costs
+  exactly another `2*L*(s+s) = 4*L*s` gates, yielding a constructive
+  `DAGLocalGenerator`.
+  This checkpoint assumes the primitive coordinate circuits as concrete data
+  and neither derives them from DPTW's catalytic-space coordinate algorithm
+  nor makes an AOBP, distributional, fooling, or lower-bound claim.
 
 These results use the exact standard-DAG MCSP target, including the
 `AND`/`OR`/`NOT` basis filter.  The counting image may include a harmless
@@ -1155,6 +1166,14 @@ This alternative also remains prose only.
   FBDD, not one deterministic AOBP, and the proved width of an individual
   guarded component can already make `S` superpolynomial in `N`.  In that
   regime the DPTW seed/locality cost does not fit `N^mu`.
+  `DPTWZeroTailJointLocality.lean` now closes only the deterministic circuit
+  plumbing for the proposed zero-tail modification: from supplied paper-basis
+  coordinate primitives it proves exact recursion semantics, exact joint-DAG
+  size `L*(gA+gB)+5*(L-1)`, and exact fixed-seed overhead `4*L*s`.  It does not
+  construct the DPTW finite-field primitives or import the inferred error bound.
+  Consequently coordinate composition is no longer a hidden locality step,
+  while the deterministic-AOBP compilation and honest size-dependent fooling
+  analysis remain the blockers.
 - Generic unambiguity does not supply that compilation.  [Amarilli--Capelli--
   Monet--Senellart, Theory of Computing Systems 2019, Proposition 3.1](https://pierre.senellart.com/publications/amarilli2019connecting.pdf)
   gives an exponential separation between unambiguous FBDDs and deterministic

@@ -466,6 +466,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.OneTapeMagnification.SignedDAGLocalGeneratorTransfer,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.ReverseOneSidedFoolingSupportEquivalence,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.CircuitRecognizableSupportAvoidanceBarrier,
+    Glob.one `Pnp4.Frontier.OneTapeMagnification.DPTWZeroTailJointLocality,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.SelectedCutMultiplicity,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.ExecutableTimedAlphaQueryOrder,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.OneSidedCutMinimumCheck,

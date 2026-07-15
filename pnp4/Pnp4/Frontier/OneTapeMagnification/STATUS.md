@@ -1,6 +1,6 @@
 # One-tape small-threshold status
 
-Status: **THE FINITE ONE-TAPE VALIDATOR, THE DIRECT DENSE/EASY STANDARD-DAG REDUCTION, THE CODEC-IMAGE AVOIDER, AND FINITE DPTW ZERO-TAIL JOINT LOCALITY ARE EXACT. THE ONE-SIDED AVERAGE-CASE MCSP INTERSECTION, A DETERMINISTIC-AOBP AGGREGATE, ITS FOOLING ANALYSIS, AND THE SMALL-THRESHOLD LOWER BOUND REMAIN OPEN**
+Status: **THE FINITE ONE-TAPE VALIDATOR, EACH TOTAL FIXED-CERTIFICATE REJECTING-GUARD READ-ONCE COMPONENT, THE DIRECT DENSE/EASY STANDARD-DAG REDUCTION, THE CODEC-IMAGE AVOIDER, AND FINITE DPTW ZERO-TAIL JOINT LOCALITY/SURVIVOR BOOKKEEPING ARE EXACT. THE OUTER COHERENT UNION, THE ONE-SIDED AVERAGE-CASE MCSP INTERSECTION, ITS RESTRICTION/FOOLING ANALYSIS, AND THE SMALL-THRESHOLD LOWER BOUND REMAIN OPEN**
 
 Primary sources:
 
@@ -9,6 +9,9 @@ Primary sources:
 - Chen, Jin, Williams, [*Hardness Magnification for all Sparse NP Languages*](https://eccc.weizmann.ac.il/report/2019/118/download), ECCC TR19-118 (CJW), used only for its exact quantifier order.
 - Santhanam, [*Pseudorandomness and the Minimum Circuit Size Problem*](https://eccc.weizmann.ac.il/report/2019/155/), ECCC TR19-155, Proposition 3 and Corollary 1, for the same easy-supported hitting-set/average-case MCSP pattern with their asymptotic quantifiers and parameter slack.
 - Hirahara, [*Non-Disjoint Promise Problems from Meta-Computational View of Pseudorandom Generator Constructions*](https://theoryofcomputing.org/articles/v019a004/), Theory of Computing 2023, for characterizations connecting HSGs to meta-computational circuit lower-bound problems.
+- Doron, Pyne, Tell, Williams, [*When Connectivity Is Hard, Random Walks Are Easy With Non-Determinism*](https://eccc.weizmann.ac.il/report/2025/077/), ECCC TR25-077, especially Definition 3.9 and Theorem 4.14 for adaptive-order read-once branching programs and the Forbes--Kelley generator.
+- Bogdanov, Papakonstantinou, Wan, [*Pseudorandomness for Linear Length Branching Programs and Stack Machines*](https://andrejb.net/pubs/branching.pdf), RANDOM 2012, for a linear-stretch PRG for non-oblivious branching programs and its unique-witness extension.
+- Savicky, Zak, [*A Large Lower Bound for 1-Branching Programs*](https://eccc.weizmann.ac.il/report/1996/036/revision/1/), ECCC TR96-036 revision 1, published as *A Read-Once Lower Bound and a (1,+k)-Hierarchy for Branching Programs*, for the weighted-sum read-once lower bound.
 
 ## Result classification
 
@@ -101,10 +104,16 @@ The following ingredients are now formalized:
   count `L*(gA+gB) + 5*(L-1)`.  The final semantically dead `B` block remains
   explicitly bundled and counted.  For `0 < n`, fixed-seed hardwiring costs
   exactly another `2*L*(s+s) = 4*L*s` gates, yielding a constructive
-  `DAGLocalGenerator`.
+  `DAGLocalGenerator`.  A separate exact survivor theorem compares this
+  recursion with an arbitrary terminal-tail version and bounds every Boolean
+  test's average change by the sum of the coordinate survival probabilities.
+  A further finite counting theorem proves that disjoint uniform `B` seed
+  blocks survive with exact probability `rho^L` whenever one block has exact
+  marginal `rho`, giving the closed bound `2^n * rho^L` for tail deletion.
   This checkpoint assumes the primitive coordinate circuits as concrete data
   and neither derives them from DPTW's catalytic-space coordinate algorithm
-  nor makes an AOBP, distributional, fooling, or lower-bound claim.
+  nor proves an AOBP restriction lemma, a fooling theorem, or a lower-bound
+  claim.
 
 These results use the exact standard-DAG MCSP target, including the
 `AND`/`OR`/`NOT` basis filter.  The counting image may include a harmless
@@ -745,6 +754,35 @@ must use.
   the guard is observationally invisible and the guarded compiled evaluation
   equals `timedAlphaInPlaceTwoWindowFoldCheck` directly; neither a reflection,
   follows-master, nor fused-fold premise remains.
+- `ExactMasterGuardedCanonicalComponent.lean` repairs the remaining generic
+  guard asymmetry.  A finite counterexample proves that the earlier permissive
+  guard can create a false positive for an arbitrary base program when it
+  suppresses an off-master query.  The new guard instead enters one absorbing
+  rejecting sink.  It has exact width `base.width*(master.length+1)+1`, is
+  sound without a follows-master premise, and is read-once whenever the master
+  is duplicate-free.  Its total checked timed-alpha specialization is
+  read-once on every input and is extensionally equal, for every fixed
+  `(alpha,schedule)`, to
+  `timedAlphaVisitScheduleInPlaceCanonicalCutCheck`.  This removes all hidden
+  replay, acceptance, and follows-master premises from the fixed-component
+  compiler.  Here `IsReadOnce` is the repository's
+  `LayeredQueryProgram.IsReadOnce`: layers may have no query and the program
+  may have arbitrary length.  It is therefore not yet literally a DPTW
+  Definition 3.9 AOBP, whose `n` layers carry mandatory variable labels.  A
+  semantics- and size-preserving conversion/padding theorem remains necessary,
+  especially because the absorbing reject sink no longer carries a master
+  cursor.  The result does not compress the outer OR over all certificates.
+- `RejectingGuardedCanonicalAggregateEndpoint.lean` integrates those strict
+  components back into the semantic endpoint.  Its minimal certificate has
+  only the total rejecting compiler's `eval = true` and an accepting terminal
+  state; schedule validity, every replay, and the canonical cut are recovered
+  from evaluation.  Such a certificate exists iff the cached machine accepts
+  at the horizon.  More strongly, acceptance is equivalent to existence of a
+  unique full `(alpha,schedule)` pair, and certificates with distinct alphas
+  are disjoint.  Thus both fixed-component exactness and complete-certificate
+  unambiguity are now unconditional finite theorems.  This still presents the
+  aggregate as an existential coherent union rather than one small
+  deterministic AOBP or an already-fooled syntactic uFBDD.
 - `GuardedCanonicalAggregateEndpoint.lean` now takes the finite OR of all
   in-place accepting timed-alpha components by an explicit executable
   `Finset.univ.fold` and proves it pointwise equal to bounded deterministic
@@ -1147,10 +1185,20 @@ This alternative also remains prose only.
 - [Chen--Lyu--Tal--Wu, ICALP 2023, Theorem 7](https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.ICALP.2023.39)
   is the strongest directly relevant structural lead found: it fools width-`w`
   deterministic adaptive read-once branching programs with seed
-  `O(log n * log^2(nw/epsilon))`.  It would avoid a transcript union bound if
-  the canonical coherent union could first be compiled into one deterministic
-  adaptive program at acceptable width and with the required fixed-seed
-  locality.  Neither compilation is currently proved here or in that paper.
+  `O(log n * log^2(nw/epsilon))`.  A line-by-line check of Claim 15 and Lemma
+  17 suggests a potentially useful extension to a *syntactically read-once,
+  unambiguous* nondeterministic program: prefix/suffix existence indicators
+  multiply to the indicator that the necessarily unique accepting path, when
+  one exists, passes through a vertex,
+  the pre/post variable sets remain disjoint, and restrictions preserve
+  unambiguity.  This is our inference, not a theorem in the paper; exact
+  layering/padding, the restriction invariant, and the size accounting remain
+  to be proved.  The inferred one-round error still contains the explicit
+  vertex factor `S*2^(-k/2)`.  Even if that extension is correct, the stated
+  seed depends
+  quadratically on `log(nw/epsilon)`.  With the current coherent aggregate's
+  transcript-size term it does not reach the small-`mu` easy-support scale,
+  and the paper supplies no fixed-seed `N^mu` joint-coordinate DAG.
 - [Doron--Pyne--Tell--Williams, ECCC TR25-077, Theorem 4.14 and Definition 3.9](https://eccc.weizmann.ac.il/report/2025/077/)
   give a strongly explicit generator with seed `n^epsilon` and error `1/n^2`
   for deterministic adaptive-order read-once branching programs of size `n`.
@@ -1162,23 +1210,72 @@ This alternative also remains prose only.
   not a theorem stated in the paper.  Here `S` is the actual AOBP vertex count,
   and replacing it by the input length `N` is invalid.  Even a fully formal
   zero-tail coordinate-DAG compiler would therefore cover deterministic AOBPs
-  only.  The canonical aggregate is presently an unambiguous/nondeterministic
-  FBDD, not one deterministic AOBP, and the proved width of an individual
-  guarded component can already make `S` superpolynomial in `N`.  In that
-  regime the DPTW seed/locality cost does not fit `N^mu`.
+  only.  The canonical aggregate is presently only an unambiguous existential
+  union of read-once components, not yet one finite syntactic uFBDD or one
+  deterministic AOBP.  Moreover, the proved width of an individual guarded
+  component can already make `S` superpolynomial in `N`.  In that regime the
+  DPTW seed/locality cost does not fit `N^mu`.
   `DPTWZeroTailJointLocality.lean` now closes only the deterministic circuit
   plumbing for the proposed zero-tail modification: from supplied paper-basis
   coordinate primitives it proves exact recursion semantics, exact joint-DAG
-  size `L*(gA+gB)+5*(L-1)`, and exact fixed-seed overhead `4*L*s`.  It does not
-  construct the DPTW finite-field primitives or import the inferred error bound.
-  Consequently coordinate composition is no longer a hidden locality step,
-  while the deterministic-AOBP compilation and honest size-dependent fooling
-  analysis remain the blockers.
+  size `L*(gA+gB)+5*(L-1)`, and exact fixed-seed overhead `4*L*s`.
+  `DPTWZeroTailSurvivorBound.lean` now also closes the previously informal
+  tail-deletion bookkeeping.  For every prefix seed and terminal table,
+  and coordinate it proves the exact affine identity
+  `withTail = zeroTail XOR (survivesEveryBLevel AND tail)`.  Consequently, for
+  every Boolean test, the exact rational difference between the full-tail and
+  zero-tail uniform test averages is at most the sum of the per-coordinate
+  survival probabilities, and is at most `N*delta` when every coordinate
+  survives with probability at most `delta`.  This uses no AOBP or fooling
+  premise and even permits the terminal table to depend arbitrarily on the
+  prefix seed.  `DPTWIndependentSurvival.lean` additionally proves the formerly
+  implicit independence step by exact finite counting on the actual
+  contiguous seed layout: if one uniform `B` block has coordinate marginal
+  `rho`, then `L` disjoint blocks survive with probability exactly `rho^L`,
+  and every Boolean test changes by at most `N*rho^L`.  A separate product-seed
+  theorem includes an independent uniformly sampled packed tail `v` as an
+  explicit factor, so both conditioning on fixed `v` and averaging back over
+  `v` are now internal to the formal statement.  Thus the paper's `(1-p)^L`
+  term follows immediately once the supplied primitive has exact marginal
+  `rho = 1-p`.  The development does not yet construct the DPTW
+  finite-field primitives or formalize the size-dependent restriction bound
+  of Lemma 4.15.
+  Consequently both coordinate composition and the finite product-average
+  cost of deleting `v` are no longer hidden steps, while an aggregate-class
+  theorem (either a
+  deterministic AOBP compilation or a proved unambiguous-FBDD extension) and
+  the honest size-dependent restriction/fooling analysis remain blockers.
 - Generic unambiguity does not supply that compilation.  [Amarilli--Capelli--
   Monet--Senellart, Theory of Computing Systems 2019, Proposition 3.1](https://pierre.senellart.com/publications/amarilli2019connecting.pdf)
   gives an exponential separation between unambiguous FBDDs and deterministic
   FBDDs.  Therefore any deterministic-adaptive reduction must exploit the
   special canonical one-tape geometry rather than invoke uniqueness alone.
+- The older weighted-sum family makes that obstruction especially explicit.
+  [Savicky--Zak, ECCC TR96-036 revision 1, Theorem 2.6](https://eccc.weizmann.ac.il/report/1996/036/revision/1/)
+  gives a deterministic read-once branching-program lower bound
+  `2^(n-3*sqrt(n))` for all sufficiently large `n`.  A direct construction
+  (our inference, not a theorem quoted from that paper) guesses the unique
+  modular sum and yields a polynomial-size unambiguous FBDD.  Hence no generic
+  polynomial uFBDD-to-deterministic-FBDD compiler can exist.  A further
+  near-linear fixed-one-tape realization of a power-of-two simplified
+  weighted sum is a plausible engineering lead using binary counters and a
+  final indexed scan.  No read-once lower bound for that different
+  power-of-two function is established here, so it currently yields no
+  machine-specific no-go.
+- [Bogdanov--Papakonstantinou--Wan, RANDOM 2012, Theorem 1 and Section 4](https://andrejb.net/pubs/branching.pdf)
+  is the closest direct semantic PRG result found for the outer union.  It
+  says that for every fixed constant `k > 1` there are parameters `rho`,
+  `gamma`, and constant alphabet block length `lambda` (with exponentially bad
+  dependence on `k`) that fool length-`kn`, width-`2^(gamma*n)` non-oblivious
+  branching programs with error `2^(-Omega(n))`; Section 4 extends the proof
+  to nondeterministic programs having at most one accepting path.  It does not
+  close this frontier: its seed is `(1-rho)*n` alphabet symbols, or
+  `lambda*(1-rho)*n` bits, and it supplies
+  neither an `N^mu` easy-supported image nor the required fixed-seed
+  joint-coordinate DAG.  Projecting each alphabet symbol to one Boolean bit
+  removes the alphabet mismatch but not these quantitative failures.  In
+  particular, fooling alone does not imply that the accepted support point is
+  an MCSP-easy truth table.
 - CHMY's [Theorem 23 and Lemma 27](https://eccc.weizmann.ac.il/report/2020/103/revision/1/download/)
   instead decompose a nondeterministic ROBP into rectangles and choose error
   inversely proportional to the number of components.  That is exactly the
@@ -1188,6 +1285,23 @@ This alternative also remains prose only.
   that approximation is the unresolved step.
 - The [journal version of CHMY](https://link.springer.com/article/10.1007/s00224-022-10113-9) retains the large-threshold one-tape result and the same Appendix-A magnification direction; it does not supply a small-threshold lower bound.
 - [ECCC TR25-017](https://eccc.weizmann.ac.il/report/2025/017/) develops a square-root-space simulation for multitape time, not the local HSG/PRG needed here.
+- [Impagliazzo--Meka--Zuckerman, ECCC TR12-057 revision 2, Theorem 1.3](https://eccc.weizmann.ac.il/report/2012/057/revision/2/)
+  fools arbitrary polynomial-size branching programs with seed
+  `size^(1/2+o(1))`; this remains too large for the small-`mu` easy-support
+  target and does not exploit uniqueness.
+- [Modanese, *Pseudorandom Generators for Sliding-Window Algorithms*](https://arxiv.org/abs/2301.07384)
+  gives a newer PRG for the substantially narrower sliding-window model.  No
+  theorem here places the adaptive canonical aggregate in that model, so it
+  is not a plug-in.
+- The [STOC 2026 accepted list](https://acm-stoc.org/stoc2026/accepted-papers.html)
+  includes Arvind--Datta, *Reach Unambiguous Logspace is almost in Logspace*,
+  but no public manuscript with parameters was located in this audit.
+  Reach-unambiguity imposes the strictly stronger machine-level promise of a
+  unique path from the start to every reachable configuration, rather than
+  merely at most one complete accepting path; this does not assert a known
+  strict separation of the corresponding language classes.
+  The canonical aggregate currently proves only the latter, so the title
+  alone yields no size- or locality-preserving compilation here.
 - [Cheng--Wu, ECCC TR25-027, Theorems 1.5 and 1.7](https://eccc.weizmann.ac.il/report/2025/027/revision/4/download)
   and [Ta-Shma--Chen, ECCC TR25-067, Theorem 1.1](https://eccc.weizmann.ac.il/report/2025/067/download)
   improve WPRGs for standard-order or regular ROBPs.  Their bounds retain a

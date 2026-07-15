@@ -1,6 +1,6 @@
 # One-tape small-threshold status
 
-Status: **THE FINITE ONE-TAPE VALIDATOR, EACH TOTAL FIXED-CERTIFICATE REJECTING-GUARD COMPONENT, THE FINITE ALPHA FAMILY, AND ONE EXACT SYNTACTICALLY READ-ONCE UNAMBIGUOUS FBDD WITH COMPLETE QUERY TRACES, A FILTERED FOURIER CUT FACTORIZATION, EXACT NO-BLOWUP CLOSURE UNDER PARTIAL ASSIGNMENTS, THE EXACT FINITE HOMOGENEOUS RESTRICTION SQUARE-MOMENT CORE, ITS STANDARD CYLINDER-LAW BOUNDED-INDEPENDENCE INSTANTIATION, THE PREFIX PARSEVAL/BESSEL ENERGY STEP, EXACT MASKED PRODUCT FACTORIZATION, THE EXACT BOUNDED SUFFIX COORDINATE-LAPLACIAN, AND THE SQUARED PER-VERTEX PREFIX-TIMES-SUFFIX RESTRICTION BOUND ARE FORMALIZED. ITS SIZE IS STILL THE EXPLICIT DISJOINT SUM. A SMALL SHARED AGGREGATE, THE HIGH-DEGREE VERTEX REGROUPING AND FULL PROGRAM-LEVEL ONE-ROUND/FOOLING BOUNDS, THE ONE-SIDED AVERAGE-CASE MCSP INTERSECTION, AND THE SMALL-THRESHOLD LOWER BOUND REMAIN OPEN**
+Status: **THE FINITE ONE-TAPE VALIDATOR, EACH TOTAL FIXED-CERTIFICATE REJECTING-GUARD COMPONENT, THE FINITE ALPHA FAMILY, AND ONE EXACT SYNTACTICALLY READ-ONCE UNAMBIGUOUS FBDD WITH COMPLETE QUERY TRACES, A FILTERED FOURIER CUT FACTORIZATION, EXACT NO-BLOWUP CLOSURE UNDER PARTIAL ASSIGNMENTS, THE EXACT FINITE HOMOGENEOUS RESTRICTION SQUARE-MOMENT CORE, ITS STANDARD CYLINDER-LAW BOUNDED-INDEPENDENCE INSTANTIATION, THE PREFIX PARSEVAL/BESSEL ENERGY STEP, EXACT MASKED PRODUCT FACTORIZATION, THE EXACT BOUNDED SUFFIX COORDINATE-LAPLACIAN, THE EXACT HIGH-DEGREE VERTEX REGROUPING, THE SQUARED PER-VERTEX PREFIX-TIMES-SUFFIX RESTRICTION BOUND, ITS EVEN-DEGREE `p^m` UNSQUARING, THE HONEST CARDINALITY-WEIGHTED VERTEX SUM, AND THE PROGRAM-LEVEL SIGNED ONE-ROUND HIGH-DEGREE BOUND ARE FORMALIZED. ITS SIZE IS STILL THE EXPLICIT DISJOINT SUM. LOW-DEGREE CANCELLATION, RESTRICTION-STABLE ITERATION AND THE FULL FOOLING THEOREM, A SMALL SHARED AGGREGATE, THE ONE-SIDED AVERAGE-CASE MCSP INTERSECTION, AND THE SMALL-THRESHOLD LOWER BOUND REMAIN OPEN**
 
 Primary sources:
 
@@ -855,8 +855,20 @@ must use.
   filtered to free coordinates, so syntactic read-once is preserved;
   injectivity of the walk-forgetting map transfers unambiguity.  Restricted
   `preVars` and `postVars` lie in the corresponding original sets intersected
-  with the free coordinates.  Thus restriction closure is no longer part of
-  the open CLTW-style step.
+  with the free coordinates.  This closes semantic/no-blowup restriction,
+  but the silent representation deliberately drops fixed coordinates from
+  its query trace.
+- `UnambiguousFBDDPaddedRestriction.lean` closes that representation-level
+  full-read gap.  It replaces a fixed query by `query q left left` or
+  `query q right right`, so the transition is fixed while the query event is
+  retained.  Acceptance is exactly the original acceptance indicator on the
+  overridden input and exactly agrees with the silent restriction.  Vertex
+  count, the whole query trace, syntactic read-once, unambiguity, and complete
+  accepting query traces are preserved.  Consequently the exact high-degree
+  Laplacian regrouping applies after every partial assignment, including for
+  the mandatory canonical uFBDD.  The remaining iterative work is
+  quantitative: cancellation on the current free-coordinate cube and the
+  telescoping composition of multiple source/mask rounds.
 - `UnambiguousFBDDPathCut.lean` proves the corrected CLTW combinatorial cut,
   rather than importing Claim 15 outside its exactly-once model.  It filters a
   walk's query events by `alpha`, splits the dependent walk at the unique
@@ -884,9 +896,9 @@ must use.
   `alpha inter preVars(v)` and the suffix coefficient on
   `alpha inter postVars(v)`.  The mandatory canonical specialization has no
   external path-support premise; `b > 0` is used only for unambiguity.  The
-  remaining CLTW step is quantitative: the square-moment/one-round analysis
-  must bound this vertex sum, and the current exact vertex count can be too
-  large.  Exact no-blowup restriction closure is supplied by
+  The later regrouping and restriction-moment modules now bound the resulting
+  high-degree vertex sum, although the current exact vertex count can still
+  be too large.  Exact no-blowup restriction closure is supplied by
   `FiniteUnambiguousFBDDRestriction.lean`.
 - `FiniteBooleanRestrictionMoment.lean` formalizes exact rational finite
   averaging for masked Walsh characters.  Under explicit degree-`k`
@@ -895,9 +907,9 @@ must use.
   `p^k * sum_alpha coefficient(alpha)^2`, and the corresponding squared
   average-absolute-value upper bound.  This closes only the abstract finite
   Claim-18 calculation.  Parseval/Bessel, prefix-slice locality, and the
-  suffix coordinate-Laplacian are supplied by later modules below; the
-  high-degree vertex regrouping, the sum over vertices, and the full
-  one-round fooling theorem remain open.
+  suffix coordinate-Laplacian, high-degree vertex regrouping, and the
+  program-level signed high-tail estimate are supplied by later modules
+  below; low-degree cancellation and the full fooling theorem remain open.
 - `FiniteBooleanBoundedIndependence.lean` gives standard finite cylinder-law
   definitions rather than renaming those moment hypotheses.  Exact pattern
   probabilities on every set of at most `2k` unbiased coordinates imply the
@@ -912,17 +924,17 @@ must use.
   pointwise unit-bounded function by one.  Applied to the compatible-prefix
   indicator at each uFBDD vertex, this removes the energy factor from the
   preceding moment theorem and proves the squared restriction bound `<= p^k`
-  under the same explicit source moments and `0 <= p`.  The program-level
-  high-degree decomposition, conversion to an unsquared per-vertex bound,
-  and the vertex sum are not yet proved.
+  under the same explicit source moments and `0 <= p`.  The later regrouping,
+  vertex-sum, and one-round high-degree modules turn this into the signed
+  program high-tail bound.
 - `FiniteBooleanMaskedProductFactorization.lean` proves that substituting a
   fixed base and mask preserves every dependency set, and that the uniform
   masked average of a product of functions on disjoint coordinate sets
   factors exactly.  Its absolute-value corollary shows that a suffix factor
   with average bounded by one cannot enlarge the prefix average.  Thus the
   generic prefix/suffix independence glue is closed.  Its concrete
-  per-vertex specialization is supplied below; the full static-filtered
-  vertex decomposition still has to be regrouped.
+  per-vertex specialization and the full static-filtered regrouping are
+  supplied below.
 - `UnambiguousFBDDSuffixLaplacian.lean` proves over exact rational finite
   sums that the Fourier filter containing a coordinate is its coordinate
   Laplacian, restricts that sum to any advertised dependency support, and
@@ -930,18 +942,39 @@ must use.
   accepting-suffix indicator selected by each uFBDD query vertex, assigns
   zero to silent and sink vertices, and proves the sharper pointwise bound
   `|G_v| <= 1/2` (hence the paper-strength bound by one).  It also proves that
-  the compatible-prefix homogeneous slice is local to `preVars`.  It does
-  not regroup the full high-degree static-filtered sum as `sum_v H_v * G_v`,
-  sum vertices, or prove the one-round lemma.
+  the compatible-prefix homogeneous slice is local to `preVars`; later
+  modules perform the exact regrouping and sum the vertices.
 - `UnambiguousFBDDPerVertexRestrictionBound.lean` supplies exact finite-average
   monotonicity and triangle inequalities, preserves the sharper masked suffix
   average bound `1/2`, and applies the disjoint masked-product factorization
   at one syntactically read-once vertex.  Under the same explicit `hD`, `hT`,
   and `0 <= p` hypotheses as the prefix Claim-18 endpoint, it proves that the
   square of the average absolute prefix-times-suffix contribution is at most
-  `p^k`.  This is only a per-vertex squared bound: it does not identify the
-  full high-degree tail with the vertex sum, convert to an unsquared
-  `p^(k/2)` estimate, control cross-vertex terms, or sum vertices.
+  `p^k`.  This theorem is only per vertex; the following modules perform the
+  exact regrouping, unsquaring, and cardinality-weighted sum.
+- `UnambiguousFBDDVertexSumRestrictionBound.lean` closes the two elementary
+  steps after that squared theorem.  At even degree `k = 2m`, nonnegativity
+  unsquares the per-vertex bound to `p^m`; the exact finite-average triangle
+  inequality then bounds the displayed sum of all vertex contributions by
+  `card(Vertex) * p^m` under common explicit `hD`, `hT`, `0 <= p`, and
+  syntactic read-once hypotheses.  This module isolates the honest displayed
+  sum bound consumed by the following program-level theorem.
+- `UnambiguousFBDDHighDegreeRegrouping.lean` proves the missing exact algebraic
+  bridge.  It reindexes every high-degree Fourier support across the disjoint
+  prefix/query/suffix cut and proves pointwise that the full degree-`> k` tail
+  of a syntactically read-once unambiguous FBDD with complete accepting query
+  traces is exactly `sum_v H_v * G_v`, both in suffix-Fourier-filter and
+  coordinate-Laplacian form.  The mandatory canonical corollaries discharge
+  all structural premises from `blockSize > 0`.
+- `UnambiguousFBDDOneRoundHighDegreeBound.lean` averages that exact pointwise
+  identity over the uniform live coordinates and identifies it with the
+  displayed sum of `vertexRestrictionContribution`.  At cutoff `2m`, its
+  outer average absolute value is at most `card(Vertex) * p^m` under the
+  explicit degree-`2m` source moments.  This is the signed average of the
+  high-degree tail, not an average of its pointwise absolute value.  It does
+  not yet cancel low degrees or carry out the quantitative telescoping over
+  successive restrictions; the padded representation above preserves the
+  structural premises needed for that next step.
 - **Audited global-energy boundary (not yet kernel-formalized).**  A tempting
   attempt to remove the vertex factor is invalid even for deterministic
   ordered read-once branching programs.  A depth-`d` prefix decision tree
@@ -1411,10 +1444,11 @@ This alternative also remains prose only.
   filter with a coordinate Laplacian bounded by `1/2`, and
   `UnambiguousFBDDPerVertexRestrictionBound.lean` threads each fixed vertex
   through the generic product theorem to retain the squared `p^k` bound.  The
-  full quantitative one-round estimate remains: the static-filtered
-  high-degree support sum must be regrouped as the concrete vertex sum, the
-  squared statement must be converted to the `p^(k/2)` scale, and all actual
-  vertices must be summed.
+  `UnambiguousFBDDVertexSumRestrictionBound.lean` now converts the squared
+  statement at even degree `k = 2m` to the `p^m` scale and sums all actual
+  vertices with the honest cardinality factor.  The full quantitative
+  one-round estimate still requires the static-filtered high-degree support
+  sum to be regrouped and identified with that concrete vertex sum.
   The inferred
   one-round error still contains the explicit vertex factor
   `S*2^(-k/2)`.  Even if that extension is

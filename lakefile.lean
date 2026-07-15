@@ -477,6 +477,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.OneTapeMagnification.UnambiguousFBDDFourierFactorization,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteBooleanFourierEnergy,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.UnambiguousFBDDSuffixLaplacian,
+    Glob.one `Pnp4.Frontier.OneTapeMagnification.UnambiguousFBDDPerVertexRestrictionBound,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.RejectingGuardedCanonicalAggregateEndpoint,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteRejectingGuardedCanonicalFamily,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteLayeredFamilySelector,

@@ -1,6 +1,6 @@
 # One-tape small-threshold status
 
-Status: **THE FINITE ONE-TAPE VALIDATOR, EACH TOTAL FIXED-CERTIFICATE REJECTING-GUARD COMPONENT, THE FINITE ALPHA FAMILY, AND ONE EXACT SYNTACTICALLY READ-ONCE UNAMBIGUOUS FBDD WITH COMPLETE QUERY TRACES, A FILTERED FOURIER CUT FACTORIZATION, EXACT NO-BLOWUP CLOSURE UNDER PARTIAL ASSIGNMENTS, THE EXACT FINITE HOMOGENEOUS RESTRICTION SQUARE-MOMENT CORE, ITS STANDARD CYLINDER-LAW BOUNDED-INDEPENDENCE INSTANTIATION, THE PREFIX PARSEVAL/BESSEL ENERGY STEP, EXACT MASKED PRODUCT FACTORIZATION, AND THE EXACT BOUNDED SUFFIX COORDINATE-LAPLACIAN ARE FORMALIZED. ITS SIZE IS STILL THE EXPLICIT DISJOINT SUM. A SMALL SHARED AGGREGATE, THE HIGH-DEGREE VERTEX REGROUPING AND FULL PROGRAM-LEVEL ONE-ROUND/FOOLING BOUNDS, THE ONE-SIDED AVERAGE-CASE MCSP INTERSECTION, AND THE SMALL-THRESHOLD LOWER BOUND REMAIN OPEN**
+Status: **THE FINITE ONE-TAPE VALIDATOR, EACH TOTAL FIXED-CERTIFICATE REJECTING-GUARD COMPONENT, THE FINITE ALPHA FAMILY, AND ONE EXACT SYNTACTICALLY READ-ONCE UNAMBIGUOUS FBDD WITH COMPLETE QUERY TRACES, A FILTERED FOURIER CUT FACTORIZATION, EXACT NO-BLOWUP CLOSURE UNDER PARTIAL ASSIGNMENTS, THE EXACT FINITE HOMOGENEOUS RESTRICTION SQUARE-MOMENT CORE, ITS STANDARD CYLINDER-LAW BOUNDED-INDEPENDENCE INSTANTIATION, THE PREFIX PARSEVAL/BESSEL ENERGY STEP, EXACT MASKED PRODUCT FACTORIZATION, THE EXACT BOUNDED SUFFIX COORDINATE-LAPLACIAN, AND THE SQUARED PER-VERTEX PREFIX-TIMES-SUFFIX RESTRICTION BOUND ARE FORMALIZED. ITS SIZE IS STILL THE EXPLICIT DISJOINT SUM. A SMALL SHARED AGGREGATE, THE HIGH-DEGREE VERTEX REGROUPING AND FULL PROGRAM-LEVEL ONE-ROUND/FOOLING BOUNDS, THE ONE-SIDED AVERAGE-CASE MCSP INTERSECTION, AND THE SMALL-THRESHOLD LOWER BOUND REMAIN OPEN**
 
 Primary sources:
 
@@ -913,15 +913,16 @@ must use.
   indicator at each uFBDD vertex, this removes the energy factor from the
   preceding moment theorem and proves the squared restriction bound `<= p^k`
   under the same explicit source moments and `0 <= p`.  The program-level
-  high-degree decomposition, its specialization through the generic product
-  factorization below, and the vertex sum are not yet proved.
+  high-degree decomposition, conversion to an unsquared per-vertex bound,
+  and the vertex sum are not yet proved.
 - `FiniteBooleanMaskedProductFactorization.lean` proves that substituting a
   fixed base and mask preserves every dependency set, and that the uniform
   masked average of a product of functions on disjoint coordinate sets
   factors exactly.  Its absolute-value corollary shows that a suffix factor
   with average bounded by one cannot enlarge the prefix average.  Thus the
-  generic prefix/suffix independence glue is closed; the full static-filtered
-  vertex decomposition still has to be threaded through it.
+  generic prefix/suffix independence glue is closed.  Its concrete
+  per-vertex specialization is supplied below; the full static-filtered
+  vertex decomposition still has to be regrouped.
 - `UnambiguousFBDDSuffixLaplacian.lean` proves over exact rational finite
   sums that the Fourier filter containing a coordinate is its coordinate
   Laplacian, restricts that sum to any advertised dependency support, and
@@ -931,8 +932,16 @@ must use.
   `|G_v| <= 1/2` (hence the paper-strength bound by one).  It also proves that
   the compatible-prefix homogeneous slice is local to `preVars`.  It does
   not regroup the full high-degree static-filtered sum as `sum_v H_v * G_v`,
-  establish the per-vertex masked expectation bound, sum vertices, or prove
-  the one-round lemma.
+  sum vertices, or prove the one-round lemma.
+- `UnambiguousFBDDPerVertexRestrictionBound.lean` supplies exact finite-average
+  monotonicity and triangle inequalities, preserves the sharper masked suffix
+  average bound `1/2`, and applies the disjoint masked-product factorization
+  at one syntactically read-once vertex.  Under the same explicit `hD`, `hT`,
+  and `0 <= p` hypotheses as the prefix Claim-18 endpoint, it proves that the
+  square of the average absolute prefix-times-suffix contribution is at most
+  `p^k`.  This is only a per-vertex squared bound: it does not identify the
+  full high-degree tail with the vertex sum, convert to an unsquared
+  `p^(k/2)` estimate, control cross-vertex terms, or sum vertices.
 - **Audited global-energy boundary (not yet kernel-formalized).**  A tempting
   attempt to remove the vertex factor is invalid even for deterministic
   ordered read-once branching programs.  A depth-`d` prefix decision tree
@@ -952,6 +961,23 @@ must use.
   program family, or use a different pseudorandom restriction; neither the
   pointwise energy estimate nor bounded-independence degree truncation alone
   removes `S`.
+- **Audited `S`-parameter boundary (not yet kernel-formalized).**  The honest
+  vertex factor is not itself fatal when `S` is polynomial.  With `L`
+  restriction rounds the direct error budget has the form
+  `L * S * p^(k/2) + N * (1-p)^L`.  At `p = 1/2`, taking
+  `L = Theta(log(N/delta))` and
+  `k = Theta(log(L*S/delta))` makes both terms at most `delta`, while the two
+  bounded-independent sources use only `O(log(S/delta) * log^2 N)` seed bits
+  up to constants.  Hence a polynomial-size program is compatible with every
+  fixed positive magnification exponent after increasing `k`.  The present
+  disjoint canonical selector is the obstruction: its audited asymptotic
+  size satisfies `log S = ~O(b + T/b)`, optimized at
+  `~O(sqrt T)`.  For the target `T = N^1.01`, this is
+  `~O(N^0.505)`, already too large for the required `N^mu` seed/image budget
+  when `mu` is the small CHMY magnification exponent.  Parameter tuning cannot
+  repair that construction; one needs transcript sharing, a lazy selector,
+  a much smaller reachable-transcript theorem, or a direct analysis that
+  avoids materializing the disjoint union.
 - `GuardedCanonicalAggregateEndpoint.lean` now takes the finite OR of all
   in-place accepting timed-alpha components by an explicit executable
   `Finset.univ.fold` and proves it pointwise equal to bounded deterministic
@@ -1382,11 +1408,13 @@ This alternative also remains prose only.
   `FiniteBooleanMaskedProductFactorization.lean` proves the generic disjoint
   prefix/suffix masked-average factorization, and
   `UnambiguousFBDDSuffixLaplacian.lean` identifies the concrete suffix Fourier
-  filter with a coordinate Laplacian bounded by `1/2`.  The full quantitative
-  one-round estimate remains: the static-filtered high-degree support sum
-  must be regrouped as the concrete vertex sum, that sum must be threaded
-  through the generic product theorem, the squared statement must be
-  converted to the `p^(k/2)` scale, and all actual vertices must be summed.
+  filter with a coordinate Laplacian bounded by `1/2`, and
+  `UnambiguousFBDDPerVertexRestrictionBound.lean` threads each fixed vertex
+  through the generic product theorem to retain the squared `p^k` bound.  The
+  full quantitative one-round estimate remains: the static-filtered
+  high-degree support sum must be regrouped as the concrete vertex sum, the
+  squared statement must be converted to the `p^(k/2)` scale, and all actual
+  vertices must be summed.
   The inferred
   one-round error still contains the explicit vertex factor
   `S*2^(-k/2)`.  Even if that extension is

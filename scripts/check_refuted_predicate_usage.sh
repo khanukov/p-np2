@@ -126,18 +126,34 @@ scan_file_for_predicate() {
   rm -f "${stripped}"
 }
 
-# scan_dir_for_predicate <dir> <predicate>
+# scan_paths_for_predicate <predicate> <path>...
 #
-# Same as above, but iterates over every *.lean file under <dir>.
-scan_dir_for_predicate() {
-  local dir="$1"
-  local pred="$2"
-  if [[ ! -d "${dir}" ]]; then
+# Uses a raw whole-word search only as a candidate prefilter, then applies
+# scan_file_for_predicate unchanged.  A Lean identifier is contiguous in the
+# source text, so this cannot omit a code-level occurrence; comment-only raw
+# matches are still rejected by the exact comment-stripped scan.  Scanning only
+# candidates avoids thousands of mktemp/awk/rg/sed/rm process launches on
+# Windows while preserving the guard result.
+scan_paths_for_predicate() {
+  local pred="$1"
+  shift
+  local existing_paths=()
+  local path
+  for path in "$@"; do
+    if [[ -e "${path}" ]]; then
+      existing_paths+=("${path}")
+    fi
+  done
+  if [[ "${#existing_paths[@]}" -eq 0 ]]; then
     return 0
   fi
-  while IFS= read -r f; do
+
+  while IFS= read -r -d '' f; do
     scan_file_for_predicate "${f}" "${pred}"
-  done < <(find "${dir}" -name '*.lean' 2>/dev/null)
+  done < <(
+    rg -l -0 -w --hidden --no-ignore -g '*.lean' -- "${pred}" \
+      "${existing_paths[@]}" 2>/dev/null || true
+  )
 }
 
 predicates=(
@@ -168,17 +184,10 @@ hard_extra_files=(
 fail=0
 
 for pred in "${predicates[@]}"; do
-  hard_hits=""
-  hard_hits+="$(scan_dir_for_predicate pnp3/Complexity "${pred}")"
-  hard_hits+=$'\n'
-  hard_hits+="$(scan_dir_for_predicate pnp3/Candidates "${pred}")"
-  hard_hits+=$'\n'
-  hard_hits+="$(scan_dir_for_predicate pnp4 "${pred}")"
-  hard_hits+=$'\n'
-  for f in "${hard_extra_files[@]}"; do
-    hard_hits+="$(scan_file_for_predicate "${f}" "${pred}")"
-    hard_hits+=$'\n'
-  done
+  hard_hits="$(
+    scan_paths_for_predicate "${pred}" \
+      pnp3/Complexity pnp3/Candidates pnp4 "${hard_extra_files[@]}"
+  )"
   # Strip leading/trailing blank lines.
   hard_hits="$(printf '%s' "${hard_hits}" | awk 'NF { print }')"
   if [[ -n "${hard_hits}" ]]; then
@@ -199,15 +208,23 @@ echo "[refuted-predicate] (B) soft-report scan (visibility only; not CI-blocking
 declare -A soft_counts
 for pred in "${predicates[@]}"; do
   count=0
-  while IFS= read -r f; do
+  while IFS= read -r -d '' f; do
+    # Native Windows ripgrep can mix '/' and '\\' in relative paths.
+    # Normalize before applying the historical-zone exclusions.
+    f="${f//\\//}"
+    case "${f}" in
+      pnp3/Magnification/AuditRoutes/* | \
+      pnp3/Magnification/FinalResultAuditRoutes.lean | \
+      pnp3/Magnification/UnconditionalResearchGap.lean)
+        continue
+        ;;
+    esac
     n=$(scan_file_for_predicate "${f}" "${pred}" | wc -l | tr -d ' ')
     count=$(( count + n ))
   done < <(
-    find pnp3/Magnification pnp3/LowerBounds pnp3/ThirdPartyFacts \
-      -name '*.lean' 2>/dev/null \
-      | grep -v '^pnp3/Magnification/AuditRoutes/' \
-      | grep -v '^pnp3/Magnification/FinalResultAuditRoutes\.lean$' \
-      | grep -v '^pnp3/Magnification/UnconditionalResearchGap\.lean$'
+    rg -l -0 -w --hidden --no-ignore -g '*.lean' -- "${pred}" \
+      pnp3/Magnification pnp3/LowerBounds pnp3/ThirdPartyFacts \
+      2>/dev/null || true
   )
   soft_counts["${pred}"]="${count}"
 done

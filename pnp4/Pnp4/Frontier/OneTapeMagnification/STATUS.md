@@ -1,6 +1,6 @@
 # One-tape small-threshold status
 
-Status: **THE FINITE ONE-TAPE VALIDATOR IS EXACT THROUGH THE GUARDED, COUNTED, READ-ONCE FUSED COMPILER. THE AGGREGATE GENERATOR, ITS FIXED-SEED DAG LOCALITY, AND THE SMALL-THRESHOLD LOWER BOUND REMAIN OPEN**
+Status: **THE FINITE ONE-TAPE VALIDATOR AND THE DIRECT SIGNED STANDARD-DAG TRANSFER ARE EXACT. THE AGGREGATE APPROXIMATION, ITS JOINT-DAG CONSTRUCTION, AND THE SMALL-THRESHOLD LOWER BOUND REMAIN OPEN**
 
 Primary sources:
 
@@ -13,8 +13,11 @@ Primary sources:
 This branch proves the parameter obstruction in the published Viola-to-CHMY
 route.  It does not prove a one-tape lower bound at the magnification-admissible
 small threshold and does not produce a `P != NP` capstone.  Under the
-repository policy it remains a restricted lower-bound side track unless an
-explicit `PpolyDAG` / `VerifiedNPDAGLowerBoundSource` bridge is later proved.
+repository policy, the one-tape validator by itself remains a restricted
+lower-bound side track.  This branch now also proves an explicit conditional
+`PpolyDAG` / `VerifiedNPDAGLowerBoundSource` bridge for reverse one-sided
+signed standard-DAG fooling; the all-exponent fooling family needed by that
+bridge is not constructed, so no unconditional source or capstone follows.
 
 ## Closed operational and finite layers
 
@@ -895,11 +898,18 @@ canonical accepted executions.
 The finite aggregate endpoint is now equally explicit.  The executable OR of
 all canonical components equals bounded one-tape acceptance, and the
 cache-normalized aggregate equals existence of a genuine total
-master-guarded fused accepting certificate.  Therefore one signed-WPRG
-approximation of this single Boolean aggregate reaches the local-HSG/MCSP
+master-guarded fused accepting certificate.  Therefore one signed weighted
+linear approximation of this single Boolean aggregate reaches the local-HSG/MCSP
 contradiction with one error parameter.  The transcript-count union bound is
 not a logical requirement of the endpoint anymore; it reappears only in the
 currently known componentwise constructions.
+
+The strongest finite endpoint now needs only the reverse one-sided estimate
+`uniformAggregate - weightedAggregate <= epsilon < 1/2`.  It does not require
+an absolute-error bound, `0 <= epsilon`, nonnegative weights, or normalized
+weights.  This aligns the implemented aggregate capstone with the direct
+standard-DAG transfer below; construction of such an approximation remains
+the unresolved step.
 
 After that implementation theorem, the central generator object is:
 
@@ -937,10 +947,43 @@ most `T`, yielding the explicit combined cardinal upper bound
 It is in particular at most `2^(2T)`, replacing the literal
 independent-counter product bound by an explicit `O(T)`-bit carrier bound.
 This is a substantial reachable-profile compression, but it
-is still indexed by essentially every boundary.  The missing step is a
-sufficient statistic whose state count is controlled by the local `b` scale
-while supporting online updates and later recovery of all selected timed
-tokens.
+is still indexed by essentially every boundary.
+
+There is now a matching obstruction for the stronger proposed shortcut of
+retaining only a small post-run statistic and later decoding the exact cut
+vector.  At `T = 6*r` and `b = 2`, an explicit family of `2^r` closed legal
+nearest-neighbour head words has, in each of its first `r` buckets, crossing
+counts `(4,2)` or `(2,4)` according to one independent bit.  More strongly,
+`FixedPairedBounceMachine.lean` realizes every such crossing-count profile
+during the first `6*r` transitions of one fixed deterministic one-tape machine
+with exactly eight control states; neither its transition table nor its state
+type depends on `r` or the seed.  The canonical minimum therefore recovers all
+`r` bits from the machine's actual crossing profile.  Lean proves that any
+finite external summary from which those complete cut vectors are decoded has
+at least `2^r` states; if its cardinality is at most `2^s`, then
+`s >= r = T/6`.
+
+This is not a lower bound on the machine's eight-state control: its work tape
+stores the seed, the machine is observed for a bounded prefix rather than at a
+halting state, and the theorem deliberately abstracts any proposed post-run
+summary as an encoder into a finite carrier.  It also does not rule out a
+machine- or task-specific decision statistic that avoids decoding the complete
+vector, early/streamed output, verifiable guessed cuts, or direct pseudorandom
+fooling.  It does rule out the complete exact-terminal-recovery shortcut even
+when the trajectories come from one fixed machine rather than an unrestricted
+family of abstract legal walks.
+
+The early-output exception is substantive, not merely a missing proof.  This
+fixed machine reads the seed bits in increasing bucket order during its first
+`2*r` transitions, so a machine-aware transducer can emit the corresponding
+offsets immediately with constant control.  During the descent a boundary-only
+transducer learns them in reverse order and can likewise emit tagged or reverse
+output without retaining all `r` bits.  An `Omega(r)` streaming-memory lower
+bound would therefore require an additional downstream constraint such as
+append-only output in increasing bucket order, or a producer--consumer buffer
+whose stored output is charged to the state budget.  No such output-order model
+is present in the current compiler interface, so no broader streaming lower
+bound is claimed here.
 
 At block scale `b`, the intended compiled bounds remain approximately
 
@@ -957,9 +1000,13 @@ two-component example shows that disjointness alone gives no error
 cancellation.  The new fused cut extractor shows that shared one-tape geometry
 does beat that black-box selector for the cut field, but its literal
 all-boundary state has no magnification-admissible local-width bound and its
-trajectory driver is not local.  A successful route must compress and locally
-drive this canonicalizer, or construct a generator that hits/fools the single
-aggregate directly.
+trajectory driver is not local.  The exact-output barrier rules out a small
+post-run state which later emits every canonical offset, already for one fixed
+eight-state machine.  A successful route must instead stream information
+before the end of the bounded prefix, verify a coherently guessed offset vector
+without deterministic enumeration, exploit task-specific structure while
+avoiding complete recovery, or construct a generator that hits/fools the
+single aggregate directly.
 Only then could one choose `b = N^mu / polylog(N)` at the magnification scale.
 `BoundaryTapeInterface.lean` identifies the exact lossless-but-exponential
 fallback, `UnambiguousAggregateSelectorBarrier.lean` rules out the two
@@ -970,14 +1017,31 @@ The fixed-seed locality *transformation* is no longer open: one joint
 constant-free generator DAG on `(seed,x)` hardwires to a paper-basis output DAG
 with exact additive cost `2*seedBits`.  What remains is to construct that
 joint DAG at total size at most the magnification threshold for the actual
-  aggregate generator.  At the `PpolyDAG` interface, the finite checkpoint now exposes
-the precise missing behavior-extraction arrow
-`PpolyDAG L -> BoundedErrorMCSPBehavior ...`; independently, an explicit
-asymptotic theorem shows that `C_DAG`-fooling local-PRG slices for every
-polynomial exponent, together with a single NP slice language, imply
-`NP_not_subset_PpolyDAG` and `P != NP`.  Neither the extraction arrow nor the
-quantified fooling family is derived by the present one-tape compiler.  None
-of these open statements is an axiom, contract, provider, or hidden instance.
+aggregate generator.  The hardwired generator can now also be weakened
+constructively to any explicitly larger MCSP threshold.
+
+At the `PpolyDAG` interface there are now two honest conditional routes.  The
+older finite checkpoint exposes the missing behavior-extraction arrow
+`PpolyDAG L -> BoundedErrorMCSPBehavior ...`.  The new direct standard-DAG
+transfer removes that arrow: for every polynomial exponent it asks instead
+for one DAG-local generator and arbitrary signed weights satisfying only the
+reverse one-sided inequality
+
+```text
+uniformAcceptance - weightedAcceptance <= epsilon < 1/2
+```
+
+against all standard DAGs at the corresponding size.  One shared output-NOT
+gate converts a hypothetical MCSP decider into the dense coMCSP predicate;
+easy generator images make its weighted acceptance exactly zero, independently
+of signs or normalization.  The resulting theorem proves `not (PpolyDAG L)`
+directly, and with explicit `NP L` and slice identity packages a
+`VerifiedNPDAGLowerBoundSource`.  This genuinely eliminates behavior
+extraction from that route, but it does **not** construct the all-exponent
+signed generators or show that the one-tape aggregate fools the whole DAG
+class.  That quantified construction is the remaining mathematical input.
+None of these open statements is an axiom, contract, provider, or hidden
+instance.
 
 The remaining direct alternative is an adaptive many-cut YES/NO splicing
 lemma for low-circuit truth tables.  The fixed-bipartition row theorem shows
@@ -1002,6 +1066,16 @@ This alternative also remains prose only.
   the canonical coherent union could first be compiled into one deterministic
   adaptive program at acceptable width and with the required fixed-seed
   locality.  Neither compilation is currently proved here or in that paper.
+- [Doron--Pyne--Tell--Williams, ECCC TR25-077, Theorem 4.14 and Definition 3.9](https://eccc.weizmann.ac.il/report/2025/077/)
+  give a strongly explicit generator with seed `n^epsilon` and error `1/n^2`
+  for deterministic adaptive-order read-once branching programs of size `n`.
+  A coordinate is computable in `O(epsilon * log n)` workspace with read-only
+  seed access and catalytic access to the output index.  This is a genuine
+  locality near miss, but the canonical aggregate is presently an
+  unambiguous/nondeterministic FBDD rather than one deterministic AOBP;
+  catalytic coordinate space is not yet a joint-DAG gate bound; and after
+  padding an `N`-bit program of size `S`, the honest seed depends on
+  `max(N,S)^epsilon`, not automatically on `N^epsilon`.
 - Generic unambiguity does not supply that compilation.  [Amarilli--Capelli--
   Monet--Senellart, Theory of Computing Systems 2019, Proposition 3.1](https://pierre.senellart.com/publications/amarilli2019connecting.pdf)
   gives an exponential separation between unambiguous FBDDs and deterministic
@@ -1047,6 +1121,13 @@ This alternative also remains prose only.
   exponential nondeterministic-circuit lower-bound assumption for `E`.  It is
   therefore a conditional hardness-vs-randomness route, not an unconditional
   way around the present aggregate-generator barrier.
+- [Meel--de Colnet, ICDT 2025, Theorem 1](https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.ICDT.2025.30)
+  and the [corrected arXiv v3](https://arxiv.org/pdf/2406.16515) give an FPRAS
+  for model counting of general nondeterministic FBDDs, a model which contains
+  the present unambiguous union.  It is a white-box randomized algorithm whose
+  runtime depends polynomially on the explicit input FBDD, not an oblivious
+  HSG/PRG, and supplies neither local generator coordinates nor low-DAG
+  satisfying assignments.
 - The latest checked ECCC revision,
   [Ren--Williams, TR26-118](https://eccc.weizmann.ac.il/report/2026/118/),
   proves near-maximum circuit lower bounds for exponential time with

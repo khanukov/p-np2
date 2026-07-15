@@ -874,6 +874,22 @@ must use.
   neither a local decoder nor a joint checker.  Exact realization, polynomial
   size, and bounded pathwidth remain explicit hypotheses, so this module is
   infrastructure rather than a P-vs-NP mainline closure.
+- `CanonicalWitnessCutBarrier.lean` proves a generic conditional fixed-slice
+  state-count inequality for the encoded relation.  It defines the
+  extensional set of component indices accepting at least one
+  `Fin n -> Bool` input and proves
+  that every exact **witness-first** factorization through a finite cut-state
+  type injects those active indices into the state space.  Consequently an
+  `r`-bit Boolean summary can represent at most `2^r` active components, with
+  a matching bit lower bound whenever the slice has at least `2^w` active
+  components.  More exactly, this rules out an exact witness-first summary
+  with fewer than `acceptingIndices.card` states, without assuming an
+  efficient active-index enumeration.  It yields no asymptotic lower bound
+  until a large active-component count is proved.  It is an information
+  bound, not a circuit-size lower bound: witness/input interleaving is not a
+  witness-first factorization, and no concrete instantiation for the
+  rejecting-guarded canonical family or large lower bound on its number of
+  active canonical alphas is proved here.
 - `FiniteUnambiguousFBDDRestriction.lean` proves exact closure under partial
   assignments.  A fixed query is replaced by a silent singleton choice to its
   selected child; the vertex type, rank, start, accept, and therefore vertex
@@ -1144,13 +1160,45 @@ must use.
   product-average presentation exactly.  The surviving `card(Vertex)` factor
   is honest and is now the dominant loss for the canonical disjoint-sum
   selector.
-- **Audited global-energy boundary (not yet kernel-formalized).**  A tempting
-  attempt to remove the vertex factor is invalid even for deterministic
-  ordered read-once branching programs.  A depth-`d` prefix decision tree
-  followed by one final query can make the degree-`k` vertex terms collide
-  coherently: the squared norm of their sum is `1/4`, whereas the sum of the
-  individual prefix/suffix energies is
-  `choose d k / (4 * 2^d)`.  Thus unambiguity and the true pointwise bound
+- `UnambiguousFBDDGlobalEnergyBound.lean` kernel-formalizes the strongest
+  unsigned `L2` refinement currently obtained from the exact restriction
+  moments.  Under explicit degree-`k` character orthogonality, exact mask
+  survival `p^k`, and syntactic read-once, if `C_v` is the displayed vertex
+  restriction contribution and `E_k(P_v)` the degree-`k` Fourier energy of
+  its compatible-prefix indicator, then
+  ```text
+  4 * E_{D,T} (sum_v C_v)^2
+    <= card(Vertex) * p^k * sum_v E_k(P_v).
+  ```
+  Consequently the same right side also bounds
+  `4 * (E_{D,T} |sum_v C_v|)^2`.
+  The factor `4` is the reciprocal square of the sharp `1/2`
+  suffix-Laplacian bound; the outer vertex factor is exactly the remaining
+  Cauchy--Schwarz loss.  Per-vertex Bessel alone gives
+  `sum_v E_k(P_v) <= card(Vertex)`, so at `k=2m` this yields only
+  `(card(Vertex)/2) * p^m` for the intended nonnegative survival parameter
+  (generically `(card(Vertex)/2) * |p^m|`) and does not close CHMY.  Exact
+  program-level regrouping additionally uses unambiguity and full-read, while
+  a multi-round use would require the energy estimate uniformly or on average
+  after every affine padded restriction; neither composition is silently
+  claimed here.
+- `GlobalEnergyProjectionBarrier.lean` kernel-formalizes the two-coordinate
+  `d=1, k=1` base obstruction.  Complementary prefix cylinders are pointwise
+  disjoint, but their degree-one slices paired with opposite half-character
+  suffixes have diagonal energy `1/8` and aggregate energy `1/4`.  Hence
+  pointwise disjointness alone does not imply exact cross-vertex
+  orthogonality/diagonal subadditivity after homogeneous projection in this
+  abstract Fourier example.  It does not by itself rule out every universal
+  constant-factor frame estimate and is not formalized as an instance of the
+  canonical uFBDD.
+- **Audited parameterized global-energy boundary (not yet kernel-formalized).**
+  The preceding collision amplifies: for any `k <= d`, a depth-`d` prefix
+  decision tree followed by one final query can make the degree-`k` vertex
+  terms collide coherently.  The squared norm of their sum is `1/4`, whereas
+  the sum of the individual prefix/suffix energies is
+  `choose d k / (4 * 2^d)`.  The general depth-`d` construction and its uFBDD
+  realization remain prose-audited rather than Lean theorems.  Thus
+  unambiguity and the true pointwise bound
   `sum_v h_v * G_v^2 <= n/2` do not imply the required vector-valued moment
   bound; homogeneous projection leaks outside the pointwise reachable
   prefix cylinders.  Aggregating first and increasing independence to
@@ -1162,7 +1210,12 @@ must use.
   Fourier sum, prove a genuinely stronger Gram/frame estimate for this
   program family, or use a different pseudorandom restriction; neither the
   pointwise energy estimate nor bounded-independence degree truncation alone
-  removes `S`.
+  removes `S`.  One exact positive target is a signed bound
+  `E_seed (sum_v C_v(seed))^2 <= Q(n,T,b,m)^2 * p^(2m)` for the actual hard
+  machine, where `Q` obeys the explicit polynomial/subexponential scale needed
+  by the downstream magnification error budget rather than merely omitting
+  the selector-cardinality symbol.  The current right-functionality theorem
+  does not imply such a quantitative bound.
 - **Audited `S`-parameter boundary (not yet kernel-formalized).**  The honest
   vertex factor is not itself fatal when `S` is polynomial.  With `L`
   restriction rounds the direct error budget has the form
@@ -1868,7 +1921,15 @@ This alternative also remains prose only.
   the present unambiguous union.  It is a white-box randomized algorithm whose
   runtime depends polynomially on the explicit input FBDD, not an oblivious
   HSG/PRG, and supplies neither local generator coordinates nor low-DAG
-  satisfying assignments.
+  satisfying assignments.  Its corrected derivation-path analysis does,
+  however, choose a canonical accepting child at each guess node and charge
+  pairs of assignments through their last common prefix/first divergence,
+  with residual model counts controlling the number of charged pairs.  This
+  suggests a precise new attack on the vertex factor: prove an analogous
+  first-divergence joint-survival bound for the DPTW restriction and sum along
+  one canonical witness path rather than over every selector vertex.  That is
+  an inference from their technique, not a theorem of the paper; no required
+  restriction-correlation or CHMY-locality statement is currently available.
 - The latest checked ECCC revision,
   [Ren--Williams, TR26-118](https://eccc.weizmann.ac.il/report/2026/118/),
   proves near-maximum circuit lower bounds for exponential time with

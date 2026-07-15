@@ -1,6 +1,6 @@
 # One-tape small-threshold status
 
-Status: **THE FINITE ONE-TAPE VALIDATOR, EACH TOTAL FIXED-CERTIFICATE REJECTING-GUARD COMPONENT, THE FINITE ALPHA FAMILY, AND ONE EXACT SYNTACTICALLY READ-ONCE UNAMBIGUOUS FBDD WITH COMPLETE QUERY TRACES, EXACT FUNCTIONAL EXISTENTIAL PROJECTION WITHOUT VERTEX GROWTH, A CLASSICALLY CHOSEN LOGARITHMIC BIT RELATION FOR THE UNIQUE CANONICAL ALPHA, A FILTERED FOURIER CUT FACTORIZATION, EXACT NO-BLOWUP CLOSURE UNDER PARTIAL ASSIGNMENTS, THE EXACT FINITE HOMOGENEOUS RESTRICTION SQUARE-MOMENT CORE, ITS STANDARD CYLINDER-LAW BOUNDED-INDEPENDENCE INSTANTIATION, THE PREFIX PARSEVAL/BESSEL ENERGY STEP, EXACT MASKED PRODUCT FACTORIZATION, THE EXACT BOUNDED SUFFIX COORDINATE-LAPLACIAN, THE EXACT HIGH-DEGREE VERTEX REGROUPING, THE SQUARED PER-VERTEX PREFIX-TIMES-SUFFIX RESTRICTION BOUND, ITS EVEN-DEGREE `p^m` UNSQUARING, THE HONEST CARDINALITY-WEIGHTED VERTEX SUM, EXACT LOW-DEGREE CANCELLATION, THE FULL PROGRAM-LEVEL ONE-ROUND FOOLING BOUND, AFFINE RESTRICTION-STABLE ROUND CLOSURE, THE CONCRETE NESTED-AVERAGE MULTI-ROUND HYBRID, THE EXACT NESTED-TO-PACKED DPTW SEED BRIDGE, THE FULL DPTW-SHAPED TELESCOPING COMPOSITION, AN EXACT LONG-SEED DYADIC PRODUCT-SOURCE BASELINE, AN EXACT MATCHED-SEED-LENGTH `GF(2^n)` BOUNDED-INDEPENDENCE PAIR WITH POLYNOMIAL-SIZE JOINT COORDINATE CIRCUITS, A GRID-SUBGRAPH/PAIRED-CONTRACTION OBSTRUCTION FOR LITERAL TWO-ORDER ROUTING, AND AN ACTUAL UNIT-SCALE SERPENTINE ONE-TAPE TRACE REALIZING THAT GRID ARE FORMALIZED. THE SELECTOR SIZE IS STILL THE EXPLICIT DISJOINT SUM. A SIZE-FACTOR-FREE CANONICAL-AGGREGATE ARGUMENT (OR A SUFFICIENT BOUNDED-PATHWIDTH ALTERNATIVE), THE ONE-SIDED AVERAGE-CASE MCSP INTERSECTION, AND THE SMALL-THRESHOLD LOWER BOUND REMAIN OPEN**
+Status: **THE FINITE ONE-TAPE VALIDATOR, EACH TOTAL FIXED-CERTIFICATE REJECTING-GUARD COMPONENT, THE FINITE ALPHA FAMILY, AND ONE EXACT SYNTACTICALLY READ-ONCE UNAMBIGUOUS FBDD WITH COMPLETE QUERY TRACES, EXACT FUNCTIONAL EXISTENTIAL PROJECTION WITHOUT VERTEX GROWTH, A CLASSICALLY CHOSEN LOGARITHMIC BIT RELATION FOR THE UNIQUE CANONICAL ALPHA, A FILTERED FOURIER CUT FACTORIZATION, EXACT NO-BLOWUP CLOSURE UNDER PARTIAL ASSIGNMENTS, THE EXACT FINITE HOMOGENEOUS RESTRICTION SQUARE-MOMENT CORE, ITS STANDARD CYLINDER-LAW BOUNDED-INDEPENDENCE INSTANTIATION, THE PREFIX PARSEVAL/BESSEL ENERGY STEP, EXACT MASKED PRODUCT FACTORIZATION, THE EXACT BOUNDED SUFFIX COORDINATE-LAPLACIAN, THE EXACT HIGH-DEGREE VERTEX REGROUPING, THE SQUARED PER-VERTEX PREFIX-TIMES-SUFFIX RESTRICTION BOUND, ITS EVEN-DEGREE `p^m` UNSQUARING, THE HONEST CARDINALITY-WEIGHTED VERTEX SUM, THE PROGRAM-LEVEL GLOBAL-ENERGY COMPOSITION, EXACT LOW-DEGREE CANCELLATION, THE FULL PROGRAM-LEVEL ONE-ROUND FOOLING BOUND, AN EXACT COMPONENT-FIRST SELECTOR PAIR EXPANSION, A CARDINALITY-FREE FULL-INDEPENDENCE AGGREGATE BOUND WITH AN EXPLICIT EXPONENTIAL PRODUCT-SEED BARRIER, AFFINE RESTRICTION-STABLE ROUND CLOSURE, THE CONCRETE NESTED-AVERAGE MULTI-ROUND HYBRID, THE EXACT NESTED-TO-PACKED DPTW SEED BRIDGE, THE FULL DPTW-SHAPED TELESCOPING COMPOSITION, AN EXACT LONG-SEED DYADIC PRODUCT-SOURCE BASELINE, AN EXACT MATCHED-SEED-LENGTH `GF(2^n)` BOUNDED-INDEPENDENCE PAIR WITH POLYNOMIAL-SIZE JOINT COORDINATE CIRCUITS, A GRID-SUBGRAPH/PAIRED-CONTRACTION OBSTRUCTION FOR LITERAL TWO-ORDER ROUTING, AND AN ACTUAL UNIT-SCALE SERPENTINE ONE-TAPE TRACE REALIZING THAT GRID ARE FORMALIZED. THE SELECTOR SIZE IS STILL THE EXPLICIT DISJOINT SUM. A SMALL-SEED SIZE-FACTOR-FREE CANONICAL-AGGREGATE ARGUMENT (OR A SUFFICIENT BOUNDED-PATHWIDTH ALTERNATIVE), THE ONE-SIDED AVERAGE-CASE MCSP INTERSECTION, AND THE SMALL-THRESHOLD LOWER BOUND REMAIN OPEN**
 
 Primary sources:
 
@@ -30,6 +30,107 @@ statement: at one suitable slice for every polynomial exponent, every dense
 bounded standard-DAG predicate accepts a threshold-easy truth table.  The
 all-exponent intersection statement is not proved, so no unconditional source
 or capstone follows.
+
+## Aggregate restriction endpoint and exact remaining correlation gap (July 2026)
+
+Three new axiom-free modules sharpen the lower Fourier/restriction layer.
+
+`UnambiguousFBDDGlobalEnergyHighDegreeBound.lean` closes a composition seam
+left explicit by the preceding checkpoint.  It rewrites the actual signed
+masked high-degree average of a full-read read-once unambiguous FBDD as the
+sum of its vertex restriction contributions and applies the global prefix
+energy theorem.  Both the second-moment and squared absolute-moment bounds,
+including mandatory-canonical specializations, now compile.  The
+result still contains `Fintype.card B.Vertex`; it does not pretend that the
+existing Cauchy step is size-free.
+
+`FiniteLayeredFamilyComponentDecomposition.lean` moves the prospective
+selector attack to the coarser and correct interface.  For an unambiguous
+finite family it proves pointwise
+
+```text
+selector.ratAcceptanceIndicator
+  = sum index, ratComponentAcceptanceIndicator index,
+```
+
+commutes this sum through high-degree Fourier projection and masked uniform
+averaging, and proves the exact identity
+
+```text
+E (selector high-tail average)^2
+  = sum left, sum right, E (componentTail left * componentTail right).
+```
+
+No triangle or vertex-cardinality inequality occurs in that identity.  It is
+the formal insertion surface for a last-common-prefix / first-divergence
+charge.  The remaining theorem is a quantitative bound on this signed pair
+sum for the mandatory canonical selector, stable under the DPTW affine
+restriction rounds.
+
+`FiniteBooleanFullIndependenceRestriction.lean` proves the ideal aggregate
+endpoint without decomposing the function at all.  Under independently
+sampled full `n`-wise unbiasedness of the base source and full `n`-wise
+false-biased product laws for the mask, the exact all-degree Gram calculation is
+
+```text
+E (highTail_{>k}(f) after restriction)^2
+  = sum_{|alpha|>k} p^|alpha| * coefficient(f,alpha)^2.
+```
+
+For `0 <= p <= 1` and pointwise `|f| <= 1`, Parseval gives the
+cardinality-free conditional high-tail bound `<= p^k`.  This is the
+nontrivial aggregate statement and shows that the earlier program-size factor
+is not inherent after sufficiently strong all-support orthogonality is
+available.  The fully averaged one-round output is even exactly uniform, not
+merely within `p^m`: full `n`-wise unbiasedness already makes the base source
+the uniform cube distribution, and XOR with the independently sampled
+mask/fill preserves it.  This exact-zero corollary is therefore a long-seed
+diagnostic, not PRG progress.
+
+The same module proves explicit lower bounds on the seed price rather than
+hiding it in a source contract.  Every fully `n`-wise-unbiased finite base
+source is surjective onto the whole `n`-bit cube, hence
+
+```text
+2^n <= card Seed.
+```
+
+If the base seed itself consists of `seedBits` Boolean bits, then
+`n <= seedBits`.  At an interior bias `0 < p < 1`, the full mask law also
+forces its source to be surjective.  Because the theorem samples the two
+sources independently, the joint seed type has at least `2^(2*n)` states;
+rational probability denominators can require more.  Thus full independence
+cannot serve as the magnification-admissible small local HSG/PRG.  The real
+open bridge is now sharper: replace full all-support orthogonality by a
+selector-specific, residual-model-mass-normalized bound on the displayed
+component cross terms while retaining small seed and fixed-seed DAG locality.
+
+A targeted self-attack also identifies why the diagonal/frame route cannot
+provide that replacement.  The two-bit XNOR fixed-order deterministic OBDD
+already has two cut terms whose projected prefix signs and suffix-Laplacian
+signs cancel each other, making the terms identical.  A depth-`t` parity-leaf
+version has `2^t` identical cut terms and exactly saturates Cauchy.  The
+two-function Fourier instance is kernel-checked in
+`GlobalEnergyProjectionBarrier.lean`; the explicit OBDD realization and its
+unbounded family are currently a verified mathematical audit, not yet a
+separate Lean construction.  Consequently unambiguity, read-once/full-read,
+fixed variable order, disjoint accepting fibers, productive pruning, and
+right-functionality do not by themselves imply a size-free diagonal prefix
+energy estimate.  This does not refute the aggregate-first pair-sum target.
+
+The Meel--de Colnet derivation-path analysis suggests the correct shape of a
+possible repair: charge assignment pairs at their last common prefix using
+residual model counts.  However, their correlation bound is produced by a
+node-aware randomized thinning/model-counting algorithm whose runtime is
+polynomial in the explicit nFBDD.  The present DPTW bounded-independence laws
+control only low-cardinality patterns.  In the exact pathwise Fourier formula,
+component cross terms involve arbitrary high supports and symmetric
+differences, so the required signed joint-survival estimate does not follow
+from the current refined Lean `2k`-wise base and `k`-wise mask APIs (the DPTW
+paper itself states `2k`-wise laws for both sources).  A successful next step
+must prove such a residual-mass-normalized DPTW correlation law from the
+concrete source, or construct a new path-aware small local source; a pair-count
+lemma alone is insufficient.
 
 ## Closed operational and finite layers
 

@@ -1,6 +1,6 @@
 # One-tape small-threshold status
 
-Status: **THE FINITE ONE-TAPE VALIDATOR, EACH TOTAL FIXED-CERTIFICATE REJECTING-GUARD COMPONENT, THE FINITE ALPHA FAMILY, AND ONE EXACT SYNTACTICALLY READ-ONCE UNAMBIGUOUS FBDD WITH COMPLETE QUERY TRACES, A FILTERED FOURIER CUT FACTORIZATION, EXACT NO-BLOWUP CLOSURE UNDER PARTIAL ASSIGNMENTS, AND THE EXACT FINITE HOMOGENEOUS RESTRICTION SQUARE-MOMENT CORE ARE FORMALIZED. ITS SIZE IS STILL THE EXPLICIT DISJOINT SUM. A SMALL SHARED AGGREGATE, THE FULL PROGRAM-LEVEL ONE-ROUND/FOOLING BOUND, THE ONE-SIDED AVERAGE-CASE MCSP INTERSECTION, AND THE SMALL-THRESHOLD LOWER BOUND REMAIN OPEN**
+Status: **THE FINITE ONE-TAPE VALIDATOR, EACH TOTAL FIXED-CERTIFICATE REJECTING-GUARD COMPONENT, THE FINITE ALPHA FAMILY, AND ONE EXACT SYNTACTICALLY READ-ONCE UNAMBIGUOUS FBDD WITH COMPLETE QUERY TRACES, A FILTERED FOURIER CUT FACTORIZATION, EXACT NO-BLOWUP CLOSURE UNDER PARTIAL ASSIGNMENTS, THE EXACT FINITE HOMOGENEOUS RESTRICTION SQUARE-MOMENT CORE, ITS STANDARD CYLINDER-LAW BOUNDED-INDEPENDENCE INSTANTIATION, THE PREFIX PARSEVAL/BESSEL ENERGY STEP, AND EXACT MASKED PRODUCT FACTORIZATION ARE FORMALIZED. ITS SIZE IS STILL THE EXPLICIT DISJOINT SUM. A SMALL SHARED AGGREGATE, THE SUFFIX/LAPLACIAN AND FULL PROGRAM-LEVEL ONE-ROUND/FOOLING BOUNDS, THE ONE-SIDED AVERAGE-CASE MCSP INTERSECTION, AND THE SMALL-THRESHOLD LOWER BOUND REMAIN OPEN**
 
 Primary sources:
 
@@ -898,6 +898,31 @@ must use.
   coefficient-mass estimate for the prefix/suffix factors, the required
   homogeneous-slice/Laplacian bound, the sum over vertices, or the full
   one-round fooling theorem.
+- `FiniteBooleanBoundedIndependence.lean` gives standard finite cylinder-law
+  definitions rather than renaming those moment hypotheses.  Exact pattern
+  probabilities on every set of at most `2k` unbiased coordinates imply the
+  required off-diagonal `D` character orthogonality via symmetric difference;
+  exact product-Bernoulli pattern probabilities on at most `k` mask
+  coordinates imply the required all-frozen `T` moment.  This closes the
+  logical derivation of the Claim-18 hypotheses from bounded independence,
+  but does not construct a short-seed source satisfying the cylinder laws.
+- `FiniteBooleanFourierEnergy.lean` proves exact character orthogonality,
+  the dual Walsh kernel, Fourier inversion, Parseval, and Bessel entirely over
+  finite rational sums.  It bounds every degree-`k` coefficient slice of a
+  pointwise unit-bounded function by one.  Applied to the compatible-prefix
+  indicator at each uFBDD vertex, this removes the energy factor from the
+  preceding moment theorem and proves the squared restriction bound `<= p^k`
+  under the same explicit source moments and `0 <= p`.  The specific suffix
+  coordinate-Laplacian identity and boundedness, its specialization through
+  the generic product factorization below, and the vertex sum are not yet
+  proved.
+- `FiniteBooleanMaskedProductFactorization.lean` proves that substituting a
+  fixed base and mask preserves every dependency set, and that the uniform
+  masked average of a product of functions on disjoint coordinate sets
+  factors exactly.  Its absolute-value corollary shows that a suffix factor
+  with average bounded by one cannot enlarge the prefix average.  Thus the
+  generic prefix/suffix independence glue is closed; constructing and
+  bounding the specific suffix Laplacian remains open.
 - `GuardedCanonicalAggregateEndpoint.lean` now takes the finite OR of all
   in-place accepting timed-alpha components by an explicit executable
   `Finset.univ.fold` and proves it pointwise equal to bounded deterministic
@@ -1319,11 +1344,19 @@ This alternative also remains prose only.
   preservation of read-once/unambiguity are formalized in
   `FiniteUnambiguousFBDDRestriction.lean`.  The exact finite degree-`k` Gram
   and square-moment calculation is now formalized in
-  `FiniteBooleanRestrictionMoment.lean`.  The full quantitative one-round
-  estimate remains: the factorized vertex contributions must still be split
-  into homogeneous slices, bounded by Parseval/Bessel or the corresponding
-  Laplacian estimate, converted from the squared bound to the per-vertex
-  `p^(k/2)` scale, and summed over all actual vertices.  The inferred
+  `FiniteBooleanRestrictionMoment.lean`.  Exact rational Parseval/Bessel and
+  the resulting prefix-indicator degree-energy bound are formalized in
+  `FiniteBooleanFourierEnergy.lean`, yielding the squared per-vertex prefix
+  restriction estimate `<= p^k`.  Standard `2k`-wise unbiased and `k`-wise
+  biased cylinder laws now imply the exact source moments in
+  `FiniteBooleanBoundedIndependence.lean`, while
+  `FiniteBooleanMaskedProductFactorization.lean` proves the generic disjoint
+  prefix/suffix masked-average factorization.  The full quantitative
+  one-round estimate remains: the suffix Fourier filter must be identified
+  with a bounded coordinate Laplacian, that concrete factor must be threaded
+  through the generic product theorem, the squared statement must be
+  converted to the `p^(k/2)` scale, and all actual vertices must be summed.
+  The inferred
   one-round error still contains the explicit vertex factor
   `S*2^(-k/2)`.  Even if that extension is
   correct, the stated

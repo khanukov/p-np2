@@ -1,6 +1,6 @@
 # One-tape small-threshold status
 
-Status: **THE FINITE ONE-TAPE VALIDATOR, EACH TOTAL FIXED-CERTIFICATE REJECTING-GUARD COMPONENT, THE FINITE ALPHA FAMILY, AND ONE EXACT SYNTACTICALLY READ-ONCE UNAMBIGUOUS FBDD WITH COMPLETE QUERY TRACES, EXACT FUNCTIONAL EXISTENTIAL PROJECTION WITHOUT VERTEX GROWTH, A FILTERED FOURIER CUT FACTORIZATION, EXACT NO-BLOWUP CLOSURE UNDER PARTIAL ASSIGNMENTS, THE EXACT FINITE HOMOGENEOUS RESTRICTION SQUARE-MOMENT CORE, ITS STANDARD CYLINDER-LAW BOUNDED-INDEPENDENCE INSTANTIATION, THE PREFIX PARSEVAL/BESSEL ENERGY STEP, EXACT MASKED PRODUCT FACTORIZATION, THE EXACT BOUNDED SUFFIX COORDINATE-LAPLACIAN, THE EXACT HIGH-DEGREE VERTEX REGROUPING, THE SQUARED PER-VERTEX PREFIX-TIMES-SUFFIX RESTRICTION BOUND, ITS EVEN-DEGREE `p^m` UNSQUARING, THE HONEST CARDINALITY-WEIGHTED VERTEX SUM, EXACT LOW-DEGREE CANCELLATION, THE FULL PROGRAM-LEVEL ONE-ROUND FOOLING BOUND, AFFINE RESTRICTION-STABLE ROUND CLOSURE, THE CONCRETE NESTED-AVERAGE MULTI-ROUND HYBRID, THE EXACT NESTED-TO-PACKED DPTW SEED BRIDGE, AND THE FULL DPTW-SHAPED TELESCOPING COMPOSITION ARE FORMALIZED. ITS SIZE IS STILL THE EXPLICIT DISJOINT SUM. A BOUNDED-PATHWIDTH CANONICAL VALIDATOR, CONCRETE DPTW FINITE-FIELD PRIMITIVES, THE ONE-SIDED AVERAGE-CASE MCSP INTERSECTION, AND THE SMALL-THRESHOLD LOWER BOUND REMAIN OPEN**
+Status: **THE FINITE ONE-TAPE VALIDATOR, EACH TOTAL FIXED-CERTIFICATE REJECTING-GUARD COMPONENT, THE FINITE ALPHA FAMILY, AND ONE EXACT SYNTACTICALLY READ-ONCE UNAMBIGUOUS FBDD WITH COMPLETE QUERY TRACES, EXACT FUNCTIONAL EXISTENTIAL PROJECTION WITHOUT VERTEX GROWTH, A CLASSICALLY CHOSEN LOGARITHMIC BIT RELATION FOR THE UNIQUE CANONICAL ALPHA, A FILTERED FOURIER CUT FACTORIZATION, EXACT NO-BLOWUP CLOSURE UNDER PARTIAL ASSIGNMENTS, THE EXACT FINITE HOMOGENEOUS RESTRICTION SQUARE-MOMENT CORE, ITS STANDARD CYLINDER-LAW BOUNDED-INDEPENDENCE INSTANTIATION, THE PREFIX PARSEVAL/BESSEL ENERGY STEP, EXACT MASKED PRODUCT FACTORIZATION, THE EXACT BOUNDED SUFFIX COORDINATE-LAPLACIAN, THE EXACT HIGH-DEGREE VERTEX REGROUPING, THE SQUARED PER-VERTEX PREFIX-TIMES-SUFFIX RESTRICTION BOUND, ITS EVEN-DEGREE `p^m` UNSQUARING, THE HONEST CARDINALITY-WEIGHTED VERTEX SUM, EXACT LOW-DEGREE CANCELLATION, THE FULL PROGRAM-LEVEL ONE-ROUND FOOLING BOUND, AFFINE RESTRICTION-STABLE ROUND CLOSURE, THE CONCRETE NESTED-AVERAGE MULTI-ROUND HYBRID, THE EXACT NESTED-TO-PACKED DPTW SEED BRIDGE, THE FULL DPTW-SHAPED TELESCOPING COMPOSITION, AN EXACT LONG-SEED DYADIC PRODUCT-SOURCE BASELINE, AN EXACT MATCHED-SEED-LENGTH `GF(2^n)` BOUNDED-INDEPENDENCE PAIR WITH POLYNOMIAL-SIZE JOINT COORDINATE CIRCUITS, A GRID-SUBGRAPH/PAIRED-CONTRACTION OBSTRUCTION FOR LITERAL TWO-ORDER ROUTING, AND AN ACTUAL UNIT-SCALE SERPENTINE ONE-TAPE TRACE REALIZING THAT GRID ARE FORMALIZED. THE SELECTOR SIZE IS STILL THE EXPLICIT DISJOINT SUM. A SIZE-FACTOR-FREE CANONICAL-AGGREGATE ARGUMENT (OR A SUFFICIENT BOUNDED-PATHWIDTH ALTERNATIVE), THE ONE-SIDED AVERAGE-CASE MCSP INTERSECTION, AND THE SMALL-THRESHOLD LOWER BOUND REMAIN OPEN**
 
 Primary sources:
 
@@ -9,9 +9,12 @@ Primary sources:
 - Chen, Jin, Williams, [*Hardness Magnification for all Sparse NP Languages*](https://eccc.weizmann.ac.il/report/2019/118/download), ECCC TR19-118 (CJW), used only for its exact quantifier order.
 - Santhanam, [*Pseudorandomness and the Minimum Circuit Size Problem*](https://eccc.weizmann.ac.il/report/2019/155/), ECCC TR19-155, Proposition 3 and Corollary 1, for the same easy-supported hitting-set/average-case MCSP pattern with their asymptotic quantifiers and parameter slack.
 - Hirahara, [*Non-Disjoint Promise Problems from Meta-Computational View of Pseudorandom Generator Constructions*](https://theoryofcomputing.org/articles/v019a004/), Theory of Computing 2023, for characterizations connecting HSGs to meta-computational circuit lower-bound problems.
-- Doron, Pyne, Tell, Williams, [*When Connectivity Is Hard, Random Walks Are Easy With Non-Determinism*](https://eccc.weizmann.ac.il/report/2025/077/), ECCC TR25-077, especially Definition 3.9 and Theorem 4.14 for adaptive-order read-once branching programs and the Forbes--Kelley generator.
+- Doron, Pyne, Tell, Williams, [*When Connectivity Is Hard, Random Walks Are Easy With Non-Determinism*](https://eccc.weizmann.ac.il/report/2025/077/), ECCC TR25-077, especially Claim 3.11, Definition 3.9, and Theorem 4.14 for biased bounded independence, adaptive-order read-once branching programs, and the Forbes--Kelley generator.
 - Chen, Cohen, Doron, Khaskelberg, Ta-Shma, [*Improved Error Reduction for Weighted PRGs*](https://eccc.weizmann.ac.il/report/2026/064/), ECCC TR26-064 revision 3, for the current weighted-PRG frontier for standard read-once branching programs.  Its model does not include the unambiguous adaptive uFBDD used here.
 - Amarilli, Capelli, Monet, Senellart, [*Connecting Knowledge Compilation Classes and Width Parameters*](https://doi.org/10.1007/s00224-019-09930-2), Theory of Computing Systems 64 (2020), Theorem 4.4, for compilation of a circuit supplied with a width-`k` path decomposition into a complete uOBDD of width at most `2^(2(k+1))`.
+- Kinnersley, [*The Vertex Separation Number of a Graph Equals Its Path-Width*](https://doi.org/10.1016/0020-0190(92)90234-M), Information Processing Letters 42 (1992), for equality of vertex separation and pathwidth.
+- Ellis, Warren, [*Lower Bounds on the Pathwidth of Some Grid-Like Graphs*](https://doi.org/10.1016/j.dam.2007.02.006), Discrete Applied Mathematics 156 (2008), Theorem 4.1, for the exact pathwidth `min(R,K)` of the rectangular `R`-by-`K` grid.
+- de Colnet, Ordyniak, Szeider, [*OBDDs, SDDs, and Circuits of Bounded Width: Completeness Matters*](https://doi.org/10.1016/j.artint.2025.104458), Artificial Intelligence 351 (2026), for the correction that bounded OBDD width corresponds to bounded circuit pathwidth only under completeness/smoothness.  It does not prove the routing-grid result below.
 - Bogdanov, Papakonstantinou, Wan, [*Pseudorandomness for Linear Length Branching Programs and Stack Machines*](https://andrejb.net/pubs/branching.pdf), RANDOM 2012, for a linear-stretch PRG for non-oblivious branching programs and its unique-witness extension.
 - Savicky, Zak, [*A Large Lower Bound for 1-Branching Programs*](https://eccc.weizmann.ac.il/report/1996/036/revision/1/), ECCC TR96-036 revision 1, published as *A Read-Once Lower Bound and a (1,+k)-Hierarchy for Branching Programs*, for the weighted-sum read-once lower bound.
 
@@ -860,6 +863,17 @@ must use.
   its vertex count is exactly unchanged.  This proves the projection
   inference, not a pathwidth compiler or a canonical-validator path
   decomposition.
+- `CanonicalAlphaFunctionalRelation.lean` turns the finite eligible-alpha
+  index into an actual Boolean witness block of length
+  `clog 2 (card Index)`.  The partial decoder has an exact graph, the relation
+  is right-functional for positive block size, and unique satisfying codes
+  are equivalent to cached one-tape acceptance.  Any syntactically read-once
+  unambiguous uFBDD that exactly realizes this joint relation can therefore be
+  projected to the visible input without vertex growth.  The encoding uses
+  the classically chosen `Fintype.equivFin`; it is noncomputable and supplies
+  neither a local decoder nor a joint checker.  Exact realization, polynomial
+  size, and bounded pathwidth remain explicit hypotheses, so this module is
+  infrastructure rather than a P-vs-NP mainline closure.
 - `FiniteUnambiguousFBDDRestriction.lean` proves exact closure under partial
   assignments.  A fixed query is replaced by a silent singleton choice to its
   selected child; the vertex type, rank, start, accept, and therefore vertex
@@ -1047,9 +1061,89 @@ must use.
     <= L * card(Vertex) * p^m + 2^n * rho^L.
   ```
 
-  The remaining DPTW input is the actual finite-field construction of
-  primitive generators satisfying the displayed bounded-independence and
-  marginal laws, not hybrid or seed-packing bookkeeping.
+  The finite-field probability, matched-seed-length, and small joint-coordinate
+  inputs are now instantiated below for dyadic bias.  The remaining obstacle
+  in this route is the aggregate/selector size factor, not DPTW seed packing.
+- `DPTWFiniteBooleanPrimitives.lean` supplies an exact finite control
+  experiment for that remaining input.  With `r = blockBits` and
+  `t = falseCount`, an independent `r`-bit block per truth-table coordinate
+  gives false mass `p = t / 2^r`; the half threshold gives an unbiased `A`.
+  The module proves every cylinder law (hence `4m`-wise `A` and `2m`-wise
+  false-biased `B`), the exact `B` marginal `1-p`, packages both sources as
+  actual constant-free AND/OR/NOT `DPTWCoordinatePrimitive`s, and directly
+  instantiates the full uFBDD hybrid bound.  This is deliberately not the
+  efficient DPTW primitive: each source uses `2^n * r` seed bits, and its
+  joint coordinate circuit is a semantic truth-table compiler whose exact
+  gate cost is exposed but not small (and can be doubly exponential in the
+  original `n`).  Only dyadic `p` is realized, with no theorem selecting the
+  paper's target parameter after rounding.
+- `DPTWFiniteFieldKWiseSeed.lean` closes the short-seed probability layer of
+  Claim 3.11.  A uniformly random degree-`< k` polynomial over `GF(2^d)` has
+  jointly uniform values on every set of at most `k` distinct nodes, proved
+  through an explicit surjectivity argument using Lagrange interpolation.
+  Mapping a field value through any fixed false subset gives the exact product
+  cylinder law with false mass `t/2^d`; a half-field subset is exactly
+  unbiased.  The source is transported to a flat tape of exactly `k*d` bits,
+  and `Fin (2^n)` is embedded in the field when `n <= d`.  The DPTW capstone
+  therefore gives `A` seed length `4*m*d` and `B` seed length `2*m*d`, replacing
+  the exponential `2^n*d` baseline.  If `tailBits <= d`, choosing exactly
+  `2^(d-tailBits)` false field values gives `p = 1/2^tailBits` with no
+  probability rounding.  The polynomial encoding, false subset,
+  and node embedding are classically chosen.  No theorem compiles their
+  `(seed,index)` map to a small AND/OR/NOT circuit, so this is not yet a
+  `DPTWCoordinatePrimitive` or a local HSG.
+- `GaloisBilinearTensorBridge.lean` fixes a classically chosen basis of
+  `GF(2^d)` over `GF(2)` and proves the exact Boolean multiplication identity:
+  every product coordinate is the XOR of the `d^2` fixed tensor bits AND the
+  corresponding two input bits.  The basis and tensor are nonuniform advice;
+  no uniform basis-finding algorithm is claimed.
+- `DPTWBilinearCoordinateCircuitProbe.lean` compiles that abstract tensor
+  recurrence into a shared constant-free AND/OR/NOT Horner DAG.  With
+  `steps + 1` coefficient blocks it uses exactly `(steps + 1)*d` seed inputs,
+  `d` index inputs, and at most
+  `steps*d*(6 + 6*d^2)` internal gates.  A selected-coordinate zero-prefix
+  decoder adds at most `2+t` gates, and the result is packaged as an actual
+  `DPTWCoordinatePrimitive`.  Its evaluation theorem is exact for the
+  Boolean tensor-Horner semantics.  The mass is `2^(-t)` only for `t`
+  distinct independent field coordinates; the structured bridge below must
+  supply and count that canonical prefix.  It must also identify the circuit
+  semantics with evaluation of the coefficient-wise finite-field polynomial
+  source; the arbitrary cardinality equivalence used by the probability-only
+  module cannot supply this identification.
+- `DPTWStructuredFieldCoordinatePrimitive.lean` supplies the missing exact
+  identification.  Its seed equivalence is coefficient-major rather than an
+  arbitrary cardinality bijection; its evaluation nodes decode the same
+  `lexInput` bits through the chosen field basis.  The module proves that the
+  Boolean tensor recurrence is field multiplication, descending Horner is
+  ordinary `Polynomial.eval`, and the canonical first-`t` zero-coordinate set
+  has exactly `2^(n-t)` elements.  Thus its false mass is exactly `2^(-t)`.
+  Both DPTW primitives use the same `K*n`-bit seed type with `K=4*m+1`; the
+  hybrid samples independent `A/B` seed blocks of that length.  Here `A` uses
+  `t=1`, `B` uses arbitrary `tailBits <= n`, and the exact `K`-wise laws are
+  weakened to the required `4*m`-wise unbiased and `2*m`-wise false-biased
+  laws.  Each joint circuit has at most
+  `4*m*n*(6+6*n^2) + 2+t` gates and uses only AND/OR/NOT.  This is a genuine
+  nonuniform `DPTWCoordinatePrimitive` pair, not merely a probability source.
+  The chosen basis and multiplication tensor remain classical nonuniform
+  advice, and only dyadic `p` is packaged; no strongly uniform field-basis
+  algorithm is claimed.
+- `DPTWStructuredHybridCapstone.lean` threads that matched-seed-length pair through
+  the actual zero-tail recurrence and the existing unambiguous-FBDD hybrid.
+  It constructs a real `DAGLocalGenerator` at the closed hardwired threshold,
+  with seed length
+  `2*(levelsAfterFirst+1)*((4*m+1)*n)`.  The joint circuit and every fixed-seed
+  circuit have explicit polynomial gate bounds, and the final theorem proves
+  directly on `generator.generate`, with `p=2^(-tailBits)`,
+  ```text
+  |E_U test - E_G test|
+    <= (levelsAfterFirst+1) * card(Vertex) * p^m
+       + 2^n * (1-p)^(levelsAfterFirst+1).
+  ```
+  All independence and marginal premises are discharged internally.  A
+  seed-only corollary also removes the unused truth-table component from the
+  product-average presentation exactly.  The surviving `card(Vertex)` factor
+  is honest and is now the dominant loss for the canonical disjoint-sum
+  selector.
 - **Audited global-energy boundary (not yet kernel-formalized).**  A tempting
   attempt to remove the vertex factor is invalid even for deterministic
   ordered read-once branching programs.  A depth-`d` prefix decision tree
@@ -1592,12 +1686,12 @@ This alternative also remains prose only.
   explicit factor, so both conditioning on fixed `v` and averaging back over
   `v` are now internal to the formal statement.  Thus the paper's `(1-p)^L`
   term follows immediately once the supplied primitive has exact marginal
-  `rho = 1-p`.  The development still does not construct the DPTW finite-field
-  primitives.  The program-level one-round theorem for the canonical
+  `rho = 1-p`.  The exact matched-seed-length finite-field law and its polynomial-size
+  nonuniform joint coordinate circuit are now constructed.  The program-level
+  one-round theorem for the canonical
   unambiguous FBDD, its affine fixed-prefix closure, and the scalar
   telescoping estimate and the nested-to-packed DPTW seed-layout bridge are
-  now internal.  The remaining quantitative input is the concrete
-  finite-field primitive construction.  The structural blocker is still the selector's
+  now internal.  The structural blocker is still the selector's
   honest size/easy-support cost, which must be compressed using special
   canonical geometry rather than generic unambiguity.
 - Generic unambiguity does not supply that compilation.  [Amarilli--Capelli--
@@ -1621,6 +1715,61 @@ This alternative also remains prose only.
   circuit may have to connect every visible input bit to many possible
   validation positions.  A streaming-space intuition alone does not bound
   this graph pathwidth.
+- `StableGroupingRoutingGridBarrier.lean` proves one exact negative design
+  lemma for that risk.  In the synthetic full-sweep architecture with one
+  event for each of `R` rounds and `K` blocks, literal chronological-successor
+  edges plus stable-grouped-successor edges contain
+  `pathGraph R boxProduct pathGraph K` as a spanning subgraph, for arbitrary
+  serpentine orientation of each round.  Splitting every event into two local
+  copies and joining the copies by equality edges does not help: the module
+  gives an explicit paired-contraction certificate for the same grid minor.
+  Combining this checked graph statement with the external grid theorem gives
+  pathwidth at least `min(R,K)` outside the one-vertex degeneracy.  The
+  pathwidth implication itself is not formalized in Mathlib.
+- `ActualSerpentineRoutingGridRealization.lean` realizes the synthetic schedule
+  with literal events from an actual finite-control deterministic one-tape
+  run.  At canonical scale `b = 1`, the work head performs `R` serpentine
+  sweeps of `K` cells during exactly `T = R*K` transitions while the input
+  head advances on every step.  The module proves a bijection from
+  `Fin R × Fin K` to those transition times, identifies the actual event's
+  chronological position, input position, canonical work block, and advance
+  bit, and proves equality of its two-order event graph with the synthetic
+  graph.  Hence the rectangular grid is a checked subgraph of a literal
+  actual-event graph, not merely a realizability sketch.
+- This remains an architecture-specific witness, not a generic lower bound
+  and not a theorem that the canonical MCSP validator must use both literal
+  consistency chains.  Combining the checked `b = 1`, `T = R*K` realization
+  with the external grid-pathwidth theorem yields the informal balanced
+  consequence `Omega(sqrt T)` for this design.  In the more general engineering
+  estimate `T = Theta(R*K*b)`, the corresponding inference is
+  `Omega(sqrt(T/b))`; fitting it into `O(b*log(Tq))` would require roughly
+  `b^3*log(Tq)^2 >= T`.  These pathwidth consequences are not formalized in
+  Mathlib.  The remaining geometry obligation is now sharper: either derive
+  the two chains from the actual target validator/relation circuit, or replace
+  them by a genuinely global functional accumulator that avoids the grid.
+- `SerpentineCanonicalCounterarchitecture.lean` proves that no geometry-only
+  necessity statement can bridge this gap.  The same serpentine machine has
+  arbitrarily large literal `R`-by-`K` event grids, but its halting map is
+  everywhere `none`.  Consequently its accepting canonical-alpha carrier is
+  empty, its encoded canonical functional relation is identically false, and
+  a query-free two-sink uFBDD realizes that relation exactly.  The installed
+  mandatory selector also rejects every input and has exactly three vertices;
+  for `R,K >= 2` the grid event carrier cannot even inject into those vertices.
+  Thus an actual routing grid does not by itself force validator states or
+  relation complexity.
+- `AcceptingAggregateSemanticRelevance.lean` now isolates the next semantic
+  obstruction exactly.  After any fixed input prefix, accepting-reachable
+  timed canonical alphas induce pairwise distinct component residual
+  functions; different terminal endpoints or final work-head positions are
+  explicit sufficient witnesses.  But a concrete two-state accepting machine
+  routes `false` and `true` to different work-head endpoints, hence different
+  alphas and component residuals, while its existential accepting aggregate
+  is the constant-true function after every prefix.  Therefore even component
+  residual injectivity does not survive the outer OR.  Any continuation of
+  this routing-geometry/component-distinctness strategy must
+  preserve or exploit the canonical witness/components, or prove an
+  aggregate-level anti-collapse property specific to the accepting hard
+  target; routing geometry plus component distinctness alone is insufficient.
 - The older weighted-sum family makes that obstruction especially explicit.
   [Savicky--Zak, ECCC TR96-036 revision 1, Theorem 2.6](https://eccc.weizmann.ac.il/report/1996/036/revision/1/)
   gives a deterministic read-once branching-program lower bound

@@ -1,12 +1,14 @@
 # One-tape small-threshold status
 
-Status: **THE FINITE ONE-TAPE VALIDATOR AND THE DIRECT SIGNED STANDARD-DAG TRANSFER ARE EXACT. THE AGGREGATE APPROXIMATION, ITS JOINT-DAG CONSTRUCTION, AND THE SMALL-THRESHOLD LOWER BOUND REMAIN OPEN**
+Status: **THE FINITE ONE-TAPE VALIDATOR, THE DIRECT DENSE/EASY STANDARD-DAG REDUCTION, AND A CODEC-IMAGE AVOIDANCE BARRIER ARE EXACT. THE ONE-SIDED AVERAGE-CASE MCSP INTERSECTION, THE AGGREGATE CONSTRUCTION, AND THE SMALL-THRESHOLD LOWER BOUND REMAIN OPEN**
 
 Primary sources:
 
 - Cheraghchi, Hirahara, Myrisiotis, Yoshida, [*One-Tape Turing Machine and Branching Program Lower Bounds for MCSP*](https://drops.dagstuhl.de/storage/00lipics/lipics-vol187-stacs2021/LIPIcs.STACS.2021.23/LIPIcs.STACS.2021.23.pdf), STACS 2021 (CHMY).
 - Viola, [*Pseudorandom Bits and Lower Bounds for Randomized Turing Machines*](https://theoryofcomputing.org/articles/v018a010/v018a010.pdf), Theory of Computing 2022.
 - Chen, Jin, Williams, [*Hardness Magnification for all Sparse NP Languages*](https://eccc.weizmann.ac.il/report/2019/118/download), ECCC TR19-118 (CJW), used only for its exact quantifier order.
+- Santhanam, [*Pseudorandomness and the Minimum Circuit Size Problem*](https://eccc.weizmann.ac.il/report/2019/155/), ECCC TR19-155, Proposition 3 and Corollary 1, for the same easy-supported hitting-set/average-case MCSP pattern with their asymptotic quantifiers and parameter slack.
+- Hirahara, [*Non-Disjoint Promise Problems from Meta-Computational View of Pseudorandom Generator Constructions*](https://theoryofcomputing.org/articles/v019a004/), Theory of Computing 2023, for characterizations connecting HSGs to meta-computational circuit lower-bound problems.
 
 ## Result classification
 
@@ -14,10 +16,12 @@ This branch proves the parameter obstruction in the published Viola-to-CHMY
 route.  It does not prove a one-tape lower bound at the magnification-admissible
 small threshold and does not produce a `P != NP` capstone.  Under the
 repository policy, the one-tape validator by itself remains a restricted
-lower-bound side track.  This branch now also proves an explicit conditional
-`PpolyDAG` / `VerifiedNPDAGLowerBoundSource` bridge for reverse one-sided
-signed standard-DAG fooling; the all-exponent fooling family needed by that
-bridge is not constructed, so no unconditional source or capstone follows.
+lower-bound side track.  This branch now also proves a direct conditional
+`not (PpolyDAG L)` bridge from a generator-free one-sided average-case MCSP
+statement: at one suitable slice for every polynomial exponent, every dense
+bounded standard-DAG predicate accepts a threshold-easy truth table.  The
+all-exponent intersection statement is not proved, so no unconditional source
+or capstone follows.
 
 ## Closed operational and finite layers
 
@@ -61,6 +65,35 @@ The following ingredients are now formalized:
   uniform accepting mass, some nonzero-weight generator output is accepting,
   regardless of negative weights.  The proof uses only that a predicate
   vanishing on the nonzero-weight support has weighted average zero.
+- An exact audit of the unnormalized reverse one-sided formulation.  For every
+  rational `epsilon`, existence of arbitrary signed weights is equivalent to
+  support hitting above uniform mass `epsilon`.  The reverse direction uses
+  the explicit nonnegative constant weight
+  `|Seed| * (|epsilon| + 2)`; when `0 <= epsilon`, weight `|Seed|` suffices.
+  Thus negative-weight cancellation supplies no additional power in this
+  particular existential, unnormalized formulation.
+- A sharp dense standard-DAG endpoint with no weights or error parameter.
+  `HitsDenseDAGPredicates` asks only for predicates carrying an explicit set
+  larger than half of the truth-table cube, exactly the case used by the
+  output-negated coMCSP contradiction.
+- A generator-elimination equivalence.  Once size two is available for the
+  constant-true test, existence of any `DAGLocalGenerator` satisfying dense
+  hitting is equivalent to `EveryDenseDAGPredicateAcceptsEasyTable`.  The
+  reverse witness is a noncomputable full-truth-table-seed enumerator.  Hence
+  bare fixed-seed image locality, without a short seed or a small joint
+  `(seed,index)` circuit, adds no semantic content to this endpoint.
+- A circuit-recognizable support-avoidance barrier.  The complement of every
+  explicit finite set `E` of `N`-bit strings has a standard fan-in-two DAG of
+  size at most `|E| * (2*N + 2) + 3`.  Applied to the canonical codec image,
+  under the same gap `codeLength + 2 < 2^n` this yields a dense predicate
+  rejecting every threshold-easy table and rules out dense hitting whenever
+  `2^codeLength * (2*tableLen + 2) + 3 <= maxSize`.  In particular, the
+  polynomial specialization proves, assuming that gap and `2 <= exponent`,
+  that a codec budget satisfying `codeLength + n + 2 <= n*exponent` is fatal
+  at that outer exponent.  Direct generator-free corollaries refute
+  `EveryDenseDAGPredicateAcceptsEasyTable` under the same inequalities, and
+  an all-exponent corollary handles every eventually linear codec length by
+  absorbing its finite prefix into one explicit exponent budget.
 
 These results use the exact standard-DAG MCSP target, including the
 `AND`/`OR`/`NOT` basis filter.  The counting image may include a harmless
@@ -904,21 +937,25 @@ contradiction with one error parameter.  The transcript-count union bound is
 not a logical requirement of the endpoint anymore; it reappears only in the
 currently known componentwise constructions.
 
-The strongest finite endpoint now needs only the reverse one-sided estimate
-`uniformAggregate - weightedAggregate <= epsilon < 1/2`.  It does not require
-an absolute-error bound, `0 <= epsilon`, nonnegative weights, or normalized
-weights.  This aligns the implemented aggregate capstone with the direct
-standard-DAG transfer below; construction of such an approximation remains
-the unresolved step.
+For one supplied fixed weight, the strongest finite endpoint needs only the
+reverse one-sided estimate
+`uniformAggregate - weightedAggregate <= epsilon < 1/2`; the theorem does not
+use an absolute-error bound, nonnegative weights, or normalization.  The new
+existential audit is important, however: if the weight itself is allowed to be
+chosen without any norm or normalization constraint, existence of such an
+estimate is exactly support hitting.  It is therefore not a second route
+around constructing the HSG.
 
 After that implementation theorem, the central generator object is:
 
-> Construct a circuit-local HSG, or a signed WPRG whose nonzero support is such
-> an HSG, for the **single executable cache-normalized master-guarded canonical
-> aggregate** now defined in Lean.  Its seed and fixed-seed DAG complexity must
-> be at most the magnification-admissible `N^mu`, and its one approximation or
-> hitting guarantee must apply directly to that aggregate, without replacing
-> it by an `epsilon / |A|` family of componentwise guarantees.
+> Construct a circuit-local HSG for the **single executable cache-normalized
+> master-guarded canonical aggregate** now defined in Lean.  Its seed and
+> fixed-seed DAG complexity must be at most the magnification-admissible
+> `N^mu`, and its hitting guarantee must apply directly to that aggregate,
+> without replacing it by an `epsilon / |A|` family of componentwise
+> guarantees.  A genuinely weighted alternative would first need explicit
+> normalization and magnitude/`l1` constraints; the current unnormalized
+> existential condition is only support hitting in disguise.
 
 Canonical boundary selection, schedule construction, every local replay,
 arbitrary-alpha global glue, streamed cut counts, leftmost tie-breaking, exact
@@ -1023,25 +1060,54 @@ constructively to any explicitly larger MCSP threshold.
 At the `PpolyDAG` interface there are now two honest conditional routes.  The
 older finite checkpoint exposes the missing behavior-extraction arrow
 `PpolyDAG L -> BoundedErrorMCSPBehavior ...`.  The new direct standard-DAG
-transfer removes that arrow: for every polynomial exponent it asks instead
-for one DAG-local generator and arbitrary signed weights satisfying only the
-reverse one-sided inequality
+transfer removes that arrow and then removes both layers of pseudorandomness
+syntax from its own premise:
+
+1. existential arbitrary unnormalized signed weights are exactly support
+   hitting above the same mass threshold;
+2. without a short-seed or joint-locality requirement, existence of a
+   DAG-local dense HSG is exactly
+   `EveryDenseDAGPredicateAcceptsEasyTable`.
+
+Consequently the sharp generator-free hypothesis is
 
 ```text
-uniformAcceptance - weightedAcceptance <= epsilon < 1/2
+forall exponent, exists n,
+  codeLength(n, threshold(n)) + 2 < 2^n and
+  forall C,
+    size(C) <= (2^n)^exponent + exponent + 1 ->
+    DenseAboveHalf(accepts(C)) ->
+    exists table,
+      HasCircuit(n, threshold(n), table) and C(table) = true.
 ```
 
-against all standard DAGs at the corresponding size.  One shared output-NOT
-gate converts a hypothetical MCSP decider into the dense coMCSP predicate;
-easy generator images make its weighted acceptance exactly zero, independently
-of signs or normalization.  The resulting theorem proves `not (PpolyDAG L)`
-directly, and with explicit `NP L` and slice identity packages a
-`VerifiedNPDAGLowerBoundSource`.  This genuinely eliminates behavior
-extraction from that route, but it does **not** construct the all-exponent
-signed generators or show that the one-tape aggregate fools the whole DAG
-class.  That quantified construction is the remaining mathematical input.
-None of these open statements is an axiom, contract, provider, or hidden
-instance.
+One shared output-NOT gate converts a hypothetical MCSP decider into a dense
+coMCSP predicate, which contradicts this intersection property.  Thus
+`not_PpolyDAG_of_dense_easy_intersection_slices` proves `not (PpolyDAG L)`
+directly.  The remaining input is precisely a one-sided average-case MCSP
+lower bound against every polynomial exponent, not a signed-cancellation
+lemma.  It is not proved, postulated, packaged as a new source, or hidden in
+an instance.
+
+The new codec-image avoider pins down the opposite quantitative edge.  For a
+fixed slice satisfying `codeLength(n, threshold(n)) + 2 < 2^n`, if
+
+```text
+2^codeLength(n, threshold(n)) * (2^(n+1) + 2) + 3 <= maxSize,
+```
+
+then an explicit dense standard-DAG predicate of that size rejects every easy
+table, so the intersection premise is false.  At polynomial outer size this
+already excludes any eventual regime
+`codeLength(n, threshold(n)) <= B*n` once the outer exponent is large enough;
+the formal proof uses a finite-prefix sum rather than silently treating an
+asymptotic bound as global.  It does **not** refute the intended
+`threshold = (2^n)^mu` regime: its canonical code length is superlinear in
+`n`, and the explicit avoider is then superpolynomial in the truth-table
+length.  The remaining theorem must therefore exploit more than cardinality
+or exhaustive hard-coding; it must show that every polynomial-size dense DAG
+intersects the much larger semantic easy set at a suitable slice for each
+exponent.
 
 The remaining direct alternative is an adaptive many-cut YES/NO splicing
 lemma for low-circuit truth tables.  The fixed-bipartition row theorem shows
@@ -1059,6 +1125,14 @@ This alternative also remains prose only.
   ties.  Thus arbitrary-alpha global glue is not a new paper-level assumption;
   the formal contribution here is its exact executable realization and edge-
   case audit in the repository's machine convention.
+- [Santhanam, ECCC TR19-155](https://eccc.weizmann.ac.il/report/2019/155/)
+  Proposition 3 relates succinct hitting sets supported on
+  `C[quasi-s(n)]`-easy strings to zero-error average-case hardness of the
+  corresponding `C-MCSP`, and Corollary 1 adds pseudorandom distributions under
+  its closure, medium-error, and `s(O(n))` conditions.  This identifies the
+  same dense/easy-intersection pattern.  Our finite `> 1/2` statement has
+  different slice quantifiers and parameter slack, so the paper does not
+  instantiate the threshold and standard-DAG obligation required here.
 - [Chen--Lyu--Tal--Wu, ICALP 2023, Theorem 7](https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.ICALP.2023.39)
   is the strongest directly relevant structural lead found: it fools width-`w`
   deterministic adaptive read-once branching programs with seed
@@ -1070,12 +1144,17 @@ This alternative also remains prose only.
   give a strongly explicit generator with seed `n^epsilon` and error `1/n^2`
   for deterministic adaptive-order read-once branching programs of size `n`.
   A coordinate is computable in `O(epsilon * log n)` workspace with read-only
-  seed access and catalytic access to the output index.  This is a genuine
-  locality near miss, but the canonical aggregate is presently an
-  unambiguous/nondeterministic FBDD rather than one deterministic AOBP;
-  catalytic coordinate space is not yet a joint-DAG gate bound; and after
-  padding an `N`-bit program of size `S`, the honest seed depends on
-  `max(N,S)^epsilon`, not automatically on `N^epsilon`.
+  seed access and catalytic access to the output index.  If Theorem 4.14 is
+  modified by fixing its final packed tail `v` to zero, Lemma 4.15 plus the
+  union bound for coordinates surviving all levels suggests the honest error
+  `L*S*p^(k/2) + N*(1-p)^L`, not automatically `1/N^2`; this is an inference,
+  not a theorem stated in the paper.  Here `S` is the actual AOBP vertex count,
+  and replacing it by the input length `N` is invalid.  Even a fully formal
+  zero-tail coordinate-DAG compiler would therefore cover deterministic AOBPs
+  only.  The canonical aggregate is presently an unambiguous/nondeterministic
+  FBDD, not one deterministic AOBP, and the proved width of an individual
+  guarded component can already make `S` superpolynomial in `N`.  In that
+  regime the DPTW seed/locality cost does not fit `N^mu`.
 - Generic unambiguity does not supply that compilation.  [Amarilli--Capelli--
   Monet--Senellart, Theory of Computing Systems 2019, Proposition 3.1](https://pierre.senellart.com/publications/amarilli2019connecting.pdf)
   gives an exponential separation between unambiguous FBDDs and deterministic
@@ -1121,6 +1200,15 @@ This alternative also remains prose only.
   exponential nondeterministic-circuit lower-bound assumption for `E`.  It is
   therefore a conditional hardness-vs-randomness route, not an unconditional
   way around the present aggregate-generator barrier.
+- [Doron--Moshkovitz--Oh--Zuckerman, ECCC TR26-082](https://eccc.weizmann.ac.il/report/2026/082/download/)
+  bypasses the usual hybrid loss under its batch fine-grained deterministic-
+  circuit hardness assumption for `(alpha,beta)`-insensitive or
+  `beta`-insensitive distinguishers.  The latter HSG targets accepting density
+  near one rather than every set above one half; the two-sided result has a
+  constant-error regime.  Arbitrary dense standard-DAG predicates need not be
+  insensitive, and the paper supplies neither easy-supported fixed-seed
+  `N^mu` DAG locality nor a small joint generator DAG.  Thus it is not a
+  general plug-in for the open premise.
 - [Meel--de Colnet, ICDT 2025, Theorem 1](https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.ICDT.2025.30)
   and the [corrected arXiv v3](https://arxiv.org/pdf/2406.16515) give an FPRAS
   for model counting of general nondeterministic FBDDs, a model which contains

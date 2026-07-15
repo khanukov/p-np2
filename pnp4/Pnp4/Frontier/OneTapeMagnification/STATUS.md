@@ -1,6 +1,6 @@
 # One-tape small-threshold status
 
-Status: **THE FINITE ONE-TAPE VALIDATOR, EACH TOTAL FIXED-CERTIFICATE REJECTING-GUARD READ-ONCE COMPONENT, THE DIRECT DENSE/EASY STANDARD-DAG REDUCTION, THE CODEC-IMAGE AVOIDER, AND FINITE DPTW ZERO-TAIL JOINT LOCALITY/SURVIVOR BOOKKEEPING ARE EXACT. THE OUTER COHERENT UNION, THE ONE-SIDED AVERAGE-CASE MCSP INTERSECTION, ITS RESTRICTION/FOOLING ANALYSIS, AND THE SMALL-THRESHOLD LOWER BOUND REMAIN OPEN**
+Status: **THE FINITE ONE-TAPE VALIDATOR, EACH TOTAL FIXED-CERTIFICATE REJECTING-GUARD READ-ONCE COMPONENT, THE FINITE ALPHA-INDEXED UNAMBIGUOUS FAMILY, ITS FINITE RANKED SELECTOR'S EXACT SIZE AND FORWARD REALIZATION, THE DIRECT DENSE/EASY STANDARD-DAG REDUCTION, THE CODEC-IMAGE AVOIDER, AND FINITE DPTW ZERO-TAIL JOINT LOCALITY/SURVIVOR BOOKKEEPING ARE EXACT. A SINGLE SMALL SYNTACTIC AGGREGATE CLASS, THE ONE-SIDED AVERAGE-CASE MCSP INTERSECTION, ITS RESTRICTION/FOOLING ANALYSIS, AND THE SMALL-THRESHOLD LOWER BOUND REMAIN OPEN**
 
 Primary sources:
 
@@ -767,11 +767,27 @@ must use.
   replay, acceptance, and follows-master premises from the fixed-component
   compiler.  Here `IsReadOnce` is the repository's
   `LayeredQueryProgram.IsReadOnce`: layers may have no query and the program
-  may have arbitrary length.  It is therefore not yet literally a DPTW
-  Definition 3.9 AOBP, whose `n` layers carry mandatory variable labels.  A
-  semantics- and size-preserving conversion/padding theorem remains necessary,
-  especially because the absorbing reject sink no longer carries a master
-  cursor.  The result does not compress the outer OR over all certificates.
+  may have arbitrary length.  The next module removes this optional-layer
+  mismatch.  The result here does not compress the outer OR over all
+  certificates.
+- `MandatoryFixedOrderQueryCollapse.lean` proves that the absorbing reject
+  sink's missing cursor is not an obstruction.  It collapses physical silent
+  layers by the number of queries already consumed, completes every
+  duplicate-free master to a permutation of `Fin n`, and produces a
+  deterministic program with exactly `n` mandatory fixed-order query layers.
+  The result is read-once, has exact width `L*base.width+2`, and is
+  extensionally equal on every input to `rejectingGuardByMasterOrder`.  Thus
+  the optional-layer/padding gap for each strict component is closed in the
+  local model.  We do not identify its local state-slot count with the
+  inconsistent shorthand “size n” in DPTW Theorem 4.14; Definition 3.9 and
+  Lemma 4.15 require the honest full vertex count.  This compiler still acts
+  on one deterministic component and does not select the finite outer family.
+  `FiniteRejectingGuardedCanonicalFamily.lean` now instantiates it for every
+  eligible alpha, proving exact equality with the corresponding family
+  component, mandatory fixed-order read-once behavior, and exact collapsed
+  width.  For `b > 0`, it also packages all of these as one finite uniform
+  `n`-layer family whose Boolean union is exactly cached acceptance and whose
+  accepting member is pointwise unique.
 - `RejectingGuardedCanonicalAggregateEndpoint.lean` integrates those strict
   components back into the semantic endpoint.  Its minimal certificate has
   only the total rejecting compiler's `eval = true` and an accepting terminal
@@ -783,6 +799,50 @@ must use.
   unambiguity are now unconditional finite theorems.  This still presents the
   aggregate as an existential coherent union rather than one small
   deterministic AOBP or an already-fooled syntactic uFBDD.
+- `FiniteRejectingGuardedCanonicalFamily.lean` removes the apparently
+  infinite schedule index from that union.  Each eligible ambient timed alpha
+  installs the unique output of `buildTimedAlphaVisitSchedule`; the finite
+  subtype also hardwires schedule validity, input monotonicity, and the
+  accepting terminal gate.  For `b > 0`, its Boolean union is exactly cached
+  acceptance and an accepting input has exactly one accepting alpha index;
+  every installed component is read-once without that positivity premise.
+  The number of indices is at most the exact
+  ambient-alpha formula, each component has the exact strict-guard width, and
+  the naive disjoint layered presentation is explicitly the **sum** of all
+  component state-slot counts rather than their maximum.  Thus no unbounded
+  `List` enumeration remains.  What remains is substantive: the explicit
+  disjoint-union sum can be superpolynomial.  This file therefore does not
+  call the aggregate a uFBDD and does not place it in the DPTW or CLTW classes.
+- `FiniteLayeredFamilySelector.lean` supplies a concrete finite ranked graph
+  for any such dependent family.  A silent root chooses a component, silent
+  singleton edges realize query-free layers, and the graph has exactly
+  `layeredStateSlotCount + 3` vertices.  Every accepting component evaluation
+  gives an input-compatible accepting path, so family acceptance has a proved
+  forward realization.  The converse path-decoding theorem is not yet proved,
+  and the family-level read-once premise covers consistent executions rather
+  than every formal graph path.  Accordingly this checkpoint claims neither
+  exact selector semantics nor syntactic read-once/unambiguity; it also does
+  not improve the honest sum-size bound.
+- `FiniteUnambiguousFBDD.lean` introduces the missing finite syntactic graph
+  language without conflating it with deterministic layered programs.  It has
+  ranked query/choice/sink DAGs, forward walks, input compatibility, accepting
+  paths, separate predicates for syntactic read-once and path-level
+  unambiguity, and the CLTW-oriented `preVars`/`postVars` convention.  The
+  syntactic read-once predicate proves these two variable sets disjoint at
+  every vertex, including across silent choice nodes.
+- `UnambiguousFBDDPathCut.lean` proves the corrected CLTW combinatorial cut,
+  rather than importing Claim 15 outside its exactly-once model.  It filters a
+  walk's query events by `alpha`, splits the dependent walk at the unique
+  `(k+1)`-st filtered event even through silent choice nodes, identifies the
+  local prefix with `alpha ∩ preVars(v)`, and proves existence and uniqueness
+  of a cut vertex satisfying the mandatory support condition
+  `α ⊆ Pre(v) ∪ Post(v)`.  The theorem assumes that the selected accepting
+  path reads all of `α`; it does not yet cover an arbitrary Fourier support.
+  This pathwise theorem needs syntactic read-once but not unambiguity;
+  unambiguity enters the still-unproved accepting-indicator factorization.
+  Reverse selector semantics, syntactic read-once/unambiguity, Fourier
+  cancellation, restriction closure, and size/error analysis remain next
+  steps.
 - `GuardedCanonicalAggregateEndpoint.lean` now takes the finite OR of all
   in-place accepting timed-alpha components by an explicit executable
   `Finset.univ.fold` and proves it pointwise equal to bounded deterministic
@@ -1165,7 +1225,7 @@ does not exclude adaptive crossing signatures.
 
 This alternative also remains prose only.
 
-## Later-literature check (through 2026-07-14)
+## Later-literature check (through 2026-07-15)
 
 - [Viola, Theory of Computing 2022, Theorem 2.2 and Section 3](https://theoryofcomputing.org/articles/v018a010/v018a010.pdf)
   confirms that the paper-level lower validator is intended to accept exactly
@@ -1185,23 +1245,33 @@ This alternative also remains prose only.
 - [Chen--Lyu--Tal--Wu, ICALP 2023, Theorem 7](https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.ICALP.2023.39)
   is the strongest directly relevant structural lead found: it fools width-`w`
   deterministic adaptive read-once branching programs with seed
-  `O(log n * log^2(nw/epsilon))`.  A line-by-line check of Claim 15 and Lemma
-  17 suggests a potentially useful extension to a *syntactically read-once,
-  unambiguous* nondeterministic program: prefix/suffix existence indicators
-  multiply to the indicator that the necessarily unique accepting path, when
-  one exists, passes through a vertex,
-  the pre/post variable sets remain disjoint, and restrictions preserve
-  unambiguity.  This is our inference, not a theorem in the paper; exact
-  layering/padding, the restriction invariant, and the size accounting remain
-  to be proved.  The inferred one-round error still contains the explicit
-  vertex factor `S*2^(-k/2)`.  Even if that extension is correct, the stated
+  `O(log n * log^2(nw/epsilon))`.  Their model reads every variable exactly
+  once on every path.  A literal reuse of Claim 15 for an at-most-once uFBDD
+  is false: if a path skips coordinates from the Fourier support, the naive
+  prefix/suffix product can be nonzero while the full coefficient is zero.
+  The corrected candidate sum must include the support filter
+  `α ⊆ Pre(v) ∪ Post(v)`.  With this filter, a line-by-line audit
+  suggests a potentially useful extension to a *syntactically read-once,
+  unambiguous* nondeterministic program: the pre/post variable sets are
+  disjoint, the filtered products cover the unique accepting path, and
+  restrictions preserve unambiguity.  This is our inference, not a theorem in
+  the paper.  The filtered path-cut identity is now formalized in
+  `UnambiguousFBDDPathCut.lean`; the accepting-indicator/Fourier
+  factorization, restriction invariant, and size accounting remain to be
+  proved.  The inferred one-round error still
+  contains the explicit vertex factor `S*2^(-k/2)`.  Even if that extension is
+  correct, the stated
   seed depends
   quadratically on `log(nw/epsilon)`.  With the current coherent aggregate's
   transcript-size term it does not reach the small-`mu` easy-support scale,
   and the paper supplies no fixed-seed `N^mu` joint-coordinate DAG.
 - [Doron--Pyne--Tell--Williams, ECCC TR25-077, Theorem 4.14 and Definition 3.9](https://eccc.weizmann.ac.il/report/2025/077/)
   give a strongly explicit generator with seed `n^epsilon` and error `1/n^2`
-  for deterministic adaptive-order read-once branching programs of size `n`.
+  for deterministic adaptive-order read-once branching programs described as
+  having size `n`.  Definition 3.9 itself has `n+1` layers of width `w` and
+  defines the actual size as `(n+1)w`; hence the literal wording of Theorem
+  4.14 cannot be used as an exact size identity.  The usable quantitative
+  statement is Lemma 4.15 with the actual vertex count `S`.
   A coordinate is computable in `O(epsilon * log n)` workspace with read-only
   seed access and catalytic access to the output index.  If Theorem 4.14 is
   modified by fixing its final packed tail `v` to zero, Lemma 4.15 plus the
@@ -1210,11 +1280,14 @@ This alternative also remains prose only.
   not a theorem stated in the paper.  Here `S` is the actual AOBP vertex count,
   and replacing it by the input length `N` is invalid.  Even a fully formal
   zero-tail coordinate-DAG compiler would therefore cover deterministic AOBPs
-  only.  The canonical aggregate is presently only an unambiguous existential
-  union of read-once components, not yet one finite syntactic uFBDD or one
-  deterministic AOBP.  Moreover, the proved width of an individual guarded
-  component can already make `S` superpolynomial in `N`.  In that regime the
-  DPTW seed/locality cost does not fit `N^mu`.
+  only.  The canonical aggregate now has an exact finite alpha-indexed
+  unambiguous family and a finite ranked selector with exact size and forward
+  acceptance realization, but not yet proved converse semantics or membership
+  in the syntactic uFBDD class, nor a deterministic AOBP.  Its honest
+  disjoint-union cost is a sum over all useful
+  alphas, not the width of one component.  That sum, and even an individual
+  guarded width, can be superpolynomial in `N`.  In that regime the DPTW
+  seed/locality cost does not fit `N^mu`.
   `DPTWZeroTailJointLocality.lean` now closes only the deterministic circuit
   plumbing for the proposed zero-tail modification: from supplied paper-basis
   coordinate primitives it proves exact recursion semantics, exact joint-DAG

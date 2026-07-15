@@ -1,6 +1,6 @@
 # One-tape small-threshold status
 
-Status: **THE FINITE ONE-TAPE VALIDATOR, EACH TOTAL FIXED-CERTIFICATE REJECTING-GUARD COMPONENT, THE FINITE ALPHA FAMILY, AND ONE EXACT SYNTACTICALLY READ-ONCE UNAMBIGUOUS FBDD WITH COMPLETE QUERY TRACES, A FILTERED FOURIER CUT FACTORIZATION, EXACT NO-BLOWUP CLOSURE UNDER PARTIAL ASSIGNMENTS, THE EXACT FINITE HOMOGENEOUS RESTRICTION SQUARE-MOMENT CORE, ITS STANDARD CYLINDER-LAW BOUNDED-INDEPENDENCE INSTANTIATION, THE PREFIX PARSEVAL/BESSEL ENERGY STEP, EXACT MASKED PRODUCT FACTORIZATION, THE EXACT BOUNDED SUFFIX COORDINATE-LAPLACIAN, THE EXACT HIGH-DEGREE VERTEX REGROUPING, THE SQUARED PER-VERTEX PREFIX-TIMES-SUFFIX RESTRICTION BOUND, ITS EVEN-DEGREE `p^m` UNSQUARING, THE HONEST CARDINALITY-WEIGHTED VERTEX SUM, AND THE PROGRAM-LEVEL SIGNED ONE-ROUND HIGH-DEGREE BOUND ARE FORMALIZED. ITS SIZE IS STILL THE EXPLICIT DISJOINT SUM. LOW-DEGREE CANCELLATION, RESTRICTION-STABLE ITERATION AND THE FULL FOOLING THEOREM, A SMALL SHARED AGGREGATE, THE ONE-SIDED AVERAGE-CASE MCSP INTERSECTION, AND THE SMALL-THRESHOLD LOWER BOUND REMAIN OPEN**
+Status: **THE FINITE ONE-TAPE VALIDATOR, EACH TOTAL FIXED-CERTIFICATE REJECTING-GUARD COMPONENT, THE FINITE ALPHA FAMILY, AND ONE EXACT SYNTACTICALLY READ-ONCE UNAMBIGUOUS FBDD WITH COMPLETE QUERY TRACES, A FILTERED FOURIER CUT FACTORIZATION, EXACT NO-BLOWUP CLOSURE UNDER PARTIAL ASSIGNMENTS, THE EXACT FINITE HOMOGENEOUS RESTRICTION SQUARE-MOMENT CORE, ITS STANDARD CYLINDER-LAW BOUNDED-INDEPENDENCE INSTANTIATION, THE PREFIX PARSEVAL/BESSEL ENERGY STEP, EXACT MASKED PRODUCT FACTORIZATION, THE EXACT BOUNDED SUFFIX COORDINATE-LAPLACIAN, THE EXACT HIGH-DEGREE VERTEX REGROUPING, THE SQUARED PER-VERTEX PREFIX-TIMES-SUFFIX RESTRICTION BOUND, ITS EVEN-DEGREE `p^m` UNSQUARING, THE HONEST CARDINALITY-WEIGHTED VERTEX SUM, EXACT LOW-DEGREE CANCELLATION, THE FULL PROGRAM-LEVEL ONE-ROUND FOOLING BOUND, AFFINE RESTRICTION-STABLE ROUND CLOSURE, AND THE SCALAR TELESCOPING BOUND ARE FORMALIZED. ITS SIZE IS STILL THE EXPLICIT DISJOINT SUM. THE CONCRETE NESTED-AVERAGE MULTI-ROUND HYBRID, A SMALL SHARED AGGREGATE, THE ONE-SIDED AVERAGE-CASE MCSP INTERSECTION, AND THE SMALL-THRESHOLD LOWER BOUND REMAIN OPEN**
 
 Primary sources:
 
@@ -10,6 +10,7 @@ Primary sources:
 - Santhanam, [*Pseudorandomness and the Minimum Circuit Size Problem*](https://eccc.weizmann.ac.il/report/2019/155/), ECCC TR19-155, Proposition 3 and Corollary 1, for the same easy-supported hitting-set/average-case MCSP pattern with their asymptotic quantifiers and parameter slack.
 - Hirahara, [*Non-Disjoint Promise Problems from Meta-Computational View of Pseudorandom Generator Constructions*](https://theoryofcomputing.org/articles/v019a004/), Theory of Computing 2023, for characterizations connecting HSGs to meta-computational circuit lower-bound problems.
 - Doron, Pyne, Tell, Williams, [*When Connectivity Is Hard, Random Walks Are Easy With Non-Determinism*](https://eccc.weizmann.ac.il/report/2025/077/), ECCC TR25-077, especially Definition 3.9 and Theorem 4.14 for adaptive-order read-once branching programs and the Forbes--Kelley generator.
+- Chen, Cohen, Doron, Khaskelberg, Ta-Shma, [*Improved Error Reduction for Weighted PRGs*](https://eccc.weizmann.ac.il/report/2026/064/), ECCC TR26-064 revision 3, for the current weighted-PRG frontier for standard read-once branching programs.  Its model does not include the unambiguous adaptive uFBDD used here.
 - Bogdanov, Papakonstantinou, Wan, [*Pseudorandomness for Linear Length Branching Programs and Stack Machines*](https://andrejb.net/pubs/branching.pdf), RANDOM 2012, for a linear-stretch PRG for non-oblivious branching programs and its unique-witness extension.
 - Savicky, Zak, [*A Large Lower Bound for 1-Branching Programs*](https://eccc.weizmann.ac.il/report/1996/036/revision/1/), ECCC TR96-036 revision 1, published as *A Read-Once Lower Bound and a (1,+k)-Hierarchy for Branching Programs*, for the weighted-sum read-once lower bound.
 
@@ -866,9 +867,8 @@ must use.
   count, the whole query trace, syntactic read-once, unambiguity, and complete
   accepting query traces are preserved.  Consequently the exact high-degree
   Laplacian regrouping applies after every partial assignment, including for
-  the mandatory canonical uFBDD.  The remaining iterative work is
-  quantitative: cancellation on the current free-coordinate cube and the
-  telescoping composition of multiple source/mask rounds.
+  the mandatory canonical uFBDD.  The later affine-round module adds the
+  live-coordinate XOR polarity needed by an actual recursive generator.
 - `UnambiguousFBDDPathCut.lean` proves the corrected CLTW combinatorial cut,
   rather than importing Claim 15 outside its exactly-once model.  It filters a
   walk's query events by `alpha`, splits the dependent walk at the unique
@@ -909,7 +909,7 @@ must use.
   Claim-18 calculation.  Parseval/Bessel, prefix-slice locality, and the
   suffix coordinate-Laplacian, high-degree vertex regrouping, and the
   program-level signed high-tail estimate are supplied by later modules
-  below; low-degree cancellation and the full fooling theorem remain open.
+  below; the final single-round module also closes low-degree cancellation.
 - `FiniteBooleanBoundedIndependence.lean` gives standard finite cylinder-law
   definitions rather than renaming those moment hypotheses.  Exact pattern
   probabilities on every set of at most `2k` unbiased coordinates imply the
@@ -971,10 +971,46 @@ must use.
   displayed sum of `vertexRestrictionContribution`.  At cutoff `2m`, its
   outer average absolute value is at most `card(Vertex) * p^m` under the
   explicit degree-`2m` source moments.  This is the signed average of the
-  high-degree tail, not an average of its pointwise absolute value.  It does
-  not yet cancel low degrees or carry out the quantitative telescoping over
-  successive restrictions; the padded representation above preserves the
-  structural premises needed for that next step.
+  high-degree tail, not an average of its pointwise absolute value.  The next
+  module cancels low degrees; quantitative telescoping over successive rounds
+  remains separate.
+- `UnambiguousFBDDOneRoundFoolingBound.lean` completes the full single-round
+  estimate.  Exact Fourier inversion splits an arbitrary rational cube
+  function into its constant coefficient, nonempty degrees at most `2m`, and
+  the strict high tail.  A `4m`-wise pattern-unbiased base source cancels all
+  low degrees after the *outer* base/mask average and also supplies the
+  high-tail orthogonality; a `2m`-wise false-biased mask source supplies the
+  survival moment.  For a complete syntactically read-once unambiguous FBDD,
+  it proves
+
+  ```text
+  |E_{D,T} E_U A(D xor (T and U)) - E_U A(U)|
+    <= card(Vertex) * p^m.
+  ```
+
+  The absolute value is correctly outside every average.  Moving it inside
+  the `D,T` average is false because low-degree cancellation is signed.  The
+  mandatory canonical specialization discharges all structural premises, but
+  no multi-round recursion or seed construction is claimed.
+- `UnambiguousFBDDAffineRestrictionIteration.lean` closes the structural
+  round-iteration gap.  On a frozen coordinate it retains the selected query
+  successor twice; on a live coordinate with base bit true it swaps the false
+  and true successors.  The transformed diagram computes exactly
+  `u |-> B(maskedInput base mask u)` while preserving every query event,
+  vertex count, syntactic read-once, unambiguity, and complete accepting
+  traces.  A list API proves exact recursive masked composition and shows that
+  the full one-round bound applies after every fixed affine prefix with the
+  original vertex factor.  Its model-independent telescoping lemmas derive
+  exactly
+
+  ```text
+  L * S * p^m + N * (1-p)^L
+  ```
+
+  from adjacent hybrid bounds and a terminal zero-tail cost.  The remaining
+  formal bookkeeping is to define the concrete nested finite-average hybrid
+  `value r`, derive each adjacent step by conditioning on its fixed prefix,
+  and connect the final value to the existing DPTW zero-tail survivor bound.
 - **Audited global-energy boundary (not yet kernel-formalized).**  A tempting
   attempt to remove the vertex factor is invalid even for deterministic
   ordered read-once branching programs.  A depth-`d` prefix decision tree
@@ -1430,7 +1466,9 @@ This alternative also remains prose only.
   `UnambiguousFBDDIndicatorLocality.lean`, `FiniteBooleanFourier.lean`, and
   `UnambiguousFBDDFourierFactorization.lean`; exact restriction semantics and
   preservation of read-once/unambiguity are formalized in
-  `FiniteUnambiguousFBDDRestriction.lean`.  The exact finite degree-`k` Gram
+  `FiniteUnambiguousFBDDRestriction.lean`, while
+  `UnambiguousFBDDPaddedRestriction.lean` also preserves every query event and
+  the complete accepting trace.  The exact finite degree-`k` Gram
   and square-moment calculation is now formalized in
   `FiniteBooleanRestrictionMoment.lean`.  Exact rational Parseval/Bessel and
   the resulting prefix-indicator degree-energy bound are formalized in
@@ -1446,14 +1484,21 @@ This alternative also remains prose only.
   through the generic product theorem to retain the squared `p^k` bound.  The
   `UnambiguousFBDDVertexSumRestrictionBound.lean` now converts the squared
   statement at even degree `k = 2m` to the `p^m` scale and sums all actual
-  vertices with the honest cardinality factor.  The full quantitative
-  one-round estimate still requires the static-filtered high-degree support
-  sum to be regrouped and identified with that concrete vertex sum.
-  The inferred
-  one-round error still contains the explicit vertex factor
-  `S*2^(-k/2)`.  Even if that extension is
-  correct, the stated
-  seed depends
+  vertices with the honest cardinality factor.
+  `UnambiguousFBDDHighDegreeRegrouping.lean` proves the exact static-filtered
+  high-tail identity, `UnambiguousFBDDOneRoundHighDegreeBound.lean` derives
+  the program-level signed high-tail estimate, and
+  `UnambiguousFBDDOneRoundFoolingBound.lean` cancels every nonempty low degree
+  under the standard cylinder laws.  The resulting fully formal one-round
+  error contains the explicit vertex factor `S*p^m`; at `p = 1/2` this is
+  `S*2^(-m)`, equivalently the paper scale `S*2^(-k/2)` at cutoff `k=2m`.
+  Affine round composition, the one-round theorem after every fixed affine
+  prefix, and the scalar telescoping inequality are now formalized in
+  `UnambiguousFBDDAffineRestrictionIteration.lean`.  The remaining bookkeeping
+  is to construct the concrete nested finite-average hybrids, derive their
+  adjacent-step bounds by averaging the fixed-prefix theorem, and connect the
+  terminal hybrid to the existing zero-tail survivor theorem.
+  The stated CLTW seed depends
   quadratically on `log(nw/epsilon)`.  With the current coherent aggregate's
   transcript-size term it does not reach the small-`mu` easy-support scale,
   and the paper supplies no fixed-seed `N^mu` joint-coordinate DAG.
@@ -1506,15 +1551,14 @@ This alternative also remains prose only.
   explicit factor, so both conditioning on fixed `v` and averaging back over
   `v` are now internal to the formal statement.  Thus the paper's `(1-p)^L`
   term follows immediately once the supplied primitive has exact marginal
-  `rho = 1-p`.  The development does not yet construct the DPTW finite-field
-  primitives or instantiate the abstract moment theorem with the
-  program-level homogeneous coefficient bounds and vertex sum required by
-  Lemma 4.15.  Consequently coordinate composition, the finite
-  product-average cost of deleting `v`, structural restriction closure, and
-  the abstract square-moment core are no longer hidden steps, while an
-  aggregate-class theorem (either a deterministic AOBP compilation or the
-  full quantitative extension to this unambiguous FBDD) and the honest
-  size-dependent fooling analysis remain blockers.
+  `rho = 1-p`.  The development still does not construct the DPTW finite-field
+  primitives.  The program-level one-round theorem for the canonical
+  unambiguous FBDD, its affine fixed-prefix closure, and the scalar
+  telescoping estimate are now internal.  The remaining quantitative
+  bookkeeping is the concrete nested-average hybrid and its terminal
+  zero-tail connection.  The structural blocker is still the selector's
+  honest size/easy-support cost, which must be compressed using special
+  canonical geometry rather than generic unambiguity.
 - Generic unambiguity does not supply that compilation.  [Amarilli--Capelli--
   Monet--Senellart, Theory of Computing Systems 2019, Proposition 3.1](https://pierre.senellart.com/publications/amarilli2019connecting.pdf)
   gives an exponential separation between unambiguous FBDDs and deterministic

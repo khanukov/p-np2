@@ -482,6 +482,8 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.OneTapeMagnification.UnambiguousFBDDPerVertexRestrictionBound,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.UnambiguousFBDDVertexSumRestrictionBound,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.UnambiguousFBDDOneRoundHighDegreeBound,
+    Glob.one `Pnp4.Frontier.OneTapeMagnification.UnambiguousFBDDOneRoundFoolingBound,
+    Glob.one `Pnp4.Frontier.OneTapeMagnification.UnambiguousFBDDAffineRestrictionIteration,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.RejectingGuardedCanonicalAggregateEndpoint,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteRejectingGuardedCanonicalFamily,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteLayeredFamilySelector,

@@ -564,14 +564,44 @@ opposite-literal factorization, in either orientation, for arbitrary
 rational-valued functions supported on the compatibility fibers of one fixed
 ordered pair of distinct accepting walks.
 
-This still is not a uniform separation of two reverse-LCP sibling cones.  The
-coordinate and orientation may change with the walk pair and need not label
-either incoming sibling step.  Refining cones into walk-pair rectangles can
-produce unboundedly many cells, while grouping cells by their least witness
-is generally nonrectangular.  Thus summing the local literal bounds can lose
-the cell count; a size-free Carleson/Cotlar/Bessel packing theorem and the
-off-coordinate cutoff boundary remain open.  This is restricted one-tape
-lower-bound work, not a reduction of the pnp4 P-vs-NP mainline obligations.
+`FiniteUnambiguousFBDDCanonicalWalkCellDecomposition.lean` now performs that
+refinement exactly.  Every canonical residual suffix cone is the finite sum
+of its realized canonical-walk cells, every cell is supported on its fixed
+walk's compatibility fiber, and the product of two cones is the exact double
+sum of the corresponding walk-pair rectangles.  Distinct-walk rectangles
+therefore inherit the opposite-literal factorization above.
+
+`FiniteUnambiguousFBDDSameWalkSiblingLiteralFactorization.lean` closes the
+equal-walk case for two distinct immediate sibling steps.  Equal-length
+suffixes on one bare walk align at the same source and target.  Choice and
+sink steps cannot differ, so two realized distinct siblings must be the two
+Boolean labels of one common query coordinate; coincident false/true
+successors are explicitly allowed.  Both nonempty same-walk sibling cells
+then factor exactly through opposite literals with coordinate-free factors.
+Thus same-label and silent merger cells are no longer a separate structural
+case after the walk-cell refinement.
+
+`FiniteUnambiguousFBDDCanonicalWalkCellEnergyPacking.lean` strengthens the
+cell semantics under unambiguity.  A cell is exactly the Boolean indicator of
+compatibility with its fixed walk together with the labelled-suffix test, and
+it depends only on that walk's queried variables.  Pointwise disjointness and
+Parseval give the cardinality-free identity
+
+```text
+sum_walk FourierEnergy(cell_walk) = FourierEnergy(cone).
+```
+
+This closes unary energy packing completely.  It does not control how often
+one cell is repeated in the ordered walk-pair incidence sum.
+
+This is still not a size-free separation of the two complete reverse-LCP
+sibling cones.  The coordinate and orientation may change with the walk-cell
+pair, and the double sum can contain unboundedly many rectangles.  Grouping
+cells by their least witness is generally nonrectangular.  Consequently a
+triangle-inequality summation of the local literal bounds can lose the cell
+count; a signed Carleson/Cotlar/Bessel packing theorem and the off-coordinate
+cutoff boundary remain open.  This is restricted one-tape lower-bound work,
+not a reduction of the pnp4 P-vs-NP mainline obligations.
 
 The current `4m+1` source does not satisfy the bottom-layer Claim-18 premise:
 degree `2m+1` would require `4m+2`-wise Gram orthogonality, and explicit
@@ -705,6 +735,48 @@ uniform upper bound.  The stronger suppression `p^K` comes from structured
 dual distance/rank.  This gives substantially more than the target `p^(2m)`
 rank scale for the bulk of a genuine opposite-query pair.
 
+`FiniteBooleanOppositeLiteralFixedWAggregation.lean` sums this estimate over
+all coordinate-free bulk toggle pairs for one fixed structured dual word
+`W`, assuming the separating coordinate is outside `W`.  Young's inequality
+costs one half, while exact toggle symmetry puts precisely one half of each
+literal part's Fourier energy on supports omitting the coordinate.  Hence the
+number of Fourier supports disappears and the complete fixed-`W` bulk obeys
+
+```text
+|Bulk_W|
+  <= (1-p) * p^(4m+1) / 4
+       * (FourierEnergy(false part) + FourierEnergy(true part)).
+```
+
+Parseval gives the identical average-square form.  This is the first
+size-free aggregation in the lower layer, but it is only for one `W` and one
+opposite-literal rectangle; it does not sum over dual words or walk cells.
+
+`FiniteBooleanOppositeLiteralDualAggregation.lean` then removes the outer
+dual-word cardinality exactly, without taking absolute values.  The rank
+weight derivative for inserting coordinate `i` is the structured-mask
+probability that the old union is frozen while `i` is live.  Fixed-difference
+reindexing therefore turns the sum over every nonempty structured dual word
+with `i ∉ W` into
+
+```text
+E_mask [1[i is live]
+          * structuredDualPairCorrelationAtMask(false part, true part)].
+```
+
+For a live `i`, all terms with `i ∈ W` vanish automatically, so this is the
+complete off-coordinate bulk and contains no dual-word count.  This exact
+semantic endpoint does not by itself retain the termwise `p^(4m+1)` gain: the
+remaining numerical task is a signed conditional operator bound for the one
+displayed mask correlation.
+
+The fixed-mask form is symmetric.  Polarization and the existing absolute
+self-correlation cap `4` give the unconditional size-free estimate `2` for
+two disjoint unit-bounded literal parts, and hence for the complete aggregated
+bulk.  This proves that dual-word multiplicity is genuinely gone, but the
+constant `2` has no `p`-decay and is far above the required
+`(1-p)*p^(2m)` scale.
+
 `FiniteBooleanOppositeLiteralCrossFormSkew.lean` proves whole-form skew
 symmetry in the complementary on-coordinate situation.  If `i ∈ W`, `a,b`
 are independent of `i`, and the cutoff and union-dependent weight are
@@ -730,21 +802,34 @@ For a nonempty structured dual word, the other endpoint has degree at least
 `(2m+1) × (>=2m+3)` selected interaction after toggling), not an unspecified
 high-tail remainder.
 
-These results are still not the full selector-pair lemma.  The exact remaining
+A natural PSD/Cauchy attempt does not close this boundary.  Because both
+selected supports contain the query coordinate, the degree-`2m+1` self-Gram
+block is diagonal: two such distinct supports differ on at most `4m`
+coordinates.  Its diagonal energy is at most `p^(2m+1)`.  The opposite
+`>=2m+3` tail block, however, still contains nonzero structured-dual aliases;
+its quadratic form is not bounded by the diagonal `p^(2m+3)` alone.  Cauchy
+uses that full quadratic form, so the tempting `p^(2m+2)` geometric-mean
+bound would silently assume the remaining tail-alias estimate.
+
+These results are still not the full selector-pair lemma.  The walk-cell
+decomposition and the same-walk alignment theorem remove the earlier
+incoming-merger/same-label structural gap.  The exact remaining analytic
 terms are now:
 
 1. off-coordinate `2m × (>=2m+2)` cutoff cells and their Fourier mass;
-2. reverse-LCP siblings which are incoming merger edges rather than the two
-   outgoing labels of one query;
-3. same-label and silent mergers; and
-4. size-free Carleson/Cotlar packing of the surviving sibling cells.
+2. a small signed conditional bound on the dual-word-free mask-correlation
+   endpoint, together with the complementary on-coordinate skew regime; and
+3. size-free Carleson/Cotlar/Bessel packing of walk-cell rectangles whose
+   separating coordinate and orientation vary with the pair.
 
-A forward-query/reconvergence (diamond) refinement of the current reverse-LCP
-partition is therefore the next structural theorem.  It must route each
-nonterminal sibling cross term either to the opposite-label bulk lemma above,
-to the explicit degree-cutoff boundary, or to a machine-specific
-same-label/silent merger budget.  Merely assuming that every reverse sibling
-is an opposite query branch would be false.
+The next required theorem is therefore a signed conditional/incidence bound
+that preserves the derivative cancellation when the exact mask expectation
+is summed across walk-cell rectangles.  Absolute rectangle summation is
+insufficient: width-two parity OBDDs already have exponentially many
+singleton accepting-walk fibers, and their coordinate-labelled conflict
+cover has growing local multiplicity even though the globally signed parity
+correlation cancels.  This is a no-go for that proof method, not a
+counterexample to the selector-pair statement.
 
 `FiniteStructuredDualRankThresholdBridge.lean` now applies Abel summation to
 the exact structured dual-alias form itself.  Writing `K = 4m+1` and `C(r)`
@@ -1067,8 +1152,18 @@ A(key)^2 - sum_child A(child)^2
 with no mixed terminal/child term.  Opposite-query bulk pairs additionally
 obey the `(1-p)*p^(4m+1)` toggle/rank bound.  On-coordinate fixed-dual
 self-pairs cancel exactly even across the cutoff; the surviving off-coordinate
-boundary is localized to `2m × (>=2m+2)`.  Those boundary cells and the
-same-label/silent merger terms can still have either sign.
+boundary is localized to `2m × (>=2m+2)`.  Exact canonical-walk-cell
+decomposition now routes every nonempty distinct-sibling rectangle to an
+opposite-literal factorization, including equal-bare-walk cells; there is no
+remaining same-label/silent structural case.  The cells also satisfy exact
+cardinality-free Parseval packing inside each cone, although that unary
+identity does not remove pair-incidence multiplicity.  For one off-coordinate
+dual word, the bulk toggle pairs sum with the size-free factor
+`(1-p)*p^(4m+1)/4` times the two literal energies.  Summing over all dual
+words is also exactly one live-coordinate fixed-mask cross-correlation, with
+no cardinality factor; proving that single conditional correlation small is
+the remaining numerical step.  The boundary cells and the outer walk-cell
+sum can still have either sign.
 Existing residual-fiber capacity controls counts of compatible accepting
 models, while each cone mass also contains the negative low-degree predictor
 contribution of incompatible models.  Taking absolute values loses the
@@ -1080,14 +1175,14 @@ size-free estimate
 S * prefixDegreeEnergySum(2m) <= 4*(1-p).
 ```
 
-The concrete lower-layer obligation is therefore narrower: route reverse
-merger siblings through forward query/reconvergence diamonds, control the
-explicit off-coordinate `2m × (>=2m+2)` boundary and same-label/silent mergers, and
-prove a rank-aware one-sided Carleson/frame packing inequality for the
-surviving signed reachable-prefix Fourier masses.  Crossing-sequence capacity
-and last-common-prefix geometry identify the cells, while the new local lemma
-controls only their genuine opposite-label bulk under the nonzero-seed rank
-filter.
+The concrete lower-layer obligation is therefore narrower: control the
+explicit off-coordinate `2m × (>=2m+2)` boundary, prove the required
+`p^(2m)`-scale conditional bound for the dual-word-free live-coordinate mask
+correlation, and establish a rank-aware one-sided Carleson/frame packing
+inequality for the signed canonical-walk rectangles.  Crossing-sequence
+capacity and last-common-prefix geometry identify the cells; the missing
+invariant must preserve their Fourier signs across the remaining walk-cell
+sum.
 
 Bounded reverse branching alone cannot repair this.  An exact finite audit at
 `n=3`, `m=tailBits=1` takes the full eight-coordinate dual word and two

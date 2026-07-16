@@ -173,6 +173,183 @@ the same one-round `p^m` and multi-round `L*p^m` estimates.  This formulation
 retains the coefficient magnitudes and all signed cancellation, so it is the
 honest insertion surface for a last-common-prefix/residual-splice argument.
 
+`FiniteResidualAcceptedModelCount.lean` now identifies that insertion surface
+with literal finite model counting.  For every fixed base and mask, an
+accepted input contributes exactly `2^(-|live|)` when it agrees with the base
+on every frozen coordinate, and zero otherwise.  Hence residual accepted mass
+is exactly
+
+```text
+compatible accepted models / 2^|live|,
+```
+
+and its square is the compatible ordered-pair count divided by
+`2^(2*|live|)`.  `MandatoryCanonicalSelectorResidualCount.lean` proves that
+the resulting model-count `L2` statement is equivalent, in both directions,
+to `ResidualMassL2Bound`; it also retains the exact low-degree-predictor cross
+term.  This is a rewrite of the open target, not a model-count concentration
+theorem.
+
+`FiniteUnambiguousFBDDResidualRectangle.lean` closes the purely combinatorial
+splice-capacity step inside the actual frozen cylinder.  At every vertex of a
+syntactically read-once finite uFBDD, normalized accepting suffix models and
+fixed-post compatible prefix models form an exact product rectangle.  The
+frozen version proves, for every candidate LCP fiber satisfying the explicit
+reachability and post-variable-agreement premises,
+
+```text
+fiber.card * frozenResidualSuffixCount <= residualAcceptedModelCount.
+```
+
+The right-hand side is the current seedwise residual count, not the global
+number of accepted inputs, and no unambiguity or probability premise is used.
+`FiniteUnambiguousFBDDFixedSuffixResidualRectangle.lean` also proves the
+path-specific variant for one actual accepting graph suffix walk.
+Its fiber premise needs agreement only on the variables queried by that walk,
+instead of the union of variables on every possible continuation.  This
+removes the global-`postVars` premise, but a fixed deterministic suffix walk
+usually leaves only one normalized compatible suffix model and therefore can
+erase the multiplicative residual-count gain.
+
+`MandatoryCanonicalSelectorResidualLCPGeometry.lean` closes the stronger
+Meel--de Colnet orientation mismatch.  Their reverse derivation-path prefix is
+a common accepting suffix in the forward `Walk` orientation.  For any
+syntactically read-once diagram, if one start-to-accept walk is complete, then
+the suffix after every cut queries exactly `postVars` at that cut.  Every
+formal accepting walk of the mandatory selector is complete, and this remains
+true after every affine padded prefix.  Equality of the newly defined
+input-labelled suffix traces then forces agreement on all `postVars`, even
+when a query's false and true children coincide.  Consequently a genuine
+edge-labelled LCP bucket feeds the strong global-post rectangle and retains
+the full `FrozenResidualSuffixModel` multiplicative factor.  The new theorem
+does not by itself manufacture that bucket: the bare `Walk` type still omits
+a query edge label in the equal-child case and does not retain parallel
+silent-choice indices.
+
+`MandatoryCanonicalSelectorReverseLCPBucket.lean` supplies the strongest
+edge trace representable by the current graph quotient.  Every step retains
+its source and target, and every query step also retains its input bit, so
+equal false/true children are distinguished.  It chooses a canonical
+compatible accepting path for each accepted model and computes the literal
+longest common suffix of every compatible ordered accepted-model pair.  The
+resulting keys have disjoint fibers, cover the entire compatible pair set,
+and satisfy the exact cardinal partition
+
+```text
+sum_key pairBucket(key).card = residualAcceptedModelPairCount.
+```
+
+For every fixed reference and key, a nonempty fiber is lifted from its list
+key back to one dependent suffix `Walk`; full labelled-trace injectivity
+identifies both the cut vertex and the suffix walk.  Empty fibers are handled
+trivially.  The global-post rectangle then gives the sharp capacity
+
+```text
+referenceFiber.card * frozenResidualSuffixCount
+  <= residualAcceptedModelCount.
+```
+
+The affine-prefixed mandatory-selector specialization discharges read-once
+and full-path completeness internally.  Thus maximal reverse-LCP selection,
+exact pair partition, value agreement, the dependent cut, and residual
+splice capacity are all formalized.  The partition is exact for the existing
+quotient graph, whose `HasChild` relation intentionally identifies duplicate
+occurrences of one silent-choice target.  The remaining obligation is
+analytic: control the **signed** high-tail contribution of these buckets
+without paying for every selector vertex or path position.
+
+`FiniteSignedResidualAcceptedModelPairKernel.lean` closes the accompanying
+algebraic mismatch.  The deviation of the normalized residual count from its
+low-degree predictor is exactly the sum, over accepted inputs, of atomic point
+deviations; its square is exactly the ordered double sum of their **signed**
+pair kernels.  Incompatible accepted points retain the negative predictor
+term rather than being deleted.  The mandatory-selector model-count target is
+therefore equivalent to the explicit budget on the average signed pair-kernel
+sum.  The maximal reverse-LCP module supplies the canonical exact partition
+and the rectangle capacity for its fixed-reference fibers.  This identity by
+itself does not yet align the complete signed kernel with those compatible
+counting buckets, because the `-mass*predictor`, `-predictor*mass`, and
+`predictor*predictor` pieces remain nonzero on incompatible points.
+
+`FiniteSignedReverseLCPTelescope.lean` closes that algebraic alignment without
+deleting those points.  For every finite trace family and arbitrary rational
+atomic weights, let `A(k)` be the total signed weight of traces having suffix
+`k`.  The exact charge of pairs whose longest common suffix is `k` is
+
+```text
+C(k) = A(k)^2 - sum_step A(step :: k)^2.
+```
+
+The realized longest-common-suffix cells partition **all** ordered pairs, so
+their signed charges, and equivalently these local square drops, sum exactly
+to the square of the total weight.  Specializing the weight to each accepted
+point's residual deviation includes compatible and incompatible accepted
+models alike.  The realized key set is structural and seed-independent, and
+the module proves the exact averaged identity plus
+
+```text
+ResidualModelCountL2Bound
+  iff sum_key E_seed[C_seed(key)] <= p^(2m).
+```
+
+This removes the path-position factor at the identity level.  It is not the
+numerical correlation bound: the remaining theorem is precisely the
+one-sided signed Carleson/potential estimate on the right-hand side.  Applying
+absolute values or charging every bucket by its rectangle capacity destroys
+the displayed inter-bucket cancellation and can reintroduce a linear path
+factor.  A successful estimate must combine the residual rectangle with the
+signed low-degree predictor rather than control only the compatible
+`mass*mass` term.
+
+`FiniteResidualLowHighProjection.lean` rules out a tempting shortcut at this
+last analytic layer.  If `A` is the residual accepted mass and `P` its
+conditional low-degree predictor, then the structured short seed does not in
+general satisfy `E[A*P] = E[P^2]`.  The exact correction is
+
+```text
+sum_{H high, L low}
+  fhat(H) * fhat(L)
+  * 1[H symmetric-difference L is in the structured dual]
+  * Pr[H union L is frozen].
+```
+
+Bounded independence kills only the supported symmetric differences within
+its degree budget; high/low dual aliases outside that budget survive.  The
+module gives the Boolean witness `(1 + chi_Q)/2` for every high structured
+dual word `Q`.  A premise-free concrete specialization at
+`n=2, m=0, tailBits=2` has cross exactly `1/16`.  The module also proves
+orthogonality under full pattern-unbiasedness or an explicit no-alias premise,
+and records the corrected identity
+
+```text
+E[(A-P)^2] = E[A^2] - E[P^2] - 2*Cross.
+```
+
+It also proves the coefficient-sensitive quotient estimate
+`Q <= 2^d * p^3 / 4` for a nonnegative symmetric kernel on at most `2^d`
+active quotient indices with Boolean Parseval energy at most `1/4`.  The
+exact arithmetic corollary closes the whole range `d <= tailBits + 2`, where
+this is at most `p^2` for `p = 2^-tailBits`.  This does not assert that the
+actual selector kernel has such a low-dimensional nonnegative quotient.
+Neither that abstract safe class nor raw rectangle capacity proves the
+general selector target: even the constant function has `A^2 = 1`.  Any
+successful LCP argument must therefore preserve the signed predictor
+cancellation while summing the maximal buckets.
+
+`scripts/check_selector_residual_small.js` provides reproducible exact
+finite evidence for the remaining analytic target.  Using integer/`BigInt`
+arithmetic, it exhausts all degree-`<5` structured mask seeds and high Fourier
+rows for `m = 1`, `n = 3,4`, including all three scalar orbits of the 35
+codimension-two subspaces over `GF(16)`.  The induced Boolean-energy bounds
+are strictly below `p^2` in every checked tail-bit case.  At `n = 5`,
+`tailBits = 1`, however, the positive row sum already equals
+`277699/256`; thus the nonnegative unweighted Schur certificate fails by a
+large margin at the first larger instance.  Exact base-code and dual-code
+indicator probes still satisfy the desired `1/4` bound.  This bounded
+computation finds no counterexample to `ResidualMassL2Bound`, but it is not a
+proof for general `n` and the two code-language probes are not an exhaustive
+search over Boolean selectors.
+
 The requested correlation lemma is proved unconditionally in the
 full-coordinate regime.  `DPTWStructuredFullFieldCorrelation.lean` factors
 the common far-pair mask weight, bounds the remaining signed base-code energy

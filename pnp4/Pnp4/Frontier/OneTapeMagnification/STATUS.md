@@ -542,6 +542,22 @@ distinct-sibling cross forms already exposed by
 missing terminal/sibling algebraic bridge, but does not bound the sibling
 sum.
 
+`FiniteUnambiguousFBDDOppositeQueryConflict.lean` proves the exact pairwise
+separation fact behind a possible diamond refinement.  In an unambiguous
+diagram, two distinct accepting walks with their own compatible inputs share
+some queried coordinate on which the input labels are opposite.  Read-once
+and full-read are not needed.  The module packages the complete finite set of
+such coordinates, its least deterministic witness, and the corresponding
+canonical input-labelled-trace statement.
+
+This is a witness for each ordered walk pair, not yet a decomposition of two
+reverse-LCP sibling cones.  The coordinate may depend on the pair and may be
+queried at different vertices; it need not label either incoming sibling
+step.  Therefore it supplies neither one coordinate uniform on the two cones
+nor a factorization of their aggregate indicators into opposite-literal
+parts.  A least-witness partition can still have coupled, nonrectangular
+cells, so the forward-diamond and size-free packing obligations remain open.
+
 The current `4m+1` source does not satisfy the bottom-layer Claim-18 premise:
 degree `2m+1` would require `4m+2`-wise Gram orthogonality, and explicit
 degree-one and degree-three dual pairs have Gram entry one.  Raising the

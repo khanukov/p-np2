@@ -540,6 +540,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.OneTapeMagnification.MandatoryCanonicalSelectorReverseLCPBucket,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteSignedReverseLCPTelescope,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteSignedReverseLCPTerminalBoundary,
+    Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteUnambiguousFBDDOppositeQueryConflict,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteSignedReverseLCPFourierKernel,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteBooleanDualAliasConvolutionTransfer,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteRankWeightAbelVariation,

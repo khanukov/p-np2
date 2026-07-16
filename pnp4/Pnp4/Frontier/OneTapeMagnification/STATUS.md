@@ -301,6 +301,41 @@ factor.  A successful estimate must combine the residual rectangle with the
 signed low-degree predictor rather than control only the compatible
 `mass*mass` term.
 
+`FiniteSignedReverseLCPFourierKernel.lean` now identifies the exact analytic
+object inside every realized reverse-LCP cone.  If a canonical accepting
+suffix starts at `v`, its cone indicator is pointwise
+
+```text
+compatiblePrefixIndicator(v) * fixedLabelledSuffixCylinder.
+```
+
+Unambiguity proves the reverse splice implication, syntactic read-once makes
+the two dependency sets disjoint, and completeness removes the Fourier
+support-filter premise.  The suffix cylinder has the explicit flat spectrum
+
+```text
+coefficient(S) = character(S, reference) / 2^|suffix query variables|.
+```
+
+Consequently every complete-cone coefficient is exactly a reachable-prefix
+coefficient times this signed flat suffix factor, and its magnitude is the
+prefix magnitude divided by `2^|suffix query variables|`.  Positivity of `b`
+discharges unambiguity for every affine-prefixed mandatory selector.  The
+same module proves that cone residual mass is its masked high Fourier tail,
+and that the average local LCP charge is the structured Fourier/code energy
+of the parent cone minus the sum of its child energies.
+
+This is a genuine product-kernel reduction, but not yet the desired numerical
+bound.  Structured energy is not additive across disjoint child cones:
+signed cross-inner-products survive exactly when their Fourier supports are
+dual aliases.  Rectangle capacity controls the number of compatible prefix
+models, while the remaining estimate must control the signs of the
+reachable-prefix coefficients against the fixed-cylinder character phases.
+Equivalently, the next theorem must be a one-sided Bessel/frame or Carleson
+inequality for the atoms `prefixReach_v * fixedPostPoint`, measured in the
+structured dual-rank kernel, with total budget `p^(2m)`.  A nodewise PSD or
+absolute Schur bound still loses the sibling cancellation.
+
 `FiniteResidualLowHighProjection.lean` rules out a tempting shortcut at this
 last analytic layer.  If `A` is the residual accepted mass and `P` its
 conditional low-degree predictor, then the structured short seed does not in

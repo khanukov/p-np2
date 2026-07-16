@@ -538,6 +538,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.OneTapeMagnification.MandatoryCanonicalSelectorResidualLCPGeometry,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.MandatoryCanonicalSelectorReverseLCPBucket,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteSignedReverseLCPTelescope,
+    Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteSignedReverseLCPFourierKernel,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.MandatoryCanonicalSelectorFullFieldCorrelation,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.SignedDAGLocalGeneratorTransfer,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.ReverseOneSidedFoolingSupportEquivalence,

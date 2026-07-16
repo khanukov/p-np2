@@ -336,6 +336,106 @@ inequality for the atoms `prefixReach_v * fixedPostPoint`, measured in the
 structured dual-rank kernel, with total budget `p^(2m)`.  A nodewise PSD or
 absolute Schur bound still loses the sibling cancellation.
 
+`FiniteVectorClaim18ReverseLCPEnergy.lean`,
+`FiniteSignedReverseLCPSiblingDualRank.lean`, and
+`DPTWStructuredIndependencePlusOneNoGo.lean` sharpen this last analytic
+frontier.  The signed-coordinate form of Claim 18 is now proved exactly:
+under degree-`k` Gram orthogonality and the exact degree-`k` mask law, the sum
+of all degree-`k` homogeneous reverse-LCP parent-minus-children moments is
+`p^k` times the root degree energy, with no factor for keys, children, or
+trace length.  This controls the pure `k × k` block, not its mixed products
+with other high degrees.  For the actual
+structured source, every sibling cross moment is exactly its bilinear
+dual-rank form.  It splits into a same-support diagonal and distinct dual
+aliases; every distinct alias pays at least `(4m+1)*tailBits` mask rank, and
+each realized cone entry has the explicit reachable-prefix coefficient times
+the fixed-suffix character phase and dyadic rank weight.  These are exact
+identities and termwise estimates, not an aggregate correlation bound.  The
+bilinear module also does not by itself decompose the complete local square
+drop: parent-terminal traces contribute additional boundary terms, and a
+separate bridge to distinct realized children is still required.
+
+The current `4m+1` source does not satisfy the bottom-layer Claim-18 premise:
+degree `2m+1` would require `4m+2`-wise Gram orthogonality, and explicit
+degree-one and degree-three dual pairs have Gram entry one.  Raising the
+degree bound to `4m+2` diagonalizes the complete homogeneous degree-`2m+1`
+block, but still does not diagonalize the full strict tail.  At `m=1` the
+strengthened `GF(8)` source has an eight-point dual word whose `4+4` split has
+Gram entry one, and an explicit Boolean cone carries a strictly positive
+off-diagonal term after every legal strengthened dyadic mask.  This rules out
+the full-tail orthogonality argument.  It is not a counterexample to the
+signed selector bound, and the witness is not claimed to be a mandatory
+selector cone.  The strengthened source is proved here only as a finite
+distribution with exact laws, not as a new circuit-budgeted
+`DPTWCoordinatePrimitive`.
+
+`FiniteBooleanDualAliasConvolutionTransfer.lean` and the selector-specific
+bridge in `FiniteSignedReverseLCPSiblingDualRank.lean` replace the proposed
+generic frame bound by a sharper exact transfer.  Two distinct one-step
+extensions `leftStep :: key` and `rightStep :: key` define pointwise disjoint
+canonical suffix cones.  Therefore their complete Fourier convolution at
+every symmetric-difference support `W` is zero.  Writing an alias pair
+uniquely as
+
+```text
+S = B union C,                 R = (W \ B) union C,
+B subset W,                   C subset W^c,
+```
+
+the actual mask factor depends only on the outside fibre:
+
+```text
+kappa_W(C) = 2^(-rank(W union C)).
+```
+
+For any base weight `kappa0`, the high/high selector-pair contribution now
+has the exact form
+
+```text
+H_W = -kappa0 * LowBoundary_W + WeightVariation_W.
+```
+
+Thus the constant-weight part is not estimated by a row sum: Boolean
+disjointness transfers it exactly to aliases with at least one degree at most
+`2m`.  When `|W| = 2(2m+1)` and `C` is empty, the high/high fibre is exactly
+the balanced `(2m+1)+(2m+1)` middle split.  The named
+`WeightedVariationUpperObligation` records the correct remaining direction:
+`Variation <= budget + kappa0*LowBoundary` implies `H_W <= budget`.
+
+What is still missing is a size-free proof of that upper obligation for
+`kappa_W(C)` after summing over actual nonzero structured dual words, distinct
+realized siblings, reverse-LCP keys, and the parent-terminal boundary terms.
+Equivalently, one must control the nonconstant rank-weight increments between
+outside fibres while preserving the fixed-cylinder phases.  Absolute row
+sums, PSD domination, and pure degree-`2m+1` Gram orthogonality all discard
+the cancellation used by the exact transfer and therefore do not establish
+the selector budget.
+
+`FiniteRankWeightAbelVariation.lean` makes this last variation problem a
+rank-threshold problem.  It proves that the actual prefix-constraint rank is
+monotone under support inclusion and, for any finite family with ranks between
+`r0` and `R`, proves the exact Abel identity
+
+```text
+V = -sum_{j in [r0,R)} 2^(-(j+1)) * Tail(j),
+Tail(j) = sum_{C : j < rank(W union C)} FibreContribution(C).
+```
+
+Consequently lower bounds `Tail(j) >= -M(j)` imply the sharp upper bound
+
+```text
+V <= sum_j 2^(-(j+1)) * M(j).
+```
+
+A uniform `M` costs exactly `(2^(-r0) - 2^(-R))*M`.  The concrete unresolved
+selector lemma is therefore a signed lower bound on these nested
+rank-threshold tail sums, aggregated with the low boundary and terminal
+terms.  Monotonicity of the dyadic weight is not enough to give the required
+sign, and the positive full rank-kernel representation does not survive the
+high/high Fourier projection.  Standard product-noise hypercontractivity and
+Markov martingale inequalities do not supply this off-diagonal union-rank
+tail bound.
+
 `FiniteResidualLowHighProjection.lean` rules out a tempting shortcut at this
 last analytic layer.  If `A` is the residual accepted mass and `P` its
 conditional low-degree predictor, then the structured short seed does not in

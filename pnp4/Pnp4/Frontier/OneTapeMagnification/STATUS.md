@@ -1192,6 +1192,310 @@ words is also exactly one live-coordinate fixed-mask cross-correlation, with
 no cardinality factor; proving that single conditional correlation small is
 the remaining numerical step.  The boundary cells and the coherent sum of
 distinct dual-word shifts can still have either sign.
+
+`FiniteBooleanStructuredDualFourierL1.lean` gives a complementary
+dual-word-free estimate before any walk-family summation.  An arbitrary
+finite set of ordered Fourier pairs with weights bounded by `kappa` has
+absolute cross form at most
+
+```text
+kappa * FourierL1(left) * FourierL1(right).
+```
+
+Applying the actual distinct structured-alias rank floor gives
+`kappa = 2^(-((4m+1)*tailBits))` for the complete sum over all structured
+dual words at once.  A fixed labelled walk cylinder has Fourier `L1` exactly
+one, so one cylinder pair pays at most this full-rank scale with no dual-word
+or Fourier-support count.  This is already stronger than the desired
+`p^(2m+2)` scale for one cell when `m >= 1`.  It is not a packing theorem for
+the whole walk family: a disjoint partition into subcubes can have large
+total Fourier `L1`, so applying the result cell by cell and taking absolute
+values would reintroduce the forbidden cell count.
+
+`FiniteUnambiguousFBDDCanonicalWalkCellFourierL1.lean` transfers this result
+to the actual realized canonical-walk cells.  It does not incorrectly
+identify every cell with a cylinder fixing the complete bare-walk trace:
+when a query node has the same false and true successor, its bare edge does
+not determine that label.  Instead, a nonempty cell is factored into a fixed
+prefix-walk compatibility cylinder and a fixed-labelled suffix cylinder.
+Fourier `L1` submultiplicativity, together with the unary edge-cylinder
+decomposition of fixed-walk compatibility, proves `FourierL1(cell) <= 1`.
+Consequently one actual realized canonical-cell pair has complete
+rank-weighted distinct-alias cross form at most
+`2^(-((4m+1)*tailBits))`, already summed over all structured dual words.
+
+Disjoint subcube geometry by itself cannot provide a cardinality-free
+absolute packing either.  For the exact `n=6, m=tailBits=1` set `A` reproduced by
+`scripts/check_selector_rank_threshold_counterexample.js`, let `f=1_A` and
+`g=1-f`.  Every selected Fourier support is nonempty, so
+`coefficient(g,S)=-coefficient(f,S)` throughout the high tail.  Bilinearity
+therefore gives the exact cross identity
+
+```text
+structuredCross(f,g) = -structuredCross(f,f),
+```
+
+and the script's rational lower bound is
+
+```text
+1352020029419001408470019735553 /
+5070602400912917605986812821504 > 0.2666.
+```
+
+Its absolute value exceeds `p^(2m+2)=1/16`, `p^(4m+1)=1/32`, and the final
+far budget `(1-p)*p^(2m)=1/8`.  The cross form itself is negative and hence
+is favorable for the required one-sided upper bound; this is not a
+counterexample to that one-sided target.  Partitioning `A` and its complement into singleton
+subcubes gives two disjoint cell families; every cross-cell pair has an
+opposite-literal coordinate, although that coordinate varies with the pair.
+An exponential unambiguous full-reading FBDD can realize these two families
+as immediate silent sibling cones.  This is not a fixed-alpha mandatory
+selector of a fixed near-linear one-tape machine.  It proves that an absolute
+outer theorem is unavailable and that a positive one-sided theorem must
+preserve the actual signs and use quantitative machine/fixed-alpha structure,
+not only cell disjointness, subcube `L1=1`, or pairwise opposite-query
+conflict.
+
+`FiniteStructuredDualSyndromeFiberBlocks.lean` exposes the exact reason a
+generic operator summation cannot fill that gap.  For a fixed mask, let
+
+```text
+B_s(f, sigma) = sum_{|S|>2m, S frozen, syndrome(S)=sigma} coefficient(f,S).
+```
+
+The complete structured fixed-mask correlation is exactly
+
+```text
+sum_sigma B_s(left,sigma) * B_s(right,sigma)
+  - maskedHighDiagonal(left,right).
+```
+
+Thus every nonempty syndrome fiber is a `J-I` block: the all-ones direction has
+eigenvalue `fiberSize-1`, while its orthogonal complement has eigenvalue
+`-1`.  Averaging this exact identity over the actual structured mask is also
+proved equal to the rank-weighted distinct-alias form.  At the mathematical
+level, the corresponding cross-mask Gram matrices are diagonal in the same
+syndrome label and count supports surviving both masks.  A
+shortened-dual-code construction on a large frozen set gives arbitrarily
+large all-ones blocks even after the query coordinate is required live.
+The cross-mask obstruction is not yet a Lean kernel theorem.  It shows that a
+size-free raw or live
+operator-norm/energy Carleson estimate is false.  This is not an absolute
+counterexample to the selector target--the normalized bad energy direction
+can have exponentially small total Fourier mass.  It changes the remaining
+positive target to a machine-specific projection estimate: the whole
+selector's signed sum of the actual fixed-alpha block-product coefficients
+must satisfy either the absolute syndrome-energy bound `E <= p^(2m)`, or,
+after subtracting the retained diagonal, the sharper one-sided bound
+`E-D <= (1-p)*p^(2m)`.
+
+`FiniteStructuredDualBlockProductSyndromeTransform.lean` now rewrites that
+projection for an arbitrary product of functions on pairwise-disjoint
+advertised block supports.  The fixed-mask high transform is the full masked
+conditional expectation minus its explicitly displayed degree-`<=2m`
+polynomial; the full conditional expectation factors block by block.  Exact
+Parseval on the structured coefficient seed then gives
+
+```text
+sum_sigma FiberSum(product,sigma)^2
+  = E_seed[(product_block LocalTransform(block,seed)
+      - LowDegreePolynomial(seed))^2].
+```
+
+There is no inequality or wrapper premise in this identity.  It converts the
+remaining selector question into a concrete fixed-alpha leakage bound for
+`product_block LocalTransform - LowDegreePolynomial`.  Product structure
+alone does not bound this square: a giant block makes the factorization
+vacuous, and the shortened-code all-ones direction can still resonate with a
+point mass.  The needed gain must therefore use quantitative restrictions on
+the block transforms actually generated by the fixed machine and schedule.
+
+`MandatoryCanonicalComponentSyndromeLeakageIdentity.lean` instantiates this
+formula on every installed mandatory fixed-alpha component.  Existing
+chaining and input-monotonicity theorems discharge locality and pairwise
+block-support disjointness; no new premise is introduced.  The module also
+proves the same identity after an arbitrary fixed affine prefix (hence every
+generated prefix), using the proved preservation of advertised locality.
+Thus the remaining
+leakage expression now contains the actual mandatory block projections and
+the actual prefixed component, rather than an abstract block-product model.
+
+`MandatoryCanonicalSelectorSyndromeLeakageIdentity.lean` completes the
+algebraic transfer from one fixed alpha to the whole installed selector.
+Linearity and unambiguity give the exact identities
+
+```text
+sum_sigma FiberSum(selector,sigma)^2
+  = E_seed[(sum_alpha product_block LocalTransform(alpha,block,seed)
+      - SelectorLowDegreePolynomial(seed))^2]
+```
+
+both before and after an arbitrary common affine prefix.  Moreover the full
+transform `sum_alpha product_block LocalTransform` is exactly a conditional
+mean of the Boolean selector and hence lies pointwise in `[0,1]`.  These facts
+remove the component-count loss from the exact representation, but `[0,1]`
+alone yields only a constant energy bound.  The still-missing numerical step
+has two useful formulations.  The absolute target forces the displayed
+centered transform to have energy at most `p^(2m)` and gives the residual-`L2`
+route.  The distinct, sharper one-sided target retains the diagonal and asks
+directly for far energy at the `(1-p)*p^(2m)` scale (with the explicit
+all-zero-seed correction in the original sharp conditional statement).
+Neither statement follows from the other without an additional relation
+between total and diagonal energy.  No leakage hypothesis has been hidden in
+the new identity.
+
+`MandatoryCanonicalSelectorAbsoluteSyndromeEnergy.lean` packages the viable
+absolute target without returning to an abstract residual function.  It
+proves that the mask-averaged syndrome energy is exactly the full
+base-seed/mask-seed second moment
+
+```text
+E = E_(baseSeed,maskSeed)[
+      (sum_alpha product_block LocalTransform(alpha,block)
+        - SelectorLowDegreePolynomial)^2].
+```
+
+For the actual affine-prefixed mandatory selector, the bound
+`E <= p^(2m)` is proved equivalent to the existing semantic
+`ResidualMassL2Bound` and to the displayed concrete block-product inequality.
+The generated-prefix finite-round form is likewise equivalent to the existing
+residual-mass source and yields the same one-round `p^m` error and
+`L*p^m` telescope.  This is an exact reformulation, not a proof of the
+numerical inequality; its advantage is that it both exposes every actual
+local transform and permits rare high-coherence seeds as long as their total
+absolute energy fits the budget.
+
+`MandatoryCanonicalSelectorSyndromeFrameBridge.lean` isolates a sufficient
+but strictly stronger relative certificate for the one-sided numerical step.
+Write
+
+```text
+E = E_mask sum_sigma FiberSum(selector,mask,sigma)^2,
+D = E_mask MaskedHighDiagonal(selector,mask),
+p = 2^(-tailBits).
+```
+
+The preceding exact block identity identifies `E` with the squared centered
+whole-selector transform, while the syndrome `J-I` identity gives
+`Far = E-D`.  The new module proves, for every bounded function,
+
+```text
+p*E <= D  and  D <= p^(2m+1)
+  ==> Far <= (1-p)*p^(2m).
+```
+
+It formalizes `p*E <= D` as `StructuredSyndromeFrameBound`, proves that the
+pointwise fiber inequality
+
+```text
+p * FiberSum(mask,sigma)^2
+  <= sum_(S in that fiber) MaskedCoefficient(S)^2
+```
+
+is sufficient, specializes the bridge to the actual affine-prefixed mandatory
+selector, and obtains the existing `DualFarBound`.  Generated-prefix and
+finite-round versions quantify only over prefixes produced by old generator
+seeds and imply the corresponding hybrid-facing dual-far interfaces.  This is
+a valid strong certificate for selectors satisfying effective all-ones
+syndrome coherence at most `1/p = 2^tailBits`; it is not the remaining general
+source condition.
+
+Indeed, `MandatoryCanonicalSelectorSyndromeFramePointMassObstruction.lean`
+proves that the relative frame bound is too strong already for a point mass.
+For `f = 1_{0^N}`, the module proves that the zero coefficient seed generates
+the all-false base and mask, that
+
+```text
+E >= 2^(-2r) * (card(high supports)/2^N)^2,
+D <= 2^(-N),                 r = (4m+1)*n,
+```
+
+and that `card(high supports) >= 2^(N-cutoff-1)`.  The resulting completely
+explicit kernel theorem is
+
+```text
+not StructuredSyndromeFrameBound
+  (n=7, m=1, tailBits=1, cutoff=2) (1_{0^128}).
+```
+
+A fixed linear-scan one-tape machine accepting only the all-zero input realizes
+the same point-mass family semantically, although that machine-to-selector
+specialization is not included in the new module.  Thus fixing the machine
+before taking large `n` does not make the relative premise a plausible general
+source.  This does **not** refute the desired absolute bound: the rare
+zero-seed contribution is far smaller than the allowed `p^(2m)` in the
+magnification regime.
+
+The GF(64) witness also violates the universal frame condition.  At `p=1/2`,
+its proved distinguishing lower bound and the diagonal upper bound give
+
+```text
+p*E-D >=
+  718194729304886707721668132865 /
+  10141204801825835211973625643008 > 0.0708.
+```
+
+This is a mathematical consequence of the existing exact audit, not a new
+Lean kernel computation.  Together, the two examples show that the viable
+general target must allow rare fibers with coherence much larger than `1/p`
+and instead control their absolute averaged contribution.  The existing
+`ResidualMassL2Bound`, equivalently the whole-selector target `E <= p^(2m)`,
+has the correct form; the exact one-sided alternative remains
+`E-D <= (1-p)*p^(2m)`.  Martingale and ordinary seed-hypercontractive
+shortcuts do not by themselves prove either target:
+nonzero structured-dual input characters collapse to constant or identical
+characters on the shared structured base seed, and disjoint input blocks are
+not independent seed blocks.  A positive proof must therefore use signed
+averaged transition/LCP packing which can absorb rare bad seeds, rather than
+input degree, a pointwise frame comparison, or block disjointness alone.
+
+`MandatoryCanonicalSelectorDefectiveSyndromeFrame.lean` makes this
+good/bad alternative exact.  For every pointwise-`1`-bounded function and
+fixed mask it proves the universal syndrome-energy cap `E_mask <= 4`; for a
+`[0,1]`-valued function it sharpens the cap to
+
+```text
+E_mask <= 2 * structuredConditionalMass(mask)
+          + 2 * uniformMass.
+```
+
+An abstract averaging lemma then charges masks satisfying `p*E_mask <=
+D_mask` to their diagonal and charges the remaining masks to either the
+constant cap or the mass-weighted envelope.  If the resulting diagonal plus
+bad-mask charge fits `p^(2m+1)`, the module proves the absolute target
+`E <= p^(2m)`.  Both certificates are specialized to the actual
+affine-prefixed mandatory selector and yield `ResidualMassL2Bound` and the
+one-round `p^m` error.  These are sufficient certificates, not a proof that
+one-tape semantics supplies their budget.  The density-only certificate does
+not show that bad masks are rare and therefore need not handle the point-mass
+obstruction.  The mass-weighted form identifies the more plausible next
+obligation: control the aggregate structured conditional acceptance mass of
+the bad masks, together with their uniform-mass density charge, from the fixed
+machine's signed transition/LCP geometry.
+
+There is also an exact finite no-go for replacing that projection statement
+by a universal bounded-residual boundary estimate.  At
+`n=12, m=1, tailBits=4`, fix `i` and a two-set `A` avoiding `i`, and sum the
+rank-weighted characters `chi_(A symmetricDifference W)` over structured
+dual words `W` avoiding `i`.  Conditioning the 5-wise mask on freezing
+`{i} union A`, a Chebyshev bound leaves probability greater than `59/60`
+that at least 130 off-`i` coordinates are frozen.  The corresponding
+shortened dual has dimension at least 70; a union bound over all `2^60`
+mask seeds shows that its annihilator exceptional set has uniform mass at
+most `1/1024`.  The resulting kernel has exact rational `L1` lower bound
+
+```text
+703290503 / 1484686098432 > 19 / 40960.
+```
+
+Taking its sign and converting both sides to Boolean coordinate-free
+residuals gives an opposite-literal boundary larger than
+`19/655360`, whereas `p^(2m+2)=1/65536`.  This derivation is not yet a Lean
+kernel theorem, and the sign residual is not shown to be a canonical cell or
+the run predicate of a fixed near-linear one-tape machine.  It therefore
+refutes only the universal bounded-residual/Carleson relaxation, not the
+machine-specific selector lemma.
+
 Existing residual-fiber capacity controls counts of compatible accepting
 models, while each cone mass also contains the negative low-degree predictor
 contribution of incompatible models.  Taking absolute values loses the
@@ -1203,14 +1507,18 @@ size-free estimate
 S * prefixDegreeEnergySum(2m) <= 4*(1-p).
 ```
 
-The concrete lower-layer obligation is therefore narrower: control the
-explicit off-coordinate `2m × (>=2m+2)` boundary, prove the required
-`p^(2m)`-scale conditional bound for the dual-word-free live-coordinate mask
-correlation, and establish a rank-aware one-sided Carleson/frame packing
-inequality for the coherent family of fixed-dual shift operators.
+The concrete lower-layer obligation is therefore narrower and more
+machine-specific than a generic operator-valued Carleson bound.  It is to
+prove a signed outer packing of the individually safe cylinder pairs, control
+the explicit off-coordinate `2m × (>=2m+2)` boundary without summing cell
+absolute values, and prove that the whole-selector signed sum of actual
+fixed-alpha block products has small all-ones syndrome-fiber projection at a
+live query coordinate.
 Crossing-sequence capacity and last-common-prefix geometry identify the
-cells; the missing invariant must preserve their Fourier signs across the
-remaining dual-word sum.
+cells; the missing invariant must connect those cells to block-product
+syndrome leakage while preserving their Fourier phases.  No existing
+Parseval, PSD, generic unambiguity, or raw operator-norm statement supplies
+that invariant.
 
 Bounded reverse branching alone cannot repair this.  An exact finite audit at
 `n=3`, `m=tailBits=1` takes the full eight-coordinate dual word and two
@@ -1223,6 +1531,20 @@ out deriving the needed one-sided estimate from disjointness, indegree two,
 or a local supermartingale sign.  The missing invariant must connect actual
 crossing transitions to the signs of reachable-prefix Fourier phases across
 all LCP cells.
+
+Nor does a fixed read-once query order automatically group all sibling pairs
+under a bounded set of common conflict coordinates.
+`FiniteFixedOrderSiblingConflictCoverObstruction.lean` proves that the pairs
+between the all-zero input and the `n` unit inputs require at least `n` groups
+if every group must advertise one coordinate on which all its pairs disagree.
+It also builds a width-four oblivious read-once layered program whose two
+distinct productive states merge through the same false-labelled final edge.
+This is a no-go for a generic size-free shared-coordinate grouping argument,
+not a counterexample to the mandatory selector lemma: no compiler-level trace
+theorem currently places those point inputs in the required mandatory
+reverse-LCP sibling cones.  A positive use of fixed order would need an extra
+machine invariant such as productive same-label backward injectivity, or a
+quantitative bounded conflict cover for every actual merge.
 
 The requested correlation lemma is proved unconditionally in the
 full-coordinate regime.  `DPTWStructuredFullFieldCorrelation.lean` factors

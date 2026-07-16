@@ -154,21 +154,56 @@ the theorem does not replace rank by support cardinality or assert a sign for
 the strict tails.
 
 Unambiguity makes this a disjoint pointwise sum, not a component-count upper
-bound.  These theorems settle the fixed-`alpha` rectangle and whole masked
-product steps, but they do **not** settle the required selector-pair bound.
-The exact ordered expansion leaves two different obligations.  For
-`alpha != beta`, the full unweighted alias sum cancels, but high/high
-truncation and nonconstant rank weights leave a low-boundary term and a signed
-weight-variation term.  For `alpha = beta`, the full alias convolution is not
-zero in general and needs its own weighted truncated diagonal estimate.  The
-prefix dependence and exact rank summation are now formalized; the remaining
-analytic obligation is a size-factor-free one-sided control of the aggregated
-low-boundary and strict-rank-tail terms together with the component diagonal.
-A triangle inequality or componentwise product-test estimate still loses the
-outer selector cardinality and therefore does not give that bound.  No theorem
-here establishes this aggregate estimate, a one-tape lower bound at the
-required threshold, or `P != NP`; without an explicit `PpolyDAG` bridge this
-checkpoint remains a restricted lower-bound side track.
+bound.  The subsequent global calculation removes the apparent second
+component-diagonal obligation altogether.
+`FiniteStructuredDualFixedDifferenceReindex.lean` constructs the explicit
+bijection
+
+```text
+(S,R) <-> (W = S symmetricDifference R, S)
+```
+
+between ordered distinct structured-dual aliases and nonempty fixed-`W`
+high/high convolutions.  `FiniteBooleanFixedDualRankAbel.lean` then applies
+idempotence of the whole Boolean selector, before taking any componentwise
+absolute values.  Finally,
+`FiniteStructuredDualCoefficientEndpoint.lean` proves the size-free endpoint
+identity
+
+```text
+sum_{nonempty structured-dual W} coefficient(f,W)
+  = E_structured[f] - E_uniform[f] <= 1                  (0 <= f <= 1).
+```
+
+Thus `MandatoryCanonicalSelectorGlobalRankAlias.lean` proves the exact global
+formula, with `r0 = (4m+1)*tailBits` and `R = (4m+1)*n`,
+
+```text
+Far
+  = 2^(-r0) * (E_structured[f] - E_uniform[f]) - Remainder,
+
+Remainder
+  = 2^(-r0) * GlobalLowBoundary
+    + sum_{r=r0}^{R-1} 2^(-(r+1)) * GlobalStrictRankTail(r).
+```
+
+This formula has no selector-cardinality factor and no separate
+`alpha = beta` term.  It also gives an exact selector-specific equivalent of
+`DualFarBound`.  Since the endpoint is at most one, the concrete sufficient
+remaining statement is the single one-sided lower bound
+
+```text
+2^(-r0) - (1-p)*p^(2m) <= Remainder,     p = 2^(-tailBits).
+```
+
+That remainder inequality is **not** proved.  Its low boundary and strict
+rank tails are signed, and the universal Boolean counterexamples recorded
+below rule out inferring the needed sign from Booleanity, unambiguity, or PSD
+alone.  A triangle inequality or componentwise product-test estimate still
+loses the outer selector cardinality.  No theorem here establishes the final
+partial-coordinate selector bound, a one-tape lower bound at the required
+threshold, or `P != NP`; without an explicit `PpolyDAG` bridge this checkpoint
+remains a restricted lower-bound side track.
 
 `FiniteBooleanBoundedIndependenceFarTail.lean` proves the exact high-tail
 second-moment split into a diagonal term and a signed far-pair residual.  For
@@ -614,6 +649,63 @@ reverse-LCP capacity lemmas do not connect transcript collisions to the signs
 of Fourier-coefficient products inside the actual-rank filter; replacing those
 products by absolute values restores the forbidden selector/transcript-size
 loss.
+
+`MandatoryCanonicalSelectorGlobalRankAliasDispersion.lean` retains more of
+the exact rank information than the uniform cumulative-four corollary.  If
+`delta` is the actual strict dispersion and `C(R)` is the actual terminal
+cumulative form, it proves
+
+```text
+Far <= 2^(-R) * C(R) + (2^(-r0) - 2^(-R)) * delta.
+```
+
+Consequently bounding this weighted expression by the `DualFarBound` budget
+is sufficient.  This criterion is weaker than replacing both `C(R)` and
+`delta` by four, and its equivalent lower bound on the new global Abel
+remainder is formalized as well.  It still does not bound `delta`; the theorem
+is sharper bookkeeping, not the missing machine-transition inequality.
+
+`MandatoryCanonicalSelectorGlobalRankAliasLCP.lean` closes the exact bridge
+from this Fourier/rank remainder to the already formalized reverse-LCP
+telescope.  If `LCP` denotes the sum over all canonical reverse-LCP keys of
+their seed-averaged signed exact charges and `Diagonal` is the actual
+structured diagonal mask energy, then
+
+```text
+LCP = Diagonal + Far,
+Remainder = 2^(-r0) * Endpoint + Diagonal - LCP.
+```
+
+In particular, the original selector-pair premise is exactly equivalent to
+the diagonal-aware machine statement
+
+```text
+DualFarBound
+  iff LCP <= Diagonal + (1-p)*p^(2m).
+```
+
+This is sharper than the existing residual-model `L2` budget because it keeps
+the actual diagonal instead of replacing it by its universal upper bound.
+The missing step is now completely explicit: crossing-sequence/residual-fiber
+geometry must prove this one-sided signed LCP inequality.  Current capacity
+bounds count compatible residual models but do not control the Fourier signs
+in the exact charge, so they do not imply it without a forbidden key/trace
+factor.
+
+The closest published pair-correlation mechanism found in the current
+literature audit is Bogdanov--Papakonstantinou--Wan (RANDOM 2012, Lemma 1): a
+linear map gives a small collision graph when every relevant coordinate set
+has nearly full row rank.  Applied globally here it is vacuous, because the
+entire DPTW coefficient seed has dimension only
+`(4m+1)*log N`; any linear-size coordinate set has linear rank deficiency and
+the collision-degree factor becomes exponential.  A viable machine-specific
+use would therefore have to prove, for every canonical LCP/first-divergence
+cell, either `O((4m+1)*log N)` relevant coordinates or a near-full **local**
+rank bound, and then sum the cells by an orthogonal square-function/Carleson
+argument rather than a triangle inequality.  No CHMY, CLTW/DPTW,
+Forbes--Kelley, product-test, or 2025--2026 weighted-ROBP theorem currently
+supplies that local-rank plus orthogonal-cell statement for the silent
+unambiguous selector.
 
 `FiniteResidualLowHighProjection.lean` rules out a tempting shortcut at this
 last analytic layer.  If `A` is the residual accepted mass and `P` its

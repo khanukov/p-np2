@@ -160,6 +160,40 @@ theorem dyadicVariation_eq_neg_sum_rankTails
       intro index _
       by_cases hlevel : level < rank index <;> simp [hlevel]
 
+/-- Selected dyadic weight variation is exactly a negative dyadic sum of the
+strict rank tails of the selected terms. -/
+theorem selectedWeightVariation_dyadicRank_eq_neg_sum_strictRankTails
+    {Index : Type*} [Fintype Index]
+    (selected : Index → Prop) [DecidablePred selected]
+    (rank : Index → Nat) (term : Index → Rat)
+    (baseRank upperRank : Nat)
+    (hlower : ∀ index, baseRank ≤ rank index)
+    (hupper : ∀ index, rank index ≤ upperRank) :
+    selectedWeightVariation selected
+        (fun index => dyadicRankWeight (rank index)) term
+        (dyadicRankWeight baseRank) =
+      -(∑ level ∈ Finset.Ico baseRank upperRank,
+          dyadicRankWeight (level + 1) *
+            strictRankTailSum rank
+              (fun index => if selected index then term index else 0)
+              level) := by
+  classical
+  have hselected :
+      selectedWeightVariation selected
+          (fun index => dyadicRankWeight (rank index)) term
+          (dyadicRankWeight baseRank) =
+        ∑ index : Index,
+          (dyadicRankWeight (rank index) - dyadicRankWeight baseRank) *
+            (if selected index then term index else 0) := by
+    unfold selectedWeightVariation
+    apply Finset.sum_congr rfl
+    intro index _hindex
+    by_cases hindex : selected index <;> simp [hindex]
+  rw [hselected]
+  exact dyadicVariation_eq_neg_sum_rankTails
+    rank (fun index => if selected index then term index else 0)
+      baseRank upperRank hlower hupper
+
 theorem dyadicRankWeight_nonneg (rank : Nat) :
     0 ≤ dyadicRankWeight rank := by
   unfold dyadicRankWeight

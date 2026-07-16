@@ -581,6 +581,8 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteBooleanFixedDualRankAbel,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteStructuredDualFixedDifferenceReindex,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteBooleanOppositeLiteralCorrelation,
+    Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteBooleanLiteralSupportFactorization,
+    Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteUnambiguousFBDDWalkPairLiteralFactorization,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteBooleanOppositeLiteralRankDerivative,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteBooleanOppositeLiteralCrossFormSkew,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteBooleanOppositeLiteralBoundaryLayer,

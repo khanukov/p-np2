@@ -542,21 +542,36 @@ distinct-sibling cross forms already exposed by
 missing terminal/sibling algebraic bridge, but does not bound the sibling
 sum.
 
-`FiniteUnambiguousFBDDOppositeQueryConflict.lean` proves the exact pairwise
-separation fact behind a possible diamond refinement.  In an unambiguous
-diagram, two distinct accepting walks with their own compatible inputs share
-some queried coordinate on which the input labels are opposite.  Read-once
-and full-read are not needed.  The module packages the complete finite set of
-such coordinates, its least deterministic witness, and the corresponding
-canonical input-labelled-trace statement.
+`FiniteUnambiguousFBDDOppositeQueryConflict.lean` first proves the exact
+input-pair separation fact behind a possible diamond refinement.  In an
+unambiguous diagram, two distinct accepting walks with their own compatible
+inputs share some queried coordinate on which the input labels are opposite.
+It then proves the stronger fixed-walk-pair statement.  A walk's compatibility
+fiber is rectangular under pointwise realizable choices, including repeated
+queries and degenerate query nodes with coincident successors.  Consequently,
+if the two fixed walks are distinct and both fibers are nonempty, one common
+queried coordinate is opposite for every pair of inputs in those two fibers.
+Equivalently, the left fiber fixes one Boolean literal and the right fiber
+fixes its negation.  Read-once, full-read, and distinct-successor assumptions
+are not needed.  Both conflict finsets and their least witnesses are exposed.
 
-This is a witness for each ordered walk pair, not yet a decomposition of two
-reverse-LCP sibling cones.  The coordinate may depend on the pair and may be
-queried at different vertices; it need not label either incoming sibling
-step.  Therefore it supplies neither one coordinate uniform on the two cones
-nor a factorization of their aggregate indicators into opposite-literal
-parts.  A least-witness partition can still have coupled, nonrectangular
-cells, so the forward-diamond and size-free packing obligations remain open.
+`FiniteBooleanLiteralSupportFactorization.lean` proves the generic exact
+algebraic step: a rational cube function supported on one literal slice is
+that literal times its coordinate-frozen factor, and the factor depends only
+on the remaining coordinates.  Combining the two results,
+`FiniteUnambiguousFBDDWalkPairLiteralFactorization.lean` gives an exact
+opposite-literal factorization, in either orientation, for arbitrary
+rational-valued functions supported on the compatibility fibers of one fixed
+ordered pair of distinct accepting walks.
+
+This still is not a uniform separation of two reverse-LCP sibling cones.  The
+coordinate and orientation may change with the walk pair and need not label
+either incoming sibling step.  Refining cones into walk-pair rectangles can
+produce unboundedly many cells, while grouping cells by their least witness
+is generally nonrectangular.  Thus summing the local literal bounds can lose
+the cell count; a size-free Carleson/Cotlar/Bessel packing theorem and the
+off-coordinate cutoff boundary remain open.  This is restricted one-tape
+lower-bound work, not a reduction of the pnp4 P-vs-NP mainline obligations.
 
 The current `4m+1` source does not satisfy the bottom-layer Claim-18 premise:
 degree `2m+1` would require `4m+2`-wise Gram orthogonality, and explicit

@@ -586,6 +586,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteUnambiguousFBDDCanonicalWalkCellDecomposition,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteUnambiguousFBDDSameWalkSiblingLiteralFactorization,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteUnambiguousFBDDCanonicalWalkCellEnergyPacking,
+    Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteUnambiguousFBDDCanonicalWalkCellFixedDualPacking,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteBooleanOppositeLiteralRankDerivative,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteBooleanOppositeLiteralFixedWAggregation,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteBooleanOppositeLiteralDualAggregation,

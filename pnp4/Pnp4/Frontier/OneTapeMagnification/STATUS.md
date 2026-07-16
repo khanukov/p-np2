@@ -594,14 +594,29 @@ sum_walk FourierEnergy(cell_walk) = FourierEnergy(cone).
 This closes unary energy packing completely.  It does not control how often
 one cell is repeated in the ordered walk-pair incidence sum.
 
+`FiniteUnambiguousFBDDCanonicalWalkCellFixedDualPacking.lean` closes that
+incidence loss for one fixed dual word `W`.  The fixed-`W` high/high form is a
+weighted Fourier shift `alpha -> alpha symmetric-difference W`, so its
+operator norm is bounded by the largest selected union weight.  Exact
+bilinearity regroups every `leftWalk × rightWalk` rectangle, including equal
+bare walks, into the single form of the two complete cones.  For a nonempty
+structured `W` this gives
+
+```text
+|sum_walk_pairs FixedW(cell_left, cell_right)|
+  <= p^(4m+1) / 2 * (Energy(leftCone) + Energy(rightCone)),
+```
+
+with no walk, cell, or pair count.
+
 This is still not a size-free separation of the two complete reverse-LCP
-sibling cones.  The coordinate and orientation may change with the walk-cell
-pair, and the double sum can contain unboundedly many rectangles.  Grouping
-cells by their least witness is generally nonrectangular.  Consequently a
-triangle-inequality summation of the local literal bounds can lose the cell
-count; a signed Carleson/Cotlar/Bessel packing theorem and the off-coordinate
-cutoff boundary remain open.  This is restricted one-tape lower-bound work,
-not a reduction of the pnp4 P-vs-NP mainline obligations.
+sibling cones after summing over all dual words.  The weighted shifts for
+different `W` are not mutually orthogonal and can add coherently, while the
+opposite-literal coordinate and orientation may change with the walk pair.
+Grouping cells by their least witness is generally nonrectangular.  A joint
+operator-valued Carleson bound and the off-coordinate cutoff boundary remain
+open.  This is restricted one-tape lower-bound work, not a reduction of the
+pnp4 P-vs-NP mainline obligations.
 
 The current `4m+1` source does not satisfy the bottom-layer Claim-18 premise:
 degree `2m+1` would require `4m+2`-wise Gram orthogonality, and explicit
@@ -811,6 +826,18 @@ its quadratic form is not bounded by the diagonal `p^(2m+3)` alone.  Cauchy
 uses that full quadratic form, so the tempting `p^(2m+2)` geometric-mean
 bound would silently assume the remaining tail-alias estimate.
 
+More explicitly, the degree-`2m` residual supports inject into structured
+base-seed syndromes.  Bessel and Parseval then give only
+
+```text
+|BoundaryOrientation|
+  <= (p^(m+1/2) + p^(2m+1)) / 4,
+```
+
+not `p^(2m+2)`.  Closing the boundary requires a within-syndrome
+Carleson/square-function estimate on the coherent deep-alias row, equivalently
+a small operator norm for the deep-tail self block.
+
 These results are still not the full selector-pair lemma.  The walk-cell
 decomposition and the same-walk alignment theorem remove the earlier
 incoming-merger/same-label structural gap.  The exact remaining analytic
@@ -819,17 +846,18 @@ terms are now:
 1. off-coordinate `2m × (>=2m+2)` cutoff cells and their Fourier mass;
 2. a small signed conditional bound on the dual-word-free mask-correlation
    endpoint, together with the complementary on-coordinate skew regime; and
-3. size-free Carleson/Cotlar/Bessel packing of walk-cell rectangles whose
-   separating coordinate and orientation vary with the pair.
+3. a joint operator-valued Carleson bound for the coherent sum of distinct
+   fixed-dual shifts; the individual walk-cell incidence at each `W` is
+   already size-free.
 
-The next required theorem is therefore a signed conditional/incidence bound
-that preserves the derivative cancellation when the exact mask expectation
-is summed across walk-cell rectangles.  Absolute rectangle summation is
-insufficient: width-two parity OBDDs already have exponentially many
-singleton accepting-walk fibers, and their coordinate-labelled conflict
-cover has growing local multiplicity even though the globally signed parity
-correlation cancels.  This is a no-go for that proof method, not a
-counterexample to the selector-pair statement.
+The next required theorem is therefore a signed conditional/operator bound
+that preserves the derivative cancellation across the coherent dual-word
+sum.  Absolute summation of the fixed-`W` bounds is insufficient: different
+shifts form all-ones blocks inside dual cosets.  Width-two parity OBDDs also
+show that a supportwise walk-cell hierarchy can have exponentially larger
+cross energy than unary cell energy even when the globally signed parity
+correlation cancels.  These are no-go results for those proof methods, not
+counterexamples to the selector-pair statement.
 
 `FiniteStructuredDualRankThresholdBridge.lean` now applies Abel summation to
 the exact structured dual-alias form itself.  Writing `K = 4m+1` and `C(r)`
@@ -1156,14 +1184,14 @@ boundary is localized to `2m × (>=2m+2)`.  Exact canonical-walk-cell
 decomposition now routes every nonempty distinct-sibling rectangle to an
 opposite-literal factorization, including equal-bare-walk cells; there is no
 remaining same-label/silent structural case.  The cells also satisfy exact
-cardinality-free Parseval packing inside each cone, although that unary
-identity does not remove pair-incidence multiplicity.  For one off-coordinate
-dual word, the bulk toggle pairs sum with the size-free factor
-`(1-p)*p^(4m+1)/4` times the two literal energies.  Summing over all dual
+cardinality-free Parseval packing inside each cone.  Exact bilinear regrouping
+then removes all walk-pair incidence multiplicity for each fixed dual word.
+For one off-coordinate dual word, the bulk toggle pairs sum with the
+size-free factor `(1-p)*p^(4m+1)/4` times the two literal energies.  Summing over all dual
 words is also exactly one live-coordinate fixed-mask cross-correlation, with
 no cardinality factor; proving that single conditional correlation small is
-the remaining numerical step.  The boundary cells and the outer walk-cell
-sum can still have either sign.
+the remaining numerical step.  The boundary cells and the coherent sum of
+distinct dual-word shifts can still have either sign.
 Existing residual-fiber capacity controls counts of compatible accepting
 models, while each cone mass also contains the negative low-degree predictor
 contribution of incompatible models.  Taking absolute values loses the
@@ -1179,10 +1207,10 @@ The concrete lower-layer obligation is therefore narrower: control the
 explicit off-coordinate `2m × (>=2m+2)` boundary, prove the required
 `p^(2m)`-scale conditional bound for the dual-word-free live-coordinate mask
 correlation, and establish a rank-aware one-sided Carleson/frame packing
-inequality for the signed canonical-walk rectangles.  Crossing-sequence
-capacity and last-common-prefix geometry identify the cells; the missing
-invariant must preserve their Fourier signs across the remaining walk-cell
-sum.
+inequality for the coherent family of fixed-dual shift operators.
+Crossing-sequence capacity and last-common-prefix geometry identify the
+cells; the missing invariant must preserve their Fourier signs across the
+remaining dual-word sum.
 
 Bounded reverse branching alone cannot repair this.  An exact finite audit at
 `n=3`, `m=tailBits=1` takes the full eight-coordinate dual word and two

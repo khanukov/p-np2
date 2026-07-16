@@ -436,6 +436,56 @@ high/high Fourier projection.  Standard product-noise hypercontractivity and
 Markov martingale inequalities do not supply this off-diagonal union-rank
 tail bound.
 
+`FiniteStructuredDualRankThresholdBridge.lean` now applies Abel summation to
+the exact structured dual-alias form itself.  Writing `K = 4m+1` and `C(r)`
+for the signed sum over all ordered distinct high dual aliases whose actual
+union rank is at most `r`, it proves the kernel identity
+
+```text
+Far = 2^(-K*n) * C(K*n)
+    + sum_{r=K*tailBits}^{K*n-1} 2^(-(r+1)) * C(r).
+```
+
+The endpoint is no longer open: for every pointwise-`1`-bounded function the
+terminal sum satisfies `C(K*n) <= 4`, by an exact rewrite to the full-field
+all-false-mask correlation.  Consequently the full cumulative-four criterion
+is equivalent to its strict-intermediate part
+
+```text
+forall r, K*tailBits <= r < K*n -> C(r) <= 4.
+```
+
+The same module proves that this criterion implies the required
+`DualFarBound`, since `4*2^(-K*tailBits)` fits the exact far-pair budget.  This
+is a reduction to the remaining selector-pair lemma, not a proof of that
+lemma.
+
+`MandatoryCanonicalSelectorRankDispersion.lean` packages the remaining
+quantity for the actual machine rather than an arbitrary Boolean function.
+Its `selectorStructuredDualRankStrictDispersion` is the maximum of zero and
+all strict-intermediate signed partial sums after one concrete affine prefix.
+For positive `b`, the module rewrites the selector indicator, the finite value
+set, and this maximum through the actual `T`-step run of `cachedInputMachine`
+on the affinely restricted input.  It proves the exact equivalence
+
+```text
+selectorStructuredDualRankStrictDispersion <= 4
+  iff
+the actual prefixed selector satisfies every strict cumulative-four bound.
+```
+
+For that fixed prefix the left side unconditionally implies `DualFarBound`.
+The separately defined families requiring the same inequality for every
+generated prefix (or every depth below `L`) imply the generated-prefix version
+and complete finite-round hybrid estimate.  No bound `dispersion <= 4` is
+asserted.  The missing theorem is now a quantitative signed rank-filtered
+Carleson/martingale inequality for the transition predicate of a fixed
+small-state near-linear one-tape machine.  Existing crossing-sequence and
+reverse-LCP capacity lemmas do not connect transcript collisions to the signs
+of Fourier-coefficient products inside the actual-rank filter; replacing those
+products by absolute values restores the forbidden selector/transcript-size
+loss.
+
 `FiniteResidualLowHighProjection.lean` rules out a tempting shortcut at this
 last analytic layer.  If `A` is the residual accepted mass and `P` its
 conditional low-degree predictor, then the structured short seed does not in
@@ -481,9 +531,82 @@ are strictly below `p^2` in every checked tail-bit case.  At `n = 5`,
 `277699/256`; thus the nonnegative unweighted Schur certificate fails by a
 large margin at the first larger instance.  Exact base-code and dual-code
 indicator probes still satisfy the desired `1/4` bound.  This bounded
-computation finds no counterexample to `ResidualMassL2Bound`, but it is not a
-proof for general `n` and the two code-language probes are not an exhaustive
-search over Boolean selectors.
+computation finds no counterexample in those small instances and probe
+classes, but it is not a proof for general `n`.
+
+`scripts/check_selector_rank_threshold_counterexample.js` reproduces the
+finite code enumeration and exact rational arithmetic in a larger
+support-counting argument showing that the universal Boolean cumulative-four
+statement is false.  The identification with the Fourier/Abel bridge is a
+mathematical argument documented by the script, not a Lean-kernel theorem.  At
+`m = tailBits = 1`, `n = 6`, the structured base code is the 13-dimensional
+length-64 code
+
+```text
+C = { x |-> Tr(a*x + b*x^3) + c : a,b in GF(64), c in GF(2) }
+```
+
+with exact weight distribution
+`0^1, 24^336, 28^2688, 32^2142, 36^2688, 40^336, 64^1`.
+Let `A` be the union of `C + L_M` over the 5167 codewords `M` of weight at
+most 32, where `L_M` contains the vectors supported inside `M`.  Its indicator
+has structured-source versus uniform acceptance gap at least `0.625810623`,
+hence dual-far correlation greater than `0.2666389`, while the required budget
+is `1/8`.  The Abel identity and terminal bound force some strict intermediate
+level `r in {5,...,12}` to satisfy
+
+```text
+C(r) >= 8.561984958 > 4.
+```
+
+This refutes every proof based only on Booleanity, read-once structure,
+unambiguity, completeness, or arbitrary decision-tree semantics.  It does not
+refute the target for a fixed near-linear one-tape computation: this one
+length-64 predicate is not shown to be a reachable-prefix selector of any
+fixed small-state near-linear machine.  The construction also does not define
+or analyse a uniform all-length language family.
+
+A current literature audit gives one nearby positive result, but not the hard
+threshold needed above.  Put `d = K*n` for the full mask-seed dimension.  For
+a fixed set `Z0` of output coordinates on which the mask is zero, the
+dual-coset quadratic form is PSD; Boolean boundedness, dual distance greater
+than twice the cutoff, and Cauchy--Schwarz give a size-free high-tail bound of
+exactly `4`.  If `U` is a random `l`-dimensional subspace of the
+`d`-dimensional constraint (seed-dual) space and
+`Z0 = {i : constraintVector(i) in U}`, averaging the fixed-`Z0` bound gives
+the Grassmann-smoothed rank kernel
+
+```text
+phi_l(r) = GaussianBinomial(d-r, l-r; 2) /
+           GaussianBinomial(d, l; 2).
+```
+
+The hard cutoff `1[r <= l]` is not PSD: already the free rank-two matroid at
+`l = 1` has eigenvalue `1 - sqrt(2)`.  Moreover, exact Gaussian-binomial
+inversion represents `2^(-r)` by these smoothed kernels with total positive
+mass `1`, not `O(2^(-K*tailBits))`; thus the PSD cap alone loses all required
+decay.  Writing `r0 = K*tailBits` and `G_l` for the smoothed signed form in
+the `d`-dimensional seed space, the minimal surviving rank-only target is the
+signed hyperplane contraction
+
+```text
+G_(d-1) <= ((2^(d-r0)-1)/(2^d-1)) * G_d.
+```
+
+`FiniteStructuredDualHyperplaneContraction.lean` proves the pointwise mixture
+identity, the exact decomposition of the structured weighted form into
+`G_(d-1)` and `G_d`, and that the displayed contraction together with the
+unconditional `G_d <= 4` gives `Far <= 4*2^(-r0)`, `DualFarBound`, and its
+generated-prefix specialization.  The contraction is an explicit definition,
+not a proved estimate.  It is not a consequence of the individual PSD caps:
+an explicit signed subspace-weight witness satisfies every fixed-subspace
+bound in `[0,4]` while its dyadic weighted value is still `4`.  Thus any proof
+of the contraction must use which row spaces and coefficient signs are
+actually reachable by the machine.  Existing CLTW/DPTW homogeneous-layer
+estimates retain a selector-size factor and miss one order of independence at
+the first high degree.  The 2025--2026 weighted-PRG results remain in standard,
+permutation, or regular ROBP models and do not supply this adaptive-selector
+comparison.
 
 The requested correlation lemma is proved unconditionally in the
 full-coordinate regime.  `DPTWStructuredFullFieldCorrelation.lean` factors
@@ -510,22 +633,26 @@ small `mu`.
 
 The exact remaining mathematical problem is the partial-coordinate case,
 where the ranks vary across pairs and the common signed factor used above
-disappears.  A pure PSD/Loewner, uniform Perron-weight, or dual-code
-weight-enumerator argument cannot be size-free: one dual coset can contain
-exponentially many large supports with the same saturated constraint space,
-and the explicit point-mass clique already refutes the proposed uniform row
-budget.  Likewise, without a quantitative restriction on the machine, a
-universal selector statement is false by a support-counting distinguisher.
+disappears.  A pure PSD/Loewner, uniform Perron-weight, dual-code
+weight-enumerator, or universal hard-threshold argument cannot be size-free:
+one dual coset can contain exponentially many large supports with the same
+saturated constraint space, the explicit point-mass clique refutes the
+proposed uniform row budget, and the length-64 support-counting construction
+directly refutes the cumulative-four criterion for an arbitrary Boolean
+selector.
 
 The viable target must therefore exploit fixed small-machine/near-linear
 transition geometry while retaining coefficient mass or signed cancellation.
-Concretely, one must either bound the canonical energy-weighted positive-edge
-sum by `(1-p)*p^(2m)`, or directly prove that residual accepted mass has
-`L2` deviation at most `p^(2m)` from its low-degree predictor after every
-generated prefix.  A last-common-prefix grouping must additionally telescope
-its path-position charges (or gain at least `log N` extra rank per bucket),
-because a plain sum over all `N` query positions loses the required size-free
-scale.  The corrected Meel--de Colnet derivation-path analysis motivates the
+In the rank-threshold interface it is now exactly the strict-intermediate
+statement `C(r) <= 4` for the reachable-prefix spectrum of the actual
+mandatory selector, not for an arbitrary Boolean function.  Equivalent routes
+are to bound the canonical energy-weighted positive-edge sum by
+`(1-p)*p^(2m)`, or directly prove that residual accepted mass has `L2`
+deviation at most `p^(2m)` from its low-degree predictor after every generated
+prefix.  A last-common-prefix grouping must additionally telescope its
+path-position charges (or gain at least `log N` extra rank per bucket), because
+a plain sum over all `N` query positions loses the required size-free scale.
+The corrected Meel--de Colnet derivation-path analysis motivates the
 residual-model grouping, but does not supply the needed Walsh/rank correlation
 or cancellation theorem.
 

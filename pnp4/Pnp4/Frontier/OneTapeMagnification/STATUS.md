@@ -586,8 +586,8 @@ The hard cutoff `1[r <= l]` is not PSD: already the free rank-two matroid at
 inversion represents `2^(-r)` by these smoothed kernels with total positive
 mass `1`, not `O(2^(-K*tailBits))`; thus the PSD cap alone loses all required
 decay.  Writing `r0 = K*tailBits` and `G_l` for the smoothed signed form in
-the `d`-dimensional seed space, the minimal surviving rank-only target is the
-signed hyperplane contraction
+the `d`-dimensional seed space led to the following strong proportional
+hyperplane contraction:
 
 ```text
 G_(d-1) <= ((2^(d-r0)-1)/(2^d-1)) * G_d.
@@ -598,7 +598,8 @@ identity, the exact decomposition of the structured weighted form into
 `G_(d-1)` and `G_d`, and that the displayed contraction together with the
 unconditional `G_d <= 4` gives `Far <= 4*2^(-r0)`, `DualFarBound`, and its
 generated-prefix specialization.  The contraction is an explicit definition,
-not a proved estimate.  It is not a consequence of the individual PSD caps:
+not a proved estimate, and is stronger than the actual conditional-seed
+budget below.  It is not a consequence of the individual PSD caps:
 an explicit signed subspace-weight witness satisfies every fixed-subspace
 bound in `[0,4]` while its dyadic weighted value is still `4`.  Thus any proof
 of the contraction must use which row spaces and coefficient signs are
@@ -607,6 +608,112 @@ estimates retain a selector-size factor and miss one order of independence at
 the first high degree.  The 2025--2026 weighted-PRG results remain in standard,
 permutation, or regular ROBP models and do not supply this adaptive-selector
 comparison.
+
+`FiniteStructuredDualNonzeroSeedCorrelation.lean` now identifies the sharp
+small-seed selector-pair statement without adding another wrapper premise.
+Let
+
+```text
+K = 4m+1,  d = K*n,  a = 2^(-d),  p = 2^(-tailBits),
+H = conditional pair correlation over nonzero d-bit mask seeds,
+C = terminal unweighted signed dual-alias form,
+F = original rank-weighted dual-far form.
+```
+
+The coefficient-seed equivalence sends the all-zero bit seed to the zero
+polynomial, every support survives that seed, and conditioning on all other
+seeds gives exactly the hyperplane survival weight.  Commuting this finite
+conditional average through the dual-pair sum proves
+
+```text
+F = (1-a)*H + a*C.
+```
+
+Consequently the exact necessary-and-sufficient numerical target is
+
+```text
+H <= ((1-p)*p^(2m) - a*C) / (1-a).
+```
+
+This is proved both for the actual prefixed mandatory selector and, when
+`b > 0`, directly for the affine-prefixed cached machine-run predicate.  The
+generated-prefix version is also an exact `iff`.  Using only the proved
+terminal cap `C <= 4`, the terminal-independent sufficient target is
+
+```text
+H <= ((1-p)*p^(2m) - 4a) / (1-a).
+```
+
+The module does **not** prove this last numerical inequality.  What it does
+prove unconditionally is the size-free but nondecaying cap `H <= 4`: for each
+fixed mask, conditional expectation over the live coordinates preserves
+pointwise boundedness and turns the mask slice into the existing all-false
+structured far correlation.  Averaging the fixed-mask cap over nonzero seeds
+then gives the displayed universal bound.  Thus the remaining gap is now a
+specific gain from `4` down to approximately `(1-p)*p^(2m)`, not the much
+stronger proportional comparison with the possibly signed terminal form.
+
+The same module also proves the exact PSD-minus-diagonal normal form
+
+```text
+H = E_(nonzero mask seed) E_(structured base seed)
+      [(E_uniform highTail(masked input))^2]
+    - sum_(|S|>2m) coefficient(f,S)^2 * hyperplaneSurvivalWeight(d, rank(S)).
+```
+
+The first term is nonnegative, but subtracting its diagonal makes the
+off-diagonal kernel indefinite.  This identity pinpoints what a transition
+argument has to control; PSD or Parseval alone does not provide the required
+small upper bound.
+
+The exact length-64 Boolean witness in
+`scripts/check_selector_rank_threshold_counterexample.js`, whose dual-far
+value exceeds `0.2666 > 1/8`, violates this sharp conditional budget as well.
+Hence even the corrected target is not universal; it must use the fixed
+small-state, near-linear cached-run transition semantics.
+
+The quantifier order is essential.  A future asymptotic selector theorem must
+fix the finite machine before letting `n` grow (with its threshold allowed to
+depend on the machine), or explicitly bound the state cardinality together
+with the running time.  A separate machine chosen at each fixed input length
+can hardwire an arbitrary Boolean predicate in a prefix tree of states and in
+`T = 2^n` steps, including the length-64 witness above.
+
+The reverse-LCP telescope does not yet provide that gain.  Its exact local
+charge is a signed square drop
+
+```text
+A(key)^2 - sum_child A(child)^2,
+```
+
+and can have either sign.  Existing residual-fiber capacity controls counts
+of compatible accepting models, while `A` also contains the negative
+low-degree predictor contribution of incompatible models.  Taking absolute
+values loses the selector/transcript size; the global-energy route gives a
+factor `S * prefixDegreeEnergySum(2m)` (crudely `S^2`) and would need the
+unproved size-free estimate
+
+```text
+S * prefixDegreeEnergySum(2m) <= 4*(1-p).
+```
+
+The concrete lower-layer obligation is therefore a rank-aware one-sided
+Carleson/frame inequality for the signed reachable-prefix Fourier masses of
+the cached run.  Crossing-sequence capacity and last-common-prefix geometry
+currently identify its cells but do not control their signs under the
+nonzero-seed rank filter.
+
+Bounded reverse branching alone cannot repair this.  An exact finite audit at
+`n=3`, `m=tailBits=1` takes the full eight-coordinate dual word and two
+disjoint singleton cones.  The high/high signed count is
+`binom(8,3)-binom(8,4)+binom(8,5)=42`, so their hyperplane-weighted sibling
+cross term is positive even though the hyperplane weight is constant and the
+weight-variation term vanishes.  Other singleton pairs give the opposite
+sign.  This is not a counterexample to the global cached-run target; it rules
+out deriving the needed one-sided estimate from disjointness, indegree two,
+or a local supermartingale sign.  The missing invariant must connect actual
+crossing transitions to the signs of reachable-prefix Fourier phases across
+all LCP cells.
 
 The requested correlation lemma is proved unconditionally in the
 full-coordinate regime.  `DPTWStructuredFullFieldCorrelation.lean` factors
@@ -643,13 +750,13 @@ selector.
 
 The viable target must therefore exploit fixed small-machine/near-linear
 transition geometry while retaining coefficient mass or signed cancellation.
-In the rank-threshold interface it is now exactly the strict-intermediate
-statement `C(r) <= 4` for the reachable-prefix spectrum of the actual
-mandatory selector, not for an arbitrary Boolean function.  Equivalent routes
-are to bound the canonical energy-weighted positive-edge sum by
-`(1-p)*p^(2m)`, or directly prove that residual accepted mass has `L2`
-deviation at most `p^(2m)` from its low-degree predictor after every generated
-prefix.  A last-common-prefix grouping must additionally telescope its
+The exact current target is the nonzero-seed inequality with the actual
+terminal form displayed above, for the reachable affine-prefixed cached-run
+predicate.  The earlier strict-intermediate bounds `C(r) <= 4`, the canonical
+energy-weighted positive-edge estimate, and the residual accepted-mass `L2`
+bound are alternative sufficient routes, not equivalent universal facts.
+The length-64 Boolean witness rules out obtaining them from Booleanity or PSD
+alone.  A last-common-prefix grouping must additionally telescope its
 path-position charges (or gain at least `log N` extra rank per bucket), because
 a plain sum over all `N` query positions loses the required size-free scale.
 The corrected Meel--de Colnet derivation-path analysis motivates the

@@ -545,6 +545,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteStructuredDualRankThresholdBridge,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteStructuredDualHyperplaneContraction,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.MandatoryCanonicalSelectorRankDispersion,
+    Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteStructuredDualNonzeroSeedCorrelation,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteVectorClaim18ReverseLCPEnergy,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.DPTWStructuredIndependencePlusOneNoGo,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.MandatoryCanonicalSelectorFullFieldCorrelation,

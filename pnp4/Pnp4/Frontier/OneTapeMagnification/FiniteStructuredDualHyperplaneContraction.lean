@@ -10,10 +10,14 @@ namespace OneTapeMagnification
 
 This file rewrites the exact inverse-rank weight as a mixture of a terminal
 constant and the survival probability of a uniformly chosen nonzero linear
-functional.  The resulting signed contraction statement is deliberately
-left as a named `Prop`: the theorems below prove that this one contraction,
+functional.  The resulting proportional signed contraction is deliberately
+left as a named `Prop`: the theorems below prove that this strong contraction,
 together with the unconditional terminal estimate, is sufficient for the
 existing `DualFarBound`.
+
+It is not the exact remaining selector target.  The weaker necessary-and-
+sufficient conditional-seed budget, including the actual signed terminal
+form, is exposed in `FiniteStructuredDualNonzeroSeedCorrelation`.
 -/
 
 noncomputable section
@@ -123,10 +127,12 @@ theorem structuredRankWeightedDualFarPairCorrelation_eq_hyperplane_add_terminal
   exact structuredDualRankDistinctCrossForm_eq_hyperplane_add_terminal
     n m tailBits cutoff hn htail f f
 
-/-! ## The exact signed contraction still required -/
+/-! ## A strong sufficient signed contraction -/
 
-/-- Minimal signed hyperplane contraction needed by this reduction.  It is
-an upper bound, not an absolute-value statement, and is not asserted here. -/
+/-- A strong proportional signed hyperplane contraction.  It is an upper
+bound, not an absolute-value statement, and is not asserted here.  In
+particular, it is stronger than the sharp affine conditional-seed budget in
+`FiniteStructuredDualNonzeroSeedCorrelation`. -/
 def StructuredDualHyperplaneContraction
     (n m tailBits cutoff : Nat) (hn : 0 < n) (htail : tailBits <= n)
     (leftFunction rightFunction : (Fin (2 ^ n) -> Bool) -> Rat) : Prop :=

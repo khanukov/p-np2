@@ -21,6 +21,7 @@ Primary sources:
 - Ellis, Warren, [*Lower Bounds on the Pathwidth of Some Grid-Like Graphs*](https://doi.org/10.1016/j.dam.2007.02.006), Discrete Applied Mathematics 156 (2008), Theorem 4.1, for the exact pathwidth `min(R,K)` of the rectangular `R`-by-`K` grid.
 - de Colnet, Ordyniak, Szeider, [*OBDDs, SDDs, and Circuits of Bounded Width: Completeness Matters*](https://doi.org/10.1016/j.artint.2025.104458), Artificial Intelligence 351 (2026), for the correction that bounded OBDD width corresponds to bounded circuit pathwidth only under completeness/smoothness.  It does not prove the routing-grid result below.
 - Bogdanov, Papakonstantinou, Wan, [*Pseudorandomness for Linear Length Branching Programs and Stack Machines*](https://andrejb.net/pubs/branching.pdf), RANDOM 2012, for a linear-stretch PRG for non-oblivious branching programs and its unique-witness extension.
+- Hartz, Scherer, [*On the Cotlar--Stein Lemma*](https://arxiv.org/abs/2604.13239), arXiv 2026, for finite operator almost-orthogonality bounds which remove the number of pieces once row/column sums of pairwise operator norms are controlled.  The theorem is a summation engine, not the missing selector-specific cross-norm estimate.
 - Savicky, Zak, [*A Large Lower Bound for 1-Branching Programs*](https://eccc.weizmann.ac.il/report/1996/036/revision/1/), ECCC TR96-036 revision 1, published as *A Read-Once Lower Bound and a (1,+k)-Hierarchy for Branching Programs*, for the weighted-sum read-once lower bound.
 
 ## Result classification
@@ -515,9 +516,31 @@ aliases; every distinct alias pays at least `(4m+1)*tailBits` mask rank, and
 each realized cone entry has the explicit reachable-prefix coefficient times
 the fixed-suffix character phase and dyadic rank weight.  These are exact
 identities and termwise estimates, not an aggregate correlation bound.  The
-bilinear module also does not by itself decompose the complete local square
-drop: parent-terminal traces contribute additional boundary terms, and a
-separate bridge to distinct realized children is still required.
+bilinear module by itself does not decompose the complete local square drop;
+that separate bridge is supplied below.
+
+`FiniteSignedReverseLCPTerminalBoundary.lean` expands every local square drop
+into a terminal boundary and ordered products of distinct immediate sibling
+cones.  The terminal boundary is proved semantically equal to the signed mass
+of traces which end exactly at the current key.  Acyclicity makes canonical
+start-to-accept full-step traces suffix-free, so a terminal trace and a proper
+child cone cannot coexist.  Hence the mixed `terminal * childSum` term
+vanishes exactly and
+
+```text
+LCPCharge(key)
+  = TerminalBoundary(key)^2
+    + sum_(left != right siblings) ConeMass(left)*ConeMass(right).
+```
+
+When every accepting walk reads every coordinate, the complete input-labelled
+trace is injective on accepted models; a realized terminal key therefore
+carries exactly one atomic residual deviation.  Thus terminal cells are
+diagonal atoms and every genuinely nonterminal cell is reduced to the
+distinct-sibling cross forms already exposed by
+`FiniteSignedReverseLCPSiblingDualRank.lean`.  This closes the previously
+missing terminal/sibling algebraic bridge, but does not bound the sibling
+sum.
 
 The current `4m+1` source does not satisfy the bottom-layer Claim-18 premise:
 degree `2m+1` would require `4m+2`-wise Gram orthogonality, and explicit
@@ -568,7 +591,8 @@ the balanced `(2m+1)+(2m+1)` middle split.  The named
 
 What is still missing is a size-free proof of that upper obligation for
 `kappa_W(C)` after summing over actual nonzero structured dual words, distinct
-realized siblings, reverse-LCP keys, and the parent-terminal boundary terms.
+realized siblings, and reverse-LCP keys.  Terminal/child mixing has now been
+removed exactly by the suffix-free decomposition above.
 Equivalently, one must control the nonconstant rank-weight increments between
 outside fibres while preserving the fixed-cylinder phases.  Absolute row
 sums, PSD domination, and pure degree-`2m+1` Gram orthogonality all discard
@@ -599,6 +623,97 @@ sign, and the positive full rank-kernel representation does not survive the
 high/high Fourier projection.  Standard product-noise hypercontractivity and
 Markov martingale inequalities do not supply this off-diagonal union-rank
 tail bound.
+
+`DPTWStructuredMaskRankInsertion.lean` proves the exact one-coordinate
+bounded-difference statement which was previously absent.  If `r(U)` is the
+actual prefix-constraint rank, `i` is one truth-table coordinate, and
+`w(U)=2^(-r(U))`, then
+
+```text
+r(U) <= r(U union {i}) <= r(U) + tailBits,
+0 <= w(U) - w(U union {i})
+  <= (1 - 2^(-tailBits)) * w(U).
+```
+
+The upper rank increment is proved by injecting the new image space into the
+old image space times the `tailBits` new binary coordinates.  Thus the exact
+weight difference has the unconditional upper factor `1-p`, for
+`p=2^(-tailBits)`; the factor is an inequality, not an assumed correlation
+contract or an asserted equality of weights.
+
+`FiniteBooleanOppositeLiteralCorrelation.lean` finds exactly where that
+derivative occurs.  For functions `a,b` independent of query coordinate `i`,
+write
+
+```text
+g0(x) = 1[x_i=0] * a(x),
+g1(x) = 1[x_i=1] * b(x).
+```
+
+Their Fourier coefficients have the same erased support, while toggling `i`
+preserves the coefficient of `g0` and negates that of `g1`.  The complete
+distinct structured-dual cross form is reindexed by the unique support in
+each toggle orbit which omits `i`.  For each fixed dual word the paired term
+has exactly three regimes: a bulk rank-weight derivative, a newly admitted
+degree-cutoff boundary, or zero.  If `i` belongs to the dual word, every
+bulk/bulk pair cancels exactly because its union support is unchanged.
+
+`FiniteBooleanOppositeLiteralRankDerivative.lean` combines this exact toggle
+identity with the rank-insertion theorem.  For `K=4m+1`, every bulk pair on a
+nonempty structured dual word now satisfies the concrete local correlation
+bound
+
+```text
+|paired bulk term|
+  <= (1-p) * 2^(-K*tailBits) * |paired Fourier product|
+  =  (1-p) * p^K * |paired Fourier product|.
+```
+
+Here the paired difference-of-weights identity is exact, while `1-p` is its
+uniform upper bound.  The stronger suppression `p^K` comes from structured
+dual distance/rank.  This gives substantially more than the target `p^(2m)`
+rank scale for the bulk of a genuine opposite-query pair.
+
+`FiniteBooleanOppositeLiteralCrossFormSkew.lean` proves whole-form skew
+symmetry in the complementary on-coordinate situation.  If `i ∈ W`, `a,b`
+are independent of `i`, and the cutoff and union-dependent weight are
+otherwise arbitrary, then
+
+```text
+F_W(a,b) = -F_W(b,a).
+```
+
+Consequently `F_W(a,a)=0`, including every cutoff-boundary term; no rank,
+positivity, code-distance, or correlation premise is used.
+
+`FiniteBooleanOppositeLiteralBoundaryLayer.lean` then pins down the remaining
+off-coordinate boundary.  If `i ∉ W`, an orbit is not high/high before the
+toggle and is high/high afterwards exactly only when
+
+```text
+min(|alpha|, |alpha △ W|) = 2m.
+```
+
+For a nonempty structured dual word, the other endpoint has degree at least
+`2m+2`.  Hence this is a `2m × (>=2m+2)` original-layer interaction (and a
+`(2m+1) × (>=2m+3)` selected interaction after toggling), not an unspecified
+high-tail remainder.
+
+These results are still not the full selector-pair lemma.  The exact remaining
+terms are now:
+
+1. off-coordinate `2m × (>=2m+2)` cutoff cells and their Fourier mass;
+2. reverse-LCP siblings which are incoming merger edges rather than the two
+   outgoing labels of one query;
+3. same-label and silent mergers; and
+4. size-free Carleson/Cotlar packing of the surviving sibling cells.
+
+A forward-query/reconvergence (diamond) refinement of the current reverse-LCP
+partition is therefore the next structural theorem.  It must route each
+nonterminal sibling cross term either to the opposite-label bulk lemma above,
+to the explicit degree-cutoff boundary, or to a machine-specific
+same-label/silent merger budget.  Merely assuming that every reverse sibling
+is an opposite query branch would be false.
 
 `FiniteStructuredDualRankThresholdBridge.lean` now applies Abel summation to
 the exact structured dual-alias form itself.  Writing `K = 4m+1` and `C(r)`
@@ -706,6 +821,16 @@ argument rather than a triangle inequality.  No CHMY, CLTW/DPTW,
 Forbes--Kelley, product-test, or 2025--2026 weighted-ROBP theorem currently
 supplies that local-rank plus orthogonal-cell statement for the silent
 unambiguous selector.
+
+The April 2026 Hartz--Scherer Cotlar--Stein refinement can sum a family of
+cell operators without an explicit cell count once the row and column sums
+of square roots of pairwise operator norms are bounded.  That is compatible
+with the desired final packing step, but it does not prove those cross-norm
+bounds.  The repository currently has exact scalar sibling moments for the
+actual coefficient vector, not uniform operator almost-orthogonality.  The
+2025 Meel--de Colnet LCP analysis supplies nonnegative splice capacity, not
+Walsh signs or structured union-rank weights.  Thus neither result closes the
+four explicit merger/boundary obligations above.
 
 `FiniteResidualLowHighProjection.lean` rules out a tempting shortcut at this
 last analytic layer.  If `A` is the residual accepted mass and `P` its
@@ -900,29 +1025,38 @@ with the running time.  A separate machine chosen at each fixed input length
 can hardwire an arbitrary Boolean predicate in a prefix tree of states and in
 `T = 2^n` steps, including the length-64 witness above.
 
-The reverse-LCP telescope does not yet provide that gain.  Its exact local
-charge is a signed square drop
+The reverse-LCP telescope alone does not provide the complete gain.  The
+terminal-boundary refinement now rewrites its signed square drop
 
 ```text
-A(key)^2 - sum_child A(child)^2,
+A(key)^2 - sum_child A(child)^2
+  = Terminal(key)^2 + sum_(left != right) A(left)*A(right),
 ```
 
-and can have either sign.  Existing residual-fiber capacity controls counts
-of compatible accepting models, while `A` also contains the negative
-low-degree predictor contribution of incompatible models.  Taking absolute
-values loses the selector/transcript size; the global-energy route gives a
-factor `S * prefixDegreeEnergySum(2m)` (crudely `S^2`) and would need the
-unproved size-free estimate
+with no mixed terminal/child term.  Opposite-query bulk pairs additionally
+obey the `(1-p)*p^(4m+1)` toggle/rank bound.  On-coordinate fixed-dual
+self-pairs cancel exactly even across the cutoff; the surviving off-coordinate
+boundary is localized to `2m × (>=2m+2)`.  Those boundary cells and the
+same-label/silent merger terms can still have either sign.
+Existing residual-fiber capacity controls counts of compatible accepting
+models, while each cone mass also contains the negative low-degree predictor
+contribution of incompatible models.  Taking absolute values loses the
+selector/transcript size; the global-energy route gives a factor
+`S * prefixDegreeEnergySum(2m)` (crudely `S^2`) and would need the unproved
+size-free estimate
 
 ```text
 S * prefixDegreeEnergySum(2m) <= 4*(1-p).
 ```
 
-The concrete lower-layer obligation is therefore a rank-aware one-sided
-Carleson/frame inequality for the signed reachable-prefix Fourier masses of
-the cached run.  Crossing-sequence capacity and last-common-prefix geometry
-currently identify its cells but do not control their signs under the
-nonzero-seed rank filter.
+The concrete lower-layer obligation is therefore narrower: route reverse
+merger siblings through forward query/reconvergence diamonds, control the
+explicit off-coordinate `2m × (>=2m+2)` boundary and same-label/silent mergers, and
+prove a rank-aware one-sided Carleson/frame packing inequality for the
+surviving signed reachable-prefix Fourier masses.  Crossing-sequence capacity
+and last-common-prefix geometry identify the cells, while the new local lemma
+controls only their genuine opposite-label bulk under the nonzero-seed rank
+filter.
 
 Bounded reverse branching alone cannot repair this.  An exact finite audit at
 `n=3`, `m=tailBits=1` takes the full eight-coordinate dual word and two

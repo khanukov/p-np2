@@ -57,6 +57,89 @@ def queryTrace {n L : Nat} (program : LayeredQueryProgram n L)
     (input : Fin n → Bool) : List (Fin n) :=
   (executePrefix program input L le_rfl).2
 
+/-- A second input agrees with a reference execution on every coordinate
+actually queried by that execution.  Coordinates outside the reference trace
+are deliberately unconstrained. -/
+def InputsAgreeOnQueryTrace {n L : Nat}
+    (program : LayeredQueryProgram n L)
+    (reference candidate : Fin n → Bool) : Prop :=
+  ∀ coordinate ∈ program.queryTrace reference,
+    candidate coordinate = reference coordinate
+
+/-- Path-cylinder principle for a finite layered query program.  If a second
+input supplies the same answers on the reference execution's query trace,
+then every live state and query exposed by the two executions is identical.
+
+The statement is directional only because the agreement premise names the
+reference trace; the conclusion in particular proves that the candidate
+trace is that same trace. -/
+theorem executePrefix_eq_of_agree_on_reference_trace
+    {n L : Nat} (program : LayeredQueryProgram n L)
+    (reference candidate : Fin n → Bool)
+    (k : Nat) (hk : k ≤ L)
+    (hagree : ∀ coordinate ∈ (program.executePrefix reference k hk).2,
+      candidate coordinate = reference coordinate) :
+    program.executePrefix candidate k hk =
+      program.executePrefix reference k hk := by
+  induction k with
+  | zero => simp [executePrefix]
+  | succ k ih =>
+      let referencePrefix := program.executePrefix reference k (by omega)
+      let layer : Fin L := ⟨k, by omega⟩
+      let query := program.query? layer referencePrefix.1
+      have hagreePrefix : ∀ coordinate ∈ referencePrefix.2,
+          candidate coordinate = reference coordinate := by
+        intro coordinate hcoordinate
+        apply hagree coordinate
+        simp only [executePrefix]
+        exact List.mem_append_left query.toList hcoordinate
+      have hprefix : program.executePrefix candidate k (by omega) =
+          referencePrefix := by
+        exact ih (by omega) hagreePrefix
+      simp only [executePrefix]
+      rw [hprefix]
+      have hanswer : query.map candidate = query.map reference := by
+        cases hquery : query with
+        | none => rfl
+        | some coordinate =>
+            simp only [Option.map_some]
+            congr 1
+            apply hagree coordinate
+            simp only [executePrefix, List.mem_append]
+            right
+            simpa [query, layer, referencePrefix] using hquery
+      simp [referencePrefix, layer, query, hanswer]
+
+/-- Full-execution form of the path-cylinder principle. -/
+theorem finalState_eq_of_inputsAgreeOnQueryTrace
+    {n L : Nat} (program : LayeredQueryProgram n L)
+    (reference candidate : Fin n → Bool)
+    (hagree : program.InputsAgreeOnQueryTrace reference candidate) :
+    program.finalState candidate = program.finalState reference := by
+  exact congrArg Prod.fst
+    (executePrefix_eq_of_agree_on_reference_trace
+      program reference candidate L le_rfl hagree)
+
+/-- Agreement on the reference trace preserves the Boolean output exactly. -/
+theorem eval_eq_of_inputsAgreeOnQueryTrace
+    {n L : Nat} (program : LayeredQueryProgram n L)
+    (reference candidate : Fin n → Bool)
+    (hagree : program.InputsAgreeOnQueryTrace reference candidate) :
+    program.eval candidate = program.eval reference := by
+  unfold eval
+  rw [finalState_eq_of_inputsAgreeOnQueryTrace
+    program reference candidate hagree]
+
+/-- Agreement on the reference trace also preserves the trace itself. -/
+theorem queryTrace_eq_of_inputsAgreeOnQueryTrace
+    {n L : Nat} (program : LayeredQueryProgram n L)
+    (reference candidate : Fin n → Bool)
+    (hagree : program.InputsAgreeOnQueryTrace reference candidate) :
+    program.queryTrace candidate = program.queryTrace reference := by
+  exact congrArg Prod.snd
+    (executePrefix_eq_of_agree_on_reference_trace
+      program reference candidate L le_rfl hagree)
+
 /-- Exact finite width of the homogeneous live-state carrier. -/
 def width {n L : Nat} (program : LayeredQueryProgram n L) : Nat :=
   @Fintype.card program.State program.stateFintype

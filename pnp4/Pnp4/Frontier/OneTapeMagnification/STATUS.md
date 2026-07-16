@@ -13,6 +13,9 @@ Primary sources:
 - Chen, Lyu, Tal, Wu, [*New PRGs for Unbounded-Width/Adaptive-Order Read-Once Branching Programs*](https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.ICALP.2023.39), ICALP 2023, for the direct adaptive-order Forbes--Kelley analysis.  Its seed length retains an explicit dependence on the branching-program width, so it does not provide the cardinality-free selector aggregate needed here.
 - Meel, de Colnet, [*An FPRAS for Model Counting for Non-Deterministic Read-Once Branching Programs*](https://arxiv.org/abs/2406.16515v3), arXiv v3 (2 December 2025), for edge-labelled reverse derivation paths, last-common-prefix grouping, and residual-model splice counting.  Its sampling correlation analysis is algorithm-specific and is not a Walsh-correlation theorem.
 - Chen, Cohen, Doron, Khaskelberg, Ta-Shma, [*Improved Error Reduction for Weighted PRGs*](https://eccc.weizmann.ac.il/report/2026/064/), ECCC TR26-064 revision 3, for the current weighted-PRG frontier for standard read-once branching programs.  Its model does not include the unambiguous adaptive uFBDD used here.
+- Lee, [*Fourier Bounds and Pseudorandom Generators for Product Tests*](https://arxiv.org/abs/1902.02428), CCC 2019, for Fourier growth and PRGs for products of arbitrary functions on disjoint blocks.  The new fixed-`alpha` rectangle is in this class, but the seed bound depends on the maximum block arity and the theorem gives additive error for one product; summing it over the outer canonical-alpha family reintroduces the forbidden component count.
+- Lee, Viola, [*Pseudorandom Bits for Non-Commutative Programs*](https://eccc.weizmann.ac.il/report/2025/071/), ECCC TR25-071 revision 1, for the 2025 block-product frontier over mixing groups.  It does not bound a disjoint sum of arbitrary Boolean rectangles after the structured affine prefixes used here.
+- Kumar, [*New Pseudorandom Generators and Correlation Bounds Using Extractors*](https://eccc.weizmann.ac.il/report/2025/002/), ECCC TR25-002, for width-two programs reading `d` bits at a time.  Its seed length has quadratic dependence on `d`, and neither its width-two model nor its restriction-shrinking premise controls the present adaptive canonical selector.
 - Amarilli, Capelli, Monet, Senellart, [*Connecting Knowledge Compilation Classes and Width Parameters*](https://doi.org/10.1007/s00224-019-09930-2), Theory of Computing Systems 64 (2020), Theorem 4.4, for compilation of a circuit supplied with a width-`k` path decomposition into a complete uOBDD of width at most `2^(2(k+1))`.
 - Kinnersley, [*The Vertex Separation Number of a Graph Equals Its Path-Width*](https://doi.org/10.1016/0020-0190(92)90234-M), Information Processing Letters 42 (1992), for equality of vertex separation and pathwidth.
 - Ellis, Warren, [*Lower Bounds on the Pathwidth of Some Grid-Like Graphs*](https://doi.org/10.1016/j.dam.2007.02.006), Discrete Applied Mathematics 156 (2008), Theorem 4.1, for the exact pathwidth `min(R,K)` of the rectangular `R`-by-`K` grid.
@@ -40,6 +43,132 @@ linear-rank calculation for the actual structured short seed.  This remains a
 restricted one-tape side track under the repository policy: none of the
 results in this section reduces `VerifiedNPDAGLowerBoundSource` or
 `SearchMCSPWeakLowerBound`.
+
+The fixed-`alpha` selector geometry is now closed at the exact-identity level.
+`TimedAlphaCanonicalFiberSplicing.lean` identifies the complete canonical
+fiber, including the leftmost-cut conditions, with the product of its
+existential block projections.  Distinct projections depend on disjoint
+advertised block-query paths under schedule chaining and input monotonicity.
+Consequently `TimedAlphaCanonicalFiberMaskedCorrelation.lean` proves, for
+every fixed base and mask, the exact whole-component formula
+
+```text
+E_uniform[fixed-alpha canonical indicator(masked input)]
+  = product_block E_uniform[block-projection indicator(masked input)].
+```
+
+This is an unconditional finite identity; it assumes no PRG, Fourier-tail, or
+cut-stability hypothesis.  Its semantic specialization derives the required
+chaining and monotonicity from a valid schedule and one simultaneous accepted
+replay.
+
+`MandatoryCanonicalSelectorTerminalFactorGraph.lean` transports the same
+fixed-`alpha` structure to the actual mandatory selector.  Its master-end
+true-prefix indicator is exactly the schedule-validity factor times all unary
+block-replay factors and all adjacent canonical-cut factors; later mandatory
+queries are inert padding after the completed answer.  Finally,
+`MandatoryCanonicalSelectorBlockProjectionCorrelation.lean` proves both that
+one installed component and its terminal prefix indicator are the product of
+the canonical block projections, and the pointwise whole-selector identity
+
+```text
+mandatory selector indicator
+  = sum_alpha product_block block-projection indicator(alpha, block).
+```
+
+The same module now commutes uniform masking through this representation and
+proves the whole-selector conditional identity
+
+```text
+E_uniform[selector(masked input)]
+  = sum_alpha product_block
+      E_uniform[block-projection(alpha, block, masked input)].
+```
+
+`FiniteBooleanDisjointProductFourierFactorization.lean` upgrades disjoint
+masked products to an exact coefficient theorem: a Fourier frequency inside
+the union of the local supports splits uniquely across them, so its global
+coefficient is the product of the intersected local coefficients; a frequency
+outside that union has coefficient zero.
+`TimedAlphaCanonicalFiberFourierFactorization.lean` instantiates this for each
+installed fixed-`alpha` canonical fiber.  Finally,
+`MandatoryCanonicalSelectorFourierFactorization.lean` proves
+
+```text
+coefficient(selector, S)
+  = sum_alpha product_block localCoefficient(alpha, block, S),
+```
+
+the corresponding exact ordered `(alpha,beta)` expansion for a product of two
+selector coefficients, and the full-alias cancellation
+
+```text
+alpha != beta ->
+sum_S componentHat(alpha,S) * componentHat(beta,S symmetricDifference W) = 0.
+```
+
+The last identity remains true after both coefficients are replaced by their
+explicit block-projection products.  Thus the cross-component cancellation is
+now a theorem, not a hoped-for heuristic.  For the diagonal it proves the
+complementary exact identity
+
+```text
+sum_S componentHat(alpha,S) * componentHat(alpha,S symmetricDifference W)
+  = componentHat(alpha,W).
+```
+
+Consequently the ordered all-`(alpha,beta)` full-alias sum is exactly its
+diagonal part, and the full selector alias convolution is exactly the selector
+coefficient at `W`.  The same module also instantiates the exact weighted
+high/high transfer for every distinct `(alpha,beta)` pair:
+the constant part of an arbitrary frequency weight moves to the low-boundary
+aliases; the resulting identity retains that low-boundary term together with
+the selected nonconstant weight variation.  The actual rank-survival weight
+can be substituted directly; the theorem does not assume that either
+remaining term has a favorable sign.
+
+`FiniteBooleanAffineRoundsLocality.lean` proves that the concrete generated
+prefixes preserve every advertised `DependsOnlyOn` support: despite the API
+name, these prefixes are iterations of coordinatewise `maskedInput`, not
+linear mixtures of coordinates.  Therefore
+`MandatoryCanonicalSelectorPrefixedFourierFactorization.lean` transports the
+complete block-product coefficient formula, selector coefficient sum,
+off-diagonal cancellation, diagonal regrouping, and weighted high/high
+transfer through an arbitrary fixed prefix without a new hypothesis.
+
+`MandatoryCanonicalSelectorRankAliasAbel.lean` then substitutes the actual
+DPTW union-rank weight for one nonempty structured-dual word `W`.  For every
+distinct prefixed component pair it proves the exact identity
+
+```text
+rankWeightedHighHigh(W)
+  = -2^(-((4m+1)*tailBits)) * lowBoundary(W)
+    - sum_{r=(4m+1)*tailBits}^{(4m+1)*n-1}
+        2^(-(r+1)) * strictRankTail(W,r).
+```
+
+The rank is exactly that of `S union (S symmetricDifference W)` under the
+structured prefix-constraint map.  Its displayed floor and ceiling are
+derived from structured duality and the full coefficient-space dimension;
+the theorem does not replace rank by support cardinality or assert a sign for
+the strict tails.
+
+Unambiguity makes this a disjoint pointwise sum, not a component-count upper
+bound.  These theorems settle the fixed-`alpha` rectangle and whole masked
+product steps, but they do **not** settle the required selector-pair bound.
+The exact ordered expansion leaves two different obligations.  For
+`alpha != beta`, the full unweighted alias sum cancels, but high/high
+truncation and nonconstant rank weights leave a low-boundary term and a signed
+weight-variation term.  For `alpha = beta`, the full alias convolution is not
+zero in general and needs its own weighted truncated diagonal estimate.  The
+prefix dependence and exact rank summation are now formalized; the remaining
+analytic obligation is a size-factor-free one-sided control of the aggregated
+low-boundary and strict-rank-tail terms together with the component diagonal.
+A triangle inequality or componentwise product-test estimate still loses the
+outer selector cardinality and therefore does not give that bound.  No theorem
+here establishes this aggregate estimate, a one-tape lower bound at the
+required threshold, or `P != NP`; without an explicit `PpolyDAG` bridge this
+checkpoint remains a restricted lower-bound side track.
 
 `FiniteBooleanBoundedIndependenceFarTail.lean` proves the exact high-tail
 second-moment split into a diagonal term and a signed far-pair residual.  For

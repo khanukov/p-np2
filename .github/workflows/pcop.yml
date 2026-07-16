@@ -1,0 +1,49 @@
+name: pcop (P = coP)
+
+on:
+  push:
+    paths:
+      - "pcop/**"
+      - ".github/workflows/pcop.yml"
+  pull_request:
+    paths:
+      - "pcop/**"
+      - ".github/workflows/pcop.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pcop
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Lean (toolchain pinned by pcop/lean-toolchain)
+        uses: Julian/setup-lean@v1
+        with:
+          default-toolchain: leanprover/lean4:v4.30.0
+
+      # Elaborate + kernel-check every proof. The #guard_msgs blocks in
+      # PCoP/Main.lean fail the build if any axiom footprint changes.
+      - name: Build (kernel-checks all proofs, pins axiom audit)
+        run: lake build
+
+      # Independent verification: replay every declaration of every
+      # module through a fresh kernel with the external checker.
+      - name: External kernel re-check (leanchecker)
+        run: |
+          set -e
+          for m in PCoP.Basic PCoP.Machine PCoP.Complement PCoP.Parity PCoP.Main PCoP; do
+            LEAN_PATH=.lake/build/lib/lean leanchecker "$m"
+            echo "leanchecker OK: $m"
+          done
+
+      # Hygiene: no sorry/admit/axiom/native_decide anywhere in pcop.
+      - name: Hygiene grep (no sorry / admit / axiom / native_decide)
+        run: |
+          set -e
+          ! grep -rnE "(^|[^A-Za-z])(sorry|admit)([^A-Za-z]|$)" --include="*.lean" .
+          ! grep -rnE "^[[:space:]]*axiom[[:space:]]" --include="*.lean" .
+          ! grep -rn "native_decide" --include="*.lean" .
+          echo "hygiene OK"

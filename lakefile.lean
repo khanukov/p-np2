@@ -604,6 +604,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.OneTapeMagnification.MandatoryCanonicalSelectorComplementBalancedBadMaskFrame,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.MandatoryCanonicalSelectorComplementBalancedResidualCountBridge,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.MandatoryCanonicalSelectorComplementPairResidualCountBridge,
+    Glob.one `Pnp4.Frontier.OneTapeMagnification.MandatoryCanonicalSelectorComplementPairPhaseImbalance,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.MandatoryCanonicalSelectorMassWeightedCertificateComplementObstruction,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteBooleanOppositeLiteralRankDerivative,
     Glob.one `Pnp4.Frontier.OneTapeMagnification.FiniteBooleanOppositeLiteralFixedWAggregation,

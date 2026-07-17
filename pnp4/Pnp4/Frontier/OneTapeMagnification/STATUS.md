@@ -1582,6 +1582,22 @@ and its exceptional-mask charge entirely through accepted-model counts of the
 two canonical selectors.  Both sides therefore now have canonical accepting
 walks, reverse-LCP buckets, and suffix-capacity APIs.
 
+`MandatoryCanonicalSelectorComplementPairPhaseImbalance.lean` makes the
+remaining sign structure explicit.  It subtracts the nonaccepting compatible-
+model count from the accepting compatible-model count before averaging over
+the structured base, and does the same for the uniform selector masses.  If
+`I_mask` is this signed outer phase, then the exact balanced envelope is
+
+```text
+2 - 2*D_mask - |I_mask|.
+```
+
+The single absolute value is therefore outside both canonical selector
+families; none is taken over components, cells, models, or dual words.  The
+exceptional-mask charge and certificate are proved exactly equivalent to this
+phase-imbalance form.  No lower bound on `|I_mask|`, no upper bound on the
+resulting charge, and no selector correlation estimate is proved.
+
 The remaining new step is a phase-preserving *outer* packing theorem across
 the accepting and nonaccepting selectors which charges globally bad masks to
 their minority residual counts without summing absolute values over keys,

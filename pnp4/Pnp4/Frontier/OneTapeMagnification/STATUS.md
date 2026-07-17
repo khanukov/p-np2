@@ -1468,10 +1468,124 @@ affine-prefixed mandatory selector and yield `ResidualMassL2Bound` and the
 one-round `p^m` error.  These are sufficient certificates, not a proof that
 one-tape semantics supplies their budget.  The density-only certificate does
 not show that bad masks are rare and therefore need not handle the point-mass
-obstruction.  The mass-weighted form identifies the more plausible next
-obligation: control the aggregate structured conditional acceptance mass of
-the bad masks, together with their uniform-mass density charge, from the fixed
-machine's signed transition/LCP geometry.
+obstruction.  The raw mass-weighted form is also not a viable general source,
+because it is not invariant under complementing the Boolean function while
+the strict high Fourier layer is.
+
+`MandatoryCanonicalSelectorBadMaskResidualCountBridge.lean` identifies the
+raw structured conditional mass exactly for the actual affine-prefixed
+mandatory selector:
+
+```text
+structuredConditionalMass(mask)
+  = E_baseSeed[normalizedResidualAcceptedModelCount(base,mask)].
+```
+
+It also retains the unused fixed-mask diagonal in the unconditional envelope,
+
+```text
+E_mask <= 2 * structuredConditionalMass(mask)
+          + 2 * (uniformMass - D_mask).
+```
+
+This is a genuine strengthening, but the raw acceptance mass is still
+asymmetric under complement.
+
+`MandatoryCanonicalSelectorMassWeightedCertificateComplementObstruction.lean`
+makes that obstruction kernel-checked.  Let `OR_N` be one except at the
+all-false input.  Its every nonempty Fourier coefficient is the negative of
+the all-false point mass coefficient, so the two functions have exactly the
+same fixed-mask syndrome energy and diagonal.  At
+`n=7, m=1, tailBits=1`, every mask with at least forty frozen coordinates
+violates `p*E_mask <= D_mask`.  The exact singleton mask law gives expected
+frozen count `64`, hence at least `25/89` of mask seeds have forty frozen
+coordinates.  Therefore every admissible exceptional set has density
+strictly greater than `1/4`; since the uniform mass of `OR_128` is greater
+than `1/2`, the raw mass-weighted budget is impossible.  The final theorem is
+
+```text
+not exists bad rho delta,
+  StructuredMassWeightedBadMaskSyndromeFrameCertificate
+    (n=7,m=1,tailBits=1) OR_128 bad rho delta.
+```
+
+This refutes the certificate, not the absolute target: complementation leaves
+`E` unchanged.  The module does not formalize realization of this width-two
+read-once predicate by the mandatory one-tape compiler.
+
+`MandatoryCanonicalSelectorComplementBalancedBadMaskFrame.lean` repairs the
+asymmetry.  For every `[0,1]`-valued `f`, without a machine-specific premise,
+applying the diagonal-retaining bound to both `f` and `1-f` proves
+
+```text
+E_mask <= 2 * min
+  (r + mu - D_mask)
+  ((1-r) + (1-mu) - D_mask),
+```
+
+where `r` is structured conditional mass and `mu` is uniform mass.  Syndrome
+energy and diagonal are proved complement-invariant.  An explicit good/bad
+certificate charging exceptional masks by the average balanced envelope is
+specialized to the actual prefixed selector and implies `ResidualMassL2Bound`
+and one-round error `p^m`.  The certificate is non-circular, but its numerical
+budget remains unproved.  The next machine-specific obligation is therefore
+a phase-preserving transition/reverse-LCP packing theorem which charges bad
+masks to the minority of accepted and rejected residual-cylinder mass, rather
+than to raw acceptance mass or absolute cell sums.
+
+`FiniteUnambiguousFBDDResidualRejectedInputCount.lean` supplies the exact
+numeric complement bridge needed by that formulation.  Live-coordinate
+patterns are put in bijection with one frozen cylinder, compatible accepted
+models are put in bijection with its accepting inputs, and the remainder is
+counted as rejected inputs.  Consequently
+
+```text
+residualAcceptedModelCount + residualRejectedInputCount = 2^|live|,
+normalizedRejected = 1 - normalizedResidualAcceptedModelCount,
+```
+
+including after averaging over the structured base source at one fixed mask.
+This gives both sides of the balanced minimum as exact residual counts.
+
+`MandatoryCanonicalSelectorComplementBalancedResidualCountBridge.lean`
+performs that rewrite for the actual affine-prefixed mandatory selector.  It
+defines the accepted and rejected residual envelope sides, proves that their
+sum is exactly `2-2*D_mask`, identifies the averaged exceptional-mask
+envelope with a literal residual-count bad charge, and proves the count-form
+certificate equivalent to the complement-balanced certificate.  Thus the
+remaining premise no longer contains an abstract complement function or
+uninterpreted conditional mass.
+
+`MandatoryCanonicalNonacceptingSelector.lean` supplies the missing structural
+complement.  Swapping the two sinks of the accepting selector would create
+many accepting paths on a rejected input, so the module instead keeps the
+same exact chronological-alpha verifier and replaces only the static terminal
+gate by `halt != accept`.  For `b>0` the resulting family is unambiguous and
+its selector computes exactly the complement of the accepting selector.  It
+is syntactically read-once, every accepting path reads every coordinate, each
+component has the same width formula, and the pointwise rational identity
+
+```text
+nonacceptingSelectorIndicator = 1 - acceptingSelectorIndicator
+```
+
+survives every fixed affine prefix.  The total selector is an honest disjoint
+sum over a different alpha subtype; no comparison between the two total sums
+is claimed.
+
+`MandatoryCanonicalSelectorComplementPairResidualCountBridge.lean` closes
+the semantic connection pointwise: for every base, mask, and fixed affine
+prefix, the normalized compatible accepted-model count of the nonaccepting
+selector equals the normalized rejected-input count of the accepting
+selector.  It rewrites the two envelope sides, the complete balanced envelope,
+and its exceptional-mask charge entirely through accepted-model counts of the
+two canonical selectors.  Both sides therefore now have canonical accepting
+walks, reverse-LCP buckets, and suffix-capacity APIs.
+
+The remaining new step is a phase-preserving *outer* packing theorem across
+the accepting and nonaccepting selectors which charges globally bad masks to
+their minority residual counts without summing absolute values over keys,
+cells, or dual words.
 
 There is also an exact finite no-go for replacing that projection statement
 by a universal bounded-residual boundary estimate.  At

@@ -1598,6 +1598,42 @@ exceptional-mask charge and certificate are proved exactly equivalent to this
 phase-imbalance form.  No lower bound on `|I_mask|`, no upper bound on the
 resulting charge, and no selector correlation estimate is proved.
 
+An exact external GF(16) audit now shows that this complement-balanced
+certificate is still not a universal bounded-function principle.  At
+`n=4, m=tailBits=1`, let `H` be the 7-dimensional structured dual, take the
+fully-high nonzero-syndrome coset `A = 0x003c + H`, and define the literal
+Boolean function
+
+```text
+f(x) = (1 + chi_0x003c(x) * q(<h_0,x>,...,<h_6,x>)) / 2
+```
+
+for the explicit seven-bit truth table recorded in
+`scripts/check_selector_complement_balanced_rank7.js`.  Its nonconstant
+Fourier spectrum is supported on `A`; every support has size at least four.
+Both its uniform mass and every fixed-mask structured-base mass are exactly
+`1/2`, so its balanced envelope is `2*(1-D_mask)`.  Exact BigInt evaluation
+over the 512 distinct structured masks gives
+
+```text
+D_avg = 1581/524288,
+bad-mask adjustment = 44629/262144,
+B = 90839/524288 > 1/8.
+```
+
+The displayed bad set is the minimal set forced by the good-mask condition;
+every added seed has positive charge, so enlarging it cannot restore the
+budget.  The certificate therefore fails for this function.
+
+Thus the phase-imbalance bad-mask certificate cannot be proved for arbitrary
+Boolean functions, even for one fully-high affine syndrome packet.  This is
+external finite computation, not a Lean kernel theorem.  It does **not**
+refute the separate absolute target: the same witness has
+`E_avg = 6843/1048576 < 1/4`.  Nor is the witness shown to be the compiled
+selector of a fixed one-tape machine.  The remaining theorem must therefore
+use actual transition/reverse-LCP geometry, not only Boolean boundedness,
+complement symmetry, or single-syndrome spectral support.
+
 The remaining new step is a phase-preserving *outer* packing theorem across
 the accepting and nonaccepting selectors which charges globally bad masks to
 their minority residual counts without summing absolute values over keys,

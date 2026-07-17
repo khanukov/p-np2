@@ -1,6 +1,12 @@
 # Draft mathlib4 PR description
 
-**Title:** `feat(Computability): step counting and complexity classes P/NP for TM1`
+**Title:** `feat(Computability/TuringMachine): add step counting and complexity classes P/NP for TM1`
+
+> Перед отправкой: прочитай тело ниже и поправь под себя — ты должен стоять
+> за каждым словом. После открытия PR обязательно оставь комментарий
+> `LLM-generated` (одним словом) — это добавит требуемую политикой метку.
+> Проверь, что base = `leanprover-community/mathlib4` `master` (не master
+> твоего форка).
 
 ---
 
@@ -50,4 +56,13 @@ that P is closed under complement.
 
 Closes #35366.
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
+## AI usage disclosure
+
+The Lean code in this PR was written with substantial assistance from an LLM
+(Anthropic's Claude, via Claude Code), working under my direction from the
+design sketch in issue #35366, over several design iterations. I have
+reviewed the file and understand the definitions and proofs. The file was
+verified by compiling it against mathlib `v4.30.0` (kernel-checked;
+`#print axioms` reports standard axioms only) and re-checked against current
+`master` for API drift before opening this PR. Per the contribution
+guidelines I am adding the `LLM-generated` label.

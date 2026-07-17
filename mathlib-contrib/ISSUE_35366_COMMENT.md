@@ -1,5 +1,14 @@
 # Draft comment for mathlib4 issue #35366
 
+> ⚠️ **НЕ копируй этот текст в issue дословно.** Политика mathlib прямо
+> запрещает LLM-написанные комментарии на GitHub и Zulip: *"Using an LLM
+> when writing comments on GitHub or Zulip is not allowed: use your own
+> words"* (https://leanprover-community.github.io/contribute/index.html).
+> Текст ниже — только фактическая шпаргалка. Напиши комментарий сам, своими
+> словами и лаконичнее; факты (что реализовано, ответы на три вопроса
+> issue, ссылка на файл) бери отсюда. Раскрытие использования ИИ для самого
+> кода делается в описании PR — оно там уже есть.
+
 ---
 
 I have a complete, compiling implementation of this proposal against current

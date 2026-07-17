@@ -4,6 +4,10 @@
 #
 #   bash prepare_branch.sh
 #
+# NOTE (2026-07-17): the branch has already been pushed (tm1-complexity,
+# single commit authored by Dmitry Khanukov, based on master 2026-07-16).
+# This script is kept only as a fallback to recreate it from scratch;
+# running it will overwrite nothing (plain push fails on divergence).
 set -euo pipefail
 
 FORK="git@github.com:khanukov/mathlib4.git"   # or https://github.com/khanukov/mathlib4.git
@@ -33,7 +37,11 @@ print("registered")
 EOF
 
 git add Mathlib/Computability/TuringMachine/TM1Complexity.lean Mathlib.lean
-git commit -m "feat(Computability): step counting and complexity classes P/NP for TM1
+# Commit message follows mathlib's commit conventions
+# (https://leanprover-community.github.io/contribute/commit.html):
+# imperative mood, lowercase subject, scope = directory without Mathlib/.
+git commit --author="Dmitry Khanukov <dmitry@dwelly.group>" \
+  -m "feat(Computability/TuringMachine): add step counting and complexity classes P/NP for TM1
 
 Implements the proposal of #35366 for the TM1 model: fuel-based
 execution runN with a bridge theorem to the relational semantics

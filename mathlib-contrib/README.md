@@ -2,11 +2,23 @@
 
 A complete, kernel-checked implementation of what
 [mathlib4 issue #35366](https://github.com/leanprover-community/mathlib4/issues/35366)
-asks for — plus the theorem the issue did not dare to ask for: **P is closed
-under complement**, with zero time overhead.
+asks for — plus one result beyond the issue's scope: **P is closed under
+complement**, with zero time overhead.
 
 **File:** `TM1Complexity.lean` (511 lines), destined for
 `Mathlib/Computability/TuringMachine/TM1Complexity.lean`.
+
+**Status (2026-07-17):** pushed to the fork as branch
+[`tm1-complexity`](https://github.com/khanukov/mathlib4/tree/tm1-complexity)
+(single commit authored by Dmitry Khanukov, subject
+`feat(Computability/TuringMachine): add step counting and complexity classes
+P/NP for TM1`, module registered in `Mathlib.lean`); the used API was
+re-checked against `master` as of 2026-07-16.  The PR description draft in
+`PR_DESCRIPTION.md` contains the AI-usage disclosure required by mathlib's
+contribution guidelines; after opening the PR, add the `LLM-generated` label
+(by commenting `LLM-generated`).  Issue/Zulip comments must be written in the
+author's own words — `ISSUE_35366_COMMENT.md` is a facts-only crib, not text
+to paste.
 
 **Verified against:** mathlib4 tag `v4.30.0`
 (commit `c5ea00351c28e24afc9f0f84379aa41082b1188f`), toolchain

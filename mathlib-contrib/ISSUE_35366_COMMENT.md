@@ -1,80 +1,80 @@
-# Draft comment for mathlib4 issue #35366
+# Факты для комментария в mathlib4 issue #35366
 
-> ⚠️ **НЕ копируй этот текст в issue дословно.** Политика mathlib прямо
+> ⚠️ **Комментарий пиши сам, своими словами.** Политика mathlib прямо
 > запрещает LLM-написанные комментарии на GitHub и Zulip: *"Using an LLM
 > when writing comments on GitHub or Zulip is not allowed: use your own
 > words"* (https://leanprover-community.github.io/contribute/index.html).
-> Текст ниже — только фактическая шпаргалка. Напиши комментарий сам, своими
-> словами и лаконичнее; факты (что реализовано, ответы на три вопроса
-> issue, ссылка на файл) бери отсюда. Раскрытие использования ИИ для самого
-> кода делается в описании PR — оно там уже есть.
+> Этот файл — только перечень фактов и фрагменты кода (вставлять код в
+> комментарий можно). Раскрытие использования ИИ для самого кода уже стоит
+> в описании PR (`PR_DESCRIPTION.md`), плюс метка `LLM-generated`.
 
----
+## Суть (что стоит сообщить)
 
-I have a complete, compiling implementation of this proposal against current
-mathlib (verified on `v4.30.0`), with answers to the three open design
-questions and one addition beyond the original scope. Happy to open it as a
-PR (or a PR stack) if the direction looks right. File:
-[`TM1Complexity.lean`](https://github.com/khanukov/p-np2/blob/claude/p-vs-np-approaches-q6p57c/mathlib-contrib/TM1Complexity.lean)
-(511 lines, no `sorry`, standard axioms only, no new imports beyond
-`PostTuringMachine` + a proof-only `Fintype.Basic`).
+* Реализация предложения issue готова целиком: ветка
+  `khanukov/mathlib4:tm1-complexity`, файл
+  `Mathlib/Computability/TuringMachine/TM1Complexity.lean` — 511 строк,
+  без `sorry`, все объявления зависят только от трёх стандартных аксиом.
+* Скомпилирована и kernel-checked на mathlib `v4.30.0`; используемый API
+  сверен с текущим `master`.
+* Код написан с существенной помощью LLM под твоим руководством и тобой
+  отревьюен — честно упомянуть, в PR будет полное раскрытие и метка.
+* Открытый вопрос к сообществу: годится ли направление, и как удобнее —
+  один PR или стек из трёх (1: `runN` + мост к `StateTransition.eval`;
+  2: `DecidesInTime` + `IsPolyTimeBound`; 3: классы + P ⊆ NP + дополнение).
+  Фидбек по именам и размещению файла приветствуется.
 
-**On the three questions in the issue:**
+## Ответы на три вопроса issue
 
-1. *TM1 or coordinate with #33132 (FinTM0)?* — This stays on TM1 as proposed
-   here, and I believe the two are complementary rather than competing:
-   #33132 gives a bundled single-tape model with relational timing; this
-   gives step counting and classes for the existing TM1. A bridge theorem
-   between them is natural follow-up work either way, so neither blocks the
-   other.
+1. **TM1 или координация с #33132 (FinTM0)?** Реализация остаётся на TM1,
+   как и предлагает issue. Модели взаимодополняющие, не конкурирующие:
+   #33132 — бандлированная однолентная модель с реляционным временем; здесь
+   — счётчик шагов и классы для существующей TM1. Мост между ними —
+   естественное продолжение, ни одна работа не блокирует другую.
 
-2. *Fuel-based `runN` vs relational?* — Both, with an equivalence theorem.
-   `runN` (fuel-based, absorbing at halt) is the workhorse — time-bound
-   statements become plain equalities, and monotonicity is
-   `runN_add`/`runN_le`. The bridge lemma
+2. **Fuel-based `runN` или реляционная семантика?** Оба, с теоремой
+   эквивалентности. `runN` (fuel, поглощение в останове) — рабочая лошадка:
+   утверждения о времени становятся равенствами, монотонность — это
+   `runN_add`/`runN_le`. Мост:
 
    ```lean
    theorem mem_eval_iff_exists_runN :
        b ∈ StateTransition.eval (step M) c ↔ (∃ n, runN M n c = b) ∧ b.l = none
    ```
 
-   proves it agrees with the existing relational semantics, so this does not
-   fork the notion of evaluation.
+   так что понятие вычисления не раздваивается.
 
-3. *Separate file for `IsPolynomial`?* — I used a deliberately lightweight
-   `IsPolyTimeBound T : ∃ k, ∀ n, T n ≤ n ^ k + k` local to the file. Using
-   `Polynomial ℕ` would drag algebra imports into the computability
-   hierarchy (`PostTuringMachine` has `assert_not_exists MonoidWithZero`);
-   if maintainers prefer a shared home for growth-rate predicates, it can
-   move later without changing any statement downstream.
+3. **Отдельный файл для `IsPolynomial`?** Использован намеренно лёгкий
+   локальный предикат `IsPolyTimeBound T : ∃ k, ∀ n, T n ≤ n ^ k + k`.
+   `Polynomial ℕ` притащил бы алгебру в иерархию computability
+   (`PostTuringMachine` держит `assert_not_exists MonoidWithZero`). Если
+   мейнтейнеры хотят общий дом для предикатов роста — предикат переезжает
+   без изменения даунстрим-утверждений.
 
-**Two design points where I strengthened the original sketch:**
+## Два усиления против исходного наброска
 
-* **Finite control is part of the class definition.** `InP`/`InNP` quantify
-  over machines with `Fintype` label and store types (via `PTimeDecider` /
-  `PTimeVerifier` structures with instance fields). This is load-bearing,
-  not decoration: with an infinite label/store type, a single transition can
-  smuggle unboundedly much information and the "class" degenerates.
+* **Финитный контроль — часть определения классов.** `InP`/`InNP`
+  квантифицируют по машинам с `Fintype`-типами меток и стора (структуры
+  `PTimeDecider`/`PTimeVerifier` с instance-полями). Это несущая
+  конструкция: с бесконечным типом меток/стора один переход протаскивает
+  неограниченную информацию, и «класс» вырождается.
 
-* **Beyond the issue's scope: P is closed under complement.**
+* **Сверх объёма issue: P замкнут относительно дополнения.**
 
   ```lean
   theorem InP.compl (h : InP Γ accept L)
       (ha : ∃ a, accept a) (hr : ∃ r, ¬accept r) : InP Γ accept Lᶜ
   ```
 
-  The textbook "swap accept and reject" becomes a statement transformation
-  `Stmt.mapHalt` (`halt ↦ write flip halt`) with a simulation lemma; since
-  only `goto`/`halt` consume steps in TM1, the complement machine runs in
-  *exactly* the same time bound. `InP.subset_np` (P ⊆ NP) is also included,
-  using the pleasant fact that tapes are quotients by trailing blanks, so a
-  decider is literally a verifier for empty certificates.
+  Учебниковое «поменять accept и reject местами» становится трансформацией
+  `Stmt.mapHalt` (`halt ↦ write flip halt`) с леммой симуляции; в TM1 шаг
+  стоят только `goto`/`halt`, поэтому машина-дополнение укладывается в *тот
+  же* тайм-баунд. Также включено `InP.subset_np` (P ⊆ NP): лента —
+  фактор по хвостовым бланкам, поэтому решатель буквально является
+  верификатором для пустых сертификатов.
 
-Also included: `step_eq_none_iff`, `haltedAt`-style stability lemmas, a
-one-step inhabitation witness for `InP`, and `DecidesInTime.mono` (enlarging
-the clock never changes the verdict).
+## Мелочи, если спросят
 
-If this looks right I would split it as: PR 1 — `runN` + bridge to
-`StateTransition.eval`; PR 2 — `DecidesInTime`/`IsPolyTimeBound`; PR 3 —
-classes, P ⊆ NP, complement closure. Feedback on naming and placement
-(`Mathlib/Computability/TuringMachine/TM1Complexity.lean`) very welcome.
+* Дополнительно в файле: `step_eq_none_iff`, лемма стабильности останова
+  `runN_le`, одношаговый свидетель непустоты `inP_head`,
+  `DecidesInTime.mono` (увеличение клока не меняет вердикт).
+* Импорты: только `PostTuringMachine` + proof-only `Data.Fintype.Basic`.

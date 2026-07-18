@@ -62,6 +62,36 @@ asserted that `lake build`/`lake test`/the linters "all pass locally" — a temp
 sentence, not a true statement (nothing has been built). It now reads as an explicit
 checklist to complete *before* opening the PR, not a claim.
 
+## Why there's still no compiler check (tried, hit a hard wall)
+
+A follow-up session attempted to actually install a toolchain and compile this. Findings,
+for whoever picks this up next:
+
+- `elan` (the Lean toolchain manager) **can** be installed in a khanukov/*-scoped sandbox:
+  it's packaged in Ubuntu's `universe` repo (`apt-get install elan`), a plain Debian
+  mirror, not GitHub.
+- The actual Lean 4 **toolchain** cannot. It is distributed exclusively via
+  `github.com/leanprover/lean4/releases`, and every GitHub-hosted path that could reach it
+  — `github.com`, `api.github.com`, `codeload.github.com` — returns the same session-scope
+  403 (`"GitHub access to this repository is not enabled for this session"`) for the
+  `leanprover` owner, because these campaign sessions are scoped to `khanukov/*` repos.
+  `raw.githubusercontent.com` and `*.github.io` are reachable (they served the file-by-file
+  reading this whole review was based on) but neither serves release binaries or archives,
+  so there is no way to reach the toolchain from inside such a session. This is a
+  same-owner-only restriction (confirmed via `add_repo`'s own error message: cross-tier
+  adds — a different GitHub owner than the session's existing repos — are refused outright,
+  you'd need a *fresh* session started with `leanprover/cslib` or `leanprover/lean4` as an
+  explicit initial source), not a general network policy, and not something to route
+  around from inside the sandbox.
+- No alternative distribution of the Lean 4 compiler exists on any host these sessions can
+  reach either (checked: not in `apt`, and PyPI/npm/crates.io don't carry it).
+
+**`verify_locally.sh`** in this directory is the practical answer: a self-contained script
+(elan install if needed → pinned toolchain → fresh `leanprover/cslib` clone → drop these
+files in at their paths → `lake exe cache get` → the full check suite from the process
+checklist below). Run it on any machine with ordinary internet access. It is the first
+thing to run before opening any PR — nothing below substitutes for it.
+
 ## What is still unverified (needs a real toolchain, not more reading)
 
 - **Everything else** — the rest of `Defs.lean`, `Relabel.lean`, `WellFormed.lean`,
@@ -141,11 +171,15 @@ optional per CSLib's own stated process — post it, in your own words, before o
   - `Cslib/Computability/Complexity/NP.lean` — PR-4 (new file, draft): `pairEncode`, `NP`,
     `P_subset_NP_of_checkComputerSpec`.
 
+- `verify_locally.sh` — run this first, on a machine with ordinary internet access
+  (see "why there's still no compiler check" above for why it can't run inside the
+  sandbox that drafted these files).
+
 ## Next steps, in order
 
-1. Get a real Lean/CSLib toolchain (this sandbox cannot fetch one — egress blocked the
-   elan download when tried). Clone `leanprover/cslib`, drop these files in at their listed
-   paths, `lake build`.
+1. Run `bash verify_locally.sh` on a machine with normal internet access (or start a
+   fresh Claude session scoped to include `leanprover/cslib`, if you want this done
+   in the cloud instead — see the note above on same-owner scoping).
 2. Fix whatever the compiler finds (expect some — see "what is still unverified" above);
    none of it should require redesigning anything, per the manual review.
 3. Post the Zulip discussion (`DESIGN.md` §7) — this is a process requirement, not a

@@ -305,7 +305,15 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.ConcreteTreeCodecSource,
     Glob.one `Pnp4.Frontier.ContractExpansion.ThresholdGrowth,
     Glob.one `Pnp4.Frontier.ContractExpansion.ConsolidatedTreeSeparation,
+    -- Sequential-magnification track (MMW19 streaming port).
+    Glob.one `Pnp4.Frontier.SequentialMagnification.StreamingModel,
+    Glob.one `Pnp4.Frontier.SequentialMagnification.StreamingLowerBounds,
+    Glob.one `Pnp4.Frontier.SequentialMagnification.MCSPStreamingTarget,
+    Glob.one `Pnp4.Frontier.SequentialMagnification.MMWMagnificationPort,
+    Glob.one `Pnp4.Frontier.SequentialMagnification.SizeParameterPadding,
+    Glob.one `Pnp4.Frontier.SequentialMagnification.MuGapNoGo,
     Glob.one `Pnp4.Tests.AlgorithmsToLowerBoundsSurfaceTests,
+    Glob.one `Pnp4.Tests.SequentialMagnificationAudit,
     Glob.one `Pnp4.Tests.AxiomsAudit
   ]
 

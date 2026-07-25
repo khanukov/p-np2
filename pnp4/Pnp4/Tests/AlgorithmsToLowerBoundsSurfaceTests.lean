@@ -63,6 +63,8 @@ import Pnp4.Frontier.ContractExpansion.ThresholdGrowth
 import Pnp4.Frontier.ContractExpansion.ConsolidatedTreeSeparation
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
+import Pnp4.Frontier.SequentialMagnification.MuGapNoGo
+import Pnp4.Frontier.SequentialMagnification.MMWMagnificationPort
 
 namespace Pnp4
 namespace Tests
@@ -3599,6 +3601,28 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms Pnp4.Frontier.ContractExpansion.parse_encodeTreeMCSPPrefixFields
 #print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_length_convention
 #check Pnp4.Frontier.ContractExpansion.treeMCSPRuntimeAwarePrefixParser
+
+
+-- Sequential-magnification track (MMW19 streaming port).
+#check Pnp4.Frontier.SequentialMagnification.StreamingAlgo
+#check Pnp4.Frontier.SequentialMagnification.SpaceBoundedStreaming
+#check Pnp4.Frontier.SequentialMagnification.MCSPStreamingHard
+#check Pnp4.Frontier.SequentialMagnification.MMWStreamingMagnification
+#check Pnp4.Frontier.SequentialMagnification.SequentialResearchGapWitness
+#check Pnp4.Frontier.SequentialMagnification.PvsNPClosureRoute
+#print axioms Pnp4.Frontier.SequentialMagnification.equality_forces_memory
+#print axioms Pnp4.Frontier.SequentialMagnification.no_small_streaming_solver_for_equality
+#print axioms Pnp4.Frontier.SequentialMagnification.exists_streaming_hard_function_at_fixed_length
+#print axioms Pnp4.Frontier.SequentialMagnification.parity_solvable
+#print axioms Pnp4.Frontier.SequentialMagnification.fixed_slice_hardwiring_costs_memory
+#print axioms Pnp4.Frontier.SequentialMagnification.padding_preserves_circuit_size
+#print axioms Pnp4.Frontier.SequentialMagnification.circuitComplexityLE_padding
+#print axioms Pnp4.Frontier.SequentialMagnification.time_exponents_are_compatible
+#print axioms Pnp4.Frontier.SequentialMagnification.padding_cannot_close_size_parameter_gap
+#print axioms Pnp4.Frontier.SequentialMagnification.P_ne_NP_of_mcsp_streaming_hardness
+#print axioms Pnp4.Frontier.SequentialMagnification.P_ne_NP_of_sequentialGap
+#print axioms Pnp4.Frontier.SequentialMagnification.sequentialTarget_of_dagTarget
+#print axioms Pnp4.Frontier.SequentialMagnification.P_ne_NP_of_closureRoute
 
 end Tests
 end Pnp4

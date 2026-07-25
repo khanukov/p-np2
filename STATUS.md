@@ -35,6 +35,44 @@ Research method boundary:
   explicit bridge to `ComplexityInterfaces.NP_not_subset_PpolyDAG`
   (consistent with `AGENTS.md` and `pnp4/README.md`).
 
+## New: Uniform Sequential Port (2026-07-25)
+
+A second closure port has been added under
+`pnp4/Pnp4/Frontier/SequentialMagnification/`.  It does **not** change the
+frozen target, does not touch
+`pnp3/Magnification/UnconditionalResearchGap.lean` or `spec/target.toml`, and
+does not prove `P != NP`.
+
+What it records:
+
+1. Every refuted source predicate in this project died to *non-uniform*
+   truth-table hardwiring.  That is a property of `PpolyDAG`/`PpolyFormula`, not
+   of magnification.
+2. The mainline citation of `pnp4` (McKay-Murray-Williams, STOC 2019,
+   Theorem 1.3, as restated in ECCC TR20-103 Theorem 47) concludes `P != NP`
+   *directly* from a one-pass **streaming** lower bound for MCSP, without ever
+   producing a `P/poly` lower bound.  The existing `SearchMCSPWeakLowerBound`
+   interface cannot express that shape.
+3. In the streaming model the hardwiring attack provably fails:
+   `fixed_slice_hardwiring_costs_memory` shows that deciding every function on a
+   single input length `2 * m` costs at least `m` bits of memory.
+4. The port's source predicate `MCSPStreamingHard` passes a falsifiability
+   audit: `probeD_mcsp_streaming_hard_concrete : MCSPStreamingHard 0 1 1` is a
+   closed satisfiability certificate.  No earlier source predicate passed this
+   test; each was proved `-> False`.
+5. The remaining obligation is quantified: the published time exponents are
+   already compatible (`1.99 > 1.01`), and the whole gap is between two
+   constants in the MCSP size parameter.  `MuGapNoGo.lean` proves that padding
+   cannot bridge them.
+
+Everything in the new directory is `axiom`/`sorry`-free with axiom surface
+`propext, Classical.choice, Quot.sound`.  The magnification step itself remains
+an explicit unproved published contract (`MMWStreamingMagnification`), and the
+weak streaming lower bound remains open research-level mathematics.
+
+Full analysis: `outputs/sequential-magnification-route-2026-07.md`.
+Module map: `pnp4/Pnp4/Frontier/SequentialMagnification/README.md`.
+
 ## Current Audit Result
 
 There is still **no unconditional in-repo theorem** `P != NP`, and the

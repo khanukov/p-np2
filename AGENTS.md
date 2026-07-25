@@ -28,6 +28,34 @@ SearchMCSPWeakLowerBound
   → P_ne_NP
 ```
 
+## Open Policy Question: The Uniform Sequential Port (2026-07)
+
+The mainline rule above requires every accepted package to end in
+`VerifiedNPDAGLowerBoundSource`, i.e. in the non-uniform separation
+`NP ⊄ PpolyDAG`.  That is strictly stronger than `P != NP`.
+
+The magnification theorem this project cites as its mainline reference does not
+have that shape.  McKay-Murray-Williams (STOC 2019, Theorem 1.3), as restated by
+Cheraghchi-Hirahara-Myrisiotis-Yoshida (ECCC TR20-103, Theorem 47), concludes
+`P != NP` directly from a *uniform* one-pass streaming lower bound for MCSP, and
+never produces a `P/poly` lower bound.  `SearchMCSPWeakLowerBound` therefore
+cannot express it.
+
+`pnp4/Pnp4/Frontier/SequentialMagnification/` supplies that missing port,
+together with a kernel-checked falsifiability audit showing that the truth-table
+hardwiring attack which refuted every earlier source predicate provably does not
+apply to it.
+
+Status of this directory under the present policy: **side track**, because it
+does not bridge to `VerifiedNPDAGLowerBoundSource`.  Whether to recognise it as
+a second mainline is a maintainer decision; the code records the proposed
+widened endpoint as `PvsNPClosureRoute` but does not enact it, and neither
+`spec/target.toml` nor `pnp3/Magnification/UnconditionalResearchGap.lean` has
+been modified.
+
+Rationale and quantitative frontier:
+`outputs/sequential-magnification-route-2026-07.md`.
+
 ## Restricted Lower-Bound Side Track
 
 The pnp4 `AC0[p]`, coin-problem, formula, and local-PRG lower-bound routes are

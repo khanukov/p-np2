@@ -196,6 +196,40 @@ Current theorem surface status:
   `decode_encode`, and `TreeMCSPSearchWitnessEncoding.ofCodec` derives the
   verifier from actual decoded `Pnp3.Models.Circuit` witnesses.
 
+## Uniform sequential magnification (`Frontier/SequentialMagnification/`)
+
+A second, independent closure port, added 2026-07-25.
+
+The compression-magnification reference cited above (McKay-Murray-Williams,
+STOC 2019) actually concludes `P != NP` *directly*, from a one-pass **streaming**
+lower bound for MCSP -- it never produces a `P/poly` lower bound.  The existing
+`SearchMCSPWeakLowerBound` interface, which demands
+`weakLowerBound -> VerifiedNPDAGLowerBoundSource`, cannot express that shape.
+This directory adds the missing port.
+
+Why it matters: every refuted source predicate in this project died to
+*non-uniform* truth-table hardwiring.  That attack provably does not apply to a
+memory-bounded one-pass model, and the directory proves it:
+
+```text
+fixed_slice_hardwiring_costs_memory :
+  (∀ f, ∃ A : SpaceBoundedStreaming space, A.SolvesLength (2 * m) f) → m ≤ space
+```
+
+The remaining obligation is quantified rather than vague.  The published time
+exponents are already compatible (`1.99 > 1.01`); the entire gap is between two
+constants `μ₁ < μ₂` in the MCSP size parameter, and `MuGapNoGo.lean` proves that
+padding cannot bridge them.
+
+It is strictly conditional: it does **not** prove `P != NP` and does not prove
+the streaming lower bound.  See
+`pnp4/Pnp4/Frontier/SequentialMagnification/README.md` for the module map and
+the proved-vs-open breakdown, and
+`outputs/sequential-magnification-route-2026-07.md` for the full analysis.
+
+Under the current `AGENTS.md` policy this track is a **side track**, since it
+does not bridge to `VerifiedNPDAGLowerBoundSource`.
+
 ## Downstream decision→search extraction (`Frontier/ContractExpansion/`)
 
 `Frontier/ContractExpansion/` replaces the abstract

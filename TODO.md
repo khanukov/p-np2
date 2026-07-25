@@ -114,6 +114,31 @@ Canonical docs must say:
    themselves;
 7. the remaining gap is mathematical, not just endpoint wiring.
 
+### Target 4. Evaluate the uniform sequential port (new, 2026-07-25)
+
+Status: proposal on the table, maintainer decision pending.
+
+`pnp4/Pnp4/Frontier/SequentialMagnification/` adds a second closure port whose
+target is `P != NP` itself rather than the strictly stronger
+`NP_not_subset_PpolyDAG`.  It is built on the McKay-Murray-Williams streaming
+magnification theorem, which the current pnp4 mainline interface cannot express.
+
+Decision items:
+
+1. whether `PvsNPClosureRoute` (the widened endpoint disjunction) should be
+   recognised as mainline in `AGENTS.md`;
+2. whether `spec/target.toml` should gain a second admissible target, which is a
+   Foundational-PR-level change and is deliberately not attempted here;
+3. whether to invest in formalizing MMW19 Theorem 1.3 itself, which would turn
+   `MMWStreamingMagnification` from a published contract into a theorem.
+
+Non-goals for this target: claiming that the sequential route is close to
+`P != NP`.  It is not.  Its remaining obligation is a weak lower bound that
+nobody knows how to prove; the contribution is that the obligation is now the
+*right size* and is quantified.
+
+Reference: `outputs/sequential-magnification-route-2026-07.md`.
+
 ## Non-Goals Right Now
 
 - Do not claim full unconditionality.

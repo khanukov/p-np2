@@ -313,6 +313,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.SequentialMagnification.LocalHSG,
     Glob.one `Pnp4.Frontier.SequentialMagnification.MMWMagnificationPort,
     Glob.one `Pnp4.Frontier.SequentialMagnification.HSGWindowNoGo,
+    Glob.one `Pnp4.Frontier.SequentialMagnification.UniformStreaming,
     Glob.one `Pnp4.Frontier.SequentialMagnification.SequentialCapstone,
     Glob.one `Pnp4.Frontier.SequentialMagnification.SizeParameterPadding,
     Glob.one `Pnp4.Frontier.SequentialMagnification.MuGapNoGo,

@@ -58,6 +58,7 @@ import Pnp4.Frontier.SequentialMagnification.MMWMagnificationPort
 import Pnp4.Frontier.SequentialMagnification.SequentialCapstone
 import Pnp4.Frontier.SequentialMagnification.FoolingSet
 import Pnp4.Frontier.SequentialMagnification.HSGWindowNoGo
+import Pnp4.Frontier.SequentialMagnification.UniformStreaming
 
 namespace Pnp4
 namespace Tests
@@ -258,6 +259,13 @@ namespace Tests
 #print axioms Pnp4.Frontier.SequentialMagnification.hitsStreamingTests_forces_short_budget
 #print axioms Pnp4.Frontier.SequentialMagnification.localHSG_budget_bound
 #print axioms Pnp4.Frontier.SequentialMagnification.no_localHSG_of_budget_too_large
+#check Pnp4.Frontier.SequentialMagnification.CircuitBoundedStreaming
+#check Pnp4.Frontier.SequentialMagnification.MMWUniformStreamingMagnification
+#check Pnp4.Frontier.SequentialMagnification.UniformSequentialWitness
+#print axioms Pnp4.Frontier.SequentialMagnification.UniformMCSPStreamingHard_of_MCSPStreamingHard
+#print axioms Pnp4.Frontier.SequentialMagnification.P_ne_NP_of_uniform_mcsp_streaming_hardness
+#print axioms Pnp4.Frontier.SequentialMagnification.P_ne_NP_of_uniformSequentialWitness
+#print axioms Pnp4.Frontier.SequentialMagnification.windowAttack_forces_easy_indicator
 
 end Tests
 end Pnp4

@@ -411,9 +411,55 @@ limitation 3 of this report when the port was first written. The caveat was not
 cosmetic: it is load-bearing, and the space-only model is not merely *stronger
 than needed* but *too strong to be satisfiable* on the HSG side.
 
-This is the concrete next work item, and it is well-defined: add an update-time
-budget to the model, re-derive §3b in the restricted class, and re-run the
-window test to confirm it is excluded.
+### 3e. Stage 4: the repair, implemented
+
+`UniformStreaming.lean` defines
+
+```lean
+structure CircuitBoundedStreaming (space updateBudget : Nat) where
+  stepCircuit   : Fin space → Circuit (space + 1)
+  acceptCircuit : Circuit space
+  step_size     : ∀ i, (stepCircuit i).size ≤ updateBudget
+  accept_size   : acceptCircuit.size ≤ updateBudget
+```
+
+— memory of `space` bits, with each update step and the output computed by a
+circuit of size at most `updateBudget`. This is the faithful reading of MMW,
+which bound *both* space and update time.
+
+The repair improves the port on both sides simultaneously:
+
+* **Contract side.** `MMWUniformStreamingMagnification` records both budgets, so
+  it is closer to the published Theorem 1.3 than the space-only version.
+* **Hardness side.** The obligation gets *weaker*: every circuit-bounded device
+  forgets to a space-bounded one, hence
+
+  ```lean
+  UniformMCSPStreamingHard_of_MCSPStreamingHard :
+    MCSPStreamingHard space n s → UniformMCSPStreamingHard space updateBudget n s
+  ```
+
+The repaired port is `P_ne_NP_of_uniform_mcsp_streaming_hardness`, with witness
+type `UniformSequentialWitness`.
+
+And the window attack no longer comes for free:
+
+```lean
+windowAttack_forces_easy_indicator :
+  (A : CircuitBoundedStreaming w u) → (A implements the window test for P) →
+  ∃ c : Circuit w, c.size ≤ u ∧ c computes the indicator of P
+```
+
+So the attack survives the restriction exactly when the generator's own window
+set has a small circuit — a checkable condition on any proposed construction,
+not a free move for the adversary.
+
+**Honest limit of stage 4.** This does not prove the window attack is
+*impossible* in the restricted class; one cannot prove the absence of an attack.
+It relocates the burden: an attacker must now exhibit a small circuit for the
+generator's window set. For a structured generator (Nisan-, Forbes–Kelley-style)
+that set may well be easy, so the next audit step is to check exactly that for a
+concrete candidate before any construction effort is spent.
 
 
 ---
@@ -438,7 +484,9 @@ surface limited to `propext`, `Classical.choice`, `Quot.sound`:
 * `SequentialCapstone.lean` — `P_ne_NP_of_localHSG`, `LocalHSGWitness`.
 * `HSGWindowNoGo.lean` — the window test and the budget inequality that closes
   the local-HSG shortcut in the space-only model.
-* `Tests/SequentialMagnificationAudit.lean` — probes A–H (H is negative).
+* `UniformStreaming.lean` — the repaired, update-time-bounded model, the
+  faithful MMW contract, and the repaired port.
+* `Tests/SequentialMagnificationAudit.lean` — probes A–I (H is negative).
 
 Deliberately **not** changed: `RESEARCH_CONSTITUTION.md`, the frozen `[target]`
 block of `spec/target.toml`, and

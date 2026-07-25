@@ -63,6 +63,7 @@ it is not touched by the barriers that close the other routes here — see
 | `LocalHSG.lean` | Local hitting-set generators: `local HSG ⟹ MCSPStreamingHard`, plus the counting bound `2 ^ seedLen ≤ circuitCountBound n s` that pins the size parameter. | **unconditional theorems** |
 | `SequentialCapstone.lean` | Composition: `P_ne_NP_of_localHSG`, `LocalHSGWitness`. | proved bridge |
 | `HSGWindowNoGo.lean` | The window test: `HitsStreamingTests G space` is false once `space ≥ seedLen + 1`; hence `2 ^ space ≤ circuitCountBound n s`. | **no-go module** |
+| `UniformStreaming.lean` | The repair: `CircuitBoundedStreaming space updateBudget` (update and output computed by bounded-size circuits), the faithful MMW contract, and the repaired port. | definitions + proved bridges |
 | `../../Tests/SequentialMagnificationAudit.lean` | Probes A–E, the falsifiability audit. | proved |
 
 ## Proved vs. open

@@ -87,9 +87,16 @@ weak streaming lower bound remains open research-level mathematics.
    Retracted: the claim that the remaining obligation "is" a local-HSG
    construction.  Not retracted: `MCSPStreamingHard` itself, which the window
    test does not touch, and the anti-hardwiring results.
-   Repair: the window test is non-uniform, so restricting the model to
-   bounded-update-time devices (the caveat already flagged when the port was
-   written) is the next work item.
+   Repair, implemented the same day: `UniformStreaming.lean` adds
+   `CircuitBoundedStreaming space updateBudget` (each update step and the output
+   computed by a circuit of size at most `updateBudget`), the faithful MMW
+   contract recording both budgets, and the repaired port.  The repair improves
+   the port in both directions: the contract is closer to the published
+   statement, and the required hardness is weaker
+   (`UniformMCSPStreamingHard_of_MCSPStreamingHard`).  It does not prove the
+   window attack impossible in the restricted class; it forces the attacker to
+   exhibit a small circuit for the generator's window set
+   (`windowAttack_forces_easy_indicator`).
 
 Governance: as of 2026-07-25 this track is recognised as **Mainline B** in
 `AGENTS.md`, recorded additively at `spec/target.toml::[secondary_target]`

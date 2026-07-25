@@ -131,27 +131,31 @@ Decisions taken (2026-07-25):
 
 Open work items, in priority order:
 
-1. **Add an update-time budget to the streaming model.**  This is now the
-   blocking item.  `HSGWindowNoGo.lean` proves that in the current space-only,
-   non-uniform test class the local-HSG hypothesis is unreachable at the port's
-   parameters (`2 ^ space <= circuitCountBound n s`).  The offending test
-   hardwires its target set; a bounded-update-time device cannot.  Restricting
-   the class restores the local-HSG route and is also the faithful reading of
-   McKay-Murray-Williams.
-2. **Then: the mathematics.**  In the restricted class, construct or refute a
+1. **DONE (2026-07-25): update-time budget added.**  `UniformStreaming.lean`
+   supplies `CircuitBoundedStreaming space updateBudget`, the faithful MMW
+   contract, and the repaired port.  The obligation in the restricted class is
+   weaker (`UniformMCSPStreamingHard_of_MCSPStreamingHard`).
+2. **Next blocking item: audit a concrete generator's window set.**
+   `windowAttack_forces_easy_indicator` shows the window attack survives the
+   restriction exactly when the generator's last-`w` window set has a circuit of
+   size `<= updateBudget`.  Before spending effort on a construction, check this
+   for a Nisan-/Forbes-Kelley-style candidate.  If the window set is easy for
+   structured generators, the local-HSG route is closed in the restricted class
+   too, and that should be recorded as a second no-go.
+3. **Then: the mathematics.**  In the restricted class, construct or refute a
    local hitting-set generator with seed length `N ^ o(1)`.  Note the standing
    counting price `2 ^ seedLen <= circuitCountBound n s`, which pins the
    published construction at `N ^ (1/2)`.
-3. **Discharge the Shannon slack.**  `hSlack` is currently a hypothesis of
+4. **Discharge the Shannon slack.**  `hSlack` is currently a hypothesis of
    `MCSPStreamingHard_of_localHSG`.  `pnp3/Counting` has the machinery
    (`card_easyFunctions_le`, `circuitCountBound`) to prove it for size
    parameters below the counting threshold; wiring it in would remove a
    hypothesis.
-4. **Formalize MMW19 Theorem 1.3**, turning `MMWStreamingMagnification` from a
+5. **Formalize MMW19 Theorem 1.3**, turning `MMWStreamingMagnification` from a
    published contract into a theorem.  Large independent project.
-5. **Note.**  The space-only model makes the required hardness stronger than MMW
-   strictly need, and (per item 1) makes the HSG side unsatisfiable.  Item 1 is
-   the same repair seen from the other direction.
+6. **Note.**  The space-only model of `MCSPStreamingTarget.lean` is retained
+   because the anti-hardwiring results are cleanest there; the repaired class of
+   `UniformStreaming.lean` is the one the port should be read against.
 
 Non-goals for this target: claiming that the sequential route is close to
 `P != NP`.  It is not.  Its remaining obligation is a weak lower bound that

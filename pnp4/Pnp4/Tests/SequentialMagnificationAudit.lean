@@ -3,6 +3,7 @@ import Pnp4.Frontier.SequentialMagnification.MuGapNoGo
 import Pnp4.Frontier.SequentialMagnification.SequentialCapstone
 import Pnp4.Frontier.SequentialMagnification.FoolingSet
 import Pnp4.Frontier.SequentialMagnification.HSGWindowNoGo
+import Pnp4.Frontier.SequentialMagnification.UniformStreaming
 
 /-!
 # Falsifiability audit for the sequential-magnification port
@@ -27,6 +28,7 @@ Four things are checked, all kernel-verified:
 | F | Is the locality price of a hitting-set generator real? | yes, `probeF_seed_length_obstruction` |
 | G | Does the reduced chain actually reach `P ≠ NP`? | yes, `probeG_reduced_chain` |
 | H | Is the local-HSG sufficient condition reachable at the port's budget? | **no**, `probeH_localHSG_budget_nogo` |
+| I | Does the repaired (update-time-bounded) model weaken the obligation? | yes, `probeI_uniform_obligation_is_weaker` |
 
 Probe D is the one the earlier routes could never pass: it exhibits concrete
 parameters at which the *actual* source predicate consumed by the port holds.
@@ -276,6 +278,24 @@ theorem probeH_localHSG_budget_nogo {n s seedLen space : Nat}
     2 ^ space ≤ Pnp3.Models.circuitCountBound n s :=
   localHSG_budget_bound G hinj hfit hHit
 
+
+/-!
+## Probe I — the repaired model weakens the obligation on both sides
+
+`UniformStreaming.lean` restricts the test class to devices whose update and
+output steps are computed by circuits of bounded size, which is the faithful
+reading of McKay-Murray-Williams and excludes the hardwired window test of
+probe H.
+
+The probe records the direction that matters: the restricted obligation is
+*implied by* the space-only one, so the repair never makes the target harder.
+-/
+
+theorem probeI_uniform_obligation_is_weaker
+    {space updateBudget n s : Nat} (h : MCSPStreamingHard space n s) :
+    UniformMCSPStreamingHard space updateBudget n s :=
+  UniformMCSPStreamingHard_of_MCSPStreamingHard h
+
 /-!
 ## Axiom surface
 -/
@@ -301,6 +321,10 @@ theorem probeH_localHSG_budget_nogo {n s seedLen space : Nat}
 #print axioms hitsStreamingTests_forces_short_budget
 #print axioms localHSG_budget_bound
 #print axioms no_localHSG_of_budget_too_large
+#print axioms UniformMCSPStreamingHard_of_MCSPStreamingHard
+#print axioms P_ne_NP_of_uniform_mcsp_streaming_hardness
+#print axioms P_ne_NP_of_uniformSequentialWitness
+#print axioms windowAttack_forces_easy_indicator
 
 end SequentialMagnificationAudit
 end Tests

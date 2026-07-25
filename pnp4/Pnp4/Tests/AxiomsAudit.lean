@@ -60,6 +60,7 @@ import Pnp4.Frontier.SequentialMagnification.FoolingSet
 import Pnp4.Frontier.SequentialMagnification.HSGWindowNoGo
 import Pnp4.Frontier.SequentialMagnification.UniformStreaming
 import Pnp4.Frontier.DirectRoute.SimulationCalculus
+import Pnp4.Frontier.DirectRoute.ExponentialScalePort
 
 namespace Pnp4
 namespace Tests
@@ -277,6 +278,20 @@ namespace Tests
 #print axioms Pnp4.Frontier.DirectRoute.contradiction_of_below_threshold
 #print axioms Pnp4.Frontier.DirectRoute.fixed_gain_insufficient
 #print axioms Pnp4.Frontier.DirectRoute.refutation_of_newToolRequirement
+-- Scale dichotomy: the whole difficulty is the exponent `c`.
+#print axioms Pnp4.Frontier.DirectRoute.unit_cost_any_gain
+#print axioms Pnp4.Frontier.DirectRoute.boundary_at_unit_cost
+#print axioms Pnp4.Frontier.DirectRoute.gain_threshold_exact
+#print axioms Pnp4.Frontier.DirectRoute.required_gain_unbounded
+#print axioms Pnp4.Frontier.DirectRoute.refutes_of_costFree
+-- Exponential-scale port.
+#check Pnp4.Frontier.DirectRoute.EXP
+#check Pnp4.Frontier.DirectRoute.NEXP
+#check Pnp4.Frontier.DirectRoute.PaddingTranslation
+#check Pnp4.Frontier.DirectRoute.ExponentialScaleWitness
+#print axioms Pnp4.Frontier.DirectRoute.P_ne_NP_of_EXP_ne_NEXP
+#print axioms Pnp4.Frontier.DirectRoute.P_ne_NP_of_exponentialScaleWitness
+#print axioms Pnp4.Frontier.DirectRoute.exponentialScale_any_gain_refutes
 
 end Tests
 end Pnp4

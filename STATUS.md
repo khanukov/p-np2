@@ -136,6 +136,20 @@ have a gain that grows with `c`, or must consume the assumption **additively**
 (once, inside a single nondeterministic guess) -- which is the algorithmic
 method, the one template the no-go does not cover.
 
+Second pass, same day (`ScaleDichotomy.lean`, `ExponentialScalePort.lean`):
+
+4. `unit_cost_any_gain` / `gain_threshold_exact` / `required_gain_unbounded` --
+   at `c = 1` the assumption is free and any positive gain closes the loop; at
+   `c > 1` the required gain is exactly `delta > 1 - c^(-k)`, tending to 1.
+   Every direct separation ever obtained is a `c -> 1` argument (PPST by
+   hypothesis, the algorithmic method by ambient scale).
+5. Third port: `P_ne_NP_of_EXP_ne_NEXP`.  `EXP` and `NEXP` are defined in the
+   repository's own TM model; the padding step `P = NP -> EXP = NEXP` is an
+   explicit external contract and the bridge is proved.  Honest note: no
+   converse is known, so this asks for something strictly STRONGER than
+   `P != NP`; what it buys is the `CostFree` regime that polynomial scale
+   provably lacks.
+
 This proves no separation and claims no path.  Full analysis:
 `outputs/direct-route-map-2026-07.md`.
 

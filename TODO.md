@@ -184,9 +184,42 @@ Open sub-questions, both checkable:
    repeatedly, which is the only additive-flavoured idea in a multiplicative
    field.
 
+Second pass (`ScaleDichotomy.lean`, `ExponentialScalePort.lean`):
+
+The governing inequality reads sharper than "there are barriers".  At `c = 1`
+the assumption is free and ANY positive gain closes the loop
+(`unit_cost_any_gain`); at `c > 1` the required gain is exactly
+`delta > 1 - c^(-k)` (`gain_threshold_exact`), tending to 1 as `c` grows.
+Every direct separation ever obtained is a `c -> 1` argument: PPST by
+hypothesis, the algorithmic method by ambient scale.
+
+Two ways to reach `c = 1`; only one is available.  Bootstrapping `c` downwards
+is not (padding moves the exponent the wrong way; Cook-Levin is circular).
+Raising the ambient scale is: at resource `2^(n^a)` an invocation of the assumed
+algorithm costs `poly(n)`, i.e. nothing.
+
+Resulting target, recorded as a third port:
+
+```text
+EXP != NEXP  =>  P != NP        (padding, external contract)
+```
+
+`EXP` / `NEXP` are defined in the repository's own TM model; the bridge is
+proved.  Honest note: no converse is known, so this asks for something strictly
+STRONGER than `P != NP`.  The compensation is the named property `CostFree`,
+which polynomial scale provably lacks.
+
 Non-goal: extending the calculus with more arrows in the hope of a contradiction.
 Theorem 3 of the module says fixed-gain arrows cannot help; adding them is
 provably wasted effort.
+
+Next work items on this track:
+
+1. Formalize the padding contract (`P = NP -> EXP = NEXP`) inside the internal
+   TM model, turning `PaddingTranslation` from a contract into a theorem.
+2. Audit whether the algorithmic method's additive-cost structure can be stated
+   in the calculus at all -- if it can, the no-go's scope should be widened to
+   say so explicitly; if it cannot, that boundary should be documented.
 
 ## Non-Goals Right Now
 

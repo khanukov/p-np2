@@ -163,7 +163,67 @@ Two concrete sub-questions that follow, both open and both checkable:
 
 ---
 
-## 5. Honest limitations
+## 4b. Second pass: the whole difficulty is one parameter
+
+Re-reading the governing inequality `(1-δ)·c^k vs 1` more carefully gives a
+sharper statement than "there are barriers".
+
+* **`c = 1` — the assumption is free.** Then any positive gain closes the loop
+  (`unit_cost_any_gain`). At `δ = 0` the inequality is exactly tight
+  (`boundary_at_unit_cost`): the exponent-level calculus is silent and the
+  logarithmic analysis decides the case.
+* **`c > 1` — the assumption is paid for.** The required gain is exactly
+  `δ > 1 - c^(-k)` (`gain_threshold_exact`), and it tends to `1` as `c` grows
+  (`required_gain_unbounded`).
+
+Lining this up with the literature:
+
+| result | effective `c` | outcome |
+|---|---|---|
+| PPST, `NTIME[n] ≠ TIME[n]` | `1` by hypothesis | succeeds, at the boundary |
+| Williams, `NEXP ⊄ ACC⁰` | `1` by scale: `poly(n)` overhead against a `2^n` resource is negligible | succeeds |
+| time–space tradeoffs for `SAT` | bounded by the extra space hypothesis | partial: `n^1.8` |
+| **`P` vs `NP`** | **unbounded** | `fixed_gain_insufficient` |
+
+**Every direct separation ever obtained is a `c → 1` argument.** That is one
+inequality, not a list of unrelated barriers.
+
+### Consequence: two ways to reach `c = 1`, one available
+
+1. **Bootstrap `c` downwards** — turn a `DTIME[n^c]` `SAT` algorithm into a
+   near-linear one. Not available: padding enlarges instances, moving the
+   exponent the wrong way; the Cook–Levin route is circular.
+2. **Raise the ambient scale** until `poly(n)` is negligible. At resource
+   `2^(n^a)` one invocation of the assumed algorithm costs `poly(n)`, which is
+   sub-polynomial in the resource: the effective `c` is `1`.
+
+Option 2 is the only reachable instance of the condition under which the direct
+method has ever worked, and it is exactly the regime the algorithmic method
+lives in.
+
+## 4c. The resulting target: `EXP ≠ NEXP`
+
+`ExponentialScalePort.lean` records it:
+
+```text
+EXP ≠ NEXP  ⟹  P ≠ NP        (padding, recorded as a published contract)
+```
+
+`EXP` and `NEXP` are defined in the repository's own Turing-machine model,
+mirroring `polyTimeDecider` and `NP_TM`. The bridge is proved; the padding
+argument is an explicit external input.
+
+**The trade, stated honestly.** No converse is known, so this asks for something
+strictly *stronger* than `P ≠ NP`. That is the same kind of trade Mainline A
+makes with `NP ⊄ P/poly` — but with one difference that is the entire point of
+§4b: here the extra strength buys a named, formal property, `CostFree`, which is
+the property every successful direct separation has and which polynomial scale
+provably lacks. Mainline A's extra strength buys nothing and costs the
+hardwiring attack.
+
+Whether the trade is worth taking is a research judgement. What is settled is
+that at polynomial scale the direct method is closed, and that this is the only
+open door in the same building.
 
 1. **This is a no-go for a named toolkit, not for all proofs.** The calculus
    contains the arrows listed in §2. A technique outside it — the algorithmic
@@ -175,7 +235,11 @@ Two concrete sub-questions that follow, both open and both checkable:
 3. **`c^j` as the collapse cost is an upper-bound model.** A sharper collapse
    accounting would only lower the threshold, i.e. strengthen Theorem 3's
    conclusion that fixed gains fail.
-4. **No new mathematics is claimed.** The theorems are about the shape of proof
+4. **`EXP ≠ NEXP` is not easier than `P ≠ NP`.** It is *sufficient* and, as far
+   as anyone knows, strictly stronger. The argument for looking there is about
+   the cost regime, not about the target being weaker. Nobody has proved
+   `EXP ≠ NEXP` either.
+5. **No new mathematics is claimed.** The theorems are about the shape of proof
    strategies. They are useful because they convert "these approaches seem to
    stall" into "these approaches provably cannot work, and here is the property
    that is missing".

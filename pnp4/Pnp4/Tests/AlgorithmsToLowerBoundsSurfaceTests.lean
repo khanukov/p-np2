@@ -67,6 +67,7 @@ import Pnp4.Frontier.SequentialMagnification.MuGapNoGo
 import Pnp4.Frontier.SequentialMagnification.MMWMagnificationPort
 import Pnp4.Frontier.SequentialMagnification.SequentialCapstone
 import Pnp4.Frontier.SequentialMagnification.FoolingSet
+import Pnp4.Frontier.SequentialMagnification.HSGWindowNoGo
 
 namespace Pnp4
 namespace Tests
@@ -3639,6 +3640,10 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms Pnp4.Frontier.SequentialMagnification.no_injective_localGenerator_of_seed_too_long
 #print axioms Pnp4.Frontier.SequentialMagnification.P_ne_NP_of_localHSG
 #print axioms Pnp4.Frontier.SequentialMagnification.P_ne_NP_of_localHSGWitness
+#print axioms Pnp4.Frontier.SequentialMagnification.not_hitsStreamingTests_of_space_ge_seed
+#print axioms Pnp4.Frontier.SequentialMagnification.hitsStreamingTests_forces_short_budget
+#print axioms Pnp4.Frontier.SequentialMagnification.localHSG_budget_bound
+#print axioms Pnp4.Frontier.SequentialMagnification.no_localHSG_of_budget_too_large
 
 end Tests
 end Pnp4

@@ -62,6 +62,7 @@ it is not touched by the barriers that close the other routes here — see
 | `FoolingSet.lean` | The fooling-set / one-way communication method as a reusable tool. | **unconditional theorems** |
 | `LocalHSG.lean` | Local hitting-set generators: `local HSG ⟹ MCSPStreamingHard`, plus the counting bound `2 ^ seedLen ≤ circuitCountBound n s` that pins the size parameter. | **unconditional theorems** |
 | `SequentialCapstone.lean` | Composition: `P_ne_NP_of_localHSG`, `LocalHSGWitness`. | proved bridge |
+| `HSGWindowNoGo.lean` | The window test: `HitsStreamingTests G space` is false once `space ≥ seedLen + 1`; hence `2 ^ space ≤ circuitCountBound n s`. | **no-go module** |
 | `../../Tests/SequentialMagnificationAudit.lean` | Probes A–E, the falsifiability audit. | proved |
 
 ## Proved vs. open
@@ -87,19 +88,30 @@ it is not touched by the barriers that close the other routes here — see
 
 **Open, research-level:**
 
-* `HitsStreamingTests G space` for a local generator `G` at a *small* size
-  parameter — i.e. a local hitting-set generator against space-bounded one-pass
-  streaming tests.  This is the whole mathematical content, and this directory
-  does not supply it.
+* An inhabitant of `MCSPStreamingHard (C.spaceBudget (s n)) n (s n)`.  This is
+  the port's actual obligation and it remains untouched.
 
-  Equivalently (weaker, and also sufficient): an inhabitant of
-  `MCSPStreamingHard (C.spaceBudget (s n)) n (s n)`.
+**Retracted (2026-07-25, same session): the local-HSG shortcut.**
 
-  `LocalHSG.lean` reduces the second to the first and proves the price:
-  `2 ^ seedLen ≤ circuitCountBound n s`, so shrinking the size parameter forces
-  a shorter seed.  With `N = 2 ^ n` and `s = N ^ μ` the best known generators
-  against read-once devices have seed `Õ(N ^ (1/2))`, which is exactly why the
-  published lower bound sits at `μ ≈ 1`.
+`LocalHSG.MCSPStreamingHard_of_localHSG` is a correct theorem, but
+`HSGWindowNoGo.lean` shows its hypothesis is unreachable at the port's
+parameters *in this test class*.  A generator with `2 ^ seedLen` seeds is
+defeated by a `(seedLen + 1)`-bit shift register that rejects every one of its
+outputs and still accepts half of all truth tables.  Hence
+
+```text
+2 ^ space ≤ circuitCountBound n s        (localHSG_budget_bound)
+```
+
+i.e. the memory budget a local HSG can defeat is at most `Õ(s)`, while the
+contract supplies `space = p(s)`.  The route is open only while `p` stays within
+`Õ(s)`.
+
+The escape hatch is the test class, not the idea: the window test hardwires its
+target set and is therefore **non-uniform**, whereas McKay–Murray–Williams
+produce a *uniform* streaming algorithm with bounded update time.  Restricting
+`SpaceBoundedStreaming` to bounded-update-time devices is the repair, and it is
+also the more faithful model.  That repair is the next work item.
 
 **Therefore this directory does not prove `P ≠ NP` and does not claim to.**
 
@@ -117,17 +129,19 @@ it is not touched by the barriers that close the other routes here — see
 ## The reduced chain
 
 ```text
-   local HSG (seed λ, local at s, secure vs space-B one-pass streaming)   [OPEN]
+   local HSG (seed λ, local at s, secure vs space-B one-pass streaming)   [BLOCKED here]
  + Shannon-counting slack at s                                            [standard]
  + MMW19 Theorem 1.3                                                      [published contract]
  ─────────────────────────────────────────────────────────────────────────────────────
    P ≠ NP                                                (`P_ne_NP_of_localHSG`)
 ```
 
-subject to the kernel-checked constraint
+subject to two kernel-checked constraints, the second of which closes it in the
+current test class:
 
 ```text
-2 ^ λ ≤ circuitCountBound n s      (`seedLength_bound_of_injective_localGenerator`)
+2 ^ λ     ≤ circuitCountBound n s   (`seedLength_bound_of_injective_localGenerator`)
+2 ^ space ≤ circuitCountBound n s   (`localHSG_budget_bound`, via the window test)
 ```
 
 ## What would actually close the gap

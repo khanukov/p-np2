@@ -78,6 +78,19 @@ weak streaming lower bound remains open research-level mathematics.
    *pseudorandomness* statement: a local HSG against space-bounded one-pass
    streaming tests with seed length `N ^ o(1)` rather than `N ^ (1/2)`.
 
+7. Stage 3, same day: the local-HSG shortcut of item 6 is **closed** in the
+   current test class.  `HSGWindowNoGo.lean` builds a `(seedLen+1)`-bit shift
+   register that rejects every generator output while accepting half of all
+   truth tables, giving `2 ^ space <= circuitCountBound n s`
+   (`localHSG_budget_bound`).  So a local HSG can only defeat a memory budget of
+   `O~(s)`, while the contract supplies `p(s)`.
+   Retracted: the claim that the remaining obligation "is" a local-HSG
+   construction.  Not retracted: `MCSPStreamingHard` itself, which the window
+   test does not touch, and the anti-hardwiring results.
+   Repair: the window test is non-uniform, so restricting the model to
+   bounded-update-time devices (the caveat already flagged when the port was
+   written) is the next work item.
+
 Governance: as of 2026-07-25 this track is recognised as **Mainline B** in
 `AGENTS.md`, recorded additively at `spec/target.toml::[secondary_target]`
 (spec_version 0.1.3).  The frozen `[target]` block,

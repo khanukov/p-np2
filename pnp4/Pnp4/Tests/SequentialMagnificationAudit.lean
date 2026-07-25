@@ -2,6 +2,7 @@ import Pnp4.Frontier.SequentialMagnification.MMWMagnificationPort
 import Pnp4.Frontier.SequentialMagnification.MuGapNoGo
 import Pnp4.Frontier.SequentialMagnification.SequentialCapstone
 import Pnp4.Frontier.SequentialMagnification.FoolingSet
+import Pnp4.Frontier.SequentialMagnification.HSGWindowNoGo
 
 /-!
 # Falsifiability audit for the sequential-magnification port
@@ -25,6 +26,7 @@ Four things are checked, all kernel-verified:
 | E | Does padding close the published size-parameter gap? | no, `probeE_padding_nogo` |
 | F | Is the locality price of a hitting-set generator real? | yes, `probeF_seed_length_obstruction` |
 | G | Does the reduced chain actually reach `P ≠ NP`? | yes, `probeG_reduced_chain` |
+| H | Is the local-HSG sufficient condition reachable at the port's budget? | **no**, `probeH_localHSG_budget_nogo` |
 
 Probe D is the one the earlier routes could never pass: it exhibits concrete
 parameters at which the *actual* source predicate consumed by the port holds.
@@ -244,6 +246,36 @@ theorem probeG_reduced_chain (w : LocalHSGWitness) :
     Pnp3.ComplexityInterfaces.P_ne_NP :=
   P_ne_NP_of_localHSGWitness w
 
+
+/-!
+## Probe H — the local-HSG sufficient condition is out of reach at the port's budget
+
+This probe is negative, and it retracts part of the previous stage.
+
+`LocalHSG.MCSPStreamingHard_of_localHSG` is true, but its hypothesis
+`HitsStreamingTests G space` is unsatisfiable once `space` reaches the seed
+length: the window test (a `w`-bit shift register, `w = seedLen + 1`) rejects
+every generator output while accepting at least half of all truth tables.
+
+Consequence, `localHSG_budget_bound`: any usable local generator satisfies
+`2 ^ space ≤ circuitCountBound n s`.  The magnification contract supplies
+`space = p(s)`, so the route survives only while `p(s)` stays within
+`log₂ (circuitCountBound n s) = Õ(s)`.
+
+The escape hatch is the *test class*: the window test hardwires `P` and is
+therefore non-uniform, whereas McKay–Murray–Williams produce a uniform streaming
+algorithm with bounded update time.  Restricting `SpaceBoundedStreaming` to
+bounded-update-time devices is the repair, and it is the more faithful model.
+-/
+
+theorem probeH_localHSG_budget_nogo {n s seedLen space : Nat}
+    (G : LocalGenerator n s seedLen)
+    (hinj : Function.Injective G.gen)
+    (hfit : seedLen + 1 ≤ Pnp3.Models.Partial.tableLen n)
+    (hHit : HitsStreamingTests G space) :
+    2 ^ space ≤ Pnp3.Models.circuitCountBound n s :=
+  localHSG_budget_bound G hinj hfit hHit
+
 /-!
 ## Axiom surface
 -/
@@ -265,6 +297,10 @@ theorem probeG_reduced_chain (w : LocalHSGWitness) :
 #print axioms no_injective_localGenerator_of_seed_too_long
 #print axioms P_ne_NP_of_localHSG
 #print axioms P_ne_NP_of_localHSGWitness
+#print axioms not_hitsStreamingTests_of_space_ge_seed
+#print axioms hitsStreamingTests_forces_short_budget
+#print axioms localHSG_budget_bound
+#print axioms no_localHSG_of_budget_too_large
 
 end SequentialMagnificationAudit
 end Tests

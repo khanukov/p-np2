@@ -131,20 +131,27 @@ Decisions taken (2026-07-25):
 
 Open work items, in priority order:
 
-1. **The mathematics.**  Construct, or prove impossible, a local hitting-set
-   generator against space-bounded one-pass streaming tests with seed length
-   `N ^ o(1)`.  `LocalHSG.lean` proves this suffices and proves the counting
-   price `2 ^ seedLen <= circuitCountBound n s` that currently pins the
+1. **Add an update-time budget to the streaming model.**  This is now the
+   blocking item.  `HSGWindowNoGo.lean` proves that in the current space-only,
+   non-uniform test class the local-HSG hypothesis is unreachable at the port's
+   parameters (`2 ^ space <= circuitCountBound n s`).  The offending test
+   hardwires its target set; a bounded-update-time device cannot.  Restricting
+   the class restores the local-HSG route and is also the faithful reading of
+   McKay-Murray-Williams.
+2. **Then: the mathematics.**  In the restricted class, construct or refute a
+   local hitting-set generator with seed length `N ^ o(1)`.  Note the standing
+   counting price `2 ^ seedLen <= circuitCountBound n s`, which pins the
    published construction at `N ^ (1/2)`.
-2. **Discharge the Shannon slack.**  `hSlack` is currently a hypothesis of
+3. **Discharge the Shannon slack.**  `hSlack` is currently a hypothesis of
    `MCSPStreamingHard_of_localHSG`.  `pnp3/Counting` has the machinery
    (`card_easyFunctions_le`, `circuitCountBound`) to prove it for size
    parameters below the counting threshold; wiring it in would remove a
    hypothesis.
-3. **Formalize MMW19 Theorem 1.3**, turning `MMWStreamingMagnification` from a
+4. **Formalize MMW19 Theorem 1.3**, turning `MMWStreamingMagnification` from a
    published contract into a theorem.  Large independent project.
-4. **Update-time-aware model.**  The current model bounds space only, which
-   makes the required hardness stronger than MMW strictly need.
+5. **Note.**  The space-only model makes the required hardness stronger than MMW
+   strictly need, and (per item 1) makes the HSG side unsatisfiable.  Item 1 is
+   the same repair seen from the other direction.
 
 Non-goals for this target: claiming that the sequential route is close to
 `P != NP`.  It is not.  Its remaining obligation is a weak lower bound that

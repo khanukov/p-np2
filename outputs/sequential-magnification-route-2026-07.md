@@ -337,6 +337,87 @@ Accepted by the maintainer in this session:
 
 ---
 
+## 3d. Stage 3 (same session): the local-HSG shortcut is closed, and why
+
+The natural next question after §3b is: *does a generator with those parameters
+exist?*  It does not — not in the test class the module used — and the reason is
+elementary enough that it should have been checked before §3b was written.
+
+### The window test
+
+A one-pass device can hold the **last `w` bits** of its input in a shift
+register: `2 ^ w` states, no counter. Take `w = seedLen + 1`. The set `P` of
+last-`w` windows realised by the `2 ^ seedLen` generator outputs has
+`|P| ≤ 2 ^ seedLen = 2 ^ w / 2`, so the test
+
+> accept iff the last `w` bits are not a realised window
+
+rejects **every** output of the generator and accepts **at least half** of all
+truth tables. Both halves are proved: the shift-register semantics
+(`run_windowAlgo`), and largeness by an explicit injection that rewrites the
+window of a rejected table through an injection `P ↪ Pᶜ`
+(`largeAcceptance_windowSolver`).
+
+Therefore `HitsStreamingTests G space` is false whenever `space ≥ seedLen + 1`
+(`not_hitsStreamingTests_of_space_ge_seed`).
+
+### The resulting inequality
+
+Combined with the price of locality from §3b:
+
+```lean
+theorem localHSG_budget_bound (G : LocalGenerator n s seedLen)
+    (hinj : Function.Injective G.gen) (hfit : seedLen + 1 ≤ tableLen n)
+    (hHit : HitsStreamingTests G space) :
+    2 ^ space ≤ Pnp3.Models.circuitCountBound n s
+```
+
+**The memory budget a local hitting-set generator can defeat is at most the
+logarithm of the number of circuits of size `≤ s`, i.e. `Õ(s)`.** The
+magnification contract supplies `space = p(s)`. So the local-HSG route is
+available only while `p(s)` stays within `Õ(s)` — for any polynomial of degree
+above 1 it is closed.
+
+This matches the published convention exactly, which is the reassuring part.
+CHMY define a local generator as `G : {0,1}^s → {0,1}^N` whose output bits come
+from circuits of size at most `s` — *the seed length and the size parameter are
+the same `s`*. A generator cannot fool a class whose resource bound exceeds its
+own seed length; that is what the theorem says in the space-bounded setting, and
+it is why the published construction lives at `μ ≈ 1`.
+
+### What is retracted and what is not
+
+* **Retracted:** the framing of §3b that the remaining obligation "is" the
+  construction of a local HSG. In the *non-uniform space-bounded* test class of
+  `MCSPStreamingTarget.lean`, that object does not exist at the port's
+  parameters. `LocalHSG.MCSPStreamingHard_of_localHSG` remains a true theorem
+  with an unreachable hypothesis.
+* **Not retracted:** `MCSPStreamingHard` itself, which is the port's actual
+  obligation. The window test rejects one finite set; it does not decide MCSP.
+  Nothing here bears on it.
+* **Not retracted:** everything in §2 — the anti-hardwiring theorem, the
+  falsifiability audit, the port itself.
+
+### The repair, and why it is the right one anyway
+
+The window test hardwires `P`. It is non-uniform. McKay–Murray–Williams produce
+a *uniform* streaming algorithm with **bounded update time**, and a
+bounded-update-time device cannot hardwire an arbitrary set of `2 ^ seedLen`
+windows.
+
+So the fix is to restrict `SpaceBoundedStreaming` to bounded-update-time /
+uniform devices — which is exactly the modelling caveat already flagged as
+limitation 3 of this report when the port was first written. The caveat was not
+cosmetic: it is load-bearing, and the space-only model is not merely *stronger
+than needed* but *too strong to be satisfiable* on the HSG side.
+
+This is the concrete next work item, and it is well-defined: add an update-time
+budget to the model, re-derive §3b in the restricted class, and re-run the
+window test to confirm it is excluded.
+
+
+---
+
 ## 4. What was added to the repository
 
 Six modules, all built, zero `axiom`/`sorry`/`admit`/`native_decide`, axiom
@@ -355,7 +436,9 @@ surface limited to `propext`, `Classical.choice`, `Quot.sound`:
 * `LocalHSG.lean` — local hitting-set generators, the reduction
   `local HSG → MCSPStreamingHard`, and the seed-length counting bound.
 * `SequentialCapstone.lean` — `P_ne_NP_of_localHSG`, `LocalHSGWitness`.
-* `Tests/SequentialMagnificationAudit.lean` — probes A–G.
+* `HSGWindowNoGo.lean` — the window test and the budget inequality that closes
+  the local-HSG shortcut in the space-only model.
+* `Tests/SequentialMagnificationAudit.lean` — probes A–H (H is negative).
 
 Deliberately **not** changed: `RESEARCH_CONSTITUTION.md`, the frozen `[target]`
 block of `spec/target.toml`, and

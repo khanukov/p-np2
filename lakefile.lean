@@ -305,6 +305,8 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.ConcreteTreeCodecSource,
     Glob.one `Pnp4.Frontier.ContractExpansion.ThresholdGrowth,
     Glob.one `Pnp4.Frontier.ContractExpansion.ConsolidatedTreeSeparation,
+    -- Direct-route analysis (indirect diagonalization calculus).
+    Glob.one `Pnp4.Frontier.DirectRoute.SimulationCalculus,
     -- Sequential-magnification track (MMW19 streaming port).
     Glob.one `Pnp4.Frontier.SequentialMagnification.StreamingModel,
     Glob.one `Pnp4.Frontier.SequentialMagnification.StreamingLowerBounds,

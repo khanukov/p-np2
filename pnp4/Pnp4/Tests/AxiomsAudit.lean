@@ -59,6 +59,7 @@ import Pnp4.Frontier.SequentialMagnification.SequentialCapstone
 import Pnp4.Frontier.SequentialMagnification.FoolingSet
 import Pnp4.Frontier.SequentialMagnification.HSGWindowNoGo
 import Pnp4.Frontier.SequentialMagnification.UniformStreaming
+import Pnp4.Frontier.DirectRoute.SimulationCalculus
 
 namespace Pnp4
 namespace Tests
@@ -266,6 +267,16 @@ namespace Tests
 #print axioms Pnp4.Frontier.SequentialMagnification.P_ne_NP_of_uniform_mcsp_streaming_hardness
 #print axioms Pnp4.Frontier.SequentialMagnification.P_ne_NP_of_uniformSequentialWitness
 #print axioms Pnp4.Frontier.SequentialMagnification.windowAttack_forces_easy_indicator
+-- Direct-route analysis: the indirect-diagonalization calculus.
+#check Pnp4.Frontier.DirectRoute.Resource
+#check Pnp4.Frontier.DirectRoute.Step
+#check Pnp4.Frontier.DirectRoute.NewToolRequirement
+#print axioms Pnp4.Frontier.DirectRoute.dspace_sink
+#print axioms Pnp4.Frontier.DirectRoute.val_monotone
+#print axioms Pnp4.Frontier.DirectRoute.exponent_monotone
+#print axioms Pnp4.Frontier.DirectRoute.contradiction_of_below_threshold
+#print axioms Pnp4.Frontier.DirectRoute.fixed_gain_insufficient
+#print axioms Pnp4.Frontier.DirectRoute.refutation_of_newToolRequirement
 
 end Tests
 end Pnp4

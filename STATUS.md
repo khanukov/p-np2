@@ -107,6 +107,38 @@ unchanged.
 Full analysis: `outputs/sequential-magnification-route-2026-07.md`.
 Module map: `pnp4/Pnp4/Frontier/SequentialMagnification/README.md`.
 
+## New: Direct-Route Analysis (2026-07-25)
+
+A second, independent addition: `pnp4/Pnp4/Frontier/DirectRoute/`.
+
+This track is not about magnification, MCSP, or any reduction.  It formalizes
+the *direct* attack family -- assume `P = NP`, compose published simulation
+theorems, contradict a hierarchy -- i.e. indirect diagonalization, the method
+behind Paul-Pippenger-Szemeredi-Trotter's `NTIME[n] != TIME[n]`.
+
+Kernel-checked results (`SimulationCalculus.lean`):
+
+1. `dspace_sink` -- space is a sink in the calculus.  This is why the only
+   *polynomial* gain in the whole toolkit (R. Williams, STOC 2025,
+   `TIME[t] subseteq SPACE[sqrt(t log t)]`) cannot be cashed: no arrow returns
+   to a time class, and the contradiction must be with a time hierarchy.
+2. `exponent_monotone` / `contradiction_of_below_threshold` -- the exact
+   dividing line is `(1-delta) * c^k`, where `c` is the exponent of the assumed
+   `SAT` algorithm and `(k, delta)` describe a hypothetical speedup arrow
+   `DTIME[t] subseteq Sigma_k TIME[t^(1-delta)]`.
+3. `fixed_gain_insufficient` -- for every fixed `k >= 1` and `delta < 1` there
+   is a `c` at which the calculus derives nothing.  Since `P = NP` supplies only
+   *some* polynomial `c`, no fixed-gain speedup can ever close the loop.
+
+Consequence, and the reason this is worth recording: the assumption enters every
+indirect-diagonalization cycle **multiplicatively**, so a new tool must either
+have a gain that grows with `c`, or must consume the assumption **additively**
+(once, inside a single nondeterministic guess) -- which is the algorithmic
+method, the one template the no-go does not cover.
+
+This proves no separation and claims no path.  Full analysis:
+`outputs/direct-route-map-2026-07.md`.
+
 ## Current Audit Result
 
 There is still **no unconditional in-repo theorem** `P != NP`, and the

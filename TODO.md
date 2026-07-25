@@ -164,6 +164,30 @@ nobody knows how to prove; the contribution is that the obligation is now the
 
 Reference: `outputs/sequential-magnification-route-2026-07.md`.
 
+### Target 5. Direct route (indirect diagonalization), 2026-07-25
+
+Status: family-level no-go proved; the open sub-questions are named.
+
+`pnp4/Pnp4/Frontier/DirectRoute/SimulationCalculus.lean` proves that the
+published simulation toolkit cannot refute `P = NP`, because the assumed
+exponent `c` enters multiplicatively while every known gain is either
+sub-polynomial or lands in the `SPACE` sink.
+
+Open sub-questions, both checkable:
+
+1. Is there a polynomial-gain speedup into *bounded alternation*, i.e.
+   `TIME[t] subseteq Sigma_k TIME[t^(1-delta)]` for constants `k, delta > 0`?
+   By `fixed_gain_insufficient` this alone still does not suffice, but it is the
+   missing arrow that every other tool in the area is built from.
+2. Is there an additive-cost analogue of the Cook-Mertz / catalytic machinery?
+   Catalytic computation is about *reusing* a resource instead of paying for it
+   repeatedly, which is the only additive-flavoured idea in a multiplicative
+   field.
+
+Non-goal: extending the calculus with more arrows in the hope of a contradiction.
+Theorem 3 of the module says fixed-gain arrows cannot help; adding them is
+provably wasted effort.
+
 ## Non-Goals Right Now
 
 - Do not claim full unconditionality.

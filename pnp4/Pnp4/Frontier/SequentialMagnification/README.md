@@ -59,6 +59,9 @@ it is not touched by the barriers that close the other routes here — see
 | `MMWMagnificationPort.lean` | The published MMW contract, the machine-checked contrapositive `P_ne_NP_of_mcsp_streaming_hardness`, `SequentialResearchGapWitness`, and the widened endpoint `PvsNPClosureRoute`. | contract (external) + proved bridge |
 | `SizeParameterPadding.lean` | Exact padding lemma: dummy variables change neither circuit complexity nor witnessing size. | **unconditional theorem** |
 | `MuGapNoGo.lean` | The two published constants, and the kernel-checked proof that padding cannot bridge them. | **no-go module** |
+| `FoolingSet.lean` | The fooling-set / one-way communication method as a reusable tool. | **unconditional theorems** |
+| `LocalHSG.lean` | Local hitting-set generators: `local HSG ⟹ MCSPStreamingHard`, plus the counting bound `2 ^ seedLen ≤ circuitCountBound n s` that pins the size parameter. | **unconditional theorems** |
+| `SequentialCapstone.lean` | Composition: `P_ne_NP_of_localHSG`, `LocalHSGWitness`. | proved bridge |
 | `../../Tests/SequentialMagnificationAudit.lean` | Probes A–E, the falsifiability audit. | proved |
 
 ## Proved vs. open
@@ -84,10 +87,19 @@ it is not touched by the barriers that close the other routes here — see
 
 **Open, research-level:**
 
-* the actual weak lower bound, i.e. an inhabitant of
-  `MCSPStreamingHard (C.spaceBudget (s n)) n (s n)` at a magnification-relevant
-  budget.  This is the whole mathematical content and this directory does not
-  supply it.
+* `HitsStreamingTests G space` for a local generator `G` at a *small* size
+  parameter — i.e. a local hitting-set generator against space-bounded one-pass
+  streaming tests.  This is the whole mathematical content, and this directory
+  does not supply it.
+
+  Equivalently (weaker, and also sufficient): an inhabitant of
+  `MCSPStreamingHard (C.spaceBudget (s n)) n (s n)`.
+
+  `LocalHSG.lean` reduces the second to the first and proves the price:
+  `2 ^ seedLen ≤ circuitCountBound n s`, so shrinking the size parameter forces
+  a shorter seed.  With `N = 2 ^ n` and `s = N ^ μ` the best known generators
+  against read-once devices have seed `Õ(N ^ (1/2))`, which is exactly why the
+  published lower bound sits at `μ ≈ 1`.
 
 **Therefore this directory does not prove `P ≠ NP` and does not claim to.**
 
@@ -101,6 +113,22 @@ it is not touched by the barriers that close the other routes here — see
 | **Locality barrier (B4)** | The CHOPRS JACM 2022 paper states the barrier for `AC⁰-XOR`, `Formula-XOR`, almost-formulas, `GapAND-Formula` and `AC⁰` (their HM frontiers A–E). Streaming and one-tape models are **not** in its stated scope. **This is not a claim that the barrier fails here** — CHMY Theorem 3 proves the analogous short-query-oracle obstruction for their own technique at `μ > 1/2`, which is the same phenomenon. It is a claim that the published barrier does not, as stated, cover this port. |
 | Magnification threshold gap (B5) | This is exactly the `μ₁ < μ₂` gap, now recorded quantitatively in `MuGapNoGo.lean` instead of informally. |
 | Internal `hInDag`/hardwiring refutations | **Provably do not apply**: `fixed_slice_hardwiring_costs_memory`. |
+
+## The reduced chain
+
+```text
+   local HSG (seed λ, local at s, secure vs space-B one-pass streaming)   [OPEN]
+ + Shannon-counting slack at s                                            [standard]
+ + MMW19 Theorem 1.3                                                      [published contract]
+ ─────────────────────────────────────────────────────────────────────────────────────
+   P ≠ NP                                                (`P_ne_NP_of_localHSG`)
+```
+
+subject to the kernel-checked constraint
+
+```text
+2 ^ λ ≤ circuitCountBound n s      (`seedLength_bound_of_injective_localGenerator`)
+```
 
 ## What would actually close the gap
 

@@ -308,8 +308,11 @@ lean_lib Pnp4 where
     -- Sequential-magnification track (MMW19 streaming port).
     Glob.one `Pnp4.Frontier.SequentialMagnification.StreamingModel,
     Glob.one `Pnp4.Frontier.SequentialMagnification.StreamingLowerBounds,
+    Glob.one `Pnp4.Frontier.SequentialMagnification.FoolingSet,
     Glob.one `Pnp4.Frontier.SequentialMagnification.MCSPStreamingTarget,
+    Glob.one `Pnp4.Frontier.SequentialMagnification.LocalHSG,
     Glob.one `Pnp4.Frontier.SequentialMagnification.MMWMagnificationPort,
+    Glob.one `Pnp4.Frontier.SequentialMagnification.SequentialCapstone,
     Glob.one `Pnp4.Frontier.SequentialMagnification.SizeParameterPadding,
     Glob.one `Pnp4.Frontier.SequentialMagnification.MuGapNoGo,
     Glob.one `Pnp4.Tests.AlgorithmsToLowerBoundsSurfaceTests,

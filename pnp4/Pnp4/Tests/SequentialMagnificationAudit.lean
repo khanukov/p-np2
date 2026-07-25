@@ -1,5 +1,7 @@
 import Pnp4.Frontier.SequentialMagnification.MMWMagnificationPort
 import Pnp4.Frontier.SequentialMagnification.MuGapNoGo
+import Pnp4.Frontier.SequentialMagnification.SequentialCapstone
+import Pnp4.Frontier.SequentialMagnification.FoolingSet
 
 /-!
 # Falsifiability audit for the sequential-magnification port
@@ -21,6 +23,8 @@ Four things are checked, all kernel-verified:
 | C | Does fixed-slice hardwiring satisfy the model for free, as it does for `PpolyDAG`? | no, `probeC_hardwiring_costs_memory` |
 | D | Is `MCSPStreamingHard` itself satisfiable, for the real MCSP predicate? | yes, `probeD_mcsp_streaming_hard_concrete` |
 | E | Does padding close the published size-parameter gap? | no, `probeE_padding_nogo` |
+| F | Is the locality price of a hitting-set generator real? | yes, `probeF_seed_length_obstruction` |
+| G | Does the reduced chain actually reach `P ≠ NP`? | yes, `probeG_reduced_chain` |
 
 Probe D is the one the earlier routes could never pass: it exhibits concrete
 parameters at which the *actual* source predicate consumed by the port holds.
@@ -213,6 +217,33 @@ theorem probeE_padding_nogo :
     chmyTimeExponentNum < mmwTimeExponentNum * 2 :=
   transferred_exponent_too_small 2 (by omega)
 
+
+/-!
+## Probe F — the locality price is real
+
+`seedLength_bound_of_injective_localGenerator` says an injective local generator
+at size parameter `s` cannot have more seeds than there are functions of circuit
+complexity `≤ s`.  The degenerate instance below checks the statement bites:
+at threshold `0` there are no circuits at all, so no generator exists.
+-/
+
+theorem probeF_seed_length_obstruction (n : Nat) :
+    ¬ ∃ G : LocalGenerator n 0 1, Function.Injective G.gen := by
+  refine no_injective_localGenerator_of_seed_too_long ?_
+  simp [Pnp3.Models.circuitCountBound]
+
+/-!
+## Probe G — the reduced chain reaches the target
+
+The capstone composes to `P ≠ NP` with exactly three inputs: the published MMW
+contract, the Shannon-counting slack, and the hitting-set security of a local
+generator.  Nothing else is consumed.
+-/
+
+theorem probeG_reduced_chain (w : LocalHSGWitness) :
+    Pnp3.ComplexityInterfaces.P_ne_NP :=
+  P_ne_NP_of_localHSGWitness w
+
 /-!
 ## Axiom surface
 -/
@@ -226,6 +257,14 @@ theorem probeE_padding_nogo :
 #print axioms P_ne_NP_of_mcsp_streaming_hardness
 #print axioms P_ne_NP_of_sequentialGap
 #print axioms P_ne_NP_of_closureRoute
+#print axioms card_le_card_state_of_foolingFamily
+#print axioms no_solver_of_large_foolingFamily
+#print axioms mem_easyFunctions_of_circuitComplexityLE
+#print axioms MCSPStreamingHard_of_localHSG
+#print axioms seedLength_bound_of_injective_localGenerator
+#print axioms no_injective_localGenerator_of_seed_too_long
+#print axioms P_ne_NP_of_localHSG
+#print axioms P_ne_NP_of_localHSGWitness
 
 end SequentialMagnificationAudit
 end Tests

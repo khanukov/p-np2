@@ -229,6 +229,112 @@ to this author's knowledge, not written down anywhere in this repository, and it
 is a considerably more specific research target than "prove a non-uniform lower
 bound against `P/poly`".
 
+
+---
+
+## 3b. Stage 2 (same session): the obligation reduced to pseudorandomness
+
+The frontier statement in §3.2 — "lower `μ₂` via a local HSG with seed length
+`N^{o(1)}`" — is now a formal object rather than a remark.
+
+`LocalHSG.lean` defines a **local generator** at size parameter `s` (every
+output is the truth table of a function with circuit complexity `≤ s`) and its
+**hitting-set security** against space-bounded one-pass tests, and proves:
+
+```lean
+theorem MCSPStreamingHard_of_localHSG
+    (G : LocalGenerator n s seedLen)
+    (hHit : HitsStreamingTests G space)
+    (hSlack : 2 * (easyFunctions n s).card ≤ Fintype.card (TruthTable n)) :
+    MCSPStreamingHard space n s
+```
+
+The argument is the standard one: a solver for MCSP[`s`] has a complement that
+accepts every NO instance, hence at least half of all tables by Shannon
+counting, hence is a large test; but the complement rejects every output of a
+local generator, since those are all YES instances. So a secure local HSG and an
+MCSP solver cannot coexist. The class of one-pass devices is closed under
+complement at no memory cost, which is what makes the step legal —
+`SpaceBoundedStreaming.complement`.
+
+Composed with the port, `SequentialCapstone.lean` gives
+
+```lean
+theorem P_ne_NP_of_localHSG
+    (C : MMWStreamingMagnification) (s : Nat → Nat) (n seedLen : Nat)
+    (G : LocalGenerator n (s n) seedLen)
+    (hHit : HitsStreamingTests G (C.spaceBudget (s n)))
+    (hSlack : ...) :
+    Pnp3.ComplexityInterfaces.P_ne_NP
+```
+
+### Where `μ ≥ 1/2` actually comes from
+
+The second theorem of the module is the one that explains the published
+parameters:
+
+```lean
+theorem seedLength_bound_of_injective_localGenerator
+    (G : LocalGenerator n s seedLen) (hinj : Function.Injective G.gen) :
+    2 ^ seedLen ≤ Pnp3.Models.circuitCountBound n s
+```
+
+An injective local generator cannot have more seeds than there are functions of
+circuit complexity `≤ s`. That single inequality is the price of locality, and
+it is what couples the two parameters that the two published theorems disagree
+about. Writing `N = 2^n` and `s = N^μ`, the right-hand side is `2^{Õ(N^μ)}`, so
+
+```text
+seed length λ ≲ Õ(N^μ).
+```
+
+The Forbes–Kelley generator used by CHMY has `λ = Õ(√N)`, forcing `μ ≥ 1/2` —
+precisely the constant at which CHMY's own Theorem 3 says the magnification side
+stops working. The two sides of the frontier meet at `1/2` because both are
+governed by the same quantity.
+
+Sharp form, also proved:
+
+```lean
+theorem no_injective_localGenerator_of_seed_too_long
+    (hbig : circuitCountBound n s < 2 ^ seedLen) :
+    ¬ ∃ G : LocalGenerator n s seedLen, Function.Injective G.gen
+```
+
+### Net effect
+
+The open obligation changed shape:
+
+| before | after |
+|---|---|
+| "prove a weak lower bound for MCSP against one-pass streaming" | "construct a local hitting-set generator against read-once/one-pass devices with seed length `N^{o(1)}`" |
+
+Both are open. The second is a *construction task with named parameters* in a
+well-developed area (unconditional PRG/HSG constructions for ROBPs), rather than
+an open-ended search for a lower-bound technique — and its difficulty is now
+bounded below by a kernel-checked inequality rather than by intuition.
+
+`FoolingSet.lean` additionally records the one-way communication method
+(`card_le_card_state_of_foolingFamily`) as a reusable tool, since that is the
+technique any direct attack on `MCSPStreamingHard` would use.
+
+## 3c. Governance decision (2026-07-25)
+
+Accepted by the maintainer in this session:
+
+* `AGENTS.md` now recognises **two** mainlines. Mainline A is unchanged
+  (`SearchMCSPWeakLowerBound → VerifiedNPDAGLowerBoundSource → PpolyDAG`).
+  Mainline B is the sequential route, reducing `MCSPStreamingHard` or the
+  stronger `LocalHSGWitness`.
+* `spec/target.toml` gained an additive `[secondary_target]` block;
+  `[meta].spec_version` 0.1.2 → 0.1.3, with `spec/version_manifest.toml`
+  updated in the same change and the cross-check passing.
+* The frozen `[target]` block, `[frozen_identifiers]`, `[frozen_files]` and
+  `pnp3/Magnification/UnconditionalResearchGap.lean` are **untouched**. The
+  target-lock guard passes unchanged.
+* Every claim built on Mainline B must state its dependency on the unproved
+  `MMWStreamingMagnification` contract; `AGENTS.md` says so explicitly.
+
 ---
 
 ## 4. What was added to the repository
@@ -245,19 +351,27 @@ surface limited to `propext`, `Classical.choice`, `Quot.sound`:
   `PvsNPClosureRoute`.
 * `SizeParameterPadding.lean` — the exact padding lemma.
 * `MuGapNoGo.lean` — the two published constants and the padding no-go.
-* `Tests/SequentialMagnificationAudit.lean` — probes A–E.
+* `FoolingSet.lean` — the one-way communication method as a reusable tool.
+* `LocalHSG.lean` — local hitting-set generators, the reduction
+  `local HSG → MCSPStreamingHard`, and the seed-length counting bound.
+* `SequentialCapstone.lean` — `P_ne_NP_of_localHSG`, `LocalHSGWitness`.
+* `Tests/SequentialMagnificationAudit.lean` — probes A–G.
 
-Deliberately **not** changed: `spec/target.toml`, `RESEARCH_CONSTITUTION.md`,
-`pnp3/Magnification/UnconditionalResearchGap.lean`. The frozen target is intact;
-`PvsNPClosureRoute` records the proposed widening without enacting it, because
-recognising a second mainline is a maintainer decision, not an agent decision.
+Deliberately **not** changed: `RESEARCH_CONSTITUTION.md`, the frozen `[target]`
+block of `spec/target.toml`, and
+`pnp3/Magnification/UnconditionalResearchGap.lean`. The frozen target is intact
+and the target-lock guard passes unchanged. `spec/target.toml` gained only an
+additive `[secondary_target]` block after the maintainer accepted the widening
+(§3c).
 
 ## 5. Honest limitations
 
 1. **No new lower bound is proved.** The weak sequential lower bound — the whole
    mathematical content of the route — remains open, and nothing here makes it
    easier to prove. What changes is which statement one should be trying to
-   prove.
+   prove, and (after §3b) that the statement is a construction task with named
+   parameters plus a kernel-checked inequality bounding how good the
+   construction must be.
 2. **`MMWStreamingMagnification` is an unproved external contract.** It is
    recorded in the same style as the existing `AC0pCoinLowerBoundContract`, and
    formalising MMW19 Theorem 1.3 in Lean would be a large independent project.
@@ -272,7 +386,11 @@ recognising a second mainline is a maintainer decision, not an agent decision.
    argument.
 5. **The locality-barrier claim is a scope claim, not an evasion claim.** See
    §2.3.
-6. **This is one route.** It is not an argument that the non-uniform route is
+6. **The Shannon slack is a hypothesis, not yet discharged.**
+   `MCSPStreamingHard_of_localHSG` takes `hSlack` as an input. The repository's
+   counting layer has the machinery to prove it below the counting threshold;
+   wiring that in is listed as TODO Target 4 item 2.
+7. **This is one route.** It is not an argument that the non-uniform route is
    wrong, only that it is strictly harder than necessary and that its known
    failure modes are structural.
 

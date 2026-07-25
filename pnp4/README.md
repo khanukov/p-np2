@@ -227,8 +227,21 @@ the streaming lower bound.  See
 the proved-vs-open breakdown, and
 `outputs/sequential-magnification-route-2026-07.md` for the full analysis.
 
-Under the current `AGENTS.md` policy this track is a **side track**, since it
-does not bridge to `VerifiedNPDAGLowerBoundSource`.
+As of 2026-07-25 this track is recognised as **Mainline B** in `AGENTS.md`, with
+an additive `spec/target.toml::[secondary_target]` entry.  Mainline A (the
+`SearchMCSPWeakLowerBound -> VerifiedNPDAGLowerBoundSource -> PpolyDAG` route)
+is unchanged.
+
+The obligation has been reduced one step further, to a pseudorandomness
+statement:
+
+```text
+LocalHSGWitness  ->  MCSPStreamingHard  ->  P != NP
+```
+
+`LocalHSG.lean` proves the reduction and the counting price of locality
+(`2 ^ seedLen <= circuitCountBound n s`), which is what pins the published lower
+bound at a large size parameter.
 
 ## Downstream decision→search extraction (`Frontier/ContractExpansion/`)
 

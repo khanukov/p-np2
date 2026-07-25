@@ -70,6 +70,20 @@ Everything in the new directory is `axiom`/`sorry`-free with axiom surface
 an explicit unproved published contract (`MMWStreamingMagnification`), and the
 weak streaming lower bound remains open research-level mathematics.
 
+6. The obligation has since been reduced one step further.  `LocalHSG.lean`
+   proves `local hitting-set generator -> MCSPStreamingHard`, and proves the
+   counting price of locality, `2 ^ seedLen <= circuitCountBound n s`.  The
+   capstone `P_ne_NP_of_localHSG` therefore reduces `P != NP` (modulo the
+   published MMW contract and the Shannon-counting slack) to an explicit
+   *pseudorandomness* statement: a local HSG against space-bounded one-pass
+   streaming tests with seed length `N ^ o(1)` rather than `N ^ (1/2)`.
+
+Governance: as of 2026-07-25 this track is recognised as **Mainline B** in
+`AGENTS.md`, recorded additively at `spec/target.toml::[secondary_target]`
+(spec_version 0.1.3).  The frozen `[target]` block,
+`pnp3/Magnification/UnconditionalResearchGap.lean` and Mainline A are
+unchanged.
+
 Full analysis: `outputs/sequential-magnification-route-2026-07.md`.
 Module map: `pnp4/Pnp4/Frontier/SequentialMagnification/README.md`.
 

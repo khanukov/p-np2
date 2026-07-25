@@ -8,10 +8,10 @@
 # which spec_version was in force at the time of a candidate's verification.
 
 [meta]
-spec_version    = "0.1.2"
+spec_version    = "0.1.3"
 constitution    = "RESEARCH_CONSTITUTION.md"
 status          = "frozen"
-last_reviewed   = "2026-05-28"
+last_reviewed   = "2026-07-25"
 
 [target]
 # The honest target: a `ResearchGapWitness` value whose `dagSeparation`
@@ -21,6 +21,38 @@ name            = "ResearchGapWitness"
 required_field  = "dagSeparation"
 required_type   = "ComplexityInterfaces.NP_not_subset_PpolyDAG"
 defined_in      = "pnp3/Magnification/UnconditionalResearchGap.lean"
+
+
+[secondary_target]
+# Foundational addition, spec_version 0.1.3 (2026-07-25).
+#
+# The `[target]` block above is UNCHANGED and remains frozen: the
+# non-uniform route still ends at `ResearchGapWitness.dagSeparation =
+# NP_not_subset_PpolyDAG`.
+#
+# What this block adds is a SECOND admissible route to the same final
+# term.  Rationale: `NP ⊄ P/poly` is strictly stronger than `P ≠ NP`,
+# and the magnification theorem the project cites as its mainline
+# reference (McKay-Murray-Williams STOC 2019 Thm 1.3, restated as
+# Cheraghchi-Hirahara-Myrisiotis-Yoshida ECCC TR20-103 Thm 47)
+# concludes `P ≠ NP` directly from a UNIFORM one-pass streaming lower
+# bound for MCSP, without producing any `P/poly` lower bound.  The
+# single-target policy could not express it.
+#
+# See outputs/sequential-magnification-route-2026-07.md.
+name            = "SequentialResearchGapWitness"
+required_field  = "hardness"
+required_type   = "MCSPStreamingHard (contract.spaceBudget (sizeParam slice)) slice (sizeParam slice)"
+defined_in      = "pnp4/Pnp4/Frontier/SequentialMagnification/MMWMagnificationPort.lean"
+# The disjunction of the two admissible routes.
+closure_route   = "Pnp4.Frontier.SequentialMagnification.PvsNPClosureRoute"
+# Stronger sufficient condition, reducing the obligation to a
+# pseudorandomness statement (local hitting-set generator).
+sufficient_via  = "Pnp4.Frontier.SequentialMagnification.LocalHSGWitness"
+# This route consumes an explicit UNPROVED published contract
+# (`MMWStreamingMagnification`).  Any claim built on it must say so.
+published_contract_required = "MMWStreamingMagnification"
+falsifiability_audit = "pnp4/Pnp4/Tests/SequentialMagnificationAudit.lean"
 
 [final]
 # The closed term that, when it exists, satisfies the project goal. Until

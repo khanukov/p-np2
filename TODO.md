@@ -114,23 +114,37 @@ Canonical docs must say:
    themselves;
 7. the remaining gap is mathematical, not just endpoint wiring.
 
-### Target 4. Evaluate the uniform sequential port (new, 2026-07-25)
+### Target 4. Uniform sequential route (Mainline B, 2026-07-25)
 
-Status: proposal on the table, maintainer decision pending.
+Status: **accepted as a second mainline**; the mathematics is open.
 
 `pnp4/Pnp4/Frontier/SequentialMagnification/` adds a second closure port whose
 target is `P != NP` itself rather than the strictly stronger
 `NP_not_subset_PpolyDAG`.  It is built on the McKay-Murray-Williams streaming
 magnification theorem, which the current pnp4 mainline interface cannot express.
 
-Decision items:
+Decisions taken (2026-07-25):
 
-1. whether `PvsNPClosureRoute` (the widened endpoint disjunction) should be
-   recognised as mainline in `AGENTS.md`;
-2. whether `spec/target.toml` should gain a second admissible target, which is a
-   Foundational-PR-level change and is deliberately not attempted here;
-3. whether to invest in formalizing MMW19 Theorem 1.3 itself, which would turn
-   `MMWStreamingMagnification` from a published contract into a theorem.
+1. `PvsNPClosureRoute` is recognised as the widened endpoint in `AGENTS.md`;
+2. `spec/target.toml` gained an additive `[secondary_target]` block
+   (spec_version 0.1.2 -> 0.1.3); the frozen `[target]` block is untouched.
+
+Open work items, in priority order:
+
+1. **The mathematics.**  Construct, or prove impossible, a local hitting-set
+   generator against space-bounded one-pass streaming tests with seed length
+   `N ^ o(1)`.  `LocalHSG.lean` proves this suffices and proves the counting
+   price `2 ^ seedLen <= circuitCountBound n s` that currently pins the
+   published construction at `N ^ (1/2)`.
+2. **Discharge the Shannon slack.**  `hSlack` is currently a hypothesis of
+   `MCSPStreamingHard_of_localHSG`.  `pnp3/Counting` has the machinery
+   (`card_easyFunctions_le`, `circuitCountBound`) to prove it for size
+   parameters below the counting threshold; wiring it in would remove a
+   hypothesis.
+3. **Formalize MMW19 Theorem 1.3**, turning `MMWStreamingMagnification` from a
+   published contract into a theorem.  Large independent project.
+4. **Update-time-aware model.**  The current model bounds space only, which
+   makes the required hardness stronger than MMW strictly need.
 
 Non-goals for this target: claiming that the sequential route is close to
 `P != NP`.  It is not.  Its remaining obligation is a weak lower bound that

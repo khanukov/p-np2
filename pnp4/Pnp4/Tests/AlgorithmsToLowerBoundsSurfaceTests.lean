@@ -65,6 +65,8 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 import Pnp4.Frontier.SequentialMagnification.MuGapNoGo
 import Pnp4.Frontier.SequentialMagnification.MMWMagnificationPort
+import Pnp4.Frontier.SequentialMagnification.SequentialCapstone
+import Pnp4.Frontier.SequentialMagnification.FoolingSet
 
 namespace Pnp4
 namespace Tests
@@ -3623,6 +3625,20 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms Pnp4.Frontier.SequentialMagnification.P_ne_NP_of_sequentialGap
 #print axioms Pnp4.Frontier.SequentialMagnification.sequentialTarget_of_dagTarget
 #print axioms Pnp4.Frontier.SequentialMagnification.P_ne_NP_of_closureRoute
+
+
+-- Sequential-magnification track: local-HSG reduction (2026-07-25).
+#check Pnp4.Frontier.SequentialMagnification.LocalGenerator
+#check Pnp4.Frontier.SequentialMagnification.HitsStreamingTests
+#check Pnp4.Frontier.SequentialMagnification.LocalHSGWitness
+#print axioms Pnp4.Frontier.SequentialMagnification.card_le_card_state_of_foolingFamily
+#print axioms Pnp4.Frontier.SequentialMagnification.no_solver_of_large_foolingFamily
+#print axioms Pnp4.Frontier.SequentialMagnification.mem_easyFunctions_of_circuitComplexityLE
+#print axioms Pnp4.Frontier.SequentialMagnification.MCSPStreamingHard_of_localHSG
+#print axioms Pnp4.Frontier.SequentialMagnification.seedLength_bound_of_injective_localGenerator
+#print axioms Pnp4.Frontier.SequentialMagnification.no_injective_localGenerator_of_seed_too_long
+#print axioms Pnp4.Frontier.SequentialMagnification.P_ne_NP_of_localHSG
+#print axioms Pnp4.Frontier.SequentialMagnification.P_ne_NP_of_localHSGWitness
 
 end Tests
 end Pnp4

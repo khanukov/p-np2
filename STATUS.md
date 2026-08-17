@@ -254,8 +254,10 @@ only a compatibility alias for enriched-package inconsistency. The canonical
 certificate `false_of_smallAC0Params_and_easyFamilyData` uses the parameter
 capacity bound, AC0 realizability of the packaged family, and its
 all-functions-scale cardinality lower bound; it does not use solver
-correctness. It is not a standard AC0 exclusion. A NEW canonical spec with non-trivial `sYES/sNO`
-where the pigeonhole argument does not apply (i.e., `Mof` grows fast
+correctness. It is not a standard AC0 exclusion.
+
+A new canonical spec with non-trivial `sYES/sNO`, where the pigeonhole
+argument does not apply (i.e., `Mof` grows fast
 enough relative to `tableLen` to invalidate the slack inequality
 used in `slack_for_D_of_isoStrong_slack`) is also an internal
 spec-engineering option, not a publishable route on its own.

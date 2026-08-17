@@ -18,12 +18,12 @@ open Classical
 open Models
 
 /-!
-  Semantic (non-vacuous) Step-C contract:
+  Enriched Step-C contract:
   the contradiction premise is attached to each concrete solver via an
   explicit easy-family package (family + AC0 witness + cardinal lower bound).
 -/
 
-/-- Semantic core hypothesis for Partial Step-C. -/
+/-- Enriched core hypothesis for Partial Step-C. -/
 def StepCCoreSemanticHypothesisPartial (p : Models.GapPartialMCSPParams) : Prop :=
   ∀ solver : SmallAC0Solver_Partial p, AC0EasyFamilyDataPartial solver.params.ac0 → False
 
@@ -38,7 +38,7 @@ theorem LB_Formulas_core_partial_semantic
   exact hCore solver easy
 
 /--
-Counting-core Step-C statement over an explicit "easy family" package.
+Counting-core contradiction over the inconsistent enriched easy-family package.
 -/
 theorem LB_Formulas_core_partial_of_easyFamilyData
   {p : Models.GapPartialMCSPParams}
@@ -47,8 +47,8 @@ theorem LB_Formulas_core_partial_of_easyFamilyData
   exact noSmallAC0Solver_partial_of_easyFamilyData (solver := solver) easy
 
 /--
-Constructive Step-C core over solver packages that already contain
-family-level easy-data witnesses.
+Compatibility Step-C core over packages that already contain the inconsistent
+family-level easy-data payload.
 -/
 theorem LB_Formulas_core_partial_constructive
   {p : Models.GapPartialMCSPParams}
@@ -67,9 +67,9 @@ theorem LB_Formulas_core_partial_closed
     (solver := constructiveSmallAC0Solver_of_solver solver)
 
 /--
-Fully closed semantic Step-C core:
-once the repository provides internal closure data (`StepCClosureDataPartial`),
-every plain semantic solver is refuted with no external Step-C hypotheses.
+Enriched-package Step-C core.  `SmallAC0Solver_Partial` already stores the
+inconsistent `easyData` payload; this is not closure over a plain semantic
+solver interface.
 -/
 theorem LB_Formulas_core_partial_fully_closed
   {p : Models.GapPartialMCSPParams}
@@ -128,7 +128,7 @@ theorem LB_Formulas_core_partial_closed_of_provider
   [StepCClosureDataPartialProvider solver] : False := by
   exact noSmallAC0Solver_partial_closed_of_provider (solver := solver)
 
-/-- Core final internalized closed contradiction (no extra hypotheses). -/
+/-- Legacy internalized contradiction for the already enriched package. -/
 theorem LB_Formulas_core_partial_closed_internalized
   {p : Models.GapPartialMCSPParams}
   (solver : SmallAC0Solver_Partial p) : False := by

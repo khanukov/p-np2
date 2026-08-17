@@ -61,7 +61,9 @@ structure SmallAC0ParamsPartial (p : GapPartialMCSPParams) where
 Family-level AC0 data for a counting-style Step-C contradiction.
 
 `F` is the candidate "easy" class, `witness` gives AC0 realizability, and
-`card_lower` is the large-cardinality premise required by the capacity gap.
+`card_lower` says that `F` has at least the cardinality of the entire Boolean
+function space.  When paired with `SmallAC0ParamsPartial`, these fields are
+inconsistent by `false_of_smallAC0Params_and_easyFamilyData` below.
 -/
 structure AC0EasyFamilyDataPartial (params : ThirdPartyFacts.AC0Parameters) where
   F : Core.Family params.n
@@ -69,7 +71,7 @@ structure AC0EasyFamilyDataPartial (params : ThirdPartyFacts.AC0Parameters) wher
   card_lower : Nat.pow 2 (Nat.pow 2 params.n) ≤ F.toFinset.card
 
 /--
-  Корректный AC⁰-решатель Partial MCSP.
+  Legacy enriched AC⁰-solver package for Partial MCSP.
 
   Здесь фиксируем только интерфейс: функция `decide` и доказательство
   корректности относительно `GapPartialMCSPPromise`.
@@ -79,8 +81,10 @@ structure AC0EasyFamilyDataPartial (params : ThirdPartyFacts.AC0Parameters) wher
   * `circuit` + `decide_eq` (связь semantic-функции с AC0-circuit eval),
   * `easyData` (готовый пакет для counting-противоречия).
 
-  Это делает возможным каноническое построение
-  `StepCSyntacticLiftDataPartial` без внешних гипотез.
+  The `easyData` field is stronger than solver correctness: together with
+  `params`, it is already contradictory.  Thus this structure must not be read
+  as a standard semantic AC0 solver interface, and its uninhabitability is not
+  a standard solver lower bound.
 -/
 structure SmallAC0Solver_Partial (p : GapPartialMCSPParams) where
   params : SmallAC0ParamsPartial p
@@ -108,7 +112,7 @@ lemma SmallAC0Solver_Partial.correct_decide
   simpa [SmallAC0Solver_Partial.decide] using solver.correct
 
 /-!
-  ### Semantic AC0 witness API (non-vacuous Step-C interface)
+  ### Legacy solver-local AC0 witness API
 
   The legacy route below uses `allFunctionsFamily` witnesses.  For a
   semantically faithful Step-C statement we expose a solver-local witness
@@ -683,19 +687,13 @@ lemma exists_partial_outside_if_card_lt_tableLen {n : Nat} (F : Finset (TotalTab
   derive a concrete bound on `F.card` before invoking
   `exists_partial_outside_if_card_lt`.
 
-  That TODO is now closed.  The current route runs:
-
-  * semantic AC⁰ solver  →  `StepCClosureDataPartial`
-    (via the canonical semantic→syntactic lift,
-    `stepCClosureData_of_syntacticLift`);
-  * `StepCClosureDataPartial`  →  Step-C contradiction
-    (`noSmallAC0Solver_partial_closed`, then
-    `noSmallAC0Solver_partial_closed_of_syntacticLift`);
-  * the final internalized contradiction is exposed downstream as
-    `LB_Formulas_core_partial_closed_internalized` in
-    `LowerBounds/LB_Formulas_Core_Partial.lean`, which is what the
-    paper-facing AC0 endpoint `gapPartialMCSP_no_semantic_AC0_solver`
-    in `LowerBounds/AC0_GapMCSP.lean` ultimately calls.
+  The former zero-hypothesis endpoint did not close that TODO.  Instead,
+  `SmallAC0Solver_Partial` was enriched with an `easyData` field that already
+  asserts both AC0 realizability and all-functions-scale cardinality.  Those
+  fields contradict the capacity bound independently of the solver function,
+  its circuit, and its correctness proof.  The explicit certificate is
+  `false_of_smallAC0Params_and_easyFamilyData` below.  The old endpoint names
+  remain only as deprecated compatibility surfaces.
 
   So `exists_partial_outside_if_card_lt` is preserved here as the
   underlying combinatorial brick (`|F| * 2^(2^n) < 3^(2^n)` ⇒ a hard
@@ -959,38 +957,44 @@ lemma decide_ac0_eq_language
 /-!
   ### Полный anti-checker в partial-треке (аналог legacy-версии)
 
-  Ниже мы переносим ключевой вывод `noSmallAC0Solver` и стандартные
-  конструктивные интерфейсы:
+  The section retains historical solver-facing interfaces, but the first
+  counting contradiction below has now been factored over parameters and an
+  enriched easy-family package alone.  Later semantic lemmas may use solver
+  correctness; the vacuity certificate explicitly does not.
+
+  Ниже мы также сохраняем стандартные конструктивные интерфейсы:
   * явный witness `Y` (без `False.elim`-экстракции),
   * testset-incompatibility в форме «из данных `Y, T` следует `False`».
-  В доказательствах используется только факт, что решатель совпадает с
-  языком Partial MCSP на всех входах.
 -/
 
 /--
-  Generic counting-core contradiction:
-  from AC0 witness for a family `F` and a large-cardinality lower bound on `F`
-  we derive inconsistency with the capacity upper bound.
+Vacuity certificate at the counting-core boundary.
+
+The contradiction uses exactly a `SmallAC0ParamsPartial p` package (in
+particular `same_n` and `union_small`) plus an AC0-realizable family whose
+cardinality is at least the number of all Boolean functions.  It has no solver
+argument and therefore cannot use solver semantics, a circuit implementation,
+or solver correctness.
 -/
-theorem noSmallAC0Solver_partial_of_family_card
-    {p : GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p)
-    {F : Family solver.params.ac0.n}
-    (hF : ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0 F)
-    (hCardLower : Nat.pow 2 (Nat.pow 2 solver.params.ac0.n) ≤ F.toFinset.card) :
+theorem false_of_smallAC0Params_and_large_AC0Family
+    {p : GapPartialMCSPParams} (params : SmallAC0ParamsPartial p)
+    {F : Family params.ac0.n}
+    (hF : ThirdPartyFacts.AC0FamilyWitnessProp params.ac0 F)
+    (hCardLower : Nat.pow 2 (Nat.pow 2 params.ac0.n) ≤ F.toFinset.card) :
     False := by
   classical
   let pack :=
     scenarioFromAC0
-      (params := solver.params.ac0) (F := F) (hF := hF)
+      (params := params.ac0) (F := F) (hF := hF)
   let sc := pack.2
-  let bound := Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong solver.params.ac0)
+  let bound := Nat.pow 2 (ThirdPartyFacts.ac0DepthBound_strong params.ac0)
   have hsummary :=
     scenarioFromAC0_stepAB_summary_strong
-      (params := solver.params.ac0) (F := F) (hF := hF)
+      (params := params.ac0) (F := F) (hF := hF)
   dsimp [pack, sc, bound] at hsummary
   rcases hsummary with ⟨hfamily, hk, hdict, _hε0, _hε1, hεInv, hcap_le⟩
-  set N := Nat.pow 2 solver.params.ac0.n
-  set t := N / (solver.params.ac0.n + 2)
+  set N := Nat.pow 2 params.ac0.n
+  set t := N / (params.ac0.n + 2)
   have hU :
       Counting.unionBound (Counting.dictLen sc.atlas.dict) sc.k
         ≤ Nat.pow 2 t := by
@@ -1002,13 +1006,13 @@ theorem noSmallAC0Solver_partial_of_family_card
         Counting.unionBound bound sc.k ≤ Counting.unionBound bound bound :=
       Counting.unionBound_mono_right (D := bound) hk
     have hchain := le_trans hmono_left hmono_right
-    simpa [t] using (le_trans hchain solver.params.union_small)
-  have hε0' : (0 : Rat) ≤ (1 : Rat) / (solver.params.ac0.n + 2) := by
-    have hden : (0 : Rat) ≤ solver.params.ac0.n + 2 := by
+    simpa [t] using (le_trans hchain params.union_small)
+  have hε0' : (0 : Rat) ≤ (1 : Rat) / (params.ac0.n + 2) := by
+    have hden : (0 : Rat) ≤ params.ac0.n + 2 := by
       nlinarith
     exact one_div_nonneg.mpr hden
-  have hε1' : (1 : Rat) / (solver.params.ac0.n + 2) ≤ (1 : Rat) / 2 := by
-    have hden : (2 : Rat) ≤ solver.params.ac0.n + 2 := by
+  have hε1' : (1 : Rat) / (params.ac0.n + 2) ≤ (1 : Rat) / 2 := by
+    have hden : (2 : Rat) ≤ params.ac0.n + 2 := by
       nlinarith
     have hpos : (0 : Rat) < (2 : Rat) := by
       nlinarith
@@ -1017,16 +1021,16 @@ theorem noSmallAC0Solver_partial_of_family_card
       Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k N
         sc.atlas.epsilon sc.hε0 sc.hε1
         ≤ Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k N
-          ((1 : Rat) / (solver.params.ac0.n + 2)) hε0' hε1' := by
+          ((1 : Rat) / (params.ac0.n + 2)) hε0' hε1' := by
     exact Counting.capacityBound_mono
       (h0 := sc.hε0) (h1 := sc.hε1)
       (h0' := hε0') (h1' := hε1')
       (hD := le_rfl) (hk := le_rfl) hεInv
   have hcap_lt :
       Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k N
-        ((1 : Rat) / (solver.params.ac0.n + 2)) hε0' hε1'
+        ((1 : Rat) / (params.ac0.n + 2)) hε0' hε1'
         < Nat.pow 2 N := by
-    have hn : 8 ≤ solver.params.ac0.n := by
+    have hn : 8 ≤ params.ac0.n := by
       have hpow :=
         Nat.pow_le_pow_right (by decide : (0 : Nat) < 2) p.n_large
       have hpow' : Nat.pow 2 8 ≤ partialInputLen p := by
@@ -1037,10 +1041,10 @@ theorem noSmallAC0Solver_partial_of_family_card
       have h8 : 8 ≤ Nat.pow 2 8 := by decide
       have h8' : 8 ≤ partialInputLen p := by
         exact le_trans h8 hpow'
-      simpa [solver.params.same_n] using h8'
+      simpa [params.same_n] using h8'
     simpa [N, t] using
       (Counting.capacityBound_twoPow_lt_twoPowPow
-        (n := solver.params.ac0.n)
+        (n := params.ac0.n)
         (D := Counting.dictLen sc.atlas.dict)
         (k := sc.k)
         (hn := hn)
@@ -1057,13 +1061,39 @@ theorem noSmallAC0Solver_partial_of_family_card
   have hcap_le_final :
       (familyFinset sc).card ≤
         Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k N
-          ((1 : Rat) / (solver.params.ac0.n + 2)) hε0' hε1' := by
+          ((1 : Rat) / (params.ac0.n + 2)) hε0' hε1' := by
     exact hcap_le.trans hcap_le'
   have hpow_le_cap : Nat.pow 2 N ≤
       Counting.capacityBound (Counting.dictLen sc.atlas.dict) sc.k N
-        ((1 : Rat) / (solver.params.ac0.n + 2)) hε0' hε1' := by
+        ((1 : Rat) / (params.ac0.n + 2)) hε0' hε1' := by
     exact le_trans hcard_ge hcap_le_final
   exact (Nat.lt_irrefl (Nat.pow 2 N)) (lt_of_le_of_lt hpow_le_cap hcap_lt)
+
+/--
+The enriched easy-family payload is itself inconsistent with the small-AC0
+parameter bounds.  This is the canonical vacuity certificate for the former
+zero-hypothesis AC0 endpoint.
+-/
+theorem false_of_smallAC0Params_and_easyFamilyData
+    {p : GapPartialMCSPParams}
+    (params : SmallAC0ParamsPartial p)
+    (easy : AC0EasyFamilyDataPartial params.ac0) : False := by
+  exact false_of_smallAC0Params_and_large_AC0Family
+    (params := params)
+    (F := easy.F)
+    (hF := easy.witness)
+    (hCardLower := easy.card_lower)
+
+/-- Deprecated solver-shaped compatibility wrapper for the vacuity certificate. -/
+@[deprecated false_of_smallAC0Params_and_large_AC0Family (since := "2026-08-17")]
+theorem noSmallAC0Solver_partial_of_family_card
+    {p : GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p)
+    {F : Family solver.params.ac0.n}
+    (hF : ThirdPartyFacts.AC0FamilyWitnessProp solver.params.ac0 F)
+    (hCardLower : Nat.pow 2 (Nat.pow 2 solver.params.ac0.n) ≤ F.toFinset.card) :
+    False := by
+  exact false_of_smallAC0Params_and_large_AC0Family
+    (params := solver.params) (F := F) hF hCardLower
 
 /-- Syntactic AC0-easy predicate for one Boolean function. -/
 def IsAC0SyntacticEasyFunc
@@ -1178,16 +1208,11 @@ noncomputable def ac0EasyFamilyData_of_syntacticHypotheses
 theorem noSmallAC0Solver_partial_of_easyFamilyData
     {p : GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p)
     (easy : AC0EasyFamilyDataPartial solver.params.ac0) : False := by
-  exact noSmallAC0Solver_partial_of_family_card
-    (solver := solver)
-    (F := easy.F)
-    (hF := easy.witness)
-    (hCardLower := easy.card_lower)
+  exact false_of_smallAC0Params_and_easyFamilyData solver.params easy
 
 /--
-Constructive non-vacuous Step-C core:
-any solver that already carries its family-level easy-data package yields
-an immediate contradiction.
+Enriched-package Step-C core: the internally stored family-level easy-data
+already contradicts the parameter capacity bound.
 -/
 theorem noConstructiveSmallAC0Solver_partial
     {p : GapPartialMCSPParams}
@@ -1197,11 +1222,9 @@ theorem noConstructiveSmallAC0Solver_partial
     (easy := solver.easyData)
 
 /--
-Data required to make Step-C fully closed over plain semantic AC0 solvers.
-
-`buildEasyData` is the missing compression/construction bridge:
-from each `SmallAC0Solver_Partial` we must internally construct the
-family-level package consumed by the counting contradiction.
+Legacy closure-data shape.  This is not closure over a plain semantic solver:
+`SmallAC0Solver_Partial` itself already stores the inconsistent family-level
+package consumed by the counting contradiction.
 -/
 structure StepCClosureDataPartial (p : GapPartialMCSPParams) : Type 2 where
   buildEasyData :
@@ -1211,9 +1234,8 @@ structure StepCClosureDataPartial (p : GapPartialMCSPParams) : Type 2 where
 /--
 Optional internalization package for the syntactic Step-C route.
 
-It states that every semantic solver can be lifted to a syntactic package
-without changing the underlying semantic solver object.  This isolates the
-remaining "semantic -> syntactic" engineering burden in one interface.
+It wraps the already enriched package in a syntactic compatibility type without
+changing the underlying object.
 -/
 structure StepCSyntacticLiftDataPartial (p : GapPartialMCSPParams) : Type 2 where
   lift :
@@ -1226,8 +1248,8 @@ structure StepCSyntacticLiftDataPartial (p : GapPartialMCSPParams) : Type 2 wher
 /--
 Canonical semantic→syntactic lift package.
 
-Because `SmallAC0Solver_Partial` now already stores the syntactic payload
-(`circuit`, `decide_eq`, `easyData`), every semantic solver can be wrapped into
+Because `SmallAC0Solver_Partial` already stores the syntactic payload
+(`circuit`, `decide_eq`, `easyData`), every enriched package can be wrapped into
 `SmallAC0Solver_Partial_Syntactic` without extra assumptions.
 -/
 noncomputable def stepCSyntacticLiftDataPartial_default
@@ -1239,10 +1261,8 @@ noncomputable def stepCSyntacticLiftDataPartial_default
     rfl
 
 /--
-Solver-local provider for the missing Step-C closure package.
-
-This isolates the remaining mathematical work in the strongest reusable form:
-for a fixed solver, provide family-level AC0 data and a strict capacity gap.
+Legacy solver-local provider shape for family-level AC0 data and a strict
+capacity gap.  It is not the source of a standard solver lower bound.
 
 @audit-class: infrastructure
 @audit-pr: PR 6
@@ -1265,8 +1285,7 @@ class StepCClosureDataPartialProvider
     scenarioCapacity (sc := sc) < Y.card
 
 /--
-Build fully-closed Step-C closure data from a semantic-to-syntactic lift
-package.
+Build legacy Step-C closure data from an enriched-package lift.
 -/
 noncomputable def stepCClosureData_of_syntacticLift
     {p : GapPartialMCSPParams}
@@ -1279,11 +1298,7 @@ noncomputable def stepCClosureData_of_syntacticLift
     exact hs ▸ s.easyData
 
 /--
-Build a constructive solver package from semantic-to-syntactic lift data.
-
-This is a local solver-level bridge: once `liftData` is available, every
-semantic solver is canonically packaged as a constructive solver carrying the
-required `easyData` payload.
+Build a constructive compatibility wrapper from enriched-package lift data.
 -/
 noncomputable def constructiveSmallAC0Solver_of_syntacticLift
     {p : GapPartialMCSPParams}
@@ -1293,8 +1308,7 @@ noncomputable def constructiveSmallAC0Solver_of_syntacticLift
   (liftData.lift solver).toConstructive
 
 /--
-Fully closed Step-C contradiction from semantic solvers, assuming the explicit
-internal closure data package.
+Contradiction from the enriched package and explicit legacy closure data.
 -/
 theorem noSmallAC0Solver_partial_closed
     {p : GapPartialMCSPParams}
@@ -1327,11 +1341,7 @@ theorem noSmallAC0Solver_partial_closed_of_provider
   exact Nat.not_lt_of_ge hY_le_cap hLarge
 
 /--
-Existential form of fully closed Step-C contradiction.
-
-This is the mathematically strongest in-repo target for Step-C at fixed `p`:
-if closure data is available, there does not exist any semantic small AC0
-solver for `GapPartialMCSPPromise p`.
+Existential form of the enriched-package contradiction with legacy closure data.
 -/
 theorem noSmallAC0Solver_partial_closed_noExists
     {p : GapPartialMCSPParams}
@@ -1342,8 +1352,8 @@ theorem noSmallAC0Solver_partial_closed_noExists
   exact noSmallAC0Solver_partial_closed (closure := closure) (solver := solver)
 
 /--
-Pointwise and existential formulations of the fully closed contradiction are
-equivalent.
+Pointwise and existential formulations of the enriched-package contradiction
+are equivalent.
 -/
 theorem noSmallAC0Solver_partial_closed_iff_noExists
     {p : GapPartialMCSPParams}
@@ -1358,7 +1368,7 @@ theorem noSmallAC0Solver_partial_closed_iff_noExists
     exact hNo ⟨solver, trivial⟩
 
 /--
-Fully closed contradiction obtained from semantic-to-syntactic lift data.
+Compatibility contradiction obtained from enriched-package lift data.
 -/
 theorem noSmallAC0Solver_partial_closed_of_syntacticLift
     {p : GapPartialMCSPParams}
@@ -1535,8 +1545,8 @@ theorem antiChecker_exists_large_Y_partial_of_easyFamilyData
 /--
 Constructive large-`Y` witness for packaged constructive solvers.
 
-This is the clean constructive Step-C output: no external witness hypotheses,
-only the internally stored `easyData` package carried by the solver.
+This output is extracted from the internally stored, inconsistent `easyData`
+package; it is not a non-vacuous solver consequence.
 -/
 theorem antiChecker_exists_large_Y_partial_constructive
     {p : GapPartialMCSPParams}
@@ -1637,8 +1647,8 @@ theorem noSmallAC0Solver_partial_closed_of_syntacticLift_provider
   exact noSmallAC0Solver_partial_closed_of_provider (solver := solver)
 
 /--
-Final internalized Step-C contradiction:
-no external closure/lift hypotheses are required anymore.
+Legacy zero-hypothesis contradiction for the already enriched package.  The
+direct certificate is `false_of_smallAC0Params_and_easyFamilyData`.
 -/
 theorem noSmallAC0Solver_partial_closed_internalized
     {p : GapPartialMCSPParams}
@@ -2038,9 +2048,9 @@ lemma exists_partial_not_consistent_with_family_tableLen {n : Nat}
   exact exists_partial_not_consistent_with_family (F := F) hsmall'
 
 /-!
-  Status: all key Step-C interfaces in the partial track are now
-  internalized.  Anything beyond this point is optional API
-  refactoring / simplification, not an open mathematical step.
+  Audit status: the apparent Step-C internalization came from placing the
+  contradictory `easyData` assumption inside `SmallAC0Solver_Partial`.  A
+  non-vacuous standard AC0 lower bound remains unproved.
 -/
 
 /-!

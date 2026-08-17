@@ -3,12 +3,13 @@ import LowerBounds.AC0_GapMCSP_Final
 /-!
   pnp3/LowerBounds/AC0_GapMCSP.lean
 
-  Paper-facing AC0 lower-bound surface for the Partial-MCSP track.
+  Deprecated compatibility quarantine for the former Partial-MCSP AC0 surface.
 
-  This is the preferred import path for the restricted-model result.  It keeps
-  the theorem names closer to standard complexity-theory prose (`in_AC0`,
-  `not_in_AC0`) while reusing the implementation layer in
-  `LowerBounds.AC0_GapMCSP_Final`.
+  The standard-looking `in_AC0` / `not_in_AC0` names below range over
+  `SmallAC0Solver_Partial`, whose `easyData` and `params` fields are already
+  inconsistent without solver correctness.  New code should use the explicitly
+  enriched names in `LowerBounds.AC0_GapMCSP_Final`.  Nothing in this module is
+  a standard AC0 lower bound.
 -/
 
 namespace Pnp3
@@ -16,73 +17,81 @@ namespace LowerBounds
 
 open Models
 
+-- This entire module is a deprecated compatibility quarantine.
+set_option linter.deprecated false
+
 /--
 Paper-facing "in AC0" predicate for the active fixed-slice Partial-MCSP
 formalization.
 
-At the current repository boundary this is defined through the structured
-semantic solver interface `SmallAC0Solver_Partial`.
+This historical name does not denote standard AC0 membership.  Its witness is
+the enriched `SmallAC0Solver_Partial` package.
 -/
+@[deprecated EnrichedSmallAC0PackagePartialExists (since := "2026-08-17")]
 def GapPartialMCSP_in_AC0 (p : GapPartialMCSPParams) : Prop :=
-  ∃ _solver : SmallAC0Solver_Partial p, True
+  EnrichedSmallAC0PackagePartialExists p
 
 /--
-Paper-facing "not in AC0" predicate for the active fixed-slice Partial-MCSP
-formalization.
+Deprecated negation of the enriched-package existence predicate.  This is not
+standard AC0 non-membership.
 -/
+@[deprecated EnrichedSmallAC0PackagePartialInconsistent (since := "2026-08-17")]
 def GapPartialMCSP_not_in_AC0 (p : GapPartialMCSPParams) : Prop :=
   ¬ GapPartialMCSP_in_AC0 p
 
 /--
-Pointwise semantic AC0-solver exclusion for the fixed slice `p`.
+Deprecated compatibility theorem for the enriched package.
 -/
+@[deprecated false_of_enrichedSmallAC0PackagePartial (since := "2026-08-17")]
 theorem gapPartialMCSP_no_semantic_AC0_solver
     (p : GapPartialMCSPParams) :
     ∀ _solver : SmallAC0Solver_Partial p, False :=
-  gapPartialMCSP_noSmallAC0Solver p
+  false_of_enrichedSmallAC0PackagePartial p
 
 /--
-Pointwise syntactic-package AC0-solver exclusion for the fixed slice `p`.
+Deprecated compatibility theorem for a thin wrapper around the enriched package.
 -/
+@[deprecated false_of_enrichedSmallAC0PackagePartial (since := "2026-08-17")]
 theorem gapPartialMCSP_no_syntactic_AC0_solver
     (p : GapPartialMCSPParams) :
     ∀ _solver : SmallAC0Solver_Partial_Syntactic p, False :=
-  gapPartialMCSP_noSyntacticSmallAC0Solver p
+  fun solver => false_of_enrichedSmallAC0PackagePartial p
+    solver.toSmallAC0Solver_Partial
 
 /--
-Pointwise constructive-package AC0-solver exclusion for the fixed slice `p`.
+Deprecated compatibility theorem for a thin wrapper around the enriched package.
 -/
+@[deprecated false_of_enrichedSmallAC0PackagePartial (since := "2026-08-17")]
 theorem gapPartialMCSP_no_constructive_AC0_solver
     (p : GapPartialMCSPParams) :
     ∀ _solver : ConstructiveSmallAC0Solver_Partial p, False :=
-  gapPartialMCSP_noConstructiveSmallAC0Solver p
+  fun solver => false_of_enrichedSmallAC0PackagePartial p
+    solver.toSmallAC0Solver_Partial
 
 /--
-Main paper-facing restricted-model theorem:
-the fixed-slice Partial-MCSP target is not in AC0 under the active structured
-solver interface.
+Deprecated zero-hypothesis endpoint.  It proves only that the enriched package
+cannot exist, because `params` and `easyData` already imply `False`.
 -/
+@[deprecated not_exists_enrichedSmallAC0PackagePartial (since := "2026-08-17")]
 theorem gapPartialMCSP_not_in_AC0
     (p : GapPartialMCSPParams) :
     GapPartialMCSP_not_in_AC0 p := by
-  intro hIn
-  rcases hIn with ⟨solver, _⟩
-  exact gapPartialMCSP_no_semantic_AC0_solver p solver
+  exact not_exists_enrichedSmallAC0PackagePartial p
 
 /--
-Compatibility alias from the paper-facing theorem back to the implementation
-predicate used in `AC0_GapMCSP_Final`.
+Deprecated compatibility alias between two historical names for the same
+enriched-package inconsistency.
 -/
+@[deprecated not_exists_enrichedSmallAC0PackagePartial (since := "2026-08-17")]
 theorem gapPartialMCSP_notInSmallAC0_of_not_in_AC0
     (p : GapPartialMCSPParams) :
     GapPartialMCSP_NotInSmallAC0 p := by
-  intro hExists
-  exact gapPartialMCSP_not_in_AC0 p hExists
+  exact not_exists_enrichedSmallAC0PackagePartial p
 
 /--
-The implementation predicate and the paper-facing predicate are definitionally
-equivalent.
+Deprecated definitional equivalence between the two historical predicates.
 -/
+@[deprecated EnrichedSmallAC0PackagePartialInconsistent (since := "2026-08-17")]
 theorem gapPartialMCSP_not_in_AC0_iff_notInSmallAC0
     (p : GapPartialMCSPParams) :
     GapPartialMCSP_not_in_AC0 p ↔ GapPartialMCSP_NotInSmallAC0 p := by

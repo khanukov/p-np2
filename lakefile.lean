@@ -321,6 +321,10 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPaddingTransport,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionTransfer,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentConsolidatedSource,
+    -- Model-audit module: it depends only on the shared complexity interfaces,
+    -- so it is listed after the whole contract-expansion chain and before the
+    -- test modules that import it.
+    Glob.one `Pnp4.Frontier.ModelAudit.RuntimeAdviceBarrier,
     Glob.one `Pnp4.Tests.AlgorithmsToLowerBoundsSurfaceTests,
     Glob.one `Pnp4.Tests.AxiomsAudit
   ]

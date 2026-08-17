@@ -61,6 +61,7 @@ import Pnp4.Frontier.ContractExpansion.ThresholdGrowth
 import Pnp4.Frontier.ContractExpansion.ConsolidatedTreeSeparation
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
+import Pnp4.Frontier.ModelAudit.RuntimeAdviceBarrier
 
 namespace Pnp4
 namespace Tests
@@ -427,6 +428,10 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.naiveGreedyModel_size_ge_pow
 #print axioms Pnp4.Frontier.ContractExpansion.pow_le_of_linear_witnessBits
 #print axioms Pnp4.Frontier.ContractExpansion.pow_quadratic_gt_poly
+
+#print axioms Pnp4.Frontier.ModelAudit.RuntimeAdviceBarrier.lengthAdviceTM_runTime_le_one
+#print axioms Pnp4.Frontier.ModelAudit.RuntimeAdviceBarrier.lengthAdviceTM_accepts
+#print axioms Pnp4.Frontier.ModelAudit.RuntimeAdviceBarrier.lengthAdviceLanguage_in_repo_P
 
 #print axioms Pnp3.ComplexityInterfaces.DagCircuit.evalGateAt_congr
 #print axioms Pnp3.ComplexityInterfaces.DagCircuit.snocBundleSubst_gates

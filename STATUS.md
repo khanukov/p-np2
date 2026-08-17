@@ -39,6 +39,18 @@ Research method boundary:
 There is still **no unconditional in-repo theorem** `P != NP`, and the
 current blockers are sharper than the old "remove residual payload" wording.
 
+**Repository `P` runtime-advice caveat.**  The current Turing-machine record's
+`runTime : Nat -> Nat` field is unrestricted data: the `P` predicate bounds it
+pointwise but does not require it to be computable or time constructible.
+`ModelAudit.RuntimeAdviceBarrier.lengthAdviceLanguage_in_repo_P` therefore
+proves that every `A : Nat -> Bool`, with no computability hypothesis, yields a
+length-only language in the current repository `P`, using a two-state machine
+whose zero-or-one-step runtime stores `A n`.  The definition thus admits
+arbitrary length languages, including languages obtained from noncomputable
+sequences.  The theorem does not itself construct a noncomputable sequence or
+formalize undecidability or a cardinality separation.  This is an interface
+audit, not a repair of the model or P-vs-NP mainline progress.
+
 The active public DAG endpoint is now the honest research-gap boundary:
 
 ```text

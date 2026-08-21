@@ -1643,6 +1643,7 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
   (`RuntimeAdviceBarrier.lean:77` `lengthAdviceLanguage_in_repo_P`), and `ContentVerifierBridge`
   does **not** exclude a bridge that exploits it. Advice-avoidance is an unenforced review
   convention until a formal clock premise is added (§1.3 caveat 6, G6).
-* FEAS-0 is implemented in one new 295-line module on top of the already merged field-recovery
-  slice. GATE-0, P0, I1 and D1a are now unlocked; D1b still waits for P0 and D1a. Their projected
-  budgets remain planning estimates, not completed work.
+* FEAS-0 is implemented in one new 295-line module on top of the merged field-recovery slice.
+  GATE-0, P0 and D1a are merged; I1 is implemented on this branch; D1b is unblocked and its
+  conditional repackaging is in progress. None of these constructs the concrete bridge instance, so
+  the projected machine-construction budgets remain planning estimates, not completed work.

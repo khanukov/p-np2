@@ -341,8 +341,9 @@ Every public theorem of the eight modules has its own `#print axioms` line in
 NP-verifier target at `ContentPrefixExtensionNPWitness` / `ContentAccepts`. FEAS-0 outcome (a) is
 now proved by `ContentTargetSizeBound.lean`: accepted complete words have polynomially bounded
 header convention length. The length-gated `PrefixExtensionNPWitness` remains compiled and audited
-for compatibility, but is retired as an alternative target for new verifier work. The bound does
-not prove polynomial-time verifiability of `L'`: the concrete TM, runtime theorem, non-vacuity, and
+for compatibility and is dispreferred, rather than retired, for new verifier work; a new slice may
+target it only with an explicit technical or compatibility rationale. The bound does not prove
+polynomial-time verifiability of `L'`: the concrete TM, runtime theorem, non-vacuity, and
 `TM.accepts` bridge remain open. This is Infrastructure and makes no `P ≠ NP` claim.
 
 ### Concrete codec (constructed)

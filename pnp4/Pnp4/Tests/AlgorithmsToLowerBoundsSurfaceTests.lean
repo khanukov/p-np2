@@ -58,6 +58,7 @@ import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPadding
+import Pnp4.Frontier.ContractExpansion.ContentVerifierTapeInterface
 import Pnp4.Frontier.ContractExpansion.ContentTargetSizeBound
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPaddingTransport
@@ -1019,6 +1020,15 @@ theorem check_NP_not_subset_PpolyDAG_treePolyCT
 #check @Pnp4.Frontier.ContractExpansion.ContentAccepts_iff_of_padRead_eq
 -- Axiom-light strict-decode transport remains with padding stability.
 #check @Pnp4.Frontier.ContractExpansion.contentHeader?_of_decodeGamma
+-- D1a machine-facing tape interface (plan §4.4): the initial tape is the complete word's
+-- blank-padded read; content acceptance is therefore reusable from a tape equality; and the
+-- verifier obligation is parameterized by an arbitrary acceptance predicate.  The bridge uses
+-- `TM.accepts` at exactly `runTime`, with the concatenated length explicit.  It has no halting or
+-- within-time alternative, supplies no machine instance, and does not formally prevent `runTime`
+-- from carrying input-length advice.
+#check @Pnp4.Frontier.ContractExpansion.initialConfig_tape_eq_padRead
+#check @Pnp4.Frontier.ContractExpansion.contentAccepts_of_initialConfig_tape_eq
+#check @Pnp4.Frontier.ContractExpansion.ContentVerifierBridgeFor
 -- The certificate-producing transport is isolated in the explicitly classical
 -- `ContentPrefixExtensionPaddingTransport.lean`.  It derives `ContentPrefixExtendable` directly
 -- from the proposition-level coincidence theorem, without either Boolean language wrapper, but

@@ -1036,24 +1036,24 @@ must exhibit one `#eval` (or `decide`) on a small concrete word in the surface-t
 axioms` cannot detect a `Classical.propDecidable` substitution here, because the honest route
 already carries `Classical.choice`.
 
-### 4.3 I1 — close the residual gate premises · *parallel-safe once FEAS-0 is green*
+### 4.3 I1 — close the residual gate premises · **implemented at `3256d950`**
 
-**Why.** Two families of side conditions currently infect every coincidence statement and would
-infect the machine's correctness proof:
+**Why this slice was needed.** Two families of side conditions infected every coincidence statement
+and would otherwise infect the machine's correctness proof:
 
 * `hn : input.n = n` in `ContentPrefixExtendable_iff_of_parse` (`Coincidence.lean:276`) and
   `ContentPrefixExtensionLanguage_eq_of_parse` (`:324`). Inversion
   (`parseTreeMCSPPrefixInput_inversion`, `:140`) yields only
   `treeMCSPPrefixM codec input.n = treeMCSPPrefixM codec n`; injectivity of `treeMCSPPrefixM codec`
-  is not proved (docstring at `:319–:323`).
+  is unavailable generically. I1 supplies it under monotone `witnessBits`, and for the concrete
+  polynomial codec (docstring at `:319–:323`).
 * The narrowing direction of the gamma decode, and the enumeration of what actually remains after
   it (§1.3, caveat 3).
 
-**Edited/new modules:** new `ContentPrefixExtensionGateClosure.lean`; no edit to
-`Coincidence.lean` in this slice (the `hn`-free corollaries are stated in the new module, so the
-existing surface and its audit lines stay untouched).
+**Landed module:** `ContentPrefixExtensionGateClosure.lean`; the original coincidence theorems keep
+their explicit `hn`, while the new module supplies the monotonicity-premised `hn`-free corollary.
 
-#### 4.3.1 Injectivity: the generic goal is **false** — specialize it
+#### 4.3.1 Injectivity: the generic goal fails at the definition level — specialize it
 
 The previous revision proposed
 `treeMCSPPrefixM_injective (codec : TreeCircuitWitnessCodec threshold) : Function.Injective (treeMCSPPrefixM codec)`
@@ -1066,15 +1066,16 @@ monotonicity". **Both the goal and the route are wrong.**
   it bounds `witnessBits` from *below*. A codec may pad `witnessBits` upward by any amount at any
   single `n` (the extra bits are simply ignored by `decode`). Since
   `k ↦ k + bitLength k` advances by 1 or 2 per step, `witnessBits` can be inflated at `0` and at `1`
-  until `treeMCSPPrefixM codec 0 = treeMCSPPrefixM codec 1`. So injectivity **fails for some legal
-  codec**, and no proof can exist.
+  until `treeMCSPPrefixM codec 0 = treeMCSPPrefixM codec 1`. This is a definition-level
+  counterexample construction explaining why no generic theorem is exposed; I1 does not add a
+  formal counterexample-codec theorem.
 * `tableLen_le_treeMCSPPrefixM` (`:48`) gives `2 ^ n ≤ treeMCSPPrefixM codec n` — a *lower* bound.
   Strict monotonicity needs an *upper* bound on `treeMCSPPrefixM codec n`, which does not exist
   without constraining `witnessBits`. `instanceSize_lt_treeMCSPPrefixM`
   (`TreeMCSPPrefixVerifierLayout.lean:194`) proves `n < treeMCSPPrefixM codec n`, not monotonicity,
   so it is not a model for this argument.
 
-Replace with the specialized forms, both true:
+I1 implements the following specialized forms:
 
 ```lean
 /-- Under monotone witness width, `treeMCSPPrefixM codec` is strictly monotone: `tagLen` is
@@ -1188,32 +1189,30 @@ requires `2 * N + 1 ≤ T'`, i.e. widening, and here `T' = treeMCSPPrefixM codec
 "four field reads". On the narrow window `padWord z (treeMCSPPrefixM codec n')`, given
 `contentHeader? z = some (n', consumed)`, they split cleanly:
 
-**Automatic (discharged by §3.1 lemmas — a slice must prove these, not assume them):**
+**Automatic range/gate facts proved by I1:**
 
 | # | Premise | Discharged by |
 |---|---|---|
-| 1 | `readNatBE y 0 tagLen` succeeds | `TreeMCSPPrefixVerifierLayout.lean:183` `gammaLen_le_treeMCSPPrefixM` (`tagLen ≤ M n'`) |
 | 2 | `decodeGamma? y tagLen` succeeds, returns `(n', consumed)` | `decodeGamma?_padWord_narrow` (§4.3.2) |
 | 3 | length gate `m = treeMCSPPrefixM codec n_dec` | `contentInput?_lengthGate_vacuous` (§4.3.2) |
 | 4 | `sliceBits? y xOffset (tableLen n')` succeeds | `TreeMCSPPrefixVerifierLayout.lean:174` `queryIdxOffset_le_treeMCSPPrefixM` |
-| 5 | `readNatBE y iOffset (idxWidth codec.witnessBits n')` succeeds | `TreeMCSPPrefixVerifierLayout.lean:157` `queryPrefixOffset_le` |
 | 6 | `sliceBits? y pOffset i` succeeds | `TreeMCSPPrefixVerifierLayout.lean:148` `queryPrefixOffset_add_witnessBits`, given #10 |
 | 7 | `sliceBits? y padOffset (codec.witnessBits n' - i)` succeeds | `TreeMCSPPrefixVerifierLayout.lean:148` `queryPrefixOffset_add_witnessBits`, given #10 |
-| 8 | `allZeroSlice? y padOffset (…)` succeeds | same range argument as #7 |
 
-**Not automatic — three genuine *value* tests, and the honest residue:**
+**Exactly three bundled read-and-value tests remain:**
 
 | # | Premise | Status |
 |---|---|---|
-| 9 | `tag = treePrefixTag` | open; `contentHeader?` never reads the tag, so a word with a valid gamma and a wrong tag is legitimately rejected |
-| 10 | `i ≤ codec.witnessBits n'` | open; `i` is read off the tape and may exceed the witness width |
-| 11 | `padZero = true` | open; the inactive suffix must be all-zero |
+| 1 + 9 | tag read returns `some treePrefixTag` | open; `contentHeader?` never reads the tag, so read failure or a wrong tag legitimately rejects |
+| 5 + 10 | index read returns `some i` and `i ≤ codec.witnessBits n'` | open; read success and the decoded bound are one existential conjunct |
+| 8 + 11 | `allZeroSlice? … = some true` | open; this bundles successful access with the inactive-suffix zero test |
 
 So the honest closure statement is a characterisation, not a vacuity claim:
 
 ```lean
-/-- Given a successful content-header decode, `contentInput?` succeeds **iff** the three value tests
-pass; every range/fit premise and the length gate discharge unconditionally. -/
+/-- Given a successful content-header decode, `contentInput?` succeeds **iff** the three bundled
+read-and-value tests pass; the range-only slice obligations and the length gate discharge
+unconditionally. -/
 theorem contentInput?_isSome_iff_of_header {threshold : Nat → Nat}
     (codec : TreeCircuitWitnessCodec threshold) {N : Nat} (z : PrefixBitVec N)
     {n' consumed : Nat}
@@ -1223,20 +1222,21 @@ theorem contentInput?_isSome_iff_of_header {threshold : Nat → Nat}
            at the canonical offsets of `padWord z (treeMCSPPrefixM codec n')`)
 ```
 
-**The three value tests are load-bearing and must not be dropped.** A slice claiming that
-`contentInput?` *never* returns `none` is wrong and must be rejected: words failing #9/#10/#11 are
-simply not in `L'`, which is sound behaviour.
+**The three bundled checks are load-bearing and must not be dropped.** A slice claiming that
+`contentInput?` *never* returns `none` is wrong and must be rejected: a failed/wrong tag read, a
+failed/out-of-range index read, or a failed/nonzero padding read legitimately rejects the word.
 
-**Budget:** 500–800 LOC · 2–3 modules (split at §4.3.1 / §4.3.2+§4.3.3 if the size gate binds).
-**Stop/go (G3):** state injectivity **only** in the two specialized forms of §4.3.1. A slice that
+**Landed size:** 497 LOC · 1 module; targeted tests, axiom audit and full `check.sh` green at
+`3256d950`.
+**Stop/go (G3) — PASS:** injectivity is stated **only** in the specialized forms of §4.3.1. A slice that
 re-proposes the generic `Function.Injective (treeMCSPPrefixM codec)` must be rejected as false, not
 merely unproved. Do **not** work around it by strengthening `PrefixInput`.
-**Stop/go (G4):** `decodeGamma?_consumed_eq_gammaLen` must be **hypothesis-free** beyond the
+**Stop/go (G4) — PASS:** `decodeGamma?_consumed_eq_gammaLen` is **hypothesis-free** beyond the
 successful decode. If canonicity needs an extra premise, the `readNatBE` payload bound is wrong —
 fix `readNatBE_lt_two_pow`, not the statement.
-**Stop/go (G4b):** `contentInput?_isSome_iff_of_header` must enumerate exactly premises #9–#11 on
-its open side. Adding a fourth open premise means a range lemma was missed; folding one away means
-the parser was mis-read.
+**Stop/go (G4b) — PASS:** `contentInput?_isSome_iff_of_header` exposes exactly the three bundled
+tag/index/padding reads above. Adding a fourth open premise means a range lemma was missed; dropping
+one of their read-success/value components means the parser was mis-read.
 
 ### 4.4 D1a — the machine-facing tape lemmas and the bridge structure · *independent, parallel-safe once FEAS-0 is green*
 
@@ -1561,7 +1561,7 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
 | FEAS-0 target size bound | `work/feas0-target-bound` | merged; outcome (a) green | PR #1629 (`af2365a2`) |
 | GATE-0 non-vacuity | `work/gate0-nonvacuity` | merged; G0 green | PR #1630 (`014a7768`) |
 | P0 content semantic verifier | `work/p0-content-semantic` | implemented; rebased targeted checks green | pending PR |
-| I1 gate closure | `work/i1-gate-closure` | implemented; documentation review fixes complete | — |
+| I1 gate closure | `work/i1-gate-closure` | rebased; review fixes complete, final targeted checks pending | `d2f18164` (pending PR) |
 | D1a tape lemmas + bridge structure | `work/d1a-tape-interface` | merged; G5/G5b green | PR #1632 (`545cbc3d`) |
 | D1b bridge ⇒ NP-witness | `work/d1b-bridge-witness` | blocked on P0 and **D1a** | — |
 
@@ -1576,9 +1576,9 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
 | **G0** | GATE-0 | **PASS:** `contentAccepts_nonvacuous_treePoly` constructs a concrete `ContentAccepts`-accepted word at `treeCircuitWitnessCodec (thresholdPoly k)` for every `k, n` | the red action is no longer applicable; this pass establishes only non-vacuity, not a verifier or NP witness |
 | **G1** | P0 | the `Bool`↔`Prop` headline is hypothesis-free | fix the `Bool` definition's failure branches, not the statement |
 | **G2** | P0 | the three codec-path theorems carry the standard triple **or lighter** (same rule as G9 — a shorter list is not a defect); computability checked by instance provenance + one `#eval`, **not** by an axiom check | a fourth axiom, a `noncomputable` marker, or a `Classical.propDecidable` instance is a blocker; a *lighter* footprint is not |
-| **G3** | I1 | injectivity stated only as `treeMCSPPrefixM_injective_of_monotone` / `_treePoly` | reject any generic-codec injectivity claim as **false**; do not strengthen `PrefixInput` to dodge it |
-| **G4** | I1 | `decodeGamma?_consumed_eq_gammaLen` needs no premise beyond a successful decode | fix `readNatBE_lt_two_pow`, not the statement |
-| **G4b** | I1 | `contentInput?_isSome_iff_of_header` leaves exactly premises #9–#11 open | a fourth open premise means a range lemma was missed; folding one away means the parser was mis-read |
+| **G3** | I1 | **PASS:** injectivity stated only as `treeMCSPPrefixM_injective_of_monotone` / `_treePoly`; generic failure is documented as a definition-level review, not a formal refutation theorem | reject any future generic-codec injectivity claim; do not strengthen `PrefixInput` to dodge it |
+| **G4** | I1 | **PASS:** `decodeGamma?_consumed_eq_gammaLen` needs no premise beyond a successful decode | preserve the hypothesis-free statement |
+| **G4b** | I1 | **PASS:** `contentInput?_isSome_iff_of_header` leaves exactly the three bundled tag/index/padding read-and-value tests open | a fourth open premise means a range lemma was missed; dropping a read-success/value component means the parser was mis-read |
 | **G5** | D1a | `accepts_eq` uses the exact-step model, no halting/`∃ t ≤` variant | reject: the slice has changed the machine model |
 | **G5b** | D1a | no D1a declaration mentions `contentSemanticAccepts` | not P0-independent: take the `acc` parameter or move the declaration to D1b |
 | **G6** | D1b | the witness repackaging consumes `runTime_poly` verbatim, and the slice is opened on top of **both** P0 and D1a (§4.5, §5) — **and note advice-avoidance is unenforced** (§1.3 caveat 6) | under-specified bridge, or a D1b branched off bare `main`; do not claim advice-freedom without a formal clock premise |

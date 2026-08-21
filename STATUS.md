@@ -39,6 +39,22 @@ Research method boundary:
 There is still **no unconditional in-repo theorem** `P != NP`, and the
 current blockers are sharper than the old "remove residual payload" wording.
 
+**Repository `P` runtime-advice caveat.**  The exact-step machine model described
+under "Runtime model caveat on input (2)" below has a `P`-side consequence too:
+since `runTime : Nat -> Nat` is unrestricted data, the `P` predicate bounds it
+pointwise but never requires it to be computable or time constructible.
+`lengthAdviceLanguage_in_repo_P`
+(`pnp4/Pnp4/Frontier/ModelAudit/RuntimeAdviceBarrier.lean`) therefore proves
+that every `A : Nat -> Bool`, with no computability hypothesis, yields a
+length-only language in the current repository `P`, using a two-state machine
+whose zero-or-one-step runtime stores `A n`.  The definition thus admits
+arbitrary length languages, including languages obtained from noncomputable
+sequences.  The theorem does not itself construct a noncomputable sequence or
+formalize undecidability or a cardinality separation.
+
+**Category: Infrastructure.** This is an interface audit, not a repair of the
+model or P-vs-NP mainline progress.
+
 The active public DAG endpoint is now the honest research-gap boundary:
 
 ```text
@@ -572,8 +588,11 @@ field** rather than a derived step count, and whose `TM.accepts` is evaluated **
 exactly step `runTime n`** (`TM.run` iterates `stepConfig` exactly `M.runTime n` times,
 then checks `state = M.accept`) with no halting predicate.  Because the declared budget
 is also the evaluation point, `PrefixExtensionNPWitness.runTime_poly` is a genuine
-restriction on the machine, not a self-certification.  No cross-model
-runtime-robustness theorem is formalized, so input (2) is an obligation *in this model*.
+restriction on the machine, not a self-certification.  That restriction is numeric
+only — it bounds the size of `runTime` without constraining *which* function it is — and
+the `P`-side consequence of that is the runtime-advice caveat recorded above.  No
+cross-model runtime-robustness theorem is formalized, so input (2) is an obligation
+*in this model*.
 This is the NP-side analogue of the coarse-inclusion caveat recorded above for
 `proved_P_subset_PpolyDAG_internal`.
 

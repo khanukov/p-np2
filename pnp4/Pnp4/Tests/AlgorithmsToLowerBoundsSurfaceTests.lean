@@ -71,6 +71,7 @@ import Pnp4.Frontier.ContractExpansion.ThresholdGrowth
 import Pnp4.Frontier.ContractExpansion.ConsolidatedTreeSeparation
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
+import Pnp4.Frontier.ModelAudit.RuntimeAdviceBarrier
 
 namespace Pnp4
 namespace Tests
@@ -1385,6 +1386,36 @@ def check_TreeMCSPPrefixRuntimeBudget
 end PrefixExtensionLanguageRuntimeSurface
 
 end PrefixExtensionLanguageSurface
+
+section RuntimeAdviceBarrierSurface
+
+open Pnp4.Frontier.ModelAudit.RuntimeAdviceBarrier
+
+def check_lengthAdviceLanguage (A : Nat -> Bool) :
+    Pnp3.ComplexityInterfaces.Language :=
+  lengthAdviceLanguage A
+
+def check_lengthAdviceTM (A : Nat -> Bool) :
+    Pnp3.Internal.PsubsetPpoly.TM.{0} :=
+  lengthAdviceTM A
+
+theorem check_lengthAdviceTM_runTime_le_one
+    (A : Nat -> Bool) (n : Nat) :
+    (lengthAdviceTM A).runTime n <= 1 :=
+  lengthAdviceTM_runTime_le_one A n
+
+theorem check_lengthAdviceTM_accepts
+    (A : Nat -> Bool) (n : Nat)
+    (input : Pnp3.ComplexityInterfaces.Bitstring n) :
+    Pnp3.Internal.PsubsetPpoly.TM.accepts
+        (M := lengthAdviceTM A) (n := n) input = A n :=
+  lengthAdviceTM_accepts A n input
+
+theorem check_lengthAdviceLanguage_in_repo_P (A : Nat -> Bool) :
+    Pnp3.ComplexityInterfaces.P (lengthAdviceLanguage A) :=
+  lengthAdviceLanguage_in_repo_P A
+
+end RuntimeAdviceBarrierSurface
 
 def check_NotInClass :
     ∀ (C : CircuitFamilyClass) (L : BitVecLanguage),

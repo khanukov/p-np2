@@ -62,8 +62,38 @@ survive. No implementation code is introduced here.
 > * **The `ContractExpansion/` divergence inventory was wrong in both directions**: nine paths
 >   differ at the two tips, of which six are `.lean` modules added *independently on both sides* and
 >   three (`ConsolidatedTreeSeparation.lean`, `PrefixExtensionNPWitness.lean`, the directory
->   `README.md`) differ only because `main` moved. Repo-wide the figure is 41 (§3.2).
+>   `README.md`) differ only because `main` moved. Repo-wide the figure is 40 (§3.2).
 > * Also corrected: P0's axiom rule now reads "standard triple **or lighter**", consistent with G9,
+>   and §6.2's purity command no longer demands empty output it cannot get (§4.2, §6.2, §8); the
+>   residual "off the critical path" donor wording in §4.7 (§3.4 had already withdrawn it); the
+>   `readNatBE` recursion citation (§4.3.2); and outcome **(c)** was added to the unlock statements
+>   (though §9's last bullet was missed — see revision 5).
+>
+> **Revision note (this revision, 5).** Two independent audits of revision 4 agreed the route is
+> actionable and found no critical blocker, but flagged five residual defects plus two stale figures
+> in the bottom line. All are fixed here, and none changes the route:
+>
+> * **The bounded-timeout argument made an invalid same-polynomial inference.** From
+>   `2 ^ n' ≤ N ^ c + c` it does **not** follow that `M n' ≤ N ^ c + c`: `M` also carries
+>   `gammaLen n'`, `idxWidth codec.witnessBits n'` and `codec.witnessBits n'`. The timeout is now
+>   derived through the growth chain on `main` —
+>   `polyBoundedInTable_treeMCSPPrefixM_of_witnessPoly` (`WitnessGrowthReduction.lean:94`) plus
+>   `PolyBoundedInTable.powAdd` (`ExtractedScheduleGrowth.lean:114`) — giving exponent `c · d`, not
+>   `c`, and the certificate and witness windows are now counted explicitly (§1.0, §8 F0, §9).
+>   Outcome (a) remains sufficient; what is withdrawn is "(a)'s exponent *is* the timeout".
+> * **The opening "hole" paragraph still read `codec.verifies n' x w`.** The relation conjunct is at
+>   `r := pr.2.n`; revision 4 fixed the route but not its own motivating paragraph (§1.0).
+> * **§4's sequencing sentence still said "D1b follows P0"** although D1b needs P0 *and* D1a — the
+>   one place revision 4 missed after correcting the heading, graph, branch strategy, gate table and
+>   slice log (§4).
+> * **The repo-wide divergence count is 40, not 41** (`git diff --name-status --diff-filter=M main
+>   pr1618 | wc -l` = 40). The scoped `ContractExpansion/` inventory (nine shared differing paths,
+>   six added on both sides, three `main`-only-changed) is unchanged and correct (§3.2).
+> * **§9's last bullet carried the stale FEAS-0 budget and unlock condition** — `250–450 LOC · 1–2
+>   modules` and "(a) or (b)" — contradicting §1.0's `350–600 LOC · 2 modules` and the
+>   (a)/(b)/(c) policy stated everywhere else (§9).
+>
+> * Also corrected in revision 4: P0's axiom rule now reads "standard triple **or lighter**", consistent with G9,
 >   and §6.2's purity command no longer demands empty output it cannot get (§4.2, §6.2, §8); the
 >   residual "off the critical path" donor wording in §4.7 (§3.4 had already withdrawn it); the
 >   `readNatBE` recursion citation (§4.3.2); and outcome **(c)** now appears in every unlock
@@ -90,8 +120,12 @@ bounds `n'` polynomially in the physical length `N`. Concretely, on `main`:
 * `contentInput?` then runs the strict parser on `padWord z (treeMCSPPrefixM codec n')`, and
   `treeMCSPPrefixM codec n' ≥ tableLen n' = 2 ^ n'` (`tableLen_le_treeMCSPPrefixM`,
   `PrefixParserConvention.lean:48`) — **doubly exponential in `N`**. The relation conjunct of
-  `ContentAccepts` is `codec.verifies n' x w`, whose `ComputesTruthTable` component
-  (`TruthTableMCSP.lean:35`) quantifies over all `2 ^ n'` inputs.
+  `ContentAccepts` is `codec.verifies r x w` at **`r := pr.2.n`**, the target the *narrow* parser
+  returns — **not** at the header value `n'`. (Corrected in revision 5: revision 4 fixed this in the
+  route below but left `codec.verifies n' x w` here. The two targets are reconciled by
+  `M n' = M r`, Step 0, never by injectivity.) Its `ComputesTruthTable` component
+  (`TruthTableMCSP.lean:35`) quantifies over all `2 ^ r` inputs, and the parse itself runs on a
+  window of physical width `M n' = M r`.
 
 Such words are not hypothetical, and they *parse*. Take `zeros := N - tagLen - 1`, a single `1` at
 index `N - 1`, the tag field set to `treePrefixTag` (`PrefixParserConvention.lean:10`), everything
@@ -99,9 +133,10 @@ else `false`. Then `payload = 0` (blank), so `n' + 1 = 2 ^ zeros` and `consumed 
 which is *exactly* `gammaLen n'` (§4.3). The strict parser's length gate compares
 `treeMCSPPrefixM codec n'` with itself and passes; every field slice fits by the Layout offset
 lemmas (§4.3); `x` is the all-false table, `i = 0`, `p` empty, `pad` all-zero, so `prefixAgrees` is
-vacuous and `padZero = true`. Acceptance of that word therefore reduces to the single question
-`codec.verifies n' (all-false table) (all-zero witness block)` — and *whatever the answer*, a
-polynomial-time verifier must decide it in `poly(N)` steps without reading a `2 ^ n'`-cell window.
+vacuous and `padZero = true`. For *this* word the narrow re-decode returns the same header value, so
+`r = n'`, and acceptance reduces to the single question
+`codec.verifies r (all-false table) (all-zero witness block)` — and *whatever the answer*, a
+polynomial-time verifier must decide it in `poly(N)` steps without reading a `2 ^ r`-cell window.
 
 **Why this blocks the freeze, not just the D-track.** The length gate that the CT route removed was
 doing feasibility work: on the length-gated target, `N = treeMCSPPrefixM codec n` pins
@@ -327,11 +362,41 @@ with exponent `c`, a verifier machine can:
    `poly(N)`;
 3. if the test fails, `M n' ≥ tableLen n' = 2 ^ n' > N ^ c + c`, so by (a)'s contrapositive the word
    is **not** accepted — reject, having read only `poly(N)` cells;
-4. otherwise `M n' ≤ N ^ c + c`, the whole query and witness window is `poly(N)` wide, and the strict
-   parse plus the `2 ^ n'`-point `ComputesTruthTable` check are all `poly(N)`.
+4. otherwise `2 ^ n' ≤ N ^ c + c` — and *that*, not `M n' ≤ N ^ c + c`, is what the machine has in
+   hand. **Corrected in revision 5:** revision 4 inferred the second from the first, which does not
+   follow. (a) bounds `M n'`, but the only test the machine can run cheaply is on
+   `tableLen n' = 2 ^ n'`, and `M n'` additionally carries `gammaLen n'`,
+   `idxWidth codec.witnessBits n'` and `codec.witnessBits n'`
+   (`treeMCSPPrefixM`, `PrefixParserConvention.lean:40`), so the same exponent cannot be reused.
+   Derive the larger timeout polynomial from the growth chain already on `main`:
+   `polyBoundedInTable_thresholdPoly k` (`ThresholdGrowth.lean:53`) →
+   `polyBoundedInTable_treeWitnessBits_of_thresholdPoly` (`ConcreteTreeCodec.lean:78`) →
+   `polyBoundedInTable_treeMCSPPrefixM_of_witnessPoly` (`WitnessGrowthReduction.lean:94`) →
+   `PolyBoundedInTable.powAdd` (`ExtractedScheduleGrowth.lean:114`, which converts a
+   `(tableLen n + 1) ^ k` bound to the `tableLen n ^ d + d` shape). That yields exponents `d`, `e`
+   with, for every `n'`,
 
-So (a)'s exponent *is* the timeout, and (b) is precisely that timeout packaged as a `Bool` predicate
-with its own correctness lemma. **Honest caveat:** steps 1–4 are a machine-construction argument, not
+   ```text
+   M n' ≤ (2 ^ n') ^ d + d    and    codec.witnessBits n' ≤ (2 ^ n') ^ e + e ,
+   ```
+
+   so under the test `2 ^ n' ≤ N ^ c + c` both collapse to polynomials in `N`:
+   `M n' ≤ (N ^ c + c) ^ d + d` and `codec.witnessBits n' ≤ (N ^ c + c) ^ e + e`;
+5. every cell the verifier touches is then `poly(N)`, **including the certificate and witness
+   windows** that revision 4's step 4 omitted: the strict parse spans `M n'` cells, `contentWitness`
+   spans `[M n', M n' + codec.witnessBits n')` (`ContentPrefixExtension.lean:135`), and the
+   certificate block of the complete word occupies `certificateLength · 1` cells
+   (`= · + 1`, `pnp3/Complexity/Interfaces.lean:521`) — at most
+   `(N ^ c + c) ^ d + (N ^ c + c) ^ e + d + e + N + 1` cells in total. The
+   `ComputesTruthTable` check then runs over `2 ^ n' ≤ N ^ c + c` assignments of a circuit of size
+   `≤ thresholdPoly k n'`, also `poly(N)`.
+
+So (a)'s exponent **yields** a timeout but **is not** the timeout: the timeout polynomial has
+exponent `c · d` for the parse window and `c · e` for the witness window, with `d`, `e` from
+`powAdd` above. Revision 4's "(a)'s exponent *is* the timeout" was the invalid same-polynomial
+inference; outcome (a) remains sufficient after the correction. (b) is that (larger) timeout packaged
+as a `Bool` predicate with its own correctness lemma. **Honest caveat:** steps 1–5 are a
+machine-construction argument, not
 a formalized theorem — they are discharged in the deferred machine slices (§4.7), not in FEAS-0.
 FEAS-0 green at (a) therefore means "the route is not blocked and the timeout exists in principle",
 not "a poly-time verifier has been built". Prefer (b) when it is no harder, because the D-track needs
@@ -638,7 +703,8 @@ comparison at the two tips against the merge base `5d8ee5f8`:
   are exactly the length-gated chain modules §1.2 retains and `AGENTS.md:31–36` cites.
 * Two more (`ContentPrefixExtensionPadding.lean`, `ContentPrefixExtensionPaddingTransport.lean`)
   exist only on `main`.
-* **Repo-wide the divergent-path count is 41**, not nine: the CI workflows, `AGENTS.md`,
+* **Repo-wide the divergent-path count is 40**, not nine
+  (`git diff --name-status --diff-filter=M main pr1618 | wc -l` = 40; revision 4 said 41): the CI workflows, `AGENTS.md`,
   `lakefile.lean`, `STATUS.md`, both `AxiomsAudit.lean` files, `AlgorithmsToLowerBoundsSurfaceTests.lean`,
   five `pnp3/LowerBounds` and `pnp3/Magnification` modules, two `TuringToolkit` modules and a dozen
   Markdown documents all differ at the tips.
@@ -664,7 +730,7 @@ So `pr1618` is not a superset and a rebase is not a fast-forward. **Sizes in byt
 `TreeMCSPPrefixSemanticVerifier.lean`. Any future rebase of the stack must reconcile the six
 added-on-both-sides modules by hand, take `main`'s version of the three `main`-only-changed paths,
 and additionally settle `lakefile.lean`, `AlgorithmsToLowerBoundsSurfaceTests.lean` and
-`AxiomsAudit.lean` — 41 divergent paths repo-wide.
+`AxiomsAudit.lean` — 40 divergent paths repo-wide.
 
 ### 3.3 Disposition of the donor stack: parked, not cancelled
 
@@ -722,7 +788,7 @@ All items below are **dependency-closed on `main = 98250643`**: every donor lemm
 **Sequencing.** FEAS-0 (§1.0) is the *only* item that may start while the freeze is provisional.
 GATE-0, P0, I1, D1a and D1b are **all conditional on FEAS-0 landing as (a), (b) or (c)**; under
 outcome (d) they are void and §1.1 is rewritten first. Once FEAS-0 is green, GATE-0, P0, I1 and D1a
-are mutually independent and may run in parallel, and D1b follows P0 (D1b specializes D1a's
+are mutually independent and may run in parallel, and D1b follows **both P0 and D1a** (D1b specializes D1a's
 `acc`-parameterized bridge structure to `contentSemanticAccepts`, §4.4/§4.5).
 
 Every slice obeys: **≤ 1500 changed `.lean` LOC (added + deleted) and ≤ 10 changed `.lean` modules**
@@ -1430,7 +1496,7 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
 
 | Gate | Slice | Condition | Action if red |
 |---|---|---|---|
-| **F0** | FEAS-0 | at `treeCircuitWitnessCodec (thresholdPoly k)`: (a) a polynomial bound from accepted complete words to `treeMCSPPrefixM codec n'`, (b) a poly-time fast-rejection equivalent (**(b) ⇒ (a)**, so not a fallback for a failed (a)), **or** (c) a poly-time decision procedure for the wide-target regime. (a) alone is green — its exponent *is* the verifier's timeout (§1.0). Never stated codec-generically — generic (a)/(b) are false | only outcome (d) is red: halt every other slice, rewrite §1.1 with a budgeted content predicate, keep the length-gated target live. "(a) failed" means the `∀ c, ∃ …` family, not one wide word |
+| **F0** | FEAS-0 | at `treeCircuitWitnessCodec (thresholdPoly k)`: (a) a polynomial bound from accepted complete words to `treeMCSPPrefixM codec n'`, (b) a poly-time fast-rejection equivalent (**(b) ⇒ (a)**, so not a fallback for a failed (a)), **or** (c) a poly-time decision procedure for the wide-target regime. (a) alone is green — it *yields* a bounded timeout, of exponent `c · d` rather than `c`, via `PolyBoundedInTable.powAdd` (§1.0). Never stated codec-generically — generic (a)/(b) are false | only outcome (d) is red: halt every other slice, rewrite §1.1 with a budgeted content predicate, keep the length-gated target live. "(a) failed" means the `∀ c, ∃ …` family, not one wide word |
 | **F0b** | FEAS-0 | the route runs on `r := pr.2.n` with `M n' = M r` from `parseTreeMCSPPrefixInput_length_convention` (`:1231`); the truth-table slice is recovered by the scheduled `parseTreeMCSPPrefixInput_x_slice`; no I1 output is cited | a slice needing `n' = pr.2.n`, `consumed = gammaLen pr.2.n`, or either injectivity lemma has inverted §4.6's ordering — re-derive via Step 0 |
 | **G0** | GATE-0 | a *concrete* word is `ContentAccepts`-accepted at `treeCircuitWitnessCodec (thresholdPoly k)` | halt the D-track and escalate; do not build a machine for a possibly-empty `L'`. P0/I1 continue |
 | **G1** | P0 | the `Bool`↔`Prop` headline is hypothesis-free | fix the `Bool` definition's failure branches, not the statement |
@@ -1476,15 +1542,21 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
   canonicity** and is independent of I1 (§1.0, F0b). It does need one lemma that does not exist on
   `main`: recovery of the parser's truth-table slice, which `parseTreeMCSPPrefixInput_inversion`
   does not expose. FEAS-0's budget rises to 350–600 LOC · 2 modules to carry it.
-* **Outcome (a) alone is sufficient**: its exponent is the verifier's bounded timeout — decode the
-  header, compare `n'` against `bitLength (N ^ c + c)` without materialising `2 ^ n'`, reject on
-  overflow (§1.0). That is a machine-construction argument, not a theorem; the machine slices still
-  have to build it. (b) is that timeout packaged as a proved `Bool` rule and is preferred when no
-  harder. Refuting (a) needs a **family** `∀ c, ∃ (N, z, n')`, not one wide word.
+* **Outcome (a) alone is sufficient**, but its exponent is **not** the timeout: decode the header,
+  compare `n'` against `bitLength (N ^ c + c)` without materialising `2 ^ n'`, reject on overflow,
+  and on the surviving branch bound the parse and witness windows by
+  `(N ^ c + c) ^ d + d` / `(N ^ c + c) ^ e + e` — exponents `d`, `e` obtained from
+  `polyBoundedInTable_treeMCSPPrefixM_of_witnessPoly` (`WitnessGrowthReduction.lean:94`) plus
+  `PolyBoundedInTable.powAdd` (`ExtractedScheduleGrowth.lean:114`), because `M n'` also carries the
+  gamma, index and witness widths (§1.0). That is a machine-construction argument, not a theorem;
+  the machine slices still have to build it. (b) is that timeout packaged as a proved `Bool` rule and
+  is preferred when no harder. Refuting (a) needs a **family** `∀ c, ∃ (N, z, n')`, not one wide word.
 * The machine model's `runTime` field is unrestricted
   (`RuntimeAdviceBarrier.lean:77` `lengthAdviceLanguage_in_repo_P`), and `ContentVerifierBridge`
   does **not** exclude a bridge that exploits it. Advice-avoidance is an unenforced review
   convention until a formal clock premise is added (§1.3 caveat 6, G6).
-* Only FEAS-0 starts today: 250–450 LOC · 1–2 modules. GATE-0, P0, I1, D1a and D1b — a further
+* Only FEAS-0 starts today: **350–600 LOC · 2 modules** (raised in revision 4 to carry the
+  truth-table slice-recovery lemma; the `250–450 LOC · 1–2 modules` printed here through revision 4
+  was the stale revision-3 figure). GATE-0, P0, I1, D1a and D1b — a further
   1360–2220 LOC across 6–9 new modules (200–350 + 350–550 + 500–800 + 250–400 + 60–120) — unlock
-  only if FEAS-0 lands as (a) or (b).
+  only if FEAS-0 lands as **(a), (b) or (c)**.

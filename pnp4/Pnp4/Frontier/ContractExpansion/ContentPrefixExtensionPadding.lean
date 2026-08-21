@@ -50,7 +50,11 @@ property of one predicate of the specification, and of nothing else.  In particu
   (`readBit?`, `readNatBE`) and the gamma decoder (`decodeGammaAux?`); the headline results
   (`ContentAccepts_padWord_of_le`, `ContentAccepts_iff_of_padRead_eq`) are invariance statements
   about `ContentAccepts` applied to a *complete* word.  No statement in this module mentions the
-  wrapper at all, and none is about a *query*.  Membership of a *query*
+  wrapper at all, and **no theorem here proves query-level padding invariance of
+  `ContentPrefixExtensionLanguage`** — the conditional transport theorem
+  `ContentAccepts_padWord_of_prefixExtendable` does take a *query* `y` (and its extendability) as a
+  hypothesis, but its conclusion is about the *complete* word `y ++ cert` at a larger physical
+  length, not about the query's membership.  Membership of a *query*
   `y` at physical length `m` unfolds (via `ContentPrefixExtendable`) to
   `∃ w : Bitstring (certificateLength m 1), ContentAccepts codec (concatBitstring y w)`, and **both**
   the certificate length and the offset at which `w` is concatenated are functions of `m`.  Padding

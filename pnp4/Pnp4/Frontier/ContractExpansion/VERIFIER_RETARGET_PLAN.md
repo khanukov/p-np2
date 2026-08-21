@@ -1053,7 +1053,7 @@ and would otherwise infect the machine's correctness proof:
   (`parseTreeMCSPPrefixInput_inversion`, `:141`) yields only
   `treeMCSPPrefixM codec input.n = treeMCSPPrefixM codec n`; injectivity of `treeMCSPPrefixM codec`
   is unavailable generically. I1 supplies it under monotone `witnessBits`, and for the concrete
-  polynomial codec (docstring at `:319–:323`).
+  polynomial codec (docstring at `:331–:334`).
 * The narrowing direction of the gamma decode, and the enumeration of what actually remains after
   it (§1.3, caveat 3).
 

@@ -1,19 +1,30 @@
 import Pnp4.Frontier.ContractExpansion.PrefixParserConvention
 
 /-!
-# The content-truthful prefix-extension language — the length-blindness repair, brick R1/R2
+# The content-truthful prefix-extension language — the physical-length-gate repair, brick R1/R2
 
-The obstruction this repairs (described in this directory's `README.md`): the ambient language
+The obstruction this addresses (described in this directory's `README.md`): the ambient language
 `PrefixExtensionLanguage` gates membership on the **physical** input length (the parser's
-`m = treeMCSPPrefixM codec n` check), while the `pnp3` TM model is length-blind, so an idle-sink TM
-cannot replicate that gate.  The argument is a review of the definitions, **not** a Lean refutation:
-nothing here formally proves `PrefixExtensionNPWitness.correct` unprovable.
+`m = treeMCSPPrefixM codec n` check), and the *planned* idle-sink verifier — a machine that reads
+only the content `initialConfig` loaded into the tape and then idles — has no way to replicate that
+gate.  This is a limitation of that planned construction, **not** of the `pnp3` TM model: the model
+is *not* length-blind.  `Pnp3.Internal.PsubsetPpoly.TM` runs inputs of length `n` on a tape of
+length `TM.tapeLength n = n + runTime n + 1` for exactly `runTime n` steps, and `runTime : ℕ → ℕ`
+is an arbitrary structure field, so a word and its zero-extension are *different-length* inputs run
+on different-length tapes for possibly different step counts; only the loaded tape *contents* agree
+cell-by-cell where both tapes exist.  The whole argument is in any case a review of the
+definitions, **not** a Lean refutation: nothing here formally proves
+`PrefixExtensionNPWitness.correct` unprovable.
 
 This module defines the **content-truthful** variant `L'`: membership at *any* physical length is
 determined by the fields read **at offsets computed from the content itself** (the gamma header
 decodes the target `n`; the query window is the first `treeMCSPPrefixM codec n` cells of the
-blank-padded word; the witness window follows it).  The physical length enters only through the
-blank padding — exactly the information a length-blind machine actually has.
+blank-padded word; the witness window follows it).  What `L'` drops is the *explicit* length gate —
+no `m = treeMCSPPrefixM codec n` equality test rejects an input.  It is **not** independent of the
+physical length `N`: `contentHeader?` decodes on the `2N+1`-padded word, so `N` fixes both that
+window's width and the gamma decoder's fuel (`decodeGamma?` uses `m + 1`).  Closing that residual
+`N`-dependence is exactly what a padding-stability lemma would have to do, and no such lemma is
+proved here.
 
 Definitions only (plus the immediate `accepts_iff` unwrapping and the NP-witness interface):
 
@@ -23,9 +34,11 @@ Definitions only (plus the immediate `accepts_iff` unwrapping and the NP-witness
   keep every read of a successful strict decode in range, so that the spec matches a blank-reading
   machine; that intent is **not formalized here** — no padding-stability lemma for the header (or
   for `ContentAccepts`) is proved in this slice;
-* `contentInput?` — the parser re-run on the **computed-length** window `padWord z (M n')`: the
-  parser's physical-length gate `m = M n'` is then satisfied *by construction*, making it vacuous —
-  the heart of the repair;
+* `contentInput?` — the parser re-run on the **computed-length** window `padWord z (M n')`.  The
+  parser re-decodes the header from that *narrower* window and gates on `m = M n_dec` for the
+  re-decoded `n_dec`; the gate is therefore **intended** to be vacuous (`n_dec = n'`, so the check
+  compares `M n'` with itself), but that is **not proved** — only the *widening* direction
+  (`decodeGammaAux?_mono`) is available, and the narrowing direction it would need is absent;
 * `contentWitness` — the witness window read just past the computed query window;
 * `ContentAccepts` / `ContentPrefixExtendable` / `ContentPrefixExtensionLanguage` — the language;
 * `ContentPrefixExtensionNPWitness` + `contentPrefixExtensionLanguage_in_NP_of_witness` — the
@@ -86,8 +99,14 @@ def contentHeader? {N : Nat} (z : PrefixBitVec N) : Option (Nat × Nat) :=
   decodeGamma? (padWord z (2 * N + 1)) tagLen
 
 /-- The content-computed parse: decode the header `n'`, then run the **existing strict parser** on
-the padded window of the *computed* convention length `treeMCSPPrefixM codec n'`.  The parser's
-physical-length gate `m = treeMCSPPrefixM codec n` is satisfied by construction. -/
+the padded window of the *computed* convention length `treeMCSPPrefixM codec n'`.  The parser
+re-decodes its own header from that narrower window and gates on `m = treeMCSPPrefixM codec n_dec`
+for the re-decoded `n_dec`; since the window's physical length *is* `treeMCSPPrefixM codec n'`, the
+gate is **intended** to compare `treeMCSPPrefixM codec n'` with itself and so never reject.  That
+is an unproved intent, not a construction: it needs `n_dec = n'`, i.e. that the successful wide
+(`2N+1`) decode re-succeeds on the narrow window, and only the opposite, *widening* direction
+(`decodeGammaAux?_mono`) is proved.  No lemma here states that `contentInput?` never fails at the
+gate. -/
 def contentInput? (codec : TreeCircuitWitnessCodec threshold) {N : Nat} (z : PrefixBitVec N) :
     Option (Σ n' : Nat,
       PrefixInput (treeMCSPSearchProblem threshold (TreeMCSPSearchWitnessEncoding.ofCodec codec))
@@ -105,8 +124,12 @@ def contentWitness (codec : TreeCircuitWitnessCodec threshold) {N : Nat} (z : Pr
   fun j => padRead z (treeMCSPPrefixM codec n + j.1)
 
 /-- **Content acceptance** of a full (query ++ certificate) word: the content-computed parse
-succeeds and the witness window extends the decoded prefix through the search relation.  No
-reference to the physical length anywhere — only padded reads at content-computed offsets. -/
+succeeds and the witness window extends the decoded prefix through the search relation.  The query
+and witness windows sit at content-computed offsets and are read through `padRead`, so no
+*explicit* physical-length gate rejects anything.  This is **not** independence of the physical
+length `N`: `contentInput?` calls `contentHeader?`, which decodes on `padWord z (2 * N + 1)`, so `N`
+still fixes that window's width and the decoder's fuel.  Whether `ContentAccepts` is invariant under
+padding to a larger `N` is **not proved** here. -/
 def ContentAccepts (codec : TreeCircuitWitnessCodec threshold) {N : Nat}
     (z : PrefixBitVec N) : Prop :=
   ∃ pr : (Σ n' : Nat,
@@ -148,12 +171,16 @@ theorem ContentPrefixExtensionLanguage_accepts_iff (codec : TreeCircuitWitnessCo
 /-- **The content-truthful NP witness** — the repaired input (2): a verifier TM, polynomial
 runtime, and certificate correctness **against `L'`**.  Mirrors `PrefixExtensionNPWitness`.  This is
 an **interface / hypothesis**: no machine, runtime bound, or `TM.accepts` bridge for `L'` is
-constructed in this directory.  The difference from the length-gated original is definitional only:
-`ContentAccepts` never mentions the physical length, reading instead through `padRead` at
-content-computed offsets, so the length-gate step of the obstruction has nothing to attach to.  Two
-things are **not** claimed: that padding-stability of `ContentAccepts` is proved (it is not — no such
-lemma is in this slice), and that a polynomial-time verifier for `L'` exists (open).  Satisfiability
-of `ContentAccepts` is likewise **not** established anywhere here. -/
+constructed in this directory.  The difference from the length-gated original is definitional and
+narrow: `ContentAccepts` carries no *explicit* physical-length gate — it reads through `padRead` at
+content-computed offsets — so the length-gate step of the obstruction has nothing to attach to.
+Three things are **not** claimed.  (i) That `ContentAccepts` is independent of the physical length:
+it is not, since `contentHeader?` decodes on the `2N+1`-padded word, so `N` fixes that window's
+width and the decoder's fuel; the `runTime` field below is likewise evaluated at the
+length-dependent point `n + certificateLength n 1`.  (ii) That padding-stability of `ContentAccepts`
+is proved — it is not, no such lemma is in this slice.  (iii) That a polynomial-time verifier for
+`L'` exists — open.  Satisfiability of `ContentAccepts` is likewise **not** established anywhere
+here. -/
 structure ContentPrefixExtensionNPWitness (codec : TreeCircuitWitnessCodec threshold) where
   /-- The verifier Turing machine reading the concatenated input+certificate. -/
   M : Pnp3.Internal.PsubsetPpoly.TM.{0}

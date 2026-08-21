@@ -5,11 +5,15 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSemanticVerifier
 /-!
 # Coincidence of `L'` with the length-gated language on parseable inputs — repair brick R3
 
-The content-truthful language `L'` (`ContentPrefixExtension.lean`) drops the parser's physical-length
-gate.  This module proves the **coincidence lemma**: on every input the strict parser accepts, the two
-languages agree —
+The content-truthful language `L'` (`ContentPrefixExtension.lean`) drops the parser's explicit
+physical-length gate.  This module proves the **coincidence lemma**: on a query sitting at the
+convention length of the very `n` its parse reports, the two languages agree —
 
-> `parseTreeMCSPPrefixInput y = some input  →  L' m y = L m y`.
+> `parseTreeMCSPPrefixInput y = some input  →  input.n = n  →  L' (M n) y = L (M n) y`
+
+for `y : PrefixBitVec (treeMCSPPrefixM codec n)`, writing `M` for `treeMCSPPrefixM codec`.  Both
+hypotheses are needed: parse inversion only yields `M input.n = M n`, and injectivity of `M` is not
+proved anywhere, so `input.n = n` does not follow from the parse alone.
 
 This is the seam through which the existing decision→search extraction transfers to `L'` (brick R4):
 the greedy machinery only ever evaluates deciders on *constructed, parseable* queries.
@@ -259,8 +263,11 @@ theorem contentInput?_concat_of_parse {threshold : Nat → Nat}
 
 /-! ### The coincidence theorem -/
 
-/-- **Coincidence (brick R3).**  On a parseable query at its convention length, the
-content-truthful language `L'` agrees with the length-gated language. -/
+/-- **Coincidence (brick R3).**  Under *both* hypotheses — the strict parse succeeds
+(`hparse`) and the parsed target is the ambient one (`hn : input.n = n`, which does **not** follow
+from `hparse`: inversion gives only `treeMCSPPrefixM codec input.n = treeMCSPPrefixM codec n`, and
+injectivity of `treeMCSPPrefixM codec` is not proved) — the content-truthful language `L'` agrees
+with the length-gated language at `treeMCSPPrefixM codec n`. -/
 theorem ContentPrefixExtensionLanguage_eq_of_parse {threshold : Nat → Nat}
     (codec : TreeCircuitWitnessCodec threshold)
     {n : Nat} (y : PrefixBitVec (treeMCSPPrefixM codec n))

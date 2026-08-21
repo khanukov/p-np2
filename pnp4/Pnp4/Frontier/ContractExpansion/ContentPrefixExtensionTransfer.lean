@@ -15,15 +15,20 @@ queries — so a `PpolyDAG` decider for `L'` drives the *same* greedy machinery:
   with the coincidence rewrite at the constructed query);
 * `boundedSearchSolver_of_deciderFamilyCT` — the solver assembly (mirror of Block 9);
 * `boundedSearchSolver_of_PpolyDAG_contentPrefixExtension` — the forward bridge (mirror of 9b);
-* `not_PpolyDAG_contentPrefixExtension_of_noExtractedScheduleSolver` /
-  `not_PpolyDAG_contentPrefixExtension_of_noPolynomialBoundedSearchSolver` — the contrapositives:
-  the **same** open lower-bound hypotheses now also pin `L'` outside `PpolyDAG`.
+* `not_PpolyDAG_contentPrefixExtension_of_noExtractedScheduleSolver` (exact schedule, no growth
+  premise) / `not_PpolyDAG_contentPrefixExtension_of_noPolynomialBoundedSearchSolver` (polynomial
+  target, carrying the **extra** premise `TreeMCSPExtractionGrowthAssumptions codec`) — the
+  contrapositives: the **same** open lower-bound hypotheses now also pin `L'` outside `PpolyDAG`.
+  The premise split mirrors Blocks 9c / 9d exactly; the growth premise is discharged only at the
+  canonical polynomial thresholds, in `ContentConsolidatedSource.lean`.
 
 Combined with `contentPrefixExtensionLanguage_in_NP_of_witness` (brick R2), this re-routes the
 conditional chain through `L'`.  The `L'` NP-witness remains an **unproved hypothesis**; the gain is
-definitional — `L'` has no physical-length gate for the obstruction to attach to — and nothing more:
-no machine, runtime bound, `TM.accepts` bridge, or padding-stability lemma is built here, and the
-transfer below is the *same* one-way `PpolyDAG →` extraction, not a converse.
+definitional and narrow — `L'` has no *explicit* physical-length gate for the obstruction to attach
+to, which is not the same as `L'` being independent of the physical length (`contentHeader?` still
+decodes on the `2N+1`-padded word, so `N` fixes that window's width and the decoder's fuel) — and
+nothing more: no machine, runtime bound, `TM.accepts` bridge, or padding-stability lemma is built
+here, and the transfer below is the *same* one-way `PpolyDAG →` extraction, not a converse.
 
 **Progress classification (AGENTS.md): Infrastructure** — specification repair for the NP-verifier
 track; all lower-bound inputs remain explicit hypotheses; proves no separation.  Standard
@@ -128,8 +133,11 @@ theorem not_PpolyDAG_contentPrefixExtension_of_noExtractedScheduleSolver
   obtain ⟨c, hSolver⟩ := boundedSearchSolver_of_PpolyDAG_contentPrefixExtension codec hPpoly
   exact hNo c hSolver
 
-/-- **Polynomial-target contrapositive for `L'`**: under the growth assumptions, the *same* open
-no-polynomial-solver hypothesis pins the content-truthful language outside `PpolyDAG`. -/
+/-- **Polynomial-target contrapositive for `L'`**: the *same* open no-polynomial-solver hypothesis
+pins the content-truthful language outside `PpolyDAG`, at the cost of the extra premise
+`TreeMCSPExtractionGrowthAssumptions codec` (exactly as in the length-gated Block 9d form).  Two
+hypotheses, therefore, not one; the growth premise is discharged for the canonical polynomial
+thresholds in `ContentConsolidatedSource.lean`. -/
 theorem not_PpolyDAG_contentPrefixExtension_of_noPolynomialBoundedSearchSolver
     (codec : TreeCircuitWitnessCodec threshold)
     (hGrowth : TreeMCSPExtractionGrowthAssumptions codec)

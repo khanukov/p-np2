@@ -10,18 +10,25 @@ obligation that would justify calling the repair complete — padding stability 
 is **not** discharged in this slice.  The two halves of the source:
 
 * `inNP` half: the content-truthful NP witness (brick R2) — an **explicit hypothesis**, exactly as
-  before.  Its target language has no physical-length gate, so the length-blindness obstruction has
-  nothing to attach to; that is a definitional observation, not a positive result.  No verifier
-  machine, runtime bound, `TM.accepts` bridge, or padding-stability lemma is constructed anywhere, so
-  nothing here shows the witness is satisfiable — nor that `ContentAccepts` is;
+  before.  Its target language has no *explicit* physical-length gate, so the gate step of the
+  obstruction has nothing to attach to; that is a definitional observation, not a positive result,
+  and it is weaker than length-independence — `contentHeader?` still decodes on the `2N+1`-padded
+  word (so `N` fixes that window's width and the gamma fuel), and the witness's `runTime` is still
+  evaluated at the length-dependent point `n + certificateLength n 1`.  No verifier machine, runtime
+  bound, `TM.accepts` bridge, or padding-stability lemma is constructed anywhere, so nothing here
+  shows the witness is satisfiable — nor that `ContentAccepts` is;
 * `¬PpolyDAG` half: the **same** open lower-bound hypothesis `NoPolynomialBoundedSearchSolver`,
-  via the transferred extraction (brick R4).
+  via the transferred extraction (brick R4), plus the growth premise
+  `TreeMCSPExtractionGrowthAssumptions` that the length-gated Block 9d form also carries.
 
-`verifiedSourceCT_treePoly` is the repaired analogue of `verifiedSource_treePoly`: at the concrete
-polynomial threshold `thresholdPoly k`, the growth premise is discharged and the source depends on
-exactly the two genuinely-open inputs — input (1) unchanged, input (2) now the **content-truthful**
-witness `ContentPrefixExtensionNPWitness`.  The original length-gated chain is left intact for
-reference; a future machine track should target the CT witness.
+The generic source `verifiedSourceCT_of_noPolynomialBoundedSearchSolver` takes **three** explicit
+hypotheses: `TreeMCSPExtractionGrowthAssumptions`, `NoPolynomialBoundedSearchSolver`, and
+`ContentPrefixExtensionNPWitness`.  `verifiedSourceCT_treePoly` is the repaired analogue of
+`verifiedSource_treePoly`: at the concrete polynomial threshold `thresholdPoly k` the growth premise
+is discharged, so *that* source — and only it — depends on exactly the two genuinely-open inputs:
+input (1) unchanged, input (2) now the **content-truthful** witness
+`ContentPrefixExtensionNPWitness`.  The original length-gated chain is left intact for reference; a
+future machine track should target the CT witness.
 
 **Progress classification (AGENTS.md): Infrastructure** — conditional packaging; both inputs remain
 explicit hypotheses; proves no separation.  Standard `[propext, Classical.choice, Quot.sound]`
@@ -36,9 +43,11 @@ open AlgorithmsToLowerBounds
 
 variable {threshold : Nat → Nat}
 
-/-- **Conditional verified DAG-lower-bound source through `L'`.**  Growth assumptions + the open
-no-polynomial-solver bound + a content-truthful NP witness assemble a
-`VerifiedNPDAGLowerBoundSource` whose language is `ContentPrefixExtensionLanguage`. -/
+/-- **Conditional verified DAG-lower-bound source through `L'`.**  Three explicit hypotheses —
+growth assumptions, the open no-polynomial-solver bound, and a content-truthful NP witness —
+assemble a `VerifiedNPDAGLowerBoundSource` whose language is `ContentPrefixExtensionLanguage`.  The
+count drops to two only after the growth premise is discharged at a concrete polynomial threshold
+(`verifiedSourceCT_treePoly`). -/
 noncomputable def verifiedSourceCT_of_noPolynomialBoundedSearchSolver
     (codec : TreeCircuitWitnessCodec threshold)
     (hGrowth : TreeMCSPExtractionGrowthAssumptions codec)

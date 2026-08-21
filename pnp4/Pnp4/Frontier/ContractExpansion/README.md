@@ -172,17 +172,17 @@ length-dependent in general; and `TM.accepts` is evaluated at exactly step
 can in principle depend on `n`; what the planned idle-sink construction cannot do is
 recover the gate from the loaded content alone. **The whole argument is a review of
 the definitions, not a Lean theorem**: no impossibility result is formalized anywhere
-in this directory. The response replaces the *language*, not the chain — eleven modules, listed here in
+in this directory. The response replaces the *language*, not the chain — twelve modules, listed here in
 review order (the `lakefile.lean` registration is the dependency order):
 
 - `ContentPrefixExtension.lean` — `padRead` / `padWord` (the blank-padded tape read),
   `contentHeader?` (the gamma header decoded on the `2N+1`-padded word),
   `contentInput?` (the **existing** strict parser re-run on the window of the
   *content-computed* length `M n'`; the parser re-decodes its own header from that
-  narrower window and gates on `m = M n_dec`, so the gate is *intended* to compare
-  `M n'` with itself and never reject — **intended, not proved**: that needs
-  `n_dec = n'`, i.e. the narrowing direction of the decode, whereas only the widening
-  lemma `decodeGammaAux?_mono` exists), `contentWitness`, `ContentAccepts`, the
+  narrower window and gates on `m = M n_dec`. The later
+  `ContentPrefixExtensionGateClosure.lean` proves that this convention-length gate compares
+  `M n'` with itself and never rejects after a successful header decode), `contentWitness`,
+  `ContentAccepts`, the
   language `ContentPrefixExtensionLanguage` (`L'`), and the NP-witness interface
   `ContentPrefixExtensionNPWitness`. Definitions plus the `accepts_iff` unwrapping;
   the interface is a **hypothesis**.
@@ -217,9 +217,10 @@ review order (the `lakefile.lean` registration is the dependency order):
   (`parseTreeMCSPPrefixInput … y = some input`) and `hn : input.n = n`, `L'` agrees
   with the length-gated language at `treeMCSPPrefixM codec n`. `hn` is a genuine
   second hypothesis: inversion yields only
-  `treeMCSPPrefixM codec input.n = treeMCSPPrefixM codec n`, and injectivity of
-  `treeMCSPPrefixM codec` is not proved.  The proposition-level theorem is the direct specification
-  coincidence and does not route through either classical Boolean language wrapper.
+  `treeMCSPPrefixM codec input.n = treeMCSPPrefixM codec n`; the base theorem therefore retains
+  the honest second hypothesis. The proposition-level theorem is the direct specification
+  coincidence and does not route through either classical Boolean language wrapper. The I1 module
+  below derives an `hn`-free corollary under the exact monotone-witness-width condition.
 - `ContentPrefixExtensionNonVacuity.lean` — GATE-0 (plan §4.1): `ContentAccepts` is
   **unconditionally satisfiable**. A private helper stores a full search witness in a certificate's
   leading `witnessBits` block and proves that the content witness window reads it back; prefix
@@ -282,6 +283,18 @@ review order (the `lakefile.lean` registration is the dependency order):
   non-vacuity or NP membership, and reduces no lower-bound source obligation. The four theorems
   stay within `[propext, Classical.choice, Quot.sound]` or a subset, and the surface tests include
   a concrete evaluation to guard computability.
+- `ContentPrefixExtensionGateClosure.lean` — I1 (`VERIFIER_RETARGET_PLAN.md` §4.3). It proves
+  `treeMCSPPrefixM_strictMono` / `treeMCSPPrefixM_injective_of_monotone`, verifies the premise for
+  `treeCircuitWitnessCodec (thresholdPoly k)`, and supplies
+  `ContentPrefixExtendable_iff_of_parse'` without an explicit `hn`. No generic-codec injectivity is
+  asserted, because unconstrained `witnessBits` makes it false. It also proves the `readNatBE`
+  power bound and hypothesis-free gamma canonicity, narrows the header via the consumed-based
+  transfer correction, proves unconditional convention-length-gate vacuity, and characterizes
+  `contentInput?` success by exactly the tag value, decoded-index bound, and inactive-pad-zero
+  value tests. These are parser/specification facts only: padding invariance of the language
+  wrapper, the verifier TM/runtime/`TM.accepts` bridge, and advice-channel enforcement all remain
+  open. Content non-vacuity is discharged separately by the GATE-0 module above. Infrastructure
+  only; no lower-bound obligation or `P ≠ NP` claim.
 - `ContentPrefixExtensionPaddingTransport.lean` — the explicitly classical conditional transport
   theorem `ContentAccepts_padWord_of_prefixExtendable`, isolated from the axiom-light padding
   module. It derives `ContentPrefixExtendable` directly from
@@ -343,13 +356,11 @@ the opposite reading:
   evaluation step both move with the input length, as above), no machine is built, and
   the obstruction remains a review of the definitions, never a Lean impossibility
   theorem — so nothing here shows that a verifier for `L'` exists or is achievable.
-- **No proof that the re-decode gate is vacuous.** `contentInput?` re-runs the strict
-  parser, which re-decodes the gamma header from the narrow window `padWord z (M n')`
-  and applies its own gate `m = M n_dec`. That the gate never fires is the *intent*
-  (it needs `n_dec = n'`, the narrowing direction of the decode); only the widening
-  lemma `decodeGammaAux?_mono` is proved, so no lemma here rules out
-  `contentInput? = none` at the gate. Padding stability does not help: it says the two
-  sides agree *including on failure*, not that either side succeeds.
+- **The re-decode length gate is vacuous, but three value tests remain.** I1 proves that a
+  successful content header narrows with the same decoded target and consumed width, so the
+  parser's `m = M n_dec` comparison is reflexive. It does not prove unconditional parser success:
+  a wrong tag, an index exceeding the witness width, or a nonzero inactive suffix is still rejected,
+  exactly as characterized by `contentInput?_isSome_iff_of_header`.
 - **Non-vacuity is settled; it is not a complexity statement.** `ContentAccepts` *is*
   unconditionally satisfiable, and `L'` is non-empty, by
   `ContentPrefixExtensionNonVacuity.lean` (`contentAccepts_nonvacuous_treePoly` at the
@@ -376,7 +387,7 @@ the opposite reading:
 - **No separation.** Both open inputs stay explicit arguments of every source in
   `ContentConsolidatedSource.lean`; no `P ≠ NP` claim follows.
 
-Every public theorem of the eleven modules has its own `#print axioms` line in
+Every public theorem of the twelve modules has its own `#print axioms` line in
 `Pnp4/Tests/AxiomsAudit.lean` and its own `#check` in
 `Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`
 (`ContentPrefixExtensionSurface`).

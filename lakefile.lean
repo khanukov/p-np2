@@ -329,6 +329,11 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentTargetSizeBound,
     -- GATE-0 slice: non-vacuity of `ContentAccepts` at the concrete codec.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity,
+    -- I1: honest convention-length injectivity, gamma canonicity/narrowing,
+    -- unconditional length-gate vacuity, and the exact three-value-test residue.
+    -- It imports `ContentPrefixExtensionCoincidence`, `ContentPrefixExtensionPadding`,
+    -- `ConcreteTreeCodec` and `ThresholdGrowth`, all listed above.
+    Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionGateClosure,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPaddingTransport,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionTransfer,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentConsolidatedSource,

@@ -62,6 +62,7 @@ import Pnp4.Frontier.ContractExpansion.ContentSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.ContentVerifierTapeInterface
 import Pnp4.Frontier.ContractExpansion.ContentTargetSizeBound
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity
+import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionGateClosure
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPaddingTransport
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionTransfer
 import Pnp4.Frontier.ContractExpansion.ContentConsolidatedSource
@@ -1095,6 +1096,24 @@ theorem check_contentInput?_x_apply
 #check @Pnp4.Frontier.ContractExpansion.contentWitness_eq_false_of_lt
 #check @Pnp4.Frontier.ContractExpansion.contentAccepts_parsed_tableLen_le_of_header_target_wide
 #check @Pnp4.Frontier.ContractExpansion.contentAccepts_target_poly_treePoly
+
+-- I1 gate closure (`ContentPrefixExtensionGateClosure.lean`, plan §4.3): convention-length
+-- injectivity is stated only under monotone witness width and at the concrete polynomial codec;
+-- there is deliberately no false generic-codec injectivity theorem.  Gamma canonicity needs only
+-- successful decoding, narrowing uses the consumed-based correction, the length gate is vacuous,
+-- and the final parser characterization leaves exactly tag/index/pad-zero value tests.  This is
+-- Infrastructure: no verifier, non-vacuity, NP-membership, or lower-bound obligation follows.
+#check @Pnp4.Frontier.ContractExpansion.treeMCSPPrefixM_strictMono
+#check @Pnp4.Frontier.ContractExpansion.treeMCSPPrefixM_injective_of_monotone
+#check @Pnp4.Frontier.ContractExpansion.witnessBits_monotone_treePoly
+#check @Pnp4.Frontier.ContractExpansion.treeMCSPPrefixM_injective_treePoly
+#check @Pnp4.Frontier.ContractExpansion.ContentPrefixExtendable_iff_of_parse'
+#check @Pnp4.Frontier.ContractExpansion.readNatBE_lt_two_pow
+#check @Pnp4.Frontier.ContractExpansion.decodeGamma?_consumed_eq_gammaLen
+#check @Pnp4.Frontier.ContractExpansion.contentHeader?_consumed_eq_gammaLen
+#check @Pnp4.Frontier.ContractExpansion.decodeGamma?_padWord_narrow
+#check @Pnp4.Frontier.ContractExpansion.contentInput?_lengthGate_vacuous
+#check @Pnp4.Frontier.ContractExpansion.contentInput?_isSome_iff_of_header
 
 /-- FEAS-0 headline surface, repeated at its exact concrete codec: every accepted complete word's
 header convention length is bounded by one polynomial depending only on `k`. -/

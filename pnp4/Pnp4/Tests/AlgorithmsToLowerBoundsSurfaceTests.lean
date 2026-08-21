@@ -55,6 +55,7 @@ import Pnp4.Frontier.ContractExpansion.PrefixExtensionNPWitness
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
+import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPadding
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPaddingTransport
@@ -1022,6 +1023,35 @@ theorem check_NP_not_subset_PpolyDAG_treePolyCT
 -- `concatBitstring`.  This is a CONDITIONAL existential under `hparse`, `hn`, `hext`, and `hT`, not
 -- an unconditional satisfiability / non-emptiness result for `ContentAccepts` or `L'`.
 #check @Pnp4.Frontier.ContractExpansion.ContentAccepts_padWord_of_prefixExtendable
+-- FEAS-0 slice, part 1 (`ContentParseFieldRecovery.lean`, plan §1.0): the parser field recovery the
+-- feasibility route assumed was available.  `parseTreeMCSPPrefixInput_inversion` above exposes only
+-- the length gate and the gamma decode; these two re-walk the same success cascade and keep the `x`
+-- branch, so a semantic fact about the parsed truth table becomes a fact about cells of the ambient
+-- word.  The gamma width is carried SYMBOLICALLY -- both conjuncts of the first theorem share one
+-- existential `consumed`, and neither statement identifies it with `gammaLen input.n` or relates
+-- `pr.2.n` to the header value `pr.1`; no injectivity of `treeMCSPPrefixM codec` is used (plan
+-- stop/go F0b).  Scope: recovery only.  These do NOT bound the decoded target (that is FEAS-0's
+-- headline, still unproved, so the §1.1 freeze stays PROVISIONAL and `L'` may not be described as
+-- polynomial-time verifiable), do NOT show `ContentAccepts` is satisfiable, and build no verifier
+-- TM, runtime bound or `TM.accepts` bridge.
+#check @Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_x_slice
+#check @Pnp4.Frontier.ContractExpansion.contentInput?_x_apply
+
+/-- FEAS-0 field-recovery surface: on a content-accepted-shaped parse the truth-table field is
+literally a blank-padded read of the ambient word at a single symbolic offset shift.  This is the
+transport step of plan §1.0 Step 4; the bound on the decoded target that Step 4 feeds is **not**
+proved here, and this statement carries no NP-membership or feasibility claim. -/
+theorem check_contentInput?_x_apply
+    {threshold : Nat → Nat} (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    {N : Nat} (z : PrefixBitVec N)
+    {pr : Σ r : Nat, PrefixInput
+      (Frontier.treeMCSPSearchProblem threshold
+        (Frontier.TreeMCSPSearchWitnessEncoding.ofCodec codec))
+      (treeMCSPPrefixM codec r)}
+    (hpr : contentInput? codec z = some pr) :
+    ∃ cg : Nat, ∀ j : Fin (Pnp3.Models.Partial.tableLen pr.2.n),
+      pr.2.x j = padRead z (tagLen + cg + j.1) :=
+  contentInput?_x_apply codec z hpr
 
 /-- Padding-stability surface (headline): any two *complete* finite words presenting the same
 blank-padded tape are content-accepted alike, so `ContentAccepts` is a function of the tape contents

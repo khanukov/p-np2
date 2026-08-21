@@ -316,6 +316,9 @@ lean_lib Pnp4 where
     -- the two verifier modules above, Padding stays specification-only, and the
     -- explicitly classical transport module imports both Coincidence and Padding).
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtension,
+    -- FEAS-0 slice, part 1: parser field recovery.  It imports only
+    -- `ContentPrefixExtension`, so it is listed immediately after it.
+    Glob.one `Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPadding,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPaddingTransport,

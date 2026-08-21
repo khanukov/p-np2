@@ -172,7 +172,7 @@ length-dependent in general; and `TM.accepts` is evaluated at exactly step
 can in principle depend on `n`; what the planned idle-sink construction cannot do is
 recover the gate from the loaded content alone. **The whole argument is a review of
 the definitions, not a Lean theorem**: no impossibility result is formalized anywhere
-in this directory. The response replaces the *language*, not the chain — six modules,
+in this directory. The response replaces the *language*, not the chain — seven modules,
 in dependency order:
 
 - `ContentPrefixExtension.lean` — `padRead` / `padWord` (the blank-padded tape read),
@@ -186,6 +186,19 @@ in dependency order:
   language `ContentPrefixExtensionLanguage` (`L'`), and the NP-witness interface
   `ContentPrefixExtensionNPWitness`. Definitions plus the `accepts_iff` unwrapping;
   the interface is a **hypothesis**.
+- `ContentParseFieldRecovery.lean` — FEAS-0 slice, part 1 (`VERIFIER_RETARGET_PLAN.md` §1.0): the
+  parser field recovery the feasibility route needs and the parse inversion below does **not**
+  provide. `parseTreeMCSPPrefixInput_x_slice` re-walks the same success cascade as
+  `parseTreeMCSPPrefixInput_inversion` but keeps the `x` branch, pinning `input.x` to the canonical
+  `x`-slice of its own ambient vector; `contentInput?_x_apply` is the content-side pointwise form,
+  `pr.2.x j = padRead z (tagLen + cg + j)`. The gamma width is carried **symbolically** — both
+  conjuncts share one existential `consumed`, and neither statement identifies it with
+  `gammaLen input.n` nor relates `pr.2.n` to the header value `pr.1`, so no injectivity of
+  `treeMCSPPrefixM codec` and no gamma canonicity is used (plan stop/go F0b). Both entries are
+  axiom-light: `[propext, Quot.sound]`, no `Classical.choice`. Scope is recovery only: **no** bound
+  on the decoded target (that is FEAS-0's headline, still unproved, so the §1.1 freeze stays
+  *provisional* and `L'` may not be described as polynomial-time verifiable), no satisfiability of
+  `ContentAccepts`, and no verifier TM, runtime bound or `TM.accepts` bridge.
 - `ContentPrefixExtensionCoincidence.lean` — reader monotonicity under ambient
   widening (`readBit?_mono`, `readNatBE_mono`, `decodeGammaAux?_mono`), parse
   inversion (`parseTreeMCSPPrefixInput_inversion`), the two window computations on a

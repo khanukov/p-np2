@@ -310,6 +310,13 @@ lean_lib Pnp4 where
     -- module imports the semantic verifier).
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSemanticVerifier,
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout,
+    -- The content-truthful prefix-extension language `L'` and the conditional chain
+    -- re-routed through it, listed in dependency order (each module imports only
+    -- modules listed above it; Coincidence pulls in the two verifier modules above).
+    Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtension,
+    Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence,
+    Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionTransfer,
+    Glob.one `Pnp4.Frontier.ContractExpansion.ContentConsolidatedSource,
     Glob.one `Pnp4.Tests.AlgorithmsToLowerBoundsSurfaceTests,
     Glob.one `Pnp4.Tests.AxiomsAudit
   ]

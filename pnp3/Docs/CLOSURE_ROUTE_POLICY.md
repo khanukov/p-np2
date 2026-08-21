@@ -1,13 +1,27 @@
 # Closure Route Policy (canonical)
 
-Updated: 2026-04-23.
+Updated: 2026-08-21.
 
 This file is a hard policy reference for unconditional-closure planning.
 It exists to prevent stale route language from re-entering status docs.
 
-## One Active Framing
+## Scope
 
-Only one active framing is allowed in canonical planning docs:
+This policy governs the **pnp3 magnification route** (SAL / locality / Route-A/B over
+`GapPartialMCSP*`).  It is not the whole active surface.
+
+Per `AGENTS.md`, the **pnp4** algorithms-to-lower-bounds frontier is a second permitted
+active framing for P-vs-NP mainline work, whose source obligations are
+`SearchMCSPWeakLowerBound` and `VerifiedNPDAGLowerBoundSource`.  Both framings terminate
+at the same target, `ComplexityInterfaces.NP_not_subset_PpolyDAG`.  See the "pnp4
+Frontier" section below, the pnp4 section of `STATUS.md`, and `pnp4/README.md`.
+
+Nothing in this file authorizes describing a restricted `AC0[p]` / formula / local-PRG /
+coin-problem result as mainline progress; that boundary is set by `AGENTS.md`.
+
+## One Active pnp3 Framing
+
+Only one active framing is allowed for the pnp3 route in canonical planning docs:
 
 1. preserve the useful DAG endpoint infrastructure;
 2. treat the legacy support-bounds and multi-switching route as formally
@@ -37,6 +51,39 @@ Future algebraic, spectral, finite-field, SOS, Fourier-analytic, or otherwise
 non-combinatorial proofs should plug in by proving `ResearchGapWitness`
 directly.  They must not be rejected merely because they do not produce
 support/locality data or an `AcceptedFamilyCertificateAt` producer.
+
+## pnp4 Frontier
+
+The pnp4 frontier reaches the same target without going through this file's pnp3
+plumbing.  Its most concrete current form is
+
+```text
+NP_not_subset_PpolyDAG_treePoly
+  (k : Nat)
+  (hNoPoly : NoPolynomialBoundedSearchSolver (treeCircuitWitnessCodec (thresholdPoly k)))
+  (hNPWit  : PrefixExtensionNPWitness
+               (treeMCSPConcretePrefixParser (thresholdPoly k) …))
+  : ComplexityInterfaces.NP_not_subset_PpolyDAG
+```
+
+in `pnp4/Pnp4/Frontier/ContractExpansion/ConsolidatedTreeSeparation.lean`.  Policy for
+canonical docs describing it:
+
+1. it is strictly **conditional** on those two hypotheses; neither is proved;
+2. the decision→search extraction is formalized in **one direction only**
+   (`PpolyDAG → solver` plus its contrapositive), so it must not be described as an
+   equivalence, and `hNoPoly` must not be described as a *weak* bound amplified by
+   magnification — no magnification theorem is formalized;
+3. `hNPWit` is an NP-membership obligation in the repository's single-tape, exact-step
+   `TM` model; see the runtime-model caveat in `STATUS.md` and
+   `pnp4/Pnp4/Frontier/ContractExpansion/README.md`;
+4. `PolyBoundedInTable threshold` is a third input at an arbitrary threshold and is
+   proved at the canonical polynomial thresholds, so it disappears at `thresholdPoly k`.
+
+A future closure via this route need not be re-expressed as `ResearchGapWitness`, though
+it may be: the pnp4 endpoint already produces
+`ComplexityInterfaces.NP_not_subset_PpolyDAG`, which is exactly
+`ResearchGapWitness.dagSeparation`.
 
 ## Simulation Boundary
 
@@ -71,8 +118,9 @@ The old support-bounds route is also closed as a false route:
 Canonical docs (`STATUS.md`, `TODO.md`,
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`,
 `pnp3/Docs/Unconditional_NP_not_subset_PpolyDAG_Plan.md`,
-`pnp3/Docs/Simulation_FineGrained_Status.md`, and this file)
-must satisfy all of the following:
+`pnp3/Docs/Simulation_FineGrained_Status.md`,
+`pnp3/Docs/Research_Method_Boundary.md`, and this file — the `route_docs` set in
+`scripts/check.sh`) must satisfy all of the following:
 
 1. explicitly mention fixed-slice no-go status;
 2. explicitly mention the refuted support-bounds/multi-switching route;

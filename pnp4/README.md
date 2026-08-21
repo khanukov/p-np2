@@ -41,6 +41,12 @@ Next progress target:
    to `VerifiedNPDAGLowerBoundSource`.
 3. Count a new theorem as P-vs-NP progress only if it reduces
    `SearchMCSPWeakLowerBound` or directly reduces `VerifiedNPDAGLowerBoundSource`.
+4. The most concrete live form of that obligation is the hypothesis pair of
+   `NP_not_subset_PpolyDAG_treePoly`
+   (`Frontier/ContractExpansion/ConsolidatedTreeSeparation.lean`): a
+   `NoPolynomialBoundedSearchSolver` for the concrete tree codec, and a
+   `PrefixExtensionNPWitness` for the concrete prefix parser.  See the downstream
+   section below.
 
 Honesty policy:
 
@@ -210,19 +216,36 @@ contrapositive: NoPolynomialBoundedSearchSolver + growth ⇒ ¬ PpolyDAG
 ```
 
 It is strictly conditional: it does **not** prove `P ≠ NP` or `NP ⊄ PpolyDAG`
-unconditionally.  What it does is expose the exact remaining obligations as three
-explicit, clearly-typed inputs:
+unconditionally.  What it does is expose the exact remaining obligations as explicit,
+clearly-typed inputs.
 
-1. `NoPolynomialBoundedSearchSolver codec` — the genuine weak lower bound (hard,
-   research-level mathematics);
-2. `PrefixExtensionNPWitness parser` — a concrete verifier TM with a polynomial
-   runtime bound and certificate correctness (the NP / runtime track);
-3. the concrete `TreeCircuitWitnessCodec` final assembly — reduced (by the
-   `Circuit ↔ CircuitTree` bridge, the native encoder round-trip, and the
-   encoding-length upper bound) to choosing a width schedule, eliminating the
-   decoder's depth budget, and supplying `PolyBoundedInTable codec.witnessBits`.
+At a **concrete polynomial threshold** `thresholdPoly k` the growth premise is already
+discharged (`polyBoundedInTable_thresholdPoly`, `ThresholdGrowth.lean`) and the concrete
+codec is constructed (`treeCircuitWitnessCodec`, `ConcreteTreeCodec.lean`), so the
+consolidated surface in `Frontier/ContractExpansion/ConsolidatedTreeSeparation.lean`
 
-The capstone `verifiedSource_of_explicit_interfaces` packages the three inputs into
-`VerifiedNPDAGLowerBoundSource`.  See
-`Frontier/ContractExpansion/README.md` for the full module map and the
-proved-vs-open breakdown.
+```lean
+verifiedSource_treePoly          : … → VerifiedNPDAGLowerBoundSource
+NP_not_subset_PpolyDAG_treePoly  : … → Pnp3.ComplexityInterfaces.NP_not_subset_PpolyDAG
+```
+
+depends on **exactly two** explicit hypotheses:
+
+1. `NoPolynomialBoundedSearchSolver (treeCircuitWitnessCodec (thresholdPoly k))` — a
+   genuine `P/poly` circuit lower bound for the concrete tree-MCSP search problem (hard,
+   research-level mathematics; **not** a Lean engineering task);
+2. `PrefixExtensionNPWitness (treeMCSPConcretePrefixParser (thresholdPoly k) …)` — a
+   concrete verifier TM with a polynomial runtime bound and certificate correctness (the
+   NP / runtime track).
+
+For an *arbitrary* threshold there is a third input, `PolyBoundedInTable threshold`;
+it is proved for the canonical polynomial thresholds, so it disappears at
+`thresholdPoly k`.  The general capstone `verifiedSource_of_explicit_interfaces`
+(`ExplicitConditionalSource.lean`) still packages three interfaces for an arbitrary
+codec and threshold.
+
+The extraction is formalized in **one direction only** (`PpolyDAG → solver`, plus its
+contrapositive); the converse is not formalized, so input (1) is *at least as strong as*
+the full `P/poly` lower bound rather than a weak bound amplified by magnification.  See
+`Frontier/ContractExpansion/README.md` for the full module map, the runtime-model caveat
+attaching to input (2), and the proved-vs-open breakdown.

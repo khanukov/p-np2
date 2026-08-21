@@ -563,13 +563,41 @@ to **exactly two** explicit open inputs:
 2. `PrefixExtensionNPWitness (…)` — a concrete NP verifier (TM + runtime + certificate
    correctness).
 
-**Honest caveat.**  The decision→search extraction is an *equivalence*
-(`PpolyDAG(prefix-extension language) ⟺ polynomial-size search solver`); since the
-instance length is `2^n`, input (1) is the **full-strength** `P/poly` lower bound,
-**not** a weak/local bound amplified by hardness magnification.  No magnification
-theorem is formalized — the chain makes the target precise and verified-conditional,
-not easier.  See `pnp4/Pnp4/Frontier/ContractExpansion/README.md` for the full module
-map and proved-vs-open breakdown.
+**Runtime model caveat on input (2).**  `NP` there is `NP_TM`
+(`pnp3/Complexity/Interfaces.lean`) over `Pnp3.Internal.PsubsetPpoly.TM`
+(`pnp3/Complexity/PsubsetPpolyInternal/TuringEncoding.lean`): a deterministic
+single-tape binary-alphabet machine with no separate read-only input tape and fixed tape
+length `n + runTime n + 1` (`TM.tapeLength`), whose `runTime : ℕ → ℕ` is a **structure
+field** rather than a derived step count, and whose `TM.accepts` is evaluated **at
+exactly step `runTime n`** (`TM.run` iterates `stepConfig` exactly `M.runTime n` times,
+then checks `state = M.accept`) with no halting predicate.  Because the declared budget
+is also the evaluation point, `PrefixExtensionNPWitness.runTime_poly` is a genuine
+restriction on the machine, not a self-certification.  No cross-model
+runtime-robustness theorem is formalized, so input (2) is an obligation *in this model*.
+This is the NP-side analogue of the coarse-inclusion caveat recorded above for
+`proved_P_subset_PpolyDAG_internal`.
+
+**Honest caveat — one-way extraction, not an equivalence.**  The decision→search
+extraction is formalized in **one direction only**:
+
+```text
+PpolyDAG (prefix-extension language) → polynomial-size bounded search solver
+```
+
+that is `boundedSearchSolver_of_PpolyDAG_prefixExtension`
+(`pnp4/Pnp4/Frontier/ContractExpansion/BoundedSolverFromPpoly.lean`), together with its
+contrapositive `not_PpolyDAG_prefixExtension_of_noPolynomialBoundedSearchSolver`
+(`ContractExpansion/ExtractedScheduleGrowth.lean`).  The converse
+(solver ⇒ `PpolyDAG`) is **not** formalized: `ContractExpansion/` contains no `Iff`
+between `PpolyDAG` and a solver and no `PpolyDAG_of_boundedSearchSolver` declaration.
+
+Since the instance length is `tableLen n = 2^n`, input (1) is therefore **at least as
+strong as** the full `P/poly` lower bound "this concrete NP language is not in
+`P/poly`" — and, absent the converse, possibly strictly stronger.  It is **not** a
+weak/local bound amplified by hardness magnification, and no magnification theorem is
+formalized: the chain makes the target precise and verified-conditional, not easier.
+See `pnp4/Pnp4/Frontier/ContractExpansion/README.md` for the full module map and
+proved-vs-open breakdown.
 
 ## Repository-Wide Honesty Policy
 

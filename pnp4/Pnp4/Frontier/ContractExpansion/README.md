@@ -174,14 +174,48 @@ NP ⊄ PpolyDAG     (and thence  P ≠ NP)        — both kept strictly conditi
 (For an *arbitrary* threshold there is a third input, `PolyBoundedInTable threshold`;
 it is proved for the canonical polynomial thresholds, so it disappears there.)
 
+### Runtime model behind input (2)
+
+`NP` here is the repository's `NP_TM` (`pnp3/Complexity/Interfaces.lean`) over the
+machine model `Pnp3.Internal.PsubsetPpoly.TM`
+(`pnp3/Complexity/PsubsetPpolyInternal/TuringEncoding.lean`).  That model is:
+
+* a **deterministic single-tape** machine over the binary alphabet, with no separate
+  read-only input tape, and a fixed tape length `n + runTime n + 1` (`TM.tapeLength`);
+* equipped with `runTime : ℕ → ℕ` as a **structure field**, not a derived step count;
+* accepted by `TM.accepts`, which is evaluated **at exactly step `runTime n`** — `TM.run`
+  iterates `stepConfig` exactly `M.runTime n` times and then checks
+  `state = M.accept`.  There is no halting predicate and no "within `t` steps"
+  quantifier.
+
+Because the declared budget is also the evaluation point, the
+`PrefixExtensionNPWitness.runTime_poly` field is a genuine restriction on the machine,
+not a self-certification.  What is **not** formalized is any cross-model
+runtime-robustness statement: nothing here relates this single-tape, exact-step model to
+multi-tape or read-only-input-tape models.  Input (2) is therefore an obligation *in this
+model*, and should be cited that way.
+
 ### Honest caveat — this is a reduction, not a magnification win
 
-The decision→search extraction proves the **equivalence**
-`PpolyDAG(prefix-extension language) ⟺ polynomial-size search solver`.  Because the
-instance length is `tableLen n = 2^n`, the no-solver input is the **full-strength**
-lower bound — "this concrete NP language is not in `P/poly`" — **not** a weak/local
-bound amplified by a hardness-*magnification* theorem.  The chain makes the target
-precise, concrete, and verified-conditional; it does **not** make the open
+The decision→search extraction is formalized in **one direction only**:
+
+```text
+PpolyDAG (prefix-extension language) → polynomial-size bounded search solver
+```
+
+i.e. `boundedSearchSolver_of_PpolyDAG_prefixExtension` (`BoundedSolverFromPpoly.lean`),
+together with its contrapositive
+`not_PpolyDAG_prefixExtension_of_noPolynomialBoundedSearchSolver`
+(`ExtractedScheduleGrowth.lean`).  The converse (solver ⇒ `PpolyDAG`) is **not**
+formalized — this directory contains no `Iff` between `PpolyDAG` and a solver, and no
+`PpolyDAG_of_boundedSearchSolver` declaration — so the chain is a one-way reduction,
+**not** an equivalence.
+
+Because the instance length is `tableLen n = 2^n`, the no-solver input is therefore
+**at least as strong as** the full `P/poly` lower bound — "this concrete NP language is
+not in `P/poly`" — and, absent the converse, possibly strictly stronger.  It is **not**
+a weak/local bound amplified by a hardness-*magnification* theorem.  The chain makes the
+target precise, concrete, and verified-conditional; it does **not** make the open
 mathematics easier, and **no** magnification theorem is formalized here.
 
 This directory adds **no** unconditional claim, does **not** modify

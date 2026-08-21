@@ -29,6 +29,23 @@ equivalence.  This file packages those three obligations as an explicit structur
 established `GapPartialMCSP_TMWitness` / `gapPartialMCSP_in_NP_TM_of_witness` idiom
 (`pnp3/Models/Model_PartialMCSP.lean`).
 
+## Runtime model caveat
+
+The machine model is `Pnp3.Internal.PsubsetPpoly.TM`
+(`pnp3/Complexity/PsubsetPpolyInternal/TuringEncoding.lean`): a **deterministic
+single-tape** machine over the binary alphabet, with no separate read-only input tape and
+a fixed tape length `n + runTime n + 1` (`TM.tapeLength`).  Its `runTime : ℕ → ℕ` is a
+**structure field**, not a derived step count, and `TM.accepts` is evaluated **at exactly
+step `runTime n`** (`TM.run` iterates `stepConfig` exactly `M.runTime n` times, then
+checks `state = M.accept`); there is no halting predicate and no "within `t` steps"
+quantifier.
+
+Because the declared budget is also the evaluation point, the `runTime_poly` field below
+is a genuine restriction on `M` rather than a self-certification.  What is **not**
+formalized anywhere is a cross-model runtime-robustness statement relating this
+single-tape, exact-step model to multi-tape or read-only-input-tape models, so this
+structure should be cited as an NP-membership obligation *in this model*.
+
 This is the minimal "obligations → NP-membership" interface: it makes the genuine
 constructive obligations visible to callers (a real machine + runtime + correctness)
 and is **not** a duplicate of the existing bare-`Prop` enumeration records

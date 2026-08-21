@@ -57,6 +57,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPadding
+import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPaddingTransport
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionTransfer
 import Pnp4.Frontier.ContractExpansion.ContentConsolidatedSource
 import Pnp4.Frontier.ContractExpansion.ExplicitConditionalSource
@@ -947,6 +948,7 @@ open Pnp4.Frontier.ContractExpansion
 #check @Pnp4.Frontier.ContractExpansion.padWord_concat_left
 #check @Pnp4.Frontier.ContractExpansion.contentWitness_concat
 #check @Pnp4.Frontier.ContractExpansion.contentInput?_concat_of_parse
+#check @Pnp4.Frontier.ContractExpansion.ContentPrefixExtendable_iff_of_parse
 #check @Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionLanguage_eq_of_parse
 -- Repair brick R4: the extraction transfer.  This is the *same* one-way
 -- `PpolyDAG → BoundedSearchSolver` direction as the length-gated chain; no converse is proved.
@@ -1010,15 +1012,14 @@ theorem check_NP_not_subset_PpolyDAG_treePolyCT
 #check @Pnp4.Frontier.ContractExpansion.contentWitness_padWord_of_le
 #check @Pnp4.Frontier.ContractExpansion.ContentAccepts_padWord_of_le
 #check @Pnp4.Frontier.ContractExpansion.ContentAccepts_iff_of_padRead_eq
--- Conditional transport (NOT an unconditional existence result): an already-successful strict decode
--- also succeeds through the `2N+1` margin, and an already-extendable query's accepted word stays
--- accepted at every larger physical length.  The second is a CONDITIONAL existential: its conclusion
--- is existential over certificates, available only under the four explicit hypotheses of its
--- statement (`hparse`, `hn`, `hext` -- none discharged anywhere -- plus the padding bound `hT`,
--- which only fixes the target length).  No unconditional existential / non-emptiness result for
--- `ContentAccepts` or `L'` is proved anywhere in this repository, so nothing here establishes that
--- `ContentAccepts` is satisfiable or that `L'` is non-empty.
+-- Axiom-light strict-decode transport remains with padding stability.
 #check @Pnp4.Frontier.ContractExpansion.contentHeader?_of_decodeGamma
+-- The certificate-producing transport is isolated in the explicitly classical
+-- `ContentPrefixExtensionPaddingTransport.lean`.  It derives `ContentPrefixExtendable` directly
+-- from the proposition-level coincidence theorem, without either Boolean language wrapper, but
+-- its statement necessarily inherits `Classical.choice` from the pre-existing noncomputable
+-- `concatBitstring`.  This is a CONDITIONAL existential under `hparse`, `hn`, `hext`, and `hT`, not
+-- an unconditional satisfiability / non-emptiness result for `ContentAccepts` or `L'`.
 #check @Pnp4.Frontier.ContractExpansion.ContentAccepts_padWord_of_prefixExtendable
 
 /-- Padding-stability surface (headline): any two *complete* finite words presenting the same

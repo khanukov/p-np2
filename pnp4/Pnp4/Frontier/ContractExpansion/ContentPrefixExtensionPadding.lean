@@ -1,4 +1,4 @@
-import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence
+import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
 
 /-!
 # Padding stability of `ContentAccepts` — the specification-side obligation
@@ -20,8 +20,8 @@ of that word's blank-padded tape only:
 * `padRead_padWord_of_le` / `padWord_padWord_of_le` — blank padding past the support is idempotent;
 * `readBit?_padWord_of_lt` / `readBit?_padWord_of_ge` / `readNatBE_padWord_transfer` — the strict
   readers on a padded word, and transfer of a successful fixed-width read to any padding whose
-  width covers the read (**both** directions of widening: the shrinking direction is what the
-  monotonicity lemmas of `ContentPrefixExtensionCoincidence.lean` cannot give);
+  width covers the read (**both** directions of widening, including shrinking to a still-sufficient
+  field width);
 * `decodeGammaAux?_padWord_support` — the **blank-tail lemma**: a successful gamma scan on a padded
   word has its terminator strictly inside the support, since every cell past the support reads
   blank.  This is what makes the shrinking direction sound at all;
@@ -51,10 +51,7 @@ property of one predicate of the specification, and of nothing else.  In particu
   (`ContentAccepts_padWord_of_le`, `ContentAccepts_iff_of_padRead_eq`) are invariance statements
   about `ContentAccepts` applied to a *complete* word.  No statement in this module mentions the
   wrapper at all, and **no theorem here proves query-level padding invariance of
-  `ContentPrefixExtensionLanguage`** — the conditional transport theorem
-  `ContentAccepts_padWord_of_prefixExtendable` does take a *query* `y` (and its extendability) as a
-  hypothesis, but its conclusion is about the *complete* word `y ++ cert` at a larger physical
-  length, not about the query's membership.  Membership of a *query*
+  `ContentPrefixExtensionLanguage`**.  Membership of a *query*
   `y` at physical length `m` unfolds (via `ContentPrefixExtendable`) to
   `∃ w : Bitstring (certificateLength m 1), ContentAccepts codec (concatBitstring y w)`, and **both**
   the certificate length and the offset at which `w` is concatenated are functions of `m`.  Padding
@@ -73,18 +70,10 @@ property of one predicate of the specification, and of nothing else.  In particu
   and gates on `m = treeMCSPPrefixM codec n_dec`; that this never fires needs `n_dec = n'` and is
   still **unproved**.
 
-Two further lemmas are **conditional transport** statements:
-`contentHeader?_of_decodeGamma` (an *already successful* strict decode also succeeds through the
-`2N+1` margin) and `ContentAccepts_padWord_of_prefixExtendable` (an *already* prefix-extendable
-query at its convention length yields a certificate whose concatenation is content-accepted, and
-stays accepted at every larger physical length).  The second one is a **conditional existential**:
-its conclusion *is* an existential over certificates, but it is available only under the four
-explicit hypotheses of its statement — `hparse`, `hn` and `hext`, none of which is discharged
-anywhere, plus the padding bound `hT`, which only fixes the target length.  So **no unconditional
-existential / non-emptiness result is proved here**, and nothing in this module asserts that
-`ContentAccepts` is satisfiable or that `L'` is non-empty.  Producing such a witness needs a truth table with a
-threshold-respecting circuit plus the codec/parse round-trip, which is not done anywhere in this
-directory.
+The axiom-light conditional lemma `contentHeader?_of_decodeGamma` transports an already successful
+strict decode through the `2N+1` margin.  The certificate-producing conditional transport theorem
+is isolated in `ContentPrefixExtensionPaddingTransport.lean`, because its statement mentions the
+pre-existing noncomputable `concatBitstring` and therefore necessarily inherits `Classical.choice`.
 
 Scope: no Turing machine, no runtime bound, no NP-witness achievability, no new source/contract
 wrapper, no lower bound, no unconditional existence claim, no separation.  The `(★′)` bridge itself
@@ -93,10 +82,8 @@ specification-side ingredient that bridge would need.
 
 **Progress classification (AGENTS.md): Infrastructure** — specification repair for the NP-verifier
 track; proves no separation.  Verified axiom footprint (`#print axioms`, see
-`Pnp4/Tests/AxiomsAudit.lean`): `readBit?_padWord_of_lt` is axiom-free, the other fourteen
-padding-stability theorems are `[propext, Quot.sound]`, and only
-`ContentAccepts_padWord_of_prefixExtendable` adds `Classical.choice` — via the noncomputable
-`concatBitstring` and the classical language wrapper it routes through.
+`Pnp4/Tests/AxiomsAudit.lean`): `readBit?_padWord_of_lt` is axiom-free and the other fourteen public
+theorems are `[propext, Quot.sound]`; this module has no `Classical.choice` theorem.
 **No `P ≠ NP` claim.**
 -/
 
@@ -126,8 +113,10 @@ theorem padWord_padWord_of_le {N T : Nat} (z : PrefixBitVec N) (hNT : N ≤ T) (
   funext j
   simp only [padWord_apply, padRead_padWord_of_le z hNT]
 
-/-- A word whose padded tape agrees with `z`'s **is** a padding of `z`: the only way to present the
-same infinite tape at a larger physical length is to blank-pad. -/
+/-- A word whose padded tape agrees with `z`'s **is** `z` presented at the arbitrary physical
+length `N'`: it equals `padWord z N'`, with no ordering assumption between `N` and `N'`.  When
+`N ≤ N'` this is ordinary blank-padding.  When `N' < N`, it additionally says the truncated tail
+of `z` was already blank: every `z j` with `N' ≤ j < N` is `false`. -/
 theorem eq_padWord_of_padRead_eq {N N' : Nat} (z : PrefixBitVec N) (z' : PrefixBitVec N')
     (h : ∀ j, padRead z j = padRead z' j) :
     z' = padWord z N' := by
@@ -351,13 +340,7 @@ theorem ContentAccepts_iff_of_padRead_eq (codec : TreeCircuitWitnessCodec thresh
   · rw [eq_padWord_of_padRead_eq z' z (fun j => (h j).symm)]
     exact ContentAccepts_padWord_of_le codec z' hle
 
-/-! ### Conditional transport (no unconditional existence claim)
-
-Both lemmas below take an already-successful decode / an already-extendable query as a hypothesis and
-transport it.  The second one is a conditional existential: its conclusion is an existential over
-certificates, available only under the four explicit hypotheses of its statement (`hparse`, `hn`,
-`hext` — undischarged — plus the padding bound `hT`), so neither lemma witnesses —
-unconditionally — that `ContentAccepts` is satisfiable. -/
+/-! ### Strict-decode transport -/
 
 /-- **The `2N+1` margin is harmless.**  Whatever the strict decoder reads off the word itself, the
 content header reads too.  (The converse fails on purpose: a terminator inside the support whose
@@ -369,39 +352,6 @@ theorem contentHeader?_of_decodeGamma {N : Nat} (z : PrefixBitVec N) {r : Nat ×
   unfold decodeGamma? at h ⊢
   rw [← padWord_self z] at h
   exact decodeGammaAux?_padWord_canonical z (by omega) (by omega) h
-
-/-- **Conditional acceptance transport.**  *If* a query at its convention length parses and is
-prefix-extendable, *then* some certificate makes the concatenation content-accepted, and — by padding
-stability — it stays accepted at every larger physical length.  The statement carries **four** explicit hypotheses:
-both hypotheses of the coincidence lemma (`hparse` and `hn : input.n = n`) and `hext`, none of which
-is discharged anywhere, plus the padding bound `hT`, which only says the target length covers
-query ++ certificate.  The conclusion *is* an existential over certificates, but a **conditional**
-one, available only under those four: this does **not** show that such a query exists, so it is no
-unconditional existential / non-emptiness result for `ContentAccepts` — nor for `L'`, whose
-membership it does not transport across physical lengths. -/
-theorem ContentAccepts_padWord_of_prefixExtendable
-    (codec : TreeCircuitWitnessCodec threshold)
-    {n : Nat} (y : PrefixBitVec (treeMCSPPrefixM codec n))
-    (input : PrefixInput
-      (treeMCSPSearchProblem threshold (TreeMCSPSearchWitnessEncoding.ofCodec codec))
-      (treeMCSPPrefixM codec n))
-    (hparse : parseTreeMCSPPrefixInput threshold codec y = some input)
-    (hn : input.n = n)
-    (hext : PrefixExtendable (treeMCSPConcretePrefixParser threshold codec) y)
-    {T : Nat}
-    (hT : treeMCSPPrefixM codec n
-        + Pnp3.ComplexityInterfaces.certificateLength (treeMCSPPrefixM codec n) 1 ≤ T) :
-    ∃ cert : Pnp3.ComplexityInterfaces.Bitstring
-        (Pnp3.ComplexityInterfaces.certificateLength (treeMCSPPrefixM codec n) 1),
-      ContentAccepts codec
-        (padWord (Pnp3.ComplexityInterfaces.concatBitstring y cert) T) := by
-  have hcontent : ContentPrefixExtendable codec y := by
-    rw [← ContentPrefixExtensionLanguage_accepts_iff codec y,
-      ContentPrefixExtensionLanguage_eq_of_parse codec y input hparse hn,
-      PrefixExtensionLanguage_accepts_iff]
-    exact hext
-  obtain ⟨cert, hacc⟩ := hcontent
-  exact ⟨cert, (ContentAccepts_padWord_of_le codec _ hT).mpr hacc⟩
 
 end ContractExpansion
 end Frontier

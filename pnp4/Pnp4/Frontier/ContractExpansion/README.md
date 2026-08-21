@@ -189,14 +189,16 @@ in dependency order:
 - `ContentPrefixExtensionCoincidence.lean` — reader monotonicity under ambient
   widening (`readBit?_mono`, `readNatBE_mono`, `decodeGammaAux?_mono`), parse
   inversion (`parseTreeMCSPPrefixInput_inversion`), the two window computations on a
-  concatenated word, and the headline
+  concatenated word, the proposition-level
+  `ContentPrefixExtendable_iff_of_parse`, and the Boolean-language headline
   `ContentPrefixExtensionLanguage_eq_of_parse`: for
   `y : PrefixBitVec (treeMCSPPrefixM codec n)`, under **both** `hparse`
   (`parseTreeMCSPPrefixInput … y = some input`) and `hn : input.n = n`, `L'` agrees
   with the length-gated language at `treeMCSPPrefixM codec n`. `hn` is a genuine
   second hypothesis: inversion yields only
   `treeMCSPPrefixM codec input.n = treeMCSPPrefixM codec n`, and injectivity of
-  `treeMCSPPrefixM codec` is not proved.
+  `treeMCSPPrefixM codec` is not proved.  The proposition-level theorem is the direct specification
+  coincidence and does not route through either classical Boolean language wrapper.
 - `ContentPrefixExtensionPadding.lean` — the specification-side obligation the modules
   above leave open: **padding stability**. `padRead_padWord_of_le` /
   `padWord_padWord_of_le` (blank padding past the support is idempotent),
@@ -212,21 +214,21 @@ in dependency order:
   `contentInput?_padWord_of_le`, `contentWitness_padWord_of_le`), and the headlines
   `ContentAccepts_padWord_of_le` (acceptance of a **complete** word is unchanged by blank
   padding to any larger physical length) and `ContentAccepts_iff_of_padRead_eq` (any two
-  complete finite words with the *same* blank-padded tape are accepted alike). Two further
-  lemmas — `contentHeader?_of_decodeGamma` and
-  `ContentAccepts_padWord_of_prefixExtendable` — are **conditional transport**: each
-  assumes an already-successful strict decode / an already-extendable query and transports
-  it. The second one is a **conditional existential**: its conclusion is an existential
-  over certificates, available only under the four explicit hypotheses of its statement
-  (`hparse`, `hn`, `hext` — undischarged — plus the padding bound `hT`), so neither
-  yields an unconditional witness. The helper lemmas are generic statements about
+  complete finite words with the *same* blank-padded tape are accepted alike). The axiom-light
+  `contentHeader?_of_decodeGamma` transports an already-successful strict decode. The helper lemmas
+  are generic statements about
   `padRead` / `padWord`, the strict readers and the gamma decoder; the headline results
   are invariance of `ContentAccepts` on complete words. Nothing in the module is a
-  statement about the language wrapper (see the scope paragraph below). Verified axiom
-  footprint: fourteen entries are
-  `[propext, Quot.sound]`, one (`readBit?_padWord_of_lt`) is axiom-free, and only
-  `ContentAccepts_padWord_of_prefixExtendable` adds `Classical.choice`, routing through the
-  noncomputable `concatBitstring` and the classical language wrapper.
+  statement about the language wrapper (see the scope paragraph below). Verified axiom footprint:
+  fourteen entries are `[propext, Quot.sound]`, one (`readBit?_padWord_of_lt`) is axiom-free, and
+  no theorem in this module depends on `Classical.choice`.
+- `ContentPrefixExtensionPaddingTransport.lean` — the explicitly classical conditional transport
+  theorem `ContentAccepts_padWord_of_prefixExtendable`, isolated from the axiom-light padding
+  module. It derives `ContentPrefixExtendable` directly from
+  `ContentPrefixExtendable_iff_of_parse`, without either Boolean language wrapper. Its statement
+  necessarily inherits `Classical.choice` from the pre-existing noncomputable `concatBitstring`.
+  It is a **conditional existential**, available only under `hparse`, `hn`, `hext`, and `hT`, so it
+  proves no unconditional satisfiability or non-emptiness result.
 - `ContentPrefixExtensionTransfer.lean` — the decision→search extraction transferred
   to `L'` (the greedy machinery only ever queries deciders on constructed, parseable
   queries), ending in

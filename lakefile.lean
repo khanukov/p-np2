@@ -313,10 +313,12 @@ lean_lib Pnp4 where
     -- The content-truthful prefix-extension language `L'`, its padding-stability
     -- lemmas, and the conditional chain re-routed through it, listed in dependency
     -- order (each module imports only modules listed above it; Coincidence pulls in
-    -- the two verifier modules above, and Padding imports Coincidence).
+    -- the two verifier modules above, Padding stays specification-only, and the
+    -- explicitly classical transport module imports both Coincidence and Padding).
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtension,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPadding,
+    Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPaddingTransport,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionTransfer,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentConsolidatedSource,
     Glob.one `Pnp4.Tests.AlgorithmsToLowerBoundsSurfaceTests,

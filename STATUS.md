@@ -1,6 +1,6 @@
 # Project Status (current)
 
-Updated: 2026-05-28
+Updated: 2026-08-17
 
 Authoritative checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
@@ -27,13 +27,12 @@ Research method boundary:
 - The repository contains substantial DAG endpoint plumbing, including the
   fixed-slice DAG-to-formula bridge
   `Complexity.ppolyFormula_of_ppolyDAG_gapPartialMCSP_fixedSlice`.
-- A separate restricted-model surface exists at
-  `pnp3/LowerBounds/AC0_GapMCSP.lean`; it exposes the paper-facing
-  fixed-slice AC0 endpoint `gapPartialMCSP_not_in_AC0`.  This is a
-  side artifact / formalization milestone, not the current P-vs-NP
-  mainline; it is not a planned closure route unless paired with an
-  explicit bridge to `ComplexityInterfaces.NP_not_subset_PpolyDAG`
-  (consistent with `AGENTS.md` and `pnp4/README.md`).
+- The former fixed-slice pnp3 AC0 endpoint is quarantined in
+  `pnp3/LowerBounds/AC0_GapMCSP.lean`. Its standard-looking names are
+  deprecated: `SmallAC0Solver_Partial` contains `params` and an enriched
+  `easyData` payload that already imply `False` without solver correctness.
+  The proved statement is only enriched-package inconsistency, not a standard
+  AC0 lower bound and not P-vs-NP mainline progress.
 
 ## Current Audit Result
 
@@ -249,15 +248,16 @@ work must pivot to a different route family:
 - or genuinely new research-level mathematics proving
   `ResearchGapWitness` directly.
 
-Restricted-model AC0 artifacts such as
-`pnp3/LowerBounds/AC0_GapMCSP.lean::gapPartialMCSP_not_in_AC0` are
-side artifacts / formalization milestones only.  They are not
-treated as the current P-vs-NP mainline and are not a planned
-closure route unless paired with an explicit bridge to
-`ComplexityInterfaces.NP_not_subset_PpolyDAG` (consistent with the
-restricted-track posture recorded in `AGENTS.md` and
-`pnp4/README.md`).  A NEW canonical spec with non-trivial `sYES/sNO`
-where the pigeonhole argument does not apply (i.e., `Mof` grows fast
+The deprecated
+`pnp3/LowerBounds/AC0_GapMCSP.lean::gapPartialMCSP_not_in_AC0` name is
+only a compatibility alias for enriched-package inconsistency. The canonical
+certificate `false_of_smallAC0Params_and_easyFamilyData` uses the parameter
+capacity bound, AC0 realizability of the packaged family, and its
+all-functions-scale cardinality lower bound; it does not use solver
+correctness. It is not a standard AC0 exclusion.
+
+A new canonical spec with non-trivial `sYES/sNO`, where the pigeonhole
+argument does not apply (i.e., `Mof` grows fast
 enough relative to `tableLen` to invalidate the slack inequality
 used in `slack_for_D_of_isoStrong_slack`) is also an internal
 spec-engineering option, not a publishable route on its own.
@@ -341,12 +341,10 @@ iso-strong route class as a path to those endpoints; future
 P-vs-NP mainline work must pivot to a different route family —
 either the pnp4 frontier (`SearchMCSPWeakLowerBound` /
 `VerifiedNPDAGLowerBoundSource`) or genuinely new research-level
-mathematics proving `ResearchGapWitness`.  Restricted-model AC0
-artifacts such as `gapPartialMCSP_not_in_AC0` are side artifacts /
-formalization milestones only and are not a planned closure route
-unless paired with an explicit bridge to
-`ComplexityInterfaces.NP_not_subset_PpolyDAG` (see `AGENTS.md` /
-`pnp4/README.md`).
+mathematics proving `ResearchGapWitness`. The deprecated
+`gapPartialMCSP_not_in_AC0` compatibility theorem proves only that an
+inconsistent enriched easy-family package cannot exist; it is neither an AC0
+lower bound nor a closure route.
 
 ## Fixed-Params Status
 

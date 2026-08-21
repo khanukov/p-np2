@@ -31,10 +31,11 @@ open LowerBounds
 -/
 
 /-!
-  ## Semantic Step-C API (non-vacuous)
+  ## Legacy enriched Step-C API
 
-  These predicates are the active Step-C interface:
-  they quantify over concrete solvers and require solver-local AC0 witnesses.
+  These compatibility predicates quantify over `SmallAC0Solver_Partial`, which
+  already contains an inconsistent `params`/`easyData` payload.  They are not a
+  non-vacuous semantic solver interface.
 -/
 
 /-- Semantic (family-level counting) Step-C statement. -/
@@ -45,16 +46,15 @@ def AC0StatementPartial_semantic (p : GapPartialMCSPParams) : Prop :=
 /--
 Primary Step-C contract for the partial pipeline.
 
-This keeps the name used by downstream code while giving it the non-vacuous
-semantic meaning (`solver`-local easy-family package), with no dependence on
-legacy global witnesses.
+This keeps the name used by downstream code for the enriched solver-local
+easy-family package.  It must not be read as a standard AC0 statement.
 -/
 abbrev AC0StatementPartial (p : GapPartialMCSPParams) : Prop :=
   AC0StatementPartial_semantic p
 
 /--
-Constructive (non-vacuous) Step-C statement:
-quantifies over solver packages that carry easy-family data internally.
+Constructive compatibility statement over packages that carry the inconsistent
+easy-family data internally.
 -/
 def AC0StatementPartial_constructive (p : GapPartialMCSPParams) : Prop :=
   ∀ _solver : ConstructiveSmallAC0Solver_Partial p, False
@@ -62,10 +62,7 @@ def AC0StatementPartial_constructive (p : GapPartialMCSPParams) : Prop :=
 /--
 Closed-world constructive Step-C statement.
 
-This is the strongest in-repo interface for Step-C in the current architecture:
-it quantifies over syntactic solver packages that already carry explicit AC0
-syntax and family-level easy-data, so the contradiction has no extra
-`hEasy/hComp` arguments.
+It quantifies over thin syntactic wrappers around the already enriched package.
 -/
 def AC0StatementPartial_closed (p : GapPartialMCSPParams) : Prop :=
   ∀ _solver : SmallAC0Solver_Partial_Syntactic p, False
@@ -91,10 +88,8 @@ def AC0StatementPartial_constructive_providerClosed (p : GapPartialMCSPParams) :
   ∀ _solver : ConstructiveSmallAC0Solver_Partial p, False
 
 /--
-Fully closed semantic Step-C statement over plain semantic solvers.
-
-This statement is parameterized by an explicit closure package that
-constructs family-level easy-data from each semantic solver.
+Legacy closure statement over enriched packages, parameterized by an explicit
+closure package that returns more family-level easy-data.
 -/
 def AC0StatementPartial_fully_closed (p : GapPartialMCSPParams) : Prop :=
   ∀ _closure : StepCClosureDataPartial p,
@@ -161,7 +156,7 @@ lemma ac0_statement_from_pipeline_partial_providerClosed
   letI : StepCClosureDataPartialProvider solver := hProv
   exact LB_Formulas_core_partial_closed_of_provider (solver := solver)
 
-/-- Final internalized closed Step-C statement (no extra hypotheses). -/
+/-- Legacy internalized statement for the inconsistent enriched package. -/
 lemma ac0_statement_from_pipeline_partial_internalized
     (p : GapPartialMCSPParams) : AC0StatementPartial_semantic p := by
   intro solver _easy
@@ -181,15 +176,15 @@ lemma ac0_statement_from_pipeline_partial_providerClosed_of_syntacticLift
 /--
 Constructive provider-closed Step-C statement from the core contradiction.
 
-This is the strongest currently fully constructive closed statement in-repo:
-it has no external witness hypotheses and no legacy all-functions bridge.
+This has no external witness hypothesis because the inconsistent `easyData`
+payload is stored inside the quantified package.
 -/
 lemma ac0_statement_from_pipeline_partial_constructive_providerClosed
     (p : GapPartialMCSPParams) : AC0StatementPartial_constructive_providerClosed p := by
   intro solver
   exact LB_Formulas_core_partial_constructive_closed_of_provider (solver := solver)
 
-/-- Fully closed semantic Step-C statement from the core contradiction. -/
+/-- Legacy closure statement from the enriched-package contradiction. -/
 lemma ac0_statement_from_pipeline_partial_fully_closed
     (p : GapPartialMCSPParams) : AC0StatementPartial_fully_closed p := by
   intro closure solver
@@ -198,7 +193,7 @@ lemma ac0_statement_from_pipeline_partial_fully_closed
     (solver := solver)
 
 /--
-Existential fully closed Step-C statement from an explicit closure package.
+Existential enriched-package contradiction from explicit legacy closure data.
 -/
 lemma ac0_statement_exists_false_from_pipeline_partial_fully_closed
     (p : GapPartialMCSPParams)
@@ -207,8 +202,7 @@ lemma ac0_statement_exists_false_from_pipeline_partial_fully_closed
   exact LB_Formulas_core_partial_fully_closed_noExists (closure := closure)
 
 /--
-Fully closed semantic Step-C contradiction from semantic-to-syntactic lift
-data.
+Enriched-package contradiction from compatibility lift data.
 -/
 lemma ac0_statement_from_pipeline_partial_fully_closed_of_syntacticLift
     (p : GapPartialMCSPParams)

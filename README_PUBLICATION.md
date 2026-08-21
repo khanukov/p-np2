@@ -3,7 +3,7 @@
 This is the publication-facing entry point for the PNP3 release.
 
 - Release type: **RC / framework milestone**, not a final unconditional claim.
-- Status date: 2026-05-28.
+- Status date: 2026-08-17.
 - Source of truth for release wording: `RELEASE_RC.md`.
 - Source of truth for closure progress: `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
 
@@ -16,7 +16,7 @@ This is the publication-facing entry point for the PNP3 release.
 | `ResearchGapWitness` → `P_ne_NP_final`                                | Proved conditional bridge                                    |
 | Old support-bounds / multi-switching route                            | Formally refuted; retained only as audit / compatibility     |
 | `FormulaSupportBoundsPartial_fromPipeline_fixedParams`                | Candidate contract shape, not a proved source theorem        |
-| Restricted-model AC0 surface (`gapPartialMCSP_not_in_AC0`)            | Side artifact only; not part of this release's P-vs-NP mainline |
+| Deprecated pnp3 AC0 endpoint                                         | Vacuous enriched-package statement; not a standard AC0 lower bound |
 | Unconditional `P != NP`                                               | **Not claimed**                                              |
 
 ## Public closure boundary
@@ -43,11 +43,9 @@ predicates are formally refuted by the falsifiability audit.
 3. A proof that `FormulaSupportBoundsPartial_fromPipeline_fixedParams` is
    realizable for realistic AC0 parameters.
 4. A zero-argument final theorem with no external research payload.
-5. A claim that the restricted-model AC0 endpoint
-   `gapPartialMCSP_not_in_AC0` is the current P-vs-NP route or a
-   planned closure path.  It is a side artifact / formalization
-   milestone only and is not packaged as a publishable standalone
-   lower bound by this release.
+5. A claim that deprecated `gapPartialMCSP_not_in_AC0` is a standard AC0
+   lower bound. It only negates an enriched package whose `params` and
+   `easyData` fields already imply `False` without solver correctness.
 
 ## Audit-only theorem surfaces — not claims
 

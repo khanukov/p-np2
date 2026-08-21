@@ -169,7 +169,7 @@ theorem queryXOffset_le_treeMCSPPrefixM
   unfold queryXOffset treeMCSPPrefixM
   omega
 
-/-- The truth-table (`x`) field ends at `queryIdxOffset codec n`, which lies within the query block —
+/-- The truth-table (`x`) field ends at `queryIdxOffset n`, which lies within the query block —
 the layout precondition for the (later) instance-reading phase. -/
 theorem queryIdxOffset_le_treeMCSPPrefixM
     {threshold : Nat → Nat} (codec : TreeCircuitWitnessCodec threshold) (n : Nat) :

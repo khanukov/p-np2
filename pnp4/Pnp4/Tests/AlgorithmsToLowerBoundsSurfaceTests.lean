@@ -58,6 +58,7 @@ import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPadding
+import Pnp4.Frontier.ContractExpansion.ContentTargetSizeBound
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPaddingTransport
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionTransfer
 import Pnp4.Frontier.ContractExpansion.ContentConsolidatedSource
@@ -1030,10 +1031,9 @@ theorem check_NP_not_subset_PpolyDAG_treePolyCT
 -- word.  The gamma width is carried SYMBOLICALLY -- both conjuncts of the first theorem share one
 -- existential `consumed`, and neither statement identifies it with `gammaLen input.n` or relates
 -- `pr.2.n` to the header value `pr.1`; no injectivity of `treeMCSPPrefixM codec` is used (plan
--- stop/go F0b).  Scope: recovery only.  These do NOT bound the decoded target (that is FEAS-0's
--- headline, still unproved, so the §1.1 freeze stays PROVISIONAL and `L'` may not be described as
--- polynomial-time verifiable), do NOT show `ContentAccepts` is satisfiable, and build no verifier
--- TM, runtime bound or `TM.accepts` bridge.
+-- stop/go F0b).  Scope: recovery only; the separate part-2 surface below now proves FEAS-0's
+-- target bound.  These recovery declarations do NOT show `ContentAccepts` is satisfiable and build
+-- no verifier TM, runtime bound or `TM.accepts` bridge.
 #check @Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_x_slice
 #check @Pnp4.Frontier.ContractExpansion.contentInput?_x_apply
 
@@ -1052,6 +1052,30 @@ theorem check_contentInput?_x_apply
     ∃ cg : Nat, ∀ j : Fin (Pnp3.Models.Partial.tableLen pr.2.n),
       pr.2.x j = padRead z (tagLen + cg + j.1) :=
   contentInput?_x_apply codec z hpr
+
+-- FEAS-0 slice, part 2 (`ContentTargetSizeBound.lean`, plan §1.0): concrete blank-witness decode,
+-- input-zero truth-table forcing/support, parser-length reconciliation at `r := pr.2.n`, and the
+-- polynomial headline.  The only header/parsed-target transport is `M n_header = M r`; none of
+-- these declarations infers `n_header = r` or imports I1.  This closes the feasibility gate and
+-- freezes the content target, but does not itself construct a verifier TM, prove `L' ∈ NP`, show
+-- `ContentAccepts` is nonempty, or reduce a lower-bound source obligation.
+#check @Pnp4.Frontier.ContractExpansion.treeCircuitWitnessCodec_decode_blank_zero
+#check @Pnp4.Frontier.ContractExpansion.treeCircuitWitnessCodec_decode_blank_pos
+#check @Pnp4.Frontier.ContractExpansion.bitVecToNat_all_true
+#check @Pnp4.Frontier.ContractExpansion.input_zero_computes_forces_last_true
+#check @Pnp4.Frontier.ContractExpansion.contentInput?_target_length
+#check @Pnp4.Frontier.ContractExpansion.contentWitness_eq_false_of_lt
+#check @Pnp4.Frontier.ContractExpansion.contentAccepts_parsed_tableLen_le_of_header_target_wide
+#check @Pnp4.Frontier.ContractExpansion.contentAccepts_target_poly_treePoly
+
+/-- FEAS-0 headline surface, repeated at its exact concrete codec: every accepted complete word's
+header convention length is bounded by one polynomial depending only on `k`. -/
+theorem check_contentAccepts_target_poly_treePoly (k : Nat) :
+    ∃ c : Nat, ∀ (N : Nat) (z : PrefixBitVec N) (n_header consumed : Nat),
+      contentHeader? z = some (n_header, consumed) →
+      ContentAccepts (treeCircuitWitnessCodec (thresholdPoly k)) z →
+      treeMCSPPrefixM (treeCircuitWitnessCodec (thresholdPoly k)) n_header ≤ N ^ c + c :=
+  contentAccepts_target_poly_treePoly k
 
 /-- Padding-stability surface (headline): any two *complete* finite words presenting the same
 blank-padded tape are content-accepted alike, so `ContentAccepts` is a function of the tape contents

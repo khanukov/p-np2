@@ -321,6 +321,8 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPadding,
+    -- FEAS-0 slice, part 2: the concrete accepted-target polynomial bound.
+    Glob.one `Pnp4.Frontier.ContractExpansion.ContentTargetSizeBound,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPaddingTransport,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionTransfer,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentConsolidatedSource,

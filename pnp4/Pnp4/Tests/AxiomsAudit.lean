@@ -48,6 +48,7 @@ import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPadding
+import Pnp4.Frontier.ContractExpansion.ContentTargetSizeBound
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPaddingTransport
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionTransfer
 import Pnp4.Frontier.ContractExpansion.ContentConsolidatedSource
@@ -395,12 +396,26 @@ end Pnp4
 -- consumed, and neither statement says consumed = gammaLen input.n nor relates pr.2.n to the header
 -- value pr.1 -- no injectivity of treeMCSPPrefixM codec and no gamma canonicity is used (plan
 -- stop/go F0b).  Both entries are axiom-light: [propext, Quot.sound], no Classical.choice, lighter
--- than the standard triple.  Scope: recovery only.  They do NOT bound the decoded target -- FEAS-0's
--- headline is unproved, so the section 1.1 freeze stays PROVISIONAL and L' may not be described as
--- polynomial-time verifiable -- do NOT show ContentAccepts is satisfiable, and build no verifier TM,
+-- than the standard triple.  Scope: recovery only; the separate part-2 audit below now covers the
+-- FEAS-0 target bound.  They do NOT show ContentAccepts is satisfiable and build no verifier TM,
 -- runtime bound or TM.accepts bridge.
 #print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_x_slice
 #print axioms Pnp4.Frontier.ContractExpansion.contentInput?_x_apply
+
+-- FEAS-0 slice, part 2 (ContentTargetSizeBound.lean, plan section 1.0): all-blank concrete decode,
+-- input-zero truth-table forcing, physical-support forcing, equality of convention lengths at the
+-- parsed target r := pr.2.n, and the polynomial headline.  This is I1-free: it uses M n_header =
+-- M r and never n_header = r.  These are infrastructure theorems.  They freeze the content target
+-- but do not construct a verifier TM, prove L' in NP, establish non-vacuity, or discharge either
+-- lower-bound source obligation.
+#print axioms Pnp4.Frontier.ContractExpansion.treeCircuitWitnessCodec_decode_blank_zero
+#print axioms Pnp4.Frontier.ContractExpansion.treeCircuitWitnessCodec_decode_blank_pos
+#print axioms Pnp4.Frontier.ContractExpansion.bitVecToNat_all_true
+#print axioms Pnp4.Frontier.ContractExpansion.input_zero_computes_forces_last_true
+#print axioms Pnp4.Frontier.ContractExpansion.contentInput?_target_length
+#print axioms Pnp4.Frontier.ContractExpansion.contentWitness_eq_false_of_lt
+#print axioms Pnp4.Frontier.ContractExpansion.contentAccepts_parsed_tableLen_le_of_header_target_wide
+#print axioms Pnp4.Frontier.ContractExpansion.contentAccepts_target_poly_treePoly
 
 #print axioms Pnp4.Frontier.ContractExpansion.verifiedSource_of_explicit_interfaces
 #print axioms Pnp4.Frontier.ContractExpansion.NP_not_subset_PpolyDAG_of_explicit_interfaces

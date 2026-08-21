@@ -98,6 +98,22 @@ survive. No implementation code is introduced here.
 >   residual "off the critical path" donor wording in §4.7 (§3.4 had already withdrawn it); the
 >   `readNatBE` recursion citation (§4.3.2); and outcome **(c)** now appears in every unlock
 >   statement, including §9.
+>
+> **Revision note (this revision, 6).** One blocker survived revision 5's audits: the bounded-timeout
+> argument was fixed at the level of *which polynomial*, but not at the level of *which target*. Its
+> steps still accounted the verifier's work at the header value `n'` — `codec.witnessBits n'`,
+> `2 ^ n'` assignments, `thresholdPoly k n'` — while `ContentAccepts` reads its witness window and
+> states its relation conjunct at `r := pr.2.n` (`ContentPrefixExtension.lean:152`). `M n' = M r`
+> gives neither `n' = r` nor `codec.witnessBits n' = codec.witnessBits r` nor
+> `thresholdPoly k n' = thresholdPoly k r`, so the `n'`-side growth chain transferred to none of the
+> quantities that matter. Resolved: the work is now accounted at `r` throughout, with each component
+> bounded **directly** by `M r = M n'` — `tableLen r ≤ M r` (`PrefixParserConvention.lean:48`),
+> `codec.witnessBits r ≤ M r` (`TreeMCSPPrefixSemanticVerifier.lean:78`), hence
+> `r ≤ bitLength (M n')` and `thresholdPoly k r = polylog N` — and never by transfer from `n'`
+> (§1.0 step 5, §8 F0/F0b, §9). The growth chain is retained for what it does bound, `M n'` itself,
+> so the larger timeout polynomial and its exponent `c · d` stand; revision 5's *second* exponent
+> `c · e` is withdrawn, because it bounded `codec.witnessBits n'`, a quantity the verifier never
+> reads. Outcome (a) remains sufficient, and no slice, budget or dependency changes.
 
 ---
 
@@ -373,29 +389,66 @@ with exponent `c`, a verifier machine can:
    `polyBoundedInTable_treeWitnessBits_of_thresholdPoly` (`ConcreteTreeCodec.lean:78`) →
    `polyBoundedInTable_treeMCSPPrefixM_of_witnessPoly` (`WitnessGrowthReduction.lean:94`) →
    `PolyBoundedInTable.powAdd` (`ExtractedScheduleGrowth.lean:114`, which converts a
-   `(tableLen n + 1) ^ k` bound to the `tableLen n ^ d + d` shape). That yields exponents `d`, `e`
+   `(tableLen n + 1) ^ k` bound to the `tableLen n ^ d + d` shape). That yields an exponent `d`
    with, for every `n'`,
 
    ```text
-   M n' ≤ (2 ^ n') ^ d + d    and    codec.witnessBits n' ≤ (2 ^ n') ^ e + e ,
+   M n' ≤ (2 ^ n') ^ d + d ,
    ```
 
-   so under the test `2 ^ n' ≤ N ^ c + c` both collapse to polynomials in `N`:
-   `M n' ≤ (N ^ c + c) ^ d + d` and `codec.witnessBits n' ≤ (N ^ c + c) ^ e + e`;
-5. every cell the verifier touches is then `poly(N)`, **including the certificate and witness
-   windows** that revision 4's step 4 omitted: the strict parse spans `M n'` cells, `contentWitness`
-   spans `[M n', M n' + codec.witnessBits n')` (`ContentPrefixExtension.lean:135`), and the
-   certificate block of the complete word occupies `certificateLength · 1` cells
+   so under the test `2 ^ n' ≤ N ^ c + c` the parse window collapses to a polynomial in `N`:
+
+   ```text
+   M n' ≤ (N ^ c + c) ^ d + d  =:  P N .
+   ```
+
+   This is a bound on the **header** target `M n'` and on nothing else at `n'`; step 5 says why that
+   is enough, and why the quantities at `n'` other than `M n'` are irrelevant;
+5. **the work is at `r := pr.2.n`, and every component of it is bounded *directly* by `M n'`.**
+   Corrected in revision 6: revisions 4 and 5 accounted the verifier's work at `n'` —
+   `codec.witnessBits n'`, `2 ^ n'` assignments, `thresholdPoly k n'` — but `ContentAccepts`
+   (`ContentPrefixExtension.lean:152`) reads `contentWitness codec z pr.2.n` and states its relation
+   conjunct at `pr.2.n`, so the working quantities are `tableLen r`, `codec.witnessBits r` and
+   `thresholdPoly k r`. `M n' = M r` (Step 0) does **not** give `n' = r`, and therefore gives
+   neither `codec.witnessBits n' = codec.witnessBits r` nor
+   `thresholdPoly k n' = thresholdPoly k r`; the `n'`-side chain of step 4 transfers to none of them.
+   Do not attempt the transfer — bound each component at `r` outright, using `M n' = M r` only to
+   land the bound back on `P N`:
+
+   ```text
+   tableLen r = 2 ^ r    ≤ M r = M n' ≤ P N      (tableLen_le_treeMCSPPrefixM, `PrefixParserConvention.lean:48`)
+   codec.witnessBits r   ≤ M r = M n' ≤ P N      (witnessBits_le_treeMCSPPrefixM, `TreeMCSPPrefixSemanticVerifier.lean:78`)
+   r ≤ bitLength (M n')  = O(log (P N)) = O(log N)                     (from 2 ^ r ≤ M n')
+   thresholdPoly k r = r ^ k + k ≤ (bitLength (M n')) ^ k + k = polylog N
+   ```
+
+   Both component lemmas are already on `main`, both are stated at *every* argument (so applying them
+   at `r` needs nothing about `n'`), and each is a summand-of-`treeMCSPPrefixM` fact
+   (`treeMCSPPrefixM`, `PrefixParserConvention.lean:40`), which is exactly why no growth chain and no
+   second exponent is needed for them;
+6. every cell the verifier touches is then `poly(N)`, **including the certificate and witness
+   windows** that revision 4's step 4 omitted: the strict parse spans `M n' ≤ P N` cells,
+   `contentWitness` spans `[M r, M r + codec.witnessBits r) = [M n', M n' + codec.witnessBits r)`
+   (`ContentPrefixExtension.lean:135`), which by step 5 lies inside the first `2 · M n' ≤ 2 · P N`
+   cells, and the certificate block of the complete word occupies `certificateLength · 1` cells
    (`= · + 1`, `pnp3/Complexity/Interfaces.lean:521`) — at most
-   `(N ^ c + c) ^ d + (N ^ c + c) ^ e + d + e + N + 1` cells in total. The
-   `ComputesTruthTable` check then runs over `2 ^ n' ≤ N ^ c + c` assignments of a circuit of size
-   `≤ thresholdPoly k n'`, also `poly(N)`.
+
+   ```text
+   2 · ((N ^ c + c) ^ d + d) + N + 1
+   ```
+
+   cells in total. The `ComputesTruthTable` check then runs over `2 ^ r ≤ M n' ≤ P N` assignments —
+   *not* `2 ^ n'` — of a circuit of size `≤ thresholdPoly k r = polylog N`, also `poly(N)`.
 
 So (a)'s exponent **yields** a timeout but **is not** the timeout: the timeout polynomial has
-exponent `c · d` for the parse window and `c · e` for the witness window, with `d`, `e` from
-`powAdd` above. Revision 4's "(a)'s exponent *is* the timeout" was the invalid same-polynomial
-inference; outcome (a) remains sufficient after the correction. (b) is that (larger) timeout packaged
-as a `Bool` predicate with its own correctness lemma. **Honest caveat:** steps 1–5 are a
+exponent `c · d`, with `d` from `powAdd` above, and that single polynomial `P N` covers the parse
+window, the witness window and the truth-table work, because step 5 bounds each `r`-side component by
+`M n'` directly. Revision 4's "(a)'s exponent *is* the timeout" was the invalid same-polynomial
+inference; revision 5's *second* exponent `c · e` is withdrawn in revision 6 — it bounded
+`codec.witnessBits n'`, which the verifier never uses, and the quantity it does use,
+`codec.witnessBits r`, is bounded by `M r = M n'` outright. Outcome (a) remains sufficient after both
+corrections. (b) is that (larger) timeout packaged
+as a `Bool` predicate with its own correctness lemma. **Honest caveat:** steps 1–6 are a
 machine-construction argument, not
 a formalized theorem — they are discharged in the deferred machine slices (§4.7), not in FEAS-0.
 FEAS-0 green at (a) therefore means "the route is not blocked and the timeout exists in principle",
@@ -1496,8 +1549,8 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
 
 | Gate | Slice | Condition | Action if red |
 |---|---|---|---|
-| **F0** | FEAS-0 | at `treeCircuitWitnessCodec (thresholdPoly k)`: (a) a polynomial bound from accepted complete words to `treeMCSPPrefixM codec n'`, (b) a poly-time fast-rejection equivalent (**(b) ⇒ (a)**, so not a fallback for a failed (a)), **or** (c) a poly-time decision procedure for the wide-target regime. (a) alone is green — it *yields* a bounded timeout, of exponent `c · d` rather than `c`, via `PolyBoundedInTable.powAdd` (§1.0). Never stated codec-generically — generic (a)/(b) are false | only outcome (d) is red: halt every other slice, rewrite §1.1 with a budgeted content predicate, keep the length-gated target live. "(a) failed" means the `∀ c, ∃ …` family, not one wide word |
-| **F0b** | FEAS-0 | the route runs on `r := pr.2.n` with `M n' = M r` from `parseTreeMCSPPrefixInput_length_convention` (`:1231`); the truth-table slice is recovered by the scheduled `parseTreeMCSPPrefixInput_x_slice`; no I1 output is cited | a slice needing `n' = pr.2.n`, `consumed = gammaLen pr.2.n`, or either injectivity lemma has inverted §4.6's ordering — re-derive via Step 0 |
+| **F0** | FEAS-0 | at `treeCircuitWitnessCodec (thresholdPoly k)`: (a) a polynomial bound from accepted complete words to `treeMCSPPrefixM codec n'`, (b) a poly-time fast-rejection equivalent (**(b) ⇒ (a)**, so not a fallback for a failed (a)), **or** (c) a poly-time decision procedure for the wide-target regime. (a) alone is green — it *yields* a bounded timeout, of exponent `c · d` rather than `c`, via `PolyBoundedInTable.powAdd` (§1.0), whose polynomial `P N = (N ^ c + c) ^ d + d` bounds `M n' = M r` and, through `tableLen_le_treeMCSPPrefixM` (`:48`) and `witnessBits_le_treeMCSPPrefixM` (`:78`) applied **at `r := pr.2.n`**, also `tableLen r`, `codec.witnessBits r` and (via `r ≤ bitLength (M n')`) `thresholdPoly k r` — the quantities `ContentAccepts` actually uses. Never stated codec-generically — generic (a)/(b) are false | only outcome (d) is red: halt every other slice, rewrite §1.1 with a budgeted content predicate, keep the length-gated target live. "(a) failed" means the `∀ c, ∃ …` family, not one wide word |
+| **F0b** | FEAS-0 | the route runs on `r := pr.2.n` with `M n' = M r` from `parseTreeMCSPPrefixInput_length_convention` (`:1231`); the truth-table slice is recovered by the scheduled `parseTreeMCSPPrefixInput_x_slice`; no I1 output is cited; and the work/timeout accounting bounds `tableLen r`, `codec.witnessBits r` and `thresholdPoly k r` **directly** by `M r = M n'`, never by transferring an `n'`-side bound | a slice needing `n' = pr.2.n`, `consumed = gammaLen pr.2.n`, either injectivity lemma, or any of `codec.witnessBits n' = codec.witnessBits r` / `thresholdPoly k n' = thresholdPoly k r` has inverted §4.6's ordering — re-derive via Step 0 and the component bounds of §1.0 step 5 |
 | **G0** | GATE-0 | a *concrete* word is `ContentAccepts`-accepted at `treeCircuitWitnessCodec (thresholdPoly k)` | halt the D-track and escalate; do not build a machine for a possibly-empty `L'`. P0/I1 continue |
 | **G1** | P0 | the `Bool`↔`Prop` headline is hypothesis-free | fix the `Bool` definition's failure branches, not the statement |
 | **G2** | P0 | the three codec-path theorems carry the standard triple **or lighter** (same rule as G9 — a shorter list is not a defect); computability checked by instance provenance + one `#eval`, **not** by an axiom check | a fourth axiom, a `noncomputable` marker, or a `Classical.propDecidable` instance is a blocker; a *lighter* footprint is not |
@@ -1544,11 +1597,20 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
   does not expose. FEAS-0's budget rises to 350–600 LOC · 2 modules to carry it.
 * **Outcome (a) alone is sufficient**, but its exponent is **not** the timeout: decode the header,
   compare `n'` against `bitLength (N ^ c + c)` without materialising `2 ^ n'`, reject on overflow,
-  and on the surviving branch bound the parse and witness windows by
-  `(N ^ c + c) ^ d + d` / `(N ^ c + c) ^ e + e` — exponents `d`, `e` obtained from
-  `polyBoundedInTable_treeMCSPPrefixM_of_witnessPoly` (`WitnessGrowthReduction.lean:94`) plus
-  `PolyBoundedInTable.powAdd` (`ExtractedScheduleGrowth.lean:114`), because `M n'` also carries the
-  gamma, index and witness widths (§1.0). That is a machine-construction argument, not a theorem;
+  and on the surviving branch bound the parse window by `P N = (N ^ c + c) ^ d + d` — exponent `d`
+  obtained from `polyBoundedInTable_treeMCSPPrefixM_of_witnessPoly` (`WitnessGrowthReduction.lean:94`)
+  plus `PolyBoundedInTable.powAdd` (`ExtractedScheduleGrowth.lean:114`), because `M n'` also carries
+  the gamma, index and witness widths (§1.0). **The work itself is at `r := pr.2.n`, and is bounded
+  directly, not by transfer from `n'`:** `ContentAccepts` reads its witness window and states its
+  relation at `pr.2.n`, and `M n' = M r` yields neither `n' = r` nor
+  `codec.witnessBits n' = codec.witnessBits r`, so use `tableLen r ≤ M r = M n'`
+  (`tableLen_le_treeMCSPPrefixM`, `PrefixParserConvention.lean:48`) and
+  `codec.witnessBits r ≤ M r = M n'` (`witnessBits_le_treeMCSPPrefixM`,
+  `TreeMCSPPrefixSemanticVerifier.lean:78`), whence `r ≤ bitLength (M n') = O(log N)` and
+  `thresholdPoly k r = polylog N`. Parse window, witness window, truth-table enumeration and
+  certificate block then all fit in `2 · P N + N + 1` cells, so the single exponent `c · d` suffices;
+  revision 5's second exponent `c · e` is withdrawn, having bounded `codec.witnessBits n'`, a
+  quantity the verifier never reads. That is a machine-construction argument, not a theorem;
   the machine slices still have to build it. (b) is that timeout packaged as a proved `Bool` rule and
   is preferred when no harder. Refuting (a) needs a **family** `∀ c, ∃ (N, z, n')`, not one wide word.
 * The machine model's `runTime` field is unrestricted

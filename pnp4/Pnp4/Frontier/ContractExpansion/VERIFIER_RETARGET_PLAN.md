@@ -1564,9 +1564,9 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
 | FEAS-0 target size bound | `work/feas0-target-bound` | merged; outcome (a) green | PR #1629 (`af2365a2`) |
 | GATE-0 non-vacuity | `work/gate0-nonvacuity` | merged; G0 green | PR #1630 (`014a7768`) |
 | P0 content semantic verifier | `work/p0-content-semantic` | merged; G1/G2 green | PR #1631 (`00369c08`) |
-| I1 gate closure | `work/i1-gate-closure` | implemented; G3/G4/G4b green; PR #1633 open | — |
+| I1 gate closure | `work/i1-gate-closure` | merged; G3/G4/G4b green | PR #1633 (`a27fef34`) |
 | D1a tape lemmas + bridge structure | `work/d1a-tape-interface` | merged; G5/G5b green | PR #1632 (`545cbc3d`) |
-| D1b bridge ⇒ NP-witness | `work/d1b-bridge-witness` | unblocked; implementation in progress | — |
+| D1b bridge ⇒ NP-witness | `work/d1b-bridge-witness` | implemented locally; G6 and targeted D1b/P0/D1a/surface/axiom builds green | — |
 
 ---
 
@@ -1584,7 +1584,7 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
 | **G4b** | I1 | **PASS:** `contentInput?_isSome_iff_of_header` leaves exactly the three bundled tag/index/padding read-and-value tests open | a fourth open premise means a range lemma was missed; dropping a read-success/value component means the parser was mis-read |
 | **G5** | D1a | `accepts_eq` uses the exact-step model, no halting/`∃ t ≤` variant | reject: the slice has changed the machine model |
 | **G5b** | D1a | no D1a declaration mentions `contentSemanticAccepts` | not P0-independent: take the `acc` parameter or move the declaration to D1b |
-| **G6** | D1b | the witness repackaging consumes `runTime_poly` verbatim, and the slice is opened on top of **both** P0 and D1a (§4.5, §5) — **and note advice-avoidance is unenforced** (§1.3 caveat 6) | under-specified bridge, or a D1b branched off bare `main`; do not claim advice-freedom without a formal clock premise |
+| **G6** | D1b | **PASS (local):** the witness repackaging consumes `runTime_poly` verbatim, the slice is implemented on top of **both** P0 and D1a (§4.5, §5), and no bridge instance is constructed — **advice-avoidance remains unenforced** (§1.3 caveat 6) | under-specified bridge, or a D1b branched off bare `main`; do not claim advice-freedom without a formal clock premise |
 | **G7** | all | ≤ 1500 LOC and ≤ 10 modules at PR time (§6.1) | split before review; never waived |
 | **G8** | all | `./scripts/check.sh` and `./scripts/check_doc_honesty.sh` green | fix before review; a red doc guard is a blocking defect, not a formality |
 | **G9** | all | axiom footprint is the standard triple or lighter | investigate any fourth axiom before merge |
@@ -1644,6 +1644,6 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
   does **not** exclude a bridge that exploits it. Advice-avoidance is an unenforced review
   convention until a formal clock premise is added (§1.3 caveat 6, G6).
 * FEAS-0 is implemented in one new 295-line module on top of the merged field-recovery slice.
-  GATE-0, P0 and D1a are merged; I1 is implemented on this branch; D1b is unblocked and its
-  conditional repackaging is in progress. None of these constructs the concrete bridge instance, so
-  the projected machine-construction budgets remain planning estimates, not completed work.
+  GATE-0, P0, D1a and I1 are merged; D1b is implemented locally on top of P0 and D1a as conditional
+  witness repackaging only, pending PR. It constructs no bridge instance or verifier machine. The
+  projected machine-construction budgets remain planning estimates, not completed work.

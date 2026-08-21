@@ -325,6 +325,9 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentSemanticVerifier,
     -- D1a: machine-facing tape lemmas and the predicate-parameterized exact-step bridge.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentVerifierTapeInterface,
+    -- D1b: the codec-specific bridge alias and the conditional witness repackaging.  It imports
+    -- both P0's semantic verifier and D1a's bridge structure, so it is listed after both.
+    Glob.one `Pnp4.Frontier.ContractExpansion.ContentVerifierBridgeWitness,
     -- FEAS-0 slice, part 2: the concrete accepted-target polynomial bound.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentTargetSizeBound,
     -- GATE-0 slice: non-vacuity of `ContentAccepts` at the concrete codec.

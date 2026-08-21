@@ -50,6 +50,7 @@ import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPadding
 import Pnp4.Frontier.ContractExpansion.ContentSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.ContentVerifierTapeInterface
+import Pnp4.Frontier.ContractExpansion.ContentVerifierBridgeWitness
 import Pnp4.Frontier.ContractExpansion.ContentTargetSizeBound
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionGateClosure
@@ -401,6 +402,14 @@ end Pnp4
 -- Its polynomial field does not formally enforce runtime-advice avoidance.
 #print axioms Pnp4.Frontier.ContractExpansion.initialConfig_tape_eq_padRead
 #print axioms Pnp4.Frontier.ContractExpansion.contentAccepts_of_initialConfig_tape_eq
+-- D1b bridge specialization and witness repackaging.  `ContentVerifierBridge` is an abbreviation
+-- for the D1a structure at P0's acceptance predicate, so it has no separate proof to audit; the
+-- repackaging below carries the proof obligation and inherits Classical.choice from the
+-- noncomputable language wrapper and concatenation used in its statement.  It is CONDITIONAL on a
+-- supplied bridge: it constructs no machine, runtime bound, or TM.accepts proof, and consumes
+-- runTime_poly verbatim rather than establishing it.  Its expected footprint is the standard
+-- [propext, Classical.choice, Quot.sound] triple or lighter.
+#print axioms Pnp4.Frontier.ContractExpansion.contentPrefixExtensionNPWitness_of_bridge
 -- Explicitly classical conditional transport module.  The theorem derives ContentPrefixExtendable
 -- directly through ContentPrefixExtendable_iff_of_parse, without either Boolean language wrapper.
 -- Its statement still necessarily inherits Classical.choice from the pre-existing noncomputable

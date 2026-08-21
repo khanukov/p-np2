@@ -1553,10 +1553,10 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
 | Slice | Branch | Status | Merged as |
 |---|---|---|---|
 | FEAS-0 target size bound | `work/feas0-target-bound` | merged; outcome (a) green | PR #1629 (`af2365a2`) |
-| GATE-0 non-vacuity | `work/gate0-nonvacuity` | implemented; review fixes complete | `80efdd04` + `c1994da7` (pending PR) |
-| P0 content semantic verifier | `work/p0-content-semantic` | implemented; review complete | pending PR |
-| I1 gate closure | `work/i1-gate-closure` | implemented; review in progress | — |
-| D1a tape lemmas + bridge structure | `work/d1a-tape-interface` | implemented; review complete | pending PR |
+| GATE-0 non-vacuity | `work/gate0-nonvacuity` | merged; G0 green | PR #1630 (`014a7768`) |
+| P0 content semantic verifier | `work/p0-content-semantic` | implemented; rebased review/checks in progress | pending PR |
+| I1 gate closure | `work/i1-gate-closure` | implemented; documentation review fixes complete | — |
+| D1a tape lemmas + bridge structure | `work/d1a-tape-interface` | implemented; all local checks and reviews green | pending PR |
 | D1b bridge ⇒ NP-witness | `work/d1b-bridge-witness` | blocked on P0 and **D1a** | — |
 
 ---

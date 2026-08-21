@@ -14,9 +14,9 @@ constructive decision procedures behind `prefixAgreesBool` and `verifiesBool`; i
 `Classical.propDecidable`.  The correctness theorems have the standard axiom footprint inherited
 from codec verification and the existing classical language wrapper, or a subset of it.
 
-**Progress classification:** Infrastructure.  This constructs no Turing machine or runtime bound,
-does not establish non-vacuity of `ContentAccepts`, and does not reduce either P-vs-NP source
-obligation.
+**Progress classification:** Infrastructure.  FEAS-0's target-size bound is already proved, but this
+module still constructs no Turing machine or runtime bound, does not establish non-vacuity of
+`ContentAccepts`, and does not discharge either P-vs-NP source obligation.  **No `P ≠ NP` claim.**
 -/
 
 namespace Pnp4

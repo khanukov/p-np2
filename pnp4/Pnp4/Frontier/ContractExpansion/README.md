@@ -296,7 +296,8 @@ review order (the `lakefile.lean` registration is the dependency order):
   characterizes `contentInput?` success by exactly three conjuncts: the tag value, the decoded-index
   bound, and the inactive-pad-zero test. Each conjunct is a *successful read with a value*, so
   read-success for those three fields is bundled into them; what discharges unconditionally is the
-  length gate and the three range-only slice obligations. Implemented at `3256d950` (497 LOC, one
+  length gate and the three range-only slice obligations. Implemented at rebased commit `19d7c4b3`
+  (505 LOC, one
   module); every entry carries the standard `[propext, Classical.choice, Quot.sound]` triple except
   `readNatBE_lt_two_pow`, which is `[propext, Quot.sound]`. These are parser/specification facts
   only: padding invariance of the language wrapper, the verifier TM/runtime/`TM.accepts` bridge,

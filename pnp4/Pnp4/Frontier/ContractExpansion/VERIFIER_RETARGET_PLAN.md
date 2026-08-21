@@ -1036,7 +1036,7 @@ must exhibit one `#eval` (or `decide`) on a small concrete word in the surface-t
 axioms` cannot detect a `Classical.propDecidable` substitution here, because the honest route
 already carries `Classical.choice`.
 
-### 4.3 I1 — close the residual gate premises · **implemented at `3256d950`**
+### 4.3 I1 — close the residual gate premises · **implemented at rebased `19d7c4b3`**
 
 **Why this slice was needed.** Two families of side conditions infected every coincidence statement
 and would otherwise infect the machine's correctness proof:
@@ -1226,8 +1226,8 @@ theorem contentInput?_isSome_iff_of_header {threshold : Nat → Nat}
 `contentInput?` *never* returns `none` is wrong and must be rejected: a failed/wrong tag read, a
 failed/out-of-range index read, or a failed/nonzero padding read legitimately rejects the word.
 
-**Landed size:** 497 LOC · 1 module; targeted tests, axiom audit and full `check.sh` green at
-`3256d950`.
+**Landed size:** 505 LOC · 1 module after documentation corrections; targeted tests, axiom audit
+and full `check.sh` green on the rebased branch.
 **Stop/go (G3) — PASS:** injectivity is stated **only** in the specialized forms of §4.3.1. A slice that
 re-proposes the generic `Function.Injective (treeMCSPPrefixM codec)` must be rejected as false, not
 merely unproved. Do **not** work around it by strengthening `PrefixInput`.
@@ -1561,7 +1561,7 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
 | FEAS-0 target size bound | `work/feas0-target-bound` | merged; outcome (a) green | PR #1629 (`af2365a2`) |
 | GATE-0 non-vacuity | `work/gate0-nonvacuity` | merged; G0 green | PR #1630 (`014a7768`) |
 | P0 content semantic verifier | `work/p0-content-semantic` | implemented; rebased targeted checks green | pending PR |
-| I1 gate closure | `work/i1-gate-closure` | rebased; review fixes complete, final targeted checks pending | `d2f18164` (pending PR) |
+| I1 gate closure | `work/i1-gate-closure` | rebased; review fixes and final targeted checks green | `19d7c4b3` (pending PR) |
 | D1a tape lemmas + bridge structure | `work/d1a-tape-interface` | merged; G5/G5b green | PR #1632 (`545cbc3d`) |
 | D1b bridge ⇒ NP-witness | `work/d1b-bridge-witness` | blocked on P0 and **D1a** | — |
 

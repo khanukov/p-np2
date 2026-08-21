@@ -785,7 +785,7 @@ So `pr1618` is not a superset and a rebase is not a fast-forward. **Sizes in byt
 
 | Module | `pr1618` (bytes) | `main` (bytes) |
 |---|---|---|
-| `ContentPrefixExtension.lean` | 9 513 | **15 015** |
+| `ContentPrefixExtension.lean` | 9 513 | **15 048** |
 | `ContentPrefixExtensionCoincidence.lean` | 14 991 | **16 531** |
 | `ContentPrefixExtensionTransfer.lean` | 7 387 | **8 761** |
 | `ContentConsolidatedSource.lean` | 3 856 | **5 580** |

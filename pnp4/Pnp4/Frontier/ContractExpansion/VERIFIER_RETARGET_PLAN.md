@@ -166,9 +166,10 @@ polynomial-time verifier must decide it in `poly(N)` steps without reading a `2 
 **Why this blocked the freeze, not just the D-track.** The length gate that the CT route removed was
 doing feasibility work: on the length-gated target, `N = treeMCSPPrefixM codec n` pins
 `n = O(log N)` by construction, so the verifier's work is polynomial in its input. `ContentAccepts`
-drops that gate and replaces it with nothing. Until FEAS-0 is settled, we do not know that `L' ∈ NP`
-was not known to be achievable by this route.  The target remained provisional until
-`contentAccepts_target_poly_treePoly` discharged outcome (a); §1.1 now records the frozen target.
+drops that gate and replaces it with nothing. While FEAS-0 was unsettled it was not known whether
+`L' ∈ NP` was achievable at all by this route, so the target stayed provisional. It stayed
+provisional until `contentAccepts_target_poly_treePoly` discharged outcome (a); §1.1 now records the
+frozen target.
 
 **What the concrete codec actually does with that word — computed, not left open.** The previous
 revision left the decisive decode "open"; it is not. Chase the concrete decoder on the all-blank
@@ -556,17 +557,21 @@ has no `k` field (`contentPrefixExtensionLanguage_in_NP_of_witness` supplies the
 `PrefixExtensionNPWitness` (`PrefixExtensionNPWitness.lean:75`) does carry a `k`. Any slice that
 needs a different certificate exponent is out of scope by construction.
 
-### 1.2 Status of the length-gated target: retained for compatibility, retired for new work
+### 1.2 Status of the length-gated target: retained for audit compatibility, not preferred for new slices
 
 `PrefixExtensionNPWitness` (`PrefixExtensionNPWitness.lean:75`) and its chain
 (`ExplicitConditionalSource.lean`, `ConcreteTreeCodecSource.lean`,
 `ConsolidatedTreeSeparation.lean`) are **retained as compiled and audited compatibility
-surfaces**, but no longer compete with the content target for new verifier work. FEAS-0 is green by
-outcome (a), so:
+surfaces**, and are **not retired**. FEAS-0 outcome (a) removed a *blocker* on the content route; it
+did not establish that the content route is superior, so the length-gated target is **not preferred**
+for new slices rather than rejected. Concretely:
 
-* **New slices state their headline against `ContentAccepts` / `L'`** and are scheduled in §4.
-  A new slice whose only target is `PrefixExtensionLanguage` / `PrefixExtensionNPWitness` is
-  rejected on target grounds unless it is explicitly compatibility or audit maintenance.
+* **New slices should state their headline against `ContentAccepts` / `L'`** and are scheduled in §4.
+  A new slice whose only target is `PrefixExtensionLanguage` / `PrefixExtensionNPWitness` is **not**
+  rejected on target grounds alone: it is dispreferred, and is admissible once it records an explicit
+  rationale for choosing the length-gated route (compatibility or audit maintenance always qualifies,
+  as does a stated technical obstruction on the `L'` side). Reject only a slice that offers no such
+  rationale.
 * **Audit compatibility is preserved regardless.** The length-gated modules keep compiling, keep
   their `#check` lines in `pnp4/Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean` and their
   `#print axioms` lines in `pnp4/Pnp4/Tests/AxiomsAudit.lean`, and keep being cited by
@@ -1548,7 +1553,7 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
 
 | Gate | Slice | Condition | Action if red |
 |---|---|---|---|
-| **F0** | FEAS-0 | **PASS (a):** `contentAccepts_target_poly_treePoly` proves the concrete polynomial bound. It yields a bounded timeout in principle through `PolyBoundedInTable.powAdd`, but not a verifier implementation (§1.0) | only outcome (d) was red; it did not occur |
+| **F0** | FEAS-0 | **PASS (a):** at `treeCircuitWitnessCodec (thresholdPoly k)`, `contentAccepts_target_poly_treePoly` proves the polynomial bound from accepted complete words to `treeMCSPPrefixM codec n'`. It *yields* a bounded timeout in principle, of exponent `c · d` rather than `c`, via `PolyBoundedInTable.powAdd` (`ExtractedScheduleGrowth.lean:114`), whose polynomial `P N = (N ^ c + c) ^ d + d` bounds `M n' = M r` and — through `tableLen_le_treeMCSPPrefixM` (`PrefixParserConvention.lean:48`) and `witnessBits_le_treeMCSPPrefixM` (`TreeMCSPPrefixSemanticVerifier.lean:78`) applied **at `r := pr.2.n`** — also `tableLen r`, `codec.witnessBits r` and (via `r ≤ bitLength (M n')`) `thresholdPoly k r`, the quantities `ContentAccepts` actually uses. These component bounds come **directly** from `M r = M n'`, never by transferring an `n'`-side bound. Never stated codec-generically — generic (a)/(b) are false. It is **not** a verifier implementation (§1.0) | only outcome (d) was red; it did not occur |
 | **F0b** | FEAS-0 | **PASS:** the proof runs on `r := pr.2.n`, uses only `M n_header = M r`, recovers the truth-table slice through `contentInput?_x_apply`, and cites no I1 output | a future consumer needing target equality or gamma canonicity must be re-derived via the convention-length equality |
 | **G0** | GATE-0 | a *concrete* word is `ContentAccepts`-accepted at `treeCircuitWitnessCodec (thresholdPoly k)` | halt the D-track and escalate; do not build a machine for a possibly-empty `L'`. P0/I1 continue |
 | **G1** | P0 | the `Bool`↔`Prop` headline is hypothesis-free | fix the `Bool` definition's failure branches, not the statement |

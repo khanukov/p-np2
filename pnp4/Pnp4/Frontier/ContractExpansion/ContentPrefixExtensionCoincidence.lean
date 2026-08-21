@@ -272,7 +272,12 @@ prefix-extendability predicate.
 
 This is the direct specification theorem.  It does not pass through either classical Boolean
 language wrapper.  Its `Classical.choice` footprint comes solely from the pre-existing
-noncomputable `concatBitstring` used by `ContentPrefixExtendable`. -/
+noncomputable `concatBitstring` used by `ContentPrefixExtendable`.
+
+`hn` is retained here on purpose.  `ContentPrefixExtensionGateClosure.lean` derives the `hn`-free
+corollary `ContentPrefixExtendable_iff_of_parse'` by replacing it with
+`Monotone codec.witnessBits`, which is a premise about the codec rather than about the parse; this
+statement stays available for codecs that do not supply it. -/
 theorem ContentPrefixExtendable_iff_of_parse {threshold : Nat → Nat}
     (codec : TreeCircuitWitnessCodec threshold)
     {n : Nat} (y : PrefixBitVec (treeMCSPPrefixM codec n))
@@ -319,8 +324,13 @@ theorem ContentPrefixExtendable_iff_of_parse {threshold : Nat → Nat}
 /-- **Boolean-language coincidence (brick R3).**  Under *both* hypotheses — the strict parse succeeds
 (`hparse`) and the parsed target is the ambient one (`hn : input.n = n`, which does **not** follow
 from `hparse`: inversion gives only `treeMCSPPrefixM codec input.n = treeMCSPPrefixM codec n`, and
-injectivity of `treeMCSPPrefixM codec` is not proved) — the content-truthful language `L'` agrees
-with the length-gated language at `treeMCSPPrefixM codec n`. -/
+no codec-generic injectivity of `treeMCSPPrefixM codec` is available) — the content-truthful
+language `L'` agrees with the length-gated language at `treeMCSPPrefixM codec n`.
+
+The injectivity that *is* available is conditional: `ContentPrefixExtensionGateClosure.lean` proves
+it under `Monotone codec.witnessBits` and at the concrete `treeCircuitWitnessCodec (thresholdPoly
+k)`.  Only the predicate-level statement above has an `hn`-free corollary there; this Boolean-language
+form keeps both hypotheses. -/
 theorem ContentPrefixExtensionLanguage_eq_of_parse {threshold : Nat → Nat}
     (codec : TreeCircuitWitnessCodec threshold)
     {n : Nat} (y : PrefixBitVec (treeMCSPPrefixM codec n))

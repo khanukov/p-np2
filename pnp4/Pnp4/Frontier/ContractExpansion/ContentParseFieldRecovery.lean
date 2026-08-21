@@ -22,9 +22,10 @@ Both are dependency-closed on `main`: nothing below `ContentPrefixExtension.lean
 **`consumed` is carried symbolically — this slice is I1-free (plan §1.0 stop/go F0b).**  Neither
 statement says `consumed = gammaLen input.n`, and neither uses injectivity of `treeMCSPPrefixM codec`
 (`treeMCSPPrefixM_injective_treePoly` / `_of_monotone`) or gamma canonicity
-(`decodeGamma?_consumed_eq_gammaLen`) — all three are scheduled I1 outputs and none of them exists on
-`main`, so the constraint holds at declaration level.  The single symbolic `consumed` produced by the
-cascade is
+(`decodeGamma?_consumed_eq_gammaLen`).  Those three are I1 outputs and now exist, in
+`ContentPrefixExtensionGateClosure.lean`; this module neither imports that module nor cites any of
+them, so the F0b constraint holds at import level and not merely because the names were once
+missing.  The single symbolic `consumed` produced by the cascade is
 what couples the header decode and the field slice: both conjuncts of
 `parseTreeMCSPPrefixInput_x_slice` are stated under the *same* existential witness, which is exactly
 what the consumer needs and all that the parser guarantees.  No range side condition appears either

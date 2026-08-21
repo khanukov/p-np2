@@ -52,6 +52,7 @@ import Pnp4.Frontier.ContractExpansion.ContentSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.ContentVerifierTapeInterface
 import Pnp4.Frontier.ContractExpansion.ContentTargetSizeBound
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity
+import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionGateClosure
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPaddingTransport
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionTransfer
 import Pnp4.Frontier.ContractExpansion.ContentConsolidatedSource
@@ -449,6 +450,24 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.contentAccepts_zeroPrefixQuery_of_predicate
 #print axioms Pnp4.Frontier.ContractExpansion.contentPrefixExtensionLanguage_zeroPrefixQuery
 #print axioms Pnp4.Frontier.ContractExpansion.contentAccepts_nonvacuous_treePoly
+
+-- I1 gate closure (ContentPrefixExtensionGateClosure.lean, plan section 4.3).  Injectivity is
+-- audited only under monotone witness width and at the concrete polynomial codec; no false generic
+-- codec theorem exists.  Canonicity is hypothesis-free after successful decoding, narrowing uses
+-- the consumed-based transfer correction, and the final parser theorem exposes exactly the three
+-- tag/index/pad-zero value tests.  Infrastructure only: no verifier, NP-membership, non-vacuity, or
+-- lower-bound source obligation is discharged.
+#print axioms Pnp4.Frontier.ContractExpansion.treeMCSPPrefixM_strictMono
+#print axioms Pnp4.Frontier.ContractExpansion.treeMCSPPrefixM_injective_of_monotone
+#print axioms Pnp4.Frontier.ContractExpansion.witnessBits_monotone_treePoly
+#print axioms Pnp4.Frontier.ContractExpansion.treeMCSPPrefixM_injective_treePoly
+#print axioms Pnp4.Frontier.ContractExpansion.ContentPrefixExtendable_iff_of_parse'
+#print axioms Pnp4.Frontier.ContractExpansion.readNatBE_lt_two_pow
+#print axioms Pnp4.Frontier.ContractExpansion.decodeGamma?_consumed_eq_gammaLen
+#print axioms Pnp4.Frontier.ContractExpansion.contentHeader?_consumed_eq_gammaLen
+#print axioms Pnp4.Frontier.ContractExpansion.decodeGamma?_padWord_narrow
+#print axioms Pnp4.Frontier.ContractExpansion.contentInput?_lengthGate_vacuous
+#print axioms Pnp4.Frontier.ContractExpansion.contentInput?_isSome_iff_of_header
 
 #print axioms Pnp4.Frontier.ContractExpansion.verifiedSource_of_explicit_interfaces
 #print axioms Pnp4.Frontier.ContractExpansion.NP_not_subset_PpolyDAG_of_explicit_interfaces

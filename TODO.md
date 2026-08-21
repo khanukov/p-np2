@@ -149,8 +149,13 @@ NP_not_subset_PpolyDAG_treePoly
 3. `PolyBoundedInTable threshold` is proved for the canonical polynomial thresholds
    (`ThresholdGrowth.lean`), so it is not an open input at `thresholdPoly k`.
 
-Nothing in this target is proved; the whole chain is conditional.  See
-`pnp4/Pnp4/Frontier/ContractExpansion/README.md` for the proved-vs-open breakdown.
+Neither of the two open hypotheses is proved, so the endpoint stays strictly
+conditional.  What *is* proved: the one-way decision→search extraction and its
+contrapositive, the growth reduction, the concrete `treeCircuitWitnessCodec`
+(`ConcreteTreeCodec.lean`), the threshold-growth discharge
+(`polyBoundedInTable_thresholdPoly`), and the consolidated conditional theorem
+itself.  See `pnp4/Pnp4/Frontier/ContractExpansion/README.md` for the full
+proved-vs-open breakdown.
 
 ## Non-Goals Right Now
 
@@ -166,8 +171,13 @@ Nothing in this target is proved; the whole chain is conditional.  See
 1. Keep `FormulaSupportBoundsFalsifiabilityProbe.lean` as the authoritative
    audit module for support-bounds falsifiability.
 2. Keep `pnp3/Magnification/UnconditionalResearchGap.lean` as the single-file
-   frontier: future unconditional closure should prove `ResearchGapWitness`
-   there and then expose `P_ne_NP_unconditional` from that same file.
+   frontier **for the pnp3 route**: a pnp3-side unconditional closure should prove
+   `ResearchGapWitness` there and then expose `P_ne_NP_unconditional` from that same
+   file.  A pnp4-side closure (Target 4) need not be re-expressed as
+   `ResearchGapWitness` — its endpoint already produces
+   `ComplexityInterfaces.NP_not_subset_PpolyDAG`, which is exactly
+   `ResearchGapWitness.dagSeparation` — though routing it through that witness remains
+   an option.  See `pnp3/Docs/CLOSURE_ROUTE_POLICY.md`.
 3. If a new support/provenance contract is proposed, first add a falsifiability
    audit before wiring it into final theorems.
 4. If a new route depends on exact MCSP thresholds, Shannon slack, or small

@@ -105,18 +105,29 @@ The theorem
 `NP_not_subset_PpolyDAG_final_under_fixedParams_and_uniformProvenance` exposes
 this research gap.  It does not close it.
 
-The one-file closure boundary is
+The one-file closure boundary **for the pnp3 route** is
 `pnp3/Magnification/UnconditionalResearchGap.lean`.  It defines
 `ResearchGapWitness` and proves the conditional bridge from that witness to
-`P != NP`.
+`P != NP`.  The pnp4 route has its own conditional boundary; see below.
 
 ## What This Means
 
 The repository is useful as a formal framework and audit harness for future
-magnification attacks.  It does not currently prove `P != NP`, and the
-remaining gap is mathematical: a non-vacuous fixed-params support/locality
-source theorem that cannot be satisfied by truth-table hardwiring or singleton
-provenance.
+magnification attacks.  It does not currently prove `P != NP`.
+
+The remaining gap is mathematical, and it is **common to both tracks**:
+`ComplexityInterfaces.NP_not_subset_PpolyDAG`.  Two routes reach it, and neither is
+closed:
+
+- **pnp3 route** — a non-vacuous fixed-params support/locality source theorem that
+  cannot be satisfied by truth-table hardwiring or singleton provenance, wired through
+  `ResearchGapWitness`.
+- **pnp4 route** (the mainline per `AGENTS.md`) — the two open hypotheses of
+  `NP_not_subset_PpolyDAG_treePoly`: a `P/poly` circuit lower bound for the concrete
+  tree-MCSP search problem, and a concrete NP-verifier witness.
+
+Both remaining obligations are research-level or engineering-heavy mathematics, not
+missing Lean wrappers.
 
 ## Verification
 

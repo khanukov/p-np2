@@ -130,9 +130,9 @@ NP ⊄ PpolyDAG     (and thence  P ≠ NP)        — both kept strictly conditi
   explicit interfaces (`PolynomialWitnessCodec`, `NoPolynomialBoundedSearchSolver`,
   `PrefixExtensionNPWitness`), and `NP_not_subset_PpolyDAG_of_explicit_interfaces`.
 
-### Concrete codec (now reduced to final assembly)
+### Concrete codec (constructed)
 - `ConcreteCodecGap.lean` (Block 12a) — the audit verdict (no concrete
-  `TreeCircuitWitnessCodec` existed) + the proved packing reduction
+  `TreeCircuitWitnessCodec` existed *at that time*) + the proved packing reduction
   `SelfDelimitingCircuitCode.toCodec` (a self-delimiting encoder with a width bound
   ⇒ a fixed-width codec, by zero-padding).
 - `CircuitTreeBridge.lean` (Block 12b) — `toTree`/`fromTree` between
@@ -141,6 +141,25 @@ NP ⊄ PpolyDAG     (and thence  P ≠ NP)        — both kept strictly conditi
   `decodeCircuit_encodeCircuit`.
 - `CircuitEncodingLength.lean` (Block 12c) — `length_encodeCircuit_le`:
   `(encodeCircuit width h_width c).length ≤ (width + 4) * Circuit.size c`.
+- `CircuitDecodeDepthFree.lean` (Block 12d) — `length_encodeCircuit_ge` (matching lower
+  bound) and the depth-budget-free decoder `decodeCircuitFull` with its all-`n`
+  round-trip `decodeCircuitFull_encodeCircuit`.
+- `ConcreteTreeCodec.lean` (Block 12e) — **the concrete codec itself**:
+  `treeSelfDelimitingCode`, `treeCircuitWitnessCodec`, `polyBoundedInTable_bitLength`,
+  `polyBoundedInTable_treeWitnessBits_of_thresholdPoly`, and the packaged
+  `treePolynomialWitnessCodec`.  The "no concrete codec" gap recorded in 12a is closed.
+- `ConcreteTreeCodecSource.lean` (Block 12f) —
+  `verifiedSource_of_treeCodec_noPolynomialBoundedSearchSolver` and
+  `NP_not_subset_PpolyDAG_of_treeCodec_interfaces`: the conditional source instantiated
+  at the concrete codec.
+
+### Threshold growth and consolidation
+- `ThresholdGrowth.lean` (Block 13a) — `thresholdLinear` / `thresholdQuadratic` /
+  `thresholdPoly` and their growth discharges `polyBoundedInTable_thresholdLinear` /
+  `_thresholdQuadratic` / `_thresholdPoly`.
+- `ConsolidatedTreeSeparation.lean` (Block 13b) — `verifiedSource_treePoly` and
+  `NP_not_subset_PpolyDAG_treePoly`: the collapsed two-hypothesis form at
+  `thresholdPoly k`.
 
 ## What is proved vs. open
 

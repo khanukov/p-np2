@@ -321,6 +321,8 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPadding,
+    -- P0: computable content-side semantic verifier and its specification correctness.
+    Glob.one `Pnp4.Frontier.ContractExpansion.ContentSemanticVerifier,
     -- D1a: machine-facing tape lemmas and the predicate-parameterized exact-step bridge.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentVerifierTapeInterface,
     -- FEAS-0 slice, part 2: the concrete accepted-target polynomial bound.

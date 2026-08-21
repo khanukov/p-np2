@@ -376,7 +376,7 @@ the opposite reading:
 - **No separation.** Both open inputs stay explicit arguments of every source in
   `ContentConsolidatedSource.lean`; no `P ≠ NP` claim follows.
 
-Every public theorem of the ten modules has its own `#print axioms` line in
+Every public theorem of the eleven modules has its own `#print axioms` line in
 `Pnp4/Tests/AxiomsAudit.lean` and its own `#check` in
 `Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`
 (`ContentPrefixExtensionSurface`).

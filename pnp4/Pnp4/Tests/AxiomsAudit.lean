@@ -17,6 +17,7 @@ import Pnp4.Frontier.CompressionMagnification
 import Pnp4.Frontier.SearchMCSPMagnification
 import Pnp4.Frontier.SearchMCSPConcreteTargets
 import Pnp4.Frontier.DagSupportCardinality
+import Pnp4.Frontier.SignedSupportNoGo.DenseEasyBarrier
 import Pnp4.Frontier.ContractExpansion.C_DAG_Adapter
 import Pnp4.Frontier.ContractExpansion.QueryComposition
 import Pnp4.Frontier.ContractExpansion.QueryBuilder
@@ -81,6 +82,26 @@ namespace Tests
 #print axioms Pnp4.Frontier.DagSupportCardinality.directInputCover_card_le_two_mul_size
 #print axioms Pnp4.Frontier.DagSupportCardinality.support_card_le_two_mul_size
 #print axioms Pnp4.Frontier.DagSupportCardinality.exists_small_evaluation_support
+
+-- Generic signed-support/no-go infrastructure.  The finite-set construction
+-- and finite sums use the standard classical finite-data axioms only; no
+-- project axiom or separation source is introduced.
+#print axioms Pnp4.Frontier.SignedSupportNoGo.uniformPredicateAverage_mem_unitInterval
+#print axioms Pnp4.Frontier.SignedSupportNoGo.boolIndicator_nonneg
+#print axioms Pnp4.Frontier.SignedSupportNoGo.boolIndicator_le_one
+#print axioms Pnp4.Frontier.SignedSupportNoGo.uniformPredicateAverage_le_one
+#print axioms Pnp4.Frontier.SignedSupportNoGo.weightedGeneratorAverage_eq_zero_of_nonzero_support_rejects
+#print axioms Pnp4.Frontier.SignedSupportNoGo.lowerWeightedApproximation_support_hits
+#print axioms Pnp4.Frontier.SignedSupportNoGo.exists_reverseOneSidedFoolsDAG_iff_hits
+#print axioms Pnp4.Frontier.SignedSupportNoGo.eval_equalsTableDAG
+#print axioms Pnp4.Frontier.SignedSupportNoGo.gates_equalsTableDAG_le
+#print axioms Pnp4.Frontier.SignedSupportNoGo.eval_avoidFiniteSetDAG
+#print axioms Pnp4.Frontier.SignedSupportNoGo.size_avoidFiniteSetDAG_le
+#print axioms Pnp4.Frontier.SignedSupportNoGo.uniformPredicateAverage_gt_half_of_dense
+#print axioms Pnp4.Frontier.SignedSupportNoGo.everyDenseDAGPredicateAcceptsEasyTable_of_hitsDense
+#print axioms Pnp4.Frontier.SignedSupportNoGo.not_everyDenseDAGPredicateAcceptsEasyTable_of_cover_fits
+#print axioms Pnp4.Frontier.SignedSupportNoGo.not_exists_reverseOneSidedFoolsDAG_of_easyImage_cover_fits
+#print axioms Pnp4.Frontier.SignedSupportNoGo.not_allExponent_everyDenseDAGPredicateAcceptsEasyTable_of_coverBits_eventuallyLinear
 
 #print axioms AlgorithmsToLowerBounds.maskBit_true
 #print axioms AlgorithmsToLowerBounds.maskBit_false

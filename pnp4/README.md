@@ -75,6 +75,14 @@ an already-proved result: a `SearchMCSPWeakLowerBound` must supply a verified
 
 Current theorem surface status:
 
+- `Frontier/SignedSupportNoGo/`: three-module generic infrastructure/no-go
+  extraction over the current `DagCompose` / `DagCircuit` model.  It provides
+  finite rational Boolean averages, the exact equivalence between existential
+  reverse-one-sided signed fooling and support hitting, an explicit finite-set
+  avoider DAG, `FiniteEasyCover`, and dense/easy plus signed-fooling no-go
+  endpoints.  Its eventual-linear cover-bits theorem is limited to
+  truth-table geometry and retains explicit sparsity and dense/easy premises.
+  It has no one-tape/streaming dependency and proves no `P != NP` consequence.
 - `BasicCircuitClasses.lean`: minimal non-uniform circuit-class interface plus
   the input-masking operator `maskVec` and `ClosedUnderInputMasking`, the class
   closure condition needed for the masking/averaging translation proof.

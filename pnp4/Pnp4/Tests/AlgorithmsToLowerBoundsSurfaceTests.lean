@@ -27,6 +27,7 @@ import Pnp4.Frontier.CompressionMagnification
 import Pnp4.Frontier.SearchMCSPMagnification
 import Pnp4.Frontier.SearchMCSPConcreteTargets
 import Pnp4.Frontier.DagSupportCardinality
+import Pnp4.Frontier.SignedSupportNoGo.DenseEasyBarrier
 import Pnp4.Frontier.ContractExpansion.C_DAG_Adapter
 import Pnp4.Frontier.ContractExpansion.QueryComposition
 import Pnp4.Frontier.ContractExpansion.QueryBuilder
@@ -101,6 +102,42 @@ open Pnp4.Frontier.DagSupportCardinality
 #check @exists_small_evaluation_support
 
 end DagSupportCardinalitySurface
+
+section SignedSupportNoGoSurface
+
+open Pnp3.ComplexityInterfaces
+open Pnp3.ComplexityInterfaces.DagCircuit
+open Pnp4.Frontier.SignedSupportNoGo
+
+#check boolIndicator
+#check uniformPredicateAverage
+#check weightedGeneratorAverage
+#check boolIndicator_nonneg
+#check boolIndicator_le_one
+#check uniformPredicateAverage_mem_unitInterval
+#check uniformPredicateAverage_le_one
+#check weightedGeneratorAverage_eq_zero_of_nonzero_support_rejects
+#check lowerWeightedApproximation_support_hits
+#check ReverseOneSidedFoolsDAG
+#check HitsDAGPredicatesAboveUniformMass
+#check exists_reverseOneSidedFoolsDAG_iff_hits
+#check equalsTableDAG
+#check eval_equalsTableDAG
+#check gates_equalsTableDAG_le
+#check avoidFiniteSetDAG
+#check eval_avoidFiniteSetDAG
+#check size_avoidFiniteSetDAG_le
+#check FiniteEasyCover
+#check DenseAboveHalf
+#check HitsDenseDAGPredicates
+#check EveryDenseDAGPredicateAcceptsEasyTable
+#check everyDenseDAGPredicateAcceptsEasyTable_of_hitsDense
+#check uniformPredicateAverage_gt_half_of_dense
+#check not_everyDenseDAGPredicateAcceptsEasyTable_of_cover_fits
+#check not_exists_reverseOneSidedFoolsDAG_of_easyImage_cover_fits
+#check not_allExponent_everyDenseDAGPredicateAcceptsEasyTable_of_coverBits_eventuallyLinear
+
+end SignedSupportNoGoSurface
 
 def check_C_DAG : CircuitFamilyClass :=
   Pnp4.Frontier.ContractExpansion.C_DAG

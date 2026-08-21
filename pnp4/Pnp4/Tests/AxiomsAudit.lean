@@ -48,6 +48,7 @@ import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPadding
+import Pnp4.Frontier.ContractExpansion.ContentVerifierTapeInterface
 import Pnp4.Frontier.ContractExpansion.ContentTargetSizeBound
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPaddingTransport
@@ -384,6 +385,13 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.ContentAccepts_padWord_of_le
 #print axioms Pnp4.Frontier.ContractExpansion.ContentAccepts_iff_of_padRead_eq
 #print axioms Pnp4.Frontier.ContractExpansion.contentHeader?_of_decodeGamma
+-- D1a machine-facing tape interface.  The first theorem inherits Classical.choice from the
+-- noncomputable concatenation used in its statement; the second is the padding theorem restated
+-- for machine consumers.  `ContentVerifierBridgeFor` is a data structure rather than a proved
+-- theorem: it names an exact-step, predicate-parameterized obligation and supplies no instance.
+-- Its polynomial field does not formally enforce runtime-advice avoidance.
+#print axioms Pnp4.Frontier.ContractExpansion.initialConfig_tape_eq_padRead
+#print axioms Pnp4.Frontier.ContractExpansion.contentAccepts_of_initialConfig_tape_eq
 -- Explicitly classical conditional transport module.  The theorem derives ContentPrefixExtendable
 -- directly through ContentPrefixExtendable_iff_of_parse, without either Boolean language wrapper.
 -- Its statement still necessarily inherits Classical.choice from the pre-existing noncomputable

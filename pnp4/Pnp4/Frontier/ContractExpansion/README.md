@@ -172,7 +172,7 @@ length-dependent in general; and `TM.accepts` is evaluated at exactly step
 can in principle depend on `n`; what the planned idle-sink construction cannot do is
 recover the gate from the loaded content alone. **The whole argument is a review of
 the definitions, not a Lean theorem**: no impossibility result is formalized anywhere
-in this directory. The response replaces the *language*, not the chain — nine modules,
+in this directory. The response replaces the *language*, not the chain — ten modules,
 in dependency order:
 
 - `ContentPrefixExtension.lean` — `padRead` / `padWord` (the blank-padded tape read),
@@ -260,6 +260,17 @@ in dependency order:
   statement about the language wrapper (see the scope paragraph below). Verified axiom footprint:
   fourteen entries are `[propext, Quot.sound]`, one (`readBit?_padWord_of_lt`) is axiom-free, and
   no theorem in this module depends on `Classical.choice`.
+- `ContentVerifierTapeInterface.lean` — D1a's P0-independent machine-facing surface from
+  `VERIFIER_RETARGET_PLAN.md` §4.4. `initialConfig_tape_eq_padRead` identifies every allocated
+  start-tape cell with the blank-padded complete concatenated word, including the blank tail;
+  `contentAccepts_of_initialConfig_tape_eq` restates the existing blank-padded-read invariance for
+  machine consumers; and `ContentVerifierBridgeFor acc` names the verifier obligation for an
+  arbitrary acceptance predicate. Its `accepts_eq` field uses the existing exact-step
+  `TM.accepts` semantics at the explicit concatenated length `n + certificateLength n 1`: there is
+  no halting or within-time variant. This module supplies no specialized alias, witness packaging,
+  or bridge instance. The `runTime_poly` inequality bounds runtime numerically but does not
+  formally prevent `runTime` from carrying input-length advice; advice avoidance remains a
+  documented, unenforced construction obligation.
 - `ContentPrefixExtensionPaddingTransport.lean` — the explicitly classical conditional transport
   theorem `ContentAccepts_padWord_of_prefixExtendable`, isolated from the axiom-light padding
   module. It derives `ContentPrefixExtendable` directly from
@@ -353,7 +364,7 @@ the opposite reading:
 - **No separation.** Both open inputs stay explicit arguments of every source in
   `ContentConsolidatedSource.lean`; no `P ≠ NP` claim follows.
 
-Every public theorem of the nine modules has its own `#print axioms` line in
+Every public theorem of the ten modules has its own `#print axioms` line in
 `Pnp4/Tests/AxiomsAudit.lean` and its own `#check` in
 `Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`
 (`ContentPrefixExtensionSurface`).

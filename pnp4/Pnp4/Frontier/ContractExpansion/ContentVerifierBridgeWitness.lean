@@ -10,7 +10,7 @@ acceptance predicate `contentSemanticAccepts`, and the repackaging of any such b
 frozen input-(2) interface `ContentPrefixExtensionNPWitness`.
 
 **Nothing here is an instance.** The abbreviation only names the bridge type at P0's acceptance
-predicate; it requires no supplied bridge and constructs no fields. The repackaging theorem is
+predicate; it requires no supplied bridge and constructs no fields. The repackaging definition is
 conditional on a supplied `ContentVerifierBridge`, which remains the whole open machine obligation
 (§1.3 caveat 1). No verifier Turing machine, runtime bound, or
 `TM.accepts … = contentSemanticAccepts …` proof is constructed. The repackaging consumes

@@ -312,7 +312,7 @@ review order (the `lakefile.lean` registration is the dependency order):
   `ContentPrefixExtensionNPWitness`: the machine, exponent and `runTime_poly` are taken over
   verbatim, and `correct` is P0's `contentSemanticAccepts_correct` composed with the bridge's
   `accepts_eq` rewrite under the certificate existential. The abbreviation merely names that bridge
-  type; the repackaging theorem is **conditional on a supplied bridge**. No bridge instance,
+  type; the repackaging definition is **conditional on a supplied bridge**. No bridge instance,
   machine, or runtime bound is constructed here — so this module proves no NP membership for `L'`
   and no advice-free claim: the inherited
   `runTime_poly` still bounds only the clock's magnitude. The repackaging has the standard

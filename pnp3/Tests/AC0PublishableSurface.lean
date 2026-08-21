@@ -1,27 +1,30 @@
 import LowerBounds.AC0_GapMCSP
 
-set_option linter.deprecated false
-
 namespace Pnp3
 namespace Tests
 
 open LowerBounds
 open Models
 
+set_option linter.deprecated false in
 example (p) : GapPartialMCSP_not_in_AC0 p := gapPartialMCSP_not_in_AC0 p
 
+set_option linter.deprecated false in
 example (p : GapPartialMCSPParams) :
     ∀ _solver : SmallAC0Solver_Partial p, False :=
   gapPartialMCSP_no_semantic_AC0_solver p
 
+set_option linter.deprecated false in
 example (p : GapPartialMCSPParams) :
     ∀ _solver : SmallAC0Solver_Partial_Syntactic p, False :=
   gapPartialMCSP_no_syntactic_AC0_solver p
 
+set_option linter.deprecated false in
 example (p : GapPartialMCSPParams) :
     ∀ _solver : ConstructiveSmallAC0Solver_Partial p, False :=
   gapPartialMCSP_no_constructive_AC0_solver p
 
+set_option linter.deprecated false in
 example (p : GapPartialMCSPParams) :
     GapPartialMCSP_not_in_AC0 p ↔ GapPartialMCSP_NotInSmallAC0 p :=
   gapPartialMCSP_not_in_AC0_iff_notInSmallAC0 p

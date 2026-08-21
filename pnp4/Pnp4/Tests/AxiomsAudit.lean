@@ -44,6 +44,10 @@ import Pnp4.Frontier.ContractExpansion.WitnessGrowthReduction
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionNPWitness
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout
+import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
+import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence
+import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionTransfer
+import Pnp4.Frontier.ContractExpansion.ContentConsolidatedSource
 import Pnp4.Frontier.ContractExpansion.ExplicitConditionalSource
 import Pnp4.Frontier.ContractExpansion.ConcreteCodecGap
 import Pnp4.Frontier.ContractExpansion.CircuitTreeBridge
@@ -296,6 +300,46 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.PolynomialWitnessCodec.toGrowthAssumptions
 
 #print axioms Pnp4.Frontier.ContractExpansion.prefixExtensionLanguage_in_NP_of_witness
+-- The content-truthful prefix-extension language L' (bricks R1/R2): membership read through the
+-- blank padding at content-computed offsets, with no physical-length gate, plus its NP-witness
+-- interface.  That interface stays an unproved hypothesis -- no TM, runtime bound, or TM.accepts
+-- bridge is built anywhere -- and nothing below establishes that ContentAccepts is satisfiable.
+#print axioms Pnp4.Frontier.ContractExpansion.padRead_lt
+#print axioms Pnp4.Frontier.ContractExpansion.padRead_ge
+#print axioms Pnp4.Frontier.ContractExpansion.padWord_apply
+#print axioms Pnp4.Frontier.ContractExpansion.padWord_self
+#print axioms Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionLanguage
+#print axioms Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionLanguage_accepts_iff
+#print axioms Pnp4.Frontier.ContractExpansion.contentPrefixExtensionLanguage_in_NP_of_witness
+-- Repair brick R3: the coincidence lemma -- on every parseable query at its convention length, L'
+-- agrees with the length-gated language -- together with its reader-monotonicity, parse-inversion
+-- and window-computation ingredients.  The three monotonicity lemmas and parse inversion are
+-- Classical-free (nothing / [propext] / [propext, Quot.sound]); the lemmas about a concatenated
+-- word inherit Classical.choice from the noncomputable concatBitstring, and the headline
+-- additionally from the classical language wrapper.
+#print axioms Pnp4.Frontier.ContractExpansion.readBit?_mono
+#print axioms Pnp4.Frontier.ContractExpansion.readNatBE_mono
+#print axioms Pnp4.Frontier.ContractExpansion.decodeGammaAux?_mono
+#print axioms Pnp4.Frontier.ContractExpansion.decodeGamma?_concat_pad
+#print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_inversion
+#print axioms Pnp4.Frontier.ContractExpansion.padWord_concat_left
+#print axioms Pnp4.Frontier.ContractExpansion.contentWitness_concat
+#print axioms Pnp4.Frontier.ContractExpansion.contentInput?_concat_of_parse
+#print axioms Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionLanguage_eq_of_parse
+-- Repair brick R4: the extraction transfer -- an L'-decider drives the same greedy machinery (by
+-- coincidence at the constructed queries), so the same open no-solver hypotheses pin L' outside
+-- PpolyDAG.  Still the one-way PpolyDAG -> solver direction; no converse.
+#print axioms Pnp4.Frontier.ContractExpansion.correctNextBitDecider_of_decidesContentLanguage
+#print axioms Pnp4.Frontier.ContractExpansion.boundedSearchSolver_of_deciderFamilyCT
+#print axioms Pnp4.Frontier.ContractExpansion.boundedSearchSolver_of_PpolyDAG_contentPrefixExtension
+#print axioms Pnp4.Frontier.ContractExpansion.not_PpolyDAG_contentPrefixExtension_of_noExtractedScheduleSolver
+#print axioms Pnp4.Frontier.ContractExpansion.not_PpolyDAG_contentPrefixExtension_of_noPolynomialBoundedSearchSolver
+-- Repair brick R5: the CT sources -- the conditional chain re-routed through L'.  The two open
+-- inputs are input (1) unchanged and the CONTENT-TRUTHFUL NP witness; both stay explicit
+-- hypotheses.  Both the generic source and the concrete-threshold specialization are audited.
+#print axioms Pnp4.Frontier.ContractExpansion.verifiedSourceCT_of_noPolynomialBoundedSearchSolver
+#print axioms Pnp4.Frontier.ContractExpansion.verifiedSourceCT_treePoly
+#print axioms Pnp4.Frontier.ContractExpansion.NP_not_subset_PpolyDAG_treePolyCT
 
 #print axioms Pnp4.Frontier.ContractExpansion.verifiedSource_of_explicit_interfaces
 #print axioms Pnp4.Frontier.ContractExpansion.NP_not_subset_PpolyDAG_of_explicit_interfaces

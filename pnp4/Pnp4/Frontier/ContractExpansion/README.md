@@ -154,6 +154,67 @@ NP ⊄ PpolyDAG     (and thence  P ≠ NP)        — both kept strictly conditi
 These are infrastructure for a future NP-membership proof: no lower bound, no change
 to `SearchMCSPMagnificationContract`, and no `P ≠ NP` claim follows from them.
 
+### The length-blindness obstruction and the content-truthful language `L'`
+The `pnp3` TM model is **length-blind**: `initialConfig` loads the input and pads with
+the blank `false`, so a word and its zero-extension induce the *same* tape, while
+`PrefixExtensionLanguage` gates membership on the **physical** input length (the
+parser's `m = treeMCSPPrefixM codec n` check). A length-blind machine cannot observe
+that gate, so `PrefixExtensionNPWitness.correct` looks out of reach for the planned
+idle-sink machine class. **This is a review of the definitions, not a Lean theorem**:
+no impossibility result is formalized anywhere in this directory. The response
+replaces the *language*, not the chain — four modules, in dependency order:
+
+- `ContentPrefixExtension.lean` — `padRead` / `padWord` (the blank-padded tape read),
+  `contentHeader?` (the gamma header decoded on the `2N+1`-padded word),
+  `contentInput?` (the **existing** strict parser re-run on the window of the
+  *content-computed* length, so the parser's physical-length gate is satisfied by
+  construction), `contentWitness`, `ContentAccepts`, the language
+  `ContentPrefixExtensionLanguage` (`L'`), and the NP-witness interface
+  `ContentPrefixExtensionNPWitness`. Definitions plus the `accepts_iff` unwrapping;
+  the interface is a **hypothesis**.
+- `ContentPrefixExtensionCoincidence.lean` — reader monotonicity under ambient
+  widening (`readBit?_mono`, `readNatBE_mono`, `decodeGammaAux?_mono`), parse
+  inversion (`parseTreeMCSPPrefixInput_inversion`), the two window computations on a
+  concatenated word, and the headline
+  `ContentPrefixExtensionLanguage_eq_of_parse`: on every query the strict parser
+  accepts at its convention length, `L'` agrees with the length-gated language.
+- `ContentPrefixExtensionTransfer.lean` — the decision→search extraction transferred
+  to `L'` (the greedy machinery only ever queries deciders on constructed, parseable
+  queries), ending in
+  `not_PpolyDAG_contentPrefixExtension_of_noPolynomialBoundedSearchSolver`: the
+  **same** open lower-bound hypothesis pins `L'` outside `PpolyDAG`. This is the same
+  one-way `PpolyDAG → BoundedSearchSolver` direction as the length-gated chain; **no
+  converse** is proved.
+- `ContentConsolidatedSource.lean` — `verifiedSourceCT_of_noPolynomialBoundedSearchSolver`
+  (generic), `verifiedSourceCT_treePoly` and `NP_not_subset_PpolyDAG_treePolyCT`: the
+  consolidated conditional source re-routed through `L'`, still depending on exactly
+  two explicit hypotheses (`NoPolynomialBoundedSearchSolver` — input (1), unchanged —
+  and `ContentPrefixExtensionNPWitness` — input (2)). The original length-gated chain
+  is left intact for reference.
+
+What this does **not** establish, stated explicitly because the module names invite
+the opposite reading:
+
+- **No padding-stability result.** The design intent is that `L'` depend only on the
+  blank-padded tape, but no lemma proving that (`ContentAccepts` invariant under
+  padding to a larger physical length, or under equality of padded tapes) is present
+  in this directory. Without it, the gain over the length-gated language is
+  *definitional* — `ContentAccepts` never mentions the physical length — and nothing
+  more. The obstruction is not formally shown to be evaded.
+- **No non-vacuity / satisfiability.** Nothing proves that any word is
+  `ContentAccepts`-accepted, or that `L'` is non-empty.
+- **No verifier.** No Turing machine, no runtime bound, and no
+  `TM.accepts … = ContentAccepts …` bridge for `L'` is constructed anywhere.
+  Whether a polynomial-time verifier for `L'` exists is open, and
+  `ContentPrefixExtensionNPWitness` remains an unproved interface.
+- **No separation.** Both open inputs stay explicit arguments of every source in
+  `ContentConsolidatedSource.lean`; no `P ≠ NP` claim follows.
+
+Every theorem of the four modules has its own `#print axioms` line in
+`Pnp4/Tests/AxiomsAudit.lean` and its own `#check` in
+`Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`
+(`ContentPrefixExtensionSurface`).
+
 ### Concrete codec (constructed)
 - `ConcreteCodecGap.lean` (Block 12a) — the audit verdict (no concrete
   `TreeCircuitWitnessCodec` existed *at that time*) + the proved packing reduction
@@ -213,6 +274,13 @@ to `SearchMCSPMagnificationContract`, and no `P ≠ NP` claim follows from them.
 2. **`PrefixExtensionNPWitness (treeMCSPConcretePrefixParser …)`** — a concrete
    verifier Turing machine with a polynomial runtime bound and certificate
    correctness (the NP / runtime track; engineering-heavy but in-principle closable).
+   For the length-gated language this input runs into the length-blindness review
+   above. The `L'` route offers an alternative target,
+   **`ContentPrefixExtensionNPWitness (treeCircuitWitnessCodec (thresholdPoly k))`**,
+   whose language carries no physical-length gate. That is a definitional difference
+   only: no padding-stability lemma, verifier TM, runtime bound, or `TM.accepts`
+   bridge is proved for `L'` either, so input (2) is an unproved interface on **both**
+   routes.
 
 (For an *arbitrary* threshold there is a third input, `PolyBoundedInTable threshold`;
 it is proved for the canonical polynomial thresholds, so it disappears there.)

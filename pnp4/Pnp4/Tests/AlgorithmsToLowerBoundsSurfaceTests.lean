@@ -54,6 +54,10 @@ import Pnp4.Frontier.ContractExpansion.WitnessGrowthReduction
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionNPWitness
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout
+import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
+import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence
+import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionTransfer
+import Pnp4.Frontier.ContractExpansion.ContentConsolidatedSource
 import Pnp4.Frontier.ContractExpansion.ExplicitConditionalSource
 import Pnp4.Frontier.ContractExpansion.ConcreteCodecGap
 import Pnp4.Frontier.ContractExpansion.CircuitTreeBridge
@@ -909,6 +913,77 @@ theorem check_prefixExtensionLanguage_in_NP_of_witness
   prefixExtensionLanguage_in_NP_of_witness parser W
 
 end PrefixExtensionNPWitnessSurface
+
+section ContentPrefixExtensionSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+-- The content-truthful language `L'` and its NP-witness interface (R1/R2).  The interface is a
+-- hypothesis: no verifier TM, runtime bound, or `TM.accepts` bridge for `L'` is constructed
+-- anywhere in this repository, and nothing establishes that `ContentAccepts` is satisfiable.
+#check @Pnp4.Frontier.ContractExpansion.padRead
+#check @Pnp4.Frontier.ContractExpansion.padWord
+#check @Pnp4.Frontier.ContractExpansion.padRead_lt
+#check @Pnp4.Frontier.ContractExpansion.padRead_ge
+#check @Pnp4.Frontier.ContractExpansion.padWord_apply
+#check @Pnp4.Frontier.ContractExpansion.padWord_self
+#check @Pnp4.Frontier.ContractExpansion.contentHeader?
+#check @Pnp4.Frontier.ContractExpansion.contentInput?
+#check @Pnp4.Frontier.ContractExpansion.contentWitness
+#check @Pnp4.Frontier.ContractExpansion.ContentAccepts
+#check @Pnp4.Frontier.ContractExpansion.ContentPrefixExtendable
+#check @Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionLanguage
+#check @Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionLanguage_accepts_iff
+#check @Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNPWitness
+#check @Pnp4.Frontier.ContractExpansion.contentPrefixExtensionLanguage_in_NP_of_witness
+-- Repair brick R3: the coincidence lemma and the reader-monotonicity / parse-inversion /
+-- window-computation ingredients it is assembled from.
+#check @Pnp4.Frontier.ContractExpansion.readBit?_mono
+#check @Pnp4.Frontier.ContractExpansion.readNatBE_mono
+#check @Pnp4.Frontier.ContractExpansion.decodeGammaAux?_mono
+#check @Pnp4.Frontier.ContractExpansion.decodeGamma?_concat_pad
+#check @Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_inversion
+#check @Pnp4.Frontier.ContractExpansion.padWord_concat_left
+#check @Pnp4.Frontier.ContractExpansion.contentWitness_concat
+#check @Pnp4.Frontier.ContractExpansion.contentInput?_concat_of_parse
+#check @Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionLanguage_eq_of_parse
+-- Repair brick R4: the extraction transfer.  This is the *same* one-way
+-- `PpolyDAG → BoundedSearchSolver` direction as the length-gated chain; no converse is proved.
+#check @Pnp4.Frontier.ContractExpansion.DecidesContentPrefixExtensionLanguage
+#check @Pnp4.Frontier.ContractExpansion.correctNextBitDecider_of_decidesContentLanguage
+#check @Pnp4.Frontier.ContractExpansion.boundedSearchSolver_of_deciderFamilyCT
+#check @Pnp4.Frontier.ContractExpansion.boundedSearchSolver_of_PpolyDAG_contentPrefixExtension
+#check @Pnp4.Frontier.ContractExpansion.not_PpolyDAG_contentPrefixExtension_of_noExtractedScheduleSolver
+#check @Pnp4.Frontier.ContractExpansion.not_PpolyDAG_contentPrefixExtension_of_noPolynomialBoundedSearchSolver
+-- Repair brick R5: the CT sources (generic and at a concrete polynomial threshold) and the
+-- conditional separation.  Both open inputs stay explicit arguments in each.
+#check @Pnp4.Frontier.ContractExpansion.verifiedSourceCT_of_noPolynomialBoundedSearchSolver
+#check @Pnp4.Frontier.ContractExpansion.verifiedSourceCT_treePoly
+#check @Pnp4.Frontier.ContractExpansion.NP_not_subset_PpolyDAG_treePolyCT
+
+/-- Repair brick R5 surface (generic source): growth assumptions + the open no-solver bound + a
+content-truthful NP witness assemble a `VerifiedNPDAGLowerBoundSource`.  All three remain explicit
+arguments; the NP-witness argument is an unproved interface. -/
+noncomputable def check_verifiedSourceCT_of_noPolynomialBoundedSearchSolver
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (hGrowth : TreeMCSPExtractionGrowthAssumptions codec)
+    (hNoPoly : NoPolynomialBoundedSearchSolver codec)
+    (hNPWit : ContentPrefixExtensionNPWitness codec) :
+    AlgorithmsToLowerBounds.VerifiedNPDAGLowerBoundSource :=
+  verifiedSourceCT_of_noPolynomialBoundedSearchSolver codec hGrowth hNoPoly hNPWit
+
+/-- Repair brick R5 surface (concrete threshold): at `thresholdPoly k` the growth premise is
+discharged, so the conditional separation through `L'` takes exactly the two open inputs — the
+lower bound (unchanged) and the content-truthful NP-witness interface. -/
+theorem check_NP_not_subset_PpolyDAG_treePolyCT
+    (k : Nat)
+    (hNoPoly : NoPolynomialBoundedSearchSolver (treeCircuitWitnessCodec (thresholdPoly k)))
+    (hNPWit : ContentPrefixExtensionNPWitness (treeCircuitWitnessCodec (thresholdPoly k))) :
+    Pnp3.ComplexityInterfaces.NP_not_subset_PpolyDAG :=
+  NP_not_subset_PpolyDAG_treePolyCT k hNoPoly hNPWit
+
+end ContentPrefixExtensionSurface
 
 section ExplicitConditionalSourceSurface
 

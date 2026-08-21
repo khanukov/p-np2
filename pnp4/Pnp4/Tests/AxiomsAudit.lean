@@ -42,6 +42,8 @@ import Pnp4.Frontier.ContractExpansion.ExtractedScheduleGrowth
 import Pnp4.Frontier.ContractExpansion.ConditionalVerifiedSource
 import Pnp4.Frontier.ContractExpansion.WitnessGrowthReduction
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionNPWitness
+import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSemanticVerifier
+import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout
 import Pnp4.Frontier.ContractExpansion.ExplicitConditionalSource
 import Pnp4.Frontier.ContractExpansion.ConcreteCodecGap
 import Pnp4.Frontier.ContractExpansion.CircuitTreeBridge
@@ -379,3 +381,41 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_malformed_rejected
 #check Pnp4.Frontier.ContractExpansion.treeMCSPConcretePrefixParser
 #check Pnp4.Frontier.ContractExpansion.treeMCSPRuntimeAwarePrefixParser
+
+-- Semantic verifier for the prefix-extension language (NP-verifier track, PR 1).
+-- Standard axiom set [propext, Classical.choice, Quot.sound] throughout.  The arithmetic /
+-- prefix-agreement helpers are Classical-free; the codec-verification path inherits
+-- Classical.choice from the pre-existing verifiesDecidable, and the headline equivalence
+-- additionally from the classical PrefixExtensionLanguage wrapper.
+#print axioms Pnp4.Frontier.ContractExpansion.witnessBits_le_treeMCSPPrefixM
+#print axioms Pnp4.Frontier.ContractExpansion.prefixAgreesBool_eq_true_iff
+#print axioms Pnp4.Frontier.ContractExpansion.verifiesBool_eq_true_iff
+#print axioms Pnp4.Frontier.ContractExpansion.sliceBits?_zero
+#print axioms Pnp4.Frontier.ContractExpansion.witnessBits_le_certificateLength
+#print axioms Pnp4.Frontier.ContractExpansion.extractWitness_eq
+#print axioms Pnp4.Frontier.ContractExpansion.treePrefixSemanticAccepts_eq_of_parse_extract
+#print axioms Pnp4.Frontier.ContractExpansion.treePrefixSemanticAccepts_eq_false_of_extract_none
+#print axioms Pnp4.Frontier.ContractExpansion.treePrefixSemanticAccepts_rejects_malformed
+#print axioms Pnp4.Frontier.ContractExpansion.treePrefixSemanticAccepts_correct
+
+-- Verifier input-tape layout (NP-verifier track); layout arithmetic only, no machine.  The
+-- offset/fit lemmas are Classical-free; the concatBitstring / tape projections inherit
+-- Classical.choice from the noncomputable concatBitstring itself.
+#print axioms Pnp4.Frontier.ContractExpansion.prefixVerifierInputLen_eq
+#print axioms Pnp4.Frontier.ContractExpansion.prefixVerifierWitnessRegion_within_input
+#print axioms Pnp4.Frontier.ContractExpansion.concatBitstring_left
+#print axioms Pnp4.Frontier.ContractExpansion.concatBitstring_right
+#print axioms Pnp4.Frontier.ContractExpansion.verifierTape_left
+#print axioms Pnp4.Frontier.ContractExpansion.verifierTape_right
+#print axioms Pnp4.Frontier.ContractExpansion.queryPrefixOffset_add_witnessBits
+#print axioms Pnp4.Frontier.ContractExpansion.queryPrefixOffset_le
+-- Gamma/x field-fit bounds (gamma-decode phase layout preconditions); Classical-free arithmetic.
+#print axioms Pnp4.Frontier.ContractExpansion.queryXOffset_le_treeMCSPPrefixM
+#print axioms Pnp4.Frontier.ContractExpansion.queryIdxOffset_le_treeMCSPPrefixM
+#print axioms Pnp4.Frontier.ContractExpansion.gammaLen_le_treeMCSPPrefixM
+#print axioms Pnp4.Frontier.ContractExpansion.instanceSize_lt_treeMCSPPrefixM
+-- Gamma payload-read geometry (counter-representation scheme); Classical-free arithmetic.
+#print axioms Pnp4.Frontier.ContractExpansion.gammaLen_eq_two_mul_gammaZeros_add_one
+#print axioms Pnp4.Frontier.ContractExpansion.gammaTermOffset_lt_queryXOffset
+#print axioms Pnp4.Frontier.ContractExpansion.gammaTermOffset_le_treeMCSPPrefixM
+#print axioms Pnp4.Frontier.ContractExpansion.gammaMirror_mem

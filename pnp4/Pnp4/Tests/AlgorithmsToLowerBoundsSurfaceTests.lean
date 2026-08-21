@@ -1012,10 +1012,12 @@ theorem check_NP_not_subset_PpolyDAG_treePolyCT
 #check @Pnp4.Frontier.ContractExpansion.ContentAccepts_iff_of_padRead_eq
 -- Conditional transport (NOT an unconditional existence result): an already-successful strict decode
 -- also succeeds through the `2N+1` margin, and an already-extendable query's accepted word stays
--- accepted at every larger physical length.  The second conclusion is existential over certificates,
--- but only under undischarged hypotheses; no unconditional existential / non-emptiness result is
--- proved anywhere in this repository, so nothing here establishes that `ContentAccepts` is
--- satisfiable or that `L'` is non-empty.
+-- accepted at every larger physical length.  The second is a CONDITIONAL existential: its conclusion
+-- is existential over certificates, available only under the four explicit hypotheses of its
+-- statement (`hparse`, `hn`, `hext` -- none discharged anywhere -- plus the padding bound `hT`,
+-- which only fixes the target length).  No unconditional existential / non-emptiness result for
+-- `ContentAccepts` or `L'` is proved anywhere in this repository, so nothing here establishes that
+-- `ContentAccepts` is satisfiable or that `L'` is non-empty.
 #check @Pnp4.Frontier.ContractExpansion.contentHeader?_of_decodeGamma
 #check @Pnp4.Frontier.ContractExpansion.ContentAccepts_padWord_of_prefixExtendable
 

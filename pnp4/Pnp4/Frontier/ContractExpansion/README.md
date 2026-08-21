@@ -216,10 +216,14 @@ in dependency order:
   lemmas — `contentHeader?_of_decodeGamma` and
   `ContentAccepts_padWord_of_prefixExtendable` — are **conditional transport**: each
   assumes an already-successful strict decode / an already-extendable query and transports
-  it. The second one's conclusion is an existential over certificates, but only under
-  undischarged hypotheses, so neither yields an unconditional witness. Every statement in
-  the module is about `ContentAccepts` on complete words, **not** about the language
-  wrapper (see the scope paragraph below). Verified axiom footprint: fourteen entries are
+  it. The second one is a **conditional existential**: its conclusion is an existential
+  over certificates, available only under the four explicit hypotheses of its statement
+  (`hparse`, `hn`, `hext` — undischarged — plus the padding bound `hT`), so neither
+  yields an unconditional witness. The helper lemmas are generic statements about
+  `padRead` / `padWord`, the strict readers and the gamma decoder; the headline results
+  are invariance of `ContentAccepts` on complete words. Nothing in the module is a
+  statement about the language wrapper (see the scope paragraph below). Verified axiom
+  footprint: fourteen entries are
   `[propext, Quot.sound]`, one (`readBit?_padWord_of_lt`) is axiom-free, and only
   `ContentAccepts_padWord_of_prefixExtendable` adds `Classical.choice`, routing through the
   noncomputable `concatBitstring` and the classical language wrapper.
@@ -286,13 +290,16 @@ the opposite reading:
   sides agree *including on failure*, not that either side succeeds.
 - **No unconditional non-vacuity / satisfiability.** Nothing proves *unconditionally*
   that any word is `ContentAccepts`-accepted, or that `L'` is non-empty. The one
-  existential conclusion in the directory,
-  `ContentAccepts_padWord_of_prefixExtendable`, is available only under its three
-  undischarged hypotheses (`hparse`, `hn`, `hext`).
-- **No padding invariance of the language `L'`.** The padding lemmas are about
-  `ContentAccepts` on complete words; the wrapper quantifies over certificates whose
-  length and concatenation offset both move with the physical length, so wrapper-level
-  invariance is unproved (scope paragraph above).
+  existential statement about `ContentAccepts`,
+  `ContentAccepts_padWord_of_prefixExtendable`, is a conditional existential: it is
+  available only under the four explicit hypotheses of its statement — `hparse`, `hn`,
+  `hext`, none discharged anywhere, plus the padding bound `hT`, which only fixes the
+  target length.
+- **No padding invariance of the language `L'`.** The padding lemmas are generic
+  statements about `padRead` / `padWord`, the strict readers and the gamma decoder,
+  topped by invariance of `ContentAccepts` on complete words; the wrapper quantifies
+  over certificates whose length and concatenation offset both move with the physical
+  length, so wrapper-level invariance is unproved (scope paragraph above).
 - **No verifier.** No Turing machine, no runtime bound, and no
   `TM.accepts … = ContentAccepts …` bridge for `L'` is constructed anywhere. Note the
   interface's `runTime_poly` field bounds `M.runTime` at the length-dependent point

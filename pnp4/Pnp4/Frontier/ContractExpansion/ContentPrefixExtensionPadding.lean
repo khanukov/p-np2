@@ -45,8 +45,12 @@ Taken together, these close the residual `N`-dependence that `ContentPrefixExten
 length of a complete word is no longer observable **in `ContentAccepts`**.  That is an invariance
 property of one predicate of the specification, and of nothing else.  In particular:
 
-* **it is not padding-invariance of the language `L'` (`ContentPrefixExtensionLanguage`).**  Every
-  statement below is about `ContentAccepts` applied to a *complete* word.  Membership of a *query*
+* **it is not padding-invariance of the language `L'` (`ContentPrefixExtensionLanguage`).**  The
+  helper lemmas below are generic statements about `padRead` / `padWord`, the strict readers
+  (`readBit?`, `readNatBE`) and the gamma decoder (`decodeGammaAux?`); the headline results
+  (`ContentAccepts_padWord_of_le`, `ContentAccepts_iff_of_padRead_eq`) are invariance statements
+  about `ContentAccepts` applied to a *complete* word.  No statement in this module mentions the
+  wrapper at all, and none is about a *query*.  Membership of a *query*
   `y` at physical length `m` unfolds (via `ContentPrefixExtendable`) to
   `∃ w : Bitstring (certificateLength m 1), ContentAccepts codec (concatBitstring y w)`, and **both**
   the certificate length and the offset at which `w` is concatenated are functions of `m`.  Padding
@@ -65,14 +69,16 @@ property of one predicate of the specification, and of nothing else.  In particu
   and gates on `m = treeMCSPPrefixM codec n_dec`; that this never fires needs `n_dec = n'` and is
   still **unproved**.
 
-Two further lemmas are **conditional transport** statements, not existence statements:
+Two further lemmas are **conditional transport** statements:
 `contentHeader?_of_decodeGamma` (an *already successful* strict decode also succeeds through the
 `2N+1` margin) and `ContentAccepts_padWord_of_prefixExtendable` (an *already* prefix-extendable
 query at its convention length yields a certificate whose concatenation is content-accepted, and
-stays accepted at every larger physical length).  The second one's conclusion *is* an existential
-over certificates, but only under its three undischarged hypotheses: **no unconditional existential
-/ non-emptiness result is proved here**, so nothing in this module asserts that `ContentAccepts` is
-satisfiable or that `L'` is non-empty.  Producing such a witness needs a truth table with a
+stays accepted at every larger physical length).  The second one is a **conditional existential**:
+its conclusion *is* an existential over certificates, but it is available only under the four
+explicit hypotheses of its statement — `hparse`, `hn` and `hext`, none of which is discharged
+anywhere, plus the padding bound `hT`, which only fixes the target length.  So **no unconditional
+existential / non-emptiness result is proved here**, and nothing in this module asserts that
+`ContentAccepts` is satisfiable or that `L'` is non-empty.  Producing such a witness needs a truth table with a
 threshold-respecting circuit plus the codec/parse round-trip, which is not done anywhere in this
 directory.
 
@@ -344,9 +350,10 @@ theorem ContentAccepts_iff_of_padRead_eq (codec : TreeCircuitWitnessCodec thresh
 /-! ### Conditional transport (no unconditional existence claim)
 
 Both lemmas below take an already-successful decode / an already-extendable query as a hypothesis and
-transport it.  The second one's conclusion is an existential over certificates, but it is available
-only under undischarged hypotheses, so neither lemma witnesses — unconditionally — that
-`ContentAccepts` is satisfiable. -/
+transport it.  The second one is a conditional existential: its conclusion is an existential over
+certificates, available only under the four explicit hypotheses of its statement (`hparse`, `hn`,
+`hext` — undischarged — plus the padding bound `hT`), so neither lemma witnesses —
+unconditionally — that `ContentAccepts` is satisfiable. -/
 
 /-- **The `2N+1` margin is harmless.**  Whatever the strict decoder reads off the word itself, the
 content header reads too.  (The converse fails on purpose: a terminator inside the support whose
@@ -361,12 +368,13 @@ theorem contentHeader?_of_decodeGamma {N : Nat} (z : PrefixBitVec N) {r : Nat ×
 
 /-- **Conditional acceptance transport.**  *If* a query at its convention length parses and is
 prefix-extendable, *then* some certificate makes the concatenation content-accepted, and — by padding
-stability — it stays accepted at every larger physical length.  Both hypotheses of the coincidence
-lemma (`hparse` and `hn : input.n = n`) are required, and neither they nor `hext` are discharged
-anywhere.  The conclusion *is* an existential over certificates, but only under those hypotheses:
-this does **not** show that such a query exists, so it is no unconditional existential /
-non-emptiness result for `ContentAccepts` — nor for `L'`, whose membership it does not transport
-across physical lengths. -/
+stability — it stays accepted at every larger physical length.  The statement carries **four** explicit hypotheses:
+both hypotheses of the coincidence lemma (`hparse` and `hn : input.n = n`) and `hext`, none of which
+is discharged anywhere, plus the padding bound `hT`, which only says the target length covers
+query ++ certificate.  The conclusion *is* an existential over certificates, but a **conditional**
+one, available only under those four: this does **not** show that such a query exists, so it is no
+unconditional existential / non-emptiness result for `ContentAccepts` — nor for `L'`, whose
+membership it does not transport across physical lengths. -/
 theorem ContentAccepts_padWord_of_prefixExtendable
     (codec : TreeCircuitWitnessCodec threshold)
     {n : Nat} (y : PrefixBitVec (treeMCSPPrefixM codec n))

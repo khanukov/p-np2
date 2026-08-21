@@ -362,9 +362,11 @@ end Pnp4
 -- whole chain is Classical-free (nothing / [propext, Quot.sound]); only the final entry inherits
 -- Classical.choice, from the noncomputable concatBitstring and the classical language wrapper it
 -- routes through.  The last two entries are CONDITIONAL transport lemmas (they assume a successful
--- decode / an extendable query); the second one's conclusion IS an existential over certificates,
--- but only under undischarged hypotheses, so no UNCONDITIONAL existential / non-emptiness result is
--- proved -- neither that ContentAccepts is satisfiable nor that L' is non-empty.
+-- decode / an extendable query); the second one is a CONDITIONAL existential -- its conclusion IS an
+-- existential over certificates, available only under the four explicit hypotheses of its statement
+-- (hparse, hn, hext, none discharged anywhere, plus the padding bound hT, which only fixes the
+-- target length), so no UNCONDITIONAL existential / non-emptiness result is proved -- neither that
+-- ContentAccepts is satisfiable nor that L' is non-empty.
 #print axioms Pnp4.Frontier.ContractExpansion.padRead_padWord_of_le
 #print axioms Pnp4.Frontier.ContractExpansion.padWord_padWord_of_le
 #print axioms Pnp4.Frontier.ContractExpansion.eq_padWord_of_padRead_eq

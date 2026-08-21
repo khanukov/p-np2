@@ -90,6 +90,8 @@ section DagSupportCardinalitySurface
 
 open Pnp3.ComplexityInterfaces
 
+#check @DagCircuit.wireDirectInputCover
+#check @DagCircuit.gateDirectInputCover
 #check @DagCircuit.directInputCover
 #check @DagCircuit.supportAt_subset_directInputCover
 #check @DagCircuit.support_subset_directInputCover

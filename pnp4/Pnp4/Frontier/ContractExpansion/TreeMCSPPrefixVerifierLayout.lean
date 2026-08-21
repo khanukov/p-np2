@@ -151,7 +151,9 @@ theorem queryPrefixOffset_add_witnessBits
   unfold queryPrefixOffset queryIdxOffset queryXOffset treeMCSPPrefixM
   omega
 
-/-- Every query-field offset lies within the query block. -/
+/-- The witness-prefix field offset lies within the query block.  This covers that offset only; the
+earlier field offsets are bounded by the companion lemmas `queryXOffset_le_treeMCSPPrefixM` and
+`queryIdxOffset_le_treeMCSPPrefixM`. -/
 theorem queryPrefixOffset_le
     {threshold : Nat → Nat} (codec : TreeCircuitWitnessCodec threshold) (n : Nat) :
     queryPrefixOffset codec n ≤ treeMCSPPrefixM codec n := by

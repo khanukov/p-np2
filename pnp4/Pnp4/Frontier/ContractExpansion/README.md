@@ -130,6 +130,24 @@ NP ⊄ PpolyDAG     (and thence  P ≠ NP)        — both kept strictly conditi
   explicit interfaces (`PolynomialWitnessCodec`, `NoPolynomialBoundedSearchSolver`,
   `PrefixExtensionNPWitness`), and `NP_not_subset_PpolyDAG_of_explicit_interfaces`.
 
+### Verifier semantics and tape layout (NP-verifier track)
+- `TreeMCSPPrefixSemanticVerifier.lean` — the computable `Bool`-valued verifier
+  `treePrefixSemanticAccepts` (parse the query, slice the witness prefix out of the
+  certificate, check prefix agreement + codec verification) and its correctness
+  `treePrefixSemanticAccepts_correct`: the **mathematical core** of the NP-membership
+  obligation at `k = 1`. It builds **no** Turing machine and proves **no** runtime
+  bound; the `TM.accepts (concatBitstring x w) = treePrefixSemanticAccepts …` bridge
+  is still missing.
+- `TreeMCSPPrefixVerifierLayout.lean` — data-independent tape arithmetic for that
+  future machine: input length / certificate start, the `concatBitstring` bit
+  projections, the start-tape reading lemmas, the query field offsets, and the
+  gamma payload-read geometry. Layout facts only; the offset/fit lemmas are
+  `Classical`-free, the `concatBitstring` projections inherit `Classical.choice`
+  from the noncomputable `concatBitstring` itself.
+
+These are infrastructure for a future NP-membership proof: no lower bound, no change
+to `SearchMCSPMagnificationContract`, and no `P ≠ NP` claim follows from them.
+
 ### Concrete codec (constructed)
 - `ConcreteCodecGap.lean` (Block 12a) — the audit verdict (no concrete
   `TreeCircuitWitnessCodec` existed *at that time*) + the proved packing reduction

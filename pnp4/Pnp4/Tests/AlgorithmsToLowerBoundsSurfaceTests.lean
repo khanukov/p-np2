@@ -52,6 +52,8 @@ import Pnp4.Frontier.ContractExpansion.ExtractedScheduleGrowth
 import Pnp4.Frontier.ContractExpansion.ConditionalVerifiedSource
 import Pnp4.Frontier.ContractExpansion.WitnessGrowthReduction
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionNPWitness
+import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSemanticVerifier
+import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout
 import Pnp4.Frontier.ContractExpansion.ExplicitConditionalSource
 import Pnp4.Frontier.ContractExpansion.ConcreteCodecGap
 import Pnp4.Frontier.ContractExpansion.CircuitTreeBridge
@@ -3599,6 +3601,40 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms Pnp4.Frontier.ContractExpansion.parse_encodeTreeMCSPPrefixFields
 #print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_length_convention
 #check Pnp4.Frontier.ContractExpansion.treeMCSPRuntimeAwarePrefixParser
+
+-- Semantic verifier for the prefix-extension language (NP-verifier track, PR 1).
+#check @Pnp4.Frontier.ContractExpansion.treePrefixSemanticAccepts
+#check @Pnp4.Frontier.ContractExpansion.treePrefixSemanticAccepts_correct
+#check @Pnp4.Frontier.ContractExpansion.treePrefixSemanticAccepts_rejects_malformed
+#check @Pnp4.Frontier.ContractExpansion.witnessBits_le_treeMCSPPrefixM
+#check @Pnp4.Frontier.ContractExpansion.prefixAgreesBool
+#check @Pnp4.Frontier.ContractExpansion.verifiesBool
+#check @Pnp4.Frontier.ContractExpansion.extractWitness?
+
+-- Verifier input-tape layout (NP-verifier track): layout arithmetic only, no machine.
+#check @Pnp4.Frontier.ContractExpansion.prefixVerifierInputLen
+#check @Pnp4.Frontier.ContractExpansion.prefixVerifierInputLen_eq
+#check @Pnp4.Frontier.ContractExpansion.prefixVerifierCertStart
+#check @Pnp4.Frontier.ContractExpansion.prefixVerifierWitnessRegion_within_input
+#check @Pnp4.Frontier.ContractExpansion.concatBitstring_left
+#check @Pnp4.Frontier.ContractExpansion.concatBitstring_right
+#check @Pnp4.Frontier.ContractExpansion.verifierTape_left
+#check @Pnp4.Frontier.ContractExpansion.verifierTape_right
+#check @Pnp4.Frontier.ContractExpansion.queryXOffset
+#check @Pnp4.Frontier.ContractExpansion.queryIdxOffset
+#check @Pnp4.Frontier.ContractExpansion.queryPrefixOffset
+#check @Pnp4.Frontier.ContractExpansion.queryPrefixOffset_add_witnessBits
+#check @Pnp4.Frontier.ContractExpansion.queryXOffset_le_treeMCSPPrefixM
+#check @Pnp4.Frontier.ContractExpansion.queryIdxOffset_le_treeMCSPPrefixM
+#check @Pnp4.Frontier.ContractExpansion.gammaLen_le_treeMCSPPrefixM
+#check @Pnp4.Frontier.ContractExpansion.instanceSize_lt_treeMCSPPrefixM
+-- Gamma payload-read geometry (the counter-representation scheme).
+#check @Pnp4.Frontier.ContractExpansion.gammaZeros
+#check @Pnp4.Frontier.ContractExpansion.gammaTermOffset
+#check @Pnp4.Frontier.ContractExpansion.gammaLen_eq_two_mul_gammaZeros_add_one
+#check @Pnp4.Frontier.ContractExpansion.gammaTermOffset_lt_queryXOffset
+#check @Pnp4.Frontier.ContractExpansion.gammaTermOffset_le_treeMCSPPrefixM
+#check @Pnp4.Frontier.ContractExpansion.gammaMirror_mem
 
 end Tests
 end Pnp4

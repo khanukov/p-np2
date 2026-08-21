@@ -238,6 +238,15 @@ depends on **exactly two** explicit hypotheses:
    concrete verifier TM with a polynomial runtime bound and certificate correctness (the
    NP / runtime track).
 
+The preferred verifier target is the content-truthful reroute
+`NP_not_subset_PpolyDAG_treePolyCT`, whose two hypotheses are the same no-solver lower bound and
+`ContentPrefixExtensionNPWitness (treeCircuitWitnessCodec (thresholdPoly k))`. On that route the
+convention-length equality gate and gamma narrowing are closed, exactly three tag/index/padding
+read-value tests remain, and concrete `ContentAccepts` non-vacuity is closed. D1b conditionally
+repackages a supplied `ContentVerifierBridge`, but constructs no bridge instance. Wrapper-level
+`L'` padding invariance, the concrete verifier bridge, runtime/advice enforcement, and
+`NoPolynomialBoundedSearchSolver` remain open.
+
 For an *arbitrary* threshold there is a third input, `PolyBoundedInTable threshold`;
 it is proved for the canonical polynomial thresholds, so it disappears at
 `thresholdPoly k`.  The general capstone `verifiedSource_of_explicit_interfaces`

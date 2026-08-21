@@ -119,23 +119,25 @@ Canonical docs must say:
 8. the pnp4 decision→search extraction is formalized in one direction only
    (`PpolyDAG → solver` plus its contrapositive), never as an equivalence, and its
    no-solver input is not a weak bound amplified by magnification;
-9. the pnp4 `PrefixExtensionNPWitness` obligation is stated in the repository's
-   single-tape, exact-step `TM` model, with no cross-model runtime-robustness theorem.
+9. the preferred pnp4 `ContentPrefixExtensionNPWitness` obligation (and the retained
+   `PrefixExtensionNPWitness` compatibility target) is stated in the repository's single-tape,
+   exact-step `TM` model, with no cross-model runtime-robustness theorem and no formal prevention of
+   input-length advice.
 
 ### Target 4. pnp4 mainline: the two consolidated source obligations
 
 Status: the P-vs-NP mainline (per `AGENTS.md`).
 
-`pnp4/Pnp4/Frontier/ContractExpansion/ConsolidatedTreeSeparation.lean` reduces the
-verified-source chain, at a concrete polynomial threshold, to exactly two explicit
-hypotheses:
+The preferred content-truthful capstone in
+`pnp4/Pnp4/Frontier/ContractExpansion/ContentConsolidatedSource.lean` reduces the verified-source
+chain, at a concrete polynomial threshold, to exactly two explicit hypotheses:
 
 ```text
-NP_not_subset_PpolyDAG_treePoly
+NP_not_subset_PpolyDAG_treePolyCT
   (k : Nat)
   (hNoPoly : NoPolynomialBoundedSearchSolver (treeCircuitWitnessCodec (thresholdPoly k)))
-  (hNPWit  : PrefixExtensionNPWitness
-               (treeMCSPConcretePrefixParser (thresholdPoly k) …))
+  (hNPWit  : ContentPrefixExtensionNPWitness
+               (treeCircuitWitnessCodec (thresholdPoly k)))
   : ComplexityInterfaces.NP_not_subset_PpolyDAG
 ```
 
@@ -143,9 +145,9 @@ NP_not_subset_PpolyDAG_treePoly
    problem.  Research-level mathematics, not a Lean engineering task.  Because the
    extraction is one-way and the instance length is `tableLen n = 2^n`, it is at least as
    strong as "this concrete NP language is not in `P/poly`".
-2. `hNPWit` is a concrete verifier TM plus polynomial runtime bound plus certificate
-   correctness, in the model described in Target 3 item 9.  Engineering-heavy but in
-   principle closable.
+2. `hNPWit` is a concrete verifier TM plus polynomial runtime bound plus certificate correctness,
+   in the model described in Target 3 item 9. D1b proves that a supplied
+   `ContentVerifierBridge` repackages into this witness, but no bridge instance is constructed.
 3. `PolyBoundedInTable threshold` is proved for the canonical polynomial thresholds
    (`ThresholdGrowth.lean`), so it is not an open input at `thresholdPoly k`.
 
@@ -153,8 +155,16 @@ Neither of the two open hypotheses is proved, so the endpoint stays strictly
 conditional.  What *is* proved: the one-way decision→search extraction and its
 contrapositive, the growth reduction, the concrete `treeCircuitWitnessCodec`
 (`ConcreteTreeCodec.lean`), the threshold-growth discharge
-(`polyBoundedInTable_thresholdPoly`), and the consolidated conditional theorem
-itself.  See `pnp4/Pnp4/Frontier/ContractExpansion/README.md` for the full
+(`polyBoundedInTable_thresholdPoly`), concrete `ContentAccepts` non-vacuity, gamma narrowing, and
+vacuity of the convention-length equality gate. Exactly three tag/index/padding read-value tests
+remain in the parser characterization.
+
+For input (2), the remaining work is an actual concrete verifier bridge: machine construction,
+runtime proof, and exact-step acceptance correctness. Wrapper-level `L'` padding invariance and
+formal runtime/advice enforcement also remain open; complete-word `ContentAccepts` padding
+invariance does not close either item. The original length-gated
+`NP_not_subset_PpolyDAG_treePoly` / `PrefixExtensionNPWitness` capstone remains compiled and audited
+as a compatibility route. See `pnp4/Pnp4/Frontier/ContractExpansion/README.md` for the full
 proved-vs-open breakdown.
 
 ## Non-Goals Right Now

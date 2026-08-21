@@ -196,8 +196,9 @@ review order (the `lakefile.lean` registration is the dependency order):
   `gammaLen input.n` nor relates `pr.2.n` to the header value `pr.1`, so no injectivity of
   `treeMCSPPrefixM codec` and no gamma canonicity is used (plan stop/go F0b). Both entries are
   axiom-light: `[propext, Quot.sound]`, no `Classical.choice`. Scope is recovery only; the separate
-  part-2 module below proves the target bound. It gives no satisfiability of `ContentAccepts` and
-  constructs no verifier TM, runtime bound or `TM.accepts` bridge.
+  part-2 module below proves the target bound. This recovery module itself gives no satisfiability
+  theorem for `ContentAccepts` and constructs no verifier TM, runtime bound or `TM.accepts` bridge;
+  GATE-0 separately proves concrete non-vacuity below.
 - `ContentTargetSizeBound.lean` — FEAS-0 slice, part 2 and outcome (a). It computes the concrete
   all-blank witness decode at zero and positive parsed targets, uses the input-zero projection to
   force a supported truth-table cell and `tableLen r ≤ N`, and proves
@@ -280,8 +281,9 @@ review order (the `lakefile.lean` registration is the dependency order):
   `contentSemanticAccepts_eq_false_of_contentInput_none` rejects parse failures;
   `contentSemanticAccepts_padWord_of_le` inherits complete-word padding stability; and
   `contentSemanticAccepts_correct` gives the existential certificate characterization of `L'`.
-  This is semantic Infrastructure only: it constructs no TM or runtime bound, proves no
-  non-vacuity or NP membership, and reduces no lower-bound source obligation. The four theorems
+  This is semantic Infrastructure only: it constructs no TM or runtime bound, does not itself prove
+  non-vacuity or NP membership, and reduces no lower-bound source obligation. GATE-0 separately
+  supplies concrete non-vacuity. The four theorems
   stay within `[propext, Classical.choice, Quot.sound]` or a subset, and the surface tests include
   a concrete evaluation to guard computability.
 - `ContentPrefixExtensionGateClosure.lean` — I1 (`VERIFIER_RETARGET_PLAN.md` §4.3). It proves
@@ -323,7 +325,7 @@ review order (the `lakefile.lean` registration is the dependency order):
   `ContentPrefixExtendable_iff_of_parse`, without either Boolean language wrapper. Its statement
   necessarily inherits `Classical.choice` from the pre-existing noncomputable `concatBitstring`.
   It is a **conditional existential**, available only under `hparse`, `hn`, `hext`, and `hT`, so it
-  proves no unconditional satisfiability or non-emptiness result.
+  is not the unconditional non-vacuity result; that result is the separate GATE-0 module.
 - `ContentPrefixExtensionTransfer.lean` — the decision→search extraction transferred
   to `L'` (the greedy machinery only ever queries deciders on constructed, parseable
   queries), ending in
@@ -378,7 +380,7 @@ the opposite reading:
   evaluation step both move with the input length, as above), no machine is built, and
   the obstruction remains a review of the definitions, never a Lean impossibility
   theorem — so nothing here shows that a verifier for `L'` exists or is achievable.
-- **The re-decode length gate is vacuous, but three value tests remain.** I1 proves that a
+- **The re-decode length gate is vacuous, but three read-value tests remain.** I1 proves that a
   successful content header narrows with the same decoded target and consumed width, so the
   parser's `m = M n_dec` comparison is reflexive. It does not prove unconditional parser success:
   a wrong tag, an index exceeding the witness width, or a nonzero inactive suffix is still rejected,
@@ -488,9 +490,11 @@ makes no `P ≠ NP` claim.
    above (a limitation of the planned idle-sink machine class, **not** of the TM
    model, which is not length-blind). The `L'` route offers an alternative target,
    **`ContentPrefixExtensionNPWitness (treeCircuitWitnessCodec (thresholdPoly k))`**,
-   whose language carries no *explicit* gate on the ambient physical length (the
+   whose language carries no *explicit* gate on the ambient physical length. The
    strict parser's own equality gate survives inside `contentInput?`, applied to the
-   computed window, with vacuity unproved). On the specification side that difference
+   computed window, but I1 proves it unconditionally reflexive after a successful header decode;
+   exactly the tag, decoded-index, and inactive-padding read-value tests remain. On the
+   specification side that difference
    is now backed by a proof — `ContentAccepts` is invariant under blank padding of a
    *complete* word (`ContentPrefixExtensionPadding.lean`), so its `2N+1` header window
    no longer makes acceptance move with `N`. It buys nothing on the machine side, and

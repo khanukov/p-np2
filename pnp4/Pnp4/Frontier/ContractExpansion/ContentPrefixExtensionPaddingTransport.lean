@@ -15,7 +15,8 @@ language wrapper.  Thus the measured `Classical.choice` dependency comes from `c
 not from `ContentPrefixExtensionLanguage` or `PrefixExtensionLanguage`.
 
 This is a **conditional existential**, available only under `hparse`, `hn`, `hext`, and `hT`.
-It proves no unconditional satisfiability or non-emptiness result.
+It is not the unconditional satisfiability or non-emptiness result; GATE-0 supplies concrete
+`ContentAccepts` non-vacuity separately in `ContentPrefixExtensionNonVacuity.lean`.
 
 **Progress classification (AGENTS.md): Infrastructure** — dependency isolation only; no source
 obligation is reduced and no separation is proved.

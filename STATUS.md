@@ -568,16 +568,30 @@ This is **not** unconditional progress: it proves neither `P ≠ NP` nor
 `NP_not_subset_PpolyDAG`.  The codec/growth machinery is now concrete: the **first
 concrete `TreeCircuitWitnessCodec`** is constructed (`ConcreteTreeCodec.lean`), and
 `PolyBoundedInTable` is proved for the canonical polynomial thresholds
-(`ThresholdGrowth.lean`).  So at a concrete polynomial threshold the consolidated
-theorem (`ConsolidatedTreeSeparation.lean`,
-`verifiedSource_treePoly` / `NP_not_subset_PpolyDAG_treePoly`) reduces the whole chain
-to **exactly two** explicit open inputs:
+(`ThresholdGrowth.lean`).  So at a concrete polynomial threshold the original
+consolidated theorem (`ConsolidatedTreeSeparation.lean`, `verifiedSource_treePoly` /
+`NP_not_subset_PpolyDAG_treePoly`) has **exactly two** explicit open inputs:
 
 1. `NoPolynomialBoundedSearchSolver (treeCircuitWitnessCodec (thresholdPoly k))` — a
    genuine `P/poly` circuit lower bound for the concrete tree-MCSP search problem
    (the same research-level lower-bound gap described above);
 2. `PrefixExtensionNPWitness (…)` — a concrete NP verifier (TM + runtime + certificate
    correctness).
+
+The preferred verifier target is now the content-truthful reroute in
+`ContentConsolidatedSource.lean`. Its concrete capstone
+`NP_not_subset_PpolyDAG_treePolyCT` likewise has exactly two explicit hypotheses: the same
+`NoPolynomialBoundedSearchSolver` and
+`ContentPrefixExtensionNPWitness (treeCircuitWitnessCodec (thresholdPoly k))`.
+
+The post-GATE/I1/D1b boundary is exact. The convention-length equality gate and gamma narrowing are
+proved; `contentInput?` retains exactly three tag/index/padding read-value tests; and concrete
+`ContentAccepts` non-vacuity is proved. D1b is complete as a **conditional repackaging** from a
+supplied `ContentVerifierBridge` to the content NP-witness interface. Still open are wrapper-level
+`L'` padding invariance, an actual concrete verifier bridge (machine, runtime proof, and exact-step
+acceptance equation), formal runtime/advice enforcement, and the
+`NoPolynomialBoundedSearchSolver` lower bound. None of the closed specification or packaging work
+constructs a bridge instance or proves NP membership.
 
 **Runtime model caveat on input (2).**  `NP` there is `NP_TM`
 (`pnp3/Complexity/Interfaces.lean`) over `Pnp3.Internal.PsubsetPpoly.TM`
@@ -587,7 +601,7 @@ length `n + runTime n + 1` (`TM.tapeLength`), whose `runTime : ℕ → ℕ` is a
 field** rather than a derived step count, and whose `TM.accepts` is evaluated **at
 exactly step `runTime n`** (`TM.run` iterates `stepConfig` exactly `M.runTime n` times,
 then checks `state = M.accept`) with no halting predicate.  Because the declared budget
-is also the evaluation point, `PrefixExtensionNPWitness.runTime_poly` is a genuine
+is also the evaluation point, the verifier interfaces' `runTime_poly` field is a genuine
 restriction on the machine, not a self-certification.  That restriction is numeric
 only — it bounds the size of `runTime` without constraining *which* function it is — and
 the `P`-side consequence of that is the runtime-advice caveat recorded above.  No

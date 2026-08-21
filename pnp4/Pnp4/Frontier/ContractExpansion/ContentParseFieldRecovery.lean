@@ -33,12 +33,14 @@ what the consumer needs and all that the parser guarantees.  No range side condi
 
 **Scope — what this does not buy.**  These are field-recovery facts about the strict parser, nothing
 more.  In particular they do **not** bound the decoded target (the now-landed FEAS-0 headline lives
-in slice part 2, `ContentTargetSizeBound.lean`), they do **not** show `ContentAccepts` is
+in slice part 2, `ContentTargetSizeBound.lean`), they do **not themselves** show `ContentAccepts` is
 satisfiable, they build no verifier TM, runtime bound or `TM.accepts` bridge for `L'`, and they say
-nothing about the vacuity of the strict parser's surviving value tests
+nothing about the strict parser's surviving value tests
 (`tag = treePrefixTag`, `i ≤ codec.witnessBits n`, `padZero = true`).  Statements are generic in the
 codec because *recovery* is; every FEAS-0 statement that constrains a decode is specialized to
 `treeCircuitWitnessCodec (thresholdPoly k)`, where alone it holds (§1.0).
+Concrete non-vacuity is supplied separately by GATE-0, and I1 separately proves the
+convention-length equality gate vacuous while leaving exactly those three read-value tests.
 
 **Progress classification (AGENTS.md): Infrastructure** — parser field recovery for the NP-verifier
 track; proves no separation and reduces neither `VerifiedNPDAGLowerBoundSource` nor

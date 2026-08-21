@@ -15,8 +15,10 @@ constructive decision procedures behind `prefixAgreesBool` and `verifiesBool`; i
 from codec verification and the existing classical language wrapper, or a subset of it.
 
 **Progress classification:** Infrastructure.  FEAS-0's target-size bound is already proved, but this
-module still constructs no Turing machine or runtime bound, does not establish non-vacuity of
-`ContentAccepts`, and does not discharge either P-vs-NP source obligation.  **No `P ≠ NP` claim.**
+module still constructs no Turing machine or runtime bound and does not discharge either P-vs-NP
+source obligation.  It does not itself establish non-vacuity; GATE-0 proves concrete
+`ContentAccepts` non-vacuity separately in `ContentPrefixExtensionNonVacuity.lean`.
+**No `P ≠ NP` claim.**
 -/
 
 namespace Pnp4

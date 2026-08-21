@@ -64,11 +64,12 @@ property of one predicate of the specification, and of nothing else.  In particu
   `TM.accepts` is evaluated at exactly step `runTime n`, all of which move with the input length
   (`pnp3/Complexity/PsubsetPpolyInternal/TuringEncoding.lean`).  No machine is built or claimed
   here, and no impossibility result is formalised anywhere in this directory;
-* **it does not prove that `contentInput?`'s surviving equality gate is vacuous.**  Stability says
-  the two sides agree, *including on failure*.  `contentInput?` still runs the strict parser on the
-  computed window `padWord z (treeMCSPPrefixM codec n')`, where the parser re-decodes its own header
-  and gates on `m = treeMCSPPrefixM codec n_dec`; that this never fires needs `n_dec = n'` and is
-  still **unproved**.
+* **padding stability alone does not prove the equality gate vacuous.**  Stability says the two
+  sides agree, *including on failure*.  The separate I1 module
+  `ContentPrefixExtensionGateClosure.lean` proves the needed gamma narrowing and shows that, after a
+  successful header decode, the convention-length equality compares the computed length with
+  itself.  Exactly three parser rejection points remain: the tag, decoded-index, and
+  inactive-padding read-value tests.
 
 The axiom-light conditional lemma `contentHeader?_of_decodeGamma` transports an already successful
 strict decode through the `2N+1` margin.  The certificate-producing conditional transport theorem
@@ -76,7 +77,9 @@ is isolated in `ContentPrefixExtensionPaddingTransport.lean`, because its statem
 pre-existing noncomputable `concatBitstring` and therefore necessarily inherits `Classical.choice`.
 
 Scope: no Turing machine, no runtime bound, no NP-witness achievability, no new source/contract
-wrapper, no lower bound, no unconditional existence claim, no separation.  The `(★′)` bridge itself
+wrapper, no lower bound, no unconditional existence theorem **in this module**, no separation.
+Concrete `ContentAccepts` non-vacuity is proved separately by
+`ContentPrefixExtensionNonVacuity.lean`.  The `(★′)` bridge itself
 (`TM.accepts … = ContentAccepts …`) is *not* claimed here; this module supplies one
 specification-side ingredient that bridge would need.
 

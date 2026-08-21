@@ -24,8 +24,12 @@ blank-padded word; the witness window follows it).  What `L'` drops is the *expl
 `treeMCSPPrefixM codec n`.  The strict parser's own `m = treeMCSPPrefixM codec n` equality test is
 **not** removed — `contentInput?` invokes that parser on the *computed* window
 `padWord z (treeMCSPPrefixM codec n')`, where the test survives as a comparison of the computed
-window's length against the parser's *re-decoded* target, and its intended vacuity is **unproved**
-(see `contentInput?` below).  Syntactically, `L'` still mentions the physical length `N`:
+window's length against the parser's *re-decoded* target.  That comparison is now **proved
+unconditionally vacuous** after a successful header decode by I1
+(`ContentPrefixExtensionGateClosure.lean`: `contentInput?_lengthGate_vacuous`); what remains as
+genuine rejection points are exactly the three read-value tests — the tag value, the decoded-index
+bound, and the inactive-padding zero test (see `contentInput?` below).  Syntactically, `L'` still
+mentions the physical length `N`:
 `contentHeader?` decodes on the `2N+1`-padded word, so `N` fixes both that window's width and the
 gamma decoder's fuel (`decodeGamma?` uses `m + 1`).  Closing that residual `N`-dependence is what a
 padding-stability lemma has to do; no such lemma is proved **in this module** — it is discharged, for
@@ -142,7 +146,8 @@ and witness windows sit at content-computed offsets and are read through `padRea
 *explicit* gate compares the ambient physical length `N` against a convention length.  The strict
 parser's own `m = treeMCSPPrefixM codec n_dec` gate is still executed inside `contentInput?`, on the
 *computed* window rather than on `N`; the separate I1 gate-closure theorem rules out rejection at
-that equality gate after a successful header decode, while three value tests may still reject.
+that equality gate after a successful header decode, while exactly three tag / decoded-index /
+inactive-padding read-value tests may still reject.
 Syntactically the
 definition still mentions the physical length `N`: `contentInput?` calls `contentHeader?`, which
 decodes on `padWord z (2 * N + 1)`, so `N` fixes that window's width and the decoder's fuel.  That
@@ -197,7 +202,9 @@ narrow: `ContentAccepts` carries no *explicit* gate on the ambient physical leng
 through `padRead` at content-computed offsets, and never compares `N` against
 `treeMCSPPrefixM codec n` — so the length-gate step of the obstruction has nothing to attach to.
 The strict parser's own equality gate is not gone; `contentInput?` still runs it against the
-*computed* window length, with vacuity unproved.
+*computed* window length, where I1 (`contentInput?_lengthGate_vacuous`) proves it unconditionally
+vacuous after a successful header decode, leaving the three tag / decoded-index / inactive-padding
+read-value tests as the genuine rejection points.
 Three things are **not** claimed.  (i) That `L'` is independent of the physical length.  Padding
 stability is proved only for `ContentAccepts` on *complete* words
 (`ContentPrefixExtensionPadding.lean`: `ContentAccepts_padWord_of_le`,

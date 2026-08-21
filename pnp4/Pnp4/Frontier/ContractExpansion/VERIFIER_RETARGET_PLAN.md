@@ -1588,7 +1588,8 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
 * The donor manifest's central premise — "nothing on `main` is reusable, branch from `4a8ee0c9`" —
   is false. Nine modules on `main` (CT-A/B/C plus the `#1626` model audit) and the pre-existing
   parser/codec foundation are
-  the actual base, and every slice in §4 is dependency-closed on `main = 98250643`.
+  the actual base, and every slice in §4 is dependency-closed on `main = af2365a2` at this
+  slice-log revision.
 * The donor TM stack is a **transcoder**, not a verifier: it never touches the header, the truth
   table, the size check, or `TM.accepts`, so completing it would not discharge `(★′)`. It is parked
   — but its witness-decoding machinery is a plausible component for a future verifier, so it is

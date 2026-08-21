@@ -1577,7 +1577,8 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
   `contentAccepts_target_poly_treePoly`: accepted complete words have polynomially bounded header
   convention length. This does not build the verifier TM or prove `L' ∈ NP` (§1.0).
 * The length-gated `PrefixExtensionNPWitness` is retained as a compiled and audited compatibility
-  surface, but retired as an alternative target for new verifier work (§1.2).
+  surface and is dispreferred, rather than retired, for new verifier work; a new slice may target it
+  only with the explicit technical or compatibility rationale required by §1.2.
 * The donor manifest's central premise — "nothing on `main` is reusable, branch from `4a8ee0c9`" —
   is false. Nine modules on `main` (CT-A/B/C plus the `#1626` model audit) and the pre-existing
   parser/codec foundation are

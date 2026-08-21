@@ -1425,20 +1425,19 @@ resolve as adjacent-line merges.
 ```bash
 # Base every slice on main, NOT on 4a8ee0c9.
 git fetch origin
-git checkout -b work/<slice-name> 98250643      # or the then-current main
+git checkout -b work/<slice-name> af2365a2      # or the then-current main
 ```
 
-* **Base:** `main` (`98250643` at time of writing). One branch per slice, one PR per branch,
+* **Base:** `main` (`af2365a2` at this slice-log revision). One branch per slice, one PR per branch,
   PR base `main`. No stacking: the slices after FEAS-0 are independent, so stacking would only
   serialize review. **D1b is the one exception, and it stacks on *both* P0 and D1a** — it needs P0's
   `contentSemanticAccepts` for its statement and D1a's `ContentVerifierBridgeFor` for its structure
   (§4.5). Branch it from whichever of the two merges last, and rebase onto the other; do not open it
   against bare `main`.
-* **Naming:** `work/ct-<letter><number>-<topic>`, matching the CT-A/B/C precedent
-  (`work/ct-a-verifier-prereqs`, `work/ct-b-source-chain`, `work/ct-c-padding-stability`).
-  So: `work/ct-feas0-target-size-bound`, `work/ct-gate0-nonvacuity`,
-  `work/ct-p0-content-semantic-verifier`, `work/ct-i1-gate-closure`,
-  `work/ct-d1a-tape-interface`, `work/ct-d1b-bridge-witness`.
+* **Naming:** the active short slice names are `work/feas0-target-bound`,
+  `work/gate0-nonvacuity`, `work/p0-content-semantic`, `work/i1-gate-closure`,
+  `work/d1a-tape-interface`, and `work/d1b-bridge-witness`.  They retain the same one-slice/one-PR
+  discipline as the earlier `work/ct-a-*`, `work/ct-b-*`, and `work/ct-c-*` branches.
 * **Never branch from `pr1526` / `pr1616` / `pr1618`** (§3.3). Never merge them into a slice branch.
 * **No push without an explicit request** (AGENTS.md line 83). Local commits only by default.
 * **Rebase, don't merge**, when `main` moves under an open slice; re-run §6 after every rebase,
@@ -1548,7 +1547,7 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
 | Slice | Branch | Status | Merged as |
 |---|---|---|---|
 | FEAS-0 target size bound | `work/feas0-target-bound` | merged; outcome (a) green | PR #1629 (`af2365a2`) |
-| GATE-0 non-vacuity | `work/gate0-nonvacuity` | implemented; targeted checks green | `80efdd04` (pending PR) |
+| GATE-0 non-vacuity | `work/gate0-nonvacuity` | implemented; review fixes complete | `80efdd04` + `c1994da7` (pending PR) |
 | P0 content semantic verifier | `work/p0-content-semantic` | implemented; review complete | pending PR |
 | I1 gate closure | `work/i1-gate-closure` | implemented; review in progress | — |
 | D1a tape lemmas + bridge structure | `work/d1a-tape-interface` | implemented; review complete | pending PR |

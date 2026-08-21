@@ -45,6 +45,7 @@ import Pnp4.Frontier.ContractExpansion.PrefixExtensionNPWitness
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
+import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPadding
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPaddingTransport
@@ -386,6 +387,20 @@ end Pnp4
 -- concatBitstring.  It is conditional on hparse, hn, hext, and hT, so proves no unconditional
 -- satisfiability or non-emptiness result.
 #print axioms Pnp4.Frontier.ContractExpansion.ContentAccepts_padWord_of_prefixExtendable
+-- FEAS-0 slice, part 1 (ContentParseFieldRecovery.lean, plan section 1.0): parser field recovery.
+-- parseTreeMCSPPrefixInput_inversion above keeps only the length gate and the gamma decode; these
+-- two re-walk the same success cascade and keep the x branch, so the parsed truth table is pinned to
+-- the canonical x-slice of the ambient vector and, content-side, to blank-padded reads of z itself.
+-- The gamma width is SYMBOLIC: both conjuncts of the first theorem live under one existential
+-- consumed, and neither statement says consumed = gammaLen input.n nor relates pr.2.n to the header
+-- value pr.1 -- no injectivity of treeMCSPPrefixM codec and no gamma canonicity is used (plan
+-- stop/go F0b).  Both entries are axiom-light: [propext, Quot.sound], no Classical.choice, lighter
+-- than the standard triple.  Scope: recovery only.  They do NOT bound the decoded target -- FEAS-0's
+-- headline is unproved, so the section 1.1 freeze stays PROVISIONAL and L' may not be described as
+-- polynomial-time verifiable -- do NOT show ContentAccepts is satisfiable, and build no verifier TM,
+-- runtime bound or TM.accepts bridge.
+#print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_x_slice
+#print axioms Pnp4.Frontier.ContractExpansion.contentInput?_x_apply
 
 #print axioms Pnp4.Frontier.ContractExpansion.verifiedSource_of_explicit_interfaces
 #print axioms Pnp4.Frontier.ContractExpansion.NP_not_subset_PpolyDAG_of_explicit_interfaces

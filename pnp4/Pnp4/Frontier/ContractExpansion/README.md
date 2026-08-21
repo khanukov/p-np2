@@ -317,6 +317,12 @@ Every public theorem of the six modules has its own `#print axioms` line in
 `Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`
 (`ContentPrefixExtensionSurface`).
 
+**Plan of record for input (2).** `VERIFIER_RETARGET_PLAN.md` (this directory) freezes the
+NP-verifier target at `ContentPrefixExtensionNPWitness` / `ContentAccepts`, retires new work
+against the length-gated `PrefixExtensionNPWitness` (keeping it for audit compatibility), and
+schedules the first dependency-closed slices. It is a planning record: it proves nothing and
+makes no `P ≠ NP` claim.
+
 ### Concrete codec (constructed)
 - `ConcreteCodecGap.lean` (Block 12a) — the audit verdict (no concrete
   `TreeCircuitWitnessCodec` existed *at that time*) + the proved packing reduction

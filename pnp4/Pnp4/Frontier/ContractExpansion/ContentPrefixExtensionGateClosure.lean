@@ -30,7 +30,8 @@ This module closes the residual specification-side gates identified in
 
 These results concern the parser and `ContentAccepts` specification only.  Padding invariance is
 still proved only for complete words, not for the `ContentPrefixExtensionLanguage` wrapper;
-non-vacuity of `ContentAccepts` is not proved.  No verifier TM, runtime accounting theorem, or
+non-vacuity of `ContentAccepts` is proved separately by
+`ContentPrefixExtensionNonVacuity.lean`.  No verifier TM, runtime accounting theorem, or
 `TM.accepts = ContentAccepts` bridge is constructed, and the repository machine model's
 unrestricted `runTime` advice channel remains unenforced.  Although the accepted-target polynomial
 bound is already proved, machine feasibility and `L' ∈ NP` remain open.

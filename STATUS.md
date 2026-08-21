@@ -50,8 +50,10 @@ length-only language in the current repository `P`, using a two-state machine
 whose zero-or-one-step runtime stores `A n`.  The definition thus admits
 arbitrary length languages, including languages obtained from noncomputable
 sequences.  The theorem does not itself construct a noncomputable sequence or
-formalize undecidability or a cardinality separation.  This is an interface
-audit, not a repair of the model or P-vs-NP mainline progress.
+formalize undecidability or a cardinality separation.
+
+**Category: Infrastructure.** This is an interface audit, not a repair of the
+model or P-vs-NP mainline progress.
 
 The active public DAG endpoint is now the honest research-gap boundary:
 

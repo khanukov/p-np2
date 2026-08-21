@@ -3,6 +3,8 @@ import Complexity.Interfaces
 /-!
 # Runtime advice in the repository `P` interface
 
+Category: Infrastructure.
+
 The repository Turing-machine interface stores `runTime : Nat -> Nat` as an
 unrestricted field of the machine.  Polynomial-time membership only bounds
 that field pointwise; it does not require the field to be computable or time

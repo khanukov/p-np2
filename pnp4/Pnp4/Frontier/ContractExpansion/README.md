@@ -172,7 +172,7 @@ length-dependent in general; and `TM.accepts` is evaluated at exactly step
 can in principle depend on `n`; what the planned idle-sink construction cannot do is
 recover the gate from the loaded content alone. **The whole argument is a review of
 the definitions, not a Lean theorem**: no impossibility result is formalized anywhere
-in this directory. The response replaces the *language*, not the chain — twelve modules, listed here in
+in this directory. The response replaces the *language*, not the chain — thirteen modules, listed here in
 review order (the `lakefile.lean` registration is the dependency order):
 
 - `ContentPrefixExtension.lean` — `padRead` / `padWord` (the blank-padded tape read),
@@ -305,6 +305,18 @@ review order (the `lakefile.lean` registration is the dependency order):
   and advice-channel enforcement all remain open. Content non-vacuity is discharged separately by
   the GATE-0 module above. Infrastructure
   only; no lower-bound obligation or `P ≠ NP` claim.
+- `ContentVerifierBridgeWitness.lean` — D1b from `VERIFIER_RETARGET_PLAN.md` §4.5, the only
+  P0-dependent half of the bridge work. `ContentVerifierBridge codec` is D1a's
+  `ContentVerifierBridgeFor` at `acc := contentSemanticAccepts codec`, and
+  `contentPrefixExtensionNPWitness_of_bridge` repackages any such bridge into
+  `ContentPrefixExtensionNPWitness`: the machine, exponent and `runTime_poly` are taken over
+  verbatim, and `correct` is P0's `contentSemanticAccepts_correct` composed with the bridge's
+  `accepts_eq` rewrite under the certificate existential. The abbreviation merely names that bridge
+  type; the repackaging definition is **conditional on a supplied bridge**. No bridge instance,
+  machine, or runtime bound is constructed here — so this module proves no NP membership for `L'`
+  and no advice-free claim: the inherited
+  `runTime_poly` still bounds only the clock's magnitude. The repackaging has the standard
+  `[propext, Classical.choice, Quot.sound]` axiom footprint.
 - `ContentPrefixExtensionPaddingTransport.lean` — the explicitly classical conditional transport
   theorem `ContentAccepts_padWord_of_prefixExtendable`, isolated from the axiom-light padding
   module. It derives `ContentPrefixExtendable` directly from
@@ -397,7 +409,7 @@ the opposite reading:
 - **No separation.** Both open inputs stay explicit arguments of every source in
   `ContentConsolidatedSource.lean`; no `P ≠ NP` claim follows.
 
-Every public theorem of the twelve modules has its own `#print axioms` line in
+Every public theorem of the thirteen modules has its own `#print axioms` line in
 `Pnp4/Tests/AxiomsAudit.lean` and its own `#check` in
 `Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`
 (`ContentPrefixExtensionSurface`).

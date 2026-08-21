@@ -60,6 +60,7 @@ import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPadding
 import Pnp4.Frontier.ContractExpansion.ContentSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.ContentVerifierTapeInterface
+import Pnp4.Frontier.ContractExpansion.ContentVerifierBridgeWitness
 import Pnp4.Frontier.ContractExpansion.ContentTargetSizeBound
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionGateClosure
@@ -1046,6 +1047,15 @@ theorem check_NP_not_subset_PpolyDAG_treePolyCT
 #check @Pnp4.Frontier.ContractExpansion.initialConfig_tape_eq_padRead
 #check @Pnp4.Frontier.ContractExpansion.contentAccepts_of_initialConfig_tape_eq
 #check @Pnp4.Frontier.ContractExpansion.ContentVerifierBridgeFor
+-- D1b bridge specialization and witness repackaging (plan §4.5): the alias fixes D1a's acceptance
+-- parameter to P0's `contentSemanticAccepts`, and the repackaging turns any such bridge into the
+-- frozen `ContentPrefixExtensionNPWitness`, consuming `runTime_poly` verbatim. The alias merely
+-- names the specialized bridge type; the repackaging is CONDITIONAL on a supplied bridge. No
+-- machine, runtime bound, `TM.accepts` bridge, or bridge instance is constructed, so nothing here
+-- proves NP membership of `L'`, and the inherited
+-- `runTime_poly` still does not prevent `runTime` from carrying input-length advice.
+#check @Pnp4.Frontier.ContractExpansion.ContentVerifierBridge
+#check @Pnp4.Frontier.ContractExpansion.contentPrefixExtensionNPWitness_of_bridge
 -- The certificate-producing transport is isolated in the explicitly classical
 -- `ContentPrefixExtensionPaddingTransport.lean`.  It derives `ContentPrefixExtendable` directly
 -- from the proposition-level coincidence theorem, without either Boolean language wrapper, but

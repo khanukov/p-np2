@@ -8,8 +8,10 @@ unrestricted field of the machine.  Polynomial-time membership only bounds
 that field pointwise; it does not require the field to be computable or time
 constructible.
 
-Consequently an arbitrary Boolean sequence indexed by input length can be
-placed directly in the choice between zero and one execution step.  The
+`TM.accepts` is moreover evaluated at *exactly* step `runTime n`, with no
+halting predicate, so the value of that field is directly observable in the
+accept condition.  Consequently an arbitrary Boolean sequence indexed by input
+length can be placed in the choice between zero and one execution step.  The
 two-state machine below makes this observation exact: at length `n` it starts
 in the rejecting state and performs one transition to the accepting state
 exactly when `A n = true`.

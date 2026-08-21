@@ -227,7 +227,12 @@ the opposite reading:
   padding to a larger physical length, or under equality of padded tapes) is present
   in this directory. Without it, the gain over the length-gated language is
   *definitional* and narrower than it may look: what `L'` drops is the **explicit
-  length gate** — no `m = treeMCSPPrefixM codec n` equality test rejects an input.
+  gate on the original ambient length** — no test in `L'` compares the physical `N`
+  against `treeMCSPPrefixM codec n`. The strict parser's own
+  `m = treeMCSPPrefixM codec n` equality test is **not** removed: `contentInput?`
+  invokes that parser on the *computed* window `padWord z (M n')`, where the test
+  survives as a comparison of the computed window's length against the re-decoded
+  target, and its intended vacuity is unproved (next bullet).
   `ContentAccepts` is **not** independent of the physical length `N`: it calls
   `contentHeader?`, which decodes on `padWord z (2 * N + 1)`, so `N` fixes both that
   window's width and the gamma decoder's fuel (`decodeGamma?` uses `m + 1`). That
@@ -319,7 +324,9 @@ Every theorem of the four modules has its own `#print axioms` line in
    above (a limitation of the planned idle-sink machine class, **not** of the TM
    model, which is not length-blind). The `L'` route offers an alternative target,
    **`ContentPrefixExtensionNPWitness (treeCircuitWitnessCodec (thresholdPoly k))`**,
-   whose language carries no *explicit* physical-length gate. That is a definitional
+   whose language carries no *explicit* gate on the ambient physical length (the
+   strict parser's own equality gate survives inside `contentInput?`, applied to the
+   computed window, with vacuity unproved). That is a definitional
    difference only, and a narrow one: `ContentAccepts` still depends on the physical
    length `N` through the `2N+1` header window and its fuel, the interface's runtime
    bound is still taken at the length-dependent point `n + certificateLength n 1`, and

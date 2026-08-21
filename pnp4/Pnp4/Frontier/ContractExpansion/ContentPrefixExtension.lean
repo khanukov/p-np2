@@ -19,8 +19,13 @@ definitions, **not** a Lean refutation: nothing here formally proves
 This module defines the **content-truthful** variant `L'`: membership at *any* physical length is
 determined by the fields read **at offsets computed from the content itself** (the gamma header
 decodes the target `n`; the query window is the first `treeMCSPPrefixM codec n` cells of the
-blank-padded word; the witness window follows it).  What `L'` drops is the *explicit* length gate —
-no `m = treeMCSPPrefixM codec n` equality test rejects an input.  It is **not** independent of the
+blank-padded word; the witness window follows it).  What `L'` drops is the *explicit* gate on the
+**original ambient length**: no test in `L'` compares the physical `N` against
+`treeMCSPPrefixM codec n`.  The strict parser's own `m = treeMCSPPrefixM codec n` equality test is
+**not** removed — `contentInput?` invokes that parser on the *computed* window
+`padWord z (treeMCSPPrefixM codec n')`, where the test survives as a comparison of the computed
+window's length against the parser's *re-decoded* target, and its intended vacuity is **unproved**
+(see `contentInput?` below).  `L'` is also **not** independent of the
 physical length `N`: `contentHeader?` decodes on the `2N+1`-padded word, so `N` fixes both that
 window's width and the gamma decoder's fuel (`decodeGamma?` uses `m + 1`).  Closing that residual
 `N`-dependence is exactly what a padding-stability lemma would have to do, and no such lemma is
@@ -126,7 +131,10 @@ def contentWitness (codec : TreeCircuitWitnessCodec threshold) {N : Nat} (z : Pr
 /-- **Content acceptance** of a full (query ++ certificate) word: the content-computed parse
 succeeds and the witness window extends the decoded prefix through the search relation.  The query
 and witness windows sit at content-computed offsets and are read through `padRead`, so no
-*explicit* physical-length gate rejects anything.  This is **not** independence of the physical
+*explicit* gate compares the ambient physical length `N` against a convention length.  The strict
+parser's own `m = treeMCSPPrefixM codec n_dec` gate is still executed inside `contentInput?`, on the
+*computed* window rather than on `N`, and no lemma here rules out its rejecting.  This is likewise
+**not** independence of the physical
 length `N`: `contentInput?` calls `contentHeader?`, which decodes on `padWord z (2 * N + 1)`, so `N`
 still fixes that window's width and the decoder's fuel.  Whether `ContentAccepts` is invariant under
 padding to a larger `N` is **not proved** here. -/
@@ -172,8 +180,11 @@ theorem ContentPrefixExtensionLanguage_accepts_iff (codec : TreeCircuitWitnessCo
 runtime, and certificate correctness **against `L'`**.  Mirrors `PrefixExtensionNPWitness`.  This is
 an **interface / hypothesis**: no machine, runtime bound, or `TM.accepts` bridge for `L'` is
 constructed in this directory.  The difference from the length-gated original is definitional and
-narrow: `ContentAccepts` carries no *explicit* physical-length gate — it reads through `padRead` at
-content-computed offsets — so the length-gate step of the obstruction has nothing to attach to.
+narrow: `ContentAccepts` carries no *explicit* gate on the ambient physical length — it reads
+through `padRead` at content-computed offsets, and never compares `N` against
+`treeMCSPPrefixM codec n` — so the length-gate step of the obstruction has nothing to attach to.
+The strict parser's own equality gate is not gone; `contentInput?` still runs it against the
+*computed* window length, with vacuity unproved.
 Three things are **not** claimed.  (i) That `ContentAccepts` is independent of the physical length:
 it is not, since `contentHeader?` decodes on the `2N+1`-padded word, so `N` fixes that window's
 width and the decoder's fuel; the `runTime` field below is likewise evaluated at the

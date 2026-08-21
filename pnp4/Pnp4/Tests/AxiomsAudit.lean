@@ -301,7 +301,10 @@ end Pnp4
 
 #print axioms Pnp4.Frontier.ContractExpansion.prefixExtensionLanguage_in_NP_of_witness
 -- The content-truthful prefix-extension language L' (bricks R1/R2): membership read through the
--- blank padding at content-computed offsets, with no physical-length gate, plus its NP-witness
+-- blank padding at content-computed offsets, with no *explicit* gate on the ambient physical length
+-- (the strict parser's own m = treeMCSPPrefixM equality gate survives inside contentInput?, applied
+-- to the computed window rather than to the ambient N, and its vacuity is unproved), plus its
+-- NP-witness
 -- interface.  That interface stays an unproved hypothesis -- no TM, runtime bound, or TM.accepts
 -- bridge is built anywhere -- and nothing below establishes that ContentAccepts is satisfiable.
 #print axioms Pnp4.Frontier.ContractExpansion.padRead_lt
@@ -311,8 +314,11 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionLanguage
 #print axioms Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionLanguage_accepts_iff
 #print axioms Pnp4.Frontier.ContractExpansion.contentPrefixExtensionLanguage_in_NP_of_witness
--- Repair brick R3: the coincidence lemma -- on every parseable query at its convention length, L'
--- agrees with the length-gated language -- together with its reader-monotonicity, parse-inversion
+-- Repair brick R3: the coincidence lemma -- under BOTH hypotheses, hparse (the strict parse of the
+-- query succeeds) and hn : input.n = n (the parsed target is the ambient one), L' agrees with the
+-- length-gated language at treeMCSPPrefixM codec n.  hn does NOT follow from hparse: inversion
+-- yields only treeMCSPPrefixM codec input.n = treeMCSPPrefixM codec n, and injectivity of
+-- treeMCSPPrefixM codec is not proved.  Listed with its reader-monotonicity, parse-inversion
 -- and window-computation ingredients.  The three monotonicity lemmas and parse inversion are
 -- Classical-free (nothing / [propext] / [propext, Quot.sound]); the lemmas about a concatenated
 -- word inherit Classical.choice from the noncomputable concatBitstring, and the headline

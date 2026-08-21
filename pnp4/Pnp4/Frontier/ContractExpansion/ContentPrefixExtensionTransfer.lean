@@ -24,8 +24,10 @@ queries — so a `PpolyDAG` decider for `L'` drives the *same* greedy machinery:
 
 Combined with `contentPrefixExtensionLanguage_in_NP_of_witness` (brick R2), this re-routes the
 conditional chain through `L'`.  The `L'` NP-witness remains an **unproved hypothesis**; the gain is
-definitional and narrow — `L'` has no *explicit* physical-length gate for the obstruction to attach
-to, which is not the same as `L'` being independent of the physical length (`contentHeader?` still
+definitional and narrow — `L'` has no *explicit* gate on the ambient physical length for the
+obstruction to attach to (the strict parser's own equality gate is still executed inside
+`contentInput?`, on the computed window, with vacuity unproved), which is not the same as `L'` being
+independent of the physical length (`contentHeader?` still
 decodes on the `2N+1`-padded word, so `N` fixes that window's width and the decoder's fuel) — and
 nothing more: no machine, runtime bound, `TM.accepts` bridge, or padding-stability lemma is built
 here, and the transfer below is the *same* one-way `PpolyDAG →` extraction, not a converse.

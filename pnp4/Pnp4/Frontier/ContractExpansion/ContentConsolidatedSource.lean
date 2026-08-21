@@ -10,7 +10,9 @@ obligation that would justify calling the repair complete — padding stability 
 is **not** discharged in this slice.  The two halves of the source:
 
 * `inNP` half: the content-truthful NP witness (brick R2) — an **explicit hypothesis**, exactly as
-  before.  Its target language has no *explicit* physical-length gate, so the gate step of the
+  before.  Its target language has no *explicit* gate on the ambient physical length (the strict
+  parser's own equality gate survives inside `contentInput?`, applied to the computed window, with
+  vacuity unproved), so the ambient-gate step of the
   obstruction has nothing to attach to; that is a definitional observation, not a positive result,
   and it is weaker than length-independence — `contentHeader?` still decodes on the `2N+1`-padded
   word (so `N` fixes that window's width and the gamma fuel), and the witness's `runTime` is still

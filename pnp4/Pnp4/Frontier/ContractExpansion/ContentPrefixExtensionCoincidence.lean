@@ -5,8 +5,10 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSemanticVerifier
 /-!
 # Coincidence of `L'` with the length-gated language on parseable inputs — repair brick R3
 
-The content-truthful language `L'` (`ContentPrefixExtension.lean`) drops the parser's explicit
-physical-length gate.  This module proves the **coincidence lemma**: on a query sitting at the
+The content-truthful language `L'` (`ContentPrefixExtension.lean`) drops the parser's *explicit*
+gate on the **ambient** physical length (the parser's own equality gate survives inside
+`contentInput?`, applied to the computed window).  This module proves the **coincidence lemma**: on
+a query sitting at the
 convention length of the very `n` its parse reports, the two languages agree —
 
 > `parseTreeMCSPPrefixInput y = some input  →  input.n = n  →  L' (M n) y = L (M n) y`

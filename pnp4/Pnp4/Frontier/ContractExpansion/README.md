@@ -172,7 +172,7 @@ length-dependent in general; and `TM.accepts` is evaluated at exactly step
 can in principle depend on `n`; what the planned idle-sink construction cannot do is
 recover the gate from the loaded content alone. **The whole argument is a review of
 the definitions, not a Lean theorem**: no impossibility result is formalized anywhere
-in this directory. The response replaces the *language*, not the chain — eight modules,
+in this directory. The response replaces the *language*, not the chain — nine modules,
 in dependency order:
 
 - `ContentPrefixExtension.lean` — `padRead` / `padWord` (the blank-padded tape read),
@@ -205,7 +205,8 @@ in dependency order:
   `treeMCSPPrefixM codec n_header = treeMCSPPrefixM codec r`, and uses the existing
   `PolyBoundedInTable` / `powAdd` chain; it has no I1 dependency and never infers
   `r = n_header`. This freezes the content target, but remains Infrastructure: no verifier TM,
-  runtime theorem, non-vacuity result, NP-membership proof, or lower-bound obligation is discharged.
+  runtime theorem, NP-membership proof, or lower-bound obligation is discharged (non-vacuity is the
+  separate GATE-0 module below).
 - `ContentPrefixExtensionCoincidence.lean` — reader monotonicity under ambient
   widening (`readBit?_mono`, `readNatBE_mono`, `decodeGammaAux?_mono`), parse
   inversion (`parseTreeMCSPPrefixInput_inversion`), the two window computations on a
@@ -219,6 +220,23 @@ in dependency order:
   `treeMCSPPrefixM codec input.n = treeMCSPPrefixM codec n`, and injectivity of
   `treeMCSPPrefixM codec` is not proved.  The proposition-level theorem is the direct specification
   coincidence and does not route through either classical Boolean language wrapper.
+- `ContentPrefixExtensionNonVacuity.lean` — GATE-0 (plan §4.1): `ContentAccepts` is
+  **unconditionally satisfiable**. A private helper stores a full search witness in a certificate's
+  leading `witnessBits` block and proves that the content witness window reads it back; prefix
+  agreement is vacuous at `i = 0`. The generic theorem
+  `contentAccepts_zeroPrefixQuery_of_predicate` then turns a satisfied tree-MCSP promise at `n` into
+  an accepted word: `zeroPrefixQueryValue_parses` supplies both `hparse` and `hn : input.n = n` for
+  `contentInput?_concat_of_parse` (the parsed object is the canonical `toPrefixInput`, so no
+  injectivity of `treeMCSPPrefixM codec` and no gamma canonicity is used), and the relation conjunct
+  is `TreeCircuitWitnessCodec.complete`. `contentPrefixExtensionLanguage_zeroPrefixQuery` is the
+  language form — the first unconditional `L'`-membership statement here. The concrete discharge
+  `contentAccepts_nonvacuous_treePoly` takes the all-false table with `Circuit.const false` (size
+  `1`) against `1 ≤ thresholdPoly k n = n ^ k + k`, so `L'` is **not** the empty language at
+  `treeCircuitWitnessCodec (thresholdPoly k)` and `ContentPrefixExtensionTransfer.lean`'s
+  `NoPolynomialBoundedSearchSolver` hypothesis is not refuted by vacuity. Scope is satisfiability
+  only: no verifier TM, runtime bound, `TM.accepts` bridge, `ContentPrefixExtensionNPWitness`
+  instance, or NP-membership follows, and the re-decode gate inside `contentInput?` is still shown
+  not to fire only on the *constructed* zero-prefix words.
 - `ContentPrefixExtensionPadding.lean` — the specification-side obligation the modules
   above leave open: **padding stability**. `padRead_padWord_of_le` /
   `padWord_padWord_of_le` (blank padding past the support is idempotent),
@@ -310,13 +328,16 @@ the opposite reading:
   lemma `decodeGammaAux?_mono` is proved, so no lemma here rules out
   `contentInput? = none` at the gate. Padding stability does not help: it says the two
   sides agree *including on failure*, not that either side succeeds.
-- **No unconditional non-vacuity / satisfiability.** Nothing proves *unconditionally*
-  that any word is `ContentAccepts`-accepted, or that `L'` is non-empty. The one
-  existential statement about `ContentAccepts`,
-  `ContentAccepts_padWord_of_prefixExtendable`, is a conditional existential: it is
-  available only under the four explicit hypotheses of its statement — `hparse`, `hn`,
-  `hext`, none discharged anywhere, plus the padding bound `hT`, which only fixes the
-  target length.
+- **Non-vacuity is settled; it is not a complexity statement.** `ContentAccepts` *is*
+  unconditionally satisfiable, and `L'` is non-empty, by
+  `ContentPrefixExtensionNonVacuity.lean` (`contentAccepts_nonvacuous_treePoly` at the
+  concrete `treeCircuitWitnessCodec (thresholdPoly k)`). That fixes only which words are
+  accepted; it gives no bound on the cost of deciding acceptance, and every "no verifier"
+  item below stands unchanged. The older existential
+  `ContentAccepts_padWord_of_prefixExtendable` remains a *conditional* one, available only
+  under the four explicit hypotheses of its statement — `hparse`, `hn`, `hext`, none
+  discharged anywhere, plus the padding bound `hT`, which only fixes the target length —
+  and is not what discharges non-vacuity.
 - **No padding invariance of the language `L'`.** The padding lemmas are generic
   statements about `padRead` / `padWord`, the strict readers and the gamma decoder,
   topped by invariance of `ContentAccepts` on complete words; the wrapper quantifies
@@ -332,7 +353,7 @@ the opposite reading:
 - **No separation.** Both open inputs stay explicit arguments of every source in
   `ContentConsolidatedSource.lean`; no `P ≠ NP` claim follows.
 
-Every public theorem of the eight modules has its own `#print axioms` line in
+Every public theorem of the nine modules has its own `#print axioms` line in
 `Pnp4/Tests/AxiomsAudit.lean` and its own `#check` in
 `Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`
 (`ContentPrefixExtensionSurface`).
@@ -342,9 +363,11 @@ NP-verifier target at `ContentPrefixExtensionNPWitness` / `ContentAccepts`. FEAS
 now proved by `ContentTargetSizeBound.lean`: accepted complete words have polynomially bounded
 header convention length. The length-gated `PrefixExtensionNPWitness` remains compiled and audited
 for compatibility and is dispreferred, rather than retired, for new verifier work; a new slice may
-target it only with an explicit technical or compatibility rationale. The bound does not prove
-polynomial-time verifiability of `L'`: the concrete TM, runtime theorem, non-vacuity, and
-`TM.accepts` bridge remain open. This is Infrastructure and makes no `P ≠ NP` claim.
+target it only with an explicit technical or compatibility rationale. GATE-0 (§4.1) is likewise
+discharged by `ContentPrefixExtensionNonVacuity.lean`, so D-track machine work is no longer aimed at
+a predicate of unknown satisfiability. Neither result proves polynomial-time verifiability of `L'`:
+the concrete TM, runtime theorem, and `TM.accepts` bridge remain open. This is Infrastructure and
+makes no `P ≠ NP` claim.
 
 ### Concrete codec (constructed)
 - `ConcreteCodecGap.lean` (Block 12a) — the audit verdict (no concrete

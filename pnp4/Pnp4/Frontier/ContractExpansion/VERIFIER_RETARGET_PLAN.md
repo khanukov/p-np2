@@ -121,8 +121,9 @@ survive. No implementation code is introduced here.
 > The proof computes the all-blank decode at `r := pr.2.n`, forces `tableLen r ≤ N`, and closes
 > `contentAccepts_target_poly_treePoly` through `PolyBoundedInTable.powAdd`.  Its sole
 > header/parsed-target reconciliation is `M n_header = M r`; it uses no I1 result and never infers
-> `n_header = r`.  Section 1.1 is therefore frozen.  This closes only target-size feasibility:
-> a concrete verifier TM, runtime proof, non-vacuity, and the `TM.accepts` bridge remain open.
+> `n_header = r`.  Section 1.1 is therefore frozen.  This closes only target-size feasibility.
+> GATE-0 now separately proves concrete non-vacuity; a concrete verifier TM, runtime proof and the
+> `TM.accepts` bridge remain open.
 
 ---
 
@@ -611,9 +612,11 @@ boundary of the frozen target.
    `i ≤ codec.witnessBits n'`, and `padZero = true`. Those are sound rejections, not defects.
    (The previous revision asserted the opposite — that unconditional gate vacuity is false and
    canonicity must be assumed. Both statements were wrong.)
-4. **Non-vacuity is unproved.** The only existential statement about `ContentAccepts`,
-   `ContentPrefixExtensionPaddingTransport.lean:39` `ContentAccepts_padWord_of_prefixExtendable`, is
-   conditional on `hparse`, `hn`, `hext`, `hT`, none discharged. This is what GATE-0 addresses.
+4. **Non-vacuity is proved at the concrete codec.** `ContentPrefixExtensionNonVacuity.lean`
+   constructs accepted zero-prefix words generically from a satisfied predicate and discharges the
+   concrete case with the all-false table and `Circuit.const false`; in particular
+   `contentAccepts_nonvacuous_treePoly` gives an accepted complete word for every `k, n`.  This is
+   GATE-0's specification-side result, not a verifier TM or NP-witness construction.
 5. **The obligation lives in this repository's machine model only.** `NP` is `NP_TM`
    (`pnp3/Complexity/Interfaces.lean:560`) over `Pnp3.Internal.PsubsetPpoly.TM`: deterministic
    single-tape, binary alphabet, no read-only input tape, tape length `n + runTime n + 1`
@@ -645,20 +648,22 @@ boundary of the frozen target.
 
 ## 2. Re-audit of `verifier-next-slices.md` against current `main`
 
-The donor manifest was written at `main = 5d8ee5f8`. `main` is now `98250643`, **36 commits ahead**
-(`git rev-list --count 5d8ee5f8..main = 36`), and those commits are precisely the work that changed
+The donor manifest was written at `main = 5d8ee5f8`. At this slice-log revision `main` is
+`af2365a2`, **50 commits ahead** (`git rev-list --count 5d8ee5f8..af2365a2 = 50`), and those commits
+are precisely the work that changed
 the retarget picture: `#1621` (AC0 audit), `#1622` (documentation-state audit), **`#1623` (CT-A)**,
-**`#1624` (CT-B)**, **`#1625` (CT-C)**, **`#1626` (runtime advice)**.
+**`#1624` (CT-B)**, **`#1625` (CT-C)**, **`#1626` (runtime advice)**, **`#1627` (retarget
+plan)**, **`#1628` (field recovery)** and **`#1629` (FEAS target bound)**.
 
 ### 2.1 Stale assumptions — corrected
 
 | Donor claim | Verdict | Correction |
 |---|---|---|
-| §0 "`main` = `5d8ee5f8`" | **stale** | `main = 98250643`; `git rev-list --count pr1618..main = 36` (the merge base is still `5d8ee5f8`, so this equals `5d8ee5f8..main`). |
-| §0 "`ContractExpansion/` has 39 files on main" | **stale** | 39 files on `5d8ee5f8`, **47** on `98250643` (`git ls-tree -r --name-only`). |
-| §0 / §9 "Nothing on `main` is reusable"; "every module named below as a donor exists **only** in the PR stack" | **false** | Nine modules directly on the retarget path landed on `main` after the donor snapshot (§3.1) — eight in `ContractExpansion/` plus `ModelAudit/RuntimeAdviceBarrier.lean`. Six of the eight also exist, **divergently**, on `pr1618` (§3.2), so the PR stack is not a superset of `main`. |
-| §0 "BASE for every slice: `4a8ee0c9`; do not branch from `main`" | **false for this plan** | Every slice in §4 is dependency-closed on `main = 98250643` and branches from it (§5). Branching from `4a8ee0c9` would *lose* the CT-A/B/C prerequisites. |
-| §0 "`git diff --stat main...pr1618` = 184 files / +56544 / −2420 — the whole stack" | **arithmetically unchanged, semantically misleading** | The number is identical today only because `...` resolves to the merge base, which is still `5d8ee5f8`. It therefore describes the stack against a 36-commit-old `main`, and hides the rebase surface in §3.2. |
+| §0 "`main` = `5d8ee5f8`" | **stale** | `main = af2365a2`; `git rev-list --count pr1618..main = 50` (the merge base is still `5d8ee5f8`, so this equals `5d8ee5f8..main`). |
+| §0 "`ContractExpansion/` has 39 files on main" | **stale** | 39 files on `5d8ee5f8`, **50** on `af2365a2` (`git ls-tree -r --name-only`). |
+| §0 / §9 "Nothing on `main` is reusable"; "every module named below as a donor exists **only** in the PR stack" | **false** | Eleven modules directly on the retarget path landed on `main` after the donor snapshot (§3.1) — ten in `ContractExpansion/` plus `ModelAudit/RuntimeAdviceBarrier.lean`. Six of the ten also exist, **divergently**, on `pr1618` (§3.2), so the PR stack is not a superset of `main`. |
+| §0 "BASE for every slice: `4a8ee0c9`; do not branch from `main`" | **false for this plan** | Every slice in §4 is dependency-closed on `main = af2365a2` at this revision and branches from it (§5). Branching from `4a8ee0c9` would *lose* the CT-A/B/C and FEAS prerequisites. |
+| §0 "`git diff --stat main...pr1618` = 184 files / +56544 / −2420 — the whole stack" | **arithmetically unchanged, semantically misleading** | The number is identical today only because `...` resolves to the merge base, which is still `5d8ee5f8`. It therefore describes the stack against a 50-commit-old `main`, and hides the rebase surface in §3.2. |
 | §4 GATE-0 = "embedding-route spike (A′ vs B) on `clearIterProgram`" | **not this plan's GATE-0** | It gates donor slices P1…P4 / D3 inside `pr1618`. It has no bearing on any slice targeting `ContentAccepts`. Superseded by FEAS-0 (§1.0) and GATE-0 (§4.1). |
 | §4 track letters P / I / D = pop arm / input arm / driver | **repurposed** | Retargeted in §4 to P = predicate-side semantic core, I = invariance and gate closure, D = machine/clock interface. The donor tracks stay valid *inside* `pr1618` and are parked (§3.3). |
 | §9 "The pop arm's machine is finished; only the run remains" | **true of `pr1618`, irrelevant to input (2)** | See §3.4: the donor machine is a transcoder, not a verifier. |
@@ -671,16 +676,16 @@ the retarget picture: `#1621` (AC0 audit), `#1622` (documentation-state audit), 
   (line 139) alongside `| _, _ => tape` (line 89). The donor's §3.3 operand-underflow gap stands.
 * `TreeMCSPPopIterRun.lean`, any `inputIter*`, `TreeMCSPDriverProgram.lean` and
   `TreeMCSPDriverRealizationInstance.lean` are all **absent** from `pr1618`, as the donor stated.
-* Branch tips are unchanged: `pr1526 = b1f4f31d` (289 ahead of `main`), `pr1616 = 57ee057a` (335),
-  `pr1618 = 4a8ee0c9` (364).
+* Branch tips are unchanged: `pr1526 = b1f4f31d` (289 commits ahead of the common merge base
+  `5d8ee5f8`), `pr1616 = 57ee057a` (335), `pr1618 = 4a8ee0c9` (364).
 
 ---
 
 ## 3. Module boundary: current `main` vs donor-only
 
-### 3.1 On current `main` — the retarget's actual foundation (9 modules, all reusable)
+### 3.1 On current `main` — the retarget's actual foundation (11 modules, all reusable)
 
-Landed by `#1623`/`#1624`/`#1625`/`#1626`, all absent from the donor's base of record
+Landed by `#1623` through `#1626` and `#1628`/`#1629`, all absent from the donor's base of record
 (`git ls-tree -r --name-only 5d8ee5f8` lists none of them):
 
 | Module | LOC | Key declarations for this plan |
@@ -694,6 +699,8 @@ Landed by `#1623`/`#1624`/`#1625`/`#1626`, all absent from the donor's base of r
 | `TreeMCSPPrefixSemanticVerifier.lean` | 304 | `witnessBits_le_treeMCSPPrefixM` `:78`, `prefixAgreesBool` `:99` + `_eq_true_iff` `:105`, `instDecidableCodecVerifies` `:114` (local), `verifiesBool` `:121` + `_eq_true_iff` `:128`, `sliceBits?_zero` `:137`, `witnessBits_le_certificateLength` `:148`, `extractWitness?` `:160` + `extractWitness_eq` `:172`, `treePrefixSemanticAccepts` `:192`, `treePrefixSemanticAccepts_correct` `:252` (**mis-targeted, see §1.2**) |
 | `ModelAudit/RuntimeAdviceBarrier.lean` | 88 | `lengthAdviceLanguage` `:37`, `lengthAdviceTM` `:44` (`runTime := if A n then 1 else 0`), `lengthAdviceTM_runTime_le_one` `:54`, `lengthAdviceTM_accepts` `:60`, `lengthAdviceLanguage_in_repo_P` `:77` — the caveat-6 source. **Provenance corrected in this revision:** this module landed with `#1626` (commit `f7244834`, "audit(pnp4): expose runtime advice barrier"); it is *not* part of the pre-existing foundation, and the previous revision listed it there. |
 | `TreeMCSPPrefixVerifierLayout.lean` | 274 | `prefixVerifierInputLen` `:33`, `prefixVerifierCertStart` `:44`, `concatBitstring_left/_right` `:72`/`:80`, `verifierTape_left/_right` `:103`/`:114`, `queryXOffset` `:136`, `queryIdxOffset` `:139`, `queryPrefixOffset` `:143`, `queryPrefixOffset_add_witnessBits` `:148`, `queryPrefixOffset_le` `:157`, `queryXOffset_le_treeMCSPPrefixM` `:166`, `queryIdxOffset_le_treeMCSPPrefixM` `:174`, `gammaLen_le_treeMCSPPrefixM` `:183`, `instanceSize_lt_treeMCSPPrefixM` `:194`, `gammaZeros` `:219`, `gammaTermOffset` `:223`, `gammaLen_eq_two_mul_gammaZeros_add_one` `:226`, `gammaTermOffset_lt_queryXOffset` `:239`, `gammaTermOffset_le_treeMCSPPrefixM` `:246`, `gammaMirror_mem` `:258` |
+| `ContentParseFieldRecovery.lean` | 156 | `parseTreeMCSPPrefixInput_x_slice` `:57`, `contentInput?_x_apply` `:124` — FEAS parser-field recovery from `#1628` |
+| `ContentTargetSizeBound.lean` | 295 | concrete blank decode and support forcing, culminating in `contentAccepts_target_poly_treePoly` `:259` — FEAS outcome (a) from `#1629` |
 
 Plus the pre-existing foundation, unchanged since the donor snapshot and equally reusable:
 
@@ -739,7 +746,7 @@ the table above.)
 
 ### 3.2 Donor-only (`pr1618 = 4a8ee0c9`) — and the overlap that is *not* clean
 
-`ContractExpansion/` has **216** files on `pr1618` versus 47 on `main`; **183** of them are
+`ContractExpansion/` has **216** files on `pr1618` versus 50 on `main`; **183** of them are
 `TreeMCSP*` modules (region-embedding toolkit, arm programs, arm runs, corridor invariants, driver
 interface, transcoder capstone). **Inventory corrected in this revision:** the previous revision said
 "none of these exist on `main`", which is false. `main` has **15** `TreeMCSP*` modules in this
@@ -762,8 +769,8 @@ comparison at the two tips against the merge base `5d8ee5f8`:
   and **`README.md`** — differ only because `main` moved; `pr1618` still carries the merge-base
   blob, so a rebase takes `main`'s version cleanly. Revision 3 omitted all three. Note the first two
   are exactly the length-gated chain modules §1.2 retains and `AGENTS.md:31–36` cites.
-* Two more (`ContentPrefixExtensionPadding.lean`, `ContentPrefixExtensionPaddingTransport.lean`)
-  exist only on `main`.
+* Four more (`ContentPrefixExtensionPadding.lean`, `ContentPrefixExtensionPaddingTransport.lean`,
+  `ContentParseFieldRecovery.lean`, `ContentTargetSizeBound.lean`) exist only on `main`.
 * **Repo-wide the divergent-path count is 40**, not nine
   (`git diff --name-status --diff-filter=M main pr1618 | wc -l` = 40; revision 4 said 41): the CI workflows, `AGENTS.md`,
   `lakefile.lean`, `STATUS.md`, both `AxiomsAudit.lean` files, `AlgorithmsToLowerBoundsSurfaceTests.lean`,
@@ -783,11 +790,13 @@ So `pr1618` is not a superset and a rebase is not a fast-forward. **Sizes in byt
 | `TreeMCSPPrefixVerifierLayout.lean` | 12 967 | **14 231** |
 | `ContentPrefixExtensionPadding.lean` | *absent* | **20 417** |
 | `ContentPrefixExtensionPaddingTransport.lean` | *absent* | **2 960** |
+| `ContentParseFieldRecovery.lean` | *absent* | **8 303** |
+| `ContentTargetSizeBound.lean` | *absent* | **13 767** |
 | `ConsolidatedTreeSeparation.lean` | *merge-base blob* | **changed on `main`** |
 | `PrefixExtensionNPWitness.lean` | *merge-base blob* | **changed on `main`** |
 | `README.md` | *merge-base blob* | **changed on `main`** |
 
-`main` is ahead on the CT chain (CT-C exists only on `main`); `pr1618` is ahead only on
+`main` is ahead on the CT chain (CT-C and FEAS recovery/bound modules exist only on `main`); `pr1618` is ahead only on
 `TreeMCSPPrefixSemanticVerifier.lean`. Any future rebase of the stack must reconcile the six
 added-on-both-sides modules by hand, take `main`'s version of the three `main`-only-changed paths,
 and additionally settle `lakefile.lean`, `AlgorithmsToLowerBoundsSurfaceTests.lean` and
@@ -843,7 +852,7 @@ on the `(★′)` bridge, because by itself it discharges none of the five bulle
 
 ## 4. FEAS-0, GATE-0 and the first slices
 
-All items below are **dependency-closed on `main = 98250643`**: every donor lemma they cite is in
+All items below are **dependency-closed on `main = af2365a2`** at this slice-log revision: every donor lemma they cite is in
 §3.1, none is on `pr1618`.
 
 **Sequencing.** FEAS-0 (§1.0) has landed as outcome (a). GATE-0, P0, I1 and D1a are now mutually
@@ -856,7 +865,8 @@ Every slice obeys: **≤ 1500 changed `.lean` LOC (added + deleted) and ≤ 10 c
 
 ### 4.1 GATE-0 — non-vacuity of `ContentAccepts` at the concrete codec · **blocking for D-track, not for P0/I1**
 
-**Why this is a gate.** Nothing proves that any word is `ContentAccepts`-accepted (§1.3, caveat 4).
+**Why this was a gate.** Before this slice, nothing proved that any word was
+`ContentAccepts`-accepted (§1.3, caveat 4).
 If `ContentAccepts` were unsatisfiable at the concrete codec, `L'` would be the empty language;
 `ContentPrefixExtensionNPWitness` would then be discharged by a trivial machine, and the
 consolidated CT source `NP_not_subset_PpolyDAG_treePolyCT` would be worthless — its other
@@ -864,6 +874,9 @@ hypothesis, `NoPolynomialBoundedSearchSolver`, would be refuted rather than mere
 `ContentPrefixExtensionTransfer.lean:145` pins the *empty* `L'` outside `PpolyDAG`. Building a
 verifier machine before settling this risks discharging a vacuous obligation. This replaces, and is
 unrelated to, the donor's arm-embedding GATE-0.
+
+**Status: PASS.** The three outputs below now settle the gate, culminating in
+`contentAccepts_nonvacuous_treePoly` at the concrete codec.
 
 **New module:** `ContentPrefixExtensionNonVacuity.lean`.
 
@@ -1418,20 +1431,19 @@ resolve as adjacent-line merges.
 ```bash
 # Base every slice on main, NOT on 4a8ee0c9.
 git fetch origin
-git checkout -b work/<slice-name> 98250643      # or the then-current main
+git checkout -b work/<slice-name> af2365a2      # or the then-current main
 ```
 
-* **Base:** `main` (`98250643` at time of writing). One branch per slice, one PR per branch,
+* **Base:** `main` (`af2365a2` at this slice-log revision). One branch per slice, one PR per branch,
   PR base `main`. No stacking: the slices after FEAS-0 are independent, so stacking would only
   serialize review. **D1b is the one exception, and it stacks on *both* P0 and D1a** — it needs P0's
   `contentSemanticAccepts` for its statement and D1a's `ContentVerifierBridgeFor` for its structure
   (§4.5). Branch it from whichever of the two merges last, and rebase onto the other; do not open it
   against bare `main`.
-* **Naming:** `work/ct-<letter><number>-<topic>`, matching the CT-A/B/C precedent
-  (`work/ct-a-verifier-prereqs`, `work/ct-b-source-chain`, `work/ct-c-padding-stability`).
-  So: `work/ct-feas0-target-size-bound`, `work/ct-gate0-nonvacuity`,
-  `work/ct-p0-content-semantic-verifier`, `work/ct-i1-gate-closure`,
-  `work/ct-d1a-tape-interface`, `work/ct-d1b-bridge-witness`.
+* **Naming:** the active short slice names are `work/feas0-target-bound`,
+  `work/gate0-nonvacuity`, `work/p0-content-semantic`, `work/i1-gate-closure`,
+  `work/d1a-tape-interface`, and `work/d1b-bridge-witness`.  They retain the same one-slice/one-PR
+  discipline as the earlier `work/ct-a-*`, `work/ct-b-*`, and `work/ct-c-*` branches.
 * **Never branch from `pr1526` / `pr1616` / `pr1618`** (§3.3). Never merge them into a slice branch.
 * **No push without an explicit request** (AGENTS.md line 83). Local commits only by default.
 * **Rebase, don't merge**, when `main` moves under an open slice; re-run §6 after every rebase,
@@ -1540,12 +1552,12 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
 
 | Slice | Branch | Status | Merged as |
 |---|---|---|---|
-| FEAS-0 target size bound | `work/feas0-target-bound` | implemented; all checks green | — |
-| GATE-0 non-vacuity | `work/ct-gate0-nonvacuity` | unblocked | — |
-| P0 content semantic verifier | `work/ct-p0-content-semantic-verifier` | unblocked | — |
-| I1 gate closure | `work/ct-i1-gate-closure` | unblocked | — |
-| D1a tape lemmas + bridge structure | `work/ct-d1a-tape-interface` | unblocked | — |
-| D1b bridge ⇒ NP-witness | `work/ct-d1b-bridge-witness` | blocked on P0 and **D1a** | — |
+| FEAS-0 target size bound | `work/feas0-target-bound` | merged; outcome (a) green | PR #1629 (`af2365a2`) |
+| GATE-0 non-vacuity | `work/gate0-nonvacuity` | implemented; review fixes complete | `80efdd04` + `c1994da7` (pending PR) |
+| P0 content semantic verifier | `work/p0-content-semantic` | implemented; review complete | pending PR |
+| I1 gate closure | `work/i1-gate-closure` | implemented; review in progress | — |
+| D1a tape lemmas + bridge structure | `work/d1a-tape-interface` | implemented; review complete | pending PR |
+| D1b bridge ⇒ NP-witness | `work/d1b-bridge-witness` | blocked on P0 and **D1a** | — |
 
 ---
 
@@ -1555,7 +1567,7 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
 |---|---|---|---|
 | **F0** | FEAS-0 | **PASS (a):** at `treeCircuitWitnessCodec (thresholdPoly k)`, `contentAccepts_target_poly_treePoly` proves the polynomial bound from accepted complete words to `treeMCSPPrefixM codec n'`. It *yields* a bounded timeout in principle, of exponent `c · d` rather than `c`, via `PolyBoundedInTable.powAdd` (`ExtractedScheduleGrowth.lean:114`), whose polynomial `P N = (N ^ c + c) ^ d + d` bounds `M n' = M r` and — through `tableLen_le_treeMCSPPrefixM` (`PrefixParserConvention.lean:48`) and `witnessBits_le_treeMCSPPrefixM` (`TreeMCSPPrefixSemanticVerifier.lean:78`) applied **at `r := pr.2.n`** — also `tableLen r`, `codec.witnessBits r` and (via `r ≤ bitLength (M n')`) `thresholdPoly k r`, the quantities `ContentAccepts` actually uses. These component bounds come **directly** from `M r = M n'`, never by transferring an `n'`-side bound. Never stated codec-generically — generic (a)/(b) are false. It is **not** a verifier implementation (§1.0) | only outcome (d) was red; it did not occur |
 | **F0b** | FEAS-0 | **PASS:** the proof runs on `r := pr.2.n`, uses only `M n_header = M r`, recovers the truth-table slice through `contentInput?_x_apply`, and cites no I1 output | a future consumer needing target equality or gamma canonicity must be re-derived via the convention-length equality |
-| **G0** | GATE-0 | a *concrete* word is `ContentAccepts`-accepted at `treeCircuitWitnessCodec (thresholdPoly k)` | halt the D-track and escalate; do not build a machine for a possibly-empty `L'`. P0/I1 continue |
+| **G0** | GATE-0 | **PASS:** `contentAccepts_nonvacuous_treePoly` constructs a concrete `ContentAccepts`-accepted word at `treeCircuitWitnessCodec (thresholdPoly k)` for every `k, n` | the red action is no longer applicable; this pass establishes only non-vacuity, not a verifier or NP witness |
 | **G1** | P0 | the `Bool`↔`Prop` headline is hypothesis-free | fix the `Bool` definition's failure branches, not the statement |
 | **G2** | P0 | the three codec-path theorems carry the standard triple **or lighter** (same rule as G9 — a shorter list is not a defect); computability checked by instance provenance + one `#eval`, **not** by an axiom check | a fourth axiom, a `noncomputable` marker, or a `Classical.propDecidable` instance is a blocker; a *lighter* footprint is not |
 | **G3** | I1 | injectivity stated only as `treeMCSPPrefixM_injective_of_monotone` / `_treePoly` | reject any generic-codec injectivity claim as **false**; do not strengthen `PrefixInput` to dodge it |
@@ -1580,9 +1592,10 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
   surface and is dispreferred, rather than retired, for new verifier work; a new slice may target it
   only with the explicit technical or compatibility rationale required by §1.2.
 * The donor manifest's central premise — "nothing on `main` is reusable, branch from `4a8ee0c9`" —
-  is false. Nine modules on `main` (CT-A/B/C plus the `#1626` model audit) and the pre-existing
+  is false. Eleven modules on `main` (CT-A/B/C, FEAS recovery/bound, plus the `#1626` model audit) and the pre-existing
   parser/codec foundation are
-  the actual base, and every slice in §4 is dependency-closed on `main = 98250643`.
+  the actual base, and every slice in §4 is dependency-closed on `main = af2365a2` at this
+  slice-log revision.
 * The donor TM stack is a **transcoder**, not a verifier: it never touches the header, the truth
   table, the size check, or `TM.accepts`, so completing it would not discharge `(★′)`. It is parked
   — but its witness-decoding machinery is a plausible component for a future verifier, so it is

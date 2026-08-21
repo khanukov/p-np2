@@ -49,6 +49,7 @@ import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPadding
 import Pnp4.Frontier.ContractExpansion.ContentTargetSizeBound
+import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPaddingTransport
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionTransfer
 import Pnp4.Frontier.ContractExpansion.ContentConsolidatedSource
@@ -311,7 +312,8 @@ end Pnp4
 -- to the computed window rather than to the ambient N, and its vacuity is unproved), plus its
 -- NP-witness
 -- interface.  That interface stays an unproved hypothesis -- no TM, runtime bound, or TM.accepts
--- bridge is built anywhere -- and nothing below establishes that ContentAccepts is satisfiable.
+-- bridge is built anywhere.  Satisfiability of ContentAccepts IS established, but only by the GATE-0
+-- block at the end of this group; nothing between here and there establishes it.
 #print axioms Pnp4.Frontier.ContractExpansion.padRead_lt
 #print axioms Pnp4.Frontier.ContractExpansion.padRead_ge
 #print axioms Pnp4.Frontier.ContractExpansion.padWord_apply
@@ -416,6 +418,21 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.contentWitness_eq_false_of_lt
 #print axioms Pnp4.Frontier.ContractExpansion.contentAccepts_parsed_tableLen_le_of_header_target_wide
 #print axioms Pnp4.Frontier.ContractExpansion.contentAccepts_target_poly_treePoly
+
+-- GATE-0 (ContentPrefixExtensionNonVacuity.lean, plan section 4.1): ContentAccepts is
+-- UNCONDITIONALLY satisfiable.  zeroPrefixQueryValue_parses supplies both hparse and hn (input.n =
+-- n) for contentInput?_concat_of_parse -- the parsed object is the canonical toPrefixInput -- so no
+-- injectivity of treeMCSPPrefixM codec and no gamma canonicity is used; prefix agreement is vacuous
+-- at i = 0; the relation conjunct is TreeCircuitWitnessCodec.complete; the concrete discharge is
+-- Circuit.const false of size 1 against 1 <= thresholdPoly k n.  These are infrastructure theorems
+-- about WHICH words are accepted, not about the cost of deciding acceptance: they construct no
+-- verifier TM, runtime bound or TM.accepts bridge, give no ContentPrefixExtensionNPWitness instance
+-- and no NP membership for L', do not show the contentInput? re-decode gate vacuous in general
+-- (only on the constructed zero-prefix words), and discharge no lower-bound source obligation.
+-- Infrastructure only; no P != NP claim.
+#print axioms Pnp4.Frontier.ContractExpansion.contentAccepts_zeroPrefixQuery_of_predicate
+#print axioms Pnp4.Frontier.ContractExpansion.contentPrefixExtensionLanguage_zeroPrefixQuery
+#print axioms Pnp4.Frontier.ContractExpansion.contentAccepts_nonvacuous_treePoly
 
 #print axioms Pnp4.Frontier.ContractExpansion.verifiedSource_of_explicit_interfaces
 #print axioms Pnp4.Frontier.ContractExpansion.NP_not_subset_PpolyDAG_of_explicit_interfaces

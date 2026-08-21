@@ -59,6 +59,7 @@ import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPadding
 import Pnp4.Frontier.ContractExpansion.ContentTargetSizeBound
+import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPaddingTransport
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionTransfer
 import Pnp4.Frontier.ContractExpansion.ContentConsolidatedSource
@@ -925,7 +926,8 @@ open Pnp4.Frontier.ContractExpansion
 
 -- The content-truthful language `L'` and its NP-witness interface (R1/R2).  The interface is a
 -- hypothesis: no verifier TM, runtime bound, or `TM.accepts` bridge for `L'` is constructed
--- anywhere in this repository, and nothing establishes that `ContentAccepts` is satisfiable.
+-- anywhere in this repository.  Satisfiability of `ContentAccepts` IS established, but only by the
+-- GATE-0 surface at the end of this section; nothing between here and there establishes it.
 #check @Pnp4.Frontier.ContractExpansion.padRead
 #check @Pnp4.Frontier.ContractExpansion.padWord
 #check @Pnp4.Frontier.ContractExpansion.padRead_lt
@@ -1090,6 +1092,56 @@ theorem check_ContentAccepts_iff_of_padRead_eq
     (h : ∀ j, padRead z j = padRead z' j) :
     ContentAccepts codec z ↔ ContentAccepts codec z' :=
   ContentAccepts_iff_of_padRead_eq codec z z' h
+
+-- GATE-0 (`ContentPrefixExtensionNonVacuity.lean`, plan §4.1): `ContentAccepts` is UNCONDITIONALLY
+-- satisfiable.  `zeroPrefixQueryValue_parses` supplies both `hparse` and `hn : input.n = n` for
+-- `contentInput?_concat_of_parse` -- the parsed object is the canonical `toPrefixInput` -- so no
+-- injectivity of `treeMCSPPrefixM codec` and no gamma canonicity is used; prefix agreement is
+-- vacuous at `i = 0`; the relation conjunct is `TreeCircuitWitnessCodec.complete`.  This says which
+-- words are accepted, NOT how hard acceptance is to decide: it constructs no verifier TM, runtime
+-- bound, or `TM.accepts` bridge, gives no `ContentPrefixExtensionNPWitness` instance and no
+-- `NP (ContentPrefixExtensionLanguage …)`, does not show the `contentInput?` re-decode gate vacuous
+-- in general (only on the constructed zero-prefix words), and discharges no lower-bound obligation.
+-- Infrastructure only; no `P ≠ NP` claim.
+#check @Pnp4.Frontier.ContractExpansion.contentAccepts_zeroPrefixQuery_of_predicate
+#check @Pnp4.Frontier.ContractExpansion.contentPrefixExtensionLanguage_zeroPrefixQuery
+#check @Pnp4.Frontier.ContractExpansion.contentAccepts_nonvacuous_treePoly
+
+/-- GATE-0 generic surface: a satisfied tree-MCSP promise at `n` makes the zero-prefix query for
+that instance content-extendable.  Infrastructure: a satisfiability witness, not a complexity
+statement. -/
+theorem check_contentAccepts_zeroPrefixQuery_of_predicate
+    {threshold : Nat → Nat} (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n : Nat) (x : PrefixBitVec (Pnp3.Models.Partial.tableLen n))
+    (hpred : treeMCSPPredicate n (threshold n) x) :
+    ∃ w : Pnp3.ComplexityInterfaces.Bitstring
+            (Pnp3.ComplexityInterfaces.certificateLength (treeMCSPPrefixM codec n) 1),
+      ContentAccepts codec
+        (Pnp3.ComplexityInterfaces.concatBitstring (zeroPrefixQueryValue codec n x) w) :=
+  contentAccepts_zeroPrefixQuery_of_predicate codec n x hpred
+
+/-- GATE-0 language surface: the zero-prefix query for a promised instance is a member of `L'` at
+its own convention length.  This is the first unconditional `L'`-membership statement; it implies no
+NP-membership and no verifier. -/
+theorem check_contentPrefixExtensionLanguage_zeroPrefixQuery
+    {threshold : Nat → Nat} (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n : Nat) (x : PrefixBitVec (Pnp3.Models.Partial.tableLen n))
+    (hpred : treeMCSPPredicate n (threshold n) x) :
+    ContentPrefixExtensionLanguage codec (treeMCSPPrefixM codec n)
+      (zeroPrefixQueryValue codec n x) = true :=
+  contentPrefixExtensionLanguage_zeroPrefixQuery codec n x hpred
+
+/-- GATE-0 headline surface, repeated at its exact concrete codec: for every exponent `k` and target
+`n` some word of the query-plus-certificate length is content-accepted, so `L'` is not the empty
+language and `ContentPrefixExtensionTransfer.lean`'s `NoPolynomialBoundedSearchSolver` hypothesis is
+not refuted by vacuity. -/
+theorem check_contentAccepts_nonvacuous_treePoly (k n : Nat) :
+    ∃ z : PrefixBitVec
+            (treeMCSPPrefixM (treeCircuitWitnessCodec (thresholdPoly k)) n
+              + Pnp3.ComplexityInterfaces.certificateLength
+                  (treeMCSPPrefixM (treeCircuitWitnessCodec (thresholdPoly k)) n) 1),
+      ContentAccepts (treeCircuitWitnessCodec (thresholdPoly k)) z :=
+  contentAccepts_nonvacuous_treePoly k n
 
 end ContentPrefixExtensionSurface
 

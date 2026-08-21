@@ -205,9 +205,9 @@ certificates of length `certificateLength m 1` concatenated at offset `m`, both 
 evaluated at the length-dependent point `n + certificateLength n 1`.  (ii) That those lemmas bring
 the `correct` field below any closer to provable — they are specification-side only: no verifier
 machine, runtime bound, or `TM.accepts` bridge for `L'` is constructed anywhere.  (iii) That a
-polynomial-time verifier for `L'` exists — open.  Satisfiability of `ContentAccepts` is likewise
-**not** established anywhere here: the one existential statement about it
-(`ContentAccepts_padWord_of_prefixExtendable`) is conditional on undischarged hypotheses. -/
+polynomial-time verifier for `L'` exists — open.  Satisfiability of `ContentAccepts` is established
+separately by `ContentPrefixExtensionNonVacuity.lean`, which constructs concrete accepted words but
+does not supply the verifier machine, runtime theorem, or `TM.accepts` bridge required below. -/
 structure ContentPrefixExtensionNPWitness (codec : TreeCircuitWitnessCodec threshold) where
   /-- The verifier Turing machine reading the concatenated input+certificate. -/
   M : Pnp3.Internal.PsubsetPpoly.TM.{0}

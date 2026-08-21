@@ -323,6 +323,8 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPadding,
     -- FEAS-0 slice, part 2: the concrete accepted-target polynomial bound.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentTargetSizeBound,
+    -- GATE-0 slice: non-vacuity of `ContentAccepts` at the concrete codec.
+    Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPaddingTransport,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionTransfer,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentConsolidatedSource,

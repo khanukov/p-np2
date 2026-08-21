@@ -6,6 +6,12 @@ namespace Tests
 open LowerBounds
 open Models
 
+-- Intentional duplicate: Qodo tracks this original anonymous example as a regression sentinel.
+set_option linter.deprecated false in
+example (p : GapPartialMCSPParams) :
+    GapPartialMCSP_not_in_AC0 p :=
+  gapPartialMCSP_not_in_AC0 p
+
 -- These checks pin the historical enriched-package aliases only.  Their
 -- standard-looking names are not standard AC0 claims.
 

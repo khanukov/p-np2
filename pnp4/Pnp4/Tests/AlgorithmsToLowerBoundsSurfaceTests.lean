@@ -3602,14 +3602,66 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_length_convention
 #check Pnp4.Frontier.ContractExpansion.treeMCSPRuntimeAwarePrefixParser
 
+section TreeMCSPPrefixSemanticVerifierSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+/-! ### Directed regression checks on the concrete `thresholdPoly 1` codec
+
+These instantiate the generic semantic verifier (`TreeMCSPPrefixSemanticVerifier.lean`, which stays
+independent of `ConcreteTreeCodec` / `ThresholdGrowth`) at the concrete tree-circuit codec. -/
+
+/-- Malformed (unparsable) queries are rejected for every certificate. -/
+example (N : Nat) (query : PrefixBitVec N)
+    (hp : parseTreeMCSPPrefixInput (thresholdPoly 1)
+        (treeCircuitWitnessCodec (thresholdPoly 1)) query = none)
+    (cert : PrefixBitVec (Pnp3.ComplexityInterfaces.certificateLength N 1)) :
+    treePrefixSemanticAccepts (treeCircuitWitnessCodec (thresholdPoly 1)) N query cert = false :=
+  treePrefixSemanticAccepts_rejects_malformed _ N query hp cert
+
+/-- A wrong version tag ⇒ the verifier rejects every certificate (end-to-end). -/
+example (N : Nat) (query : PrefixBitVec N) {tag : Nat}
+    (htag : readNatBE query 0 tagLen = some tag) (hbad : tag ≠ treePrefixTag)
+    (cert : PrefixBitVec (Pnp3.ComplexityInterfaces.certificateLength N 1)) :
+    treePrefixSemanticAccepts (treeCircuitWitnessCodec (thresholdPoly 1)) N query cert = false :=
+  treePrefixSemanticAccepts_rejects_malformed _ N query
+    (parseTreeMCSPPrefixInput_bad_tag (thresholdPoly 1)
+      (treeCircuitWitnessCodec (thresholdPoly 1)) query htag hbad) cert
+
+/-- Accept path: a successful parse + extraction with both checks passing accepts. -/
+example (N : Nat) (query : PrefixBitVec N)
+    (cert : PrefixBitVec (Pnp3.ComplexityInterfaces.certificateLength N 1))
+    {input : PrefixInput (Frontier.treeMCSPSearchProblem (thresholdPoly 1)
+      (Frontier.TreeMCSPSearchWitnessEncoding.ofCodec
+        (treeCircuitWitnessCodec (thresholdPoly 1)))) N}
+    {w : PrefixBitVec ((treeCircuitWitnessCodec (thresholdPoly 1)).witnessBits input.n)}
+    (hp : parseTreeMCSPPrefixInput (thresholdPoly 1)
+        (treeCircuitWitnessCodec (thresholdPoly 1)) query = some input)
+    (hw : extractWitness? (treeCircuitWitnessCodec (thresholdPoly 1)) N cert input = some w)
+    (hAg : input.prefixAgrees w)
+    (hVer : (treeCircuitWitnessCodec (thresholdPoly 1)).verifies input.n input.x w) :
+    treePrefixSemanticAccepts (treeCircuitWitnessCodec (thresholdPoly 1)) N query cert = true := by
+  rw [treePrefixSemanticAccepts_eq_of_parse_extract _ N query cert hp hw, Bool.and_eq_true]
+  exact ⟨(prefixAgreesBool_eq_true_iff input w).mpr hAg,
+    (verifiesBool_eq_true_iff _ input.n input.x w).mpr hVer⟩
+
+end TreeMCSPPrefixSemanticVerifierSurface
+
 -- Semantic verifier for the prefix-extension language (NP-verifier track, PR 1).
 #check @Pnp4.Frontier.ContractExpansion.treePrefixSemanticAccepts
 #check @Pnp4.Frontier.ContractExpansion.treePrefixSemanticAccepts_correct
 #check @Pnp4.Frontier.ContractExpansion.treePrefixSemanticAccepts_rejects_malformed
+#check @Pnp4.Frontier.ContractExpansion.treePrefixSemanticAccepts_eq_of_parse_extract
+#check @Pnp4.Frontier.ContractExpansion.treePrefixSemanticAccepts_eq_false_of_extract_none
 #check @Pnp4.Frontier.ContractExpansion.witnessBits_le_treeMCSPPrefixM
+#check @Pnp4.Frontier.ContractExpansion.witnessBits_le_certificateLength
 #check @Pnp4.Frontier.ContractExpansion.prefixAgreesBool
+#check @Pnp4.Frontier.ContractExpansion.prefixAgreesBool_eq_true_iff
 #check @Pnp4.Frontier.ContractExpansion.verifiesBool
+#check @Pnp4.Frontier.ContractExpansion.verifiesBool_eq_true_iff
+#check @Pnp4.Frontier.ContractExpansion.sliceBits?_zero
 #check @Pnp4.Frontier.ContractExpansion.extractWitness?
+#check @Pnp4.Frontier.ContractExpansion.extractWitness_eq
 
 -- Verifier input-tape layout (NP-verifier track): layout arithmetic only, no machine.
 #check @Pnp4.Frontier.ContractExpansion.prefixVerifierInputLen
@@ -3624,6 +3676,7 @@ def check_no_uniform_cklmEnvelopeFrequentEscape :
 #check @Pnp4.Frontier.ContractExpansion.queryIdxOffset
 #check @Pnp4.Frontier.ContractExpansion.queryPrefixOffset
 #check @Pnp4.Frontier.ContractExpansion.queryPrefixOffset_add_witnessBits
+#check @Pnp4.Frontier.ContractExpansion.queryPrefixOffset_le
 #check @Pnp4.Frontier.ContractExpansion.queryXOffset_le_treeMCSPPrefixM
 #check @Pnp4.Frontier.ContractExpansion.queryIdxOffset_le_treeMCSPPrefixM
 #check @Pnp4.Frontier.ContractExpansion.gammaLen_le_treeMCSPPrefixM

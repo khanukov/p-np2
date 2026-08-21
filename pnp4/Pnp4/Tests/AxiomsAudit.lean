@@ -390,7 +390,11 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.witnessBits_le_treeMCSPPrefixM
 #print axioms Pnp4.Frontier.ContractExpansion.prefixAgreesBool_eq_true_iff
 #print axioms Pnp4.Frontier.ContractExpansion.verifiesBool_eq_true_iff
+#print axioms Pnp4.Frontier.ContractExpansion.sliceBits?_zero
+#print axioms Pnp4.Frontier.ContractExpansion.witnessBits_le_certificateLength
 #print axioms Pnp4.Frontier.ContractExpansion.extractWitness_eq
+#print axioms Pnp4.Frontier.ContractExpansion.treePrefixSemanticAccepts_eq_of_parse_extract
+#print axioms Pnp4.Frontier.ContractExpansion.treePrefixSemanticAccepts_eq_false_of_extract_none
 #print axioms Pnp4.Frontier.ContractExpansion.treePrefixSemanticAccepts_rejects_malformed
 #print axioms Pnp4.Frontier.ContractExpansion.treePrefixSemanticAccepts_correct
 
@@ -407,6 +411,7 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.queryPrefixOffset_le
 -- Gamma/x field-fit bounds (gamma-decode phase layout preconditions); Classical-free arithmetic.
 #print axioms Pnp4.Frontier.ContractExpansion.queryXOffset_le_treeMCSPPrefixM
+#print axioms Pnp4.Frontier.ContractExpansion.queryIdxOffset_le_treeMCSPPrefixM
 #print axioms Pnp4.Frontier.ContractExpansion.gammaLen_le_treeMCSPPrefixM
 #print axioms Pnp4.Frontier.ContractExpansion.instanceSize_lt_treeMCSPPrefixM
 -- Gamma payload-read geometry (counter-representation scheme); Classical-free arithmetic.

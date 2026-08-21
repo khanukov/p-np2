@@ -137,13 +137,19 @@ NP ⊄ PpolyDAG     (and thence  P ≠ NP)        — both kept strictly conditi
   `treePrefixSemanticAccepts_correct`: the **mathematical core** of the NP-membership
   obligation at `k = 1`. It builds **no** Turing machine and proves **no** runtime
   bound; the `TM.accepts (concatBitstring x w) = treePrefixSemanticAccepts …` bridge
-  is still missing.
+  is still missing. The module is generic in the codec (it does **not** import
+  `ConcreteTreeCodec` / `ThresholdGrowth`); the directed regression checks at the
+  concrete `thresholdPoly 1` codec live in
+  `Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`
+  (`TreeMCSPPrefixSemanticVerifierSurface`).
 - `TreeMCSPPrefixVerifierLayout.lean` — data-independent tape arithmetic for that
   future machine: input length / certificate start, the `concatBitstring` bit
   projections, the start-tape reading lemmas, the query field offsets, and the
   gamma payload-read geometry. Layout facts only; the offset/fit lemmas are
-  `Classical`-free, the `concatBitstring` projections inherit `Classical.choice`
-  from the noncomputable `concatBitstring` itself.
+  `Classical`-free, the `concatBitstring` projections and the tape-reading lemmas
+  built on them inherit `Classical.choice` from the noncomputable `concatBitstring`
+  itself. Every theorem of both modules has its own `#print axioms` line in
+  `Pnp4/Tests/AxiomsAudit.lean` and its own `#check` in the surface tests.
 
 These are infrastructure for a future NP-membership proof: no lower bound, no change
 to `SearchMCSPMagnificationContract`, and no `P ≠ NP` claim follows from them.

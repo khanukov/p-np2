@@ -16,7 +16,16 @@ prefix-language instance and `cert : Bitstring (certificateLength N 1)` is the c
 module fixes the **data-independent** tape layout (the input length and the certificate / witness
 region offsets) and proves the basic fit lemmas the per-phase TM programs will rely on.
 
-No Turing machine is built here; this is layout arithmetic only (`Classical`-free).
+No Turing machine is built here: the module contains layout arithmetic plus the bit-projection
+lemmas for the concatenated input.
+
+Axiom split (audited line-by-line in `Pnp4/Tests/AxiomsAudit.lean`):
+
+* the offset / fit lemmas (`prefixVerifierInputLen_eq`, `prefixVerifierWitnessRegion_within_input`,
+  the `query*Offset*` family, the gamma geometry) are `Classical`-free;
+* the `concatBitstring` projections (`concatBitstring_left/right`) and the tape-reading lemmas
+  built on them (`verifierTape_left/right`) inherit `Classical.choice` from the noncomputable
+  `concatBitstring` itself — see the discussion before `concatBitstring_left`.
 -/
 
 /-- Length of the verifier's input tape: the length-`N` query followed by the certificate of length
@@ -115,8 +124,11 @@ theorem verifierTape_right {n m : Nat} (M : Pnp3.Internal.PsubsetPpoly.TM)
 ### Query field offsets
 
 The canonical query block (length `treeMCSPPrefixM codec n`) is laid out as
-`tag ++ gamma(n) ++ x ++ idx ++ (prefix ++ pad)`.  These offsets name the start of each field, so a
-parse-phase program can seek to the right tape position.  They partition the query block exactly
+`tag ++ gamma(n+1) ++ x ++ i ++ (p ++ pad)`, exactly as documented for `treeMCSPPrefixM` in
+`PrefixParserConvention.lean` (the Elias-gamma field for the instance size `n` encodes `n + 1`, so
+its length is `gammaLen n = 2 * bitLength (n + 1) - 1`).  These offsets name the start of each
+field, so a parse-phase program can seek to the right tape position.  They partition the query
+block exactly
 (`queryPrefixOffset + witnessBits = treeMCSPPrefixM`).
 -/
 
@@ -207,8 +219,9 @@ def gammaTermOffset (n : Nat) : Nat := tagLen + gammaZeros n
 theorem gammaLen_eq_two_mul_gammaZeros_add_one (n : Nat) :
     gammaLen n = 2 * gammaZeros n + 1 := by
   unfold gammaLen gammaZeros
-  -- `bitLength (n+1) ≥ 1` proved inline (the Mathlib `bitLength_pos_of_pos` pulls `Classical.choice`;
-  -- unfolding keeps this whole layout family genuinely `Classical`-free).
+  -- `bitLength (n+1) ≥ 1` is proved inline rather than by the project lemma
+  -- `bitLength_pos_of_pos` (`PrefixParserConvention.lean`), whose `simp` proof carries
+  -- `Classical.choice`; unfolding keeps this layout family `Classical`-free.
   have hpos : 0 < bitLength (n + 1) := by
     unfold bitLength
     rw [if_neg (by omega : ¬ (n + 1 = 0))]

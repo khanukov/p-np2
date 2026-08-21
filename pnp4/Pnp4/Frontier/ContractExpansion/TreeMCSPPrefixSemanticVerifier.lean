@@ -1,7 +1,5 @@
 import Pnp4.Frontier.ContractExpansion.PrefixParserConvention
 import Pnp4.Frontier.ContractExpansion.PrefixExtensionLanguageNP
-import Pnp4.Frontier.ContractExpansion.ConcreteTreeCodec
-import Pnp4.Frontier.ContractExpansion.ThresholdGrowth
 import Complexity.Interfaces
 
 namespace Pnp4
@@ -41,15 +39,19 @@ so the first `witnessBits input.n` certificate bits decode the witness prefix
 
 ## Axiom budget
 
-All results stay within the standard axiom set `[propext, Classical.choice, Quot.sound]` (verified
-in `AxiomsAudit.lean`).  The checks go through genuine `Decidable` instances
+All results stay within the standard axiom set `[propext, Classical.choice, Quot.sound]`; every
+theorem of this module is audited individually by a `#print axioms` line in
+`Pnp4/Tests/AxiomsAudit.lean`.  The checks go through genuine `Decidable` instances
 (`Fintype.decidableForallFintype`, `TreeCircuitWitnessCodec.verifiesDecidable`), never
 `Classical.propDecidable`, so `treePrefixSemanticAccepts` is computable.
 
-* `witnessBits_le_treeMCSPPrefixM`, `prefixAgreesBool_eq_true_iff`, `extractWitness_eq` are
-  `Classical`-free (`[propext]` / `[propext, Quot.sound]`).
-* `verifiesBool_eq_true_iff` — and hence `treePrefixSemanticAccepts` and every theorem mentioning
-  it — inherits `Classical.choice` from the *existing* `TreeCircuitWitnessCodec.verifiesDecidable`
+* `witnessBits_le_treeMCSPPrefixM`, `witnessBits_le_certificateLength`, `sliceBits?_zero`,
+  `prefixAgreesBool_eq_true_iff` and `extractWitness_eq` are `Classical`-free
+  (`[propext]` / `[propext, Quot.sound]`).
+* `verifiesBool_eq_true_iff` — and hence every theorem mentioning `treePrefixSemanticAccepts`
+  (the two reduction lemmas, `treePrefixSemanticAccepts_rejects_malformed`,
+  `treePrefixSemanticAccepts_correct`) — inherits `Classical.choice` from the *existing*
+  `TreeCircuitWitnessCodec.verifiesDecidable`
   (the `Classical.choice` lives only in the decidability proof terms, not the returned `Bool`).
 * `treePrefixSemanticAccepts_correct` additionally relies on `Classical.choice` through the
   classical, noncomputable `PrefixExtensionLanguage` wrapper (`PrefixExtensionLanguage_accepts_iff`).
@@ -61,6 +63,15 @@ in `AxiomsAudit.lean`).  The checks go through genuine `Decidable` instances
   `PrefixExtensionNPWitness.correct` here;
 * **no** lower bound, **no** `VerifiedNPDAGLowerBoundSource`, **no**
   `SearchMCSPMagnificationContract` change, **no** `P ≠ NP` endpoint.
+
+## Dependency boundary
+
+Everything here is generic in `codec : TreeCircuitWitnessCodec threshold`, so the module imports
+only the parser convention, the NP-side language interface and `Complexity.Interfaces`.  The
+directed regression checks on the *concrete* `thresholdPoly 1` codec (which need
+`ConcreteTreeCodec` / `ThresholdGrowth`) live in
+`Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`, section
+`TreeMCSPPrefixSemanticVerifierSurface`.
 -/
 
 /-- The witness block is the final summand of the concrete length `treeMCSPPrefixM`. -/
@@ -287,45 +298,6 @@ theorem treePrefixSemanticAccepts_correct
             refine ⟨input, hp, w, (prefixAgreesBool_eq_true_iff input w).mp hAg, ?_⟩
             dsimp [treeMCSPSearchProblem, TreeMCSPSearchWitnessEncoding.ofCodec]
             exact (verifiesBool_eq_true_iff codec input.n input.x w).mp hVer
-
-/-! ## Directed regression checks on the concrete `thresholdPoly 1` codec -/
-
-section Regression
-
-/-- Malformed (unparsable) queries are rejected for every certificate. -/
-example (N : Nat) (query : PrefixBitVec N)
-    (hp : parseTreeMCSPPrefixInput (thresholdPoly 1)
-        (treeCircuitWitnessCodec (thresholdPoly 1)) query = none)
-    (cert : PrefixBitVec (Pnp3.ComplexityInterfaces.certificateLength N 1)) :
-    treePrefixSemanticAccepts (treeCircuitWitnessCodec (thresholdPoly 1)) N query cert = false :=
-  treePrefixSemanticAccepts_rejects_malformed _ N query hp cert
-
-/-- A wrong version tag ⇒ the verifier rejects every certificate (end-to-end). -/
-example (N : Nat) (query : PrefixBitVec N) {tag : Nat}
-    (htag : readNatBE query 0 tagLen = some tag) (hbad : tag ≠ treePrefixTag)
-    (cert : PrefixBitVec (Pnp3.ComplexityInterfaces.certificateLength N 1)) :
-    treePrefixSemanticAccepts (treeCircuitWitnessCodec (thresholdPoly 1)) N query cert = false :=
-  treePrefixSemanticAccepts_rejects_malformed _ N query
-    (parseTreeMCSPPrefixInput_bad_tag (thresholdPoly 1)
-      (treeCircuitWitnessCodec (thresholdPoly 1)) query htag hbad) cert
-
-/-- Accept path: a successful parse + extraction with both checks passing accepts. -/
-example (N : Nat) (query : PrefixBitVec N)
-    (cert : PrefixBitVec (Pnp3.ComplexityInterfaces.certificateLength N 1))
-    {input : PrefixInput (treeMCSPSearchProblem (thresholdPoly 1)
-      (TreeMCSPSearchWitnessEncoding.ofCodec (treeCircuitWitnessCodec (thresholdPoly 1)))) N}
-    {w : PrefixBitVec ((treeCircuitWitnessCodec (thresholdPoly 1)).witnessBits input.n)}
-    (hp : parseTreeMCSPPrefixInput (thresholdPoly 1)
-        (treeCircuitWitnessCodec (thresholdPoly 1)) query = some input)
-    (hw : extractWitness? (treeCircuitWitnessCodec (thresholdPoly 1)) N cert input = some w)
-    (hAg : input.prefixAgrees w)
-    (hVer : (treeCircuitWitnessCodec (thresholdPoly 1)).verifies input.n input.x w) :
-    treePrefixSemanticAccepts (treeCircuitWitnessCodec (thresholdPoly 1)) N query cert = true := by
-  rw [treePrefixSemanticAccepts_eq_of_parse_extract _ N query cert hp hw, Bool.and_eq_true]
-  exact ⟨(prefixAgreesBool_eq_true_iff input w).mpr hAg,
-    (verifiesBool_eq_true_iff _ input.n input.x w).mpr hVer⟩
-
-end Regression
 
 end ContractExpansion
 end Frontier

@@ -236,8 +236,9 @@ review order (the `lakefile.lean` registration is the dependency order):
   `treeCircuitWitnessCodec (thresholdPoly k)` and `ContentPrefixExtensionTransfer.lean`'s
   `NoPolynomialBoundedSearchSolver` hypothesis is not refuted by vacuity. Scope is satisfiability
   only: no verifier TM, runtime bound, `TM.accepts` bridge, `ContentPrefixExtensionNPWitness`
-  instance, or NP-membership follows, and the re-decode gate inside `contentInput?` is still shown
-  not to fire only on the *constructed* zero-prefix words.
+  instance, or NP-membership follows. The separate I1 gate-closure module below proves that the
+  convention-length re-decode gate cannot fire after any successful content-header decode; the
+  tag, decoded-index, and inactive-padding checks remain genuine rejection points.
 - `ContentPrefixExtensionPadding.lean` — the specification-side obligation the modules
   above leave open: **padding stability**. `padRead_padWord_of_le` /
   `padWord_padWord_of_le` (blank padding past the support is idempotent),

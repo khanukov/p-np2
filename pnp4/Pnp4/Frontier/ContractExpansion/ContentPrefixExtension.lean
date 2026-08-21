@@ -195,7 +195,7 @@ narrow: `ContentAccepts` carries no *explicit* gate on the ambient physical leng
 through `padRead` at content-computed offsets, and never compares `N` against
 `treeMCSPPrefixM codec n` — so the length-gate step of the obstruction has nothing to attach to.
 The strict parser's own equality gate is not gone; `contentInput?` still runs it against the
-*computed* window length.  Its later gate-closure theorem is separate from this base definition.
+*computed* window length, with vacuity unproved.
 Three things are **not** claimed.  (i) That `L'` is independent of the physical length.  Padding
 stability is proved only for `ContentAccepts` on *complete* words
 (`ContentPrefixExtensionPadding.lean`: `ContentAccepts_padWord_of_le`,

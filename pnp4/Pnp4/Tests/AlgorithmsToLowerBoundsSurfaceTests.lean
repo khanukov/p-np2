@@ -58,6 +58,7 @@ import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPadding
+import Pnp4.Frontier.ContractExpansion.ContentSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.ContentVerifierTapeInterface
 import Pnp4.Frontier.ContractExpansion.ContentTargetSizeBound
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity
@@ -1018,6 +1019,20 @@ theorem check_NP_not_subset_PpolyDAG_treePolyCT
 #check @Pnp4.Frontier.ContractExpansion.contentWitness_padWord_of_le
 #check @Pnp4.Frontier.ContractExpansion.ContentAccepts_padWord_of_le
 #check @Pnp4.Frontier.ContractExpansion.ContentAccepts_iff_of_padRead_eq
+-- P0 content-side semantic verifier: a plain computable Boolean checker, its unconditional
+-- correctness equivalence, parse-failure rejection, padding stability, and language wrapper.
+-- This is Infrastructure only: it is not a TM construction or runtime theorem and does not
+-- establish non-vacuity, NP membership, a lower bound, or P != NP.
+#check @Pnp4.Frontier.ContractExpansion.contentSemanticAccepts
+#check @Pnp4.Frontier.ContractExpansion.contentSemanticAccepts_eq_true_iff
+#check @Pnp4.Frontier.ContractExpansion.contentSemanticAccepts_eq_false_of_contentInput_none
+#check @Pnp4.Frontier.ContractExpansion.contentSemanticAccepts_padWord_of_le
+#check @Pnp4.Frontier.ContractExpansion.contentSemanticAccepts_correct
+
+-- Concrete computability regression: the empty complete word fails the content parse and is
+-- rejected by the semantic verifier at the small concrete `thresholdPoly 1` codec.
+#eval contentSemanticAccepts (treeCircuitWitnessCodec (thresholdPoly 1))
+  (fun i : Fin 0 => Fin.elim0 i)
 -- Axiom-light strict-decode transport remains with padding stability.
 #check @Pnp4.Frontier.ContractExpansion.contentHeader?_of_decodeGamma
 -- D1a machine-facing tape interface (plan §4.4): the initial tape is the complete word's

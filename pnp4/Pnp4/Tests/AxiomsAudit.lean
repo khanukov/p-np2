@@ -48,6 +48,7 @@ import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPadding
+import Pnp4.Frontier.ContractExpansion.ContentSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.ContentVerifierTapeInterface
 import Pnp4.Frontier.ContractExpansion.ContentTargetSizeBound
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity
@@ -385,6 +386,13 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.ContentAccepts_padWord_of_le
 #print axioms Pnp4.Frontier.ContractExpansion.ContentAccepts_iff_of_padRead_eq
 #print axioms Pnp4.Frontier.ContractExpansion.contentHeader?_of_decodeGamma
+-- P0 content-side semantic verifier.  These must stay within the standard
+-- [propext, Classical.choice, Quot.sound] triple or a subset.  The Boolean definition itself is
+-- separately exercised by a concrete #eval in AlgorithmsToLowerBoundsSurfaceTests.lean.
+#print axioms Pnp4.Frontier.ContractExpansion.contentSemanticAccepts_eq_true_iff
+#print axioms Pnp4.Frontier.ContractExpansion.contentSemanticAccepts_eq_false_of_contentInput_none
+#print axioms Pnp4.Frontier.ContractExpansion.contentSemanticAccepts_padWord_of_le
+#print axioms Pnp4.Frontier.ContractExpansion.contentSemanticAccepts_correct
 -- D1a machine-facing tape interface.  The first theorem inherits Classical.choice from the
 -- noncomputable concatenation used in its statement; the second is the padding theorem restated
 -- for machine consumers.  `ContentVerifierBridgeFor` is a data structure rather than a proved

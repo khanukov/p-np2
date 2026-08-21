@@ -271,6 +271,17 @@ in dependency order:
   or bridge instance. The `runTime_poly` inequality bounds runtime numerically but does not
   formally prevent `runTime` from carrying input-length advice; advice avoidance remains a
   documented, unenforced construction obligation.
+- `ContentSemanticVerifier.lean` — P0's plain computable `Bool` counterpart of
+  `ContentAccepts`. `contentSemanticAccepts` content-parses one complete word, reads its total
+  content witness window, and combines `prefixAgreesBool` with `verifiesBool`. The unconditional
+  headline `contentSemanticAccepts_eq_true_iff` identifies `= true` with `ContentAccepts`;
+  `contentSemanticAccepts_eq_false_of_contentInput_none` rejects parse failures;
+  `contentSemanticAccepts_padWord_of_le` inherits complete-word padding stability; and
+  `contentSemanticAccepts_correct` gives the existential certificate characterization of `L'`.
+  This is semantic Infrastructure only: it constructs no TM or runtime bound, proves no
+  non-vacuity or NP membership, and reduces no lower-bound source obligation. The four theorems
+  stay within `[propext, Classical.choice, Quot.sound]` or a subset, and the surface tests include
+  a concrete evaluation to guard computability.
 - `ContentPrefixExtensionPaddingTransport.lean` — the explicitly classical conditional transport
   theorem `ContentAccepts_padWord_of_prefixExtendable`, isolated from the axiom-light padding
   module. It derives `ContentPrefixExtendable` directly from
@@ -354,7 +365,8 @@ the opposite reading:
   topped by invariance of `ContentAccepts` on complete words; the wrapper quantifies
   over certificates whose length and concatenation offset both move with the physical
   length, so wrapper-level invariance is unproved (scope paragraph above).
-- **No verifier.** No Turing machine, no runtime bound, and no
+- **No machine verifier.** The Boolean semantic checker in `ContentSemanticVerifier.lean` is not a
+  Turing-machine construction. No Turing machine, no runtime bound, and no
   `TM.accepts … = ContentAccepts …` bridge for `L'` is constructed anywhere. Note the
   interface's `runTime_poly` field bounds `M.runTime` at the length-dependent point
   `n + certificateLength n 1`, so the CT route does not remove length-dependence from

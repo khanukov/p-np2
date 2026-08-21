@@ -184,9 +184,11 @@ theorem gammaLen_le_treeMCSPPrefixM
   queryXOffset_le_treeMCSPPrefixM codec n
 
 /-- The instance size is strictly smaller than the query length: the `x` field has `2 ^ n` cells and
-`n < 2 ^ n`, so `n < treeMCSPPrefixM codec n`.  Equivalently, the instance size is logarithmic in the
-query length (`2 ^ n ≤ N`).  This bounds the gamma-decode design's search/counter range — a candidate
-`n`, and its `bitLength N`-bit binary counter, fit within the input. -/
+`n < 2 ^ n`, so `n < treeMCSPPrefixM codec n`.  The proof route establishes strictly more than the
+statement: `tableLen_le_treeMCSPPrefixM` gives `2 ^ n ≤ N` (the instance size is logarithmic in the
+query length), which *implies* — but is not implied by — the stated `n < N`.  This bounds the
+gamma-decode design's search/counter range — a candidate `n`, and its `bitLength N`-bit binary
+counter, fit within the input. -/
 theorem instanceSize_lt_treeMCSPPrefixM
     {threshold : Nat → Nat} (codec : TreeCircuitWitnessCodec threshold) (n : Nat) :
     n < treeMCSPPrefixM codec n := by
@@ -200,15 +202,18 @@ theorem instanceSize_lt_treeMCSPPrefixM
 /-!
 ### Gamma payload-read geometry (the counter-representation scheme)
 
-The planned data-dependent gamma read is a **localized decoupled unary countdown**: the `z = bitLength (n+1) − 1` leading zeros of the Elias-gamma block (filled to `1`s) are
-the loop counter `K`, driving `repeatBody`; each iteration reads the payload bit **mirror** to the
-consumed counter cell across the (fixed) terminator at `tagLen + z`.  These offsets and the
-mirror-position fit lemma are the layout preconditions that body program consumes — proved here,
-`Classical`-free, alongside the rest of the query-field geometry.
+The planned data-dependent gamma read is a **localized decoupled unary countdown**: the
+`z = bitLength (n+1) − 1` leading zeros of the Elias-gamma block (filled to `1`s) are the loop
+counter `K`, driving the loop body of the future read program; each iteration reads the payload bit
+**mirror** to the consumed counter cell across the (fixed) terminator at `tagLen + z`.  These offsets
+and the mirror-position fit lemma are the layout preconditions that the body program will consume —
+proved here, `Classical`-free, alongside the rest of the query-field geometry.  Only the geometry is
+formalized below: neither the loop program nor any TM-level `repeat` combinator exists in the
+repository yet.
 -/
 
 /-- Leading-zero count of the Elias-gamma block for `n`: `z = bitLength (n+1) − 1`.  Equals the payload
-width and the loop count `K` the payload read drives `repeatBody` with. -/
+width, and is the loop count `K` intended for the future payload-read loop. -/
 def gammaZeros (n : Nat) : Nat := bitLength (n + 1) - 1
 
 /-- Offset of the Elias-gamma unary terminator: the lone `1` at `tagLen + z` separating the `z` leading

@@ -27,10 +27,12 @@ conditional chain through `L'`.  The `L'` NP-witness remains an **unproved hypot
 definitional and narrow — `L'` has no *explicit* gate on the ambient physical length for the
 obstruction to attach to (the strict parser's own equality gate is still executed inside
 `contentInput?`, on the computed window, with vacuity unproved), which is not the same as `L'` being
-independent of the physical length (`contentHeader?` still
-decodes on the `2N+1`-padded word, so `N` fixes that window's width and the decoder's fuel) — and
-nothing more: no machine, runtime bound, `TM.accepts` bridge, or padding-stability lemma is built
-here, and the transfer below is the *same* one-way `PpolyDAG →` extraction, not a converse.
+independent of the physical length.  Padding stability *is* proved in
+`ContentPrefixExtensionPadding.lean`, but only for `ContentAccepts` on *complete* words; membership
+in `L'` at physical length `m` still quantifies over certificates of length `certificateLength m 1`
+concatenated at offset `m`, both moving with `m`, so `L'` itself is not known to be padding-invariant.
+Nothing more follows: no machine, runtime bound, or `TM.accepts` bridge is built here, and the
+transfer below is the *same* one-way `PpolyDAG →` extraction, not a converse.
 
 **Progress classification (AGENTS.md): Infrastructure** — specification repair for the NP-verifier
 track; all lower-bound inputs remain explicit hypotheses; proves no separation.  Standard

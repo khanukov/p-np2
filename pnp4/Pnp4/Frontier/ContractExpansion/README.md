@@ -172,7 +172,7 @@ length-dependent in general; and `TM.accepts` is evaluated at exactly step
 can in principle depend on `n`; what the planned idle-sink construction cannot do is
 recover the gate from the loaded content alone. **The whole argument is a review of
 the definitions, not a Lean theorem**: no impossibility result is formalized anywhere
-in this directory. The response replaces the *language*, not the chain — four modules,
+in this directory. The response replaces the *language*, not the chain — six modules,
 in dependency order:
 
 - `ContentPrefixExtension.lean` — `padRead` / `padWord` (the blank-padded tape read),
@@ -189,14 +189,46 @@ in dependency order:
 - `ContentPrefixExtensionCoincidence.lean` — reader monotonicity under ambient
   widening (`readBit?_mono`, `readNatBE_mono`, `decodeGammaAux?_mono`), parse
   inversion (`parseTreeMCSPPrefixInput_inversion`), the two window computations on a
-  concatenated word, and the headline
+  concatenated word, the proposition-level
+  `ContentPrefixExtendable_iff_of_parse`, and the Boolean-language headline
   `ContentPrefixExtensionLanguage_eq_of_parse`: for
   `y : PrefixBitVec (treeMCSPPrefixM codec n)`, under **both** `hparse`
   (`parseTreeMCSPPrefixInput … y = some input`) and `hn : input.n = n`, `L'` agrees
   with the length-gated language at `treeMCSPPrefixM codec n`. `hn` is a genuine
   second hypothesis: inversion yields only
   `treeMCSPPrefixM codec input.n = treeMCSPPrefixM codec n`, and injectivity of
-  `treeMCSPPrefixM codec` is not proved.
+  `treeMCSPPrefixM codec` is not proved.  The proposition-level theorem is the direct specification
+  coincidence and does not route through either classical Boolean language wrapper.
+- `ContentPrefixExtensionPadding.lean` — the specification-side obligation the modules
+  above leave open: **padding stability**. `padRead_padWord_of_le` /
+  `padWord_padWord_of_le` (blank padding past the support is idempotent),
+  `readNatBE_padWord_transfer` (fixed-width read transfer **both** ways between
+  paddings — the shrinking direction the monotonicity lemmas above cannot give),
+  `decodeGammaAux?_padWord_support` (the **blank-tail** lemma: a successful gamma scan
+  on a padded word has its terminator strictly inside the support, since every cell
+  past the support reads blank), `decodeGammaAux?_padWord_canonical` (the canonical
+  re-run; its fuel side condition `N + 1 ≤ fuel' + zeros` is an **explicit hypothesis** of
+  the statement — what is *proved* is that the induction preserves it, and that both
+  callers discharge it at their concrete fuel `2 * width + 2` with `zeros = 0`), padding
+  stability of the three content-computed reads (`contentHeader?_padWord_of_le`,
+  `contentInput?_padWord_of_le`, `contentWitness_padWord_of_le`), and the headlines
+  `ContentAccepts_padWord_of_le` (acceptance of a **complete** word is unchanged by blank
+  padding to any larger physical length) and `ContentAccepts_iff_of_padRead_eq` (any two
+  complete finite words with the *same* blank-padded tape are accepted alike). The axiom-light
+  `contentHeader?_of_decodeGamma` transports an already-successful strict decode. The helper lemmas
+  are generic statements about
+  `padRead` / `padWord`, the strict readers and the gamma decoder; the headline results
+  are invariance of `ContentAccepts` on complete words. Nothing in the module is a
+  statement about the language wrapper (see the scope paragraph below). Verified axiom footprint:
+  fourteen entries are `[propext, Quot.sound]`, one (`readBit?_padWord_of_lt`) is axiom-free, and
+  no theorem in this module depends on `Classical.choice`.
+- `ContentPrefixExtensionPaddingTransport.lean` — the explicitly classical conditional transport
+  theorem `ContentAccepts_padWord_of_prefixExtendable`, isolated from the axiom-light padding
+  module. It derives `ContentPrefixExtendable` directly from
+  `ContentPrefixExtendable_iff_of_parse`, without either Boolean language wrapper. Its statement
+  necessarily inherits `Classical.choice` from the pre-existing noncomputable `concatBitstring`.
+  It is a **conditional existential**, available only under `hparse`, `hn`, `hext`, and `hT`, so it
+  proves no unconditional satisfiability or non-emptiness result.
 - `ContentPrefixExtensionTransfer.lean` — the decision→search extraction transferred
   to `L'` (the greedy machinery only ever queries deciders on constructed, parseable
   queries), ending in
@@ -219,33 +251,57 @@ in dependency order:
   and `ContentPrefixExtensionNPWitness` — input (2)). The original length-gated chain
   is left intact for reference.
 
+What the padding lemmas **do** buy, precisely. `L'` carries no *explicit* gate on the
+ambient length — no test in `L'` compares the physical `N` against
+`treeMCSPPrefixM codec n` — and that alone was a definitional observation, weaker than
+length-independence, because `contentHeader?` decodes on `padWord z (2 * N + 1)`, so `N`
+fixed both that window's width and the gamma decoder's fuel (`decodeGamma?` uses
+`m + 1`). `contentHeader?_padWord_of_le` closes exactly that residual `N`-dependence:
+the definition still *mentions* `2 * N + 1`, but its value does not move with `N`. Up
+the chain, `ContentAccepts_padWord_of_le` and `ContentAccepts_iff_of_padRead_eq`
+upgrade this to full invariance **of `ContentAccepts`**: the ambient physical length of a
+*complete* word (query ++ certificate) is not observable in `ContentAccepts` at all, so
+that predicate is a function of the blank-padded tape only. It is one ingredient the
+planned idle-sink verifier would need, and it is a statement about that predicate of the
+*specification* and nothing else.
+
+**Scope — `ContentAccepts`, not the language wrapper.** Padding invariance is *not*
+proved for `ContentPrefixExtensionLanguage` (`L'`). Membership of a query `y` at physical
+length `m` unfolds to
+`∃ w : Bitstring (certificateLength m 1), ContentAccepts codec (concatBitstring y w)`, and
+both the certificate length and the offset at which `w` is concatenated are functions of
+`m`. Padding `y` moves that boundary and changes the family of certificates quantified
+over, so nothing here relates `ContentPrefixExtensionLanguage codec m y` to
+`ContentPrefixExtensionLanguage codec m' (padWord y m')`. The `L'` NP-witness interface,
+and every TM-side claim, are untouched.
+
 What this does **not** establish, stated explicitly because the module names invite
 the opposite reading:
 
-- **No padding-stability result.** The design intent is that `L'` depend only on the
-  blank-padded tape, but no lemma proving that (`ContentAccepts` invariant under
-  padding to a larger physical length, or under equality of padded tapes) is present
-  in this directory. Without it, the gain over the length-gated language is
-  *definitional* and narrower than it may look: what `L'` drops is the **explicit
-  gate on the original ambient length** — no test in `L'` compares the physical `N`
-  against `treeMCSPPrefixM codec n`. The strict parser's own
-  `m = treeMCSPPrefixM codec n` equality test is **not** removed: `contentInput?`
-  invokes that parser on the *computed* window `padWord z (M n')`, where the test
-  survives as a comparison of the computed window's length against the re-decoded
-  target, and its intended vacuity is unproved (next bullet).
-  `ContentAccepts` is **not** independent of the physical length `N`: it calls
-  `contentHeader?`, which decodes on `padWord z (2 * N + 1)`, so `N` fixes both that
-  window's width and the gamma decoder's fuel (`decodeGamma?` uses `m + 1`). That
-  residual `N`-dependence is exactly what a padding-stability lemma would have to
-  neutralize. The obstruction is not formally shown to be evaded.
+- **No machine-side conclusion.** Padding stability is an invariance of the
+  specification. The `pnp3` model is still **not** length-blind (tape length and
+  evaluation step both move with the input length, as above), no machine is built, and
+  the obstruction remains a review of the definitions, never a Lean impossibility
+  theorem — so nothing here shows that a verifier for `L'` exists or is achievable.
 - **No proof that the re-decode gate is vacuous.** `contentInput?` re-runs the strict
   parser, which re-decodes the gamma header from the narrow window `padWord z (M n')`
   and applies its own gate `m = M n_dec`. That the gate never fires is the *intent*
   (it needs `n_dec = n'`, the narrowing direction of the decode); only the widening
   lemma `decodeGammaAux?_mono` is proved, so no lemma here rules out
-  `contentInput? = none` at the gate.
-- **No non-vacuity / satisfiability.** Nothing proves that any word is
-  `ContentAccepts`-accepted, or that `L'` is non-empty.
+  `contentInput? = none` at the gate. Padding stability does not help: it says the two
+  sides agree *including on failure*, not that either side succeeds.
+- **No unconditional non-vacuity / satisfiability.** Nothing proves *unconditionally*
+  that any word is `ContentAccepts`-accepted, or that `L'` is non-empty. The one
+  existential statement about `ContentAccepts`,
+  `ContentAccepts_padWord_of_prefixExtendable`, is a conditional existential: it is
+  available only under the four explicit hypotheses of its statement — `hparse`, `hn`,
+  `hext`, none discharged anywhere, plus the padding bound `hT`, which only fixes the
+  target length.
+- **No padding invariance of the language `L'`.** The padding lemmas are generic
+  statements about `padRead` / `padWord`, the strict readers and the gamma decoder,
+  topped by invariance of `ContentAccepts` on complete words; the wrapper quantifies
+  over certificates whose length and concatenation offset both move with the physical
+  length, so wrapper-level invariance is unproved (scope paragraph above).
 - **No verifier.** No Turing machine, no runtime bound, and no
   `TM.accepts … = ContentAccepts …` bridge for `L'` is constructed anywhere. Note the
   interface's `runTime_poly` field bounds `M.runTime` at the length-dependent point
@@ -256,7 +312,7 @@ the opposite reading:
 - **No separation.** Both open inputs stay explicit arguments of every source in
   `ContentConsolidatedSource.lean`; no `P ≠ NP` claim follows.
 
-Every theorem of the four modules has its own `#print axioms` line in
+Every public theorem of the six modules has its own `#print axioms` line in
 `Pnp4/Tests/AxiomsAudit.lean` and its own `#check` in
 `Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`
 (`ContentPrefixExtensionSurface`).
@@ -326,12 +382,16 @@ Every theorem of the four modules has its own `#print axioms` line in
    **`ContentPrefixExtensionNPWitness (treeCircuitWitnessCodec (thresholdPoly k))`**,
    whose language carries no *explicit* gate on the ambient physical length (the
    strict parser's own equality gate survives inside `contentInput?`, applied to the
-   computed window, with vacuity unproved). That is a definitional
-   difference only, and a narrow one: `ContentAccepts` still depends on the physical
-   length `N` through the `2N+1` header window and its fuel, the interface's runtime
-   bound is still taken at the length-dependent point `n + certificateLength n 1`, and
-   no padding-stability lemma, verifier TM, runtime bound, or `TM.accepts` bridge is
-   proved for `L'` either — so input (2) is an unproved interface on **both** routes.
+   computed window, with vacuity unproved). On the specification side that difference
+   is now backed by a proof — `ContentAccepts` is invariant under blank padding of a
+   *complete* word (`ContentPrefixExtensionPadding.lean`), so its `2N+1` header window
+   no longer makes acceptance move with `N`. It buys nothing on the machine side, and
+   the target of this input is the *language* `L'`, for which padding invariance is
+   **not** proved (the certificate length and concatenation offset both move with the
+   physical length): the interface's runtime bound is still taken at the
+   length-dependent point `n + certificateLength n 1`, and no verifier TM, runtime
+   bound, or `TM.accepts` bridge is proved for `L'` — so input (2) is an unproved
+   interface on **both** routes.
 
 (For an *arbitrary* threshold there is a third input, `PolyBoundedInTable threshold`;
 it is proved for the canonical polynomial thresholds, so it disappears there.)

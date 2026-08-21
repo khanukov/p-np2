@@ -263,9 +263,60 @@ theorem contentInput?_concat_of_parse {threshold : Nat → Nat}
   rw [hheader]
   simp only [padWord_concat_left, hparse, Option.map_some]
 
-/-! ### The coincidence theorem -/
+/-! ### The coincidence theorems -/
 
-/-- **Coincidence (brick R3).**  Under *both* hypotheses — the strict parse succeeds
+/-- **Predicate-level coincidence (brick R3).**  Under *both* hypotheses — the strict parse
+succeeds (`hparse`) and the parsed target is the ambient one (`hn : input.n = n`, which does
+**not** follow from `hparse`) — content prefix extendability is exactly the original semantic
+prefix-extendability predicate.
+
+This is the direct specification theorem.  It does not pass through either classical Boolean
+language wrapper.  Its `Classical.choice` footprint comes solely from the pre-existing
+noncomputable `concatBitstring` used by `ContentPrefixExtendable`. -/
+theorem ContentPrefixExtendable_iff_of_parse {threshold : Nat → Nat}
+    (codec : TreeCircuitWitnessCodec threshold)
+    {n : Nat} (y : PrefixBitVec (treeMCSPPrefixM codec n))
+    (input : PrefixInput
+      (treeMCSPSearchProblem threshold (TreeMCSPSearchWitnessEncoding.ofCodec codec))
+      (treeMCSPPrefixM codec n))
+    (hparse : parseTreeMCSPPrefixInput threshold codec y = some input)
+    (hn : input.n = n) :
+    ContentPrefixExtendable codec y
+      ↔ PrefixExtendable (treeMCSPConcretePrefixParser threshold codec) y := by
+  constructor
+  · rintro ⟨w, pr, hci, hagree, hrel⟩
+    rw [contentInput?_concat_of_parse codec y input hparse hn w] at hci
+    obtain rfl : (⟨n, input⟩ : Σ n', PrefixInput
+        (treeMCSPSearchProblem threshold (TreeMCSPSearchWitnessEncoding.ofCodec codec))
+        (treeMCSPPrefixM codec n')) = pr := Option.some.inj hci
+    exact ⟨input, hparse,
+      ⟨contentWitness codec (Pnp3.ComplexityInterfaces.concatBitstring y w) input.n,
+        hagree, hrel⟩⟩
+  · rintro ⟨input', hparse', wfull, hagree, hrel⟩
+    obtain rfl : input' = input := Option.some.inj (hparse'.symm.trans hparse)
+    set wcert : Pnp3.ComplexityInterfaces.Bitstring
+        (Pnp3.ComplexityInterfaces.certificateLength (treeMCSPPrefixM codec n) 1) :=
+      fun j => if h : j.1 < codec.witnessBits input'.n then wfull ⟨j.1, h⟩ else false
+      with hwcert
+    have hcw : contentWitness codec
+        (Pnp3.ComplexityInterfaces.concatBitstring y wcert) input'.n = wfull := by
+      funext j
+      rw [contentWitness_concat codec y wcert (by rw [hn]), hwcert]
+      simp only [dif_pos (show (j : Nat) < codec.witnessBits input'.n from j.2)]
+      exact congrArg wfull (Fin.ext rfl)
+    refine ⟨wcert, ⟨n, input'⟩,
+      contentInput?_concat_of_parse codec y input' hparse hn wcert, ?_, ?_⟩
+    · show input'.prefixAgrees
+        (contentWitness codec (Pnp3.ComplexityInterfaces.concatBitstring y wcert) input'.n)
+      rw [hcw]
+      exact hagree
+    · show (treeMCSPSearchProblem threshold
+          (TreeMCSPSearchWitnessEncoding.ofCodec codec)).relation input'.n input'.x
+        (contentWitness codec (Pnp3.ComplexityInterfaces.concatBitstring y wcert) input'.n)
+      rw [hcw]
+      exact hrel
+
+/-- **Boolean-language coincidence (brick R3).**  Under *both* hypotheses — the strict parse succeeds
 (`hparse`) and the parsed target is the ambient one (`hn : input.n = n`, which does **not** follow
 from `hparse`: inversion gives only `treeMCSPPrefixM codec input.n = treeMCSPPrefixM codec n`, and
 injectivity of `treeMCSPPrefixM codec` is not proved) — the content-truthful language `L'` agrees
@@ -281,46 +332,9 @@ theorem ContentPrefixExtensionLanguage_eq_of_parse {threshold : Nat → Nat}
     ContentPrefixExtensionLanguage codec (treeMCSPPrefixM codec n) y
       = PrefixExtensionLanguage (treeMCSPConcretePrefixParser threshold codec)
           (treeMCSPPrefixM codec n) y := by
-  have hwb : codec.witnessBits input.n
-      ≤ Pnp3.ComplexityInterfaces.certificateLength (treeMCSPPrefixM codec n) 1 :=
-    witnessBits_le_certificateLength codec input.n _ (by rw [hn])
-  have hiff : ContentPrefixExtendable codec y
-      ↔ PrefixExtendable (treeMCSPConcretePrefixParser threshold codec) y := by
-    constructor
-    · rintro ⟨w, pr, hci, hagree, hrel⟩
-      rw [contentInput?_concat_of_parse codec y input hparse hn w] at hci
-      obtain rfl : (⟨n, input⟩ : Σ n', PrefixInput
-          (treeMCSPSearchProblem threshold (TreeMCSPSearchWitnessEncoding.ofCodec codec))
-          (treeMCSPPrefixM codec n')) = pr := Option.some.inj hci
-      exact ⟨input, hparse,
-        ⟨contentWitness codec (Pnp3.ComplexityInterfaces.concatBitstring y w) input.n,
-          hagree, hrel⟩⟩
-    · rintro ⟨input', hparse', wfull, hagree, hrel⟩
-      obtain rfl : input' = input := Option.some.inj (hparse'.symm.trans hparse)
-      set wcert : Pnp3.ComplexityInterfaces.Bitstring
-          (Pnp3.ComplexityInterfaces.certificateLength (treeMCSPPrefixM codec n) 1) :=
-        fun j => if h : j.1 < codec.witnessBits input'.n then wfull ⟨j.1, h⟩ else false
-        with hwcert
-      have hcw : contentWitness codec
-          (Pnp3.ComplexityInterfaces.concatBitstring y wcert) input'.n = wfull := by
-        funext j
-        rw [contentWitness_concat codec y wcert (by rw [hn]), hwcert]
-        simp only [dif_pos (show (j : Nat) < codec.witnessBits input'.n from j.2)]
-        exact congrArg wfull (Fin.ext rfl)
-      refine ⟨wcert, ⟨n, input'⟩,
-        contentInput?_concat_of_parse codec y input' hparse hn wcert, ?_, ?_⟩
-      · show input'.prefixAgrees
-          (contentWitness codec (Pnp3.ComplexityInterfaces.concatBitstring y wcert) input'.n)
-        rw [hcw]
-        exact hagree
-      · show (treeMCSPSearchProblem threshold
-            (TreeMCSPSearchWitnessEncoding.ofCodec codec)).relation input'.n input'.x
-          (contentWitness codec (Pnp3.ComplexityInterfaces.concatBitstring y wcert) input'.n)
-        rw [hcw]
-        exact hrel
   rw [Bool.eq_iff_iff, ContentPrefixExtensionLanguage_accepts_iff,
     PrefixExtensionLanguage_accepts_iff]
-  exact hiff
+  exact ContentPrefixExtendable_iff_of_parse codec y input hparse hn
 
 end ContractExpansion
 end Frontier

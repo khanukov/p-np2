@@ -46,6 +46,8 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence
+import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPadding
+import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPaddingTransport
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionTransfer
 import Pnp4.Frontier.ContractExpansion.ContentConsolidatedSource
 import Pnp4.Frontier.ContractExpansion.ExplicitConditionalSource
@@ -321,8 +323,9 @@ end Pnp4
 -- treeMCSPPrefixM codec is not proved.  Listed with its reader-monotonicity, parse-inversion
 -- and window-computation ingredients.  The three monotonicity lemmas and parse inversion are
 -- Classical-free (nothing / [propext] / [propext, Quot.sound]); the lemmas about a concatenated
--- word inherit Classical.choice from the noncomputable concatBitstring, and the headline
--- additionally from the classical language wrapper.
+-- word inherit Classical.choice from the noncomputable concatBitstring.  The predicate-level
+-- coincidence theorem avoids both Boolean language wrappers; the language-level headline adds
+-- those wrappers only at its outermost step.
 #print axioms Pnp4.Frontier.ContractExpansion.readBit?_mono
 #print axioms Pnp4.Frontier.ContractExpansion.readNatBE_mono
 #print axioms Pnp4.Frontier.ContractExpansion.decodeGammaAux?_mono
@@ -331,6 +334,7 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.padWord_concat_left
 #print axioms Pnp4.Frontier.ContractExpansion.contentWitness_concat
 #print axioms Pnp4.Frontier.ContractExpansion.contentInput?_concat_of_parse
+#print axioms Pnp4.Frontier.ContractExpansion.ContentPrefixExtendable_iff_of_parse
 #print axioms Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionLanguage_eq_of_parse
 -- Repair brick R4: the extraction transfer -- an L'-decider drives the same greedy machinery (by
 -- coincidence at the constructed queries), so the same open no-solver hypotheses pin L' outside
@@ -346,6 +350,41 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.verifiedSourceCT_of_noPolynomialBoundedSearchSolver
 #print axioms Pnp4.Frontier.ContractExpansion.verifiedSourceCT_treePoly
 #print axioms Pnp4.Frontier.ContractExpansion.NP_not_subset_PpolyDAG_treePolyCT
+-- Specification-side obligation: padding stability of ContentAccepts -- the blank-tail lemma is
+-- proved, and the headline says any two COMPLETE finite words with the same blank-padded tape are
+-- content-accepted alike.  The fuel side condition N + 1 <= fuel' + zeros is an EXPLICIT HYPOTHESIS
+-- of decodeGammaAux?_padWord_canonical, not a proved fact: what the induction proves is that the
+-- scan step PRESERVES it, and the two callers in the module discharge its initial instance at their
+-- concrete fuel 2 * width + 2 with zeros = 0.  This closes the residual ambient-N dependence of
+-- ContentAccepts on the SPECIFICATION side only.  It does NOT give padding invariance of the
+-- language wrapper ContentPrefixExtensionLanguage (L'), whose membership at length m quantifies
+-- over certificates of length certificateLength m 1 concatenated at offset m, both moving with m;
+-- it does NOT build a verifier TM, a runtime bound, or a TM.accepts bridge; the pnp3 model is not
+-- length-blind; and stability is agreement INCLUDING on failure, so it does not show the strict
+-- parser's surviving m = treeMCSPPrefixM codec n_dec gate inside contentInput? is vacuous.  This
+-- entire module is axiom-light: readBit?_padWord_of_lt is axiom-free and the other fourteen entries
+-- are [propext, Quot.sound], with no Classical.choice theorem.
+#print axioms Pnp4.Frontier.ContractExpansion.padRead_padWord_of_le
+#print axioms Pnp4.Frontier.ContractExpansion.padWord_padWord_of_le
+#print axioms Pnp4.Frontier.ContractExpansion.eq_padWord_of_padRead_eq
+#print axioms Pnp4.Frontier.ContractExpansion.lt_of_padRead_eq_true
+#print axioms Pnp4.Frontier.ContractExpansion.readBit?_padWord_of_lt
+#print axioms Pnp4.Frontier.ContractExpansion.readBit?_padWord_of_ge
+#print axioms Pnp4.Frontier.ContractExpansion.readNatBE_padWord_transfer
+#print axioms Pnp4.Frontier.ContractExpansion.decodeGammaAux?_padWord_support
+#print axioms Pnp4.Frontier.ContractExpansion.decodeGammaAux?_padWord_canonical
+#print axioms Pnp4.Frontier.ContractExpansion.contentHeader?_padWord_of_le
+#print axioms Pnp4.Frontier.ContractExpansion.contentInput?_padWord_of_le
+#print axioms Pnp4.Frontier.ContractExpansion.contentWitness_padWord_of_le
+#print axioms Pnp4.Frontier.ContractExpansion.ContentAccepts_padWord_of_le
+#print axioms Pnp4.Frontier.ContractExpansion.ContentAccepts_iff_of_padRead_eq
+#print axioms Pnp4.Frontier.ContractExpansion.contentHeader?_of_decodeGamma
+-- Explicitly classical conditional transport module.  The theorem derives ContentPrefixExtendable
+-- directly through ContentPrefixExtendable_iff_of_parse, without either Boolean language wrapper.
+-- Its statement still necessarily inherits Classical.choice from the pre-existing noncomputable
+-- concatBitstring.  It is conditional on hparse, hn, hext, and hT, so proves no unconditional
+-- satisfiability or non-emptiness result.
+#print axioms Pnp4.Frontier.ContractExpansion.ContentAccepts_padWord_of_prefixExtendable
 
 #print axioms Pnp4.Frontier.ContractExpansion.verifiedSource_of_explicit_interfaces
 #print axioms Pnp4.Frontier.ContractExpansion.NP_not_subset_PpolyDAG_of_explicit_interfaces

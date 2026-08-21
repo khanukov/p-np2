@@ -56,6 +56,8 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence
+import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPadding
+import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPaddingTransport
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionTransfer
 import Pnp4.Frontier.ContractExpansion.ContentConsolidatedSource
 import Pnp4.Frontier.ContractExpansion.ExplicitConditionalSource
@@ -946,6 +948,7 @@ open Pnp4.Frontier.ContractExpansion
 #check @Pnp4.Frontier.ContractExpansion.padWord_concat_left
 #check @Pnp4.Frontier.ContractExpansion.contentWitness_concat
 #check @Pnp4.Frontier.ContractExpansion.contentInput?_concat_of_parse
+#check @Pnp4.Frontier.ContractExpansion.ContentPrefixExtendable_iff_of_parse
 #check @Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionLanguage_eq_of_parse
 -- Repair brick R4: the extraction transfer.  This is the *same* one-way
 -- `PpolyDAG → BoundedSearchSolver` direction as the length-gated chain; no converse is proved.
@@ -982,6 +985,56 @@ theorem check_NP_not_subset_PpolyDAG_treePolyCT
     (hNPWit : ContentPrefixExtensionNPWitness (treeCircuitWitnessCodec (thresholdPoly k))) :
     Pnp3.ComplexityInterfaces.NP_not_subset_PpolyDAG :=
   NP_not_subset_PpolyDAG_treePolyCT k hNoPoly hNPWit
+
+-- Padding stability of `ContentAccepts` (`ContentPrefixExtensionPadding.lean`): the
+-- padding-idempotence and strict-reader lemmas, the blank-tail lemma, the canonical re-run (whose
+-- fuel bound `N + 1 <= fuel' + zeros` is an explicit hypothesis; the induction proves its
+-- preservation and the two callers discharge it), the three content-computed reads, and the headline
+-- invariance.  Scope: these close the residual ambient-`N` dependence for `ContentAccepts` on
+-- COMPLETE words, on the SPECIFICATION side only.  They do NOT give padding invariance of the
+-- language wrapper `ContentPrefixExtensionLanguage` (membership at length `m` quantifies over
+-- certificates of length `certificateLength m 1` concatenated at offset `m`, both moving with `m`);
+-- no verifier TM, runtime bound, or `TM.accepts` bridge follows; the `pnp3` model is not
+-- length-blind; and stability is agreement *including on failure* -- it does NOT show that the
+-- strict parser's surviving `m = treeMCSPPrefixM codec n_dec` gate inside `contentInput?` is
+-- vacuous.
+#check @Pnp4.Frontier.ContractExpansion.padRead_padWord_of_le
+#check @Pnp4.Frontier.ContractExpansion.padWord_padWord_of_le
+#check @Pnp4.Frontier.ContractExpansion.eq_padWord_of_padRead_eq
+#check @Pnp4.Frontier.ContractExpansion.lt_of_padRead_eq_true
+#check @Pnp4.Frontier.ContractExpansion.readBit?_padWord_of_lt
+#check @Pnp4.Frontier.ContractExpansion.readBit?_padWord_of_ge
+#check @Pnp4.Frontier.ContractExpansion.readNatBE_padWord_transfer
+#check @Pnp4.Frontier.ContractExpansion.decodeGammaAux?_padWord_support
+#check @Pnp4.Frontier.ContractExpansion.decodeGammaAux?_padWord_canonical
+#check @Pnp4.Frontier.ContractExpansion.contentHeader?_padWord_of_le
+#check @Pnp4.Frontier.ContractExpansion.contentInput?_padWord_of_le
+#check @Pnp4.Frontier.ContractExpansion.contentWitness_padWord_of_le
+#check @Pnp4.Frontier.ContractExpansion.ContentAccepts_padWord_of_le
+#check @Pnp4.Frontier.ContractExpansion.ContentAccepts_iff_of_padRead_eq
+-- Axiom-light strict-decode transport remains with padding stability.
+#check @Pnp4.Frontier.ContractExpansion.contentHeader?_of_decodeGamma
+-- The certificate-producing transport is isolated in the explicitly classical
+-- `ContentPrefixExtensionPaddingTransport.lean`.  It derives `ContentPrefixExtendable` directly
+-- from the proposition-level coincidence theorem, without either Boolean language wrapper, but
+-- its statement necessarily inherits `Classical.choice` from the pre-existing noncomputable
+-- `concatBitstring`.  This is a CONDITIONAL existential under `hparse`, `hn`, `hext`, and `hT`, not
+-- an unconditional satisfiability / non-emptiness result for `ContentAccepts` or `L'`.
+#check @Pnp4.Frontier.ContractExpansion.ContentAccepts_padWord_of_prefixExtendable
+
+/-- Padding-stability surface (headline): any two *complete* finite words presenting the same
+blank-padded tape are content-accepted alike, so `ContentAccepts` is a function of the tape contents
+only.  Scope is exactly that predicate: padding invariance of the language wrapper
+`ContentPrefixExtensionLanguage` (`L'`) is **not** proved, since membership at physical length `m`
+quantifies over certificates of length `certificateLength m 1` concatenated at offset `m`, both of
+which move with `m`.  A specification-side invariance; it builds no machine and claims no NP-witness
+achievability. -/
+theorem check_ContentAccepts_iff_of_padRead_eq
+    {threshold : Nat → Nat} (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    {N N' : Nat} (z : PrefixBitVec N) (z' : PrefixBitVec N')
+    (h : ∀ j, padRead z j = padRead z' j) :
+    ContentAccepts codec z ↔ ContentAccepts codec z' :=
+  ContentAccepts_iff_of_padRead_eq codec z z' h
 
 end ContentPrefixExtensionSurface
 

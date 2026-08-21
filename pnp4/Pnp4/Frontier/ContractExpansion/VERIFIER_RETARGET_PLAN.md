@@ -121,8 +121,9 @@ survive. No implementation code is introduced here.
 > The proof computes the all-blank decode at `r := pr.2.n`, forces `tableLen r ≤ N`, and closes
 > `contentAccepts_target_poly_treePoly` through `PolyBoundedInTable.powAdd`.  Its sole
 > header/parsed-target reconciliation is `M n_header = M r`; it uses no I1 result and never infers
-> `n_header = r`.  Section 1.1 is therefore frozen.  This closes only target-size feasibility:
-> a concrete verifier TM, runtime proof, non-vacuity, and the `TM.accepts` bridge remain open.
+> `n_header = r`.  Section 1.1 is therefore frozen.  This closes only target-size feasibility.
+> GATE-0 now separately proves concrete non-vacuity; a concrete verifier TM, runtime proof and the
+> `TM.accepts` bridge remain open.
 
 ---
 
@@ -611,9 +612,11 @@ boundary of the frozen target.
    `i ≤ codec.witnessBits n'`, and `padZero = true`. Those are sound rejections, not defects.
    (The previous revision asserted the opposite — that unconditional gate vacuity is false and
    canonicity must be assumed. Both statements were wrong.)
-4. **Non-vacuity is unproved.** The only existential statement about `ContentAccepts`,
-   `ContentPrefixExtensionPaddingTransport.lean:39` `ContentAccepts_padWord_of_prefixExtendable`, is
-   conditional on `hparse`, `hn`, `hext`, `hT`, none discharged. This is what GATE-0 addresses.
+4. **Non-vacuity is proved at the concrete codec.** `ContentPrefixExtensionNonVacuity.lean`
+   constructs accepted zero-prefix words generically from a satisfied predicate and discharges the
+   concrete case with the all-false table and `Circuit.const false`; in particular
+   `contentAccepts_nonvacuous_treePoly` gives an accepted complete word for every `k, n`.  This is
+   GATE-0's specification-side result, not a verifier TM or NP-witness construction.
 5. **The obligation lives in this repository's machine model only.** `NP` is `NP_TM`
    (`pnp3/Complexity/Interfaces.lean:560`) over `Pnp3.Internal.PsubsetPpoly.TM`: deterministic
    single-tape, binary alphabet, no read-only input tape, tape length `n + runTime n + 1`
@@ -856,7 +859,8 @@ Every slice obeys: **≤ 1500 changed `.lean` LOC (added + deleted) and ≤ 10 c
 
 ### 4.1 GATE-0 — non-vacuity of `ContentAccepts` at the concrete codec · **blocking for D-track, not for P0/I1**
 
-**Why this is a gate.** Nothing proves that any word is `ContentAccepts`-accepted (§1.3, caveat 4).
+**Why this was a gate.** Before this slice, nothing proved that any word was
+`ContentAccepts`-accepted (§1.3, caveat 4).
 If `ContentAccepts` were unsatisfiable at the concrete codec, `L'` would be the empty language;
 `ContentPrefixExtensionNPWitness` would then be discharged by a trivial machine, and the
 consolidated CT source `NP_not_subset_PpolyDAG_treePolyCT` would be worthless — its other
@@ -864,6 +868,9 @@ hypothesis, `NoPolynomialBoundedSearchSolver`, would be refuted rather than mere
 `ContentPrefixExtensionTransfer.lean:145` pins the *empty* `L'` outside `PpolyDAG`. Building a
 verifier machine before settling this risks discharging a vacuous obligation. This replaces, and is
 unrelated to, the donor's arm-embedding GATE-0.
+
+**Status: PASS.** The three outputs below now settle the gate, culminating in
+`contentAccepts_nonvacuous_treePoly` at the concrete codec.
 
 **New module:** `ContentPrefixExtensionNonVacuity.lean`.
 
@@ -1540,12 +1547,12 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
 
 | Slice | Branch | Status | Merged as |
 |---|---|---|---|
-| FEAS-0 target size bound | `work/feas0-target-bound` | implemented; all checks green | — |
-| GATE-0 non-vacuity | `work/gate0-nonvacuity` | implemented; targeted checks green | — |
-| P0 content semantic verifier | `work/ct-p0-content-semantic-verifier` | unblocked | — |
-| I1 gate closure | `work/ct-i1-gate-closure` | unblocked | — |
-| D1a tape lemmas + bridge structure | `work/ct-d1a-tape-interface` | unblocked | — |
-| D1b bridge ⇒ NP-witness | `work/ct-d1b-bridge-witness` | blocked on P0 and **D1a** | — |
+| FEAS-0 target size bound | `work/feas0-target-bound` | merged; outcome (a) green | PR #1629 (`af2365a2`) |
+| GATE-0 non-vacuity | `work/gate0-nonvacuity` | implemented; targeted checks green | `80efdd04` (pending PR) |
+| P0 content semantic verifier | `work/p0-content-semantic` | implemented; review complete | pending PR |
+| I1 gate closure | `work/i1-gate-closure` | implemented; review in progress | — |
+| D1a tape lemmas + bridge structure | `work/d1a-tape-interface` | implemented; review complete | pending PR |
+| D1b bridge ⇒ NP-witness | `work/d1b-bridge-witness` | blocked on P0 and **D1a** | — |
 
 ---
 
@@ -1555,7 +1562,7 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
 |---|---|---|---|
 | **F0** | FEAS-0 | **PASS (a):** at `treeCircuitWitnessCodec (thresholdPoly k)`, `contentAccepts_target_poly_treePoly` proves the polynomial bound from accepted complete words to `treeMCSPPrefixM codec n'`. It *yields* a bounded timeout in principle, of exponent `c · d` rather than `c`, via `PolyBoundedInTable.powAdd` (`ExtractedScheduleGrowth.lean:114`), whose polynomial `P N = (N ^ c + c) ^ d + d` bounds `M n' = M r` and — through `tableLen_le_treeMCSPPrefixM` (`PrefixParserConvention.lean:48`) and `witnessBits_le_treeMCSPPrefixM` (`TreeMCSPPrefixSemanticVerifier.lean:78`) applied **at `r := pr.2.n`** — also `tableLen r`, `codec.witnessBits r` and (via `r ≤ bitLength (M n')`) `thresholdPoly k r`, the quantities `ContentAccepts` actually uses. These component bounds come **directly** from `M r = M n'`, never by transferring an `n'`-side bound. Never stated codec-generically — generic (a)/(b) are false. It is **not** a verifier implementation (§1.0) | only outcome (d) was red; it did not occur |
 | **F0b** | FEAS-0 | **PASS:** the proof runs on `r := pr.2.n`, uses only `M n_header = M r`, recovers the truth-table slice through `contentInput?_x_apply`, and cites no I1 output | a future consumer needing target equality or gamma canonicity must be re-derived via the convention-length equality |
-| **G0** | GATE-0 | a *concrete* word is `ContentAccepts`-accepted at `treeCircuitWitnessCodec (thresholdPoly k)` | halt the D-track and escalate; do not build a machine for a possibly-empty `L'`. P0/I1 continue |
+| **G0** | GATE-0 | **PASS:** `contentAccepts_nonvacuous_treePoly` constructs a concrete `ContentAccepts`-accepted word at `treeCircuitWitnessCodec (thresholdPoly k)` for every `k, n` | the red action is no longer applicable; this pass establishes only non-vacuity, not a verifier or NP witness |
 | **G1** | P0 | the `Bool`↔`Prop` headline is hypothesis-free | fix the `Bool` definition's failure branches, not the statement |
 | **G2** | P0 | the three codec-path theorems carry the standard triple **or lighter** (same rule as G9 — a shorter list is not a defect); computability checked by instance provenance + one `#eval`, **not** by an axiom check | a fourth axiom, a `noncomputable` marker, or a `Classical.propDecidable` instance is a blocker; a *lighter* footprint is not |
 | **G3** | I1 | injectivity stated only as `treeMCSPPrefixM_injective_of_monotone` / `_treePoly` | reject any generic-codec injectivity claim as **false**; do not strengthen `PrefixInput` to dodge it |

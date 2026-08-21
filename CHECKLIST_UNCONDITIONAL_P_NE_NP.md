@@ -109,16 +109,20 @@ route.  Full 16-stage audit chain: `STATUS.md`.
 
 ### Deprecated pnp3 fixed-slice AC0 endpoint
 
-`pnp3/LowerBounds/AC0_GapMCSP.lean` is a deprecated compatibility quarantine.  The
-canonical certificate is
+`pnp3/LowerBounds/AC0_GapMCSP.lean` is a deprecated compatibility quarantine holding the
+historical `in_AC0` / `not_in_AC0` names.  The canonical certificate does **not** live in
+that file; it is declared in `pnp3/LowerBounds/AntiChecker_Partial.lean`:
 
 ```text
 false_of_smallAC0Params_and_easyFamilyData
+  {p     : GapPartialMCSPParams}
   (params : SmallAC0ParamsPartial p)
   (easy   : AC0EasyFamilyDataPartial params.ac0) : False
 ```
 
-which projects only `params` and `easyData` and never uses solver correctness.  The
+Its two arguments are exactly the `params` and `easyData` fields of
+`SmallAC0Solver_Partial`, so the package is inconsistent without ever touching the
+separate `correct` (solver-correctness) field.  The
 historical `in_AC0` / `not_in_AC0` names must not be cited as a standard AC0 lower
 bound, a publishable result, or a closure route.  See
 `pnp3/Docs/AC0_Publishable_Result.md`.

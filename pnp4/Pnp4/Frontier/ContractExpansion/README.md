@@ -223,12 +223,20 @@ PpolyDAG (prefix-extension language) → polynomial-size bounded search solver
 ```
 
 i.e. `boundedSearchSolver_of_PpolyDAG_prefixExtension` (`BoundedSolverFromPpoly.lean`),
-together with its contrapositive
-`not_PpolyDAG_prefixExtension_of_noPolynomialBoundedSearchSolver`
-(`ExtractedScheduleGrowth.lean`).  The converse (solver ⇒ `PpolyDAG`) is **not**
-formalized — this directory contains no `Iff` between `PpolyDAG` and a solver, and no
-`PpolyDAG_of_boundedSearchSolver` declaration — so the chain is a one-way reduction,
-**not** an equivalence.
+together with its contrapositive, which exists in two forms (see the module map above):
+
+* `not_PpolyDAG_prefixExtension_of_noExtractedScheduleSolver`
+  (`NoSolverContrapositive.lean`, Block 9c) — the direct contrapositive at the *exact*
+  extracted size schedule `extractedSolverSizeBound codec c`, with no growth premise;
+* `not_PpolyDAG_prefixExtension_of_noPolynomialBoundedSearchSolver`
+  (`ExtractedScheduleGrowth.lean`, Block 9d) — the polynomial-target form, derived from
+  the exact-schedule one via `noExtractedScheduleSolver_of_noPolynomial` and therefore
+  carrying the extra premise `TreeMCSPExtractionGrowthAssumptions codec`.
+
+Both are the *same* single direction restated; neither is a converse.  The converse
+(solver ⇒ `PpolyDAG`) is **not** formalized — this directory contains no `Iff` between
+`PpolyDAG` and a solver, and no `PpolyDAG_of_boundedSearchSolver` declaration — so the
+chain is a one-way reduction, **not** an equivalence.
 
 Because the instance length is `tableLen n = 2^n`, the no-solver input is therefore
 **at least as strong as** the full `P/poly` lower bound — "this concrete NP language is

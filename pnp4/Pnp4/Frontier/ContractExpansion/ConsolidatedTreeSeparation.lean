@@ -37,9 +37,13 @@ This file states that collapsed form once and for all.
   result.  The decision→search extraction is formalized in **one direction only** —
   `PpolyDAG (prefix-extension language) → polynomial-size bounded search solver`
   (`boundedSearchSolver_of_PpolyDAG_prefixExtension`, `BoundedSolverFromPpoly.lean`)
-  plus its contrapositive
+  plus its contrapositive in two forms: the exact-schedule
+  (`not_PpolyDAG_prefixExtension_of_noExtractedScheduleSolver`,
+  `NoSolverContrapositive.lean`) and the polynomial-target
   (`not_PpolyDAG_prefixExtension_of_noPolynomialBoundedSearchSolver`,
-  `ExtractedScheduleGrowth.lean`).  The converse (solver ⇒ `PpolyDAG`) is **not**
+  `ExtractedScheduleGrowth.lean`, which adds `TreeMCSPExtractionGrowthAssumptions` and
+  is derived from the exact-schedule form) — both restating the same single direction.
+  The converse (solver ⇒ `PpolyDAG`) is **not**
   formalized, so this is a one-way reduction and *not* an equivalence.  Since the
   instance length is `tableLen n = 2^n`, `NoPolynomialBoundedSearchSolver` is therefore
   *at least as strong as* the full `P/poly` lower bound — "this concrete NP language is

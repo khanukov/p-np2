@@ -262,7 +262,7 @@ enough relative to `tableLen` to invalidate the slack inequality
 used in `slack_for_D_of_isoStrong_slack`) is also an internal
 spec-engineering option, not a publishable route on its own.
 
-**Audit chain summary (11 stages, all kernel-checked).**
+**Audit chain summary (16 stages, all kernel-checked).**
 
 | Stage | Verdict | Lean witness |
 |---|---|---|
@@ -586,8 +586,13 @@ PpolyDAG (prefix-extension language) → polynomial-size bounded search solver
 
 that is `boundedSearchSolver_of_PpolyDAG_prefixExtension`
 (`pnp4/Pnp4/Frontier/ContractExpansion/BoundedSolverFromPpoly.lean`), together with its
-contrapositive `not_PpolyDAG_prefixExtension_of_noPolynomialBoundedSearchSolver`
-(`ContractExpansion/ExtractedScheduleGrowth.lean`).  The converse
+contrapositive in two forms: the exact-schedule
+`not_PpolyDAG_prefixExtension_of_noExtractedScheduleSolver`
+(`ContractExpansion/NoSolverContrapositive.lean`, no growth premise) and the
+polynomial-target `not_PpolyDAG_prefixExtension_of_noPolynomialBoundedSearchSolver`
+(`ContractExpansion/ExtractedScheduleGrowth.lean`, which adds
+`TreeMCSPExtractionGrowthAssumptions` and is derived from the exact-schedule form).
+Both restate the same single direction.  The converse
 (solver ⇒ `PpolyDAG`) is **not** formalized: `ContractExpansion/` contains no `Iff`
 between `PpolyDAG` and a solver and no `PpolyDAG_of_boundedSearchSolver` declaration.
 

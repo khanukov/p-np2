@@ -6,26 +6,6 @@ namespace Tests
 open LowerBounds
 open Models
 
-example {p : GapPartialMCSPParams}
-    (params : SmallAC0ParamsPartial p)
-    (easy : AC0EasyFamilyDataPartial params.ac0) : False :=
-  false_of_smallAC0Params_and_easyFamilyData params easy
-
-example {p : GapPartialMCSPParams}
-    (params : SmallAC0ParamsPartial p)
-    {F : Core.Family params.ac0.n}
-    (hF : ThirdPartyFacts.AC0FamilyWitnessProp params.ac0 F)
-    (hCard : Nat.pow 2 (Nat.pow 2 params.ac0.n) ≤ F.toFinset.card) : False :=
-  false_of_smallAC0Params_and_large_AC0Family params hF hCard
-
-example (p : GapPartialMCSPParams)
-    (package : SmallAC0Solver_Partial p) : False :=
-  false_of_enrichedSmallAC0PackagePartial p package
-
-example (p : GapPartialMCSPParams) :
-    EnrichedSmallAC0PackagePartialInconsistent p :=
-  not_exists_enrichedSmallAC0PackagePartial p
-
 section DeprecatedCompatibilitySmoke
 
 -- These checks pin the historical API only.  Both predicates below mean
@@ -53,6 +33,26 @@ example (p : GapPartialMCSPParams) :
   gapPartialMCSP_not_in_AC0_iff_notInSmallAC0 p
 
 end DeprecatedCompatibilitySmoke
+
+example {p : GapPartialMCSPParams}
+    (params : SmallAC0ParamsPartial p)
+    (easy : AC0EasyFamilyDataPartial params.ac0) : False :=
+  false_of_smallAC0Params_and_easyFamilyData params easy
+
+example {p : GapPartialMCSPParams}
+    (params : SmallAC0ParamsPartial p)
+    {F : Core.Family params.ac0.n}
+    (hF : ThirdPartyFacts.AC0FamilyWitnessProp params.ac0 F)
+    (hCard : Nat.pow 2 (Nat.pow 2 params.ac0.n) ≤ F.toFinset.card) : False :=
+  false_of_smallAC0Params_and_large_AC0Family params hF hCard
+
+example (p : GapPartialMCSPParams)
+    (package : SmallAC0Solver_Partial p) : False :=
+  false_of_enrichedSmallAC0PackagePartial p package
+
+example (p : GapPartialMCSPParams) :
+    EnrichedSmallAC0PackagePartialInconsistent p :=
+  not_exists_enrichedSmallAC0PackagePartial p
 
 end Tests
 end Pnp3

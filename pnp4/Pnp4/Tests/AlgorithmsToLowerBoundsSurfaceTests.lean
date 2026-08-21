@@ -1021,7 +1021,8 @@ theorem check_NP_not_subset_PpolyDAG_treePolyCT
 -- Axiom-light strict-decode transport remains with padding stability.
 #check @Pnp4.Frontier.ContractExpansion.contentHeader?_of_decodeGamma
 -- D1a machine-facing tape interface (plan §4.4): the initial tape is the complete word's
--- blank-padded read; content acceptance is therefore reusable from a tape equality; and the
+-- blank-padded read; the existing content-acceptance invariance is independently restated for
+-- machine consumers; and the
 -- verifier obligation is parameterized by an arbitrary acceptance predicate.  The bridge uses
 -- `TM.accepts` at exactly `runTime`, with the concatenated length explicit.  It has no halting or
 -- within-time alternative, supplies no machine instance, and does not formally prevent `runTime`

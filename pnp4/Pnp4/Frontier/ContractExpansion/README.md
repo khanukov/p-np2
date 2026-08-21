@@ -263,8 +263,8 @@ in dependency order:
 - `ContentVerifierTapeInterface.lean` — D1a's P0-independent machine-facing surface from
   `VERIFIER_RETARGET_PLAN.md` §4.4. `initialConfig_tape_eq_padRead` identifies every allocated
   start-tape cell with the blank-padded complete concatenated word, including the blank tail;
-  `contentAccepts_of_initialConfig_tape_eq` exposes content-acceptance invariance in the form used
-  by machine proofs; and `ContentVerifierBridgeFor acc` names the verifier obligation for an
+  `contentAccepts_of_initialConfig_tape_eq` restates the existing blank-padded-read invariance for
+  machine consumers; and `ContentVerifierBridgeFor acc` names the verifier obligation for an
   arbitrary acceptance predicate. Its `accepts_eq` field uses the existing exact-step
   `TM.accepts` semantics at the explicit concatenated length `n + certificateLength n 1`: there is
   no halting or within-time variant. This module supplies no specialized alias, witness packaging,

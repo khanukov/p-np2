@@ -1,20 +1,14 @@
 import LowerBounds.AC0_GapMCSP
 
+set_option linter.deprecated false
+
 namespace Pnp3
 namespace Tests
 
 open LowerBounds
 open Models
 
-section DeprecatedCompatibilitySmoke
-
--- These checks pin the historical API only.  Both predicates below mean
--- inconsistency of the enriched package; they are not standard AC0 claims.
-set_option linter.deprecated false
-
-example (p : GapPartialMCSPParams) :
-    GapPartialMCSP_not_in_AC0 p :=
-  gapPartialMCSP_not_in_AC0 p
+example (p) : GapPartialMCSP_not_in_AC0 p := gapPartialMCSP_not_in_AC0 p
 
 example (p : GapPartialMCSPParams) :
     ∀ _solver : SmallAC0Solver_Partial p, False :=
@@ -31,8 +25,6 @@ example (p : GapPartialMCSPParams) :
 example (p : GapPartialMCSPParams) :
     GapPartialMCSP_not_in_AC0 p ↔ GapPartialMCSP_NotInSmallAC0 p :=
   gapPartialMCSP_not_in_AC0_iff_notInSmallAC0 p
-
-end DeprecatedCompatibilitySmoke
 
 example {p : GapPartialMCSPParams}
     (params : SmallAC0ParamsPartial p)

@@ -11,7 +11,8 @@ induce tapes whose *contents* agree cell-by-cell wherever both are defined, and 
 verifier, which reads only that loaded content, has no way to replicate the gate.
 `ContentPrefixExtension.lean` repairs the *definition*; this module discharges the specification-side
 obligation that CT-B explicitly left open — **the padding-stability lemma for `ContentAccepts`** —
-i.e. the statement that the repaired language is a function of the blank-padded tape only:
+i.e. the statement that acceptance of a *complete* finite word (query ++ certificate) is a function
+of that word's blank-padded tape only:
 
 * `padRead_padWord_of_le` / `padWord_padWord_of_le` — blank padding past the support is idempotent;
 * `readBit?_padWord_of_lt` / `readBit?_padWord_of_ge` / `readNatBE_padWord_transfer` — the strict
@@ -22,9 +23,11 @@ i.e. the statement that the repaired language is a function of the blank-padded 
   word has its terminator strictly inside the support, since every cell past the support reads
   blank.  This is what makes the shrinking direction sound at all;
 * `decodeGammaAux?_padWord_canonical` — combining the two: a successful scan on *any* padding
-  re-runs successfully on *any* padding of width `≥ 2N+1` with fuel `≥ N+1` (the fuel side is an
-  explicit **fuel-monotonicity** hypothesis `N + 1 ≤ fuel' + zeros`, maintained along the scan, not
-  a weakening of the statement);
+  re-runs successfully on *any* padding of width `≥ 2N+1`, under the **explicit theorem hypothesis**
+  `N + 1 ≤ fuel' + zeros` on the target fuel.  That initial bound is *assumed*, not proved; what the
+  induction proves is that it is **preserved** by the scan step, and both callers in this module
+  (`contentHeader?_padWord_of_le`, `contentHeader?_of_decodeGamma`) **discharge** it at their
+  concrete fuel `2 * width + 2` with `zeros = 0`;
 * `contentHeader?_padWord_of_le`, `contentInput?_padWord_of_le`, `contentWitness_padWord_of_le` —
   the three content-computed reads are padding-stable;
 * **`ContentAccepts_padWord_of_le`** — the headline: acceptance of a word is unchanged by blank
@@ -35,10 +38,19 @@ i.e. the statement that the repaired language is a function of the blank-padded 
 
 Taken together, these close the residual `N`-dependence that `ContentPrefixExtension.lean` records:
 `contentHeader?` still *syntactically* decodes on `padWord z (2 * N + 1)`, but
-`contentHeader?_padWord_of_le` shows the result does not move with `N`, so on the specification side
-the ambient physical length is no longer observable at all.  That is an invariance property of the
-*specification*; it says nothing about the machine side, and in particular:
+`contentHeader?_padWord_of_le` shows the result does not move with `N`, so the ambient physical
+length of a complete word is no longer observable **in `ContentAccepts`**.  That is an invariance
+property of one predicate of the specification, and of nothing else.  In particular:
 
+* **it is not padding-invariance of the language `L'` (`ContentPrefixExtensionLanguage`).**  Every
+  statement below is about `ContentAccepts` applied to a *complete* word.  Membership of a *query*
+  `y` at physical length `m` unfolds (via `ContentPrefixExtendable`) to
+  `∃ w : Bitstring (certificateLength m 1), ContentAccepts codec (concatBitstring y w)`, and **both**
+  the certificate length and the offset at which `w` is concatenated are functions of `m`.  Padding
+  `y` moves that boundary and changes the family of certificates quantified over, so nothing here
+  relates `ContentPrefixExtensionLanguage codec m y` to
+  `ContentPrefixExtensionLanguage codec m' (padWord y m')`: **wrapper-level padding invariance is not
+  proved**, and the `L'` NP-witness interface is untouched;
 * **it is not a statement that the `pnp3` TM model is length-blind — it is not.**
   `TM.tapeLength n = n + TM.runTime n + 1`, `runTime : ℕ → ℕ` is an arbitrary structure field, and
   `TM.accepts` is evaluated at exactly step `runTime n`, all of which move with the input length
@@ -54,19 +66,24 @@ Two further lemmas are **conditional transport** statements, not existence state
 `contentHeader?_of_decodeGamma` (an *already successful* strict decode also succeeds through the
 `2N+1` margin) and `ContentAccepts_padWord_of_prefixExtendable` (an *already* prefix-extendable
 query at its convention length yields a certificate whose concatenation is content-accepted, and
-stays accepted at every larger physical length).  Neither exhibits a word: **no existential
-accepted word is proved here**, so nothing in this module asserts that `ContentAccepts` is
-satisfiable.  Producing such a witness needs a truth table with a threshold-respecting circuit plus
-the codec/parse round-trip, which is not done anywhere in this directory.
+stays accepted at every larger physical length).  The second one's conclusion *is* an existential
+over certificates, but only under its three undischarged hypotheses: **no unconditional existential
+/ non-emptiness result is proved here**, so nothing in this module asserts that `ContentAccepts` is
+satisfiable or that `L'` is non-empty.  Producing such a witness needs a truth table with a
+threshold-respecting circuit plus the codec/parse round-trip, which is not done anywhere in this
+directory.
 
 Scope: no Turing machine, no runtime bound, no NP-witness achievability, no new source/contract
-wrapper, no lower bound, no existence claim, no separation.  The `(★′)` bridge itself
+wrapper, no lower bound, no unconditional existence claim, no separation.  The `(★′)` bridge itself
 (`TM.accepts … = ContentAccepts …`) is *not* claimed here; this module supplies one
 specification-side ingredient that bridge would need.
 
 **Progress classification (AGENTS.md): Infrastructure** — specification repair for the NP-verifier
-track; proves no separation.  The whole chain below is `Classical`-free except where it touches the
-noncomputable `concatBitstring` / the classical language wrapper.
+track; proves no separation.  Verified axiom footprint (`#print axioms`, see
+`Pnp4/Tests/AxiomsAudit.lean`): `readBit?_padWord_of_lt` is axiom-free, the other fourteen
+padding-stability theorems are `[propext, Quot.sound]`, and only
+`ContentAccepts_padWord_of_prefixExtendable` adds `Classical.choice` — via the noncomputable
+`concatBitstring` and the classical language wrapper it routes through.
 **No `P ≠ NP` claim.**
 -/
 
@@ -192,14 +209,15 @@ theorem decodeGammaAux?_padWord_support {N : Nat} (z : PrefixBitVec N) {T offset
 
 /-- **Canonical re-run of a successful gamma scan.**  A scan that succeeds on *some* padding
 succeeds, with the same result, on *any* padding of width at least `2N+1` provided the fuel still
-covers the remaining scan.  Both side conditions are explicit and are exactly what the blank-tail
-lemma makes available:
+covers the remaining scan.  Both side conditions are **explicit hypotheses** of the statement:
 
 * width `2N+1` is enough because the terminator sits at an index `< N` (blank tail), so its
   `zeros`-bit payload ends before `2N`;
-* the fuel invariant `N + 1 ≤ fuel' + zeros` is preserved by the scan step (`zeros` grows by one as
-  the fuel drops by one) and, together with the blank-tail bound `zeros < N`, keeps the target fuel
-  positive — this is the fuel-monotonicity obligation, discharged rather than assumed away. -/
+* the fuel bound `N + 1 ≤ fuel' + zeros` is *assumed* here, not proved.  What the induction proves
+  is that it is **preserved** by the scan step (`zeros` grows by one as the fuel drops by one) and
+  that, together with the blank-tail bound `zeros < N`, it keeps the target fuel positive.  The two
+  callers below (`contentHeader?_padWord_of_le`, `contentHeader?_of_decodeGamma`) **discharge** it
+  outright, since they enter at `zeros = 0` with fuel `2 * width + 2`. -/
 theorem decodeGammaAux?_padWord_canonical {N : Nat} (z : PrefixBitVec N) {offset : Nat} :
     ∀ {T T' fuel fuel' zeros : Nat} {r : Nat × Nat},
       2 * N + 1 ≤ T' → N + 1 ≤ fuel' + zeros →
@@ -297,13 +315,19 @@ theorem ContentAccepts_padWord_of_le (codec : TreeCircuitWitnessCodec threshold)
   unfold ContentAccepts
   simp only [contentInput?_padWord_of_le codec z hNT, contentWitness_padWord_of_le codec z hNT]
 
-/-- **Full padding-invariance of the specification.**  Any two finite words presenting the same
-blank-padded tape are content-accepted alike — no physical-length information is observable in `L'`
-at all.  This is the invariance the *planned idle-sink verifier* would need on the specification
-side, so the zero-extension pair that the length-gated language separates is not separated here.
-It says nothing about the machine side: no verifier TM is built, the `pnp3` model is **not**
-length-blind (its tape length and evaluation step both move with the input length), and the `(★′)`
-bridge `TM.accepts … = ContentAccepts …` remains open. -/
+/-- **Full padding-invariance of `ContentAccepts`.**  Any two *complete* finite words presenting the
+same blank-padded tape are content-accepted alike, so no physical-length information about a complete
+word is observable in `ContentAccepts`.  This is one ingredient the *planned idle-sink verifier*
+would need on the specification side: the zero-extension pair of complete words that the
+length-gated parser separates is not separated by `ContentAccepts`.
+
+Two things it does **not** give.  It does not lift to the language wrapper: membership of a *query*
+`y` in `ContentPrefixExtensionLanguage codec m` quantifies over certificates of length
+`certificateLength m 1` concatenated at offset `m`, both of which move with `m`, so padding a query
+is outside the scope of this lemma and wrapper-level invariance stays unproved.  And it says nothing
+about the machine side: no verifier TM is built, the `pnp3` model is **not** length-blind (its tape
+length and evaluation step both move with the input length), and the `(★′)` bridge
+`TM.accepts … = ContentAccepts …` remains open. -/
 theorem ContentAccepts_iff_of_padRead_eq (codec : TreeCircuitWitnessCodec threshold)
     {N N' : Nat} (z : PrefixBitVec N) (z' : PrefixBitVec N')
     (h : ∀ j, padRead z j = padRead z' j) :
@@ -314,10 +338,12 @@ theorem ContentAccepts_iff_of_padRead_eq (codec : TreeCircuitWitnessCodec thresh
   · rw [eq_padWord_of_padRead_eq z' z (fun j => (h j).symm)]
     exact ContentAccepts_padWord_of_le codec z' hle
 
-/-! ### Conditional transport (no existence claim)
+/-! ### Conditional transport (no unconditional existence claim)
 
 Both lemmas below take an already-successful decode / an already-extendable query as a hypothesis and
-transport it.  Neither produces a word, so neither witnesses that `ContentAccepts` is satisfiable. -/
+transport it.  The second one's conclusion is an existential over certificates, but it is available
+only under undischarged hypotheses, so neither lemma witnesses — unconditionally — that
+`ContentAccepts` is satisfiable. -/
 
 /-- **The `2N+1` margin is harmless.**  Whatever the strict decoder reads off the word itself, the
 content header reads too.  (The converse fails on purpose: a terminator inside the support whose
@@ -334,8 +360,10 @@ theorem contentHeader?_of_decodeGamma {N : Nat} (z : PrefixBitVec N) {r : Nat ×
 prefix-extendable, *then* some certificate makes the concatenation content-accepted, and — by padding
 stability — it stays accepted at every larger physical length.  Both hypotheses of the coincidence
 lemma (`hparse` and `hn : input.n = n`) are required, and neither they nor `hext` are discharged
-anywhere: this does **not** show that such a query exists, so it is not a non-vacuity result for
-`ContentAccepts`. -/
+anywhere.  The conclusion *is* an existential over certificates, but only under those hypotheses:
+this does **not** show that such a query exists, so it is no unconditional existential /
+non-emptiness result for `ContentAccepts` — nor for `L'`, whose membership it does not transport
+across physical lengths. -/
 theorem ContentAccepts_padWord_of_prefixExtendable
     (codec : TreeCircuitWitnessCodec threshold)
     {n : Nat} (y : PrefixBitVec (treeMCSPPrefixM codec n))

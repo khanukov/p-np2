@@ -28,10 +28,15 @@ window's length against the parser's *re-decoded* target, and its intended vacui
 (see `contentInput?` below).  Syntactically, `L'` still mentions the physical length `N`:
 `contentHeader?` decodes on the `2N+1`-padded word, so `N` fixes both that window's width and the
 gamma decoder's fuel (`decodeGamma?` uses `m + 1`).  Closing that residual `N`-dependence is what a
-padding-stability lemma has to do; no such lemma is proved **in this module** — it is discharged in
-`ContentPrefixExtensionPadding.lean` (`contentHeader?_padWord_of_le`,
-`ContentAccepts_padWord_of_le`, `ContentAccepts_iff_of_padRead_eq`), which does not affect any
-statement below.
+padding-stability lemma has to do; no such lemma is proved **in this module** — it is discharged, for
+`ContentAccepts` on *complete* words, in `ContentPrefixExtensionPadding.lean`
+(`contentHeader?_padWord_of_le`, `ContentAccepts_padWord_of_le`,
+`ContentAccepts_iff_of_padRead_eq`), which does not affect any statement below.  The scope of those
+lemmas is exactly `ContentAccepts`: padding invariance of the language wrapper
+`ContentPrefixExtensionLanguage` — whose membership at physical length `m` quantifies over
+certificates of length `certificateLength m 1` concatenated at offset `m`, both of which move with
+`m` — is **not** proved, and neither is any verifier TM, runtime bound, or `TM.accepts` bridge
+for `L'`.
 
 Definitions only (plus the immediate `accepts_iff` unwrapping and the NP-witness interface):
 
@@ -136,11 +141,14 @@ succeeds and the witness window extends the decoded prefix through the search re
 and witness windows sit at content-computed offsets and are read through `padRead`, so no
 *explicit* gate compares the ambient physical length `N` against a convention length.  The strict
 parser's own `m = treeMCSPPrefixM codec n_dec` gate is still executed inside `contentInput?`, on the
-*computed* window rather than on `N`, and no lemma here rules out its rejecting.  This is likewise
-**not** independence of the physical
-length `N`: `contentInput?` calls `contentHeader?`, which decodes on `padWord z (2 * N + 1)`, so `N`
-still fixes that window's width and the decoder's fuel.  Whether `ContentAccepts` is invariant under
-padding to a larger `N` is **not proved** here. -/
+*computed* window rather than on `N`, and no lemma here rules out its rejecting.  Syntactically the
+definition still mentions the physical length `N`: `contentInput?` calls `contentHeader?`, which
+decodes on `padWord z (2 * N + 1)`, so `N` fixes that window's width and the decoder's fuel.  That
+the *value* does not move with `N` — invariance of `ContentAccepts` under blank padding, and under
+equality of padded tapes — is **not proved here**; it is proved in
+`ContentPrefixExtensionPadding.lean` (`ContentAccepts_padWord_of_le`,
+`ContentAccepts_iff_of_padRead_eq`), for this predicate on complete words only, not for the language
+wrapper below. -/
 def ContentAccepts (codec : TreeCircuitWitnessCodec threshold) {N : Nat}
     (z : PrefixBitVec N) : Prop :=
   ∃ pr : (Σ n' : Nat,
@@ -188,13 +196,18 @@ through `padRead` at content-computed offsets, and never compares `N` against
 `treeMCSPPrefixM codec n` — so the length-gate step of the obstruction has nothing to attach to.
 The strict parser's own equality gate is not gone; `contentInput?` still runs it against the
 *computed* window length, with vacuity unproved.
-Three things are **not** claimed.  (i) That `ContentAccepts` is independent of the physical length:
-it is not, since `contentHeader?` decodes on the `2N+1`-padded word, so `N` fixes that window's
-width and the decoder's fuel; the `runTime` field below is likewise evaluated at the
-length-dependent point `n + certificateLength n 1`.  (ii) That padding-stability of `ContentAccepts`
-is proved — it is not, no such lemma is in this slice.  (iii) That a polynomial-time verifier for
-`L'` exists — open.  Satisfiability of `ContentAccepts` is likewise **not** established anywhere
-here. -/
+Three things are **not** claimed.  (i) That `L'` is independent of the physical length.  Padding
+stability is proved only for `ContentAccepts` on *complete* words
+(`ContentPrefixExtensionPadding.lean`: `ContentAccepts_padWord_of_le`,
+`ContentAccepts_iff_of_padRead_eq`), while membership in `L'` at length `m` quantifies over
+certificates of length `certificateLength m 1` concatenated at offset `m`, both of which move with
+`m`; wrapper-level padding invariance is unproved, and the `runTime` field below is likewise
+evaluated at the length-dependent point `n + certificateLength n 1`.  (ii) That those lemmas bring
+the `correct` field below any closer to provable — they are specification-side only: no verifier
+machine, runtime bound, or `TM.accepts` bridge for `L'` is constructed anywhere.  (iii) That a
+polynomial-time verifier for `L'` exists — open.  Satisfiability of `ContentAccepts` is likewise
+**not** established anywhere here: the one existential statement about it
+(`ContentAccepts_padWord_of_prefixExtendable`) is conditional on undischarged hypotheses. -/
 structure ContentPrefixExtensionNPWitness (codec : TreeCircuitWitnessCodec threshold) where
   /-- The verifier Turing machine reading the concatenated input+certificate. -/
   M : Pnp3.Internal.PsubsetPpoly.TM.{0}

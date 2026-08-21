@@ -17,9 +17,12 @@ of the source:
   obstruction has nothing to attach to; that is a definitional observation, not a positive result,
   and, on the machine side, the witness's `runTime` is still evaluated at the length-dependent point
   `n + certificateLength n 1`.  On the specification side `contentHeader?` still *mentions*
-  `2 * N + 1`, but `contentHeader?_padWord_of_le` shows its value does not move with `N`.  No
-  verifier machine, runtime bound, or `TM.accepts` bridge is constructed anywhere, so nothing here
-  shows the witness is satisfiable — nor that `ContentAccepts` is;
+  `2 * N + 1`, but `contentHeader?_padWord_of_le` shows its value does not move with `N`; that
+  invariance is proved for `ContentAccepts` on complete words only, **not** for the language wrapper
+  `L'` that this witness targets (its membership at length `m` quantifies over certificates of length
+  `certificateLength m 1` concatenated at offset `m`).  No verifier machine, runtime bound, or
+  `TM.accepts` bridge is constructed anywhere, so nothing here shows the witness is satisfiable — nor
+  that `ContentAccepts` is;
 * `¬PpolyDAG` half: the **same** open lower-bound hypothesis `NoPolynomialBoundedSearchSolver`,
   via the transferred extraction (brick R4), plus the growth premise
   `TreeMCSPExtractionGrowthAssumptions` that the length-gated Block 9d form also carries.

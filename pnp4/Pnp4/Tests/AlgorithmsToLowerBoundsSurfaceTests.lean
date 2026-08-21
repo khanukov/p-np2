@@ -984,12 +984,16 @@ theorem check_NP_not_subset_PpolyDAG_treePolyCT
     Pnp3.ComplexityInterfaces.NP_not_subset_PpolyDAG :=
   NP_not_subset_PpolyDAG_treePolyCT k hNoPoly hNPWit
 
--- Padding stability of the specification (`ContentPrefixExtensionPadding.lean`): the
--- padding-idempotence and strict-reader lemmas, the blank-tail lemma, the canonical re-run with its
--- explicit fuel-monotonicity side condition, the three content-computed reads, and the headline
--- invariance.  These close the residual ambient-`N` dependence of `L'` on the SPECIFICATION side
--- only: no verifier TM, runtime bound, or `TM.accepts` bridge follows, the `pnp3` model is not
--- length-blind, and stability is agreement *including on failure* -- it does NOT show that the
+-- Padding stability of `ContentAccepts` (`ContentPrefixExtensionPadding.lean`): the
+-- padding-idempotence and strict-reader lemmas, the blank-tail lemma, the canonical re-run (whose
+-- fuel bound `N + 1 <= fuel' + zeros` is an explicit hypothesis; the induction proves its
+-- preservation and the two callers discharge it), the three content-computed reads, and the headline
+-- invariance.  Scope: these close the residual ambient-`N` dependence for `ContentAccepts` on
+-- COMPLETE words, on the SPECIFICATION side only.  They do NOT give padding invariance of the
+-- language wrapper `ContentPrefixExtensionLanguage` (membership at length `m` quantifies over
+-- certificates of length `certificateLength m 1` concatenated at offset `m`, both moving with `m`);
+-- no verifier TM, runtime bound, or `TM.accepts` bridge follows; the `pnp3` model is not
+-- length-blind; and stability is agreement *including on failure* -- it does NOT show that the
 -- strict parser's surviving `m = treeMCSPPrefixM codec n_dec` gate inside `contentInput?` is
 -- vacuous.
 #check @Pnp4.Frontier.ContractExpansion.padRead_padWord_of_le
@@ -1006,10 +1010,12 @@ theorem check_NP_not_subset_PpolyDAG_treePolyCT
 #check @Pnp4.Frontier.ContractExpansion.contentWitness_padWord_of_le
 #check @Pnp4.Frontier.ContractExpansion.ContentAccepts_padWord_of_le
 #check @Pnp4.Frontier.ContractExpansion.ContentAccepts_iff_of_padRead_eq
--- Conditional transport (NOT existence): an already-successful strict decode also succeeds through
--- the `2N+1` margin, and an already-extendable query's accepted word stays accepted at every larger
--- physical length.  No existential accepted word is proved anywhere in this repository, so nothing
--- here establishes that `ContentAccepts` is satisfiable.
+-- Conditional transport (NOT an unconditional existence result): an already-successful strict decode
+-- also succeeds through the `2N+1` margin, and an already-extendable query's accepted word stays
+-- accepted at every larger physical length.  The second conclusion is existential over certificates,
+-- but only under undischarged hypotheses; no unconditional existential / non-emptiness result is
+-- proved anywhere in this repository, so nothing here establishes that `ContentAccepts` is
+-- satisfiable or that `L'` is non-empty.
 #check @Pnp4.Frontier.ContractExpansion.contentHeader?_of_decodeGamma
 #check @Pnp4.Frontier.ContractExpansion.ContentAccepts_padWord_of_prefixExtendable
 

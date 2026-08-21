@@ -205,19 +205,24 @@ in dependency order:
   `decodeGammaAux?_padWord_support` (the **blank-tail** lemma: a successful gamma scan
   on a padded word has its terminator strictly inside the support, since every cell
   past the support reads blank), `decodeGammaAux?_padWord_canonical` (the canonical
-  re-run, with the fuel side condition `N + 1 ≤ fuel' + zeros` proved as a maintained
-  invariant rather than assumed away), padding stability of the three content-computed
-  reads (`contentHeader?_padWord_of_le`, `contentInput?_padWord_of_le`,
-  `contentWitness_padWord_of_le`), and the headlines `ContentAccepts_padWord_of_le`
-  (acceptance is unchanged by blank padding to any larger physical length) and
-  `ContentAccepts_iff_of_padRead_eq` (any two finite words with the *same* blank-padded
-  tape are accepted alike). Two further lemmas —
-  `contentHeader?_of_decodeGamma` and `ContentAccepts_padWord_of_prefixExtendable` —
-  are **conditional transport**: each assumes an already-successful strict decode / an
-  already-extendable query and transports it, so neither exhibits a word. The chain is
-  `Classical`-free (`[propext, Quot.sound]`, two entries axiom-free) except the last,
-  which routes through the noncomputable `concatBitstring` and the classical language
-  wrapper.
+  re-run; its fuel side condition `N + 1 ≤ fuel' + zeros` is an **explicit hypothesis** of
+  the statement — what is *proved* is that the induction preserves it, and that both
+  callers discharge it at their concrete fuel `2 * width + 2` with `zeros = 0`), padding
+  stability of the three content-computed reads (`contentHeader?_padWord_of_le`,
+  `contentInput?_padWord_of_le`, `contentWitness_padWord_of_le`), and the headlines
+  `ContentAccepts_padWord_of_le` (acceptance of a **complete** word is unchanged by blank
+  padding to any larger physical length) and `ContentAccepts_iff_of_padRead_eq` (any two
+  complete finite words with the *same* blank-padded tape are accepted alike). Two further
+  lemmas — `contentHeader?_of_decodeGamma` and
+  `ContentAccepts_padWord_of_prefixExtendable` — are **conditional transport**: each
+  assumes an already-successful strict decode / an already-extendable query and transports
+  it. The second one's conclusion is an existential over certificates, but only under
+  undischarged hypotheses, so neither yields an unconditional witness. Every statement in
+  the module is about `ContentAccepts` on complete words, **not** about the language
+  wrapper (see the scope paragraph below). Verified axiom footprint: fourteen entries are
+  `[propext, Quot.sound]`, one (`readBit?_padWord_of_lt`) is axiom-free, and only
+  `ContentAccepts_padWord_of_prefixExtendable` adds `Classical.choice`, routing through the
+  noncomputable `concatBitstring` and the classical language wrapper.
 - `ContentPrefixExtensionTransfer.lean` — the decision→search extraction transferred
   to `L'` (the greedy machinery only ever queries deciders on constructed, parseable
   queries), ending in
@@ -248,10 +253,21 @@ fixed both that window's width and the gamma decoder's fuel (`decodeGamma?` uses
 `m + 1`). `contentHeader?_padWord_of_le` closes exactly that residual `N`-dependence:
 the definition still *mentions* `2 * N + 1`, but its value does not move with `N`. Up
 the chain, `ContentAccepts_padWord_of_le` and `ContentAccepts_iff_of_padRead_eq`
-upgrade this to full invariance — on the specification side the ambient physical length
-is not observable in `L'` at all, so `L'` is a function of the blank-padded tape only.
-That is the invariance the planned idle-sink verifier would need, and it is a statement
-about the *specification* and nothing else.
+upgrade this to full invariance **of `ContentAccepts`**: the ambient physical length of a
+*complete* word (query ++ certificate) is not observable in `ContentAccepts` at all, so
+that predicate is a function of the blank-padded tape only. It is one ingredient the
+planned idle-sink verifier would need, and it is a statement about that predicate of the
+*specification* and nothing else.
+
+**Scope — `ContentAccepts`, not the language wrapper.** Padding invariance is *not*
+proved for `ContentPrefixExtensionLanguage` (`L'`). Membership of a query `y` at physical
+length `m` unfolds to
+`∃ w : Bitstring (certificateLength m 1), ContentAccepts codec (concatBitstring y w)`, and
+both the certificate length and the offset at which `w` is concatenated are functions of
+`m`. Padding `y` moves that boundary and changes the family of certificates quantified
+over, so nothing here relates `ContentPrefixExtensionLanguage codec m y` to
+`ContentPrefixExtensionLanguage codec m' (padWord y m')`. The `L'` NP-witness interface,
+and every TM-side claim, are untouched.
 
 What this does **not** establish, stated explicitly because the module names invite
 the opposite reading:
@@ -268,8 +284,15 @@ the opposite reading:
   lemma `decodeGammaAux?_mono` is proved, so no lemma here rules out
   `contentInput? = none` at the gate. Padding stability does not help: it says the two
   sides agree *including on failure*, not that either side succeeds.
-- **No non-vacuity / satisfiability.** Nothing proves that any word is
-  `ContentAccepts`-accepted, or that `L'` is non-empty.
+- **No unconditional non-vacuity / satisfiability.** Nothing proves *unconditionally*
+  that any word is `ContentAccepts`-accepted, or that `L'` is non-empty. The one
+  existential conclusion in the directory,
+  `ContentAccepts_padWord_of_prefixExtendable`, is available only under its three
+  undischarged hypotheses (`hparse`, `hn`, `hext`).
+- **No padding invariance of the language `L'`.** The padding lemmas are about
+  `ContentAccepts` on complete words; the wrapper quantifies over certificates whose
+  length and concatenation offset both move with the physical length, so wrapper-level
+  invariance is unproved (scope paragraph above).
 - **No verifier.** No Turing machine, no runtime bound, and no
   `TM.accepts … = ContentAccepts …` bridge for `L'` is constructed anywhere. Note the
   interface's `runTime_poly` field bounds `M.runTime` at the length-dependent point
@@ -280,7 +303,7 @@ the opposite reading:
 - **No separation.** Both open inputs stay explicit arguments of every source in
   `ContentConsolidatedSource.lean`; no `P ≠ NP` claim follows.
 
-Every theorem of the five modules has its own `#print axioms` line in
+Every public theorem of the five modules has its own `#print axioms` line in
 `Pnp4/Tests/AxiomsAudit.lean` and its own `#check` in
 `Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`
 (`ContentPrefixExtensionSurface`).
@@ -350,12 +373,16 @@ Every theorem of the five modules has its own `#print axioms` line in
    **`ContentPrefixExtensionNPWitness (treeCircuitWitnessCodec (thresholdPoly k))`**,
    whose language carries no *explicit* gate on the ambient physical length (the
    strict parser's own equality gate survives inside `contentInput?`, applied to the
-   computed window, with vacuity unproved). That is a definitional
-   difference only, and a narrow one: `ContentAccepts` still depends on the physical
-   length `N` through the `2N+1` header window and its fuel, the interface's runtime
-   bound is still taken at the length-dependent point `n + certificateLength n 1`, and
-   no padding-stability lemma, verifier TM, runtime bound, or `TM.accepts` bridge is
-   proved for `L'` either — so input (2) is an unproved interface on **both** routes.
+   computed window, with vacuity unproved). On the specification side that difference
+   is now backed by a proof — `ContentAccepts` is invariant under blank padding of a
+   *complete* word (`ContentPrefixExtensionPadding.lean`), so its `2N+1` header window
+   no longer makes acceptance move with `N`. It buys nothing on the machine side, and
+   the target of this input is the *language* `L'`, for which padding invariance is
+   **not** proved (the certificate length and concatenation offset both move with the
+   physical length): the interface's runtime bound is still taken at the
+   length-dependent point `n + certificateLength n 1`, and no verifier TM, runtime
+   bound, or `TM.accepts` bridge is proved for `L'` — so input (2) is an unproved
+   interface on **both** routes.
 
 (For an *arbitrary* threshold there is a third input, `PolyBoundedInTable threshold`;
 it is proved for the canonical polynomial thresholds, so it disappears there.)

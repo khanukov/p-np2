@@ -172,7 +172,7 @@ length-dependent in general; and `TM.accepts` is evaluated at exactly step
 can in principle depend on `n`; what the planned idle-sink construction cannot do is
 recover the gate from the loaded content alone. **The whole argument is a review of
 the definitions, not a Lean theorem**: no impossibility result is formalized anywhere
-in this directory. The response replaces the *language*, not the chain — seven modules,
+in this directory. The response replaces the *language*, not the chain — eight modules,
 in dependency order:
 
 - `ContentPrefixExtension.lean` — `padRead` / `padWord` (the blank-padded tape read),
@@ -195,10 +195,17 @@ in dependency order:
   conjuncts share one existential `consumed`, and neither statement identifies it with
   `gammaLen input.n` nor relates `pr.2.n` to the header value `pr.1`, so no injectivity of
   `treeMCSPPrefixM codec` and no gamma canonicity is used (plan stop/go F0b). Both entries are
-  axiom-light: `[propext, Quot.sound]`, no `Classical.choice`. Scope is recovery only: **no** bound
-  on the decoded target (that is FEAS-0's headline, still unproved, so the §1.1 freeze stays
-  *provisional* and `L'` may not be described as polynomial-time verifiable), no satisfiability of
-  `ContentAccepts`, and no verifier TM, runtime bound or `TM.accepts` bridge.
+  axiom-light: `[propext, Quot.sound]`, no `Classical.choice`. Scope is recovery only; the separate
+  part-2 module below proves the target bound. It gives no satisfiability of `ContentAccepts` and
+  constructs no verifier TM, runtime bound or `TM.accepts` bridge.
+- `ContentTargetSizeBound.lean` — FEAS-0 slice, part 2 and outcome (a). It computes the concrete
+  all-blank witness decode at zero and positive parsed targets, uses the input-zero projection to
+  force a supported truth-table cell and `tableLen r ≤ N`, and proves
+  `contentAccepts_target_poly_treePoly`. The proof works at `r := pr.2.n`, transports only through
+  `treeMCSPPrefixM codec n_header = treeMCSPPrefixM codec r`, and uses the existing
+  `PolyBoundedInTable` / `powAdd` chain; it has no I1 dependency and never infers
+  `r = n_header`. This freezes the content target, but remains Infrastructure: no verifier TM,
+  runtime theorem, non-vacuity result, NP-membership proof, or lower-bound obligation is discharged.
 - `ContentPrefixExtensionCoincidence.lean` — reader monotonicity under ambient
   widening (`readBit?_mono`, `readNatBE_mono`, `decodeGammaAux?_mono`), parse
   inversion (`parseTreeMCSPPrefixInput_inversion`), the two window computations on a
@@ -325,20 +332,18 @@ the opposite reading:
 - **No separation.** Both open inputs stay explicit arguments of every source in
   `ContentConsolidatedSource.lean`; no `P ≠ NP` claim follows.
 
-Every public theorem of the six modules has its own `#print axioms` line in
+Every public theorem of the eight modules has its own `#print axioms` line in
 `Pnp4/Tests/AxiomsAudit.lean` and its own `#check` in
 `Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`
 (`ContentPrefixExtensionSurface`).
 
 **Plan of record for input (2).** `VERIFIER_RETARGET_PLAN.md` (this directory) freezes the
-NP-verifier target at `ContentPrefixExtensionNPWitness` / `ContentAccepts` **provisionally**, and
-schedules the first dependency-closed slices. The freeze is conditional on its FEAS-0 gate: nothing
-bounds the content-decoded convention length `treeMCSPPrefixM codec n'` polynomially in the physical
-length of an accepted word, and a successful header decode admits `n'` exponential in that length,
-so polynomial-time verifiability of `L'` by this route is open. Accordingly the length-gated
-`PrefixExtensionNPWitness` is **retained as a live target**, not retired, and keeps its audit
-surface under every FEAS-0 outcome. The plan is a planning record: it proves nothing and makes no
-`P ≠ NP` claim.
+NP-verifier target at `ContentPrefixExtensionNPWitness` / `ContentAccepts`. FEAS-0 outcome (a) is
+now proved by `ContentTargetSizeBound.lean`: accepted complete words have polynomially bounded
+header convention length. The length-gated `PrefixExtensionNPWitness` remains compiled and audited
+for compatibility, but is retired as an alternative target for new verifier work. The bound does
+not prove polynomial-time verifiability of `L'`: the concrete TM, runtime theorem, non-vacuity, and
+`TM.accepts` bridge remain open. This is Infrastructure and makes no `P ≠ NP` claim.
 
 ### Concrete codec (constructed)
 - `ConcreteCodecGap.lean` (Block 12a) — the audit verdict (no concrete

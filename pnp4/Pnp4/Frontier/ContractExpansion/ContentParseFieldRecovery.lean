@@ -31,9 +31,8 @@ what the consumer needs and all that the parser guarantees.  No range side condi
 — a successful parse has already produced the slice, so its fit is a consequence, not a premise.
 
 **Scope — what this does not buy.**  These are field-recovery facts about the strict parser, nothing
-more.  In particular they do **not** bound the decoded target (that is the FEAS-0 headline, slice
-part 2, `ContentTargetSizeBound.lean`; until it lands the freeze of §1.1 stays *provisional* and `L'`
-may not be described as polynomial-time verifiable), they do **not** show `ContentAccepts` is
+more.  In particular they do **not** bound the decoded target (the now-landed FEAS-0 headline lives
+in slice part 2, `ContentTargetSizeBound.lean`), they do **not** show `ContentAccepts` is
 satisfiable, they build no verifier TM, runtime bound or `TM.accepts` bridge for `L'`, and they say
 nothing about the vacuity of the strict parser's surviving value tests
 (`tag = treePrefixTag`, `i ≤ codec.witnessBits n`, `padZero = true`).  Statements are generic in the

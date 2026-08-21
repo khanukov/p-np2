@@ -12,16 +12,21 @@ This module closes the residual specification-side gates identified in
 * `treeMCSPPrefixM` is strictly monotone, hence injective, when the codec's witness width is
   monotone.  The concrete `treeCircuitWitnessCodec (thresholdPoly k)` satisfies that premise.
   There is deliberately no codec-generic injectivity theorem: `TreeCircuitWitnessCodec` places no
-  monotonicity constraint on `witnessBits`, so such a statement would be false.
+  monotonicity constraint on `witnessBits`.  A definition-level codec construction can therefore
+  make adjacent convention lengths collide; no formal counterexample-codec theorem is claimed here.
 * A successful gamma decode is canonical without an extra hypothesis: its consumed width is
   `gammaLen` of the decoded target.  Narrowing the content-header decode to the convention window
-  uses a consumed-based transfer argument; a support-size/fuel premise based on the original word
-  would be false when the target window is narrower.
+  uses a consumed-based transfer argument; the support-size/fuel premise of
+  `decodeGammaAux?_padWord_canonical`, stated in terms of the original word, cannot be discharged
+  here, because the target window may be narrower than the original support.
 * Consequently the strict parser's convention-length gate is unconditionally vacuous after a
-  successful content-header decode.  `contentInput?_isSome_iff_of_header` leaves exactly the three
-  genuine value tests: the tag value, the decoded index bound, and zero inactive padding.  Its
-  `allZeroSlice? = some true` conjunct includes both successful range access and the pad-zero value
-  test; no fourth range premise remains open.
+  successful content-header decode.  `contentInput?_isSome_iff_of_header` leaves exactly three
+  conjuncts, carrying the tag value, the decoded index bound, and zero inactive padding.  Each of
+  the three is stated as a *successful read with a given value*, so read-success for the tag field,
+  the index field and the inactive suffix is bundled into them rather than discharged separately;
+  what is discharged unconditionally is the length gate and the three range-only slice obligations
+  (`x`, the active prefix `p`, and the padding slice).  No fourth open premise remains, and no
+  lemma here asserts that those three reads always succeed.
 
 These results concern the parser and `ContentAccepts` specification only.  Padding invariance is
 still proved only for complete words, not for the `ContentPrefixExtensionLanguage` wrapper;
@@ -422,9 +427,11 @@ private theorem parseTreeMCSPPrefixInput_value_tests
       · simp [htag] at h
 
 /-- Given a successful content-header decode, `contentInput?` succeeds **iff** exactly the three
-remaining parser value tests pass: the tag equals `treePrefixTag`, the decoded index is within the
-witness width, and the inactive suffix is all zero.  All field ranges and the convention-length
-gate are discharged unconditionally. -/
+remaining parser tests pass: the tag read succeeds with value `treePrefixTag`; the index read
+succeeds with a value within the witness width; and the inactive-suffix read succeeds with value
+`true`.  The range-only slice obligations and the convention-length gate are discharged
+unconditionally; the read-success parts of the tag/index/padding checks are deliberately bundled in
+the three displayed right-hand conjuncts, so there is no separate fourth open premise. -/
 theorem contentInput?_isSome_iff_of_header {threshold : Nat → Nat}
     (codec : TreeCircuitWitnessCodec threshold) {N : Nat} (z : PrefixBitVec N)
     {n' consumed : Nat}

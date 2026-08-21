@@ -287,13 +287,21 @@ review order (the `lakefile.lean` registration is the dependency order):
   `treeMCSPPrefixM_strictMono` / `treeMCSPPrefixM_injective_of_monotone`, verifies the premise for
   `treeCircuitWitnessCodec (thresholdPoly k)`, and supplies
   `ContentPrefixExtendable_iff_of_parse'` without an explicit `hn`. No generic-codec injectivity is
-  asserted, because unconstrained `witnessBits` makes it false. It also proves the `readNatBE`
-  power bound and hypothesis-free gamma canonicity, narrows the header via the consumed-based
-  transfer correction, proves unconditional convention-length-gate vacuity, and characterizes
-  `contentInput?` success by exactly the tag value, decoded-index bound, and inactive-pad-zero
-  value tests. These are parser/specification facts only: padding invariance of the language
-  wrapper, the verifier TM/runtime/`TM.accepts` bridge, and advice-channel enforcement all remain
-  open. Content non-vacuity is discharged separately by the GATE-0 module above. Infrastructure
+  asserted, and none is refuted either: `witnessBits` is unconstrained, so a definition-level codec
+  construction can pad it upward at a single point until two adjacent convention lengths collide
+  (with widths `3` at `0` and `1` at `1`, both `M` values are `15`), but that is a review of the
+  definitions — no counterexample codec is constructed and no formal refutation is claimed. It also
+  proves the `readNatBE` power bound and hypothesis-free gamma canonicity, narrows the header via
+  the consumed-based transfer correction, proves unconditional convention-length-gate vacuity, and
+  characterizes `contentInput?` success by exactly three conjuncts: the tag value, the decoded-index
+  bound, and the inactive-pad-zero test. Each conjunct is a *successful read with a value*, so
+  read-success for those three fields is bundled into them; what discharges unconditionally is the
+  length gate and the three range-only slice obligations. Implemented at `3256d950` (497 LOC, one
+  module); every entry carries the standard `[propext, Classical.choice, Quot.sound]` triple except
+  `readNatBE_lt_two_pow`, which is `[propext, Quot.sound]`. These are parser/specification facts
+  only: padding invariance of the language wrapper, the verifier TM/runtime/`TM.accepts` bridge,
+  and advice-channel enforcement all remain open. Content non-vacuity is discharged separately by
+  the GATE-0 module above. Infrastructure
   only; no lower-bound obligation or `P ≠ NP` claim.
 - `ContentPrefixExtensionPaddingTransport.lean` — the explicitly classical conditional transport
   theorem `ContentAccepts_padWord_of_prefixExtendable`, isolated from the axiom-light padding

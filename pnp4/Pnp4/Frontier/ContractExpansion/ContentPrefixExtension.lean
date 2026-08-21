@@ -48,9 +48,10 @@ Definitions only (plus the immediate `accepts_iff` unwrapping and the NP-witness
   for `ContentAccepts` live in `ContentPrefixExtensionPadding.lean`;
 * `contentInput?` — the parser re-run on the **computed-length** window `padWord z (M n')`.  The
   parser re-decodes the header from that *narrower* window and gates on `m = M n_dec` for the
-  re-decoded `n_dec`; the gate is therefore **intended** to be vacuous (`n_dec = n'`, so the check
-  compares `M n'` with itself), but that is **not proved** — only the *widening* direction
-  (`decodeGammaAux?_mono`) is available, and the narrowing direction it would need is absent;
+  re-decoded `n_dec`.  `ContentPrefixExtensionGateClosure.lean` proves the required narrowing and
+  `contentInput?_lengthGate_vacuous`: after a successful header decode this equality check compares
+  `M n'` with itself.  The parser may still reject at its tag, decoded-index, or inactive-padding
+  value tests;
 * `contentWitness` — the witness window read just past the computed query window;
 * `ContentAccepts` / `ContentPrefixExtendable` / `ContentPrefixExtensionLanguage` — the language;
 * `ContentPrefixExtensionNPWitness` + `contentPrefixExtensionLanguage_in_NP_of_witness` — the
@@ -114,12 +115,11 @@ def contentHeader? {N : Nat} (z : PrefixBitVec N) : Option (Nat × Nat) :=
 /-- The content-computed parse: decode the header `n'`, then run the **existing strict parser** on
 the padded window of the *computed* convention length `treeMCSPPrefixM codec n'`.  The parser
 re-decodes its own header from that narrower window and gates on `m = treeMCSPPrefixM codec n_dec`
-for the re-decoded `n_dec`; since the window's physical length *is* `treeMCSPPrefixM codec n'`, the
-gate is **intended** to compare `treeMCSPPrefixM codec n'` with itself and so never reject.  That
-is an unproved intent, not a construction: it needs `n_dec = n'`, i.e. that the successful wide
-(`2N+1`) decode re-succeeds on the narrow window, and only the opposite, *widening* direction
-(`decodeGammaAux?_mono`) is proved.  No lemma here states that `contentInput?` never fails at the
-gate. -/
+for the re-decoded `n_dec`.  The separate I1 module
+`ContentPrefixExtensionGateClosure.lean` proves that a successful wide (`2N+1`) decode re-succeeds
+on this narrow window and that the convention-length equality gate is vacuous.  It does **not** say
+that `contentInput?` always succeeds: the tag, decoded-index, and inactive-padding value tests remain
+genuine rejection points. -/
 def contentInput? (codec : TreeCircuitWitnessCodec threshold) {N : Nat} (z : PrefixBitVec N) :
     Option (Σ n' : Nat,
       PrefixInput (treeMCSPSearchProblem threshold (TreeMCSPSearchWitnessEncoding.ofCodec codec))
@@ -141,7 +141,9 @@ succeeds and the witness window extends the decoded prefix through the search re
 and witness windows sit at content-computed offsets and are read through `padRead`, so no
 *explicit* gate compares the ambient physical length `N` against a convention length.  The strict
 parser's own `m = treeMCSPPrefixM codec n_dec` gate is still executed inside `contentInput?`, on the
-*computed* window rather than on `N`, and no lemma here rules out its rejecting.  Syntactically the
+*computed* window rather than on `N`; the separate I1 gate-closure theorem rules out rejection at
+that equality gate after a successful header decode, while three value tests may still reject.
+Syntactically the
 definition still mentions the physical length `N`: `contentInput?` calls `contentHeader?`, which
 decodes on `padWord z (2 * N + 1)`, so `N` fixes that window's width and the decoder's fuel.  That
 the *value* does not move with `N` — invariance of `ContentAccepts` under blank padding, and under

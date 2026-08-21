@@ -1564,7 +1564,7 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
 | FEAS-0 target size bound | `work/feas0-target-bound` | merged; outcome (a) green | PR #1629 (`af2365a2`) |
 | GATE-0 non-vacuity | `work/gate0-nonvacuity` | merged; G0 green | PR #1630 (`014a7768`) |
 | P0 content semantic verifier | `work/p0-content-semantic` | merged; G1/G2 green | PR #1631 (`00369c08`) |
-| I1 gate closure | `work/i1-gate-closure` | implemented; Qodo/review/CI in progress | PR #1633 |
+| I1 gate closure | `work/i1-gate-closure` | implemented; G3/G4/G4b green | PR #1633 |
 | D1a tape lemmas + bridge structure | `work/d1a-tape-interface` | merged; G5/G5b green | PR #1632 (`545cbc3d`) |
 | D1b bridge ⇒ NP-witness | `work/d1b-bridge-witness` | unblocked; implementation in progress | — |
 

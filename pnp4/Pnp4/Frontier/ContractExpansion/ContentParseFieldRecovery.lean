@@ -6,7 +6,7 @@ import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
 `VERIFIER_RETARGET_PLAN.md` §1.0 (the FEAS-0 feasibility gate) needs to turn a semantic fact about
 the *parsed* truth table `pr.2.x` into a fact about cells of the *ambient* word `z`.  The existing
 parse inversion `parseTreeMCSPPrefixInput_inversion`
-(`ContentPrefixExtensionCoincidence.lean:140`) exposes only the length gate and the gamma decode; it
+(`ContentPrefixExtensionCoincidence.lean:141`) exposes only the length gate and the gamma decode; it
 discards the `x` branch of the success cascade.  This module re-walks that same cascade and keeps the
 `x` branch instead:
 

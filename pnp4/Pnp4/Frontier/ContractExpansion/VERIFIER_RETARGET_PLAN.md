@@ -49,7 +49,7 @@ survive. No implementation code is introduced here.
 >   *independent of I1*: it needs neither injectivity of `treeMCSPPrefixM codec` nor
 >   `consumed = gammaLen r`.
 > * **The truth-table slice was assumed to be available; it is not.**
->   `parseTreeMCSPPrefixInput_inversion` (`ContentPrefixExtensionCoincidence.lean:140`) exposes only
+>   `parseTreeMCSPPrefixInput_inversion` (`ContentPrefixExtensionCoincidence.lean:141`) exposes only
 >   the length gate and the gamma decode — it says nothing about `input.x`. FEAS-0 now carries an
 >   explicit scheduled lemma recovering that slice (§1.0), and its budget rises accordingly.
 > * **FEAS-0 exit discipline was inconsistent**: (a) alone was declared green while the prose said a
@@ -104,7 +104,7 @@ survive. No implementation code is introduced here.
 > argument was fixed at the level of *which polynomial*, but not at the level of *which target*. Its
 > steps still accounted the verifier's work at the header value `n'` — `codec.witnessBits n'`,
 > `2 ^ n'` assignments, `thresholdPoly k n'` — while `ContentAccepts` reads its witness window and
-> states its relation conjunct at `r := pr.2.n` (`ContentPrefixExtension.lean:152`). `M n' = M r`
+> states its relation conjunct at `r := pr.2.n` (`ContentPrefixExtension.lean:159`). `M n' = M r`
 > gives neither `n' = r` nor `codec.witnessBits n' = codec.witnessBits r` nor
 > `thresholdPoly k n' = thresholdPoly k r`, so the `n'`-side growth chain transferred to none of the
 > quantities that matter. Resolved: the work is now accounted at `r` throughout, with each component
@@ -136,9 +136,9 @@ survive. No implementation code is introduced here.
 bounds `n'` polynomially in the physical length `N`. Concretely, on `main`:
 
 * `contentHeader? z = decodeGamma? (padWord z (2 * N + 1)) tagLen`
-  (`ContentPrefixExtension.lean:111`). `decodeGammaAux?` (`PrefixParserConvention.lean:87`) scans
+  (`ContentPrefixExtension.lean:116`). `decodeGammaAux?` (`PrefixParserConvention.lean:87`) scans
   for the unary terminator, i.e. the first `true` bit at `tagLen + zeros`. Every cell at index
-  `≥ N` reads blank (`padRead_ge`, `ContentPrefixExtension.lean:88`), so a successful decode forces
+  `≥ N` reads blank (`padRead_ge`, `ContentPrefixExtension.lean:93`), so a successful decode forces
   the terminator *inside the support*: `tagLen + zeros < N`.
 * The decoded value is `n' + 1 = 2 ^ zeros + payload` with `payload < 2 ^ zeros`. Hence `n'` may be
   as large as `2 ^ (N - tagLen - 1) - 1` — **exponential in `N`** (`tagLen = 8`,
@@ -200,7 +200,7 @@ treeCircuitClass (Circuit.input ⟨0, _⟩) x` demands that `x` be the truth tab
 therefore *expected to hold* at the concrete codec.
 
 **The route to (a), in full — and note the target it runs on is `pr.2.n`, not `n'`.** This is the
-correction that makes the route actionable. `ContentAccepts` (`ContentPrefixExtension.lean:152`)
+correction that makes the route actionable. `ContentAccepts` (`ContentPrefixExtension.lean:159`)
 reads its witness window, its truth table and its relation conjunct at **`pr.2.n`** — the `n` field
 of the `PrefixInput` the *narrow* parser returned — and only the header decode mentions `n'`
 (`= pr.1`). Revision 3 wrote the entire route in terms of `n'`; every step below that touches the
@@ -212,7 +212,7 @@ Fix notation: `codec := treeCircuitWitnessCodec (thresholdPoly k)`,
 `contentHeader? z = some (n', consumed)` and `contentInput? codec z = some pr`, and set
 `r := pr.2.n`.
 
-*Step 0 — `M n' = M r`, with no injectivity.* `contentInput?` (`:123`) runs
+*Step 0 — `M n' = M r`, with no injectivity.* `contentInput?` (`:127`) runs
 `parseTreeMCSPPrefixInput` on `padWord z (M n')`, a vector of physical length `M n'`, so
 `parseTreeMCSPPrefixInput_length_convention` (`PrefixParserConvention.lean:1231`) gives
 
@@ -228,8 +228,8 @@ here would invert §4.6's ordering. FEAS-0 never needs `n' = r`, because (a)'s c
 *Step 1 — case split.* Either `M n' ≤ N`, and (a)'s bound is immediate with `c = 1`; or `M n' > N`.
 
 *Step 2 — the wide case has a blank witness window.* By Step 0, `contentWitness codec z r` reads at
-`M r + j = M n' + j > N` (`ContentPrefixExtension.lean:135`), so every cell is blank
-(`padRead_ge`, `:88`) and the witness block is `fun _ => false`.
+`M r + j = M n' + j > N` (`ContentPrefixExtension.lean:139`), so every cell is blank
+(`padRead_ge`, `:93`) and the witness block is `fun _ => false`.
 
 *Step 3 — the decode, at `r`.* The relation conjunct is `codec.verifies r pr.2.x (blank)`
 (`treeMCSPSearchProblem.relation = encoding.verifies`, `SearchMCSPConcreteTargets.lean:121`), and
@@ -245,7 +245,7 @@ all-true assignment forces one cell of `pr.2.x` to be `true`: `bitVecToNat (fun 
 `x`-slice, which **is not available on `main`** — see the scheduled lemma below. With it,
 `pr.2.x j = padRead z (tagLen + cg + j)` for the narrow-window gamma width `cg`, so
 `padRead z (tagLen + cg + 2 ^ r - 1) = true`, and `lt_of_padRead_eq_true`
-(`ContentPrefixExtensionPadding.lean:127`) gives
+(`ContentPrefixExtensionPadding.lean:130`) gives
 
 ```text
 tagLen + cg + 2 ^ r - 1 < N ,   hence   tableLen r = 2 ^ r ≤ N   and   r ≤ bitLength N .
@@ -267,7 +267,7 @@ M n' ≤ N + polylog N ≤ N ^ c + c   for a small c depending only on k.
 **The scheduled sublemmas.** Two are arithmetic — `bitVecToNat (fun _ => true) = 2 ^ n - 1` and the
 polylog bound on `(bitLength r + 4) * (r ^ k + k)` under `2 ^ r ≤ N`. The third is the slice
 recovery, and it is the one revision 3 silently assumed. `parseTreeMCSPPrefixInput_inversion`
-(`ContentPrefixExtensionCoincidence.lean:140`) returns **exactly** `m = treeMCSPPrefixM codec
+(`ContentPrefixExtensionCoincidence.lean:141`) returns **exactly** `m = treeMCSPPrefixM codec
 input.n` and `∃ consumed, decodeGamma? y tagLen = some (input.n, consumed)` — it does **not** expose
 `input.x`. FEAS-0 must therefore prove:
 
@@ -304,9 +304,9 @@ The types line up without `HEq`: `instanceBits := fun n => tableLen n`
 (`SearchMCSPConcreteTargets.lean:118`) and `TruthTable n = Core.BitVec (tableLen n)`
 (`TruthTableMCSP.lean:11`), so `input.x : PrefixBitVec (tableLen input.n)` is already a
 `TruthTable input.n`. The proof of the first is the same eleven-way cascade
-`parseTreeMCSPPrefixInput_inversion` already walks (`Coincidence.lean:140`–), reading off the `x`
+`parseTreeMCSPPrefixInput_inversion` already walks (`Coincidence.lean:141`–), reading off the `x`
 branch instead of discarding it; the second composes it with `padWord_apply`
-(`ContentPrefixExtension.lean:92`).
+(`ContentPrefixExtension.lean:97`).
 
 **Every FEAS-0 statement is at the concrete codec.** For an arbitrary
 `codec : TreeCircuitWitnessCodec threshold` outcome (a) — and hence (b) — is **false**, so a
@@ -418,7 +418,7 @@ with exponent `c`, a verifier machine can:
 5. **the work is at `r := pr.2.n`, and every component of it is bounded *directly* by `M n'`.**
    Corrected in revision 6: revisions 4 and 5 accounted the verifier's work at `n'` —
    `codec.witnessBits n'`, `2 ^ n'` assignments, `thresholdPoly k n'` — but `ContentAccepts`
-   (`ContentPrefixExtension.lean:152`) reads `contentWitness codec z pr.2.n` and states its relation
+   (`ContentPrefixExtension.lean:159`) reads `contentWitness codec z pr.2.n` and states its relation
    conjunct at `pr.2.n`, so the working quantities are `tableLen r`, `codec.witnessBits r` and
    `thresholdPoly k r`. `M n' = M r` (Step 0) does **not** give `n' = r`, and therefore gives
    neither `codec.witnessBits n' = codec.witnessBits r` nor
@@ -440,7 +440,7 @@ with exponent `c`, a verifier machine can:
 6. every cell the verifier touches is then `poly(N)`, **including the certificate and witness
    windows** that revision 4's step 4 omitted: the strict parse spans `M n' ≤ P N` cells,
    `contentWitness` spans `[M r, M r + codec.witnessBits r) = [M n', M n' + codec.witnessBits r)`
-   (`ContentPrefixExtension.lean:135`), which by step 5 lies inside the first `2 · M n' ≤ 2 · P N`
+   (`ContentPrefixExtension.lean:139`), which by step 5 lies inside the first `2 · M n' ≤ 2 · P N`
    cells, and the certificate block of the complete word occupies `certificateLength · 1` cells
    (`= · + 1`, `pnp3/Complexity/Interfaces.lean:521`) — at most
 
@@ -498,7 +498,7 @@ modules for "the case split on `M n' ≤ N`, the blank-witness decode, the all-t
 arithmetic", which omitted the slice-recovery lemma it assumed was available. Split:
 
 * `ContentParseFieldRecovery.lean` — `parseTreeMCSPPrefixInput_x_slice` and
-  `contentInput?_x_apply` (100–200 LOC; the eleven-way cascade of `Coincidence.lean:140` re-walked
+  `contentInput?_x_apply` (100–200 LOC; the eleven-way cascade of `Coincidence.lean:141` re-walked
   to keep the `x` branch);
 * `ContentTargetSizeBound.lean` — Steps 0–5 and the two arithmetic sublemmas (250–400 LOC).
 
@@ -534,21 +534,21 @@ Exact declarations, all in `pnp4/Pnp4/Frontier/ContractExpansion/ContentPrefixEx
 
 | Declaration | Line | Shape |
 |---|---|---|
-| `padRead` / `padWord` | `:77` / `:81` | blank-padded read of a finite bitstring |
-| `padRead_lt` / `padRead_ge` | `:84` / `:88` | in-support read / blank tail |
-| `contentHeader?` | `:111` | `decodeGamma? (padWord z (2 * N + 1)) tagLen` |
-| `contentInput?` | `:123` | strict parser re-run on `padWord z (treeMCSPPrefixM codec n')` |
-| `contentWitness` | `:135` | `codec.witnessBits n` cells at `treeMCSPPrefixM codec n` |
-| **`ContentAccepts`** | **`:152`** | `∃ pr, contentInput? codec z = some pr ∧ pr.2.prefixAgrees … ∧ relation …` |
-| `ContentPrefixExtendable` | `:165` | `∃ w, ContentAccepts codec (concatBitstring y w)` |
-| `ContentPrefixExtensionLanguage` | `:172` | classical `Bool` wrapper of the above |
-| `ContentPrefixExtensionLanguage_accepts_iff` | `:178` | wrapper unwrapping |
-| **`ContentPrefixExtensionNPWitness`** | **`:211`** | `M`, `c`, `runTime_poly`, `correct` |
-| `contentPrefixExtensionLanguage_in_NP_of_witness` | `:231` | witness ⇒ `NP L'` |
+| `padRead` / `padWord` | `:82` / `:86` | blank-padded read of a finite bitstring |
+| `padRead_lt` / `padRead_ge` | `:89` / `:93` | in-support read / blank tail |
+| `contentHeader?` | `:116` | `decodeGamma? (padWord z (2 * N + 1)) tagLen` |
+| `contentInput?` | `:127` | strict parser re-run on `padWord z (treeMCSPPrefixM codec n')` |
+| `contentWitness` | `:139` | `codec.witnessBits n` cells at `treeMCSPPrefixM codec n` |
+| **`ContentAccepts`** | **`:159`** | `∃ pr, contentInput? codec z = some pr ∧ pr.2.prefixAgrees … ∧ relation …` |
+| `ContentPrefixExtendable` | `:172` | `∃ w, ContentAccepts codec (concatBitstring y w)` |
+| `ContentPrefixExtensionLanguage` | `:179` | classical `Bool` wrapper of the above |
+| `ContentPrefixExtensionLanguage_accepts_iff` | `:185` | wrapper unwrapping |
+| **`ContentPrefixExtensionNPWitness`** | **`:220`** | `M`, `c`, `runTime_poly`, `correct` |
+| `contentPrefixExtensionLanguage_in_NP_of_witness` | `:240` | witness ⇒ `NP L'` |
 
 Downstream consumers already exist and are unconditional given the interface:
-`ContentConsolidatedSource.lean:57` `verifiedSourceCT_of_noPolynomialBoundedSearchSolver`,
-`:73` `verifiedSourceCT_treePoly`, `:86` `NP_not_subset_PpolyDAG_treePolyCT`. At the concrete
+`ContentConsolidatedSource.lean:60` `verifiedSourceCT_of_noPolynomialBoundedSearchSolver`,
+`:76` `verifiedSourceCT_treePoly`, `:89` `NP_not_subset_PpolyDAG_treePolyCT`. At the concrete
 threshold those take exactly two explicit hypotheses: `NoPolynomialBoundedSearchSolver`
 (input (1), untouched by this plan) and `ContentPrefixExtensionNPWitness` (input (2), the target).
 
@@ -579,8 +579,8 @@ for new slices rather than rejected. Concretely:
   `AGENTS.md`'s "most concrete live form" paragraph. Removing or weakening them is **not** part of
   this plan under any FEAS-0 outcome.
 * **Bridging lemmas are admissible in both directions** when they serve either route, e.g. the
-  coincidence family `ContentPrefixExtensionCoincidence.lean:276`
-  `ContentPrefixExtendable_iff_of_parse` / `:324` `ContentPrefixExtensionLanguage_eq_of_parse`.
+  coincidence family `ContentPrefixExtensionCoincidence.lean:282`
+  `ContentPrefixExtendable_iff_of_parse` / `:335` `ContentPrefixExtensionLanguage_eq_of_parse`.
   Under FEAS-0 outcome (d) the old → new direction is the one that survives.
 * One CT-A artifact is **mis-targeted relative to the CT route** (slice P0): the semantic core
   `TreeMCSPPrefixSemanticVerifier.lean:252` `treePrefixSemanticAccepts_correct` is stated for
@@ -596,7 +596,7 @@ boundary of the frozen target.
    bound, and no `TM.accepts … = ContentAccepts …` statement exists for `L'` anywhere in the
    repository.
 2. **Padding invariance is proved for the predicate, not the language.**
-   `ContentPrefixExtensionPadding.lean:314` `ContentAccepts_padWord_of_le` and `:333`
+   `ContentPrefixExtensionPadding.lean:317` `ContentAccepts_padWord_of_le` and `:336`
    `ContentAccepts_iff_of_padRead_eq` are about *complete* words. Membership in `L'` at physical
    length `m` quantifies over `Bitstring (certificateLength m 1)` concatenated at offset `m`, both
    of which move with `m`; wrapper-level invariance is unproved.
@@ -884,7 +884,7 @@ If `ContentAccepts` were unsatisfiable at the concrete codec, `L'` would be the 
 `ContentPrefixExtensionNPWitness` would then be discharged by a trivial machine, and the
 consolidated CT source `NP_not_subset_PpolyDAG_treePolyCT` would be worthless — its other
 hypothesis, `NoPolynomialBoundedSearchSolver`, would be refuted rather than merely open, since
-`ContentPrefixExtensionTransfer.lean:145` pins the *empty* `L'` outside `PpolyDAG`. Building a
+`ContentPrefixExtensionTransfer.lean:147` pins the *empty* `L'` outside `PpolyDAG`. Building a
 verifier machine before settling this risks discharging a vacuous obligation. This replaces, and is
 unrelated to, the donor's arm-embedding GATE-0.
 
@@ -931,14 +931,14 @@ zero-prefix shape makes `n` load-bearing.
 
 **Proof route, fully on `main`.**
 `zeroPrefixQueryValue_parses` (`TreeMCSPPrefixSerializer.lean:84`) supplies *both* hypotheses that
-`contentInput?_concat_of_parse` (`Coincidence.lean:244`) needs — `hparse` **and**
+`contentInput?_concat_of_parse` (`Coincidence.lean:245`) needs — `hparse` **and**
 `hn : input.n = n`. `prefixAgrees` is vacuous because `zeroPrefixFields` sets `i := 0`
 (`TreeMCSPPrefixSerializer.lean:49`), `toPrefixInput` copies it verbatim
 (`PrefixParserConvention.lean:675`), and `PrefixInput.prefixAgrees` is a `∀ k : Fin input.i`
 (`PrefixExtensionLanguage.lean:52`). The relation conjunct comes from
 `TreeCircuitWitnessCodec.complete` (`SearchMCSPConcreteTargets.lean:85`), with the witness
 transported into the certificate's leading `witnessBits` block by
-`contentWitness_concat` (`Coincidence.lean:218`). The concrete discharge takes
+`contentWitness_concat` (`Coincidence.lean:219`). The concrete discharge takes
 `c := Pnp3.Models.Circuit.const false` (size `1`, `pnp3/Models/Model_PartialMCSP.lean:53`) against
 `x := fun _ => false`, and `1 ≤ thresholdPoly k n = n ^ k + k` for every `k, n` (at `k = 0` the
 first summand is `n ^ 0 = 1`; at `k ≥ 1` the second summand suffices).
@@ -999,9 +999,9 @@ theorem contentSemanticAccepts_correct {threshold : Nat → Nat}
 `prefixAgreesBool_eq_true_iff` (`TreeMCSPPrefixSemanticVerifier.lean:99`, `:105`) and `verifiesBool`
 / `verifiesBool_eq_true_iff` (`:121`, `:128`). The existential in `ContentAccepts` is pinned by
 `contentInput? codec z = some pr`, so the `↔` is a `match` analysis, not a choice. Padding
-stability is `contentInput?_padWord_of_le` (`Padding.lean:293`) and `contentWitness_padWord_of_le`
-(`:300`). The last theorem is `ContentPrefixExtensionLanguage_accepts_iff`
-(`ContentPrefixExtension.lean:178`) composed with the headline.
+stability is `contentInput?_padWord_of_le` (`Padding.lean:296`) and `contentWitness_padWord_of_le`
+(`:303`). The last theorem is `ContentPrefixExtensionLanguage_accepts_iff`
+(`ContentPrefixExtension.lean:185`) composed with the headline.
 
 Note `contentSemanticAccepts` does **not** need `extractWitness?` (`:160`): the content witness
 window is already total via `padRead`, so CT-A's dependent-slice machinery is bypassed. Do not port
@@ -1048,9 +1048,9 @@ already carries `Classical.choice`.
 **Why this slice was needed.** Two families of side conditions infected every coincidence statement
 and would otherwise infect the machine's correctness proof:
 
-* `hn : input.n = n` in `ContentPrefixExtendable_iff_of_parse` (`Coincidence.lean:276`) and
-  `ContentPrefixExtensionLanguage_eq_of_parse` (`:324`). Inversion
-  (`parseTreeMCSPPrefixInput_inversion`, `:140`) yields only
+* `hn : input.n = n` in `ContentPrefixExtendable_iff_of_parse` (`Coincidence.lean:282`) and
+  `ContentPrefixExtensionLanguage_eq_of_parse` (`:335`). Inversion
+  (`parseTreeMCSPPrefixInput_inversion`, `:141`) yields only
   `treeMCSPPrefixM codec input.n = treeMCSPPrefixM codec n`; injectivity of `treeMCSPPrefixM codec`
   is unavailable generically. I1 supplies it under monotone `witnessBits`, and for the concrete
   polynomial codec (docstring at `:319–:323`).
@@ -1179,15 +1179,15 @@ determinacy) — there is **no** width bound anywhere in the repository, which i
 `readNatBE_lt_two_pow` is new. Then `gammaLen_eq_two_mul_zeros_add_one` (`:371`) and `bitLength`
 (`:22`) finish.
 Narrowing: a successful header decode puts the terminator strictly inside the support
-(`padRead_ge`, `ContentPrefixExtension.lean:88`, so `tagLen + zeros < N`), and
-`decodeGammaAux?_padWord_support` (`Padding.lean:186`) plus `readNatBE_padWord_transfer` (`:151`)
+(`padRead_ge`, `ContentPrefixExtension.lean:93`, so `tagLen + zeros < N`), and
+`decodeGammaAux?_padWord_support` (`Padding.lean:189`) plus `readNatBE_padWord_transfer` (`:154`)
 move both the terminator search and the payload read to the narrow window. The width side condition
 is `queryXOffset_le_treeMCSPPrefixM` (`TreeMCSPPrefixVerifierLayout.lean:166`) combined with
 `gammaLen_eq_two_mul_gammaZeros_add_one` (`:226`), i.e.
 `tagLen + 2 · gammaZeros n' + 1 ≤ treeMCSPPrefixM codec n'`, which is now available *because*
 `consumed = gammaLen n'` is a theorem rather than an assumption. Both windows agree on every read
 cell: all read positions are `< tagLen + gammaLen n' ≤ 2 * N + 1`, and cells in `[N, ·)` are blank
-in both. The existing `decodeGammaAux?_padWord_canonical` (`Padding.lean:223`) cannot be reused: it
+in both. The existing `decodeGammaAux?_padWord_canonical` (`Padding.lean:226`) cannot be reused: it
 requires `2 * N + 1 ≤ T'`, i.e. widening, and here `T' = treeMCSPPrefixM codec n'` may be smaller.
 
 #### 4.3.3 Every remaining parser premise, enumerated
@@ -1322,8 +1322,8 @@ P0-free — in dependency *and* in signature.
 (`pnp3/Complexity/PsubsetPpolyInternal/TuringEncoding.lean:133`, with `initial_tape_input` `:140`
 and `initial_tape_blank` `:146`) — modelled line-for-line on `verifierTape_left` /
 `verifierTape_right` (`TreeMCSPPrefixVerifierLayout.lean:103`, `:114`), with `padRead_ge`
-(`ContentPrefixExtension.lean:88`) covering the blank tail. The second is
-`ContentAccepts_iff_of_padRead_eq` (`Padding.lean:333`) restated for machine consumers.
+(`ContentPrefixExtension.lean:93`) covering the blank tail. The second is
+`ContentAccepts_iff_of_padRead_eq` (`Padding.lean:336`) restated for machine consumers.
 
 **Budget:** 250–400 LOC · 1–2 modules.
 **Stop/go (G5):** `ContentVerifierBridgeFor.accepts_eq` must be stated with the concatenated length
@@ -1366,7 +1366,7 @@ def contentPrefixExtensionNPWitness_of_bridge {threshold : Nat → Nat}
 **Proof route.** A one-line repackaging: `M := B.M`, `c := B.c`, `runTime_poly := B.runTime_poly`
 verbatim, and `correct` obtained by rewriting `TM.accepts` to `contentSemanticAccepts` via
 `B.accepts_eq` and then applying P0's `contentSemanticAccepts_correct` (§4.2), whose shape matches
-the `correct` field of `ContentPrefixExtensionNPWitness` (`ContentPrefixExtension.lean:211`)
+the `correct` field of `ContentPrefixExtensionNPWitness` (`ContentPrefixExtension.lean:220`)
 exactly at `k = 1`.
 
 **Budget:** 60–120 LOC · 1 module.
@@ -1596,7 +1596,7 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
 ## 9. Bottom line
 
 * Input (2) is **frozen** at `ContentPrefixExtensionNPWitness` / `ContentAccepts`
-  (`ContentPrefixExtension.lean:211`, `:152`). FEAS-0 outcome (a) is proved by
+  (`ContentPrefixExtension.lean:220`, `:159`). FEAS-0 outcome (a) is proved by
   `contentAccepts_target_poly_treePoly`: accepted complete words have polynomially bounded header
   convention length. This does not build the verifier TM or prove `L' ∈ NP` (§1.0).
 * The length-gated `PrefixExtensionNPWitness` is retained as a compiled and audited compatibility

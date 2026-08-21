@@ -5,19 +5,20 @@ import Pnp4.Frontier.ContractExpansion.ConsolidatedTreeSeparation
 # Consolidated conditional source through the content-truthful language — repair brick R5
 
 Re-routes the consolidated two-input conditional chain through `L'`
-(`ContentPrefixExtensionLanguage`).  This re-routing is all that is done: the specification-side
-obligation that would justify calling the repair complete — padding stability of `ContentAccepts` —
-is **not** discharged in this slice.  The two halves of the source:
+(`ContentPrefixExtensionLanguage`).  This re-routing is all that is done *here*; the
+specification-side obligation — padding stability of `ContentAccepts` — is discharged separately, in
+`ContentPrefixExtensionPadding.lean`, and adds nothing to the two hypotheses below.  The two halves
+of the source:
 
 * `inNP` half: the content-truthful NP witness (brick R2) — an **explicit hypothesis**, exactly as
   before.  Its target language has no *explicit* gate on the ambient physical length (the strict
   parser's own equality gate survives inside `contentInput?`, applied to the computed window, with
   vacuity unproved), so the ambient-gate step of the
   obstruction has nothing to attach to; that is a definitional observation, not a positive result,
-  and it is weaker than length-independence — `contentHeader?` still decodes on the `2N+1`-padded
-  word (so `N` fixes that window's width and the gamma fuel), and the witness's `runTime` is still
-  evaluated at the length-dependent point `n + certificateLength n 1`.  No verifier machine, runtime
-  bound, `TM.accepts` bridge, or padding-stability lemma is constructed anywhere, so nothing here
+  and, on the machine side, the witness's `runTime` is still evaluated at the length-dependent point
+  `n + certificateLength n 1`.  On the specification side `contentHeader?` still *mentions*
+  `2 * N + 1`, but `contentHeader?_padWord_of_le` shows its value does not move with `N`.  No
+  verifier machine, runtime bound, or `TM.accepts` bridge is constructed anywhere, so nothing here
   shows the witness is satisfiable — nor that `ContentAccepts` is;
 * `¬PpolyDAG` half: the **same** open lower-bound hypothesis `NoPolynomialBoundedSearchSolver`,
   via the transferred extraction (brick R4), plus the growth premise

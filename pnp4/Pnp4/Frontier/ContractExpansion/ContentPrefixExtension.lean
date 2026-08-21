@@ -25,11 +25,13 @@ blank-padded word; the witness window follows it).  What `L'` drops is the *expl
 **not** removed — `contentInput?` invokes that parser on the *computed* window
 `padWord z (treeMCSPPrefixM codec n')`, where the test survives as a comparison of the computed
 window's length against the parser's *re-decoded* target, and its intended vacuity is **unproved**
-(see `contentInput?` below).  `L'` is also **not** independent of the
-physical length `N`: `contentHeader?` decodes on the `2N+1`-padded word, so `N` fixes both that
-window's width and the gamma decoder's fuel (`decodeGamma?` uses `m + 1`).  Closing that residual
-`N`-dependence is exactly what a padding-stability lemma would have to do, and no such lemma is
-proved here.
+(see `contentInput?` below).  Syntactically, `L'` still mentions the physical length `N`:
+`contentHeader?` decodes on the `2N+1`-padded word, so `N` fixes both that window's width and the
+gamma decoder's fuel (`decodeGamma?` uses `m + 1`).  Closing that residual `N`-dependence is what a
+padding-stability lemma has to do; no such lemma is proved **in this module** — it is discharged in
+`ContentPrefixExtensionPadding.lean` (`contentHeader?_padWord_of_le`,
+`ContentAccepts_padWord_of_le`, `ContentAccepts_iff_of_padRead_eq`), which does not affect any
+statement below.
 
 Definitions only (plus the immediate `accepts_iff` unwrapping and the NP-witness interface):
 
@@ -37,8 +39,8 @@ Definitions only (plus the immediate `accepts_iff` unwrapping and the NP-witness
   (`initialConfig` loads the input and pads with `false`);
 * `contentHeader?` — the gamma header read on the `2N+1`-padded word.  The margin is *intended* to
   keep every read of a successful strict decode in range, so that the spec matches a blank-reading
-  machine; that intent is **not formalized here** — no padding-stability lemma for the header (or
-  for `ContentAccepts`) is proved in this slice;
+  machine; that intent is **not formalized here** — the padding-stability lemmas for the header and
+  for `ContentAccepts` live in `ContentPrefixExtensionPadding.lean`;
 * `contentInput?` — the parser re-run on the **computed-length** window `padWord z (M n')`.  The
   parser re-decodes the header from that *narrower* window and gates on `m = M n_dec` for the
   re-decoded `n_dec`; the gate is therefore **intended** to be vacuous (`n_dec = n'`, so the check
@@ -97,9 +99,10 @@ variable {threshold : Nat → Nat}
 /-- The content-read gamma header: decode the Elias-gamma target length on the `2N+1`-padded word.
 The `2N+1` margin is chosen so that a terminator inside the support has its whole payload inside the
 padded window — the design intent being that the strict spec agree with what a blank-reading machine
-computes.  **That agreement is not proved in this slice**: no lemma here relates this decode across
-different physical lengths, so the margin should be read as a definitional choice, not an
-established coincidence with a machine. -/
+computes.  No lemma **in this module** relates this decode across different physical lengths; the
+padding-stability statement `contentHeader?_padWord_of_le` is proved in
+`ContentPrefixExtensionPadding.lean`.  **Agreement with a machine is still not established**: no
+verifier TM exists here, so the margin remains a definitional choice. -/
 def contentHeader? {N : Nat} (z : PrefixBitVec N) : Option (Nat × Nat) :=
   decodeGamma? (padWord z (2 * N + 1)) tagLen
 

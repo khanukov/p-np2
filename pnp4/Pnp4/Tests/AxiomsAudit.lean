@@ -46,6 +46,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence
+import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPadding
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionTransfer
 import Pnp4.Frontier.ContractExpansion.ContentConsolidatedSource
 import Pnp4.Frontier.ContractExpansion.ExplicitConditionalSource
@@ -346,6 +347,33 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.verifiedSourceCT_of_noPolynomialBoundedSearchSolver
 #print axioms Pnp4.Frontier.ContractExpansion.verifiedSourceCT_treePoly
 #print axioms Pnp4.Frontier.ContractExpansion.NP_not_subset_PpolyDAG_treePolyCT
+-- Specification-side obligation: padding stability of L' -- the blank-tail lemma and the
+-- fuel-monotonicity side condition are proved, not assumed, and the headline says any two finite
+-- words with the same blank-padded tape are content-accepted alike.  This closes the residual
+-- ambient-N dependence of L' on the SPECIFICATION side only.  It does NOT build a verifier TM, a
+-- runtime bound, or a TM.accepts bridge; the pnp3 model is not length-blind; and stability is
+-- agreement INCLUDING on failure, so it does not show the strict parser's surviving
+-- m = treeMCSPPrefixM codec n_dec gate inside contentInput? is vacuous.  The whole chain is
+-- Classical-free (nothing / [propext, Quot.sound]); only the final entry inherits Classical.choice,
+-- from the noncomputable concatBitstring and the classical language wrapper it routes through.
+-- The last two entries are CONDITIONAL transport lemmas (they assume a successful decode / an
+-- extendable query); no existential accepted word is proved, so they are not non-vacuity results.
+#print axioms Pnp4.Frontier.ContractExpansion.padRead_padWord_of_le
+#print axioms Pnp4.Frontier.ContractExpansion.padWord_padWord_of_le
+#print axioms Pnp4.Frontier.ContractExpansion.eq_padWord_of_padRead_eq
+#print axioms Pnp4.Frontier.ContractExpansion.lt_of_padRead_eq_true
+#print axioms Pnp4.Frontier.ContractExpansion.readBit?_padWord_of_lt
+#print axioms Pnp4.Frontier.ContractExpansion.readBit?_padWord_of_ge
+#print axioms Pnp4.Frontier.ContractExpansion.readNatBE_padWord_transfer
+#print axioms Pnp4.Frontier.ContractExpansion.decodeGammaAux?_padWord_support
+#print axioms Pnp4.Frontier.ContractExpansion.decodeGammaAux?_padWord_canonical
+#print axioms Pnp4.Frontier.ContractExpansion.contentHeader?_padWord_of_le
+#print axioms Pnp4.Frontier.ContractExpansion.contentInput?_padWord_of_le
+#print axioms Pnp4.Frontier.ContractExpansion.contentWitness_padWord_of_le
+#print axioms Pnp4.Frontier.ContractExpansion.ContentAccepts_padWord_of_le
+#print axioms Pnp4.Frontier.ContractExpansion.ContentAccepts_iff_of_padRead_eq
+#print axioms Pnp4.Frontier.ContractExpansion.contentHeader?_of_decodeGamma
+#print axioms Pnp4.Frontier.ContractExpansion.ContentAccepts_padWord_of_prefixExtendable
 
 #print axioms Pnp4.Frontier.ContractExpansion.verifiedSource_of_explicit_interfaces
 #print axioms Pnp4.Frontier.ContractExpansion.NP_not_subset_PpolyDAG_of_explicit_interfaces

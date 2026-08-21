@@ -1049,9 +1049,10 @@ theorem check_NP_not_subset_PpolyDAG_treePolyCT
 #check @Pnp4.Frontier.ContractExpansion.ContentVerifierBridgeFor
 -- D1b bridge specialization and witness repackaging (plan §4.5): the alias fixes D1a's acceptance
 -- parameter to P0's `contentSemanticAccepts`, and the repackaging turns any such bridge into the
--- frozen `ContentPrefixExtensionNPWitness`, consuming `runTime_poly` verbatim.  Both are
--- CONDITIONAL on a supplied bridge: no machine, runtime bound, `TM.accepts` bridge, or bridge
--- instance is constructed, so nothing here proves NP membership of `L'`, and the inherited
+-- frozen `ContentPrefixExtensionNPWitness`, consuming `runTime_poly` verbatim. The alias merely
+-- names the specialized bridge type; the repackaging is CONDITIONAL on a supplied bridge. No
+-- machine, runtime bound, `TM.accepts` bridge, or bridge instance is constructed, so nothing here
+-- proves NP membership of `L'`, and the inherited
 -- `runTime_poly` still does not prevent `runTime` from carrying input-length advice.
 #check @Pnp4.Frontier.ContractExpansion.ContentVerifierBridge
 #check @Pnp4.Frontier.ContractExpansion.contentPrefixExtensionNPWitness_of_bridge

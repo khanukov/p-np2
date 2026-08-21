@@ -9,10 +9,12 @@ predicate-parameterized obligation `ContentVerifierBridgeFor` instantiated at P0
 acceptance predicate `contentSemanticAccepts`, and the repackaging of any such bridge into the
 frozen input-(2) interface `ContentPrefixExtensionNPWitness`.
 
-**Nothing here is an instance.** No verifier Turing machine, no runtime bound, and no
-`TM.accepts … = contentSemanticAccepts …` proof is constructed; both declarations are conditional
-on a supplied `ContentVerifierBridge`, which remains the whole open machine obligation (§1.3
-caveat 1). The repackaging consumes `runTime_poly` verbatim (§8, G6) and derives `correct` by
+**Nothing here is an instance.** The abbreviation only names the bridge type at P0's acceptance
+predicate; it requires no supplied bridge and constructs no fields. The repackaging theorem is
+conditional on a supplied `ContentVerifierBridge`, which remains the whole open machine obligation
+(§1.3 caveat 1). No verifier Turing machine, runtime bound, or
+`TM.accepts … = contentSemanticAccepts …` proof is constructed. The repackaging consumes
+`runTime_poly` verbatim (§8, G6) and derives `correct` by
 rewriting `TM.accepts` through `accepts_eq` and applying P0's `contentSemanticAccepts_correct`; it
 proves no premise of the bridge and therefore establishes no NP membership for `L'`.
 

@@ -311,9 +311,10 @@ review order (the `lakefile.lean` registration is the dependency order):
   `contentPrefixExtensionNPWitness_of_bridge` repackages any such bridge into
   `ContentPrefixExtensionNPWitness`: the machine, exponent and `runTime_poly` are taken over
   verbatim, and `correct` is P0's `contentSemanticAccepts_correct` composed with the bridge's
-  `accepts_eq` rewrite under the certificate existential. Both declarations are **conditional on a
-  supplied bridge**, and no bridge instance, machine, or runtime bound is constructed here — so
-  this module proves no NP membership for `L'` and no advice-free claim: the inherited
+  `accepts_eq` rewrite under the certificate existential. The abbreviation merely names that bridge
+  type; the repackaging theorem is **conditional on a supplied bridge**. No bridge instance,
+  machine, or runtime bound is constructed here — so this module proves no NP membership for `L'`
+  and no advice-free claim: the inherited
   `runTime_poly` still bounds only the clock's magnitude. The repackaging has the standard
   `[propext, Classical.choice, Quot.sound]` axiom footprint.
 - `ContentPrefixExtensionPaddingTransport.lean` — the explicitly classical conditional transport

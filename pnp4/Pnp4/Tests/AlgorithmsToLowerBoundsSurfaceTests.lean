@@ -1019,9 +1019,13 @@ theorem check_NP_not_subset_PpolyDAG_treePolyCT
 #check @Pnp4.Frontier.ContractExpansion.contentHeader?_of_decodeGamma
 #check @Pnp4.Frontier.ContractExpansion.ContentAccepts_padWord_of_prefixExtendable
 
-/-- Padding-stability surface (headline): any two finite words presenting the same blank-padded tape
-are content-accepted alike, so `L'` is a function of the tape contents only.  A specification-side
-invariance; it builds no machine and claims no NP-witness achievability. -/
+/-- Padding-stability surface (headline): any two *complete* finite words presenting the same
+blank-padded tape are content-accepted alike, so `ContentAccepts` is a function of the tape contents
+only.  Scope is exactly that predicate: padding invariance of the language wrapper
+`ContentPrefixExtensionLanguage` (`L'`) is **not** proved, since membership at physical length `m`
+quantifies over certificates of length `certificateLength m 1` concatenated at offset `m`, both of
+which move with `m`.  A specification-side invariance; it builds no machine and claims no NP-witness
+achievability. -/
 theorem check_ContentAccepts_iff_of_padRead_eq
     {threshold : Nat → Nat} (codec : Frontier.TreeCircuitWitnessCodec threshold)
     {N N' : Nat} (z : PrefixBitVec N) (z' : PrefixBitVec N')

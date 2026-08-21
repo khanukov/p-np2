@@ -1,7 +1,10 @@
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence
 
 /-!
-# Padding stability of the content-truthful language — the specification-side obligation
+# Padding stability of `ContentAccepts` — the specification-side obligation
+
+(Not padding stability of the *language* `ContentPrefixExtensionLanguage` — see the scope bullets
+below.)
 
 The review that motivated the content-truthful language `L'` (see this directory's `README.md`) is a
 mismatch between two definitions: `PrefixExtensionLanguage` gates membership on the **physical**

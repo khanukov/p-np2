@@ -347,17 +347,24 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.verifiedSourceCT_of_noPolynomialBoundedSearchSolver
 #print axioms Pnp4.Frontier.ContractExpansion.verifiedSourceCT_treePoly
 #print axioms Pnp4.Frontier.ContractExpansion.NP_not_subset_PpolyDAG_treePolyCT
--- Specification-side obligation: padding stability of L' -- the blank-tail lemma and the
--- fuel-monotonicity side condition are proved, not assumed, and the headline says any two finite
--- words with the same blank-padded tape are content-accepted alike.  This closes the residual
--- ambient-N dependence of L' on the SPECIFICATION side only.  It does NOT build a verifier TM, a
--- runtime bound, or a TM.accepts bridge; the pnp3 model is not length-blind; and stability is
--- agreement INCLUDING on failure, so it does not show the strict parser's surviving
--- m = treeMCSPPrefixM codec n_dec gate inside contentInput? is vacuous.  The whole chain is
--- Classical-free (nothing / [propext, Quot.sound]); only the final entry inherits Classical.choice,
--- from the noncomputable concatBitstring and the classical language wrapper it routes through.
--- The last two entries are CONDITIONAL transport lemmas (they assume a successful decode / an
--- extendable query); no existential accepted word is proved, so they are not non-vacuity results.
+-- Specification-side obligation: padding stability of ContentAccepts -- the blank-tail lemma is
+-- proved, and the headline says any two COMPLETE finite words with the same blank-padded tape are
+-- content-accepted alike.  The fuel side condition N + 1 <= fuel' + zeros is an EXPLICIT HYPOTHESIS
+-- of decodeGammaAux?_padWord_canonical, not a proved fact: what the induction proves is that the
+-- scan step PRESERVES it, and the two callers in the module discharge its initial instance at their
+-- concrete fuel 2 * width + 2 with zeros = 0.  This closes the residual ambient-N dependence of
+-- ContentAccepts on the SPECIFICATION side only.  It does NOT give padding invariance of the
+-- language wrapper ContentPrefixExtensionLanguage (L'), whose membership at length m quantifies
+-- over certificates of length certificateLength m 1 concatenated at offset m, both moving with m;
+-- it does NOT build a verifier TM, a runtime bound, or a TM.accepts bridge; the pnp3 model is not
+-- length-blind; and stability is agreement INCLUDING on failure, so it does not show the strict
+-- parser's surviving m = treeMCSPPrefixM codec n_dec gate inside contentInput? is vacuous.  The
+-- whole chain is Classical-free (nothing / [propext, Quot.sound]); only the final entry inherits
+-- Classical.choice, from the noncomputable concatBitstring and the classical language wrapper it
+-- routes through.  The last two entries are CONDITIONAL transport lemmas (they assume a successful
+-- decode / an extendable query); the second one's conclusion IS an existential over certificates,
+-- but only under undischarged hypotheses, so no UNCONDITIONAL existential / non-emptiness result is
+-- proved -- neither that ContentAccepts is satisfiable nor that L' is non-empty.
 #print axioms Pnp4.Frontier.ContractExpansion.padRead_padWord_of_le
 #print axioms Pnp4.Frontier.ContractExpansion.padWord_padWord_of_le
 #print axioms Pnp4.Frontier.ContractExpansion.eq_padWord_of_padRead_eq

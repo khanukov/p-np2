@@ -468,9 +468,9 @@ during PR 8 or a dedicated audit PR.
 | `pnp3/Magnification/Bridge_to_Magnification_Partial.lean` | `conditional-suspicious` | Not canonical; do not use as path to the final theorem before audit.   |
 | `pnp3/Magnification/AsymptoticDAGCollapse.lean`     | `conditional-collapse`         | Collapse consequence ≠ contradiction (Rule 8); audit-only until proof. |
 | `pnp3/Magnification/AsymptoticFormulaCollapse.lean` | `conditional-collapse`         | Same.                                                                   |
-| `pnp3/Magnification/AsymptoticDAGBarrierTheorems.lean` *(if present)* | `barrier-audit-suspicious` | Barrier/audit area; not a source route.                                 |
+| `pnp3/LowerBounds/AsymptoticDAGBarrierTheorems.lean` | `barrier-audit-suspicious` | Barrier/audit area; not a source route.                                 |
 | `pnp3/Complexity/Interfaces.lean`                   | `semantic-conditional-bridges` | Part of frozen target surface; verify against FrozenSpec.              |
-| `pnp3/Magnification/Bypass.lean` *(if present)*     | `barrier-suite / audit`        | Barrier infrastructure, not a candidate source.                         |
+| `pnp3/Barrier/Bypass.lean`                          | `barrier-suite / audit`        | Barrier infrastructure, not a candidate source.                         |
 
 These classifications are intentionally conservative: when in doubt, an
 endpoint is **not canonical**. Reclassification upward (toward canonical)

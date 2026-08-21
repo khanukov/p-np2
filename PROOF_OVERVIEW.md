@@ -1,9 +1,10 @@
 # Proof Overview (Auditor Guide)
 
-Updated: 2026-05-28
+Updated: 2026-08-21
 
 This file is the short auditor-oriented map of the active proof route in the
-current repository state.
+current repository state.  Sections 1–2a and 3–7 describe the `pnp3/` route; §2b
+inventories the separate `pnp4/` conditional endpoints.
 
 Canonical unconditional checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
@@ -30,11 +31,14 @@ The compatibility import path for the historical aggregator is
 
 ## 2. Final theorem surface in code
 
-There is exactly **one** public final endpoint pair.  Everything else in the
-final-result modules is either a conditional anti-checker surface (Mainline)
+There is exactly **one** public final endpoint pair **in pnp3**.  Everything else in
+the pnp3 final-result modules is either a conditional anti-checker surface (Mainline)
 or an explicitly quarantined audit-only / refuted-route compatibility
 wrapper (see §2a).  None of the audit surfaces is a publishable closure
 claim.
+
+`pnp4/` carries additional conditional `P ≠ NP` endpoints; they are enumerated in §2b
+and are **not** covered by the "exactly one pair" statement above.
 
 ### Public default closure boundary
 
@@ -90,6 +94,44 @@ around active weak-route schemas (`AcceptedFamilyStatement`,
 `PromiseYesSubcubeStatement`, ...).  These are conditional surfaces, not
 audit-only and not the public closure boundary.
 
+## 2b. pnp4 conditional endpoints — not claims
+
+`pnp4/` exposes its own `P ≠ NP` and `NP ⊄ PpolyDAG` endpoints.  Each is explicitly
+conditional on unproved, explicitly-typed hypotheses; none is unconditional, and none is
+the pnp3 public closure boundary.
+
+| Endpoint | File |
+|---|---|
+| `P_ne_NP_of_NP_not_subset_Ppoly` | `pnp4/Pnp4/Frontier/CompressionMagnification.lean:22` |
+| `P_ne_NP_of_searchMCSPWeakLowerBound` | `pnp4/Pnp4/Frontier/CompressionMagnification.lean:68` |
+| `P_ne_NP_of_mainlineProgress` | `pnp4/Pnp4/Frontier/CompressionMagnification.lean:83` |
+| `P_ne_NP_of_treeMCSPSearchMagnificationSource` | `pnp4/Pnp4/Frontier/SearchMCSPConcreteTargets.lean:186` |
+| `P_ne_NP_of_pnp4_bridge_requirement` | `pnp4/Pnp4/Frontier/PvsNPBridgeRequirements.lean:40` |
+| `P_ne_NP_of_restricted_source_and_dag_bridge` | `pnp4/Pnp4/Frontier/PvsNPBridgeRequirements.lean:59` |
+| `P_ne_NP_of_weakCircuitLowerBound` | `pnp4/Pnp4/Frontier/SearchMCSPMagnification.lean:139` |
+| `P_ne_NP_of_verified_source` | `pnp4/Pnp4/AlgorithmsToLowerBounds/BridgeToPpolyDAG.lean:35` |
+
+The most reduced conditional surface on this side is
+
+```text
+NP_not_subset_PpolyDAG_treePoly (k) (hNoPoly) (hNPWit)
+  : ComplexityInterfaces.NP_not_subset_PpolyDAG
+```
+
+in `pnp4/Pnp4/Frontier/ContractExpansion/ConsolidatedTreeSeparation.lean`, which at a
+concrete polynomial threshold depends on exactly two open inputs.  Two wording
+constraints apply when citing it: the decision→search extraction is formalized in **one
+direction only** (not an equivalence), and `hNPWit` is an NP-membership obligation in the
+repository's single-tape, exact-step `TM` model.  See
+`CHECKLIST_UNCONDITIONAL_P_NE_NP.md` ("pnp4 Route") and
+`pnp4/Pnp4/Frontier/ContractExpansion/README.md`.
+
+Grep-friendly inventory:
+
+```bash
+rg -n "^theorem P_ne_NP_of_" pnp4/Pnp4
+```
+
 ## 3. Current explicit boundary assumption
 
 The public default theorem is:
@@ -131,7 +173,8 @@ Still open:
 
 1. a non-vacuous proof of `ResearchGapWitness`, equivalently
    `ComplexityInterfaces.NP_not_subset_PpolyDAG`, that does not route through
-   the refuted support-bounds / multi-switching surfaces;
+   the refuted support-bounds / multi-switching surfaces — on the pnp3 side, or
+   equivalently by discharging the two open inputs of the pnp4 route in §2b;
 2. a zero-argument public theorem `P_ne_NP_unconditional`, currently kept as
    a commented template inside
    `pnp3/Magnification/UnconditionalResearchGap.lean`.

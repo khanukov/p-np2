@@ -34,12 +34,23 @@ This file states that collapsed form once and for all.
   pnp3 bridge) `P ≠ NP`.  All links are theorems with complete proofs (no proof
   holes) and only the standard axioms.
 * It is **not** unconditional progress, and it is **not** a hardness-*magnification*
-  result.  The decision→search extraction proves the *equivalence*
-  `PpolyDAG(prefix-extension language) ⟺ polynomial-size search solver`, so
-  `NoPolynomialBoundedSearchSolver` is the **full-strength** lower bound — "this
-  concrete NP language is not in `P/poly`" — *not* a weak/local bound amplified by a
-  magnification theorem.  The chain makes the target **precise, concrete, and
-  verified-conditional**; it does **not** make the open mathematics easier.
+  result.  The decision→search extraction is formalized in **one direction only** —
+  `PpolyDAG (prefix-extension language) → polynomial-size bounded search solver`
+  (`boundedSearchSolver_of_PpolyDAG_prefixExtension`, `BoundedSolverFromPpoly.lean`)
+  plus its contrapositive in two forms: the exact-schedule
+  (`not_PpolyDAG_prefixExtension_of_noExtractedScheduleSolver`,
+  `NoSolverContrapositive.lean`) and the polynomial-target
+  (`not_PpolyDAG_prefixExtension_of_noPolynomialBoundedSearchSolver`,
+  `ExtractedScheduleGrowth.lean`, which adds `TreeMCSPExtractionGrowthAssumptions` and
+  is derived from the exact-schedule form) — both restating the same single direction.
+  The converse (solver ⇒ `PpolyDAG`) is **not**
+  formalized, so this is a one-way reduction and *not* an equivalence.  Since the
+  instance length is `tableLen n = 2^n`, `NoPolynomialBoundedSearchSolver` is therefore
+  *at least as strong as* the full `P/poly` lower bound — "this concrete NP language is
+  not in `P/poly`" — and, absent the converse, possibly strictly stronger; it is *not* a
+  weak/local bound amplified by a magnification theorem.  The chain makes the target
+  **precise, concrete, and verified-conditional**; it does **not** make the open
+  mathematics easier.
 
 The two remaining hypotheses are exactly the genuine frontier: a circuit lower bound
 (open research) and an NP-verifier construction (engineering/verification).

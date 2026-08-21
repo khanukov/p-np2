@@ -72,8 +72,10 @@ for f in pnp3/Tests/AxiomsAudit.lean \
 done
 ```
 
-Confirm docs are aligned (matches the public-doc allowlist enforced by
-`scripts/check.sh` route-policy step):
+Confirm docs are aligned.  The first fourteen entries below are the `route_docs` +
+`public_docs` allowlist enforced by the `scripts/check.sh` route-policy step;
+`pnp3/Docs/Unconditionality_FAQ.md` is listed here as a release-review item but is
+**not** part of that enforced allowlist:
 
 - `README.md`
 - `README_PUBLICATION.md`

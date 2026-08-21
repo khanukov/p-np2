@@ -1,6 +1,6 @@
 # TODO / Roadmap (current)
 
-Updated: 2026-08-17
+Updated: 2026-08-21
 
 Canonical checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
@@ -32,6 +32,10 @@ Research method boundary:
 - The former pnp3 fixed-slice AC0 surface is now an audit quarantine.
   Its enriched `SmallAC0Solver_Partial` package is inconsistent before solver
   correctness is used, so it is not an AC0 lower bound or P-vs-NP progress.
+- Mainline scope: per `AGENTS.md`, P-vs-NP mainline progress means reducing
+  `SearchMCSPWeakLowerBound` or `VerifiedNPDAGLowerBoundSource` in `pnp4/`.  The
+  pnp3 targets below are honest infrastructure and no-go hardening for the
+  magnification route; they are not the mainline.  See Target 4.
 
 ## Hard Policy Update
 
@@ -72,7 +76,8 @@ theorem that proves `ResearchGapWitness` /
 
 ### Target 2. Replace the false support-bounds source
 
-Status: main research blocker.
+Status: open pnp3 research question.  This is **not** the P-vs-NP mainline — see the
+Snapshot above and Target 4.
 
 Do not try to "finish" the old `hMS` route.  It is inconsistent.
 
@@ -110,7 +115,47 @@ Canonical docs must say:
    fine-grained compiler for slack-sensitive magnification;
 6. green CI/check scripts are proof hygiene, not mathematical progress by
    themselves;
-7. the remaining gap is mathematical, not just endpoint wiring.
+7. the remaining gap is mathematical, not just endpoint wiring;
+8. the pnp4 decision→search extraction is formalized in one direction only
+   (`PpolyDAG → solver` plus its contrapositive), never as an equivalence, and its
+   no-solver input is not a weak bound amplified by magnification;
+9. the pnp4 `PrefixExtensionNPWitness` obligation is stated in the repository's
+   single-tape, exact-step `TM` model, with no cross-model runtime-robustness theorem.
+
+### Target 4. pnp4 mainline: the two consolidated source obligations
+
+Status: the P-vs-NP mainline (per `AGENTS.md`).
+
+`pnp4/Pnp4/Frontier/ContractExpansion/ConsolidatedTreeSeparation.lean` reduces the
+verified-source chain, at a concrete polynomial threshold, to exactly two explicit
+hypotheses:
+
+```text
+NP_not_subset_PpolyDAG_treePoly
+  (k : Nat)
+  (hNoPoly : NoPolynomialBoundedSearchSolver (treeCircuitWitnessCodec (thresholdPoly k)))
+  (hNPWit  : PrefixExtensionNPWitness
+               (treeMCSPConcretePrefixParser (thresholdPoly k) …))
+  : ComplexityInterfaces.NP_not_subset_PpolyDAG
+```
+
+1. `hNoPoly` is a genuine `P/poly` circuit lower bound for the concrete tree-MCSP search
+   problem.  Research-level mathematics, not a Lean engineering task.  Because the
+   extraction is one-way and the instance length is `tableLen n = 2^n`, it is at least as
+   strong as "this concrete NP language is not in `P/poly`".
+2. `hNPWit` is a concrete verifier TM plus polynomial runtime bound plus certificate
+   correctness, in the model described in Target 3 item 9.  Engineering-heavy but in
+   principle closable.
+3. `PolyBoundedInTable threshold` is proved for the canonical polynomial thresholds
+   (`ThresholdGrowth.lean`), so it is not an open input at `thresholdPoly k`.
+
+Neither of the two open hypotheses is proved, so the endpoint stays strictly
+conditional.  What *is* proved: the one-way decision→search extraction and its
+contrapositive, the growth reduction, the concrete `treeCircuitWitnessCodec`
+(`ConcreteTreeCodec.lean`), the threshold-growth discharge
+(`polyBoundedInTable_thresholdPoly`), and the consolidated conditional theorem
+itself.  See `pnp4/Pnp4/Frontier/ContractExpansion/README.md` for the full
+proved-vs-open breakdown.
 
 ## Non-Goals Right Now
 
@@ -126,8 +171,13 @@ Canonical docs must say:
 1. Keep `FormulaSupportBoundsFalsifiabilityProbe.lean` as the authoritative
    audit module for support-bounds falsifiability.
 2. Keep `pnp3/Magnification/UnconditionalResearchGap.lean` as the single-file
-   frontier: future unconditional closure should prove `ResearchGapWitness`
-   there and then expose `P_ne_NP_unconditional` from that same file.
+   frontier **for the pnp3 route**: a pnp3-side unconditional closure should prove
+   `ResearchGapWitness` there and then expose `P_ne_NP_unconditional` from that same
+   file.  A pnp4-side closure (Target 4) need not be re-expressed as
+   `ResearchGapWitness` — its endpoint already produces
+   `ComplexityInterfaces.NP_not_subset_PpolyDAG`, which is exactly
+   `ResearchGapWitness.dagSeparation` — though routing it through that witness remains
+   an option.  See `pnp3/Docs/CLOSURE_ROUTE_POLICY.md`.
 3. If a new support/provenance contract is proposed, first add a falsifiability
    audit before wiring it into final theorems.
 4. If a new route depends on exact MCSP thresholds, Shannon slack, or small

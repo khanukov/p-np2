@@ -1,9 +1,14 @@
 # Checklist: Unconditional Constructive `P != NP`
 
-Updated: 2026-04-23
+Updated: 2026-08-21
 
 This is the canonical checklist for what still blocks an unconditional
 in-repo theorem `P != NP`.
+
+Scope note: the repository has two active tracks.  `pnp3/` carries the magnification
+route; `pnp4/` carries the P-vs-NP mainline per `AGENTS.md`.  Both terminate at
+`ComplexityInterfaces.NP_not_subset_PpolyDAG`; neither closes it.  See "pnp4 Route"
+below.
 
 For current release posture, see `RELEASE_RC.md`.
 For hard route policy lock, see `pnp3/Docs/CLOSURE_ROUTE_POLICY.md`.
@@ -21,6 +26,9 @@ Files:
   `pnp3/Magnification/UnconditionalResearchGap.lean`
 - legacy/audit route surface:
   `pnp3/Magnification/FinalResultAuditRoutes.lean`
+- pnp4 conditional source surface:
+  `pnp4/Pnp4/Frontier/ContractExpansion/ConsolidatedTreeSeparation.lean`
+  (see "pnp4 Route" below)
 
 Current public endpoints:
 
@@ -64,16 +72,60 @@ part of the formally refuted support-bounds route.
 
 ## Refuted Assumption Surfaces
 
-The support-bounds audit proves that these surfaces are vacuous:
+The support-bounds audit (`pnp3/Tests/FormulaSupportBoundsFalsifiabilityProbe.lean`)
+proves that these six surfaces are vacuous:
 
 1. `FormulaSupportRestrictionBoundsPartial -> False`
 2. `FormulaSupportBoundsFromMultiSwitchingContract -> False`
 3. `MagnificationAssumptions -> False`
 4. `FormulaSupportBoundsPartial_fromPipeline -> False`
 5. `MagnificationAssumptions_fromPipeline -> False`
+6. `FormulaCertificateProviderPartial -> False` (Probe 13, PR 13 audit)
 
 Therefore, proving final statements from these assumptions is not mathematical
 progress toward unconditional `P != NP`.
+
+## Closed Route Families
+
+Two route families are closed beyond the six refuted surfaces above.  Neither closure
+proves `P != NP` or `NP ⊄ PpolyDAG`; both remove a route.
+
+### Iso-strong / promise-YES route class
+
+Closed at the **conclusion** level over arbitrary `GapSliceFamilyEventually`:
+
+```text
+isoStrong_conclusion_negative_general
+    (F : GapSliceFamilyEventually)
+    (hInDag : ∀ n β, InPpolyDAG (gapPartialMCSP_Language (F.paramsOf n β))) :
+  ¬ IsoStrongFamilyEventually F hInDag
+```
+
+in `pnp3/Tests/GeneralIsoStrongNoGoProbe.lean`, with the strategic consequence packaged
+as four named theorems in `pnp3/Tests/GeneralIsoStrongRouteClosure.lean` and the two
+canonical promise companions in `pnp3/Tests/PromiseRouteConclusionProbe.lean`.  The
+canonical asymptotic track via `canonicalAsymptoticHAsym` is therefore not a closure
+route.  Full 16-stage audit chain: `STATUS.md`.
+
+### Deprecated pnp3 fixed-slice AC0 endpoint
+
+`pnp3/LowerBounds/AC0_GapMCSP.lean` is a deprecated compatibility quarantine holding the
+historical `in_AC0` / `not_in_AC0` names.  The canonical certificate does **not** live in
+that file; it is declared in `pnp3/LowerBounds/AntiChecker_Partial.lean`:
+
+```text
+false_of_smallAC0Params_and_easyFamilyData
+  {p     : GapPartialMCSPParams}
+  (params : SmallAC0ParamsPartial p)
+  (easy   : AC0EasyFamilyDataPartial params.ac0) : False
+```
+
+Its two arguments are exactly the `params` and `easyData` fields of
+`SmallAC0Solver_Partial`, so the package is inconsistent without ever touching the
+separate `correct` (solver-correctness) field.  The
+historical `in_AC0` / `not_in_AC0` names must not be cited as a standard AC0 lower
+bound, a publishable result, or a closure route.  See
+`pnp3/Docs/AC0_Publishable_Result.md`.
 
 ## Fixed-Params Candidate
 
@@ -117,6 +169,40 @@ The gap is isolated in
 `ResearchGapWitness` and already proves
 `P_ne_NP_of_researchGap : ResearchGapWitness -> P_ne_NP`.
 
+## pnp4 Route
+
+`pnp4/` reaches the same target through a separate, machine-checked conditional chain.
+At a concrete polynomial threshold it collapses to exactly two explicit hypotheses
+(`pnp4/Pnp4/Frontier/ContractExpansion/ConsolidatedTreeSeparation.lean`):
+
+```text
+NP_not_subset_PpolyDAG_treePoly
+  (k : Nat)
+  (hNoPoly : NoPolynomialBoundedSearchSolver (treeCircuitWitnessCodec (thresholdPoly k)))
+  (hNPWit  : PrefixExtensionNPWitness
+               (treeMCSPConcretePrefixParser (thresholdPoly k) …))
+  : ComplexityInterfaces.NP_not_subset_PpolyDAG
+```
+
+Status of each input:
+
+1. `hNoPoly` — open, research-level.  The decision→search extraction is formalized in
+   **one direction only** (`boundedSearchSolver_of_PpolyDAG_prefixExtension` plus its
+   contrapositive); the converse is not formalized, so this is a one-way reduction and
+   not an equivalence.  Since the instance length is `tableLen n = 2^n`, `hNoPoly` is at
+   least as strong as the full `P/poly` lower bound and is **not** a weak bound amplified
+   by magnification — no magnification theorem is formalized.
+2. `hNPWit` — open, engineering-heavy.  It is an NP-membership obligation in the
+   repository's deterministic single-tape, exact-step `TM` model (`runTime` is a structure
+   field; `TM.accepts` is evaluated at exactly step `runTime n`).  No cross-model
+   runtime-robustness theorem is formalized.
+3. `PolyBoundedInTable threshold` — **discharged** at the canonical polynomial thresholds
+   (`polyBoundedInTable_thresholdPoly`, `ThresholdGrowth.lean`); an open input only at an
+   arbitrary threshold.
+
+Neither open input is proved, so this route currently adds no unconditional progress.
+Proved-vs-open breakdown: `pnp4/Pnp4/Frontier/ContractExpansion/README.md`.
+
 ## Proof-Quality Safety Checks
 
 Before declaring any blocker closed, confirm:
@@ -144,13 +230,20 @@ Before declaring any blocker closed, confirm:
 
 All of the following must hold at once:
 
-1. A non-vacuous formula-side source theorem replaces the refuted
-   support-bounds/multi-switching route, or another non-vacuous source theorem
-   proves the same `ResearchGapWitness` boundary.
-2. `ResearchGapWitness` is proved in
-   `pnp3/Magnification/UnconditionalResearchGap.lean`.
-3. `ComplexityInterfaces.NP_not_subset_PpolyDAG` is derived without false or
-   externally supplied research assumptions.
-4. Public final theorem no longer depends on external provider payload.
-5. Zero-argument theorem `P_ne_NP` is derivable in the active tree.
-6. Canonical docs are updated consistently to unconditional wording.
+1. `ComplexityInterfaces.NP_not_subset_PpolyDAG` is derived without false or
+   externally supplied research assumptions, by **either**:
+   - a non-vacuous source theorem on the pnp3 side (replacing the refuted
+     support-bounds / multi-switching route, or proving the `ResearchGapWitness`
+     boundary directly by any method); **or**
+   - discharging both open inputs of the pnp4 route above
+     (`NoPolynomialBoundedSearchSolver` and `PrefixExtensionNPWitness`), whose
+     endpoint is already exactly that target.
+2. That derivation is wired to a `ResearchGapWitness` in
+   `pnp3/Magnification/UnconditionalResearchGap.lean`, or to an equivalent
+   zero-hypothesis endpoint, so the public final theorem has a single named source.
+3. Public final theorem no longer depends on external provider payload.
+4. Zero-argument theorem `P_ne_NP` is derivable in the active tree.
+5. Canonical docs are updated consistently to unconditional wording.
+6. No route claim rests on a strength overstatement — in particular the pnp4
+   extraction is still described as one-way, not as an equivalence, unless a converse
+   is actually formalized.

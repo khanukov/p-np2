@@ -394,12 +394,22 @@ open Pnp3.Magnification
 #print axioms Magnification.ac0_statement_from_pipeline_partial_fully_closed_of_syntacticLift
 #print axioms Magnification.ac0_statement_exists_false_from_pipeline_partial_fully_closed_of_syntacticLift
 #print axioms Magnification.ac0_statement_fully_closed_iff_noExists
+
+section DeprecatedAC0CompatibilityAxiomAudit
+
+-- Keep the historical enriched-package aliases audited without emitting
+-- deprecation warnings from these intentional compatibility checks.
+set_option linter.deprecated false
+
 #print axioms LowerBounds.gapPartialMCSP_no_semantic_AC0_solver
 #print axioms LowerBounds.gapPartialMCSP_no_syntactic_AC0_solver
 #print axioms LowerBounds.gapPartialMCSP_no_constructive_AC0_solver
 #print axioms LowerBounds.gapPartialMCSP_not_in_AC0
 #print axioms LowerBounds.gapPartialMCSP_notInSmallAC0_of_not_in_AC0
 #print axioms LowerBounds.gapPartialMCSP_not_in_AC0_iff_notInSmallAC0
+
+end DeprecatedAC0CompatibilityAxiomAudit
+
 #print axioms LowerBounds.noSmallLocalCircuitSolver_partial_constructive
 #print axioms LowerBounds.antiChecker_testset_incompatibility_local_partial_constructive
 

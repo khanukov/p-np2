@@ -187,8 +187,8 @@ theorem LB_Formulas_core_partial
     (solver := solver) (hEasy := hEasy) (hComp := hComp)
 
 /--
-Constructive variant of the core AC0 lower-bound step:
-an explicit multi-switching witness for the all-functions family is sufficient.
+Legacy constructive contradiction for the enriched Partial-MCSP package:
+an explicit multi-switching witness for its all-functions family is sufficient.
 -/
 theorem LB_Formulas_core_partial_of_multiSwitching
   {p : Models.GapPartialMCSPParams} (solver : SmallAC0Solver_Partial p)

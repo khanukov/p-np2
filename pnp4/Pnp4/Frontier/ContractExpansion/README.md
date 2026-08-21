@@ -172,8 +172,8 @@ length-dependent in general; and `TM.accepts` is evaluated at exactly step
 can in principle depend on `n`; what the planned idle-sink construction cannot do is
 recover the gate from the loaded content alone. **The whole argument is a review of
 the definitions, not a Lean theorem**: no impossibility result is formalized anywhere
-in this directory. The response replaces the *language*, not the chain — ten modules,
-in dependency order:
+in this directory. The response replaces the *language*, not the chain — eleven modules, listed here in
+review order (the `lakefile.lean` registration is the dependency order):
 
 - `ContentPrefixExtension.lean` — `padRead` / `padWord` (the blank-padded tape read),
   `contentHeader?` (the gamma header decoded on the `2N+1`-padded word),

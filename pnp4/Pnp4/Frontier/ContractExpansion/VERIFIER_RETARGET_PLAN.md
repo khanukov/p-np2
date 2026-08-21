@@ -1541,7 +1541,7 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
 | Slice | Branch | Status | Merged as |
 |---|---|---|---|
 | FEAS-0 target size bound | `work/feas0-target-bound` | implemented; all checks green | — |
-| GATE-0 non-vacuity | `work/ct-gate0-nonvacuity` | unblocked | — |
+| GATE-0 non-vacuity | `work/gate0-nonvacuity` | implemented; targeted checks green | — |
 | P0 content semantic verifier | `work/ct-p0-content-semantic-verifier` | unblocked | — |
 | I1 gate closure | `work/ct-i1-gate-closure` | unblocked | — |
 | D1a tape lemmas + bridge structure | `work/ct-d1a-tape-interface` | unblocked | — |

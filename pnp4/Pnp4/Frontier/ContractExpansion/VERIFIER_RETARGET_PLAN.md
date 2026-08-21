@@ -35,6 +35,39 @@ survive. No implementation code is introduced here.
 > at declaration level (§4.4/§4.5), the donor stack is "not a prerequisite" rather than
 > "off the critical path" (§3.4), `RuntimeAdviceBarrier.lean`'s provenance (it landed with `#1626`,
 > §3.1), the `TreeMCSP*` overlap count (§3.2), and the `readNatBE` citation (§4.3.2).
+>
+> **Revision note (this revision, 4).** Two independent audits of revision 3 agreed the route is
+> sound and executable but found the FEAS-0 write-up not yet actionable, plus residual
+> inconsistencies. Resolved here:
+>
+> * **The FEAS-0 proof conflated two different targets.** `ContentAccepts` reads its witness window,
+>   its truth table and its relation conjunct at `pr.2.n` — the target the *narrow* parser returns —
+>   not at the header value `n'`. Revision 3 wrote the whole route in terms of `n'`. The route is
+>   rewritten around `r := pr.2.n`, with `parseTreeMCSPPrefixInput_length_convention`
+>   (`PrefixParserConvention.lean:1231`) supplying `M n' = M r` (§1.0). This makes the route
+>   *independent of I1*: it needs neither injectivity of `treeMCSPPrefixM codec` nor
+>   `consumed = gammaLen r`.
+> * **The truth-table slice was assumed to be available; it is not.**
+>   `parseTreeMCSPPrefixInput_inversion` (`ContentPrefixExtensionCoincidence.lean:140`) exposes only
+>   the length gate and the gamma decode — it says nothing about `input.x`. FEAS-0 now carries an
+>   explicit scheduled lemma recovering that slice (§1.0), and its budget rises accordingly.
+> * **FEAS-0 exit discipline was inconsistent**: (a) alone was declared green while the prose said a
+>   verifier needs (b)'s computable rejection rule. The bounded-timeout construction that makes (a)
+>   sufficient is now stated explicitly, together with the honest note that it is a
+>   machine-construction argument, not a formalized theorem (§1.0).
+> * **A failure of (a) is a family, not a word**: `¬(a)` is `∀ c, ∃ (N, z, n')`, not "a single
+>   accepted word with super-polynomial decoded target" (§1.0).
+> * **D1b's dependency on D1a was recorded in the graph but nowhere else** — the slice log, the
+>   branch strategy and §4.5's own heading all named P0 only (§4.5, §5, §7.1).
+> * **The `ContractExpansion/` divergence inventory was wrong in both directions**: nine paths
+>   differ at the two tips, of which six are `.lean` modules added *independently on both sides* and
+>   three (`ConsolidatedTreeSeparation.lean`, `PrefixExtensionNPWitness.lean`, the directory
+>   `README.md`) differ only because `main` moved. Repo-wide the figure is 41 (§3.2).
+> * Also corrected: P0's axiom rule now reads "standard triple **or lighter**", consistent with G9,
+>   and §6.2's purity command no longer demands empty output it cannot get (§4.2, §6.2, §8); the
+>   residual "off the critical path" donor wording in §4.7 (§3.4 had already withdrawn it); the
+>   `readNatBE` recursion citation (§4.3.2); and outcome **(c)** now appears in every unlock
+>   statement, including §9.
 
 ---
 
@@ -104,26 +137,114 @@ treeCircuitClass (Circuit.input ⟨0, _⟩) x` demands that `x` be the truth tab
 `x ↦ x 0`, and that word's `x` is all-false. The generic worry does not instantiate here, and (a) is
 therefore *expected to hold* at the concrete codec.
 
-**The route to (a), in full.** Let `z` be accepted with `contentHeader? z = some (n', consumed)`,
-and write `M := treeMCSPPrefixM (treeCircuitWitnessCodec (thresholdPoly k))`. Either `M n' ≤ N`,
-and the bound is immediate; or `M n' > N`, and then every cell of the witness window is blank
-(`contentWitness` reads at `M n' + j ≥ N`, `ContentPrefixExtension.lean:135`, `padRead_ge` `:88`),
-so by the computation above `n' ≥ 1` and the decoded circuit is exactly `Circuit.input ⟨0, _⟩`.
-`ComputesTruthTable` at the all-true assignment then forces one specific table cell to be `true`:
-`bitVecToNat (fun _ => true) = 2 ^ n' - 1` (`Model_PartialMCSP.lean:74`) and `truthTableFunction`
-indexes the table at that value (`:303`), so the parsed `x` has `x ⟨2 ^ n' - 1, _⟩ = true`, i.e.
-`padRead z (queryXOffset n' + 2 ^ n' - 1) = true`. `lt_of_padRead_eq_true`
-(`ContentPrefixExtensionPadding.lean:127`) turns that into
+**The route to (a), in full — and note the target it runs on is `pr.2.n`, not `n'`.** This is the
+correction that makes the route actionable. `ContentAccepts` (`ContentPrefixExtension.lean:152`)
+reads its witness window, its truth table and its relation conjunct at **`pr.2.n`** — the `n` field
+of the `PrefixInput` the *narrow* parser returned — and only the header decode mentions `n'`
+(`= pr.1`). Revision 3 wrote the entire route in terms of `n'`; every step below that touches the
+tape is therefore at `r := pr.2.n`, and the two are reconciled by the length gate, not by
+injectivity.
+
+Fix notation: `codec := treeCircuitWitnessCodec (thresholdPoly k)`,
+`M := treeMCSPPrefixM codec`, let `z : PrefixBitVec N` be accepted with
+`contentHeader? z = some (n', consumed)` and `contentInput? codec z = some pr`, and set
+`r := pr.2.n`.
+
+*Step 0 — `M n' = M r`, with no injectivity.* `contentInput?` (`:123`) runs
+`parseTreeMCSPPrefixInput` on `padWord z (M n')`, a vector of physical length `M n'`, so
+`parseTreeMCSPPrefixInput_length_convention` (`PrefixParserConvention.lean:1231`) gives
 
 ```text
-queryXOffset n' + 2 ^ n' - 1 < N ,   hence   tableLen n' ≤ N   and   n' ≤ bitLength N .
+M n' = M r .
 ```
 
-Every remaining summand of `M n'` — `tagLen`, `gammaLen n'`, `idxWidth codec.witnessBits n'` and
-`codec.witnessBits n' = (bitLength n' + 4) * (n' ^ k + k)` — is then polylogarithmic in `N`, so
-`M n' ≤ N + polylog N` and (a) holds with a small `c`. The two arithmetic sublemmas are
-`bitVecToNat (fun _ => true) = 2 ^ n - 1` and the polylog bound on `(bitLength n' + 4) * (n' ^ k + k)`
-under `2 ^ n' ≤ N`.
+This is the whole reconciliation, and it is already on `main`. **Do not** reach for
+`treeMCSPPrefixM_injective_treePoly` to get `n' = r`: that is an I1 output (§4.3.1) and using it
+here would invert §4.6's ordering. FEAS-0 never needs `n' = r`, because (a)'s conclusion bounds
+`M n'`, and `M n' = M r` converts any bound on `M r` into one on `M n'`.
+
+*Step 1 — case split.* Either `M n' ≤ N`, and (a)'s bound is immediate with `c = 1`; or `M n' > N`.
+
+*Step 2 — the wide case has a blank witness window.* By Step 0, `contentWitness codec z r` reads at
+`M r + j = M n' + j > N` (`ContentPrefixExtension.lean:135`), so every cell is blank
+(`padRead_ge`, `:88`) and the witness block is `fun _ => false`.
+
+*Step 3 — the decode, at `r`.* The relation conjunct is `codec.verifies r pr.2.x (blank)`
+(`treeMCSPSearchProblem.relation = encoding.verifies`, `SearchMCSPConcreteTargets.lean:121`), and
+`codec.verifies` (`:61`) demands `codec.decode r (blank) = some c` with `Circuit.size c ≤
+thresholdPoly k r` and `ComputesTruthTable treeCircuitClass c pr.2.x`. By the computation above,
+applied **at `r`**: `r = 0` gives `none` and kills acceptance, so `r ≥ 1`, and then
+`c = Circuit.input ⟨0, _⟩`.
+
+*Step 4 — recover the truth-table slice (new lemma, see below).* `ComputesTruthTable` at the
+all-true assignment forces one cell of `pr.2.x` to be `true`: `bitVecToNat (fun _ => true) = 2 ^ r - 1`
+(`Model_PartialMCSP.lean:74`) and `truthTableFunction` indexes the table at that value (`:303`), so
+`pr.2.x ⟨2 ^ r - 1, _⟩ = true`. To turn that into a statement about `z` we need the parser's
+`x`-slice, which **is not available on `main`** — see the scheduled lemma below. With it,
+`pr.2.x j = padRead z (tagLen + cg + j)` for the narrow-window gamma width `cg`, so
+`padRead z (tagLen + cg + 2 ^ r - 1) = true`, and `lt_of_padRead_eq_true`
+(`ContentPrefixExtensionPadding.lean:127`) gives
+
+```text
+tagLen + cg + 2 ^ r - 1 < N ,   hence   tableLen r = 2 ^ r ≤ N   and   r ≤ bitLength N .
+```
+
+Note the bound is on `r`. Nothing here bounds `n'` — and nothing needs to: `n'` may be astronomical
+as a *value* while `M n'` is small, because `M` is not injective.
+
+*Step 5 — arithmetic.* `M n' = M r = tagLen + gammaLen r + tableLen r + idxWidth codec.witnessBits r
++ codec.witnessBits r`. Under `2 ^ r ≤ N`, i.e. `r ≤ bitLength N`: `tagLen = 8`,
+`tableLen r ≤ N`, `gammaLen r = 2 · bitLength (r+1) − 1 = O(log log N)`,
+`codec.witnessBits r = (bitLength r + 4) · (r ^ k + k) = O(log log N · (log N) ^ k)`, and
+`idxWidth codec.witnessBits r = bitLength (codec.witnessBits r)` is smaller still. So
+
+```text
+M n' ≤ N + polylog N ≤ N ^ c + c   for a small c depending only on k.
+```
+
+**The scheduled sublemmas.** Two are arithmetic — `bitVecToNat (fun _ => true) = 2 ^ n - 1` and the
+polylog bound on `(bitLength r + 4) * (r ^ k + k)` under `2 ^ r ≤ N`. The third is the slice
+recovery, and it is the one revision 3 silently assumed. `parseTreeMCSPPrefixInput_inversion`
+(`ContentPrefixExtensionCoincidence.lean:140`) returns **exactly** `m = treeMCSPPrefixM codec
+input.n` and `∃ consumed, decodeGamma? y tagLen = some (input.n, consumed)` — it does **not** expose
+`input.x`. FEAS-0 must therefore prove:
+
+```lean
+/-- **Truth-table slice recovery.**  The parser's success cascade pins `input.x` to the canonical
+`x`-slice of the ambient word.  `consumed` is the *narrow-window* gamma width, carried
+**symbolically**: FEAS-0 never needs `consumed = gammaLen input.n`, so this does not depend on
+I1's §4.3.2, and no range side condition is needed because a successful parse already produced the
+slice. -/
+theorem parseTreeMCSPPrefixInput_x_slice
+    {threshold : Nat → Nat} (codec : TreeCircuitWitnessCodec threshold) {m : Nat}
+    (y : PrefixBitVec m)
+    (input : PrefixInput
+      (treeMCSPSearchProblem threshold (TreeMCSPSearchWitnessEncoding.ofCodec codec)) m)
+    (h : parseTreeMCSPPrefixInput threshold codec y = some input) :
+    ∃ consumed : Nat,
+      decodeGamma? y tagLen = some (input.n, consumed)
+        ∧ sliceBits? y (tagLen + consumed)
+            (Pnp3.Models.Partial.tableLen input.n) = some input.x
+
+/-- Content-side pointwise form: the parsed truth table is a blank-padded read of `z` itself. -/
+theorem contentInput?_x_apply
+    {threshold : Nat → Nat} (codec : TreeCircuitWitnessCodec threshold) {N : Nat}
+    (z : PrefixBitVec N)
+    {pr : Σ r : Nat, PrefixInput
+      (treeMCSPSearchProblem threshold (TreeMCSPSearchWitnessEncoding.ofCodec codec))
+      (treeMCSPPrefixM codec r)}
+    (hpr : contentInput? codec z = some pr) :
+    ∃ cg : Nat, ∀ j : Fin (Pnp3.Models.Partial.tableLen pr.2.n),
+      pr.2.x j = padRead z (tagLen + cg + j.1)
+```
+
+The types line up without `HEq`: `instanceBits := fun n => tableLen n`
+(`SearchMCSPConcreteTargets.lean:118`) and `TruthTable n = Core.BitVec (tableLen n)`
+(`TruthTableMCSP.lean:11`), so `input.x : PrefixBitVec (tableLen input.n)` is already a
+`TruthTable input.n`. The proof of the first is the same eleven-way cascade
+`parseTreeMCSPPrefixInput_inversion` already walks (`Coincidence.lean:140`–), reading off the `x`
+branch instead of discarding it; the second composes it with `padWord_apply`
+(`ContentPrefixExtension.lean:92`).
 
 **Every FEAS-0 statement is at the concrete codec.** For an arbitrary
 `codec : TreeCircuitWitnessCodec threshold` outcome (a) — and hence (b) — is **false**, so a
@@ -174,15 +295,51 @@ must not slice at offsets beyond `poly(N)`.
 
 **(b) implies (a) — they are not alternatives, and (b) is not a fallback.** Contraposing the first
 theorem, an accepted word has `contentBudgetOK … = true`; the second then bounds its decoded target.
-So a proof of (b) *is* a proof of (a) with a different exponent, and a refutation of (a) — a single
-accepted word with super-polynomial decoded target — refutes (b) as well. Read the pair as "the
-bound, plus the check that computes it": the only reason to state (b) separately is that a verifier
-needs a computable rejection rule, not merely the existence of a bound. Do **not** schedule (b) as
+So a proof of (b) *is* a proof of (a) with a different exponent, and a refutation of (a) refutes (b)
+as well. Read the pair as "the bound, plus the check that computes it". Do **not** schedule (b) as
 the escape hatch for a failed (a); the escape hatch is (c).
 
-*(c) Polynomial-time wide-target decision procedure.* If (a) is refuted — some accepted word really
-does carry a super-polynomial decoded target — the route is still not dead, and this is the outcome
-(b) cannot express. A word with `treeMCSPPrefixM codec n' > N` has an all-blank witness window and
+**What refuting (a) actually requires — a family, not a word.** Corrected in this revision.
+Revision 3 said a refutation of (a) is "a single accepted word with super-polynomial decoded
+target". That is not the negation. (a) is `∃ c, ∀ N z n' …`, so
+
+```text
+¬(a)  =  ∀ c : Nat, ∃ (N : Nat) (z : PrefixBitVec N) (n' consumed : Nat),
+           contentHeader? z = some (n', consumed) ∧ ContentAccepts codec z
+             ∧ treeMCSPPrefixM codec n' > N ^ c + c .
+```
+
+One accepted word with a wide decoded target refutes (a) *at a particular `c`* only, and there is
+always a larger `c` that absorbs any finite set of words. Routing to (c) therefore requires
+exhibiting an accepted family whose decoded target outruns **every** polynomial — which, by Steps
+2–5 above, would mean exhibiting accepted words with an all-blank witness window whose decoded
+circuit is not `Circuit.input ⟨0, _⟩`. At this codec that is what the decode computation rules out.
+
+**Is (a) alone enough for a verifier? Yes — via a bounded timeout.** Revision 3 declared (a) green
+while simultaneously saying "a verifier needs a computable rejection rule, not merely the existence
+of a bound", which left the reader unable to tell whether (b) was mandatory. It is not. Given (a)
+with exponent `c`, a verifier machine can:
+
+1. decode the header from at most `N` cells — `contentHeader?` terminates inside the support, so this
+   is `O(N)` work and yields `n'` as a binary numeral of at most `N` bits;
+2. test `2 ^ n' ≤ N ^ c + c` **without materialising `2 ^ n'`**, by comparing `n'` against
+   `bitLength (N ^ c + c) = O(log N)`. The numeral `n'` has `O(N)` bits, so this comparison is
+   `poly(N)`;
+3. if the test fails, `M n' ≥ tableLen n' = 2 ^ n' > N ^ c + c`, so by (a)'s contrapositive the word
+   is **not** accepted — reject, having read only `poly(N)` cells;
+4. otherwise `M n' ≤ N ^ c + c`, the whole query and witness window is `poly(N)` wide, and the strict
+   parse plus the `2 ^ n'`-point `ComputesTruthTable` check are all `poly(N)`.
+
+So (a)'s exponent *is* the timeout, and (b) is precisely that timeout packaged as a `Bool` predicate
+with its own correctness lemma. **Honest caveat:** steps 1–4 are a machine-construction argument, not
+a formalized theorem — they are discharged in the deferred machine slices (§4.7), not in FEAS-0.
+FEAS-0 green at (a) therefore means "the route is not blocked and the timeout exists in principle",
+not "a poly-time verifier has been built". Prefer (b) when it is no harder, because the D-track needs
+the `Bool` rule anyway and (b) hands it over already proved.
+
+*(c) Polynomial-time wide-target decision procedure.* If (a) is refuted — i.e. the family displayed
+below exists, so that accepted words outrun *every* polynomial bound — the route is still not dead,
+and this is the outcome (b) cannot express. A word with `treeMCSPPrefixM codec n' > N` has an all-blank witness window and
 an all-blank tail of its truth-table field, so its acceptance depends only on the header, the
 support of `z`, and a *fixed* decode fact — potentially a closed-form rule decidable in `poly(N)`
 even though the nominal window is astronomically wide. What must be produced is then a decision
@@ -207,16 +364,30 @@ gate that is polynomial rather than absent, e.g. requiring
 exact equality `N = treeMCSPPrefixM codec n`). That is a new §1.1 and a new plan revision, not a
 slice.
 
-**Budget:** 250–450 LOC · 1–2 modules (`ContentTargetSizeBound.lean`), scoped to the (a) route
-above: the case split on `M n' ≤ N`, the blank-witness decode, the all-true assignment, and the
-arithmetic.
+**Budget — raised in this revision:** 350–600 LOC · 2 modules. Revision 3 budgeted 250–450 LOC · 1–2
+modules for "the case split on `M n' ≤ N`, the blank-witness decode, the all-true assignment, and the
+arithmetic", which omitted the slice-recovery lemma it assumed was available. Split:
+
+* `ContentParseFieldRecovery.lean` — `parseTreeMCSPPrefixInput_x_slice` and
+  `contentInput?_x_apply` (100–200 LOC; the eleven-way cascade of `Coincidence.lean:140` re-walked
+  to keep the `x` branch);
+* `ContentTargetSizeBound.lean` — Steps 0–5 and the two arithmetic sublemmas (250–400 LOC).
+
 **Exit (FEAS-0 green):** (a), (b) or (c) proved at the concrete codec, `#check`/`#print axioms`
 lines added, and this file's §1.1/§1.2 promoted from *provisional* to *frozen* in the same PR.
 **Stop/go (F0):** only outcome (d) is red. If the outcome is (d), **halt GATE-0, P0, I1, D1a and
 D1b**, revise §1.1, and do not open any slice against `ContentAccepts` until the repaired predicate
 is frozen. A failure of (a) alone is *not* outcome (d) — it routes to (c), and it also kills (b), so
-do not re-open (b) after (a) falls. FEAS-0 is the only item in §4 that may start while the freeze is
+do not re-open (b) after (a) falls; and remember that "failure of (a)" means the `∀ c, ∃ …` family
+above, not one wide word. FEAS-0 is the only item in §4 that may start while the freeze is
 provisional.
+**Stop/go (F0b) — no I1 dependency.** No FEAS-0 declaration may cite
+`treeMCSPPrefixM_injective_treePoly`, `treeMCSPPrefixM_injective_of_monotone` or
+`decodeGamma?_consumed_eq_gammaLen` (all §4.3, all I1 outputs). Step 0 uses
+`parseTreeMCSPPrefixInput_length_convention` (`PrefixParserConvention.lean:1231`) and the slice
+lemma carries `consumed` symbolically, so the route is I1-free by construction. A slice that needs
+`n' = pr.2.n` or `consumed = gammaLen pr.2.n` has inverted §4.6's ordering — reject it and re-derive
+via Step 0.
 
 ### 1.1 The provisionally frozen target
 
@@ -333,11 +504,16 @@ provisionally frozen target.
    and cited here, do **not** describe the CT route as advice-free.
 7. **Feasibility itself is open (§1.0).** No bound relates the physical length of an accepted
    complete word to the decoded convention length `treeMCSPPrefixM codec n'`, and the decoded value
-   can be exponential in `N`. This is FEAS-0 and it gates the freeze. Refined in this revision: the
-   gap is a *missing theorem*, not a known obstruction — at the concrete codec the all-blank witness
-   decodes to `Circuit.input ⟨0, _⟩` (never `Circuit.const false`), which forces `tableLen n' ≤ N`
-   on every accepted wide word, so outcome (a) is the expected result. Until it is proved, no slice
-   may describe `L'` as polynomial-time verifiable.
+   can be exponential in `N`. This is FEAS-0 and it gates the freeze. The gap is a *missing theorem*,
+   not a known obstruction — at the concrete codec the all-blank witness decodes to
+   `Circuit.input ⟨0, _⟩` (never `Circuit.const false`), which forces `tableLen r ≤ N` on every
+   accepted wide word, so outcome (a) is the expected result. Refined in this revision: that forcing
+   is at **`r := pr.2.n`**, the target the narrow parser returns, and is transported to the header
+   target by `M n' = M r` (`PrefixParserConvention.lean:1231`) — *not* by injectivity of
+   `treeMCSPPrefixM codec`, which is false generically (§4.3.1) and is an I1 output at the concrete
+   codec. Until FEAS-0 is proved, no slice may describe `L'` as polynomial-time verifiable; and even
+   once (a) lands, the poly-time verifier still has to be *built* (the bounded-timeout construction
+   of §1.0 is an argument, not a theorem).
 
 ---
 
@@ -446,8 +622,29 @@ ones, 13 are byte-identical on both branches and exactly **2** diverge —
 `TreeMCSPPrefixSemanticVerifier.lean` and `TreeMCSPPrefixVerifierLayout.lean`, both rows of the table
 below.
 
-Six modules in all exist on **both** with different contents — so `pr1618` is not a superset and a
-rebase is not a fast-forward. **Sizes in bytes throughout** (`git cat-file -s`):
+**Divergence inventory — corrected in this revision.** Revision 3 said "six modules in all exist on
+both with different contents", which was wrong in both directions. The exact figures, all by blob
+comparison at the two tips against the merge base `5d8ee5f8`:
+
+* **Nine paths** in `ContractExpansion/` exist at *both* tips with **different contents** — eight
+  `.lean` modules plus the directory `README.md`.
+* Of those nine, **six `.lean` modules were added independently on both sides** (absent at the merge
+  base, so there is *no common ancestor blob*): the four `Content*` modules below plus
+  `TreeMCSPPrefixSemanticVerifier.lean` and `TreeMCSPPrefixVerifierLayout.lean`. These are the
+  genuine conflict set — a rebase must merge two independent implementations, not replay a diff.
+* The remaining three — **`ConsolidatedTreeSeparation.lean`**, **`PrefixExtensionNPWitness.lean`**
+  and **`README.md`** — differ only because `main` moved; `pr1618` still carries the merge-base
+  blob, so a rebase takes `main`'s version cleanly. Revision 3 omitted all three. Note the first two
+  are exactly the length-gated chain modules §1.2 retains and `AGENTS.md:31–36` cites.
+* Two more (`ContentPrefixExtensionPadding.lean`, `ContentPrefixExtensionPaddingTransport.lean`)
+  exist only on `main`.
+* **Repo-wide the divergent-path count is 41**, not nine: the CI workflows, `AGENTS.md`,
+  `lakefile.lean`, `STATUS.md`, both `AxiomsAudit.lean` files, `AlgorithmsToLowerBoundsSurfaceTests.lean`,
+  five `pnp3/LowerBounds` and `pnp3/Magnification` modules, two `TuringToolkit` modules and a dozen
+  Markdown documents all differ at the tips.
+
+So `pr1618` is not a superset and a rebase is not a fast-forward. **Sizes in bytes throughout**
+(`git cat-file -s`):
 
 | Module | `pr1618` (bytes) | `main` (bytes) |
 |---|---|---|
@@ -459,10 +656,15 @@ rebase is not a fast-forward. **Sizes in bytes throughout** (`git cat-file -s`):
 | `TreeMCSPPrefixVerifierLayout.lean` | 12 967 | **14 231** |
 | `ContentPrefixExtensionPadding.lean` | *absent* | **20 417** |
 | `ContentPrefixExtensionPaddingTransport.lean` | *absent* | **2 960** |
+| `ConsolidatedTreeSeparation.lean` | *merge-base blob* | **changed on `main`** |
+| `PrefixExtensionNPWitness.lean` | *merge-base blob* | **changed on `main`** |
+| `README.md` | *merge-base blob* | **changed on `main`** |
 
 `main` is ahead on the CT chain (CT-C exists only on `main`); `pr1618` is ahead only on
-`TreeMCSPPrefixSemanticVerifier.lean`. Any future rebase of the stack must reconcile these six
-files plus `lakefile.lean`, `AlgorithmsToLowerBoundsSurfaceTests.lean` and `AxiomsAudit.lean`.
+`TreeMCSPPrefixSemanticVerifier.lean`. Any future rebase of the stack must reconcile the six
+added-on-both-sides modules by hand, take `main`'s version of the three `main`-only-changed paths,
+and additionally settle `lakefile.lean`, `AlgorithmsToLowerBoundsSurfaceTests.lean` and
+`AxiomsAudit.lean` — 41 divergent paths repo-wide.
 
 ### 3.3 Disposition of the donor stack: parked, not cancelled
 
@@ -670,10 +872,17 @@ unachievable**: `verifiesBool` resolves `Decidable (codec.verifies …)` through
   `[propext, Quot.sound]`, matching `ContentPrefixExtensionPadding.lean`'s Classical-free family.
   Do not force this if the definition routes through `verifiesBool`.
 * `contentSemanticAccepts_eq_true_iff`, `contentSemanticAccepts_eq_false_of_contentInput_none`,
-  `contentSemanticAccepts_correct` — **expect the standard triple**
-  `[propext, Classical.choice, Quot.sound]`, inherited from `verifiesDecidable` and (for the last)
-  the classical language wrapper and noncomputable `concatBitstring`.
-* A fourth axiom is still a blocker (G9).
+  `contentSemanticAccepts_correct` — expect the standard triple
+  `[propext, Classical.choice, Quot.sound]` **or lighter**, inherited from `verifiesDecidable` and
+  (for the last) the classical language wrapper and noncomputable `concatBitstring`.
+* **"Or lighter" is deliberate, and corrected in this revision.** Revision 3 demanded *exactly* the
+  triple for these three. That is too strict: `contentSemanticAccepts_eq_false_of_contentInput_none`
+  is a pure failure-branch rewrite that can discharge by `simp` on `contentInput? … = none` without
+  ever unfolding `verifiesBool`, in which case it legitimately prints a shorter list. Demanding the
+  full triple would push an author to *add* a classical detour to satisfy a checklist. The rule is
+  therefore the same as G9: **the standard triple or any subset of it.**
+* A fourth axiom — anything outside `{propext, Classical.choice, Quot.sound}` — is still a blocker
+  (G9).
 
 Computability is a **separate** property from the axiom footprint and must be checked separately:
 `contentSemanticAccepts` must be a plain `def` with no `noncomputable` marker, its `Decidable`
@@ -806,10 +1015,17 @@ theorem contentInput?_lengthGate_vacuous {threshold : Nat → Nat}
     n_dec = n' ∧ treeMCSPPrefixM codec n' = treeMCSPPrefixM codec n_dec
 ```
 
-**Proof route, fully on `main`.** Canonicity: `readNatBE_lt_two_pow` (new, by induction on `width`
-over the `readNatBE` recursion, `PrefixParserConvention.lean:61`–`:67` — the previous revision cited
-`:89`, which is inside `decodeGammaAux?`) plus
-`gammaLen_eq_two_mul_zeros_add_one` (`:371`) and `bitLength` (`:22`).
+**Proof route, fully on `main`.** Canonicity: `readNatBE_lt_two_pow` (new) by induction on `width`
+over the `readNatBE` recursion — declared at `PrefixParserConvention.lean:61`, with the two match
+arms this induction mirrors at **`:62`–`:67`** (`| 0 => some 0` and
+`| k + 1 => … some ((if b then 2 ^ k else 0) + rest)`, whence `rest < 2 ^ k` gives
+`v < 2 ^ k + 2 ^ k = 2 ^ (k+1)`). Citation corrected in this revision: revision 3 pointed at the
+whole span `:61`–`:67`, conflating the declaration header with the recursion, and revision 2 pointed
+at `:89`, which is the `match fuel with` line *inside* `decodeGammaAux?`. Note the only existing
+`readNatBE` structural lemma on `main` is `readNatBE_eq_of_readBit_eq` (`:155`, pointwise
+determinacy) — there is **no** width bound anywhere in the repository, which is why
+`readNatBE_lt_two_pow` is new. Then `gammaLen_eq_two_mul_zeros_add_one` (`:371`) and `bitLength`
+(`:22`) finish.
 Narrowing: a successful header decode puts the terminator strictly inside the support
 (`padRead_ge`, `ContentPrefixExtension.lean:88`, so `tagLen + zeros < N`), and
 `decodeGammaAux?_padWord_support` (`Padding.lean:186`) plus `readNatBE_padWord_transfer` (`:151`)
@@ -965,12 +1181,19 @@ step-bounded or halting-based variant it has silently changed the machine model 
 **Stop/go (G5b):** no D1a declaration may mention `contentSemanticAccepts`. If one does, the slice
 is not P0-independent and must either take the `acc` parameter or move to D1b.
 
-### 4.5 D1b — the bridge specialization and the witness repackaging · **depends on P0**
+### 4.5 D1b — the bridge specialization and the witness repackaging · **depends on P0 *and* D1a**
 
-Split out from D1a in revision 2, and made exact in this revision: the P0-dependent part is
+Split out from D1a in revision 2, and made exact in revision 3: the P0-dependent part is
 *both* declarations below — the `codec`-specific bridge alias (whose statement mentions
 `contentSemanticAccepts`) and the repackaging that consumes it. Revision 2 displayed the alias among
 D1a's "exact outputs" while calling D1a independent, which was false at declaration level.
+
+**Both dependencies are hard, and this revision records the D1a one everywhere.** D1b's alias
+*is* `ContentVerifierBridgeFor` — D1a's structure — instantiated, and `contentPrefixExtensionNPWitness_of_bridge`
+projects `B.M`, `B.c`, `B.runTime_poly` and `B.accepts_eq` out of it. So D1b cannot compile without
+D1a, and cannot be stated without P0. Revision 3's dependency graph (§4.6) had this right, but the
+heading above, the branch strategy (§5) and the slice log (§7.1) all named P0 only; all three are
+corrected.
 
 **Module:** appended to `ContentVerifierTapeInterface.lean`, or `ContentVerifierBridgeWitness.lean`
 if the size gate binds.
@@ -1042,9 +1265,13 @@ resolve as adjacent-line merges.
 
 * **"Rebase `pr1618` onto `main`"** as a retarget slice — §3.2/§3.4: it is a 184-file, six-way
   reconciliation that does not advance the frozen target.
-* **"Finish `popIter_run_*` / `inputIter_run_full` / the driver instance"** — donor-only,
-  transcoder-side, off the critical path. Admissible later only as scoped witness-decoding reuse
-  (§3.4), never as bridge progress.
+* **"Finish `popIter_run_*` / `inputIter_run_full` / the driver instance"** — donor-only and
+  transcoder-side, so **not a prerequisite for any slice in §4** and rejected *as a retarget slice
+  now*. Wording corrected in this revision: it is **not** claimed to be off the critical path to
+  input (2) — §3.4 withdrew that claim, because whether the eventual verifier machine reuses the
+  transcoder's witness-decoding machinery is an open machine-architecture question. Reassess after
+  FEAS-0 lands and the architecture is chosen; admissible then as scoped witness-decoding reuse,
+  never as `(★′)` bridge progress on its own.
 * **"Port `extractWitness?` to the content side"** — dead weight: `contentWitness` is total
   (§4.2).
 * **"Retarget the layout offsets to the content window"** as a standalone slice — pure layout,
@@ -1074,7 +1301,10 @@ git checkout -b work/<slice-name> 98250643      # or the then-current main
 
 * **Base:** `main` (`98250643` at time of writing). One branch per slice, one PR per branch,
   PR base `main`. No stacking: the slices after FEAS-0 are independent, so stacking would only
-  serialize review. D1b is the one exception and may stack on P0.
+  serialize review. **D1b is the one exception, and it stacks on *both* P0 and D1a** — it needs P0's
+  `contentSemanticAccepts` for its statement and D1a's `ContentVerifierBridgeFor` for its structure
+  (§4.5). Branch it from whichever of the two merges last, and rebase onto the other; do not open it
+  against bare `main`.
 * **Naming:** `work/ct-<letter><number>-<topic>`, matching the CT-A/B/C precedent
   (`work/ct-a-verifier-prereqs`, `work/ct-b-source-chain`, `work/ct-c-padding-stability`).
   So: `work/ct-feas0-target-size-bound`, `work/ct-gate0-nonvacuity`,
@@ -1120,17 +1350,25 @@ lake test
 # 5. documentation honesty linter (Tier 2, repo-wide)
 ./scripts/check_doc_honesty.sh
 
-# 6. purity gate — the audit block must print only the standard triple
+# 6. purity gate — every axiom named anywhere in the audit block must be one of the standard three.
+#    Collect the union of all printed axioms and eyeball it; the output is NOT expected to be empty.
 lake build Pnp4 2>&1 | grep -A1 "depends on axioms" \
-  | grep -v "propext, Classical.choice, Quot.sound"     # must produce no output
+  | grep -oE "\[[^]]*\]" | tr -d '[]' | tr ',' '\n' | tr -d ' ' | sort -u
+# Every line of that output must be exactly one of: propext / Classical.choice / Quot.sound.
+# Any fourth name is the blocker (G9).
 
 # 7. hygiene (also inside check.sh; standalone for speed)
 rg -n "\bsorry\b|\badmit\b|\bnative_decide\b|^\s*axiom " -g'*.lean' pnp4   # must be empty
 ```
 
-Note on step 6: a Classical-free theorem prints a *shorter* axiom list, which this filter also
-surfaces. That is expected for the arithmetic/padding families (§4.2, G2) and is not a defect —
-inspect, do not "fix".
+**Note on step 6 — command corrected in this revision.** Revision 3's filter was
+`grep -v "propext, Classical.choice, Quot.sound"` with the comment "must produce no output", while
+the very next paragraph said a Classical-free theorem prints a *shorter* list that "this filter also
+surfaces". Both cannot hold: any lighter footprint makes the command non-empty, so the gate was
+self-contradictory and would fail on the arithmetic/padding families it explicitly blesses. The
+replacement above tests the right property — the *set* of axioms used, not the exact string of each
+line — so a shorter list passes silently and only a genuinely foreign axiom fails. Lighter footprints
+are expected (§4.2, G2, G9): inspect, do not "fix".
 
 ### 6.3 Mandatory per AGENTS.md, every slice
 
@@ -1184,7 +1422,7 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
 | P0 content semantic verifier | `work/ct-p0-content-semantic-verifier` | blocked on FEAS-0 | — |
 | I1 gate closure | `work/ct-i1-gate-closure` | blocked on FEAS-0 | — |
 | D1a tape lemmas + bridge structure | `work/ct-d1a-tape-interface` | blocked on FEAS-0 | — |
-| D1b bridge ⇒ NP-witness | `work/ct-d1b-bridge-witness` | blocked on FEAS-0, P0 | — |
+| D1b bridge ⇒ NP-witness | `work/ct-d1b-bridge-witness` | blocked on FEAS-0, P0, **D1a** | — |
 
 ---
 
@@ -1192,15 +1430,17 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
 
 | Gate | Slice | Condition | Action if red |
 |---|---|---|---|
-| **F0** | FEAS-0 | at `treeCircuitWitnessCodec (thresholdPoly k)`: (a) a polynomial bound from accepted complete words to `treeMCSPPrefixM codec n'`, (b) a poly-time fast-rejection equivalent (**(b) ⇒ (a)**, so not a fallback for a failed (a)), **or** (c) a poly-time decision procedure for the wide-target regime. Never stated codec-generically — generic (a)/(b) are false | only outcome (d) is red: halt every other slice, rewrite §1.1 with a budgeted content predicate, keep the length-gated target live |
+| **F0** | FEAS-0 | at `treeCircuitWitnessCodec (thresholdPoly k)`: (a) a polynomial bound from accepted complete words to `treeMCSPPrefixM codec n'`, (b) a poly-time fast-rejection equivalent (**(b) ⇒ (a)**, so not a fallback for a failed (a)), **or** (c) a poly-time decision procedure for the wide-target regime. (a) alone is green — its exponent *is* the verifier's timeout (§1.0). Never stated codec-generically — generic (a)/(b) are false | only outcome (d) is red: halt every other slice, rewrite §1.1 with a budgeted content predicate, keep the length-gated target live. "(a) failed" means the `∀ c, ∃ …` family, not one wide word |
+| **F0b** | FEAS-0 | the route runs on `r := pr.2.n` with `M n' = M r` from `parseTreeMCSPPrefixInput_length_convention` (`:1231`); the truth-table slice is recovered by the scheduled `parseTreeMCSPPrefixInput_x_slice`; no I1 output is cited | a slice needing `n' = pr.2.n`, `consumed = gammaLen pr.2.n`, or either injectivity lemma has inverted §4.6's ordering — re-derive via Step 0 |
 | **G0** | GATE-0 | a *concrete* word is `ContentAccepts`-accepted at `treeCircuitWitnessCodec (thresholdPoly k)` | halt the D-track and escalate; do not build a machine for a possibly-empty `L'`. P0/I1 continue |
 | **G1** | P0 | the `Bool`↔`Prop` headline is hypothesis-free | fix the `Bool` definition's failure branches, not the statement |
-| **G2** | P0 | the three codec-path theorems carry **exactly** the standard triple; the padding lemma may be lighter; computability checked by instance provenance + one `#eval`, **not** by an axiom check | a fourth axiom, a `noncomputable` marker, or a `Classical.propDecidable` instance is a blocker |
+| **G2** | P0 | the three codec-path theorems carry the standard triple **or lighter** (same rule as G9 — a shorter list is not a defect); computability checked by instance provenance + one `#eval`, **not** by an axiom check | a fourth axiom, a `noncomputable` marker, or a `Classical.propDecidable` instance is a blocker; a *lighter* footprint is not |
 | **G3** | I1 | injectivity stated only as `treeMCSPPrefixM_injective_of_monotone` / `_treePoly` | reject any generic-codec injectivity claim as **false**; do not strengthen `PrefixInput` to dodge it |
 | **G4** | I1 | `decodeGamma?_consumed_eq_gammaLen` needs no premise beyond a successful decode | fix `readNatBE_lt_two_pow`, not the statement |
 | **G4b** | I1 | `contentInput?_isSome_iff_of_header` leaves exactly premises #9–#11 open | a fourth open premise means a range lemma was missed; folding one away means the parser was mis-read |
 | **G5** | D1a | `accepts_eq` uses the exact-step model, no halting/`∃ t ≤` variant | reject: the slice has changed the machine model |
-| **G6** | D1b | the witness repackaging consumes `runTime_poly` verbatim — **and note advice-avoidance is unenforced** (§1.3 caveat 6) | under-specified bridge; do not claim advice-freedom without a formal clock premise |
+| **G5b** | D1a | no D1a declaration mentions `contentSemanticAccepts` | not P0-independent: take the `acc` parameter or move the declaration to D1b |
+| **G6** | D1b | the witness repackaging consumes `runTime_poly` verbatim, and the slice is opened on top of **both** P0 and D1a (§4.5, §5) — **and note advice-avoidance is unenforced** (§1.3 caveat 6) | under-specified bridge, or a D1b branched off bare `main`; do not claim advice-freedom without a formal clock premise |
 | **G7** | all | ≤ 1500 LOC and ≤ 10 modules at PR time (§6.1) | split before review; never waived |
 | **G8** | all | `./scripts/check.sh` and `./scripts/check_doc_honesty.sh` green | fix before review; a red doc guard is a blocking defect, not a formality |
 | **G9** | all | axiom footprint is the standard triple or lighter | investigate any fourth axiom before merge |
@@ -1225,10 +1465,22 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
   table, the size check, or `TM.accepts`, so completing it would not discharge `(★′)`. It is parked
   — but its witness-decoding machinery is a plausible component for a future verifier, so it is
   insufficient rather than useless (§3.4).
-* Two claims from the previous revision are **corrected**: generic injectivity of
+* Two claims from revision 2 are **corrected**: generic injectivity of
   `treeMCSPPrefixM codec` is **false** (specialize to monotone `witnessBits`, §4.3.1), and gamma
   canonicity is a **theorem** rather than a hypothesis, which makes the strict parser's length gate
   unconditionally vacuous and reduces the open residue to three explicit value tests (§4.3.2–4.3.3).
+* The FEAS-0 route runs on **`r := pr.2.n`**, the target the narrow parser returns — not on the
+  header value `n'`, which is what `ContentAccepts` never uses for its witness window, truth table or
+  relation. `M n' = M r` comes from `parseTreeMCSPPrefixInput_length_convention`
+  (`PrefixParserConvention.lean:1231`), so the route needs **no injectivity and no gamma
+  canonicity** and is independent of I1 (§1.0, F0b). It does need one lemma that does not exist on
+  `main`: recovery of the parser's truth-table slice, which `parseTreeMCSPPrefixInput_inversion`
+  does not expose. FEAS-0's budget rises to 350–600 LOC · 2 modules to carry it.
+* **Outcome (a) alone is sufficient**: its exponent is the verifier's bounded timeout — decode the
+  header, compare `n'` against `bitLength (N ^ c + c)` without materialising `2 ^ n'`, reject on
+  overflow (§1.0). That is a machine-construction argument, not a theorem; the machine slices still
+  have to build it. (b) is that timeout packaged as a proved `Bool` rule and is preferred when no
+  harder. Refuting (a) needs a **family** `∀ c, ∃ (N, z, n')`, not one wide word.
 * The machine model's `runTime` field is unrestricted
   (`RuntimeAdviceBarrier.lean:77` `lengthAdviceLanguage_in_repo_P`), and `ContentVerifierBridge`
   does **not** exclude a bridge that exploits it. Advice-avoidance is an unenforced review

@@ -201,6 +201,11 @@ Current theorem surface status:
   now codec-shaped: `TreeCircuitWitnessCodec` supplies `encode`, `decode`, and
   `decode_encode`, and `TreeMCSPSearchWitnessEncoding.ofCodec` derives the
   verifier from actual decoded `Pnp3.Models.Circuit` witnesses.
+- `Frontier/DagSupportCardinality.lean`: infrastructure proving that the
+  dependency-closed support of a DAG is contained in its finite direct-input
+  cover and has cardinality at most twice `DagCircuit.size`.  It reuses the
+  existing support-based evaluation invariance and does not reduce a
+  P-vs-NP source obligation.
 
 ## Downstream decision→search extraction (`Frontier/ContractExpansion/`)
 

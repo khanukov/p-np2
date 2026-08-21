@@ -26,6 +26,7 @@ import Pnp4.Frontier.PvsNPBridgeRequirements
 import Pnp4.Frontier.CompressionMagnification
 import Pnp4.Frontier.SearchMCSPMagnification
 import Pnp4.Frontier.SearchMCSPConcreteTargets
+import Pnp4.Frontier.DagSupportCardinality
 import Pnp4.Frontier.ContractExpansion.C_DAG_Adapter
 import Pnp4.Frontier.ContractExpansion.QueryComposition
 import Pnp4.Frontier.ContractExpansion.QueryBuilder
@@ -84,6 +85,19 @@ namespace Pnp4
 namespace Tests
 
 open AlgorithmsToLowerBounds
+
+section DagSupportCardinalitySurface
+
+open Pnp3.ComplexityInterfaces
+
+#check @DagCircuit.directInputCover
+#check @DagCircuit.supportAt_subset_directInputCover
+#check @DagCircuit.support_subset_directInputCover
+#check @DagCircuit.directInputCover_card_le_two_mul_size
+#check @DagCircuit.support_card_le_two_mul_size
+#check @DagCircuit.exists_small_evaluation_support
+
+end DagSupportCardinalitySurface
 
 def check_C_DAG : CircuitFamilyClass :=
   Pnp4.Frontier.ContractExpansion.C_DAG

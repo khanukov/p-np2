@@ -42,6 +42,8 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.GateEvalCS.gateConstCS_seqList_two_runSpec
 #print axioms Internal.PsubsetPpoly.TM.GateEvalCS.gateConstCS_seqList_two_run_full
 #print axioms Internal.PsubsetPpoly.TM.GateEvalCS.gateConstCS_seqList_three_recursion_probe
+#print axioms Internal.PsubsetPpoly.TM.GateEvalCS.gateConstCSReady
+#print axioms Internal.PsubsetPpoly.TM.GateEvalCS.gateConstCS_seqList_replicate_runSpec
 
 -- Итоговые утверждения (формульная сепарация).
 #print axioms RefutedRoute_NP_not_subset_PpolyFormula_final

@@ -114,7 +114,9 @@ bridge `liftP1ToSeq_eq_embedSeqConfig_lift` proves that lifting directly into a
 composite tail agrees with lifting into its head and embedding, under the
 explicit adjacent comparison `Pᵢ.tapeLength n ≤ Pᵢ₊₁.tapeLength n`.
 This adjacent hypothesis is essential: embedding through a shorter successor
-can erase cells, so no unrestricted-list theorem is claimed.
+can erase cells.  The current public API covers adjacent-monotone lists; a
+shorter handoff would require a separate no-information-loss premise rather
+than an unrestricted-list claim.
 
 `RunSpec.seqList_singleton_exact` identifies the actual terminal boundary-step
 configuration.  `RunSpec.seqList_cons` is the semantic recursion interface: it
@@ -133,6 +135,13 @@ two-constant-gate `seqList` `RunSpec` with exact final configuration and both
 gate-write facts; this exercises the bridge and exact singleton.  A three-gate
 probe applies the cons theorem twice under only `d₁ ≤ d₂` and `d₂ ≤ d₃`,
 pinning the recursive scope without claiming arbitrary unordered gates.
+The arbitrary control-flow driver is now concretely inhabited for every
+nonempty homogeneous list `P :: List.replicate copies P`, where
+`P = gateConstCS b d`: its explicit readiness predicate and every
+`List.Forall`/`List.Chain' ReadyStep` obligation are proved from the constant
+gate run facts.  This remains a phase-only result.  An arbitrary-length
+semantic accumulator (including the proposed `zeroExtTape`-style tape
+description) remains open.
 The modules, public signatures, and headline axiom dependencies are registered
 in `lakefile.lean`, `Tests/TMSeqRunSurfaceTests.lean`, and
 `Tests/AxiomsAudit.lean`.

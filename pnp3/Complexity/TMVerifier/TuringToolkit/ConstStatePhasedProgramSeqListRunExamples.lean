@@ -240,6 +240,91 @@ theorem gateConstCS_seqList_three_recursion_probe
   exact (RunSpec.seqList_cons P1 P2 [P3] c1 (fun _ => True) (fun _ => True)
     hLen12 spec1 tail23).imp (fun _ _ => trivial)
 
+/-- Readiness for a homogeneous list of constant-gate programs.  Besides
+identifying the program, it records exactly the start phase, local start
+state, and destination bound needed by the standalone gate run theorem. -/
+def gateConstCSReady (b : Bool) (d n : Nat) :
+    Ready (S := Bool × Bool) n :=
+  fun P c =>
+    P = gateConstCS b d ∧
+    c.state.fst.val = 0 ∧
+    c.state.snd = (false, false) ∧
+    (c.head : Nat) + d < P.toPhased.toTM.tapeLength n
+
+/-- A concrete arbitrary-length instantiation of `RunSpec.seqList_of_forall`.
+Every item is the same-offset constant gate, so all adjacent tape comparisons
+are equalities.  `gateConstCSReady` is preserved because a completed gate
+returns the head to its initial position and `liftP1ToP2` resets the phase and
+local state.  The result is intentionally phase-only, not an acceptance or
+accumulated-tape theorem. -/
+theorem gateConstCS_seqList_replicate_runSpec
+    (b : Bool) (d copies : Nat) {n : Nat}
+    (c : Configuration (M := (gateConstCS b d).toPhased.toTM) n)
+    (hPhase : c.state.fst.val = 0)
+    (hState : c.state.snd = (false, false))
+    (hBound : (c.head : Nat) + d <
+      (gateConstCS b d).toPhased.toTM.tapeLength n) :
+    let P := gateConstCS b d
+    RunSpec (seqList (P :: List.replicate copies P))
+      (embedSeqConfig P (seqList (List.replicate copies P)) c)
+      (fun _ => True) := by
+  dsimp only
+  let P := gateConstCS b d
+  let ready := gateConstCSReady b d n
+  have specOfReady : ∀ (Q : ConstStatePhasedProgram (Bool × Bool))
+      (cQ : Configuration (M := Q.toPhased.toTM) n),
+      ready Q cQ → RunSpec Q cQ (fun _ => True) := by
+    intro Q cQ hReadyQ
+    rcases hReadyQ with ⟨hQ, hPhaseQ, hStateQ, hBoundQ⟩
+    subst Q
+    obtain ⟨_, _, hAccept, _, _, _⟩ :=
+      CombineAtOffset.combineAtOffsetCS_run_full d d d
+        (le_refl _) (le_refl _) (fun _ _ => b)
+        cQ hPhaseQ hStateQ hBoundQ
+    exact {
+      prefixSafe := by
+        intro s hs
+        exact CombineAtOffset.combineAtOffsetCS_run_invariants_in_prefix
+          d d d (le_refl _) (le_refl _) (fun _ _ => b)
+          cQ hPhaseQ hStateQ hBoundQ s
+            (by simpa [gateConstCS_timeBound] using hs) |>.2
+      reachesAcceptPhase := by
+        simpa using hAccept
+      postcondition := trivial
+    }
+  have sameReadyStep : ReadyStep ready P P := by
+    refine ⟨Nat.le_refl _, ?_⟩
+    intro cQ hReadyQ
+    rcases hReadyQ with ⟨_, hPhaseQ, hStateQ, hBoundQ⟩
+    obtain ⟨_, _, _, _, hFinalHead, _⟩ :=
+      CombineAtOffset.combineAtOffsetCS_run_full d d d
+        (le_refl _) (le_refl _) (fun _ _ => b)
+        cQ hPhaseQ hStateQ hBoundQ
+    refine ⟨rfl, rfl, rfl, ?_⟩
+    change
+      ((TM.runConfig (M := P.toPhased.toTM) cQ (P.timeBound n)).head : Nat) + d <
+        P.toPhased.toTM.tapeLength n
+    rw [show (TM.runConfig (M := P.toPhased.toTM) cQ
+      (P.timeBound n)).head = cQ.head by
+        simpa [P, gateConstCS_timeBound] using hFinalHead]
+    exact hBoundQ
+  have hSpecs : List.Forall (fun Q => ∀ cQ, ready Q cQ →
+      RunSpec Q cQ (fun _ => True)) (P :: List.replicate copies P) := by
+    rw [List.forall_cons]
+    refine ⟨specOfReady P, ?_⟩
+    induction copies with
+    | zero => simp
+    | succ copies ih =>
+        rw [List.replicate_succ, List.forall_cons]
+        exact ⟨specOfReady P, ih⟩
+  have hSteps : List.Chain' (ReadyStep ready)
+      (P :: List.replicate copies P) := by
+    simpa [List.replicate_succ] using
+      (List.chain'_replicate_of_rel (r := ReadyStep ready)
+        (copies + 1) sameReadyStep)
+  exact RunSpec.seqList_of_forall ready P (List.replicate copies P) c
+    ⟨rfl, hPhase, hState, hBound⟩ hSpecs hSteps
+
 end GateEvalCS
 end TM
 end PsubsetPpoly

@@ -123,6 +123,16 @@ theorem check_RunSpec_seqList_singleton [Inhabited S]
       Post cFinal) :=
   RunSpec.seqList_singleton P c Post spec
 
+/-- Pin weakening of a `RunSpec` postcondition. -/
+theorem check_RunSpec_imp
+    {P : ConstStatePhasedProgram S} {n : Nat}
+    {c : Configuration (M := P.toPhased.toTM) n}
+    {Post Post' : Configuration (M := P.toPhased.toTM) n → Prop}
+    (spec : RunSpec P c Post)
+    (h : ∀ c', Post c' → Post' c') :
+    RunSpec P c Post' :=
+  RunSpec.imp spec h
+
 /-- Pin the adjacent-only lift/embed bridge used by list recursion. -/
 theorem check_liftP1ToSeq_eq_embedSeqConfig_lift
     (P1 P2 Ptail : ConstStatePhasedProgram S) {n : Nat}
@@ -305,5 +315,116 @@ theorem check_gateConstCS_seqList_two_runSpec
         c1Final.tape = c1.write ⟨(c1.head : Nat) + d1, hBound1⟩ b1 ∧
         c2Final.tape = c2Init.write ⟨(c2Init.head : Nat) + d2, hBound2⟩ b2) :=
   gateConstCS_seqList_two_runSpec b1 b2 d1 d2 hD c1 hPhase hState hBound1
+
+/-- Pin the direct full-run corollary, including the exact boundary
+configuration and both standalone tape-write equations. -/
+theorem check_gateConstCS_seqList_two_run_full
+    (b1 b2 : Bool) (d1 d2 : Nat) (hD : d1 ≤ d2) {n : Nat}
+    (c1 : Configuration (M := (gateConstCS b1 d1).toPhased.toTM) n)
+    (hPhase : c1.state.fst.val = 0)
+    (hState : c1.state.snd = (false, false))
+    (hBound1 : (c1.head : Nat) + d1 <
+      (gateConstCS b1 d1).toPhased.toTM.tapeLength n) :
+    let P1 := gateConstCS b1 d1
+    let P2 := gateConstCS b2 d2
+    let c1Final := runConfig (M := P1.toPhased.toTM) c1 (P1.timeBound n)
+    let hLen : P1.toPhased.toTM.tapeLength n ≤ P2.toPhased.toTM.tapeLength n := by
+      show n + (2 * d1 + 3) + 1 ≤ n + (2 * d2 + 3) + 1
+      omega
+    let hHead : c1Final.head.val < P2.toPhased.toTM.tapeLength n :=
+      Nat.lt_of_lt_of_le c1Final.head.isLt hLen
+    let c2Init := liftP1ToP2 P1 P2 c1Final hHead
+    let hBound2 : (c2Init.head : Nat) + d2 < P2.toPhased.toTM.tapeLength n := by
+      have hHeadEq : c1Final.head = c1.head := by
+        obtain ⟨_, _, _, _, h, _⟩ :=
+          CombineAtOffset.combineAtOffsetCS_run_full d1 d1 d1
+            (le_refl _) (le_refl _) (fun _ _ => b1) c1 hPhase hState hBound1
+        simpa [P1, c1Final, gateConstCS_timeBound] using h
+      change (c1Final.head : Nat) + d2 < P2.toPhased.toTM.tapeLength n
+      rw [hHeadEq]
+      show (c1.head : Nat) + d2 < n + (2 * d2 + 3) + 1
+      have hBound1' : (c1.head : Nat) + d1 < n + (2 * d1 + 3) + 1 := hBound1
+      omega
+    let c2Final := runConfig (M := P2.toPhased.toTM) c2Init (P2.timeBound n)
+    let c2Boundary := stepConfig (M := (seq P2 idleCS).toPhased.toTM)
+      (embedSeqConfig P2 idleCS c2Final)
+    let cSeqFinal := runConfig (M := (seqList [P1, P2]).toPhased.toTM)
+      (embedSeqConfig P1 (seqList [P2]) c1) ((seqList [P1, P2]).timeBound n)
+    cSeqFinal = embedSeqP2Config P1 (seqList [P2]) c2Boundary ∧
+    c1Final.tape = c1.write ⟨(c1.head : Nat) + d1, hBound1⟩ b1 ∧
+    c2Final.tape = c2Init.write ⟨(c2Init.head : Nat) + d2, hBound2⟩ b2 :=
+  gateConstCS_seqList_two_run_full
+    b1 b2 d1 d2 hD c1 hPhase hState hBound1
+
+/-- Pin the three-gate recursion probe and all three dependent standalone
+specification inputs. -/
+theorem check_gateConstCS_seqList_three_recursion_probe
+    (b1 b2 b3 : Bool) (d1 d2 d3 : Nat)
+    (h12 : d1 ≤ d2) (h23 : d2 ≤ d3) {n : Nat}
+    (c1 : Configuration (M := (gateConstCS b1 d1).toPhased.toTM) n)
+    (spec1 : RunSpec (gateConstCS b1 d1) c1 (fun _ => True))
+    (spec2 :
+      let P1 := gateConstCS b1 d1
+      let P2 := gateConstCS b2 d2
+      let c1Final := runConfig (M := P1.toPhased.toTM) c1 (P1.timeBound n)
+      let hLen12 : P1.toPhased.toTM.tapeLength n ≤
+          P2.toPhased.toTM.tapeLength n := by
+        show n + (2 * d1 + 3) + 1 ≤ n + (2 * d2 + 3) + 1
+        omega
+      let hHead2 := Nat.lt_of_lt_of_le c1Final.head.isLt hLen12
+      RunSpec P2 (liftP1ToP2 P1 P2 c1Final hHead2) (fun _ => True))
+    (spec3 :
+      let P1 := gateConstCS b1 d1
+      let P2 := gateConstCS b2 d2
+      let P3 := gateConstCS b3 d3
+      let c1Final := runConfig (M := P1.toPhased.toTM) c1 (P1.timeBound n)
+      let hLen12 : P1.toPhased.toTM.tapeLength n ≤
+          P2.toPhased.toTM.tapeLength n := by
+        show n + (2 * d1 + 3) + 1 ≤ n + (2 * d2 + 3) + 1
+        omega
+      let hHead2 := Nat.lt_of_lt_of_le c1Final.head.isLt hLen12
+      let c2Init := liftP1ToP2 P1 P2 c1Final hHead2
+      let c2Final := runConfig (M := P2.toPhased.toTM) c2Init (P2.timeBound n)
+      let hLen23 : P2.toPhased.toTM.tapeLength n ≤
+          P3.toPhased.toTM.tapeLength n := by
+        show n + (2 * d2 + 3) + 1 ≤ n + (2 * d3 + 3) + 1
+        omega
+      let hHead3 := Nat.lt_of_lt_of_le c2Final.head.isLt hLen23
+      RunSpec P3 (liftP1ToP2 P2 P3 c2Final hHead3) (fun _ => True)) :
+    let P1 := gateConstCS b1 d1
+    let P2 := gateConstCS b2 d2
+    let P3 := gateConstCS b3 d3
+    RunSpec (seqList [P1, P2, P3])
+      (embedSeqConfig P1 (seqList [P2, P3]) c1) (fun _ => True) :=
+  gateConstCS_seqList_three_recursion_probe
+    b1 b2 b3 d1 d2 d3 h12 h23 c1 spec1 spec2 spec3
+
+/-- Pin the explicit readiness predicate used by the homogeneous-list
+instantiation. -/
+theorem check_gateConstCSReady
+    (b : Bool) (d n : Nat)
+    (P : ConstStatePhasedProgram (Bool × Bool))
+    (c : Configuration (M := P.toPhased.toTM) n) :
+    gateConstCSReady b d n P c ↔
+      P = gateConstCS b d ∧
+      c.state.fst.val = 0 ∧
+      c.state.snd = (false, false) ∧
+      (c.head : Nat) + d < P.toPhased.toTM.tapeLength n :=
+  Iff.rfl
+
+/-- Pin the concrete arbitrary-length, homogeneous same-offset use of the
+phase-only list driver. -/
+theorem check_gateConstCS_seqList_replicate_runSpec
+    (b : Bool) (d copies : Nat) {n : Nat}
+    (c : Configuration (M := (gateConstCS b d).toPhased.toTM) n)
+    (hPhase : c.state.fst.val = 0)
+    (hState : c.state.snd = (false, false))
+    (hBound : (c.head : Nat) + d <
+      (gateConstCS b d).toPhased.toTM.tapeLength n) :
+    let P := gateConstCS b d
+    RunSpec (seqList (P :: List.replicate copies P))
+      (embedSeqConfig P (seqList (List.replicate copies P)) c)
+      (fun _ => True) :=
+  gateConstCS_seqList_replicate_runSpec b d copies c hPhase hState hBound
 
 end Pnp3.Tests.TMSeqRunSurface

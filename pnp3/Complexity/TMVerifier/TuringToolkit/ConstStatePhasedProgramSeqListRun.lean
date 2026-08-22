@@ -18,8 +18,9 @@ variable {S : Type v} [Fintype S] [DecidableEq S]
 This module is the light list layer over `ConstStatePhasedProgramSeqRun`.
 Recursive handoffs compare adjacent programs only.  The comparison is
 essential: embedding through the next program truncates the previous tape at
-the next program's tape length, so there is no corresponding theorem for
-unrestricted lists.
+the next program's tape length.  The current API therefore covers
+adjacent-monotone lists; a more general theorem would need an explicit
+no-information-loss condition at each shorter handoff.
 -/
 
 /-- Weaken the semantic postcondition of a `RunSpec`. -/

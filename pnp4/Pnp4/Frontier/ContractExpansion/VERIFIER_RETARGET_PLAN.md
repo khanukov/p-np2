@@ -132,7 +132,7 @@ survive. No implementation code is introduced here.
 > `ContractExpansion/` files. The retarget foundation is now 18 modules — 17 in
 > `ContractExpansion/` plus `ModelAudit/RuntimeAdviceBarrier.lean` — after adding the two
 > CVB-ARCH-1 modules. Those two modules grow the baseline-only side of the donor comparison from
-> eight to ten. The donor comparison and slice log are refreshed without changing the experiment's
+> nine to eleven. The donor comparison and slice log are refreshed without changing the experiment's
 > honest **BLOCK** verdict.
 
 ---
@@ -800,10 +800,11 @@ comparison at the two tips against the merge base `5d8ee5f8`:
   and **`README.md`** — differ only because `main` moved; `pr1618` still carries the merge-base
   blob, so a rebase takes `main`'s version cleanly. Revision 3 omitted all three. Note the first two
   are exactly the length-gated chain modules §1.2 retains and `AGENTS.md:31–36` cites.
-* Ten more (`ContentPrefixExtensionPadding.lean`, `ContentPrefixExtensionPaddingTransport.lean`,
+* Eleven more (`ContentPrefixExtensionPadding.lean`, `ContentPrefixExtensionPaddingTransport.lean`,
   `ContentParseFieldRecovery.lean`, `ContentTargetSizeBound.lean`,
   `ContentPrefixExtensionNonVacuity.lean`, `ContentVerifierTapeInterface.lean`,
   `ContentSemanticVerifier.lean`, `ContentPrefixExtensionGateClosure.lean`,
+  `ContentVerifierBridgeWitness.lean`,
   `ConcreteTreeDirectEvaluator.lean`, `ConcreteTreeDirectTagProgram.lean`) exist only on the
   audited baseline.
 * **Repo-wide the divergent-path count is 40**, not nine
@@ -831,6 +832,7 @@ So `pr1618` is not a superset and a rebase is not a fast-forward. **Sizes in byt
 | `ContentVerifierTapeInterface.lean` | *absent* | **3 782** |
 | `ContentSemanticVerifier.lean` | *absent* | **4 495** |
 | `ContentPrefixExtensionGateClosure.lean` | *absent* | **25 010** |
+| `ContentVerifierBridgeWitness.lean` | *absent* | **4 129** |
 | `ConcreteTreeDirectEvaluator.lean` | *absent* | **20 119** |
 | `ConcreteTreeDirectTagProgram.lean` | *absent* | **22 549** |
 | `ConsolidatedTreeSeparation.lean` | *merge-base blob* | **changed on integrated baseline** |
@@ -838,7 +840,7 @@ So `pr1618` is not a superset and a rebase is not a fast-forward. **Sizes in byt
 | `README.md` | *merge-base blob* | **changed on integrated baseline** |
 
 The integrated baseline is ahead on the CT chain and CVB experiment (CT-C, FEAS, GATE-0, P0,
-D1a, I1 and CVB modules exist only there); `pr1618` is ahead only on
+D1a, I1, D1b and CVB modules exist only there); `pr1618` is ahead only on
 `TreeMCSPPrefixSemanticVerifier.lean`. Any future rebase of the stack must reconcile the six
 added-on-both-sides modules by hand, take the integrated lineage's version of the three
 baseline-only-changed paths,

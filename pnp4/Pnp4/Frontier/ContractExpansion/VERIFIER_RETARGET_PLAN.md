@@ -818,19 +818,19 @@ So `pr1618` is not a superset and a rebase is not a fast-forward. **Sizes in byt
 
 | Module | `pr1618` (bytes) | `1512f380` (bytes) |
 |---|---|---|
-| `ContentPrefixExtension.lean` | 9 513 | **15 071** |
-| `ContentPrefixExtensionCoincidence.lean` | 14 991 | **17 206** |
-| `ContentPrefixExtensionTransfer.lean` | 7 387 | **8 761** |
-| `ContentConsolidatedSource.lean` | 3 856 | **5 580** |
+| `ContentPrefixExtension.lean` | 9 513 | **15 617** |
+| `ContentPrefixExtensionCoincidence.lean` | 14 991 | **17 329** |
+| `ContentPrefixExtensionTransfer.lean` | 7 387 | **8 890** |
+| `ContentConsolidatedSource.lean` | 3 856 | **5 805** |
 | `TreeMCSPPrefixSemanticVerifier.lean` | **15 858** | 14 166 |
 | `TreeMCSPPrefixVerifierLayout.lean` | 12 967 | **14 231** |
-| `ContentPrefixExtensionPadding.lean` | *absent* | **20 417** |
-| `ContentPrefixExtensionPaddingTransport.lean` | *absent* | **2 960** |
-| `ContentParseFieldRecovery.lean` | *absent* | **8 431** |
+| `ContentPrefixExtensionPadding.lean` | *absent* | **20 596** |
+| `ContentPrefixExtensionPaddingTransport.lean` | *absent* | **3 070** |
+| `ContentParseFieldRecovery.lean` | *absent* | **8 603** |
 | `ContentTargetSizeBound.lean` | *absent* | **13 767** |
-| `ContentPrefixExtensionNonVacuity.lean` | *absent* | **10 984** |
+| `ContentPrefixExtensionNonVacuity.lean` | *absent* | **11 161** |
 | `ContentVerifierTapeInterface.lean` | *absent* | **3 782** |
-| `ContentSemanticVerifier.lean` | *absent* | **4 495** |
+| `ContentSemanticVerifier.lean` | *absent* | **4 591** |
 | `ContentPrefixExtensionGateClosure.lean` | *absent* | **25 010** |
 | `ContentVerifierBridgeWitness.lean` | *absent* | **4 129** |
 | `ConcreteTreeDirectEvaluator.lean` | *absent* | **20 119** |

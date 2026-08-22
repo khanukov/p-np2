@@ -1,5 +1,6 @@
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
+import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 
 namespace Pnp3.Tests.TMSeqRunSurface
 
@@ -44,6 +45,84 @@ theorem check_RunSpec_projections
         (P.timeBound n)).state.fst.val = P.acceptPhase.val ∧
     Post (runConfig (M := P.toPhased.toTM) c (P.timeBound n)) :=
   ⟨spec.prefixSafe, spec.reachesAcceptPhase, spec.postcondition⟩
+
+/-- Pin the distinction between arrival at the accept phase and equality of
+the complete dependent accepting state. -/
+theorem check_RunSpec_final_state_eq_accept_iff
+    {P : ConstStatePhasedProgram S} {n : Nat}
+    {c : Configuration (M := P.toPhased.toTM) n}
+    {Post : Configuration (M := P.toPhased.toTM) n → Prop}
+    (spec : RunSpec P c Post) :
+    let cf := runConfig (M := P.toPhased.toTM) c (P.timeBound n)
+    cf.state = P.toPhased.toTM.accept ↔ cf.state.snd = P.acceptState :=
+  spec.final_state_eq_accept_iff
+
+/-- Pin the exact-step `TM.accepts` bridge for a `RunSpec` starting at the
+machine's actual initial configuration. -/
+theorem check_RunSpec_accepts_eq_decide_local
+    {P : ConstStatePhasedProgram S} {n : Nat}
+    {x : Boolcube.Point n}
+    {Post : Configuration (M := P.toPhased.toTM) n → Prop}
+    (spec : RunSpec P (P.toPhased.toTM.initialConfig x) Post) :
+    accepts (M := P.toPhased.toTM) n x =
+      decide ((P.toPhased.toTM.run x).state.snd = P.acceptState) :=
+  spec.accepts_eq_decide_local
+
+/-- Pin the fixed `(Bool × Bool)` conditional-accept program. -/
+def check_acceptIfCellCS (Δflag : Nat) :
+    ConstStatePhasedProgram (Bool × Bool) :=
+  acceptIfCellCS Δflag
+
+/-- Pin the corrected ready-run signature: start phase, full start state,
+and head bound are all explicit. -/
+theorem check_acceptIfCellCS_run_full (Δflag : Nat) {n : Nat}
+    (c : Configuration (M := (acceptIfCellCS Δflag).toPhased.toTM) n)
+    (hphase : c.state.fst.val = (acceptIfCellCS Δflag).startPhase.val)
+    (hstate : c.state.snd = (acceptIfCellCS Δflag).startState)
+    (hbound : c.head.val + Δflag <
+      (acceptIfCellCS Δflag).toPhased.toTM.tapeLength n) :
+    let b := c.tape ⟨c.head.val + Δflag, hbound⟩
+    let cf := runConfig (M := (acceptIfCellCS Δflag).toPhased.toTM) c
+      ((acceptIfCellCS Δflag).timeBound n)
+    cf.state =
+        (⟨(acceptIfCellCS Δflag).acceptPhase, (b, b)⟩ :
+          (acceptIfCellCS Δflag).toPhased.State) ∧
+      cf.head = c.head ∧ cf.tape = c.tape :=
+  acceptIfCellCS_run_full Δflag c hphase hstate hbound
+
+/-- Pin exact acceptance equivalence for an arbitrary ready configuration. -/
+theorem check_acceptIfCellCS_run_state_eq_accept_iff (Δflag : Nat) {n : Nat}
+    (c : Configuration (M := (acceptIfCellCS Δflag).toPhased.toTM) n)
+    (hphase : c.state.fst.val = (acceptIfCellCS Δflag).startPhase.val)
+    (hstate : c.state.snd = (acceptIfCellCS Δflag).startState)
+    (hbound : c.head.val + Δflag <
+      (acceptIfCellCS Δflag).toPhased.toTM.tapeLength n) :
+    (runConfig (M := (acceptIfCellCS Δflag).toPhased.toTM) c
+        ((acceptIfCellCS Δflag).timeBound n)).state =
+      (acceptIfCellCS Δflag).toPhased.toTM.accept ↔
+    c.tape ⟨c.head.val + Δflag, hbound⟩ = true :=
+  acceptIfCellCS_run_state_eq_accept_iff Δflag c hphase hstate hbound
+
+/-- Pin the dependency-closed `RunSpec` needed by explicit final `seq`. -/
+theorem check_acceptIfCellCS_runSpec (Δflag : Nat) {n : Nat}
+    (c : Configuration (M := (acceptIfCellCS Δflag).toPhased.toTM) n)
+    (hphase : c.state.fst.val = (acceptIfCellCS Δflag).startPhase.val)
+    (hstate : c.state.snd = (acceptIfCellCS Δflag).startState)
+    (hbound : c.head.val + Δflag <
+      (acceptIfCellCS Δflag).toPhased.toTM.tapeLength n) :
+    RunSpec (acceptIfCellCS Δflag) c (fun cf =>
+      cf.state.snd =
+          (c.tape ⟨c.head.val + Δflag, hbound⟩,
+           c.tape ⟨c.head.val + Δflag, hbound⟩) ∧
+      cf.head = c.head ∧ cf.tape = c.tape) :=
+  acceptIfCellCS_runSpec Δflag c hphase hstate hbound
+
+/-- Pin end-to-end acceptance from `initialConfig`, including blank reads. -/
+theorem check_acceptIfCellCS_accepts_iff_input_or_blank_flag
+    (Δflag : Nat) {n : Nat} (x : Boolcube.Point n) :
+    accepts (M := (acceptIfCellCS Δflag).toPhased.toTM) n x = true ↔
+      (if h : Δflag < n then x ⟨Δflag, h⟩ else false) = true :=
+  acceptIfCellCS_accepts_iff_input_or_blank_flag Δflag x
 
 /-- Pin the exact boundary-handoff theorem signature, including its single
 tape-length comparison and derived lift head bound. -/

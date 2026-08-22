@@ -1,4 +1,5 @@
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqRunExamples
+import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 
 namespace Pnp3.Tests.TMSeqRunSurface
 
@@ -122,6 +123,95 @@ theorem check_RunSpec_seqList_singleton [Inhabited S]
       Post cFinal) :=
   RunSpec.seqList_singleton P c Post spec
 
+/-- Pin the adjacent-only lift/embed bridge used by list recursion. -/
+theorem check_liftP1ToSeq_eq_embedSeqConfig_lift
+    (P1 P2 Ptail : ConstStatePhasedProgram S) {n : Nat}
+    (c1Final : Configuration (M := P1.toPhased.toTM) n)
+    (h12 : P1.toPhased.toTM.tapeLength n ≤ P2.toPhased.toTM.tapeLength n) :
+    let h1Tail : P1.toPhased.toTM.tapeLength n ≤
+        (seq P2 Ptail).toPhased.toTM.tapeLength n :=
+      Nat.le_trans h12 (seq_tapeLength_ge_P1 P2 Ptail n)
+    let hHead2 : c1Final.head.val < P2.toPhased.toTM.tapeLength n :=
+      Nat.lt_of_lt_of_le c1Final.head.isLt h12
+    let hHeadTail : c1Final.head.val <
+        (seq P2 Ptail).toPhased.toTM.tapeLength n :=
+      Nat.lt_of_lt_of_le c1Final.head.isLt h1Tail
+    liftP1ToP2 P1 (seq P2 Ptail) c1Final hHeadTail =
+      embedSeqConfig P2 Ptail (liftP1ToP2 P1 P2 c1Final hHead2) :=
+  liftP1ToSeq_eq_embedSeqConfig_lift P1 P2 Ptail c1Final h12
+
+/-- Pin the singleton's exact terminal boundary configuration. -/
+theorem check_RunSpec_seqList_singleton_exact [Inhabited S]
+    (P : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P.toPhased.toTM) n)
+    (Post : Configuration (M := P.toPhased.toTM) n → Prop)
+    (spec : RunSpec P c Post) :
+    let cFinal := runConfig (M := P.toPhased.toTM) c (P.timeBound n)
+    let cBoundary := stepConfig (M := (seq P idleCS).toPhased.toTM)
+      (embedSeqConfig P idleCS cFinal)
+    RunSpec (seqList [P]) (embedSeqConfig P idleCS c)
+      (fun cSeq => cSeq = cBoundary ∧ Post cFinal) :=
+  RunSpec.seqList_singleton_exact P c Post spec
+
+/-- Pin the semantic cons combiner: exact final configuration and both
+standalone head/tail postconditions, under adjacent monotonicity. -/
+theorem check_RunSpec_seqList_cons [Inhabited S]
+    (P Q : ConstStatePhasedProgram S)
+    (rest : List (ConstStatePhasedProgram S)) {n : Nat}
+    (cP : Configuration (M := P.toPhased.toTM) n)
+    (PostP : Configuration (M := P.toPhased.toTM) n → Prop)
+    (PostTail : Configuration
+      (M := (seqList (Q :: rest)).toPhased.toTM) n → Prop)
+    (hPQ : P.toPhased.toTM.tapeLength n ≤ Q.toPhased.toTM.tapeLength n)
+    (specP : RunSpec P cP PostP)
+    (specTail :
+      let cPFinal := runConfig (M := P.toPhased.toTM) cP (P.timeBound n)
+      let hHeadQ := Nat.lt_of_lt_of_le cPFinal.head.isLt hPQ
+      let cQInit := liftP1ToP2 P Q cPFinal hHeadQ
+      RunSpec (seqList (Q :: rest))
+        (embedSeqConfig Q (seqList rest) cQInit) PostTail) :
+    let cPFinal := runConfig (M := P.toPhased.toTM) cP (P.timeBound n)
+    let hPTail : P.toPhased.toTM.tapeLength n ≤
+        (seqList (Q :: rest)).toPhased.toTM.tapeLength n :=
+      Nat.le_trans hPQ (seq_tapeLength_ge_P1 Q (seqList rest) n)
+    let hHeadTail := Nat.lt_of_lt_of_le cPFinal.head.isLt hPTail
+    let cTailInit := liftP1ToP2 P (seqList (Q :: rest)) cPFinal hHeadTail
+    let cTailFinal := runConfig
+      (M := (seqList (Q :: rest)).toPhased.toTM)
+      cTailInit ((seqList (Q :: rest)).timeBound n)
+    RunSpec (seqList (P :: Q :: rest))
+      (embedSeqConfig P (seqList (Q :: rest)) cP) (fun cFinal =>
+        cFinal = embedSeqP2Config P (seqList (Q :: rest)) cTailFinal ∧
+        PostP cPFinal ∧ PostTail cTailFinal) :=
+  RunSpec.seqList_cons P Q rest cP PostP PostTail hPQ specP specTail
+
+/-- Pin construction of one adjacent readiness edge. -/
+theorem check_ReadyStep
+    {n : Nat} (ready : Ready (S := S) n)
+    (P Q : ConstStatePhasedProgram S)
+    (hPQ : P.toPhased.toTM.tapeLength n ≤ Q.toPhased.toTM.tapeLength n)
+    (hReady : ∀ c, ready P c →
+      let cFinal := runConfig (M := P.toPhased.toTM) c (P.timeBound n)
+      let hHead := Nat.lt_of_lt_of_le cFinal.head.isLt hPQ
+      ready Q (liftP1ToP2 P Q cFinal hHead)) :
+    ReadyStep ready P Q :=
+  ⟨hPQ, hReady⟩
+
+/-- Pin the arbitrary nonempty list driver and its intentionally payload-free
+postcondition. -/
+theorem check_RunSpec_seqList_of_forall [Inhabited S]
+    {n : Nat} (ready : Ready (S := S) n)
+    (P : ConstStatePhasedProgram S)
+    (rest : List (ConstStatePhasedProgram S))
+    (c : Configuration (M := P.toPhased.toTM) n)
+    (hReady : ready P c)
+    (hSpecs : List.Forall (fun Q => ∀ cQ, ready Q cQ →
+      RunSpec Q cQ (fun _ => True)) (P :: rest))
+    (hSteps : List.Chain' (ReadyStep ready) (P :: rest)) :
+    RunSpec (seqList (P :: rest))
+      (embedSeqConfig P (seqList rest) c) (fun _ => True) :=
+  RunSpec.seqList_of_forall ready P rest c hReady hSpecs hSteps
+
 /-- Pin a concrete compiling `RunSpec` surface for a singleton constant-gate
 `seqList`, including its tape-write meaning. -/
 theorem check_gateConstCS_seqList_singleton_runSpec
@@ -176,5 +266,44 @@ theorem check_gateConstCS_seq_run_full
         have hBound1' : (c1.head : Nat) + d1 < n + (2 * d1 + 3) + 1 := hBound1
         omega⟩ b2 :=
   gateConstCS_seq_run_full b1 b2 d1 d2 hD c1 hPhase hState hBound1
+
+/-- Pin the concrete two-gate `seqList` result that exercises both the
+adjacent bridge and the exact singleton terminal step. -/
+theorem check_gateConstCS_seqList_two_runSpec
+    (b1 b2 : Bool) (d1 d2 : Nat) (hD : d1 ≤ d2) {n : Nat}
+    (c1 : Configuration (M := (gateConstCS b1 d1).toPhased.toTM) n)
+    (hPhase : c1.state.fst.val = 0)
+    (hState : c1.state.snd = (false, false))
+    (hBound1 : (c1.head : Nat) + d1 <
+      (gateConstCS b1 d1).toPhased.toTM.tapeLength n) :
+    let P1 := gateConstCS b1 d1
+    let P2 := gateConstCS b2 d2
+    let c1Final := runConfig (M := P1.toPhased.toTM) c1 (P1.timeBound n)
+    let hLen : P1.toPhased.toTM.tapeLength n ≤ P2.toPhased.toTM.tapeLength n := by
+      show n + (2 * d1 + 3) + 1 ≤ n + (2 * d2 + 3) + 1
+      omega
+    let hHead : c1Final.head.val < P2.toPhased.toTM.tapeLength n :=
+      Nat.lt_of_lt_of_le c1Final.head.isLt hLen
+    let c2Init := liftP1ToP2 P1 P2 c1Final hHead
+    let hBound2 : (c2Init.head : Nat) + d2 < P2.toPhased.toTM.tapeLength n := by
+      have hHeadEq : c1Final.head = c1.head := by
+        obtain ⟨_, _, _, _, h, _⟩ :=
+          CombineAtOffset.combineAtOffsetCS_run_full d1 d1 d1
+            (le_refl _) (le_refl _) (fun _ _ => b1) c1 hPhase hState hBound1
+        simpa [P1, c1Final, gateConstCS_timeBound] using h
+      change (c1Final.head : Nat) + d2 < P2.toPhased.toTM.tapeLength n
+      rw [hHeadEq]
+      show (c1.head : Nat) + d2 < n + (2 * d2 + 3) + 1
+      have hBound1' : (c1.head : Nat) + d1 < n + (2 * d1 + 3) + 1 := hBound1
+      omega
+    let c2Final := runConfig (M := P2.toPhased.toTM) c2Init (P2.timeBound n)
+    let c2Boundary := stepConfig (M := (seq P2 idleCS).toPhased.toTM)
+      (embedSeqConfig P2 idleCS c2Final)
+    RunSpec (seqList [P1, P2])
+      (embedSeqConfig P1 (seqList [P2]) c1) (fun cSeq =>
+        cSeq = embedSeqP2Config P1 (seqList [P2]) c2Boundary ∧
+        c1Final.tape = c1.write ⟨(c1.head : Nat) + d1, hBound1⟩ b1 ∧
+        c2Final.tape = c2Init.write ⟨(c2Init.head : Nat) + d2, hBound2⟩ b2) :=
+  gateConstCS_seqList_two_runSpec b1 b2 d1 d2 hD c1 hPhase hState hBound1
 
 end Pnp3.Tests.TMSeqRunSurface

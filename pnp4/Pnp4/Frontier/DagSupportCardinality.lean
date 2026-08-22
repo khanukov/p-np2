@@ -2,6 +2,7 @@ import Complexity.Interfaces
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Data.Finset.Union
+import Mathlib.Tactic
 /-!
 # DAG support cardinality
 
@@ -9,7 +10,10 @@ Category: Infrastructure.  This module bounds the existing dependency-closed
 `DagCircuit.support`; it does not supply a lower-bound source or make progress
 toward `P != NP`.
 -/
-namespace Pnp3.ComplexityInterfaces.DagCircuit
+namespace Pnp4.Frontier.DagSupportCardinality
+
+open Pnp3.ComplexityInterfaces
+open Pnp3.ComplexityInterfaces.DagCircuit
 open scoped BigOperators
 /-- Input coordinates mentioned directly by a wire. -/
 def wireDirectInputCover {n k : Nat} (w : DagWire n k) : Finset (Fin n) :=
@@ -117,4 +121,4 @@ theorem exists_small_evaluation_support {n : Nat} (C : DagCircuit n) :
     ∃ Q : Finset (Fin n), Q.card ≤ 2 * size C ∧
       ∀ {x y : Bitstring n}, (∀ i ∈ Q, x i = y i) → eval C x = eval C y := by
   exact ⟨support C, support_card_le_two_mul_size C, fun h => eval_eq_of_eq_on_support C h⟩
-end Pnp3.ComplexityInterfaces.DagCircuit
+end Pnp4.Frontier.DagSupportCardinality

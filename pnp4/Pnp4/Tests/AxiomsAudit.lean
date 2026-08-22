@@ -76,11 +76,11 @@ namespace Tests
 
 -- Dependency-closed DAG support cardinality.  Infrastructure only: these
 -- theorems neither supply nor reduce a P-vs-NP lower-bound source obligation.
-#print axioms Pnp3.ComplexityInterfaces.DagCircuit.supportAt_subset_directInputCover
-#print axioms Pnp3.ComplexityInterfaces.DagCircuit.support_subset_directInputCover
-#print axioms Pnp3.ComplexityInterfaces.DagCircuit.directInputCover_card_le_two_mul_size
-#print axioms Pnp3.ComplexityInterfaces.DagCircuit.support_card_le_two_mul_size
-#print axioms Pnp3.ComplexityInterfaces.DagCircuit.exists_small_evaluation_support
+#print axioms Pnp4.Frontier.DagSupportCardinality.supportAt_subset_directInputCover
+#print axioms Pnp4.Frontier.DagSupportCardinality.support_subset_directInputCover
+#print axioms Pnp4.Frontier.DagSupportCardinality.directInputCover_card_le_two_mul_size
+#print axioms Pnp4.Frontier.DagSupportCardinality.support_card_le_two_mul_size
+#print axioms Pnp4.Frontier.DagSupportCardinality.exists_small_evaluation_support
 
 #print axioms AlgorithmsToLowerBounds.maskBit_true
 #print axioms AlgorithmsToLowerBounds.maskBit_false

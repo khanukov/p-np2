@@ -89,15 +89,16 @@ open AlgorithmsToLowerBounds
 section DagSupportCardinalitySurface
 
 open Pnp3.ComplexityInterfaces
+open Pnp4.Frontier.DagSupportCardinality
 
-#check @DagCircuit.wireDirectInputCover
-#check @DagCircuit.gateDirectInputCover
-#check @DagCircuit.directInputCover
-#check @DagCircuit.supportAt_subset_directInputCover
-#check @DagCircuit.support_subset_directInputCover
-#check @DagCircuit.directInputCover_card_le_two_mul_size
-#check @DagCircuit.support_card_le_two_mul_size
-#check @DagCircuit.exists_small_evaluation_support
+#check @wireDirectInputCover
+#check @gateDirectInputCover
+#check @directInputCover
+#check @supportAt_subset_directInputCover
+#check @support_subset_directInputCover
+#check @directInputCover_card_le_two_mul_size
+#check @support_card_le_two_mul_size
+#check @exists_small_evaluation_support
 
 end DagSupportCardinalitySurface
 

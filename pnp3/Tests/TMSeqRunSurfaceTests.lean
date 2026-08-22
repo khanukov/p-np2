@@ -7,6 +7,7 @@ namespace Pnp3.Tests.TMSeqRunSurface
 open Pnp3.Internal.PsubsetPpoly
 open Pnp3.Internal.PsubsetPpoly.TM
 open Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram
+open Pnp3.Internal.PsubsetPpoly.TM.CombineAtOffset
 open Pnp3.Internal.PsubsetPpoly.TM.GateEvalCS
 
 universe v
@@ -73,6 +74,54 @@ def check_acceptIfCellCS (Δflag : Nat) :
     ConstStatePhasedProgram (Bool × Bool) :=
   acceptIfCellCS Δflag
 
+/-- Pin the standalone/right-operand terminal transition exactly. -/
+theorem check_acceptIfCellCS_terminal_transition (Δflag : Nat)
+    (q : Bool × Bool) (scan : Bool) :
+    (acceptIfCellCS Δflag).transition
+        (acceptIfCellCS Δflag).acceptPhase q scan =
+      ((acceptIfCellCS Δflag).acceptPhase, q, scan, Move.stay) :=
+  acceptIfCellCS_terminal_transition Δflag q scan
+
+/-- Pin all three value-preserving projections of the public configuration
+cast used by the conditional-accept proof. -/
+theorem check_castAcceptIfCellConfig_state (Δflag : Nat) {n : Nat}
+    (c : Configuration (M := (acceptIfCellCS Δflag).toPhased.toTM) n) :
+    (castAcceptIfCellConfig Δflag c).state = c.state :=
+  castAcceptIfCellConfig_state Δflag c
+
+theorem check_castAcceptIfCellConfig_head (Δflag : Nat) {n : Nat}
+    (c : Configuration (M := (acceptIfCellCS Δflag).toPhased.toTM) n) :
+    (castAcceptIfCellConfig Δflag c).head = c.head :=
+  castAcceptIfCellConfig_head Δflag c
+
+theorem check_castAcceptIfCellConfig_tape (Δflag : Nat) {n : Nat}
+    (c : Configuration (M := (acceptIfCellCS Δflag).toPhased.toTM) n) :
+    (castAcceptIfCellConfig Δflag c).tape = c.tape :=
+  castAcceptIfCellConfig_tape Δflag c
+
+/-- Pin the public one-step cast transport exactly. -/
+theorem check_castAcceptIfCellConfig_stepConfig (Δflag : Nat) {n : Nat}
+    (c : Configuration (M := (acceptIfCellCS Δflag).toPhased.toTM) n) :
+    castAcceptIfCellConfig Δflag
+        (stepConfig (M := (acceptIfCellCS Δflag).toPhased.toTM) c) =
+      stepConfig
+        (M := (combineAtOffsetCS Δflag Δflag Δflag le_rfl le_rfl
+          (fun a b => a && b)).toPhased.toTM)
+        (castAcceptIfCellConfig Δflag c) :=
+  castAcceptIfCellConfig_stepConfig Δflag c
+
+/-- Pin the public finite-run cast transport exactly. -/
+theorem check_castAcceptIfCellConfig_runConfig (Δflag : Nat) {n : Nat}
+    (c : Configuration (M := (acceptIfCellCS Δflag).toPhased.toTM) n)
+    (t : Nat) :
+    castAcceptIfCellConfig Δflag
+        (runConfig (M := (acceptIfCellCS Δflag).toPhased.toTM) c t) =
+      runConfig
+        (M := (combineAtOffsetCS Δflag Δflag Δflag le_rfl le_rfl
+          (fun a b => a && b)).toPhased.toTM)
+        (castAcceptIfCellConfig Δflag c) t :=
+  castAcceptIfCellConfig_runConfig Δflag c t
+
 /-- Pin the corrected ready-run signature: start phase, full start state,
 and head bound are all explicit. -/
 theorem check_acceptIfCellCS_run_full (Δflag : Nat) {n : Nat}
@@ -89,6 +138,21 @@ theorem check_acceptIfCellCS_run_full (Δflag : Nat) {n : Nat}
           (acceptIfCellCS Δflag).toPhased.State) ∧
       cf.head = c.head ∧ cf.tape = c.tape :=
   acceptIfCellCS_run_full Δflag c hphase hstate hbound
+
+/-- Pin exact stabilization at `timeBound + k`, including the ready-state
+premises and the absence of an extra handoff step. -/
+theorem check_acceptIfCellCS_runConfig_stabilizes (Δflag : Nat) {n : Nat}
+    (c : Configuration (M := (acceptIfCellCS Δflag).toPhased.toTM) n)
+    (hphase : c.state.fst.val = (acceptIfCellCS Δflag).startPhase.val)
+    (hstate : c.state.snd = (acceptIfCellCS Δflag).startState)
+    (hbound : c.head.val + Δflag <
+      (acceptIfCellCS Δflag).toPhased.toTM.tapeLength n)
+    (k : Nat) :
+    runConfig (M := (acceptIfCellCS Δflag).toPhased.toTM) c
+        ((acceptIfCellCS Δflag).timeBound n + k) =
+      runConfig (M := (acceptIfCellCS Δflag).toPhased.toTM) c
+        ((acceptIfCellCS Δflag).timeBound n) :=
+  acceptIfCellCS_runConfig_stabilizes Δflag c hphase hstate hbound k
 
 /-- Pin exact acceptance equivalence for an arbitrary ready configuration. -/
 theorem check_acceptIfCellCS_run_state_eq_accept_iff (Δflag : Nat) {n : Nat}
@@ -116,6 +180,15 @@ theorem check_acceptIfCellCS_runSpec (Δflag : Nat) {n : Nat}
            c.tape ⟨c.head.val + Δflag, hbound⟩) ∧
       cf.head = c.head ∧ cf.tape = c.tape) :=
   acceptIfCellCS_runSpec Δflag c hphase hstate hbound
+
+/-- Pin the exact initial input/blank flag read. -/
+theorem check_acceptIfCellCS_initial_flag_eq (Δflag : Nat) {n : Nat}
+    (x : Boolcube.Point n)
+    (hbound : Δflag < (acceptIfCellCS Δflag).toPhased.toTM.tapeLength n) :
+    ((acceptIfCellCS Δflag).toPhased.toTM.initialConfig x).tape
+        ⟨Δflag, hbound⟩ =
+      if h : Δflag < n then x ⟨Δflag, h⟩ else false :=
+  acceptIfCellCS_initial_flag_eq Δflag x hbound
 
 /-- Pin end-to-end acceptance from `initialConfig`, including blank reads. -/
 theorem check_acceptIfCellCS_accepts_iff_input_or_blank_flag

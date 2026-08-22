@@ -23,7 +23,9 @@ This program is intended to be the explicit right operand of the final
 `ConstStatePhasedProgram.seq`.  It must not be hidden in `seqList`: that fold
 appends `idleCS`, whose boundary resets the local state and would erase the
 conditional result.  The predecessor tape-length comparison (or future
-padding construction) is a separate composition obligation.
+padding construction), and identification of the composite `initialConfig`
+with the embedded predecessor `initialConfig`, are separate composition
+obligations.
 -/
 
 /-- A fixed finite-control program that accepts exactly when the cell at
@@ -55,9 +57,10 @@ def acceptIfCellCS (Δflag : Nat) : ConstStatePhasedProgram (Bool × Bool) :=
 @[simp] theorem acceptIfCellCS_acceptState (Δflag : Nat) :
     (acceptIfCellCS Δflag).acceptState = (true, true) := rfl
 
-/-- The terminal phase is absorbing at the transition level.  In
-particular, the false result `(false, false)` is a nonaccepting sink, while
-the true result `(true, true)` is the unique full accepting state. -/
+/-- For the standalone program, or when it is the right operand of `seq`, the
+terminal phase is absorbing at the transition level.  In particular, the
+false result `(false, false)` is a nonaccepting sink, while the true result
+`(true, true)` is the unique full accepting state. -/
 theorem acceptIfCellCS_terminal_transition (Δflag : Nat)
     (q : Bool × Bool) (scan : Bool) :
     (acceptIfCellCS Δflag).transition
@@ -126,8 +129,10 @@ theorem castAcceptIfCellConfig_runConfig (Δflag : Nat) {n : Nat}
       exact castAcceptIfCellConfig_stepConfig Δflag _
 
 /-- Exact run behavior from a ready configuration.  The theorem explicitly
-requires both the start phase and the full start local state, as well as the
-head bound needed to prevent clamped right motion. -/
+requires the start phase, the full start local state, and the head bound needed
+to prevent clamped right motion.  The `hstate` premise is inherited from the
+current underlying combiner theorem: the two reads overwrite both local-state
+bits, so the stated final semantics is independent of the initial local state. -/
 theorem acceptIfCellCS_run_full (Δflag : Nat) {n : Nat}
     (c : Configuration (M := (acceptIfCellCS Δflag).toPhased.toTM) n)
     (hphase : c.state.fst.val = (acceptIfCellCS Δflag).startPhase.val)
@@ -176,6 +181,44 @@ theorem acceptIfCellCS_run_full (Δflag : Nat) {n : Nat}
       rw [← castAcceptIfCellConfig_tape Δflag cf, hrun]
       simpa [c'] using ht
     rw [ht', BinaryCounter.write_self_eq]
+
+private theorem acceptIfCellCS_stepConfig_terminal (Δflag : Nat) {n : Nat}
+    (c : Configuration (M := (acceptIfCellCS Δflag).toPhased.toTM) n)
+    (hphase : c.state.fst = (acceptIfCellCS Δflag).acceptPhase) :
+    TM.stepConfig (M := (acceptIfCellCS Δflag).toPhased.toTM) c = c := by
+  rcases c with ⟨⟨i, q⟩, head, tape⟩
+  simp only at hphase
+  subst i
+  simp [TM.stepConfig, PhasedProgram.toTM, toPhased,
+    acceptIfCellCS_terminal_transition]
+  exact BinaryCounter.write_self_eq _ head
+
+/-- Exact-clock stabilization from a ready configuration.  After the precise
+`timeBound`-step arrival at the terminal phase, every additional `k` steps
+leave the complete final configuration unchanged. -/
+theorem acceptIfCellCS_runConfig_stabilizes (Δflag : Nat) {n : Nat}
+    (c : Configuration (M := (acceptIfCellCS Δflag).toPhased.toTM) n)
+    (hphase : c.state.fst.val = (acceptIfCellCS Δflag).startPhase.val)
+    (hstate : c.state.snd = (acceptIfCellCS Δflag).startState)
+    (hbound : c.head.val + Δflag <
+      (acceptIfCellCS Δflag).toPhased.toTM.tapeLength n)
+    (k : Nat) :
+    TM.runConfig (M := (acceptIfCellCS Δflag).toPhased.toTM) c
+        ((acceptIfCellCS Δflag).timeBound n + k) =
+      TM.runConfig (M := (acceptIfCellCS Δflag).toPhased.toTM) c
+        ((acceptIfCellCS Δflag).timeBound n) := by
+  let cf := TM.runConfig (M := (acceptIfCellCS Δflag).toPhased.toTM) c
+    ((acceptIfCellCS Δflag).timeBound n)
+  obtain ⟨hrun, _, _⟩ := acceptIfCellCS_run_full Δflag c hphase hstate hbound
+  have hterminal : cf.state.fst = (acceptIfCellCS Δflag).acceptPhase := by
+    exact congrArg Sigma.fst hrun
+  rw [runConfig_add]
+  change TM.runConfig (M := (acceptIfCellCS Δflag).toPhased.toTM) cf k = cf
+  induction k with
+  | zero => rfl
+  | succ k ih =>
+      rw [runConfig_succ, ih]
+      exact acceptIfCellCS_stepConfig_terminal Δflag cf hterminal
 
 /-- At the exact runtime, full accepting-state equality is equivalent to the
 original flag cell being true. -/

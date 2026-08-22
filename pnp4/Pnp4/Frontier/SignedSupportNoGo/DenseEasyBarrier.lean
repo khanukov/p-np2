@@ -95,11 +95,11 @@ theorem uniformPredicateAverage_gt_half_of_dense
   apply (lt_div_iff₀ hPositive).2
   linarith
 
-private theorem avoidFiniteSetDAG_dense_of_card
+private theorem avoidCoverListDAG_dense_of_card
     {N : Nat} (forbidden : Finset (Bitstring N))
     (hSparse : forbidden.card * 2 < 2 ^ N) :
     DenseAboveHalf
-      (fun input => eval (avoidFiniteSetDAG forbidden) input) := by
+      (fun input => eval (avoidListDAG forbidden.toList) input) := by
   classical
   let witnesses : Finset (Bitstring N) := Finset.univ \ forbidden
   have hCard : witnesses.card = 2 ^ N - forbidden.card := by
@@ -126,7 +126,7 @@ private theorem avoidCover_rejects_easy
     {N : Nat} {Easy : Bitstring N → Prop}
     (cover : FiniteEasyCover N Easy) {input : Bitstring N}
     (hEasy : Easy input) :
-    eval (avoidFiniteSetDAG cover.tables) input = false := by
+    eval (avoidListDAG cover.tables.toList) input = false := by
   simp [cover.covers input hEasy]
 
 /-- Direct dense/easy no-go.  The first premise makes the cover occupy less
@@ -139,13 +139,15 @@ theorem not_everyDenseDAGPredicateAcceptsEasyTable_of_cover_fits
     (hFits : (2 ^ cover.codeBits) * (2 * N + 2) + 3 ≤ maxSize) :
     ¬ EveryDenseDAGPredicateAcceptsEasyTable Easy maxSize := by
   intro hEvery
-  let avoider := avoidFiniteSetDAG cover.tables
+  let avoider := avoidListDAG cover.tables.toList
   have hSize : size avoider ≤ maxSize := by
-    apply (size_avoidFiniteSetDAG_le cover.tables).trans
-    exact Nat.add_le_add_right
+    have hListSize :
+        size avoider ≤ cover.tables.card * (2 * N + 2) + 3 := by
+      simpa [avoider] using size_avoidListDAG_le cover.tables.toList
+    exact hListSize.trans <| Nat.add_le_add_right
       (Nat.mul_le_mul_right (2 * N + 2) cover.card_le) 3 |>.trans hFits
   have hDense : DenseAboveHalf (fun input => eval avoider input) :=
-    avoidFiniteSetDAG_dense_of_card cover.tables (cover_sparse cover hSparse)
+    avoidCoverListDAG_dense_of_card cover.tables (cover_sparse cover hSparse)
   rcases hEvery avoider hSize hDense with ⟨input, hEasy, hAccepts⟩
   have hRejects : eval avoider input = false :=
     avoidCover_rejects_easy cover hEasy
@@ -165,13 +167,15 @@ theorem not_exists_reverseOneSidedFoolsDAG_of_easyImage_cover_fits
     ¬ ∃ weight : Seed → Rat,
       ReverseOneSidedFoolsDAG generator weight maxSize epsilon := by
   rintro ⟨weight, hFools⟩
-  let avoider := avoidFiniteSetDAG cover.tables
+  let avoider := avoidListDAG cover.tables.toList
   have hSize : size avoider ≤ maxSize := by
-    apply (size_avoidFiniteSetDAG_le cover.tables).trans
-    exact Nat.add_le_add_right
+    have hListSize :
+        size avoider ≤ cover.tables.card * (2 * N + 2) + 3 := by
+      simpa [avoider] using size_avoidListDAG_le cover.tables.toList
+    exact hListSize.trans <| Nat.add_le_add_right
       (Nat.mul_le_mul_right (2 * N + 2) cover.card_le) 3 |>.trans hFits
   have hDense : DenseAboveHalf (fun input => eval avoider input) :=
-    avoidFiniteSetDAG_dense_of_card cover.tables (cover_sparse cover hSparse)
+    avoidCoverListDAG_dense_of_card cover.tables (cover_sparse cover hSparse)
   have hUniform : (1 : Rat) / 2 <
       uniformPredicateAverage (fun input : Bitstring N => eval avoider input) :=
     uniformPredicateAverage_gt_half_of_dense _ hDense

@@ -10,9 +10,9 @@ The three-module dependency chain is deliberately small:
    reverse-one-sided weights exist exactly when the generator support hits
    every tested bounded-DAG predicate above the stated mass.
 2. `FiniteSetDAG.lean` builds a computable list-based current-model `DagCircuit` accepting the
-   complement of a list of `N`-bit strings, then supplies an order-insensitive `Finset` wrapper whose
-   only noncomputability is the absence of a canonical `Finset.toList` order. Both forms have exact
-   evaluation and the size bound `|S| * (2*N + 2) + 3`.
+   complement of a list of `N`-bit strings. It has exact evaluation and the size bound
+   `forbidden.length * (2*N + 2) + 3`; duplicate entries are semantically harmless but do count
+   toward that syntactic size bound. Finset-based consumers explicitly pass `tables.toList`.
 3. `DenseEasyBarrier.lean` introduces `FiniteEasyCover` and applies that
    avoider to dense/easy and signed-fooling premises.
 

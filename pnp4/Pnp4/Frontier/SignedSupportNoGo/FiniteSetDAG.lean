@@ -261,24 +261,4 @@ theorem size_avoidListDAG_le {N : Nat}
   rw [hFactor] at hBound
   omega
 
-/-- Order-insensitive wrapper around the computable list constructor.  It is
-noncomputable only because `Finset.toList` has no canonical order. -/
-noncomputable def avoidFiniteSetDAG {N : Nat}
-    (forbidden : Finset (Bitstring N)) : DagCircuit N :=
-  avoidListDAG forbidden.toList
-
-@[simp] theorem eval_avoidFiniteSetDAG {N : Nat}
-    (forbidden : Finset (Bitstring N)) (input : Bitstring N) :
-    eval (avoidFiniteSetDAG forbidden) input = decide (input ∉ forbidden) := by
-  classical
-  simp [avoidFiniteSetDAG]
-
-/-- Explicit size bound, linear in `N` times the number of forbidden strings. -/
-theorem size_avoidFiniteSetDAG_le {N : Nat}
-    (forbidden : Finset (Bitstring N)) :
-    size (avoidFiniteSetDAG forbidden) ≤
-      forbidden.card * (2 * N + 2) + 3 := by
-  classical
-  simpa [avoidFiniteSetDAG] using size_avoidListDAG_le forbidden.toList
-
 end Pnp4.Frontier.SignedSupportNoGo

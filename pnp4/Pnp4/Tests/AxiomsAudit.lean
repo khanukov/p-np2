@@ -97,8 +97,6 @@ namespace Tests
 #print axioms Pnp4.Frontier.SignedSupportNoGo.gates_equalsTableDAG_le
 #print axioms Pnp4.Frontier.SignedSupportNoGo.eval_avoidListDAG
 #print axioms Pnp4.Frontier.SignedSupportNoGo.size_avoidListDAG_le
-#print axioms Pnp4.Frontier.SignedSupportNoGo.eval_avoidFiniteSetDAG
-#print axioms Pnp4.Frontier.SignedSupportNoGo.size_avoidFiniteSetDAG_le
 #print axioms Pnp4.Frontier.SignedSupportNoGo.uniformPredicateAverage_gt_half_of_dense
 #print axioms Pnp4.Frontier.SignedSupportNoGo.everyDenseDAGPredicateAcceptsEasyTable_of_hitsDense
 #print axioms Pnp4.Frontier.SignedSupportNoGo.not_everyDenseDAGPredicateAcceptsEasyTable_of_cover_fits

@@ -127,9 +127,6 @@ open Pnp4.Frontier.SignedSupportNoGo
 #check avoidListDAG
 #check eval_avoidListDAG
 #check size_avoidListDAG_le
-#check avoidFiniteSetDAG
-#check eval_avoidFiniteSetDAG
-#check size_avoidFiniteSetDAG_le
 #check FiniteEasyCover
 #check DenseAboveHalf
 #check HitsDenseDAGPredicates

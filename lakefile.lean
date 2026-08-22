@@ -268,6 +268,12 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.SearchMCSPMagnification,
     Glob.one `Pnp4.Frontier.SearchMCSPConcreteTargets,
     Glob.one `Pnp4.Frontier.DagSupportCardinality,
+    -- Generic signed-support/no-go infrastructure.  These modules use only
+    -- the current `DagCompose` / `DagCircuit` layer and carry no one-tape or
+    -- streaming-magnification dependency.
+    Glob.one `Pnp4.Frontier.SignedSupportNoGo.FiniteSignedSupport,
+    Glob.one `Pnp4.Frontier.SignedSupportNoGo.FiniteSetDAG,
+    Glob.one `Pnp4.Frontier.SignedSupportNoGo.DenseEasyBarrier,
     Glob.one `Pnp4.Frontier.ContractExpansion.C_DAG_Adapter,
     Glob.one `Pnp4.Frontier.ContractExpansion.QueryComposition,
     Glob.one `Pnp4.Frontier.ContractExpansion.QueryBuilder,

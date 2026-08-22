@@ -78,7 +78,7 @@ Current theorem surface status:
 - `Frontier/SignedSupportNoGo/`: three-module generic infrastructure/no-go
   extraction over the current `DagCompose` / `DagCircuit` model.  It provides
   finite rational Boolean averages, the exact equivalence between existential
-  reverse-one-sided signed fooling and support hitting, an explicit finite-set
+  reverse-one-sided unnormalized signed fooling and support hitting, an explicit finite-set
   avoider DAG, `FiniteEasyCover`, and dense/easy plus signed-fooling no-go
   endpoints.  Its eventual-linear cover-bits theorem is limited to
   truth-table geometry and retains explicit sparsity and dense/easy premises.

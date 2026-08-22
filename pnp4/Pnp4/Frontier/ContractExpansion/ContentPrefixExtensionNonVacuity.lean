@@ -40,8 +40,10 @@ how hard acceptance is to *decide*:
 
 * **no** verifier Turing machine, runtime bound, or `TM.accepts` bridge for `L'`;
 * **no** `ContentPrefixExtensionNPWitness` instance and no `NP (ContentPrefixExtensionLanguage …)`;
-* **no** claim that the re-decode gate inside `contentInput?` is vacuous in general — the gate is
-  shown not to fire only on the *constructed* zero-prefix words below, via the parse round-trip;
+* this module shows the re-decode gate does not fire on the *constructed* zero-prefix words below,
+  via the parse round-trip; the separate I1 module `ContentPrefixExtensionGateClosure.lean` proves
+  its convention-length equality unconditionally vacuous after any successful header decode and
+  leaves exactly the tag, decoded-index, and inactive-padding read-value tests;
 * **no** lower bound, no `NoPolynomialBoundedSearchSolver`, and no change to any
   `VerifiedNPDAGLowerBoundSource` or `SearchMCSPMagnificationContract`.
 

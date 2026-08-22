@@ -26,8 +26,10 @@ Combined with `contentPrefixExtensionLanguage_in_NP_of_witness` (brick R2), this
 conditional chain through `L'`.  The `L'` NP-witness remains an **unproved hypothesis**; the gain is
 definitional and narrow — `L'` has no *explicit* gate on the ambient physical length for the
 obstruction to attach to (the strict parser's own equality gate is still executed inside
-`contentInput?`, on the computed window, with vacuity unproved), which is not the same as `L'` being
-independent of the physical length.  Padding stability *is* proved in
+`contentInput?`, on the computed window, where I1 proves it unconditionally vacuous after a
+successful header decode, leaving the three tag / decoded-index / inactive-padding read-value tests),
+which is not the same as `L'` being independent of the physical length.  Padding stability *is*
+proved in
 `ContentPrefixExtensionPadding.lean`, but only for `ContentAccepts` on *complete* words; membership
 in `L'` at physical length `m` still quantifies over certificates of length `certificateLength m 1`
 concatenated at offset `m`, both moving with `m`, so `L'` itself is not known to be padding-invariant.

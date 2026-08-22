@@ -12,17 +12,20 @@ of the source:
 
 * `inNP` half: the content-truthful NP witness (brick R2) — an **explicit hypothesis**, exactly as
   before.  Its target language has no *explicit* gate on the ambient physical length (the strict
-  parser's own equality gate survives inside `contentInput?`, applied to the computed window, with
-  vacuity unproved), so the ambient-gate step of the
-  obstruction has nothing to attach to; that is a definitional observation, not a positive result,
-  and, on the machine side, the witness's `runTime` is still evaluated at the length-dependent point
-  `n + certificateLength n 1`.  On the specification side `contentHeader?` still *mentions*
+  parser's own equality gate survives inside `contentInput?`, applied to the computed window, but
+  I1 proves that the equality is unconditionally reflexive after gamma narrowing and a successful
+  header decode; exactly the
+  tag, decoded-index, and inactive-padding read-value tests remain), so the ambient-gate step of the
+  obstruction has nothing to attach to.  On the machine side, however, the witness's `runTime` is
+  still evaluated at the length-dependent point `n + certificateLength n 1`.  On the specification
+  side `contentHeader?` still *mentions*
   `2 * N + 1`, but `contentHeader?_padWord_of_le` shows its value does not move with `N`; that
   invariance is proved for `ContentAccepts` on complete words only, **not** for the language wrapper
   `L'` that this witness targets (its membership at length `m` quantifies over certificates of length
   `certificateLength m 1` concatenated at offset `m`).  No verifier machine, runtime bound, or
-  `TM.accepts` bridge is constructed anywhere, so nothing here shows the witness is satisfiable — nor
-  that `ContentAccepts` is;
+  `TM.accepts` bridge is constructed anywhere, so the NP-witness hypothesis remains open.  Concrete
+  `ContentAccepts` non-vacuity and `L'` non-emptiness are already proved separately by GATE-0; they do
+  not supply that machine bridge;
 * `¬PpolyDAG` half: the **same** open lower-bound hypothesis `NoPolynomialBoundedSearchSolver`,
   via the transferred extraction (brick R4), plus the growth premise
   `TreeMCSPExtractionGrowthAssumptions` that the length-gated Block 9d form also carries.

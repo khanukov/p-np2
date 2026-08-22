@@ -313,11 +313,10 @@ end Pnp4
 -- The content-truthful prefix-extension language L' (bricks R1/R2): membership read through the
 -- blank padding at content-computed offsets, with no *explicit* gate on the ambient physical length
 -- (the strict parser's own m = treeMCSPPrefixM equality gate survives inside contentInput?, applied
--- to the computed window rather than to the ambient N, and its vacuity is unproved), plus its
--- NP-witness
--- interface.  That interface stays an unproved hypothesis -- no TM, runtime bound, or TM.accepts
--- bridge is built anywhere.  Satisfiability of ContentAccepts IS established, but only by the GATE-0
--- block at the end of this group; nothing between here and there establishes it.
+-- to the computed window rather than to the ambient N; I1 proves this equality gate vacuous after a
+-- successful header decode, leaving exactly three tag/index/padding read-value tests), plus its
+-- NP-witness interface.  That interface stays an unproved hypothesis -- no TM, runtime bound, or
+-- TM.accepts bridge is built anywhere.  GATE-0 establishes concrete ContentAccepts non-vacuity.
 #print axioms Pnp4.Frontier.ContractExpansion.padRead_lt
 #print axioms Pnp4.Frontier.ContractExpansion.padRead_ge
 #print axioms Pnp4.Frontier.ContractExpansion.padWord_apply
@@ -369,8 +368,10 @@ end Pnp4
 -- language wrapper ContentPrefixExtensionLanguage (L'), whose membership at length m quantifies
 -- over certificates of length certificateLength m 1 concatenated at offset m, both moving with m;
 -- it does NOT build a verifier TM, a runtime bound, or a TM.accepts bridge; the pnp3 model is not
--- length-blind; and stability is agreement INCLUDING on failure, so it does not show the strict
--- parser's surviving m = treeMCSPPrefixM codec n_dec gate inside contentInput? is vacuous.  This
+-- length-blind; and stability is agreement INCLUDING on failure, so it does not by itself show the
+-- strict parser's m = treeMCSPPrefixM codec n_dec gate inside contentInput? is vacuous.  I1 proves
+-- that equality gate vacuous separately and leaves exactly three tag/index/padding read-value tests.
+-- This
 -- entire module is axiom-light: readBit?_padWord_of_lt is axiom-free and the other fourteen entries
 -- are [propext, Quot.sound], with no Classical.choice theorem.
 #print axioms Pnp4.Frontier.ContractExpansion.padRead_padWord_of_le
@@ -413,8 +414,8 @@ end Pnp4
 -- Explicitly classical conditional transport module.  The theorem derives ContentPrefixExtendable
 -- directly through ContentPrefixExtendable_iff_of_parse, without either Boolean language wrapper.
 -- Its statement still necessarily inherits Classical.choice from the pre-existing noncomputable
--- concatBitstring.  It is conditional on hparse, hn, hext, and hT, so proves no unconditional
--- satisfiability or non-emptiness result.
+-- concatBitstring.  It is conditional on hparse, hn, hext, and hT, so is not the unconditional
+-- non-vacuity result; GATE-0 supplies that separately.
 #print axioms Pnp4.Frontier.ContractExpansion.ContentAccepts_padWord_of_prefixExtendable
 -- FEAS-0 slice, part 1 (ContentParseFieldRecovery.lean, plan section 1.0): parser field recovery.
 -- parseTreeMCSPPrefixInput_inversion above keeps only the length gate and the gamma decode; these
@@ -425,8 +426,8 @@ end Pnp4
 -- value pr.1 -- no injectivity of treeMCSPPrefixM codec and no gamma canonicity is used (plan
 -- stop/go F0b).  Both entries are axiom-light: [propext, Quot.sound], no Classical.choice, lighter
 -- than the standard triple.  Scope: recovery only; the separate part-2 audit below now covers the
--- FEAS-0 target bound.  They do NOT show ContentAccepts is satisfiable and build no verifier TM,
--- runtime bound or TM.accepts bridge.
+-- FEAS-0 target bound.  They do not themselves show ContentAccepts is satisfiable and build no
+-- verifier TM, runtime bound or TM.accepts bridge; GATE-0 separately supplies non-vacuity.
 #print axioms Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_x_slice
 #print axioms Pnp4.Frontier.ContractExpansion.contentInput?_x_apply
 
@@ -434,8 +435,8 @@ end Pnp4
 -- input-zero truth-table forcing, physical-support forcing, equality of convention lengths at the
 -- parsed target r := pr.2.n, and the polynomial headline.  This is I1-free: it uses M n_header =
 -- M r and never n_header = r.  These are infrastructure theorems.  They freeze the content target
--- but do not construct a verifier TM, prove L' in NP, establish non-vacuity, or discharge either
--- lower-bound source obligation.
+-- but do not construct a verifier TM, prove L' in NP, themselves establish non-vacuity, or
+-- discharge either lower-bound source obligation.  GATE-0 establishes non-vacuity separately.
 #print axioms Pnp4.Frontier.ContractExpansion.treeCircuitWitnessCodec_decode_blank_zero
 #print axioms Pnp4.Frontier.ContractExpansion.treeCircuitWitnessCodec_decode_blank_pos
 #print axioms Pnp4.Frontier.ContractExpansion.bitVecToNat_all_true
@@ -453,8 +454,9 @@ end Pnp4
 -- Circuit.const false of size 1 against 1 <= thresholdPoly k n.  These are infrastructure theorems
 -- about WHICH words are accepted, not about the cost of deciding acceptance: they construct no
 -- verifier TM, runtime bound or TM.accepts bridge, give no ContentPrefixExtensionNPWitness instance
--- and no NP membership for L', do not show the contentInput? re-decode gate vacuous in general
--- (only on the constructed zero-prefix words), and discharge no lower-bound source obligation.
+-- and no NP membership for L'.  This module handles the re-decode gate only on its constructed
+-- zero-prefix words; I1 separately proves the convention-length equality gate vacuous in general
+-- after successful header decoding.  No lower-bound source obligation is discharged.
 -- Infrastructure only; no P != NP claim.
 #print axioms Pnp4.Frontier.ContractExpansion.contentAccepts_zeroPrefixQuery_of_predicate
 #print axioms Pnp4.Frontier.ContractExpansion.contentPrefixExtensionLanguage_zeroPrefixQuery
@@ -463,9 +465,10 @@ end Pnp4
 -- I1 gate closure (ContentPrefixExtensionGateClosure.lean, plan section 4.3).  Injectivity is
 -- audited only under monotone witness width and at the concrete polynomial codec; no false generic
 -- codec theorem exists.  Canonicity is hypothesis-free after successful decoding, narrowing uses
--- the consumed-based transfer correction, and the final parser theorem exposes exactly the three
--- tag/index/pad-zero value tests.  Infrastructure only: no verifier, NP-membership, non-vacuity, or
--- lower-bound source obligation is discharged.
+-- the consumed-based transfer correction, proves the convention-length equality gate vacuous, and
+-- exposes exactly the three tag/index/pad-zero read-value tests.  Infrastructure only: no verifier,
+-- NP-membership, or lower-bound source obligation is discharged; GATE-0 supplies non-vacuity
+-- independently.
 #print axioms Pnp4.Frontier.ContractExpansion.treeMCSPPrefixM_strictMono
 #print axioms Pnp4.Frontier.ContractExpansion.treeMCSPPrefixM_injective_of_monotone
 #print axioms Pnp4.Frontier.ContractExpansion.witnessBits_monotone_treePoly

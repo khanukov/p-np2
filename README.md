@@ -82,10 +82,11 @@ inconsistent from `params` and `easyData` alone, before solver correctness is us
 names are not a standard AC0 lower bound and not P-vs-NP progress.
 
 On the pnp4 side there is a machine-checked **conditional** chain from a concrete
-tree-MCSP search lower bound to `NP_not_subset_PpolyDAG`
-(`NP_not_subset_PpolyDAG_treePoly`).  It proves neither `P != NP` nor
-`NP_not_subset_PpolyDAG`: at a concrete polynomial threshold it still depends on exactly
-two unproved hypotheses.  See `STATUS.md` and
+tree-MCSP search lower bound to `NP_not_subset_PpolyDAG`. The original
+`NP_not_subset_PpolyDAG_treePoly` and preferred content-truthful
+`NP_not_subset_PpolyDAG_treePolyCT` capstones each still depend on exactly two unproved hypotheses
+at a concrete polynomial threshold. They prove neither `P != NP` nor
+`NP_not_subset_PpolyDAG` unconditionally. See `STATUS.md` and
 `pnp4/Pnp4/Frontier/ContractExpansion/README.md`.
 
 ## Fixed-Params Candidate
@@ -122,9 +123,10 @@ closed:
 - **pnp3 route** — a non-vacuous fixed-params support/locality source theorem that
   cannot be satisfied by truth-table hardwiring or singleton provenance, wired through
   `ResearchGapWitness`.
-- **pnp4 route** (the mainline per `AGENTS.md`) — the two open hypotheses of
-  `NP_not_subset_PpolyDAG_treePoly`: a `P/poly` circuit lower bound for the concrete
-  tree-MCSP search problem, and a concrete NP-verifier witness.
+- **pnp4 route** (the mainline per `AGENTS.md`) — the same concrete
+  `NoPolynomialBoundedSearchSolver` lower bound plus a concrete NP-verifier witness. The preferred
+  content target has closed non-vacuity and parser-length/gamma gates, but its actual verifier
+  bridge and runtime/advice enforcement remain open.
 
 Both remaining obligations are research-level or engineering-heavy mathematics, not
 missing Lean wrappers.

@@ -15,7 +15,8 @@ convention length of the very `n` its parse reports, the two languages agree —
 
 for `y : PrefixBitVec (treeMCSPPrefixM codec n)`, writing `M` for `treeMCSPPrefixM codec`.  Both
 hypotheses are needed: parse inversion only yields `M input.n = M n`, and injectivity of `M` is not
-proved anywhere, so `input.n = n` does not follow from the parse alone.
+available for a generic codec, so `input.n = n` does not follow from the parse alone. The separate
+I1 module proves injectivity under monotone witness width and at the concrete polynomial codec.
 
 This is the seam through which the existing decision→search extraction transfers to `L'` (brick R4):
 the greedy machinery only ever evaluates deciders on *constructed, parseable* queries.

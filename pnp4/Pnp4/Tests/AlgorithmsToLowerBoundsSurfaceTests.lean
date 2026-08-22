@@ -930,8 +930,9 @@ open Pnp4.Frontier.ContractExpansion
 
 -- The content-truthful language `L'` and its NP-witness interface (R1/R2).  The interface is a
 -- hypothesis: no verifier TM, runtime bound, or `TM.accepts` bridge for `L'` is constructed
--- anywhere in this repository.  Satisfiability of `ContentAccepts` IS established, but only by the
--- GATE-0 surface at the end of this section; nothing between here and there establishes it.
+-- anywhere in this repository.  GATE-0 establishes concrete `ContentAccepts` non-vacuity, while I1
+-- closes the convention-length equality gate and leaves exactly three tag/index/padding read-value
+-- tests.
 #check @Pnp4.Frontier.ContractExpansion.padRead
 #check @Pnp4.Frontier.ContractExpansion.padWord
 #check @Pnp4.Frontier.ContractExpansion.padRead_lt
@@ -1004,9 +1005,10 @@ theorem check_NP_not_subset_PpolyDAG_treePolyCT
 -- language wrapper `ContentPrefixExtensionLanguage` (membership at length `m` quantifies over
 -- certificates of length `certificateLength m 1` concatenated at offset `m`, both moving with `m`);
 -- no verifier TM, runtime bound, or `TM.accepts` bridge follows; the `pnp3` model is not
--- length-blind; and stability is agreement *including on failure* -- it does NOT show that the
--- strict parser's surviving `m = treeMCSPPrefixM codec n_dec` gate inside `contentInput?` is
--- vacuous.
+-- length-blind; and stability is agreement *including on failure* -- it does not by itself show
+-- the strict parser's `m = treeMCSPPrefixM codec n_dec` gate inside `contentInput?` is vacuous. I1
+-- proves that equality gate vacuous separately and leaves exactly three tag/index/padding
+-- read-value tests.
 #check @Pnp4.Frontier.ContractExpansion.padRead_padWord_of_le
 #check @Pnp4.Frontier.ContractExpansion.padWord_padWord_of_le
 #check @Pnp4.Frontier.ContractExpansion.eq_padWord_of_padRead_eq
@@ -1024,7 +1026,8 @@ theorem check_NP_not_subset_PpolyDAG_treePolyCT
 -- P0 content-side semantic verifier: a plain computable Boolean checker, its unconditional
 -- correctness equivalence, parse-failure rejection, padding stability, and language wrapper.
 -- This is Infrastructure only: it is not a TM construction or runtime theorem and does not
--- establish non-vacuity, NP membership, a lower bound, or P != NP.
+-- itself establish non-vacuity, NP membership, a lower bound, or P != NP; GATE-0 supplies
+-- non-vacuity separately.
 #check @Pnp4.Frontier.ContractExpansion.contentSemanticAccepts
 #check @Pnp4.Frontier.ContractExpansion.contentSemanticAccepts_eq_true_iff
 #check @Pnp4.Frontier.ContractExpansion.contentSemanticAccepts_eq_false_of_contentInput_none
@@ -1061,7 +1064,8 @@ theorem check_NP_not_subset_PpolyDAG_treePolyCT
 -- from the proposition-level coincidence theorem, without either Boolean language wrapper, but
 -- its statement necessarily inherits `Classical.choice` from the pre-existing noncomputable
 -- `concatBitstring`.  This is a CONDITIONAL existential under `hparse`, `hn`, `hext`, and `hT`, not
--- an unconditional satisfiability / non-emptiness result for `ContentAccepts` or `L'`.
+-- the unconditional satisfiability / non-emptiness result for `ContentAccepts` or `L'`; GATE-0
+-- supplies that separately.
 #check @Pnp4.Frontier.ContractExpansion.ContentAccepts_padWord_of_prefixExtendable
 -- FEAS-0 slice, part 1 (`ContentParseFieldRecovery.lean`, plan §1.0): the parser field recovery the
 -- feasibility route assumed was available.  `parseTreeMCSPPrefixInput_inversion` above exposes only
@@ -1071,8 +1075,9 @@ theorem check_NP_not_subset_PpolyDAG_treePolyCT
 -- existential `consumed`, and neither statement identifies it with `gammaLen input.n` or relates
 -- `pr.2.n` to the header value `pr.1`; no injectivity of `treeMCSPPrefixM codec` is used (plan
 -- stop/go F0b).  Scope: recovery only; the separate part-2 surface below now proves FEAS-0's
--- target bound.  These recovery declarations do NOT show `ContentAccepts` is satisfiable and build
--- no verifier TM, runtime bound or `TM.accepts` bridge.
+-- target bound.  These recovery declarations do not themselves show `ContentAccepts` is
+-- satisfiable and build no verifier TM, runtime bound or `TM.accepts` bridge; GATE-0 separately
+-- supplies non-vacuity.
 #check @Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput_x_slice
 #check @Pnp4.Frontier.ContractExpansion.contentInput?_x_apply
 
@@ -1097,7 +1102,8 @@ theorem check_contentInput?_x_apply
 -- polynomial headline.  The only header/parsed-target transport is `M n_header = M r`; none of
 -- these declarations infers `n_header = r` or imports I1.  This closes the feasibility gate and
 -- freezes the content target, but does not itself construct a verifier TM, prove `L' ∈ NP`, show
--- `ContentAccepts` is nonempty, or reduce a lower-bound source obligation.
+-- `ContentAccepts` is nonempty, or reduce a lower-bound source obligation. GATE-0 supplies
+-- non-emptiness separately.
 #check @Pnp4.Frontier.ContractExpansion.treeCircuitWitnessCodec_decode_blank_zero
 #check @Pnp4.Frontier.ContractExpansion.treeCircuitWitnessCodec_decode_blank_pos
 #check @Pnp4.Frontier.ContractExpansion.bitVecToNat_all_true
@@ -1111,8 +1117,9 @@ theorem check_contentInput?_x_apply
 -- injectivity is stated only under monotone witness width and at the concrete polynomial codec;
 -- there is deliberately no false generic-codec injectivity theorem.  Gamma canonicity needs only
 -- successful decoding, narrowing uses the consumed-based correction, the length gate is vacuous,
--- and the final parser characterization leaves exactly tag/index/pad-zero value tests.  This is
--- Infrastructure: no verifier, non-vacuity, NP-membership, or lower-bound obligation follows.
+-- and the final parser characterization leaves exactly tag/index/pad-zero read-value tests.  This
+-- is Infrastructure: no verifier, NP-membership, or lower-bound obligation follows; GATE-0 supplies
+-- non-vacuity independently.
 #check @Pnp4.Frontier.ContractExpansion.treeMCSPPrefixM_strictMono
 #check @Pnp4.Frontier.ContractExpansion.treeMCSPPrefixM_injective_of_monotone
 #check @Pnp4.Frontier.ContractExpansion.witnessBits_monotone_treePoly
@@ -1155,8 +1162,10 @@ theorem check_ContentAccepts_iff_of_padRead_eq
 -- vacuous at `i = 0`; the relation conjunct is `TreeCircuitWitnessCodec.complete`.  This says which
 -- words are accepted, NOT how hard acceptance is to decide: it constructs no verifier TM, runtime
 -- bound, or `TM.accepts` bridge, gives no `ContentPrefixExtensionNPWitness` instance and no
--- `NP (ContentPrefixExtensionLanguage …)`, does not show the `contentInput?` re-decode gate vacuous
--- in general (only on the constructed zero-prefix words), and discharges no lower-bound obligation.
+-- `NP (ContentPrefixExtensionLanguage …)`. This module handles the `contentInput?` re-decode gate
+-- only on the constructed zero-prefix words; I1 separately proves its convention-length equality
+-- gate vacuous in general after successful header decoding. It discharges no lower-bound
+-- obligation.
 -- Infrastructure only; no `P ≠ NP` claim.
 #check @Pnp4.Frontier.ContractExpansion.contentAccepts_zeroPrefixQuery_of_predicate
 #check @Pnp4.Frontier.ContractExpansion.contentPrefixExtensionLanguage_zeroPrefixQuery

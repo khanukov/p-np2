@@ -11,6 +11,7 @@ import LowerBounds.AC0_GapMCSP
 import Tests.BridgeLocalityRegression
 import Tests.PromiseRouteConclusionProbe
 import ThirdPartyFacts.Facts_Switching
+import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqRunExamples
 
 /-!
   pnp3/Tests/AxiomsAudit.lean
@@ -23,6 +24,14 @@ import ThirdPartyFacts.Facts_Switching
 open Pnp3
 open Pnp3.ComplexityInterfaces
 open Pnp3.Magnification
+
+-- Reusable sequential-TM infrastructure (W-A).
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_boundary_step_eq_embedSeqP2Config_lift
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_run_full
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.RunSpec.seq
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.RunSpec.seqList_singleton
+#print axioms Internal.PsubsetPpoly.TM.GateEvalCS.gateConstCS_seqList_singleton_runSpec
+#print axioms Internal.PsubsetPpoly.TM.GateEvalCS.gateConstCS_seq_run_full
 
 -- Итоговые утверждения (формульная сепарация).
 #print axioms RefutedRoute_NP_not_subset_PpolyFormula_final

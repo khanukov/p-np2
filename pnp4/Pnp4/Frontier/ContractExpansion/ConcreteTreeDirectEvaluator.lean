@@ -9,9 +9,10 @@ open AlgorithmsToLowerBounds
 /-!
 # Direct iterative evaluation of concrete tree-codec witnesses
 
-**Progress classification (AGENTS.md): Infrastructure.**  This removes a concrete semantic
-sub-obligation of the `PrefixExtensionNPWitness` route, but constructs no verifier bridge and
-reduces neither mainline source obligation.  **No `P ≠ NP` claim.**
+**Progress classification (AGENTS.md): Infrastructure.**  This supplies reusable functional
+evaluation facts for the `ContentPrefixExtensionNPWitness` / `ContentVerifierBridge` route, but
+constructs no machine or verifier bridge and reduces neither mainline source obligation.
+**No `P ≠ NP` claim.**
 
 The existing depth-free decoder reads the authoritative five-tag, fixed-width prefix encoding.
 After that direct parse, `directEvalLoop` evaluates the decoded tree with explicit control and
@@ -198,6 +199,12 @@ theorem nativeEvalList_rejects_short_input_field (n : Nat) (rest : List Bool)
   simp [nativeEvalList, decodeCircuitFull, decodeCircuit,
     Pnp3.Internal.PsubsetPpoly.TM.Encoding.decodeCircuitTreeAtDepth, hshort]
 
+/-- The constant tag requires its one-bit Boolean payload. -/
+@[simp] theorem nativeEvalList_rejects_truncated_const (n : Nat) (x : Fin n → Bool) :
+    nativeEvalList n [false, false, true] x = none := by
+  simp [nativeEvalList, decodeCircuitFull, decodeCircuit,
+    Pnp3.Internal.PsubsetPpoly.TM.Encoding.decodeCircuitTreeAtDepth]
+
 /-- A full runtime-width input field is still rejected when its decoded index is outside `Fin n`.
 This makes the index-validity failure distinct from the short-field failure above. -/
 theorem nativeEvalList_rejects_invalid_input_index (n : Nat)
@@ -248,6 +255,16 @@ theorem directEvalLoop_rejects_and_underflow {n fuel gates : Nat} (x : Fin n →
   · simp only [List.length_cons] at h
     omega
 
+/-- Explicit value-stack-underflow rejection for disjunction reduction. -/
+theorem directEvalLoop_rejects_or_underflow {n fuel gates : Nat} (x : Fin n → Bool)
+    (tasks : List (DirectEvalTask n)) (values : List Bool) (h : values.length < 2) :
+    directEvalLoop x (fuel + 1) (.applyOr :: tasks) values gates = none := by
+  rcases values with _ | ⟨a, _ | ⟨b, tail⟩⟩
+  · simp [directEvalLoop]
+  · simp [directEvalLoop]
+  · simp only [List.length_cons] at h
+    omega
+
 /-- The loop uses fewer than twice the number of circuit nodes plus one iterations. -/
 theorem directEvalCost_le_two_mul_size {n : Nat} (c : Pnp3.Models.Circuit n) :
     directEvalCost c ≤ 2 * Pnp3.Models.Circuit.size c := by
@@ -258,18 +275,120 @@ theorem directEvalCost_le_two_mul_size {n : Nat} (c : Pnp3.Models.Circuit n) :
   | and a b iha ihb => simp only [directEvalCost, Pnp3.Models.Circuit.size]; omega
   | or a b iha ihb => simp only [directEvalCost, Pnp3.Models.Circuit.size]; omega
 
-/-- Conservative linear reference capacity for a serialized direct-evaluator layout. -/
-def directStackCapacity (serializedLength : Nat) : Nat := 2 * serializedLength + 2
+/-- A successful authoritative tree decode consumes at least three tag bits per decoded node.
+This is the decoder-side complement of the encoder length bound: it applies to arbitrary successful
+inputs, not only to lists produced by `encodeCircuitTree`. -/
+theorem decodeCircuitTreeAtDepth_consumed_ge (n width d : Nat) :
+    ∀ {bits : List Bool} {tree : Pnp3.Internal.PsubsetPpoly.TM.Encoding.CircuitTree n}
+      {rest : List Bool},
+      Pnp3.Internal.PsubsetPpoly.TM.Encoding.decodeCircuitTreeAtDepth n width d bits =
+          some (tree, rest) →
+        3 * tree.size + rest.length ≤ bits.length := by
+  induction d with
+  | zero =>
+      intro bits tree rest h
+      simp [Pnp3.Internal.PsubsetPpoly.TM.Encoding.decodeCircuitTreeAtDepth] at h
+  | succ d ih =>
+      intro bits tree rest h
+      rcases bits with _ | ⟨b0, _ | ⟨b1, _ | ⟨b2, tail⟩⟩⟩
+      · simp [Pnp3.Internal.PsubsetPpoly.TM.Encoding.decodeCircuitTreeAtDepth] at h
+      · simp [Pnp3.Internal.PsubsetPpoly.TM.Encoding.decodeCircuitTreeAtDepth] at h
+      · simp [Pnp3.Internal.PsubsetPpoly.TM.Encoding.decodeCircuitTreeAtDepth] at h
+      · rcases b0 with _ | _ <;> rcases b1 with _ | _ <;> rcases b2 with _ | _
+        · simp only [Pnp3.Internal.PsubsetPpoly.TM.Encoding.decodeCircuitTreeAtDepth] at h
+          split at h
+          · contradiction
+          · next hlen =>
+            cases hfin : Pnp3.Internal.PsubsetPpoly.TM.Encoding.decodeFin width
+                (List.take width tail) with
+            | none => simp [hfin] at h
+            | some i =>
+                simp only [hfin] at h
+                split at h
+                · cases h
+                  have hdrop : (List.drop width tail).length = tail.length - width :=
+                    List.length_drop
+                  simp [Pnp3.Internal.PsubsetPpoly.TM.Encoding.CircuitTree.size]
+                  omega
+                · contradiction
+        · rcases tail with _ | ⟨b, tail⟩
+          · simp [Pnp3.Internal.PsubsetPpoly.TM.Encoding.decodeCircuitTreeAtDepth] at h
+          · simp [Pnp3.Internal.PsubsetPpoly.TM.Encoding.decodeCircuitTreeAtDepth] at h
+            rcases h with ⟨rfl, rfl⟩
+            simp [Pnp3.Internal.PsubsetPpoly.TM.Encoding.CircuitTree.size]
+            omega
+        · simp only [Pnp3.Internal.PsubsetPpoly.TM.Encoding.decodeCircuitTreeAtDepth] at h
+          cases hsub : Pnp3.Internal.PsubsetPpoly.TM.Encoding.decodeCircuitTreeAtDepth
+              n width d tail with
+          | none => simp [hsub] at h
+          | some p =>
+              rcases p with ⟨c, remainder⟩
+              simp only [hsub] at h
+              cases h
+              have hc := ih hsub
+              simp [Pnp3.Internal.PsubsetPpoly.TM.Encoding.CircuitTree.size]
+              omega
+        · simp only [Pnp3.Internal.PsubsetPpoly.TM.Encoding.decodeCircuitTreeAtDepth] at h
+          cases hleft : Pnp3.Internal.PsubsetPpoly.TM.Encoding.decodeCircuitTreeAtDepth
+              n width d tail with
+          | none => simp [hleft] at h
+          | some p =>
+              rcases p with ⟨left, tail'⟩
+              simp only [hleft] at h
+              cases hright : Pnp3.Internal.PsubsetPpoly.TM.Encoding.decodeCircuitTreeAtDepth
+                  n width d tail' with
+              | none => simp [hright] at h
+              | some p =>
+                  rcases p with ⟨right, remainder⟩
+                  simp only [hright] at h
+                  cases h
+                  have hl := ih hleft
+                  have hr := ih hright
+                  simp [Pnp3.Internal.PsubsetPpoly.TM.Encoding.CircuitTree.size]
+                  omega
+        · simp only [Pnp3.Internal.PsubsetPpoly.TM.Encoding.decodeCircuitTreeAtDepth] at h
+          cases hleft : Pnp3.Internal.PsubsetPpoly.TM.Encoding.decodeCircuitTreeAtDepth
+              n width d tail with
+          | none => simp [hleft] at h
+          | some p =>
+              rcases p with ⟨left, tail'⟩
+              simp only [hleft] at h
+              cases hright : Pnp3.Internal.PsubsetPpoly.TM.Encoding.decodeCircuitTreeAtDepth
+                  n width d tail' with
+              | none => simp [hright] at h
+              | some p =>
+                  rcases p with ⟨right, remainder⟩
+                  simp only [hright] at h
+                  cases h
+                  have hl := ih hleft
+                  have hr := ih hright
+                  simp [Pnp3.Internal.PsubsetPpoly.TM.Encoding.CircuitTree.size]
+                  omega
+        · simp [Pnp3.Internal.PsubsetPpoly.TM.Encoding.decodeCircuitTreeAtDepth] at h
+        · simp [Pnp3.Internal.PsubsetPpoly.TM.Encoding.decodeCircuitTreeAtDepth] at h
+        · simp [Pnp3.Internal.PsubsetPpoly.TM.Encoding.decodeCircuitTreeAtDepth] at h
 
-/-- A quadratic single-tape microstep budget: at most `2L+1` logical iterations, each allowed a
-home-to-home scan of at most `2L+2` cells. -/
-def directMicrostepBound (serializedLength : Nat) : Nat :=
-  (2 * serializedLength + 1) * directStackCapacity serializedLength
-
-theorem directMicrostepBound_polynomial (L : Nat) :
-    directMicrostepBound L ≤ 4 * (L + 1) ^ 2 := by
-  unfold directMicrostepBound directStackCapacity
-  nlinarith
+/-- Successful native decoding bounds the exact functional evaluator iterations by the serialized
+input length.  This is not a Turing-machine microstep theorem: `nativeEvalList` still invokes the
+Lean decoder and stores whole `Circuit` values on its control stack. -/
+theorem decodeCircuitFull_directEvalCost_le_length (n width : Nat) (bits : List Bool)
+    (c : Pnp3.Models.Circuit n) (rest : List Bool)
+    (hdecode : decodeCircuitFull n width bits = some (c, rest)) :
+    directEvalCost c ≤ bits.length := by
+  unfold decodeCircuitFull decodeCircuit at hdecode
+  cases htree : Pnp3.Internal.PsubsetPpoly.TM.Encoding.decodeCircuitTreeAtDepth
+      n width bits.length bits with
+  | none => simp [htree] at hdecode
+  | some p =>
+      rcases p with ⟨tree, remainder⟩
+      simp only [htree, Option.map_some] at hdecode
+      cases hdecode
+      have hconsumed := decodeCircuitTreeAtDepth_consumed_ge n width bits.length htree
+      have hsize : Pnp3.Models.Circuit.size (fromTree tree) = tree.size := by
+        rw [← size_toTree (fromTree tree), toTree_fromTree]
+      have hcost := directEvalCost_le_two_mul_size (fromTree tree)
+      rw [hsize] at hcost
+      omega
 
 end ContractExpansion
 end Frontier

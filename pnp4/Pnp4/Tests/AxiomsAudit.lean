@@ -65,6 +65,7 @@ import Pnp4.Frontier.ContractExpansion.CircuitTreeBridge
 import Pnp4.Frontier.ContractExpansion.CircuitEncodingLength
 import Pnp4.Frontier.ContractExpansion.CircuitDecodeDepthFree
 import Pnp4.Frontier.ContractExpansion.ConcreteTreeCodec
+import Pnp4.Frontier.ContractExpansion.ConcreteTreeDirectTagProgram
 import Pnp4.Frontier.ContractExpansion.ConcreteTreeCodecSource
 import Pnp4.Frontier.ContractExpansion.ThresholdGrowth
 import Pnp4.Frontier.ContractExpansion.ConsolidatedTreeSeparation
@@ -531,6 +532,16 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.treeCircuitWitnessCodec
 #print axioms Pnp4.Frontier.ContractExpansion.polyBoundedInTable_treeWitnessBits_of_thresholdPoly
 #print axioms Pnp4.Frontier.ContractExpansion.treePolynomialWitnessCodec
+
+-- CVB-ARCH-1 direct-evaluation architecture spike.  These are reusable infrastructure results:
+-- they do not construct ContentVerifierBridge or reduce either lower-bound source obligation.
+#print axioms Pnp4.Frontier.ContractExpansion.directEvalLoop_visit
+#print axioms Pnp4.Frontier.ContractExpansion.nativeEval_spec
+#print axioms Pnp4.Frontier.ContractExpansion.nativeEvalList_rejects_invalid_input_index
+#print axioms Pnp4.Frontier.ContractExpansion.nativeEvalBounded_rejects_threshold_overflow
+#print axioms Pnp4.Frontier.ContractExpansion.directMicrostepBound_polynomial
+#print axioms Pnp4.Frontier.ContractExpansion.directTagProgram_runConfig_home
+#print axioms Pnp4.Frontier.ContractExpansion.directTagProgram_within_bounds
 
 #print axioms Pnp4.Frontier.ContractExpansion.verifiedSource_of_treeCodec_noPolynomialBoundedSearchSolver
 #print axioms Pnp4.Frontier.ContractExpansion.NP_not_subset_PpolyDAG_of_treeCodec_interfaces

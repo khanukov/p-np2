@@ -75,6 +75,7 @@ import Pnp4.Frontier.ContractExpansion.CircuitTreeBridge
 import Pnp4.Frontier.ContractExpansion.CircuitEncodingLength
 import Pnp4.Frontier.ContractExpansion.CircuitDecodeDepthFree
 import Pnp4.Frontier.ContractExpansion.ConcreteTreeCodec
+import Pnp4.Frontier.ContractExpansion.ConcreteTreeDirectTagProgram
 import Pnp4.Frontier.ContractExpansion.ConcreteTreeCodecSource
 import Pnp4.Frontier.ContractExpansion.ThresholdGrowth
 import Pnp4.Frontier.ContractExpansion.ConsolidatedTreeSeparation
@@ -1388,6 +1389,19 @@ def check_treePolynomialWitnessCodec (threshold : Nat → Nat)
   treePolynomialWitnessCodec threshold hT
 
 end ConcreteTreeCodecSurface
+
+section ConcreteTreeDirectEvaluatorSurface
+
+#check Pnp4.Frontier.ContractExpansion.directEvalLoop_visit
+#check Pnp4.Frontier.ContractExpansion.nativeEval_spec
+#check Pnp4.Frontier.ContractExpansion.nativeEvalList_rejects_invalid_input_index
+#check Pnp4.Frontier.ContractExpansion.nativeEvalBounded_rejects_threshold_overflow
+#check Pnp4.Frontier.ContractExpansion.directEvalCost_le_two_mul_size
+#check Pnp4.Frontier.ContractExpansion.directMicrostepBound_polynomial
+#check Pnp4.Frontier.ContractExpansion.directTagProgram_runConfig_home
+#check Pnp4.Frontier.ContractExpansion.directTagProgram_within_bounds
+
+end ConcreteTreeDirectEvaluatorSurface
 
 section ConcreteTreeCodecSourceSurface
 

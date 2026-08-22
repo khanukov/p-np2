@@ -66,6 +66,25 @@ will directly use the existential rewrite instead of `trivialCert`.
 **Acceptance:** theorem typechecks; axiom audit ∈
 `{propext, Classical.choice, Quot.sound}`.
 
+**W-A infrastructure delivered (2026-08-22):**
+`TuringToolkit/ConstStatePhasedProgramSeqRun.lean` now closes the reusable
+two-program kernel, not the full list induction promised by this session.
+`RunSpec` records only the non-automatic prefix conditions (not accepting
+early and right-move head safety), exact acceptance at `timeBound`, and a
+caller-chosen semantic postcondition.  `seq_run_full` starts from
+`embedSeqConfig P1 P2 c1`, derives the handoff head bound from the single
+`P1.tapeLength ≤ P2.tapeLength` premise, starts P2 at
+`liftP1ToP2 P1 P2 (P1.run ...)`, and returns the final configuration as
+`embedSeqP2Config P1 P2 (P2.run ...)` together with both postconditions.
+`gateConstCS_seq_run_full` instantiates the theorem on two ordered constant
+gate pieces and derives the second gate's destination bound from the first
+gate's bound and `d1 ≤ d2`.
+
+This is **Infrastructure**, not a restricted lower bound and not P-vs-NP
+mainline progress.  It does not by itself provide the recursive
+`seqList_run_full` theorem or close any verifier-language correctness or
+runtime obligation.
+
 ### Session 2 — `writeVecOfNatProgram`
 **File:** new
 `pnp3/Complexity/TMVerifier/TuringToolkit/RowInputWriter.lean`

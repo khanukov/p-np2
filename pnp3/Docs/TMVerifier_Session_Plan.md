@@ -101,12 +101,55 @@ gate's bound and `d1 ≤ d2`.  These two concrete constant-gate examples live in
 `RunSpec` interface and composition theorems remain in
 `TuringToolkit/ConstStatePhasedProgramSeqRun.lean`.
 
-This is **Infrastructure**, not a restricted lower bound and not P-vs-NP
-mainline progress.  Ordinary `RunSpec.seq` plus the terminal singleton closure
-now form the induction kernel; the recursive theorem that assembles that kernel
-over arbitrary `seqList`s (and the full `seqList_run_full` promised by this
-session) remains open.  This work does not close any verifier-language
-correctness or runtime obligation.
+This W-A increment was **Infrastructure**, not a restricted lower bound and
+not P-vs-NP mainline progress.  At that stage, ordinary `RunSpec.seq` plus the
+terminal singleton closure formed the induction kernel, while the recursive
+theorem assembling it over `seqList` remained open.  It did not close any
+verifier-language correctness or runtime obligation.
+
+**W-B non-dependent list layer delivered (2026-08-22):**
+`TuringToolkit/ConstStatePhasedProgramSeqListRun.lean` now supplies the light
+`seqList` recursion layer, importing only the preceding `SeqRun` module.  The
+bridge `liftP1ToSeq_eq_embedSeqConfig_lift` proves that lifting directly into a
+composite tail agrees with lifting into its head and embedding, under the
+explicit adjacent comparison `Pᵢ.tapeLength n ≤ Pᵢ₊₁.tapeLength n`.
+This adjacent hypothesis is essential: embedding through a shorter successor
+can erase cells.  The current public API covers adjacent-monotone lists; a
+shorter handoff would require a separate no-information-loss premise rather
+than an unrestricted-list claim.
+
+`RunSpec.seqList_singleton_exact` identifies the actual terminal boundary-step
+configuration.  `RunSpec.seqList_cons` is the semantic recursion interface: it
+preserves the exact final composite configuration together with the head
+program's standalone postcondition and the already-assembled tail
+postcondition.  The separate non-dependent control-flow theorem
+`RunSpec.seqList_of_forall` handles every nonempty list using ordinary
+`List.Forall` and `List.Chain' (ReadyStep ready)` and deliberately concludes
+with postcondition `True`.  It guarantees whole-list `prefixSafe` and arrival
+at the declared accept phase.  It does **not** collect heterogeneously typed
+intermediate configurations, and it does not assert TM acceptance: phase
+arrival remains distinct from equality with the accepting local state.
+
+`TuringToolkit/ConstStatePhasedProgramSeqListRunExamples.lean` proves an actual
+two-constant-gate `seqList` `RunSpec` with exact final configuration and both
+gate-write facts; this exercises the bridge and exact singleton.  A three-gate
+probe applies the cons theorem twice under only `d₁ ≤ d₂` and `d₂ ≤ d₃`,
+pinning the recursive scope without claiming arbitrary unordered gates.
+The arbitrary control-flow driver is now concretely inhabited for every
+nonempty homogeneous list `P :: List.replicate copies P`, where
+`P = gateConstCS b d`: its explicit readiness predicate and every
+`List.Forall`/`List.Chain' ReadyStep` obligation are proved from the constant
+gate run facts.  This remains a phase-only result.  An arbitrary-length
+semantic accumulator (including the proposed `zeroExtTape`-style tape
+description) remains open.
+The modules, public signatures, and headline axiom dependencies are registered
+in `lakefile.lean`, `Tests/TMSeqRunSurfaceTests.lean`, and
+`Tests/AxiomsAudit.lean`.
+
+This remains **Infrastructure**, not a restricted lower bound and not P-vs-NP
+mainline progress.  It closes the non-dependent, adjacent-monotone list
+control-flow layer, but it does not prove verifier-language correctness,
+acceptance, or a polynomial runtime bound for the eventual verifier.
 
 ### Session 2 — `writeVecOfNatProgram`
 **File:** new

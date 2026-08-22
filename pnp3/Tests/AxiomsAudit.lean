@@ -12,6 +12,7 @@ import Tests.BridgeLocalityRegression
 import Tests.PromiseRouteConclusionProbe
 import ThirdPartyFacts.Facts_Switching
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqRunExamples
+import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 
 /-!
   pnp3/Tests/AxiomsAudit.lean
@@ -32,6 +33,18 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.RunSpec.seqList_singleton
 #print axioms Internal.PsubsetPpoly.TM.GateEvalCS.gateConstCS_seqList_singleton_runSpec
 #print axioms Internal.PsubsetPpoly.TM.GateEvalCS.gateConstCS_seq_run_full
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.RunSpec.imp
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.liftP1ToSeq_eq_embedSeqConfig_lift
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.RunSpec.seqList_singleton_exact
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.RunSpec.seqList_cons
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.ReadyStep
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.RunSpec.seqList_of_forall
+#print axioms Internal.PsubsetPpoly.TM.GateEvalCS.gateConstCS_tapeLength_mono
+#print axioms Internal.PsubsetPpoly.TM.GateEvalCS.gateConstCS_seqList_two_runSpec
+#print axioms Internal.PsubsetPpoly.TM.GateEvalCS.gateConstCS_seqList_two_run_full
+#print axioms Internal.PsubsetPpoly.TM.GateEvalCS.gateConstCS_seqList_three_recursion_probe
+#print axioms Internal.PsubsetPpoly.TM.GateEvalCS.gateConstCSReady
+#print axioms Internal.PsubsetPpoly.TM.GateEvalCS.gateConstCS_seqList_replicate_runSpec
 
 -- Итоговые утверждения (формульная сепарация).
 #print axioms RefutedRoute_NP_not_subset_PpolyFormula_final

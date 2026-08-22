@@ -74,6 +74,32 @@ def check_acceptIfCellCS (Δflag : Nat) :
     ConstStatePhasedProgram (Bool × Bool) :=
   acceptIfCellCS Δflag
 
+/-- Pin the structural arithmetic/state surface of the fixed conditional
+terminal program. -/
+theorem check_acceptIfCellCS_numPhases (Δflag : Nat) :
+    (acceptIfCellCS Δflag).numPhases = 2 * Δflag + 4 :=
+  acceptIfCellCS_numPhases Δflag
+
+theorem check_acceptIfCellCS_timeBound (Δflag n : Nat) :
+    (acceptIfCellCS Δflag).timeBound n = 2 * Δflag + 3 :=
+  acceptIfCellCS_timeBound Δflag n
+
+theorem check_acceptIfCellCS_startPhase_val (Δflag : Nat) :
+    (acceptIfCellCS Δflag).startPhase.val = 0 :=
+  acceptIfCellCS_startPhase_val Δflag
+
+theorem check_acceptIfCellCS_startState (Δflag : Nat) :
+    (acceptIfCellCS Δflag).startState = (false, false) :=
+  acceptIfCellCS_startState Δflag
+
+theorem check_acceptIfCellCS_acceptPhase_val (Δflag : Nat) :
+    (acceptIfCellCS Δflag).acceptPhase.val = 2 * Δflag + 3 :=
+  acceptIfCellCS_acceptPhase_val Δflag
+
+theorem check_acceptIfCellCS_acceptState (Δflag : Nat) :
+    (acceptIfCellCS Δflag).acceptState = (true, true) :=
+  acceptIfCellCS_acceptState Δflag
+
 /-- Pin the standalone/right-operand terminal transition exactly. -/
 theorem check_acceptIfCellCS_terminal_transition (Δflag : Nat)
     (q : Bool × Bool) (scan : Bool) :

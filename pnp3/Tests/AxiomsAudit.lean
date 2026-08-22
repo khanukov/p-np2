@@ -33,6 +33,12 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.RunSpec.seq
 #print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.RunSpec.final_state_eq_accept_iff
 #print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.RunSpec.accepts_eq_decide_local
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.acceptIfCellCS_numPhases
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.acceptIfCellCS_timeBound
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.acceptIfCellCS_startPhase_val
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.acceptIfCellCS_startState
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.acceptIfCellCS_acceptPhase_val
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.acceptIfCellCS_acceptState
 #print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.acceptIfCellCS_terminal_transition
 #print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.castAcceptIfCellConfig_state
 #print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.castAcceptIfCellConfig_head

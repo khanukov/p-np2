@@ -16,6 +16,7 @@ import Pnp4.Frontier.PvsNPBridgeRequirements
 import Pnp4.Frontier.CompressionMagnification
 import Pnp4.Frontier.SearchMCSPMagnification
 import Pnp4.Frontier.SearchMCSPConcreteTargets
+import Pnp4.Frontier.DagSupportCardinality
 import Pnp4.Frontier.ContractExpansion.C_DAG_Adapter
 import Pnp4.Frontier.ContractExpansion.QueryComposition
 import Pnp4.Frontier.ContractExpansion.QueryBuilder
@@ -72,6 +73,14 @@ import Pnp4.Frontier.ModelAudit.RuntimeAdviceBarrier
 
 namespace Pnp4
 namespace Tests
+
+-- Dependency-closed DAG support cardinality.  Infrastructure only: these
+-- theorems neither supply nor reduce a P-vs-NP lower-bound source obligation.
+#print axioms Pnp4.Frontier.DagSupportCardinality.supportAt_subset_directInputCover
+#print axioms Pnp4.Frontier.DagSupportCardinality.support_subset_directInputCover
+#print axioms Pnp4.Frontier.DagSupportCardinality.directInputCover_card_le_two_mul_size
+#print axioms Pnp4.Frontier.DagSupportCardinality.support_card_le_two_mul_size
+#print axioms Pnp4.Frontier.DagSupportCardinality.exists_small_evaluation_support
 
 #print axioms AlgorithmsToLowerBounds.maskBit_true
 #print axioms AlgorithmsToLowerBounds.maskBit_false

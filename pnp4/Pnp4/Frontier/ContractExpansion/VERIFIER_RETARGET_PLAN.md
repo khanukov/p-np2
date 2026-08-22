@@ -125,6 +125,16 @@ survive. No implementation code is introduced here.
 > GATE-0 now separately proves concrete non-vacuity; a concrete verifier TM, runtime proof and the
 > `TM.accepts` bridge remain open.
 
+> **Inventory note (this revision, 8).** This revision audits the post-merge tree at the stable
+> integrated baseline `1512f380` (merge PR `#1638`). That SHA is intentionally a fixed audit anchor,
+> not a claim that it will still be the tip of `main` after this documentation revision merges.
+> Relative to the donor snapshot `5d8ee5f8`, the baseline is 105 commits ahead and contains 57
+> `ContractExpansion/` files. The retarget foundation is now 18 modules — 17 in
+> `ContractExpansion/` plus `ModelAudit/RuntimeAdviceBarrier.lean` — after adding the two
+> CVB-ARCH-1 modules. Those two modules grow the baseline-only side of the donor comparison from
+> nine to eleven. The donor comparison and slice log are refreshed without changing the experiment's
+> honest **BLOCK** verdict.
+
 ---
 
 ## 1. The target
@@ -646,26 +656,37 @@ boundary of the frozen target.
 
 ---
 
-## 2. Re-audit of `verifier-next-slices.md` against current `main`
+## 2. Re-audit of `verifier-next-slices.md` against the stable integrated baseline
 
-The donor manifest was written at `main = 5d8ee5f8`. At this slice-log revision `main` is
-`184400c5`, **88 commits ahead** (`git rev-list --count 5d8ee5f8..184400c5 = 88`), and those commits
-are precisely the work that changed
+The donor manifest was written at `main = 5d8ee5f8`. The stable integrated baseline audited by this
+revision is `1512f380`, **105 commits ahead**
+(`git rev-list --count 5d8ee5f8..1512f380 = 105`). This fixed SHA records the repository state the
+inventory was checked against; it is not described as the moving tip of `main` after this docs
+revision merges. Those commits are precisely the work that changed
 the retarget picture: `#1621` (AC0 audit), `#1622` (documentation-state audit), **`#1623` (CT-A)**,
 **`#1624` (CT-B)**, **`#1625` (CT-C)**, **`#1626` (runtime advice)**, **`#1627` (retarget
 plan)**, **`#1628` (field recovery)**, **`#1629` (FEAS target bound)** and **`#1630`
 (concrete non-vacuity)**, **`#1632` (D1a tape interface)**, **`#1631` (P0 semantic verifier)**,
 **`#1633` (I1 gate closure)** and **`#1634` (D1b bridge-to-witness repackaging)**.
 
+The four later merges included in the audited baseline are:
+
+* **PR `#1635`** (`0b3d142e`): documentation reconciliation and citation cleanup;
+* **PR `#1636`** (`18a2dc79`): DAG-support cardinality work, outside the
+  `ContractExpansion/` retarget foundation;
+* **PR `#1637`** (`1bd5d235`): the signed-support no-go, also outside that foundation; and
+* **PR `#1638`** (`1512f380`): CVB-ARCH-1, the direct-evaluator architecture experiment whose
+  verdict remains **BLOCK** (§4.8).
+
 ### 2.1 Stale assumptions — corrected
 
 | Donor claim | Verdict | Correction |
 |---|---|---|
-| §0 "`main` = `5d8ee5f8`" | **stale** | `main = 184400c5`; `git rev-list --count pr1618..main = 88` (the merge base is still `5d8ee5f8`, so this equals `5d8ee5f8..main`). |
-| §0 "`ContractExpansion/` has 39 files on main" | **stale** | 39 files on `5d8ee5f8`, **55** on `184400c5` (`git ls-tree -r --name-only`). |
-| §0 / §9 "Nothing on `main` is reusable"; "every module named below as a donor exists **only** in the PR stack" | **false** | Sixteen modules directly on the retarget path landed on `main` after the donor snapshot (§3.1) — fifteen in `ContractExpansion/` plus `ModelAudit/RuntimeAdviceBarrier.lean`. Six of the fifteen also exist, **divergently**, on `pr1618` (§3.2), so the PR stack is not a superset of `main`. |
-| §0 "BASE for every slice: `4a8ee0c9`; do not branch from `main`" | **false for this plan** | Every slice in §4 is dependency-closed on `main = 184400c5` at this revision and branches from it (§5). Branching from `4a8ee0c9` would *lose* the CT, FEAS, GATE-0, P0, D1a, I1 and D1b prerequisites. |
-| §0 "`git diff --stat main...pr1618` = 184 files / +56544 / −2420 — the whole stack" | **arithmetically unchanged, semantically misleading** | The number is identical today only because `...` resolves to the merge base, which is still `5d8ee5f8`. It therefore describes the stack against an 88-commit-old `main`, and hides the rebase surface in §3.2. |
+| §0 "`main` = `5d8ee5f8`" | **stale** | Stable integrated baseline `1512f380`; `git rev-list --count 5d8ee5f8..1512f380 = 105`. This is an audit anchor, not a moving-current-`main` assertion. |
+| §0 "`ContractExpansion/` has 39 files on main" | **stale** | 39 files on `5d8ee5f8`, **57** on the audited baseline `1512f380` (`git ls-tree -r --name-only`). |
+| §0 / §9 "Nothing on `main` is reusable"; "every module named below as a donor exists **only** in the PR stack" | **false** | Eighteen modules directly on the retarget path landed in the integrated lineage after the donor snapshot (§3.1) — seventeen in `ContractExpansion/` plus `ModelAudit/RuntimeAdviceBarrier.lean`. Six of the seventeen also exist, **divergently**, on `pr1618` (§3.2), so the PR stack is not a superset of the integrated baseline. |
+| §0 "BASE for every slice: `4a8ee0c9`; do not branch from `main`" | **false for this plan** | Every slice in §4 is dependency-closed on the audited baseline `1512f380`; future slices branch from a then-current `main` that contains that baseline (§5). Branching from `4a8ee0c9` would *lose* the CT, FEAS, GATE-0, P0, D1a, I1 and D1b prerequisites. |
+| §0 "`git diff --stat main...pr1618` = 184 files / +56544 / −2420 — the whole stack" | **arithmetically unchanged, semantically misleading** | The number is identical at the audited baseline only because `...` resolves to the merge base, which is still `5d8ee5f8`. It therefore describes the stack against a snapshot 105 commits behind `1512f380`, and hides the rebase surface in §3.2. |
 | §4 GATE-0 = "embedding-route spike (A′ vs B) on `clearIterProgram`" | **not this plan's GATE-0** | It gates donor slices P1…P4 / D3 inside `pr1618`. It has no bearing on any slice targeting `ContentAccepts`. Superseded by FEAS-0 (§1.0) and GATE-0 (§4.1). |
 | §4 track letters P / I / D = pop arm / input arm / driver | **repurposed** | Retargeted in §4 to P = predicate-side semantic core, I = invariance and gate closure, D = machine/clock interface. The donor tracks stay valid *inside* `pr1618` and are parked (§3.3). |
 | §9 "The pop arm's machine is finished; only the run remains" | **true of `pr1618`, irrelevant to input (2)** | See §3.4: the donor machine is a transcoder, not a verifier. |
@@ -683,12 +704,13 @@ plan)**, **`#1628` (field recovery)**, **`#1629` (FEAS target bound)** and **`#1
 
 ---
 
-## 3. Module boundary: current `main` vs donor-only
+## 3. Module boundary: stable integrated baseline vs donor-only
 
-### 3.1 On current `main` — the retarget's actual foundation (16 modules, all reusable)
+### 3.1 On audited baseline `1512f380` — the retarget's actual foundation (18 modules, all reusable)
 
-Landed by `#1623` through `#1626` and `#1628` through `#1634`, all absent from the donor's base of record
-(`git ls-tree -r --name-only 5d8ee5f8` lists none of them):
+Landed by `#1623` through `#1626`, `#1628` through `#1634`, and `#1638`, all absent from the donor's
+base of record (`git ls-tree -r --name-only 5d8ee5f8` lists none of them): 17 modules are in
+`ContractExpansion/`, and the eighteenth is `ModelAudit/RuntimeAdviceBarrier.lean`.
 
 | Module | LOC | Key declarations for this plan |
 |---|---|---|
@@ -708,6 +730,8 @@ Landed by `#1623` through `#1626` and `#1628` through `#1634`, all absent from t
 | `ContentSemanticVerifier.lean` | 95 | `contentSemanticAccepts` `:32`, `_eq_true_iff` `:41`, parse-failure/padding theorems `:62`/`:69`, `contentSemanticAccepts_correct` `:78` — P0 from `#1631` |
 | `ContentPrefixExtensionGateClosure.lean` | 505 | the monotone-codec injectivity specialization, gamma canonicity/narrowing, unconditional length-gate vacuity and exact three-test parser residue — I1 from `#1633` |
 | `ContentVerifierBridgeWitness.lean` | 76 | `ContentVerifierBridge` and conditional `contentPrefixExtensionNPWitness_of_bridge` — D1b from `#1634`; no bridge instance |
+| `ConcreteTreeDirectEvaluator.lean` | 395 | `nativeEval_spec` `:146`, `directEvalCost_le_two_mul_size` `:269`, `decodeCircuitTreeAtDepth_consumed_ge` `:281`, `decodeCircuitFull_directEvalCost_le_length` `:374` — the functional CVB-ARCH-1 evaluator and decoder-consumption bound from `#1638`; no evaluator TM |
+| `ConcreteTreeDirectTagProgram.lean` | 476 | `decodeDirectTreeTag_authoritative` `:57`, `decodeDirectTreeTag_eq_root_of_decode` `:84`, `directTagProgram` `:156`, `directTagProgram_runConfig_home` `:328`, `directTagProgram_runConfig_at` `:366`, `directTagProgram_runConfig_input_at` `:426`, `directTagProgram_runConfig_five_accepts_iff` `:455` — the CVB-ARCH-1 tag microprogram from `#1638`; not a full evaluator loop |
 
 Plus the pre-existing foundation, unchanged since the donor snapshot and equally reusable:
 
@@ -753,10 +777,10 @@ the table above.)
 
 ### 3.2 Donor-only (`pr1618 = 4a8ee0c9`) — and the overlap that is *not* clean
 
-`ContractExpansion/` has **216** files on `pr1618` versus 55 on `main`; **183** of them are
+`ContractExpansion/` has **216** files on `pr1618` versus **57** on the audited baseline; **183** of them are
 `TreeMCSP*` modules (region-embedding toolkit, arm programs, arm runs, corridor invariants, driver
 interface, transcoder capstone). **Inventory corrected in this revision:** the previous revision said
-"none of these exist on `main`", which is false. `main` has **15** `TreeMCSP*` modules in this
+"none of these exist on `main`", which is false. The audited baseline has **15** `TreeMCSP*` modules in this
 directory, all 15 of them also on `pr1618`, so **168** of the 183 are donor-only. Of the 15 shared
 ones, 13 are byte-identical on both branches and exactly **2** diverge —
 `TreeMCSPPrefixSemanticVerifier.lean` and `TreeMCSPPrefixVerifierLayout.lean`, both rows of the table
@@ -776,12 +800,15 @@ comparison at the two tips against the merge base `5d8ee5f8`:
   and **`README.md`** — differ only because `main` moved; `pr1618` still carries the merge-base
   blob, so a rebase takes `main`'s version cleanly. Revision 3 omitted all three. Note the first two
   are exactly the length-gated chain modules §1.2 retains and `AGENTS.md:31–36` cites.
-* Eight more (`ContentPrefixExtensionPadding.lean`, `ContentPrefixExtensionPaddingTransport.lean`,
+* Eleven more (`ContentPrefixExtensionPadding.lean`, `ContentPrefixExtensionPaddingTransport.lean`,
   `ContentParseFieldRecovery.lean`, `ContentTargetSizeBound.lean`,
   `ContentPrefixExtensionNonVacuity.lean`, `ContentVerifierTapeInterface.lean`,
-  `ContentSemanticVerifier.lean`, `ContentPrefixExtensionGateClosure.lean`) exist only on `main`.
+  `ContentSemanticVerifier.lean`, `ContentPrefixExtensionGateClosure.lean`,
+  `ContentVerifierBridgeWitness.lean`,
+  `ConcreteTreeDirectEvaluator.lean`, `ConcreteTreeDirectTagProgram.lean`) exist only on the
+  audited baseline.
 * **Repo-wide the divergent-path count is 40**, not nine
-  (`git diff --name-status --diff-filter=M main pr1618 | wc -l` = 40; revision 4 said 41): the CI workflows, `AGENTS.md`,
+  (`git diff --name-status --diff-filter=M 1512f380 pr1618 | wc -l` = 40; revision 4 said 41): the CI workflows, `AGENTS.md`,
   `lakefile.lean`, `STATUS.md`, both `AxiomsAudit.lean` files, `AlgorithmsToLowerBoundsSurfaceTests.lean`,
   five `pnp3/LowerBounds` and `pnp3/Magnification` modules, two `TuringToolkit` modules and a dozen
   Markdown documents all differ at the tips.
@@ -789,31 +816,36 @@ comparison at the two tips against the merge base `5d8ee5f8`:
 So `pr1618` is not a superset and a rebase is not a fast-forward. **Sizes in bytes throughout**
 (`git cat-file -s`):
 
-| Module | `pr1618` (bytes) | `main` (bytes) |
+| Module | `pr1618` (bytes) | `1512f380` (bytes) |
 |---|---|---|
-| `ContentPrefixExtension.lean` | 9 513 | **15 071** |
-| `ContentPrefixExtensionCoincidence.lean` | 14 991 | **17 206** |
-| `ContentPrefixExtensionTransfer.lean` | 7 387 | **8 761** |
-| `ContentConsolidatedSource.lean` | 3 856 | **5 580** |
+| `ContentPrefixExtension.lean` | 9 513 | **15 617** |
+| `ContentPrefixExtensionCoincidence.lean` | 14 991 | **17 329** |
+| `ContentPrefixExtensionTransfer.lean` | 7 387 | **8 890** |
+| `ContentConsolidatedSource.lean` | 3 856 | **5 805** |
 | `TreeMCSPPrefixSemanticVerifier.lean` | **15 858** | 14 166 |
 | `TreeMCSPPrefixVerifierLayout.lean` | 12 967 | **14 231** |
-| `ContentPrefixExtensionPadding.lean` | *absent* | **20 417** |
-| `ContentPrefixExtensionPaddingTransport.lean` | *absent* | **2 960** |
-| `ContentParseFieldRecovery.lean` | *absent* | **8 431** |
+| `ContentPrefixExtensionPadding.lean` | *absent* | **20 596** |
+| `ContentPrefixExtensionPaddingTransport.lean` | *absent* | **3 070** |
+| `ContentParseFieldRecovery.lean` | *absent* | **8 603** |
 | `ContentTargetSizeBound.lean` | *absent* | **13 767** |
-| `ContentPrefixExtensionNonVacuity.lean` | *absent* | **10 984** |
+| `ContentPrefixExtensionNonVacuity.lean` | *absent* | **11 161** |
 | `ContentVerifierTapeInterface.lean` | *absent* | **3 782** |
-| `ContentSemanticVerifier.lean` | *absent* | **4 495** |
+| `ContentSemanticVerifier.lean` | *absent* | **4 591** |
 | `ContentPrefixExtensionGateClosure.lean` | *absent* | **25 010** |
-| `ConsolidatedTreeSeparation.lean` | *merge-base blob* | **changed on `main`** |
-| `PrefixExtensionNPWitness.lean` | *merge-base blob* | **changed on `main`** |
-| `README.md` | *merge-base blob* | **changed on `main`** |
+| `ContentVerifierBridgeWitness.lean` | *absent* | **4 129** |
+| `ConcreteTreeDirectEvaluator.lean` | *absent* | **20 119** |
+| `ConcreteTreeDirectTagProgram.lean` | *absent* | **22 549** |
+| `ConsolidatedTreeSeparation.lean` | *merge-base blob* | **changed on integrated baseline** |
+| `PrefixExtensionNPWitness.lean` | *merge-base blob* | **changed on integrated baseline** |
+| `README.md` | *merge-base blob* | **changed on integrated baseline** |
 
-`main` is ahead on the CT chain (CT-C, FEAS, GATE-0, P0, D1a and I1 modules exist only on `main`); `pr1618` is ahead only on
+The integrated baseline is ahead on the CT chain and CVB experiment (CT-C, FEAS, GATE-0, P0,
+D1a, I1, D1b and CVB modules exist only there); `pr1618` is ahead only on
 `TreeMCSPPrefixSemanticVerifier.lean`. Any future rebase of the stack must reconcile the six
-added-on-both-sides modules by hand, take `main`'s version of the three `main`-only-changed paths,
+added-on-both-sides modules by hand, take the integrated lineage's version of the three
+baseline-only-changed paths,
 and additionally settle `lakefile.lean`, `AlgorithmsToLowerBoundsSurfaceTests.lean` and
-`AxiomsAudit.lean` — 40 divergent paths repo-wide.
+`AxiomsAudit.lean` — 40 divergent paths repo-wide at the audited tips.
 
 ### 3.3 Disposition of the donor stack: parked, not cancelled
 
@@ -868,8 +900,8 @@ on the `(★′)` bridge, because by itself it discharges none of the five bulle
 
 ## 4. FEAS-0, GATE-0 and the first slices
 
-All items below are **dependency-closed on `main = 184400c5`** at this slice-log revision: every donor lemma they cite is in
-§3.1, none is on `pr1618`.
+All items below are **dependency-closed on the stable integrated baseline `1512f380`** audited by
+this revision: every donor lemma they cite is in §3.1, none is on `pr1618`.
 
 **Sequencing.** FEAS-0 (§1.0), GATE-0, P0, D1a, I1 and D1b have landed. D1b consumes **both P0 and
 D1a**: it specializes D1a's `acc`-parameterized bridge structure to P0's
@@ -1481,13 +1513,14 @@ neither architecture is booked as completed progress on `(★′)`.
 ```bash
 # Base every slice on main, NOT on 4a8ee0c9.
 git fetch origin
-git checkout -b work/<slice-name> 184400c5      # or the then-current main
+git checkout -b work/<slice-name> main          # main must contain audited baseline 1512f380
 ```
 
-* **Base:** `main` (`184400c5` at this slice-log revision). One branch per slice, one PR per branch,
-  PR base `main`. D1b and both of its dependencies are now merged; future machine-construction work
-  branches from this current main and must not be rebased onto an earlier main that lacks P0, D1a,
-  or D1b.
+* **Base:** a then-current `main` containing the stable integrated baseline `1512f380` audited by
+  this revision. The SHA is a historical inventory anchor, not a moving-current-`main` label. One
+  branch per slice, one PR per branch, PR base `main`. D1b and both of its dependencies are now
+  merged; future machine-construction work must not be rebased onto an earlier main that lacks P0,
+  D1a, or D1b.
 * **Naming:** the active short slice names are `work/feas0-target-bound`,
   `work/gate0-nonvacuity`, `work/p0-content-semantic`, `work/i1-gate-closure`,
   `work/d1a-tape-interface`, and `work/d1b-bridge-witness`.  They retain the same one-slice/one-PR
@@ -1606,7 +1639,7 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
 | I1 gate closure | `work/i1-gate-closure` | merged; G3/G4/G4b green | PR #1633 (`a27fef34`) |
 | D1a tape lemmas + bridge structure | `work/d1a-tape-interface` | merged; G5/G5b green | PR #1632 (`545cbc3d`) |
 | D1b bridge ⇒ NP-witness | `work/d1b-bridge-witness` | merged; G6 and targeted D1b/P0/D1a/surface/axiom builds green | PR #1634 (`184400c5`) |
-| CVB-ARCH-1 direct evaluator architecture | `spike/content-verifier-architecture` | **BLOCK**: functional evaluator, decoder-consumption bound and offset tag microprogram reusable; no full TM evaluator/run theorem | — |
+| CVB-ARCH-1 direct evaluator architecture | `spike/content-verifier-architecture` | merged with **BLOCK** verdict: functional evaluator, decoder-consumption bound and offset tag microprogram reusable; no full TM evaluator/run theorem | PR #1638 (`1512f380`) |
 
 ---
 
@@ -1641,11 +1674,11 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
   surface and is dispreferred, rather than retired, for new verifier work; a new slice may target it
   only with the explicit technical or compatibility rationale required by §1.2.
 * The donor manifest's central premise — "nothing on `main` is reusable, branch from `4a8ee0c9`" —
-  is false. Sixteen modules on `main` (CT-A/B/C, FEAS recovery/bound, GATE-0, P0, D1a, I1, D1b,
-  plus the `#1626` model audit) and the pre-existing
+  is false. Eighteen modules on the audited integrated baseline (CT-A/B/C, FEAS recovery/bound,
+  GATE-0, P0, D1a, I1, D1b, the two CVB-ARCH-1 modules, plus the `#1626` model audit) and the pre-existing
   parser/codec foundation are
-  the actual base, and every slice in §4 is dependency-closed on `main = 184400c5` at this
-  slice-log revision.
+  the actual base, and every slice in §4 is dependency-closed on the stable baseline `1512f380`
+  audited by this revision.
 * The donor TM stack is a **transcoder**, not a verifier: it never touches the header, the truth
   table, the size check, or `TM.accepts`, so completing it would not discharge `(★′)`. It is parked
   — but its witness-decoding machinery is a plausible component for a future verifier, so it is

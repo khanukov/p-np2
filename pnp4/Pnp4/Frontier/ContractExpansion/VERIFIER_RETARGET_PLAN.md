@@ -125,7 +125,7 @@ survive. No implementation code is introduced here.
 > GATE-0 now separately proves concrete non-vacuity; a concrete verifier TM, runtime proof and the
 > `TM.accepts` bridge remain open.
 
-> **Inventory note (this revision, 7).** This revision audits the post-merge tree at the stable
+> **Inventory note (this revision, 8).** This revision audits the post-merge tree at the stable
 > integrated baseline `1512f380` (merge PR `#1638`). That SHA is intentionally a fixed audit anchor,
 > not a claim that it will still be the tip of `main` after this documentation revision merges.
 > Relative to the donor snapshot `5d8ee5f8`, the baseline is 105 commits ahead and contains 57

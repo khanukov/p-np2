@@ -1455,9 +1455,9 @@ underflow. The new decoder-side theorem proves that every successful authoritati
 at least three bits per decoded node; combined with the exact evaluator proof, functional logical
 iterations are bounded by the serialized input length. `ConcreteTreeDirectTagProgram.lean` defines
 its tag classifier by calling the authoritative decoder on a distinguishing probe, proves that any
-successful real decoder branch has the same root classification, and supplies premise-free
-four-step `runConfig` theorems at home and at arbitrary offsets. The offset theorem is instantiated
-on the actual `initialConfig` tape of a fixed-width input. A fifth transition now reaches a unique,
+successful real decoder branch has the same root classification, and supplies a premise-free
+four-step home `runConfig` theorem plus offset and actual-input variants requiring only the explicit
+in-range room premise, with no driver-realization hypothesis. A fifth transition reaches a unique,
 reachable accept state exactly for valid tags; malformed tags remain nonaccepting.
 
 **Decisive failure.** No TM encodes the functional evaluator's `DirectEvalTask` list or Boolean
@@ -1652,7 +1652,8 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
   insufficient rather than useless (§3.4).
 * **CVB-ARCH-1 verdict is BLOCK, not DIRECT.** Successful authoritative decoding now bounds the
   functional evaluator's logical iterations by serialized length, and the finite-control tag
-  reader has premise-free home/offset/actual-input run theorems plus a reachable valid-tag accept
+  reader has a premise-free home theorem and room-conditional offset/actual-input run theorems,
+  with no driver-realization premise, plus a reachable valid-tag accept
   state. But no TM serializes or updates the evaluator stacks, so there is no full-witness run or
   microstep theorem and no `ContentVerifierBridge`; the unsupported quadratic expression was
   removed (§4.8).

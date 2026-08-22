@@ -360,8 +360,9 @@ theorem directTagProgram_runConfig_home (L : Nat)
   · rw [c4t, c3t, c2t, c1t]
     rfl
 
-/-- **Offset-parametric premise-free run theorem.**  The same finite control reads three cells at
-any supplied home offset with room, returns to that offset, and preserves the entire tape. -/
+/-- **Offset-parametric run theorem.**  Given only the explicit in-range room premise (and no
+driver-realization hypothesis), the same finite control reads three cells at the supplied home
+offset, returns there, and preserves the entire tape. -/
 theorem directTagProgram_runConfig_at (L home : Nat)
     (hroom : home + 2 < directTagProgram.toTM.tapeLength L)
     (tape : Fin (directTagProgram.toTM.tapeLength L) → Bool) :

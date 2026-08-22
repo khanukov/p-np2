@@ -11,7 +11,7 @@ import LowerBounds.AC0_GapMCSP
 import Tests.BridgeLocalityRegression
 import Tests.PromiseRouteConclusionProbe
 import ThirdPartyFacts.Facts_Switching
-import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqRun
+import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqRunExamples
 
 /-!
   pnp3/Tests/AxiomsAudit.lean

@@ -96,7 +96,10 @@ configuration.  `gateConstCS_seqList_singleton_runSpec` supplies a concrete
 compiling singleton `seqList [gateConstCS b d]` surface.
 `gateConstCS_seq_run_full` instantiates the theorem on two ordered constant
 gate pieces and derives the second gate's destination bound from the first
-gate's bound and `d1 ≤ d2`.
+gate's bound and `d1 ≤ d2`.  These two concrete constant-gate examples live in
+`TuringToolkit/ConstStatePhasedProgramSeqRunExamples.lean`; the generic
+`RunSpec` interface and composition theorems remain in
+`TuringToolkit/ConstStatePhasedProgramSeqRun.lean`.
 
 This is **Infrastructure**, not a restricted lower bound and not P-vs-NP
 mainline progress.  Ordinary `RunSpec.seq` plus the terminal singleton closure

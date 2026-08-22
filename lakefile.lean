@@ -68,6 +68,8 @@ lean_lib PnP3 where
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateWrappers,
     Glob.one `Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgram,
     Glob.one `Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqRun,
+    Glob.one `Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramAccepts,
+    Glob.one `Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept,
     Glob.one `Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRun,
     Glob.one `Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqRunExamples,
     Glob.one `Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples,

@@ -472,6 +472,31 @@ makes no `P ≠ NP` claim.
   no theorem connected it to such a run. These modules are reusable Infrastructure only; they do
   not construct `ContentVerifierBridge` or reduce a mainline lower-bound source obligation.
 
+### Conditional-accept terminal infrastructure
+- `ConstStatePhasedProgramAccepts.lean` keeps phase arrival and full TM acceptance separate:
+  `RunSpec.final_state_eq_accept_iff` reduces accepting-state equality to the remaining local-state
+  equality, and `RunSpec.accepts_eq_decide_local` specializes that fact to an actual
+  `initialConfig` run at the machine's exact clock.
+- `ConstStatePhasedProgramConditionalAccept.lean` supplies the fixed
+  `acceptIfCellCS Δflag : ConstStatePhasedProgram (Bool × Bool)`. Both flag values run for exactly
+  `2 * Δflag + 3` steps, return the head, and preserve the tape. A true flag ends in the complete
+  accepting state; a false flag ends in a distinct nonaccepting terminal sink. Its full-run theorem
+  currently requires the start phase, the complete start local state, and the head bound needed to
+  rule out clamped motion. The local-state premise is inherited from the current combiner proof;
+  because the two reads overwrite both local-state bits, the final semantics is independent of that
+  initial local state. The end-to-end theorem is stated for the real `initialConfig`; offsets beyond
+  the input read the blank `false` cell.
+- This terminal program must be the explicit right operand of the final `seq`. It must not be routed
+  through `seqList`, because that fold appends `idleCS` and its boundary resets the local state.
+  Predecessor tape-length monotonicity, padding, and the still-open composition equality
+  `initialConfig (seq P₁ P₂) x = embedSeqConfig P₁ P₂ (initialConfig P₁ x)` remain separate
+  obligations; without the last bridge, the `initialConfig` acceptance theorem is standalone rather
+  than an end-to-end theorem for the composite machine.
+
+This closes reusable conditional-accept plumbing only. It constructs no content verifier, runtime
+bound for that verifier, or `ContentVerifierBridge`, and is therefore Infrastructure rather than
+P-vs-NP mainline progress.
+
 ### Threshold growth and consolidation
 - `ThresholdGrowth.lean` (Block 13a) — `thresholdLinear` / `thresholdQuadratic` /
   `thresholdPoly` and their growth discharges `polyBoundedInTable_thresholdLinear` /

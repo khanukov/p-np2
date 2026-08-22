@@ -67,23 +67,34 @@ will directly use the existential rewrite instead of `trivialCert`.
 `{propext, Classical.choice, Quot.sound}`.
 
 **W-A infrastructure delivered (2026-08-22):**
-`TuringToolkit/ConstStatePhasedProgramSeqRun.lean` now closes the reusable
-two-program kernel, not the full list induction promised by this session.
-`RunSpec` records only the non-automatic prefix conditions (not accepting
-early and right-move head safety), exact acceptance at `timeBound`, and a
-caller-chosen semantic postcondition.  `seq_run_full` starts from
+`TuringToolkit/ConstStatePhasedProgramSeqRun.lean` now completes both the
+two-program configuration-flow theorem and the `RunSpec` closure step, not the
+full list induction promised by this session.  `RunSpec` records the
+non-automatic prefix conditions (not reaching the accept phase early and
+right-move head safety), arrival at the accept phase at `timeBound`, and a
+caller-chosen semantic postcondition.  Phase arrival alone is not TM
+acceptance, because it does not assert equality with the accepting local state.
+`seq_run_full` starts from
 `embedSeqConfig P1 P2 c1`, derives the handoff head bound from the single
 `P1.tapeLength ≤ P2.tapeLength` premise, starts P2 at
 `liftP1ToP2 P1 P2 (P1.run ...)`, and returns the final configuration as
 `embedSeqP2Config P1 P2 (P2.run ...)` together with both postconditions.
+`RunSpec.seq` packages that flow as a `RunSpec (seq P1 P2)` whose postcondition
+identifies the exact embedded final configuration and preserves both component
+postconditions.  Its full P2 `RunSpec` premise is intentionally stronger than
+configuration flow alone requires: P2's early-phase avoidance and final phase
+arrival are required to prove closure and support later right-nested
+induction.  The concrete theorem's second write postcondition is relative to
+the P1-to-P2 boundary lift `c2Init`, not directly to the original P1
+configuration.
 `gateConstCS_seq_run_full` instantiates the theorem on two ordered constant
 gate pieces and derives the second gate's destination bound from the first
 gate's bound and `d1 ≤ d2`.
 
 This is **Infrastructure**, not a restricted lower bound and not P-vs-NP
-mainline progress.  It does not by itself provide the recursive
-`seqList_run_full` theorem or close any verifier-language correctness or
-runtime obligation.
+mainline progress.  Configuration flow and `RunSpec` closure are completed;
+the full recursive `seqList_run_full` induction remains open.  This work does
+not close any verifier-language correctness or runtime obligation.
 
 ### Session 2 — `writeVecOfNatProgram`
 **File:** new

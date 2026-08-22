@@ -28,6 +28,7 @@ open Pnp3.Magnification
 -- Reusable sequential-TM infrastructure (W-A).
 #print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_boundary_step_eq_embedSeqP2Config_lift
 #print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_run_full
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.RunSpec.seq
 #print axioms Internal.PsubsetPpoly.TM.GateEvalCS.gateConstCS_seq_run_full
 
 -- Итоговые утверждения (формульная сепарация).

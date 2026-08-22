@@ -846,8 +846,10 @@ So even a completed donor driver instance would leave the `(★′)` bridge open
 
 **But it is not dead weight.** Witness-decoding — turning a certificate block into an object whose
 `Circuit.eval` can be checked — is a genuine sub-obligation of *any* verifier for `L'`, and
-`transcodeWitness` plus the region-embedding toolkit is the only machinery in the repository that
-attacks it. The accurate statement is **insufficient but potentially reusable**: the donor stack
+`transcodeWitness` plus the region-embedding toolkit remains the only machinery in the repository
+that attacks a complete machine loop. CVB-ARCH-1 adds a direct functional evaluator and a concrete
+single-tag microprogram, but not a complete machine loop. The accurate statement is **insufficient
+but potentially reusable**: the donor stack
 supplies at most the witness-decoding component, and the five bullets above must be scheduled
 separately.
 
@@ -855,9 +857,10 @@ separately.
 one: **donor completion is not a prerequisite for FEAS-0, P0 or D1a**, none of which imports or cites
 anything on `pr1618`, so nothing in §4 waits on it. It is **not** claimed that the donor arms are
 categorically off the critical path to input (2): whether the eventual verifier machine reuses the
-transcoder's witness-decoding machinery is a *machine-architecture* question, and that architecture
-is not fixed in this plan (§4.7 defers the machine-construction slices). **Now that FEAS-0 has
-landed, reassess the donor stack only when the machine architecture is chosen** — and until then,
+transcoder's witness-decoding machinery is a *machine-architecture* question. CVB-ARCH-1 has now
+tested the direct alternative and returned **BLOCK**, not a DIRECT selection (§4.8), so the final
+architecture remains unfixed. **Reassess the donor stack in the next architecture slice** — and
+until then,
 do not book the donor manifest's "5 slices / ~3100–4400 LOC to the pop arm" as progress
 on the `(★′)` bridge, because by itself it discharges none of the five bullets above.
 
@@ -1417,8 +1420,9 @@ resolve as adjacent-line merges.
   transcoder-side, so **not a prerequisite for any slice in §4** and rejected *as a retarget slice
   now*. Wording corrected in this revision: it is **not** claimed to be off the critical path to
   input (2) — §3.4 withdrew that claim, because whether the eventual verifier machine reuses the
-  transcoder's witness-decoding machinery is an open machine-architecture question. Reassess after
-  the architecture is chosen; admissible then as scoped witness-decoding reuse,
+  transcoder's witness-decoding machinery is an open machine-architecture question. CVB-ARCH-1's
+  direct experiment is now BLOCK (§4.8), so the next architecture slice may reassess it as scoped
+  witness-decoding reuse,
   never as `(★′)` bridge progress on its own.
 * **"Port `extractWitness?` to the content side"** — dead weight: `contentWitness` is total
   (§4.2).
@@ -1436,6 +1440,39 @@ resolve as adjacent-line merges.
   rejections.
 * **"Treat the target-size bound as a verifier or NP-membership proof"** — false: FEAS-0 closes
   only the size obstruction; the machine, runtime and `TM.accepts` bridge remain open (§1.3).
+
+### 4.8 CVB-ARCH-1 — direct concrete witness evaluation · **verdict BLOCK**
+
+CVB-ARCH-1 tested whether the concrete tree witness could be decoded and evaluated directly in the
+repository TM model, avoiding the `pr1618` transcoder. The experiment is classified
+**Infrastructure** and reduces neither `SearchMCSPWeakLowerBound` nor
+`VerifiedNPDAGLowerBoundSource`.
+
+**Closed, reusable results.** `ConcreteTreeDirectEvaluator.lean` gives a premise-free functional
+specification on arbitrary fixed-width witnesses, explicit rejection of short/malformed tags,
+truncated constant payloads, invalid indices, threshold overflow, and `not`/`and`/`or` value-stack
+underflow. The new decoder-side theorem proves that every successful authoritative decode consumes
+at least three bits per decoded node; combined with the exact evaluator proof, functional logical
+iterations are bounded by the serialized input length. `ConcreteTreeDirectTagProgram.lean` defines
+its tag classifier by calling the authoritative decoder on a distinguishing probe, proves that any
+successful real decoder branch has the same root classification, and supplies a premise-free
+four-step home `runConfig` theorem plus offset and actual-input variants requiring only the explicit
+in-range room premise, with no driver-realization hypothesis. A fifth transition reaches a unique,
+reachable accept state exactly for valid tags; malformed tags remain nonaccepting.
+
+**Decisive failure.** No TM encodes the functional evaluator's `DirectEvalTask` list or Boolean
+value stack; the tasks still contain whole Lean `Circuit` subtrees. No representation invariant
+bounds stack occupancy in tape cells, no transition loop realizes parsing plus reductions, and no
+theorem converts the functional iteration bound into TM microsteps. `nativeEvalList` itself invokes
+the recursive Lean decoder. Consequently there is no premise-free full-witness `runConfig` theorem,
+no full-evaluation runtime theorem, and no `ContentVerifierBridge`. The unconnected quadratic
+`directMicrostepBound` expression from the first CVB-ARCH-1 commit was removed rather than retained
+as a purported evaluation bound.
+
+**Decision.** **BLOCK**: DIRECT is not selected. The functional evaluator, authoritative tag bridge,
+decoder-consumption bound, and offset-parametric tag microprogram remain reusable. A future slice
+must either build and verify the missing direct stack machine or compare/reuse the donor transcoder;
+neither architecture is booked as completed progress on `(★′)`.
 
 ---
 
@@ -1569,6 +1606,7 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
 | I1 gate closure | `work/i1-gate-closure` | merged; G3/G4/G4b green | PR #1633 (`a27fef34`) |
 | D1a tape lemmas + bridge structure | `work/d1a-tape-interface` | merged; G5/G5b green | PR #1632 (`545cbc3d`) |
 | D1b bridge ⇒ NP-witness | `work/d1b-bridge-witness` | merged; G6 and targeted D1b/P0/D1a/surface/axiom builds green | PR #1634 (`184400c5`) |
+| CVB-ARCH-1 direct evaluator architecture | `spike/content-verifier-architecture` | **BLOCK**: functional evaluator, decoder-consumption bound and offset tag microprogram reusable; no full TM evaluator/run theorem | — |
 
 ---
 
@@ -1612,6 +1650,13 @@ unconditional `contentInput?` success (§4.7); or (vi) reports green CI as mathe
   table, the size check, or `TM.accepts`, so completing it would not discharge `(★′)`. It is parked
   — but its witness-decoding machinery is a plausible component for a future verifier, so it is
   insufficient rather than useless (§3.4).
+* **CVB-ARCH-1 verdict is BLOCK, not DIRECT.** Successful authoritative decoding now bounds the
+  functional evaluator's logical iterations by serialized length, and the finite-control tag
+  reader has a premise-free home theorem and room-conditional offset/actual-input run theorems,
+  with no driver-realization premise, plus a reachable valid-tag accept
+  state. But no TM serializes or updates the evaluator stacks, so there is no full-witness run or
+  microstep theorem and no `ContentVerifierBridge`; the unsupported quadratic expression was
+  removed (§4.8).
 * Two claims from revision 2 are **corrected**: generic injectivity of
   `treeMCSPPrefixM codec` is **false** (specialize to monotone `witnessBits`, §4.3.1), and gamma
   canonicity is a **theorem** rather than a hypothesis, which makes the strict parser's length gate

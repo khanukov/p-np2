@@ -75,6 +75,7 @@ import Pnp4.Frontier.ContractExpansion.CircuitTreeBridge
 import Pnp4.Frontier.ContractExpansion.CircuitEncodingLength
 import Pnp4.Frontier.ContractExpansion.CircuitDecodeDepthFree
 import Pnp4.Frontier.ContractExpansion.ConcreteTreeCodec
+import Pnp4.Frontier.ContractExpansion.ConcreteTreeDirectTagProgram
 import Pnp4.Frontier.ContractExpansion.ConcreteTreeCodecSource
 import Pnp4.Frontier.ContractExpansion.ThresholdGrowth
 import Pnp4.Frontier.ContractExpansion.ConsolidatedTreeSeparation
@@ -1388,6 +1389,71 @@ def check_treePolynomialWitnessCodec (threshold : Nat → Nat)
   treePolynomialWitnessCodec threshold hT
 
 end ConcreteTreeCodecSurface
+
+section ConcreteTreeDirectEvaluatorSurface
+
+#check Pnp4.Frontier.ContractExpansion.DirectEvalTask
+#check Pnp4.Frontier.ContractExpansion.directEvalCost
+#check Pnp4.Frontier.ContractExpansion.directEvalLoop
+#check Pnp4.Frontier.ContractExpansion.directEvalLoop_visit
+#check Pnp4.Frontier.ContractExpansion.directCircuitEval
+#check Pnp4.Frontier.ContractExpansion.directCircuitEval_correct
+#check Pnp4.Frontier.ContractExpansion.nativeEvalList
+#check Pnp4.Frontier.ContractExpansion.nativeEval
+#check Pnp4.Frontier.ContractExpansion.nativeEval_spec
+#check Pnp4.Frontier.ContractExpansion.nativeEvalList_rejects_short_tag
+#check Pnp4.Frontier.ContractExpansion.nativeEvalList_rejects_tag101
+#check Pnp4.Frontier.ContractExpansion.nativeEvalList_rejects_tag110
+#check Pnp4.Frontier.ContractExpansion.nativeEvalList_rejects_tag111
+#check Pnp4.Frontier.ContractExpansion.nativeEvalList_rejects_short_input_field
+#check Pnp4.Frontier.ContractExpansion.nativeEvalList_rejects_truncated_const
+#check Pnp4.Frontier.ContractExpansion.nativeEvalList_rejects_invalid_input_index
+#check Pnp4.Frontier.ContractExpansion.nativeEvalBounded
+#check Pnp4.Frontier.ContractExpansion.nativeEvalBounded_rejects_threshold_overflow
+#check Pnp4.Frontier.ContractExpansion.directEvalLoop_rejects_not_underflow
+#check Pnp4.Frontier.ContractExpansion.directEvalLoop_rejects_and_underflow
+#check Pnp4.Frontier.ContractExpansion.directEvalLoop_rejects_or_underflow
+#check Pnp4.Frontier.ContractExpansion.directEvalCost_le_two_mul_size
+#check Pnp4.Frontier.ContractExpansion.decodeCircuitTreeAtDepth_consumed_ge
+#check Pnp4.Frontier.ContractExpansion.decodeCircuitFull_directEvalCost_le_length
+
+#check Pnp4.Frontier.ContractExpansion.DirectTreeTag
+#check Pnp4.Frontier.ContractExpansion.directTreeTagOfTree
+#check Pnp4.Frontier.ContractExpansion.directTagDecoderProbe
+#check Pnp4.Frontier.ContractExpansion.decodeDirectTreeTag
+#check Pnp4.Frontier.ContractExpansion.decodeDirectTreeTag_authoritative
+#check Pnp4.Frontier.ContractExpansion.decodeDirectTreeTag_input
+#check Pnp4.Frontier.ContractExpansion.decodeDirectTreeTag_const
+#check Pnp4.Frontier.ContractExpansion.decodeDirectTreeTag_not
+#check Pnp4.Frontier.ContractExpansion.decodeDirectTreeTag_and
+#check Pnp4.Frontier.ContractExpansion.decodeDirectTreeTag_or
+#check Pnp4.Frontier.ContractExpansion.decodeDirectTreeTag_bad101
+#check Pnp4.Frontier.ContractExpansion.decodeDirectTreeTag_bad110
+#check Pnp4.Frontier.ContractExpansion.decodeDirectTreeTag_bad111
+#check Pnp4.Frontier.ContractExpansion.decodeDirectTreeTag_eq_root_of_decode
+#check Pnp4.Frontier.ContractExpansion.DirectTagState
+#check Pnp4.Frontier.ContractExpansion.directTagProgram
+#check Pnp4.Frontier.ContractExpansion.directTagProgram_timeBound
+#check Pnp4.Frontier.ContractExpansion.directTagProgram_tapeLength
+#check Pnp4.Frontier.ContractExpansion.directTagHomeConfig
+#check Pnp4.Frontier.ContractExpansion.directTagCell
+#check Pnp4.Frontier.ContractExpansion.directTagCell_val
+#check Pnp4.Frontier.ContractExpansion.directTagHomeConfigAt
+#check Pnp4.Frontier.ContractExpansion.directTagCellAt
+#check Pnp4.Frontier.ContractExpansion.directTagCellAt_val
+#check Pnp4.Frontier.ContractExpansion.directTagInputCell
+#check Pnp4.Frontier.ContractExpansion.directTagInputCell_val
+#check Pnp4.Frontier.ContractExpansion.directTagProgram_step0
+#check Pnp4.Frontier.ContractExpansion.directTagProgram_step1
+#check Pnp4.Frontier.ContractExpansion.directTagProgram_step2
+#check Pnp4.Frontier.ContractExpansion.directTagProgram_step3
+#check Pnp4.Frontier.ContractExpansion.directTagProgram_step4_accepts_iff
+#check Pnp4.Frontier.ContractExpansion.directTagProgram_runConfig_home
+#check Pnp4.Frontier.ContractExpansion.directTagProgram_runConfig_at
+#check Pnp4.Frontier.ContractExpansion.directTagProgram_runConfig_input_at
+#check Pnp4.Frontier.ContractExpansion.directTagProgram_runConfig_five_accepts_iff
+
+end ConcreteTreeDirectEvaluatorSurface
 
 section ConcreteTreeCodecSourceSurface
 

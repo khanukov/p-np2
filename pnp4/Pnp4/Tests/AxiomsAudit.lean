@@ -65,6 +65,7 @@ import Pnp4.Frontier.ContractExpansion.CircuitTreeBridge
 import Pnp4.Frontier.ContractExpansion.CircuitEncodingLength
 import Pnp4.Frontier.ContractExpansion.CircuitDecodeDepthFree
 import Pnp4.Frontier.ContractExpansion.ConcreteTreeCodec
+import Pnp4.Frontier.ContractExpansion.ConcreteTreeDirectTagProgram
 import Pnp4.Frontier.ContractExpansion.ConcreteTreeCodecSource
 import Pnp4.Frontier.ContractExpansion.ThresholdGrowth
 import Pnp4.Frontier.ContractExpansion.ConsolidatedTreeSeparation
@@ -531,6 +532,51 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.treeCircuitWitnessCodec
 #print axioms Pnp4.Frontier.ContractExpansion.polyBoundedInTable_treeWitnessBits_of_thresholdPoly
 #print axioms Pnp4.Frontier.ContractExpansion.treePolynomialWitnessCodec
+
+-- CVB-ARCH-1 verdict BLOCK.  These are reusable functional-evaluator/tag-microprogram
+-- infrastructure results; they do not construct ContentVerifierBridge or a full TM evaluation run.
+#print axioms Pnp4.Frontier.ContractExpansion.directEvalLoop_visit
+#print axioms Pnp4.Frontier.ContractExpansion.directCircuitEval_correct
+#print axioms Pnp4.Frontier.ContractExpansion.nativeEval_spec
+#print axioms Pnp4.Frontier.ContractExpansion.nativeEvalList_rejects_short_tag
+#print axioms Pnp4.Frontier.ContractExpansion.nativeEvalList_rejects_tag101
+#print axioms Pnp4.Frontier.ContractExpansion.nativeEvalList_rejects_tag110
+#print axioms Pnp4.Frontier.ContractExpansion.nativeEvalList_rejects_tag111
+#print axioms Pnp4.Frontier.ContractExpansion.nativeEvalList_rejects_short_input_field
+#print axioms Pnp4.Frontier.ContractExpansion.nativeEvalList_rejects_truncated_const
+#print axioms Pnp4.Frontier.ContractExpansion.nativeEvalList_rejects_invalid_input_index
+#print axioms Pnp4.Frontier.ContractExpansion.nativeEvalBounded_rejects_threshold_overflow
+#print axioms Pnp4.Frontier.ContractExpansion.directEvalLoop_rejects_not_underflow
+#print axioms Pnp4.Frontier.ContractExpansion.directEvalLoop_rejects_and_underflow
+#print axioms Pnp4.Frontier.ContractExpansion.directEvalLoop_rejects_or_underflow
+#print axioms Pnp4.Frontier.ContractExpansion.directEvalCost_le_two_mul_size
+#print axioms Pnp4.Frontier.ContractExpansion.decodeCircuitTreeAtDepth_consumed_ge
+#print axioms Pnp4.Frontier.ContractExpansion.decodeCircuitFull_directEvalCost_le_length
+
+#print axioms Pnp4.Frontier.ContractExpansion.decodeDirectTreeTag_authoritative
+#print axioms Pnp4.Frontier.ContractExpansion.decodeDirectTreeTag_input
+#print axioms Pnp4.Frontier.ContractExpansion.decodeDirectTreeTag_const
+#print axioms Pnp4.Frontier.ContractExpansion.decodeDirectTreeTag_not
+#print axioms Pnp4.Frontier.ContractExpansion.decodeDirectTreeTag_and
+#print axioms Pnp4.Frontier.ContractExpansion.decodeDirectTreeTag_or
+#print axioms Pnp4.Frontier.ContractExpansion.decodeDirectTreeTag_bad101
+#print axioms Pnp4.Frontier.ContractExpansion.decodeDirectTreeTag_bad110
+#print axioms Pnp4.Frontier.ContractExpansion.decodeDirectTreeTag_bad111
+#print axioms Pnp4.Frontier.ContractExpansion.decodeDirectTreeTag_eq_root_of_decode
+#print axioms Pnp4.Frontier.ContractExpansion.directTagProgram_timeBound
+#print axioms Pnp4.Frontier.ContractExpansion.directTagProgram_tapeLength
+#print axioms Pnp4.Frontier.ContractExpansion.directTagCell_val
+#print axioms Pnp4.Frontier.ContractExpansion.directTagCellAt_val
+#print axioms Pnp4.Frontier.ContractExpansion.directTagInputCell_val
+#print axioms Pnp4.Frontier.ContractExpansion.directTagProgram_step0
+#print axioms Pnp4.Frontier.ContractExpansion.directTagProgram_step1
+#print axioms Pnp4.Frontier.ContractExpansion.directTagProgram_step2
+#print axioms Pnp4.Frontier.ContractExpansion.directTagProgram_step3
+#print axioms Pnp4.Frontier.ContractExpansion.directTagProgram_step4_accepts_iff
+#print axioms Pnp4.Frontier.ContractExpansion.directTagProgram_runConfig_home
+#print axioms Pnp4.Frontier.ContractExpansion.directTagProgram_runConfig_at
+#print axioms Pnp4.Frontier.ContractExpansion.directTagProgram_runConfig_input_at
+#print axioms Pnp4.Frontier.ContractExpansion.directTagProgram_runConfig_five_accepts_iff
 
 #print axioms Pnp4.Frontier.ContractExpansion.verifiedSource_of_treeCodec_noPolynomialBoundedSearchSolver
 #print axioms Pnp4.Frontier.ContractExpansion.NP_not_subset_PpolyDAG_of_treeCodec_interfaces

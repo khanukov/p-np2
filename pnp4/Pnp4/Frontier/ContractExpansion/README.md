@@ -401,7 +401,9 @@ the opposite reading:
   over certificates whose length and concatenation offset both move with the physical
   length, so wrapper-level invariance is unproved (scope paragraph above).
 - **No machine verifier.** The Boolean semantic checker in `ContentSemanticVerifier.lean` is not a
-  Turing-machine construction. No Turing machine, no runtime bound, and no
+  Turing-machine construction. `ConcreteTreeDirectTagProgram.lean` now constructs only a
+  five-step finite-control **single-tag reader**; it is not a decoder loop or circuit evaluator.
+  No complete verifier Turing machine, full-evaluation runtime bound, or
   `TM.accepts … = ContentAccepts …` bridge for `L'` is constructed anywhere. Note the
   interface's `runTime_poly` field bounds `M.runTime` at the length-dependent point
   `n + certificateLength n 1`, so the CT route does not remove length-dependence from
@@ -449,6 +451,26 @@ makes no `P ≠ NP` claim.
   `verifiedSource_of_treeCodec_noPolynomialBoundedSearchSolver` and
   `NP_not_subset_PpolyDAG_of_treeCodec_interfaces`: the conditional source instantiated
   at the concrete codec.
+
+### CVB-ARCH-1 direct-evaluator experiment · **verdict BLOCK**
+- `ConcreteTreeDirectEvaluator.lean` — a correct functional evaluator with explicit task/value
+  stacks, rejection lemmas for malformed tags, truncated constant payloads, threshold overflow,
+  and all three reduction underflows. `decodeCircuitTreeAtDepth_consumed_ge` proves the missing
+  decoder-side size bound for arbitrary successful parses, and
+  `decodeCircuitFull_directEvalCost_le_length` consequently bounds the functional evaluator's
+  logical iterations by serialized length. This is **not** a TM runtime theorem: the Lean decoder
+  remains recursive and evaluator tasks contain whole `Circuit` subtrees.
+- `ConcreteTreeDirectTagProgram.lean` — a five-step finite-control tag microprogram. Its tag
+  classifier is defined from the authoritative decoder and is bridged to successful real decoder
+  roots. Four steps classify and return home on an arbitrary offset, including a theorem for the
+  actual `initialConfig` input tape; the fifth reaches a redesigned, reachable accept state exactly
+  for a valid tag. It does not iterate, serialize either stack, or evaluate a circuit.
+- **Why BLOCK, not DIRECT.** There is no TM representation invariant for the parser/control/value
+  stacks, no bound on the occupied serialized stack region, no transition program implementing a
+  decoder/evaluator iteration, and therefore no premise-free `runConfig` theorem for complete
+  witness evaluation. The former quadratic `directMicrostepBound` expression was removed because
+  no theorem connected it to such a run. These modules are reusable Infrastructure only; they do
+  not construct `ContentVerifierBridge` or reduce a mainline lower-bound source obligation.
 
 ### Threshold growth and consolidation
 - `ThresholdGrowth.lean` (Block 13a) — `thresholdLinear` / `thresholdQuadratic` /

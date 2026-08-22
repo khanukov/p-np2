@@ -124,6 +124,9 @@ open Pnp4.Frontier.SignedSupportNoGo
 #check equalsTableDAG
 #check eval_equalsTableDAG
 #check gates_equalsTableDAG_le
+#check avoidListDAG
+#check eval_avoidListDAG
+#check size_avoidListDAG_le
 #check avoidFiniteSetDAG
 #check eval_avoidFiniteSetDAG
 #check size_avoidFiniteSetDAG_le

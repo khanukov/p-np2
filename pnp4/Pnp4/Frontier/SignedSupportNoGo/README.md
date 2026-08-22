@@ -9,9 +9,10 @@ The three-module dependency chain is deliberately small:
    weighted Boolean averages. It proves that arbitrary signed, unnormalized
    reverse-one-sided weights exist exactly when the generator support hits
    every tested bounded-DAG predicate above the stated mass.
-2. `FiniteSetDAG.lean` builds an explicit current-model `DagCircuit` accepting
-   the complement of a finite set of `N`-bit strings, with exact evaluation
-   and the size bound `|S| * (2*N + 2) + 3`.
+2. `FiniteSetDAG.lean` builds a computable list-based current-model `DagCircuit` accepting the
+   complement of a list of `N`-bit strings, then supplies an order-insensitive `Finset` wrapper whose
+   only noncomputability is the absence of a canonical `Finset.toList` order. Both forms have exact
+   evaluation and the size bound `|S| * (2*N + 2) + 3`.
 3. `DenseEasyBarrier.lean` introduces `FiniteEasyCover` and applies that
    avoider to dense/easy and signed-fooling premises.
 

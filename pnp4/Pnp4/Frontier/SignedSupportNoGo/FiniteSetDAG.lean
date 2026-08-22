@@ -211,27 +211,26 @@ theorem gates_equalsTableDAG_le {N : Nat} (table : Bitstring N) :
     exact gates_literalDAG_le_one table index
   simpa [Nat.mul_comm] using hBound hEach
 
-/-- A standard DAG accepting exactly the complement of a finite forbidden
-set. -/
-noncomputable def avoidFiniteSetDAG {N : Nat}
-    (forbidden : Finset (Bitstring N)) : DagCircuit N :=
-  dagNot <| dagOrList <| forbidden.toList.map equalsTableDAG
+/-- A computable standard DAG accepting exactly the complement of a list of
+forbidden strings.  This is the executable core; duplicate list entries are harmless. -/
+def avoidListDAG {N : Nat}
+    (forbidden : List (Bitstring N)) : DagCircuit N :=
+  dagNot <| dagOrList <| forbidden.map equalsTableDAG
 
-@[simp] theorem eval_avoidFiniteSetDAG {N : Nat}
-    (forbidden : Finset (Bitstring N)) (input : Bitstring N) :
-    eval (avoidFiniteSetDAG forbidden) input =
-      decide (input ∉ forbidden) := by
+@[simp] theorem eval_avoidListDAG {N : Nat}
+    (forbidden : List (Bitstring N)) (input : Bitstring N) :
+    eval (avoidListDAG forbidden) input = decide (input ∉ forbidden) := by
   classical
   by_cases hMem : input ∈ forbidden
   · have hAny :
-        (forbidden.toList.map equalsTableDAG).any
+        (forbidden.map equalsTableDAG).any
             (fun circuit => eval circuit input) = true := by
       rw [List.any_eq_true]
       refine ⟨equalsTableDAG input, ?_, by simp⟩
-      exact List.mem_map.mpr ⟨input, by simpa using hMem, rfl⟩
-    simp [avoidFiniteSetDAG, hAny, hMem]
+      exact List.mem_map.mpr ⟨input, hMem, rfl⟩
+    simp [avoidListDAG, hAny, hMem]
   · have hAny :
-        (forbidden.toList.map equalsTableDAG).any
+        (forbidden.map equalsTableDAG).any
             (fun circuit => eval circuit input) = false := by
       rw [List.any_eq_false]
       intro circuit hCircuit
@@ -239,9 +238,40 @@ noncomputable def avoidFiniteSetDAG {N : Nat}
       have hNe : input ≠ table := by
         intro hEq
         subst table
-        exact hMem (by simpa using hTable)
+        exact hMem hTable
       simp [hNe]
-    simp [avoidFiniteSetDAG, hAny, hMem]
+    simp [avoidListDAG, hAny, hMem]
+
+/-- Explicit size bound for the computable list constructor. -/
+theorem size_avoidListDAG_le {N : Nat}
+    (forbidden : List (Bitstring N)) :
+    size (avoidListDAG forbidden) ≤ forbidden.length * (2 * N + 2) + 3 := by
+  unfold avoidListDAG
+  rw [size, gates_dagNot]
+  have hOr := gates_dagOrList_le
+    (gateBound := 2 * N + 1) (forbidden.map equalsTableDAG)
+  have hEach : ∀ circuit,
+      circuit ∈ forbidden.map equalsTableDAG → circuit.gates ≤ 2 * N + 1 := by
+    intro circuit hCircuit
+    rcases List.mem_map.mp hCircuit with ⟨table, _, rfl⟩
+    exact gates_equalsTableDAG_le table
+  have hBound := hOr hEach
+  simp only [List.length_map] at hBound
+  have hFactor : 2 * N + 1 + 1 = 2 * N + 2 := by omega
+  rw [hFactor] at hBound
+  omega
+
+/-- Order-insensitive wrapper around the computable list constructor.  It is
+noncomputable only because `Finset.toList` has no canonical order. -/
+noncomputable def avoidFiniteSetDAG {N : Nat}
+    (forbidden : Finset (Bitstring N)) : DagCircuit N :=
+  avoidListDAG forbidden.toList
+
+@[simp] theorem eval_avoidFiniteSetDAG {N : Nat}
+    (forbidden : Finset (Bitstring N)) (input : Bitstring N) :
+    eval (avoidFiniteSetDAG forbidden) input = decide (input ∉ forbidden) := by
+  classical
+  simp [avoidFiniteSetDAG]
 
 /-- Explicit size bound, linear in `N` times the number of forbidden strings. -/
 theorem size_avoidFiniteSetDAG_le {N : Nat}
@@ -249,21 +279,6 @@ theorem size_avoidFiniteSetDAG_le {N : Nat}
     size (avoidFiniteSetDAG forbidden) ≤
       forbidden.card * (2 * N + 2) + 3 := by
   classical
-  unfold avoidFiniteSetDAG
-  rw [size, gates_dagNot]
-  have hOr := gates_dagOrList_le
-    (gateBound := 2 * N + 1)
-    (forbidden.toList.map equalsTableDAG)
-  have hEach : ∀ circuit,
-      circuit ∈ forbidden.toList.map equalsTableDAG →
-      circuit.gates ≤ 2 * N + 1 := by
-    intro circuit hCircuit
-    rcases List.mem_map.mp hCircuit with ⟨table, _, rfl⟩
-    exact gates_equalsTableDAG_le table
-  have hBound := hOr hEach
-  simp only [List.length_map, Finset.length_toList] at hBound
-  have hFactor : 2 * N + 1 + 1 = 2 * N + 2 := by omega
-  rw [hFactor] at hBound
-  omega
+  simpa [avoidFiniteSetDAG] using size_avoidListDAG_le forbidden.toList
 
 end Pnp4.Frontier.SignedSupportNoGo

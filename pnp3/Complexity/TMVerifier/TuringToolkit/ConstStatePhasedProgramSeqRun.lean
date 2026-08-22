@@ -305,6 +305,94 @@ theorem RunSpec.seq
     exact congrArg (fun phase => P1.numPhases + phase) spec2.reachesAcceptPhase
   · exact hFinal
 
+/-- Terminal closure for the singleton `seqList` case.
+
+Unlike `RunSpec.seq`, this theorem does not run `idleCS` as a standalone
+second program and therefore needs no impossible comparison from `P`'s tape
+length to the shorter idle tape.  It transports the `P` run inside the
+composite, takes the handoff step there, and records directly that this step
+preserves the embedded final head and tape.  Since `idleCS` starts at its
+accept phase, that same boundary step reaches the composite accept phase. -/
+theorem RunSpec.seqList_singleton [Inhabited S]
+    (P : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P.toPhased.toTM) n)
+    (Post : Configuration (M := P.toPhased.toTM) n → Prop)
+    (spec : RunSpec P c Post) :
+    let cFinal := TM.runConfig (M := P.toPhased.toTM) c (P.timeBound n)
+    RunSpec (seqList [P]) (embedSeqConfig P idleCS c) (fun cSeq =>
+      cSeq.head = (embedSeqConfig P idleCS cFinal).head ∧
+      cSeq.tape = (embedSeqConfig P idleCS cFinal).tape ∧
+      Post cFinal) := by
+  dsimp only
+  let cFinal := TM.runConfig (M := P.toPhased.toTM) c (P.timeBound n)
+  have hPRun :
+      TM.runConfig (M := (ConstStatePhasedProgram.seq P idleCS).toPhased.toTM)
+          (embedSeqConfig P idleCS c) (P.timeBound n) =
+        embedSeqConfig P idleCS cFinal :=
+    embedSeqConfig_runConfig_eq P idleCS c (P.timeBound n) (by
+      intro s hs
+      let c_s := TM.runConfig (M := P.toPhased.toTM) c s
+      exact ⟨c_s.state.fst.isLt, spec.prefixSafe s hs⟩)
+  have hFinal :
+      TM.runConfig (M := (seqList [P]).toPhased.toTM)
+          (embedSeqConfig P idleCS c) ((seqList [P]).timeBound n) =
+        TM.stepConfig (M := (ConstStatePhasedProgram.seq P idleCS).toPhased.toTM)
+          (embedSeqConfig P idleCS cFinal) := by
+    change TM.runConfig (M := (ConstStatePhasedProgram.seq P idleCS).toPhased.toTM)
+        (embedSeqConfig P idleCS c) (P.timeBound n + 0 + 1) = _
+    rw [Nat.add_zero, runConfig_succ, hPRun]
+  refine RunSpec.mk ?_ ?_ ?_
+  · intro s hs
+    let c_s := TM.runConfig (M := (seqList [P]).toPhased.toTM)
+      (embedSeqConfig P idleCS c) s
+    change c_s.state.fst.val ≠ (seqList [P]).acceptPhase.val ∧
+      (((seqList [P]).toPhased.toTM.step
+          c_s.state (c_s.tape c_s.head)).snd.snd = Move.right →
+        c_s.head.val + 1 < (seqList [P]).toPhased.toTM.tapeLength n)
+    have hsP : s ≤ P.timeBound n := by
+      change s < P.timeBound n + 0 + 1 at hs
+      omega
+    have hPrefix : c_s = embedSeqConfig P idleCS
+        (TM.runConfig (M := P.toPhased.toTM) c s) := by
+      exact embedSeqConfig_runConfig_eq P idleCS c s (by
+        intro r hr
+        let c_r := TM.runConfig (M := P.toPhased.toTM) c r
+        exact ⟨c_r.state.fst.isLt, spec.prefixSafe r (by omega)⟩)
+    constructor
+    · rw [hPrefix]
+      change (TM.runConfig (M := P.toPhased.toTM) c s).state.fst.val ≠
+        P.numPhases + 0
+      have hPhase :=
+        (TM.runConfig (M := P.toPhased.toTM) c s).state.fst.isLt
+      simp only [toPhased_numPhases] at hPhase
+      omega
+    · intro _
+      rw [hPrefix]
+      simp only [embedSeqConfig_head_val]
+      have hHeadBound :=
+        (TM.runConfig (M := P.toPhased.toTM) c s).head.isLt
+      simp only [PhasedProgram.toTM_tapeLength, toPhased_timeBound] at hHeadBound ⊢
+      change _ < n + (P.timeBound n + 0 + 1) + 1
+      omega
+  · rw [hFinal]
+    have hPhase : (embedSeqConfig P idleCS cFinal).state.fst.val < P.numPhases := by
+      exact cFinal.state.fst.isLt
+    have hBoundary := stepConfig_seq_P1_boundary_phase P idleCS
+      (embedSeqConfig P idleCS cFinal) hPhase spec.reachesAcceptPhase
+    change
+      (TM.stepConfig (M := (ConstStatePhasedProgram.seq P idleCS).toPhased.toTM)
+        (embedSeqConfig P idleCS cFinal)).state.fst.val = P.numPhases + 0
+    simpa only using hBoundary
+  · rw [hFinal]
+    have hPhase : (embedSeqConfig P idleCS cFinal).state.fst.val < P.numPhases := by
+      exact cFinal.state.fst.isLt
+    exact ⟨
+      stepConfig_seq_P1_boundary_head P idleCS
+        (embedSeqConfig P idleCS cFinal) hPhase spec.reachesAcceptPhase,
+      stepConfig_seq_P1_boundary_tape P idleCS
+        (embedSeqConfig P idleCS cFinal) hPhase spec.reachesAcceptPhase,
+      spec.postcondition⟩
+
 end ConstStatePhasedProgram
 
 namespace GateEvalCS
@@ -313,12 +401,48 @@ open Pnp3.Internal.PsubsetPpoly.TM
 open ConstStatePhasedProgram
 
 /-!
-### Concrete two-constant-gate instance
+### Concrete constant-gate instances
 
-This theorem exercises the generic API with two real gate programs.  It states
-the standalone meaning of both pieces as sequential tape writes and identifies
-the composite final configuration with the lifted/embedded second run.
+The singleton theorem exercises the terminal closure used by the `seqList`
+base case.  The two-piece theorem exercises ordinary `RunSpec.seq`-style
+composition and identifies the composite final configuration with the
+lifted/embedded second run.
 -/
+
+/-- A concrete `RunSpec` for the actual singleton-list representation
+`seqList [gateConstCS b d]`.  Its terminal handoff preserves the embedded
+standalone gate's final head and tape, while the standalone postcondition
+records the gate's write. -/
+theorem gateConstCS_seqList_singleton_runSpec
+    (b : Bool) (d : Nat) {n : Nat}
+    (c : Configuration (M := (gateConstCS b d).toPhased.toTM) n)
+    (hPhase : c.state.fst.val = 0)
+    (hState : c.state.snd = (false, false))
+    (hBound : (c.head : Nat) + d <
+      (gateConstCS b d).toPhased.toTM.tapeLength n) :
+    let P := gateConstCS b d
+    let cFinal := TM.runConfig (M := P.toPhased.toTM) c (P.timeBound n)
+    RunSpec (seqList [P]) (embedSeqConfig P idleCS c) (fun cSeq =>
+      cSeq.head = (embedSeqConfig P idleCS cFinal).head ∧
+      cSeq.tape = (embedSeqConfig P idleCS cFinal).tape ∧
+      cFinal.tape = c.write ⟨(c.head : Nat) + d, hBound⟩ b) := by
+  dsimp only
+  let P := gateConstCS b d
+  let cFinal := TM.runConfig (M := P.toPhased.toTM) c (P.timeBound n)
+  obtain ⟨_, _, hAccept, _, _, hTape⟩ :=
+    CombineAtOffset.combineAtOffsetCS_run_full d d d
+      (le_refl _) (le_refl _) (fun _ _ => b) c hPhase hState hBound
+  let post : Configuration (M := P.toPhased.toTM) n → Prop :=
+    fun c' => c'.tape = c.write ⟨(c.head : Nat) + d, hBound⟩ b
+  let spec : RunSpec P c post := RunSpec.mk
+    (by
+      intro s hs
+      exact CombineAtOffset.combineAtOffsetCS_run_invariants_in_prefix
+        d d d (le_refl _) (le_refl _) (fun _ _ => b)
+        c hPhase hState hBound s (by simpa [P] using hs) |>.2)
+    (by simpa [P] using hAccept)
+    (by simpa [P, post, gateConstCS_timeBound] using hTape)
+  exact RunSpec.seqList_singleton P c post spec
 
 /-- A full `seq` run of two `gateConstCS` pieces is exactly the embedded
 standalone second-gate run.  The two postconditions record, in order, the write

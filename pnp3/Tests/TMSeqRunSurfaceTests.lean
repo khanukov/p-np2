@@ -2,6 +2,7 @@ import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqRun
 
 namespace Pnp3.Tests.TMSeqRunSurface
 
+open Pnp3.Internal.PsubsetPpoly
 open Pnp3.Internal.PsubsetPpoly.TM
 open Pnp3.Internal.PsubsetPpoly.TM.ConstStatePhasedProgram
 open Pnp3.Internal.PsubsetPpoly.TM.GateEvalCS
@@ -9,6 +10,39 @@ open Pnp3.Internal.PsubsetPpoly.TM.GateEvalCS
 universe v
 
 variable {S : Type v} [Fintype S] [DecidableEq S]
+
+/-- Pin the `RunSpec` constructor fields and their order. -/
+theorem check_RunSpec_mk
+    (P : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P.toPhased.toTM) n)
+    (Post : Configuration (M := P.toPhased.toTM) n → Prop)
+    (hPrefix : ∀ s < P.timeBound n,
+      let c_s := runConfig (M := P.toPhased.toTM) c s
+      c_s.state.fst.val ≠ P.acceptPhase.val ∧
+      ((P.toPhased.toTM.step c_s.state (c_s.tape c_s.head)).snd.snd = Move.right →
+        c_s.head.val + 1 < P.toPhased.toTM.tapeLength n))
+    (hReach :
+      (runConfig (M := P.toPhased.toTM) c (P.timeBound n)).state.fst.val =
+        P.acceptPhase.val)
+    (hPost : Post (runConfig (M := P.toPhased.toTM) c (P.timeBound n))) :
+    RunSpec P c Post :=
+  RunSpec.mk hPrefix hReach hPost
+
+/-- Pin the three public `RunSpec` projections. -/
+theorem check_RunSpec_projections
+    (P : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P.toPhased.toTM) n)
+    (Post : Configuration (M := P.toPhased.toTM) n → Prop)
+    (spec : RunSpec P c Post) :
+    (∀ s < P.timeBound n,
+      let c_s := runConfig (M := P.toPhased.toTM) c s
+      c_s.state.fst.val ≠ P.acceptPhase.val ∧
+      ((P.toPhased.toTM.step c_s.state (c_s.tape c_s.head)).snd.snd = Move.right →
+        c_s.head.val + 1 < P.toPhased.toTM.tapeLength n)) ∧
+    (runConfig (M := P.toPhased.toTM) c
+        (P.timeBound n)).state.fst.val = P.acceptPhase.val ∧
+    Post (runConfig (M := P.toPhased.toTM) c (P.timeBound n)) :=
+  ⟨spec.prefixSafe, spec.reachesAcceptPhase, spec.postcondition⟩
 
 /-- Pin the exact boundary-handoff theorem signature, including its single
 tape-length comparison and derived lift head bound. -/
@@ -72,6 +106,38 @@ theorem check_RunSpec_seq
       c = embedSeqP2Config P1 P2 c2Final ∧
       Post1 c1Final ∧ Post2 c2Final) :=
   RunSpec.seq P1 P2 c1 Post1 Post2 hLen spec1 spec2
+
+/-- Pin the honest singleton terminal closure.  Its result is a `RunSpec` for
+the actual `seqList [P]`, and its postcondition preserves the embedded P1
+final head and tape without constructing a standalone idle configuration. -/
+theorem check_RunSpec_seqList_singleton [Inhabited S]
+    (P : ConstStatePhasedProgram S) {n : Nat}
+    (c : Configuration (M := P.toPhased.toTM) n)
+    (Post : Configuration (M := P.toPhased.toTM) n → Prop)
+    (spec : RunSpec P c Post) :
+    let cFinal := runConfig (M := P.toPhased.toTM) c (P.timeBound n)
+    RunSpec (seqList [P]) (embedSeqConfig P idleCS c) (fun cSeq =>
+      cSeq.head = (embedSeqConfig P idleCS cFinal).head ∧
+      cSeq.tape = (embedSeqConfig P idleCS cFinal).tape ∧
+      Post cFinal) :=
+  RunSpec.seqList_singleton P c Post spec
+
+/-- Pin a concrete compiling `RunSpec` surface for a singleton constant-gate
+`seqList`, including its tape-write meaning. -/
+theorem check_gateConstCS_seqList_singleton_runSpec
+    (b : Bool) (d : Nat) {n : Nat}
+    (c : Configuration (M := (gateConstCS b d).toPhased.toTM) n)
+    (hPhase : c.state.fst.val = 0)
+    (hState : c.state.snd = (false, false))
+    (hBound : (c.head : Nat) + d <
+      (gateConstCS b d).toPhased.toTM.tapeLength n) :
+    let P := gateConstCS b d
+    let cFinal := runConfig (M := P.toPhased.toTM) c (P.timeBound n)
+    RunSpec (seqList [P]) (embedSeqConfig P idleCS c) (fun cSeq =>
+      cSeq.head = (embedSeqConfig P idleCS cFinal).head ∧
+      cSeq.tape = (embedSeqConfig P idleCS cFinal).tape ∧
+      cFinal.tape = c.write ⟨(c.head : Nat) + d, hBound⟩ b) :=
+  gateConstCS_seqList_singleton_runSpec b d c hPhase hState hBound
 
 /-- Pin the concrete theorem's full result type.  It needs only the first
 gate's tape bound; the second follows from ordered destinations.  Its second

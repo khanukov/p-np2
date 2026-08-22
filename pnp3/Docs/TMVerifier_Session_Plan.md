@@ -67,9 +67,10 @@ will directly use the existential rewrite instead of `trivialCert`.
 `{propext, Classical.choice, Quot.sound}`.
 
 **W-A infrastructure delivered (2026-08-22):**
-`TuringToolkit/ConstStatePhasedProgramSeqRun.lean` now completes both the
-two-program configuration-flow theorem and the `RunSpec` closure step, not the
-full list induction promised by this session.  `RunSpec` records the
+`TuringToolkit/ConstStatePhasedProgramSeqRun.lean` now completes the named
+two-program configuration-flow theorem `seq_run_full`, ordinary `RunSpec.seq`
+closure, and the specialized terminal closure `RunSpec.seqList_singleton`, not
+the full list induction promised by this session.  `RunSpec` records the
 non-automatic prefix conditions (not reaching the accept phase early and
 right-move head safety), arrival at the accept phase at `timeBound`, and a
 caller-chosen semantic postcondition.  Phase arrival alone is not TM
@@ -84,17 +85,25 @@ identifies the exact embedded final configuration and preserves both component
 postconditions.  Its full P2 `RunSpec` premise is intentionally stronger than
 configuration flow alone requires: P2's early-phase avoidance and final phase
 arrival are required to prove closure and support later right-nested
-induction.  The concrete theorem's second write postcondition is relative to
-the P1-to-P2 boundary lift `c2Init`, not directly to the original P1
-configuration.
+induction.  It cannot serve as the singleton base by taking `P2 := idleCS`:
+for nonzero `P.timeBound`, `P.tapeLength ≤ idleCS.tapeLength` is false.
+`RunSpec.seqList_singleton` instead performs the final handoff directly in the
+`seq P idleCS` composite, reaches the composite accept phase, and preserves the
+embedded P final tape and head without projecting either into a shorter idle
+tape.  The two-piece concrete theorem's second write postcondition is relative
+to the P1-to-P2 boundary lift `c2Init`, not directly to the original P1
+configuration.  `gateConstCS_seqList_singleton_runSpec` supplies a concrete
+compiling singleton `seqList [gateConstCS b d]` surface.
 `gateConstCS_seq_run_full` instantiates the theorem on two ordered constant
 gate pieces and derives the second gate's destination bound from the first
 gate's bound and `d1 ≤ d2`.
 
 This is **Infrastructure**, not a restricted lower bound and not P-vs-NP
-mainline progress.  Configuration flow and `RunSpec` closure are completed;
-the full recursive `seqList_run_full` induction remains open.  This work does
-not close any verifier-language correctness or runtime obligation.
+mainline progress.  Ordinary `RunSpec.seq` plus the terminal singleton closure
+now form the induction kernel; the recursive theorem that assembles that kernel
+over arbitrary `seqList`s (and the full `seqList_run_full` promised by this
+session) remains open.  This work does not close any verifier-language
+correctness or runtime obligation.
 
 ### Session 2 — `writeVecOfNatProgram`
 **File:** new

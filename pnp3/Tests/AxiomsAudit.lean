@@ -29,6 +29,8 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_boundary_step_eq_embedSeqP2Config_lift
 #print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_run_full
 #print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.RunSpec.seq
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.RunSpec.seqList_singleton
+#print axioms Internal.PsubsetPpoly.TM.GateEvalCS.gateConstCS_seqList_singleton_runSpec
 #print axioms Internal.PsubsetPpoly.TM.GateEvalCS.gateConstCS_seq_run_full
 
 -- Итоговые утверждения (формульная сепарация).

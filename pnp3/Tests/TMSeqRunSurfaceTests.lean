@@ -222,6 +222,14 @@ theorem check_RunSpec_seqList_of_forall [Inhabited S]
       (embedSeqConfig P (seqList rest) c) (fun _ => True) :=
   RunSpec.seqList_of_forall ready P rest c hReady hSpecs hSteps
 
+/-- Pin constant-gate tape-length monotonicity for arbitrary gate values,
+destination offsets, and input length. -/
+theorem check_gateConstCS_tapeLength_mono
+    (b1 b2 : Bool) (d1 d2 n : Nat) (hD : d1 ≤ d2) :
+    (gateConstCS b1 d1).toPhased.toTM.tapeLength n ≤
+      (gateConstCS b2 d2).toPhased.toTM.tapeLength n :=
+  gateConstCS_tapeLength_mono b1 b2 d1 d2 n hD
+
 /-- Pin a concrete compiling `RunSpec` surface for a singleton constant-gate
 `seqList`, including its tape-write meaning. -/
 theorem check_gateConstCS_seqList_singleton_runSpec
@@ -252,9 +260,8 @@ theorem check_gateConstCS_seq_run_full
     let P1 := gateConstCS b1 d1
     let P2 := gateConstCS b2 d2
     let c1Final := runConfig (M := P1.toPhased.toTM) c1 (P1.timeBound n)
-    let hLen : P1.toPhased.toTM.tapeLength n ≤ P2.toPhased.toTM.tapeLength n := by
-      show n + (2 * d1 + 3) + 1 ≤ n + (2 * d2 + 3) + 1
-      omega
+    let hLen : P1.toPhased.toTM.tapeLength n ≤ P2.toPhased.toTM.tapeLength n :=
+      gateConstCS_tapeLength_mono b1 b2 d1 d2 n hD
     let hHead : c1Final.head.val < P2.toPhased.toTM.tapeLength n :=
       Nat.lt_of_lt_of_le c1Final.head.isLt hLen
     let c2Init := liftP1ToP2 P1 P2 c1Final hHead
@@ -289,9 +296,8 @@ theorem check_gateConstCS_seqList_two_runSpec
     let P1 := gateConstCS b1 d1
     let P2 := gateConstCS b2 d2
     let c1Final := runConfig (M := P1.toPhased.toTM) c1 (P1.timeBound n)
-    let hLen : P1.toPhased.toTM.tapeLength n ≤ P2.toPhased.toTM.tapeLength n := by
-      show n + (2 * d1 + 3) + 1 ≤ n + (2 * d2 + 3) + 1
-      omega
+    let hLen : P1.toPhased.toTM.tapeLength n ≤ P2.toPhased.toTM.tapeLength n :=
+      gateConstCS_tapeLength_mono b1 b2 d1 d2 n hD
     let hHead : c1Final.head.val < P2.toPhased.toTM.tapeLength n :=
       Nat.lt_of_lt_of_le c1Final.head.isLt hLen
     let c2Init := liftP1ToP2 P1 P2 c1Final hHead
@@ -328,9 +334,8 @@ theorem check_gateConstCS_seqList_two_run_full
     let P1 := gateConstCS b1 d1
     let P2 := gateConstCS b2 d2
     let c1Final := runConfig (M := P1.toPhased.toTM) c1 (P1.timeBound n)
-    let hLen : P1.toPhased.toTM.tapeLength n ≤ P2.toPhased.toTM.tapeLength n := by
-      show n + (2 * d1 + 3) + 1 ≤ n + (2 * d2 + 3) + 1
-      omega
+    let hLen : P1.toPhased.toTM.tapeLength n ≤ P2.toPhased.toTM.tapeLength n :=
+      gateConstCS_tapeLength_mono b1 b2 d1 d2 n hD
     let hHead : c1Final.head.val < P2.toPhased.toTM.tapeLength n :=
       Nat.lt_of_lt_of_le c1Final.head.isLt hLen
     let c2Init := liftP1ToP2 P1 P2 c1Final hHead
@@ -368,9 +373,8 @@ theorem check_gateConstCS_seqList_three_recursion_probe
       let P2 := gateConstCS b2 d2
       let c1Final := runConfig (M := P1.toPhased.toTM) c1 (P1.timeBound n)
       let hLen12 : P1.toPhased.toTM.tapeLength n ≤
-          P2.toPhased.toTM.tapeLength n := by
-        show n + (2 * d1 + 3) + 1 ≤ n + (2 * d2 + 3) + 1
-        omega
+          P2.toPhased.toTM.tapeLength n :=
+        gateConstCS_tapeLength_mono b1 b2 d1 d2 n h12
       let hHead2 := Nat.lt_of_lt_of_le c1Final.head.isLt hLen12
       RunSpec P2 (liftP1ToP2 P1 P2 c1Final hHead2) (fun _ => True))
     (spec3 :
@@ -379,16 +383,14 @@ theorem check_gateConstCS_seqList_three_recursion_probe
       let P3 := gateConstCS b3 d3
       let c1Final := runConfig (M := P1.toPhased.toTM) c1 (P1.timeBound n)
       let hLen12 : P1.toPhased.toTM.tapeLength n ≤
-          P2.toPhased.toTM.tapeLength n := by
-        show n + (2 * d1 + 3) + 1 ≤ n + (2 * d2 + 3) + 1
-        omega
+          P2.toPhased.toTM.tapeLength n :=
+        gateConstCS_tapeLength_mono b1 b2 d1 d2 n h12
       let hHead2 := Nat.lt_of_lt_of_le c1Final.head.isLt hLen12
       let c2Init := liftP1ToP2 P1 P2 c1Final hHead2
       let c2Final := runConfig (M := P2.toPhased.toTM) c2Init (P2.timeBound n)
       let hLen23 : P2.toPhased.toTM.tapeLength n ≤
-          P3.toPhased.toTM.tapeLength n := by
-        show n + (2 * d2 + 3) + 1 ≤ n + (2 * d3 + 3) + 1
-        omega
+          P3.toPhased.toTM.tapeLength n :=
+        gateConstCS_tapeLength_mono b2 b3 d2 d3 n h23
       let hHead3 := Nat.lt_of_lt_of_le c2Final.head.isLt hLen23
       RunSpec P3 (liftP1ToP2 P2 P3 c2Final hHead3) (fun _ => True)) :
     let P1 := gateConstCS b1 d1

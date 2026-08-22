@@ -127,8 +127,8 @@ theorem RunSpec.seqList_singleton_exact [Inhabited S]
     change TM.runConfig (M := (ConstStatePhasedProgram.seq P idleCS).toPhased.toTM)
         (embedSeqConfig P idleCS c) (P.timeBound n + 0 + 1) = _
     rw [Nat.add_zero, runConfig_succ, hPRun]
-  exact ⟨base.prefixSafe, base.reachesAcceptPhase,
-    hFinal, spec.postcondition⟩
+  exact RunSpec.mk base.prefixSafe base.reachesAcceptPhase
+    (And.intro hFinal spec.postcondition)
 
 /-- Add one program to a nonempty `seqList` tail.  The result preserves the
 exact final composite configuration and both the head and tail postconditions.

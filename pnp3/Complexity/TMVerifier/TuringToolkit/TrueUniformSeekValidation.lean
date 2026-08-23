@@ -11,7 +11,8 @@ request.
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
 
-private abbrev T1M := t1CS.toPhased.toTM
+/-- The concrete T1 machine used by the execution-theorem surface. -/
+abbrev T1M := t1CS.toPhased.toTM
 
 private def t1Phase : Fin t1CS.toPhased.numPhases := t1CS.toPhased.startPhase
 
@@ -45,6 +46,12 @@ def t1PhysicalBitsAt {n h : Nat} (hh : h + 4 < T1M.tapeLength n)
     (tape : Fin (T1M.tapeLength n) → Bool) : List Bool :=
   [tape ⟨h, by omega⟩, tape ⟨h+1, by omega⟩,
    tape ⟨h+2, by omega⟩, tape ⟨h+3, by omega⟩]
+
+/-- Modes in which the T1 control reads a frame from left to right. -/
+def T1ForwardMode : T1Mode → Prop
+  | .validateBof | .validateIndex | .validateData | .validateFinish
+  | .validateBlank => True
+  | _ => False
 
 /-- **Four-bit decoding macrostep.**  From any aligned configuration and any
 arbitrary surrounding tape, a grammar-valid frame is decoded in exactly four
@@ -80,11 +87,13 @@ private theorem t1CS_step_forward
       Configuration.write, funext_iff, hsafe'] <;>
     split <;> simp_all [Configuration.write, funext_iff]
 
+/-- **Four-bit decoding macrostep.**  In any forward validation mode, a
+grammar-valid frame on an arbitrary surrounding tape is decoded in exactly
+four physical TM steps.  The head advances by four and no tape cell changes. -/
 theorem t1CS_frame_macrostep
     (n h : Nat) (hsafe : h + 4 < T1M.tapeLength n)
     (tape : Fin (T1M.tapeLength n) → Bool) (mode : T1Mode) (frame : T1Frame)
-    (hmode : mode ≠ .rewind ∧ mode ≠ .rewindStart ∧
-      mode ≠ .startMutation ∧ mode ≠ .accept ∧ mode ≠ .reject)
+    (hmode : T1ForwardMode mode)
     (hnext : t1Advance mode frame ≠ .reject)
     (hbits : t1PhysicalBitsAt hsafe tape = frame.bits) :
     TM.runConfig (M := T1M)
@@ -92,8 +101,7 @@ theorem t1CS_frame_macrostep
       t1AlignedConfig n (h+4) hsafe tape (t1Advance mode frame) := by
   have hfwd : mode = .validateBof ∨ mode = .validateIndex ∨
       mode = .validateData ∨ mode = .validateFinish ∨ mode = .validateBlank := by
-    rcases hmode with ⟨hr, hrs, hm, ha, hj⟩
-    cases mode <;> simp_all
+    cases mode <;> simp_all [T1ForwardMode]
   change TM.runConfig (M := T1M)
       (t1AlignedConfig n h (by omega) tape mode) (1 + 1 + 1 + 1) = _
   rw [runConfig_add, runConfig_add, runConfig_add]
@@ -193,11 +201,6 @@ private theorem t1PhysicalBitsAt_flatMap
       simp [t1PhysicalBitsAt, t1ListTape, List.getD,
         List.flatMap_append, hlen, T1Frame.bits]
 
-def T1ForwardMode : T1Mode → Prop
-  | .validateBof | .validateIndex | .validateData | .validateFinish
-  | .validateBlank => True
-  | _ => False
-
 def T1ValidPath : T1Mode → List T1Frame → Prop
   | _, [] => True
   | mode, frame :: rest =>
@@ -208,13 +211,10 @@ def t1AdvanceList : T1Mode → List T1Frame → T1Mode
   | mode, [] => mode
   | mode, frame :: rest => t1AdvanceList (t1Advance mode frame) rest
 
-private theorem t1ForwardMode_exclusions {mode : T1Mode}
-    (h : T1ForwardMode mode) :
-    mode ≠ .rewind ∧ mode ≠ .rewindStart ∧ mode ≠ .startMutation ∧
-      mode ≠ .accept ∧ mode ≠ .reject := by
-  cases mode <;> simp_all [T1ForwardMode]
-
-private theorem t1CS_scan_frames
+/-- Scan a grammar-valid list of frames from left to right in exactly four TM
+steps per frame.  The theorem preserves the complete list-backed tape and
+ends at the mode obtained by folding `t1Advance` over the scanned frames. -/
+theorem t1CS_scan_frames
     (n : Nat) (pre frames suffix : List T1Frame) (mode : T1Mode)
     (hpath : T1ValidPath mode frames)
     (hsafe : 4 * (pre.length + frames.length) < T1M.tapeLength n) :
@@ -234,7 +234,7 @@ private theorem t1CS_scan_frames
         omega
       have hmacro := t1CS_frame_macrostep n (4 * pre.length) hframeSafe
         (t1ListTape ((pre ++ frame :: rest ++ suffix).flatMap T1Frame.bits))
-        mode frame (t1ForwardMode_exclusions hfwd) hnext
+        mode frame hfwd hnext
         (by simpa [List.append_assoc] using
           t1PhysicalBitsAt_flatMap n pre (rest ++ suffix) frame hframeSafe)
       rw [show 4 * (frame :: rest).length = 4 + 4 * rest.length by simp; omega,
@@ -290,6 +290,16 @@ def t1ValidationFrames (r : T1Request) : List T1Frame :=
     | zero => simpa [t1AdvanceList, t1Advance] using hd
     | succ k ih => simpa [List.replicate_succ, t1AdvanceList, t1Advance] using ih
   simpa [t1ValidationFrames, encodeT1Frames, t1AdvanceList, t1Advance] using hi
+
+/-- The canonical encoder frames followed by the physical blank frame form a
+complete valid trace of the forward control automaton, ending at rewind.  This
+states an encoder/automaton trace, not full parser/machine equivalence. -/
+theorem t1CanonicalEncoderAutomatonTrace (r : T1Request) :
+    T1ValidPath .validateBof (encodeT1Frames r ++ [.blank]) ∧
+      t1AdvanceList .validateBof (encodeT1Frames r ++ [.blank]) =
+        .rewindStart := by
+  simpa [t1ValidationFrames] using
+    And.intro (t1ValidationPath r) (t1ValidationAdvance r)
 
 /-- Canonical input tape equals the same tape with one explicit blank frame
 appended.  This is precisely where the binary-tape EOF ambiguity is handled. -/
@@ -507,7 +517,10 @@ private theorem t1CS_step_rewindStart
     ConstStatePhasedProgram.toPhased, PhasedProgram.toTM, t1Transition,
     t1State, Configuration.moveHead, Configuration.write, funext_iff, hne]
 
-private theorem t1CS_rewind_tail
+/-- Rewind right-to-left across a list of non-`bof` frames in exactly four TM
+steps per frame.  The complete list-backed tape is preserved and the head
+finishes on the final bit of the leading `bof` frame. -/
+theorem t1CS_rewind_tail
     (n : Nat) (tail suffix : List T1Frame)
     (hne : ∀ f ∈ tail, f ≠ .bof)
     (hsafe : 4 * (1 + tail.length) < T1M.tapeLength n) :
@@ -555,7 +568,7 @@ private theorem t1CS_rewind_tail
         Nat.add_left_comm] using htail
 
 set_option maxHeartbeats 800000 in
-/- Canonical validation and rewind reach the exact start-of-mutation boundary
+/-- Canonical validation and rewind reach the exact start-of-mutation boundary
 in `2 * encodeT1 r.length + 9` steps, with the complete tape unchanged. -/
 theorem t1CS_validate_rewind_encoded_exact (r : T1Request) :
     let n := (encodeT1 r).length

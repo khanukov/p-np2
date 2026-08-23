@@ -76,8 +76,12 @@ open Pnp3.Magnification
 
 -- T1a fixed-control canonical validation and read-only rewind handoff.
 #print axioms Internal.PsubsetPpoly.TM.decodeT1Tape_encode
+#print axioms Internal.PsubsetPpoly.TM.decodeT1Tape?_eq_some
 #print axioms Internal.PsubsetPpoly.TM.t1CS_frame_macrostep
+#print axioms Internal.PsubsetPpoly.TM.t1CS_scan_frames
 #print axioms Internal.PsubsetPpoly.TM.t1CS_validate_encoded_exact
+#print axioms Internal.PsubsetPpoly.TM.t1CanonicalEncoderAutomatonTrace
+#print axioms Internal.PsubsetPpoly.TM.t1CS_rewind_tail
 #print axioms Internal.PsubsetPpoly.TM.t1CS_validate_rewind_encoded_exact
 #print axioms Internal.PsubsetPpoly.TM.t1CS_run_encoded_reaches_mutation
 

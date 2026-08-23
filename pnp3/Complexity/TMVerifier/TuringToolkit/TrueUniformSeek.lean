@@ -92,7 +92,11 @@ def t1CS : ConstStatePhasedProgram T1State where
 
 @[simp] theorem t1CS_numPhases : t1CS.numPhases = 1 := rfl
 
-@[simp] theorem t1CS_runTime (N : Nat) :
+/-- The public T1 clock in arithmetic normal form.  This theorem is kept out
+of the simp set because the generic `toTM_runTime` and `toPhased_timeBound`
+simps already reduce the same left-hand side to `t1Clock N`; callers can use
+this named theorem when they specifically want the expanded polynomial. -/
+theorem t1CS_runTime (N : Nat) :
     t1CS.toPhased.toTM.runTime N = 128 * (N + 1) ^ 2 + 128 := rfl
 
 @[simp] theorem t1Transition_accept_sink (scan : Bool) :

@@ -192,6 +192,24 @@ restoration, acceptance, or T1b success claim.  The modules and their public
 headline results are covered by a concrete example, a compile-time surface
 test, and the axiom audit.
 
+**T1a review hardening (2026-08-23):** the generic forward-frame scanner
+`t1CS_scan_frames` and non-anchor reverse scanner `t1CS_rewind_tail` are public
+T1b reuse surfaces, with exact import-side type probes and axiom audits.  Their
+shared public signature exposes only the concrete-machine abbreviation `T1M`
+in addition to the existing frame/tape/path vocabulary.  The public
+`t1CS_frame_macrostep` now takes the positive `T1ForwardMode` premise.  The
+clock theorem remains available by name but is not a simp rule, since the
+generic clock projections already select `t1Clock` as the simp normal form.
+
+The pure parser is now canonical: `decodeT1Tape? bits = some r` implies
+`bits = encodeT1 r`.  Separately, `t1CanonicalEncoderAutomatonTrace` connects
+the encoder's frames plus the explicit blank frame to the forward control
+trace ending at rewind.  This is not a theorem equating the parser and the TM,
+nor a malformed/trailing-input rejection theorem.  `T1Physical` is retained
+only as vocabulary for that future scope and is not claimed to be discharged
+by the current canonical execution results.  This review increment remains
+**Infrastructure**, not P-vs-NP mainline progress.
+
 ### Session 2 — `writeVecOfNatProgram`
 **File:** new
 `pnp3/Complexity/TMVerifier/TuringToolkit/RowInputWriter.lean`

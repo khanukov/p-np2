@@ -55,12 +55,54 @@ def decodeT1Frame? : List Bool → Option T1Frame
   | data b | output b => cases b <;> rfl
   | blank | bof | index | spent | separator | cursor | finish => rfl
 
+private theorem decodeT1Frame?_eq_some {bits : List Bool} {f : T1Frame}
+    (h : decodeT1Frame? bits = some f) : bits = f.bits := by
+  rcases bits with _ | ⟨a, bits⟩
+  · simp [decodeT1Frame?] at h
+  rcases bits with _ | ⟨b, bits⟩
+  · simp [decodeT1Frame?] at h
+  rcases bits with _ | ⟨c, bits⟩
+  · simp [decodeT1Frame?] at h
+  rcases bits with _ | ⟨d, bits⟩
+  · simp [decodeT1Frame?] at h
+  rcases bits with _ | ⟨e, rest⟩
+  · cases a <;> cases b <;> cases c <;> cases d <;>
+      simp [decodeT1Frame?] at h <;> subst f <;> rfl
+  · simp [decodeT1Frame?] at h
+
 def decodeT1Frames? : List Bool → Option (List T1Frame)
   | [] => some []
   | a :: b :: c :: d :: rest => do
       let f ← decodeT1Frame? [a, b, c, d]
       pure (f :: (← decodeT1Frames? rest))
   | _ => none
+
+private theorem decodeT1Frames?_eq_some {bits : List Bool} {fs : List T1Frame}
+    (h : decodeT1Frames? bits = some fs) :
+    bits = fs.flatMap T1Frame.bits := by
+  match bits with
+  | [] =>
+      simp [decodeT1Frames?] at h
+      subst fs
+      rfl
+  | [a] => simp [decodeT1Frames?] at h
+  | [a, b] => simp [decodeT1Frames?] at h
+  | [a, b, c] => simp [decodeT1Frames?] at h
+  | a :: b :: c :: d :: rest =>
+      simp only [decodeT1Frames?] at h
+      cases hframe : decodeT1Frame? [a, b, c, d] with
+      | none => simp [hframe] at h
+      | some frame =>
+          cases hrest : decodeT1Frames? rest with
+          | none => simp [hframe, hrest] at h
+          | some tail =>
+              simp [hframe, hrest] at h
+              subst fs
+              rw [decodeT1Frames?_eq_some hrest]
+              simp only [List.flatMap_cons]
+              rw [← decodeT1Frame?_eq_some hframe]
+              rfl
+  termination_by bits.length
 
 structure T1Request where
   index : Nat
@@ -95,6 +137,30 @@ def parseT1Index : List T1Frame → Option (Nat × List T1Frame)
   | .separator :: rest => some (0, rest)
   | _ => none
 
+private theorem parseT1Index_eq_some {fs : List T1Frame} {k : Nat}
+    {tail : List T1Frame} (h : parseT1Index fs = some (k, tail)) :
+    fs = List.replicate k .index ++ .separator :: tail := by
+  induction fs generalizing k tail with
+  | nil => simp [parseT1Index] at h
+  | cons frame rest ih =>
+      cases frame with
+      | index =>
+          simp only [parseT1Index] at h
+          cases hp : parseT1Index rest with
+          | none => simp [hp] at h
+          | some result =>
+              rcases result with ⟨k', tail'⟩
+              simp [hp] at h
+              rcases h with ⟨rfl, rfl⟩
+              rw [ih hp]
+              simp [List.replicate_succ]
+      | separator =>
+          simp [parseT1Index] at h
+          rcases h with ⟨rfl, rfl⟩
+          rfl
+      | data b | output b => cases b <;> simp [parseT1Index] at h
+      | blank | bof | spent | cursor | finish => simp [parseT1Index] at h
+
 def parseT1Data : List T1Frame → Option (List Bool × List T1Frame)
   | .data b :: rest => do
       let (xs, tail) ← parseT1Data rest
@@ -102,12 +168,62 @@ def parseT1Data : List T1Frame → Option (List Bool × List T1Frame)
   | .output false :: rest => some ([], rest)
   | _ => none
 
+private theorem parseT1Data_eq_some {fs : List T1Frame} {data : List Bool}
+    {tail : List T1Frame} (h : parseT1Data fs = some (data, tail)) :
+    fs = data.map .data ++ .output false :: tail := by
+  induction fs generalizing data tail with
+  | nil => simp [parseT1Data] at h
+  | cons frame rest ih =>
+      cases frame with
+      | data bit =>
+          simp only [parseT1Data] at h
+          cases hp : parseT1Data rest with
+          | none => simp [hp] at h
+          | some result =>
+              rcases result with ⟨data', tail'⟩
+              simp [hp] at h
+              rcases h with ⟨rfl, rfl⟩
+              rw [ih hp]
+              rfl
+      | output bit =>
+          cases bit with
+          | false =>
+              simp [parseT1Data] at h
+              rcases h with ⟨rfl, rfl⟩
+              rfl
+          | true => simp [parseT1Data] at h
+      | blank | bof | index | spent | separator | cursor | finish =>
+          simp [parseT1Data] at h
+
 def decodeT1FrameList? : List T1Frame → Option T1Request
   | .bof :: rest => do
       let (k, rest) ← parseT1Index rest
       let (data, rest) ← parseT1Data rest
       if rest = [.finish] then some ⟨k, data⟩ else none
   | _ => none
+
+private theorem decodeT1FrameList?_eq_some {fs : List T1Frame} {r : T1Request}
+    (h : decodeT1FrameList? fs = some r) : fs = encodeT1Frames r := by
+  rcases fs with _ | ⟨frame, rest⟩
+  · simp [decodeT1FrameList?] at h
+  cases frame with
+  | bof =>
+      simp only [decodeT1FrameList?] at h
+      cases hi : parseT1Index rest with
+      | none => simp [hi] at h
+      | some indexResult =>
+          rcases indexResult with ⟨k, afterIndex⟩
+          cases hd : parseT1Data afterIndex with
+          | none => simp [hi, hd] at h
+          | some dataResult =>
+              rcases dataResult with ⟨data, afterData⟩
+              simp [hi, hd] at h
+              rcases h with ⟨rfl, rfl⟩
+              rw [parseT1Index_eq_some hi, parseT1Data_eq_some hd]
+              simp [encodeT1Frames, List.append_assoc]
+  | data b | output b => cases b <;> simp [decodeT1FrameList?] at h
+  | blank | index | spent | separator | cursor | finish =>
+      simp [decodeT1FrameList?] at h
 
 def decodeT1Tape? (bits : List Bool) : Option T1Request := do
   decodeT1FrameList? (← decodeT1Frames? bits)
@@ -118,7 +234,8 @@ def paddedT1FrameAt (bits : List Bool) (j : Nat) : List Bool :=
    bits.getD (4*j+2) false, bits.getD (4*j+3) false]
 
 /-- Every represented physical frame is observable (not the blank code).
-This is the necessary premise excluding indistinguishable all-zero suffixes. -/
+This predicate is reserved for future malformed/trailing-input theorems; the
+current T1a canonical execution results neither consume nor discharge it. -/
 def T1Physical (bits : List Bool) : Prop :=
   ∀ j, 4 * j < bits.length → paddedT1FrameAt bits j ≠ T1Frame.blank.bits
 
@@ -151,6 +268,18 @@ def T1Physical (bits : List Bool) : Prop :=
   unfold decodeT1Tape? encodeT1
   rw [decodeT1Frames_encoded]
   simp [encodeT1Frames, decodeT1FrameList?]
+
+/-- Successful T1 tape decoding determines the canonical physical encoding. -/
+theorem decodeT1Tape?_eq_some {bits : List Bool} {r : T1Request}
+    (h : decodeT1Tape? bits = some r) : bits = encodeT1 r := by
+  unfold decodeT1Tape? at h
+  cases hframes : decodeT1Frames? bits with
+  | none => simp [hframes] at h
+  | some fs =>
+      simp [hframes] at h
+      rw [decodeT1Frames?_eq_some hframes,
+        decodeT1FrameList?_eq_some h]
+      rfl
 
 def t1OutputPosition (r : T1Request) : Nat :=
   4 * (r.index + r.data.length + 2) + 3

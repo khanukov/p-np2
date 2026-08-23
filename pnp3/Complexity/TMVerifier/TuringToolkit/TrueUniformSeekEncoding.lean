@@ -377,7 +377,7 @@ def t1CursorFrameIndex (r : T1Request) (j : Nat) : Nat := r.index + 2 + j
 /-- Physical cell index where the cursor frame starts after `j` decrements. -/
 def t1CursorBase (r : T1Request) (j : Nat) : Nat := 4 * t1CursorFrameIndex r j
 
-@[simp] theorem t1MutationFrames_length (r : T1Request) (j : Nat)
+theorem t1MutationFrames_length (r : T1Request) (j : Nat)
     (hj : j ≤ r.index) (hdata : j < r.data.length) :
     (t1MutationFrames r j).length = r.index + r.data.length + 4 := by
   have hdrop : (r.data.drop (j+1)).length = r.data.length - (j+1) := by

@@ -16,6 +16,4 @@ def t1aExampleRequest : T1Request := ⟨2, [true, false, true]⟩
 example : decodeT1Tape? (encodeT1 t1aExampleRequest) = some t1aExampleRequest :=
   decodeT1Tape_encode t1aExampleRequest
 
-example := t1CS_validate_rewind_encoded_exact t1aExampleRequest
-
 end Pnp3.Internal.PsubsetPpoly.TM

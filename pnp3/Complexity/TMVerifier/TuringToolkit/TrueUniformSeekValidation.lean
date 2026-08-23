@@ -9,12 +9,13 @@ interpreter.  They establish the four-bit forward macrostep, stable terminal
 sinks, the two idle T1c boundary states, and the exact read-only
 validation/rewind trace for every canonical request.
 
-**Proof discipline.**  Every `TM.stepConfig` fact in this module — and in
-`TrueUniformSeekMutation`, which builds on it — is obtained by applying a
+**Proof discipline.**  Every `TM.stepConfig` fact in this module — and in the
+dependent mutation-execution slice — is obtained by applying a
 corollary of the generic `ConstStatePhasedStepBridge` to a standalone
-transition-table lemma of `TrueUniformSeek`.  The three `t1CS_aligned_step_*`
-adapters below are the only place where the bridge is instantiated at `t1CS`;
-`t1Transition` is never unfolded inside a `stepConfig` proof.
+transition-table lemma of `TrueUniformSeek`.  The three public
+`t1CS_aligned_step_*` adapters below are the primary reuse surface; the small
+internal stability proof follows the same discipline.  `t1Transition` is never
+unfolded inside a `stepConfig` proof.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM

@@ -30,7 +30,7 @@ The twenty-one modes fall into five groups.
   data field ran out) are the two T1c handoff states; `accept` and `reject`
   are the stable sinks.
 
-Three of the mutation modes (`seekSeparator`, `seekCursorFwd`) read frames
+Two of the mutation modes (`seekSeparator`, `seekCursorFwd`) read frames
 left to right exactly like the T1a validation modes, so they are folded into
 the shared `t1Advance`/`t1Complete` table and inherit T1a's macrostep
 machinery.  `seekIndexBack` reads frames right to left and has its own
@@ -78,7 +78,6 @@ def t1State (mode : T1Mode) (position : T1FramePosition)
 
 def t1AcceptState : T1State := t1State .accept .p0
 def t1RejectState : T1State := t1State .reject .p0
-def t1MutationState : T1State := t1State .startMutation .p0
 
 /-- The success boundary state, carrying the latched data value that T1c will
 write into the output frame. -/

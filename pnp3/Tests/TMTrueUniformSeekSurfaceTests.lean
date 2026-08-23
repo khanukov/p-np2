@@ -80,4 +80,21 @@ theorem check_t1CS_validate_rewind_encoded_exact (r : T1Request) :
           (t1Point (encodeT1 r))).tape .startMutation :=
   t1CS_validate_rewind_encoded_exact r
 
+-- T1b-A1 fixed-control and generic-step reuse surfaces.
+#check @t1Transition_startMutation_active
+#check @t1Transition_probeData_p3_data
+#check @t1Transition_probeData_p3_oob
+#check @t1Transition_writeCursor
+#check @t1Transition_seekIndexBack_p0_mark
+#check @t1Transition_markSpent
+#check @t1Transition_backupCursor
+#check @t1Transition_writeData
+#check @t1MutationFrames_length
+#check @t1MutationFrames_zero
+#check @t1CS_aligned_step_right
+#check @t1CS_aligned_step_left
+#check @t1CS_aligned_step_stay
+#check @t1CS_runConfig_successStart
+#check @t1CS_runConfig_oobStart
+
 end Pnp3.Tests.TMTrueUniformSeekSurface

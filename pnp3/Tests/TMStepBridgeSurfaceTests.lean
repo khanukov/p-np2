@@ -14,8 +14,8 @@ breaks this file.
 
 The surface is deliberately narrow: one machine-independent bridge, five
 move-specific corollaries (`left`, `left_clamped`, `right`, `right_clamped`,
-`stay`), and a probe.  Nothing here claims acceptance, a runtime bound, or any
-verifier property.
+`stay`), and two tiny probe controls that between them exercise all five.
+Nothing here claims acceptance, a runtime bound, or any verifier property.
 -/
 
 namespace Pnp3.Tests.TMStepBridgeSurface
@@ -35,7 +35,11 @@ variable {S : Type} [Fintype S] [DecidableEq S]
 #check @stepBridgeProbeCS_transition_false
 #check @stepBridgeProbeCS_step_left
 #check @stepBridgeProbeCS_step_left_clamped
+#check @stepBridgeProbeCS_step_right_clamped
 #check @stepBridgeProbeCS_stepConfig_true
+#check @stepBridgeProbeStayCS
+#check @stepBridgeProbeStayCS_transition
+#check @stepBridgeProbeStayCS_step_stay
 #check @Configuration.moveHead_left_clamp
 
 /-- The complete bridge: an opaque transition fact yields the exact

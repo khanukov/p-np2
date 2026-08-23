@@ -23,13 +23,16 @@ Consumers supply that hypothesis by whatever means is cheapest for their
 program (`rfl`, `decide`, or a dedicated table lemma) and then get an exact,
 complete `TM.stepConfig` equality for free.
 
-Layering:
+Layering (every exported declaration of this module, in dependency order):
 
-* `Configuration.ext_of_components` — componentwise extensionality;
 * `toTM_step_of_transition` — the compiled `TM.step` equation;
+* `toTM_step_config_of_transition` — the same equation instantiated at a
+  configuration's own state and scanned bit;
 * `stepConfig_state_of_transition` / `_head_` / `_tape_` — the three
   components, each stated in the canonical `Sigma` / `moveHead` /
   `Configuration.write` normal form;
+* `stepConfig_tape_apply_of_transition` — the pointwise form of the tape
+  component, with `Configuration.write`'s `dite` resolved to a `Nat` test;
 * `stepConfig_of_transition` — the complete configuration equality;
 * `stepConfig_eq_of_transition_left` / `_left_clamped` / `_right` /
   `_right_clamped` / `_stay` — ergonomic corollaries that identify
@@ -45,9 +48,12 @@ match with three value-level equations, never touching `Configuration.write`
 or `Configuration.moveHead` normal forms.
 
 The three `stepConfig_*` component lemmas of `Foundation` are reused verbatim,
-as is its head-movement micro-API (`moveHead_right_lt`, `moveHead_right_clamp`,
-`moveHead_left_val_of_pos`, `moveHead_left_clamp`, `moveHead_stay`).  No new
-axioms, no placeholders, and no program-specific imports.
+as are its head-movement micro-API (`moveHead_right_lt`,
+`moveHead_right_clamp`, `moveHead_left_val_of_pos`, `moveHead_left_clamp`,
+`moveHead_stay`) and its componentwise extensionality lemma
+`Configuration.ext_of_components`; all of those are generic in the machine and
+live in `Foundation`, so a consumer needs no step-bridge import to use them.
+No new axioms, no placeholders, and no program-specific imports.
 -/
 
 namespace Pnp3
@@ -55,26 +61,7 @@ namespace Internal
 namespace PsubsetPpoly
 namespace TM
 
-universe u v
-
-namespace Configuration
-
-/-- Componentwise extensionality for `Configuration`: two configurations of
-the same machine and input length are equal as soon as their three fields
-agree.  `Configuration` carries no proof fields, so this is exactly the
-injectivity of its constructor. -/
-theorem ext_of_components {M : TM.{u}} {n : Nat}
-    {c₁ c₂ : Configuration (M := M) n}
-    (hstate : c₁.state = c₂.state)
-    (hhead : c₁.head = c₂.head)
-    (htape : c₁.tape = c₂.tape) :
-    c₁ = c₂ := by
-  cases c₁
-  cases c₂
-  simp only [Configuration.mk.injEq]
-  exact ⟨hstate, hhead, htape⟩
-
-end Configuration
+universe v
 
 namespace ConstStatePhasedProgram
 

@@ -211,7 +211,6 @@ only as vocabulary for that future scope and is not claimed to be discharged
 by the current canonical execution results.  This review increment remains
 **Infrastructure**, not P-vs-NP mainline progress.
 
-### Session 2 — `writeVecOfNatProgram`
 **Generic step bridge delivered (2026-08-23):**
 `TuringToolkit/ConstStatePhasedStepBridge.lean` proves, once and generically,
 that an opaque `ConstStatePhasedProgram.transition` tuple equality determines
@@ -220,11 +219,13 @@ pointwise tape update.  Its five corollaries (`left`, `left_clamped`, `right`,
 `right_clamped`, `stay` — the two `left` and the two `right` premises are
 pairwise complementary, so every move at every head position is covered) let
 large fixed control tables supply one small transition lemma without unfolding
-every branch inside each machine proof.  A separate one-phase probe confirms this API on a
-concrete program.  This is **Infrastructure**, not verifier correctness,
-runtime closure, or P-vs-NP mainline progress; it unblocks the T1b destructive
-seek proof layer after direct unfolding exceeded the heartbeat budget.
+every branch inside each machine proof.  Separate one-phase probes exercise all
+five corollaries on concrete programs.  This is **Infrastructure**, not
+verifier correctness, runtime closure, or P-vs-NP mainline progress; it
+unblocks the T1b destructive seek proof layer after direct unfolding exceeded
+the heartbeat budget.
 
+### Session 2 — `writeVecOfNatProgram`
 **File:** new
 `pnp3/Complexity/TMVerifier/TuringToolkit/RowInputWriter.lean`
 **LOC:** ~300

@@ -369,6 +369,31 @@ theorem moveHead_val_le_succ {M : TM.{u}} {n : Nat}
     · rw [moveHead_right_clamp (c := c) h]
       exact Nat.le_succ _
 
+/-!
+### Componentwise extensionality
+
+`Configuration` is a plain three-field structure with no proof fields, so
+equality of configurations is exactly equality of the three components.
+Stated here, next to the head-movement micro-API, because it is generic in
+`M` and `n` and is needed by any consumer that builds a configuration by
+hand — no step-bridge or program-specific import required.
+-/
+
+/-- Componentwise extensionality for `Configuration`: two configurations of
+the same machine and input length are equal as soon as their three fields
+agree.  `Configuration` carries no proof fields, so this is exactly the
+injectivity of its constructor. -/
+theorem ext_of_components {M : TM.{u}} {n : Nat}
+    {c₁ c₂ : Configuration (M := M) n}
+    (hstate : c₁.state = c₂.state)
+    (hhead : c₁.head = c₂.head)
+    (htape : c₁.tape = c₂.tape) :
+    c₁ = c₂ := by
+  cases c₁
+  cases c₂
+  simp only [Configuration.mk.injEq]
+  exact ⟨hstate, hhead, htape⟩
+
 end Configuration
 
 /-!

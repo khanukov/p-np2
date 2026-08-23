@@ -77,9 +77,11 @@ open Pnp3.Magnification
 
 -- Generic `ConstStatePhasedProgram` transition → `stepConfig` step bridge
 -- (`TuringToolkit/ConstStatePhasedStepBridge.lean`), its five move
--- corollaries, the generic `Move.left` clamp lemma they rest on, and the
--- one-phase concrete probe.  Machine-independent infrastructure: no
--- acceptance, runtime, or verifier claim.
+-- corollaries, the generic `Foundation` lemmas they use that are new in this
+-- increment (componentwise `Configuration` extensionality, plus the
+-- `Move.left` clamp lemma that only `stepConfig_eq_of_transition_left_clamped`
+-- rests on), and the one-phase concrete probes.  Machine-independent
+-- infrastructure: no acceptance, runtime, or verifier claim.
 #print axioms Internal.PsubsetPpoly.TM.Configuration.ext_of_components
 #print axioms Internal.PsubsetPpoly.TM.Configuration.moveHead_left_clamp
 #print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.toTM_step_of_transition
@@ -97,9 +99,12 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepBridgeProbeCS_transition_true
 #print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepBridgeProbeCS_transition_false
 #print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepBridgeProbeCS_step_right
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepBridgeProbeCS_step_right_clamped
 #print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepBridgeProbeCS_step_left
 #print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepBridgeProbeCS_step_left_clamped
 #print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepBridgeProbeCS_stepConfig_true
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepBridgeProbeStayCS_transition
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepBridgeProbeStayCS_step_stay
 
 -- T1a fixed-control canonical validation and read-only rewind handoff.
 #print axioms Internal.PsubsetPpoly.TM.decodeT1Tape_encode

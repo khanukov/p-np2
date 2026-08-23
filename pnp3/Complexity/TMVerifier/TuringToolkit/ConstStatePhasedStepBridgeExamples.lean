@@ -18,8 +18,13 @@ The discipline the probe pins down is the one T1b needs:
    `decide`, and no reference to `stepBridgeProbeCS`'s definition, so no
    branch of the control table is ever reduced during the step proof.
 
-The probe makes no acceptance, runtime, or verifier claim; it is a
-compilation and API-shape witness only.
+All five move corollaries are exercised: `stepBridgeProbeCS` reaches `right`,
+`right_clamped`, `left` and `left_clamped` from its two table lemmas, and the
+equally tiny `stepBridgeProbeStayCS` — added only because no `Move.stay`
+transition is reachable in the first table — covers `stay`.
+
+The probes make no acceptance, runtime, or verifier claim; they are
+compilation and API-shape witnesses only.
 -/
 
 namespace Pnp3
@@ -80,6 +85,28 @@ theorem stepBridgeProbeCS_step_right {n : Nat}
     (by rw [hscan]; exact stepBridgeProbeCS_transition_true c.state.fst c.state.snd)
     hb c' hstate hhead htape
 
+/-- Probe of `stepConfig_eq_of_transition_right_clamped`: the *same* scanned
+`true` table lemma drives the clamped `Move.right` regime at the tape's right
+edge — the head value stays put while the write still happens.  Together with
+`stepBridgeProbeCS_step_right` this shows one concrete program using both
+`Move.right` corollaries from a single transition fact. -/
+theorem stepBridgeProbeCS_step_right_clamped {n : Nat}
+    (c : Configuration (M := stepBridgeProbeCS.toPhased.toTM) n)
+    (hscan : c.tape c.head = true)
+    (hb : ¬ ((c.head : Nat) + 1 <
+      stepBridgeProbeCS.toPhased.toTM.tapeLength n))
+    (c' : Configuration (M := stepBridgeProbeCS.toPhased.toTM) n)
+    (hstate : c'.state =
+      (⟨⟨0, Nat.zero_lt_one⟩, !c.state.snd⟩ :
+        stepBridgeProbeCS.toPhased.State))
+    (hhead : (c'.head : Nat) = (c.head : Nat))
+    (htape : ∀ i : Fin (stepBridgeProbeCS.toPhased.toTM.tapeLength n),
+      c'.tape i = if (i : Nat) = (c.head : Nat) then true else c.tape i) :
+    TM.stepConfig (M := stepBridgeProbeCS.toPhased.toTM) c = c' :=
+  stepConfig_eq_of_transition_right_clamped stepBridgeProbeCS c
+    (by rw [hscan]; exact stepBridgeProbeCS_transition_true c.state.fst c.state.snd)
+    hb c' hstate hhead htape
+
 /-- Probe of `stepConfig_eq_of_transition_left`: on a scanned `false` at a
 strictly positive head position, one step moves the head back by one and
 writes `false`. -/
@@ -133,6 +160,43 @@ theorem stepBridgeProbeCS_stepConfig_true {n : Nat}
         tape := c.write c.head true } :=
   stepConfig_of_transition stepBridgeProbeCS c
     (by rw [hscan]; exact stepBridgeProbeCS_transition_true c.state.fst c.state.snd)
+
+/-- Second one-phase probe control, added only so that `Move.stay` is
+reachable: `stepBridgeProbeCS`'s table never returns `Move.stay`, so the
+`stay` corollary needs a table that does.  This control keeps the local state,
+writes `true` and stays, on every scanned bit. -/
+def stepBridgeProbeStayCS : ConstStatePhasedProgram Bool where
+  numPhases := 1
+  startPhase := ⟨0, Nat.zero_lt_one⟩
+  startState := false
+  acceptPhase := ⟨0, Nat.zero_lt_one⟩
+  acceptState := true
+  transition := fun _ q _ => (⟨0, Nat.zero_lt_one⟩, q, true, Move.stay)
+  timeBound := fun n => n + 1
+
+/-- The only place the stay-probe's control table is unfolded.  It is
+scan-uniform, so a single `rfl` lemma serves both scanned bits. -/
+theorem stepBridgeProbeStayCS_transition
+    (i : Fin stepBridgeProbeStayCS.numPhases) (q : Bool) (scan : Bool) :
+    stepBridgeProbeStayCS.transition i q scan =
+      (⟨0, Nat.zero_lt_one⟩, q, true, Move.stay) := rfl
+
+/-- Probe of `stepConfig_eq_of_transition_stay`: the head value is unchanged
+with no boundary premise at all, while the write still happens at the old head
+position.  As above, the proof only *applies* the bridge to the table lemma. -/
+theorem stepBridgeProbeStayCS_step_stay {n : Nat}
+    (c : Configuration (M := stepBridgeProbeStayCS.toPhased.toTM) n)
+    (c' : Configuration (M := stepBridgeProbeStayCS.toPhased.toTM) n)
+    (hstate : c'.state =
+      (⟨⟨0, Nat.zero_lt_one⟩, c.state.snd⟩ :
+        stepBridgeProbeStayCS.toPhased.State))
+    (hhead : (c'.head : Nat) = (c.head : Nat))
+    (htape : ∀ i : Fin (stepBridgeProbeStayCS.toPhased.toTM.tapeLength n),
+      c'.tape i = if (i : Nat) = (c.head : Nat) then true else c.tape i) :
+    TM.stepConfig (M := stepBridgeProbeStayCS.toPhased.toTM) c = c' :=
+  stepConfig_eq_of_transition_stay stepBridgeProbeStayCS c
+    (stepBridgeProbeStayCS_transition c.state.fst c.state.snd (c.tape c.head))
+    c' hstate hhead htape
 
 end ConstStatePhasedProgram
 

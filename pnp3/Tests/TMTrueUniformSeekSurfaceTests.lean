@@ -80,14 +80,4 @@ theorem check_t1CS_validate_rewind_encoded_exact (r : T1Request) :
           (t1Point (encodeT1 r))).tape .startMutation :=
   t1CS_validate_rewind_encoded_exact r
 
-theorem check_t1CS_run_encoded_reaches_mutation (r : T1Request) :
-    let n := (encodeT1 r).length
-    (t1CS.toPhased.toTM).run (t1Point (encodeT1 r)) =
-      t1AlignedConfig n 0 (by
-        simp [t1CS, ConstStatePhasedProgram.toPhased,
-          PhasedProgram.toTM, TM.tapeLength])
-        ((t1CS.toPhased.toTM).initialConfig
-          (t1Point (encodeT1 r))).tape .startMutation :=
-  t1CS_run_encoded_reaches_mutation r
-
 end Pnp3.Tests.TMTrueUniformSeekSurface

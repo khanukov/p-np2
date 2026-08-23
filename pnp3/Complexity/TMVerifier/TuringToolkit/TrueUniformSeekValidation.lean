@@ -1,12 +1,20 @@
 import Complexity.TMVerifier.TuringToolkit.TrueUniformSeek
+import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedStepBridge
 
 /-!
-# Generic T1a execution theorems
+# Generic T1 execution theorems: read-only validation and rewind
 
 The results here are about `TM.runConfig`/`TM.run`, not a separate pure
 interpreter.  They establish the four-bit forward macrostep, stable terminal
-sinks, and the exact read-only validation/rewind trace for every canonical
-request.
+sinks, the two idle T1c boundary states, and the exact read-only
+validation/rewind trace for every canonical request.
+
+**Proof discipline.**  Every `TM.stepConfig` fact in this module — and in
+`TrueUniformSeekMutation`, which builds on it — is obtained by applying a
+corollary of the generic `ConstStatePhasedStepBridge` to a standalone
+transition-table lemma of `TrueUniformSeek`.  The three `t1CS_aligned_step_*`
+adapters below are the only place where the bridge is instantiated at `t1CS`;
+`t1Transition` is never unfolded inside a `stepConfig` proof.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -21,25 +29,74 @@ private def t1Phase : Fin t1CS.toPhased.numPhases := t1CS.toPhased.startPhase
       let r := t1Transition 0 s scan
       (⟨r.1, r.2.1⟩, r.2.2.1, r.2.2.2) := rfl
 
-/-- A configuration with arbitrary tape, aligned control, and an explicit
-physical head position.  This constructor only packages `Fin` bookkeeping. -/
-def t1AlignedConfig (n h : Nat) (hh : h < T1M.tapeLength n)
-    (tape : Fin (T1M.tapeLength n) → Bool) (mode : T1Mode)
-    (position := T1FramePosition.p0) (b0 := false) (b1 := false)
-    (b2 := false) : Configuration (M := T1M) n where
-  state := ⟨t1Phase, t1State mode position b0 b1 b2⟩
+/-- A configuration with arbitrary tape, an aligned control state, and an
+explicit physical head position.  This constructor only packages `Fin`
+bookkeeping. -/
+def t1AlignedConfigQ (n h : Nat) (hh : h < T1M.tapeLength n)
+    (tape : Fin (T1M.tapeLength n) → Bool) (q : T1State) :
+    Configuration (M := T1M) n where
+  state := ⟨t1Phase, q⟩
   head := ⟨h, hh⟩
   tape := tape
 
-@[simp] theorem t1AlignedConfig_state (n h hh tape mode position b0 b1 b2) :
-    (t1AlignedConfig n h hh tape mode position b0 b1 b2).state =
-      ⟨t1Phase, t1State mode position b0 b1 b2⟩ := rfl
+/-- `t1AlignedConfigQ` with the control state spelled out componentwise. -/
+def t1AlignedConfig (n h : Nat) (hh : h < T1M.tapeLength n)
+    (tape : Fin (T1M.tapeLength n) → Bool) (mode : T1Mode)
+    (position := T1FramePosition.p0) (b0 := false) (b1 := false)
+    (b2 := false) (latch := false) : Configuration (M := T1M) n :=
+  t1AlignedConfigQ n h hh tape (t1State mode position b0 b1 b2 latch)
 
-@[simp] theorem t1AlignedConfig_head_val (n h hh tape mode position b0 b1 b2) :
-    ((t1AlignedConfig n h hh tape mode position b0 b1 b2).head : Nat) = h := rfl
+@[simp] theorem t1AlignedConfig_state
+    (n h hh tape mode position b0 b1 b2 latch) :
+    (t1AlignedConfig n h hh tape mode position b0 b1 b2 latch).state =
+      ⟨t1Phase, t1State mode position b0 b1 b2 latch⟩ := rfl
 
-@[simp] theorem t1AlignedConfig_tape (n h hh tape mode position b0 b1 b2) :
-    (t1AlignedConfig n h hh tape mode position b0 b1 b2).tape = tape := rfl
+@[simp] theorem t1AlignedConfig_head_val
+    (n h hh tape mode position b0 b1 b2 latch) :
+    ((t1AlignedConfig n h hh tape mode position b0 b1 b2 latch).head : Nat) =
+      h := rfl
+
+@[simp] theorem t1AlignedConfig_tape
+    (n h hh tape mode position b0 b1 b2 latch) :
+    (t1AlignedConfig n h hh tape mode position b0 b1 b2 latch).tape = tape := rfl
+
+/-! ## The three T1 step adapters
+
+Each adapter turns one standalone transition-table equation into one exact
+`TM.stepConfig` equation on aligned configurations, by applying the matching
+generic bridge corollary.  The table equation is quantified over the phase so
+that it instantiates at whatever `Fin`-encoded phase the configuration
+carries. -/
+
+theorem t1CS_aligned_step_right
+    (n h : Nat) (hh : h < T1M.tapeLength n) (hb : h + 1 < T1M.tapeLength n)
+    (tape : Fin (T1M.tapeLength n) → Bool) (q q' : T1State) (w : Bool)
+    (htr : ∀ phase : Fin 1,
+      t1Transition phase q (tape ⟨h, hh⟩) = (0, q', w, Move.right)) :
+    TM.stepConfig (M := T1M) (t1AlignedConfigQ n h hh tape q) =
+      t1AlignedConfigQ n (h+1) hb (t1WriteCell h w tape) q' :=
+  ConstStatePhasedProgram.stepConfig_eq_of_transition_right t1CS
+    (t1AlignedConfigQ n h hh tape q) (htr 0) hb _ rfl rfl (fun _ => rfl)
+
+theorem t1CS_aligned_step_left
+    (n h : Nat) (hh : h < T1M.tapeLength n) (hpos : 0 < h)
+    (tape : Fin (T1M.tapeLength n) → Bool) (q q' : T1State) (w : Bool)
+    (htr : ∀ phase : Fin 1,
+      t1Transition phase q (tape ⟨h, hh⟩) = (0, q', w, Move.left)) :
+    TM.stepConfig (M := T1M) (t1AlignedConfigQ n h hh tape q) =
+      t1AlignedConfigQ n (h-1) (by omega) (t1WriteCell h w tape) q' :=
+  ConstStatePhasedProgram.stepConfig_eq_of_transition_left t1CS
+    (t1AlignedConfigQ n h hh tape q) (htr 0) hpos _ rfl rfl (fun _ => rfl)
+
+theorem t1CS_aligned_step_stay
+    (n h : Nat) (hh : h < T1M.tapeLength n)
+    (tape : Fin (T1M.tapeLength n) → Bool) (q q' : T1State) (w : Bool)
+    (htr : ∀ phase : Fin 1,
+      t1Transition phase q (tape ⟨h, hh⟩) = (0, q', w, Move.stay)) :
+    TM.stepConfig (M := T1M) (t1AlignedConfigQ n h hh tape q) =
+      t1AlignedConfigQ n h hh (t1WriteCell h w tape) q' :=
+  ConstStatePhasedProgram.stepConfig_eq_of_transition_stay t1CS
+    (t1AlignedConfigQ n h hh tape q) (htr 0) _ rfl rfl (fun _ => rfl)
 
 /-- Four physical cells, read at an aligned head position. -/
 def t1PhysicalBitsAt {n h : Nat} (hh : h + 4 < T1M.tapeLength n)
@@ -47,77 +104,83 @@ def t1PhysicalBitsAt {n h : Nat} (hh : h + 4 < T1M.tapeLength n)
   [tape ⟨h, by omega⟩, tape ⟨h+1, by omega⟩,
    tape ⟨h+2, by omega⟩, tape ⟨h+3, by omega⟩]
 
-/-- Modes in which the T1 control reads a frame from left to right. -/
-def T1ForwardMode : T1Mode → Prop
-  | .validateBof | .validateIndex | .validateData | .validateFinish
-  | .validateBlank => True
-  | _ => False
+/-! ## The shared forward frame macrostep -/
 
-/-- **Four-bit decoding macrostep.**  From any aligned configuration and any
-arbitrary surrounding tape, a grammar-valid frame is decoded in exactly four
-physical TM steps.  The head advances by four and no tape cell changes. -/
-private theorem t1CS_step_forward
-    (n h : Nat) (hsafe : h + 1 < T1M.tapeLength n)
-    (tape : Fin (T1M.tapeLength n) → Bool) (mode : T1Mode)
-    (position : T1FramePosition) (b0 b1 b2 : Bool)
-    (hmode : mode = .validateBof ∨ mode = .validateIndex ∨
-      mode = .validateData ∨ mode = .validateFinish ∨ mode = .validateBlank) :
+private theorem t1CS_step_forward_p0
+    (n h : Nat) (hh : h < T1M.tapeLength n) (hb : h + 1 < T1M.tapeLength n)
+    (tape : Fin (T1M.tapeLength n) → Bool) {mode : T1Mode}
+    (hmode : T1ForwardMode mode) (b0 b1 b2 latch : Bool) :
     TM.stepConfig (M := T1M)
-        (t1AlignedConfig n h (by omega) tape mode position b0 b1 b2) =
-      match position with
-      | .p0 => t1AlignedConfig n (h+1) hsafe tape mode .p1
-          (tape ⟨h, by omega⟩)
-      | .p1 => t1AlignedConfig n (h+1) hsafe tape mode .p2 b0
-          (tape ⟨h, by omega⟩)
-      | .p2 => t1AlignedConfig n (h+1) hsafe tape mode .p3 b0 b1
-          (tape ⟨h, by omega⟩)
-      | .p3 =>
-          let next := t1Complete mode b0 b1 b2 (tape ⟨h, by omega⟩)
-          if next = .reject then
-            { state := ⟨t1Phase, t1RejectState⟩,
-              head := ⟨h, by omega⟩, tape := tape }
-          else t1AlignedConfig n (h+1) hsafe tape next := by
-  have hsafe' : h + 1 < n + t1Clock n + 1 := by
-    simpa [T1M, t1CS, ConstStatePhasedProgram.toPhased,
-      PhasedProgram.toTM, TM.tapeLength] using hsafe
-  rcases hmode with rfl | rfl | rfl | rfl | rfl <;> cases position <;>
-    simp [TM.stepConfig, t1AlignedConfig, T1M, t1Phase, t1CS,
-      ConstStatePhasedProgram.toPhased, PhasedProgram.toTM, t1Transition,
-      t1State, TM.tapeLength, Configuration.moveHead,
-      Configuration.write, funext_iff, hsafe'] <;>
-    split <;> simp_all [Configuration.write, funext_iff]
+        (t1AlignedConfig n h hh tape mode .p0 b0 b1 b2 latch) =
+      t1AlignedConfig n (h+1) hb tape mode .p1 (tape ⟨h, hh⟩) false false latch := by
+  have hstep := t1CS_aligned_step_right n h hh hb tape
+    (t1State mode .p0 b0 b1 b2 latch)
+    (t1State mode .p1 (tape ⟨h, hh⟩) false false latch) (tape ⟨h, hh⟩)
+    (fun phase => t1Transition_forward_p0 hmode phase b0 b1 b2 latch _)
+  rwa [t1WriteCell_self] at hstep
 
-/-- **Four-bit decoding macrostep.**  In any forward validation mode, a
-grammar-valid frame on an arbitrary surrounding tape is decoded in exactly
-four physical TM steps.  The head advances by four and no tape cell changes. -/
+private theorem t1CS_step_forward_p1
+    (n h : Nat) (hh : h < T1M.tapeLength n) (hb : h + 1 < T1M.tapeLength n)
+    (tape : Fin (T1M.tapeLength n) → Bool) {mode : T1Mode}
+    (hmode : T1ForwardMode mode) (b0 b1 b2 latch : Bool) :
+    TM.stepConfig (M := T1M)
+        (t1AlignedConfig n h hh tape mode .p1 b0 b1 b2 latch) =
+      t1AlignedConfig n (h+1) hb tape mode .p2 b0 (tape ⟨h, hh⟩) false latch := by
+  have hstep := t1CS_aligned_step_right n h hh hb tape
+    (t1State mode .p1 b0 b1 b2 latch)
+    (t1State mode .p2 b0 (tape ⟨h, hh⟩) false latch) (tape ⟨h, hh⟩)
+    (fun phase => t1Transition_forward_p1 hmode phase b0 b1 b2 latch _)
+  rwa [t1WriteCell_self] at hstep
+
+private theorem t1CS_step_forward_p2
+    (n h : Nat) (hh : h < T1M.tapeLength n) (hb : h + 1 < T1M.tapeLength n)
+    (tape : Fin (T1M.tapeLength n) → Bool) {mode : T1Mode}
+    (hmode : T1ForwardMode mode) (b0 b1 b2 latch : Bool) :
+    TM.stepConfig (M := T1M)
+        (t1AlignedConfig n h hh tape mode .p2 b0 b1 b2 latch) =
+      t1AlignedConfig n (h+1) hb tape mode .p3 b0 b1 (tape ⟨h, hh⟩) latch := by
+  have hstep := t1CS_aligned_step_right n h hh hb tape
+    (t1State mode .p2 b0 b1 b2 latch)
+    (t1State mode .p3 b0 b1 (tape ⟨h, hh⟩) latch) (tape ⟨h, hh⟩)
+    (fun phase => t1Transition_forward_p2 hmode phase b0 b1 b2 latch _)
+  rwa [t1WriteCell_self] at hstep
+
+private theorem t1CS_step_forward_p3
+    (n h : Nat) (hh : h < T1M.tapeLength n) (hb : h + 1 < T1M.tapeLength n)
+    (tape : Fin (T1M.tapeLength n) → Bool) {mode : T1Mode}
+    (hmode : T1ForwardMode mode) (b0 b1 b2 latch : Bool)
+    (hnext : t1Complete mode b0 b1 b2 (tape ⟨h, hh⟩) ≠ .reject) :
+    TM.stepConfig (M := T1M)
+        (t1AlignedConfig n h hh tape mode .p3 b0 b1 b2 latch) =
+      t1AlignedConfig n (h+1) hb tape
+        (t1Complete mode b0 b1 b2 (tape ⟨h, hh⟩)) .p0 false false false latch := by
+  have hstep := t1CS_aligned_step_right n h hh hb tape
+    (t1State mode .p3 b0 b1 b2 latch)
+    (t1State (t1Complete mode b0 b1 b2 (tape ⟨h, hh⟩)) .p0 false false false latch)
+    (tape ⟨h, hh⟩)
+    (fun phase => t1Transition_forward_p3_advance hmode phase b0 b1 b2 latch _ hnext)
+  rwa [t1WriteCell_self] at hstep
+
+/-- **Four-bit decoding macrostep.**  In any forward mode — the five T1a
+validation modes or the two T1b forward scans — a grammar-valid frame on an
+arbitrary surrounding tape is decoded in exactly four physical TM steps.  The
+head advances by four, no tape cell changes, and the latch is carried
+through. -/
 theorem t1CS_frame_macrostep
     (n h : Nat) (hsafe : h + 4 < T1M.tapeLength n)
     (tape : Fin (T1M.tapeLength n) → Bool) (mode : T1Mode) (frame : T1Frame)
     (hmode : T1ForwardMode mode)
     (hnext : t1Advance mode frame ≠ .reject)
-    (hbits : t1PhysicalBitsAt hsafe tape = frame.bits) :
+    (hbits : t1PhysicalBitsAt hsafe tape = frame.bits)
+    (latch : Bool := false) :
     TM.runConfig (M := T1M)
-        (t1AlignedConfig n h (by omega) tape mode) 4 =
-      t1AlignedConfig n (h+4) hsafe tape (t1Advance mode frame) := by
-  have hfwd : mode = .validateBof ∨ mode = .validateIndex ∨
-      mode = .validateData ∨ mode = .validateFinish ∨ mode = .validateBlank := by
-    cases mode <;> simp_all [T1ForwardMode]
-  change TM.runConfig (M := T1M)
-      (t1AlignedConfig n h (by omega) tape mode) (1 + 1 + 1 + 1) = _
-  rw [runConfig_add, runConfig_add, runConfig_add]
-  simp only [runConfig_one]
-  rw [t1CS_step_forward n h (by omega) tape mode .p0 false false false hfwd]
-  rw [t1CS_step_forward n (h+1) (by omega) tape mode .p1
-    (tape ⟨h, by omega⟩) false false hfwd]
-  rw [t1CS_step_forward n (h+2) (by omega) tape mode .p2
-    (tape ⟨h, by omega⟩) (tape ⟨h+1, by omega⟩) false hfwd]
-  rw [t1CS_step_forward n (h+3) hsafe tape mode .p3
-    (tape ⟨h, by omega⟩) (tape ⟨h+1, by omega⟩)
-    (tape ⟨h+2, by omega⟩) hfwd]
-  simp only [t1PhysicalBitsAt] at hbits
+        (t1AlignedConfig n h (by omega) tape mode .p0 false false false latch) 4 =
+      t1AlignedConfig n (h+4) hsafe tape (t1Advance mode frame)
+        .p0 false false false latch := by
   have hcomplete : t1Complete mode (tape ⟨h, by omega⟩)
       (tape ⟨h+1, by omega⟩) (tape ⟨h+2, by omega⟩)
       (tape ⟨h+3, by omega⟩) = t1Advance mode frame := by
+    simp only [t1PhysicalBitsAt] at hbits
     have hb0 : tape ⟨h, by omega⟩ = frame.bits[0]! := by
       simpa using congrArg (fun xs => xs[0]!) hbits
     have hb1 : tape ⟨h+1, by omega⟩ = frame.bits[1]! := by
@@ -128,24 +191,66 @@ theorem t1CS_frame_macrostep
       simpa using congrArg (fun xs => xs[3]!) hbits
     rw [hb0, hb1, hb2, hb3]
     cases frame with
-    | data value | output value => cases value <;>
-        rfl
+    | data value | output value => cases value <;> rfl
     | blank | bof | index | spent | separator | cursor | finish => rfl
-  simp [hcomplete, hnext]
+  change TM.runConfig (M := T1M)
+      (t1AlignedConfig n h (by omega) tape mode .p0 false false false latch)
+      (1 + 1 + 1 + 1) = _
+  rw [runConfig_add, runConfig_add, runConfig_add]
+  simp only [runConfig_one]
+  rw [t1CS_step_forward_p0 n h (by omega) (by omega) tape hmode
+    false false false latch]
+  rw [t1CS_step_forward_p1 n (h+1) (by omega) (by omega) tape hmode
+    (tape ⟨h, by omega⟩) false false latch]
+  rw [t1CS_step_forward_p2 n (h+2) (by omega) (by omega) tape hmode
+    (tape ⟨h, by omega⟩) (tape ⟨h+1, by omega⟩) false latch]
+  rw [t1CS_step_forward_p3 n (h+3) (by omega) hsafe tape hmode
+    (tape ⟨h, by omega⟩) (tape ⟨h+1, by omega⟩) (tape ⟨h+2, by omega⟩) latch
+    (by rw [hcomplete]; exact hnext)]
+  rw [hcomplete]
+
+/-! ## Stable sinks and idle boundary states -/
+
+private theorem t1CS_stepConfig_stay_self {n : Nat}
+    (c : Configuration (M := T1M) n) (q : T1State)
+    (hs : c.state = ⟨t1Phase, q⟩)
+    (htr : ∀ (phase : Fin 1) (scan : Bool),
+      t1Transition phase q scan = (0, q, scan, Move.stay)) :
+    TM.stepConfig (M := T1M) c = c := by
+  have hfst : c.state.fst = t1Phase := by rw [hs]
+  have hsnd : c.state.snd = q := by rw [hs]
+  have htr' : t1CS.transition c.state.fst c.state.snd (c.tape c.head) =
+      ((0 : Fin 1), q, c.tape c.head, Move.stay) := by
+    rw [hfst, hsnd]; exact htr 0 (c.tape c.head)
+  refine ConstStatePhasedProgram.stepConfig_eq_of_transition_stay t1CS c htr'
+    c ?_ rfl ?_
+  · rw [hs]; rfl
+  · intro i
+    by_cases hi : (i : Nat) = (c.head : Nat)
+    · have hfin : i = c.head := Fin.ext hi
+      simp [hfin]
+    · simp [hi]
+
+private theorem t1CS_runConfig_stay_self {n : Nat}
+    (c : Configuration (M := T1M) n) (q : T1State)
+    (hs : c.state = ⟨t1Phase, q⟩)
+    (htr : ∀ (phase : Fin 1) (scan : Bool),
+      t1Transition phase q scan = (0, q, scan, Move.stay))
+    (steps : Nat) : TM.runConfig (M := T1M) c steps = c := by
+  induction steps with
+  | zero => rfl
+  | succ k ih =>
+      rw [runConfig_succ, ih]
+      exact t1CS_stepConfig_stay_self c q hs htr
 
 /-- A sink transition leaves the complete configuration unchanged. -/
 theorem t1CS_stepConfig_sink {n : Nat} (c : Configuration (M := T1M) n)
     (q : T1State) (hq : q = t1AcceptState ∨ q = t1RejectState)
     (hs : c.state = ⟨t1Phase, q⟩) : TM.stepConfig (M := T1M) c = c := by
-  rcases hq with rfl | rfl <;>
-    cases c with
-    | mk state head tape =>
-      simp only at hs
-      subst state
-      simp [TM.stepConfig, t1Phase, t1CS,
-        ConstStatePhasedProgram.toPhased, PhasedProgram.toTM, t1Transition,
-        t1AcceptState, t1RejectState, t1State, Configuration.moveHead,
-        Configuration.write, funext_iff]
+  refine t1CS_stepConfig_stay_self c q hs ?_
+  rcases hq with rfl | rfl
+  · exact fun phase scan => t1Transition_accept_sink phase scan
+  · exact fun phase scan => t1Transition_reject_sink phase scan
 
 /-- **Stable-sink run theorem.**  Either terminal sink preserves the entire
 configuration for an arbitrary number of genuine TM steps. -/
@@ -159,34 +264,38 @@ theorem t1CS_runConfig_sink {n : Nat} (c : Configuration (M := T1M) n)
       rw [runConfig_succ, ih]
       exact t1CS_stepConfig_sink c q hq hs
 
-private theorem t1CS_stepConfig_mutation {n : Nat}
-    (c : Configuration (M := T1M) n)
-    (hs : c.state = ⟨t1Phase, t1MutationState⟩) :
-    TM.stepConfig (M := T1M) c = c := by
-  cases c with
-  | mk state head tape =>
-    simp only at hs
-    subst state
-    simp [TM.stepConfig, t1Phase, t1CS, ConstStatePhasedProgram.toPhased,
-      PhasedProgram.toTM, t1Transition, t1MutationState, t1State,
-      Configuration.moveHead, Configuration.write, funext_iff]
+/-- **The success boundary is idle.**  This is one of the two states that
+replace T1a's idle `startMutation` handoff: `startMutation` is now an active
+mutation mode, and the two idle handoff points for T1c are `successStart`
+and `oobStart`.  The latched data value is preserved for T1c's output
+write. -/
+theorem t1CS_runConfig_successStart
+    (n h : Nat) (hh : h < T1M.tapeLength n)
+    (tape : Fin (T1M.tapeLength n) → Bool) (latch : Bool) (steps : Nat) :
+    TM.runConfig (M := T1M)
+        (t1AlignedConfig n h hh tape .successStart .p0 false false false latch)
+        steps =
+      t1AlignedConfig n h hh tape .successStart .p0 false false false latch :=
+  t1CS_runConfig_stay_self _ (t1SuccessState latch) rfl
+    (fun phase scan => t1Transition_successStart_idle phase latch scan) steps
 
-/-- The T1a mutation boundary is idle until T1b supplies the destructive seek. -/
-theorem t1CS_runConfig_mutation {n : Nat} (c : Configuration (M := T1M) n)
-    (hs : c.state = ⟨t1Phase, t1MutationState⟩) (steps : Nat) :
-    TM.runConfig (M := T1M) c steps = c := by
-  induction steps with
-  | zero => rfl
-  | succ k ih =>
-      rw [runConfig_succ, ih]
-      exact t1CS_stepConfig_mutation c hs
+/-- **The out-of-bounds boundary is idle.**  The second T1c handoff point. -/
+theorem t1CS_runConfig_oobStart
+    (n h : Nat) (hh : h < T1M.tapeLength n)
+    (tape : Fin (T1M.tapeLength n) → Bool) (latch : Bool) (steps : Nat) :
+    TM.runConfig (M := T1M)
+        (t1AlignedConfig n h hh tape .oobStart .p0 false false false latch)
+        steps =
+      t1AlignedConfig n h hh tape .oobStart .p0 false false false latch :=
+  t1CS_runConfig_stay_self _ (t1OobState latch) rfl
+    (fun phase scan => t1Transition_oobStart_idle phase latch scan) steps
 
 /-! ## Exact generic read-only validation -/
 
 def t1ListTape {n : Nat} (bits : List Bool) :
     Fin (T1M.tapeLength n) → Bool := fun i => bits.getD i.val false
 
-private theorem t1PhysicalBitsAt_flatMap
+theorem t1PhysicalBitsAt_flatMap
     (n : Nat) (pre suffix : List T1Frame) (frame : T1Frame)
     (hsafe : 4 * pre.length + 4 < T1M.tapeLength n) :
     t1PhysicalBitsAt hsafe
@@ -212,19 +321,22 @@ def t1AdvanceList : T1Mode → List T1Frame → T1Mode
   | mode, frame :: rest => t1AdvanceList (t1Advance mode frame) rest
 
 /-- Scan a grammar-valid list of frames from left to right in exactly four TM
-steps per frame.  The theorem preserves the complete list-backed tape and
-ends at the mode obtained by folding `t1Advance` over the scanned frames. -/
+steps per frame.  The theorem preserves the complete list-backed tape and the
+latch, and ends at the mode obtained by folding `t1Advance` over the scanned
+frames. -/
 theorem t1CS_scan_frames
     (n : Nat) (pre frames suffix : List T1Frame) (mode : T1Mode)
     (hpath : T1ValidPath mode frames)
-    (hsafe : 4 * (pre.length + frames.length) < T1M.tapeLength n) :
+    (hsafe : 4 * (pre.length + frames.length) < T1M.tapeLength n)
+    (latch : Bool := false) :
     TM.runConfig (M := T1M)
         (t1AlignedConfig n (4 * pre.length) (by omega)
-          (t1ListTape ((pre ++ frames ++ suffix).flatMap T1Frame.bits)) mode)
+          (t1ListTape ((pre ++ frames ++ suffix).flatMap T1Frame.bits)) mode
+          .p0 false false false latch)
         (4 * frames.length) =
       t1AlignedConfig n (4 * (pre.length + frames.length)) hsafe
         (t1ListTape ((pre ++ frames ++ suffix).flatMap T1Frame.bits))
-        (t1AdvanceList mode frames) := by
+        (t1AdvanceList mode frames) .p0 false false false latch := by
   induction frames generalizing pre mode with
   | nil => simp [t1AdvanceList]
   | cons frame rest ih =>
@@ -237,6 +349,7 @@ theorem t1CS_scan_frames
         mode frame hfwd hnext
         (by simpa [List.append_assoc] using
           t1PhysicalBitsAt_flatMap n pre (rest ++ suffix) frame hframeSafe)
+        latch
       rw [show 4 * (frame :: rest).length = 4 + 4 * rest.length by simp; omega,
         runConfig_add, hmacro]
       have hsafeTail :
@@ -368,8 +481,8 @@ theorem t1CS_validate_encoded_exact (r : T1Request) :
         .validateBof := by
     cases r with
     | mk index data =>
-      simp [TM.initialConfig, t1Point, t1AlignedConfig, t1Phase, t1CS,
-        ConstStatePhasedProgram.toPhased, PhasedProgram.toTM,
+      simp [TM.initialConfig, t1Point, t1AlignedConfig, t1AlignedConfigQ,
+        t1Phase, t1CS, ConstStatePhasedProgram.toPhased, PhasedProgram.toTM,
         t1ListTape_validation_eq_initial]
   rw [hinit]
   simp only [t1AlignedConfig_tape]
@@ -379,62 +492,69 @@ theorem t1CS_validate_encoded_exact (r : T1Request) :
 
 private theorem t1CS_step_rewind_p3
     (n h : Nat) (hpos : 0 < h) (hh : h < T1M.tapeLength n)
-    (tape : Fin (T1M.tapeLength n) → Bool) :
-    TM.stepConfig (M := T1M) (t1AlignedConfig n h hh tape .rewind .p3) =
+    (tape : Fin (T1M.tapeLength n) → Bool) (latch : Bool) :
+    TM.stepConfig (M := T1M)
+        (t1AlignedConfig n h hh tape .rewind .p3 false false false latch) =
       t1AlignedConfig n (h-1) (by omega) tape .rewind .p2 false false
-        (tape ⟨h, hh⟩) := by
-  have hne : h ≠ 0 := Nat.ne_of_gt hpos
-  simp [TM.stepConfig, t1AlignedConfig, t1Phase, t1CS,
-    ConstStatePhasedProgram.toPhased, PhasedProgram.toTM, t1Transition,
-    t1State, Configuration.moveHead, Configuration.write, funext_iff, hne]
+        (tape ⟨h, hh⟩) latch := by
+  have hstep := t1CS_aligned_step_left n h hh hpos tape
+    (t1State .rewind .p3 false false false latch)
+    (t1State .rewind .p2 false false (tape ⟨h, hh⟩) latch) (tape ⟨h, hh⟩)
+    (fun phase => t1Transition_rewind_p3 phase false false false latch _)
+  rwa [t1WriteCell_self] at hstep
 
 private theorem t1CS_step_rewind_p2
     (n h : Nat) (hpos : 0 < h) (hh : h < T1M.tapeLength n)
-    (tape : Fin (T1M.tapeLength n) → Bool) (b2 : Bool) :
+    (tape : Fin (T1M.tapeLength n) → Bool) (b2 latch : Bool) :
     TM.stepConfig (M := T1M)
-        (t1AlignedConfig n h hh tape .rewind .p2 false false b2) =
+        (t1AlignedConfig n h hh tape .rewind .p2 false false b2 latch) =
       t1AlignedConfig n (h-1) (by omega) tape .rewind .p1 false
-        (tape ⟨h, hh⟩) b2 := by
-  have hne : h ≠ 0 := Nat.ne_of_gt hpos
-  simp [TM.stepConfig, t1AlignedConfig, t1Phase, t1CS,
-    ConstStatePhasedProgram.toPhased, PhasedProgram.toTM, t1Transition,
-    t1State, Configuration.moveHead, Configuration.write, funext_iff, hne]
+        (tape ⟨h, hh⟩) b2 latch := by
+  have hstep := t1CS_aligned_step_left n h hh hpos tape
+    (t1State .rewind .p2 false false b2 latch)
+    (t1State .rewind .p1 false (tape ⟨h, hh⟩) b2 latch) (tape ⟨h, hh⟩)
+    (fun phase => t1Transition_rewind_p2 phase false false b2 latch _)
+  rwa [t1WriteCell_self] at hstep
 
 private theorem t1CS_step_rewind_p1
     (n h : Nat) (hpos : 0 < h) (hh : h < T1M.tapeLength n)
-    (tape : Fin (T1M.tapeLength n) → Bool) (b1 b2 : Bool) :
+    (tape : Fin (T1M.tapeLength n) → Bool) (b1 b2 latch : Bool) :
     TM.stepConfig (M := T1M)
-        (t1AlignedConfig n h hh tape .rewind .p1 false b1 b2) =
+        (t1AlignedConfig n h hh tape .rewind .p1 false b1 b2 latch) =
       t1AlignedConfig n (h-1) (by omega) tape .rewind .p0
-        (tape ⟨h, hh⟩) b1 b2 := by
-  have hne : h ≠ 0 := Nat.ne_of_gt hpos
-  simp [TM.stepConfig, t1AlignedConfig, t1Phase, t1CS,
-    ConstStatePhasedProgram.toPhased, PhasedProgram.toTM, t1Transition,
-    t1State, Configuration.moveHead, Configuration.write, funext_iff, hne]
+        (tape ⟨h, hh⟩) b1 b2 latch := by
+  have hstep := t1CS_aligned_step_left n h hh hpos tape
+    (t1State .rewind .p1 false b1 b2 latch)
+    (t1State .rewind .p0 (tape ⟨h, hh⟩) b1 b2 latch) (tape ⟨h, hh⟩)
+    (fun phase => t1Transition_rewind_p1 phase false b1 b2 latch _)
+  rwa [t1WriteCell_self] at hstep
 
 private theorem t1CS_step_rewind_p0_other
     (n h : Nat) (hpos : 0 < h) (hh : h < T1M.tapeLength n)
-    (tape : Fin (T1M.tapeLength n) → Bool) (b0 b1 b2 : Bool)
+    (tape : Fin (T1M.tapeLength n) → Bool) (b0 b1 b2 latch : Bool)
     (hne : decodeT1Frame? [tape ⟨h, hh⟩, b0, b1, b2] ≠ some .bof) :
     TM.stepConfig (M := T1M)
-        (t1AlignedConfig n h hh tape .rewind .p0 b0 b1 b2) =
-      t1AlignedConfig n (h-1) (by omega) tape .rewind .p3 := by
-  have hzero : h ≠ 0 := Nat.ne_of_gt hpos
-  simp [TM.stepConfig, t1AlignedConfig, t1Phase, t1CS,
-    ConstStatePhasedProgram.toPhased, PhasedProgram.toTM, t1Transition,
-    t1State, Configuration.moveHead, Configuration.write, funext_iff, hzero, hne]
+        (t1AlignedConfig n h hh tape .rewind .p0 b0 b1 b2 latch) =
+      t1AlignedConfig n (h-1) (by omega) tape .rewind .p3
+        false false false latch := by
+  have hstep := t1CS_aligned_step_left n h hh hpos tape
+    (t1State .rewind .p0 b0 b1 b2 latch)
+    (t1State .rewind .p3 false false false latch) (tape ⟨h, hh⟩)
+    (fun phase => t1Transition_rewind_p0_other phase b0 b1 b2 latch _ hne)
+  rwa [t1WriteCell_self] at hstep
 
 private theorem t1CS_step_rewind_p0_bof
     (n h : Nat) (hh : h < T1M.tapeLength n)
-    (tape : Fin (T1M.tapeLength n) → Bool) (b0 b1 b2 : Bool)
+    (tape : Fin (T1M.tapeLength n) → Bool) (b0 b1 b2 latch : Bool)
     (heq : decodeT1Frame? [tape ⟨h, hh⟩, b0, b1, b2] = some .bof) :
     TM.stepConfig (M := T1M)
-        (t1AlignedConfig n h hh tape .rewind .p0 b0 b1 b2) =
-      t1AlignedConfig n h hh tape .startMutation := by
-  simp [TM.stepConfig, t1AlignedConfig, t1Phase, t1CS,
-    ConstStatePhasedProgram.toPhased, PhasedProgram.toTM, t1Transition,
-    t1State, t1MutationState, Configuration.moveHead, Configuration.write,
-    funext_iff, heq]
+        (t1AlignedConfig n h hh tape .rewind .p0 b0 b1 b2 latch) =
+      t1AlignedConfig n h hh tape .startMutation .p0 false false false latch := by
+  have hstep := t1CS_aligned_step_stay n h hh tape
+    (t1State .rewind .p0 b0 b1 b2 latch)
+    (t1State .startMutation .p0 false false false latch) (tape ⟨h, hh⟩)
+    (fun phase => t1Transition_rewind_p0_bof phase b0 b1 b2 latch _ heq)
+  rwa [t1WriteCell_self] at hstep
 
 /-- Reverse-decode one non-`bof` frame in exactly four physical steps. -/
 private theorem t1CS_rewind_frame_other
@@ -455,7 +575,7 @@ private theorem t1CS_rewind_frame_other
       (t1AlignedConfig n (base+3) (by omega) tape .rewind .p3) =
       t1AlignedConfig n (base+2) (by omega) tape .rewind .p2 false false
         (tape ⟨base+3, by omega⟩) := by
-    simpa using t1CS_step_rewind_p3 n (base+3) (by omega) (by omega) tape
+    simpa using t1CS_step_rewind_p3 n (base+3) (by omega) (by omega) tape false
   rw [hs1]
   have hs2 : TM.stepConfig (M := T1M)
       (t1AlignedConfig n (base+2) (by omega) tape .rewind .p2 false false
@@ -463,7 +583,7 @@ private theorem t1CS_rewind_frame_other
       t1AlignedConfig n (base+1) (by omega) tape .rewind .p1 false
         (tape ⟨base+2, by omega⟩) (tape ⟨base+3, by omega⟩) := by
     simpa using t1CS_step_rewind_p2 n (base+2) (by omega) (by omega) tape
-      (tape ⟨base+3, by omega⟩)
+      (tape ⟨base+3, by omega⟩) false
   rw [hs2]
   have hs3 : TM.stepConfig (M := T1M)
       (t1AlignedConfig n (base+1) (by omega) tape .rewind .p1 false
@@ -472,7 +592,7 @@ private theorem t1CS_rewind_frame_other
         (tape ⟨base+1, by omega⟩) (tape ⟨base+2, by omega⟩)
         (tape ⟨base+3, by omega⟩) := by
     simpa using t1CS_step_rewind_p1 n (base+1) (by omega) (by omega) tape
-      (tape ⟨base+2, by omega⟩) (tape ⟨base+3, by omega⟩)
+      (tape ⟨base+2, by omega⟩) (tape ⟨base+3, by omega⟩) false
   rw [hs3]
   apply t1CS_step_rewind_p0_other
   · omega
@@ -496,11 +616,11 @@ private theorem t1CS_rewind_bof
       (t1AlignedConfig n 3 (by omega) tape .rewind .p3) (1+1+1+1) = _
   rw [runConfig_add, runConfig_add, runConfig_add]
   simp only [runConfig_one]
-  rw [t1CS_step_rewind_p3 n 3 (by omega) (by omega) tape]
+  rw [t1CS_step_rewind_p3 n 3 (by omega) (by omega) tape false]
   rw [t1CS_step_rewind_p2 n 2 (by omega) (by omega) tape
-    (tape ⟨3, by omega⟩)]
+    (tape ⟨3, by omega⟩) false]
   rw [t1CS_step_rewind_p1 n 1 (by omega) (by omega) tape
-    (tape ⟨2, by omega⟩) (tape ⟨3, by omega⟩)]
+    (tape ⟨2, by omega⟩) (tape ⟨3, by omega⟩) false]
   apply t1CS_step_rewind_p0_bof
   simp only [t1PhysicalBitsAt] at hbits
   rw [hbits]
@@ -512,10 +632,12 @@ private theorem t1CS_step_rewindStart
     TM.runConfig (M := T1M)
         (t1AlignedConfig n h hh tape .rewindStart) 1 =
       t1AlignedConfig n (h-1) (by omega) tape .rewind .p3 := by
-  have hne : h ≠ 0 := Nat.ne_of_gt hpos
-  simp [runConfig_one, TM.stepConfig, t1AlignedConfig, t1Phase, t1CS,
-    ConstStatePhasedProgram.toPhased, PhasedProgram.toTM, t1Transition,
-    t1State, Configuration.moveHead, Configuration.write, funext_iff, hne]
+  rw [runConfig_one]
+  have hstep := t1CS_aligned_step_left n h hh hpos tape
+    (t1State .rewindStart .p0 false false false false)
+    (t1State .rewind .p3 false false false false) (tape ⟨h, hh⟩)
+    (fun phase => t1Transition_rewindStart phase .p0 false false false false _)
+  rwa [t1WriteCell_self] at hstep
 
 /-- Rewind right-to-left across a list of non-`bof` frames in exactly four TM
 steps per frame.  The complete list-backed tape is preserved and the head
@@ -569,7 +691,9 @@ theorem t1CS_rewind_tail
 
 set_option maxHeartbeats 800000 in
 /-- Canonical validation and rewind reach the exact start-of-mutation boundary
-in `2 * encodeT1 r.length + 9` steps, with the complete tape unchanged. -/
+in `2 * encodeT1 r.length + 9` steps, with the complete tape unchanged.  This
+is the T1a result, preserved verbatim: it is the entry point of the T1b
+mutation phase. -/
 theorem t1CS_validate_rewind_encoded_exact (r : T1Request) :
     let n := (encodeT1 r).length
     TM.runConfig (M := T1M) (T1M.initialConfig (t1Point (encodeT1 r)))
@@ -638,41 +762,5 @@ theorem t1CS_validate_rewind_encoded_exact (r : T1Request) :
         (T1M.initialConfig (t1Point (encodeT1 r))).tape .rewind .p3 := by
     simpa only [hleft] using htail
   rw [htail', hbof]
-
-/-- A canonical request reaches the read-only mutation boundary under the
-machine's public exact quadratic clock.  This is a `TM.run` theorem; it is not
-an addressing-success theorem. -/
-theorem t1CS_run_encoded_reaches_mutation (r : T1Request) :
-    let n := (encodeT1 r).length
-    T1M.run (t1Point (encodeT1 r)) =
-      t1AlignedConfig n 0 (by
-        simp [T1M, t1CS, ConstStatePhasedProgram.toPhased,
-          PhasedProgram.toTM, TM.tapeLength])
-        (T1M.initialConfig (t1Point (encodeT1 r))).tape .startMutation := by
-  dsimp
-  let N := (encodeT1 r).length
-  have hsq : N + 1 ≤ (N + 1) ^ 2 := by
-    rw [pow_two]
-    exact Nat.le_mul_of_pos_right (N + 1) (by omega)
-  have hle : 2 * N + 9 ≤ t1Clock N := by
-    calc
-      2 * N + 9 ≤ 128 * (N + 1) + 128 := by omega
-      _ ≤ 128 * (N + 1) ^ 2 + 128 :=
-        Nat.add_le_add_right (Nat.mul_le_mul_left 128 hsq) 128
-      _ = t1Clock N := rfl
-  let remaining := t1Clock N - (2 * N + 9)
-  have hclock : t1Clock N = 2 * N + 9 + remaining := by
-    exact (Nat.add_sub_of_le hle).symm
-  let target : Configuration (M := T1M) N :=
-    t1AlignedConfig N 0 (by
-      simp [T1M, t1CS, ConstStatePhasedProgram.toPhased,
-        PhasedProgram.toTM, TM.tapeLength])
-      (T1M.initialConfig (t1Point (encodeT1 r))).tape .startMutation
-  rw [TM.run]
-  change TM.runConfig (M := T1M) (T1M.initialConfig (t1Point (encodeT1 r)))
-      (t1Clock N) = target
-  rw [hclock, runConfig_add, t1CS_validate_rewind_encoded_exact r]
-  apply t1CS_runConfig_mutation
-  rfl
 
 end Pnp3.Internal.PsubsetPpoly.TM

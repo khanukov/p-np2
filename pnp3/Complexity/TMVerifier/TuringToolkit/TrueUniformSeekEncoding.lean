@@ -284,4 +284,124 @@ theorem decodeT1Tape?_eq_some {bits : List Bool} {r : T1Request}
 def t1OutputPosition (r : T1Request) : Nat :=
   4 * (r.index + r.data.length + 2) + 3
 
+/-! ## Mutation vocabulary
+
+The declarations below name the tape-level objects the destructive seek
+manipulates.  They are pure ABI vocabulary: no machine, control state, or
+execution claim appears here.
+-/
+
+/-- Overwrite a single physical cell. -/
+def t1WriteCell {L : Nat} (h : Nat) (b : Bool)
+    (tape : Fin L → Bool) : Fin L → Bool :=
+  fun i => if (i : Nat) = h then b else tape i
+
+/-- Overwrite the four physical cells of the frame starting at `base`. -/
+def t1WriteFrame {L : Nat} (base : Nat) (bits : List Bool)
+    (tape : Fin L → Bool) : Fin L → Bool :=
+  fun i =>
+    if base ≤ (i : Nat) ∧ (i : Nat) < base + 4 then bits.getD ((i : Nat) - base) false
+    else tape i
+
+theorem t1WriteCell_self {L : Nat} (h : Nat) (hh : h < L)
+    (tape : Fin L → Bool) : t1WriteCell h (tape ⟨h, hh⟩) tape = tape := by
+  funext i
+  by_cases hi : (i : Nat) = h
+  · have hfin : (⟨h, hh⟩ : Fin L) = i := Fin.ext hi.symm
+    simp [t1WriteCell, hi, hfin]
+  · simp [t1WriteCell, hi]
+
+/-- Four ascending single-cell writes are one frame write. -/
+theorem t1WriteFrame_ascending {L : Nat} (base : Nat) (b0 b1 b2 b3 : Bool)
+    (tape : Fin L → Bool) :
+    t1WriteCell (base+3) b3 (t1WriteCell (base+2) b2
+        (t1WriteCell (base+1) b1 (t1WriteCell base b0 tape))) =
+      t1WriteFrame base [b0, b1, b2, b3] tape := by
+  funext i
+  by_cases h0 : (i : Nat) = base
+  · simp [t1WriteCell, t1WriteFrame, h0]
+  · by_cases h1 : (i : Nat) = base + 1
+    · simp [t1WriteCell, t1WriteFrame, h1, List.getD]
+    · by_cases h2 : (i : Nat) = base + 2
+      · simp [t1WriteCell, t1WriteFrame, h2, List.getD]
+      · by_cases h3 : (i : Nat) = base + 3
+        · simp [t1WriteCell, t1WriteFrame, h3, List.getD]
+        · have hout : ¬ (base ≤ (i : Nat) ∧ (i : Nat) < base + 4) := by omega
+          simp [t1WriteCell, t1WriteFrame, h0, h1, h2, h3, hout]
+
+/-- Four descending single-cell writes are the same frame write. -/
+theorem t1WriteFrame_descending {L : Nat} (base : Nat) (b0 b1 b2 b3 : Bool)
+    (tape : Fin L → Bool) :
+    t1WriteCell base b0 (t1WriteCell (base+1) b1
+        (t1WriteCell (base+2) b2 (t1WriteCell (base+3) b3 tape))) =
+      t1WriteFrame base [b0, b1, b2, b3] tape := by
+  funext i
+  by_cases h0 : (i : Nat) = base
+  · simp [t1WriteCell, t1WriteFrame, h0]
+  · by_cases h1 : (i : Nat) = base + 1
+    · simp [t1WriteCell, t1WriteFrame, h1, List.getD]
+    · by_cases h2 : (i : Nat) = base + 2
+      · simp [t1WriteCell, t1WriteFrame, h2, List.getD]
+      · by_cases h3 : (i : Nat) = base + 3
+        · simp [t1WriteCell, t1WriteFrame, h3, List.getD]
+        · have hout : ¬ (base ≤ (i : Nat) ∧ (i : Nat) < base + 4) := by omega
+          simp [t1WriteCell, t1WriteFrame, h0, h1, h2, h3, hout]
+
+@[simp] theorem T1Frame.bits_spent :
+    T1Frame.spent.bits = [false, false, true, true] := rfl
+
+@[simp] theorem T1Frame.bits_cursor :
+    T1Frame.cursor.bits = [false, true, true, true] := rfl
+
+@[simp] theorem T1Frame.bits_data (b : Bool) :
+    (T1Frame.data b).bits = [false, true, b, !b] := by cases b <;> rfl
+
+/-- **Canonical mutation frame layout after `j` on-tape decrements.**
+
+```text
+bof · index^(k-j) · spent^j · separator
+    · data(b₀)…data(b_{j-1}) · cursor · data(b_{j+1})… · output(false) · finish
+```
+
+This is the vocabulary the T1b-B loop invariant is stated in.  T1b-A only
+identifies the `j = 0` layout with the tape produced by the genuine
+installation run; the `j → j+1` step is deliberately not claimed here. -/
+def t1MutationFrames (r : T1Request) (j : Nat) : List T1Frame :=
+  [.bof] ++ List.replicate (r.index - j) .index ++ List.replicate j .spent ++
+    [.separator] ++ (r.data.take j).map .data ++ [.cursor] ++
+    (r.data.drop (j+1)).map .data ++ [.output false, .finish]
+
+/-- Physical frame index of the cursor after `j` decrements. -/
+def t1CursorFrameIndex (r : T1Request) (j : Nat) : Nat := r.index + 2 + j
+
+/-- Physical cell index where the cursor frame starts after `j` decrements. -/
+def t1CursorBase (r : T1Request) (j : Nat) : Nat := 4 * t1CursorFrameIndex r j
+
+@[simp] theorem t1MutationFrames_length (r : T1Request) (j : Nat)
+    (hj : j ≤ r.index) (hdata : j < r.data.length) :
+    (t1MutationFrames r j).length = r.index + r.data.length + 4 := by
+  have hdrop : (r.data.drop (j+1)).length = r.data.length - (j+1) := by
+    simp
+  have htake : (r.data.take j).length = j := by
+    simp; omega
+  simp [t1MutationFrames]
+  omega
+
+/-- At `j = 0` the mutation layout is the canonical encoder layout with the
+first data frame replaced by the cursor marker. -/
+theorem t1MutationFrames_zero (r : T1Request) (b : Bool) (rest : List Bool)
+    (hdata : r.data = b :: rest) :
+    t1MutationFrames r 0 =
+      ([.bof] ++ List.replicate r.index .index ++ [.separator]) ++
+        .cursor :: (rest.map .data ++ [.output false, .finish]) := by
+  simp [t1MutationFrames, hdata, List.append_assoc]
+
+/-- The canonical encoder layout, split at the first data frame. -/
+theorem encodeT1Frames_split (r : T1Request) (b : Bool) (rest : List Bool)
+    (hdata : r.data = b :: rest) :
+    encodeT1Frames r =
+      ([.bof] ++ List.replicate r.index .index ++ [.separator]) ++
+        .data b :: (rest.map .data ++ [.output false, .finish]) := by
+  simp [encodeT1Frames, hdata, List.append_assoc]
+
 end Pnp3.Internal.PsubsetPpoly.TM

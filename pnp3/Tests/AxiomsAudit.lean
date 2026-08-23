@@ -115,7 +115,30 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.t1CanonicalEncoderAutomatonTrace
 #print axioms Internal.PsubsetPpoly.TM.t1CS_rewind_tail
 #print axioms Internal.PsubsetPpoly.TM.t1CS_validate_rewind_encoded_exact
-#print axioms Internal.PsubsetPpoly.TM.t1CS_run_encoded_reaches_mutation
+
+-- T1b-A1 fixed-control activation and generic-step adapters.  This slice
+-- preserves the exact validation/rewind run to the now-active mutation handoff;
+-- destructive execution capstones are isolated in the dependent T1b-A2 slice.
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_startMutation_active
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_probeData_p3_data
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_probeData_p3_oob
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_turnInstall
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_writeCursor
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_seekIndexBack_p0_mark
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_seekIndexBack_p0_skip
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_seekIndexBack_p0_success
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_markSpent
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_backupCursor
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_writeData
+#print axioms Internal.PsubsetPpoly.TM.t1WriteFrame_ascending
+#print axioms Internal.PsubsetPpoly.TM.t1WriteFrame_descending
+#print axioms Internal.PsubsetPpoly.TM.t1MutationFrames_zero
+#print axioms Internal.PsubsetPpoly.TM.encodeT1Frames_split
+#print axioms Internal.PsubsetPpoly.TM.t1CS_aligned_step_right
+#print axioms Internal.PsubsetPpoly.TM.t1CS_aligned_step_left
+#print axioms Internal.PsubsetPpoly.TM.t1CS_aligned_step_stay
+#print axioms Internal.PsubsetPpoly.TM.t1CS_runConfig_successStart
+#print axioms Internal.PsubsetPpoly.TM.t1CS_runConfig_oobStart
 
 -- Итоговые утверждения (формульная сепарация).
 #print axioms RefutedRoute_NP_not_subset_PpolyFormula_final

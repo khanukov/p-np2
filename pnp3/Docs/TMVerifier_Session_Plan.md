@@ -212,6 +212,17 @@ by the current canonical execution results.  This review increment remains
 **Infrastructure**, not P-vs-NP mainline progress.
 
 ### Session 2 — `writeVecOfNatProgram`
+**Generic step bridge delivered (2026-08-23):**
+`TuringToolkit/ConstStatePhasedStepBridge.lean` proves, once and generically,
+that an opaque `ConstStatePhasedProgram.transition` tuple equality determines
+the complete compiled `TM.stepConfig`: dependent control state, moved head and
+pointwise tape update.  Its left/right/stay/clamped corollaries let large fixed
+control tables supply one small transition lemma without unfolding every branch
+inside each machine proof.  A separate one-phase probe confirms this API on a
+concrete program.  This is **Infrastructure**, not verifier correctness,
+runtime closure, or P-vs-NP mainline progress; it unblocks the T1b destructive
+seek proof layer after direct unfolding exceeded the heartbeat budget.
+
 **File:** new
 `pnp3/Complexity/TMVerifier/TuringToolkit/RowInputWriter.lean`
 **LOC:** ~300

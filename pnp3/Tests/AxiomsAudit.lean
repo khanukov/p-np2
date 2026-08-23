@@ -184,6 +184,8 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.t1CS_loop_success_tail_exact
 #print axioms Internal.PsubsetPpoly.TM.t1CS_loop_success_from_zero_exact
 #print axioms Internal.PsubsetPpoly.TM.t1CS_loop_oob_from_zero_exact
+#print axioms Internal.PsubsetPpoly.TM.t1OobSteps_nil
+#print axioms Internal.PsubsetPpoly.TM.t1OobSteps_cons
 #print axioms Internal.PsubsetPpoly.TM.t1DecideSteps_some
 #print axioms Internal.PsubsetPpoly.TM.t1DecideSteps_none
 #print axioms Internal.PsubsetPpoly.TM.t1Selected_none_iff

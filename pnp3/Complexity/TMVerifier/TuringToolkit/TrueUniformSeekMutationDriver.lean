@@ -657,9 +657,9 @@ theorem t1CS_run_encoded_decide_oob_nonempty (r : T1Request) (v : Bool)
     t1CS_runConfig_decide_oob_exact r v hv hne hlast]
   exact t1CS_runConfig_oobStart _ _ _ _ v _
 
-/-- **Empty-data out-of-bounds under the public clock.**  This is T1b-A's own
-public-clock theorem, restated at the driver's clock split so that the three
-public cases read uniformly. -/
+/-- **Empty-data out-of-bounds under the public clock.**  This is a direct
+named alias of T1b-A's public-clock theorem, included so that the driver's
+three public terminal cases have a uniform API. -/
 theorem t1CS_run_encoded_decide_oob_empty (r : T1Request) (hdata : r.data = []) :
     T1M.run (t1Point (encodeT1 r)) =
       t1AlignedConfig (encodeT1 r).length (4 * (r.index + 2) + 3)

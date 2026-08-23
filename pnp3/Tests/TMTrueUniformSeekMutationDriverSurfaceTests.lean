@@ -24,6 +24,8 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @t1CS_loop_oob_from_zero_exact
 #check @t1SuccessSteps
 #check @t1OobSteps
+#check @t1OobSteps_nil
+#check @t1OobSteps_cons
 #check @t1DecideSteps
 #check @t1DecideTotal
 #check @t1DecideSteps_some

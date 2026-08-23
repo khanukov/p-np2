@@ -216,9 +216,11 @@ by the current canonical execution results.  This review increment remains
 `TuringToolkit/ConstStatePhasedStepBridge.lean` proves, once and generically,
 that an opaque `ConstStatePhasedProgram.transition` tuple equality determines
 the complete compiled `TM.stepConfig`: dependent control state, moved head and
-pointwise tape update.  Its left/right/stay/clamped corollaries let large fixed
-control tables supply one small transition lemma without unfolding every branch
-inside each machine proof.  A separate one-phase probe confirms this API on a
+pointwise tape update.  Its five corollaries (`left`, `left_clamped`, `right`,
+`right_clamped`, `stay` — the two `left` and the two `right` premises are
+pairwise complementary, so every move at every head position is covered) let
+large fixed control tables supply one small transition lemma without unfolding
+every branch inside each machine proof.  A separate one-phase probe confirms this API on a
 concrete program.  This is **Infrastructure**, not verifier correctness,
 runtime closure, or P-vs-NP mainline progress; it unblocks the T1b destructive
 seek proof layer after direct unfolding exceeded the heartbeat budget.

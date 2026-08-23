@@ -32,23 +32,6 @@ open Pnp3.Magnification
 
 -- Reusable sequential-TM infrastructure (W-A).
 #print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_boundary_step_eq_embedSeqP2Config_lift
-#print axioms Internal.PsubsetPpoly.TM.Configuration.ext_of_components
-#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.toTM_step_of_transition
-#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.toTM_step_config_of_transition
-#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepConfig_state_of_transition
-#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepConfig_head_of_transition
-#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepConfig_tape_of_transition
-#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepConfig_tape_apply_of_transition
-#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepConfig_of_transition
-#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepConfig_eq_of_transition_right
-#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepConfig_eq_of_transition_left
-#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepConfig_eq_of_transition_stay
-#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepConfig_eq_of_transition_right_clamped
-#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepBridgeProbeCS_transition_true
-#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepBridgeProbeCS_transition_false
-#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepBridgeProbeCS_step_right
-#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepBridgeProbeCS_step_left
-#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepBridgeProbeCS_stepConfig_true
 #print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_run_full
 #print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.RunSpec.seq
 #print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.RunSpec.final_state_eq_accept_iff
@@ -91,6 +74,32 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.GateEvalCS.gateConstThenAcceptIfCS_timeBound
 #print axioms Internal.PsubsetPpoly.TM.GateEvalCS.gateConstThenAcceptIfCS_runSpec
 #print axioms Internal.PsubsetPpoly.TM.GateEvalCS.gateConstThenAcceptIfCS_accepts
+
+-- Generic `ConstStatePhasedProgram` transition → `stepConfig` step bridge
+-- (`TuringToolkit/ConstStatePhasedStepBridge.lean`), its five move
+-- corollaries, the generic `Move.left` clamp lemma they rest on, and the
+-- one-phase concrete probe.  Machine-independent infrastructure: no
+-- acceptance, runtime, or verifier claim.
+#print axioms Internal.PsubsetPpoly.TM.Configuration.ext_of_components
+#print axioms Internal.PsubsetPpoly.TM.Configuration.moveHead_left_clamp
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.toTM_step_of_transition
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.toTM_step_config_of_transition
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepConfig_state_of_transition
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepConfig_head_of_transition
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepConfig_tape_of_transition
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepConfig_tape_apply_of_transition
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepConfig_of_transition
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepConfig_eq_of_transition_right
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepConfig_eq_of_transition_right_clamped
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepConfig_eq_of_transition_left
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepConfig_eq_of_transition_left_clamped
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepConfig_eq_of_transition_stay
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepBridgeProbeCS_transition_true
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepBridgeProbeCS_transition_false
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepBridgeProbeCS_step_right
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepBridgeProbeCS_step_left
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepBridgeProbeCS_step_left_clamped
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepBridgeProbeCS_stepConfig_true
 
 -- T1a fixed-control canonical validation and read-only rewind handoff.
 #print axioms Internal.PsubsetPpoly.TM.decodeT1Tape_encode

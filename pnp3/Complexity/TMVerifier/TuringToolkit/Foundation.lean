@@ -281,17 +281,22 @@ end PhasedProgram
 ### Head-movement micro-API
 
 `moveHead` is a dependent `dite` on head position; simp doesn't discharge
-the bounds check automatically.  These three rewrite lemmas carve out
-the three regimes relevant to Session 4's pilots and subsequent
-verifier phases:
+the bounds check automatically.  These rewrite lemmas carve out the
+regimes relevant to Session 4's pilots and subsequent verifier phases:
 
 * `moveHead_stay` — `Move.stay` leaves the head unchanged (rfl);
 * `moveHead_right_lt` — a `Move.right` within bounds advances the head
   by one;
-* `moveHead_right_clamp` — a `Move.right` at the tape's right edge stays.
+* `moveHead_right_clamp` — a `Move.right` at the tape's right edge stays;
+* `moveHead_left_clamp` — a `Move.left` at head `0` stays;
+* `moveHead_left_val_le` / `moveHead_left_val_of_pos` — the two `Move.left`
+  head-*value* facts (uniform bound, and the exact decrement away from `0`);
+* `moveHead_val_le_succ` — the move-agnostic `≤ head + 1` bound.
 
-All three are stated so that simp can use them when the corresponding
-numeric condition is available as a hypothesis.
+Each is stated so that simp can use it when the corresponding numeric
+condition is available as a hypothesis.  The `right`/`left` clamp lemmas
+have premises exactly complementary to `moveHead_right_lt` and
+`moveHead_left_val_of_pos`, so callers never have to guess a regime.
 -/
 
 namespace Configuration
@@ -332,6 +337,17 @@ theorem moveHead_left_val_of_pos {M : TM.{u}} {n : Nat}
     ((Configuration.moveHead (c := c) Move.left) : ℕ) = (c.head : ℕ) - 1 := by
   have hne : (c.head : ℕ) ≠ 0 := by omega
   simp [Configuration.moveHead, hne]
+
+/-- `Move.left` at the tape's left edge: the move clamps and the head is
+unchanged.  This is the exact complement of `moveHead_left_val_of_pos`
+(`(c.head : ℕ) = 0` versus `0 < (c.head : ℕ)`), and the `Move.left`
+counterpart of `moveHead_right_clamp`.  Stated as a full `Fin` equality,
+which is strictly stronger than the head-value form. -/
+theorem moveHead_left_clamp {M : TM.{u}} {n : Nat}
+    (c : Configuration (M := M) n) (h : (c.head : ℕ) = 0) :
+    Configuration.moveHead (c := c) Move.left = c.head := by
+  unfold Configuration.moveHead
+  rw [dif_pos h]
 
 /-- One `moveHead` step never advances the head value by more than
 one.  Applies uniformly across `Move.left`, `Move.stay`, `Move.right`,

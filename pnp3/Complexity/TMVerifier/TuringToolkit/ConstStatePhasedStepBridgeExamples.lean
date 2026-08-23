@@ -99,6 +99,27 @@ theorem stepBridgeProbeCS_step_left {n : Nat}
     (by rw [hscan]; exact stepBridgeProbeCS_transition_false c.state.fst c.state.snd)
     hpos c' hstate hhead htape
 
+/-- Probe of `stepConfig_eq_of_transition_left_clamped`: on a scanned `false`
+at head `0`, the same table lemma drives the clamped regime — the head value
+stays put while the write still happens.  Together with
+`stepBridgeProbeCS_step_left` this shows one concrete program can use both
+`Move.left` corollaries from a single transition fact. -/
+theorem stepBridgeProbeCS_step_left_clamped {n : Nat}
+    (c : Configuration (M := stepBridgeProbeCS.toPhased.toTM) n)
+    (hscan : c.tape c.head = false)
+    (hzero : (c.head : Nat) = 0)
+    (c' : Configuration (M := stepBridgeProbeCS.toPhased.toTM) n)
+    (hstate : c'.state =
+      (⟨⟨0, Nat.zero_lt_one⟩, c.state.snd⟩ :
+        stepBridgeProbeCS.toPhased.State))
+    (hhead : (c'.head : Nat) = (c.head : Nat))
+    (htape : ∀ i : Fin (stepBridgeProbeCS.toPhased.toTM.tapeLength n),
+      c'.tape i = if (i : Nat) = (c.head : Nat) then false else c.tape i) :
+    TM.stepConfig (M := stepBridgeProbeCS.toPhased.toTM) c = c' :=
+  stepConfig_eq_of_transition_left_clamped stepBridgeProbeCS c
+    (by rw [hscan]; exact stepBridgeProbeCS_transition_false c.state.fst c.state.snd)
+    hzero c' hstate hhead htape
+
 /-- Probe of the raw complete bridge `stepConfig_of_transition`: the canonical
 normal form (`Sigma` state, `moveHead`, `Configuration.write`) is available
 for the probe too, again with no table reduction in the proof. -/

@@ -31,18 +31,23 @@ Layering:
   components, each stated in the canonical `Sigma` / `moveHead` /
   `Configuration.write` normal form;
 * `stepConfig_of_transition` — the complete configuration equality;
-* `stepConfig_eq_of_transition_left` / `_right` / `_stay` — ergonomic
-  corollaries that identify `stepConfig c` with a *caller-supplied* target
-  configuration `c'`, given the head-value equation under the exact boundary
-  premise and a pointwise (extensional) description of the target tape.
+* `stepConfig_eq_of_transition_left` / `_left_clamped` / `_right` /
+  `_right_clamped` / `_stay` — ergonomic corollaries that identify
+  `stepConfig c` with a *caller-supplied* target configuration `c'`, given the
+  head-value equation under the exact boundary premise and a pointwise
+  (extensional) description of the target tape.  The two `left` and the two
+  `right` corollaries have pairwise complementary boundary premises, so the
+  five together cover every move at every head position.
 
 The corollaries are the intended entry point: they let a caller keep its own
 aligned-configuration constructor on the right-hand side and discharge the
 match with three value-level equations, never touching `Configuration.write`
 or `Configuration.moveHead` normal forms.
 
-The three `stepConfig_*` component lemmas of `Foundation` are reused verbatim;
-no new axioms, no placeholders, and no program-specific imports.
+The three `stepConfig_*` component lemmas of `Foundation` are reused verbatim,
+as is its head-movement micro-API (`moveHead_right_lt`, `moveHead_right_clamp`,
+`moveHead_left_val_of_pos`, `moveHead_left_clamp`, `moveHead_stay`).  No new
+axioms, no placeholders, and no program-specific imports.
 -/
 
 namespace Pnp3
@@ -267,6 +272,30 @@ theorem stepConfig_eq_of_transition_stay (U : ConstStatePhasedProgram S)
   · apply Fin.ext
     rw [stepConfig_head_of_transition U c htr,
       Configuration.moveHead_stay (c := c), hhead]
+  · funext i
+    rw [stepConfig_tape_apply_of_transition U c htr i, htape i]
+
+/-- `Move.left` step at the left edge of the tape: the move clamps and the
+head does not change.  The premise `(c.head : Nat) = 0` is exactly
+complementary to `stepConfig_eq_of_transition_left`'s `0 < (c.head : Nat)`,
+so together the two corollaries cover every `Move.left` step. -/
+theorem stepConfig_eq_of_transition_left_clamped (U : ConstStatePhasedProgram S)
+    {n : Nat} (c : Configuration (M := U.toPhased.toTM) n)
+    {phaseNext : Fin U.numPhases} {localNext : S} {w : Bool}
+    (htr : U.transition c.state.fst c.state.snd (c.tape c.head) =
+      (phaseNext, localNext, w, Move.left))
+    (hzero : (c.head : Nat) = 0)
+    (c' : Configuration (M := U.toPhased.toTM) n)
+    (hstate : c'.state = (⟨phaseNext, localNext⟩ : U.toPhased.State))
+    (hhead : (c'.head : Nat) = (c.head : Nat))
+    (htape : ∀ i : Fin (U.toPhased.toTM.tapeLength n),
+      c'.tape i = if (i : Nat) = (c.head : Nat) then w else c.tape i) :
+    TM.stepConfig (M := U.toPhased.toTM) c = c' := by
+  refine Configuration.ext_of_components ?_ ?_ ?_
+  · rw [stepConfig_state_of_transition U c htr, hstate]
+  · apply Fin.ext
+    rw [stepConfig_head_of_transition U c htr,
+      Configuration.moveHead_left_clamp (c := c) hzero, hhead]
   · funext i
     rw [stepConfig_tape_apply_of_transition U c htr i, htape i]
 

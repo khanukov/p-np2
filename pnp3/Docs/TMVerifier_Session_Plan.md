@@ -174,6 +174,24 @@ no runtime bound for one.  Generic padding and the discipline needed to rule
 out advice through arbitrary functional clocks remain explicitly open; this
 increment adds neither a padding constructor nor a free clock argument.
 
+**T1a fixed-control true uniform seek delivered (2026-08-23):**
+`TuringToolkit/TrueUniformSeekEncoding.lean` defines the canonical four-bit
+frame ABI and proves the encoder/decoder round trip.
+`TuringToolkit/TrueUniformSeek.lean` defines one closed finite-control
+`ConstStatePhasedProgram` with the public exact clock
+`128 * (N + 1)^2 + 128`.  `TuringToolkit/TrueUniformSeekValidation.lean`
+proves genuine `TM.runConfig` traces for the four-bit forward macrostep,
+canonical grammar validation, and the exact rewind to the left anchor.  The
+capstone `t1CS_run_encoded_reaches_mutation` proves that `TM.run` reaches the
+read-only `startMutation` handoff under the public clock while preserving the
+initial tape.  The handoff is idle in T1a.
+
+This increment is **Infrastructure**, not a restricted lower bound and not
+P-vs-NP mainline progress.  It makes no addressing, destructive seek,
+restoration, acceptance, or T1b success claim.  The modules and their public
+headline results are covered by a concrete example, a compile-time surface
+test, and the axiom audit.
+
 ### Session 2 — `writeVecOfNatProgram`
 **File:** new
 `pnp3/Complexity/TMVerifier/TuringToolkit/RowInputWriter.lean`

@@ -14,6 +14,7 @@ import ThirdPartyFacts.Facts_Switching
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
+import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
 
 /-!
   pnp3/Tests/AxiomsAudit.lean
@@ -66,6 +67,11 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.GateEvalCS.gateConstCS_seqList_three_recursion_probe
 #print axioms Internal.PsubsetPpoly.TM.GateEvalCS.gateConstCSReady
 #print axioms Internal.PsubsetPpoly.TM.GateEvalCS.gateConstCS_seqList_replicate_runSpec
+#print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.initialConfig_seq_eq_embedSeqConfig_initialConfig
+#print axioms Internal.PsubsetPpoly.TM.GateEvalCS.gateConstCS_timeBound_eq_acceptIfCellCS_timeBound
+#print axioms Internal.PsubsetPpoly.TM.GateEvalCS.gateConstThenAcceptIfCS_timeBound
+#print axioms Internal.PsubsetPpoly.TM.GateEvalCS.gateConstThenAcceptIfCS_runSpec
+#print axioms Internal.PsubsetPpoly.TM.GateEvalCS.gateConstThenAcceptIfCS_accepts
 
 -- Итоговые утверждения (формульная сепарация).
 #print axioms RefutedRoute_NP_not_subset_PpolyFormula_final

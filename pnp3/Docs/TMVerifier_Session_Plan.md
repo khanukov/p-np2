@@ -151,6 +151,29 @@ mainline progress.  It closes the non-dependent, adjacent-monotone list
 control-flow layer, but it does not prove verifier-language correctness,
 acceptance, or a polynomial runtime bound for the eventual verifier.
 
+**W-C actual-input conditional-accept capstone delivered (2026-08-23):**
+`TuringToolkit/ConstStatePhasedProgramInitialConfig.lean` proves the
+unconditional full-configuration identity
+`initialConfig_seq_eq_embedSeqConfig_initialConfig`.  The equality covers the
+dependent phase/local state, head, and every cell of the composite tape; it
+has no hypotheses and no input cast.
+
+`TuringToolkit/ConstStatePhasedProgramConditionalAcceptExamples.lean` defines
+`gateConstThenAcceptIfCS b d := seq (gateConstCS b d) (acceptIfCellCS d)`.
+The operands both have standalone clock `2*d+3`, so ordinary `RunSpec.seq`
+applies with equal tape lengths and no padding.  From the composite machine's
+actual `initialConfig`, the dependency-closed `RunSpec` proves that the exact
+final local state is `(b,b)`, the head returns to its initial position, and
+the complete final tape is the initial tape with cell `d` set to `b`.  Hence
+`TM.accepts ... = b` for every input length, input, bit, and offset, covering
+both the accepting and rejecting executions.
+
+This W-C increment is **Infrastructure**, not a restricted lower bound and
+not P-vs-NP mainline progress.  It constructs no content verifier and proves
+no runtime bound for one.  Generic padding and the discipline needed to rule
+out advice through arbitrary functional clocks remain explicitly open; this
+increment adds neither a padding constructor nor a free clock argument.
+
 ### Session 2 — `writeVecOfNatProgram`
 **File:** new
 `pnp3/Complexity/TMVerifier/TuringToolkit/RowInputWriter.lean`

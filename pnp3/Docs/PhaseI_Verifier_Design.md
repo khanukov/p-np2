@@ -1670,3 +1670,19 @@ migration is an independent refactor on the Magnification side.
 - `Tests/FormulaSupportBoundsFalsifiabilityProbe.lean` is compiled as
   part of the default `PnP3` library, not optional — so regression is
   a build gate.
+
+## W-C clock-discipline boundary (2026-08-23)
+
+The focused actual-input capstone uses only
+`seq (gateConstCS b d) (acceptIfCellCS d)`.  Both operands have the same
+standalone `timeBound`, so its dependency-closed `RunSpec` needs no padding.
+The construction exports no arbitrary `Nat → Nat` clock and makes no
+advice-freeness claim beyond this concrete syntactic composition.
+
+Padding and general clock discipline remain open design work.  In particular,
+this increment does not add `padTo`, `padClock`, a caller-selected runtime
+function, or a general theorem that such clocks preserve uniform-machine
+semantics.  Any future padding API must separately address prefix safety,
+operational realizability, and the existing runtime-advice channel.  This is
+an Infrastructure boundary, not verifier correctness or P-vs-NP mainline
+progress.

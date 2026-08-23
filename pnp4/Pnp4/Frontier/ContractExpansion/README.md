@@ -488,14 +488,18 @@ makes no `P ≠ NP` claim.
   the input read the blank `false` cell.
 - This terminal program must be the explicit right operand of the final `seq`. It must not be routed
   through `seqList`, because that fold appends `idleCS` and its boundary resets the local state.
-  Predecessor tape-length monotonicity, padding, and the still-open composition equality
-  `initialConfig (seq P₁ P₂) x = embedSeqConfig P₁ P₂ (initialConfig P₁ x)` remain separate
-  obligations; without the last bridge, the `initialConfig` acceptance theorem is standalone rather
-  than an end-to-end theorem for the composite machine.
+  `ConstStatePhasedProgramInitialConfig.lean` now proves the unconditional full-configuration
+  equality `initialConfig (seq P₁ P₂) x = embedSeqConfig P₁ P₂ (initialConfig P₁ x)`.
+- `ConstStatePhasedProgramConditionalAcceptExamples.lean` exercises that bridge with
+  `seq (gateConstCS b d) (acceptIfCellCS d)`. The operands have equal standalone clocks, so no
+  padding is involved. Its actual-input `RunSpec` fixes the exact final local state, head, and full
+  tape, and the headline theorem proves `TM.accepts ... = b`, including the rejecting branch.
+- Generic padding and uniform clock discipline remain open. No arbitrary clock function, padding
+  constructor, content verifier, or advice-free theorem is introduced by this capstone.
 
-This closes reusable conditional-accept plumbing only. It constructs no content verifier, runtime
-bound for that verifier, or `ContentVerifierBridge`, and is therefore Infrastructure rather than
-P-vs-NP mainline progress.
+This closes reusable conditional-accept plumbing and its focused constant-gate capstone only. It
+constructs no content verifier, runtime bound for that verifier, or `ContentVerifierBridge`, and is
+therefore Infrastructure rather than P-vs-NP mainline progress.
 
 ### Threshold growth and consolidation
 - `ThresholdGrowth.lean` (Block 13a) — `thresholdLinear` / `thresholdQuadratic` /

@@ -1,6 +1,7 @@
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
+import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
 
 namespace Pnp3.Tests.TMSeqRunSurface
 
@@ -606,5 +607,56 @@ theorem check_gateConstCS_seqList_replicate_runSpec
       (embedSeqConfig P (seqList (List.replicate copies P)) c)
       (fun _ => True) :=
   gateConstCS_seqList_replicate_runSpec b d copies c hPhase hState hBound
+
+/-! ### Actual-initial-configuration capstone -/
+
+/-- Pin the unconditional equality of complete sequential initial
+configurations. -/
+theorem check_initialConfig_seq_eq_embedSeqConfig_initialConfig
+    (P Q : ConstStatePhasedProgram S) {n : Nat}
+    (x : Boolcube.Point n) :
+    (seq P Q).toPhased.toTM.initialConfig x =
+      embedSeqConfig P Q (P.toPhased.toTM.initialConfig x) :=
+  initialConfig_seq_eq_embedSeqConfig_initialConfig P Q x
+
+/-- Pin the concrete constant-gate/conditional-terminal constructor. -/
+def check_gateConstThenAcceptIfCS (b : Bool) (d : Nat) :
+    ConstStatePhasedProgram (Bool × Bool) :=
+  gateConstThenAcceptIfCS b d
+
+/-- Pin the absence of a padding premise: the standalone clocks are equal. -/
+theorem check_gateConstCS_timeBound_eq_acceptIfCellCS_timeBound
+    (b : Bool) (d n : Nat) :
+    (gateConstCS b d).timeBound n = (acceptIfCellCS d).timeBound n :=
+  gateConstCS_timeBound_eq_acceptIfCellCS_timeBound b d n
+
+/-- Pin the exact composite clock. -/
+theorem check_gateConstThenAcceptIfCS_timeBound
+    (b : Bool) (d n : Nat) :
+    (gateConstThenAcceptIfCS b d).timeBound n = 4 * d + 7 :=
+  gateConstThenAcceptIfCS_timeBound b d n
+
+/-- Pin the dependency-closed actual-input `RunSpec` and its exact final
+local-state, head, and full-tape semantics. -/
+theorem check_gateConstThenAcceptIfCS_runSpec
+    (b : Bool) (d : Nat) {n : Nat}
+    (x : Boolcube.Point n) :
+    let R := gateConstThenAcceptIfCS b d
+    let c₀ := R.toPhased.toTM.initialConfig x
+    let hd : d < R.toPhased.toTM.tapeLength n := by
+      simp [R, gateConstThenAcceptIfCS, TM.tapeLength]
+      omega
+    RunSpec R c₀ (fun cf =>
+      cf.state.snd = (b, b) ∧
+      cf.head = c₀.head ∧
+      cf.tape = c₀.write ⟨d, hd⟩ b) :=
+  gateConstThenAcceptIfCS_runSpec b d x
+
+/-- Pin both accepting and rejecting cases in one Boolean equality. -/
+theorem check_gateConstThenAcceptIfCS_accepts
+    (b : Bool) (d : Nat) {n : Nat}
+    (x : Boolcube.Point n) :
+    accepts (M := (gateConstThenAcceptIfCS b d).toPhased.toTM) n x = b :=
+  gateConstThenAcceptIfCS_accepts b d x
 
 end Pnp3.Tests.TMSeqRunSurface

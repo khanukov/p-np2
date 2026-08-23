@@ -233,6 +233,23 @@ over all unary index units or prove the final `getElem?` success/OOB split.
 It also proves no consumed-index-field repair, output write, malformed-input
 closure, or acceptance; those remain the next loop-driver and T1c obligations.
 
+**T1b-C loop driver delivered (2026-08-23):**
+`TuringToolkit/TrueUniformSeekMutationDriver.lean` sums the variable loop cost
+as `t1LoopSteps m = 8*m^2 + 29*m` and proves by genuine `TM.runConfig`
+induction that the installed cursor reaches every canonical `Σ(m)` allowed by
+the unary index and data bounds.  The success tail crosses the fully spent
+index field and reaches idle `successStart`; the OOB branches cover both empty
+and nonempty data.  Exact case theorems start from the real initial
+configuration and are keyed by `r.data[r.index]? = some v` or `none`.
+`t1CS_decideTotal_le_clock` proves every case fits the fixed public quadratic
+clock, and the public `T1M.run` theorems pad only with the already-proved idle
+success/OOB boundary behavior.
+
+This remains **Infrastructure**: `successStart` and `oobStart` are semantic
+boundaries, not accept/reject states.  No temporary-marker repair, output write,
+malformed-input closure, or acceptance equivalence is claimed; those are T1c
+obligations.
+
 **T1a review hardening (2026-08-23):** the generic forward-frame scanner
 `t1CS_scan_frames` and non-anchor reverse scanner `t1CS_rewind_tail` are public
 T1b reuse surfaces, with exact import-side type probes and axiom audits.  Their

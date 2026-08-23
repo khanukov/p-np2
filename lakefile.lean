@@ -81,6 +81,7 @@ lean_lib PnP3 where
     Glob.one `Complexity.TMVerifier.TuringToolkit.TrueUniformSeekEncoding,
     Glob.one `Complexity.TMVerifier.TuringToolkit.TrueUniformSeek,
     Glob.one `Complexity.TMVerifier.TuringToolkit.TrueUniformSeekValidation,
+    Glob.one `Complexity.TMVerifier.TuringToolkit.TrueUniformSeekTerminalControl,
     Glob.one `Complexity.TMVerifier.TuringToolkit.TrueUniformSeekMutation,
     Glob.one `Complexity.TMVerifier.TuringToolkit.TrueUniformSeekMutationLoop,
     Glob.one `Complexity.TMVerifier.TuringToolkit.TrueUniformSeekMutationLoopExamples,

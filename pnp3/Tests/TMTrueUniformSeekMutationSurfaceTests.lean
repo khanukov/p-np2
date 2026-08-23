@@ -6,7 +6,8 @@ import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekExamples
 Named compile-time pins for the fixed finite control, mutation tape vocabulary,
 atomic genuine-TM steps, canonical first-cursor installation, and empty-data OOB
 execution.  T1b-A does not claim the `j → j+1` loop, restoration, output, or
-acceptance.
+acceptance.  Since T1c-1 the OOB boundary is active, so only the exact
+finite-prefix form survives here.
 -/
 
 namespace Pnp3.Tests.TMTrueUniformSeekMutationSurface
@@ -51,12 +52,11 @@ theorem check_t1PhysicalBitsAt_flatMap
       frame.bits :=
   t1PhysicalBitsAt_flatMap n pre suffix frame hsafe
 
--- Generic aligned-step bridge adapters and stable T1c boundaries.
+-- Generic aligned-step bridge adapters and the stable accept/reject sinks.
 #check @t1CS_aligned_step_right
 #check @t1CS_aligned_step_left
 #check @t1CS_aligned_step_stay
-#check @t1CS_runConfig_successStart
-#check @t1CS_runConfig_oobStart
+#check @t1CS_runConfig_sink
 
 -- Atomic mutation execution.
 #check @t1CS_startMutation_walk
@@ -75,11 +75,10 @@ theorem check_t1PhysicalBitsAt_flatMap
 #check @t1CS_install_first_cursor_exact
 #check @t1CS_runConfig_install_first_cursor_exact
 #check @t1CS_oob_empty_data_exact
-#check @t1CS_run_encoded_oob_empty_data
 
 -- Concrete zero/nonzero/OOB probes.
 #check @t1bIndexZero_install
 #check @t1bNonzeroIndex_install
-#check @t1bEmptyData_oob
+#check @t1bEmptyData_oob_exact
 
 end Pnp3.Tests.TMTrueUniformSeekMutationSurface

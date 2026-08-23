@@ -19,6 +19,7 @@ import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcc
 import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekExamples
 import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekMutationLoopExamples
 import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekMutationDriverExamples
+import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekTerminalControl
 
 /-!
   pnp3/Tests/AxiomsAudit.lean
@@ -141,8 +142,7 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.t1CS_aligned_step_right
 #print axioms Internal.PsubsetPpoly.TM.t1CS_aligned_step_left
 #print axioms Internal.PsubsetPpoly.TM.t1CS_aligned_step_stay
-#print axioms Internal.PsubsetPpoly.TM.t1CS_runConfig_successStart
-#print axioms Internal.PsubsetPpoly.TM.t1CS_runConfig_oobStart
+#print axioms Internal.PsubsetPpoly.TM.t1CS_runConfig_sink
 #print axioms Internal.PsubsetPpoly.TM.t1CS_startMutation_walk
 #print axioms Internal.PsubsetPpoly.TM.t1CS_probeData_frame_data
 #print axioms Internal.PsubsetPpoly.TM.t1CS_probeData_frame_oob
@@ -159,14 +159,14 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.t1CS_install_first_cursor_exact
 #print axioms Internal.PsubsetPpoly.TM.t1CS_runConfig_install_first_cursor_exact
 #print axioms Internal.PsubsetPpoly.TM.t1CS_oob_empty_data_exact
-#print axioms Internal.PsubsetPpoly.TM.t1CS_run_encoded_oob_empty_data
 #print axioms Internal.PsubsetPpoly.TM.t1bIndexZero_install
 #print axioms Internal.PsubsetPpoly.TM.t1bNonzeroIndex_install
-#print axioms Internal.PsubsetPpoly.TM.t1bEmptyData_oob
+#print axioms Internal.PsubsetPpoly.TM.t1bEmptyData_oob_exact
 
 -- T1b-B genuine one-iteration mutation loop and exact OOB companion.  The
 -- induction/terminal split is not part of this layer and is audited in T1b-C
--- below; all T1c repair/output/acceptance remains open.
+-- below; end-to-end T1c repair/output/acceptance remains open (T1c-1, audited
+-- last, fixes the control table and the per-mode steps only).
 #print axioms Internal.PsubsetPpoly.TM.t1CS_scan_back_skip
 #print axioms Internal.PsubsetPpoly.TM.t1MutationTape_eq_listTape
 #print axioms Internal.PsubsetPpoly.TM.t1CursorBase_safe
@@ -178,7 +178,9 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.t1bbOobAtOne
 
 -- T1b-C loop induction, exact terminal cases from the real initial
--- configuration, and public-clock padding to idle semantic boundaries.
+-- configuration, and the clock estimate.  These are finite-prefix `runConfig`
+-- roots: T1c-1 activated both boundaries, so the former public-clock padding
+-- theorems no longer exist and are not audited.
 #print axioms Internal.PsubsetPpoly.TM.t1LoopSteps_succ
 #print axioms Internal.PsubsetPpoly.TM.t1CS_loop_iterate_exact
 #print axioms Internal.PsubsetPpoly.TM.t1CS_loop_reach_exact
@@ -194,23 +196,48 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.t1CS_runConfig_decide_oob_exact
 #print axioms Internal.PsubsetPpoly.TM.t1CS_runConfig_decide_oob_empty_exact
 #print axioms Internal.PsubsetPpoly.TM.t1CS_decideTotal_le_clock
-#print axioms Internal.PsubsetPpoly.TM.t1CS_run_encoded_decide_success
-#print axioms Internal.PsubsetPpoly.TM.t1CS_run_encoded_decide_oob_nonempty
-#print axioms Internal.PsubsetPpoly.TM.t1CS_run_encoded_decide_oob_empty
-#print axioms Internal.PsubsetPpoly.TM.t1CS_run_encoded_decide_oob
 #print axioms Internal.PsubsetPpoly.TM.t1bcDriveToSlotTwo
 #print axioms Internal.PsubsetPpoly.TM.t1bcSuccessTail
 #print axioms Internal.PsubsetPpoly.TM.t1bcSuccessFromInitial
-#print axioms Internal.PsubsetPpoly.TM.t1bcSuccessPublicClock
 #print axioms Internal.PsubsetPpoly.TM.t1bcOobFromInitial
-#print axioms Internal.PsubsetPpoly.TM.t1bcOobPublicClock
 #print axioms Internal.PsubsetPpoly.TM.t1bcEmptyOobFromInitial
-#print axioms Internal.PsubsetPpoly.TM.t1bcEmptyOobPublicClock
 #print axioms Internal.PsubsetPpoly.TM.t1bcSuccessFitsClock
 #print axioms Internal.PsubsetPpoly.TM.t1bcOobFitsClock
 #print axioms Internal.PsubsetPpoly.TM.t1bcEmptyFitsClock
 #print axioms Internal.PsubsetPpoly.TM.t1bcIndexZeroSuccessFromInitial
 #print axioms Internal.PsubsetPpoly.TM.t1bcOobBoundaryFromInitial
+
+-- T1c-1 active terminal control: the transition table for both terminal arms
+-- and one genuine generic execution theorem per new mode.  Restoration,
+-- terminal step counts and acceptance stay open (T1c-2).
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_successStart_active
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_oobStart_active
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_outWriteOut
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_repairSeek_p0_write
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_repairSeek_p0_skip
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_repairSeek_p0_done
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_repairDone_accept
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_repairDone_reject
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_repairDone_acceptState
+#print axioms Internal.PsubsetPpoly.TM.t1CS_successStart_dispatch
+#print axioms Internal.PsubsetPpoly.TM.t1CS_oobStart_dispatch
+#print axioms Internal.PsubsetPpoly.TM.t1CS_outWalk_walk
+#print axioms Internal.PsubsetPpoly.TM.t1CS_outSeekCursor_frame
+#print axioms Internal.PsubsetPpoly.TM.t1CS_outBackup_walk
+#print axioms Internal.PsubsetPpoly.TM.t1CS_outWriteData_frame
+#print axioms Internal.PsubsetPpoly.TM.t1CS_outSeekOutput_frame
+#print axioms Internal.PsubsetPpoly.TM.t1CS_outTurn_step
+#print axioms Internal.PsubsetPpoly.TM.t1CS_outWriteOut_frame
+#print axioms Internal.PsubsetPpoly.TM.t1CS_repairSeek_frame_skip
+#print axioms Internal.PsubsetPpoly.TM.t1CS_repairSeek_frame_write
+#print axioms Internal.PsubsetPpoly.TM.t1CS_repairSeek_frame_done
+#print axioms Internal.PsubsetPpoly.TM.t1CS_repairWrite_frame
+#print axioms Internal.PsubsetPpoly.TM.t1CS_repairBack_walk
+#print axioms Internal.PsubsetPpoly.TM.t1CS_repairHop_step
+#print axioms Internal.PsubsetPpoly.TM.t1CS_repairDone_accept
+#print axioms Internal.PsubsetPpoly.TM.t1CS_repairDone_reject
+#print axioms Internal.PsubsetPpoly.TM.t1CS_repairDone_accept_stable
+#print axioms Internal.PsubsetPpoly.TM.t1CS_repairDone_reject_stable
 
 -- Итоговые утверждения (формульная сепарация).
 #print axioms RefutedRoute_NP_not_subset_PpolyFormula_final

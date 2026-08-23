@@ -4,10 +4,14 @@ import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekMutationDriver
 # Concrete T1b-C driver probes
 
 These named proof values instantiate the loop driver, the success tail and
-the three terminal cases at concrete requests, so that the driver surface is
-demonstrably non-vacuous.  They are not evaluator tests, and they make no
-acceptance, output or restoration claim: `successStart` and `oobStart` stay
-idle semantic boundaries.
+the three exact terminal cases at concrete requests, so that the driver
+surface is demonstrably non-vacuous.  Two of them — `index = 0` and the exact
+`index = data.length` boundary — are stated as `theorem`s with the whole
+configuration spelled out, so a weakened conclusion fails here.  They are not
+evaluator tests, and they make no acceptance, output or restoration claim.
+There are no public-clock probes any more: T1c-1 activated `successStart` and
+`oobStart`, so the `t1CS_run_encoded_decide_*` theorems they instantiated no
+longer exist.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -42,10 +46,6 @@ configuration. -/
 def t1bcSuccessFromInitial :=
   t1CS_runConfig_decide_success_exact t1bcSuccessRequest true rfl
 
-/-- The same case under the genuine public clock. -/
-def t1bcSuccessPublicClock :=
-  t1CS_run_encoded_decide_success t1bcSuccessRequest true rfl
-
 /-- Degenerate nonempty success: index zero selects the first data cell. -/
 def t1bcIndexZeroRequest : T1Request := ⟨0, [true]⟩
 
@@ -68,9 +68,6 @@ def t1bcOobRequest : T1Request := ⟨3, [true, false]⟩
 
 def t1bcOobFromInitial :=
   t1CS_runConfig_decide_oob_exact t1bcOobRequest false rfl (by decide) rfl
-
-def t1bcOobPublicClock :=
-  t1CS_run_encoded_decide_oob_nonempty t1bcOobRequest false rfl (by decide) rfl
 
 /-- Exact boundary OOB: the first missing slot is `index = data.length`. -/
 def t1bcOobBoundaryRequest : T1Request := ⟨2, [true, false]⟩
@@ -96,9 +93,6 @@ def t1bcEmptyRequest : T1Request := ⟨2, []⟩
 
 def t1bcEmptyOobFromInitial :=
   t1CS_runConfig_decide_oob_empty_exact t1bcEmptyRequest rfl
-
-def t1bcEmptyOobPublicClock :=
-  t1CS_run_encoded_decide_oob_empty t1bcEmptyRequest rfl
 
 /-! ## The clock estimate is usable at concrete requests -/
 

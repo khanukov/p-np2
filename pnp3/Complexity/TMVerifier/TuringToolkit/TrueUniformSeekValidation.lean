@@ -5,10 +5,12 @@ import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedStepBridge
 # Generic T1 execution theorems: read-only validation and rewind
 
 The results here are genuine finite-prefix `TM.runConfig` traces, not a
-separate pure interpreter.  They establish the four-bit forward macrostep,
-stable sinks, the two idle T1c boundary states, and exact read-only
-validation/rewind for every canonical request.  No full-clock `TM.run` claim
-survives because `startMutation` is now active.
+separate pure interpreter.  They establish the four-bit forward macrostep, the
+stable `accept`/`reject` sinks, and exact read-only validation/rewind for
+every canonical request.  No full-clock `TM.run` claim survives: `startMutation`
+became active in T1b-A1, and since T1c-1 the two terminal boundary states
+`successStart` and `oobStart` are active too, so no idleness theorem for them
+exists any more.
 
 **Proof discipline.**  Every `TM.stepConfig` fact in this module is obtained by
 applying a corollary of the generic `ConstStatePhasedStepBridge` to a standalone
@@ -164,10 +166,10 @@ private theorem t1CS_step_forward_p3
   rwa [t1WriteCell_self] at hstep
 
 /-- **Four-bit decoding macrostep.**  In any forward mode — the five T1a
-validation modes or the two T1b forward scans — a grammar-valid frame on an
-arbitrary surrounding tape is decoded in exactly four physical TM steps.  The
-head advances by four, no tape cell changes, and the latch is carried
-through. -/
+validation modes, the two T1b forward scans, or the two T1c terminal scans — a
+grammar-valid frame on an arbitrary surrounding tape is decoded in exactly four
+physical TM steps.  The head advances by four, no tape cell changes, and the
+latch is carried through. -/
 theorem t1CS_frame_macrostep
     (n h : Nat) (hsafe : h + 4 < T1M.tapeLength n)
     (tape : Fin (T1M.tapeLength n) → Bool) (mode : T1Mode) (frame : T1Frame)
@@ -211,7 +213,7 @@ theorem t1CS_frame_macrostep
     (by rw [hcomplete]; exact hnext)]
   rw [hcomplete]
 
-/-! ## Stable sinks and idle boundary states -/
+/-! ## Stable `accept`/`reject` sinks -/
 
 private theorem t1CS_stepConfig_stay_self {n : Nat}
     (c : Configuration (M := T1M) n) (q : T1State)
@@ -266,31 +268,14 @@ theorem t1CS_runConfig_sink {n : Nat} (c : Configuration (M := T1M) n)
       rw [runConfig_succ, ih]
       exact t1CS_stepConfig_sink c q hq hs
 
-/-- **The success boundary is idle.**  This is one of the two states that
-replace T1a's idle `startMutation` handoff: `startMutation` is now an active
-mutation mode, and the two idle handoff points for T1c are `successStart`
-and `oobStart`.  The latched data value is preserved for T1c's output
-write. -/
-theorem t1CS_runConfig_successStart
-    (n h : Nat) (hh : h < T1M.tapeLength n)
-    (tape : Fin (T1M.tapeLength n) → Bool) (latch : Bool) (steps : Nat) :
-    TM.runConfig (M := T1M)
-        (t1AlignedConfig n h hh tape .successStart .p0 false false false latch)
-        steps =
-      t1AlignedConfig n h hh tape .successStart .p0 false false false latch :=
-  t1CS_runConfig_stay_self _ (t1SuccessState latch) rfl
-    (fun phase scan => t1Transition_successStart_idle phase latch scan) steps
+/-! ## The terminal boundaries are *not* idle
 
-/-- **The out-of-bounds boundary is idle.**  The second T1c handoff point. -/
-theorem t1CS_runConfig_oobStart
-    (n h : Nat) (hh : h < T1M.tapeLength n)
-    (tape : Fin (T1M.tapeLength n) → Bool) (latch : Bool) (steps : Nat) :
-    TM.runConfig (M := T1M)
-        (t1AlignedConfig n h hh tape .oobStart .p0 false false false latch)
-        steps =
-      t1AlignedConfig n h hh tape .oobStart .p0 false false false latch :=
-  t1CS_runConfig_stay_self _ (t1OobState latch) rfl
-    (fun phase scan => t1Transition_oobStart_idle phase latch scan) steps
+`successStart` and `oobStart` were idle handoff states through T1b; T1c-1
+activates both, so the two run theorems that asserted their idleness are
+gone.  The only stability results left are `t1CS_stepConfig_sink` /
+`t1CS_runConfig_sink` above, for `accept` and `reject`, which is where
+clock padding now happens.  The active boundary steps live in
+`TrueUniformSeekTerminalControl`. -/
 
 /-! ## Exact generic read-only validation -/
 

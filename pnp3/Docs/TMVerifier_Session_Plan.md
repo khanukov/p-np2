@@ -203,9 +203,12 @@ for leaving `startMutation`, probing data/OOB, installing and restoring cursor
 frames, marking one unary index frame as `spent`, and finding the next index or
 success anchor.  The capstones prove exact first-cursor installation from both
 the mutation boundary and the real initial configuration, and prove that an
-empty data region reaches the idle OOB boundary under the full public clock.
-Concrete index-zero, nonzero-index, and empty-data runs instantiate the public
-theorems.
+empty data region reaches the OOB boundary in exactly `4 * index + 12` steps
+from the mutation boundary.  Concrete index-zero, nonzero-index, and
+empty-data runs instantiate the public theorems.  T1c-1 subsequently makes
+the OOB boundary active, so the former full-public-clock empty-data theorem is
+intentionally superseded rather than retained with a false conclusion; the
+exact finite-prefix form is what remains.
 
 This T1b-A increment remains **Infrastructure**.  It does not prove the
 iterated `j → j+1` mutation invariant, successful runtime-index lookup,
@@ -226,7 +229,7 @@ decrement and cursor move in exactly `16*j+37` steps, producing the complete
 canonical `j+1` configuration.  `t1CS_loop_oob_exact` proves the exact companion
 path when no next data cell exists: after `16*j+32` steps the data field is
 cursor-free and restored, while the consumed index markers remain explicitly
-`spent`, and control is at the idle OOB boundary.
+`spent`, and control is at the OOB boundary.
 
 This slice is **Infrastructure**.  It does not yet iterate the one-step theorem
 over all unary index units or prove the final `getElem?` success/OOB split.
@@ -239,17 +242,34 @@ repair/output/acceptance work is owned by T1c.
 as `t1LoopSteps m = 8*m^2 + 29*m` and proves by genuine `TM.runConfig`
 induction that the installed cursor reaches every canonical `Σ(m)` allowed by
 the unary index and data bounds.  The success tail crosses the fully spent
-index field and reaches idle `successStart`; the OOB branches cover both empty
-and nonempty data.  Exact case theorems start from the real initial
+index field and reaches `successStart`; the OOB branches cover both empty and
+nonempty data.  Exact case theorems start from the real initial
 configuration and are keyed by `r.data[r.index]? = some v` or `none`.
 `t1CS_decideTotal_le_clock` proves every case fits the fixed public quadratic
-clock, and the public `T1M.run` theorems pad only with the already-proved idle
-success/OOB boundary behavior.
+clock.  The four public `T1M.run` theorems that padded the decision prefix with
+idle success/OOB boundary behavior were removed by T1c-1 below, which activated
+both boundaries; the exact finite-prefix `runConfig` picture is what remains.
 
 This remains **Infrastructure**: `successStart` and `oobStart` are semantic
 boundaries, not accept/reject states.  No temporary-marker repair, output write,
 malformed-input closure, or acceptance equivalence is claimed; those are T1c
 obligations.
+
+**T1c-1 terminal control activated (2026-08-23):**
+The same zero-parameter `t1CS` now contains fixed output traversal, cursor/data
+restoration setup, right-to-left `spent → index` repair, and final dispatch to
+the literal `t1AcceptState` or `t1RejectState` with scratch/latch cleared.  The
+ABI, one-phase architecture, and public quadratic clock are unchanged.
+`TrueUniformSeekTerminalControl.lean` proves genuine mode-level execution
+macros for entering both arms, writing a data/output frame, scanning/rewriting
+repair frames, and dispatching into the stable accept/reject sinks.
+
+Activating `successStart` and `oobStart` necessarily removes the former
+full-clock theorems that padded at those idle boundaries; all exact finite-prefix
+validation, seek-loop, and real-initialConfig decision theorems remain.  This
+slice is **Infrastructure** and does not yet compose the terminal macros over a
+whole canonical tape, prove complete restoration, pad through the final sinks,
+or establish `TM.accepts`/output correctness.  Those are T1c-2/T1c-3.
 
 **T1a review hardening (2026-08-23):** the generic forward-frame scanner
 `t1CS_scan_frames` and non-anchor reverse scanner `t1CS_rewind_tail` are public
@@ -292,12 +312,15 @@ control with one Boolean latch and the machine-only modes needed to create
 no runtime `Nat`, width, offset, or index enters the state or program term.
 Small transition-table lemmas feed the generic `ConstStatePhasedStepBridge`;
 the latch-aware validation module supplies reusable aligned right/left/stay
-step adapters and proves the success/OOB handoff states are stable.
+step adapters and, at the time, proved the success/OOB handoff states stable —
+superseded by T1c-1 above, which activates both.
 
-The control table is a **T1a/T1b-A fragment, not a complete T1 control**: the
-T1c transitions — index-field restoration, the output write, and acceptance —
-are absent from the table, not merely unproved.  No transition enters
-`accept`, and no transition leaves `successStart` or `oobStart`.
+As of that slice the control table was a **T1a/T1b-A fragment, not a complete
+T1 control**: the T1c transitions — index-field restoration, the output write,
+and acceptance — were absent from the table, not merely unproved; no transition
+entered `accept`, and no transition left `successStart` or `oobStart`.  T1c-1
+above supersedes that: the table is now complete, both boundaries are active,
+and `repairDone` enters `accept`/`reject`.
 
 The existing exact validation/rewind execution theorem still reaches the now
 active `startMutation` boundary at its finite prefix time with the complete tape

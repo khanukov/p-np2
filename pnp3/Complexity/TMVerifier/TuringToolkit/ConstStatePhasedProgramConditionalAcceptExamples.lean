@@ -31,8 +31,10 @@ def gateConstThenAcceptIfCS (b : Bool) (d : Nat) :
     ConstStatePhasedProgram (Bool × Bool) :=
   seq (gateConstCS b d) (acceptIfCellCS d)
 
-/-- The two standalone operands have definitionally equal clocks. -/
-@[simp] theorem gateConstCS_timeBound_eq_acceptIfCellCS_timeBound
+/-- The two standalone operands have definitionally equal clocks.  This is
+kept out of the simp set because `gateConstCS_timeBound` already rewrites the
+same left-hand side to its arithmetic normal form. -/
+theorem gateConstCS_timeBound_eq_acceptIfCellCS_timeBound
     (b : Bool) (d n : Nat) :
     (gateConstCS b d).timeBound n = (acceptIfCellCS d).timeBound n := rfl
 

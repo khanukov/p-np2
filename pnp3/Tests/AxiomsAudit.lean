@@ -15,6 +15,7 @@ import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
+import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekValidation
 
 /-!
   pnp3/Tests/AxiomsAudit.lean
@@ -72,6 +73,17 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.GateEvalCS.gateConstThenAcceptIfCS_timeBound
 #print axioms Internal.PsubsetPpoly.TM.GateEvalCS.gateConstThenAcceptIfCS_runSpec
 #print axioms Internal.PsubsetPpoly.TM.GateEvalCS.gateConstThenAcceptIfCS_accepts
+
+-- T1a fixed-control canonical validation and read-only rewind handoff.
+#print axioms Internal.PsubsetPpoly.TM.decodeT1Tape_encode
+#print axioms Internal.PsubsetPpoly.TM.decodeT1Tape?_eq_some
+#print axioms Internal.PsubsetPpoly.TM.t1CS_frame_macrostep
+#print axioms Internal.PsubsetPpoly.TM.t1CS_scan_frames
+#print axioms Internal.PsubsetPpoly.TM.t1CS_validate_encoded_exact
+#print axioms Internal.PsubsetPpoly.TM.t1CanonicalEncoderAutomatonTrace
+#print axioms Internal.PsubsetPpoly.TM.t1CS_rewind_tail
+#print axioms Internal.PsubsetPpoly.TM.t1CS_validate_rewind_encoded_exact
+#print axioms Internal.PsubsetPpoly.TM.t1CS_run_encoded_reaches_mutation
 
 -- Итоговые утверждения (формульная сепарация).
 #print axioms RefutedRoute_NP_not_subset_PpolyFormula_final

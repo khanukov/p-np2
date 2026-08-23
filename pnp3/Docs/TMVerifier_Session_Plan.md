@@ -198,8 +198,9 @@ T1b reuse surfaces, with exact import-side type probes and axiom audits.  Their
 shared public signature exposes only the concrete-machine abbreviation `T1M`
 in addition to the existing frame/tape/path vocabulary.  The public
 `t1CS_frame_macrostep` now takes the positive `T1ForwardMode` premise.  The
-clock theorem remains available by name but is not a simp rule, since the
-generic clock projections already select `t1Clock` as the simp normal form.
+clock theorem remains available by name but is not a simp rule: the generic
+clock projections stop at `t1CS.timeBound N`, and the named theorem supplies
+the explicit program-specific expansion to `t1Clock N` when needed.
 
 The pure parser is now canonical: `decodeT1Tape? bits = some r` implies
 `bits = encodeT1 r`.  Separately, `t1CanonicalEncoderAutomatonTrace` connects

@@ -94,8 +94,9 @@ def t1CS : ConstStatePhasedProgram T1State where
 
 /-- The public T1 clock in arithmetic normal form.  This theorem is kept out
 of the simp set because the generic `toTM_runTime` and `toPhased_timeBound`
-simps already reduce the same left-hand side to `t1Clock N`; callers can use
-this named theorem when they specifically want the expanded polynomial. -/
+simps already reduce the same left-hand side to `t1CS.timeBound N`; callers use
+this named theorem to take the additional program-specific step to the expanded
+polynomial `t1Clock N` without adding a competing default rewrite. -/
 theorem t1CS_runTime (N : Nat) :
     t1CS.toPhased.toTM.runTime N = 128 * (N + 1) ^ 2 + 128 := rfl
 

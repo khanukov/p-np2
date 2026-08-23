@@ -217,7 +217,9 @@ surface test, and the axiom audit.
 **T1b-B one-iteration loop delivered (2026-08-23):**
 `TuringToolkit/TrueUniformSeekMutationLoop.lean` defines the exact canonical
 loop configuration `t1MutationConfig r j`: `index^(k-j)`, `spent^j`, one cursor
-at data slot `j`, head immediately before that cursor, and latch `r.data[j]`.
+at data slot `j`, and head immediately before that cursor.  The constructor
+carries an explicit Boolean latch; the execution capstones identify it with
+`r.data[j]` through their `List.get?` hypotheses.
 The genuine theorem `t1CS_loop_iteration_exact` executes one full on-tape unary
 decrement and cursor move in exactly `16*j+37` steps, producing the complete
 canonical `j+1` configuration.  `t1CS_loop_oob_exact` proves the exact companion

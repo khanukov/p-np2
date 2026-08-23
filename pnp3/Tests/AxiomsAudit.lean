@@ -16,7 +16,7 @@ import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedStepBridgeExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
-import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekValidation
+import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekExamples
 
 /-!
   pnp3/Tests/AxiomsAudit.lean
@@ -116,9 +116,8 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.t1CS_rewind_tail
 #print axioms Internal.PsubsetPpoly.TM.t1CS_validate_rewind_encoded_exact
 
--- T1b-A1 fixed-control activation and generic-step adapters.  This slice
--- preserves the exact validation/rewind run to the now-active mutation handoff;
--- destructive execution capstones are isolated in the dependent T1b-A2 slice.
+-- T1b-A fixed-control mutation and genuine execution surfaces.  This slice
+-- stops before the j→j+1 loop, restoration, output, and acceptance.
 #print axioms Internal.PsubsetPpoly.TM.t1Transition_startMutation_active
 #print axioms Internal.PsubsetPpoly.TM.t1Transition_probeData_p3_data
 #print axioms Internal.PsubsetPpoly.TM.t1Transition_probeData_p3_oob
@@ -141,6 +140,26 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.t1CS_aligned_step_stay
 #print axioms Internal.PsubsetPpoly.TM.t1CS_runConfig_successStart
 #print axioms Internal.PsubsetPpoly.TM.t1CS_runConfig_oobStart
+#print axioms Internal.PsubsetPpoly.TM.t1CS_startMutation_walk
+#print axioms Internal.PsubsetPpoly.TM.t1CS_probeData_frame_data
+#print axioms Internal.PsubsetPpoly.TM.t1CS_probeData_frame_oob
+#print axioms Internal.PsubsetPpoly.TM.t1CS_turnInstall_step
+#print axioms Internal.PsubsetPpoly.TM.t1CS_writeCursor_frame
+#print axioms Internal.PsubsetPpoly.TM.t1CS_markSpent_frame
+#print axioms Internal.PsubsetPpoly.TM.t1CS_backupCursor_walk
+#print axioms Internal.PsubsetPpoly.TM.t1CS_writeData_frame
+#print axioms Internal.PsubsetPpoly.TM.t1CS_seekIndexBack_frame_skip
+#print axioms Internal.PsubsetPpoly.TM.t1CS_seekIndexBack_frame_mark
+#print axioms Internal.PsubsetPpoly.TM.t1CS_seekIndexBack_frame_success
+#print axioms Internal.PsubsetPpoly.TM.t1ListTape_write_frame
+#print axioms Internal.PsubsetPpoly.TM.t1MutationTape_zero
+#print axioms Internal.PsubsetPpoly.TM.t1CS_install_first_cursor_exact
+#print axioms Internal.PsubsetPpoly.TM.t1CS_runConfig_install_first_cursor_exact
+#print axioms Internal.PsubsetPpoly.TM.t1CS_oob_empty_data_exact
+#print axioms Internal.PsubsetPpoly.TM.t1CS_run_encoded_oob_empty_data
+#print axioms Internal.PsubsetPpoly.TM.t1bIndexZero_install
+#print axioms Internal.PsubsetPpoly.TM.t1bNonzeroIndex_install
+#print axioms Internal.PsubsetPpoly.TM.t1bEmptyData_oob
 
 -- Итоговые утверждения (формульная сепарация).
 #print axioms RefutedRoute_NP_not_subset_PpolyFormula_final

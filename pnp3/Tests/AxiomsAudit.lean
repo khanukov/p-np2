@@ -20,6 +20,7 @@ import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekExamples
 import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekMutationLoopExamples
 import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekMutationDriverExamples
 import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekTerminalExamples
+import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekSemanticsExamples
 import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekTerminalControl
 
 /-!
@@ -274,6 +275,32 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.t1c2SuccessOutputAt
 #print axioms Internal.PsubsetPpoly.TM.t1c2OobTerminal
 #print axioms Internal.PsubsetPpoly.TM.t1c2EmptyTerminal
+
+-- T1c-3 full canonical semantics: initialConfig→sink, fixed public clock,
+-- literal-state acceptance, output value and tape conservation.
+#print axioms Internal.PsubsetPpoly.TM.t1TotalSteps_some
+#print axioms Internal.PsubsetPpoly.TM.t1TotalSteps_none
+#print axioms Internal.PsubsetPpoly.TM.t1CS_runConfig_total_success_exact
+#print axioms Internal.PsubsetPpoly.TM.t1CS_runConfig_total_oob_exact
+#print axioms Internal.PsubsetPpoly.TM.t1CS_runConfig_total_oob_empty_exact
+#print axioms Internal.PsubsetPpoly.TM.t1CS_runConfig_total_reject_exact
+#print axioms Internal.PsubsetPpoly.TM.t1CS_totalSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.t1CS_run_success_exact
+#print axioms Internal.PsubsetPpoly.TM.t1CS_run_reject_exact
+#print axioms Internal.PsubsetPpoly.TM.t1CS_run_head_zero
+#print axioms Internal.PsubsetPpoly.TM.t1CS_accepts_eq_isSome
+#print axioms Internal.PsubsetPpoly.TM.t1CS_accepts_iff
+#print axioms Internal.PsubsetPpoly.TM.t1CS_accepts_eq_decide_lt
+#print axioms Internal.PsubsetPpoly.TM.t1CS_run_reject_not_accepts
+#print axioms Internal.PsubsetPpoly.TM.t1CS_run_success_tape_eq
+#print axioms Internal.PsubsetPpoly.TM.t1CS_run_output_at
+#print axioms Internal.PsubsetPpoly.TM.t1CS_run_tape_off
+#print axioms Internal.PsubsetPpoly.TM.t1CS_run_reject_tape_eq
+#print axioms Internal.PsubsetPpoly.TM.t1CS_canonical_semantics
+#print axioms Internal.PsubsetPpoly.TM.t1c3TrueAccepts
+#print axioms Internal.PsubsetPpoly.TM.t1c3FalseAccepts
+#print axioms Internal.PsubsetPpoly.TM.t1c3OobRejects
+#print axioms Internal.PsubsetPpoly.TM.t1c3EmptyRejects
 
 -- Итоговые утверждения (формульная сепарация).
 #print axioms RefutedRoute_NP_not_subset_PpolyFormula_final

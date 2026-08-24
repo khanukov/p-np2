@@ -287,6 +287,23 @@ This is still **Infrastructure**.  Composition from the real initial
 configuration through the terminal pass, final public-clock padding, and the
 `TM.accepts`/output semantic equivalence are deliberately deferred to T1c-3.
 
+**T1c-3 canonical semantics delivered (2026-08-23):**
+`TuringToolkit/TrueUniformSeekSemantics.lean` composes the exact decision and
+terminal prefixes from the real `initialConfig`, proves the total cost fits the
+unchanged fixed quadratic clock, and pads only in literal accept/reject sinks.
+For every canonical request `r`, the full machine satisfies
+`t1CS_accepts_eq_isSome`: `TM.accepts` is exactly
+`(r.data[r.index]?).isSome`.  Thus an in-range selected `false` bit is still a
+structurally successful accepting read whose output cell is `false`; OOB rejects.
+On success the full run changes only `t1OutputPosition r` and writes the
+selected bit there; on rejection the final tape is bit-for-bit the input tape;
+the final head is `0` in all cases.
+
+This closes the canonical fixed-machine runtime-addressing semantics as
+**Infrastructure**.  Theorems remain scoped to `encodeT1 r`; arbitrary raw
+trailing input retains the documented `T1Physical`/blank-suffix caveat.  No
+universal gate interpreter or content verifier is claimed by this result.
+
 **T1a review hardening (2026-08-23):** the generic forward-frame scanner
 `t1CS_scan_frames` and non-anchor reverse scanner `t1CS_rewind_tail` are public
 T1b reuse surfaces, with exact import-side type probes and axiom audits.  Their

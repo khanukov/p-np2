@@ -16,6 +16,7 @@ import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedStepBridgeExamples
 import Complexity.TMVerifier.TuringToolkit.FrameScannerProbe
 import Complexity.TMVerifier.TuringToolkit.FrameScannerT1
 import Complexity.TMVerifier.TuringToolkit.GateOneSemantics
+import Complexity.TMVerifier.TuringToolkit.GateOneScanner
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -176,6 +177,20 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1Request.getElem?_isSome_iff
 #print axioms Internal.PsubsetPpoly.TM.G1Request.spec_isSome_iff
 #print axioms Internal.PsubsetPpoly.TM.G1Request.g1_example_canonical_oob_not_wellFormed
+
+-- T2a, control layer: the frame-level correspondence between the fixed
+-- forward control and the pure parser -- the machine language *is* the
+-- canonical grammar -- and the same control as an instance of the generic
+-- frame-scanner kernel.  Still no execution capstone and no acceptance.
+#print axioms Internal.PsubsetPpoly.TM.g1AdvanceList_encode
+#print axioms Internal.PsubsetPpoly.TM.g1AdvanceList_encode_reject
+#print axioms Internal.PsubsetPpoly.TM.g1_structure_of_accepts
+#print axioms Internal.PsubsetPpoly.TM.g1ValidPath_of_accepts
+#print axioms Internal.PsubsetPpoly.TM.g1Automaton_accepts_iff_decode
+#print axioms Internal.PsubsetPpoly.TM.g1CanonicalEncoderAutomatonTrace_iff
+#print axioms Internal.PsubsetPpoly.TM.g1FrameScanner_frameMacrostep
+#print axioms Internal.PsubsetPpoly.TM.g1FrameScanner_scanFrames
+#print axioms Internal.PsubsetPpoly.TM.g1FrameScanner_accepts_iff_decode
 
 -- T1a fixed-control canonical validation and read-only rewind handoff.
 #print axioms Internal.PsubsetPpoly.TM.decodeT1Tape_encode

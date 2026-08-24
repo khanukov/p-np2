@@ -320,6 +320,39 @@ kernel at the existing T1 machine and pins named regression theorems.
 This is **Infrastructure** for the fixed unary gate interpreter.  It proves no
 gate semantics, multi-gate evaluation, verifier correctness or lower bound.
 
+**T2a unary one-gate ABI and pure semantics delivered (2026-08-24):**
+Two modules under `TuringToolkit/` open the fixed one-gate interpreter with its
+**pure** layer only: the encoding its parser accepts, and the gate semantics
+that encoding denotes.
+
+* `GateOneEncoding.lean` — a **fresh** four-bit unary ABI, independent of the
+  width-parameterised `SLGate.encode`.  `blank` stays `0000`; `argSep` is
+  `1011`; `spent`/`cursor` are the two machine-internal markers the planned
+  destructive read needs; `1101`–`1111` are reserved and rejected.  The
+  canonical word is
+  `bof · tag^g · argSep · index^arg1 · argSep · index^arg2 · separator ·
+  data(vals) · output(false) · finish`, with the unary tag
+  `input 1, const 2, not 3, and 4, or 5` and an explicit arity convention
+  (`arg2 = 0` for arity-1 tags, `arg1 ≤ 1` for `const`).  `decodeG1Tape?_iff`
+  characterises the pure parser exactly: a bit list decodes to `r` iff it is
+  literally `encodeG1 r` with `r` canonical, so wrong tag counts, wrong
+  arity/unused fields, missing delimiters, reserved codes and malformed
+  canonical words are rejected.  Exact length and output-cell theorems are
+  proved.
+* `GateOneSemantics.lean` — the pure `G1Request.spec : Option Bool`, operand
+  selection by partial list indexing (`vals[i]?`), with branch simplification
+  theorems, out-of-range and non-canonical `none` theorems, and concrete
+  examples including a successful `false` result.
+
+This layer is **Infrastructure**, and it is purely definitional: it declares no
+Turing machine.  The fixed zero-parameter finite control that validates this
+ABI, the frame-level correspondence between that control and the parser above,
+and the exact validation/rewind execution capstone are **explicitly deferred**
+to the following layers and are claimed nowhere here.  Also deferred, as
+before: operand execution, combine/write/repair, `TM.run`/`TM.accepts` and any
+full-clock theorem, the `SLGate` bridge, the multi-gate evaluator, and any
+verifier obligation or lower bound.
+
 **T1a review hardening (2026-08-23):** the generic forward-frame scanner
 `t1CS_scan_frames` and non-anchor reverse scanner `t1CS_rewind_tail` are public
 T1b reuse surfaces, with exact import-side type probes and axiom audits.  Their

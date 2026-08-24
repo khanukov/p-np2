@@ -15,6 +15,7 @@ import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedStepBridgeExamples
 import Complexity.TMVerifier.TuringToolkit.FrameScannerProbe
 import Complexity.TMVerifier.TuringToolkit.FrameScannerT1
+import Complexity.TMVerifier.TuringToolkit.GateOneSemantics
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -147,6 +148,17 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.t1FrameScanner_st0
 #print axioms Internal.PsubsetPpoly.TM.t1FrameScanner_frameMacrostep
 #print axioms Internal.PsubsetPpoly.TM.t1FrameScanner_scanFrames
+
+-- T2a, pure layer: the fresh unary one-gate ABI, its exact parser
+-- characterisation, and the pure gate semantics.  These are parser/spec
+-- surfaces only: no machine, no execution, no acceptance, no
+-- gate-evaluation or verifier claim.
+#print axioms Internal.PsubsetPpoly.TM.decodeG1Tape_encode
+#print axioms Internal.PsubsetPpoly.TM.decodeG1Tape?_eq_some
+#print axioms Internal.PsubsetPpoly.TM.decodeG1Tape?_iff
+#print axioms Internal.PsubsetPpoly.TM.decodeG1FrameList?_reject_tagRun
+#print axioms Internal.PsubsetPpoly.TM.encodeG1_getElem?_outputPosition
+#print axioms Internal.PsubsetPpoly.TM.G1Request.spec_eq_none_of_not_canonical
 
 -- T1a fixed-control canonical validation and read-only rewind handoff.
 #print axioms Internal.PsubsetPpoly.TM.decodeT1Tape_encode

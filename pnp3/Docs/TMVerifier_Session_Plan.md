@@ -320,11 +320,9 @@ kernel at the existing T1 machine and pins named regression theorems.
 This is **Infrastructure** for the fixed unary gate interpreter.  It proves no
 gate semantics, multi-gate evaluation, verifier correctness or lower bound.
 
-**T2a unary one-gate ABI, semantics and fixed control delivered (2026-08-24):**
-Four modules under `TuringToolkit/` build the fixed one-gate interpreter's ABI,
-its pure semantics, and the one zero-parameter finite control whose forward
-table decides that ABI's canonical grammar, on top of the generic
-frame-scanner kernel.
+**T2a unary one-gate interpreter foundation delivered (2026-08-24):**
+Six modules under `TuringToolkit/` build the dependency-closed foundation of
+the fixed one-gate interpreter on top of the generic frame-scanner kernel.
 
 * `GateOneEncoding.lean` — a **fresh** four-bit unary ABI, independent of the
   width-parameterised `SLGate.encode`.  `blank` stays `0000`; `argSep` is
@@ -380,16 +378,71 @@ frame-scanner kernel.
   `g1FrameScanner_validPath` identify the kernel's frame language with the
   control's, and `g1FrameScanner_frameLanguage_iff_decode` transfers the pure
   parser correspondence to the kernel's `advanceList` fold.
+* `GateOneValidation.lean` — the executable capstone.  From the real
+  `G1M.initialConfig (g1Point (encodeG1 r))` of a **canonical** `r`, exactly
+  `g1ReadBHandoffSteps r = 2 * (encodeG1 r).length + 9` genuine
+  `TM.runConfig` steps perform read-only canonical grammar validation and
+  rewind, ending at head `0` in the local `readBStart` handoff with frame
+  position `p0`, all three frame-buffer cells `false`, context `g1Ctx0`, and
+  the tape bit-for-bit the initial tape.  Exact validation
+  (`g1CS_validate_encoded_exact`) and exact reverse scan
+  (`g1CS_rewind_tail`) are separate public components.
 
-This layer is **Infrastructure**.  It delivers the pure frame-table/parser
-correspondence and two exact generic-kernel `TM.runConfig` primitives:
-`g1FrameScanner_frameMacrostep` and `g1FrameScanner_scanFrames`, with their
-four-steps-per-frame clocks.  Their end-to-end composition with physical
-validation/rejection, rewind, and the `readBStart` handoff is **explicitly
-deferred** to the next layer; no full-clock or acceptance theorem is claimed.
-Also deferred, as before: operand execution, combine/write/repair,
-`TM.run`/`TM.accepts`, the `SLGate` bridge, the multi-gate evaluator, and every
-verifier or lower-bound obligation.
+  The `r.Canonical` hypothesis is matched by a proved converse:
+  `g1CS_validate_noncanonical_reject_exact` runs the *same* fixed
+  `(encodeG1 r).length + 4`-step validation prefix from the same real initial
+  configuration on a noncanonical request and lands in the literal
+  `g1RejectState` with the tape exactly unchanged, and
+  `g1CS_noncanonical_ne_readB` records that the pass-B handoff is therefore
+  never reached.  The head is deliberately not pinned in the rejection
+  statement: it stops on the offending frame.
+* `GateOneExamples.lean` — named examples: round trip, every listed rejection,
+  the pure semantics, the capstone at every gate tag, and concrete
+  *machine-level* rejections of every noncanonical class — the two wrong
+  tag-count classes at frame-word level (`automaton_reject_zero_tags`,
+  `automaton_reject_six_tags`; wrong tag counts are not expressible as
+  `encodeG1Frames r`, since `G1Tag.units` is always `1 … 5`), and
+  `const` with `arg1 = 2` plus `input`/`not`/`const` with `arg2 > 0` as exact
+  TM runs (`machine_reject_*`, `machine_no_handoff_*`).
+
+This slice is **Infrastructure**.  It is not a universal gate interpreter, not
+a multi-gate evaluator, not a content verifier and not a lower bound.  The
+following are **explicitly deferred** and are not claimed anywhere:
+
+* **operand execution** — the pass-B/pass-A destructive index reads that
+  resolve `arg1`/`arg2` against the data region;
+* **combine, write and repair** — computing the gate value, writing it into
+  the `output` cell, and the `spent ↦ index` restoration pass;
+* **full run and acceptance** — `TM.run`, `TM.accepts`, and any full-clock
+  theorem.  `readBStart` is idle in this slice only and T2b activates it, so
+  only the exact prefix statement above is proved; `g1ReadBHandoffSteps ≤
+  g1Clock` records solely that the proved prefix fits the public clock;
+* **the `SLGate` bridge** — the pure `G1Request.ofGate` / `spec_ofGate`
+  relation to `SLGate.compute`;
+* **the multi-gate evaluator** — `SLProgram.eval`-style iteration;
+* **the verifier** — no `CanonicalAsymptoticVerifierComponents` obligation is
+  reduced, and no runtime-polynomial verifier claim is made.
+
+Every execution theorem is scoped to `encodeG1 r`; no execution claim is made
+for physically padded tapes.  The rejection theorems are likewise scoped: they
+are about the canonical encoding of a *noncanonical request*, not about an
+arbitrary padded or malformed physical tape.  The head, state and tape scope is
+explicit: the canonical capstone pins head, state *and* tape, while the
+rejection statement pins state and tape but deliberately not the head.
+
+**T2a correction (2026-08-24).**  The first T2a head shipped a permissive
+forward table (`vTag` looping on every `tag`, `vArg1`/`vArg2` looping on every
+`index`) whose language was strictly larger than `G1Request.Canonical`, while
+the comments, theorem names and this document described it as "the canonical
+grammar".  Two independent reviews agreed the brief's §3 requires machine
+enforcement, not a label.  The control was redesigned as described above; the
+success surfaces `g1ValidationPath`, `g1ValidationAdvance`,
+`g1CS_validate_encoded_exact`, `g1CS_validate_rewind_readB_exact`,
+`g1CS_readB_head/state/tape` and `g1CanonicalEncoderAutomatonTrace` now take
+`r.Canonical`, and the correspondence and rejection surfaces listed above were
+added.  Step arithmetic is unchanged: no motion or step count of the control
+was altered, so `2 * (encodeG1 r).length + 9`, the clock bound and every
+head/tape projection are the same literals as before.
 
 **T1a review hardening (2026-08-23):** the generic forward-frame scanner
 `t1CS_scan_frames` and non-anchor reverse scanner `t1CS_rewind_tail` are public

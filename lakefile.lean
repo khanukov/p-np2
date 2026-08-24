@@ -117,6 +117,11 @@ lean_lib PnP3 where
     -- (`GateOneScanner`).  Execution is registered in the next layer.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneControl,
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneScanner,
+    -- T2a, execution layer: the exact validation/rewind capstone from the
+    -- real initial configuration (`GateOneValidation`) and the per-tag named
+    -- examples (`GateOneExamples`).
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneValidation,
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneExamples,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -277,6 +282,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMFrameScannerSurfaceTests,
     Glob.one `Tests.TMGateOnePureSurfaceTests,
     Glob.one `Tests.TMGateOneControlSurfaceTests,
+    Glob.one `Tests.TMGateOneExecutionSurfaceTests,
     Glob.one `Tests.FormulaSupportBoundsFalsifiabilityProbe,
     Glob.one `Tests.SmokeTests,
     Glob.one `Tests.UnitTests,

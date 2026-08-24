@@ -19,6 +19,7 @@ import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcc
 import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekExamples
 import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekMutationLoopExamples
 import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekMutationDriverExamples
+import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekTerminalExamples
 import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekTerminalControl
 
 /-!
@@ -245,6 +246,28 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.t1CS_repairDone_reject
 #print axioms Internal.PsubsetPpoly.TM.t1CS_repairDone_accept_stable
 #print axioms Internal.PsubsetPpoly.TM.t1CS_repairDone_reject_stable
+
+-- T1c-2 composite output/repair execution to literal accept/reject sinks.
+#print axioms Internal.PsubsetPpoly.TM.t1OutputFrames_count_spent
+#print axioms Internal.PsubsetPpoly.TM.t1OutputFrames_count_index
+#print axioms Internal.PsubsetPpoly.TM.t1CS_success_final_tape_eq
+#print axioms Internal.PsubsetPpoly.TM.t1CS_success_final_tape_off
+#print axioms Internal.PsubsetPpoly.TM.t1CS_success_final_tape_at
+#print axioms Internal.PsubsetPpoly.TM.t1CS_oob_final_tape_eq
+#print axioms Internal.PsubsetPpoly.TM.t1CS_repair_scan_skip
+#print axioms Internal.PsubsetPpoly.TM.t1CS_repair_cycle
+#print axioms Internal.PsubsetPpoly.TM.t1CS_repair_spent_run
+#print axioms Internal.PsubsetPpoly.TM.t1CS_repair_pass_exact
+#print axioms Internal.PsubsetPpoly.TM.t1CS_output_write_exact
+#print axioms Internal.PsubsetPpoly.TM.t1TerminalSteps_some
+#print axioms Internal.PsubsetPpoly.TM.t1TerminalSteps_none
+#print axioms Internal.PsubsetPpoly.TM.t1CS_terminal_success_exact
+#print axioms Internal.PsubsetPpoly.TM.t1CS_terminal_oob_exact
+#print axioms Internal.PsubsetPpoly.TM.t1CS_terminal_oob_empty_exact
+#print axioms Internal.PsubsetPpoly.TM.t1c2SuccessTerminal
+#print axioms Internal.PsubsetPpoly.TM.t1c2SuccessOutputAt
+#print axioms Internal.PsubsetPpoly.TM.t1c2OobTerminal
+#print axioms Internal.PsubsetPpoly.TM.t1c2EmptyTerminal
 
 -- Итоговые утверждения (формульная сепарация).
 #print axioms RefutedRoute_NP_not_subset_PpolyFormula_final

@@ -276,7 +276,7 @@ theorem g1CS_round_example_state :
 The whole tape after 151 steps is the thirteen-frame word
 `bof · tag⁴ · argSep · argSep · spent · separator · data true · output false ·
 finish · blank`; by `g1RoundExample_initial_tape` the initial tape is the same
-word with `index` in that seventh frame, so exactly the four cells `28 … 31`
+word with `index` in that eighth frame, so exactly the four cells `28 … 31`
 changed. -/
 theorem g1CS_round_example_tape :
     (TM.runConfig (M := G1M)

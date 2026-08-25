@@ -86,6 +86,11 @@ lean_lib PnP3 where
     Glob.one `Complexity.TMVerifier.TuringToolkit.FrameScannerCodec,
     Glob.one `Complexity.TMVerifier.TuringToolkit.FrameScannerKernel,
     Glob.one `Complexity.TMVerifier.TuringToolkit.FrameScannerProbe,
+    -- Reverse/write half of the same kernel: right-to-left frame scanning and
+    -- four-cell frame replacement, with a second non-T1 genericity probe.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.FrameScannerReverse,
+    Glob.one `Complexity.TMVerifier.TuringToolkit.FrameScannerWrite,
+    Glob.one `Complexity.TMVerifier.TuringToolkit.FrameScannerReverseProbe,
     Glob.one `Complexity.TMVerifier.TuringToolkit.RowConsistencyCheck,
     Glob.one `Complexity.TMVerifier.TuringToolkit.TrueUniformSeekEncoding,
     Glob.one `Complexity.TMVerifier.TuringToolkit.TrueUniformSeek,
@@ -121,6 +126,8 @@ lean_lib PnP3 where
     -- real initial configuration (`GateOneValidation`) and the per-tag named
     -- examples (`GateOneExamples`).
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneValidation,
+    -- T1/G1 instances of the generic reverse frame-scanner kernel.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.FrameScannerReverseInstances,
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneExamples,
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneRouting,
     -- T2b, pass-B execution layer: the exact `TM.runConfig` route capstones
@@ -286,6 +293,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMTrueUniformSeekSemanticsSurfaceTests,
     Glob.one `Tests.TMStepBridgeSurfaceTests,
     Glob.one `Tests.TMFrameScannerSurfaceTests,
+    Glob.one `Tests.TMFrameScannerReverseSurfaceTests,
     Glob.one `Tests.TMGateOnePureSurfaceTests,
     Glob.one `Tests.TMGateOneControlSurfaceTests,
     Glob.one `Tests.TMGateOneRoutingSurfaceTests,

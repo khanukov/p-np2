@@ -601,6 +601,90 @@ This slice is **Infrastructure**, not P-vs-NP mainline progress: it is a
 finite-control tape-reading capability, not a gate evaluator, not a content
 verifier and not a lower bound.
 
+**Generic reverse frame kernel and four-cell frame write delivered
+(2026-08-25):**
+
+The prerequisite named in the T2b read-B design audit — "extract a generic
+reverse four-bit scanner with a finite context update, plus generic
+`writeFrame`, frame-replacement and rewrite-cycle lemmas" — is delivered in its
+reverse-scan and single-frame-write parts.  Four modules under `TuringToolkit/`
+add the mutation-side half of the frame kernel; no existing control table,
+theorem statement or step count was changed.
+
+* `FrameScannerReverse.lean` — the generic **reverse** kernel.  A
+  `ReverseFrameScanner S F Mode Aux` is parameterised by a fixed
+  `ConstStatePhasedProgram S`, its phase, a fixed-width `FrameCodec F`, a
+  reverse frame table `revAdvance`/`revComplete`, a reverse-mode predicate, a
+  `Stop` predicate, and the five aligned state constructors
+  `rst3/rst2/rst1/rst0`/`stopState`.  Its proof obligations are **one codec law
+  and five concrete transition tuple equalities** — there is no semantic
+  correctness field and no "desired run" field, and every execution theorem is
+  derived through `ConstStatePhasedStepBridge`, so no instance can hand the
+  kernel a finished theorem.  Proved: `revFrameMacrostep` (one frame right to
+  left in exactly four `TM.stepConfig`s, head `base + 3 ↦ base - 1`, tape and
+  carried context untouched), `revAnchorStep` (the stopping frame: the fourth
+  step *stays*, head lands on `base` in `stopState`), `revScanFrames` (exact
+  `List` induction over an arbitrary `pre ++ anchor :: scanned ++ suffix`
+  layout: exactly `4 * scanned.length` steps, right-to-left fold order, head
+  `4 * (pre.length + scanned.length) + 3 ↦ 4 * pre.length + 3`), its
+  `_tape`/`_state`/`_head` projections, `revValidPath_const` (homogeneous
+  runs), and `revScanToAnchor` (the generic rewind).  The `Phased` namespace
+  holds the shared aligned-configuration constructor and the three step
+  adapters.
+* `FrameScannerWrite.lean` — the generic **four-cell write/replacement** layer.
+  `writeFrame4` with its pointwise `writeFrame4_apply`;
+  `writeFrame4_frameListTape`, the frame-replacement law on an *arbitrary*
+  surrounding frame list, proved for an arbitrary codec with no case split on a
+  frame type; `FrameWriter.writeMacrostep`, the exact four-step machine macro
+  for a control that writes a supplied 4-bit code while walking across the
+  frame (exact head, exit state, carried context and pointwise tape); and
+  `FrameWriter.writeFrameOnList`, their composition — four genuine TM steps
+  replace one frame of an arbitrary frame list.
+* `FrameScannerReverseProbe.lean` — the genericity probe, with **no T1
+  import**.  A frame alphabet whose five codewords are `1011`, `1100`, `1101`,
+  `1110`, `1111` — every one of them outside the eleven codes `T1Frame` uses —
+  two *distinct* reverse modes so the mode argument of `revAdvance` is
+  genuinely used, a control state whose carried context is a Boolean *triple*,
+  and its own program and clock.  It ends in two concrete executable runs that
+  hold for **every** input length `n` with no side hypothesis:
+  `revProbeCS_scan_word` (twenty genuine TM steps rewind
+  `anchor · cell true · mark · cell false · spent` and stop on the anchor,
+  having switched reverse mode at `mark`) and `revProbeCS_write_cell` (four
+  genuine TM steps replace one frame, with the exact resulting tape).
+* `FrameScannerReverseInstances.lean` — the concrete instances.
+  `t1RevScanner` and `g1RevScanner` instantiate the kernel at the *existing*
+  T1 and G1 rewinds, discharging every obligation from the existing standalone
+  `t1Transition_rewind_*` / `g1Transition_rewind_*` tuple lemmas;
+  `t1RevScanner_rewind_tail` and `g1RevScanner_rewind_tail` are the named
+  regressions, matching `t1CS_rewind_tail` and `g1CS_rewind_tail` in statement
+  shape (the T1 one additionally generalises the latch, which the original
+  fixes to `false`).  No control table was touched: in particular
+  `bRoundStart` is still idle and the G1 clock, grammar and step arithmetic are
+  the same literals as before.
+
+`Tests/TMFrameScannerReverseSurfaceTests.lean` pins the public surface and
+`Tests/AxiomsAudit.lean` audits the generic capstones, both probe runs and both
+regressions; all of them depend only on `propext`, `Classical.choice` and
+`Quot.sound`.
+
+This slice is **Infrastructure**.  It proves no gate semantics, no addressing,
+no acceptance and no verifier claim, and it does not by itself execute any new
+`G1` pass.  The following are **explicitly deferred** and claimed nowhere:
+
+* **the leftward frame writer** — the mirror image of `FrameWriter` that walks
+  `p3 … p0` while writing, as T1's `writeCursor`/`outWriteOut` do;
+* **the generic 13-step rewrite-cycle composition** matching T1's
+  `spent ↦ index` cycle — it needs the leftward writer plus a
+  seek-until-marker driver on top of this layer, and is the immediately
+  following slice.  Only the exact generic reverse scan and the exact generic
+  single-frame write are capstones here;
+* **the G1 pass-B destructive index walk** — the kernel is a prerequisite for
+  it, not a proof of it.  `bRoundStart` remains idle and
+  `g1_bScan_index_deferred` is unchanged;
+* **non-canonical or physically padded tapes** — every statement is about a
+  list-backed tape layout supplied to it, exactly as in the forward kernel.
+
+
 **T2a correction (2026-08-24).**  The first T2a head shipped a permissive
 forward table (`vTag` looping on every `tag`, `vArg1`/`vArg2` looping on every
 `index`) whose language was strictly larger than `G1Request.Canonical`, while

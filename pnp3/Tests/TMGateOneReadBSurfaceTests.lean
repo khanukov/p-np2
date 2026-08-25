@@ -1,25 +1,24 @@
+import Complexity.TMVerifier.TuringToolkit.GateOneIndexRound
 import Complexity.TMVerifier.TuringToolkit.GateOneReadBExamples
 
 /-!
 # G1 one-gate interpreter, pass-B execution layer: surface tests
 
-Import-side contracts for the T2b pass-B *execution* surface: the exact
+Import-side contracts for the T2b pass-B *execution* surface: exact
 `TM.runConfig` route capstones from the real initial configuration
 `G1M.initialConfig (g1Point (encodeG1 r))`, the `const` literal decode, the
-zero-index operand-2 read, the stable out-of-range boundary, the deferred
-positive-index boundary, the idleness of the five handoffs, and the named
-per-route examples.  The frame-level routing itself is pinned by
-`Tests.TMGateOneRoutingSurface`; only the newly added deferred route is
-re-pinned here.
+zero-index operand-2 read, the stable out-of-range boundary, the four idle
+handoffs, named per-route examples, and the T2b-2 destructive index round
+(bridge, fourteen-step composition, and one concrete request).
 
-The initial-configuration arrival capstones pinned here are scoped to
-`encodeG1 r` and stop at a handoff.  Local adapters intentionally use arbitrary
-aligned tapes; post-boundary `+ k`/`+ m` stability pins have no public-clock
-bound.  In particular there is **no** `TM.run`, `TM.accepts`,
-output-write, combine, pass-A or `spec`-correctness surface, and the `arg2 > 0`
-operand-2 walk is pinned only *up to* the deferred `bRoundStart` boundary,
-together with the fact that the machine never leaves it.  This is an audit
-surface: it pins public signatures, it does not prove anything new.
+The initial-configuration capstones are scoped to the exact tape `encodeG1 r`.
+Local adapters intentionally use arbitrary aligned tapes; post-boundary
+stability pins have no public-clock bound.  There is **no** `TM.run`,
+`TM.accepts`, output-write, combine, pass-A or `spec`-correctness surface, and
+no surface claiming more than **one** destructive round for `arg2 > 0`:
+nothing pins iteration, runtime addressing, a positive-index operand-value
+read, or acceptance.  This is an audit surface: it pins public signatures and
+proves nothing new.
 -/
 
 namespace Pnp3.Tests.TMGateOneReadBSurface
@@ -27,13 +26,15 @@ namespace Pnp3.Tests.TMGateOneReadBSurface
 open Pnp3.Internal.PsubsetPpoly
 open Pnp3.Internal.PsubsetPpoly.TM
 
-/-! ## The deferred positive-index route, at frame level -/
+/-! ## The positive-index route, at frame level -/
 
 #check @g1RoundRouteFrames
 #check @g1RoundRouteFrames_length
 #check @g1RoundRoute_split
 #check @g1RoundRoute_advance
 #check @g1RoundRoute_validPath
+#check @g1_bScan_index_bridge
+#check @g1_bRoundStart_stuck
 
 /-! ## Budget: the routes fit the tape and the unchanged public clock -/
 
@@ -60,12 +61,10 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1CS_step_constLit
 #check @g1CS_step_store
 
-/-! ## The five handoffs, all idle in this slice -/
-
+-- The four remaining handoffs, all idle in this slice.
 #check @g1CS_runConfig_readA_idle
 #check @g1CS_runConfig_combine_idle
 #check @g1CS_runConfig_readAReset_idle
-#check @g1CS_runConfig_round_idle
 #check @g1CS_runConfig_oob_sink
 
 /-! ## The exact route capstones from the real initial configuration -/
@@ -78,7 +77,7 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1CS_readB_zero_oob_exact
 #check @g1CS_readB_zero_oob_stable
 #check @g1CS_readB_round_deferred_exact
-#check @g1CS_readB_round_deferred_stable
+
 
 /-! ## The components of the capstones -/
 
@@ -121,10 +120,7 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @G1Examples.readB_const_true_clock
 #check @G1Examples.readB_field_route_and
 #check @G1Examples.readB_field_route_or
-#check @G1Examples.readB_round_and
-#check @G1Examples.readB_round_or
-#check @G1Examples.readB_round_and_stable
-#check @G1Examples.readB_deferred_at_index
+#check @G1Examples.readB_bridge_at_index
 #check @G1Examples.readB_and_true
 #check @G1Examples.readB_and_false
 #check @G1Examples.readB_or_true
@@ -238,20 +234,6 @@ theorem check_g1CS_readB_zero_oob_ne_success (ctx : G1Ctx) :
     g1OOBState g1Ctx0 ≠ g1ReadAResetState ctx :=
   g1CS_readB_zero_oob_ne_success ctx
 
-/-- **The deferred positive-index boundary, and the fact that nothing passes
-it.**  For `arg2 > 0` the machine stops at `bRoundStart` and stays there for
-every further budget, so no runtime-index addressing is claimed. -/
-theorem check_g1CS_readB_round_deferred_stable (r : G1Request)
-    (hc : r.Canonical) (ht : r.tag = .and ∨ r.tag = .or) (k : Nat)
-    (h2 : r.arg2 = k + 1) (m : Nat) :
-    TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
-        (g1ReadBHandoffSteps r + 4 * (r.tag.units + r.arg1 + 4) + m) =
-      g1AlignedConfig (encodeG1 r).length (4 * (r.tag.units + r.arg1 + 4))
-        (g1_route_lt_tapeLength r _ (by omega))
-        (G1M.initialConfig (g1Point (encodeG1 r))).tape
-        .bRoundStart .p0 false false false g1Ctx0 :=
-  g1CS_readB_round_deferred_stable r hc ht k h2 m
-
 /-- The `const` boundary is idle: nothing combines, writes or accepts. -/
 theorem check_g1CS_runConfig_combine_idle (n h : Nat)
     (hh : h < G1M.tapeLength n) (tape : Fin (G1M.tapeLength n) → Bool)
@@ -269,5 +251,32 @@ theorem check_g1RoundRoute_split (r : G1Request) (k : Nat)
           (r.vals.map .data ++ [.output false, .finish, .blank])) =
       encodeG1Frames r ++ [.blank] :=
   g1RoundRoute_split r k h2
+
+-- T2b-2: the destructive index round.  One round, executed; no iteration,
+-- addressing or `arg2 > 0` value-read surface is pinned here.
+#check @g1RoundRouteFrames
+#check @g1RoundRouteRest
+#check @g1RoundRouteFrames_length
+#check @g1RoundRoute_split
+#check @g1RoundRoute_advance
+#check @g1RoundRoute_validPath
+#check @g1RoundBoundarySteps
+#check @g1IndexRoundSteps
+#check @g1RoundBoundarySteps_eq
+#check @g1IndexRoundSteps_eq
+#check @g1IndexRoundSteps_le_clock
+#check @g1CS_step_round_bridge
+#check @g1CS_readB_round_boundary
+#check @g1CS_round_from_bridge
+#check @g1CS_index_first_round
+#check @g1RoundExample
+#check @g1RoundExample_canonical
+#check @g1RoundExampleInitFrames
+#check @g1RoundExampleFrames
+#check @g1RoundExample_initial_tape
+#check @g1CS_round_example_head
+#check @g1CS_round_example_state
+#check @g1CS_round_example_tape
+#check @g1CS_round_example_clock
 
 end Pnp3.Tests.TMGateOneReadBSurface

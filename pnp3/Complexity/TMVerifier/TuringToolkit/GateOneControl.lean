@@ -83,19 +83,44 @@ At the separator it enters `bProbe`, which reads the selected data frame:
 `readAResetStart`, while the `output` destination frame means the index ran off
 the end of the data region and hands off to the stable `bOOB` boundary.
 
-**What is deferred.**  `bScan` reaching an *unspent* `index` frame means the
-operand-2 index is non-zero and the deferred destructive index walk is needed;
-that row hands off to the idle `bRoundStart`, and no theorem of this
-development runs the machine out of it.  So the physically executed operand
-read is exactly the zero-index one; `arg2 > 0` reaches `bRoundStart` and stops
-there, which the execution layer proves as an exact endpoint plus a stability
-statement (`g1CS_readB_round_deferred_exact`,
-`g1CS_readB_round_deferred_stable`).
-`readAStart`, `combineStart`, `readAResetStart`, `bRoundStart` and `bOOB` are
-idle handoffs in this slice, and **no full-clock or acceptance theorem is
-stated** — such a theorem would become false once those handoffs do work.
-`accept`/`reject` are the two stable sinks; only their tuple equations are
-proved.
+## One destructive round
+
+`bScan` reaching an *unspent* `index` frame means the operand-2 index is
+non-zero, and the T2b-2 slice activates that branch: `bRoundStart` is **no
+longer idle**.  It is a one-step *bridge*.  The forward table enters it having
+just completed the `index` frame, so the head sits on the first cell of the
+*next* frame; the bridge steps once to the left, onto the last cell of that
+`index`, and enters `bWalk` — the reverse-aligned entry of a right-to-left
+frame read.  From there four modes perform exactly one `index ↦ spent` round:
+
+* `bWalk` reads a frame right to left (`p3 … p0`) and *stops* on an `index`,
+  entering the write handoff on that frame's first cell without moving; any
+  other frame continues the reverse walk one frame further left;
+* `bMark` writes the four literal cells of `spent` (`1100`) left to right,
+  independently of what it overwrites;
+* `bBack` walks the four cells back leftwards, writing back what it reads;
+* `bHop` takes one further left step and re-enters `bWalk` on the last cell of
+  the preceding frame.
+
+`4 + 4 + 4 + 1 = 13` steps, so a bridge plus a round is exactly fourteen.  This
+is the machine shape of one destructive index round and nothing more: the
+composed theorems of `FrameRewriteCycleInstances` and `GateOneIndexRound` run
+**one** round.  Iterating the round, addressing a runtime index, terminating
+the walk, restoring the data region, acceptance and rejection are all outside
+this slice and none of them is claimed.
+
+In particular `bWalk` stops **only** on an `index` frame, and nothing here says
+that it ever meets one: a walk that does not is simply an unclaimed run (at head
+zero a `Move.left` stays, by `Configuration.moveHead`).  Every round theorem
+takes its head-safety premise from the caller and states exactly the fourteen or
+thirteen steps it executes.
+
+**What is deferred.**  `readAStart`, `combineStart` and `readAResetStart` are
+idle handoffs in this slice.  `bOOB` is a stable read boundary, distinct from
+the reject state, rather than a rejection verdict.  There is **no full-clock or
+acceptance theorem** — the public clock is unchanged and only the proved
+prefixes are bounded.  `accept`/`reject` are the two stable sinks; only their
+tuple equations are proved.
 
 **Proof discipline.**  Everything below `g1Transition` is a small standalone
 tuple lemma proved by `rfl` after at most one mode split.  Downstream
@@ -122,9 +147,12 @@ walk the operand-2 region and read the selected data frame.
 
 `constFalse`/`constTrue` and `bStoreFalse`/`bStoreTrue` are the four one-step
 dispatch modes that write the decoded Boolean into `G1Ctx.vB`.
-`readAStart`, `combineStart`, `readAResetStart`, `bRoundStart` and `bOOB` are
-the five local handoffs, idle in this slice; `accept`/`reject` are the
-sinks. -/
+
+`bRoundStart` is the one-step bridge into the destructive round and
+`bWalk`/`bMark`/`bBack`/`bHop` are its reverse read, its fixed-code write, its
+back-walk and its hop.  `readAStart`, `combineStart`, `readAResetStart` and
+`bOOB` are the four remaining local handoffs, idle in this slice;
+`accept`/`reject` are the sinks. -/
 inductive G1Mode
   | vBof
   | vTag0 | vTag1 | vTag2 | vTag3 | vTag4 | vTag5
@@ -137,7 +165,8 @@ inductive G1Mode
   | rConst0 | rConst1 | rArg1Binary
   | bScan | bProbe
   | constFalse | constTrue | bStoreFalse | bStoreTrue
-  | readAStart | combineStart | readAResetStart | bRoundStart | bOOB
+  | bRoundStart | bWalk | bMark | bBack | bHop
+  | readAStart | combineStart | readAResetStart | bOOB
   | accept | reject
   deriving Fintype, DecidableEq, Repr
 
@@ -211,9 +240,22 @@ operand-2 value and the data cursor has to be reset before pass A. -/
 def g1ReadAResetState (ctx : G1Ctx) : G1State :=
   g1State .readAResetStart .p0 false false false ctx
 
-/-- The entry point of the deferred destructive index walk. -/
+/-- **The bridge state of the destructive index round.**  The forward table
+lands here having just completed an unspent `index` frame, so the head is on
+the first cell of the *next* frame; one step to the left re-aligns it on the
+last cell of that `index` in `g1WalkState`. -/
 def g1RoundState (ctx : G1Ctx) : G1State :=
   g1State .bRoundStart .p0 false false false ctx
+
+/-- **The reverse-aligned entry of the index round.**  Head on the last cell of
+the frame about to be read right to left, frame buffer empty. -/
+def g1WalkState (ctx : G1Ctx) : G1State :=
+  g1State .bWalk .p3 false false false ctx
+
+/-- **The write handoff of the index round.**  Head on the first cell of the
+`index` frame the reverse read stopped on. -/
+def g1MarkState (ctx : G1Ctx) : G1State :=
+  g1State .bMark .p0 false false false ctx
 
 /-- The stable out-of-range boundary of the operand read. -/
 def g1OOBState (ctx : G1Ctx) : G1State :=
@@ -299,7 +341,7 @@ def g1Advance : G1Mode → G1Frame → G1Mode
   -- the probe.  A data frame before the separator is malformed and rejects.
   | .bScan, .spent => .bScan
   | .bScan, .separator => .bProbe
-  | .bScan, .index => .bRoundStart   -- deferred: the destructive index walk
+  | .bScan, .index => .bRoundStart   -- the bridge into the destructive round
   -- the probe reads the selected data frame, or runs off the data region
   | .bProbe, .data false => .bStoreFalse
   | .bProbe, .data true => .bStoreTrue
@@ -315,12 +357,13 @@ def g1Complete (mode : G1Mode) (b0 b1 b2 b3 : Bool) : G1Mode :=
 /-- The modes that read one frame left to right through `g1Advance`.  Both the
 validation scan (`vBof … vBlank`) and the pass-B rescan (`readBStart`,
 `rTag0 … rTag5`, `rConst0`/`rConst1`, `rArg1Binary`, `bScan`, `bProbe`) are
-forward modes; the rewind, the four dispatch modes, the five handoffs and the
-two sinks are not. -/
+forward modes; the rewind, the four dispatch modes, the five modes of the
+destructive round, the four remaining handoffs and the two sinks are not. -/
 def G1ForwardMode : G1Mode → Prop
   | .rewindStart | .rewind
   | .constFalse | .constTrue | .bStoreFalse | .bStoreTrue
-  | .readAStart | .combineStart | .readAResetStart | .bRoundStart | .bOOB
+  | .bRoundStart | .bWalk | .bMark | .bBack | .bHop
+  | .readAStart | .combineStart | .readAResetStart | .bOOB
   | .accept | .reject => False
   | _ => True
 
@@ -335,7 +378,8 @@ theorem G1ForwardMode.readBStart : G1ForwardMode .readBStart := trivial
 
 /-- **Stuck modes.**  A mode from which the forward table can read nothing: it
 completes every frame into `reject`, and it is not the end-of-input mode.  In
-particular the four dispatch modes, the five handoffs and the `reject` sink are
+particular the four dispatch modes, the five modes of the destructive round,
+the four remaining handoffs and the `reject` sink are
 stuck; `rewind` and `accept` also satisfy this table-level predicate but are
 unreachable as results of `g1Advance`;
 the point of the predicate is that a stuck mode can never fold to
@@ -400,7 +444,10 @@ theorem g1AdvanceList_ne_rewindStart_of_stuck {mode : G1Mode} (h : G1Stuck mode)
       decide
 
 /-- **The forward table only ever produces a forward mode, `rewindStart`, or a
-stuck mode.**  Every non-forward routing target reads nothing further. -/
+stuck mode.**  In particular `rewind` and `accept` are unreachable from any
+scan, and every non-forward target of the table (the four dispatch modes, the
+round's five modes, the four idle handoffs, the `reject` sink) reads nothing
+further. -/
 theorem g1Advance_range (mode : G1Mode) (frame : G1Frame) :
     G1ForwardMode (g1Advance mode frame) ∨
       g1Advance mode frame = .rewindStart ∨
@@ -1026,12 +1073,39 @@ def g1Transition (_phase : Fin 1) (s : G1State) (scan : Bool) :
   match s.mode with
   | .accept => (0, g1AcceptState, scan, .stay)
   | .reject => (0, g1RejectState, scan, .stay)
-  -- the five local handoffs: idle in this slice, each its own stable state
+  -- the four remaining local handoffs: idle in this slice, each its own stable
+  -- state
   | .readAStart => (0, g1ReadAState s.ctx, scan, .stay)
   | .combineStart => (0, g1CombineState s.ctx, scan, .stay)
   | .readAResetStart => (0, g1ReadAResetState s.ctx, scan, .stay)
-  | .bRoundStart => (0, g1RoundState s.ctx, scan, .stay)
   | .bOOB => (0, g1OOBState s.ctx, scan, .stay)
+  -- the destructive index round: bridge, reverse read, fixed-code write,
+  -- back-walk, hop.  Nothing here inspects the request: the four written cells
+  -- are the literal codeword of `spent`, and every other row writes back the
+  -- cell it scanned.
+  | .bRoundStart => (0, g1WalkState s.ctx, scan, .left)
+  | .bWalk =>
+      match s.position with
+      | .p3 => (0, g1State .bWalk .p2 false false scan s.ctx, scan, .left)
+      | .p2 => (0, g1State .bWalk .p1 false scan s.b2 s.ctx, scan, .left)
+      | .p1 => (0, g1State .bWalk .p0 scan s.b1 s.b2 s.ctx, scan, .left)
+      | .p0 =>
+          if decodeG1Frame? [scan, s.b0, s.b1, s.b2] = some .index then
+            (0, g1MarkState s.ctx, scan, .stay)
+          else (0, g1WalkState s.ctx, scan, .left)
+  | .bMark =>
+      match s.position with
+      | .p0 => (0, g1State .bMark .p1 false false false s.ctx, true, .right)
+      | .p1 => (0, g1State .bMark .p2 false false false s.ctx, true, .right)
+      | .p2 => (0, g1State .bMark .p3 false false false s.ctx, false, .right)
+      | .p3 => (0, g1State .bBack .p0 false false false s.ctx, false, .right)
+  | .bBack =>
+      match s.position with
+      | .p0 => (0, g1State .bBack .p1 false false false s.ctx, scan, .left)
+      | .p1 => (0, g1State .bBack .p2 false false false s.ctx, scan, .left)
+      | .p2 => (0, g1State .bBack .p3 false false false s.ctx, scan, .left)
+      | .p3 => (0, g1State .bHop .p0 false false false s.ctx, scan, .left)
+  | .bHop => (0, g1WalkState s.ctx, scan, .left)
   -- the four dispatch modes: store the decoded Boolean in `vB`, do not move
   | .constFalse => (0, g1CombineState (s.ctx.withVB false), scan, .stay)
   | .constTrue => (0, g1CombineState (s.ctx.withVB true), scan, .stay)
@@ -1089,8 +1163,10 @@ carries. -/
 
 `readBStart` no longer appears here: it is a genuine forward frame-reading
 mode and its steps come from the four `g1Transition_forward_*` lemmas below.
-The five handoffs are idle **in this slice**; the deferred pass-A, combine and
-index-walk slices replace those five equations. -/
+`bRoundStart` no longer appears here either: it is the genuine one-step bridge
+of the destructive round and its tuple is `g1Transition_bRoundStart_bridge`
+below.  The four remaining handoffs are idle **in this slice**; the deferred
+pass-A and combine slices replace those four equations. -/
 
 @[simp] theorem g1Transition_accept_sink (phase : Fin 1) (scan : Bool) :
     g1Transition phase g1AcceptState scan = (0, g1AcceptState, scan, .stay) :=
@@ -1114,11 +1190,6 @@ theorem g1Transition_readAResetStart_idle (phase : Fin 1)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
     g1Transition phase (g1State .readAResetStart position b0 b1 b2 ctx) scan =
       (0, g1ReadAResetState ctx, scan, .stay) := rfl
-
-theorem g1Transition_bRoundStart_idle (phase : Fin 1)
-    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
-    g1Transition phase (g1State .bRoundStart position b0 b1 b2 ctx) scan =
-      (0, g1RoundState ctx, scan, .stay) := rfl
 
 /-- **The out-of-range boundary is stable.**  It never moves, never writes and
 never leaves itself. -/
@@ -1243,5 +1314,114 @@ theorem g1Transition_rewind_p0_other (phase : Fin 1) (b0 b1 b2 scan : Bool)
     g1Transition phase (g1State .rewind .p0 b0 b1 b2 ctx) scan =
       (0, g1State .rewind .p3 false false false ctx, scan, .left) := by
   rw [g1Transition_rewind_p0_raw, if_neg hne]
+
+/-! ### The destructive index round
+
+Fourteen tuples: the bridge, four reverse-read steps (the last one splitting on
+whether the completed frame is the `index` marker), four fixed-code writes, four
+back-walk steps and the hop.  Every one of them is `rfl` after at most one
+position split, and none of them mentions the request. -/
+
+/-- **The bridge.**  Entered just after a scanned `index` frame, with the head
+on the first cell of the next frame, one step to the left re-aligns the control
+on the last cell of that `index` in the reverse-read entry shape.  The scanned
+cell is written back, so the tape does not change. -/
+theorem g1Transition_bRoundStart_bridge (phase : Fin 1)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State .bRoundStart position b0 b1 b2 ctx) scan =
+      (0, g1WalkState ctx, scan, .left) := rfl
+
+theorem g1Transition_bWalk_p3 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .bWalk .p3 b0 b1 b2 ctx) scan =
+      (0, g1State .bWalk .p2 false false scan ctx, scan, .left) := rfl
+
+theorem g1Transition_bWalk_p2 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .bWalk .p2 b0 b1 b2 ctx) scan =
+      (0, g1State .bWalk .p1 false scan b2 ctx, scan, .left) := rfl
+
+theorem g1Transition_bWalk_p1 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .bWalk .p1 b0 b1 b2 ctx) scan =
+      (0, g1State .bWalk .p0 scan b1 b2 ctx, scan, .left) := rfl
+
+private theorem g1Transition_bWalk_p0_raw (phase : Fin 1)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State .bWalk .p0 b0 b1 b2 ctx) scan =
+      (if decodeG1Frame? [scan, b0, b1, b2] = some .index then
+          (0, g1MarkState ctx, scan, .stay)
+        else (0, g1WalkState ctx, scan, .left)) :=
+  rfl
+
+/-- **The marker stops the reverse read.**  On an `index` frame the fourth step
+*stays*, so the head is left on that frame's first cell, and the control enters
+the write handoff. -/
+theorem g1Transition_bWalk_p0_index (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) (heq : decodeG1Frame? [scan, b0, b1, b2] = some .index) :
+    g1Transition phase (g1State .bWalk .p0 b0 b1 b2 ctx) scan =
+      (0, g1MarkState ctx, scan, .stay) := by
+  rw [g1Transition_bWalk_p0_raw, if_pos heq]
+
+/-- **Any other frame continues the reverse read** one frame further left. -/
+theorem g1Transition_bWalk_p0_other (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) (hne : decodeG1Frame? [scan, b0, b1, b2] ≠ some .index) :
+    g1Transition phase (g1State .bWalk .p0 b0 b1 b2 ctx) scan =
+      (0, g1WalkState ctx, scan, .left) := by
+  rw [g1Transition_bWalk_p0_raw, if_neg hne]
+
+/-! The four write rows.  Each writes a **fixed** cell of `G1Frame.spent.bits =
+[true, true, false, false]` and moves right, whatever it scans: the code is in
+the finite control, not on the tape. -/
+
+theorem g1Transition_bMark_p0 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .bMark .p0 b0 b1 b2 ctx) scan =
+      (0, g1State .bMark .p1 false false false ctx, true, .right) := rfl
+
+theorem g1Transition_bMark_p1 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .bMark .p1 b0 b1 b2 ctx) scan =
+      (0, g1State .bMark .p2 false false false ctx, true, .right) := rfl
+
+theorem g1Transition_bMark_p2 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .bMark .p2 b0 b1 b2 ctx) scan =
+      (0, g1State .bMark .p3 false false false ctx, false, .right) := rfl
+
+theorem g1Transition_bMark_p3 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .bMark .p3 b0 b1 b2 ctx) scan =
+      (0, g1State .bBack .p0 false false false ctx, false, .right) := rfl
+
+/-! The four back-walk rows and the hop.  All five write back the scanned cell,
+so they are tape-preserving. -/
+
+theorem g1Transition_bBack_p0 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .bBack .p0 b0 b1 b2 ctx) scan =
+      (0, g1State .bBack .p1 false false false ctx, scan, .left) := rfl
+
+theorem g1Transition_bBack_p1 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .bBack .p1 b0 b1 b2 ctx) scan =
+      (0, g1State .bBack .p2 false false false ctx, scan, .left) := rfl
+
+theorem g1Transition_bBack_p2 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .bBack .p2 b0 b1 b2 ctx) scan =
+      (0, g1State .bBack .p3 false false false ctx, scan, .left) := rfl
+
+theorem g1Transition_bBack_p3 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .bBack .p3 b0 b1 b2 ctx) scan =
+      (0, g1State .bHop .p0 false false false ctx, scan, .left) := rfl
+
+/-- **The hop.**  One further left step re-enters the reverse read on the last
+cell of the frame preceding the rewritten one. -/
+theorem g1Transition_bHop (phase : Fin 1) (position : G1FramePosition)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State .bHop position b0 b1 b2 ctx) scan =
+      (0, g1WalkState ctx, scan, .left) := rfl
 
 end Pnp3.Internal.PsubsetPpoly.TM

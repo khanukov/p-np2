@@ -13,11 +13,18 @@ the matching general theorem instantiated at a concrete canonical request, i.e.
 a genuine finite run of the one fixed machine from its **real** initial
 configuration.  Nothing depends on this module; it is an audit surface.
 
-The value reads and the out-of-range example all have `arg2 = 0`: that is the
-case in which the operand-2 walk terminates without the destructive index walk,
-which this slice does not build.  The `arg2 = 1` examples stop either at the
-operand-2 field (`readB_field_route_and`) or at the deferred `bRoundStart`
-boundary (`readB_round_and`), and nothing runs past the latter.
+Every capstone below is the exact `TM.runConfig` statement of the matching
+general theorem instantiated at a concrete canonical request, i.e. a genuine
+finite run of the one fixed machine from its **real** initial configuration.
+
+The two `and`/`or` value reads and the out-of-range example all have
+`arg2 = 0`: that is the case in which the operand-2 walk terminates without any
+destructive round.  The `arg2 = 1` example stops at the operand-2 field
+(`g1CS_readB_route_binary_exact`) and the frame-level lemma
+`readB_bridge_at_index` records that the very next frame sends the control to
+the `bRoundStart` bridge.  The executed bridge and the one destructive round
+behind it are in `GateOneIndexRound`, whose own concrete example runs the same
+shape of request for exactly one round.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -142,53 +149,23 @@ abbrev FieldRouteAt (r : G1Request) : Prop :=
       (G1M.initialConfig (g1Point (encodeG1 r))).tape
       .bScan .p0 false false false g1Ctx0
 
-/-- `reqAnd` has `arg2 = 1`, so the head sits on the first cell of `index^1`. -/
+/-- `reqAnd` has `arg2 = 1`, so this is the last endpoint the *pass-B read*
+proves for it: the head sits on the first cell of `index^1`.  One destructive
+round past it is `GateOneIndexRound`. -/
 theorem readB_field_route_and : FieldRouteAt reqAnd :=
   g1CS_readB_route_binary_exact reqAnd reqAnd_canonical (Or.inl rfl)
 
 theorem readB_field_route_or : FieldRouteAt reqOr :=
   g1CS_readB_route_binary_exact reqOr reqOr_canonical (Or.inr rfl)
 
-/-! ## The deferred positive-index boundary
-
-`reqAnd` and `reqOr` have `arg2 = 1`.  Four further steps read the unspent
-`index` unit and the fixed control stops at `bRoundStart` — the entry point of
-the destructive index walk this slice does not build.  That is the last exact
-endpoint proved for those two requests. -/
-
-/-- The deferred-boundary capstone statement, at a concrete request. -/
-abbrev RoundRouteAt (r : G1Request) : Prop :=
-  TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
-      (g1RoundRouteSteps r) =
-    g1AlignedConfig (encodeG1 r).length (4 * (r.tag.units + r.arg1 + 4))
-      (g1_route_lt_tapeLength r _ (by omega))
-      (G1M.initialConfig (g1Point (encodeG1 r))).tape
-      .bRoundStart .p0 false false false g1Ctx0
-
-theorem readB_round_and : RoundRouteAt reqAnd :=
-  g1CS_readB_round_deferred_exact reqAnd reqAnd_canonical (Or.inl rfl) 0 rfl
-
-theorem readB_round_or : RoundRouteAt reqOr :=
-  g1CS_readB_round_deferred_exact reqOr reqOr_canonical (Or.inr rfl) 0 rfl
-
-/-- **Nothing runs past the deferred boundary.**  Whatever further budget is
-given, the machine is still at `bRoundStart`, with the tape untouched. -/
-theorem readB_round_and_stable (m : Nat) :
-    TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 reqAnd)))
-        (g1RoundRouteSteps reqAnd + m) =
-      g1AlignedConfig (encodeG1 reqAnd).length
-        (4 * (reqAnd.tag.units + reqAnd.arg1 + 4))
-        (g1_route_lt_tapeLength reqAnd _ (by omega))
-        (G1M.initialConfig (g1Point (encodeG1 reqAnd))).tape
-        .bRoundStart .p0 false false false g1Ctx0 :=
-  g1CS_readB_round_deferred_stable reqAnd reqAnd_canonical (Or.inl rfl) 0 rfl m
-
-/-- **The deferred branch, at frame level.**  From the operand-2 field of a
-request with `arg2 > 0` the very next frame is an unspent `index`, and the
-fixed control hands off to `bRoundStart`. -/
-theorem readB_deferred_at_index (rest : List G1Frame) :
+/-- **The bridge branch, named.**  From the operand-2 field of a request with
+`arg2 > 0` the very next frame is an unspent `index`, and the fixed control
+hands off to `bRoundStart`, the one-step bridge into the destructive round.  The
+executed round is `GateOneIndexRound.g1CS_index_first_round`; this lemma is only
+the frame-level handoff. -/
+theorem readB_bridge_at_index (rest : List G1Frame) :
     g1AdvanceList .bScan (.index :: rest) = g1AdvanceList .bRoundStart rest :=
-  g1_bScan_index_deferred rest
+  g1_bScan_index_bridge rest
 
 /-! ## Genuine operand-2 reads out of the data region
 

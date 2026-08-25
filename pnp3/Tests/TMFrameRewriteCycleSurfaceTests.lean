@@ -7,7 +7,8 @@ import Complexity.TMVerifier.TuringToolkit.FrameRewriteCycleInstances
 Pins the generic leftward writer, the seek-until-marker driver, the exact
 thirteen-step frame rewrite cycle with its frame-list and seek forms, the
 non-T1 probe with its four concrete runs, the T1 regressions, the G1 seek
-instantiation, and the exact (still undischarged) G1 cycle obligation.
+instantiation, G1's `index -> spent` round as a genuine instance, and the G1
+cycle obligation together with its constructed inhabitant.
 -/
 namespace Pnp3.Tests.TMFrameRewriteCycleSurface
 
@@ -47,10 +48,20 @@ open Pnp3.Internal.PsubsetPpoly.TM.FrameScan
 #check @t1RepairCycle_repair_cycle_onList
 #check @t1OutWriter
 #check @t1OutWriter_outWriteOut_frame
--- G1: the seek at existing modes, and the exact deferred obligation
+-- G1: the seek at the rewind modes, the destructive index round as a genuine
+-- instance, and the now-inhabited obligation
 #check @g1RevScanner_seek_bof
+#check @g1IndexRevAdvance
+#check @g1IndexRevComplete
+#check @G1IndexWalkMode
+#check @G1IndexStop
+#check @g1IndexScanner
+#check @g1IndexCycle
+#check @g1CS_index_round
+#check @g1CS_index_round_onList
 #check @G1RewriteCycleObligation
 #check @G1RewriteCycleObligation.machine_eq
+#check @g1RewriteCycleObligation
 #check @G1RewriteCycleObligation.rewrite_cycle
 
 end Pnp3.Tests.TMFrameRewriteCycleSurface

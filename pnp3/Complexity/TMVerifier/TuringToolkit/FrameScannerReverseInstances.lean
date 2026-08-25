@@ -6,9 +6,24 @@ import Complexity.TMVerifier.TuringToolkit.GateOneValidation
 /-!
 # T1 and G1 as instances of the generic reverse frame-scanner kernel
 
-Instantiate the generic reverse kernel at the existing T1/G1 rewinds and
-re-derive their exact reverse-tail contracts.  Obligations use existing tuple
-lemmas; no transition table, clock, or prior theorem is changed.
+Both existing rewinds are the same machine shape — three leftward buffering
+steps, then a frame-position-0 decision that either steps left again or stays
+in a local handoff — and both are proved separately today, in
+`TrueUniformSeekValidation` and in `GateOneValidation`.  This module
+instantiates `ReverseFrameScanner` at each of them and re-derives the two
+public reverse-scan theorems from the *generic* induction:
+`t1RevScanner_rewind_tail` matches `t1CS_rewind_tail`'s statement shape (and
+generalises its latch), `g1RevScanner_rewind_tail` matches `g1CS_rewind_tail`'s.
+
+Neither existing theorem is changed or removed; the point is that the generic
+kernel reproduces the same execution, so the next reverse pass — `G1`'s pass-B
+operand walk — need not duplicate the stack a third time.
+
+All obligations of both instances are discharged by the *existing* standalone
+transition-table lemmas (`t1Transition_rewind_*`, `g1Transition_rewind_*`);
+neither `t1Transition` nor `g1Transition` is unfolded here, and no control
+table is modified.  The two scanners here are the two *rewinds*; G1's
+destructive index walk is a separate instance (`g1IndexScanner`).
 -/
 namespace Pnp3.Internal.PsubsetPpoly.TM
 

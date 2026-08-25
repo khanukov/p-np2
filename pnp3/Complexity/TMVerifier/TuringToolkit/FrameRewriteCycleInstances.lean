@@ -25,23 +25,26 @@ context — and `t1OutWriter_outWriteOut_frame` matches
 
 ## G1
 
-`g1RevScanner_seek_bof` instantiates the new seek-until-marker driver at G1's
-**existing** rewind modes in the `pre = []` case: an arbitrary run of
-non-anchor frames is crossed and
-the anchor read in exactly `4 * tail.length + 4` steps, landing at head `0` in
-the `readBStart` handoff.  No control table is touched and `bRoundStart` stays
-idle.
-`g1CS` has **no** destructive walk modes — no write, walk-back or hop rows exist
-for it — so **no G1 rewrite cycle is claimed here**.  What is provided instead
-is a core obligation: `G1RewriteCycleObligation` fixes a `FrameRewriteCycle`
-whose scanner's program is `g1CS`, codec is `g1FrameCodec`, and direction is
-`index ↦ spent`.  It intentionally does not fix the scanner state embedding;
-the next G1 slice must additionally prove its cycle starts from the aligned
-pass-B state before using the conditional execution theorem.
-`machine_eq` records that such a cycle's machine is literally `G1M`, and
-`rewrite_cycle` derives the thirteen-step `index ↦ spent` run from it by the
-generic theorem verbatim.  Both are conditional on data that does not exist
-yet; nothing below executes `g1CS` past `bRoundStart`.
+`g1RevScanner_seek_bof` instantiates the seek-until-marker driver at G1's
+rewind modes: an arbitrary run of non-anchor frames is crossed and the anchor
+read in exactly `4 * tail.length + 4` steps, landing at head `0` in the
+`readBStart` handoff.
+
+`g1IndexScanner` and `g1IndexCycle` then instantiate the reverse kernel and the
+rewrite cycle at G1's **destructive round**: the `bWalk`/`bMark`/`bBack`/`bHop`
+rows of `g1Transition`, with `marker = index` and `target = spent`.  All
+obligations are the standalone tuple lemmas of `GateOneControl`; `g1Transition`
+is not unfolded here.  `g1CS_index_round` and `g1CS_index_round_onList` are the
+resulting thirteen-step runs of the fixed machine `G1M`, on an arbitrary tape
+and on an arbitrary frame list.
+
+`G1RewriteCycleObligation` is the pinning record the previous slice deferred —
+program `g1CS`, codec `g1FrameCodec`, direction `index ↦ spent`, seek/stop modes
+and *all* aligned-state constructors literally G1's own — and
+`g1RewriteCycleObligation` **constructs it**, so `rewrite_cycle` is no longer
+conditional on absent data.  The bridge that reaches this cycle from a real
+execution, and the composed round, are in `GateOneIndexRound`; nothing here or
+there runs more than one round.
 -/
 namespace Pnp3.Internal.PsubsetPpoly.TM
 
@@ -305,8 +308,8 @@ theorem t1OutWriter_outWriteOut_frame (n base : Nat) (hpos : 0 < base)
 /-- **The generic seek-until-marker at G1's existing rewind.**  An arbitrary run
 of non-anchor frames is crossed right to left and the anchor read, in exactly
 `4 * tail.length + 4` genuine TM steps, landing at head `0` in the pass-B
-handoff with the list-backed tape and the whole `G1Ctx` untouched.  No control
-table is touched; `bRoundStart` stays idle. -/
+handoff with the list-backed tape and the whole `G1Ctx` untouched.  This uses
+only the rewind modes; the destructive round below is separate. -/
 theorem g1RevScanner_seek_bof (n : Nat) (tail suffix : List G1Frame)
     (ctx : G1Ctx) (hne : ∀ f ∈ tail, f ≠ .bof)
     (hsafe : 4 * tail.length + 4 < G1M.tapeLength n) :
@@ -325,18 +328,221 @@ theorem g1RevScanner_seek_bof (n : Nat) (tail suffix : List G1Frame)
     trivial (by simp [G1RewindStop]) hskip rfl (by simpa using hsafe)
   simpa [g1RevScanner] using h
 
-/-! ## G1: the exact obligation of the deferred destructive walk -/
-/-- **What the next G1 slice must build.**  A rewrite cycle *of the fixed
-control `g1CS`*: the program equation is the whole content, since a cycle at
-any other program says nothing about `G1M`.  `g1CS` has no write, walk-back or
-hop rows today, so this structure has no inhabitant in this development and
-nothing below claims one. -/
+/-! ## G1: the destructive index round, concretely
+
+The four rows `bWalk`/`bMark`/`bBack`/`bHop` of `g1Transition` are exactly the
+generic reverse scanner plus the generic rewrite cycle at `marker = index`,
+`target = spent`.  Every obligation below is discharged by a *standalone tuple
+lemma* of `GateOneControl`; `g1Transition` is not unfolded here. -/
+
+/-- G1's right-to-left index table: an `index` frame stops the reverse walk at
+the write handoff, every other frame continues it one frame further left. -/
+def g1IndexRevAdvance : G1Mode → G1Frame → G1Mode
+  | _, .index => .bMark
+  | _, _ => .bWalk
+
+/-- The bit-level form of `g1IndexRevAdvance`, as `g1Transition` computes it. -/
+def g1IndexRevComplete (_mode : G1Mode) (b0 b1 b2 b3 : Bool) : G1Mode :=
+  match decodeG1Frame? [b0, b1, b2, b3] with
+  | some .index => .bMark
+  | _ => .bWalk
+
+/-- The single G1 mode of the round that reads frames right to left. -/
+def G1IndexWalkMode : G1Mode → Prop
+  | .bWalk => True
+  | _ => False
+
+theorem G1IndexWalkMode.eq {m : G1Mode} (h : G1IndexWalkMode m) : m = .bWalk := by
+  cases m <;> simp_all [G1IndexWalkMode]
+
+/-- The reverse walk of the round stops exactly at the write handoff. -/
+def G1IndexStop (mode : G1Mode) : Prop := mode = .bMark
+
+private theorem g1IndexRevComplete_stop_iff (m : G1Mode) (b0 b1 b2 b3 : Bool) :
+    g1IndexRevComplete m b0 b1 b2 b3 = .bMark ↔
+      decodeG1Frame? [b0, b1, b2, b3] = some .index := by
+  unfold g1IndexRevComplete
+  cases h : decodeG1Frame? [b0, b1, b2, b3] with
+  | none => simp
+  | some f => cases f <;> simp
+
+private theorem g1IndexRevComplete_ne (m : G1Mode) {b0 b1 b2 b3 : Bool}
+    (h : ¬ G1IndexStop (g1IndexRevComplete m b0 b1 b2 b3)) :
+    g1IndexRevComplete m b0 b1 b2 b3 = .bWalk := by
+  unfold g1IndexRevComplete at h ⊢
+  cases hd : decodeG1Frame? [b0, b1, b2, b3] with
+  | none => rfl
+  | some f => cases f <;> simp_all [G1IndexStop]
+
+/-- **G1's index walk is an instance of the generic reverse kernel.**  The
+carried context is the full `G1Ctx` triple, threaded through unchanged. -/
+def g1IndexScanner : ReverseFrameScanner G1State G1Frame G1Mode G1Ctx where
+  program := g1CS
+  phase := g1CS.startPhase
+  codec := g1FrameCodec
+  Stop := G1IndexStop
+  revAdvance := g1IndexRevAdvance
+  revComplete := g1IndexRevComplete
+  Reverse := G1IndexWalkMode
+  rst3 := fun m ctx => g1State m .p3 false false false ctx
+  rst2 := fun m ctx b3 => g1State m .p2 false false b3 ctx
+  rst1 := fun m ctx b2 b3 => g1State m .p1 false b2 b3 ctx
+  rst0 := fun m ctx b1 b2 b3 => g1State m .p0 b1 b2 b3 ctx
+  stopState := fun m ctx => g1State m .p0 false false false ctx
+  revComplete_decode := by
+    intro m f b0 b1 b2 b3 h
+    have h' : decodeG1Frame? [b0, b1, b2, b3] = some f := h
+    unfold g1IndexRevComplete
+    rw [h']
+    cases f <;> rfl
+  rstep_p3 := by
+    intro m hm ctx scan
+    obtain rfl := hm.eq
+    exact g1Transition_bWalk_p3 g1CS.startPhase false false false scan ctx
+  rstep_p2 := by
+    intro m hm ctx b3 scan
+    obtain rfl := hm.eq
+    exact g1Transition_bWalk_p2 g1CS.startPhase false false b3 scan ctx
+  rstep_p1 := by
+    intro m hm ctx b2 b3 scan
+    obtain rfl := hm.eq
+    exact g1Transition_bWalk_p1 g1CS.startPhase false b2 b3 scan ctx
+  rstep_p0 := by
+    intro m hm ctx b1 b2 b3 scan hne
+    obtain rfl := hm.eq
+    rw [g1IndexRevComplete_ne _ hne]
+    refine g1Transition_bWalk_p0_other g1CS.startPhase b1 b2 b3 scan ctx ?_
+    exact fun hidx => hne ((g1IndexRevComplete_stop_iff _ _ _ _ _).mpr hidx)
+  rstep_p0_stop := by
+    intro m hm ctx b1 b2 b3 scan hstop
+    obtain rfl := hm.eq
+    rw [show g1IndexRevComplete .bWalk scan b1 b2 b3 = .bMark from hstop]
+    exact g1Transition_bWalk_p0_index g1CS.startPhase b1 b2 b3 scan ctx
+      ((g1IndexRevComplete_stop_iff _ _ _ _ _).mp hstop)
+
+/-- **G1's `index ↦ spent` round is an instance of the generic rewrite
+cycle.**  The nine cycle tuples are the standalone `g1Transition_bMark_*`,
+`g1Transition_bBack_*` and `g1Transition_bHop` lemmas of `GateOneControl`; the
+write half is entered at the scanner's own stop state, so the reverse read and
+the write are glued by definitional equality of the configuration. -/
+def g1IndexCycle : FrameRewriteCycle G1State G1Frame G1Mode G1Ctx where
+  scanner := g1IndexScanner
+  seekMode := .bWalk
+  stopMode := .bMark
+  marker := .index
+  target := .spent
+  w0 := true
+  w1 := true
+  w2 := false
+  w3 := false
+  wst1 := fun ctx => g1State .bMark .p1 false false false ctx
+  wst2 := fun ctx => g1State .bMark .p2 false false false ctx
+  wst3 := fun ctx => g1State .bMark .p3 false false false ctx
+  bst0 := fun ctx => g1State .bBack .p0 false false false ctx
+  bst1 := fun ctx => g1State .bBack .p1 false false false ctx
+  bst2 := fun ctx => g1State .bBack .p2 false false false ctx
+  bst3 := fun ctx => g1State .bBack .p3 false false false ctx
+  hopState := fun ctx => g1State .bHop .p0 false false false ctx
+  seek_reverse := trivial
+  seek_nostop := by simp [g1IndexScanner, G1IndexStop]
+  marker_stop := rfl
+  stop_stops := rfl
+  target_bits := rfl
+  wstep_p0 := fun ctx scan =>
+    g1Transition_bMark_p0 g1CS.startPhase false false false scan ctx
+  wstep_p1 := fun ctx scan =>
+    g1Transition_bMark_p1 g1CS.startPhase false false false scan ctx
+  wstep_p2 := fun ctx scan =>
+    g1Transition_bMark_p2 g1CS.startPhase false false false scan ctx
+  wstep_p3 := fun ctx scan =>
+    g1Transition_bMark_p3 g1CS.startPhase false false false scan ctx
+  bstep_p0 := fun ctx scan =>
+    g1Transition_bBack_p0 g1CS.startPhase false false false scan ctx
+  bstep_p1 := fun ctx scan =>
+    g1Transition_bBack_p1 g1CS.startPhase false false false scan ctx
+  bstep_p2 := fun ctx scan =>
+    g1Transition_bBack_p2 g1CS.startPhase false false false scan ctx
+  bstep_p3 := fun ctx scan =>
+    g1Transition_bBack_p3 g1CS.startPhase false false false scan ctx
+  hop_step := fun ctx scan =>
+    g1Transition_bHop g1CS.startPhase .p0 false false false scan ctx
+
+/-! ### The two exact G1 rounds -/
+/-- **The thirteen-step G1 index round, on an arbitrary tape.**  From the last
+cell of a frame whose four cells spell `index`, thirteen genuine steps of the
+fixed control `g1CS` overwrite those four cells with the codeword of `spent`
+and return the head to the last cell of the preceding frame in the reverse-read
+entry shape, with the whole `G1Ctx` preserved. -/
+theorem g1CS_index_round (n base : Nat) (hpos : 0 < base)
+    (hsafe : base + 4 < G1M.tapeLength n)
+    (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx)
+    (hbits : physicalBitsAt hsafe tape = G1Frame.index.bits) :
+    TM.runConfig (M := G1M)
+        (g1AlignedConfig n (base + 3) (by omega) tape .bWalk .p3
+          false false false ctx) 13 =
+      g1AlignedConfig n (base - 1) (by omega)
+        (writeFrame4 base true true false false tape) .bWalk .p3
+        false false false ctx :=
+  g1IndexCycle.rewriteCycle n base hpos hsafe tape ctx hbits
+
+/-- **The thirteen-step G1 index round on an arbitrary frame list.**  Thirteen
+genuine steps turn the tape backed by `pre ++ index :: suffix` into the tape
+backed by `pre ++ spent :: suffix` — nothing outside those four cells changes —
+with the head going from the last cell of the rewritten frame to the last cell
+of the frame before it, and the control back in the reverse-read entry shape.
+
+This is *one* round.  Nothing here iterates it, addresses a runtime index, or
+claims that any particular frame of a request sits at `pre.length`. -/
+theorem g1CS_index_round_onList (n : Nat) (pre suffix : List G1Frame)
+    (ctx : G1Ctx) (hpre : 0 < pre.length)
+    (hsafe : 4 * pre.length + 4 < G1M.tapeLength n) :
+    TM.runConfig (M := G1M)
+        (g1AlignedConfig n (4 * pre.length + 3) (by omega)
+          (g1ListTape ((pre ++ G1Frame.index :: suffix).flatMap G1Frame.bits))
+          .bWalk .p3 false false false ctx) 13 =
+      g1AlignedConfig n (4 * pre.length - 1) (by omega)
+        (g1ListTape ((pre ++ G1Frame.spent :: suffix).flatMap G1Frame.bits))
+        .bWalk .p3 false false false ctx :=
+  g1IndexCycle.rewriteCycleOnList n pre suffix ctx hpre hsafe
+
+/-! ### The obligation of the destructive walk, now discharged -/
+/-- **What a G1 rewrite cycle has to be.**  A cycle *of the fixed control
+`g1CS`* whose codec is `g1FrameCodec`, whose direction is `index ↦ spent`, and
+whose seek/stop modes and *aligned-state constructors* are literally G1's own:
+without the last group a cycle's run would be about an unconstrained state
+shape rather than about `g1AlignedConfig`.  `g1RewriteCycleObligation` below
+constructs it, so nothing in this development is conditional on it any more. -/
 structure G1RewriteCycleObligation where
   cycle : FrameRewriteCycle G1State G1Frame G1Mode G1Ctx
   program_eq : cycle.scanner.program = g1CS
   codec_eq : cycle.scanner.codec = g1FrameCodec
   marker_eq : cycle.marker = G1Frame.index
   target_eq : cycle.target = G1Frame.spent
+  seekMode_eq : cycle.seekMode = G1Mode.bWalk
+  stopMode_eq : cycle.stopMode = G1Mode.bMark
+  reverse_eq : cycle.scanner.Reverse = G1IndexWalkMode
+  stop_eq : cycle.scanner.Stop = G1IndexStop
+  revAdvance_eq : cycle.scanner.revAdvance = g1IndexRevAdvance
+  rst3_eq : cycle.scanner.rst3 =
+    fun m ctx => g1State m .p3 false false false ctx
+  rst2_eq : cycle.scanner.rst2 =
+    fun m ctx b3 => g1State m .p2 false false b3 ctx
+  rst1_eq : cycle.scanner.rst1 =
+    fun m ctx b2 b3 => g1State m .p1 false b2 b3 ctx
+  rst0_eq : cycle.scanner.rst0 =
+    fun m ctx b1 b2 b3 => g1State m .p0 b1 b2 b3 ctx
+  stopState_eq : cycle.scanner.stopState =
+    fun m ctx => g1State m .p0 false false false ctx
+  wst1_eq : cycle.wst1 = fun ctx => g1State .bMark .p1 false false false ctx
+  wst2_eq : cycle.wst2 = fun ctx => g1State .bMark .p2 false false false ctx
+  wst3_eq : cycle.wst3 = fun ctx => g1State .bMark .p3 false false false ctx
+  bst0_eq : cycle.bst0 = fun ctx => g1State .bBack .p0 false false false ctx
+  bst1_eq : cycle.bst1 = fun ctx => g1State .bBack .p1 false false false ctx
+  bst2_eq : cycle.bst2 = fun ctx => g1State .bBack .p2 false false false ctx
+  bst3_eq : cycle.bst3 = fun ctx => g1State .bBack .p3 false false false ctx
+  hopState_eq : cycle.hopState =
+    fun ctx => g1State .bHop .p0 false false false ctx
+  cells_eq : [cycle.w0, cycle.w1, cycle.w2, cycle.w3] = G1Frame.spent.bits
 
 /-- Such a cycle's machine is literally the fixed G1 machine. -/
 theorem G1RewriteCycleObligation.machine_eq (O : G1RewriteCycleObligation) :
@@ -344,25 +550,55 @@ theorem G1RewriteCycleObligation.machine_eq (O : G1RewriteCycleObligation) :
   congrArg (fun U : ConstStatePhasedProgram G1State => U.toPhased.toTM)
     O.program_eq
 
-/-- **The obligation, discharged forward.**  Given the missing cycle, the
-thirteen-step `index ↦ spent` rewrite on an arbitrary G1 frame list is the
-generic theorem verbatim.  This is a *conditional* statement: no G1 execution
-past `bRoundStart` is claimed anywhere, because `G1RewriteCycleObligation` is
-not inhabited here. -/
+/-- **The obligation is inhabited.**  `g1IndexCycle` satisfies every pinning
+equation by `rfl`: the previously conditional G1 rewrite-cycle statement is now
+a statement about existing data. -/
+def g1RewriteCycleObligation : G1RewriteCycleObligation where
+  cycle := g1IndexCycle
+  program_eq := rfl
+  codec_eq := rfl
+  marker_eq := rfl
+  target_eq := rfl
+  seekMode_eq := rfl
+  stopMode_eq := rfl
+  reverse_eq := rfl
+  stop_eq := rfl
+  revAdvance_eq := rfl
+  rst3_eq := rfl
+  rst2_eq := rfl
+  rst1_eq := rfl
+  rst0_eq := rfl
+  stopState_eq := rfl
+  wst1_eq := rfl
+  wst2_eq := rfl
+  wst3_eq := rfl
+  bst0_eq := rfl
+  bst1_eq := rfl
+  bst2_eq := rfl
+  bst3_eq := rfl
+  hopState_eq := rfl
+  cells_eq := rfl
+
+/-- **The obligation, discharged forward.**  Any cycle satisfying the pinning
+equations performs the thirteen-step `index ↦ spent` rewrite on an arbitrary G1
+frame list *in G1's own aligned states* — the conclusion mentions
+`g1State .bWalk .p3` rather than a free state shape.  `g1CS_index_round_onList`
+is this statement at the constructed instance, with the machine spelled
+`G1M`. -/
 theorem G1RewriteCycleObligation.rewrite_cycle (O : G1RewriteCycleObligation)
     (n : Nat) (pre suffix : List G1Frame) (ctx : G1Ctx) (hpre : 0 < pre.length)
     (hsafe : 4 * pre.length + 4 < O.cycle.scanner.machine.tapeLength n) :
     TM.runConfig (M := O.cycle.scanner.machine)
-        (O.cycle.scanner.revAligned n (4 * pre.length + 3) (by omega)
+        (O.cycle.scanner.alignedConfigQ n (4 * pre.length + 3) (by omega)
           (frameListTape
             ((pre ++ G1Frame.index :: suffix).flatMap G1Frame.bits))
-          O.cycle.seekMode ctx) 13 =
-      O.cycle.scanner.revAligned n (4 * pre.length - 1) (by omega)
+          (g1State .bWalk .p3 false false false ctx)) 13 =
+      O.cycle.scanner.alignedConfigQ n (4 * pre.length - 1) (by omega)
         (frameListTape
           ((pre ++ G1Frame.spent :: suffix).flatMap G1Frame.bits))
-        O.cycle.seekMode ctx := by
+        (g1State .bWalk .p3 false false false ctx) := by
   have h := O.cycle.rewriteCycleOnList n pre suffix ctx hpre hsafe
   rw [O.marker_eq, O.target_eq, O.codec_eq] at h
-  exact h
+  simpa [ReverseFrameScanner.revAligned, O.rst3_eq, O.seekMode_eq] using h
 
 end Pnp3.Internal.PsubsetPpoly.TM

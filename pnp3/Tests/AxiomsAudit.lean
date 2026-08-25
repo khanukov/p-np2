@@ -22,6 +22,7 @@ import Complexity.TMVerifier.TuringToolkit.FrameRewriteCycleInstances
 import Complexity.TMVerifier.TuringToolkit.GateOneExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneRouting
 import Complexity.TMVerifier.TuringToolkit.GateOneReadBExamples
+import Complexity.TMVerifier.TuringToolkit.GateOneIndexRound
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -182,8 +183,8 @@ open Pnp3.Magnification
 -- driver, the exact thirteen-step rewrite cycle composed from them, the non-T1
 -- executable probe, and the T1 regressions.  Execution infrastructure only: one
 -- frame per cycle, no addressing/runtime-index/acceptance/verifier claim.
--- `G1RewriteCycleObligation.rewrite_cycle` is *conditional* on data the next G1
--- slice must build; `g1CS` is not executed past `bRoundStart`.
+-- `G1RewriteCycleObligation` is now inhabited by `g1RewriteCycleObligation`,
+-- whose cycle is G1's own `index -> spent` round; still one round only.
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.writeFrame4_descending
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameWriter.writeMacrostepLeft
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameWriter.writeFrameOnListLeft
@@ -194,6 +195,10 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameRewriteCycle.hopStep
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameRewriteCycle.rewriteCycle
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameRewriteCycle.rewriteCycleOnList
+#print axioms Internal.PsubsetPpoly.TM.g1CS_index_round
+#print axioms Internal.PsubsetPpoly.TM.g1CS_index_round_onList
+#print axioms Internal.PsubsetPpoly.TM.g1RewriteCycleObligation
+#print axioms Internal.PsubsetPpoly.TM.G1RewriteCycleObligation.rewrite_cycle
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameRewriteCycle.seekAndRewrite
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.cycProbeCS_rewrite_cycle
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.cycProbeCS_seek_rewrite
@@ -255,7 +260,21 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_readAStart_idle
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_combineStart_idle
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_readAResetStart_idle
-#print axioms Internal.PsubsetPpoly.TM.g1Transition_bRoundStart_idle
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bRoundStart_bridge
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bWalk_p3
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bWalk_p2
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bWalk_p1
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bWalk_p0_index
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bWalk_p0_other
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bMark_p0
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bMark_p1
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bMark_p2
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bMark_p3
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bBack_p0
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bBack_p1
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bBack_p2
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bBack_p3
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bHop
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_bOOB_stable
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_constLit
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_store
@@ -329,11 +348,14 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.machine_no_handoff_constUnused
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.machine_no_handoff_constBig
 
--- T2b-1, control/routing layer: the physical tag rescan and the frame-level
--- routing of the fixed control.  Frame level only: no `TM.runConfig`
--- statement, no operand read, no `TM.accepts`, no output write, no
--- `spec`-correctness claim, and no `arg2 > 0` operand walk -- that branch is
--- routed to the idle `bRoundStart`.
+-- T2b, pass-B layer: the physical tag rescan and finite-control routing,
+-- exact initial-configuration prefixes, the zero-index operand-2 read and its
+-- stable out-of-range boundary, and the T2b-2 destructive index round (bridge,
+-- fourteen-step composed round, one concrete request).  Local adapters retain
+-- their arbitrary-aligned-tape scope and stability padding has no clock bound.
+-- Still no `TM.accepts`, output write, combine step, pass-A read,
+-- `spec`-correctness claim, or more than **one** round for `arg2 > 0`: no
+-- iteration, addressing or operand-value claim is audited here.
 #print axioms Internal.PsubsetPpoly.TM.G1Ctx.withVB_vB
 #print axioms Internal.PsubsetPpoly.TM.G1Ctx.withVB_pass
 #print axioms Internal.PsubsetPpoly.TM.G1Ctx.withVB_crossed
@@ -357,7 +379,7 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1ReadBRoute_validPath
 #print axioms Internal.PsubsetPpoly.TM.g1ReadBOOB_advance
 #print axioms Internal.PsubsetPpoly.TM.g1ReadBOOB_validPath
-#print axioms Internal.PsubsetPpoly.TM.g1_bScan_index_deferred
+#print axioms Internal.PsubsetPpoly.TM.g1_bScan_index_bridge
 #print axioms Internal.PsubsetPpoly.TM.g1_bRoundStart_stuck
 #print axioms Internal.PsubsetPpoly.TM.g1RoundRouteFrames_length
 #print axioms Internal.PsubsetPpoly.TM.g1RoundRoute_split
@@ -382,7 +404,7 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_runConfig_readA_idle
 #print axioms Internal.PsubsetPpoly.TM.g1CS_runConfig_combine_idle
 #print axioms Internal.PsubsetPpoly.TM.g1CS_runConfig_readAReset_idle
-#print axioms Internal.PsubsetPpoly.TM.g1CS_runConfig_round_idle
+#print axioms Internal.PsubsetPpoly.TM.g1CS_step_round_bridge
 #print axioms Internal.PsubsetPpoly.TM.g1CS_runConfig_oob_sink
 #print axioms Internal.PsubsetPpoly.TM.g1CS_step_constLit
 #print axioms Internal.PsubsetPpoly.TM.g1CS_step_store
@@ -414,18 +436,25 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_readB_zero_oob_tape
 #print axioms Internal.PsubsetPpoly.TM.g1CS_readB_zero_oob_ne_success
 #print axioms Internal.PsubsetPpoly.TM.g1CS_readB_oob_ne_reject
-#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_round_deferred_exact
-#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_round_deferred_stable
-#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_round_deferred_state
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_route_input
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_route_not
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_const_false
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_const_true
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_field_route_and
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_field_route_or
-#print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_round_and
-#print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_round_or
-#print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_round_and_stable
+#print axioms Internal.PsubsetPpoly.TM.g1ReadBSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1CS_step_round_bridge
+#print axioms Internal.PsubsetPpoly.TM.g1RoundRoute_split
+#print axioms Internal.PsubsetPpoly.TM.g1RoundRoute_advance
+#print axioms Internal.PsubsetPpoly.TM.g1IndexRoundSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_round_boundary
+#print axioms Internal.PsubsetPpoly.TM.g1CS_round_from_bridge
+#print axioms Internal.PsubsetPpoly.TM.g1CS_index_first_round
+#print axioms Internal.PsubsetPpoly.TM.g1RoundExample_initial_tape
+#print axioms Internal.PsubsetPpoly.TM.g1CS_round_example_head
+#print axioms Internal.PsubsetPpoly.TM.g1CS_round_example_state
+#print axioms Internal.PsubsetPpoly.TM.g1CS_round_example_tape
+#print axioms Internal.PsubsetPpoly.TM.g1CS_round_example_clock
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_and_true
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_and_false
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_or_true

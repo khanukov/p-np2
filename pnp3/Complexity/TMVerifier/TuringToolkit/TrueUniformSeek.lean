@@ -703,6 +703,18 @@ theorem t1Transition_repairSeek_p0_done
   rw [t1Transition_repairSeek_p0_raw]
   simp [t1RepairBackComplete, h, t1RepairBackAdvance]
 
+/-- A frame the repair scan cannot cross — a `blank`, a `cursor`, or a
+four-cell window that decodes to nothing — makes the pass reject without
+moving.  This is the fourth and last outcome of the `repairSeek` frame
+decision; it is stated here, next to the other three, because
+`t1RepairBackComplete` is the only scrutinee involved. -/
+theorem t1Transition_repairSeek_p0_bad
+    (phase : Fin 1) (b0 b1 b2 latch scan : Bool)
+    (h : t1RepairBackComplete scan b0 b1 b2 = .reject) :
+    t1Transition phase (t1State .repairSeek .p0 b0 b1 b2 latch) scan =
+      (0, t1RejectState, scan, .stay) := by
+  rw [t1Transition_repairSeek_p0_raw, h]
+
 /-- The inverse of `markSpent`: four ascending writes of `T1Frame.index`. -/
 theorem t1Transition_repairWrite
     (phase : Fin 1) (position : T1FramePosition) (b0 b1 b2 latch scan : Bool) :

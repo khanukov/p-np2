@@ -17,6 +17,8 @@ import Complexity.TMVerifier.TuringToolkit.FrameScannerProbe
 import Complexity.TMVerifier.TuringToolkit.FrameScannerT1
 import Complexity.TMVerifier.TuringToolkit.FrameScannerReverseProbe
 import Complexity.TMVerifier.TuringToolkit.FrameScannerReverseInstances
+import Complexity.TMVerifier.TuringToolkit.FrameRewriteCycleProbe
+import Complexity.TMVerifier.TuringToolkit.FrameRewriteCycleInstances
 import Complexity.TMVerifier.TuringToolkit.GateOneExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneRouting
 import Complexity.TMVerifier.TuringToolkit.GateOneReadBExamples
@@ -156,8 +158,7 @@ open Pnp3.Magnification
 -- Generic *reverse* four-bit frame-scanner kernel and the generic four-cell
 -- frame write/replacement layer, a genuinely non-T1 probe of both, and the T1
 -- and G1 reverse-scan regressions.  Execution infrastructure only: no
--- addressing, acceptance, gate-evaluation or verifier claim, and the leftward
--- writer and the 13-step rewrite cycle are deferred, not audited here.
+-- addressing, acceptance, gate-evaluation or verifier claim.
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.Phased.stepLeft
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameScanner.revFrameMacrostep
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameScanner.revFrameMacrostepAt
@@ -176,6 +177,34 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.revProbeCS_write_cell
 #print axioms Internal.PsubsetPpoly.TM.t1RevScanner_rewind_tail
 #print axioms Internal.PsubsetPpoly.TM.g1RevScanner_rewind_tail
+
+-- Mutation half of the same kernel: the leftward writer, the seek-until-marker
+-- driver, the exact thirteen-step rewrite cycle composed from them, the non-T1
+-- executable probe, and the T1 regressions.  Execution infrastructure only: one
+-- frame per cycle, no addressing/runtime-index/acceptance/verifier claim.
+-- `G1RewriteCycleObligation.rewrite_cycle` is *conditional* on data the next G1
+-- slice must build; `g1CS` is not executed past `bRoundStart`.
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.writeFrame4_descending
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameWriter.writeMacrostepLeft
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameWriter.writeFrameOnListLeft
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameScanner.revSkipRun
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameScanner.revSeekToMarker
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameScanner.revSeekToMarker_head
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameRewriteCycle.backWalk
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameRewriteCycle.hopStep
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameRewriteCycle.rewriteCycle
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameRewriteCycle.rewriteCycleOnList
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameRewriteCycle.seekAndRewrite
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.cycProbeCS_rewrite_cycle
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.cycProbeCS_seek_rewrite
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.cycProbeCS_seek_marker
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.cycProbeCS_write_left
+#print axioms Internal.PsubsetPpoly.TM.t1RepairCycle_repair_cycle
+#print axioms Internal.PsubsetPpoly.TM.t1RepairCycle_repair_cycle_onList
+#print axioms Internal.PsubsetPpoly.TM.t1OutWriter_outWriteOut_frame
+#print axioms Internal.PsubsetPpoly.TM.g1RevScanner_seek_bof
+#print axioms Internal.PsubsetPpoly.TM.G1RewriteCycleObligation.machine_eq
+#print axioms Internal.PsubsetPpoly.TM.G1RewriteCycleObligation.rewrite_cycle
 
 -- T2a, pure layer: the fresh unary one-gate ABI, its exact parser
 -- characterisation, and the pure gate semantics.  These are parser/spec

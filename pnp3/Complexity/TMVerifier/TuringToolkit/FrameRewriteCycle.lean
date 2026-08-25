@@ -30,7 +30,7 @@ seek driver in front of it: skip an arbitrary run of skippable frames, then
 rewrite, in `4 * skipped.length + 13` steps.
 
 **Obligation hygiene.**  A `FrameRewriteCycle` is a `ReverseFrameScanner` plus
-one codec law, four *table facts* about the seek/stop modes, and ten *concrete
+one codec law, four *table facts* about the seek/stop modes, and nine *concrete
 transition tuple equalities* (four write, four walk-back, one hop, quantified
 over the scanned cell and the carried context).  No semantic-correctness field,
 no desired-run field, no step-count field: the thirteen is *derived* from the

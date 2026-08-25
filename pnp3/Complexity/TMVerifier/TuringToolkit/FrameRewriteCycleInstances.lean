@@ -159,7 +159,7 @@ def t1RepairScanner : ReverseFrameScanner T1State T1Frame T1Mode Bool where
               T1Mode.repairSeek by
                 simp [t1RepairRevComplete, hc, t1RepairBackAdvance]) hstop
 
-/-- **T1's repair cycle is an instance of the generic rewrite cycle.**  All ten
+/-- **T1's repair cycle is an instance of the generic rewrite cycle.**  All nine
 cycle tuples are the *existing* standalone table lemmas of `TrueUniformSeek`;
 `t1Transition` is not unfolded here and no control table is modified. -/
 def t1RepairCycle : FrameRewriteCycle T1State T1Frame T1Mode Bool where

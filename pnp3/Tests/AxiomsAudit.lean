@@ -548,6 +548,7 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.t1Transition_repairSeek_p0_write
 #print axioms Internal.PsubsetPpoly.TM.t1Transition_repairSeek_p0_skip
 #print axioms Internal.PsubsetPpoly.TM.t1Transition_repairSeek_p0_done
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_repairSeek_p0_bad
 #print axioms Internal.PsubsetPpoly.TM.t1Transition_repairDone_accept
 #print axioms Internal.PsubsetPpoly.TM.t1Transition_repairDone_reject
 #print axioms Internal.PsubsetPpoly.TM.t1Transition_repairDone_acceptState

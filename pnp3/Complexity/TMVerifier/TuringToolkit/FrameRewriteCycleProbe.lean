@@ -232,7 +232,7 @@ def cycProbeCycle : FrameRewriteCycle CycState RevFrame CycMode (Bool × Bool) w
   marker_stop := rfl
   stop_stops := rfl
   target_bits := rfl
-  -- the ten cycle tuples are single `rfl` facts of `cycTransition`
+  -- the nine cycle tuples are single `rfl` facts of `cycTransition`
   wstep_p0 := fun _ _ => rfl
   wstep_p1 := fun _ _ => rfl
   wstep_p2 := fun _ _ => rfl

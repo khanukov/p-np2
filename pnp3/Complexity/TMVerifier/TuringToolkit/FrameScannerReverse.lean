@@ -438,8 +438,6 @@ theorem revScanFrames (K : ReverseFrameScanner S F Mode Aux) (n : Nat)
       obtain ⟨hrev, hnext, hrest⟩ := hpath
       simp only [List.length_append, List.length_cons, List.length_nil]
         at hsafe ⊢
-      have hbound :
-          4 * (pre.length + rest.length) + 8 < K.machine.tapeLength n := by omega
       have hbaseEq : 4 * (pre ++ anchor :: rest).length =
           4 * (pre.length + rest.length) + 4 := by
         simp only [List.length_append, List.length_cons]; omega

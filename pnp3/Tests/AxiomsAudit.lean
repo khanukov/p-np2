@@ -160,6 +160,7 @@ open Pnp3.Magnification
 -- writer and the 13-step rewrite cycle are deferred, not audited here.
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.Phased.stepLeft
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameScanner.revFrameMacrostep
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameScanner.revFrameMacrostepAt
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameScanner.revAnchorStep
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameScanner.revValidPath_const
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameScanner.revScanFrames

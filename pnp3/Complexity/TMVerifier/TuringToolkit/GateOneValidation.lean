@@ -36,7 +36,7 @@ theorem is about the encoded word of a noncanonical request, not about an
 arbitrary padded physical tape.  No acceptance, output-write, operand read or
 `spec`-correctness claim is made, and `g1ReadBHandoffSteps_le_clock` records
 only that the *proved prefix* fits the public clock — deliberately no
-full-clock theorem, since `readBStart` becomes active in T2b.
+full-clock theorem, since `readBStart` is activated by the T2b layers.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -446,7 +446,7 @@ def g1ReadBHandoffSteps (r : G1Request) : Nat := 2 * (encodeG1 r).length + 9
 
 /-- The proved prefix fits inside the public clock.  This is a budget fact
 about the *proved* prefix only; no full-clock theorem is claimed, because
-`readBStart` becomes active in T2b. -/
+`readBStart` is activated by the T2b layers. -/
 theorem g1ReadBHandoffSteps_le_clock (r : G1Request) :
     g1ReadBHandoffSteps r ≤ g1Clock (encodeG1 r).length := by
   have hmul : 512 * ((encodeG1 r).length + 1) ≤

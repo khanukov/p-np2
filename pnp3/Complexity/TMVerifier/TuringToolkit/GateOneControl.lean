@@ -52,18 +52,44 @@ blank frame.  Nothing is claimed about arbitrary padded physical tapes.
 
 ## Motion
 
-In this slice the control performs read-only canonical grammar validation of
-the whole word plus one trailing blank frame, then rewinds right-to-left to
-head zero and enters the explicit local handoff `readBStart`, the entry point
-of the planned pass-B operand read.  The forward modes (`vBof … vBlank`) read
-frames left to right through the shared `g1Advance` table and are therefore an
-instance of the generic frame-scanner kernel (`GateOneScanner`);
-`rewindStart`/`rewind` read right to left and have their own tuple lemmas.
+The control performs read-only canonical grammar validation of the whole word
+plus one trailing blank frame, then rewinds right-to-left to head zero and
+enters `readBStart`.  The forward modes (`vBof … vBlank`) read frames left to
+right through the shared `g1Advance` table and are therefore an instance of the
+generic frame-scanner kernel (`GateOneScanner`); `rewindStart`/`rewind` read
+right to left and have their own tuple lemmas.
 
-`readBStart` is **idle in this slice only**; T2b activates it exactly as T1's
-`startMutation` was activated.  Therefore no theorem here runs the machine
-past `readBStart`, and in particular **no full-clock or acceptance theorem is
-stated** — such a theorem would become false once the handoff does work.
+`readBStart` is **no longer idle**: the T2b-1 slice activates it as a genuine
+forward frame-reading mode.  From head zero it re-reads the anchor and
+*physically rescans* the unary tag run (`rTag0 … rTag5`) — the tag is not
+retained anywhere across the rewind, and it is not a parameter of anything —
+and the `argSep` that closes the run selects the operand regime a second time:
+
+* `rTag1` (`input`) and `rTag3` (`not`) hand off directly to `readAStart`, with
+  the head exactly on the first cell of the operand-1 field — the `argSep`
+  closing that field when it is empty;
+* `rTag2` (`const`) enters `rConst0`, which decodes the canonical unary literal
+  (`argSep` at once ↦ `constFalse`, one `index` then `argSep` ↦ `constTrue`)
+  and stores it in the fixed Boolean field `G1Ctx.vB` on the way to
+  `combineStart`;
+* `rTag4`/`rTag5` (`and`/`or`) enter `rArg1Binary`, which skips the operand-1
+  field and stops on the `argSep` that opens the **operand-2 field**, entering
+  `bScan`.
+
+`bScan` walks the operand-2 region (`spent` and `data` frames are skipped) to
+the `separator` and enters `bProbe`, which reads the selected data frame:
+`data b` stores `b` in `vB` through `bStoreFalse`/`bStoreTrue` and hands off to
+`readAResetStart`, while the `output` destination frame means the index ran off
+the end of the data region and hands off to the stable `bOOB` boundary.
+
+**What is deferred.**  `bScan` reaching an *unspent* `index` frame means the
+operand-2 index is non-zero and the destructive index walk of T2b-2 is needed;
+that row hands off to the idle `bRoundStart`, and no theorem of this
+development runs the machine past it.  So the physically executed operand read
+is exactly the zero-index one; `arg2 > 0` reaches `bRoundStart` and stops.
+`readAStart`, `combineStart`, `readAResetStart`, `bRoundStart` and `bOOB` are
+idle handoffs in this slice, and **no full-clock or acceptance theorem is
+stated** — such a theorem would become false once those handoffs do work.
 `accept`/`reject` are the two stable sinks; only their tuple equations are
 proved.
 
@@ -83,7 +109,17 @@ namespace Pnp3.Internal.PsubsetPpoly.TM
 carry the unary tag count (and hence the tag kind), and `vArg1Unary`,
 `vConst0`/`vConst1`, `vArg1Binary`, `vArg2Zero`, `vArg2Any` carry the
 tag-dependent operand convention.  `rewindStart`/`rewind` return the head to
-zero; `readBStart` is the local pass-B handoff; `accept`/`reject` are the
+zero.
+
+`readBStart` opens the pass-B rescan: `rTag0 … rTag5` recount the unary tag
+physically, `rConst0`/`rConst1` decode the unary `const` literal,
+`rArg1Binary` skips the operand-1 field of a binary gate, and `bScan`/`bProbe`
+walk the operand-2 region and read the selected data frame.
+
+`constFalse`/`constTrue` and `bStoreFalse`/`bStoreTrue` are the four one-step
+dispatch modes that write the decoded Boolean into `G1Ctx.vB`.
+`readAStart`, `combineStart`, `readAResetStart`, `bRoundStart` and `bOOB` are
+the five local handoffs, idle in this slice; `accept`/`reject` are the
 sinks. -/
 inductive G1Mode
   | vBof
@@ -91,7 +127,14 @@ inductive G1Mode
   | vArg1Unary | vConst0 | vConst1 | vArg1Binary
   | vArg2Zero | vArg2Any
   | vData | vFinish | vBlank
-  | rewindStart | rewind | readBStart | accept | reject
+  | rewindStart | rewind
+  | readBStart
+  | rTag0 | rTag1 | rTag2 | rTag3 | rTag4 | rTag5
+  | rConst0 | rConst1 | rArg1Binary
+  | bScan | bProbe
+  | constFalse | constTrue | bStoreFalse | bStoreTrue
+  | readAStart | combineStart | readAResetStart | bRoundStart | bOOB
+  | accept | reject
   deriving Fintype, DecidableEq, Repr
 
 inductive G1FramePosition | p0 | p1 | p2 | p3
@@ -109,6 +152,22 @@ structure G1Ctx where
   deriving Fintype, DecidableEq, Repr
 
 def g1Ctx0 : G1Ctx := ⟨false, false, false⟩
+
+/-- **The one place a resolved Boolean is stored.**  `vB` is the fixed Boolean
+field of the finite context that holds the decoded `const` literal or the
+value read out of the data region; nothing else in the state changes. -/
+def G1Ctx.withVB (ctx : G1Ctx) (b : Bool) : G1Ctx := { ctx with vB := b }
+
+@[simp] theorem G1Ctx.withVB_vB (ctx : G1Ctx) (b : Bool) :
+    (ctx.withVB b).vB = b := rfl
+
+@[simp] theorem G1Ctx.withVB_pass (ctx : G1Ctx) (b : Bool) :
+    (ctx.withVB b).pass = ctx.pass := rfl
+
+@[simp] theorem G1Ctx.withVB_crossed (ctx : G1Ctx) (b : Bool) :
+    (ctx.withVB b).crossed = ctx.crossed := rfl
+
+theorem g1Ctx0_withVB (b : Bool) : g1Ctx0.withVB b = ⟨false, false, b⟩ := rfl
 
 set_option synthInstance.maxSize 1024 in
 /-- The complete G1 control state.  No `Nat`, width, offset, index or length
@@ -135,12 +194,41 @@ documented values. -/
 def g1ReadBState (ctx : G1Ctx) : G1State :=
   g1State .readBStart .p0 false false false ctx
 
+/-- The pass-A handoff of an arity-1 gate: the head sits on the first cell of
+the operand-1 field (the closing `argSep` when that field is empty). -/
+def g1ReadAState (ctx : G1Ctx) : G1State :=
+  g1State .readAStart .p0 false false false ctx
+
+/-- The `const` handoff: the decoded literal is already in `ctx.vB`. -/
+def g1CombineState (ctx : G1Ctx) : G1State :=
+  g1State .combineStart .p0 false false false ctx
+
+/-- The post-operand-2 handoff of a binary gate: `ctx.vB` holds the resolved
+operand-2 value and the data cursor has to be reset before pass A. -/
+def g1ReadAResetState (ctx : G1Ctx) : G1State :=
+  g1State .readAResetStart .p0 false false false ctx
+
+/-- The entry point of the deferred destructive index walk (T2b-2). -/
+def g1RoundState (ctx : G1Ctx) : G1State :=
+  g1State .bRoundStart .p0 false false false ctx
+
+/-- The stable out-of-range boundary of the operand read. -/
+def g1OOBState (ctx : G1Ctx) : G1State :=
+  g1State .bOOB .p0 false false false ctx
+
 /-- The reject sink and pass-B handoff differ.  Used by the
 `GateOneValidation` rejection surface. -/
 theorem g1RejectState_ne_readB (ctx : G1Ctx) :
     g1RejectState ≠ g1ReadBState ctx := by
   intro h
   have hmode : G1Mode.reject = G1Mode.readBStart := congrArg G1State.mode h
+  exact G1Mode.noConfusion hmode
+
+/-- The stable out-of-range boundary is not the success handoff. -/
+theorem g1OOBState_ne_readAReset (ctx ctx' : G1Ctx) :
+    g1OOBState ctx ≠ g1ReadAResetState ctx' := by
+  intro h
+  have hmode : G1Mode.bOOB = G1Mode.readAResetStart := congrArg G1State.mode h
   exact G1Mode.noConfusion hmode
 
 /-- **The left-to-right frame table.**
@@ -183,6 +271,37 @@ def g1Advance : G1Mode → G1Frame → G1Mode
   | .vData, .output false => .vFinish
   | .vFinish, .finish => .vBlank
   | .vBlank, .blank => .rewindStart
+  -- the pass-B rescan: re-read the anchor and physically recount the tag run
+  | .readBStart, .bof => .rTag0
+  | .rTag0, .tag => .rTag1
+  | .rTag1, .tag => .rTag2
+  | .rTag2, .tag => .rTag3
+  | .rTag3, .tag => .rTag4
+  | .rTag4, .tag => .rTag5
+  -- routing, decided a second time from the physically rescanned tag
+  | .rTag1, .argSep => .readAStart   -- input: no operand 2, pass A next
+  | .rTag2, .argSep => .rConst0      -- const: decode the unary literal
+  | .rTag3, .argSep => .readAStart   -- not: no operand 2, pass A next
+  | .rTag4, .argSep => .rArg1Binary  -- and
+  | .rTag5, .argSep => .rArg1Binary  -- or
+  -- the canonical unary `const` literal: `argSep` at once is `0`, one `index`
+  -- then `argSep` is `1`; a second `index` is not canonical and rejects
+  | .rConst0, .index => .rConst1
+  | .rConst0, .argSep => .constFalse
+  | .rConst1, .argSep => .constTrue
+  -- a binary gate skips the operand-1 field and stops at the operand-2 field
+  | .rArg1Binary, .index => .rArg1Binary
+  | .rArg1Binary, .argSep => .bScan
+  -- the operand-2 walk: already-spent index units and already-passed data
+  -- frames are skipped, the separator opens the probe
+  | .bScan, .spent => .bScan
+  | .bScan, .data _ => .bScan
+  | .bScan, .separator => .bProbe
+  | .bScan, .index => .bRoundStart   -- deferred: the destructive index walk
+  -- the probe reads the selected data frame, or runs off the data region
+  | .bProbe, .data false => .bStoreFalse
+  | .bProbe, .data true => .bStoreTrue
+  | .bProbe, .output false => .bOOB
   | _, _ => .reject
 
 /-- The bit-level form of `g1Advance`, as the control table computes it. -/
@@ -191,9 +310,16 @@ def g1Complete (mode : G1Mode) (b0 b1 b2 b3 : Bool) : G1Mode :=
   | some frame => g1Advance mode frame
   | none => .reject
 
-/-- The modes that read one frame left to right through `g1Advance`. -/
+/-- The modes that read one frame left to right through `g1Advance`.  Both the
+validation scan (`vBof … vBlank`) and the pass-B rescan (`readBStart`,
+`rTag0 … rTag5`, `rConst0`/`rConst1`, `rArg1Binary`, `bScan`, `bProbe`) are
+forward modes; the rewind, the four dispatch modes, the five handoffs and the
+two sinks are not. -/
 def G1ForwardMode : G1Mode → Prop
-  | .rewindStart | .rewind | .readBStart | .accept | .reject => False
+  | .rewindStart | .rewind
+  | .constFalse | .constTrue | .bStoreFalse | .bStoreTrue
+  | .readAStart | .combineStart | .readAResetStart | .bRoundStart | .bOOB
+  | .accept | .reject => False
   | _ => True
 
 instance : DecidablePred G1ForwardMode := fun mode => by
@@ -202,6 +328,24 @@ instance : DecidablePred G1ForwardMode := fun mode => by
 theorem G1ForwardMode.not_reject : ¬ G1ForwardMode .reject := id
 
 theorem G1ForwardMode.not_rewindStart : ¬ G1ForwardMode .rewindStart := id
+
+theorem G1ForwardMode.readBStart : G1ForwardMode .readBStart := trivial
+
+/-- **Stuck modes.**  A mode from which the forward table can read nothing: it
+completes every frame into `reject`, and it is not the end-of-input mode.  In
+particular the four dispatch modes, the five handoffs and the `reject` sink are
+stuck; `rewind` and `accept` also satisfy this table-level predicate but are
+unreachable as results of `g1Advance`;
+the point of the predicate is that a stuck mode can never fold to
+`rewindStart`, which is what keeps the validation grammar proofs of this module
+independent of the pass-B rows added above. -/
+def G1Stuck (mode : G1Mode) : Prop :=
+  (∀ f : G1Frame, g1Advance mode f = .reject) ∧ mode ≠ .rewindStart
+
+instance (mode : G1Mode) : Decidable (G1Stuck mode) :=
+  inferInstanceAs
+    (Decidable ((∀ f : G1Frame, g1Advance mode f = .reject) ∧
+      mode ≠ .rewindStart))
 
 /-! ## The frame-level language of the forward table
 
@@ -244,13 +388,23 @@ theorem g1Advance_rewindStart (frame : G1Frame) :
   | nil => rfl
   | cons frame rest ih => rw [g1AdvanceList_cons, g1Advance_reject]; exact ih
 
-/-- **The forward table only ever produces a forward mode, `rewindStart` or
-`reject`.**  In particular `rewind`, `readBStart` and `accept` are unreachable
-from the validation scan. -/
+/-- A stuck mode can never fold to the end-of-input mode. -/
+theorem g1AdvanceList_ne_rewindStart_of_stuck {mode : G1Mode} (h : G1Stuck mode)
+    (fs : List G1Frame) : g1AdvanceList mode fs ≠ .rewindStart := by
+  cases fs with
+  | nil => exact h.2
+  | cons frame rest =>
+      rw [g1AdvanceList_cons, h.1 frame, g1AdvanceList_reject]
+      decide
+
+/-- **The forward table only ever produces a forward mode, `rewindStart`, or a
+stuck mode.**  In particular `rewind` and `accept` are unreachable from any
+scan, and every non-forward target of the table (the four dispatch modes, the
+five handoffs, the `reject` sink) reads nothing further. -/
 theorem g1Advance_range (mode : G1Mode) (frame : G1Frame) :
     G1ForwardMode (g1Advance mode frame) ∨
       g1Advance mode frame = .rewindStart ∨
-      g1Advance mode frame = .reject := by
+      G1Stuck (g1Advance mode frame) := by
   revert mode frame; decide
 
 /-- Once the end-of-input frame has been consumed, an accepting word is over. -/
@@ -856,8 +1010,7 @@ theorem g1ValidPath_of_accepts {mode : G1Mode} (hmode : G1ForwardMode mode)
         · rw [hf] at h ⊢
           rw [g1AdvanceList_rewindStart_eq_nil h]
           trivial
-        · rw [hf, g1AdvanceList_reject] at h
-          exact absurd h (by decide)
+        · exact absurd h (g1AdvanceList_ne_rewindStart_of_stuck hf rest)
 
 /-! ## The one fixed zero-parameter program -/
 
@@ -867,7 +1020,17 @@ def g1Transition (_phase : Fin 1) (s : G1State) (scan : Bool) :
   match s.mode with
   | .accept => (0, g1AcceptState, scan, .stay)
   | .reject => (0, g1RejectState, scan, .stay)
-  | .readBStart => (0, g1ReadBState s.ctx, scan, .stay)
+  -- the five local handoffs: idle in this slice, each its own stable state
+  | .readAStart => (0, g1ReadAState s.ctx, scan, .stay)
+  | .combineStart => (0, g1CombineState s.ctx, scan, .stay)
+  | .readAResetStart => (0, g1ReadAResetState s.ctx, scan, .stay)
+  | .bRoundStart => (0, g1RoundState s.ctx, scan, .stay)
+  | .bOOB => (0, g1OOBState s.ctx, scan, .stay)
+  -- the four dispatch modes: store the decoded Boolean in `vB`, do not move
+  | .constFalse => (0, g1CombineState (s.ctx.withVB false), scan, .stay)
+  | .constTrue => (0, g1CombineState (s.ctx.withVB true), scan, .stay)
+  | .bStoreFalse => (0, g1ReadAResetState (s.ctx.withVB false), scan, .stay)
+  | .bStoreTrue => (0, g1ReadAResetState (s.ctx.withVB true), scan, .stay)
   | .rewindStart => (0, g1State .rewind .p3 false false false s.ctx, scan, .left)
   | .rewind =>
       match s.position with
@@ -916,7 +1079,12 @@ after at most one mode split.  The phase is universally quantified so that a
 caller can instantiate it at whatever `Fin`-encoded phase its configuration
 carries. -/
 
-/-! ### Sinks and the pass-B handoff -/
+/-! ### Sinks, handoffs and dispatch
+
+`readBStart` no longer appears here: it is a genuine forward frame-reading
+mode and its steps come from the four `g1Transition_forward_*` lemmas below.
+The five handoffs are idle **in this slice**; the deferred pass-A, combine and
+index-walk slices replace those five equations. -/
 
 @[simp] theorem g1Transition_accept_sink (phase : Fin 1) (scan : Bool) :
     g1Transition phase g1AcceptState scan = (0, g1AcceptState, scan, .stay) :=
@@ -926,12 +1094,58 @@ carries. -/
     g1Transition phase g1RejectState scan = (0, g1RejectState, scan, .stay) :=
   rfl
 
-/-- The pass-B handoff is idle **in this slice**.  No theorem of this
-development steps the machine from here; T2b replaces this equation. -/
-theorem g1Transition_readBStart_idle (phase : Fin 1)
+theorem g1Transition_readAStart_idle (phase : Fin 1)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
-    g1Transition phase (g1State .readBStart position b0 b1 b2 ctx) scan =
-      (0, g1ReadBState ctx, scan, .stay) := rfl
+    g1Transition phase (g1State .readAStart position b0 b1 b2 ctx) scan =
+      (0, g1ReadAState ctx, scan, .stay) := rfl
+
+theorem g1Transition_combineStart_idle (phase : Fin 1)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State .combineStart position b0 b1 b2 ctx) scan =
+      (0, g1CombineState ctx, scan, .stay) := rfl
+
+theorem g1Transition_readAResetStart_idle (phase : Fin 1)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State .readAResetStart position b0 b1 b2 ctx) scan =
+      (0, g1ReadAResetState ctx, scan, .stay) := rfl
+
+theorem g1Transition_bRoundStart_idle (phase : Fin 1)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State .bRoundStart position b0 b1 b2 ctx) scan =
+      (0, g1RoundState ctx, scan, .stay) := rfl
+
+/-- **The out-of-range boundary is stable.**  It never moves, never writes and
+never leaves itself. -/
+theorem g1Transition_bOOB_stable (phase : Fin 1)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State .bOOB position b0 b1 b2 ctx) scan =
+      (0, g1OOBState ctx, scan, .stay) := rfl
+
+/-- **The `const` literal dispatch.**  One stationary step writes the decoded
+unary literal into the fixed Boolean field `vB` and hands off to the combine
+boundary.  `g1ConstMode` is the mode the forward table lands in. -/
+def g1ConstMode : Bool → G1Mode
+  | false => .constFalse
+  | true => .constTrue
+
+theorem g1Transition_constLit (phase : Fin 1) (b : Bool)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State (g1ConstMode b) position b0 b1 b2 ctx) scan =
+      (0, g1CombineState (ctx.withVB b), scan, .stay) := by
+  cases b <;> rfl
+
+/-- **The operand-2 store dispatch.**  One stationary step writes the value
+just read out of the data region into `vB` and hands off to the pass-A reset
+boundary. -/
+def g1StoreMode : Bool → G1Mode
+  | false => .bStoreFalse
+  | true => .bStoreTrue
+
+theorem g1Transition_store (phase : Fin 1) (b : Bool)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State (g1StoreMode b) position b0 b1 b2 ctx) scan =
+      (0, g1ReadAResetState (ctx.withVB b), scan, .stay) := by
+  cases b <;> rfl
 
 /-! ### Forward frame reading -/
 

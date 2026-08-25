@@ -122,6 +122,7 @@ lean_lib PnP3 where
     -- examples (`GateOneExamples`).
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneValidation,
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneExamples,
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneRouting,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,

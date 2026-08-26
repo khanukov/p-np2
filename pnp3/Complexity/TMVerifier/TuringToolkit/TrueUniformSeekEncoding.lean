@@ -389,6 +389,28 @@ theorem t1MutationFrames_length (r : T1Request) (j : Nat)
   simp [t1MutationFrames]
   omega
 
+/-- Under the loop-invariant bounds, the arithmetic cursor frame index points
+to the actual `cursor` marker in the mutation layout.  This is a list theorem;
+it makes no machine-execution or physical-address claim. -/
+theorem t1MutationFrames_getElem?_cursor (r : T1Request) (j : Nat)
+    (hj : j ≤ r.index) (hdata : j < r.data.length) :
+    (t1MutationFrames r j)[t1CursorFrameIndex r j]? = some .cursor := by
+  have hpre : ([.bof] ++ List.replicate (r.index - j) .index ++
+      List.replicate j .spent ++ [.separator] ++
+      (r.data.take j).map .data : List T1Frame).length =
+      t1CursorFrameIndex r j := by
+    simp [t1CursorFrameIndex]
+    omega
+  have hsplit : t1MutationFrames r j =
+      ([.bof] ++ List.replicate (r.index - j) .index ++
+          List.replicate j .spent ++ [.separator] ++
+          (r.data.take j).map .data) ++
+        T1Frame.cursor :: ((r.data.drop (j+1)).map .data ++
+          [.output false, .finish]) := by
+    simp [t1MutationFrames, List.append_assoc]
+  rw [hsplit, ← hpre, List.getElem?_append_right (Nat.le_refl _)]
+  simp
+
 /-- At `j = 0` the mutation layout is the canonical encoder layout with the
 first data frame replaced by the cursor marker. -/
 theorem t1MutationFrames_zero (r : T1Request) (b : Bool) (rest : List Bool)

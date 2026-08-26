@@ -94,6 +94,10 @@ theorem check_t1CS_validate_rewind_encoded_exact (r : T1Request) :
 #check @t1Transition_backupCursor
 #check @t1Transition_writeData
 #check @t1MutationFrames_length
+theorem check_t1MutationFrames_getElem?_cursor (r : T1Request) (j : Nat)
+    (hj : j ≤ r.index) (hdata : j < r.data.length) :
+    (t1MutationFrames r j)[t1CursorFrameIndex r j]? = some .cursor :=
+  t1MutationFrames_getElem?_cursor r j hj hdata
 #check @t1MutationFrames_zero
 #check @t1CS_aligned_step_right
 #check @t1CS_aligned_step_left

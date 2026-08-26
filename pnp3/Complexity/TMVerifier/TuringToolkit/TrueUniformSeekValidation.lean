@@ -174,7 +174,7 @@ theorem t1CS_frame_macrostep
     (hmode : T1ForwardMode mode)
     (hnext : t1Advance mode frame ≠ .reject)
     (hbits : t1PhysicalBitsAt hsafe tape = frame.bits)
-    (latch : Bool := false) :
+    (latch : Bool) :
     TM.runConfig (M := T1M)
         (t1AlignedConfig n h (by omega) tape mode .p0 false false false latch) 4 =
       t1AlignedConfig n (h+4) hsafe tape (t1Advance mode frame)
@@ -330,7 +330,7 @@ theorem t1CS_scan_frames
     (n : Nat) (pre frames suffix : List T1Frame) (mode : T1Mode)
     (hpath : T1ValidPath mode frames)
     (hsafe : 4 * (pre.length + frames.length) < T1M.tapeLength n)
-    (latch : Bool := false) :
+    (latch : Bool) :
     TM.runConfig (M := T1M)
         (t1AlignedConfig n (4 * pre.length) (by omega)
           (t1ListTape ((pre ++ frames ++ suffix).flatMap T1Frame.bits)) mode
@@ -472,7 +472,7 @@ theorem t1CS_validate_encoded_exact (r : T1Request) :
       TM.tapeLength, t1Clock]
     omega
   have hscan := t1CS_scan_frames (encodeT1 r).length [] (t1ValidationFrames r) []
-    .validateBof (t1ValidationPath r) (by simpa using hsafe)
+    .validateBof (t1ValidationPath r) (by simpa using hsafe) false
   simp only [List.nil_append, List.append_nil, List.length_nil, zero_add,
     t1ValidationAdvance] at hscan
   have hinit : T1M.initialConfig (t1Point (encodeT1 r)) =

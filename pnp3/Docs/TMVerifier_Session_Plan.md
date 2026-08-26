@@ -244,18 +244,18 @@ unchanged.  This A1 slice is **Infrastructure** and does not yet execute cursor
 installation, a unary decrement, the `j → j+1` loop, restoration, output, or
 acceptance; those genuine execution theorems are isolated in T1b-A2/T1c.
 
-**T1b-A1 review-surface hardening:** the T1b-A1 block of
-`Tests/TMTrueUniformSeekSurfaceTests.lean` restates every pinned statement as a
-`theorem check_*` instead of a bare `#check`, so weakening a written bit, a
-head move or a successor state fails the surface test rather than passing it.
-The pinned list is kept equal to the T1a/T1b-A1 blocks of
-`Tests/AxiomsAudit.lean`; table lemmas consumed by an audited capstone are
-covered transitively through its dependency closure.  `t1CS_frame_macrostep`
-and `t1CS_scan_frames` take the latch as an explicit argument rather than an
-`optParam`, so a probe cannot silently pin only the `latch = false` instance.
+**T1b-A1 review-surface hardening:** headline semantic probes in
+`Tests/TMTrueUniformSeekSurfaceTests.lean` are `theorem check_*` restatements:
+the forward macrostep and scan quantify the latch, and the cursor-position
+probe pins the exact marker equation.  The remaining T1b-A1 `#check` entries
+pin declaration existence only; their theorem bodies are covered by the
+corresponding `Tests/AxiomsAudit.lean` roots.  `t1CS_frame_macrostep` and
+`t1CS_scan_frames` take the latch as an explicit argument rather than an
+`optParam`, so callers cannot silently select only the `latch = false` instance.
 `t1MutationFrames_getElem?_cursor` puts `t1CursorFrameIndex`'s arithmetic under
-the kernel; its unconsumed physical-cell companion definition is dropped here
-and deferred to the T1b-A2 slice that first reads or writes at that address.
+the kernel.  `t1CursorBase` remains a pure bounded-layout definition; any
+machine execution that reads or writes at that physical address is deferred to
+the T1b-A2 slice.
 The control-table bodies, the frame ABI, the clock and every pre-existing proof
 are untouched: the only new content is that cursor-position theorem, and the
 only signature change is the two now-explicit latch arguments.

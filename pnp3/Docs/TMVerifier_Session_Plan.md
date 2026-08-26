@@ -190,21 +190,6 @@ intentionally superseded rather than retained with a false conclusion.
 This increment is **Infrastructure**, not a restricted lower bound and not
 P-vs-NP mainline progress.
 
-**T1b-A1 fixed-control activation delivered (2026-08-23):**
-`TuringToolkit/TrueUniformSeek.lean` extends the same zero-parameter finite
-control with one Boolean latch and the machine-only modes needed to create
-`spent` and `cursor` markers.  The ABI and quadratic clock are unchanged, and
-no runtime `Nat`, width, offset, or index enters the state or program term.
-Small transition-table lemmas feed the generic `ConstStatePhasedStepBridge`;
-the latch-aware validation module supplies reusable aligned right/left/stay
-step adapters and proves the success/OOB handoff states are stable.
-
-The existing exact validation/rewind execution theorem still reaches the now
-active `startMutation` boundary at its finite prefix time with the complete tape
-unchanged.  This A1 slice is **Infrastructure** and does not yet execute cursor
-installation, a unary decrement, the `j → j+1` loop, restoration, output, or
-acceptance; those genuine execution theorems are isolated in T1b-A2/T1c.
-
 **T1a review hardening (2026-08-23):** the generic forward-frame scanner
 `t1CS_scan_frames` and non-anchor reverse scanner `t1CS_rewind_tail` are public
 T1b reuse surfaces, with exact import-side type probes and axiom audits.  Their
@@ -237,6 +222,43 @@ five corollaries on concrete programs.  This is **Infrastructure**, not
 verifier correctness, runtime closure, or P-vs-NP mainline progress; it
 unblocks the T1b destructive seek proof layer after direct unfolding exceeded
 the heartbeat budget.
+
+**T1b-A1 fixed-control activation delivered (2026-08-23, after the generic
+step bridge it consumes):**
+`TuringToolkit/TrueUniformSeek.lean` extends the same zero-parameter finite
+control with one Boolean latch and the machine-only modes needed to create
+`spent` and `cursor` markers.  The ABI and quadratic clock are unchanged, and
+no runtime `Nat`, width, offset, or index enters the state or program term.
+Small transition-table lemmas feed the generic `ConstStatePhasedStepBridge`;
+the latch-aware validation module supplies reusable aligned right/left/stay
+step adapters and proves the success/OOB handoff states are stable.
+
+The control table is a **T1a/T1b-A fragment, not a complete T1 control**: the
+T1c transitions — index-field restoration, the output write, and acceptance —
+are absent from the table, not merely unproved.  No transition enters
+`accept`, and no transition leaves `successStart` or `oobStart`.
+
+The existing exact validation/rewind execution theorem still reaches the now
+active `startMutation` boundary at its finite prefix time with the complete tape
+unchanged.  This A1 slice is **Infrastructure** and does not yet execute cursor
+installation, a unary decrement, the `j → j+1` loop, restoration, output, or
+acceptance; those genuine execution theorems are isolated in T1b-A2/T1c.
+
+**T1b-A1 review-surface hardening:** the T1b-A1 block of
+`Tests/TMTrueUniformSeekSurfaceTests.lean` restates every pinned statement as a
+`theorem check_*` instead of a bare `#check`, so weakening a written bit, a
+head move or a successor state fails the surface test rather than passing it.
+The pinned list is kept equal to the T1a/T1b-A1 blocks of
+`Tests/AxiomsAudit.lean`; table lemmas consumed by an audited capstone are
+covered transitively through its dependency closure.  `t1CS_frame_macrostep`
+and `t1CS_scan_frames` take the latch as an explicit argument rather than an
+`optParam`, so a probe cannot silently pin only the `latch = false` instance.
+`t1MutationFrames_getElem?_cursor` puts `t1CursorFrameIndex`'s arithmetic under
+the kernel; its unconsumed physical-cell companion definition is dropped here
+and deferred to the T1b-A2 slice that first reads or writes at that address.
+The control-table bodies, the frame ABI, the clock and every pre-existing proof
+are untouched: the only new content is that cursor-position theorem, and the
+only signature change is the two now-explicit latch arguments.
 
 ### Session 2 — `writeVecOfNatProgram`
 **File:** new

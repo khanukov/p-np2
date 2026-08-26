@@ -5,12 +5,18 @@ import Mathlib.Tactic.DeriveFintype
 /-!
 # T1 fixed-control true uniform seek: finite control
 
-This module holds the **complete** zero-parameter T1 finite control: the
-read-only grammar pass and rewind of T1a, plus the destructive cursor/index
-mutation modes of T1b.  There is still exactly one program declaration
-(`t1CS`), no machine arguments, no `Nat` in `T1State`, and no compiled
-offsets: the only state added for mutation is a single Boolean latch holding
-the data value currently carried by the cursor.
+This module holds the current zero-parameter T1 finite control: the read-only
+grammar pass and rewind of T1a, plus the destructive cursor/index mutation
+modes of T1b-A.  It is a **fragment of T1, not the whole of it**: the T1c
+transitions — restoring the consumed index field, writing the output frame,
+and entering `accept` — are *absent from this table*, not merely unproved.
+No transition enters `accept`, and no transition leaves `successStart` or
+`oobStart`.
+
+There is still exactly one program declaration (`t1CS`), no machine
+arguments, no `Nat` in `T1State`, and no compiled offsets: the only state
+added for mutation is a single Boolean latch holding the data value currently
+carried by the cursor.
 
 The twenty-one modes fall into five groups.
 
@@ -27,8 +33,10 @@ The twenty-one modes fall into five groups.
   `backupCursor` turns around onto it, and `writeData` restores it to the
   latched data frame.
 * Boundaries: `successStart` (all index units consumed) and `oobStart` (the
-  data field ran out) are the two T1c handoff states; `accept` and `reject`
-  are the stable sinks.
+  data field ran out) are the two T1c handoff states; both are idle here,
+  because the T1c transitions that would leave them are not part of this
+  table.  `accept` and `reject` are the stable sinks, and only `reject` is
+  reachable from any other mode.
 
 Two of the mutation modes (`seekSeparator`, `seekCursorFwd`) read frames
 left to right exactly like the T1a validation modes, so they are folded into
@@ -36,12 +44,17 @@ the shared `t1Advance`/`t1Complete` table and inherit T1a's macrostep
 machinery.  `seekIndexBack` reads frames right to left and has its own
 `t1SeekBackAdvance` table.
 
-**Transition-table lemmas.**  Everything below `t1Transition` is a *small
-standalone table lemma*: a plain tuple equation, proved by `rfl` after at
-most one `T1Mode` case split.  Downstream `TM.stepConfig` proofs consume only
-these lemmas through the generic `ConstStatePhasedStepBridge` corollaries and
-never unfold `t1Transition` itself.  That is what keeps the enlarged
-twenty-one-branch control table out of every execution proof.
+**Transition-table lemmas.**  Every lemma in the *Standalone
+transition-table lemmas* section below is a plain tuple equation about
+`t1Transition`, discharged by `rfl` after at most one case split — on
+`T1FramePosition`, through `T1ForwardMode.cases`, or on the decoded frame —
+possibly preceded by rewriting with the lemma's own decoded-frame hypothesis.
+The clock `t1Clock`, the program `t1CS` and its two projections also sit
+below `t1Transition`; they are definitions and projections, not table lemmas.
+Downstream `TM.stepConfig` proofs consume only the table lemmas through the
+generic `ConstStatePhasedStepBridge` corollaries and never unfold
+`t1Transition` itself.  That is what keeps the enlarged twenty-one-mode
+control table out of every execution proof.
 
 This module makes no addressing, restoration, or acceptance claim.
 -/
@@ -60,9 +73,9 @@ inductive T1Mode
 inductive T1FramePosition | p0 | p1 | p2 | p3
   deriving Fintype, DecidableEq, Repr
 
-/-- The complete T1 control state: a mode, a frame position, a three-bit
-frame buffer, and the single Boolean cursor-value latch.  No `Nat`, width,
-offset, or length field occurs. -/
+/-- The T1 control state as it stands after T1b-A1: a mode, a frame position,
+a three-bit frame buffer, and the single Boolean cursor-value latch.  No
+`Nat`, width, offset, or length field occurs. -/
 structure T1State where
   mode : T1Mode
   position : T1FramePosition

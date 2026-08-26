@@ -4,18 +4,20 @@ import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedStepBridge
 /-!
 # Generic T1 execution theorems: read-only validation and rewind
 
-The results here are about `TM.runConfig`/`TM.run`, not a separate pure
-interpreter.  They establish the four-bit forward macrostep, stable terminal
-sinks, the two idle T1c boundary states, and the exact read-only
-validation/rewind trace for every canonical request.
+The results here are genuine `TM.runConfig` traces of the compiled machine,
+not statements about a separate pure interpreter.  They establish the four-bit
+forward macrostep, stable terminal sinks, the two idle T1c boundary states,
+and the exact read-only validation/rewind trace for every canonical request.
+Every trace is finite-prefix: no full-clock `TM.run` statement about T1
+survives in this slice, because `startMutation` is no longer idle.
 
-**Proof discipline.**  Every `TM.stepConfig` fact in this module — and in the
-dependent mutation-execution slice — is obtained by applying a
-corollary of the generic `ConstStatePhasedStepBridge` to a standalone
-transition-table lemma of `TrueUniformSeek`.  The three public
-`t1CS_aligned_step_*` adapters below are the primary reuse surface; the small
-internal stability proof follows the same discipline.  `t1Transition` is never
-unfolded inside a `stepConfig` proof.
+**Proof discipline.**  Every `TM.stepConfig` fact in this module is obtained
+by applying a corollary of the generic `ConstStatePhasedStepBridge` to a
+standalone transition-table lemma of `TrueUniformSeek`; the dependent
+mutation-execution slice is required to keep the same discipline.  The three
+public `t1CS_aligned_step_*` adapters below are the primary reuse surface, and
+the small internal stability proof applies the generic `stay` corollary
+directly.  `t1Transition` is never unfolded inside a `stepConfig` proof.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -166,14 +168,15 @@ private theorem t1CS_step_forward_p3
 validation modes or the two T1b forward scans — a grammar-valid frame on an
 arbitrary surrounding tape is decoded in exactly four physical TM steps.  The
 head advances by four, no tape cell changes, and the latch is carried
-through. -/
+through.  The latch is an explicit argument rather than an `optParam`, so an
+import-side probe cannot silently pin only the `latch = false` instance. -/
 theorem t1CS_frame_macrostep
     (n h : Nat) (hsafe : h + 4 < T1M.tapeLength n)
     (tape : Fin (T1M.tapeLength n) → Bool) (mode : T1Mode) (frame : T1Frame)
     (hmode : T1ForwardMode mode)
     (hnext : t1Advance mode frame ≠ .reject)
     (hbits : t1PhysicalBitsAt hsafe tape = frame.bits)
-    (latch : Bool := false) :
+    (latch : Bool) :
     TM.runConfig (M := T1M)
         (t1AlignedConfig n h (by omega) tape mode .p0 false false false latch) 4 =
       t1AlignedConfig n (h+4) hsafe tape (t1Advance mode frame)
@@ -296,7 +299,7 @@ theorem t1CS_runConfig_oobStart
 def t1ListTape {n : Nat} (bits : List Bool) :
     Fin (T1M.tapeLength n) → Bool := fun i => bits.getD i.val false
 
-theorem t1PhysicalBitsAt_flatMap
+private theorem t1PhysicalBitsAt_flatMap
     (n : Nat) (pre suffix : List T1Frame) (frame : T1Frame)
     (hsafe : 4 * pre.length + 4 < T1M.tapeLength n) :
     t1PhysicalBitsAt hsafe
@@ -324,12 +327,13 @@ def t1AdvanceList : T1Mode → List T1Frame → T1Mode
 /-- Scan a grammar-valid list of frames from left to right in exactly four TM
 steps per frame.  The theorem preserves the complete list-backed tape and the
 latch, and ends at the mode obtained by folding `t1Advance` over the scanned
-frames. -/
+frames.  As in `t1CS_frame_macrostep`, the latch is an explicit argument, not
+an `optParam`. -/
 theorem t1CS_scan_frames
     (n : Nat) (pre frames suffix : List T1Frame) (mode : T1Mode)
     (hpath : T1ValidPath mode frames)
     (hsafe : 4 * (pre.length + frames.length) < T1M.tapeLength n)
-    (latch : Bool := false) :
+    (latch : Bool) :
     TM.runConfig (M := T1M)
         (t1AlignedConfig n (4 * pre.length) (by omega)
           (t1ListTape ((pre ++ frames ++ suffix).flatMap T1Frame.bits)) mode
@@ -471,7 +475,7 @@ theorem t1CS_validate_encoded_exact (r : T1Request) :
       TM.tapeLength, t1Clock]
     omega
   have hscan := t1CS_scan_frames (encodeT1 r).length [] (t1ValidationFrames r) []
-    .validateBof (t1ValidationPath r) (by simpa using hsafe)
+    .validateBof (t1ValidationPath r) (by simpa using hsafe) false
   simp only [List.nil_append, List.append_nil, List.length_nil, zero_add,
     t1ValidationAdvance] at hscan
   have hinit : T1M.initialConfig (t1Point (encodeT1 r)) =

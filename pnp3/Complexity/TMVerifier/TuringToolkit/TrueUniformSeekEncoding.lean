@@ -363,19 +363,20 @@ bof · index^(k-j) · spent^j · separator
     · data(b₀)…data(b_{j-1}) · cursor · data(b_{j+1})… · output(false) · finish
 ```
 
-This is the vocabulary the T1b-B loop invariant is stated in.  T1b-A only
-identifies the `j = 0` layout with the tape produced by the genuine
-installation run; the `j → j+1` step is deliberately not claimed here. -/
+This is the vocabulary the T1b-B loop invariant is stated in.  T1b-A2 will
+identify the `j = 0` layout with the tape produced by the genuine installation
+run; nothing in this slice executes that installation, and the `j → j+1` step
+is deliberately not claimed here either. -/
 def t1MutationFrames (r : T1Request) (j : Nat) : List T1Frame :=
   [.bof] ++ List.replicate (r.index - j) .index ++ List.replicate j .spent ++
     [.separator] ++ (r.data.take j).map .data ++ [.cursor] ++
     (r.data.drop (j+1)).map .data ++ [.output false, .finish]
 
-/-- Physical frame index of the cursor after `j` decrements. -/
+/-- Frame index of the cursor in `t1MutationFrames r j`.  The arithmetic is
+not asserted: `t1MutationFrames_getElem?_cursor` below checks it against the
+layout.  The companion physical cell address is deliberately deferred to the
+T1b-A2 slice that first reads or writes at it. -/
 def t1CursorFrameIndex (r : T1Request) (j : Nat) : Nat := r.index + 2 + j
-
-/-- Physical cell index where the cursor frame starts after `j` decrements. -/
-def t1CursorBase (r : T1Request) (j : Nat) : Nat := 4 * t1CursorFrameIndex r j
 
 theorem t1MutationFrames_length (r : T1Request) (j : Nat)
     (hj : j ≤ r.index) (hdata : j < r.data.length) :
@@ -386,6 +387,30 @@ theorem t1MutationFrames_length (r : T1Request) (j : Nat)
     simp; omega
   simp [t1MutationFrames]
   omega
+
+/-- **The cursor sits exactly at `t1CursorFrameIndex`.**  Under the same two
+hypotheses as `t1MutationFrames_length`, frame number `r.index + 2 + j` of the
+mutation layout is the `cursor` marker.  This is the kernel-checked form of
+`t1CursorFrameIndex`'s arithmetic; it is a statement about the frame list
+only, with no machine, tape, or execution content. -/
+theorem t1MutationFrames_getElem?_cursor (r : T1Request) (j : Nat)
+    (hj : j ≤ r.index) (hdata : j < r.data.length) :
+    (t1MutationFrames r j)[t1CursorFrameIndex r j]? = some .cursor := by
+  have hpre : ([.bof] ++ List.replicate (r.index - j) .index ++
+      List.replicate j .spent ++ [.separator] ++
+      (r.data.take j).map .data : List T1Frame).length =
+      t1CursorFrameIndex r j := by
+    simp [t1CursorFrameIndex]
+    omega
+  have hsplit : t1MutationFrames r j =
+      ([.bof] ++ List.replicate (r.index - j) .index ++
+          List.replicate j .spent ++ [.separator] ++
+          (r.data.take j).map .data) ++
+        T1Frame.cursor :: ((r.data.drop (j+1)).map .data ++
+          [.output false, .finish]) := by
+    simp [t1MutationFrames, List.append_assoc]
+  rw [hsplit, ← hpre, List.getElem?_append_right (Nat.le_refl _)]
+  simp
 
 /-- At `j = 0` the mutation layout is the canonical encoder layout with the
 first data frame replaced by the cursor marker. -/

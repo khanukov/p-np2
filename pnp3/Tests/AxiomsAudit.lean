@@ -107,8 +107,14 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.stepBridgeProbeStayCS_step_stay
 
 -- T1a fixed-control canonical validation and read-only rewind handoff.
+-- Every declaration in this block and in the T1b-A1 block below also has a
+-- statement-restating `theorem check_*` wrapper in
+-- `pnp3/Tests/TMTrueUniformSeekSurfaceTests.lean`; the two lists are kept
+-- equal.  Table lemmas consumed by one of these capstones are covered
+-- transitively through its dependency closure.
 #print axioms Internal.PsubsetPpoly.TM.decodeT1Tape_encode
 #print axioms Internal.PsubsetPpoly.TM.decodeT1Tape?_eq_some
+#print axioms Internal.PsubsetPpoly.TM.t1CS_runTime
 #print axioms Internal.PsubsetPpoly.TM.t1CS_frame_macrostep
 #print axioms Internal.PsubsetPpoly.TM.t1CS_scan_frames
 #print axioms Internal.PsubsetPpoly.TM.t1CS_validate_encoded_exact
@@ -119,20 +125,33 @@ open Pnp3.Magnification
 -- T1b-A1 fixed-control activation and generic-step adapters.  This slice
 -- preserves the exact validation/rewind run to the now-active mutation handoff;
 -- destructive execution capstones are isolated in the dependent T1b-A2 slice.
+-- The T1c transitions (index restoration, output write, acceptance) are absent
+-- from the control table, so nothing below claims them.
 #print axioms Internal.PsubsetPpoly.TM.t1Transition_startMutation_active
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_probeData_p0
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_probeData_p1
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_probeData_p2
 #print axioms Internal.PsubsetPpoly.TM.t1Transition_probeData_p3_data
 #print axioms Internal.PsubsetPpoly.TM.t1Transition_probeData_p3_oob
 #print axioms Internal.PsubsetPpoly.TM.t1Transition_turnInstall
 #print axioms Internal.PsubsetPpoly.TM.t1Transition_writeCursor
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_seekIndexBack_p3
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_seekIndexBack_p2
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_seekIndexBack_p1
 #print axioms Internal.PsubsetPpoly.TM.t1Transition_seekIndexBack_p0_mark
 #print axioms Internal.PsubsetPpoly.TM.t1Transition_seekIndexBack_p0_skip
 #print axioms Internal.PsubsetPpoly.TM.t1Transition_seekIndexBack_p0_success
 #print axioms Internal.PsubsetPpoly.TM.t1Transition_markSpent
 #print axioms Internal.PsubsetPpoly.TM.t1Transition_backupCursor
 #print axioms Internal.PsubsetPpoly.TM.t1Transition_writeData
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_forward_p3_reject
+#print axioms Internal.PsubsetPpoly.TM.T1Frame.bits_spent
+#print axioms Internal.PsubsetPpoly.TM.T1Frame.bits_cursor
+#print axioms Internal.PsubsetPpoly.TM.T1Frame.bits_data
 #print axioms Internal.PsubsetPpoly.TM.t1WriteFrame_ascending
 #print axioms Internal.PsubsetPpoly.TM.t1WriteFrame_descending
 #print axioms Internal.PsubsetPpoly.TM.t1MutationFrames_length
+#print axioms Internal.PsubsetPpoly.TM.t1MutationFrames_getElem?_cursor
 #print axioms Internal.PsubsetPpoly.TM.t1MutationFrames_zero
 #print axioms Internal.PsubsetPpoly.TM.encodeT1Frames_split
 #print axioms Internal.PsubsetPpoly.TM.t1CS_aligned_step_right

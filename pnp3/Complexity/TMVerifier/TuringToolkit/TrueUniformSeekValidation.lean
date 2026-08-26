@@ -297,7 +297,13 @@ theorem t1CS_runConfig_oobStart
 def t1ListTape {n : Nat} (bits : List Bool) :
     Fin (T1M.tapeLength n) → Bool := fun i => bits.getD i.val false
 
-private theorem t1PhysicalBitsAt_flatMap
+/-- **List-backed frame-locality bridge.**  At a frame boundary in a tape
+obtained by flattening four-bit frame encodings, reading the next four physical
+cells returns exactly that frame's bits.  This public lemma is reused by
+dependent mutation execution.  It is only a frame-locality fact for the
+list-backed tape; it makes no claim about arbitrary-tape acceptance or machine
+runtime. -/
+theorem t1PhysicalBitsAt_flatMap
     (n : Nat) (pre suffix : List T1Frame) (frame : T1Frame)
     (hsafe : 4 * pre.length + 4 < T1M.tapeLength n) :
     t1PhysicalBitsAt hsafe

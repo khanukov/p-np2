@@ -1,20 +1,40 @@
-import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekValidation
+import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekMutation
 
 /-!
-# T1 true uniform-seek examples
+# T1a/T1b-A true uniform-seek examples
 
-These examples exercise only the canonical encoder and the proved read-only
-validation/rewind handoff.  `startMutation` is now the active T1a→T1b entry
-point; reaching it is a finite-prefix validation result, not an
-addressing-success result.
+The first example retains the canonical codec probe.  The named T1b-A probes
+specialize genuine execution theorems at index zero, a nonzero index, and the
+empty-data out-of-bounds path.  They do not claim the T1b-B loop invariant,
+restoration, output, or acceptance.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
 
-/-- A small canonical request used to instantiate the T1 theorems. -/
+/-- A small canonical request used to instantiate the T1a codec theorem. -/
 def t1aExampleRequest : T1Request := ⟨2, [true, false, true]⟩
 
 example : decodeT1Tape? (encodeT1 t1aExampleRequest) = some t1aExampleRequest :=
   decodeT1Tape_encode t1aExampleRequest
+
+/-- Genuine initial-configuration cursor installation at runtime index zero. -/
+def t1bIndexZeroRequest : T1Request := ⟨0, [true, false]⟩
+
+def t1bIndexZero_install :=
+  t1CS_runConfig_install_first_cursor_exact
+    t1bIndexZeroRequest true [false] rfl
+
+/-- Genuine initial-configuration cursor installation at a nonzero index. -/
+def t1bNonzeroIndexRequest : T1Request := ⟨2, [true, false, true]⟩
+
+def t1bNonzeroIndex_install :=
+  t1CS_runConfig_install_first_cursor_exact
+    t1bNonzeroIndexRequest true [false, true] rfl
+
+/-- Full-public-clock empty-data execution reaches the idle OOB boundary. -/
+def t1bEmptyDataRequest : T1Request := ⟨2, []⟩
+
+def t1bEmptyData_oob :=
+  t1CS_run_encoded_oob_empty_data t1bEmptyDataRequest rfl
 
 end Pnp3.Internal.PsubsetPpoly.TM

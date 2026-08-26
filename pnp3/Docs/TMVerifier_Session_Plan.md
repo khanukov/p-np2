@@ -182,13 +182,37 @@ frame ABI and proves the encoder/decoder round trip.
 `128 * (N + 1)^2 + 128`.  `TuringToolkit/TrueUniformSeekValidation.lean`
 proves genuine `TM.runConfig` traces for the four-bit forward macrostep,
 canonical grammar validation, and the exact rewind to the left anchor.  The
-finite-time theorem `t1CS_validate_rewind_encoded_exact` reaches the
-`startMutation` handoff while preserving the initial tape.  T1b-A1 makes that
-handoff active, so the former T1a full-clock idle-handoff theorem is
+exact finite-time theorem `t1CS_validate_rewind_encoded_exact` reaches the
+`startMutation` handoff while preserving the initial tape.  T1b-A subsequently
+makes that handoff active, so the former T1a full-clock idle-handoff theorem is
 intentionally superseded rather than retained with a false conclusion.
 
 This increment is **Infrastructure**, not a restricted lower bound and not
 P-vs-NP mainline progress.
+
+**T1b-A fixed destructive-seek opening delivered (2026-08-23):**
+`TuringToolkit/TrueUniformSeek.lean` extends the same zero-parameter finite
+control with a single Boolean latch and machine-created `spent`/`cursor`
+markers.  The ABI, public quadratic clock, and absence of runtime `Nat`, width,
+offset, or index fields are unchanged.  Small transition-table lemmas feed the
+generic `ConstStatePhasedStepBridge`; mutation proofs do not unfold the full
+control table inside `TM.stepConfig`.
+
+`TuringToolkit/TrueUniformSeekMutation.lean` proves genuine atomic execution
+for leaving `startMutation`, probing data/OOB, installing and restoring cursor
+frames, marking one unary index frame as `spent`, and finding the next index or
+success anchor.  The capstones prove exact first-cursor installation from both
+the mutation boundary and the real initial configuration, and prove that an
+empty data region reaches the idle OOB boundary under the full public clock.
+Concrete index-zero, nonzero-index, and empty-data runs instantiate the public
+theorems.
+
+This T1b-A increment remains **Infrastructure**.  It does not prove the
+iterated `j → j+1` mutation invariant, successful runtime-index lookup,
+restoration of all temporary markers, output writing, malformed-input closure,
+or acceptance.  Those are explicit T1b-B/T1c obligations.  The modules and
+their public headline results are covered by concrete examples, a compile-time
+surface test, and the axiom audit.
 
 **T1a review hardening (2026-08-23):** the generic forward-frame scanner
 `t1CS_scan_frames` and non-anchor reverse scanner `t1CS_rewind_tail` are public
@@ -259,6 +283,12 @@ the T1b-A2 slice.
 The control-table bodies, the frame ABI, the clock and every pre-existing proof
 are untouched: the only new content is that cursor-position theorem, and the
 only signature change is the two now-explicit latch arguments.
+
+The earlier A1 review decision to keep `t1PhysicalBitsAt_flatMap` private is
+superseded now that the dependent A2 mutation execution has concrete consumers.
+The helper is intentionally public as the list-backed frame-locality bridge
+used by those proofs; it does not state arbitrary-tape acceptance or a machine
+runtime bound.
 
 ### Session 2 — `writeVecOfNatProgram`
 **File:** new

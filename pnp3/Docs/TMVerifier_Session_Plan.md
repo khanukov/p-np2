@@ -217,9 +217,10 @@ surface test, and the axiom audit.
 **T1b-B one-iteration loop delivered (2026-08-23):**
 `TuringToolkit/TrueUniformSeekMutationLoop.lean` defines the exact canonical
 loop configuration `t1MutationConfig r j`: `index^(k-j)`, `spent^j`, one cursor
-at data slot `j`, and head immediately before that cursor.  The constructor
+at data slot `j`, and — under the executed bound `j ≤ k` — head immediately
+before that cursor.  The constructor
 carries an explicit Boolean latch; the execution capstones identify it with
-`r.data[j]` through their `List.get?` hypotheses.
+`r.data[j]` through their `getElem?` hypotheses.
 The genuine theorem `t1CS_loop_iteration_exact` executes one full on-tape unary
 decrement and cursor move in exactly `16*j+37` steps, producing the complete
 canonical `j+1` configuration.  `t1CS_loop_oob_exact` proves the exact companion
@@ -228,9 +229,9 @@ cursor-free and restored, while the consumed index markers remain explicitly
 `spent`, and control is at the idle OOB boundary.
 
 This slice is **Infrastructure**.  It does not yet iterate the one-step theorem
-over all unary index units or prove the final `List.get?` success/OOB split.
-It also proves no marker repair, output write, malformed-input closure, or
-acceptance; those remain the next loop-driver and T1c obligations.
+over all unary index units or prove the final `getElem?` success/OOB split.
+It also proves no consumed-index-field repair, output write, malformed-input
+closure, or acceptance; those remain the next loop-driver and T1c obligations.
 
 **T1a review hardening (2026-08-23):** the generic forward-frame scanner
 `t1CS_scan_frames` and non-anchor reverse scanner `t1CS_rewind_tail` are public

@@ -4,8 +4,8 @@ import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekMutationLoop
 # Concrete T1b-B one-iteration probes
 
 These named proof values instantiate the genuine loop-step and OOB theorems.
-They are not evaluator tests and make no induction, restoration, output, or
-acceptance claim.
+They are not evaluator tests and make no loop-driver induction,
+consumed-index-field repair, output-write, or acceptance claim.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM

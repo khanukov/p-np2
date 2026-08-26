@@ -3,9 +3,9 @@ import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekMutation
 /-!
 # T1b-B: the genuine destructive seek loop
 
-This module closes the mutation loop of the T1 machine with real
-`TM.runConfig` theorems.  It adds no machine, no state, no clock and no
-vocabulary beyond the canonical `t1MutationFrames` layout T1b-A introduced:
+This module closes one round of the T1 mutation loop with real `TM.runConfig`
+theorems.  It adds no machine, control state, clock or frame code; its derived
+layouts and configuration use the canonical vocabulary T1b-A introduced:
 every `TM.stepConfig` fact still comes from the atomic macro-step theorems of
 `TrueUniformSeekMutation.lean`, which in turn come from the standalone
 transition-table lemmas through the generic step bridge.  The control table is
@@ -20,7 +20,7 @@ tape  = t1MutationTape n r j
       = bof · index^(k-j) · spent^j · separator
           · data(b₀)…data(b_{j-1}) · cursor · data(b_{j+1})… · output(false)
           · finish · blank
-head  = t1CursorBase r j - 1        (last cell before the cursor frame)
+head  = t1CursorBase r j - 1        (before the cursor when j ≤ k)
 state = seekIndexBack.p3, latch = value
 ```
 
@@ -31,8 +31,8 @@ reaches at `j = 0` (`t1CS_mutationConfig_zero`).
 
 * `t1CS_scan_back_skip` — the backward multi-frame scan: `seekIndexBack`
   crosses a whole run of `spent`, `separator` and data frames in four genuine
-  steps per frame, tape and latch untouched.  Its base case is T1b-A's
-  `t1CS_seekIndexBack_frame_skip`.
+  steps per frame, tape and latch untouched.  Its inductive step uses T1b-A's
+  `t1CS_seekIndexBack_frame_skip`; the empty skipped run is the base case.
 * `t1CS_mutationConfig_zero` — T1b-A's installation capstone lands exactly on
   `Σ(0)`.
 * `t1CS_loop_iteration_exact` — the **one-iteration theorem**: for
@@ -367,9 +367,9 @@ theorem t1CursorBase_safe (r : T1Request) (j : Nat) (hj : j < r.data.length) :
   exact t1_lt_tapeLength _ _ hb
 
 /-- **Σ(r, j, value): the canonical mutation loop configuration.**  The tape is
-the canonical layout after `j` on-tape decrements, the head sits on the last
-cell before the cursor frame, the control is in the backward index scan and
-the latch carries `value`. -/
+the derived layout at stage `j`; under the loop theorems' bound `j ≤ r.index`,
+the head sits on the last cell before the cursor frame.  The control is in the
+backward index scan and the latch carries `value`. -/
 def t1MutationConfig (r : T1Request) (j : Nat) (hj : j < r.data.length)
     (value : Bool) : Configuration (M := T1M) (encodeT1 r).length :=
   t1AlignedConfig (encodeT1 r).length (t1CursorBase r j - 1)

@@ -124,8 +124,8 @@ private theorem t1ListTape_write_frame' (n : Nat) (pre suf : List T1Frame)
 /-- **Backward multi-frame scan.**  `seekIndexBack` crosses a whole run of
 `spent`, `separator` and data frames in exactly four genuine steps per frame,
 leaving the tape and the latch untouched.  This is the only genuinely new
-execution lemma of T1b-B; it is an induction over the skipped run whose base
-case is T1b-A's `t1CS_seekIndexBack_frame_skip`. -/
+execution lemma of T1b-B; the empty skipped run is the base case, and the
+inductive step uses T1b-A's `t1CS_seekIndexBack_frame_skip`. -/
 theorem t1CS_scan_back_skip (n : Nat) (pre skipped suffix : List T1Frame)
     (hpre : 0 < pre.length)
     (hskip : ∀ f ∈ skipped, f = .spent ∨ f = .separator ∨ ∃ v, f = .data v)

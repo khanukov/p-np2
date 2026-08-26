@@ -284,6 +284,12 @@ The control-table bodies, the frame ABI, the clock and every pre-existing proof
 are untouched: the only new content is that cursor-position theorem, and the
 only signature change is the two now-explicit latch arguments.
 
+The earlier A1 review decision to keep `t1PhysicalBitsAt_flatMap` private is
+superseded now that the dependent A2 mutation execution has concrete consumers.
+The helper is intentionally public as the list-backed frame-locality bridge
+used by those proofs; it does not state arbitrary-tape acceptance or a machine
+runtime bound.
+
 ### Session 2 — `writeVecOfNatProgram`
 **File:** new
 `pnp3/Complexity/TMVerifier/TuringToolkit/RowInputWriter.lean`

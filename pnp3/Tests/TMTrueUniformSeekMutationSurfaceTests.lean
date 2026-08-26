@@ -43,6 +43,14 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @t1MutationTape_zero
 #check @t1ListTape_write_frame
 
+theorem check_t1PhysicalBitsAt_flatMap
+    (n : Nat) (pre suffix : List T1Frame) (frame : T1Frame)
+    (hsafe : 4 * pre.length + 4 < T1M.tapeLength n) :
+    t1PhysicalBitsAt hsafe
+        (t1ListTape ((pre ++ frame :: suffix).flatMap T1Frame.bits)) =
+      frame.bits :=
+  t1PhysicalBitsAt_flatMap n pre suffix frame hsafe
+
 -- Generic aligned-step bridge adapters and stable T1c boundaries.
 #check @t1CS_aligned_step_right
 #check @t1CS_aligned_step_left

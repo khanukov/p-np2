@@ -135,6 +135,7 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.t1MutationFrames_getElem?_cursor
 #print axioms Internal.PsubsetPpoly.TM.t1MutationFrames_zero
 #print axioms Internal.PsubsetPpoly.TM.encodeT1Frames_split
+#print axioms Internal.PsubsetPpoly.TM.t1PhysicalBitsAt_flatMap
 #print axioms Internal.PsubsetPpoly.TM.t1CS_aligned_step_right
 #print axioms Internal.PsubsetPpoly.TM.t1CS_aligned_step_left
 #print axioms Internal.PsubsetPpoly.TM.t1CS_aligned_step_stay

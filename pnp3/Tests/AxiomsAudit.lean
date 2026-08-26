@@ -17,6 +17,7 @@ import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExam
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
 import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekExamples
+import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekMutationLoopExamples
 
 /-!
   pnp3/Tests/AxiomsAudit.lean
@@ -161,6 +162,18 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.t1bIndexZero_install
 #print axioms Internal.PsubsetPpoly.TM.t1bNonzeroIndex_install
 #print axioms Internal.PsubsetPpoly.TM.t1bEmptyData_oob
+
+-- T1b-B genuine one-iteration mutation loop and exact OOB companion.  The
+-- induction/terminal split and all T1c repair/output/acceptance remain open.
+#print axioms Internal.PsubsetPpoly.TM.t1CS_scan_back_skip
+#print axioms Internal.PsubsetPpoly.TM.t1MutationTape_eq_listTape
+#print axioms Internal.PsubsetPpoly.TM.t1CursorBase_safe
+#print axioms Internal.PsubsetPpoly.TM.t1CS_mutationConfig_zero
+#print axioms Internal.PsubsetPpoly.TM.t1LoopProbe_safe
+#print axioms Internal.PsubsetPpoly.TM.t1CS_loop_iteration_exact
+#print axioms Internal.PsubsetPpoly.TM.t1CS_loop_oob_exact
+#print axioms Internal.PsubsetPpoly.TM.t1bbIterationZero
+#print axioms Internal.PsubsetPpoly.TM.t1bbOobAtOne
 
 -- Итоговые утверждения (формульная сепарация).
 #print axioms RefutedRoute_NP_not_subset_PpolyFormula_final

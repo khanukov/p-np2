@@ -182,15 +182,13 @@ frame ABI and proves the encoder/decoder round trip.
 `128 * (N + 1)^2 + 128`.  `TuringToolkit/TrueUniformSeekValidation.lean`
 proves genuine `TM.runConfig` traces for the four-bit forward macrostep,
 canonical grammar validation, and the exact rewind to the left anchor.  The
-capstone `t1CS_run_encoded_reaches_mutation` proves that `TM.run` reaches the
-read-only `startMutation` handoff under the public clock while preserving the
-initial tape.  The handoff is idle in T1a.
+finite-time theorem `t1CS_validate_rewind_encoded_exact` reaches the
+`startMutation` handoff while preserving the initial tape.  T1b-A1 makes that
+handoff active, so the former T1a full-clock idle-handoff theorem is
+intentionally superseded rather than retained with a false conclusion.
 
 This increment is **Infrastructure**, not a restricted lower bound and not
-P-vs-NP mainline progress.  It makes no addressing, destructive seek,
-restoration, acceptance, or T1b success claim.  The modules and their public
-headline results are covered by a concrete example, a compile-time surface
-test, and the axiom audit.
+P-vs-NP mainline progress.
 
 **T1a review hardening (2026-08-23):** the generic forward-frame scanner
 `t1CS_scan_frames` and non-anchor reverse scanner `t1CS_rewind_tail` are public
@@ -224,6 +222,43 @@ five corollaries on concrete programs.  This is **Infrastructure**, not
 verifier correctness, runtime closure, or P-vs-NP mainline progress; it
 unblocks the T1b destructive seek proof layer after direct unfolding exceeded
 the heartbeat budget.
+
+**T1b-A1 fixed-control activation delivered (2026-08-23, after the generic
+step bridge it consumes):**
+`TuringToolkit/TrueUniformSeek.lean` extends the same zero-parameter finite
+control with one Boolean latch and the machine-only modes needed to create
+`spent` and `cursor` markers.  The ABI and quadratic clock are unchanged, and
+no runtime `Nat`, width, offset, or index enters the state or program term.
+Small transition-table lemmas feed the generic `ConstStatePhasedStepBridge`;
+the latch-aware validation module supplies reusable aligned right/left/stay
+step adapters and proves the success/OOB handoff states are stable.
+
+The control table is a **T1a/T1b-A fragment, not a complete T1 control**: the
+T1c transitions — index-field restoration, the output write, and acceptance —
+are absent from the table, not merely unproved.  No transition enters
+`accept`, and no transition leaves `successStart` or `oobStart`.
+
+The existing exact validation/rewind execution theorem still reaches the now
+active `startMutation` boundary at its finite prefix time with the complete tape
+unchanged.  This A1 slice is **Infrastructure** and does not yet execute cursor
+installation, a unary decrement, the `j → j+1` loop, restoration, output, or
+acceptance; those genuine execution theorems are isolated in T1b-A2/T1c.
+
+**T1b-A1 review-surface hardening:** headline semantic probes in
+`Tests/TMTrueUniformSeekSurfaceTests.lean` are `theorem check_*` restatements:
+the forward macrostep and scan quantify the latch, and the cursor-position
+probe pins the exact marker equation.  The remaining T1b-A1 `#check` entries
+pin declaration existence only; their theorem bodies are covered by the
+corresponding `Tests/AxiomsAudit.lean` roots.  `t1CS_frame_macrostep` and
+`t1CS_scan_frames` take the latch as an explicit argument rather than an
+`optParam`, so callers cannot silently select only the `latch = false` instance.
+`t1MutationFrames_getElem?_cursor` puts `t1CursorFrameIndex`'s arithmetic under
+the kernel.  `t1CursorBase` remains a pure bounded-layout definition; any
+machine execution that reads or writes at that physical address is deferred to
+the T1b-A2 slice.
+The control-table bodies, the frame ABI, the clock and every pre-existing proof
+are untouched: the only new content is that cursor-position theorem, and the
+only signature change is the two now-explicit latch arguments.
 
 ### Session 2 — `writeVecOfNatProgram`
 **File:** new

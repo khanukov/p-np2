@@ -1,11 +1,12 @@
 import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekValidation
 
 /-!
-# T1a true uniform-seek surface tests
+# T1 true uniform-seek surface tests
 
 These compile-time probes pin the canonical codec, public quadratic clock,
-and exact read-only validation/rewind handoff.  They deliberately expose no
-T1b addressing-success surface.
+exact read-only validation/rewind handoff, and selected T1b-A1 control
+surfaces.  They deliberately expose no addressing-success, restoration,
+output, or acceptance theorem.
 -/
 
 namespace Pnp3.Tests.TMTrueUniformSeekSurface
@@ -30,24 +31,27 @@ theorem check_t1CS_frame_macrostep
     (tape : Fin (T1M.tapeLength n) → Bool) (mode : T1Mode) (frame : T1Frame)
     (hmode : T1ForwardMode mode)
     (hnext : t1Advance mode frame ≠ .reject)
-    (hbits : t1PhysicalBitsAt hsafe tape = frame.bits) :
+    (hbits : t1PhysicalBitsAt hsafe tape = frame.bits) (latch : Bool) :
     TM.runConfig (M := T1M)
-        (t1AlignedConfig n h (by omega) tape mode) 4 =
-      t1AlignedConfig n (h+4) hsafe tape (t1Advance mode frame) :=
-  t1CS_frame_macrostep n h hsafe tape mode frame hmode hnext hbits
+        (t1AlignedConfig n h (by omega) tape mode .p0 false false false latch) 4 =
+      t1AlignedConfig n (h+4) hsafe tape (t1Advance mode frame)
+        .p0 false false false latch :=
+  t1CS_frame_macrostep n h hsafe tape mode frame hmode hnext hbits latch
 
 theorem check_t1CS_scan_frames
     (n : Nat) (pre frames suffix : List T1Frame) (mode : T1Mode)
     (hpath : T1ValidPath mode frames)
-    (hsafe : 4 * (pre.length + frames.length) < T1M.tapeLength n) :
+    (hsafe : 4 * (pre.length + frames.length) < T1M.tapeLength n)
+    (latch : Bool) :
     TM.runConfig (M := T1M)
         (t1AlignedConfig n (4 * pre.length) (by omega)
-          (t1ListTape ((pre ++ frames ++ suffix).flatMap T1Frame.bits)) mode)
+          (t1ListTape ((pre ++ frames ++ suffix).flatMap T1Frame.bits)) mode
+          .p0 false false false latch)
         (4 * frames.length) =
       t1AlignedConfig n (4 * (pre.length + frames.length)) hsafe
         (t1ListTape ((pre ++ frames ++ suffix).flatMap T1Frame.bits))
-        (t1AdvanceList mode frames) :=
-  t1CS_scan_frames n pre frames suffix mode hpath hsafe
+        (t1AdvanceList mode frames) .p0 false false false latch :=
+  t1CS_scan_frames n pre frames suffix mode hpath hsafe latch
 
 theorem check_t1CanonicalEncoderAutomatonTrace (r : T1Request) :
     T1ValidPath .validateBof (encodeT1Frames r ++ [.blank]) ∧
@@ -80,14 +84,25 @@ theorem check_t1CS_validate_rewind_encoded_exact (r : T1Request) :
           (t1Point (encodeT1 r))).tape .startMutation :=
   t1CS_validate_rewind_encoded_exact r
 
-theorem check_t1CS_run_encoded_reaches_mutation (r : T1Request) :
-    let n := (encodeT1 r).length
-    (t1CS.toPhased.toTM).run (t1Point (encodeT1 r)) =
-      t1AlignedConfig n 0 (by
-        simp [t1CS, ConstStatePhasedProgram.toPhased,
-          PhasedProgram.toTM, TM.tapeLength])
-        ((t1CS.toPhased.toTM).initialConfig
-          (t1Point (encodeT1 r))).tape .startMutation :=
-  t1CS_run_encoded_reaches_mutation r
+-- T1b-A1 fixed-control and generic-step reuse surfaces.
+#check @t1Transition_startMutation_active
+#check @t1Transition_probeData_p3_data
+#check @t1Transition_probeData_p3_oob
+#check @t1Transition_writeCursor
+#check @t1Transition_seekIndexBack_p0_mark
+#check @t1Transition_markSpent
+#check @t1Transition_backupCursor
+#check @t1Transition_writeData
+#check @t1MutationFrames_length
+theorem check_t1MutationFrames_getElem?_cursor (r : T1Request) (j : Nat)
+    (hj : j ≤ r.index) (hdata : j < r.data.length) :
+    (t1MutationFrames r j)[t1CursorFrameIndex r j]? = some .cursor :=
+  t1MutationFrames_getElem?_cursor r j hj hdata
+#check @t1MutationFrames_zero
+#check @t1CS_aligned_step_right
+#check @t1CS_aligned_step_left
+#check @t1CS_aligned_step_stay
+#check @t1CS_runConfig_successStart
+#check @t1CS_runConfig_oobStart
 
 end Pnp3.Tests.TMTrueUniformSeekSurface

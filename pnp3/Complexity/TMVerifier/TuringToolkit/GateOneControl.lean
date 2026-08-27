@@ -76,8 +76,9 @@ and the `argSep` that closes the run selects the operand regime a second time:
   field and stops on the `argSep` that opens the **operand-2 field**, entering
   `bScan`.
 
-`bScan` walks the operand-2 region (`spent` and `data` frames are skipped) to
-the `separator` and enters `bProbe`, which reads the selected data frame:
+`bScan` walks the operand-2 region (only `spent` frames are skipped) to the
+`separator`; a `data` frame before that separator is malformed and rejects.
+At the separator it enters `bProbe`, which reads the selected data frame:
 `data b` stores `b` in `vB` through `bStoreFalse`/`bStoreTrue` and hands off to
 `readAResetStart`, while the `output` destination frame means the index ran off
 the end of the data region and hands off to the stable `bOOB` boundary.

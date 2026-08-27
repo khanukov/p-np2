@@ -602,7 +602,7 @@ finite-control tape-reading capability, not a gate evaluator, not a content
 verifier and not a lower bound.
 
 **Generic reverse frame kernel and four-cell frame write delivered
-(2026-08-25):**
+(2026-08-27):**
 
 The prerequisite named in the T2b read-B design audit — "extract a generic
 reverse four-bit scanner with a finite context update, plus generic
@@ -685,7 +685,6 @@ no acceptance and no verifier claim, and it does not by itself execute any new
   support arbitrary tapes under explicit safety and codeword premises; list-scan
   and frame-replacement capstones use explicit list-backed layouts.  No theorem
   packages either form as a canonical or padded-input end-to-end execution.
-
 
 **T2a correction (2026-08-24).**  The first T2a head shipped a permissive
 forward table (`vTag` looping on every `tag`, `vArg1`/`vArg2` looping on every

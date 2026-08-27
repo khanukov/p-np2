@@ -18,10 +18,8 @@ def t1c2SuccessTerminal :=
 
 def t1c2SuccessOutputAt :=
   t1CS_success_final_tape_at t1c2SuccessRequest true
-    ⟨t1OutputPosition t1c2SuccessRequest, by
-      have := t1tOutputBase_safe t1c2SuccessRequest
-      simp only [t1OutputPosition_eq] at *
-      omega⟩ rfl
+    ⟨t1OutputPosition t1c2SuccessRequest,
+      t1OutputPosition_safe t1c2SuccessRequest⟩ rfl
 
 /-- Three index units but only two data cells. -/
 def t1c2OobRequest : T1Request := ⟨3, [true, false]⟩

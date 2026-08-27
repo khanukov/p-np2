@@ -276,7 +276,8 @@ or establish `TM.accepts`/output correctness.  Those are T1c-2/T1c-3.
 whole canonical tapes.  On success it restores the cursor to the selected data
 bit, writes that bit into the output frame, repairs every `spent` marker to an
 `index`, and reaches the literal accept state at head `0`.  The final tape is
-the canonical input with only `t1OutputPosition r` changed.  On both nonempty
+obtained by overwriting only `t1OutputPosition r` with the selected bit
+(possibly a no-op).  On both nonempty
 and empty OOB paths it repairs every consumed marker, preserves data and
 `output false`, and reaches the literal reject state at head `0`; the final tape
 is bit-for-bit the initial tape.  Exact terminal clocks and pointwise tape

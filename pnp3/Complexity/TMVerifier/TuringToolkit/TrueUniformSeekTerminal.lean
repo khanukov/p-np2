@@ -50,8 +50,8 @@ the terminal trace.
 
 ## Deliberately *not* claimed here
 
-Nothing below composes with `T1M.initialConfig` or with the public clock
-`t1Clock`, and there is no acceptance `iff`.  Those are T1c-3.  The three
+Nothing below executes `TM.runConfig` from `T1M.initialConfig` or composes with
+the public clock `t1Clock`, and there is no acceptance `iff`.  Those are T1c-3.  The three
 terminal theorems start from the *exact* boundary configurations the driver
 produces, so T1c-3 is a `runConfig_add` splice plus a sink padding argument.
 
@@ -109,6 +109,13 @@ theorem t1tOutputBase_safe (r : T1Request) :
   have hTL : (encodeT1 r).length < T1M.tapeLength (encodeT1 r).length :=
     t1_lt_tapeLength _ _ (le_refl _)
   simp only [t1OutputBase]
+  omega
+
+/-- The observable output payload cell lies inside the fixed tape. -/
+theorem t1OutputPosition_safe (r : T1Request) :
+    t1OutputPosition r < T1M.tapeLength (encodeT1 r).length := by
+  have h := t1tOutputBase_safe r
+  rw [t1OutputPosition_eq]
   omega
 
 theorem t1tOutputEntry_safe (r : T1Request) :

@@ -248,6 +248,12 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.t1CS_repairDone_reject_stable
 
 -- T1c-2 composite output/repair execution to literal accept/reject sinks.
+#print axioms Internal.PsubsetPpoly.TM.t1OutputPosition_eq
+#print axioms Internal.PsubsetPpoly.TM.t1OutputPosition_safe
+#print axioms Internal.PsubsetPpoly.TM.t1OutputFrames_false
+#print axioms Internal.PsubsetPpoly.TM.t1OutputFrames_length
+#print axioms Internal.PsubsetPpoly.TM.t1tOutputBase_safe
+#print axioms Internal.PsubsetPpoly.TM.t1tOutputEntry_safe
 #print axioms Internal.PsubsetPpoly.TM.t1OutputFrames_count_spent
 #print axioms Internal.PsubsetPpoly.TM.t1OutputFrames_count_index
 #print axioms Internal.PsubsetPpoly.TM.t1CS_success_final_tape_eq

@@ -16,7 +16,11 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @t1SpentFrames
 #check @t1OutputBase
 #check @t1OutputPosition_eq
+#check @t1OutputPosition_safe
 #check @t1OutputFrames_false
+#check @t1OutputFrames_length
+#check @t1tOutputBase_safe
+#check @t1tOutputEntry_safe
 #check @t1OutputFrames_count_spent
 #check @t1OutputFrames_count_index
 #check @t1CS_success_final_tape_eq
@@ -43,5 +47,58 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @t1c2SuccessOutputAt
 #check @t1c2OobTerminal
 #check @t1c2EmptyTerminal
+
+/-! ## Exact theorem-contract pins -/
+
+theorem check_t1CS_success_final_tape_eq (r : T1Request) (v : Bool) :
+    t1ListTape (n := (encodeT1 r).length)
+        ((t1OutputFrames r v).flatMap T1Frame.bits) =
+      t1WriteCell (t1OutputPosition r) v
+        (T1M.initialConfig (t1Point (encodeT1 r))).tape :=
+  t1CS_success_final_tape_eq r v
+
+theorem check_t1CS_terminal_success_exact (r : T1Request) (v : Bool)
+    (hv : r.data[r.index]? = some v) :
+    T1M.runConfig
+        (t1AlignedConfig (encodeT1 r).length 0
+          (t1_lt_tapeLength _ _ (Nat.zero_le _))
+          (t1ListTape ((t1LoopFrames r r.index).flatMap T1Frame.bits))
+          .successStart .p0 false false false v)
+        (t1SuccessTerminalSteps r) =
+      t1AlignedConfig (encodeT1 r).length 0
+        (t1_lt_tapeLength _ _ (Nat.zero_le _))
+        (t1ListTape ((t1OutputFrames r v).flatMap T1Frame.bits))
+        .accept .p0 false false false false :=
+  t1CS_terminal_success_exact r v hv
+
+theorem check_t1CS_terminal_oob_exact (r : T1Request) (v : Bool)
+    (hv : r.data[r.index]? = none) (hne : 0 < r.data.length) :
+    T1M.runConfig
+        (t1AlignedConfig (encodeT1 r).length
+          (4 * (r.index + (r.data.length - 1) + 3) + 3) (t1dOobHead_safe r)
+          (t1ListTape
+            ((t1LoopFramesRestored r (r.data.length - 1)).flatMap
+              T1Frame.bits))
+          .oobStart .p0 false false false v)
+        (t1OobTerminalSteps r) =
+      t1AlignedConfig (encodeT1 r).length 0
+        (t1_lt_tapeLength _ _ (Nat.zero_le _))
+        (t1ListTape ((t1OutputFrames r false).flatMap T1Frame.bits))
+        .reject .p0 false false false false :=
+  t1CS_terminal_oob_exact r v hv hne
+
+theorem check_t1CS_terminal_oob_empty_exact (r : T1Request)
+    (hdata : r.data = []) :
+    T1M.runConfig
+        (t1AlignedConfig (encodeT1 r).length (4 * (r.index + 2) + 3)
+          (t1dEmptyOobHead_safe r)
+          (T1M.initialConfig (t1Point (encodeT1 r))).tape .oobStart .p0
+          false false false false)
+        (t1OobTerminalSteps r) =
+      t1AlignedConfig (encodeT1 r).length 0
+        (t1_lt_tapeLength _ _ (Nat.zero_le _))
+        (T1M.initialConfig (t1Point (encodeT1 r))).tape
+        .reject .p0 false false false false :=
+  t1CS_terminal_oob_empty_exact r hdata
 
 end Pnp3.Tests.TMTrueUniformSeekTerminalSurface

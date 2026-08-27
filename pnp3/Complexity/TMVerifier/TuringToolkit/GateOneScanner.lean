@@ -26,20 +26,9 @@ open Pnp3.Internal.PsubsetPpoly.TM.FrameScan
 /-- The concrete G1 machine. -/
 abbrev G1M := g1CS.toPhased.toTM
 
-/-- The G1 four-bit alphabet as a generic fixed-width codec. -/
-def g1FrameCodec : FrameCodec G1Frame where
-  bits := G1Frame.bits
-  decode? := decodeG1Frame?
-  bits_length := G1Frame.bits_length
-  decode_bits := decodeG1Frame_bits
-
-@[simp] theorem g1FrameCodec_bits : g1FrameCodec.bits = G1Frame.bits := rfl
-
-@[simp] theorem g1FrameCodec_decode : g1FrameCodec.decode? = decodeG1Frame? :=
-  rfl
-
-/-- **G1 is an instance of the generic kernel.**  The carried context is the
-three-Boolean `G1Ctx`, threaded through every frame unchanged. -/
+/-- **G1 is an instance of the generic kernel.**  It reuses the pure-layer
+`g1FrameCodec`; the carried context is the three-Boolean `G1Ctx`, threaded
+through every frame unchanged. -/
 def g1FrameScanner : FrameScanner G1State G1Frame G1Mode G1Ctx where
   program := g1CS
   phase := g1CS.startPhase

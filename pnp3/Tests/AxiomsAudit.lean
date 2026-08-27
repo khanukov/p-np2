@@ -196,7 +196,13 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_rewind_p1
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_rewind_p0_bof
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_rewind_p0_other
-#print axioms Internal.PsubsetPpoly.TM.g1Transition_readBStart_idle
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_readAStart_idle
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_combineStart_idle
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_readAResetStart_idle
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bRoundStart_idle
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bOOB_stable
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_constLit
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_store
 #print axioms Internal.PsubsetPpoly.TM.g1RejectState_ne_readB
 #print axioms Internal.PsubsetPpoly.TM.g1AdvanceList_append
 #print axioms Internal.PsubsetPpoly.TM.G1ForwardMode.not_reject

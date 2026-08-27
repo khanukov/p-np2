@@ -20,11 +20,14 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1ReadBRouteFrames
 #check @g1ReadBOOBFrames
 #check @g1_tagRescan_advance
+#check @g1_tagRescan_validPath
 #check @g1TagRoute_split
 #check @g1FieldRoute_split
 #check @g1ReadBRoute_split
 #check @g1ReadBOOB_split
 #check @g1TagRoute_advance_unary
+#check @g1TagRoute_advance
+#check @g1TagRoute_validPath
 #check @g1FieldRoute_advance_const
 #check @g1FieldRoute_advance_binary
 #check @g1ReadBRoute_advance
@@ -34,6 +37,8 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1_bScan_index_deferred
 #check @g1_bRoundStart_stuck
 #check @g1Advance_ne_sink
+#check @G1ForwardMode.readBStart
+#check @g1OOBState_ne_readAReset
 #check @G1Ctx.withVB_vB
 #check @G1Ctx.withVB_pass
 #check @G1Ctx.withVB_crossed
@@ -56,6 +61,13 @@ theorem check_withVB_crossed (ctx : G1Ctx) (b : Bool) :
 theorem check_g1Advance_ne_sink (mode : G1Mode) (frame : G1Frame) :
     g1Advance mode frame ≠ .accept ∧ g1Advance mode frame ≠ .rewind :=
   g1Advance_ne_sink mode frame
+
+theorem check_G1ForwardMode_readBStart : G1ForwardMode .readBStart :=
+  G1ForwardMode.readBStart
+
+theorem check_g1OOBState_ne_readAReset (ctx ctx' : G1Ctx) :
+    g1OOBState ctx ≠ g1ReadAResetState ctx' :=
+  g1OOBState_ne_readAReset ctx ctx'
 
 theorem check_g1Transition_constLit (phase : Fin 1) (b : Bool)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
@@ -98,6 +110,20 @@ theorem check_g1TagRoute_advance_unary (r : G1Request)
     (ht : r.tag = .input ∨ r.tag = .not) :
     g1AdvanceList .readBStart (g1TagRouteFrames r) = .readAStart :=
   g1TagRoute_advance_unary r ht
+
+theorem check_g1_tagRescan_validPath (t : G1Tag) (rest : List G1Frame)
+    (hrest : G1ValidPath (g1RouteMode t) rest) :
+    G1ValidPath .readBStart
+      (.bof :: (List.replicate t.units .tag ++ .argSep :: rest)) :=
+  g1_tagRescan_validPath t rest hrest
+
+theorem check_g1TagRoute_advance (r : G1Request) :
+    g1AdvanceList .readBStart (g1TagRouteFrames r) = g1RouteMode r.tag :=
+  g1TagRoute_advance r
+
+theorem check_g1TagRoute_validPath (r : G1Request) :
+    G1ValidPath .readBStart (g1TagRouteFrames r) :=
+  g1TagRoute_validPath r
 
 theorem check_g1FieldRoute_advance_const (r : G1Request)
     (ht : r.tag = .const) (b : Bool)

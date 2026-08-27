@@ -9,9 +9,9 @@ the proved correspondence between that language and the pure parser, the named
 noncanonical-rejection witnesses, and the program as a genuine instance of the
 generic frame-scanner kernel.
 
-Everything here is at frame-word level or at the level of the transition
-tuple lemmas.  The exact `TM.runConfig` validation/rewind execution capstone is
-a separate layer with its own surface file.
+This layer exposes frame-word/table correspondence and the generic kernel's
+exact four-step and multi-frame `TM.runConfig` primitives.  End-to-end physical
+validation, rejection, rewind, and `readBStart` composition are deferred.
 
 This is an audit surface: it pins public signatures, it does not prove
 anything new.
@@ -53,10 +53,13 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1Advance
 #check @g1Complete
 #check @G1ForwardMode
+#check @G1ForwardMode.not_reject
+#check @G1ForwardMode.not_rewindStart
 #check @g1AdvanceList
 #check @g1AdvanceList_append
 #check @G1ValidPath
 #check @G1RejectPath
+#check @G1RejectPath.forward
 #check @g1ValidPath_of_accepts
 #check @g1AdvanceList_encode
 #check @g1AdvanceList_encode_reject
@@ -65,6 +68,8 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1_structure_of_accepts
 #check @g1Automaton_accepts_iff_decode
 #check @g1CanonicalEncoderAutomatonTrace_iff
+#check @g1_example_control_and_accepts
+#check @g1_example_control_const_rejects
 
 -- Named rejection witnesses: wrong tag counts, the `const` operand
 -- convention, and the unused operand-2 field of every arity-1 tag.
@@ -83,10 +88,106 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @G1M
 #check @g1FrameCodec
 #check @g1FrameScanner
+#check @g1FrameScanner_codec
 #check @g1FrameScanner_frameMacrostep
 #check @g1FrameScanner_scanFrames
 #check @g1FrameScanner_advanceList
 #check @g1FrameScanner_validPath
-#check @g1FrameScanner_accepts_iff_decode
+#check @g1FrameScanner_frameLanguage_iff_decode
+
+/-! ## Exact theorem-contract pins -/
+
+theorem check_g1CS_runTime (N : Nat) :
+    g1CS.toPhased.toTM.runTime N = 512 * (N + 1) ^ 2 + 512 :=
+  g1CS_runTime N
+
+theorem check_g1AdvanceList_encode_reject (r : G1Request)
+    (hc : ¬ r.Canonical) :
+    g1AdvanceList .vBof (encodeG1Frames r ++ [.blank]) = .reject :=
+  g1AdvanceList_encode_reject r hc
+
+theorem check_g1_reject_tagRun_zero (rest : List G1Frame) :
+    g1AdvanceList .vBof (.bof :: .argSep :: rest) = .reject :=
+  g1_reject_tagRun_zero rest
+
+theorem check_g1_reject_tagRun_six (rest : List G1Frame) :
+    g1AdvanceList .vBof
+        (.bof :: .tag :: .tag :: .tag :: .tag :: .tag :: .tag :: rest) =
+      .reject :=
+  g1_reject_tagRun_six rest
+
+theorem check_g1_reject_const_arg1_ge_two (a1 : Nat) (h : 2 ≤ a1)
+    (rest : List G1Frame) :
+    g1AdvanceList .vBof
+        (.bof :: .tag :: .tag :: .argSep ::
+          (List.replicate a1 .index ++ rest)) = .reject :=
+  g1_reject_const_arg1_ge_two a1 h rest
+
+theorem check_g1_reject_unusedField_input (a1 a2 : Nat) (h : a2 ≠ 0)
+    (rest : List G1Frame) :
+    g1AdvanceList .vBof
+        (.bof :: .tag :: .argSep ::
+          (List.replicate a1 .index ++ .argSep ::
+            (List.replicate a2 .index ++ rest))) = .reject :=
+  g1_reject_unusedField_input a1 a2 h rest
+
+theorem check_g1_reject_unusedField_not (a1 a2 : Nat) (h : a2 ≠ 0)
+    (rest : List G1Frame) :
+    g1AdvanceList .vBof
+        (.bof :: .tag :: .tag :: .tag :: .argSep ::
+          (List.replicate a1 .index ++ .argSep ::
+            (List.replicate a2 .index ++ rest))) = .reject :=
+  g1_reject_unusedField_not a1 a2 h rest
+
+theorem check_g1_reject_unusedField_const (a1 a2 : Nat) (h1 : a1 ≤ 1)
+    (h2 : a2 ≠ 0) (rest : List G1Frame) :
+    g1AdvanceList .vBof
+        (.bof :: .tag :: .tag :: .argSep ::
+          (List.replicate a1 .index ++ .argSep ::
+            (List.replicate a2 .index ++ rest))) = .reject :=
+  g1_reject_unusedField_const a1 a2 h1 h2 rest
+
+theorem check_g1Automaton_accepts_iff_decode (fs : List G1Frame) :
+    g1AdvanceList .vBof (fs ++ [.blank]) = .rewindStart ↔
+      ∃ r : G1Request, decodeG1FrameList? fs = some r :=
+  g1Automaton_accepts_iff_decode fs
+
+theorem check_g1CanonicalEncoderAutomatonTrace_iff (r : G1Request) :
+    g1AdvanceList .vBof (encodeG1Frames r ++ [.blank]) = .rewindStart ↔
+      r.Canonical :=
+  g1CanonicalEncoderAutomatonTrace_iff r
+
+theorem check_g1FrameScanner_frameLanguage_iff_decode (fs : List G1Frame) :
+    g1FrameScanner.advanceList .vBof (fs ++ [.blank]) = .rewindStart ↔
+      ∃ r : G1Request, decodeG1FrameList? fs = some r :=
+  g1FrameScanner_frameLanguage_iff_decode fs
+
+theorem check_g1FrameScanner_frameMacrostep (n h : Nat)
+    (hsafe : h + 4 < G1M.tapeLength n) (tape : Fin (G1M.tapeLength n) → Bool)
+    (mode : G1Mode) (frame : G1Frame) (ctx : G1Ctx)
+    (hmode : G1ForwardMode mode) (hnext : g1Advance mode frame ≠ .reject)
+    (hbits : FrameScan.physicalBitsAt hsafe tape = frame.bits) :
+    G1M.runConfig
+        (g1FrameScanner.alignedFrame n h
+          (by rw [g1FrameScanner_machine]; omega) tape mode ctx) 4 =
+      g1FrameScanner.alignedFrame n (h + 4) hsafe tape
+        (g1Advance mode frame) ctx :=
+  g1FrameScanner_frameMacrostep n h hsafe tape mode frame ctx hmode hnext hbits
+
+theorem check_g1FrameScanner_scanFrames (n : Nat)
+    (pre frames suffix : List G1Frame) (mode : G1Mode) (ctx : G1Ctx)
+    (hpath : g1FrameScanner.ValidPath mode frames)
+    (hsafe : 4 * (pre.length + frames.length) < G1M.tapeLength n) :
+    G1M.runConfig
+        (g1FrameScanner.alignedFrame n (4 * pre.length)
+          (by rw [g1FrameScanner_machine]; omega)
+          (FrameScan.frameListTape
+            ((pre ++ frames ++ suffix).flatMap G1Frame.bits)) mode ctx)
+        (4 * frames.length) =
+      g1FrameScanner.alignedFrame n (4 * (pre.length + frames.length)) hsafe
+        (FrameScan.frameListTape
+          ((pre ++ frames ++ suffix).flatMap G1Frame.bits))
+        (g1FrameScanner.advanceList mode frames) ctx :=
+  g1FrameScanner_scanFrames n pre frames suffix mode ctx hpath hsafe
 
 end Pnp3.Tests.TMGateOneControlSurface

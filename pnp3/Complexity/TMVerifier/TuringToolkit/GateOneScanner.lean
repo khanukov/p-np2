@@ -14,7 +14,7 @@ context (`Aux`) is the three-Boolean `G1Ctx`.
 
 **No T1 proof stack is duplicated.**  All five obligations are discharged by
 the standalone tuple lemmas of `GateOneControl`; nothing here unfolds
-`g1Transition`, and the multi-frame validation scan of `GateOneValidation` is
+`g1Transition`, and the multi-frame validation scan of the planned `GateOneValidation` is
 the *generic* `FrameScanner.scanFrames` instantiated here, not a re-proof.
 Semantic content is carried by theorems, never by a structure field.
 -/
@@ -63,6 +63,9 @@ def g1FrameScanner : FrameScanner G1State G1Frame G1Mode G1Ctx where
 @[simp] theorem g1FrameScanner_advance :
     g1FrameScanner.advance = g1Advance := rfl
 
+@[simp] theorem g1FrameScanner_codec :
+    g1FrameScanner.codec = g1FrameCodec := rfl
+
 @[simp] theorem g1FrameScanner_st0 (mode : G1Mode) (ctx : G1Ctx) :
     g1FrameScanner.st0 mode ctx = g1State mode .p0 false false false ctx := rfl
 
@@ -93,7 +96,7 @@ two bridges say the generic kernel's `advanceList`/`ValidPath` at this instance
 /-- **The executable scan validates exactly the canonical grammar.**  The
 kernel-level forward run of a frame word closed by the explicit end-of-input
 frame reaches `rewindStart` precisely when the pure parser decodes it. -/
-theorem g1FrameScanner_accepts_iff_decode (fs : List G1Frame) :
+theorem g1FrameScanner_frameLanguage_iff_decode (fs : List G1Frame) :
     g1FrameScanner.advanceList .vBof (fs ++ [.blank]) = .rewindStart ↔
       ∃ r : G1Request, decodeG1FrameList? fs = some r := by
   rw [g1FrameScanner_advanceList]

@@ -40,8 +40,12 @@ by the pure parser:
 **exactly** the language of the pure parser, and
 `g1CanonicalEncoderAutomatonTrace_iff` specialises it to the encoder: the
 forward run of `encodeG1Frames r` plus the explicit trailing blank frame
-reaches `rewindStart` if and only if `r.Canonical`.  Everything else — in
-particular a noncanonical encoded request — ends in `reject`.
+reaches `rewindStart` if and only if `r.Canonical`.  In particular every
+noncanonical encoded request ends in `reject`; arbitrary-frame behavior is
+stated only through the explicit table/path theorems below.
+
+`Canonical` enforces frame grammar and unused-field conventions only.  Operand
+bounds belong to `G1Request.WellFormed` and are deferred to pass B.
 
 Both statements are scoped to explicit *frame words* closed by one trailing
 blank frame.  Nothing is claimed about arbitrary padded physical tapes.
@@ -72,10 +76,6 @@ field.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
-
--- The thirteen-letter frame alphabet is finite; the small "every other frame
--- rejects" side conditions of the grammar proofs below are decided over it.
-deriving instance Fintype for G1Frame
 
 /-- The modes of the G1 control.
 
@@ -135,8 +135,8 @@ documented values. -/
 def g1ReadBState (ctx : G1Ctx) : G1State :=
   g1State .readBStart .p0 false false false ctx
 
-/-- The reject sink and the pass-B handoff are different states.  Used by the
-noncanonical rejection surfaces of `GateOneValidation`. -/
+/-- The reject sink and pass-B handoff differ.  Used by the planned
+`GateOneValidation` rejection surface. -/
 theorem g1RejectState_ne_readB (ctx : G1Ctx) :
     g1RejectState ≠ g1ReadBState ctx := by
   intro h
@@ -273,7 +273,7 @@ theorem g1AdvanceList_cons_ne_of_reject {mode : G1Mode} {frame : G1Frame}
 
 `G1ValidPath` and `G1RejectPath` are the local forms of "the forward control
 reads this whole word" and "the forward control reads a prefix of this word and
-then rejects".  Both are what the executable scan of `GateOneValidation`
+then rejects".  Both are what the executable scan of the planned `GateOneValidation`
 consumes: the first drives the generic kernel's frame scan, the second drives
 the exact noncanonical rejection trace.  Neither mentions a Turing machine. -/
 
@@ -758,6 +758,19 @@ theorem g1CanonicalEncoderAutomatonTrace_iff (r : G1Request) :
     rw [g1AdvanceList_encode_reject r hc] at h
     exact absurd h (by decide)
   · exact g1AdvanceList_encode r
+
+/-- Closed accepted-word witness for the control grammar. -/
+theorem g1_example_control_and_accepts :
+    g1AdvanceList .vBof
+        (encodeG1Frames ⟨.and, 2, 3, [true, false]⟩ ++ [.blank]) =
+      .rewindStart :=
+  (g1CanonicalEncoderAutomatonTrace_iff _).2 rfl
+
+/-- Closed noncanonical-word witness for the reject sink. -/
+theorem g1_example_control_const_rejects :
+    g1AdvanceList .vBof (encodeG1Frames ⟨.const, 3, 1, []⟩ ++ [.blank]) =
+      .reject :=
+  g1AdvanceList_encode_reject _ (by decide)
 
 /-! ### Named frame-level rejection witnesses
 

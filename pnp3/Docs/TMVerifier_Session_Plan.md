@@ -378,17 +378,18 @@ frame-scanner kernel.
   five obligations are the tuple lemmas above, and the multi-frame scan is the
   generic `scanFrames` instantiated at G1.  `g1FrameScanner_advanceList` and
   `g1FrameScanner_validPath` identify the kernel's frame language with the
-  control's, so `g1FrameScanner_accepts_iff_decode` carries the grammar
-  correspondence into the executable scan.
+  control's, and `g1FrameScanner_frameLanguage_iff_decode` transfers the pure
+  parser correspondence to the kernel's `advanceList` fold.
 
-This layer is **Infrastructure**.  Its rejection claims are table-level: they
-are about frame words and about `encodeG1Frames r`, not about arbitrary padded
-or malformed physical tapes.  The exact `TM.runConfig` validation/rewind
-execution capstone is **explicitly deferred** to the next layer, so no
-execution, `readBStart` handoff or step-count theorem is claimed here.  Also
-deferred, as before: operand execution, combine/write/repair,
-`TM.run`/`TM.accepts` and any full-clock theorem, the `SLGate` bridge, the
-multi-gate evaluator, and any verifier obligation or lower bound.
+This layer is **Infrastructure**.  It delivers the pure frame-table/parser
+correspondence and two exact generic-kernel `TM.runConfig` primitives:
+`g1FrameScanner_frameMacrostep` and `g1FrameScanner_scanFrames`, with their
+four-steps-per-frame clocks.  Their end-to-end composition with physical
+validation/rejection, rewind, and the `readBStart` handoff is **explicitly
+deferred** to the next layer; no full-clock or acceptance theorem is claimed.
+Also deferred, as before: operand execution, combine/write/repair,
+`TM.run`/`TM.accepts`, the `SLGate` bridge, the multi-gate evaluator, and every
+verifier or lower-bound obligation.
 
 **T1a review hardening (2026-08-23):** the generic forward-frame scanner
 `t1CS_scan_frames` and non-anchor reverse scanner `t1CS_rewind_tail` are public

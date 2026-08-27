@@ -15,8 +15,7 @@ import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedStepBridgeExamples
 import Complexity.TMVerifier.TuringToolkit.FrameScannerProbe
 import Complexity.TMVerifier.TuringToolkit.FrameScannerT1
-import Complexity.TMVerifier.TuringToolkit.GateOneSemantics
-import Complexity.TMVerifier.TuringToolkit.GateOneScanner
+import Complexity.TMVerifier.TuringToolkit.GateOneExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -181,8 +180,8 @@ open Pnp3.Magnification
 -- T2a, control layer: the frame-level correspondence between the fixed
 -- forward control and the pure parser -- the machine language *is* the
 -- canonical grammar -- and the same control as an instance of the generic
--- frame-scanner kernel.  Generic frame execution primitives are present;
--- end-to-end validation/rewind remains deferred.
+-- frame-scanner kernel.  Generic frame execution primitives are present; the
+-- end-to-end validation/rewind roots are audited in the next block.
 #print axioms Internal.PsubsetPpoly.TM.g1CS_runTime
 #print axioms Internal.PsubsetPpoly.TM.g1CS_numPhases
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_forward_p0
@@ -221,6 +220,51 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1FrameScanner_frameMacrostep
 #print axioms Internal.PsubsetPpoly.TM.g1FrameScanner_scanFrames
 #print axioms Internal.PsubsetPpoly.TM.g1FrameScanner_frameLanguage_iff_decode
+
+-- T2a, execution layer: the exact validation/rewind capstone from the real
+-- initial configuration, and the matching exact rejection of a noncanonical
+-- encoded request over the same fixed validation prefix.  Still no operand
+-- read, no acceptance, no gate-evaluation or verifier claim.
+#print axioms Internal.PsubsetPpoly.TM.g1CanonicalEncoderAutomatonTrace
+#print axioms Internal.PsubsetPpoly.TM.g1AlignedFrame_eq
+#print axioms Internal.PsubsetPpoly.TM.g1ValidationFrames_length
+#print axioms Internal.PsubsetPpoly.TM.g1ValidationAdvance_reject_of_not_canonical
+#print axioms Internal.PsubsetPpoly.TM.g1FrameScanner_encode_iff_canonical
+#print axioms Internal.PsubsetPpoly.TM.g1CS_validate_encoded_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_rewind_tail
+#print axioms Internal.PsubsetPpoly.TM.g1ReadBHandoffSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1CS_validate_rewind_readB_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_head
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_phase
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_state
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_tape
+#print axioms Internal.PsubsetPpoly.TM.g1CS_runConfig_reject_sink
+#print axioms Internal.PsubsetPpoly.TM.g1CS_scan_reject
+#print axioms Internal.PsubsetPpoly.TM.g1CS_validate_noncanonical_reject_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_noncanonical_ne_readB
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.capstone_input
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.capstone_const
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.capstone_not
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.capstone_and
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.capstone_or
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.reject_reserved_code
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.reject_ragged_word
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.reject_missing_argSep
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.reject_missing_finish
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.reject_trailing_frame
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.reject_internal_marker
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.reject_unused_field
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.reject_const_convention
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.automaton_reject_zero_tags
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.automaton_reject_six_tags
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.machine_reject_constBig
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.machine_reject_notUnused
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.machine_reject_inputUnused
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.machine_reject_constUnused
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.machine_no_handoff_notUnused
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.machine_no_handoff_inputUnused
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.machine_no_handoff_constUnused
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.machine_no_handoff_constBig
 
 -- T1a fixed-control canonical validation and read-only rewind handoff.
 #print axioms Internal.PsubsetPpoly.TM.decodeT1Tape_encode

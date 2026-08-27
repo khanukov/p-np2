@@ -135,7 +135,7 @@ documented values. -/
 def g1ReadBState (ctx : G1Ctx) : G1State :=
   g1State .readBStart .p0 false false false ctx
 
-/-- The reject sink and pass-B handoff differ.  Used by the planned
+/-- The reject sink and pass-B handoff differ.  Used by the
 `GateOneValidation` rejection surface. -/
 theorem g1RejectState_ne_readB (ctx : G1Ctx) :
     g1RejectState ≠ g1ReadBState ctx := by
@@ -273,7 +273,7 @@ theorem g1AdvanceList_cons_ne_of_reject {mode : G1Mode} {frame : G1Frame}
 
 `G1ValidPath` and `G1RejectPath` are the local forms of "the forward control
 reads this whole word" and "the forward control reads a prefix of this word and
-then rejects".  Both are what the executable scan of the planned `GateOneValidation`
+then rejects".  Both are what the executable scan of `GateOneValidation`
 consumes: the first drives the generic kernel's frame scan, the second drives
 the exact noncanonical rejection trace.  Neither mentions a Turing machine. -/
 

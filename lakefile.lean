@@ -107,16 +107,21 @@ lean_lib PnP3 where
     Glob.one `Complexity.TMVerifier.TuringToolkit.TrueUniformSeekExamples,
     -- T2a, pure layer: the fresh unary one-gate ABI (`GateOneEncoding`) and
     -- the pure gate semantics on top of it (`GateOneSemantics`).  These are
-    -- parser/spec modules only; a fixed machine executing this ABI is deferred
-    -- to later dependency slices and is not registered here.
+    -- parser/spec modules only; the fixed control and execution layers are
+    -- registered immediately below.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneEncoding,
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneSemantics,
     -- T2a, control layer: one zero-parameter finite control whose forward
     -- table decides the canonical grammar (`GateOneControl`), and that
     -- control as a genuine instance of the generic frame-scanner kernel
-    -- (`GateOneScanner`).  Execution is registered in the next layer.
+    -- (`GateOneScanner`).  Exact validation/rewind is registered next.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneControl,
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneScanner,
+    -- T2a, execution layer: the exact validation/rewind capstone from the
+    -- real initial configuration (`GateOneValidation`) and the per-tag named
+    -- examples (`GateOneExamples`).
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneValidation,
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneExamples,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -277,6 +282,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMFrameScannerSurfaceTests,
     Glob.one `Tests.TMGateOnePureSurfaceTests,
     Glob.one `Tests.TMGateOneControlSurfaceTests,
+    Glob.one `Tests.TMGateOneExecutionSurfaceTests,
     Glob.one `Tests.FormulaSupportBoundsFalsifiabilityProbe,
     Glob.one `Tests.SmokeTests,
     Glob.one `Tests.UnitTests,

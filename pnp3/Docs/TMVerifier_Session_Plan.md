@@ -410,7 +410,9 @@ a multi-gate evaluator, not a content verifier and not a lower bound.  The
 following are **explicitly deferred** and are not claimed anywhere:
 
 * **operand execution** — the pass-B/pass-A destructive index reads that
-  resolve `arg1`/`arg2` against the data region;
+  resolve `arg1`/`arg2` against the data region (the *non-destructive*
+  `arg2 = 0` pass-B read is delivered by T2b-2 below; the destructive walk is
+  still deferred);
 * **combine, write and repair** — computing the gate value, writing it into
   the `output` cell, and the `spent ↦ index` restoration pass;
 * **full run and acceptance** — `TM.run`, `TM.accepts`, and any full-clock
@@ -456,20 +458,21 @@ never as a parameter.
 * `GateOneRouting.lean` — the frame level.  `g1RouteMode` is the mode the
   `argSep` closing the rescanned tag run selects; `g1_tagRescan_advance` and
   `g1_tagRescan_validPath` fold and validate the rescan for each of the five
-  tags.  Four route prefixes of the canonical word are defined —
+  tags.  Five route prefixes of the canonical word are defined —
   `g1TagRouteFrames` (`bof · tag^units · argSep`), `g1FieldRouteFrames`
-  (`… · index^arg1 · argSep`, which is also the `const` literal route) and the
-  two probe extensions `g1ReadBRouteFrames`/`g1ReadBOOBFrames` — each with a
-  split lemma saying the prefix followed by the rest of the word is literally
-  `encodeG1Frames r ++ [.blank]`.  No producer annotation, no scratch region,
-  no marker.
+  (`… · index^arg1 · argSep`, which is also the `const` literal route), the
+  two probe extensions `g1ReadBRouteFrames`/`g1ReadBOOBFrames`, and (added by
+  T2b-2 below) `g1RoundRouteFrames`, the route up to the deferred
+  positive-index boundary — each with a split lemma saying the prefix followed
+  by the rest of the word is literally `encodeG1Frames r ++ [.blank]`.  No
+  producer annotation, no scratch region, no marker.
 
 This layer is **table- and frame-level only**, and it is **Infrastructure**.
 Nothing in it is a `TM.runConfig` statement: the exact executions from the real
 `G1M.initialConfig (g1Point (encodeG1 r))` — the per-tag route capstones, the
 `const` literal store, the zero-index operand-2 read and its out-of-range
-boundary — are the following layer and are claimed nowhere here.  Also claimed
-nowhere:
+boundary — are the T2b-2 layer below and are claimed nowhere here.  Also
+claimed nowhere in T2b-1:
 
 * **the destructive index walk** — for `arg2 > 0` the table sends the operand
   walk to `bRoundStart` (`g1_bScan_index_deferred`), which is idle and stuck
@@ -488,6 +491,115 @@ handoffs and the `reject` sink are stuck; `rewind` and `accept` also satisfy the
 predicate but are unreachable from `g1Advance`.  Thus the T2a
 validation-grammar proofs are unaffected: they are the same theorems with the
 same statements and the same step arithmetic.
+
+**T2b-2 pass-B execution delivered (2026-08-27):**
+
+The T2b-1 table and its frame-level routing become genuine `TM.runConfig`
+statements.  The six arrival capstones of `GateOneReadB.lean` start from the
+**real** initial configuration `G1M.initialConfig (g1Point (encodeG1 r))` of
+the same one fixed zero-parameter machine, compose the exact T2a validation/rewind
+prefix `g1ReadBHandoffSteps r = 2 * (encodeG1 r).length + 9`, and then run the
+`readBStart` handoff for a further exact, literal number of steps.  No
+transition table is unfolded: the single composition lemma `g1CS_readB_scan`
+glues the T2a prefix to the *generic* `FrameScanner.scanFrames`, and the two
+stationary dispatch rows come from the standalone tuple lemmas
+`g1Transition_constLit`/`g1Transition_store`.  No T1 theorem is transported and
+no machine, state field, clock or `G1Ctx` field is added or changed.
+
+The reusable local adapters quantify over arbitrary aligned tapes.  The stable
+handoff theorems also allow arbitrary post-boundary `+ k`/`+ m` budgets; those
+padding budgets are not claimed to fit the public clock.  Only the named
+initial-configuration arrival prefixes have the clock bounds listed below.
+
+**Implication direction.**  Each capstone is an *equation* read left to right:
+running the fixed machine from its real initial configuration for exactly this
+many steps **produces** this configuration.  Nothing is assumed about where the
+machine already is, and no theorem concludes something about the machine from a
+hypothesis about the machine.
+
+**Hypotheses, and why none of them is advice.**  Every capstone assumes
+`r.Canonical` (matched by T2a's proved converse
+`g1CS_validate_noncanonical_reject_exact`), a tag fact about the encoded request
+`r`, and — where a Boolean is resolved — a *pure selector equation on that same
+`r`*: `r.spec = some b` for `const` (which by `g1_const_fields_of_spec`
+determines the encoded `index^arg1` run the machine physically decodes), and
+`r.vals[r.arg2]? = some b` / `= none` with `r.arg2 = 0` for the operand-2 read.
+The tag is *not* carried across the T2a rewind: at the handoff the context is
+`g1Ctx0` and the route is re-derived by physically re-reading
+`bof · tag^units · argSep` off the tape.  No value, cell index, cursor or target
+is supplied to the machine, and `encodeG1` gains no annotation.
+
+Six exact endpoints, each pinning head, state **and** tape (`n` abbreviates
+`(encodeG1 r).length`, `u` abbreviates `r.tag.units`):
+
+| hypotheses on `r` | steps | endpoint state | head |
+|---|---|---|---|
+| `Canonical`, `tag ∈ {input, not}` | `g1ReadARouteSteps r = 2n+9 + 4*(u+2)` | `readAStart`, `g1Ctx0` | `4*(u+2)` |
+| `Canonical`, `tag = const`, `spec = some b` | `g1ConstRouteSteps r = 2n+9 + 4*(u+arg1+3) + 1` | `combineStart`, `vB = b` | `4*(u+arg1+3)` |
+| `Canonical`, `tag ∈ {and, or}` | `g1FieldRouteSteps r = 2n+9 + 4*(u+arg1+3)` | `bScan`, `g1Ctx0` | `4*(u+arg1+3)` |
+| `Canonical`, `tag ∈ {and, or}`, `arg2 = 0`, `vals[arg2]? = some b` | `g1ReadBSteps r = 2n+9 + 4*(u+arg1+5) + 1` | `readAResetStart`, `vB = b` | `4*(u+arg1+5)` |
+| `Canonical`, `tag ∈ {and, or}`, `arg2 = 0`, `vals[arg2]? = none` | `g1ReadBOOBSteps r = 2n+9 + 4*(u+arg1+5)` | `bOOB`, `g1Ctx0` (stable) | `4*(u+arg1+5)` |
+| `Canonical`, `tag ∈ {and, or}`, `arg2 = k+1` | `g1RoundRouteSteps r = 2n+9 + 4*(u+arg1+4)` | `bRoundStart`, `g1Ctx0` (idle) | `4*(u+arg1+4)` |
+
+For `and`/`or`, `Canonical` is automatic; it is retained to compose uniformly
+with the T2a initial prefix.
+
+In **every** row the tape is bit-for-bit the initial tape: the whole pass-B
+rescan is read-only, so no `spent`/`cursor` marker is written and no data cursor
+has to be restored.  The `input`/`not` head is the first cell of the operand-1
+field and the binary field head is the first cell of the operand-2 field — in
+both cases the cell of the `argSep`/`separator` closing that field when the
+field is empty — so the deferred passes continue from a physically addressed
+cell.
+
+**Scope: generic vs. concrete.**  All six endpoints are *generic* in the
+request: `r` ranges over all canonical requests with the stated tag, with
+arbitrary `arg1`, `arg2` and arbitrary data region.  `GateOneReadBExamples.lean`
+instantiates them at concrete requests (heads `12`/`20` for `input`/`not`, both
+`const` literals, `true`/`false` operand-2 reads, the empty-data boundary, the
+deferred boundary) with literal step counts, purely as an audit surface.  Every
+step count is bounded by the **unchanged** clock
+`g1Clock N = 512 * (N + 1) ^ 2 + 512` through `g1_readB_steps_le_clock`; the
+clock is neither widened nor restated, and these are budget facts about the
+proved prefixes only, **not** a full-clock theorem.
+
+**Both stopping points are boundaries, not verdicts.**  `bOOB` records that the
+operand index selects nothing: it is stable for every further budget
+(`g1CS_readB_zero_oob_stable`), it stores nothing in `vB`, and it is a different
+state from both the success handoff (`g1CS_readB_zero_oob_ne_success`) and the
+reject sink (`g1CS_readB_oob_ne_reject`); no acceptance or rejection semantics
+is attached to it.  `bRoundStart` is the deferred entry point of the destructive
+index walk: for `arg2 > 0` the machine provably reaches it and provably never
+leaves it (`g1CS_readB_round_deferred_stable`, for every further budget).
+
+**Explicitly deferred, and claimed nowhere:** the **destructive positive-index
+walk** (the physically executed operand-2 read is exactly the zero-index one;
+for `arg2 > 0` the proved endpoint *is* the `bRoundStart` boundary, so no
+general runtime-index addressing is claimed); **pass A, combine, output write
+and repair** (`readAStart`, `combineStart` and `readAResetStart` are idle rows,
+proved idle for every budget by `g1CS_runConfig_readA_idle`,
+`g1CS_runConfig_combine_idle`, `g1CS_runConfig_readAReset_idle`, and nothing
+consumes the `G1Ctx.vB` value they carry); **acceptance/rejection semantics,
+full run and full clock** (no `TM.run`, no `TM.accepts`, no `spec`-correctness
+and no full-clock theorem — none could honestly exist while five handoffs are
+idle); **padded tapes** (the six initial-config capstones are scoped to the
+exact tape `encodeG1 r`; local adapters state arbitrary tapes explicitly, but
+no capstone covers a padded tape); and the **`SLGate` bridge, multi-gate evaluator
+and verifier obligation**, unchanged from T2a.
+
+Modules: `GateOneReadB.lean` (execution) and `GateOneReadBExamples.lean` (named
+examples), both registered in `lakefile.lean`; `GateOneRouting.lean` gains only
+the frame-level deferred route `g1RoundRouteFrames` with its split, fold and
+valid-path lemmas, and `GateOneControl.lean` only a docstring correction.
+Pinned by `Tests/TMGateOneReadBSurfaceTests.lean` (`#check` plus exact `check_*`
+contract wrappers) and audited by `Tests/AxiomsAudit.lean`; the observed cone of
+every new declaration is `[propext, Classical.choice, Quot.sound]` or a subset,
+with no trusted-compiler reduction axiom.  No existing theorem was weakened,
+restated or removed.
+
+This slice is **Infrastructure**, not P-vs-NP mainline progress: it is a
+finite-control tape-reading capability, not a gate evaluator, not a content
+verifier and not a lower bound.
 
 **T2a correction (2026-08-24).**  The first T2a head shipped a permissive
 forward table (`vTag` looping on every `tag`, `vArg1`/`vArg2` looping on every

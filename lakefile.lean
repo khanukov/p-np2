@@ -123,6 +123,11 @@ lean_lib PnP3 where
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneValidation,
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneExamples,
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneRouting,
+    -- T2b, pass-B execution layer: the exact `TM.runConfig` route capstones
+    -- from the real initial configuration (`GateOneReadB`) and the named
+    -- per-route examples (`GateOneReadBExamples`).
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneReadB,
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneReadBExamples,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -285,6 +290,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMGateOneControlSurfaceTests,
     Glob.one `Tests.TMGateOneRoutingSurfaceTests,
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,
+    Glob.one `Tests.TMGateOneReadBSurfaceTests,
     Glob.one `Tests.FormulaSupportBoundsFalsifiabilityProbe,
     Glob.one `Tests.SmokeTests,
     Glob.one `Tests.UnitTests,

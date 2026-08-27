@@ -316,9 +316,8 @@ open Pnp3.Magnification
 -- `arg2 > 0` boundary.  The six initial-config arrival endpoints pin head,
 -- state and tape, and their named prefix counts fit `g1Clock`.  Local adapters
 -- use arbitrary aligned tapes; `+ k`/`+ m` stability carries no clock bound.
--- Still no `TM.run`, no
--- `TM.accepts`, no output write, no combine step, no pass-A read, no
--- `spec`-correctness claim and no full-clock theorem; `bOOB` is a stable read
+-- Still no `TM.run` or `TM.accepts`, no output write, combine step, pass-A read
+-- or `spec`-correctness claim, and no full-clock theorem; `bOOB` is a stable read
 -- boundary rather than a rejection, and nothing runs past `bRoundStart`.
 #print axioms Internal.PsubsetPpoly.TM.g1_route_le
 #print axioms Internal.PsubsetPpoly.TM.g1_route_lt_tapeLength

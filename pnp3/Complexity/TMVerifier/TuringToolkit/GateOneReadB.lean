@@ -13,7 +13,7 @@ below start from the *real* initial configuration
 machine, compose the exact T2a validation/rewind prefix, and run the
 `readBStart` handoff for a further exact, literal number of steps.  Their named
 arrival counts are closed expressions in the encoded length and are proved to
-fit `g1Clock`.  Local step/scan adapters intentionally quantify over arbitrary
+fit `g1Clock`.  Local step adapters intentionally quantify over arbitrary
 aligned tapes, while the post-boundary `+ k`/`+ m` stability theorems allow an
 arbitrary extra budget and make no public-clock claim.
 
@@ -65,9 +65,10 @@ rejection: `g1RejectState` is a different state and no acceptance or rejection
 semantics is attached to either.  There is no `TM.run`, `TM.accepts`, output
 write, combine step, pass-A read, `spec`-correctness claim or full-clock
 theorem: the five handoffs are idle rows and the clock lemmas bound only the
-*proved* prefixes against the **unchanged** clock `g1Clock`.  As in T1 and T2a,
-every execution statement is scoped to the exact tape `encodeG1 r`; nothing is
-claimed about physically padded tapes.
+*proved* arrival prefixes against the **unchanged** clock `g1Clock`.  The six
+initial-config capstones are scoped to the exact tape `encodeG1 r`; local
+adapters state their arbitrary tape explicitly.  No capstone claim is made
+about physically padded tapes.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -76,11 +77,11 @@ open Pnp3.Internal.PsubsetPpoly.TM.FrameScan
 
 /-! ## Budget arithmetic
 
-Every route reads a prefix of the canonical word, so its physical length is at
-most `(encodeG1 r).length`, far inside both the tape and the public clock.
-`g1Clock` is **unchanged**: the existing `512 * (N + 1) ^ 2 + 512` quadratic
-clock already dominates every step count proved here, so nothing about the
-clock is widened or restated. -/
+Every named arrival route reads a prefix of the canonical word, so its physical
+length is at most `(encodeG1 r).length`, far inside both the tape and the public
+clock.  `g1Clock` is **unchanged**: the arrival lemmas below prove their named
+prefix counts fit the existing quadratic clock.  Arbitrary stability budgets
+are not included in that claim. -/
 
 /-- A frame count inside the canonical word costs at most the whole word. -/
 theorem g1_route_le (r : G1Request) (k : Nat)

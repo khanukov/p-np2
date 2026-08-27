@@ -582,8 +582,9 @@ proved idle for every budget by `g1CS_runConfig_readA_idle`,
 consumes the `G1Ctx.vB` value they carry); **acceptance/rejection semantics,
 full run and full clock** (no `TM.run`, no `TM.accepts`, no `spec`-correctness
 and no full-clock theorem — none could honestly exist while five handoffs are
-idle); **padded tapes** (as in T1 and T2a every execution statement is scoped to
-the exact tape `encodeG1 r`); and the **`SLGate` bridge, multi-gate evaluator
+idle); **padded tapes** (the six initial-config capstones are scoped to the
+exact tape `encodeG1 r`; local adapters state arbitrary tapes explicitly, but
+no capstone covers a padded tape); and the **`SLGate` bridge, multi-gate evaluator
 and verifier obligation**, unchanged from T2a.
 
 Modules: `GateOneReadB.lean` (execution) and `GateOneReadBExamples.lean` (named

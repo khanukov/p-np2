@@ -35,10 +35,8 @@ def t1c3TrueRun :=
 /-- The output cell of the accepting run reads `true`. -/
 def t1c3TrueOutput :=
   t1CS_run_output_at t1c3TrueRequest true rfl
-    ⟨t1OutputPosition t1c3TrueRequest, by
-      have := t1tOutputBase_safe t1c3TrueRequest
-      simp only [t1OutputPosition_eq] at *
-      omega⟩ rfl
+    ⟨t1OutputPosition t1c3TrueRequest,
+      t1OutputPosition_safe t1c3TrueRequest⟩ rfl
 
 theorem t1c3TrueAccepts :
     TM.accepts (M := T1M) (encodeT1 t1c3TrueRequest).length
@@ -60,10 +58,8 @@ def t1c3FalseRun :=
 /-- The output cell of the accepting run reads `false`. -/
 def t1c3FalseOutput :=
   t1CS_run_output_at t1c3FalseRequest false rfl
-    ⟨t1OutputPosition t1c3FalseRequest, by
-      have := t1tOutputBase_safe t1c3FalseRequest
-      simp only [t1OutputPosition_eq] at *
-      omega⟩ rfl
+    ⟨t1OutputPosition t1c3FalseRequest,
+      t1OutputPosition_safe t1c3FalseRequest⟩ rfl
 
 theorem t1c3FalseAccepts :
     TM.accepts (M := T1M) (encodeT1 t1c3FalseRequest).length
@@ -86,6 +82,17 @@ theorem t1c3OobRejects :
     TM.accepts (M := T1M) (encodeT1 t1c3OobRequest).length
       (t1Point (encodeT1 t1c3OobRequest)) = false :=
   t1CS_run_reject_not_accepts t1c3OobRequest rfl
+
+/-- Tight OOB boundary: `index = data.length`. -/
+def t1c3BoundaryRequest : T1Request := ⟨2, [true, false]⟩
+
+def t1c3BoundaryRun :=
+  t1CS_run_reject_exact t1c3BoundaryRequest rfl
+
+theorem t1c3BoundaryRejects :
+    TM.accepts (M := T1M) (encodeT1 t1c3BoundaryRequest).length
+      (t1Point (encodeT1 t1c3BoundaryRequest)) = false :=
+  t1CS_run_reject_not_accepts t1c3BoundaryRequest rfl
 
 /-! ## Empty out-of-bounds probe -/
 

@@ -59,11 +59,121 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @t1c3OobRun
 #check @t1c3OobTapePreserved
 #check @t1c3OobRejects
+#check @t1c3BoundaryRun
+#check @t1c3BoundaryRejects
 #check @t1c3EmptyRun
 #check @t1c3EmptyTapePreserved
 #check @t1c3EmptyRejects
 #check @t1c3TrueClockFits
 #check @t1c3OobClockFits
 #check @t1c3EmptyClockFits
+
+/-! ## Exact theorem-contract pins -/
+
+theorem check_t1CS_runConfig_total_success_exact (r : T1Request) (v : Bool)
+    (hv : r.data[r.index]? = some v) :
+    T1M.runConfig (T1M.initialConfig (t1Point (encodeT1 r)))
+        (t1TotalSteps r) =
+      t1AlignedConfig (encodeT1 r).length 0
+        (t1_lt_tapeLength _ _ (Nat.zero_le _))
+        (t1ListTape ((t1OutputFrames r v).flatMap T1Frame.bits))
+        .accept .p0 false false false false :=
+  t1CS_runConfig_total_success_exact r v hv
+
+theorem check_t1CS_runConfig_total_oob_exact (r : T1Request)
+    (hv : r.data[r.index]? = none) (hne : 0 < r.data.length) :
+    T1M.runConfig (T1M.initialConfig (t1Point (encodeT1 r)))
+        (t1TotalSteps r) =
+      t1AlignedConfig (encodeT1 r).length 0
+        (t1_lt_tapeLength _ _ (Nat.zero_le _))
+        (t1ListTape ((t1OutputFrames r false).flatMap T1Frame.bits))
+        .reject .p0 false false false false :=
+  t1CS_runConfig_total_oob_exact r hv hne
+
+theorem check_t1CS_runConfig_total_oob_empty_exact (r : T1Request)
+    (hdata : r.data = []) :
+    T1M.runConfig (T1M.initialConfig (t1Point (encodeT1 r)))
+        (t1TotalSteps r) =
+      t1AlignedConfig (encodeT1 r).length 0
+        (t1_lt_tapeLength _ _ (Nat.zero_le _))
+        (T1M.initialConfig (t1Point (encodeT1 r))).tape
+        .reject .p0 false false false false :=
+  t1CS_runConfig_total_oob_empty_exact r hdata
+
+theorem check_t1CS_runConfig_total_reject_exact (r : T1Request)
+    (hv : r.data[r.index]? = none) :
+    T1M.runConfig (T1M.initialConfig (t1Point (encodeT1 r)))
+        (t1TotalSteps r) =
+      t1AlignedConfig (encodeT1 r).length 0
+        (t1_lt_tapeLength _ _ (Nat.zero_le _))
+        (T1M.initialConfig (t1Point (encodeT1 r))).tape
+        .reject .p0 false false false false :=
+  t1CS_runConfig_total_reject_exact r hv
+
+theorem check_t1CS_totalSteps_le_clock (r : T1Request) :
+    t1TotalSteps r ≤ t1Clock (encodeT1 r).length :=
+  t1CS_totalSteps_le_clock r
+
+theorem check_t1CS_run_success_exact (r : T1Request) (v : Bool)
+    (hv : r.data[r.index]? = some v) :
+    T1M.run (n := (encodeT1 r).length) (t1Point (encodeT1 r)) =
+      t1AlignedConfig (encodeT1 r).length 0
+        (t1_lt_tapeLength _ _ (Nat.zero_le _))
+        (t1ListTape ((t1OutputFrames r v).flatMap T1Frame.bits))
+        .accept .p0 false false false false :=
+  t1CS_run_success_exact r v hv
+
+theorem check_t1CS_run_reject_exact (r : T1Request)
+    (hv : r.data[r.index]? = none) :
+    T1M.run (n := (encodeT1 r).length) (t1Point (encodeT1 r)) =
+      t1AlignedConfig (encodeT1 r).length 0
+        (t1_lt_tapeLength _ _ (Nat.zero_le _))
+        (T1M.initialConfig (t1Point (encodeT1 r))).tape
+        .reject .p0 false false false false :=
+  t1CS_run_reject_exact r hv
+
+theorem check_t1CS_accepts_eq_isSome (r : T1Request) :
+    T1M.accepts (encodeT1 r).length (t1Point (encodeT1 r)) =
+      (r.data[r.index]?).isSome :=
+  t1CS_accepts_eq_isSome r
+
+theorem check_t1CS_accepts_iff (r : T1Request) :
+    T1M.accepts (encodeT1 r).length
+        (t1Point (encodeT1 r)) = true ↔
+      (r.data[r.index]?).isSome = true :=
+  t1CS_accepts_iff r
+
+theorem check_t1CS_accepts_eq_decide_lt (r : T1Request) :
+    T1M.accepts (encodeT1 r).length (t1Point (encodeT1 r)) =
+      decide (r.index < r.data.length) :=
+  t1CS_accepts_eq_decide_lt r
+
+theorem check_t1CS_run_success_tape_eq (r : T1Request) (v : Bool)
+    (hv : r.data[r.index]? = some v) :
+    (T1M.run (n := (encodeT1 r).length) (t1Point (encodeT1 r))).tape =
+      t1WriteCell (t1OutputPosition r) v
+        (T1M.initialConfig (t1Point (encodeT1 r))).tape :=
+  t1CS_run_success_tape_eq r v hv
+
+theorem check_t1CS_run_reject_tape_eq (r : T1Request)
+    (hv : r.data[r.index]? = none) :
+    (T1M.run (n := (encodeT1 r).length) (t1Point (encodeT1 r))).tape =
+      (T1M.initialConfig (t1Point (encodeT1 r))).tape :=
+  t1CS_run_reject_tape_eq r hv
+
+theorem check_t1CS_run_output_at (r : T1Request) (v : Bool)
+    (hv : r.data[r.index]? = some v)
+    (i : Fin (T1M.tapeLength (encodeT1 r).length))
+    (hi : (i : Nat) = t1OutputPosition r) :
+    (T1M.run (n := (encodeT1 r).length) (t1Point (encodeT1 r))).tape i = v :=
+  t1CS_run_output_at r v hv i hi
+
+theorem check_t1CS_run_tape_off (r : T1Request) (v : Bool)
+    (hv : r.data[r.index]? = some v)
+    (i : Fin (T1M.tapeLength (encodeT1 r).length))
+    (hi : (i : Nat) ≠ t1OutputPosition r) :
+    (T1M.run (n := (encodeT1 r).length) (t1Point (encodeT1 r))).tape i =
+      (T1M.initialConfig (t1Point (encodeT1 r))).tape i :=
+  t1CS_run_tape_off r v hv i hi
 
 end Pnp3.Tests.TMTrueUniformSeekSemanticsSurface

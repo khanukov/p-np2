@@ -167,8 +167,8 @@ open Pnp3.Magnification
 
 -- T1b-B genuine one-iteration mutation loop and exact OOB companion.  The
 -- induction/terminal split is not part of this layer and is audited in T1b-C
--- below; end-to-end T1c repair/output/acceptance remains open (T1c-1, audited
--- last, fixes the control table and the per-mode steps only).
+-- below; the later T1c sections audit terminal control, restoration/output,
+-- public-clock composition, and acceptance semantics.
 #print axioms Internal.PsubsetPpoly.TM.t1CS_scan_back_skip
 #print axioms Internal.PsubsetPpoly.TM.t1MutationTape_eq_listTape
 #print axioms Internal.PsubsetPpoly.TM.t1CursorBase_safe
@@ -298,9 +298,22 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.t1CS_run_reject_tape_eq
 #print axioms Internal.PsubsetPpoly.TM.t1CS_canonical_semantics
 #print axioms Internal.PsubsetPpoly.TM.t1c3TrueAccepts
+#print axioms Internal.PsubsetPpoly.TM.t1c3TrueRun
+#print axioms Internal.PsubsetPpoly.TM.t1c3TrueOutput
 #print axioms Internal.PsubsetPpoly.TM.t1c3FalseAccepts
+#print axioms Internal.PsubsetPpoly.TM.t1c3FalseRun
+#print axioms Internal.PsubsetPpoly.TM.t1c3FalseOutput
 #print axioms Internal.PsubsetPpoly.TM.t1c3OobRejects
+#print axioms Internal.PsubsetPpoly.TM.t1c3OobRun
+#print axioms Internal.PsubsetPpoly.TM.t1c3OobTapePreserved
+#print axioms Internal.PsubsetPpoly.TM.t1c3BoundaryRun
+#print axioms Internal.PsubsetPpoly.TM.t1c3BoundaryRejects
 #print axioms Internal.PsubsetPpoly.TM.t1c3EmptyRejects
+#print axioms Internal.PsubsetPpoly.TM.t1c3EmptyRun
+#print axioms Internal.PsubsetPpoly.TM.t1c3EmptyTapePreserved
+#print axioms Internal.PsubsetPpoly.TM.t1c3TrueClockFits
+#print axioms Internal.PsubsetPpoly.TM.t1c3OobClockFits
+#print axioms Internal.PsubsetPpoly.TM.t1c3EmptyClockFits
 
 -- Итоговые утверждения (формульная сепарация).
 #print axioms RefutedRoute_NP_not_subset_PpolyFormula_final

@@ -287,7 +287,7 @@ This is still **Infrastructure**.  Composition from the real initial
 configuration through the terminal pass, final public-clock padding, and the
 `TM.accepts`/output semantic equivalence are deliberately deferred to T1c-3.
 
-**T1c-3 canonical semantics delivered (2026-08-23):**
+**T1c-3 canonical semantics delivered (2026-08-24):**
 `TuringToolkit/TrueUniformSeekSemantics.lean` composes the exact decision and
 terminal prefixes from the real `initialConfig`, proves the total cost fits the
 unchanged fixed quadratic clock, and pads only in literal accept/reject sinks.

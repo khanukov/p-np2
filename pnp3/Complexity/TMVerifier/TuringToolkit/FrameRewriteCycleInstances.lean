@@ -26,16 +26,19 @@ context — and `t1OutWriter_outWriteOut_frame` matches
 ## G1
 
 `g1RevScanner_seek_bof` instantiates the new seek-until-marker driver at G1's
-**existing** rewind modes: an arbitrary run of non-anchor frames is crossed and
+**existing** rewind modes in the `pre = []` case: an arbitrary run of
+non-anchor frames is crossed and
 the anchor read in exactly `4 * tail.length + 4` steps, landing at head `0` in
 the `readBStart` handoff.  No control table is touched and `bRoundStart` stays
 idle.
 
 `g1CS` has **no** destructive walk modes — no write, walk-back or hop rows exist
 for it — so **no G1 rewrite cycle is claimed here**.  What is provided instead
-is the exact obligation: `G1RewriteCycleObligation` is the data the next G1
-slice must build (a `FrameRewriteCycle` whose scanner's program *is* `g1CS`,
-whose codec is `g1FrameCodec`, with the `index ↦ spent` direction fixed),
+is a core obligation: `G1RewriteCycleObligation` fixes a `FrameRewriteCycle`
+whose scanner's program is `g1CS`, codec is `g1FrameCodec`, and direction is
+`index ↦ spent`.  It intentionally does not fix the scanner state embedding;
+the next G1 slice must additionally prove its cycle starts from the aligned
+pass-B state before using the conditional execution theorem.
 `machine_eq` records that such a cycle's machine is literally `G1M`, and
 `rewrite_cycle` derives the thirteen-step `index ↦ spent` run from it by the
 generic theorem verbatim.  Both are conditional on data that does not exist

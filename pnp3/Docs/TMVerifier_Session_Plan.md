@@ -742,7 +742,8 @@ changed, and `bRoundStart` is still idle.
   instantiates the leftward writer at T1's output write and
   `t1OutWriter_outWriteOut_frame` matches `t1CS_outWriteOut_frame`.  For G1,
   `g1RevScanner_seek_bof` instantiates the seek driver at the *existing* rewind
-  modes (`4 * tail.length + 4` steps to head `0` in the `readBStart` handoff).
+  modes in the `pre = []` case (`4 * tail.length + 4` steps to head `0` in the
+  `readBStart` handoff).
 
 The only change to an existing module is one new standalone tuple lemma,
 `t1Transition_repairSeek_p0_bad`, in `TrueUniformSeek.lean`: the fourth outcome
@@ -752,9 +753,10 @@ lemmas did not cover.  The table itself is untouched.
 
 **G1 is not executed by this slice.**  `g1CS` has no write, walk-back or hop
 rows, so no G1 rewrite cycle exists.  What is provided instead is the exact
-obligation: `G1RewriteCycleObligation` names the data the next G1 slice must
-build (a `FrameRewriteCycle` whose scanner's program *is* `g1CS`, whose codec is
-`g1FrameCodec`, with the `index ↦ spent` direction fixed),
+core obligation: `G1RewriteCycleObligation` fixes a `FrameRewriteCycle` whose
+scanner program is `g1CS`, codec is `g1FrameCodec`, and direction is
+`index ↦ spent`.  It does not fix the scanner state embedding; the next G1
+slice must separately prove alignment with the pass-B state before execution.
 `machine_eq` records that such a cycle's machine is literally `G1M`, and
 `rewrite_cycle` derives the thirteen-step run from it by the generic theorem
 verbatim.  Both are conditional on data that does not exist here; nothing runs

@@ -25,7 +25,8 @@ The thirteen steps are `4 + 4 + 4 + 1`:
 
 `rewriteCycle` is that theorem on an arbitrary tape, `rewriteCycleOnList` its
 frame-list form (`pre ++ marker :: suffix ↦ pre ++ target :: suffix`, head
-`4 * pre.length + 3 ↦ 4 * pre.length - 1`), and `seekAndRewrite` composes the
+`4 * pre.length + 3 ↦ 4 * pre.length - 1`, with nonempty `pre` because the hop
+needs a predecessor frame), and `seekAndRewrite` composes the
 seek driver in front of it: skip an arbitrary run of skippable frames, then
 rewrite, in `4 * skipped.length + 13` steps.
 

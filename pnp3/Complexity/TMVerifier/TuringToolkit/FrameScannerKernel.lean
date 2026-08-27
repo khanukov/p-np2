@@ -18,8 +18,8 @@ frame-based control table in `TuringToolkit` needs, **once**, generically:
 
 Both are stated for an arbitrary `ConstStatePhasedProgram S`, an arbitrary
 frame alphabet `F` with a fixed-width `FrameCodec F`, an arbitrary mode type
-and an arbitrary carried context type `Aux` (T1's Boolean latch; a future G1's
-`pass/crossed/vB` triple).  Nothing here mentions `T1Frame`, `t1CS`, or any
+and an arbitrary carried context type `Aux` (for example one Boolean or a
+multi-Boolean product).  Nothing here mentions `T1Frame`, `t1CS`, or any
 concrete control table, and no hypothesis is left dangling: a `FrameScanner`
 is a *complete* obligation set, discharged by `rfl`-sized table lemmas at each
 instance (`FrameScannerT1`, `FrameScannerProbe`).
@@ -67,7 +67,7 @@ control table actually computes.
 "about to read a frame in mode `m` with context `a`", and `stk m a b₀ … b_{k-1}`
 holds the first `k` cells already buffered.  Keeping them as *functions*
 rather than a concrete record is what lets an instance carry any extra state
-it likes (T1: a Boolean latch; G1: three Booleans) without touching this file.
+it likes without touching this file.
 
 The five proof fields are the complete obligation set. -/
 structure FrameScanner (S : Type v) [Fintype S] [DecidableEq S]

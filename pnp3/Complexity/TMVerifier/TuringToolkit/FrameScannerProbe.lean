@@ -87,8 +87,7 @@ inductive ProbePos | q0 | q1 | q2 | q3
 
 set_option synthInstance.maxSize 512 in
 /-- The probe's control state.  Note the carried context is *two* Booleans
-(the `pass`/`crossed` pair `G1` needs), instantiating the kernel's `Aux` at
-`Bool × Bool` rather than T1's `Bool`.
+— a product-valued `Aux` rather than T1's single Boolean latch.
 
 The `synthInstance.maxSize` bump is only for the derived `Fintype`: the
 `ProxyType` sigma tower of a six-field record with a product field exceeds the
@@ -253,7 +252,7 @@ theorem probeCS_frame_macrostep (n h : Nat)
   probeFrameScanner.frameMacrostep n h hsafe tape mode frame a hm hnext hbits
 
 /-- The generic list scan, at the probe machine: exactly four steps per frame
-over an arbitrary surrounding tape. -/
+on the canonical list-backed tape with arbitrary frame prefix/suffix. -/
 theorem probeCS_scan_frames (n : Nat)
     (pre frames suffix : List ProbeFrame) (mode : ProbeMode) (a : Bool × Bool)
     (hpath : probeFrameScanner.ValidPath mode frames)
@@ -269,10 +268,10 @@ theorem probeCS_scan_frames (n : Nat)
         (probeFrameScanner.advanceList mode frames) a :=
   probeFrameScanner.scanFrames n pre frames suffix mode a hpath hsafe
 
-/-! ### A concrete gate-request-shaped word -/
+/-! ### A concrete two-operand-shaped word -/
 
 /-- `tag · argSep · datum true · argSep · datum false · stop`: six frames
-shaped like a two-operand `G1` request. -/
+shaped like a two-operand request. -/
 def probeWord : List ProbeFrame :=
   [.ptag, .pargSep, .pdatum true, .pargSep, .pdatum false, .pstop]
 

@@ -50,7 +50,11 @@ open Pnp3.Internal.PsubsetPpoly.TM.FrameScan
 #check @t1FrameCodec_bits
 #check @t1FrameCodec_decode
 #check @t1FrameScanner
+#check @t1FrameScanner_program
 #check @t1FrameScanner_machine
+#check @t1FrameScanner_phase
+#check @t1FrameScanner_advance
+#check @t1FrameScanner_st0
 #check @t1FrameScanner_frameMacrostep
 #check @t1FrameScanner_scanFrames
 

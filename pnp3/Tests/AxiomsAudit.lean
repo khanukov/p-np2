@@ -140,7 +140,11 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.probeCS_scan_probeWord_one
 #print axioms Internal.PsubsetPpoly.TM.t1FrameCodec_bits
 #print axioms Internal.PsubsetPpoly.TM.t1FrameCodec_decode
+#print axioms Internal.PsubsetPpoly.TM.t1FrameScanner_program
 #print axioms Internal.PsubsetPpoly.TM.t1FrameScanner_machine
+#print axioms Internal.PsubsetPpoly.TM.t1FrameScanner_phase
+#print axioms Internal.PsubsetPpoly.TM.t1FrameScanner_advance
+#print axioms Internal.PsubsetPpoly.TM.t1FrameScanner_st0
 #print axioms Internal.PsubsetPpoly.TM.t1FrameScanner_frameMacrostep
 #print axioms Internal.PsubsetPpoly.TM.t1FrameScanner_scanFrames
 

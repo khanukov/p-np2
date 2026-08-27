@@ -84,10 +84,13 @@ At the separator it enters `bProbe`, which reads the selected data frame:
 the end of the data region and hands off to the stable `bOOB` boundary.
 
 **What is deferred.**  `bScan` reaching an *unspent* `index` frame means the
-operand-2 index is non-zero and the destructive index walk of T2b-2 is needed;
+operand-2 index is non-zero and the deferred destructive index walk is needed;
 that row hands off to the idle `bRoundStart`, and no theorem of this
-development runs the machine past it.  So the physically executed operand read
-is exactly the zero-index one; `arg2 > 0` reaches `bRoundStart` and stops.
+development runs the machine out of it.  So the physically executed operand
+read is exactly the zero-index one; `arg2 > 0` reaches `bRoundStart` and stops
+there, which the execution layer proves as an exact endpoint plus a stability
+statement (`g1CS_readB_round_deferred_exact`,
+`g1CS_readB_round_deferred_stable`).
 `readAStart`, `combineStart`, `readAResetStart`, `bRoundStart` and `bOOB` are
 idle handoffs in this slice, and **no full-clock or acceptance theorem is
 stated** — such a theorem would become false once those handoffs do work.
@@ -208,7 +211,7 @@ operand-2 value and the data cursor has to be reset before pass A. -/
 def g1ReadAResetState (ctx : G1Ctx) : G1State :=
   g1State .readAResetStart .p0 false false false ctx
 
-/-- The entry point of the deferred destructive index walk (T2b-2). -/
+/-- The entry point of the deferred destructive index walk. -/
 def g1RoundState (ctx : G1Ctx) : G1State :=
   g1State .bRoundStart .p0 false false false ctx
 

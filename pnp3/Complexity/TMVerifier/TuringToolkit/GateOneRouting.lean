@@ -6,11 +6,10 @@ import Complexity.TMVerifier.TuringToolkit.GateOneControl
 **Progress classification: Infrastructure.**  The frame-level content of the
 pass-B rescan: which prefix of the canonical word the fixed control reads from
 `readBStart`, that the prefix is a grammar-valid path, and which mode the fold
-of the forward table lands in.  Nothing here mentions a Turing machine; exact
-`TM.runConfig` statements are deferred to the planned future pass-B execution
-layer.
+of the forward table lands in.  Nothing here mentions a Turing machine; the
+exact `TM.runConfig` statements built on these routes are `GateOneReadB`.
 
-Four route prefixes are defined, all of them *prefixes of the canonical word
+Five route prefixes are defined, all of them *prefixes of the canonical word
 itself* — no producer annotation, no scratch region, no marker:
 
 ```text
@@ -18,6 +17,7 @@ g1TagRouteFrames   r   = bof · tag^units · argSep
 g1FieldRouteFrames r   = bof · tag^units · argSep · index^arg1 · argSep
 g1ReadBRouteFrames r b = g1FieldRouteFrames r · separator · data b
 g1ReadBOOBFrames   r   = g1FieldRouteFrames r · separator · output false
+g1RoundRouteFrames r   = g1FieldRouteFrames r · index
 ```
 
 and the corresponding split lemmas say each prefix, followed by the rest of the
@@ -32,8 +32,9 @@ across the T2a rewind, and none is a parameter of the machine.
 **Scope.**  The two `g1ReadB*` routes are the `arg2 = 0` case of the operand-2
 read: the probe finds the selected data frame (or the `output` destination)
 immediately after the `separator`.  For `arg2 > 0` the forward table sends
-`bScan` to the idle `bRoundStart` handoff instead, and this module proves
-nothing about that branch — the destructive index walk is deferred.
+`bScan` to the idle `bRoundStart` handoff instead; `g1RoundRouteFrames` is the
+route *up to that boundary* and nothing beyond it is proved anywhere — the
+destructive index walk is deferred.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -357,13 +358,50 @@ theorem g1ReadBOOB_validPath (r : G1Request)
 
 For `arg2 > 0` the operand-2 walk meets an unspent `index` unit and the fixed
 control hands off to `bRoundStart`, the entry point of the destructive index
-walk that this slice does not build.  The lemma below records exactly that; no
-theorem of this development runs the machine from `bRoundStart`. -/
+walk that this slice does not build.  The lemmas below record exactly that, and
+supply the route *up to* that boundary so the deferral can be executed rather
+than merely asserted; no theorem of this development runs the machine *out of*
+`bRoundStart`. -/
 
 theorem g1_bScan_index_deferred (rest : List G1Frame) :
     g1AdvanceList .bScan (.index :: rest) = g1AdvanceList .bRoundStart rest :=
   rfl
 
 theorem g1_bRoundStart_stuck : G1Stuck .bRoundStart := by decide
+
+/-- The complete pass-B route of a binary gate with `arg2 > 0`: the operand-2
+walk meets the first unspent `index` unit, which the fixed control routes to the
+deferred `bRoundStart` handoff.  Like the other four, this is a prefix of the
+canonical word itself. -/
+def g1RoundRouteFrames (r : G1Request) : List G1Frame :=
+  g1FieldRouteFrames r ++ [.index]
+
+@[simp] theorem g1RoundRouteFrames_length (r : G1Request) :
+    (g1RoundRouteFrames r).length = r.tag.units + r.arg1 + 4 := by
+  simp only [g1RoundRouteFrames, List.length_append, g1FieldRouteFrames_length]
+  rfl
+
+theorem g1RoundRoute_split (r : G1Request) (k : Nat) (h2 : r.arg2 = k + 1) :
+    g1RoundRouteFrames r ++
+        (List.replicate k .index ++ .separator ::
+          (r.vals.map .data ++ [.output false, .finish, .blank])) =
+      encodeG1Frames r ++ [.blank] := by
+  rw [← g1FieldRoute_split r]
+  simp only [g1RoundRouteFrames, g1FieldRouteRest, h2, List.replicate_succ,
+    List.append_assoc, List.nil_append, List.cons_append]
+
+theorem g1RoundRoute_advance (r : G1Request)
+    (ht : r.tag = .and ∨ r.tag = .or) :
+    g1AdvanceList .readBStart (g1RoundRouteFrames r) = .bRoundStart := by
+  rw [g1RoundRouteFrames, g1AdvanceList_append,
+    g1FieldRoute_advance_binary r ht]
+  rfl
+
+theorem g1RoundRoute_validPath (r : G1Request)
+    (ht : r.tag = .and ∨ r.tag = .or) :
+    G1ValidPath .readBStart (g1RoundRouteFrames r) := by
+  refine g1ValidPath_append (g1FieldRoute_validPath_binary r ht) ?_
+  rw [g1FieldRoute_advance_binary r ht]
+  exact g1ValidPath_cons (by exact trivial) rfl (by decide) trivial
 
 end Pnp3.Internal.PsubsetPpoly.TM

@@ -92,6 +92,8 @@ lean_lib PnP3 where
     -- exact terminal theorems).
     Glob.one `Complexity.TMVerifier.TuringToolkit.TrueUniformSeekTerminal,
     Glob.one `Complexity.TMVerifier.TuringToolkit.TrueUniformSeekTerminalExamples,
+    Glob.one `Complexity.TMVerifier.TuringToolkit.TrueUniformSeekSemantics,
+    Glob.one `Complexity.TMVerifier.TuringToolkit.TrueUniformSeekSemanticsExamples,
     Glob.one `Complexity.TMVerifier.TuringToolkit.TrueUniformSeekExamples,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
@@ -248,6 +250,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMTrueUniformSeekMutationLoopSurfaceTests,
     Glob.one `Tests.TMTrueUniformSeekMutationDriverSurfaceTests,
     Glob.one `Tests.TMTrueUniformSeekTerminalSurfaceTests,
+    Glob.one `Tests.TMTrueUniformSeekSemanticsSurfaceTests,
     Glob.one `Tests.TMStepBridgeSurfaceTests,
     Glob.one `Tests.FormulaSupportBoundsFalsifiabilityProbe,
     Glob.one `Tests.SmokeTests,

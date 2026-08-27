@@ -271,6 +271,22 @@ slice is **Infrastructure** and does not yet compose the terminal macros over a
 whole canonical tape, prove complete restoration, pad through the final sinks,
 or establish `TM.accepts`/output correctness.  Those are T1c-2/T1c-3.
 
+**T1c-2 terminal execution delivered (2026-08-23):**
+`TuringToolkit/TrueUniformSeekTerminal.lean` composes the terminal macros over
+whole canonical tapes.  On success it restores the cursor to the selected data
+bit, writes that bit into the output frame, repairs every `spent` marker to an
+`index`, and reaches the literal accept state at head `0`.  The final tape is
+obtained by overwriting only `t1OutputPosition r` with the selected bit
+(possibly a no-op).  On both nonempty
+and empty OOB paths it repairs every consumed marker, preserves data and
+`output false`, and reaches the literal reject state at head `0`; the final tape
+is bit-for-bit the initial tape.  Exact terminal clocks and pointwise tape
+conservation theorems are surfaced and axiom-audited.
+
+This is still **Infrastructure**.  Composition from the real initial
+configuration through the terminal pass, final public-clock padding, and the
+`TM.accepts`/output semantic equivalence are deliberately deferred to T1c-3.
+
 **T1a review hardening (2026-08-23):** the generic forward-frame scanner
 `t1CS_scan_frames` and non-anchor reverse scanner `t1CS_rewind_tail` are public
 T1b reuse surfaces, with exact import-side type probes and axiom audits.  Their

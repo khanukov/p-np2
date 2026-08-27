@@ -88,6 +88,10 @@ lean_lib PnP3 where
     -- T1b-C: the seek-loop driver (induction, success tail, terminal split).
     Glob.one `Complexity.TMVerifier.TuringToolkit.TrueUniformSeekMutationDriver,
     Glob.one `Complexity.TMVerifier.TuringToolkit.TrueUniformSeekMutationDriverExamples,
+    -- T1c-2: terminal execution (repair pass, output write, the three
+    -- exact terminal theorems).
+    Glob.one `Complexity.TMVerifier.TuringToolkit.TrueUniformSeekTerminal,
+    Glob.one `Complexity.TMVerifier.TuringToolkit.TrueUniformSeekTerminalExamples,
     Glob.one `Complexity.TMVerifier.TuringToolkit.TrueUniformSeekExamples,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
@@ -243,6 +247,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMTrueUniformSeekMutationSurfaceTests,
     Glob.one `Tests.TMTrueUniformSeekMutationLoopSurfaceTests,
     Glob.one `Tests.TMTrueUniformSeekMutationDriverSurfaceTests,
+    Glob.one `Tests.TMTrueUniformSeekTerminalSurfaceTests,
     Glob.one `Tests.TMStepBridgeSurfaceTests,
     Glob.one `Tests.FormulaSupportBoundsFalsifiabilityProbe,
     Glob.one `Tests.SmokeTests,

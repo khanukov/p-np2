@@ -210,8 +210,8 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.t1bcOobBoundaryFromInitial
 
 -- T1c-1 active terminal control: the transition table for both terminal arms
--- and one genuine generic execution theorem per new mode.  Restoration,
--- terminal step counts and acceptance stay open (T1c-2).
+-- and one genuine generic execution theorem per new mode.  T1c-2/T1c-3 below
+-- audit restoration, terminal clocks, public runs, and acceptance semantics.
 #print axioms Internal.PsubsetPpoly.TM.t1Transition_successStart_active
 #print axioms Internal.PsubsetPpoly.TM.t1Transition_oobStart_active
 #print axioms Internal.PsubsetPpoly.TM.t1Transition_outWalk

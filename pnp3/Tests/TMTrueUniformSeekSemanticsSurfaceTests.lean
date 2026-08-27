@@ -6,7 +6,7 @@ import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekSemanticsExamples
 Pins the total honest clock, the three exact compositions from the genuine
 `T1M.initialConfig`, the merged reject arm, the public-clock bound, the two
 full `T1M.run` theorems, full `TM.accepts` correctness, output-cell/tape
-conservation, and the four concrete probes.
+conservation, and the five concrete probes.
 
 Out of scope by design (and unchanged by this slice): malformed or
 trailing-padded physical tapes.  `T1Physical` stays reserved vocabulary; no
@@ -49,7 +49,7 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @t1CS_run_reject_tape_eq
 #check @t1CS_canonical_semantics
 
--- Concrete probes: true bit, false bit (still accepts), OOB, empty OOB.
+-- Concrete probes: true bit, false bit, strict OOB, boundary OOB, empty OOB.
 #check @t1c3TrueRun
 #check @t1c3TrueOutput
 #check @t1c3TrueAccepts
@@ -175,5 +175,23 @@ theorem check_t1CS_run_tape_off (r : T1Request) (v : Bool)
     (T1M.run (n := (encodeT1 r).length) (t1Point (encodeT1 r))).tape i =
       (T1M.initialConfig (t1Point (encodeT1 r))).tape i :=
   t1CS_run_tape_off r v hv i hi
+
+theorem check_t1CS_run_head_zero (r : T1Request) :
+    ((T1M.run (n := (encodeT1 r).length) (t1Point (encodeT1 r))).head : Nat) =
+      0 :=
+  t1CS_run_head_zero r
+
+theorem check_t1CS_canonical_semantics (r : T1Request) (v : Bool)
+    (hv : r.data[r.index]? = some v) :
+    T1M.accepts (encodeT1 r).length (t1Point (encodeT1 r)) = true ∧
+      (∀ i : Fin (T1M.tapeLength (encodeT1 r).length),
+        (i : Nat) = t1OutputPosition r →
+          (T1M.run (n := (encodeT1 r).length)
+            (t1Point (encodeT1 r))).tape i = v) ∧
+      (∀ i : Fin (T1M.tapeLength (encodeT1 r).length),
+        (i : Nat) ≠ t1OutputPosition r →
+          (T1M.run (n := (encodeT1 r).length) (t1Point (encodeT1 r))).tape i =
+            (T1M.initialConfig (t1Point (encodeT1 r))).tape i) :=
+  t1CS_canonical_semantics r v hv
 
 end Pnp3.Tests.TMTrueUniformSeekSemanticsSurface

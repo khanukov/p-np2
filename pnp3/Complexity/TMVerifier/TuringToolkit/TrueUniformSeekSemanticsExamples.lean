@@ -3,7 +3,7 @@ import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekSemantics
 /-!
 # Concrete T1c-3 canonical-semantics probes
 
-Four named probes on the one fixed machine `t1CS`, each at a canonical
+Five named probes on the one fixed machine `t1CS`, each at a canonical
 `encodeT1 r` input:
 
 * **true bit** — the selected slot holds `true`: the machine accepts and the
@@ -14,6 +14,8 @@ Four named probes on the one fixed machine `t1CS`, each at a canonical
   accept/reject decision;
 * **nonempty out of bounds** — the index exceeds a nonempty data field: the
   machine rejects and the tape is restored to the input tape;
+* **tight out-of-bounds boundary** — the index equals the data length and
+  selects the first missing slot;
 * **empty out of bounds** — no data field at all: the machine rejects and the
   tape was never written.
 

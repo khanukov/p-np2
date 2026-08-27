@@ -105,6 +105,12 @@ lean_lib PnP3 where
     Glob.one `Complexity.TMVerifier.TuringToolkit.TrueUniformSeekSemantics,
     Glob.one `Complexity.TMVerifier.TuringToolkit.TrueUniformSeekSemanticsExamples,
     Glob.one `Complexity.TMVerifier.TuringToolkit.TrueUniformSeekExamples,
+    -- T2a, pure layer: the fresh unary one-gate ABI (`GateOneEncoding`) and
+    -- the pure gate semantics on top of it (`GateOneSemantics`).  These are
+    -- parser/spec modules only; a fixed machine executing this ABI is deferred
+    -- to later dependency slices and is not registered here.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneEncoding,
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneSemantics,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -263,6 +269,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMTrueUniformSeekSemanticsSurfaceTests,
     Glob.one `Tests.TMStepBridgeSurfaceTests,
     Glob.one `Tests.TMFrameScannerSurfaceTests,
+    Glob.one `Tests.TMGateOnePureSurfaceTests,
     Glob.one `Tests.FormulaSupportBoundsFalsifiabilityProbe,
     Glob.one `Tests.SmokeTests,
     Glob.one `Tests.UnitTests,

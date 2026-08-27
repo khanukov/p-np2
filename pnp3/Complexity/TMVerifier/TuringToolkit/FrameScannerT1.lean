@@ -11,9 +11,10 @@ program `t1CS`, its single phase, the shared left-to-right table
 four aligned control states of `T1State` — whose carried context (`Aux`) is
 T1's single Boolean latch.
 
-All five proof obligations are discharged by the *existing* standalone
-transition-table lemmas of `TrueUniformSeek`; nothing here unfolds
-`t1Transition`, and no new hypothesis is introduced.  The named regression theorems below instantiate `FrameScanner.frameMacrostep`
+Four transition obligations are discharged by the *existing* standalone
+table lemmas of `TrueUniformSeek`; the fifth, `complete_decode`, follows by
+definitional unfolding of `t1Complete`.  Nothing here unfolds `t1Transition`,
+and no new hypothesis is introduced.  The named regression theorems below instantiate `FrameScanner.frameMacrostep`
 and `FrameScanner.scanFrames` directly at T1.  Existing validation theorems
 retain their public statements; the regressions pin that the generic kernel
 reproduces the same execution shape without changing downstream APIs.

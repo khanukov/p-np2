@@ -6,10 +6,9 @@ import Complexity.TMVerifier.TuringToolkit.GateOneValidation
 
 **Progress classification: Infrastructure.**  Concrete instances of the T2a
 surface: the ABI round trip, the pure rejections, the pure semantics, the
-executable capstone at every gate tag, and — since the fixed control now
-decides the canonical grammar — concrete *machine-level* rejections of every
-noncanonical class the deliverable lists.  Nothing depends on this module; it
-is an audit surface.
+executable capstone at every gate tag, frame-control rejection of wrong tag
+counts, and concrete machine-level rejection of every encoded noncanonical
+request class.  Nothing depends on this module; it is an audit surface.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -166,7 +165,7 @@ theorem capstone_and_clock :
     g1ReadBHandoffSteps reqAnd ≤ g1Clock (encodeG1 reqAnd).length :=
   g1ReadBHandoffSteps_le_clock reqAnd
 
-/-! ## Machine-level rejection, at every noncanonical class
+/-! ## Frame-control and machine rejection
 
 Parser rejection alone is not evidence about the machine, so each class below
 is witnessed by a genuine automaton or `TM.runConfig` rejection of the *fixed
@@ -187,7 +186,8 @@ abbrev RejectAt (r : G1Request) : Prop :=
       ((encodeG1 r).length + 4)).tape =
       (G1M.initialConfig (g1Point (encodeG1 r))).tape
 
-/-- The matching "did not reach the pass-B handoff" statement. -/
+/-- The matching "validation-prefix endpoint is not the pass-B handoff"
+statement. -/
 abbrev NotReadBAt (r : G1Request) : Prop :=
   (TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
       ((encodeG1 r).length + 4)).state.snd ≠ g1ReadBState g1Ctx0

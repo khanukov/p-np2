@@ -393,8 +393,8 @@ the fixed one-gate interpreter on top of the generic frame-scanner kernel.
   `(encodeG1 r).length + 4`-step validation prefix from the same real initial
   configuration on a noncanonical request and lands in the literal
   `g1RejectState` with the tape exactly unchanged, and
-  `g1CS_noncanonical_ne_readB` records that the pass-B handoff is therefore
-  never reached.  The head is deliberately not pinned in the rejection
+  `g1CS_noncanonical_ne_readB` records that the validation-prefix endpoint is
+  not a pass-B handoff.  The head is deliberately not pinned in the rejection
   statement: it stops on the offending frame.
 * `GateOneExamples.lean` — named examples: round trip, every listed rejection,
   the pure semantics, the capstone at every gate tag, and concrete

@@ -19,8 +19,8 @@ The `r.Canonical` hypothesis is not decoration.  `GateOneControl` proves the
 forward table decides exactly the pure parser's language
 (`g1Automaton_accepts_iff_decode`,
 `g1CanonicalEncoderAutomatonTrace_iff`), so a *noncanonical* encoded request
-provably does **not** reach the handoff: it enters the literal `reject` sink
-inside the fixed `(encodeG1 r).length + 4`-step validation prefix, with the
+ends the fixed `(encodeG1 r).length + 4`-step validation prefix in the literal
+`reject` sink rather than the handoff, with the
 tape unchanged (`g1CS_validate_noncanonical_reject_exact`,
 `g1CS_noncanonical_ne_readB`).
 
@@ -533,6 +533,13 @@ theorem g1CS_readB_head (r : G1Request) (hc : r.Canonical) :
         (g1ReadBHandoffSteps r)).head : Nat) = 0 := by
   rw [g1CS_validate_rewind_readB_exact r hc]; rfl
 
+/-- The capstone remains in the machine's unique public start phase. -/
+theorem g1CS_readB_phase (r : G1Request) (hc : r.Canonical) :
+    (TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1ReadBHandoffSteps r)).state.fst = g1CS.toPhased.startPhase := by
+  rw [g1CS_validate_rewind_readB_exact r hc]
+  rfl
+
 theorem g1CS_readB_state (r : G1Request) (hc : r.Canonical) :
     (TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
         (g1ReadBHandoffSteps r)).state.snd =
@@ -752,9 +759,9 @@ theorem g1CS_validate_noncanonical_reject_exact (r : G1Request)
   rw [hrun']
   exact ⟨rfl, rfl⟩
 
-/-- **A noncanonical encoded request never reaches the pass-B handoff.**  The
-context is universally quantified, so this is the handoff state in *any*
-context, not merely in the initial one. -/
+/-- **At the end of the validation prefix, a noncanonical encoded request is
+not at the pass-B handoff.**  The context is universally quantified, so the
+excluded endpoint covers the handoff state in any context. -/
 theorem g1CS_noncanonical_ne_readB (r : G1Request) (hc : ¬ r.Canonical)
     (ctx : G1Ctx) :
     (TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))

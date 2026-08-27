@@ -15,6 +15,8 @@ import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedStepBridgeExamples
 import Complexity.TMVerifier.TuringToolkit.FrameScannerProbe
 import Complexity.TMVerifier.TuringToolkit.FrameScannerT1
+import Complexity.TMVerifier.TuringToolkit.FrameScannerReverseProbe
+import Complexity.TMVerifier.TuringToolkit.FrameScannerReverseInstances
 import Complexity.TMVerifier.TuringToolkit.GateOneExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneRouting
 import Complexity.TMVerifier.TuringToolkit.GateOneReadBExamples
@@ -150,6 +152,30 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.t1FrameScanner_st0
 #print axioms Internal.PsubsetPpoly.TM.t1FrameScanner_frameMacrostep
 #print axioms Internal.PsubsetPpoly.TM.t1FrameScanner_scanFrames
+
+-- Generic *reverse* four-bit frame-scanner kernel and the generic four-cell
+-- frame write/replacement layer, a genuinely non-T1 probe of both, and the T1
+-- and G1 reverse-scan regressions.  Execution infrastructure only: no
+-- addressing, acceptance, gate-evaluation or verifier claim, and the leftward
+-- writer and the 13-step rewrite cycle are deferred, not audited here.
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.Phased.stepLeft
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameScanner.revFrameMacrostep
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameScanner.revFrameMacrostepAt
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameScanner.revAnchorStep
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameScanner.revValidPath_const
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameScanner.revScanFrames
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameScanner.revScanFrames_tape
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameScanner.revScanFrames_state
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameScanner.revScanFrames_head
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameScanner.revScanToAnchor
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.writeFrame4_apply
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.writeFrame4_frameListTape
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameWriter.writeMacrostep
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameWriter.writeFrameOnList
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.revProbeCS_scan_word
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.revProbeCS_write_cell
+#print axioms Internal.PsubsetPpoly.TM.t1RevScanner_rewind_tail
+#print axioms Internal.PsubsetPpoly.TM.g1RevScanner_rewind_tail
 
 -- T2a, pure layer: the fresh unary one-gate ABI, its exact parser
 -- characterisation, and the pure gate semantics.  These are parser/spec

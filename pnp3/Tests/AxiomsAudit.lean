@@ -17,6 +17,7 @@ import Complexity.TMVerifier.TuringToolkit.FrameScannerProbe
 import Complexity.TMVerifier.TuringToolkit.FrameScannerT1
 import Complexity.TMVerifier.TuringToolkit.GateOneExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneRouting
+import Complexity.TMVerifier.TuringToolkit.GateOneReadBExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -303,6 +304,79 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1ReadBOOB_validPath
 #print axioms Internal.PsubsetPpoly.TM.g1_bScan_index_deferred
 #print axioms Internal.PsubsetPpoly.TM.g1_bRoundStart_stuck
+#print axioms Internal.PsubsetPpoly.TM.g1RoundRouteFrames_length
+#print axioms Internal.PsubsetPpoly.TM.g1RoundRoute_split
+#print axioms Internal.PsubsetPpoly.TM.g1RoundRoute_advance
+#print axioms Internal.PsubsetPpoly.TM.g1RoundRoute_validPath
+
+-- T2b-2, pass-B execution layer: exact `TM.runConfig` statements from the real
+-- `G1M.initialConfig (g1Point (encodeG1 r))` for the physical tag rescan and
+-- its per-tag dispatch, the `const` literal decode/store, the `arg2 = 0`
+-- operand-2 read and its empty-data `bOOB` boundary, and the deferred
+-- `arg2 > 0` boundary.  Every endpoint pins head, state *and* tape, and every
+-- step count is bounded by the unchanged `g1Clock`.  Still no `TM.run`, no
+-- `TM.accepts`, no output write, no combine step, no pass-A read, no
+-- `spec`-correctness claim and no full-clock theorem; `bOOB` is a stable read
+-- boundary rather than a rejection, and nothing runs past `bRoundStart`.
+#print axioms Internal.PsubsetPpoly.TM.g1_route_le
+#print axioms Internal.PsubsetPpoly.TM.g1_route_lt_tapeLength
+#print axioms Internal.PsubsetPpoly.TM.g1_readB_steps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_scan
+#print axioms Internal.PsubsetPpoly.TM.g1CS_runConfig_stable
+#print axioms Internal.PsubsetPpoly.TM.g1CS_runConfig_readA_idle
+#print axioms Internal.PsubsetPpoly.TM.g1CS_runConfig_combine_idle
+#print axioms Internal.PsubsetPpoly.TM.g1CS_runConfig_readAReset_idle
+#print axioms Internal.PsubsetPpoly.TM.g1CS_runConfig_round_idle
+#print axioms Internal.PsubsetPpoly.TM.g1CS_runConfig_oob_sink
+#print axioms Internal.PsubsetPpoly.TM.g1CS_step_constLit
+#print axioms Internal.PsubsetPpoly.TM.g1CS_step_store
+#print axioms Internal.PsubsetPpoly.TM.g1ReadARouteSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1FieldRouteSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1ConstRouteSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1ReadBSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1ReadBOOBSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1RoundRouteSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_route_unary_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_route_unary_head
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_route_unary_state
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_route_unary_tape
+#print axioms Internal.PsubsetPpoly.TM.g1_const_fields_of_spec
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_route_const_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_route_const_vB
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_route_const_tape
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_route_binary_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_route_binary_head
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_zero_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_zero_head
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_zero_vB
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_zero_tape
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_zero_state
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_zero_phase
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_zero_oob_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_zero_oob_stable
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_zero_oob_state
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_zero_oob_tape
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_zero_oob_ne_success
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_oob_ne_reject
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_round_deferred_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_round_deferred_stable
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_round_deferred_state
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_route_input
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_route_not
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_const_false
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_const_true
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_field_route_and
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_field_route_or
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_round_and
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_round_or
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_round_and_stable
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_and_true
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_and_false
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_or_true
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_and_oob
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_and_oob_stable
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_oob_ne_success
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_oob_ne_reject
 
 -- T1a fixed-control canonical validation and read-only rewind handoff.
 #print axioms Internal.PsubsetPpoly.TM.decodeT1Tape_encode

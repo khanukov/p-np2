@@ -290,6 +290,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMGateOneControlSurfaceTests,
     Glob.one `Tests.TMGateOneRoutingSurfaceTests,
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,
+    Glob.one `Tests.TMGateOneReadBSurfaceTests,
     Glob.one `Tests.FormulaSupportBoundsFalsifiabilityProbe,
     Glob.one `Tests.SmokeTests,
     Glob.one `Tests.UnitTests,

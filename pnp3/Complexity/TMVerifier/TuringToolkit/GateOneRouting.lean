@@ -6,8 +6,9 @@ import Complexity.TMVerifier.TuringToolkit.GateOneControl
 **Progress classification: Infrastructure.**  The frame-level content of the
 pass-B rescan: which prefix of the canonical word the fixed control reads from
 `readBStart`, that the prefix is a grammar-valid path, and which mode the fold
-of the forward table lands in.  Nothing here mentions a Turing machine; the
-exact `TM.runConfig` statements are `GateOneReadB`.
+of the forward table lands in.  Nothing here mentions a Turing machine; exact
+`TM.runConfig` statements are deferred to the planned future pass-B execution
+layer.
 
 Four route prefixes are defined, all of them *prefixes of the canonical word
 itself* — no producer annotation, no scratch region, no marker:

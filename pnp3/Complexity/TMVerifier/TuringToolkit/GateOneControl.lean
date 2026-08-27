@@ -140,11 +140,10 @@ inductive G1Mode
 inductive G1FramePosition | p0 | p1 | p2 | p3
   deriving Fintype, DecidableEq, Repr
 
-/-- The carried context of the G1 control: the pass selector, the
-"an `argSep` has already been crossed" flag, and the resolved operand-2 value.
-All three are inert in the T2a slice and are threaded through unchanged; they
-are declared here because they are part of the fixed finite state the planned
-interpreter uses, and adding state later would change the machine. -/
+/-- The carried context of the G1 control.  `pass` and `crossed` remain inert in
+this slice.  `vB` is written by the dispatch rows and holds either the decoded
+`const` literal or the operand-2 value read from the data region.  All fields
+are part of the fixed finite state; adding state later would change the machine. -/
 structure G1Ctx where
   pass : Bool
   crossed : Bool
@@ -292,10 +291,9 @@ def g1Advance : G1Mode → G1Frame → G1Mode
   -- a binary gate skips the operand-1 field and stops at the operand-2 field
   | .rArg1Binary, .index => .rArg1Binary
   | .rArg1Binary, .argSep => .bScan
-  -- the operand-2 walk: already-spent index units and already-passed data
-  -- frames are skipped, the separator opens the probe
+  -- the operand-2 walk: spent index units are skipped; the separator opens
+  -- the probe.  A data frame before the separator is malformed and rejects.
   | .bScan, .spent => .bScan
-  | .bScan, .data _ => .bScan
   | .bScan, .separator => .bProbe
   | .bScan, .index => .bRoundStart   -- deferred: the destructive index walk
   -- the probe reads the selected data frame, or runs off the data region
@@ -398,14 +396,18 @@ theorem g1AdvanceList_ne_rewindStart_of_stuck {mode : G1Mode} (h : G1Stuck mode)
       decide
 
 /-- **The forward table only ever produces a forward mode, `rewindStart`, or a
-stuck mode.**  In particular `rewind` and `accept` are unreachable from any
-scan, and every non-forward target of the table (the four dispatch modes, the
-five handoffs, the `reject` sink) reads nothing further. -/
+stuck mode.**  Every non-forward routing target reads nothing further. -/
 theorem g1Advance_range (mode : G1Mode) (frame : G1Frame) :
     G1ForwardMode (g1Advance mode frame) ∨
       g1Advance mode frame = .rewindStart ∨
       G1Stuck (g1Advance mode frame) := by
   revert mode frame; decide
+
+/-- Neither sink-like control mode is ever produced by one frame-table step. -/
+theorem g1Advance_ne_sink (mode : G1Mode) (frame : G1Frame) :
+    g1Advance mode frame ≠ .accept ∧ g1Advance mode frame ≠ .rewind := by
+  revert mode frame
+  decide
 
 /-- Once the end-of-input frame has been consumed, an accepting word is over. -/
 theorem g1AdvanceList_rewindStart_eq_nil {fs : List G1Frame}

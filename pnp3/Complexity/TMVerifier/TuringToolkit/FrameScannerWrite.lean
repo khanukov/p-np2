@@ -5,9 +5,10 @@ import Complexity.TMVerifier.TuringToolkit.FrameScannerReverse
 
 Generic pointwise four-cell overwrite, arbitrary-list frame replacement, and
 an exact four-step writer machine.  `FrameWriter` carries one target-codeword
-law and four concrete transition tuples—no semantic run field.  This slice
-stops at one rightward frame replacement; the leftward writer and 13-step
-rewrite cycle are explicitly deferred.
+law and four concrete transition tuples—no semantic run field.  This module
+stops at one rightward frame replacement; companion modules
+`FrameScannerWriteLeft` and `FrameRewriteCycle` supply the leftward writer and
+13-step rewrite composition.
 -/
 namespace Pnp3.Internal.PsubsetPpoly.TM.FrameScan
 

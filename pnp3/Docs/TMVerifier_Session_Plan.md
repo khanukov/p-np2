@@ -686,6 +686,92 @@ no acceptance and no verifier claim, and it does not by itself execute any new
   and frame-replacement capstones use explicit list-backed layouts.  No theorem
   packages either form as a canonical or padded-input end-to-end execution.
 
+The first two of those deferrals are discharged by the next slice, below; the
+G1 pass-B destructive index walk and the padded-tape question are not.
+
+**Generic leftward writer, seek driver and thirteen-step rewrite cycle
+delivered (2026-08-25):**
+
+The mutation half of the frame kernel is completed.  Five modules under
+`TuringToolkit/`; no existing control table, theorem statement or step count was
+changed, and `bRoundStart` is still idle.
+
+* `FrameScannerWriteLeft.lean` — the generic **leftward** four-cell writer.
+  `writeFrame4_descending` identifies the descending write order with
+  `writeFrame4`, so the leftward writer inherits the frame-replacement law of
+  the rightward one.  A `ReverseFrameWriter S F Aux` carries one codec law and
+  four concrete transition tuples; unlike `FrameWriter` its installed frame may
+  depend on the carried context (`target : Aux → F`).  `writeMacrostepLeft` is
+  the exact four-step macro (head `base + 3 ↦ base - 1`, exact exit state and
+  context, tape exactly `writeFrame4`) and `writeFrameOnListLeft` the executable
+  replacement on an arbitrary `pre ++ old :: suffix`.
+* `FrameScannerSeek.lean` — the generic **seek-until-marker** driver on top of
+  `ReverseFrameScanner`.  `revSkipRun` crosses an arbitrary run of skippable
+  frames (`4 * skipped.length` steps, mode/tape/context unchanged) and
+  `revSeekToMarker` continues into the marker that stops the pass
+  (`4 * skipped.length + 4` steps, head on the marker's first cell,
+  `stopState (revAdvance mode marker)`), with `revSeekToMarker_head` its head
+  projection.  The desired run is *not* a field: the premises are two mode
+  facts of the scanner's own table, one frame predicate on the skipped run, one
+  table fact about the marker, and head safety.
+* `FrameRewriteCycle.lean` — the exact **thirteen-step rewrite cycle**,
+  `4 + 4 + 4 + 1`: `revAnchorStep` reads the marker right to left and stops on
+  its first cell; `FrameWriter.writeMacrostep` — obtained from the cycle by
+  `toWriter`, entered at the *scanner's own* `stopState`, which is what glues
+  the halves — installs the replacement codeword; `backWalk` returns the head;
+  one explicit hop transition re-enters the reverse scan.  `rewriteCycle` is
+  the arbitrary-tape form (head `base + 3 ↦ base - 1`, tape exactly
+  `writeFrame4`), `rewriteCycleOnList` the frame-list form
+  (`pre ++ marker :: suffix ↦ pre ++ target :: suffix`), and `seekAndRewrite`
+  the composition with the seek driver (`4 * skipped.length + 13` steps).  The
+  thirteen is derived, not assumed: the structure has no step-count field, no
+  desired-run field and no semantic-correctness field.
+* `FrameRewriteCycleProbe.lean` — the genericity probe, with **no T1 import**,
+  on the non-T1 `RevFrame` alphabet and a new seven-mode control whose carried
+  context is a Boolean *pair*.  Four concrete runs, unconditional in `n`:
+  `cycProbeCS_rewrite_cycle` (thirteen genuine steps, `spent ↦ cell true`,
+  head `11 ↦ 7`, exact resulting tape), `cycProbeCS_seek_rewrite`
+  (`8 + 13 = 21` steps, head `19 ↦ 7`), `cycProbeCS_write_left` (the leftward
+  writer, head `15 ↦ 11`) and `cycProbeCS_seek_marker` (the seek alone).
+* `FrameRewriteCycleInstances.lean` — the concrete instances.
+  `t1RepairScanner`/`t1RepairCycle` instantiate the kernel at T1's *existing*
+  `repairSeek`/`repairWrite`/`repairBack`/`repairHop` rows, and
+  `t1RepairCycle_repair_cycle` re-derives `t1CS_repair_cycle` — same statement,
+  `spent ↦ index` in thirteen steps — from the generic composition, with
+  `t1RepairCycle_repair_cycle_onList` its frame-list form.  `t1OutWriter`
+  instantiates the leftward writer at T1's output write and
+  `t1OutWriter_outWriteOut_frame` matches `t1CS_outWriteOut_frame`.  For G1,
+  `g1RevScanner_seek_bof` instantiates the seek driver at the *existing* rewind
+  modes in the `pre = []` case (`4 * tail.length + 4` steps to head `0` in the
+  `readBStart` handoff).
+
+The only change to an existing module is one new standalone tuple lemma,
+`t1Transition_repairSeek_p0_bad`, in `TrueUniformSeek.lean`: the fourth outcome
+of T1's `repairSeek` frame decision (a frame the pass cannot cross), which the
+generic kernel's five-row interface requires and which the existing three
+lemmas did not cover.  The table itself is untouched.
+
+**G1 is not executed by this slice.**  `g1CS` has no write, walk-back or hop
+rows, so no G1 rewrite cycle exists.  What is provided instead is the exact
+core obligation: `G1RewriteCycleObligation` fixes a `FrameRewriteCycle` whose
+scanner program is `g1CS`, codec is `g1FrameCodec`, and direction is
+`index ↦ spent`.  It does not fix the scanner state embedding; the next G1
+slice must separately prove alignment with the pass-B state before execution.
+`machine_eq` records that such a cycle's machine is literally `G1M`, and
+`rewrite_cycle` derives the thirteen-step run from it by the generic theorem
+verbatim.  Both are conditional on data that does not exist here; nothing runs
+`g1CS` past `bRoundStart` and `g1_bScan_index_deferred` is unchanged.
+
+`Tests/TMFrameRewriteCycleSurfaceTests.lean` pins the public surface and
+`Tests/AxiomsAudit.lean` audits the generic capstones, the four probe runs, the
+T1 regressions and both G1 statements; all depend only on `propext`,
+`Classical.choice` and `Quot.sound`.
+
+This slice is **Infrastructure**.  Still deferred and claimed nowhere: any
+runtime-index addressing, the iteration of the cycle along a runtime-determined
+run inside `G1`, the G1 destructive index walk itself, gate semantics,
+acceptance, and non-canonical or physically padded tapes.
+
 **T2a correction (2026-08-24).**  The first T2a head shipped a permissive
 forward table (`vTag` looping on every `tag`, `vArg1`/`vArg2` looping on every
 `index`) whose language was strictly larger than `G1Request.Canonical`, while

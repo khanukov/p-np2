@@ -121,6 +121,7 @@ theorem check_t1MutationFrames_getElem?_cursor (r : T1Request) (j : Nat)
 #check @t1Transition_repairSeek_p0_write
 #check @t1Transition_repairSeek_p0_skip
 #check @t1Transition_repairSeek_p0_done
+#check @t1Transition_repairSeek_p0_bad
 #check @t1Transition_repairDone_accept
 #check @t1Transition_repairDone_reject
 #check @t1Transition_repairDone_acceptState

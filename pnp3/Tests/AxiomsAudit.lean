@@ -257,6 +257,7 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.reject_const_convention
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.automaton_reject_zero_tags
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.automaton_reject_six_tags
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.machine_reject_constBig
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.machine_reject_notUnused
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.machine_reject_inputUnused
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.machine_reject_constUnused

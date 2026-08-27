@@ -8,9 +8,8 @@ import Mathlib.Data.Fintype.Sigma
 This module exists to witness that `FrameScannerKernel` is genuinely generic
 and not a T1 wrapper.  It defines, from scratch and with **no T1 import**:
 
-* `ProbeFrame` — a different frame alphabet with different codewords,
-  including the `1011` separator code that the planned `G1` gate ABI reserves
-  for `argSep`;
+* `ProbeFrame` — a different frame alphabet; its tag/separator/stop codes
+  include four-bit words the T1 encoder never emits;
 * `probeFrameCodec` — its fixed-width codec, with the round trip proved;
 * `ProbeMode`/`ProbeState`/`probeCS` — a different mode set, a different
   control-state record (its carried context is a *pair* of Booleans, not T1's
@@ -22,8 +21,7 @@ It then applies the kernel unchanged: `probeCS_frame_macrostep` is the
 four-step macrostep, `probeCS_scan_frames` the arbitrary-context list scan,
 and `probeCS_scan_probeWord` a fully concrete six-frame,
 twenty-four-step run of a `tag · argSep · datum · argSep · datum · stop`
-word — a word shaped like a `G1` gate request, scanned by a machine that has
-never heard of `T1Frame`.
+word, scanned by a machine that has never heard of `T1Frame`.
 
 Nothing downstream depends on this module; it is an audit surface.
 -/
@@ -37,9 +35,9 @@ namespace FrameScan
 
 /-! ## A different four-bit alphabet -/
 
-/-- A gate-request-shaped alphabet: an argument separator, a unary tag, data
-frames and a terminator.  The codewords deliberately differ from `T1Frame`'s,
-and `pargSep` uses the `1011` code reserved for `G1`'s `argSep`. -/
+/-- A request-shaped alphabet: an argument separator, unary tag, data frames
+and terminator.  Its `ptag`, `pargSep`, and `pstop` codes are not emitted by T1;
+the alphabet, modes, state record, and carried context are independently defined. -/
 inductive ProbeFrame
   | pblank | ptag | pargSep | pdatum (value : Bool) | pstop
   deriving DecidableEq, Repr
@@ -164,6 +162,9 @@ def probeCS : ConstStatePhasedProgram ProbeState where
   acceptState := probeState .done .q0
   transition := probeTransition
   timeBound := probeClock
+
+theorem probeCS_runTime (N : Nat) :
+    probeCS.toPhased.toTM.runTime N = probeClock N := rfl
 
 /-! ### Standalone table lemmas (the only place `probeTransition` reduces) -/
 
@@ -296,6 +297,15 @@ theorem probeCS_scan_probeWord (n : Nat)
   have h := probeFrameScanner.scanFrames n [] probeWord [] .scanTag a
     probeWord_validPath (by simpa [probeWord] using hsafe)
   simpa [probeWord, probeWord_advanceList] using h
+
+/-- Closed non-vacuity witness for the literal 24-step probe run. -/
+theorem probeCS_scan_probeWord_one (a : Bool × Bool) :
+    TM.runConfig (M := probeFrameScanner.machine)
+        (probeFrameScanner.alignedFrame 1 0 (by decide)
+          (frameListTape (probeWord.flatMap ProbeFrame.bits)) .scanTag a) 24 =
+      probeFrameScanner.alignedFrame 1 24 (by decide)
+        (frameListTape (probeWord.flatMap ProbeFrame.bits)) .done a :=
+  probeCS_scan_probeWord 1 (by decide) a
 
 end FrameScan
 

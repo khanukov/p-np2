@@ -18,10 +18,10 @@ and `FrameScanner.scanFrames` directly at T1.  Existing validation theorems
 retain their public statements; the regressions pin that the generic kernel
 reproduces the same execution shape without changing downstream APIs.
 
-The instance also fixes the compatibility facts a caller needs when moving
-between the T1 vocabulary and the generic one: the scanner's machine is `T1M`,
-its codec's encoder is `T1Frame.bits`, and its aligned states are the T1
-`t1State` records.  All of them hold by `rfl`.
+The compatibility facts below pin the program, machine, phase, frame codec,
+advance table, and aligned start state used by the two regression theorems.
+No equivalence with every legacy T1 helper (`T1ValidPath`, list tape, or all
+intermediate state constructors) is claimed here.
 -/
 
 namespace Pnp3

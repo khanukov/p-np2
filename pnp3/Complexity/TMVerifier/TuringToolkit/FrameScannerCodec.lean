@@ -10,8 +10,8 @@ all have the fixed physical width `4`, together with the round-trip law.
 
 Everything downstream — `FrameScannerKernel`'s macrostep and list-scan
 induction, the `T1Frame` instantiation, and the non-T1 genericity probe —
-consumes frames only through this interface.  In particular a future `G1`
-alphabet (`argSep`, gate tags, …) is a *new instance*, not a new proof.
+consumes frames only through this interface.  Any later four-bit alphabet is
+a new instance, not a new scanner proof.
 
 The module also fixes the two purely physical vocabularies that the kernel
 shares with every instance:

@@ -308,9 +308,11 @@ universal gate interpreter or content verifier is claimed by this result.
 `FrameScannerCodec.lean` and `FrameScannerKernel.lean` factor out an executable
 four-cell macrostep and exact multi-frame `TM.runConfig` induction, reproducing
 T1's execution shape in a kernel generic over the frame alphabet, finite
-control, mode table and carried context.  The kernel preserves an arbitrary
-surrounding tape and exposes exact state/head/tape projections; transition
-obligations are concrete tuple facts consumed by the existing generic step bridge, not a correctness field that
+control, mode table and carried context.  The one-frame macrostep preserves an
+arbitrary physical tape; the multi-frame induction preserves its canonical
+list-backed tape with arbitrary frame prefix/suffix and exposes exact
+state/head/tape projections.  Transition obligations are concrete tuple facts
+consumed by the existing generic step bridge, not a correctness field that
 repackages a semantic theorem.  `FrameScannerProbe.lean` supplies a genuinely
 non-T1 codec/program execution, while `FrameScannerT1.lean` instantiates the
 kernel at the existing T1 machine and pins named regression theorems.

@@ -116,6 +116,11 @@ open Pnp3.Magnification
 -- Generic four-bit frame-scanner execution kernel, a non-T1 probe and the T1
 -- regression instantiation.  This is execution infrastructure, not a scanner
 -- correctness provider or a verifier claim.
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameCodec.bits_injective
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameCodec.bits_eq_four
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameCodec.flatMap_bits_length
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.writeCell_self
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.physicalBitsAt_flatMap
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameScanner.alignedStepRight
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameScanner.alignedStepLeft
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameScanner.alignedStepStay
@@ -129,7 +134,13 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameScanner.scanFrames_head
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.probeCS_frame_macrostep
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.probeCS_scan_frames
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.probeWord_validPath
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.probeCS_runTime
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.probeCS_scan_probeWord
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.probeCS_scan_probeWord_one
+#print axioms Internal.PsubsetPpoly.TM.t1FrameCodec_bits
+#print axioms Internal.PsubsetPpoly.TM.t1FrameCodec_decode
+#print axioms Internal.PsubsetPpoly.TM.t1FrameScanner_machine
 #print axioms Internal.PsubsetPpoly.TM.t1FrameScanner_frameMacrostep
 #print axioms Internal.PsubsetPpoly.TM.t1FrameScanner_scanFrames
 

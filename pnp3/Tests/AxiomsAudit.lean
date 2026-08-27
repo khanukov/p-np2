@@ -184,6 +184,21 @@ open Pnp3.Magnification
 -- frame-scanner kernel.  Generic frame execution primitives are present;
 -- end-to-end validation/rewind remains deferred.
 #print axioms Internal.PsubsetPpoly.TM.g1CS_runTime
+#print axioms Internal.PsubsetPpoly.TM.g1CS_numPhases
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_forward_p0
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_forward_p1
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_forward_p2
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_forward_p3_advance
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_forward_p3_reject
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_rewindStart
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_rewind_p3
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_rewind_p2
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_rewind_p1
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_rewind_p0_bof
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_rewind_p0_other
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_readBStart_idle
+#print axioms Internal.PsubsetPpoly.TM.g1RejectState_ne_readB
+#print axioms Internal.PsubsetPpoly.TM.g1AdvanceList_append
 #print axioms Internal.PsubsetPpoly.TM.G1ForwardMode.not_reject
 #print axioms Internal.PsubsetPpoly.TM.G1ForwardMode.not_rewindStart
 #print axioms Internal.PsubsetPpoly.TM.G1RejectPath.forward

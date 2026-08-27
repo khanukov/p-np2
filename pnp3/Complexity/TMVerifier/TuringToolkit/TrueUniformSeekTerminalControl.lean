@@ -6,7 +6,8 @@ generic `TM.runConfig` macros for output traversal/write, reverse index repair,
 literal dispatch, and sink stability from standalone transition lemmas.  It
 never unfolds the table and claims no canonical composite run, global
 restoration, output correctness, `t1Clock` padding, `TM.accepts`, or concrete
-input-to-sink theorem; those obligations belong to T1c-2.
+input-to-sink theorem.  Boundary-to-sink restoration/output is T1c-2; initial
+composition, public-clock padding, and acceptance semantics are T1c-3.
 -/
 namespace Pnp3.Internal.PsubsetPpoly.TM
 private theorem t1CS_hold_right (n h : Nat) (hb : h + 1 < T1M.tapeLength n)

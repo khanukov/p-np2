@@ -73,7 +73,8 @@ control table out of every execution proof.
 
 This module makes no addressing claim, and it proves no *end-to-end*
 restoration or acceptance theorem: it fixes the terminal control only.  The
-exact repair/output traces and the acceptance semantics are T1c-2.
+exact boundary-to-sink repair/output traces are T1c-2; initial composition,
+public-clock padding, and acceptance semantics are T1c-3.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM

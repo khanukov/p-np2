@@ -31,7 +31,6 @@ non-anchor frames is crossed and
 the anchor read in exactly `4 * tail.length + 4` steps, landing at head `0` in
 the `readBStart` handoff.  No control table is touched and `bRoundStart` stays
 idle.
-
 `g1CS` has **no** destructive walk modes — no write, walk-back or hop rows exist
 for it — so **no G1 rewrite cycle is claimed here**.  What is provided instead
 is a core obligation: `G1RewriteCycleObligation` fixes a `FrameRewriteCycle`

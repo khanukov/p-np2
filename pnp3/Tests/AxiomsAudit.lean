@@ -281,6 +281,8 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1Ctx.withVB_vB
 #print axioms Internal.PsubsetPpoly.TM.G1Ctx.withVB_pass
 #print axioms Internal.PsubsetPpoly.TM.G1Ctx.withVB_crossed
+#print axioms Internal.PsubsetPpoly.TM.G1ForwardMode.readBStart
+#print axioms Internal.PsubsetPpoly.TM.g1OOBState_ne_readAReset
 #print axioms Internal.PsubsetPpoly.TM.g1Advance_ne_sink
 #print axioms Internal.PsubsetPpoly.TM.g1_tagRescan_advance
 #print axioms Internal.PsubsetPpoly.TM.g1_tagRescan_validPath
@@ -288,6 +290,8 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1FieldRoute_split
 #print axioms Internal.PsubsetPpoly.TM.g1ReadBRoute_split
 #print axioms Internal.PsubsetPpoly.TM.g1ReadBOOB_split
+#print axioms Internal.PsubsetPpoly.TM.g1TagRoute_advance
+#print axioms Internal.PsubsetPpoly.TM.g1TagRoute_validPath
 #print axioms Internal.PsubsetPpoly.TM.g1TagRoute_advance_unary
 #print axioms Internal.PsubsetPpoly.TM.g1FieldRoute_advance_const
 #print axioms Internal.PsubsetPpoly.TM.g1FieldRoute_validPath_const

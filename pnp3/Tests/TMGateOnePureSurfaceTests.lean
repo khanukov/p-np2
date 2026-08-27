@@ -84,6 +84,12 @@ theorem check_encodeG1_length (r : G1Request) :
       4 * (r.tag.units + r.arg1 + r.arg2 + r.vals.length + 6) :=
   encodeG1_length r
 
+theorem check_encodeG1Frames_injective : Function.Injective encodeG1Frames :=
+  encodeG1Frames_injective
+
+theorem check_encodeG1_injective : Function.Injective encodeG1 :=
+  encodeG1_injective
+
 theorem check_encodeG1_getElem?_outputPosition (r : G1Request) :
     (encodeG1 r)[g1OutputPosition r]? = some false :=
   encodeG1_getElem?_outputPosition r

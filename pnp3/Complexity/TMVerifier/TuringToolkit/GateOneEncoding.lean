@@ -295,7 +295,8 @@ theorem encodeG1Frames_eq_prefix (r : G1Request) :
       r.tag.units + r.arg1 + r.arg2 + r.vals.length + 4 := by
   simp [g1PrefixFrames]; omega
 
-/-- The initial point of the machine: the canonical word, cell by cell. -/
+/-- The canonical word as an exact-length Boolean-cube point, reserved for the
+later machine layer. -/
 def g1Point (bits : List Bool) : Boolcube.Point bits.length := fun i => bits.get i
 
 @[simp] theorem encodeG1Frames_length (r : G1Request) :

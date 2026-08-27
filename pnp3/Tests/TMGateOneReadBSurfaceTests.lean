@@ -12,8 +12,10 @@ per-route examples.  The frame-level routing itself is pinned by
 `Tests.TMGateOneRoutingSurface`; only the newly added deferred route is
 re-pinned here.
 
-Every theorem pinned here is scoped to `encodeG1 r`, and none of them runs the
-machine past a handoff.  In particular there is **no** `TM.run`, `TM.accepts`,
+The initial-configuration arrival capstones pinned here are scoped to
+`encodeG1 r` and stop at a handoff.  Local adapters intentionally use arbitrary
+aligned tapes; post-boundary `+ k`/`+ m` stability pins have no public-clock
+bound.  In particular there is **no** `TM.run`, `TM.accepts`,
 output-write, combine, pass-A or `spec`-correctness surface, and the `arg2 > 0`
 operand-2 walk is pinned only *up to* the deferred `bRoundStart` boundary,
 together with the fact that the machine never leaves it.  This is an audit

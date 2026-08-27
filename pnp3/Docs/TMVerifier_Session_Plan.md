@@ -495,16 +495,21 @@ same statements and the same step arithmetic.
 **T2b-2 pass-B execution delivered (2026-08-27):**
 
 The T2b-1 table and its frame-level routing become genuine `TM.runConfig`
-statements.  Every theorem of `GateOneReadB.lean` starts from the **real**
-initial configuration `G1M.initialConfig (g1Point (encodeG1 r))` of the same
-one fixed zero-parameter machine, composes the exact T2a validation/rewind
-prefix `g1ReadBHandoffSteps r = 2 * (encodeG1 r).length + 9`, and then runs the
+statements.  The six arrival capstones of `GateOneReadB.lean` start from the
+**real** initial configuration `G1M.initialConfig (g1Point (encodeG1 r))` of
+the same one fixed zero-parameter machine, compose the exact T2a validation/rewind
+prefix `g1ReadBHandoffSteps r = 2 * (encodeG1 r).length + 9`, and then run the
 `readBStart` handoff for a further exact, literal number of steps.  No
 transition table is unfolded: the single composition lemma `g1CS_readB_scan`
 glues the T2a prefix to the *generic* `FrameScanner.scanFrames`, and the two
 stationary dispatch rows come from the standalone tuple lemmas
 `g1Transition_constLit`/`g1Transition_store`.  No T1 theorem is transported and
 no machine, state field, clock or `G1Ctx` field is added or changed.
+
+The reusable local adapters quantify over arbitrary aligned tapes.  The stable
+handoff theorems also allow arbitrary post-boundary `+ k`/`+ m` budgets; those
+padding budgets are not claimed to fit the public clock.  Only the named
+initial-configuration arrival prefixes have the clock bounds listed below.
 
 **Implication direction.**  Each capstone is an *equation* read left to right:
 running the fixed machine from its real initial configuration for exactly this
@@ -535,6 +540,9 @@ Six exact endpoints, each pinning head, state **and** tape (`n` abbreviates
 | `Canonical`, `tag ∈ {and, or}`, `arg2 = 0`, `vals[arg2]? = some b` | `g1ReadBSteps r = 2n+9 + 4*(u+arg1+5) + 1` | `readAResetStart`, `vB = b` | `4*(u+arg1+5)` |
 | `Canonical`, `tag ∈ {and, or}`, `arg2 = 0`, `vals[arg2]? = none` | `g1ReadBOOBSteps r = 2n+9 + 4*(u+arg1+5)` | `bOOB`, `g1Ctx0` (stable) | `4*(u+arg1+5)` |
 | `Canonical`, `tag ∈ {and, or}`, `arg2 = k+1` | `g1RoundRouteSteps r = 2n+9 + 4*(u+arg1+4)` | `bRoundStart`, `g1Ctx0` (idle) | `4*(u+arg1+4)` |
+
+For `and`/`or`, `Canonical` is automatic; it is retained to compose uniformly
+with the T2a initial prefix.
 
 In **every** row the tape is bit-for-bit the initial tape: the whole pass-B
 rescan is read-only, so no `spent`/`cursor` marker is written and no data cursor

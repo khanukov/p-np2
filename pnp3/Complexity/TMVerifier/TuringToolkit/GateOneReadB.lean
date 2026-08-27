@@ -7,15 +7,15 @@ import Complexity.TMVerifier.TuringToolkit.GateOneValidation
 
 **Progress classification: Infrastructure.**
 
-The executable layer of the T2b pass-B slice.  Every theorem below starts from
-the *real* initial configuration `G1M.initialConfig (g1Point (encodeG1 r))` of
-the one fixed zero-parameter machine, composes the exact T2a validation/rewind
-prefix (`g1CS_validate_rewind_readB_exact`, `2 * (encodeG1 r).length + 9`
-steps), and then runs the `readBStart` handoff for a further exact, literal
-number of steps.  `GateOneRouting` supplies the frame-level content; this module
-turns it into `TM.runConfig` equations.  Nothing is wrapped: the request is
-otherwise arbitrary, the initial configuration is the compiled machine's own,
-and every step count is a closed arithmetic expression in the encoded length.
+The executable layer of the T2b pass-B slice.  The six named arrival capstones
+below start from the *real* initial configuration
+`G1M.initialConfig (g1Point (encodeG1 r))` of the one fixed zero-parameter
+machine, compose the exact T2a validation/rewind prefix, and run the
+`readBStart` handoff for a further exact, literal number of steps.  Their named
+arrival counts are closed expressions in the encoded length and are proved to
+fit `g1Clock`.  Local step/scan adapters intentionally quantify over arbitrary
+aligned tapes, while the post-boundary `+ k`/`+ m` stability theorems allow an
+arbitrary extra budget and make no public-clock claim.
 
 **The tag is physically rescanned.**  At the T2a handoff the context is
 `g1Ctx0` and no gate tag is retained anywhere: `G1State` has no `Nat`, index,
@@ -387,8 +387,10 @@ Boolean register.**  From the real initial configuration, exactly
 `g1ConstRouteSteps r` genuine steps physically rescan the tag, physically
 decode the canonical unary literal field, and store it in `G1Ctx.vB`.  The
 literal is pinned to the pure semantics: `b` is the value of `r.spec`, which
-for `const` determines the encoded operand-1 run.  `combineStart` is the honest
-boundary and is idle here (`g1CS_runConfig_combine_idle`). -/
+for `const` determines the encoded operand-1 run.  The route ends after the
+operand-1 field and is therefore independent of the unused `arg2` field.
+`combineStart` is the honest boundary and is idle here
+(`g1CS_runConfig_combine_idle`). -/
 theorem g1CS_readB_route_const_exact (r : G1Request) (hc : r.Canonical)
     (ht : r.tag = .const) (b : Bool) (hs : r.spec = some b) :
     TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))

@@ -313,8 +313,10 @@ open Pnp3.Magnification
 -- `G1M.initialConfig (g1Point (encodeG1 r))` for the physical tag rescan and
 -- its per-tag dispatch, the `const` literal decode/store, the `arg2 = 0`
 -- operand-2 read and its empty-data `bOOB` boundary, and the deferred
--- `arg2 > 0` boundary.  Every endpoint pins head, state *and* tape, and every
--- step count is bounded by the unchanged `g1Clock`.  Still no `TM.run`, no
+-- `arg2 > 0` boundary.  The six initial-config arrival endpoints pin head,
+-- state and tape, and their named prefix counts fit `g1Clock`.  Local adapters
+-- use arbitrary aligned tapes; `+ k`/`+ m` stability carries no clock bound.
+-- Still no `TM.run`, no
 -- `TM.accepts`, no output write, no combine step, no pass-A read, no
 -- `spec`-correctness claim and no full-clock theorem; `bOOB` is a stable read
 -- boundary rather than a rejection, and nothing runs past `bRoundStart`.

@@ -1,12 +1,14 @@
-import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekValidation
+import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekTerminalControl
 
 /-!
 # T1 true uniform-seek surface tests
 
 These compile-time probes pin the canonical codec, public quadratic clock,
-exact read-only validation/rewind handoff, and selected T1b-A1 control
-surfaces.  They deliberately expose no addressing-success, restoration,
-output, or acceptance theorem.
+exact read-only validation/rewind handoff, and selected T1b-A1 and T1c-1
+control surfaces.  They deliberately expose no addressing-success,
+tape-restoration, output-correctness, or acceptance theorem: the T1c-1 entries
+below are the fixed control table and one generic execution macro per mode,
+not a claim that any concrete input reaches a sink.
 -/
 
 namespace Pnp3.Tests.TMTrueUniformSeekSurface
@@ -102,7 +104,46 @@ theorem check_t1MutationFrames_getElem?_cursor (r : T1Request) (j : Nat)
 #check @t1CS_aligned_step_right
 #check @t1CS_aligned_step_left
 #check @t1CS_aligned_step_stay
-#check @t1CS_runConfig_successStart
-#check @t1CS_runConfig_oobStart
+#check @t1CS_stepConfig_sink
+#check @t1CS_runConfig_sink
+
+-- T1c-1 active terminal boundaries: the two former idleness lemmas are gone.
+#check @t1Transition_successStart_active
+#check @t1Transition_oobStart_active
+#check @t1Transition_outWalk
+#check @t1Transition_outBackup
+#check @t1Transition_outWriteData
+#check @t1Transition_outTurn
+#check @t1Transition_outWriteOut
+#check @t1Transition_repairWrite
+#check @t1Transition_repairBack
+#check @t1Transition_repairHop
+#check @t1Transition_repairSeek_p0_write
+#check @t1Transition_repairSeek_p0_skip
+#check @t1Transition_repairSeek_p0_done
+#check @t1Transition_repairDone_accept
+#check @t1Transition_repairDone_reject
+#check @t1Transition_repairDone_acceptState
+
+-- T1c-1 generic terminal execution: one macro theorem per new mode.
+#check @t1CS_successStart_dispatch
+#check @t1CS_oobStart_dispatch
+#check @t1CS_outWalk_walk
+#check @t1CS_outSeekCursor_frame
+#check @t1CS_outBackup_walk
+#check @t1CS_outWriteData_frame
+#check @t1CS_outSeekOutput_frame
+#check @t1CS_outTurn_step
+#check @t1CS_outWriteOut_frame
+#check @t1CS_repairSeek_frame_skip
+#check @t1CS_repairSeek_frame_write
+#check @t1CS_repairSeek_frame_done
+#check @t1CS_repairWrite_frame
+#check @t1CS_repairBack_walk
+#check @t1CS_repairHop_step
+#check @t1CS_repairDone_accept
+#check @t1CS_repairDone_reject
+#check @t1CS_repairDone_accept_stable
+#check @t1CS_repairDone_reject_stable
 
 end Pnp3.Tests.TMTrueUniformSeekSurface

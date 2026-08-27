@@ -12,7 +12,7 @@ advice: every `TM.runConfig` fact below is assembled from
   `t1CS_scan_back_skip`;
 * T1b-A's installation capstone `t1CS_mutationConfig_zero`, its
   `bof`-transition macro-step `t1CS_seekIndexBack_frame_success`, and its
-  empty-data public-clock theorem `t1CS_run_encoded_oob_empty_data`;
+  exact empty-data boundary theorem `t1CS_oob_empty_data_exact`;
 * T1a's validation/rewind capstone `t1CS_validate_rewind_encoded_exact`.
 
 The control table is never unfolded here, and the machine is the one fixed
@@ -40,7 +40,7 @@ t1LoopSteps m = 16 * m + 37` (`t1LoopSteps_succ`), which is the exact cost
 * `t1CS_loop_success_tail_exact` — the **success tail**: from `Σ(r, r.index,
   latch)`, where the index field is fully spent, the backward scan crosses
   `spent^k · separator · data^k` and the `bof` anchor hands control to the
-  idle `successStart` boundary in exactly `8 * r.index + 8` steps.  The tape
+  `successStart` boundary in exactly `8 * r.index + 8` steps.  The tape
   is unchanged and stated exactly: it is still the canonical layout
   `t1LoopFrames r r.index`, i.e. the *unique* cursor frame sits in data slot
   `r.index`, the index field holds `r.index` `spent` markers and no `index`
@@ -61,18 +61,18 @@ t1LoopSteps m = 16 * m + 37` (`t1LoopSteps_succ`), which is the exact cost
   supplied by the caller.
 * `t1CS_decideTotal_le_clock` — the whole decision prefix fits inside the
   public clock `t1Clock (encodeT1 r).length`.
-* `t1CS_run_encoded_decide_success`, `t1CS_run_encoded_decide_oob_nonempty`,
-  `t1CS_run_encoded_decide_oob_empty` and the dichotomy
-  `t1CS_run_encoded_decide_oob` — the same split under the genuine public
-  clock: the boundary is padded out with the idle-boundary run theorems, so
-  `T1M.run` itself is the boundary configuration.
 
 ## Deliberately *not* claimed here
 
-`successStart` and `oobStart` remain **idle semantic boundaries** owned by
-T1c.  Nothing below claims acceptance, rejection, an output write, or repair
-of the consumed index field.  On the nonempty out-of-bounds path the exact
-intermediate tape has `r.data.length` spent markers and
+There are **no public-clock `TM.run` theorems in this module.**  T1c-1 made
+`successStart` and `oobStart` active, so padding the decision prefix out to
+the public clock no longer leaves the machine at the boundary: the four
+former `t1CS_run_encoded_decide_*` theorems were deleted rather than
+weakened.  What survives here is exactly the finite-prefix `runConfig`
+picture, and nothing below claims acceptance, rejection, an output write, or
+repair of the consumed index field.  In particular the out-of-bounds boundary
+is reached on the *intermediate* tape `t1LoopFramesRestored`: on the nonempty
+out-of-bounds path its index field has `r.data.length` spent markers and
 `r.index - r.data.length` unconsumed index markers; on the empty-data path the
 input tape is unchanged.
 -/
@@ -258,7 +258,7 @@ theorem t1CS_loop_reach_exact (r : T1Request) (m : Nat) (hm : m ≤ r.index)
 so the backward scan crosses the whole run `spent^k · separator · data^k`
 (`4` genuine steps per frame, `k = r.index`) and the following
 `seekIndexBack` frame read finds the `bof` anchor, which hands control to
-the idle `successStart` boundary: exactly `4 * (2k+1) + 4 = 8k + 8` steps.
+the `successStart` boundary: exactly `4 * (2k+1) + 4 = 8k + 8` steps.
 
 Everything is stated exactly.  The tape is *unchanged* — it is still the
 canonical layout `t1LoopFrames r r.index`, that is
@@ -315,7 +315,7 @@ theorem t1CS_loop_success_tail_exact (r : T1Request) (latch : Bool)
         4 * (r.index + r.index + 2) - 1 from by omega,
       show 4 * (r.index - r.index + 1) - 1 = 3 from by omega] at hscan
     exact hscan
-  -- Phase B: the `bof` anchor hands control to the idle success boundary.
+  -- Phase B: the `bof` anchor hands control to the success boundary.
   have hbits : t1PhysicalBitsAt hsafe0
       (t1ListTape (n := (encodeT1 r).length)
         ((t1LoopFrames r r.index).flatMap T1Frame.bits)) =
@@ -340,7 +340,7 @@ theorem t1CS_loop_success_tail_exact (r : T1Request) (latch : Bool)
 
 /-- **Success, from the configuration the installation reaches.**  When the
 selected slot `r.index` exists, the driver walks the cursor to it and the
-success tail reaches the idle `successStart` boundary, in exactly
+success tail reaches the `successStart` boundary, in exactly
 `t1LoopSteps r.index + (8 * r.index + 8)` genuine steps, with the latch
 holding `r.data[r.index]`. -/
 theorem t1CS_loop_success_from_zero_exact (r : T1Request) (b v : Bool)
@@ -368,14 +368,15 @@ theorem t1CS_loop_success_from_zero_exact (r : T1Request) (b v : Bool)
 installation reaches.**  When the data field is nonempty and no longer than
 the index (`r.data.length ≤ r.index`), the driver walks the cursor to the last
 slot `L-1` and T1b-B's
-out-of-bounds step reaches the idle `oobStart` boundary, in exactly
+out-of-bounds step reaches the `oobStart` boundary, in exactly
 `t1LoopSteps (L-1) + (16 * (L-1) + 32)` genuine steps.
 
 The final tape is T1b-B's exact intermediate layout
 `t1LoopFramesRestored r (L-1)`: the data field is fully restored and carries
 no cursor frame, while the index field is **not** restored — it holds `L`
 `spent` markers and `r.index - L` unconsumed `index` frames.  No repair is
-claimed, and `oobStart` is an idle boundary, not a rejection. -/
+claimed, and reaching `oobStart` is not a rejection: this theorem stops at
+the boundary and says nothing about the terminal arm T1c-1 activated there. -/
 theorem t1CS_loop_oob_from_zero_exact (r : T1Request) (b v : Bool)
     (hlen : r.data.length ≤ r.index) (hne : 0 < r.data.length)
     (hb : r.data[0]? = some b)
@@ -476,7 +477,7 @@ private theorem t1dCons_of_pos (r : T1Request) (h : 0 < r.data.length) :
   | cons b rest => exact ⟨b, rest, rfl⟩
 
 /-- **The exact success case, from the genuine initial configuration.**  When
-`r.data[r.index]? = some v`, the machine reaches the idle `successStart`
+`r.data[r.index]? = some v`, the machine reaches the `successStart`
 boundary after exactly `t1DecideTotal r` genuine steps, with the latch
 holding `v`, the head on cell `0`, and the tape the canonical layout
 `t1LoopFrames r r.index` — cursor in data slot `r.index`, index field spent
@@ -615,92 +616,5 @@ theorem t1CS_decideTotal_le_clock (r : T1Request) :
         exact harith.2.2
       · rw [t1OobSteps_cons r hL, t1LoopSteps_mul]
         exact harith.2.1
-
-/-! ## The same split under the genuine public clock -/
-
-/-- **Success under the public clock.**  The decision prefix reaches the idle
-`successStart` boundary, and the boundary is idle, so the machine's whole
-`TM.run` *is* that configuration.  This is an execution theorem, not an
-acceptance claim: `successStart` is a semantic boundary owned by T1c. -/
-theorem t1CS_run_encoded_decide_success (r : T1Request) (v : Bool)
-    (hv : r.data[r.index]? = some v) :
-    T1M.run (t1Point (encodeT1 r)) =
-      t1AlignedConfig (encodeT1 r).length 0
-        (t1_lt_tapeLength _ _ (Nat.zero_le _))
-        (t1ListTape ((t1LoopFrames r r.index).flatMap T1Frame.bits))
-        .successStart .p0 false false false v := by
-  have hle := t1CS_decideTotal_le_clock r
-  have hsplit : t1Clock (encodeT1 r).length =
-      t1DecideTotal r + (t1Clock (encodeT1 r).length - t1DecideTotal r) := by
-    omega
-  rw [TM.run]
-  change TM.runConfig (M := T1M) (T1M.initialConfig (t1Point (encodeT1 r)))
-      (t1Clock (encodeT1 r).length) = _
-  rw [hsplit, runConfig_add, t1CS_runConfig_decide_success_exact r v hv]
-  exact t1CS_runConfig_successStart _ _ _ _ v _
-
-/-- **Nonempty out-of-bounds under the public clock.** -/
-theorem t1CS_run_encoded_decide_oob_nonempty (r : T1Request) (v : Bool)
-    (hv : r.data[r.index]? = none) (hne : 0 < r.data.length)
-    (hlast : r.data[r.data.length - 1]? = some v) :
-    T1M.run (t1Point (encodeT1 r)) =
-      t1AlignedConfig (encodeT1 r).length
-        (4 * (r.index + (r.data.length - 1) + 3) + 3) (t1dOobHead_safe r)
-        (t1ListTape
-          ((t1LoopFramesRestored r (r.data.length - 1)).flatMap T1Frame.bits))
-        .oobStart .p0 false false false v := by
-  have hle := t1CS_decideTotal_le_clock r
-  have hsplit : t1Clock (encodeT1 r).length =
-      t1DecideTotal r + (t1Clock (encodeT1 r).length - t1DecideTotal r) := by
-    omega
-  rw [TM.run]
-  change TM.runConfig (M := T1M) (T1M.initialConfig (t1Point (encodeT1 r)))
-      (t1Clock (encodeT1 r).length) = _
-  rw [hsplit, runConfig_add,
-    t1CS_runConfig_decide_oob_exact r v hv hne hlast]
-  exact t1CS_runConfig_oobStart _ _ _ _ v _
-
-/-- **Empty-data out-of-bounds under the public clock.**  This is a direct
-named alias of T1b-A's public-clock theorem, included so that the driver's
-three public terminal cases have a uniform API. -/
-theorem t1CS_run_encoded_decide_oob_empty (r : T1Request) (hdata : r.data = []) :
-    T1M.run (t1Point (encodeT1 r)) =
-      t1AlignedConfig (encodeT1 r).length (4 * (r.index + 2) + 3)
-        (t1dEmptyOobHead_safe r)
-        (T1M.initialConfig (t1Point (encodeT1 r))).tape .oobStart .p0
-        false false false false :=
-  t1CS_run_encoded_oob_empty_data r hdata
-
-/-- **The public out-of-bounds dichotomy.**  When the selected slot does not
-exist, the machine's whole `TM.run` is one of exactly two idle `oobStart`
-configurations: the untouched input tape when there is no data at all, or
-T1b-B's exact intermediate tape for the last data slot.  Neither disjunct
-claims repair, output, or rejection. -/
-theorem t1CS_run_encoded_decide_oob (r : T1Request)
-    (hv : r.data[r.index]? = none) :
-    (r.data = [] ∧ T1M.run (t1Point (encodeT1 r)) =
-        t1AlignedConfig (encodeT1 r).length (4 * (r.index + 2) + 3)
-          (t1dEmptyOobHead_safe r)
-          (T1M.initialConfig (t1Point (encodeT1 r))).tape .oobStart .p0
-          false false false false) ∨
-      (∃ v, r.data[r.data.length - 1]? = some v ∧
-        T1M.run (t1Point (encodeT1 r)) =
-          t1AlignedConfig (encodeT1 r).length
-            (4 * (r.index + (r.data.length - 1) + 3) + 3)
-            (t1dOobHead_safe r)
-            (t1ListTape
-              ((t1LoopFramesRestored r (r.data.length - 1)).flatMap
-                T1Frame.bits))
-            .oobStart .p0 false false false v) := by
-  by_cases hdata : r.data = []
-  · exact Or.inl ⟨hdata, t1CS_run_encoded_decide_oob_empty r hdata⟩
-  · have hne : 0 < r.data.length := by
-      cases hd : r.data with
-      | nil => exact absurd hd hdata
-      | cons b rest => simp
-    obtain ⟨v, hlast⟩ : ∃ v, r.data[r.data.length - 1]? = some v :=
-      ⟨r.data[r.data.length - 1], List.getElem?_eq_getElem (by omega)⟩
-    exact Or.inr ⟨v, hlast,
-      t1CS_run_encoded_decide_oob_nonempty r v hv hne hlast⟩
 
 end Pnp3.Internal.PsubsetPpoly.TM

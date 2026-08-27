@@ -5,20 +5,23 @@ import Mathlib.Tactic.DeriveFintype
 /-!
 # T1 fixed-control true uniform seek: finite control
 
-This module holds the current zero-parameter T1 finite control: the read-only
-grammar pass and rewind of T1a, plus the destructive cursor/index mutation
-modes of T1b-A.  It is a **fragment of T1, not the whole of it**: the T1c
-transitions — restoring the consumed index field, writing the output frame,
-and entering `accept` — are *absent from this table*, not merely unproved.
-No transition enters `accept`, and no transition leaves `successStart` or
-`oobStart`.
+This module holds the **complete** zero-parameter T1 finite control: the
+read-only grammar pass and rewind of T1a, the destructive cursor/index
+mutation modes of T1b, and the terminal output/repair/dispatch modes of T1c.
+T1c-1 closes the table: the T1c transitions — restoring the consumed index
+field, writing the output frame, and entering `accept` — are present, and
+`successStart`/`oobStart`, the last two idle states, are active.
+"Complete" here is a statement about the **table only**.  It is not a claim
+that the traces those transitions generate have been proved; see the scope
+paragraph at the end of this docstring.
 
 There is still exactly one program declaration (`t1CS`), no machine
-arguments, no `Nat` in `T1State`, and no compiled offsets: the only state
-added for mutation is a single Boolean latch holding the data value currently
-carried by the cursor.
+arguments, no `Nat` in `T1State`, no compiled offsets, and the public clock
+`t1Clock` is unchanged: the only state added beyond T1a is a single Boolean
+latch, which carries the data value under the cursor during T1b and is
+re-used as the accept/reject tag during T1c's repair pass.
 
-The twenty-one modes fall into five groups.
+The thirty-three modes fall into seven groups.
 
 * Read-only validation (T1a): `validateBof`, `validateIndex`, `validateData`,
   `validateFinish`, `validateBlank`, then `rewindStart` and `rewind`.
@@ -33,16 +36,28 @@ The twenty-one modes fall into five groups.
   `backupCursor` turns around onto it, and `writeData` restores it to the
   latched data frame.
 * Boundaries: `successStart` (all index units consumed) and `oobStart` (the
-  data field ran out) are the two T1c handoff states; both are idle here,
-  because the T1c transitions that would leave them are not part of this
-  table.  `accept` and `reject` are the stable sinks, and only `reject` is
-  reachable from any other mode.
+  data field ran out) are the two terminal entry points.  Both are now
+  **active**: `successStart` dispatches into the output arm keeping the latch,
+  `oobStart` dispatches straight into the repair pass with the latch cleared
+  to the reject tag.  `accept` and `reject` remain the only stable sinks.
+* Success arm (T1c): `outWalk` walks off the `bof` anchor, `outSeekCursor`
+  scans left to right for the `cursor` marker, `outBackup` turns around onto
+  it, `outWriteData` restores it to the latched data frame, `outSeekOutput`
+  scans on to the `output` frame, `outTurn` turns around onto it, and
+  `outWriteOut` overwrites it with `output latch` — then sets the latch to
+  `true`, the accept tag.
+* Shared repair and dispatch (T1c): `repairSeek` scans right to left,
+  `repairWrite` rewrites each `spent` marker back to `index`, `repairBack`
+  and `repairHop` return the head to the preceding frame, and `repairDone`
+  fires at the `bof` anchor, entering `t1AcceptState` or `t1RejectState`
+  according to the latch tag.
 
-Two of the mutation modes (`seekSeparator`, `seekCursorFwd`) read frames
-left to right exactly like the T1a validation modes, so they are folded into
-the shared `t1Advance`/`t1Complete` table and inherit T1a's macrostep
-machinery.  `seekIndexBack` reads frames right to left and has its own
-`t1SeekBackAdvance` table.
+Four of the mutation and terminal modes (`seekSeparator`, `seekCursorFwd`,
+`outSeekCursor`, `outSeekOutput`) read frames left to right exactly like the
+T1a validation modes, so they are folded into the shared
+`t1Advance`/`t1Complete` table and inherit T1a's macrostep machinery.
+`seekIndexBack` and `repairSeek` read frames right to left and have their own
+`t1SeekBackAdvance` and `t1RepairBackAdvance` tables.
 
 **Transition-table lemmas.**  Every lemma in the *Standalone
 transition-table lemmas* section below is a plain tuple equation about
@@ -53,10 +68,12 @@ The clock `t1Clock`, the program `t1CS` and its two projections also sit
 below `t1Transition`; they are definitions and projections, not table lemmas.
 Downstream `TM.stepConfig` proofs consume only the table lemmas through the
 generic `ConstStatePhasedStepBridge` corollaries and never unfold
-`t1Transition` itself.  That is what keeps the enlarged twenty-one-mode
+`t1Transition` itself.  That is what keeps the enlarged thirty-three-mode
 control table out of every execution proof.
 
-This module makes no addressing, restoration, or acceptance claim.
+This module makes no addressing claim, and it proves no *end-to-end*
+restoration or acceptance theorem: it fixes the terminal control only.  The
+exact repair/output traces and the acceptance semantics are T1c-2.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -67,15 +84,19 @@ inductive T1Mode
   | seekSeparator | probeData | turnInstall | writeCursor
   | seekIndexBack | markSpent | seekCursorFwd | backupCursor | writeData
   | successStart | oobStart
+  | outWalk | outSeekCursor | outBackup | outWriteData
+  | outSeekOutput | outTurn | outWriteOut
+  | repairSeek | repairWrite | repairBack | repairHop | repairDone
   | accept | reject
   deriving Fintype, DecidableEq, Repr
 
 inductive T1FramePosition | p0 | p1 | p2 | p3
   deriving Fintype, DecidableEq, Repr
 
-/-- The T1 control state as it stands after T1b-A1: a mode, a frame position,
-a three-bit frame buffer, and the single Boolean cursor-value latch.  No
-`Nat`, width, offset, or length field occurs. -/
+/-- The complete T1 control state: a mode, a frame position, a three-bit
+frame buffer, and the single Boolean latch — the cursor value during T1b, the
+accept/reject tag during T1c's repair pass.  T1c-1 adds no field: no `Nat`,
+width, offset, or length occurs here. -/
 structure T1State where
   mode : T1Mode
   position : T1FramePosition
@@ -101,8 +122,8 @@ def t1SuccessState (latch : Bool) : T1State :=
 def t1OobState (latch : Bool) : T1State :=
   t1State .oobStart .p0 false false false latch
 
-/-- Left-to-right frame table, shared by the read-only validation modes and
-by the two forward mutation scans. -/
+/-- Left-to-right frame table shared by validation, mutation, and terminal
+forward scans. -/
 def t1Advance : T1Mode → T1Frame → T1Mode
   | .validateBof, .bof => .validateIndex
   | .validateIndex, .index => .validateIndex
@@ -117,6 +138,12 @@ def t1Advance : T1Mode → T1Frame → T1Mode
   | .seekCursorFwd, .separator => .seekCursorFwd
   | .seekCursorFwd, .data _ => .seekCursorFwd
   | .seekCursorFwd, .cursor => .backupCursor
+  | .outSeekCursor, .spent => .outSeekCursor
+  | .outSeekCursor, .separator => .outSeekCursor
+  | .outSeekCursor, .data _ => .outSeekCursor
+  | .outSeekCursor, .cursor => .outBackup
+  | .outSeekOutput, .data _ => .outSeekOutput
+  | .outSeekOutput, .output false => .outTurn
   | _, _ => .reject
 
 def t1Complete (mode : T1Mode) (b0 b1 b2 b3 : Bool) : T1Mode :=
@@ -140,28 +167,106 @@ def t1SeekBackComplete (b0 b1 b2 b3 : Bool) : T1Mode :=
   | some frame => t1SeekBackAdvance frame
   | none => .reject
 
+/-- Right-to-left frame table for the shared `spent ↦ index` repair scan.
+Everything to the right of the index field is skipped; each `spent` marker is
+rewritten; the `bof` anchor ends the pass. -/
+def t1RepairBackAdvance : T1Frame → T1Mode
+  | .spent => .repairWrite
+  | .bof => .repairDone
+  | .index => .repairSeek
+  | .separator => .repairSeek
+  | .data _ => .repairSeek
+  | .output _ => .repairSeek
+  | .finish => .repairSeek
+  | _ => .reject
+
+def t1RepairBackComplete (b0 b1 b2 b3 : Bool) : T1Mode :=
+  match decodeT1Frame? [b0, b1, b2, b3] with
+  | some frame => t1RepairBackAdvance frame
+  | none => .reject
+
 /-- Modes in which the T1 control reads one frame from left to right through
 the shared `t1Advance` table. -/
 def T1ForwardMode : T1Mode → Prop
   | .validateBof | .validateIndex | .validateData | .validateFinish
-  | .validateBlank | .seekSeparator | .seekCursorFwd => True
+  | .validateBlank | .seekSeparator | .seekCursorFwd
+  | .outSeekCursor | .outSeekOutput => True
   | _ => False
 
 /-- The forward modes, enumerated.  Case-splitting through this lemma keeps
-the table lemmas below at seven cheap `rfl`s instead of twenty-one. -/
+the table lemmas below at nine cheap `rfl`s instead of thirty-three. -/
 theorem T1ForwardMode.cases {mode : T1Mode} (hmode : T1ForwardMode mode) :
     mode = .validateBof ∨ mode = .validateIndex ∨ mode = .validateData ∨
       mode = .validateFinish ∨ mode = .validateBlank ∨
-      mode = .seekSeparator ∨ mode = .seekCursorFwd := by
+      mode = .seekSeparator ∨ mode = .seekCursorFwd ∨
+      mode = .outSeekCursor ∨ mode = .outSeekOutput := by
   cases mode <;> simp_all [T1ForwardMode]
+
+theorem T1ForwardMode.outSeekCursor : T1ForwardMode .outSeekCursor := trivial
+
+theorem T1ForwardMode.outSeekOutput : T1ForwardMode .outSeekOutput := trivial
 
 def t1Transition (_phase : Fin 1) (s : T1State) (scan : Bool) :
     Fin 1 × T1State × Bool × Move :=
   match s.mode with
   | .accept => (0, t1AcceptState, scan, .stay)
   | .reject => (0, t1RejectState, scan, .stay)
-  | .successStart => (0, t1SuccessState s.latch, scan, .stay)
-  | .oobStart => (0, t1OobState s.latch, scan, .stay)
+  | .successStart => (0, t1State .outWalk .p0 false false false s.latch, scan, .stay)
+  | .oobStart => (0, t1State .repairSeek .p3 false false false false, scan, .stay)
+  | .outWalk =>
+      match s.position with
+      | .p0 => (0, t1State .outWalk .p1 false false false s.latch, scan, .right)
+      | .p1 => (0, t1State .outWalk .p2 false false false s.latch, scan, .right)
+      | .p2 => (0, t1State .outWalk .p3 false false false s.latch, scan, .right)
+      | .p3 => (0, t1State .outSeekCursor .p0 false false false s.latch, scan, .right)
+  | .outBackup =>
+      match s.position with
+      | .p0 => (0, t1State .outBackup .p1 false false false s.latch, scan, .left)
+      | .p1 => (0, t1State .outBackup .p2 false false false s.latch, scan, .left)
+      | .p2 => (0, t1State .outBackup .p3 false false false s.latch, scan, .left)
+      | .p3 => (0, t1State .outWriteData .p0 false false false s.latch, scan, .left)
+  | .outWriteData =>
+      match s.position with
+      | .p0 => (0, t1State .outWriteData .p1 false false false s.latch, false, .right)
+      | .p1 => (0, t1State .outWriteData .p2 false false false s.latch, true, .right)
+      | .p2 => (0, t1State .outWriteData .p3 false false false s.latch, s.latch, .right)
+      | .p3 => (0, t1State .outSeekOutput .p0 false false false s.latch, !s.latch, .right)
+  | .outTurn => (0, t1State .outWriteOut .p3 false false false s.latch, scan, .left)
+  | .outWriteOut =>
+      match s.position with
+      | .p3 => (0, t1State .outWriteOut .p2 false false false s.latch, s.latch, .left)
+      | .p2 => (0, t1State .outWriteOut .p1 false false false s.latch, false, .left)
+      | .p1 => (0, t1State .outWriteOut .p0 false false false s.latch, false, .left)
+      | .p0 => (0, t1State .repairSeek .p3 false false false true, true, .left)
+  | .repairSeek =>
+      match s.position with
+      | .p3 => (0, t1State .repairSeek .p2 false false scan s.latch, scan, .left)
+      | .p2 => (0, t1State .repairSeek .p1 false scan s.b2 s.latch, scan, .left)
+      | .p1 => (0, t1State .repairSeek .p0 scan s.b1 s.b2 s.latch, scan, .left)
+      | .p0 =>
+          match t1RepairBackComplete scan s.b0 s.b1 s.b2 with
+          | .repairWrite =>
+              (0, t1State .repairWrite .p0 false false false s.latch, scan, .stay)
+          | .repairSeek =>
+              (0, t1State .repairSeek .p3 false false false s.latch, scan, .left)
+          | .repairDone =>
+              (0, t1State .repairDone .p0 false false false s.latch, scan, .stay)
+          | _ => (0, t1RejectState, scan, .stay)
+  | .repairWrite =>
+      match s.position with
+      | .p0 => (0, t1State .repairWrite .p1 false false false s.latch, false, .right)
+      | .p1 => (0, t1State .repairWrite .p2 false false false s.latch, false, .right)
+      | .p2 => (0, t1State .repairWrite .p3 false false false s.latch, true, .right)
+      | .p3 => (0, t1State .repairBack .p0 false false false s.latch, false, .right)
+  | .repairBack =>
+      match s.position with
+      | .p0 => (0, t1State .repairBack .p1 false false false s.latch, scan, .left)
+      | .p1 => (0, t1State .repairBack .p2 false false false s.latch, scan, .left)
+      | .p2 => (0, t1State .repairBack .p3 false false false s.latch, scan, .left)
+      | .p3 => (0, t1State .repairHop .p0 false false false s.latch, scan, .left)
+  | .repairHop => (0, t1State .repairSeek .p3 false false false s.latch, scan, .left)
+  | .repairDone =>
+      (0, bif s.latch then t1AcceptState else t1RejectState, scan, .stay)
   | .startMutation =>
       match s.position with
       | .p0 => (0, t1State .startMutation .p1 false false false s.latch, scan, .right)
@@ -274,18 +379,22 @@ universally quantified so that callers can instantiate it at whatever
 @[simp] theorem t1Transition_reject_sink (phase : Fin 1) (scan : Bool) :
     t1Transition phase t1RejectState scan = (0, t1RejectState, scan, .stay) := rfl
 
-/-- The success boundary is idle, and keeps the latched data value: T1c will
-consume it when it writes the output frame. -/
-@[simp] theorem t1Transition_successStart_idle
-    (phase : Fin 1) (latch scan : Bool) :
-    t1Transition phase (t1SuccessState latch) scan =
-      (0, t1SuccessState latch, scan, .stay) := rfl
+/-- **The success boundary is active.**  It hands the latched data value to
+the output-writing arm without moving the head, which still sits on the first
+cell of the `bof` anchor. -/
+theorem t1Transition_successStart_active
+    (phase : Fin 1) (position : T1FramePosition) (b0 b1 b2 latch scan : Bool) :
+    t1Transition phase (t1State .successStart position b0 b1 b2 latch) scan =
+      (0, t1State .outWalk .p0 false false false latch, scan, .stay) := rfl
 
-/-- The out-of-bounds boundary is idle. -/
-@[simp] theorem t1Transition_oobStart_idle
-    (phase : Fin 1) (latch scan : Bool) :
-    t1Transition phase (t1OobState latch) scan =
-      (0, t1OobState latch, scan, .stay) := rfl
+/-- **The out-of-bounds boundary is active.**  The head already sits on the
+last cell of the output frame, which is exactly the entry shape of the
+backward repair scan; the latch is cleared to `false`, the reject tag that
+`repairDone` will dispatch on. -/
+theorem t1Transition_oobStart_active
+    (phase : Fin 1) (position : T1FramePosition) (b0 b1 b2 latch scan : Bool) :
+    t1Transition phase (t1State .oobStart position b0 b1 b2 latch) scan =
+      (0, t1State .repairSeek .p3 false false false false, scan, .stay) := rfl
 
 /-! ### Cursor installation -/
 
@@ -467,6 +576,188 @@ theorem t1Transition_writeData
         .right) := by
   cases position <;> rfl
 
+/-! ### The success arm: output traversal and output write -/
+
+theorem t1Transition_outWalk
+    (phase : Fin 1) (position : T1FramePosition) (b0 b1 b2 latch scan : Bool) :
+    t1Transition phase (t1State .outWalk position b0 b1 b2 latch) scan =
+      (0, match position with
+          | .p0 => t1State .outWalk .p1 false false false latch
+          | .p1 => t1State .outWalk .p2 false false false latch
+          | .p2 => t1State .outWalk .p3 false false false latch
+          | .p3 => t1State .outSeekCursor .p0 false false false latch,
+        scan, .right) := by
+  cases position <;> rfl
+
+theorem t1Transition_outBackup
+    (phase : Fin 1) (position : T1FramePosition) (b0 b1 b2 latch scan : Bool) :
+    t1Transition phase (t1State .outBackup position b0 b1 b2 latch) scan =
+      (0, match position with
+          | .p0 => t1State .outBackup .p1 false false false latch
+          | .p1 => t1State .outBackup .p2 false false false latch
+          | .p2 => t1State .outBackup .p3 false false false latch
+          | .p3 => t1State .outWriteData .p0 false false false latch,
+        scan, .left) := by
+  cases position <;> rfl
+
+/-- The cursor restore on the success arm: the same four ascending writes as
+`writeData`, but handing over to the output-frame search instead of the next
+probe. -/
+theorem t1Transition_outWriteData
+    (phase : Fin 1) (position : T1FramePosition) (b0 b1 b2 latch scan : Bool) :
+    t1Transition phase (t1State .outWriteData position b0 b1 b2 latch) scan =
+      (0, match position with
+          | .p0 => t1State .outWriteData .p1 false false false latch
+          | .p1 => t1State .outWriteData .p2 false false false latch
+          | .p2 => t1State .outWriteData .p3 false false false latch
+          | .p3 => t1State .outSeekOutput .p0 false false false latch,
+        match position with
+        | .p0 => false
+        | .p1 => true
+        | .p2 => latch
+        | .p3 => !latch,
+        .right) := by
+  cases position <;> rfl
+
+theorem t1Transition_outTurn
+    (phase : Fin 1) (position : T1FramePosition) (b0 b1 b2 latch scan : Bool) :
+    t1Transition phase (t1State .outTurn position b0 b1 b2 latch) scan =
+      (0, t1State .outWriteOut .p3 false false false latch, scan, .left) := rfl
+
+/-- **The output write.**  Four descending writes turn `output false` into
+`output latch`; only the last cell of the frame can change value.  The latch
+is then re-used as the *accept tag* for the shared repair pass. -/
+theorem t1Transition_outWriteOut
+    (phase : Fin 1) (position : T1FramePosition) (b0 b1 b2 latch scan : Bool) :
+    t1Transition phase (t1State .outWriteOut position b0 b1 b2 latch) scan =
+      (0, match position with
+          | .p3 => t1State .outWriteOut .p2 false false false latch
+          | .p2 => t1State .outWriteOut .p1 false false false latch
+          | .p1 => t1State .outWriteOut .p0 false false false latch
+          | .p0 => t1State .repairSeek .p3 false false false true,
+        match position with
+        | .p3 => latch
+        | .p2 => false
+        | .p1 => false
+        | .p0 => true,
+        .left) := by
+  cases position <;> rfl
+
+/-! ### The shared right-to-left `spent ↦ index` repair -/
+
+theorem t1Transition_repairSeek_p3
+    (phase : Fin 1) (b0 b1 b2 latch scan : Bool) :
+    t1Transition phase (t1State .repairSeek .p3 b0 b1 b2 latch) scan =
+      (0, t1State .repairSeek .p2 false false scan latch, scan, .left) := rfl
+
+theorem t1Transition_repairSeek_p2
+    (phase : Fin 1) (b0 b1 b2 latch scan : Bool) :
+    t1Transition phase (t1State .repairSeek .p2 b0 b1 b2 latch) scan =
+      (0, t1State .repairSeek .p1 false scan b2 latch, scan, .left) := rfl
+
+theorem t1Transition_repairSeek_p1
+    (phase : Fin 1) (b0 b1 b2 latch scan : Bool) :
+    t1Transition phase (t1State .repairSeek .p1 b0 b1 b2 latch) scan =
+      (0, t1State .repairSeek .p0 scan b1 b2 latch, scan, .left) := rfl
+
+private theorem t1Transition_repairSeek_p0_raw
+    (phase : Fin 1) (b0 b1 b2 latch scan : Bool) :
+    t1Transition phase (t1State .repairSeek .p0 b0 b1 b2 latch) scan =
+      (match t1RepairBackComplete scan b0 b1 b2 with
+       | .repairWrite =>
+           (0, t1State .repairWrite .p0 false false false latch, scan, .stay)
+       | .repairSeek =>
+           (0, t1State .repairSeek .p3 false false false latch, scan, .left)
+       | .repairDone =>
+           (0, t1State .repairDone .p0 false false false latch, scan, .stay)
+       | _ => (0, t1RejectState, scan, .stay)) := rfl
+
+/-- A `spent` marker: rewrite it back to `index` without moving. -/
+theorem t1Transition_repairSeek_p0_write
+    (phase : Fin 1) (b0 b1 b2 latch scan : Bool)
+    (h : decodeT1Frame? [scan, b0, b1, b2] = some .spent) :
+    t1Transition phase (t1State .repairSeek .p0 b0 b1 b2 latch) scan =
+      (0, t1State .repairWrite .p0 false false false latch, scan, .stay) := by
+  rw [t1Transition_repairSeek_p0_raw]
+  simp [t1RepairBackComplete, h, t1RepairBackAdvance]
+
+/-- A frame the repair scan skips: keep going left. -/
+theorem t1Transition_repairSeek_p0_skip
+    (phase : Fin 1) (b0 b1 b2 latch scan : Bool) (frame : T1Frame)
+    (h : decodeT1Frame? [scan, b0, b1, b2] = some frame)
+    (hframe : frame = .index ∨ frame = .separator ∨ frame = .finish ∨
+      (∃ v, frame = .data v) ∨ ∃ v, frame = .output v) :
+    t1Transition phase (t1State .repairSeek .p0 b0 b1 b2 latch) scan =
+      (0, t1State .repairSeek .p3 false false false latch, scan, .left) := by
+  rw [t1Transition_repairSeek_p0_raw]
+  rcases hframe with rfl | rfl | rfl | ⟨v, rfl⟩ | ⟨v, rfl⟩ <;>
+    simp [t1RepairBackComplete, h, t1RepairBackAdvance]
+
+/-- The `bof` anchor: the index field is fully repaired, dispatch. -/
+theorem t1Transition_repairSeek_p0_done
+    (phase : Fin 1) (b0 b1 b2 latch scan : Bool)
+    (h : decodeT1Frame? [scan, b0, b1, b2] = some .bof) :
+    t1Transition phase (t1State .repairSeek .p0 b0 b1 b2 latch) scan =
+      (0, t1State .repairDone .p0 false false false latch, scan, .stay) := by
+  rw [t1Transition_repairSeek_p0_raw]
+  simp [t1RepairBackComplete, h, t1RepairBackAdvance]
+
+/-- The inverse of `markSpent`: four ascending writes of `T1Frame.index`. -/
+theorem t1Transition_repairWrite
+    (phase : Fin 1) (position : T1FramePosition) (b0 b1 b2 latch scan : Bool) :
+    t1Transition phase (t1State .repairWrite position b0 b1 b2 latch) scan =
+      (0, match position with
+          | .p0 => t1State .repairWrite .p1 false false false latch
+          | .p1 => t1State .repairWrite .p2 false false false latch
+          | .p2 => t1State .repairWrite .p3 false false false latch
+          | .p3 => t1State .repairBack .p0 false false false latch,
+        match position with
+        | .p0 => false
+        | .p1 => false
+        | .p2 => true
+        | .p3 => false,
+        .right) := by
+  cases position <;> rfl
+
+theorem t1Transition_repairBack
+    (phase : Fin 1) (position : T1FramePosition) (b0 b1 b2 latch scan : Bool) :
+    t1Transition phase (t1State .repairBack position b0 b1 b2 latch) scan =
+      (0, match position with
+          | .p0 => t1State .repairBack .p1 false false false latch
+          | .p1 => t1State .repairBack .p2 false false false latch
+          | .p2 => t1State .repairBack .p3 false false false latch
+          | .p3 => t1State .repairHop .p0 false false false latch,
+        scan, .left) := by
+  cases position <;> rfl
+
+/-- One more left step off the repaired frame, back onto the last cell of its
+predecessor: the repair scan's entry shape. -/
+theorem t1Transition_repairHop
+    (phase : Fin 1) (position : T1FramePosition) (b0 b1 b2 latch scan : Bool) :
+    t1Transition phase (t1State .repairHop position b0 b1 b2 latch) scan =
+      (0, t1State .repairSeek .p3 false false false latch, scan, .left) := rfl
+
+/-! ### Final dispatch
+
+`repairDone` is the terminal dispatch after a valid repair trace.  Its branches
+enter *literally* `t1AcceptState` / `t1RejectState`, clearing every scratch bit
+and the latch.  Invalid frames in other modes may also enter the reject sink. -/
+
+theorem t1Transition_repairDone_accept
+    (phase : Fin 1) (position : T1FramePosition) (b0 b1 b2 scan : Bool) :
+    t1Transition phase (t1State .repairDone position b0 b1 b2 true) scan =
+      (0, t1AcceptState, scan, .stay) := rfl
+
+theorem t1Transition_repairDone_reject
+    (phase : Fin 1) (position : T1FramePosition) (b0 b1 b2 scan : Bool) :
+    t1Transition phase (t1State .repairDone position b0 b1 b2 false) scan =
+      (0, t1RejectState, scan, .stay) := rfl
+
+/-- The dispatch target is the program's own accept state, with no residual
+latch or buffer content. -/
+theorem t1Transition_repairDone_acceptState :
+    t1AcceptState = t1CS.acceptState := rfl
+
 /-! ### The read-only rewind (T1a) -/
 
 theorem t1Transition_rewindStart
@@ -509,27 +800,26 @@ theorem t1Transition_rewind_p0_other
 
 /-! ### The shared forward frame reader
 
-These four lemmas cover every mode satisfying `T1ForwardMode`, which is the
-five T1a validation modes together with `seekSeparator` and `seekCursorFwd`.
-Each is discharged by seven `rfl`s through `T1ForwardMode.cases`. -/
+These four lemmas cover all nine `T1ForwardMode`s: five T1a validation modes,
+two mutation scans, and two terminal scans.  Each proof follows the nine cases. -/
 
 theorem t1Transition_forward_p0 {mode : T1Mode} (hmode : T1ForwardMode mode)
     (phase : Fin 1) (b0 b1 b2 latch scan : Bool) :
     t1Transition phase (t1State mode .p0 b0 b1 b2 latch) scan =
       (0, t1State mode .p1 scan false false latch, scan, .right) := by
-  rcases hmode.cases with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> rfl
+  rcases hmode.cases with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> rfl
 
 theorem t1Transition_forward_p1 {mode : T1Mode} (hmode : T1ForwardMode mode)
     (phase : Fin 1) (b0 b1 b2 latch scan : Bool) :
     t1Transition phase (t1State mode .p1 b0 b1 b2 latch) scan =
       (0, t1State mode .p2 b0 scan false latch, scan, .right) := by
-  rcases hmode.cases with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> rfl
+  rcases hmode.cases with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> rfl
 
 theorem t1Transition_forward_p2 {mode : T1Mode} (hmode : T1ForwardMode mode)
     (phase : Fin 1) (b0 b1 b2 latch scan : Bool) :
     t1Transition phase (t1State mode .p2 b0 b1 b2 latch) scan =
       (0, t1State mode .p3 b0 b1 scan latch, scan, .right) := by
-  rcases hmode.cases with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> rfl
+  rcases hmode.cases with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> rfl
 
 private theorem t1Transition_forward_p3_raw {mode : T1Mode}
     (hmode : T1ForwardMode mode)
@@ -540,7 +830,7 @@ private theorem t1Transition_forward_p3_raw {mode : T1Mode}
       else
         (0, t1State (t1Complete mode b0 b1 b2 scan) .p0 false false false latch,
           scan, .right)) := by
-  rcases hmode.cases with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> rfl
+  rcases hmode.cases with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> rfl
 
 /-- Completing a grammar-valid frame: enter the next mode one cell to the
 right, carrying the latch. -/

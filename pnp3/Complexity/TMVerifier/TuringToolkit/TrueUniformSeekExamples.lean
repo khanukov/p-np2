@@ -4,9 +4,9 @@ import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekMutation
 # T1a/T1b-A true uniform-seek examples
 
 The first example retains the canonical codec probe.  The named T1b-A probes
-specialize genuine execution theorems at index zero, a nonzero index, and the
-empty-data out-of-bounds path.  They do not claim the T1b-B loop invariant,
-restoration, output, or acceptance.
+specialize genuine `TM.runConfig` execution theorems at index zero, a nonzero
+index, and the empty-data out-of-bounds path.  They do not claim the T1b-B
+loop invariant, restoration, output, or acceptance.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -31,10 +31,12 @@ def t1bNonzeroIndex_install :=
   t1CS_runConfig_install_first_cursor_exact
     t1bNonzeroIndexRequest true [false, true] rfl
 
-/-- Full-public-clock empty-data execution reaches the idle OOB boundary. -/
+/-- Exact finite-prefix empty-data execution reaches the OOB boundary.  The
+former full-public-clock probe is gone: T1c-1 activated that boundary, so the
+machine no longer stays there for the rest of the clock. -/
 def t1bEmptyDataRequest : T1Request := ⟨2, []⟩
 
-def t1bEmptyData_oob :=
-  t1CS_run_encoded_oob_empty_data t1bEmptyDataRequest rfl
+def t1bEmptyData_oob_exact :=
+  t1CS_oob_empty_data_exact t1bEmptyDataRequest rfl
 
 end Pnp3.Internal.PsubsetPpoly.TM

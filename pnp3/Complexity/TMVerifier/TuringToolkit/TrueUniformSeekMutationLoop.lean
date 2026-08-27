@@ -47,7 +47,7 @@ reaches at `j = 0` (`t1CS_mutationConfig_zero`).
   observable output frame, the `bof` anchor and the separator — is unchanged.
 * `t1CS_loop_oob_exact` — the **one-iteration out-of-bounds theorem**: for
   `j < r.index` and `j+1 = r.data.length`, in exactly `16 * j + 32` steps the
-  machine reaches the idle `oobStart` boundary on the *precisely documented*
+  machine reaches the `oobStart` boundary on the *precisely documented*
   intermediate tape `t1LoopFramesRestored r j`: the data field is fully
   restored and carries no cursor, but the index field is **not** restored — it
   holds `j+1` `spent` markers and `r.index - j - 1` unconsumed `index`
@@ -60,8 +60,8 @@ The iteration over `j` (`Σ(0) → Σ(min (r.index) (r.data.length - 1))`), the
 `successStart` tail at `j = r.index`, and the terminal dichotomy driven by
 `r.data[r.index]?` are **not** proved in this module: they are the next
 slice.  Nothing below claims acceptance, output writing, or repair of the
-consumed index field; `successStart` and `oobStart` remain idle boundaries
-owned by T1c.
+consumed index field; this module stops *at* `successStart` and `oobStart` and
+says nothing about the terminal arms T1c-1 activated behind them.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -682,7 +682,7 @@ theorem t1CS_loop_iteration_exact (r : T1Request) (j : Nat)
 
 /-- **The genuine out-of-bounds loop step.**  For `j < r.index` (an index unit
 is still unconsumed) but `j + 1 = r.data.length` (the data field has no next
-slot), the machine runs from `Σ(r, j, r.data[j])` to the idle `oobStart`
+slot), the machine runs from `Σ(r, j, r.data[j])` to the `oobStart`
 boundary in exactly `16 * j + 32` genuine steps.
 
 The final tape is stated exactly, as `t1LoopFramesRestored r j`:
@@ -695,9 +695,9 @@ bof · index^(k-j-1) · spent^(j+1) · separator · data(b₀)…data(b_{L-1})
 so the *data field is fully restored and carries no cursor frame*, while the
 *index field is not restored*: `j+1` units have been consumed and only
 `k-j-1` remain.  This is an intermediate state, not a repaired one; no claim
-is made that any later phase restores the index field, and `oobStart` is an
-idle boundary, not a rejection.  The head is left on the last cell of the
-output frame and the latch still carries `r.data[j]`. -/
+is made that any later phase restores the index field, and reaching `oobStart`
+is not a rejection: this theorem stops at the boundary.  The head is left on
+the last cell of the output frame and the latch still carries `r.data[j]`. -/
 theorem t1CS_loop_oob_exact (r : T1Request) (j : Nat)
     (hjk : j < r.index) (hj1 : j + 1 = r.data.length)
     (v : Bool) (hv : r.data[j]? = some v) :

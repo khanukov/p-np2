@@ -25,16 +25,19 @@ Three groups of results:
 3. **Exact execution theorems**: installation of the first cursor for a
    canonical request with nonempty data (`t1CS_install_first_cursor_exact`,
    `t1CS_runConfig_install_first_cursor_exact`), and the empty-data
-   out-of-bounds boundary, including a full `TM.run` theorem under the public
-   clock (`t1CS_oob_empty_data_exact`, `t1CS_run_encoded_oob_empty_data`).
+   out-of-bounds boundary (`t1CS_oob_empty_data_exact`).  All three are exact
+   finite-prefix `TM.runConfig` theorems.  There is no full-clock `TM.run`
+   companion: since T1c-1 the out-of-bounds boundary is active, so `TM.run`
+   no longer stops there.
 
 Every `TM.stepConfig` fact used here comes from a `TrueUniformSeek`
 transition-table lemma through the `t1CS_aligned_step_*` adapters, which are
 in turn applications of the generic `ConstStatePhasedStepBridge`.  The control
 table is never unfolded in this file.
 
-No acceptance, restoration or addressing-success claim is made: `successStart`
-and `oobStart` are idle boundaries, and this slice stops at them.
+No acceptance, restoration or addressing-success claim is made: this slice
+stops *at* `successStart` and `oobStart` and says nothing about the terminal
+arms that T1c-1 activated behind them.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -660,7 +663,7 @@ theorem t1CS_seekIndexBack_frame_mark (n base : Nat)
     runConfig_one, hs3]
 
 /-- Backward scan onto the `bof` anchor: every index unit has been consumed,
-so four steps reach the idle success boundary with the latch intact. -/
+so four steps reach the success boundary with the latch intact. -/
 theorem t1CS_seekIndexBack_frame_success (n base : Nat)
     (hsafe : base + 4 < T1M.tapeLength n)
     (tape : Fin (T1M.tapeLength n) → Bool) (latch : Bool)
@@ -900,7 +903,7 @@ theorem t1CS_runConfig_install_first_cursor_exact (r : T1Request) (b : Bool)
 
 /-- **Exact empty-data out-of-bounds boundary.**  When the data field is
 empty, the probe of the first data position finds the output frame instead:
-from `startMutation`, the machine reaches the idle out-of-bounds boundary in
+from `startMutation`, the machine reaches the out-of-bounds boundary in
 exactly `4 * index + 12` steps with the entire tape unchanged. -/
 theorem t1CS_oob_empty_data_exact (r : T1Request) (hdata : r.data = []) :
     TM.runConfig (M := T1M)
@@ -941,40 +944,5 @@ theorem t1CS_oob_empty_data_exact (r : T1Request) (hdata : r.data = []) :
     (T1Frame.output false :: [.finish, .blank]) hframes (by omega)]
   rw [t1CS_probeData_frame_oob (encodeT1 r).length (4 * (r.index + 2))
     houtSafe T false houtBits]
-
-/-- **Empty-data out-of-bounds under the public clock.**  A canonical request
-with no data frames runs to the idle out-of-bounds boundary and stays there:
-the machine's whole `TM.run` is that configuration, and the tape is exactly
-the input tape.  This is a genuine full-clock execution theorem; it is not an
-acceptance or rejection claim, since T1c owns the recovery and the sinks. -/
-theorem t1CS_run_encoded_oob_empty_data (r : T1Request) (hdata : r.data = []) :
-    T1M.run (t1Point (encodeT1 r)) =
-      t1AlignedConfig (encodeT1 r).length (4 * (r.index + 2) + 3)
-        (t1_lt_tapeLength _ _
-          (by rw [t1EncodeLength_nil r hdata]; omega))
-        (T1M.initialConfig (t1Point (encodeT1 r))).tape .oobStart .p0
-        false false false false := by
-  have hlen := t1EncodeLength_nil r hdata
-  set N := (encodeT1 r).length with hN
-  have hsq : N + 1 ≤ (N + 1) ^ 2 := by
-    rw [pow_two]
-    exact Nat.le_mul_of_pos_right (N + 1) (by omega)
-  have hle : 3 * N + 5 ≤ t1Clock N := by
-    calc
-      3 * N + 5 ≤ 128 * (N + 1) + 128 := by omega
-      _ ≤ 128 * (N + 1) ^ 2 + 128 :=
-        Nat.add_le_add_right (Nat.mul_le_mul_left 128 hsq) 128
-      _ = t1Clock N := rfl
-  have hsplit : t1Clock N =
-      (2 * N + 9) + (4 * r.index + 12) + (t1Clock N - (3 * N + 5)) := by
-    omega
-  rw [TM.run]
-  change TM.runConfig (M := T1M) (T1M.initialConfig (t1Point (encodeT1 r)))
-      (t1Clock N) = _
-  rw [hsplit, runConfig_add, runConfig_add]
-  have hval := t1CS_validate_rewind_encoded_exact r
-  simp only at hval
-  rw [hval, t1CS_oob_empty_data_exact r hdata]
-  exact t1CS_runConfig_oobStart _ _ _ _ false _
 
 end Pnp3.Internal.PsubsetPpoly.TM

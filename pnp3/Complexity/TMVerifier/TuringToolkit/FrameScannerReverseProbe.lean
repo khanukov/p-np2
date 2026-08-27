@@ -5,24 +5,9 @@ import Mathlib.Data.Fintype.Sigma
 /-!
 # A non-T1 instance of the reverse and write kernels (genericity probe)
 
-This module witnesses that `FrameScannerReverse` and `FrameScannerWrite` are
-genuinely generic and not T1 wrappers.  With **no T1 import** it defines a
-frame alphabet `RevFrame` whose five codewords are `1011`, `1100`, `1101`,
-`1110`, `1111` — *every one of them outside the eleven codes `T1Frame` uses*,
-so no theorem below can be a disguised T1 fact — its codec, a different mode
-set with **two distinct reverse modes** (so the reverse table genuinely depends
-on the mode), a control state whose carried context is a *triple* of Booleans,
-its own `ConstStatePhasedProgram` and clock, and the two kernel instances.
-
-It then applies both kernels unchanged and ends in two fully concrete
-executable runs, for **every** input length `n` and with no side hypothesis:
-`revProbeCS_scan_word` rewinds the five-frame word
-`anchor · cell true · mark · cell false · spent` right to left in twenty
-genuine TM steps and stops on the anchor, having switched reverse mode at the
-`mark` frame; `revProbeCS_write_cell` replaces the `cell false` frame of that
-same word by `spent` in four genuine TM steps, with the exact resulting tape.
-
-Nothing downstream depends on this module; it is an audit surface.
+No T1 import: five disjoint codewords, two visited reverse modes, a Boolean
+triple context, an independent program/clock, and exact unconditional 20-step
+reverse plus 4-step replacement runs.  This is an audit-only genericity probe.
 -/
 namespace Pnp3.Internal.PsubsetPpoly.TM.FrameScan
 
@@ -286,10 +271,7 @@ theorem revProbeTail_validPath :
 theorem revProbeTail_advanceList :
     revProbeScanner.revAdvanceList .rScan revProbeTail = .rMark := rfl
 
-/-- **Concrete non-T1 reverse run.**  Sixteen genuine TM steps take the probe
-machine right to left across the four frames after the anchor, and four more
-read the anchor itself, ending at head `0` in the `rHalt` sink with the tape and
-the three-Boolean context untouched.  Unconditional in `n`. -/
+/-- Unconditional concrete non-T1 20-step reverse-to-anchor run. -/
 theorem revProbeCS_scan_word (n : Nat) (a : Bool × Bool × Bool) :
     TM.runConfig (M := revProbeScanner.machine)
         (revProbeScanner.revAligned n 19
@@ -305,10 +287,7 @@ theorem revProbeCS_scan_word (n : Nat) (a : Bool × Bool × Bool) :
       revProbeScanner_lt_tapeLength (n := n) (k := 20) (by omega))
   simpa [revProbeTail, revProbeWord, revProbeScanner] using h
 
-/-- **Concrete non-T1 frame replacement.**  Four genuine TM steps replace the
-`cell false` frame of the same word by `spent`: head `12 ↦ 16`, control in
-`wDone`, context surviving, and the tape exactly that of the rewritten word.
-Unconditional in `n`. -/
+/-- Unconditional concrete non-T1 four-step frame replacement. -/
 theorem revProbeCS_write_cell (n : Nat) (a : Bool × Bool × Bool) :
     TM.runConfig (M := revProbeWriter.machine)
         (revProbeWriter.alignedConfigQ n 12

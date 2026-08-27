@@ -4,38 +4,12 @@ import Complexity.TMVerifier.TuringToolkit.FrameScannerCodec
 /-!
 # The generic reverse fixed-width frame-scanner kernel
 
-`FrameScannerKernel` proves the *left-to-right* four-cell macrostep and its
-list induction once, generically.  This module is its mirror image: the
-*right-to-left* macrostep and the exact reverse `List` induction, again as
-genuine `TM.stepConfig`/`TM.runConfig` theorems, over an arbitrary
-`ConstStatePhasedProgram S`, mode type, carried context `Aux` and fixed-width
-`FrameCodec F`.  It is what `T1`'s destructive operand reads and the planned
-`G1` pass-B walk need and the forward kernel cannot supply: a control starting
-on the *last* cell of a frame, buffering the four cells right to left, and
-re-aligning on the last cell of the *preceding* frame.
-
-`revFrameMacrostep` reads one reverse frame in exactly four physical steps
-(head `base + 3 ↦ base - 1`, tape and carried context untouched, mode updated
-by the reverse frame table `revAdvance`); `revAnchorStep` is the boundary
-variant, where a stopping frame makes the fourth step *stay*, leaving the head
-on the first cell of that frame in `stopState`.  `revScanFrames` is the exact
-reverse induction over an arbitrary `pre`/`anchor`/`scanned`/`suffix` frame
-list — exactly `4 * scanned.length` steps, right-to-left fold order, head
-`4 * (pre.length + scanned.length) + 3 ↦ 4 * pre.length + 3` — with
-`revScanFrames_tape`/`_state`/`_head` its three projections, and
-`revScanToAnchor` composes the two into the generic "rewind to the anchor".
-
-**Obligation hygiene.**  A `ReverseFrameScanner` carries no semantic-correctness
-field and no "desired run" field: its obligations are exactly one codec law
-(`revComplete_decode`) and five *concrete transition tuple equalities* on
-`program.transition` at one fixed phase, and everything executable is derived
-from those five tuples through `ConstStatePhasedStepBridge`.  No concrete
-control table is unfolded here.  The `Phased` namespace holds the aligned
-configuration constructor and the three step adapters shared with
-`FrameScannerWrite`.
-
-**Non-goals.**  No validation, addressing, acceptance or rejection claim, and
-nothing about non-canonical or physically padded tapes.
+The right-to-left mirror of `FrameScannerKernel`: exact four-step frame and
+anchor macrosteps, exact reverse list induction, projections, and rewind to an
+anchor over an arbitrary fixed-width codec and finite control.  The structure
+contains one codec law and five concrete transition-tuple obligations—no
+semantic or desired-run field—and execution is derived through the generic
+step bridge.  No validation, addressing, acceptance, or input-language claim.
 -/
 namespace Pnp3.Internal.PsubsetPpoly.TM.FrameScan
 
@@ -280,11 +254,7 @@ private theorem revBuffer (K : ReverseFrameScanner S F Mode Aux) (n base : Nat)
       (tape ⟨base + 2, by omega⟩) (tape ⟨base + 3, by omega⟩)
   rw [hs1, hs2, hs3]
 
-/-- **Reverse four-bit decoding macrostep, generically.**  The frame occupying
-cells `base … base+3` of an arbitrary surrounding tape is read right to left in
-exactly four physical TM steps: the head goes from `base + 3` to `base - 1` —
-the last cell of the *preceding* frame — *no tape cell changes*, the carried
-context `a` survives, and the mode becomes `K.revAdvance m frame`. -/
+/-- Exact read-only four-step reverse frame macrostep, head `base+3 ↦ base-1`. -/
 theorem revFrameMacrostep (K : ReverseFrameScanner S F Mode Aux) (n base : Nat)
     (hpos : 0 < base) (hsafe : base + 4 < K.machine.tapeLength n)
     (tape : Fin (K.machine.tapeLength n) → Bool) (m : Mode) (frame : F)
@@ -320,10 +290,7 @@ theorem revFrameMacrostepAt (K : ReverseFrameScanner S F Mode Aux)
   simpa using K.revFrameMacrostep n (hend + 1) (by omega) hsafe tape m frame a
     hm hnext hbits
 
-/-- **Reverse boundary macrostep, generically.**  On a stopping frame the fourth
-step *stays*: the head finishes on `base`, the first cell of that frame, the
-tape and context are untouched, and the control enters `stopState`.  No
-positivity premise is needed. -/
+/-- Exact stopping-frame macrostep: fourth step stays at `base`. -/
 theorem revAnchorStep (K : ReverseFrameScanner S F Mode Aux) (n base : Nat)
     (hsafe : base + 4 < K.machine.tapeLength n)
     (tape : Fin (K.machine.tapeLength n) → Bool) (m : Mode) (frame : F)
@@ -411,12 +378,7 @@ theorem revValidPath_const (K : ReverseFrameScanner S F Mode Aux) {m : Mode}
   exact main fs.reverse fun f hf => hfix f (List.mem_reverse.mp hf)
 
 /-! ### Exact reverse list-scan induction -/
-/-- **Exact reverse frame-scan induction, generically.**  On a tape backed by an
-arbitrary frame list `pre ++ anchor :: scanned ++ suffix`, starting on the last
-cell of the last frame of `scanned`, the machine reads `scanned` right to left
-in exactly four TM steps per frame and finishes on the last cell of `anchor`.
-The list-backed tape and the carried context are preserved and the mode is the
-right-to-left fold `revAdvanceList mode scanned`. -/
+/-- Exact read-only right-to-left list scan, four steps per scanned frame. -/
 theorem revScanFrames (K : ReverseFrameScanner S F Mode Aux) (n : Nat)
     (pre : List F) (anchor : F) (scanned suffix : List F) (mode : Mode)
     (a : Aux) (hpath : K.RevValidPath mode scanned)
@@ -516,10 +478,7 @@ theorem revScanFrames_head (K : ReverseFrameScanner S F Mode Aux) (n : Nat)
   rw [K.revScanFrames n pre anchor scanned suffix mode a hpath hsafe]; rfl
 
 /-! ### Reverse scan all the way to the anchor -/
-/-- **The generic rewind.**  From the last cell of the last scanned frame,
-`4 * scanned.length + 4` genuine TM steps read `scanned` right to left and then
-the leading `anchor`, which stops the pass: head `0`, tape untouched, context
-preserved, control in `stopState`. -/
+/-- Exact rewind through `scanned` and the stopping anchor to head zero. -/
 theorem revScanToAnchor (K : ReverseFrameScanner S F Mode Aux) (n : Nat)
     (anchor : F) (scanned suffix : List F) (mode : Mode) (a : Aux)
     (hpath : K.RevValidPath mode scanned)

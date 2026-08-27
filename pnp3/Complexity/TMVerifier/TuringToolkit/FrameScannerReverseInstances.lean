@@ -6,23 +6,9 @@ import Complexity.TMVerifier.TuringToolkit.GateOneValidation
 /-!
 # T1 and G1 as instances of the generic reverse frame-scanner kernel
 
-Both existing rewinds are the same machine shape — three leftward buffering
-steps, then a frame-position-0 decision that either steps left again or stays
-in a local handoff — and both are proved separately today, in
-`TrueUniformSeekValidation` and in `GateOneValidation`.  This module
-instantiates `ReverseFrameScanner` at each of them and re-derives the two
-public reverse-scan theorems from the *generic* induction:
-`t1RevScanner_rewind_tail` matches `t1CS_rewind_tail`'s statement shape (and
-generalises its latch), `g1RevScanner_rewind_tail` matches `g1CS_rewind_tail`'s.
-
-Neither existing theorem is changed or removed; the point is that the generic
-kernel reproduces the same execution, so the next reverse pass — `G1`'s pass-B
-operand walk — need not duplicate the stack a third time.
-
-All obligations of both instances are discharged by the *existing* standalone
-transition-table lemmas (`t1Transition_rewind_*`, `g1Transition_rewind_*`);
-neither `t1Transition` nor `g1Transition` is unfolded here, and no control
-table is modified — in particular `bRoundStart` stays inert.
+Instantiate the generic reverse kernel at the existing T1/G1 rewinds and
+re-derive their exact reverse-tail contracts.  Obligations use existing tuple
+lemmas; no transition table, clock, or prior theorem is changed.
 -/
 namespace Pnp3.Internal.PsubsetPpoly.TM
 
@@ -127,10 +113,7 @@ private theorem t1Rev_const (l : List T1Frame) (h : ∀ f ∈ l, f ≠ T1Frame.b
       have hne := h f hf
       cases f <;> simp_all [t1RevAdvance]
 
-/-- **T1 reverse-scan regression.**  The statement is `t1CS_rewind_tail`'s and
-the proof is the generic `revScanFrames` at `t1RevScanner`: exactly four TM
-steps per frame rewind across a list of non-anchor frames, preserving the
-list-backed tape and the latch, finishing on the last cell of the `bof`. -/
+/-- T1 exact reverse-tail regression re-derived from the generic kernel. -/
 theorem t1RevScanner_rewind_tail (n : Nat) (tail suffix : List T1Frame)
     (latch : Bool) (hne : ∀ f ∈ tail, f ≠ .bof)
     (hsafe : 4 * (1 + tail.length) < T1M.tapeLength n) :
@@ -248,11 +231,7 @@ private theorem g1Rev_const (l : List G1Frame) (h : ∀ f ∈ l, f ≠ G1Frame.b
       have hne := h f hf
       cases f <;> simp_all [g1RevAdvance]
 
-/-- **G1 reverse-scan regression.**  The statement is `g1CS_rewind_tail`'s and
-the proof is the generic `revScanFrames` at `g1RevScanner`: exactly four TM
-steps per frame rewind across a list of non-anchor frames, preserving the
-list-backed tape and the whole `G1Ctx`, finishing on the last cell of the
-anchor. -/
+/-- G1 exact reverse-tail regression re-derived from the generic kernel. -/
 theorem g1RevScanner_rewind_tail (n : Nat) (tail suffix : List G1Frame)
     (ctx : G1Ctx) (hne : ∀ f ∈ tail, f ≠ .bof)
     (hsafe : 4 * (1 + tail.length) < G1M.tapeLength n) :

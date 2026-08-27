@@ -681,8 +681,10 @@ no acceptance and no verifier claim, and it does not by itself execute any new
 * **the G1 pass-B destructive index walk** — the kernel is a prerequisite for
   it, not a proof of it.  `bRoundStart` remains idle and
   `g1_bScan_index_deferred` is unchanged;
-* **non-canonical or physically padded tapes** — every statement is about a
-  list-backed tape layout supplied to it, exactly as in the forward kernel.
+* **non-canonical or physically padded inputs** — local reverse/write macrosteps
+  support arbitrary tapes under explicit safety and codeword premises; list-scan
+  and frame-replacement capstones use explicit list-backed layouts.  No theorem
+  packages either form as a canonical or padded-input end-to-end execution.
 
 
 **T2a correction (2026-08-24).**  The first T2a head shipped a permissive

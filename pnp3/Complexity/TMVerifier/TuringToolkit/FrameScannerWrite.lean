@@ -3,35 +3,11 @@ import Complexity.TMVerifier.TuringToolkit.FrameScannerReverse
 /-!
 # The generic four-cell frame write/replacement layer
 
-`FrameScannerKernel` and `FrameScannerReverse` are read-only.  This module
-proves the destructive counterpart, once and generically:
-
-`writeFrame4` is the four-cell overwrite, described pointwise by
-`writeFrame4_apply`.  `writeFrame4_frameListTape` is the **frame-replacement
-law**: on a tape backed by an *arbitrary* surrounding frame list
-`pre ++ old :: suffix`, overwriting the four cells at `4 * pre.length` with the
-codeword of `new` gives exactly the tape backed by `pre ++ new :: suffix`;
-it holds for an arbitrary `FrameCodec`, with no case split on a concrete frame
-type.  `FrameWriter.writeMacrostep` is the **exact four-step machine macro** —
-a control whose four transition tuples write a supplied 4-bit code while
-walking right across the frame takes exactly four genuine `TM.stepConfig`s,
-head advancing by four, carried context surviving, tape becoming `writeFrame4`
-of the old tape — and `FrameWriter.writeFrameOnList` composes the two: four
-genuine steps replace one frame of an arbitrary frame list, with exact head,
-exit state and tape.
-
-**Obligation hygiene.**  A `FrameWriter` carries one codec law (`target_bits`:
-the four bits the control writes *are* the codeword of the frame it claims to
-write) and four *concrete transition tuple equalities*, quantified over the
-scanned cell — the "overwrite regardless of what is there" regime.
-
-**Explicit deferrals.**  This slice stops at *one* frame replacement.  The
-**leftward** writer (walking `p3 … p0` while writing, as `T1`'s
-`writeCursor`/`outWriteOut` do) is **not** provided here, and neither is the
-**13-step rewrite-cycle composition** matching `T1`'s `spent ↦ index` repair
-cycle: that needs the leftward writer plus a seek-until-marker driver on top of
-this layer, and is the immediately following slice.  Neither is claimed anywhere
-and no theorem below depends on them.
+Generic pointwise four-cell overwrite, arbitrary-list frame replacement, and
+an exact four-step writer machine.  `FrameWriter` carries one target-codeword
+law and four concrete transition tuples—no semantic run field.  This slice
+stops at one rightward frame replacement; the leftward writer and 13-step
+rewrite cycle are explicitly deferred.
 -/
 namespace Pnp3.Internal.PsubsetPpoly.TM.FrameScan
 
@@ -77,11 +53,7 @@ private theorem getD_append_split (P Q : List Bool) (j : Nat) :
       | zero => simp
       | succ k => simpa using ih k
 
-/-- **The frame-replacement law.**  On a tape backed by an arbitrary surrounding
-frame list, writing the codeword of `new` over the four cells of the frame at
-index `pre.length` yields exactly the tape backed by the list with that frame
-replaced.  Generic in the codec: the proof destructures the codewords through
-`bits_eq_four` instead of casing on a frame type. -/
+/-- Generic arbitrary-list frame-replacement law for `writeFrame4`. -/
 theorem writeFrame4_frameListTape {F : Type v} (C : FrameCodec F) {L : Nat}
     (pre suffix : List F) (old new : F) {b0 b1 b2 b3 : Bool}
     (hbits : C.bits new = [b0, b1, b2, b3]) :
@@ -166,11 +138,7 @@ abbrev alignedConfigQ (W : FrameWriter S F Aux) (n h : Nat)
     Configuration (M := W.machine) n :=
   Phased.alignedAt W.program W.phase n h hh tape q
 
-/-- **Exact four-step frame write, generically.**  From the first cell of a
-frame, four genuine TM steps install `w0 w1 w2 w3` into its four cells: the head
-advances by exactly four, the carried context `a` survives, the control lands in
-`exitState a`, and the tape is exactly `writeFrame4` of the old tape —
-pointwise, by `writeFrame4_apply`. -/
+/-- Exact four-step writer: head +4, context preserved, tape = `writeFrame4`. -/
 theorem writeMacrostep (W : FrameWriter S F Aux) (n base : Nat)
     (hsafe : base + 4 < W.machine.tapeLength n)
     (tape : Fin (W.machine.tapeLength n) → Bool) (a : Aux) :
@@ -196,12 +164,7 @@ theorem writeMacrostep (W : FrameWriter S F Aux) (n base : Nat)
     (W.wst3 a) (W.exitState a) W.w3 (W.wstep_p3 a _)]
   rfl
 
-/-- **Executable frame replacement, generically.**  On a tape backed by an
-arbitrary frame list `pre ++ old :: suffix`, four genuine TM steps replace the
-frame at index `pre.length` by `W.target`: the head goes from `4 * pre.length`
-to `4 * (pre.length + 1)`, the control lands in `exitState a` with the context
-unchanged, and the tape is exactly the one backed by
-`pre ++ W.target :: suffix`. -/
+/-- Four-step executable replacement of one frame in an arbitrary list tape. -/
 theorem writeFrameOnList (W : FrameWriter S F Aux) (n : Nat)
     (pre suffix : List F) (old : F) (a : Aux)
     (hsafe : 4 * pre.length + 4 < W.machine.tapeLength n) :

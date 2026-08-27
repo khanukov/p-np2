@@ -153,12 +153,29 @@ open Pnp3.Magnification
 -- characterisation, and the pure gate semantics.  These are parser/spec
 -- surfaces only: no machine, no execution, no acceptance, no
 -- gate-evaluation or verifier claim.
+#print axioms Internal.PsubsetPpoly.TM.decodeG1Frame_bits
+#print axioms Internal.PsubsetPpoly.TM.decodeG1Frame_reserved
+#print axioms Internal.PsubsetPpoly.TM.g1FrameCodec_bits
+#print axioms Internal.PsubsetPpoly.TM.g1FrameCodec_decode
+#print axioms Internal.PsubsetPpoly.TM.G1Frame.bits_argSep
+#print axioms Internal.PsubsetPpoly.TM.encodeG1_length
+#print axioms Internal.PsubsetPpoly.TM.encodeG1Frames_injective
+#print axioms Internal.PsubsetPpoly.TM.encodeG1_injective
 #print axioms Internal.PsubsetPpoly.TM.decodeG1Tape_encode
 #print axioms Internal.PsubsetPpoly.TM.decodeG1Tape?_eq_some
 #print axioms Internal.PsubsetPpoly.TM.decodeG1Tape?_iff
+#print axioms Internal.PsubsetPpoly.TM.decodeG1Tape?_encode_not_canonical
+#print axioms Internal.PsubsetPpoly.TM.g1_example_tape_roundtrip
 #print axioms Internal.PsubsetPpoly.TM.decodeG1FrameList?_reject_tagRun
 #print axioms Internal.PsubsetPpoly.TM.encodeG1_getElem?_outputPosition
+#print axioms Internal.PsubsetPpoly.TM.G1Request.spec_and_of
+#print axioms Internal.PsubsetPpoly.TM.G1Request.spec_or_of
+#print axioms Internal.PsubsetPpoly.TM.G1Request.spec_and_oob
+#print axioms Internal.PsubsetPpoly.TM.G1Request.spec_or_oob
 #print axioms Internal.PsubsetPpoly.TM.G1Request.spec_eq_none_of_not_canonical
+#print axioms Internal.PsubsetPpoly.TM.G1Request.getElem?_isSome_iff
+#print axioms Internal.PsubsetPpoly.TM.G1Request.spec_isSome_iff
+#print axioms Internal.PsubsetPpoly.TM.G1Request.g1_example_canonical_oob_not_wellFormed
 
 -- T1a fixed-control canonical validation and read-only rewind handoff.
 #print axioms Internal.PsubsetPpoly.TM.decodeT1Tape_encode

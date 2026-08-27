@@ -337,12 +337,13 @@ that encoding denotes.
   characterises the pure parser exactly: a bit list decodes to `r` iff it is
   literally `encodeG1 r` with `r` canonical, so wrong tag counts, wrong
   arity/unused fields, missing delimiters, reserved codes and malformed
-  canonical words are rejected.  Exact length and output-cell theorems are
-  proved.
+  canonical words are rejected.  `encodeG1_injective`, the pure `g1FrameCodec`,
+  exact length/output-cell theorems, and literal ABI pins are provided.
 * `GateOneSemantics.lean` — the pure `G1Request.spec : Option Bool`, operand
-  selection by partial list indexing (`vals[i]?`), with branch simplification
-  theorems, out-of-range and non-canonical `none` theorems, and concrete
-  examples including a successful `false` result.
+  selection by partial list indexing (`vals[i]?`), with branch simplification,
+  out-of-range/non-canonical `none`, and concrete successful-`false` examples.
+  `G1Request.WellFormed` adds operand bounds to the unused-field convention;
+  `spec_isSome_iff` proves that this, not canonicity alone, is the semantic domain.
 
 This layer is **Infrastructure**, and it is purely definitional: it declares no
 Turing machine.  The fixed zero-parameter finite control that validates this

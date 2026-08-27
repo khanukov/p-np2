@@ -1,3 +1,4 @@
+import Complexity.TMVerifier.TuringToolkit.FrameScannerCodec
 import Complexity.PsubsetPpolyInternal.Bitstring
 
 /-!
@@ -45,12 +46,10 @@ wrong unused fields, missing delimiters, reserved codes and malformed
 canonical words are all rejected.
 
 **Caveat.**  `decodeG1Tape?_iff` is a statement about the *pure* parser only.
-The fixed control of `GateOneControl` is separately proved to decide the same
-grammar at frame level (`g1Automaton_accepts_iff_decode`), but every *machine*
-theorem in this development is still scoped to the exact tape `encodeG1 r` —
-acceptance for canonical requests, rejection for noncanonical ones.  As in T1,
-no execution, acceptance or rejection claim is made for physically padded or
-otherwise malformed physical tapes.
+A fixed zero-parameter control deciding the same frame grammar is deferred to a
+later layer; no machine-level parser correspondence, execution, acceptance, or
+rejection theorem exists in this slice.  As in T1, nothing here claims behavior
+for physically padded or otherwise malformed machine tapes.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -112,6 +111,20 @@ def decodeG1Frame? : List Bool → Option G1Frame
   | data b | output b => cases b <;> rfl
   | blank | bof | tag | index | separator | cursor | finish | argSep | spent =>
       rfl
+
+/-- The pure G1 alphabet as an instance of the generic four-bit codec. -/
+def g1FrameCodec : FrameScan.FrameCodec G1Frame where
+  bits := G1Frame.bits
+  decode? := decodeG1Frame?
+  bits_length := G1Frame.bits_length
+  decode_bits := decodeG1Frame_bits
+
+@[simp] theorem g1FrameCodec_bits : g1FrameCodec.bits = G1Frame.bits := rfl
+@[simp] theorem g1FrameCodec_decode : g1FrameCodec.decode? = decodeG1Frame? := rfl
+
+/-- Literal ABI pin for the argument separator code. -/
+theorem G1Frame.bits_argSep :
+    G1Frame.argSep.bits = [true, false, true, true] := rfl
 
 /-- The three reserved codes are rejected. -/
 theorem decodeG1Frame_reserved :
@@ -432,6 +445,49 @@ def decodeG1FrameList? : List G1Frame → Option G1Request
       else none
   | _ => none
 
+/-- Structural decoder used to prove encoder injectivity; unlike the public
+parser it does not enforce the unused-field convention. -/
+def decodeG1FrameListRaw? : List G1Frame → Option G1Request
+  | .bof :: rest => do
+      let (g, rest) ← parseG1Run .tag .argSep rest
+      let tag ← g1TagOfUnits? g
+      let (a1, rest) ← parseG1Run .index .argSep rest
+      let (a2, rest) ← parseG1Run .index .separator rest
+      let (vals, rest) ← parseG1Data rest
+      if rest = [.finish] then some ⟨tag, a1, a2, vals⟩ else none
+  | _ => none
+
+@[simp] theorem decodeG1FrameListRaw?_encoded (r : G1Request) :
+    decodeG1FrameListRaw? (encodeG1Frames r) = some r := by
+  cases r with
+  | mk tag arg1 arg2 vals =>
+      have hshape : encodeG1Frames ⟨tag, arg1, arg2, vals⟩ =
+          .bof :: (List.replicate tag.units .tag ++ .argSep ::
+            (List.replicate arg1 .index ++ .argSep ::
+              (List.replicate arg2 .index ++ .separator ::
+                (vals.map .data ++ [.output false, .finish])))) := by
+        simp [encodeG1Frames, List.append_assoc]
+      rw [hshape]
+      simp [decodeG1FrameListRaw?,
+        parseG1Run_encoded (by decide : G1Frame.tag ≠ G1Frame.argSep),
+        parseG1Run_encoded (by decide : G1Frame.index ≠ G1Frame.argSep),
+        parseG1Run_encoded (by decide : G1Frame.index ≠ G1Frame.separator)]
+
+/-- The frame encoding preserves the complete request, including non-canonical
+unused fields. -/
+theorem encodeG1Frames_injective : Function.Injective encodeG1Frames := by
+  intro r s h
+  have hd := congrArg decodeG1FrameListRaw? h
+  simpa using hd
+
+/-- The physical bit encoding is injective on all requests. -/
+theorem encodeG1_injective : Function.Injective encodeG1 := by
+  intro r s h
+  have hd := congrArg decodeG1Frames? h
+  have hframes : encodeG1Frames r = encodeG1Frames s := by
+    simpa [encodeG1] using hd
+  exact encodeG1Frames_injective hframes
+
 /-- The physical parser: split into frames, then parse the grammar. -/
 def decodeG1Tape? (bits : List Bool) : Option G1Request := do
   decodeG1FrameList? (← decodeG1Frames? bits)
@@ -521,6 +577,24 @@ theorem decodeG1Tape?_iff (bits : List Bool) (r : G1Request) :
   constructor
   · exact decodeG1Tape?_eq_some
   · rintro ⟨rfl, hcan⟩; exact decodeG1Tape_encode r hcan
+
+/-- Encoding a request that violates the unused-field convention is rejected
+by the public parser. -/
+theorem decodeG1Tape?_encode_not_canonical {r : G1Request}
+    (h : ¬ r.Canonical) : decodeG1Tape? (encodeG1 r) = none := by
+  cases hd : decodeG1Tape? (encodeG1 r) with
+  | none => rfl
+  | some s =>
+      obtain ⟨heq, hcan⟩ := decodeG1Tape?_eq_some hd
+      have hrs : r = s := encodeG1_injective heq
+      subst s
+      exact absurd hcan h
+
+/-- Concrete bit-level round trip for the ABI. -/
+theorem g1_example_tape_roundtrip :
+    decodeG1Tape? (encodeG1 ⟨.input, 1, 0, [false, true]⟩) =
+      some ⟨.input, 1, 0, [false, true]⟩ :=
+  decodeG1Tape_encode _ rfl
 
 /-- The physical and frame-level parsers agree on canonical words. -/
 theorem decodeG1Tape?_eq_frameList (r : G1Request) :

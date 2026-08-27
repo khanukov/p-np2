@@ -10,7 +10,9 @@ verifier: the T2a slice does **not** prove that the machine computes `spec`.
 Operand selection is partial list indexing on the runtime value region,
 `vals[i]?` — the `getElem?`/`List.get?` selector, `none` exactly out of range.
 (`List.get?` is deprecated in this toolchain; `vals[i]?` is the same function
-under the current spelling, and is what `SLGate.compute` uses.)
+under the current spelling.)  A future circuit bridge must prefix external
+input values into `vals`; the `input` tag here is therefore a partial copy from
+the single on-tape runtime region, not yet an `SLGate.input` theorem.
 
 | tag | arity | `arg1` | `arg2` |
 |-----|-------|--------|--------|
@@ -45,6 +47,25 @@ def G1Request.spec (r : G1Request) : Option Bool :=
       match r.vals[r.arg1]?, r.vals[r.arg2]? with
       | some a, some b => some (a || b)
       | _, _ => none
+
+/-- Operand-domain condition, separate from the unused-field convention. -/
+def G1Request.operandsInBounds (r : G1Request) : Prop :=
+  match r.tag with
+  | .const => True
+  | .input | .not => r.arg1 < r.vals.length
+  | .and | .or => r.arg1 < r.vals.length ∧ r.arg2 < r.vals.length
+
+/-- Canonical unused fields plus existing operands.  Canonicity alone does not
+imply this predicate. -/
+def G1Request.WellFormed (r : G1Request) : Prop :=
+  r.Canonical ∧ r.operandsInBounds
+
+instance (r : G1Request) : Decidable r.operandsInBounds := by
+  unfold G1Request.operandsInBounds
+  cases r.tag <;> infer_instance
+
+instance (r : G1Request) : Decidable r.WellFormed :=
+  instDecidableAnd
 
 namespace G1Request
 
@@ -128,6 +149,76 @@ theorem spec_eq_none_of_not_canonical {r : G1Request} (h : ¬ r.Canonical) :
       case and => simp_all [G1Tag.arity]
       case or => simp_all [G1Tag.arity]
 
+/-- Partial indexing returns a value exactly in range. -/
+theorem getElem?_isSome_iff {i : Nat} {vals : List Bool} :
+    vals[i]?.isSome = true ↔ i < vals.length := by
+  constructor
+  · intro h
+    by_contra hn
+    have hnone : vals[i]? = none := List.getElem?_eq_none (by omega)
+    simp [hnone] at h
+  · intro hi
+    rw [List.getElem?_eq_getElem hi]
+    rfl
+
+/-- Exact domain characterization of the pure semantics. -/
+theorem spec_isSome_iff (r : G1Request) : r.spec.isSome = true ↔ r.WellFormed := by
+  rcases r with ⟨tag, a1, a2, vals⟩
+  cases tag with
+  | input =>
+      by_cases h2 : a2 = 0
+      · subst a2
+        simpa [spec, WellFormed, operandsInBounds, canonical_iff, G1Tag.arity]
+          using (getElem?_isSome_iff (i := a1) (vals := vals))
+      · simp [spec, WellFormed, operandsInBounds, canonical_iff, G1Tag.arity, h2]
+  | const =>
+      by_cases h2 : a2 = 0
+      · subst a2
+        by_cases h0 : a1 = 0
+        · subst a1; simp [spec, WellFormed, operandsInBounds, canonical_iff,
+            G1Tag.arity]
+        · by_cases h1 : a1 = 1
+          · subst a1; simp [spec, WellFormed, operandsInBounds, canonical_iff,
+              G1Tag.arity]
+          · simp [spec, WellFormed, operandsInBounds, canonical_iff, G1Tag.arity,
+              h0, h1]
+            omega
+      · simp [spec, WellFormed, operandsInBounds, canonical_iff, G1Tag.arity, h2]
+  | not =>
+      by_cases h2 : a2 = 0
+      · subst a2
+        simpa [spec, WellFormed, operandsInBounds, canonical_iff, G1Tag.arity]
+          using (getElem?_isSome_iff (i := a1) (vals := vals))
+      · simp [spec, WellFormed, operandsInBounds, canonical_iff, G1Tag.arity, h2]
+  | and =>
+      simp only [spec]
+      by_cases h1 : a1 < vals.length
+      · rw [List.getElem?_eq_getElem h1]
+        by_cases h2 : a2 < vals.length
+        · rw [List.getElem?_eq_getElem h2]
+          simp [spec, WellFormed, operandsInBounds, canonical_iff, G1Tag.arity,
+            h1, h2]
+        · have hn : vals[a2]? = none := List.getElem?_eq_none (by omega)
+          simp [spec, WellFormed, operandsInBounds, canonical_iff, G1Tag.arity,
+            h1, h2, hn]
+      · have hn : vals[a1]? = none := List.getElem?_eq_none (by omega)
+        simp [spec, WellFormed, operandsInBounds, canonical_iff, G1Tag.arity,
+          h1, hn]
+  | or =>
+      simp only [spec]
+      by_cases h1 : a1 < vals.length
+      · rw [List.getElem?_eq_getElem h1]
+        by_cases h2 : a2 < vals.length
+        · rw [List.getElem?_eq_getElem h2]
+          simp [spec, WellFormed, operandsInBounds, canonical_iff, G1Tag.arity,
+            h1, h2]
+        · have hn : vals[a2]? = none := List.getElem?_eq_none (by omega)
+          simp [spec, WellFormed, operandsInBounds, canonical_iff, G1Tag.arity,
+            h1, h2, hn]
+      · have hn : vals[a1]? = none := List.getElem?_eq_none (by omega)
+        simp [spec, WellFormed, operandsInBounds, canonical_iff, G1Tag.arity,
+          h1, hn]
+
 /-! ## Named examples
 
 Every tag, a successful `false` result, an out-of-range rejection and a
@@ -161,6 +252,14 @@ theorem g1_example_not_false :
 /-- Out-of-range operand. -/
 theorem g1_example_oob : (G1Request.mk .input 5 0 [true, false]).spec = none :=
   rfl
+
+/-- Canonical unused fields do not make an out-of-range operand meaningful. -/
+theorem g1_example_canonical_oob_not_wellFormed :
+    (G1Request.mk .input 5 0 [true, false]).Canonical ∧
+      ¬ (G1Request.mk .input 5 0 [true, false]).WellFormed := by
+  constructor
+  · rfl
+  · simp [WellFormed, operandsInBounds]
 
 /-- Violated unused-field convention. -/
 theorem g1_example_unused :

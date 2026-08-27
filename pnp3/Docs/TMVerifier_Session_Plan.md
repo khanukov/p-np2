@@ -320,7 +320,7 @@ kernel at the existing T1 machine and pins named regression theorems.
 This is **Infrastructure** for the fixed unary gate interpreter.  It proves no
 gate semantics, multi-gate evaluation, verifier correctness or lower bound.
 
-**T2a unary one-gate interpreter foundation delivered (2026-08-24):**
+**T2a unary one-gate interpreter foundation delivered (2026-08-27):**
 Six modules under `TuringToolkit/` build the dependency-closed foundation of
 the fixed one-gate interpreter on top of the generic frame-scanner kernel.
 

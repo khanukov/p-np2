@@ -253,7 +253,16 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.reject_missing_finish
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.reject_trailing_frame
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.reject_internal_marker
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.reject_unused_field
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.reject_const_convention
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.automaton_reject_zero_tags
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.automaton_reject_six_tags
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.machine_reject_notUnused
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.machine_reject_inputUnused
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.machine_reject_constUnused
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.machine_no_handoff_notUnused
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.machine_no_handoff_inputUnused
+#print axioms Internal.PsubsetPpoly.TM.G1Examples.machine_no_handoff_constUnused
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.machine_no_handoff_constBig
 
 -- T1a fixed-control canonical validation and read-only rewind handoff.

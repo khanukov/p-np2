@@ -14,7 +14,7 @@ context (`Aux`) is the three-Boolean `G1Ctx`.
 
 **No T1 proof stack is duplicated.**  All five obligations are discharged by
 the standalone tuple lemmas of `GateOneControl`; nothing here unfolds
-`g1Transition`, and the multi-frame validation scan of the planned `GateOneValidation` is
+`g1Transition`, and the multi-frame validation scan of `GateOneValidation` is
 the *generic* `FrameScanner.scanFrames` instantiated here, not a re-proof.
 Semantic content is carried by theorems, never by a structure field.
 -/

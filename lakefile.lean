@@ -77,9 +77,19 @@ lean_lib PnP3 where
     Glob.one `Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples,
     Glob.one `Complexity.TMVerifier.TuringToolkit.ConstStatePhasedStepBridge,
     Glob.one `Complexity.TMVerifier.TuringToolkit.ConstStatePhasedStepBridgeExamples,
+    -- Blocker-1 infrastructure: the dependency-closed generic fixed-width
+    -- frame-scanner kernel.  `Codec` is the 4-bit alphabet layer, `Kernel`
+    -- proves the macrostep and the exact list-scan induction generically in
+    -- the program/alphabet/mode/context, and `Probe` is a non-T1 instance
+    -- that witnesses the genericity.  None of the three imports any T1
+    -- module; `FrameScannerT1` (below `TrueUniformSeek`) is the T1 instance.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.FrameScannerCodec,
+    Glob.one `Complexity.TMVerifier.TuringToolkit.FrameScannerKernel,
+    Glob.one `Complexity.TMVerifier.TuringToolkit.FrameScannerProbe,
     Glob.one `Complexity.TMVerifier.TuringToolkit.RowConsistencyCheck,
     Glob.one `Complexity.TMVerifier.TuringToolkit.TrueUniformSeekEncoding,
     Glob.one `Complexity.TMVerifier.TuringToolkit.TrueUniformSeek,
+    Glob.one `Complexity.TMVerifier.TuringToolkit.FrameScannerT1,
     Glob.one `Complexity.TMVerifier.TuringToolkit.TrueUniformSeekValidation,
     Glob.one `Complexity.TMVerifier.TuringToolkit.TrueUniformSeekTerminalControl,
     Glob.one `Complexity.TMVerifier.TuringToolkit.TrueUniformSeekMutation,
@@ -252,6 +262,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMTrueUniformSeekTerminalSurfaceTests,
     Glob.one `Tests.TMTrueUniformSeekSemanticsSurfaceTests,
     Glob.one `Tests.TMStepBridgeSurfaceTests,
+    Glob.one `Tests.TMFrameScannerSurfaceTests,
     Glob.one `Tests.FormulaSupportBoundsFalsifiabilityProbe,
     Glob.one `Tests.SmokeTests,
     Glob.one `Tests.UnitTests,

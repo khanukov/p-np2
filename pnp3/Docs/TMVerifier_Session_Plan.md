@@ -304,6 +304,22 @@ This closes the canonical fixed-machine runtime-addressing semantics as
 trailing input retains the documented `T1Physical`/blank-suffix caveat.  No
 universal gate interpreter or content verifier is claimed by this result.
 
+**Generic four-bit frame scanner delivered (2026-08-24):**
+`FrameScannerCodec.lean` and `FrameScannerKernel.lean` factor out an executable
+four-cell macrostep and exact multi-frame `TM.runConfig` induction, reproducing
+T1's execution shape in a kernel generic over the frame alphabet, finite
+control, mode table and carried context.  The one-frame macrostep preserves an
+arbitrary physical tape; the multi-frame induction preserves its canonical
+list-backed tape with arbitrary frame prefix/suffix and exposes exact
+state/head/tape projections.  Transition obligations are concrete tuple facts
+consumed by the existing generic step bridge, not a correctness field that
+repackages a semantic theorem.  `FrameScannerProbe.lean` supplies a genuinely
+non-T1 codec/program execution, while `FrameScannerT1.lean` instantiates the
+kernel at the existing T1 machine and pins named regression theorems.
+
+This is **Infrastructure** for the fixed unary gate interpreter.  It proves no
+gate semantics, multi-gate evaluation, verifier correctness or lower bound.
+
 **T1a review hardening (2026-08-23):** the generic forward-frame scanner
 `t1CS_scan_frames` and non-anchor reverse scanner `t1CS_rewind_tail` are public
 T1b reuse surfaces, with exact import-side type probes and axiom audits.  Their

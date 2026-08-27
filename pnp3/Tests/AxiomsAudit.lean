@@ -16,6 +16,7 @@ import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedStepBridgeExamples
 import Complexity.TMVerifier.TuringToolkit.FrameScannerProbe
 import Complexity.TMVerifier.TuringToolkit.FrameScannerT1
 import Complexity.TMVerifier.TuringToolkit.GateOneSemantics
+import Complexity.TMVerifier.TuringToolkit.GateOneScanner
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -176,6 +177,50 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1Request.getElem?_isSome_iff
 #print axioms Internal.PsubsetPpoly.TM.G1Request.spec_isSome_iff
 #print axioms Internal.PsubsetPpoly.TM.G1Request.g1_example_canonical_oob_not_wellFormed
+
+-- T2a, control layer: the frame-level correspondence between the fixed
+-- forward control and the pure parser -- the machine language *is* the
+-- canonical grammar -- and the same control as an instance of the generic
+-- frame-scanner kernel.  Generic frame execution primitives are present;
+-- end-to-end validation/rewind remains deferred.
+#print axioms Internal.PsubsetPpoly.TM.g1CS_runTime
+#print axioms Internal.PsubsetPpoly.TM.g1CS_numPhases
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_forward_p0
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_forward_p1
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_forward_p2
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_forward_p3_advance
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_forward_p3_reject
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_rewindStart
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_rewind_p3
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_rewind_p2
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_rewind_p1
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_rewind_p0_bof
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_rewind_p0_other
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_readBStart_idle
+#print axioms Internal.PsubsetPpoly.TM.g1RejectState_ne_readB
+#print axioms Internal.PsubsetPpoly.TM.g1AdvanceList_append
+#print axioms Internal.PsubsetPpoly.TM.G1ForwardMode.not_reject
+#print axioms Internal.PsubsetPpoly.TM.G1ForwardMode.not_rewindStart
+#print axioms Internal.PsubsetPpoly.TM.G1RejectPath.forward
+#print axioms Internal.PsubsetPpoly.TM.g1AdvanceList_encode
+#print axioms Internal.PsubsetPpoly.TM.g1AdvanceList_encode_reject
+#print axioms Internal.PsubsetPpoly.TM.g1RejectPath_encode
+#print axioms Internal.PsubsetPpoly.TM.g1_structure_of_accepts
+#print axioms Internal.PsubsetPpoly.TM.g1ValidPath_of_accepts
+#print axioms Internal.PsubsetPpoly.TM.g1Automaton_accepts_iff_decode
+#print axioms Internal.PsubsetPpoly.TM.g1CanonicalEncoderAutomatonTrace_iff
+#print axioms Internal.PsubsetPpoly.TM.g1_example_control_and_accepts
+#print axioms Internal.PsubsetPpoly.TM.g1_example_control_const_rejects
+#print axioms Internal.PsubsetPpoly.TM.g1_reject_tagRun_zero
+#print axioms Internal.PsubsetPpoly.TM.g1_reject_tagRun_six
+#print axioms Internal.PsubsetPpoly.TM.g1_reject_const_arg1_ge_two
+#print axioms Internal.PsubsetPpoly.TM.g1_reject_unusedField_input
+#print axioms Internal.PsubsetPpoly.TM.g1_reject_unusedField_not
+#print axioms Internal.PsubsetPpoly.TM.g1_reject_unusedField_const
+#print axioms Internal.PsubsetPpoly.TM.g1FrameScanner_codec
+#print axioms Internal.PsubsetPpoly.TM.g1FrameScanner_frameMacrostep
+#print axioms Internal.PsubsetPpoly.TM.g1FrameScanner_scanFrames
+#print axioms Internal.PsubsetPpoly.TM.g1FrameScanner_frameLanguage_iff_decode
 
 -- T1a fixed-control canonical validation and read-only rewind handoff.
 #print axioms Internal.PsubsetPpoly.TM.decodeT1Tape_encode

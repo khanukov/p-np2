@@ -111,6 +111,12 @@ lean_lib PnP3 where
     -- to later dependency slices and is not registered here.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneEncoding,
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneSemantics,
+    -- T2a, control layer: one zero-parameter finite control whose forward
+    -- table decides the canonical grammar (`GateOneControl`), and that
+    -- control as a genuine instance of the generic frame-scanner kernel
+    -- (`GateOneScanner`).  Execution is registered in the next layer.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneControl,
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneScanner,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -270,6 +276,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMStepBridgeSurfaceTests,
     Glob.one `Tests.TMFrameScannerSurfaceTests,
     Glob.one `Tests.TMGateOnePureSurfaceTests,
+    Glob.one `Tests.TMGateOneControlSurfaceTests,
     Glob.one `Tests.FormulaSupportBoundsFalsifiabilityProbe,
     Glob.one `Tests.SmokeTests,
     Glob.one `Tests.UnitTests,

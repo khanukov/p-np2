@@ -320,10 +320,11 @@ kernel at the existing T1 machine and pins named regression theorems.
 This is **Infrastructure** for the fixed unary gate interpreter.  It proves no
 gate semantics, multi-gate evaluation, verifier correctness or lower bound.
 
-**T2a unary one-gate ABI and pure semantics delivered (2026-08-24):**
-Two modules under `TuringToolkit/` open the fixed one-gate interpreter with its
-**pure** layer only: the encoding its parser accepts, and the gate semantics
-that encoding denotes.
+**T2a unary one-gate ABI, semantics and fixed control delivered (2026-08-24):**
+Four modules under `TuringToolkit/` build the fixed one-gate interpreter's ABI,
+its pure semantics, and the one zero-parameter finite control whose forward
+table decides that ABI's canonical grammar, on top of the generic
+frame-scanner kernel.
 
 * `GateOneEncoding.lean` — a **fresh** four-bit unary ABI, independent of the
   width-parameterised `SLGate.encode`.  `blank` stays `0000`; `argSep` is
@@ -344,15 +345,51 @@ that encoding denotes.
   out-of-range/non-canonical `none`, and concrete successful-`false` examples.
   `G1Request.WellFormed` adds operand bounds to the unused-field convention;
   `spec_isSome_iff` proves that this, not canonicity alone, is the semantic domain.
+* `GateOneControl.lean` — one zero-parameter `ConstStatePhasedProgram`
+  `g1CS` with the closed clock `g1Clock N = 512 * (N + 1) ^ 2 + 512`.  The
+  finite state carries a mode, a frame position, a three-cell frame buffer and
+  a three-Boolean context; no `Nat`, index, width, offset, data length or
+  request-dependent value occurs in it.  Everything below `g1Transition` is a
+  standalone tuple lemma.
 
-This layer is **Infrastructure**, and it is purely definitional: it declares no
-Turing machine.  The fixed zero-parameter finite control that validates this
-ABI, the frame-level correspondence between that control and the parser above,
-and the exact validation/rewind execution capstone are **explicitly deferred**
-to the following layers and are claimed nowhere here.  Also deferred, as
-before: operand execution, combine/write/repair, `TM.run`/`TM.accepts` and any
-full-clock theorem, the `SLGate` bridge, the multi-gate evaluator, and any
-verifier obligation or lower bound.
+  The forward modes **remember the unary tag count**, and through it the tag
+  kind: `vTag0 … vTag5` count the tag run (`vTag0` rejects `argSep`, `vTag5`
+  rejects a sixth `tag`), and the `argSep` leaving `vTagk` selects that tag's
+  operand convention — `vArg1Unary` for `input`/`not`, `vConst0`/`vConst1`
+  for `const` (a second constant `index` rejects), `vArg1Binary` for
+  `and`/`or`; an arity-1 tag then lands in `vArg2Zero`, which rejects any
+  operand-2 `index`, and an arity-2 tag in `vArg2Any`, which loops.  This is
+  exactly `G1Request.Canonical`, and it is *proved* to be:
+
+  - `g1Automaton_accepts_iff_decode` — for every frame word `fs`, the forward
+    control run of `fs ++ [.blank]` reaches `rewindStart` **iff**
+    `decodeG1FrameList? fs` succeeds.  Machine language = pure parser
+    language, on explicit canonical frame words closed by one trailing blank
+    frame.  (Nothing is claimed about arbitrary padded physical tapes.)
+  - `g1CanonicalEncoderAutomatonTrace_iff` — its encoder specialisation:
+    `advanceList .vBof (encodeG1Frames r ++ [.blank]) = .rewindStart ↔
+    r.Canonical`.
+  - `g1AdvanceList_encode_reject` and the named witnesses
+    `g1_reject_tagRun_zero`, `g1_reject_tagRun_six`,
+    `g1_reject_const_arg1_ge_two`, `g1_reject_unusedField_{input,not,const}`
+    — every noncanonical class ends in the literal `reject` sink.
+* `GateOneScanner.lean` — `g1CS` as a genuine instance of the generic
+  `FrameScanner` kernel.  The T1 scanner proof stack is not duplicated: the
+  five obligations are the tuple lemmas above, and the multi-frame scan is the
+  generic `scanFrames` instantiated at G1.  `g1FrameScanner_advanceList` and
+  `g1FrameScanner_validPath` identify the kernel's frame language with the
+  control's, and `g1FrameScanner_frameLanguage_iff_decode` transfers the pure
+  parser correspondence to the kernel's `advanceList` fold.
+
+This layer is **Infrastructure**.  It delivers the pure frame-table/parser
+correspondence and two exact generic-kernel `TM.runConfig` primitives:
+`g1FrameScanner_frameMacrostep` and `g1FrameScanner_scanFrames`, with their
+four-steps-per-frame clocks.  Their end-to-end composition with physical
+validation/rejection, rewind, and the `readBStart` handoff is **explicitly
+deferred** to the next layer; no full-clock or acceptance theorem is claimed.
+Also deferred, as before: operand execution, combine/write/repair,
+`TM.run`/`TM.accepts`, the `SLGate` bridge, the multi-gate evaluator, and every
+verifier or lower-bound obligation.
 
 **T1a review hardening (2026-08-23):** the generic forward-frame scanner
 `t1CS_scan_frames` and non-anchor reverse scanner `t1CS_rewind_tail` are public

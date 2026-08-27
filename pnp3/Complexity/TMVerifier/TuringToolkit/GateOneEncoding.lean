@@ -1,5 +1,6 @@
 import Complexity.TMVerifier.TuringToolkit.FrameScannerCodec
 import Complexity.PsubsetPpolyInternal.Bitstring
+import Mathlib.Tactic.DeriveFintype
 
 /-!
 # G1: a fresh unary one-gate ABI
@@ -46,10 +47,10 @@ wrong unused fields, missing delimiters, reserved codes and malformed
 canonical words are all rejected.
 
 **Caveat.**  `decodeG1Tape?_iff` is a statement about the *pure* parser only.
-A fixed zero-parameter control deciding the same frame grammar is deferred to a
-later layer; no machine-level parser correspondence, execution, acceptance, or
-rejection theorem exists in this slice.  As in T1, nothing here claims behavior
-for physically padded or otherwise malformed machine tapes.
+`GateOneControl` now supplies a fixed zero-parameter frame-table decision and
+pure frame-language/parser correspondence.  End-to-end physical validation,
+rewind, acceptance, and behavior on padded or malformed machine tapes remain
+outside this pure module.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -64,7 +65,7 @@ inductive G1Frame
   | data (value : Bool) | cursor
   | output (value : Bool) | finish
   | argSep | spent
-  deriving DecidableEq, Repr
+  deriving Fintype, DecidableEq, Repr
 
 def G1Frame.bits : G1Frame → List Bool
   | .blank        => [false, false, false, false]

@@ -414,9 +414,10 @@ following are **explicitly deferred** and are not claimed anywhere:
 * **combine, write and repair** — computing the gate value, writing it into
   the `output` cell, and the `spent ↦ index` restoration pass;
 * **full run and acceptance** — `TM.run`, `TM.accepts`, and any full-clock
-  theorem.  `readBStart` is idle in this slice only and T2b activates it, so
-  only the exact prefix statement above is proved; `g1ReadBHandoffSteps ≤
-  g1Clock` records solely that the proved prefix fits the public clock;
+  theorem.  `readBStart` was idle in the T2a slice and is activated by T2b-1
+  below, so only the exact prefix statement above is proved;
+  `g1ReadBHandoffSteps ≤ g1Clock` records solely that the proved prefix fits
+  the public clock;
 * **the `SLGate` bridge** — the pure `G1Request.ofGate` / `spec_ofGate`
   relation to `SLGate.compute`;
 * **the multi-gate evaluator** — `SLProgram.eval`-style iteration;
@@ -429,6 +430,64 @@ are about the canonical encoding of a *noncanonical request*, not about an
 arbitrary padded or malformed physical tape.  The head, state and tape scope is
 explicit: the canonical capstone pins head, state *and* tape, while the
 rejection statement pins state and tape but deliberately not the head.
+
+**T2b-1 pass-B control table and routing delivered (2026-08-25):**
+
+`readBStart` is no longer an idle row of the table.  It is now a genuine
+*forward frame-reading mode* of the same fixed zero-parameter `g1CS`, in the
+same single phase, under the **unchanged** clock
+`g1Clock N = 512 * (N + 1) ^ 2 + 512`.  No `Nat`, index, width, offset, data
+length or request value was added to `G1State`: the new state is twenty extra
+`G1Mode` constructors plus the existing three-Boolean `G1Ctx`, whose `vB` field
+is the one place a resolved Boolean is stored.
+
+The continuity constraint is respected literally.  At the T2a handoff the
+context is `g1Ctx0` and no gate tag is retained anywhere, so the control
+**physically rescans** `bof · tag^units · argSep` from the start of the word and
+re-derives the routing from the tape.  The tag appears in the T2b-1 statements
+only as a fact about `r`, never as a hypothesis about the machine's state and
+never as a parameter.
+
+* `GateOneControl.lean` — the table.  Twenty new `G1Mode` constructors, the
+  five handoff states (`readAStart`, `combineStart`, `readAResetStart`,
+  `bRoundStart`, `bOOB`), the `vB` writer `G1Ctx.withVB`, and transition tuple
+  lemmas for the two stationary dispatch rows (`g1Transition_constLit`,
+  `g1Transition_store`), the four idle handoffs and the stable `bOOB` sink.
+* `GateOneRouting.lean` — the frame level.  `g1RouteMode` is the mode the
+  `argSep` closing the rescanned tag run selects; `g1_tagRescan_advance` and
+  `g1_tagRescan_validPath` fold and validate the rescan for each of the five
+  tags.  Four route prefixes of the canonical word are defined —
+  `g1TagRouteFrames` (`bof · tag^units · argSep`), `g1FieldRouteFrames`
+  (`… · index^arg1 · argSep`, which is also the `const` literal route) and the
+  two probe extensions `g1ReadBRouteFrames`/`g1ReadBOOBFrames` — each with a
+  split lemma saying the prefix followed by the rest of the word is literally
+  `encodeG1Frames r ++ [.blank]`.  No producer annotation, no scratch region,
+  no marker.
+
+This layer is **table- and frame-level only**, and it is **Infrastructure**.
+Nothing in it is a `TM.runConfig` statement: the exact executions from the real
+`G1M.initialConfig (g1Point (encodeG1 r))` — the per-tag route capstones, the
+`const` literal store, the zero-index operand-2 read and its out-of-range
+boundary — are the following layer and are claimed nowhere here.  Also claimed
+nowhere:
+
+* **the destructive index walk** — for `arg2 > 0` the table sends the operand
+  walk to `bRoundStart` (`g1_bScan_index_deferred`), which is idle and stuck
+  (`g1_bRoundStart_stuck`), and no execution theorem passes it.  Nothing here
+  claims general runtime-index addressing;
+* **pass A, combine, write, repair, acceptance** — `readAStart`,
+  `combineStart` and `readAResetStart` are idle rows; there is still no
+  `TM.run`, `TM.accepts`, output-write, `spec`-correctness or full-clock
+  theorem.
+
+Structural note: `G1ForwardMode` now holds of the pass-B modes, and the old
+`g1Advance_range` ("forward, `rewindStart` or `reject`") was generalised to
+"forward, `rewindStart` or `G1Stuck`", where a stuck mode completes every frame
+into `reject` and is not `rewindStart`.  The four dispatch modes, the five
+handoffs and the `reject` sink are stuck; `rewind` and `accept` also satisfy the
+predicate but are unreachable from `g1Advance`.  Thus the T2a
+validation-grammar proofs are unaffected: they are the same theorems with the
+same statements and the same step arithmetic.
 
 **T2a correction (2026-08-24).**  The first T2a head shipped a permissive
 forward table (`vTag` looping on every `tag`, `vArg1`/`vArg2` looping on every

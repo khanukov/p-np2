@@ -31,6 +31,14 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1AcceptState
 #check @g1RejectState
 #check @g1ReadBState
+#check @g1ReadAState
+#check @g1CombineState
+#check @g1ReadAResetState
+#check @g1RoundState
+#check @g1OOBState
+#check @G1Ctx.withVB
+#check @g1ConstMode
+#check @g1StoreMode
 #check @g1Clock
 #check @g1CS
 #check @g1CS_runTime
@@ -46,8 +54,15 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1Transition_rewind_p1
 #check @g1Transition_rewind_p0_bof
 #check @g1Transition_rewind_p0_other
-#check @g1Transition_readBStart_idle
+#check @g1Transition_readAStart_idle
+#check @g1Transition_combineStart_idle
+#check @g1Transition_readAResetStart_idle
+#check @g1Transition_bRoundStart_idle
+#check @g1Transition_bOOB_stable
+#check @g1Transition_constLit
+#check @g1Transition_store
 #check @g1RejectState_ne_readB
+#check @g1OOBState_ne_readAReset
 
 -- The frame-level language of the fixed forward control.
 #check @g1Advance
@@ -55,6 +70,9 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @G1ForwardMode
 #check @G1ForwardMode.not_reject
 #check @G1ForwardMode.not_rewindStart
+#check @G1Stuck
+#check @g1Advance_range
+#check @g1AdvanceList_ne_rewindStart_of_stuck
 #check @g1AdvanceList
 #check @g1AdvanceList_append
 #check @G1ValidPath

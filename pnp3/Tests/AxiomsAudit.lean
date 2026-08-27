@@ -16,6 +16,7 @@ import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedStepBridgeExamples
 import Complexity.TMVerifier.TuringToolkit.FrameScannerProbe
 import Complexity.TMVerifier.TuringToolkit.FrameScannerT1
 import Complexity.TMVerifier.TuringToolkit.GateOneExamples
+import Complexity.TMVerifier.TuringToolkit.GateOneRouting
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -195,7 +196,13 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_rewind_p1
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_rewind_p0_bof
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_rewind_p0_other
-#print axioms Internal.PsubsetPpoly.TM.g1Transition_readBStart_idle
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_readAStart_idle
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_combineStart_idle
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_readAResetStart_idle
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bRoundStart_idle
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bOOB_stable
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_constLit
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_store
 #print axioms Internal.PsubsetPpoly.TM.g1RejectState_ne_readB
 #print axioms Internal.PsubsetPpoly.TM.g1AdvanceList_append
 #print axioms Internal.PsubsetPpoly.TM.G1ForwardMode.not_reject
@@ -265,6 +272,33 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.machine_no_handoff_inputUnused
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.machine_no_handoff_constUnused
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.machine_no_handoff_constBig
+
+-- T2b-1, control/routing layer: the physical tag rescan and the frame-level
+-- routing of the fixed control.  Frame level only: no `TM.runConfig`
+-- statement, no operand read, no `TM.accepts`, no output write, no
+-- `spec`-correctness claim, and no `arg2 > 0` operand walk -- that branch is
+-- routed to the idle `bRoundStart`.
+#print axioms Internal.PsubsetPpoly.TM.G1Ctx.withVB_vB
+#print axioms Internal.PsubsetPpoly.TM.G1Ctx.withVB_pass
+#print axioms Internal.PsubsetPpoly.TM.G1Ctx.withVB_crossed
+#print axioms Internal.PsubsetPpoly.TM.g1Advance_ne_sink
+#print axioms Internal.PsubsetPpoly.TM.g1_tagRescan_advance
+#print axioms Internal.PsubsetPpoly.TM.g1_tagRescan_validPath
+#print axioms Internal.PsubsetPpoly.TM.g1TagRoute_split
+#print axioms Internal.PsubsetPpoly.TM.g1FieldRoute_split
+#print axioms Internal.PsubsetPpoly.TM.g1ReadBRoute_split
+#print axioms Internal.PsubsetPpoly.TM.g1ReadBOOB_split
+#print axioms Internal.PsubsetPpoly.TM.g1TagRoute_advance_unary
+#print axioms Internal.PsubsetPpoly.TM.g1FieldRoute_advance_const
+#print axioms Internal.PsubsetPpoly.TM.g1FieldRoute_validPath_const
+#print axioms Internal.PsubsetPpoly.TM.g1FieldRoute_advance_binary
+#print axioms Internal.PsubsetPpoly.TM.g1FieldRoute_validPath_binary
+#print axioms Internal.PsubsetPpoly.TM.g1ReadBRoute_advance
+#print axioms Internal.PsubsetPpoly.TM.g1ReadBRoute_validPath
+#print axioms Internal.PsubsetPpoly.TM.g1ReadBOOB_advance
+#print axioms Internal.PsubsetPpoly.TM.g1ReadBOOB_validPath
+#print axioms Internal.PsubsetPpoly.TM.g1_bScan_index_deferred
+#print axioms Internal.PsubsetPpoly.TM.g1_bRoundStart_stuck
 
 -- T1a fixed-control canonical validation and read-only rewind handoff.
 #print axioms Internal.PsubsetPpoly.TM.decodeT1Tape_encode

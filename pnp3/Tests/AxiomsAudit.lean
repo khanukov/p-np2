@@ -18,6 +18,7 @@ import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcc
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
 import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekExamples
 import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekMutationLoopExamples
+import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekMutationDriverExamples
 
 /-!
   pnp3/Tests/AxiomsAudit.lean
@@ -164,7 +165,8 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.t1bEmptyData_oob
 
 -- T1b-B genuine one-iteration mutation loop and exact OOB companion.  The
--- induction/terminal split and all T1c repair/output/acceptance remain open.
+-- induction/terminal split is not part of this layer and is audited in T1b-C
+-- below; all T1c repair/output/acceptance remains open.
 #print axioms Internal.PsubsetPpoly.TM.t1CS_scan_back_skip
 #print axioms Internal.PsubsetPpoly.TM.t1MutationTape_eq_listTape
 #print axioms Internal.PsubsetPpoly.TM.t1CursorBase_safe
@@ -174,6 +176,41 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.t1CS_loop_oob_exact
 #print axioms Internal.PsubsetPpoly.TM.t1bbIterationZero
 #print axioms Internal.PsubsetPpoly.TM.t1bbOobAtOne
+
+-- T1b-C loop induction, exact terminal cases from the real initial
+-- configuration, and public-clock padding to idle semantic boundaries.
+#print axioms Internal.PsubsetPpoly.TM.t1LoopSteps_succ
+#print axioms Internal.PsubsetPpoly.TM.t1CS_loop_iterate_exact
+#print axioms Internal.PsubsetPpoly.TM.t1CS_loop_reach_exact
+#print axioms Internal.PsubsetPpoly.TM.t1CS_loop_success_tail_exact
+#print axioms Internal.PsubsetPpoly.TM.t1CS_loop_success_from_zero_exact
+#print axioms Internal.PsubsetPpoly.TM.t1CS_loop_oob_from_zero_exact
+#print axioms Internal.PsubsetPpoly.TM.t1OobSteps_nil
+#print axioms Internal.PsubsetPpoly.TM.t1OobSteps_cons
+#print axioms Internal.PsubsetPpoly.TM.t1DecideSteps_some
+#print axioms Internal.PsubsetPpoly.TM.t1DecideSteps_none
+#print axioms Internal.PsubsetPpoly.TM.t1Selected_none_iff
+#print axioms Internal.PsubsetPpoly.TM.t1CS_runConfig_decide_success_exact
+#print axioms Internal.PsubsetPpoly.TM.t1CS_runConfig_decide_oob_exact
+#print axioms Internal.PsubsetPpoly.TM.t1CS_runConfig_decide_oob_empty_exact
+#print axioms Internal.PsubsetPpoly.TM.t1CS_decideTotal_le_clock
+#print axioms Internal.PsubsetPpoly.TM.t1CS_run_encoded_decide_success
+#print axioms Internal.PsubsetPpoly.TM.t1CS_run_encoded_decide_oob_nonempty
+#print axioms Internal.PsubsetPpoly.TM.t1CS_run_encoded_decide_oob_empty
+#print axioms Internal.PsubsetPpoly.TM.t1CS_run_encoded_decide_oob
+#print axioms Internal.PsubsetPpoly.TM.t1bcDriveToSlotTwo
+#print axioms Internal.PsubsetPpoly.TM.t1bcSuccessTail
+#print axioms Internal.PsubsetPpoly.TM.t1bcSuccessFromInitial
+#print axioms Internal.PsubsetPpoly.TM.t1bcSuccessPublicClock
+#print axioms Internal.PsubsetPpoly.TM.t1bcOobFromInitial
+#print axioms Internal.PsubsetPpoly.TM.t1bcOobPublicClock
+#print axioms Internal.PsubsetPpoly.TM.t1bcEmptyOobFromInitial
+#print axioms Internal.PsubsetPpoly.TM.t1bcEmptyOobPublicClock
+#print axioms Internal.PsubsetPpoly.TM.t1bcSuccessFitsClock
+#print axioms Internal.PsubsetPpoly.TM.t1bcOobFitsClock
+#print axioms Internal.PsubsetPpoly.TM.t1bcEmptyFitsClock
+#print axioms Internal.PsubsetPpoly.TM.t1bcIndexZeroSuccessFromInitial
+#print axioms Internal.PsubsetPpoly.TM.t1bcOobBoundaryFromInitial
 
 -- Итоговые утверждения (формульная сепарация).
 #print axioms RefutedRoute_NP_not_subset_PpolyFormula_final

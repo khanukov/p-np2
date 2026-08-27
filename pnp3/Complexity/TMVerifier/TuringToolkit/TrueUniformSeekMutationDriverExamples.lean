@@ -46,6 +46,21 @@ def t1bcSuccessFromInitial :=
 def t1bcSuccessPublicClock :=
   t1CS_run_encoded_decide_success t1bcSuccessRequest true rfl
 
+/-- Degenerate nonempty success: index zero selects the first data cell. -/
+def t1bcIndexZeroRequest : T1Request := ⟨0, [true]⟩
+
+theorem t1bcIndexZeroSuccessFromInitial :
+    TM.runConfig (M := T1M)
+        (T1M.initialConfig (t1Point (encodeT1 t1bcIndexZeroRequest)))
+        (t1DecideTotal t1bcIndexZeroRequest) =
+      t1AlignedConfig (encodeT1 t1bcIndexZeroRequest).length 0
+        (t1_lt_tapeLength _ _ (Nat.zero_le _))
+        (t1ListTape
+          ((t1LoopFrames t1bcIndexZeroRequest t1bcIndexZeroRequest.index).flatMap
+            T1Frame.bits))
+        .successStart .p0 false false false true :=
+  t1CS_runConfig_decide_success_exact t1bcIndexZeroRequest true rfl
+
 /-! ## Out of bounds with nonempty data -/
 
 /-- Two data cells but three index units: the driver falls off at slot `1`. -/
@@ -56,6 +71,24 @@ def t1bcOobFromInitial :=
 
 def t1bcOobPublicClock :=
   t1CS_run_encoded_decide_oob_nonempty t1bcOobRequest false rfl (by decide) rfl
+
+/-- Exact boundary OOB: the first missing slot is `index = data.length`. -/
+def t1bcOobBoundaryRequest : T1Request := ⟨2, [true, false]⟩
+
+theorem t1bcOobBoundaryFromInitial :
+    TM.runConfig (M := T1M)
+        (T1M.initialConfig (t1Point (encodeT1 t1bcOobBoundaryRequest)))
+        (t1DecideTotal t1bcOobBoundaryRequest) =
+      t1AlignedConfig (encodeT1 t1bcOobBoundaryRequest).length
+        (4 * (t1bcOobBoundaryRequest.index +
+          (t1bcOobBoundaryRequest.data.length - 1) + 3) + 3)
+        (t1dOobHead_safe t1bcOobBoundaryRequest)
+        (t1ListTape
+          ((t1LoopFramesRestored t1bcOobBoundaryRequest
+            (t1bcOobBoundaryRequest.data.length - 1)).flatMap T1Frame.bits))
+        .oobStart .p0 false false false false :=
+  t1CS_runConfig_decide_oob_exact t1bcOobBoundaryRequest false rfl
+    (by decide) rfl
 
 /-! ## Out of bounds with empty data -/
 

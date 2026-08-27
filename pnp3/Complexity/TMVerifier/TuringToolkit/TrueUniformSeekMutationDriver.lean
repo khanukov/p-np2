@@ -71,9 +71,10 @@ t1LoopSteps m = 16 * m + 37` (`t1LoopSteps_succ`), which is the exact cost
 
 `successStart` and `oobStart` remain **idle semantic boundaries** owned by
 T1c.  Nothing below claims acceptance, rejection, an output write, or repair
-of the consumed index field.  In particular the out-of-bounds boundary is
-reached on the *intermediate* tape `t1LoopFramesRestored`, whose index field
-is spent, exactly as T1b-B documented.
+of the consumed index field.  On the nonempty out-of-bounds path the exact
+intermediate tape has `r.data.length` spent markers and
+`r.index - r.data.length` unconsumed index markers; on the empty-data path the
+input tape is unchanged.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -364,8 +365,9 @@ theorem t1CS_loop_success_from_zero_exact (r : T1Request) (b v : Bool)
     _ = _ := by rw [hreach]; exact htail
 
 /-- **Out of bounds with nonempty data, from the configuration the
-installation reaches.**  When the data field is nonempty but shorter than the
-index, the driver walks the cursor to the last slot `L-1` and T1b-B's
+installation reaches.**  When the data field is nonempty and no longer than
+the index (`r.data.length ≤ r.index`), the driver walks the cursor to the last
+slot `L-1` and T1b-B's
 out-of-bounds step reaches the idle `oobStart` boundary, in exactly
 `t1LoopSteps (L-1) + (16 * (L-1) + 32)` genuine steps.
 
@@ -512,7 +514,8 @@ theorem t1CS_runConfig_decide_success_exact (r : T1Request) (v : Bool)
 /-- **The exact out-of-bounds case with nonempty data, from the genuine
 initial configuration.**  The step count is the same closed
 `t1DecideTotal r`; the terminal boundary is `oobStart` on T1b-B's exact
-intermediate tape, whose index field is spent and *not* repaired. -/
+intermediate tape.  Its index field has `r.data.length` spent markers and
+`r.index - r.data.length` unconsumed markers, and is not repaired. -/
 theorem t1CS_runConfig_decide_oob_exact (r : T1Request) (v : Bool)
     (hv : r.data[r.index]? = none) (hne : 0 < r.data.length)
     (hlast : r.data[r.data.length - 1]? = some v) :

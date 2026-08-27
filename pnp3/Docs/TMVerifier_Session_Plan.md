@@ -231,7 +231,8 @@ cursor-free and restored, while the consumed index markers remain explicitly
 This slice is **Infrastructure**.  It does not yet iterate the one-step theorem
 over all unary index units or prove the final `getElem?` success/OOB split.
 It also proves no consumed-index-field repair, output write, malformed-input
-closure, or acceptance; those remain the next loop-driver and T1c obligations.
+closure, or acceptance; the loop driver is T1b-C below, while the remaining
+repair/output/acceptance work is owned by T1c.
 
 **T1b-C loop driver delivered (2026-08-23):**
 `TuringToolkit/TrueUniformSeekMutationDriver.lean` sums the variable loop cost

@@ -1,48 +1,14 @@
 import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekValidation
-
 /-!
 # T1c-1: entering the terminal arms
-
-T1b left the machine at one of two boundary states, `successStart` (every
-index unit consumed, head on the first cell of the `bof` anchor, latch holding
-the selected data value) or `oobStart` (the data field ran out, head on the
-last cell of the output frame).  Both were idle.  T1c-1 activates them and
-fixes the whole terminal control; this module is the *execution* companion:
-one genuine `TM.runConfig` theorem per new mode, obtained — like every step
-fact in this development — by feeding a standalone transition-table lemma of
-`TrueUniformSeek` to a generic `ConstStatePhasedStepBridge` adapter.  The
-control table is never unfolded here.
-
-## Scope
-
-Every theorem below is a *generic* statement about an arbitrary tape at an
-arbitrary safe head position.  Together they cover both terminal arms
-mode-by-mode:
-
-* success arm — `t1CS_successStart_dispatch`, `t1CS_outWalk_walk`,
-  `t1CS_outSeekCursor_frame`, `t1CS_outBackup_walk`,
-  `t1CS_outWriteData_frame`, `t1CS_outSeekOutput_frame`,
-  `t1CS_outTurn_step`, `t1CS_outWriteOut_frame`;
-* shared repair — `t1CS_oobStart_dispatch`, `t1CS_repairSeek_frame_skip`,
-  `t1CS_repairSeek_frame_write`, `t1CS_repairSeek_frame_done`,
-  `t1CS_repairWrite_frame`, `t1CS_repairBack_walk`, `t1CS_repairHop_step`;
-* dispatch — `t1CS_repairDone_accept`, `t1CS_repairDone_reject`.
-
-What is **not** here, and is the whole content of T1c-2: the composite traces
-that chain these macro steps along a canonical tape, the terminal step counts,
-the conservation statement (`spent ↦ index` everywhere, exactly one output
-cell changed), the padding of `t1Clock` through the sinks, and the acceptance
-`iff`.  Nothing below claims that the machine reaches a sink on any concrete
-input.
+T1c-1 activates the two T1b terminal boundaries.  This companion derives
+generic `TM.runConfig` macros for output traversal/write, reverse index repair,
+literal dispatch, and sink stability from standalone transition lemmas.  It
+never unfolds the table and claims no canonical composite run, global
+restoration, output correctness, `t1Clock` padding, `TM.accepts`, or concrete
+input-to-sink theorem; those obligations belong to T1c-2.
 -/
-
 namespace Pnp3.Internal.PsubsetPpoly.TM
-
-/-! ## Tape-preserving step helpers
-
-The same three specialisations of the `t1CS_aligned_step_*` adapters that the
-mutation slice uses, for transitions writing the scanned bit back. -/
-
 private theorem t1CS_hold_right (n h : Nat) (hb : h + 1 < T1M.tapeLength n)
     (tape : Fin (T1M.tapeLength n) → Bool) (q q' : T1State)
     (htr : ∀ phase : Fin 1,
@@ -53,7 +19,6 @@ private theorem t1CS_hold_right (n h : Nat) (hb : h + 1 < T1M.tapeLength n)
   have hstep := t1CS_aligned_step_right n h (by omega) hb tape q q'
     (tape ⟨h, by omega⟩) htr
   rwa [t1WriteCell_self] at hstep
-
 private theorem t1CS_hold_left (n h : Nat) (hh : h < T1M.tapeLength n)
     (hpos : 0 < h) (tape : Fin (T1M.tapeLength n) → Bool) (q q' : T1State)
     (htr : ∀ phase : Fin 1,
@@ -62,7 +27,6 @@ private theorem t1CS_hold_left (n h : Nat) (hh : h < T1M.tapeLength n)
       t1AlignedConfigQ n (h-1) (by omega) tape q' := by
   have hstep := t1CS_aligned_step_left n h hh hpos tape q q' (tape ⟨h, hh⟩) htr
   rwa [t1WriteCell_self] at hstep
-
 private theorem t1CS_hold_stay (n h : Nat) (hh : h < T1M.tapeLength n)
     (tape : Fin (T1M.tapeLength n) → Bool) (q q' : T1State)
     (htr : ∀ phase : Fin 1,
@@ -72,11 +36,7 @@ private theorem t1CS_hold_stay (n h : Nat) (hh : h < T1M.tapeLength n)
   have hstep := t1CS_aligned_step_stay n h hh tape q q' (tape ⟨h, hh⟩) htr
   rwa [t1WriteCell_self] at hstep
 
-/-! ## Entering the two arms -/
 
-/-- **The success boundary fires.**  One genuine step hands the latched data
-value to the output arm.  The head does not move — it is still on the first
-cell of the `bof` anchor — and the tape is untouched. -/
 theorem t1CS_successStart_dispatch (n h : Nat) (hh : h < T1M.tapeLength n)
     (tape : Fin (T1M.tapeLength n) → Bool) (latch : Bool) :
     TM.runConfig (M := T1M)
@@ -90,10 +50,6 @@ theorem t1CS_successStart_dispatch (n h : Nat) (hh : h < T1M.tapeLength n)
     (fun phase => t1Transition_successStart_active phase .p0
       false false false latch _)
 
-/-- **The out-of-bounds boundary fires.**  One genuine step enters the shared
-repair pass with the latch cleared to the reject tag.  The head already sits
-on the last cell of the output frame, which is the repair scan's entry shape,
-so it does not move; the tape is untouched. -/
 theorem t1CS_oobStart_dispatch (n h : Nat) (hh : h < T1M.tapeLength n)
     (tape : Fin (T1M.tapeLength n) → Bool) (latch : Bool) :
     TM.runConfig (M := T1M)
@@ -106,11 +62,7 @@ theorem t1CS_oobStart_dispatch (n h : Nat) (hh : h < T1M.tapeLength n)
     (fun phase => t1Transition_oobStart_active phase .p0
       false false false latch _)
 
-/-! ## The success arm -/
 
-/-- **Leaving the anchor, again.**  `outWalk` walks off the `bof` frame in
-exactly four steps and enters the forward cursor search.  Tape untouched,
-latch carried. -/
 theorem t1CS_outWalk_walk (n h : Nat) (hsafe : h + 4 < T1M.tapeLength n)
     (tape : Fin (T1M.tapeLength n) → Bool) (latch : Bool) :
     TM.runConfig (M := T1M)
@@ -161,10 +113,6 @@ theorem t1CS_outWalk_walk (n h : Nat) (hsafe : h + 4 < T1M.tapeLength n)
   simp only [runConfig_one]
   rw [hs0, hs1, hs2, hs3]
 
-/-- **The forward cursor search reads one frame.**  `outSeekCursor` is a
-`T1ForwardMode`, so this is a direct instance of the shared four-bit
-macrostep: `spent`, `separator` and data frames are skipped, the `cursor`
-marker hands over to `outBackup`. -/
 theorem t1CS_outSeekCursor_frame (n h : Nat)
     (hsafe : h + 4 < T1M.tapeLength n)
     (tape : Fin (T1M.tapeLength n) → Bool) (frame : T1Frame)
@@ -178,7 +126,6 @@ theorem t1CS_outSeekCursor_frame (n h : Nat)
   t1CS_frame_macrostep n h hsafe tape .outSeekCursor frame
     T1ForwardMode.outSeekCursor hnext hbits latch
 
-/-- Four steps back onto the cursor frame, ready to restore it. -/
 theorem t1CS_outBackup_walk (n base : Nat)
     (hsafe : base + 4 < T1M.tapeLength n)
     (tape : Fin (T1M.tapeLength n) → Bool) (latch : Bool) :
@@ -230,9 +177,6 @@ theorem t1CS_outBackup_walk (n base : Nat)
   simp only [runConfig_one]
   rw [hs0, hs1, hs2, hs3]
 
-/-- **The cursor restore on the success arm.**  Four ascending writes put the
-latched data frame back where the cursor was, and hand over to the search for
-the output frame. -/
 theorem t1CS_outWriteData_frame (n base : Nat)
     (hsafe : base + 4 < T1M.tapeLength n)
     (tape : Fin (T1M.tapeLength n) → Bool) (latch : Bool) :
@@ -299,9 +243,6 @@ theorem t1CS_outWriteData_frame (n base : Nat)
   simp only [runConfig_one]
   rw [hs0, hs1, hs2, hs3, t1WriteFrame_ascending, T1Frame.bits_data]
 
-/-- **The output-frame search reads one frame.**  Another instance of the
-shared macrostep: data frames are skipped, `output false` hands over to
-`outTurn`. -/
 theorem t1CS_outSeekOutput_frame (n h : Nat)
     (hsafe : h + 4 < T1M.tapeLength n)
     (tape : Fin (T1M.tapeLength n) → Bool) (frame : T1Frame)
@@ -315,7 +256,6 @@ theorem t1CS_outSeekOutput_frame (n h : Nat)
   t1CS_frame_macrostep n h hsafe tape .outSeekOutput frame
     T1ForwardMode.outSeekOutput hnext hbits latch
 
-/-- One step turns the control around onto the output frame. -/
 theorem t1CS_outTurn_step (n h : Nat) (hpos : 0 < h)
     (hh : h < T1M.tapeLength n) (tape : Fin (T1M.tapeLength n) → Bool)
     (latch : Bool) :
@@ -329,12 +269,7 @@ theorem t1CS_outTurn_step (n h : Nat) (hpos : 0 < h)
     (t1State .outWriteOut .p3 false false false latch)
     (fun phase => t1Transition_outTurn phase .p0 false false false latch _)
 
-/-- **The output write.**  Four right-to-left steps overwrite the frame at
-`base` with `output latch` and leave the control on the last cell of the
-preceding frame, in the repair scan, with the latch set to the accept tag.
-Since `(T1Frame.output false).bits` and `(T1Frame.output latch).bits` differ
-at most in their last cell, this is where the machine's single output bit is
-produced. -/
+/-- **The output write.** Four right-to-left steps overwrite the frame at `base` with `output latch` and leave the control on the last cell of the preceding frame, in the repair scan, with the latch set to the accept tag. Since `(T1Frame.output false).bits` and `(T1Frame.output latch).bits` differ at most in their last cell, this is where the machine's single output bit is produced. -/
 theorem t1CS_outWriteOut_frame (n base : Nat) (hpos : 0 < base)
     (hsafe : base + 4 < T1M.tapeLength n)
     (tape : Fin (T1M.tapeLength n) → Bool) (latch : Bool) :
@@ -402,9 +337,7 @@ theorem t1CS_outWriteOut_frame (n base : Nat) (hpos : 0 < base)
   rw [hs0, hs1, hs2, hs3, t1WriteFrame_descending]
   cases latch <;> rfl
 
-/-! ## The shared repair pass -/
 
-/-- The first three steps of a `repairSeek` frame read. -/
 private theorem t1CS_repairSeek_read (n base : Nat)
     (hsafe : base + 4 < T1M.tapeLength n)
     (tape : Fin (T1M.tapeLength n) → Bool) (latch : Bool) :
@@ -464,8 +397,6 @@ private theorem t1CS_repairSeek_decode (n base : Nat)
   rw [hbits]
   exact decodeT1Frame_bits frame
 
-/-- Repair scan across a frame that needs no repair: four steps, tape
-unchanged, head on the last cell of the preceding frame. -/
 theorem t1CS_repairSeek_frame_skip (n base : Nat) (hpos : 0 < base)
     (hsafe : base + 4 < T1M.tapeLength n)
     (tape : Fin (T1M.tapeLength n) → Bool) (latch : Bool) (frame : T1Frame)
@@ -496,8 +427,6 @@ theorem t1CS_repairSeek_frame_skip (n base : Nat) (hpos : 0 < base)
   rw [runConfig_add, t1CS_repairSeek_read n base hsafe tape latch,
     runConfig_one, hs3]
 
-/-- Repair scan onto a `spent` marker: four steps, tape unchanged, head on the
-first cell of that frame, ready to rewrite it. -/
 theorem t1CS_repairSeek_frame_write (n base : Nat)
     (hsafe : base + 4 < T1M.tapeLength n)
     (tape : Fin (T1M.tapeLength n) → Bool) (latch : Bool)
@@ -525,9 +454,6 @@ theorem t1CS_repairSeek_frame_write (n base : Nat)
   rw [runConfig_add, t1CS_repairSeek_read n base hsafe tape latch,
     runConfig_one, hs3]
 
-/-- Repair scan onto the `bof` anchor: the index field is fully repaired, so
-four steps reach the final dispatch with the head on cell `base` and the
-arm tag still in the latch. -/
 theorem t1CS_repairSeek_frame_done (n base : Nat)
     (hsafe : base + 4 < T1M.tapeLength n)
     (tape : Fin (T1M.tapeLength n) → Bool) (latch : Bool)
@@ -555,9 +481,6 @@ theorem t1CS_repairSeek_frame_done (n base : Nat)
   rw [runConfig_add, t1CS_repairSeek_read n base hsafe tape latch,
     runConfig_one, hs3]
 
-/-- **The on-tape increment.**  Four left-to-right steps overwrite the `spent`
-marker at `base` with the `index` frame — the exact inverse of
-`t1CS_markSpent_frame` — and hand over to the walk back. -/
 theorem t1CS_repairWrite_frame (n base : Nat)
     (hsafe : base + 4 < T1M.tapeLength n)
     (tape : Fin (T1M.tapeLength n) → Bool) (latch : Bool) :
@@ -625,7 +548,6 @@ theorem t1CS_repairWrite_frame (n base : Nat)
   rw [hs0, hs1, hs2, hs3, t1WriteFrame_ascending]
   rfl
 
-/-- Four steps back onto the repaired frame. -/
 theorem t1CS_repairBack_walk (n base : Nat)
     (hsafe : base + 4 < T1M.tapeLength n)
     (tape : Fin (T1M.tapeLength n) → Bool) (latch : Bool) :
@@ -677,9 +599,6 @@ theorem t1CS_repairBack_walk (n base : Nat)
   simp only [runConfig_one]
   rw [hs0, hs1, hs2, hs3]
 
-/-- One step off the repaired frame, back into the repair scan's entry
-shape.  This closes the thirteen-step repair cycle
-`4 + 4 + 4 + 1`. -/
 theorem t1CS_repairHop_step (n h : Nat) (hpos : 0 < h)
     (hh : h < T1M.tapeLength n) (tape : Fin (T1M.tapeLength n) → Bool)
     (latch : Bool) :
@@ -693,12 +612,6 @@ theorem t1CS_repairHop_step (n h : Nat) (hpos : 0 < h)
     (t1State .repairSeek .p3 false false false latch)
     (fun phase => t1Transition_repairHop phase .p0 false false false latch _)
 
-/-! ## Final dispatch
-
-Both dispatch steps enter *literally* `t1AcceptState` / `t1RejectState` —
-every scratch bit and the latch cleared — so `t1CS_runConfig_sink` applies
-verbatim afterwards and, in the accepting case, the state is definitionally
-`t1CS.acceptState`, which is what `TM.accepts` compares against. -/
 
 theorem t1CS_repairDone_accept (n h : Nat) (hh : h < T1M.tapeLength n)
     (tape : Fin (T1M.tapeLength n) → Bool) :
@@ -720,8 +633,6 @@ theorem t1CS_repairDone_reject (n h : Nat) (hh : h < T1M.tapeLength n)
     (t1State .repairDone .p0 false false false false) t1RejectState
     (fun phase => t1Transition_repairDone_reject phase .p0 false false false _)
 
-/-- The accepting dispatch lands in a configuration that stays put for the
-remaining clock: the terminal state is a genuine sink. -/
 theorem t1CS_repairDone_accept_stable (n h : Nat) (hh : h < T1M.tapeLength n)
     (tape : Fin (T1M.tapeLength n) → Bool) (steps : Nat) :
     TM.runConfig (M := T1M)
@@ -731,7 +642,6 @@ theorem t1CS_repairDone_accept_stable (n h : Nat) (hh : h < T1M.tapeLength n)
   rw [runConfig_add, t1CS_repairDone_accept n h hh tape]
   exact t1CS_runConfig_sink _ t1AcceptState (Or.inl rfl) rfl steps
 
-/-- The rejecting dispatch is a genuine sink in the same sense. -/
 theorem t1CS_repairDone_reject_stable (n h : Nat) (hh : h < T1M.tapeLength n)
     (tape : Fin (T1M.tapeLength n) → Bool) (steps : Nat) :
     TM.runConfig (M := T1M)

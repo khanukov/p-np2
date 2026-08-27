@@ -110,7 +110,14 @@ theorem check_t1MutationFrames_getElem?_cursor (r : T1Request) (j : Nat)
 -- T1c-1 active terminal boundaries: the two former idleness lemmas are gone.
 #check @t1Transition_successStart_active
 #check @t1Transition_oobStart_active
+#check @t1Transition_outWalk
+#check @t1Transition_outBackup
+#check @t1Transition_outWriteData
+#check @t1Transition_outTurn
 #check @t1Transition_outWriteOut
+#check @t1Transition_repairWrite
+#check @t1Transition_repairBack
+#check @t1Transition_repairHop
 #check @t1Transition_repairSeek_p0_write
 #check @t1Transition_repairSeek_p0_skip
 #check @t1Transition_repairSeek_p0_done

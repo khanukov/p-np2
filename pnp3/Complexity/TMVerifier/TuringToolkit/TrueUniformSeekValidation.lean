@@ -14,8 +14,8 @@ exists any more.
 
 **Proof discipline.**  Every `TM.stepConfig` fact in this module is obtained by
 applying a corollary of the generic `ConstStatePhasedStepBridge` to a standalone
-transition-table lemma of `TrueUniformSeek`; the future dependent
-mutation-execution slice must follow the same discipline.  The three public
+transition-table lemma of `TrueUniformSeek`; the dependent mutation and terminal
+execution slices follow the same discipline.  The three public
 `t1CS_aligned_step_*` adapters below are the primary reuse surface; the small
 internal stability proof follows the same discipline.  `t1Transition` is never
 unfolded inside a `stepConfig` proof.

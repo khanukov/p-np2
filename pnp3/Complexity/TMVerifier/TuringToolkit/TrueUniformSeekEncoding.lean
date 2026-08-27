@@ -363,9 +363,8 @@ bof · index^(k-j) · spent^j · separator
     · data(b₀)…data(b_{j-1}) · cursor · data(b_{j+1})… · output(false) · finish
 ```
 
-This is the vocabulary for the future T1b-B loop invariant.  T1b-A2 will
-connect the `j = 0` list layout to an executed installation run; neither that
-execution nor the `j → j+1` step is claimed here. -/
+This is the vocabulary used by the delivered T1b-A installation and T1b-B/C
+loop execution theorems; this pure definition itself makes no execution claim. -/
 def t1MutationFrames (r : T1Request) (j : Nat) : List T1Frame :=
   [.bof] ++ List.replicate (r.index - j) .index ++ List.replicate j .spent ++
     [.separator] ++ (r.data.take j).map .data ++ [.cursor] ++

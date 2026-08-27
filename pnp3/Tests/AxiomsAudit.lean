@@ -212,7 +212,14 @@ open Pnp3.Magnification
 -- terminal step counts and acceptance stay open (T1c-2).
 #print axioms Internal.PsubsetPpoly.TM.t1Transition_successStart_active
 #print axioms Internal.PsubsetPpoly.TM.t1Transition_oobStart_active
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_outWalk
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_outBackup
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_outWriteData
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_outTurn
 #print axioms Internal.PsubsetPpoly.TM.t1Transition_outWriteOut
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_repairWrite
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_repairBack
+#print axioms Internal.PsubsetPpoly.TM.t1Transition_repairHop
 #print axioms Internal.PsubsetPpoly.TM.t1Transition_repairSeek_p0_write
 #print axioms Internal.PsubsetPpoly.TM.t1Transition_repairSeek_p0_skip
 #print axioms Internal.PsubsetPpoly.TM.t1Transition_repairSeek_p0_done

@@ -122,8 +122,8 @@ def t1SuccessState (latch : Bool) : T1State :=
 def t1OobState (latch : Bool) : T1State :=
   t1State .oobStart .p0 false false false latch
 
-/-- Left-to-right frame table, shared by the read-only validation modes and
-by the two forward mutation scans. -/
+/-- Left-to-right frame table shared by validation, mutation, and terminal
+forward scans. -/
 def t1Advance : T1Mode → T1Frame → T1Mode
   | .validateBof, .bof => .validateIndex
   | .validateIndex, .index => .validateIndex
@@ -739,10 +739,9 @@ theorem t1Transition_repairHop
 
 /-! ### Final dispatch
 
-`repairDone` is the only mode that enters a sink.  Both branches enter
-*literally* `t1AcceptState` / `t1RejectState`: every scratch bit and the latch
-are cleared, which is what makes `TM.accepts` — a comparison of the full
-`Sigma` state against `t1CS.acceptState` — able to fire at all. -/
+`repairDone` is the terminal dispatch after a valid repair trace.  Its branches
+enter *literally* `t1AcceptState` / `t1RejectState`, clearing every scratch bit
+and the latch.  Invalid frames in other modes may also enter the reject sink. -/
 
 theorem t1Transition_repairDone_accept
     (phase : Fin 1) (position : T1FramePosition) (b0 b1 b2 scan : Bool) :
@@ -801,9 +800,8 @@ theorem t1Transition_rewind_p0_other
 
 /-! ### The shared forward frame reader
 
-These four lemmas cover every mode satisfying `T1ForwardMode`, which is the
-five T1a validation modes together with `seekSeparator` and `seekCursorFwd`.
-Each is discharged by seven `rfl`s through `T1ForwardMode.cases`. -/
+These four lemmas cover all nine `T1ForwardMode`s: five T1a validation modes,
+two mutation scans, and two terminal scans.  Each proof follows the nine cases. -/
 
 theorem t1Transition_forward_p0 {mode : T1Mode} (hmode : T1ForwardMode mode)
     (phase : Fin 1) (b0 b1 b2 latch scan : Bool) :

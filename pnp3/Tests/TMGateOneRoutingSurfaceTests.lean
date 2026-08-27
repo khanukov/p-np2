@@ -111,6 +111,12 @@ theorem check_g1TagRoute_advance_unary (r : G1Request)
     g1AdvanceList .readBStart (g1TagRouteFrames r) = .readAStart :=
   g1TagRoute_advance_unary r ht
 
+theorem check_g1_tagRescan_advance (t : G1Tag) (rest : List G1Frame) :
+    g1AdvanceList .readBStart
+        (.bof :: (List.replicate t.units .tag ++ .argSep :: rest)) =
+      g1AdvanceList (g1RouteMode t) rest :=
+  g1_tagRescan_advance t rest
+
 theorem check_g1_tagRescan_validPath (t : G1Tag) (rest : List G1Frame)
     (hrest : G1ValidPath (g1RouteMode t) rest) :
     G1ValidPath .readBStart

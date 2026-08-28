@@ -174,8 +174,8 @@ def g1WalkFramesMarked (r : G1Request) (j : Nat) : List G1Frame :=
 
 /-- The layout *after* the cursor restore and before the next probe: the data
 region is exactly `vals` and carries no cursor, while the operand-2 field is
-partially spent, `index^(arg2-j-1) · spent^(j+1)`.  Vocabulary only: the round
-that produces it is PR3b. -/
+partially spent, `index^(arg2-j-1) · spent^(j+1)`.  This module proves its
+length/count facts; the round that produces it is PR3b. -/
 def g1WalkFramesRestored (r : G1Request) (j : Nat) : List G1Frame :=
   g1FieldRouteFrames r ++ List.replicate (r.arg2 - j - 1) G1Frame.index ++
     List.replicate (j + 1) G1Frame.spent ++ [G1Frame.separator] ++
@@ -312,6 +312,14 @@ theorem g1WalkFramesMarked_count_index (r : G1Request) (j : Nat) :
     g1Count_data_run G1Frame.index _ (g1Data_run_take r.vals j) (by decide),
     g1Count_data_run G1Frame.index _ (g1Data_run_drop r.vals (j + 1))
       (by decide)]
+
+theorem g1WalkFramesRestored_length (r : G1Request) (j : Nat)
+    (hj2 : j < r.arg2) :
+    (g1WalkFramesRestored r j).length =
+      r.tag.units + r.arg1 + r.arg2 + r.vals.length + 7 := by
+  simp only [g1WalkFramesRestored, List.length_append, g1FieldRouteFrames_length,
+    List.length_replicate, List.length_map, List.length_cons, List.length_nil]
+  omega
 
 /-- **The restored layout carries no cursor at all.** -/
 theorem g1WalkFramesRestored_count_cursor (r : G1Request) (j : Nat) :

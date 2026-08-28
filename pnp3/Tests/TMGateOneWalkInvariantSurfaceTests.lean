@@ -114,6 +114,12 @@ theorem check_g1WalkFramesMarked_count_index (r : G1Request) (j : Nat) :
       r.arg1 + (r.arg2 - j - 1) :=
   g1WalkFramesMarked_count_index r j
 
+theorem check_g1WalkFramesRestored_length (r : G1Request) (j : Nat)
+    (hj2 : j < r.arg2) :
+    (g1WalkFramesRestored r j).length =
+      r.tag.units + r.arg1 + r.arg2 + r.vals.length + 7 :=
+  g1WalkFramesRestored_length r j hj2
+
 /-- The restored layout carries **no** cursor. -/
 theorem check_g1WalkFramesRestored_count_cursor (r : G1Request) (j : Nat) :
     (g1WalkFramesRestored r j).count G1Frame.cursor = 0 :=

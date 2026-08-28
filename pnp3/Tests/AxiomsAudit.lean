@@ -609,6 +609,7 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1WalkFramesMarked_count_cursor
 #print axioms Internal.PsubsetPpoly.TM.g1WalkFramesMarked_count_spent
 #print axioms Internal.PsubsetPpoly.TM.g1WalkFramesMarked_count_index
+#print axioms Internal.PsubsetPpoly.TM.g1WalkFramesRestored_length
 #print axioms Internal.PsubsetPpoly.TM.g1WalkFramesRestored_count_cursor
 #print axioms Internal.PsubsetPpoly.TM.g1WalkFramesRestored_count_spent
 #print axioms Internal.PsubsetPpoly.TM.g1WalkFramesRestored_count_index

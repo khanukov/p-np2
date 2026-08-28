@@ -1634,6 +1634,90 @@ correctness, the acceptance gate, multi-gate composition, the
 specification-level bridge, and non-canonical or physically padded tapes.
 Reaching `bOOB` remains a boundary, not a rejection theorem.
 
+**Repair-1: the G1 operand-2 repair control and its generic kernel, delivered
+(2026-08-28):**
+
+**Progress classification: Infrastructure.**
+
+PR3c leaves both operand-2 endpoints on a **repair-pending** tape: the field is
+`index^(a-s) · spent^s`, so the word is not the canonical one.  This slice adds
+the finite control that can undo that, and the generic `spent ↦ index` machine
+kernel behind it, on **caller-supplied** frame lists only.  `G1Ctx`, the
+`G1State` field list, `g1Advance`, `g1Clock`, `G1M` and every merged execution
+theorem are unchanged; **no new runtime field**, **no new `Nat`**, and the
+transition table is never unfolded inside an execution proof.
+
+* `GateOneControl.lean` — five new modes `bRepairSeek`/`bRepairWrite`/
+  `bRepairBack`/`bRepairHop`/`bRepairDone`, the exact analogue of T1's
+  `repairSeek`/`repairWrite`/`repairBack`/`repairHop`/`repairDone`, with their
+  three named entry states (`g1RepairSeekState`, `g1RepairWriteState`,
+  `g1RepairDoneState`), their `g1Transition` rows and their ten standalone
+  tuple lemmas.  `bRepairSeek` reads right to left with **three** outcomes — a
+  `spent` unit stops it at `bRepairWrite`, the `bof` anchor at `bRepairDone`,
+  everything else continues one frame further left; `bRepairWrite` writes the
+  four literal cells of `index`, `bRepairBack` walks them back and `bRepairHop`
+  hops, the same `4 + 4 + 4 + 1 = 13` shape as the destructive round run in
+  reverse; `bRepairDone` hands off to the **existing, still idle** `readAStart`.
+  `G1ForwardMode` gains the five extra non-forward rows; `G1Stuck` and
+  `g1Advance_range` are unchanged definitions whose `decide` proofs now range
+  over them too, and the docstring counts are updated to match.
+* **`readAResetStart` is still idle.**  Nothing routes into the sweep in this
+  slice: `g1_repair_unreachable_forward` proves no `g1Advance` row produces a
+  repair mode, `g1_repair_modes_stuck` proves all five are stuck at the frame
+  table, and no `g1Transition` row outside the five enters one.  The sweep is
+  therefore only ever entered from a configuration the caller writes down.
+* `GateOneRepairKernel.lean` (new) — `g1RepairScanner` (`ReverseFrameScanner`,
+  stopping on `spent` at the write handoff and on `bof` at the terminal
+  handoff) and `g1RepairCycle` (`FrameRewriteCycle`, `marker = spent`,
+  `target = index`) as genuine instances of the generic kernels, all of whose
+  obligations are the control's standalone tuple lemmas.  On top of them, the
+  exact `TM.runConfig` macros on an **arbitrary** frame list: the thirteen-step
+  cycle `g1CS_repair_cycle_onList` (head `4p + 3 ↦ 4p - 1`),
+  `g1CS_repair_seek_and_repair` (`4k + 13`), `g1CS_repair_frame_skip` (`4`),
+  `g1CS_repair_scan_skip` (`4` per frame), the iteration
+  `g1CS_repair_spent_run` (`13 * s`), the executed terminal dispatch
+  `g1CS_step_repairDone` and the anchor finish `g1CS_repair_finish` (`5`).
+  `g1RepairPassSteps a s m = 4m + 13s + 4a + 5` — literally T1's
+  `t1RepairSteps` — is the closed cost of the capstone
+  `g1CS_repair_pass_exact`: from the scan's entry shape on the last cell of the
+  rightmost frame it must visit, exactly that many genuine steps rewrite every
+  designated `spent` frame to `index`, leave `left`, `mid` and `tail`
+  bit-for-bit alone, leave the whole carried `G1Ctx` untouched, and stop at
+  head `0` in `readAStart` through `bRepairDone`.
+* `GateOneRepairKernelExamples.lean` (new) — three all-literal probes on one
+  sixteen-frame word, the canonical word of `⟨and, 0, 2, [false, true, true]⟩`
+  plus its trailing blank frame with both operand-2 units consumed: one cycle
+  (`13` steps, head `35 ↦ 31`), the two-unit run (`26`, head `35 ↦ 27`) and the
+  whole pass (`79 = 4·6 + 13·2 + 4·6 + 5`, head `59 ↦ 0`).  Nonvacuity is
+  proved at three levels — the three words are pairwise different, the consumed
+  units go `2 ↦ 1 ↦ 0` while the index field is restored to `2`, and physical
+  cell `32` genuinely flips — and the pass endpoint is bit-for-bit
+  `encodeG1Frames ⟨and, 0, 2, [false, true, true]⟩ ++ [blank]`, with head `0`,
+  the latch `vB = true` preserved and the endpoint idle for the whole remaining
+  budget.
+
+Pinned by `Tests/TMGateOneRepairKernelSurfaceTests.lean` (new: theorem-style
+exact wrappers for both kernel instances, the reverse table, all seven macros,
+the closed cost, the capstone, the two unreachability facts, the idle endpoint
+and every literal probe) and by the extended
+`Tests/TMGateOneControlSurfaceTests.lean` (the ten new tuple lemmas, plus the
+row pinning that `readAStart` and `readAResetStart` are both still idle).
+`Tests/AxiomsAudit.lean` prints the axioms of every new statement **directly**;
+each depends only on `propext`, `Classical.choice` and `Quot.sound`.  Two new
+modules and one new surface test are registered in `lakefile.lean`.  The
+`GateOneWalkKernel` and `GateOneWalkInvariant` docstrings are re-scoped to point
+here.
+
+Explicitly deferred to **Repair-2** and claimed nowhere by Repair-1: the
+request-specific **repair driver** (the layout split that identifies `left`,
+`spent^s`, `mid` and `tail` inside a real request), any composition of the
+operand-2 read with a repair, the `readAResetStart` bridge that would route into
+`bRepairSeek`, the common zero/positive pass-A theorem, clocks for a combined
+read-plus-repair, any pass-A execution, and any output write, acceptance or
+`TM.accepts` claim.  `readAStart` remains idle, so the sweep's endpoint is a
+stationary handoff and nothing continues from it; `bOOB` is untouched and is
+still a boundary, not a rejection theorem.
+
 **T2a correction (2026-08-24).**  The first T2a head shipped a permissive
 forward table (`vTag` looping on every `tag`, `vArg1`/`vArg2` looping on every
 `index`) whose language was strictly larger than `G1Request.Canonical`, while

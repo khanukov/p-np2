@@ -16,7 +16,12 @@ fourteen transition tuples of the retired destructive index round
 transition tuples of the cursor walk (the reverse seek `bSeek` with its three
 outcomes, the `index ↦ spent` writer `bDec`, the two turns, the two
 cursor-restore writers, the two **terminal** restore writers, the two latch
-dispatches and the leftward cursor writer `bIns`).  The
+dispatches and the leftward cursor writer `bIns`).  It also pins the ten
+transition tuples of the **operand-2 repair sweep** (the reverse scan
+`bRepairSeek` with its three outcomes, the `spent ↦ index` writer
+`bRepairWrite`, its back-walk `bRepairBack`, its hop `bRepairHop` and the anchor
+dispatch `bRepairDone` into the still-idle `readAStart`) — no route of this
+slice enters those five modes, and `readAResetStart` is still idle.  The
 five *forward* walk modes — `bInsSeek`, `bProbe2`, `bFwd`, `bExh` and `bRet` —
 have no transition blocks of their own.  Execution lives in separate layers with
 their own surface entries.  End-to-end physical validation, rejection, rewind,
@@ -135,6 +140,16 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1RejectState_ne_readB
 #check @g1OOBState_ne_readAReset
 #check @g1ExhState_ne_dec
+
+-- The three entry states of the operand-2 repair sweep; its ten transition
+-- tuples are pinned as exact equations by the `check_g1Transition_bRepair*`
+-- theorems below.  No route of this slice enters any of the five modes.
+#check @g1RepairSeekState
+#check @g1RepairWriteState
+#check @g1RepairDoneState
+#check @g1Transition_bRepairWrite
+#check @g1Transition_bRepairBack
+#check @g1Transition_bRepairHop
 
 -- The frame-level language of the fixed forward control.
 #check @g1Advance
@@ -308,6 +323,77 @@ theorem check_g1Transition_bFin (phase : Fin 1) (b : Bool)
     g1Transition_bFin_p2 phase b b0 b1 b2 scan ctx,
     g1Transition_bFin_p3 phase b b0 b1 b2 scan ctx,
     by cases b <;> rfl⟩
+
+/-- **The reverse repair scan, pinned exactly.**  Three buffering steps and a
+three-way decision at frame position `0`: a `spent` unit is the write handoff,
+the `bof` anchor the terminal handoff — both *without* moving — and every other
+frame continues the scan one frame further left. -/
+theorem check_g1Transition_bRepairSeek (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .bRepairSeek .p3 b0 b1 b2 ctx) scan =
+        (0, g1State .bRepairSeek .p2 false false scan ctx, scan, .left) ∧
+      g1Transition phase (g1State .bRepairSeek .p2 b0 b1 b2 ctx) scan =
+        (0, g1State .bRepairSeek .p1 false scan b2 ctx, scan, .left) ∧
+      g1Transition phase (g1State .bRepairSeek .p1 b0 b1 b2 ctx) scan =
+        (0, g1State .bRepairSeek .p0 scan b1 b2 ctx, scan, .left) ∧
+      (decodeG1Frame? [scan, b0, b1, b2] = some .spent →
+        g1Transition phase (g1State .bRepairSeek .p0 b0 b1 b2 ctx) scan =
+          (0, g1RepairWriteState ctx, scan, .stay)) ∧
+      (decodeG1Frame? [scan, b0, b1, b2] = some .bof →
+        g1Transition phase (g1State .bRepairSeek .p0 b0 b1 b2 ctx) scan =
+          (0, g1RepairDoneState ctx, scan, .stay)) ∧
+      (decodeG1Frame? [scan, b0, b1, b2] ≠ some .spent →
+        decodeG1Frame? [scan, b0, b1, b2] ≠ some .bof →
+        g1Transition phase (g1State .bRepairSeek .p0 b0 b1 b2 ctx) scan =
+          (0, g1RepairSeekState ctx, scan, .left)) :=
+  ⟨g1Transition_bRepairSeek_p3 phase b0 b1 b2 scan ctx,
+    g1Transition_bRepairSeek_p2 phase b0 b1 b2 scan ctx,
+    g1Transition_bRepairSeek_p1 phase b0 b1 b2 scan ctx,
+    g1Transition_bRepairSeek_p0_spent phase b0 b1 b2 scan ctx,
+    g1Transition_bRepairSeek_p0_bof phase b0 b1 b2 scan ctx,
+    g1Transition_bRepairSeek_p0_other phase b0 b1 b2 scan ctx⟩
+
+/-- **The `spent ↦ index` writer, its back-walk and its hop, pinned exactly.**
+The four cells the writer lays down are literally `G1Frame.index.bits`, the
+back-walk writes back what it scans and the hop re-enters the scan one frame
+further left. -/
+theorem check_g1Transition_bRepairWrite (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .bRepairWrite .p0 b0 b1 b2 ctx) scan =
+        (0, g1State .bRepairWrite .p1 false false false ctx, false, .right) ∧
+      g1Transition phase (g1State .bRepairWrite .p1 b0 b1 b2 ctx) scan =
+        (0, g1State .bRepairWrite .p2 false false false ctx, false, .right) ∧
+      g1Transition phase (g1State .bRepairWrite .p2 b0 b1 b2 ctx) scan =
+        (0, g1State .bRepairWrite .p3 false false false ctx, true, .right) ∧
+      g1Transition phase (g1State .bRepairWrite .p3 b0 b1 b2 ctx) scan =
+        (0, g1State .bRepairBack .p0 false false false ctx, true, .right) ∧
+      g1Transition phase (g1State .bRepairBack .p3 b0 b1 b2 ctx) scan =
+        (0, g1State .bRepairHop .p0 false false false ctx, scan, .left) ∧
+      g1Transition phase (g1State .bRepairHop .p0 b0 b1 b2 ctx) scan =
+        (0, g1RepairSeekState ctx, scan, .left) ∧
+      G1Frame.index.bits = [false, false, true, true] :=
+  ⟨g1Transition_bRepairWrite phase .p0 b0 b1 b2 scan ctx,
+    g1Transition_bRepairWrite phase .p1 b0 b1 b2 scan ctx,
+    g1Transition_bRepairWrite phase .p2 b0 b1 b2 scan ctx,
+    g1Transition_bRepairWrite phase .p3 b0 b1 b2 scan ctx,
+    g1Transition_bRepairBack phase .p3 b0 b1 b2 scan ctx,
+    g1Transition_bRepairHop phase .p0 b0 b1 b2 scan ctx, rfl⟩
+
+/-- **The terminal dispatch, pinned exactly.**  It enters the *existing*
+`readAStart` handoff, which is still idle in this slice, with the tape, the head
+and the whole `G1Ctx` untouched — and `readAResetStart` is still idle too, so
+nothing routes into the sweep here. -/
+theorem check_g1Transition_bRepairDone (phase : Fin 1)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State .bRepairDone position b0 b1 b2 ctx) scan =
+        (0, g1ReadAState ctx, scan, .stay) ∧
+      g1Transition phase (g1State .readAStart position b0 b1 b2 ctx) scan =
+        (0, g1ReadAState ctx, scan, .stay) ∧
+      g1Transition phase (g1State .readAResetStart position b0 b1 b2 ctx) scan =
+        (0, g1ReadAResetState ctx, scan, .stay) :=
+  ⟨g1Transition_bRepairDone phase position b0 b1 b2 scan ctx,
+    g1Transition_readAStart_idle phase position b0 b1 b2 scan ctx,
+    g1Transition_readAResetStart_idle phase position b0 b1 b2 scan ctx⟩
 
 theorem check_g1AdvanceList_encode_reject (r : G1Request)
     (hc : ¬ r.Canonical) :

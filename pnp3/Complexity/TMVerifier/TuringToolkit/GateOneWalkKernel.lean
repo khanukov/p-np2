@@ -44,7 +44,8 @@ positive-index operand-value theorem, no repair, no pass A, no output write, no
 padded-tape claim.  The invariant, its installation and one round are
 `GateOneWalkInvariant` (PR3a/PR3b); the induction, the terminal and the
 arbitrary positive-index operand-2 read are `GateOneWalkDriver` (PR3c).  The
-repair sweep is started nowhere in this development.
+repair control and its generic kernel are `GateOneRepairKernel` (Repair-1); no
+route of the machine reaches them, and nothing here composes them.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM

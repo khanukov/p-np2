@@ -27,6 +27,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOneProbeInstallExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneWalkExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneWalkInvariantExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneWalkDriverExamples
+import Complexity.TMVerifier.TuringToolkit.GateOneRepairKernelExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneIndexRound
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
@@ -284,6 +285,19 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_bBack_p2
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_bBack_p3
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_bHop
+-- The ten tuple lemmas of the operand-2 repair sweep.  `bRepairDone` enters
+-- the *existing* idle `readAStart`; `readAResetStart` above is still idle, so
+-- no route of this slice enters any of these five modes.
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bRepairSeek_p3
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bRepairSeek_p2
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bRepairSeek_p1
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bRepairSeek_p0_spent
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bRepairSeek_p0_bof
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bRepairSeek_p0_other
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bRepairWrite
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bRepairBack
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bRepairHop
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bRepairDone
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_bOOB_stable
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_constLit
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_store
@@ -777,6 +791,49 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.loopSteps_two
 #print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.loopSteps_three
 #print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.loopSteps_two_eq
+
+-- Repair-1: the G1 operand-2 repair control and its generic kernel.  The five
+-- repair modes, the reverse repair scanner and the `spent ↦ index` rewrite
+-- cycle as genuine instances of the generic kernels, the five
+-- arbitrary-frame-list macros, the terminal dispatch and the capstone
+-- `g1CS_repair_pass_exact` with its closed cost `4m + 13s + 4a + 5`, plus the
+-- three all-literal probes (one cycle, a two-unit run, a whole pass on the
+-- canonical word of `⟨and, 0, 2, [false, true, true]⟩`).
+-- **Every configuration is caller-supplied**: `g1_repair_unreachable_forward`
+-- and `g1_repair_modes_stuck` show no route of the machine enters the sweep,
+-- `readAResetStart` is still idle, and nothing here mentions
+-- `G1M.initialConfig`.  **Deliberately absent**: the request-specific repair
+-- driver (Repair-2), any read-to-repair composition, pass A, combine, the
+-- output write, and any `TM.accepts`, verdict, full-clock, gate-semantics,
+-- acceptance-gate, multi-gate or specification-bridge claim.
+#print axioms Internal.PsubsetPpoly.TM.g1_repair_unreachable_forward
+#print axioms Internal.PsubsetPpoly.TM.g1_repair_modes_stuck
+#print axioms Internal.PsubsetPpoly.TM.g1RepairRevAdvance_of_skip
+#print axioms Internal.PsubsetPpoly.TM.G1RepairMode.eq
+#print axioms Internal.PsubsetPpoly.TM.g1RepairScanner_machine
+#print axioms Internal.PsubsetPpoly.TM.g1CS_repair_cycle_onList
+#print axioms Internal.PsubsetPpoly.TM.g1CS_repair_seek_and_repair
+#print axioms Internal.PsubsetPpoly.TM.g1CS_repair_frame_skip
+#print axioms Internal.PsubsetPpoly.TM.g1CS_repair_scan_skip
+#print axioms Internal.PsubsetPpoly.TM.g1CS_repair_spent_run
+#print axioms Internal.PsubsetPpoly.TM.g1CS_step_repairDone
+#print axioms Internal.PsubsetPpoly.TM.g1CS_repair_finish
+#print axioms Internal.PsubsetPpoly.TM.g1CS_repair_pass_exact
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probeLen_eq
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probeIndex_eq_encoded
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probe_words_distinct
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probe_counts
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probe_cell32
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probe_passSteps
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.cycle_probe
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.cycle_probe_ctx
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.run_probe
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.run_probe_tape
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.pass_probe
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.pass_probe_head
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.pass_probe_tape
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.pass_probe_ctx
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.pass_probe_idle
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

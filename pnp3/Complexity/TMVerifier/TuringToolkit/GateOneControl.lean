@@ -157,6 +157,28 @@ operand-2 value: `bWalk` stops on *any* `index`, so once the operand-2 field
 empties it would cross the opening `argSep` and consume operand-1 units.  That
 is the failure the PR2 walk is designed to rule out.
 
+## The operand-2 repair control (Repair-1)
+
+`bRepairSeek`/`bRepairWrite`/`bRepairBack`/`bRepairHop`/`bRepairDone` are the
+five modes of the `spent ↦ index` **repair sweep**, the exact analogue of T1's
+`repairSeek`/`repairWrite`/`repairBack`/`repairHop`/`repairDone`.
+`bRepairSeek` reads right to left with **three** outcomes — a `spent` unit stops
+it at `bRepairWrite`, the `bof` anchor at `bRepairDone`, everything else
+continues one frame further left.  `bRepairWrite` writes the four literal cells
+of `index` over the consumed unit, `bRepairBack` walks them back leftwards
+writing what it reads and `bRepairHop` steps once more left: the same
+`4 + 4 + 4 + 1 = 13` shape as the destructive round, run in reverse.
+`bRepairDone` fires on the anchor's first cell and hands off to the **existing**
+idle `readAStart`.  No new state field, no new `Nat`, same `G1Ctx`, same
+`g1Clock`.
+
+**Nothing routes into the sweep in this slice.**  No `g1Advance` row and no
+`g1Transition` row outside those five modes produces one of them —
+`readAResetStart` is still the idle handoff it was, and the `spent ↦ index`
+sweep is therefore only ever entered from a **caller-supplied** configuration
+(`GateOneRepairKernel`).  Wiring it behind the operand-2 read is deferred to
+Repair-2.
+
 **What is deferred.**  `readAStart`, `combineStart` and `readAResetStart` are
 idle handoffs in this slice.  `bOOB` is a stable read boundary, distinct from
 the reject state, rather than a rejection verdict.  There is **no full-clock or
@@ -202,6 +224,13 @@ forward scan to the cursor, `bTurn` the turn and
 exhaustion handoff, `bRet` its scan back to the cursor, `bTurnFin` the terminal
 turn and `bFinFalse`/`bFinTrue` the two terminal restore writers.
 
+`bRepairSeek`/`bRepairWrite`/`bRepairBack`/`bRepairHop`/`bRepairDone` are the
+five modes of the **operand-2 repair sweep** — the right-to-left scan that stops
+on a consumed unit or on the anchor, the `spent ↦ index` writer, its back-walk,
+its hop, and the anchor dispatch into `readAStart` — the exact analogue of T1's
+`repairSeek`/`repairWrite`/`repairBack`/`repairHop`/`repairDone`.  No route of
+this slice enters them.
+
 `readAStart`, `combineStart`, `readAResetStart` and
 `bOOB` are the four remaining local handoffs, idle in this slice;
 `accept`/`reject` are the sinks. -/
@@ -225,6 +254,8 @@ inductive G1Mode
   | bRestoreFalse | bRestoreTrue
   | bRet | bTurnFin
   | bFinFalse | bFinTrue
+  -- the operand-2 repair sweep
+  | bRepairSeek | bRepairWrite | bRepairBack | bRepairHop | bRepairDone
   | readAStart | combineStart | readAResetStart | bOOB
   | accept | reject
   deriving Fintype, DecidableEq, Repr
@@ -380,6 +411,25 @@ cursor on the tape cannot be confused with the exit that re-opens the probe. -/
 theorem g1FinMode_ne_restore (b b' : Bool) : g1FinMode b ≠ g1RestoreMode b' := by
   cases b <;> cases b' <;> decide
 
+/-! ### The named entry states of the operand-2 repair sweep.  Like the walk's,
+none carries a `Nat`, an index, an offset or a length: the sweep's whole memory
+is the frame position, the frame buffer and the pre-existing `G1Ctx`, which it
+never modifies. -/
+
+/-- Repair-scan entry: head on the last cell of the frame about to be read right
+to left, frame buffer empty. -/
+def g1RepairSeekState (ctx : G1Ctx) : G1State :=
+  g1State .bRepairSeek .p3 false false false ctx
+
+/-- Repair-write handoff: head on the first cell of the `spent` unit the reverse
+scan stopped on. -/
+def g1RepairWriteState (ctx : G1Ctx) : G1State :=
+  g1State .bRepairWrite .p0 false false false ctx
+
+/-- Repair-done handoff: head on cell zero, the first cell of the anchor. -/
+def g1RepairDoneState (ctx : G1Ctx) : G1State :=
+  g1State .bRepairDone .p0 false false false ctx
+
 /-- The two outcomes of the reverse seek are different states. -/
 theorem g1ExhState_ne_dec (ctx ctx' : G1Ctx) :
     g1ExhState ctx ≠ g1DecState ctx' := by
@@ -508,7 +558,9 @@ five forward modes of the cursor walk (`bInsSeek`, `bProbe2`, `bFwd`, `bExh`,
 `bRet`) are forward modes; the rewind, the four dispatch modes, the five modes
 of the destructive round, the eleven non-forward modes of the cursor walk
 (`bSeek` reads right to left, the two latch modes dispatch, the six writers
-write and the two turns hold), the four remaining
+write and the two turns hold), the five modes of the operand-2 repair sweep
+(`bRepairSeek` reads right to left, the writer and its back-walk write, the hop
+and the terminal dispatch hold), the four remaining
 handoffs and the two sinks are not. -/
 def G1ForwardMode : G1Mode → Prop
   | .rewindStart | .rewind
@@ -517,6 +569,7 @@ def G1ForwardMode : G1Mode → Prop
   | .bSeek | .bDec | .bTurn | .bTurnFin
   | .bRestoreFalse | .bRestoreTrue | .bFinFalse | .bFinTrue
   | .bLatchFalse | .bLatchTrue | .bIns
+  | .bRepairSeek | .bRepairWrite | .bRepairBack | .bRepairHop | .bRepairDone
   | .readAStart | .combineStart | .readAResetStart | .bOOB
   | .accept | .reject => False
   | _ => True
@@ -533,7 +586,8 @@ theorem G1ForwardMode.readBStart : G1ForwardMode .readBStart := trivial
 /-- **Stuck modes.**  A mode with no successful frame row: an attempted
 complete-frame read enters `reject`, and it is not the end-of-input mode.  In
 particular the four dispatch modes, the five modes of the destructive round,
-the eleven non-forward modes of the cursor walk,
+the eleven non-forward modes of the cursor walk, the five modes of the
+operand-2 repair sweep,
 the four remaining handoffs and the `reject` sink are
 stuck; `rewind` and `accept` also satisfy this table-level predicate but are
 unreachable as results of `g1Advance`;
@@ -601,8 +655,8 @@ theorem g1AdvanceList_ne_rewindStart_of_stuck {mode : G1Mode} (h : G1Stuck mode)
 /-- **The forward table only ever produces a forward mode, `rewindStart`, or a
 stuck mode.**  In particular `rewind` and `accept` are unreachable from any
 scan.  Every non-forward target (the four dispatch modes, the round's five
-modes, the eleven non-forward walk modes, the four idle handoffs and the
-`reject` sink) is stuck. -/
+modes, the eleven non-forward walk modes, the sweep's five modes, the four idle
+handoffs and the `reject` sink) is stuck. -/
 theorem g1Advance_range (mode : G1Mode) (frame : G1Frame) :
     G1ForwardMode (g1Advance mode frame) ∨
       g1Advance mode frame = .rewindStart ∨
@@ -1234,6 +1288,39 @@ def g1Transition (_phase : Fin 1) (s : G1State) (scan : Bool) :
   | .combineStart => (0, g1CombineState s.ctx, scan, .stay)
   | .readAResetStart => (0, g1ReadAResetState s.ctx, scan, .stay)
   | .bOOB => (0, g1OOBState s.ctx, scan, .stay)
+  -- the operand-2 repair sweep: the reverse scan with its three outcomes, the
+  -- `spent ↦ index` writer, its back-walk, its hop and the anchor dispatch.
+  -- Nothing here inspects the request: the scan decides on two literal
+  -- codewords and the writer's four cells are the literal codeword of `index`.
+  -- No row above enters any of these five modes in this slice.
+  | .bRepairSeek =>
+      match s.position with
+      | .p3 => (0, g1State .bRepairSeek .p2 false false scan s.ctx, scan, .left)
+      | .p2 => (0, g1State .bRepairSeek .p1 false scan s.b2 s.ctx, scan, .left)
+      | .p1 => (0, g1State .bRepairSeek .p0 scan s.b1 s.b2 s.ctx, scan, .left)
+      | .p0 =>
+          match decodeG1Frame? [scan, s.b0, s.b1, s.b2] with
+          | some .spent => (0, g1RepairWriteState s.ctx, scan, .stay)
+          | some .bof => (0, g1RepairDoneState s.ctx, scan, .stay)
+          | _ => (0, g1RepairSeekState s.ctx, scan, .left)
+  | .bRepairWrite =>
+      match s.position with
+      | .p0 => (0, g1State .bRepairWrite .p1 false false false s.ctx,
+                  false, .right)
+      | .p1 => (0, g1State .bRepairWrite .p2 false false false s.ctx,
+                  false, .right)
+      | .p2 => (0, g1State .bRepairWrite .p3 false false false s.ctx,
+                  true, .right)
+      | .p3 => (0, g1State .bRepairBack .p0 false false false s.ctx,
+                  true, .right)
+  | .bRepairBack =>
+      match s.position with
+      | .p0 => (0, g1State .bRepairBack .p1 false false false s.ctx, scan, .left)
+      | .p1 => (0, g1State .bRepairBack .p2 false false false s.ctx, scan, .left)
+      | .p2 => (0, g1State .bRepairBack .p3 false false false s.ctx, scan, .left)
+      | .p3 => (0, g1State .bRepairHop .p0 false false false s.ctx, scan, .left)
+  | .bRepairHop => (0, g1RepairSeekState s.ctx, scan, .left)
+  | .bRepairDone => (0, g1ReadAState s.ctx, scan, .stay)
   -- the destructive index round: bridge, reverse read, fixed-code write,
   -- back-walk, hop.  Nothing here inspects the request: the four written cells
   -- are the literal codeword of `spent`, and every other row writes back the
@@ -1404,7 +1491,9 @@ mode and its steps come from the four `g1Transition_forward_*` lemmas below.
 `bRoundStart` no longer appears here either: it is the genuine one-step bridge
 of the destructive round and its tuple is `g1Transition_bRoundStart_bridge`
 below.  The four remaining handoffs are idle **in this slice**; the deferred
-pass-A and combine slices replace those four equations. -/
+pass-A and combine slices replace those four equations, and the deferred
+Repair-2 slice replaces the `readAResetStart` one by the bridge into
+`bRepairSeek`. -/
 
 @[simp] theorem g1Transition_accept_sink (phase : Fin 1) (scan : Bool) :
     g1Transition phase g1AcceptState scan = (0, g1AcceptState, scan, .stay) :=
@@ -1891,5 +1980,121 @@ theorem g1Transition_bFin_p3 (phase : Fin 1) (b : Bool)
     g1Transition phase (g1State (g1FinMode b) .p3 b0 b1 b2 ctx) scan =
       (0, g1ReadAResetState ctx, !b, .right) := by
   cases b <;> rfl
+
+/-! ### The operand-2 repair sweep
+
+The rows of the five repair modes, each `rfl` after at most one position split.
+None of them mentions the request: the reverse scan decides on the two literal
+codewords `spent` and `bof`, the writer's four cells are the literal codeword of
+`index`, and the back-walk and the hop write back the cell they scan.  The whole
+`G1Ctx` — in particular the operand-2 value latched in `vB` — is threaded
+through every one of them unchanged.
+
+#### The reverse repair scan: three buffering steps and a frame-position-0
+decision with **three** outcomes — a `spent` unit is the write handoff, the
+`bof` anchor is the terminal handoff, every other frame continues the scan one
+frame further left.  Both stopping rows *stay*, leaving the head on the first
+cell of the frame that stopped the pass. -/
+
+theorem g1Transition_bRepairSeek_p3 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .bRepairSeek .p3 b0 b1 b2 ctx) scan =
+      (0, g1State .bRepairSeek .p2 false false scan ctx, scan, .left) := rfl
+
+theorem g1Transition_bRepairSeek_p2 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .bRepairSeek .p2 b0 b1 b2 ctx) scan =
+      (0, g1State .bRepairSeek .p1 false scan b2 ctx, scan, .left) := rfl
+
+theorem g1Transition_bRepairSeek_p1 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .bRepairSeek .p1 b0 b1 b2 ctx) scan =
+      (0, g1State .bRepairSeek .p0 scan b1 b2 ctx, scan, .left) := rfl
+
+private theorem g1Transition_bRepairSeek_p0_raw (phase : Fin 1)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State .bRepairSeek .p0 b0 b1 b2 ctx) scan =
+      (match decodeG1Frame? [scan, b0, b1, b2] with
+        | some .spent => (0, g1RepairWriteState ctx, scan, Move.stay)
+        | some .bof => (0, g1RepairDoneState ctx, scan, Move.stay)
+        | _ => (0, g1RepairSeekState ctx, scan, Move.left)) := rfl
+
+/-- **A consumed unit stops the repair scan at the write handoff.** -/
+theorem g1Transition_bRepairSeek_p0_spent (phase : Fin 1)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx)
+    (heq : decodeG1Frame? [scan, b0, b1, b2] = some .spent) :
+    g1Transition phase (g1State .bRepairSeek .p0 b0 b1 b2 ctx) scan =
+      (0, g1RepairWriteState ctx, scan, .stay) := by
+  rw [g1Transition_bRepairSeek_p0_raw, heq]
+
+/-- **The anchor stops the repair scan at the terminal handoff.**  This is the
+sweep's confinement row: the pass never steps left of cell zero. -/
+theorem g1Transition_bRepairSeek_p0_bof (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) (heq : decodeG1Frame? [scan, b0, b1, b2] = some .bof) :
+    g1Transition phase (g1State .bRepairSeek .p0 b0 b1 b2 ctx) scan =
+      (0, g1RepairDoneState ctx, scan, .stay) := by
+  rw [g1Transition_bRepairSeek_p0_raw, heq]
+
+/-- **Any other frame continues the repair scan** one frame further left. -/
+theorem g1Transition_bRepairSeek_p0_other (phase : Fin 1)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx)
+    (hs : decodeG1Frame? [scan, b0, b1, b2] ≠ some .spent)
+    (hb : decodeG1Frame? [scan, b0, b1, b2] ≠ some .bof) :
+    g1Transition phase (g1State .bRepairSeek .p0 b0 b1 b2 ctx) scan =
+      (0, g1RepairSeekState ctx, scan, .left) := by
+  rw [g1Transition_bRepairSeek_p0_raw]
+  cases hd : decodeG1Frame? [scan, b0, b1, b2] with
+  | none => rfl
+  | some f =>
+      rw [hd] at hs hb
+      cases f <;> first | rfl | exact absurd rfl hs | exact absurd rfl hb
+
+/-! #### The `spent ↦ index` writer and the back-walk, in T1's position-indexed
+form: four fixed writes of `G1Frame.index.bits = [false, false, true, true]`
+walking right, then four tape-preserving hold-and-move-left steps. -/
+
+theorem g1Transition_bRepairWrite (phase : Fin 1) (position : G1FramePosition)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State .bRepairWrite position b0 b1 b2 ctx) scan =
+      (0, match position with
+          | .p0 => g1State .bRepairWrite .p1 false false false ctx
+          | .p1 => g1State .bRepairWrite .p2 false false false ctx
+          | .p2 => g1State .bRepairWrite .p3 false false false ctx
+          | .p3 => g1State .bRepairBack .p0 false false false ctx,
+        match position with
+        | .p0 => false
+        | .p1 => false
+        | .p2 => true
+        | .p3 => true,
+        .right) := by
+  cases position <;> rfl
+
+theorem g1Transition_bRepairBack (phase : Fin 1) (position : G1FramePosition)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State .bRepairBack position b0 b1 b2 ctx) scan =
+      (0, match position with
+          | .p0 => g1State .bRepairBack .p1 false false false ctx
+          | .p1 => g1State .bRepairBack .p2 false false false ctx
+          | .p2 => g1State .bRepairBack .p3 false false false ctx
+          | .p3 => g1State .bRepairHop .p0 false false false ctx,
+        scan, .left) := by
+  cases position <;> rfl
+
+/-- **The hop.**  One further left step re-enters the repair scan on the last
+cell of the frame preceding the repaired one. -/
+theorem g1Transition_bRepairHop (phase : Fin 1) (position : G1FramePosition)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State .bRepairHop position b0 b1 b2 ctx) scan =
+      (0, g1RepairSeekState ctx, scan, .left) := rfl
+
+/-- **The last row of the repair sweep.**  On the anchor's first cell — physical
+cell zero — one stationary step writes back what it scans and hands off to the
+**existing** `readAStart`, with the operand-2 value still in `ctx.vB`.
+`readAStart` itself stays idle in this slice, so the sweep's endpoint is a
+stationary handoff and nothing continues from it. -/
+theorem g1Transition_bRepairDone (phase : Fin 1) (position : G1FramePosition)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State .bRepairDone position b0 b1 b2 ctx) scan =
+      (0, g1ReadAState ctx, scan, .stay) := rfl
 
 end Pnp3.Internal.PsubsetPpoly.TM

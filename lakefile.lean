@@ -188,6 +188,15 @@ lean_lib PnP3 where
     -- both on a repair-pending tape — with their literal probes.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneWalkDriver,
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneWalkDriverExamples,
+    -- Repair-1, the operand-2 repair control and its generic kernel: the
+    -- reverse repair scanner, the `spent ↦ index` rewrite cycle and the
+    -- arbitrary-frame-list repair pass `g1CS_repair_pass_exact`
+    -- (`GateOneRepairKernel`), with all-literal probes of one cycle, a
+    -- multi-unit run and a whole pass (`GateOneRepairKernelExamples`).
+    -- Every run there is caller-supplied: no route of the machine enters the
+    -- sweep, and the request-specific repair driver is deferred to Repair-2.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneRepairKernel,
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneRepairKernelExamples,
     -- The thirteen-step rewrite cycle at the G1 control, kept as an
     -- arbitrary-configuration regression: the bridge, the fourteen-step
     -- composed round and one literal frame-list probe.  Unreachable from
@@ -362,6 +371,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMGateOneWalkSurfaceTests,
     Glob.one `Tests.TMGateOneWalkInvariantSurfaceTests,
     Glob.one `Tests.TMGateOneWalkDriverSurfaceTests,
+    Glob.one `Tests.TMGateOneRepairKernelSurfaceTests,
     Glob.one `Tests.FormulaSupportBoundsFalsifiabilityProbe,
     Glob.one `Tests.SmokeTests,
     Glob.one `Tests.UnitTests,

@@ -143,6 +143,9 @@ lean_lib PnP3 where
     -- per-route examples (`GateOneReadBExamples`).
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneReadB,
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneReadBExamples,
+    -- T2b-2, one destructive operand-2 index round: the bridge, the
+    -- fourteen-step composed round and one concrete encoded request.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneIndexRound,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,

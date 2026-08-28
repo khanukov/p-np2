@@ -474,10 +474,11 @@ Nothing in it is a `TM.runConfig` statement: the exact executions from the real
 boundary — are the T2b-2 layer below and are claimed nowhere here.  Also
 claimed nowhere in T2b-1:
 
-* **the destructive index walk** — for `arg2 > 0` the table sends the operand
-  walk to `bRoundStart` (`g1_bScan_index_deferred`), which is idle and stuck
-  (`g1_bRoundStart_stuck`), and no execution theorem passes it.  Nothing here
-  claims general runtime-index addressing;
+* **the destructive index walk** — for `arg2 > 0` this table/routing layer
+  sends the operand walk to the `bRoundStart` bridge
+  (`g1_bScan_index_bridge`) and runs no machine step beyond that boundary.  The
+  T2b-2 slice below activates the bridge and executes exactly **one**
+  `index ↦ spent` round; general runtime-index addressing is claimed nowhere;
 * **pass A, combine, write, repair, acceptance** — `readAStart`,
   `combineStart` and `readAResetStart` are idle rows; there is still no
   `TM.run`, `TM.accepts`, output-write, `spec`-correctness or full-clock
@@ -539,7 +540,7 @@ Six exact endpoints, each pinning head, state **and** tape (`n` abbreviates
 | `Canonical`, `tag ∈ {and, or}` | `g1FieldRouteSteps r = 2n+9 + 4*(u+arg1+3)` | `bScan`, `g1Ctx0` | `4*(u+arg1+3)` |
 | `Canonical`, `tag ∈ {and, or}`, `arg2 = 0`, `vals[arg2]? = some b` | `g1ReadBSteps r = 2n+9 + 4*(u+arg1+5) + 1` | `readAResetStart`, `vB = b` | `4*(u+arg1+5)` |
 | `Canonical`, `tag ∈ {and, or}`, `arg2 = 0`, `vals[arg2]? = none` | `g1ReadBOOBSteps r = 2n+9 + 4*(u+arg1+5)` | `bOOB`, `g1Ctx0` (stable) | `4*(u+arg1+5)` |
-| `Canonical`, `tag ∈ {and, or}`, `arg2 = k+1` | `g1RoundRouteSteps r = 2n+9 + 4*(u+arg1+4)` | `bRoundStart`, `g1Ctx0` (idle) | `4*(u+arg1+4)` |
+| `Canonical`, `tag ∈ {and, or}`, `arg2 = k+1` | `g1RoundRouteSteps r = 2n+9 + 4*(u+arg1+4)` | `bRoundStart` bridge, `g1Ctx0` | `4*(u+arg1+4)` |
 
 For `and`/`or`, `Canonical` is automatic; it is retained to compose uniformly
 with the T2a initial prefix.
@@ -557,7 +558,7 @@ request: `r` ranges over all canonical requests with the stated tag, with
 arbitrary `arg1`, `arg2` and arbitrary data region.  `GateOneReadBExamples.lean`
 instantiates them at concrete requests (heads `12`/`20` for `input`/`not`, both
 `const` literals, `true`/`false` operand-2 reads, the empty-data boundary, the
-deferred boundary) with literal step counts, purely as an audit surface.  Every
+frame-level bridge boundary) with literal step counts, purely as an audit surface.  Every
 step count is bounded by the **unchanged** clock
 `g1Clock N = 512 * (N + 1) ^ 2 + 512` through `g1_readB_steps_le_clock`; the
 clock is neither widened nor restated, and these are budget facts about the
@@ -568,20 +569,21 @@ operand index selects nothing: it is stable for every further budget
 (`g1CS_readB_zero_oob_stable`), it stores nothing in `vB`, and it is a different
 state from both the success handoff (`g1CS_readB_zero_oob_ne_success`) and the
 reject sink (`g1CS_readB_oob_ne_reject`); no acceptance or rejection semantics
-is attached to it.  `bRoundStart` is the deferred entry point of the destructive
-index walk: for `arg2 > 0` the machine provably reaches it and provably never
-leaves it (`g1CS_readB_round_deferred_stable`, for every further budget).
+is attached to it.  At the T2b-2 slice, `bRoundStart` was the proved bridge
+boundary and no theorem ran it further; the first-round slice below activates
+the bridge and executes exactly one round.
 
 **Explicitly deferred, and claimed nowhere:** the **destructive positive-index
 walk** (the physically executed operand-2 read is exactly the zero-index one;
 for `arg2 > 0` the proved endpoint *is* the `bRoundStart` boundary, so no
-general runtime-index addressing is claimed); **pass A, combine, output write
+general runtime-index addressing beyond the single round below is claimed);
+**pass A, combine, output write
 and repair** (`readAStart`, `combineStart` and `readAResetStart` are idle rows,
 proved idle for every budget by `g1CS_runConfig_readA_idle`,
 `g1CS_runConfig_combine_idle`, `g1CS_runConfig_readAReset_idle`, and nothing
 consumes the `G1Ctx.vB` value they carry); **acceptance/rejection semantics,
 full run and full clock** (no `TM.run`, no `TM.accepts`, no `spec`-correctness
-and no full-clock theorem — none could honestly exist while five handoffs are
+and no full-clock theorem — none could honestly exist while four handoffs are
 idle); **padded tapes** (the six initial-config capstones are scoped to the
 exact tape `encodeG1 r`; local adapters state arbitrary tapes explicitly, but
 no capstone covers a padded tape); and the **`SLGate` bridge, multi-gate evaluator
@@ -658,9 +660,10 @@ theorem statement or step count was changed.
   `t1RevScanner_rewind_tail` and `g1RevScanner_rewind_tail` are the named
   regressions, matching `t1CS_rewind_tail` and `g1CS_rewind_tail` in statement
   shape (the T1 one additionally generalises the latch, which the original
-  fixes to `false`).  No control table was touched: in particular
-  `bRoundStart` is still idle and the G1 clock, grammar and step arithmetic are
-  the same literals as before.
+  fixes to `false`).  No control table was touched by *that* slice: in
+  particular `bRoundStart` was still idle there, and the G1 clock, grammar and
+  step arithmetic are the same literals as before (they are still the same
+  literals after T2b-2, which adds rows but changes no clock and no grammar).
 
 `Tests/TMFrameScannerReverseSurfaceTests.lean` pins the public surface and
 `Tests/AxiomsAudit.lean` audits the generic capstones, both probe runs and both
@@ -679,12 +682,14 @@ no acceptance and no verifier claim, and it does not by itself execute any new
   following slice.  Only the exact generic reverse scan and the exact generic
   single-frame write are capstones here;
 * **the G1 pass-B destructive index walk** — the kernel is a prerequisite for
-  it, not a proof of it.  `bRoundStart` remains idle and
-  `g1_bScan_index_deferred` is unchanged;
-* **non-canonical or physically padded inputs** — local reverse/write macrosteps
-  support arbitrary tapes under explicit safety and codeword premises; list-scan
-  and frame-replacement capstones use explicit list-backed layouts.  No theorem
-  packages either form as a canonical or padded-input end-to-end execution.
+  it, not a proof of it.  At that historical slice `bRoundStart` was still
+  idle; T2b-2 below later activates it for exactly one round, while the full
+  runtime-determined destructive walk remains deferred;
+* **non-canonical or physically padded inputs** — local reverse/write
+  macrosteps support arbitrary tapes under explicit safety and codeword
+  premises; list-scan and frame-replacement capstones use explicit list-backed
+  layouts.  No theorem packages either form as a canonical or padded-input
+  end-to-end execution.
 
 The first two of those deferrals are discharged by the next slice, below; the
 G1 pass-B destructive index walk and the padded-tape question are not.
@@ -751,16 +756,17 @@ of T1's `repairSeek` frame decision (a frame the pass cannot cross), which the
 generic kernel's five-row interface requires and which the existing three
 lemmas did not cover.  The table itself is untouched.
 
-**G1 is not executed by this slice.**  `g1CS` has no write, walk-back or hop
-rows, so no G1 rewrite cycle exists.  What is provided instead is the exact
-core obligation: `G1RewriteCycleObligation` fixes a `FrameRewriteCycle` whose
-scanner program is `g1CS`, codec is `g1FrameCodec`, and direction is
-`index ↦ spent`.  It does not fix the scanner state embedding; the next G1
-slice must separately prove alignment with the pass-B state before execution.
-`machine_eq` records that such a cycle's machine is literally `G1M`, and
-`rewrite_cycle` derives the thirteen-step run from it by the generic theorem
-verbatim.  Both are conditional on data that does not exist here; nothing runs
-`g1CS` past `bRoundStart` and `g1_bScan_index_deferred` is unchanged.
+**G1 was not executed by that slice.**  `g1CS` had no write, walk-back or hop
+rows, so no G1 rewrite cycle existed.  What was provided instead was the exact
+core obligation: `G1RewriteCycleObligation` fixed a `FrameRewriteCycle` whose
+scanner program was `g1CS`, codec was `g1FrameCodec`, and direction was
+`index ↦ spent`, but did not yet fix the scanner-state embedding; the next G1
+slice therefore had to prove alignment with the pass-B state before execution.
+`machine_eq` recorded that such a cycle's machine was literally `G1M`, and
+`rewrite_cycle` derived the thirteen-step run from it by the generic theorem
+verbatim.  Those statements were conditional on data that did not exist then;
+the T2b-2 slice below adds the rows, strengthens the obligation to pin the exact
+aligned-state constructors, and **constructs** it.
 
 `Tests/TMFrameRewriteCycleSurfaceTests.lean` pins the public surface and
 `Tests/AxiomsAudit.lean` audits the generic capstones, the four probe runs, the
@@ -771,6 +777,68 @@ This slice is **Infrastructure**.  Still deferred and claimed nowhere: any
 runtime-index addressing, the iteration of the cycle along a runtime-determined
 run inside `G1`, the G1 destructive index walk itself, gate semantics,
 acceptance, and non-canonical or physically padded tapes.
+
+**T2b-2: one destructive G1 operand-2 index round delivered (2026-08-27):**
+
+The G1 obligation left open by the previous slice is discharged for **one
+round**.  Six existing modules gained content and one is new; the `G1Ctx`
+triple, the
+public clock `g1Clock` and the whole T2a validation grammar are unchanged.
+
+* `GateOneControl.lean` — `G1Mode` gains four constructors, `bWalk`, `bMark`,
+  `bBack` and `bHop`, and `g1Transition` gains fourteen rows: the
+  `bRoundStart` **bridge** (`.left`, writing back the scanned cell), the four
+  reverse-read rows of `bWalk` (`p3 … p0`, the last one *staying* into `bMark`
+  when the completed frame is an `index` and stepping left otherwise), the four
+  `bMark` rows that write the fixed cells `1 1 0 0` — the codeword of `spent` —
+  regardless of what they overwrite, the four tape-preserving `bBack` rows and
+  the `bHop` row.  The idle `bRoundStart` row and its lemma
+  `g1Transition_bRoundStart_idle` are **gone**: `bRoundStart` moves.  All four
+  new modes are non-forward (`G1ForwardMode`) and `G1Stuck`, so `g1Advance` and
+  every T2a/T2b-1 grammar and execution theorem is re-derived unchanged against
+  the new table, with the same statements and the same step literals.
+* `FrameRewriteCycleInstances.lean` — `g1IndexScanner` instantiates the generic
+  reverse kernel at `bWalk`/`bMark` and `g1IndexCycle` the generic thirteen-step
+  rewrite cycle at `marker = index`, `target = spent`; every obligation is a
+  standalone tuple lemma of `GateOneControl`.  `g1CS_index_round` and
+  `g1CS_index_round_onList` are the resulting exact thirteen-step runs of `G1M`
+  (head `base + 3 ↦ base − 1`, tape `pre ++ index :: suffix ↦
+  pre ++ spent :: suffix`, `G1Ctx` preserved).  `G1RewriteCycleObligation` is
+  strengthened to pin `seekMode`, `stopMode`, `Reverse`, `Stop`, `revAdvance`,
+  all four `rst*` constructors, `stopState`, all eight write/back/hop states and
+  the four written cells, and `g1RewriteCycleObligation` **constructs** it by
+  `rfl`: the previously uninhabited conditional gap is closed.
+* `GateOneReadB.lean` — `g1CS_runConfig_round_idle` is replaced by
+  `g1CS_step_round_bridge`: one genuine step, head `h ↦ h − 1`, state
+  `bWalk .p3`, tape and context untouched.
+* `GateOneIndexRound.lean` (new) — the composition.  `g1CS_round_from_bridge`
+  is bridge-plus-round on an arbitrary frame list (`14 = 1 + 13` steps, exact
+  tape replacement, head `4p + 4 ↦ 4p − 1`); `g1CS_readB_round_boundary`
+  reaches the bridge from the **real** initial configuration for a canonical
+  `and`/`or` request with `arg2 = k + 1`; `g1CS_index_first_round` composes the
+  two, so `g1IndexRoundSteps r = g1FieldRouteSteps r + 18` genuine steps turn
+  the initial tape into the canonical word with the **first** operand-2 `index`
+  replaced by `spent`.  `g1IndexRoundSteps_le_clock` keeps it inside the
+  unchanged clock, and `g1RoundExample = ⟨.and, 0, 1, [true]⟩` is a concrete
+  request where all numbers are literals: after exactly `151` steps the head is
+  `27`, the state is `g1WalkState g1Ctx0`, and the tape is the thirteen-frame
+  word `bof · tag⁴ · argSep · argSep · spent · separator · data true ·
+  output false · finish · blank`.
+
+`Tests/TMGateOneControlSurfaceTests.lean`,
+`Tests/TMGateOneReadBSurfaceTests.lean`,
+`Tests/TMFrameRewriteCycleSurfaceTests.lean` and `Tests/AxiomsAudit.lean` pin
+and audit every new surface; all depend only on `propext`, `Classical.choice`
+and `Quot.sound`.
+
+This slice is **Infrastructure**.  It executes **one** round and claims nothing
+beyond it.  Explicitly deferred and claimed nowhere: iterating the round along a
+runtime-determined operand-2 field, any runtime-index addressing, termination of
+the reverse walk, the `arg2 > 0` operand *value* (no read-B success theorem for
+that branch), restoring the data region, pass A, combine, output write,
+`TM.accepts`, a full-clock theorem, and non-canonical or physically padded
+tapes.  After the round the control sits in `bWalk` on the last cell of the
+frame preceding the rewritten one, and no theorem runs it further.
 
 **T2a correction (2026-08-24).**  The first T2a head shipped a permissive
 forward table (`vTag` looping on every `tag`, `vArg1`/`vArg2` looping on every

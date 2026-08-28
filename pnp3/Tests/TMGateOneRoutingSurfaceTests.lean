@@ -34,7 +34,7 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1ReadBRoute_validPath
 #check @g1ReadBOOB_advance
 #check @g1ReadBOOB_validPath
-#check @g1_bScan_index_deferred
+#check @g1_bScan_index_bridge
 #check @g1_bRoundStart_stuck
 #check @g1Advance_ne_sink
 #check @G1ForwardMode.readBStart
@@ -44,7 +44,7 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @G1Ctx.withVB_crossed
 #check @g1Transition_constLit
 #check @g1Transition_store
-#check @g1Transition_bRoundStart_idle
+#check @g1Transition_bRoundStart_bridge
 #check @g1Transition_bOOB_stable
 
 /-! ## Exact theorem-contract pins -/
@@ -81,11 +81,11 @@ theorem check_g1Transition_store (phase : Fin 1) (b : Bool)
       (0, g1ReadAResetState (ctx.withVB b), scan, .stay) :=
   g1Transition_store phase b position b0 b1 b2 scan ctx
 
-theorem check_g1Transition_bRoundStart_idle (phase : Fin 1)
+theorem check_g1Transition_bRoundStart_bridge (phase : Fin 1)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
     g1Transition phase (g1State .bRoundStart position b0 b1 b2 ctx) scan =
-      (0, g1RoundState ctx, scan, .stay) :=
-  g1Transition_bRoundStart_idle phase position b0 b1 b2 scan ctx
+      (0, g1WalkState ctx, scan, .left) :=
+  g1Transition_bRoundStart_bridge phase position b0 b1 b2 scan ctx
 
 theorem check_g1Transition_bOOB_stable (phase : Fin 1)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
@@ -162,10 +162,10 @@ theorem check_g1ReadBOOB_validPath (r : G1Request)
     G1ValidPath .readBStart (g1ReadBOOBFrames r) :=
   g1ReadBOOB_validPath r ht
 
-theorem check_g1_bScan_index_deferred (rest : List G1Frame) :
+theorem check_g1_bScan_index_bridge (rest : List G1Frame) :
     g1AdvanceList .bScan (.index :: rest) =
       g1AdvanceList .bRoundStart rest :=
-  g1_bScan_index_deferred rest
+  g1_bScan_index_bridge rest
 
 theorem check_g1_bRoundStart_stuck : G1Stuck .bRoundStart :=
   g1_bRoundStart_stuck

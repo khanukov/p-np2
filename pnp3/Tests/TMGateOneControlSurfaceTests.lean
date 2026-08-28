@@ -10,8 +10,12 @@ noncanonical-rejection witnesses, and the program as a genuine instance of the
 generic frame-scanner kernel.
 
 This layer exposes frame-word/table correspondence and the generic kernel's
-exact four-step and multi-frame `TM.runConfig` primitives.  End-to-end physical
-validation, rejection, rewind, and `readBStart` composition are deferred.
+exact four-step and multi-frame `TM.runConfig` primitives.  It also pins the
+fourteen transition tuples of the destructive index round (`bRoundStart`
+bridge, `bWalk`, `bMark`, `bBack`, `bHop`); the executed one-round theorem is a
+separate layer with its own surface entries.  End-to-end physical validation,
+rejection, rewind, and `readBStart` composition remain in their separate
+execution surface.
 
 This is an audit surface: it pins public signatures, it does not prove
 anything new.
@@ -35,6 +39,8 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1CombineState
 #check @g1ReadAResetState
 #check @g1RoundState
+#check @g1WalkState
+#check @g1MarkState
 #check @g1OOBState
 #check @G1Ctx.withVB
 #check @g1ConstMode
@@ -57,10 +63,25 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1Transition_readAStart_idle
 #check @g1Transition_combineStart_idle
 #check @g1Transition_readAResetStart_idle
-#check @g1Transition_bRoundStart_idle
 #check @g1Transition_bOOB_stable
 #check @g1Transition_constLit
 #check @g1Transition_store
+-- The fourteen tuples of the destructive index round.
+#check @g1Transition_bRoundStart_bridge
+#check @g1Transition_bWalk_p3
+#check @g1Transition_bWalk_p2
+#check @g1Transition_bWalk_p1
+#check @g1Transition_bWalk_p0_index
+#check @g1Transition_bWalk_p0_other
+#check @g1Transition_bMark_p0
+#check @g1Transition_bMark_p1
+#check @g1Transition_bMark_p2
+#check @g1Transition_bMark_p3
+#check @g1Transition_bBack_p0
+#check @g1Transition_bBack_p1
+#check @g1Transition_bBack_p2
+#check @g1Transition_bBack_p3
+#check @g1Transition_bHop
 #check @g1RejectState_ne_readB
 #check @g1OOBState_ne_readAReset
 

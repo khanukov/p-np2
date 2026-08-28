@@ -14,8 +14,8 @@ machine, compose the exact T2a validation/rewind prefix, and run the
 `readBStart` handoff for a further exact, literal number of steps.  Their named
 arrival counts are closed expressions in the encoded length and are proved to
 fit `g1Clock`.  Local step adapters intentionally quantify over arbitrary
-aligned tapes, while the post-boundary `+ k`/`+ m` stability theorems allow an
-arbitrary extra budget and make no public-clock claim.
+aligned tapes.  The stable `bOOB` `+ k` theorem allows an arbitrary extra
+budget and makes no public-clock claim.
 
 **The tag is physically rescanned.**  At the T2a handoff the context is
 `g1Ctx0` and no gate tag is retained anywhere: `G1State` has no `Nat`, index,
@@ -33,7 +33,7 @@ Six exact endpoints are proved, from `initialConfig`, for a canonical `r`:
 | `and`, `or` | `bScan` at the operand-2 field | `4 * (units + arg1 + 3)` | `4 * (units + arg1 + 3)` |
 | `and`, `or`, `arg2 = 0` | `readAResetStart`, `vB = b` | `4 * (units + arg1 + 5)` | `4 * (units + arg1 + 5) + 1` |
 | `and`, `or`, `arg2 = 0`, empty data | `bOOB` (stable) | `4 * (units + arg1 + 5)` | `4 * (units + arg1 + 5)` |
-| `and`, `or`, `arg2 > 0` | `bRoundStart` (deferred, idle) | `4 * (units + arg1 + 4)` | `4 * (units + arg1 + 4)` |
+| `and`, `or`, `arg2 > 0` | `bRoundStart` bridge | `4 * (units + arg1 + 4)` | `4 * (units + arg1 + 4)` |
 
 In **every** case the tape is bit-for-bit the initial tape: the whole pass-B
 rescan is read-only, so no `spent`/`cursor` marker is left behind and no data
@@ -56,19 +56,24 @@ cursor or index annotation is added to `encodeG1`.
 **Scope and deferrals.**  The operand-2 value is resolved *physically*, out of
 the unannotated data region, exactly for `arg2 = 0`: the walk meets the
 `separator` with no unspent `index` unit left, and the probe reads the frame
-behind it.  For `arg2 > 0` the fixed control hands off to `bRoundStart`, the
-entry point of the deferred destructive index walk; the endpoint proved here
-stops *at* that boundary and `g1CS_readB_round_deferred_stable` shows the
-machine never leaves it, so nothing here claims general runtime-index
-addressing.  `bOOB` is likewise a **stable boundary of the read**, not a
-rejection: `g1RejectState` is a different state and no acceptance or rejection
-semantics is attached to either.  There is no `TM.run`, `TM.accepts`, output
-write, combine step, pass-A read, `spec`-correctness claim or full-clock
-theorem: the five handoffs are idle rows and the clock lemmas bound only the
-*proved* arrival prefixes against the **unchanged** clock `g1Clock`.  The six
-initial-config capstones are scoped to the exact tape `encodeG1 r`; local
-adapters state their arbitrary tape explicitly.  No capstone claim is made
-about physically padded tapes.
+behind it.  For `arg2 > 0` the fixed control enters `bRoundStart`, which is the
+one-step *bridge* into the destructive index round: `g1CS_step_round_bridge`
+below is its exact execution, and `GateOneIndexRound` composes it with one
+thirteen-step `index ↦ spent` round.  That is **one** round; nothing in this
+development iterates it, addresses a runtime index, or claims that the walk
+resolves the selected data frame for `arg2 > 0`.
+
+`bOOB` is likewise a **stable boundary of the read**, not a rejection:
+`g1RejectState` is a different state and no acceptance or rejection semantics
+is attached to either.  There is no `TM.run`, `TM.accepts`, output write,
+combine step, pass-A read, `spec`-correctness claim or full-clock theorem.  The
+four remaining handoffs are idle, and clock lemmas bound only the proved
+arrival prefixes against the **unchanged** clock `g1Clock`.
+
+The six initial-configuration capstones are scoped to the exact tape
+`encodeG1 r`; reusable local adapters state their arbitrary aligned tapes
+explicitly, and post-boundary stability budgets carry no public-clock bound.
+No capstone claim is made about physically padded tapes.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -146,7 +151,8 @@ Each is one generic aligned-step adapter applied to one standalone tuple lemma
 of `GateOneControl`; `g1Transition` is never unfolded. -/
 
 /-- **A stationary self-looping state is stable for the whole remaining
-budget.**  The five handoffs and the two sinks are all of this shape. -/
+budget.**  The four idle handoffs and the two sinks are all of this
+shape. -/
 theorem g1CS_runConfig_stable (n h : Nat) (hh : h < G1M.tapeLength n)
     (tape : Fin (G1M.tapeLength n) → Bool) (q : G1State)
     (hq : ∀ (phase : Fin 1) (scan : Bool),
@@ -210,17 +216,28 @@ theorem g1CS_runConfig_readAReset_idle (n h : Nat) (hh : h < G1M.tapeLength n)
     (fun phase scan => g1Transition_readAResetStart_idle phase .p0 false false
       false scan ctx) k
 
-/-- **The deferred index-walk entry is idle in this slice.**  This is the
-honest statement of what happens for `arg2 > 0`: the machine reaches
-`bRoundStart` and stops there. -/
-theorem g1CS_runConfig_round_idle (n h : Nat) (hh : h < G1M.tapeLength n)
-    (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx) (k : Nat) :
+/-- **The bridge into the destructive index round, executed.**  `bRoundStart` is
+not idle: one genuine TM step moves the head one cell to the *left* — from the
+first cell of the frame after the scanned `index` back onto the last cell of
+that `index` — writes back the cell it scanned, so **not one tape cell
+changes**, keeps the whole `G1Ctx`, and enters the reverse-read entry shape
+`bWalk .p3` with an empty frame buffer.
+
+This is the exact one-step boundary the thirteen-step `index ↦ spent` round of
+`FrameRewriteCycleInstances` starts from; `GateOneIndexRound`'s
+`g1CS_round_from_bridge` composes the two. -/
+theorem g1CS_step_round_bridge (n h : Nat) (hh : h < G1M.tapeLength n)
+    (hpos : 0 < h) (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx) :
     TM.runConfig (M := G1M)
-        (g1AlignedConfig n h hh tape .bRoundStart .p0 false false false ctx) k =
-      g1AlignedConfig n h hh tape .bRoundStart .p0 false false false ctx :=
-  g1CS_runConfig_stable n h hh tape (g1RoundState ctx)
-    (fun phase scan => g1Transition_bRoundStart_idle phase .p0 false false false
-      scan ctx) k
+        (g1AlignedConfig n h hh tape .bRoundStart .p0 false false false ctx) 1 =
+      g1AlignedConfig n (h - 1) (by omega) tape .bWalk .p3 false false false
+        ctx := by
+  rw [runConfig_one]
+  have hstep := g1CS_aligned_step_left n h hh hpos tape (g1RoundState ctx)
+    (g1WalkState ctx) (tape ⟨h, hh⟩)
+    (fun phase => g1Transition_bRoundStart_bridge phase .p0 false false false _
+      ctx)
+  rwa [writeCell_self] at hstep
 
 /-- **The `const` literal dispatch, executed.**  One stationary step writes the
 decoded unary literal into the fixed Boolean field `vB`. -/
@@ -529,12 +546,13 @@ theorem g1CS_readB_zero_oob_stable (r : G1Request) (hc : r.Canonical)
   rw [runConfig_add, g1CS_readB_zero_oob_exact r hc ht h2 hb]
   exact g1CS_runConfig_oob_sink _ _ _ _ _ k
 
-/-! ## The deferred positive-index branch, executed up to its boundary
+/-! ## The positive-index bridge boundary
 
 For `arg2 > 0` the operand-2 walk meets an unspent `index` unit and the control
-hands off to `bRoundStart`: the entry point of the destructive index walk this
-slice does **not** build.  The two theorems below make that deferral executable
-rather than merely asserted — the machine reaches that boundary, and stays. -/
+hands off to `bRoundStart`, the one-step bridge into the destructive round.
+The retained `g1CS_readB_round_deferred_exact` theorem (historical name) pins
+the exact arrival at that boundary; `GateOneIndexRound` executes the bridge and
+one thirteen-step round beyond it. -/
 
 /-- **The deferred boundary, exactly.**  For a canonical `and`/`or` request with
 `arg2 > 0`, exactly `g1RoundRouteSteps r` genuine steps from the real initial
@@ -560,21 +578,6 @@ theorem g1CS_readB_round_deferred_exact (r : G1Request) (hc : r.Canonical)
     (g1RoundRoute_split r k h2) (g1RoundRoute_validPath r ht) hsafe
   rw [g1RoundRoute_advance r ht] at h
   simpa [g1RoundRouteSteps] using h
-
-/-- **The deferred boundary is idle for the whole remaining budget.**  Nothing
-in this development runs the machine past `bRoundStart`, so `arg2 > 0` is not
-a resolved operand read and no general runtime-index addressing is claimed. -/
-theorem g1CS_readB_round_deferred_stable (r : G1Request) (hc : r.Canonical)
-    (ht : r.tag = .and ∨ r.tag = .or) (k : Nat) (h2 : r.arg2 = k + 1)
-    (m : Nat) :
-    TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
-        (g1RoundRouteSteps r + m) =
-      g1AlignedConfig (encodeG1 r).length (4 * (r.tag.units + r.arg1 + 4))
-        (g1_route_lt_tapeLength r _ (by omega))
-        (G1M.initialConfig (g1Point (encodeG1 r))).tape
-        .bRoundStart .p0 false false false g1Ctx0 := by
-  rw [runConfig_add, g1CS_readB_round_deferred_exact r hc ht k h2]
-  exact g1CS_runConfig_round_idle _ _ _ _ _ m
 
 /-! ## The components of the capstones, separately -/
 

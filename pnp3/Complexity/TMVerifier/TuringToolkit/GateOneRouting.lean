@@ -32,9 +32,11 @@ across the T2a rewind, and none is a parameter of the machine.
 **Scope.**  The two `g1ReadB*` routes are the `arg2 = 0` case of the operand-2
 read: the probe finds the selected data frame (or the `output` destination)
 immediately after the `separator`.  For `arg2 > 0` the forward table sends
-`bScan` to the idle `bRoundStart` handoff instead; `g1RoundRouteFrames` is the
-route *up to that boundary* and nothing beyond it is proved anywhere — the
-destructive index walk is deferred.
+`bScan` to the `bRoundStart` bridge instead; the only thing this module says
+about that branch is the frame-level handoff `g1_bScan_index_bridge`.  The
+bridge and the one destructive round behind it are machine statements and live
+in `GateOneIndexRound`; the frame-level grammar of this module is untouched by
+them, since `bRoundStart` reads no frame at all (`g1_bRoundStart_stuck`).
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -354,16 +356,15 @@ theorem g1ReadBOOB_validPath (r : G1Request)
   rw [g1FieldRoute_advance_binary r ht]
   exact g1_probe_oob_validPath [] trivial
 
-/-! ### The deferred branch, stated honestly
+/-! ### The bridge branch, at frame level
 
 For `arg2 > 0` the operand-2 walk meets an unspent `index` unit and the fixed
-control hands off to `bRoundStart`, the entry point of the destructive index
-walk that this slice does not build.  The lemmas below record exactly that, and
-supply the route *up to* that boundary so the deferral can be executed rather
-than merely asserted; no theorem of this development runs the machine *out of*
-`bRoundStart`. -/
+control hands off to `bRoundStart`, the one-step bridge into the destructive
+index round.  The lemma below records exactly that frame-level handoff; the
+round itself is a machine statement and lives in `GateOneIndexRound`, which runs
+`bRoundStart` for one round and no further. -/
 
-theorem g1_bScan_index_deferred (rest : List G1Frame) :
+theorem g1_bScan_index_bridge (rest : List G1Frame) :
     g1AdvanceList .bScan (.index :: rest) = g1AdvanceList .bRoundStart rest :=
   rfl
 

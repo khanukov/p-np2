@@ -149,7 +149,8 @@ open Pnp3.Internal.PsubsetPpoly.TM
 
 -- The three entry states of the operand-2 repair sweep; its eleven transition
 -- tuples are pinned as exact equations by the `check_g1Transition_bRepair*`
--- theorems below.  No route of this slice enters any of the five modes.
+-- theorems below.  No `g1Advance` row enters them; the sole live entry is the
+-- Repair-2a `readAResetStart` bridge.
 #check @g1RepairSeekState
 #check @g1RepairWriteState
 #check @g1RepairDoneState

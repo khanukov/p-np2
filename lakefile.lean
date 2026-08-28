@@ -196,8 +196,8 @@ lean_lib PnP3 where
     -- `blank`, a leftover `cursor` and the three reserved codes send it to the
     -- `reject` sink, so a repair run can never rewrite `spent` units behind
     -- malformed tape.
-    -- Every run there is caller-supplied: no route of the machine enters the
-    -- sweep, and the request-specific repair driver is deferred to Repair-2.
+    -- No `g1Advance` frame-table row enters the sweep; the generic runs are
+    -- caller-supplied.  Repair-2a adds the sole live `readAResetStart` bridge.
     -- Repair-1b adds `GateOneRepairKernelExamples`, the all-literal probes of
     -- that kernel: the sixteen-frame word for `⟨and, 0, 2, [false, true,
     -- true]⟩` with both operand-2 units consumed, and four exact `G1M` runs on

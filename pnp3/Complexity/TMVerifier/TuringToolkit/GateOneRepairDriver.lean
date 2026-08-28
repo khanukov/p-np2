@@ -191,12 +191,13 @@ theorem g1RepairTail_unread (r : G1Request) (s : Nat) (hs : s ≤ r.arg2)
     G1Frame.blank ∈ g1RepairTail r ∧ ¬ G1RepairSkip G1Frame.blank ∧
       1 + (g1RepairLeft r s).length + s + (g1RepairMid r).length =
         g1WalkCursor r r.arg2 + 1 ∧
-      ∀ i, 4 * (g1WalkCursor r r.arg2 + 1) - 1 <
-        4 * (g1WalkCursor r r.arg2 + 1) + i := by
+      ∀ i, i < 4 * (g1RepairTail r).length →
+        4 * (g1WalkCursor r r.arg2 + 1) - 1 <
+          4 * (g1WalkCursor r r.arg2 + 1) + i := by
   refine ⟨by simp [g1RepairTail], g1Repair_not_skip.1, ?_, ?_⟩
   · rw [g1RepairLeft_length, g1RepairMid_length r hm, g1WalkCursor]
     omega
-  · intro i
+  · intro i _
     simp only [g1WalkCursor]
     omega
 

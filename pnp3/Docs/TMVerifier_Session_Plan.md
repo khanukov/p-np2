@@ -1828,11 +1828,11 @@ only *instantiates* those macros at one literal word.
   physical cells `60 … 63` lies strictly to the right of the sweep's entry cell
   `59 = 4 * 15 - 1`.  It is therefore passed as the capstone's **unconstrained**
   `tail`, never read, and reproduced bit-for-bit at the endpoint.
-* **Everything stays caller-supplied.**  Every probe starts from an explicit
-  `g1AlignedConfig`; none mentions `G1M.initialConfig`, and Repair-1's
-  `g1_repair_unreachable_forward`/`g1_repair_modes_stuck` still say no route of
-  the machine enters the sweep.  `readAStart` is still the idle handoff, which
-  is exactly what `pass_probe_idle` records.
+* **The probes stay caller-supplied.**  Every probe starts from an explicit
+  `g1AlignedConfig`; none mentions `G1M.initialConfig`.  Repair-1's
+  unreachability results say no `g1Advance` frame-table row enters the sweep;
+  Repair-2a below adds the sole live `readAResetStart` bridge.  `readAStart`
+  remains idle, exactly as `pass_probe_idle` records.
 
 Pinned by `Tests/TMGateOneRepairKernelExamplesSurfaceTests.lean` (new:
 theorem-style exact wrappers for **every** public statement of the probe module,

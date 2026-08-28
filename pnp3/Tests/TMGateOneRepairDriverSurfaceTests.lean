@@ -86,8 +86,9 @@ theorem check_g1RepairTail_unread (r : G1Request) (s : Nat) (hs : s ≤ r.arg2)
     G1Frame.blank ∈ g1RepairTail r ∧ ¬ G1RepairSkip G1Frame.blank ∧
       1 + (g1RepairLeft r s).length + s + (g1RepairMid r).length =
         g1WalkCursor r r.arg2 + 1 ∧
-      ∀ i, 4 * (g1WalkCursor r r.arg2 + 1) - 1 <
-        4 * (g1WalkCursor r r.arg2 + 1) + i :=
+      ∀ i, i < 4 * (g1RepairTail r).length →
+        4 * (g1WalkCursor r r.arg2 + 1) - 1 <
+          4 * (g1WalkCursor r r.arg2 + 1) + i :=
   g1RepairTail_unread r s hs hm
 
 /-- **Repairing the units restores the field, and the repaired word is the
@@ -164,15 +165,18 @@ theorem check_g1CS_repair_sweep_readAConfig (r : G1Request) (s : Nat)
 
 /-! ## The two cumulative totals, inside the unchanged clock -/
 
-theorem check_passASteps_eq (r : G1Request) (h2 : r.arg2 = 0) :
+theorem check_passASteps_eq (r : G1Request) :
     g1BPassASteps r = g1BReadSteps r + g1RepairSteps r r.arg2 ∧
       g1ZPassASteps r = g1ReadBSteps r + g1RepairSteps r 0 ∧
       g1BPassASteps r =
         g1InstallScanSteps r +
-          (8 * r.arg2 ^ 2 + 62 * r.arg2 + 4 * r.tag.units + 4 * r.arg1 + 59) ∧
-      g1ZPassASteps r =
-        g1ReadBHandoffSteps r + (8 * r.tag.units + 8 * r.arg1 + 43) :=
-  ⟨rfl, rfl, g1BPassASteps_eq r, g1ZPassASteps_eq r h2⟩
+          (8 * r.arg2 ^ 2 + 62 * r.arg2 + 4 * r.tag.units + 4 * r.arg1 + 59) :=
+  ⟨rfl, rfl, g1BPassASteps_eq r⟩
+
+theorem check_zPassASteps_eq (r : G1Request) (h2 : r.arg2 = 0) :
+    g1ZPassASteps r =
+      g1ReadBHandoffSteps r + (8 * r.tag.units + 8 * r.arg1 + 43) :=
+  g1ZPassASteps_eq r h2
 
 /-- **Both totals fit the unchanged public clock**, unconditionally: no
 hypothesis on the request at all, and `g1Clock` is not widened. -/

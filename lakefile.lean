@@ -208,7 +208,7 @@ lean_lib PnP3 where
     -- scan.  Those probes are caller-supplied too.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneRepairKernel,
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneRepairKernelExamples,
-    -- Repair-2, the request-specific repair driver: the `readAResetStart`
+    -- Repair-2a, the request-specific repair driver: the `readAResetStart`
     -- bridge is now a live row, the layout split
     -- `g1RepairLeft`/`g1RepairMid`/`g1RepairTail` instantiates the Repair-1
     -- pass at the real operand-2 word, and `g1CS_repair_sweep_exact` runs it in

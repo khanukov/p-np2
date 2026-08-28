@@ -7,9 +7,11 @@ Exact import-side contracts for the fixed control's frame-level pass-B routing.
 This module pins the physical tag rescan, canonical-word prefix splits,
 context-bit preservation, const/store dispatches, zero-index success/OOB, and
 the positive-index installation route that replaces the retired bridge route.
-It proves no `TM.runConfig`, acceptance, output, or gate-semantics claim, and it
-pins **no** latch, cursor install, round, iteration or operand-value statement
-for `arg2 > 0`: those are PR2.  `g1_bProbe2_stuck` pins the boundary itself.
+It proves no `TM.runConfig`, acceptance, output, or gate-semantics claim.  For
+`arg2 > 0` it pins the route only as far as `bProbe2`; `g1_bProbe2_rows` pins
+that probe's three **active** rows and `g1_bSeek_stuck` the local endpoint the
+cursor install stops in, but no route prefix here reaches either, and nothing
+here states a round, an iteration or an operand value.
 -/
 
 namespace Pnp3.Tests.TMGateOneRoutingSurface
@@ -45,7 +47,8 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1InstallRoute_split
 #check @g1InstallRoute_advance
 #check @g1InstallRoute_validPath
-#check @g1_bProbe2_stuck
+#check @g1_bProbe2_rows
+#check @g1_bSeek_stuck
 #check @g1_bRoundStart_stuck
 #check @g1_bRoundStart_unreachable
 #check @g1Advance_ne_sink
@@ -215,12 +218,21 @@ theorem check_g1InstallRouteFrames_length (r : G1Request) :
 theorem check_g1_bRoundStart_stuck : G1Stuck .bRoundStart :=
   g1_bRoundStart_stuck
 
-/-- **The installation scan's endpoint is the boundary of this slice.**
-`bProbe2` has no successful frame row: an attempted full-frame read rejects,
-and no theorem executes it.  Nothing here latches a bit or installs a cursor;
-those rows are PR2. -/
-theorem check_g1_bProbe2_stuck : G1Stuck .bProbe2 :=
-  g1_bProbe2_stuck
+/-- **The installation scan's endpoint is active.**  `bProbe2` latches the data
+bit it reads, or hands off to the stable out-of-range boundary — it is not
+stuck.  No route prefix in this module reaches past it: the probe, latch and
+install runs take a caller-supplied configuration. -/
+theorem check_g1_bProbe2_rows :
+    g1Advance .bProbe2 (.data false) = .bLatchFalse ∧
+      g1Advance .bProbe2 (.data true) = .bLatchTrue ∧
+      g1Advance .bProbe2 (.output false) = .bOOB :=
+  g1_bProbe2_rows
+
+/-- **`bSeek` is the new local endpoint.**  The cursor install stops there and
+the table gives it no successful frame row, so an attempted complete-frame read
+enters `reject`; no theorem executes it.  Its reverse-read rows are PR2b. -/
+theorem check_g1_bSeek_stuck : G1Stuck .bSeek :=
+  g1_bSeek_stuck
 
 /-- **The retired bridge is unreachable from the forward table.**  This is what
 makes the surviving rewrite-cycle theorems an arbitrary-configuration

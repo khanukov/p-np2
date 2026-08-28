@@ -83,40 +83,49 @@ At the separator it enters `bProbe`, which reads the selected data frame:
 `readAResetStart`, while the `output` destination frame means the index ran off
 the end of the data region and hands off to the stable `bOOB` boundary.
 
-## The positive-index branch: the installation scan
+## The positive-index branch: the cursor walk
 
 `bScan` reaching an *unspent* `index` frame means the operand-2 index is
-non-zero.  This slice **re-points** that single row: `bScan + index` now enters
-`bInsSeek`, the read-only **installation scan**, which crosses the rest of the
-operand-2 field (`index` and `spent` alike), crosses the `separator` and stops
-at `bProbe2` on the first cell after the separator: data when nonempty,
-`output false` otherwise.  Four `g1Advance` rows
-and two new modes, and that is all:
+non-zero.  That row enters `bInsSeek`, the read-only **installation scan**,
+which crosses the rest of the operand-2 field (`index` and `spent` alike),
+crosses the `separator` and stops at `bProbe2` on the first cell after the
+separator: data when nonempty, `output false` otherwise.  The executed form of
+that route is `GateOneInstallScan.g1CS_readB_install_scan_exact`, and it is the
+**only** thing a run from `G1M.initialConfig` reaches on this branch: every
+statement about the walk proper starts from a caller-supplied configuration.
+
+`bProbe2` is now **active**: it is the probe of the paired-marker cursor walk —
+one `spent` per consumed index unit in the operand-2 field, one `cursor` in the
+data region, moved one data frame right per marked unit.  This slice activates
+its immediate successor, and **only** that:
 
 ```text
-bScan    + index     ↦ bInsSeek     (the re-pointed row)
-bInsSeek + index     ↦ bInsSeek
-bInsSeek + spent     ↦ bInsSeek
-bInsSeek + separator ↦ bProbe2
+bScan    + index        ↦ bInsSeek     (merged)
+bInsSeek + index/spent  ↦ bInsSeek     (merged)
+bInsSeek + separator    ↦ bProbe2      (merged)
+bProbe2  + data b       ↦ bLatch b     (new)
+bProbe2  + output false ↦ bOOB         (new)
 ```
 
-Both modes are ordinary *forward* frame-reading modes, so they need no
-`g1Transition` rows of their own: their steps are the four
-`g1Transition_forward_*` lemmas below.  The executed form of the route is
-`GateOneInstallScan.g1CS_readB_install_scan_exact`.
+`bLatch b` stores `b` in `G1Ctx.vB`, writes back the cell it scans and steps one
+cell left, onto the last cell of that data frame; `bIns` then writes `cursor`
+over it right to left and enters `bSeek` on the last cell of the preceding
+frame.  Four new modes in all: `bLatchFalse`, `bLatchTrue`, `bIns`, `bSeek`.
 
-**`bProbe2` is an explicit local boundary of this slice.**  It has **no**
-outgoing `g1Advance` row here, so it completes every frame into `reject` and is
-therefore `G1Stuck` (`GateOneRouting.g1_bProbe2_stuck`).  No theorem of this
-development runs the machine out of it: the installation scan's endpoint is the
-last thing proved on this branch.  Reading the selected data bit there, latching
-it into `G1Ctx.vB` and installing the data cursor need the **fourteen remaining
-cursor-walk modes** — the reverse seek and its two outcomes, the
-`index ↦ spent` writer, the forward scan and the two turns, the four restore
-writers, the two latch dispatches and the leftward cursor writer — together with
-their `g1Advance`/`g1Transition` rows and tuple lemmas.  All of that, and every
-execution of the latch, the cursor install or a walk round, is **PR2**; none of
-it is present or claimed here.
+**`bSeek` is the explicit local endpoint of this slice.**  It is the reverse
+seek's entry shape, but the table gives it **no** rows here, so it reads nothing
+and is `G1Stuck` (`GateOneRouting.g1_bSeek_stuck`), exactly as `bProbe2` was
+before this slice.  Its three reverse-read outcomes — an `index` at the write
+handoff, the opening `argSep` at the exhaustion handoff, everything else
+continuing the seek — together with the `index ↦ spent` writer, the forward scan
+back to the cursor, the two turns, the four restore writers and the exhaustion
+path are **PR2b**; none of them exists here.
+
+`GateOneProbeInstall` turns the three new rows into two frame-kernel facts and
+the exact atomic macros of the probe, the latch and the cursor install, each on
+a **caller-supplied** frame-list configuration.  Nothing here or there states a
+walk invariant, latches or installs from a real initial configuration, iterates
+a round, aggregates out-of-range branches or addresses an operand-2 index.
 
 ## The rewrite-cycle bridge, retained only as a regression
 
@@ -170,8 +179,10 @@ dispatch modes that write the decoded Boolean into `G1Ctx.vB`.
 `bWalk`/`bMark`/`bBack`/`bHop` are its reverse read, its fixed-code write, its
 back-walk and its hop; the forward table no longer enters `bRoundStart`.
 
-`bInsSeek` is the read-only installation scan of the positive-index branch and
-`bProbe2` its endpoint, the explicit local boundary of this slice.
+`bInsSeek`/`bProbe2` are the installation scan and its probe;
+`bLatchFalse`/`bLatchTrue` are the two latch dispatches, `bIns` the leftward
+cursor writer and `bSeek` the reverse seek's entry shape — the explicit local
+endpoint of this slice, with no rows of its own.
 
 `readAStart`, `combineStart`, `readAResetStart` and
 `bOOB` are the four remaining local handoffs, idle in this slice;
@@ -189,8 +200,9 @@ inductive G1Mode
   | bScan | bProbe
   | constFalse | constTrue | bStoreFalse | bStoreTrue
   | bRoundStart | bWalk | bMark | bBack | bHop
-  -- the installation scan and its endpoint
+  -- the cursor walk
   | bInsSeek | bProbe2
+  | bLatchFalse | bLatchTrue | bIns | bSeek
   | readAStart | combineStart | readAResetStart | bOOB
   | accept | reject
   deriving Fintype, DecidableEq, Repr
@@ -285,21 +297,38 @@ def g1MarkState (ctx : G1Ctx) : G1State :=
 def g1OOBState (ctx : G1Ctx) : G1State :=
   g1State .bOOB .p0 false false false ctx
 
-/-! ### The two named states of the installation scan.  Neither carries a `Nat`,
-an index, an offset or a length: the scan's whole memory is the frame position,
-the three-cell frame buffer and the pre-existing `G1Ctx`. -/
+/-! ### The named entry states of the cursor walk.  Each is the exact aligned
+shape one atomic macro of the walk starts or ends in.  None carries a `Nat`, an
+index, an offset or a length: the walk's whole memory is the frame position, the
+three-cell frame buffer and the pre-existing `G1Ctx`. -/
 
 /-- Installation scan: head on the first cell of the frame after the first
 operand-2 `index`. -/
 def g1InsSeekState (ctx : G1Ctx) : G1State :=
   g1State .bInsSeek .p0 false false false ctx
 
-/-- **The endpoint of the installation scan**, and the explicit local boundary
-of this slice: head on the first cell after the separator.  That frame is data
-when the region is nonempty and `output false` otherwise.  Reading it
-successfully is PR2. -/
+/-- **The walk probe**: head on the first cell of the data frame the cursor
+moves onto.  For the live route it is the endpoint of the installation scan;
+every round re-enters it from the cursor restore. -/
 def g1Probe2State (ctx : G1Ctx) : G1State :=
   g1State .bProbe2 .p0 false false false ctx
+
+/-- Leftward cursor-install entry: head on the last cell of the data frame the
+cursor moves onto. -/
+def g1InsState (ctx : G1Ctx) : G1State :=
+  g1State .bIns .p3 false false false ctx
+
+/-- **The explicit local endpoint of this slice.**  Reverse-seek entry: head on
+the last cell of the frame preceding the freshly installed cursor, frame buffer
+empty.  `bSeek` has no rows here, so it reads nothing; PR2b supplies its three
+reverse-read outcomes. -/
+def g1SeekState (ctx : G1Ctx) : G1State :=
+  g1State .bSeek .p3 false false false ctx
+
+/-- The two latch dispatches, indexed by the probed bit. -/
+def g1LatchMode : Bool → G1Mode
+  | false => .bLatchFalse
+  | true => .bLatchTrue
 
 /-- The reject sink and pass-B handoff differ.  Used by the
 `GateOneValidation` rejection surface. -/
@@ -381,18 +410,22 @@ def g1Advance : G1Mode → G1Frame → G1Mode
   -- the probe.  A data frame before the separator is malformed and rejects.
   | .bScan, .spent => .bScan
   | .bScan, .separator => .bProbe
-  | .bScan, .index => .bInsSeek      -- a non-zero index: enter installation scan
+  | .bScan, .index => .bInsSeek      -- a non-zero index: install the cursor
   -- the probe reads the selected data frame, or runs off the data region
   | .bProbe, .data false => .bStoreFalse
   | .bProbe, .data true => .bStoreTrue
   | .bProbe, .output false => .bOOB
   -- the installation scan: cross the rest of the operand-2 field and the
-  -- `separator`, stopping at `bProbe2` on the first frame after it: data when
-  -- nonempty, `output false` otherwise.  `bProbe2` has no successful frame row
-  -- and its successors are PR2.
+  -- `separator`, opening the cursor-walk probe on the first frame after it:
+  -- data when nonempty, `output false` otherwise
   | .bInsSeek, .index => .bInsSeek
   | .bInsSeek, .spent => .bInsSeek
   | .bInsSeek, .separator => .bProbe2
+  -- the cursor-walk probe: latch the next data bit, or run off the region.
+  -- `bSeek`, the endpoint of this slice, has no row of its own.
+  | .bProbe2, .data false => .bLatchFalse
+  | .bProbe2, .data true => .bLatchTrue
+  | .bProbe2, .output false => .bOOB
   | _, _ => .reject
 
 /-- The bit-level form of `g1Advance`, as the control table computes it. -/
@@ -404,19 +437,20 @@ def g1Complete (mode : G1Mode) (b0 b1 b2 b3 : Bool) : G1Mode :=
 /-- The modes that read one frame left to right through `g1Advance`.  The
 validation scan (`vBof … vBlank`), the pass-B rescan (`readBStart`,
 `rTag0 … rTag5`, `rConst0`/`rConst1`, `rArg1Binary`, `bScan`, `bProbe`) and the
-installation scan (`bInsSeek`, `bProbe2`) are forward modes; the rewind, the
-four dispatch modes, the five modes of the destructive round, the four remaining
-handoffs and the two sinks are not.
+installation scan and its probe (`bInsSeek`, `bProbe2`) are forward modes; the
+rewind, the four dispatch modes, the five modes of the destructive round, the
+two latch dispatches, the leftward cursor writer, the four remaining handoffs
+and the two sinks are not.
 
-`bProbe2` is forward *and* `G1Stuck` in this slice: the shared forward control
-can read its four cells, but the table gives it no successful frame row, so a
-completed frame enters `reject`.  No theorem executes that read.  This is what
-makes it an explicit boundary and
-not a claim; PR2 supplies its rows. -/
+`bSeek` is forward *and* `G1Stuck` in this slice: the shared forward control can
+read its four cells, but the table gives it no successful frame row, so a
+completed frame enters `reject`.  No theorem executes that read; this is what
+makes it an explicit endpoint and not a claim, and PR2b supplies its rows. -/
 def G1ForwardMode : G1Mode → Prop
   | .rewindStart | .rewind
   | .constFalse | .constTrue | .bStoreFalse | .bStoreTrue
   | .bRoundStart | .bWalk | .bMark | .bBack | .bHop
+  | .bLatchFalse | .bLatchTrue | .bIns
   | .readAStart | .combineStart | .readAResetStart | .bOOB
   | .accept | .reject => False
   | _ => True
@@ -433,7 +467,7 @@ theorem G1ForwardMode.readBStart : G1ForwardMode .readBStart := trivial
 /-- **Stuck modes.**  A mode from which the forward table can read nothing: it
 completes every frame into `reject`, and it is not the end-of-input mode.  In
 particular the four dispatch modes, the five modes of the destructive round,
-the installation scan's endpoint `bProbe2`,
+the two latch dispatches, the leftward cursor writer, the walk endpoint `bSeek`,
 the four remaining handoffs and the `reject` sink are
 stuck; `rewind` and `accept` also satisfy this table-level predicate but are
 unreachable as results of `g1Advance`;
@@ -501,8 +535,9 @@ theorem g1AdvanceList_ne_rewindStart_of_stuck {mode : G1Mode} (h : G1Stuck mode)
 /-- **The forward table only ever produces a forward mode, `rewindStart`, or a
 stuck mode.**  In particular `rewind` and `accept` are unreachable from any
 scan.  Every non-forward target (the four dispatch modes, the round's five
-modes, the four idle handoffs and the `reject` sink) is stuck; the forward
-boundary `bProbe2` is separately stuck because it has no successful frame row. -/
+modes, the two latch dispatches, the cursor writer, the four idle handoffs and
+the `reject` sink) is stuck; the forward endpoint `bSeek` is separately stuck
+because it has no successful frame row. -/
 theorem g1Advance_range (mode : G1Mode) (frame : G1Frame) :
     G1ForwardMode (g1Advance mode frame) ∨
       g1Advance mode frame = .rewindStart ∨
@@ -1161,6 +1196,17 @@ def g1Transition (_phase : Fin 1) (s : G1State) (scan : Bool) :
       | .p2 => (0, g1State .bBack .p3 false false false s.ctx, scan, .left)
       | .p3 => (0, g1State .bHop .p0 false false false s.ctx, scan, .left)
   | .bHop => (0, g1WalkState s.ctx, scan, .left)
+  -- the cursor walk's probe successor.  Nothing here inspects the request:
+  -- the latch stores the probed bit in the pre-existing `G1Ctx.vB`, and the
+  -- writer's four cells are the literal codeword of `cursor`.
+  | .bLatchFalse => (0, g1InsState (s.ctx.withVB false), scan, .left)
+  | .bLatchTrue => (0, g1InsState (s.ctx.withVB true), scan, .left)
+  | .bIns =>
+      match s.position with
+      | .p3 => (0, g1State .bIns .p2 false false false s.ctx, true, .left)
+      | .p2 => (0, g1State .bIns .p1 false false false s.ctx, true, .left)
+      | .p1 => (0, g1State .bIns .p0 false false false s.ctx, true, .left)
+      | .p0 => (0, g1SeekState s.ctx, false, .left)
   -- the four dispatch modes: store the decoded Boolean in `vB`, do not move
   | .constFalse => (0, g1CombineState (s.ctx.withVB false), scan, .stay)
   | .constTrue => (0, g1CombineState (s.ctx.withVB true), scan, .stay)
@@ -1480,5 +1526,50 @@ theorem g1Transition_bHop (phase : Fin 1) (position : G1FramePosition)
     (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
     g1Transition phase (g1State .bHop position b0 b1 b2 ctx) scan =
       (0, g1WalkState ctx, scan, .left) := rfl
+
+/-! ### The cursor walk: the probe's successor
+
+Five tuples, one per row of the three new non-forward modes.  Every one is
+`rfl` after at most one position or one Boolean split, and none mentions the
+request: the latch stores the probed bit in the pre-existing `G1Ctx.vB` and
+writes back the cell it scans, and the four cells the writer installs are the
+literal codeword `G1Frame.cursor.bits = [false, true, true, true]`.  The two
+forward walk modes (`bInsSeek`, `bProbe2`) have no rows of their own: their
+steps are the four `g1Transition_forward_*` lemmas above.  `bSeek`, the
+endpoint, has none either, and PR2b supplies them. -/
+
+/-- **The latch.**  One step stores the probed bit in `vB`, writes back the
+cell it scans and moves one cell left, onto the last cell of the data frame the
+cursor is about to occupy. -/
+theorem g1Transition_bLatch (phase : Fin 1) (b : Bool)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State (g1LatchMode b) position b0 b1 b2 ctx) scan =
+      (0, g1InsState (ctx.withVB b), scan, .left) := by
+  cases b <;> rfl
+
+theorem g1Transition_bIns_p3 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .bIns .p3 b0 b1 b2 ctx) scan =
+      (0, g1State .bIns .p2 false false false ctx, true, .left) := rfl
+
+theorem g1Transition_bIns_p2 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .bIns .p2 b0 b1 b2 ctx) scan =
+      (0, g1State .bIns .p1 false false false ctx, true, .left) := rfl
+
+theorem g1Transition_bIns_p1 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .bIns .p1 b0 b1 b2 ctx) scan =
+      (0, g1State .bIns .p0 false false false ctx, true, .left) := rfl
+
+/-- **The cursor is installed and this slice stops.**  The fourth leftward write
+completes `G1Frame.cursor.bits`, leaving the head on the last cell of the
+preceding frame in `g1SeekState` — the explicit endpoint, out of which the
+table reads nothing. -/
+theorem g1Transition_bIns_p0 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .bIns .p0 b0 b1 b2 ctx) scan =
+      (0, g1SeekState ctx, false, .left) := rfl
+
 
 end Pnp3.Internal.PsubsetPpoly.TM

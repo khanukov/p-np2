@@ -15,9 +15,10 @@ false` otherwise.
 **real** initial configuration `G1M.initialConfig (g1Point (encodeG1 r))`; it
 replaces the retired first-round route of `GateOneIndexRound`.
 
-`bProbe2` is the **explicit local boundary** of this slice: the control table
-gives it no successful frame row (`GateOneRouting.g1_bProbe2_stuck`); an
-attempted full-frame read rejects, and no theorem here executes that read.
+`bProbe2` is the **live-route boundary**: the two rows behind it — the latch and
+the cursor install — are exercised only from caller-supplied configurations in
+`GateOneProbeInstall`, and no theorem here or there runs them from a real
+initial configuration.
 
 This module is deliberately *narrow*.  It imports `GateOneReadB` and nothing
 else, so it depends only on the existing forward frame scanner
@@ -28,10 +29,10 @@ support it needs is the class of frames the installation scan crosses
 `g1ValidPath_fix`/`g1AdvanceList_fix`, which `GateOneRouting` has only in the
 homogeneous `List.replicate` form.
 
-**Explicit deferrals — all of them PR2.**  Nothing here latches a value,
-installs a cursor, seeks, marks, restores, turns, iterates, or reads an
-operand-2 value for `arg2 > 0`; the fourteen remaining cursor-walk modes and
-their rows do not exist yet.  There is no walk invariant, no installation
+**Explicit deferrals.**  Nothing *here* latches a value, installs a cursor,
+seeks, marks, restores, turns, iterates, or reads an operand-2 value for
+`arg2 > 0`; the probe, latch and cursor-install macros are `GateOneProbeInstall`,
+on caller-supplied configurations.  There is no walk invariant, no installation
 driver, no loop clock, no out-of-range aggregation, no repair, no pass A, no
 output write, no `TM.accepts`, no gate-semantics correctness, no full-clock
 theorem and no padded-tape claim: the real-run statements are scoped to the
@@ -161,8 +162,8 @@ tape **bit-for-bit the initial tape**.  This is the re-pointed reachability
 statement, *not* an addressing claim: nothing here reads that frame, latches a
 value, installs a cursor, iterates a round, or says which data frame the operand
 selects.  The frame is `.data r.vals[0]` when data is nonempty and `.output
-false` otherwise.  `bProbe2` has no successful frame row in this slice: an
-attempted full-frame read rejects, and no theorem executes that read. -/
+false` otherwise.  The cursor-walk rows behind `bProbe2` are never run from this
+configuration; their macros take the caller's own. -/
 theorem g1CS_readB_install_scan_exact (r : G1Request) (hc : r.Canonical)
     (ht : r.tag = .and ∨ r.tag = .or) (k : Nat) (h2 : r.arg2 = k + 1) :
     TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))

@@ -892,7 +892,9 @@ the control or the context.
   The `bScan + data` row stays **absent**: a data frame before the separator is
   still malformed and still rejects.
 
-  **`bProbe2` is an explicit local boundary.**  It has no outgoing `g1Advance`
+  **`bProbe2` is an explicit local boundary.**  (**Superseded by T2b-3a-2,
+  2026-08-28**: it now has three rows and `g1_bProbe2_stuck` is removed; the
+  boundary is `bSeek`.)  It has no outgoing `g1Advance`
   row, so it completes every frame into `reject` and is `G1Stuck`
   (`g1_bProbe2_stuck`); no theorem of this development runs the machine out of
   it.  The **fourteen remaining cursor-walk modes** — `bSeek`, `bDec`, `bFwd`,
@@ -958,6 +960,8 @@ when the region is nonempty and `.output false` otherwise.  It latches no bit, i
 no cursor, writes no cell and says nothing about which data frame the operand
 finally selects.  `bProbe2` has no successful frame row in this slice; an
 attempted full-frame read rejects, and no theorem executes that read.
+(**Superseded by T2b-3a-2, 2026-08-28** for the last sentence only: the probe is
+now active.  The reachability endpoint itself is unchanged.)
 
 Pinned by `Tests/TMGateOneControlSurfaceTests.lean` (the two entry states plus
 exact wrappers for the re-pointed row and the complete four-row installation
@@ -972,7 +976,8 @@ axioms of every load-bearing new theorem directly; the stale `#1662` roots are
 removed in the same change.
 
 This slice is **Infrastructure**.  Explicitly deferred and claimed nowhere, all
-of it **PR2**: the fourteen remaining cursor-walk modes and every row and tuple
+of it **PR2** (**T2b-3a-2 below delivers four of these modes; eleven remain**):
+the fourteen remaining cursor-walk modes and every row and tuple
 lemma they need, the
 cursor-walk tape invariant `Σ(j)`, the **installation driver** (latch plus
 cursor install executed from a real initial configuration), the reverse/write
@@ -991,6 +996,103 @@ current route prefix is `g1InstallRouteFrames`, and the current
 real-initial-config statement for that branch is
 `g1CS_readB_install_scan_exact`.  The T2b-2 endpoint table's sixth row
 (`bRoundStart` bridge) no longer exists.
+
+**T2b-3a-2: the G1 probe, latch and cursor install, delivered (2026-08-28):**
+
+**Progress classification: Infrastructure.**
+
+The immediate successor of the T2b-3a-1 endpoint `bProbe2`, and nothing else.
+`G1Ctx`, the `G1State` field list, `g1Clock` and the whole T2a validation
+grammar are unchanged, and no new `Nat`, index, width, offset, length or request
+field appears anywhere in the machine, the control or the context.
+
+**The route from the real initial configuration is unchanged.**  It still
+reaches exactly `bProbe2`: `g1InstallScanSteps`,
+`g1CS_readB_install_scan_exact`, its `_head`/`_tape`/`_state` projections, the
+clock bound and the literal `169`-step probe of `GateOneInstallScanExamples` are
+byte-for-byte as merged.  **Every** new run below starts from a
+**caller-supplied** configuration, tape length and safety bound.  There is no
+installation driver: nothing composes the `169`-step capstone with the atoms.
+
+* `GateOneControl.lean` — `G1Mode` gains exactly **four** constructors:
+  `bLatchFalse`, `bLatchTrue` (the latch dispatches), `bIns` (the leftward
+  cursor writer) and `bSeek` (the reverse-seek entry shape).  `g1Advance` gains
+  **three** rows, all out of the now-active probe:
+
+  ```text
+  bProbe2 + data false   ↦ bLatchFalse
+  bProbe2 + data true    ↦ bLatchTrue
+  bProbe2 + output false ↦ bOOB
+  ```
+
+  `g1Transition` gains **three** blocks and **five** standalone tuple lemmas —
+  `g1Transition_bLatch` and `g1Transition_bIns_p3/p2/p1/p0` — each `rfl` after
+  at most one split, none mentioning the request.  `g1LatchMode`, `g1InsState`
+  and `g1SeekState` are the new selector and entry states.  `g1Advance_range`,
+  `g1Advance_ne_sink` and every T2a/T2b-1 grammar and execution theorem
+  re-derives unchanged.  The `bScan + data` row stays **absent**.
+* **`bSeek` is the explicit local endpoint.**  It has no `g1Advance` row, so it
+  completes every frame into `reject` and is `G1Stuck`
+  (`GateOneRouting.g1_bSeek_stuck`) — exactly the role `bProbe2` played before
+  this slice.  No theorem runs the machine out of it.  Its three reverse-read
+  outcomes, the `index ↦ spent` writer `bDec`, the forward scan `bFwd`, the
+  turns `bTurn`/`bTurnFin`, the restore writers `bRestore*`/`bFin*` and the
+  exhaustion path `bExh`/`bRet` are **PR2b**; none of them exists in the tree.
+* `GateOneRouting.lean` — `g1_bProbe2_stuck` is **removed** (it is false now)
+  and replaced by `g1_bProbe2_rows`, which pins the three active probe rows, and
+  by `g1_bSeek_stuck`, which pins the new endpoint.  No route prefix reaches
+  past `bProbe2`.
+* `GateOneProbeInstall.lean` (new) — imports `FrameScannerWriteLeft` and the
+  merged `GateOneInstallScan`, and **reuses** `G1InstallSkip`,
+  `g1Advance_bInsSeek_of_skip`, `g1ValidPath_fix`, `g1AdvanceList_fix`,
+  `g1CS_walk_install_scan` and the real-initial-config capstones without
+  restating them.  It adds one table fact (`g1Advance_bProbe2_data`), one
+  `ReverseFrameWriter` instance (`g1CursorWriter`, leftward `_ ↦ cursor`) and
+  three exact `TM.runConfig` macros on an **arbitrary** frame list:
+  `g1CS_walk_probe_latch` (five steps: four to read `data v`, one to store `v`
+  in `G1Ctx.vB`; head `4k ↦ 4k + 3`, tape unchanged),
+  `g1CS_walk_probe_oob` (four steps on `output false` into the stable `bOOB`)
+  and `g1CS_walk_install_cursor` (four leftward steps, frame `pre.length`
+  replaced by `cursor`, head `4k + 3 ↦ 4k - 1`, control in `bSeek`).  The probe
+  reuses the existing forward `g1FrameScanner`; only the leftward writer needs a
+  new kernel instance, and **no** generic kernel file is touched.
+* `GateOneProbeInstallExamples.lean` (new) — four literal probes reusing
+  `G1InstallScanExamples.g1WalkExample = ⟨and, 0, 2, [false, true, true]⟩`
+  (**fifteen** encoded frames, `60` input cells; the layout `g1WalkInitFrames`
+  appends one `blank`, so **sixteen** frames and `64` bits) and its literal
+  frame word: `probe_latch_false` (head `40 → 43`, `vB := false`),
+  `probe_latch_true` (`44 → 47`, `vB := true`), `probe_oob` (`52 → 56`) and
+  `install_cursor` (`43 → 39`, ordinal `10` becomes `cursor`).  One new layout,
+  `g1WalkFramesCursor0`.  Each takes `n` and one safety bound from the caller;
+  nothing chains them, and nothing chains them to the `169`-step capstone.
+
+Pinned by `Tests/TMGateOneProbeInstallSurfaceTests.lean` (theorem-style exact
+wrappers for all three macros and all four literal probes),
+`Tests/TMGateOneControlSurfaceTests.lean` (the entry states, the latch selector,
+the five tuple lemmas, and exact wrappers for the probe table, for `bSeek`/the
+three new modes being stuck, for the still-absent `bScan + data` row, and for
+the latch tuple) and `Tests/TMGateOneRoutingSurfaceTests.lean` /
+`Tests/TMGateOneReadBSurfaceTests.lean` (`g1_bProbe2_rows` and
+`g1_bSeek_stuck` replacing `g1_bProbe2_stuck`).  `Tests/AxiomsAudit.lean` prints
+the axioms of every load-bearing new theorem directly.
+
+Explicitly deferred and claimed nowhere: the eleven remaining cursor-walk modes
+and all their rows and tuple lemmas, the reverse seek and its confinement, the
+`index ↦ spent` round, the two turns, the four restore writers, the exhaustion
+path, the cursor-walk tape invariant, the **installation driver** (latch plus
+cursor install executed from a real initial configuration), any iteration or
+loop clock, addressing, the positive-index operand *value* read, the aggregated
+out-of-range branches, repair, pass A, combine, output write, `TM.accepts`,
+gate-semantics correctness, a full-clock theorem, and non-canonical or
+physically padded tapes.
+
+*Superseded statements in the T2b-3a-1 entry above:* the sentences saying that
+`bProbe2` "has no outgoing `g1Advance` row", that it "completes every frame into
+`reject` and is `G1Stuck` (`g1_bProbe2_stuck`)", that an "attempted full-frame
+read rejects", and that the **fourteen** remaining cursor-walk modes are all
+PR2, describe the table before this slice.  `bProbe2` now has three rows,
+`g1_bProbe2_stuck` is removed, and the remaining deferred modes are **eleven**.
+The endpoint whose reject-boundary reading still holds is `bSeek`.
 
 **T2a correction (2026-08-24).**  The first T2a head shipped a permissive
 forward table (`vTag` looping on every `tag`, `vArg1`/`vArg2` looping on every

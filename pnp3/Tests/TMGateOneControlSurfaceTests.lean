@@ -12,14 +12,14 @@ generic frame-scanner kernel.
 This layer exposes frame-word/table correspondence and the generic kernel's
 exact four-step and multi-frame `TM.runConfig` primitives.  It also pins the
 fourteen transition tuples of the retired destructive index round
-(`bRoundStart` bridge, `bWalk`, `bMark`, `bBack`, `bHop`) and the complete
-four-row installation-scan table.  `bInsSeek` and `bProbe2` are forward modes
-and have **no** transition rows of their own; `bProbe2` has no `g1Advance` row
-either, and the remaining cursor-walk modes, rows, tuple lemmas and the latch /
-cursor-install execution are PR2.  The executed installation scan is a separate
-layer with its own surface entries.  End-to-end physical validation, rejection,
-rewind, and `readBStart` composition remain in their separate execution
-surface.
+(`bRoundStart` bridge, `bWalk`, `bMark`, `bBack`, `bHop`) and the three probe
+rows with the five transition tuples of `bLatchFalse`/`bLatchTrue`/`bIns`.
+`bInsSeek` and `bProbe2` are forward modes with no transition rows of their own,
+and `bSeek` — the local endpoint of this slice — has neither a frame row nor a
+transition row; its reverse-read rows are PR2b.  Execution lives in separate
+layers with their own surface entries.  End-to-end physical validation,
+rejection, rewind, and `readBStart` composition remain in their separate
+execution surface.
 
 This is an audit surface: it pins public signatures, it does not prove
 anything new.
@@ -86,10 +86,19 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1Transition_bBack_p2
 #check @g1Transition_bBack_p3
 #check @g1Transition_bHop
--- The two states of the installation scan.  Both modes are forward, so they
--- have no transition rows of their own.
+-- The entry states, the latch selector and the five transition tuples of the
+-- probe's successor.  `bInsSeek`/`bProbe2` are forward modes and `bSeek` is the
+-- endpoint, so none of the three has transition rows of its own.
 #check @g1InsSeekState
 #check @g1Probe2State
+#check @g1InsState
+#check @g1SeekState
+#check @g1LatchMode
+#check @g1Transition_bLatch
+#check @g1Transition_bIns_p3
+#check @g1Transition_bIns_p2
+#check @g1Transition_bIns_p1
+#check @g1Transition_bIns_p0
 #check @g1RejectState_ne_readB
 #check @g1OOBState_ne_readAReset
 
@@ -153,14 +162,34 @@ enters the installation scan, not the retired rewrite-cycle bridge. -/
 theorem check_g1Advance_bScan_index :
     g1Advance .bScan .index = .bInsSeek := rfl
 
-/-- **The complete installation-scan table.**  Four rows and no more; in
-particular `bProbe2` has none, so this slice cannot read the selected data
-frame. -/
+/-- **The complete installation-scan table.** -/
 theorem check_g1Advance_bInsSeek :
     g1Advance .bInsSeek .index = .bInsSeek ∧
       g1Advance .bInsSeek .spent = .bInsSeek ∧
       g1Advance .bInsSeek .separator = .bProbe2 :=
   ⟨rfl, rfl, rfl⟩
+
+/-- **The complete probe table, and the endpoint.**  `bProbe2` is **active** —
+it latches the data bit it reads, or hands off to the stable out-of-range
+boundary — while `bSeek`, where the cursor install stops, has no successful
+frame row at all, so an attempted complete-frame read there enters `reject` and
+no theorem of this development executes it.  The `bScan + data` row also stays
+absent: a data frame before the separator is still malformed and still
+rejects. -/
+theorem check_g1Advance_probe (b : Bool) :
+    (g1Advance .bProbe2 (.data b) = g1LatchMode b ∧
+        g1Advance .bProbe2 (.output false) = .bOOB) ∧
+      G1Stuck .bSeek ∧ G1Stuck .bLatchFalse ∧ G1Stuck .bLatchTrue ∧
+      G1Stuck .bIns ∧ g1Advance .bScan (.data b) = .reject := by
+  cases b <;> exact ⟨⟨rfl, rfl⟩, by decide, by decide, by decide, by decide, rfl⟩
+
+/-- **The latch, pinned exactly.**  One step stores the probed bit in the fixed
+Boolean field `vB` and steps left; it writes back the cell it scans. -/
+theorem check_g1Transition_bLatch (phase : Fin 1) (b : Bool)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State (g1LatchMode b) position b0 b1 b2 ctx) scan =
+      (0, g1InsState (ctx.withVB b), scan, .left) :=
+  g1Transition_bLatch phase b position b0 b1 b2 scan ctx
 
 theorem check_g1AdvanceList_encode_reject (r : G1Request)
     (hc : ¬ r.Canonical) :

@@ -36,9 +36,12 @@ immediately after the `separator`.  For `arg2 > 0` the forward table sends
 `g1InstallRouteFrames` is the resulting fifth route prefix —
 `g1FieldRouteFrames r · index^arg2 · separator` — whose fold ends at `bProbe2`.
 The executed capstone is
-`GateOneInstallScan.g1CS_readB_install_scan_exact`.  `bProbe2` is where this
-slice stops (`g1_bProbe2_stuck`); the latch, the cursor install and the walk
-round are PR2.
+`GateOneInstallScan.g1CS_readB_install_scan_exact`, and it is the last thing a
+run from `G1M.initialConfig` reaches: `bProbe2` is now **active** (it latches
+the data bit it reads), but the probe, the latch and the cursor install are
+proved only on caller-supplied configurations in `GateOneProbeInstall`, and
+their exit `bSeek` is the local endpoint (`g1_bSeek_stuck`) whose reverse-read
+rows are PR2b.
 
 The older bridge `bRoundStart` is now unreachable from the forward table
 (`g1_bRoundStart_unreachable`) and reads no frame at all
@@ -368,10 +371,10 @@ theorem g1ReadBOOB_validPath (r : G1Request)
 For `arg2 > 0` the operand-2 walk meets an unspent `index` unit and hands off to
 `bInsSeek`, the **installation scan**, which crosses the rest of the operand-2
 field, crosses the `separator` and stops at `bProbe2` on the first frame after
-it: data when nonempty, `output false` otherwise.  `bProbe2` is the explicit
-local boundary of this slice: it has no successful frame row
-(`g1_bProbe2_stuck`); an attempted full-frame read rejects, and no theorem
-executes it.  PR2 supplies the latch and cursor-install rows behind it.
+it: data when nonempty, `output false` otherwise.  That is where the route from
+a real initial configuration ends; the probe, latch and cursor-install rows
+behind `bProbe2` are exercised only from caller-supplied configurations
+(`GateOneProbeInstall`), and no route prefix here reaches them.
 `bRoundStart` — the bridge into the thirteen-step
 rewrite cycle — is no longer a target of the forward table
 (`g1_bRoundStart_unreachable`), so nothing here or downstream claims that
@@ -396,11 +399,19 @@ theorem g1_insSeek_validPath (k : Nat) (rest : List G1Frame)
 
 theorem g1_bRoundStart_stuck : G1Stuck .bRoundStart := by decide
 
-/-- **The installation scan's endpoint has no successful frame row in this
-slice.**  An attempted complete-frame read at `bProbe2` enters `reject`; the
-capstone stops at its first cell and no theorem executes that read.  PR2
-supplies the two latch rows `data b ↦ bLatch b` and the out-of-range row. -/
-theorem g1_bProbe2_stuck : G1Stuck .bProbe2 := by decide
+/-- **The walk probe is active.**  Its three rows latch the data bit it reads or
+hand off to the stable out-of-range boundary; it is not stuck. -/
+theorem g1_bProbe2_rows :
+    g1Advance .bProbe2 (.data false) = .bLatchFalse ∧
+      g1Advance .bProbe2 (.data true) = .bLatchTrue ∧
+      g1Advance .bProbe2 (.output false) = .bOOB :=
+  ⟨rfl, rfl, rfl⟩
+
+/-- **The cursor install's exit has no successful frame row in this slice.**  An
+attempted complete-frame read at `bSeek` enters `reject`; the install macro
+stops on its first cell and no theorem executes that read.  PR2b supplies the
+three reverse-read outcomes. -/
+theorem g1_bSeek_stuck : G1Stuck .bSeek := by decide
 
 /-- **The rewrite-cycle bridge is unreachable from the forward table.**  No
 mode/frame pair completes into `bRoundStart`. -/

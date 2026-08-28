@@ -23,6 +23,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOneExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneRouting
 import Complexity.TMVerifier.TuringToolkit.GateOneReadBExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneInstallScanExamples
+import Complexity.TMVerifier.TuringToolkit.GateOneProbeInstallExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneIndexRound
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
@@ -382,7 +383,8 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1_bScan_index_install
 #print axioms Internal.PsubsetPpoly.TM.g1_insSeek_advance
 #print axioms Internal.PsubsetPpoly.TM.g1_insSeek_validPath
-#print axioms Internal.PsubsetPpoly.TM.g1_bProbe2_stuck
+#print axioms Internal.PsubsetPpoly.TM.g1_bProbe2_rows
+#print axioms Internal.PsubsetPpoly.TM.g1_bSeek_stuck
 #print axioms Internal.PsubsetPpoly.TM.g1_bRoundStart_stuck
 #print axioms Internal.PsubsetPpoly.TM.g1_bRoundStart_unreachable
 #print axioms Internal.PsubsetPpoly.TM.g1InstallRouteFrames_length
@@ -451,10 +453,9 @@ open Pnp3.Magnification
 -- `g1CS_readB_install_scan_exact` is the one statement here that starts from the
 -- real initial configuration, and it is a **reachability** endpoint: it latches
 -- nothing, installs no cursor, writes no cell and reads no operand-2 value.
--- Its endpoint `bProbe2` has no successful frame row (`g1_bProbe2_stuck`): a
--- completed attempted read rejects, and no theorem executes that read.  The
--- remaining fourteen walk modes, their rows and the latch / cursor-install
--- execution are PR2.
+-- Its endpoint `bProbe2` is where every real-initial-configuration statement of
+-- this development stops; the probe, latch and cursor install behind it are
+-- audited below and take the caller's configuration.
 #print axioms Internal.PsubsetPpoly.TM.g1Advance_bInsSeek_of_skip
 #print axioms Internal.PsubsetPpoly.TM.g1ValidPath_fix
 #print axioms Internal.PsubsetPpoly.TM.g1AdvanceList_fix
@@ -474,6 +475,27 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1InstallScanExamples.walk_install_scan_state
 #print axioms Internal.PsubsetPpoly.TM.G1InstallScanExamples.walk_install_scan_tape
 #print axioms Internal.PsubsetPpoly.TM.G1InstallScanExamples.walk_install_scan_clock
+
+-- The successor of the installation-scan endpoint: the probe's table fact, the
+-- leftward cursor-writer instance, the three exact atomic macros on an
+-- **arbitrary** frame list, and their four literal encoded-frame probes.
+-- **Every one takes the caller's configuration**: none starts from
+-- `G1M.initialConfig`, so no installation driver is audited here.  The install
+-- stops in `bSeek`, which has no successful frame row (`g1_bSeek_stuck`); its
+-- reverse-read rows, the `index -> spent` writer, the forward scan, the turns,
+-- the restore writers and the exhaustion path are PR2b.  No walk invariant,
+-- iteration, loop clock, out-of-range aggregation, repair, arbitrary-index
+-- read, `TM.accepts`, gate-semantics, full-clock or padded-tape statement is
+-- audited here, because none exists.
+#print axioms Internal.PsubsetPpoly.TM.g1Advance_bProbe2_data
+#print axioms Internal.PsubsetPpoly.TM.g1CursorWriter_machine
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_probe_latch
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_probe_oob
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_install_cursor
+#print axioms Internal.PsubsetPpoly.TM.G1ProbeInstallExamples.probe_latch_false
+#print axioms Internal.PsubsetPpoly.TM.G1ProbeInstallExamples.probe_latch_true
+#print axioms Internal.PsubsetPpoly.TM.G1ProbeInstallExamples.probe_oob
+#print axioms Internal.PsubsetPpoly.TM.G1ProbeInstallExamples.install_cursor
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

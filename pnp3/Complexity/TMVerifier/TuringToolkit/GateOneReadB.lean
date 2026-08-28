@@ -60,9 +60,12 @@ the unannotated data region, exactly for `arg2 = 0`: the walk meets the
 `separator` with no unspent `index` unit left, and the probe reads the frame
 behind it.  For `arg2 > 0` the fixed control enters `bInsSeek`, the installation
 scan of the positive-index branch; the exact route to its endpoint is
-`GateOneInstallScan.g1CS_readB_install_scan_exact`.  Nothing in this development
-latches a value, installs a cursor, iterates a round, addresses a runtime index,
-or claims that the walk resolves the selected data frame for `arg2 > 0`.
+`GateOneInstallScan.g1CS_readB_install_scan_exact`, and that endpoint is where
+every statement from a **real** initial configuration stops.  The latch and the
+cursor install exist only as atomic macros on caller-supplied configurations
+(`GateOneProbeInstall`); nothing in this development runs them from
+`G1M.initialConfig`, iterates a round, addresses a runtime index, or claims that
+the walk resolves the selected data frame for `arg2 > 0`.
 
 `g1CS_step_round_bridge` below is the exact one-step execution of the older
 bridge `bRoundStart`, which is **no longer a target of the forward table**

@@ -807,7 +807,7 @@ open Pnp3.Magnification
 -- Repair-1: the G1 operand-2 repair control and its generic kernel.  The five
 -- repair modes, the reverse repair scanner and the `spent ↦ index` rewrite
 -- cycle as genuine instances of the generic kernels, the seven
--- arbitrary-frame-list macros, the terminal dispatch and the capstone
+-- arbitrary-frame-list macros, anchor finish, terminal dispatch and capstone
 -- `g1CS_repair_pass_exact` with its closed cost `4m + 13s + 4a + 5`, which is
 -- the concrete endpoint of the slice.
 -- **The sweep does not cross malformed tape**: `G1RepairSkip` holds for exactly

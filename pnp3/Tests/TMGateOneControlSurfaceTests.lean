@@ -145,7 +145,7 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1OOBState_ne_readAReset
 #check @g1ExhState_ne_dec
 
--- The three entry states of the operand-2 repair sweep; its ten transition
+-- The three entry states of the operand-2 repair sweep; its eleven transition
 -- tuples are pinned as exact equations by the `check_g1Transition_bRepair*`
 -- theorems below.  No route of this slice enters any of the five modes.
 #check @g1RepairSeekState

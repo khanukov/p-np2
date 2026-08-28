@@ -480,8 +480,9 @@ validation scan (`vBof … vBlank`), the pass-B rescan (`readBStart`,
 `rTag0 … rTag5`, `rConst0`/`rConst1`, `rArg1Binary`, `bScan`, `bProbe`) and the
 four forward modes of the cursor walk (`bInsSeek`, `bProbe2`, `bFwd`, `bExh`)
 are forward modes; the rewind, the four dispatch modes, the five modes of the
-destructive round, the five non-forward modes of the cursor walk (`bSeek` reads
-right to left, the four writers write, the turn holds), the four remaining
+destructive round, the eight non-forward modes of the cursor walk (`bSeek` reads
+right to left, the two latch modes dispatch, the four writers write and the turn
+holds), the four remaining
 handoffs and the two sinks are not.
 
 `bExh` is forward *and* `G1Stuck` in this slice: the shared forward control can
@@ -510,7 +511,7 @@ theorem G1ForwardMode.readBStart : G1ForwardMode .readBStart := trivial
 /-- **Stuck modes.**  A mode with no successful frame row: an attempted
 complete-frame read enters `reject`, and it is not the end-of-input mode.  In
 particular the four dispatch modes, the five modes of the destructive round,
-the five non-forward modes of the cursor walk, the exhaustion boundary `bExh`,
+the eight non-forward modes of the cursor walk, the exhaustion boundary `bExh`,
 the four remaining handoffs and the `reject` sink are
 stuck; `rewind` and `accept` also satisfy this table-level predicate but are
 unreachable as results of `g1Advance`;
@@ -578,7 +579,7 @@ theorem g1AdvanceList_ne_rewindStart_of_stuck {mode : G1Mode} (h : G1Stuck mode)
 /-- **The forward table only ever produces a forward mode, `rewindStart`, or a
 stuck mode.**  In particular `rewind` and `accept` are unreachable from any
 scan.  Every non-forward target (the four dispatch modes, the round's five
-modes, the five non-forward walk modes, the four idle handoffs and the
+modes, the eight non-forward walk modes, the four idle handoffs and the
 `reject` sink) is stuck; the forward boundary `bExh` is separately stuck because
 it has no successful frame row. -/
 theorem g1Advance_range (mode : G1Mode) (frame : G1Frame) :

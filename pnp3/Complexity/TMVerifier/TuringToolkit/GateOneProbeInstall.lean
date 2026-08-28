@@ -16,7 +16,8 @@ lemmas of `bLatchFalse`/`bLatchTrue`/`bIns`; this module turns them into
   and enter the stable `bOOB` boundary;
 * `g1CursorWriter`, one `ReverseFrameWriter` instance, and
   `g1CS_walk_install_cursor` — four leftward steps replace that frame by
-  `cursor`, head on the last cell of its predecessor, control in `bSeek`.
+  `cursor`, head on the last cell of its predecessor, control in the
+  reverse-seek entry shape `bSeek .p3`.
 
 Each is an exact `TM.runConfig` equality — steps, head, control state, carried
 context and the complete list-backed tape all pinned — on an **arbitrary**
@@ -30,13 +31,12 @@ The installation scan is **not** restated: `G1InstallSkip`,
 `g1CS_readB_install_scan_exact` come unchanged from `GateOneInstallScan`, and
 nothing here composes with them.
 
-**Explicit deferrals.**  `bSeek` is the local endpoint at `.p3`, head on the
-last cell of the frame preceding the cursor.  It has no successful frame row
-(`GateOneRouting.g1_bSeek_stuck`): an attempted complete-frame read rejects,
-and no theorem executes it.  The reverse seek rows, the `index ↦ spent` writer,
-the forward scan
-back to the cursor, the two turns, the four restore writers and the exhaustion
-path are **PR2b**.  Every theorem below takes the caller's configuration; none
+**Explicit deferrals.**  The install exits at `bSeek .p3`, head on the last cell
+of the frame preceding the cursor; the reverse seek itself, the `index ↦ spent`
+writer, the forward scan back to the cursor, the normal turn and the two normal
+restore writers are in `GateOneWalkKernel`; terminal exhaustion, its turn and
+two terminal restore writers remain PR2b2.  Nothing here composes with them.
+Every theorem below takes the caller's configuration; none
 starts from `G1M.initialConfig`, so there is no installation driver here.  No
 walk invariant, no iteration or loop clock, no out-of-range aggregation, no
 addressing, no `TM.accepts`, no gate-semantics correctness, no full-clock
@@ -48,7 +48,7 @@ namespace Pnp3.Internal.PsubsetPpoly.TM
 open Pnp3.Internal.PsubsetPpoly.TM.FrameScan
 
 /-- **The leftward cursor writer.**  Four fixed cells of `cursor`, walking
-*left* from the last cell of the data frame, into the endpoint `bSeek`. -/
+*left* from the last cell of the data frame, into the reverse seek. -/
 def g1CursorWriter : ReverseFrameWriter G1State G1Frame G1Ctx where
   program := g1CS
   phase := g1CS.startPhase
@@ -155,7 +155,7 @@ theorem g1CS_walk_probe_oob (n : Nat) (pre suffix : List G1Frame) (ctx : G1Ctx)
 
 /-- **The cursor install.**  Four leftward steps replace the frame at ordinal
 `pre.length` by `cursor`, head on the last cell of its predecessor, control in
-the endpoint `bSeek`. -/
+the reverse-seek entry shape `bSeek .p3`. -/
 theorem g1CS_walk_install_cursor (n : Nat) (pre suffix : List G1Frame)
     (old : G1Frame) (ctx : G1Ctx) (hpre : 0 < pre.length)
     (hsafe : 4 * pre.length + 4 < G1M.tapeLength n) :

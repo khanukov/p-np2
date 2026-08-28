@@ -1035,13 +1035,11 @@ installation driver: nothing composes the `169`-step capstone with the atoms.
   on the last cell of the frame preceding the cursor.  `bSeek` has no successful
   frame row, so an attempted complete-frame read enters `reject`; it is
   `G1Stuck` (`GateOneRouting.g1_bSeek_stuck`) and no theorem executes that read.
-  PR2b supplies two new handoffs (`bDec`, `bExh`) plus the seek self-loop.  It
-  also supplies the `index ↦ spent` writer, the forward scan `bFwd`, the
-  turns `bTurn`/`bTurnFin`, the restore writers `bRestore*`/`bFin*` and the
-  exhaustion path `bExh`/`bRet`; none of them exists in the tree.
+  (**Superseded by PR2b1 below:** `bSeek` now has three live reverse outcomes,
+  `g1_bSeek_stuck` is removed, and the boundary is `bExh`.)
 * `GateOneRouting.lean` — `g1_bProbe2_stuck` is **removed** (it is false now)
   and replaced by `g1_bProbe2_rows`, which pins the three active probe rows, and
-  by `g1_bSeek_stuck`, which pins the new endpoint.  No route prefix reaches
+  by the then-current `g1_bSeek_stuck`, which pinned the new endpoint.  No route prefix reaches
   past `bProbe2`.
 * `GateOneProbeInstall.lean` (new) — imports `FrameScannerWriteLeft` and the
   merged `GateOneInstallScan`, and **reuses** `G1InstallSkip`,
@@ -1074,12 +1072,14 @@ the five tuple lemmas, and exact wrappers for the probe table, for `bSeek`/the
 three new modes being stuck, for the still-absent `bScan + data` row, and for
 the latch tuple) and `Tests/TMGateOneRoutingSurfaceTests.lean` /
 `Tests/TMGateOneReadBSurfaceTests.lean` (`g1_bProbe2_rows` and
-`g1_bSeek_stuck` replacing `g1_bProbe2_stuck`).  `Tests/AxiomsAudit.lean` prints
+the then-current `g1_bSeek_stuck` replacing `g1_bProbe2_stuck`).
+`Tests/AxiomsAudit.lean` prints
 the axioms of every load-bearing new theorem directly.
 
-Explicitly deferred and claimed nowhere: the ten remaining cursor-walk modes
-and all their rows and tuple lemmas, the reverse seek and its confinement, the
-`index ↦ spent` round, the two turns, the four restore writers, the exhaustion
+Explicitly deferred and claimed nowhere (at the time of that slice; PR2b1 below
+delivers six of these ten modes): the ten remaining cursor-walk modes and all
+their rows and tuple lemmas, the reverse-seek rows and exact stop endpoints, the
+`index ↦ spent` round, the turns, the restore writers, the exhaustion
 path, the cursor-walk tape invariant, the **installation driver** (latch plus
 cursor install executed from a real initial configuration), any iteration or
 loop clock, addressing, the positive-index operand *value* read, the aggregated
@@ -1094,6 +1094,123 @@ read rejects", and that the **fourteen** remaining cursor-walk modes are all
 PR2, describe the table before this slice.  `bProbe2` now has three rows,
 `g1_bProbe2_stuck` is removed, and the remaining deferred modes are **ten**.
 The endpoint whose reject-boundary reading still holds is `bSeek`.
+(**Superseded by PR2b1, 2026-08-28** for that last sentence only: `bSeek` is now
+a live reverse-reading mode with three outcomes, `g1_bSeek_stuck` is removed,
+and the boundary is `bExh`.)
+
+**PR2b1: one normal round of the G1 cursor walk, delivered (2026-08-28):**
+
+**Progress classification: Infrastructure.**
+
+The successor of the merged reverse-seek entry `bSeek`, and one **normal round**
+only.  `G1Ctx`, the `G1State` field list, `g1Clock` and the whole T2a validation
+grammar are unchanged, and no new `Nat`, index, width, offset, length or request
+field appears anywhere in the machine, the control or the context.
+
+**The route from the real initial configuration is unchanged.**  It still
+reaches exactly `bProbe2`: `g1InstallScanSteps`,
+`g1CS_readB_install_scan_exact`, its projections, the clock bound and the
+literal `169`-step probe of `GateOneInstallScanExamples` are byte-for-byte as
+merged, as are `g1CursorWriter`, `g1CS_walk_probe_latch`, `g1CS_walk_probe_oob`,
+`g1CS_walk_install_cursor` and their four literal probes.  **Every** new run
+below starts from a **caller-supplied** configuration, tape length and safety
+bound.  There is no installation driver: nothing composes the `169`-step
+capstone with the atoms, and nothing composes two atoms into a round.
+
+* `GateOneControl.lean` — `G1Mode` gains exactly **six** constructors: `bDec`
+  (the `index ↦ spent` writer), `bFwd` (the forward scan back to the cursor),
+  `bTurn` (the four-step turn), `bRestoreFalse`/`bRestoreTrue` (the two
+  cursor-restore writers) and `bExh` (the exhaustion handoff).  `g1Advance`
+  gains **four** rows, all out of `bFwd`:
+
+  ```text
+  bFwd + spent      ↦ bFwd      bFwd + separator ↦ bFwd
+  bFwd + data _     ↦ bFwd      bFwd + cursor    ↦ bTurn
+  ```
+
+  `bSeek` becomes a **non-forward, right-to-left** mode: it has no `g1Advance`
+  row and is decided at frame position `.p0` inside `g1Transition`, with the
+  three exact outcomes `index ↦ bDec` (stay), opening `argSep ↦ bExh` (stay)
+  and everything else ↦ `bSeek` (one frame further left).  The literal
+  `argSep` stop row enters the exact exhaustion endpoint `bExh`; no trace
+  invariant is claimed by this slice.
+  `g1Transition` gains **five** blocks and **eighteen** new standalone tuple
+  lemmas — `g1Transition_bSeek_p3/p2/p1`, `_p0_index`, `_p0_argSep`, `_p0_other`,
+  `g1Transition_bDec_p0…p3`, `g1Transition_bTurn_p0…p3` and
+  `g1Transition_bRestore_p0…p3` — each `rfl` after at most one split, none
+  mentioning the request.  `g1DecState`, `g1FwdState`, `g1ExhState`,
+  `g1RestoreMode` and `g1ExhState_ne_dec` are the new entry states, selector and
+  separation fact.  `g1Advance_range`, `g1Advance_ne_sink` and every T2a/T2b
+  grammar and execution theorem re-derives unchanged; the `bScan + data` row
+  stays **absent**.
+* **`bExh` is the explicit local boundary.**  The seek's `argSep` outcome stops
+  at `.bExh .p0`, head on the **first cell of the `argSep` that opens the
+  operand-2 field**, tape and `G1Ctx` untouched.  `bExh` is a forward mode with
+  **no successful frame row**, so an attempted complete-frame read enters
+  `reject`; it is `G1Stuck` (`GateOneRouting.g1_bExh_stuck`) and no theorem
+  executes past it.  The **terminal exhaustion** path — the modes `bRet`,
+  `bTurnFin`, `bFinFalse`, `bFinTrue`, their rows and tuple lemmas, the
+  `bExh + argSep ↦ bRet` handoff, the run back to the cursor, the terminal turn
+  and the two terminal restore writers that hand off to `readAResetStart` with
+  no cursor left on the tape — is **PR2b2**; none of it exists in the tree.
+* `GateOneRouting.lean` — `g1_bSeek_stuck` is removed because it no longer
+  describes an execution boundary.  The frame-table proposition
+  `G1Stuck .bSeek` remains true: non-forward `bSeek` has no `g1Advance` row,
+  while its execution now uses dedicated reverse `g1Transition` rows.  The old
+  boundary root is replaced by `g1_bFwd_rows`, which pins the walk's
+  right-running scan, and by
+  `g1_bExh_stuck`, which pins the new boundary.  No route prefix reaches either.
+* `FrameScannerReverse.lean` — the shared phased layer gains the two generic
+  tape-preserving leftward primitives `Phased.holdLeft` (one hold-and-move-left
+  step) and `Phased.holdWalk4` (the four-step turn from `k + 4` back to `k`).
+  They are used concretely by `g1CS_walk_turn`.
+* `GateOneWalkKernel.lean` (new) — imports `FrameScannerSeek` and the merged
+  `GateOneProbeInstall`, and **reuses** `G1InstallSkip`,
+  `g1Advance_bInsSeek_of_skip`, `g1ValidPath_fix`, `g1AdvanceList_fix`,
+  `g1CS_walk_install_scan`, `g1CursorWriter` and the probe/latch/install macros
+  without restating them.  It adds `G1WalkSkip` with
+  `g1Advance_bFwd_of_skip`, the reverse-seek table
+  (`g1WalkRevAdvance`/`g1WalkRevComplete`/`G1WalkMode`/`G1WalkStop`), three
+  kernel instances — `g1WalkScanner` (`ReverseFrameScanner`), `g1DecWriter` and
+  `g1RestoreWriter b` (`FrameWriter`) — and **seven** exact `TM.runConfig`
+  macros on an **arbitrary** frame list: `g1CS_walk_seek_to_index`
+  (`4k + 4` steps, head `4(p+k)+3 ↦ 4p`, into `bDec`), `g1CS_walk_seek_exhaust`
+  (the same shape into the boundary `bExh`), `g1CS_walk_mark`
+  (`index ↦ spent`, head `4p ↦ 4p + 4`, into `bFwd`), `g1CS_walk_seek_mark`
+  (`4k + 8` steps, the two composed), `g1CS_walk_fwd_to_cursor`
+  (`4(k+1)` read-only steps to just past the cursor, into `bTurn`),
+  `g1CS_walk_turn` (four hold-left steps, arbitrary tape, into
+  `g1RestoreMode ctx.vB`) and `g1CS_walk_restore` (`cursor ↦ data b`, back into
+  `bProbe2`).
+* `GateOneWalkExamples.lean` (new) — five literal probes reusing
+  `G1InstallScanExamples.g1WalkExample = ⟨and, 0, 2, [false, true, true]⟩`
+  (**fifteen** encoded frames, `60` input cells; the list-backed layouts append
+  one `blank`, so **sixteen** frames and `64` bits) and three new intermediate
+  layouts `g1WalkFramesRound1`/`Marked1`/`Restored1`: `walk_seek_mark`
+  (`43 → 32` in `20` steps), `walk_seek_exhaust` (`43 → 24` in `20` steps on the
+  marked layout, into `bExh`), `walk_fwd_to_cursor` (`32 → 48` in `16`),
+  `walk_turn` (`48 → 44`) and `walk_restore` (`44 → 48`).  Each takes `n` and
+  one safety bound from the caller; nothing chains them.
+
+Pinned by `Tests/TMGateOneWalkSurfaceTests.lean` (theorem-style exact wrappers
+for all seven macros, for `Phased.holdWalk4` and for three representative
+literal probes), `Tests/TMGateOneControlSurfaceTests.lean` (the three new entry
+states, the restore selector, the eighteen tuple lemmas, and exact wrappers for
+the probe/`bFwd` table with `G1Stuck .bExh`, for the eight non-forward walk
+modes being stuck, and for the seek's three outcomes) and
+`Tests/TMGateOneRoutingSurfaceTests.lean` / `Tests/TMGateOneReadBSurfaceTests.lean`
+(`g1_bFwd_rows` and `g1_bExh_stuck` replacing `g1_bSeek_stuck`).
+`Tests/AxiomsAudit.lean` prints the axioms of every new tuple lemma, macro and
+probe directly.
+
+Explicitly deferred and claimed nowhere: the four remaining cursor-walk modes
+and all their rows and tuple lemmas, the terminal exhaustion path, the
+cursor-walk tape invariant, the **installation driver** (latch plus cursor
+install executed from a real initial configuration), any iteration or loop
+clock, addressing, the positive-index operand *value* read, the aggregated
+out-of-range branches, repair, pass A, combine, output write, `TM.accepts`,
+gate-semantics correctness, a full-clock theorem, and non-canonical or
+physically padded tapes.
 
 **T2a correction (2026-08-24).**  The first T2a head shipped a permissive
 forward table (`vTag` looping on every `tag`, `vArg1`/`vArg2` looping on every

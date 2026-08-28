@@ -9,9 +9,12 @@ context-bit preservation, const/store dispatches, zero-index success/OOB, and
 the positive-index installation route that replaces the retired bridge route.
 It proves no `TM.runConfig`, acceptance, output, or gate-semantics claim.  For
 `arg2 > 0` it pins the route only as far as `bProbe2`; `g1_bProbe2_rows` pins
-that probe's three **active** rows and `g1_bSeek_stuck` the local endpoint the
-cursor install stops in, but no route prefix here reaches either, and nothing
-here states a round, an iteration or an operand value.
+that probe's three **active** rows, `g1_bFwd_rows` the forward table of the
+walk's right-running scan and `g1_bExh_stuck` its exhaustion boundary, but no
+route prefix here reaches any of them, and nothing here states a round, an
+iteration or an operand value.  The reverse seek `bSeek` has no forward row at
+all: it is decided inside `g1Transition`, and `TMGateOneControlSurfaceTests`
+pins its three outcomes.
 -/
 
 namespace Pnp3.Tests.TMGateOneRoutingSurface
@@ -48,7 +51,8 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1InstallRoute_advance
 #check @g1InstallRoute_validPath
 #check @g1_bProbe2_rows
-#check @g1_bSeek_stuck
+#check @g1_bFwd_rows
+#check @g1_bExh_stuck
 #check @g1_bRoundStart_stuck
 #check @g1_bRoundStart_unreachable
 #check @g1Advance_ne_sink
@@ -228,11 +232,16 @@ theorem check_g1_bProbe2_rows :
       g1Advance .bProbe2 (.output false) = .bOOB :=
   g1_bProbe2_rows
 
-/-- **`bSeek` is the new local endpoint.**  The cursor install stops there and
-the table gives it no successful frame row, so an attempted complete-frame read
-enters `reject`; no theorem executes it.  Its reverse-read rows are PR2b. -/
-theorem check_g1_bSeek_stuck : G1Stuck .bSeek :=
-  g1_bSeek_stuck
+/-- **The walk's right-running scan and its boundary, at frame level.**  `bFwd`
+crosses consumed units, the separator and data and stops on the `cursor`; `bExh`
+has no successful frame row, so an attempted complete-frame read there enters
+`reject`.  No route prefix in this module reaches either: the walk's runs take a
+caller-supplied configuration. -/
+theorem check_g1_bFwd_rows_and_bExh :
+    (g1Advance .bFwd .spent = .bFwd ∧ g1Advance .bFwd .separator = .bFwd ∧
+        g1Advance .bFwd .cursor = .bTurn ∧
+        (∀ b, g1Advance .bFwd (.data b) = .bFwd)) ∧ G1Stuck .bExh :=
+  ⟨g1_bFwd_rows, g1_bExh_stuck⟩
 
 /-- **The retired bridge is unreachable from the forward table.**  This is what
 makes the surviving rewrite-cycle theorems an arbitrary-configuration

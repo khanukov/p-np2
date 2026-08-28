@@ -24,6 +24,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOneRouting
 import Complexity.TMVerifier.TuringToolkit.GateOneReadBExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneInstallScanExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneProbeInstallExamples
+import Complexity.TMVerifier.TuringToolkit.GateOneWalkExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneIndexRound
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
@@ -389,7 +390,8 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1_insSeek_advance
 #print axioms Internal.PsubsetPpoly.TM.g1_insSeek_validPath
 #print axioms Internal.PsubsetPpoly.TM.g1_bProbe2_rows
-#print axioms Internal.PsubsetPpoly.TM.g1_bSeek_stuck
+#print axioms Internal.PsubsetPpoly.TM.g1_bFwd_rows
+#print axioms Internal.PsubsetPpoly.TM.g1_bExh_stuck
 #print axioms Internal.PsubsetPpoly.TM.g1_bRoundStart_stuck
 #print axioms Internal.PsubsetPpoly.TM.g1_bRoundStart_unreachable
 #print axioms Internal.PsubsetPpoly.TM.g1InstallRouteFrames_length
@@ -485,13 +487,7 @@ open Pnp3.Magnification
 -- leftward cursor-writer instance, the three exact atomic macros on an
 -- **arbitrary** frame list, and their four literal encoded-frame probes.
 -- **Every one takes the caller's configuration**: none starts from
--- `G1M.initialConfig`, so no installation driver is audited here.  The install
--- stops in `bSeek`, which has no successful frame row (`g1_bSeek_stuck`); its
--- reverse-read rows, the `index -> spent` writer, the forward scan, the turns,
--- the restore writers and the exhaustion path are PR2b.  No walk invariant,
--- iteration, loop clock, out-of-range aggregation, repair, arbitrary-index
--- read, `TM.accepts`, gate-semantics, full-clock or padded-tape statement is
--- audited here, because none exists.
+-- `G1M.initialConfig`, so no installation driver is audited here.
 #print axioms Internal.PsubsetPpoly.TM.g1Advance_bProbe2_data
 #print axioms Internal.PsubsetPpoly.TM.g1CursorWriter_machine
 #print axioms Internal.PsubsetPpoly.TM.g1CS_walk_probe_latch
@@ -501,6 +497,60 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1ProbeInstallExamples.probe_latch_true
 #print axioms Internal.PsubsetPpoly.TM.G1ProbeInstallExamples.probe_oob
 #print axioms Internal.PsubsetPpoly.TM.G1ProbeInstallExamples.install_cursor
+
+-- PR2b1, one **normal round** of the cursor walk behind `bSeek`: the six new
+-- modes, the reverse seek and the merged latch/writer rows — twenty-three
+-- transition tuples in total — plus the two generic
+-- tape-preserving leftward primitives, the three new frame-kernel instances,
+-- the seven exact atomic macros on an **arbitrary** frame list, and their five
+-- literal encoded-frame probes.  **Every run takes the caller's
+-- configuration**: none starts from `G1M.initialConfig`, so no installation
+-- driver is audited, and nothing composes two macros into a round.  The
+-- exhaustion outcome stops at `.bExh .p0` — head on the first cell of the
+-- opening `argSep` — and `bExh` has no successful frame row
+-- (`g1_bExh_stuck`); the terminal exhaustion path (`bRet`, `bTurnFin`, the two
+-- terminal restore writers) is PR2b2 and does not exist.  No walk invariant,
+-- iteration, loop clock, out-of-range aggregation, repair, arbitrary-index
+-- read, `TM.accepts`, gate-semantics, full-clock or padded-tape statement is
+-- audited here, because none exists.
+#print axioms Internal.PsubsetPpoly.TM.g1ExhState_ne_dec
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bSeek_p3
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bSeek_p2
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bSeek_p1
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bSeek_p0_index
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bSeek_p0_argSep
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bSeek_p0_other
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bDec_p0
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bDec_p1
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bDec_p2
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bDec_p3
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bTurn_p0
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bTurn_p1
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bTurn_p2
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bTurn_p3
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bRestore_p0
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bRestore_p1
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bRestore_p2
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bRestore_p3
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.Phased.holdLeft
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.Phased.holdWalk4
+#print axioms Internal.PsubsetPpoly.TM.g1Advance_bFwd_of_skip
+#print axioms Internal.PsubsetPpoly.TM.G1WalkMode.eq
+#print axioms Internal.PsubsetPpoly.TM.g1WalkRevAdvance_of_skip
+#print axioms Internal.PsubsetPpoly.TM.g1WalkScanner_machine
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_seek_to_index
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_seek_exhaust
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_mark
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_seek_mark
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_fwd_to_cursor
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_turn
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_restore
+#print axioms Internal.PsubsetPpoly.TM.G1WalkExamples.g1WalkFrames_length
+#print axioms Internal.PsubsetPpoly.TM.G1WalkExamples.walk_seek_mark
+#print axioms Internal.PsubsetPpoly.TM.G1WalkExamples.walk_seek_exhaust
+#print axioms Internal.PsubsetPpoly.TM.G1WalkExamples.walk_fwd_to_cursor
+#print axioms Internal.PsubsetPpoly.TM.G1WalkExamples.walk_turn
+#print axioms Internal.PsubsetPpoly.TM.G1WalkExamples.walk_restore
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

@@ -6,7 +6,10 @@ import Complexity.TMVerifier.TuringToolkit.FrameScannerCodec
 
 The right-to-left mirror of `FrameScannerKernel`: exact four-step frame and
 anchor macrosteps, exact reverse list induction, projections, and rewind to an
-anchor over an arbitrary fixed-width codec and finite control.  The structure
+anchor over an arbitrary fixed-width codec and finite control.  The shared
+phase-aligned layer also carries the two tape-preserving leftward primitives
+`holdLeft` and `holdWalk4`, the four-step "turn" a control needs to stand again
+on the first cell of a frame it has just passed.  The structure
 contains one codec law and five concrete transition-tuple obligations—no
 semantic or desired-run field—and execution is derived through the generic
 step bridge.  No validation, addressing, acceptance, or input-language claim.
@@ -66,6 +69,55 @@ theorem stepStay (U : ConstStatePhasedProgram S) (ph : Fin U.numPhases)
       alignedAt U ph n h hh (writeCell h w tape) q' :=
   ConstStatePhasedProgram.stepConfig_eq_of_transition_stay U
     (alignedAt U ph n h hh tape q) htr _ rfl rfl (fun _ => rfl)
+
+/-- One *hold-and-move-left* transition tuple, as one exact `TM.stepConfig`:
+the control writes back the cell it scans, so the tape does not change. -/
+theorem holdLeft (U : ConstStatePhasedProgram S) (ph : Fin U.numPhases)
+    (n h : Nat) (hh : h < (machine U).tapeLength n) (hpos : 0 < h)
+    (tape : Fin ((machine U).tapeLength n) → Bool) (q q' : S)
+    (htr : ∀ scan : Bool, U.transition ph q scan = (ph, q', scan, Move.left)) :
+    TM.stepConfig (M := machine U) (alignedAt U ph n h hh tape q) =
+      alignedAt U ph n (h - 1) (by omega) tape q' := by
+  have hstep := stepLeft U ph n h hh hpos tape q q' (tape ⟨h, hh⟩) (htr _)
+  rwa [writeCell_self] at hstep
+
+/-- **The generic four-step turn.**  Four hold-and-move-left rows carry the head
+from the first cell of the frame at `k + 4` back to the first cell of the frame
+at `k`, writing back every cell they scan: the tape is untouched, and the
+control ends in `qe`.  This is the read-only mirror of the leftward writer, and
+it is what a control that has just *passed* a frame needs in order to stand on
+its first cell again. -/
+theorem holdWalk4 (U : ConstStatePhasedProgram S) (ph : Fin U.numPhases)
+    (n k : Nat) (hsafe : k + 4 < (machine U).tapeLength n)
+    (tape : Fin ((machine U).tapeLength n) → Bool) (q3 q2 q1 q0 qe : S)
+    (h3 : ∀ scan : Bool, U.transition ph q3 scan = (ph, q2, scan, Move.left))
+    (h2 : ∀ scan : Bool, U.transition ph q2 scan = (ph, q1, scan, Move.left))
+    (h1 : ∀ scan : Bool, U.transition ph q1 scan = (ph, q0, scan, Move.left))
+    (h0 : ∀ scan : Bool, U.transition ph q0 scan = (ph, qe, scan, Move.left)) :
+    TM.runConfig (M := machine U)
+        (alignedAt U ph n (k + 4) hsafe tape q3) 4 =
+      alignedAt U ph n k (by omega) tape qe := by
+  show TM.runConfig (M := machine U)
+      (alignedAt U ph n (k + 4) hsafe tape q3) (1 + 1 + 1 + 1) = _
+  rw [runConfig_add, runConfig_add, runConfig_add]
+  simp only [runConfig_one]
+  have s3 : TM.stepConfig (M := machine U)
+      (alignedAt U ph n (k + 4) hsafe tape q3) =
+      alignedAt U ph n (k + 3) (by omega) tape q2 := by
+    simpa using holdLeft U ph n (k + 4) hsafe (by omega) tape q3 q2 h3
+  have s2 : TM.stepConfig (M := machine U)
+      (alignedAt U ph n (k + 3) (by omega) tape q2) =
+      alignedAt U ph n (k + 2) (by omega) tape q1 := by
+    simpa using holdLeft U ph n (k + 3) (by omega) (by omega) tape q2 q1 h2
+  have s1 : TM.stepConfig (M := machine U)
+      (alignedAt U ph n (k + 2) (by omega) tape q1) =
+      alignedAt U ph n (k + 1) (by omega) tape q0 := by
+    simpa using holdLeft U ph n (k + 2) (by omega) (by omega) tape q1 q0 h1
+  have s0 : TM.stepConfig (M := machine U)
+      (alignedAt U ph n (k + 1) (by omega) tape q0) =
+      alignedAt U ph n k (by omega) tape qe := by
+    simpa using holdLeft U ph n (k + 1) (by omega) (by omega) tape q0 qe h0
+  rw [s3, s2, s1, s0]
 
 end Phased
 

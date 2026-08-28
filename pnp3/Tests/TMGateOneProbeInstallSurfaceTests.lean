@@ -10,12 +10,11 @@ arbitrary frame-list contexts, and their literal encoded-frame probes.
 **Every statement below takes the caller's configuration.**  None starts from
 `G1M.initialConfig`: the only real-initial-configuration endpoint on this branch
 is the installation scan, pinned unchanged in `TMGateOneReadBSurfaceTests`.
-The install exits at `bSeek .p3`, head on the preceding frame's last cell.
-`bSeek` has no successful frame row; a complete-frame attempt rejects and no
-theorem executes it.  Its reverse-read rows are PR2b.  Deliberately absent: any
-walk invariant, installation driver, seek/mark/turn/restore/exhaustion macro,
-iteration or loop clock, addressing, `TM.accepts`, gate-semantics, full-clock or
-padded-tape surface.
+The install exits at `bSeek .p3`, head on the preceding frame's last cell; the
+reverse seek from there and the seek/mark/turn/restore/exhaustion macros are
+`TMGateOneWalkSurfaceTests`, and nothing here composes with them.  Deliberately
+absent: any walk invariant, installation driver, iteration or loop clock,
+addressing, `TM.accepts`, gate-semantics, full-clock or padded-tape surface.
 
 This is an audit surface: it pins public signatures and proves nothing new.
 -/
@@ -64,7 +63,7 @@ theorem check_g1CS_walk_probe_oob (n : Nat) (pre suffix : List G1Frame)
   g1CS_walk_probe_oob n pre suffix ctx hsafe
 
 /-- **The cursor install** replaces one arbitrary frame by `cursor`, walking
-left, and stops in the endpoint `bSeek`. -/
+left, and stops in the reverse-seek entry shape `bSeek .p3`. -/
 theorem check_g1CS_walk_install_cursor (n : Nat) (pre suffix : List G1Frame)
     (old : G1Frame) (ctx : G1Ctx) (hpre : 0 < pre.length)
     (hsafe : 4 * pre.length + 4 < G1M.tapeLength n) :
@@ -114,7 +113,7 @@ theorem check_probe_oob (n : Nat) (hsafe : 56 < G1M.tapeLength n) :
 
 open G1InstallScanExamples G1ProbeInstallExamples in
 /-- Head `43 → 39` in `4` steps: ordinal `10` becomes `cursor`, nothing else
-changes, and the run stops in the local endpoint `bSeek`. -/
+changes, and the run stops in the reverse-seek entry shape `bSeek .p3`. -/
 theorem check_install_cursor (n : Nat) (hsafe : 44 < G1M.tapeLength n) :
     TM.runConfig (M := G1M) (g1AlignedConfig n 43 (by omega)
         (g1ListTape (g1WalkInitFrames.flatMap G1Frame.bits))

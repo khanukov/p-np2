@@ -89,8 +89,8 @@ the end of the data region and hands off to the stable `bOOB` boundary.
 non-zero.  This slice **re-points** that single row: `bScan + index` now enters
 `bInsSeek`, the read-only **installation scan**, which crosses the rest of the
 operand-2 field (`index` and `spent` alike), crosses the `separator` and stops
-at `bProbe2` on the first cell after the separator, the start of the data
-region.  Four `g1Advance` rows
+at `bProbe2` on the first cell after the separator: data when nonempty,
+`output false` otherwise.  Four `g1Advance` rows
 and two new modes, and that is all:
 
 ```text

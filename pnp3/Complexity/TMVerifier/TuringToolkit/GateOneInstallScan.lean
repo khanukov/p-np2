@@ -9,15 +9,15 @@ The **installation scan** that the re-pointed positive-index row of `g1Advance`
 opens.  For a canonical `and`/`or` request with `arg2 > 0` the pass-B walk
 `bScan` meets an unspent `index`, enters `bInsSeek`, crosses the rest of the
 operand-2 field and the `separator`, and stops at `bProbe2` on the **first cell
-after the separator**, i.e. the start of the data region: a `.data` frame when
-`r.vals` is nonempty and `.output false` otherwise.
+after the separator**: a `.data` frame when `r.vals` is nonempty and `.output
+false` otherwise.
 `g1CS_readB_install_scan_exact` is that run from the
 **real** initial configuration `G1M.initialConfig (g1Point (encodeG1 r))`; it
 replaces the retired first-round route of `GateOneIndexRound`.
 
 `bProbe2` is the **explicit local boundary** of this slice: the control table
-gives it no outgoing row (`GateOneRouting.g1_bProbe2_stuck`) and no theorem here
-runs the machine out of it.
+gives it no successful frame row (`GateOneRouting.g1_bProbe2_stuck`); an
+attempted full-frame read rejects, and no theorem here executes that read.
 
 This module is deliberately *narrow*.  It imports `GateOneReadB` and nothing
 else, so it depends only on the existing forward frame scanner

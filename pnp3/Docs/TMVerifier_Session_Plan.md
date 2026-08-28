@@ -953,8 +953,8 @@ the control or the context.
   field-route docstring now names the installation scan as its successor.
 
 **The endpoint is reachability, not addressing.**  `g1CS_readB_install_scan_exact`
-says the machine gets to the start of the data region: a `.data` frame when the
-region is nonempty and `.output false` otherwise.  It latches no bit, installs
+says the machine gets to the first frame after the separator: a `.data` frame
+when the region is nonempty and `.output false` otherwise.  It latches no bit, installs
 no cursor, writes no cell and says nothing about which data frame the operand
 finally selects.  `bProbe2` has no successful frame row in this slice; an
 attempted full-frame read rejects, and no theorem executes that read.

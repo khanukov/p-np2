@@ -396,10 +396,10 @@ theorem g1_insSeek_validPath (k : Nat) (rest : List G1Frame)
 
 theorem g1_bRoundStart_stuck : G1Stuck .bRoundStart := by decide
 
-/-- **The installation scan's endpoint reads nothing in this slice.**  `bProbe2`
-completes every frame into `reject`, so it is an explicit boundary and no
-theorem of this development runs the machine out of it.  PR2 replaces this by
-the two latch rows `data b ↦ bLatch b` and the out-of-range row. -/
+/-- **The installation scan's endpoint has no successful frame row in this
+slice.**  An attempted complete-frame read at `bProbe2` enters `reject`; the
+capstone stops at its first cell and no theorem executes that read.  PR2
+supplies the two latch rows `data b ↦ bLatch b` and the out-of-range row. -/
 theorem g1_bProbe2_stuck : G1Stuck .bProbe2 := by decide
 
 /-- **The rewrite-cycle bridge is unreachable from the forward table.**  No

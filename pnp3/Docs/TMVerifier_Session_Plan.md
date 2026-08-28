@@ -1819,8 +1819,8 @@ Pinned by `Tests/TMGateOneRepairKernelExamplesSurfaceTests.lean` (new:
 theorem-style exact wrappers for **every** public statement of the probe module,
 including the two narrowing regressions).  `Tests/AxiomsAudit.lean` prints the
 axioms of every new statement **directly**; none depends on anything beyond
-`propext`, `Classical.choice` and `Quot.sound`, and the twelve purely
-definitional ones depend on no axiom at all.  One new module and
+`propext`, `Classical.choice` and `Quot.sound`, and the purely definitional
+ones depend on no axiom at all.  One new module and
 one new surface test are registered in `lakefile.lean`; the Repair-1 deferral
 pointers in `lakefile.lean`, `Tests/AxiomsAudit.lean` and
 `Tests/TMGateOneRepairKernelSurfaceTests.lean` are re-scoped to point here.

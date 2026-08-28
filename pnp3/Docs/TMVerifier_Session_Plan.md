@@ -1315,6 +1315,109 @@ physically padded tapes.  `readAStart`, `combineStart`, `readAResetStart` and
 `bOOB` are still idle handoffs: the terminal restore *arrives* at
 `readAResetStart` and nothing happens there.
 
+**PR3a: the G1 cursor-walk tape invariant and its real installation, delivered
+(2026-08-28):**
+
+**Progress classification: Infrastructure.**
+
+The merged atoms of PR2b1/PR2b2 hold on **arbitrary** frame lists.  This slice
+pins the **one canonical frame list** the walk runs on and reaches it from the
+**real initial configuration** — and stops there.  **No round is executed.**
+`G1Ctx`, the `G1State` field list, `G1Mode`, `g1Advance`, `g1Transition` and
+`g1Clock` are all unchanged, no new `Nat`, index, width, offset, length or
+request **field** appears in the machine, the control or the context, and
+**every merged module is byte-identical**: this slice is additive.  The new
+`Nat`-valued names below (`g1WalkCursor`, `g1WalkInstallSteps`,
+`g1WalkEmptyOOBSteps`) are pure functions used to *state* the theorems; the
+machine never computes with them.
+
+* `GateOneWalkInvariant.lean` (new) — the vocabulary.  With `u = tag.units`,
+  `a1 = arg1`, `a2 = arg2`, `m = vals.length`:
+
+  ```text
+  g1WalkFrames r j = g1FieldRouteFrames r
+      · index^(a2-j) · spent^j · separator
+      · data(vals.take j) · cursor · data(vals.drop (j+1))
+      · output false · finish · blank
+  g1WalkCursor r j = u + a1 + a2 + j + 4
+  g1WalkConfig r j _ _ v  -- Σ(j): that tape, head 4 * g1WalkCursor r j - 1,
+                          -- control bSeek .p3 (empty buffer), ctx g1Ctx0.withVB v
+  ```
+
+  under the invariant's two numeric conditions `j ≤ a2` and `j < m`, both
+  **explicit arguments** of `g1WalkConfig`, so the configuration cannot be
+  formed outside the invariant's range.  Every structural side condition the
+  merged round macros take as a *hypothesis* is **proved here as a theorem about
+  the layout**, from those two conditions alone and never assumed — PR3b is what
+  feeds them to the macros: `g1WalkFrames_length_eq_validation` (the invariant
+  word is exactly as long as `encodeG1Frames r ++ [.blank]`),
+  `g1WalkFrames_count_index`/`_count_spent`/`_count_cursor` (`a2 - j` unspent,
+  `j` spent, cursor **unique**), `g1WalkOperand2_spent_suffix` (`spent^j` is the
+  right suffix of the operand-2 field, so the reverse seek's stopping `index` is
+  the one immediately left of the spent run), `g1WalkSkipRun_mem` and
+  `g1WalkSkipRun_no_index` (the run both scans of a round cross is
+  `spent^j · separator · data^j` and contains **no** `index` frame — the reason
+  the forward scan `bFwd`, which has no `index` row, never stalls) and
+  `g1WalkCursor_safe` (every cell a round touches is inside the tape, from
+  `j < m` alone).  `g1WalkFramesMarked` and `g1WalkFramesRestored` name the two
+  other layouts of a round; the restored one carries its own three counts.  The
+  module imports `GateOneWalkKernel` for exactly one name, `G1WalkSkip`, in
+  whose terms the two skip-run facts are stated; **no macro of that module is
+  used**, and the two executed capstones compose only the merged
+  `GateOneInstallScan` and `GateOneProbeInstall` atoms, with the transition
+  table never unfolded.
+* `GateOneWalkInvariant.lean`, executed part — **two** capstones, both from
+  `G1M.initialConfig` and both **terminating at their endpoint**:
+  * `g1CS_walk_install_exact` — for a canonical `and`/`or` request with
+    `arg2 = k + 1` and `vals[0]? = some v`, exactly
+    `g1WalkInstallSteps r = g1InstallScanSteps r + 9` genuine steps validate the
+    word, rewind, rescan the tag, cross both operand fields and the `separator`,
+    probe the first data frame, latch its bit into `G1Ctx.vB` and install the
+    cursor over it — landing exactly on `Σ(r, 0, v)`.  Exactly **one** frame is
+    written, `data vals[0] ↦ cursor`.  `_head`, `_vB`, `_tape` and `_state`
+    project it.
+  * `g1CS_walk_install_oob_exact` — the **empty-data** branch: with `vals = []`
+    the same read-only scan's probe meets the `output false` destination and
+    `g1WalkEmptyOOBSteps r = g1InstallScanSteps r + 4` steps end in the stable
+    `bOOB` boundary with the tape **bit-for-bit the initial tape**.  `_stable`,
+    `_tape`, `_head` and `_state` project it, and `g1CS_walk_oob_ne_invariant`
+    separates that boundary from the reverse-seek entry of `Σ(0)`.
+
+  `g1WalkInstallSteps_le_clock` and `g1WalkEmptyOOBSteps_le_clock` keep both
+  counts inside the **unchanged** public clock; `g1Clock` is not widened.
+* `GateOneWalkInvariantExamples.lean` (new) — all-literal probes on two literal
+  requests.  `⟨and, 0, 2, [false, true, true]⟩` (the merged
+  `G1InstallScanExamples.g1WalkExample`, **fifteen** encoded frames and `60`
+  input cells; the list-backed layouts append one `blank`, so **sixteen**
+  frames): `Σ(0)` is literally the merged post-install layout
+  `G1ProbeInstallExamples.g1WalkFramesCursor0`, re-named `g1WalkFramesRound0`,
+  with the cursor at ordinal `10`, `index²` and no `spent`; the installation is
+  `169 + 5 + 4 = 178` steps to head `39`, inside the clock.
+  `⟨and, 0, 2, []⟩`: the empty-data installation out-of-range branch in exactly
+  `149` steps to head `44`, tape unchanged, inside the clock.
+
+Pinned by `Tests/TMGateOneWalkInvariantSurfaceTests.lean` (theorem-style exact
+wrappers for the structural facts, the lengths and counts, the head bound,
+`Σ(j)`'s four projections, both capstones with all their projections, both
+clock bounds and both literal probes).  `Tests/AxiomsAudit.lean` prints the
+axioms of every new statement directly; each depends only on `propext`,
+`Classical.choice` and `Quot.sound`.
+
+Explicitly deferred to PR3b and claimed nowhere: the **one-round iteration**
+`Σ(j) → Σ(j+1)`, the **normal-round and out-of-range preservation** theorems on
+`Σ(j)`, the induction over `j`, any loop, driver or cumulative clock, the
+successful terminal at `j = arg2` (the `bExh`/`bRet`/`bTurnFin`/`bFin` path into
+`readAResetStart`), the aggregation of the two out-of-range branches,
+addressing, and the **positive-index operand-value theorem** — nothing here
+claims the machine resolves `r.vals[r.arg2]?` for `arg2 > 0`.  Also absent: the
+`spent ↦ index` repair sweep, pass A, combine, the output write, `TM.accepts`,
+gate-semantics correctness, a full-clock theorem, and non-canonical or
+physically padded tapes.  The deferral lists of the merged `GateOneInstallScan`,
+`GateOneProbeInstall` and `GateOneWalkKernel` docstrings are scoped to *those*
+modules ("nothing *here*", "every theorem below") and stay true verbatim; the
+invariant and the installation driver they defer now live in the new module
+above.
+
 **T2a correction (2026-08-24).**  The first T2a head shipped a permissive
 forward table (`vTag` looping on every `tag`, `vArg1`/`vArg2` looping on every
 `index`) whose language was strictly larger than `G1Request.Canonical`, while

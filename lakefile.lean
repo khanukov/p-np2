@@ -169,6 +169,14 @@ lean_lib PnP3 where
     -- runs are caller-supplied too; nothing composes a round with them.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneWalkKernel,
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneWalkExamples,
+    -- PR3a, the cursor-walk tape invariant `Σ(j)`: the exact layout with its
+    -- length, counts and structural facts (`GateOneWalkInvariant`), the
+    -- installation into `Σ(0)` from the real initial configuration, the
+    -- empty-data out-of-range branch, and their literal probes
+    -- (`GateOneWalkInvariantExamples`).  No round is executed there: the
+    -- iteration `Σ(j) → Σ(j+1)` and the round out-of-range branch are PR3b.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneWalkInvariant,
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneWalkInvariantExamples,
     -- The thirteen-step rewrite cycle at the G1 control, kept as an
     -- arbitrary-configuration regression: the bridge, the fourteen-step
     -- composed round and one literal frame-list probe.  Unreachable from
@@ -341,6 +349,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMGateOneReadBSurfaceTests,
     Glob.one `Tests.TMGateOneProbeInstallSurfaceTests,
     Glob.one `Tests.TMGateOneWalkSurfaceTests,
+    Glob.one `Tests.TMGateOneWalkInvariantSurfaceTests,
     Glob.one `Tests.FormulaSupportBoundsFalsifiabilityProbe,
     Glob.one `Tests.SmokeTests,
     Glob.one `Tests.UnitTests,

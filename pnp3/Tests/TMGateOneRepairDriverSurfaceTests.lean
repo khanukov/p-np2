@@ -31,9 +31,10 @@ handoff.  No repair and no rejection is claimed for it.
 **Absent from this surface**: any pass-A execution, operand-1 read, combine step,
 output write, and any `TM.accepts`, verdict, full-clock, gate-semantics,
 acceptance-gate, multi-gate, specification-bridge or padded-tape surface.  The
-**all-literal** repaired runs from `G1M.initialConfig` are deferred in full to
-Repair-2b, so no probe wrapper appears here either.  This is an audit surface:
-it pins public signatures and proves nothing new.
+**all-literal** repaired runs from `G1M.initialConfig` live with their module in
+**Repair-2b** and are pinned by `TMGateOneRepairExamplesSurfaceTests`, so no
+probe wrapper appears here either.  This is an audit surface: it pins public
+signatures and proves nothing new.
 -/
 
 namespace Pnp3.Tests.TMGateOneRepairDriverSurface

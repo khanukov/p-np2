@@ -828,6 +828,7 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.cycle_probe
 #print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.cycle_probe_ctx
 #print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.run_probe
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.seek_repair_probe
 #print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.run_probe_tape
 #print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.pass_probe
 #print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.pass_probe_head

@@ -4,28 +4,15 @@ import Complexity.TMVerifier.TuringToolkit.GateOneWalkDriverExamples
 /-!
 # G1 operand-2 repair kernel: all-literal probes
 
-**Progress classification: Infrastructure.**  Three genuine exact runs of the
-Repair-1 macros on one literal sixteen-frame word — the canonical word of
-`⟨and, 0, 2, [false, true, true]⟩` plus its trailing blank frame, with the two
-operand-2 units consumed:
-
-| probe | macro | steps | head |
-|-------|-------|-------|------|
-| one `spent ↦ index` cycle | `g1CS_repair_cycle_onList` | `13` | `35 ↦ 31` |
-| the two-unit run | `g1CS_repair_spent_run` | `26` | `35 ↦ 27` |
-| the whole pass | `g1CS_repair_pass_exact` | `79` | `59 ↦ 0` |
-
-Every step count, head position and frame word below is a literal, and each
-probe is an exact `TM.runConfig` equality of `G1M`.  The pass endpoint is
-bit-for-bit `encodeG1Frames ⟨and, 0, 2, [false, true, true]⟩ ++ [blank]`
-(`probeIndex_eq_encoded`): **no** consumed unit survives, the data region, the
-destination frame, the terminator and the untouched trailing `tail` frame are
-preserved, and the carried `G1Ctx` — here `vB = true` — comes out unchanged.
-
-**Every configuration here is written down by this file.**  No probe starts from
-`G1M.initialConfig`, none composes a read with a repair and none claims a run of
-the machine ever reaches `bRepairSeek`; `readAStart` is still idle, so the
-endpoint is a stationary handoff.  The request-specific driver is Repair-2.
+**Progress classification: Infrastructure.**  Four exact `G1M` runs on the
+sixteen-frame word for `⟨and, 0, 2, [false, true, true]⟩` with both operand-2
+units consumed: one cycle (`13`, head `35 ↦ 31`), seek+repair (`37`, `59 ↦ 31`),
+the two-unit run (`26`, `35 ↦ 27`) and the whole pass (`79`, `59 ↦ 0`).
+The endpoint word is exactly the canonical encoding plus `blank`; literal
+counts and cell `32` witness the real `spent ↦ index` changes.  Every
+configuration is caller-supplied: no probe starts from `G1M.initialConfig`, no
+live route reaches the repair modes, and `readAStart` remains idle.  The
+request-specific driver is Repair-2.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -95,9 +82,7 @@ theorem probe_cell32 :
         ⟨32, probe_safe (by omega)⟩ = false :=
   ⟨rfl, rfl⟩
 
-/-! ## The pass split
-
-`[bof] ++ left ++ spent^2 ++ mid ++ tail`: six frames between the anchor and the
+/- `[bof] ++ left ++ spent^2 ++ mid ++ tail`: six frames between the anchor and the
 run, two consumed units, six frames the scan crosses on the way in, and one
 frame — the trailing blank — that sits to the **right** of where the scan
 starts and is therefore never read at all. -/
@@ -129,8 +114,6 @@ theorem probe_passSteps : g1RepairPassSteps 6 2 6 = 79 := rfl
 
 theorem probe_passSteps_split :
     g1RepairPassSteps 6 2 6 = 4 * 6 + 13 * 2 + 4 * 6 + 5 := rfl
-
-/-! ## Probe 1: one thirteen-step `spent ↦ index` cycle -/
 
 /-- The eight frames left of the repaired unit: the anchor, the tag run, both
 `argSep`s and the still-consumed first unit. -/
@@ -173,8 +156,6 @@ theorem cycle_probe_ctx :
         13).state.snd.ctx = g1Ctx0.withVB true := by
   rw [cycle_probe]; rfl
 
-/-! ## Probe 2: the two-unit run -/
-
 /-- The seven frames left of the run: the anchor, the tag run and both
 `argSep`s. -/
 def probeRunPre : List G1Frame :=
@@ -214,7 +195,18 @@ theorem run_probe_tape :
         26).tape = g1ListTape (probeIndexFrames.flatMap G1Frame.bits) := by
   rw [run_probe]; rfl
 
-/-! ## Probe 3: the whole repair pass -/
+theorem seek_repair_probe :
+    TM.runConfig (M := G1M)
+        (g1AlignedConfig probeLen 59 (probe_safe (by omega))
+          (g1ListTape (probeSpentFrames.flatMap G1Frame.bits))
+          .bRepairSeek .p3 false false false (g1Ctx0.withVB true)) 37 =
+      g1AlignedConfig probeLen 31 (probe_safe (by omega))
+        (g1ListTape (probeHalfFrames.flatMap G1Frame.bits))
+        .bRepairSeek .p3 false false false (g1Ctx0.withVB true) := by
+  have h := g1CS_repair_seek_and_repair probeLen
+    (probeRunPre ++ [G1Frame.spent]) probeMid probeTail (g1Ctx0.withVB true)
+    (by decide) probeMid_skip (probe_safe (by decide))
+  simpa [probeSpentFrames, probeHalfFrames, probeRunPre, probeMid, probeTail] using h
 
 /-- **Exactly `79` genuine steps run the whole sweep.**  From cell `59` — the
 last cell of the `finish` frame, where a caller hands the sweep over — the
@@ -272,9 +264,7 @@ theorem pass_probe_ctx :
         79).state.snd.ctx.vB = true := by
   constructor <;> · rw [pass_probe]; rfl
 
-/-! ## The endpoint is a handoff, not a continuation
-
-`readAStart` is **not** activated by this slice: the repaired endpoint holds its
+/- `readAStart` is **not** activated by this slice: the repaired endpoint holds its
 state, head and tape for the whole remaining budget.  Operand 1 is not read. -/
 
 theorem pass_probe_idle (k : Nat) :

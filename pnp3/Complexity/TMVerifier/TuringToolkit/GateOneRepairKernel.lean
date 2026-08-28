@@ -45,8 +45,6 @@ namespace Pnp3.Internal.PsubsetPpoly.TM
 
 open Pnp3.Internal.PsubsetPpoly.TM.FrameScan
 
-/-! ## Nothing routes into the sweep -/
-
 /-- **The five repair modes are unreachable from the forward frame table.**  No
 mode/frame pair completes into any of them, so the sweep is never entered by a
 frame read.  The mirror of `GateOneRouting.g1_bRoundStart_unreachable`. -/
@@ -226,8 +224,6 @@ def g1RepairCycle : FrameRewriteCycle G1State G1Frame G1Mode G1Ctx where
     g1Transition_bRepairBack g1CS.startPhase .p3 false false false scan ctx
   hop_step := fun ctx scan =>
     g1Transition_bRepairHop g1CS.startPhase .p0 false false false scan ctx
-
-/-! ## The atomic macros, on arbitrary frame lists -/
 
 /-- **The thirteen-step `spent ↦ index` cycle on an arbitrary frame list.**
 Thirteen genuine steps turn `pre ++ spent :: suffix` into `pre ++ index ::
@@ -435,7 +431,7 @@ on the last cell of the rightmost frame it has to visit, the machine skips
 dispatches — landing on head `0` in `readAStart` with the carried context `ctx`
 **unchanged**.  The tape statement is exact: the only change is
 `spent^s ↦ index^s`, so `left`, `mid` and `tail` are bit-for-bit preserved and
-no consumed unit remains.  This is the exact mirror of
+no designated consumed unit remains in the swept run.  This is the exact mirror of
 `t1CS_repair_pass_exact`, at a different fixed control and with an untouched
 context instead of a cleared latch.
 

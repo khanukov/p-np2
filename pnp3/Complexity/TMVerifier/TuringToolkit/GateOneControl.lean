@@ -560,7 +560,7 @@ of the destructive round, the eleven non-forward modes of the cursor walk
 (`bSeek` reads right to left, the two latch modes dispatch, the six writers
 write and the two turns hold), the five modes of the operand-2 repair sweep
 (`bRepairSeek` reads right to left, the writer and its back-walk write, the hop
-and the terminal dispatch hold), the four remaining
+moves left and the terminal dispatch holds), the four remaining
 handoffs and the two sinks are not. -/
 def G1ForwardMode : G1Mode → Prop
   | .rewindStart | .rewind

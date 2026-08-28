@@ -76,8 +76,12 @@ theorem check_G1RepairMode (m : G1Mode) :
 theorem check_g1RepairScanner :
     g1RepairScanner.program = g1CS ∧
       g1RepairScanner.codec = g1FrameCodec ∧
-      g1RepairScanner.machine = G1M :=
-  ⟨rfl, rfl, g1RepairScanner_machine⟩
+      g1RepairScanner.machine = G1M ∧
+      g1RepairScanner.Reverse = G1RepairMode ∧
+      g1RepairScanner.Stop = G1RepairStop ∧
+      g1RepairScanner.revAdvance = g1RepairRevAdvance ∧
+      g1RepairScanner.revComplete = g1RepairRevComplete :=
+  ⟨rfl, rfl, g1RepairScanner_machine, rfl, rfl, rfl, rfl⟩
 
 /-- The cycle is a genuine `FrameRewriteCycle` over that scanner, in the
 direction `spent ↦ index`, whose four written cells are literally
@@ -91,8 +95,6 @@ theorem check_g1RepairCycle :
       [g1RepairCycle.w0, g1RepairCycle.w1, g1RepairCycle.w2,
         g1RepairCycle.w3] = G1Frame.index.bits :=
   ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩
-
-/-! ## The atomic macros, on arbitrary frame lists -/
 
 /-- **The thirteen-step `spent ↦ index` cycle.** -/
 theorem check_g1CS_repair_cycle_onList (n : Nat) (pre suffix : List G1Frame)
@@ -217,8 +219,6 @@ theorem check_g1CS_repair_pass_exact (n s : Nat) (left mid tail : List G1Frame)
         .readAStart .p0 false false false ctx :=
   g1CS_repair_pass_exact n s left mid tail ctx hleft hmid hsafe
 
-/-! ## The literal probes -/
-
 open G1RepairKernelExamples
 
 /-- The literal word, its split and its nonvacuity: the repaired word is
@@ -262,6 +262,13 @@ theorem check_cycle_probe :
 `35 ↦ 27`, on the exact repaired word. -/
 theorem check_run_probe :
     TM.runConfig (M := G1M)
+          (g1AlignedConfig probeLen 59 (probe_safe (by omega))
+            (g1ListTape (probeSpentFrames.flatMap G1Frame.bits))
+            .bRepairSeek .p3 false false false (g1Ctx0.withVB true)) 37 =
+        g1AlignedConfig probeLen 31 (probe_safe (by omega))
+          (g1ListTape (probeHalfFrames.flatMap G1Frame.bits))
+          .bRepairSeek .p3 false false false (g1Ctx0.withVB true) ∧
+      TM.runConfig (M := G1M)
           (g1AlignedConfig probeLen 35 (probe_safe (by omega))
             (g1ListTape (probeSpentFrames.flatMap G1Frame.bits))
             .bRepairSeek .p3 false false false (g1Ctx0.withVB true)) 26 =
@@ -273,7 +280,7 @@ theorem check_run_probe :
             (g1ListTape (probeSpentFrames.flatMap G1Frame.bits))
             .bRepairSeek .p3 false false false (g1Ctx0.withVB true))
           26).tape = g1ListTape (probeIndexFrames.flatMap G1Frame.bits) :=
-  ⟨run_probe, run_probe_tape⟩
+  ⟨seek_repair_probe, run_probe, run_probe_tape⟩
 
 /-- **`79 = 4 * 6 + 13 * 2 + 4 * 6 + 5` genuine steps run the whole pass**:
 head `59 ↦ 0`, control `readAStart`, tape exactly the repaired word. -/

@@ -21,7 +21,8 @@ for `arg2 > 0` the only endpoint pinned here from a **real** initial
 configuration is the read-only installation scan, which stops at `bProbe2` and
 is unchanged by this slice.  The probe, latch and cursor install behind it are
 pinned by `TMGateOneProbeInstallSurfaceTests`, and the seek, mark, scan, turn
-and restore of one normal round behind *those* by `TMGateOneWalkSurfaceTests`,
+and restore of one normal round — plus the terminal exhaustion path behind the
+`bExh` handoff — by `TMGateOneWalkSurfaceTests`,
 on caller-supplied configurations only.  Nothing here pins a latch, a cursor
 install, a round, an iteration, runtime addressing, a positive-index
 operand-value read, or acceptance.  This is an audit surface: it pins public
@@ -46,7 +47,7 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1_insSeek_validPath
 #check @g1_bProbe2_rows
 #check @g1_bFwd_rows
-#check @g1_bExh_stuck
+#check @g1_bRet_rows
 #check @g1_bRoundStart_stuck
 #check @g1_bRoundStart_unreachable
 

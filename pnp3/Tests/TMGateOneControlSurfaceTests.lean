@@ -12,12 +12,13 @@ generic frame-scanner kernel.
 This layer exposes frame-word/table correspondence and the generic kernel's
 exact four-step and multi-frame `TM.runConfig` primitives.  It also pins the
 fourteen transition tuples of the retired destructive index round
-(`bRoundStart` bridge, `bWalk`, `bMark`, `bBack`, `bHop`) and the twenty-three
+(`bRoundStart` bridge, `bWalk`, `bMark`, `bBack`, `bHop`) and the thirty-one
 transition tuples of the cursor walk (the reverse seek `bSeek` with its three
-outcomes, the `index ↦ spent` writer `bDec`, the turn, the two cursor-restore
-writers, the two latch dispatches and the leftward cursor writer `bIns`).  The
-four *forward* walk modes — `bInsSeek`, `bProbe2`, `bFwd` and the boundary
-`bExh` — have no transition blocks of their own.  Execution lives in separate layers with
+outcomes, the `index ↦ spent` writer `bDec`, the two turns, the two
+cursor-restore writers, the two **terminal** restore writers, the two latch
+dispatches and the leftward cursor writer `bIns`).  The
+five *forward* walk modes — `bInsSeek`, `bProbe2`, `bFwd`, `bExh` and `bRet` —
+have no transition blocks of their own.  Execution lives in separate layers with
 their own surface entries.  End-to-end physical validation, rejection, rewind,
 and `readBStart` composition remain in their separate execution surface.
 
@@ -86,9 +87,9 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1Transition_bBack_p2
 #check @g1Transition_bBack_p3
 #check @g1Transition_bHop
--- The entry states, the two selectors and the twenty-three transition tuples of
--- the cursor walk.  `bInsSeek`/`bProbe2`/`bFwd`/`bExh` are forward modes, so
--- none of the four has transition rows of its own.
+-- The entry states, the three selectors and the thirty-one transition tuples of
+-- the cursor walk.  `bInsSeek`/`bProbe2`/`bFwd`/`bExh`/`bRet` are forward modes,
+-- so none of the five has transition rows of its own.
 #check @g1InsSeekState
 #check @g1Probe2State
 #check @g1InsState
@@ -98,6 +99,8 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1ExhState
 #check @g1LatchMode
 #check @g1RestoreMode
+#check @g1FinMode
+#check @g1FinMode_ne_restore
 #check @g1Transition_bLatch
 #check @g1Transition_bIns_p3
 #check @g1Transition_bIns_p2
@@ -117,10 +120,18 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1Transition_bTurn_p1
 #check @g1Transition_bTurn_p2
 #check @g1Transition_bTurn_p3
+#check @g1Transition_bTurnFin_p0
+#check @g1Transition_bTurnFin_p1
+#check @g1Transition_bTurnFin_p2
+#check @g1Transition_bTurnFin_p3
 #check @g1Transition_bRestore_p0
 #check @g1Transition_bRestore_p1
 #check @g1Transition_bRestore_p2
 #check @g1Transition_bRestore_p3
+#check @g1Transition_bFin_p0
+#check @g1Transition_bFin_p1
+#check @g1Transition_bFin_p2
+#check @g1Transition_bFin_p3
 #check @g1RejectState_ne_readB
 #check @g1OOBState_ne_readAReset
 #check @g1ExhState_ne_dec
@@ -192,29 +203,43 @@ theorem check_g1Advance_bInsSeek :
       g1Advance .bInsSeek .separator = .bProbe2 :=
   ⟨rfl, rfl, rfl⟩
 
-/-- **The complete probe table, the walk's right-running scan, and the
-boundary.**  `bProbe2` latches the data bit it reads or hands off to the stable
+/-- **The complete probe table and the walk's right-running scan.**  `bProbe2`
+latches the data bit it reads or hands off to the stable
 out-of-range boundary; `bFwd` crosses consumed units, the separator and data and
-stops on the `cursor`; `bExh` has **no** successful frame row, so a completed
-frame there enters `reject` and no theorem executes that read.  The
+stops on the `cursor`.  The
 `bScan + data` row stays absent: a data frame before the separator is still
 malformed and still rejects. -/
 theorem check_g1Advance_probe (b : Bool) :
     (g1Advance .bProbe2 (.data b) = g1LatchMode b ∧
         g1Advance .bProbe2 (.output false) = .bOOB) ∧
       (g1Advance .bFwd (.data b) = .bFwd ∧ g1Advance .bFwd .cursor = .bTurn) ∧
-      G1Stuck .bExh ∧ g1Advance .bScan (.data b) = .reject := by
-  cases b <;> exact ⟨⟨rfl, rfl⟩, ⟨rfl, rfl⟩, by decide, rfl⟩
+      g1Advance .bScan (.data b) = .reject := by
+  cases b <;> exact ⟨⟨rfl, rfl⟩, ⟨rfl, rfl⟩, rfl⟩
 
-/-- **The writers and the turn never read a frame forward.**  Each of the five
-non-forward walk modes, and the three merged ones, is `G1Stuck`: they move under
+/-- **The complete terminal exhaustion table.**  `bExh` has exactly one row —
+it re-reads the `argSep` that opens the operand-2 field and enters `bRet` — and
+`bRet` crosses consumed units, the separator and data and stops on the `cursor`
+at the terminal turn.  Every other frame at either mode enters `reject`. -/
+theorem check_g1Advance_exhaustion (b : Bool) :
+    (g1Advance .bExh .argSep = .bRet ∧
+        g1Advance .bExh .cursor = .reject) ∧
+      (g1Advance .bRet .spent = .bRet ∧ g1Advance .bRet .separator = .bRet ∧
+        g1Advance .bRet (.data b) = .bRet ∧
+        g1Advance .bRet .cursor = .bTurnFin ∧
+        g1Advance .bRet .argSep = .reject) := by
+  cases b <;> exact ⟨⟨rfl, rfl⟩, rfl, rfl, rfl, rfl, rfl⟩
+
+/-- **The writers and the turns never read a frame forward.**  Each of the eight
+non-forward walk modes of the round and the three of the terminal path is
+`G1Stuck`: they move under
 `g1Transition` alone.  `bSeek` is among them because it reads **right to left**,
 not because it is a boundary; its three outcomes are
 `check_g1Transition_bSeek`. -/
 theorem check_g1Advance_walk_nonforward :
     G1Stuck .bSeek ∧ G1Stuck .bDec ∧ G1Stuck .bTurn ∧
       G1Stuck .bRestoreFalse ∧ G1Stuck .bRestoreTrue ∧
-      G1Stuck .bLatchFalse ∧ G1Stuck .bLatchTrue ∧ G1Stuck .bIns := by decide
+      G1Stuck .bLatchFalse ∧ G1Stuck .bLatchTrue ∧ G1Stuck .bIns ∧
+      G1Stuck .bTurnFin ∧ G1Stuck .bFinFalse ∧ G1Stuck .bFinTrue := by decide
 
 /-- **The reverse seek's three outcomes, pinned exactly.**  An `index` stops it
 at the write handoff and an `argSep` at the exhaustion handoff, both *without*
@@ -243,6 +268,46 @@ theorem check_g1Transition_bLatch (phase : Fin 1) (b : Bool)
     g1Transition phase (g1State (g1LatchMode b) position b0 b1 b2 ctx) scan =
       (0, g1InsState (ctx.withVB b), scan, .left) :=
   g1Transition_bLatch phase b position b0 b1 b2 scan ctx
+
+/-- **The terminal turn, pinned exactly.**  Four hold-and-move-left steps that
+write back what they scan, exiting into the *terminal* writer selected by the
+latched bit — never into the round writer. -/
+theorem check_g1Transition_bTurnFin (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .bTurnFin .p0 b0 b1 b2 ctx) scan =
+        (0, g1State .bTurnFin .p1 false false false ctx, scan, .left) ∧
+      g1Transition phase (g1State .bTurnFin .p1 b0 b1 b2 ctx) scan =
+        (0, g1State .bTurnFin .p2 false false false ctx, scan, .left) ∧
+      g1Transition phase (g1State .bTurnFin .p2 b0 b1 b2 ctx) scan =
+        (0, g1State .bTurnFin .p3 false false false ctx, scan, .left) ∧
+      g1Transition phase (g1State .bTurnFin .p3 b0 b1 b2 ctx) scan =
+        (0, g1State (g1FinMode ctx.vB) .p0 false false false ctx, scan, .left) ∧
+      g1FinMode ctx.vB ≠ g1RestoreMode ctx.vB :=
+  ⟨g1Transition_bTurnFin_p0 phase b0 b1 b2 scan ctx,
+    g1Transition_bTurnFin_p1 phase b0 b1 b2 scan ctx,
+    g1Transition_bTurnFin_p2 phase b0 b1 b2 scan ctx,
+    g1Transition_bTurnFin_p3 phase b0 b1 b2 scan ctx,
+    g1FinMode_ne_restore ctx.vB ctx.vB⟩
+
+/-- **The terminal restore, pinned exactly.**  The four cells it writes are
+literally `(G1Frame.data b).bits`, and the fourth step hands off to
+`readAResetStart` — the row that leaves no cursor on the tape. -/
+theorem check_g1Transition_bFin (phase : Fin 1) (b : Bool)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State (g1FinMode b) .p0 b0 b1 b2 ctx) scan =
+        (0, g1State (g1FinMode b) .p1 false false false ctx, false, .right) ∧
+      g1Transition phase (g1State (g1FinMode b) .p1 b0 b1 b2 ctx) scan =
+        (0, g1State (g1FinMode b) .p2 false false false ctx, true, .right) ∧
+      g1Transition phase (g1State (g1FinMode b) .p2 b0 b1 b2 ctx) scan =
+        (0, g1State (g1FinMode b) .p3 false false false ctx, b, .right) ∧
+      g1Transition phase (g1State (g1FinMode b) .p3 b0 b1 b2 ctx) scan =
+        (0, g1ReadAResetState ctx, !b, .right) ∧
+      (G1Frame.data b).bits = [false, true, b, !b] :=
+  ⟨g1Transition_bFin_p0 phase b b0 b1 b2 scan ctx,
+    g1Transition_bFin_p1 phase b b0 b1 b2 scan ctx,
+    g1Transition_bFin_p2 phase b b0 b1 b2 scan ctx,
+    g1Transition_bFin_p3 phase b b0 b1 b2 scan ctx,
+    by cases b <;> rfl⟩
 
 theorem check_g1AdvanceList_encode_reject (r : G1Request)
     (hc : ¬ r.Canonical) :

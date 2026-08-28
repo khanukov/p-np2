@@ -96,15 +96,15 @@ statement about the walk proper starts from a caller-supplied configuration.
 
 `bProbe2` is now **active**: it is the probe of the paired-marker cursor walk —
 one `spent` per consumed index unit in the operand-2 field, one `cursor` in the
-data region, moved one data frame right per marked unit.  The walk's twelve
-current modes are complete for this normal-round slice; four terminal modes are
-deferred to PR2b2.  The current forward part of its table is complete:
+data region, moved one data frame right per marked unit.  The walk's sixteen
+modes are complete, and so is the forward part of its table:
 
 ```text
 bScan    + index        ↦ bInsSeek      bInsSeek + index/spent  ↦ bInsSeek
 bInsSeek + separator    ↦ bProbe2       bProbe2  + data b       ↦ bLatch b
 bProbe2  + output false ↦ bOOB          bFwd + spent/sep/data   ↦ bFwd
-bFwd     + cursor       ↦ bTurn
+bFwd     + cursor       ↦ bTurn         bExh + argSep           ↦ bRet
+bRet     + spent/sep/data ↦ bRet        bRet + cursor           ↦ bTurnFin
 ```
 
 `bLatch b` stores `b` in `G1Ctx.vB`, writes back the cell it scans and steps one
@@ -116,20 +116,25 @@ over it right to left and enters `bSeek` on the last cell of the preceding frame
 with three outcomes — an `index` stops it at the write handoff `bDec`, the
 `argSep` opening the operand-2 field stops it at the exhaustion handoff `bExh`,
 everything else continues the seek one frame further left.  That literal
-`argSep` stop row is the finite-control boundary used by the exhaustion path;
-this slice proves the exact stop endpoint but no iteration.  `bDec`
-writes `spent` over the `index` and exits into `bFwd`, which runs right to the
-`cursor` and enters `bTurn`; `bTurn` walks four cells back onto the cursor and
-enters `bRestore vB`, which rewrites `cursor` into `data vB` and re-enters
-`bProbe2` on the next data frame.  That closes one normal round.
+`argSep` stop row is the finite-control boundary between the normal round and
+the terminal path; this slice proves the exact stop endpoint but no iteration.
+`bDec` writes `spent` over the `index` and exits into `bFwd`, which runs right
+to the `cursor` and enters `bTurn`; `bTurn` walks four cells back onto the
+cursor and enters `bRestore vB`, which rewrites `cursor` into `data vB` and
+re-enters `bProbe2` on the next data frame.  That closes one normal round.
 
-**`bExh` is the explicit local boundary of this slice**, at `.p0`, head on the
-first cell of the `argSep` that opens the operand-2 field.  It has no successful
-frame row (`GateOneRouting.g1_bExh_stuck`): an attempted complete-frame read
-rejects, and no theorem executes past it.  The terminal exhaustion path —
-`bRet`, `bTurnFin` and the two terminal restore writers that hand off to
-`readAResetStart` with no cursor left on the tape — is **PR2b2**, and none of it
-exists here.
+**The terminal exhaustion path.**  `bExh`, at `.p0` with the head on the first
+cell of the `argSep` that opens the operand-2 field, is where the seek stops
+once no unspent `index` remains.  It is now a genuine forward mode with exactly
+one row: it re-reads that `argSep` and enters `bRet`, which runs right over
+`spent`/`separator`/`data` to the `cursor` and enters `bTurnFin`.  `bTurnFin`
+walks four cells back onto the cursor exactly as `bTurn` does and enters
+`bFin vB`, whose four writes rewrite `cursor` into `data vB` and hand off to
+`readAResetStart` — with **no cursor left on the tape**.  `bFin b` differs from
+`bRestore b` only in that exit (`g1FinMode_ne_restore`); every other cell it
+writes is the same literal codeword.  Nothing here iterates the round, drives
+the walk from a real initial configuration or claims that the terminal path is
+reached after the right number of rounds.
 
 `GateOneProbeInstall` and `GateOneWalkKernel` turn these rows into the frame
 kernel instances and the exact atomic macro of every step, each on a
@@ -192,9 +197,10 @@ back-walk and its hop; the forward table no longer enters `bRoundStart`.
 `bInsSeek`/`bProbe2` are the installation scan and its probe;
 `bLatchFalse`/`bLatchTrue` are the latch dispatches, `bIns` the leftward cursor
 writer, `bSeek` the reverse seek, `bDec` the `index ↦ spent` writer, `bFwd` the
-forward scan to the cursor, `bTurn` the turn,
-`bRestoreFalse`/`bRestoreTrue` the two cursor-restore writers and `bExh` the
-exhaustion boundary.
+forward scan to the cursor, `bTurn` the turn and
+`bRestoreFalse`/`bRestoreTrue` the two cursor-restore writers.  `bExh` is the
+exhaustion handoff, `bRet` its scan back to the cursor, `bTurnFin` the terminal
+turn and `bFinFalse`/`bFinTrue` the two terminal restore writers.
 
 `readAStart`, `combineStart`, `readAResetStart` and
 `bOOB` are the four remaining local handoffs, idle in this slice;
@@ -217,6 +223,8 @@ inductive G1Mode
   | bLatchFalse | bLatchTrue | bIns | bSeek
   | bDec | bFwd | bTurn | bExh
   | bRestoreFalse | bRestoreTrue
+  | bRet | bTurnFin
+  | bFinFalse | bFinTrue
   | readAStart | combineStart | readAResetStart | bOOB
   | accept | reject
   deriving Fintype, DecidableEq, Repr
@@ -360,6 +368,18 @@ def g1RestoreMode : Bool → G1Mode
   | false => .bRestoreFalse
   | true => .bRestoreTrue
 
+/-- The two **terminal** restore writers, indexed by the latched bit.  They
+write the same four literal cells as `g1RestoreMode`; only the exit differs. -/
+def g1FinMode : Bool → G1Mode
+  | false => .bFinFalse
+  | true => .bFinTrue
+
+/-- **The terminal writer is never the round writer.**  Whatever the two latched
+bits, `bFin b` and `bRestore b'` are different modes, so the exit that leaves no
+cursor on the tape cannot be confused with the exit that re-opens the probe. -/
+theorem g1FinMode_ne_restore (b b' : Bool) : g1FinMode b ≠ g1RestoreMode b' := by
+  cases b <;> cases b' <;> decide
+
 /-- The two outcomes of the reverse seek are different states. -/
 theorem g1ExhState_ne_dec (ctx ctx' : G1Ctx) :
     g1ExhState ctx ≠ g1DecState ctx' := by
@@ -466,8 +486,13 @@ def g1Advance : G1Mode → G1Frame → G1Mode
   | .bFwd, .separator => .bFwd
   | .bFwd, .data _ => .bFwd
   | .bFwd, .cursor => .bTurn
-  -- `bSeek` reads right to left and has no row here at all; `bExh`, the
-  -- exhaustion boundary of this slice, has none either.
+  -- the exhaustion scan: re-read the opening `argSep`, then run to the cursor
+  | .bExh, .argSep => .bRet
+  | .bRet, .spent => .bRet
+  | .bRet, .separator => .bRet
+  | .bRet, .data _ => .bRet
+  | .bRet, .cursor => .bTurnFin
+  -- `bSeek` reads right to left and has no row here at all.
   | _, _ => .reject
 
 /-- The bit-level form of `g1Advance`, as the control table computes it. -/
@@ -479,22 +504,18 @@ def g1Complete (mode : G1Mode) (b0 b1 b2 b3 : Bool) : G1Mode :=
 /-- The modes that read one frame left to right through `g1Advance`.  The
 validation scan (`vBof … vBlank`), the pass-B rescan (`readBStart`,
 `rTag0 … rTag5`, `rConst0`/`rConst1`, `rArg1Binary`, `bScan`, `bProbe`) and the
-four forward modes of the cursor walk (`bInsSeek`, `bProbe2`, `bFwd`, `bExh`)
-are forward modes; the rewind, the four dispatch modes, the five modes of the
-destructive round, the eight non-forward modes of the cursor walk (`bSeek` reads
-right to left, the two latch modes dispatch, the four writers write and the turn
-holds), the four remaining
-handoffs and the two sinks are not.
-
-`bExh` is forward *and* `G1Stuck` in this slice: the shared forward control can
-read its four cells, but the table gives it no successful frame row, so a
-completed frame enters `reject`.  No theorem executes that read; that is what
-makes it an explicit boundary and not a claim, and PR2b2 supplies its rows. -/
+five forward modes of the cursor walk (`bInsSeek`, `bProbe2`, `bFwd`, `bExh`,
+`bRet`) are forward modes; the rewind, the four dispatch modes, the five modes
+of the destructive round, the eleven non-forward modes of the cursor walk
+(`bSeek` reads right to left, the two latch modes dispatch, the six writers
+write and the two turns hold), the four remaining
+handoffs and the two sinks are not. -/
 def G1ForwardMode : G1Mode → Prop
   | .rewindStart | .rewind
   | .constFalse | .constTrue | .bStoreFalse | .bStoreTrue
   | .bRoundStart | .bWalk | .bMark | .bBack | .bHop
-  | .bSeek | .bDec | .bTurn | .bRestoreFalse | .bRestoreTrue
+  | .bSeek | .bDec | .bTurn | .bTurnFin
+  | .bRestoreFalse | .bRestoreTrue | .bFinFalse | .bFinTrue
   | .bLatchFalse | .bLatchTrue | .bIns
   | .readAStart | .combineStart | .readAResetStart | .bOOB
   | .accept | .reject => False
@@ -512,7 +533,7 @@ theorem G1ForwardMode.readBStart : G1ForwardMode .readBStart := trivial
 /-- **Stuck modes.**  A mode with no successful frame row: an attempted
 complete-frame read enters `reject`, and it is not the end-of-input mode.  In
 particular the four dispatch modes, the five modes of the destructive round,
-the eight non-forward modes of the cursor walk, the exhaustion boundary `bExh`,
+the eleven non-forward modes of the cursor walk,
 the four remaining handoffs and the `reject` sink are
 stuck; `rewind` and `accept` also satisfy this table-level predicate but are
 unreachable as results of `g1Advance`;
@@ -580,9 +601,8 @@ theorem g1AdvanceList_ne_rewindStart_of_stuck {mode : G1Mode} (h : G1Stuck mode)
 /-- **The forward table only ever produces a forward mode, `rewindStart`, or a
 stuck mode.**  In particular `rewind` and `accept` are unreachable from any
 scan.  Every non-forward target (the four dispatch modes, the round's five
-modes, the eight non-forward walk modes, the four idle handoffs and the
-`reject` sink) is stuck; the forward boundary `bExh` is separately stuck because
-it has no successful frame row. -/
+modes, the eleven non-forward walk modes, the four idle handoffs and the
+`reject` sink) is stuck. -/
 theorem g1Advance_range (mode : G1Mode) (frame : G1Frame) :
     G1ForwardMode (g1Advance mode frame) ∨
       g1Advance mode frame = .rewindStart ∨
@@ -1277,6 +1297,14 @@ def g1Transition (_phase : Fin 1) (s : G1State) (scan : Bool) :
       | .p3 =>
           (0, g1State (g1RestoreMode s.ctx.vB) .p0 false false false s.ctx,
             scan, .left)
+  | .bTurnFin =>
+      match s.position with
+      | .p0 => (0, g1State .bTurnFin .p1 false false false s.ctx, scan, .left)
+      | .p1 => (0, g1State .bTurnFin .p2 false false false s.ctx, scan, .left)
+      | .p2 => (0, g1State .bTurnFin .p3 false false false s.ctx, scan, .left)
+      | .p3 =>
+          (0, g1State (g1FinMode s.ctx.vB) .p0 false false false s.ctx,
+            scan, .left)
   | .bRestoreFalse =>
       match s.position with
       | .p0 => (0, g1State .bRestoreFalse .p1 false false false s.ctx,
@@ -1295,6 +1323,27 @@ def g1Transition (_phase : Fin 1) (s : G1State) (scan : Bool) :
       | .p2 => (0, g1State .bRestoreTrue .p3 false false false s.ctx,
                   true, .right)
       | .p3 => (0, g1Probe2State s.ctx, false, .right)
+  -- the two terminal restore writers: the same four literal cells of
+  -- `(data vB).bits`, exiting into the pass-A reset handoff instead of the
+  -- walk's probe, so no `cursor` is left on the tape
+  | .bFinFalse =>
+      match s.position with
+      | .p0 => (0, g1State .bFinFalse .p1 false false false s.ctx,
+                  false, .right)
+      | .p1 => (0, g1State .bFinFalse .p2 false false false s.ctx,
+                  true, .right)
+      | .p2 => (0, g1State .bFinFalse .p3 false false false s.ctx,
+                  false, .right)
+      | .p3 => (0, g1ReadAResetState s.ctx, true, .right)
+  | .bFinTrue =>
+      match s.position with
+      | .p0 => (0, g1State .bFinTrue .p1 false false false s.ctx,
+                  false, .right)
+      | .p1 => (0, g1State .bFinTrue .p2 false false false s.ctx,
+                  true, .right)
+      | .p2 => (0, g1State .bFinTrue .p3 false false false s.ctx,
+                  true, .right)
+      | .p3 => (0, g1ReadAResetState s.ctx, false, .right)
   -- the four dispatch modes: store the decoded Boolean in `vB`, do not move
   | .constFalse => (0, g1CombineState (s.ctx.withVB false), scan, .stay)
   | .constTrue => (0, g1CombineState (s.ctx.withVB true), scan, .stay)
@@ -1617,14 +1666,14 @@ theorem g1Transition_bHop (phase : Fin 1) (position : G1FramePosition)
 
 /-! ### The cursor walk
 
-Twenty-three tuples across the eight non-forward cursor-walk modes.
+Thirty-one tuples across the eleven non-forward cursor-walk modes.
 Every one is `rfl` after at most one position or one Boolean split, and none
 mentions the request: the latch stores the probed bit in the pre-existing
 `G1Ctx.vB`, the reverse seek decides on two literal codewords, each writer
-installs a literal codeword of the frame alphabet, and the turn writes back what
-it scans.  The four *forward* walk modes (`bInsSeek`, `bProbe2`, `bFwd`, `bExh`)
-have no rows of their own: their steps are the four `g1Transition_forward_*`
-lemmas above. -/
+installs a literal codeword of the frame alphabet, and the two turns write back
+what they scan.  The five *forward* walk modes (`bInsSeek`, `bProbe2`, `bFwd`,
+`bExh`, `bRet`) have no rows of their own: their steps are the four
+`g1Transition_forward_*` lemmas above. -/
 
 /-- **The latch.**  One step stores the probed bit in `vB`, writes back the
 cell it scans and moves one cell left, onto the last cell of the data frame the
@@ -1741,7 +1790,8 @@ theorem g1Transition_bDec_p3 (phase : Fin 1) (b0 b1 b2 scan : Bool)
 cell they scan, so the tape does not change, and carry the head from the frame
 *after* the cursor onto its first cell.  The exit mode is selected by the
 latched bit `ctx.vB`, the only thing the walk remembers about the hidden
-value. -/
+value: `bTurn` selects the round writer `bRestore vB` and `bTurnFin` the
+terminal writer `bFin vB`. -/
 
 theorem g1Transition_bTurn_p0 (phase : Fin 1) (b0 b1 b2 scan : Bool)
     (ctx : G1Ctx) :
@@ -1764,8 +1814,32 @@ theorem g1Transition_bTurn_p3 (phase : Fin 1) (b0 b1 b2 scan : Bool)
       (0, g1State (g1RestoreMode ctx.vB) .p0 false false false ctx,
         scan, .left) := rfl
 
-/-! #### The two cursor-restore writers: `bRestore b` writes the four literal
-cells of `(data b).bits` walking right, and exits into the walk's probe. -/
+theorem g1Transition_bTurnFin_p0 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .bTurnFin .p0 b0 b1 b2 ctx) scan =
+      (0, g1State .bTurnFin .p1 false false false ctx, scan, .left) := rfl
+
+theorem g1Transition_bTurnFin_p1 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .bTurnFin .p1 b0 b1 b2 ctx) scan =
+      (0, g1State .bTurnFin .p2 false false false ctx, scan, .left) := rfl
+
+theorem g1Transition_bTurnFin_p2 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .bTurnFin .p2 b0 b1 b2 ctx) scan =
+      (0, g1State .bTurnFin .p3 false false false ctx, scan, .left) := rfl
+
+/-- **The terminal turn's exit.**  The fourth hold-and-move-left step selects
+the *terminal* writer of the latched bit, not the round writer. -/
+theorem g1Transition_bTurnFin_p3 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .bTurnFin .p3 b0 b1 b2 ctx) scan =
+      (0, g1State (g1FinMode ctx.vB) .p0 false false false ctx,
+        scan, .left) := rfl
+
+/-! #### The four restore writers: `bRestore b` and `bFin b` each write the four
+literal cells of `(data b).bits` walking right, and differ only in where they
+exit — the walk's probe, or the pass-A reset handoff. -/
 
 theorem g1Transition_bRestore_p0 (phase : Fin 1) (b : Bool)
     (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
@@ -1789,6 +1863,33 @@ theorem g1Transition_bRestore_p3 (phase : Fin 1) (b : Bool)
     (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
     g1Transition phase (g1State (g1RestoreMode b) .p3 b0 b1 b2 ctx) scan =
       (0, g1Probe2State ctx, !b, .right) := by
+  cases b <;> rfl
+
+theorem g1Transition_bFin_p0 (phase : Fin 1) (b : Bool)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State (g1FinMode b) .p0 b0 b1 b2 ctx) scan =
+      (0, g1State (g1FinMode b) .p1 false false false ctx, false, .right) := by
+  cases b <;> rfl
+
+theorem g1Transition_bFin_p1 (phase : Fin 1) (b : Bool)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State (g1FinMode b) .p1 b0 b1 b2 ctx) scan =
+      (0, g1State (g1FinMode b) .p2 false false false ctx, true, .right) := by
+  cases b <;> rfl
+
+theorem g1Transition_bFin_p2 (phase : Fin 1) (b : Bool)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State (g1FinMode b) .p2 b0 b1 b2 ctx) scan =
+      (0, g1State (g1FinMode b) .p3 false false false ctx, b, .right) := by
+  cases b <;> rfl
+
+/-- **The last row of the walk.**  The terminal restore hands off to
+`readAResetStart`, with the latched operand-2 value already in `ctx.vB` and no
+cursor left on the tape. -/
+theorem g1Transition_bFin_p3 (phase : Fin 1) (b : Bool)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State (g1FinMode b) .p3 b0 b1 b2 ctx) scan =
+      (0, g1ReadAResetState ctx, !b, .right) := by
   cases b <;> rfl
 
 end Pnp3.Internal.PsubsetPpoly.TM

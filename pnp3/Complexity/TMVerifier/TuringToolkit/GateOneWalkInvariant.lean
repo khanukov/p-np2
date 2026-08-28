@@ -7,8 +7,12 @@ import Complexity.TMVerifier.TuringToolkit.GateOneWalkKernel
 
 PR3a.  The merged atomic macros hold on **arbitrary** frame lists; this module
 pins the **one canonical frame list** the cursor walk runs on and reaches it
-from the **real initial configuration** `G1M.initialConfig`.  It stops exactly
-there: **no round is executed here**.
+from the **real initial configuration** `G1M.initialConfig`.
+
+PR3b adds **exactly one round** on that frame list, in both of its outcomes —
+the normal step `Σ(j) → Σ(j+1)` and the out-of-range abort at the last data
+slot — and nothing beyond it: there is still **no induction over `j`, no driver
+and no loop clock**.
 
 ## `Σ(j)`: the invariant vocabulary
 
@@ -49,12 +53,35 @@ Every structural side condition the merged macros take as a *hypothesis* is
   on the invariant domain `j ≤ arg2` and `j < m`.
 
 `g1WalkFramesMarked` and `g1WalkFramesRestored` name the two other layouts a
-round passes through.  Both carry exact length/count facts; no execution theorem
-in this module writes either layout — those preservation runs are PR3b.
+round passes through.  Both carry exact length/count facts, and PR3b's round
+theorems below really do write them: the marked word is the tape between the
+`index ↦ spent` write and the cursor restore, the restored word the tape from
+the restore onwards.
 
 ## What is executed here
 
-Only the **installation**, and only from `G1M.initialConfig`:
+The **installation** from `G1M.initialConfig`, and **one round** on `Σ(j)`.
+
+One round, from a caller-supplied `Σ(j)` (no run below reaches `Σ(j)` for
+`j > 0` from `initialConfig`; that composition needs the induction, which is
+deferred):
+
+* `g1CS_walk_iteration_exact` — for `j < a2` and `j + 1 < m`, exactly
+  `16 * j + 37` genuine steps take `Σ(r, j, v)` to `Σ(r, j+1, v')`, where the
+  hidden-bit proofs `vals[j]? = some v` and `vals[j+1]? = some v'` are
+  **arguments of the two configurations**: the relation is explicit at the start
+  and re-established at the endpoint.  One on-tape decrement
+  (`index^(a2-j) · spent^j ↦ index^(a2-j-1) · spent^(j+1)`), the unique cursor
+  moves one data slot right, slot `j` is restored to `data vals[j]`, everything
+  else is unchanged.
+* `g1CS_walk_oob_exact` / `g1CS_walk_oob_stable` — for `j < a2` but
+  `j + 1 = m`, exactly `16 * j + 32` steps reach the **stable** `bOOB` boundary
+  on `g1WalkFramesRestored r j`: the data region is exactly `vals` and
+  cursor-free, while operand 2 is **partially spent and unrepaired**
+  (`spent^(j+1)`, `index^(a2-j-1)` left).  This is an intermediate tape and
+  **not** a rejection: no verdict, no `TM.accepts`, no output frame is claimed.
+
+Only the **installation** starts from `G1M.initialConfig`:
 
 * `g1CS_walk_install_exact` — for a canonical `and`/`or` request with `a2 > 0`
   and `vals[0]? = some v`, exactly `g1WalkInstallSteps r = g1InstallScanSteps r
@@ -67,35 +94,55 @@ Only the **installation**, and only from `G1M.initialConfig`:
   `bOOB` boundary with the tape **bit-for-bit the initial tape**.
 * `g1CS_walk_oob_ne_invariant` — those two endpoints are different boundaries.
 
-Both counts stay inside the unchanged public clock `g1Clock`; no new `Nat`,
-index, width, offset or request field is introduced anywhere.  The two capstones
-are composed from the merged `GateOneInstallScan` and `GateOneProbeInstall`
-atoms only, with the transition table never unfolded.  `GateOneWalkKernel` is
-imported for exactly one name, `G1WalkSkip`, in whose terms the two pure
-skip-run facts above are stated; no macro of that module is used below.
+Both installation counts stay inside the unchanged public clock `g1Clock`; no
+new `Nat`, index, width, offset or request field is introduced anywhere.  The
+installation capstones are composed from the merged `GateOneInstallScan` and
+`GateOneProbeInstall` atoms, and the round from the merged `GateOneWalkKernel`
+and `GateOneProbeInstall` atoms; the transition table is never unfolded.
+`GateOneWalkKernel` also supplies the single name `G1WalkSkip`, in whose terms
+the two pure skip-run facts above are stated.
 
-## Explicit deferrals (PR3b and later)
+## Explicit deferrals (PR3c and later)
 
-`Σ(0)` is *reached*; nothing here moves off it.  There is **no** one-round
-iteration theorem (`Σ(j) → Σ(j+1)`), **no** normal-round or out-of-range
-preservation theorem on `Σ(j)`, no induction over `j`, no loop, driver or
-cumulative clock, no successful terminal at `j = a2`, no aggregation of the two
-out-of-range branches, no addressing and **no positive-index operand-value
-theorem**: nothing below claims the machine resolves `r.vals[r.arg2]?` for
-`a2 > 0`.  Also absent: the `spent ↦ index` repair sweep, pass A, combine, the
-output write, `TM.accepts`, gate-semantics correctness, a full-clock theorem and
-non-canonical or physically padded tapes.  As everywhere in this development,
-every execution statement is scoped to the exact tape `encodeG1 r`.
+Exactly **one** round is executed, and only from a `Σ(j)` the caller hands in.
+There is **no** induction over `j`, no driver, no loop and **no cumulative or
+per-round clock bound** — `16 * j + 37` and `16 * j + 32` are stated but never
+summed or compared against `g1Clock`.  There is no successful terminal at
+`j = a2` (the `bExh`/`bRet`/`bTurnFin`/`bFin` path into `readAResetStart`), no
+aggregation of the two out-of-range branches, no addressing and **no
+positive-index operand-value theorem**: nothing below claims the machine
+resolves `r.vals[r.arg2]?` for `a2 > 0`.  Also absent: the `spent ↦ index`
+repair sweep, pass A, combine, the output write, `TM.accepts`, gate-semantics
+correctness, a full-clock theorem and non-canonical or physically padded tapes.
+As everywhere in this development, every execution statement is scoped to the
+exact tape `encodeG1 r`.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
 
 /-! ## List helpers -/
 
+private theorem g1Drop_cons (l : List Bool) (j : Nat) (hj : j < l.length) :
+    l.drop j = l[j] :: l.drop (j + 1) := by
+  induction l generalizing j with
+  | nil => simp at hj
+  | cons a t ih =>
+      cases j with
+      | zero => simp
+      | succ j => exact ih j (by simpa using hj)
+
 private theorem g1Replicate_split (m : Nat) (hm : 0 < m) (f : G1Frame) :
     List.replicate m f = List.replicate (m - 1) f ++ [f] := by
   obtain ⟨m, rfl⟩ : ∃ t, m = t + 1 := ⟨m - 1, by omega⟩
   simp [List.replicate_succ']
+
+/-- The hidden-bit relation `vals[j]? = some v` in `getElem` form.  Everything
+below reads the invariant's latch through this equation, so the bit written back
+by a round's restore is the bit the cursor was hiding. -/
+private theorem g1Getn {l : List Bool} {j : Nat} {v : Bool}
+    (h : l[j]? = some v) (hj : j < l.length) : l[j] = v := by
+  rw [List.getElem?_eq_getElem hj] at h
+  exact Option.some.inj h
 
 private theorem g1Vals_cons {l : List Bool} {v : Bool} (h : l[0]? = some v) :
     ∃ rest : List Bool, l = v :: rest := by
@@ -346,6 +393,164 @@ theorem g1WalkFramesRestored_count_index (r : G1Request) (j : Nat) :
     g1Count_replicate_ne G1Frame.index G1Frame.spent (j + 1) (by decide),
     g1Count_data_run G1Frame.index _ (g1Data_run_map r.vals) (by decide)]
 
+/-! ### Layout splits
+
+Each split is a pure re-association of the three layout definitions above, in
+exactly the shape one atomic macro of `GateOneWalkKernel` or
+`GateOneProbeInstall` consumes.  No execution claim is involved, and no
+transition row is unfolded. -/
+
+private theorem g1WalkSplit_mark (r : G1Request) (j : Nat) (hj2 : j < r.arg2) :
+    (g1FieldRouteFrames r ++ List.replicate (r.arg2 - j - 1) G1Frame.index) ++
+        G1Frame.index :: (List.replicate j G1Frame.spent ++
+          [G1Frame.separator] ++ (r.vals.take j).map G1Frame.data) ++
+        (G1Frame.cursor :: ((r.vals.drop (j + 1)).map G1Frame.data ++
+          [G1Frame.output false, G1Frame.finish, G1Frame.blank])) =
+      g1WalkFrames r j := by
+  rw [g1WalkFrames, g1Replicate_split (r.arg2 - j) (by omega) G1Frame.index]
+  simp [List.append_assoc]
+
+private theorem g1WalkSplit_marked_mark (r : G1Request) (j : Nat) :
+    (g1FieldRouteFrames r ++ List.replicate (r.arg2 - j - 1) G1Frame.index) ++
+        G1Frame.spent :: (List.replicate j G1Frame.spent ++
+          [G1Frame.separator] ++ (r.vals.take j).map G1Frame.data) ++
+        (G1Frame.cursor :: ((r.vals.drop (j + 1)).map G1Frame.data ++
+          [G1Frame.output false, G1Frame.finish, G1Frame.blank])) =
+      g1WalkFramesMarked r j := by
+  rw [g1WalkFramesMarked, List.replicate_succ]
+  simp [List.append_assoc]
+
+private theorem g1WalkSplit_marked_fwd (r : G1Request) (j : Nat) :
+    (g1FieldRouteFrames r ++ List.replicate (r.arg2 - j - 1) G1Frame.index ++
+        [G1Frame.spent]) ++
+        (List.replicate j G1Frame.spent ++ [G1Frame.separator] ++
+          (r.vals.take j).map G1Frame.data) ++
+        G1Frame.cursor :: ((r.vals.drop (j + 1)).map G1Frame.data ++
+          [G1Frame.output false, G1Frame.finish, G1Frame.blank]) =
+      g1WalkFramesMarked r j := by
+  rw [g1WalkFramesMarked, List.replicate_succ]
+  simp [List.append_assoc]
+
+private theorem g1WalkSplit_marked_cursor (r : G1Request) (j : Nat) :
+    (g1FieldRouteFrames r ++ List.replicate (r.arg2 - j - 1) G1Frame.index ++
+        List.replicate (j + 1) G1Frame.spent ++ [G1Frame.separator] ++
+        (r.vals.take j).map G1Frame.data) ++
+        G1Frame.cursor :: ((r.vals.drop (j + 1)).map G1Frame.data ++
+          [G1Frame.output false, G1Frame.finish, G1Frame.blank]) =
+      g1WalkFramesMarked r j := by
+  simp [g1WalkFramesMarked, List.append_assoc]
+
+/-- **The restore writes back exactly the hidden bit.**  The `data v` frame the
+round puts at ordinal `g1WalkCursor r j` re-creates the data region `vals`
+precisely because `v` is `vals[j]`; this is where the invariant's hidden-bit
+relation is consumed. -/
+private theorem g1WalkSplit_restored_cursor (r : G1Request) (j : Nat) (v : Bool)
+    (hj : j < r.vals.length) (hv : r.vals[j] = v) :
+    (g1FieldRouteFrames r ++ List.replicate (r.arg2 - j - 1) G1Frame.index ++
+        List.replicate (j + 1) G1Frame.spent ++ [G1Frame.separator] ++
+        (r.vals.take j).map G1Frame.data) ++
+        G1Frame.data v :: ((r.vals.drop (j + 1)).map G1Frame.data ++
+          [G1Frame.output false, G1Frame.finish, G1Frame.blank]) =
+      g1WalkFramesRestored r j := by
+  have hd : r.vals.map G1Frame.data =
+      (r.vals.take j).map G1Frame.data ++
+        G1Frame.data v :: (r.vals.drop (j + 1)).map G1Frame.data := by
+    conv_lhs => rw [← List.take_append_drop j r.vals]
+    rw [List.map_append, g1Drop_cons r.vals j hj, hv]
+    simp
+  rw [g1WalkFramesRestored, hd]
+  simp [List.append_assoc]
+
+/-- **The next probe reads exactly `vals[j+1]`.**  The same restored word, split
+one frame further right; this is where the *next* round's hidden-bit relation is
+produced. -/
+private theorem g1WalkSplit_restored_probe (r : G1Request) (j : Nat) (v' : Bool)
+    (hj1 : j + 1 < r.vals.length) (hv' : r.vals[j + 1] = v') :
+    (g1FieldRouteFrames r ++ List.replicate (r.arg2 - j - 1) G1Frame.index ++
+        List.replicate (j + 1) G1Frame.spent ++ [G1Frame.separator] ++
+        (r.vals.take (j + 1)).map G1Frame.data) ++
+        G1Frame.data v' :: ((r.vals.drop (j + 2)).map G1Frame.data ++
+          [G1Frame.output false, G1Frame.finish, G1Frame.blank]) =
+      g1WalkFramesRestored r j := by
+  have hd : r.vals.map G1Frame.data =
+      (r.vals.take (j + 1)).map G1Frame.data ++
+        G1Frame.data v' :: (r.vals.drop (j + 2)).map G1Frame.data := by
+    conv_lhs => rw [← List.take_append_drop (j + 1) r.vals]
+    rw [List.map_append, g1Drop_cons r.vals (j + 1) hj1, hv']
+    simp
+  rw [g1WalkFramesRestored, hd]
+  simp [List.append_assoc]
+
+/-- **The out-of-range split.**  When slot `j` was the last one, the frame the
+next probe meets is the `output false` destination, not a data frame. -/
+private theorem g1WalkSplit_restored_oob (r : G1Request) (j : Nat)
+    (hj1 : j + 1 = r.vals.length) :
+    (g1FieldRouteFrames r ++ List.replicate (r.arg2 - j - 1) G1Frame.index ++
+        List.replicate (j + 1) G1Frame.spent ++ [G1Frame.separator] ++
+        (r.vals.take (j + 1)).map G1Frame.data) ++
+        G1Frame.output false :: [G1Frame.finish, G1Frame.blank] =
+      g1WalkFramesRestored r j := by
+  have htake : r.vals.take (j + 1) = r.vals := by rw [hj1]; simp
+  rw [g1WalkFramesRestored, htake]
+
+private theorem g1WalkSplit_succ (r : G1Request) (j : Nat) :
+    (g1FieldRouteFrames r ++ List.replicate (r.arg2 - j - 1) G1Frame.index ++
+        List.replicate (j + 1) G1Frame.spent ++ [G1Frame.separator] ++
+        (r.vals.take (j + 1)).map G1Frame.data) ++
+        G1Frame.cursor :: ((r.vals.drop (j + 2)).map G1Frame.data ++
+          [G1Frame.output false, G1Frame.finish, G1Frame.blank]) =
+      g1WalkFrames r (j + 1) := by
+  rw [g1WalkFrames, show r.arg2 - (j + 1) = r.arg2 - j - 1 from by omega]
+  simp [List.append_assoc]
+
+/-! ### Layout lengths used by the round proof
+
+Each pins the frame ordinal a macro's `pre` ends at, so the head positions the
+macros produce are the invariant's own, not free parameters. -/
+
+private theorem g1MarkPre_length (r : G1Request) (j : Nat) :
+    (g1FieldRouteFrames r ++
+      List.replicate (r.arg2 - j - 1) G1Frame.index).length =
+      r.tag.units + r.arg1 + 3 + (r.arg2 - j - 1) := by
+  simp only [List.length_append, g1FieldRouteFrames_length,
+    List.length_replicate]
+
+private theorem g1SkipRun_length (r : G1Request) (j : Nat)
+    (hj : j ≤ r.vals.length) :
+    (List.replicate j G1Frame.spent ++ [G1Frame.separator] ++
+      (r.vals.take j).map G1Frame.data).length = 2 * j + 1 := by
+  simp only [List.length_append, List.length_replicate, List.length_cons,
+    List.length_nil, List.length_map, List.length_take]
+  omega
+
+private theorem g1FwdPre_length (r : G1Request) (j : Nat) :
+    (g1FieldRouteFrames r ++ List.replicate (r.arg2 - j - 1) G1Frame.index ++
+      [G1Frame.spent]).length = r.tag.units + r.arg1 + 4 + (r.arg2 - j - 1) := by
+  simp only [List.length_append, g1FieldRouteFrames_length,
+    List.length_replicate, List.length_cons, List.length_nil]
+  omega
+
+private theorem g1CursorPre_length (r : G1Request) (j : Nat)
+    (hj2 : j < r.arg2) (hj : j < r.vals.length) :
+    (g1FieldRouteFrames r ++ List.replicate (r.arg2 - j - 1) G1Frame.index ++
+      List.replicate (j + 1) G1Frame.spent ++ [G1Frame.separator] ++
+      (r.vals.take j).map G1Frame.data).length = g1WalkCursor r j := by
+  simp only [List.length_append, g1FieldRouteFrames_length,
+    List.length_replicate, List.length_cons, List.length_nil, List.length_map,
+    List.length_take, g1WalkCursor]
+  omega
+
+private theorem g1ProbePre_length (r : G1Request) (j : Nat)
+    (hj2 : j < r.arg2) (hj1 : j + 1 ≤ r.vals.length) :
+    (g1FieldRouteFrames r ++ List.replicate (r.arg2 - j - 1) G1Frame.index ++
+      List.replicate (j + 1) G1Frame.spent ++ [G1Frame.separator] ++
+      (r.vals.take (j + 1)).map G1Frame.data).length =
+      g1WalkCursor r j + 1 := by
+  simp only [List.length_append, g1FieldRouteFrames_length,
+    List.length_replicate, List.length_cons, List.length_nil, List.length_map,
+    List.length_take, g1WalkCursor]
+  omega
+
 /-! ### Head safety, on the invariant domain -/
 
 /-- **Every cell a round touches is inside the tape.**  The furthest physical
@@ -400,6 +605,291 @@ theorem g1WalkConfig_vB (r : G1Request) (j : Nat) (hj2 : j ≤ r.arg2)
 theorem g1WalkConfig_hidden (r : G1Request) (j : Nat) (hj2 : j ≤ r.arg2)
     (hj : j < r.vals.length) (v : Bool) (hv : r.vals[j]? = some v) :
     r.vals[j]? = some v := hv
+
+private theorem g1Ctx0_withVB_withVB (v v' : Bool) :
+    (g1Ctx0.withVB v).withVB v' = g1Ctx0.withVB v' := rfl
+
+/-! ## The shared prefix of a round
+
+Phases A–D: the reverse seek with its `index ↦ spent` write, the forward scan
+back to the cursor, the turn and the cursor restore.  They are identical for the
+data outcome and for the out-of-range outcome, which differ only in the frame
+the following probe reads.  Every hypothesis the merged macros take is supplied
+from the structural theorems above — `g1WalkSkipRun_mem` for both scans, the
+`g1*_length` splits for the head positions, `g1WalkCursor_safe` for the tape
+bound — and the hidden-bit relation of `Σ(j)` is what makes the restored word
+`g1WalkFramesRestored r j` rather than an arbitrary one. -/
+
+set_option maxHeartbeats 1000000 in
+private theorem g1CS_walk_prefix_exact (r : G1Request) (j : Nat)
+    (hj2 : j < r.arg2) (hj : j < r.vals.length) (v : Bool)
+    (hv : r.vals[j]? = some v) :
+    TM.runConfig (M := G1M) (g1WalkConfig r j (by omega) hj v hv)
+        (16 * j + 28) =
+      g1AlignedConfig (encodeG1 r).length (4 * (g1WalkCursor r j + 1))
+        (by have := g1WalkCursor_safe r j (by omega) hj; omega)
+        (g1ListTape ((g1WalkFramesRestored r j).flatMap G1Frame.bits))
+        .bProbe2 .p0 false false false (g1Ctx0.withVB v) := by
+  have hdv : r.vals[j] = v := g1Getn hv hj
+  have hTL := g1WalkCursor_safe r j (by omega) hj
+  have hTLe : 4 * (r.tag.units + r.arg1 + r.arg2 + j + 6) <
+      G1M.tapeLength (encodeG1 r).length := by
+    simpa only [g1WalkCursor] using hTL
+  have hLmark := g1MarkPre_length r j
+  have hLskip := g1SkipRun_length r j (by omega)
+  have hLfwd := g1FwdPre_length r j
+  have hLcur := g1CursorPre_length r j hj2 hj
+  -- Phase A: reverse seek across `spent^j · separator · data^j`, then the
+  -- `index ↦ spent` write of the rightmost unspent unit.
+  have hA : TM.runConfig (M := G1M)
+      (g1AlignedConfig (encodeG1 r).length (4 * g1WalkCursor r j - 1)
+        (by omega) (g1ListTape ((g1WalkFrames r j).flatMap G1Frame.bits))
+        .bSeek .p3 false false false (g1Ctx0.withVB v)) (8 * j + 12) =
+      g1AlignedConfig (encodeG1 r).length
+        (4 * (r.tag.units + r.arg1 + 4 + (r.arg2 - j - 1))) (by omega)
+        (g1ListTape ((g1WalkFramesMarked r j).flatMap G1Frame.bits))
+        .bFwd .p0 false false false (g1Ctx0.withVB v) := by
+    have h := g1CS_walk_seek_mark (encodeG1 r).length
+      (g1FieldRouteFrames r ++ List.replicate (r.arg2 - j - 1) G1Frame.index)
+      (List.replicate j G1Frame.spent ++ [G1Frame.separator] ++
+        (r.vals.take j).map G1Frame.data)
+      (G1Frame.cursor :: ((r.vals.drop (j + 1)).map G1Frame.data ++
+        [G1Frame.output false, G1Frame.finish, G1Frame.blank]))
+      (g1Ctx0.withVB v) (g1WalkSkipRun_mem j r.vals)
+      (by rw [hLmark, hLskip]; simp only [g1WalkCursor] at hTL; omega)
+    rw [g1WalkSplit_mark r j hj2, g1WalkSplit_marked_mark r j] at h
+    simp only [hLmark, hLskip,
+      show 4 * (r.tag.units + r.arg1 + 3 + (r.arg2 - j - 1) + (2 * j + 1)) + 3 =
+        4 * g1WalkCursor r j - 1 from by simp only [g1WalkCursor]; omega,
+      show 4 * (r.tag.units + r.arg1 + 3 + (r.arg2 - j - 1)) + 4 =
+        4 * (r.tag.units + r.arg1 + 4 + (r.arg2 - j - 1)) from by omega,
+      show 4 * (2 * j + 1) + 8 = 8 * j + 12 from by omega] at h
+    exact h
+  -- Phase B: the forward scan back to the cursor.
+  have hB : TM.runConfig (M := G1M)
+      (g1AlignedConfig (encodeG1 r).length
+        (4 * (r.tag.units + r.arg1 + 4 + (r.arg2 - j - 1))) (by omega)
+        (g1ListTape ((g1WalkFramesMarked r j).flatMap G1Frame.bits))
+        .bFwd .p0 false false false (g1Ctx0.withVB v)) (8 * j + 8) =
+      g1AlignedConfig (encodeG1 r).length (4 * (g1WalkCursor r j + 1))
+        (by omega)
+        (g1ListTape ((g1WalkFramesMarked r j).flatMap G1Frame.bits))
+        .bTurn .p0 false false false (g1Ctx0.withVB v) := by
+    have h := g1CS_walk_fwd_to_cursor (encodeG1 r).length
+      (g1FieldRouteFrames r ++ List.replicate (r.arg2 - j - 1) G1Frame.index ++
+        [G1Frame.spent])
+      (List.replicate j G1Frame.spent ++ [G1Frame.separator] ++
+        (r.vals.take j).map G1Frame.data)
+      ((r.vals.drop (j + 1)).map G1Frame.data ++
+        [G1Frame.output false, G1Frame.finish, G1Frame.blank])
+      (g1Ctx0.withVB v) (g1WalkSkipRun_mem j r.vals)
+      (by rw [hLfwd, hLskip]; simp only [g1WalkCursor] at hTL; omega)
+    rw [g1WalkSplit_marked_fwd r j] at h
+    simp only [hLfwd, hLskip,
+      show r.tag.units + r.arg1 + 4 + (r.arg2 - j - 1) + (2 * j + 1 + 1) =
+        g1WalkCursor r j + 1 from by simp only [g1WalkCursor]; omega,
+      show 4 * (2 * j + 1 + 1) = 8 * j + 8 from by omega] at h
+    exact h
+  -- Phase C: the turn back onto the cursor frame.
+  have hC : TM.runConfig (M := G1M)
+      (g1AlignedConfig (encodeG1 r).length (4 * (g1WalkCursor r j + 1))
+        (by omega)
+        (g1ListTape ((g1WalkFramesMarked r j).flatMap G1Frame.bits))
+        .bTurn .p0 false false false (g1Ctx0.withVB v)) 4 =
+      g1AlignedConfig (encodeG1 r).length (4 * g1WalkCursor r j) (by omega)
+        (g1ListTape ((g1WalkFramesMarked r j).flatMap G1Frame.bits))
+        (g1RestoreMode v) .p0 false false false (g1Ctx0.withVB v) := by
+    have h := g1CS_walk_turn (encodeG1 r).length (4 * g1WalkCursor r j)
+      (by omega)
+      (g1ListTape (n := (encodeG1 r).length)
+        ((g1WalkFramesMarked r j).flatMap G1Frame.bits)) (g1Ctx0.withVB v)
+    simpa only [show 4 * g1WalkCursor r j + 4 = 4 * (g1WalkCursor r j + 1) from
+      by omega, G1Ctx.withVB_vB] using h
+  -- Phase D: the cursor restore, `cursor ↦ data vals[j]`.
+  have hD : TM.runConfig (M := G1M)
+      (g1AlignedConfig (encodeG1 r).length (4 * g1WalkCursor r j) (by omega)
+        (g1ListTape ((g1WalkFramesMarked r j).flatMap G1Frame.bits))
+        (g1RestoreMode v) .p0 false false false (g1Ctx0.withVB v)) 4 =
+      g1AlignedConfig (encodeG1 r).length (4 * (g1WalkCursor r j + 1))
+        (by omega)
+        (g1ListTape ((g1WalkFramesRestored r j).flatMap G1Frame.bits))
+        .bProbe2 .p0 false false false (g1Ctx0.withVB v) := by
+    have h := g1CS_walk_restore (encodeG1 r).length
+      (g1FieldRouteFrames r ++ List.replicate (r.arg2 - j - 1) G1Frame.index ++
+        List.replicate (j + 1) G1Frame.spent ++ [G1Frame.separator] ++
+        (r.vals.take j).map G1Frame.data)
+      ((r.vals.drop (j + 1)).map G1Frame.data ++
+        [G1Frame.output false, G1Frame.finish, G1Frame.blank])
+      v (g1Ctx0.withVB v)
+      (by rw [hLcur]; omega)
+    rw [g1WalkSplit_marked_cursor r j,
+      g1WalkSplit_restored_cursor r j v hj hdv] at h
+    simp only [hLcur,
+      show 4 * g1WalkCursor r j + 4 = 4 * (g1WalkCursor r j + 1) from
+        by omega] at h
+    exact h
+  simp only [g1WalkConfig]
+  rw [show 16 * j + 28 = (8 * j + 12) + ((8 * j + 8) + (4 + 4)) from by omega,
+    runConfig_add, hA, runConfig_add, hB, runConfig_add, hC, hD]
+
+/-! ## The one-round theorems
+
+Exactly **one** round, in both of its outcomes.  Nothing below iterates, sums a
+loop clock or reaches a successful terminal. -/
+
+/-- **One genuine round of the cursor walk.**  For `j < arg2` (an operand-2 unit
+is still unspent) and `j + 1 < vals.length` (the data region has a next slot),
+the machine runs from `Σ(r, j, v)` with `vals[j]? = some v` to `Σ(r, j+1, v')`
+with `vals[j+1]? = some v'` in exactly `16 * j + 37` genuine `TM.runConfig`
+steps.  Both hidden-bit proofs are **arguments of the two configurations**, so
+the invariant's latch relation is explicit at the start *and* at the endpoint:
+the round re-establishes it rather than assuming it away.
+
+Both sides are the canonical layout at their own `j`, so the statement pins the
+*whole* tape: the operand-2 field's `index^(arg2-j) · spent^j` becomes
+`index^(arg2-j-1) · spent^(j+1)` — one on-tape decrement and no other change —
+the cursor, which is unique (`g1WalkFrames_count_cursor`), moves from data slot
+`j` to data slot `j+1`, slot `j` is restored to `data vals[j]`, and the `bof`
+anchor, the tag run, the whole operand-1 field, the `argSep`s, the `separator`,
+the untouched data slots, the `output` frame, the `finish` frame and the blank
+frame are all unchanged.  The head returns to the last cell before the new
+cursor and the context is `g1Ctx0.withVB vals[j+1]`.
+
+The six atomic macros composed are `g1CS_walk_seek_mark` (`8j + 12`),
+`g1CS_walk_fwd_to_cursor` (`8j + 8`), `g1CS_walk_turn` (`4`),
+`g1CS_walk_restore` (`4`), `g1CS_walk_probe_latch` (`5`) and
+`g1CS_walk_install_cursor` (`4`); the transition table is never unfolded.  This
+is one round only: there is no induction over `j` and no driver here. -/
+theorem g1CS_walk_iteration_exact (r : G1Request) (j : Nat)
+    (hj2 : j < r.arg2) (hj1 : j + 1 < r.vals.length) (v v' : Bool)
+    (hv : r.vals[j]? = some v) (hv' : r.vals[j + 1]? = some v') :
+    TM.runConfig (M := G1M)
+        (g1WalkConfig r j (by omega) (by omega) v hv) (16 * j + 37) =
+      g1WalkConfig r (j + 1) (by omega) hj1 v' hv' := by
+  have hj : j < r.vals.length := by omega
+  have hdv' : r.vals[j + 1] = v' := g1Getn hv' hj1
+  have hTL := g1WalkCursor_safe r j (by omega) hj
+  have hTL' := g1WalkCursor_safe r (j + 1) (by omega) hj1
+  have hLprobe := g1ProbePre_length r j hj2 (by omega)
+  have hCsucc : g1WalkCursor r (j + 1) = g1WalkCursor r j + 1 := by
+    simp only [g1WalkCursor]; omega
+  -- Phase E: the probe of the next data frame latches `vals[j+1]`.
+  have hE : TM.runConfig (M := G1M)
+      (g1AlignedConfig (encodeG1 r).length (4 * (g1WalkCursor r j + 1))
+        (by omega)
+        (g1ListTape ((g1WalkFramesRestored r j).flatMap G1Frame.bits))
+        .bProbe2 .p0 false false false (g1Ctx0.withVB v)) 5 =
+      g1AlignedConfig (encodeG1 r).length (4 * (g1WalkCursor r j + 1) + 3)
+        (by omega)
+        (g1ListTape ((g1WalkFramesRestored r j).flatMap G1Frame.bits))
+        .bIns .p3 false false false (g1Ctx0.withVB v') := by
+    have h := g1CS_walk_probe_latch (encodeG1 r).length
+      (g1FieldRouteFrames r ++ List.replicate (r.arg2 - j - 1) G1Frame.index ++
+        List.replicate (j + 1) G1Frame.spent ++ [G1Frame.separator] ++
+        (r.vals.take (j + 1)).map G1Frame.data)
+      ((r.vals.drop (j + 2)).map G1Frame.data ++
+        [G1Frame.output false, G1Frame.finish, G1Frame.blank])
+      v' (g1Ctx0.withVB v)
+      (by rw [hLprobe]; omega)
+    rw [g1WalkSplit_restored_probe r j v' hj1 hdv'] at h
+    simp only [hLprobe, g1Ctx0_withVB_withVB] at h
+    exact h
+  -- Phase F: the new cursor is installed, leftward, over data slot `j + 1`.
+  have hF : TM.runConfig (M := G1M)
+      (g1AlignedConfig (encodeG1 r).length (4 * (g1WalkCursor r j + 1) + 3)
+        (by omega)
+        (g1ListTape ((g1WalkFramesRestored r j).flatMap G1Frame.bits))
+        .bIns .p3 false false false (g1Ctx0.withVB v')) 4 =
+      g1AlignedConfig (encodeG1 r).length (4 * (g1WalkCursor r j + 1) - 1)
+        (by omega)
+        (g1ListTape ((g1WalkFrames r (j + 1)).flatMap G1Frame.bits))
+        .bSeek .p3 false false false (g1Ctx0.withVB v') := by
+    have h := g1CS_walk_install_cursor (encodeG1 r).length
+      (g1FieldRouteFrames r ++ List.replicate (r.arg2 - j - 1) G1Frame.index ++
+        List.replicate (j + 1) G1Frame.spent ++ [G1Frame.separator] ++
+        (r.vals.take (j + 1)).map G1Frame.data)
+      ((r.vals.drop (j + 2)).map G1Frame.data ++
+        [G1Frame.output false, G1Frame.finish, G1Frame.blank])
+      (G1Frame.data v') (g1Ctx0.withVB v')
+      (by rw [hLprobe]; omega) (by rw [hLprobe]; omega)
+    rw [g1WalkSplit_restored_probe r j v' hj1 hdv', g1WalkSplit_succ r j] at h
+    simp only [hLprobe] at h
+    exact h
+  rw [show 16 * j + 37 = (16 * j + 28) + (5 + 4) from by omega, runConfig_add,
+    g1CS_walk_prefix_exact r j hj2 hj v hv, runConfig_add, hE, hF]
+  simp only [g1WalkConfig, hCsucc]
+
+/-- **The genuine out-of-range round.**  For `j < arg2` but `j + 1 = vals.length`
+(the cursor is on the *last* data frame while an operand-2 unit is still
+unspent), the machine runs from `Σ(r, j, v)` with `vals[j]? = some v` to the
+explicit **stable** out-of-range boundary `bOOB` in exactly `16 * j + 32`
+genuine steps.
+
+The final tape is stated exactly, as `g1WalkFramesRestored r j`:
+
+```text
+bof · tag^u · argSep · index^a1 · argSep
+    · index^(a2-j-1) · spent^(j+1) · separator
+    · data(vals) · output false · finish · blank
+```
+
+so the *data region is fully restored to `vals` and carries no `cursor` frame*
+(`g1WalkFramesRestored_count_cursor`), while the *operand-2 field is not
+repaired*: `j + 1` units are spent and `arg2 - j - 1` remain
+(`g1WalkFramesRestored_count_spent`, `_count_index`).  This is an
+**intermediate, unrepaired** tape, not a repaired one, and reaching `bOOB` is
+**not** a rejection theorem: nothing here claims a verdict, a `TM.accepts`
+value or an output frame.  The head is left on the frame boundary just past the
+`output` destination and the context still carries `vB = vals[j]`. -/
+theorem g1CS_walk_oob_exact (r : G1Request) (j : Nat)
+    (hj2 : j < r.arg2) (hj1 : j + 1 = r.vals.length) (v : Bool)
+    (hv : r.vals[j]? = some v) :
+    TM.runConfig (M := G1M)
+        (g1WalkConfig r j (by omega) (by omega) v hv) (16 * j + 32) =
+      g1AlignedConfig (encodeG1 r).length (4 * (g1WalkCursor r j + 2))
+        (g1WalkCursor_safe r j (by omega) (by omega))
+        (g1ListTape ((g1WalkFramesRestored r j).flatMap G1Frame.bits))
+        .bOOB .p0 false false false (g1Ctx0.withVB v) := by
+  have hj : j < r.vals.length := by omega
+  have hTL := g1WalkCursor_safe r j (by omega) hj
+  have hLprobe := g1ProbePre_length r j hj2 (by omega)
+  have hE : TM.runConfig (M := G1M)
+      (g1AlignedConfig (encodeG1 r).length (4 * (g1WalkCursor r j + 1))
+        (by omega)
+        (g1ListTape ((g1WalkFramesRestored r j).flatMap G1Frame.bits))
+        .bProbe2 .p0 false false false (g1Ctx0.withVB v)) 4 =
+      g1AlignedConfig (encodeG1 r).length (4 * (g1WalkCursor r j + 2))
+        (by omega)
+        (g1ListTape ((g1WalkFramesRestored r j).flatMap G1Frame.bits))
+        .bOOB .p0 false false false (g1Ctx0.withVB v) := by
+    have h := g1CS_walk_probe_oob (encodeG1 r).length
+      (g1FieldRouteFrames r ++ List.replicate (r.arg2 - j - 1) G1Frame.index ++
+        List.replicate (j + 1) G1Frame.spent ++ [G1Frame.separator] ++
+        (r.vals.take (j + 1)).map G1Frame.data)
+      [G1Frame.finish, G1Frame.blank] (g1Ctx0.withVB v)
+      (by rw [hLprobe]; omega)
+    rw [g1WalkSplit_restored_oob r j hj1] at h
+    simp only [hLprobe,
+      show 4 * (g1WalkCursor r j + 1) + 4 = 4 * (g1WalkCursor r j + 2) from
+        by omega] at h
+    exact h
+  rw [show 16 * j + 32 = (16 * j + 28) + 4 from by omega, runConfig_add,
+    g1CS_walk_prefix_exact r j hj2 hj v hv, hE]
+
+/-- **The out-of-range boundary of a round is stable.**  Every further step
+leaves the same configuration, on the same unrepaired tape; still no verdict is
+claimed. -/
+theorem g1CS_walk_oob_stable (r : G1Request) (j : Nat)
+    (hj2 : j < r.arg2) (hj1 : j + 1 = r.vals.length) (v : Bool)
+    (hv : r.vals[j]? = some v) (k : Nat) :
+    TM.runConfig (M := G1M)
+        (g1WalkConfig r j (by omega) (by omega) v hv) (16 * j + 32 + k) =
+      g1AlignedConfig (encodeG1 r).length (4 * (g1WalkCursor r j + 2))
+        (g1WalkCursor_safe r j (by omega) (by omega))
+        (g1ListTape ((g1WalkFramesRestored r j).flatMap G1Frame.bits))
+        .bOOB .p0 false false false (g1Ctx0.withVB v) := by
+  rw [runConfig_add, g1CS_walk_oob_exact r j hj2 hj1 v hv]
+  exact g1CS_runConfig_oob_sink _ _ _ _ _ k
 
 /-! ## Installation: from the real initial configuration into `Σ(0)`
 

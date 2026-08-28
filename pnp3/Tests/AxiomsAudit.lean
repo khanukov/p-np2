@@ -592,11 +592,11 @@ open Pnp3.Magnification
 -- **two executed capstones from `G1M.initialConfig`** — the installation into
 -- `Σ(0)` and the empty-data out-of-range branch — with their projections, their
 -- clock bounds and their all-literal probes.  Both capstones **stop** at their
--- endpoint.  **Deliberately absent**: any one-round iteration `Σ(j) → Σ(j+1)`,
--- any normal-round or out-of-range preservation theorem on `Σ(j)`, any
--- induction over `j`, any loop, driver or cumulative clock, any successful
--- terminal, any aggregation of the two out-of-range branches, and any
--- addressing or positive-index operand-value claim.
+-- endpoint; the one round that moves off `Σ(j)` is the PR3b block below.
+-- **Deliberately absent from this block**: any induction over `j`, any loop,
+-- driver or cumulative clock, any successful terminal, any aggregation of the
+-- two out-of-range branches, and any addressing or positive-index
+-- operand-value claim.
 #print axioms Internal.PsubsetPpoly.TM.g1WalkSkipRun_mem
 #print axioms Internal.PsubsetPpoly.TM.g1WalkSkipRun_no_index
 #print axioms Internal.PsubsetPpoly.TM.g1WalkOperand2_spent_suffix
@@ -650,6 +650,51 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walk_empty_oob
 #print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walk_empty_oob_tape
 #print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walk_empty_oob_clock
+
+-- PR3b, **exactly one round** of the cursor walk on the PR3a invariant, in both
+-- of its outcomes.  `g1CS_walk_iteration_exact` takes a **caller-supplied**
+-- `Σ(r, j, v)` to `Σ(r, j+1, v')` in `16 * j + 37` genuine steps, with the
+-- hidden-bit relation `vals[j]? = some v` an explicit argument of *both*
+-- configurations; `g1CS_walk_oob_exact` and `_stable` take the same `Σ(j)` to
+-- the stable `bOOB` boundary in `16 * j + 32` steps on
+-- `g1WalkFramesRestored r j` — data region exactly `vals` and cursor-free,
+-- operand 2 **partially spent and unrepaired**.  Reaching `bOOB` is **not** a
+-- rejection: no verdict, output frame or `TM.accepts` value is claimed.
+-- **Deliberately absent**: any induction over `j`, any driver reaching `Σ(j)`
+-- for `j > 0` from `G1M.initialConfig`, any loop or cumulative clock, any clock
+-- bound on `16 * j + 37`/`16 * j + 32`, the successful terminal at `j = arg2`,
+-- the aggregation of the two out-of-range branches, addressing, the
+-- positive-index operand-value theorem, the `spent ↦ index` repair sweep, pass
+-- A, combine, the output write, gate semantics, a full-clock theorem and
+-- padded tapes.
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_iteration_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_oob_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_oob_stable
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walkFrames_one
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walkFrames_two
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walkFramesRestored_one
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walkCursor_one
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walkCursor_two
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walkFrames_one_length
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walkFrames_one_count_cursor
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walkFrames_one_count_index
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walkFrames_one_count_spent
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walk_round_zero
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walk_round_one
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walk_round_zero_head
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walk_round_one_head
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walk_round_two_head
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.g1OOBExample_canonical
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.oobFrames_one
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.oobFrames_one_length
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.oobFrames_one_count_cursor
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.oobFramesRestored_one
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.oobFramesRestored_one_length
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.oobFramesRestored_one_count_cursor
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.oobFramesRestored_one_count_spent
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.oobFramesRestored_one_count_index
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walk_oob_round
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walk_oob_round_head
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

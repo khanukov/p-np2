@@ -83,7 +83,7 @@ theorem check_g1CS_walk_seek_to_index (n : Nat)
         .bDec .p0 false false false ctx :=
   g1CS_walk_seek_to_index n pre skipped suffix ctx hskip hsafe
 
-/-- **The confinement statement, and the boundary.**  The seek stops on the
+/-- **The exhaustion endpoint and boundary.**  The seek stops on the
 `argSep` that opens the operand-2 field, in `bExh` — which has no successful
 frame row, so nothing runs past this configuration. -/
 theorem check_g1CS_walk_seek_exhaust (n : Nat)
@@ -195,7 +195,7 @@ theorem check_walk_seek_mark (n : Nat) (hsafe : 44 < G1M.tapeLength n) :
 
 open G1WalkExamples in
 /-- Head `43 → 24` in `20` steps on the marked layout: with operand-2 exhausted
-the seek stops on the opening `argSep`, never going left of `24`. -/
+the seek stops on the opening `argSep` in `bExh`. -/
 theorem check_walk_seek_exhaust (n : Nat) (hsafe : 44 < G1M.tapeLength n) :
     TM.runConfig (M := G1M) (g1AlignedConfig n 43 (by omega)
         (g1ListTape (g1WalkFramesMarked1.flatMap G1Frame.bits))

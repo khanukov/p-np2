@@ -96,8 +96,9 @@ statement about the walk proper starts from a caller-supplied configuration.
 
 `bProbe2` is now **active**: it is the probe of the paired-marker cursor walk —
 one `spent` per consumed index unit in the operand-2 field, one `cursor` in the
-data region, moved one data frame right per marked unit.  The walk's sixteen
-modes are complete, and so is the forward part of its table:
+data region, moved one data frame right per marked unit.  The walk's twelve
+current modes are complete for this normal-round slice; four terminal modes are
+deferred to PR2b2.  The current forward part of its table is complete:
 
 ```text
 bScan    + index        ↦ bInsSeek      bInsSeek + index/spent  ↦ bInsSeek

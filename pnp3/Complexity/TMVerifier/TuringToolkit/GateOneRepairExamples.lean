@@ -60,7 +60,6 @@ open G1WalkDriverExamples (g1BReadExample g1BReadExample_canonical
 open G1RepairKernelExamples (probeSpentFrames probeIndexFrames
   probeIndex_eq_encoded probe_counts)
 
-/-! ## The three literal requests and their head-safety bounds -/
 
 /-- `and` with both operand fields empty and a one-bit data region: the
 zero-index probe.  The two positive-index requests are the merged literals
@@ -88,7 +87,6 @@ theorem two_safe {k : Nat} (hk : k ≤ 64) :
     k < G1M.tapeLength (encodeG1 g1WalkExample).length :=
   g1_lt_tapeLength (by rw [g1WalkExample_length]; omega)
 
-/-! ## The three endpoint words -/
 
 /-- The zero probe's endpoint word: the canonical eleven-frame encoding plus the
 trailing `blank` frame.  No `spent`, no `cursor`, no operand-2 unit at all. -/
@@ -99,8 +97,8 @@ def g1ZeroFrames : List G1Frame :=
 theorem zeroFrames_eq :
     encodeG1Frames g1ZeroExample ++ [G1Frame.blank] = g1ZeroFrames := rfl
 
-/-- **At `arg2 = 0` the sweep has no repair frame to write.**  The layout it
-starts from is already the canonical word, so none of its `38` steps writes. -/
+/-- **At `arg2 = 0` the sweep has no repair frame to rewrite.**  The entry
+layout is already canonical and its `spent → index` block has length `13 * 0`. -/
 theorem zeroFrames_layout : g1BSpentFrames g1ZeroExample 0 = g1ZeroFrames := rfl
 
 theorem zeroFrames_counts :
@@ -165,9 +163,6 @@ theorem probe_extents :
     ⟨g1WalkExample_length, by decide, two_safe (by omega)⟩,
     by rw [g1ZeroExample_length]; rfl⟩
 
-/-! ## The closed sweep cost on literals: `4u + 4a1 + 8a + 9s + 22`, with
-`u = 4` (the `and` tag run) and `a1 = 0` -/
-
 /-- `1 + 8 + 0 + 24 + 5`: at `s = 0` the sweep is a pure rewind. -/
 theorem repairSteps_zero : g1RepairSteps g1ZeroExample 0 = 38 := rfl
 
@@ -190,7 +185,6 @@ theorem repairSteps_splits :
   · rw [g1RepairSteps_eq g1BReadExample 1 (by decide) (by decide)]; rfl
   · rw [g1RepairSteps_eq g1WalkExample 2 (by decide) (by decide)]; rfl
 
-/-! ## `⟨and, 0, 0, [true]⟩`: the zero-index read and its rewind -/
 
 /-- The read `2 * 44 + 9 + 4 * 9 + 1`, the total, and its split. -/
 theorem zeroExample_steps :
@@ -201,7 +195,7 @@ theorem zeroExample_steps :
       g1ZeroExample_length] <;> rfl
 
 /-- **Exactly `172` genuine steps read `vals[0] = true` and return the head to
-`0` in `readAStart`.**  The read wrote nothing, so the `38`-step sweep only
+`0` in `readAStart`.**  The `38`-step sweep has an empty rewrite block and
 walks back: it crosses the `separator` and the single data frame, finds no
 consumed unit, crosses the tag run and both `argSep`s and dispatches. -/
 theorem zero_repaired :
@@ -267,7 +261,6 @@ theorem readA_idle_after_zero (k : Nat) :
   rw [runConfig_add, zero_repaired]
   exact g1CS_runConfig_readA_idle _ _ _ _ _ k
 
-/-! ## `⟨and, 0, 1, [false, true]⟩`: one consumed unit repaired -/
 
 /-- The cumulative total, and its split into the merged `239`-step read and the
 `55`-step sweep. -/
@@ -348,7 +341,6 @@ theorem readA_idle_after_one (k : Nat) :
   rw [runConfig_add, one_repaired]
   exact g1CS_runConfig_readA_idle _ _ _ _ _ k
 
-/-! ## `⟨and, 0, 2, [false, true, true]⟩`: two consumed units repaired -/
 
 theorem twoExample_steps :
     g1BPassASteps g1WalkExample = 400 ∧
@@ -436,8 +428,6 @@ theorem readA_idle_after_two (k : Nat) :
   rw [runConfig_add, two_repaired]
   exact g1CS_runConfig_readA_idle _ _ _ _ _ k
 
-/-! ## Both arms of the common capstone, on literals.  It conditions on the
-**request** — `arg2 = 0` or not — never on a machine parameter -/
 
 /-- The zero-index literal takes the `g1ZPassASteps` arm, the two others the
 `g1BPassASteps` arm. -/

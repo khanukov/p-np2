@@ -409,8 +409,8 @@ theorem g1_bProbe2_rows :
 
 /-- **The cursor install's exit has no successful frame row in this slice.**  An
 attempted complete-frame read at `bSeek` enters `reject`; the install macro
-stops on its first cell and no theorem executes that read.  PR2b supplies the
-three reverse-read outcomes. -/
+stops at `.bSeek .p3`, head on the last cell of the preceding frame, and no
+theorem executes a further read.  PR2b supplies the reverse-read rows. -/
 theorem g1_bSeek_stuck : G1Stuck .bSeek := by decide
 
 /-- **The rewrite-cycle bridge is unreachable from the forward table.**  No

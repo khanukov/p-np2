@@ -113,11 +113,12 @@ over it right to left and enters `bSeek` on the last cell of the preceding
 frame.  Four new modes in all: `bLatchFalse`, `bLatchTrue`, `bIns`, `bSeek`.
 
 **`bSeek` is the explicit local endpoint of this slice.**  It is the reverse
-seek's entry shape, but the table gives it **no** rows here, so it reads nothing
-and is `G1Stuck` (`GateOneRouting.g1_bSeek_stuck`), exactly as `bProbe2` was
-before this slice.  Its three reverse-read outcomes — an `index` at the write
-handoff, the opening `argSep` at the exhaustion handoff, everything else
-continuing the seek — together with the `index ↦ spent` writer, the forward scan
+seek's entry shape at `.p3`, head on the last cell of the frame preceding the
+fresh cursor.  It has no successful frame row and is `G1Stuck`
+(`GateOneRouting.g1_bSeek_stuck`): an attempted complete-frame read rejects,
+and no theorem executes it.  PR2b supplies two new handoffs — `index ↦ bDec`
+and opening `argSep ↦ bExh` — plus the seek self-loop.  Those rows, the
+`index ↦ spent` writer, the forward scan
 back to the cursor, the two turns, the four restore writers and the exhaustion
 path are **PR2b**; none of them exists here.
 
@@ -320,8 +321,8 @@ def g1InsState (ctx : G1Ctx) : G1State :=
 
 /-- **The explicit local endpoint of this slice.**  Reverse-seek entry: head on
 the last cell of the frame preceding the freshly installed cursor, frame buffer
-empty.  `bSeek` has no rows here, so it reads nothing; PR2b supplies its three
-reverse-read outcomes. -/
+empty.  `bSeek` has no successful frame row; an attempted complete-frame read
+rejects, and no theorem executes it.  PR2b supplies its reverse-read rows. -/
 def g1SeekState (ctx : G1Ctx) : G1State :=
   g1State .bSeek .p3 false false false ctx
 
@@ -422,7 +423,7 @@ def g1Advance : G1Mode → G1Frame → G1Mode
   | .bInsSeek, .spent => .bInsSeek
   | .bInsSeek, .separator => .bProbe2
   -- the cursor-walk probe: latch the next data bit, or run off the region.
-  -- `bSeek`, the endpoint of this slice, has no row of its own.
+  -- `bSeek`, the endpoint of this slice, has no successful frame row.
   | .bProbe2, .data false => .bLatchFalse
   | .bProbe2, .data true => .bLatchTrue
   | .bProbe2, .output false => .bOOB

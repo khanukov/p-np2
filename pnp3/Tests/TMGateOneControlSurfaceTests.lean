@@ -14,9 +14,10 @@ exact four-step and multi-frame `TM.runConfig` primitives.  It also pins the
 fourteen transition tuples of the retired destructive index round
 (`bRoundStart` bridge, `bWalk`, `bMark`, `bBack`, `bHop`) and the three probe
 rows with the five transition tuples of `bLatchFalse`/`bLatchTrue`/`bIns`.
-`bInsSeek` and `bProbe2` are forward modes with no transition rows of their own,
-and `bSeek` — the local endpoint of this slice — has neither a frame row nor a
-transition row; its reverse-read rows are PR2b.  Execution lives in separate
+`bInsSeek` and `bProbe2` are forward modes with no transition blocks of their
+own.  `bSeek` — the local endpoint at `.p3`, head on the preceding frame's last
+cell — has no successful frame row; a complete-frame attempt rejects and no
+theorem executes it.  Its reverse-read rows are PR2b.  Execution lives in separate
 layers with their own surface entries.  End-to-end physical validation,
 rejection, rewind, and `readBStart` composition remain in their separate
 execution surface.

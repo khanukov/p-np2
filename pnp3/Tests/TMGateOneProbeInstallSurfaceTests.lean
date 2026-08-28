@@ -10,8 +10,9 @@ arbitrary frame-list contexts, and their literal encoded-frame probes.
 **Every statement below takes the caller's configuration.**  None starts from
 `G1M.initialConfig`: the only real-initial-configuration endpoint on this branch
 is the installation scan, pinned unchanged in `TMGateOneReadBSurfaceTests`.
-The install's exit `bSeek` is the local endpoint — no `g1Advance` row, nothing
-runs out of it, and its reverse-read rows are PR2b.  Deliberately absent: any
+The install exits at `bSeek .p3`, head on the preceding frame's last cell.
+`bSeek` has no successful frame row; a complete-frame attempt rejects and no
+theorem executes it.  Its reverse-read rows are PR2b.  Deliberately absent: any
 walk invariant, installation driver, seek/mark/turn/restore/exhaustion macro,
 iteration or loop clock, addressing, `TM.accepts`, gate-semantics, full-clock or
 padded-tape surface.

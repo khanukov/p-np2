@@ -30,9 +30,11 @@ The installation scan is **not** restated: `G1InstallSkip`,
 `g1CS_readB_install_scan_exact` come unchanged from `GateOneInstallScan`, and
 nothing here composes with them.
 
-**Explicit deferrals.**  `bSeek` is the local endpoint: it has no `g1Advance`
-row (`GateOneRouting.g1_bSeek_stuck`) and no theorem runs the machine out of it.
-The reverse seek's three outcomes, the `index ↦ spent` writer, the forward scan
+**Explicit deferrals.**  `bSeek` is the local endpoint at `.p3`, head on the
+last cell of the frame preceding the cursor.  It has no successful frame row
+(`GateOneRouting.g1_bSeek_stuck`): an attempted complete-frame read rejects,
+and no theorem executes it.  The reverse seek rows, the `index ↦ spent` writer,
+the forward scan
 back to the cursor, the two turns, the four restore writers and the exhaustion
 path are **PR2b**.  Every theorem below takes the caller's configuration; none
 starts from `G1M.initialConfig`, so there is no installation driver here.  No

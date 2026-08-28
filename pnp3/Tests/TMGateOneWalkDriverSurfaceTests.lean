@@ -90,12 +90,6 @@ theorem check_g1CS_walk_terminal_exact (r : G1Request)
         (g1ListTape ((g1BSpentFrames r r.arg2).flatMap G1Frame.bits))
         .readAResetStart .p0 false false false (g1Ctx0.withVB v) :=
   g1CS_walk_terminal_exact r hm v hv
-
-/-! ## The two totals and the unchanged clock, pinned exactly
-
-Both are concrete polynomials in the request's fields, inside the unchanged
-public clock. -/
-
 theorem check_g1BSteps_eq (r : G1Request) :
     g1BReadSteps r =
         g1WalkInstallSteps r + g1BLoopSteps r.arg2 + (16 * r.arg2 + 28) ∧
@@ -105,12 +99,10 @@ theorem check_g1BSteps_eq (r : G1Request) :
         g1InstallScanSteps r +
           (8 * r.vals.length ^ 2 + 29 * r.vals.length + 4) :=
   ⟨g1BReadSteps_eq r, g1BReadSteps_eq_install r, g1BOOBSteps_eq r⟩
-
 theorem check_g1BSteps_le_clock (r : G1Request) :
     g1BReadSteps r ≤ g1Clock (encodeG1 r).length ∧
       g1BOOBSteps r ≤ g1Clock (encodeG1 r).length :=
   ⟨g1BReadSteps_le_clock r, g1BOOBSteps_le_clock r⟩
-
 /-- **The machine resolves `r.vals[r.arg2]` for an arbitrary `arg2 > 0`**, from
 the real initial configuration, in exactly `g1BReadSteps r` genuine steps; the
 returned bit is the *actual* data bit — no value is supplied to the machine —

@@ -156,6 +156,14 @@ lean_lib PnP3 where
     -- caller-supplied configuration; the exit `bSeek` is a local endpoint.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneProbeInstall,
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneProbeInstallExamples,
+    -- PR2b1, one normal round of the cursor walk behind `bSeek`: the reverse
+    -- seek, the `index ↦ spent` writer, the forward scan, the turn and the
+    -- cursor restore as exact atoms on arbitrary frame-list contexts
+    -- (`GateOneWalkKernel`) and their literal encoded-frame probes
+    -- (`GateOneWalkExamples`).  Every run there is caller-supplied too, and the
+    -- exhaustion outcome stops at the boundary `bExh`.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneWalkKernel,
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneWalkExamples,
     -- The thirteen-step rewrite cycle at the G1 control, kept as an
     -- arbitrary-configuration regression: the bridge, the fourteen-step
     -- composed round and one literal frame-list probe.  Unreachable from
@@ -327,6 +335,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,
     Glob.one `Tests.TMGateOneReadBSurfaceTests,
     Glob.one `Tests.TMGateOneProbeInstallSurfaceTests,
+    Glob.one `Tests.TMGateOneWalkSurfaceTests,
     Glob.one `Tests.FormulaSupportBoundsFalsifiabilityProbe,
     Glob.one `Tests.SmokeTests,
     Glob.one `Tests.UnitTests,

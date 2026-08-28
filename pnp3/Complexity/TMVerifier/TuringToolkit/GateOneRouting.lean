@@ -38,10 +38,11 @@ immediately after the `separator`.  For `arg2 > 0` the forward table sends
 The executed capstone is
 `GateOneInstallScan.g1CS_readB_install_scan_exact`, and it is the last thing a
 run from `G1M.initialConfig` reaches: `bProbe2` is now **active** (it latches
-the data bit it reads), but the probe, the latch and the cursor install are
-proved only on caller-supplied configurations in `GateOneProbeInstall`, and
-their exit `bSeek` is the local endpoint (`g1_bSeek_stuck`) whose reverse-read
-rows are PR2b.
+the data bit it reads), but the probe, the latch, the cursor install and every
+step of the walk behind them are proved only on caller-supplied configurations
+in `GateOneProbeInstall`/`GateOneWalkKernel`.  `g1_bFwd_rows` pins the walk's
+right-running scan and `g1_bExh_stuck` its exhaustion boundary; the reverse seek
+`bSeek` has no forward row at all and is decided inside `g1Transition`.
 
 The older bridge `bRoundStart` is now unreachable from the forward table
 (`g1_bRoundStart_unreachable`) and reads no frame at all
@@ -407,11 +408,19 @@ theorem g1_bProbe2_rows :
       g1Advance .bProbe2 (.output false) = .bOOB :=
   ⟨rfl, rfl, rfl⟩
 
-/-- **The cursor install's exit has no successful frame row in this slice.**  An
-attempted complete-frame read at `bSeek` enters `reject`; the install macro
-stops at `.bSeek .p3`, head on the last cell of the preceding frame, and no
-theorem executes a further read.  PR2b supplies the reverse-read rows. -/
-theorem g1_bSeek_stuck : G1Stuck .bSeek := by decide
+/-- **The complete forward table of the walk's right-running scan.**  The
+reverse seek `bSeek` has no row here at all: it reads right to left and is
+decided inside `g1Transition`. -/
+theorem g1_bFwd_rows :
+    g1Advance .bFwd .spent = .bFwd ∧ g1Advance .bFwd .separator = .bFwd ∧
+      g1Advance .bFwd .cursor = .bTurn :=
+  ⟨rfl, rfl, rfl⟩
+
+/-- **The exhaustion handoff is the local boundary of this slice.**  An
+attempted complete-frame read at `bExh` enters `reject`; the seek's `argSep`
+outcome stops at `.bExh .p0`, head on that frame's first cell, and no theorem
+executes a further read.  PR2b2 supplies its rows. -/
+theorem g1_bExh_stuck : G1Stuck .bExh := by decide
 
 /-- **The rewrite-cycle bridge is unreachable from the forward table.**  No
 mode/frame pair completes into `bRoundStart`. -/

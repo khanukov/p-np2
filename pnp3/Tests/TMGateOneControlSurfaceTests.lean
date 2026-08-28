@@ -12,15 +12,14 @@ generic frame-scanner kernel.
 This layer exposes frame-word/table correspondence and the generic kernel's
 exact four-step and multi-frame `TM.runConfig` primitives.  It also pins the
 fourteen transition tuples of the retired destructive index round
-(`bRoundStart` bridge, `bWalk`, `bMark`, `bBack`, `bHop`) and the three probe
-rows with the five transition tuples of `bLatchFalse`/`bLatchTrue`/`bIns`.
-`bInsSeek` and `bProbe2` are forward modes with no transition blocks of their
-own.  `bSeek` — the local endpoint at `.p3`, head on the preceding frame's last
-cell — has no successful frame row; a complete-frame attempt rejects and no
-theorem executes it.  Its reverse-read rows are PR2b.  Execution lives in separate
-layers with their own surface entries.  End-to-end physical validation,
-rejection, rewind, and `readBStart` composition remain in their separate
-execution surface.
+(`bRoundStart` bridge, `bWalk`, `bMark`, `bBack`, `bHop`) and the twenty-three
+transition tuples of the cursor walk (the reverse seek `bSeek` with its three
+outcomes, the `index ↦ spent` writer `bDec`, the turn, the two cursor-restore
+writers, the two latch dispatches and the leftward cursor writer `bIns`).  The
+four *forward* walk modes — `bInsSeek`, `bProbe2`, `bFwd` and the boundary
+`bExh` — have no transition blocks of their own.  Execution lives in separate layers with
+their own surface entries.  End-to-end physical validation, rejection, rewind,
+and `readBStart` composition remain in their separate execution surface.
 
 This is an audit surface: it pins public signatures, it does not prove
 anything new.
@@ -87,21 +86,44 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1Transition_bBack_p2
 #check @g1Transition_bBack_p3
 #check @g1Transition_bHop
--- The entry states, the latch selector and the five transition tuples of the
--- probe's successor.  `bInsSeek`/`bProbe2` are forward modes and `bSeek` is the
--- endpoint, so none of the three has transition rows of its own.
+-- The entry states, the two selectors and the twenty-three transition tuples of
+-- the cursor walk.  `bInsSeek`/`bProbe2`/`bFwd`/`bExh` are forward modes, so
+-- none of the four has transition rows of its own.
 #check @g1InsSeekState
 #check @g1Probe2State
 #check @g1InsState
 #check @g1SeekState
+#check @g1DecState
+#check @g1FwdState
+#check @g1ExhState
 #check @g1LatchMode
+#check @g1RestoreMode
 #check @g1Transition_bLatch
 #check @g1Transition_bIns_p3
 #check @g1Transition_bIns_p2
 #check @g1Transition_bIns_p1
 #check @g1Transition_bIns_p0
+#check @g1Transition_bSeek_p3
+#check @g1Transition_bSeek_p2
+#check @g1Transition_bSeek_p1
+#check @g1Transition_bSeek_p0_index
+#check @g1Transition_bSeek_p0_argSep
+#check @g1Transition_bSeek_p0_other
+#check @g1Transition_bDec_p0
+#check @g1Transition_bDec_p1
+#check @g1Transition_bDec_p2
+#check @g1Transition_bDec_p3
+#check @g1Transition_bTurn_p0
+#check @g1Transition_bTurn_p1
+#check @g1Transition_bTurn_p2
+#check @g1Transition_bTurn_p3
+#check @g1Transition_bRestore_p0
+#check @g1Transition_bRestore_p1
+#check @g1Transition_bRestore_p2
+#check @g1Transition_bRestore_p3
 #check @g1RejectState_ne_readB
 #check @g1OOBState_ne_readAReset
+#check @g1ExhState_ne_dec
 
 -- The frame-level language of the fixed forward control.
 #check @g1Advance
@@ -170,19 +192,49 @@ theorem check_g1Advance_bInsSeek :
       g1Advance .bInsSeek .separator = .bProbe2 :=
   ⟨rfl, rfl, rfl⟩
 
-/-- **The complete probe table, and the endpoint.**  `bProbe2` is **active** —
-it latches the data bit it reads, or hands off to the stable out-of-range
-boundary — while `bSeek`, where the cursor install stops, has no successful
-frame row at all, so an attempted complete-frame read there enters `reject` and
-no theorem of this development executes it.  The `bScan + data` row also stays
-absent: a data frame before the separator is still malformed and still
-rejects. -/
+/-- **The complete probe table, the walk's right-running scan, and the
+boundary.**  `bProbe2` latches the data bit it reads or hands off to the stable
+out-of-range boundary; `bFwd` crosses consumed units, the separator and data and
+stops on the `cursor`; `bExh` has **no** successful frame row, so a completed
+frame there enters `reject` and no theorem executes that read.  The
+`bScan + data` row stays absent: a data frame before the separator is still
+malformed and still rejects. -/
 theorem check_g1Advance_probe (b : Bool) :
     (g1Advance .bProbe2 (.data b) = g1LatchMode b ∧
         g1Advance .bProbe2 (.output false) = .bOOB) ∧
-      G1Stuck .bSeek ∧ G1Stuck .bLatchFalse ∧ G1Stuck .bLatchTrue ∧
-      G1Stuck .bIns ∧ g1Advance .bScan (.data b) = .reject := by
-  cases b <;> exact ⟨⟨rfl, rfl⟩, by decide, by decide, by decide, by decide, rfl⟩
+      (g1Advance .bFwd (.data b) = .bFwd ∧ g1Advance .bFwd .cursor = .bTurn) ∧
+      G1Stuck .bExh ∧ g1Advance .bScan (.data b) = .reject := by
+  cases b <;> exact ⟨⟨rfl, rfl⟩, ⟨rfl, rfl⟩, by decide, rfl⟩
+
+/-- **The writers and the turn never read a frame forward.**  Each of the five
+non-forward walk modes, and the three merged ones, is `G1Stuck`: they move under
+`g1Transition` alone.  `bSeek` is among them because it reads **right to left**,
+not because it is a boundary; its three outcomes are
+`check_g1Transition_bSeek`. -/
+theorem check_g1Advance_walk_nonforward :
+    G1Stuck .bSeek ∧ G1Stuck .bDec ∧ G1Stuck .bTurn ∧
+      G1Stuck .bRestoreFalse ∧ G1Stuck .bRestoreTrue ∧
+      G1Stuck .bLatchFalse ∧ G1Stuck .bLatchTrue ∧ G1Stuck .bIns := by decide
+
+/-- **The reverse seek's three outcomes, pinned exactly.**  An `index` stops it
+at the write handoff and an `argSep` at the exhaustion handoff, both *without*
+moving; every other frame continues it one frame further left.  The `argSep` row
+is the confinement row of the whole walk. -/
+theorem check_g1Transition_bSeek (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    (decodeG1Frame? [scan, b0, b1, b2] = some .index →
+        g1Transition phase (g1State .bSeek .p0 b0 b1 b2 ctx) scan =
+          (0, g1DecState ctx, scan, .stay)) ∧
+      (decodeG1Frame? [scan, b0, b1, b2] = some .argSep →
+        g1Transition phase (g1State .bSeek .p0 b0 b1 b2 ctx) scan =
+          (0, g1ExhState ctx, scan, .stay)) ∧
+      (decodeG1Frame? [scan, b0, b1, b2] ≠ some .index →
+        decodeG1Frame? [scan, b0, b1, b2] ≠ some .argSep →
+        g1Transition phase (g1State .bSeek .p0 b0 b1 b2 ctx) scan =
+          (0, g1SeekState ctx, scan, .left)) :=
+  ⟨g1Transition_bSeek_p0_index phase b0 b1 b2 scan ctx,
+    g1Transition_bSeek_p0_argSep phase b0 b1 b2 scan ctx,
+    g1Transition_bSeek_p0_other phase b0 b1 b2 scan ctx⟩
 
 /-- **The latch, pinned exactly.**  One step stores the probed bit in the fixed
 Boolean field `vB` and steps left; it writes back the cell it scans. -/

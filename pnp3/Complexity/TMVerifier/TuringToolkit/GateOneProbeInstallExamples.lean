@@ -86,8 +86,8 @@ theorem probe_oob (n : Nat) (hsafe : 56 < G1M.tapeLength n) :
   simpa [g1WalkInitFrames] using h
 
 /-- **The cursor install.**  Four leftward steps turn ordinal `10` — the frame
-just latched — into `cursor`, head on cell `39`, control in the local endpoint
-`bSeek`.  The latched `vB = false` rides through unchanged. -/
+just latched — into `cursor`, head on cell `39`, control in the reverse-seek
+entry shape `bSeek .p3`.  The latched `vB = false` rides through unchanged. -/
 theorem install_cursor (n : Nat) (hsafe : 44 < G1M.tapeLength n) :
     TM.runConfig (M := G1M) (g1AlignedConfig n 43 (by omega)
         (g1ListTape (g1WalkInitFrames.flatMap G1Frame.bits))

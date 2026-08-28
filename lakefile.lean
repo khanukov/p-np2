@@ -181,6 +181,13 @@ lean_lib PnP3 where
     -- clock and no verdict are claimed there.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneWalkInvariant,
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneWalkInvariantExamples,
+    -- PR3c, the cursor-walk driver: the `8k² + 29k` loop clock, the induction
+    -- into `Σ(k)` from the real initial configuration, the successful terminal
+    -- at `j = arg2`, the public positive-index operand-2 read and the
+    -- aggregated out-of-range branch — both inside the unchanged `g1Clock` and
+    -- both on a repair-pending tape — with their literal probes.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneWalkDriver,
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneWalkDriverExamples,
     -- The thirteen-step rewrite cycle at the G1 control, kept as an
     -- arbitrary-configuration regression: the bridge, the fourteen-step
     -- composed round and one literal frame-list probe.  Unreachable from
@@ -354,6 +361,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMGateOneProbeInstallSurfaceTests,
     Glob.one `Tests.TMGateOneWalkSurfaceTests,
     Glob.one `Tests.TMGateOneWalkInvariantSurfaceTests,
+    Glob.one `Tests.TMGateOneWalkDriverSurfaceTests,
     Glob.one `Tests.FormulaSupportBoundsFalsifiabilityProbe,
     Glob.one `Tests.SmokeTests,
     Glob.one `Tests.UnitTests,

@@ -26,6 +26,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOneInstallScanExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneProbeInstallExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneWalkExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneWalkInvariantExamples
+import Complexity.TMVerifier.TuringToolkit.GateOneWalkDriverExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneIndexRound
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
@@ -508,11 +509,9 @@ open Pnp3.Magnification
 -- driver is audited, and nothing composes two macros into a round.  The
 -- exhaustion outcome stops at `.bExh .p0` — head on the first cell of the
 -- opening `argSep`; the terminal path continuing from that shape is audited in
--- the PR2b2 block below, on caller-supplied configurations only.  No walk
--- invariant, iteration, loop clock, out-of-range aggregation, repair,
--- arbitrary-index
--- read, `TM.accepts`, gate-semantics, full-clock or padded-tape statement is
--- audited here, because none exists.
+-- the PR2b2 block below, on caller-supplied configurations only.  At that
+-- slice no invariant, driver or OOB aggregation existed; they are audited in
+-- PR3a–PR3c below.  Repair, pass A, output write and `TM.accepts` remain absent.
 #print axioms Internal.PsubsetPpoly.TM.g1ExhState_ne_dec
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_bSeek_p3
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_bSeek_p2
@@ -563,10 +562,10 @@ open Pnp3.Magnification
 -- resulting tape has no `cursor` frame left.  **Every run takes the caller's
 -- configuration**: none starts from `G1M.initialConfig`, nothing composes a
 -- round with the terminal path, and no theorem says a real run reaches `bExh`
--- after the right number of rounds.  No walk invariant, iteration, loop clock,
--- addressing, positive-index operand-value read, out-of-range aggregation,
--- repair, pass A, output write, `TM.accepts`, gate-semantics, full-clock or
--- padded-tape statement is audited here, because none exists.
+-- after the right number of rounds.  At that slice the invariant, driver,
+-- positive-index read and OOB aggregation did not exist; they are audited in
+-- the PR3a–PR3c blocks below.  Repair, pass A, output write and `TM.accepts`
+-- remain absent.
 #print axioms Internal.PsubsetPpoly.TM.g1FinMode_ne_restore
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_bTurnFin_p0
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_bTurnFin_p1
@@ -661,13 +660,13 @@ open Pnp3.Magnification
 -- `g1WalkFramesRestored r j` — data region exactly `vals` and cursor-free,
 -- operand 2 **partially spent and unrepaired**.  Reaching `bOOB` is **not** a
 -- rejection: no output write, verdict or `TM.accepts` result is claimed.
--- **Deliberately absent**: any induction over `j`, any driver reaching `Σ(j)`
--- for `j > 0` from `G1M.initialConfig`, any loop or cumulative clock, any clock
--- bound on `16 * j + 37`/`16 * j + 32`, the successful terminal at `j = arg2`,
--- the aggregation of the two out-of-range branches, addressing, the
--- positive-index operand-value theorem, the `spent ↦ index` repair sweep, pass
--- A, combine, the output write, gate semantics, a full-clock theorem and
--- padded tapes.
+-- **Absent from this block**: the induction over `j`, any driver reaching
+-- `Σ(j)` for `j > 0` from `G1M.initialConfig`, the cumulative loop clock, the
+-- successful terminal at `j = arg2`, the aggregation of the two out-of-range
+-- branches and the positive-index operand-value theorem — all six are the PR3c
+-- block below.  Absent everywhere: the `spent ↦ index` repair sweep, pass A,
+-- combine, the output write, gate semantics, a full-clock theorem and padded
+-- tapes.
 #print axioms Internal.PsubsetPpoly.TM.g1CS_walk_iteration_exact
 #print axioms Internal.PsubsetPpoly.TM.g1CS_walk_oob_exact
 #print axioms Internal.PsubsetPpoly.TM.g1CS_walk_oob_stable
@@ -696,6 +695,88 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.oobFramesRestored_one_count_index
 #print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walk_oob_round
 #print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walk_oob_round_head
+
+-- PR3c, the cursor-walk **driver**: the `8k² + 29k` loop clock, the induction
+-- from the **real** initial configuration into `Σ(k)` — whose endpoint carries
+-- the caller's own hidden-bit proof — the `g1BSpentFrames` repair-pending
+-- layout family, the successful terminal at `j = arg2`, the **public arbitrary
+-- positive-index operand-2 read** returning the actual `r.vals[r.arg2]`, and
+-- the aggregated out-of-range branch, both inside the **unchanged** `g1Clock`.
+-- Every endpoint tape is `g1BSpentFrames r s`: data region exactly `vals` and
+-- cursor-free, operand 2 still consumed.  **Deliberately absent**: the
+-- `spent ↦ index` repair sweep, pass A, combine, the output write, and any
+-- `TM.accepts`, verdict, full-clock, gate-semantics, acceptance-gate, multi-gate
+-- or specification-bridge claim.
+#print axioms Internal.PsubsetPpoly.TM.g1BLoopSteps_zero
+#print axioms Internal.PsubsetPpoly.TM.g1BLoopSteps_succ
+#print axioms Internal.PsubsetPpoly.TM.g1BLoopSteps_eq_sum
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_loop_exact
+#print axioms Internal.PsubsetPpoly.TM.g1BSpentFrames_eq_restored
+#print axioms Internal.PsubsetPpoly.TM.g1BSpentFrames_empty
+#print axioms Internal.PsubsetPpoly.TM.g1BSpentFrames_length
+#print axioms Internal.PsubsetPpoly.TM.g1BSpentFrames_length_eq_validation
+#print axioms Internal.PsubsetPpoly.TM.g1BSpentFrames_count_cursor
+#print axioms Internal.PsubsetPpoly.TM.g1BSpentFrames_count_spent
+#print axioms Internal.PsubsetPpoly.TM.g1BSpentFrames_count_index
+#print axioms Internal.PsubsetPpoly.TM.g1ExhPre_length
+#print axioms Internal.PsubsetPpoly.TM.g1ExhPre_argSep
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_terminal_exact
+#print axioms Internal.PsubsetPpoly.TM.g1BReadSteps_eq
+#print axioms Internal.PsubsetPpoly.TM.g1BReadSteps_eq_install
+#print axioms Internal.PsubsetPpoly.TM.g1BReadSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1BOOBSteps_eq
+#print axioms Internal.PsubsetPpoly.TM.g1BOOBSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_positive_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_positive_head
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_positive_state
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_positive_vB
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_positive_tape
+#print axioms Internal.PsubsetPpoly.TM.g1BOOBCtx_nil
+#print axioms Internal.PsubsetPpoly.TM.g1BOOBCtx_last
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_positive_oob_nil
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_positive_oob_cons
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_positive_oob_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_positive_oob_stable
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_positive_oob_head
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_positive_oob_state
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_positive_oob_tape
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_positive_oob_ne_success
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.g1BReadExample_canonical
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.g1BReadExample_length
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.readFramesFinal_eq
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.readFramesFinal_count_cursor
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.readFramesFinal_count_spent
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.readFramesFinal_count_index
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.readFramesFinal_length
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.readExample_install_scan_steps
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.readExample_steps
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.readExample_steps_split
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.read_positive
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.read_positive_vB
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.read_positive_head
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.readExample_clock_value
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.read_positive_clock
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.walkExample_framesFinal
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.walkExample_steps
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.walkExample_steps_split
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.read_positive_two
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.read_positive_two_vB
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.read_positive_two_clock
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.emptyExample_oob_steps
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.emptyExample_frames
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.oob_empty
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.oob_empty_clock
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.oobExample_oob_steps
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.oobExample_oob_steps_split
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.oobExample_frames
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.oob_nonempty
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.oob_nonempty_head
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.oob_nonempty_clock
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.loopSteps_zero
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.loopSteps_one
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.loopSteps_two
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.loopSteps_three
+#print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.loopSteps_two_eq
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

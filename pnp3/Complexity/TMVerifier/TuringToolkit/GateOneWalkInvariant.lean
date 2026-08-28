@@ -11,8 +11,8 @@ from the **real initial configuration** `G1M.initialConfig`.
 
 PR3b adds **exactly one round** on that frame list, in both of its outcomes —
 the normal step `Σ(j) → Σ(j+1)` and the out-of-range abort at the last data
-slot — and nothing beyond it: there is still **no induction over `j`, no driver
-and no loop clock**.
+slot — and nothing beyond it **in this module**.  The induction, driver and
+loop clock are supplied separately by `GateOneWalkDriver`.
 
 ## `Σ(j)`: the invariant vocabulary
 
@@ -102,7 +102,7 @@ and `GateOneProbeInstall` atoms; the transition table is never unfolded.
 `GateOneWalkKernel` also supplies the single name `G1WalkSkip`, in whose terms
 the two pure skip-run facts above are stated.
 
-## Explicit deferrals (PR3c and later)
+## Scope of this module
 
 Exactly **one** round is executed, and only from a `Σ(j)` the caller hands in.
 There is **no** induction over `j`, no driver, no loop and **no cumulative or
@@ -111,7 +111,9 @@ summed or compared against `g1Clock`.  There is no successful terminal at
 `j = a2` (the `bExh`/`bRet`/`bTurnFin`/`bFin` path into `readAResetStart`), no
 aggregation of the two out-of-range branches, no addressing and **no
 positive-index operand-value theorem**: nothing below claims the machine
-resolves `r.vals[r.arg2]?` for `a2 > 0`.  Also absent: the `spent ↦ index`
+resolves `r.vals[r.arg2]?` for `a2 > 0`.  All five are `GateOneWalkDriver`
+(PR3c), which composes exactly the capstones above and adds no new machine
+fact.  Absent everywhere: the `spent ↦ index`
 repair sweep, pass A, combine, the output write, `TM.accepts`, gate-semantics
 correctness, a full-clock theorem and non-canonical or physically padded tapes.
 As everywhere in this development, every execution statement is scoped to the

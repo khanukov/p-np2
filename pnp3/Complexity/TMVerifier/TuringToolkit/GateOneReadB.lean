@@ -61,11 +61,12 @@ the unannotated data region, exactly for `arg2 = 0`: the walk meets the
 behind it.  For `arg2 > 0` the fixed control enters `bInsSeek`, the installation
 scan of the positive-index branch; the exact route to its endpoint is
 `GateOneInstallScan.g1CS_readB_install_scan_exact`, and that endpoint is where
-every statement from a **real** initial configuration stops.  The latch and the
-cursor install exist only as atomic macros on caller-supplied configurations
-(`GateOneProbeInstall`); nothing in this development runs them from
-`G1M.initialConfig`, iterates a round, addresses a runtime index, or claims that
-the walk resolves the selected data frame for `arg2 > 0`.
+every statement **of this module** from a real initial configuration stops.
+The walk continuing from it is `GateOneWalkInvariant`/`GateOneWalkDriver`
+(PR3a–PR3c): `g1CS_readB_positive_exact` is the exact `arg2 > 0` counterpart of
+the `arg2 = 0` row above, so the machine *does* resolve the selected data frame
+for a positive index — but on a tape whose operand-2 field the walk leaves
+consumed, since the `spent ↦ index` repair sweep is started nowhere here.
 
 `g1CS_step_round_bridge` below is the exact one-step execution of the older
 bridge `bRoundStart`, which is **no longer a target of the forward table**

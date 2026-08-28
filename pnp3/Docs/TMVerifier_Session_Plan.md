@@ -1716,10 +1716,11 @@ transition table is never unfolded inside an execution proof.
 * **No literal probes in this slice.**  `g1CS_repair_pass_exact` is the
   concrete capstone: it is an exact `TM.runConfig` equation, on the caller's
   `n`, frame list and `G1Ctx`, with a closed step count.  The all-literal
-  sixteen-frame probes of the sweep — one cycle, seek+repair, a multi-unit run,
-  a whole pass and a literal rejection — are deferred **in full** to
-  **Repair-1b** together with their module, so this slice ships no
-  `GateOneRepairKernelExamples`, no probe wrappers and no probe axiom roots.
+  sixteen-frame probes of the sweep — one cycle, seek+repair, a multi-unit run
+  and a whole pass — were deferred **in full** to **Repair-1b** together with
+  their module, so *this* slice ships no `GateOneRepairKernelExamples`, no probe
+  wrappers and no probe axiom roots.  **Repair-1b is delivered below
+  (2026-08-28)** and supplies exactly those four runs.
 
 Pinned by `Tests/TMGateOneRepairKernelSurfaceTests.lean` (new: theorem-style
 exact wrappers for both kernel instances, the reverse table with all four
@@ -1736,7 +1737,8 @@ module and one new surface test are registered in `lakefile.lean`.  The
 `GateOneWalkKernel` and `GateOneWalkInvariant` docstrings are re-scoped to point
 here.
 
-Explicitly deferred to **Repair-1b**: the all-literal probe module for this
+Deferred by Repair-1 to **Repair-1b** and **now delivered there** (see the
+Repair-1b entry immediately below): the all-literal probe module for this
 kernel and every statement in it.  Explicitly deferred to **Repair-2** and
 claimed nowhere by Repair-1: the
 request-specific **repair driver** (the layout split that identifies `left`,
@@ -1751,6 +1753,89 @@ likewise a **control-level** fact — the machine enters the stable `reject` sta
 and stops rewriting — and not a verdict: no statement of this slice relates it
 to `TM.accepts`, to a decision procedure, or to any claim that malformed tapes
 are detected end to end.
+
+**Repair-1b: the literal G1 repair probes, delivered (2026-08-28):**
+
+**Progress classification: Infrastructure.**
+
+The probe module Repair-1 deferred.  Nothing in the control, the kernel or the
+machine changes: no new mode, **no new runtime field**, no new `Nat`, no new
+`g1Advance` row, and no macro of `GateOneRepairKernel` is restated.  This slice
+only *instantiates* those macros at one literal word.
+
+* `GateOneRepairKernelExamples.lean` (new) — the sixteen-frame word for
+  `G1InstallScanExamples.g1WalkExample = ⟨and, 0, 2, [false, true, true]⟩` with
+  **both** operand-2 units consumed (`probeSpentFrames`), the half-repaired word
+  (`probeHalfFrames`) and the repaired word (`probeIndexFrames`), on
+  `probeLen = 60` input cells.  Nonvacuity is literal:
+  `probeIndex_eq_encoded` says the repaired word is exactly
+  `encodeG1Frames g1WalkExample ++ [blank]`, `probe_words_distinct` says the
+  three words are pairwise different, `probe_counts` says the consumed units go
+  `2 ↦ 1 ↦ 0` while the `index` count goes `0 ↦ 2` at length `16`, and
+  `probe_cell32` says physical cell `32` genuinely flips `true ↦ false`, so the
+  runs below cannot be no-ops.  `probe_safe` is the single head-safety bound
+  every probe reuses.
+* **Four exact `G1M` runs**, each from a caller-supplied `g1AlignedConfig` in
+  the reverse-read entry shape `bRepairSeek .p3` with the caller's latch
+  `g1Ctx0.withVB true`: `cycle_probe` (`13` steps, head `35 ↦ 31`, one unit
+  repaired) with `cycle_probe_ctx`; `seek_repair_probe`
+  (`37 = 4 * 6 + 13` steps, head `59 ↦ 31`) with `seek_repair_probe_tape`
+  landing on the half-repaired word; `run_probe` (`26 = 13 * 2` steps, head
+  `35 ↦ 27`) with `run_probe_tape`; and the whole pass `pass_probe`
+  (`79` steps, head `59 ↦ 0`, control `readAStart`) with `pass_probe_head`,
+  `pass_probe_tape` — bit-for-bit `encodeG1Frames g1WalkExample ++ [blank]` —
+  `pass_probe_ctx` (`vB` still latched) and `pass_probe_idle` (the endpoint
+  holds for the whole remaining budget).  `probe_passSteps` and
+  `probe_passSteps_split` pin `g1RepairPassSteps 6 2 6 = 4 * 6 + 13 * 2 +
+  4 * 6 + 5 = 79`, and six split lemmas put the word into the exact shapes the
+  macros consume.
+* **The narrowed skip predicate is exercised, not bypassed.**  Repair-1
+  narrowed `G1RepairSkip` so that `blank`, `bof`, `cursor` and `spent` are not
+  crossable; these probes are stated against that narrowing.  `probeLeft` (the
+  tag run and both `argSep`s) and `probeMid` (the `separator`, the data region,
+  `output` and `finish`) are the only lists handed to the kernel's `hleft`/
+  `hmid`, and they remain valid: `probeLeft_skip`/`probeMid_skip` discharge the
+  hypotheses, and the new regression `probe_scan_lists_clean` pins **both
+  directions** — the four non-crossable frames really are non-crossable, and
+  neither scanned list, nor the fifteen-frame scanned region `probeScanned` as a
+  whole, contains a `blank` or a leftover `cursor`.  Were a
+  malformed frame to appear in either list, those hypotheses would fail and the
+  pass theorems would lose their premises.
+* **The trailing `blank` is documented and proved to sit outside the scan.**
+  It is the sixteenth frame, the one the machine's own tape supplies past the
+  `60` input cells; it is *not* `G1RepairSkip`, so it could not be crossed.
+  `probeTail_beyond_entry` proves it does not have to be: it does not occur in
+  the scanned region `probeScanned` (fifteen frames), and each of its four
+  physical cells `60 … 63` lies strictly to the right of the sweep's entry cell
+  `59 = 4 * 15 - 1`.  It is therefore passed as the capstone's **unconstrained**
+  `tail`, never read, and reproduced bit-for-bit at the endpoint.
+* **Everything stays caller-supplied.**  Every probe starts from an explicit
+  `g1AlignedConfig`; none mentions `G1M.initialConfig`, and Repair-1's
+  `g1_repair_unreachable_forward`/`g1_repair_modes_stuck` still say no route of
+  the machine enters the sweep.  `readAStart` is still the idle handoff, which
+  is exactly what `pass_probe_idle` records.
+
+Pinned by `Tests/TMGateOneRepairKernelExamplesSurfaceTests.lean` (new:
+theorem-style exact wrappers for **every** public statement of the probe module,
+including the two narrowing regressions).  `Tests/AxiomsAudit.lean` prints the
+axioms of every new statement **directly**; none depends on anything beyond
+`propext`, `Classical.choice` and `Quot.sound`, and the twelve purely
+definitional ones depend on no axiom at all.  One new module and
+one new surface test are registered in `lakefile.lean`; the Repair-1 deferral
+pointers in `lakefile.lean`, `Tests/AxiomsAudit.lean` and
+`Tests/TMGateOneRepairKernelSurfaceTests.lean` are re-scoped to point here.
+
+Explicitly deferred to **Repair-2** and claimed nowhere by Repair-1b: the
+request-specific **repair driver** and its layout split, any composition of the
+operand-2 read with a repair, any run from `G1M.initialConfig`, any clock or
+budget statement for a combined read-plus-repair, any pass-A execution, the
+combine step, the output write, and any `TM.accepts`, verdict, gate-semantics,
+acceptance-gate, multi-gate or specification-bridge claim.  No literal
+**rejection** probe is claimed here either: the executable rejection lives in
+Repair-1 (`g1CS_repair_frame_reject`, `g1CS_repair_frame_reject_idle`) on the
+caller's tape, and this slice adds no literal instance of it — the probe word
+has no malformed frame inside its scanned region, which is precisely what
+`probe_scan_lists_clean` and `probeTail_beyond_entry` record.
 
 **T2a correction (2026-08-24).**  The first T2a head shipped a permissive
 forward table (`vTag` looping on every `tag`, `vArg1`/`vArg2` looping on every

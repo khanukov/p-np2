@@ -197,9 +197,17 @@ lean_lib PnP3 where
     -- `reject` sink, so a repair run can never rewrite `spent` units behind
     -- malformed tape.
     -- Every run there is caller-supplied: no route of the machine enters the
-    -- sweep, the request-specific repair driver is deferred to Repair-2, and
-    -- the all-literal probes of this kernel are deferred to Repair-1b.
+    -- sweep, and the request-specific repair driver is deferred to Repair-2.
+    -- Repair-1b adds `GateOneRepairKernelExamples`, the all-literal probes of
+    -- that kernel: the sixteen-frame word for `⟨and, 0, 2, [false, true,
+    -- true]⟩` with both operand-2 units consumed, and four exact `G1M` runs on
+    -- it — the `13`-step cycle, the `37`-step seek+repair, the `26`-step
+    -- two-unit run and the `79`-step whole pass onto the canonical word plus
+    -- the trailing blank.  Both scanned lists are pinned against the narrowed
+    -- `G1RepairSkip`, and the trailing `blank` is proved to lie outside the
+    -- scan.  Those probes are caller-supplied too.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneRepairKernel,
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneRepairKernelExamples,
     -- The thirteen-step rewrite cycle at the G1 control, kept as an
     -- arbitrary-configuration regression: the bridge, the fourteen-step
     -- composed round and one literal frame-list probe.  Unreachable from
@@ -375,6 +383,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMGateOneWalkInvariantSurfaceTests,
     Glob.one `Tests.TMGateOneWalkDriverSurfaceTests,
     Glob.one `Tests.TMGateOneRepairKernelSurfaceTests,
+    Glob.one `Tests.TMGateOneRepairKernelExamplesSurfaceTests,
     Glob.one `Tests.FormulaSupportBoundsFalsifiabilityProbe,
     Glob.one `Tests.SmokeTests,
     Glob.one `Tests.UnitTests,

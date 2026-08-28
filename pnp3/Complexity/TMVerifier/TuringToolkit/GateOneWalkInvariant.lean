@@ -49,8 +49,8 @@ Every structural side condition the merged macros take as a *hypothesis* is
   on the invariant domain `j ≤ arg2` and `j < m`.
 
 `g1WalkFramesMarked` and `g1WalkFramesRestored` name the two other layouts a
-round passes through.  `g1WalkFramesRestored` carries the counts above;
-`g1WalkFramesMarked` is pure vocabulary for PR3b and no statement here uses it.
+round passes through.  Both carry exact length/count facts; no execution theorem
+in this module writes either layout — those preservation runs are PR3b.
 
 ## What is executed here
 
@@ -163,8 +163,8 @@ def g1WalkFrames (r : G1Request) (j : Nat) : List G1Frame :=
     [G1Frame.output false, G1Frame.finish, G1Frame.blank]
 
 /-- The layout *between* the `index ↦ spent` write and the cursor restore: one
-more `spent` marker, cursor still on data slot `j`.  Vocabulary only — no
-statement in this module mentions it, and nothing here writes it. -/
+more `spent` marker, cursor still on data slot `j`.  This module proves its
+length/count facts but no execution theorem writes it. -/
 def g1WalkFramesMarked (r : G1Request) (j : Nat) : List G1Frame :=
   g1FieldRouteFrames r ++ List.replicate (r.arg2 - j - 1) G1Frame.index ++
     List.replicate (j + 1) G1Frame.spent ++ [G1Frame.separator] ++

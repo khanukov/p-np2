@@ -1360,9 +1360,10 @@ machine never computes with them.
   `g1WalkSkipRun_no_index` (the run both scans of a round cross is
   `spent^j · separator · data^j` and contains **no** `index` frame — the reason
   the forward scan `bFwd`, which has no `index` row, never stalls) and
-  `g1WalkCursor_safe` (every cell a round touches is inside the tape, from
-  `j < m` alone).  `g1WalkFramesMarked` and `g1WalkFramesRestored` name the two
-  other layouts of a round; the restored one carries its own three counts.  The
+  `g1WalkCursor_safe` (every cell a round touches is inside the tape on the
+  invariant domain `j ≤ a2`, `j < m`).  `g1WalkFramesMarked` and
+  `g1WalkFramesRestored` name the two other layouts of a round; both carry exact
+  length/count facts, while their execution theorems remain PR3b.  The
   module imports `GateOneWalkKernel` for exactly one name, `G1WalkSkip`, in
   whose terms the two skip-run facts are stated; **no macro of that module is
   used**, and the two executed capstones compose only the merged

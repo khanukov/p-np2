@@ -83,37 +83,54 @@ At the separator it enters `bProbe`, which reads the selected data frame:
 `readAResetStart`, while the `output` destination frame means the index ran off
 the end of the data region and hands off to the stable `bOOB` boundary.
 
-## One destructive round
+## The positive-index branch: the installation scan
 
 `bScan` reaching an *unspent* `index` frame means the operand-2 index is
-non-zero, and the T2b-2 slice activates that branch: `bRoundStart` is **no
-longer idle**.  It is a one-step *bridge*.  The forward table enters it having
-just completed the `index` frame, so the head sits on the first cell of the
-*next* frame; the bridge steps once to the left, onto the last cell of that
-`index`, and enters `bWalk` — the reverse-aligned entry of a right-to-left
-frame read.  From there four modes perform exactly one `index ↦ spent` round:
+non-zero.  This slice **re-points** that single row: `bScan + index` now enters
+`bInsSeek`, the read-only **installation scan**, which crosses the rest of the
+operand-2 field (`index` and `spent` alike), crosses the `separator` and stops
+at `bProbe2` on the first cell of the first data frame.  Four `g1Advance` rows
+and two new modes, and that is all:
 
-* `bWalk` reads a frame right to left (`p3 … p0`) and *stops* on an `index`,
-  entering the write handoff on that frame's first cell without moving; any
-  other frame continues the reverse walk one frame further left;
-* `bMark` writes the four literal cells of `spent` (`1100`) left to right,
-  independently of what it overwrites;
-* `bBack` walks the four cells back leftwards, writing back what it reads;
-* `bHop` takes one further left step and re-enters `bWalk` on the last cell of
-  the preceding frame.
+```text
+bScan    + index     ↦ bInsSeek     (the re-pointed row)
+bInsSeek + index     ↦ bInsSeek
+bInsSeek + spent     ↦ bInsSeek
+bInsSeek + separator ↦ bProbe2
+```
 
-`4 + 4 + 4 + 1 = 13` steps, so a bridge plus a round is exactly fourteen.  This
-is the machine shape of one destructive index round and nothing more: the
-composed theorems of `FrameRewriteCycleInstances` and `GateOneIndexRound` run
-**one** round.  Iterating the round, addressing a runtime index, terminating
-the walk, restoring the data region, acceptance and rejection are all outside
-this slice and none of them is claimed.
+Both modes are ordinary *forward* frame-reading modes, so they need no
+`g1Transition` rows of their own: their steps are the four
+`g1Transition_forward_*` lemmas below.  The executed form of the route is
+`GateOneInstallScan.g1CS_readB_install_scan_exact`.
 
-In particular `bWalk` stops **only** on an `index` frame, and nothing here says
-that it ever meets one: a walk that does not is simply an unclaimed run (at head
-zero a `Move.left` stays, by `Configuration.moveHead`).  Every round theorem
-takes its head-safety premise from the caller and states exactly the fourteen or
-thirteen steps it executes.
+**`bProbe2` is an explicit local boundary of this slice.**  It has **no**
+outgoing `g1Advance` row here, so it completes every frame into `reject` and is
+therefore `G1Stuck` (`GateOneRouting.g1_bProbe2_stuck`).  No theorem of this
+development runs the machine out of it: the installation scan's endpoint is the
+last thing proved on this branch.  Reading the selected data bit there, latching
+it into `G1Ctx.vB` and installing the data cursor need the **fourteen remaining
+cursor-walk modes** — the reverse seek and its two outcomes, the
+`index ↦ spent` writer, the forward scan and the two turns, the four restore
+writers, the two latch dispatches and the leftward cursor writer — together with
+their `g1Advance`/`g1Transition` rows and tuple lemmas.  All of that, and every
+execution of the latch, the cursor install or a walk round, is **PR2**; none of
+it is present or claimed here.
+
+## The rewrite-cycle bridge, retained only as a regression
+
+`bRoundStart`/`bWalk`/`bMark`/`bBack`/`bHop` are the earlier one-step bridge and
+its thirteen-step `index ↦ spent` round (`4 + 4 + 4 + 1 = 13`, so bridge plus
+round is fourteen).  After the re-point they are **unreachable from the forward
+table**: no mode/frame pair completes into `bRoundStart`
+(`GateOneRouting.g1_bRoundStart_unreachable`).  Their rows and tuple lemmas
+survive only so that the generic rewrite-cycle composition of
+`FrameRewriteCycleInstances` and `GateOneIndexRound` keeps a regression on a
+**caller-supplied** configuration.  Nothing composes them from
+`G1M.initialConfig`, and nothing claims that repeating that cycle addresses an
+operand-2 value: `bWalk` stops on *any* `index`, so once the operand-2 field
+empties it would cross the opening `argSep` and consume operand-1 units.  That
+is the failure the PR2 walk is designed to rule out.
 
 **What is deferred.**  `readAStart`, `combineStart` and `readAResetStart` are
 idle handoffs in this slice.  `bOOB` is a stable read boundary, distinct from
@@ -150,7 +167,12 @@ dispatch modes that write the decoded Boolean into `G1Ctx.vB`.
 
 `bRoundStart` is the one-step bridge into the destructive round and
 `bWalk`/`bMark`/`bBack`/`bHop` are its reverse read, its fixed-code write, its
-back-walk and its hop.  `readAStart`, `combineStart`, `readAResetStart` and
+back-walk and its hop; the forward table no longer enters `bRoundStart`.
+
+`bInsSeek` is the read-only installation scan of the positive-index branch and
+`bProbe2` its endpoint, the explicit local boundary of this slice.
+
+`readAStart`, `combineStart`, `readAResetStart` and
 `bOOB` are the four remaining local handoffs, idle in this slice;
 `accept`/`reject` are the sinks. -/
 inductive G1Mode
@@ -166,6 +188,8 @@ inductive G1Mode
   | bScan | bProbe
   | constFalse | constTrue | bStoreFalse | bStoreTrue
   | bRoundStart | bWalk | bMark | bBack | bHop
+  -- the installation scan and its endpoint
+  | bInsSeek | bProbe2
   | readAStart | combineStart | readAResetStart | bOOB
   | accept | reject
   deriving Fintype, DecidableEq, Repr
@@ -240,10 +264,9 @@ operand-2 value and the data cursor has to be reset before pass A. -/
 def g1ReadAResetState (ctx : G1Ctx) : G1State :=
   g1State .readAResetStart .p0 false false false ctx
 
-/-- **The bridge state of the destructive index round.**  The forward table
-lands here having just completed an unspent `index` frame, so the head is on
-the first cell of the *next* frame; one step to the left re-aligns it on the
-last cell of that `index` in `g1WalkState`. -/
+/-- **Caller-supplied regression state for the old destructive index round.**
+The current forward table never reaches this state; it remains only so the
+generic rewrite-cycle regression can be stated on an arbitrary configuration. -/
 def g1RoundState (ctx : G1Ctx) : G1State :=
   g1State .bRoundStart .p0 false false false ctx
 
@@ -260,6 +283,21 @@ def g1MarkState (ctx : G1Ctx) : G1State :=
 /-- The stable out-of-range boundary of the operand read. -/
 def g1OOBState (ctx : G1Ctx) : G1State :=
   g1State .bOOB .p0 false false false ctx
+
+/-! ### The two named states of the installation scan.  Neither carries a `Nat`,
+an index, an offset or a length: the scan's whole memory is the frame position,
+the three-cell frame buffer and the pre-existing `G1Ctx`. -/
+
+/-- Installation scan: head on the first cell of the frame after the first
+operand-2 `index`. -/
+def g1InsSeekState (ctx : G1Ctx) : G1State :=
+  g1State .bInsSeek .p0 false false false ctx
+
+/-- **The endpoint of the installation scan**, and the explicit local boundary
+of this slice: head on the first cell of the first data frame.  Reading that
+frame is PR2. -/
+def g1Probe2State (ctx : G1Ctx) : G1State :=
+  g1State .bProbe2 .p0 false false false ctx
 
 /-- The reject sink and pass-B handoff differ.  Used by the
 `GateOneValidation` rejection surface. -/
@@ -341,11 +379,18 @@ def g1Advance : G1Mode → G1Frame → G1Mode
   -- the probe.  A data frame before the separator is malformed and rejects.
   | .bScan, .spent => .bScan
   | .bScan, .separator => .bProbe
-  | .bScan, .index => .bRoundStart   -- the bridge into the destructive round
+  | .bScan, .index => .bInsSeek      -- a non-zero index: install the cursor
   -- the probe reads the selected data frame, or runs off the data region
   | .bProbe, .data false => .bStoreFalse
   | .bProbe, .data true => .bStoreTrue
   | .bProbe, .output false => .bOOB
+  -- the installation scan: cross the rest of the operand-2 field and the
+  -- `separator`, stopping at `bProbe2` on the *first* data frame.  `bProbe2`
+  -- has no row of its own in this slice: it is the explicit local boundary,
+  -- and its successors are PR2.
+  | .bInsSeek, .index => .bInsSeek
+  | .bInsSeek, .spent => .bInsSeek
+  | .bInsSeek, .separator => .bProbe2
   | _, _ => .reject
 
 /-- The bit-level form of `g1Advance`, as the control table computes it. -/
@@ -354,11 +399,17 @@ def g1Complete (mode : G1Mode) (b0 b1 b2 b3 : Bool) : G1Mode :=
   | some frame => g1Advance mode frame
   | none => .reject
 
-/-- The modes that read one frame left to right through `g1Advance`.  Both the
-validation scan (`vBof … vBlank`) and the pass-B rescan (`readBStart`,
-`rTag0 … rTag5`, `rConst0`/`rConst1`, `rArg1Binary`, `bScan`, `bProbe`) are
-forward modes; the rewind, the four dispatch modes, the five modes of the
-destructive round, the four remaining handoffs and the two sinks are not. -/
+/-- The modes that read one frame left to right through `g1Advance`.  The
+validation scan (`vBof … vBlank`), the pass-B rescan (`readBStart`,
+`rTag0 … rTag5`, `rConst0`/`rConst1`, `rArg1Binary`, `bScan`, `bProbe`) and the
+installation scan (`bInsSeek`, `bProbe2`) are forward modes; the rewind, the
+four dispatch modes, the five modes of the destructive round, the four remaining
+handoffs and the two sinks are not.
+
+`bProbe2` is forward *and* `G1Stuck` in this slice: it reads a frame like any
+forward mode, but the table gives it no accepting row yet, so every frame
+completes into `reject`.  That is exactly what makes it an explicit boundary and
+not a claim; PR2 supplies its rows. -/
 def G1ForwardMode : G1Mode → Prop
   | .rewindStart | .rewind
   | .constFalse | .constTrue | .bStoreFalse | .bStoreTrue
@@ -379,6 +430,7 @@ theorem G1ForwardMode.readBStart : G1ForwardMode .readBStart := trivial
 /-- **Stuck modes.**  A mode from which the forward table can read nothing: it
 completes every frame into `reject`, and it is not the end-of-input mode.  In
 particular the four dispatch modes, the five modes of the destructive round,
+the installation scan's endpoint `bProbe2`,
 the four remaining handoffs and the `reject` sink are
 stuck; `rewind` and `accept` also satisfy this table-level predicate but are
 unreachable as results of `g1Advance`;
@@ -445,9 +497,9 @@ theorem g1AdvanceList_ne_rewindStart_of_stuck {mode : G1Mode} (h : G1Stuck mode)
 
 /-- **The forward table only ever produces a forward mode, `rewindStart`, or a
 stuck mode.**  In particular `rewind` and `accept` are unreachable from any
-scan, and every non-forward target of the table (the four dispatch modes, the
-round's five modes, the four idle handoffs, the `reject` sink) reads nothing
-further. -/
+scan, and every target of the table that reads nothing further (the four
+dispatch modes, the round's five modes, the boundary `bProbe2`, the four idle
+handoffs, the `reject` sink) is stuck. -/
 theorem g1Advance_range (mode : G1Mode) (frame : G1Frame) :
     G1ForwardMode (g1Advance mode frame) ∨
       g1Advance mode frame = .rewindStart ∨
@@ -1315,17 +1367,19 @@ theorem g1Transition_rewind_p0_other (phase : Fin 1) (b0 b1 b2 scan : Bool)
       (0, g1State .rewind .p3 false false false ctx, scan, .left) := by
   rw [g1Transition_rewind_p0_raw, if_neg hne]
 
-/-! ### The destructive index round
+/-! ### The destructive index round, retained as a regression
 
 Fourteen tuples: the bridge, four reverse-read steps (the last one splitting on
 whether the completed frame is the `index` marker), four fixed-code writes, four
 back-walk steps and the hop.  Every one of them is `rfl` after at most one
-position split, and none of them mentions the request. -/
+position split, and none of them mentions the request.  The forward table no
+longer produces `bRoundStart`, so these rows are exercised only from
+caller-supplied configurations. -/
 
-/-- **The bridge.**  Entered just after a scanned `index` frame, with the head
-on the first cell of the next frame, one step to the left re-aligns the control
-on the last cell of that `index` in the reverse-read entry shape.  The scanned
-cell is written back, so the tape does not change. -/
+/-- **The bridge.**  From a configuration whose head is on the first cell of the
+frame after an `index`, one step to the left re-aligns the control on the last
+cell of that `index` in the reverse-read entry shape.  The scanned cell is
+written back, so the tape does not change. -/
 theorem g1Transition_bRoundStart_bridge (phase : Fin 1)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
     g1Transition phase (g1State .bRoundStart position b0 b1 b2 ctx) scan =

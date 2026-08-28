@@ -11,11 +11,15 @@ generic frame-scanner kernel.
 
 This layer exposes frame-word/table correspondence and the generic kernel's
 exact four-step and multi-frame `TM.runConfig` primitives.  It also pins the
-fourteen transition tuples of the destructive index round (`bRoundStart`
-bridge, `bWalk`, `bMark`, `bBack`, `bHop`); the executed one-round theorem is a
-separate layer with its own surface entries.  End-to-end physical validation,
-rejection, rewind, and `readBStart` composition remain in their separate
-execution surface.
+fourteen transition tuples of the retired destructive index round
+(`bRoundStart` bridge, `bWalk`, `bMark`, `bBack`, `bHop`) and the complete
+four-row installation-scan table.  `bInsSeek` and `bProbe2` are forward modes
+and have **no** transition rows of their own; `bProbe2` has no `g1Advance` row
+either, and the remaining cursor-walk modes, rows, tuple lemmas and the latch /
+cursor-install execution are PR2.  The executed installation scan is a separate
+layer with its own surface entries.  End-to-end physical validation, rejection,
+rewind, and `readBStart` composition remain in their separate execution
+surface.
 
 This is an audit surface: it pins public signatures, it does not prove
 anything new.
@@ -82,6 +86,10 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1Transition_bBack_p2
 #check @g1Transition_bBack_p3
 #check @g1Transition_bHop
+-- The two states of the installation scan.  Both modes are forward, so they
+-- have no transition rows of their own.
+#check @g1InsSeekState
+#check @g1Probe2State
 #check @g1RejectState_ne_readB
 #check @g1OOBState_ne_readAReset
 
@@ -139,6 +147,20 @@ open Pnp3.Internal.PsubsetPpoly.TM
 theorem check_g1CS_runTime (N : Nat) :
     g1CS.toPhased.toTM.runTime N = 512 * (N + 1) ^ 2 + 512 :=
   g1CS_runTime N
+
+/-- **The re-pointed row.**  The positive-index branch of the operand-2 walk
+enters the installation scan, not the retired rewrite-cycle bridge. -/
+theorem check_g1Advance_bScan_index :
+    g1Advance .bScan .index = .bInsSeek := rfl
+
+/-- **The complete installation-scan table.**  Four rows and no more; in
+particular `bProbe2` has none, so this slice cannot read the selected data
+frame. -/
+theorem check_g1Advance_bInsSeek :
+    g1Advance .bInsSeek .index = .bInsSeek ∧
+      g1Advance .bInsSeek .spent = .bInsSeek ∧
+      g1Advance .bInsSeek .separator = .bProbe2 :=
+  ⟨rfl, rfl, rfl⟩
 
 theorem check_g1AdvanceList_encode_reject (r : G1Request)
     (hc : ¬ r.Canonical) :

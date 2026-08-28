@@ -485,7 +485,7 @@ claimed nowhere in T2b-1:
 * **pass A, combine, write, repair, acceptance** — `readAStart`,
   `combineStart` and `readAResetStart` are idle rows; there is still no
   `TM.run`, `TM.accepts`, output-write, `spec`-correctness or full-clock
-  theorem.  (**Superseded by Repair-2, 2026-08-28**, for `readAResetStart`
+  theorem.  (**Superseded by Repair-2a, 2026-08-28**, for `readAResetStart`
   only: it is now the one-step bridge into the repair sweep.  `readAStart` and
   `combineStart` are still idle rows, and pass A, combine, the output write,
   `TM.accepts` and a full clock are still absent.)
@@ -594,7 +594,7 @@ general runtime-index addressing beyond the single round below is claimed);
 and repair** (`readAStart`, `combineStart` and `readAResetStart` are idle rows,
 proved idle for every budget by `g1CS_runConfig_readA_idle`,
 `g1CS_runConfig_combine_idle`, `g1CS_runConfig_readAReset_idle`, and nothing
-consumes the `G1Ctx.vB` value they carry — **superseded by Repair-2,
+consumes the `G1Ctx.vB` value they carry — **superseded by Repair-2a,
 2026-08-28**: `g1CS_runConfig_readAReset_idle` is *gone*, replaced by the
 executed bridge `g1CS_step_readAReset_bridge`, and the repair sweep behind it is
 delivered; the other two rows are still idle and nothing still consumes `vB`);

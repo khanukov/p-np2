@@ -1512,8 +1512,8 @@ modules and the surface test are already roots of `lakefile.lean`.
 
 Deferred to PR3c **by PR3b** and all **delivered by PR3c, 2026-08-28**, in the
 section below: the **induction over `j`**, the driver that reaches `Σ(j)` for
-`j > 0` from `G1M.initialConfig`, the cumulative loop clock and the clock bound
-on the round counts, the **successful terminal** at `j = arg2` (the
+`j > 0` from `G1M.initialConfig`, the cumulative loop clock and the clock bounds
+on the cumulative success/OOB totals, the **successful terminal** at `j = arg2` (the
 `bExh`/`bRet`/`bTurnFin`/`bFin` path into `readAResetStart`), the aggregation of
 the round's out-of-range branch with the empty-data one, and the
 **positive-index operand-value theorem**.  Still absent and claimed nowhere:
@@ -1554,6 +1554,8 @@ capstones.  With `u = tag.units`, `a1 = arg1`, `a = arg2`, `m = vals.length`:
 * `GateOneWalkDriver.lean`, the layout family — `g1BSpentFrames r s`, the one
   **repair-pending** shape both endpoints land on: operand 2 split as
   `index^(a-s) · spent^s`, data region exactly `vals`, **no cursor**.
+  The semantic domain is `s ≤ a`; outside it the unrestricted definition is
+  only a syntactic Nat-subtraction identity.
   `g1WalkFramesRestored r j = g1BSpentFrames r (j+1)`
   (`g1BSpentFrames_eq_restored`), `g1BSpentFrames r 0 = encodeG1Frames r ++
   [.blank]` when `vals = []` (`_empty`), plus `_length`,

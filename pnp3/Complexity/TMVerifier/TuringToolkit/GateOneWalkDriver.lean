@@ -180,7 +180,8 @@ theorem g1CS_walk_loop_exact (r : G1Request) (hc : r.Canonical)
 
 The canonical word with operand 2 split as `index^(arg2-s) · spent^s`, data
 region **exactly `vals`**, **no cursor**.  For `s > 0` it is *not* the canonical
-word: the repair is deferred. -/
+word: the repair is deferred.  Its semantic domain is `s ≤ arg2`; outside that
+domain the unrestricted definition is only a syntactic Nat-subtraction identity. -/
 
 /-- The walk's **repair-pending** layout after `s` consumed operand-2 units. -/
 def g1BSpentFrames (r : G1Request) (s : Nat) : List G1Frame :=

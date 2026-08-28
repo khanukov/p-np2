@@ -11,8 +11,8 @@ from the **real initial configuration** `G1M.initialConfig`.
 
 PR3b adds **exactly one round** on that frame list, in both of its outcomes —
 the normal step `Σ(j) → Σ(j+1)` and the out-of-range abort at the last data
-slot — and nothing beyond it: there is still **no induction over `j`, no driver
-and no loop clock**.
+slot — and nothing beyond it **in this module**.  The induction, driver and
+loop clock are supplied separately by `GateOneWalkDriver`.
 
 ## `Σ(j)`: the invariant vocabulary
 

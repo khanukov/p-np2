@@ -26,18 +26,6 @@ namespace Pnp3.Tests.TMGateOneWalkDriverSurface
 
 open Pnp3.Internal.PsubsetPpoly
 open Pnp3.Internal.PsubsetPpoly.TM
-
-#check @g1BLoopSteps
-#check @g1BSpentFrames
-#check @g1ExhPre
-#check @g1BReadSteps
-#check @g1BOOBSteps
-#check @g1BOOBCtx
-#check @G1WalkDriverExamples.g1BReadExample
-#check @G1WalkDriverExamples.g1BReadFramesFinal
-
-/-! ## The loop clock, pinned exactly -/
-
 theorem check_g1BLoopSteps_zero : g1BLoopSteps 0 = 0 := g1BLoopSteps_zero
 
 /-- One more round costs exactly the `16k + 37` of the merged round theorem. -/
@@ -50,8 +38,6 @@ theorem check_g1BLoopSteps_eq_sum (k : Nat) :
     g1BLoopSteps k = ((List.range k).map (fun j => 16 * j + 37)).sum :=
   g1BLoopSteps_eq_sum k
 
-/-! ## The induction, pinned exactly -/
-
 theorem check_g1CS_walk_loop_exact (r : G1Request) (hc : r.Canonical)
     (ht : r.tag = .and ∨ r.tag = .or) (k0 : Nat) (h2 : r.arg2 = k0 + 1) :
     ∀ (k : Nat) (hk2 : k ≤ r.arg2) (hk : k < r.vals.length) (v : Bool)
@@ -60,8 +46,6 @@ theorem check_g1CS_walk_loop_exact (r : G1Request) (hc : r.Canonical)
           (g1WalkInstallSteps r + g1BLoopSteps k) =
         g1WalkConfig r k hk2 hk v hv :=
   g1CS_walk_loop_exact r hc ht k0 h2
-
-/-! ## The repair-pending layout family, pinned exactly -/
 
 /-- The one-round out-of-range tape *is* this family… -/
 theorem check_g1BSpentFrames_eq_restored (r : G1Request) (j : Nat) :
@@ -93,8 +77,6 @@ theorem check_g1ExhPre (r : G1Request) :
     (g1ExhPre r).length = r.tag.units + r.arg1 + 2 ∧
       g1ExhPre r ++ [G1Frame.argSep] = g1FieldRouteFrames r :=
   ⟨g1ExhPre_length r, g1ExhPre_argSep r⟩
-
-/-! ## The successful terminal, pinned exactly -/
 
 /-- **`Σ(r, arg2, v) → readAResetStart`** in exactly `16 * arg2 + 28` steps, on
 the repair-pending `g1BSpentFrames r arg2`: data region `vals`, no cursor,
@@ -128,8 +110,6 @@ theorem check_g1BSteps_le_clock (r : G1Request) :
     g1BReadSteps r ≤ g1Clock (encodeG1 r).length ∧
       g1BOOBSteps r ≤ g1Clock (encodeG1 r).length :=
   ⟨g1BReadSteps_le_clock r, g1BOOBSteps_le_clock r⟩
-
-/-! ## The public arbitrary positive-index read, pinned exactly -/
 
 /-- **The machine resolves `r.vals[r.arg2]` for an arbitrary `arg2 > 0`**, from
 the real initial configuration, in exactly `g1BReadSteps r` genuine steps; the
@@ -168,8 +148,6 @@ theorem check_g1CS_readB_positive_proj (r : G1Request) (hc : r.Canonical)
     g1CS_readB_positive_state r hc ht h2 b hb,
     g1CS_readB_positive_vB r hc ht h2 b hb,
     g1CS_readB_positive_tape r hc ht h2 b hb⟩
-
-/-! ## The aggregated out-of-range branch, pinned exactly -/
 
 /-- The context split: `g1Ctx0` on an empty data region… -/
 theorem check_g1BOOBCtx_nil (r : G1Request) (hv : r.vals = []) :
@@ -256,8 +234,6 @@ theorem check_g1CS_readB_positive_oob_proj (r : G1Request) (hc : r.Canonical)
 theorem check_g1CS_readB_positive_oob_ne_success (ctx ctx' : G1Ctx) :
     g1OOBState ctx ≠ g1ReadAResetState ctx' :=
   g1CS_readB_positive_oob_ne_success ctx ctx'
-
-/-! ## The literal probes, pinned exactly -/
 
 open G1WalkDriverExamples in
 /-- The loop clock on literals, with the recurrence at `k = 1`. -/

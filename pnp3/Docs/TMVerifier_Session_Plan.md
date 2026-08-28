@@ -1482,7 +1482,7 @@ this slice is purely additive.
     **partially spent and unrepaired** — `j + 1` units consumed and
     `arg2 - j - 1` left (`_count_spent`, `_count_index`).  It is an
     intermediate tape, and reaching `bOOB` is **not a rejection theorem**: no
-    verdict, output frame or `TM.accepts` value is claimed anywhere.
+    output write, verdict or `TM.accepts` result is claimed anywhere.
   * `g1CS_walk_oob_stable` — that boundary absorbs every further step.
 
   No clock bound is claimed for either round count: `16 * j + 37` and

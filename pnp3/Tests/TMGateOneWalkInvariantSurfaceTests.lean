@@ -335,7 +335,7 @@ theorem check_g1CS_walk_iteration_exact (r : G1Request) (j : Nat)
 `16 * j + 32` steps to the `bOOB` boundary on `g1WalkFramesRestored r j`.  That
 tape is **intermediate and unrepaired** — the data region is exactly `vals` and
 cursor-free while operand 2 keeps `spent^(j+1)` — and this is **not** a
-rejection theorem: no verdict, output frame or `TM.accepts` value appears. -/
+rejection theorem: no output write, verdict or `TM.accepts` result is claimed. -/
 theorem check_g1CS_walk_oob_exact (r : G1Request) (j : Nat)
     (hj2 : j < r.arg2) (hj1 : j + 1 = r.vals.length) (v : Bool)
     (hv : r.vals[j]? = some v) :

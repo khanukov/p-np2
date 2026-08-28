@@ -79,7 +79,7 @@ deferred):
   on `g1WalkFramesRestored r j`: the data region is exactly `vals` and
   cursor-free, while operand 2 is **partially spent and unrepaired**
   (`spent^(j+1)`, `index^(a2-j-1)` left).  This is an intermediate tape and
-  **not** a rejection: no verdict, no `TM.accepts`, no output frame is claimed.
+  **not** a rejection: no output write, verdict or `TM.accepts` result is claimed.
 
 Only the **installation** starts from `G1M.initialConfig`:
 
@@ -210,8 +210,8 @@ def g1WalkFrames (r : G1Request) (j : Nat) : List G1Frame :=
     [G1Frame.output false, G1Frame.finish, G1Frame.blank]
 
 /-- The layout *between* the `index ↦ spent` write and the cursor restore: one
-more `spent` marker, cursor still on data slot `j`.  This module proves its
-length/count facts but no execution theorem writes it. -/
+more `spent` marker, cursor still on data slot `j`.  The private round prefix
+passes through this tape, but no public capstone exposes it as a final endpoint. -/
 def g1WalkFramesMarked (r : G1Request) (j : Nat) : List G1Frame :=
   g1FieldRouteFrames r ++ List.replicate (r.arg2 - j - 1) G1Frame.index ++
     List.replicate (j + 1) G1Frame.spent ++ [G1Frame.separator] ++
@@ -221,8 +221,8 @@ def g1WalkFramesMarked (r : G1Request) (j : Nat) : List G1Frame :=
 
 /-- The layout *after* the cursor restore and before the next probe: the data
 region is exactly `vals` and carries no cursor, while the operand-2 field is
-partially spent, `index^(arg2-j-1) · spent^(j+1)`.  This module proves its
-length/count facts; the round that produces it is PR3b. -/
+partially spent, `index^(arg2-j-1) · spent^(j+1)`.  The private round prefix
+reaches this tape after restore, and the public OOB capstone ends on it. -/
 def g1WalkFramesRestored (r : G1Request) (j : Nat) : List G1Frame :=
   g1FieldRouteFrames r ++ List.replicate (r.arg2 - j - 1) G1Frame.index ++
     List.replicate (j + 1) G1Frame.spent ++ [G1Frame.separator] ++
@@ -838,8 +838,8 @@ so the *data region is fully restored to `vals` and carries no `cursor` frame*
 repaired*: `j + 1` units are spent and `arg2 - j - 1` remain
 (`g1WalkFramesRestored_count_spent`, `_count_index`).  This is an
 **intermediate, unrepaired** tape, not a repaired one, and reaching `bOOB` is
-**not** a rejection theorem: nothing here claims a verdict, a `TM.accepts`
-value or an output frame.  The head is left on the frame boundary just past the
+**not** a rejection theorem: nothing here claims an output write, verdict or
+`TM.accepts` result.  The head is left on the frame boundary just past the
 `output` destination and the context still carries `vB = vals[j]`. -/
 theorem g1CS_walk_oob_exact (r : G1Request) (j : Nat)
     (hj2 : j < r.arg2) (hj1 : j + 1 = r.vals.length) (v : Bool)

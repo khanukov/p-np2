@@ -659,7 +659,7 @@ open Pnp3.Magnification
 -- the stable `bOOB` boundary in `16 * j + 32` steps on
 -- `g1WalkFramesRestored r j` — data region exactly `vals` and cursor-free,
 -- operand 2 **partially spent and unrepaired**.  Reaching `bOOB` is **not** a
--- rejection: no verdict, output frame or `TM.accepts` value is claimed.
+-- rejection: no output write, verdict or `TM.accepts` result is claimed.
 -- **Deliberately absent**: any induction over `j`, any driver reaching `Σ(j)`
 -- for `j > 0` from `G1M.initialConfig`, any loop or cumulative clock, any clock
 -- bound on `16 * j + 37`/`16 * j + 32`, the successful terminal at `j = arg2`,

@@ -183,7 +183,8 @@ back-walk and its hop; the forward table no longer enters `bRoundStart`.
 `bInsSeek`/`bProbe2` are the installation scan and its probe;
 `bLatchFalse`/`bLatchTrue` are the two latch dispatches, `bIns` the leftward
 cursor writer and `bSeek` the reverse seek's entry shape — the explicit local
-endpoint of this slice, with no rows of its own.
+endpoint of this slice, with no successful frame row.  A completed attempted
+read enters `reject`, and no theorem executes it.
 
 `readAStart`, `combineStart`, `readAResetStart` and
 `bOOB` are the four remaining local handoffs, idle in this slice;
@@ -465,8 +466,8 @@ theorem G1ForwardMode.not_rewindStart : ¬ G1ForwardMode .rewindStart := id
 
 theorem G1ForwardMode.readBStart : G1ForwardMode .readBStart := trivial
 
-/-- **Stuck modes.**  A mode from which the forward table can read nothing: it
-completes every frame into `reject`, and it is not the end-of-input mode.  In
+/-- **Stuck modes.**  A mode with no successful frame row: an attempted
+complete-frame read enters `reject`, and it is not the end-of-input mode.  In
 particular the four dispatch modes, the five modes of the destructive round,
 the two latch dispatches, the leftward cursor writer, the walk endpoint `bSeek`,
 the four remaining handoffs and the `reject` sink are
@@ -1537,7 +1538,7 @@ writes back the cell it scans, and the four cells the writer installs are the
 literal codeword `G1Frame.cursor.bits = [false, true, true, true]`.  The two
 forward walk modes (`bInsSeek`, `bProbe2`) have no rows of their own: their
 steps are the four `g1Transition_forward_*` lemmas above.  `bSeek`, the
-endpoint, has none either, and PR2b supplies them. -/
+endpoint, has no successful frame row; PR2b supplies its reverse-read rows. -/
 
 /-- **The latch.**  One step stores the probed bit in `vB`, writes back the
 cell it scans and moves one cell left, onto the last cell of the data frame the
@@ -1565,8 +1566,8 @@ theorem g1Transition_bIns_p1 (phase : Fin 1) (b0 b1 b2 scan : Bool)
 
 /-- **The cursor is installed and this slice stops.**  The fourth leftward write
 completes `G1Frame.cursor.bits`, leaving the head on the last cell of the
-preceding frame in `g1SeekState` — the explicit endpoint, out of which the
-table reads nothing. -/
+preceding frame in `g1SeekState` — the explicit endpoint.  It has no successful
+frame row; an attempted complete-frame read rejects, and no theorem executes it. -/
 theorem g1Transition_bIns_p0 (phase : Fin 1) (b0 b1 b2 scan : Bool)
     (ctx : G1Ctx) :
     g1Transition phase (g1State .bIns .p0 b0 b1 b2 ctx) scan =

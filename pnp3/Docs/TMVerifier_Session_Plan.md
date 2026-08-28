@@ -1035,10 +1035,10 @@ installation driver: nothing composes the `169`-step capstone with the atoms.
   on the last cell of the frame preceding the cursor.  `bSeek` has no successful
   frame row, so an attempted complete-frame read enters `reject`; it is
   `G1Stuck` (`GateOneRouting.g1_bSeek_stuck`) and no theorem executes that read.
-  PR2b supplies two new handoffs (`bDec`, `bExh`) plus the seek self-loop, the
-  `index ↦ spent` writer, the forward scan `bFwd`, the
+  PR2b supplies two new handoffs (`bDec`, `bExh`) plus the seek self-loop.  It
+  also supplies the `index ↦ spent` writer, the forward scan `bFwd`, the
   turns `bTurn`/`bTurnFin`, the restore writers `bRestore*`/`bFin*` and the
-  exhaustion path `bExh`/`bRet` are **PR2b**; none of them exists in the tree.
+  exhaustion path `bExh`/`bRet`; none of them exists in the tree.
 * `GateOneRouting.lean` — `g1_bProbe2_stuck` is **removed** (it is false now)
   and replaced by `g1_bProbe2_rows`, which pins the three active probe rows, and
   by `g1_bSeek_stuck`, which pins the new endpoint.  No route prefix reaches

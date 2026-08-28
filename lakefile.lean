@@ -208,6 +208,22 @@ lean_lib PnP3 where
     -- scan.  Those probes are caller-supplied too.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneRepairKernel,
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneRepairKernelExamples,
+    -- Repair-2, the request-specific repair driver: the `readAResetStart`
+    -- bridge is now a live row, the layout split
+    -- `g1RepairLeft`/`g1RepairMid`/`g1RepairTail` instantiates the Repair-1
+    -- pass at the real operand-2 word, and `g1CS_repair_sweep_exact` runs it in
+    -- `4u + 4a1 + 8a + 9s + 22` steps from the post-read handoff to head `0` in
+    -- `readAStart` on a tape that is **bit-for-bit the initial tape**.  Both
+    -- successful reads — positive index and `arg2 = 0` — compose with it from
+    -- the real `G1M.initialConfig` and meet in the one canonical handoff
+    -- `g1ReadAConfig r b`, with `g1BPassASteps`/`g1ZPassASteps` inside the
+    -- **unchanged** `g1Clock`.  Both scanned runs are pinned against the
+    -- narrowed `G1RepairSkip`; the trailing `blank` lives in the unread tail.
+    -- `readAStart` stays idle, operand 1 is not read, and the out-of-range
+    -- `bOOB` boundary is left stable and unrepaired.
+    -- The all-literal repaired runs from `G1M.initialConfig` are deferred in
+    -- full to Repair-2b: this slice ships no repair-driver example module.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneRepairDriver,
     -- The thirteen-step rewrite cycle at the G1 control, kept as an
     -- arbitrary-configuration regression: the bridge, the fourteen-step
     -- composed round and one literal frame-list probe.  Unreachable from
@@ -384,6 +400,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMGateOneWalkDriverSurfaceTests,
     Glob.one `Tests.TMGateOneRepairKernelSurfaceTests,
     Glob.one `Tests.TMGateOneRepairKernelExamplesSurfaceTests,
+    Glob.one `Tests.TMGateOneRepairDriverSurfaceTests,
     Glob.one `Tests.FormulaSupportBoundsFalsifiabilityProbe,
     Glob.one `Tests.SmokeTests,
     Glob.one `Tests.UnitTests,

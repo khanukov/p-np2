@@ -39,16 +39,17 @@ constraints on the caller's frame list, and no run of this module can rewrite a
 `spent` unit that lies behind a malformed frame.
 
 **Everything here is caller-supplied.**  Every statement below takes the
-caller's `n`, head-safety bound, frame list and `G1Ctx`, and **no route of the
-machine reaches the sweep in this slice**: `g1_repair_unreachable_forward` shows
-no `g1Advance` row produces a repair mode, `g1_repair_modes_stuck` shows all
-five are stuck at the frame table, and `readAResetStart` is still the idle
-handoff `GateOneControl` leaves it.
+caller's `n`, head-safety bound, frame list and `G1Ctx`; no statement of *this*
+module mentions `G1M.initialConfig` or a request.  The sweep is never reached by
+a frame read — `g1_repair_unreachable_forward` shows no `g1Advance` row produces
+a repair mode and `g1_repair_modes_stuck` shows all five are stuck at the frame
+table — so the only live entry is the `readAResetStart` bridge
+(`g1CS_step_readAReset_bridge`), which Repair-2a's `GateOneRepairDriver`
+instantiates at the real post-read head.
 
-**Explicit deferrals.**  Wiring the sweep behind the operand-2 read, the
-request-specific layout split and the composed `initialConfig` capstones are
-**Repair-2**; no statement of this module mentions `G1M.initialConfig`, a
-request, a repair driver, `readAStart` doing any work, pass A, the combine step,
+**Explicit deferrals.**  The request-specific layout split and the composed
+`initialConfig` capstones are `GateOneRepairDriver`; no statement of this module
+mentions a repair driver, `readAStart` doing any work, pass A, the combine step,
 the output write, `TM.accepts`, a full-clock theorem or the gate-semantics
 correctness statement.  The out-of-range boundary `bOOB` is untouched: it is
 still the stable sink of `GateOneReadB`, and no repair or rejection is claimed
@@ -61,7 +62,8 @@ open Pnp3.Internal.PsubsetPpoly.TM.FrameScan
 
 /-- **The five repair modes are unreachable from the forward frame table.**  No
 mode/frame pair completes into any of them, so the sweep is never entered by a
-frame read.  The mirror of `GateOneRouting.g1_bRoundStart_unreachable`. -/
+frame read — the only live entry is the `readAResetStart` bridge.  The mirror of
+`GateOneRouting.g1_bRoundStart_unreachable`. -/
 theorem g1_repair_unreachable_forward (mode : G1Mode) (frame : G1Frame) :
     g1Advance mode frame ≠ .bRepairSeek ∧
       g1Advance mode frame ≠ .bRepairWrite ∧

@@ -65,9 +65,12 @@ in the request's own fields — no pad, no advice, no free budget parameter.
 
 ## Explicit deferrals
 
-The `spent ↦ index` **repair sweep** is not started: both endpoints leave the
-operand-2 field consumed, so neither final tape is the canonical word and no
-theorem here claims otherwise.  Also absent and claimed nowhere: **pass A**, the
+The `spent ↦ index` **repair sweep** is not started *here*: both endpoints of
+this module leave the operand-2 field consumed, so neither final tape is the
+canonical word and no theorem of this module claims otherwise.  The sweep that
+restores the successful one is `GateOneRepairDriver` (Repair-2a), which composes
+behind `g1CS_readB_positive_exact`; the out-of-range endpoint stays unrepaired
+there too.  Also absent and claimed nowhere: **pass A**, the
 **combine** step, the **output write**, `TM.accepts`, a full-clock theorem,
 gate-semantics correctness, the acceptance gate, multi-gate composition, the
 specification-level bridge, and non-canonical or padded tapes.  Reaching `bOOB`

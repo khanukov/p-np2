@@ -177,20 +177,24 @@ writing what it reads and `bRepairHop` steps once more left: the same
 idle `readAStart`.  No new state field, no new `Nat`, same `G1Ctx`, same
 `g1Clock`.
 
-**Nothing routes into the sweep in this slice.**  No `g1Advance` row and no
-`g1Transition` row outside those five modes produces one of them —
-`readAResetStart` is still the idle handoff it was, and the `spent ↦ index`
-sweep is therefore only ever entered from a **caller-supplied** configuration
-(`GateOneRepairKernel`).  Wiring it behind the operand-2 read is deferred to
-Repair-2.  The sweep's rejection row leaves the sweep into the **pre-existing**
-`reject` sink: no sixth mode and no new state field.
+**The sweep is entered from `readAResetStart` (Repair-2a).**  That handoff is
+**no longer idle**: it is the sweep's one-step bridge, writing back the cell it
+scans — so the tape does not change — and stepping one cell *left* into the
+reverse-read entry shape `bRepairSeek .p3`, with the whole `G1Ctx` (in
+particular the operand-2 value latched in `vB`) preserved.  This is the **only**
+new live activation of the slice: no `g1Advance` row produces a repair mode
+(`g1_repair_unreachable_forward`) and no `g1Transition` row outside the five
+repair modes and this bridge enters one, so the sweep is reached exactly through
+the post-read handoff and from configurations a caller writes down.  The sweep's
+rejection row leaves the sweep into the **pre-existing** `reject` sink: no sixth
+mode and no new state field.
 
-**What is deferred.**  `readAStart`, `combineStart` and `readAResetStart` are
-idle handoffs in this slice.  `bOOB` is a stable read boundary, distinct from
-the reject state, rather than a rejection verdict.  There is **no full-clock or
-acceptance theorem** — the public clock is unchanged and only the proved
-prefixes are bounded.  `accept`/`reject` are the two stable sinks; only their
-tuple equations are proved.
+**What is deferred.**  `readAStart` and `combineStart` are idle handoffs in this
+slice.  `bOOB` is a stable read boundary, distinct from the reject state, rather
+than a rejection verdict.  There is **no full-clock or acceptance theorem** —
+the public clock is unchanged and only the proved prefixes are bounded.
+`accept`/`reject` are the two stable sinks; only their tuple equations are
+proved.
 
 **Proof discipline.**  Everything below `g1Transition` is a small standalone
 tuple lemma proved by `rfl` after at most one mode split.  Downstream
@@ -235,12 +239,13 @@ five modes of the **operand-2 repair sweep** — the right-to-left scan that sto
 on a consumed unit or on the anchor and rejects on a frame it may not cross, the
 `spent ↦ index` writer, its back-walk,
 its hop, and the anchor dispatch into `readAStart` — the exact analogue of T1's
-`repairSeek`/`repairWrite`/`repairBack`/`repairHop`/`repairDone`.  No route of
-this slice enters them.
+`repairSeek`/`repairWrite`/`repairBack`/`repairHop`/`repairDone`.  They are
+entered from the `readAResetStart` bridge and from caller-supplied
+configurations, never from a frame-table row.
 
-`readAStart`, `combineStart`, `readAResetStart` and
-`bOOB` are the four remaining local handoffs, idle in this slice;
-`accept`/`reject` are the sinks. -/
+`readAStart`, `combineStart` and `bOOB` are the three remaining local handoffs,
+idle in this slice; `readAResetStart` is **no longer idle** — it is the one-step
+bridge into `bRepairSeek`.  `accept`/`reject` are the sinks. -/
 inductive G1Mode
   | vBof
   | vTag0 | vTag1 | vTag2 | vTag3 | vTag4 | vTag5
@@ -1361,20 +1366,23 @@ def g1Transition (_phase : Fin 1) (s : G1State) (scan : Bool) :
   match s.mode with
   | .accept => (0, g1AcceptState, scan, .stay)
   | .reject => (0, g1RejectState, scan, .stay)
-  -- the four remaining local handoffs: idle in this slice, each its own stable
+  -- the three remaining local handoffs: idle in this slice, each its own stable
   -- state
   | .readAStart => (0, g1ReadAState s.ctx, scan, .stay)
   | .combineStart => (0, g1CombineState s.ctx, scan, .stay)
-  | .readAResetStart => (0, g1ReadAResetState s.ctx, scan, .stay)
   | .bOOB => (0, g1OOBState s.ctx, scan, .stay)
-  -- the operand-2 repair sweep: the reverse scan with its four outcomes, the
-  -- `spent ↦ index` writer, its back-walk, its hop and the anchor dispatch.
-  -- Nothing here inspects the request: the scan decides through the fixed
-  -- reverse table `g1RepairBackComplete` and the writer's four cells are the
-  -- literal codeword of `index`.  A window the scan may not cross — a `blank`,
-  -- a leftover `cursor`, or a reserved code that decodes to nothing — enters the
-  -- reject sink instead of being skipped.
-  -- No row above enters any of these five modes in this slice.
+  -- the operand-2 repair sweep: the bridge, the reverse scan with its four
+  -- outcomes, the `spent ↦ index` writer, its back-walk, its hop and the anchor
+  -- dispatch.  Nothing here inspects the request: the scan decides through the
+  -- fixed reverse table `g1RepairBackComplete` and the writer's four cells are
+  -- the literal codeword of `index`.  A window the scan may not cross — a
+  -- `blank`, a leftover `cursor`, or a reserved code that decodes to nothing —
+  -- enters the reject sink instead of being skipped.
+  -- `readAResetStart` is the sweep's one-step bridge: it writes back the cell it
+  -- scans and steps one cell left onto the last cell of the frame the reverse
+  -- repair scan starts on.  It is the only row outside these five modes that
+  -- enters one.
+  | .readAResetStart => (0, g1RepairSeekState s.ctx, scan, .left)
   | .bRepairSeek =>
       match s.position with
       | .p3 => (0, g1State .bRepairSeek .p2 false false scan s.ctx, scan, .left)
@@ -1573,10 +1581,11 @@ carries. -/
 mode and its steps come from the four `g1Transition_forward_*` lemmas below.
 `bRoundStart` no longer appears here either: it is the genuine one-step bridge
 of the destructive round and its tuple is `g1Transition_bRoundStart_bridge`
-below.  The four remaining handoffs are idle **in this slice**; the deferred
-pass-A and combine slices replace those four equations, and the deferred
-Repair-2 slice replaces the `readAResetStart` one by the bridge into
-`bRepairSeek`. -/
+below.  `readAResetStart` has likewise stopped being idle: Repair-2a turns it into
+the one-step bridge of the operand-2 repair sweep, and its tuple is
+`g1Transition_readAResetStart_bridge` below.  The three remaining handoffs
+(`readAStart`, `combineStart`, `bOOB`) are idle **in this slice**; the deferred
+pass-A and combine slices replace those equations. -/
 
 @[simp] theorem g1Transition_accept_sink (phase : Fin 1) (scan : Bool) :
     g1Transition phase g1AcceptState scan = (0, g1AcceptState, scan, .stay) :=
@@ -1596,10 +1605,20 @@ theorem g1Transition_combineStart_idle (phase : Fin 1)
     g1Transition phase (g1State .combineStart position b0 b1 b2 ctx) scan =
       (0, g1CombineState ctx, scan, .stay) := rfl
 
-theorem g1Transition_readAResetStart_idle (phase : Fin 1)
+/-- **The pass-A reset handoff is no longer idle.**  It is the one-step bridge
+of the operand-2 repair sweep: whatever it scans is written back — so the tape
+does not change — and the head steps one cell *left*, onto the last cell of the
+frame the reverse repair scan starts on, in the reverse-read entry shape
+`bRepairSeek .p3` with an empty frame buffer and the whole `G1Ctx` (in
+particular the latched `vB`) preserved.
+
+This is the **only** new live activation of Repair-2a.  The machine still has no
+runtime argument, no advice input and no new state field: the bridge is a single
+row of the same fixed zero-parameter table. -/
+theorem g1Transition_readAResetStart_bridge (phase : Fin 1)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
     g1Transition phase (g1State .readAResetStart position b0 b1 b2 ctx) scan =
-      (0, g1ReadAResetState ctx, scan, .stay) := rfl
+      (0, g1RepairSeekState ctx, scan, .left) := rfl
 
 /-- **The out-of-range boundary is stable.**  It never moves, never writes and
 never leaves itself. -/

@@ -10,9 +10,10 @@ units consumed: one cycle (`13`, head `35 ↦ 31`), seek+repair (`37`,
 `59 ↦ 31`), the two-unit run (`26`, `35 ↦ 27`) and the whole pass (`79`,
 `59 ↦ 0`).  The endpoint word is exactly the canonical encoding plus `blank`;
 literal counts and cell `32` witness the real `spent ↦ index` changes.  Every
-configuration is caller-supplied: no probe starts from `G1M.initialConfig`, no
-live route reaches the repair modes, and `readAStart` remains idle.  The
-request-specific driver is Repair-2.
+configuration here is caller-supplied: no probe of *this* module starts from
+`G1M.initialConfig`, no frame-table row reaches the repair modes, and
+`readAStart` remains idle.  The request-specific driver is
+`GateOneRepairDriver`; its all-literal `initialConfig` probes are Repair-2b.
 
 **These probes respect the narrowed crossable-frame predicate.**  `G1RepairSkip`
 holds for exactly the canonical interior frame kinds; `blank`, `bof`, `cursor`

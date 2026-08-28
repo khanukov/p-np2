@@ -28,6 +28,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOneWalkExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneWalkInvariantExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneWalkDriverExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneRepairKernel
+import Complexity.TMVerifier.TuringToolkit.GateOneRepairKernelExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneIndexRound
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
@@ -821,8 +822,7 @@ open Pnp3.Magnification
 -- **Every configuration is caller-supplied**: `g1_repair_unreachable_forward`
 -- and `g1_repair_modes_stuck` show no route of the machine enters the sweep,
 -- `readAResetStart` is still idle, and nothing here mentions
--- `G1M.initialConfig`.  **Deliberately absent**: the all-literal probes of this
--- kernel (Repair-1b); the request-specific repair
+-- `G1M.initialConfig`.  **Deliberately absent**: the request-specific repair
 -- driver (Repair-2), any read-to-repair composition, pass A, combine, the
 -- output write, and any `TM.accepts`, verdict, full-clock, gate-semantics,
 -- acceptance-gate, multi-gate or specification-bridge claim.
@@ -845,6 +845,58 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_step_repairDone
 #print axioms Internal.PsubsetPpoly.TM.g1CS_repair_finish
 #print axioms Internal.PsubsetPpoly.TM.g1CS_repair_pass_exact
+
+-- Repair-1b: the all-literal probes of that kernel.  One literal sixteen-frame
+-- word — the canonical encoding of `⟨and, 0, 2, [false, true, true]⟩` plus the
+-- trailing `blank`, with both operand-2 units consumed — its six split lemmas,
+-- the pairwise differences, the literal `spent`/`index` counts, the flipped
+-- physical cell `32`, and four exact `G1M` runs on it: the `13`-step cycle
+-- (head `35 ↦ 31`), the `37`-step seek+repair (`59 ↦ 31`), the `26`-step
+-- two-unit run (`35 ↦ 27`) and the `79`-step whole pass (`59 ↦ 0`) whose
+-- endpoint tape is bit-for-bit `encodeG1Frames ⟨and, 0, 2, [false, true,
+-- true]⟩ ++ [blank]`.
+-- **The narrowed skip predicate is exercised, not bypassed**:
+-- `probe_scan_lists_clean` pins that `blank`, `cursor`, `bof` and `spent` are
+-- not crossable and that neither canonical scanned list — nor the scanned
+-- region as a whole — contains a `blank` or a leftover `cursor`, and
+-- `probeTail_beyond_entry` pins that the sixteenth frame
+-- — the trailing `blank` — is not crossable, does not occur in the scanned
+-- region, and lies entirely to the right of the sweep's entry cell `59`, so it
+-- is the kernel's unconstrained, never-read `tail`.
+-- **Every configuration is caller-supplied**: every probe starts from an
+-- explicit `g1AlignedConfig`, none mentions `G1M.initialConfig`, and
+-- `pass_probe_idle` pins that the `readAStart` endpoint is still idle.
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probeInputLen_eq
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probe_safe
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probe_word_cells
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probeIndex_eq_encoded
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probe_words_distinct
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probe_counts
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probe_cell32
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probeSpent_split
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probeIndex_split
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probeLeft_skip
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probeMid_skip
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probe_scan_lists_clean
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probeSpent_scanned_tail
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probeTail_beyond_entry
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probe_passSteps
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probe_passSteps_split
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probeCycle_split_spent
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probeCycle_split_half
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.cycle_probe
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.cycle_probe_ctx
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probeRun_split_spent
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probeRun_split_index
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.run_probe
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.run_probe_tape
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.seek_repair_probe
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.seek_repair_probe_tape
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.pass_probe
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.pass_probe_head
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.pass_probe_tape
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.pass_probe_ctx
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.pass_probe_idle
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

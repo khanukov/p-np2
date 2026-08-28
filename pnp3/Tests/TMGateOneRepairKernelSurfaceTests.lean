@@ -32,8 +32,9 @@ bound, frame list and `G1Ctx`, and none mentions `G1M.initialConfig`.  And the
 pass endpoint is **exact**: the tape changes in exactly the `s` repaired frames
 and the carried context comes out untouched.
 
-**Absent from this surface**: the all-literal probes of the kernel, which are
-deferred with their module to **Repair-1b**; the request-specific repair driver;
+**Absent from this surface**: the all-literal probes of the kernel, which live
+with their module in **Repair-1b** and are pinned by
+`TMGateOneRepairKernelExamplesSurfaceTests`; the request-specific repair driver;
 any
 composition of a read with a repair, any pass-A read, combine step, output
 write, and any `TM.accepts`, verdict, full-clock, gate-semantics,

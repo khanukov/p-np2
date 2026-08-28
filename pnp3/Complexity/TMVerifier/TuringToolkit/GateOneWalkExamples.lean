@@ -52,8 +52,13 @@ def g1WalkFramesRestored1 : List G1Frame :=
 /-- Every walk layout is the merged initial layout with ordinals rewritten:
 same request, same sixteen frames, same `64` bits. -/
 theorem g1WalkFrames_length :
-    g1WalkFramesRound1.length = g1WalkInitFrames.length ∧
-      g1WalkFramesMarked1.length = g1WalkInitFrames.length := ⟨rfl, rfl⟩
+    g1WalkFramesRound1.length = 16 ∧
+      g1WalkFramesMarked1.length = 16 ∧
+      g1WalkFramesRestored1.length = 16 ∧
+      (g1WalkFramesRound1.flatMap G1Frame.bits).length = 64 ∧
+      (g1WalkFramesMarked1.flatMap G1Frame.bits).length = 64 ∧
+      (g1WalkFramesRestored1.flatMap G1Frame.bits).length = 64 :=
+  ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩
 
 /-- The latched context of the round: `vB = vals[1] = true`. -/
 def ctx1 : G1Ctx := g1Ctx0.withVB true
@@ -78,7 +83,7 @@ theorem walk_seek_mark (n : Nat) (hsafe : 44 < G1M.tapeLength n) :
 /-- **The exhaustion outcome, and the boundary.**  From the *same* head `43` on
 the marked layout — operand-2 now `spent²`, so no `index` is left — `4 * 4 + 4 =
 20` steps stop the seek on the **opening `argSep`** at cell `24`, tape
-untouched.  It never goes left of `24`, and `bExh` is where this slice stops. -/
+untouched, and `bExh` is where this slice stops. -/
 theorem walk_seek_exhaust (n : Nat) (hsafe : 44 < G1M.tapeLength n) :
     TM.runConfig (M := G1M) (g1AlignedConfig n 43 (by omega)
         (g1ListTape (g1WalkFramesMarked1.flatMap G1Frame.bits))

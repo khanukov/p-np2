@@ -1039,7 +1039,7 @@ installation driver: nothing composes the `169`-step capstone with the atoms.
   `g1_bSeek_stuck` is removed, and the boundary is `bExh`.)
 * `GateOneRouting.lean` — `g1_bProbe2_stuck` is **removed** (it is false now)
   and replaced by `g1_bProbe2_rows`, which pins the three active probe rows, and
-  by `g1_bSeek_stuck`, which pins the new endpoint.  No route prefix reaches
+  by the then-current `g1_bSeek_stuck`, which pinned the new endpoint.  No route prefix reaches
   past `bProbe2`.
 * `GateOneProbeInstall.lean` (new) — imports `FrameScannerWriteLeft` and the
   merged `GateOneInstallScan`, and **reuses** `G1InstallSkip`,
@@ -1133,7 +1133,7 @@ capstone with the atoms, and nothing composes two atoms into a round.
   three exact outcomes `index ↦ bDec` (stay), opening `argSep ↦ bExh` (stay)
   and everything else ↦ `bSeek` (one frame further left).  That `argSep` row is
   the **confinement** row: the seek never reads left of the operand-2 field.
-  `g1Transition` gains **six** blocks and **eighteen** new standalone tuple
+  `g1Transition` gains **five** blocks and **eighteen** new standalone tuple
   lemmas — `g1Transition_bSeek_p3/p2/p1`, `_p0_index`, `_p0_argSep`, `_p0_other`,
   `g1Transition_bDec_p0…p3`, `g1Transition_bTurn_p0…p3` and
   `g1Transition_bRestore_p0…p3` — each `rfl` after at most one split, none
@@ -1152,8 +1152,12 @@ capstone with the atoms, and nothing composes two atoms into a round.
   `bExh + argSep ↦ bRet` handoff, the run back to the cursor, the terminal turn
   and the two terminal restore writers that hand off to `readAResetStart` with
   no cursor left on the tape — is **PR2b2**; none of it exists in the tree.
-* `GateOneRouting.lean` — `g1_bSeek_stuck` is **removed** (it is false now) and
-  replaced by `g1_bFwd_rows`, which pins the walk's right-running scan, and by
+* `GateOneRouting.lean` — `g1_bSeek_stuck` is removed because it no longer
+  describes an execution boundary.  The frame-table proposition
+  `G1Stuck .bSeek` remains true: non-forward `bSeek` has no `g1Advance` row,
+  while its execution now uses dedicated reverse `g1Transition` rows.  The old
+  boundary root is replaced by `g1_bFwd_rows`, which pins the walk's
+  right-running scan, and by
   `g1_bExh_stuck`, which pins the new boundary.  No route prefix reaches either.
 * `FrameScannerReverse.lean` — the shared phased layer gains the two generic
   tape-preserving leftward primitives `Phased.holdLeft` (one hold-and-move-left

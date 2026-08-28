@@ -413,8 +413,9 @@ reverse seek `bSeek` has no row here at all: it reads right to left and is
 decided inside `g1Transition`. -/
 theorem g1_bFwd_rows :
     g1Advance .bFwd .spent = .bFwd ∧ g1Advance .bFwd .separator = .bFwd ∧
-      g1Advance .bFwd .cursor = .bTurn :=
-  ⟨rfl, rfl, rfl⟩
+      g1Advance .bFwd .cursor = .bTurn ∧
+      (∀ b, g1Advance .bFwd (.data b) = .bFwd) :=
+  ⟨rfl, rfl, rfl, fun b => by cases b <;> rfl⟩
 
 /-- **The exhaustion handoff is the local boundary of this slice.**  An
 attempted complete-frame read at `bExh` enters `reject`; the seek's `argSep`

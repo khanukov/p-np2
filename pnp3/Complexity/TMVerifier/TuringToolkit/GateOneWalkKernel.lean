@@ -231,10 +231,9 @@ theorem g1CS_walk_seek_to_index (n : Nat) (pre skipped suffix : List G1Frame)
     (by simp [g1WalkScanner, G1WalkStop])
     (fun f hf => g1WalkRevAdvance_of_skip (hskip f hf)) (Or.inl rfl) hsafe
 
-/-- **The seek stops on the opening `argSep`.**  The exhaustion outcome, the
-walk's *confinement* statement (the pass reads nothing to its left), and the
-**local boundary of this slice**: `bExh` has no successful frame row, and no
-theorem runs past this configuration. -/
+/-- **The seek stops on the opening `argSep`.**  The exact exhaustion endpoint
+and the **local boundary of this slice**: `bExh` has no successful frame row,
+and no theorem runs past this configuration. -/
 theorem g1CS_walk_seek_exhaust (n : Nat) (pre skipped suffix : List G1Frame)
     (ctx : G1Ctx) (hskip : ∀ f ∈ skipped, G1WalkSkip f)
     (hsafe : 4 * (pre.length + skipped.length) + 4 < G1M.tapeLength n) :

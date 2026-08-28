@@ -499,7 +499,8 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1ProbeInstallExamples.install_cursor
 
 -- PR2b1, one **normal round** of the cursor walk behind `bSeek`: the six new
--- modes with the twenty-three transition tuples they need, the two generic
+-- modes, the reverse seek and the merged latch/writer rows — twenty-three
+-- transition tuples in total — plus the two generic
 -- tape-preserving leftward primitives, the three new frame-kernel instances,
 -- the seven exact atomic macros on an **arbitrary** frame list, and their five
 -- literal encoded-frame probes.  **Every run takes the caller's

@@ -239,7 +239,8 @@ has no successful frame row, so an attempted complete-frame read there enters
 caller-supplied configuration. -/
 theorem check_g1_bFwd_rows_and_bExh :
     (g1Advance .bFwd .spent = .bFwd ∧ g1Advance .bFwd .separator = .bFwd ∧
-        g1Advance .bFwd .cursor = .bTurn) ∧ G1Stuck .bExh :=
+        g1Advance .bFwd .cursor = .bTurn ∧
+        (∀ b, g1Advance .bFwd (.data b) = .bFwd)) ∧ G1Stuck .bExh :=
   ⟨g1_bFwd_rows, g1_bExh_stuck⟩
 
 /-- **The retired bridge is unreachable from the forward table.**  This is what

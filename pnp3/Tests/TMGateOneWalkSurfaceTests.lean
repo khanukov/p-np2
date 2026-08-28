@@ -53,6 +53,15 @@ open Pnp3.Internal.PsubsetPpoly.TM.FrameScan
 #check @G1WalkExamples.g1WalkFrames_length
 #check @G1WalkExamples.ctx1
 
+theorem check_g1WalkFrames_length :
+    G1WalkExamples.g1WalkFramesRound1.length = 16 ∧
+      G1WalkExamples.g1WalkFramesMarked1.length = 16 ∧
+      G1WalkExamples.g1WalkFramesRestored1.length = 16 ∧
+      (G1WalkExamples.g1WalkFramesRound1.flatMap G1Frame.bits).length = 64 ∧
+      (G1WalkExamples.g1WalkFramesMarked1.flatMap G1Frame.bits).length = 64 ∧
+      (G1WalkExamples.g1WalkFramesRestored1.flatMap G1Frame.bits).length = 64 :=
+  G1WalkExamples.g1WalkFrames_length
+
 /-! ## The atomic macros, pinned exactly.  Each wrapper restates its macro
 verbatim, so a later slice cannot silently drop the tape equation, move the
 head, change the step count or specialise the surrounding frame list. -/

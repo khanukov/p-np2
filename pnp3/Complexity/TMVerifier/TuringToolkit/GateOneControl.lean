@@ -1615,7 +1615,7 @@ theorem g1Transition_bHop (phase : Fin 1) (position : G1FramePosition)
 
 /-! ### The cursor walk
 
-Twenty-three tuples, one per row of the five non-forward cursor-walk modes.
+Twenty-three tuples across the eight non-forward cursor-walk modes.
 Every one is `rfl` after at most one position or one Boolean split, and none
 mentions the request: the latch stores the probed bit in the pre-existing
 `G1Ctx.vB`, the reverse seek decides on two literal codewords, each writer

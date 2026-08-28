@@ -153,7 +153,8 @@ lean_lib PnP3 where
     -- probe / latch / cursor-install atoms on arbitrary frame-list contexts
     -- (`GateOneProbeInstall`) and their literal encoded-frame probes
     -- (`GateOneProbeInstallExamples`).  Every run there starts from a
-    -- caller-supplied configuration; the exit `bSeek` is a local endpoint.
+    -- caller-supplied configuration; `bSeek` is the reverse-seek entry shape
+    -- executed in `GateOneWalkKernel`.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneProbeInstall,
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneProbeInstallExamples,
     -- PR2b1, one normal round of the cursor walk behind `bSeek`: the reverse

@@ -166,8 +166,7 @@ Each is one generic aligned-step adapter applied to one standalone tuple lemma
 of `GateOneControl`; `g1Transition` is never unfolded. -/
 
 /-- **A stationary self-looping state is stable for the whole remaining
-budget.**  The four idle handoffs and the two sinks are all of this
-shape. -/
+budget.**  The three idle handoffs and the two sinks are all of this shape. -/
 theorem g1CS_runConfig_stable (n h : Nat) (hh : h < G1M.tapeLength n)
     (tape : Fin (G1M.tapeLength n) → Bool) (q : G1State)
     (hq : ∀ (phase : Fin 1) (scan : Bool),

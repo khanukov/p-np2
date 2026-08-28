@@ -508,8 +508,8 @@ open Pnp3.Magnification
 -- exhaustion outcome stops at `.bExh .p0` — head on the first cell of the
 -- opening `argSep`; the terminal path continuing from that shape is audited in
 -- the PR2b2 block below, on caller-supplied configurations only.  No walk
--- invariant,
--- iteration, loop clock, out-of-range aggregation, repair, arbitrary-index
+-- invariant, iteration, loop clock, out-of-range aggregation, repair,
+-- arbitrary-index
 -- read, `TM.accepts`, gate-semantics, full-clock or padded-tape statement is
 -- audited here, because none exists.
 #print axioms Internal.PsubsetPpoly.TM.g1ExhState_ne_dec

@@ -427,8 +427,11 @@ theorem g1_bRet_rows :
     g1Advance .bExh .argSep = .bRet ∧
       g1Advance .bRet .spent = .bRet ∧ g1Advance .bRet .separator = .bRet ∧
       g1Advance .bRet .cursor = .bTurnFin ∧
-      (∀ b, g1Advance .bRet (.data b) = .bRet) :=
-  ⟨rfl, rfl, rfl, rfl, fun b => by cases b <;> rfl⟩
+      (∀ b, g1Advance .bRet (.data b) = .bRet) ∧
+      (∀ f, f ≠ .argSep → g1Advance .bExh f = .reject) ∧
+      (∀ f, f ≠ .spent → f ≠ .separator → f ≠ .cursor →
+        (∀ b, f ≠ .data b) → g1Advance .bRet f = .reject) := by
+  decide
 
 /-- **The rewrite-cycle bridge is unreachable from the forward table.**  No
 mode/frame pair completes into `bRoundStart`. -/

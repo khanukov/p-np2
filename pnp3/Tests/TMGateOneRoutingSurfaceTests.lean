@@ -246,7 +246,10 @@ theorem check_g1_bFwd_and_bRet_rows :
       (g1Advance .bExh .argSep = .bRet ∧
         g1Advance .bRet .spent = .bRet ∧ g1Advance .bRet .separator = .bRet ∧
         g1Advance .bRet .cursor = .bTurnFin ∧
-        (∀ b, g1Advance .bRet (.data b) = .bRet)) :=
+        (∀ b, g1Advance .bRet (.data b) = .bRet) ∧
+        (∀ f, f ≠ .argSep → g1Advance .bExh f = .reject) ∧
+        (∀ f, f ≠ .spent → f ≠ .separator → f ≠ .cursor →
+          (∀ b, f ≠ .data b) → g1Advance .bRet f = .reject)) :=
   ⟨g1_bFwd_rows, g1_bRet_rows⟩
 
 /-- **The retired bridge is unreachable from the forward table.**  This is what

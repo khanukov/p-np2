@@ -24,8 +24,10 @@ sink for every window it may not cross — the `spent ↦ index` writer
 `bRepairWrite`, its back-walk `bRepairBack`, its hop `bRepairHop` and the anchor
 dispatch `bRepairDone` into the still-idle `readAStart`), together with its
 reverse frame table `g1RepairBackAdvance`/`g1RepairBackComplete` and the literal
-codewords that reject it — no route of this
-slice enters those five modes, and `readAResetStart` is still idle.  The
+codewords that reject it — no *frame-table* row enters those five modes, and the
+only row that does is the `readAResetStart` bridge
+(`check_g1Transition_readAResetStart_bridge`), which is **not** idle any more.
+The
 five *forward* walk modes — `bInsSeek`, `bProbe2`, `bFwd`, `bExh` and `bRet` —
 have no transition blocks of their own.  Execution lives in separate layers with
 their own surface entries.  End-to-end physical validation, rejection, rewind,
@@ -76,7 +78,7 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1Transition_rewind_p0_other
 #check @g1Transition_readAStart_idle
 #check @g1Transition_combineStart_idle
-#check @g1Transition_readAResetStart_idle
+#check @g1Transition_readAResetStart_bridge
 #check @g1Transition_bOOB_stable
 #check @g1Transition_constLit
 #check @g1Transition_store
@@ -147,7 +149,8 @@ open Pnp3.Internal.PsubsetPpoly.TM
 
 -- The three entry states of the operand-2 repair sweep; its eleven transition
 -- tuples are pinned as exact equations by the `check_g1Transition_bRepair*`
--- theorems below.  No route of this slice enters any of the five modes.
+-- theorems below.  No `g1Advance` row enters them; the sole live entry is the
+-- Repair-2a `readAResetStart` bridge.
 #check @g1RepairSeekState
 #check @g1RepairWriteState
 #check @g1RepairDoneState
@@ -428,19 +431,31 @@ theorem check_g1Transition_bRepairWrite (phase : Fin 1) (b0 b1 b2 scan : Bool)
 
 /-- **The terminal dispatch, pinned exactly.**  It enters the *existing*
 `readAStart` handoff, which is still idle in this slice, with the tape, the head
-and the whole `G1Ctx` untouched — and `readAResetStart` is still idle too, so
-nothing routes into the sweep here. -/
+and the whole `G1Ctx` untouched. -/
 theorem check_g1Transition_bRepairDone (phase : Fin 1)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
     g1Transition phase (g1State .bRepairDone position b0 b1 b2 ctx) scan =
         (0, g1ReadAState ctx, scan, .stay) ∧
       g1Transition phase (g1State .readAStart position b0 b1 b2 ctx) scan =
-        (0, g1ReadAState ctx, scan, .stay) ∧
-      g1Transition phase (g1State .readAResetStart position b0 b1 b2 ctx) scan =
-        (0, g1ReadAResetState ctx, scan, .stay) :=
+        (0, g1ReadAState ctx, scan, .stay) :=
   ⟨g1Transition_bRepairDone phase position b0 b1 b2 scan ctx,
-    g1Transition_readAStart_idle phase position b0 b1 b2 scan ctx,
-    g1Transition_readAResetStart_idle phase position b0 b1 b2 scan ctx⟩
+    g1Transition_readAStart_idle phase position b0 b1 b2 scan ctx⟩
+
+/-- **The bridge into the sweep, pinned exactly.**  `readAResetStart` is the
+one and only row outside the five repair modes that enters one: it writes back
+the cell it scans — so the tape is unchanged — steps one cell **left**, and
+lands in the reverse-read entry shape `bRepairSeek .p3` with an empty frame
+buffer and the whole `G1Ctx`, latch included, preserved.  `readAStart` and
+`combineStart` remain idle beside it. -/
+theorem check_g1Transition_readAResetStart_bridge (phase : Fin 1)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State .readAResetStart position b0 b1 b2 ctx) scan =
+        (0, g1RepairSeekState ctx, scan, .left) ∧
+      g1RepairSeekState ctx = g1State .bRepairSeek .p3 false false false ctx ∧
+      g1Transition phase (g1State .combineStart position b0 b1 b2 ctx) scan =
+        (0, g1CombineState ctx, scan, .stay) :=
+  ⟨g1Transition_readAResetStart_bridge phase position b0 b1 b2 scan ctx, rfl,
+    g1Transition_combineStart_idle phase position b0 b1 b2 scan ctx⟩
 
 theorem check_g1AdvanceList_encode_reject (r : G1Request)
     (hc : ¬ r.Canonical) :

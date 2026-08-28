@@ -485,7 +485,10 @@ claimed nowhere in T2b-1:
 * **pass A, combine, write, repair, acceptance** — `readAStart`,
   `combineStart` and `readAResetStart` are idle rows; there is still no
   `TM.run`, `TM.accepts`, output-write, `spec`-correctness or full-clock
-  theorem.
+  theorem.  (**Superseded by Repair-2a, 2026-08-28**, for `readAResetStart`
+  only: it is now the one-step bridge into the repair sweep.  `readAStart` and
+  `combineStart` are still idle rows, and pass A, combine, the output write,
+  `TM.accepts` and a full clock are still absent.)
 
 Structural note: `G1ForwardMode` now holds of the pass-B modes, and the old
 `g1Advance_range` ("forward, `rewindStart` or `reject`") was generalised to
@@ -591,7 +594,11 @@ general runtime-index addressing beyond the single round below is claimed);
 and repair** (`readAStart`, `combineStart` and `readAResetStart` are idle rows,
 proved idle for every budget by `g1CS_runConfig_readA_idle`,
 `g1CS_runConfig_combine_idle`, `g1CS_runConfig_readAReset_idle`, and nothing
-consumes the `G1Ctx.vB` value they carry); **acceptance/rejection semantics,
+consumes the `G1Ctx.vB` value they carry — **superseded by Repair-2a,
+2026-08-28**: `g1CS_runConfig_readAReset_idle` is *gone*, replaced by the
+executed bridge `g1CS_step_readAReset_bridge`, and the repair sweep behind it is
+delivered; the other two rows are still idle and nothing still consumes `vB`);
+**acceptance/rejection semantics,
 full run and full clock** (no `TM.run`, no `TM.accepts`, no `spec`-correctness
 and no full-clock theorem — none could honestly exist while four handoffs are
 idle); **padded tapes** (the six initial-config capstones are scoped to the
@@ -1313,7 +1320,10 @@ out-of-range branches, repair, pass A, combine, output write, `TM.accepts`,
 gate-semantics correctness, a full-clock theorem, and non-canonical or
 physically padded tapes.  `readAStart`, `combineStart`, `readAResetStart` and
 `bOOB` are still idle handoffs: the terminal restore *arrives* at
-`readAResetStart` and nothing happens there.
+`readAResetStart` and nothing happens there.  (**Superseded by Repair-2a,
+2026-08-28**, for `readAResetStart` only: it is now the live one-step bridge
+into `bRepairSeek`, so the terminal restore's arrival *does* continue into the
+repair sweep.  The other three handoffs are unchanged.)
 
 **PR3a: the G1 cursor-walk tape invariant and its real installation, delivered
 (2026-08-28):**
@@ -1687,7 +1697,11 @@ transition table is never unfolded inside an execution proof.
   table, and no `g1Transition` row outside the five enters one.  The sweep is
   therefore only ever entered from a configuration the caller writes down.  Its
   rejection row leaves the sweep into the pre-existing `reject` sink: no sixth
-  mode, no new state field.
+  mode, no new state field.  (**Superseded by Repair-2a, 2026-08-28**: the
+  `readAResetStart` row is now the live bridge into `bRepairSeek`.  The two
+  unreachability theorems are unchanged and still true — they are about the
+  *frame table* `g1Advance` — and the bridge is the only `g1Transition` row
+  outside the five that enters one.)
 * `GateOneRepairKernel.lean` (new) — `g1RepairScanner` (`ReverseFrameScanner`,
   stopping on `spent` at the write handoff, on `bof` at the terminal
   handoff and on any frame it may not cross in the `reject` sink, with the
@@ -1730,7 +1744,9 @@ endpoint) and by the extended
 `Tests/TMGateOneControlSurfaceTests.lean` (the eleven new tuple lemmas, the
 reverse table pinned in both directions, the two forbidden codewords and the
 three reserved codes pinned literally, plus the
-row pinning that `readAStart` and `readAResetStart` are both still idle).
+row pinning that `readAStart` and `readAResetStart` are both still idle —
+**superseded by Repair-2a, 2026-08-28**, which replaces the `readAResetStart`
+conjunct by `check_g1Transition_readAResetStart_bridge`).
 `Tests/AxiomsAudit.lean` prints the axioms of every new statement **directly**;
 each depends only on `propext`, `Classical.choice` and `Quot.sound`.  One new
 module and one new surface test are registered in `lakefile.lean`.  The
@@ -1740,13 +1756,14 @@ here.
 Deferred by Repair-1 to **Repair-1b** and **now delivered there** (see the
 Repair-1b entry immediately below): the all-literal probe module for this
 kernel and every statement in it.  Explicitly deferred to **Repair-2** and
-claimed nowhere by Repair-1: the
+claimed nowhere by Repair-1 — and **all delivered by Repair-2a, 2026-08-28**,
+in the section below: the
 request-specific **repair driver** (the layout split that identifies `left`,
 `spent^s`, `mid` and `tail` inside a real request), any composition of the
 operand-2 read with a repair, the `readAResetStart` bridge that would route into
 `bRepairSeek`, the common zero/positive pass-A theorem, clocks for a combined
-read-plus-repair, any pass-A execution, and any output write, acceptance or
-`TM.accepts` claim.  `readAStart` remains idle, so the sweep's endpoint is a
+read-plus-repair.  Still deferred and claimed nowhere: any pass-A execution, and
+any output write, acceptance or `TM.accepts` claim.  `readAStart` remains idle, so the sweep's endpoint is a
 stationary handoff and nothing continues from it; `bOOB` is untouched and is
 still a boundary, not a rejection theorem.  The sweep's own rejection outcome is
 likewise a **control-level** fact — the machine enters the stable `reject` state
@@ -1811,11 +1828,11 @@ only *instantiates* those macros at one literal word.
   physical cells `60 … 63` lies strictly to the right of the sweep's entry cell
   `59 = 4 * 15 - 1`.  It is therefore passed as the capstone's **unconstrained**
   `tail`, never read, and reproduced bit-for-bit at the endpoint.
-* **Everything stays caller-supplied.**  Every probe starts from an explicit
-  `g1AlignedConfig`; none mentions `G1M.initialConfig`, and Repair-1's
-  `g1_repair_unreachable_forward`/`g1_repair_modes_stuck` still say no route of
-  the machine enters the sweep.  `readAStart` is still the idle handoff, which
-  is exactly what `pass_probe_idle` records.
+* **The probes stay caller-supplied.**  Every probe starts from an explicit
+  `g1AlignedConfig`; none mentions `G1M.initialConfig`.  Repair-1's
+  unreachability results say no `g1Advance` frame-table row enters the sweep;
+  Repair-2a below adds the sole live `readAResetStart` bridge.  `readAStart`
+  remains idle, exactly as `pass_probe_idle` records.
 
 Pinned by `Tests/TMGateOneRepairKernelExamplesSurfaceTests.lean` (new:
 theorem-style exact wrappers for **every** public statement of the probe module,
@@ -1832,12 +1849,127 @@ request-specific **repair driver** and its layout split, any composition of the
 operand-2 read with a repair, any run from `G1M.initialConfig`, any clock or
 budget statement for a combined read-plus-repair, any pass-A execution, the
 combine step, the output write, and any `TM.accepts`, verdict, gate-semantics,
-acceptance-gate, multi-gate or specification-bridge claim.  No literal
+acceptance-gate, multi-gate or specification-bridge claim.  (**Repair-2a,
+2026-08-28**, delivers the first four of those; pass A, combine, the output
+write and every verdict claim remain deferred.)  No literal
 **rejection** probe is claimed here either: the executable rejection lives in
 Repair-1 (`g1CS_repair_frame_reject`, `g1CS_repair_frame_reject_idle`) on the
 caller's tape, and this slice adds no literal instance of it — the probe word
 has no malformed frame inside its scanned region, which is precisely what
 `probe_scan_lists_clean` and `probeTail_beyond_entry` record.
+
+**Repair-2a: the G1 repair driver and the common pass-A handoff, delivered
+(2026-08-28):**
+
+**Progress classification: Infrastructure.**
+
+Repair-1/1b prove the `spent ↦ index` sweep on **caller-supplied** frame lists
+only.  This slice activates it on the machine's own route and instantiates it at
+the **real** operand-2 layout, so both successful operand-2 reads end on a tape
+that is bit-for-bit the initial tape again.  `G1Ctx`, the `G1State` field list,
+`g1Advance`, `g1Clock`, `G1M` and every merged execution theorem are otherwise
+unchanged: **no new mode**, **no new runtime field**, **no new `Nat`**, no
+runtime argument and no advice input.
+
+* **The one new live activation.**  `GateOneControl`'s `readAResetStart` row
+  stops being idle and becomes the sweep's one-step bridge: it writes back the
+  cell it scans — so **not one tape cell changes** — steps one cell *left* onto
+  the last cell of the frame the reverse scan starts on, and enters
+  `bRepairSeek .p3` with an empty frame buffer and the whole `G1Ctx` (in
+  particular the latched `vB`) preserved.  `g1Transition_readAResetStart_idle`
+  is **replaced** by `g1Transition_readAResetStart_bridge`, and
+  `GateOneReadB`'s `g1CS_runConfig_readAReset_idle` — now false — is **replaced**
+  by the executed boundary `g1CS_step_readAReset_bridge`.  This is the *only*
+  row that changes.  `g1_repair_unreachable_forward` and `g1_repair_modes_stuck`
+  are unchanged and still true: no *frame-table* row produces a repair mode, so
+  the bridge is the single live entry.  `readAStart` and `combineStart` stay
+  idle, `bOOB` stays a stable boundary, `G1ForwardMode`, `G1Stuck` and the
+  validation grammar are untouched, and the malformed-word rejection surface of
+  `GateOneValidation` is unaffected — a malformed word never reaches
+  `readAResetStart`.
+* **Repair-1's reject-aware behaviour is preserved verbatim.**  The scan still
+  has four outcomes, `G1RepairSkip` is still the narrowed predicate, and the
+  driver *discharges* its hypotheses rather than weakening them.
+* `GateOneRepairDriver.lean` (new) — the layout split
+  `g1BSpentFrames_repair_split`:
+  `g1BSpentFrames r s = [bof] ++ g1RepairLeft r s ++ spent^s ++ g1RepairMid r
+  ++ g1RepairTail r`, with `g1RepairLeft r s = tag^u · argSep · index^a1 ·
+  argSep · index^(a-s)` (length `u + a1 + (a-s) + 2`),
+  `g1RepairMid r = separator · data^(a+1)` (length `a + 2`) and the rest in
+  `g1RepairTail r`.  `g1BSpentFrames_zero` pins that `s = 0` is *literally*
+  `encodeG1Frames r ++ [blank]` (generalising `g1BSpentFrames_empty`, which
+  needed an empty data region), and `g1RepairLeft_append`/
+  `g1RepairFrames_repaired` pin that repairing the `s` units restores exactly
+  the canonical word — the endpoint tape is the machine's **initial word**, not
+  merely a word of the same length.
+* **Both scanned runs are clean, and the tail is not scanned.**
+  `g1RepairLeft_skip`/`g1RepairMid_skip` discharge the kernel's `hleft`/`hmid`
+  against the narrowed `G1RepairSkip`; `g1Repair_not_skip` plus
+  `g1RepairLeft_clean`/`g1RepairMid_clean` record the contrapositive — neither
+  run contains a `blank` or a leftover `cursor`.  `g1RepairTail` **does**
+  contain a `blank` (the frame the machine's own tape supplies past the input),
+  and `g1RepairTail_unread` shows why that is harmless: the scanned region is
+  exactly `g1WalkCursor r a + 1` frames, the sweep enters on its last cell, and
+  every tail cell lies strictly to the right.  The tail is therefore the
+  kernel's **unconstrained** argument, never read, reproduced bit-for-bit.
+* **The sweep at the real layout.**  `g1CS_repair_sweep_exact`: from the post-B
+  `readAResetStart` boundary **at its exact head** `4 * (g1WalkCursor r a + 1)`
+  on `g1BSpentFrames r s`, for `s ≤ a` and `a < m`, exactly
+  `g1RepairSteps r s = 4u + 4a1 + 8a + 9s + 22` genuine steps repair **all** `s`
+  consumed units, finish on head `0` in `readAStart`, leave the tape exactly
+  `encodeG1Frames r ++ [blank]` and leave the carried `G1Ctx` **unchanged**.
+  `g1RepairSteps_eq` gives the provenance: `1 + g1RepairPassSteps (u + a1 +
+  (a-s) + 2) s (a + 2)` — the bridge, `4` per skipped frame, `13` per consumed
+  unit, the anchor read and the dispatch.  No pad, no free budget parameter.
+* **The common pass-A handoff.**  `g1ReadAConfig r b` is head `0`, control
+  `readAStart`, tape `(G1M.initialConfig (g1Point (encodeG1 r))).tape` and
+  `G1Ctx.vB = b`, with the four projections `g1ReadAConfig_head/_state/_vB/
+  _tape`.  `g1CS_readB_positive_repaired_exact` composes
+  `g1CS_readB_positive_exact` (at `s = a`) with the sweep in
+  `g1BPassASteps r = g1BReadSteps r + g1RepairSteps r a = g1InstallScanSteps r +
+  8a² + 62a + 4u + 4a1 + 59` steps; `g1CS_readB_zero_repaired_exact` composes
+  `g1CS_readB_zero_exact` (at `s = 0`, where nothing was consumed so the sweep
+  writes **nothing** — `13 * 0` write steps) in
+  `g1ZPassASteps r = g1ReadBSteps r + g1RepairSteps r 0 = g1ReadBHandoffSteps r
+  + 8u + 8a1 + 43` steps.  Both land on the **same** `g1ReadAConfig r b`, with
+  head/state/`vB`/tape projections each way and `*_tape_initial` pinning the
+  tape as literally the initial tape; `g1CS_readB_repaired_common` states the
+  meeting point once, conditioned on the *request* (`arg2 = 0` or not), never on
+  a machine parameter.  The bit `b` is the **actual** `r.vals[r.arg2]`, resolved
+  physically out of the unannotated data region.
+* **Both totals fit the unchanged clock.**  `g1BPassASteps_le_clock`,
+  `g1ZPassASteps_le_clock` and `g1CS_readB_repaired_common_le_clock` hold with
+  **no hypothesis on the request**; `g1Clock` is not widened anywhere.
+* **The out-of-range boundary is untouched.**
+  `g1CS_readB_positive_oob_unrepaired` records only that it is stable for every
+  extra budget, that its tape still carries `m` consumed units, and that
+  `g1ReadAState ≠ g1OOBState` (`g1ReadAState_ne_oob`).  No repair, no rejection
+  and no verdict is claimed for it.
+
+Pinned by `Tests/TMGateOneRepairDriverSurfaceTests.lean` (new: theorem-style
+exact wrappers for **every** public statement of the driver, including both
+narrowing regressions and the unread tail), by the re-scoped
+`Tests/TMGateOneControlSurfaceTests.lean` (`check_g1Transition_bRepairDone`
+loses its `readAResetStart`-idle conjunct; the new
+`check_g1Transition_readAResetStart_bridge` pins the bridge row and that
+`readAStart`/`combineStart` are still idle) and by the re-scoped
+`Tests/TMGateOneReadBSurfaceTests.lean` (`check_g1CS_step_readAReset_bridge`
+replaces the removed idle pin).  `Tests/AxiomsAudit.lean` prints the axioms of
+every new statement **directly**; each depends only on `propext`,
+`Classical.choice` and `Quot.sound`.  One new module and one new surface test
+are registered in `lakefile.lean`.  The `GateOneReadB`, `GateOneWalkDriver`,
+`GateOneRepairKernel` and `GateOneRepairKernelExamples` docstrings are re-scoped
+to point here.
+
+Explicitly deferred to **Repair-2b** and claimed nowhere by Repair-2a: the
+**all-literal** repaired runs from `G1M.initialConfig` — concrete requests,
+concrete step counts, concrete endpoint words — and every probe module, probe
+wrapper and probe axiom root for them.  Every statement of this slice is
+quantified over the caller's request.  Explicitly deferred further and claimed
+nowhere: **pass A** (`readAStart` is still idle and operand 1 is not read), the
+**combine** step, the **output write**, `TM.accepts`, a full-clock theorem,
+gate-semantics correctness, the acceptance gate, multi-gate composition, the
+specification-level bridge, and non-canonical or physically padded tapes.
 
 **T2a correction (2026-08-24).**  The first T2a head shipped a permissive
 forward table (`vTag` looping on every `tag`, `vArg1`/`vArg2` looping on every

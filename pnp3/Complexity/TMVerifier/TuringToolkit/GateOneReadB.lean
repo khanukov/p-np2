@@ -66,7 +66,10 @@ The walk continuing from it is `GateOneWalkInvariant`/`GateOneWalkDriver`
 (PR3a–PR3c): `g1CS_readB_positive_exact` is the exact `arg2 > 0` counterpart of
 the `arg2 = 0` row above, so the machine *does* resolve the selected data frame
 for a positive index — but on a tape whose operand-2 field the walk leaves
-consumed, since the `spent ↦ index` repair sweep is started nowhere here.
+consumed.  The `spent ↦ index` repair sweep that restores it is
+`GateOneRepairKernel`/`GateOneRepairDriver` (Repair-1/Repair-2a), entered through
+the `g1CS_step_readAReset_bridge` boundary below; no theorem *of this module*
+composes it.
 
 `g1CS_step_round_bridge` below is the exact one-step execution of the older
 bridge `bRoundStart`, which is **no longer a target of the forward table**
@@ -77,8 +80,10 @@ regression composed in `GateOneIndexRound`.
 `g1RejectState` is a different state and no acceptance or rejection semantics
 is attached to either.  There is no `TM.run`, `TM.accepts`, output write,
 combine step, pass-A read, `spec`-correctness claim or full-clock theorem.  The
-four remaining handoffs are idle, and clock lemmas bound only the proved
-arrival prefixes against the **unchanged** clock `g1Clock`.
+three remaining handoffs (`readAStart`, `combineStart`, `bOOB`) are idle —
+`readAResetStart` is not, it is the repair sweep's bridge — and clock lemmas
+bound only the proved arrival prefixes against the **unchanged** clock
+`g1Clock`.
 
 The five initial-configuration capstones are scoped to the exact tape
 `encodeG1 r`; reusable local adapters state their arbitrary aligned tapes
@@ -161,8 +166,7 @@ Each is one generic aligned-step adapter applied to one standalone tuple lemma
 of `GateOneControl`; `g1Transition` is never unfolded. -/
 
 /-- **A stationary self-looping state is stable for the whole remaining
-budget.**  The four idle handoffs and the two sinks are all of this
-shape. -/
+budget.**  The three idle handoffs and the two sinks are all of this shape. -/
 theorem g1CS_runConfig_stable (n h : Nat) (hh : h < G1M.tapeLength n)
     (tape : Fin (G1M.tapeLength n) → Bool) (q : G1State)
     (hq : ∀ (phase : Fin 1) (scan : Bool),
@@ -215,16 +219,32 @@ theorem g1CS_runConfig_combine_idle (n h : Nat) (hh : h < G1M.tapeLength n)
     (fun phase scan => g1Transition_combineStart_idle phase .p0 false false
       false scan ctx) k
 
-/-- **The pass-A reset handoff is idle in this slice.** -/
-theorem g1CS_runConfig_readAReset_idle (n h : Nat) (hh : h < G1M.tapeLength n)
-    (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx) (k : Nat) :
+/-- **The bridge into the operand-2 repair sweep, executed.**  `readAResetStart`
+is *not* idle: one genuine TM step moves the head one cell to the **left** —
+from the frame boundary a successful operand-2 read stops on back onto the last
+cell of the frame in front of it — writes back the cell it scanned, so **not one
+tape cell changes**, keeps the whole `G1Ctx` (in particular the latched `vB`),
+and enters the reverse-read entry shape `bRepairSeek .p3` with an empty frame
+buffer.
+
+This is the exact one-step boundary the repair sweep of `GateOneRepairKernel`
+starts from.  The theorem it replaces, `g1CS_runConfig_readAReset_idle`, is gone
+with the idle row: the handoff now does work.  The head position is the
+caller's; the *request-specific* head is supplied by
+`GateOneRepairDriver`. -/
+theorem g1CS_step_readAReset_bridge (n h : Nat) (hh : h < G1M.tapeLength n)
+    (hpos : 0 < h) (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx) :
     TM.runConfig (M := G1M)
         (g1AlignedConfig n h hh tape .readAResetStart .p0 false false false ctx)
-        k =
-      g1AlignedConfig n h hh tape .readAResetStart .p0 false false false ctx :=
-  g1CS_runConfig_stable n h hh tape (g1ReadAResetState ctx)
-    (fun phase scan => g1Transition_readAResetStart_idle phase .p0 false false
-      false scan ctx) k
+        1 =
+      g1AlignedConfig n (h - 1) (by omega) tape .bRepairSeek .p3
+        false false false ctx := by
+  rw [runConfig_one]
+  have hstep := g1CS_aligned_step_left n h hh hpos tape (g1ReadAResetState ctx)
+    (g1RepairSeekState ctx) (tape ⟨h, hh⟩)
+    (fun phase => g1Transition_readAResetStart_bridge phase .p0 false false
+      false _ ctx)
+  rwa [writeCell_self] at hstep
 
 /-- **The bridge into the destructive index round, executed.**  `bRoundStart` is
 not idle: one genuine TM step moves the head one cell to the *left* — from the

@@ -22,21 +22,18 @@ rejection as four genuine `G1M` steps into the stable `reject` sink.  The skip
 hypotheses of the macros are therefore real constraints on the caller's frame
 list, not decoration.
 
-Three further facts the wrappers pin deliberately.  **Nothing routes into the
-sweep**:
-`check_repair_unreachable` pins that no `g1Advance` row produces a repair mode
-and that all five are stuck, and `check_repair_endpoint_idle` pins that the
-sweep's endpoint `readAStart` is the same idle handoff it always was.  **Every
-run is caller-supplied**: every wrapper below takes the caller's `n`, safety
-bound, frame list and `G1Ctx`, and none mentions `G1M.initialConfig`.  And the
+Three further facts the wrappers pin deliberately.  No `g1Advance` frame-table
+row produces a repair mode and all five are stuck; the sole live entry is the
+Repair-2a `readAResetStart` bridge.  The generic kernel runs remain
+caller-supplied, and `check_repair_endpoint_idle` pins that `readAStart` is
+still idle.  The
 pass endpoint is **exact**: the tape changes in exactly the `s` repaired frames
 and the carried context comes out untouched.
 
 **Absent from this surface**: the all-literal probes of the kernel, which live
 with their module in **Repair-1b** and are pinned by
-`TMGateOneRepairKernelExamplesSurfaceTests`; the request-specific repair driver;
-any
-composition of a read with a repair, any pass-A read, combine step, output
+`TMGateOneRepairKernelExamplesSurfaceTests`; the concrete driver lives in
+Repair-2a.  Still absent: any pass-A read, combine step, output
 write, and any `TM.accepts`, verdict, full-clock, gate-semantics,
 acceptance-gate, multi-gate, specification-bridge or padded-tape surface.  It
 pins public signatures and proves nothing new.

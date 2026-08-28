@@ -8,10 +8,11 @@ import Complexity.TMVerifier.TuringToolkit.GateOneReadBExamples
 Import-side contracts for the T2b pass-B *execution* surface: exact
 `TM.runConfig` route capstones from the real initial configuration
 `G1M.initialConfig (g1Point (encodeG1 r))`, the `const` literal decode, the
-zero-index operand-2 read, the stable out-of-range boundary, the four idle
-handoffs, named per-route examples, the **installation scan** that the
-re-pointed positive-index row opens, and the thirteen-step rewrite cycle kept as
-an arbitrary-configuration regression.
+zero-index operand-2 read, the stable out-of-range boundary, the three remaining
+idle handoffs, the executed `readAResetStart` bridge into the repair sweep,
+named per-route examples, the **installation scan** that the re-pointed
+positive-index row opens, and the thirteen-step rewrite cycle kept as an
+arbitrary-configuration regression.
 
 The initial-configuration capstones are scoped to the exact tape `encodeG1 r`.
 Local adapters intentionally use arbitrary aligned tapes; post-boundary
@@ -77,11 +78,12 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1CS_step_constLit
 #check @g1CS_step_store
 
--- The four remaining handoffs, all idle in this slice.
+-- The three remaining idle handoffs, and the executed `readAResetStart` bridge
+-- that replaces the former `g1CS_runConfig_readAReset_idle`.
 #check @g1CS_runConfig_readA_idle
 #check @g1CS_runConfig_combine_idle
-#check @g1CS_runConfig_readAReset_idle
 #check @g1CS_runConfig_oob_sink
+#check @g1CS_step_readAReset_bridge
 
 /-! ## The exact route capstones from the real initial configuration -/
 
@@ -238,6 +240,22 @@ theorem check_g1CS_readB_zero_exact (r : G1Request) (hc : r.Canonical)
         (G1M.initialConfig (g1Point (encodeG1 r))).tape
         .readAResetStart .p0 false false false (g1Ctx0.withVB b) :=
   g1CS_readB_zero_exact r hc ht h2 b hb
+
+/-- **The `readAResetStart` handoff is no longer idle.**  One genuine step is the
+repair sweep's bridge: the head moves one cell **left**, the tape is *unchanged*
+(the row writes back what it scans), the whole `G1Ctx` — latch included — is
+carried through, and the control enters the reverse-read entry shape
+`bRepairSeek .p3`.  The configuration is the caller's; the request-specific head
+is supplied by `TMGateOneRepairDriverSurfaceTests`. -/
+theorem check_g1CS_step_readAReset_bridge (n h : Nat)
+    (hh : h < G1M.tapeLength n) (hpos : 0 < h)
+    (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx) :
+    TM.runConfig (M := G1M)
+        (g1AlignedConfig n h hh tape .readAResetStart .p0 false false false ctx)
+        1 =
+      g1AlignedConfig n (h - 1) (by omega) tape .bRepairSeek .p3
+        false false false ctx :=
+  g1CS_step_readAReset_bridge n h hh hpos tape ctx
 
 /-- **The empty-data boundary is `bOOB`, and it is stable.**  Not an
 acceptance, not a rejection: the budget is universally quantified. -/

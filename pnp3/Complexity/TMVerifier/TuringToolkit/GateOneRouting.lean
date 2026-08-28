@@ -13,11 +13,11 @@ Five route prefixes are defined, all of them *prefixes of the canonical word
 itself* — no producer annotation, no scratch region, no marker:
 
 ```text
-g1TagRouteFrames   r   = bof · tag^units · argSep
-g1FieldRouteFrames r   = bof · tag^units · argSep · index^arg1 · argSep
-g1ReadBRouteFrames r b = g1FieldRouteFrames r · separator · data b
-g1ReadBOOBFrames   r   = g1FieldRouteFrames r · separator · output false
-g1RoundRouteFrames r   = g1FieldRouteFrames r · index
+g1TagRouteFrames    r   = bof · tag^units · argSep
+g1FieldRouteFrames  r   = bof · tag^units · argSep · index^arg1 · argSep
+g1ReadBRouteFrames  r b = g1FieldRouteFrames r · separator · data b
+g1ReadBOOBFrames    r   = g1FieldRouteFrames r · separator · output false
+g1InstallRouteFrames r  = g1FieldRouteFrames r · index^arg2 · separator
 ```
 
 and the corresponding split lemmas say each prefix, followed by the rest of the
@@ -32,11 +32,18 @@ across the T2a rewind, and none is a parameter of the machine.
 **Scope.**  The two `g1ReadB*` routes are the `arg2 = 0` case of the operand-2
 read: the probe finds the selected data frame (or the `output` destination)
 immediately after the `separator`.  For `arg2 > 0` the forward table sends
-`bScan` to the `bRoundStart` bridge instead; the only thing this module says
-about that branch is the frame-level handoff `g1_bScan_index_bridge`.  The
-bridge and the one destructive round behind it are machine statements and live
-in `GateOneIndexRound`; the frame-level grammar of this module is untouched by
-them, since `bRoundStart` reads no frame at all (`g1_bRoundStart_stuck`).
+`bScan` into `bInsSeek`, the installation scan (`g1_bScan_index_install`), and
+`g1InstallRouteFrames` is the resulting fifth route prefix —
+`g1FieldRouteFrames r · index^arg2 · separator` — whose fold ends at `bProbe2`.
+The executed capstone is
+`GateOneInstallScan.g1CS_readB_install_scan_exact`.  `bProbe2` is where this
+slice stops (`g1_bProbe2_stuck`); the latch, the cursor install and the walk
+round are PR2.
+
+The older bridge `bRoundStart` is now unreachable from the forward table
+(`g1_bRoundStart_unreachable`) and reads no frame at all
+(`g1_bRoundStart_stuck`), so nothing in this development claims that repeating
+the thirteen-step rewrite cycle addresses an operand-2 value.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -356,53 +363,99 @@ theorem g1ReadBOOB_validPath (r : G1Request)
   rw [g1FieldRoute_advance_binary r ht]
   exact g1_probe_oob_validPath [] trivial
 
-/-! ### The bridge branch, at frame level
+/-! ### The positive-index branch, at frame level
 
-For `arg2 > 0` the operand-2 walk meets an unspent `index` unit and the fixed
-control hands off to `bRoundStart`, the one-step bridge into the destructive
-index round.  The lemma below records exactly that frame-level handoff; the
-round itself is a machine statement and lives in `GateOneIndexRound`, which runs
-`bRoundStart` for one round and no further. -/
+For `arg2 > 0` the operand-2 walk meets an unspent `index` unit and hands off to
+`bInsSeek`, the **installation scan**, which crosses the rest of the operand-2
+field, crosses the `separator` and stops at `bProbe2` on the first frame after
+it: data when nonempty, `output false` otherwise.  `bProbe2` is the explicit
+local boundary of this slice: it has no successful frame row
+(`g1_bProbe2_stuck`); an attempted full-frame read rejects, and no theorem
+executes it.  PR2 supplies the latch and cursor-install rows behind it.
+`bRoundStart` — the bridge into the thirteen-step
+rewrite cycle — is no longer a target of the forward table
+(`g1_bRoundStart_unreachable`), so nothing here or downstream claims that
+iterating that cycle addresses an operand-2 value. -/
 
-theorem g1_bScan_index_bridge (rest : List G1Frame) :
-    g1AdvanceList .bScan (.index :: rest) = g1AdvanceList .bRoundStart rest :=
+theorem g1_bScan_index_install (rest : List G1Frame) :
+    g1AdvanceList .bScan (.index :: rest) = g1AdvanceList .bInsSeek rest :=
   rfl
+
+/-- **The installation scan crosses the rest of the operand-2 field.** -/
+theorem g1_insSeek_advance (k : Nat) (rest : List G1Frame) :
+    g1AdvanceList .bInsSeek (List.replicate k .index ++ .separator :: rest) =
+      g1AdvanceList .bProbe2 rest := by
+  rw [g1AdvanceList_run (mode := .bInsSeek) (unit := .index) rfl k]
+  rfl
+
+theorem g1_insSeek_validPath (k : Nat) (rest : List G1Frame)
+    (hrest : G1ValidPath .bProbe2 rest) :
+    G1ValidPath .bInsSeek (List.replicate k .index ++ .separator :: rest) :=
+  g1ValidPath_run (by exact trivial) rfl k
+    (g1ValidPath_cons (by exact trivial) rfl (by decide) hrest)
 
 theorem g1_bRoundStart_stuck : G1Stuck .bRoundStart := by decide
 
-/-- The complete pass-B route of a binary gate with `arg2 > 0`: the operand-2
-walk meets the first unspent `index` unit, which the fixed control routes to the
-deferred `bRoundStart` handoff.  Like the other four, this is a prefix of the
-canonical word itself. -/
-def g1RoundRouteFrames (r : G1Request) : List G1Frame :=
-  g1FieldRouteFrames r ++ [.index]
+/-- **The installation scan's endpoint has no successful frame row in this
+slice.**  An attempted complete-frame read at `bProbe2` enters `reject`; the
+capstone stops at its first cell and no theorem executes that read.  PR2
+supplies the two latch rows `data b ↦ bLatch b` and the out-of-range row. -/
+theorem g1_bProbe2_stuck : G1Stuck .bProbe2 := by decide
 
-@[simp] theorem g1RoundRouteFrames_length (r : G1Request) :
-    (g1RoundRouteFrames r).length = r.tag.units + r.arg1 + 4 := by
-  simp only [g1RoundRouteFrames, List.length_append, g1FieldRouteFrames_length]
-  rfl
+/-- **The rewrite-cycle bridge is unreachable from the forward table.**  No
+mode/frame pair completes into `bRoundStart`. -/
+theorem g1_bRoundStart_unreachable (mode : G1Mode) (frame : G1Frame) :
+    g1Advance mode frame ≠ .bRoundStart := by
+  revert mode frame; decide
 
-theorem g1RoundRoute_split (r : G1Request) (k : Nat) (h2 : r.arg2 = k + 1) :
-    g1RoundRouteFrames r ++
-        (List.replicate k .index ++ .separator ::
-          (r.vals.map .data ++ [.output false, .finish, .blank])) =
+/-! ## The installation route of a positive operand-2 index
+
+The whole prefix the pass-B rescan reads on the positive-index branch:
+the binary field route, the operand-2 index field and the `separator`.  It
+replaces the bridge route of the previous slice, which is **removed** together
+with its fold and valid-path lemmas: the re-pointed table makes them false or
+pointless.  The executed capstone is `g1CS_readB_install_scan_exact` in
+`GateOneInstallScan`. -/
+
+/-- `g1FieldRouteFrames r · index^arg2 · separator`. -/
+def g1InstallRouteFrames (r : G1Request) : List G1Frame :=
+  g1FieldRouteFrames r ++ (List.replicate r.arg2 .index ++ [.separator])
+
+/-- The rest of the canonical word after `g1InstallRouteFrames`. -/
+def g1InstallRouteRest (r : G1Request) : List G1Frame :=
+  r.vals.map .data ++ [.output false, .finish, .blank]
+
+@[simp] theorem g1InstallRouteFrames_length (r : G1Request) :
+    (g1InstallRouteFrames r).length = r.tag.units + r.arg1 + r.arg2 + 4 := by
+  simp only [g1InstallRouteFrames, List.length_append, g1FieldRouteFrames_length,
+    List.length_replicate, List.length_singleton]
+  omega
+
+theorem g1InstallRoute_split (r : G1Request) :
+    g1InstallRouteFrames r ++ g1InstallRouteRest r =
       encodeG1Frames r ++ [.blank] := by
   rw [← g1FieldRoute_split r]
-  simp only [g1RoundRouteFrames, g1FieldRouteRest, h2, List.replicate_succ,
-    List.append_assoc, List.nil_append, List.cons_append]
+  simp only [g1InstallRouteFrames, g1InstallRouteRest, g1FieldRouteRest,
+    List.append_assoc, List.cons_append, List.nil_append]
 
-theorem g1RoundRoute_advance (r : G1Request)
-    (ht : r.tag = .and ∨ r.tag = .or) :
-    g1AdvanceList .readBStart (g1RoundRouteFrames r) = .bRoundStart := by
-  rw [g1RoundRouteFrames, g1AdvanceList_append,
-    g1FieldRoute_advance_binary r ht]
-  rfl
+/-- **The installation route ends at `bProbe2`.**  The first
+`index` sends `bScan` into `bInsSeek`, which crosses the remaining `k` units and
+the `separator`. -/
+theorem g1InstallRoute_advance (r : G1Request)
+    (ht : r.tag = .and ∨ r.tag = .or) (k : Nat) (h2 : r.arg2 = k + 1) :
+    g1AdvanceList .readBStart (g1InstallRouteFrames r) = .bProbe2 := by
+  rw [g1InstallRouteFrames, g1AdvanceList_append,
+    g1FieldRoute_advance_binary r ht, h2, List.replicate_succ,
+    List.cons_append, g1_bScan_index_install]
+  exact g1_insSeek_advance k []
 
-theorem g1RoundRoute_validPath (r : G1Request)
-    (ht : r.tag = .and ∨ r.tag = .or) :
-    G1ValidPath .readBStart (g1RoundRouteFrames r) := by
+theorem g1InstallRoute_validPath (r : G1Request)
+    (ht : r.tag = .and ∨ r.tag = .or) (k : Nat) (h2 : r.arg2 = k + 1) :
+    G1ValidPath .readBStart (g1InstallRouteFrames r) := by
   refine g1ValidPath_append (g1FieldRoute_validPath_binary r ht) ?_
-  rw [g1FieldRoute_advance_binary r ht]
-  exact g1ValidPath_cons (by exact trivial) rfl (by decide) trivial
+  rw [g1FieldRoute_advance_binary r ht, h2, List.replicate_succ,
+    List.cons_append]
+  exact g1ValidPath_cons (by exact trivial) rfl (by decide)
+    (g1_insSeek_validPath k [] trivial)
 
 end Pnp3.Internal.PsubsetPpoly.TM

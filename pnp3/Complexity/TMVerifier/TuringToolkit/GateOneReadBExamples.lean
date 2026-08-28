@@ -7,19 +7,19 @@ import Complexity.TMVerifier.TuringToolkit.GateOneReadB
 **Progress classification: Infrastructure.**  Concrete instances of the T2b
 pass-B execution surface: the unary route, both `const` literals, a `true` and
 a `false` operand-2 read out of the data region, the out-of-range boundary, the
-binary route to the operand-2 field, the frame-level bridge handoff, and exact
-literal step counts.  Each capstone is the matching general theorem at a
+binary route to the operand-2 field, the frame-level installation handoff, and
+exact literal step counts.  Each capstone is the matching general theorem at a
 concrete canonical request—a genuine finite run of the one fixed machine from
 its real initial configuration.  Nothing depends on this audit module.
 
 The two `and`/`or` value reads and the out-of-range example all have
-`arg2 = 0`: that is the case in which the operand-2 walk terminates without any
-destructive round.  The `arg2 = 1` example stops at the operand-2 field
+`arg2 = 0`: that is the case in which the operand-2 walk terminates at once.
+The `arg2 = 1` example stops at the operand-2 field
 (`g1CS_readB_route_binary_exact`) and the frame-level lemma
-`readB_bridge_at_index` records that the very next frame sends the control to
-the `bRoundStart` bridge.  The executed bridge and the one destructive round
-behind it are in `GateOneIndexRound`, whose own concrete example runs the same
-shape of request for exactly one round.
+`readB_install_at_index` records that the very next frame sends the control into
+`bInsSeek`, the installation scan.  The executed scan is
+`GateOneInstallScan.g1CS_readB_install_scan_exact`, with its own concrete
+example in `GateOneInstallScanExamples`.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -144,23 +144,23 @@ abbrev FieldRouteAt (r : G1Request) : Prop :=
       (G1M.initialConfig (g1Point (encodeG1 r))).tape
       .bScan .p0 false false false g1Ctx0
 
-/-- `reqAnd` has `arg2 = 1`, so this is the last endpoint the *pass-B read*
-proves for it: the head sits on the first cell of `index^1`.  One destructive
-round past it is `GateOneIndexRound`. -/
+/-- `reqAnd` has `arg2 = 1`, so this endpoint has the head on the first cell of
+`index^1`.  The positive-index successor is the installation scan proved by
+`g1CS_readB_install_scan_exact`. -/
 theorem readB_field_route_and : FieldRouteAt reqAnd :=
   g1CS_readB_route_binary_exact reqAnd reqAnd_canonical (Or.inl rfl)
 
 theorem readB_field_route_or : FieldRouteAt reqOr :=
   g1CS_readB_route_binary_exact reqOr reqOr_canonical (Or.inr rfl)
 
-/-- **The bridge branch, named.**  From the operand-2 field of a request with
-`arg2 > 0` the very next frame is an unspent `index`, and the fixed control
-hands off to `bRoundStart`, the one-step bridge into the destructive round.  The
-executed round is `GateOneIndexRound.g1CS_index_first_round`; this lemma is only
+/-- **The positive-index branch, named.**  From the operand-2 field of a request
+with `arg2 > 0` the very next frame is an unspent `index`, and the fixed control
+hands off to `bInsSeek`, the installation scan.  The executed
+scan is `GateOneInstallScan.g1CS_readB_install_scan_exact`; this lemma is only
 the frame-level handoff. -/
-theorem readB_bridge_at_index (rest : List G1Frame) :
-    g1AdvanceList .bScan (.index :: rest) = g1AdvanceList .bRoundStart rest :=
-  g1_bScan_index_bridge rest
+theorem readB_install_at_index (rest : List G1Frame) :
+    g1AdvanceList .bScan (.index :: rest) = g1AdvanceList .bInsSeek rest :=
+  g1_bScan_index_install rest
 
 /-! ## Genuine operand-2 reads out of the data region
 

@@ -22,6 +22,7 @@ import Complexity.TMVerifier.TuringToolkit.FrameRewriteCycleInstances
 import Complexity.TMVerifier.TuringToolkit.GateOneExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneRouting
 import Complexity.TMVerifier.TuringToolkit.GateOneReadBExamples
+import Complexity.TMVerifier.TuringToolkit.GateOneInstallScanExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneIndexRound
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
@@ -349,11 +350,11 @@ open Pnp3.Magnification
 
 -- T2b, pass-B layer: the physical tag rescan and finite-control routing,
 -- exact initial-configuration prefixes, the zero-index operand-2 read and its
--- stable out-of-range boundary, and the T2b-2 destructive index round (bridge,
--- fourteen-step composed round, one concrete request).  Local adapters retain
+-- stable out-of-range boundary, and the positive-index **installation route**
+-- that the re-pointed `bScan + index` row opens.  Local adapters retain
 -- their arbitrary-aligned-tape scope and stability padding has no clock bound.
--- Still no `TM.accepts`, output write, combine step, pass-A read,
--- `spec`-correctness claim, or more than **one** round for `arg2 > 0`: no
+-- Still no `TM.accepts`, output write, combine step, pass-A read or
+-- `spec`-correctness claim, and for `arg2 > 0` no latch, cursor install, round,
 -- iteration, addressing or operand-value claim is audited here.
 #print axioms Internal.PsubsetPpoly.TM.G1Ctx.withVB_vB
 #print axioms Internal.PsubsetPpoly.TM.G1Ctx.withVB_pass
@@ -378,23 +379,27 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1ReadBRoute_validPath
 #print axioms Internal.PsubsetPpoly.TM.g1ReadBOOB_advance
 #print axioms Internal.PsubsetPpoly.TM.g1ReadBOOB_validPath
-#print axioms Internal.PsubsetPpoly.TM.g1_bScan_index_bridge
+#print axioms Internal.PsubsetPpoly.TM.g1_bScan_index_install
+#print axioms Internal.PsubsetPpoly.TM.g1_insSeek_advance
+#print axioms Internal.PsubsetPpoly.TM.g1_insSeek_validPath
+#print axioms Internal.PsubsetPpoly.TM.g1_bProbe2_stuck
 #print axioms Internal.PsubsetPpoly.TM.g1_bRoundStart_stuck
-#print axioms Internal.PsubsetPpoly.TM.g1RoundRouteFrames_length
-#print axioms Internal.PsubsetPpoly.TM.g1RoundRoute_split
-#print axioms Internal.PsubsetPpoly.TM.g1RoundRoute_advance
-#print axioms Internal.PsubsetPpoly.TM.g1RoundRoute_validPath
+#print axioms Internal.PsubsetPpoly.TM.g1_bRoundStart_unreachable
+#print axioms Internal.PsubsetPpoly.TM.g1InstallRouteFrames_length
+#print axioms Internal.PsubsetPpoly.TM.g1InstallRoute_split
+#print axioms Internal.PsubsetPpoly.TM.g1InstallRoute_advance
+#print axioms Internal.PsubsetPpoly.TM.g1InstallRoute_validPath
 
--- T2b-2, pass-B execution layer: exact `TM.runConfig` statements from the real
+-- T2b, pass-B execution layer: exact `TM.runConfig` statements from the real
 -- `G1M.initialConfig (g1Point (encodeG1 r))` for the physical tag rescan and
 -- its per-tag dispatch, the `const` literal decode/store, the `arg2 = 0`
--- operand-2 read and its empty-data `bOOB` boundary, and the `arg2 > 0` bridge
--- boundary.  The six initial-config arrival endpoints pin head,
+-- operand-2 read and its empty-data `bOOB` boundary.  The five initial-config
+-- arrival endpoints pin head,
 -- state and tape, and their named prefix counts fit `g1Clock`.  Local adapters
 -- use arbitrary aligned tapes; `bOOB + k` stability carries no clock bound.
 -- Still no `TM.run` or `TM.accepts`, no output write, combine step, pass-A read
--- or `spec`-correctness claim, and no full-clock theorem.  The first-round
--- block below executes exactly one round past `bRoundStart`, with no iteration.
+-- or `spec`-correctness claim, and no full-clock theorem.  The `arg2 > 0`
+-- endpoint is the read-only installation scan audited below.
 #print axioms Internal.PsubsetPpoly.TM.g1_route_le
 #print axioms Internal.PsubsetPpoly.TM.g1_route_lt_tapeLength
 #print axioms Internal.PsubsetPpoly.TM.g1_readB_steps_le_clock
@@ -412,7 +417,6 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1ConstRouteSteps_le_clock
 #print axioms Internal.PsubsetPpoly.TM.g1ReadBSteps_le_clock
 #print axioms Internal.PsubsetPpoly.TM.g1ReadBOOBSteps_le_clock
-#print axioms Internal.PsubsetPpoly.TM.g1RoundRouteSteps_le_clock
 #print axioms Internal.PsubsetPpoly.TM.g1CS_readB_route_unary_exact
 #print axioms Internal.PsubsetPpoly.TM.g1CS_readB_route_unary_head
 #print axioms Internal.PsubsetPpoly.TM.g1CS_readB_route_unary_state
@@ -435,8 +439,6 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_readB_zero_oob_tape
 #print axioms Internal.PsubsetPpoly.TM.g1CS_readB_zero_oob_ne_success
 #print axioms Internal.PsubsetPpoly.TM.g1CS_readB_oob_ne_reject
-#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_round_deferred_exact
-#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_round_deferred_state
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_route_input
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_route_not
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_const_false
@@ -444,15 +446,42 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_field_route_and
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_field_route_or
 
-#print axioms Internal.PsubsetPpoly.TM.g1IndexRoundSteps_le_clock
-#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_round_boundary
+-- The installation scan of the positive-index branch.  `g1CS_walk_install_scan` is the
+-- forward-scan macro on a caller-supplied frame list;
+-- `g1CS_readB_install_scan_exact` is the one statement here that starts from the
+-- real initial configuration, and it is a **reachability** endpoint: it latches
+-- nothing, installs no cursor, writes no cell and reads no operand-2 value.
+-- Its endpoint `bProbe2` has no successful frame row (`g1_bProbe2_stuck`): a
+-- completed attempted read rejects, and no theorem executes that read.  The
+-- remaining fourteen walk modes, their rows and the latch / cursor-install
+-- execution are PR2.
+#print axioms Internal.PsubsetPpoly.TM.g1Advance_bInsSeek_of_skip
+#print axioms Internal.PsubsetPpoly.TM.g1ValidPath_fix
+#print axioms Internal.PsubsetPpoly.TM.g1AdvanceList_fix
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_install_scan
+#print axioms Internal.PsubsetPpoly.TM.g1InstallScanSteps_eq
+#print axioms Internal.PsubsetPpoly.TM.g1InstallScanSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_install_scan_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_install_scan_head
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_install_scan_tape
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_install_scan_state
+#print axioms Internal.PsubsetPpoly.TM.G1InstallScanExamples.g1WalkExample_canonical
+#print axioms Internal.PsubsetPpoly.TM.G1InstallScanExamples.g1WalkExample_length
+#print axioms Internal.PsubsetPpoly.TM.G1InstallScanExamples.g1WalkExample_initial_tape
+#print axioms Internal.PsubsetPpoly.TM.G1InstallScanExamples.walk_install_scan_steps
+#print axioms Internal.PsubsetPpoly.TM.G1InstallScanExamples.walk_install_scan
+#print axioms Internal.PsubsetPpoly.TM.G1InstallScanExamples.walk_install_scan_head
+#print axioms Internal.PsubsetPpoly.TM.G1InstallScanExamples.walk_install_scan_state
+#print axioms Internal.PsubsetPpoly.TM.G1InstallScanExamples.walk_install_scan_tape
+#print axioms Internal.PsubsetPpoly.TM.G1InstallScanExamples.walk_install_scan_clock
+
+-- The thirteen-step rewrite cycle at the G1 control, kept only as an
+-- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves
+-- the forward table never produces `bRoundStart`, so the caller supplies the
+-- configuration, the frame list and the safety bound.  Nothing composes these
+-- from `G1M.initialConfig`.
 #print axioms Internal.PsubsetPpoly.TM.g1CS_round_from_bridge
-#print axioms Internal.PsubsetPpoly.TM.g1CS_index_first_round
-#print axioms Internal.PsubsetPpoly.TM.g1RoundExample_initial_tape
-#print axioms Internal.PsubsetPpoly.TM.g1CS_round_example_head
-#print axioms Internal.PsubsetPpoly.TM.g1CS_round_example_state
-#print axioms Internal.PsubsetPpoly.TM.g1CS_round_example_tape
-#print axioms Internal.PsubsetPpoly.TM.g1CS_round_example_clock
+#print axioms Internal.PsubsetPpoly.TM.g1CS_round_probe
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_and_true
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_and_false
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_or_true

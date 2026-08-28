@@ -7,7 +7,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOneValidation
 
 **Progress classification: Infrastructure.**
 
-The executable layer of the T2b pass-B slice.  The six named arrival capstones
+The executable layer of the T2b pass-B slice.  The five named arrival capstones
 below start from the *real* initial configuration
 `G1M.initialConfig (g1Point (encodeG1 r))` of the one fixed zero-parameter
 machine, compose the exact T2a validation/rewind prefix, and run the
@@ -24,7 +24,7 @@ selected by reading `bof · tag^units · argSep` off the tape a second time,
 through the *generic* frame-scanner kernel; the tag never enters a theorem as a
 hypothesis about the machine's state, only as a fact about the encoded request.
 
-Six exact endpoints are proved, from `initialConfig`, for a canonical `r`:
+Five exact endpoints are proved, from `initialConfig`, for a canonical `r`:
 
 | tag | endpoint | head | extra steps after the T2a prefix |
 |-----|----------|------|----------------------------------|
@@ -33,7 +33,9 @@ Six exact endpoints are proved, from `initialConfig`, for a canonical `r`:
 | `and`, `or` | `bScan` at the operand-2 field | `4 * (units + arg1 + 3)` | `4 * (units + arg1 + 3)` |
 | `and`, `or`, `arg2 = 0` | `readAResetStart`, `vB = b` | `4 * (units + arg1 + 5)` | `4 * (units + arg1 + 5) + 1` |
 | `and`, `or`, `arg2 = 0`, empty data | `bOOB` (stable) | `4 * (units + arg1 + 5)` | `4 * (units + arg1 + 5)` |
-| `and`, `or`, `arg2 > 0` | `bRoundStart` bridge | `4 * (units + arg1 + 4)` | `4 * (units + arg1 + 4)` |
+
+The `arg2 > 0` branch leaves this module at `bScan` (row three): its continuation
+is the installation scan of `GateOneInstallScan`.
 
 In **every** case the tape is bit-for-bit the initial tape: the whole pass-B
 rescan is read-only, so no `spent`/`cursor` marker is left behind and no data
@@ -56,12 +58,16 @@ cursor or index annotation is added to `encodeG1`.
 **Scope and deferrals.**  The operand-2 value is resolved *physically*, out of
 the unannotated data region, exactly for `arg2 = 0`: the walk meets the
 `separator` with no unspent `index` unit left, and the probe reads the frame
-behind it.  For `arg2 > 0` the fixed control enters `bRoundStart`, which is the
-one-step *bridge* into the destructive index round: `g1CS_step_round_bridge`
-below is its exact execution, and `GateOneIndexRound` composes it with one
-thirteen-step `index ↦ spent` round.  That is **one** round; nothing in this
-development iterates it, addresses a runtime index, or claims that the walk
-resolves the selected data frame for `arg2 > 0`.
+behind it.  For `arg2 > 0` the fixed control enters `bInsSeek`, the installation
+scan of the positive-index branch; the exact route to its endpoint is
+`GateOneInstallScan.g1CS_readB_install_scan_exact`.  Nothing in this development
+latches a value, installs a cursor, iterates a round, addresses a runtime index,
+or claims that the walk resolves the selected data frame for `arg2 > 0`.
+
+`g1CS_step_round_bridge` below is the exact one-step execution of the older
+bridge `bRoundStart`, which is **no longer a target of the forward table**
+(`g1_bRoundStart_unreachable`) and survives only as an arbitrary-configuration
+regression composed in `GateOneIndexRound`.
 
 `bOOB` is likewise a **stable boundary of the read**, not a rejection:
 `g1RejectState` is a different state and no acceptance or rejection semantics
@@ -70,7 +76,7 @@ combine step, pass-A read, `spec`-correctness claim or full-clock theorem.  The
 four remaining handoffs are idle, and clock lemmas bound only the proved
 arrival prefixes against the **unchanged** clock `g1Clock`.
 
-The six initial-configuration capstones are scoped to the exact tape
+The five initial-configuration capstones are scoped to the exact tape
 `encodeG1 r`; reusable local adapters state their arbitrary aligned tapes
 explicitly, and post-boundary stability budgets carry no public-clock bound.
 No capstone claim is made about physically padded tapes.
@@ -218,14 +224,17 @@ theorem g1CS_runConfig_readAReset_idle (n h : Nat) (hh : h < G1M.tapeLength n)
 
 /-- **The bridge into the destructive index round, executed.**  `bRoundStart` is
 not idle: one genuine TM step moves the head one cell to the *left* — from the
-first cell of the frame after the scanned `index` back onto the last cell of
-that `index` — writes back the cell it scanned, so **not one tape cell
-changes**, keeps the whole `G1Ctx`, and enters the reverse-read entry shape
-`bWalk .p3` with an empty frame buffer.
+first cell of the frame after an `index` back onto the last cell of that
+`index` — writes back the cell it scanned, so **not one tape cell changes**,
+keeps the whole `G1Ctx`, and enters the reverse-read entry shape `bWalk .p3`
+with an empty frame buffer.  The head position is the caller's; nothing in this
+module puts the machine there.
 
 This is the exact one-step boundary the thirteen-step `index ↦ spent` round of
 `FrameRewriteCycleInstances` starts from; `GateOneIndexRound`'s
-`g1CS_round_from_bridge` composes the two. -/
+`g1CS_round_from_bridge` composes the two.  The forward table no longer enters
+this mode (`g1_bRoundStart_unreachable`), so the configuration is the caller's:
+this is an arbitrary-configuration regression, not a route. -/
 theorem g1CS_step_round_bridge (n h : Nat) (hh : h < G1M.tapeLength n)
     (hpos : 0 < h) (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx) :
     TM.runConfig (M := G1M)
@@ -296,11 +305,6 @@ def g1ReadBSteps (r : G1Request) : Nat :=
 def g1ReadBOOBSteps (r : G1Request) : Nat :=
   g1ReadBHandoffSteps r + 4 * (r.tag.units + r.arg1 + 5)
 
-/-- Steps from `initialConfig` to the deferred index-walk boundary of a binary
-gate with `arg2 > 0`. -/
-def g1RoundRouteSteps (r : G1Request) : Nat :=
-  g1ReadBHandoffSteps r + 4 * (r.tag.units + r.arg1 + 4)
-
 theorem g1ReadARouteSteps_le_clock (r : G1Request) :
     g1ReadARouteSteps r ≤ g1Clock (encodeG1 r).length := by
   have h := g1_readB_steps_le_clock r (r.tag.units + 2) (by omega)
@@ -329,12 +333,6 @@ theorem g1ReadBOOBSteps_le_clock (r : G1Request) :
     g1ReadBOOBSteps r ≤ g1Clock (encodeG1 r).length := by
   have h := g1_readB_steps_le_clock r (r.tag.units + r.arg1 + 5) (by omega)
   simp only [g1ReadBOOBSteps]
-  omega
-
-theorem g1RoundRouteSteps_le_clock (r : G1Request) :
-    g1RoundRouteSteps r ≤ g1Clock (encodeG1 r).length := by
-  have h := g1_readB_steps_le_clock r (r.tag.units + r.arg1 + 4) (by omega)
-  simp only [g1RoundRouteSteps]
   omega
 
 /-! ## The three exact routing capstones -/
@@ -546,39 +544,6 @@ theorem g1CS_readB_zero_oob_stable (r : G1Request) (hc : r.Canonical)
   rw [runConfig_add, g1CS_readB_zero_oob_exact r hc ht h2 hb]
   exact g1CS_runConfig_oob_sink _ _ _ _ _ k
 
-/-! ## The positive-index bridge boundary
-
-For `arg2 > 0` the operand-2 walk meets an unspent `index` unit and the control
-hands off to `bRoundStart`, the one-step bridge into the destructive round.
-The retained `g1CS_readB_round_deferred_exact` theorem (historical name) pins
-the exact arrival at that boundary; `GateOneIndexRound` executes the bridge and
-one thirteen-step round beyond it. -/
-
-/-- **The deferred boundary, exactly.**  For a canonical `and`/`or` request with
-`arg2 > 0`, exactly `g1RoundRouteSteps r` genuine steps from the real initial
-configuration reach `bRoundStart`, head `4 * (units + arg1 + 4)` — the frame
-boundary just past the first unspent operand-2 `index` unit — with the tape
-bit-for-bit the initial tape and the context still `g1Ctx0`.  No value is
-resolved on this branch. -/
-theorem g1CS_readB_round_deferred_exact (r : G1Request) (hc : r.Canonical)
-    (ht : r.tag = .and ∨ r.tag = .or) (k : Nat) (h2 : r.arg2 = k + 1) :
-    TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
-        (g1RoundRouteSteps r) =
-      g1AlignedConfig (encodeG1 r).length (4 * (r.tag.units + r.arg1 + 4))
-        (g1_route_lt_tapeLength r _ (by omega))
-        (G1M.initialConfig (g1Point (encodeG1 r))).tape
-        .bRoundStart .p0 false false false g1Ctx0 := by
-  have hsafe : 4 * (g1RoundRouteFrames r).length <
-      G1M.tapeLength (encodeG1 r).length := by
-    rw [g1RoundRouteFrames_length]
-    exact g1_route_lt_tapeLength r _ (by omega)
-  have h := g1CS_readB_scan r hc (g1RoundRouteFrames r)
-    (List.replicate k .index ++ .separator ::
-      (r.vals.map .data ++ [.output false, .finish, .blank]))
-    (g1RoundRoute_split r k h2) (g1RoundRoute_validPath r ht) hsafe
-  rw [g1RoundRoute_advance r ht] at h
-  simpa [g1RoundRouteSteps] using h
-
 /-! ## The components of the capstones, separately -/
 
 theorem g1CS_readB_zero_head (r : G1Request) (hc : r.Canonical)
@@ -688,11 +653,5 @@ theorem g1CS_readB_route_binary_head (r : G1Request) (hc : r.Canonical)
         (g1FieldRouteSteps r)).head : Nat) =
       4 * (r.tag.units + r.arg1 + 3) := by
   rw [g1CS_readB_route_binary_exact r hc ht]; rfl
-
-theorem g1CS_readB_round_deferred_state (r : G1Request) (hc : r.Canonical)
-    (ht : r.tag = .and ∨ r.tag = .or) (k : Nat) (h2 : r.arg2 = k + 1) :
-    (TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
-        (g1RoundRouteSteps r)).state.snd = g1RoundState g1Ctx0 := by
-  rw [g1CS_readB_round_deferred_exact r hc ht k h2]; rfl
 
 end Pnp3.Internal.PsubsetPpoly.TM

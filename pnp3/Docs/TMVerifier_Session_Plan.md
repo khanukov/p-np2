@@ -462,7 +462,8 @@ never as a parameter.
   `g1TagRouteFrames` (`bof · tag^units · argSep`), `g1FieldRouteFrames`
   (`… · index^arg1 · argSep`, which is also the `const` literal route), the
   two probe extensions `g1ReadBRouteFrames`/`g1ReadBOOBFrames`, and (added by
-  T2b-2 below) `g1RoundRouteFrames`, the route up to the deferred
+  T2b-2 below, **removed** by T2b-3a-1) `g1RoundRouteFrames`, the route up to
+  the deferred
   positive-index boundary — each with a split lemma saying the prefix followed
   by the rest of the word is literally `encodeG1Frames r ++ [.blank]`.  No
   producer annotation, no scratch region, no marker.
@@ -478,7 +479,9 @@ claimed nowhere in T2b-1:
   sends the operand walk to the `bRoundStart` bridge
   (`g1_bScan_index_bridge`) and runs no machine step beyond that boundary.  The
   T2b-2 slice below activates the bridge and executes exactly **one**
-  `index ↦ spent` round; general runtime-index addressing is claimed nowhere;
+  `index ↦ spent` round; general runtime-index addressing is claimed nowhere.
+  (**Superseded by T2b-3a-1, 2026-08-28**: that row is re-pointed to `bInsSeek`
+  and `g1_bScan_index_bridge` is renamed `g1_bScan_index_install`.)
 * **pass A, combine, write, repair, acceptance** — `readAStart`,
   `combineStart` and `readAResetStart` are idle rows; there is still no
   `TM.run`, `TM.accepts`, output-write, `spec`-correctness or full-clock
@@ -530,7 +533,8 @@ The tag is *not* carried across the T2a rewind: at the handoff the context is
 `bof · tag^units · argSep` off the tape.  No value, cell index, cursor or target
 is supplied to the machine, and `encodeG1` gains no annotation.
 
-Six exact endpoints, each pinning head, state **and** tape (`n` abbreviates
+Six historical exact endpoints (five remain live after T2b-3a-1), each pinning
+head, state **and** tape (`n` abbreviates
 `(encodeG1 r).length`, `u` abbreviates `r.tag.units`):
 
 | hypotheses on `r` | steps | endpoint state | head |
@@ -541,6 +545,12 @@ Six exact endpoints, each pinning head, state **and** tape (`n` abbreviates
 | `Canonical`, `tag ∈ {and, or}`, `arg2 = 0`, `vals[arg2]? = some b` | `g1ReadBSteps r = 2n+9 + 4*(u+arg1+5) + 1` | `readAResetStart`, `vB = b` | `4*(u+arg1+5)` |
 | `Canonical`, `tag ∈ {and, or}`, `arg2 = 0`, `vals[arg2]? = none` | `g1ReadBOOBSteps r = 2n+9 + 4*(u+arg1+5)` | `bOOB`, `g1Ctx0` (stable) | `4*(u+arg1+5)` |
 | `Canonical`, `tag ∈ {and, or}`, `arg2 = k+1` | `g1RoundRouteSteps r = 2n+9 + 4*(u+arg1+4)` | `bRoundStart` bridge, `g1Ctx0` | `4*(u+arg1+4)` |
+
+**The sixth row was removed by T2b-3a-1 (2026-08-28)** together with
+`g1RoundRouteSteps`: the re-pointed table no longer reaches `bRoundStart`.  Its
+replacement is `g1CS_readB_install_scan_exact` at
+`g1InstallScanSteps r = 2n+9 + 4*(u+arg1+arg2+4)`, endpoint `bProbe2`, head
+`4*(u+arg1+arg2+4)`.
 
 For `and`/`or`, `Canonical` is automatic; it is retained to compose uniformly
 with the T2a initial prefix.
@@ -592,7 +602,8 @@ and verifier obligation**, unchanged from T2a.
 Modules: `GateOneReadB.lean` (execution) and `GateOneReadBExamples.lean` (named
 examples), both registered in `lakefile.lean`; `GateOneRouting.lean` gains only
 the frame-level deferred route `g1RoundRouteFrames` with its split, fold and
-valid-path lemmas, and `GateOneControl.lean` only a docstring correction.
+valid-path lemmas (all **removed** by T2b-3a-1), and `GateOneControl.lean` only
+a docstring correction.
 Pinned by `Tests/TMGateOneReadBSurfaceTests.lean` (`#check` plus exact `check_*`
 contract wrappers) and audited by `Tests/AxiomsAudit.lean`; the observed cone of
 every new declaration is `[propext, Classical.choice, Quot.sound]` or a subset,
@@ -824,6 +835,12 @@ public clock `g1Clock` and the whole T2a validation grammar are unchanged.
   `27`, the state is `g1WalkState g1Ctx0`, and the tape is the thirteen-frame
   word `bof · tag⁴ · argSep · argSep · spent · separator · data true ·
   output false · finish · blank`.
+  (**Superseded by T2b-3a-1, 2026-08-28**: `g1CS_readB_round_boundary`,
+  `g1CS_index_first_round`, `g1IndexRoundSteps*`, `g1RoundExample*` and the
+  `151`-step projections are **removed**, because the re-pointed forward table
+  never reaches `bRoundStart`.  `g1CS_round_from_bridge` survives only as an
+  arbitrary-configuration regression, with the literal probe
+  `g1CS_round_probe`.)
 
 `Tests/TMGateOneControlSurfaceTests.lean`,
 `Tests/TMGateOneReadBSurfaceTests.lean`,
@@ -839,6 +856,141 @@ that branch), restoring the data region, pass A, combine, output write,
 `TM.accepts`, a full-clock theorem, and non-canonical or physically padded
 tapes.  After the round the control sits in `bWalk` on the last cell of the
 frame preceding the rewritten one, and no theorem runs it further.
+
+**T2b-3a-1: the G1 installation-scan opening, delivered (2026-08-28):**
+
+**Progress classification: Infrastructure.**
+
+The T2b-2 positive-index route is **superseded**.  Repeating the thirteen-step
+cycle does not address an operand-2 value: `bWalk` stops on *any* `index`, so
+once the operand-2 field empties it crosses the opening `argSep` and consumes
+operand-1 units.  The agreed replacement is the paired-marker (cursor) design —
+one `spent` per consumed index unit in the operand-2 field, one `cursor` in the
+data region.  **This slice delivers only the opening of that design**: the
+re-pointed row, the two modes it needs, and the read-only **installation scan**
+executed from a real initial configuration.  `G1Ctx`, the `G1State` field list,
+`g1Clock` and the whole T2a validation grammar are unchanged, and no new `Nat`,
+index, width, offset, length or request field appears anywhere in the machine,
+the control or the context.
+
+* `GateOneControl.lean` — `G1Mode` gains exactly **two** constructors,
+  `bInsSeek` (the installation scan) and `bProbe2` (its endpoint).  `g1Advance`
+  gains **three** rows and **one existing row is re-pointed**:
+
+  ```text
+  bScan    + index     ↦ bInsSeek     (re-pointed, was bRoundStart)
+  bInsSeek + index     ↦ bInsSeek
+  bInsSeek + spent     ↦ bInsSeek
+  bInsSeek + separator ↦ bProbe2
+  ```
+
+  Both modes are ordinary forward frame-reading modes, so `g1Transition` gains
+  **no rows at all** and there are **no new tuple lemmas**: their steps are the
+  existing `g1Transition_forward_*` lemmas.  `g1Advance_range`,
+  `g1Advance_ne_sink` and every T2a/T2b-1 grammar and execution theorem
+  re-derives unchanged, with the same statements and the same step literals.
+  The `bScan + data` row stays **absent**: a data frame before the separator is
+  still malformed and still rejects.
+
+  **`bProbe2` is an explicit local boundary.**  It has no outgoing `g1Advance`
+  row, so it completes every frame into `reject` and is `G1Stuck`
+  (`g1_bProbe2_stuck`); no theorem of this development runs the machine out of
+  it.  The **fourteen remaining cursor-walk modes** — `bSeek`, `bDec`, `bFwd`,
+  `bTurn`, `bRestoreFalse`/`bRestoreTrue`, `bLatchFalse`/`bLatchTrue`, `bIns`,
+  `bExh`, `bRet`, `bTurnFin`, `bFinFalse`/`bFinTrue` — together with their
+  `g1Advance` rows, their `g1Transition` rows and tuple lemmas, the kernel
+  instances, and every execution of the latch, the cursor install or a walk
+  round, are **PR2**.  None of them exists in the tree after this slice.
+* `GateOneRouting.lean` — `g1_bScan_index_install` replaces
+  `g1_bScan_index_bridge`; `g1_bRoundStart_unreachable` proves by `decide` that
+  **no** mode/frame pair completes into `bRoundStart`, and `g1_bProbe2_stuck`
+  pins the new boundary.  `g1InstallRouteFrames`
+  (`= g1FieldRouteFrames r · index^arg2 · separator`) is the fifth route prefix,
+  with `g1InstallRouteRest`, its length, its split, its fold (`= .bProbe2`) and
+  its valid path.  The bridge route `g1RoundRouteFrames` and its
+  split/fold/valid-path lemmas are **removed**: the re-point makes
+  `g1RoundRoute_advance` false outright.
+* `GateOneInstallScan.lean` (new) — a deliberately narrow module importing
+  `GateOneReadB` and nothing else.  It reuses the **existing** forward frame
+  scanner `g1FrameScanner`; it instantiates no reverse scanner and no frame
+  writer.  `G1InstallSkip` is the class of frames the scan crosses,
+  `g1Advance_bInsSeek_of_skip` the table fact, and `g1ValidPath_fix` /
+  `g1AdvanceList_fix` the heterogeneous-run forms `GateOneRouting` has only for
+  `List.replicate`.  `g1CS_walk_install_scan` is the `4 * (k + 1)`-step macro on
+  a caller-supplied `pre ++ skipped ++ separator :: suffix` layout, and
+  `g1CS_readB_install_scan_exact` is the re-pointed real-initial-configuration
+  route: `g1InstallScanSteps r = g1ReadBHandoffSteps r + 4*(units+arg1+arg2+4)`
+  steps land at `bProbe2` on the **first cell after the separator**, context
+  still `g1Ctx0`, tape **bit-for-bit the initial tape**.  `_head`, `_tape`,
+  `_state` are its projections and `g1InstallScanSteps_le_clock` keeps it inside
+  the unchanged clock.
+* `GateOneInstallScanExamples.lean` (new) — one literal probe on
+  `g1WalkExample = ⟨and, 0, 2, [false, true, true]⟩`: **fifteen** encoded frames
+  and `60` input cells; the explicit list-backed layout `g1WalkInitFrames`
+  appends one `blank`, so it has **sixteen** frames and `64` bits.  Exactly
+  `169 = 2*60 + 9 + 4*10` genuine steps from the real initial configuration
+  reach `bProbe2` at head `40`, with the tape equal to that same literal
+  sixteen-frame word.
+* `GateOneReadB.lean` — the obsolete positive live-route declarations
+  `g1RoundRouteSteps`, `g1RoundRouteSteps_le_clock`,
+  `g1CS_readB_round_deferred_exact` and `g1CS_readB_round_deferred_state` are
+  **removed**; the endpoint table drops from six rows to five.  Everything else
+  is retained verbatim, including the zero-phase, OOB-non-reject, unary/const
+  tape, stable-`bOOB` and exact-arrival hardening.  `g1CS_step_round_bridge`
+  stays, now documented as a caller-supplied regression step.
+* `GateOneIndexRound.lean` — reduced to the arbitrary-configuration regression.
+  `g1CS_round_from_bridge` (fourteen steps) and its provider chain
+  (`g1CS_step_round_bridge`, `g1CS_index_round_onList`,
+  `g1RewriteCycleObligation`) are kept, and a literal frame-list probe
+  `g1CS_round_probe` (`g1RoundProbeFramesIn/Out`, head `32 → 27`) is added.
+  `g1IndexRoundSteps`, `g1IndexRoundSteps_eq`, `g1IndexRoundSteps_le_clock`,
+  `g1CS_readB_round_boundary`, `g1CS_index_first_round`, `g1RoundRouteRest`,
+  `g1RoundExample*` and the four concrete `151`-step projections are
+  **removed** — every one of them asserted a live route the re-pointed table no
+  longer has.
+* `GateOneReadBExamples.lean` — `readB_bridge_at_index` becomes
+  `readB_install_at_index` (`bScan + index ↦ bInsSeek`), and the `arg2 = 1`
+  field-route docstring now names the installation scan as its successor.
+
+**The endpoint is reachability, not addressing.**  `g1CS_readB_install_scan_exact`
+says the machine gets to the first frame after the separator: a `.data` frame
+when the region is nonempty and `.output false` otherwise.  It latches no bit, installs
+no cursor, writes no cell and says nothing about which data frame the operand
+finally selects.  `bProbe2` has no successful frame row in this slice; an
+attempted full-frame read rejects, and no theorem executes that read.
+
+Pinned by `Tests/TMGateOneControlSurfaceTests.lean` (the two entry states plus
+exact wrappers for the re-pointed row and the complete four-row installation
+table), `Tests/TMGateOneRoutingSurfaceTests.lean` (the installation route, with
+exact wrappers for its split, fold, valid path, length, and for
+`g1_bRoundStart_unreachable` and `g1_bProbe2_stuck`) and
+`Tests/TMGateOneReadBSurfaceTests.lean` (exact
+wrappers for the installation exact/head/tape/state endpoints, the literal
+`169`-step run with its head, tape and clock, and the retained
+arbitrary-configuration round regression).  `Tests/AxiomsAudit.lean` prints the
+axioms of every load-bearing new theorem directly; the stale `#1662` roots are
+removed in the same change.
+
+This slice is **Infrastructure**.  Explicitly deferred and claimed nowhere, all
+of it **PR2**: the fourteen remaining cursor-walk modes and every row and tuple
+lemma they need, the
+cursor-walk tape invariant `Σ(j)`, the **installation driver** (latch plus
+cursor install executed from a real initial configuration), the reverse/write
+atomic macro family and its kernel instances, any iteration of the round or loop
+clock, addressing, the positive-index operand *value* read, the aggregated
+out-of-range branches, repair, pass A, combine, output write, `TM.accepts`,
+gate-semantics correctness, a full-clock theorem, and non-canonical or
+physically padded tapes.
+
+*Superseded statements in the T2b-1 and T2b-2 entries above:* the sentences
+saying the `arg2 > 0` branch hands off to `bRoundStart`, that
+`g1RoundRouteFrames`/`g1RoundRouteSteps` is a route prefix of a real run, and
+that `g1CS_index_first_round` reaches the first round from `initialConfig`, all
+describe the table before this slice.  The current handoff is `bInsSeek`, the
+current route prefix is `g1InstallRouteFrames`, and the current
+real-initial-config statement for that branch is
+`g1CS_readB_install_scan_exact`.  The T2b-2 endpoint table's sixth row
+(`bRoundStart` bridge) no longer exists.
 
 **T2a correction (2026-08-24).**  The first T2a head shipped a permissive
 forward table (`vTag` looping on every `tag`, `vArg1`/`vArg2` looping on every

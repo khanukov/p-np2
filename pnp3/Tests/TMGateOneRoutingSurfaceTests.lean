@@ -6,8 +6,10 @@ import Complexity.TMVerifier.TuringToolkit.GateOneRouting
 Exact import-side contracts for the fixed control's frame-level pass-B routing.
 This module pins the physical tag rescan, canonical-word prefix splits,
 context-bit preservation, const/store dispatches, zero-index success/OOB, and
-the explicit nonzero-index deferral.  It proves no `TM.runConfig`, acceptance,
-output, or gate-semantics claim.
+the positive-index installation route that replaces the retired bridge route.
+It proves no `TM.runConfig`, acceptance, output, or gate-semantics claim, and it
+pins **no** latch, cursor install, round, iteration or operand-value statement
+for `arg2 > 0`: those are PR2.  `g1_bProbe2_stuck` pins the boundary itself.
 -/
 
 namespace Pnp3.Tests.TMGateOneRoutingSurface
@@ -34,8 +36,18 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1ReadBRoute_validPath
 #check @g1ReadBOOB_advance
 #check @g1ReadBOOB_validPath
-#check @g1_bScan_index_bridge
+#check @g1_bScan_index_install
+#check @g1_insSeek_advance
+#check @g1_insSeek_validPath
+#check @g1InstallRouteFrames
+#check @g1InstallRouteRest
+#check @g1InstallRouteFrames_length
+#check @g1InstallRoute_split
+#check @g1InstallRoute_advance
+#check @g1InstallRoute_validPath
+#check @g1_bProbe2_stuck
 #check @g1_bRoundStart_stuck
+#check @g1_bRoundStart_unreachable
 #check @g1Advance_ne_sink
 #check @G1ForwardMode.readBStart
 #check @g1OOBState_ne_readAReset
@@ -162,12 +174,59 @@ theorem check_g1ReadBOOB_validPath (r : G1Request)
     G1ValidPath .readBStart (g1ReadBOOBFrames r) :=
   g1ReadBOOB_validPath r ht
 
-theorem check_g1_bScan_index_bridge (rest : List G1Frame) :
+/-- **The re-pointed positive-index handoff.** -/
+theorem check_g1_bScan_index_install (rest : List G1Frame) :
     g1AdvanceList .bScan (.index :: rest) =
-      g1AdvanceList .bRoundStart rest :=
-  g1_bScan_index_bridge rest
+      g1AdvanceList .bInsSeek rest :=
+  g1_bScan_index_install rest
+
+theorem check_g1_insSeek_advance (k : Nat) (rest : List G1Frame) :
+    g1AdvanceList .bInsSeek (List.replicate k .index ++ .separator :: rest) =
+      g1AdvanceList .bProbe2 rest :=
+  g1_insSeek_advance k rest
+
+theorem check_g1_insSeek_validPath (k : Nat) (rest : List G1Frame)
+    (hrest : G1ValidPath .bProbe2 rest) :
+    G1ValidPath .bInsSeek (List.replicate k .index ++ .separator :: rest) :=
+  g1_insSeek_validPath k rest hrest
+
+/-- **The installation route is a prefix of the canonical word itself**: no
+producer annotation, no scratch region, no marker. -/
+theorem check_g1InstallRoute_split (r : G1Request) :
+    g1InstallRouteFrames r ++ g1InstallRouteRest r =
+      encodeG1Frames r ++ [.blank] :=
+  g1InstallRoute_split r
+
+/-- **The installation route folds to the boundary `bProbe2`.** -/
+theorem check_g1InstallRoute_advance (r : G1Request)
+    (ht : r.tag = .and ∨ r.tag = .or) (k : Nat) (h2 : r.arg2 = k + 1) :
+    g1AdvanceList .readBStart (g1InstallRouteFrames r) = .bProbe2 :=
+  g1InstallRoute_advance r ht k h2
+
+theorem check_g1InstallRoute_validPath (r : G1Request)
+    (ht : r.tag = .and ∨ r.tag = .or) (k : Nat) (h2 : r.arg2 = k + 1) :
+    G1ValidPath .readBStart (g1InstallRouteFrames r) :=
+  g1InstallRoute_validPath r ht k h2
+
+theorem check_g1InstallRouteFrames_length (r : G1Request) :
+    (g1InstallRouteFrames r).length = r.tag.units + r.arg1 + r.arg2 + 4 :=
+  g1InstallRouteFrames_length r
 
 theorem check_g1_bRoundStart_stuck : G1Stuck .bRoundStart :=
   g1_bRoundStart_stuck
+
+/-- **The installation scan's endpoint is the boundary of this slice.**
+`bProbe2` has no successful frame row: an attempted full-frame read rejects,
+and no theorem executes it.  Nothing here latches a bit or installs a cursor;
+those rows are PR2. -/
+theorem check_g1_bProbe2_stuck : G1Stuck .bProbe2 :=
+  g1_bProbe2_stuck
+
+/-- **The retired bridge is unreachable from the forward table.**  This is what
+makes the surviving rewrite-cycle theorems an arbitrary-configuration
+regression rather than a route. -/
+theorem check_g1_bRoundStart_unreachable (mode : G1Mode) (frame : G1Frame) :
+    g1Advance mode frame ≠ .bRoundStart :=
+  g1_bRoundStart_unreachable mode frame
 
 end Pnp3.Tests.TMGateOneRoutingSurface

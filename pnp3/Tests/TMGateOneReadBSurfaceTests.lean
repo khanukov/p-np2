@@ -1,4 +1,5 @@
 import Complexity.TMVerifier.TuringToolkit.GateOneIndexRound
+import Complexity.TMVerifier.TuringToolkit.GateOneInstallScanExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneReadBExamples
 
 /-!
@@ -8,17 +9,20 @@ Import-side contracts for the T2b pass-B *execution* surface: exact
 `TM.runConfig` route capstones from the real initial configuration
 `G1M.initialConfig (g1Point (encodeG1 r))`, the `const` literal decode, the
 zero-index operand-2 read, the stable out-of-range boundary, the four idle
-handoffs, named per-route examples, and the T2b-2 destructive index round
-(bridge, fourteen-step composition, and one concrete request).
+handoffs, named per-route examples, the **installation scan** that the
+re-pointed positive-index row opens, and the thirteen-step rewrite cycle kept as
+an arbitrary-configuration regression.
 
 The initial-configuration capstones are scoped to the exact tape `encodeG1 r`.
 Local adapters intentionally use arbitrary aligned tapes; post-boundary
 stability pins have no public-clock bound.  There is **no** `TM.run`,
 `TM.accepts`, output-write, combine, pass-A or `spec`-correctness surface, and
-no surface claiming more than **one** destructive round for `arg2 > 0`:
-nothing pins iteration, runtime addressing, a positive-index operand-value
-read, or acceptance.  This is an audit surface: it pins public signatures and
-proves nothing new.
+for `arg2 > 0` the only executed endpoint pinned here is the read-only
+installation scan.  `bProbe2` has no successful frame row; an attempted full
+frame read rejects and no theorem executes it.  Nothing pins a latch, a cursor
+install, a round, an iteration, runtime addressing, a
+positive-index operand-value read, or acceptance — those are PR2.  This is an
+audit surface: it pins public signatures and proves nothing new.
 -/
 
 namespace Pnp3.Tests.TMGateOneReadBSurface
@@ -28,13 +32,18 @@ open Pnp3.Internal.PsubsetPpoly.TM
 
 /-! ## The positive-index route, at frame level -/
 
-#check @g1RoundRouteFrames
-#check @g1RoundRouteFrames_length
-#check @g1RoundRoute_split
-#check @g1RoundRoute_advance
-#check @g1RoundRoute_validPath
-#check @g1_bScan_index_bridge
+#check @g1InstallRouteFrames
+#check @g1InstallRouteRest
+#check @g1InstallRouteFrames_length
+#check @g1InstallRoute_split
+#check @g1InstallRoute_advance
+#check @g1InstallRoute_validPath
+#check @g1_bScan_index_install
+#check @g1_insSeek_advance
+#check @g1_insSeek_validPath
+#check @g1_bProbe2_stuck
 #check @g1_bRoundStart_stuck
+#check @g1_bRoundStart_unreachable
 
 /-! ## Budget: the routes fit the tape and the unchanged public clock -/
 
@@ -46,13 +55,14 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1ConstRouteSteps
 #check @g1ReadBSteps
 #check @g1ReadBOOBSteps
-#check @g1RoundRouteSteps
+#check @g1InstallScanSteps
 #check @g1ReadARouteSteps_le_clock
 #check @g1FieldRouteSteps_le_clock
 #check @g1ConstRouteSteps_le_clock
 #check @g1ReadBSteps_le_clock
 #check @g1ReadBOOBSteps_le_clock
-#check @g1RoundRouteSteps_le_clock
+#check @g1InstallScanSteps_eq
+#check @g1InstallScanSteps_le_clock
 
 /-! ## Exact execution: the generic pass-B scan and the stationary dispatches -/
 
@@ -76,8 +86,18 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1CS_readB_zero_exact
 #check @g1CS_readB_zero_oob_exact
 #check @g1CS_readB_zero_oob_stable
-#check @g1CS_readB_round_deferred_exact
 
+/-! ## The installation scan: the re-pointed positive-index endpoint -/
+
+#check @G1InstallSkip
+#check @g1Advance_bInsSeek_of_skip
+#check @g1ValidPath_fix
+#check @g1AdvanceList_fix
+#check @g1CS_walk_install_scan
+#check @g1CS_readB_install_scan_exact
+#check @g1CS_readB_install_scan_head
+#check @g1CS_readB_install_scan_tape
+#check @g1CS_readB_install_scan_state
 
 /-! ## The components of the capstones -/
 
@@ -96,7 +116,6 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1CS_readB_zero_oob_tape
 #check @g1CS_readB_zero_oob_ne_success
 #check @g1CS_readB_oob_ne_reject
-#check @g1CS_readB_round_deferred_state
 
 /-! ## Named examples -/
 
@@ -120,7 +139,7 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @G1Examples.readB_const_true_clock
 #check @G1Examples.readB_field_route_and
 #check @G1Examples.readB_field_route_or
-#check @G1Examples.readB_bridge_at_index
+#check @G1Examples.readB_install_at_index
 #check @G1Examples.readB_and_true
 #check @G1Examples.readB_and_false
 #check @G1Examples.readB_or_true
@@ -244,33 +263,119 @@ theorem check_g1CS_runConfig_combine_idle (n h : Nat)
       g1AlignedConfig n h hh tape .combineStart .p0 false false false ctx :=
   g1CS_runConfig_combine_idle n h hh tape ctx k
 
-theorem check_g1RoundRoute_split (r : G1Request) (k : Nat)
-    (h2 : r.arg2 = k + 1) :
-    g1RoundRouteFrames r ++
-        (List.replicate k .index ++ .separator ::
-          (r.vals.map .data ++ [.output false, .finish, .blank])) =
+theorem check_g1InstallRoute_split (r : G1Request) :
+    g1InstallRouteFrames r ++ g1InstallRouteRest r =
       encodeG1Frames r ++ [.blank] :=
-  g1RoundRoute_split r k h2
+  g1InstallRoute_split r
 
--- T2b-2: the destructive index round.  One round, executed; no iteration,
--- addressing or `arg2 > 0` value-read surface is pinned here.
-#check @g1RoundRouteRest
-#check @g1IndexRoundSteps
-#check @g1IndexRoundSteps_eq
-#check @g1IndexRoundSteps_le_clock
+/-! ## The installation scan, pinned exactly
+
+The one executed positive-index endpoint.  Each wrapper restates it verbatim, so
+a later slice cannot silently weaken a hypothesis, drop the tape equation, move
+the head, or turn the probe into a value read. -/
+
+/-- **The re-pointed positive-index route, exactly.**  Steps, head, control
+state, context and the complete tape are all pinned, and the tape is
+bit-for-bit the initial tape. -/
+theorem check_g1CS_readB_install_scan_exact (r : G1Request) (hc : r.Canonical)
+    (ht : r.tag = .and ∨ r.tag = .or) (k : Nat) (h2 : r.arg2 = k + 1) :
+    TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1ReadBHandoffSteps r + 4 * (r.tag.units + r.arg1 + r.arg2 + 4)) =
+      g1AlignedConfig (encodeG1 r).length
+        (4 * (r.tag.units + r.arg1 + r.arg2 + 4))
+        (g1_route_lt_tapeLength r _ (by omega))
+        (G1M.initialConfig (g1Point (encodeG1 r))).tape
+        .bProbe2 .p0 false false false g1Ctx0 :=
+  g1CS_readB_install_scan_exact r hc ht k h2
+
+theorem check_g1CS_readB_install_scan_head (r : G1Request) (hc : r.Canonical)
+    (ht : r.tag = .and ∨ r.tag = .or) (k : Nat) (h2 : r.arg2 = k + 1) :
+    ((TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1InstallScanSteps r)).head : Nat) =
+      4 * (r.tag.units + r.arg1 + r.arg2 + 4) :=
+  g1CS_readB_install_scan_head r hc ht k h2
+
+/-- **The installation scan writes nothing.** -/
+theorem check_g1CS_readB_install_scan_tape (r : G1Request) (hc : r.Canonical)
+    (ht : r.tag = .and ∨ r.tag = .or) (k : Nat) (h2 : r.arg2 = k + 1) :
+    (TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1InstallScanSteps r)).tape =
+      (G1M.initialConfig (g1Point (encodeG1 r))).tape :=
+  g1CS_readB_install_scan_tape r hc ht k h2
+
+theorem check_g1CS_readB_install_scan_state (r : G1Request) (hc : r.Canonical)
+    (ht : r.tag = .and ∨ r.tag = .or) (k : Nat) (h2 : r.arg2 = k + 1) :
+    (TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1InstallScanSteps r)).state.snd = g1Probe2State g1Ctx0 :=
+  g1CS_readB_install_scan_state r hc ht k h2
+
+theorem check_g1InstallScanSteps_le_clock (r : G1Request) :
+    g1InstallScanSteps r ≤ g1Clock (encodeG1 r).length :=
+  g1InstallScanSteps_le_clock r
+
+/-! ## The concrete installation-scan probe
+
+`⟨and, 0, 2, [false, true, true]⟩`: fifteen encoded frames and `60` input cells;
+the explicit list-backed layout appends one `blank`, so it has sixteen frames
+and `64` bits. -/
+
+#check @G1InstallScanExamples.g1WalkExample
+#check @G1InstallScanExamples.g1WalkExample_canonical
+#check @G1InstallScanExamples.g1WalkExample_length
+#check @G1InstallScanExamples.g1WalkInitFrames
+#check @G1InstallScanExamples.g1WalkExample_initial_tape
+#check @G1InstallScanExamples.walk_install_scan_steps
+#check @G1InstallScanExamples.walk_install_scan
+#check @G1InstallScanExamples.walk_install_scan_head
+#check @G1InstallScanExamples.walk_install_scan_state
+#check @G1InstallScanExamples.walk_install_scan_tape
+#check @G1InstallScanExamples.walk_install_scan_clock
+
+open G1InstallScanExamples in
+/-- **Exactly `169` genuine steps** from the real initial configuration reach
+`bProbe2` at head `40`, tape bit-for-bit the initial tape. -/
+theorem check_walk_install_scan :
+    TM.runConfig (M := G1M)
+        (G1M.initialConfig (g1Point (encodeG1 g1WalkExample))) 169 =
+      g1AlignedConfig (encodeG1 g1WalkExample).length 40
+        (g1_route_lt_tapeLength g1WalkExample 10 (by decide))
+        (G1M.initialConfig (g1Point (encodeG1 g1WalkExample))).tape
+        .bProbe2 .p0 false false false g1Ctx0 :=
+  walk_install_scan
+
+open G1InstallScanExamples in
+theorem check_walk_install_scan_head :
+    ((TM.runConfig (M := G1M)
+        (G1M.initialConfig (g1Point (encodeG1 g1WalkExample))) 169).head : Nat) =
+      40 :=
+  walk_install_scan_head
+
+open G1InstallScanExamples in
+/-- The literal run leaves the sixteen-frame initial word untouched. -/
+theorem check_walk_install_scan_tape :
+    (TM.runConfig (M := G1M)
+        (G1M.initialConfig (g1Point (encodeG1 g1WalkExample))) 169).tape =
+      g1ListTape (n := (encodeG1 g1WalkExample).length)
+        (g1WalkInitFrames.flatMap G1Frame.bits) :=
+  walk_install_scan_tape
+
+open G1InstallScanExamples in
+theorem check_walk_install_scan_clock :
+    169 ≤ g1Clock (encodeG1 g1WalkExample).length :=
+  walk_install_scan_clock
+
+/-! ## The thirteen-step rewrite cycle, as an arbitrary-configuration regression
+
+The forward table never produces `bRoundStart` (`g1_bRoundStart_unreachable`),
+so the caller supplies the configuration, the frame list and the safety bound.
+Nothing here reaches the bridge from `G1M.initialConfig`, and no iteration,
+addressing or `arg2 > 0` value-read surface is pinned. -/
+
 #check @g1CS_step_round_bridge
-#check @g1CS_readB_round_boundary
 #check @g1CS_round_from_bridge
-#check @g1CS_index_first_round
-#check @g1RoundExample
-#check @g1RoundExample_canonical
-#check @g1RoundExampleInitFrames
-#check @g1RoundExampleFrames
-#check @g1RoundExample_initial_tape
-#check @g1CS_round_example_head
-#check @g1CS_round_example_state
-#check @g1CS_round_example_tape
-#check @g1CS_round_example_clock
+#check @g1RoundProbeFramesIn
+#check @g1RoundProbeFramesOut
+#check @g1CS_round_probe
 
 theorem check_g1CS_round_from_bridge (n : Nat) (pre suffix : List G1Frame)
     (ctx : G1Ctx) (hpre : 0 < pre.length)
@@ -284,16 +389,15 @@ theorem check_g1CS_round_from_bridge (n : Nat) (pre suffix : List G1Frame)
         .bWalk .p3 false false false ctx :=
   g1CS_round_from_bridge n pre suffix ctx hpre hsafe
 
-theorem check_g1CS_index_first_round (r : G1Request) (hc : r.Canonical)
-    (ht : r.tag = .and ∨ r.tag = .or) (k : Nat) (h2 : r.arg2 = k + 1) :
-    TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
-        (g1IndexRoundSteps r) =
-      g1AlignedConfig (encodeG1 r).length (4 * (r.tag.units + r.arg1 + 3) - 1)
-        (Nat.lt_of_le_of_lt (Nat.sub_le _ _)
-          (g1_route_lt_tapeLength r _ (by omega)))
-        (g1ListTape ((g1FieldRouteFrames r ++
-          G1Frame.spent :: g1RoundRouteRest r k).flatMap G1Frame.bits))
-        .bWalk .p3 false false false g1Ctx0 :=
-  g1CS_index_first_round r hc ht k h2
+theorem check_g1CS_round_probe (n : Nat) (ctx : G1Ctx)
+    (hsafe : 32 < G1M.tapeLength n) :
+    TM.runConfig (M := G1M)
+        (g1AlignedConfig n 32 hsafe
+          (g1ListTape (g1RoundProbeFramesIn.flatMap G1Frame.bits))
+          .bRoundStart .p0 false false false ctx) 14 =
+      g1AlignedConfig n 27 (by omega)
+        (g1ListTape (g1RoundProbeFramesOut.flatMap G1Frame.bits))
+        .bWalk .p3 false false false ctx :=
+  g1CS_round_probe n ctx hsafe
 
 end Pnp3.Tests.TMGateOneReadBSurface

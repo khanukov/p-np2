@@ -143,8 +143,16 @@ lean_lib PnP3 where
     -- per-route examples (`GateOneReadBExamples`).
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneReadB,
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneReadBExamples,
-    -- T2b-2, one destructive operand-2 index round: the bridge, the
-    -- fourteen-step composed round and one concrete encoded request.
+    -- T2b-3a, the cursor-walk installation scan: the re-pointed
+    -- positive-index route from the real initial configuration
+    -- (`GateOneInstallScan`) and its concrete literal probe
+    -- (`GateOneInstallScanExamples`).
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneInstallScan,
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneInstallScanExamples,
+    -- The thirteen-step rewrite cycle at the G1 control, kept as an
+    -- arbitrary-configuration regression: the bridge, the fourteen-step
+    -- composed round and one literal frame-list probe.  Unreachable from
+    -- `G1M.initialConfig`.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneIndexRound,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,

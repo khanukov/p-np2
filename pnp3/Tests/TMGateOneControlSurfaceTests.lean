@@ -16,11 +16,15 @@ fourteen transition tuples of the retired destructive index round
 transition tuples of the cursor walk (the reverse seek `bSeek` with its three
 outcomes, the `index ↦ spent` writer `bDec`, the two turns, the two
 cursor-restore writers, the two **terminal** restore writers, the two latch
-dispatches and the leftward cursor writer `bIns`).  It also pins the ten
+dispatches and the leftward cursor writer `bIns`).  It also pins the eleven
 transition tuples of the **operand-2 repair sweep** (the reverse scan
-`bRepairSeek` with its three outcomes, the `spent ↦ index` writer
+`bRepairSeek` with its **four** outcomes — the `spent` write handoff, the `bof`
+terminal handoff, a `G1RepairSkip` frame continuing the scan, and the `reject`
+sink for every window it may not cross — the `spent ↦ index` writer
 `bRepairWrite`, its back-walk `bRepairBack`, its hop `bRepairHop` and the anchor
-dispatch `bRepairDone` into the still-idle `readAStart`) — no route of this
+dispatch `bRepairDone` into the still-idle `readAStart`), together with its
+reverse frame table `g1RepairBackAdvance`/`g1RepairBackComplete` and the literal
+codewords that reject it — no route of this
 slice enters those five modes, and `readAResetStart` is still idle.  The
 five *forward* walk modes — `bInsSeek`, `bProbe2`, `bFwd`, `bExh` and `bRet` —
 have no transition blocks of their own.  Execution lives in separate layers with
@@ -325,11 +329,12 @@ theorem check_g1Transition_bFin (phase : Fin 1) (b : Bool)
     by cases b <;> rfl⟩
 
 /-- **The reverse repair scan, pinned exactly.**  Three buffering steps and a
-three-way decision at frame position `0`: a `spent` unit is the write handoff,
-the `bof` anchor the terminal handoff — both *without* moving — and every other
-frame continues the scan one frame further left. -/
+**four-way** decision at frame position `0`: a `spent` unit is the write handoff,
+the `bof` anchor the terminal handoff, a crossable interior frame continues the
+scan one frame further left, and a window the scan may not cross enters the
+`reject` sink.  All three non-continuing rows *stay*. -/
 theorem check_g1Transition_bRepairSeek (phase : Fin 1) (b0 b1 b2 scan : Bool)
-    (ctx : G1Ctx) :
+    (ctx : G1Ctx) (frame : G1Frame) :
     g1Transition phase (g1State .bRepairSeek .p3 b0 b1 b2 ctx) scan =
         (0, g1State .bRepairSeek .p2 false false scan ctx, scan, .left) ∧
       g1Transition phase (g1State .bRepairSeek .p2 b0 b1 b2 ctx) scan =
@@ -342,16 +347,58 @@ theorem check_g1Transition_bRepairSeek (phase : Fin 1) (b0 b1 b2 scan : Bool)
       (decodeG1Frame? [scan, b0, b1, b2] = some .bof →
         g1Transition phase (g1State .bRepairSeek .p0 b0 b1 b2 ctx) scan =
           (0, g1RepairDoneState ctx, scan, .stay)) ∧
-      (decodeG1Frame? [scan, b0, b1, b2] ≠ some .spent →
-        decodeG1Frame? [scan, b0, b1, b2] ≠ some .bof →
+      (decodeG1Frame? [scan, b0, b1, b2] = some frame → G1RepairSkip frame →
         g1Transition phase (g1State .bRepairSeek .p0 b0 b1 b2 ctx) scan =
-          (0, g1RepairSeekState ctx, scan, .left)) :=
+          (0, g1RepairSeekState ctx, scan, .left)) ∧
+      (g1RepairBackComplete scan b0 b1 b2 = .reject →
+        g1Transition phase (g1State .bRepairSeek .p0 b0 b1 b2 ctx) scan =
+          (0, g1RejectState, scan, .stay)) :=
   ⟨g1Transition_bRepairSeek_p3 phase b0 b1 b2 scan ctx,
     g1Transition_bRepairSeek_p2 phase b0 b1 b2 scan ctx,
     g1Transition_bRepairSeek_p1 phase b0 b1 b2 scan ctx,
     g1Transition_bRepairSeek_p0_spent phase b0 b1 b2 scan ctx,
     g1Transition_bRepairSeek_p0_bof phase b0 b1 b2 scan ctx,
-    g1Transition_bRepairSeek_p0_other phase b0 b1 b2 scan ctx⟩
+    g1Transition_bRepairSeek_p0_skip phase b0 b1 b2 scan ctx frame,
+    g1Transition_bRepairSeek_p0_bad phase b0 b1 b2 scan ctx⟩
+
+/-- **The malformed windows, pinned literally.**  `G1RepairSkip` is *exactly*
+the crossable interior frame kinds, and the two forbidden decodable codewords
+`blank = 0000` and `cursor = 0111`, together with the three reserved codes
+`1101`, `1110`, `1111` that decode to nothing, all send the frame-position-`0`
+row of `bRepairSeek` into the `reject` sink without moving.  The reserved codes
+have no `G1Frame` at all, so they are pinned at the bit level — there is no
+frame-level run to state for them. -/
+theorem check_g1Transition_bRepairSeek_malformed (phase : Fin 1) (ctx : G1Ctx) :
+    (decodeG1Frame? [true, true, false, true] = none ∧
+        decodeG1Frame? [true, true, true, false] = none ∧
+        decodeG1Frame? [true, true, true, true] = none) ∧
+      (∀ f : G1Frame, G1RepairSkip f → g1RepairBackAdvance f = .bRepairSeek) ∧
+      (g1RepairBackAdvance .spent = .bRepairWrite ∧
+        g1RepairBackAdvance .bof = .bRepairDone ∧
+        g1RepairBackAdvance .blank = .reject ∧
+        g1RepairBackAdvance .cursor = .reject) ∧
+      g1Transition phase (g1State .bRepairSeek .p0 false false false ctx)
+          false = (0, g1RejectState, false, .stay) ∧
+      g1Transition phase (g1State .bRepairSeek .p0 true true true ctx)
+          false = (0, g1RejectState, false, .stay) ∧
+      g1Transition phase (g1State .bRepairSeek .p0 true false true ctx)
+          true = (0, g1RejectState, true, .stay) ∧
+      g1Transition phase (g1State .bRepairSeek .p0 true true false ctx)
+          true = (0, g1RejectState, true, .stay) ∧
+      g1Transition phase (g1State .bRepairSeek .p0 true true true ctx)
+          true = (0, g1RejectState, true, .stay) :=
+  ⟨decodeG1Frame_reserved, fun _ h => g1RepairBackAdvance_of_skip h,
+    ⟨rfl, rfl, rfl, rfl⟩,
+    g1Transition_bRepairSeek_p0_bad phase false false false false ctx
+      g1RepairBackComplete_forbidden.1,
+    g1Transition_bRepairSeek_p0_bad phase true true true false ctx
+      g1RepairBackComplete_forbidden.2,
+    g1Transition_bRepairSeek_p0_bad phase true false true true ctx
+      g1RepairBackComplete_reserved.1,
+    g1Transition_bRepairSeek_p0_bad phase true true false true ctx
+      g1RepairBackComplete_reserved.2.1,
+    g1Transition_bRepairSeek_p0_bad phase true true true true ctx
+      g1RepairBackComplete_reserved.2.2⟩
 
 /-- **The `spent ↦ index` writer, its back-walk and its hop, pinned exactly.**
 The four cells the writer lays down are literally `G1Frame.index.bits`, the

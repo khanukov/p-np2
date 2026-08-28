@@ -7,22 +7,36 @@ import Complexity.TMVerifier.TuringToolkit.GateOneWalkDriver
 **Progress classification: Infrastructure.**
 
 The executable half of the Repair-1 slice.  `GateOneControl` supplies the repair
-rows and their tuple lemmas; this module turns them into **two concrete
+rows, the reverse table `g1RepairBackAdvance`/`g1RepairBackComplete`, the
+crossable-frame predicate `G1RepairSkip` and their tuple lemmas; this module
+turns them into **two concrete
 instances of the generic frame kernels** — `g1RepairScanner`
 (`ReverseFrameScanner`: the reverse repair scan, stopping on a `spent` unit at
-the write handoff or on the `bof` anchor at the terminal handoff) and
+the write handoff, on the `bof` anchor at the terminal handoff, and on any frame
+it may not cross in the `reject` sink) and
 `g1RepairCycle` (`FrameRewriteCycle`: `spent ↦ index`, the exact mirror of T1's
 `t1RepairCycle`) — and into exact `TM.runConfig` macros on an **arbitrary
 surrounding frame list**: the thirteen-step cycle (`g1CS_repair_cycle_onList`,
 `4 + 4 + 4 + 1`, head `4p + 3 ↦ 4p - 1`), the combined seek/repair step
-(`g1CS_repair_seek_and_repair`), the single skipped frame
-(`g1CS_repair_frame_skip`), the read-only skip of a whole run
+(`g1CS_repair_seek_and_repair`), the single crossable frame
+(`g1CS_repair_frame_skip`), the four-step rejection of a frame the scan may not
+cross (`g1CS_repair_frame_reject`, with its sink-stable form
+`g1CS_repair_frame_reject_idle`), the read-only skip of a whole run
 (`g1CS_repair_scan_skip`), the **iteration** turning a contiguous run of `s`
 consumed units back into `s` `index` frames in exactly `13 * s` steps
 (`g1CS_repair_spent_run`), and the anchor read plus dispatch
 (`g1CS_repair_finish`).  `g1CS_repair_pass_exact` composes them into the generic
 repair pass, with the same closed cost `g1RepairPassSteps a s m =
 4m + 13s + 4a + 5` as T1's `t1RepairSteps`.
+
+**The sweep does not cross corrupted tape.**  `G1RepairSkip` holds for exactly
+the canonical interior frame kinds — the tag run, both `argSep`s, `index`, the
+`separator`, the data region, `output` and `finish` — and the scan's fourth
+outcome sends every other window (`blank`, a leftover `cursor`, and the three
+reserved codes, which decode to nothing) to the `reject` sink.  The skip
+hypotheses `hskip`/`hleft`/`hmid` of the macros below are therefore genuine
+constraints on the caller's frame list, and no run of this module can rewrite a
+`spent` unit that lies behind a malformed frame.
 
 **Everything here is caller-supplied.**  Every statement below takes the
 caller's `n`, head-safety bound, frame list and `G1Ctx`, and **no route of the
@@ -63,32 +77,20 @@ theorem g1_repair_modes_stuck :
     G1Stuck .bRepairSeek ∧ G1Stuck .bRepairWrite ∧ G1Stuck .bRepairBack ∧
       G1Stuck .bRepairHop ∧ G1Stuck .bRepairDone := by decide
 
-/-- Frames the repair scan crosses: **everything except** a consumed operand-2
-unit and the anchor — on the canonical layout, every nonspent frame (the tag
-run, both `argSep`s, both index fields, the `separator`, the data region, the
-destination frame, the terminator and the trailing blank). -/
-def G1RepairSkip : G1Frame → Prop
-  | .spent => False
-  | .bof => False
-  | _ => True
+/-- G1's right-to-left repair table, as a mode-indexed reverse frame table.  The
+mode argument is inert: the repair pass has one reverse mode.  The table itself
+is `GateOneControl`'s `g1RepairBackAdvance`, the very function the `bRepairSeek`
+transition row scrutinises — a `spent` unit stops the pass at the write handoff,
+the `bof` anchor at the terminal handoff, a `G1RepairSkip` frame continues it one
+frame further left, and a `blank` or a leftover `cursor` rejects. -/
+def g1RepairRevAdvance (_mode : G1Mode) (frame : G1Frame) : G1Mode :=
+  g1RepairBackAdvance frame
 
-instance : DecidablePred G1RepairSkip := fun f => by
-  cases f <;> first | exact isTrue trivial | exact isFalse id
-
-/-- G1's right-to-left repair table: a `spent` unit stops the pass at the write
-handoff, the `bof` anchor stops it at the terminal handoff, every other frame
-continues it one frame further left. -/
-def g1RepairRevAdvance : G1Mode → G1Frame → G1Mode
-  | _, .spent => .bRepairWrite
-  | _, .bof => .bRepairDone
-  | _, _ => .bRepairSeek
-
-/-- The bit-level form of `g1RepairRevAdvance`, as `g1Transition` computes it. -/
+/-- The bit-level form of `g1RepairRevAdvance`, as `g1Transition` computes it:
+`GateOneControl`'s `g1RepairBackComplete`, which rejects every window that
+decodes to nothing — in particular the three reserved codes. -/
 def g1RepairRevComplete (_mode : G1Mode) (b0 b1 b2 b3 : Bool) : G1Mode :=
-  match decodeG1Frame? [b0, b1, b2, b3] with
-  | some .spent => .bRepairWrite
-  | some .bof => .bRepairDone
-  | _ => .bRepairSeek
+  g1RepairBackComplete b0 b1 b2 b3
 
 /-- The single G1 mode of the repair sweep that reads frames right to left. -/
 def G1RepairMode : G1Mode → Prop
@@ -98,31 +100,48 @@ def G1RepairMode : G1Mode → Prop
 theorem G1RepairMode.eq {m : G1Mode} (h : G1RepairMode m) : m = .bRepairSeek := by
   cases m <;> simp_all [G1RepairMode]
 
-/-- The repair scan stops at the write handoff or at the terminal handoff. -/
+/-- The repair scan ends at the write handoff, at the terminal handoff, or in the
+`reject` sink.  Spelled as an explicit three-way disjunction rather than
+`≠ bRepairSeek`, so that the exact set of stopping modes is visible in the
+statement. -/
 def G1RepairStop (mode : G1Mode) : Prop :=
-  mode = .bRepairWrite ∨ mode = .bRepairDone
+  mode = .bRepairWrite ∨ mode = .bRepairDone ∨ mode = .reject
+
+/-- The three states G1's repair scan can stop in.  The sink drops the carried
+context, which is why this is a case distinction and not a uniform record — the
+exact mirror of T1's `t1RepairStopState`. -/
+def g1RepairStopState (mode : G1Mode) (ctx : G1Ctx) : G1State :=
+  match mode with
+  | .bRepairWrite => g1State .bRepairWrite .p0 false false false ctx
+  | .bRepairDone => g1State .bRepairDone .p0 false false false ctx
+  | _ => g1RejectState
+
+theorem g1RepairStopState_write (ctx : G1Ctx) :
+    g1RepairStopState .bRepairWrite ctx = g1RepairWriteState ctx := rfl
+
+theorem g1RepairStopState_done (ctx : G1Ctx) :
+    g1RepairStopState .bRepairDone ctx = g1RepairDoneState ctx := rfl
+
+theorem g1RepairStopState_reject (ctx : G1Ctx) :
+    g1RepairStopState .reject ctx = g1RejectState := rfl
 
 theorem g1RepairRevAdvance_of_skip {m : G1Mode} {f : G1Frame}
-    (h : G1RepairSkip f) : g1RepairRevAdvance m f = .bRepairSeek := by
-  cases f <;> first | rfl | exact (show False from h).elim
+    (h : G1RepairSkip f) : g1RepairRevAdvance m f = .bRepairSeek :=
+  g1RepairBackAdvance_of_skip h
 
-private theorem g1RepairRevComplete_cases (m : G1Mode) (b0 b1 b2 b3 : Bool) :
-    (g1RepairRevComplete m b0 b1 b2 b3 = .bRepairWrite ∧
-        decodeG1Frame? [b0, b1, b2, b3] = some .spent) ∨
-      (g1RepairRevComplete m b0 b1 b2 b3 = .bRepairDone ∧
-        decodeG1Frame? [b0, b1, b2, b3] = some .bof) ∨
-      (g1RepairRevComplete m b0 b1 b2 b3 = .bRepairSeek ∧
-        decodeG1Frame? [b0, b1, b2, b3] ≠ some .spent ∧
-        decodeG1Frame? [b0, b1, b2, b3] ≠ some .bof) := by
-  unfold g1RepairRevComplete
-  cases hd : decodeG1Frame? [b0, b1, b2, b3] with
-  | none => exact Or.inr (Or.inr ⟨rfl, by simp, by simp⟩)
-  | some f => cases f <;> simp_all
+/-- A frame the scan may not cross sends it to the sink. -/
+theorem g1RepairRevAdvance_reject {m : G1Mode} {f : G1Frame}
+    (h : f = .blank ∨ f = .cursor) : g1RepairRevAdvance m f = .reject := by
+  rcases h with rfl | rfl <;> rfl
 
-/-- **G1's repair scan is an instance of the generic reverse kernel.**  The
-carried `G1Ctx` triple is threaded through unchanged, so whatever the caller
-latched in `vB` survives the whole sweep.  All six obligations are standalone
-tuple lemmas of `GateOneControl`; `g1Transition` is not unfolded here. -/
+/-- **G1's repair scan is an instance of the generic reverse kernel.**  On a
+crossable frame the carried `G1Ctx` triple is threaded through unchanged, so
+whatever the caller latched in `vB` survives the whole sweep; the `reject`
+branch of `g1RepairStopState` drops it, which is why the stop state is a
+dispatcher.  All six obligations are standalone
+tuple lemmas of `GateOneControl` — the four frame-position rows plus the four
+frame-position-`0` outcomes `spent`/`bof`/`skip`/`bad`; `g1Transition` is not
+unfolded here. -/
 def g1RepairScanner : ReverseFrameScanner G1State G1Frame G1Mode G1Ctx where
   program := g1CS
   phase := g1CS.startPhase
@@ -135,13 +154,11 @@ def g1RepairScanner : ReverseFrameScanner G1State G1Frame G1Mode G1Ctx where
   rst2 := fun m ctx b3 => g1State m .p2 false false b3 ctx
   rst1 := fun m ctx b2 b3 => g1State m .p1 false b2 b3 ctx
   rst0 := fun m ctx b1 b2 b3 => g1State m .p0 b1 b2 b3 ctx
-  stopState := fun m ctx => g1State m .p0 false false false ctx
+  stopState := g1RepairStopState
   revComplete_decode := by
     intro m f b0 b1 b2 b3 h
     have h' : decodeG1Frame? [b0, b1, b2, b3] = some f := h
-    unfold g1RepairRevComplete
-    rw [h']
-    cases f <;> rfl
+    exact g1RepairBackComplete_some h'
   rstep_p3 := by
     intro m hm ctx scan
     obtain rfl := hm.eq
@@ -157,24 +174,56 @@ def g1RepairScanner : ReverseFrameScanner G1State G1Frame G1Mode G1Ctx where
   rstep_p0 := by
     intro m hm ctx b1 b2 b3 scan hne
     obtain rfl := hm.eq
-    rcases g1RepairRevComplete_cases .bRepairSeek scan b1 b2 b3 with
-      ⟨he, -⟩ | ⟨he, -⟩ | ⟨he, hs, hb⟩
-    · exact absurd (he ▸ Or.inl rfl : G1RepairStop _) hne
-    · exact absurd (he ▸ Or.inr rfl : G1RepairStop _) hne
-    · rw [he]
-      exact g1Transition_bRepairSeek_p0_other g1CS.startPhase b1 b2 b3 scan ctx
-        hs hb
+    have hne' : ¬ G1RepairStop (g1RepairBackComplete scan b1 b2 b3) := hne
+    cases hd : decodeG1Frame? [scan, b1, b2, b3] with
+    | none =>
+        exact absurd
+          (Or.inr (Or.inr (g1RepairBackComplete_none hd)) : G1RepairStop _) hne'
+    | some f =>
+        have hc : g1RepairBackComplete scan b1 b2 b3 = g1RepairBackAdvance f :=
+          g1RepairBackComplete_some hd
+        cases f with
+        | spent => exact absurd (Or.inl hc : G1RepairStop _) hne'
+        | bof => exact absurd (Or.inr (Or.inl hc) : G1RepairStop _) hne'
+        | blank | cursor => exact absurd (Or.inr (Or.inr hc) : G1RepairStop _) hne'
+        | tag | index | separator | finish | argSep | data _ | output _ =>
+            rw [show g1RepairRevComplete G1Mode.bRepairSeek scan b1 b2 b3 =
+              G1Mode.bRepairSeek from hc]
+            exact g1Transition_bRepairSeek_p0_skip g1CS.startPhase b1 b2 b3 scan
+              ctx _ hd trivial
   rstep_p0_stop := by
     intro m hm ctx b1 b2 b3 scan hstop
     obtain rfl := hm.eq
-    rcases g1RepairRevComplete_cases .bRepairSeek scan b1 b2 b3 with
-      ⟨he, hd⟩ | ⟨he, hd⟩ | ⟨he, -, -⟩
-    · rw [he]
-      exact g1Transition_bRepairSeek_p0_spent g1CS.startPhase b1 b2 b3 scan ctx hd
-    · rw [he]
-      exact g1Transition_bRepairSeek_p0_bof g1CS.startPhase b1 b2 b3 scan ctx hd
-    · rw [he] at hstop
-      rcases hstop with h | h <;> exact absurd h (by decide)
+    have hstop' : G1RepairStop (g1RepairBackComplete scan b1 b2 b3) := hstop
+    cases hd : decodeG1Frame? [scan, b1, b2, b3] with
+    | none =>
+        have hc := g1RepairBackComplete_none hd
+        rw [show g1RepairRevComplete G1Mode.bRepairSeek scan b1 b2 b3 =
+          G1Mode.reject from hc]
+        exact g1Transition_bRepairSeek_p0_bad g1CS.startPhase b1 b2 b3 scan ctx hc
+    | some f =>
+        have hc : g1RepairBackComplete scan b1 b2 b3 = g1RepairBackAdvance f :=
+          g1RepairBackComplete_some hd
+        cases f with
+        | spent =>
+            rw [show g1RepairRevComplete G1Mode.bRepairSeek scan b1 b2 b3 =
+              G1Mode.bRepairWrite from hc]
+            exact g1Transition_bRepairSeek_p0_spent g1CS.startPhase b1 b2 b3 scan
+              ctx hd
+        | bof =>
+            rw [show g1RepairRevComplete G1Mode.bRepairSeek scan b1 b2 b3 =
+              G1Mode.bRepairDone from hc]
+            exact g1Transition_bRepairSeek_p0_bof g1CS.startPhase b1 b2 b3 scan
+              ctx hd
+        | blank | cursor =>
+            rw [show g1RepairRevComplete G1Mode.bRepairSeek scan b1 b2 b3 =
+              G1Mode.reject from hc]
+            exact g1Transition_bRepairSeek_p0_bad g1CS.startPhase b1 b2 b3 scan
+              ctx hc
+        | tag | index | separator | finish | argSep | data _ | output _ =>
+            rw [show g1RepairBackComplete scan b1 b2 b3 = G1Mode.bRepairSeek
+              from hc] at hstop'
+            rcases hstop' with h | h | h <;> exact absurd h (by decide)
 
 @[simp] theorem g1RepairScanner_machine : g1RepairScanner.machine = G1M := rfl
 
@@ -261,7 +310,8 @@ theorem g1CS_repair_seek_and_repair (n : Nat) (pre skipped suffix : List G1Frame
           G1Frame.bits))
         .bRepairSeek .p3 false false false ctx :=
   g1RepairCycle.seekAndRewrite n pre skipped suffix ctx hpre
-    (fun f hf => g1RepairRevAdvance_of_skip (hskip f hf)) hsafe
+    (fun f hf => g1RepairRevAdvance_of_skip (m := .bRepairSeek) (hskip f hf))
+    hsafe
 
 /-- **One skipped frame.**  Four genuine steps read a frame that needs no repair
 right to left, leaving the head on the last cell of its predecessor. -/
@@ -274,16 +324,63 @@ theorem g1CS_repair_frame_skip (n base : Nat) (hpos : 0 < base)
           false false false ctx) 4 =
       g1AlignedConfig n (base - 1) (by omega) tape .bRepairSeek .p3
         false false false ctx := by
+  have hseek : g1RepairRevAdvance G1Mode.bRepairSeek f = G1Mode.bRepairSeek :=
+    g1RepairRevAdvance_of_skip (m := .bRepairSeek) hf
   have hns : ¬ g1RepairScanner.Stop
       (g1RepairScanner.revAdvance .bRepairSeek f) := by
     show ¬ G1RepairStop (g1RepairRevAdvance .bRepairSeek f)
-    rw [g1RepairRevAdvance_of_skip hf]
+    rw [hseek]
     simp [G1RepairStop]
   have h := g1RepairScanner.revFrameMacrostep n base hpos hsafe tape
     .bRepairSeek f ctx trivial hns hbits
-  rw [show g1RepairScanner.revAdvance .bRepairSeek f = .bRepairSeek from
-    g1RepairRevAdvance_of_skip hf] at h
+  rw [show g1RepairScanner.revAdvance .bRepairSeek f = .bRepairSeek from hseek]
+    at h
   exact h
+
+/-- **One frame the scan may not cross, executed.**  Four genuine steps read a
+`blank` or a leftover `cursor` right to left; the fourth *stays* on the frame's
+first cell and enters the program's own `reject` sink, so the sweep does **not**
+continue left and no earlier `spent` unit is rewritten.  The tape is untouched
+and the carried `G1Ctx` is dropped, exactly as the sink's tuple equation says.
+The tape, the head base and the context are all the caller's; nothing here is
+tied to a canonical word.  The mirror of T1's `repairSeek` rejection outcome. -/
+theorem g1CS_repair_frame_reject (n base : Nat)
+    (hsafe : base + 4 < G1M.tapeLength n)
+    (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx) (f : G1Frame)
+    (hf : f = .blank ∨ f = .cursor)
+    (hbits : physicalBitsAt hsafe tape = f.bits) :
+    TM.runConfig (M := G1M)
+        (g1AlignedConfig n (base + 3) (by omega) tape .bRepairSeek .p3
+          false false false ctx) 4 =
+      g1AlignedConfig n base (by omega) tape .reject .p0 false false false
+        g1Ctx0 := by
+  have hbad : g1RepairRevAdvance G1Mode.bRepairSeek f = G1Mode.reject :=
+    g1RepairRevAdvance_reject (m := .bRepairSeek) hf
+  have hstop : g1RepairScanner.Stop
+      (g1RepairScanner.revAdvance .bRepairSeek f) := by
+    show G1RepairStop (g1RepairRevAdvance .bRepairSeek f)
+    rw [hbad]
+    exact Or.inr (Or.inr rfl)
+  have h := g1RepairScanner.revAnchorStep n base hsafe tape .bRepairSeek f ctx
+    trivial hstop hbits
+  rw [show g1RepairScanner.revAdvance .bRepairSeek f = .reject from hbad] at h
+  exact h
+
+/-- **The rejection is final.**  After those four steps the sweep sits in the
+stable `reject` sink for the whole remaining budget: it never resumes, never
+moves and never writes. -/
+theorem g1CS_repair_frame_reject_idle (n base : Nat)
+    (hsafe : base + 4 < G1M.tapeLength n)
+    (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx) (f : G1Frame)
+    (hf : f = .blank ∨ f = .cursor)
+    (hbits : physicalBitsAt hsafe tape = f.bits) (k : Nat) :
+    TM.runConfig (M := G1M)
+        (g1AlignedConfig n (base + 3) (by omega) tape .bRepairSeek .p3
+          false false false ctx) (4 + k) =
+      g1AlignedConfig n base (by omega) tape .reject .p0 false false false
+        g1Ctx0 := by
+  rw [runConfig_add, g1CS_repair_frame_reject n base hsafe tape ctx f hf hbits]
+  exact g1CS_runConfig_reject_sink n base (by omega) tape k
 
 /-- **Backward multi-frame skip.**  A whole run of frames that need no repair is
 crossed in exactly four genuine steps per frame, tape and context untouched.
@@ -414,7 +511,7 @@ theorem g1CS_repair_finish (n : Nat) (suffix : List G1Frame) (ctx : G1Ctx)
         .bRepairDone .p0 false false false ctx := by
     have h := g1RepairScanner.revAnchorStep n 0 hsafe0
       (g1ListTape (n := n) ((G1Frame.bof :: suffix).flatMap G1Frame.bits))
-      .bRepairSeek G1Frame.bof ctx trivial (Or.inr rfl) hbits
+      .bRepairSeek G1Frame.bof ctx trivial (Or.inr (Or.inl rfl)) hbits
     simpa using h
   rw [show (5 : Nat) = 4 + 1 from rfl, runConfig_add, hanchor]
   exact g1CS_step_repairDone n 0 (by omega) _ ctx

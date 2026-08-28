@@ -25,6 +25,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOneReadBExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneInstallScanExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneProbeInstallExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneWalkExamples
+import Complexity.TMVerifier.TuringToolkit.GateOneWalkInvariantExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneIndexRound
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
@@ -584,6 +585,71 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1WalkExamples.walk_exh_to_cursor
 #print axioms Internal.PsubsetPpoly.TM.G1WalkExamples.walk_turn_fin
 #print axioms Internal.PsubsetPpoly.TM.G1WalkExamples.walk_fin_restore
+
+-- PR3a, the cursor-walk tape invariant `Σ(j)`: the exact layout with its
+-- length, its `index`/`spent`/`cursor` counts and the two structural facts its
+-- scans depend on, the head-safety bound, `Σ(j)`'s four projections, and the
+-- **two executed capstones from `G1M.initialConfig`** — the installation into
+-- `Σ(0)` and the empty-data out-of-range branch — with their projections, their
+-- clock bounds and their all-literal probes.  Both capstones **stop** at their
+-- endpoint.  **Deliberately absent**: any one-round iteration `Σ(j) → Σ(j+1)`,
+-- any normal-round or out-of-range preservation theorem on `Σ(j)`, any
+-- induction over `j`, any loop, driver or cumulative clock, any successful
+-- terminal, any aggregation of the two out-of-range branches, and any
+-- addressing or positive-index operand-value claim.
+#print axioms Internal.PsubsetPpoly.TM.g1WalkSkipRun_mem
+#print axioms Internal.PsubsetPpoly.TM.g1WalkSkipRun_no_index
+#print axioms Internal.PsubsetPpoly.TM.g1WalkOperand2_spent_suffix
+#print axioms Internal.PsubsetPpoly.TM.g1WalkFrames_length
+#print axioms Internal.PsubsetPpoly.TM.g1WalkFrames_length_eq_validation
+#print axioms Internal.PsubsetPpoly.TM.g1WalkFrames_count_index
+#print axioms Internal.PsubsetPpoly.TM.g1WalkFrames_count_spent
+#print axioms Internal.PsubsetPpoly.TM.g1WalkFrames_count_cursor
+#print axioms Internal.PsubsetPpoly.TM.g1WalkFramesMarked_length
+#print axioms Internal.PsubsetPpoly.TM.g1WalkFramesMarked_count_cursor
+#print axioms Internal.PsubsetPpoly.TM.g1WalkFramesMarked_count_spent
+#print axioms Internal.PsubsetPpoly.TM.g1WalkFramesMarked_count_index
+#print axioms Internal.PsubsetPpoly.TM.g1WalkFramesRestored_length
+#print axioms Internal.PsubsetPpoly.TM.g1WalkFramesRestored_count_cursor
+#print axioms Internal.PsubsetPpoly.TM.g1WalkFramesRestored_count_spent
+#print axioms Internal.PsubsetPpoly.TM.g1WalkFramesRestored_count_index
+#print axioms Internal.PsubsetPpoly.TM.g1WalkCursor_safe
+#print axioms Internal.PsubsetPpoly.TM.g1WalkConfig_tape
+#print axioms Internal.PsubsetPpoly.TM.g1WalkConfig_head
+#print axioms Internal.PsubsetPpoly.TM.g1WalkConfig_state
+#print axioms Internal.PsubsetPpoly.TM.g1WalkConfig_vB
+#print axioms Internal.PsubsetPpoly.TM.g1WalkConfig_hidden
+#print axioms Internal.PsubsetPpoly.TM.g1WalkInstallSteps_eq
+#print axioms Internal.PsubsetPpoly.TM.g1WalkEmptyOOBSteps_eq
+#print axioms Internal.PsubsetPpoly.TM.g1WalkInstallSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1WalkEmptyOOBSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_install_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_install_head
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_install_vB
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_install_tape
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_install_state
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_install_oob_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_install_oob_stable
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_install_oob_tape
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_install_oob_head
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_install_oob_state
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_oob_ne_invariant
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walkFrames_zero
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walkCursor_zero
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walkFrames_zero_length
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walkFrames_zero_count_cursor
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walkFrames_zero_count_index
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walkFrames_zero_count_spent
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walk_install_steps
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walk_install
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walk_install_head
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walk_install_clock
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.g1EmptyExample_canonical
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.g1EmptyExample_length
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walk_empty_oob_steps
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walk_empty_oob
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walk_empty_oob_tape
+#print axioms Internal.PsubsetPpoly.TM.G1WalkInvariantExamples.walk_empty_oob_clock
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

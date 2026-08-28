@@ -3,16 +3,24 @@ import Complexity.TMVerifier.TuringToolkit.GateOneWalkInvariantExamples
 /-!
 # G1 cursor walk, invariant layer: surface tests
 
-Import-side contracts for the PR3a surface: the exact `Σ(j)` layout with its
-length, counts and structural facts, the installation into `Σ(0)` from the
-**real** initial configuration, the empty-data out-of-range branch, and the
-all-literal probes of both executed capstones.
+Import-side contracts for the PR3a and PR3b surface: the exact `Σ(j)` layout
+with its length, counts and structural facts, the installation into `Σ(0)` from
+the **real** initial configuration, the empty-data out-of-range branch, the
+**one-round** preservation theorems on `Σ(j)` in both outcomes, and the
+all-literal probes of every executed capstone.
 
-**Deliberately absent**: any one-round iteration theorem `Σ(j) → Σ(j+1)`, any
-normal-round or out-of-range preservation theorem on `Σ(j)`, any induction over
-`j`, any loop, driver or cumulative clock, any successful terminal at
-`j = arg2`, any aggregation of the two out-of-range branches, any addressing or
-positive-index operand-value surface — those are PR3b — and any repair, pass-A,
+The round surface is **exactly one round**: `g1CS_walk_iteration_exact` takes a
+caller-supplied `Σ(j)` and lands on `Σ(j+1)`: the start carries
+`vals[j]? = some v`, while the endpoint carries `vals[j+1]? = some v'`.
+`g1CS_walk_oob_exact`/`_stable` take the same `Σ(j)` to the stable `bOOB`
+boundary on an **intermediate, unrepaired** tape — data region restored and
+cursor-free, operand 2 still partially spent — with **no verdict claimed**.
+
+**Deliberately absent**: any induction over `j`, any driver that reaches `Σ(j)`
+for `j > 0` from `G1M.initialConfig`, any loop or cumulative clock, any clock
+bound on the round counts `16 * j + 37` and `16 * j + 32`, any successful
+terminal at `j = arg2`, any aggregation of the two out-of-range branches, any
+addressing or positive-index operand-value surface, and any repair, pass-A,
 output-write, `TM.accepts`, gate-semantics, full-clock or padded-tape surface.
 
 This is an audit surface: it pins public signatures and proves nothing new.
@@ -34,6 +42,10 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @G1WalkInvariantExamples.g1EmptyExample
 #check @G1WalkInvariantExamples.g1EmptyExample_canonical
 #check @G1WalkInvariantExamples.g1EmptyExample_length
+#check @G1WalkInvariantExamples.g1OOBExample
+#check @G1WalkInvariantExamples.g1OOBExample_canonical
+#check @G1WalkInvariantExamples.g1OOBFramesRound1
+#check @G1WalkInvariantExamples.g1OOBFramesRestored1
 
 theorem check_g1EmptyExample_canonical :
     G1WalkInvariantExamples.g1EmptyExample.Canonical :=
@@ -42,6 +54,10 @@ theorem check_g1EmptyExample_canonical :
 theorem check_g1EmptyExample_length :
     (encodeG1 G1WalkInvariantExamples.g1EmptyExample).length = 48 :=
   G1WalkInvariantExamples.g1EmptyExample_length
+
+theorem check_g1OOBExample_canonical :
+    G1WalkInvariantExamples.g1OOBExample.Canonical :=
+  G1WalkInvariantExamples.g1OOBExample_canonical
 
 /-! ## The structural facts, pinned exactly
 
@@ -295,6 +311,55 @@ theorem check_g1CS_walk_oob_ne_invariant (ctx ctx' : G1Ctx) :
     g1OOBState ctx ≠ g1State .bSeek .p3 false false false ctx' :=
   g1CS_walk_oob_ne_invariant ctx ctx'
 
+/-! ## The one-round preservation theorems, pinned exactly
+
+All three take a **caller-supplied** `Σ(j)`; none starts from
+`G1M.initialConfig`, none iterates, and no clock bound is claimed for their step
+counts.  The hidden-bit relation is an explicit argument of every `Σ` below, at
+the start and — for the normal round — at the endpoint too. -/
+
+/-- **One normal round**, `Σ(r, j, v) → Σ(r, j+1, v')` in exactly `16 * j + 37`
+genuine steps, for `j < arg2` and `j + 1 < vals.length`.  The start
+configuration is formed with `hv : vals[j]? = some v` and the endpoint with
+`hv' : vals[j+1]? = some v'`: the invariant's latch relation is re-established,
+not dropped. -/
+theorem check_g1CS_walk_iteration_exact (r : G1Request) (j : Nat)
+    (hj2 : j < r.arg2) (hj1 : j + 1 < r.vals.length) (v v' : Bool)
+    (hv : r.vals[j]? = some v) (hv' : r.vals[j + 1]? = some v') :
+    TM.runConfig (M := G1M)
+        (g1WalkConfig r j (by omega) (by omega) v hv) (16 * j + 37) =
+      g1WalkConfig r (j + 1) (by omega) hj1 v' hv' :=
+  g1CS_walk_iteration_exact r j hj2 hj1 v v' hv hv'
+
+/-- **The out-of-range round**, for `j < arg2` and `j + 1 = vals.length`:
+`16 * j + 32` steps to the `bOOB` boundary on `g1WalkFramesRestored r j`.  That
+tape is **intermediate and unrepaired** — the data region is exactly `vals` and
+cursor-free while operand 2 keeps `spent^(j+1)` — and this is **not** a
+rejection theorem: no output write, verdict or `TM.accepts` result is claimed. -/
+theorem check_g1CS_walk_oob_exact (r : G1Request) (j : Nat)
+    (hj2 : j < r.arg2) (hj1 : j + 1 = r.vals.length) (v : Bool)
+    (hv : r.vals[j]? = some v) :
+    TM.runConfig (M := G1M)
+        (g1WalkConfig r j (by omega) (by omega) v hv) (16 * j + 32) =
+      g1AlignedConfig (encodeG1 r).length (4 * (g1WalkCursor r j + 2))
+        (g1WalkCursor_safe r j (by omega) (by omega))
+        (g1ListTape ((g1WalkFramesRestored r j).flatMap G1Frame.bits))
+        .bOOB .p0 false false false (g1Ctx0.withVB v) :=
+  g1CS_walk_oob_exact r j hj2 hj1 v hv
+
+/-- That boundary is **stable**: every further step keeps the same
+configuration, on the same unrepaired tape. -/
+theorem check_g1CS_walk_oob_stable (r : G1Request) (j : Nat)
+    (hj2 : j < r.arg2) (hj1 : j + 1 = r.vals.length) (v : Bool)
+    (hv : r.vals[j]? = some v) (k : Nat) :
+    TM.runConfig (M := G1M)
+        (g1WalkConfig r j (by omega) (by omega) v hv) (16 * j + 32 + k) =
+      g1AlignedConfig (encodeG1 r).length (4 * (g1WalkCursor r j + 2))
+        (g1WalkCursor_safe r j (by omega) (by omega))
+        (g1ListTape ((g1WalkFramesRestored r j).flatMap G1Frame.bits))
+        .bOOB .p0 false false false (g1Ctx0.withVB v) :=
+  g1CS_walk_oob_stable r j hj2 hj1 v hv k
+
 /-! ## The literal probes, pinned exactly -/
 
 open G1InstallScanExamples G1WalkInvariantExamples in
@@ -324,6 +389,81 @@ theorem check_walk_install :
           178).head : Nat) = 39 ∧
       178 ≤ g1Clock (encodeG1 g1WalkExample).length :=
   ⟨walk_install_steps, walk_install, walk_install_head, walk_install_clock⟩
+
+open G1InstallScanExamples G1WalkInvariantExamples G1WalkExamples in
+/-- `Σ(1)` and `Σ(2)` of `⟨and, 0, 2, [false, true, true]⟩` are literally the
+merged atomic-probe layouts, with the cursor at ordinals `11` and `12`; one
+round has spent exactly one operand-2 unit at `j = 1`, and the restored layout
+of that round is the merged one too. -/
+theorem check_walkFrames_one_two :
+    g1WalkFrames g1WalkExample 1 = g1WalkFramesRound1 ∧
+      g1WalkFrames g1WalkExample 2 = g1WalkFramesTerminal ∧
+      g1WalkFramesRestored g1WalkExample 1 = g1WalkFramesRestored1 ∧
+      g1WalkCursor g1WalkExample 1 = 11 ∧
+      g1WalkCursor g1WalkExample 2 = 12 ∧
+      (g1WalkFrames g1WalkExample 1).length = 16 ∧
+      (g1WalkFrames g1WalkExample 1).count G1Frame.cursor = 1 ∧
+      (g1WalkFrames g1WalkExample 1).count G1Frame.index = 1 ∧
+      (g1WalkFrames g1WalkExample 1).count G1Frame.spent = 1 :=
+  ⟨walkFrames_one, walkFrames_two, walkFramesRestored_one, walkCursor_one,
+    walkCursor_two, walkFrames_one_length, walkFrames_one_count_cursor,
+    walkFrames_one_count_index, walkFrames_one_count_spent⟩
+
+open G1InstallScanExamples G1WalkInvariantExamples in
+/-- **Two single rounds**, `37` and `53` steps, heads `39 → 43 → 47`.  Neither
+is chained to the installation or to the other. -/
+theorem check_walk_rounds :
+    TM.runConfig (M := G1M)
+        (g1WalkConfig g1WalkExample 0 (by decide) (by decide) false
+          (by decide)) 37 =
+      g1WalkConfig g1WalkExample 1 (by decide) (by decide) true (by decide) ∧
+    TM.runConfig (M := G1M)
+        (g1WalkConfig g1WalkExample 1 (by decide) (by decide) true
+          (by decide)) 53 =
+      g1WalkConfig g1WalkExample 2 (by decide) (by decide) true (by decide) ∧
+      ((g1WalkConfig g1WalkExample 0 (by decide) (by decide) false
+        (by decide)).head : Nat) = 39 ∧
+      ((g1WalkConfig g1WalkExample 1 (by decide) (by decide) true
+        (by decide)).head : Nat) = 43 ∧
+      ((g1WalkConfig g1WalkExample 2 (by decide) (by decide) true
+        (by decide)).head : Nat) = 47 :=
+  ⟨walk_round_zero, walk_round_one, walk_round_zero_head, walk_round_one_head,
+    walk_round_two_head⟩
+
+open G1WalkInvariantExamples in
+/-- The out-of-range request's two layouts, `15` frames each: `Σ(1)` with one
+unspent `index` and the unique cursor, and the boundary layout with **no**
+cursor, `spent²` and **no** `index` — restored data region, unrepaired operand
+field. -/
+theorem check_oobFrames_one :
+    g1WalkFrames g1OOBExample 1 = g1OOBFramesRound1 ∧
+      g1OOBFramesRound1.length = 15 ∧
+      g1OOBFramesRound1.count G1Frame.cursor = 1 ∧
+      g1WalkFramesRestored g1OOBExample 1 = g1OOBFramesRestored1 ∧
+      g1OOBFramesRestored1.length = 15 ∧
+      g1OOBFramesRestored1.count G1Frame.cursor = 0 ∧
+      g1OOBFramesRestored1.count G1Frame.spent = 2 ∧
+      g1OOBFramesRestored1.count G1Frame.index = 0 :=
+  ⟨oobFrames_one, oobFrames_one_length, oobFrames_one_count_cursor,
+    oobFramesRestored_one, oobFramesRestored_one_length,
+    oobFramesRestored_one_count_cursor, oobFramesRestored_one_count_spent,
+    oobFramesRestored_one_count_index⟩
+
+open G1WalkInvariantExamples in
+/-- **The non-empty out-of-range round of `⟨and, 0, 2, [false, true]⟩`**: `48`
+steps, head `43 → 52`, ending in the stable `bOOB` boundary on the unrepaired
+layout.  No verdict is claimed. -/
+theorem check_walk_oob_round :
+    TM.runConfig (M := G1M)
+        (g1WalkConfig g1OOBExample 1 (by decide) (by decide) true
+          (by decide)) 48 =
+      g1AlignedConfig (encodeG1 g1OOBExample).length 52
+        (g1WalkCursor_safe g1OOBExample 1 (by decide) (by decide))
+        (g1ListTape (g1OOBFramesRestored1.flatMap G1Frame.bits))
+        .bOOB .p0 false false false (g1Ctx0.withVB true) ∧
+      ((g1WalkConfig g1OOBExample 1 (by decide) (by decide) true
+        (by decide)).head : Nat) = 43 :=
+  ⟨walk_oob_round, walk_oob_round_head⟩
 
 open G1WalkInvariantExamples in
 /-- `149` steps from the real initial configuration of `⟨and, 0, 2, []⟩` to the

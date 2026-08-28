@@ -173,8 +173,12 @@ lean_lib PnP3 where
     -- length, counts and structural facts (`GateOneWalkInvariant`), the
     -- installation into `Σ(0)` from the real initial configuration, the
     -- empty-data out-of-range branch, and their literal probes
-    -- (`GateOneWalkInvariantExamples`).  No round is executed there: the
-    -- iteration `Σ(j) → Σ(j+1)` and the round out-of-range branch are PR3b.
+    -- (`GateOneWalkInvariantExamples`).
+    -- PR3b adds, to the same two modules, **exactly one round** on `Σ(j)` from
+    -- a caller-supplied configuration: the normal step `Σ(j) → Σ(j+1)` in
+    -- `16j + 37` steps and the out-of-range abort in `16j + 32` steps onto an
+    -- intermediate, unrepaired tape.  No induction over `j`, no driver, no loop
+    -- clock and no verdict are claimed there.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneWalkInvariant,
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneWalkInvariantExamples,
     -- The thirteen-step rewrite cycle at the G1 control, kept as an

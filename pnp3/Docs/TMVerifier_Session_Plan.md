@@ -1407,7 +1407,9 @@ with all their projections, both clock bounds and both literal probes).
 axioms of every new statement directly; each depends only on `propext`,
 `Classical.choice` and `Quot.sound`.
 
-Explicitly deferred to PR3b and claimed nowhere: the **one-round iteration**
+Explicitly deferred to PR3b and claimed nowhere **by PR3a** (the first two items
+were then **delivered by PR3b, 2026-08-28**, in the section below; the rest are
+still open): the **one-round iteration**
 `Σ(j) → Σ(j+1)`, the **normal-round and out-of-range preservation** theorems on
 `Σ(j)`, the induction over `j`, any loop, driver or cumulative clock, the
 successful terminal at `j = arg2` (the `bExh`/`bRet`/`bTurnFin`/`bFin` path into
@@ -1421,6 +1423,102 @@ physically padded tapes.  The deferral lists of the merged `GateOneInstallScan`,
 modules ("nothing *here*", "every theorem below") and stay true verbatim; the
 invariant and the installation driver they defer now live in the new module
 above.
+
+**PR3b: exactly one round of the G1 cursor walk, delivered (2026-08-28):**
+
+**Progress classification: Infrastructure.**
+
+PR3a reaches `Σ(0)` and stops there.  This slice executes **one round** on the
+invariant, in both of its outcomes, and stops there: **there is still no
+induction over `j`, no driver, no loop and no cumulative clock**.  `G1Ctx`, the
+`G1State` field list, `G1Mode`, `g1Advance`, `g1Transition` and `g1Clock` are
+all unchanged, **no new runtime field** of any kind appears in the machine, the
+control or the context, and every merged module outside the two extended below
+is byte-identical.  The PR3a install/OOB declarations themselves are unchanged;
+this slice is purely additive.
+
+* `GateOneWalkInvariant.lean` (extended) — the layout algebra a round needs, all
+  of it *proved* from the PR3a structural facts and never assumed: eight private
+  re-association splits (`g1WalkSplit_mark`, `_marked_mark`, `_marked_fwd`,
+  `_marked_cursor`, `_restored_cursor`, `_restored_probe`, `_restored_oob`,
+  `_succ`) putting `g1WalkFrames`/`g1WalkFramesMarked`/`g1WalkFramesRestored`
+  into exactly the shape one merged macro consumes, and five private length
+  lemmas (`g1MarkPre_length`, `g1SkipRun_length`, `g1FwdPre_length`,
+  `g1CursorPre_length`, `g1ProbePre_length`) pinning the frame ordinal each
+  macro's `pre` ends at, so every head position is the invariant's own.  Two
+  private list helpers are added, `g1Drop_cons` and `g1Getn`; `g1Getn` is what
+  turns the invariant's hidden-bit argument `vals[j]? = some v` into the
+  `getElem` form the restore split consumes, so **the bit written back is the
+  bit the cursor was hiding**, by proof rather than by stipulation.  One further
+  private `rfl`, `g1Ctx0_withVB_withVB`, records that re-latching overwrites the
+  previous bit rather than accumulating state.  The shared
+  prefix of a round (`g1CS_walk_prefix_exact`, private) composes
+  `g1CS_walk_seek_mark` (`8j + 12`), `g1CS_walk_fwd_to_cursor` (`8j + 8`),
+  `g1CS_walk_turn` (`4`) and `g1CS_walk_restore` (`4`) into `16j + 28` steps
+  from `Σ(j)` to `bProbe2` on `g1WalkFramesRestored r j`; the skip-run
+  hypotheses of both scans are discharged by `g1WalkSkipRun_mem` and the tape
+  bound by `g1WalkCursor_safe`.  The transition table is never unfolded.
+* `GateOneWalkInvariant.lean`, executed part — **three** new public theorems,
+  all from a **caller-supplied** `Σ(j)`:
+  * `g1CS_walk_iteration_exact` — for `j < arg2` and `j + 1 < vals.length`,
+    exactly `16 * j + 37` genuine steps run `Σ(r, j, v)` to `Σ(r, j+1, v')`.
+    The hypotheses are exactly `hv : vals[j]? = some v` and
+    `hv' : vals[j+1]? = some v'`, and **both are passed into `g1WalkConfig`**,
+    at the start *and* at the endpoint: the hidden-bit relation is explicit on
+    both sides, so the round re-establishes the invariant rather than weakening
+    it.  Because both sides are the canonical layout at their own `j`, the
+    statement pins the whole tape: one on-tape decrement
+    `index^(a2-j) · spent^j ↦ index^(a2-j-1) · spent^(j+1)`, the **unique**
+    cursor moves one data slot right, slot `j` is restored to `data vals[j]`,
+    and the anchor, tag run, operand-1 field, `argSep`s, `separator`, untouched
+    data slots, `output`, `finish` and blank frames are all unchanged.  Six
+    merged macros are composed — the prefix's four plus
+    `g1CS_walk_probe_latch` (`5`) and `g1CS_walk_install_cursor` (`4`).
+  * `g1CS_walk_oob_exact` — for `j < arg2` but `j + 1 = vals.length` (cursor on
+    the *last* data frame, an operand-2 unit still unspent), exactly
+    `16 * j + 32` steps reach the `bOOB` boundary on `g1WalkFramesRestored r j`.
+    That tape is stated exactly: the data region is **fully restored to `vals`
+    and cursor-free** (`g1WalkFramesRestored_count_cursor`) while operand 2 is
+    **partially spent and unrepaired** — `j + 1` units consumed and
+    `arg2 - j - 1` left (`_count_spent`, `_count_index`).  It is an
+    intermediate tape, and reaching `bOOB` is **not a rejection theorem**: no
+    output write, verdict or `TM.accepts` result is claimed anywhere.
+  * `g1CS_walk_oob_stable` — that boundary absorbs every further step.
+
+  No clock bound is claimed for either round count: `16 * j + 37` and
+  `16 * j + 32` are stated but never summed or compared against `g1Clock`,
+  because the comparison only becomes meaningful once the loop exists.
+* `GateOneWalkInvariantExamples.lean` (extended) — the PR3b probes, reusing the
+  merged literals rather than copying them.  On `⟨and, 0, 2, [false, true,
+  true]⟩`: `Σ(1)`, `Σ(2)` and the round's restored word **are literally**
+  `G1WalkExamples.g1WalkFramesRound1`, `g1WalkFramesTerminal` and
+  `g1WalkFramesRestored1` (`walkFrames_one`, `walkFrames_two`,
+  `walkFramesRestored_one`), with cursors at ordinals `11` and `12`, sixteen
+  frames, a unique cursor and `index¹ · spent¹` at `j = 1`; the two single
+  rounds are `Σ(0) → Σ(1)` in `37` steps and `Σ(1) → Σ(2)` in `53`, heads
+  `39 → 43 → 47`.  On `⟨and, 0, 2, [false, true]⟩` — whose data region is one
+  frame shorter, so it needs its own two fifteen-frame literals — the
+  out-of-range round is exactly `48` steps, head `43 → 52`, ending on a layout
+  with `cursor` count `0`, `spent` count `2` and `index` count `0`.  Neither
+  round probe is chained to `walk_install` or to the other.
+
+Pinned by `Tests/TMGateOneWalkInvariantSurfaceTests.lean` (theorem-style exact
+wrappers for all three round theorems and for every new example fact, plus the
+existing PR3a wrappers, unchanged).  `Tests/AxiomsAudit.lean` prints the axioms
+of every new statement **directly**; each depends only on `propext`,
+`Classical.choice` and `Quot.sound`.  No new module is registered: both extended
+modules and the surface test are already roots of `lakefile.lean`.
+
+Explicitly deferred to PR3c and claimed nowhere: the **induction over `j`**, any
+driver that reaches `Σ(j)` for `j > 0` from `G1M.initialConfig`, the cumulative
+loop clock and any clock bound on the two round counts, the **successful
+terminal** at `j = arg2` (the `bExh`/`bRet`/`bTurnFin`/`bFin` path into
+`readAResetStart`), the aggregation of the round's out-of-range branch with the
+empty-data one, addressing, and the **positive-index operand-value theorem** —
+nothing here claims the machine resolves `r.vals[r.arg2]?` for `arg2 > 0`.  Also
+absent: the `spent ↦ index` repair sweep, pass A, combine, the output write,
+`TM.accepts`, gate-semantics correctness, a full-clock theorem, and
+non-canonical or physically padded tapes.
 
 **T2a correction (2026-08-24).**  The first T2a head shipped a permissive
 forward table (`vTag` looping on every `tag`, `vArg1`/`vArg2` looping on every

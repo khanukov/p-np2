@@ -16,12 +16,13 @@ caller-supplied `Σ(j)` and lands on `Σ(j+1)`: the start carries
 boundary on an **intermediate, unrepaired** tape — data region restored and
 cursor-free, operand 2 still partially spent — with **no verdict claimed**.
 
-**Deliberately absent**: any induction over `j`, any driver that reaches `Σ(j)`
-for `j > 0` from `G1M.initialConfig`, any loop or cumulative clock, any clock
-bound on the round counts `16 * j + 37` and `16 * j + 32`, any successful
+**Absent from this surface**: any induction over `j`, any driver that reaches
+`Σ(j)` for `j > 0` from `G1M.initialConfig`, any loop or cumulative clock, any
+clock bound on the round counts `16 * j + 37` and `16 * j + 32`, any successful
 terminal at `j = arg2`, any aggregation of the two out-of-range branches, any
-addressing or positive-index operand-value surface, and any repair, pass-A,
-output-write, `TM.accepts`, gate-semantics, full-clock or padded-tape surface.
+positive-index operand-value surface — those are PR3c, pinned by
+`TMGateOneWalkDriverSurfaceTests` — and any repair, pass-A, output-write,
+`TM.accepts`, gate-semantics, full-clock or padded-tape surface.
 
 This is an audit surface: it pins public signatures and proves nothing new.
 -/

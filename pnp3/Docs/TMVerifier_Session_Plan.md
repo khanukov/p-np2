@@ -1408,8 +1408,9 @@ axioms of every new statement directly; each depends only on `propext`,
 `Classical.choice` and `Quot.sound`.
 
 Explicitly deferred to PR3b and claimed nowhere **by PR3a** (the first two items
-were then **delivered by PR3b, 2026-08-28**, in the section below; the rest are
-still open): the **one-round iteration**
+were then **delivered by PR3b, 2026-08-28**, and the walk items after them by
+**PR3c, 2026-08-28**, both in sections below; the repair sweep and everything
+listed after it are still open): the **one-round iteration**
 `Σ(j) → Σ(j+1)`, the **normal-round and out-of-range preservation** theorems on
 `Σ(j)`, the induction over `j`, any loop, driver or cumulative clock, the
 successful terminal at `j = arg2` (the `bExh`/`bRet`/`bTurnFin`/`bFin` path into
@@ -1509,16 +1510,127 @@ of every new statement **directly**; each depends only on `propext`,
 `Classical.choice` and `Quot.sound`.  No new module is registered: both extended
 modules and the surface test are already roots of `lakefile.lean`.
 
-Explicitly deferred to PR3c and claimed nowhere: the **induction over `j`**, any
-driver that reaches `Σ(j)` for `j > 0` from `G1M.initialConfig`, the cumulative
-loop clock and any clock bound on the two round counts, the **successful
-terminal** at `j = arg2` (the `bExh`/`bRet`/`bTurnFin`/`bFin` path into
-`readAResetStart`), the aggregation of the round's out-of-range branch with the
-empty-data one, addressing, and the **positive-index operand-value theorem** —
-nothing here claims the machine resolves `r.vals[r.arg2]?` for `arg2 > 0`.  Also
-absent: the `spent ↦ index` repair sweep, pass A, combine, the output write,
+Deferred to PR3c **by PR3b** and all **delivered by PR3c, 2026-08-28**, in the
+section below: the **induction over `j`**, the driver that reaches `Σ(j)` for
+`j > 0` from `G1M.initialConfig`, the cumulative loop clock and the clock bound
+on the round counts, the **successful terminal** at `j = arg2` (the
+`bExh`/`bRet`/`bTurnFin`/`bFin` path into `readAResetStart`), the aggregation of
+the round's out-of-range branch with the empty-data one, and the
+**positive-index operand-value theorem**.  Still absent and claimed nowhere:
+the `spent ↦ index` repair sweep, pass A, combine, the output write,
 `TM.accepts`, gate-semantics correctness, a full-clock theorem, and
 non-canonical or physically padded tapes.
+
+**PR3c: the G1 cursor-walk driver, terminal and positive-index read-B,
+delivered (2026-08-28):**
+
+**Progress classification: Infrastructure.**
+
+PR3b executes one round on `Σ(j)` from a caller-supplied configuration.  This
+slice **iterates** that round from the real initial configuration, closes the
+walk at `j = arg2` and turns the result into the first **arbitrary
+positive-index operand-2 read** of the G1 machine.  `G1Ctx`, the `G1State` field
+list, `G1Mode`, `g1Advance`, `g1Transition` and `g1Clock` are all unchanged,
+**no new runtime field** and **no new `Nat`** appear anywhere, every merged
+module outside the four docstrings touched below is byte-identical, and the
+transition table is never unfolded: every step is a composition of the PR3a/PR3b
+capstones.  With `u = tag.units`, `a1 = arg1`, `a = arg2`, `m = vals.length`:
+
+* `GateOneWalkDriver.lean` (new) — the loop clock and the induction.
+  `g1BLoopSteps k = 8k² + 29k` is the cumulative cost of the first `k` rounds,
+  with the recurrence `g1BLoopSteps_succ` (`= g1BLoopSteps k + (16k + 37)`,
+  exactly the cost of `g1CS_walk_iteration_exact` at `j = k`) and the closed
+  form `g1BLoopSteps_eq_sum` (`= ∑_{j<k} (16j + 37)`).
+  `g1CS_walk_loop_exact` is the induction: for every `k ≤ a` with `k < m` and
+  `hv : r.vals[k]? = some v`, exactly `g1WalkInstallSteps r + g1BLoopSteps k`
+  genuine steps run `G1M.initialConfig` to `Σ(r, k, v)` — **formed with that
+  same `hv`**, so the hidden-bit relation is carried, not dropped: the
+  statement is about the invariant configuration whose latch is tied to the
+  data region, and every intermediate round re-establishes it.  The base case
+  *is* `g1CS_walk_install_exact`; the successor composes one exact `16k + 37`
+  round and generates the *prior* round's hidden-bit proof
+  `r.vals[k]? = some r.vals[k]` from `k < m`.  Both numeric side conditions of
+  `Σ` travel with the induction; no semantic hypothesis is introduced.
+* `GateOneWalkDriver.lean`, the layout family — `g1BSpentFrames r s`, the one
+  **repair-pending** shape both endpoints land on: operand 2 split as
+  `index^(a-s) · spent^s`, data region exactly `vals`, **no cursor**.
+  `g1WalkFramesRestored r j = g1BSpentFrames r (j+1)`
+  (`g1BSpentFrames_eq_restored`), `g1BSpentFrames r 0 = encodeG1Frames r ++
+  [.blank]` when `vals = []` (`_empty`), plus `_length`,
+  `_length_eq_validation` and `_count_cursor`/`_count_spent`/`_count_index`.
+  `g1ExhPre` with `_length` and `_argSep` names the prefix the exhaustion seek
+  stops in front of.
+* `GateOneWalkDriver.lean`, the successful terminal — `g1CS_walk_terminal_exact`
+  at `k = a < m`.  `Σ(a)` has `index⁰`, so the reverse seek exhausts on the
+  `argSep` that opens the operand-2 field instead of marking:
+  `(8a + 8) + (8a + 12) + 4 + 4 = 16a + 28` steps compose
+  `g1CS_walk_seek_exhaust`, `g1CS_walk_exh_to_cursor`, `g1CS_walk_turn_fin` and
+  `g1CS_walk_fin_restore` and land in `readAResetStart`, head
+  `4 * (g1WalkCursor r a + 1)`, tape `g1BSpentFrames r a`, `vB = vals[a]`.  The
+  cursor is gone and the data region is exactly `vals`; the operand-2 field is
+  `spent^a` — **unrepaired**.
+* `GateOneWalkDriver.lean`, the public read — `g1CS_readB_positive_exact`.  For
+  a canonical `and`/`or` request with `0 < a` and `r.vals[a]? = some b`, exactly
+  `g1BReadSteps r = g1WalkInstallSteps r + 8a² + 45a + 28 = g1InstallScanSteps r
+  + 8a² + 45a + 37` genuine steps take `G1M.initialConfig` to that pass-A reset
+  handoff with `G1Ctx.vB = b`; head, control state, context and the whole tape
+  are pinned, with `_head/_state/_vB/_tape` projections.  The returned bit is
+  the **actual** `r.vals[r.arg2]`, resolved physically out of the unannotated
+  data region: no value, target, cursor or index annotation is supplied to the
+  machine, and every summand of the count is a concrete polynomial in the
+  request's own fields — no pad and no advice.
+* `GateOneWalkDriver.lean`, the aggregated out-of-range branch —
+  `g1CS_readB_positive_oob_exact`.  For `0 < a` and `m ≤ a`, one exact
+  configuration equality with the single count `g1BOOBSteps r =
+  g1InstallScanSteps r + 8m² + 29m + 4`: `m = 0` is the read-only empty-data
+  installation branch (`+4`, `_oob_nil`), `m > 0` composes the installation,
+  `g1BLoopSteps (m-1)` and the `16(m-1) + 32` out-of-range round (`_oob_cons`).
+  Head `4 * (u + a1 + a + m + 5)`, stable `bOOB`, tape `g1BSpentFrames r m`,
+  context `g1BOOBCtx r` — `g1Ctx0` when `vals = []`, `g1Ctx0.withVB vals[m-1]`
+  otherwise.  `_oob_stable` shows the boundary absorbs every further step, and
+  `_head/_state/_tape` project it.  Reaching `bOOB` is a **boundary, not a
+  verdict**: no output write, rejection or `TM.accepts` claim is attached.
+* `GateOneWalkDriver.lean`, the clock — `g1BReadSteps_le_clock` and
+  `g1BOOBSteps_le_clock` keep both totals inside the **unchanged** `g1Clock`,
+  and are proved *before* either public capstone is stated.  `m ≤ a` and
+  `a < m` are exhaustive and the two endpoints are distinguished by
+  `g1CS_readB_positive_oob_ne_success`, so exactly one public capstone applies
+  to every data region of a canonical binary request with `0 < a`.
+* `GateOneWalkDriverExamples.lean` (new) — four all-literal probes, reusing the
+  merged literals.  `⟨and, 0, 1, [false, true]⟩`: `vals[1] = true` in `239`
+  steps (`149 + 90`) to head `44`, ending on a fourteen-frame word with no
+  cursor, one `spent` and no `index`; literal clock `1438720`.
+  `⟨and, 0, 2, [false, true, true]⟩`: `vals[2] = true` in `328` steps
+  (`178 + (37 + 53) + 60`) to head `52`, ending on
+  `G1WalkExamples.g1WalkFramesFinal` — the literal word that module's terminal
+  restore probe already produced, re-identified here as `g1BSpentFrames r arg2`.
+  `⟨and, 0, 2, []⟩`: aggregated OOB at `m = 0` in `149` steps to head `44`,
+  tape the initial word.  `⟨and, 0, 2, [false, true]⟩`: aggregated OOB at
+  `m = 2` in `255` steps (`170 + 37 + 48`) to head `52` on
+  `G1WalkInvariantExamples.g1OOBFramesRestored1`.
+
+Pinned by `Tests/TMGateOneWalkDriverSurfaceTests.lean` (new: theorem-style exact
+wrappers for the loop clock, the induction with its hidden-bit endpoint, the
+layout family with all its counts, the terminal, both totals, both clock bounds,
+the public read with all four projections, both out-of-range branches with the
+aggregated capstone, its stability, its projections and the boundary
+distinction, plus all four literal probes).  `Tests/AxiomsAudit.lean` prints the
+axioms of every new statement **directly**; each depends only on `propext`,
+`Classical.choice` and `Quot.sound`.  Two new modules and one new surface test
+are registered in `lakefile.lean`.  The `GateOneReadB`, `GateOneWalkKernel`,
+`GateOneWalkInvariant` and `TMGateOneWalkInvariantSurfaceTests` docstrings are
+re-scoped to point here — in particular the PR3a/T2b-1 sentence saying nothing
+in this development resolves the selected data frame for `arg2 > 0` is
+superseded by `g1CS_readB_positive_exact`.
+
+Explicitly deferred and claimed nowhere by PR3c: the `spent ↦ index` **repair
+sweep** — both endpoints leave the operand-2 field consumed, so neither final
+tape is the canonical word and no theorem claims otherwise — **pass A** (the
+operand-1 read the `readAResetStart` handoff opens), the **combine** step, the
+**output write**, `TM.accepts`, a full-clock theorem, gate-semantics
+correctness, the acceptance gate, multi-gate composition, the
+specification-level bridge, and non-canonical or physically padded tapes.
+Reaching `bOOB` remains a boundary, not a rejection theorem.
 
 **T2a correction (2026-08-24).**  The first T2a head shipped a permissive
 forward table (`vTag` looping on every `tag`, `vArg1`/`vArg2` looping on every

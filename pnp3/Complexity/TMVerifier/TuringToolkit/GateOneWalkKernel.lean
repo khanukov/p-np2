@@ -41,7 +41,10 @@ the right number of rounds.  No walk invariant,
 no iteration or loop clock, no out-of-range aggregation, no addressing, no
 positive-index operand-value theorem, no repair, no pass A, no output write, no
 `TM.accepts`, no gate-semantics correctness, no full-clock theorem and no
-padded-tape claim.
+padded-tape claim.  The invariant, its installation and one round are
+`GateOneWalkInvariant` (PR3a/PR3b); the induction, the terminal and the
+arbitrary positive-index operand-2 read are `GateOneWalkDriver` (PR3c).  The
+repair sweep is started nowhere in this development.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM

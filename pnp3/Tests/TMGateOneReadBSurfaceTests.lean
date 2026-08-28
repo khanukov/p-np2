@@ -17,12 +17,13 @@ The initial-configuration capstones are scoped to the exact tape `encodeG1 r`.
 Local adapters intentionally use arbitrary aligned tapes; post-boundary
 stability pins have no public-clock bound.  There is **no** `TM.run`,
 `TM.accepts`, output-write, combine, pass-A or `spec`-correctness surface, and
-for `arg2 > 0` the only executed endpoint pinned here is the read-only
-installation scan.  `bProbe2` has no successful frame row; an attempted full
-frame read rejects and no theorem executes it.  Nothing pins a latch, a cursor
-install, a round, an iteration, runtime addressing, a
-positive-index operand-value read, or acceptance — those are PR2.  This is an
-audit surface: it pins public signatures and proves nothing new.
+for `arg2 > 0` the only endpoint pinned here from a **real** initial
+configuration is the read-only installation scan, which stops at `bProbe2` and
+is unchanged by this slice.  The probe, latch and cursor install behind it are
+pinned by `TMGateOneProbeInstallSurfaceTests`, on caller-supplied configurations
+only.  Nothing here pins a latch, a cursor install, a round, an iteration,
+runtime addressing, a positive-index operand-value read, or acceptance.  This is
+an audit surface: it pins public signatures and proves nothing new.
 -/
 
 namespace Pnp3.Tests.TMGateOneReadBSurface
@@ -41,7 +42,8 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1_bScan_index_install
 #check @g1_insSeek_advance
 #check @g1_insSeek_validPath
-#check @g1_bProbe2_stuck
+#check @g1_bProbe2_rows
+#check @g1_bSeek_stuck
 #check @g1_bRoundStart_stuck
 #check @g1_bRoundStart_unreachable
 

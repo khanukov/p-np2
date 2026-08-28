@@ -149,6 +149,13 @@ lean_lib PnP3 where
     -- (`GateOneInstallScanExamples`).
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneInstallScan,
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneInstallScanExamples,
+    -- T2b-3a-2, the successor of the installation-scan endpoint: the exact
+    -- probe / latch / cursor-install atoms on arbitrary frame-list contexts
+    -- (`GateOneProbeInstall`) and their literal encoded-frame probes
+    -- (`GateOneProbeInstallExamples`).  Every run there starts from a
+    -- caller-supplied configuration; the exit `bSeek` is a local endpoint.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneProbeInstall,
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneProbeInstallExamples,
     -- The thirteen-step rewrite cycle at the G1 control, kept as an
     -- arbitrary-configuration regression: the bridge, the fourteen-step
     -- composed round and one literal frame-list probe.  Unreachable from
@@ -319,6 +326,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMGateOneRoutingSurfaceTests,
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,
     Glob.one `Tests.TMGateOneReadBSurfaceTests,
+    Glob.one `Tests.TMGateOneProbeInstallSurfaceTests,
     Glob.one `Tests.FormulaSupportBoundsFalsifiabilityProbe,
     Glob.one `Tests.SmokeTests,
     Glob.one `Tests.UnitTests,

@@ -18,9 +18,11 @@ initial configuration to head `40` — the first cell of `data vals[0]` — in
 `bProbe2`, with the tape bit-for-bit the initial tape and the context still
 `g1Ctx0`.
 
-`bProbe2` is the boundary of this slice: nothing here latches a value, installs
-a cursor, runs a round or states an invariant — those are PR2.  This module is
-an audit surface and nothing depends on it.
+`bProbe2` is the live-route boundary: nothing here latches a value, installs a
+cursor, runs a round or states an invariant.  The literal probes of those steps
+are `GateOneProbeInstallExamples`, and they start from caller-supplied
+configurations.  This module is an audit surface, and that one reuses its
+request, its literal frame word and these `169`-step capstones verbatim.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM

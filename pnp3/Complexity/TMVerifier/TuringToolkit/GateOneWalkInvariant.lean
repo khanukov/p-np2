@@ -113,8 +113,10 @@ aggregation of the two out-of-range branches, no addressing and **no
 positive-index operand-value theorem**: nothing below claims the machine
 resolves `r.vals[r.arg2]?` for `a2 > 0`.  All five are `GateOneWalkDriver`
 (PR3c), which composes exactly the capstones above and adds no new machine
-fact.  Absent everywhere: the `spent ↦ index`
-repair sweep, pass A, combine, the output write, `TM.accepts`, gate-semantics
+fact.  Absent from this module: the `spent ↦ index`
+repair sweep — its control and generic kernel are `GateOneRepairKernel`
+(Repair-1), on caller-supplied configurations only, and nothing here reaches
+them — pass A, combine, the output write, `TM.accepts`, gate-semantics
 correctness, a full-clock theorem and non-canonical or physically padded tapes.
 As everywhere in this development, every execution statement is scoped to the
 exact tape `encodeG1 r`.

@@ -188,6 +188,18 @@ lean_lib PnP3 where
     -- both on a repair-pending tape — with their literal probes.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneWalkDriver,
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneWalkDriverExamples,
+    -- Repair-1, the operand-2 repair control and its generic kernel: the
+    -- reverse repair scanner, the `spent ↦ index` rewrite cycle, the
+    -- four-step rejection of a frame the scan may not cross and the
+    -- arbitrary-frame-list repair pass `g1CS_repair_pass_exact`, which is the
+    -- capstone of the slice.  The scan crosses only `G1RepairSkip` frames: a
+    -- `blank`, a leftover `cursor` and the three reserved codes send it to the
+    -- `reject` sink, so a repair run can never rewrite `spent` units behind
+    -- malformed tape.
+    -- Every run there is caller-supplied: no route of the machine enters the
+    -- sweep, the request-specific repair driver is deferred to Repair-2, and
+    -- the all-literal probes of this kernel are deferred to Repair-1b.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneRepairKernel,
     -- The thirteen-step rewrite cycle at the G1 control, kept as an
     -- arbitrary-configuration regression: the bridge, the fourteen-step
     -- composed round and one literal frame-list probe.  Unreachable from
@@ -362,6 +374,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMGateOneWalkSurfaceTests,
     Glob.one `Tests.TMGateOneWalkInvariantSurfaceTests,
     Glob.one `Tests.TMGateOneWalkDriverSurfaceTests,
+    Glob.one `Tests.TMGateOneRepairKernelSurfaceTests,
     Glob.one `Tests.FormulaSupportBoundsFalsifiabilityProbe,
     Glob.one `Tests.SmokeTests,
     Glob.one `Tests.UnitTests,

@@ -27,6 +27,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOneProbeInstallExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneWalkExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneWalkInvariantExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneWalkDriverExamples
+import Complexity.TMVerifier.TuringToolkit.GateOneRepairKernel
 import Complexity.TMVerifier.TuringToolkit.GateOneIndexRound
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
@@ -284,6 +285,31 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_bBack_p2
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_bBack_p3
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_bHop
+-- The eleven tuple lemmas of the operand-2 repair sweep, together with the
+-- reverse frame table they scrutinise.  The frame-position-`0` decision has
+-- **four** outcomes: `spent` is the write handoff, `bof` the terminal handoff,
+-- a `G1RepairSkip` frame continues the scan, and every other window — a
+-- `blank`, a leftover `cursor`, or one of the three reserved codes, which
+-- decode to nothing — enters the *existing* `reject` sink without moving, so
+-- the sweep can never cross malformed tape content.  `bRepairDone` enters
+-- the *existing* idle `readAStart`; `readAResetStart` above is still idle, so
+-- no route of this slice enters any of these five modes.
+#print axioms Internal.PsubsetPpoly.TM.g1RepairBackAdvance_of_skip
+#print axioms Internal.PsubsetPpoly.TM.g1RepairBackComplete_some
+#print axioms Internal.PsubsetPpoly.TM.g1RepairBackComplete_none
+#print axioms Internal.PsubsetPpoly.TM.g1RepairBackComplete_reserved
+#print axioms Internal.PsubsetPpoly.TM.g1RepairBackComplete_forbidden
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bRepairSeek_p3
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bRepairSeek_p2
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bRepairSeek_p1
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bRepairSeek_p0_spent
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bRepairSeek_p0_bof
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bRepairSeek_p0_skip
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bRepairSeek_p0_bad
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bRepairWrite
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bRepairBack
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bRepairHop
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bRepairDone
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_bOOB_stable
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_constLit
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_store
@@ -777,6 +803,48 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.loopSteps_two
 #print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.loopSteps_three
 #print axioms Internal.PsubsetPpoly.TM.G1WalkDriverExamples.loopSteps_two_eq
+
+-- Repair-1: the G1 operand-2 repair control and its generic kernel.  The five
+-- repair modes, the reverse repair scanner and the `spent ↦ index` rewrite
+-- cycle as genuine instances of the generic kernels, the seven
+-- arbitrary-frame-list macros, anchor finish, terminal dispatch and capstone
+-- `g1CS_repair_pass_exact` with its closed cost `4m + 13s + 4a + 5`, which is
+-- the concrete endpoint of the slice.
+-- **The sweep does not cross malformed tape**: `G1RepairSkip` holds for exactly
+-- the canonical interior frame kinds, so `g1CS_repair_frame_reject` runs the
+-- scan's fourth outcome — a `blank` or a leftover
+-- `cursor` sends it to the stable `reject` sink in four genuine steps, with the
+-- tape untouched and any `spent` unit behind it left unrepaired — while the
+-- three
+-- reserved codes, which decode to no frame at all, are pinned at the table
+-- level by `g1RepairBackComplete_reserved` above.
+-- **Every configuration is caller-supplied**: `g1_repair_unreachable_forward`
+-- and `g1_repair_modes_stuck` show no route of the machine enters the sweep,
+-- `readAResetStart` is still idle, and nothing here mentions
+-- `G1M.initialConfig`.  **Deliberately absent**: the all-literal probes of this
+-- kernel (Repair-1b); the request-specific repair
+-- driver (Repair-2), any read-to-repair composition, pass A, combine, the
+-- output write, and any `TM.accepts`, verdict, full-clock, gate-semantics,
+-- acceptance-gate, multi-gate or specification-bridge claim.
+#print axioms Internal.PsubsetPpoly.TM.g1_repair_unreachable_forward
+#print axioms Internal.PsubsetPpoly.TM.g1_repair_modes_stuck
+#print axioms Internal.PsubsetPpoly.TM.g1RepairRevAdvance_of_skip
+#print axioms Internal.PsubsetPpoly.TM.g1RepairRevAdvance_reject
+#print axioms Internal.PsubsetPpoly.TM.g1RepairStopState_write
+#print axioms Internal.PsubsetPpoly.TM.g1RepairStopState_done
+#print axioms Internal.PsubsetPpoly.TM.g1RepairStopState_reject
+#print axioms Internal.PsubsetPpoly.TM.G1RepairMode.eq
+#print axioms Internal.PsubsetPpoly.TM.g1RepairScanner_machine
+#print axioms Internal.PsubsetPpoly.TM.g1CS_repair_cycle_onList
+#print axioms Internal.PsubsetPpoly.TM.g1CS_repair_seek_and_repair
+#print axioms Internal.PsubsetPpoly.TM.g1CS_repair_frame_skip
+#print axioms Internal.PsubsetPpoly.TM.g1CS_repair_frame_reject
+#print axioms Internal.PsubsetPpoly.TM.g1CS_repair_frame_reject_idle
+#print axioms Internal.PsubsetPpoly.TM.g1CS_repair_scan_skip
+#print axioms Internal.PsubsetPpoly.TM.g1CS_repair_spent_run
+#print axioms Internal.PsubsetPpoly.TM.g1CS_step_repairDone
+#print axioms Internal.PsubsetPpoly.TM.g1CS_repair_finish
+#print axioms Internal.PsubsetPpoly.TM.g1CS_repair_pass_exact
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

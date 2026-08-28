@@ -191,8 +191,9 @@ lean_lib PnP3 where
     -- Repair-1, the operand-2 repair control and its generic kernel: the
     -- reverse repair scanner, the `spent ↦ index` rewrite cycle and the
     -- arbitrary-frame-list repair pass `g1CS_repair_pass_exact`
-    -- (`GateOneRepairKernel`), with all-literal probes of one cycle, a
-    -- multi-unit run and a whole pass (`GateOneRepairKernelExamples`).
+    -- (`GateOneRepairKernel`), with all-literal probes of one cycle,
+    -- seek+repair, a multi-unit run and a whole pass
+    -- (`GateOneRepairKernelExamples`).
     -- Every run there is caller-supplied: no route of the machine enters the
     -- sweep, and the request-specific repair driver is deferred to Repair-2.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneRepairKernel,

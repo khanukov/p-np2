@@ -8,7 +8,7 @@ instances (`g1RepairScanner`, `g1RepairCycle`), the reverse repair table, the
 five arbitrary-frame-list macros (the thirteen-step cycle, seek-and-repair, the
 single frame skip, the multi-frame skip and the `13 * s` run), the terminal
 dispatch and the anchor finish, the closed cost `g1RepairPassSteps` and the
-capstone `g1CS_repair_pass_exact`, plus the three all-literal probes.
+capstone `g1CS_repair_pass_exact`, plus the four all-literal probes.
 
 Three facts the wrappers pin deliberately.  **Nothing routes into the sweep**:
 `check_repair_unreachable` pins that no `g1Advance` row produces a repair mode
@@ -258,8 +258,8 @@ theorem check_cycle_probe :
           13).state.snd.ctx = g1Ctx0.withVB true :=
   ⟨cycle_probe, cycle_probe_ctx⟩
 
-/-- **`26 = 13 * 2` genuine steps repair the whole two-unit run**, head
-`35 ↦ 27`, on the exact repaired word. -/
+/-- **Seek+repair in `37` steps**, head `59 ↦ 31`, and the full two-unit run in
+`26 = 13 * 2` steps, head `35 ↦ 27`. -/
 theorem check_run_probe :
     TM.runConfig (M := G1M)
           (g1AlignedConfig probeLen 59 (probe_safe (by omega))

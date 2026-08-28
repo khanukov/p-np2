@@ -797,8 +797,8 @@ open Pnp3.Magnification
 -- cycle as genuine instances of the generic kernels, the five
 -- arbitrary-frame-list macros, the terminal dispatch and the capstone
 -- `g1CS_repair_pass_exact` with its closed cost `4m + 13s + 4a + 5`, plus the
--- three all-literal probes (one cycle, a two-unit run, a whole pass on the
--- canonical word of `⟨and, 0, 2, [false, true, true]⟩`).
+-- four all-literal probes (one cycle, seek+repair, a two-unit run and a whole
+-- pass on the canonical word of `⟨and, 0, 2, [false, true, true]⟩`).
 -- **Every configuration is caller-supplied**: `g1_repair_unreachable_forward`
 -- and `g1_repair_modes_stuck` show no route of the machine enters the sweep,
 -- `readAResetStart` is still idle, and nothing here mentions

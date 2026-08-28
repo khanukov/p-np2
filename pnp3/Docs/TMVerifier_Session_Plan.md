@@ -1684,10 +1684,11 @@ transition table is never unfolded inside an execution proof.
   designated `spent` frame to `index`, leave `left`, `mid` and `tail`
   bit-for-bit alone, leave the whole carried `G1Ctx` untouched, and stop at
   head `0` in `readAStart` through `bRepairDone`.
-* `GateOneRepairKernelExamples.lean` (new) — three all-literal probes on one
+* `GateOneRepairKernelExamples.lean` (new) — four all-literal probes on one
   sixteen-frame word, the canonical word of `⟨and, 0, 2, [false, true, true]⟩`
   plus its trailing blank frame with both operand-2 units consumed: one cycle
-  (`13` steps, head `35 ↦ 31`), the two-unit run (`26`, head `35 ↦ 27`) and the
+  (`13` steps, head `35 ↦ 31`), seek+repair (`37`, head `59 ↦ 31`), the
+  two-unit run (`26`, head `35 ↦ 27`) and the
   whole pass (`79 = 4·6 + 13·2 + 4·6 + 5`, head `59 ↦ 0`).  Nonvacuity is
   proved at three levels — the three words are pairwise different, the consumed
   units go `2 ↦ 1 ↦ 0` while the index field is restored to `2`, and physical

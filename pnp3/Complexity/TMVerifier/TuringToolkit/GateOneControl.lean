@@ -387,8 +387,8 @@ def g1Advance : G1Mode → G1Frame → G1Mode
   | .bProbe, .data true => .bStoreTrue
   | .bProbe, .output false => .bOOB
   -- the installation scan: cross the rest of the operand-2 field and the
-  -- `separator`, stopping at `bProbe2` on the *first* data frame.  `bProbe2`
-  -- has no row of its own in this slice: it is the explicit local boundary,
+  -- `separator`, stopping at `bProbe2` on the first frame after it: data when
+  -- nonempty, `output false` otherwise.  `bProbe2` has no successful frame row
   -- and its successors are PR2.
   | .bInsSeek, .index => .bInsSeek
   | .bInsSeek, .spent => .bInsSeek

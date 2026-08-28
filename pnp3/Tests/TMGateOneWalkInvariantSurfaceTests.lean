@@ -35,6 +35,14 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @G1WalkInvariantExamples.g1EmptyExample_canonical
 #check @G1WalkInvariantExamples.g1EmptyExample_length
 
+theorem check_g1EmptyExample_canonical :
+    G1WalkInvariantExamples.g1EmptyExample.Canonical :=
+  G1WalkInvariantExamples.g1EmptyExample_canonical
+
+theorem check_g1EmptyExample_length :
+    (encodeG1 G1WalkInvariantExamples.g1EmptyExample).length = 48 :=
+  G1WalkInvariantExamples.g1EmptyExample_length
+
 /-! ## The structural facts, pinned exactly
 
 Each is a theorem *about the layout*; a later slice must not turn one back into
@@ -87,6 +95,25 @@ theorem check_g1WalkFrames_count_cursor (r : G1Request) (j : Nat) :
     (g1WalkFrames r j).count G1Frame.cursor = 1 :=
   g1WalkFrames_count_cursor r j
 
+theorem check_g1WalkFramesMarked_length (r : G1Request) (j : Nat)
+    (hj2 : j < r.arg2) (hj : j < r.vals.length) :
+    (g1WalkFramesMarked r j).length =
+      r.tag.units + r.arg1 + r.arg2 + r.vals.length + 7 :=
+  g1WalkFramesMarked_length r j hj2 hj
+
+theorem check_g1WalkFramesMarked_count_cursor (r : G1Request) (j : Nat) :
+    (g1WalkFramesMarked r j).count G1Frame.cursor = 1 :=
+  g1WalkFramesMarked_count_cursor r j
+
+theorem check_g1WalkFramesMarked_count_spent (r : G1Request) (j : Nat) :
+    (g1WalkFramesMarked r j).count G1Frame.spent = j + 1 :=
+  g1WalkFramesMarked_count_spent r j
+
+theorem check_g1WalkFramesMarked_count_index (r : G1Request) (j : Nat) :
+    (g1WalkFramesMarked r j).count G1Frame.index =
+      r.arg1 + (r.arg2 - j - 1) :=
+  g1WalkFramesMarked_count_index r j
+
 /-- The restored layout carries **no** cursor. -/
 theorem check_g1WalkFramesRestored_count_cursor (r : G1Request) (j : Nat) :
     (g1WalkFramesRestored r j).count G1Frame.cursor = 0 :=
@@ -102,42 +129,53 @@ theorem check_g1WalkFramesRestored_count_index (r : G1Request) (j : Nat) :
       r.arg1 + (r.arg2 - j - 1) :=
   g1WalkFramesRestored_count_index r j
 
-/-- Head safety follows from `j < vals.length` **alone**. -/
+/-- Head safety on the invariant domain. -/
 theorem check_g1WalkCursor_safe (r : G1Request) (j : Nat)
-    (hj : j < r.vals.length) :
+    (hj2 : j ≤ r.arg2) (hj : j < r.vals.length) :
     4 * (g1WalkCursor r j + 2) < G1M.tapeLength (encodeG1 r).length :=
-  g1WalkCursor_safe r j hj
+  g1WalkCursor_safe r j hj2 hj
 
 /-! ## `Σ(j)`'s projections, pinned exactly -/
 
 theorem check_g1WalkConfig_tape (r : G1Request) (j : Nat) (hj2 : j ≤ r.arg2)
-    (hj : j < r.vals.length) (v : Bool) :
-    (g1WalkConfig r j hj2 hj v).tape =
+    (hj : j < r.vals.length) (v : Bool) (hv : r.vals[j]? = some v) :
+    (g1WalkConfig r j hj2 hj v hv).tape =
       g1ListTape ((g1WalkFrames r j).flatMap G1Frame.bits) :=
-  g1WalkConfig_tape r j hj2 hj v
+  g1WalkConfig_tape r j hj2 hj v hv
 
 theorem check_g1WalkConfig_head (r : G1Request) (j : Nat) (hj2 : j ≤ r.arg2)
-    (hj : j < r.vals.length) (v : Bool) :
-    ((g1WalkConfig r j hj2 hj v).head : Nat) = 4 * g1WalkCursor r j - 1 :=
-  g1WalkConfig_head r j hj2 hj v
+    (hj : j < r.vals.length) (v : Bool) (hv : r.vals[j]? = some v) :
+    ((g1WalkConfig r j hj2 hj v hv).head : Nat) = 4 * g1WalkCursor r j - 1 :=
+  g1WalkConfig_head r j hj2 hj v hv
 
 theorem check_g1WalkConfig_state (r : G1Request) (j : Nat) (hj2 : j ≤ r.arg2)
-    (hj : j < r.vals.length) (v : Bool) :
-    (g1WalkConfig r j hj2 hj v).state.snd =
+    (hj : j < r.vals.length) (v : Bool) (hv : r.vals[j]? = some v) :
+    (g1WalkConfig r j hj2 hj v hv).state.snd =
       g1State .bSeek .p3 false false false (g1Ctx0.withVB v) :=
-  g1WalkConfig_state r j hj2 hj v
+  g1WalkConfig_state r j hj2 hj v hv
 
 /-- The latched bit is the one the cursor is hiding. -/
 theorem check_g1WalkConfig_vB (r : G1Request) (j : Nat) (hj2 : j ≤ r.arg2)
-    (hj : j < r.vals.length) (v : Bool) :
-    (g1WalkConfig r j hj2 hj v).state.snd.ctx.vB = v :=
-  g1WalkConfig_vB r j hj2 hj v
+    (hj : j < r.vals.length) (v : Bool) (hv : r.vals[j]? = some v) :
+    (g1WalkConfig r j hj2 hj v hv).state.snd.ctx.vB = v :=
+  g1WalkConfig_vB r j hj2 hj v hv
+
+theorem check_g1WalkConfig_hidden (r : G1Request) (j : Nat)
+    (hj2 : j ≤ r.arg2) (hj : j < r.vals.length)
+    (v : Bool) (hv : r.vals[j]? = some v) :
+    r.vals[j]? = some v :=
+  g1WalkConfig_hidden r j hj2 hj v hv
 
 /-! ## The step counts, pinned exactly -/
 
 theorem check_g1WalkInstallSteps_eq (r : G1Request) :
     g1WalkInstallSteps r = g1FieldRouteSteps r + 4 * (r.arg2 + 1) + 9 :=
   g1WalkInstallSteps_eq r
+
+theorem check_g1WalkEmptyOOBSteps_eq (r : G1Request) :
+    g1WalkEmptyOOBSteps r =
+      g1FieldRouteSteps r + 4 * (r.arg2 + 1) + 4 :=
+  g1WalkEmptyOOBSteps_eq r
 
 /-- Both real-run counts stay inside the **unchanged** public clock. -/
 theorem check_g1WalkInstallSteps_le_clock (r : G1Request) :
@@ -164,7 +202,7 @@ theorem check_g1CS_walk_install_exact (r : G1Request) (hc : r.Canonical)
         (by
           cases hl : r.vals with
           | nil => rw [hl] at hv; simp at hv
-          | cons c cs => simp) v :=
+          | cons c cs => simp) v hv :=
   g1CS_walk_install_exact r hc ht k h2 v hv
 
 theorem check_g1CS_walk_install_head (r : G1Request) (hc : r.Canonical)
@@ -274,7 +312,7 @@ theorem check_walk_install :
     g1WalkInstallSteps g1WalkExample = 178 ∧
       TM.runConfig (M := G1M)
           (G1M.initialConfig (g1Point (encodeG1 g1WalkExample))) 178 =
-        g1WalkConfig g1WalkExample 0 (by decide) (by decide) false ∧
+        g1WalkConfig g1WalkExample 0 (by decide) (by decide) false (by decide) ∧
       ((TM.runConfig (M := G1M)
           (G1M.initialConfig (g1Point (encodeG1 g1WalkExample)))
           178).head : Nat) = 39 ∧

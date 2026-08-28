@@ -22,16 +22,16 @@ bof · tag^u · argSep · index^a1 · argSep          -- g1FieldRouteFrames r
     · output false · finish · blank
 ```
 
-`g1WalkConfig r j _ _ v` is that list as a tape, head on the **last cell of the
+`g1WalkConfig r j _ _ v _` is that list as a tape, head on the **last cell of the
 frame preceding the cursor** (`4 * g1WalkCursor r j - 1`, with
 `g1WalkCursor r j = u + a1 + a2 + j + 4` the cursor's frame ordinal), control
 `bSeek .p3` with an empty frame buffer, and context `g1Ctx0.withVB v`, i.e.
 `pass = crossed = false` and the latched operand bit `vB = v`.  Both numeric
-conditions of the invariant are explicit arguments, so the configuration cannot
-be formed outside the invariant's range.
+guards and `vals[j]? = some v` are explicit arguments, so the configuration
+cannot be formed outside the invariant's range or with the wrong hidden bit.
 
 Every structural side condition the merged macros take as a *hypothesis* is
-**proved here** from those two numeric conditions, never assumed:
+**proved here** from the numeric guards, never assumed:
 
 * `g1WalkFrames_length_eq_validation` — the invariant word is exactly as long as
   the real tape word `encodeG1Frames r ++ [.blank]`, so no frame is invented or
@@ -45,8 +45,8 @@ Every structural side condition the merged macros take as a *hypothesis* is
   cross is `spent^j · separator · data^j`, which contains **no** `index` frame;
   this is why the forward scan `bFwd`, which has no `index` row, never stalls,
   and it is a theorem about the layout, not a semantic hypothesis;
-* `g1WalkCursor_safe` — every physical cell a round touches is inside the tape,
-  from `j < m` alone.
+* `g1WalkCursor_safe` — every physical cell a round touches is inside the tape
+  on the invariant domain `j ≤ arg2` and `j < m`.
 
 `g1WalkFramesMarked` and `g1WalkFramesRestored` name the two other layouts a
 round passes through.  `g1WalkFramesRestored` carries the counts above;
@@ -276,6 +276,43 @@ theorem g1WalkFrames_count_cursor (r : G1Request) (j : Nat) :
     g1Count_data_run G1Frame.cursor _ (g1Data_run_drop r.vals (j + 1))
       (by decide)]
 
+theorem g1WalkFramesMarked_length (r : G1Request) (j : Nat)
+    (hj2 : j < r.arg2) (hj : j < r.vals.length) :
+    (g1WalkFramesMarked r j).length =
+      r.tag.units + r.arg1 + r.arg2 + r.vals.length + 7 := by
+  simp only [g1WalkFramesMarked, List.length_append, g1FieldRouteFrames_length,
+    List.length_replicate, List.length_map, List.length_take, List.length_drop,
+    List.length_cons, List.length_nil]
+  omega
+
+theorem g1WalkFramesMarked_count_cursor (r : G1Request) (j : Nat) :
+    (g1WalkFramesMarked r j).count G1Frame.cursor = 1 := by
+  simp [g1WalkFramesMarked, List.count_append, g1FieldRoute_count_cursor,
+    g1Count_replicate_ne G1Frame.cursor G1Frame.index (r.arg2 - j - 1)
+      (by decide),
+    g1Count_replicate_ne G1Frame.cursor G1Frame.spent (j + 1) (by decide),
+    g1Count_data_run G1Frame.cursor _ (g1Data_run_take r.vals j) (by decide),
+    g1Count_data_run G1Frame.cursor _ (g1Data_run_drop r.vals (j + 1))
+      (by decide)]
+
+theorem g1WalkFramesMarked_count_spent (r : G1Request) (j : Nat) :
+    (g1WalkFramesMarked r j).count G1Frame.spent = j + 1 := by
+  simp [g1WalkFramesMarked, List.count_append, g1FieldRoute_count_spent,
+    g1Count_replicate_ne G1Frame.spent G1Frame.index (r.arg2 - j - 1)
+      (by decide),
+    g1Count_data_run G1Frame.spent _ (g1Data_run_take r.vals j) (by decide),
+    g1Count_data_run G1Frame.spent _ (g1Data_run_drop r.vals (j + 1))
+      (by decide)]
+
+theorem g1WalkFramesMarked_count_index (r : G1Request) (j : Nat) :
+    (g1WalkFramesMarked r j).count G1Frame.index =
+      r.arg1 + (r.arg2 - j - 1) := by
+  simp [g1WalkFramesMarked, List.count_append, g1FieldRoute_count_index,
+    g1Count_replicate_ne G1Frame.index G1Frame.spent (j + 1) (by decide),
+    g1Count_data_run G1Frame.index _ (g1Data_run_take r.vals j) (by decide),
+    g1Count_data_run G1Frame.index _ (g1Data_run_drop r.vals (j + 1))
+      (by decide)]
+
 /-- **The restored layout carries no cursor at all.** -/
 theorem g1WalkFramesRestored_count_cursor (r : G1Request) (j : Nat) :
     (g1WalkFramesRestored r j).count G1Frame.cursor = 0 := by
@@ -301,12 +338,14 @@ theorem g1WalkFramesRestored_count_index (r : G1Request) (j : Nat) :
     g1Count_replicate_ne G1Frame.index G1Frame.spent (j + 1) (by decide),
     g1Count_data_run G1Frame.index _ (g1Data_run_map r.vals) (by decide)]
 
-/-! ### Head safety, from `j < vals.length` alone -/
+/-! ### Head safety, on the invariant domain -/
 
 /-- **Every cell a round touches is inside the tape.**  The furthest physical
 cell any macro of a round reaches is `4 * (g1WalkCursor r j + 2)`, the frame
-boundary just past the probed frame. -/
-theorem g1WalkCursor_safe (r : G1Request) (j : Nat) (hj : j < r.vals.length) :
+boundary just past the probed frame.  The guard `j ≤ arg2` makes
+`g1WalkCursor r j` the actual cursor ordinal of `g1WalkFrames r j`. -/
+theorem g1WalkCursor_safe (r : G1Request) (j : Nat) (hj2 : j ≤ r.arg2)
+    (hj : j < r.vals.length) :
     4 * (g1WalkCursor r j + 2) < G1M.tapeLength (encodeG1 r).length :=
   g1_route_lt_tapeLength r _ (by simp only [g1WalkCursor]; omega)
 
@@ -317,36 +356,42 @@ set_option linter.unusedVariables false in
 `g1WalkFrames r j`, the head is on the last cell of the frame preceding the
 cursor, the control is the reverse seek `bSeek .p3` with an empty frame buffer,
 and the context is `g1Ctx0.withVB v`: `pass = crossed = false` and the latched
-operand bit `vB = v`.  The two numeric conditions of the invariant are explicit
-arguments; `hj2` is carried as a proof obligation of the invariant rather than
-used by the head bound, so the configuration cannot be formed outside the
-invariant's range. -/
+operand bit `vB = v`.  The two numeric guards and the hidden-bit relation
+`vals[j]? = some v` are explicit arguments, so the configuration cannot be
+formed outside the invariant's range or with a latch inconsistent with the
+cursor-hidden data frame. -/
 def g1WalkConfig (r : G1Request) (j : Nat) (hj2 : j ≤ r.arg2)
-    (hj : j < r.vals.length) (v : Bool) :
+    (hj : j < r.vals.length) (v : Bool) (hv : r.vals[j]? = some v) :
     Configuration (M := G1M) (encodeG1 r).length :=
   g1AlignedConfig (encodeG1 r).length (4 * g1WalkCursor r j - 1)
-    (by have := g1WalkCursor_safe r j hj; omega)
+    (by have := g1WalkCursor_safe r j hj2 hj; omega)
     (g1ListTape ((g1WalkFrames r j).flatMap G1Frame.bits))
     .bSeek .p3 false false false (g1Ctx0.withVB v)
 
 @[simp] theorem g1WalkConfig_tape (r : G1Request) (j : Nat) (hj2 : j ≤ r.arg2)
-    (hj : j < r.vals.length) (v : Bool) :
-    (g1WalkConfig r j hj2 hj v).tape =
+    (hj : j < r.vals.length) (v : Bool) (hv : r.vals[j]? = some v) :
+    (g1WalkConfig r j hj2 hj v hv).tape =
       g1ListTape ((g1WalkFrames r j).flatMap G1Frame.bits) := rfl
 
 @[simp] theorem g1WalkConfig_head (r : G1Request) (j : Nat) (hj2 : j ≤ r.arg2)
-    (hj : j < r.vals.length) (v : Bool) :
-    ((g1WalkConfig r j hj2 hj v).head : Nat) = 4 * g1WalkCursor r j - 1 := rfl
+    (hj : j < r.vals.length) (v : Bool) (hv : r.vals[j]? = some v) :
+    ((g1WalkConfig r j hj2 hj v hv).head : Nat) =
+      4 * g1WalkCursor r j - 1 := rfl
 
 @[simp] theorem g1WalkConfig_state (r : G1Request) (j : Nat) (hj2 : j ≤ r.arg2)
-    (hj : j < r.vals.length) (v : Bool) :
-    (g1WalkConfig r j hj2 hj v).state.snd =
+    (hj : j < r.vals.length) (v : Bool) (hv : r.vals[j]? = some v) :
+    (g1WalkConfig r j hj2 hj v hv).state.snd =
       g1State .bSeek .p3 false false false (g1Ctx0.withVB v) := rfl
 
 /-- **The latched bit is the one the cursor is hiding.** -/
 theorem g1WalkConfig_vB (r : G1Request) (j : Nat) (hj2 : j ≤ r.arg2)
-    (hj : j < r.vals.length) (v : Bool) :
-    (g1WalkConfig r j hj2 hj v).state.snd.ctx.vB = v := rfl
+    (hj : j < r.vals.length) (v : Bool) (hv : r.vals[j]? = some v) :
+    (g1WalkConfig r j hj2 hj v hv).state.snd.ctx.vB = v := rfl
+
+/-- **The invariant records the data bit hidden by the cursor.** -/
+theorem g1WalkConfig_hidden (r : G1Request) (j : Nat) (hj2 : j ≤ r.arg2)
+    (hj : j < r.vals.length) (v : Bool) (hv : r.vals[j]? = some v) :
+    r.vals[j]? = some v := hv
 
 /-! ## Installation: from the real initial configuration into `Σ(0)`
 
@@ -366,6 +411,11 @@ def g1WalkEmptyOOBSteps (r : G1Request) : Nat := g1InstallScanSteps r + 4
 theorem g1WalkInstallSteps_eq (r : G1Request) :
     g1WalkInstallSteps r = g1FieldRouteSteps r + 4 * (r.arg2 + 1) + 9 := by
   simp only [g1WalkInstallSteps, g1InstallScanSteps_eq]
+
+theorem g1WalkEmptyOOBSteps_eq (r : G1Request) :
+    g1WalkEmptyOOBSteps r =
+      g1FieldRouteSteps r + 4 * (r.arg2 + 1) + 4 := by
+  simp only [g1WalkEmptyOOBSteps, g1InstallScanSteps_eq]
 
 /-- **The installation fits the unchanged public clock**; `g1Clock` is not
 widened. -/
@@ -437,9 +487,9 @@ theorem g1CS_walk_install_exact (r : G1Request) (hc : r.Canonical)
     (v : Bool) (hv : r.vals[0]? = some v) :
     TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
         (g1WalkInstallSteps r) =
-      g1WalkConfig r 0 (by omega) (g1Length_pos_of_get hv) v := by
+      g1WalkConfig r 0 (by omega) (g1Length_pos_of_get hv) v hv := by
   have hm : 0 < r.vals.length := g1Length_pos_of_get hv
-  have hTL := g1WalkCursor_safe r 0 hm
+  have hTL := g1WalkCursor_safe r 0 (Nat.zero_le _) hm
   have hLpre := g1InstallPre_length r
   obtain ⟨rest, hvals⟩ := g1Vals_cons hv
   -- The installation scan, from `initialConfig`, in list-backed form.

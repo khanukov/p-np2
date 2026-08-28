@@ -605,6 +605,10 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1WalkFrames_count_index
 #print axioms Internal.PsubsetPpoly.TM.g1WalkFrames_count_spent
 #print axioms Internal.PsubsetPpoly.TM.g1WalkFrames_count_cursor
+#print axioms Internal.PsubsetPpoly.TM.g1WalkFramesMarked_length
+#print axioms Internal.PsubsetPpoly.TM.g1WalkFramesMarked_count_cursor
+#print axioms Internal.PsubsetPpoly.TM.g1WalkFramesMarked_count_spent
+#print axioms Internal.PsubsetPpoly.TM.g1WalkFramesMarked_count_index
 #print axioms Internal.PsubsetPpoly.TM.g1WalkFramesRestored_count_cursor
 #print axioms Internal.PsubsetPpoly.TM.g1WalkFramesRestored_count_spent
 #print axioms Internal.PsubsetPpoly.TM.g1WalkFramesRestored_count_index
@@ -613,7 +617,9 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1WalkConfig_head
 #print axioms Internal.PsubsetPpoly.TM.g1WalkConfig_state
 #print axioms Internal.PsubsetPpoly.TM.g1WalkConfig_vB
+#print axioms Internal.PsubsetPpoly.TM.g1WalkConfig_hidden
 #print axioms Internal.PsubsetPpoly.TM.g1WalkInstallSteps_eq
+#print axioms Internal.PsubsetPpoly.TM.g1WalkEmptyOOBSteps_eq
 #print axioms Internal.PsubsetPpoly.TM.g1WalkInstallSteps_le_clock
 #print axioms Internal.PsubsetPpoly.TM.g1WalkEmptyOOBSteps_le_clock
 #print axioms Internal.PsubsetPpoly.TM.g1CS_walk_install_exact

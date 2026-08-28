@@ -81,7 +81,7 @@ the single `cursor` frame.  The run stops there; no round follows. -/
 theorem walk_install :
     TM.runConfig (M := G1M)
         (G1M.initialConfig (g1Point (encodeG1 g1WalkExample))) 178 =
-      g1WalkConfig g1WalkExample 0 (by decide) (by decide) false := by
+      g1WalkConfig g1WalkExample 0 (by decide) (by decide) false (by decide) := by
   have h := g1CS_walk_install_exact g1WalkExample g1WalkExample_canonical
     (Or.inl rfl) 1 rfl false (by decide)
   rw [walk_install_steps] at h

@@ -1340,15 +1340,17 @@ machine never computes with them.
       · data(vals.take j) · cursor · data(vals.drop (j+1))
       · output false · finish · blank
   g1WalkCursor r j = u + a1 + a2 + j + 4
-  g1WalkConfig r j _ _ v  -- Σ(j): that tape, head 4 * g1WalkCursor r j - 1,
-                          -- control bSeek .p3 (empty buffer), ctx g1Ctx0.withVB v
+  g1WalkConfig r j _ _ v _  -- Σ(j): that tape, head 4 * g1WalkCursor r j - 1,
+                            -- control bSeek .p3, ctx g1Ctx0.withVB v,
+                            -- and vals[j]? = some v
   ```
 
-  under the invariant's two numeric conditions `j ≤ a2` and `j < m`, both
-  **explicit arguments** of `g1WalkConfig`, so the configuration cannot be
-  formed outside the invariant's range.  Every structural side condition the
-  merged round macros take as a *hypothesis* is **proved here as a theorem about
-  the layout**, from those two conditions alone and never assumed — PR3b is what
+  under the invariant's numeric conditions `j ≤ a2`, `j < m` and the hidden-bit
+  relation `vals[j]? = some v`, all **explicit arguments** of `g1WalkConfig`, so
+  the configuration cannot be formed outside the invariant's range or with a
+  latch inconsistent with the hidden frame.  Every structural side condition
+  the merged round macros take as a *hypothesis* is **proved here as a theorem
+  about the layout**, from the numeric guards and never assumed — PR3b is what
   feeds them to the macros: `g1WalkFrames_length_eq_validation` (the invariant
   word is exactly as long as `encodeG1Frames r ++ [.blank]`),
   `g1WalkFrames_count_index`/`_count_spent`/`_count_cursor` (`a2 - j` unspent,
@@ -1397,9 +1399,10 @@ machine never computes with them.
   `149` steps to head `44`, tape unchanged, inside the clock.
 
 Pinned by `Tests/TMGateOneWalkInvariantSurfaceTests.lean` (theorem-style exact
-wrappers for the structural facts, the lengths and counts, the head bound,
-`Σ(j)`'s four projections, both capstones with all their projections, both
-clock bounds and both literal probes).  `Tests/AxiomsAudit.lean` prints the
+wrappers for the structural facts, the lengths and counts of all three layouts,
+the head bound, `Σ(j)`'s projections and hidden-bit relation, both capstones
+with all their projections, both clock bounds and both literal probes).
+`Tests/AxiomsAudit.lean` prints the
 axioms of every new statement directly; each depends only on `propext`,
 `Classical.choice` and `Quot.sound`.
 

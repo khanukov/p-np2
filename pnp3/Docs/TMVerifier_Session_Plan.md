@@ -1766,8 +1766,10 @@ only *instantiates* those macros at one literal word.
 * `GateOneRepairKernelExamples.lean` (new) — the sixteen-frame word for
   `G1InstallScanExamples.g1WalkExample = ⟨and, 0, 2, [false, true, true]⟩` with
   **both** operand-2 units consumed (`probeSpentFrames`), the half-repaired word
-  (`probeHalfFrames`) and the repaired word (`probeIndexFrames`), on
-  `probeLen = 60` input cells.  Nonvacuity is literal:
+  (`probeHalfFrames`) and the repaired word (`probeIndexFrames`).
+  `probeInputLen = 60` is the encoded-input length parameter; `probe_word_cells`
+  separately pins 64 occupied cells strictly inside `G1M.tapeLength
+  probeInputLen`.  Nonvacuity is literal:
   `probeIndex_eq_encoded` says the repaired word is exactly
   `encodeG1Frames g1WalkExample ++ [blank]`, `probe_words_distinct` says the
   three words are pairwise different, `probe_counts` says the consumed units go

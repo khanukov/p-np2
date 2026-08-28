@@ -866,8 +866,9 @@ open Pnp3.Magnification
 -- **Every configuration is caller-supplied**: every probe starts from an
 -- explicit `g1AlignedConfig`, none mentions `G1M.initialConfig`, and
 -- `pass_probe_idle` pins that the `readAStart` endpoint is still idle.
-#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probeLen_eq
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probeInputLen_eq
 #print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probe_safe
+#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probe_word_cells
 #print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probeIndex_eq_encoded
 #print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probe_words_distinct
 #print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probe_counts

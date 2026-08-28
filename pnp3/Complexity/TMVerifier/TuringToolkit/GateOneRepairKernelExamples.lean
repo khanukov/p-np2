@@ -34,17 +34,16 @@ namespace G1RepairKernelExamples
 
 open G1InstallScanExamples (g1WalkExample g1WalkExample_length)
 
-/-- The probe tape length: the canonical word of `⟨and, 0, 2, [false, true,
-true]⟩`, `60` physical cells, so the sixteenth (blank) frame lives on the
-tape the machine supplies past the input. -/
-def probeLen : Nat := 60
+/-- The encoded-input length parameter is `60`; physical configurations use
+`G1M.tapeLength probeInputLen`, not a 60-cell tape. -/
+def probeInputLen : Nat := 60
 
-theorem probeLen_eq : probeLen = (encodeG1 g1WalkExample).length :=
+theorem probeInputLen_eq : probeInputLen = (encodeG1 g1WalkExample).length :=
   g1WalkExample_length.symm
 
 /-- Every cell the probes touch is far inside the tape. -/
-theorem probe_safe {k : Nat} (hk : k ≤ 64) : k < G1M.tapeLength probeLen :=
-  g1_lt_tapeLength (by simp only [probeLen]; omega)
+theorem probe_safe {k : Nat} (hk : k ≤ 64) : k < G1M.tapeLength probeInputLen :=
+  g1_lt_tapeLength (by simp only [probeInputLen]; omega)
 
 /-- The word **before** the sweep: both operand-2 units consumed. -/
 def probeSpentFrames : List G1Frame :=
@@ -61,6 +60,13 @@ def probeHalfFrames : List G1Frame :=
 def probeIndexFrames : List G1Frame :=
   [.bof, .tag, .tag, .tag, .tag, .argSep, .argSep, .index, .index, .separator,
     .data false, .data true, .data true, .output false, .finish, .blank]
+
+/-- The literal word occupies `16 * 4 = 64` cells, all strictly inside the
+machine's derived physical tape capacity. -/
+theorem probe_word_cells :
+    (probeSpentFrames.flatMap G1Frame.bits).length = 64 ∧
+      64 < G1M.tapeLength probeInputLen :=
+  ⟨by decide, probe_safe (by omega)⟩
 
 /-- **Nonvacuity, at the word level.**  The repaired word is literally the
 canonical encoded word of a real request plus the trailing blank frame, the
@@ -90,9 +96,9 @@ frame `8`, the rightmost operand-2 unit — flips: `spent` spells
 `index` spells `[false, false, true, true]`, so the two tapes are genuinely
 different functions and the `79` steps below cannot be a no-op. -/
 theorem probe_cell32 :
-    g1ListTape (n := probeLen) (probeSpentFrames.flatMap G1Frame.bits)
+    g1ListTape (n := probeInputLen) (probeSpentFrames.flatMap G1Frame.bits)
         ⟨32, probe_safe (by omega)⟩ = true ∧
-      g1ListTape (n := probeLen) (probeIndexFrames.flatMap G1Frame.bits)
+      g1ListTape (n := probeInputLen) (probeIndexFrames.flatMap G1Frame.bits)
         ⟨32, probe_safe (by omega)⟩ = false :=
   ⟨rfl, rfl⟩
 
@@ -189,13 +195,13 @@ of the unit before it, the control is back in the reverse-read entry shape, and
 the only cells that change are the four of frame `8`. -/
 theorem cycle_probe :
     TM.runConfig (M := G1M)
-        (g1AlignedConfig probeLen 35 (probe_safe (by omega))
+        (g1AlignedConfig probeInputLen 35 (probe_safe (by omega))
           (g1ListTape (probeSpentFrames.flatMap G1Frame.bits))
           .bRepairSeek .p3 false false false (g1Ctx0.withVB true)) 13 =
-      g1AlignedConfig probeLen 31 (probe_safe (by omega))
+      g1AlignedConfig probeInputLen 31 (probe_safe (by omega))
         (g1ListTape (probeHalfFrames.flatMap G1Frame.bits))
         .bRepairSeek .p3 false false false (g1Ctx0.withVB true) := by
-  have h := g1CS_repair_cycle_onList probeLen probeCyclePre probeCycleSuffix
+  have h := g1CS_repair_cycle_onList probeInputLen probeCyclePre probeCycleSuffix
     (g1Ctx0.withVB true) (by decide) (probe_safe (by decide))
   simpa only [probeCycle_split_spent, probeCycle_split_half,
     show (probeCyclePre.length : Nat) = 8 from rfl] using h
@@ -203,7 +209,7 @@ theorem cycle_probe :
 /-- The cycle preserves the whole carried context, latch included. -/
 theorem cycle_probe_ctx :
     (TM.runConfig (M := G1M)
-        (g1AlignedConfig probeLen 35 (probe_safe (by omega))
+        (g1AlignedConfig probeInputLen 35 (probe_safe (by omega))
           (g1ListTape (probeSpentFrames.flatMap G1Frame.bits))
           .bRepairSeek .p3 false false false (g1Ctx0.withVB true))
         13).state.snd.ctx = g1Ctx0.withVB true := by
@@ -229,20 +235,20 @@ head goes from cell `35` to cell `27`, the last cell of the second `argSep`, and
 the operand-2 field is back to `index index`. -/
 theorem run_probe :
     TM.runConfig (M := G1M)
-        (g1AlignedConfig probeLen 35 (probe_safe (by omega))
+        (g1AlignedConfig probeInputLen 35 (probe_safe (by omega))
           (g1ListTape (probeSpentFrames.flatMap G1Frame.bits))
           .bRepairSeek .p3 false false false (g1Ctx0.withVB true)) 26 =
-      g1AlignedConfig probeLen 27 (probe_safe (by omega))
+      g1AlignedConfig probeInputLen 27 (probe_safe (by omega))
         (g1ListTape (probeIndexFrames.flatMap G1Frame.bits))
         .bRepairSeek .p3 false false false (g1Ctx0.withVB true) := by
-  have h := g1CS_repair_spent_run probeLen probeRunPre (probeMid ++ probeTail) 2
+  have h := g1CS_repair_spent_run probeInputLen probeRunPre (probeMid ++ probeTail) 2
     (g1Ctx0.withVB true) (by decide) (probe_safe (by decide))
   simpa only [probeRun_split_spent, probeRun_split_index,
     show (probeRunPre.length : Nat) = 7 from rfl] using h
 
 theorem run_probe_tape :
     (TM.runConfig (M := G1M)
-        (g1AlignedConfig probeLen 35 (probe_safe (by omega))
+        (g1AlignedConfig probeInputLen 35 (probe_safe (by omega))
           (g1ListTape (probeSpentFrames.flatMap G1Frame.bits))
           .bRepairSeek .p3 false false false (g1Ctx0.withVB true))
         26).tape = g1ListTape (probeIndexFrames.flatMap G1Frame.bits) := by
@@ -255,13 +261,13 @@ the rightmost consumed unit and lands on cell `31`.  The trailing `blank` sits
 at cells `60 … 63` and is never read (`probeTail_beyond_entry`). -/
 theorem seek_repair_probe :
     TM.runConfig (M := G1M)
-        (g1AlignedConfig probeLen 59 (probe_safe (by omega))
+        (g1AlignedConfig probeInputLen 59 (probe_safe (by omega))
           (g1ListTape (probeSpentFrames.flatMap G1Frame.bits))
           .bRepairSeek .p3 false false false (g1Ctx0.withVB true)) 37 =
-      g1AlignedConfig probeLen 31 (probe_safe (by omega))
+      g1AlignedConfig probeInputLen 31 (probe_safe (by omega))
         (g1ListTape (probeHalfFrames.flatMap G1Frame.bits))
         .bRepairSeek .p3 false false false (g1Ctx0.withVB true) := by
-  have h := g1CS_repair_seek_and_repair probeLen
+  have h := g1CS_repair_seek_and_repair probeInputLen
     (probeRunPre ++ [G1Frame.spent]) probeMid probeTail (g1Ctx0.withVB true)
     (by decide) probeMid_skip (probe_safe (by decide))
   simpa [probeSpentFrames, probeHalfFrames, probeRunPre, probeMid, probeTail] using h
@@ -270,7 +276,7 @@ theorem seek_repair_probe :
 is still consumed. -/
 theorem seek_repair_probe_tape :
     (TM.runConfig (M := G1M)
-        (g1AlignedConfig probeLen 59 (probe_safe (by omega))
+        (g1AlignedConfig probeInputLen 59 (probe_safe (by omega))
           (g1ListTape (probeSpentFrames.flatMap G1Frame.bits))
           .bRepairSeek .p3 false false false (g1Ctx0.withVB true))
         37).tape = g1ListTape (probeHalfFrames.flatMap G1Frame.bits) := by
@@ -284,13 +290,13 @@ control `readAStart`, tape exactly the canonical word plus the blank frame, and
 the latched `vB = true` still in place. -/
 theorem pass_probe :
     TM.runConfig (M := G1M)
-        (g1AlignedConfig probeLen 59 (probe_safe (by omega))
+        (g1AlignedConfig probeInputLen 59 (probe_safe (by omega))
           (g1ListTape (probeSpentFrames.flatMap G1Frame.bits))
           .bRepairSeek .p3 false false false (g1Ctx0.withVB true)) 79 =
-      g1AlignedConfig probeLen 0 (probe_safe (by omega))
+      g1AlignedConfig probeInputLen 0 (probe_safe (by omega))
         (g1ListTape (probeIndexFrames.flatMap G1Frame.bits))
         .readAStart .p0 false false false (g1Ctx0.withVB true) := by
-  have h := g1CS_repair_pass_exact probeLen 2 probeLeft probeMid probeTail
+  have h := g1CS_repair_pass_exact probeInputLen 2 probeLeft probeMid probeTail
     (g1Ctx0.withVB true) probeLeft_skip probeMid_skip (probe_safe (by decide))
   simpa only [probeSpent_split, probeIndex_split, probe_passSteps,
     show (probeLeft.length : Nat) = 6 from rfl,
@@ -298,7 +304,7 @@ theorem pass_probe :
 
 theorem pass_probe_head :
     ((TM.runConfig (M := G1M)
-        (g1AlignedConfig probeLen 59 (probe_safe (by omega))
+        (g1AlignedConfig probeInputLen 59 (probe_safe (by omega))
           (g1ListTape (probeSpentFrames.flatMap G1Frame.bits))
           .bRepairSeek .p3 false false false (g1Ctx0.withVB true))
         79).head : Nat) = 0 := by
@@ -308,7 +314,7 @@ theorem pass_probe_head :
 plus the trailing blank frame. -/
 theorem pass_probe_tape :
     (TM.runConfig (M := G1M)
-        (g1AlignedConfig probeLen 59 (probe_safe (by omega))
+        (g1AlignedConfig probeInputLen 59 (probe_safe (by omega))
           (g1ListTape (probeSpentFrames.flatMap G1Frame.bits))
           .bRepairSeek .p3 false false false (g1Ctx0.withVB true))
         79).tape =
@@ -321,12 +327,12 @@ theorem pass_probe_tape :
 caller latched. -/
 theorem pass_probe_ctx :
     (TM.runConfig (M := G1M)
-        (g1AlignedConfig probeLen 59 (probe_safe (by omega))
+        (g1AlignedConfig probeInputLen 59 (probe_safe (by omega))
           (g1ListTape (probeSpentFrames.flatMap G1Frame.bits))
           .bRepairSeek .p3 false false false (g1Ctx0.withVB true))
         79).state.snd.ctx = g1Ctx0.withVB true ∧
       (TM.runConfig (M := G1M)
-        (g1AlignedConfig probeLen 59 (probe_safe (by omega))
+        (g1AlignedConfig probeInputLen 59 (probe_safe (by omega))
           (g1ListTape (probeSpentFrames.flatMap G1Frame.bits))
           .bRepairSeek .p3 false false false (g1Ctx0.withVB true))
         79).state.snd.ctx.vB = true := by
@@ -337,10 +343,10 @@ state, head and tape for the whole remaining budget.  Operand 1 is not read. -/
 
 theorem pass_probe_idle (k : Nat) :
     TM.runConfig (M := G1M)
-        (g1AlignedConfig probeLen 59 (probe_safe (by omega))
+        (g1AlignedConfig probeInputLen 59 (probe_safe (by omega))
           (g1ListTape (probeSpentFrames.flatMap G1Frame.bits))
           .bRepairSeek .p3 false false false (g1Ctx0.withVB true)) (79 + k) =
-      g1AlignedConfig probeLen 0 (probe_safe (by omega))
+      g1AlignedConfig probeInputLen 0 (probe_safe (by omega))
         (g1ListTape (probeIndexFrames.flatMap G1Frame.bits))
         .readAStart .p0 false false false (g1Ctx0.withVB true) := by
   rw [runConfig_add, pass_probe]

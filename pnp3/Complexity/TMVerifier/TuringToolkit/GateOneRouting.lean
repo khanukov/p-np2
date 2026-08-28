@@ -41,8 +41,9 @@ run from `G1M.initialConfig` reaches: `bProbe2` is now **active** (it latches
 the data bit it reads), but the probe, the latch, the cursor install and every
 step of the walk behind them are proved only on caller-supplied configurations
 in `GateOneProbeInstall`/`GateOneWalkKernel`.  `g1_bFwd_rows` pins the walk's
-right-running scan and `g1_bExh_stuck` its exhaustion boundary; the reverse seek
-`bSeek` has no forward row at all and is decided inside `g1Transition`.
+right-running scan and `g1_bRet_rows` the two forward modes of its terminal
+exhaustion path; the reverse seek `bSeek` has no forward row at all and is
+decided inside `g1Transition`.
 
 The older bridge `bRoundStart` is now unreachable from the forward table
 (`g1_bRoundStart_unreachable`) and reads no frame at all
@@ -417,11 +418,17 @@ theorem g1_bFwd_rows :
       (∀ b, g1Advance .bFwd (.data b) = .bFwd) :=
   ⟨rfl, rfl, rfl, fun b => by cases b <;> rfl⟩
 
-/-- **The exhaustion handoff is the local boundary of this slice.**  An
-attempted complete-frame read at `bExh` enters `reject`; the seek's `argSep`
-outcome stops at `.bExh .p0`, head on that frame's first cell, and no theorem
-executes a further read.  PR2b2 supplies its rows. -/
-theorem g1_bExh_stuck : G1Stuck .bExh := by decide
+/-- **The complete forward table of the terminal exhaustion path.**  `bExh`
+re-reads the `argSep` that opens the operand-2 field and enters `bRet`, which
+crosses consumed units, the separator and data and stops on the `cursor` at the
+terminal turn.  These are the only rows out of the two modes; no route prefix in
+this module reaches either, and nothing here claims a round count. -/
+theorem g1_bRet_rows :
+    g1Advance .bExh .argSep = .bRet ∧
+      g1Advance .bRet .spent = .bRet ∧ g1Advance .bRet .separator = .bRet ∧
+      g1Advance .bRet .cursor = .bTurnFin ∧
+      (∀ b, g1Advance .bRet (.data b) = .bRet) :=
+  ⟨rfl, rfl, rfl, rfl, fun b => by cases b <;> rfl⟩
 
 /-- **The rewrite-cycle bridge is unreachable from the forward table.**  No
 mode/frame pair completes into `bRoundStart`. -/

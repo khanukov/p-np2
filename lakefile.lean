@@ -162,7 +162,11 @@ lean_lib PnP3 where
     -- cursor restore as exact atoms on arbitrary frame-list contexts
     -- (`GateOneWalkKernel`) and their literal encoded-frame probes
     -- (`GateOneWalkExamples`).  Every run there is caller-supplied too, and the
-    -- exhaustion outcome stops at the boundary `bExh`.
+    -- exhaustion outcome stops at `bExh`.
+    -- PR2b2 adds, to the same two modules, the terminal exhaustion path behind
+    -- that handoff: the exhaustion scan, the terminal turn and the terminal
+    -- restore into `readAResetStart` with no cursor left on the tape.  Those
+    -- runs are caller-supplied too; nothing composes a round with them.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneWalkKernel,
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneWalkExamples,
     -- The thirteen-step rewrite cycle at the G1 control, kept as an

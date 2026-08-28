@@ -10,7 +10,8 @@ the positive-index installation route that replaces the retired bridge route.
 It proves no `TM.runConfig`, acceptance, output, or gate-semantics claim.  For
 `arg2 > 0` it pins the route only as far as `bProbe2`; `g1_bProbe2_rows` pins
 that probe's three **active** rows, `g1_bFwd_rows` the forward table of the
-walk's right-running scan and `g1_bExh_stuck` its exhaustion boundary, but no
+walk's right-running scan and `g1_bRet_rows` the two forward modes of its
+terminal exhaustion path, but no
 route prefix here reaches any of them, and nothing here states a round, an
 iteration or an operand value.  The reverse seek `bSeek` has no forward row at
 all: it is decided inside `g1Transition`, and `TMGateOneControlSurfaceTests`
@@ -52,7 +53,7 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1InstallRoute_validPath
 #check @g1_bProbe2_rows
 #check @g1_bFwd_rows
-#check @g1_bExh_stuck
+#check @g1_bRet_rows
 #check @g1_bRoundStart_stuck
 #check @g1_bRoundStart_unreachable
 #check @g1Advance_ne_sink
@@ -232,16 +233,21 @@ theorem check_g1_bProbe2_rows :
       g1Advance .bProbe2 (.output false) = .bOOB :=
   g1_bProbe2_rows
 
-/-- **The walk's right-running scan and its boundary, at frame level.**  `bFwd`
-crosses consumed units, the separator and data and stops on the `cursor`; `bExh`
-has no successful frame row, so an attempted complete-frame read there enters
-`reject`.  No route prefix in this module reaches either: the walk's runs take a
-caller-supplied configuration. -/
-theorem check_g1_bFwd_rows_and_bExh :
+/-- **The walk's two right-running scans, at frame level.**  `bFwd`
+crosses consumed units, the separator and data and stops on the `cursor`;
+`bExh` re-reads the opening `argSep` and `bRet` crosses the same frames to the
+same `cursor`, stopping at the terminal turn.  No route prefix in this module
+reaches any of them: the walk's runs take a caller-supplied configuration, and
+nothing here says how many rounds precede the terminal path. -/
+theorem check_g1_bFwd_and_bRet_rows :
     (g1Advance .bFwd .spent = .bFwd ∧ g1Advance .bFwd .separator = .bFwd ∧
         g1Advance .bFwd .cursor = .bTurn ∧
-        (∀ b, g1Advance .bFwd (.data b) = .bFwd)) ∧ G1Stuck .bExh :=
-  ⟨g1_bFwd_rows, g1_bExh_stuck⟩
+        (∀ b, g1Advance .bFwd (.data b) = .bFwd)) ∧
+      (g1Advance .bExh .argSep = .bRet ∧
+        g1Advance .bRet .spent = .bRet ∧ g1Advance .bRet .separator = .bRet ∧
+        g1Advance .bRet .cursor = .bTurnFin ∧
+        (∀ b, g1Advance .bRet (.data b) = .bRet)) :=
+  ⟨g1_bFwd_rows, g1_bRet_rows⟩
 
 /-- **The retired bridge is unreachable from the forward table.**  This is what
 makes the surviving rewrite-cycle theorems an arbitrary-configuration

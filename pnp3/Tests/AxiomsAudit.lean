@@ -391,7 +391,7 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1_insSeek_validPath
 #print axioms Internal.PsubsetPpoly.TM.g1_bProbe2_rows
 #print axioms Internal.PsubsetPpoly.TM.g1_bFwd_rows
-#print axioms Internal.PsubsetPpoly.TM.g1_bExh_stuck
+#print axioms Internal.PsubsetPpoly.TM.g1_bRet_rows
 #print axioms Internal.PsubsetPpoly.TM.g1_bRoundStart_stuck
 #print axioms Internal.PsubsetPpoly.TM.g1_bRoundStart_unreachable
 #print axioms Internal.PsubsetPpoly.TM.g1InstallRouteFrames_length
@@ -499,17 +499,17 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1ProbeInstallExamples.install_cursor
 
 -- PR2b1, one **normal round** of the cursor walk behind `bSeek`: the six new
--- modes, the reverse seek and the merged latch/writer rows — twenty-three
--- transition tuples in total — plus the two generic
+-- modes, the reverse seek and the merged latch/writer rows — plus the two
+-- generic
 -- tape-preserving leftward primitives, the three new frame-kernel instances,
 -- the seven exact atomic macros on an **arbitrary** frame list, and their five
 -- literal encoded-frame probes.  **Every run takes the caller's
 -- configuration**: none starts from `G1M.initialConfig`, so no installation
 -- driver is audited, and nothing composes two macros into a round.  The
 -- exhaustion outcome stops at `.bExh .p0` — head on the first cell of the
--- opening `argSep` — and `bExh` has no successful frame row
--- (`g1_bExh_stuck`); the terminal exhaustion path (`bRet`, `bTurnFin`, the two
--- terminal restore writers) is PR2b2 and does not exist.  No walk invariant,
+-- opening `argSep`; the terminal path continuing from that shape is audited in
+-- the PR2b2 block below, on caller-supplied configurations only.  No walk
+-- invariant,
 -- iteration, loop clock, out-of-range aggregation, repair, arbitrary-index
 -- read, `TM.accepts`, gate-semantics, full-clock or padded-tape statement is
 -- audited here, because none exists.
@@ -551,6 +551,40 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1WalkExamples.walk_fwd_to_cursor
 #print axioms Internal.PsubsetPpoly.TM.G1WalkExamples.walk_turn
 #print axioms Internal.PsubsetPpoly.TM.G1WalkExamples.walk_restore
+
+-- PR2b2, the **terminal exhaustion path** behind the merged `bExh` handoff: the
+-- four new modes (`bRet`, `bTurnFin`, `bFinFalse`, `bFinTrue`), the five new
+-- `g1Advance` rows pinned by `g1_bRet_rows`, the eight new transition tuples
+-- (`g1Transition_bTurnFin_p0…p3`, `g1Transition_bFin_p0…p3`), the terminal
+-- writer instance `g1FinWriter`, the three exact atomic macros on an
+-- **arbitrary** frame list and their three literal encoded-frame probes.
+-- `g1Transition_bFin_p3` is the row that hands off to `readAResetStart`, and
+-- `G1WalkExamples.g1WalkFramesFinal_no_cursor` is the literal witness that the
+-- resulting tape has no `cursor` frame left.  **Every run takes the caller's
+-- configuration**: none starts from `G1M.initialConfig`, nothing composes a
+-- round with the terminal path, and no theorem says a real run reaches `bExh`
+-- after the right number of rounds.  No walk invariant, iteration, loop clock,
+-- addressing, positive-index operand-value read, out-of-range aggregation,
+-- repair, pass A, output write, `TM.accepts`, gate-semantics, full-clock or
+-- padded-tape statement is audited here, because none exists.
+#print axioms Internal.PsubsetPpoly.TM.g1FinMode_ne_restore
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bTurnFin_p0
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bTurnFin_p1
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bTurnFin_p2
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bTurnFin_p3
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bFin_p0
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bFin_p1
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bFin_p2
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_bFin_p3
+#print axioms Internal.PsubsetPpoly.TM.g1Advance_bRet_of_skip
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_exh_to_cursor
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_turn_fin
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_fin_restore
+#print axioms Internal.PsubsetPpoly.TM.G1WalkExamples.g1WalkFramesTerminal_length
+#print axioms Internal.PsubsetPpoly.TM.G1WalkExamples.g1WalkFramesFinal_no_cursor
+#print axioms Internal.PsubsetPpoly.TM.G1WalkExamples.walk_exh_to_cursor
+#print axioms Internal.PsubsetPpoly.TM.G1WalkExamples.walk_turn_fin
+#print axioms Internal.PsubsetPpoly.TM.G1WalkExamples.walk_fin_restore
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

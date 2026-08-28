@@ -6,32 +6,38 @@ import Complexity.TMVerifier.TuringToolkit.GateOneProbeInstall
 
 **Progress classification: Infrastructure.**
 
-One **normal round** of the walk behind the merged reverse-seek entry `bSeek`.
-`GateOneControl` supplies the six new modes and their tuple lemmas; this module
-turns them into three more instances of the generic frame kernels —
+One **normal round** of the walk behind the merged reverse-seek entry `bSeek`,
+plus the **terminal exhaustion path** behind the merged `bExh` handoff.
+`GateOneControl` supplies the modes and their tuple lemmas; this module
+turns them into four more instances of the generic frame kernels —
 `g1WalkScanner` (`ReverseFrameScanner`: the reverse seek, stopping on an `index`
 at the write handoff `bDec` or on the opening `argSep` at the exhaustion
-boundary `bExh`), `g1DecWriter` (`FrameWriter`: `index ↦ spent`) and
+handoff `bExh`), `g1DecWriter` (`FrameWriter`: `index ↦ spent`),
 `g1RestoreWriter b` (`FrameWriter`: `cursor ↦ data b`, back into the walk's
-probe) — and into the exact `TM.runConfig` macro of each step: steps, head,
+probe) and `g1FinWriter b` (`FrameWriter`: the same write, out into
+`readAResetStart` with no cursor left on the tape) — and into the exact
+`TM.runConfig` macro of each step: steps, head,
 control state, carried context and the complete list-backed tape all pinned, on
-an **arbitrary** surrounding frame list.  The forward scan reuses the existing
-`g1FrameScanner`; the tape-preserving turn is the generic `Phased.holdWalk4`.
+an **arbitrary** surrounding frame list.  The forward and exhaustion scans reuse
+the existing `g1FrameScanner`; both tape-preserving turns are the generic
+`Phased.holdWalk4`.
 
 Nothing merged is restated: `G1InstallSkip`, `g1Advance_bInsSeek_of_skip`,
 `g1ValidPath_fix`, `g1AdvanceList_fix`, `g1CS_walk_install_scan` and
 `g1CS_readB_install_scan_exact` come from `GateOneInstallScan`, and
 `g1CursorWriter`, `g1CS_walk_probe_latch`, `g1CS_walk_probe_oob` and
-`g1CS_walk_install_cursor` from `GateOneProbeInstall`.
+`g1CS_walk_install_cursor` from `GateOneProbeInstall`.  The terminal path
+**reuses** `G1WalkSkip` and the merged forward-scan plumbing; no normal-round
+macro is duplicated for it.
 
 **Explicit deferrals.**  Every theorem below takes the **caller's**
 configuration, tape length and safety bound; none starts from
 `G1M.initialConfig`, so there is no installation driver here, and nothing
 composes two macros into a round or iterates one.  `g1CS_walk_seek_exhaust`
-stops at the **boundary** `.bExh .p0`, head on the first cell of the opening
-`argSep`: `bExh` has no successful frame row, and nothing here runs past it.
-The terminal exhaustion path — `bRet`, `bTurnFin`, the two terminal restore
-writers and their macros — is **PR2b2** and does not exist.  No walk invariant,
+stops at `.bExh .p0`, head on the first cell of the opening `argSep`, and
+`g1CS_walk_exh_to_cursor` is the **caller-supplied** continuation from exactly
+that shape: nothing here proves that a real run reaches it, or reaches it after
+the right number of rounds.  No walk invariant,
 no iteration or loop clock, no out-of-range aggregation, no addressing, no
 positive-index operand-value theorem, no repair, no pass A, no output write, no
 `TM.accepts`, no gate-semantics correctness, no full-clock theorem and no
@@ -42,7 +48,7 @@ namespace Pnp3.Internal.PsubsetPpoly.TM
 
 open Pnp3.Internal.PsubsetPpoly.TM.FrameScan
 
-/-- Frames the walk's right-running scan crosses: consumed units, the
+/-- Frames the walk's two right-running scans cross: consumed units, the
 `separator`, data. -/
 def G1WalkSkip : G1Frame → Prop
   | .spent => True
@@ -55,6 +61,12 @@ instance : DecidablePred G1WalkSkip := fun f => by
 
 theorem g1Advance_bFwd_of_skip {f : G1Frame} (h : G1WalkSkip f) :
     g1Advance .bFwd f = .bFwd := by
+  cases f <;> first | rfl | exact (show False from h).elim
+
+/-- The exhaustion scan crosses exactly the same frames as the round's forward
+scan, so it reuses `G1WalkSkip` rather than a second predicate. -/
+theorem g1Advance_bRet_of_skip {f : G1Frame} (h : G1WalkSkip f) :
+    g1Advance .bRet f = .bRet := by
   cases f <;> first | rfl | exact (show False from h).elim
 
 /-- G1's right-to-left seek table: an `index` stops the pass at the write
@@ -207,6 +219,32 @@ def g1RestoreWriter (b : Bool) : FrameWriter G1State G1Frame G1Ctx where
   wstep_p3 := fun ctx scan =>
     g1Transition_bRestore_p3 g1CS.startPhase b false false false scan ctx
 
+/-- **The terminal restore writer.**  The same `cursor ↦ data b` write, into the
+pass-A reset handoff: the row that leaves **no cursor on the tape**. -/
+def g1FinWriter (b : Bool) : FrameWriter G1State G1Frame G1Ctx where
+  program := g1CS
+  phase := g1CS.startPhase
+  codec := g1FrameCodec
+  target := .data b
+  w0 := false
+  w1 := true
+  w2 := b
+  w3 := !b
+  wst0 := fun ctx => g1State (g1FinMode b) .p0 false false false ctx
+  wst1 := fun ctx => g1State (g1FinMode b) .p1 false false false ctx
+  wst2 := fun ctx => g1State (g1FinMode b) .p2 false false false ctx
+  wst3 := fun ctx => g1State (g1FinMode b) .p3 false false false ctx
+  exitState := fun ctx => g1ReadAResetState ctx
+  target_bits := by cases b <;> rfl
+  wstep_p0 := fun ctx scan =>
+    g1Transition_bFin_p0 g1CS.startPhase b false false false scan ctx
+  wstep_p1 := fun ctx scan =>
+    g1Transition_bFin_p1 g1CS.startPhase b false false false scan ctx
+  wstep_p2 := fun ctx scan =>
+    g1Transition_bFin_p2 g1CS.startPhase b false false false scan ctx
+  wstep_p3 := fun ctx scan =>
+    g1Transition_bFin_p3 g1CS.startPhase b false false false scan ctx
+
 /-! ## The atomic macros.  Each is an exact configuration equality on an
 **arbitrary** surrounding frame list: nothing is assumed about which request,
 index or round the frames belong to, and the caller supplies `n` and the bound. -/
@@ -231,9 +269,10 @@ theorem g1CS_walk_seek_to_index (n : Nat) (pre skipped suffix : List G1Frame)
     (by simp [g1WalkScanner, G1WalkStop])
     (fun f hf => g1WalkRevAdvance_of_skip (hskip f hf)) (Or.inl rfl) hsafe
 
-/-- **The seek stops on the opening `argSep`.**  The exact exhaustion endpoint
-and the **local boundary of this slice**: `bExh` has no successful frame row,
-and no theorem runs past this configuration. -/
+/-- **The seek stops on the opening `argSep`.**  The exact exhaustion endpoint:
+head on that frame's first cell, in `bExh`.  The terminal path continues from
+this *shape* in `g1CS_walk_exh_to_cursor`, on a configuration the caller
+supplies; nothing composes the two. -/
 theorem g1CS_walk_seek_exhaust (n : Nat) (pre skipped suffix : List G1Frame)
     (ctx : G1Ctx) (hskip : ∀ f ∈ skipped, G1WalkSkip f)
     (hsafe : 4 * (pre.length + skipped.length) + 4 < G1M.tapeLength n) :
@@ -345,5 +384,94 @@ theorem g1CS_walk_restore (n : Nat) (pre suffix : List G1Frame) (b : Bool)
         (g1ListTape ((pre ++ G1Frame.data b :: suffix).flatMap G1Frame.bits))
         .bProbe2 .p0 false false false ctx :=
   (g1RestoreWriter b).writeFrameOnList n pre suffix .cursor ctx hsafe
+
+/-! ## The terminal exhaustion path
+
+Three macros behind the merged `bExh` handoff, in the same caller-supplied
+shape as the round's: the exhaustion scan, the terminal turn and the terminal
+restore.  They reuse `G1WalkSkip`, `g1FrameScanner`, `g1ValidPath_fix`,
+`g1AdvanceList_fix` and `Phased.holdWalk4`; nothing chains them, and no run
+below reaches `bExh` on its own. -/
+
+/-- **The exhaustion scan.**  From the first cell of the opening `argSep`,
+`4 * (k + 2)` read-only steps re-read that `argSep`, cross the `k` consumed
+units, separator and data frames after it and read the `cursor`, entering the
+terminal turn just past it. -/
+theorem g1CS_walk_exh_to_cursor (n : Nat) (pre skipped suffix : List G1Frame)
+    (ctx : G1Ctx) (hskip : ∀ f ∈ skipped, G1WalkSkip f)
+    (hsafe : 4 * (pre.length + (skipped.length + 2)) < G1M.tapeLength n) :
+    TM.runConfig (M := G1M) (g1AlignedConfig n (4 * pre.length) (by omega)
+        (g1ListTape
+          ((pre ++ G1Frame.argSep :: skipped ++ G1Frame.cursor ::
+            suffix).flatMap G1Frame.bits))
+        .bExh .p0 false false false ctx)
+        (4 * (skipped.length + 2)) =
+      g1AlignedConfig n (4 * (pre.length + (skipped.length + 2))) hsafe
+        (g1ListTape
+          ((pre ++ G1Frame.argSep :: skipped ++ G1Frame.cursor ::
+            suffix).flatMap G1Frame.bits))
+        .bTurnFin .p0 false false false ctx := by
+  have hfix : ∀ f ∈ skipped, g1Advance .bRet f = .bRet :=
+    fun f hf => g1Advance_bRet_of_skip (hskip f hf)
+  have hlen :
+      (G1Frame.argSep :: (skipped ++ [G1Frame.cursor])).length =
+        skipped.length + 2 := by
+    simp
+  have hlist :
+      pre ++ (G1Frame.argSep :: (skipped ++ [G1Frame.cursor])) ++ suffix =
+        pre ++ G1Frame.argSep :: skipped ++ G1Frame.cursor :: suffix := by
+    simp [List.append_assoc]
+  have hpath : G1ValidPath .bExh
+      (G1Frame.argSep :: (skipped ++ [G1Frame.cursor])) :=
+    ⟨trivial, by decide,
+      g1ValidPath_fix (mode := .bRet) trivial [G1Frame.cursor]
+        ⟨trivial, by decide, trivial⟩ skipped hfix⟩
+  have hfold : g1AdvanceList .bExh
+      (G1Frame.argSep :: (skipped ++ [G1Frame.cursor])) = .bTurnFin := by
+    rw [g1AdvanceList_cons,
+      show g1Advance .bExh G1Frame.argSep = .bRet from rfl,
+      g1AdvanceList_fix (mode := .bRet) [G1Frame.cursor] skipped hfix]
+    rfl
+  have hscan := g1FrameScanner_scanFrames n pre
+    (G1Frame.argSep :: (skipped ++ [G1Frame.cursor])) suffix .bExh ctx
+    ((g1FrameScanner_validPath _ _).mpr hpath)
+    (by rw [hlen]; exact hsafe)
+  simp only [hlist, hlen, g1AlignedFrame_eq, g1FrameScanner_advanceList, hfold]
+    at hscan
+  exact hscan
+
+/-- **The terminal turn.**  The same four hold-and-move-left steps as
+`g1CS_walk_turn`, on an arbitrary tape, into the *terminal* writer of
+`ctx.vB`. -/
+theorem g1CS_walk_turn_fin (n k : Nat) (hsafe : k + 4 < G1M.tapeLength n)
+    (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx) :
+    TM.runConfig (M := G1M)
+        (g1AlignedConfig n (k + 4) hsafe tape .bTurnFin .p0 false false false
+          ctx) 4 =
+      g1AlignedConfig n k (by omega) tape
+        (g1FinMode ctx.vB) .p0 false false false ctx :=
+  Phased.holdWalk4 g1CS g1CS.startPhase n k hsafe tape _ _ _ _ _
+    (fun scan =>
+      g1Transition_bTurnFin_p0 g1CS.startPhase false false false scan ctx)
+    (fun scan =>
+      g1Transition_bTurnFin_p1 g1CS.startPhase false false false scan ctx)
+    (fun scan =>
+      g1Transition_bTurnFin_p2 g1CS.startPhase false false false scan ctx)
+    (fun scan =>
+      g1Transition_bTurnFin_p3 g1CS.startPhase false false false scan ctx)
+
+/-- **The terminal restore.**  Four steps replace the `cursor` at ordinal
+`pre.length` by `data b` and hand off to `readAResetStart` on the next frame:
+the resulting frame list has **no `cursor` in it at all** wherever the caller's
+`pre` and `suffix` had none. -/
+theorem g1CS_walk_fin_restore (n : Nat) (pre suffix : List G1Frame) (b : Bool)
+    (ctx : G1Ctx) (hsafe : 4 * pre.length + 4 < G1M.tapeLength n) :
+    TM.runConfig (M := G1M) (g1AlignedConfig n (4 * pre.length) (by omega)
+        (g1ListTape ((pre ++ G1Frame.cursor :: suffix).flatMap G1Frame.bits))
+        (g1FinMode b) .p0 false false false ctx) 4 =
+      g1AlignedConfig n (4 * pre.length + 4) hsafe
+        (g1ListTape ((pre ++ G1Frame.data b :: suffix).flatMap G1Frame.bits))
+        .readAResetStart .p0 false false false ctx :=
+  (g1FinWriter b).writeFrameOnList n pre suffix .cursor ctx hsafe
 
 end Pnp3.Internal.PsubsetPpoly.TM

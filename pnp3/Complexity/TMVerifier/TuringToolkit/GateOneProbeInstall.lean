@@ -34,8 +34,8 @@ nothing here composes with them.
 **Explicit deferrals.**  The install exits at `bSeek .p3`, head on the last cell
 of the frame preceding the cursor; the reverse seek itself, the `index ↦ spent`
 writer, the forward scan back to the cursor, the normal turn and the two normal
-restore writers are in `GateOneWalkKernel`; terminal exhaustion, its turn and
-two terminal restore writers remain PR2b2.  Nothing here composes with them.
+restore writers are in `GateOneWalkKernel`, as are the terminal exhaustion scan,
+its turn and the two terminal restore writers.  Nothing here composes with them.
 Every theorem below takes the caller's configuration; none
 starts from `G1M.initialConfig`, so there is no installation driver here.  No
 walk invariant, no iteration or loop clock, no out-of-range aggregation, no

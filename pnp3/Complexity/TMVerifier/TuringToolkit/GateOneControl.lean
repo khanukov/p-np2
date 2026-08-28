@@ -115,9 +115,9 @@ over it right to left and enters `bSeek` on the last cell of the preceding frame
 `g1Advance` row: it is decided at frame position `.p0` inside `g1Transition`,
 with three outcomes — an `index` stops it at the write handoff `bDec`, the
 `argSep` opening the operand-2 field stops it at the exhaustion handoff `bExh`,
-everything else continues the seek one frame further left.  That `argSep` row is
-the **confinement** row: the seek never reads left of the operand-2 field, so
-the operand-1 field, the tag run and the anchor are out of its reach.  `bDec`
+everything else continues the seek one frame further left.  That literal
+`argSep` stop row is the finite-control boundary used by the exhaustion path;
+this slice proves the exact stop endpoint but no iteration.  `bDec`
 writes `spent` over the `index` and exits into `bFwd`, which runs right to the
 `cursor` and enters `bTurn`; `bTurn` walks four cells back onto the cursor and
 enters `bRestore vB`, which rewrites `cursor` into `data vB` and re-enters
@@ -1692,9 +1692,9 @@ theorem g1Transition_bSeek_p0_index (phase : Fin 1) (b0 b1 b2 scan : Bool)
       (0, g1DecState ctx, scan, .stay) := by
   rw [g1Transition_bSeek_p0_raw, heq]
 
-/-- **The opening `argSep` stops the seek at the exhaustion handoff.**  This is
-the confinement row: the seek never goes left of the operand-2 field, so the
-operand-1 field, the tag run and the anchor are physically unreachable. -/
+/-- **The opening `argSep` stops the seek at the exhaustion handoff.**  When the
+completed frame decodes as `argSep`, the control stays on its first cell and
+enters `bExh`. -/
 theorem g1Transition_bSeek_p0_argSep (phase : Fin 1) (b0 b1 b2 scan : Bool)
     (ctx : G1Ctx) (heq : decodeG1Frame? [scan, b0, b1, b2] = some .argSep) :
     g1Transition phase (g1State .bSeek .p0 b0 b1 b2 ctx) scan =

@@ -218,8 +218,8 @@ theorem check_g1Advance_walk_nonforward :
 
 /-- **The reverse seek's three outcomes, pinned exactly.**  An `index` stops it
 at the write handoff and an `argSep` at the exhaustion handoff, both *without*
-moving; every other frame continues it one frame further left.  The `argSep` row
-is the confinement row of the whole walk. -/
+moving; every other frame continues it one frame further left.  The literal
+`argSep` stop row is pinned exactly. -/
 theorem check_g1Transition_bSeek (phase : Fin 1) (b0 b1 b2 scan : Bool)
     (ctx : G1Ctx) :
     (decodeG1Frame? [scan, b0, b1, b2] = some .index →

@@ -1078,7 +1078,7 @@ the axioms of every load-bearing new theorem directly.
 
 Explicitly deferred and claimed nowhere (at the time of that slice; PR2b1 below
 delivers six of these ten modes): the ten remaining cursor-walk modes and all
-their rows and tuple lemmas, the reverse seek and its confinement, the
+their rows and tuple lemmas, the reverse-seek rows and exact stop endpoints, the
 `index ↦ spent` round, the turns, the restore writers, the exhaustion
 path, the cursor-walk tape invariant, the **installation driver** (latch plus
 cursor install executed from a real initial configuration), any iteration or
@@ -1131,8 +1131,9 @@ capstone with the atoms, and nothing composes two atoms into a round.
   `bSeek` becomes a **non-forward, right-to-left** mode: it has no `g1Advance`
   row and is decided at frame position `.p0` inside `g1Transition`, with the
   three exact outcomes `index ↦ bDec` (stay), opening `argSep ↦ bExh` (stay)
-  and everything else ↦ `bSeek` (one frame further left).  That `argSep` row is
-  the **confinement** row: the seek never reads left of the operand-2 field.
+  and everything else ↦ `bSeek` (one frame further left).  The literal
+  `argSep` stop row enters the exact exhaustion endpoint `bExh`; no trace
+  invariant is claimed by this slice.
   `g1Transition` gains **five** blocks and **eighteen** new standalone tuple
   lemmas — `g1Transition_bSeek_p3/p2/p1`, `_p0_index`, `_p0_argSep`, `_p0_other`,
   `g1Transition_bDec_p0…p3`, `g1Transition_bTurn_p0…p3` and

@@ -18,8 +18,9 @@ Local adapters intentionally use arbitrary aligned tapes; post-boundary
 stability pins have no public-clock bound.  There is **no** `TM.run`,
 `TM.accepts`, output-write, combine, pass-A or `spec`-correctness surface, and
 for `arg2 > 0` the only executed endpoint pinned here is the read-only
-installation scan, whose endpoint `bProbe2` reads nothing further: nothing pins
-a latch, a cursor install, a round, an iteration, runtime addressing, a
+installation scan.  `bProbe2` has no successful frame row; an attempted full
+frame read rejects and no theorem executes it.  Nothing pins a latch, a cursor
+install, a round, an iteration, runtime addressing, a
 positive-index operand-value read, or acceptance — those are PR2.  This is an
 audit surface: it pins public signatures and proves nothing new.
 -/

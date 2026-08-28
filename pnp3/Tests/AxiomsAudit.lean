@@ -451,7 +451,8 @@ open Pnp3.Magnification
 -- `g1CS_readB_install_scan_exact` is the one statement here that starts from the
 -- real initial configuration, and it is a **reachability** endpoint: it latches
 -- nothing, installs no cursor, writes no cell and reads no operand-2 value.
--- Its endpoint `bProbe2` reads nothing further (`g1_bProbe2_stuck`); the
+-- Its endpoint `bProbe2` has no successful frame row (`g1_bProbe2_stuck`): a
+-- completed attempted read rejects, and no theorem executes that read.  The
 -- remaining fourteen walk modes, their rows and the latch / cursor-install
 -- execution are PR2.
 #print axioms Internal.PsubsetPpoly.TM.g1Advance_bInsSeek_of_skip

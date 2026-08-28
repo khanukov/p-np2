@@ -216,8 +216,9 @@ theorem check_g1_bRoundStart_stuck : G1Stuck .bRoundStart :=
   g1_bRoundStart_stuck
 
 /-- **The installation scan's endpoint is the boundary of this slice.**
-`bProbe2` reads nothing further, so nothing here latches the selected data bit
-or installs a cursor; those rows are PR2. -/
+`bProbe2` has no successful frame row: an attempted full-frame read rejects,
+and no theorem executes it.  Nothing here latches a bit or installs a cursor;
+those rows are PR2. -/
 theorem check_g1_bProbe2_stuck : G1Stuck .bProbe2 :=
   g1_bProbe2_stuck
 

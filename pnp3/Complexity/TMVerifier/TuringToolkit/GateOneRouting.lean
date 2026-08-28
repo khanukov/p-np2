@@ -367,10 +367,12 @@ theorem g1ReadBOOB_validPath (r : G1Request)
 
 For `arg2 > 0` the operand-2 walk meets an unspent `index` unit and hands off to
 `bInsSeek`, the **installation scan**, which crosses the rest of the operand-2
-field, crosses the `separator` and stops at `bProbe2` on the *first* data frame.
-`bProbe2` is the explicit local boundary of this slice: it has no outgoing row,
-so it reads nothing further (`g1_bProbe2_stuck`), and PR2 supplies the latch and
-cursor-install rows behind it.  `bRoundStart` — the bridge into the thirteen-step
+field, crosses the `separator` and stops at `bProbe2` on the first frame after
+it: data when nonempty, `output false` otherwise.  `bProbe2` is the explicit
+local boundary of this slice: it has no successful frame row
+(`g1_bProbe2_stuck`); an attempted full-frame read rejects, and no theorem
+executes it.  PR2 supplies the latch and cursor-install rows behind it.
+`bRoundStart` — the bridge into the thirteen-step
 rewrite cycle — is no longer a target of the forward table
 (`g1_bRoundStart_unreachable`), so nothing here or downstream claims that
 iterating that cycle addresses an operand-2 value. -/

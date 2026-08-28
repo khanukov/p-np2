@@ -9,7 +9,9 @@ The **installation scan** that the re-pointed positive-index row of `g1Advance`
 opens.  For a canonical `and`/`or` request with `arg2 > 0` the pass-B walk
 `bScan` meets an unspent `index`, enters `bInsSeek`, crosses the rest of the
 operand-2 field and the `separator`, and stops at `bProbe2` on the **first cell
-of the first data frame**.  `g1CS_readB_install_scan_exact` is that run from the
+after the separator**, i.e. the start of the data region: a `.data` frame when
+`r.vals` is nonempty and `.output false` otherwise.
+`g1CS_readB_install_scan_exact` is that run from the
 **real** initial configuration `G1M.initialConfig (g1Point (encodeG1 r))`; it
 replaces the retired first-round route of `GateOneIndexRound`.
 
@@ -154,11 +156,13 @@ theorem g1InstallScanSteps_le_clock (r : G1Request) :
 canonical `and`/`or` request with a non-empty operand-2 field, exactly
 `g1InstallScanSteps r` genuine steps validate the word, rewind, physically
 rescan the tag, cross both operand fields and the `separator`, landing in
-`bProbe2` on the **first cell of the first data frame**, context still `g1Ctx0`,
+`bProbe2` on the **first cell after the separator**, context still `g1Ctx0`,
 tape **bit-for-bit the initial tape**.  This is the re-pointed reachability
 statement, *not* an addressing claim: nothing here reads that frame, latches a
 value, installs a cursor, iterates a round, or says which data frame the operand
-selects.  `bProbe2` reads nothing further in this slice. -/
+selects.  The frame is `.data r.vals[0]` when data is nonempty and `.output
+false` otherwise.  `bProbe2` has no successful frame row in this slice: an
+attempted full-frame read rejects, and no theorem executes that read. -/
 theorem g1CS_readB_install_scan_exact (r : G1Request) (hc : r.Canonical)
     (ht : r.tag = .and ∨ r.tag = .or) (k : Nat) (h2 : r.arg2 = k + 1) :
     TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))

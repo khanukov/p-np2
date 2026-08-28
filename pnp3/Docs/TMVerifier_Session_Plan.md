@@ -533,7 +533,8 @@ The tag is *not* carried across the T2a rewind: at the handoff the context is
 `bof · tag^units · argSep` off the tape.  No value, cell index, cursor or target
 is supplied to the machine, and `encodeG1` gains no annotation.
 
-Six exact endpoints, each pinning head, state **and** tape (`n` abbreviates
+Six historical exact endpoints (five remain live after T2b-3a-1), each pinning
+head, state **and** tape (`n` abbreviates
 `(encodeG1 r).length`, `u` abbreviates `r.tag.units`):
 
 | hypotheses on `r` | steps | endpoint state | head |
@@ -919,7 +920,7 @@ the control or the context.
   a caller-supplied `pre ++ skipped ++ separator :: suffix` layout, and
   `g1CS_readB_install_scan_exact` is the re-pointed real-initial-configuration
   route: `g1InstallScanSteps r = g1ReadBHandoffSteps r + 4*(units+arg1+arg2+4)`
-  steps land at `bProbe2` on the **first cell of the first data frame**, context
+  steps land at `bProbe2` on the **first cell after the separator**, context
   still `g1Ctx0`, tape **bit-for-bit the initial tape**.  `_head`, `_tape`,
   `_state` are its projections and `g1InstallScanSteps_le_clock` keeps it inside
   the unchanged clock.
@@ -952,9 +953,11 @@ the control or the context.
   field-route docstring now names the installation scan as its successor.
 
 **The endpoint is reachability, not addressing.**  `g1CS_readB_install_scan_exact`
-says the machine *gets to* the first data frame.  It latches no bit, installs no
-cursor, writes no cell and says nothing about which data frame the operand
-finally selects.
+says the machine gets to the start of the data region: a `.data` frame when the
+region is nonempty and `.output false` otherwise.  It latches no bit, installs
+no cursor, writes no cell and says nothing about which data frame the operand
+finally selects.  `bProbe2` has no successful frame row in this slice; an
+attempted full-frame read rejects, and no theorem executes that read.
 
 Pinned by `Tests/TMGateOneControlSurfaceTests.lean` (the two entry states plus
 exact wrappers for the re-pointed row and the complete four-row installation

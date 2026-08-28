@@ -89,7 +89,8 @@ the end of the data region and hands off to the stable `bOOB` boundary.
 non-zero.  This slice **re-points** that single row: `bScan + index` now enters
 `bInsSeek`, the read-only **installation scan**, which crosses the rest of the
 operand-2 field (`index` and `spent` alike), crosses the `separator` and stops
-at `bProbe2` on the first cell of the first data frame.  Four `g1Advance` rows
+at `bProbe2` on the first cell after the separator, the start of the data
+region.  Four `g1Advance` rows
 and two new modes, and that is all:
 
 ```text
@@ -294,8 +295,9 @@ def g1InsSeekState (ctx : G1Ctx) : G1State :=
   g1State .bInsSeek .p0 false false false ctx
 
 /-- **The endpoint of the installation scan**, and the explicit local boundary
-of this slice: head on the first cell of the first data frame.  Reading that
-frame is PR2. -/
+of this slice: head on the first cell after the separator.  That frame is data
+when the region is nonempty and `output false` otherwise.  Reading it
+successfully is PR2. -/
 def g1Probe2State (ctx : G1Ctx) : G1State :=
   g1State .bProbe2 .p0 false false false ctx
 
@@ -379,7 +381,7 @@ def g1Advance : G1Mode → G1Frame → G1Mode
   -- the probe.  A data frame before the separator is malformed and rejects.
   | .bScan, .spent => .bScan
   | .bScan, .separator => .bProbe
-  | .bScan, .index => .bInsSeek      -- a non-zero index: install the cursor
+  | .bScan, .index => .bInsSeek      -- a non-zero index: enter installation scan
   -- the probe reads the selected data frame, or runs off the data region
   | .bProbe, .data false => .bStoreFalse
   | .bProbe, .data true => .bStoreTrue
@@ -406,9 +408,10 @@ installation scan (`bInsSeek`, `bProbe2`) are forward modes; the rewind, the
 four dispatch modes, the five modes of the destructive round, the four remaining
 handoffs and the two sinks are not.
 
-`bProbe2` is forward *and* `G1Stuck` in this slice: it reads a frame like any
-forward mode, but the table gives it no accepting row yet, so every frame
-completes into `reject`.  That is exactly what makes it an explicit boundary and
+`bProbe2` is forward *and* `G1Stuck` in this slice: the shared forward control
+can read its four cells, but the table gives it no successful frame row, so a
+completed frame enters `reject`.  No theorem executes that read.  This is what
+makes it an explicit boundary and
 not a claim; PR2 supplies its rows. -/
 def G1ForwardMode : G1Mode → Prop
   | .rewindStart | .rewind
@@ -497,9 +500,9 @@ theorem g1AdvanceList_ne_rewindStart_of_stuck {mode : G1Mode} (h : G1Stuck mode)
 
 /-- **The forward table only ever produces a forward mode, `rewindStart`, or a
 stuck mode.**  In particular `rewind` and `accept` are unreachable from any
-scan, and every target of the table that reads nothing further (the four
-dispatch modes, the round's five modes, the boundary `bProbe2`, the four idle
-handoffs, the `reject` sink) is stuck. -/
+scan.  Every non-forward target (the four dispatch modes, the round's five
+modes, the four idle handoffs and the `reject` sink) is stuck; the forward
+boundary `bProbe2` is separately stuck because it has no successful frame row. -/
 theorem g1Advance_range (mode : G1Mode) (frame : G1Frame) :
     G1ForwardMode (g1Advance mode frame) ∨
       g1Advance mode frame = .rewindStart ∨

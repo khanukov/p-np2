@@ -1785,8 +1785,8 @@ only *instantiates* those macros at one literal word.
   **both** operand-2 units consumed (`probeSpentFrames`), the half-repaired word
   (`probeHalfFrames`) and the repaired word (`probeIndexFrames`).
   `probeInputLen = 60` is the encoded-input length parameter; `probe_word_cells`
-  separately pins 64 occupied cells strictly inside `G1M.tapeLength
-  probeInputLen`.  Nonvacuity is literal:
+  separately pins a 64-cell explicit validation-word extent strictly inside
+  `G1M.tapeLength probeInputLen`.  Nonvacuity is literal:
   `probeIndex_eq_encoded` says the repaired word is exactly
   `encodeG1Frames g1WalkExample ++ [blank]`, `probe_words_distinct` says the
   three words are pairwise different, `probe_counts` says the consumed units go
@@ -1989,11 +1989,10 @@ probes could not say.
   `g1ZeroExample_length = 44`; the two positive-index requests are the merged
   literals `G1WalkDriverExamples.g1BReadExample = ⟨and, 0, 1, [false, true]⟩`
   and `G1InstallScanExamples.g1WalkExample = ⟨and, 0, 2, [false, true, true]⟩`.
-* **Three lengths, kept apart** (`probe_cells`): the **encoded input length**
-  `(encodeG1 r).length` — `44`, `52`, `60` cells, four per encoded frame; the
-  **occupied cells** of the machine's initial tape — `48`, `56`, `64`, the
-  encoded word *plus* the four cells of the trailing `blank` frame the machine's
-  own tape supplies past the input; and the **physical tape capacity**
+* **Three lengths, kept apart** (`probe_extents`): the **encoded input length**
+  `(encodeG1 r).length` — `44`, `52`, `60`; the explicit **validation
+  frame-word extent** — `48`, `56`, `64`, including the four all-false cells of
+  the trailing `blank`; and the **physical tape capacity**
   `G1M.tapeLength (encodeG1 r).length`, a separately derived number whose
   zero-probe literal is `1037357`.  The head-safety bounds
   `zero_safe`/`one_safe`/`two_safe` are each *derived* from the encoded length
@@ -2013,16 +2012,16 @@ probes could not say.
   state (`g1ReadAState (g1Ctx0.withVB true)`), latched `vB`, endpoint word,
   initial-tape identity, clock bound and `readA_idle_after_*` projection: the
   endpoint holds its state, head and tape for the whole remaining budget.
-* **Nonvacuity is literal.**  `zero_repaired_no_write` pins that the `arg2 = 0`
-  branch writes nothing at all — the layout the sweep starts from is already the
-  canonical word, so `13 * 0` of its `38` steps write anything;
+* **Nonvacuity is literal.**  `zero_repaired_no_net_change` pins that the
+  `arg2 = 0` endpoint tape is the initial tape, the entry layout is already
+  canonical, and the `spent → index` rewrite block has length `13 * 0`;
   `one_repaired_cell28` and `two_repaired_cell32` pin that the two positive
   branches genuinely flip a physical cell between the read's terminal tape and
   the repaired endpoint, so their sweeps cannot be no-ops;
   `oneRepairedFrames_counts` and `twoRepaired_counts` pin the `spent`/`index`
   counts and that **no** `cursor` survives; `zero_selected`/`one_selected`/
-  `two_selected` pin that the latched bit is the request's own `vals[arg2]` and
-  not a constant (`vals[0]` is `false` in both positive probes).
+  `two_selected` pin that the latched bit is the request's own `vals[arg2]`, not
+  `vals[0]` (`vals[0]` is `false` in both positive probes).
 * **Both arms of the common capstone, on literals.**  `common_zero_arm` and
   `common_positive_arm` instantiate `g1CS_readB_repaired_common` at a zero-index
   and a positive-index request; `common_arms_distinct` pins that the two arms

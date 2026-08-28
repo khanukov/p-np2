@@ -229,11 +229,12 @@ lean_lib PnP3 where
     -- `g1ReadAConfig r true` — `172 = 134 + 38`, `294 = 239 + 55` and
     -- `400 = 328 + 72` steps at `arg2 = 0, 1, 2` — with head, state, `vB`,
     -- endpoint word, initial-tape identity, clock bound and idle projections,
-    -- and both arms of the common capstone.  The zero branch writes nothing;
+    -- and both arms of the common capstone.  The zero branch has no net tape
+    -- change and an empty rewrite block;
     -- the positive branches consume and restore, witnessed at cells `28`/`32`.
-    -- Encoded input length, occupied cells and `G1M.tapeLength` are pinned as
-    -- three separate numbers (`probe_cells`); the `arg2 = 2` endpoint words are
-    -- Repair-1b's, reused verbatim.
+    -- Encoded input length, explicit validation-word extent and
+    -- `G1M.tapeLength` are pinned separately (`probe_extents`); the `arg2 = 2`
+    -- endpoint words are Repair-1b's, reused verbatim.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneRepairExamples,
     -- The thirteen-step rewrite cycle at the G1 control, kept as an
     -- arbitrary-configuration regression: the bridge, the fourteen-step

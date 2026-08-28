@@ -13,15 +13,15 @@ three exact `G1M` runs **from the real `G1M.initialConfig`** — `172` steps at
 `vB`, endpoint-word, initial-tape, cell-level, clock and idle projections, plus
 both arms of the common capstone on literals.
 
-**Three lengths, kept apart.**  `check_probe_cells` restates that the encoded
-input length (`44`, `52`, `60` cells), the occupied cells of the initial tape
-(`48`, `56`, `64` — the encoded word plus the trailing `blank` frame) and the
+**Three lengths, kept apart.**  `check_probe_extents` restates the encoded
+input length (`44`, `52`, `60`), explicit validation frame-word extent
+(`48`, `56`, `64`, including the all-false trailing `blank`) and the
 physical capacity `G1M.tapeLength (encodeG1 r).length` (literally `1037357` for
 the zero probe) are three different numbers.  Nothing here identifies the
 physical tape length with the input length.
 
-**Nonvacuity is pinned, not assumed.**  `check_zero_repaired_tape` restates that
-the `arg2 = 0` branch writes nothing at all; `check_one_repaired_cell28` and
+**Nonvacuity is pinned, not assumed.**  `check_zero_repaired_tape` restates no
+net tape change at `arg2 = 0`; `check_one_repaired_cell28` and
 `check_two_repaired_cell32` restate that the two positive branches genuinely
 flip a physical cell between the read's terminal tape and the repaired endpoint;
 `check_common_branch_literals` restates that the common capstone's branch is
@@ -64,11 +64,11 @@ theorem check_two_safe {k : Nat} (hk : k ≤ 64) :
     k < G1M.tapeLength (encodeG1 g1WalkExample).length :=
   two_safe hk
 
-/-- **Encoded input length, occupied cells and physical capacity are three
-different numbers.**  The occupied cells are the encoded word plus the four
-cells of the trailing `blank` frame; the capacity is separately derived and far
+/-- **Encoded input length, explicit word extent and physical capacity are three
+different numbers.**  The explicit word includes the four all-false cells of
+the trailing `blank` frame; the capacity is separately derived and far
 larger than either. -/
-theorem check_probe_cells :
+theorem check_probe_extents :
     ((encodeG1 g1ZeroExample).length = 44 ∧
         (g1ZeroFrames.flatMap G1Frame.bits).length = 48 ∧
         48 < G1M.tapeLength (encodeG1 g1ZeroExample).length) ∧
@@ -79,7 +79,7 @@ theorem check_probe_cells :
         (probeIndexFrames.flatMap G1Frame.bits).length = 64 ∧
         64 < G1M.tapeLength (encodeG1 g1WalkExample).length) ∧
       G1M.tapeLength (encodeG1 g1ZeroExample).length = 1037357 :=
-  probe_cells
+  probe_extents
 
 /-! ## The three endpoint words -/
 
@@ -169,9 +169,8 @@ theorem check_zero_selected :
       g1ZeroExample.vals = [true] :=
   zero_selected
 
-/-- The endpoint word, and **the zero branch writes nothing at all**: the
-endpoint tape is literally the initial tape and no `spent` frame is ever
-written. -/
+/-- The endpoint word, and **no net tape change** on the zero branch: the
+endpoint tape is literally the initial tape and the rewrite block is empty. -/
 theorem check_zero_repaired_tape :
     (TM.runConfig (M := G1M)
           (G1M.initialConfig (g1Point (encodeG1 g1ZeroExample))) 172).tape =
@@ -181,7 +180,7 @@ theorem check_zero_repaired_tape :
         (G1M.initialConfig (g1Point (encodeG1 g1ZeroExample))).tape ∧
       g1BSpentFrames g1ZeroExample 0 = g1ZeroFrames ∧
       g1ZeroFrames.count G1Frame.spent = 0 :=
-  ⟨zero_repaired_tape, zero_repaired_no_write⟩
+  ⟨zero_repaired_tape, zero_repaired_no_net_change⟩
 
 /-- The total fits the **unchanged** public clock of this request. -/
 theorem check_zero_repaired_clock :
@@ -223,7 +222,7 @@ theorem check_one_repaired_projections :
           294).state.snd.ctx.vB = true :=
   one_repaired_projections
 
-/-- **The latched bit is the actual selected element**, not a constant:
+/-- **The latched bit is the actual selected element, not `vals[0]`:**
 `vals[1]` is `true` while `vals[0]` is `false`. -/
 theorem check_one_selected :
     g1BReadExample.vals[g1BReadExample.arg2]? = some true ∧

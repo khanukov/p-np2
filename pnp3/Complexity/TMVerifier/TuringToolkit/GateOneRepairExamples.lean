@@ -20,24 +20,24 @@ exactly what Repair-1b's caller-supplied kernel probes could not say.  All three
 endpoint tapes are bit-for-bit the initial tape: the canonical encoded word plus
 the trailing `blank` frame, with **no** consumed unit and **no** cursor.
 
-**Three different lengths, kept apart** (`probe_cells`), and nothing below
+**Three different lengths, kept apart** (`probe_extents`), and nothing below
 conflates them: the **encoded input length** `(encodeG1 r).length` (`44`, `52`,
-`60` cells, four per encoded frame); the **occupied cells** of the machine's
-initial tape (`48`, `56`, `64` — the encoded word *plus* the four cells of the
-trailing `blank` frame the machine's own tape supplies past the input); and the
+`60` cells, four per encoded frame); the explicit **validation frame-word
+extent** (`48`, `56`, `64` — the encoded word plus the four cells of the
+trailing all-false `blank` frame); and the
 **physical tape capacity** `G1M.tapeLength (encodeG1 r).length`, a separately
 derived number (`1037357` for the zero probe) far larger than either.  The
 physical tape is not the input and its length is not the input length, and
 `zero_safe`/`one_safe`/`two_safe` *derive* each head-safety bound from the
 encoded length.
 
-**Reuse, not duplication.**  The two positive-index requests, their read step
-counts and the read's terminal words are `GateOneWalkDriverExamples`' merged
-literals; the `arg2 = 2` endpoint words and counts are
+**Reuse, not duplication.**  The `arg2 = 1` request/read count comes from
+`GateOneWalkDriverExamples`; the `arg2 = 2` request is
+`GateOneInstallScanExamples.g1WalkExample`.  Its endpoint words and counts are
 `GateOneRepairKernelExamples`' `probeSpentFrames`/`probeIndexFrames` verbatim.
-Repair-1b ran the sweep between those two words from a **caller-supplied**
-configuration; `two_repaired_kernel_words` shows the machine reaches both from
-the real initial configuration.  No caller-supplied kernel probe is restated.
+Repair-1b's caller-supplied pass used a six-frame middle and `79` steps; this
+slice's real run uses a four-frame middle and `72` repair steps.  Only the words
+coincide.  No caller-supplied kernel probe is restated.
 
 **Explicitly deferred.**  Nothing here reads operand 1, activates `readAStart`,
 combines, writes the output frame or mentions `TM.accepts`: the three
@@ -146,12 +146,10 @@ theorem twoRepaired_counts :
       probeIndexFrames.count G1Frame.cursor = 0 :=
   ⟨probe_counts.1, probe_counts.2.2.1, probe_counts.2.2.2.2.1, by decide⟩
 
-/-! ## Encoded input length, occupied cells and the physical tape -/
-
 /-- Three different numbers per probe: `4` cells per encoded frame; four cells
-more for the trailing `blank` frame the tape supplies past the input; and a
+more in the explicit validation word for the all-false trailing `blank`; and a
 separately derived capacity, `44 + g1Clock 44 + 1` for the zero probe. -/
-theorem probe_cells :
+theorem probe_extents :
     ((encodeG1 g1ZeroExample).length = 44 ∧
         (g1ZeroFrames.flatMap G1Frame.bits).length = 48 ∧
         48 < G1M.tapeLength (encodeG1 g1ZeroExample).length) ∧
@@ -240,10 +238,10 @@ theorem zero_repaired_tape :
       g1ListTape (g1ZeroFrames.flatMap G1Frame.bits) := by
   rw [zero_repaired, g1ReadAConfig_tape, zeroFrames_eq]
 
-/-- **The zero branch writes nothing at all.**  The read is non-destructive and
-the sweep has no consumed unit to repair, so the endpoint tape is literally the
-initial tape and no `spent` frame is ever written. -/
-theorem zero_repaired_no_write :
+/-- **The zero branch has no net tape change.**  Its endpoint tape is literally
+the initial tape, the entry layout is already canonical, and the sweep's
+`spent → index` rewrite block has length `13 * 0`. -/
+theorem zero_repaired_no_net_change :
     (TM.runConfig (M := G1M)
         (G1M.initialConfig (g1Point (encodeG1 g1ZeroExample))) 172).tape =
         (G1M.initialConfig (g1Point (encodeG1 g1ZeroExample))).tape ∧
@@ -303,7 +301,7 @@ theorem one_repaired_projections :
           294).state.snd.ctx.vB = true := by
   refine ⟨?_, ?_, ?_⟩ <;> rw [one_repaired] <;> rfl
 
-/-- **The latched bit is the actual selected element**, not a constant: this
+/-- **The latched bit is the actual selected element, not `vals[0]`:** this
 request's data region is `[false, true]`, the read returns `vals[1] = true`, and
 `vals[0]` is `false`. -/
 theorem one_selected :
@@ -399,9 +397,9 @@ theorem two_repaired_tape :
   rw [two_repaired, g1ReadAConfig_tape, ← probeIndex_eq_encoded]
 
 /-- **The machine reaches the two Repair-1b words from `G1M.initialConfig`.**
-Repair-1b ran the `79`-step sweep between `probeSpentFrames` and
-`probeIndexFrames` on a **caller-supplied** configuration; here the read's
-terminal tape *is* the first word and the endpoint tape *is* the second. -/
+Here the executed sweep is the `72`-step instance with a four-frame scanned
+middle; Repair-1b's `79`-step caller-supplied pass used a six-frame middle.  The
+words coincide, not the pass instances. -/
 theorem two_repaired_kernel_words :
     (TM.runConfig (M := G1M)
         (G1M.initialConfig (g1Point (encodeG1 g1WalkExample))) 328).tape =

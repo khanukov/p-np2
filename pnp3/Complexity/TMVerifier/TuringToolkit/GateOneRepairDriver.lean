@@ -79,9 +79,8 @@ concrete endpoint words — are **Repair-2b**, delivered in
 `GateOneRepairExamples`: `⟨and, 0, 0, [true]⟩` in `172` steps,
 `⟨and, 0, 1, [false, true]⟩` in `294` and `⟨and, 0, 2, [false, true, true]⟩` in
 `400`, each from the real `G1M.initialConfig` onto `g1ReadAConfig r true`.  That
-module also keeps the encoded input length, the occupied cells of the initial
-tape and the derived capacity `G1M.tapeLength (encodeG1 r).length` apart as
-three separate numbers.
+module also keeps encoded input length, explicit validation frame-word extent
+and derived capacity `G1M.tapeLength (encodeG1 r).length` separate.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM

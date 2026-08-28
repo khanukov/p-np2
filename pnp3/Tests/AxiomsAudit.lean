@@ -984,22 +984,22 @@ open Pnp3.Magnification
 -- control state, latched `vB`, endpoint word, initial-tape identity, clock
 -- bound and `readAStart`-idle projection, plus both arms of the common capstone
 -- `g1CS_readB_repaired_common` on literals.
--- **Three lengths are kept apart**: `probe_cells` pins the encoded input length
--- (`44`, `52`, `60` cells), the occupied cells of the machine's initial tape
--- (`48`, `56`, `64` — the encoded word plus the trailing `blank` frame) and the
+-- **Three lengths are kept apart**: `probe_extents` pins the encoded input length
+-- (`44`, `52`, `60`), explicit validation frame-word extent (`48`, `56`, `64`,
+-- including the all-false trailing `blank`) and the
 -- separately derived physical capacity `G1M.tapeLength (encodeG1 r).length`,
 -- whose zero-probe literal is `1037357`.  No root here identifies the physical
 -- tape length with the input length.
--- **Nonvacuity is literal**: `zero_repaired_no_write` pins that the `arg2 = 0`
--- branch writes nothing at all, `one_repaired_cell28` and `two_repaired_cell32`
+-- **Nonvacuity is literal**: `zero_repaired_no_net_change` pins no net tape
+-- change and an empty rewrite block at `arg2 = 0`; the positive cell theorems
 -- pin that the two positive branches genuinely flip a physical cell between the
 -- read's terminal tape and the repaired endpoint, `*_selected` pin that the
--- latched bit is the request's own `vals[arg2]` and not a constant, and
+-- latched bit is the request's own `vals[arg2]`, not `vals[0]`, and
 -- `common_branch_literals` pins that the common capstone's branch is real — at
 -- the zero-index request the other arm would be `204`, not `172`.
--- **Reuse, not duplication**: the two positive requests, their read counts and
--- the `arg2 = 2` endpoint words are the merged literals of
--- `GateOneWalkDriverExamples` and `GateOneRepairKernelExamples`, and
+-- **Reuse, not duplication**: the `arg2 = 1` request/read count comes from
+-- `GateOneWalkDriverExamples`; the `arg2 = 2` request is the merged
+-- `GateOneInstallScanExamples.g1WalkExample`, with endpoint words from Repair-1b.
 -- `two_repaired_kernel_words` shows the machine reaches Repair-1b's
 -- caller-supplied words from the real initial configuration.
 -- **Deliberately absent**: pass A (`readAStart` is still idle and operand 1 is
@@ -1019,7 +1019,7 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.oneRepairedFrames_counts
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.twoFrames_eq
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.twoRepaired_counts
-#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.probe_cells
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.probe_extents
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.repairSteps_zero
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.repairSteps_one
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.repairSteps_two
@@ -1029,7 +1029,7 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.zero_repaired_projections
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.zero_selected
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.zero_repaired_tape
-#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.zero_repaired_no_write
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.zero_repaired_no_net_change
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.zero_repaired_clock
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.readA_idle_after_zero
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.oneExample_steps

@@ -10,8 +10,8 @@ the **real** initial configuration, the empty-data out-of-range branch, the
 all-literal probes of every executed capstone.
 
 The round surface is **exactly one round**: `g1CS_walk_iteration_exact` takes a
-caller-supplied `Σ(j)` and lands on `Σ(j+1)`, with the hidden-bit relation
-`vals[j]? = some v` an explicit argument of *both* configurations, and
+caller-supplied `Σ(j)` and lands on `Σ(j+1)`: the start carries
+`vals[j]? = some v`, while the endpoint carries `vals[j+1]? = some v'`.
 `g1CS_walk_oob_exact`/`_stable` take the same `Σ(j)` to the stable `bOOB`
 boundary on an **intermediate, unrepaired** tape — data region restored and
 cursor-free, operand 2 still partially spent — with **no verdict claimed**.

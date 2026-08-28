@@ -653,9 +653,10 @@ open Pnp3.Magnification
 
 -- PR3b, **exactly one round** of the cursor walk on the PR3a invariant, in both
 -- of its outcomes.  `g1CS_walk_iteration_exact` takes a **caller-supplied**
--- `Σ(r, j, v)` to `Σ(r, j+1, v')` in `16 * j + 37` genuine steps, with the
--- hidden-bit relation `vals[j]? = some v` an explicit argument of *both*
--- configurations; `g1CS_walk_oob_exact` and `_stable` take the same `Σ(j)` to
+-- `Σ(r, j, v)` to `Σ(r, j+1, v')` in `16 * j + 37` genuine steps.  The
+-- hidden-bit relations `vals[j]? = some v` and `vals[j+1]? = some v'` are
+-- explicit arguments of the start and endpoint configurations respectively;
+-- `g1CS_walk_oob_exact` and `_stable` take the same `Σ(j)` to
 -- the stable `bOOB` boundary in `16 * j + 32` steps on
 -- `g1WalkFramesRestored r j` — data region exactly `vals` and cursor-free,
 -- operand 2 **partially spent and unrepaired**.  Reaching `bOOB` is **not** a

@@ -14,8 +14,8 @@ machine, compose the exact T2a validation/rewind prefix, and run the
 `readBStart` handoff for a further exact, literal number of steps.  Their named
 arrival counts are closed expressions in the encoded length and are proved to
 fit `g1Clock`.  Local step adapters intentionally quantify over arbitrary
-aligned tapes, while the post-boundary `+ k`/`+ m` stability theorems allow an
-arbitrary extra budget and make no public-clock claim.
+aligned tapes.  The stable `bOOB` `+ k` theorem allows an arbitrary extra
+budget and makes no public-clock claim.
 
 **The tag is physically rescanned.**  At the T2a handoff the context is
 `g1Ctx0` and no gate tag is retained anywhere: `G1State` has no `Nat`, index,
@@ -33,7 +33,7 @@ Six exact endpoints are proved, from `initialConfig`, for a canonical `r`:
 | `and`, `or` | `bScan` at the operand-2 field | `4 * (units + arg1 + 3)` | `4 * (units + arg1 + 3)` |
 | `and`, `or`, `arg2 = 0` | `readAResetStart`, `vB = b` | `4 * (units + arg1 + 5)` | `4 * (units + arg1 + 5) + 1` |
 | `and`, `or`, `arg2 = 0`, empty data | `bOOB` (stable) | `4 * (units + arg1 + 5)` | `4 * (units + arg1 + 5)` |
-| `and`, `or`, `arg2 > 0` | `bRoundStart` (deferred, idle) | `4 * (units + arg1 + 4)` | `4 * (units + arg1 + 4)` |
+| `and`, `or`, `arg2 > 0` | `bRoundStart` bridge | `4 * (units + arg1 + 4)` | `4 * (units + arg1 + 4)` |
 
 In **every** case the tape is bit-for-bit the initial tape: the whole pass-B
 rescan is read-only, so no `spent`/`cursor` marker is left behind and no data
@@ -546,12 +546,13 @@ theorem g1CS_readB_zero_oob_stable (r : G1Request) (hc : r.Canonical)
   rw [runConfig_add, g1CS_readB_zero_oob_exact r hc ht h2 hb]
   exact g1CS_runConfig_oob_sink _ _ _ _ _ k
 
-/-! ## The deferred positive-index branch, executed up to its boundary
+/-! ## The positive-index bridge boundary
 
 For `arg2 > 0` the operand-2 walk meets an unspent `index` unit and the control
-hands off to `bRoundStart`: the entry point of the destructive index walk this
-slice does **not** build.  The two theorems below make that deferral executable
-rather than merely asserted — the machine reaches that boundary, and stays. -/
+hands off to `bRoundStart`, the one-step bridge into the destructive round.
+The retained `g1CS_readB_round_deferred_exact` theorem (historical name) pins
+the exact arrival at that boundary; `GateOneIndexRound` executes the bridge and
+one thirteen-step round beyond it. -/
 
 /-- **The deferred boundary, exactly.**  For a canonical `and`/`or` request with
 `arg2 > 0`, exactly `g1RoundRouteSteps r` genuine steps from the real initial

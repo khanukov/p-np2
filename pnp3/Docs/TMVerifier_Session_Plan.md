@@ -540,7 +540,7 @@ Six exact endpoints, each pinning head, state **and** tape (`n` abbreviates
 | `Canonical`, `tag ∈ {and, or}` | `g1FieldRouteSteps r = 2n+9 + 4*(u+arg1+3)` | `bScan`, `g1Ctx0` | `4*(u+arg1+3)` |
 | `Canonical`, `tag ∈ {and, or}`, `arg2 = 0`, `vals[arg2]? = some b` | `g1ReadBSteps r = 2n+9 + 4*(u+arg1+5) + 1` | `readAResetStart`, `vB = b` | `4*(u+arg1+5)` |
 | `Canonical`, `tag ∈ {and, or}`, `arg2 = 0`, `vals[arg2]? = none` | `g1ReadBOOBSteps r = 2n+9 + 4*(u+arg1+5)` | `bOOB`, `g1Ctx0` (stable) | `4*(u+arg1+5)` |
-| `Canonical`, `tag ∈ {and, or}`, `arg2 = k+1` | `g1RoundRouteSteps r = 2n+9 + 4*(u+arg1+4)` | `bRoundStart`, `g1Ctx0` (idle) | `4*(u+arg1+4)` |
+| `Canonical`, `tag ∈ {and, or}`, `arg2 = k+1` | `g1RoundRouteSteps r = 2n+9 + 4*(u+arg1+4)` | `bRoundStart` bridge, `g1Ctx0` | `4*(u+arg1+4)` |
 
 For `and`/`or`, `Canonical` is automatic; it is retained to compose uniformly
 with the T2a initial prefix.
@@ -558,7 +558,7 @@ request: `r` ranges over all canonical requests with the stated tag, with
 arbitrary `arg1`, `arg2` and arbitrary data region.  `GateOneReadBExamples.lean`
 instantiates them at concrete requests (heads `12`/`20` for `input`/`not`, both
 `const` literals, `true`/`false` operand-2 reads, the empty-data boundary, the
-deferred boundary) with literal step counts, purely as an audit surface.  Every
+frame-level bridge boundary) with literal step counts, purely as an audit surface.  Every
 step count is bounded by the **unchanged** clock
 `g1Clock N = 512 * (N + 1) ^ 2 + 512` through `g1_readB_steps_le_clock`; the
 clock is neither widened nor restated, and these are budget facts about the
@@ -569,20 +569,21 @@ operand index selects nothing: it is stable for every further budget
 (`g1CS_readB_zero_oob_stable`), it stores nothing in `vB`, and it is a different
 state from both the success handoff (`g1CS_readB_zero_oob_ne_success`) and the
 reject sink (`g1CS_readB_oob_ne_reject`); no acceptance or rejection semantics
-is attached to it.  `bRoundStart` is the deferred entry point of the destructive
-index walk: for `arg2 > 0` the machine provably reaches it and provably never
-leaves it (`g1CS_readB_round_deferred_stable`, for every further budget).
+is attached to it.  At the T2b-2 slice, `bRoundStart` was the proved bridge
+boundary and no theorem ran it further; the first-round slice below activates
+the bridge and executes exactly one round.
 
 **Explicitly deferred, and claimed nowhere:** the **destructive positive-index
 walk** (the physically executed operand-2 read is exactly the zero-index one;
 for `arg2 > 0` the proved endpoint *is* the `bRoundStart` boundary, so no
-general runtime-index addressing is claimed); **pass A, combine, output write
+general runtime-index addressing beyond the single round below is claimed);
+**pass A, combine, output write
 and repair** (`readAStart`, `combineStart` and `readAResetStart` are idle rows,
 proved idle for every budget by `g1CS_runConfig_readA_idle`,
 `g1CS_runConfig_combine_idle`, `g1CS_runConfig_readAReset_idle`, and nothing
 consumes the `G1Ctx.vB` value they carry); **acceptance/rejection semantics,
 full run and full clock** (no `TM.run`, no `TM.accepts`, no `spec`-correctness
-and no full-clock theorem — none could honestly exist while five handoffs are
+and no full-clock theorem — none could honestly exist while four handoffs are
 idle); **padded tapes** (the six initial-config capstones are scoped to the
 exact tape `encodeG1 r`; local adapters state arbitrary tapes explicitly, but
 no capstone covers a padded tape); and the **`SLGate` bridge, multi-gate evaluator
@@ -777,10 +778,11 @@ runtime-index addressing, the iteration of the cycle along a runtime-determined
 run inside `G1`, the G1 destructive index walk itself, gate semantics,
 acceptance, and non-canonical or physically padded tapes.
 
-**T2b-2: one destructive G1 operand-2 index round delivered (2026-08-25):**
+**T2b-2: one destructive G1 operand-2 index round delivered (2026-08-27):**
 
 The G1 obligation left open by the previous slice is discharged for **one
-round**.  Four modules gained content and one is new; the `G1Ctx` triple, the
+round**.  Six existing modules gained content and one is new; the `G1Ctx`
+triple, the
 public clock `g1Clock` and the whole T2a validation grammar are unchanged.
 
 * `GateOneControl.lean` — `G1Mode` gains four constructors, `bWalk`, `bMark`,

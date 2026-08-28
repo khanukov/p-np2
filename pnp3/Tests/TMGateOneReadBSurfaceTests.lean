@@ -254,15 +254,8 @@ theorem check_g1RoundRoute_split (r : G1Request) (k : Nat)
 
 -- T2b-2: the destructive index round.  One round, executed; no iteration,
 -- addressing or `arg2 > 0` value-read surface is pinned here.
-#check @g1RoundRouteFrames
 #check @g1RoundRouteRest
-#check @g1RoundRouteFrames_length
-#check @g1RoundRoute_split
-#check @g1RoundRoute_advance
-#check @g1RoundRoute_validPath
-#check @g1RoundBoundarySteps
 #check @g1IndexRoundSteps
-#check @g1RoundBoundarySteps_eq
 #check @g1IndexRoundSteps_eq
 #check @g1IndexRoundSteps_le_clock
 #check @g1CS_step_round_bridge
@@ -278,5 +271,29 @@ theorem check_g1RoundRoute_split (r : G1Request) (k : Nat)
 #check @g1CS_round_example_state
 #check @g1CS_round_example_tape
 #check @g1CS_round_example_clock
+
+theorem check_g1CS_round_from_bridge (n : Nat) (pre suffix : List G1Frame)
+    (ctx : G1Ctx) (hpre : 0 < pre.length)
+    (hsafe : 4 * pre.length + 4 < G1M.tapeLength n) :
+    TM.runConfig (M := G1M)
+        (g1AlignedConfig n (4 * pre.length + 4) hsafe
+          (g1ListTape ((pre ++ G1Frame.index :: suffix).flatMap G1Frame.bits))
+          .bRoundStart .p0 false false false ctx) 14 =
+      g1AlignedConfig n (4 * pre.length - 1) (by omega)
+        (g1ListTape ((pre ++ G1Frame.spent :: suffix).flatMap G1Frame.bits))
+        .bWalk .p3 false false false ctx :=
+  g1CS_round_from_bridge n pre suffix ctx hpre hsafe
+
+theorem check_g1CS_index_first_round (r : G1Request) (hc : r.Canonical)
+    (ht : r.tag = .and ∨ r.tag = .or) (k : Nat) (h2 : r.arg2 = k + 1) :
+    TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1IndexRoundSteps r) =
+      g1AlignedConfig (encodeG1 r).length (4 * (r.tag.units + r.arg1 + 3) - 1)
+        (Nat.lt_of_le_of_lt (Nat.sub_le _ _)
+          (g1_route_lt_tapeLength r _ (by omega)))
+        (g1ListTape ((g1FieldRouteFrames r ++
+          G1Frame.spent :: g1RoundRouteRest r k).flatMap G1Frame.bits))
+        .bWalk .p3 false false false g1Ctx0 :=
+  g1CS_index_first_round r hc ht k h2
 
 end Pnp3.Tests.TMGateOneReadBSurface

@@ -209,7 +209,6 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.t1OutWriter_outWriteOut_frame
 #print axioms Internal.PsubsetPpoly.TM.g1RevScanner_seek_bof
 #print axioms Internal.PsubsetPpoly.TM.G1RewriteCycleObligation.machine_eq
-#print axioms Internal.PsubsetPpoly.TM.G1RewriteCycleObligation.rewrite_cycle
 
 -- T2a, pure layer: the fresh unary one-gate ABI, its exact parser
 -- characterisation, and the pure gate semantics.  These are parser/spec
@@ -389,13 +388,13 @@ open Pnp3.Magnification
 -- T2b-2, pass-B execution layer: exact `TM.runConfig` statements from the real
 -- `G1M.initialConfig (g1Point (encodeG1 r))` for the physical tag rescan and
 -- its per-tag dispatch, the `const` literal decode/store, the `arg2 = 0`
--- operand-2 read and its empty-data `bOOB` boundary, and the deferred
--- `arg2 > 0` boundary.  The six initial-config arrival endpoints pin head,
+-- operand-2 read and its empty-data `bOOB` boundary, and the `arg2 > 0` bridge
+-- boundary.  The six initial-config arrival endpoints pin head,
 -- state and tape, and their named prefix counts fit `g1Clock`.  Local adapters
--- use arbitrary aligned tapes; `+ k`/`+ m` stability carries no clock bound.
+-- use arbitrary aligned tapes; `bOOB + k` stability carries no clock bound.
 -- Still no `TM.run` or `TM.accepts`, no output write, combine step, pass-A read
--- or `spec`-correctness claim, and no full-clock theorem; `bOOB` is a stable read
--- boundary rather than a rejection, and nothing runs past `bRoundStart`.
+-- or `spec`-correctness claim, and no full-clock theorem.  The first-round
+-- block below executes exactly one round past `bRoundStart`, with no iteration.
 #print axioms Internal.PsubsetPpoly.TM.g1_route_le
 #print axioms Internal.PsubsetPpoly.TM.g1_route_lt_tapeLength
 #print axioms Internal.PsubsetPpoly.TM.g1_readB_steps_le_clock
@@ -436,16 +435,15 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_readB_zero_oob_tape
 #print axioms Internal.PsubsetPpoly.TM.g1CS_readB_zero_oob_ne_success
 #print axioms Internal.PsubsetPpoly.TM.g1CS_readB_oob_ne_reject
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_round_deferred_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_round_deferred_state
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_route_input
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_route_not
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_const_false
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_const_true
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_field_route_and
 #print axioms Internal.PsubsetPpoly.TM.G1Examples.readB_field_route_or
-#print axioms Internal.PsubsetPpoly.TM.g1ReadBSteps_le_clock
-#print axioms Internal.PsubsetPpoly.TM.g1CS_step_round_bridge
-#print axioms Internal.PsubsetPpoly.TM.g1RoundRoute_split
-#print axioms Internal.PsubsetPpoly.TM.g1RoundRoute_advance
+
 #print axioms Internal.PsubsetPpoly.TM.g1IndexRoundSteps_le_clock
 #print axioms Internal.PsubsetPpoly.TM.g1CS_readB_round_boundary
 #print axioms Internal.PsubsetPpoly.TM.g1CS_round_from_bridge

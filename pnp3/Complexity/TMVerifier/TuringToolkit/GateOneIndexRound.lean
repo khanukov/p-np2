@@ -58,23 +58,14 @@ def g1RoundRouteRest (r : G1Request) (k : Nat) : List G1Frame :=
 
 /-! ## Step counts -/
 
-/-- Steps from `initialConfig` to the bridge boundary of the first operand-2
-index unit. -/
-def g1RoundBoundarySteps (r : G1Request) : Nat :=
-  g1ReadBHandoffSteps r + 4 * (r.tag.units + r.arg1 + 4)
-
 /-- Steps from `initialConfig` to the endpoint of the first destructive round:
 the bridge boundary plus `1 + 13`. -/
-def g1IndexRoundSteps (r : G1Request) : Nat := g1RoundBoundarySteps r + 14
-
-theorem g1RoundBoundarySteps_eq (r : G1Request) :
-    g1RoundBoundarySteps r = g1FieldRouteSteps r + 4 := by
-  unfold g1RoundBoundarySteps g1FieldRouteSteps
-  omega
+def g1IndexRoundSteps (r : G1Request) : Nat := g1RoundRouteSteps r + 14
 
 theorem g1IndexRoundSteps_eq (r : G1Request) :
     g1IndexRoundSteps r = g1FieldRouteSteps r + 18 := by
-  rw [g1IndexRoundSteps, g1RoundBoundarySteps_eq]
+  unfold g1IndexRoundSteps g1RoundRouteSteps g1FieldRouteSteps
+  omega
 
 /-- **The whole round fits the unchanged public clock.**  `g1Clock` is not
 widened: the existing quadratic bound already dominates the bridge and the
@@ -90,7 +81,7 @@ theorem g1IndexRoundSteps_le_clock (r : G1Request) :
     exact Nat.le_mul_of_pos_left _ (Nat.succ_pos _)
   have hmul : 512 * ((encodeG1 r).length + 1) ≤
       512 * ((encodeG1 r).length + 1) ^ 2 := Nat.mul_le_mul_left _ hsq
-  simp only [g1IndexRoundSteps, g1RoundBoundarySteps, g1ReadBHandoffSteps,
+  simp only [g1IndexRoundSteps, g1RoundRouteSteps, g1ReadBHandoffSteps,
     g1Clock]
   omega
 
@@ -98,7 +89,7 @@ theorem g1IndexRoundSteps_le_clock (r : G1Request) :
 
 /-- **The `arg2 > 0` branch reaches the bridge, exactly.**  For a canonical
 `and`/`or` request whose operand-2 field is non-empty, exactly
-`g1RoundBoundarySteps r` genuine steps validate the word, rewind, physically
+`g1RoundRouteSteps r` genuine steps validate the word, rewind, physically
 rescan the tag, skip the operand-1 field and read the **first** `index` unit of
 the operand-2 field, landing in `bRoundStart` with the head on the first cell of
 the following frame, the context still `g1Ctx0`, and the tape bit-for-bit the
@@ -106,19 +97,12 @@ initial tape. -/
 theorem g1CS_readB_round_boundary (r : G1Request) (hc : r.Canonical)
     (ht : r.tag = .and ∨ r.tag = .or) (k : Nat) (h2 : r.arg2 = k + 1) :
     TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
-        (g1RoundBoundarySteps r) =
+        (g1RoundRouteSteps r) =
       g1AlignedConfig (encodeG1 r).length (4 * (r.tag.units + r.arg1 + 4))
         (g1_route_lt_tapeLength r _ (by omega))
         (G1M.initialConfig (g1Point (encodeG1 r))).tape
         .bRoundStart .p0 false false false g1Ctx0 := by
-  have hsafe : 4 * (g1RoundRouteFrames r).length <
-      G1M.tapeLength (encodeG1 r).length := by
-    rw [g1RoundRouteFrames_length]
-    exact g1_route_lt_tapeLength r _ (by omega)
-  have h := g1CS_readB_scan r hc (g1RoundRouteFrames r) (g1RoundRouteRest r k)
-    (g1RoundRoute_split r k h2) (g1RoundRoute_validPath r ht) hsafe
-  rw [g1RoundRoute_advance r ht] at h
-  simpa [g1RoundBoundarySteps] using h
+  exact g1CS_readB_round_deferred_exact r hc ht k h2
 
 /-! ## The composed round
 
@@ -236,7 +220,7 @@ private theorem g1RoundExample_length :
 
 private theorem g1RoundExample_steps :
     g1IndexRoundSteps g1RoundExample = 151 := by
-  simp only [g1IndexRoundSteps, g1RoundBoundarySteps, g1ReadBHandoffSteps,
+  simp only [g1IndexRoundSteps, g1RoundRouteSteps, g1ReadBHandoffSteps,
     g1RoundExample_length]
   rfl
 

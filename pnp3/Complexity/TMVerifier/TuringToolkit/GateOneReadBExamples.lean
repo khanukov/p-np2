@@ -7,15 +7,10 @@ import Complexity.TMVerifier.TuringToolkit.GateOneReadB
 **Progress classification: Infrastructure.**  Concrete instances of the T2b
 pass-B execution surface: the unary route, both `const` literals, a `true` and
 a `false` operand-2 read out of the data region, the out-of-range boundary, the
-binary route to the operand-2 field, the deferred positive-index boundary, and
-the exact literal step counts.  Each is the exact `TM.runConfig` statement of
-the matching general theorem instantiated at a concrete canonical request, i.e.
-a genuine finite run of the one fixed machine from its **real** initial
-configuration.  Nothing depends on this module; it is an audit surface.
-
-Every capstone below is the exact `TM.runConfig` statement of the matching
-general theorem instantiated at a concrete canonical request, i.e. a genuine
-finite run of the one fixed machine from its **real** initial configuration.
+binary route to the operand-2 field, the frame-level bridge handoff, and exact
+literal step counts.  Each capstone is the matching general theorem at a
+concrete canonical request—a genuine finite run of the one fixed machine from
+its real initial configuration.  Nothing depends on this audit module.
 
 The two `and`/`or` value reads and the out-of-range example all have
 `arg2 = 0`: that is the case in which the operand-2 walk terminates without any

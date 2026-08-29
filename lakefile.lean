@@ -243,6 +243,13 @@ lean_lib PnP3 where
     -- composed round and one literal frame-list probe.  Unreachable from
     -- `G1M.initialConfig`.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneIndexRound,
+    -- S1b1, the **dormant** pass-A control ABI: the twelve pass-A modes, the
+    -- residual view of the two spare context bits and the frame rows that join
+    -- them are declared in `GateOneControl`/`GateOneRouting`, and
+    -- `GateOnePassAControl` executes them on caller-supplied configurations.
+    -- The family is unreachable (`g1Transition_passA_closed`), `readAStart`
+    -- stays idle and no live route changes; activation is S1b2.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOnePassAControl,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -407,6 +414,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMGateOneResidualSurfaceTests,
     Glob.one `Tests.TMGateOneControlSurfaceTests,
     Glob.one `Tests.TMGateOneRoutingSurfaceTests,
+    Glob.one `Tests.TMGateOnePassAControlSurfaceTests,
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,
     Glob.one `Tests.TMGateOneReadBSurfaceTests,
     Glob.one `Tests.TMGateOneProbeInstallSurfaceTests,

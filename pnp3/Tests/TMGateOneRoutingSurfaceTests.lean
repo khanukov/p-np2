@@ -16,6 +16,12 @@ route prefix here reaches any of them, and nothing here states a round, an
 iteration or an operand value.  The reverse seek `bSeek` has no forward row at
 all: it is decided inside `g1Transition`, and `TMGateOneControlSurfaceTests`
 pins its three outcomes.
+
+S1b1 adds the **dormant** pass-A rescan as a *separate* named table over the
+same anchor-plus-tag-run prefix.  It re-points nothing: `g1RouteMode` is
+untouched, `input`/`not` still fold to the still-idle `readAStart`, and
+`check_g1ATagRoute_dormant` pins both facts alongside the closure theorem that
+keeps every route here out of the pass-A family.
 -/
 
 namespace Pnp3.Tests.TMGateOneRoutingSurface
@@ -56,6 +62,14 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1_bRet_rows
 #check @g1_bRoundStart_stuck
 #check @g1_bRoundStart_unreachable
+-- S1b1, the dormant pass-A rescan: a *separate* named table over the same
+-- prefix, targeting the dormant `g1AOpMode` latches.  `g1RouteMode` and every
+-- live route above are untouched.
+#check @g1ATagRoute_advance
+#check @g1ATagRoute_validPath
+#check @g1ATagRoute_advance_const
+#check @g1ATagRoute_rejectPath
+#check @g1ATagRoute_unreachable
 #check @g1Advance_ne_sink
 #check @G1ForwardMode.readBStart
 #check @g1OOBState_ne_readAReset
@@ -258,5 +272,29 @@ regression rather than a route. -/
 theorem check_g1_bRoundStart_unreachable (mode : G1Mode) (frame : G1Frame) :
     g1Advance mode frame ≠ .bRoundStart :=
   g1_bRoundStart_unreachable mode frame
+
+/-- **The dormant pass-A rescan, at frame level.**  The same prefix
+`g1TagRouteFrames r` the pass-B rescan reads, folded from `aBof` through the
+A-counters into the operand-1 operation latch, with `const` falling into the
+`reject` sink along a genuine rejecting path. -/
+theorem check_g1ATagRoute (r : G1Request) (ht : r.tag ≠ .const)
+    (r' : G1Request) (ht' : r'.tag = .const) :
+    (g1AdvanceList .aBof (g1TagRouteFrames r) = g1AOpMode r.tag ∧
+        G1ValidPath .aBof (g1TagRouteFrames r)) ∧
+      (g1AdvanceList .aBof (g1TagRouteFrames r') = .reject ∧
+        G1RejectPath .aBof (g1TagRouteFrames r')) :=
+  ⟨⟨g1ATagRoute_advance r, g1ATagRoute_validPath r ht⟩,
+    ⟨g1ATagRoute_advance_const r' ht', g1ATagRoute_rejectPath r' ht'⟩⟩
+
+/-- **No route of this module can cross into the pass-A family**, and the live
+`input`/`not` route still ends at the still-idle `readAStart`: this slice
+re-points nothing. -/
+theorem check_g1ATagRoute_dormant (r : G1Request)
+    (ht : r.tag = .input ∨ r.tag = .not) :
+    g1AdvanceList .readBStart (g1TagRouteFrames r) = .readAStart ∧
+      g1RouteMode .input = .readAStart ∧ g1RouteMode .not = .readAStart ∧
+      ∀ (mode : G1Mode) (frame : G1Frame), ¬ G1PassAMode mode →
+        ¬ G1PassAMode (g1Advance mode frame) :=
+  ⟨g1TagRoute_advance_unary r ht, rfl, rfl, g1ATagRoute_unreachable⟩
 
 end Pnp3.Tests.TMGateOneRoutingSurface

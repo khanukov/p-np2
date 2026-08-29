@@ -1,5 +1,5 @@
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgram
-import Complexity.TMVerifier.TuringToolkit.GateOneEncoding
+import Complexity.TMVerifier.TuringToolkit.GateOneResidual
 import Mathlib.Tactic.DeriveFintype
 
 /-!
@@ -18,7 +18,8 @@ request-dependent value occurs in it**.  The clock
 
 ## The forward table decides the canonical grammar
 
-The sixteen forward modes remember the tag count and, through it, the tag
+The sixteen forward modes of the *validation scan* (`vBof … vBlank`) remember
+the tag count and, through it, the tag
 kind, so the tag-dependent arity/unused-field convention of
 `G1Request.Canonical` is enforced by the finite control itself and not merely
 by the pure parser:
@@ -196,6 +197,54 @@ the public clock is unchanged and only the proved prefixes are bounded.
 `accept`/`reject` are the two stable sinks; only their tuple equations are
 proved.
 
+## The dormant pass-A control ABI (S1b1)
+
+Twelve modes — `aBof`, the counters `aTag0 … aTag5`, the four operation latches
+`aOpInput`/`aOpNot`/`aOpAnd`/`aOpOr` and the handoff `aInstallStart` — and the
+context views `G1Ctx.res`/`G1Ctx.withRes`/`g1ResultCtx` are declared here as the
+**calling convention** the deferred operand-1 pass will use.  They are
+*dormant*: the live machine cannot enter any of them.
+
+```text
+aBof  , bof    ↦ aTag0        aTagk , tag    ↦ aTag(k+1)     (k = 0 … 4)
+aTag1 , argSep ↦ aOpInput     aTag3 , argSep ↦ aOpNot
+aTag4 , argSep ↦ aOpAnd       aTag5 , argSep ↦ aOpOr
+aTag2 , argSep ↦ reject                    -- `const` has no pass-A row
+aOp t          ↦ aInstallStart, ctx.withRes (g1Residual t ctx.vB)
+aInstallStart  ↦ aInstallStart             -- stationary self-loop
+```
+
+`G1PassAMode` names exactly those twelve modes, and the two closure theorems
+`g1Advance_passA` and `g1Transition_passA_closed` say the family is entered from
+**nowhere else**: neither a frame-table row nor any row of the executed
+`g1Transition` sends a mode outside the family into it.  So this slice adds rows
+and views, and changes no live behaviour: the routes of the validation scan, the
+pass-B rescan, the cursor walk and the operand-2 repair sweep are bit-for-bit
+what they were, and every theorem about them still holds verbatim.
+
+**`readAStart` stays idle** (`g1Transition_readAStart_idle`).  Turning it into
+the two-way dispatch on `ctx.pass` that would *reach* `aBof` — and re-pointing
+`rTag1`/`rTag3` and the two `const` literal rows through `readAResetStart` so
+that all five tags arrive at one entry — is **deferred to S1b2**.  Nothing here
+reads operand 1, combines, writes an output frame or mentions `TM.accepts`.
+
+**The residual is a view, not a field.**  `G1Ctx` is the same three Booleans it
+has always been; `res`/`withRes` read and write the pair `(pass, crossed)` as
+one of the four `G1Residual` values, and `vB` is untouched by them.  No state
+field, no `Nat`, no advice input and no runtime parameter is added, and the
+`const` filler row of `g1Residual` is never consumed: `g1AOpMode .const` is
+`reject`, matching the `aTag2` gap in the table above.
+
+**No row of `g1Transition` branches on `pass`** in this slice — `readAStart`,
+the one row that would, is still idle — so the overlap between the residual view
+and the result convention is inert here.  It is nonetheless real,
+and `g1ResultCtx_eq_andFalse_res` records it: the absorbing `and`/`vB = false`
+residual is `constFalse`, whose two bits are literally `g1ResultCtx false`.  All
+four two-bit patterns are in use, so S1b2 cannot re-encode its way out — the
+deferred operand-1 walk must get its **own** terminal that normalises the
+context, rather than returning a latched residual through
+`bRepairDone → readAStart`.
+
 **Proof discipline.**  Everything below `g1Transition` is a small standalone
 tuple lemma proved by `rfl` after at most one mode split.  Downstream
 `TM.stepConfig` facts come from the generic `ConstStatePhasedStepBridge`
@@ -243,6 +292,16 @@ its hop, and the anchor dispatch into `readAStart` — the exact analogue of T1'
 entered from the `readAResetStart` bridge and from caller-supplied
 configurations, never from a frame-table row.
 
+`aBof`, `aTag0 … aTag5` and `aOpInput`/`aOpNot`/`aOpAnd`/`aOpOr` are the eleven
+**dormant** modes of the pass-A entry — the A-specific anchor read, the unary
+tag recount and the four stationary latches writing the residual of
+`(tag, ctx.vB)` into the two spare context bits — and `aInstallStart` is the
+handoff they install it in.  They are a *separate* family from `rTag0 … rTag5`,
+whose `argSep` rows select the operand-2 regime, and `G1PassAMode` collects
+exactly these twelve.  Nothing outside the family enters it
+(`g1Advance_passA`, `g1Transition_passA_closed`), so the live machine never
+reaches them; S1b2 activates `readAStart` to do so.
+
 `readAStart`, `combineStart` and `bOOB` are the three remaining local handoffs,
 idle in this slice; `readAResetStart` is **no longer idle** — it is the one-step
 bridge into `bRepairSeek`.  `accept`/`reject` are the sinks. -/
@@ -268,6 +327,12 @@ inductive G1Mode
   | bFinFalse | bFinTrue
   -- the operand-2 repair sweep
   | bRepairSeek | bRepairWrite | bRepairBack | bRepairHop | bRepairDone
+  -- the dormant pass-A entry: the A-specific anchor read, tag recount, the four
+  -- operation latches and the handoff they install the residual in
+  | aBof
+  | aTag0 | aTag1 | aTag2 | aTag3 | aTag4 | aTag5
+  | aOpInput | aOpNot | aOpAnd | aOpOr
+  | aInstallStart
   | readAStart | combineStart | readAResetStart | bOOB
   | accept | reject
   deriving Fintype, DecidableEq, Repr
@@ -303,6 +368,100 @@ def G1Ctx.withVB (ctx : G1Ctx) (b : Bool) : G1Ctx := { ctx with vB := b }
 
 theorem g1Ctx0_withVB (b : Bool) : g1Ctx0.withVB b = ⟨false, false, b⟩ := rfl
 
+/-! ### The residual view of the two spare context bits (dormant ABI)
+
+`pass` and `crossed` are two Booleans, i.e. four values, i.e. exactly one
+`G1Residual` — `⟨false, false⟩ ↦ idA`, `⟨false, true⟩ ↦ notA`,
+`⟨true, false⟩ ↦ constFalse`, `⟨true, true⟩ ↦ constTrue`.  This is a **view**:
+no field is added, nothing is stored twice, and `withVB` keeps working on the
+third bit, which the deferred pass-A cursor walk needs as its value latch.
+
+`withRes` is called by exactly four rows of `g1Transition` — the dormant
+operation latches `aOpInput`/`aOpNot`/`aOpAnd`/`aOpOr` (`g1Transition_aOp`) —
+and all four install the latched context in `aInstallStart`, a stationary
+self-loop (`g1Transition_aInstallStart_idle`).  Since nothing outside the pass-A
+family enters that family (`g1Transition_passA_closed`), **no run of the live
+machine ever evaluates `withRes`**. -/
+
+def g1ResPass : G1Residual → Bool
+  | .idA | .notA => false
+  | .constFalse | .constTrue => true
+
+def g1ResCrossed : G1Residual → Bool
+  | .idA | .constFalse => false
+  | .notA | .constTrue => true
+
+/-- Decode the residual carried in the two spare context bits. -/
+def G1Ctx.res (ctx : G1Ctx) : G1Residual :=
+  match ctx.pass, ctx.crossed with
+  | false, false => .idA
+  | false, true => .notA
+  | true, false => .constFalse
+  | true, true => .constTrue
+
+/-- Encode a residual into the two spare context bits, leaving `vB` alone. -/
+def G1Ctx.withRes (ctx : G1Ctx) (res : G1Residual) : G1Ctx :=
+  ⟨g1ResPass res, g1ResCrossed res, ctx.vB⟩
+
+@[simp] theorem G1Ctx.res_withRes (ctx : G1Ctx) (res : G1Residual) :
+    (ctx.withRes res).res = res := by cases res <;> rfl
+
+@[simp] theorem G1Ctx.withRes_vB (ctx : G1Ctx) (res : G1Residual) :
+    (ctx.withRes res).vB = ctx.vB := rfl
+
+@[simp] theorem G1Ctx.withVB_res (ctx : G1Ctx) (b : Bool) :
+    (ctx.withVB b).res = ctx.res := rfl
+
+/-- The encoding is faithful: the two bits of a context are recovered from the
+residual it decodes to. -/
+theorem G1Ctx.withRes_res (ctx : G1Ctx) : ctx.withRes ctx.res = ctx := by
+  rcases ctx with ⟨p, c, v⟩
+  cases p <;> cases c <;> rfl
+
+/-! ### The result convention (dormant ABI)
+
+The convention S1b2 will use is that a context is a **result** context when its
+`pass` bit is set: the operand pass is over and the finished value of the gate
+sits in `vB`.  **Nothing in this slice reads `pass`** — `readAStart` is still
+idle — so `g1ResultCtx` is declared here only so that the dormant table and the
+deferred dispatch agree on one convention.
+
+The mode qualification of that reading is load-bearing rather than cosmetic, and
+it is why the two lemmas below are stated now.  *Away* from a `readAStart`
+dispatch a set `pass` bit means only "the latched residual is absorbing": the
+`and`/`vB = false` install context is *literally* a result context, even though
+operand 1 has not been read. -/
+
+/-- The canonical result context: the finished value, and nothing else. -/
+def g1ResultCtx (b : Bool) : G1Ctx := ⟨true, false, b⟩
+
+@[simp] theorem g1ResultCtx_pass (b : Bool) : (g1ResultCtx b).pass = true := rfl
+
+@[simp] theorem g1ResultCtx_vB (b : Bool) : (g1ResultCtx b).vB = b := rfl
+
+/-- **An entry context is not a result context.**  The pass-A entry of every
+non-`const` route carries `g1Ctx0.withVB b`, whose `pass` bit is clear. -/
+theorem g1ResultCtx_ne_entry (b b' : Bool) :
+    g1ResultCtx b ≠ g1Ctx0.withVB b' := fun h =>
+  Bool.noConfusion (congrArg G1Ctx.pass h)
+
+/-- **A residual-latched context, however, *can* be a result context.**  The
+absorbing `and`/`vB = false` residual is `constFalse`, whose two bits are exactly
+the result marker — so the context of the `and`/`vB = false` pass-A install
+endpoint equals `g1ResultCtx false`.  Harmless while `aInstallStart` self-loops
+and `readAStart` is idle; it is what forbids the deferred operand-1 walk from
+returning a latched residual through `bRepairDone → readAStart`. -/
+theorem g1ResultCtx_eq_andFalse_res :
+    (g1Ctx0.withVB false).withRes (g1Residual .and false) = g1ResultCtx false :=
+  rfl
+
+/-- The companion aliasing: the absorbing `or`/`vB = true` residual differs from
+the result context in `crossed`, but agrees on `pass` — the only bit the
+deferred dispatch would read. -/
+theorem g1ResultCtx_pass_eq_orTrue_res :
+    ((g1Ctx0.withVB true).withRes (g1Residual .or true)).pass =
+      (g1ResultCtx true).pass := rfl
+
 set_option synthInstance.maxSize 1024 in
 /-- The complete G1 control state.  No `Nat`, width, offset, index or length
 field occurs. -/
@@ -332,6 +491,17 @@ def g1ReadBState (ctx : G1Ctx) : G1State :=
 the operand-1 field (the closing `argSep` when that field is empty). -/
 def g1ReadAState (ctx : G1Ctx) : G1State :=
   g1State .readAStart .p0 false false false ctx
+
+/-- **The A-specific anchor read**: head zero, about to re-read `bof`.  Dormant:
+only `readAStart` could reach it, and `readAStart` is idle in this slice. -/
+def g1ABofState (ctx : G1Ctx) : G1State :=
+  g1State .aBof .p0 false false false ctx
+
+/-- **The pass-A install handoff**: head on the first cell of the operand-1
+field (the `argSep` closing it when the field is empty), with the residual
+latched in the two spare context bits.  Dormant and stationary. -/
+def g1AInstallState (ctx : G1Ctx) : G1State :=
+  g1State .aInstallStart .p0 false false false ctx
 
 /-- The `const` handoff: the decoded literal is already in `ctx.vB`. -/
 def g1CombineState (ctx : G1Ctx) : G1State :=
@@ -554,6 +724,22 @@ def g1Advance : G1Mode → G1Frame → G1Mode
   | .bRet, .separator => .bRet
   | .bRet, .data _ => .bRet
   | .bRet, .cursor => .bTurnFin
+  -- the **dormant** pass-A entry: re-read the anchor and physically recount the
+  -- tag run with the A-specific counters.  No row of any *other* mode enters
+  -- this family (`g1Advance_passA`), so the live machine never runs them.
+  | .aBof, .bof => .aTag0
+  | .aTag0, .tag => .aTag1
+  | .aTag1, .tag => .aTag2
+  | .aTag2, .tag => .aTag3
+  | .aTag3, .tag => .aTag4
+  | .aTag4, .tag => .aTag5
+  -- the operand-1 operation, selected by the `argSep` closing the run.  `aTag2`
+  -- (`const`) has **no** row: `const` is finished in pass B and rejects here,
+  -- which is why the `const` filler row of `g1Residual` is never consumed.
+  | .aTag1, .argSep => .aOpInput
+  | .aTag3, .argSep => .aOpNot
+  | .aTag4, .argSep => .aOpAnd
+  | .aTag5, .argSep => .aOpOr
   -- `bSeek` reads right to left and has no row here at all.
   | _, _ => .reject
 
@@ -644,8 +830,12 @@ of the destructive round, the eleven non-forward modes of the cursor walk
 (`bSeek` reads right to left, the two latch modes dispatch, the six writers
 write and the two turns hold), the five modes of the operand-2 repair sweep
 (`bRepairSeek` reads right to left, the writer and its back-walk write, the hop
-moves left and the terminal dispatch holds), the four remaining
-handoffs and the two sinks are not. -/
+moves left and the terminal dispatch holds), the four dormant operand-1
+operation latches (`aOpInput`, `aOpNot`, `aOpAnd`, `aOpOr`), the five remaining
+handoffs (`aInstallStart`, `readAStart`, `combineStart`, `readAResetStart`,
+`bOOB`) and the two sinks are not.  The dormant pass-A anchor read `aBof` and
+its counters `aTag0 … aTag5` *are* forward modes and fall through to the `True`
+catch-all — they read frames, they are simply never reached. -/
 def G1ForwardMode : G1Mode → Prop
   | .rewindStart | .rewind
   | .constFalse | .constTrue | .bStoreFalse | .bStoreTrue
@@ -654,12 +844,48 @@ def G1ForwardMode : G1Mode → Prop
   | .bRestoreFalse | .bRestoreTrue | .bFinFalse | .bFinTrue
   | .bLatchFalse | .bLatchTrue | .bIns
   | .bRepairSeek | .bRepairWrite | .bRepairBack | .bRepairHop | .bRepairDone
+  | .aOpInput | .aOpNot | .aOpAnd | .aOpOr | .aInstallStart
   | .readAStart | .combineStart | .readAResetStart | .bOOB
   | .accept | .reject => False
   | _ => True
 
 instance : DecidablePred G1ForwardMode := fun mode => by
   cases mode <;> first | exact isTrue trivial | exact isFalse id
+
+/-- **The dormant pass-A family.**  Exactly the twelve modes this slice adds:
+the A-specific anchor read, the six A-counters, the four operation latches and
+the install handoff.  `g1Advance_passA` and `g1Transition_passA_closed` say
+nothing outside the family enters it, which is what makes the whole slice
+inert. -/
+def G1PassAMode : G1Mode → Prop
+  | .aBof
+  | .aTag0 | .aTag1 | .aTag2 | .aTag3 | .aTag4 | .aTag5
+  | .aOpInput | .aOpNot | .aOpAnd | .aOpOr
+  | .aInstallStart => True
+  | _ => False
+
+instance : DecidablePred G1PassAMode := fun mode => by
+  cases mode <;> first | exact isTrue trivial | exact isFalse id
+
+theorem G1PassAMode.not_reject : ¬ G1PassAMode .reject := id
+
+/-- **The pass-A family is closed under the forward frame table.**  If one
+frame-table step lands in a pass-A mode then it started in one: no validation,
+rescan, walk or repair mode has a row into the family, so the frames the live
+machine reads can never divert it there. -/
+theorem g1Advance_passA (mode : G1Mode) (frame : G1Frame) :
+    G1PassAMode (g1Advance mode frame) → G1PassAMode mode := by
+  revert mode frame; decide
+
+/-- The bit-level form of `g1Advance_passA`: a completed four-cell window
+cannot divert a non-pass-A mode into the family either, and an undecodable
+window rejects. -/
+theorem g1Complete_passA (mode : G1Mode) (b0 b1 b2 b3 : Bool) :
+    G1PassAMode (g1Complete mode b0 b1 b2 b3) → G1PassAMode mode := by
+  unfold g1Complete
+  cases decodeG1Frame? [b0, b1, b2, b3] with
+  | none => exact fun h => False.elim h
+  | some frame => exact g1Advance_passA mode frame
 
 theorem G1ForwardMode.not_reject : ¬ G1ForwardMode .reject := id
 
@@ -671,8 +897,8 @@ theorem G1ForwardMode.readBStart : G1ForwardMode .readBStart := trivial
 complete-frame read enters `reject`, and it is not the end-of-input mode.  In
 particular the four dispatch modes, the five modes of the destructive round,
 the eleven non-forward modes of the cursor walk, the five modes of the
-operand-2 repair sweep,
-the four remaining handoffs and the `reject` sink are
+operand-2 repair sweep, the four dormant operand-1 operation latches,
+the five remaining handoffs and the `reject` sink are
 stuck; `rewind` and `accept` also satisfy this table-level predicate but are
 unreachable as results of `g1Advance`;
 the point of the predicate is that a stuck mode can never fold to
@@ -740,11 +966,24 @@ theorem g1AdvanceList_ne_rewindStart_of_stuck {mode : G1Mode} (h : G1Stuck mode)
 stuck mode.**  In particular `rewind` and `accept` are unreachable from any
 scan.  Every non-forward target (the four dispatch modes, the round's five
 modes, the eleven non-forward walk modes, the sweep's five modes, the four
-handoffs and the `reject` sink) is stuck. -/
+dormant operation latches, the `readAResetStart` and `bOOB` handoffs and the
+`reject` sink) is stuck, and so are the three handoffs no row targets at all
+(`aInstallStart`, `readAStart`, `combineStart`). -/
 theorem g1Advance_range (mode : G1Mode) (frame : G1Frame) :
     G1ForwardMode (g1Advance mode frame) ∨
       g1Advance mode frame = .rewindStart ∨
       G1Stuck (g1Advance mode frame) := by
+  revert mode frame; decide
+
+/-- **Every frame-table producer of `readAStart`, enumerated.**  Exactly two
+rows reach the pass-A handoff through `g1Advance`: the `argSep` closing the
+pass-B tag run of `input` (`rTag1`) and of `not` (`rTag3`).  Those two arrive
+carrying `g1Ctx0`, so they are precisely what S1b2 has to re-point through
+`readAResetStart` before it may read `ctx.pass` at `readAStart`; this slice
+changes neither row.  A statement about `g1Advance` only. -/
+theorem g1Advance_eq_readAStart (mode : G1Mode) (frame : G1Frame) :
+    g1Advance mode frame = .readAStart →
+      (mode = .rTag1 ∨ mode = .rTag3) ∧ frame = .argSep := by
   revert mode frame; decide
 
 /-- Neither sink-like control mode is ever produced by one frame-table step. -/
@@ -1366,11 +1605,27 @@ def g1Transition (_phase : Fin 1) (s : G1State) (scan : Bool) :
   match s.mode with
   | .accept => (0, g1AcceptState, scan, .stay)
   | .reject => (0, g1RejectState, scan, .stay)
-  -- the three remaining local handoffs: idle in this slice, each its own stable
-  -- state
+  -- the four remaining local handoffs: idle in this slice, each its own stable
+  -- state.  `readAStart` stays idle here — S1b2 turns it into the pass-A
+  -- dispatch on `ctx.pass`, which is the one row that would make the pass-A
+  -- family below reachable.
   | .readAStart => (0, g1ReadAState s.ctx, scan, .stay)
+  | .aInstallStart => (0, g1AInstallState s.ctx, scan, .stay)
   | .combineStart => (0, g1CombineState s.ctx, scan, .stay)
   | .bOOB => (0, g1OOBState s.ctx, scan, .stay)
+  -- the four **dormant** operand-1 operation latches: one stationary step each,
+  -- writing the residual of the rescanned tag and the operand-2 value latched in
+  -- `vB` into the two spare context bits, leaving `vB`, the tape and the head
+  -- untouched.  These are the only rows that call `withRes`, and they install
+  -- into the self-looping `aInstallStart`, so no live run evaluates them.
+  | .aOpInput => (0, g1AInstallState (s.ctx.withRes (g1Residual .input s.ctx.vB)),
+                    scan, .stay)
+  | .aOpNot => (0, g1AInstallState (s.ctx.withRes (g1Residual .not s.ctx.vB)),
+                  scan, .stay)
+  | .aOpAnd => (0, g1AInstallState (s.ctx.withRes (g1Residual .and s.ctx.vB)),
+                  scan, .stay)
+  | .aOpOr => (0, g1AInstallState (s.ctx.withRes (g1Residual .or s.ctx.vB)),
+                 scan, .stay)
   -- the operand-2 repair sweep: the bridge, the reverse scan with its four
   -- outcomes, the `spent ↦ index` writer, its back-walk, its hop and the anchor
   -- dispatch.  Nothing here inspects the request: the scan decides through the
@@ -1583,9 +1838,10 @@ mode and its steps come from the four `g1Transition_forward_*` lemmas below.
 of the destructive round and its tuple is `g1Transition_bRoundStart_bridge`
 below.  `readAResetStart` has likewise stopped being idle: Repair-2a turns it into
 the one-step bridge of the operand-2 repair sweep, and its tuple is
-`g1Transition_readAResetStart_bridge` below.  The three remaining handoffs
-(`readAStart`, `combineStart`, `bOOB`) are idle **in this slice**; the deferred
-pass-A and combine slices replace those equations. -/
+`g1Transition_readAResetStart_bridge` below.  The four remaining handoffs
+(`readAStart`, `aInstallStart`, `combineStart`, `bOOB`) are idle **in this
+slice**; the deferred pass-A activation (S1b2), the operand-1 walk and the
+combine slice replace those equations. -/
 
 @[simp] theorem g1Transition_accept_sink (phase : Fin 1) (scan : Bool) :
     g1Transition phase g1AcceptState scan = (0, g1AcceptState, scan, .stay) :=
@@ -1595,10 +1851,43 @@ pass-A and combine slices replace those equations. -/
     g1Transition phase g1RejectState scan = (0, g1RejectState, scan, .stay) :=
   rfl
 
+/-- **`readAStart` is still idle.**  S1b1 declares the pass-A calling convention
+but does not activate the handoff: turning this row into the two-way dispatch on
+`ctx.pass` — the only row that would make `aBof` reachable — is deferred to
+S1b2. -/
 theorem g1Transition_readAStart_idle (phase : Fin 1)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
     g1Transition phase (g1State .readAStart position b0 b1 b2 ctx) scan =
       (0, g1ReadAState ctx, scan, .stay) := rfl
+
+/-- `g1AOpMode` is the mode the closing `argSep` of the dormant pass-A tag
+rescan selects.  `const` has no A row, so its entry is the `reject` sink — which
+is exactly why the `const` filler of `g1Residual` is never consumed. -/
+def g1AOpMode : G1Tag → G1Mode
+  | .input => .aOpInput
+  | .const => .reject
+  | .not => .aOpNot
+  | .and => .aOpAnd
+  | .or => .aOpOr
+
+@[simp] theorem g1AOpMode_const : g1AOpMode .const = .reject := rfl
+
+/-- **The operand-1 operation latch, as a tuple.**  One stationary step writes
+the residual of `(t, ctx.vB)` into the two spare context bits and installs it in
+`aInstallStart`; `vB`, the tape and the head are untouched. -/
+theorem g1Transition_aOp (phase : Fin 1) (t : G1Tag) (ht : t ≠ .const)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State (g1AOpMode t) position b0 b1 b2 ctx) scan =
+      (0, g1AInstallState (ctx.withRes (g1Residual t ctx.vB)), scan, .stay) := by
+  cases t <;> first | rfl | exact absurd rfl ht
+
+/-- **The pass-A install handoff is idle.**  It is where the deferred operand-1
+cursor walk will start; today it is a stationary self-loop, which is what makes
+a latched residual harmless. -/
+theorem g1Transition_aInstallStart_idle (phase : Fin 1)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State .aInstallStart position b0 b1 b2 ctx) scan =
+      (0, g1AInstallState ctx, scan, .stay) := rfl
 
 theorem g1Transition_combineStart_idle (phase : Fin 1)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
@@ -2218,5 +2507,47 @@ theorem g1Transition_bRepairDone (phase : Fin 1) (position : G1FramePosition)
     (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
     g1Transition phase (g1State .bRepairDone position b0 b1 b2 ctx) scan =
       (0, g1ReadAState ctx, scan, .stay) := rfl
+
+/-! ### The pass-A family is dormant
+
+`g1Advance_passA` rules out the *frame table*.  The theorem here rules out the
+whole of `g1Transition`, which is what "this slice changes no live behaviour"
+actually needs: without it, "the machine never runs a pass-A row" would be an
+unproved reading of a statement about `g1Advance`. -/
+
+/-- **Nothing outside the pass-A family enters it.**  Whatever the phase, the
+scanned bit and the whole finite state, if one executed step lands in a pass-A
+mode then the step was taken from a pass-A mode.  So the twelve modes this slice
+adds are an **unreachable** part of the control graph: no run that starts
+outside them can enter them, so every existing execution theorem holds verbatim
+and no live behaviour changes.  (The family is not *closed* the other way, and
+is not claimed to be: `aBof` and the counters reject a frame they cannot read,
+and `g1Transition_aInstallStart_idle` makes the install handoff a self-loop, so
+its only exits are the `reject` sink and itself.)
+
+The component becomes reachable only when S1b2 activates `readAStart`. -/
+theorem g1Transition_passA_closed (phase : Fin 1) (s : G1State) (scan : Bool)
+    (h : G1PassAMode (g1Transition phase s scan).2.1.mode) :
+    G1PassAMode s.mode := by
+  obtain ⟨mode, position, b0, b1, b2, ctx⟩ := s
+  obtain ⟨pass, crossed, vB⟩ := ctx
+  cases mode <;> cases position <;>
+    first
+      | trivial
+      | exact False.elim h
+      | (cases vB <;> exact False.elim h)
+      | (simp only [g1Transition, g1State] at h
+         split at h <;>
+           first
+             | exact False.elim h
+             | exact g1Complete_passA _ _ _ _ _ h)
+
+/-- **The dormant family's install handoff is never produced by a live row.**
+The specialisation of `g1Transition_passA_closed` that names the endpoint the
+four latches write into. -/
+theorem g1Transition_aInstallStart_unique (phase : Fin 1) (s : G1State)
+    (scan : Bool) (h : (g1Transition phase s scan).2.1.mode = .aInstallStart) :
+    G1PassAMode s.mode :=
+  g1Transition_passA_closed phase s scan (by rw [h]; trivial)
 
 end Pnp3.Internal.PsubsetPpoly.TM

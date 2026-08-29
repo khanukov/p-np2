@@ -25,13 +25,13 @@ is read-only and the latch writes back the cell it scans.  `vB` survives the
 latch untouched — it is the deferred walk's value slot — and only the pair
 `(pass, crossed)` changes.
 
-**Explicitly deferred and claimed nowhere.**  Operand 1 is not read: the install
-handoff self-loops (`g1CS_runConfig_aInstall_idle`).  There is no operand-1
-walk, invariant, repair or out-of-range branch, no combine step, no output
-write, no `TM.accepts`, no full-clock and no acceptance-gate claim.  The
-`const` rejection is a *local* fact about an `aBof` configuration its real
-route never reaches; the result-ready route bypasses pass A and reaches
-`combineStart` carrying `g1ResultCtx b`.
+S4 changes only the next one-step atom: `aInstallStart` now enters
+`aInsSeek .p0` in place, preserving head, tape and context.  The scan/probe and
+writer composition lives in `GateOneAWalkInstallAtoms`; this module still
+executes no operand-A scan, writer, normal walk, repair, combine, output or
+acceptance row.  The `const` rejection is a *local* fact about an `aBof`
+configuration its real route never reaches; the result-ready route bypasses
+pass A and reaches `combineStart` carrying `g1ResultCtx b`.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -71,19 +71,19 @@ theorem g1CS_step_aOp (n h : Nat) (hh : h < G1M.tapeLength n)
     (fun phase => g1Transition_aOp phase t ht .p0 false false false _ ctx)
   rwa [writeCell_self] at hstep
 
-/-- **The pass-A install handoff is idle**: it holds its state, head and tape for
-the whole remaining budget.  This is the honest boundary of the live entry —
-operand 1 is not read — and it is also what makes a latched residual harmless,
-since the latched context never moves on to anything that reads `pass`. -/
-theorem g1CS_runConfig_aInstall_idle (n h : Nat) (hh : h < G1M.tapeLength n)
-    (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx) (k : Nat) :
+/-- **The live S4 entry, executed.**  One stationary step enters the aligned
+installation scan without changing the head, tape or latched context. -/
+theorem g1CS_step_aInstallStart (n h : Nat) (hh : h < G1M.tapeLength n)
+    (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx) :
     TM.runConfig (M := G1M)
         (g1AlignedConfig n h hh tape .aInstallStart .p0 false false false ctx)
-        k =
-      g1AlignedConfig n h hh tape .aInstallStart .p0 false false false ctx :=
-  g1CS_runConfig_stable n h hh tape (g1AInstallState ctx)
-    (fun phase scan => g1Transition_aInstallStart_idle phase .p0 false false
-      false scan ctx) k
+        1 =
+      g1AlignedConfig n h hh tape .aInsSeek .p0 false false false ctx := by
+  rw [runConfig_one]
+  have hstep := g1CS_aligned_step_stay n h hh tape
+    (g1AInstallState ctx) (g1AInsSeekState ctx) (tape ⟨h, hh⟩)
+    (fun phase => g1Transition_aInstallStart_live phase .p0 false false false _ ctx)
+  rwa [writeCell_self] at hstep
 
 /-! ## The pass-A rescan, on a caller-supplied frame word
 
@@ -212,6 +212,16 @@ def g1AInstallConfig (r : G1Request) (b : Bool) :
     .aInstallStart .p0 false false false
     ((g1Ctx0.withVB b).withRes (g1Residual r.tag b))
 
+/-- The exact live installation-scan entry, one step after
+`g1AInstallConfig`: same aligned head, canonical tape and latched context. -/
+def g1AInstallSeekConfig (r : G1Request) (b : Bool) :
+    Configuration (M := G1M) (encodeG1 r).length :=
+  g1AlignedConfig (encodeG1 r).length (4 * (r.tag.units + 2))
+    (g1_route_lt_tapeLength r _ (by omega))
+    (G1M.initialConfig (g1Point (encodeG1 r))).tape
+    .aInsSeek .p0 false false false
+    ((g1Ctx0.withVB b).withRes (g1Residual r.tag b))
+
 /-- The exact result-ready boundary of the `const` bypass. -/
 def g1CombineConfig (r : G1Request) (b : Bool) :
     Configuration (M := G1M) (encodeG1 r).length :=
@@ -234,6 +244,16 @@ def g1CombineConfig (r : G1Request) (b : Bool) :
 
 @[simp] theorem g1AInstallConfig_vB (r : G1Request) (b : Bool) :
     (g1AInstallConfig r b).state.snd.ctx.vB = b := rfl
+
+@[simp] theorem g1AInstallSeekConfig_head (r : G1Request) (b : Bool) :
+    ((g1AInstallSeekConfig r b).head : Nat) = 4 * (r.tag.units + 2) := rfl
+
+@[simp] theorem g1AInstallSeekConfig_res (r : G1Request) (b : Bool) :
+    (g1AInstallSeekConfig r b).state.snd.ctx.res = g1Residual r.tag b := by
+  simp [g1AInstallSeekConfig, g1AlignedConfig, g1AlignedConfigQ, g1State]
+
+@[simp] theorem g1AInstallSeekConfig_vB (r : G1Request) (b : Bool) :
+    (g1AInstallSeekConfig r b).state.snd.ctx.vB = b := rfl
 
 @[simp] theorem g1CombineConfig_ctx (r : G1Request) (b : Bool) :
     (g1CombineConfig r b).state.snd.ctx = g1ResultCtx b := rfl
@@ -302,6 +322,17 @@ theorem g1CS_passA_entry_initial_exact (r : G1Request) (ht : r.tag ≠ .const)
   rw [htape] at h
   simpa only [g1ABofConfig, g1AInstallConfig, List.length_nil, Nat.zero_add,
     G1Ctx.withVB_vB] using h
+
+/-- The residual-latched real-tape boundary takes its one exact live step into
+the S3b1 installation scan. -/
+theorem g1CS_aInstall_entry_initial_exact (r : G1Request) (b : Bool) :
+    TM.runConfig (M := G1M) (g1AInstallConfig r b) 1 =
+      g1AInstallSeekConfig r b := by
+  simpa [g1AInstallConfig, g1AInstallSeekConfig] using
+    g1CS_step_aInstallStart (encodeG1 r).length (4 * (r.tag.units + 2))
+      (g1_route_lt_tapeLength r _ (by omega))
+      (G1M.initialConfig (g1Point (encodeG1 r))).tape
+      ((g1Ctx0.withVB b).withRes (g1Residual r.tag b))
 
 /-- Real unary routes reach the exact install boundary with their residual
 latched and operand 1 unread. -/
@@ -449,8 +480,8 @@ theorem not_latch (b : Bool) :
 
 /-- **`and` with `vB = false`: the absorbing residual.**  Twenty-five steps,
 head `0 ↦ 24`, and the latched context is *literally* `g1ResultCtx false` — the
-aliasing `g1ResultCtx_eq_andFalse_res` records, harmless only because
-`aInstallStart` self-loops. -/
+aliasing `g1ResultCtx_eq_andFalse_res` records.  The live successor is
+`aInsSeek`, whose installation path does not branch on `pass`. -/
 theorem and_false_latch :
     TM.runConfig (M := G1M)
         (g1AlignedConfig 44 0 (probe_safe (m := 12) (by omega))

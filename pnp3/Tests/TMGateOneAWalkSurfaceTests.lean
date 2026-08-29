@@ -3,8 +3,9 @@ import Complexity.TMVerifier.TuringToolkit.GateOneAWalkKernel
 /-!
 # S3b2a/S3b2b dormant operand-A walk surface
 
-Dated 2026-08-29.  All runs are caller-supplied; `aInstallStart` is idle,
-terminal cleanup stops at stationary `aRepairStart`, and no repair executes.
+Dated 2026-08-29.  The normal/terminal runs remain caller-supplied; S4 stops at
+their `aSeekOut .p3` entry boundary, terminal cleanup stops at stationary
+`aRepairStart`, and no repair executes.
 -/
 
 namespace Pnp3.Tests.TMGateOneAWalkSurface
@@ -323,11 +324,11 @@ theorem check_g1Transition_aFin (phase : Fin 1) (b : Bool)
         .right) :=
   g1Transition_aFin phase b position b0 b1 b2 scan ctx
 
-theorem check_g1Transition_aWalk_dormant
+theorem check_g1Transition_aWalk_entry_closure
     (phase : Fin 1) (s : G1State) (scan : Bool)
     (h : G1AWalkMode (g1Transition phase s scan).2.1.mode) :
-    G1AWalkMode s.mode :=
-  g1Transition_aWalk_dormant phase s scan h
+    G1AWalkMode s.mode ∨ s.mode = .aInstallStart :=
+  g1Transition_aWalk_entry_closure phase s scan h
 
 theorem check_g1Advance_aFwd_of_skip {f : G1Frame} (h : G1AWalkSkip f) :
     g1Advance .aFwd f = .aFwd :=
@@ -614,10 +615,10 @@ theorem literal_malformed_reserved_run (n : Nat)
         .reject .p0 false false false g1Ctx0 := by
   exact g1CS_aWalk_reserved_1101_reject n 0 hsafe _ .aSeekOut g1Ctx0 trivial rfl
 
-theorem check_aInstallStart_still_idle (phase : Fin 1)
+theorem check_aInstallStart_live_entry (phase : Fin 1)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
     g1Transition phase (g1State .aInstallStart position b0 b1 b2 ctx) scan =
-      (0, g1AInstallState ctx, scan, .stay) :=
-  g1Transition_aInstallStart_idle phase position b0 b1 b2 scan ctx
+      (0, g1AInsSeekState ctx, scan, .stay) :=
+  g1Transition_aInstallStart_live phase position b0 b1 b2 scan ctx
 
 end Pnp3.Tests.TMGateOneAWalkSurface

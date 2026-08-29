@@ -2163,7 +2163,8 @@ No live route, step count, endpoint, clock or state field changes.
   faithfulness round-trip, `G1Ctx.withRes_vB` keeps `vB` free), and
   `g1ResultCtx` fixes the result convention S1b2 will read.  The latch row
   `g1Transition_aOp` writes `g1Residual t ctx.vB` into those two bits and
-  installs it in the stationary `g1Transition_aInstallStart_idle`.
+  installed it at the then-stationary `aInstallStart` boundary.  S4 below
+  removes that idle row and activates the exact installation entry.
 * `GateOneRouting.lean` — the frame level of the pass-A rescan as a **separate
   named table** over the same prefix: `g1ATagRoute_advance`,
   `g1ATagRoute_validPath`, and the `const` rejection in both its fold form
@@ -2171,7 +2172,7 @@ No live route, step count, endpoint, clock or state field changes.
   (`g1ATagRoute_rejectPath`).  `g1RouteMode` is **not** re-pointed.
 * `GateOnePassAControl.lean` (new) — the executed layer, entirely on
   **caller-supplied** aligned configurations: `g1CS_step_aOp`,
-  `g1CS_runConfig_aInstall_idle`, the tag recount `g1CS_aTagRescan_exact`
+  the then-idle install boundary (superseded by S4), the tag recount `g1CS_aTagRescan_exact`
   (`4(u+2)` steps), the whole entry `g1CS_passA_entry_exact` (`4u+9` steps) and
   the local `g1CS_passA_const_reject_exact` (`16` steps into the literal reject
   sink), plus six all-literal probes — `input` (13 steps, head `0 ↦ 12`), `not`
@@ -2267,10 +2268,10 @@ idle tuple/run theorems are deleted.  `g1Transition_passA_door` replaces the
 former closed-family theorem: the executed family has exactly the
 `readAStart` door.
 `g1Transition_readAStart_unique` closes the dispatch predecessor at
-`bRepairDone`; `g1Transition_aInstallStart_unique` closes the residual-latch
-exit at the four operation latches or its own stationary boundary.  Together
-they prevent a residual-latched operand-B context from being read as a final
-result.
+`bRepairDone`; `g1Transition_aInstallStart_unique` now closes the residual
+boundary at exactly the four operation latches.  S4 removes its former self
+predecessor and sends it only to the installation scan, so a latched context is
+never read as a final result.
 
 `GateOneReadB` supplies aligned one-step adapters for both arms and the direct
 run-level `g1CS_step_readAStart_operandB_not_result`.  `GateOnePassAControl`
@@ -2284,7 +2285,8 @@ the existing A-specific rescan then reaches `aInstallStart` with
 `combineStart` carrying exactly `g1ResultCtx b`, so its filler residual is never
 consumed.  All new public totals fit the unchanged `g1Clock`.
 
-Operand 1 is unread: `aInstallStart` remains stationary.  There is still no
+At this historical prefix boundary operand 1 is unread; the stated run stops
+at `aInstallStart`.  S4 below activates the following step.  There is still no
 operand-1 tape selection, combine action, output write, `TM.accepts`, acceptance
 semantics, full-clock result, or OOB repair.  The expanded literal matrix
 was deferred from this slice and is delivered by S1c below; S1b2b itself added
@@ -2309,7 +2311,7 @@ the binary totals are `198` (`and`) and `218` (`or`), and the constant totals
 are `117` and `133`; every literal total is proved at most the unchanged
 `g1Clock`.
 
-The eight unary/binary runs end at exact stationary `aInstallStart`: heads
+The eight unary/binary prefix runs end at exact `aInstallStart`: heads
 `12`, `20`, `24` or `28`, initial canonical tape unchanged, exact residual,
 and operand-B latch retained.  The two values in the `input`/`not` pairs are
 facts about the operand-1 selection in the canonical request; pass A stops on
@@ -2660,10 +2662,9 @@ contracts.  The dormant writer's final row exits to reverse-aligned
 `aSeekOut .p3` after installing one cursor; S3b2a supplies that dedicated
 normal-walk boundary without changing the caller-supplied entry contract.
 
-`aInstallStart` remains its stationary self-loop.  Frame-level and executed
-closure theorems place every predecessor inside the dormant walk, so there is
-no live bridge and no route from `G1M.initialConfig`.  Initial-configuration
-activation remains S4.
+At the S3b1 checkpoint `aInstallStart` was a stationary self-loop and there was
+no live bridge.  S4 below deliberately supersedes only that fact; the atomic
+scan/probe/writer theorems remain the donors of the live composition.
 
 ## S3b2a dormant operand-A normal walk (2026-08-29)
 
@@ -2678,8 +2679,9 @@ a literal raw `1101` run and arbitrary extra sink-idle budget pinned.
 Caller-supplied macros prove the exact mixed-boundary seek, `index → spent`
 write, forward scan to `cursor`, normal turn, and `cursor → data b` restore.
 Normal restore ends at `aProbe`, the next-round boundary.  Exhaustion is a
-stationary explicit `aExh` endpoint.  `aInstallStart` remains idle and no live
-initial configuration enters the walk.
+stationary explicit `aExh` endpoint.  At this checkpoint `aInstallStart` was
+idle; S4 below later activates only the installation prefix and stops before
+any one of these normal-walk macros executes.
 
 S3b2b was explicitly deferred at this boundary; the dated successor slice
 below supplies it without activating the walk.  The S3b2a surface retains
@@ -2711,8 +2713,40 @@ wrappers for all 11 new source theorems, definition-only declaration probes,
 literal false/true final-writer runs and a literal 16-step
 `aExh → aRepairStart` run.  `AxiomsAudit` prints the same 11 direct roots.
 
-This is deliberately dormant.  `aInstallStart` remains its stationary idle
-handoff, no route from `G1M.initialConfig` enters any operand-A walk mode, and
-`aRepairStart` executes no repair sweep.  There is no invariant, iteration,
-driver, A-repair, result/combine/output row, acceptance theorem or semantic
-claim in S3b2b.
+This slice remains a caller-supplied dormant continuation.  S4 below reaches
+the post-writer `aSeekOut .p3` boundary from `G1M.initialConfig` but executes no
+seek, mark, iteration, terminal or repair macro.  `aRepairStart` still executes
+no repair sweep.  There is no driver, A-repair, result/combine/output row,
+acceptance theorem or semantic claim in S3b2b.
+
+## S4 live operand-A cursor installation (2026-08-29)
+
+**Classification: infrastructure, not P-vs-NP mainline progress.**  S4 makes
+one semantic switch only: `aInstallStart` now takes one stationary step into
+aligned `aInsSeek .p0`, preserving the head cell, canonical tape and complete
+latched context.  Its predecessor closure is exact (only the four operation
+latches enter it), and the operand-A walk-family entry closure names
+`aInstallStart` as the only new external door.  No fields, advice, runtime
+parameters or clock changes are introduced.
+
+`GateOneAWalkInstallAtoms` composes the merged pass-A residual boundary with
+the existing S3b1 scan, literal false/true probe/latch and four-cell reverse
+writer.  For nonempty `vals`, the exact endpoint is `aSeekOut .p3`, head on the
+last cell preceding data slot zero, with exactly that one `data` frame replaced
+by `cursor`.  The residual still records the tag and physically read operand-B
+value, while `vB` holds the probed operand-A value.  `aIns .p3` is the
+pre-writer latch boundary, not the post-writer endpoint.
+
+Generic real-initial capstones cover `input`/`not` and successful `and`/`or`
+routes.  Literal runs pin input-false (`131` steps), not-true (`171`),
+and-false (`216`) and or-true (`236`).  Every total fits the unchanged public
+`g1Clock`.  Canonical non-`const` requests permit empty data, so the unary
+input-empty request has an executable `118`-step real-initial path to `bOOB`,
+with its tape untouched.  A separate theorem records the precise reason a
+successful binary-read premise cannot coexist with empty `vals`.
+
+The writer's final existing row necessarily enters `aSeekOut .p3`; S4 stops
+there.  It executes no reverse seek, `index → spent` mark, forward cursor scan,
+turn, restore, iteration, terminal continuation or A-repair.  Const routing,
+malformed/reject behavior, operand-B execution, output and acceptance are
+unchanged and are not claimed here.

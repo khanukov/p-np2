@@ -5,8 +5,9 @@ import Complexity.TMVerifier.TuringToolkit.GateOneAWalkInstallAtoms
 # Dormant G1 operand-A normal and terminal walk
 
 **Progress classification: Infrastructure.**  Every execution theorem starts
-from a caller-supplied configuration.  `aInstallStart` stays idle, normal
-restore ends at `aProbe`, and terminal cleanup stops at the stationary local
+from a caller-supplied configuration.  S4 reaches the completed writer's
+`aSeekOut .p3` boundary but executes none of this module's normal
+walk rows.  Normal restore ends at `aProbe`, and terminal cleanup stops at the stationary local
 handoff `aRepairStart`.  No initial-configuration route, iteration or repair
 sweep is supplied here.
 -/

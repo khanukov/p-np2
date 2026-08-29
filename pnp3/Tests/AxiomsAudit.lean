@@ -1143,10 +1143,8 @@ open Pnp3.Magnification
 -- rejected.  `g1ResultCtx_eq_andFalse_res` records the one real aliasing the
 -- two-bit view creates and is the constraint S1b2 inherits.
 --
--- **Deliberately absent**: any operand-1 read, walk, invariant, repair or
--- out-of-range branch; any combine step or output write; any `TM.accepts`,
--- full-clock, verdict or acceptance-gate claim.  The real-initial activation
--- and residual-latching capstones are audited directly below.
+-- This section stops at the residual boundary.  S4's live installation entry,
+-- writer and OOB capstones are audited with the installation atoms below.
 #print axioms Internal.PsubsetPpoly.TM.G1Ctx.res_withRes
 #print axioms Internal.PsubsetPpoly.TM.G1Ctx.withRes_vB
 #print axioms Internal.PsubsetPpoly.TM.G1Ctx.withVB_res
@@ -1165,7 +1163,7 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1Complete_ne_aInstallStart
 #print axioms Internal.PsubsetPpoly.TM.g1AOpMode_const
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aOp
-#print axioms Internal.PsubsetPpoly.TM.g1Transition_aInstallStart_idle
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aInstallStart_live
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_readAStart_entry
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_readAStart_result
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_passA_door
@@ -1177,7 +1175,7 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1ATagRoute_rejectPath
 #print axioms Internal.PsubsetPpoly.TM.g1ATagRoute_unreachable
 #print axioms Internal.PsubsetPpoly.TM.g1CS_step_aOp
-#print axioms Internal.PsubsetPpoly.TM.g1CS_runConfig_aInstall_idle
+#print axioms Internal.PsubsetPpoly.TM.g1CS_step_aInstallStart
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aTagRescan_exact
 #print axioms Internal.PsubsetPpoly.TM.g1CS_passA_entry_exact
 #print axioms Internal.PsubsetPpoly.TM.g1CS_passA_entry_ctx
@@ -1187,12 +1185,16 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1AInstallConfig_head
 #print axioms Internal.PsubsetPpoly.TM.g1AInstallConfig_res
 #print axioms Internal.PsubsetPpoly.TM.g1AInstallConfig_vB
+#print axioms Internal.PsubsetPpoly.TM.g1AInstallSeekConfig_head
+#print axioms Internal.PsubsetPpoly.TM.g1AInstallSeekConfig_res
+#print axioms Internal.PsubsetPpoly.TM.g1AInstallSeekConfig_vB
 #print axioms Internal.PsubsetPpoly.TM.g1CombineConfig_ctx
 #print axioms Internal.PsubsetPpoly.TM.g1CS_activate_unary_exact
 #print axioms Internal.PsubsetPpoly.TM.g1CS_activate_binary_exact
 #print axioms Internal.PsubsetPpoly.TM.g1CS_activate_binary_not_result
 #print axioms Internal.PsubsetPpoly.TM.g1CS_activate_const_exact
 #print axioms Internal.PsubsetPpoly.TM.g1CS_passA_entry_initial_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aInstall_entry_initial_exact
 #print axioms Internal.PsubsetPpoly.TM.g1CS_install_unary_exact
 #print axioms Internal.PsubsetPpoly.TM.g1CS_install_binary_exact
 #print axioms Internal.PsubsetPpoly.TM.g1UActivatedSteps_le_clock
@@ -1243,9 +1245,10 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.and_false_no_wrong_result
 #print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.probe_clocks
 
--- S3b1 (2026-08-29), dormant operand-A installation atoms.  All twenty
--- public source theorems are direct roots.  Every execution theorem starts
--- from a caller-supplied configuration; `aInstallStart` remains idle.
+-- S4 (2026-08-29), live operand-A cursor installation.  The S3b1 atoms remain
+-- direct roots, followed by every live entry, real-initial, exact endpoint,
+-- OOB, clock, literal and no-wrong-exit theorem.  The writer stops at
+-- `aSeekOut .p3`; no normal-walk or repair step executes.
 #print axioms Internal.PsubsetPpoly.TM.g1Advance_aInstallAtoms_dormant
 #print axioms Internal.PsubsetPpoly.TM.g1Complete_aInstallAtoms_dormant
 #print axioms Internal.PsubsetPpoly.TM.g1Complete_aInstallAtoms_reserved
@@ -1254,7 +1257,7 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aIns_p2
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aIns_p1
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aIns_p0
-#print axioms Internal.PsubsetPpoly.TM.g1Transition_aInstallAtoms_dormant
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aInstallAtoms_entry_closure
 #print axioms Internal.PsubsetPpoly.TM.g1Advance_aInsSeek_of_skip
 #print axioms Internal.PsubsetPpoly.TM.g1Advance_aProbe_data
 #print axioms Internal.PsubsetPpoly.TM.g1Advance_aInsSeek_rows
@@ -1266,6 +1269,32 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aProbe_oob
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aInstall_reserved_1101_reject
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aInstall_cursor
+#print axioms Internal.PsubsetPpoly.TM.g1AInstallSkippedFrames_length
+#print axioms Internal.PsubsetPpoly.TM.g1APostWriterConfig_res
+#print axioms Internal.PsubsetPpoly.TM.g1APostWriterConfig_vB
+#print axioms Internal.PsubsetPpoly.TM.g1APostWriterConfig_mode
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aInstall_success_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aInstall_oob_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aCursor_unary_initial_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aCursor_binary_initial_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aInstall_unary_oob_initial_exact
+#print axioms Internal.PsubsetPpoly.TM.g1A_binary_success_not_empty
+#print axioms Internal.PsubsetPpoly.TM.g1AFirstCursorFrames_count_cursor
+#print axioms Internal.PsubsetPpoly.TM.g1APostWriterConfig_head
+#print axioms Internal.PsubsetPpoly.TM.g1APostWriterConfig_tape
+#print axioms Internal.PsubsetPpoly.TM.g1APostWriterConfig_no_wrong_exit
+#print axioms Internal.PsubsetPpoly.TM.g1AUnaryCursorSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1ABinaryCursorSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1AUnaryOOBSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aCursor_unary_no_wrong_exit
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aCursor_binary_no_wrong_exit
+#print axioms Internal.PsubsetPpoly.TM.G1ALiveInstallExamples.requests_canonical
+#print axioms Internal.PsubsetPpoly.TM.G1ALiveInstallExamples.input_false_cursor_exact
+#print axioms Internal.PsubsetPpoly.TM.G1ALiveInstallExamples.not_true_cursor_exact
+#print axioms Internal.PsubsetPpoly.TM.G1ALiveInstallExamples.and_false_cursor_exact
+#print axioms Internal.PsubsetPpoly.TM.G1ALiveInstallExamples.or_true_cursor_exact
+#print axioms Internal.PsubsetPpoly.TM.G1ALiveInstallExamples.input_empty_oob_exact
+#print axioms Internal.PsubsetPpoly.TM.G1ALiveInstallExamples.literal_clock_bounds
 
 -- S3b2a (2026-08-29): direct source roots for the dormant normal walk.
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameScanner.revWindowStop
@@ -1299,7 +1328,7 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aDec
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aTurn
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aRestore
-#print axioms Internal.PsubsetPpoly.TM.g1Transition_aWalk_dormant
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aWalk_entry_closure
 #print axioms Internal.PsubsetPpoly.TM.g1Advance_aFwd_of_skip
 #print axioms Internal.PsubsetPpoly.TM.G1ASeekOutSkip_ne_argSep
 #print axioms Internal.PsubsetPpoly.TM.G1ASeekInSkip_ne_index
@@ -1318,8 +1347,8 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_restore
 
 -- S3b2b (2026-08-29): all 11 direct source roots for the dormant terminal
--- continuation.  Every run is caller-supplied; `aInstallStart` remains idle,
--- `aRepairStart` is stationary, and no A-repair, driver or result row exists.
+-- continuation.  Every run here remains caller-supplied; `aRepairStart` is
+-- stationary, and no A-repair, driver or result row exists.
 #print axioms Internal.PsubsetPpoly.TM.g1AFinMode_ne_restore
 #print axioms Internal.PsubsetPpoly.TM.g1Advance_aTerminal_rows
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aRepairStart_idle

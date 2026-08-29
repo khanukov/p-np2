@@ -2693,9 +2693,10 @@ local `aRepairStart` handoff, after the merged normal modes.  The `aExh` boundar
 now re-reads its opening `argSep`, `aRet` crosses exactly the normal forward
 skip class (`spent`, `argSep`, `index`, `separator`, `data _`) to the cursor,
 and `aTurnFin` walks four cells left into the Boolean-selected final writer.
-That writer replaces `cursor` by `data ctx.vB`, preserves the complete context
-including its residual view, and arrives just after the restored frame at
-stationary `aRepairStart`.  No cursor remains on the exact list-backed tape.
+That writer replaces the designated `cursor` by `data ctx.vB`, preserves the
+complete context including its residual view, and arrives just after the
+restored frame at stationary `aRepairStart`.  The generic theorem makes no
+cursor-absence claim about its parameterized `pre` or `suffix` regions.
 
 The existing reject-aware reverse seek is unchanged: malformed, reserved and
 forbidden reverse windows still reject and remain in the existing sink.  The

@@ -49,6 +49,14 @@ The older bridge `bRoundStart` is now unreachable from the forward table
 (`g1_bRoundStart_unreachable`) and reads no frame at all
 (`g1_bRoundStart_stuck`), so nothing in this development claims that repeating
 the thirteen-step rewrite cycle addresses an operand-2 value.
+
+**The dormant pass-A rescan (S1b1).**  The last section adds a *separate* named
+table over the same prefix: `g1ATagRoute_advance` folds `g1TagRouteFrames r`
+from `aBof` into the operation latch `g1AOpMode r.tag`, with `const` rejecting.
+It re-points nothing — `g1RouteMode` and every live route above are untouched,
+`input`/`not` still end at `readAStart` and `readAStart` is still idle — and by
+`g1ATagRoute_unreachable` no route of this module can cross into the pass-A
+modes at all.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -398,6 +406,64 @@ theorem g1_insSeek_validPath (k : Nat) (rest : List G1Frame)
     G1ValidPath .bInsSeek (List.replicate k .index ++ .separator :: rest) :=
   g1ValidPath_run (by exact trivial) rfl k
     (g1ValidPath_cons (by exact trivial) rfl (by decide) hrest)
+
+/-! ## The dormant pass-A tag rescan, at frame level
+
+The pass-A entry reads the **same prefix** `g1TagRouteFrames r` as the pass-B
+rescan — the anchor and the unary tag run — but through the A-specific counters,
+so its `argSep` selects an operand-**1** operation (`g1AOpMode`) instead of an
+operand-2 regime.  `const` is the one tag with no A row: it is finished in pass
+B, and a `const` run folded through the A-counters rejects.
+
+Everything in this section is about `g1Advance`/`g1AdvanceList`, i.e. the
+**frame table**; no Turing machine occurs, and the executed counterparts live in
+`GateOnePassAControl`.  All four theorems are about a mode the live machine
+never reaches: the pass-B route below still ends at `readAStart`
+(`g1TagRoute_advance_unary`), `readAStart` is still idle, and nothing enters the
+pass-A family (`g1Transition_passA_closed`).  This section adds a *new named
+table*, it does not re-point `g1RouteMode`. -/
+
+/-- **The pass-A rescan folds the anchor and the tag run into the latch.** -/
+theorem g1ATagRoute_advance (r : G1Request) :
+    g1AdvanceList .aBof (g1TagRouteFrames r) = g1AOpMode r.tag := by
+  show g1AdvanceList .aBof
+    (.bof :: (List.replicate r.tag.units .tag ++ [.argSep])) = _
+  cases r.tag <;> rfl
+
+/-- **The pass-A rescan of a non-`const` tag is a valid path.** -/
+theorem g1ATagRoute_validPath (r : G1Request) (ht : r.tag ≠ .const) :
+    G1ValidPath .aBof (g1TagRouteFrames r) := by
+  show G1ValidPath .aBof
+    (.bof :: (List.replicate r.tag.units .tag ++ [.argSep]))
+  cases h : r.tag
+  case const => exact absurd h ht
+  all_goals (repeat refine ⟨by exact trivial, by decide, ?_⟩); trivial
+
+/-- **A `const` gate entering pass A rejects — in the frame table.**  `aTag2`
+has no `argSep` row, so the fold of a two-unit tag run through the A-counters
+falls through to the `reject` sink.  This is a `g1AdvanceList` equation: it
+fixes no configuration, head, tape or step count. -/
+theorem g1ATagRoute_advance_const (r : G1Request) (ht : r.tag = .const) :
+    g1AdvanceList .aBof (g1TagRouteFrames r) = .reject := by
+  rw [g1ATagRoute_advance, ht]; rfl
+
+/-- **The `const` pass-A rescan is a *rejecting path*, not merely a fold to
+`reject`.**  Every frame of `bof · tag · tag · argSep` is read in a forward mode
+and the last one completes into `reject`, which is exactly what the executed
+rejection scan of `GateOneValidation` consumes. -/
+theorem g1ATagRoute_rejectPath (r : G1Request) (ht : r.tag = .const) :
+    G1RejectPath .aBof (g1TagRouteFrames r) := by
+  have h : g1TagRouteFrames r = [G1Frame.bof, .tag, .tag, .argSep] := by
+    rw [g1TagRouteFrames, ht]; rfl
+  rw [h]
+  exact ⟨trivial, Or.inr ⟨trivial, Or.inr ⟨trivial, Or.inr ⟨trivial, Or.inl rfl⟩⟩⟩⟩
+
+/-- **The pass-A family is entered by no route of this module.**  Every route
+prefix here is folded from `readBStart`, `bScan` or `bInsSeek`, and the frame
+table cannot cross into the pass-A modes from any of them. -/
+theorem g1ATagRoute_unreachable (mode : G1Mode) (frame : G1Frame)
+    (hmode : ¬ G1PassAMode mode) : ¬ G1PassAMode (g1Advance mode frame) :=
+  fun h => hmode (g1Advance_passA mode frame h)
 
 theorem g1_bRoundStart_stuck : G1Stuck .bRoundStart := by decide
 

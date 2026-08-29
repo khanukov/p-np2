@@ -2150,6 +2150,97 @@ the **combine** step, the **output write**, `TM.accepts`, a full-clock or
 acceptance theorem, gate-semantics correctness *of the machine*, multi-gate
 composition, the `SLGate` bridge, and non-canonical or physically padded tapes.
 
+**S1b1: the dormant G1 pass-A control ABI, delivered (2026-08-29):**
+
+**Progress classification: Infrastructure.**
+
+The *calling convention* of pass A, and only the calling convention.  S1a made
+the residual a pure four-element type; this slice gives the fixed control the
+modes, frame rows, context views and executed atoms that the deferred operand-1
+pass will use — and proves that **the live machine cannot reach any of them**.
+No live route, step count, endpoint, clock or state field changes.
+
+* `GateOneControl.lean` — twelve new modes: the A-specific anchor read `aBof`,
+  the counters `aTag0 … aTag5`, the four operation latches
+  `aOpInput`/`aOpNot`/`aOpAnd`/`aOpOr` and the handoff `aInstallStart`.  The
+  frame rows are `aBof + bof ↦ aTag0`, `aTagk + tag ↦ aTag(k+1)` and the four
+  `argSep` rows selecting `g1AOpMode t`; `aTag2` (`const`) has **no** `argSep`
+  row and rejects.  `G1Ctx.res`/`G1Ctx.withRes` view the existing
+  `pass`/`crossed` pair as one `G1Residual` (`G1Ctx.withRes_res` is the
+  faithfulness round-trip, `G1Ctx.withRes_vB` keeps `vB` free), and
+  `g1ResultCtx` fixes the result convention S1b2 will read.  The latch row
+  `g1Transition_aOp` writes `g1Residual t ctx.vB` into those two bits and
+  installs it in the stationary `g1Transition_aInstallStart_idle`.
+* `GateOneRouting.lean` — the frame level of the pass-A rescan as a **separate
+  named table** over the same prefix: `g1ATagRoute_advance`,
+  `g1ATagRoute_validPath`, and the `const` rejection in both its fold form
+  (`g1ATagRoute_advance_const`) and its rejecting-path form
+  (`g1ATagRoute_rejectPath`).  `g1RouteMode` is **not** re-pointed.
+* `GateOnePassAControl.lean` (new) — the executed layer, entirely on
+  **caller-supplied** aligned configurations: `g1CS_step_aOp`,
+  `g1CS_runConfig_aInstall_idle`, the tag recount `g1CS_aTagRescan_exact`
+  (`4(u+2)` steps), the whole entry `g1CS_passA_entry_exact` (`4u+9` steps) and
+  the local `g1CS_passA_const_reject_exact` (`16` steps into the literal reject
+  sink), plus six all-literal probes — `input` (13 steps, head `0 ↦ 12`), `not`
+  (21, `0 ↦ 20`), `and` at both operand-2 values (25, `0 ↦ 24`), `or` (29,
+  `0 ↦ 28`) and the `const` rejection (16).  In every one of them the tape is
+  bit-for-bit the caller's and `vB` is untouched.
+
+**The slice is inert, and that is proved rather than asserted.**
+`g1Advance_passA` says no frame-table row crosses into the twelve-mode family
+`G1PassAMode`; `g1Transition_passA_closed` says no row of the *executed* control
+does either, so the twelve modes are an unreachable part of the control graph.
+(Their own exits are the `reject` sink and the `aInstallStart` self-loop; the
+family is not claimed to be closed in that direction.)  So every existing
+execution theorem — validation, rewind, the pass-B rescan, the cursor walk, the
+operand-2 repair sweep and all their literal probes — holds verbatim, and no run
+from `G1M.initialConfig` can enter pass A at all.
+
+**`readAStart` is still idle, and activation is deferred to S1b2.**
+`g1Transition_readAStart_idle` and `g1CS_runConfig_readA_idle` are still true
+and still present.  `g1Advance_eq_readAStart` enumerates the only two
+frame-table rows that produce `readAStart` — the `argSep` closing the pass-B tag
+run of `input` (`rTag1`) and of `not` (`rTag3`) — and those two, together with
+the two `const` literal rows, are exactly what **S1b2** must re-point through
+`readAResetStart` before it may turn `readAStart` into the dispatch on
+`ctx.pass` that reaches `aBof`.  This slice re-points nothing.
+
+**No new state, field, advice or clock.**  `G1Ctx` is the same three Booleans:
+`res`/`withRes` are a *view* of two bits that already existed, not a fourth
+field, and `g1Clock` is unchanged.  The `const` filler row of `g1Residual` is
+never semantically consumed — `g1AOpMode .const = .reject` matches the `aTag2`
+gap, and the executed `const` rejection is a **local** fact about a
+configuration nothing reaches, not a claim that the machine rejects `const`
+requests (their live route still ends at `combineStart` in `GateOneReadB`).
+
+**One constraint recorded for S1b2 and the deferred walk.**  Two of the four
+residuals set the `pass` bit, so at `and`/`vB = false` the install context is
+*literally* `g1ResultCtx false` (`g1ResultCtx_eq_andFalse_res`; the `or`/`true`
+companion agrees on `pass`).  All four two-bit patterns are in use, so
+re-encoding cannot avoid this: once `readAStart` reads `pass`, the operand-1
+walk must not return a latched residual through `bRepairDone → readAStart`, and
+needs its own context-normalising terminal.
+
+Pinned by `Tests/TMGateOneControlSurfaceTests.lean` and
+`Tests/TMGateOneRoutingSurfaceTests.lean` (extended) and
+`Tests/TMGateOnePassAControlSurfaceTests.lean` (new): `#check` pins for every
+new public declaration, plus exact theorem-contract wrappers for the complete
+dormant frame table, both closure theorems, the still-idle `readAStart` with its
+two producers, the latch tuple, the residual round-trip, the result-context
+aliasing, the frame-level rescan and the executed atoms.
+`Tests/AxiomsAudit.lean` prints the axioms of every new statement **directly**;
+each depends only on `propext`, `Classical.choice` and `Quot.sound`.  One new
+toolkit module and one new surface test are registered in `lakefile.lean`.
+
+**Explicitly deferred to S1b2 and later, and claimed nowhere here:** activating
+`readAStart`; re-pointing the `input`/`not`/`const` routes; the head-zero rewind
+into pass A; any run from `G1M.initialConfig` that reaches a pass-A mode; the
+operand-1 cursor walk, its invariant, its repair and its out-of-range branch.
+**Deferred further and claimed nowhere:** the **combine** step, the **output
+write**, `TM.accepts`, a full-clock or acceptance theorem, gate-semantics
+correctness *of the machine*, multi-gate composition, the `SLGate` bridge, and
+non-canonical or physically padded tapes.
+
 **T2a correction (2026-08-24).**  The first T2a head shipped a permissive
 forward table (`vTag` looping on every `tag`, `vArg1`/`vArg2` looping on every
 `index`) whose language was strictly larger than `G1Request.Canonical`, while

@@ -33,6 +33,15 @@ have no transition blocks of their own.  Execution lives in separate layers with
 their own surface entries.  End-to-end physical validation, rejection, rewind,
 and `readBStart` composition remain in their separate execution surface.
 
+S1b1 adds the **dormant** pass-A control ABI: the twelve pass-A modes, their
+frame rows, the residual view of the two spare context bits, the result
+convention and the operation latch.  Every one of those entries is pinned below,
+together with the two closure theorems (`g1Advance_passA`,
+`g1Transition_passA_closed`) that say nothing outside the family enters it.
+`readAStart` is **still idle** — `check_g1_readAStart_still_idle` pins that, and
+also enumerates the only two frame-table rows that produce it — so no live route
+changes and activation is deferred to S1b2.
+
 This is an audit surface: it pins public signatures, it does not prove
 anything new.
 -/
@@ -206,6 +215,39 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1FrameScanner_advanceList
 #check @g1FrameScanner_validPath
 #check @g1FrameScanner_frameLanguage_iff_decode
+
+-- S1b1, the **dormant** pass-A control ABI.  The residual view of the two spare
+-- context bits and the result convention, the two named pass-A states, the
+-- twelve-mode family predicate with its two closure theorems, the operation
+-- latch and the still-idle install handoff.  `readAStart` stays idle
+-- (`g1Transition_readAStart_idle` above); activation is S1b2.
+#check @g1ResPass
+#check @g1ResCrossed
+#check @G1Ctx.res
+#check @G1Ctx.withRes
+#check @G1Ctx.res_withRes
+#check @G1Ctx.withRes_vB
+#check @G1Ctx.withVB_res
+#check @G1Ctx.withRes_res
+#check @g1ResultCtx
+#check @g1ResultCtx_pass
+#check @g1ResultCtx_vB
+#check @g1ResultCtx_ne_entry
+#check @g1ResultCtx_eq_andFalse_res
+#check @g1ResultCtx_pass_eq_orTrue_res
+#check @g1ABofState
+#check @g1AInstallState
+#check @G1PassAMode
+#check @G1PassAMode.not_reject
+#check @g1Advance_passA
+#check @g1Complete_passA
+#check @g1Advance_eq_readAStart
+#check @g1AOpMode
+#check @g1AOpMode_const
+#check @g1Transition_aOp
+#check @g1Transition_aInstallStart_idle
+#check @g1Transition_passA_closed
+#check @g1Transition_aInstallStart_unique
 
 /-! ## Exact theorem-contract pins -/
 
@@ -545,5 +587,93 @@ theorem check_g1FrameScanner_scanFrames (n : Nat)
           ((pre ++ frames ++ suffix).flatMap G1Frame.bits))
         (g1FrameScanner.advanceList mode frames) ctx :=
   g1FrameScanner_scanFrames n pre frames suffix mode ctx hpath hsafe
+
+/-! ## The dormant pass-A control ABI (S1b1)
+
+Every row of the twelve-mode family, the two closure theorems that make it
+unreachable, and the still-idle `readAStart`. -/
+
+/-- **The complete dormant pass-A frame table.**  The anchor read, the five
+counter rows and the four `argSep` rows that select an operation latch — and the
+`aTag2` gap, which is why `const` rejects and why the `const` filler row of
+`g1Residual` is never consumed. -/
+theorem check_g1Advance_passA_table :
+    (g1Advance .aBof .bof = .aTag0 ∧ g1Advance .aTag0 .tag = .aTag1 ∧
+        g1Advance .aTag1 .tag = .aTag2 ∧ g1Advance .aTag2 .tag = .aTag3 ∧
+        g1Advance .aTag3 .tag = .aTag4 ∧ g1Advance .aTag4 .tag = .aTag5) ∧
+      (g1Advance .aTag1 .argSep = .aOpInput ∧
+        g1Advance .aTag3 .argSep = .aOpNot ∧
+        g1Advance .aTag4 .argSep = .aOpAnd ∧
+        g1Advance .aTag5 .argSep = .aOpOr) ∧
+      (g1Advance .aTag2 .argSep = .reject ∧
+        g1Advance .aTag5 .tag = .reject ∧
+        g1AOpMode .const = .reject) := by
+  refine ⟨⟨rfl, rfl, rfl, rfl, rfl, rfl⟩, ⟨rfl, rfl, rfl, rfl⟩, rfl, rfl, rfl⟩
+
+/-- **The four latches read nothing forward, and the install handoff is
+stuck.**  The pass-A anchor read and its counters, by contrast, are genuine
+forward modes. -/
+theorem check_g1Advance_passA_forward :
+    (G1ForwardMode .aBof ∧ G1ForwardMode .aTag0 ∧ G1ForwardMode .aTag5) ∧
+      (G1Stuck .aOpInput ∧ G1Stuck .aOpNot ∧ G1Stuck .aOpAnd ∧
+        G1Stuck .aOpOr ∧ G1Stuck .aInstallStart) := by
+  refine ⟨⟨trivial, trivial, trivial⟩, ?_⟩
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩ <;> decide
+
+/-- **The pass-A family is closed, at both levels.**  Neither the frame table
+nor the executed control can send a mode outside the family into it, which is
+what makes the whole slice inert. -/
+theorem check_g1_passA_closed :
+    (∀ (mode : G1Mode) (frame : G1Frame),
+        G1PassAMode (g1Advance mode frame) → G1PassAMode mode) ∧
+      (∀ (phase : Fin 1) (s : G1State) (scan : Bool),
+        G1PassAMode (g1Transition phase s scan).2.1.mode → G1PassAMode s.mode) :=
+  ⟨g1Advance_passA, fun phase s scan h => g1Transition_passA_closed phase s scan h⟩
+
+/-- **`readAStart` is still idle**, and exactly two frame-table rows produce it:
+the `argSep` closing the pass-B tag run of `input` and of `not`.  Those are the
+rows S1b2 has to re-point before it may read `ctx.pass` there. -/
+theorem check_g1_readAStart_still_idle (phase : Fin 1)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State .readAStart position b0 b1 b2 ctx) scan =
+        (0, g1ReadAState ctx, scan, .stay) ∧
+      ∀ (mode : G1Mode) (frame : G1Frame), g1Advance mode frame = .readAStart →
+        (mode = .rTag1 ∨ mode = .rTag3) ∧ frame = .argSep :=
+  ⟨g1Transition_readAStart_idle phase position b0 b1 b2 scan ctx,
+    g1Advance_eq_readAStart⟩
+
+/-- **The operation latch and the idle install handoff, pinned exactly.**  One
+stationary step writes the residual of `(t, ctx.vB)` into the two spare context
+bits and installs it in a state that never moves again. -/
+theorem check_g1Transition_aOp (phase : Fin 1) (t : G1Tag) (ht : t ≠ .const)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State (g1AOpMode t) position b0 b1 b2 ctx) scan =
+        (0, g1AInstallState (ctx.withRes (g1Residual t ctx.vB)), scan, .stay) ∧
+      g1Transition phase (g1State .aInstallStart position b0 b1 b2 ctx) scan =
+        (0, g1AInstallState ctx, scan, .stay) :=
+  ⟨g1Transition_aOp phase t ht position b0 b1 b2 scan ctx,
+    g1Transition_aInstallStart_idle phase position b0 b1 b2 scan ctx⟩
+
+/-- **The residual view is a faithful two-bit encoding that leaves `vB`
+alone.**  No field is added to `G1Ctx`: `res`/`withRes` read and write the
+existing `pass`/`crossed` pair. -/
+theorem check_G1Ctx_res_roundTrip (ctx : G1Ctx) (res : G1Residual) (b : Bool) :
+    (ctx.withRes res).res = res ∧ (ctx.withRes res).vB = ctx.vB ∧
+      ctx.withRes ctx.res = ctx ∧ (ctx.withVB b).res = ctx.res :=
+  ⟨G1Ctx.res_withRes ctx res, G1Ctx.withRes_vB ctx res, G1Ctx.withRes_res ctx,
+    G1Ctx.withVB_res ctx b⟩
+
+/-- **The result convention, and the aliasing it creates.**  An entry context is
+never a result context, but a *latched* one can be: the absorbing
+`and`/`vB = false` residual is literally `g1ResultCtx false`.  Harmless while
+`aInstallStart` self-loops and `readAStart` is idle; it is the constraint S1b2
+and the deferred operand-1 walk inherit. -/
+theorem check_g1ResultCtx_aliasing (b b' : Bool) :
+    g1ResultCtx b ≠ g1Ctx0.withVB b' ∧
+      (g1Ctx0.withVB false).withRes (g1Residual .and false) = g1ResultCtx false ∧
+      ((g1Ctx0.withVB true).withRes (g1Residual .or true)).pass =
+        (g1ResultCtx true).pass :=
+  ⟨g1ResultCtx_ne_entry b b', g1ResultCtx_eq_andFalse_res,
+    g1ResultCtx_pass_eq_orTrue_res⟩
 
 end Pnp3.Tests.TMGateOneControlSurface

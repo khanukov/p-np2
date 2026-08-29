@@ -32,6 +32,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOneRepairKernelExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneRepairDriver
 import Complexity.TMVerifier.TuringToolkit.GateOneRepairExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneIndexRound
+import Complexity.TMVerifier.TuringToolkit.GateOnePassAControl
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -1101,6 +1102,79 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.common_zero_arm
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.common_positive_arm
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.common_branch_clock
+
+-- S1b1, the **dormant** pass-A control ABI.  Twelve pass-A modes, the frame rows
+-- that join them, the residual view of the two spare context bits, the result
+-- convention, the operation latch, and the executed capstones of all of it on
+-- caller-supplied configurations.  Every public root of the slice is audited
+-- directly here, not only through the capstones that use it.
+--
+-- **The slice is inert, and that is proved, not asserted.**  `g1Advance_passA`
+-- rules out the frame table and `g1Transition_passA_closed` rules out the whole
+-- executed control, so no run that starts outside the twelve modes can reach
+-- them; `g1Transition_aInstallStart_idle` makes the install handoff a self-loop,
+-- so the family's only exits are that loop and the `reject` sink.
+-- `readAStart` is **still idle**
+-- (`g1Transition_readAStart_idle`, executed as `g1CS_runConfig_readA_idle`), and
+-- `g1Advance_eq_readAStart` enumerates the only two frame-table rows that
+-- produce it — the `argSep` closing the pass-B tag run of `input` and of `not` —
+-- which are exactly the rows S1b2 must re-point before it may read `ctx.pass`
+-- there.  No live route, step count or endpoint changes in this slice.
+--
+-- **No new state, field or advice.**  `res`/`withRes` are a *view* of the
+-- existing `pass`/`crossed` pair; `G1Ctx` is the same three Booleans, `vB` is
+-- untouched by the latch, and the machine keeps its one closed clock.  The
+-- `const` filler row of `g1Residual` is never consumed: `g1AOpMode .const` is
+-- `reject`, and `g1CS_passA_const_reject_exact` executes that — a *local* fact
+-- about a configuration nothing reaches, not a claim that `const` requests are
+-- rejected.  `g1ResultCtx_eq_andFalse_res` records the one real aliasing the
+-- two-bit view creates and is the constraint S1b2 inherits.
+--
+-- **Deliberately absent**: any operand-1 read, walk, invariant, repair or
+-- out-of-range branch; any combine step or output write; any `TM.accepts`,
+-- full-clock, verdict or acceptance-gate claim; and any run from
+-- `G1M.initialConfig` into the pass-A family, which is impossible in this slice.
+#print axioms Internal.PsubsetPpoly.TM.G1Ctx.res_withRes
+#print axioms Internal.PsubsetPpoly.TM.G1Ctx.withRes_vB
+#print axioms Internal.PsubsetPpoly.TM.G1Ctx.withVB_res
+#print axioms Internal.PsubsetPpoly.TM.G1Ctx.withRes_res
+#print axioms Internal.PsubsetPpoly.TM.g1ResultCtx_pass
+#print axioms Internal.PsubsetPpoly.TM.g1ResultCtx_vB
+#print axioms Internal.PsubsetPpoly.TM.g1ResultCtx_ne_entry
+#print axioms Internal.PsubsetPpoly.TM.g1ResultCtx_eq_andFalse_res
+#print axioms Internal.PsubsetPpoly.TM.g1ResultCtx_pass_eq_orTrue_res
+#print axioms Internal.PsubsetPpoly.TM.G1PassAMode.not_reject
+#print axioms Internal.PsubsetPpoly.TM.g1Advance_passA
+#print axioms Internal.PsubsetPpoly.TM.g1Complete_passA
+#print axioms Internal.PsubsetPpoly.TM.g1Advance_eq_readAStart
+#print axioms Internal.PsubsetPpoly.TM.g1AOpMode_const
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aOp
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aInstallStart_idle
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_readAStart_idle
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_passA_closed
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aInstallStart_unique
+#print axioms Internal.PsubsetPpoly.TM.g1ATagRoute_advance
+#print axioms Internal.PsubsetPpoly.TM.g1ATagRoute_validPath
+#print axioms Internal.PsubsetPpoly.TM.g1ATagRoute_advance_const
+#print axioms Internal.PsubsetPpoly.TM.g1ATagRoute_rejectPath
+#print axioms Internal.PsubsetPpoly.TM.g1ATagRoute_unreachable
+#print axioms Internal.PsubsetPpoly.TM.g1CS_step_aOp
+#print axioms Internal.PsubsetPpoly.TM.g1CS_runConfig_aInstall_idle
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aTagRescan_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_passA_entry_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_passA_entry_ctx
+#print axioms Internal.PsubsetPpoly.TM.g1CS_passA_const_reject_exact
+#print axioms Internal.PsubsetPpoly.TM.G1PassAControlExamples.examples_canonical
+#print axioms Internal.PsubsetPpoly.TM.G1PassAControlExamples.example_lengths
+#print axioms Internal.PsubsetPpoly.TM.G1PassAControlExamples.probe_safe
+#print axioms Internal.PsubsetPpoly.TM.G1PassAControlExamples.input_latch
+#print axioms Internal.PsubsetPpoly.TM.G1PassAControlExamples.not_latch
+#print axioms Internal.PsubsetPpoly.TM.G1PassAControlExamples.and_false_latch
+#print axioms Internal.PsubsetPpoly.TM.G1PassAControlExamples.and_true_latch
+#print axioms Internal.PsubsetPpoly.TM.G1PassAControlExamples.or_true_latch
+#print axioms Internal.PsubsetPpoly.TM.G1PassAControlExamples.const_reject
+#print axioms
+  Internal.PsubsetPpoly.TM.G1PassAControlExamples.latched_residuals_distinct
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

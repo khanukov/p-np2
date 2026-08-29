@@ -233,7 +233,7 @@ lean_lib PnP3 where
     -- **real** `G1M.initialConfig` onto the one canonical handoff
     -- `g1ReadAConfig r true` — `172 = 134 + 38`, `294 = 239 + 55` and
     -- `400 = 328 + 72` steps at `arg2 = 0, 1, 2` — with head, state, `vB`,
-    -- endpoint word, initial-tape identity, clock bound and idle projections,
+    -- endpoint word, initial-tape identity and clock-bound projections,
     -- and both arms of the common capstone.  The zero branch has no net tape
     -- change and an empty rewrite block;
     -- the positive branches consume and restore, witnessed at cells `28`/`32`.

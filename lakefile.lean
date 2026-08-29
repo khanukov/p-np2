@@ -268,6 +268,9 @@ lean_lib PnP3 where
     -- caller-supplied scan, probe/latch, OOB and four-cell cursor writer.
     -- `aInstallStart` remains idle; no seek, walk, repair or live route.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneAWalkInstallAtoms,
+    -- S3b2a (2026-08-29): dormant normal seek/mark/turn/restore only;
+    -- exhaustion stops locally and terminal S3b2b remains deferred.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneAWalkKernel,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -436,6 +439,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMGateOnePassAControlSurfaceTests,
     Glob.one `Tests.TMGateOnePassAEntrySurfaceTests,
     Glob.one `Tests.TMGateOneAWalkInstallAtomsSurfaceTests,
+    Glob.one `Tests.TMGateOneAWalkSurfaceTests,
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,
     Glob.one `Tests.TMGateOneReadBSurfaceTests,
     Glob.one `Tests.TMGateOneProbeInstallSurfaceTests,

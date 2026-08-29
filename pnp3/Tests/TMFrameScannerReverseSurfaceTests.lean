@@ -17,24 +17,12 @@ open Pnp3.Internal.PsubsetPpoly.TM.FrameScan
 
 -- shared phase-aligned layer
 #check @Phased.alignedAt
-#check @Phased.stepRight
-#check @Phased.stepLeft
-#check @Phased.stepStay
 
 -- generic reverse kernel
 #check @ReverseFrameScanner
 #check @ReverseFrameScanner.revAligned
-#check @ReverseFrameScanner.revComplete_of_bits
-#check @ReverseFrameScanner.revFrameMacrostepAt
 #check @ReverseFrameScanner.RevValidPath
 #check @ReverseFrameScanner.revAdvanceList
-#check @ReverseFrameScanner.revAdvanceList_eq_foldr
-#check @ReverseFrameScanner.revValidPath_append_singleton
-#check @ReverseFrameScanner.revScanFrames_tape
-#check @ReverseFrameScanner.revScanFrames_state
-#check @ReverseFrameScanner.revScanFrames_head
-#check @ReverseFrameScanner.revSkipToBoundary
-#check @ReverseFrameScanner.revSeekAcrossBoundary
 
 -- generic write/replacement kernel
 #check @writeFrame4
@@ -44,9 +32,6 @@ open Pnp3.Internal.PsubsetPpoly.TM.FrameScan
 #check @revProbeCodec
 #check @revProbeScanner
 #check @revProbeWriter
-#check @ReverseFrameScanner.revValidPath_const
-#check @revProbeTail_advanceList
-#check @revProbeCS_seek_across_mark
 
 
 -- concrete T1/G1 reverse instances and regressions

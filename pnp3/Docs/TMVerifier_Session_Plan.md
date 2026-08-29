@@ -2656,15 +2656,32 @@ decoded frames and all three reserved windows reject; a caller-supplied raw
 
 `GateOneAWalkInstallAtoms` proves exact caller-supplied scan, probe/latch, OOB
 and cursor-write macros with the complete head, tape, context, step and safety
-contracts.  The dormant writer's final row cycles to the same reverse-aligned
-`aIns .p3` state after installing one cursor; S3b2 will replace that boundary
-with its dedicated seek control.
+contracts.  The dormant writer's final row exits to reverse-aligned
+`aSeekOut .p3` after installing one cursor; S3b2a supplies that dedicated
+normal-walk boundary without changing the caller-supplied entry contract.
 
 `aInstallStart` remains its stationary self-loop.  Frame-level and executed
-closure theorems prove the five new modes cannot be entered from outside their
-family, so there is no live bridge and no route from `G1M.initialConfig`.
-`aSeekOut`/`aSeekIn`, mark/forward/turn/exhaustion/restore/terminal/repair modes,
-mixed-boundary seek and all walk or repair macros remain deferred to S3b2;
-initial-configuration activation remains S4.  The dated surface has one exact
-named wrapper per public source theorem and literal probes for every executable
-branch; `AxiomsAudit` roots all twenty public source theorems directly.
+closure theorems place every predecessor inside the dormant walk, so there is
+no live bridge and no route from `G1M.initialConfig`.  Initial-configuration
+activation remains S4.
+
+## S3b2a dormant operand-A normal walk (2026-08-29)
+
+**Classification: infrastructure, not P-vs-NP mainline progress.**  This slice
+adds only `aSeekOut`/`aSeekIn`, `aDec`, `aFwd`, `aTurn`, the local `aExh`
+boundary and `aRestoreFalse`/`aRestoreTrue`.  The shared reverse completion
+crosses the data/field suffix to the mixed `argSep` boundary, then crosses only
+`spent`; `index` selects `aDec` and the opening `argSep` selects `aExh`.
+Undecodable or reserved windows and forbidden blank/cursor frames reject, with
+a literal raw `1101` run and arbitrary extra sink-idle budget pinned.
+
+Caller-supplied macros prove the exact mixed-boundary seek, `index → spent`
+write, forward scan to `cursor`, normal turn, and `cursor → data b` restore.
+Normal restore ends at `aProbe`, the next-round boundary.  Exhaustion is a
+stationary explicit `aExh` endpoint.  `aInstallStart` remains idle and no live
+initial configuration enters the walk.
+
+S3b2b is explicitly deferred: there is no `aTurnFin`, `aFinFalse`/`aFinTrue`,
+`aRet`, `aRepairStart`, terminal cursor cleanup, or repair handoff in S3b2a.
+The dated surface gives all 49 new theorems named direct-root wrappers and
+literal normal/malformed probes; `AxiomsAudit` has the same 49 direct roots.

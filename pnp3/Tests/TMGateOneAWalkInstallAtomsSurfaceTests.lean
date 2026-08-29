@@ -72,13 +72,13 @@ theorem check_g1Transition_aIns_p1 (phase : Fin 1) (b0 b1 b2 scan : Bool)
 theorem check_g1Transition_aIns_p0 (phase : Fin 1) (b0 b1 b2 scan : Bool)
     (ctx : G1Ctx) :
     g1Transition phase (g1State .aIns .p0 b0 b1 b2 ctx) scan =
-      (0, g1AInsState ctx, false, .left) :=
+      (0, g1ASeekOutState ctx, false, .left) :=
   g1Transition_aIns_p0 phase b0 b1 b2 scan ctx
 
 theorem check_g1Transition_aInstallAtoms_dormant (phase : Fin 1) (s : G1State)
     (scan : Bool)
     (h : G1AInstallAtomMode (g1Transition phase s scan).2.1.mode) :
-    G1AInstallAtomMode s.mode :=
+    G1AWalkMode s.mode :=
   g1Transition_aInstallAtoms_dormant phase s scan h
 
 theorem check_g1Advance_aInsSeek_of_skip {frame : G1Frame}
@@ -171,7 +171,7 @@ theorem check_g1CS_aInstall_cursor (n : Nat) (pre suffix : List G1Frame)
         .aIns .p3 false false false ctx) 4 =
       g1AlignedConfig n (4 * pre.length - 1) (by omega)
         (g1ListTape ((pre ++ G1Frame.cursor :: suffix).flatMap G1Frame.bits))
-        .aIns .p3 false false false ctx :=
+        .aSeekOut .p3 false false false ctx :=
   g1CS_aInstall_cursor n pre suffix old ctx hpre hsafe
 
 /-! ## Literal caller-supplied nonvacuity probes -/
@@ -235,7 +235,7 @@ theorem literal_install_cursor (n : Nat) (hsafe : 8 < G1M.tapeLength n) :
           G1Frame.bits)) .aIns .p3 false false false ⟨false, true, true⟩) 4 =
       g1AlignedConfig n 3 (by omega)
         (g1ListTape ([G1Frame.bof, .cursor, .output false].flatMap G1Frame.bits))
-        .aIns .p3 false false false ⟨false, true, true⟩ := by
+        .aSeekOut .p3 false false false ⟨false, true, true⟩ := by
   simpa using g1CS_aInstall_cursor n [.bof] [.output false] (.data true)
     ⟨false, true, true⟩ (by decide) hsafe
 

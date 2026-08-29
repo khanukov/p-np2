@@ -22,7 +22,7 @@ transition tuples of the **operand-2 repair sweep** (the reverse scan
 terminal handoff, a `G1RepairSkip` frame continuing the scan, and the `reject`
 sink for every window it may not cross — the `spent ↦ index` writer
 `bRepairWrite`, its back-walk `bRepairBack`, its hop `bRepairHop` and the anchor
-dispatch `bRepairDone` into the still-idle `readAStart`), together with its
+dispatch `bRepairDone` into `readAStart`), together with its
 reverse frame table `g1RepairBackAdvance`/`g1RepairBackComplete` and the literal
 codewords that reject it — no *frame-table* row enters those five modes, and the
 only row that does is the `readAResetStart` bridge
@@ -33,14 +33,14 @@ have no transition blocks of their own.  Execution lives in separate layers with
 their own surface entries.  End-to-end physical validation, rejection, rewind,
 and `readBStart` composition remain in their separate execution surface.
 
-S1b1 adds the **dormant** pass-A control ABI: the twelve pass-A modes, their
+S1b1 introduced the then-dormant pass-A control ABI: the twelve pass-A modes, their
 frame rows, the residual view of the two spare context bits, the result
 convention and the operation latch.  Every one of those entries is pinned below,
-together with the two closure theorems (`g1Advance_passA`,
-`g1Transition_passA_closed`) that say nothing outside the family enters it.
+together with the frame-table closure and the executed one-door theorem
+(`g1Advance_passA`, `g1Transition_passA_door`).
 S1b2a re-points the two unary rows and both constant tuples through
-`readAResetStart`.  `readAStart` is **still idle** and no frame-table row
-produces it; activation is deferred to S1b2b.
+`readAResetStart`.  S1b2b activates `readAStart`; no frame-table row produces
+it and the repair terminal is its unique predecessor.
 
 This is an audit surface: it pins public signatures, it does not prove
 anything new.
@@ -85,7 +85,6 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1Transition_rewind_p1
 #check @g1Transition_rewind_p0_bof
 #check @g1Transition_rewind_p0_other
-#check @g1Transition_readAStart_idle
 #check @g1Transition_combineStart_idle
 #check @g1Transition_readAResetStart_bridge
 #check @g1Transition_bOOB_stable
@@ -216,11 +215,11 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1FrameScanner_validPath
 #check @g1FrameScanner_frameLanguage_iff_decode
 
--- S1b1, the **dormant** pass-A control ABI.  The residual view of the two spare
+-- The pass-A control ABI and its S1b2b activation.  The residual view of the two spare
 -- context bits and the result convention, the two named pass-A states, the
--- twelve-mode family predicate with its two closure theorems, the operation
--- latch and the still-idle install handoff.  `readAStart` stays idle
--- (`g1Transition_readAStart_idle` above); activation is S1b2b.
+-- twelve-mode family predicate with its frame-table closure and executed door,
+-- the operation latch, the idle install handoff and the live two-way
+-- `readAStart` dispatch.
 #check @g1ResPass
 #check @g1ResCrossed
 #check @G1Ctx.res
@@ -242,12 +241,14 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1Advance_passA
 #check @g1Complete_passA
 #check @g1_readAStart_unreachable
+#check @g1_aInstallStart_unreachable
+#check @g1Complete_ne_readAStart
+#check @g1Complete_ne_aInstallStart
 #check @g1AOpMode
 #check @g1AOpMode_const
 #check @g1Transition_aOp
 #check @g1Transition_aInstallStart_idle
-#check @g1Transition_passA_closed
-#check @g1Transition_aInstallStart_unique
+#check @g1Transition_passA_door
 
 /-! ## Exact theorem-contract pins -/
 
@@ -471,17 +472,12 @@ theorem check_g1Transition_bRepairWrite (phase : Fin 1) (b0 b1 b2 scan : Bool)
     g1Transition_bRepairBack phase .p3 b0 b1 b2 scan ctx,
     g1Transition_bRepairHop phase .p0 b0 b1 b2 scan ctx, rfl⟩
 
-/-- **The terminal dispatch, pinned exactly.**  It enters the *existing*
-`readAStart` handoff, which is still idle in this slice, with the tape, the head
-and the whole `G1Ctx` untouched. -/
+/-- **The repair terminal, pinned exactly.** -/
 theorem check_g1Transition_bRepairDone (phase : Fin 1)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
     g1Transition phase (g1State .bRepairDone position b0 b1 b2 ctx) scan =
-        (0, g1ReadAState ctx, scan, .stay) ∧
-      g1Transition phase (g1State .readAStart position b0 b1 b2 ctx) scan =
-        (0, g1ReadAState ctx, scan, .stay) :=
-  ⟨g1Transition_bRepairDone phase position b0 b1 b2 scan ctx,
-    g1Transition_readAStart_idle phase position b0 b1 b2 scan ctx⟩
+      (0, g1ReadAState ctx, scan, .stay) :=
+  g1Transition_bRepairDone phase position b0 b1 b2 scan ctx
 
 /-- **The bridge into the sweep, pinned exactly.**  `readAResetStart` is the
 one and only row outside the five repair modes that enters one: it writes back
@@ -588,12 +584,12 @@ theorem check_g1FrameScanner_scanFrames (n : Nat)
         (g1FrameScanner.advanceList mode frames) ctx :=
   g1FrameScanner_scanFrames n pre frames suffix mode ctx hpath hsafe
 
-/-! ## The dormant pass-A control ABI (S1b1)
+/-! ## The live pass-A control ABI (S1b2b)
 
-Every row of the twelve-mode family, the two closure theorems that make it
-unreachable, and the still-idle `readAStart`. -/
+Every row of the twelve-mode family, its closure against frame-table entry from
+outside, and its sole executed external door through live `readAStart`. -/
 
-/-- **The complete dormant pass-A frame table.**  The anchor read, the five
+/-- **The complete pass-A frame table.**  The anchor read, the five
 counter rows and the four `argSep` rows that select an operation latch — and the
 `aTag2` gap, which is why `const` rejects and why the `const` filler row of
 `g1Residual` is never consumed. -/
@@ -626,25 +622,47 @@ theorem check_g1Advance_passA_forward :
   refine ⟨⟨trivial, trivial, trivial⟩, ?_⟩
   refine ⟨?_, ?_, ?_, ?_, ?_⟩ <;> decide
 
-/-- **The pass-A family is closed, at both levels.**  Neither the frame table
-nor the executed control can send a mode outside the family into it, which is
-what makes the whole slice inert. -/
-theorem check_g1_passA_closed :
+/-- The frame table is closed and the executed family has only the live
+`readAStart` door. -/
+theorem check_g1_passA_door :
     (∀ (mode : G1Mode) (frame : G1Frame),
         G1PassAMode (g1Advance mode frame) → G1PassAMode mode) ∧
       (∀ (phase : Fin 1) (s : G1State) (scan : Bool),
-        G1PassAMode (g1Transition phase s scan).2.1.mode → G1PassAMode s.mode) :=
-  ⟨g1Advance_passA, fun phase s scan h => g1Transition_passA_closed phase s scan h⟩
+        G1PassAMode (g1Transition phase s scan).2.1.mode →
+          G1PassAMode s.mode ∨ s.mode = .readAStart) :=
+  ⟨g1Advance_passA, g1Transition_passA_door⟩
 
-/-- **`readAStart` is still idle**, and no frame-table row produces it. -/
-theorem check_g1_readAStart_still_idle (phase : Fin 1)
-    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+/-- The live entry branch preserves the scanned cell and context and keeps the
+head stationary while entering the A-specific anchor state. -/
+theorem check_g1Transition_readAStart_entry (phase : Fin 1)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx)
+    (hpass : ctx.pass = false) :
     g1Transition phase (g1State .readAStart position b0 b1 b2 ctx) scan =
-        (0, g1ReadAState ctx, scan, .stay) ∧
-      ∀ (mode : G1Mode) (frame : G1Frame),
-        g1Advance mode frame ≠ .readAStart :=
-  ⟨g1Transition_readAStart_idle phase position b0 b1 b2 scan ctx,
-    g1_readAStart_unreachable⟩
+      (0, g1ABofState ctx, scan, .stay) :=
+  g1Transition_readAStart_entry phase position b0 b1 b2 scan ctx hpass
+
+/-- The live result branch preserves the scanned cell and context and keeps the
+head stationary while entering the combine boundary. -/
+theorem check_g1Transition_readAStart_result (phase : Fin 1)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx)
+    (hpass : ctx.pass = true) :
+    g1Transition phase (g1State .readAStart position b0 b1 b2 ctx) scan =
+      (0, g1CombineState ctx, scan, .stay) :=
+  g1Transition_readAStart_result phase position b0 b1 b2 scan ctx hpass
+
+/-- The repair terminal is the exact and only predecessor of `readAStart`. -/
+theorem check_g1Transition_readAStart_unique (phase : Fin 1) (s : G1State)
+    (scan : Bool) (h : (g1Transition phase s scan).2.1.mode = .readAStart) :
+    s.mode = .bRepairDone :=
+  g1Transition_readAStart_unique phase s scan h
+
+/-- The four operation latches and the stationary boundary are the exact
+predecessors of `aInstallStart`. -/
+theorem check_g1Transition_aInstallStart_unique (phase : Fin 1) (s : G1State)
+    (scan : Bool) (h : (g1Transition phase s scan).2.1.mode = .aInstallStart) :
+    s.mode = .aOpInput ∨ s.mode = .aOpNot ∨ s.mode = .aOpAnd ∨
+      s.mode = .aOpOr ∨ s.mode = .aInstallStart :=
+  g1Transition_aInstallStart_unique phase s scan h
 
 /-- **The operation latch and the idle install handoff, pinned exactly.**  One
 stationary step writes the residual of `(t, ctx.vB)` into the two spare context
@@ -670,7 +688,7 @@ theorem check_G1Ctx_res_roundTrip (ctx : G1Ctx) (res : G1Residual) (b : Bool) :
 /-- **The result convention, and the aliasing it creates.**  An entry context is
 never a result context, but a *latched* one can be: the absorbing
 `and`/`vB = false` residual is literally `g1ResultCtx false`.  Harmless while
-`aInstallStart` self-loops and `readAStart` is idle; it is the constraint S1b2
+`aInstallStart` self-loops and cannot return to `readAStart`; it is the constraint S1b2
 and the deferred operand-1 walk inherit. -/
 theorem check_g1ResultCtx_aliasing (b b' : Bool) :
     g1ResultCtx b ≠ g1Ctx0.withVB b' ∧

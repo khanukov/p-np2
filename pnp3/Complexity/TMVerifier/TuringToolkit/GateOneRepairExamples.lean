@@ -39,10 +39,10 @@ Repair-1b's caller-supplied pass used a six-frame middle and `79` steps; this
 slice's real run uses a four-frame middle and `72` repair steps.  Only the words
 coincide.  No caller-supplied kernel probe is restated.
 
-**Explicitly deferred.**  Nothing here reads operand 1, activates `readAStart`,
-combines, writes the output frame or mentions `TM.accepts`: the three
-`readA_idle_after_*` theorems show the endpoint is a stationary handoff for the
-whole remaining budget.  Also absent and claimed nowhere: a full-clock theorem,
+**Explicitly deferred.**  Nothing here reads operand 1, combines, writes the
+output frame or mentions `TM.accepts`: the three repaired endpoints stop
+immediately before the live pass-A dispatch.  Also absent and claimed nowhere:
+a full-clock theorem,
 gate-semantics correctness, the acceptance gate, multi-gate composition, the
 specification-level bridge, and any literal probe of the unrepaired
 out-of-range boundary or of a non-canonical word.
@@ -252,16 +252,6 @@ theorem zero_repaired_clock :
   rw [← zeroExample_steps.2.1]
   exact g1ZPassASteps_le_clock g1ZeroExample
 
-/-- The endpoint is a **handoff**, not a continuation: it holds its state, head
-and tape for the whole remaining budget.  Operand 1 is not read. -/
-theorem readA_idle_after_zero (k : Nat) :
-    TM.runConfig (M := G1M)
-        (G1M.initialConfig (g1Point (encodeG1 g1ZeroExample))) (172 + k) =
-      g1ReadAConfig g1ZeroExample true := by
-  rw [runConfig_add, zero_repaired]
-  exact g1CS_runConfig_readA_idle _ _ _ _ _ k
-
-
 /-- The cumulative total, and its split into the merged `239`-step read and the
 `55`-step sweep. -/
 theorem oneExample_steps :
@@ -333,14 +323,6 @@ theorem one_repaired_clock :
     294 ≤ g1Clock (encodeG1 g1BReadExample).length := by
   rw [← oneExample_steps.1]
   exact g1BPassASteps_le_clock g1BReadExample
-
-theorem readA_idle_after_one (k : Nat) :
-    TM.runConfig (M := G1M)
-        (G1M.initialConfig (g1Point (encodeG1 g1BReadExample))) (294 + k) =
-      g1ReadAConfig g1BReadExample true := by
-  rw [runConfig_add, one_repaired]
-  exact g1CS_runConfig_readA_idle _ _ _ _ _ k
-
 
 theorem twoExample_steps :
     g1BPassASteps g1WalkExample = 400 ∧
@@ -420,14 +402,6 @@ theorem two_repaired_clock :
     400 ≤ g1Clock (encodeG1 g1WalkExample).length := by
   rw [← twoExample_steps.1]
   exact g1BPassASteps_le_clock g1WalkExample
-
-theorem readA_idle_after_two (k : Nat) :
-    TM.runConfig (M := G1M)
-        (G1M.initialConfig (g1Point (encodeG1 g1WalkExample))) (400 + k) =
-      g1ReadAConfig g1WalkExample true := by
-  rw [runConfig_add, two_repaired]
-  exact g1CS_runConfig_readA_idle _ _ _ _ _ k
-
 
 /-- The zero-index literal takes the `g1ZPassASteps` arm, the two others the
 `g1BPassASteps` arm. -/

@@ -8,8 +8,8 @@ import Complexity.TMVerifier.TuringToolkit.GateOneReadBExamples
 Import-side contracts for the T2b pass-B *execution* surface: exact
 `TM.runConfig` route capstones from the real initial configuration
 `G1M.initialConfig (g1Point (encodeG1 r))`, the `const` literal decode, the
-zero-index operand-2 read, the stable out-of-range boundary, the three remaining
-idle handoffs, the executed `readAResetStart` bridge into the repair sweep,
+zero-index operand-2 read, the stable out-of-range boundary, the live
+`readAStart` dispatch, the remaining stationary handoffs, and the executed `readAResetStart` bridge into the repair sweep,
 named per-route examples, the **installation scan** that the re-pointed
 positive-index row opens, and the thirteen-step rewrite cycle kept as an
 arbitrary-configuration regression.
@@ -17,7 +17,7 @@ arbitrary-configuration regression.
 S1b2a pins the exact one-step constant tuple and changes the unary/constant
 route capstones to the canonical `readAResetStart` boundary.  Their head-zero
 rewinds and real-initial repaired endpoints are pinned by the repair-driver
-surface; `readAStart` remains idle here.
+surface; the live one-step dispatch is pinned here.
 
 The initial-configuration capstones are scoped to the exact tape `encodeG1 r`.
 Local adapters intentionally use arbitrary aligned tapes; post-boundary
@@ -83,12 +83,48 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1CS_step_constLit
 #check @g1CS_step_store
 
--- The three remaining idle handoffs, and the executed `readAResetStart` bridge
+-- The live `readAStart`, the remaining idle handoffs, and the executed `readAResetStart` bridge
 -- that replaces the former `g1CS_runConfig_readAReset_idle`.
-#check @g1CS_runConfig_readA_idle
 #check @g1CS_runConfig_combine_idle
 #check @g1CS_runConfig_oob_sink
 #check @g1CS_step_readAReset_bridge
+
+/-! ## Exact live-dispatch theorem contracts -/
+
+/-- The aligned entry adapter preserves the exact head, tape and context. -/
+theorem check_g1CS_step_readAStart_entry (n h : Nat)
+    (hh : h < G1M.tapeLength n)
+    (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx)
+    (hpass : ctx.pass = false) :
+    TM.runConfig (M := G1M)
+        (g1AlignedConfig n h hh tape .readAStart .p0 false false false ctx) 1 =
+      g1AlignedConfig n h hh tape .aBof .p0 false false false ctx :=
+  g1CS_step_readAStart_entry n h hh tape ctx hpass
+
+/-- The aligned result adapter preserves the exact head, tape and context. -/
+theorem check_g1CS_step_readAStart_result (n h : Nat)
+    (hh : h < G1M.tapeLength n)
+    (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx)
+    (hpass : ctx.pass = true) :
+    TM.runConfig (M := G1M)
+        (g1AlignedConfig n h hh tape .readAStart .p0 false false false ctx) 1 =
+      g1AlignedConfig n h hh tape .combineStart .p0 false false false ctx :=
+  g1CS_step_readAStart_result n h hh tape ctx hpass
+
+/-- An operand-B context takes the exact entry step and cannot be mistaken for
+the result branch. -/
+theorem check_g1CS_step_readAStart_operandB_not_result (n h : Nat)
+    (hh : h < G1M.tapeLength n) (tape : Fin (G1M.tapeLength n) → Bool)
+    (b : Bool) :
+    TM.runConfig (M := G1M)
+        (g1AlignedConfig n h hh tape .readAStart .p0 false false false
+          (g1Ctx0.withVB b)) 1 =
+      g1AlignedConfig n h hh tape .aBof .p0 false false false
+        (g1Ctx0.withVB b) ∧
+      (TM.runConfig (M := G1M)
+        (g1AlignedConfig n h hh tape .readAStart .p0 false false false
+          (g1Ctx0.withVB b)) 1).state.snd.mode ≠ .combineStart :=
+  g1CS_step_readAStart_operandB_not_result n h hh tape b
 
 /-! ## The exact route capstones from the real initial configuration -/
 

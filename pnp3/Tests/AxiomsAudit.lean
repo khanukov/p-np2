@@ -313,7 +313,8 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_rewind_p1
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_rewind_p0_bof
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_rewind_p0_other
-#print axioms Internal.PsubsetPpoly.TM.g1Transition_readAStart_idle
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_readAStart_entry
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_readAStart_result
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_combineStart_idle
 -- `readAResetStart` is **no longer idle**: Repair-2a makes it the one-step bridge
 -- into the repair sweep, writing back what it scans and stepping one cell left
@@ -348,7 +349,7 @@ open Pnp3.Magnification
 -- `blank`, a leftover `cursor`, or one of the three reserved codes, which
 -- decode to nothing — enters the *existing* `reject` sink without moving, so
 -- the sweep can never cross malformed tape content.  `bRepairDone` enters
--- the *existing* idle `readAStart`; no frame-table row enters any of these five
+-- the `readAStart` boundary; no frame-table row enters any of these five
 -- modes, and the only row that does is the `readAResetStart` bridge above.
 #print axioms Internal.PsubsetPpoly.TM.g1RepairBackAdvance_of_skip
 #print axioms Internal.PsubsetPpoly.TM.g1RepairBackComplete_some
@@ -498,7 +499,9 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1_readB_steps_le_clock
 #print axioms Internal.PsubsetPpoly.TM.g1CS_readB_scan
 #print axioms Internal.PsubsetPpoly.TM.g1CS_runConfig_stable
-#print axioms Internal.PsubsetPpoly.TM.g1CS_runConfig_readA_idle
+#print axioms Internal.PsubsetPpoly.TM.g1CS_step_readAStart_entry
+#print axioms Internal.PsubsetPpoly.TM.g1CS_step_readAStart_result
+#print axioms Internal.PsubsetPpoly.TM.g1CS_step_readAStart_operandB_not_result
 #print axioms Internal.PsubsetPpoly.TM.g1CS_runConfig_combine_idle
 #print axioms Internal.PsubsetPpoly.TM.g1CS_step_readAReset_bridge
 #print axioms Internal.PsubsetPpoly.TM.g1CS_step_round_bridge
@@ -921,7 +924,7 @@ open Pnp3.Magnification
 -- is the kernel's unconstrained, never-read `tail`.
 -- **Every configuration is caller-supplied**: every probe starts from an
 -- explicit `g1AlignedConfig`, none mentions `G1M.initialConfig`, and
--- `pass_probe_idle` pins that the `readAStart` endpoint is still idle.
+-- the probe stops exactly at `readAStart`; no post-endpoint idle claim remains.
 #print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probeInputLen_eq
 #print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probe_safe
 #print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.probe_word_cells
@@ -952,7 +955,6 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.pass_probe_head
 #print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.pass_probe_tape
 #print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.pass_probe_ctx
-#print axioms Internal.PsubsetPpoly.TM.G1RepairKernelExamples.pass_probe_idle
 
 -- Repair-2a: the request-specific repair driver.  The real layout split
 -- `[bof] ++ g1RepairLeft ++ spent^s ++ g1RepairMid ++ g1RepairTail`, its
@@ -978,8 +980,8 @@ open Pnp3.Magnification
 -- `g1CS_readB_positive_oob_unrepaired` pins that it is stable for every extra
 -- budget, still carries `m` consumed units, and is a different state from the
 -- pass-A handoff.  No repair, no rejection, no verdict is claimed for it.
--- **Deliberately absent**: pass A (`readAStart` is still idle and operand 1 is
--- not read), combine, the output write, and any `TM.accepts`, verdict,
+-- **Deliberately absent from this older repair surface**: operand 1, combine,
+-- the output write, and any `TM.accepts`, verdict,
 -- full-clock, gate-semantics, acceptance-gate, multi-gate,
 -- specification-bridge or padded-tape claim.  The **all-literal** repaired runs
 -- from `G1M.initialConfig` are deferred in full to Repair-2b, whose module and
@@ -1023,7 +1025,7 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_readB_repaired_common_le_clock
 
 -- S1b2a route alignment: `input`/`not` and `const` now enter the canonical
--- Repair-2 rewind and reach head-zero idle `readAStart` from the real initial
+-- Repair-2 rewind and reach head-zero `readAStart` from the real initial
 -- configuration.  The constant carries `g1ResultCtx`; the filler residual is
 -- not evaluated.  Binary repaired endpoints and OOB behavior are unchanged.
 #print axioms Internal.PsubsetPpoly.TM.g1CS_route_rewind_exact
@@ -1044,7 +1046,7 @@ open Pnp3.Magnification
 -- steps, `⟨and, 0, 1, [false, true]⟩` in `294 = 239 + 55` and
 -- `⟨and, 0, 2, [false, true, true]⟩` in `400 = 328 + 72` — each with its head,
 -- control state, latched `vB`, endpoint word, initial-tape identity, clock
--- bound and `readAStart`-idle projection, plus both arms of the common capstone
+-- bound, plus both arms of the common capstone
 -- `g1CS_readB_repaired_common` on literals.
 -- **Three lengths are kept apart**: `probe_extents` pins the encoded input length
 -- (`44`, `52`, `60`), explicit validation frame-word extent (`48`, `56`, `64`,
@@ -1064,8 +1066,8 @@ open Pnp3.Magnification
 -- `GateOneInstallScanExamples.g1WalkExample`, with endpoint words from Repair-1b.
 -- `two_repaired_kernel_words` shows the machine reaches Repair-1b's
 -- caller-supplied words from the real initial configuration.
--- **Deliberately absent**: pass A (`readAStart` is still idle and operand 1 is
--- not read), combine, the output write, and any `TM.accepts`, verdict,
+-- **Deliberately absent from the repair-example roots**: operand 1, combine,
+-- the output write, and any `TM.accepts`, verdict,
 -- full-clock, gate-semantics, acceptance-gate, multi-gate,
 -- specification-bridge, out-of-range-repair, non-canonical-word or padded-tape
 -- claim.
@@ -1093,7 +1095,6 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.zero_repaired_tape
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.zero_repaired_no_net_change
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.zero_repaired_clock
-#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.readA_idle_after_zero
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.oneExample_steps
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.one_repaired
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.one_repaired_projections
@@ -1101,7 +1102,6 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.one_repaired_tape
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.one_repaired_cell28
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.one_repaired_clock
-#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.readA_idle_after_one
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.twoExample_steps
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.two_repaired
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.two_repaired_projections
@@ -1110,28 +1110,23 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.two_repaired_kernel_words
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.two_repaired_cell32
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.two_repaired_clock
-#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.readA_idle_after_two
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.common_arms_distinct
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.common_branch_literals
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.common_zero_arm
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.common_positive_arm
 #print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.common_branch_clock
 
--- S1b1, the **dormant** pass-A control ABI.  Twelve pass-A modes, the frame rows
+-- S1b2b, the live pass-A entry.  Twelve pass-A modes, the frame rows
 -- that join them, the residual view of the two spare context bits, the result
 -- convention, the operation latch, and the executed capstones of all of it on
--- caller-supplied configurations.  Every public root of the slice is audited
--- directly here, not only through the capstones that use it.
+-- caller-supplied configurations and from the real initial configuration.
+-- Every public root of the slice is audited directly here, not only through
+-- the capstones that use it.
 --
--- **The slice is inert, and that is proved, not asserted.**  `g1Advance_passA`
--- rules out the frame table and `g1Transition_passA_closed` rules out the whole
--- executed control, so no run that starts outside the twelve modes can reach
--- them; `g1Transition_aInstallStart_idle` makes the install handoff a self-loop,
--- so the family's only exits are that loop and the `reject` sink.
--- `readAStart` is **still idle**
--- (`g1Transition_readAStart_idle`, executed as `g1CS_runConfig_readA_idle`), and
--- `g1_readAStart_unreachable` records that S1b2a re-pointed the former unary
--- frame-table producers through `readAResetStart`.  Activation remains S1b2b.
+-- `g1Advance_passA` rules out frame-table entry from outside the family;
+-- `g1Transition_passA_door` names live `readAStart` as the sole external door,
+-- while the predecessor and install-exit theorems prevent residual contexts
+-- from being treated as results.
 --
 -- **No new state, field or advice.**  `res`/`withRes` are a *view* of the
 -- existing `pass`/`crossed` pair; `G1Ctx` is the same three Booleans, `vB` is
@@ -1144,8 +1139,8 @@ open Pnp3.Magnification
 --
 -- **Deliberately absent**: any operand-1 read, walk, invariant, repair or
 -- out-of-range branch; any combine step or output write; any `TM.accepts`,
--- full-clock, verdict or acceptance-gate claim; and any run from
--- `G1M.initialConfig` into the pass-A family, which is impossible in this slice.
+-- full-clock, verdict or acceptance-gate claim.  The real-initial activation
+-- and residual-latching capstones are audited directly below.
 #print axioms Internal.PsubsetPpoly.TM.G1Ctx.res_withRes
 #print axioms Internal.PsubsetPpoly.TM.G1Ctx.withRes_vB
 #print axioms Internal.PsubsetPpoly.TM.G1Ctx.withVB_res
@@ -1159,11 +1154,16 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1Advance_passA
 #print axioms Internal.PsubsetPpoly.TM.g1Complete_passA
 #print axioms Internal.PsubsetPpoly.TM.g1_readAStart_unreachable
+#print axioms Internal.PsubsetPpoly.TM.g1_aInstallStart_unreachable
+#print axioms Internal.PsubsetPpoly.TM.g1Complete_ne_readAStart
+#print axioms Internal.PsubsetPpoly.TM.g1Complete_ne_aInstallStart
 #print axioms Internal.PsubsetPpoly.TM.g1AOpMode_const
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aOp
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aInstallStart_idle
-#print axioms Internal.PsubsetPpoly.TM.g1Transition_readAStart_idle
-#print axioms Internal.PsubsetPpoly.TM.g1Transition_passA_closed
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_readAStart_entry
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_readAStart_result
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_passA_door
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_readAStart_unique
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aInstallStart_unique
 #print axioms Internal.PsubsetPpoly.TM.g1ATagRoute_advance
 #print axioms Internal.PsubsetPpoly.TM.g1ATagRoute_validPath
@@ -1176,6 +1176,22 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_passA_entry_exact
 #print axioms Internal.PsubsetPpoly.TM.g1CS_passA_entry_ctx
 #print axioms Internal.PsubsetPpoly.TM.g1CS_passA_const_reject_exact
+#print axioms Internal.PsubsetPpoly.TM.g1ABofConfig_head
+#print axioms Internal.PsubsetPpoly.TM.g1ABofConfig_ctx
+#print axioms Internal.PsubsetPpoly.TM.g1AInstallConfig_head
+#print axioms Internal.PsubsetPpoly.TM.g1AInstallConfig_res
+#print axioms Internal.PsubsetPpoly.TM.g1AInstallConfig_vB
+#print axioms Internal.PsubsetPpoly.TM.g1CombineConfig_ctx
+#print axioms Internal.PsubsetPpoly.TM.g1CS_activate_unary_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_activate_binary_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_activate_binary_not_result
+#print axioms Internal.PsubsetPpoly.TM.g1CS_activate_const_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_passA_entry_initial_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_install_unary_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_install_binary_exact
+#print axioms Internal.PsubsetPpoly.TM.g1UActivatedSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1BActivatedSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1ConstActivatedSteps_le_clock
 #print axioms Internal.PsubsetPpoly.TM.G1PassAControlExamples.examples_canonical
 #print axioms Internal.PsubsetPpoly.TM.G1PassAControlExamples.example_lengths
 #print axioms Internal.PsubsetPpoly.TM.G1PassAControlExamples.probe_safe

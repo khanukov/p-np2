@@ -10,7 +10,7 @@ words and their `spent`/`cursor`/`index` counts, the three-way length
 distinction, the closed sweep cost at `s = 0, 1, 2` with its split, and the
 three exact `G1M` runs **from the real `G1M.initialConfig`** — `172` steps at
 `arg2 = 0`, `294` at `arg2 = 1`, `400` at `arg2 = 2` — with their head, state,
-`vB`, endpoint-word, initial-tape, cell-level, clock and idle projections, plus
+`vB`, endpoint-word, initial-tape, cell-level and clock projections, plus
 both arms of the common capstone on literals.
 
 **Three lengths, kept apart.**  `check_probe_extents` restates the encoded
@@ -188,14 +188,6 @@ theorem check_zero_repaired_clock :
       172 ≤ g1Clock (encodeG1 g1ZeroExample).length :=
   zero_repaired_clock
 
-/-- The endpoint is a **handoff**: it holds for the whole remaining budget, so
-operand 1 is never read. -/
-theorem check_readA_idle_after_zero (k : Nat) :
-    TM.runConfig (M := G1M)
-        (G1M.initialConfig (g1Point (encodeG1 g1ZeroExample))) (172 + k) =
-      g1ReadAConfig g1ZeroExample true :=
-  readA_idle_after_zero k
-
 /-! ## `⟨and, 0, 1, [false, true]⟩`: one consumed unit repaired -/
 
 theorem check_oneExample_steps :
@@ -255,12 +247,6 @@ theorem check_one_repaired_cell28 :
 theorem check_one_repaired_clock :
     294 ≤ g1Clock (encodeG1 g1BReadExample).length :=
   one_repaired_clock
-
-theorem check_readA_idle_after_one (k : Nat) :
-    TM.runConfig (M := G1M)
-        (G1M.initialConfig (g1Point (encodeG1 g1BReadExample))) (294 + k) =
-      g1ReadAConfig g1BReadExample true :=
-  readA_idle_after_one k
 
 /-! ## `⟨and, 0, 2, [false, true, true]⟩`: two consumed units repaired -/
 
@@ -323,12 +309,6 @@ theorem check_two_repaired_cell32 :
 theorem check_two_repaired_clock :
     400 ≤ g1Clock (encodeG1 g1WalkExample).length :=
   two_repaired_clock
-
-theorem check_readA_idle_after_two (k : Nat) :
-    TM.runConfig (M := G1M)
-        (G1M.initialConfig (g1Point (encodeG1 g1WalkExample))) (400 + k) =
-      g1ReadAConfig g1WalkExample true :=
-  readA_idle_after_two k
 
 /-! ## Both arms of the common capstone, on literals -/
 

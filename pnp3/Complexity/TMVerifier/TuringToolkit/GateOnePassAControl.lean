@@ -1,29 +1,15 @@
-import Complexity.TMVerifier.TuringToolkit.GateOneReadB
+import Complexity.TMVerifier.TuringToolkit.GateOneRepairDriver
 
 /-!
-# G1 pass A: the executed capstones of the **dormant** control ABI
+# G1 pass A: live entry activation and residual latch
 
 **Progress classification: Infrastructure.**
 
-The S1b1 slice declares the pass-A calling convention — twelve modes, the
-residual view of the two spare context bits, and the frame rows that connect
-them — and this module *executes* it.  Every run below starts from a
-**caller-supplied** aligned configuration: nothing here starts from
-`G1M.initialConfig`, and nothing can, because the live machine cannot reach a
-single one of these modes.
-
-**Why "dormant" is a proved word, not a label.**
-
-* `g1Advance_passA` — no frame-table row crosses into the pass-A family;
-* `g1Transition_passA_closed` — no row of the executed control does either;
-* `g1Transition_readAStart_idle` — `readAStart`, the handoff S1b2b will turn into
-  the dispatch that *does* reach `aBof`, is still a stationary self-loop, and
-  `g1CS_runConfig_readA_idle` of `GateOneReadB` executes that.
-
-So the four capstones here are exact statements about configurations a caller
-writes down, and they change no existing run: the validation scan, the pass-B
-rescan, the cursor walk and the operand-2 repair sweep all execute exactly as
-before.
+S1b2b activates the S1b1 calling convention.  `readAStart` now dispatches an
+entry context to `aBof` and a result context to `combineStart`.  The existing
+caller-supplied rescan theorems remain reusable, and this module composes them
+with the merged unary, constant and binary repaired routes from the real
+`G1M.initialConfig`.
 
 **The four capstones**, for `u = r.tag.units`:
 
@@ -42,12 +28,10 @@ latch untouched — it is the deferred walk's value slot — and only the pair
 **Explicitly deferred and claimed nowhere.**  Operand 1 is not read: the install
 handoff self-loops (`g1CS_runConfig_aInstall_idle`).  There is no operand-1
 walk, invariant, repair or out-of-range branch, no combine step, no output
-write, no `TM.accepts`, no full-clock and no acceptance-gate claim, and no
-statement at all about a run from the real initial configuration.  The `const`
-rejection is a *local* fact about a configuration nothing reaches; it is not a
-claim that the machine rejects `const` requests.  Their live pass-B route
-carries `g1ResultCtx b` through the common repair rewind and stops at the
-still-idle `readAStart` boundary.
+write, no `TM.accepts`, no full-clock and no acceptance-gate claim.  The
+`const` rejection is a *local* fact about an `aBof` configuration its real
+route never reaches; the result-ready route bypasses pass A and reaches
+`combineStart` carrying `g1ResultCtx b`.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -88,7 +72,7 @@ theorem g1CS_step_aOp (n h : Nat) (hh : h < G1M.tapeLength n)
   rwa [writeCell_self] at hstep
 
 /-- **The pass-A install handoff is idle**: it holds its state, head and tape for
-the whole remaining budget.  This is the honest boundary of the dormant entry —
+the whole remaining budget.  This is the honest boundary of the live entry —
 operand 1 is not read — and it is also what makes a latched residual harmless,
 since the latched context never moves on to anything that reads `pass`. -/
 theorem g1CS_runConfig_aInstall_idle (n h : Nat) (hh : h < G1M.tapeLength n)
@@ -101,7 +85,7 @@ theorem g1CS_runConfig_aInstall_idle (n h : Nat) (hh : h < G1M.tapeLength n)
     (fun phase scan => g1Transition_aInstallStart_idle phase .p0 false false
       false scan ctx) k
 
-/-! ## The dormant rescan, on a caller-supplied frame word
+/-! ## The pass-A rescan, on a caller-supplied frame word
 
 The A-counters read the same prefix `g1TagRouteFrames r` the pass-B rescan
 reads — the anchor and the unary tag run — so the runs below are the generic
@@ -141,7 +125,7 @@ theorem g1CS_aTagRescan_exact (n : Nat) (pre suffix : List G1Frame)
     by rw [hlen]]
   exact hscan
 
-/-- **The whole dormant pass-A entry, executed.**  Exactly `4u + 9` genuine
+/-- **The whole pass-A entry, executed.**  Exactly `4u + 9` genuine
 steps recount the tag run and latch `g1Residual r.tag ctx.vB` into the two spare
 context bits, stopping on the first cell after the `argSep` that closes the run
 — the first cell of the operand-1 field — with the tape bit-for-bit the
@@ -171,7 +155,7 @@ theorem g1CS_passA_entry_ctx (r : G1Request) (ctx : G1Ctx) :
       (ctx.withRes (g1Residual r.tag ctx.vB)).vB = ctx.vB :=
   ⟨G1Ctx.res_withRes ctx _, rfl⟩
 
-/-- **The `const` rescan of the dormant entry rejects, executed.**  From the
+/-- **The local `const` pass-A rescan rejects, executed.**  From the
 anchor read `aBof` — in *any* context — exactly `16` genuine steps (four frames,
 `bof · tag · tag · argSep`) drive the machine into the literal `g1RejectState`
 with the tape bit-for-bit the caller's.  This is the executed counterpart of the
@@ -179,9 +163,8 @@ frame-table equation `g1ATagRoute_advance_const`.
 
 **It is a *local* rejection and nothing more.**  The starting configuration is
 one nothing reaches: a `const` request's live route is decided in pass B,
-rewinds through `readAResetStart`, and ends at idle `readAStart`
-(`GateOneRepairDriver.g1CS_const_repaired_exact`); the pass-A family is
-unreachable anyway.  Nothing here says a `const` request is
+  rewinds through `readAResetStart`, and takes the result branch to
+  `combineStart` (`g1CS_activate_const_exact`).  Nothing here says a `const` request is
 rejected by the machine; it says the A-counters have no `const` row,
 physically — which is exactly why the `const` filler row of `g1Residual` is
 never consumed. -/
@@ -209,12 +192,192 @@ theorem g1CS_passA_const_reject_exact (n : Nat) (pre suffix : List G1Frame)
   rw [hrun]
   exact ⟨rfl, rfl⟩
 
+/-! ## Live activation from the real initial configuration -/
+
+/-- The exact live entry boundary: head zero on the initial tape, with the
+operand-B value still in the non-result context. -/
+def g1ABofConfig (r : G1Request) (b : Bool) :
+    Configuration (M := G1M) (encodeG1 r).length :=
+  g1AlignedConfig (encodeG1 r).length 0 (g1_route_lt_tapeLength r 0 (by omega))
+    (G1M.initialConfig (g1Point (encodeG1 r))).tape
+    .aBof .p0 false false false (g1Ctx0.withVB b)
+
+/-- The exact pass-A install boundary.  Operand 1 is still unread; its unary
+residual is latched and the operand-B value remains in `vB`. -/
+def g1AInstallConfig (r : G1Request) (b : Bool) :
+    Configuration (M := G1M) (encodeG1 r).length :=
+  g1AlignedConfig (encodeG1 r).length (4 * (r.tag.units + 2))
+    (g1_route_lt_tapeLength r _ (by omega))
+    (G1M.initialConfig (g1Point (encodeG1 r))).tape
+    .aInstallStart .p0 false false false
+    ((g1Ctx0.withVB b).withRes (g1Residual r.tag b))
+
+/-- The exact result-ready boundary of the `const` bypass. -/
+def g1CombineConfig (r : G1Request) (b : Bool) :
+    Configuration (M := G1M) (encodeG1 r).length :=
+  g1AlignedConfig (encodeG1 r).length 0 (g1_route_lt_tapeLength r 0 (by omega))
+    (G1M.initialConfig (g1Point (encodeG1 r))).tape
+    .combineStart .p0 false false false (g1ResultCtx b)
+
+@[simp] theorem g1ABofConfig_head (r : G1Request) (b : Bool) :
+    ((g1ABofConfig r b).head : Nat) = 0 := rfl
+
+@[simp] theorem g1ABofConfig_ctx (r : G1Request) (b : Bool) :
+    (g1ABofConfig r b).state.snd.ctx = g1Ctx0.withVB b := rfl
+
+@[simp] theorem g1AInstallConfig_head (r : G1Request) (b : Bool) :
+    ((g1AInstallConfig r b).head : Nat) = 4 * (r.tag.units + 2) := rfl
+
+@[simp] theorem g1AInstallConfig_res (r : G1Request) (b : Bool) :
+    (g1AInstallConfig r b).state.snd.ctx.res = g1Residual r.tag b := by
+  simp [g1AInstallConfig, g1AlignedConfig, g1AlignedConfigQ, g1State]
+
+@[simp] theorem g1AInstallConfig_vB (r : G1Request) (b : Bool) :
+    (g1AInstallConfig r b).state.snd.ctx.vB = b := rfl
+
+@[simp] theorem g1CombineConfig_ctx (r : G1Request) (b : Bool) :
+    (g1CombineConfig r b).state.snd.ctx = g1ResultCtx b := rfl
+
+/-- The three repaired-route totals, extended by exactly the one live dispatch
+step. -/
+def g1UActivatedSteps (r : G1Request) : Nat := g1UReadASteps r + 1
+def g1BActivatedSteps (r : G1Request) : Nat :=
+  (if r.arg2 = 0 then g1ZPassASteps r else g1BPassASteps r) + 1
+def g1ConstActivatedSteps (r : G1Request) : Nat := g1ConstReadASteps r + 1
+
+/-- Unary repaired routes take the live entry branch in exactly one more step. -/
+theorem g1CS_activate_unary_exact (r : G1Request) (hc : r.Canonical)
+    (ht : r.tag = .input ∨ r.tag = .not) :
+    TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1UActivatedSteps r) = g1ABofConfig r false := by
+  rw [g1UActivatedSteps, runConfig_add,
+    g1CS_readA_unary_repaired_exact r hc ht]
+  exact g1CS_step_readAStart_entry _ _ _ _ _ rfl
+
+/-- Every successful binary repaired route takes the entry branch in exactly
+one more step; the operand-B value cannot be delivered to `combineStart`. -/
+theorem g1CS_activate_binary_exact (r : G1Request) (hc : r.Canonical)
+    (ht : r.tag = .and ∨ r.tag = .or) (b : Bool)
+    (hb : r.vals[r.arg2]? = some b) :
+    TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1BActivatedSteps r) = g1ABofConfig r b := by
+  rw [g1BActivatedSteps, runConfig_add,
+    g1CS_readB_repaired_common r hc ht b hb]
+  exact g1CS_step_readAStart_entry _ _ _ _ _ rfl
+
+/-- Run-level no-wrong-exit closure: a successful operand-B route is at the
+pass-A anchor scan after activation, never at the final-result boundary. -/
+theorem g1CS_activate_binary_not_result (r : G1Request) (hc : r.Canonical)
+    (ht : r.tag = .and ∨ r.tag = .or) (b : Bool)
+    (hb : r.vals[r.arg2]? = some b) :
+    (TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1BActivatedSteps r)).state.snd.mode = .aBof ∧
+      (TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1BActivatedSteps r)).state.snd.mode ≠ .combineStart := by
+  rw [g1CS_activate_binary_exact r hc ht b hb]
+  exact ⟨rfl, fun h => G1Mode.noConfusion h⟩
+
+/-- A repaired `const` route carries `g1ResultCtx` and takes the other branch
+in exactly one more step.  It never enters the pass-A scan. -/
+theorem g1CS_activate_const_exact (r : G1Request) (hc : r.Canonical)
+    (ht : r.tag = .const) (b : Bool) (hs : r.spec = some b) :
+    TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1ConstActivatedSteps r) = g1CombineConfig r b := by
+  rw [g1ConstActivatedSteps, runConfig_add,
+    g1CS_const_repaired_exact r hc ht b hs]
+  exact g1CS_step_readAStart_result _ _ _ _ _ rfl
+
+/-- The pass-A scan, reached from the live entry, latches the exact
+residual on the real initial tape without reading operand 1. -/
+theorem g1CS_passA_entry_initial_exact (r : G1Request) (ht : r.tag ≠ .const)
+    (b : Bool) :
+    TM.runConfig (M := G1M) (g1ABofConfig r b)
+        (4 * (r.tag.units + 2) + 1) = g1AInstallConfig r b := by
+  have h := g1CS_passA_entry_exact (encodeG1 r).length []
+    (g1TagRouteRest r) r ht (g1Ctx0.withVB b)
+    (by simpa using g1_route_lt_tapeLength r (r.tag.units + 2) (by omega))
+  rw [List.nil_append, g1TagRoute_split] at h
+  have htape := g1ListTape_validation_eq_initial r
+  simp only [g1ValidationFrames] at htape
+  rw [htape] at h
+  simpa only [g1ABofConfig, g1AInstallConfig, List.length_nil, Nat.zero_add,
+    G1Ctx.withVB_vB] using h
+
+/-- Real unary routes reach the exact install boundary with their residual
+latched and operand 1 unread. -/
+theorem g1CS_install_unary_exact (r : G1Request) (hc : r.Canonical)
+    (ht : r.tag = .input ∨ r.tag = .not) :
+    TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1UActivatedSteps r + (4 * (r.tag.units + 2) + 1)) =
+      g1AInstallConfig r false := by
+  rw [runConfig_add, g1CS_activate_unary_exact r hc ht]
+  exact g1CS_passA_entry_initial_exact r
+    (by rcases ht with h | h <;> rw [h] <;> decide) false
+
+/-- Real successful binary routes reach the same exact install boundary with
+the residual selected by the physically read operand-B value. -/
+theorem g1CS_install_binary_exact (r : G1Request) (hc : r.Canonical)
+    (ht : r.tag = .and ∨ r.tag = .or) (b : Bool)
+    (hb : r.vals[r.arg2]? = some b) :
+    TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1BActivatedSteps r + (4 * (r.tag.units + 2) + 1)) =
+      g1AInstallConfig r b := by
+  rw [runConfig_add, g1CS_activate_binary_exact r hc ht b hb]
+  exact g1CS_passA_entry_initial_exact r
+    (by rcases ht with h | h <;> rw [h] <;> decide) b
+
+private theorem g1PAClock_sq (k : Nat) :
+    (k + 1) ^ 2 = k ^ 2 + (2 * k + 1) := by
+  rw [Nat.pow_two, Nat.pow_two, Nat.mul_add, Nat.add_mul, Nat.add_mul]
+  omega
+
+private theorem g1PAClock_quad (N : Nat) :
+    g1Clock (4 * N) = 8192 * N ^ 2 + (4096 * N + 1024) := by
+  rw [g1Clock, g1PAClock_sq, Nat.mul_pow, show (4 : Nat) ^ 2 = 16 from rfl]
+  omega
+
+private theorem g1PAClock_eq (r : G1Request) :
+    g1Clock (encodeG1 r).length =
+      8192 * (r.tag.units + r.arg1 + r.arg2 + r.vals.length + 6) ^ 2 +
+        (4096 * (r.tag.units + r.arg1 + r.arg2 + r.vals.length + 6) + 1024) := by
+  rw [encodeG1_length r, g1PAClock_quad]
+
+theorem g1UActivatedSteps_le_clock (r : G1Request) :
+    g1UActivatedSteps r + (4 * (r.tag.units + 2) + 1) ≤
+      g1Clock (encodeG1 r).length := by
+  have hlen := encodeG1_length r
+  rw [g1PAClock_eq]
+  simp only [g1UActivatedSteps, g1UReadASteps, g1ReadARouteSteps,
+    g1ReadBHandoffSteps, g1AUnaryRewindSteps, hlen]
+  omega
+
+theorem g1ConstActivatedSteps_le_clock (r : G1Request) :
+    g1ConstActivatedSteps r ≤ g1Clock (encodeG1 r).length := by
+  have hlen := encodeG1_length r
+  rw [g1PAClock_eq]
+  simp only [g1ConstActivatedSteps, g1ConstReadASteps, g1ConstRouteSteps,
+    g1FieldRouteSteps, g1ReadBHandoffSteps, g1AConstRewindSteps, hlen]
+  omega
+
+theorem g1BActivatedSteps_le_clock (r : G1Request) :
+    g1BActivatedSteps r + (4 * (r.tag.units + 2) + 1) ≤
+      g1Clock (encodeG1 r).length := by
+  have hlen := encodeG1_length r
+  have hsq : 8 * r.arg2 ^ 2 ≤
+      8192 * (r.tag.units + r.arg1 + r.arg2 + r.vals.length + 6) ^ 2 :=
+    Nat.mul_le_mul (by omega) (Nat.pow_le_pow_left (by omega) 2)
+  rw [g1PAClock_eq]
+  simp only [g1BActivatedSteps, g1BPassASteps, g1BReadSteps,
+    g1InstallScanSteps, g1ZPassASteps, g1ReadBSteps, g1RepairSteps,
+    g1ReadBHandoffSteps, hlen]
+  split_ifs <;> omega
+
 /-! ## All-literal probes
 
 Five caller-supplied words, one per gate tag, each the canonical frame word of a
 literal request plus its trailing `blank`.  Every step count, head position and
-frame is a literal.  These are probes of a **dormant** table: no run of the
-machine from any real configuration reaches the mode they start in. -/
+frame is a literal.  These remain local caller-supplied probes of the rescan;
+they are not the expanded real-initial literal matrix deferred to S1c. -/
 
 namespace G1PassAControlExamples
 

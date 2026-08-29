@@ -11,8 +11,8 @@ units consumed: one cycle (`13`, head `35 ↦ 31`), seek+repair (`37`,
 `59 ↦ 0`).  The endpoint word is exactly the canonical encoding plus `blank`;
 literal counts and cell `32` witness the real `spent ↦ index` changes.  Every
 configuration here is caller-supplied: no probe of *this* module starts from
-`G1M.initialConfig`, no frame-table row reaches the repair modes, and
-`readAStart` remains idle.  The request-specific driver is
+`G1M.initialConfig`, no frame-table row reaches the repair modes, and the probe
+stops at `readAStart` before its now-live dispatch.  The request-specific driver is
 `GateOneRepairDriver`; its all-literal `initialConfig` probes are Repair-2b.
 
 **These probes respect the narrowed crossable-frame predicate.**  `G1RepairSkip`
@@ -338,20 +338,6 @@ theorem pass_probe_ctx :
           .bRepairSeek .p3 false false false (g1Ctx0.withVB true))
         79).state.snd.ctx.vB = true := by
   constructor <;> · rw [pass_probe]; rfl
-
-/- `readAStart` is **not** activated by this slice: the repaired endpoint holds its
-state, head and tape for the whole remaining budget.  Operand 1 is not read. -/
-
-theorem pass_probe_idle (k : Nat) :
-    TM.runConfig (M := G1M)
-        (g1AlignedConfig probeInputLen 59 (probe_safe (by omega))
-          (g1ListTape (probeSpentFrames.flatMap G1Frame.bits))
-          .bRepairSeek .p3 false false false (g1Ctx0.withVB true)) (79 + k) =
-      g1AlignedConfig probeInputLen 0 (probe_safe (by omega))
-        (g1ListTape (probeIndexFrames.flatMap G1Frame.bits))
-        .readAStart .p0 false false false (g1Ctx0.withVB true) := by
-  rw [runConfig_add, pass_probe]
-  exact g1CS_runConfig_readA_idle _ _ _ _ _ k
 
 end G1RepairKernelExamples
 

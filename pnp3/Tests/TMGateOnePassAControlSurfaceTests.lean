@@ -1,24 +1,22 @@
 import Complexity.TMVerifier.TuringToolkit.GateOnePassAControl
 
 /-!
-# G1 dormant pass-A control: surface tests
+# G1 live pass-A entry: surface tests
 
-Import-side contracts for the S1b1 slice's executed layer: the two one-step
-atoms of the dormant pass-A entry, the A-specific tag recount, the whole entry,
+Import-side contracts for the pass-A executed layer: the two one-step atoms of
+the live entry, the A-specific tag recount, the whole entry,
 the local `const` rejection, and the six all-literal probes.
 
-Every run pinned here starts from a **caller-supplied** aligned configuration.
-Nothing here starts from `G1M.initialConfig`, and nothing could: the twelve
-pass-A modes are unreachable from the live control
-(`g1Advance_passA`, `g1Transition_passA_closed`), and `readAStart` — the handoff
-S1b2 will turn into the dispatch that reaches `aBof` — is **still idle**.
+The caller-supplied rescan contracts remain pinned, together with the S1b2b
+activation from the real `G1M.initialConfig`: non-`const` routes enter `aBof`
+and reach `aInstallStart` with the exact residual, while `const` reaches the
+result-ready combine boundary.  Operand 1 remains unread.
 
 Deliberately absent, here and in the module it audits: any operand-1 read, walk,
 invariant, repair or out-of-range branch; any combine step, output write,
-`TM.accepts`, full-clock or acceptance-gate claim; and any statement about a run
-from the real initial configuration.  The `const` rejection is a local fact
-about a configuration nothing reaches, not a claim that the machine rejects
-`const` requests.
+`TM.accepts`, full-clock or acceptance-gate claim.  The `const` rejection is a
+local fact about the A-specific recount, not a claim that the machine rejects
+canonical `const` requests: the live result-ready route bypasses that recount.
 
 This is an audit surface: it pins public signatures, it does not prove anything
 new.
@@ -26,16 +24,33 @@ new.
 
 namespace Pnp3.Tests.TMGateOnePassAControlSurface
 
+open Pnp3.Internal.PsubsetPpoly
 open Pnp3.Internal.PsubsetPpoly.TM
 open Pnp3.Internal.PsubsetPpoly.TM.G1PassAControlExamples
 
--- The executed layer of the dormant entry.
+-- The executed layer of the live entry.
 #check @g1CS_step_aOp
 #check @g1CS_runConfig_aInstall_idle
 #check @g1CS_aTagRescan_exact
 #check @g1CS_passA_entry_exact
 #check @g1CS_passA_entry_ctx
 #check @g1CS_passA_const_reject_exact
+#check @g1ABofConfig
+#check @g1AInstallConfig
+#check @g1CombineConfig
+#check @g1ABofConfig_head
+#check @g1ABofConfig_ctx
+#check @g1AInstallConfig_head
+#check @g1AInstallConfig_res
+#check @g1AInstallConfig_vB
+#check @g1CombineConfig_ctx
+#check @g1UActivatedSteps
+#check @g1BActivatedSteps
+#check @g1ConstActivatedSteps
+#check @g1CS_activate_unary_exact
+#check @g1CS_activate_binary_exact
+#check @g1CS_activate_const_exact
+#check @g1CS_install_binary_exact
 
 -- The six all-literal probes and the literal requests behind them.
 #check @aInputExample
@@ -56,6 +71,14 @@ open Pnp3.Internal.PsubsetPpoly.TM.G1PassAControlExamples
 
 /-! ## Exact theorem-contract pins -/
 
+/-- The generic unary route extends its repaired endpoint by exactly one step
+to the live pass-A anchor, on the real initial tape. -/
+theorem check_g1CS_activate_unary_exact (r : G1Request) (hc : r.Canonical)
+    (ht : r.tag = .input ∨ r.tag = .not) :
+    G1M.runConfig (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1UActivatedSteps r) = g1ABofConfig r false :=
+  g1CS_activate_unary_exact r hc ht
+
 /-- **The operation latch, executed.**  One stationary step; the tape, the head
 and `vB` are untouched, and only the pair `(pass, crossed)` changes. -/
 theorem check_g1CS_step_aOp (n h : Nat) (hh : h < G1M.tapeLength n)
@@ -69,7 +92,7 @@ theorem check_g1CS_step_aOp (n h : Nat) (hh : h < G1M.tapeLength n)
   g1CS_step_aOp n h hh tape t ht ctx
 
 /-- **The install handoff is idle for the whole remaining budget.**  This is the
-honest boundary of the dormant entry: operand 1 is not read. -/
+honest boundary of the live entry: operand 1 is not read. -/
 theorem check_g1CS_runConfig_aInstall_idle (n h : Nat)
     (hh : h < G1M.tapeLength n) (tape : Fin (G1M.tapeLength n) → Bool)
     (ctx : G1Ctx) (k : Nat) :
@@ -79,7 +102,7 @@ theorem check_g1CS_runConfig_aInstall_idle (n h : Nat)
       g1AlignedConfig n h hh tape .aInstallStart .p0 false false false ctx :=
   g1CS_runConfig_aInstall_idle n h hh tape ctx k
 
-/-- **The whole dormant pass-A entry, executed.**  Exactly `4u + 9` steps from
+/-- **The whole pass-A entry, executed.**  Exactly `4u + 9` steps from
 the anchor read to the install handoff, on the caller's frame word, with the
 tape bit-for-bit unchanged. -/
 theorem check_g1CS_passA_entry_exact (n : Nat) (pre suffix : List G1Frame)
@@ -98,12 +121,83 @@ theorem check_g1CS_passA_entry_exact (n : Nat) (pre suffix : List G1Frame)
         (ctx.withRes (g1Residual r.tag ctx.vB)) :=
   g1CS_passA_entry_exact n pre suffix r ht ctx hsafe
 
+/-- The live-anchor adapter uses the exact initial tape and reaches the exact
+residual-latched install configuration. -/
+theorem check_g1CS_passA_entry_initial_exact (r : G1Request)
+    (ht : r.tag ≠ .const) (b : Bool) :
+    TM.runConfig (M := G1M) (g1ABofConfig r b)
+        (4 * (r.tag.units + 2) + 1) = g1AInstallConfig r b :=
+  g1CS_passA_entry_initial_exact r ht b
+
 /-- **What the entry leaves behind**: the gate's residual in the two spare
 context bits, and the operand-2 value still in `vB`. -/
 theorem check_g1CS_passA_entry_ctx (r : G1Request) (ctx : G1Ctx) :
     (ctx.withRes (g1Residual r.tag ctx.vB)).res = g1Residual r.tag ctx.vB ∧
       (ctx.withRes (g1Residual r.tag ctx.vB)).vB = ctx.vB :=
   g1CS_passA_entry_ctx r ctx
+
+/-- The generic successful binary route reaches the exact live anchor boundary
+in one step beyond the merged repaired endpoint. -/
+theorem check_g1CS_activate_binary_exact (r : G1Request) (hc : r.Canonical)
+    (ht : r.tag = .and ∨ r.tag = .or) (b : Bool)
+    (hb : r.vals[r.arg2]? = some b) :
+    G1M.runConfig (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1BActivatedSteps r) = g1ABofConfig r b :=
+  g1CS_activate_binary_exact r hc ht b hb
+
+/-- A successful binary activation is exactly at the A anchor and not at the
+result boundary. -/
+theorem check_g1CS_activate_binary_not_result (r : G1Request)
+    (hc : r.Canonical) (ht : r.tag = .and ∨ r.tag = .or) (b : Bool)
+    (hb : r.vals[r.arg2]? = some b) :
+    (TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1BActivatedSteps r)).state.snd.mode = .aBof ∧
+      (TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1BActivatedSteps r)).state.snd.mode ≠ .combineStart :=
+  g1CS_activate_binary_not_result r hc ht b hb
+
+/-- The unary route reaches the exact residual-latched install configuration
+on the unchanged initial tape. -/
+theorem check_g1CS_install_unary_exact (r : G1Request) (hc : r.Canonical)
+    (ht : r.tag = .input ∨ r.tag = .not) :
+    TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1UActivatedSteps r + (4 * (r.tag.units + 2) + 1)) =
+      g1AInstallConfig r false :=
+  g1CS_install_unary_exact r hc ht
+
+/-- The same route then reaches the residual-latched install boundary, with
+operand 1 still unread. -/
+theorem check_g1CS_install_binary_exact (r : G1Request) (hc : r.Canonical)
+    (ht : r.tag = .and ∨ r.tag = .or) (b : Bool)
+    (hb : r.vals[r.arg2]? = some b) :
+    G1M.runConfig (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1BActivatedSteps r + (4 * (r.tag.units + 2) + 1)) =
+      g1AInstallConfig r b :=
+  g1CS_install_binary_exact r hc ht b hb
+
+/-- `const` takes the result branch and preserves `g1ResultCtx`. -/
+theorem check_g1CS_activate_const_exact (r : G1Request) (hc : r.Canonical)
+    (ht : r.tag = .const) (b : Bool) (hs : r.spec = some b) :
+    G1M.runConfig (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1ConstActivatedSteps r) = g1CombineConfig r b :=
+  g1CS_activate_const_exact r hc ht b hs
+
+/-- The full activated unary prefix fits the unchanged public clock. -/
+theorem check_g1UActivatedSteps_le_clock (r : G1Request) :
+    g1UActivatedSteps r + (4 * (r.tag.units + 2) + 1) ≤
+      g1Clock (encodeG1 r).length :=
+  g1UActivatedSteps_le_clock r
+
+/-- The activated constant bypass fits the unchanged public clock. -/
+theorem check_g1ConstActivatedSteps_le_clock (r : G1Request) :
+    g1ConstActivatedSteps r ≤ g1Clock (encodeG1 r).length :=
+  g1ConstActivatedSteps_le_clock r
+
+/-- The full activated binary prefix fits the unchanged public clock. -/
+theorem check_g1BActivatedSteps_le_clock (r : G1Request) :
+    g1BActivatedSteps r + (4 * (r.tag.units + 2) + 1) ≤
+      g1Clock (encodeG1 r).length :=
+  g1BActivatedSteps_le_clock r
 
 /-- **The four literal probes latch four different residuals**, so the table is
 not vacuous, and the five literal requests are genuinely canonical. -/

@@ -11,7 +11,7 @@ differences, the literal counts, the flipped cell `32`, the head-safety bound,
 the closed pass cost and its split, and the four exact `G1M` runs — the `13`-step
 cycle (`35 ↦ 31`), the `37`-step seek+repair (`59 ↦ 31`), the `26`-step two-unit
 run (`35 ↦ 27`) and the `79`-step whole pass (`59 ↦ 0`) with its head, tape,
-context and idle projections.
+context projections.  The former post-endpoint idle projection is removed.
 
 **The narrowed crossable-frame predicate is pinned here too.**
 `check_probe_scan_lists_clean` restates that `blank`, `cursor`, `bof` and
@@ -269,18 +269,5 @@ theorem check_pass_probe_ctx :
   have h := pass_probe_ctx
   rw [pass_probe] at h ⊢
   exact h
-
-/-- The endpoint is a **handoff**: it holds for the whole remaining budget, so
-nothing in this slice continues from the repaired configuration and operand 1 is
-never read. -/
-theorem check_pass_probe_idle (k : Nat) :
-    TM.runConfig (M := G1M)
-        (g1AlignedConfig probeInputLen 59 (probe_safe (by omega))
-          (g1ListTape (probeSpentFrames.flatMap G1Frame.bits))
-          .bRepairSeek .p3 false false false (g1Ctx0.withVB true)) (79 + k) =
-      g1AlignedConfig probeInputLen 0 (probe_safe (by omega))
-        (g1ListTape (probeIndexFrames.flatMap G1Frame.bits))
-        .readAStart .p0 false false false (g1Ctx0.withVB true) :=
-  pass_probe_idle k
 
 end Pnp3.Tests.TMGateOneRepairKernelExamplesSurface

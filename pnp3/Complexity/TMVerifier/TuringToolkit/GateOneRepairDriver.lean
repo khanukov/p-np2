@@ -64,8 +64,8 @@ of the unannotated data region.
 
 ## Explicit deferrals
 
-`readAStart` is still idle (`g1CS_runConfig_readA_idle`): **operand 1 is not
-read**, and nothing here claims it is.  Also absent and claimed nowhere: the
+This module stops at `readAStart`; S1b2b activates the next step in
+`GateOnePassAControl`.  **Operand 1 is not read** here.  Also absent and claimed nowhere: the
 combine step, the output write, `TM.accepts`, a full-clock theorem, the
 gate-semantics correctness statement, the acceptance gate, multi-gate
 composition and the specification-level bridge.  The out-of-range boundary
@@ -88,12 +88,12 @@ and derived capacity `G1M.tapeLength (encodeG1 r).length` separate.
 `g1CS_route_rewind_exact` reuses the same Repair-2 control as a zero-rewrite
 rewind: the unary `input`/`not` and decoded `const` routes now enter
 `readAResetStart`, preserve the complete tape and context, and reach head-zero
-idle `readAStart`.  The real-initial capstones are
+`readAStart`.  The real-initial capstones are
 `g1CS_readA_unary_repaired_exact` and `g1CS_const_repaired_exact`; the latter
 ends in `g1ResultCtx b`, so the literal filler is never consumed.  Their route
 counts are unchanged and their composed totals fit the unchanged clock.
-Binary repaired endpoints are unchanged.  `readAStart` remains stationary, so
-there is still no operand-1 read or pass-A activation; that is S1b2b.
+Binary repaired endpoints are unchanged.  S1b2b activates the following
+dispatch in `GateOnePassAControl`; this module still reads no operand 1.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -359,7 +359,8 @@ theorem g1CS_repair_sweep_readAConfig (r : G1Request) (s : Nat) (hs : s ≤ r.ar
 The live `input`/`not` and `const` routes now enter the same Repair-2 bridge as
 the binary routes.  They have consumed no operand-2 unit, so the generic repair
 kernel is instantiated with `s = 0`: it is a pure reverse scan that preserves
-the canonical tape and the complete context.  `readAStart` remains idle. -/
+the canonical tape and the complete context, ending immediately before the
+live dispatch. -/
 
 /-- A generic zero-rewrite rewind from a canonical prefix boundary. -/
 theorem g1CS_route_rewind_exact (r : G1Request) (left tail : List G1Frame)
@@ -446,17 +447,17 @@ def g1AUnaryRewindSteps (r : G1Request) : Nat := 4 * r.tag.units + 10
 def g1AConstRewindSteps (r : G1Request) : Nat :=
   4 * r.tag.units + 4 * r.arg1 + 14
 
-/-- Total steps from the real initial configuration to idle `readAStart` for
+/-- Total steps from the real initial configuration to `readAStart` for
 `input`/`not`. -/
 def g1UReadASteps (r : G1Request) : Nat :=
   g1ReadARouteSteps r + g1AUnaryRewindSteps r
 
-/-- Total steps from the real initial configuration to idle `readAStart` for
+/-- Total steps from the real initial configuration to `readAStart` for
 `const`, carrying a result context. -/
 def g1ConstReadASteps (r : G1Request) : Nat :=
   g1ConstRouteSteps r + g1AConstRewindSteps r
 
-/-- The canonical idle result boundary used by `const`. -/
+/-- The canonical pre-dispatch result boundary used by `const`. -/
 def g1ReadAResultConfig (r : G1Request) (b : Bool) :
     Configuration (M := G1M) (encodeG1 r).length :=
   g1AlignedConfig (encodeG1 r).length 0 (g1_route_lt_tapeLength r 0 (by omega))
@@ -503,8 +504,8 @@ theorem g1CS_readA_unary_repaired_exact (r : G1Request) (hc : r.Canonical)
     hrew]
   rfl
 
-/-- `const` reaches head-zero idle `readAStart` with exactly `g1ResultCtx b`;
-the literal is complete, but the result branch is not activated in S1b2a. -/
+/-- `const` reaches head-zero `readAStart` with exactly `g1ResultCtx b`; the
+live result branch is composed in `GateOnePassAControl`. -/
 theorem g1CS_const_repaired_exact (r : G1Request) (hc : r.Canonical)
     (ht : r.tag = .const) (b : Bool) (hs : r.spec = some b) :
     TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
@@ -641,7 +642,7 @@ before.
 
 This is the statement the read alone could not make: after the sweep the tape is
 the canonical word again, so pass A can start from a clean word.  It is *only*
-the read plus its repair: `readAStart` is idle, operand 1 is not read, and
+the read plus its repair and stops before the live dispatch; operand 1 is not read, and
 combine, the output write and `TM.accepts` are untouched. -/
 theorem g1CS_readB_positive_repaired_exact (r : G1Request) (hc : r.Canonical)
     (ht : r.tag = .and ∨ r.tag = .or) (h2 : 0 < r.arg2) (b : Bool)

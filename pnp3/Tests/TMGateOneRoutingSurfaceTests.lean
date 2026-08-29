@@ -17,11 +17,12 @@ iteration or an operand value.  The reverse seek `bSeek` has no forward row at
 all: it is decided inside `g1Transition`, and `TMGateOneControlSurfaceTests`
 pins its three outcomes.
 
-S1b1 adds the **dormant** pass-A rescan as a *separate* named table over the
-same anchor-plus-tag-run prefix.  S1b2a re-points the live `g1RouteMode` for
-`input`/`not` to the canonical rewind before idle `readAStart`;
-`check_g1ATagRoute_dormant` pins both that alignment and the closure theorem
-that keeps every route here out of the pass-A family.
+S1b1 introduced the then-dormant pass-A rescan as a *separate* named table over
+the same anchor-plus-tag-run prefix.  S1b2a re-points the live `g1RouteMode` for
+`input`/`not` to the canonical rewind before live `readAStart`, and S1b2b's
+executed dispatch now enters the A-specific table.  The theorem
+`check_g1ATagRoute_frame_closed` pins the narrower frame-table fact: a
+`g1Advance` step cannot enter the pass-A family from outside it.
 -/
 
 namespace Pnp3.Tests.TMGateOneRoutingSurface
@@ -62,9 +63,9 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1_bRet_rows
 #check @g1_bRoundStart_stuck
 #check @g1_bRoundStart_unreachable
--- S1b1, the dormant pass-A rescan: a *separate* named table over the same
--- prefix, targeting the dormant `g1AOpMode` latches.  S1b2a changes only the
--- live unary routing table; this dormant table remains unreachable.
+-- The pass-A rescan: a *separate* named table over the same prefix, targeting
+-- the live but non-forward `g1AOpMode` latches.  Its frame table is closed
+-- against entry from outside; the executed `readAStart` door reaches it.
 #check @g1ATagRoute_advance
 #check @g1ATagRoute_validPath
 #check @g1ATagRoute_advance_const
@@ -273,7 +274,7 @@ theorem check_g1_bRoundStart_unreachable (mode : G1Mode) (frame : G1Frame) :
     g1Advance mode frame ≠ .bRoundStart :=
   g1_bRoundStart_unreachable mode frame
 
-/-- **The dormant pass-A rescan, at frame level.**  The same prefix
+/-- **The pass-A rescan, at frame level.**  The same prefix
 `g1TagRouteFrames r` the pass-B rescan reads, folded from `aBof` through the
 A-counters into the operand-1 operation latch, with `const` falling into the
 `reject` sink along a genuine rejecting path. -/
@@ -286,10 +287,10 @@ theorem check_g1ATagRoute (r : G1Request) (ht : r.tag ≠ .const)
   ⟨⟨g1ATagRoute_advance r, g1ATagRoute_validPath r ht⟩,
     ⟨g1ATagRoute_advance_const r' ht', g1ATagRoute_rejectPath r' ht'⟩⟩
 
-/-- **No route of this module can cross into the pass-A family**, and the live
-`input`/`not` route ends at `readAResetStart`; the dormant pass-A table remains
-unreachable. -/
-theorem check_g1ATagRoute_dormant (r : G1Request)
+/-- **No frame-table step can cross into the pass-A family from outside it.**
+The live `input`/`not` pass-B route ends at `readAResetStart`; after the rewind,
+the separate executed `readAStart` door enters pass A. -/
+theorem check_g1ATagRoute_frame_closed (r : G1Request)
     (ht : r.tag = .input ∨ r.tag = .not) :
     g1AdvanceList .readBStart (g1TagRouteFrames r) = .readAResetStart ∧
       g1RouteMode .input = .readAResetStart ∧

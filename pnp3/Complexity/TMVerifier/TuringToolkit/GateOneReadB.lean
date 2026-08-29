@@ -79,14 +79,14 @@ regression composed in `GateOneIndexRound`.
 `bOOB` is likewise a **stable boundary of the read**, not a rejection:
 `g1RejectState` is a different state and no acceptance or rejection semantics
 is attached to either.  There is no `TM.run`, `TM.accepts`, output write,
-combine step, pass-A read, `spec`-correctness claim or full-clock theorem.  The
-three remaining handoffs (`readAStart`, `combineStart`, `bOOB`) are idle —
-`readAResetStart` is not, it is the repair sweep's bridge — and clock lemmas
+combine step, operand-1 read, `spec`-correctness claim or full-clock theorem.
+`readAStart` is the live pass-A dispatch; `combineStart` and `bOOB` remain
+stationary boundaries, and `readAResetStart` is the repair sweep's bridge.  Clock lemmas
 bound only the proved arrival prefixes against the **unchanged** clock
 `g1Clock`.
 
 S1b2a changes only the unary and constant endpoints in the table above.  Their
-pure rewinds to head-zero idle `readAStart` are composed in
+pure rewinds to head-zero `readAStart` are composed in
 `GateOneRepairDriver`; this module deliberately stops at `readAResetStart`.
 
 The five initial-configuration capstones are scoped to the exact tape
@@ -199,20 +199,52 @@ theorem g1CS_runConfig_oob_sink (n h : Nat) (hh : h < G1M.tapeLength n)
     (fun phase scan => g1Transition_bOOB_stable phase .p0 false false false
       scan ctx) k
 
-/-- **The pass-A handoff is idle in this slice**: it holds its state, head and
-tape for the whole remaining budget. -/
-theorem g1CS_runConfig_readA_idle (n h : Nat) (hh : h < G1M.tapeLength n)
-    (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx) (k : Nat) :
+/-- The executed entry branch of the live `readAStart` dispatch. -/
+theorem g1CS_step_readAStart_entry (n h : Nat) (hh : h < G1M.tapeLength n)
+    (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx)
+    (hpass : ctx.pass = false) :
     TM.runConfig (M := G1M)
-        (g1AlignedConfig n h hh tape .readAStart .p0 false false false ctx) k =
-      g1AlignedConfig n h hh tape .readAStart .p0 false false false ctx :=
-  g1CS_runConfig_stable n h hh tape (g1ReadAState ctx)
-    (fun phase scan => g1Transition_readAStart_idle phase .p0 false false false
-      scan ctx) k
+        (g1AlignedConfig n h hh tape .readAStart .p0 false false false ctx) 1 =
+      g1AlignedConfig n h hh tape .aBof .p0 false false false ctx := by
+  rw [runConfig_one]
+  have hstep := g1CS_aligned_step_stay n h hh tape (g1ReadAState ctx)
+    (g1ABofState ctx) (tape ⟨h, hh⟩)
+    (fun phase => g1Transition_readAStart_entry phase .p0 false false false _
+      ctx hpass)
+  rwa [writeCell_self] at hstep
 
-/-- **The combine handoff is idle in this slice.**  S1b2a no longer routes
-`const` here directly; this remains the later boundary beyond the still-idle
-`readAStart` result branch.  Nothing combines, writes or accepts. -/
+/-- The executed result branch of the live `readAStart` dispatch. -/
+theorem g1CS_step_readAStart_result (n h : Nat) (hh : h < G1M.tapeLength n)
+    (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx)
+    (hpass : ctx.pass = true) :
+    TM.runConfig (M := G1M)
+        (g1AlignedConfig n h hh tape .readAStart .p0 false false false ctx) 1 =
+      g1AlignedConfig n h hh tape .combineStart .p0 false false false ctx := by
+  rw [runConfig_one]
+  have hstep := g1CS_aligned_step_stay n h hh tape (g1ReadAState ctx)
+    (g1CombineState ctx) (tape ⟨h, hh⟩)
+    (fun phase => g1Transition_readAStart_result phase .p0 false false false _
+      ctx hpass)
+  rwa [writeCell_self] at hstep
+
+/-- A successful operand-B context always takes the entry branch; its `vB`
+cannot be treated as the final gate result. -/
+theorem g1CS_step_readAStart_operandB_not_result (n h : Nat)
+    (hh : h < G1M.tapeLength n) (tape : Fin (G1M.tapeLength n) → Bool)
+    (b : Bool) :
+    TM.runConfig (M := G1M)
+        (g1AlignedConfig n h hh tape .readAStart .p0 false false false
+          (g1Ctx0.withVB b)) 1 =
+      g1AlignedConfig n h hh tape .aBof .p0 false false false
+        (g1Ctx0.withVB b) ∧
+      (TM.runConfig (M := G1M)
+        (g1AlignedConfig n h hh tape .readAStart .p0 false false false
+          (g1Ctx0.withVB b)) 1).state.snd.mode ≠ .combineStart := by
+  rw [g1CS_step_readAStart_entry n h hh tape (g1Ctx0.withVB b) rfl]
+  exact ⟨rfl, fun h => G1Mode.noConfusion h⟩
+
+/-- **The combine handoff is idle in this slice.**  A result-ready `readAStart`
+now reaches it in one step.  Nothing combines, writes or accepts. -/
 theorem g1CS_runConfig_combine_idle (n h : Nat) (hh : h < G1M.tapeLength n)
     (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx) (k : Nat) :
     TM.runConfig (M := G1M)
@@ -370,7 +402,7 @@ initial configuration, exactly `g1ReadARouteSteps r` genuine steps validate the
 word, rewind, physically rescan the unary tag and stop at `readAResetStart` with the
 head on the **first cell of the operand-1 field** (the closing `argSep` when
 `arg1 = 0`), the context still `g1Ctx0`, and the tape bit-for-bit the initial
-tape.  `GateOneRepairDriver` composes the pure rewind to idle `readAStart`. -/
+tape.  `GateOneRepairDriver` composes the pure rewind to `readAStart`. -/
 theorem g1CS_readB_route_unary_exact (r : G1Request) (hc : r.Canonical)
     (ht : r.tag = .input ∨ r.tag = .not) :
     TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))

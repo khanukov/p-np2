@@ -2215,7 +2215,7 @@ theorem g1Transition_aRepairStart_idle (phase : Fin 1)
     g1Transition phase (g1State .aRepairStart position b0 b1 b2 ctx) scan =
       (0, g1ARepairStartState ctx, scan, .stay) := rfl
 
-/-! ### Dormant operand-A installation tuples -/
+/-! ### Live-entry operand-A installation tuples -/
 
 theorem g1Transition_aLatch (phase : Fin 1) (b : Bool)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :

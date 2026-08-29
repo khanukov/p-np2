@@ -228,9 +228,9 @@ theorem examples_canonical :
     aInputExample.Canonical ∧ aNotExample.Canonical ∧ aAndExample.Canonical ∧
       aOrExample.Canonical ∧ aConstExample.Canonical := by decide
 
-/-- The **encoded input length** parameter of each probe: eleven frames for the
-four operand probes, ten for `const`.  Physical configurations use
-`G1M.tapeLength` of it, not a tape of that length. -/
+/-- The **encoded input length** parameter of each probe: eight, ten, eleven and
+twelve frames for `input`, `not`, `and` and `or`, and nine for `const`.
+Physical configurations use `G1M.tapeLength` of it, not a tape of that length. -/
 theorem example_lengths :
     (encodeG1 aInputExample).length = 32 ∧ (encodeG1 aNotExample).length = 40 ∧
       (encodeG1 aAndExample).length = 44 ∧ (encodeG1 aOrExample).length = 48 ∧

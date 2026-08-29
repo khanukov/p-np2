@@ -340,8 +340,9 @@ inductive G1Mode
 inductive G1FramePosition | p0 | p1 | p2 | p3
   deriving Fintype, DecidableEq, Repr
 
-/-- The carried context of the G1 control.  `pass` and `crossed` remain inert in
-this slice.  `vB` is written by the dispatch rows and holds either the decoded
+/-- The carried context of the G1 control.  `pass` and `crossed` remain inert on
+live routes; only dormant `aOp*` latch rows write their residual view.  `vB` is
+written by the dispatch rows and holds either the decoded
 `const` literal or the operand-2 value read from the data region.  All fields
 are part of the fixed finite state; adding state later would change the machine. -/
 structure G1Ctx where
@@ -966,9 +967,9 @@ theorem g1AdvanceList_ne_rewindStart_of_stuck {mode : G1Mode} (h : G1Stuck mode)
 stuck mode.**  In particular `rewind` and `accept` are unreachable from any
 scan.  Every non-forward target (the four dispatch modes, the round's five
 modes, the eleven non-forward walk modes, the sweep's five modes, the four
-dormant operation latches, the `readAResetStart` and `bOOB` handoffs and the
-`reject` sink) is stuck, and so are the three handoffs no row targets at all
-(`aInstallStart`, `readAStart`, `combineStart`). -/
+dormant operation latches, the `readAResetStart`, `readAStart` and `bOOB`
+handoffs and the `reject` sink) is stuck, and so are the two handoffs no row
+targets at all (`aInstallStart`, `combineStart`). -/
 theorem g1Advance_range (mode : G1Mode) (frame : G1Frame) :
     G1ForwardMode (g1Advance mode frame) ∨
       g1Advance mode frame = .rewindStart ∨

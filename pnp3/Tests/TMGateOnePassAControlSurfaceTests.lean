@@ -10,10 +10,12 @@ the local `const` rejection, and the six all-literal probes.
 The caller-supplied rescan contracts remain pinned, together with the S1b2b
 activation from the real `G1M.initialConfig`: non-`const` routes enter `aBof`
 and reach `aInstallStart` with the exact residual, while `const` reaches the
-result-ready combine boundary.  Operand 1 remains unread.
+result-ready combine boundary.  S4 adds the one exact entry step from that
+boundary to aligned `aInsSeek`; scan/probe/writer execution is audited by the
+installation surface.
 
-Deliberately absent, here and in the module it audits: any operand-1 read, walk,
-invariant, repair or out-of-range branch; any combine step, output write,
+Deliberately absent, here and in the module it audits: any installation scan,
+normal walk, repair or out-of-range branch; any combine step, output write,
 `TM.accepts`, full-clock or acceptance-gate claim.  The `const` rejection is a
 local fact about the A-specific recount, not a claim that the machine rejects
 canonical `const` requests: the live result-ready route bypasses that recount.
@@ -30,19 +32,23 @@ open Pnp3.Internal.PsubsetPpoly.TM.G1PassAControlExamples
 
 -- The executed layer of the live entry.
 #check @g1CS_step_aOp
-#check @g1CS_runConfig_aInstall_idle
+#check @g1CS_step_aInstallStart
 #check @g1CS_aTagRescan_exact
 #check @g1CS_passA_entry_exact
 #check @g1CS_passA_entry_ctx
 #check @g1CS_passA_const_reject_exact
 #check @g1ABofConfig
 #check @g1AInstallConfig
+#check @g1AInstallSeekConfig
 #check @g1CombineConfig
 #check @g1ABofConfig_head
 #check @g1ABofConfig_ctx
 #check @g1AInstallConfig_head
 #check @g1AInstallConfig_res
 #check @g1AInstallConfig_vB
+#check @g1AInstallSeekConfig_head
+#check @g1AInstallSeekConfig_res
+#check @g1AInstallSeekConfig_vB
 #check @g1CombineConfig_ctx
 #check @g1UActivatedSteps
 #check @g1BActivatedSteps
@@ -51,6 +57,7 @@ open Pnp3.Internal.PsubsetPpoly.TM.G1PassAControlExamples
 #check @g1CS_activate_binary_exact
 #check @g1CS_activate_const_exact
 #check @g1CS_install_binary_exact
+#check @g1CS_aInstall_entry_initial_exact
 
 -- The six all-literal probes and the literal requests behind them.
 #check @aInputExample
@@ -91,16 +98,33 @@ theorem check_g1CS_step_aOp (n h : Nat) (hh : h < G1M.tapeLength n)
         (ctx.withRes (g1Residual t ctx.vB)) :=
   g1CS_step_aOp n h hh tape t ht ctx
 
-/-- **The install handoff is idle for the whole remaining budget.**  This is the
-honest boundary of the live entry: operand 1 is not read. -/
-theorem check_g1CS_runConfig_aInstall_idle (n h : Nat)
+/-- **The live install entry.**  One stationary step preserves the complete
+configuration payload and enters aligned `aInsSeek`. -/
+theorem check_g1CS_step_aInstallStart (n h : Nat)
     (hh : h < G1M.tapeLength n) (tape : Fin (G1M.tapeLength n) → Bool)
-    (ctx : G1Ctx) (k : Nat) :
+    (ctx : G1Ctx) :
     G1M.runConfig
         (g1AlignedConfig n h hh tape .aInstallStart .p0 false false false ctx)
-        k =
-      g1AlignedConfig n h hh tape .aInstallStart .p0 false false false ctx :=
-  g1CS_runConfig_aInstall_idle n h hh tape ctx k
+        1 =
+      g1AlignedConfig n h hh tape .aInsSeek .p0 false false false ctx :=
+  g1CS_step_aInstallStart n h hh tape ctx
+
+theorem check_g1AInstallSeekConfig_head (r : G1Request) (b : Bool) :
+    ((g1AInstallSeekConfig r b).head : Nat) = 4 * (r.tag.units + 2) :=
+  g1AInstallSeekConfig_head r b
+
+theorem check_g1AInstallSeekConfig_res (r : G1Request) (b : Bool) :
+    (g1AInstallSeekConfig r b).state.snd.ctx.res = g1Residual r.tag b :=
+  g1AInstallSeekConfig_res r b
+
+theorem check_g1AInstallSeekConfig_vB (r : G1Request) (b : Bool) :
+    (g1AInstallSeekConfig r b).state.snd.ctx.vB = b :=
+  g1AInstallSeekConfig_vB r b
+
+theorem check_g1CS_aInstall_entry_initial_exact (r : G1Request) (b : Bool) :
+    TM.runConfig (M := G1M) (g1AInstallConfig r b) 1 =
+      g1AInstallSeekConfig r b :=
+  g1CS_aInstall_entry_initial_exact r b
 
 /-- **The whole pass-A entry, executed.**  Exactly `4u + 9` steps from
 the anchor read to the install handoff, on the caller's frame word, with the

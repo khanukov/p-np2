@@ -264,9 +264,11 @@ lean_lib PnP3 where
     -- bounds are pinned, along with separate input/frame-word/capacity extents
     -- and the and-false context-alias/no-wrong-mode regression.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOnePassAEntryExamples,
-    -- S3b1 (2026-08-29), dormant operand-A installation atoms only:
-    -- caller-supplied scan, probe/latch, OOB and four-cell cursor writer.
-    -- `aInstallStart` remains idle; no seek, walk, repair or live route.
+    -- S4 (2026-08-29), live operand-A cursor installation: the former S3b1
+    -- scan/probe/writer atoms are composed through the single stationary
+    -- `aInstallStart → aInsSeek` entry.  Real unary/binary routes stop at the
+    -- completed writer's `aSeekOut .p3` boundary; unary empty-data reaches
+    -- `bOOB`.  No seek, mark, iteration or repair step executes.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneAWalkInstallAtoms,
     -- S3b2a/S3b2b (2026-08-29): dormant normal seek/mark/turn/restore plus
     -- the caller-supplied terminal return, cursor cleanup and stationary

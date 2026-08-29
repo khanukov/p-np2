@@ -15,11 +15,12 @@ S1b2b activation/install capstones at ten canonical requests:
 | `const` | `false`, `true` | `32`, `36` | `36`, `40` | `117`, `133` | `combineStart`, head `0` |
 
 Every principal theorem starts at the real `G1M.initialConfig`.  The eight
-unary/binary runs stop at the stationary `aInstallStart` boundary on the first
+unary/binary runs stop at the exact `aInstallStart` boundary on the first
 cell of operand 1.  Their tape is exactly the initial canonical tape, their
 residual is exact, and the operand-B latch `vB` is retained.  Thus pass A has
-read only its tag/residual entry prefix: it installs no cursor and does not read
-operand 1.  The two `const` runs bypass that prefix and stop at `combineStart`
+read only its tag/residual entry prefix at these stated step counts: the next
+S4 step is the live `aInsSeek` entry.  The two `const` runs bypass that prefix
+and stop at `combineStart`
 with exactly `g1ResultCtx false` or `g1ResultCtx true`; the `const` filler row
 of `g1Residual` is not used.
 
@@ -29,9 +30,10 @@ latched context is literally `g1ResultCtx false`, but its control mode is
 
 The input length, explicit encoded frame word plus trailing `blank`, and
 physical tape capacity are three different quantities.  `probe_extents` pins
-all three for every request.  Nothing here installs an operand-1 cursor,
-executes combine, writes output, proves acceptance or changes advice.  The
-merged OOB/reject behavior is untouched.
+all three for every request.  These historical prefix capstones execute no
+cursor-installation step; the S4 capstones live in `GateOneAWalkInstallAtoms`.
+Nothing here executes combine, writes output, proves acceptance or changes
+advice.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -323,7 +325,8 @@ theorem endpoint_tapes :
   exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
 
 /-- The no-wrong-result pin: the `and false` context aliases the false result
-bit pattern, but control remains at the stationary install boundary. -/
+bit pattern, but control remains at the exact pre-entry install boundary at
+this step count. -/
 theorem and_false_no_wrong_result :
     (TM.runConfig (M := G1M)
         (G1M.initialConfig (g1Point (encodeG1 reqAndFalse))) 198).state.snd.ctx =

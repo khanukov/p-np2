@@ -218,7 +218,7 @@ open Pnp3.Internal.PsubsetPpoly.TM
 -- The pass-A control ABI and its S1b2b activation.  The residual view of the two spare
 -- context bits and the result convention, the two named pass-A states, the
 -- twelve-mode family predicate with its frame-table closure and executed door,
--- the operation latch, the idle install handoff and the live two-way
+-- the operation latch, the live install entry and the live two-way
 -- `readAStart` dispatch.
 #check @g1ResPass
 #check @g1ResCrossed
@@ -247,7 +247,7 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1AOpMode
 #check @g1AOpMode_const
 #check @g1Transition_aOp
-#check @g1Transition_aInstallStart_idle
+#check @g1Transition_aInstallStart_live
 #check @g1Transition_passA_door
 
 /-! ## Exact theorem-contract pins -/
@@ -656,25 +656,23 @@ theorem check_g1Transition_readAStart_unique (phase : Fin 1) (s : G1State)
     s.mode = .bRepairDone :=
   g1Transition_readAStart_unique phase s scan h
 
-/-- The four operation latches and the stationary boundary are the exact
-predecessors of `aInstallStart`. -/
+/-- The four operation latches are the exact predecessors of `aInstallStart`. -/
 theorem check_g1Transition_aInstallStart_unique (phase : Fin 1) (s : G1State)
     (scan : Bool) (h : (g1Transition phase s scan).2.1.mode = .aInstallStart) :
     s.mode = .aOpInput ∨ s.mode = .aOpNot ∨ s.mode = .aOpAnd ∨
-      s.mode = .aOpOr ∨ s.mode = .aInstallStart :=
+      s.mode = .aOpOr :=
   g1Transition_aInstallStart_unique phase s scan h
 
-/-- **The operation latch and the idle install handoff, pinned exactly.**  One
-stationary step writes the residual of `(t, ctx.vB)` into the two spare context
-bits and installs it in a state that never moves again. -/
+/-- **The operation latch and live install entry, pinned exactly.**  The latch
+writes the residual; the next stationary step enters aligned `aInsSeek`. -/
 theorem check_g1Transition_aOp (phase : Fin 1) (t : G1Tag) (ht : t ≠ .const)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
     g1Transition phase (g1State (g1AOpMode t) position b0 b1 b2 ctx) scan =
         (0, g1AInstallState (ctx.withRes (g1Residual t ctx.vB)), scan, .stay) ∧
       g1Transition phase (g1State .aInstallStart position b0 b1 b2 ctx) scan =
-        (0, g1AInstallState ctx, scan, .stay) :=
+        (0, g1AInsSeekState ctx, scan, .stay) :=
   ⟨g1Transition_aOp phase t ht position b0 b1 b2 scan ctx,
-    g1Transition_aInstallStart_idle phase position b0 b1 b2 scan ctx⟩
+    g1Transition_aInstallStart_live phase position b0 b1 b2 scan ctx⟩
 
 /-- **The residual view is a faithful two-bit encoding that leaves `vB`
 alone.**  No field is added to `G1Ctx`: `res`/`withRes` read and write the
@@ -688,8 +686,7 @@ theorem check_G1Ctx_res_roundTrip (ctx : G1Ctx) (res : G1Residual) (b : Bool) :
 /-- **The result convention, and the aliasing it creates.**  An entry context is
 never a result context, but a *latched* one can be: the absorbing
 `and`/`vB = false` residual is literally `g1ResultCtx false`.  Harmless while
-`aInstallStart` self-loops and cannot return to `readAStart`; it is the constraint S1b2
-and the deferred operand-1 walk inherit. -/
+the live install path does not branch on `pass` or return to `readAStart`. -/
 theorem check_g1ResultCtx_aliasing (b b' : Bool) :
     g1ResultCtx b ≠ g1Ctx0.withVB b' ∧
       (g1Ctx0.withVB false).withRes (g1Residual .and false) = g1ResultCtx false ∧

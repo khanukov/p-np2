@@ -247,6 +247,53 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1Request.spec_isSome_iff
 #print axioms Internal.PsubsetPpoly.TM.G1Request.g1_example_canonical_oob_not_wellFormed
 
+-- S1a, pure layer: the four pass-A residual operations of operand 1 and the
+-- bridge from `(tag, operand-2 value, operand-1 value)` to `G1Request.spec`.
+-- Pure throughout: no machine, no configuration, no head, no step, no
+-- `G1Ctx`, no execution and no correctness claim about the interpreter.  The
+-- `const` row of `g1Residual` is filler; every bridge is restricted to
+-- non-`const` tags by disequality or explicit tag case, and the counterexample
+-- is the concrete
+-- canonical request that makes the exclusion load-bearing.  The pass-A
+-- control that would consume the residual is deferred to S1b.
+#print axioms Internal.PsubsetPpoly.TM.G1Residual.apply_idA
+#print axioms Internal.PsubsetPpoly.TM.G1Residual.apply_notA
+#print axioms Internal.PsubsetPpoly.TM.G1Residual.apply_constFalse
+#print axioms Internal.PsubsetPpoly.TM.G1Residual.apply_constTrue
+#print axioms Internal.PsubsetPpoly.TM.G1Residual.card_eq_four
+#print axioms Internal.PsubsetPpoly.TM.G1Residual.apply_pairwise_ne
+#print axioms Internal.PsubsetPpoly.TM.g1Residual_input
+#print axioms Internal.PsubsetPpoly.TM.g1Residual_not
+#print axioms Internal.PsubsetPpoly.TM.g1Residual_and_false
+#print axioms Internal.PsubsetPpoly.TM.g1Residual_and_true
+#print axioms Internal.PsubsetPpoly.TM.g1Residual_or_false
+#print axioms Internal.PsubsetPpoly.TM.g1Residual_or_true
+#print axioms Internal.PsubsetPpoly.TM.g1Residual_const_filler
+#print axioms Internal.PsubsetPpoly.TM.g1Residual_unary_const
+#print axioms Internal.PsubsetPpoly.TM.g1Residual_binary_ne
+#print axioms Internal.PsubsetPpoly.TM.g1Residual_input_apply
+#print axioms Internal.PsubsetPpoly.TM.g1Residual_not_apply
+#print axioms Internal.PsubsetPpoly.TM.g1Residual_and_apply
+#print axioms Internal.PsubsetPpoly.TM.g1Residual_or_apply
+#print axioms Internal.PsubsetPpoly.TM.g1Residual_apply_table
+#print axioms Internal.PsubsetPpoly.TM.g1OperandB_input
+#print axioms Internal.PsubsetPpoly.TM.g1OperandB_const
+#print axioms Internal.PsubsetPpoly.TM.g1OperandB_not
+#print axioms Internal.PsubsetPpoly.TM.g1OperandB_and
+#print axioms Internal.PsubsetPpoly.TM.g1OperandB_or
+#print axioms Internal.PsubsetPpoly.TM.g1OperandB_of_arity_one
+#print axioms Internal.PsubsetPpoly.TM.g1OperandB_of_arity_two
+#print axioms Internal.PsubsetPpoly.TM.g1OperandB_isSome_of_wellFormed
+#print axioms Internal.PsubsetPpoly.TM.g1OperandA_isSome_of_wellFormed
+#print axioms Internal.PsubsetPpoly.TM.g1Residual_apply_spec_unary
+#print axioms Internal.PsubsetPpoly.TM.g1Residual_apply_spec_binary
+#print axioms Internal.PsubsetPpoly.TM.g1Residual_apply_spec
+#print axioms Internal.PsubsetPpoly.TM.g1Spec_eq_residual_apply
+#print axioms Internal.PsubsetPpoly.TM.g1Residual_input_selects
+#print axioms Internal.PsubsetPpoly.TM.g1Residual_not_selects
+#print axioms Internal.PsubsetPpoly.TM.g1Residual_const_apply_ne_spec
+#print axioms Internal.PsubsetPpoly.TM.g1Residual_spec_capstone
+
 -- T2a, control layer: the frame-level correspondence between the fixed
 -- forward control and the pure parser -- the machine language *is* the
 -- canonical grammar -- and the same control as an instance of the generic

@@ -264,6 +264,10 @@ lean_lib PnP3 where
     -- bounds are pinned, along with separate input/frame-word/capacity extents
     -- and the and-false context-alias/no-wrong-mode regression.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOnePassAEntryExamples,
+    -- S3b1 (2026-08-29), dormant operand-A installation atoms only:
+    -- caller-supplied scan, probe/latch, OOB and four-cell cursor writer.
+    -- `aInstallStart` remains idle; no seek, walk, repair or live route.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneAWalkInstallAtoms,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -431,6 +435,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMGateOneRoutingSurfaceTests,
     Glob.one `Tests.TMGateOnePassAControlSurfaceTests,
     Glob.one `Tests.TMGateOnePassAEntrySurfaceTests,
+    Glob.one `Tests.TMGateOneAWalkInstallAtomsSurfaceTests,
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,
     Glob.one `Tests.TMGateOneReadBSurfaceTests,
     Glob.one `Tests.TMGateOneProbeInstallSurfaceTests,

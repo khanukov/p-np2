@@ -31,9 +31,10 @@ handoff.  No repair and no rejection is claimed for it.
 **Absent from this surface**: any pass-A execution, operand-1 read, combine step,
 output write, and any `TM.accepts`, verdict, full-clock, gate-semantics,
 acceptance-gate, multi-gate, specification-bridge or padded-tape surface.  The
-**all-literal** repaired runs from `G1M.initialConfig` are deferred in full to
-Repair-2b, so no probe wrapper appears here either.  This is an audit surface:
-it pins public signatures and proves nothing new.
+**all-literal** repaired runs from `G1M.initialConfig` live with their module in
+**Repair-2b** and are pinned by `TMGateOneRepairExamplesSurfaceTests`, so no
+probe wrapper appears here either.  This is an audit surface: it pins public
+signatures and proves nothing new.
 -/
 
 namespace Pnp3.Tests.TMGateOneRepairDriverSurface
@@ -223,8 +224,8 @@ theorem check_g1CS_readB_positive_repaired_projections (r : G1Request)
     g1CS_readB_positive_repaired_tape r hc ht h2 b hb,
     g1CS_readB_positive_repaired_tape_initial r hc ht h2 b hb⟩
 
-/-- **The zero-index read, repaired.**  At `arg2 = 0` nothing was consumed, so
-the sweep writes nothing: it is a pure rewind to the same canonical handoff. -/
+/-- **The zero-index read, repaired.**  At `arg2 = 0` nothing was consumed; the
+endpoint has no net tape change and the rewrite block has length `13 * 0`. -/
 theorem check_g1CS_readB_zero_repaired_exact (r : G1Request) (hc : r.Canonical)
     (ht : r.tag = .and ∨ r.tag = .or) (h2 : r.arg2 = 0) (b : Bool)
     (hb : r.vals[r.arg2]? = some b) :

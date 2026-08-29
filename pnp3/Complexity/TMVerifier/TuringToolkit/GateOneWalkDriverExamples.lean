@@ -188,7 +188,7 @@ theorem emptyExample_frames :
 
 /-- **Exactly `149` genuine steps end in the stable `bOOB` boundary**, head
 `4 * 11 = 44`, context `g1Ctx0` — nothing was latched — and the tape is
-bit-for-bit the initial word: this branch writes nothing anywhere. -/
+bit-for-bit the initial word at the endpoint. -/
 theorem oob_empty :
     TM.runConfig (M := G1M)
         (G1M.initialConfig (g1Point (encodeG1 g1EmptyExample))) 149 =

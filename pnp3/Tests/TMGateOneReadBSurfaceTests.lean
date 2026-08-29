@@ -319,7 +319,7 @@ theorem check_g1CS_readB_install_scan_head (r : G1Request) (hc : r.Canonical)
       4 * (r.tag.units + r.arg1 + r.arg2 + 4) :=
   g1CS_readB_install_scan_head r hc ht k h2
 
-/-- **The installation scan writes nothing.** -/
+/-- **The installation-scan endpoint tape equals the initial tape.** -/
 theorem check_g1CS_readB_install_scan_tape (r : G1Request) (hc : r.Canonical)
     (ht : r.tag = .and ∨ r.tag = .or) (k : Nat) (h2 : r.arg2 = k + 1) :
     (TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))

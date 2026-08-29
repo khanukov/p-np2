@@ -53,7 +53,7 @@ advice, no free budget parameter.
 `g1CS_readB_positive_repaired_exact` is `g1CS_readB_positive_exact` (at `s = a`)
 plus the sweep, in `g1BPassASteps r = g1BReadSteps r + g1RepairSteps r a` steps;
 `g1CS_readB_zero_repaired_exact` is `g1CS_readB_zero_exact` (at `s = 0`, where
-the sweep is a pure rewind: nothing was consumed, so **nothing is written**) plus
+the sweep has an empty `spent → index` rewrite block) plus
 the sweep, in `g1ZPassASteps r = g1ReadBSteps r + g1RepairSteps r 0` steps.  Both
 end in the **same** `g1ReadAConfig r b`, whose tape is literally
 `(G1M.initialConfig (g1Point (encodeG1 r))).tape`, and both totals fit the
@@ -73,10 +73,14 @@ and **not** a rejection theorem; `g1CS_readB_positive_oob_unrepaired` below only
 records that it is still unrepaired and is a different state from the pass-A
 handoff.  Every execution statement is scoped to the exact tape `encodeG1 r`.
 
-The **all-literal** repaired runs — concrete requests, concrete step counts,
-concrete endpoint words — are deferred in full to **Repair-2b**: this slice
-ships no example module, and every statement below is quantified over the
-caller's request.
+Every statement below is quantified over the caller's request.  The
+**all-literal** repaired runs — concrete requests, concrete step counts,
+concrete endpoint words — are **Repair-2b**, delivered in
+`GateOneRepairExamples`: `⟨and, 0, 0, [true]⟩` in `172` steps,
+`⟨and, 0, 1, [false, true]⟩` in `294` and `⟨and, 0, 2, [false, true, true]⟩` in
+`400`, each from the real `G1M.initialConfig` onto `g1ReadAConfig r true`.  That
+module also keeps encoded input length, explicit validation frame-word extent
+and derived capacity `G1M.tapeLength (encodeG1 r).length` separate.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -444,8 +448,8 @@ theorem g1CS_readB_positive_repaired_exact (r : G1Request) (hc : r.Canonical)
 request with `arg2 = 0` and `r.vals[0]? = some b`, exactly
 `g1ZPassASteps r = g1ReadBSteps r + (4u + 4a1 + 22) = g1ReadBHandoffSteps r +
 8u + 8a1 + 43` genuine steps take `G1M.initialConfig` to the **same** pass-A
-`g1ReadAConfig r b`.  At `arg2 = 0` the read wrote nothing, so the sweep has no
-consumed unit to repair (`s = 0`, `13 * 0 = 0` write steps): it is a pure rewind
+`g1ReadAConfig r b`.  At `arg2 = 0` the sweep has no consumed unit to repair
+(`s = 0`, `13 * 0 = 0` rewrite steps): it is a pure rewind
 back to head `0`.  That is why both branches share one endpoint. -/
 theorem g1CS_readB_zero_repaired_exact (r : G1Request) (hc : r.Canonical)
     (ht : r.tag = .and ∨ r.tag = .or) (h2 : r.arg2 = 0) (b : Bool)
@@ -541,8 +545,8 @@ theorem g1CS_readB_zero_repaired_vB (r : G1Request) (hc : r.Canonical)
         (g1ZPassASteps r)).state.snd.ctx.vB = b := by
   rw [g1CS_readB_zero_repaired_exact r hc ht h2 b hb]; rfl
 
-/-- **The zero-index branch is genuinely non-destructive**: the sweep writes
-nothing, so the endpoint tape is the initial tape itself. -/
+/-- **The zero-index branch has no net tape change**: its endpoint tape is the
+initial tape, and the repair rewrite block has length `13 * 0`. -/
 theorem g1CS_readB_zero_repaired_tape (r : G1Request) (hc : r.Canonical)
     (ht : r.tag = .and ∨ r.tag = .or) (h2 : r.arg2 = 0) (b : Bool)
     (hb : r.vals[r.arg2]? = some b) :

@@ -30,6 +30,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOneWalkDriverExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneRepairKernel
 import Complexity.TMVerifier.TuringToolkit.GateOneRepairKernelExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneRepairDriver
+import Complexity.TMVerifier.TuringToolkit.GateOneRepairExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneIndexRound
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
@@ -933,8 +934,8 @@ open Pnp3.Magnification
 -- not read), combine, the output write, and any `TM.accepts`, verdict,
 -- full-clock, gate-semantics, acceptance-gate, multi-gate,
 -- specification-bridge or padded-tape claim.  The **all-literal** repaired runs
--- from `G1M.initialConfig` are deferred in full to Repair-2b, so this slice
--- registers no repair-driver example module and no probe roots.
+-- from `G1M.initialConfig` are deferred in full to Repair-2b, whose module and
+-- probe roots are audited immediately below.
 #print axioms Internal.PsubsetPpoly.TM.g1RepairLeft_length
 #print axioms Internal.PsubsetPpoly.TM.g1RepairMid_length
 #print axioms Internal.PsubsetPpoly.TM.g1RepairTail_length
@@ -974,6 +975,85 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_readB_repaired_common_le_clock
 #print axioms Internal.PsubsetPpoly.TM.g1ReadAState_ne_oob
 #print axioms Internal.PsubsetPpoly.TM.g1CS_readB_positive_oob_unrepaired
+
+-- Repair-2b: the all-literal repaired reads of that driver.  Three exact `G1M`
+-- runs from the **real** `G1M.initialConfig` onto the one canonical pass-A
+-- handoff `g1ReadAConfig r true` — `⟨and, 0, 0, [true]⟩` in `172 = 134 + 38`
+-- steps, `⟨and, 0, 1, [false, true]⟩` in `294 = 239 + 55` and
+-- `⟨and, 0, 2, [false, true, true]⟩` in `400 = 328 + 72` — each with its head,
+-- control state, latched `vB`, endpoint word, initial-tape identity, clock
+-- bound and `readAStart`-idle projection, plus both arms of the common capstone
+-- `g1CS_readB_repaired_common` on literals.
+-- **Three lengths are kept apart**: `probe_extents` pins the encoded input length
+-- (`44`, `52`, `60`), explicit validation frame-word extent (`48`, `56`, `64`,
+-- including the all-false trailing `blank`) and the
+-- separately derived physical capacity `G1M.tapeLength (encodeG1 r).length`,
+-- whose zero-probe literal is `1037357`.  No root here identifies the physical
+-- tape length with the input length.
+-- **Nonvacuity is literal**: `zero_repaired_no_net_change` pins no net tape
+-- change and an empty rewrite block at `arg2 = 0`; the positive cell theorems
+-- pin that the two positive branches genuinely flip a physical cell between the
+-- read's terminal tape and the repaired endpoint, `*_selected` pin that the
+-- latched bit is the request's own `vals[arg2]`, not `vals[0]`, and
+-- `common_branch_literals` pins that the common capstone's branch is real — at
+-- the zero-index request the other arm would be `204`, not `172`.
+-- **Reuse, not duplication**: the `arg2 = 1` request/read count comes from
+-- `GateOneWalkDriverExamples`; the `arg2 = 2` request is the merged
+-- `GateOneInstallScanExamples.g1WalkExample`, with endpoint words from Repair-1b.
+-- `two_repaired_kernel_words` shows the machine reaches Repair-1b's
+-- caller-supplied words from the real initial configuration.
+-- **Deliberately absent**: pass A (`readAStart` is still idle and operand 1 is
+-- not read), combine, the output write, and any `TM.accepts`, verdict,
+-- full-clock, gate-semantics, acceptance-gate, multi-gate,
+-- specification-bridge, out-of-range-repair, non-canonical-word or padded-tape
+-- claim.
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.g1ZeroExample_canonical
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.g1ZeroExample_length
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.zero_safe
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.one_safe
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.two_safe
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.zeroFrames_eq
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.zeroFrames_layout
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.zeroFrames_counts
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.oneRepairedFrames_eq
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.oneRepairedFrames_counts
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.twoFrames_eq
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.twoRepaired_counts
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.probe_extents
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.repairSteps_zero
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.repairSteps_one
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.repairSteps_two
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.repairSteps_splits
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.zeroExample_steps
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.zero_repaired
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.zero_repaired_projections
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.zero_selected
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.zero_repaired_tape
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.zero_repaired_no_net_change
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.zero_repaired_clock
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.readA_idle_after_zero
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.oneExample_steps
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.one_repaired
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.one_repaired_projections
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.one_selected
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.one_repaired_tape
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.one_repaired_cell28
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.one_repaired_clock
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.readA_idle_after_one
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.twoExample_steps
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.two_repaired
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.two_repaired_projections
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.two_selected
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.two_repaired_tape
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.two_repaired_kernel_words
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.two_repaired_cell32
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.two_repaired_clock
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.readA_idle_after_two
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.common_arms_distinct
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.common_branch_literals
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.common_zero_arm
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.common_positive_arm
+#print axioms Internal.PsubsetPpoly.TM.G1RepairExamples.common_branch_clock
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

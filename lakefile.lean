@@ -221,9 +221,21 @@ lean_lib PnP3 where
     -- narrowed `G1RepairSkip`; the trailing `blank` lives in the unread tail.
     -- `readAStart` stays idle, operand 1 is not read, and the out-of-range
     -- `bOOB` boundary is left stable and unrepaired.
-    -- The all-literal repaired runs from `G1M.initialConfig` are deferred in
-    -- full to Repair-2b: this slice ships no repair-driver example module.
+    -- Repair-2b adds `GateOneRepairExamples`, the all-literal repaired runs
+    -- from `G1M.initialConfig` that Repair-2a deferred.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneRepairDriver,
+    -- Repair-2b, the literal repaired reads: three exact `G1M` runs from the
+    -- **real** `G1M.initialConfig` onto the one canonical handoff
+    -- `g1ReadAConfig r true` — `172 = 134 + 38`, `294 = 239 + 55` and
+    -- `400 = 328 + 72` steps at `arg2 = 0, 1, 2` — with head, state, `vB`,
+    -- endpoint word, initial-tape identity, clock bound and idle projections,
+    -- and both arms of the common capstone.  The zero branch has no net tape
+    -- change and an empty rewrite block;
+    -- the positive branches consume and restore, witnessed at cells `28`/`32`.
+    -- Encoded input length, explicit validation-word extent and
+    -- `G1M.tapeLength` are pinned separately (`probe_extents`); the `arg2 = 2`
+    -- endpoint words are Repair-1b's, reused verbatim.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneRepairExamples,
     -- The thirteen-step rewrite cycle at the G1 control, kept as an
     -- arbitrary-configuration regression: the bridge, the fourteen-step
     -- composed round and one literal frame-list probe.  Unreachable from
@@ -401,6 +413,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMGateOneRepairKernelSurfaceTests,
     Glob.one `Tests.TMGateOneRepairKernelExamplesSurfaceTests,
     Glob.one `Tests.TMGateOneRepairDriverSurfaceTests,
+    Glob.one `Tests.TMGateOneRepairExamplesSurfaceTests,
     Glob.one `Tests.FormulaSupportBoundsFalsifiabilityProbe,
     Glob.one `Tests.SmokeTests,
     Glob.one `Tests.UnitTests,

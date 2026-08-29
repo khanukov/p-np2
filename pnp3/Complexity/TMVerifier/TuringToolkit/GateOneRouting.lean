@@ -456,9 +456,10 @@ theorem g1ATagRoute_rejectPath (r : G1Request) (ht : r.tag = .const) :
   rw [h]
   exact ⟨trivial, Or.inr ⟨trivial, Or.inr ⟨trivial, Or.inr ⟨trivial, Or.inl rfl⟩⟩⟩⟩
 
-/-- **The pass-A family is entered by no route of this module.**  Every route
-prefix here is folded from `readBStart`, `bScan` or `bInsSeek`, and the frame
-table cannot cross into the pass-A modes from any of them. -/
+/-- **No frame route starting outside pass A enters its family.**  Every route
+prefix here that starts outside the family is folded from `readBStart`, `bScan`
+or `bInsSeek`, and the frame table cannot cross into the pass-A modes from any
+of them.  The executed `readAStart → aBof` door is separate and live. -/
 theorem g1ATagRoute_unreachable (mode : G1Mode) (frame : G1Frame)
     (hmode : ¬ G1PassAMode mode) : ¬ G1PassAMode (g1Advance mode frame) :=
   fun h => hmode (g1Advance_passA mode frame h)

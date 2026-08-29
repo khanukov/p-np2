@@ -2263,7 +2263,8 @@ with `pass = false` takes one stationary, tape-preserving step to `aBof`; a
 context with `pass = true` takes one such step to `combineStart`.  The exact
 tuple theorems are `g1Transition_readAStart_entry` and `_result`, and the old
 idle tuple/run theorems are deleted.  `g1Transition_passA_door` replaces the
-dormant-family closure: the executed family has exactly the `readAStart` door.
+former closed-family theorem: the executed family has exactly the
+`readAStart` door.
 `g1Transition_readAStart_unique` closes the dispatch predecessor at
 `bRepairDone`; `g1Transition_aInstallStart_unique` closes the residual-latch
 exit at the four operation latches or its own stationary boundary.  Together

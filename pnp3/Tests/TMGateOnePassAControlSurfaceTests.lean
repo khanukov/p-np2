@@ -24,6 +24,7 @@ new.
 
 namespace Pnp3.Tests.TMGateOnePassAControlSurface
 
+open Pnp3.Internal.PsubsetPpoly
 open Pnp3.Internal.PsubsetPpoly.TM
 open Pnp3.Internal.PsubsetPpoly.TM.G1PassAControlExamples
 
@@ -48,14 +49,8 @@ open Pnp3.Internal.PsubsetPpoly.TM.G1PassAControlExamples
 #check @g1ConstActivatedSteps
 #check @g1CS_activate_unary_exact
 #check @g1CS_activate_binary_exact
-#check @g1CS_activate_binary_not_result
 #check @g1CS_activate_const_exact
-#check @g1CS_passA_entry_initial_exact
-#check @g1CS_install_unary_exact
 #check @g1CS_install_binary_exact
-#check @g1UActivatedSteps_le_clock
-#check @g1BActivatedSteps_le_clock
-#check @g1ConstActivatedSteps_le_clock
 
 -- The six all-literal probes and the literal requests behind them.
 #check @aInputExample
@@ -126,6 +121,14 @@ theorem check_g1CS_passA_entry_exact (n : Nat) (pre suffix : List G1Frame)
         (ctx.withRes (g1Residual r.tag ctx.vB)) :=
   g1CS_passA_entry_exact n pre suffix r ht ctx hsafe
 
+/-- The live-anchor adapter uses the exact initial tape and reaches the exact
+residual-latched install configuration. -/
+theorem check_g1CS_passA_entry_initial_exact (r : G1Request)
+    (ht : r.tag ≠ .const) (b : Bool) :
+    TM.runConfig (M := G1M) (g1ABofConfig r b)
+        (4 * (r.tag.units + 2) + 1) = g1AInstallConfig r b :=
+  g1CS_passA_entry_initial_exact r ht b
+
 /-- **What the entry leaves behind**: the gate's residual in the two spare
 context bits, and the operand-2 value still in `vB`. -/
 theorem check_g1CS_passA_entry_ctx (r : G1Request) (ctx : G1Ctx) :
@@ -141,6 +144,26 @@ theorem check_g1CS_activate_binary_exact (r : G1Request) (hc : r.Canonical)
     G1M.runConfig (G1M.initialConfig (g1Point (encodeG1 r)))
         (g1BActivatedSteps r) = g1ABofConfig r b :=
   g1CS_activate_binary_exact r hc ht b hb
+
+/-- A successful binary activation is exactly at the A anchor and not at the
+result boundary. -/
+theorem check_g1CS_activate_binary_not_result (r : G1Request)
+    (hc : r.Canonical) (ht : r.tag = .and ∨ r.tag = .or) (b : Bool)
+    (hb : r.vals[r.arg2]? = some b) :
+    (TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1BActivatedSteps r)).state.snd.mode = .aBof ∧
+      (TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1BActivatedSteps r)).state.snd.mode ≠ .combineStart :=
+  g1CS_activate_binary_not_result r hc ht b hb
+
+/-- The unary route reaches the exact residual-latched install configuration
+on the unchanged initial tape. -/
+theorem check_g1CS_install_unary_exact (r : G1Request) (hc : r.Canonical)
+    (ht : r.tag = .input ∨ r.tag = .not) :
+    TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1UActivatedSteps r + (4 * (r.tag.units + 2) + 1)) =
+      g1AInstallConfig r false :=
+  g1CS_install_unary_exact r hc ht
 
 /-- The same route then reaches the residual-latched install boundary, with
 operand 1 still unread. -/
@@ -158,6 +181,23 @@ theorem check_g1CS_activate_const_exact (r : G1Request) (hc : r.Canonical)
     G1M.runConfig (G1M.initialConfig (g1Point (encodeG1 r)))
         (g1ConstActivatedSteps r) = g1CombineConfig r b :=
   g1CS_activate_const_exact r hc ht b hs
+
+/-- The full activated unary prefix fits the unchanged public clock. -/
+theorem check_g1UActivatedSteps_le_clock (r : G1Request) :
+    g1UActivatedSteps r + (4 * (r.tag.units + 2) + 1) ≤
+      g1Clock (encodeG1 r).length :=
+  g1UActivatedSteps_le_clock r
+
+/-- The activated constant bypass fits the unchanged public clock. -/
+theorem check_g1ConstActivatedSteps_le_clock (r : G1Request) :
+    g1ConstActivatedSteps r ≤ g1Clock (encodeG1 r).length :=
+  g1ConstActivatedSteps_le_clock r
+
+/-- The full activated binary prefix fits the unchanged public clock. -/
+theorem check_g1BActivatedSteps_le_clock (r : G1Request) :
+    g1BActivatedSteps r + (4 * (r.tag.units + 2) + 1) ≤
+      g1Clock (encodeG1 r).length :=
+  g1BActivatedSteps_le_clock r
 
 /-- **The four literal probes latch four different residuals**, so the table is
 not vacuous, and the five literal requests are genuinely canonical. -/

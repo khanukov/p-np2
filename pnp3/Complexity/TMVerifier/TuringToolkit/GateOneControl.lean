@@ -490,7 +490,8 @@ def g1ABofState (ctx : G1Ctx) : G1State :=
 
 /-- **The pass-A install handoff**: head on the first cell of the operand-1
 field (the `argSep` closing it when the field is empty), with the residual
-latched in the two spare context bits.  Dormant and stationary. -/
+latched in the two spare context bits.  Reached by the live pass-A rescan and
+stationary until the deferred operand-1 walk is implemented. -/
 def g1AInstallState (ctx : G1Ctx) : G1State :=
   g1State .aInstallStart .p0 false false false ctx
 
@@ -820,7 +821,7 @@ of the destructive round, the eleven non-forward modes of the cursor walk
 (`bSeek` reads right to left, the two latch modes dispatch, the six writers
 write and the two turns hold), the five modes of the operand-2 repair sweep
 (`bRepairSeek` reads right to left, the writer and its back-walk write, the hop
-moves left and the terminal dispatch holds), the four dormant operand-1
+moves left and the terminal dispatch holds), the four non-forward operand-1
 operation latches (`aOpInput`, `aOpNot`, `aOpAnd`, `aOpOr`), the five remaining
 handoffs (`aInstallStart`, `readAStart`, `combineStart`, `readAResetStart`,
 `bOOB`) and the two sinks are not.  The pass-A anchor read `aBof` and
@@ -886,7 +887,7 @@ theorem G1ForwardMode.readBStart : G1ForwardMode .readBStart := trivial
 complete-frame read enters `reject`, and it is not the end-of-input mode.  In
 particular the four dispatch modes, the five modes of the destructive round,
 the eleven non-forward modes of the cursor walk, the five modes of the
-operand-2 repair sweep, the four dormant operand-1 operation latches,
+operand-2 repair sweep, the four non-forward operand-1 operation latches,
 the five remaining handoffs and the `reject` sink are
 stuck; `rewind` and `accept` also satisfy this table-level predicate but are
 unreachable as results of `g1Advance`;
@@ -1608,7 +1609,8 @@ def g1Transition (_phase : Fin 1) (s : G1State) (scan : Bool) :
   -- writing the residual of the rescanned tag and the operand-2 value latched in
   -- `vB` into the two spare context bits, leaving `vB`, the tape and the head
   -- untouched.  These are the only rows that call `withRes`, and they install
-  -- into the self-looping `aInstallStart`, so no live run evaluates them.
+  -- into the self-looping `aInstallStart`.  The live pass-A rescan reaches and
+  -- evaluates one of these rows before stopping at that stationary handoff.
   | .aOpInput => (0, g1AInstallState (s.ctx.withRes (g1Residual .input s.ctx.vB)),
                     scan, .stay)
   | .aOpNot => (0, g1AInstallState (s.ctx.withRes (g1Residual .not s.ctx.vB)),

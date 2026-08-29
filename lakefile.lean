@@ -249,7 +249,8 @@ lean_lib PnP3 where
     -- S1b1/S1b2b, the pass-A control ABI and live entry: the twelve pass-A modes, the
     -- residual view of the two spare context bits and the frame rows that join
     -- them are declared in `GateOneControl`/`GateOneRouting`, and
-    -- `GateOnePassAControl` executes them on caller-supplied configurations.
+    -- `GateOnePassAControl` executes both caller-supplied atoms and the
+    -- real-initial activation.
     -- S1b2b makes `readAStart` the exact two-way dispatch, closes its
     -- predecessors/exits, and composes real unary/constant/binary repaired
     -- routes to `aBof`/`aInstallStart` or `combineStart`, within unchanged

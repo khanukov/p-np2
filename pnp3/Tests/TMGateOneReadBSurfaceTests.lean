@@ -85,12 +85,46 @@ open Pnp3.Internal.PsubsetPpoly.TM
 
 -- The live `readAStart`, the remaining idle handoffs, and the executed `readAResetStart` bridge
 -- that replaces the former `g1CS_runConfig_readAReset_idle`.
-#check @g1CS_step_readAStart_entry
-#check @g1CS_step_readAStart_result
-#check @g1CS_step_readAStart_operandB_not_result
 #check @g1CS_runConfig_combine_idle
 #check @g1CS_runConfig_oob_sink
 #check @g1CS_step_readAReset_bridge
+
+/-! ## Exact live-dispatch theorem contracts -/
+
+/-- The aligned entry adapter preserves the exact head, tape and context. -/
+theorem check_g1CS_step_readAStart_entry (n h : Nat)
+    (hh : h < G1M.tapeLength n)
+    (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx)
+    (hpass : ctx.pass = false) :
+    TM.runConfig (M := G1M)
+        (g1AlignedConfig n h hh tape .readAStart .p0 false false false ctx) 1 =
+      g1AlignedConfig n h hh tape .aBof .p0 false false false ctx :=
+  g1CS_step_readAStart_entry n h hh tape ctx hpass
+
+/-- The aligned result adapter preserves the exact head, tape and context. -/
+theorem check_g1CS_step_readAStart_result (n h : Nat)
+    (hh : h < G1M.tapeLength n)
+    (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx)
+    (hpass : ctx.pass = true) :
+    TM.runConfig (M := G1M)
+        (g1AlignedConfig n h hh tape .readAStart .p0 false false false ctx) 1 =
+      g1AlignedConfig n h hh tape .combineStart .p0 false false false ctx :=
+  g1CS_step_readAStart_result n h hh tape ctx hpass
+
+/-- An operand-B context takes the exact entry step and cannot be mistaken for
+the result branch. -/
+theorem check_g1CS_step_readAStart_operandB_not_result (n h : Nat)
+    (hh : h < G1M.tapeLength n) (tape : Fin (G1M.tapeLength n) → Bool)
+    (b : Bool) :
+    TM.runConfig (M := G1M)
+        (g1AlignedConfig n h hh tape .readAStart .p0 false false false
+          (g1Ctx0.withVB b)) 1 =
+      g1AlignedConfig n h hh tape .aBof .p0 false false false
+        (g1Ctx0.withVB b) ∧
+      (TM.runConfig (M := G1M)
+        (g1AlignedConfig n h hh tape .readAStart .p0 false false false
+          (g1Ctx0.withVB b)) 1).state.snd.mode ≠ .combineStart :=
+  g1CS_step_readAStart_operandB_not_result n h hh tape b
 
 /-! ## The exact route capstones from the real initial configuration -/
 

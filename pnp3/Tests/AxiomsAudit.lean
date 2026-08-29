@@ -1119,10 +1119,11 @@ open Pnp3.Magnification
 -- S1b2b, the live pass-A entry.  Twelve pass-A modes, the frame rows
 -- that join them, the residual view of the two spare context bits, the result
 -- convention, the operation latch, and the executed capstones of all of it on
--- caller-supplied configurations.  Every public root of the slice is audited
--- directly here, not only through the capstones that use it.
+-- caller-supplied configurations and from the real initial configuration.
+-- Every public root of the slice is audited directly here, not only through
+-- the capstones that use it.
 --
--- `g1Advance_passA` rules out frame-table entry;
+-- `g1Advance_passA` rules out frame-table entry from outside the family;
 -- `g1Transition_passA_door` names live `readAStart` as the sole external door,
 -- while the predecessor and install-exit theorems prevent residual contexts
 -- from being treated as results.

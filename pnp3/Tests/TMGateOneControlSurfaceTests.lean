@@ -85,8 +85,6 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1Transition_rewind_p1
 #check @g1Transition_rewind_p0_bof
 #check @g1Transition_rewind_p0_other
-#check @g1Transition_readAStart_entry
-#check @g1Transition_readAStart_result
 #check @g1Transition_combineStart_idle
 #check @g1Transition_readAResetStart_bridge
 #check @g1Transition_bOOB_stable
@@ -219,8 +217,9 @@ open Pnp3.Internal.PsubsetPpoly.TM
 
 -- The pass-A control ABI and its S1b2b activation.  The residual view of the two spare
 -- context bits and the result convention, the two named pass-A states, the
--- twelve-mode family predicate with its two closure theorems, the operation
--- latch, the idle install handoff and the live two-way `readAStart` dispatch.
+-- twelve-mode family predicate with its frame-table closure and executed door,
+-- the operation latch, the idle install handoff and the live two-way
+-- `readAStart` dispatch.
 #check @g1ResPass
 #check @g1ResCrossed
 #check @G1Ctx.res
@@ -250,8 +249,6 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1Transition_aOp
 #check @g1Transition_aInstallStart_idle
 #check @g1Transition_passA_door
-#check @g1Transition_readAStart_unique
-#check @g1Transition_aInstallStart_unique
 
 /-! ## Exact theorem-contract pins -/
 
@@ -589,8 +586,8 @@ theorem check_g1FrameScanner_scanFrames (n : Nat)
 
 /-! ## The live pass-A control ABI (S1b2b)
 
-Every row of the twelve-mode family, the two closure theorems that make it
-frame-table-unreachable, and entered only through live `readAStart`. -/
+Every row of the twelve-mode family, its closure against frame-table entry from
+outside, and its sole executed external door through live `readAStart`. -/
 
 /-- **The complete pass-A frame table.**  The anchor read, the five
 counter rows and the four `argSep` rows that select an operation latch — and the
@@ -635,20 +632,37 @@ theorem check_g1_passA_door :
           G1PassAMode s.mode ∨ s.mode = .readAStart) :=
   ⟨g1Advance_passA, g1Transition_passA_door⟩
 
-/-- The live dispatch has exactly two branches, and no frame-table row produces
-it. -/
-theorem check_g1_readAStart_live (phase : Fin 1)
-    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx0 ctx1 : G1Ctx)
-    (h0 : ctx0.pass = false) (h1 : ctx1.pass = true) :
-    g1Transition phase (g1State .readAStart position b0 b1 b2 ctx0) scan =
-        (0, g1ABofState ctx0, scan, .stay) ∧
-      g1Transition phase (g1State .readAStart position b0 b1 b2 ctx1) scan =
-        (0, g1CombineState ctx1, scan, .stay) ∧
-      ∀ (mode : G1Mode) (frame : G1Frame),
-        g1Advance mode frame ≠ .readAStart :=
-  ⟨g1Transition_readAStart_entry phase position b0 b1 b2 scan ctx0 h0,
-    g1Transition_readAStart_result phase position b0 b1 b2 scan ctx1 h1,
-    g1_readAStart_unreachable⟩
+/-- The live entry branch preserves the scanned cell and context and keeps the
+head stationary while entering the A-specific anchor state. -/
+theorem check_g1Transition_readAStart_entry (phase : Fin 1)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx)
+    (hpass : ctx.pass = false) :
+    g1Transition phase (g1State .readAStart position b0 b1 b2 ctx) scan =
+      (0, g1ABofState ctx, scan, .stay) :=
+  g1Transition_readAStart_entry phase position b0 b1 b2 scan ctx hpass
+
+/-- The live result branch preserves the scanned cell and context and keeps the
+head stationary while entering the combine boundary. -/
+theorem check_g1Transition_readAStart_result (phase : Fin 1)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx)
+    (hpass : ctx.pass = true) :
+    g1Transition phase (g1State .readAStart position b0 b1 b2 ctx) scan =
+      (0, g1CombineState ctx, scan, .stay) :=
+  g1Transition_readAStart_result phase position b0 b1 b2 scan ctx hpass
+
+/-- The repair terminal is the exact and only predecessor of `readAStart`. -/
+theorem check_g1Transition_readAStart_unique (phase : Fin 1) (s : G1State)
+    (scan : Bool) (h : (g1Transition phase s scan).2.1.mode = .readAStart) :
+    s.mode = .bRepairDone :=
+  g1Transition_readAStart_unique phase s scan h
+
+/-- The four operation latches and the stationary boundary are the exact
+predecessors of `aInstallStart`. -/
+theorem check_g1Transition_aInstallStart_unique (phase : Fin 1) (s : G1State)
+    (scan : Bool) (h : (g1Transition phase s scan).2.1.mode = .aInstallStart) :
+    s.mode = .aOpInput ∨ s.mode = .aOpNot ∨ s.mode = .aOpAnd ∨
+      s.mode = .aOpOr ∨ s.mode = .aInstallStart :=
+  g1Transition_aInstallStart_unique phase s scan h
 
 /-- **The operation latch and the idle install handoff, pinned exactly.**  One
 stationary step writes the residual of `(t, ctx.vB)` into the two spare context

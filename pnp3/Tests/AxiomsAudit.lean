@@ -181,11 +181,14 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameScanner.revScanFrames_state
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameScanner.revScanFrames_head
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameScanner.revScanToAnchor
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameScanner.revSkipToBoundary
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameScanner.revSeekAcrossBoundary
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.writeFrame4_apply
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.writeFrame4_frameListTape
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameWriter.writeMacrostep
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameWriter.writeFrameOnList
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.revProbeCS_scan_word
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.revProbeCS_seek_across_mark
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.revProbeCS_write_cell
 #print axioms Internal.PsubsetPpoly.TM.t1RevScanner_rewind_tail
 #print axioms Internal.PsubsetPpoly.TM.g1RevScanner_rewind_tail

@@ -2335,6 +2335,53 @@ read, operand-1 walk/repair/OOB behavior, combine execution, output or
 acceptance, advice, and multi-gate composition.  Existing rejection and OOB
 behavior is unchanged.
 
+**S3a: generic reverse mixed-boundary seek, delivered (2026-08-29):**
+
+**Progress classification: Infrastructure.**  This generic execution layer
+does not reduce `SearchMCSPWeakLowerBound` or
+`VerifiedNPDAGLowerBoundSource` and is not P-vs-NP mainline progress.
+
+This slice extends only the generic reverse scanner and its independent probe.
+It adds no G1 control mode, route or machine theorem, and it changes no existing
+generic, T1 or G1 scanner API.
+
+* `FrameScannerSeek.lean` — `revSkipToBoundary` crosses `outer` right-to-left
+  in `mOut`, reads one heterogeneous `boundary` frame whose explicit table row
+  is `revAdvance mOut boundary = mIn`, and lands reverse-aligned immediately to
+  its left in exactly `4 * outer.length + 4` steps.  Its hypotheses explicitly
+  require the outer skip predicate, both non-stop facts, positive left context
+  and physical tape safety.  `revSeekAcrossBoundary` composes that run with
+  `revSeekToMarker`: it crosses `inner` in `mIn`, stops on `marker`, preserves
+  the literal list-backed tape and carried context, and ends at head
+  `4 * pre.length` in exactly
+  `4 * (inner.length + outer.length + 1) + 4` steps.  The selector is the
+  reverse mode; there is no padding, advice or annotated target cell.
+* `FrameScannerReverseProbe.lean` — the existing non-T1/non-G1
+  `revProbeCS` is a genuine executable `ConstStatePhasedProgram` with its own
+  transition table and clock.  `revProbeCS_seek_across_mark` instantiates the
+  new driver on the literal word
+  `anchor · cell true · mark · cell false · spent`.  Starting at head `19` in
+  `rScan`, the fixed machine crosses the two-frame outer region, switches at
+  `mark`, crosses the one-frame inner region in `rMark`, then reads `anchor` and
+  reaches literal head `0` and state `rHalt.q0` after
+  `4 * (1 + 2 + 1) + 4 = 20` steps.  The exact tape and three-Boolean context
+  are unchanged.  The theorem is unconditional for every `n`; its concrete
+  tape-capacity proof is supplied by `revProbeScanner_lt_tapeLength`, so the run
+  is nonvacuous rather than hidden behind an impossible safety premise.
+
+`Tests/TMFrameScannerReverseSurfaceTests.lean` gives theorem-style exact
+contract wrappers for `revSkipToBoundary`, `revSeekAcrossBoundary` and
+`revProbeCS_seek_across_mark`.  `Tests/AxiomsAudit.lean` prints those three
+source declarations as direct roots.  The already registered source modules
+`FrameScannerSeek`/`FrameScannerReverseProbe` and the already registered
+surface root `TMFrameScannerReverseSurfaceTests` remain explicit in
+`lakefile.lean`, whose registration comments now name S3a.
+
+**Scope boundary.**  These theorems concern canonical list-backed frame tapes.
+No claim is made about arbitrary tapes without `physicalBitsAt` and safety
+hypotheses.  There is no addressing correctness, operand read, G1 route,
+acceptance, runtime-polynomial or verifier theorem in this slice.
+
 **T2a correction (2026-08-24).**  The first T2a head shipped a permissive
 forward table (`vTag` looping on every `tag`, `vArg1`/`vArg2` looping on every
 `index`) whose language was strictly larger than `G1Request.Canonical`, while

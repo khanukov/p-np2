@@ -6,7 +6,8 @@ import Complexity.TMVerifier.TuringToolkit.FrameScannerReverseInstances
 
 Pins the shared phase-aligned layer, the generic reverse macrostep and list
 induction with its projections, the four-cell write/replacement layer, the
-non-T1 probe with its two concrete runs, and the T1/G1 reverse regressions.
+generic mixed-boundary seek, the non-T1 probe with its three concrete runs, and
+the T1/G1 reverse regressions.
 -/
 
 namespace Pnp3.Tests.TMFrameScannerReverseSurface
@@ -32,6 +33,8 @@ open Pnp3.Internal.PsubsetPpoly.TM.FrameScan
 #check @ReverseFrameScanner.revScanFrames_tape
 #check @ReverseFrameScanner.revScanFrames_state
 #check @ReverseFrameScanner.revScanFrames_head
+#check @ReverseFrameScanner.revSkipToBoundary
+#check @ReverseFrameScanner.revSeekAcrossBoundary
 
 -- generic write/replacement kernel
 #check @writeFrame4
@@ -43,6 +46,7 @@ open Pnp3.Internal.PsubsetPpoly.TM.FrameScan
 #check @revProbeWriter
 #check @ReverseFrameScanner.revValidPath_const
 #check @revProbeTail_advanceList
+#check @revProbeCS_seek_across_mark
 
 
 -- concrete T1/G1 reverse instances and regressions
@@ -113,6 +117,55 @@ theorem check_revScanToAnchor
         (K.stopState (K.revAdvance (K.revAdvanceList mode scanned) anchor) a) :=
   K.revScanToAnchor n anchor scanned suffix mode a hpath hrev hstop hsafe
 
+theorem check_revSkipToBoundary
+    (K : ReverseFrameScanner S F Mode Aux) (n : Nat)
+    (pre : List F) (boundary : F) (outer suffix : List F) (mOut mIn : Mode)
+    (a : Aux) (hrev : K.Reverse mOut) (hnostop : ¬ K.Stop mOut)
+    (houter : ∀ f ∈ outer, K.revAdvance mOut f = mOut)
+    (hbnd : K.revAdvance mOut boundary = mIn) (hnostopIn : ¬ K.Stop mIn)
+    (hpre : 0 < pre.length)
+    (hsafe : 4 * (pre.length + outer.length) + 4 < K.machine.tapeLength n) :
+    K.machine.runConfig
+        (K.revAligned n (4 * (pre.length + outer.length) + 3) (by omega)
+          (frameListTape
+            ((pre ++ boundary :: outer ++ suffix).flatMap K.codec.bits))
+          mOut a)
+        (4 * outer.length + 4) =
+      K.revAligned n (4 * pre.length - 1) (by omega)
+        (frameListTape
+          ((pre ++ boundary :: outer ++ suffix).flatMap K.codec.bits))
+        mIn a :=
+  K.revSkipToBoundary n pre boundary outer suffix mOut mIn a hrev hnostop
+    houter hbnd hnostopIn hpre hsafe
+
+theorem check_revSeekAcrossBoundary
+    (K : ReverseFrameScanner S F Mode Aux) (n : Nat)
+    (pre : List F) (marker : F) (inner : List F) (boundary : F)
+    (outer suffix : List F) (mOut mIn : Mode) (a : Aux)
+    (hrevOut : K.Reverse mOut) (hnostopOut : ¬ K.Stop mOut)
+    (hrevIn : K.Reverse mIn) (hnostopIn : ¬ K.Stop mIn)
+    (houter : ∀ f ∈ outer, K.revAdvance mOut f = mOut)
+    (hbnd : K.revAdvance mOut boundary = mIn)
+    (hinner : ∀ f ∈ inner, K.revAdvance mIn f = mIn)
+    (hstop : K.Stop (K.revAdvance mIn marker))
+    (hsafe : 4 * (pre.length + (inner.length + outer.length + 1)) + 4 <
+      K.machine.tapeLength n) :
+    K.machine.runConfig
+        (K.revAligned n
+          (4 * (pre.length + (inner.length + outer.length + 1)) + 3) (by omega)
+          (frameListTape
+            ((pre ++ marker :: inner ++ boundary :: outer ++ suffix).flatMap
+              K.codec.bits))
+          mOut a)
+        (4 * (inner.length + outer.length + 1) + 4) =
+      K.alignedConfigQ n (4 * pre.length) (by omega)
+        (frameListTape
+          ((pre ++ marker :: inner ++ boundary :: outer ++ suffix).flatMap
+            K.codec.bits))
+        (K.stopState (K.revAdvance mIn marker) a) :=
+  K.revSeekAcrossBoundary n pre marker inner boundary outer suffix mOut mIn a
+    hrevOut hnostopOut hrevIn hnostopIn houter hbnd hinner hstop hsafe
+
 theorem check_writeFrame4_apply {L : Nat} (base : Nat) (b0 b1 b2 b3 : Bool)
     (tape : Fin L → Bool) (i : Fin L) :
     writeFrame4 base b0 b1 b2 b3 tape i =
@@ -164,6 +217,18 @@ theorem check_revProbeCS_scan_word (n : Nat) (a : Bool × Bool × Bool) :
         (frameListTape (revProbeWord.flatMap RevFrame.bits))
         (revState .rHalt .q0 false false false a) :=
   revProbeCS_scan_word n a
+
+theorem check_revProbeCS_seek_across_mark
+    (n : Nat) (a : Bool × Bool × Bool) :
+    revProbeScanner.machine.runConfig
+        (revProbeScanner.revAligned n 19
+          (revProbeScanner_lt_tapeLength (by omega))
+          (frameListTape (revProbeWord.flatMap RevFrame.bits)) .rScan a) 20 =
+      revProbeScanner.alignedConfigQ n 0
+        (revProbeScanner_lt_tapeLength (by omega))
+        (frameListTape (revProbeWord.flatMap RevFrame.bits))
+        (revState .rHalt .q0 false false false a) :=
+  revProbeCS_seek_across_mark n a
 
 theorem check_revProbeCS_write_cell (n : Nat) (a : Bool × Bool × Bool) :
     revProbeWriter.machine.runConfig

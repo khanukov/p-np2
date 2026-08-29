@@ -86,13 +86,14 @@ lean_lib PnP3 where
     Glob.one `Complexity.TMVerifier.TuringToolkit.FrameScannerCodec,
     Glob.one `Complexity.TMVerifier.TuringToolkit.FrameScannerKernel,
     Glob.one `Complexity.TMVerifier.TuringToolkit.FrameScannerProbe,
-    -- Reverse/write half of the same kernel: right-to-left frame scanning and
-    -- four-cell frame replacement, with a second non-T1 genericity probe.
+    -- Reverse/write half of the same kernel: right-to-left frame scanning,
+    -- four-cell frame replacement, and the S3a non-T1 mixed-boundary probe.
     Glob.one `Complexity.TMVerifier.TuringToolkit.FrameScannerReverse,
     Glob.one `Complexity.TMVerifier.TuringToolkit.FrameScannerWrite,
     Glob.one `Complexity.TMVerifier.TuringToolkit.FrameScannerReverseProbe,
     -- Mutation half of the same kernel: leftward writer, seek-until-marker
-    -- driver, the exact thirteen-step rewrite cycle, and a non-T1 probe.
+    -- and S3a mixed-boundary drivers, the exact thirteen-step rewrite cycle,
+    -- and a non-T1 probe.
     Glob.one `Complexity.TMVerifier.TuringToolkit.FrameScannerWriteLeft,
     Glob.one `Complexity.TMVerifier.TuringToolkit.FrameScannerSeek,
     Glob.one `Complexity.TMVerifier.TuringToolkit.FrameRewriteCycle,
@@ -421,6 +422,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMTrueUniformSeekSemanticsSurfaceTests,
     Glob.one `Tests.TMStepBridgeSurfaceTests,
     Glob.one `Tests.TMFrameScannerSurfaceTests,
+    -- Reverse/write and S3a mixed-boundary exact contract surface.
     Glob.one `Tests.TMFrameScannerReverseSurfaceTests,
     Glob.one `Tests.TMFrameRewriteCycleSurfaceTests,
     Glob.one `Tests.TMGateOnePureSurfaceTests,

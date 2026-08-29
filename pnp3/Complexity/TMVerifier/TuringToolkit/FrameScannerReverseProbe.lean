@@ -1,3 +1,4 @@
+import Complexity.TMVerifier.TuringToolkit.FrameScannerSeek
 import Complexity.TMVerifier.TuringToolkit.FrameScannerWrite
 import Mathlib.Tactic.DeriveFintype
 import Mathlib.Data.Fintype.Sigma
@@ -5,9 +6,10 @@ import Mathlib.Data.Fintype.Sigma
 /-!
 # A non-T1 instance of the reverse and write kernels (genericity probe)
 
-No T1 import: five disjoint codewords, two visited reverse modes, a Boolean
-triple context, an independent program/clock, and exact unconditional 20-step
-reverse plus 4-step replacement runs.  This is an audit-only genericity probe.
+No T1 or G1 import: five disjoint codewords, two visited reverse modes, a
+Boolean triple context, an independent executable program/clock, and exact
+unconditional 20-step reverse, 20-step mixed-boundary seek, and 4-step
+replacement runs.  This is an audit-only genericity probe.
 -/
 namespace Pnp3.Internal.PsubsetPpoly.TM.FrameScan
 
@@ -286,6 +288,32 @@ theorem revProbeCS_scan_word (n : Nat) (a : Bool × Bool × Bool) :
     (by simpa [revProbeTail] using
       revProbeScanner_lt_tapeLength (n := n) (k := 20) (by omega))
   simpa [revProbeTail, revProbeWord, revProbeScanner] using h
+
+/-- **Concrete non-T1/non-G1 mixed-boundary seek.**  Twenty genuine steps of
+the fixed probe machine cross `cell false · spent` in `rScan`, read `rvMark`
+and switch to `rMark` without stopping, cross `cell true` in `rMark`, and stop
+on `rvAnchor` at head `0`.  The literal list-backed tape and the complete
+three-Boolean context are unchanged, for every input length. -/
+theorem revProbeCS_seek_across_mark (n : Nat) (a : Bool × Bool × Bool) :
+    TM.runConfig (M := revProbeScanner.machine)
+        (revProbeScanner.revAligned n 19
+          (revProbeScanner_lt_tapeLength (by omega))
+          (frameListTape (revProbeWord.flatMap RevFrame.bits)) .rScan a) 20 =
+      revProbeScanner.alignedConfigQ n 0
+        (revProbeScanner_lt_tapeLength (by omega))
+        (frameListTape (revProbeWord.flatMap RevFrame.bits))
+        (revState .rHalt .q0 false false false a) := by
+  have hskip : ∀ (m : RevMode) (fs : List RevFrame),
+      (∀ f ∈ fs, revProbeAdvance m f = m) →
+      ∀ f ∈ fs, revProbeScanner.revAdvance m f = m := fun _ _ h => h
+  have h := revProbeScanner.revSeekAcrossBoundary n [] .rvAnchor
+    [RevFrame.rvCell true] .rvMark [RevFrame.rvCell false, .rvSpent] []
+    .rScan .rMark a trivial
+    (by simp [revProbeScanner, RevProbeStop, revProbeStops]) trivial
+    (by simp [revProbeScanner, RevProbeStop, revProbeStops])
+    (hskip .rScan _ (by decide)) rfl (hskip .rMark _ (by decide)) rfl
+    (by simpa using revProbeScanner_lt_tapeLength (n := n) (k := 20) (by omega))
+  simpa [revProbeWord, revProbeScanner] using h
 
 /-- Unconditional concrete non-T1 four-step frame replacement. -/
 theorem revProbeCS_write_cell (n : Nat) (a : Bool × Bool × Bool) :

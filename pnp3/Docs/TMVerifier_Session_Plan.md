@@ -542,8 +542,8 @@ head, state **and** tape (`n` abbreviates
 
 | hypotheses on `r` | steps | endpoint state | head |
 |---|---|---|---|
-| `Canonical`, `tag ∈ {input, not}` | `g1ReadARouteSteps r = 2n+9 + 4*(u+2)` | `readAStart`, `g1Ctx0` | `4*(u+2)` |
-| `Canonical`, `tag = const`, `spec = some b` | `g1ConstRouteSteps r = 2n+9 + 4*(u+arg1+3) + 1` | `combineStart`, `vB = b` | `4*(u+arg1+3)` |
+| `Canonical`, `tag ∈ {input, not}` | `g1ReadARouteSteps r = 2n+9 + 4*(u+2)` | `readAResetStart`, `g1Ctx0` | `4*(u+2)` |
+| `Canonical`, `tag = const`, `spec = some b` | `g1ConstRouteSteps r = 2n+9 + 4*(u+arg1+3) + 1` | `readAResetStart`, `g1ResultCtx b` | `4*(u+arg1+3)` |
 | `Canonical`, `tag ∈ {and, or}` | `g1FieldRouteSteps r = 2n+9 + 4*(u+arg1+3)` | `bScan`, `g1Ctx0` | `4*(u+arg1+3)` |
 | `Canonical`, `tag ∈ {and, or}`, `arg2 = 0`, `vals[arg2]? = some b` | `g1ReadBSteps r = 2n+9 + 4*(u+arg1+5) + 1` | `readAResetStart`, `vB = b` | `4*(u+arg1+5)` |
 | `Canonical`, `tag ∈ {and, or}`, `arg2 = 0`, `vals[arg2]? = none` | `g1ReadBOOBSteps r = 2n+9 + 4*(u+arg1+5)` | `bOOB`, `g1Ctx0` (stable) | `4*(u+arg1+5)` |
@@ -2196,14 +2196,10 @@ execution theorem — validation, rewind, the pass-B rescan, the cursor walk, th
 operand-2 repair sweep and all their literal probes — holds verbatim, and no run
 from `G1M.initialConfig` can enter pass A at all.
 
-**`readAStart` is still idle, and activation is deferred to S1b2.**
-`g1Transition_readAStart_idle` and `g1CS_runConfig_readA_idle` are still true
-and still present.  `g1Advance_eq_readAStart` enumerates the only two
-frame-table rows that produce `readAStart` — the `argSep` closing the pass-B tag
-run of `input` (`rTag1`) and of `not` (`rTag3`) — and those two, together with
-the two `const` literal rows, are exactly what **S1b2** must re-point through
-`readAResetStart` before it may turn `readAStart` into the dispatch on
-`ctx.pass` that reaches `aBof`.  This slice re-points nothing.
+At the S1b1 revision `readAStart` was still idle and route alignment remained
+deferred.  S1b2a below performs that alignment without activating the handoff;
+the current guardrail is `g1_readAStart_unreachable`, which states that no
+frame-table row now produces `readAStart`.
 
 **No new state, field, advice or clock.**  `G1Ctx` is the same three Booleans:
 `res`/`withRes` are a *view* of two bits that already existed, not a fourth
@@ -2211,7 +2207,8 @@ field, and `g1Clock` is unchanged.  The `const` filler row of `g1Residual` is
 never semantically consumed — `g1AOpMode .const = .reject` matches the `aTag2`
 gap, and the executed `const` rejection is a **local** fact about a
 configuration nothing reaches, not a claim that the machine rejects `const`
-requests (their live route still ends at `combineStart` in `GateOneReadB`).
+requests.  Their current live route carries `g1ResultCtx b` through the repair
+rewind and stops at idle `readAStart`.
 
 **One constraint recorded for S1b2 and the deferred walk.**  Two of the four
 residuals set the `pass` bit, so at `and`/`vB = false` the install context is
@@ -2225,21 +2222,58 @@ Pinned by `Tests/TMGateOneControlSurfaceTests.lean` and
 `Tests/TMGateOneRoutingSurfaceTests.lean` (extended) and
 `Tests/TMGateOnePassAControlSurfaceTests.lean` (new): `#check` pins for every
 new public declaration, plus exact theorem-contract wrappers for the complete
-dormant frame table, both closure theorems, the still-idle `readAStart` with its
-two producers, the latch tuple, the residual round-trip, the result-context
+dormant frame table, both closure theorems, the still-idle `readAStart`, the
+latch tuple, the residual round-trip, the result-context
 aliasing, the frame-level rescan and the executed atoms.
 `Tests/AxiomsAudit.lean` prints the axioms of every new statement **directly**;
 each depends only on `propext`, `Classical.choice` and `Quot.sound`.  One new
 toolkit module and one new surface test are registered in `lakefile.lean`.
 
-**Explicitly deferred to S1b2 and later, and claimed nowhere here:** activating
+**Explicitly deferred beyond S1b1 and claimed nowhere in that slice:** activating
 `readAStart`; re-pointing the `input`/`not`/`const` routes; the head-zero rewind
-into pass A; any run from `G1M.initialConfig` that reaches a pass-A mode; the
+to its boundary; any run from `G1M.initialConfig` that reaches a pass-A mode; the
 operand-1 cursor walk, its invariant, its repair and its out-of-range branch.
 **Deferred further and claimed nowhere:** the **combine** step, the **output
 write**, `TM.accepts`, a full-clock or acceptance theorem, gate-semantics
 correctness *of the machine*, multi-gate composition, the `SLGate` bridge, and
 non-canonical or physically padded tapes.
+
+**S1b2a: pass-A route alignment, delivered (2026-08-29):**
+
+**Progress classification: Infrastructure.**  This slice changes live routing,
+but does not execute pass A and does not reduce a P-vs-NP source obligation.
+
+The two unary pass-B rows, `rTag1 + argSep` and `rTag3 + argSep`, now enter
+`readAResetStart`.  Both constant literal tuples do the same while carrying
+`g1ResultCtx false` or `g1ResultCtx true`; they do not consume the dormant
+constant filler of `g1Residual`.  `g1RouteMode` and the exact pass-B route
+capstones expose those new endpoints.  The binary route, successful repaired
+read-B endpoint, rejection behavior and stable `bOOB` boundary are unchanged.
+
+`GateOneRepairDriver.g1CS_route_rewind_exact` instantiates the existing
+Repair-2 bridge/kernel with zero rewrites.  It preserves the tape and complete
+context and moves the route boundary to head-zero idle `readAStart`.  Composed
+from the real `G1M.initialConfig`,
+`g1CS_readA_unary_repaired_exact` reaches `g1ReadAConfig r false` for
+`input`/`not`, and `g1CS_const_repaired_exact` reaches
+`g1ReadAResultConfig r b` for `const`.  The latter pins exactly
+`g1ResultCtx b`.  No pass-A operand-1 selection/execution occurs; the const
+literal is decoded and the reset bridge is data-independent.  Route step counts
+are unchanged, and both new cumulative totals fit the unchanged `g1Clock`.
+
+The control, routing, read-B and repair-driver surfaces pin the exact rows,
+one-step tuple, generic rewind, endpoint projections, real-initial capstones and
+clock bounds.  `Tests/AxiomsAudit.lean` prints those theorem roots directly.
+The existing examples are updated only to their changed raw route endpoints;
+the expanded five-tag literal matrix remains deferred to S1c.
+
+**Frozen boundary:** `g1Transition_readAStart_idle` and
+`g1CS_runConfig_readA_idle` remain unchanged.  No frame-table row produces
+`readAStart`; apart from its self-loop, repair terminal `bRepairDone` is its only
+external arrival.  There is no operand-1
+read, operation-latch execution from a real initial configuration, combine,
+output write, acceptance change or new advice/state field.  Activating
+`readAStart` is S1b2b.
 
 **T2a correction (2026-08-24).**  The first T2a head shipped a permissive
 forward table (`vTag` looping on every `tag`, `vArg1`/`vArg2` looping on every

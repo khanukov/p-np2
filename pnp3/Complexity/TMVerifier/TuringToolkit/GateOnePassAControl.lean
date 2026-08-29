@@ -16,7 +16,7 @@ single one of these modes.
 
 * `g1Advance_passA` — no frame-table row crosses into the pass-A family;
 * `g1Transition_passA_closed` — no row of the executed control does either;
-* `g1Transition_readAStart_idle` — `readAStart`, the handoff S1b2 will turn into
+* `g1Transition_readAStart_idle` — `readAStart`, the handoff S1b2b will turn into
   the dispatch that *does* reach `aBof`, is still a stationary self-loop, and
   `g1CS_runConfig_readA_idle` of `GateOneReadB` executes that.
 
@@ -45,8 +45,9 @@ walk, invariant, repair or out-of-range branch, no combine step, no output
 write, no `TM.accepts`, no full-clock and no acceptance-gate claim, and no
 statement at all about a run from the real initial configuration.  The `const`
 rejection is a *local* fact about a configuration nothing reaches; it is not a
-claim that the machine rejects `const` requests, which today take the pass-B
-`combineStart` route of `GateOneReadB` and stop there.
+claim that the machine rejects `const` requests.  Their live pass-B route
+carries `g1ResultCtx b` through the common repair rewind and stops at the
+still-idle `readAStart` boundary.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -177,9 +178,10 @@ with the tape bit-for-bit the caller's.  This is the executed counterpart of the
 frame-table equation `g1ATagRoute_advance_const`.
 
 **It is a *local* rejection and nothing more.**  The starting configuration is
-one nothing reaches: a `const` request's live route is decided in pass B and
-ends at `combineStart` (`GateOneReadB.g1CS_readB_route_const_exact`), and the
-pass-A family is unreachable anyway.  Nothing here says a `const` request is
+one nothing reaches: a `const` request's live route is decided in pass B,
+rewinds through `readAResetStart`, and ends at idle `readAStart`
+(`GateOneRepairDriver.g1CS_const_repaired_exact`); the pass-A family is
+unreachable anyway.  Nothing here says a `const` request is
 rejected by the machine; it says the A-counters have no `const` row,
 physically — which is exactly why the `const` filler row of `g1Residual` is
 never consumed. -/

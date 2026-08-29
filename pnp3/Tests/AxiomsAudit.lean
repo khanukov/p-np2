@@ -1021,6 +1021,20 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_readB_zero_repaired_tape
 #print axioms Internal.PsubsetPpoly.TM.g1CS_readB_repaired_common
 #print axioms Internal.PsubsetPpoly.TM.g1CS_readB_repaired_common_le_clock
+
+-- S1b2a route alignment: `input`/`not` and `const` now enter the canonical
+-- Repair-2 rewind and reach head-zero idle `readAStart` from the real initial
+-- configuration.  The constant carries `g1ResultCtx`; the filler residual is
+-- not evaluated.  Binary repaired endpoints and OOB behavior are unchanged.
+#print axioms Internal.PsubsetPpoly.TM.g1CS_route_rewind_exact
+#print axioms Internal.PsubsetPpoly.TM.g1ReadAResultConfig_head
+#print axioms Internal.PsubsetPpoly.TM.g1ReadAResultConfig_state
+#print axioms Internal.PsubsetPpoly.TM.g1ReadAResultConfig_ctx
+#print axioms Internal.PsubsetPpoly.TM.g1ReadAResultConfig_tape
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readA_unary_repaired_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_const_repaired_exact
+#print axioms Internal.PsubsetPpoly.TM.g1UReadASteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1ConstReadASteps_le_clock
 #print axioms Internal.PsubsetPpoly.TM.g1ReadAState_ne_oob
 #print axioms Internal.PsubsetPpoly.TM.g1CS_readB_positive_oob_unrepaired
 
@@ -1116,10 +1130,8 @@ open Pnp3.Magnification
 -- so the family's only exits are that loop and the `reject` sink.
 -- `readAStart` is **still idle**
 -- (`g1Transition_readAStart_idle`, executed as `g1CS_runConfig_readA_idle`), and
--- `g1Advance_eq_readAStart` enumerates the only two frame-table rows that
--- produce it — the `argSep` closing the pass-B tag run of `input` and of `not` —
--- which are exactly the rows S1b2 must re-point before it may read `ctx.pass`
--- there.  No live route, step count or endpoint changes in this slice.
+-- `g1_readAStart_unreachable` records that S1b2a re-pointed the former unary
+-- frame-table producers through `readAResetStart`.  Activation remains S1b2b.
 --
 -- **No new state, field or advice.**  `res`/`withRes` are a *view* of the
 -- existing `pass`/`crossed` pair; `G1Ctx` is the same three Booleans, `vB` is
@@ -1146,7 +1158,7 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1PassAMode.not_reject
 #print axioms Internal.PsubsetPpoly.TM.g1Advance_passA
 #print axioms Internal.PsubsetPpoly.TM.g1Complete_passA
-#print axioms Internal.PsubsetPpoly.TM.g1Advance_eq_readAStart
+#print axioms Internal.PsubsetPpoly.TM.g1_readAStart_unreachable
 #print axioms Internal.PsubsetPpoly.TM.g1AOpMode_const
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aOp
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aInstallStart_idle

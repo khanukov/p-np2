@@ -57,7 +57,7 @@ theorem reqAndFalseB_canonical : reqAndFalseB.Canonical := by decide
 theorem reqOrTrueB_canonical : reqOrTrueB.Canonical := by decide
 theorem reqAndOOB_canonical : reqAndOOB.Canonical := by decide
 
-/-! ## The unary route: `input` and `not` reach the pass-A handoff -/
+/-! ## The unary route: `input` and `not` reach the rewind boundary -/
 
 /-- The unary-route capstone statement, at a concrete request. -/
 abbrev ReadARouteAt (r : G1Request) : Prop :=
@@ -66,7 +66,7 @@ abbrev ReadARouteAt (r : G1Request) : Prop :=
     g1AlignedConfig (encodeG1 r).length (4 * (r.tag.units + 2))
       (g1_route_lt_tapeLength r _ (by omega))
       (G1M.initialConfig (g1Point (encodeG1 r))).tape
-      .readAStart .p0 false false false g1Ctx0
+      .readAResetStart .p0 false false false g1Ctx0
 
 theorem readB_route_input : ReadARouteAt reqInput :=
   g1CS_readB_route_unary_exact reqInput reqInput_canonical (Or.inl rfl)
@@ -106,7 +106,7 @@ abbrev ConstRouteAt (r : G1Request) (b : Bool) : Prop :=
     g1AlignedConfig (encodeG1 r).length (4 * (r.tag.units + r.arg1 + 3))
       (g1_route_lt_tapeLength r _ (by omega))
       (G1M.initialConfig (g1Point (encodeG1 r))).tape
-      .combineStart .p0 false false false (g1Ctx0.withVB b)
+      .readAResetStart .p0 false false false (g1ResultCtx b)
 
 theorem readB_const_false : ConstRouteAt reqConstFalse false :=
   g1CS_readB_route_const_exact reqConstFalse reqConstFalse_canonical rfl false

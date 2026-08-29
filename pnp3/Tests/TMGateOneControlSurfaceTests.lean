@@ -38,9 +38,9 @@ frame rows, the residual view of the two spare context bits, the result
 convention and the operation latch.  Every one of those entries is pinned below,
 together with the two closure theorems (`g1Advance_passA`,
 `g1Transition_passA_closed`) that say nothing outside the family enters it.
-`readAStart` is **still idle** — `check_g1_readAStart_still_idle` pins that, and
-also enumerates the only two frame-table rows that produce it — so no live route
-changes and activation is deferred to S1b2.
+S1b2a re-points the two unary rows and both constant tuples through
+`readAResetStart`.  `readAStart` is **still idle** and no frame-table row
+produces it; activation is deferred to S1b2b.
 
 This is an audit surface: it pins public signatures, it does not prove
 anything new.
@@ -220,7 +220,7 @@ open Pnp3.Internal.PsubsetPpoly.TM
 -- context bits and the result convention, the two named pass-A states, the
 -- twelve-mode family predicate with its two closure theorems, the operation
 -- latch and the still-idle install handoff.  `readAStart` stays idle
--- (`g1Transition_readAStart_idle` above); activation is S1b2.
+-- (`g1Transition_readAStart_idle` above); activation is S1b2b.
 #check @g1ResPass
 #check @g1ResCrossed
 #check @G1Ctx.res
@@ -241,7 +241,7 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @G1PassAMode.not_reject
 #check @g1Advance_passA
 #check @g1Complete_passA
-#check @g1Advance_eq_readAStart
+#check @g1_readAStart_unreachable
 #check @g1AOpMode
 #check @g1AOpMode_const
 #check @g1Transition_aOp
@@ -610,6 +610,12 @@ theorem check_g1Advance_passA_table :
         g1AOpMode .const = .reject) := by
   refine ⟨⟨rfl, rfl, rfl, rfl, rfl, rfl⟩, ⟨rfl, rfl, rfl, rfl⟩, rfl, rfl, rfl⟩
 
+/-- The two unary pass-B rows enter the common rewind. -/
+theorem check_g1Advance_unary_repoint :
+    g1Advance .rTag1 .argSep = .readAResetStart ∧
+      g1Advance .rTag3 .argSep = .readAResetStart :=
+  ⟨rfl, rfl⟩
+
 /-- **The four latches read nothing forward, and the install handoff is
 stuck.**  The pass-A anchor read and its counters, by contrast, are genuine
 forward modes. -/
@@ -630,17 +636,15 @@ theorem check_g1_passA_closed :
         G1PassAMode (g1Transition phase s scan).2.1.mode → G1PassAMode s.mode) :=
   ⟨g1Advance_passA, fun phase s scan h => g1Transition_passA_closed phase s scan h⟩
 
-/-- **`readAStart` is still idle**, and exactly two frame-table rows produce it:
-the `argSep` closing the pass-B tag run of `input` and of `not`.  Those are the
-rows S1b2 has to re-point before it may read `ctx.pass` there. -/
+/-- **`readAStart` is still idle**, and no frame-table row produces it. -/
 theorem check_g1_readAStart_still_idle (phase : Fin 1)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
     g1Transition phase (g1State .readAStart position b0 b1 b2 ctx) scan =
         (0, g1ReadAState ctx, scan, .stay) ∧
-      ∀ (mode : G1Mode) (frame : G1Frame), g1Advance mode frame = .readAStart →
-        (mode = .rTag1 ∨ mode = .rTag3) ∧ frame = .argSep :=
+      ∀ (mode : G1Mode) (frame : G1Frame),
+        g1Advance mode frame ≠ .readAStart :=
   ⟨g1Transition_readAStart_idle phase position b0 b1 b2 scan ctx,
-    g1Advance_eq_readAStart⟩
+    g1_readAStart_unreachable⟩
 
 /-- **The operation latch and the idle install handoff, pinned exactly.**  One
 stationary step writes the residual of `(t, ctx.vB)` into the two spare context

@@ -2643,3 +2643,28 @@ At the end of each session:
 
 **Total estimated work:** 7 sessions × ~350 LOC ≈ 2500 LOC of new
 engineering plus ~50 LOC of edits to the bridge structure.
+
+## S3b1 dormant operand-A installation atoms (2026-08-29)
+
+**Classification: infrastructure, not P-vs-NP mainline progress.**  S3b1 adds
+only five modes: the `aInsSeek` installation scan, `aProbe`, the two Boolean
+latches and the four-cell `aIns` cursor writer.  The exact forward table crosses
+`index`, `spent` and `argSep` until `separator`, then probes `data b` into the
+matching latch or `output false` into the existing `bOOB` boundary.  Other
+decoded frames and all three reserved windows reject; a caller-supplied raw
+`1101` run reaches the existing reject sink in exactly four steps.
+
+`GateOneAWalkInstallAtoms` proves exact caller-supplied scan, probe/latch, OOB
+and cursor-write macros with the complete head, tape, context, step and safety
+contracts.  The dormant writer's final row cycles to the same reverse-aligned
+`aIns .p3` state after installing one cursor; S3b2 will replace that boundary
+with its dedicated seek control.
+
+`aInstallStart` remains its stationary self-loop.  Frame-level and executed
+closure theorems prove the five new modes cannot be entered from outside their
+family, so there is no live bridge and no route from `G1M.initialConfig`.
+`aSeekOut`/`aSeekIn`, mark/forward/turn/exhaustion/restore/terminal/repair modes,
+mixed-boundary seek and all walk or repair macros remain deferred to S3b2;
+initial-configuration activation remains S4.  The dated surface has one exact
+named wrapper per public source theorem and literal probes for every executable
+branch; `AxiomsAudit` roots all twenty public source theorems directly.

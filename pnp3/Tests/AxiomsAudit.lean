@@ -34,6 +34,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOneRepairExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneIndexRound
 import Complexity.TMVerifier.TuringToolkit.GateOnePassAControl
 import Complexity.TMVerifier.TuringToolkit.GateOnePassAEntryExamples
+import Complexity.TMVerifier.TuringToolkit.GateOneAWalkInstallAtoms
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -1240,6 +1241,30 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.endpoint_tapes
 #print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.and_false_no_wrong_result
 #print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.probe_clocks
+
+-- S3b1 (2026-08-29), dormant operand-A installation atoms.  All twenty
+-- public source theorems are direct roots.  Every execution theorem starts
+-- from a caller-supplied configuration; `aInstallStart` remains idle.
+#print axioms Internal.PsubsetPpoly.TM.g1Advance_aInstallAtoms_dormant
+#print axioms Internal.PsubsetPpoly.TM.g1Complete_aInstallAtoms_dormant
+#print axioms Internal.PsubsetPpoly.TM.g1Complete_aInstallAtoms_reserved
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aLatch
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aIns_p3
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aIns_p2
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aIns_p1
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aIns_p0
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aInstallAtoms_dormant
+#print axioms Internal.PsubsetPpoly.TM.g1Advance_aInsSeek_of_skip
+#print axioms Internal.PsubsetPpoly.TM.g1Advance_aProbe_data
+#print axioms Internal.PsubsetPpoly.TM.g1Advance_aInsSeek_rows
+#print axioms Internal.PsubsetPpoly.TM.g1Advance_aProbe_rows
+#print axioms Internal.PsubsetPpoly.TM.g1Advance_aInstallAtoms_rejects
+#print axioms Internal.PsubsetPpoly.TM.g1AInstallCursorWriter_machine
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aInstall_scan
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aProbe_latch
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aProbe_oob
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aInstall_reserved_1101_reject
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aInstall_cursor
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

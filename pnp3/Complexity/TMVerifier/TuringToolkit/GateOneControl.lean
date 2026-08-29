@@ -294,6 +294,10 @@ whose `argSep` rows select the operand-2 regime, and `G1PassAMode` collects
 exactly these twelve.  The live machine enters them only through
 `readAStart → aBof` (`g1Transition_passA_door`).
 
+`aInsSeek`/`aProbe`, `aLatchFalse`/`aLatchTrue` and `aIns` are the separate
+five-mode dormant operand-A installation family.  They have exact local rows,
+but no row from `aInstallStart` or any other live mode enters them.
+
 `combineStart` and `bOOB` remain local idle/stable boundaries; `readAStart` is
 the live two-way dispatch, and `readAResetStart` is the one-step
 bridge into `bRepairSeek`.  `accept`/`reject` are the sinks. -/
@@ -325,6 +329,9 @@ inductive G1Mode
   | aTag0 | aTag1 | aTag2 | aTag3 | aTag4 | aTag5
   | aOpInput | aOpNot | aOpAnd | aOpOr
   | aInstallStart
+  -- dormant operand-A installation atoms; no live row enters this family
+  | aInsSeek | aProbe
+  | aLatchFalse | aLatchTrue | aIns
   | readAStart | combineStart | readAResetStart | bOOB
   | accept | reject
   deriving Fintype, DecidableEq, Repr
@@ -334,7 +341,8 @@ inductive G1FramePosition | p0 | p1 | p2 | p3
 
 /-- The carried context of the G1 control.  `pass` and `crossed` remain inert on
 entry routes; only `aOp*` latch rows write their residual view.  `vB` is
-written by the dispatch rows and holds either the decoded
+written by the existing dispatch rows or the dormant operand-A probe latch and
+holds either the decoded
 `const` literal or the operand-2 value read from the data region.  All fields
 are part of the fixed finite state; adding state later would change the machine. -/
 structure G1Ctx where
@@ -494,6 +502,24 @@ latched in the two spare context bits.  Reached by the live pass-A rescan and
 stationary until the deferred operand-1 walk is implemented. -/
 def g1AInstallState (ctx : G1Ctx) : G1State :=
   g1State .aInstallStart .p0 false false false ctx
+
+/-! ### Dormant operand-A installation states
+
+These states are used only by caller-supplied configurations.  In particular,
+`aInstallStart` remains the stationary live handoff. -/
+
+def g1AInsSeekState (ctx : G1Ctx) : G1State :=
+  g1State .aInsSeek .p0 false false false ctx
+
+def g1AProbeState (ctx : G1Ctx) : G1State :=
+  g1State .aProbe .p0 false false false ctx
+
+def g1AInsState (ctx : G1Ctx) : G1State :=
+  g1State .aIns .p3 false false false ctx
+
+def g1ALatchMode : Bool → G1Mode
+  | false => .aLatchFalse
+  | true => .aLatchTrue
 
 /-- The `const` handoff: the decoded literal is already in `ctx.vB`. -/
 def g1CombineState (ctx : G1Ctx) : G1State :=
@@ -731,6 +757,14 @@ def g1Advance : G1Mode → G1Frame → G1Mode
   | .aTag3, .argSep => .aOpNot
   | .aTag4, .argSep => .aOpAnd
   | .aTag5, .argSep => .aOpOr
+  -- dormant operand-A installation scan and probe
+  | .aInsSeek, .index => .aInsSeek
+  | .aInsSeek, .spent => .aInsSeek
+  | .aInsSeek, .argSep => .aInsSeek
+  | .aInsSeek, .separator => .aProbe
+  | .aProbe, .data false => .aLatchFalse
+  | .aProbe, .data true => .aLatchTrue
+  | .aProbe, .output false => .bOOB
   -- `bSeek` reads right to left and has no row here at all.
   | _, _ => .reject
 
@@ -824,9 +858,10 @@ write and the two turns hold), the five modes of the operand-2 repair sweep
 moves left and the terminal dispatch holds), the four non-forward operand-1
 operation latches (`aOpInput`, `aOpNot`, `aOpAnd`, `aOpOr`), the five remaining
 handoffs (`aInstallStart`, `readAStart`, `combineStart`, `readAResetStart`,
-`bOOB`) and the two sinks are not.  The pass-A anchor read `aBof` and
-its counters `aTag0 … aTag5` *are* forward modes and fall through to the `True`
-catch-all — they read frames after the live dispatch reaches them. -/
+`bOOB`) and the two sinks are not.  The dormant `aInsSeek`/`aProbe` modes are
+forward; their two latch modes and writer are not.  The pass-A anchor read
+`aBof` and its counters `aTag0 … aTag5` *are* forward modes and fall through to
+the `True` catch-all — they read frames after the live dispatch reaches them. -/
 def G1ForwardMode : G1Mode → Prop
   | .rewindStart | .rewind
   | .constFalse | .constTrue | .bStoreFalse | .bStoreTrue
@@ -836,6 +871,7 @@ def G1ForwardMode : G1Mode → Prop
   | .bLatchFalse | .bLatchTrue | .bIns
   | .bRepairSeek | .bRepairWrite | .bRepairBack | .bRepairHop | .bRepairDone
   | .aOpInput | .aOpNot | .aOpAnd | .aOpOr | .aInstallStart
+  | .aLatchFalse | .aLatchTrue | .aIns
   | .readAStart | .combineStart | .readAResetStart | .bOOB
   | .accept | .reject => False
   | _ => True
@@ -858,6 +894,38 @@ instance : DecidablePred G1PassAMode := fun mode => by
   cases mode <;> first | exact isTrue trivial | exact isFalse id
 
 theorem G1PassAMode.not_reject : ¬ G1PassAMode .reject := id
+
+/-- Exactly the five dormant operand-A installation modes. -/
+def G1AInstallAtomMode : G1Mode → Prop
+  | .aInsSeek | .aProbe | .aLatchFalse | .aLatchTrue | .aIns => True
+  | _ => False
+
+instance : DecidablePred G1AInstallAtomMode := fun mode => by
+  cases mode <;> first | exact isTrue trivial | exact isFalse id
+
+/-- No frame-table row can enter the dormant installation family from outside
+that family. -/
+theorem g1Advance_aInstallAtoms_dormant (mode : G1Mode) (frame : G1Frame) :
+    G1AInstallAtomMode (g1Advance mode frame) → G1AInstallAtomMode mode := by
+  revert mode frame; decide
+
+/-- Bit-level completion cannot enter the dormant installation family from
+outside it either. -/
+theorem g1Complete_aInstallAtoms_dormant (mode : G1Mode)
+    (b0 b1 b2 b3 : Bool) :
+    G1AInstallAtomMode (g1Complete mode b0 b1 b2 b3) →
+      G1AInstallAtomMode mode := by
+  unfold g1Complete
+  cases decodeG1Frame? [b0, b1, b2, b3] with
+  | none => exact fun h => False.elim h
+  | some frame => exact g1Advance_aInstallAtoms_dormant mode frame
+
+/-- All three reserved four-bit windows reject in either new forward mode. -/
+theorem g1Complete_aInstallAtoms_reserved (mode : G1Mode) :
+    g1Complete mode true true false true = .reject ∧
+      g1Complete mode true true true false = .reject ∧
+      g1Complete mode true true true true = .reject :=
+  ⟨rfl, rfl, rfl⟩
 
 /-- **The pass-A family is closed under the forward frame table.**  If one
 frame-table step lands in a pass-A mode then it started in one: no validation,
@@ -888,7 +956,8 @@ complete-frame read enters `reject`, and it is not the end-of-input mode.  In
 particular the four dispatch modes, the five modes of the destructive round,
 the eleven non-forward modes of the cursor walk, the five modes of the
 operand-2 repair sweep, the four non-forward operand-1 operation latches,
-the five remaining handoffs and the `reject` sink are
+the dormant operand-A latch/writer modes, the five remaining handoffs and the
+`reject` sink are
 stuck; `rewind` and `accept` also satisfy this table-level predicate but are
 unreachable as results of `g1Advance`;
 the point of the predicate is that a stuck mode can never fold to
@@ -956,14 +1025,16 @@ theorem g1AdvanceList_ne_rewindStart_of_stuck {mode : G1Mode} (h : G1Stuck mode)
 stuck mode.**  In particular `rewind` and `accept` are unreachable from any
 scan.  Every non-forward target (the four dispatch modes, the round's five
 modes, the eleven non-forward walk modes, the sweep's five modes, the four
-pass-A operation latches, the `readAStart` and `bOOB` handoffs and the
-`reject` sink) is stuck, and so are the three handoffs no row targets at all
+pass-A operation latches, the dormant operand-A latch/writer modes, the
+`readAStart` and `bOOB` handoffs and the `reject` sink) is stuck, and so are the
+three handoffs no row targets at all
 (`aInstallStart`, `readAResetStart`, `combineStart`). -/
 theorem g1Advance_range (mode : G1Mode) (frame : G1Frame) :
     G1ForwardMode (g1Advance mode frame) ∨
       g1Advance mode frame = .rewindStart ∨
       G1Stuck (g1Advance mode frame) := by
-  revert mode frame; decide
+  set_option maxRecDepth 4096 in
+    revert mode frame; decide
 
 /-- **No frame-table row produces `readAStart`.**  The two former producers,
 `rTag1` and `rTag3` on `argSep`, now enter `readAResetStart`; apart from the
@@ -1619,6 +1690,18 @@ def g1Transition (_phase : Fin 1) (s : G1State) (scan : Bool) :
                   scan, .stay)
   | .aOpOr => (0, g1AInstallState (s.ctx.withRes (g1Residual .or s.ctx.vB)),
                  scan, .stay)
+  -- Dormant operand-A installation atoms.  There is intentionally no bridge
+  -- from `aInstallStart`.  The final writer row cycles to the same reverse-
+  -- aligned writer state; S3b2 will replace that dormant boundary with its
+  -- dedicated seek control.
+  | .aLatchFalse => (0, g1AInsState (s.ctx.withVB false), scan, .left)
+  | .aLatchTrue => (0, g1AInsState (s.ctx.withVB true), scan, .left)
+  | .aIns =>
+      match s.position with
+      | .p3 => (0, g1State .aIns .p2 false false false s.ctx, true, .left)
+      | .p2 => (0, g1State .aIns .p1 false false false s.ctx, true, .left)
+      | .p1 => (0, g1State .aIns .p0 false false false s.ctx, true, .left)
+      | .p0 => (0, g1AInsState s.ctx, false, .left)
   -- the operand-2 repair sweep: the bridge, the reverse scan with its four
   -- outcomes, the `spent ↦ index` writer, its back-walk, its hop and the anchor
   -- dispatch.  Nothing here inspects the request: the scan decides through the
@@ -1832,8 +1915,9 @@ of the destructive round and its tuple is `g1Transition_bRoundStart_bridge`
 below.  `readAResetStart` has likewise stopped being idle: Repair-2a turns it into
 the one-step bridge of the operand-2 repair sweep, and its tuple is
 `g1Transition_readAResetStart_bridge` below.  `readAStart` is the live two-way
-dispatch.  `aInstallStart`, `combineStart` and `bOOB` remain stationary; the
-deferred operand-1 walk and combine slice replace those equations. -/
+dispatch.  `aInstallStart`, `combineStart` and `bOOB` remain stationary; only
+caller-supplied operand-A installation atoms exist, and the later live-walk and
+combine slices replace those equations. -/
 
 @[simp] theorem g1Transition_accept_sink (phase : Fin 1) (scan : Bool) :
     g1Transition phase g1AcceptState scan = (0, g1AcceptState, scan, .stay) :=
@@ -1897,6 +1981,34 @@ theorem g1Transition_aInstallStart_idle (phase : Fin 1)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
     g1Transition phase (g1State .aInstallStart position b0 b1 b2 ctx) scan =
       (0, g1AInstallState ctx, scan, .stay) := rfl
+
+/-! ### Dormant operand-A installation tuples -/
+
+theorem g1Transition_aLatch (phase : Fin 1) (b : Bool)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State (g1ALatchMode b) position b0 b1 b2 ctx) scan =
+      (0, g1AInsState (ctx.withVB b), scan, .left) := by
+  cases b <;> rfl
+
+theorem g1Transition_aIns_p3 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .aIns .p3 b0 b1 b2 ctx) scan =
+      (0, g1State .aIns .p2 false false false ctx, true, .left) := rfl
+
+theorem g1Transition_aIns_p2 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .aIns .p2 b0 b1 b2 ctx) scan =
+      (0, g1State .aIns .p1 false false false ctx, true, .left) := rfl
+
+theorem g1Transition_aIns_p1 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .aIns .p1 b0 b1 b2 ctx) scan =
+      (0, g1State .aIns .p0 false false false ctx, true, .left) := rfl
+
+theorem g1Transition_aIns_p0 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .aIns .p0 b0 b1 b2 ctx) scan =
+      (0, g1AInsState ctx, false, .left) := rfl
 
 theorem g1Transition_combineStart_idle (phase : Fin 1)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
@@ -2594,5 +2706,27 @@ theorem g1Transition_aInstallStart_unique (phase : Fin 1) (s : G1State)
            first
              | exact G1Mode.noConfusion h
              | exact absurd h (g1Complete_ne_aInstallStart _ _ _ _ _))
+
+set_option maxHeartbeats 800000 in
+/-- No executed row outside the new installation family enters it.  In
+particular the stationary `aInstallStart` row remains an idle boundary rather
+than an activation door. -/
+theorem g1Transition_aInstallAtoms_dormant (phase : Fin 1) (s : G1State)
+    (scan : Bool)
+    (h : G1AInstallAtomMode (g1Transition phase s scan).2.1.mode) :
+    G1AInstallAtomMode s.mode := by
+  obtain ⟨mode, position, b0, b1, b2, ctx⟩ := s
+  obtain ⟨pass, crossed, vB⟩ := ctx
+  cases mode <;> cases position <;>
+    first
+      | exact trivial
+      | exact False.elim h
+      | (cases vB <;> exact False.elim h)
+      | (cases pass <;> exact False.elim h)
+      | (simp only [g1Transition, g1State] at h
+         split at h <;>
+           first
+             | exact False.elim h
+             | exact g1Complete_aInstallAtoms_dormant _ _ _ _ _ h)
 
 end Pnp3.Internal.PsubsetPpoly.TM

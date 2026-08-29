@@ -28,8 +28,8 @@ Five exact endpoints are proved, from `initialConfig`, for a canonical `r`:
 
 | tag | endpoint | head | extra steps after the T2a prefix |
 |-----|----------|------|----------------------------------|
-| `input`, `not` | `readAStart` | `4 * (units + 2)` | `4 * (units + 2)` |
-| `const` | `combineStart`, `vB = b` | `4 * (units + arg1 + 3)` | `4 * (units + arg1 + 3) + 1` |
+| `input`, `not` | `readAResetStart` | `4 * (units + 2)` | `4 * (units + 2)` |
+| `const` | `readAResetStart`, `g1ResultCtx b` | `4 * (units + arg1 + 3)` | `4 * (units + arg1 + 3) + 1` |
 | `and`, `or` | `bScan` at the operand-2 field | `4 * (units + arg1 + 3)` | `4 * (units + arg1 + 3)` |
 | `and`, `or`, `arg2 = 0` | `readAResetStart`, `vB = b` | `4 * (units + arg1 + 5)` | `4 * (units + arg1 + 5) + 1` |
 | `and`, `or`, `arg2 = 0`, empty data | `bOOB` (stable) | `4 * (units + arg1 + 5)` | `4 * (units + arg1 + 5)` |
@@ -84,6 +84,10 @@ three remaining handoffs (`readAStart`, `combineStart`, `bOOB`) are idle —
 `readAResetStart` is not, it is the repair sweep's bridge — and clock lemmas
 bound only the proved arrival prefixes against the **unchanged** clock
 `g1Clock`.
+
+S1b2a changes only the unary and constant endpoints in the table above.  Their
+pure rewinds to head-zero idle `readAStart` are composed in
+`GateOneRepairDriver`; this module deliberately stops at `readAResetStart`.
 
 The five initial-configuration capstones are scoped to the exact tape
 `encodeG1 r`; reusable local adapters state their arbitrary aligned tapes
@@ -206,9 +210,9 @@ theorem g1CS_runConfig_readA_idle (n h : Nat) (hh : h < G1M.tapeLength n)
     (fun phase scan => g1Transition_readAStart_idle phase .p0 false false false
       scan ctx) k
 
-/-- **The combine handoff is idle in this slice.**  This is the honest boundary
-of the `const` route: the decoded literal sits in `vB` and nothing combines,
-writes or accepts. -/
+/-- **The combine handoff is idle in this slice.**  S1b2a no longer routes
+`const` here directly; this remains the later boundary beyond the still-idle
+`readAStart` result branch.  Nothing combines, writes or accepts. -/
 theorem g1CS_runConfig_combine_idle (n h : Nat) (hh : h < G1M.tapeLength n)
     (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx) (k : Nat) :
     TM.runConfig (M := G1M)
@@ -272,19 +276,19 @@ theorem g1CS_step_round_bridge (n h : Nat) (hh : h < G1M.tapeLength n)
       ctx)
   rwa [writeCell_self] at hstep
 
-/-- **The `const` literal dispatch, executed.**  One stationary step writes the
-decoded unary literal into the fixed Boolean field `vB`. -/
+/-- **The `const` literal dispatch, executed.**  One stationary step carries the
+decoded literal as `g1ResultCtx b` into the canonical rewind. -/
 theorem g1CS_step_constLit (n h : Nat) (hh : h < G1M.tapeLength n)
     (tape : Fin (G1M.tapeLength n) → Bool) (b : Bool) (ctx : G1Ctx) :
     TM.runConfig (M := G1M)
         (g1AlignedConfig n h hh tape (g1ConstMode b) .p0 false false false ctx)
         1 =
-      g1AlignedConfig n h hh tape .combineStart .p0 false false false
-        (ctx.withVB b) := by
+      g1AlignedConfig n h hh tape .readAResetStart .p0 false false false
+        (g1ResultCtx b) := by
   rw [runConfig_one]
   have hstep := g1CS_aligned_step_stay n h hh tape
     (g1State (g1ConstMode b) .p0 false false false ctx)
-    (g1CombineState (ctx.withVB b)) (tape ⟨h, hh⟩)
+    (g1ReadAResetState (g1ResultCtx b)) (tape ⟨h, hh⟩)
     (fun phase => g1Transition_constLit phase b .p0 false false false _ ctx)
   rwa [writeCell_self] at hstep
 
@@ -309,7 +313,7 @@ theorem g1CS_step_store (n h : Nat) (hh : h < G1M.tapeLength n)
 Each is the exact T2a prefix plus four steps per rescanned frame, plus the one
 stationary dispatch step where a Boolean is stored. -/
 
-/-- Steps from `initialConfig` to the pass-A handoff of `input`/`not`. -/
+/-- Steps from `initialConfig` to the rewind boundary of `input`/`not`. -/
 def g1ReadARouteSteps (r : G1Request) : Nat :=
   g1ReadBHandoffSteps r + 4 * (r.tag.units + 2)
 
@@ -317,7 +321,7 @@ def g1ReadARouteSteps (r : G1Request) : Nat :=
 def g1FieldRouteSteps (r : G1Request) : Nat :=
   g1ReadBHandoffSteps r + 4 * (r.tag.units + r.arg1 + 3)
 
-/-- Steps from `initialConfig` to the `const` combine handoff. -/
+/-- Steps from `initialConfig` to the `const` result-context rewind boundary. -/
 def g1ConstRouteSteps (r : G1Request) : Nat := g1FieldRouteSteps r + 1
 
 /-- Steps from `initialConfig` to the pass-A reset boundary of a zero-index
@@ -361,12 +365,12 @@ theorem g1ReadBOOBSteps_le_clock (r : G1Request) :
 
 /-! ## The three exact routing capstones -/
 
-/-- **`input` and `not`: exact dispatch to the pass-A handoff.**  From the real
+/-- **`input` and `not`: exact dispatch to the rewind boundary.**  From the real
 initial configuration, exactly `g1ReadARouteSteps r` genuine steps validate the
-word, rewind, physically rescan the unary tag and stop at `readAStart` with the
+word, rewind, physically rescan the unary tag and stop at `readAResetStart` with the
 head on the **first cell of the operand-1 field** (the closing `argSep` when
 `arg1 = 0`), the context still `g1Ctx0`, and the tape bit-for-bit the initial
-tape.  `readAStart` is idle in this slice (`g1CS_runConfig_readA_idle`). -/
+tape.  `GateOneRepairDriver` composes the pure rewind to idle `readAStart`. -/
 theorem g1CS_readB_route_unary_exact (r : G1Request) (hc : r.Canonical)
     (ht : r.tag = .input ∨ r.tag = .not) :
     TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
@@ -374,7 +378,7 @@ theorem g1CS_readB_route_unary_exact (r : G1Request) (hc : r.Canonical)
       g1AlignedConfig (encodeG1 r).length (4 * (r.tag.units + 2))
         (g1_route_lt_tapeLength r _ (by omega))
         (G1M.initialConfig (g1Point (encodeG1 r))).tape
-        .readAStart .p0 false false false g1Ctx0 := by
+        .readAResetStart .p0 false false false g1Ctx0 := by
   have hsafe : 4 * (g1TagRouteFrames r).length <
       G1M.tapeLength (encodeG1 r).length := by
     rw [g1TagRouteFrames_length]
@@ -422,15 +426,14 @@ theorem g1_const_fields_of_spec {r : G1Request} (ht : r.tag = .const)
     subst hb
     exact ⟨by simp [h1], h2⟩
 
-/-- **`const`: exact dispatch to the combine handoff, with the literal in the
-Boolean register.**  From the real initial configuration, exactly
+/-- **`const`: exact dispatch to the rewind boundary, with the literal in a
+result context.**  From the real initial configuration, exactly
 `g1ConstRouteSteps r` genuine steps physically rescan the tag, physically
 decode the canonical unary literal field, and store it in `G1Ctx.vB`.  The
 literal is pinned to the pure semantics: `b` is the value of `r.spec`, which
 for `const` determines the encoded operand-1 run.  The route ends after the
-operand-1 field and is therefore independent of the unused `arg2` field.
-`combineStart` is the honest boundary and is idle here
-(`g1CS_runConfig_combine_idle`). -/
+operand-1 field and is therefore independent of the unused `arg2` field.  The
+result marker is carried without evaluating the `const` filler of `g1Residual`. -/
 theorem g1CS_readB_route_const_exact (r : G1Request) (hc : r.Canonical)
     (ht : r.tag = .const) (b : Bool) (hs : r.spec = some b) :
     TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
@@ -438,7 +441,7 @@ theorem g1CS_readB_route_const_exact (r : G1Request) (hc : r.Canonical)
       g1AlignedConfig (encodeG1 r).length (4 * (r.tag.units + r.arg1 + 3))
         (g1_route_lt_tapeLength r _ (by omega))
         (G1M.initialConfig (g1Point (encodeG1 r))).tape
-        .combineStart .p0 false false false (g1Ctx0.withVB b) := by
+        .readAResetStart .p0 false false false (g1ResultCtx b) := by
   obtain ⟨harg, -⟩ := g1_const_fields_of_spec ht hs
   have hsafe : 4 * (g1FieldRouteFrames r).length <
       G1M.tapeLength (encodeG1 r).length := by
@@ -455,7 +458,7 @@ theorem g1CS_readB_route_const_exact (r : G1Request) (hc : r.Canonical)
       g1AlignedConfig (encodeG1 r).length
         (4 * (g1FieldRouteFrames r).length) hsafe
         (G1M.initialConfig (g1Point (encodeG1 r))).tape
-        .combineStart .p0 false false false (g1Ctx0.withVB b) := by
+        .readAResetStart .p0 false false false (g1ResultCtx b) := by
     rw [runConfig_add, h, hstep]
   simpa [g1ConstRouteSteps, g1FieldRouteSteps] using hall
 
@@ -648,7 +651,7 @@ theorem g1CS_readB_route_unary_head (r : G1Request) (hc : r.Canonical)
 theorem g1CS_readB_route_unary_state (r : G1Request) (hc : r.Canonical)
     (ht : r.tag = .input ∨ r.tag = .not) :
     (TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
-        (g1ReadARouteSteps r)).state.snd = g1ReadAState g1Ctx0 := by
+        (g1ReadARouteSteps r)).state.snd = g1ReadAResetState g1Ctx0 := by
   rw [g1CS_readB_route_unary_exact r hc ht]; rfl
 
 theorem g1CS_readB_route_unary_tape (r : G1Request) (hc : r.Canonical)

@@ -5,7 +5,8 @@ import Complexity.TMVerifier.TuringToolkit.GateOneRepairKernel
 
 **Progress classification: Infrastructure.**
 
-The Repair-2a slice.  `GateOneRepairKernel` proves the `spent ↦ index` pass on an
+The Repair-2a driver, extended by the S1b2a route alignment.
+`GateOneRepairKernel` proves the `spent ↦ index` pass on an
 **arbitrary** frame list; this module instantiates it at the **real** operand-2
 layout `g1BSpentFrames r s` and composes it behind both successful operand-2
 reads, so that the two of them meet in **one** canonical pass-A handoff.
@@ -81,6 +82,18 @@ concrete endpoint words — are **Repair-2b**, delivered in
 `400`, each from the real `G1M.initialConfig` onto `g1ReadAConfig r true`.  That
 module also keeps encoded input length, explicit validation frame-word extent
 and derived capacity `G1M.tapeLength (encodeG1 r).length` separate.
+
+## S1b2a route alignment
+
+`g1CS_route_rewind_exact` reuses the same Repair-2 control as a zero-rewrite
+rewind: the unary `input`/`not` and decoded `const` routes now enter
+`readAResetStart`, preserve the complete tape and context, and reach head-zero
+idle `readAStart`.  The real-initial capstones are
+`g1CS_readA_unary_repaired_exact` and `g1CS_const_repaired_exact`; the latter
+ends in `g1ResultCtx b`, so the literal filler is never consumed.  Their route
+counts are unchanged and their composed totals fit the unchanged clock.
+Binary repaired endpoints are unchanged.  `readAStart` remains stationary, so
+there is still no operand-1 read or pass-A activation; that is S1b2b.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -341,6 +354,183 @@ theorem g1CS_repair_sweep_readAConfig (r : G1Request) (s : Nat) (hs : s ≤ r.ar
       ((g1ValidationFrames r).flatMap G1Frame.bits) = _
   exact g1ListTape_validation_eq_initial r
 
+/-! ## The read-only unary and constant rewinds
+
+The live `input`/`not` and `const` routes now enter the same Repair-2 bridge as
+the binary routes.  They have consumed no operand-2 unit, so the generic repair
+kernel is instantiated with `s = 0`: it is a pure reverse scan that preserves
+the canonical tape and the complete context.  `readAStart` remains idle. -/
+
+/-- A generic zero-rewrite rewind from a canonical prefix boundary. -/
+theorem g1CS_route_rewind_exact (r : G1Request) (left tail : List G1Frame)
+    (hleft : ∀ f ∈ left, G1RepairSkip f)
+    (hsplit : [G1Frame.bof] ++ left ++ tail =
+      encodeG1Frames r ++ [G1Frame.blank])
+    (hsafe : 4 * (1 + left.length) < G1M.tapeLength (encodeG1 r).length)
+    (ctx : G1Ctx) :
+    TM.runConfig (M := G1M)
+        (g1AlignedConfig (encodeG1 r).length (4 * (1 + left.length)) hsafe
+          (G1M.initialConfig (g1Point (encodeG1 r))).tape
+          .readAResetStart .p0 false false false ctx)
+        (4 * left.length + 6) =
+      g1AlignedConfig (encodeG1 r).length 0 (by omega)
+        (G1M.initialConfig (g1Point (encodeG1 r))).tape
+        .readAStart .p0 false false false ctx := by
+  have hspent : [G1Frame.bof] ++ left ++ List.replicate 0 G1Frame.spent ++
+      ([] : List G1Frame) ++ tail = encodeG1Frames r ++ [G1Frame.blank] := by
+    simpa using hsplit
+  have hindex : [G1Frame.bof] ++ left ++ List.replicate 0 G1Frame.index ++
+      ([] : List G1Frame) ++ tail = encodeG1Frames r ++ [G1Frame.blank] := by
+    simpa using hsplit
+  have hbridge := g1CS_step_readAReset_bridge (encodeG1 r).length
+    (4 * (1 + left.length)) hsafe (by omega)
+    (G1M.initialConfig (g1Point (encodeG1 r))).tape ctx
+  have hpass := g1CS_repair_pass_exact (encodeG1 r).length 0 left
+    ([] : List G1Frame) tail ctx hleft
+    (by intro f hf; simp at hf) (by simpa using hsafe)
+  rw [hspent, hindex] at hpass
+  have htape := g1ListTape_validation_eq_initial r
+  simp only [g1ValidationFrames] at htape
+  rw [htape] at hpass
+  have hsteps : 4 * left.length + 6 =
+      1 + g1RepairPassSteps left.length 0 0 := by
+    simp only [g1RepairPassSteps]; omega
+  rw [hsteps, runConfig_add, hbridge]
+  exact hpass
+
+/-- Frames between the anchor and the unary route boundary. -/
+private def g1AUnaryLeft (r : G1Request) : List G1Frame :=
+  List.replicate r.tag.units G1Frame.tag ++ [G1Frame.argSep]
+
+/-- Frames between the anchor and the constant-literal route boundary. -/
+private def g1AConstLeft (r : G1Request) : List G1Frame :=
+  List.replicate r.tag.units G1Frame.tag ++ G1Frame.argSep ::
+    (List.replicate r.arg1 G1Frame.index ++ [G1Frame.argSep])
+
+@[simp] private theorem g1AUnaryLeft_length (r : G1Request) :
+    (g1AUnaryLeft r).length = r.tag.units + 1 := by
+  simp [g1AUnaryLeft]
+
+@[simp] private theorem g1AConstLeft_length (r : G1Request) :
+    (g1AConstLeft r).length = r.tag.units + r.arg1 + 2 := by
+  simp [g1AConstLeft]; omega
+
+private theorem g1AUnaryLeft_skip (r : G1Request) :
+    ∀ f ∈ g1AUnaryLeft r, G1RepairSkip f := by
+  intro f hf
+  simp only [g1AUnaryLeft, List.mem_append, List.mem_replicate,
+    List.mem_singleton] at hf
+  rcases hf with ⟨-, rfl⟩ | rfl <;> trivial
+
+private theorem g1AConstLeft_skip (r : G1Request) :
+    ∀ f ∈ g1AConstLeft r, G1RepairSkip f := by
+  intro f hf
+  simp only [g1AConstLeft, List.mem_append, List.mem_cons, List.mem_replicate,
+    List.not_mem_nil, or_false] at hf
+  rcases hf with ⟨-, rfl⟩ | rfl | ⟨-, rfl⟩ | rfl <;> trivial
+
+private theorem g1AUnaryLeft_split (r : G1Request) :
+    [G1Frame.bof] ++ g1AUnaryLeft r ++ g1TagRouteRest r =
+      encodeG1Frames r ++ [G1Frame.blank] := by
+  rw [← g1TagRoute_split r]
+  simp [g1TagRouteFrames, g1AUnaryLeft, List.append_assoc]
+
+private theorem g1AConstLeft_split (r : G1Request) :
+    [G1Frame.bof] ++ g1AConstLeft r ++ g1FieldRouteRest r =
+      encodeG1Frames r ++ [G1Frame.blank] := by
+  rw [← g1FieldRoute_split r]
+  simp [g1FieldRouteFrames, g1AConstLeft, List.append_assoc]
+
+def g1AUnaryRewindSteps (r : G1Request) : Nat := 4 * r.tag.units + 10
+
+def g1AConstRewindSteps (r : G1Request) : Nat :=
+  4 * r.tag.units + 4 * r.arg1 + 14
+
+/-- Total steps from the real initial configuration to idle `readAStart` for
+`input`/`not`. -/
+def g1UReadASteps (r : G1Request) : Nat :=
+  g1ReadARouteSteps r + g1AUnaryRewindSteps r
+
+/-- Total steps from the real initial configuration to idle `readAStart` for
+`const`, carrying a result context. -/
+def g1ConstReadASteps (r : G1Request) : Nat :=
+  g1ConstRouteSteps r + g1AConstRewindSteps r
+
+/-- The canonical idle result boundary used by `const`. -/
+def g1ReadAResultConfig (r : G1Request) (b : Bool) :
+    Configuration (M := G1M) (encodeG1 r).length :=
+  g1AlignedConfig (encodeG1 r).length 0 (g1_route_lt_tapeLength r 0 (by omega))
+    (G1M.initialConfig (g1Point (encodeG1 r))).tape
+    .readAStart .p0 false false false (g1ResultCtx b)
+
+@[simp] theorem g1ReadAResultConfig_head (r : G1Request) (b : Bool) :
+    ((g1ReadAResultConfig r b).head : Nat) = 0 := rfl
+
+@[simp] theorem g1ReadAResultConfig_state (r : G1Request) (b : Bool) :
+    (g1ReadAResultConfig r b).state.snd = g1ReadAState (g1ResultCtx b) := rfl
+
+@[simp] theorem g1ReadAResultConfig_ctx (r : G1Request) (b : Bool) :
+    (g1ReadAResultConfig r b).state.snd.ctx = g1ResultCtx b := rfl
+
+theorem g1ReadAResultConfig_tape (r : G1Request) (b : Bool) :
+    (g1ReadAResultConfig r b).tape =
+      (G1M.initialConfig (g1Point (encodeG1 r))).tape := rfl
+
+/-- `input` and `not` reach the same repaired `readAStart` configuration as a
+binary read with Boolean latch `false`; no operand-1 step is taken. -/
+theorem g1CS_readA_unary_repaired_exact (r : G1Request) (hc : r.Canonical)
+    (ht : r.tag = .input ∨ r.tag = .not) :
+    TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1UReadASteps r) = g1ReadAConfig r false := by
+  have hsafe : 4 * (1 + (g1AUnaryLeft r).length) <
+      G1M.tapeLength (encodeG1 r).length := by
+    rw [g1AUnaryLeft_length]
+    have h := g1_route_lt_tapeLength r (r.tag.units + 2) (by omega)
+    omega
+  have hrew := g1CS_route_rewind_exact r (g1AUnaryLeft r) (g1TagRouteRest r)
+    (g1AUnaryLeft_skip r) (g1AUnaryLeft_split r) hsafe g1Ctx0
+  have hcongr := g1RAligned_congr (encodeG1 r).length
+    (4 * (r.tag.units + 2)) (4 * (1 + (g1AUnaryLeft r).length))
+    (g1_route_lt_tapeLength r _ (by omega)) hsafe
+    (by rw [g1AUnaryLeft_length]; omega)
+    (G1M.initialConfig (g1Point (encodeG1 r))).tape
+    (G1M.initialConfig (g1Point (encodeG1 r))).tape rfl
+    .readAResetStart .p0 false false false g1Ctx0
+  rw [g1UReadASteps, runConfig_add, g1CS_readB_route_unary_exact r hc ht,
+    hcongr,
+    show g1AUnaryRewindSteps r = 4 * (g1AUnaryLeft r).length + 6 from by
+      simp only [g1AUnaryRewindSteps, g1AUnaryLeft_length]; omega,
+    hrew]
+  rfl
+
+/-- `const` reaches head-zero idle `readAStart` with exactly `g1ResultCtx b`;
+the literal is complete, but the result branch is not activated in S1b2a. -/
+theorem g1CS_const_repaired_exact (r : G1Request) (hc : r.Canonical)
+    (ht : r.tag = .const) (b : Bool) (hs : r.spec = some b) :
+    TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1ConstReadASteps r) = g1ReadAResultConfig r b := by
+  have hsafe : 4 * (1 + (g1AConstLeft r).length) <
+      G1M.tapeLength (encodeG1 r).length := by
+    rw [g1AConstLeft_length]
+    have h := g1_route_lt_tapeLength r (r.tag.units + r.arg1 + 3) (by omega)
+    omega
+  have hrew := g1CS_route_rewind_exact r (g1AConstLeft r) (g1FieldRouteRest r)
+    (g1AConstLeft_skip r) (g1AConstLeft_split r) hsafe (g1ResultCtx b)
+  have hcongr := g1RAligned_congr (encodeG1 r).length
+    (4 * (r.tag.units + r.arg1 + 3))
+    (4 * (1 + (g1AConstLeft r).length))
+    (g1_route_lt_tapeLength r _ (by omega)) hsafe
+    (by rw [g1AConstLeft_length]; omega)
+    (G1M.initialConfig (g1Point (encodeG1 r))).tape
+    (G1M.initialConfig (g1Point (encodeG1 r))).tape rfl
+    .readAResetStart .p0 false false false (g1ResultCtx b)
+  rw [g1ConstReadASteps, runConfig_add,
+    g1CS_readB_route_const_exact r hc ht b hs, hcongr,
+    show g1AConstRewindSteps r = 4 * (g1AConstLeft r).length + 6 from by
+      simp only [g1AConstRewindSteps, g1AConstLeft_length]; omega,
+    hrew]
+  rfl
+
 /-! ## The two cumulative totals, and the unchanged clock -/
 
 /-- Steps from `initialConfig` to the canonical pass-A handoff of a **positive**
@@ -409,6 +599,28 @@ theorem g1ZPassASteps_le_clock (r : G1Request) :
   rw [g1RClock_eq r]
   simp only [g1ZPassASteps, g1ReadBSteps, g1ReadBHandoffSteps, g1RepairSteps,
     hlen]
+  omega
+
+/-- The unary route plus its pure rewind fits the unchanged public clock. -/
+theorem g1UReadASteps_le_clock (r : G1Request) :
+    g1UReadASteps r ≤ g1Clock (encodeG1 r).length := by
+  have hlen : (encodeG1 r).length =
+      4 * (r.tag.units + r.arg1 + r.arg2 + r.vals.length + 6) :=
+    encodeG1_length r
+  rw [g1RClock_eq r]
+  simp only [g1UReadASteps, g1ReadARouteSteps, g1ReadBHandoffSteps,
+    g1AUnaryRewindSteps, hlen]
+  omega
+
+/-- The constant route plus its pure rewind fits the unchanged public clock. -/
+theorem g1ConstReadASteps_le_clock (r : G1Request) :
+    g1ConstReadASteps r ≤ g1Clock (encodeG1 r).length := by
+  have hlen : (encodeG1 r).length =
+      4 * (r.tag.units + r.arg1 + r.arg2 + r.vals.length + 6) :=
+    encodeG1_length r
+  rw [g1RClock_eq r]
+  simp only [g1ConstReadASteps, g1ConstRouteSteps, g1FieldRouteSteps,
+    g1ReadBHandoffSteps, g1AConstRewindSteps, hlen]
   omega
 
 /-! ## The two composed capstones -/

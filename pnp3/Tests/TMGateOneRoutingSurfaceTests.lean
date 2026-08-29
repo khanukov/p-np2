@@ -18,10 +18,10 @@ all: it is decided inside `g1Transition`, and `TMGateOneControlSurfaceTests`
 pins its three outcomes.
 
 S1b1 adds the **dormant** pass-A rescan as a *separate* named table over the
-same anchor-plus-tag-run prefix.  It re-points nothing: `g1RouteMode` is
-untouched, `input`/`not` still fold to the still-idle `readAStart`, and
-`check_g1ATagRoute_dormant` pins both facts alongside the closure theorem that
-keeps every route here out of the pass-A family.
+same anchor-plus-tag-run prefix.  S1b2a re-points the live `g1RouteMode` for
+`input`/`not` to the canonical rewind before idle `readAStart`;
+`check_g1ATagRoute_dormant` pins both that alignment and the closure theorem
+that keeps every route here out of the pass-A family.
 -/
 
 namespace Pnp3.Tests.TMGateOneRoutingSurface
@@ -63,8 +63,8 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1_bRoundStart_stuck
 #check @g1_bRoundStart_unreachable
 -- S1b1, the dormant pass-A rescan: a *separate* named table over the same
--- prefix, targeting the dormant `g1AOpMode` latches.  `g1RouteMode` and every
--- live route above are untouched.
+-- prefix, targeting the dormant `g1AOpMode` latches.  S1b2a changes only the
+-- live unary routing table; this dormant table remains unreachable.
 #check @g1ATagRoute_advance
 #check @g1ATagRoute_validPath
 #check @g1ATagRoute_advance_const
@@ -106,7 +106,7 @@ theorem check_g1OOBState_ne_readAReset (ctx ctx' : G1Ctx) :
 theorem check_g1Transition_constLit (phase : Fin 1) (b : Bool)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
     g1Transition phase (g1State (g1ConstMode b) position b0 b1 b2 ctx) scan =
-      (0, g1CombineState (ctx.withVB b), scan, .stay) :=
+      (0, g1ReadAResetState (g1ResultCtx b), scan, .stay) :=
   g1Transition_constLit phase b position b0 b1 b2 scan ctx
 
 theorem check_g1Transition_store (phase : Fin 1) (b : Bool)
@@ -142,7 +142,7 @@ theorem check_g1ReadBOOB_split (r : G1Request) (h2 : r.arg2 = 0)
 
 theorem check_g1TagRoute_advance_unary (r : G1Request)
     (ht : r.tag = .input ∨ r.tag = .not) :
-    g1AdvanceList .readBStart (g1TagRouteFrames r) = .readAStart :=
+    g1AdvanceList .readBStart (g1TagRouteFrames r) = .readAResetStart :=
   g1TagRoute_advance_unary r ht
 
 theorem check_g1_tagRescan_advance (t : G1Tag) (rest : List G1Frame) :
@@ -287,12 +287,13 @@ theorem check_g1ATagRoute (r : G1Request) (ht : r.tag ≠ .const)
     ⟨g1ATagRoute_advance_const r' ht', g1ATagRoute_rejectPath r' ht'⟩⟩
 
 /-- **No route of this module can cross into the pass-A family**, and the live
-`input`/`not` route still ends at the still-idle `readAStart`: this slice
-re-points nothing. -/
+`input`/`not` route ends at `readAResetStart`; the dormant pass-A table remains
+unreachable. -/
 theorem check_g1ATagRoute_dormant (r : G1Request)
     (ht : r.tag = .input ∨ r.tag = .not) :
-    g1AdvanceList .readBStart (g1TagRouteFrames r) = .readAStart ∧
-      g1RouteMode .input = .readAStart ∧ g1RouteMode .not = .readAStart ∧
+    g1AdvanceList .readBStart (g1TagRouteFrames r) = .readAResetStart ∧
+      g1RouteMode .input = .readAResetStart ∧
+      g1RouteMode .not = .readAResetStart ∧
       ∀ (mode : G1Mode) (frame : G1Frame), ¬ G1PassAMode mode →
         ¬ G1PassAMode (g1Advance mode frame) :=
   ⟨g1TagRoute_advance_unary r ht, rfl, rfl, g1ATagRoute_unreachable⟩

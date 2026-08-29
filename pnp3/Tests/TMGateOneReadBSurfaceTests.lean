@@ -14,6 +14,11 @@ named per-route examples, the **installation scan** that the re-pointed
 positive-index row opens, and the thirteen-step rewrite cycle kept as an
 arbitrary-configuration regression.
 
+S1b2a pins the exact one-step constant tuple and changes the unary/constant
+route capstones to the canonical `readAResetStart` boundary.  Their head-zero
+rewinds and real-initial repaired endpoints are pinned by the repair-driver
+surface; `readAStart` remains idle here.
+
 The initial-configuration capstones are scoped to the exact tape `encodeG1 r`.
 Local adapters intentionally use arbitrary aligned tapes; post-boundary
 stability pins have no public-clock bound.  There is **no** `TM.run`,
@@ -187,6 +192,16 @@ theorem check_g1_readB_steps_le_clock (r : G1Request) (k : Nat)
     g1ReadBHandoffSteps r + 4 * k + 1 ≤ g1Clock (encodeG1 r).length :=
   g1_readB_steps_le_clock r k hk
 
+/-- The literal dispatch carries a result context into the rewind in one step. -/
+theorem check_g1CS_step_constLit (n h : Nat) (hh : h < G1M.tapeLength n)
+    (tape : Fin (G1M.tapeLength n) → Bool) (b : Bool) (ctx : G1Ctx) :
+    TM.runConfig (M := G1M)
+        (g1AlignedConfig n h hh tape (g1ConstMode b) .p0 false false false ctx)
+        1 =
+      g1AlignedConfig n h hh tape .readAResetStart .p0 false false false
+        (g1ResultCtx b) :=
+  g1CS_step_constLit n h hh tape b ctx
+
 /-- **The `input`/`not` handoff.**  Exact steps, exact head on the first cell of
 the operand-1 field, `g1Ctx0` untouched, tape bit-for-bit the initial tape. -/
 theorem check_g1CS_readB_route_unary_exact (r : G1Request) (hc : r.Canonical)
@@ -196,7 +211,7 @@ theorem check_g1CS_readB_route_unary_exact (r : G1Request) (hc : r.Canonical)
       g1AlignedConfig (encodeG1 r).length (4 * (r.tag.units + 2))
         (g1_route_lt_tapeLength r _ (by omega))
         (G1M.initialConfig (g1Point (encodeG1 r))).tape
-        .readAStart .p0 false false false g1Ctx0 :=
+        .readAResetStart .p0 false false false g1Ctx0 :=
   g1CS_readB_route_unary_exact r hc ht
 
 /-- **The `const` literal decode.**  The stored bit is the value of the pure
@@ -208,7 +223,7 @@ theorem check_g1CS_readB_route_const_exact (r : G1Request) (hc : r.Canonical)
       g1AlignedConfig (encodeG1 r).length (4 * (r.tag.units + r.arg1 + 3))
         (g1_route_lt_tapeLength r _ (by omega))
         (G1M.initialConfig (g1Point (encodeG1 r))).tape
-        .combineStart .p0 false false false (g1Ctx0.withVB b) :=
+        .readAResetStart .p0 false false false (g1ResultCtx b) :=
   g1CS_readB_route_const_exact r hc ht b hs
 
 theorem check_g1_const_fields_of_spec {r : G1Request} (ht : r.tag = .const)

@@ -221,8 +221,12 @@ lean_lib PnP3 where
     -- `g1ReadAConfig r b`, with `g1BPassASteps`/`g1ZPassASteps` inside the
     -- **unchanged** `g1Clock`.  Both scanned runs are pinned against the
     -- narrowed `G1RepairSkip`; the trailing `blank` lives in the unread tail.
-    -- `readAStart` stays idle, operand 1 is not read, and the out-of-range
-    -- `bOOB` boundary is left stable and unrepaired.
+    -- S1b2a also uses the same bridge/kernel as a zero-rewrite rewind for the
+    -- re-pointed `input`/`not`/`const` routes.  Its real-initial capstones end
+    -- at head-zero `readAStart`; unary preserves `g1Ctx0`, while `const`
+    -- carries `g1ResultCtx b`.  Route counts and the public clock are unchanged,
+    -- the binary repaired endpoint is unchanged, `readAStart` stays idle,
+    -- operand 1 is not read, and `bOOB` remains stable and unrepaired.
     -- Repair-2b adds `GateOneRepairExamples`, the all-literal repaired runs
     -- from `G1M.initialConfig` that Repair-2a deferred.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneRepairDriver,
@@ -247,8 +251,9 @@ lean_lib PnP3 where
     -- residual view of the two spare context bits and the frame rows that join
     -- them are declared in `GateOneControl`/`GateOneRouting`, and
     -- `GateOnePassAControl` executes them on caller-supplied configurations.
-    -- The family is unreachable (`g1Transition_passA_closed`), `readAStart`
-    -- stays idle and no live route changes; activation is S1b2.
+    -- The family is unreachable (`g1Transition_passA_closed`).  S1b2a aligns
+    -- unary and constant pass-B routes through the Repair-2 rewind, but
+    -- `readAStart` stays idle; activation is S1b2b.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOnePassAControl,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,

@@ -66,13 +66,11 @@ forward frame-reading mode.  From head zero it re-reads the anchor and
 retained anywhere across the rewind, and it is not a parameter of anything —
 and the `argSep` that closes the run selects the operand regime a second time:
 
-* `rTag1` (`input`) and `rTag3` (`not`) hand off directly to `readAStart`, with
-  the head exactly on the first cell of the operand-1 field — the `argSep`
-  closing that field when it is empty;
+* `rTag1` (`input`) and `rTag3` (`not`) hand off to `readAResetStart`, so the
+  common rewind restores head zero before the still-idle `readAStart` boundary;
 * `rTag2` (`const`) enters `rConst0`, which decodes the canonical unary literal
   (`argSep` at once ↦ `constFalse`, one `index` then `argSep` ↦ `constTrue`)
-  and stores it in the fixed Boolean field `G1Ctx.vB` on the way to
-  `combineStart`;
+  and carries it as `g1ResultCtx` through the same `readAResetStart` rewind;
 * `rTag4`/`rTag5` (`and`/`or`) enter `rArg1Binary`, which skips the operand-1
   field and stops on the `argSep` that opens the **operand-2 field**, entering
   `bScan`.
@@ -217,16 +215,16 @@ aInstallStart  ↦ aInstallStart             -- stationary self-loop
 `G1PassAMode` names exactly those twelve modes, and the two closure theorems
 `g1Advance_passA` and `g1Transition_passA_closed` say the family is entered from
 **nowhere else**: neither a frame-table row nor any row of the executed
-`g1Transition` sends a mode outside the family into it.  So this slice adds rows
-and views, and changes no live behaviour: the routes of the validation scan, the
-pass-B rescan, the cursor walk and the operand-2 repair sweep are bit-for-bit
-what they were, and every theorem about them still holds verbatim.
+`g1Transition` sends a mode outside the family into it.  S1b1 added these rows
+and views without changing live behaviour.  S1b2a keeps the family dormant but
+re-points the unary and constant pass-B endpoints through the already-live
+repair bridge, as described below.
 
-**`readAStart` stays idle** (`g1Transition_readAStart_idle`).  Turning it into
-the two-way dispatch on `ctx.pass` that would *reach* `aBof` — and re-pointing
-`rTag1`/`rTag3` and the two `const` literal rows through `readAResetStart` so
-that all five tags arrive at one entry — is **deferred to S1b2**.  Nothing here
-reads operand 1, combines, writes an output frame or mentions `TM.accepts`.
+**`readAStart` stays idle** (`g1Transition_readAStart_idle`).  S1b2a only
+re-points `rTag1`/`rTag3` and the two `const` literal rows through
+`readAResetStart`, so all five tags arrive at a canonical head-zero boundary.
+Turning `readAStart` into the dispatch on `ctx.pass` remains deferred to S1b2b.
+Nothing here reads operand 1, combines, writes output or mentions `TM.accepts`.
 
 **The residual is a view, not a field.**  `G1Ctx` is the same three Booleans it
 has always been; `res`/`withRes` read and write the pair `(pass, crossed)` as
@@ -300,7 +298,7 @@ handoff they install it in.  They are a *separate* family from `rTag0 … rTag5`
 whose `argSep` rows select the operand-2 regime, and `G1PassAMode` collects
 exactly these twelve.  Nothing outside the family enters it
 (`g1Advance_passA`, `g1Transition_passA_closed`), so the live machine never
-reaches them; S1b2 activates `readAStart` to do so.
+reaches them; S1b2b activates `readAStart` to do so.
 
 `readAStart`, `combineStart` and `bOOB` are the three remaining local handoffs,
 idle in this slice; `readAResetStart` is **no longer idle** — it is the one-step
@@ -682,9 +680,9 @@ def g1Advance : G1Mode → G1Frame → G1Mode
   | .rTag3, .tag => .rTag4
   | .rTag4, .tag => .rTag5
   -- routing, decided a second time from the physically rescanned tag
-  | .rTag1, .argSep => .readAStart   -- input: no operand 2, pass A next
+  | .rTag1, .argSep => .readAResetStart -- input: rewind to canonical entry
   | .rTag2, .argSep => .rConst0      -- const: decode the unary literal
-  | .rTag3, .argSep => .readAStart   -- not: no operand 2, pass A next
+  | .rTag3, .argSep => .readAResetStart -- not: rewind to canonical entry
   | .rTag4, .argSep => .rArg1Binary  -- and
   | .rTag5, .argSep => .rArg1Binary  -- or
   -- the canonical unary `const` literal: `argSep` at once is `0`, one `index`
@@ -976,15 +974,11 @@ theorem g1Advance_range (mode : G1Mode) (frame : G1Frame) :
       G1Stuck (g1Advance mode frame) := by
   revert mode frame; decide
 
-/-- **Every frame-table producer of `readAStart`, enumerated.**  Exactly two
-rows reach the pass-A handoff through `g1Advance`: the `argSep` closing the
-pass-B tag run of `input` (`rTag1`) and of `not` (`rTag3`).  Those two arrive
-carrying `g1Ctx0`, so they are precisely what S1b2 has to re-point through
-`readAResetStart` before it may read `ctx.pass` at `readAStart`; this slice
-changes neither row.  A statement about `g1Advance` only. -/
-theorem g1Advance_eq_readAStart (mode : G1Mode) (frame : G1Frame) :
-    g1Advance mode frame = .readAStart →
-      (mode = .rTag1 ∨ mode = .rTag3) ∧ frame = .argSep := by
+/-- **No frame-table row produces `readAStart`.**  The two former producers,
+`rTag1` and `rTag3` on `argSep`, now enter `readAResetStart`; the only live
+arrival at `readAStart` is therefore the repair terminal `bRepairDone`. -/
+theorem g1_readAStart_unreachable (mode : G1Mode) (frame : G1Frame) :
+    g1Advance mode frame ≠ .readAStart := by
   revert mode frame; decide
 
 /-- Neither sink-like control mode is ever produced by one frame-table step. -/
@@ -1607,7 +1601,7 @@ def g1Transition (_phase : Fin 1) (s : G1State) (scan : Bool) :
   | .accept => (0, g1AcceptState, scan, .stay)
   | .reject => (0, g1RejectState, scan, .stay)
   -- the four remaining local handoffs: idle in this slice, each its own stable
-  -- state.  `readAStart` stays idle here — S1b2 turns it into the pass-A
+  -- state.  `readAStart` stays idle here — S1b2b turns it into the pass-A
   -- dispatch on `ctx.pass`, which is the one row that would make the pass-A
   -- family below reachable.
   | .readAStart => (0, g1ReadAState s.ctx, scan, .stay)
@@ -1779,8 +1773,8 @@ def g1Transition (_phase : Fin 1) (s : G1State) (scan : Bool) :
                   true, .right)
       | .p3 => (0, g1ReadAResetState s.ctx, false, .right)
   -- the four dispatch modes: store the decoded Boolean in `vB`, do not move
-  | .constFalse => (0, g1CombineState (s.ctx.withVB false), scan, .stay)
-  | .constTrue => (0, g1CombineState (s.ctx.withVB true), scan, .stay)
+  | .constFalse => (0, g1ReadAResetState (g1ResultCtx false), scan, .stay)
+  | .constTrue => (0, g1ReadAResetState (g1ResultCtx true), scan, .stay)
   | .bStoreFalse => (0, g1ReadAResetState (s.ctx.withVB false), scan, .stay)
   | .bStoreTrue => (0, g1ReadAResetState (s.ctx.withVB true), scan, .stay)
   | .rewindStart => (0, g1State .rewind .p3 false false false s.ctx, scan, .left)
@@ -1841,7 +1835,7 @@ below.  `readAResetStart` has likewise stopped being idle: Repair-2a turns it in
 the one-step bridge of the operand-2 repair sweep, and its tuple is
 `g1Transition_readAResetStart_bridge` below.  The four remaining handoffs
 (`readAStart`, `aInstallStart`, `combineStart`, `bOOB`) are idle **in this
-slice**; the deferred pass-A activation (S1b2), the operand-1 walk and the
+slice**; the deferred pass-A activation (S1b2b), the operand-1 walk and the
 combine slice replace those equations. -/
 
 @[simp] theorem g1Transition_accept_sink (phase : Fin 1) (scan : Bool) :
@@ -1853,9 +1847,9 @@ combine slice replace those equations. -/
   rfl
 
 /-- **`readAStart` is still idle.**  S1b1 declares the pass-A calling convention
-but does not activate the handoff: turning this row into the two-way dispatch on
-`ctx.pass` — the only row that would make `aBof` reachable — is deferred to
-S1b2. -/
+and S1b2a aligns all successful pass-B routes at this handoff without activating
+it.  Turning this row into the two-way dispatch on `ctx.pass` — the only row
+that would make `aBof` reachable — is deferred to S1b2b. -/
 theorem g1Transition_readAStart_idle (phase : Fin 1)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
     g1Transition phase (g1State .readAStart position b0 b1 b2 ctx) scan =
@@ -1917,9 +1911,9 @@ theorem g1Transition_bOOB_stable (phase : Fin 1)
     g1Transition phase (g1State .bOOB position b0 b1 b2 ctx) scan =
       (0, g1OOBState ctx, scan, .stay) := rfl
 
-/-- **The `const` literal dispatch.**  One stationary step writes the decoded
-unary literal into the fixed Boolean field `vB` and hands off to the combine
-boundary.  `g1ConstMode` is the mode the forward table lands in. -/
+/-- **The `const` literal dispatch.**  One stationary step carries the decoded
+literal as a result context into the canonical rewind.  It does not use the
+`const` filler of `g1Residual`; pass-A activation remains deferred. -/
 def g1ConstMode : Bool → G1Mode
   | false => .constFalse
   | true => .constTrue
@@ -1927,7 +1921,7 @@ def g1ConstMode : Bool → G1Mode
 theorem g1Transition_constLit (phase : Fin 1) (b : Bool)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
     g1Transition phase (g1State (g1ConstMode b) position b0 b1 b2 ctx) scan =
-      (0, g1CombineState (ctx.withVB b), scan, .stay) := by
+      (0, g1ReadAResetState (g1ResultCtx b), scan, .stay) := by
   cases b <;> rfl
 
 /-- **The operand-2 store dispatch.**  One stationary step writes the value
@@ -2526,7 +2520,7 @@ is not claimed to be: `aBof` and the counters reject a frame they cannot read,
 and `g1Transition_aInstallStart_idle` makes the install handoff a self-loop, so
 its only exits are the `reject` sink and itself.)
 
-The component becomes reachable only when S1b2 activates `readAStart`. -/
+The component becomes reachable only when S1b2b activates `readAStart`. -/
 theorem g1Transition_passA_closed (phase : Fin 1) (s : G1State) (scan : Bool)
     (h : G1PassAMode (g1Transition phase s scan).2.1.mode) :
     G1PassAMode s.mode := by

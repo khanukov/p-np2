@@ -4,8 +4,9 @@ import Complexity.TMVerifier.TuringToolkit.GateOneRepairDriver
 # G1 operand-2 repair driver: surface tests
 
 Theorem-style exact wrappers for **every** public statement of
-`GateOneRepairDriver`, the Repair-2a slice: the layout split, the
-request-specific sweep and the two composed `initialConfig` capstones.
+`GateOneRepairDriver`, the Repair-2a slice plus S1b2a route alignment: the
+layout split, the request-specific sweep and all four composed
+`initialConfig` capstones.
 
 **What this surface pins.**  The real layout split
 `g1BSpentFrames r s = [bof] ++ left ++ spent^s ++ mid ++ tail`, the lengths of
@@ -22,6 +23,11 @@ canonical word, context untouched), the common handoff `g1ReadAConfig r b` with
 its four projections, the two cumulative totals inside the **unchanged**
 `g1Clock`, both composed `initialConfig` capstones with head/state/`vB`/tape
 projections, and the common conditional theorem.
+
+S1b2a additionally pins the generic zero-rewrite rewind, the canonical result
+endpoint and projections, the unary and constant real-initial capstones, and
+their unchanged-clock bounds.  Both stop at idle `readAStart`; operand 1 is not
+read and the binary repaired endpoint is unchanged.
 
 `check_g1CS_readB_positive_oob_unrepaired` pins that the out-of-range boundary is
 left exactly as it was: stable for every extra budget, still carrying
@@ -259,6 +265,63 @@ theorem check_g1CS_readB_repaired_common (r : G1Request) (hc : r.Canonical)
         (if r.arg2 = 0 then g1ZPassASteps r else g1BPassASteps r) =
       g1ReadAConfig r b :=
   g1CS_readB_repaired_common r hc ht b hb
+
+/-! ## S1b2a: unary and constant routes join the repaired boundary -/
+
+#check @g1AUnaryRewindSteps
+#check @g1AConstRewindSteps
+#check @g1UReadASteps
+#check @g1ConstReadASteps
+#check @g1ReadAResultConfig
+
+/-- The generic zero-rewrite Repair-2 run preserves tape and context exactly. -/
+theorem check_g1CS_route_rewind_exact (r : G1Request) (left tail : List G1Frame)
+    (hleft : ∀ f ∈ left, G1RepairSkip f)
+    (hsplit : [G1Frame.bof] ++ left ++ tail =
+      encodeG1Frames r ++ [G1Frame.blank])
+    (hsafe : 4 * (1 + left.length) < G1M.tapeLength (encodeG1 r).length)
+    (ctx : G1Ctx) :
+    TM.runConfig (M := G1M)
+        (g1AlignedConfig (encodeG1 r).length (4 * (1 + left.length)) hsafe
+          (G1M.initialConfig (g1Point (encodeG1 r))).tape
+          .readAResetStart .p0 false false false ctx)
+        (4 * left.length + 6) =
+      g1AlignedConfig (encodeG1 r).length 0 (by omega)
+        (G1M.initialConfig (g1Point (encodeG1 r))).tape
+        .readAStart .p0 false false false ctx :=
+  g1CS_route_rewind_exact r left tail hleft hsplit hsafe ctx
+
+/-- The constant endpoint is head-zero `readAStart`, exact result context,
+initial tape; the boundary remains idle. -/
+theorem check_g1ReadAResultConfig (r : G1Request) (b : Bool) :
+    ((g1ReadAResultConfig r b).head : Nat) = 0 ∧
+      (g1ReadAResultConfig r b).state.snd = g1ReadAState (g1ResultCtx b) ∧
+      (g1ReadAResultConfig r b).state.snd.ctx = g1ResultCtx b ∧
+      (g1ReadAResultConfig r b).tape =
+        (G1M.initialConfig (g1Point (encodeG1 r))).tape :=
+  ⟨g1ReadAResultConfig_head r b, g1ReadAResultConfig_state r b,
+    g1ReadAResultConfig_ctx r b, g1ReadAResultConfig_tape r b⟩
+
+theorem check_g1RouteRewindSteps_le_clock (r : G1Request) :
+    g1UReadASteps r ≤ g1Clock (encodeG1 r).length ∧
+      g1ConstReadASteps r ≤ g1Clock (encodeG1 r).length :=
+  ⟨g1UReadASteps_le_clock r, g1ConstReadASteps_le_clock r⟩
+
+/-- Real initial-configuration unary capstone; it is the same endpoint shape as
+the existing binary repaired capstone. -/
+theorem check_g1CS_readA_unary_repaired_exact (r : G1Request)
+    (hc : r.Canonical) (ht : r.tag = .input ∨ r.tag = .not) :
+    TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1UReadASteps r) = g1ReadAConfig r false :=
+  g1CS_readA_unary_repaired_exact r hc ht
+
+/-- Real initial-configuration constant capstone.  It stops before activation:
+`readAStart` is still stable and no operand-1 cell is read. -/
+theorem check_g1CS_const_repaired_exact (r : G1Request) (hc : r.Canonical)
+    (ht : r.tag = .const) (b : Bool) (hs : r.spec = some b) :
+    TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1ConstReadASteps r) = g1ReadAResultConfig r b :=
+  g1CS_const_repaired_exact r hc ht b hs
 
 /-! ## The out-of-range boundary is untouched -/
 

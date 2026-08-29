@@ -33,6 +33,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOneRepairDriver
 import Complexity.TMVerifier.TuringToolkit.GateOneRepairExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneIndexRound
 import Complexity.TMVerifier.TuringToolkit.GateOnePassAControl
+import Complexity.TMVerifier.TuringToolkit.GateOnePassAEntryExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -1203,6 +1204,39 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1PassAControlExamples.const_reject
 #print axioms
   Internal.PsubsetPpoly.TM.G1PassAControlExamples.latched_residuals_distinct
+
+-- S1c, the ten real-initial pass-A entry probes.  Every public definition and
+-- theorem in `GateOnePassAEntryExamples` is a direct root.  The runs stop at
+-- `aInstallStart` or the const `combineStart` bypass; they add no operand-1
+-- read, combine execution, output, acceptance, advice or OOB/reject theorem.
+#print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.reqInputFalse
+#print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.reqInputTrue
+#print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.reqNotFalse
+#print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.reqNotTrue
+#print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.reqAndFalse
+#print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.reqAndTrue
+#print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.reqOrFalse
+#print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.reqOrTrue
+#print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.reqConstFalse
+#print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.reqConstTrue
+#print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.requests_canonical
+#print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.selected_literals
+#print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.probe_extents
+#print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.input_false_install
+#print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.input_true_install
+#print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.not_false_install
+#print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.not_true_install
+#print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.and_false_install
+#print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.and_true_install
+#print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.or_false_install
+#print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.or_true_install
+#print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.const_false_result
+#print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.const_true_result
+#print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.endpoint_heads
+#print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.endpoint_states
+#print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.endpoint_tapes
+#print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.and_false_no_wrong_result
+#print axioms Internal.PsubsetPpoly.TM.G1PassAEntryExamples.probe_clocks
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

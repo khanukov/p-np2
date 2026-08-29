@@ -2247,7 +2247,8 @@ The control, routing, read-B and repair-driver surfaces pin the exact rows,
 one-step tuple, generic rewind, endpoint projections, real-initial capstones and
 clock bounds.  `Tests/AxiomsAudit.lean` prints those theorem roots directly.
 The existing examples are updated only to their changed raw route endpoints;
-the expanded five-tag literal matrix remains deferred to S1c.
+the expanded five-tag literal matrix was deferred here and is delivered by
+S1c below.
 
 **Superseded boundary:** S1b2a stopped at a stationary `readAStart`.  S1b2b
 deletes its idle tuple and arbitrary-budget run claims and activates exactly
@@ -2286,11 +2287,53 @@ consumed.  All new public totals fit the unchanged `g1Clock`.
 Operand 1 is unread: `aInstallStart` remains stationary.  There is still no
 operand-1 tape selection, combine action, output write, `TM.accepts`, acceptance
 semantics, full-clock result, or OOB repair.  The expanded literal matrix
-remains S1c; no new broad example module is added.  Compatibility edits remove
-the now-false post-`readAStart` idle projections from the older repair examples
-and their surfaces.  This is the documented module-count exception: those
-legacy direct roots had to change because their theorem statements became
-false under the frozen semantic switch.
+was deferred from this slice and is delivered by S1c below; S1b2b itself added
+no broad example module.  Compatibility edits remove the now-false
+post-`readAStart` idle projections from the older repair examples and their
+surfaces.  This is the documented module-count exception: those legacy direct
+roots had to change because their theorem statements became false under the
+frozen semantic switch.
+
+**S1c: real-initial pass-A entry probes, delivered (2026-08-29):**
+
+**Progress classification: Infrastructure.**  This slice instantiates the
+merged activation/install capstones; it does not reduce a P-vs-NP source
+obligation.
+
+`GateOnePassAEntryExamples.lean` adds ten literal canonical requests: `input`
+selecting `false` and `true`, `not` selecting `false` and `true`, `and` with
+operand B `false` and `true`, `or` with operand B `false` and `true`, and both
+`const` literals.  Every principal equality begins at the real
+`G1M.initialConfig`.  The unary totals are `113` (`input`) and `153` (`not`),
+the binary totals are `198` (`and`) and `218` (`or`), and the constant totals
+are `117` and `133`; every literal total is proved at most the unchanged
+`g1Clock`.
+
+The eight unary/binary runs end at exact stationary `aInstallStart`: heads
+`12`, `20`, `24` or `28`, initial canonical tape unchanged, exact residual,
+and operand-B latch retained.  The two values in the `input`/`not` pairs are
+facts about the operand-1 selection in the canonical request; pass A stops on
+the first operand-1 cell and does not read it.  The `and` residuals are
+`constFalse`/`idA`, and the `or` residuals are `idA`/`constTrue`.  For the
+`and`/false probe, the latched context is literally `g1ResultCtx false`, but
+the control is proved to be `aInstallStart` and not `combineStart`.
+
+The two constant runs instead end at head-zero `combineStart` with exact
+`g1ResultCtx false`/`g1ResultCtx true` and unchanged initial tape.  They use the
+live result branch; no `const` filler residual is consumed.  Input length,
+explicit frame-word extent (encoding plus the trailing four-cell `blank`) and
+physical `G1M.tapeLength` are pinned as separate numbers for all ten requests.
+
+`Tests/TMGateOnePassAEntrySurfaceTests.lean` keeps direct `#check`s for the ten
+public request definitions and gives each of the eighteen public theorems a
+named exact wrapper with its full proposition.  `Tests/AxiomsAudit.lean` prints
+every public source declaration as a direct root, and both modules are
+registered in `lakefile.lean`.
+
+**Still deferred and claimed nowhere:** operand-1 cursor installation or tape
+read, operand-1 walk/repair/OOB behavior, combine execution, output or
+acceptance, advice, and multi-gate composition.  Existing rejection and OOB
+behavior is unchanged.
 
 **T2a correction (2026-08-24).**  The first T2a head shipped a permissive
 forward table (`vTag` looping on every `tag`, `vArg1`/`vArg2` looping on every

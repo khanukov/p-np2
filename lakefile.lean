@@ -225,7 +225,8 @@ lean_lib PnP3 where
     -- re-pointed `input`/`not`/`const` routes.  Its real-initial capstones end
     -- at head-zero `readAStart`; unary preserves `g1Ctx0`, while `const`
     -- carries `g1ResultCtx b`.  S1b2b activates the next `readAStart` step;
-    -- these repaired endpoints and `bOOB` remain otherwise unchanged.
+    -- S1c instantiates that live entry at ten real-initial literals.  These
+    -- repaired endpoints and `bOOB` remain otherwise unchanged.
     -- Repair-2b adds `GateOneRepairExamples`, the all-literal repaired runs
     -- from `G1M.initialConfig` that Repair-2a deferred.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneRepairDriver,
@@ -256,6 +257,12 @@ lean_lib PnP3 where
     -- routes to `aBof`/`aInstallStart` or `combineStart`, within unchanged
     -- `g1Clock`.  Operand 1 remains unread.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOnePassAControl,
+    -- S1c, the ten real-initial pass-A entry probes: input/not selection
+    -- contexts false/true, both operand-B outcomes for and/or, and both const
+    -- literals.  Exact literal steps, heads, states, initial tapes and clock
+    -- bounds are pinned, along with separate input/frame-word/capacity extents
+    -- and the and-false context-alias/no-wrong-mode regression.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOnePassAEntryExamples,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -421,6 +428,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMGateOneControlSurfaceTests,
     Glob.one `Tests.TMGateOneRoutingSurfaceTests,
     Glob.one `Tests.TMGateOnePassAControlSurfaceTests,
+    Glob.one `Tests.TMGateOnePassAEntrySurfaceTests,
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,
     Glob.one `Tests.TMGateOneReadBSurfaceTests,
     Glob.one `Tests.TMGateOneProbeInstallSurfaceTests,

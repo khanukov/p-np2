@@ -2102,8 +2102,9 @@ count, `G1Ctx`, `TM.runConfig` or `TM.accepts` in any statement of the slice.
   `G1Request.spec`, `g1Residual` and list indexing.
 * **`const` is excluded from every bridge, and the exclusion is load-bearing.**
   The `const` row of `g1Residual` is an arbitrary filler
-  (`g1Residual_const_filler` states exactly what it is, and no other theorem
-  reads it), because a `const` gate is decided in pass B from its literal field
+  (`g1Residual_const_filler` states exactly what it is; only the filler pin and
+  counterexample/capstone read it), because a `const` gate is decided in pass B
+  from its literal field
   and never needs a residual.  `g1Residual_const_apply_ne_spec` exhibits the
   concrete canonical request `⟨const, 1, 0, [false, false]⟩` on which all three
   selector hypotheses hold and the filler row is nevertheless *wrong*, so
@@ -2124,8 +2125,8 @@ count, `G1Ctx`, `TM.runConfig` or `TM.accepts` in any statement of the slice.
   request that shows the filler would be wrong.
 
 Pinned by `Tests/TMGateOneResidualSurfaceTests.lean` (new: `#check` pins for
-**every** public declaration of the slice plus theorem-style exact wrappers for
-every public theorem, including both bridge directions, both selection rows,
+every non-propositional public declaration plus exact theorem-contract wrappers
+for all 37 public theorems, including both bridge directions, both selection rows,
 the `const` counterexample and the capstone).  `Tests/AxiomsAudit.lean` prints
 the axioms of every new statement **directly**; each depends only on `propext`,
 `Classical.choice` and `Quot.sound`.  One new toolkit module and one new

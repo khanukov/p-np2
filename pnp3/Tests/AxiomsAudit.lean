@@ -251,8 +251,9 @@ open Pnp3.Magnification
 -- bridge from `(tag, operand-2 value, operand-1 value)` to `G1Request.spec`.
 -- Pure throughout: no machine, no configuration, no head, no step, no
 -- `G1Ctx`, no execution and no correctness claim about the interpreter.  The
--- `const` row of `g1Residual` is filler, every bridge carries
--- `r.tag != .const`, and `g1Residual_const_apply_ne_spec` is the concrete
+-- `const` row of `g1Residual` is filler; every bridge is restricted to
+-- non-`const` tags by disequality or explicit tag case, and the counterexample
+-- is the concrete
 -- canonical request that makes the exclusion load-bearing.  The pass-A
 -- control that would consume the residual is deferred to S1b.
 #print axioms Internal.PsubsetPpoly.TM.G1Residual.apply_idA

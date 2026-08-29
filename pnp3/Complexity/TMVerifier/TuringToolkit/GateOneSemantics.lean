@@ -381,9 +381,9 @@ theorem g1Residual_apply_spec {r : G1Request} (ht : r.tag ≠ .const)
       exact g1Residual_apply_spec_binary (Or.inr rfl) ha
         (by simpa using hb) hs
 
-/-- **The converse direction.**  On a canonical non-`const` request whose two
-operands are both in range, the specification *is* the residual applied to the
-operand-1 value. -/
+/-- **The converse direction.**  On a canonical non-`const` request whose
+operand selectors both succeed, the specification *is* the residual applied to
+the operand-1 value. -/
 theorem g1Spec_eq_residual_apply {r : G1Request} (hc : r.Canonical)
     (ht : r.tag ≠ .const) {a b : Bool} (ha : r.vals[r.arg1]? = some a)
     (hb : g1OperandB r = some b) :

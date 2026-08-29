@@ -33,8 +33,8 @@ a new field; **that wiring is deferred to S1b and is claimed nowhere here.**
 pass-B rescan from its literal field, so its residual is never needed.  The
 `const` row below is therefore an arbitrary filler:
 `g1Residual_const_filler` states exactly what the filler is, no other theorem
-of this module reads it, and every semantic bridge of `GateOneSemantics`
-carries `r.tag ≠ .const` as an explicit hypothesis —
+of this module reads it, and every semantic bridge of `GateOneSemantics` is
+restricted to non-`const` tags by a disequality or explicit tag case —
 `GateOneSemantics.g1Residual_const_apply_ne_spec` exhibits the concrete
 canonical `const` request on which the filler row *would* be wrong, so the
 exclusion is load-bearing rather than decorative.  Proving that the pass-A

@@ -2056,6 +2056,99 @@ padded tape is probed.  The sweep's own rejection outcome stays the
 literal instance of it, because none of the three probe words has a malformed
 frame inside its scanned region.
 
+**S1a, pure half: the G1 pass-A residual and its bridge to `G1Request.spec`,
+delivered (2026-08-29):**
+
+**Progress classification: Infrastructure.**
+
+The *pure* half of pass A, and only the pure half.  Once pass B has resolved
+the operand-2 value `b` of a gate, the remaining gate is a **unary** operation
+of the operand-1 value `a`, and there are exactly four such operations.  This
+slice defines that four-element type, the table that maps `(tag, b)` to it, and
+the exact bridge from that table to the pre-existing pure specification
+`G1Request.spec`.  **Nothing executes.**  There is no configuration, head, step
+count, `G1Ctx`, `TM.runConfig` or `TM.accepts` in any statement of the slice.
+
+* `GateOneResidual.lean` (new) — the pure four-element `G1Residual`
+  (`idA`/`notA`/`constFalse`/`constTrue`), `G1Residual.apply` with its four
+  defining rows, `G1Residual.card_eq_four` (the carrier really is two bits) and
+  `G1Residual.apply_pairwise_ne` (the four are pairwise distinct *operations*,
+  so all four values are needed).  The table
+  `g1Residual : G1Tag → Bool → G1Residual` is pinned entry by entry, and its
+  composed truth table is exact: `g1Residual_and_apply = (a && b)`,
+  `g1Residual_or_apply = (a || b)`, `input ↦ a`, `not ↦ !a`, packaged as
+  `g1Residual_apply_table`.  `input`/`not` ignore operand 2
+  (`g1Residual_unary_const`); `and`/`or` genuinely depend on it
+  (`g1Residual_binary_ne`).
+* **The residual is pure ABI data.**  `G1Residual` is a closed inductive with
+  no `Nat`, no index, no width parameter and no request-dependent payload.  It
+  is **not** an advice input and **not** a state field: this slice adds no
+  field to `G1Ctx`, touches no control table and executes no step.  That four
+  values fit in two bits is the *design reason* the type is shaped this way;
+  carrying them in the existing finite context is deferred to S1b and is
+  claimed nowhere here.
+* `GateOneSemantics.lean` — the pure operand-2 value `g1OperandB` (the selected
+  data-region entry of a binary gate, the convention value `false` for an
+  arity-1 gate), its five per-tag rows, its two arity forms, and the two
+  well-formedness
+  lemmas `g1OperandB_isSome_of_wellFormed` /
+  `g1OperandA_isSome_of_wellFormed` that discharge the selector hypotheses
+  without any machine assumption.  The bridge `g1Residual_apply_spec` — from
+  `r.tag ≠ .const`, `r.vals[r.arg1]? = some a`, `g1OperandB r = some b` and
+  `r.spec = some res`, conclude `(g1Residual r.tag b).apply a = res` — plus its
+  two branch forms and the converse `g1Spec_eq_residual_apply` on a canonical
+  request.  **No hypothesis is moved onto a machine**, and nothing here says a
+  machine computes anything: every statement is an equation between
+  `G1Request.spec`, `g1Residual` and list indexing.
+* **`const` is excluded from every bridge, and the exclusion is load-bearing.**
+  The `const` row of `g1Residual` is an arbitrary filler
+  (`g1Residual_const_filler` states exactly what it is, and no other theorem
+  reads it), because a `const` gate is decided in pass B from its literal field
+  and never needs a residual.  `g1Residual_const_apply_ne_spec` exhibits the
+  concrete canonical request `⟨const, 1, 0, [false, false]⟩` on which all three
+  selector hypotheses hold and the filler row is nevertheless *wrong*, so
+  dropping `r.tag ≠ .const` would make the bridge false.  That a pass-A run
+  physically never carries a `const` tag is a **control-level** statement and
+  is deferred to S1b; it is asserted nowhere in this slice.
+* **Selection is kept apart from the values.**  `a` is whatever
+  `r.vals[r.arg1]?` selected out of the single on-tape runtime value region;
+  `g1Residual_input_selects` and `g1Residual_not_selects` say only that the
+  `input`/`not` residuals return that selected value and its negation.  **No
+  external circuit input and no `SLGate.input` correspondence is claimed** —
+  that remains the deferred pure gate bridge described earlier in this
+  document.
+* **The capstone.**  A pure slice admits no machine-run capstone, so none is
+  offered.  The capstone is `g1Residual_spec_capstone`, the exact five-tag
+  truth-table/spec suite: the bridge for every pass-A tag, the four exact rows
+  it composes to, the `const` filler row, and the concrete canonical `const`
+  request that shows the filler would be wrong.
+
+Pinned by `Tests/TMGateOneResidualSurfaceTests.lean` (new: `#check` pins for
+**every** public declaration of the slice plus theorem-style exact wrappers for
+every public theorem, including both bridge directions, both selection rows,
+the `const` counterexample and the capstone).  `Tests/AxiomsAudit.lean` prints
+the axioms of every new statement **directly**; each depends only on `propext`,
+`Classical.choice` and `Quot.sound`.  One new toolkit module and one new
+surface test are registered in `lakefile.lean`.
+
+**Untouched by this slice.**  `GateOneControl`, `GateOneRouting`,
+`GateOneReadB`, `GateOneValidation`, `GateOneExamples` and every repair module
+and probe module are unchanged, and so is `G1Ctx`.  In particular `readAStart`
+is **still the idle handoff** it was after Repair-2b, `g1Transition_readAStart_idle`
+and `g1CS_runConfig_readA_idle` are still true and still present, and operand 1
+is still not read: every "pass A is deferred" statement earlier in this
+document stands exactly as written.
+
+**Explicitly deferred to S1b and claimed nowhere here:** activating
+`readAStart`; any pass-A control mode, operation latch or residual view on
+`G1Ctx`; the frame-level pass-A tag rescan and its `const` rejection; any
+executed step, `TM.runConfig` statement or literal probe of pass A; the
+head-zero rewind into pass A; the operand-1 cursor walk, its invariant, its
+repair and its out-of-range branch.  **Deferred further and claimed nowhere:**
+the **combine** step, the **output write**, `TM.accepts`, a full-clock or
+acceptance theorem, gate-semantics correctness *of the machine*, multi-gate
+composition, the `SLGate` bridge, and non-canonical or physically padded tapes.
+
 **T2a correction (2026-08-24).**  The first T2a head shipped a permissive
 forward table (`vTag` looping on every `tag`, `vArg1`/`vArg2` looping on every
 `index`) whose language was strictly larger than `G1Request.Canonical`, while

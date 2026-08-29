@@ -116,11 +116,13 @@ lean_lib PnP3 where
     Glob.one `Complexity.TMVerifier.TuringToolkit.TrueUniformSeekSemantics,
     Glob.one `Complexity.TMVerifier.TuringToolkit.TrueUniformSeekSemanticsExamples,
     Glob.one `Complexity.TMVerifier.TuringToolkit.TrueUniformSeekExamples,
-    -- T2a, pure layer: the fresh unary one-gate ABI (`GateOneEncoding`) and
-    -- the pure gate semantics on top of it (`GateOneSemantics`).  These are
+    -- T2a, pure layer: the fresh unary one-gate ABI (`GateOneEncoding`), the
+    -- four pass-A residual operations of operand 1 (`GateOneResidual`) and the
+    -- pure gate semantics on top of both (`GateOneSemantics`).  These are
     -- parser/spec modules only; the fixed control and execution layers are
     -- registered immediately below.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneEncoding,
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneResidual,
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneSemantics,
     -- T2a, control layer: one zero-parameter finite control whose forward
     -- table decides the canonical grammar (`GateOneControl`), and that
@@ -402,6 +404,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMFrameScannerReverseSurfaceTests,
     Glob.one `Tests.TMFrameRewriteCycleSurfaceTests,
     Glob.one `Tests.TMGateOnePureSurfaceTests,
+    Glob.one `Tests.TMGateOneResidualSurfaceTests,
     Glob.one `Tests.TMGateOneControlSurfaceTests,
     Glob.one `Tests.TMGateOneRoutingSurfaceTests,
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,

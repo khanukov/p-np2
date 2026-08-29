@@ -103,9 +103,9 @@ def g1Residual : G1Tag → Bool → G1Residual
 
 @[simp] theorem g1Residual_or_true : g1Residual .or true = .constTrue := rfl
 
-/-- **The `const` row is filler, and this is the only theorem that reads it.**
-Nothing else uses this equation: `const` is decided in pass B from its literal
-field, and every bridge in `GateOneSemantics` carries `r.tag ≠ .const`. -/
+/-- **The `const` row is filler.**  This theorem pins its value; the pure
+counterexample/capstone also reads it to show why all semantic bridges are
+restricted to non-`const` tags by disequality or explicit tag case. -/
 theorem g1Residual_const_filler (b : Bool) :
     g1Residual .const b = .constFalse := rfl
 

@@ -254,7 +254,7 @@ theorem revProbeScanner_lt_tapeLength {n k : Nat} (h : k ≤ 64) :
 theorem revProbeWriter_lt_tapeLength {n k : Nat} (h : k ≤ 64) :
     k < revProbeWriter.machine.tapeLength n := revProbe_lt_tapeLength h
 
-/-! ### Two fully concrete non-T1 runs -/
+/-! ### Three fully concrete non-T1 runs -/
 /-- `anchor · cell true · mark · cell false · spent`: a five-frame word shaped
 like a marked operand field. -/
 def revProbeWord : List RevFrame :=

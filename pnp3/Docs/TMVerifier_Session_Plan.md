@@ -2681,7 +2681,38 @@ Normal restore ends at `aProbe`, the next-round boundary.  Exhaustion is a
 stationary explicit `aExh` endpoint.  `aInstallStart` remains idle and no live
 initial configuration enters the walk.
 
-S3b2b is explicitly deferred: there is no `aTurnFin`, `aFinFalse`/`aFinTrue`,
-`aRet`, `aRepairStart`, terminal cursor cleanup, or repair handoff in S3b2a.
-The dated surface gives all 49 new theorems named direct-root wrappers and
-literal normal/malformed probes; `AxiomsAudit` has the same 49 direct roots.
+S3b2b was explicitly deferred at this boundary; the dated successor slice
+below supplies it without activating the walk.  The S3b2a surface retains
+named direct-root wrappers and literal normal/malformed probes.
+
+## S3b2b dormant operand-A terminal walk (2026-08-29)
+
+**Classification: infrastructure, not P-vs-NP mainline progress.**  This slice
+adds only the terminal modes `aRet`, `aTurnFin`, `aFinFalse`/`aFinTrue` and the
+local `aRepairStart` handoff, after the merged normal modes.  The `aExh` boundary
+now re-reads its opening `argSep`, `aRet` crosses exactly the normal forward
+skip class (`spent`, `argSep`, `index`, `separator`, `data _`) to the cursor,
+and `aTurnFin` walks four cells left into the Boolean-selected final writer.
+That writer replaces the designated `cursor` by `data ctx.vB`, preserves the
+complete context including its residual view, and arrives just after the
+restored frame at stationary `aRepairStart`.  The generic theorem makes no
+cursor-absence claim about its parameterized `pre` or `suffix` regions.
+
+The existing reject-aware reverse seek is unchanged: malformed, reserved and
+forbidden reverse windows still reject and remain in the existing sink.  The
+terminal continuation introduces no reverse decoder.  Its forward decoder has
+only the pinned successful rows above; all other frame pairs and every reserved
+window continue through the existing reject default.
+
+`GateOneAWalkKernel` supplies the three exact caller-supplied terminal atoms and
+their exact composition `g1CS_aWalk_terminal_exact`, with step count, head,
+tape, context and safety bound fixed.  The dated surface gives named direct-root
+wrappers for all 11 new source theorems, definition-only declaration probes,
+literal false/true final-writer runs and a literal 16-step
+`aExh → aRepairStart` run.  `AxiomsAudit` prints the same 11 direct roots.
+
+This is deliberately dormant.  `aInstallStart` remains its stationary idle
+handoff, no route from `G1M.initialConfig` enters any operand-A walk mode, and
+`aRepairStart` executes no repair sweep.  There is no invariant, iteration,
+driver, A-repair, result/combine/output row, acceptance theorem or semantic
+claim in S3b2b.

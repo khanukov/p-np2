@@ -1267,7 +1267,7 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aInstall_reserved_1101_reject
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aInstall_cursor
 
--- S3b2a (2026-08-29): all 49 direct source roots for the dormant normal walk.
+-- S3b2a (2026-08-29): direct source roots for the dormant normal walk.
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameScanner.revWindowStop
 #print axioms Internal.PsubsetPpoly.TM.g1Advance_aWalk_dormant
 #print axioms Internal.PsubsetPpoly.TM.g1Complete_aWalk_dormant
@@ -1277,7 +1277,6 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1ASeekRevComplete_none
 #print axioms Internal.PsubsetPpoly.TM.g1ASeekRevComplete_reserved
 #print axioms Internal.PsubsetPpoly.TM.g1ASeekRevAdvance_blank_cursor
-#print axioms Internal.PsubsetPpoly.TM.g1Transition_aExh_stable
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aSeekOut_p3
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aSeekOut_p2
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aSeekOut_p1
@@ -1317,6 +1316,21 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_fwd_to_cursor
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_turn
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_restore
+
+-- S3b2b (2026-08-29): all 11 direct source roots for the dormant terminal
+-- continuation.  Every run is caller-supplied; `aInstallStart` remains idle,
+-- `aRepairStart` is stationary, and no A-repair, driver or result row exists.
+#print axioms Internal.PsubsetPpoly.TM.g1AFinMode_ne_restore
+#print axioms Internal.PsubsetPpoly.TM.g1Advance_aTerminal_rows
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aRepairStart_idle
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aTurnFin
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aFin
+#print axioms Internal.PsubsetPpoly.TM.g1Advance_aRet_of_skip
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_exh_to_cursor
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_turn_fin
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_fin_restore
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_terminal_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_runConfig_aRepairStart_idle
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

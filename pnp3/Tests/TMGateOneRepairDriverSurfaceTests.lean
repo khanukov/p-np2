@@ -317,7 +317,8 @@ theorem check_g1CS_readA_unary_repaired_exact (r : G1Request)
 
 /-- Real initial-configuration constant capstone.  It stops before pass-A
 operand-1 selection/execution: the unary literal is decoded, the reset bridge
-is data-independent, and `readAStart` remains stable. -/
+is data-independent, and the endpoint is immediately before the live
+`readAStart` dispatch. -/
 theorem check_g1CS_const_repaired_exact (r : G1Request) (hc : r.Canonical)
     (ht : r.tag = .const) (b : Bool) (hs : r.spec = some b) :
     TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))

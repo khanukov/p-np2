@@ -1927,7 +1927,8 @@ theorem g1Transition_bOOB_stable (phase : Fin 1)
 
 /-- **The `const` literal dispatch.**  One stationary step carries the decoded
 literal as a result context into the canonical rewind.  It does not use the
-`const` filler of `g1Residual`; pass-A activation remains deferred. -/
+`const` filler or enter the A-specific rescan; the later live `readAStart`
+dispatch recognizes the result-ready context. -/
 def g1ConstMode : Bool → G1Mode
   | false => .constFalse
   | true => .constTrue

@@ -58,8 +58,8 @@ theorem g1Advance_aInstallAtoms_rejects :
       g1Advance .aProbe (.output true) = .reject :=
   ⟨rfl, rfl, rfl, rfl, rfl⟩
 
-/-- Four fixed cursor bits, written right-to-left.  The dormant exit cycles to
-the same reverse-aligned writer state; S3b2 supplies the later seek boundary. -/
+/-- Four fixed cursor bits, written right-to-left, exiting into the dormant
+normal-walk outer seek. -/
 def g1AInstallCursorWriter : ReverseFrameWriter G1State G1Frame G1Ctx where
   program := g1CS
   phase := g1CS.startPhase
@@ -73,7 +73,7 @@ def g1AInstallCursorWriter : ReverseFrameWriter G1State G1Frame G1Ctx where
   lst2 := fun ctx => g1State .aIns .p2 false false false ctx
   lst1 := fun ctx => g1State .aIns .p1 false false false ctx
   lst0 := fun ctx => g1State .aIns .p0 false false false ctx
-  exitState := g1AInsState
+  exitState := g1ASeekOutState
   target_bits := fun _ => rfl
   lstep_p3 := fun ctx scan =>
     g1Transition_aIns_p3 g1CS.startPhase false false false scan ctx
@@ -292,7 +292,7 @@ theorem g1CS_aInstall_cursor (n : Nat) (pre suffix : List G1Frame)
         .aIns .p3 false false false ctx) 4 =
       g1AlignedConfig n (4 * pre.length - 1) (by omega)
         (g1ListTape ((pre ++ G1Frame.cursor :: suffix).flatMap G1Frame.bits))
-        .aIns .p3 false false false ctx :=
+        .aSeekOut .p3 false false false ctx :=
   g1AInstallCursorWriter.writeFrameOnListLeft n pre suffix old ctx hpre hsafe
 
 end Pnp3.Internal.PsubsetPpoly.TM

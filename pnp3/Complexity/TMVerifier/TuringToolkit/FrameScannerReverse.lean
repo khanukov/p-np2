@@ -362,6 +362,26 @@ theorem revAnchorStep (K : ReverseFrameScanner S F Mode Aux) (n base : Nat)
   rw [K.revStep_p0_stop n base (by omega) tape hm a _ _ _
     (by rw [hcomplete]; exact hstop), hcomplete]
 
+/-- Exact stopping-window macrostep at raw bit level.  Unlike `revAnchorStep`,
+this also applies to windows that do not decode as frames. -/
+theorem revWindowStop (K : ReverseFrameScanner S F Mode Aux) (n base : Nat)
+    (hsafe : base + 4 < K.machine.tapeLength n)
+    (tape : Fin (K.machine.tapeLength n) → Bool) (m : Mode) (a : Aux)
+    (hm : K.Reverse m)
+    (hstop : K.Stop (K.revComplete m (tape ⟨base, by omega⟩)
+      (tape ⟨base + 1, by omega⟩) (tape ⟨base + 2, by omega⟩)
+      (tape ⟨base + 3, by omega⟩))) :
+    TM.runConfig (M := K.machine)
+        (K.revAligned n (base + 3) (by omega) tape m a) 4 =
+      K.alignedConfigQ n base (by omega) tape
+        (K.stopState (K.revComplete m (tape ⟨base, by omega⟩)
+          (tape ⟨base + 1, by omega⟩) (tape ⟨base + 2, by omega⟩)
+          (tape ⟨base + 3, by omega⟩)) a) := by
+  rw [show (4 : Nat) = 3 + 1 by rfl, runConfig_add,
+    K.revBuffer n base hsafe tape hm a]
+  simp only [runConfig_one]
+  exact K.revStep_p0_stop n base (by omega) tape hm a _ _ _ hstop
+
 /-! ### The reverse frame language and the right-to-left fold -/
 /-- The reverse path condition in *reading* order: each frame of `fs` is read in
 a reverse mode and none of them stops the pass. -/

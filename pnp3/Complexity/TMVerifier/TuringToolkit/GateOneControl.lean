@@ -295,8 +295,9 @@ exactly these twelve.  The live machine enters them only through
 `readAStart → aBof` (`g1Transition_passA_door`).
 
 `aInsSeek`/`aProbe`, `aLatchFalse`/`aLatchTrue` and `aIns` are the separate
-five-mode dormant operand-A installation family.  They have exact local rows,
-but no row from `aInstallStart` or any other live mode enters them.
+five installation atoms of the dormant operand-A walk.  `aSeekOut`/`aSeekIn`,
+`aDec`, `aFwd`, `aTurn` and the two restore writers close its normal round;
+`aExh` is the stationary terminal boundary.  No live row enters the family.
 
 `combineStart` and `bOOB` remain local idle/stable boundaries; `readAStart` is
 the live two-way dispatch, and `readAResetStart` is the one-step
@@ -332,6 +333,9 @@ inductive G1Mode
   -- dormant operand-A installation atoms; no live row enters this family
   | aInsSeek | aProbe
   | aLatchFalse | aLatchTrue | aIns
+  -- dormant normal operand-A walk and its local exhaustion boundary
+  | aSeekOut | aSeekIn | aDec | aFwd | aTurn | aExh
+  | aRestoreFalse | aRestoreTrue
   | readAStart | combineStart | readAResetStart | bOOB
   | accept | reject
   deriving Fintype, DecidableEq, Repr
@@ -517,9 +521,28 @@ def g1AProbeState (ctx : G1Ctx) : G1State :=
 def g1AInsState (ctx : G1Ctx) : G1State :=
   g1State .aIns .p3 false false false ctx
 
+def g1ASeekOutState (ctx : G1Ctx) : G1State :=
+  g1State .aSeekOut .p3 false false false ctx
+
+def g1ASeekInState (ctx : G1Ctx) : G1State :=
+  g1State .aSeekIn .p3 false false false ctx
+
+def g1ADecState (ctx : G1Ctx) : G1State :=
+  g1State .aDec .p0 false false false ctx
+
+def g1AFwdState (ctx : G1Ctx) : G1State :=
+  g1State .aFwd .p0 false false false ctx
+
+def g1AExhState (ctx : G1Ctx) : G1State :=
+  g1State .aExh .p0 false false false ctx
+
 def g1ALatchMode : Bool → G1Mode
   | false => .aLatchFalse
   | true => .aLatchTrue
+
+def g1ARestoreMode : Bool → G1Mode
+  | false => .aRestoreFalse
+  | true => .aRestoreTrue
 
 /-- The `const` handoff: the decoded literal is already in `ctx.vB`. -/
 def g1CombineState (ctx : G1Ctx) : G1State :=
@@ -765,6 +788,13 @@ def g1Advance : G1Mode → G1Frame → G1Mode
   | .aProbe, .data false => .aLatchFalse
   | .aProbe, .data true => .aLatchTrue
   | .aProbe, .output false => .bOOB
+  -- normal return scan: cross both operand fields and the data prefix
+  | .aFwd, .spent => .aFwd
+  | .aFwd, .argSep => .aFwd
+  | .aFwd, .index => .aFwd
+  | .aFwd, .separator => .aFwd
+  | .aFwd, .data _ => .aFwd
+  | .aFwd, .cursor => .aTurn
   -- `bSeek` reads right to left and has no row here at all.
   | _, _ => .reject
 
@@ -858,8 +888,9 @@ write and the two turns hold), the five modes of the operand-2 repair sweep
 moves left and the terminal dispatch holds), the four non-forward operand-1
 operation latches (`aOpInput`, `aOpNot`, `aOpAnd`, `aOpOr`), the five remaining
 handoffs (`aInstallStart`, `readAStart`, `combineStart`, `readAResetStart`,
-`bOOB`) and the two sinks are not.  The dormant `aInsSeek`/`aProbe` modes are
-forward; their two latch modes and writer are not.  The pass-A anchor read
+`bOOB`) and the two sinks are not.  The dormant `aInsSeek`/`aProbe`/`aFwd`
+modes are forward; its latches, writer, reverse seeks, mark, turn, restores and
+`aExh` boundary are not.  The pass-A anchor read
 `aBof` and its counters `aTag0 … aTag5` *are* forward modes and fall through to
 the `True` catch-all — they read frames after the live dispatch reaches them. -/
 def G1ForwardMode : G1Mode → Prop
@@ -871,6 +902,8 @@ def G1ForwardMode : G1Mode → Prop
   | .bLatchFalse | .bLatchTrue | .bIns
   | .bRepairSeek | .bRepairWrite | .bRepairBack | .bRepairHop | .bRepairDone
   | .aOpInput | .aOpNot | .aOpAnd | .aOpOr | .aInstallStart
+  | .aSeekOut | .aSeekIn | .aDec | .aTurn | .aExh
+  | .aRestoreFalse | .aRestoreTrue
   | .aLatchFalse | .aLatchTrue | .aIns
   | .readAStart | .combineStart | .readAResetStart | .bOOB
   | .accept | .reject => False
@@ -927,6 +960,79 @@ theorem g1Complete_aInstallAtoms_reserved (mode : G1Mode) :
       g1Complete mode true true true true = .reject :=
   ⟨rfl, rfl, rfl⟩
 
+/-- The dependency-closed dormant normal operand-A walk family. -/
+def G1AWalkMode : G1Mode → Prop
+  | .aInsSeek | .aProbe | .aLatchFalse | .aLatchTrue | .aIns
+  | .aSeekOut | .aSeekIn | .aDec | .aFwd | .aTurn | .aExh
+  | .aRestoreFalse | .aRestoreTrue => True
+  | _ => False
+
+instance : DecidablePred G1AWalkMode := fun mode => by
+  cases mode <;> first | exact isTrue trivial | exact isFalse id
+
+/-- No frame-table row enters the dormant normal walk from outside it. -/
+theorem g1Advance_aWalk_dormant (mode : G1Mode) (frame : G1Frame) :
+    G1AWalkMode (g1Advance mode frame) → G1AWalkMode mode := by
+  revert mode frame; decide
+
+theorem g1Complete_aWalk_dormant (mode : G1Mode) (b0 b1 b2 b3 : Bool) :
+    G1AWalkMode (g1Complete mode b0 b1 b2 b3) → G1AWalkMode mode := by
+  unfold g1Complete
+  cases decodeG1Frame? [b0, b1, b2, b3] with
+  | none => exact fun h => False.elim h
+  | some frame => exact g1Advance_aWalk_dormant mode frame
+
+/-- Reserved frame codes reject in every forward row. -/
+theorem g1Complete_aWalk_reserved (mode : G1Mode) :
+    g1Complete mode true true false true = .reject ∧
+      g1Complete mode true true true false = .reject ∧
+      g1Complete mode true true true true = .reject :=
+  ⟨rfl, rfl, rfl⟩
+
+theorem g1Advance_aFwd_cursor : g1Advance .aFwd .cursor = .aTurn := rfl
+
+/-! ### Reject-aware mixed-boundary reverse seek -/
+
+def g1ASeekRevAdvance : G1Mode → G1Frame → G1Mode
+  | .aSeekOut, .argSep => .aSeekIn
+  | .aSeekOut, .data _ | .aSeekOut, .separator
+  | .aSeekOut, .index | .aSeekOut, .spent => .aSeekOut
+  | .aSeekIn, .index => .aDec
+  | .aSeekIn, .argSep => .aExh
+  | .aSeekIn, .spent => .aSeekIn
+  | _, _ => .reject
+
+/-- Shared completion decision for the executable seek and its kernel. -/
+def g1ASeekRevComplete (mode : G1Mode) (b0 b1 b2 b3 : Bool) : G1Mode :=
+  match decodeG1Frame? [b0, b1, b2, b3] with
+  | some frame => g1ASeekRevAdvance mode frame
+  | none => .reject
+
+theorem g1ASeekRevComplete_some {mode : G1Mode} {b0 b1 b2 b3 : Bool}
+    {frame : G1Frame} (h : decodeG1Frame? [b0, b1, b2, b3] = some frame) :
+    g1ASeekRevComplete mode b0 b1 b2 b3 = g1ASeekRevAdvance mode frame := by
+  simp [g1ASeekRevComplete, h]
+
+theorem g1ASeekRevComplete_none {mode : G1Mode} {b0 b1 b2 b3 : Bool}
+    (h : decodeG1Frame? [b0, b1, b2, b3] = none) :
+    g1ASeekRevComplete mode b0 b1 b2 b3 = .reject := by
+  simp [g1ASeekRevComplete, h]
+
+/-- Literal reserved windows reject in either seek mode. -/
+theorem g1ASeekRevComplete_reserved (mode : G1Mode) :
+    g1ASeekRevComplete mode true true false true = .reject ∧
+      g1ASeekRevComplete mode true true true false = .reject ∧
+      g1ASeekRevComplete mode true true true true = .reject :=
+  ⟨rfl, rfl, rfl⟩
+
+/-- Forbidden blank and cursor frames reject in both seek regions. -/
+theorem g1ASeekRevAdvance_blank_cursor :
+    g1ASeekRevAdvance .aSeekOut .blank = .reject ∧
+      g1ASeekRevAdvance .aSeekOut .cursor = .reject ∧
+      g1ASeekRevAdvance .aSeekIn .blank = .reject ∧
+      g1ASeekRevAdvance .aSeekIn .cursor = .reject :=
+  ⟨rfl, rfl, rfl, rfl⟩
+
 /-- **The pass-A family is closed under the forward frame table.**  If one
 frame-table step lands in a pass-A mode then it started in one: no validation,
 rescan, walk or repair mode has a row into the family, so the frames the live
@@ -955,8 +1061,8 @@ theorem G1ForwardMode.readBStart : G1ForwardMode .readBStart := trivial
 complete-frame read enters `reject`, and it is not the end-of-input mode.  In
 particular the four dispatch modes, the five modes of the destructive round,
 the eleven non-forward modes of the cursor walk, the five modes of the
-operand-2 repair sweep, the four non-forward operand-1 operation latches,
-the dormant operand-A latch/writer modes, the five remaining handoffs and the
+operand-2 repair sweep, the four non-forward operand-1 operation latches, the
+dormant operand-A non-forward modes, the five remaining handoffs and the
 `reject` sink are
 stuck; `rewind` and `accept` also satisfy this table-level predicate but are
 unreachable as results of `g1Advance`;
@@ -1025,7 +1131,7 @@ theorem g1AdvanceList_ne_rewindStart_of_stuck {mode : G1Mode} (h : G1Stuck mode)
 stuck mode.**  In particular `rewind` and `accept` are unreachable from any
 scan.  Every non-forward target (the four dispatch modes, the round's five
 modes, the eleven non-forward walk modes, the sweep's five modes, the four
-pass-A operation latches, the dormant operand-A latch/writer modes, the
+pass-A operation latches, the dormant operand-A non-forward modes, the
 `readAStart` and `bOOB` handoffs and the `reject` sink) is stuck, and so are the
 three handoffs no row targets at all
 (`aInstallStart`, `readAResetStart`, `combineStart`). -/
@@ -1674,6 +1780,7 @@ def g1Transition (_phase : Fin 1) (s : G1State) (scan : Bool) :
       if s.ctx.pass then (0, g1CombineState s.ctx, scan, .stay)
       else (0, g1ABofState s.ctx, scan, .stay)
   | .aInstallStart => (0, g1AInstallState s.ctx, scan, .stay)
+  | .aExh => (0, g1AExhState s.ctx, scan, .stay)
   | .combineStart => (0, g1CombineState s.ctx, scan, .stay)
   | .bOOB => (0, g1OOBState s.ctx, scan, .stay)
   -- the four operand-1 operation latches: one stationary step each,
@@ -1690,10 +1797,8 @@ def g1Transition (_phase : Fin 1) (s : G1State) (scan : Bool) :
                   scan, .stay)
   | .aOpOr => (0, g1AInstallState (s.ctx.withRes (g1Residual .or s.ctx.vB)),
                  scan, .stay)
-  -- Dormant operand-A installation atoms.  There is intentionally no bridge
-  -- from `aInstallStart`.  The final writer row cycles to the same reverse-
-  -- aligned writer state; S3b2 will replace that dormant boundary with its
-  -- dedicated seek control.
+  -- Dormant operand-A normal walk.  There is intentionally no bridge from
+  -- `aInstallStart`; every entry remains caller-supplied.
   | .aLatchFalse => (0, g1AInsState (s.ctx.withVB false), scan, .left)
   | .aLatchTrue => (0, g1AInsState (s.ctx.withVB true), scan, .left)
   | .aIns =>
@@ -1701,7 +1806,60 @@ def g1Transition (_phase : Fin 1) (s : G1State) (scan : Bool) :
       | .p3 => (0, g1State .aIns .p2 false false false s.ctx, true, .left)
       | .p2 => (0, g1State .aIns .p1 false false false s.ctx, true, .left)
       | .p1 => (0, g1State .aIns .p0 false false false s.ctx, true, .left)
-      | .p0 => (0, g1AInsState s.ctx, false, .left)
+      | .p0 => (0, g1ASeekOutState s.ctx, false, .left)
+  | .aSeekOut =>
+      match s.position with
+      | .p3 => (0, g1State .aSeekOut .p2 false false scan s.ctx, scan, .left)
+      | .p2 => (0, g1State .aSeekOut .p1 false scan s.b2 s.ctx, scan, .left)
+      | .p1 => (0, g1State .aSeekOut .p0 scan s.b1 s.b2 s.ctx, scan, .left)
+      | .p0 =>
+          match g1ASeekRevComplete .aSeekOut scan s.b0 s.b1 s.b2 with
+          | .aSeekIn => (0, g1ASeekInState s.ctx, scan, .left)
+          | .aSeekOut => (0, g1ASeekOutState s.ctx, scan, .left)
+          | _ => (0, g1RejectState, scan, .stay)
+  | .aSeekIn =>
+      match s.position with
+      | .p3 => (0, g1State .aSeekIn .p2 false false scan s.ctx, scan, .left)
+      | .p2 => (0, g1State .aSeekIn .p1 false scan s.b2 s.ctx, scan, .left)
+      | .p1 => (0, g1State .aSeekIn .p0 scan s.b1 s.b2 s.ctx, scan, .left)
+      | .p0 =>
+          match g1ASeekRevComplete .aSeekIn scan s.b0 s.b1 s.b2 with
+          | .aDec => (0, g1ADecState s.ctx, scan, .stay)
+          | .aExh => (0, g1AExhState s.ctx, scan, .stay)
+          | .aSeekIn => (0, g1ASeekInState s.ctx, scan, .left)
+          | _ => (0, g1RejectState, scan, .stay)
+  | .aDec =>
+      match s.position with
+      | .p0 => (0, g1State .aDec .p1 false false false s.ctx, true, .right)
+      | .p1 => (0, g1State .aDec .p2 false false false s.ctx, true, .right)
+      | .p2 => (0, g1State .aDec .p3 false false false s.ctx, false, .right)
+      | .p3 => (0, g1AFwdState s.ctx, false, .right)
+  | .aTurn =>
+      match s.position with
+      | .p0 => (0, g1State .aTurn .p1 false false false s.ctx, scan, .left)
+      | .p1 => (0, g1State .aTurn .p2 false false false s.ctx, scan, .left)
+      | .p2 => (0, g1State .aTurn .p3 false false false s.ctx, scan, .left)
+      | .p3 =>
+          (0, g1State (g1ARestoreMode s.ctx.vB) .p0 false false false s.ctx,
+            scan, .left)
+  | .aRestoreFalse =>
+      match s.position with
+      | .p0 => (0, g1State .aRestoreFalse .p1 false false false s.ctx,
+                  false, .right)
+      | .p1 => (0, g1State .aRestoreFalse .p2 false false false s.ctx,
+                  true, .right)
+      | .p2 => (0, g1State .aRestoreFalse .p3 false false false s.ctx,
+                  false, .right)
+      | .p3 => (0, g1AProbeState s.ctx, true, .right)
+  | .aRestoreTrue =>
+      match s.position with
+      | .p0 => (0, g1State .aRestoreTrue .p1 false false false s.ctx,
+                  false, .right)
+      | .p1 => (0, g1State .aRestoreTrue .p2 false false false s.ctx,
+                  true, .right)
+      | .p2 => (0, g1State .aRestoreTrue .p3 false false false s.ctx,
+                  true, .right)
+      | .p3 => (0, g1AProbeState s.ctx, false, .right)
   -- the operand-2 repair sweep: the bridge, the reverse scan with its four
   -- outcomes, the `spent ↦ index` writer, its back-walk, its hop and the anchor
   -- dispatch.  Nothing here inspects the request: the scan decides through the
@@ -1915,9 +2073,8 @@ of the destructive round and its tuple is `g1Transition_bRoundStart_bridge`
 below.  `readAResetStart` has likewise stopped being idle: Repair-2a turns it into
 the one-step bridge of the operand-2 repair sweep, and its tuple is
 `g1Transition_readAResetStart_bridge` below.  `readAStart` is the live two-way
-dispatch.  `aInstallStart`, `combineStart` and `bOOB` remain stationary; only
-caller-supplied operand-A installation atoms exist, and the later live-walk and
-combine slices replace those equations. -/
+dispatch.  `aInstallStart`, `aExh`, `combineStart` and `bOOB` remain stationary;
+operand-A walk execution is caller-supplied. -/
 
 @[simp] theorem g1Transition_accept_sink (phase : Fin 1) (scan : Bool) :
     g1Transition phase g1AcceptState scan = (0, g1AcceptState, scan, .stay) :=
@@ -1982,6 +2139,12 @@ theorem g1Transition_aInstallStart_idle (phase : Fin 1)
     g1Transition phase (g1State .aInstallStart position b0 b1 b2 ctx) scan =
       (0, g1AInstallState ctx, scan, .stay) := rfl
 
+/-- Terminal exhaustion is an explicit local boundary; S3b2b owns its exit. -/
+theorem g1Transition_aExh_stable (phase : Fin 1)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State .aExh position b0 b1 b2 ctx) scan =
+      (0, g1AExhState ctx, scan, .stay) := rfl
+
 /-! ### Dormant operand-A installation tuples -/
 
 theorem g1Transition_aLatch (phase : Fin 1) (b : Bool)
@@ -2008,7 +2171,194 @@ theorem g1Transition_aIns_p1 (phase : Fin 1) (b0 b1 b2 scan : Bool)
 theorem g1Transition_aIns_p0 (phase : Fin 1) (b0 b1 b2 scan : Bool)
     (ctx : G1Ctx) :
     g1Transition phase (g1State .aIns .p0 b0 b1 b2 ctx) scan =
-      (0, g1AInsState ctx, false, .left) := rfl
+      (0, g1ASeekOutState ctx, false, .left) := rfl
+
+theorem g1Transition_aSeekOut_p3 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .aSeekOut .p3 b0 b1 b2 ctx) scan =
+      (0, g1State .aSeekOut .p2 false false scan ctx, scan, .left) := rfl
+
+theorem g1Transition_aSeekOut_p2 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .aSeekOut .p2 b0 b1 b2 ctx) scan =
+      (0, g1State .aSeekOut .p1 false scan b2 ctx, scan, .left) := rfl
+
+theorem g1Transition_aSeekOut_p1 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .aSeekOut .p1 b0 b1 b2 ctx) scan =
+      (0, g1State .aSeekOut .p0 scan b1 b2 ctx, scan, .left) := rfl
+
+private theorem g1Transition_aSeekOut_p0_raw (phase : Fin 1)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State .aSeekOut .p0 b0 b1 b2 ctx) scan =
+      (match g1ASeekRevComplete .aSeekOut scan b0 b1 b2 with
+        | .aSeekIn => (0, g1ASeekInState ctx, scan, Move.left)
+        | .aSeekOut => (0, g1ASeekOutState ctx, scan, Move.left)
+        | _ => (0, g1RejectState, scan, Move.stay)) := rfl
+
+theorem g1Transition_aSeekOut_p0_seekIn (phase : Fin 1)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx)
+    (hnext : g1ASeekRevComplete .aSeekOut scan b0 b1 b2 = .aSeekIn) :
+    g1Transition phase (g1State .aSeekOut .p0 b0 b1 b2 ctx) scan =
+      (0, g1ASeekInState ctx, scan, .left) := by
+  rw [g1Transition_aSeekOut_p0_raw, hnext]
+
+theorem g1Transition_aSeekOut_p0_argSep (phase : Fin 1)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx)
+    (heq : decodeG1Frame? [scan, b0, b1, b2] = some .argSep) :
+    g1Transition phase (g1State .aSeekOut .p0 b0 b1 b2 ctx) scan =
+      (0, g1ASeekInState ctx, scan, .left) :=
+  g1Transition_aSeekOut_p0_seekIn phase b0 b1 b2 scan ctx
+    ((g1ASeekRevComplete_some heq).trans rfl)
+
+theorem g1Transition_aSeekOut_p0_other (phase : Fin 1)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx)
+    (hnext : g1ASeekRevComplete .aSeekOut scan b0 b1 b2 = .aSeekOut) :
+    g1Transition phase (g1State .aSeekOut .p0 b0 b1 b2 ctx) scan =
+      (0, g1ASeekOutState ctx, scan, .left) := by
+  rw [g1Transition_aSeekOut_p0_raw, hnext]
+
+theorem g1Transition_aSeekOut_p0_bad (phase : Fin 1)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx)
+    (hbad : g1ASeekRevComplete .aSeekOut scan b0 b1 b2 = .reject) :
+    g1Transition phase (g1State .aSeekOut .p0 b0 b1 b2 ctx) scan =
+      (0, g1RejectState, scan, .stay) := by
+  rw [g1Transition_aSeekOut_p0_raw, hbad]
+
+theorem g1Transition_aSeekOut_p0_none_bad (phase : Fin 1)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx)
+    (hdec : decodeG1Frame? [scan, b0, b1, b2] = none) :
+    g1Transition phase (g1State .aSeekOut .p0 b0 b1 b2 ctx) scan =
+      (0, g1RejectState, scan, .stay) :=
+  g1Transition_aSeekOut_p0_bad phase b0 b1 b2 scan ctx
+    (g1ASeekRevComplete_none hdec)
+
+theorem g1Transition_aSeekIn_p3 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .aSeekIn .p3 b0 b1 b2 ctx) scan =
+      (0, g1State .aSeekIn .p2 false false scan ctx, scan, .left) := rfl
+
+theorem g1Transition_aSeekIn_p2 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .aSeekIn .p2 b0 b1 b2 ctx) scan =
+      (0, g1State .aSeekIn .p1 false scan b2 ctx, scan, .left) := rfl
+
+theorem g1Transition_aSeekIn_p1 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .aSeekIn .p1 b0 b1 b2 ctx) scan =
+      (0, g1State .aSeekIn .p0 scan b1 b2 ctx, scan, .left) := rfl
+
+private theorem g1Transition_aSeekIn_p0_raw (phase : Fin 1)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State .aSeekIn .p0 b0 b1 b2 ctx) scan =
+      (match g1ASeekRevComplete .aSeekIn scan b0 b1 b2 with
+        | .aDec => (0, g1ADecState ctx, scan, Move.stay)
+        | .aExh => (0, g1AExhState ctx, scan, Move.stay)
+        | .aSeekIn => (0, g1ASeekInState ctx, scan, Move.left)
+        | _ => (0, g1RejectState, scan, Move.stay)) := rfl
+
+theorem g1Transition_aSeekIn_p0_dec (phase : Fin 1)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx)
+    (hnext : g1ASeekRevComplete .aSeekIn scan b0 b1 b2 = .aDec) :
+    g1Transition phase (g1State .aSeekIn .p0 b0 b1 b2 ctx) scan =
+      (0, g1ADecState ctx, scan, .stay) := by
+  rw [g1Transition_aSeekIn_p0_raw, hnext]
+
+theorem g1Transition_aSeekIn_p0_exh (phase : Fin 1)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx)
+    (hnext : g1ASeekRevComplete .aSeekIn scan b0 b1 b2 = .aExh) :
+    g1Transition phase (g1State .aSeekIn .p0 b0 b1 b2 ctx) scan =
+      (0, g1AExhState ctx, scan, .stay) := by
+  rw [g1Transition_aSeekIn_p0_raw, hnext]
+
+theorem g1Transition_aSeekIn_p0_index (phase : Fin 1)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx)
+    (heq : decodeG1Frame? [scan, b0, b1, b2] = some .index) :
+    g1Transition phase (g1State .aSeekIn .p0 b0 b1 b2 ctx) scan =
+      (0, g1ADecState ctx, scan, .stay) :=
+  g1Transition_aSeekIn_p0_dec phase b0 b1 b2 scan ctx
+    ((g1ASeekRevComplete_some heq).trans rfl)
+
+theorem g1Transition_aSeekIn_p0_argSep (phase : Fin 1)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx)
+    (heq : decodeG1Frame? [scan, b0, b1, b2] = some .argSep) :
+    g1Transition phase (g1State .aSeekIn .p0 b0 b1 b2 ctx) scan =
+      (0, g1AExhState ctx, scan, .stay) :=
+  g1Transition_aSeekIn_p0_exh phase b0 b1 b2 scan ctx
+    ((g1ASeekRevComplete_some heq).trans rfl)
+
+theorem g1Transition_aSeekIn_p0_other (phase : Fin 1)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx)
+    (hnext : g1ASeekRevComplete .aSeekIn scan b0 b1 b2 = .aSeekIn) :
+    g1Transition phase (g1State .aSeekIn .p0 b0 b1 b2 ctx) scan =
+      (0, g1ASeekInState ctx, scan, .left) := by
+  rw [g1Transition_aSeekIn_p0_raw, hnext]
+
+theorem g1Transition_aSeekIn_p0_bad (phase : Fin 1)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx)
+    (hbad : g1ASeekRevComplete .aSeekIn scan b0 b1 b2 = .reject) :
+    g1Transition phase (g1State .aSeekIn .p0 b0 b1 b2 ctx) scan =
+      (0, g1RejectState, scan, .stay) := by
+  rw [g1Transition_aSeekIn_p0_raw, hbad]
+
+theorem g1Transition_aSeekIn_p0_none_bad (phase : Fin 1)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx)
+    (hdec : decodeG1Frame? [scan, b0, b1, b2] = none) :
+    g1Transition phase (g1State .aSeekIn .p0 b0 b1 b2 ctx) scan =
+      (0, g1RejectState, scan, .stay) :=
+  g1Transition_aSeekIn_p0_bad phase b0 b1 b2 scan ctx
+    (g1ASeekRevComplete_none hdec)
+
+/-- Literal executable bad rows for all three reserved windows. -/
+theorem g1Transition_aSeek_p0_reserved_bad (phase : Fin 1) (ctx : G1Ctx) :
+    (g1Transition phase (g1State .aSeekOut .p0 true false true ctx) true =
+        (0, g1RejectState, true, .stay) ∧
+      g1Transition phase (g1State .aSeekIn .p0 true false true ctx) true =
+        (0, g1RejectState, true, .stay)) ∧
+    (g1Transition phase (g1State .aSeekOut .p0 true true false ctx) true =
+        (0, g1RejectState, true, .stay) ∧
+      g1Transition phase (g1State .aSeekIn .p0 true true false ctx) true =
+        (0, g1RejectState, true, .stay)) ∧
+    (g1Transition phase (g1State .aSeekOut .p0 true true true ctx) true =
+        (0, g1RejectState, true, .stay) ∧
+      g1Transition phase (g1State .aSeekIn .p0 true true true ctx) true =
+        (0, g1RejectState, true, .stay)) :=
+  ⟨⟨rfl, rfl⟩, ⟨rfl, rfl⟩, ⟨rfl, rfl⟩⟩
+
+theorem g1Transition_aDec (phase : Fin 1) (position : G1FramePosition)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State .aDec position b0 b1 b2 ctx) scan =
+      (0, match position with
+          | .p0 => g1State .aDec .p1 false false false ctx
+          | .p1 => g1State .aDec .p2 false false false ctx
+          | .p2 => g1State .aDec .p3 false false false ctx
+          | .p3 => g1AFwdState ctx,
+        match position with | .p0 | .p1 => true | .p2 | .p3 => false,
+        .right) := by
+  cases position <;> rfl
+
+theorem g1Transition_aTurn (phase : Fin 1) (position : G1FramePosition)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State .aTurn position b0 b1 b2 ctx) scan =
+      (0, match position with
+          | .p0 => g1State .aTurn .p1 false false false ctx
+          | .p1 => g1State .aTurn .p2 false false false ctx
+          | .p2 => g1State .aTurn .p3 false false false ctx
+          | .p3 => g1State (g1ARestoreMode ctx.vB) .p0 false false false ctx,
+        scan, .left) := by
+  cases position <;> rfl
+
+theorem g1Transition_aRestore (phase : Fin 1) (b : Bool)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State (g1ARestoreMode b) position b0 b1 b2 ctx) scan =
+      (0, match position with
+          | .p0 => g1State (g1ARestoreMode b) .p1 false false false ctx
+          | .p1 => g1State (g1ARestoreMode b) .p2 false false false ctx
+          | .p2 => g1State (g1ARestoreMode b) .p3 false false false ctx
+          | .p3 => g1AProbeState ctx,
+        match position with | .p0 => false | .p1 => true | .p2 => b | .p3 => !b,
+        .right) := by
+  cases b <;> cases position <;> rfl
 
 theorem g1Transition_combineStart_idle (phase : Fin 1)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
@@ -2708,13 +3058,34 @@ theorem g1Transition_aInstallStart_unique (phase : Fin 1) (s : G1State)
              | exact absurd h (g1Complete_ne_aInstallStart _ _ _ _ _))
 
 set_option maxHeartbeats 800000 in
-/-- No executed row outside the new installation family enters it.  In
-particular the stationary `aInstallStart` row remains an idle boundary rather
-than an activation door. -/
+/-- An executed predecessor of an S3b1 atom remains in the full dormant walk;
+normal restoration is the only new way to re-enter `aProbe`. -/
 theorem g1Transition_aInstallAtoms_dormant (phase : Fin 1) (s : G1State)
     (scan : Bool)
     (h : G1AInstallAtomMode (g1Transition phase s scan).2.1.mode) :
-    G1AInstallAtomMode s.mode := by
+    G1AWalkMode s.mode := by
+  have hw : G1AWalkMode (g1Transition phase s scan).2.1.mode := by
+    generalize (g1Transition phase s scan).2.1.mode = mode at h ⊢
+    cases mode <;> first | exact trivial | exact False.elim h
+  obtain ⟨mode, position, b0, b1, b2, ctx⟩ := s
+  obtain ⟨pass, crossed, vB⟩ := ctx
+  cases mode <;> cases position <;>
+    first
+      | exact trivial
+      | exact False.elim hw
+      | (cases vB <;> exact False.elim hw)
+      | (cases pass <;> exact False.elim hw)
+      | (simp only [g1Transition, g1State] at hw
+         split at hw <;>
+           first
+             | exact False.elim hw
+             | exact g1Complete_aWalk_dormant _ _ _ _ _ hw)
+
+set_option maxHeartbeats 800000 in
+/-- No executed row outside the dormant normal walk enters it. -/
+theorem g1Transition_aWalk_dormant (phase : Fin 1) (s : G1State) (scan : Bool)
+    (h : G1AWalkMode (g1Transition phase s scan).2.1.mode) :
+    G1AWalkMode s.mode := by
   obtain ⟨mode, position, b0, b1, b2, ctx⟩ := s
   obtain ⟨pass, crossed, vB⟩ := ctx
   cases mode <;> cases position <;>
@@ -2727,6 +3098,6 @@ theorem g1Transition_aInstallAtoms_dormant (phase : Fin 1) (s : G1State)
          split at h <;>
            first
              | exact False.elim h
-             | exact g1Complete_aInstallAtoms_dormant _ _ _ _ _ h)
+             | exact g1Complete_aWalk_dormant _ _ _ _ _ h)
 
 end Pnp3.Internal.PsubsetPpoly.TM

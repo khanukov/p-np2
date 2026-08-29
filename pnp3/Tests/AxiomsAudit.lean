@@ -35,6 +35,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOneIndexRound
 import Complexity.TMVerifier.TuringToolkit.GateOnePassAControl
 import Complexity.TMVerifier.TuringToolkit.GateOnePassAEntryExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneAWalkInstallAtoms
+import Complexity.TMVerifier.TuringToolkit.GateOneAWalkKernel
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -1265,6 +1266,57 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aProbe_oob
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aInstall_reserved_1101_reject
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aInstall_cursor
+
+-- S3b2a (2026-08-29): all 49 direct source roots for the dormant normal walk.
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameScanner.revWindowStop
+#print axioms Internal.PsubsetPpoly.TM.g1Advance_aWalk_dormant
+#print axioms Internal.PsubsetPpoly.TM.g1Complete_aWalk_dormant
+#print axioms Internal.PsubsetPpoly.TM.g1Complete_aWalk_reserved
+#print axioms Internal.PsubsetPpoly.TM.g1Advance_aFwd_cursor
+#print axioms Internal.PsubsetPpoly.TM.g1ASeekRevComplete_some
+#print axioms Internal.PsubsetPpoly.TM.g1ASeekRevComplete_none
+#print axioms Internal.PsubsetPpoly.TM.g1ASeekRevComplete_reserved
+#print axioms Internal.PsubsetPpoly.TM.g1ASeekRevAdvance_blank_cursor
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aExh_stable
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aSeekOut_p3
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aSeekOut_p2
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aSeekOut_p1
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aSeekOut_p0_seekIn
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aSeekOut_p0_argSep
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aSeekOut_p0_other
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aSeekOut_p0_bad
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aSeekOut_p0_none_bad
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aSeekIn_p3
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aSeekIn_p2
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aSeekIn_p1
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aSeekIn_p0_dec
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aSeekIn_p0_exh
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aSeekIn_p0_index
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aSeekIn_p0_argSep
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aSeekIn_p0_other
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aSeekIn_p0_bad
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aSeekIn_p0_none_bad
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aSeek_p0_reserved_bad
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aDec
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aTurn
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aRestore
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aWalk_dormant
+#print axioms Internal.PsubsetPpoly.TM.g1Advance_aFwd_of_skip
+#print axioms Internal.PsubsetPpoly.TM.G1ASeekOutSkip_ne_argSep
+#print axioms Internal.PsubsetPpoly.TM.G1ASeekInSkip_ne_index
+#print axioms Internal.PsubsetPpoly.TM.G1ASeekInSkip_ne_argSep
+#print axioms Internal.PsubsetPpoly.TM.G1ASeekMode.eq
+#print axioms Internal.PsubsetPpoly.TM.g1ASeekRevAdvance_out_of_skip
+#print axioms Internal.PsubsetPpoly.TM.g1ASeekRevAdvance_in_of_skip
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_reserved_1101_reject
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_reserved_1101_reject_idle
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkScanner_machine
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_seek_index
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_seek_exhaust
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_mark
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_fwd_to_cursor
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_turn
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_restore
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

@@ -296,8 +296,10 @@ exactly these twelve.  The live machine enters them only through
 
 `aInsSeek`/`aProbe`, `aLatchFalse`/`aLatchTrue` and `aIns` are the separate
 five installation atoms of the dormant operand-A walk.  `aSeekOut`/`aSeekIn`,
-`aDec`, `aFwd`, `aTurn` and the two restore writers close its normal round;
-`aExh` is the stationary terminal boundary.  No live row enters the family.
+`aDec`, `aFwd`, `aTurn` and the two restore writers close its normal round.
+The terminal-only continuation is `aExh`/`aRet`, `aTurnFin`, the two final
+restore writers and the stationary `aRepairStart` handoff.  No live row enters
+the family.
 
 `combineStart` and `bOOB` remain local idle/stable boundaries; `readAStart` is
 the live two-way dispatch, and `readAResetStart` is the one-step
@@ -336,6 +338,10 @@ inductive G1Mode
   -- dormant normal operand-A walk and its local exhaustion boundary
   | aSeekOut | aSeekIn | aDec | aFwd | aTurn | aExh
   | aRestoreFalse | aRestoreTrue
+  -- dormant operand-A terminal continuation and stationary repair handoff
+  | aRet | aTurnFin
+  | aFinFalse | aFinTrue
+  | aRepairStart
   | readAStart | combineStart | readAResetStart | bOOB
   | accept | reject
   deriving Fintype, DecidableEq, Repr
@@ -543,6 +549,19 @@ def g1ALatchMode : Bool → G1Mode
 def g1ARestoreMode : Bool → G1Mode
   | false => .aRestoreFalse
   | true => .aRestoreTrue
+
+def g1AFinMode : Bool → G1Mode
+  | false => .aFinFalse
+  | true => .aFinTrue
+
+/-- The terminal writer modes are distinct from the normal-round writers. -/
+theorem g1AFinMode_ne_restore (b b' : Bool) :
+    g1AFinMode b ≠ g1ARestoreMode b' := by
+  cases b <;> cases b' <;> decide
+
+/-- The stationary local handoff after terminal cursor cleanup. -/
+def g1ARepairStartState (ctx : G1Ctx) : G1State :=
+  g1State .aRepairStart .p0 false false false ctx
 
 /-- The `const` handoff: the decoded literal is already in `ctx.vB`. -/
 def g1CombineState (ctx : G1Ctx) : G1State :=
@@ -795,6 +814,14 @@ def g1Advance : G1Mode → G1Frame → G1Mode
   | .aFwd, .separator => .aFwd
   | .aFwd, .data _ => .aFwd
   | .aFwd, .cursor => .aTurn
+  -- terminal return: re-read the opening boundary, then run to the cursor
+  | .aExh, .argSep => .aRet
+  | .aRet, .spent => .aRet
+  | .aRet, .argSep => .aRet
+  | .aRet, .index => .aRet
+  | .aRet, .separator => .aRet
+  | .aRet, .data _ => .aRet
+  | .aRet, .cursor => .aTurnFin
   -- `bSeek` reads right to left and has no row here at all.
   | _, _ => .reject
 
@@ -888,9 +915,10 @@ write and the two turns hold), the five modes of the operand-2 repair sweep
 moves left and the terminal dispatch holds), the four non-forward operand-1
 operation latches (`aOpInput`, `aOpNot`, `aOpAnd`, `aOpOr`), the five remaining
 handoffs (`aInstallStart`, `readAStart`, `combineStart`, `readAResetStart`,
-`bOOB`) and the two sinks are not.  The dormant `aInsSeek`/`aProbe`/`aFwd`
-modes are forward; its latches, writer, reverse seeks, mark, turn, restores and
-`aExh` boundary are not.  The pass-A anchor read
+`bOOB`) and the two sinks are not.  The dormant
+`aInsSeek`/`aProbe`/`aFwd`/`aExh`/`aRet` modes are forward; its latches, writer,
+reverse seeks, mark, turns, restore writers and stationary `aRepairStart` are
+not.  The pass-A anchor read
 `aBof` and its counters `aTag0 … aTag5` *are* forward modes and fall through to
 the `True` catch-all — they read frames after the live dispatch reaches them. -/
 def G1ForwardMode : G1Mode → Prop
@@ -902,8 +930,9 @@ def G1ForwardMode : G1Mode → Prop
   | .bLatchFalse | .bLatchTrue | .bIns
   | .bRepairSeek | .bRepairWrite | .bRepairBack | .bRepairHop | .bRepairDone
   | .aOpInput | .aOpNot | .aOpAnd | .aOpOr | .aInstallStart
-  | .aSeekOut | .aSeekIn | .aDec | .aTurn | .aExh
-  | .aRestoreFalse | .aRestoreTrue
+  | .aSeekOut | .aSeekIn | .aDec | .aTurn | .aTurnFin
+  | .aRestoreFalse | .aRestoreTrue | .aFinFalse | .aFinTrue
+  | .aRepairStart
   | .aLatchFalse | .aLatchTrue | .aIns
   | .readAStart | .combineStart | .readAResetStart | .bOOB
   | .accept | .reject => False
@@ -960,11 +989,12 @@ theorem g1Complete_aInstallAtoms_reserved (mode : G1Mode) :
       g1Complete mode true true true true = .reject :=
   ⟨rfl, rfl, rfl⟩
 
-/-- The dependency-closed dormant normal operand-A walk family. -/
+/-- The dependency-closed dormant normal and terminal operand-A walk family. -/
 def G1AWalkMode : G1Mode → Prop
   | .aInsSeek | .aProbe | .aLatchFalse | .aLatchTrue | .aIns
   | .aSeekOut | .aSeekIn | .aDec | .aFwd | .aTurn | .aExh
-  | .aRestoreFalse | .aRestoreTrue => True
+  | .aRestoreFalse | .aRestoreTrue
+  | .aRet | .aTurnFin | .aFinFalse | .aFinTrue | .aRepairStart => True
   | _ => False
 
 instance : DecidablePred G1AWalkMode := fun mode => by
@@ -990,6 +1020,18 @@ theorem g1Complete_aWalk_reserved (mode : G1Mode) :
   ⟨rfl, rfl, rfl⟩
 
 theorem g1Advance_aFwd_cursor : g1Advance .aFwd .cursor = .aTurn := rfl
+
+/-- Every successful row of the terminal forward path, pinned literally. -/
+theorem g1Advance_aTerminal_rows :
+    g1Advance .aExh .argSep = .aRet ∧
+      g1Advance .aRet .spent = .aRet ∧
+      g1Advance .aRet .argSep = .aRet ∧
+      g1Advance .aRet .index = .aRet ∧
+      g1Advance .aRet .separator = .aRet ∧
+      g1Advance .aRet (.data false) = .aRet ∧
+      g1Advance .aRet (.data true) = .aRet ∧
+      g1Advance .aRet .cursor = .aTurnFin :=
+  ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
 
 /-! ### Reject-aware mixed-boundary reverse seek -/
 
@@ -1780,7 +1822,7 @@ def g1Transition (_phase : Fin 1) (s : G1State) (scan : Bool) :
       if s.ctx.pass then (0, g1CombineState s.ctx, scan, .stay)
       else (0, g1ABofState s.ctx, scan, .stay)
   | .aInstallStart => (0, g1AInstallState s.ctx, scan, .stay)
-  | .aExh => (0, g1AExhState s.ctx, scan, .stay)
+  | .aRepairStart => (0, g1ARepairStartState s.ctx, scan, .stay)
   | .combineStart => (0, g1CombineState s.ctx, scan, .stay)
   | .bOOB => (0, g1OOBState s.ctx, scan, .stay)
   -- the four operand-1 operation latches: one stationary step each,
@@ -1842,6 +1884,14 @@ def g1Transition (_phase : Fin 1) (s : G1State) (scan : Bool) :
       | .p3 =>
           (0, g1State (g1ARestoreMode s.ctx.vB) .p0 false false false s.ctx,
             scan, .left)
+  | .aTurnFin =>
+      match s.position with
+      | .p0 => (0, g1State .aTurnFin .p1 false false false s.ctx, scan, .left)
+      | .p1 => (0, g1State .aTurnFin .p2 false false false s.ctx, scan, .left)
+      | .p2 => (0, g1State .aTurnFin .p3 false false false s.ctx, scan, .left)
+      | .p3 =>
+          (0, g1State (g1AFinMode s.ctx.vB) .p0 false false false s.ctx,
+            scan, .left)
   | .aRestoreFalse =>
       match s.position with
       | .p0 => (0, g1State .aRestoreFalse .p1 false false false s.ctx,
@@ -1860,6 +1910,24 @@ def g1Transition (_phase : Fin 1) (s : G1State) (scan : Bool) :
       | .p2 => (0, g1State .aRestoreTrue .p3 false false false s.ctx,
                   true, .right)
       | .p3 => (0, g1AProbeState s.ctx, false, .right)
+  | .aFinFalse =>
+      match s.position with
+      | .p0 => (0, g1State .aFinFalse .p1 false false false s.ctx,
+                  false, .right)
+      | .p1 => (0, g1State .aFinFalse .p2 false false false s.ctx,
+                  true, .right)
+      | .p2 => (0, g1State .aFinFalse .p3 false false false s.ctx,
+                  false, .right)
+      | .p3 => (0, g1ARepairStartState s.ctx, true, .right)
+  | .aFinTrue =>
+      match s.position with
+      | .p0 => (0, g1State .aFinTrue .p1 false false false s.ctx,
+                  false, .right)
+      | .p1 => (0, g1State .aFinTrue .p2 false false false s.ctx,
+                  true, .right)
+      | .p2 => (0, g1State .aFinTrue .p3 false false false s.ctx,
+                  true, .right)
+      | .p3 => (0, g1ARepairStartState s.ctx, false, .right)
   -- the operand-2 repair sweep: the bridge, the reverse scan with its four
   -- outcomes, the `spent ↦ index` writer, its back-walk, its hop and the anchor
   -- dispatch.  Nothing here inspects the request: the scan decides through the
@@ -2073,7 +2141,7 @@ of the destructive round and its tuple is `g1Transition_bRoundStart_bridge`
 below.  `readAResetStart` has likewise stopped being idle: Repair-2a turns it into
 the one-step bridge of the operand-2 repair sweep, and its tuple is
 `g1Transition_readAResetStart_bridge` below.  `readAStart` is the live two-way
-dispatch.  `aInstallStart`, `aExh`, `combineStart` and `bOOB` remain stationary;
+dispatch.  `aInstallStart`, `aRepairStart`, `combineStart` and `bOOB` remain stationary;
 operand-A walk execution is caller-supplied. -/
 
 @[simp] theorem g1Transition_accept_sink (phase : Fin 1) (scan : Bool) :
@@ -2139,11 +2207,11 @@ theorem g1Transition_aInstallStart_idle (phase : Fin 1)
     g1Transition phase (g1State .aInstallStart position b0 b1 b2 ctx) scan =
       (0, g1AInstallState ctx, scan, .stay) := rfl
 
-/-- Terminal exhaustion is an explicit local boundary; S3b2b owns its exit. -/
-theorem g1Transition_aExh_stable (phase : Fin 1)
+/-- The terminal cleanup handoff is stationary: no A-repair executes here. -/
+theorem g1Transition_aRepairStart_idle (phase : Fin 1)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
-    g1Transition phase (g1State .aExh position b0 b1 b2 ctx) scan =
-      (0, g1AExhState ctx, scan, .stay) := rfl
+    g1Transition phase (g1State .aRepairStart position b0 b1 b2 ctx) scan =
+      (0, g1ARepairStartState ctx, scan, .stay) := rfl
 
 /-! ### Dormant operand-A installation tuples -/
 
@@ -2348,6 +2416,18 @@ theorem g1Transition_aTurn (phase : Fin 1) (position : G1FramePosition)
         scan, .left) := by
   cases position <;> rfl
 
+/-- The terminal turn is the normal four-cell left turn with a distinct exit. -/
+theorem g1Transition_aTurnFin (phase : Fin 1) (position : G1FramePosition)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State .aTurnFin position b0 b1 b2 ctx) scan =
+      (0, match position with
+          | .p0 => g1State .aTurnFin .p1 false false false ctx
+          | .p1 => g1State .aTurnFin .p2 false false false ctx
+          | .p2 => g1State .aTurnFin .p3 false false false ctx
+          | .p3 => g1State (g1AFinMode ctx.vB) .p0 false false false ctx,
+        scan, .left) := by
+  cases position <;> rfl
+
 theorem g1Transition_aRestore (phase : Fin 1) (b : Bool)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
     g1Transition phase (g1State (g1ARestoreMode b) position b0 b1 b2 ctx) scan =
@@ -2357,6 +2437,24 @@ theorem g1Transition_aRestore (phase : Fin 1) (b : Bool)
           | .p2 => g1State (g1ARestoreMode b) .p3 false false false ctx
           | .p3 => g1AProbeState ctx,
         match position with | .p0 => false | .p1 => true | .p2 => b | .p3 => !b,
+        .right) := by
+  cases b <;> cases position <;> rfl
+
+/-- The final writer emits the same literal `data b` codeword as normal
+restore and exits into the stationary A-repair handoff. -/
+theorem g1Transition_aFin (phase : Fin 1) (b : Bool)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State (g1AFinMode b) position b0 b1 b2 ctx) scan =
+      (0, match position with
+          | .p0 => g1State (g1AFinMode b) .p1 false false false ctx
+          | .p1 => g1State (g1AFinMode b) .p2 false false false ctx
+          | .p2 => g1State (g1AFinMode b) .p3 false false false ctx
+          | .p3 => g1ARepairStartState ctx,
+        match position with
+          | .p0 => false
+          | .p1 => true
+          | .p2 => b
+          | .p3 => !b,
         .right) := by
   cases b <;> cases position <;> rfl
 
@@ -3032,6 +3130,7 @@ theorem g1Transition_readAStart_unique (phase : Fin 1) (s : G1State)
              | exact G1Mode.noConfusion h
              | exact absurd h (g1Complete_ne_readAStart _ _ _ _ _))
 
+set_option maxHeartbeats 800000 in
 /-- `aInstallStart` is reached only from one of the four operation latches or
 from its own idle row.  Thus a latched residual cannot exit toward
 `readAStart` and be mistaken for a result. -/
@@ -3043,11 +3142,6 @@ theorem g1Transition_aInstallStart_unique (phase : Fin 1) (s : G1State)
   obtain ⟨pass, crossed, vB⟩ := ctx
   cases mode <;> cases position <;>
     first
-      | exact Or.inl rfl
-      | exact Or.inr (Or.inl rfl)
-      | exact Or.inr (Or.inr (Or.inl rfl))
-      | exact Or.inr (Or.inr (Or.inr (Or.inl rfl)))
-      | exact Or.inr (Or.inr (Or.inr (Or.inr rfl)))
       | exact G1Mode.noConfusion h
       | (cases vB <;> exact G1Mode.noConfusion h)
       | (cases pass <;> exact G1Mode.noConfusion h)
@@ -3056,6 +3150,11 @@ theorem g1Transition_aInstallStart_unique (phase : Fin 1) (s : G1State)
            first
              | exact G1Mode.noConfusion h
              | exact absurd h (g1Complete_ne_aInstallStart _ _ _ _ _))
+      | exact Or.inl rfl
+      | exact Or.inr (Or.inl rfl)
+      | exact Or.inr (Or.inr (Or.inl rfl))
+      | exact Or.inr (Or.inr (Or.inr (Or.inl rfl)))
+      | exact Or.inr (Or.inr (Or.inr (Or.inr rfl)))
 
 set_option maxHeartbeats 800000 in
 /-- An executed predecessor of an S3b1 atom remains in the full dormant walk;

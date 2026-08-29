@@ -1,10 +1,10 @@
 import Complexity.TMVerifier.TuringToolkit.GateOneAWalkKernel
 
 /-!
-# S3b2a dormant operand-A normal-walk surface
+# S3b2a/S3b2b dormant operand-A walk surface
 
-Dated 2026-08-29.  All runs are caller-supplied; `aInstallStart` is idle and
-terminal S3b2b is deferred at `aExh`.
+Dated 2026-08-29.  All runs are caller-supplied; `aInstallStart` is idle,
+terminal cleanup stops at stationary `aRepairStart`, and no repair executes.
 -/
 
 namespace Pnp3.Tests.TMGateOneAWalkSurface
@@ -22,6 +22,8 @@ open Pnp3.Internal.PsubsetPpoly.TM.FrameScan
 #check @g1AFwdState
 #check @g1AExhState
 #check @g1ARestoreMode
+#check @g1AFinMode
+#check @g1ARepairStartState
 #check @g1ASeekRevAdvance
 #check @g1ASeekRevComplete
 #check @G1ASeekOutSkip
@@ -33,6 +35,7 @@ open Pnp3.Internal.PsubsetPpoly.TM.FrameScan
 #check @g1AWalkScanner
 #check @g1ADecWriter
 #check @g1ARestoreWriter
+#check @g1AFinWriter
 
 /-! Every new public source theorem has an exact named direct-root wrapper. -/
 
@@ -101,11 +104,26 @@ theorem check_g1ASeekRevAdvance_blank_cursor :
       g1ASeekRevAdvance .aSeekIn .cursor = .reject :=
   g1ASeekRevAdvance_blank_cursor
 
-theorem check_g1Transition_aExh_stable (phase : Fin 1)
+theorem check_g1AFinMode_ne_restore (b b' : Bool) :
+    g1AFinMode b ≠ g1ARestoreMode b' :=
+  g1AFinMode_ne_restore b b'
+
+theorem check_g1Advance_aTerminal_rows :
+    g1Advance .aExh .argSep = .aRet ∧
+      g1Advance .aRet .spent = .aRet ∧
+      g1Advance .aRet .argSep = .aRet ∧
+      g1Advance .aRet .index = .aRet ∧
+      g1Advance .aRet .separator = .aRet ∧
+      g1Advance .aRet (.data false) = .aRet ∧
+      g1Advance .aRet (.data true) = .aRet ∧
+      g1Advance .aRet .cursor = .aTurnFin :=
+  g1Advance_aTerminal_rows
+
+theorem check_g1Transition_aRepairStart_idle (phase : Fin 1)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
-    g1Transition phase (g1State .aExh position b0 b1 b2 ctx) scan =
-      (0, g1AExhState ctx, scan, .stay) :=
-  g1Transition_aExh_stable phase position b0 b1 b2 scan ctx
+    g1Transition phase (g1State .aRepairStart position b0 b1 b2 ctx) scan =
+      (0, g1ARepairStartState ctx, scan, .stay) :=
+  g1Transition_aRepairStart_idle phase position b0 b1 b2 scan ctx
 
 theorem check_g1Transition_aSeekOut_p3
     (phase : Fin 1) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
@@ -278,6 +296,33 @@ theorem check_g1Transition_aRestore (phase : Fin 1) (b : Bool)
         .right) :=
   g1Transition_aRestore phase b position b0 b1 b2 scan ctx
 
+theorem check_g1Transition_aTurnFin (phase : Fin 1)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State .aTurnFin position b0 b1 b2 ctx) scan =
+      (0, match position with
+          | .p0 => g1State .aTurnFin .p1 false false false ctx
+          | .p1 => g1State .aTurnFin .p2 false false false ctx
+          | .p2 => g1State .aTurnFin .p3 false false false ctx
+          | .p3 => g1State (g1AFinMode ctx.vB) .p0 false false false ctx,
+        scan, .left) :=
+  g1Transition_aTurnFin phase position b0 b1 b2 scan ctx
+
+theorem check_g1Transition_aFin (phase : Fin 1) (b : Bool)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State (g1AFinMode b) position b0 b1 b2 ctx) scan =
+      (0, match position with
+          | .p0 => g1State (g1AFinMode b) .p1 false false false ctx
+          | .p1 => g1State (g1AFinMode b) .p2 false false false ctx
+          | .p2 => g1State (g1AFinMode b) .p3 false false false ctx
+          | .p3 => g1ARepairStartState ctx,
+        match position with
+          | .p0 => false
+          | .p1 => true
+          | .p2 => b
+          | .p3 => !b,
+        .right) :=
+  g1Transition_aFin phase b position b0 b1 b2 scan ctx
+
 theorem check_g1Transition_aWalk_dormant
     (phase : Fin 1) (s : G1State) (scan : Bool)
     (h : G1AWalkMode (g1Transition phase s scan).2.1.mode) :
@@ -287,6 +332,10 @@ theorem check_g1Transition_aWalk_dormant
 theorem check_g1Advance_aFwd_of_skip {f : G1Frame} (h : G1AWalkSkip f) :
     g1Advance .aFwd f = .aFwd :=
   g1Advance_aFwd_of_skip h
+
+theorem check_g1Advance_aRet_of_skip {f : G1Frame} (h : G1AWalkSkip f) :
+    g1Advance .aRet f = .aRet :=
+  g1Advance_aRet_of_skip h
 
 theorem check_G1ASeekOutSkip_ne_argSep
     {f : G1Frame} (h : G1ASeekOutSkip f) :
@@ -426,7 +475,68 @@ theorem check_g1CS_aWalk_restore
         .aProbe .p0 false false false ctx :=
   g1CS_aWalk_restore n pre suffix b ctx hsafe
 
-/-! Literal normal and malformed caller-supplied probes. -/
+theorem check_g1CS_aWalk_exh_to_cursor
+    (n : Nat) (pre skipped suffix : List G1Frame) (ctx : G1Ctx)
+    (hskip : ∀ f ∈ skipped, G1AWalkSkip f)
+    (hsafe : 4 * (pre.length + (skipped.length + 2)) < G1M.tapeLength n) :
+    TM.runConfig (M := G1M) (g1AlignedConfig n (4 * pre.length) (by omega)
+        (g1ListTape
+          ((pre ++ G1Frame.argSep :: skipped ++ G1Frame.cursor ::
+            suffix).flatMap G1Frame.bits))
+        .aExh .p0 false false false ctx) (4 * (skipped.length + 2)) =
+      g1AlignedConfig n (4 * (pre.length + (skipped.length + 2))) hsafe
+        (g1ListTape
+          ((pre ++ G1Frame.argSep :: skipped ++ G1Frame.cursor ::
+            suffix).flatMap G1Frame.bits))
+        .aTurnFin .p0 false false false ctx :=
+  g1CS_aWalk_exh_to_cursor n pre skipped suffix ctx hskip hsafe
+
+theorem check_g1CS_aWalk_turn_fin
+    (n k : Nat) (hsafe : k + 4 < G1M.tapeLength n)
+    (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx) :
+    TM.runConfig (M := G1M)
+        (g1AlignedConfig n (k + 4) hsafe tape .aTurnFin .p0 false false false ctx)
+        4 =
+      g1AlignedConfig n k (by omega) tape
+        (g1AFinMode ctx.vB) .p0 false false false ctx :=
+  g1CS_aWalk_turn_fin n k hsafe tape ctx
+
+theorem check_g1CS_aWalk_fin_restore
+    (n : Nat) (pre suffix : List G1Frame) (b : Bool) (ctx : G1Ctx)
+    (hsafe : 4 * pre.length + 4 < G1M.tapeLength n) :
+    TM.runConfig (M := G1M) (g1AlignedConfig n (4 * pre.length) (by omega)
+        (g1ListTape ((pre ++ G1Frame.cursor :: suffix).flatMap G1Frame.bits))
+        (g1AFinMode b) .p0 false false false ctx) 4 =
+      g1AlignedConfig n (4 * pre.length + 4) hsafe
+        (g1ListTape ((pre ++ G1Frame.data b :: suffix).flatMap G1Frame.bits))
+        .aRepairStart .p0 false false false ctx :=
+  g1CS_aWalk_fin_restore n pre suffix b ctx hsafe
+
+theorem check_g1CS_aWalk_terminal_exact
+    (n : Nat) (pre skipped suffix : List G1Frame) (ctx : G1Ctx)
+    (hskip : ∀ f ∈ skipped, G1AWalkSkip f)
+    (hsafe : 4 * (pre.length + (skipped.length + 2)) < G1M.tapeLength n) :
+    TM.runConfig (M := G1M) (g1AlignedConfig n (4 * pre.length) (by omega)
+        (g1ListTape
+          ((pre ++ G1Frame.argSep :: skipped ++ G1Frame.cursor ::
+            suffix).flatMap G1Frame.bits))
+        .aExh .p0 false false false ctx) (4 * (skipped.length + 4)) =
+      g1AlignedConfig n (4 * (pre.length + (skipped.length + 2))) hsafe
+        (g1ListTape
+          ((pre ++ G1Frame.argSep :: skipped ++ G1Frame.data ctx.vB ::
+            suffix).flatMap G1Frame.bits))
+        .aRepairStart .p0 false false false ctx :=
+  g1CS_aWalk_terminal_exact n pre skipped suffix ctx hskip hsafe
+
+theorem check_g1CS_runConfig_aRepairStart_idle
+    (n h : Nat) (hh : h < G1M.tapeLength n)
+    (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx) (k : Nat) :
+    TM.runConfig (M := G1M)
+        (g1AlignedConfig n h hh tape .aRepairStart .p0 false false false ctx) k =
+      g1AlignedConfig n h hh tape .aRepairStart .p0 false false false ctx :=
+  g1CS_runConfig_aRepairStart_idle n h hh tape ctx k
+
+/-! Literal normal, terminal and malformed caller-supplied probes. -/
 
 theorem literal_normal_mark (n : Nat) (hsafe : 4 < G1M.tapeLength n) :
     TM.runConfig (M := G1M)
@@ -447,6 +557,46 @@ theorem literal_normal_restore (n : Nat) (hsafe : 4 < G1M.tapeLength n) :
         (g1ListTape ([G1Frame.data true].flatMap G1Frame.bits))
         .aProbe .p0 false false false g1Ctx0 := by
   simpa using g1CS_aWalk_restore n [] [] true g1Ctx0 hsafe
+
+theorem literal_terminal_false (n : Nat) (hsafe : 4 < G1M.tapeLength n) :
+    TM.runConfig (M := G1M)
+        (g1AlignedConfig n 0 (by omega)
+          (g1ListTape ([G1Frame.cursor].flatMap G1Frame.bits))
+          .aFinFalse .p0 false false false
+          ((g1Ctx0.withRes .notA).withVB false)) 4 =
+      g1AlignedConfig n 4 hsafe
+        (g1ListTape ([G1Frame.data false].flatMap G1Frame.bits))
+        .aRepairStart .p0 false false false
+        ((g1Ctx0.withRes .notA).withVB false) := by
+  simpa using g1CS_aWalk_fin_restore n [] [] false
+    ((g1Ctx0.withRes .notA).withVB false) hsafe
+
+theorem literal_terminal_true (n : Nat) (hsafe : 4 < G1M.tapeLength n) :
+    TM.runConfig (M := G1M)
+        (g1AlignedConfig n 0 (by omega)
+          (g1ListTape ([G1Frame.cursor].flatMap G1Frame.bits))
+          .aFinTrue .p0 false false false
+          ((g1Ctx0.withRes .notA).withVB true)) 4 =
+      g1AlignedConfig n 4 hsafe
+        (g1ListTape ([G1Frame.data true].flatMap G1Frame.bits))
+        .aRepairStart .p0 false false false
+        ((g1Ctx0.withRes .notA).withVB true) := by
+  simpa using g1CS_aWalk_fin_restore n [] [] true
+    ((g1Ctx0.withRes .notA).withVB true) hsafe
+
+theorem literal_exhaustion_repair_boundary
+    (n : Nat) (hsafe : 8 < G1M.tapeLength n) :
+    TM.runConfig (M := G1M)
+        (g1AlignedConfig n 0 (by omega)
+          (g1ListTape ([G1Frame.argSep, G1Frame.cursor].flatMap G1Frame.bits))
+          .aExh .p0 false false false
+          ((g1Ctx0.withRes .notA).withVB true)) 16 =
+      g1AlignedConfig n 8 hsafe
+        (g1ListTape ([G1Frame.argSep, G1Frame.data true].flatMap G1Frame.bits))
+        .aRepairStart .p0 false false false
+        ((g1Ctx0.withRes .notA).withVB true) := by
+  simpa using g1CS_aWalk_terminal_exact n [] [] []
+    ((g1Ctx0.withRes .notA).withVB true) (by simp) hsafe
 
 theorem literal_malformed_reserved_row (phase : Fin 1) (ctx : G1Ctx) :
     g1Transition phase (g1State .aSeekOut .p0 true false true ctx) true =

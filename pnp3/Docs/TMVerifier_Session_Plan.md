@@ -591,13 +591,9 @@ walk** (the physically executed operand-2 read is exactly the zero-index one;
 for `arg2 > 0` the proved endpoint *is* the `bRoundStart` boundary, so no
 general runtime-index addressing beyond the single round below is claimed);
 **pass A, combine, output write
-and repair** (`readAStart`, `combineStart` and `readAResetStart` are idle rows,
-proved idle for every budget by `g1CS_runConfig_readA_idle`,
-`g1CS_runConfig_combine_idle`, `g1CS_runConfig_readAReset_idle`, and nothing
-consumes the `G1Ctx.vB` value they carry — **superseded by Repair-2a,
-2026-08-28**: `g1CS_runConfig_readAReset_idle` is *gone*, replaced by the
-executed bridge `g1CS_step_readAReset_bridge`, and the repair sweep behind it is
-delivered; the other two rows are still idle and nothing still consumes `vB`);
+and repair** (these were deferred at that revision — **superseded by
+Repair-2a and S1b2b**: `readAResetStart` now enters repair and `readAStart` now
+dispatches into pass A or combine; `combineStart` itself remains stationary);
 **acceptance/rejection semantics,
 full run and full clock** (no `TM.run`, no `TM.accepts`, no `spec`-correctness
 and no full-clock theorem — none could honestly exist while four handoffs are
@@ -1675,7 +1671,8 @@ transition table is never unfolded inside an execution proof.
   (`g1Transition_bRepairSeek_p0_bad`).  `bRepairWrite` writes the
   four literal cells of `index`, `bRepairBack` walks them back and `bRepairHop`
   hops, the same `4 + 4 + 4 + 1 = 13` shape as the destructive round run in
-  reverse; `bRepairDone` hands off to the **existing, still idle** `readAStart`.
+  reverse; at that revision `bRepairDone` handed off to the stationary
+  `readAStart` boundary, since activated by S1b2b.
   `G1ForwardMode` gains the five extra non-forward rows; `G1Stuck` and
   `g1Advance_range` are unchanged definitions whose `decide` proofs now range
   over them too, and the docstring counts are updated to match.
@@ -1744,9 +1741,8 @@ endpoint) and by the extended
 `Tests/TMGateOneControlSurfaceTests.lean` (the eleven new tuple lemmas, the
 reverse table pinned in both directions, the two forbidden codewords and the
 three reserved codes pinned literally, plus the
-row pinning that `readAStart` and `readAResetStart` are both still idle —
-**superseded by Repair-2a, 2026-08-28**, which replaces the `readAResetStart`
-conjunct by `check_g1Transition_readAResetStart_bridge`).
+then-current idle-row pins for `readAStart` and `readAResetStart` — both now
+superseded by the live repair and pass-A dispatch rows).
 `Tests/AxiomsAudit.lean` prints the axioms of every new statement **directly**;
 each depends only on `propext`, `Classical.choice` and `Quot.sound`.  One new
 module and one new surface test are registered in `lakefile.lean`.  The
@@ -1762,9 +1758,9 @@ request-specific **repair driver** (the layout split that identifies `left`,
 `spent^s`, `mid` and `tail` inside a real request), any composition of the
 operand-2 read with a repair, the `readAResetStart` bridge that would route into
 `bRepairSeek`, the common zero/positive pass-A theorem, clocks for a combined
-read-plus-repair.  Still deferred and claimed nowhere: any pass-A execution, and
-any output write, acceptance or `TM.accepts` claim.  `readAStart` remains idle, so the sweep's endpoint is a
-stationary handoff and nothing continues from it; `bOOB` is untouched and is
+  read-plus-repair.  Pass-A execution was still deferred at that revision and
+is delivered by S1b2b below; output write, acceptance and `TM.accepts` remain
+unclaimed.  `bOOB` is untouched and is
 still a boundary, not a rejection theorem.  The sweep's own rejection outcome is
 likewise a **control-level** fact — the machine enters the stable `reject` state
 and stops rewriting — and not a verdict: no statement of this slice relates it
@@ -1803,8 +1799,8 @@ only *instantiates* those macros at one literal word.
   `35 ↦ 27`) with `run_probe_tape`; and the whole pass `pass_probe`
   (`79` steps, head `59 ↦ 0`, control `readAStart`) with `pass_probe_head`,
   `pass_probe_tape` — bit-for-bit `encodeG1Frames g1WalkExample ++ [blank]` —
-  `pass_probe_ctx` (`vB` still latched) and `pass_probe_idle` (the endpoint
-  holds for the whole remaining budget).  `probe_passSteps` and
+  `pass_probe_ctx` (`vB` still latched).  The former whole-remaining-budget idle
+  projection is removed by S1b2b.  `probe_passSteps` and
   `probe_passSteps_split` pin `g1RepairPassSteps 6 2 6 = 4 * 6 + 13 * 2 +
   4 * 6 + 5 = 79`, and six split lemmas put the word into the exact shapes the
   macros consume.
@@ -1831,8 +1827,8 @@ only *instantiates* those macros at one literal word.
 * **The probes stay caller-supplied.**  Every probe starts from an explicit
   `g1AlignedConfig`; none mentions `G1M.initialConfig`.  Repair-1's
   unreachability results say no `g1Advance` frame-table row enters the sweep;
-  Repair-2a below adds the sole live `readAResetStart` bridge.  `readAStart`
-  remains idle, exactly as `pass_probe_idle` records.
+  Repair-2a below adds the sole live `readAResetStart` bridge, and S1b2b later
+  activates the endpoint dispatch.
 
 Pinned by `Tests/TMGateOneRepairKernelExamplesSurfaceTests.lean` (new:
 theorem-style exact wrappers for **every** public statement of the probe module,
@@ -1951,8 +1947,8 @@ exact wrappers for **every** public statement of the driver, including both
 narrowing regressions and the unread tail), by the re-scoped
 `Tests/TMGateOneControlSurfaceTests.lean` (`check_g1Transition_bRepairDone`
 loses its `readAResetStart`-idle conjunct; the new
-`check_g1Transition_readAResetStart_bridge` pins the bridge row and that
-`readAStart`/`combineStart` are still idle) and by the re-scoped
+`check_g1Transition_readAResetStart_bridge` pins the bridge row; its historical
+idle pin for `readAStart` is superseded by S1b2b) and by the re-scoped
 `Tests/TMGateOneReadBSurfaceTests.lean` (`check_g1CS_step_readAReset_bridge`
 replaces the removed idle pin).  `Tests/AxiomsAudit.lean` prints the axioms of
 every new statement **directly**; each depends only on `propext`,
@@ -1966,9 +1962,9 @@ Repair-2b entry immediately below): the **all-literal** repaired runs from
 `G1M.initialConfig` — concrete requests, concrete step counts, concrete endpoint
 words — and every probe module, probe wrapper and probe axiom root for them.
 Every statement of the Repair-2a slice itself is still quantified over the
-caller's request.  Explicitly deferred further and claimed nowhere by either
-slice: **pass A** (`readAStart` is still idle and operand 1 is not read), the
-**combine** step, the **output write**, `TM.accepts`, a full-clock theorem,
+caller's request.  Explicitly deferred further at that revision and delivered
+by S1b2b: **pass A** (operand 1 remains unread at the new install boundary).
+Still deferred: the **combine** step, the **output write**, `TM.accepts`, a full-clock theorem,
 gate-semantics correctness, the acceptance gate, multi-gate composition, the
 specification-level bridge, and non-canonical or physically padded tapes.
 
@@ -2010,8 +2006,8 @@ probes could not say.
   at `400 = 328 + 72`, the two positive read components (`239`, `328`) taken
   verbatim from `GateOneWalkDriverExamples`.  Each has its head (`0`), control
   state (`g1ReadAState (g1Ctx0.withVB true)`), latched `vB`, endpoint word,
-  initial-tape identity, clock bound and `readA_idle_after_*` projection: the
-  endpoint holds its state, head and tape for the whole remaining budget.
+  initial-tape identity and clock bound.  Their former post-endpoint idle
+  projections are removed by S1b2b.
 * **Nonvacuity is literal.**  `zero_repaired_no_net_change` pins that the
   `arg2 = 0` endpoint tape is the initial tape, the entry layout is already
   canonical, and the `spent → index` rewrite block has length `13 * 0`;
@@ -2132,13 +2128,10 @@ the axioms of every new statement **directly**; each depends only on `propext`,
 `Classical.choice` and `Quot.sound`.  One new toolkit module and one new
 surface test are registered in `lakefile.lean`.
 
-**Untouched by this slice.**  `GateOneControl`, `GateOneRouting`,
+**Untouched at the S1a revision.**  `GateOneControl`, `GateOneRouting`,
 `GateOneReadB`, `GateOneValidation`, `GateOneExamples` and every repair module
-and probe module are unchanged, and so is `G1Ctx`.  In particular `readAStart`
-is **still the idle handoff** it was after Repair-2b, `g1Transition_readAStart_idle`
-and `g1CS_runConfig_readA_idle` are still true and still present, and operand 1
-is still not read: every "pass A is deferred" statement earlier in this
-document stands exactly as written.
+and probe module were unchanged, as was `G1Ctx`.  S1b2b below supersedes the
+idle `readAStart` claims and removes both idle theorems.
 
 **Explicitly deferred to S1b and claimed nowhere here:** activating
 `readAStart`; any pass-A control mode, operation latch or residual view on
@@ -2186,20 +2179,11 @@ No live route, step count, endpoint, clock or state field changes.
   `0 ↦ 28`) and the `const` rejection (16).  In every one of them the tape is
   bit-for-bit the caller's and `vB` is untouched.
 
-**The slice is inert, and that is proved rather than asserted.**
-`g1Advance_passA` says no frame-table row crosses into the twelve-mode family
-`G1PassAMode`; `g1Transition_passA_closed` says no row of the *executed* control
-does either, so the twelve modes are an unreachable part of the control graph.
-(Their own exits are the `reject` sink and the `aInstallStart` self-loop; the
-family is not claimed to be closed in that direction.)  So every existing
-execution theorem — validation, rewind, the pass-B rescan, the cursor walk, the
-operand-2 repair sweep and all their literal probes — holds verbatim, and no run
-from `G1M.initialConfig` can enter pass A at all.
-
-At the S1b1 revision `readAStart` was still idle and route alignment remained
-deferred.  S1b2a below performs that alignment without activating the handoff;
-the current guardrail is `g1_readAStart_unreachable`, which states that no
-frame-table row now produces `readAStart`.
+**At S1b1 the slice was inert.**  `g1Advance_passA` closed the frame table and a
+then-current executed-control closure made the twelve modes unreachable.  S1b2b
+replaces that closure with `g1Transition_passA_door`, naming `readAStart` as the
+sole external entry.  `g1_readAStart_unreachable` remains a frame-table
+guardrail; it does not forbid the executed repair endpoint.
 
 **No new state, field, advice or clock.**  `G1Ctx` is the same three Booleans:
 `res`/`withRes` are a *view* of two bits that already existed, not a fourth
@@ -2207,8 +2191,8 @@ field, and `g1Clock` is unchanged.  The `const` filler row of `g1Residual` is
 never semantically consumed — `g1AOpMode .const = .reject` matches the `aTag2`
 gap, and the executed `const` rejection is a **local** fact about a
 configuration nothing reaches, not a claim that the machine rejects `const`
-requests.  Their current live route carries `g1ResultCtx b` through the repair
-rewind and stops at idle `readAStart`.
+requests.  At the S1b2a revision their route carried `g1ResultCtx b` through the
+repair rewind and stopped at `readAStart`; S1b2b activates the following step.
 
 **One constraint recorded for S1b2 and the deferred walk.**  Two of the four
 residuals set the `pass` bit, so at `and`/`vB = false` the install context is
@@ -2218,13 +2202,11 @@ re-encoding cannot avoid this: once `readAStart` reads `pass`, the operand-1
 walk must not return a latched residual through `bRepairDone → readAStart`, and
 needs its own context-normalising terminal.
 
-Pinned by `Tests/TMGateOneControlSurfaceTests.lean` and
-`Tests/TMGateOneRoutingSurfaceTests.lean` (extended) and
-`Tests/TMGateOnePassAControlSurfaceTests.lean` (new): `#check` pins for every
-new public declaration, plus exact theorem-contract wrappers for the complete
-dormant frame table, both closure theorems, the still-idle `readAStart`, the
-latch tuple, the residual round-trip, the result-context
-aliasing, the frame-level rescan and the executed atoms.
+At S1b1, `Tests/TMGateOneControlSurfaceTests.lean`,
+`Tests/TMGateOneRoutingSurfaceTests.lean` and the new
+`Tests/TMGateOnePassAControlSurfaceTests.lean` pinned the then-dormant frame
+table, closure, latch, residual/result conventions and executed atoms.  S1b2b
+updates those same roots to the live door and deletes the obsolete idle pin.
 `Tests/AxiomsAudit.lean` prints the axioms of every new statement **directly**;
 each depends only on `propext`, `Classical.choice` and `Quot.sound`.  One new
 toolkit module and one new surface test are registered in `lakefile.lean`.
@@ -2252,7 +2234,7 @@ read-B endpoint, rejection behavior and stable `bOOB` boundary are unchanged.
 
 `GateOneRepairDriver.g1CS_route_rewind_exact` instantiates the existing
 Repair-2 bridge/kernel with zero rewrites.  It preserves the tape and complete
-context and moves the route boundary to head-zero idle `readAStart`.  Composed
+context and moves the route boundary to head-zero `readAStart`.  Composed
 from the real `G1M.initialConfig`,
 `g1CS_readA_unary_repaired_exact` reaches `g1ReadAConfig r false` for
 `input`/`not`, and `g1CS_const_repaired_exact` reaches
@@ -2267,13 +2249,47 @@ clock bounds.  `Tests/AxiomsAudit.lean` prints those theorem roots directly.
 The existing examples are updated only to their changed raw route endpoints;
 the expanded five-tag literal matrix remains deferred to S1c.
 
-**Frozen boundary:** `g1Transition_readAStart_idle` and
-`g1CS_runConfig_readA_idle` remain unchanged.  No frame-table row produces
-`readAStart`; apart from its self-loop, repair terminal `bRepairDone` is its only
-external arrival.  There is no operand-1
-read, operation-latch execution from a real initial configuration, combine,
-output write, acceptance change or new advice/state field.  Activating
-`readAStart` is S1b2b.
+**Superseded boundary:** S1b2a stopped at a stationary `readAStart`.  S1b2b
+deletes its idle tuple and arbitrary-budget run claims and activates exactly
+that row.
+
+**S1b2b: live `readAStart` activation, delivered (2026-08-29):**
+
+**Progress classification: Infrastructure.**  This activates the pass-A entry
+but does not reduce a P-vs-NP source obligation.
+
+`GateOneControl.g1Transition` changes in one place.  At `readAStart`, a context
+with `pass = false` takes one stationary, tape-preserving step to `aBof`; a
+context with `pass = true` takes one such step to `combineStart`.  The exact
+tuple theorems are `g1Transition_readAStart_entry` and `_result`, and the old
+idle tuple/run theorems are deleted.  `g1Transition_passA_door` replaces the
+dormant-family closure: the executed family has exactly the `readAStart` door.
+`g1Transition_readAStart_unique` closes the dispatch predecessor at
+`bRepairDone`; `g1Transition_aInstallStart_unique` closes the residual-latch
+exit at the four operation latches or its own stationary boundary.  Together
+they prevent a residual-latched operand-B context from being read as a final
+result.
+
+`GateOneReadB` supplies aligned one-step adapters for both arms and the direct
+run-level `g1CS_step_readAStart_operandB_not_result`.  `GateOnePassAControl`
+imports the merged repair driver and defines exact `aBof`, `aInstallStart` and
+`combineStart` configurations.  The repaired unary, constant and conditional
+binary totals are extended by exactly one step as `g1UActivatedSteps`,
+`g1ConstActivatedSteps` and `g1BActivatedSteps`.  Unary and successful binary
+routes reach `aBof` on the exact initial tape with the correct entry context;
+the existing A-specific rescan then reaches `aInstallStart` with
+`ctx.res = g1Residual r.tag b` and `ctx.vB = b`.  `const` instead reaches
+`combineStart` carrying exactly `g1ResultCtx b`, so its filler residual is never
+consumed.  All new public totals fit the unchanged `g1Clock`.
+
+Operand 1 is unread: `aInstallStart` remains stationary.  There is still no
+operand-1 tape selection, combine action, output write, `TM.accepts`, acceptance
+semantics, full-clock result, or OOB repair.  The expanded literal matrix
+remains S1c; no new broad example module is added.  Compatibility edits remove
+the now-false post-`readAStart` idle projections from the older repair examples
+and their surfaces.  This is the documented module-count exception: those
+legacy direct roots had to change because their theorem statements became
+false under the frozen semantic switch.
 
 **T2a correction (2026-08-24).**  The first T2a head shipped a permissive
 forward table (`vTag` looping on every `tag`, `vArg1`/`vArg2` looping on every

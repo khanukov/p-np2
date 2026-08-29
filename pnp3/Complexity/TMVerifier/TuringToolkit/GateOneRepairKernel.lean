@@ -469,7 +469,7 @@ theorem g1CS_repair_spent_run (n : Nat) (pre suffix : List G1Frame) (s : Nat)
       rw [hIH, hcycle]
 
 /-- **The terminal dispatch of the repair sweep, executed.**  One stationary
-step on the anchor's first cell hands off to the existing idle `readAStart` with
+step on the anchor's first cell hands off to `readAStart` with
 the tape, the head and the whole `G1Ctx` untouched. -/
 theorem g1CS_step_repairDone (n h : Nat) (hh : h < G1M.tapeLength n)
     (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx) :

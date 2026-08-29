@@ -50,13 +50,13 @@ The older bridge `bRoundStart` is now unreachable from the forward table
 (`g1_bRoundStart_stuck`), so nothing in this development claims that repeating
 the thirteen-step rewrite cycle addresses an operand-2 value.
 
-**The dormant pass-A rescan (S1b1/S1b2a).**  The last section is a *separate* named
+**The pass-A rescan (S1b1/S1b2b).**  The last section is a *separate* named
 table over the same prefix: `g1ATagRoute_advance` folds `g1TagRouteFrames r`
 from `aBof` into the operation latch `g1AOpMode r.tag`, with `const` rejecting.
 S1b2a re-points only `g1RouteMode` for `input`/`not`: they now end at
-`readAResetStart`, while `readAStart` stays idle.  By
-`g1ATagRoute_unreachable` no route of this module can cross into the pass-A
-modes at all.
+`readAResetStart`; S1b2b's live dispatch reaches the A-specific table after
+the rewind.  `g1ATagRoute_unreachable` remains a statement about this module's
+frame table, not the executed dispatch.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -407,7 +407,7 @@ theorem g1_insSeek_validPath (k : Nat) (rest : List G1Frame)
   g1ValidPath_run (by exact trivial) rfl k
     (g1ValidPath_cons (by exact trivial) rfl (by decide) hrest)
 
-/-! ## The dormant pass-A tag rescan, at frame level
+/-! ## The pass-A tag rescan, at frame level
 
 The pass-A entry reads the **same prefix** `g1TagRouteFrames r` as the pass-B
 rescan — the anchor and the unary tag run — but through the A-specific counters,
@@ -417,10 +417,9 @@ B, and a `const` run folded through the A-counters rejects.
 
 Everything in this section is about `g1Advance`/`g1AdvanceList`, i.e. the
 **frame table**; no Turing machine occurs, and the executed counterparts live in
-`GateOnePassAControl`.  All four theorems are about a mode the live machine
-never reaches: the pass-B unary route ends at `readAResetStart`, the rewind
-finishes at the still-idle `readAStart`, and nothing enters the pass-A family
-(`g1Transition_passA_closed`). -/
+`GateOnePassAControl`.  The frame-level routes here remain independent of the
+executed `readAStart → aBof` door.
+-/
 
 /-- **The pass-A rescan folds the anchor and the tag run into the latch.** -/
 theorem g1ATagRoute_advance (r : G1Request) :

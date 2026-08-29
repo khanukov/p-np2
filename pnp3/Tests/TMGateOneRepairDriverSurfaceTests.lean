@@ -26,7 +26,7 @@ projections, and the common conditional theorem.
 
 S1b2a additionally pins the generic zero-rewrite rewind, the canonical result
 endpoint and projections, the unary and constant real-initial capstones, and
-their unchanged-clock bounds.  Both stop at idle `readAStart`; operand 1 is not
+their unchanged-clock bounds.  Both stop immediately before live `readAStart`; operand 1 is not
 read and the binary repaired endpoint is unchanged.
 
 `check_g1CS_readB_positive_oob_unrepaired` pins that the out-of-range boundary is
@@ -292,7 +292,7 @@ theorem check_g1CS_route_rewind_exact (r : G1Request) (left tail : List G1Frame)
   g1CS_route_rewind_exact r left tail hleft hsplit hsafe ctx
 
 /-- The constant endpoint is head-zero `readAStart`, exact result context,
-initial tape; the boundary remains idle. -/
+initial tape; the theorem stops before the boundary dispatch. -/
 theorem check_g1ReadAResultConfig (r : G1Request) (b : Bool) :
     ((g1ReadAResultConfig r b).head : Nat) = 0 ∧
       (g1ReadAResultConfig r b).state.snd = g1ReadAState (g1ResultCtx b) ∧

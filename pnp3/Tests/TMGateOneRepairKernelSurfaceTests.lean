@@ -25,9 +25,9 @@ list, not decoration.
 Three further facts the wrappers pin deliberately.  No `g1Advance` frame-table
 row produces a repair mode and all five are stuck; the sole live entry is the
 Repair-2a `readAResetStart` bridge.  The generic kernel runs remain
-caller-supplied, and `check_repair_endpoint_idle` pins that `readAStart` is
-still idle.  The
-pass endpoint is **exact**: the tape changes in exactly the `s` repaired frames
+caller-supplied and stop exactly at `readAStart`; S1b2b's following live
+dispatch is audited by the read-B/pass-A surfaces.  The pass endpoint is
+**exact**: the tape changes in exactly the `s` repaired frames
 and the carried context comes out untouched.
 
 **Absent from this surface**: the all-literal probes of the kernel, which live
@@ -56,16 +56,6 @@ theorem check_repair_unreachable (mode : G1Mode) (frame : G1Frame) :
       (G1Stuck .bRepairSeek ∧ G1Stuck .bRepairWrite ∧ G1Stuck .bRepairBack ∧
         G1Stuck .bRepairHop ∧ G1Stuck .bRepairDone) :=
   ⟨g1_repair_unreachable_forward mode frame, g1_repair_modes_stuck⟩
-
-/-- The sweep's endpoint is the **existing** idle `readAStart`: it holds its
-state, head and tape for the whole remaining budget, so nothing continues from
-the repaired configuration in this slice. -/
-theorem check_repair_endpoint_idle (n h : Nat) (hh : h < G1M.tapeLength n)
-    (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx) (k : Nat) :
-    TM.runConfig (M := G1M)
-        (g1AlignedConfig n h hh tape .readAStart .p0 false false false ctx) k =
-      g1AlignedConfig n h hh tape .readAStart .p0 false false false ctx :=
-  g1CS_runConfig_readA_idle n h hh tape ctx k
 
 /-- The skip predicate, the reverse table and its **three** stop targets: a
 `spent` unit is the write handoff, the `bof` anchor the terminal handoff, a

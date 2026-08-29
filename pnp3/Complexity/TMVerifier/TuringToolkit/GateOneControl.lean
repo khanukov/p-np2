@@ -967,9 +967,9 @@ theorem g1AdvanceList_ne_rewindStart_of_stuck {mode : G1Mode} (h : G1Stuck mode)
 stuck mode.**  In particular `rewind` and `accept` are unreachable from any
 scan.  Every non-forward target (the four dispatch modes, the round's five
 modes, the eleven non-forward walk modes, the sweep's five modes, the four
-dormant operation latches, the `readAResetStart`, `readAStart` and `bOOB`
-handoffs and the `reject` sink) is stuck, and so are the two handoffs no row
-targets at all (`aInstallStart`, `combineStart`). -/
+dormant operation latches, the `readAStart` and `bOOB` handoffs and the
+`reject` sink) is stuck, and so are the three handoffs no row targets at all
+(`aInstallStart`, `readAResetStart`, `combineStart`). -/
 theorem g1Advance_range (mode : G1Mode) (frame : G1Frame) :
     G1ForwardMode (g1Advance mode frame) ∨
       g1Advance mode frame = .rewindStart ∨

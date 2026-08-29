@@ -2257,7 +2257,8 @@ from the real `G1M.initialConfig`,
 `g1CS_readA_unary_repaired_exact` reaches `g1ReadAConfig r false` for
 `input`/`not`, and `g1CS_const_repaired_exact` reaches
 `g1ReadAResultConfig r b` for `const`.  The latter pins exactly
-`g1ResultCtx b`; neither capstone reads operand 1.  The pass-B route step counts
+`g1ResultCtx b`.  No pass-A operand-1 selection/execution occurs; the const
+literal is decoded and the reset bridge is data-independent.  Route step counts
 are unchanged, and both new cumulative totals fit the unchanged `g1Clock`.
 
 The control, routing, read-B and repair-driver surfaces pin the exact rows,
@@ -2268,7 +2269,8 @@ the expanded five-tag literal matrix remains deferred to S1c.
 
 **Frozen boundary:** `g1Transition_readAStart_idle` and
 `g1CS_runConfig_readA_idle` remain unchanged.  No frame-table row produces
-`readAStart`; the repair terminal is its only arrival.  There is no operand-1
+`readAStart`; apart from its self-loop, repair terminal `bRepairDone` is its only
+external arrival.  There is no operand-1
 read, operation-latch execution from a real initial configuration, combine,
 output write, acceptance change or new advice/state field.  Activating
 `readAStart` is S1b2b.

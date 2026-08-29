@@ -975,8 +975,9 @@ theorem g1Advance_range (mode : G1Mode) (frame : G1Frame) :
   revert mode frame; decide
 
 /-- **No frame-table row produces `readAStart`.**  The two former producers,
-`rTag1` and `rTag3` on `argSep`, now enter `readAResetStart`; the only live
-arrival at `readAStart` is therefore the repair terminal `bRepairDone`. -/
+`rTag1` and `rTag3` on `argSep`, now enter `readAResetStart`; apart from the
+stationary self-loop, the only external arrival is repair terminal
+`bRepairDone`. -/
 theorem g1_readAStart_unreachable (mode : G1Mode) (frame : G1Frame) :
     g1Advance mode frame ≠ .readAStart := by
   revert mode frame; decide

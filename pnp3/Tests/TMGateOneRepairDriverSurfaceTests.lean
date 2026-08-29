@@ -315,8 +315,9 @@ theorem check_g1CS_readA_unary_repaired_exact (r : G1Request)
         (g1UReadASteps r) = g1ReadAConfig r false :=
   g1CS_readA_unary_repaired_exact r hc ht
 
-/-- Real initial-configuration constant capstone.  It stops before activation:
-`readAStart` is still stable and no operand-1 cell is read. -/
+/-- Real initial-configuration constant capstone.  It stops before pass-A
+operand-1 selection/execution: the unary literal is decoded, the reset bridge
+is data-independent, and `readAStart` remains stable. -/
 theorem check_g1CS_const_repaired_exact (r : G1Request) (hc : r.Canonical)
     (ht : r.tag = .const) (b : Bool) (hs : r.spec = some b) :
     TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))

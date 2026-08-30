@@ -291,8 +291,14 @@ lean_lib PnP3 where
     -- S8b (2026-08-30), live reject-aware operand-A repair.  The unique
     -- `aRepairStart` door composes S7 terminal cleanup with S8a's canonical
     -- sweep from real unary/successful-binary initial configurations and stops
-    -- at stationary `aRepairDone`; no result/combine/output/acceptance step.
+    -- at the exact canonical `aRepairDone` handoff.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneARepair,
+    -- S9 (2026-08-30), dependency-closed five-tag gate result.  Non-constant
+    -- routes execute `aRepairDone → aResultStart → readAStart →
+    -- combineStart`; `const` keeps its pass-B bypass.  Exact pure-spec,
+    -- OOB-semantic, boundary, literal and unchanged-clock surfaces stop at the
+    -- stationary combine boundary, before output or acceptance.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneAResult,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -466,6 +472,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMGateOneAWalkRoundSurfaceTests,
     Glob.one `Tests.TMGateOneAWalkDriverSurfaceTests,
     Glob.one `Tests.TMGateOneARepairSurfaceTests,
+    Glob.one `Tests.TMGateOneAResultSurfaceTests,
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,
     Glob.one `Tests.TMGateOneReadBSurfaceTests,
     Glob.one `Tests.TMGateOneProbeInstallSurfaceTests,

@@ -10,14 +10,15 @@ S8b activates S8a's five-mode reject-aware reverse repair through the unique
 `aRepairStart` door.  The live door takes one tape-preserving step left into
 aligned `aRepairSeek .p3`; the canonical S8a sweep then crosses only
 `G1RepairSkip`, rewrites every operand-A `spent` frame to `index`, rejects the
-same malformed/reserved windows, and stops at stationary `aRepairDone`.
+same malformed/reserved windows, and stops at the exact `aRepairDone` handoff.
 
 The dependency-closed capstones compose S7's complete terminal driver with
 that one activation step and the canonical sweep, both from caller-supplied
 `Σᴬ(0)` and from genuine unary/successful-binary initial configurations.  The
 endpoint is the exact canonical tape at head zero with the residual (operand B)
 and latest operand-A latch preserved.  Data-OOB remains the separate stationary
-`bOOB` path.  No result, combine, output-write or acceptance transition runs.
+`bOOB` path.  S8b itself runs no result, combine, output-write or acceptance
+transition; S9 consumes its exact endpoint.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -369,16 +370,6 @@ theorem g1CS_aRepair_finish (n : Nat) (suffix : List G1Frame) (ctx : G1Ctx)
     (g1ListTape (n := n) ((G1Frame.bof :: suffix).flatMap G1Frame.bits))
     .aRepairSeek G1Frame.bof ctx trivial (Or.inr (Or.inl rfl)) hb
   simpa [g1ARepairScanner, g1ARepairStopState] using h
-/-- The canonical endpoint stays put for every extra caller-supplied budget. -/
-theorem g1CS_runConfig_aRepairDone_idle (n h : Nat)
-    (hh : h < G1M.tapeLength n) (tape : Fin (G1M.tapeLength n) → Bool)
-    (ctx : G1Ctx) (k : Nat) :
-    TM.runConfig (M := G1M)
-        (g1AlignedConfig n h hh tape .aRepairDone .p0 false false false ctx) k =
-      g1AlignedConfig n h hh tape .aRepairDone .p0 false false false ctx :=
-  g1CS_runConfig_stable n h hh tape (g1ARepairDoneState ctx)
-    (fun phase scan => g1Transition_aRepairDone_idle phase .p0 false false
-      false scan ctx) k
 /-! ## Generic dependency-closed repair pass -/
 def g1ARepairPassSteps (a s m : Nat) : Nat := 4 * m + 13 * s + 4 * a + 4
 theorem g1ARepairPassSteps_eq (a s m : Nat) :
@@ -668,15 +659,6 @@ theorem g1CS_aRepair_live_exact (r : G1Request) (b v : Bool)
     g1CS_aRepair_activation_exact r b v hm hv]
   exact g1CS_aRepair_canonical_exact r b v hm hv
 
-/-- `aRepairDone` is the stationary boundary: even an explicit extra budget
-cannot execute result, combine, output or acceptance control. -/
-theorem g1CS_aRepair_live_done_stable (r : G1Request) (b v : Bool)
-    (hm : r.arg1 < r.vals.length) (hv : r.vals[r.arg1]? = some v) (k : Nat) :
-    TM.runConfig (M := G1M) (g1AWalkRepairStartConfig r b v hm hv)
-        (g1ARepairLiveSteps r + k) = g1ARepairDoneConfig r b v := by
-  rw [runConfig_add, g1CS_aRepair_live_exact r b v hm hv]
-  exact g1CS_runConfig_aRepairDone_idle _ _ _ _ _ k
-
 /-- Exact endpoint projections, including context preservation, canonical
 spent/cursor freedom, and separation from every downstream or wrong exit. -/
 theorem g1CS_aRepair_live_endpoint (r : G1Request) (b v : Bool)
@@ -712,7 +694,7 @@ def g1AWalkRepairSteps (r : G1Request) : Nat :=
   g1AWalkExhaustDriverSteps r + g1AWalkTerminalSteps r +
     g1ARepairLiveSteps r
 
-/-- Exact combined formula from `Σᴬ(0)` to stationary `aRepairDone`. -/
+/-- Exact combined formula from `Σᴬ(0)` to the canonical `aRepairDone` handoff. -/
 theorem g1AWalkRepairSteps_eq (r : G1Request) :
     g1AWalkRepairSteps r =
       8 * r.arg1 ^ 2 + (8 * r.arg2 + 70) * r.arg1 +
@@ -736,8 +718,7 @@ theorem g1CS_aWalk_repair_driver_exact (r : G1Request) (b : Bool)
   exact g1CS_aRepair_live_exact r b (v r.arg1) hlen
     (hv r.arg1 (Nat.le_refl _))
 
-/-- Genuine unary-initial total through the stationary canonical repair
-endpoint. -/
+/-- Genuine unary-initial total through the canonical `aRepairDone` handoff. -/
 def g1AUnaryRepairSteps (r : G1Request) : Nat :=
   g1AUnaryCursorSteps r + g1AWalkRepairSteps r
 

@@ -2875,7 +2875,7 @@ that an external repair-family successor comes iff its predecessor is this
 unique door.
 
 The reverse table has four exact outcomes.  `spent` enters the four-cell
-`index` writer, `bof` stops at stationary `aRepairDone`, precisely the existing
+`index` writer, `bof` stops at the exact `aRepairDone` handoff, precisely the existing
 `G1RepairSkip` frames continue left, and `blank`, `cursor` or an undecodable
 reserved window enters the stable `reject` sink.  The generic pass costs
 `4*m + 13*s + 4*a + 4`; on the terminal operand-A layout this is
@@ -2894,8 +2894,8 @@ head zero with tape exactly
 unchanged: `ctx.res = g1Residual tag operandB` and `ctx.vB = operandA`.  Endpoint
 projections pin zero remaining spent/cursor frames and separate `aRepairDone`
 from `readAStart`, `combineStart`, `accept`, `reject` and `bOOB`.  The done row
-is stationary for arbitrary extra budget, so no result/combine/output/acceptance
-transition runs.
+is S8b's endpoint; S9 consumes it, so S8b itself runs no
+result/combine/output/acceptance transition.
 
 Named capstones start from genuine unary and successful-binary
 `G1M.initialConfig` routes, including `arg1 = 0`.  Both totals are bounded by
@@ -2905,3 +2905,37 @@ the concrete quadratic
 `bOOB` configuration and is proved unequal to canonical repair done.  Literal
 real-initial false/true/zero representatives take exactly 404, 404 and 192
 steps; the original caller-supplied S8a probes remain at 58, 58 and 24 steps.
+
+## S9 dependency-closed five-tag result boundary (2026-08-30)
+
+**Classification: infrastructure, not P-vs-NP mainline progress.**  S9 keeps
+the canonical S8b `aRepairDone` architecture and adds the minimal explicit
+`aResultStart` control row.  A non-constant success takes exactly three further
+exact steps:
+`aRepairDone → aResultStart → readAStart → combineStart`.
+The middle row alone computes `ctx.res.apply ctx.vB` and installs the exact
+`g1ResultCtx`; predecessor closure is exact for both new handoffs.
+
+The real-initial totals are
+
+`g1BACombineSteps r = g1ABinaryCursorSteps r +
+  8*arg1^2 + (8*arg2 + 70)*arg1 + 4*tag.units + 12*arg2 + 60`
+
+and the same formula with `g1AUnaryCursorSteps` for `g1UACombineSteps`.
+`g1GateResultSteps` selects the unchanged `g1ConstActivatedSteps` bypass for
+`const`, the binary total for `and`/`or`, and the unary total for `input`/`not`.
+Every branch remains below the unchanged `g1Clock`.
+
+For canonical `r` with `r.spec = some res`, the exact endpoint has head zero,
+the initial canonical tape, state `g1CombineState (g1ResultCtx res)`, and
+`pass = true`, `vB = res`.  It is stable for arbitrary extra budget because
+`combineStart` remains stationary.  Pure bridges cover all five tags;
+out-of-range premises prove `spec = none`, and the total semantic split makes
+no machine-result, rejection, output or acceptance claim on that branch.
+A successful `false` endpoint is proved distinct from `bOOB`.  Six literal
+rows cover every tag and both constant literals, with exact step counts
+`195, 243, 430, 454, 117, 133` and exact clocks
+`558080, 861184, 1438720, 1664000, 558080, 701440`.
+
+This slice stops at `combineStart`: it executes no combine operation, writes no
+output cell, and proves no accept/reject or `TM.accepts` statement.

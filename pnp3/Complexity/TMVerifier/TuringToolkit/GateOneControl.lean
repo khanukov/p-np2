@@ -344,8 +344,10 @@ inductive G1Mode
   | aRet | aTurnFin
   | aFinFalse | aFinTrue
   | aRepairStart
-  -- operand-A repair control, entered only from aRepairStart
+  -- operand-A repair control, entered only from aRepairStart, followed by the
+  -- result-normalisation row
   | aRepairSeek | aRepairWrite | aRepairBack | aRepairHop | aRepairDone
+  | aResultStart
   | readAStart | combineStart | readAResetStart | bOOB
   | accept | reject
   deriving Fintype, DecidableEq, Repr
@@ -579,6 +581,10 @@ def g1ARepairWriteState (ctx : G1Ctx) : G1State :=
 /-- Cursor-free local handoff after the dormant scan reads the anchor. -/
 def g1ARepairDoneState (ctx : G1Ctx) : G1State :=
   g1State .aRepairDone .p0 false false false ctx
+
+/-- The one-step handoff where the completed operand-A pass is normalised. -/
+def g1AResultStartState (ctx : G1Ctx) : G1State :=
+  g1State .aResultStart .p0 false false false ctx
 
 /-- The `const` handoff: the decoded literal is already in `ctx.vB`. -/
 def g1CombineState (ctx : G1Ctx) : G1State :=
@@ -996,6 +1002,7 @@ def G1ForwardMode : G1Mode → Prop
   | .aRestoreFalse | .aRestoreTrue | .aFinFalse | .aFinTrue
   | .aRepairStart
   | .aRepairSeek | .aRepairWrite | .aRepairBack | .aRepairHop | .aRepairDone
+  | .aResultStart
   | .aLatchFalse | .aLatchTrue | .aIns
   | .readAStart | .combineStart | .readAResetStart | .bOOB
   | .accept | .reject => False
@@ -1032,7 +1039,8 @@ instance : DecidablePred G1AInstallAtomMode := fun mode => by
 that family. -/
 theorem g1Advance_aInstallAtoms_dormant (mode : G1Mode) (frame : G1Frame) :
     G1AInstallAtomMode (g1Advance mode frame) → G1AInstallAtomMode mode := by
-  revert mode frame; decide
+  set_option maxRecDepth 4096 in
+    revert mode frame; decide
 
 /-- Bit-level completion cannot enter the dormant installation family from
 outside it either. -/
@@ -1066,7 +1074,8 @@ instance : DecidablePred G1AWalkMode := fun mode => by
 /-- No frame-table row enters the dormant normal walk from outside it. -/
 theorem g1Advance_aWalk_dormant (mode : G1Mode) (frame : G1Frame) :
     G1AWalkMode (g1Advance mode frame) → G1AWalkMode mode := by
-  revert mode frame; decide
+  set_option maxRecDepth 4096 in
+    revert mode frame; decide
 
 theorem g1Complete_aWalk_dormant (mode : G1Mode) (b0 b1 b2 b3 : Bool) :
     G1AWalkMode (g1Complete mode b0 b1 b2 b3) → G1AWalkMode mode := by
@@ -1094,7 +1103,8 @@ instance : DecidablePred G1ARepairControlMode := fun mode => by
 entry is the separate `aRepairStart` transition row. -/
 theorem g1Advance_aRepair_predecessor_closure (mode : G1Mode) (frame : G1Frame) :
     G1ARepairControlMode (g1Advance mode frame) → G1ARepairControlMode mode := by
-  revert mode frame; decide
+  set_option maxRecDepth 4096 in
+    revert mode frame; decide
 
 /-- Nor can a completed raw window divert external control into A-repair. -/
 theorem g1Complete_aRepair_predecessor_closure (mode : G1Mode)
@@ -1171,7 +1181,8 @@ rescan, walk or repair mode has a row into the family, so the frames the live
 machine reads can never divert it there. -/
 theorem g1Advance_passA (mode : G1Mode) (frame : G1Frame) :
     G1PassAMode (g1Advance mode frame) → G1PassAMode mode := by
-  revert mode frame; decide
+  set_option maxRecDepth 4096 in
+    revert mode frame; decide
 
 /-- The bit-level form of `g1Advance_passA`: a completed four-cell window
 cannot divert a non-pass-A mode into the family either, and an undecodable
@@ -1272,7 +1283,7 @@ modes, the eleven non-forward walk modes, the sweep's five modes, the four
 pass-A operation latches, the dormant operand-A non-forward modes, the
 `readAStart` and `bOOB` handoffs and the `reject` sink) is stuck, and so are the
 three handoffs no row targets at all
-(`aInstallStart`, `readAResetStart`, `combineStart`). -/
+(`aInstallStart`, `aResultStart`, `combineStart`). -/
 theorem g1Advance_range (mode : G1Mode) (frame : G1Frame) :
     G1ForwardMode (g1Advance mode frame) ∨
       g1Advance mode frame = .rewindStart ∨
@@ -1281,11 +1292,17 @@ theorem g1Advance_range (mode : G1Mode) (frame : G1Frame) :
     revert mode frame; decide
 
 /-- **No frame-table row produces `readAStart`.**  The two former producers,
-`rTag1` and `rTag3` on `argSep`, now enter `readAResetStart`; apart from the
-stationary self-loop, the only external arrival is repair terminal
-`bRepairDone`. -/
+`rTag1` and `rTag3` on `argSep`, now enter `readAResetStart`.  At full-transition
+level its exact predecessors are repair terminals `bRepairDone` and
+`aResultStart`. -/
 theorem g1_readAStart_unreachable (mode : G1Mode) (frame : G1Frame) :
     g1Advance mode frame ≠ .readAStart := by
+  set_option maxRecDepth 4096 in
+    revert mode frame; decide
+
+/-- No frame-table row produces the result-normalisation handoff. -/
+theorem g1_aResultStart_unreachable (mode : G1Mode) (frame : G1Frame) :
+    g1Advance mode frame ≠ .aResultStart := by
   set_option maxRecDepth 4096 in
     revert mode frame; decide
 
@@ -1951,7 +1968,9 @@ def g1Transition (_phase : Fin 1) (s : G1State) (scan : Bool) :
       | .p2 => (0, g1State .aRepairBack .p3 false false false s.ctx, scan, .left)
       | .p3 => (0, g1State .aRepairHop .p0 false false false s.ctx, scan, .left)
   | .aRepairHop => (0, g1ARepairSeekState s.ctx, scan, .left)
-  | .aRepairDone => (0, g1ARepairDoneState s.ctx, scan, .stay)
+  | .aRepairDone => (0, g1AResultStartState s.ctx, scan, .stay)
+  | .aResultStart =>
+      (0, g1ReadAState (g1ResultCtx (s.ctx.res.apply s.ctx.vB)), scan, .stay)
   | .combineStart => (0, g1CombineState s.ctx, scan, .stay)
   | .bOOB => (0, g1OOBState s.ctx, scan, .stay)
   -- the four operand-1 operation latches: one stationary step each,
@@ -2448,11 +2467,19 @@ theorem g1Transition_aRepairHop (phase : Fin 1)
     g1Transition phase (g1State .aRepairHop position b0 b1 b2 ctx) scan =
       (0, g1ARepairSeekState ctx, scan, .left) := rfl
 
-/-- The canonical repair endpoint is a stationary local handoff. -/
-theorem g1Transition_aRepairDone_idle (phase : Fin 1)
+/-- The canonical repair endpoint hands off in one stationary step, preserving
+the complete residual/value context for the result row. -/
+theorem g1Transition_aRepairDone_result (phase : Fin 1)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
     g1Transition phase (g1State .aRepairDone position b0 b1 b2 ctx) scan =
-      (0, g1ARepairDoneState ctx, scan, .stay) := rfl
+      (0, g1AResultStartState ctx, scan, .stay) := rfl
+
+/-- The result row applies the latched residual to operand A and installs the
+exact result convention before entering the existing live dispatch. -/
+theorem g1Transition_aResultStart_apply (phase : Fin 1)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State .aResultStart position b0 b1 b2 ctx) scan =
+      (0, g1ReadAState (g1ResultCtx (ctx.res.apply ctx.vB)), scan, .stay) := rfl
 
 /-! ### Live-entry operand-A installation tuples -/
 
@@ -3327,6 +3354,13 @@ theorem g1Complete_ne_readAStart (mode : G1Mode) (b0 b1 b2 b3 : Bool) :
   | none => exact fun h => G1Mode.noConfusion h
   | some frame => exact g1_readAStart_unreachable mode frame
 
+theorem g1Complete_ne_aResultStart (mode : G1Mode) (b0 b1 b2 b3 : Bool) :
+    g1Complete mode b0 b1 b2 b3 ≠ .aResultStart := by
+  unfold g1Complete
+  cases decodeG1Frame? [b0, b1, b2, b3] with
+  | none => exact fun h => G1Mode.noConfusion h
+  | some frame => exact g1_aResultStart_unreachable mode frame
+
 theorem g1Complete_ne_aInstallStart (mode : G1Mode) (b0 b1 b2 b3 : Bool) :
     g1Complete mode b0 b1 b2 b3 ≠ .aInstallStart := by
   unfold g1Complete
@@ -3353,23 +3387,73 @@ theorem g1Transition_passA_door (phase : Fin 1) (s : G1State) (scan : Bool)
              | exact False.elim h
              | exact Or.inl (g1Complete_passA _ _ _ _ _ h))
 
-/-- The repair terminal is the only predecessor row of `readAStart`. -/
-theorem g1Transition_readAStart_unique (phase : Fin 1) (s : G1State)
-    (scan : Bool) (h : (g1Transition phase s scan).2.1.mode = .readAStart) :
-    s.mode = .bRepairDone := by
+/-- `aRepairDone` is the only predecessor row of the result-normalisation
+handoff. -/
+theorem g1Transition_aResultStart_unique (phase : Fin 1) (s : G1State)
+    (scan : Bool) (h : (g1Transition phase s scan).2.1.mode = .aResultStart) :
+    s.mode = .aRepairDone := by
   obtain ⟨mode, position, b0, b1, b2, ctx⟩ := s
   obtain ⟨pass, crossed, vB⟩ := ctx
-  cases mode <;> cases position <;>
-    first
-      | rfl
-      | exact G1Mode.noConfusion h
-      | (cases vB <;> exact G1Mode.noConfusion h)
-      | (cases pass <;> exact G1Mode.noConfusion h)
-      | (simp only [g1Transition, g1State] at h
-         split at h <;>
-           first
-             | exact G1Mode.noConfusion h
-             | exact absurd h (g1Complete_ne_readAStart _ _ _ _ _))
+  set_option maxRecDepth 12000 in
+  set_option maxHeartbeats 1600000 in
+    cases mode <;> cases position <;>
+      first
+        | rfl
+        | exact G1Mode.noConfusion h
+        | (cases vB <;> exact G1Mode.noConfusion h)
+        | (cases pass <;> exact G1Mode.noConfusion h)
+        | (simp only [g1Transition, g1State] at h
+           split at h <;>
+             first
+               | exact G1Mode.noConfusion h
+               | exact absurd h (g1Complete_ne_aResultStart _ _ _ _ _))
+
+/-- Exact predecessor closure for the new result handoff. -/
+theorem g1Transition_aResultStart_iff (phase : Fin 1) (s : G1State)
+    (scan : Bool) :
+    (g1Transition phase s scan).2.1.mode = .aResultStart ↔
+      s.mode = .aRepairDone := by
+  constructor
+  · exact g1Transition_aResultStart_unique phase s scan
+  · intro h
+    obtain ⟨mode, position, b0, b1, b2, ctx⟩ := s
+    simp only at h
+    subst mode
+    rfl
+
+/-- The operand-B repair terminal and the operand-A result row are exactly the
+two predecessor rows of `readAStart`. -/
+theorem g1Transition_readAStart_unique (phase : Fin 1) (s : G1State)
+    (scan : Bool) (h : (g1Transition phase s scan).2.1.mode = .readAStart) :
+    s.mode = .bRepairDone ∨ s.mode = .aResultStart := by
+  obtain ⟨mode, position, b0, b1, b2, ctx⟩ := s
+  obtain ⟨pass, crossed, vB⟩ := ctx
+  set_option maxRecDepth 12000 in
+  set_option maxHeartbeats 1600000 in
+    cases mode <;> cases position <;>
+      first
+        | exact Or.inl rfl
+        | exact Or.inr rfl
+        | exact G1Mode.noConfusion h
+        | (cases vB <;> exact G1Mode.noConfusion h)
+        | (cases pass <;> exact G1Mode.noConfusion h)
+        | (simp only [g1Transition, g1State] at h
+           split at h <;>
+             first
+               | exact G1Mode.noConfusion h
+               | exact absurd h (g1Complete_ne_readAStart _ _ _ _ _))
+
+/-- Exact predecessor closure for the live `readAStart` dispatch. -/
+theorem g1Transition_readAStart_iff (phase : Fin 1) (s : G1State)
+    (scan : Bool) :
+    (g1Transition phase s scan).2.1.mode = .readAStart ↔
+      s.mode = .bRepairDone ∨ s.mode = .aResultStart := by
+  constructor
+  · exact g1Transition_readAStart_unique phase s scan
+  · intro h
+    obtain ⟨mode, position, b0, b1, b2, ctx⟩ := s
+    simp only at h
+    rcases h with rfl | rfl <;> rfl
 
 set_option maxHeartbeats 800000 in
 /-- `aInstallStart` is reached only from one of the four operation latches.

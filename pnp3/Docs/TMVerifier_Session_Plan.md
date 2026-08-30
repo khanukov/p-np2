@@ -3102,8 +3102,9 @@ the corrected GN-1 typed parser, the work view is literally
 `encodeG1Frames (gnFieldRequest (gnGateFields g) (r.inputs ++ prior))`, and its
 pure specification is the current gate's `compute` at absolute indices.
 
-`gnCommit?` is defined only for `j < m`.  It appends the computed Boolean to
-the current-value region, consumes exactly slot `j`, changes the selected marker
+`gnCommit?` is defined only for `j < m`.  It appends the caller-supplied
+result Boolean to the current-value region, consumes exactly slot `j`, and
+changes the selected marker
 to `spent`, advances the controller index/cursor to `j+1`, preserves the input
 prefix and every record body, and preserves total length.  A nonterminal commit
 leaves the final output false; the terminal commit writes its result to the

@@ -283,6 +283,11 @@ lean_lib PnP3 where
     -- while operand-index exhaustion stops at the local `aExh` boundary.
     -- No terminal continuation, A-repair, driver or result row is composed.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneAWalkRound,
+    -- S7 (2026-08-30), the exact operand-A induction/driver.  The first `m`
+    -- normal rounds use the finite sum of S6's own costs, then the exhaustion
+    -- and dormant terminal capstones stop at `aExh` or stationary
+    -- cursor-free `aRepairStart`; first-successor OOB remains separate.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneAWalkDriver,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -454,6 +459,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMGateOneAWalkSurfaceTests,
     Glob.one `Tests.TMGateOneAWalkInvariantSurfaceTests,
     Glob.one `Tests.TMGateOneAWalkRoundSurfaceTests,
+    Glob.one `Tests.TMGateOneAWalkDriverSurfaceTests,
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,
     Glob.one `Tests.TMGateOneReadBSurfaceTests,
     Glob.one `Tests.TMGateOneProbeInstallSurfaceTests,

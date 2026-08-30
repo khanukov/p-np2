@@ -78,10 +78,9 @@ regression composed in `GateOneIndexRound`.
 
 `bOOB` is likewise a **stable boundary of the read**, not a rejection:
 `g1RejectState` is a different state and no acceptance or rejection semantics
-is attached to either.  There is no `TM.run`, `TM.accepts`, output write,
-combine step, operand-1 read, `spec`-correctness claim or full-clock theorem.
-`readAStart` is the live pass-A dispatch; `combineStart` and `bOOB` remain
-stationary boundaries, and `readAResetStart` is the repair sweep's bridge.  Clock lemmas
+is attached to either in this slice.  `readAStart` is the live pass-A dispatch;
+S10b consumes `combineStart` as the output door, `bOOB` remains stationary,
+and `readAResetStart` is the repair sweep's bridge.  Clock lemmas
 bound only the proved arrival prefixes against the **unchanged** clock
 `g1Clock`.
 
@@ -242,18 +241,6 @@ theorem g1CS_step_readAStart_operandB_not_result (n h : Nat)
           (g1Ctx0.withVB b)) 1).state.snd.mode ≠ .combineStart := by
   rw [g1CS_step_readAStart_entry n h hh tape (g1Ctx0.withVB b) rfl]
   exact ⟨rfl, fun h => G1Mode.noConfusion h⟩
-
-/-- **The combine handoff is idle in this slice.**  A result-ready `readAStart`
-now reaches it in one step.  Nothing combines, writes or accepts. -/
-theorem g1CS_runConfig_combine_idle (n h : Nat) (hh : h < G1M.tapeLength n)
-    (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx) (k : Nat) :
-    TM.runConfig (M := G1M)
-        (g1AlignedConfig n h hh tape .combineStart .p0 false false false ctx)
-        k =
-      g1AlignedConfig n h hh tape .combineStart .p0 false false false ctx :=
-  g1CS_runConfig_stable n h hh tape (g1CombineState ctx)
-    (fun phase scan => g1Transition_combineStart_idle phase .p0 false false
-      false scan ctx) k
 
 /-- **The bridge into the operand-2 repair sweep, executed.**  `readAResetStart`
 is *not* idle: one genuine TM step moves the head one cell to the **left** —

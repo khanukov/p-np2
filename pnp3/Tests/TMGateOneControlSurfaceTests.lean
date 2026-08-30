@@ -88,7 +88,7 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1Transition_rewind_p1
 #check @g1Transition_rewind_p0_bof
 #check @g1Transition_rewind_p0_other
-#check @g1Transition_combineStart_idle
+#check @g1Transition_combineStart_output
 #check @g1Transition_readAResetStart_bridge
 #check @g1Transition_bOOB_stable
 #check @g1Transition_constLit
@@ -487,16 +487,16 @@ one and only row outside the five repair modes that enters one: it writes back
 the cell it scans — so the tape is unchanged — steps one cell **left**, and
 lands in the reverse-read entry shape `bRepairSeek .p3` with an empty frame
 buffer and the whole `G1Ctx`, latch included, preserved.  `readAStart` is the
-live result/pass-A dispatch; `combineStart` remains the stationary boundary. -/
+live result/pass-A dispatch; `combineStart` is the live output door. -/
 theorem check_g1Transition_readAResetStart_bridge (phase : Fin 1)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
     g1Transition phase (g1State .readAResetStart position b0 b1 b2 ctx) scan =
         (0, g1RepairSeekState ctx, scan, .left) ∧
       g1RepairSeekState ctx = g1State .bRepairSeek .p3 false false false ctx ∧
       g1Transition phase (g1State .combineStart position b0 b1 b2 ctx) scan =
-        (0, g1CombineState ctx, scan, .stay) :=
+        (0, g1OutSeekState ctx, scan, .stay) :=
   ⟨g1Transition_readAResetStart_bridge phase position b0 b1 b2 scan ctx, rfl,
-    g1Transition_combineStart_idle phase position b0 b1 b2 scan ctx⟩
+    g1Transition_combineStart_output phase position b0 b1 b2 scan ctx⟩
 
 theorem check_g1AdvanceList_encode_reject (r : G1Request)
     (hc : ¬ r.Canonical) :

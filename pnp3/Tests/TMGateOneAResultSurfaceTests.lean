@@ -213,12 +213,6 @@ theorem check_g1CS_gate_result_tape (r : G1Request) (hc : r.Canonical)
         (G1M.initialConfig (g1Point (encodeG1 r))).tape := by
   exact g1CS_gate_result_tape r hc res hs
 
-theorem check_g1CS_gate_result_stable (r : G1Request) (hc : r.Canonical)
-    (res : Bool) (hs : r.spec = some res) (k : Nat) :
-    TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
-        (g1GateResultSteps r + k) = g1CombineConfig r res := by
-  exact g1CS_gate_result_stable r hc res hs k
-
 theorem check_g1Spec_none_of_arg1_oob (r : G1Request)
     (ht : r.tag ≠ .const) (hm : r.vals.length ≤ r.arg1) :
     r.spec = none := by

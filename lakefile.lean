@@ -293,18 +293,22 @@ lean_lib PnP3 where
     -- sweep from real unary/successful-binary initial configurations and stops
     -- at the exact canonical `aRepairDone` handoff.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneARepair,
-    -- S9 (2026-08-30), dependency-closed five-tag gate result.  Non-constant
+    -- S9 (2026-08-30), dependency-closed five-tag gate-result boundary.
+    -- Non-constant
     -- routes execute `aRepairDone → aResultStart → readAStart →
     -- combineStart`; `const` keeps its pass-B bypass.  Exact pure-spec,
-    -- OOB-semantic, boundary, literal and unchanged-clock surfaces stop at the
-    -- stationary combine boundary, before output or acceptance.
+    -- OOB-semantic, boundary, literal and unchanged-clock surfaces reach the
+    -- exact combine boundary consumed by S10b.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneAResult,
-    -- S10a (2026-08-30), dormant caller-supplied G1 output kernel.  A strict
+    -- S10a (2026-08-30), reusable G1 output kernel.  A strict
     -- canonical-prefix scan consumes the unique `output false`, turns, and a
     -- four-cell false/true writer installs `output res` before stopping at a
-    -- local stationary output-done boundary.  `combineStart` remains idle;
-    -- there is no live result bridge, acceptance, clock, or spec-none claim.
+    -- local output-done boundary.  S10b supplies its live entry and exit.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneOutputKernel,
+    -- S10b (2026-08-30), live one-gate output and literal acceptance.  The S9
+    -- result enters S10a, writes the exact Boolean output, and accepts both
+    -- defined false and true results under the unchanged clock.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneOutputAccept,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -480,6 +484,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMGateOneARepairSurfaceTests,
     Glob.one `Tests.TMGateOneAResultSurfaceTests,
     Glob.one `Tests.TMGateOneOutputKernelSurfaceTests,
+    Glob.one `Tests.TMGateOneOutputAcceptSurfaceTests,
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,
     Glob.one `Tests.TMGateOneReadBSurfaceTests,
     Glob.one `Tests.TMGateOneProbeInstallSurfaceTests,

@@ -83,9 +83,8 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1CS_step_constLit
 #check @g1CS_step_store
 
--- The live `readAStart`, the remaining idle handoffs, and the executed `readAResetStart` bridge
--- that replaces the former `g1CS_runConfig_readAReset_idle`.
-#check @g1CS_runConfig_combine_idle
+-- The live `readAStart`, stable OOB boundary, and executed `readAResetStart`
+-- bridge that replaces the former `g1CS_runConfig_readAReset_idle`.
 #check @g1CS_runConfig_oob_sink
 #check @g1CS_step_readAReset_bridge
 
@@ -327,16 +326,6 @@ theorem check_g1CS_readB_oob_ne_reject : g1OOBState g1Ctx0 ≠ g1RejectState :=
 theorem check_g1CS_readB_zero_oob_ne_success (ctx : G1Ctx) :
     g1OOBState g1Ctx0 ≠ g1ReadAResetState ctx :=
   g1CS_readB_zero_oob_ne_success ctx
-
-/-- The `const` boundary is idle: nothing combines, writes or accepts. -/
-theorem check_g1CS_runConfig_combine_idle (n h : Nat)
-    (hh : h < G1M.tapeLength n) (tape : Fin (G1M.tapeLength n) → Bool)
-    (ctx : G1Ctx) (k : Nat) :
-    TM.runConfig (M := G1M)
-        (g1AlignedConfig n h hh tape .combineStart .p0 false false false ctx)
-        k =
-      g1AlignedConfig n h hh tape .combineStart .p0 false false false ctx :=
-  g1CS_runConfig_combine_idle n h hh tape ctx k
 
 theorem check_g1InstallRoute_split (r : G1Request) :
     g1InstallRouteFrames r ++ g1InstallRouteRest r =

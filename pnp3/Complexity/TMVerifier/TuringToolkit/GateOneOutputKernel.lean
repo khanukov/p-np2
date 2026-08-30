@@ -1,20 +1,19 @@
 import Complexity.TMVerifier.TuringToolkit.GateOneAResult
 
 /-!
-# S10a dormant G1 output scan/turn/write kernel (2026-08-30)
+# S10a G1 output scan/turn/write kernel (2026-08-30)
 
 **Progress classification: Infrastructure, not P-vs-NP mainline progress.**
 
 This module executes a caller-supplied output scan on the current five-tag G1
 ABI.  It scans exactly the repaired canonical prefix, stops only on the unique
 `output false`, turns one cell left, and uses one of two literal four-cell
-writers to install `output res`.  The endpoint is the local stationary
+writers to install `output res`.  The endpoint is the local
 `outputDoneFalse`/`outputDoneTrue` boundary.
 
-The kernel is deliberately dormant.  `combineStart` remains stationary and no
-live result route enters an output mode.  There is no combine bridge, accept
-transition, `TM.accepts` theorem, full-initial composition, clock composition,
-or claim about a request whose specification is `none`.
+S10b supplies the live `combineStart` door and consumes the two output-done
+handoffs.  This module retains the exact caller-supplied kernel theorem; it
+does not itself compose the real initial run or state `TM.accepts`.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -79,34 +78,35 @@ theorem g1Complete_outSeek_malformed_reserved
 
 set_option maxRecDepth 12000 in
 set_option maxHeartbeats 1600000 in
-/-- Executable predecessor closure: no transition from outside the six output
-modes can enter them.  Thus the caller-supplied start is genuinely dormant. -/
+/-- Executable predecessor closure: the only external predecessor of the six
+output modes is the live `combineStart` door. -/
 theorem g1Transition_outputKernel_predecessor (phase : Fin 1) (s : G1State)
     (scan : Bool)
     (h : G1OutputKernelMode (g1Transition phase s scan).2.1.mode) :
-    G1OutputKernelMode s.mode := by
+    G1OutputKernelMode s.mode ∨ s.mode = .combineStart := by
   obtain ⟨mode, position, b0, b1, b2, ctx⟩ := s
   obtain ⟨pass, crossed, vB⟩ := ctx
   cases mode <;> cases position <;>
     first
-      | exact trivial
+      | exact Or.inl trivial
       | exact False.elim h
+      | exact Or.inr rfl
       | (cases vB <;> exact False.elim h)
       | (cases pass <;> exact False.elim h)
       | (simp only [g1Transition, g1State] at h
          split at h <;>
            first
              | exact False.elim h
-             | exact g1Complete_outputKernel_predecessor _ _ _ _ _ h)
+             | exact Or.inl
+                 (g1Complete_outputKernel_predecessor _ _ _ _ _ h))
 
-/-- In particular, the unchanged stationary combine row does not enter S10a. -/
-theorem g1Transition_combineStart_not_output (phase : Fin 1)
+/-- The live external door enters `outSeek` exactly. -/
+theorem g1Transition_combineStart_output_mode (phase : Fin 1)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
-    ¬ G1OutputKernelMode
-      (g1Transition phase
-        (g1State .combineStart position b0 b1 b2 ctx) scan).2.1.mode := by
-  rw [g1Transition_combineStart_idle]
-  exact id
+    (g1Transition phase
+      (g1State .combineStart position b0 b1 b2 ctx) scan).2.1.mode = .outSeek := by
+  rw [g1Transition_combineStart_output]
+  rfl
 
 /-! ## Exact caller-supplied atoms -/
 
@@ -202,15 +202,6 @@ theorem g1CS_out_write (n : Nat) (pre suffix : List G1Frame) (res : Bool)
         (g1OutputDoneState res) :=
   (g1OutWriter res).writeFrameOnListLeft n pre suffix (.output false) ctx
     hpre hsafe
-
-/-- The local output-complete boundary stays fixed for every further budget. -/
-theorem g1CS_outputDone_stable (n h : Nat) (hh : h < G1M.tapeLength n)
-    (tape : Fin (G1M.tapeLength n) → Bool) (res : Bool) (k : Nat) :
-    TM.runConfig (M := G1M)
-        (g1AlignedConfigQ n h hh tape (g1OutputDoneState res)) k =
-      g1AlignedConfigQ n h hh tape (g1OutputDoneState res) :=
-  g1CS_runConfig_stable n h hh tape (g1OutputDoneState res)
-    (fun phase scan => g1Transition_outputDone_stable phase res scan) k
 
 /-! ## Canonical output layout -/
 
@@ -447,7 +438,7 @@ def g1OutputRoute (r : G1Request) : List G1Frame :=
     (g1OutputRoute r).length = (g1PrefixFrames r).length + 1 := by
   simp [g1OutputRoute]
 
-/-- No bridge is included: this is the exact caller-supplied dormant entry. -/
+/-- No bridge is included: this is the exact caller-supplied kernel entry. -/
 def g1OutputStartConfig (r : G1Request) (res : Bool) :
     Configuration (M := G1M) (encodeG1 r).length :=
   g1AlignedConfig (encodeG1 r).length 0 (g1_route_lt_tapeLength r 0 (by omega))
@@ -576,12 +567,6 @@ theorem g1OutputDone_ne_combine (res : Bool) (ctx : G1Ctx) :
     g1OutputDoneState res ≠ g1CombineState ctx := by
   cases res <;> intro h <;>
     exact G1Mode.noConfusion (congrArg G1State.mode h)
-
-theorem g1CS_output_kernel_stable (r : G1Request) (res : Bool) (k : Nat) :
-    TM.runConfig (M := G1M) (g1OutputStartConfig r res)
-        (g1OutputKernelSteps r + k) = g1OutputDoneConfig r res := by
-  rw [runConfig_add, g1CS_output_kernel_exact, g1OutputDoneConfig]
-  exact g1CS_outputDone_stable _ _ _ _ res k
 
 /-! ## Literal caller-supplied false/true probes -/
 

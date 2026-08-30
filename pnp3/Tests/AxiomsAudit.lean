@@ -37,6 +37,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOnePassAEntryExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneAWalkInstallAtoms
 import Complexity.TMVerifier.TuringToolkit.GateOneAWalkKernel
 import Complexity.TMVerifier.TuringToolkit.GateOneAWalkInvariant
+import Complexity.TMVerifier.TuringToolkit.GateOneAWalkRound
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -1380,6 +1381,41 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1AWalkInvariantExamples.or_true_sigma0_exact
 #print axioms Internal.PsubsetPpoly.TM.G1AWalkInvariantExamples.input_empty_oob_exact
 #print axioms Internal.PsubsetPpoly.TM.G1AWalkInvariantExamples.input_empty_no_sigma0_success
+
+-- S6 (2026-08-30): exactly one operand-A round.  Normal execution moves the
+-- unique designated cursor from slot `j` to `j+1`, restores the old hidden
+-- value, re-latches the successor value and preserves the residual.  The
+-- successor-data OOB endpoint is the existing `bOOB` on the cursor-free
+-- restored tape; operand-index exhaustion stops earlier at local `aExh`.
+-- No terminal continuation, A-repair, driver, output or acceptance theorem.
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkOOBConfig_tape
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkOOBConfig_head
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkOOBConfig_state
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkOOBConfig_res
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkOOBConfig_vB
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkExhaustConfig_tape
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkExhaustConfig_head
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkExhaustConfig_state
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkExhaustConfig_res
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkExhaustConfig_vB
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_round_prefix_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_round_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_round_oob_exact
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkExhaustPre_length
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkSplit_exhaust
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_exhaust_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_round_preservation
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_round_oob_preservation
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkRoundSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkRoundOOBSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkExhaustSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readA_round_unary_exact
+#print axioms Internal.PsubsetPpoly.TM.G1AWalkRoundExamples.requests_canonical
+#print axioms Internal.PsubsetPpoly.TM.G1AWalkRoundExamples.normal_round_exact
+#print axioms Internal.PsubsetPpoly.TM.G1AWalkRoundExamples.normal_round_from_initial_exact
+#print axioms Internal.PsubsetPpoly.TM.G1AWalkRoundExamples.oob_round_exact
+#print axioms Internal.PsubsetPpoly.TM.G1AWalkRoundExamples.exhaust_exact
+#print axioms Internal.PsubsetPpoly.TM.G1AWalkRoundExamples.literal_clock_bounds
 
 -- S3b2a (2026-08-29): direct source roots for the dormant normal walk.
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameScanner.revWindowStop

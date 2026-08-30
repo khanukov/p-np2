@@ -2786,3 +2786,35 @@ premise remains explicit.
 The marked/restored layouts and their pure splits are only an S6 foundation.
 S5 contains no round theorem, induction, driver, terminal execution, operand-A
 repair, result/combine computation, output write or acceptance theorem.
+
+## S6 exact one-round operand-A walk (2026-08-30)
+
+**Classification: infrastructure, not P-vs-NP mainline progress.**  S6 changes
+no machine transition, mode, state field or clock.  `GateOneAWalkRound` composes
+the merged kernel and invariant atoms for exactly one machine round from a
+caller-supplied `Σᴬ(j)`.
+
+With `j < arg1`, `j+1 < vals.length` and explicit current/successor value
+witnesses, the normal theorem executes the mixed seek, rewrites precisely the
+rightmost remaining operand-A `index` to `spent`, returns to the designated
+cursor, restores slot `j`, probes and re-latches slot `j+1`, and installs the
+unique cursor there.  The endpoint is exactly `Σᴬ(j+1)`, with the full
+canonical tape, head, `aSeekOut .p3` state and residual-bearing context pinned.
+The exact cost is `16*j + 8*arg2 + 45`.
+
+Two different failure boundaries remain explicit.  If the successor data slot
+is absent while an operand-A index remains, the `16*j + 8*arg2 + 40` theorem
+stops at existing `bOOB` on `g1AWalkFramesRestored`: the data region is exactly
+`vals`, the cursor count is zero and the operand-A field has one new `spent`.
+If `j = arg1`, the read-only mixed seek takes `8*arg1 + 4*arg2 + 12` steps and
+stops immediately at the opening-field `aExh` boundary, with the `Σᴬ(arg1)`
+tape and context unchanged.  It does not compose the already available
+terminal cursor return or repair-pending handoff.
+
+Projection theorems pin the normal and OOB layouts, current/successor `vB`,
+residual, cursor uniqueness and operand-A spent/index counts.  All three local
+costs fit the unchanged `g1Clock`.  Literal caller-supplied probes cover the
+45-step normal, 40-step data-OOB and 20-step local-exhaustion cases.  A
+196-step literal composes the real initial configuration through S5 and one S6
+normal round only.  There is no induction, driver, live automatic loop,
+terminal repair, A-repair, result/combine computation, output or acceptance.

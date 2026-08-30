@@ -278,6 +278,11 @@ lean_lib PnP3 where
     -- canonical `Σᴬ(j)` layout, exact post-S4 inhabitance and honest OOB
     -- separation.  No round, driver, repair, result or output theorem.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneAWalkInvariant,
+    -- S6 (2026-08-30), exactly one operand-A machine round.  The normal
+    -- branch moves `Σᴬ(j)` to `Σᴬ(j+1)`; successor-data OOB stops at `bOOB`,
+    -- while operand-index exhaustion stops at the local `aExh` boundary.
+    -- No terminal continuation, A-repair, driver or result row is composed.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneAWalkRound,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -448,6 +453,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMGateOneAWalkInstallAtomsSurfaceTests,
     Glob.one `Tests.TMGateOneAWalkSurfaceTests,
     Glob.one `Tests.TMGateOneAWalkInvariantSurfaceTests,
+    Glob.one `Tests.TMGateOneAWalkRoundSurfaceTests,
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,
     Glob.one `Tests.TMGateOneReadBSurfaceTests,
     Glob.one `Tests.TMGateOneProbeInstallSurfaceTests,

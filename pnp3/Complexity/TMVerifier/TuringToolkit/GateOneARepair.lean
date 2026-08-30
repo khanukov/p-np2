@@ -718,8 +718,7 @@ theorem g1CS_aWalk_repair_driver_exact (r : G1Request) (b : Bool)
   exact g1CS_aRepair_live_exact r b (v r.arg1) hlen
     (hv r.arg1 (Nat.le_refl _))
 
-/-- Genuine unary-initial total through the stationary canonical repair
-endpoint. -/
+/-- Genuine unary-initial total through the canonical `aRepairDone` handoff. -/
 def g1AUnaryRepairSteps (r : G1Request) : Nat :=
   g1AUnaryCursorSteps r + g1AWalkRepairSteps r
 

@@ -3013,3 +3013,46 @@ accept totals are `230, 286, 485, 513, 152, 172`; their unchanged clocks are
 cells are probed.  The S10b public surface has 43 named theorem wrappers and
 two definition-only checks, with the same 43 theorems rooted directly in the
 axiom audit.  This remains a one-gate result; multi-gate execution is deferred.
+
+## GN-1 pure multi-gate encoding foundation (2026-08-30)
+
+**Classification: infrastructure, not P-vs-NP mainline progress.**  GN-1 adds
+the machine-free `GateNEncoding` foundation only.  There is no GN controller,
+tape transition, execution theorem, clock, or acceptance statement, and no
+runtime machine parameter or advice field.
+
+The ABI reuses the existing fixed four-bit `G1Frame` alphabet verbatim: 13
+decoded codes and the same three reserved/rejected codes `1101`, `1110`, and
+`1111`.  The canonical frame word is
+
+`bof · data(inputs) · output(false)^m · separator · records · separator ·
+output(false) · finish`,
+
+where `m` is the record count.  Record zero is cursor-marked and later records
+are `bof`-marked.  Each record is
+
+`marker · tag^units · argSep · index^arg1 · argSep · index^arg2 · finish`.
+
+The unary tag order is pinned to the current G1 convention: input, const, not,
+and, or use respectively 1, 2, 3, 4, and 5 `tag` frames.  Input indices are
+absolute positions in the initial current-value environment; prior-gate index
+`k` is encoded as absolute position `n + k`.  The typed inverse rejects input
+positions at or beyond `n`, prior-gate positions below `n`, noncanonical
+constant/unused fields, malformed delimiters and markers, record/slot count
+mismatches, trailing frames, and aligned reserved codes.
+
+Pure record interpretation constructs the current `G1Request` literally and
+uses `G1Request.spec`.  Thus an input record means `vals[arg1]?`: it selects
+from the current serialized environment and is not a claim that G1 reads an
+external input object.  Sequential evaluation begins with the serialized
+input-value list and appends each successful record result.  Forward or
+otherwise unavailable operands therefore yield `none` through the existing
+partial-index semantics.
+
+The named nonvacuous capstone serializes one true input and two gates,
+`[input 0, notGate 0]`.  Its second record carries absolute index `1`; the
+whole word has 21 frames / 84 cells, both records decode exactly, sequential
+evaluation produces `[true, true, false]`, and the final result is
+`some false`.  The source, named examples, exact-wrapper surface, and all 42
+direct theorem roots are registered in `lakefile.lean` and
+`Tests/AxiomsAudit.lean`.

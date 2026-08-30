@@ -3184,3 +3184,40 @@ the source clamps at zero while its positive-base shift moves left, so the
 unconditional conjugacy statement is false.  The source exports 29 theorems,
 the examples export 18, the surface provides 47 exact named wrappers plus
 definition-only pins, and all 47 theorem roots are audited directly.
+
+## GN-3B1 canonical G1 output-done boundary (2026-08-30)
+
+**Classification: infrastructure, not P-vs-NP mainline progress.**  This is
+the dependency-closed first half of GN-3B.  It adds no GN machine, controller,
+mode, copier, clock, or acceptance theorem and reduces neither pnp4 source
+obligation.
+
+`g1GateDoneSteps r` is the exact real-initial canonical schedule stopping at
+the existing result-indexed `g1OutputDoneConfig r res`.  It is exactly one
+step shorter than `g1GateAcceptSteps r`: the omitted transition is the literal
+output-done-to-accept handoff.  The source proves the provenance and closed
+formula, separate formulas for all five tags, the unchanged-clock bound, and
+exact state/mode/context/head/tape/output-cell projections.  The Boolean is
+identified by the existing `outputDoneFalse`/`outputDoneTrue` state; no target
+or result annotation is introduced.
+
+The generic head-growth theorem gives `runConfig c k` head at most
+`c.head+k`.  A separate right-footprint reduction isolates the natural
+`head+1 <= W+5` bound from the one boundary-control case.  The early-prefix
+corollary is unconditional under `k+1 < W+5`.  Canonical validation is
+inspected at its exact maximum head `W+4`: that configuration is one cell
+below the `W+5` span, and its actual next transition is left, so the boundary
+configuration itself satisfies `G1LocalStepSafe`.
+
+This split is deliberately honest about what is not yet present.  It does not
+claim the schedule-specific bound for every later proper prefix, the actual
+trace theorem forbidding a left move at head zero, full canonical
+`G1RunSafe`, or a `ShiftRunSafe` corollary.  Those are GN-3B2 obligations and
+are not replaced by assumptions or inferred from the output-done endpoint.
+Consequently no full false/true literal trace-safety capstone is claimed in
+GN-3B1.  The two literal boundary probes are narrower and explicit: concrete
+`const false` and `const true` traces really attain `W+4`, and that attained
+configuration is locally safe.  Separate literal endpoints reach output-done
+at steps 151 and 171.  The source exports 31 theorems, the surface gives 31
+exact named wrappers plus the definition-only pin, and all 31 theorem roots
+are audited directly.

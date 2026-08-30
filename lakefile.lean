@@ -136,6 +136,12 @@ lean_lib PnP3 where
     -- suffix, and tight work-word capacity.  No machine or execution layer.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateNTapeState,
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateNTapeStateExamples,
+    -- GN-3A (2026-08-30), generic local relocation infrastructure: copy
+    -- exactly `[0,W+5)`, preserve the ambient tape outside it, and conjugate
+    -- tuple-delegated safe G1 steps/runs into an arbitrary target TM.  No GN
+    -- machine, controller, clock, copier, trace, or acceptance theorem.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateNRelocation,
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateNRelocationExamples,
     -- T2a, control layer: one zero-parameter finite control whose forward
     -- table decides the canonical grammar (`GateOneControl`), and that
     -- control as a genuine instance of the generic frame-scanner kernel
@@ -488,6 +494,9 @@ lean_lib PnP3 where
     -- GN-2 (2026-08-30): exact theorem wrappers and definition-only pins for
     -- the pure multi-gate tape-state surface.
     Glob.one `Tests.TMGateNTapeStateSurfaceTests,
+    -- GN-3A (2026-08-30): exact wrappers for the generic local relocation,
+    -- literal shifted one-/two-step capstones, and left-clamp counterexample.
+    Glob.one `Tests.TMGateNRelocationSurfaceTests,
     Glob.one `Tests.TMGateOneResidualSurfaceTests,
     Glob.one `Tests.TMGateOneControlSurfaceTests,
     Glob.one `Tests.TMGateOneRoutingSurfaceTests,

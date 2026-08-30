@@ -43,6 +43,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOneARepair
 import Complexity.TMVerifier.TuringToolkit.GateOneAResult
 import Complexity.TMVerifier.TuringToolkit.GateOneOutputKernel
 import Complexity.TMVerifier.TuringToolkit.GateOneOutputAccept
+import Complexity.TMVerifier.TuringToolkit.GateOneTraceSafety
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -1960,6 +1961,42 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1OutputAcceptProbes.literal_accepts
 #print axioms Internal.PsubsetPpoly.TM.G1OutputAcceptProbes.literal_false_output
 #print axioms Internal.PsubsetPpoly.TM.G1OutputAcceptProbes.literal_true_output
+
+-- GN-3B1 (2026-08-30): exact result-indexed output-done boundary, one step
+-- before literal accept, plus generic prefix/right-footprint reductions and
+-- the exact `W+4` validation-boundary inspection.  This split slice does not
+-- claim the schedule-specific full canonical trace or `ShiftRunSafe`.
+#print axioms Internal.PsubsetPpoly.TM.g1GateDoneSteps_provenance
+#print axioms Internal.PsubsetPpoly.TM.g1GateAcceptSteps_eq_done_add_one
+#print axioms Internal.PsubsetPpoly.TM.g1GateDoneSteps_closed
+#print axioms Internal.PsubsetPpoly.TM.g1GateDoneSteps_const
+#print axioms Internal.PsubsetPpoly.TM.g1GateDoneSteps_input
+#print axioms Internal.PsubsetPpoly.TM.g1GateDoneSteps_not
+#print axioms Internal.PsubsetPpoly.TM.g1GateDoneSteps_and
+#print axioms Internal.PsubsetPpoly.TM.g1GateDoneSteps_or
+#print axioms Internal.PsubsetPpoly.TM.g1GateDoneSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1CS_output_done_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_done_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_done_state
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_done_mode
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_done_context
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_done_head
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_done_tape
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_done_frames
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_done_output
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_done_off
+#print axioms Internal.PsubsetPpoly.TM.g1_runConfig_head_le_start_add
+#print axioms Internal.PsubsetPpoly.TM.g1_initial_prefix_head_le_steps
+#print axioms Internal.PsubsetPpoly.TM.g1_local_right_safe_of_head_le_span_pred
+#print axioms Internal.PsubsetPpoly.TM.g1_initial_prefix_right_safe_of_steps_lt_span
+#print axioms Internal.PsubsetPpoly.TM.g1CS_validation_reaches_span_pred
+#print axioms Internal.PsubsetPpoly.TM.g1CS_validation_span_pred_moves_left
+#print axioms Internal.PsubsetPpoly.TM.g1CS_validation_span_pred_local_safe
+#print axioms Internal.PsubsetPpoly.TM.G1TraceSafetyProbes.literal_done_steps
+#print axioms Internal.PsubsetPpoly.TM.G1TraceSafetyProbes.literal_false_done
+#print axioms Internal.PsubsetPpoly.TM.G1TraceSafetyProbes.literal_true_done
+#print axioms Internal.PsubsetPpoly.TM.G1TraceSafetyProbes.literal_false_span_pred_safe
+#print axioms Internal.PsubsetPpoly.TM.G1TraceSafetyProbes.literal_true_span_pred_safe
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_steps
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_false_repair_exact
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_true_repair_exact

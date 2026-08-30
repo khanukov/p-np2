@@ -70,7 +70,8 @@ theorem g1_repair_unreachable_forward (mode : G1Mode) (frame : G1Frame) :
       g1Advance mode frame ≠ .bRepairBack ∧
       g1Advance mode frame ≠ .bRepairHop ∧
       g1Advance mode frame ≠ .bRepairDone := by
-  revert mode frame; decide
+  set_option maxRecDepth 4096 in
+    revert mode frame; decide
 
 /-- **All five repair modes are stuck at the frame table.**  They read right to
 left or write; none of them has a successful `g1Advance` row, so the validation

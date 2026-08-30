@@ -344,6 +344,8 @@ inductive G1Mode
   | aRet | aTurnFin
   | aFinFalse | aFinTrue
   | aRepairStart
+  -- dormant operand-A repair control; no row enters it from aRepairStart
+  | aRepairSeek | aRepairWrite | aRepairBack | aRepairHop | aRepairDone
   | readAStart | combineStart | readAResetStart | bOOB
   | accept | reject
   deriving Fintype, DecidableEq, Repr
@@ -565,6 +567,18 @@ theorem g1AFinMode_ne_restore (b b' : Bool) :
 /-- The stationary local handoff after terminal cursor cleanup. -/
 def g1ARepairStartState (ctx : G1Ctx) : G1State :=
   g1State .aRepairStart .p0 false false false ctx
+
+/-- Caller-supplied reverse-scan entry of the dormant operand-A repair. -/
+def g1ARepairSeekState (ctx : G1Ctx) : G1State :=
+  g1State .aRepairSeek .p3 false false false ctx
+
+/-- Write handoff after the dormant scan reads one `spent` frame. -/
+def g1ARepairWriteState (ctx : G1Ctx) : G1State :=
+  g1State .aRepairWrite .p0 false false false ctx
+
+/-- Cursor-free local handoff after the dormant scan reads the anchor. -/
+def g1ARepairDoneState (ctx : G1Ctx) : G1State :=
+  g1State .aRepairDone .p0 false false false ctx
 
 /-- The `const` handoff: the decoded literal is already in `ctx.vB`. -/
 def g1CombineState (ctx : G1Ctx) : G1State :=
@@ -906,6 +920,50 @@ theorem g1RepairBackComplete_forbidden :
       g1RepairBackComplete false true true true = .reject :=
   ⟨rfl, rfl⟩
 
+/-! ### Reject-aware reverse table of the dormant operand-A repair -/
+
+/-- The A-repair scan shares the canonical skip class with operand B, but uses
+fresh modes and stops at its own cursor-free local handoff. -/
+def g1ARepairBackAdvance : G1Frame → G1Mode
+  | .spent => .aRepairWrite
+  | .bof => .aRepairDone
+  | .tag | .index | .separator | .data _ | .output _ | .finish | .argSep =>
+      .aRepairSeek
+  | .blank | .cursor => .reject
+
+/-- Raw four-cell decision for the A-repair scan.  Undecodable windows reject. -/
+def g1ARepairBackComplete (b0 b1 b2 b3 : Bool) : G1Mode :=
+  match decodeG1Frame? [b0, b1, b2, b3] with
+  | some frame => g1ARepairBackAdvance frame
+  | none => .reject
+
+theorem g1ARepairBackAdvance_of_skip {f : G1Frame} (h : G1RepairSkip f) :
+    g1ARepairBackAdvance f = .aRepairSeek := by
+  cases f <;> first | rfl | exact (show False from h).elim
+
+theorem g1ARepairBackComplete_some {b0 b1 b2 b3 : Bool} {f : G1Frame}
+    (h : decodeG1Frame? [b0, b1, b2, b3] = some f) :
+    g1ARepairBackComplete b0 b1 b2 b3 = g1ARepairBackAdvance f := by
+  simp [g1ARepairBackComplete, h]
+
+theorem g1ARepairBackComplete_none {b0 b1 b2 b3 : Bool}
+    (h : decodeG1Frame? [b0, b1, b2, b3] = none) :
+    g1ARepairBackComplete b0 b1 b2 b3 = .reject := by
+  simp [g1ARepairBackComplete, h]
+
+/-- All three reserved raw windows reject literally. -/
+theorem g1ARepairBackComplete_reserved :
+    g1ARepairBackComplete true true false true = .reject ∧
+      g1ARepairBackComplete true true true false = .reject ∧
+      g1ARepairBackComplete true true true true = .reject :=
+  ⟨rfl, rfl, rfl⟩
+
+/-- The decodable but forbidden `blank` and `cursor` frames reject literally. -/
+theorem g1ARepairBackComplete_forbidden :
+    g1ARepairBackComplete false false false false = .reject ∧
+      g1ARepairBackComplete false true true true = .reject :=
+  ⟨rfl, rfl⟩
+
 /-- The modes that read one frame left to right through `g1Advance`.  The
 validation scan (`vBof … vBlank`), the pass-B rescan (`readBStart`,
 `rTag0 … rTag5`, `rConst0`/`rConst1`, `rArg1Binary`, `bScan`, `bProbe`) and the
@@ -936,6 +994,7 @@ def G1ForwardMode : G1Mode → Prop
   | .aSeekOut | .aSeekIn | .aDec | .aTurn | .aTurnFin
   | .aRestoreFalse | .aRestoreTrue | .aFinFalse | .aFinTrue
   | .aRepairStart
+  | .aRepairSeek | .aRepairWrite | .aRepairBack | .aRepairHop | .aRepairDone
   | .aLatchFalse | .aLatchTrue | .aIns
   | .readAStart | .combineStart | .readAResetStart | .bOOB
   | .accept | .reject => False
@@ -1021,6 +1080,31 @@ theorem g1Complete_aWalk_reserved (mode : G1Mode) :
       g1Complete mode true true true false = .reject ∧
       g1Complete mode true true true true = .reject :=
   ⟨rfl, rfl, rfl⟩
+
+/-- Exactly the five dormant operand-A repair modes. -/
+def G1ARepairControlMode : G1Mode → Prop
+  | .aRepairSeek | .aRepairWrite | .aRepairBack | .aRepairHop | .aRepairDone => True
+  | _ => False
+
+instance : DecidablePred G1ARepairControlMode := fun mode => by
+  cases mode <;> first | exact isTrue trivial | exact isFalse id
+
+/-- No forward frame row enters the dormant A-repair family. -/
+theorem g1Advance_aRepair_dormant (mode : G1Mode) (frame : G1Frame) :
+    G1ARepairControlMode (g1Advance mode frame) → G1ARepairControlMode mode := by
+  revert mode frame; decide
+
+/-- Nor can a completed raw window divert external control into A-repair. -/
+theorem g1Complete_aRepair_dormant (mode : G1Mode) (b0 b1 b2 b3 : Bool) :
+    G1ARepairControlMode (g1Complete mode b0 b1 b2 b3) →
+      G1ARepairControlMode mode := by
+  unfold g1Complete
+  cases decodeG1Frame? [b0, b1, b2, b3] with
+  | none => exact fun h => False.elim h
+  | some frame => exact g1Advance_aRepair_dormant mode frame
+
+theorem g1ARepairStart_not_control :
+    ¬ G1ARepairControlMode .aRepairStart := id
 
 theorem g1Advance_aFwd_cursor : g1Advance .aFwd .cursor = .aTurn := rfl
 
@@ -1193,18 +1277,21 @@ stationary self-loop, the only external arrival is repair terminal
 `bRepairDone`. -/
 theorem g1_readAStart_unreachable (mode : G1Mode) (frame : G1Frame) :
     g1Advance mode frame ≠ .readAStart := by
-  revert mode frame; decide
+  set_option maxRecDepth 4096 in
+    revert mode frame; decide
 
 /-- No frame-table row produces the pass-A install boundary. -/
 theorem g1_aInstallStart_unreachable (mode : G1Mode) (frame : G1Frame) :
     g1Advance mode frame ≠ .aInstallStart := by
-  revert mode frame; decide
+  set_option maxRecDepth 4096 in
+    revert mode frame; decide
 
 /-- Neither sink-like control mode is ever produced by one frame-table step. -/
 theorem g1Advance_ne_sink (mode : G1Mode) (frame : G1Frame) :
     g1Advance mode frame ≠ .accept ∧ g1Advance mode frame ≠ .rewind := by
-  revert mode frame
-  decide
+  set_option maxRecDepth 4096 in
+    revert mode frame
+    decide
 
 /-- Once the end-of-input frame has been consumed, an accepting word is over. -/
 theorem g1AdvanceList_rewindStart_eq_nil {fs : List G1Frame}
@@ -1825,7 +1912,38 @@ def g1Transition (_phase : Fin 1) (s : G1State) (scan : Bool) :
       if s.ctx.pass then (0, g1CombineState s.ctx, scan, .stay)
       else (0, g1ABofState s.ctx, scan, .stay)
   | .aInstallStart => (0, g1AInsSeekState s.ctx, scan, .stay)
+  -- S8a keeps the walk handoff idle.  The fresh repair modes below are
+  -- executable only from configurations explicitly supplied by a caller.
   | .aRepairStart => (0, g1ARepairStartState s.ctx, scan, .stay)
+  | .aRepairSeek =>
+      match s.position with
+      | .p3 => (0, g1State .aRepairSeek .p2 false false scan s.ctx, scan, .left)
+      | .p2 => (0, g1State .aRepairSeek .p1 false scan s.b2 s.ctx, scan, .left)
+      | .p1 => (0, g1State .aRepairSeek .p0 scan s.b1 s.b2 s.ctx, scan, .left)
+      | .p0 =>
+          match g1ARepairBackComplete scan s.b0 s.b1 s.b2 with
+          | .aRepairWrite => (0, g1ARepairWriteState s.ctx, scan, .stay)
+          | .aRepairSeek => (0, g1ARepairSeekState s.ctx, scan, .left)
+          | .aRepairDone => (0, g1ARepairDoneState s.ctx, scan, .stay)
+          | _ => (0, g1RejectState, scan, .stay)
+  | .aRepairWrite =>
+      match s.position with
+      | .p0 => (0, g1State .aRepairWrite .p1 false false false s.ctx,
+          false, .right)
+      | .p1 => (0, g1State .aRepairWrite .p2 false false false s.ctx,
+          false, .right)
+      | .p2 => (0, g1State .aRepairWrite .p3 false false false s.ctx,
+          true, .right)
+      | .p3 => (0, g1State .aRepairBack .p0 false false false s.ctx,
+          true, .right)
+  | .aRepairBack =>
+      match s.position with
+      | .p0 => (0, g1State .aRepairBack .p1 false false false s.ctx, scan, .left)
+      | .p1 => (0, g1State .aRepairBack .p2 false false false s.ctx, scan, .left)
+      | .p2 => (0, g1State .aRepairBack .p3 false false false s.ctx, scan, .left)
+      | .p3 => (0, g1State .aRepairHop .p0 false false false s.ctx, scan, .left)
+  | .aRepairHop => (0, g1ARepairSeekState s.ctx, scan, .left)
+  | .aRepairDone => (0, g1ARepairDoneState s.ctx, scan, .stay)
   | .combineStart => (0, g1CombineState s.ctx, scan, .stay)
   | .bOOB => (0, g1OOBState s.ctx, scan, .stay)
   -- the four operand-1 operation latches: one stationary step each,
@@ -2214,6 +2332,117 @@ theorem g1Transition_aRepairStart_idle (phase : Fin 1)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
     g1Transition phase (g1State .aRepairStart position b0 b1 b2 ctx) scan =
       (0, g1ARepairStartState ctx, scan, .stay) := rfl
+
+/-! ### Dormant reject-aware operand-A repair tuples -/
+
+theorem g1Transition_aRepairSeek_p3 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .aRepairSeek .p3 b0 b1 b2 ctx) scan =
+      (0, g1State .aRepairSeek .p2 false false scan ctx, scan, .left) := rfl
+
+theorem g1Transition_aRepairSeek_p2 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .aRepairSeek .p2 b0 b1 b2 ctx) scan =
+      (0, g1State .aRepairSeek .p1 false scan b2 ctx, scan, .left) := rfl
+
+theorem g1Transition_aRepairSeek_p1 (phase : Fin 1) (b0 b1 b2 scan : Bool)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .aRepairSeek .p1 b0 b1 b2 ctx) scan =
+      (0, g1State .aRepairSeek .p0 scan b1 b2 ctx, scan, .left) := rfl
+
+private theorem g1Transition_aRepairSeek_p0_raw (phase : Fin 1)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State .aRepairSeek .p0 b0 b1 b2 ctx) scan =
+      (match g1ARepairBackComplete scan b0 b1 b2 with
+        | .aRepairWrite => (0, g1ARepairWriteState ctx, scan, Move.stay)
+        | .aRepairSeek => (0, g1ARepairSeekState ctx, scan, Move.left)
+        | .aRepairDone => (0, g1ARepairDoneState ctx, scan, Move.stay)
+        | _ => (0, g1RejectState, scan, Move.stay)) := rfl
+
+theorem g1Transition_aRepairSeek_p0_spent (phase : Fin 1)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx)
+    (h : decodeG1Frame? [scan, b0, b1, b2] = some .spent) :
+    g1Transition phase (g1State .aRepairSeek .p0 b0 b1 b2 ctx) scan =
+      (0, g1ARepairWriteState ctx, scan, .stay) := by
+  rw [g1Transition_aRepairSeek_p0_raw,
+    show g1ARepairBackComplete scan b0 b1 b2 = .aRepairWrite from
+      g1ARepairBackComplete_some h]
+
+theorem g1Transition_aRepairSeek_p0_bof (phase : Fin 1)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx)
+    (h : decodeG1Frame? [scan, b0, b1, b2] = some .bof) :
+    g1Transition phase (g1State .aRepairSeek .p0 b0 b1 b2 ctx) scan =
+      (0, g1ARepairDoneState ctx, scan, .stay) := by
+  rw [g1Transition_aRepairSeek_p0_raw,
+    show g1ARepairBackComplete scan b0 b1 b2 = .aRepairDone from
+      g1ARepairBackComplete_some h]
+
+theorem g1Transition_aRepairSeek_p0_skip (phase : Fin 1)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx) (frame : G1Frame)
+    (hdec : decodeG1Frame? [scan, b0, b1, b2] = some frame)
+    (hskip : G1RepairSkip frame) :
+    g1Transition phase (g1State .aRepairSeek .p0 b0 b1 b2 ctx) scan =
+      (0, g1ARepairSeekState ctx, scan, .left) := by
+  rw [g1Transition_aRepairSeek_p0_raw,
+    show g1ARepairBackComplete scan b0 b1 b2 = .aRepairSeek from
+      (g1ARepairBackComplete_some hdec).trans
+        (g1ARepairBackAdvance_of_skip hskip)]
+
+theorem g1Transition_aRepairSeek_p0_bad (phase : Fin 1)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx)
+    (h : g1ARepairBackComplete scan b0 b1 b2 = .reject) :
+    g1Transition phase (g1State .aRepairSeek .p0 b0 b1 b2 ctx) scan =
+      (0, g1RejectState, scan, .stay) := by
+  rw [g1Transition_aRepairSeek_p0_raw, h]
+
+/-- The three reserved raw windows take the exact bad row. -/
+theorem g1Transition_aRepairSeek_p0_reserved_bad (phase : Fin 1)
+    (ctx : G1Ctx) :
+    g1Transition phase (g1State .aRepairSeek .p0 true false true ctx) true =
+        (0, g1RejectState, true, .stay) ∧
+      g1Transition phase (g1State .aRepairSeek .p0 true true false ctx) true =
+        (0, g1RejectState, true, .stay) ∧
+      g1Transition phase (g1State .aRepairSeek .p0 true true true ctx) true =
+        (0, g1RejectState, true, .stay) := by
+  exact ⟨g1Transition_aRepairSeek_p0_bad phase _ _ _ _ ctx rfl,
+    g1Transition_aRepairSeek_p0_bad phase _ _ _ _ ctx rfl,
+    g1Transition_aRepairSeek_p0_bad phase _ _ _ _ ctx rfl⟩
+
+theorem g1Transition_aRepairWrite (phase : Fin 1)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State .aRepairWrite position b0 b1 b2 ctx) scan =
+      (0, match position with
+          | .p0 => g1State .aRepairWrite .p1 false false false ctx
+          | .p1 => g1State .aRepairWrite .p2 false false false ctx
+          | .p2 => g1State .aRepairWrite .p3 false false false ctx
+          | .p3 => g1State .aRepairBack .p0 false false false ctx,
+        match position with
+          | .p0 | .p1 => false
+          | .p2 | .p3 => true,
+        .right) := by
+  cases position <;> rfl
+
+theorem g1Transition_aRepairBack (phase : Fin 1)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State .aRepairBack position b0 b1 b2 ctx) scan =
+      (0, match position with
+          | .p0 => g1State .aRepairBack .p1 false false false ctx
+          | .p1 => g1State .aRepairBack .p2 false false false ctx
+          | .p2 => g1State .aRepairBack .p3 false false false ctx
+          | .p3 => g1State .aRepairHop .p0 false false false ctx,
+        scan, .left) := by
+  cases position <;> rfl
+
+theorem g1Transition_aRepairHop (phase : Fin 1)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State .aRepairHop position b0 b1 b2 ctx) scan =
+      (0, g1ARepairSeekState ctx, scan, .left) := rfl
+
+/-- The canonical repair endpoint is a stationary local handoff. -/
+theorem g1Transition_aRepairDone_idle (phase : Fin 1)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State .aRepairDone position b0 b1 b2 ctx) scan =
+      (0, g1ARepairDoneState ctx, scan, .stay) := rfl
 
 /-! ### Live-entry operand-A installation tuples -/
 
@@ -3203,5 +3432,54 @@ theorem g1Transition_aWalk_entry_closure (phase : Fin 1) (s : G1State)
            first
              | exact False.elim h
              | exact Or.inl (g1Complete_aWalk_dormant _ _ _ _ _ h))
+
+set_option maxRecDepth 12000 in
+set_option maxHeartbeats 1600000 in
+/-- Exact predecessor closure of the dormant A-repair family.  Every executed
+successor in one of its five modes already came from that family; in particular
+there is no live external activation row. -/
+theorem g1Transition_aRepair_predecessor_closure (phase : Fin 1) (s : G1State)
+    (scan : Bool)
+    (h : G1ARepairControlMode (g1Transition phase s scan).2.1.mode) :
+    G1ARepairControlMode s.mode := by
+  obtain ⟨mode, position, b0, b1, b2, ctx⟩ := s
+  obtain ⟨pass, crossed, vB⟩ := ctx
+  cases mode <;> cases position <;>
+    first
+      | exact trivial
+      | exact False.elim h
+      | (cases vB <;> exact False.elim h)
+      | (cases pass <;> exact False.elim h)
+      | (simp only [g1Transition, g1State] at h
+         split at h <;>
+           first
+             | exact False.elim h
+             | exact g1Complete_aRepair_dormant _ _ _ _ _ h)
+
+/-- Door-shaped form of predecessor closure.  `aRepairStart` is the designated
+external handoff, but its stationary row means the right disjunct is never
+needed in S8a. -/
+theorem g1Transition_aRepair_entry_closure (phase : Fin 1) (s : G1State)
+    (scan : Bool)
+    (h : G1ARepairControlMode (g1Transition phase s scan).2.1.mode) :
+    G1ARepairControlMode s.mode ∨ s.mode = .aRepairStart :=
+  Or.inl (g1Transition_aRepair_predecessor_closure phase s scan h)
+
+/-- Any hypothetical external predecessor has the unique designated door
+shape.  S8a separately proves that this stationary door never opens. -/
+theorem g1Transition_aRepair_unique_external_door (phase : Fin 1) (s : G1State)
+    (scan : Bool)
+    (hnext : G1ARepairControlMode (g1Transition phase s scan).2.1.mode)
+    (hprev : ¬ G1ARepairControlMode s.mode) : s.mode = .aRepairStart :=
+  (g1Transition_aRepair_entry_closure phase s scan hnext).resolve_left hprev
+
+/-- The designated external handoff does not enter the repair family. -/
+theorem g1Transition_aRepairStart_no_entry (phase : Fin 1)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    ¬ G1ARepairControlMode
+      (g1Transition phase
+        (g1State .aRepairStart position b0 b1 b2 ctx) scan).2.1.mode := by
+  rw [g1Transition_aRepairStart_idle]
+  exact g1ARepairStart_not_control
 
 end Pnp3.Internal.PsubsetPpoly.TM

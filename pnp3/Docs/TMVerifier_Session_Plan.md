@@ -2859,3 +2859,29 @@ Literal probes cover zero, one and two rounds (0, 45 and 106 steps), the
 edge, and a genuine initial unary route followed by two rounds.  Deferred:
 the A-repair sweep, result/combine computation, output write and acceptance.
 The real-initial literal uses 277 exact steps (171 for S5 plus 106 for S7).
+
+## S8a dormant reject-aware operand-A repair (2026-08-30)
+
+**Classification: infrastructure, not P-vs-NP mainline progress.**  S8a adds
+five finite modes and no state, runtime or advice field:
+`aRepairSeek`, `aRepairWrite`, `aRepairBack`, `aRepairHop`, `aRepairDone`.
+The existing `aRepairStart` row remains stationary.  No transition from a real
+S7 run enters the new family; predecessor closure and the idle handoff theorem
+make that dormancy explicit.  Caller-supplied runs begin directly in the
+reverse-read entry shape.
+
+The reverse table has four exact outcomes.  `spent` enters the four-cell
+`index` writer, `bof` stops at stationary `aRepairDone`, precisely the existing
+`G1RepairSkip` frames continue left, and `blank`, `cursor` or an undecodable
+reserved window enters the stable `reject` sink.  The generic pass costs
+`4*m + 13*s + 4*a + 4`; on the terminal operand-A layout this is
+`4*tag.units + 17*arg1 + 4*arg2 + 20`.
+
+The canonical caller-supplied capstone repairs all `arg1` spent frames and
+ends at head zero with tape exactly
+`encodeG1Frames r ++ [blank]`, state `aRepairDone`, and the complete context
+unchanged.  The field spelling separately pins the tag, all operand-B indices,
+the data region, output/finish/blank suffix, and zero remaining spent/cursor
+frames.  Literal probes cover false, true and `arg1 = 0` runs at 58, 58 and 24
+steps.  There is no activation, real-initial capstone, residual application,
+gate-result/combine step, output write or acceptance theorem.

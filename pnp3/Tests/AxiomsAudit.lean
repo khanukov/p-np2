@@ -39,6 +39,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOneAWalkKernel
 import Complexity.TMVerifier.TuringToolkit.GateOneAWalkInvariant
 import Complexity.TMVerifier.TuringToolkit.GateOneAWalkRound
 import Complexity.TMVerifier.TuringToolkit.GateOneAWalkDriver
+import Complexity.TMVerifier.TuringToolkit.GateOneARepair
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -1520,6 +1521,31 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_fin_restore
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_terminal_exact
 #print axioms Internal.PsubsetPpoly.TM.g1CS_runConfig_aRepairStart_idle
+
+-- S8a (2026-08-30): dormant reject-aware operand-A repair.  The walk handoff
+-- remains idle; all executions start from caller-supplied A-repair states and
+-- stop at the stationary local `aRepairDone` boundary.  No real-initial,
+-- result/combine/output or acceptance root is present.
+#print axioms Internal.PsubsetPpoly.TM.g1ARepairBackComplete_reserved
+#print axioms Internal.PsubsetPpoly.TM.g1ARepairBackComplete_forbidden
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aRepairSeek_p0_bad
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aRepairSeek_p0_reserved_bad
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aRepair_predecessor_closure
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aRepair_unique_external_door
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aRepairStart_no_entry
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_cycle_onList
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_frame_reject
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_frame_reject_idle
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_reserved_1101_reject
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_reserved_1101_reject_idle
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_pass_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_runConfig_aRepairDone_idle
+#print axioms Internal.PsubsetPpoly.TM.g1ARepairFrames_repaired
+#print axioms Internal.PsubsetPpoly.TM.g1ARepairCanonical_fields
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_canonical_exact
+#print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_false_repair_exact
+#print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_true_repair_exact
+#print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_zero_arg1_repair_exact
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

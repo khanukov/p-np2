@@ -502,7 +502,8 @@ theorem g1_bRet_rows :
 mode/frame pair completes into `bRoundStart`. -/
 theorem g1_bRoundStart_unreachable (mode : G1Mode) (frame : G1Frame) :
     g1Advance mode frame ≠ .bRoundStart := by
-  revert mode frame; decide
+  set_option maxRecDepth 4096 in
+    revert mode frame; decide
 
 /-! ## The installation route of a positive operand-2 index
 

@@ -1282,8 +1282,8 @@ scan.  Every non-forward target (the four dispatch modes, the round's five
 modes, the eleven non-forward walk modes, the sweep's five modes, the four
 pass-A operation latches, the dormant operand-A non-forward modes, the
 `readAStart` and `bOOB` handoffs and the `reject` sink) is stuck, and so are the
-four handoffs no row targets at all
-(`aInstallStart`, `aResultStart`, `readAResetStart`, `combineStart`). -/
+three handoffs no row targets at all
+(`aInstallStart`, `aResultStart`, `combineStart`). -/
 theorem g1Advance_range (mode : G1Mode) (frame : G1Frame) :
     G1ForwardMode (g1Advance mode frame) ∨
       g1Advance mode frame = .rewindStart ∨

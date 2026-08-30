@@ -1282,8 +1282,8 @@ scan.  Every non-forward target (the four dispatch modes, the round's five
 modes, the eleven non-forward walk modes, the sweep's five modes, the four
 pass-A operation latches, the dormant operand-A non-forward modes, the
 `readAStart` and `bOOB` handoffs and the `reject` sink) is stuck, and so are the
-three handoffs no row targets at all
-(`aInstallStart`, `readAResetStart`, `combineStart`). -/
+four handoffs no row targets at all
+(`aInstallStart`, `aResultStart`, `readAResetStart`, `combineStart`). -/
 theorem g1Advance_range (mode : G1Mode) (frame : G1Frame) :
     G1ForwardMode (g1Advance mode frame) ∨
       g1Advance mode frame = .rewindStart ∨
@@ -1292,9 +1292,9 @@ theorem g1Advance_range (mode : G1Mode) (frame : G1Frame) :
     revert mode frame; decide
 
 /-- **No frame-table row produces `readAStart`.**  The two former producers,
-`rTag1` and `rTag3` on `argSep`, now enter `readAResetStart`; apart from the
-stationary self-loop, the only external arrival is repair terminal
-`bRepairDone`. -/
+`rTag1` and `rTag3` on `argSep`, now enter `readAResetStart`.  At full-transition
+level its exact predecessors are repair terminals `bRepairDone` and
+`aResultStart`. -/
 theorem g1_readAStart_unreachable (mode : G1Mode) (frame : G1Frame) :
     g1Advance mode frame ≠ .readAStart := by
   set_option maxRecDepth 4096 in

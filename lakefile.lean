@@ -288,6 +288,12 @@ lean_lib PnP3 where
     -- and dormant terminal capstones stop at `aExh` or stationary
     -- cursor-free `aRepairStart`; first-successor OOB remains separate.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneAWalkDriver,
+    -- S8a (2026-08-30), dormant reject-aware operand-A repair control and
+    -- caller-supplied exact macros.  The five fresh modes repair `spent` back
+    -- to `index` and stop at stationary `aRepairDone`; malformed/reserved
+    -- windows reject.  `aRepairStart` remains idle, so no real-initial route,
+    -- result/combine/output or acceptance step is activated.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneARepair,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -460,6 +466,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMGateOneAWalkInvariantSurfaceTests,
     Glob.one `Tests.TMGateOneAWalkRoundSurfaceTests,
     Glob.one `Tests.TMGateOneAWalkDriverSurfaceTests,
+    Glob.one `Tests.TMGateOneARepairSurfaceTests,
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,
     Glob.one `Tests.TMGateOneReadBSurfaceTests,
     Glob.one `Tests.TMGateOneProbeInstallSurfaceTests,

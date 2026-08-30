@@ -15,39 +15,29 @@ run combine/output/acceptance.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
-
 open Pnp3.Internal.PsubsetPpoly.TM.FrameScan
-
 /-! ## Reject-aware scanner and rewrite-cycle instances -/
-
 /-- The single reverse-reading mode of the dormant A-repair scan. -/
 def G1ARepairScanMode : G1Mode → Prop
   | .aRepairSeek => True
   | _ => False
-
 theorem G1ARepairScanMode.eq {m : G1Mode} (h : G1ARepairScanMode m) :
     m = .aRepairSeek := by
   cases m <;> simp_all [G1ARepairScanMode]
-
 /-- Exact stop set: rewrite handoff, canonical terminal, or reject sink. -/
 def G1ARepairStop (mode : G1Mode) : Prop :=
   mode = .aRepairWrite ∨ mode = .aRepairDone ∨ mode = .reject
-
 def g1ARepairStopState (mode : G1Mode) (ctx : G1Ctx) : G1State :=
   match mode with
   | .aRepairWrite => g1ARepairWriteState ctx
   | .aRepairDone => g1ARepairDoneState ctx
   | _ => g1RejectState
-
 theorem g1ARepairStopState_write (ctx : G1Ctx) :
     g1ARepairStopState .aRepairWrite ctx = g1ARepairWriteState ctx := rfl
-
 theorem g1ARepairStopState_done (ctx : G1Ctx) :
     g1ARepairStopState .aRepairDone ctx = g1ARepairDoneState ctx := rfl
-
 theorem g1ARepairStopState_reject (ctx : G1Ctx) :
     g1ARepairStopState .reject ctx = g1RejectState := rfl
-
 /-- Concrete reverse scanner using the same decision function as control. -/
 def g1ARepairScanner : ReverseFrameScanner G1State G1Frame G1Mode G1Ctx where
   program := g1CS
@@ -121,9 +111,7 @@ def g1ARepairScanner : ReverseFrameScanner G1State G1Frame G1Mode G1Ctx where
             rw [show g1ARepairBackComplete scan b1 b2 b3 = G1Mode.aRepairSeek
               from hc] at hstop
             rcases hstop with h | h | h <;> exact absurd h (by decide)
-
 @[simp] theorem g1ARepairScanner_machine : g1ARepairScanner.machine = G1M := rfl
-
 /-- The dormant `spent ↦ index` rewrite cycle at the fresh A modes. -/
 def g1ARepairCycle : FrameRewriteCycle G1State G1Frame G1Mode G1Ctx where
   scanner := g1ARepairScanner
@@ -166,9 +154,7 @@ def g1ARepairCycle : FrameRewriteCycle G1State G1Frame G1Mode G1Ctx where
     g1Transition_aRepairBack g1CS.startPhase .p3 false false false x c
   hop_step := fun c x =>
     g1Transition_aRepairHop g1CS.startPhase .p0 false false false x c
-
 /-! ## Exact caller-supplied atoms -/
-
 theorem g1CS_aRepair_cycle_onList (n : Nat) (pre suffix : List G1Frame)
     (ctx : G1Ctx) (hpre : 0 < pre.length)
     (hsafe : 4 * pre.length + 4 < G1M.tapeLength n) :
@@ -180,7 +166,6 @@ theorem g1CS_aRepair_cycle_onList (n : Nat) (pre suffix : List G1Frame)
         (g1ListTape ((pre ++ G1Frame.index :: suffix).flatMap G1Frame.bits))
         .aRepairSeek .p3 false false false ctx :=
   g1ARepairCycle.rewriteCycleOnList n pre suffix ctx hpre hsafe
-
 theorem g1CS_aRepair_seek_and_repair (n : Nat)
     (pre skipped suffix : List G1Frame) (ctx : G1Ctx)
     (hpre : 0 < pre.length) (hskip : ∀ f ∈ skipped, G1RepairSkip f)

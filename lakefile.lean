@@ -126,8 +126,9 @@ lean_lib PnP3 where
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneResidual,
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneSemantics,
     -- GN-1 (2026-08-30), pure infrastructure only: the fixed multi-gate
-    -- record/program ABI, exact parsers, and sequential `G1Request.spec`
-    -- interpretation.  No machine, execution, clock, or acceptance layer.
+    -- record/program ABI, exact-image parsers, symbolic region extents, and
+    -- sequential `G1Request.spec`/`SLProgram.eval` correspondence.  No
+    -- machine, execution, clock, or acceptance layer.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateNEncoding,
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateNEncodingExamples,
     -- T2a, control layer: one zero-parameter finite control whose forward
@@ -476,8 +477,8 @@ lean_lib PnP3 where
     Glob.one `Tests.TMFrameScannerReverseSurfaceTests,
     Glob.one `Tests.TMFrameRewriteCycleSurfaceTests,
     Glob.one `Tests.TMGateOnePureSurfaceTests,
-    -- GN-1 (2026-08-30): exact wrappers for every theorem and `#check` pins
-    -- for definitions in the pure multi-gate encoding surface.
+    -- GN-1 (2026-08-30): 59 exact wrappers and definition `#check` pins for
+    -- the pure multi-gate encoding surface.
     Glob.one `Tests.TMGateNEncodingSurfaceTests,
     Glob.one `Tests.TMGateOneResidualSurfaceTests,
     Glob.one `Tests.TMGateOneControlSurfaceTests,

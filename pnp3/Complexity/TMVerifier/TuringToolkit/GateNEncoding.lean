@@ -203,6 +203,24 @@ def encodeGNFrames (r : GNProgram) : List G1Frame :=
 def encodeGN (r : GNProgram) : List Bool :=
   (encodeGNFrames r).flatMap G1Frame.bits
 
+/-- First frame of the reserved output-slot region. -/
+def gnOutputSlotsStart (r : GNProgram) : Nat := 1 + r.inputs.length
+
+/-- Number of reserved output-slot frames. -/
+def gnOutputSlotsLength (r : GNProgram) : Nat := r.program.gates.length
+
+/-- First frame of the gate-record region. -/
+def gnRecordsStart (r : GNProgram) : Nat :=
+  r.inputs.length + r.program.gates.length + 2
+
+/-- Number of frames occupied by all gate records. -/
+def gnRecordsLength (r : GNProgram) : Nat :=
+  (r.program.gates.map (gnRecordSize ∘ gnGateFields)).sum
+
+/-- Frame position of the final output cell's four-bit frame. -/
+def gnFinalOutputFrame (r : GNProgram) : Nat :=
+  r.inputs.length + r.program.gates.length + gnRecordsLength r + 3
+
 private theorem gnFieldRecordsFrames_length (marker : G1Frame)
     (fields : List GNField) :
     (gnFieldRecordsFrames marker fields).length = (fields.map gnRecordSize).sum := by
@@ -236,6 +254,40 @@ theorem gnRecordsFrames_length {n : Nat} (marker : G1Frame)
 @[simp] theorem encodeGN_length (r : GNProgram) :
     (encodeGN r).length = 4 * (encodeGNFrames r).length := by
   rw [encodeGN, G1Frame.flatMap_bits_length]
+
+theorem gnOutputSlots_extent (r : GNProgram) :
+    gnOutputSlotsStart r + gnOutputSlotsLength r =
+      r.inputs.length + r.program.gates.length + 1 := by
+  simp [gnOutputSlotsStart, gnOutputSlotsLength]
+  omega
+
+theorem gnRecords_extent (r : GNProgram) :
+    gnRecordsStart r + gnRecordsLength r =
+      r.inputs.length + r.program.gates.length + gnRecordsLength r + 2 := by
+  simp [gnRecordsStart]
+  omega
+
+theorem gnFinalOutputFrame_eq (r : GNProgram) :
+    gnFinalOutputFrame r = (encodeGNFrames r).length - 2 := by
+  simp [gnFinalOutputFrame, gnRecordsLength]
+
+/-- Both variable regions and the final-output frame lie within the frame word. -/
+theorem gnRegions_within_frames (r : GNProgram) :
+    gnOutputSlotsStart r + gnOutputSlotsLength r ≤ (encodeGNFrames r).length ∧
+      gnRecordsStart r + gnRecordsLength r ≤ (encodeGNFrames r).length ∧
+        gnFinalOutputFrame r < (encodeGNFrames r).length := by
+  simp [gnOutputSlotsStart, gnOutputSlotsLength, gnRecordsStart,
+    gnRecordsLength, gnFinalOutputFrame]
+  omega
+
+/-- Multiplying the frame extents by four gives in-bounds physical bit extents. -/
+theorem gnRegions_within_bits (r : GNProgram) :
+    4 * (gnOutputSlotsStart r + gnOutputSlotsLength r) ≤ (encodeGN r).length ∧
+      4 * (gnRecordsStart r + gnRecordsLength r) ≤ (encodeGN r).length ∧
+        4 * gnFinalOutputFrame r + 4 ≤ (encodeGN r).length := by
+  rw [encodeGN_length]
+  obtain ⟨hslots, hrecords, hfinal⟩ := gnRegions_within_frames r
+  omega
 
 def parseGNAssign : List G1Frame → List Bool × List G1Frame
   | .data b :: rest =>
@@ -359,6 +411,107 @@ private theorem parseGNRecords_encoded (marker : G1Frame) (fields : List GNField
       rw [ih G1Frame.bof]
       rfl
 
+private theorem parseGNAssign_exact (fs : List G1Frame) :
+    fs = (parseGNAssign fs).1.map G1Frame.data ++ (parseGNAssign fs).2 := by
+  induction fs with
+  | nil => rfl
+  | cons f fs ih =>
+      cases f with
+      | data b =>
+          simpa only [parseGNAssign, Prod.fst, Prod.snd, List.map_cons,
+            List.cons_append] using congrArg (List.cons (G1Frame.data b)) ih
+      | output b => cases b <;> rfl
+      | blank | bof | tag | index | separator | cursor | finish | argSep
+      | spent => rfl
+
+private theorem parseGNSlots_exact (fs : List G1Frame) :
+    fs = gnSlotFrames (parseGNSlots fs).1 ++ (parseGNSlots fs).2 := by
+  induction fs with
+  | nil => rfl
+  | cons f fs ih =>
+      cases f with
+      | output b => cases b with
+        | false =>
+            simp only [parseGNSlots]
+            calc
+              G1Frame.output false :: fs = .output false ::
+                  (gnSlotFrames (parseGNSlots fs).1 ++
+                    (parseGNSlots fs).2) := congrArg _ ih
+              _ = gnSlotFrames ((parseGNSlots fs).1 + 1) ++
+                  (parseGNSlots fs).2 := by
+                    simp [gnSlotFrames, List.replicate_succ]
+        | true => rfl
+      | data b => rfl
+      | blank | bof | tag | index | separator | cursor | finish | argSep
+      | spent => rfl
+
+private theorem parseGNRecordBody_eq_some {fs : List G1Frame}
+    {f : GNField} {rest : List G1Frame}
+    (h : parseGNRecordBody fs = some (f, rest)) :
+    fs = List.replicate f.1.units .tag ++ .argSep ::
+      (List.replicate f.2.1 .index ++ .argSep ::
+        (List.replicate f.2.2 .index ++ .finish :: rest)) := by
+  cases ht : parseG1Run .tag .argSep fs with
+  | none => simp [parseGNRecordBody, ht] at h
+  | some rt =>
+      rcases rt with ⟨units, afterTag⟩
+      cases htag : g1TagOfUnits? units with
+      | none => simp [parseGNRecordBody, ht, htag] at h
+      | some tag =>
+          cases h1 : parseG1Run .index .argSep afterTag with
+          | none => simp [parseGNRecordBody, ht, htag, h1] at h
+          | some r1 =>
+              rcases r1 with ⟨a1, after1⟩
+              cases h2 : parseG1Run .index .finish after1 with
+              | none => simp [parseGNRecordBody, ht, htag, h1, h2] at h
+              | some r2 =>
+                  rcases r2 with ⟨a2, after2⟩
+                  simp [parseGNRecordBody, ht, htag, h1, h2] at h
+                  rcases h with ⟨rfl, rfl⟩
+                  rw [parseG1Run_eq_some ht, parseG1Run_eq_some h1,
+                    parseG1Run_eq_some h2, g1TagOfUnits?_eq_some htag]
+
+private theorem parseGNRecord_eq_some {marker : G1Frame} {fs : List G1Frame}
+    {f : GNField} {rest : List G1Frame}
+    (h : parseGNRecord marker fs = some (f, rest)) :
+    fs = g1RecordFrames marker f ++ rest := by
+  cases fs with
+  | nil => simp [parseGNRecord] at h
+  | cons head tail =>
+      by_cases hm : head = marker
+      · subst head
+        simp [parseGNRecord] at h
+        rw [parseGNRecordBody_eq_some h]
+        simp [g1RecordFrames, List.append_assoc]
+      · simp [parseGNRecord, hm] at h
+
+private theorem parseGNRecords_eq_some {marker : G1Frame} {k : Nat}
+    {fs : List G1Frame} {fields : List GNField} {rest : List G1Frame}
+    (h : parseGNRecords marker k fs = some (fields, rest)) :
+    fields.length = k ∧ fs = gnFieldRecordsFrames marker fields ++ rest := by
+  induction k generalizing marker fs fields rest with
+  | zero =>
+      simp [parseGNRecords] at h
+      rcases h with ⟨rfl, rfl⟩
+      exact ⟨rfl, rfl⟩
+  | succ k ih =>
+      simp only [parseGNRecords] at h
+      cases hr : parseGNRecord marker fs with
+      | none => simp [hr] at h
+      | some rr =>
+          rcases rr with ⟨f, afterRecord⟩
+          cases hrs : parseGNRecords .bof k afterRecord with
+          | none => simp [hr, hrs] at h
+          | some rs =>
+              rcases rs with ⟨tail, afterRecords⟩
+              simp [hr, hrs] at h
+              rcases h with ⟨rfl, rfl⟩
+              obtain ⟨hlen, hexact⟩ := ih hrs
+              constructor
+              · simp [hlen]
+              · rw [parseGNRecord_eq_some hr, hexact]
+                simp [gnFieldRecordsFrames, List.append_assoc]
+
 @[simp] theorem gnGateOfFields?_gnGateFields {n : Nat} (g : SLGate n) :
     gnGateOfFields? n (gnGateFields g) = some g := by
   cases g with
@@ -444,6 +597,24 @@ theorem gnGateOfFields?_isSome_iff (n : Nat) (f : GNField) :
   · rintro ⟨g, rfl⟩
     simp
 
+private theorem gnGatesOfFields?_eq_some {n : Nat} {fields : List GNField}
+    {gates : List (SLGate n)} (h : gnGatesOfFields? n fields = some gates) :
+    fields = gates.map gnGateFields := by
+  induction fields generalizing gates with
+  | nil => simp [gnGatesOfFields?] at h; subst gates; rfl
+  | cons f fs ih =>
+      simp only [gnGatesOfFields?] at h
+      cases hg : gnGateOfFields? n f with
+      | none => simp [hg] at h
+      | some g =>
+          cases hgs : gnGatesOfFields? n fs with
+          | none => simp [hg, hgs] at h
+          | some gs =>
+              simp [hg, hgs] at h
+              subst gates
+              rw [gnGateOfFields?_eq_some hg, ih hgs]
+              rfl
+
 private theorem slots_head_ne_data (m : Nat) (rest : List G1Frame) (b : Bool) :
     (gnSlotFrames m ++ G1Frame.separator :: rest).head? ≠ some (.data b) := by
   cases m <;> simp [gnSlotFrames, List.replicate_succ]
@@ -472,9 +643,130 @@ private theorem slots_head_ne_data (m : Nat) (rest : List G1Frame) (b : Bool) :
   rw [parseGNRecords_encoded]
   simp [gnProgramOf?, gnGatesOfFields?_map]
 
+/-- A successful frame parse determines the entire canonical frame image. -/
+theorem decodeGNFrameList?_eq_some {fs : List G1Frame} {r : GNProgram}
+    (h : decodeGNFrameList? fs = some r) : fs = encodeGNFrames r := by
+  rcases fs with _ | ⟨frame, originalRest⟩
+  · simp [decodeGNFrameList?] at h
+  cases frame with
+  | bof =>
+      simp only [decodeGNFrameList?] at h
+      cases ha : parseGNAssign originalRest with
+      | mk inputs afterInputs =>
+          cases hs : parseGNSlots afterInputs with
+          | mk slots afterSlots =>
+              rcases afterSlots with _ | ⟨head, recordFrames⟩
+              · simp [ha, hs] at h
+              cases head with
+              | separator =>
+                  simp [ha, hs] at h
+                  unfold decodeGNTail? at h
+                  cases hr : parseGNRecords .cursor slots recordFrames with
+                  | none => simp [hr] at h
+                  | some result =>
+                      rcases result with ⟨fields, tail⟩
+                      by_cases ht : tail = gnCanonicalTail
+                      · simp [hr, ht] at h
+                        cases hg : gnGatesOfFields? inputs.length fields with
+                        | none => simp [gnProgramOf?, hg] at h
+                        | some gates =>
+                            simp [gnProgramOf?, hg] at h
+                            subst r
+                            obtain ⟨hlen, hrecords⟩ := parseGNRecords_eq_some hr
+                            have hfields := gnGatesOfFields?_eq_some hg
+                            have hassign := parseGNAssign_exact originalRest
+                            rw [ha] at hassign
+                            have hslots := parseGNSlots_exact afterInputs
+                            rw [hs] at hslots
+                            have hslotCount : slots = gates.length := by
+                              rw [← hlen, hfields]
+                              simp
+                            calc
+                              G1Frame.bof :: originalRest = .bof ::
+                                  (inputs.map .data ++ afterInputs) := by rw [hassign]
+                              _ = .bof :: (inputs.map .data ++
+                                  (gnSlotFrames slots ++ .separator :: recordFrames)) := by
+                                    rw [hslots]
+                              _ = encodeGNFrames
+                                  ⟨inputs, ⟨gates⟩⟩ := by
+                                    rw [hslotCount, hrecords, ht, hfields]
+                                    simp [encodeGNFrames, gnAssignFrames,
+                                      gnRecordsFrames, gnCanonicalTail,
+                                      List.append_assoc]
+                      · simp [hr, ht] at h
+              | data b | output b => cases b <;> simp [ha, hs] at h
+              | blank | bof | tag | index | cursor | finish | argSep | spent =>
+                  simp [ha, hs] at h
+  | data b | output b => cases b <;> simp [decodeGNFrameList?] at h
+  | blank | tag | index | separator | cursor | finish | argSep | spent =>
+      simp [decodeGNFrameList?] at h
+
+theorem decodeGNFrameList?_iff (fs : List G1Frame) (r : GNProgram) :
+    decodeGNFrameList? fs = some r ↔ fs = encodeGNFrames r := by
+  constructor
+  · exact decodeGNFrameList?_eq_some
+  · rintro rfl
+    exact decodeGNFrameList?_encodeGNFrames r
+
 @[simp] theorem decodeGN?_encodeGN (r : GNProgram) :
     decodeGN? (encodeGN r) = some r := by
   simp [decodeGN?, encodeGN]
+
+private theorem decodeG1Frame?_eq_some_gn {bits : List Bool} {f : G1Frame}
+    (h : decodeG1Frame? bits = some f) : bits = f.bits := by
+  rcases bits with _ | ⟨a, bits⟩
+  · simp [decodeG1Frame?] at h
+  rcases bits with _ | ⟨b, bits⟩
+  · simp [decodeG1Frame?] at h
+  rcases bits with _ | ⟨c, bits⟩
+  · simp [decodeG1Frame?] at h
+  rcases bits with _ | ⟨d, bits⟩
+  · simp [decodeG1Frame?] at h
+  rcases bits with _ | ⟨e, rest⟩
+  · cases a <;> cases b <;> cases c <;> cases d <;>
+      simp [decodeG1Frame?] at h <;> subst f <;> rfl
+  · simp [decodeG1Frame?] at h
+
+private theorem decodeG1Frames?_eq_some_gn {bits : List Bool}
+    {fs : List G1Frame} (h : decodeG1Frames? bits = some fs) :
+    bits = fs.flatMap G1Frame.bits := by
+  match bits with
+  | [] => simp [decodeG1Frames?] at h; subst fs; rfl
+  | [_] => simp [decodeG1Frames?] at h
+  | [_, _] => simp [decodeG1Frames?] at h
+  | [_, _, _] => simp [decodeG1Frames?] at h
+  | a :: b :: c :: d :: rest =>
+      simp only [decodeG1Frames?] at h
+      cases hf : decodeG1Frame? [a, b, c, d] with
+      | none => simp [hf] at h
+      | some frame =>
+          cases hrs : decodeG1Frames? rest with
+          | none => simp [hf, hrs] at h
+          | some tail =>
+              simp [hf, hrs] at h
+              subst fs
+              rw [decodeG1Frames?_eq_some_gn hrs]
+              simp only [List.flatMap_cons]
+              rw [← decodeG1Frame?_eq_some_gn hf]
+              rfl
+
+/-- A successful physical parse determines the entire canonical bit image. -/
+theorem decodeGN?_eq_some {bits : List Bool} {r : GNProgram}
+    (h : decodeGN? bits = some r) : bits = encodeGN r := by
+  unfold decodeGN? at h
+  cases hf : decodeG1Frames? bits with
+  | none => simp [hf] at h
+  | some fs =>
+      simp [hf] at h
+      rw [decodeG1Frames?_eq_some_gn hf, decodeGNFrameList?_eq_some h]
+      rfl
+
+theorem decodeGN?_iff (bits : List Bool) (r : GNProgram) :
+    decodeGN? bits = some r ↔ bits = encodeGN r := by
+  constructor
+  · exact decodeGN?_eq_some
+  · rintro rfl
+    exact decodeGN?_encodeGN r
 
 theorem encodeGN_injective : Function.Injective encodeGN := by
   intro r s h
@@ -507,6 +799,27 @@ theorem decodeGN?_reserved_aligned (pre : List G1Frame) {b0 b1 b2 b3 : Bool}
 
 /-! ## Pure sequential semantics -/
 
+theorem gnFieldEval_gnGateFields {n : Nat} (inputs : List Bool)
+    (hinputs : inputs.length = n) (gateVals : List Bool) (g : SLGate n) :
+    gnFieldEval (gnGateFields g) (inputs ++ gateVals) =
+      g.compute (fun i => inputs[i.val]'(by omega)) gateVals := by
+  subst n
+  cases g with
+  | input i =>
+      simp [gnFieldEval, gnFieldRequest, gnGateFields, G1Request.spec,
+        SLGate.compute, List.getElem?_append_left i.isLt]
+  | const b => cases b <;> rfl
+  | notGate k => simp [gnFieldEval, gnFieldRequest, gnGateFields,
+      G1Request.spec, SLGate.compute, List.getElem?_append_right]
+  | andGate k l =>
+      simp [gnFieldEval, gnFieldRequest, gnGateFields, G1Request.spec,
+        SLGate.compute, List.getElem?_append_right]
+      cases gateVals[k]? <;> cases gateVals[l]? <;> rfl
+  | orGate k l =>
+      simp [gnFieldEval, gnFieldRequest, gnGateFields, G1Request.spec,
+        SLGate.compute, List.getElem?_append_right]
+      cases gateVals[k]? <;> cases gateVals[l]? <;> rfl
+
 /-- Evaluate serialized fields left-to-right, appending each result to the
 single current value environment. -/
 def evalGNFields : List GNField → List Bool → Option (List Bool)
@@ -515,11 +828,52 @@ def evalGNFields : List GNField → List Bool → Option (List Bool)
       let value ← gnFieldEval f vals
       evalGNFields rest (vals ++ [value])
 
+theorem evalGNFields_gates {n : Nat} (inputs : List Bool)
+    (hinputs : inputs.length = n) (gates : List (SLGate n))
+    (gateVals : List Bool) :
+    evalGNFields (gates.map gnGateFields) (inputs ++ gateVals) =
+      (SLProgram.evalAux (fun i => inputs[i.val]'(by omega)) gates gateVals).map
+        (fun out => inputs ++ out) := by
+  induction gates generalizing gateVals with
+  | nil => simp [evalGNFields, SLProgram.evalAux]
+  | cons g gates ih =>
+      simp only [List.map_cons, evalGNFields, SLProgram.evalAux_cons]
+      rw [gnFieldEval_gnGateFields inputs hinputs gateVals g]
+      cases g.compute (fun i => inputs[i.val]'(by omega)) gateVals with
+      | none => simp
+      | some value =>
+          simp only [Option.bind_some]
+          change evalGNFields (gates.map gnGateFields)
+              ((inputs ++ gateVals) ++ [value]) =
+            (SLProgram.evalAux (fun i => inputs[i.val]'(by omega)) gates
+              (gateVals ++ [value])).map (fun out => inputs ++ out)
+          rw [List.append_assoc, ih]
+
 def evalGNProgramAll (r : GNProgram) : Option (List Bool) :=
   evalGNFields (r.program.gates.map gnGateFields) r.inputs
 
+/-- The environment evaluator retains the input prefix and appends exactly the
+same gate-result list produced by `SLProgram.evalAll`. -/
+theorem evalGNProgramAll_eq_SLProgram_evalAll (r : GNProgram) :
+    evalGNProgramAll r =
+      (r.program.evalAll (fun i => r.inputs[i.val]'(by omega))).map
+        (fun gateVals => r.inputs ++ gateVals) := by
+  rw [evalGNProgramAll]
+  simpa using evalGNFields_gates r.inputs rfl r.program.gates []
+
 def evalGNProgram (r : GNProgram) : Option Bool :=
-  (evalGNProgramAll r).bind List.getLast?
+  (evalGNProgramAll r).bind
+    (fun vals => (vals.drop r.inputs.length).getLast?)
+
+/-- Final-result semantics agrees exactly with the existing straight-line
+program evaluator, including `none` for the empty gate list. -/
+theorem evalGNProgram_eq_SLProgram_eval (r : GNProgram) :
+    evalGNProgram r = r.program.eval (fun i => r.inputs[i.val]'(by omega)) := by
+  rw [evalGNProgram, evalGNProgramAll_eq_SLProgram_evalAll]
+  unfold SLProgram.eval
+  cases r.program.evalAll (fun i => r.inputs[i.val]'(by omega)) with
+  | none => simp
+  | some gateVals => simp
 
 theorem evalGNFields_length {fields : List GNField} {vals out : List Bool}
     (h : evalGNFields fields vals = some out) :

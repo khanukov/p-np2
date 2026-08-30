@@ -3040,6 +3040,17 @@ absolute positions in the initial current-value environment; prior-gate index
 positions at or beyond `n`, prior-gate positions below `n`, noncanonical
 constant/unused fields, malformed delimiters and markers, record/slot count
 mismatches, trailing frames, and aligned reserved codes.
+The exact-image theorems now state both converses: a successful frame parse
+is literally `encodeGNFrames r`, and a successful physical parse is literally
+`encodeGN r`.  Thus the slot/record mismatch and malformed-tail probes are
+instances of a complete canonical-image contract, not only isolated tests.
+
+For `n = inputs.length`, `m = gates.length`, and
+`S = (gates.map (gnRecordSize ∘ gnGateFields)).sum`, the output-slot region
+starts at frame `1+n` and has length `m`; records start at frame `n+m+2` and
+have length `S`; the final-output frame is `n+m+S+3`, equivalently two frames
+before the total frame extent `n+m+S+5`.  The public contracts also lift all
+three bounds through the fixed factor four to physical bit extents.
 
 Pure record interpretation constructs the current `G1Request` literally and
 uses `G1Request.spec`.  Thus an input record means `vals[arg1]?`: it selects
@@ -3048,11 +3059,16 @@ external input object.  Sequential evaluation begins with the serialized
 input-value list and appends each successful record result.  Forward or
 otherwise unavailable operands therefore yield `none` through the existing
 partial-index semantics.
+`evalGNProgramAll` deliberately retains this complete environment, including
+the input prefix.  `evalGNProgram` selects only from the gate-result suffix and
+is proved exactly equal to `SLProgram.eval`; in particular the zero-gate
+program with input environment `[true]` has full environment `some [true]`
+but final result `none`.
 
 The named nonvacuous capstone serializes one true input and two gates,
 `[input 0, notGate 0]`.  Its second record carries absolute index `1`; the
 whole word has 21 frames / 84 cells, both records decode exactly, sequential
 evaluation produces `[true, true, false]`, and the final result is
-`some false`.  The source, named examples, exact-wrapper surface, and all 42
+`some false`.  The source, named examples, exact-wrapper surface, and all 59
 direct theorem roots are registered in `lakefile.lean` and
 `Tests/AxiomsAudit.lean`.

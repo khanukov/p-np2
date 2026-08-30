@@ -52,6 +52,7 @@ import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekMutationDriverExamples
 import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekTerminalExamples
 import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekSemanticsExamples
 import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekTerminalControl
+import Complexity.TMVerifier.TuringToolkit.GateNEncodingExamples
 
 /-!
   pnp3/Tests/AxiomsAudit.lean
@@ -260,6 +261,69 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1Request.getElem?_isSome_iff
 #print axioms Internal.PsubsetPpoly.TM.G1Request.spec_isSome_iff
 #print axioms Internal.PsubsetPpoly.TM.G1Request.g1_example_canonical_oob_not_wellFormed
+
+-- GN-1 (2026-08-30), pure infrastructure: the fixed 13-code-compatible
+-- multi-gate record/program ABI, exact parsers, and current-value semantics.
+-- Deliberately no machine, transition, execution, clock, or acceptance root.
+#print axioms Internal.PsubsetPpoly.TM.gnGateFields_input
+#print axioms Internal.PsubsetPpoly.TM.gnGateFields_const
+#print axioms Internal.PsubsetPpoly.TM.gnGateFields_not
+#print axioms Internal.PsubsetPpoly.TM.gnGateFields_and
+#print axioms Internal.PsubsetPpoly.TM.gnGateFields_or
+#print axioms Internal.PsubsetPpoly.TM.gnFieldEval_input
+#print axioms Internal.PsubsetPpoly.TM.gnFieldEval_const
+#print axioms Internal.PsubsetPpoly.TM.gnFieldEval_not
+#print axioms Internal.PsubsetPpoly.TM.gnFieldEval_and
+#print axioms Internal.PsubsetPpoly.TM.gnFieldEval_or
+#print axioms Internal.PsubsetPpoly.TM.gnFieldEval_isSome_iff
+#print axioms Internal.PsubsetPpoly.TM.g1RecordFrames_length
+#print axioms Internal.PsubsetPpoly.TM.encodeGNRecord_length
+#print axioms Internal.PsubsetPpoly.TM.decodeGNRecordFrames?_encoded
+#print axioms Internal.PsubsetPpoly.TM.decodeGNRecord?_encoded
+#print axioms Internal.PsubsetPpoly.TM.encodeGNRecord_injective
+#print axioms Internal.PsubsetPpoly.TM.gnAssignFrames_length
+#print axioms Internal.PsubsetPpoly.TM.gnSlotFrames_length
+#print axioms Internal.PsubsetPpoly.TM.gnRecordsFrames_length
+#print axioms Internal.PsubsetPpoly.TM.encodeGNFrames_length
+#print axioms Internal.PsubsetPpoly.TM.encodeGN_length
+#print axioms Internal.PsubsetPpoly.TM.gnOutputSlots_extent
+#print axioms Internal.PsubsetPpoly.TM.gnRecords_extent
+#print axioms Internal.PsubsetPpoly.TM.gnFinalOutputFrame_eq
+#print axioms Internal.PsubsetPpoly.TM.gnRegions_within_frames
+#print axioms Internal.PsubsetPpoly.TM.gnRegions_within_bits
+#print axioms Internal.PsubsetPpoly.TM.gnGateOfFields?_gnGateFields
+#print axioms Internal.PsubsetPpoly.TM.gnGateFields_canonical
+#print axioms Internal.PsubsetPpoly.TM.gnGateOfFields?_eq_some
+#print axioms Internal.PsubsetPpoly.TM.gnGateOfFields?_isSome_iff
+#print axioms Internal.PsubsetPpoly.TM.decodeGNFrameList?_encodeGNFrames
+#print axioms Internal.PsubsetPpoly.TM.decodeGNFrameList?_eq_some
+#print axioms Internal.PsubsetPpoly.TM.decodeGNFrameList?_iff
+#print axioms Internal.PsubsetPpoly.TM.decodeGN?_encodeGN
+#print axioms Internal.PsubsetPpoly.TM.decodeGN?_eq_some
+#print axioms Internal.PsubsetPpoly.TM.decodeGN?_iff
+#print axioms Internal.PsubsetPpoly.TM.encodeGN_injective
+#print axioms Internal.PsubsetPpoly.TM.decodeGN?_reserved_aligned
+#print axioms Internal.PsubsetPpoly.TM.gnFieldEval_gnGateFields
+#print axioms Internal.PsubsetPpoly.TM.evalGNFields_gates
+#print axioms Internal.PsubsetPpoly.TM.evalGNProgramAll_eq_SLProgram_evalAll
+#print axioms Internal.PsubsetPpoly.TM.evalGNProgram_eq_SLProgram_eval
+#print axioms Internal.PsubsetPpoly.TM.evalGNFields_length
+#print axioms Internal.PsubsetPpoly.TM.GNEncodingExamples.capstone_frames_literal
+#print axioms Internal.PsubsetPpoly.TM.GNEncodingExamples.capstone_counts
+#print axioms Internal.PsubsetPpoly.TM.GNEncodingExamples.capstone_records_decode
+#print axioms Internal.PsubsetPpoly.TM.GNEncodingExamples.capstone_decode_and_eval
+#print axioms Internal.PsubsetPpoly.TM.GNEncodingExamples.capstone_eval_all
+#print axioms Internal.PsubsetPpoly.TM.GNEncodingExamples.empty_program_eval
+#print axioms Internal.PsubsetPpoly.TM.GNEncodingExamples.empty_program_eval_all
+#print axioms Internal.PsubsetPpoly.TM.GNEncodingExamples.reject_wrong_marker
+#print axioms Internal.PsubsetPpoly.TM.GNEncodingExamples.reject_slot_record_mismatch_frames
+#print axioms Internal.PsubsetPpoly.TM.GNEncodingExamples.reject_slot_record_mismatch
+#print axioms Internal.PsubsetPpoly.TM.GNEncodingExamples.reject_bad_tag_run
+#print axioms Internal.PsubsetPpoly.TM.GNEncodingExamples.reject_invalid_input_index
+#print axioms Internal.PsubsetPpoly.TM.GNEncodingExamples.reject_prior_index_below_width
+#print axioms Internal.PsubsetPpoly.TM.GNEncodingExamples.reject_trailing_frame
+#print axioms Internal.PsubsetPpoly.TM.GNEncodingExamples.reject_trailing_frame_frames
+#print axioms Internal.PsubsetPpoly.TM.GNEncodingExamples.reject_reserved_mid
 
 -- S1a, pure layer: the four pass-A residual operations of operand 1 and the
 -- bridge from `(tag, operand-2 value, operand-1 value)` to `G1Request.spec`.

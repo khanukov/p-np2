@@ -2697,7 +2697,7 @@ skip class (`spent`, `argSep`, `index`, `separator`, `data _`) to the cursor,
 and `aTurnFin` walks four cells left into the Boolean-selected final writer.
 That writer replaces the designated `cursor` by `data ctx.vB`, preserves the
 complete context including its residual view, and arrives just after the
-restored frame at stationary `aRepairStart`.  The generic theorem makes no
+restored frame at the exact `aRepairStart` boundary.  The generic theorem makes no
 cursor-absence claim about its parameterized `pre` or `suffix` regions.
 
 The existing reject-aware reverse seek is unchanged: malformed, reserved and
@@ -2713,11 +2713,11 @@ wrappers for all 11 new source theorems, definition-only declaration probes,
 literal false/true final-writer runs and a literal 16-step
 `aExh → aRepairStart` run.  `AxiomsAudit` prints the same 11 direct roots.
 
-This slice remains a caller-supplied dormant continuation.  S4 below reaches
+This slice was introduced as a caller-supplied dormant continuation.  S4 below reaches
 the post-writer `aSeekOut .p3` boundary from `G1M.initialConfig` but executes no
-seek, mark, iteration, terminal or repair macro.  `aRepairStart` still executes
-no repair sweep.  There is no driver, A-repair, result/combine/output row,
-acceptance theorem or semantic claim in S3b2b.
+seek, mark, iteration, terminal or repair macro.  S8b now activates
+`aRepairStart`; there is still no result/combine/output row, acceptance theorem
+or semantic claim in S3b2b itself.
 
 ## S4 live operand-A cursor installation (2026-08-29)
 
@@ -2849,28 +2849,30 @@ With data through slot `arg1`, the full exhaustion driver runs all `arg1`
 normal rounds and appends the S6 seek to exact local `aExh`; this includes the
 nonvacuous `arg1 = 0` case (zero rounds followed by the 12-step seek when
 `arg2 = 0`).  The S3b2b terminal is composed too: it returns from `aExh` to the
-cursor, restores `vals[arg1]`, removes the cursor and stops at stationary
-`aRepairStart` on named cursor-free `g1AWalkDoneFrames`.  A distinct theorem
+cursor, restores `vals[arg1]`, removes the cursor and stops exactly at the live
+`aRepairStart` boundary on named cursor-free `g1AWalkDoneFrames`.  A distinct theorem
 covers the first missing successor, appending S6's data-OOB round and stopping
 at `bOOB` rather than conflating it with operand-index exhaustion.
 
 Literal probes cover zero, one and two rounds (0, 45 and 106 steps), the
 134-step two-round exhaustion driver, the 12-step zero-operand exhaustion
-edge, and a genuine initial unary route followed by two rounds.  Deferred:
-the A-repair sweep, result/combine computation, output write and acceptance.
+edge, and a genuine initial unary route followed by two rounds.  S8b supplies
+the formerly deferred A-repair sweep; result/combine computation, output write
+and acceptance remain deferred.
 The real-initial literal uses 277 exact steps (171 for S5 plus 106 for S7).
 
-## S8a dormant reject-aware operand-A repair (2026-08-30)
+## S8b live operand-A repair activation and closure (2026-08-30)
 
-**Classification: infrastructure, not P-vs-NP mainline progress.**  S8a adds
-five finite modes and no state, runtime or advice field:
+**Classification: infrastructure, not P-vs-NP mainline progress.**  S8b
+activates S8a's five finite modes without adding a mode, state, runtime or
+advice field:
 `aRepairSeek`, `aRepairWrite`, `aRepairBack`, `aRepairHop`, `aRepairDone`.
 All five patterns are in `G1ForwardMode`'s `False` branch, so the generic
-forward scanner cannot accept them.
-The existing `aRepairStart` row remains stationary.  No transition from a real
-S7 run enters the new family; predecessor closure and the idle handoff theorem
-make that dormancy explicit.  Caller-supplied runs begin directly in the
-reverse-read entry shape.
+forward scanner cannot accept them.  The sole semantic-table switch changes
+`aRepairStart` from a stationary self-loop to a tape/context-preserving left
+move into aligned `aRepairSeek .p3`.  Exact executed predecessor closure says
+that an external repair-family successor comes iff its predecessor is this
+unique door.
 
 The reverse table has four exact outcomes.  `spent` enters the four-cell
 `index` writer, `bof` stops at stationary `aRepairDone`, precisely the existing
@@ -2879,11 +2881,27 @@ reserved window enters the stable `reject` sink.  The generic pass costs
 `4*m + 13*s + 4*a + 4`; on the terminal operand-A layout this is
 `4*tag.units + 17*arg1 + 4*arg2 + 20`.
 
-The canonical caller-supplied capstone repairs all `arg1` spent frames and
-ends at head zero with tape exactly
+The canonical S8a sweep still costs
+`4*tag.units + 17*arg1 + 4*arg2 + 20`; live activation adds exactly one step.
+Composing S7 normal rounds, exhaustion, terminal cleanup, activation and repair
+from `Σᴬ(0)` gives the exact local total
+
+`8*arg1^2 + (8*arg2 + 70)*arg1 + 4*tag.units + 12*arg2 + 57`.
+
+The dependency-closed capstone repairs all `arg1` spent frames and ends at
+head zero with tape exactly
 `encodeG1Frames r ++ [blank]`, state `aRepairDone`, and the complete context
-unchanged.  The field spelling separately pins the tag, all operand-B indices,
-the data region, output/finish/blank suffix, and zero remaining spent/cursor
-frames.  Literal probes cover false, true and `arg1 = 0` runs at 58, 58 and 24
-steps.  There is no activation, real-initial capstone, residual application,
-gate-result/combine step, output write or acceptance theorem.
+unchanged: `ctx.res = g1Residual tag operandB` and `ctx.vB = operandA`.  Endpoint
+projections pin zero remaining spent/cursor frames and separate `aRepairDone`
+from `readAStart`, `combineStart`, `accept`, `reject` and `bOOB`.  The done row
+is stationary for arbitrary extra budget, so no result/combine/output/acceptance
+transition runs.
+
+Named capstones start from genuine unary and successful-binary
+`G1M.initialConfig` routes, including `arg1 = 0`.  Both totals are bounded by
+the concrete quadratic
+`1024*(tag.units + arg1 + arg2 + vals.length + 6)^2`, itself below the unchanged
+`g1Clock`.  First-missing-successor execution remains forever at the separate
+`bOOB` configuration and is proved unequal to canonical repair done.  Literal
+real-initial false/true/zero representatives take exactly 404, 404 and 192
+steps; the original caller-supplied S8a probes remain at 58, 58 and 24 steps.

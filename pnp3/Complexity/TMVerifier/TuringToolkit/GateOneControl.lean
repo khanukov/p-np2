@@ -300,7 +300,7 @@ exactly these twelve.  The live machine enters them only through
 installation atoms reached through the live S4 entry.  `aSeekOut`/`aSeekIn`,
 `aDec`, `aFwd`, `aTurn` and the two restore writers close its dormant normal round.
 The terminal-only continuation is `aExh`/`aRet`, `aTurnFin`, the two final
-restore writers and the stationary `aRepairStart` handoff.  S4 stops at the
+restore writers and the live `aRepairStart` handoff.  S4 stops at the
 post-writer `aSeekOut .p3` boundary and executes none of these continuation rows.
 
 `combineStart` and `bOOB` remain local idle/stable boundaries; `readAStart` is
@@ -340,11 +340,11 @@ inductive G1Mode
   -- dormant normal operand-A walk and its local exhaustion boundary
   | aSeekOut | aSeekIn | aDec | aFwd | aTurn | aExh
   | aRestoreFalse | aRestoreTrue
-  -- dormant operand-A terminal continuation and stationary repair handoff
+  -- operand-A terminal continuation and live repair handoff
   | aRet | aTurnFin
   | aFinFalse | aFinTrue
   | aRepairStart
-  -- dormant operand-A repair control; no row enters it from aRepairStart
+  -- operand-A repair control, entered only from aRepairStart
   | aRepairSeek | aRepairWrite | aRepairBack | aRepairHop | aRepairDone
   | readAStart | combineStart | readAResetStart | bOOB
   | accept | reject
@@ -564,11 +564,11 @@ theorem g1AFinMode_ne_restore (b b' : Bool) :
     g1AFinMode b ≠ g1ARestoreMode b' := by
   cases b <;> cases b' <;> decide
 
-/-- The stationary local handoff after terminal cursor cleanup. -/
+/-- The exact live repair-entry handoff after terminal cursor cleanup. -/
 def g1ARepairStartState (ctx : G1Ctx) : G1State :=
   g1State .aRepairStart .p0 false false false ctx
 
-/-- Caller-supplied reverse-scan entry of the dormant operand-A repair. -/
+/-- Aligned reverse-scan entry of the operand-A repair. -/
 def g1ARepairSeekState (ctx : G1Ctx) : G1State :=
   g1State .aRepairSeek .p3 false false false ctx
 
@@ -978,7 +978,7 @@ operation latches (`aOpInput`, `aOpNot`, `aOpAnd`, `aOpOr`), the five remaining
 handoffs (`aInstallStart`, `readAStart`, `combineStart`, `readAResetStart`,
 `bOOB`) and the two sinks are not.  The dormant `aInsSeek`/`aProbe`/`aFwd`/
 `aExh`/`aRet` modes are forward; its latches, writer, reverse seeks, mark,
-turns, restore writers and stationary `aRepairStart` are not.  All five
+turns, restore writers and live `aRepairStart` are not.  All five
 `aRepair*` patterns are in the `False` branch, so the generic forward scanner
 cannot accept them.  The pass-A anchor read
 `aBof` and its counters `aTag0 … aTag5` *are* forward modes and fall through to
@@ -1082,7 +1082,7 @@ theorem g1Complete_aWalk_reserved (mode : G1Mode) :
       g1Complete mode true true true true = .reject :=
   ⟨rfl, rfl, rfl⟩
 
-/-- Exactly the five dormant operand-A repair modes. -/
+/-- Exactly the five operand-A repair modes after the live entry door. -/
 def G1ARepairControlMode : G1Mode → Prop
   | .aRepairSeek | .aRepairWrite | .aRepairBack | .aRepairHop | .aRepairDone => True
   | _ => False
@@ -1090,19 +1090,21 @@ def G1ARepairControlMode : G1Mode → Prop
 instance : DecidablePred G1ARepairControlMode := fun mode => by
   cases mode <;> first | exact isTrue trivial | exact isFalse id
 
-/-- No forward frame row enters the dormant A-repair family. -/
-theorem g1Advance_aRepair_dormant (mode : G1Mode) (frame : G1Frame) :
+/-- No decoded forward-frame row enters the A-repair family.  Its sole external
+entry is the separate `aRepairStart` transition row. -/
+theorem g1Advance_aRepair_predecessor_closure (mode : G1Mode) (frame : G1Frame) :
     G1ARepairControlMode (g1Advance mode frame) → G1ARepairControlMode mode := by
   revert mode frame; decide
 
 /-- Nor can a completed raw window divert external control into A-repair. -/
-theorem g1Complete_aRepair_dormant (mode : G1Mode) (b0 b1 b2 b3 : Bool) :
+theorem g1Complete_aRepair_predecessor_closure (mode : G1Mode)
+    (b0 b1 b2 b3 : Bool) :
     G1ARepairControlMode (g1Complete mode b0 b1 b2 b3) →
       G1ARepairControlMode mode := by
   unfold g1Complete
   cases decodeG1Frame? [b0, b1, b2, b3] with
   | none => exact fun h => False.elim h
-  | some frame => exact g1Advance_aRepair_dormant mode frame
+  | some frame => exact g1Advance_aRepair_predecessor_closure mode frame
 
 theorem g1ARepairStart_not_control :
     ¬ G1ARepairControlMode .aRepairStart := id
@@ -1919,9 +1921,8 @@ def g1Transition (_phase : Fin 1) (s : G1State) (scan : Bool) :
       if s.ctx.pass then (0, g1CombineState s.ctx, scan, .stay)
       else (0, g1ABofState s.ctx, scan, .stay)
   | .aInstallStart => (0, g1AInsSeekState s.ctx, scan, .stay)
-  -- S8a keeps the walk handoff idle.  The fresh repair modes below are
-  -- executable only from configurations explicitly supplied by a caller.
-  | .aRepairStart => (0, g1ARepairStartState s.ctx, scan, .stay)
+  -- S8b activates the exact aligned reverse-read entry one cell to the left.
+  | .aRepairStart => (0, g1ARepairSeekState s.ctx, scan, .left)
   | .aRepairSeek =>
       match s.position with
       | .p3 => (0, g1State .aRepairSeek .p2 false false scan s.ctx, scan, .left)
@@ -2269,7 +2270,8 @@ below.  `readAResetStart` has likewise stopped being idle: Repair-2a turns it in
 the one-step bridge of the operand-2 repair sweep, and its tuple is
 `g1Transition_readAResetStart_bridge` below.  `readAStart` is the live two-way
 dispatch and `aInstallStart` is the stationary-head entry into `aInsSeek`.
-`aRepairStart`, `combineStart` and `bOOB` remain stationary boundaries. -/
+`aRepairStart` is the left-moving entry into `aRepairSeek`; `combineStart` and
+`bOOB` remain stationary boundaries. -/
 
 @[simp] theorem g1Transition_accept_sink (phase : Fin 1) (scan : Bool) :
     g1Transition phase g1AcceptState scan = (0, g1AcceptState, scan, .stay) :=
@@ -2334,13 +2336,14 @@ theorem g1Transition_aInstallStart_live (phase : Fin 1)
     g1Transition phase (g1State .aInstallStart position b0 b1 b2 ctx) scan =
       (0, g1AInsSeekState ctx, scan, .stay) := rfl
 
-/-- The terminal cleanup handoff is stationary: no A-repair executes here. -/
-theorem g1Transition_aRepairStart_idle (phase : Fin 1)
+/-- **The S8b A-repair handoff is live.**  One step preserves the scanned bit
+and complete context, selects aligned reverse phase `p3`, and moves left. -/
+theorem g1Transition_aRepairStart_live (phase : Fin 1)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
     g1Transition phase (g1State .aRepairStart position b0 b1 b2 ctx) scan =
-      (0, g1ARepairStartState ctx, scan, .stay) := rfl
+      (0, g1ARepairSeekState ctx, scan, .left) := rfl
 
-/-! ### Dormant reject-aware operand-A repair tuples -/
+/-! ### Reject-aware operand-A repair tuples -/
 
 theorem g1Transition_aRepairSeek_p3 (phase : Fin 1) (b0 b1 b2 scan : Bool)
     (ctx : G1Ctx) :
@@ -2679,7 +2682,7 @@ theorem g1Transition_aRestore (phase : Fin 1) (b : Bool)
   cases b <;> cases position <;> rfl
 
 /-- The final writer emits the same literal `data b` codeword as normal
-restore and exits into the stationary A-repair handoff. -/
+restore and exits into the live A-repair handoff. -/
 theorem g1Transition_aFin (phase : Fin 1) (b : Bool)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
     g1Transition phase (g1State (g1AFinMode b) position b0 b1 b2 ctx) scan =
@@ -3442,18 +3445,19 @@ theorem g1Transition_aWalk_entry_closure (phase : Fin 1) (s : G1State)
 
 set_option maxRecDepth 12000 in
 set_option maxHeartbeats 1600000 in
-/-- Exact predecessor closure of the dormant A-repair family.  Every executed
-successor in one of its five modes already came from that family; in particular
-there is no live external activation row. -/
-theorem g1Transition_aRepair_predecessor_closure (phase : Fin 1) (s : G1State)
+/-- Exact executed-entry closure of the live A-repair family.  Every successor
+in one of its five modes comes either from the family itself or from the unique
+`aRepairStart` door. -/
+theorem g1Transition_aRepair_entry_closure (phase : Fin 1) (s : G1State)
     (scan : Bool)
     (h : G1ARepairControlMode (g1Transition phase s scan).2.1.mode) :
-    G1ARepairControlMode s.mode := by
+    G1ARepairControlMode s.mode ∨ s.mode = .aRepairStart := by
   obtain ⟨mode, position, b0, b1, b2, ctx⟩ := s
   obtain ⟨pass, crossed, vB⟩ := ctx
   cases mode <;> cases position <;>
     first
-      | exact trivial
+      | exact Or.inl trivial
+      | exact Or.inr rfl
       | exact False.elim h
       | (cases vB <;> exact False.elim h)
       | (cases pass <;> exact False.elim h)
@@ -3461,32 +3465,38 @@ theorem g1Transition_aRepair_predecessor_closure (phase : Fin 1) (s : G1State)
          split at h <;>
            first
              | exact False.elim h
-             | exact g1Complete_aRepair_dormant _ _ _ _ _ h)
+             | exact Or.inl
+                 (g1Complete_aRepair_predecessor_closure _ _ _ _ _ h))
 
-/-- Door-shaped form of predecessor closure.  `aRepairStart` is the designated
-external handoff, but its stationary row means the right disjunct is never
-needed in S8a. -/
-theorem g1Transition_aRepair_entry_closure (phase : Fin 1) (s : G1State)
-    (scan : Bool)
-    (h : G1ARepairControlMode (g1Transition phase s scan).2.1.mode) :
-    G1ARepairControlMode s.mode ∨ s.mode = .aRepairStart :=
-  Or.inl (g1Transition_aRepair_predecessor_closure phase s scan h)
-
-/-- Any hypothetical external predecessor has the unique designated door
-shape.  S8a separately proves that this stationary door never opens. -/
+/-- Every external predecessor has the unique designated live-door shape. -/
 theorem g1Transition_aRepair_unique_external_door (phase : Fin 1) (s : G1State)
     (scan : Bool)
     (hnext : G1ARepairControlMode (g1Transition phase s scan).2.1.mode)
     (hprev : ¬ G1ARepairControlMode s.mode) : s.mode = .aRepairStart :=
   (g1Transition_aRepair_entry_closure phase s scan hnext).resolve_left hprev
 
-/-- The designated external handoff does not enter the repair family. -/
-theorem g1Transition_aRepairStart_no_entry (phase : Fin 1)
+/-- The designated handoff enters the repair family in every physical shape. -/
+theorem g1Transition_aRepairStart_entry (phase : Fin 1)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
-    ¬ G1ARepairControlMode
+    G1ARepairControlMode
       (g1Transition phase
         (g1State .aRepairStart position b0 b1 b2 ctx) scan).2.1.mode := by
-  rw [g1Transition_aRepairStart_idle]
-  exact g1ARepairStart_not_control
+  rw [g1Transition_aRepairStart_live]
+  trivial
+
+/-- Exact external-entry characterization: outside the repair family, the
+next state is in it iff the current mode is `aRepairStart`. -/
+theorem g1Transition_aRepair_external_entry_iff (phase : Fin 1) (s : G1State)
+    (scan : Bool) (hprev : ¬ G1ARepairControlMode s.mode) :
+    G1ARepairControlMode (g1Transition phase s scan).2.1.mode ↔
+      s.mode = .aRepairStart := by
+  constructor
+  · intro hnext
+    exact g1Transition_aRepair_unique_external_door phase s scan hnext hprev
+  · intro hs
+    obtain ⟨mode, position, b0, b1, b2, ctx⟩ := s
+    simp only at hs
+    subst mode
+    exact g1Transition_aRepairStart_entry phase position b0 b1 b2 scan ctx
 
 end Pnp3.Internal.PsubsetPpoly.TM

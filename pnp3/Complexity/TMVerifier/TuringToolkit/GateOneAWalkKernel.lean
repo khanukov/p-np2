@@ -7,9 +7,9 @@ import Complexity.TMVerifier.TuringToolkit.GateOneAWalkInstallAtoms
 **Progress classification: Infrastructure.**  Every execution theorem starts
 from a caller-supplied configuration.  S4 reaches the completed writer's
 `aSeekOut .p3` boundary but executes none of this module's normal
-walk rows.  Normal restore ends at `aProbe`, and terminal cleanup stops at the stationary local
-handoff `aRepairStart`.  No initial-configuration route, iteration or repair
-sweep is supplied here.
+walk rows.  Normal restore ends at `aProbe`, and terminal cleanup stops at the
+local live handoff `aRepairStart`.  The activation step and repair composition
+are supplied by `GateOneARepair`, not this kernel.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -438,7 +438,7 @@ theorem g1CS_aWalk_turn_fin (n k : Nat) (hsafe : k + 4 < G1M.tapeLength n)
     (fun scan => g1Transition_aTurnFin g1CS.startPhase .p3 _ _ _ scan ctx)
 
 /-- Final restoration removes the cursor, restores the latched Boolean, and
-arrives at the stationary A-repair handoff with the context unchanged. -/
+arrives at the live A-repair handoff with the context unchanged. -/
 theorem g1CS_aWalk_fin_restore (n : Nat) (pre suffix : List G1Frame) (b : Bool)
     (ctx : G1Ctx) (hsafe : 4 * pre.length + 4 < G1M.tapeLength n) :
     TM.runConfig (M := G1M) (g1AlignedConfig n (4 * pre.length) (by omega)
@@ -510,15 +510,19 @@ theorem g1CS_aWalk_terminal_exact (n : Nat)
       4 * (skipped.length + 2) + (4 + 4) by omega,
     runConfig_add, hscan, runConfig_add, hturn', hfin']
 
-/-- `aRepairStart` is a local stationary handoff for every remaining budget. -/
-theorem g1CS_runConfig_aRepairStart_idle (n h : Nat)
-    (hh : h < G1M.tapeLength n) (tape : Fin (G1M.tapeLength n) → Bool)
-    (ctx : G1Ctx) (k : Nat) :
+/-- The live handoff takes one exact tape-preserving step left into aligned
+`aRepairSeek .p3`; the complete context is unchanged. -/
+theorem g1CS_aRepairStart_entry_exact (n h : Nat)
+    (hpos : 0 < h) (hh : h < G1M.tapeLength n)
+    (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx) :
     TM.runConfig (M := G1M)
-        (g1AlignedConfig n h hh tape .aRepairStart .p0 false false false ctx) k =
-      g1AlignedConfig n h hh tape .aRepairStart .p0 false false false ctx :=
-  g1CS_runConfig_stable n h hh tape (g1ARepairStartState ctx)
-    (fun phase scan => g1Transition_aRepairStart_idle phase .p0 false false
-      false scan ctx) k
+        (g1AlignedConfig n h hh tape .aRepairStart .p0 false false false ctx) 1 =
+      g1AlignedConfig n (h - 1) (by omega) tape .aRepairSeek .p3
+        false false false ctx := by
+  rw [runConfig_one]
+  have hstep := g1CS_aligned_step_left n h hh hpos tape
+    (g1ARepairStartState ctx) (g1ARepairSeekState ctx) (tape ⟨h, hh⟩)
+    (fun phase => g1Transition_aRepairStart_live phase .p0 false false false _ ctx)
+  rwa [writeCell_self] at hstep
 
 end Pnp3.Internal.PsubsetPpoly.TM

@@ -271,8 +271,8 @@ lean_lib PnP3 where
     -- `bOOB`.  No seek, mark, iteration or repair step executes.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneAWalkInstallAtoms,
     -- S3b2a/S3b2b (2026-08-29): dormant normal seek/mark/turn/restore plus
-    -- the caller-supplied terminal return, cursor cleanup and stationary
-    -- `aRepairStart` handoff.  No activation, iteration or A-repair.
+    -- the caller-supplied terminal return and cursor cleanup at the exact
+    -- `aRepairStart` boundary.  S8b supplies its activation and repair.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneAWalkKernel,
     -- S5 (2026-08-29), the pure operand-A walk invariant foundation:
     -- canonical `Σᴬ(j)` layout, exact post-S4 inhabitance and honest OOB
@@ -285,14 +285,13 @@ lean_lib PnP3 where
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneAWalkRound,
     -- S7 (2026-08-30), the exact operand-A induction/driver.  The first `m`
     -- normal rounds use the finite sum of S6's own costs, then the exhaustion
-    -- and dormant terminal capstones stop at `aExh` or stationary
-    -- cursor-free `aRepairStart`; first-successor OOB remains separate.
+    -- and dormant terminal capstones stop at `aExh` or the cursor-free
+    -- `aRepairStart` boundary later consumed by S8b; OOB remains separate.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneAWalkDriver,
-    -- S8a (2026-08-30), dormant reject-aware operand-A repair control and
-    -- caller-supplied exact macros.  The five fresh modes repair `spent` back
-    -- to `index` and stop at stationary `aRepairDone`; malformed/reserved
-    -- windows reject.  `aRepairStart` remains idle, so no real-initial route,
-    -- result/combine/output or acceptance step is activated.
+    -- S8b (2026-08-30), live reject-aware operand-A repair.  The unique
+    -- `aRepairStart` door composes S7 terminal cleanup with S8a's canonical
+    -- sweep from real unary/successful-binary initial configurations and stops
+    -- at stationary `aRepairDone`; no result/combine/output/acceptance step.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneARepair,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,

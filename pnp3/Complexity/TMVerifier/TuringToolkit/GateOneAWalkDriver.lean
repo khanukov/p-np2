@@ -20,10 +20,10 @@ capstones compose the real unary and successful-binary S5 prefixes.
 
 At `m = arg1`, the driver appends S6's exact exhaustion seek to local `aExh`.
 The S3b2b terminal macro is also composed: it returns to the cursor, restores
-the hidden data bit, removes the cursor and stops at stationary
-`aRepairStart`.  A first-missing-successor theorem separately composes S6's
-data-OOB round.  No transition, A-repair sweep, result, output or acceptance
-theorem is added.
+the hidden data bit, removes the cursor and stops exactly at the live
+`aRepairStart` boundary.  S8b composes the next activation step separately.
+A first-missing-successor theorem composes S6's data-OOB round.  No A-repair
+sweep, result, output or acceptance theorem is added in this S7 module.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -275,7 +275,7 @@ theorem g1AWalkExhaustDriverSteps_le_clock (r : G1Request) :
 
 /-! ## S3b2b terminal composition -/
 
-/-- Cursor-free designated word at the stationary A-repair handoff. -/
+/-- Cursor-free designated word at the live A-repair handoff. -/
 def g1AWalkDoneFrames (r : G1Request) : List G1Frame :=
   g1TagRouteFrames r ++ g1AWalkOperand1 r r.arg1 ++ [G1Frame.argSep] ++
     g1AWalkOperand2 r ++ [G1Frame.separator] ++ r.vals.map G1Frame.data ++
@@ -402,8 +402,8 @@ theorem g1CS_aWalk_terminal_from_exhaust_exact (r : G1Request) (b v : Bool)
         simp only [g1AWalkCursor]; omega] at h
   exact h
 
-/-- Full caller-supplied S7 execution through exhaustion and the stationary
-cursor-free S3b2b handoff. -/
+/-- Full caller-supplied S7 execution through exhaustion and the exact
+cursor-free S3b2b live handoff boundary. -/
 theorem g1CS_aWalk_full_driver_exact (r : G1Request) (b : Bool)
     (hlen : r.arg1 < r.vals.length) (v : Nat → Bool)
     (hv : ∀ j, j ≤ r.arg1 → r.vals[j]? = some (v j)) :

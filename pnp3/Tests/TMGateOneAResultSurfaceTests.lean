@@ -5,8 +5,8 @@ import Complexity.TMVerifier.TuringToolkit.GateOneAResult
 
 Definitions receive type checks only.  Every public theorem in
 `GateOneAResult` has one exact named wrapper rooted directly in that theorem;
-there are no anonymous examples.  The surface stops at stationary
-`combineStart` and contains no output, accept/reject, or `TM.accepts` claim.
+there are no anonymous examples.  The surface stops at the exact `combineStart`
+boundary and contains no output, accept/reject, or `TM.accepts` claim.
 -/
 
 namespace Pnp3.Tests.TMGateOneAResultSurface

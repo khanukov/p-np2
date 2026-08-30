@@ -159,11 +159,11 @@ theorem check_g1Transition_aRepairHop (phase : Fin 1)
     g1Transition phase (g1State .aRepairHop position b0 b1 b2 ctx) scan =
       (0, g1ARepairSeekState ctx, scan, .left) := by
   apply g1Transition_aRepairHop <;> assumption
-theorem check_g1Transition_aRepairDone_idle (phase : Fin 1)
+theorem check_g1Transition_aRepairDone_result (phase : Fin 1)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
     g1Transition phase (g1State .aRepairDone position b0 b1 b2 ctx) scan =
-      (0, g1ARepairDoneState ctx, scan, .stay) := by
-  apply g1Transition_aRepairDone_idle <;> assumption
+      (0, g1AResultStartState ctx, scan, .stay) := by
+  apply g1Transition_aRepairDone_result <;> assumption
 theorem check_g1Transition_aRepair_entry_closure (phase : Fin 1) (s : G1State)
     (scan : Bool)
     (h : G1ARepairControlMode (g1Transition phase s scan).2.1.mode) :
@@ -309,13 +309,6 @@ theorem check_g1CS_aRepair_finish (n : Nat) (suffix : List G1Frame) (ctx : G1Ctx
         (g1ListTape ((G1Frame.bof :: suffix).flatMap G1Frame.bits))
         .aRepairDone .p0 false false false ctx := by
   apply g1CS_aRepair_finish <;> assumption
-theorem check_g1CS_runConfig_aRepairDone_idle (n h : Nat)
-    (hh : h < G1M.tapeLength n) (tape : Fin (G1M.tapeLength n) → Bool)
-    (ctx : G1Ctx) (k : Nat) :
-    TM.runConfig (M := G1M)
-        (g1AlignedConfig n h hh tape .aRepairDone .p0 false false false ctx) k =
-      g1AlignedConfig n h hh tape .aRepairDone .p0 false false false ctx := by
-  apply g1CS_runConfig_aRepairDone_idle <;> assumption
 theorem check_g1ARepairPassSteps_eq (a s m : Nat) :
     g1ARepairPassSteps a s m + 1 = g1RepairPassSteps a s m := by
   apply g1ARepairPassSteps_eq <;> assumption
@@ -432,11 +425,6 @@ theorem check_g1CS_aRepair_live_exact (r : G1Request) (b v : Bool)
     TM.runConfig (M := G1M) (g1AWalkRepairStartConfig r b v hm hv)
         (g1ARepairLiveSteps r) = g1ARepairDoneConfig r b v := by
   apply g1CS_aRepair_live_exact <;> assumption
-theorem check_g1CS_aRepair_live_done_stable (r : G1Request) (b v : Bool)
-    (hm : r.arg1 < r.vals.length) (hv : r.vals[r.arg1]? = some v) (k : Nat) :
-    TM.runConfig (M := G1M) (g1AWalkRepairStartConfig r b v hm hv)
-        (g1ARepairLiveSteps r + k) = g1ARepairDoneConfig r b v := by
-  apply g1CS_aRepair_live_done_stable <;> assumption
 theorem check_g1CS_aRepair_live_endpoint (r : G1Request) (b v : Bool)
     (hm : r.arg1 < r.vals.length) (hv : r.vals[r.arg1]? = some v) :
     let out := TM.runConfig (M := G1M)

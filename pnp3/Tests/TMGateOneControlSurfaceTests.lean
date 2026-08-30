@@ -39,8 +39,10 @@ convention and the operation latch.  Every one of those entries is pinned below,
 together with the frame-table closure and the executed one-door theorem
 (`g1Advance_passA`, `g1Transition_passA_door`).
 S1b2a re-points the two unary rows and both constant tuples through
-`readAResetStart`.  S1b2b activates `readAStart`; no frame-table row produces
-it and the repair terminal is its unique predecessor.
+`readAResetStart`.  S1b2b activates `readAStart`.  S9 inserts the exact
+`aRepairDone → aResultStart → readAStart` result-normalisation chain; no
+frame-table row produces either handoff, and both predecessor closures are
+pinned below.
 
 This is an audit surface: it pins public signatures, it does not prove
 anything new.
@@ -61,6 +63,7 @@ open Pnp3.Internal.PsubsetPpoly.TM
 #check @g1RejectState
 #check @g1ReadBState
 #check @g1ReadAState
+#check @g1AResultStartState
 #check @g1CombineState
 #check @g1ReadAResetState
 #check @g1RoundState
@@ -650,11 +653,44 @@ theorem check_g1Transition_readAStart_result (phase : Fin 1)
       (0, g1CombineState ctx, scan, .stay) :=
   g1Transition_readAStart_result phase position b0 b1 b2 scan ctx hpass
 
-/-- The repair terminal is the exact and only predecessor of `readAStart`. -/
+theorem check_g1_aResultStart_unreachable (mode : G1Mode) (frame : G1Frame) :
+    g1Advance mode frame ≠ .aResultStart := by
+  exact g1_aResultStart_unreachable mode frame
+
+theorem check_g1Complete_ne_aResultStart (mode : G1Mode)
+    (b0 b1 b2 b3 : Bool) :
+    g1Complete mode b0 b1 b2 b3 ≠ .aResultStart := by
+  exact g1Complete_ne_aResultStart mode b0 b1 b2 b3
+
+theorem check_g1Transition_aResultStart_apply (phase : Fin 1)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State .aResultStart position b0 b1 b2 ctx) scan =
+      (0, g1ReadAState (g1ResultCtx (ctx.res.apply ctx.vB)), scan, .stay) := by
+  exact g1Transition_aResultStart_apply phase position b0 b1 b2 scan ctx
+
+/-- The repair terminal is the exact and only predecessor of `aResultStart`. -/
+theorem check_g1Transition_aResultStart_unique (phase : Fin 1) (s : G1State)
+    (scan : Bool) (h : (g1Transition phase s scan).2.1.mode = .aResultStart) :
+    s.mode = .aRepairDone :=
+  g1Transition_aResultStart_unique phase s scan h
+
+theorem check_g1Transition_aResultStart_iff (phase : Fin 1) (s : G1State)
+    (scan : Bool) :
+    (g1Transition phase s scan).2.1.mode = .aResultStart ↔
+      s.mode = .aRepairDone :=
+  g1Transition_aResultStart_iff phase s scan
+
+/-- `readAStart` has exactly the B-repair and A-result predecessors. -/
 theorem check_g1Transition_readAStart_unique (phase : Fin 1) (s : G1State)
     (scan : Bool) (h : (g1Transition phase s scan).2.1.mode = .readAStart) :
-    s.mode = .bRepairDone :=
+    s.mode = .bRepairDone ∨ s.mode = .aResultStart :=
   g1Transition_readAStart_unique phase s scan h
+
+theorem check_g1Transition_readAStart_iff (phase : Fin 1) (s : G1State)
+    (scan : Bool) :
+    (g1Transition phase s scan).2.1.mode = .readAStart ↔
+      s.mode = .bRepairDone ∨ s.mode = .aResultStart :=
+  g1Transition_readAStart_iff phase s scan
 
 /-- The four operation latches are the exact predecessors of `aInstallStart`. -/
 theorem check_g1Transition_aInstallStart_unique (phase : Fin 1) (s : G1State)

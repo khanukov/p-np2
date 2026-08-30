@@ -40,6 +40,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOneAWalkInvariant
 import Complexity.TMVerifier.TuringToolkit.GateOneAWalkRound
 import Complexity.TMVerifier.TuringToolkit.GateOneAWalkDriver
 import Complexity.TMVerifier.TuringToolkit.GateOneARepair
+import Complexity.TMVerifier.TuringToolkit.GateOneAResult
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -1172,6 +1173,12 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_readAStart_result
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_passA_door
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_readAStart_unique
+#print axioms Internal.PsubsetPpoly.TM.g1_aResultStart_unreachable
+#print axioms Internal.PsubsetPpoly.TM.g1Complete_ne_aResultStart
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aResultStart_apply
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aResultStart_unique
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aResultStart_iff
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_readAStart_iff
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aInstallStart_unique
 #print axioms Internal.PsubsetPpoly.TM.g1ATagRoute_advance
 #print axioms Internal.PsubsetPpoly.TM.g1ATagRoute_validPath
@@ -1525,7 +1532,8 @@ open Pnp3.Magnification
 -- S8b (2026-08-30): live reject-aware operand-A repair.  S8a's caller-supplied
 -- macros remain audited, then the direct roots below compose the unique door,
 -- S7 terminal driver and real initial unary/successful-binary routes through
--- canonical stationary `aRepairDone`.  No result/combine/output/accept root.
+-- canonical `aRepairDone` handoff.  S8b itself has no
+-- result/combine/output/accept root; S9 consumes the handoff below.
 #print axioms Internal.PsubsetPpoly.TM.G1ForwardMode.not_aRepair
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairScanMode.eq
 #print axioms Internal.PsubsetPpoly.TM.g1ARepairStopState_write
@@ -1551,7 +1559,7 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aRepairWrite
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aRepairBack
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aRepairHop
-#print axioms Internal.PsubsetPpoly.TM.g1Transition_aRepairDone_idle
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aRepairDone_result
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aRepair_entry_closure
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aRepair_unique_external_door
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aRepairStart_entry
@@ -1568,7 +1576,6 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_finish
 #print axioms Internal.PsubsetPpoly.TM.g1ARepairPassSteps_eq
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_pass_exact
-#print axioms Internal.PsubsetPpoly.TM.g1CS_runConfig_aRepairDone_idle
 #print axioms Internal.PsubsetPpoly.TM.g1ARepairLeft_length
 #print axioms Internal.PsubsetPpoly.TM.g1ARepairMid_length
 #print axioms Internal.PsubsetPpoly.TM.g1ARepair_split_of
@@ -1590,7 +1597,6 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1ARepairLiveSteps_eq
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_activation_exact
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_live_exact
-#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_live_done_stable
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_live_endpoint
 #print axioms Internal.PsubsetPpoly.TM.g1AWalkRepairSteps_eq
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_repair_driver_exact
@@ -1605,6 +1611,52 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1ABinaryRepairSteps_le_clock
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_oob_driver_stable
 #print axioms Internal.PsubsetPpoly.TM.g1AWalkOOBConfig_ne_aRepairDone
+
+-- S9 (2026-08-30): exact three-row non-const result handoff, unchanged const
+-- bypass, five pure tag bridges, honest spec-none/OOB separation, exact stable
+-- combine boundary and all-five-tag literal probes.  No output/acceptance root.
+#print axioms Internal.PsubsetPpoly.TM.g1CS_step_aRepairDone_result
+#print axioms Internal.PsubsetPpoly.TM.g1CS_step_aResultStart_apply
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepairDone_combine_exact
+#print axioms Internal.PsubsetPpoly.TM.g1BACombineSteps_eq
+#print axioms Internal.PsubsetPpoly.TM.g1UACombineSteps_eq
+#print axioms Internal.PsubsetPpoly.TM.g1GateResultSteps_const
+#print axioms Internal.PsubsetPpoly.TM.g1GateResultSteps_binary
+#print axioms Internal.PsubsetPpoly.TM.g1GateResultSteps_unary
+#print axioms Internal.PsubsetPpoly.TM.g1ResultSq_succ
+#print axioms Internal.PsubsetPpoly.TM.g1ResultClock_quad
+#print axioms Internal.PsubsetPpoly.TM.g1BACombineSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1UACombineSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1GateResultSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aCombine_binary_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aCombine_unary_exact
+#print axioms Internal.PsubsetPpoly.TM.g1Vals_prefix_witness
+#print axioms Internal.PsubsetPpoly.TM.g1Spec_operands_binary
+#print axioms Internal.PsubsetPpoly.TM.g1Spec_operand_unary
+#print axioms Internal.PsubsetPpoly.TM.g1Spec_input_bridge
+#print axioms Internal.PsubsetPpoly.TM.g1Spec_not_bridge
+#print axioms Internal.PsubsetPpoly.TM.g1Spec_and_bridge
+#print axioms Internal.PsubsetPpoly.TM.g1Spec_or_bridge
+#print axioms Internal.PsubsetPpoly.TM.g1Spec_const_bridge
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_result_binary
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_result_unary
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_result_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_result_ctx
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_result_pass_vB
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_result_head
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_result_state
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_result_tape
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_result_stable
+#print axioms Internal.PsubsetPpoly.TM.g1Spec_none_of_arg1_oob
+#print axioms Internal.PsubsetPpoly.TM.g1Spec_none_of_arg2_oob_binary
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_result_or_spec_none
+#print axioms Internal.PsubsetPpoly.TM.g1CombineState_ne_oob
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_result_false_ne_oob
+#print axioms Internal.PsubsetPpoly.TM.G1AResultProbes.literal_canonical
+#print axioms Internal.PsubsetPpoly.TM.G1AResultProbes.literal_specs
+#print axioms Internal.PsubsetPpoly.TM.G1AResultProbes.literal_steps
+#print axioms Internal.PsubsetPpoly.TM.G1AResultProbes.literal_clocks
+#print axioms Internal.PsubsetPpoly.TM.G1AResultProbes.literal_results
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_steps
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_false_repair_exact
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_true_repair_exact

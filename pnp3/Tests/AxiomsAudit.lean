@@ -41,6 +41,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOneAWalkRound
 import Complexity.TMVerifier.TuringToolkit.GateOneAWalkDriver
 import Complexity.TMVerifier.TuringToolkit.GateOneARepair
 import Complexity.TMVerifier.TuringToolkit.GateOneAResult
+import Complexity.TMVerifier.TuringToolkit.GateOneOutputKernel
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -1657,6 +1658,74 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1AResultProbes.literal_steps
 #print axioms Internal.PsubsetPpoly.TM.G1AResultProbes.literal_clocks
 #print axioms Internal.PsubsetPpoly.TM.G1AResultProbes.literal_results
+
+-- S10a (2026-08-30): dormant, caller-supplied strict output scan/turn/write.
+-- Definitions are pinned by the surface test; every public theorem is a direct
+-- audit root here.  `combineStart` remains idle and no root composes a live
+-- result route, acceptance, a clock, or spec-none behavior.
+#print axioms Internal.PsubsetPpoly.TM.g1Advance_outputKernel_predecessor
+#print axioms Internal.PsubsetPpoly.TM.g1Complete_outputKernel_predecessor
+#print axioms Internal.PsubsetPpoly.TM.g1Stuck_of_not_forward
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_outTurn
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_outWrite
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_outputDone_stable
+#print axioms Internal.PsubsetPpoly.TM.G1OutputSkip_ne_output
+#print axioms Internal.PsubsetPpoly.TM.G1OutputSkip_ne_spent
+#print axioms Internal.PsubsetPpoly.TM.G1OutputSkip_ne_cursor
+#print axioms Internal.PsubsetPpoly.TM.g1Advance_outSeek_of_skip
+#print axioms Internal.PsubsetPpoly.TM.g1Advance_outSeek_output_false
+#print axioms Internal.PsubsetPpoly.TM.g1Advance_outSeek_reject_iff
+#print axioms Internal.PsubsetPpoly.TM.g1Advance_outSeek_forbidden
+#print axioms Internal.PsubsetPpoly.TM.g1Complete_outSeek_malformed_reserved
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_outputKernel_predecessor
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_combineStart_not_output
+#print axioms Internal.PsubsetPpoly.TM.g1CS_out_scan
+#print axioms Internal.PsubsetPpoly.TM.g1CS_out_turn
+#print axioms Internal.PsubsetPpoly.TM.g1OutWriter_machine
+#print axioms Internal.PsubsetPpoly.TM.g1CS_out_write
+#print axioms Internal.PsubsetPpoly.TM.g1CS_outputDone_stable
+#print axioms Internal.PsubsetPpoly.TM.g1OutputFrames_false
+#print axioms Internal.PsubsetPpoly.TM.g1OutputFrames_length
+#print axioms Internal.PsubsetPpoly.TM.g1OutputBase_eq
+#print axioms Internal.PsubsetPpoly.TM.g1OutputPosition_eq_base
+#print axioms Internal.PsubsetPpoly.TM.g1OutputBase_pos
+#print axioms Internal.PsubsetPpoly.TM.g1OutputBase_safe
+#print axioms Internal.PsubsetPpoly.TM.g1OutputExitHead_safe
+#print axioms Internal.PsubsetPpoly.TM.g1OutputTape_false
+#print axioms Internal.PsubsetPpoly.TM.g1OutputTape_eq_writeCell
+#print axioms Internal.PsubsetPpoly.TM.g1OutputTape_at
+#print axioms Internal.PsubsetPpoly.TM.g1OutputTape_off
+#print axioms Internal.PsubsetPpoly.TM.g1OutputTape_true_ne_initial
+#print axioms Internal.PsubsetPpoly.TM.g1OutputTape_false_identity
+#print axioms Internal.PsubsetPpoly.TM.g1OutputFrames_count_spent
+#print axioms Internal.PsubsetPpoly.TM.g1OutputFrames_count_cursor
+#print axioms Internal.PsubsetPpoly.TM.g1OutputFrames_count_index
+#print axioms Internal.PsubsetPpoly.TM.g1PrefixFrames_outSkip
+#print axioms Internal.PsubsetPpoly.TM.g1PrefixFrames_ne_output
+#print axioms Internal.PsubsetPpoly.TM.g1OutputFrames_count_output
+#print axioms Internal.PsubsetPpoly.TM.g1OutputFrames_count_other_output
+#print axioms Internal.PsubsetPpoly.TM.g1OutputRoute_length
+#print axioms Internal.PsubsetPpoly.TM.g1OutputDoneConfig_state
+#print axioms Internal.PsubsetPpoly.TM.g1OutputDoneConfig_head
+#print axioms Internal.PsubsetPpoly.TM.g1OutputDoneConfig_tape
+#print axioms Internal.PsubsetPpoly.TM.g1OutputKernelSteps_eq
+#print axioms Internal.PsubsetPpoly.TM.g1CS_output_scan_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_output_turn_write_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_output_kernel_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_output_kernel_tape
+#print axioms Internal.PsubsetPpoly.TM.g1CS_output_kernel_head
+#print axioms Internal.PsubsetPpoly.TM.g1CS_output_kernel_state
+#print axioms Internal.PsubsetPpoly.TM.g1OutputDone_false_ne_reject
+#print axioms Internal.PsubsetPpoly.TM.g1OutputDone_false_ne_oob
+#print axioms Internal.PsubsetPpoly.TM.g1OutputDone_ne_combine
+#print axioms Internal.PsubsetPpoly.TM.g1CS_output_kernel_stable
+#print axioms Internal.PsubsetPpoly.TM.G1OutputKernelProbes.literal_frames_false
+#print axioms Internal.PsubsetPpoly.TM.G1OutputKernelProbes.literal_frames_true
+#print axioms Internal.PsubsetPpoly.TM.G1OutputKernelProbes.literal_steps
+#print axioms Internal.PsubsetPpoly.TM.G1OutputKernelProbes.literal_false_run
+#print axioms Internal.PsubsetPpoly.TM.G1OutputKernelProbes.literal_true_run
+#print axioms Internal.PsubsetPpoly.TM.G1OutputKernelProbes.literal_false_tape
+#print axioms Internal.PsubsetPpoly.TM.G1OutputKernelProbes.literal_true_tape
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_steps
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_false_repair_exact
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_true_repair_exact

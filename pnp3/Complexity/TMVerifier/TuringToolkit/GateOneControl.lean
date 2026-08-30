@@ -348,6 +348,9 @@ inductive G1Mode
   -- result-normalisation row
   | aRepairSeek | aRepairWrite | aRepairBack | aRepairHop | aRepairDone
   | aResultStart
+  -- S10a's dormant output kernel.  No live row enters this family.
+  | outSeek | outTurn | outWriteFalse | outWriteTrue
+  | outputDoneFalse | outputDoneTrue
   | readAStart | combineStart | readAResetStart | bOOB
   | accept | reject
   deriving Fintype, DecidableEq, Repr
@@ -589,6 +592,32 @@ def g1AResultStartState (ctx : G1Ctx) : G1State :=
 /-- The `const` handoff: the decoded literal is already in `ctx.vB`. -/
 def g1CombineState (ctx : G1Ctx) : G1State :=
   g1State .combineStart .p0 false false false ctx
+
+/-- Caller-supplied entry to the dormant output scan. -/
+def g1OutSeekState (ctx : G1Ctx) : G1State :=
+  g1State .outSeek .p0 false false false ctx
+
+/-- Local turn after the scan has consumed the unique unwritten output frame. -/
+def g1OutTurnState (ctx : G1Ctx) : G1State :=
+  g1State .outTurn .p0 false false false ctx
+
+/-- The result-indexed reverse writer mode. -/
+def g1OutWriteMode : Bool → G1Mode
+  | false => .outWriteFalse
+  | true => .outWriteTrue
+
+/-- Reverse-aligned entry state for the selected literal output writer. -/
+def g1OutWriteState (b : Bool) (ctx : G1Ctx) : G1State :=
+  g1State (g1OutWriteMode b) .p3 false false false ctx
+
+/-- The two local, non-accepting output-complete modes. -/
+def g1OutputDoneMode : Bool → G1Mode
+  | false => .outputDoneFalse
+  | true => .outputDoneTrue
+
+/-- Literal stationary endpoint of the dormant output kernel. -/
+def g1OutputDoneState (b : Bool) : G1State :=
+  g1State (g1OutputDoneMode b) .p0 false false false g1Ctx0
 
 /-- The post-operand-2 handoff of a binary gate: `ctx.vB` holds the resolved
 operand-2 value and the data cursor has to be reset before pass A. -/
@@ -845,6 +874,15 @@ def g1Advance : G1Mode → G1Frame → G1Mode
   | .aRet, .separator => .aRet
   | .aRet, .data _ => .aRet
   | .aRet, .cursor => .aTurnFin
+  -- S10a dormant output scan: exactly the canonical, fully repaired prefix is
+  -- crossable.  Only the unique unwritten destination opens the local turn.
+  | .outSeek, .bof => .outSeek
+  | .outSeek, .tag => .outSeek
+  | .outSeek, .argSep => .outSeek
+  | .outSeek, .index => .outSeek
+  | .outSeek, .separator => .outSeek
+  | .outSeek, .data _ => .outSeek
+  | .outSeek, .output false => .outTurn
   -- `bSeek` reads right to left and has no row here at all.
   | _, _ => .reject
 
@@ -1004,6 +1042,8 @@ def G1ForwardMode : G1Mode → Prop
   | .aRepairSeek | .aRepairWrite | .aRepairBack | .aRepairHop | .aRepairDone
   | .aResultStart
   | .aLatchFalse | .aLatchTrue | .aIns
+  | .outTurn | .outWriteFalse | .outWriteTrue
+  | .outputDoneFalse | .outputDoneTrue
   | .readAStart | .combineStart | .readAResetStart | .bOOB
   | .accept | .reject => False
   | _ => True
@@ -1118,6 +1158,31 @@ theorem g1Complete_aRepair_predecessor_closure (mode : G1Mode)
 
 theorem g1ARepairStart_not_control :
     ¬ G1ARepairControlMode .aRepairStart := id
+
+/-- The complete, dependency-closed family of S10a output modes. -/
+def G1OutputKernelMode : G1Mode → Prop
+  | .outSeek | .outTurn | .outWriteFalse | .outWriteTrue
+  | .outputDoneFalse | .outputDoneTrue => True
+  | _ => False
+
+instance : DecidablePred G1OutputKernelMode := fun mode => by
+  cases mode <;> first | exact isTrue trivial | exact isFalse id
+
+/-- No decoded frame-table row can enter the dormant output family externally. -/
+theorem g1Advance_outputKernel_predecessor (mode : G1Mode) (frame : G1Frame) :
+    G1OutputKernelMode (g1Advance mode frame) → G1OutputKernelMode mode := by
+  set_option maxRecDepth 8192 in
+    revert mode frame; decide
+
+/-- The bit-level completion table has the same predecessor closure. -/
+theorem g1Complete_outputKernel_predecessor (mode : G1Mode)
+    (b0 b1 b2 b3 : Bool) :
+    G1OutputKernelMode (g1Complete mode b0 b1 b2 b3) →
+      G1OutputKernelMode mode := by
+  unfold g1Complete
+  cases decodeG1Frame? [b0, b1, b2, b3] with
+  | none => exact fun h => False.elim h
+  | some frame => exact g1Advance_outputKernel_predecessor mode frame
 
 theorem g1Advance_aFwd_cursor : g1Advance .aFwd .cursor = .aTurn := rfl
 
@@ -1276,6 +1341,12 @@ theorem g1AdvanceList_ne_rewindStart_of_stuck {mode : G1Mode} (h : G1Stuck mode)
       rw [g1AdvanceList_cons, h.1 frame, g1AdvanceList_reject]
       decide
 
+/-- Every non-forward mode other than the end-of-input boundary is stuck. -/
+theorem g1Stuck_of_not_forward {mode : G1Mode} (hforward : ¬ G1ForwardMode mode)
+    (hrewind : mode ≠ .rewindStart) : G1Stuck mode := by
+  set_option maxRecDepth 8192 in
+    revert mode; decide
+
 /-- **The forward table only ever produces a forward mode, `rewindStart`, or a
 stuck mode.**  In particular `rewind` and `accept` are unreachable from any
 scan.  Every non-forward target (the four dispatch modes, the round's five
@@ -1288,8 +1359,11 @@ theorem g1Advance_range (mode : G1Mode) (frame : G1Frame) :
     G1ForwardMode (g1Advance mode frame) ∨
       g1Advance mode frame = .rewindStart ∨
       G1Stuck (g1Advance mode frame) := by
-  set_option maxRecDepth 4096 in
-    revert mode frame; decide
+  by_cases hforward : G1ForwardMode (g1Advance mode frame)
+  · exact Or.inl hforward
+  · by_cases hrewind : g1Advance mode frame = .rewindStart
+    · exact Or.inr (Or.inl hrewind)
+    · exact Or.inr (Or.inr (g1Stuck_of_not_forward hforward hrewind))
 
 /-- **No frame-table row produces `readAStart`.**  The two former producers,
 `rTag1` and `rTag3` on `argSep`, now enter `readAResetStart`.  At full-transition
@@ -1971,6 +2045,29 @@ def g1Transition (_phase : Fin 1) (s : G1State) (scan : Bool) :
   | .aRepairDone => (0, g1AResultStartState s.ctx, scan, .stay)
   | .aResultStart =>
       (0, g1ReadAState (g1ResultCtx (s.ctx.res.apply s.ctx.vB)), scan, .stay)
+  -- S10a is dormant: callers may start at `outSeek`, but `combineStart` below
+  -- remains its existing stationary boundary and does not bridge here.
+  | .outTurn => (0, g1OutWriteState s.ctx.vB s.ctx, scan, .left)
+  | .outWriteFalse =>
+      match s.position with
+      | .p3 => (0, g1State .outWriteFalse .p2 false false false s.ctx,
+          false, .left)
+      | .p2 => (0, g1State .outWriteFalse .p1 false false false s.ctx,
+          false, .left)
+      | .p1 => (0, g1State .outWriteFalse .p0 false false false s.ctx,
+          false, .left)
+      | .p0 => (0, g1OutputDoneState false, true, .left)
+  | .outWriteTrue =>
+      match s.position with
+      | .p3 => (0, g1State .outWriteTrue .p2 false false false s.ctx,
+          true, .left)
+      | .p2 => (0, g1State .outWriteTrue .p1 false false false s.ctx,
+          false, .left)
+      | .p1 => (0, g1State .outWriteTrue .p0 false false false s.ctx,
+          false, .left)
+      | .p0 => (0, g1OutputDoneState true, true, .left)
+  | .outputDoneFalse => (0, g1OutputDoneState false, scan, .stay)
+  | .outputDoneTrue => (0, g1OutputDoneState true, scan, .stay)
   | .combineStart => (0, g1CombineState s.ctx, scan, .stay)
   | .bOOB => (0, g1OOBState s.ctx, scan, .stay)
   -- the four operand-1 operation latches: one stationary step each,
@@ -2725,6 +2822,37 @@ theorem g1Transition_aFin (phase : Fin 1) (b : Bool)
           | .p3 => !b,
         .right) := by
   cases b <;> cases position <;> rfl
+
+/-- S10a's local turn chooses one of the two literal writer phases from the
+already-carried result bit. -/
+theorem g1Transition_outTurn (phase : Fin 1) (position : G1FramePosition)
+    (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase (g1State .outTurn position b0 b1 b2 ctx) scan =
+      (0, g1OutWriteState ctx.vB ctx, scan, .left) := rfl
+
+/-- One result-indexed equation pins all four cells of both literal writers. -/
+theorem g1Transition_outWrite (phase : Fin 1) (res : Bool)
+    (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
+    g1Transition phase
+        (g1State (g1OutWriteMode res) position b0 b1 b2 ctx) scan =
+      (0, match position with
+          | .p3 => g1State (g1OutWriteMode res) .p2 false false false ctx
+          | .p2 => g1State (g1OutWriteMode res) .p1 false false false ctx
+          | .p1 => g1State (g1OutWriteMode res) .p0 false false false ctx
+          | .p0 => g1OutputDoneState res,
+        match position with
+          | .p3 => res
+          | .p2 => false
+          | .p1 => false
+          | .p0 => true,
+        .left) := by
+  cases res <;> cases position <;> rfl
+
+/-- Each local output-complete state is a stationary, tape-preserving sink. -/
+theorem g1Transition_outputDone_stable (phase : Fin 1) (res scan : Bool) :
+    g1Transition phase (g1OutputDoneState res) scan =
+      (0, g1OutputDoneState res, scan, .stay) := by
+  cases res <;> rfl
 
 theorem g1Transition_combineStart_idle (phase : Fin 1)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :

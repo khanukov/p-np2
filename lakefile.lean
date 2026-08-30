@@ -299,6 +299,12 @@ lean_lib PnP3 where
     -- OOB-semantic, boundary, literal and unchanged-clock surfaces stop at the
     -- stationary combine boundary, before output or acceptance.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneAResult,
+    -- S10a (2026-08-30), dormant caller-supplied G1 output kernel.  A strict
+    -- canonical-prefix scan consumes the unique `output false`, turns, and a
+    -- four-cell false/true writer installs `output res` before stopping at a
+    -- local stationary output-done boundary.  `combineStart` remains idle;
+    -- there is no live result bridge, acceptance, clock, or spec-none claim.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneOutputKernel,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -473,6 +479,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMGateOneAWalkDriverSurfaceTests,
     Glob.one `Tests.TMGateOneARepairSurfaceTests,
     Glob.one `Tests.TMGateOneAResultSurfaceTests,
+    Glob.one `Tests.TMGateOneOutputKernelSurfaceTests,
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,
     Glob.one `Tests.TMGateOneReadBSurfaceTests,
     Glob.one `Tests.TMGateOneProbeInstallSurfaceTests,

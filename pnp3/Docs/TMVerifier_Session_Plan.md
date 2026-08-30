@@ -3072,3 +3072,61 @@ evaluation produces `[true, true, false]`, and the final result is
 `some false`.  The source, named examples, exact-wrapper surface, and all 59
 direct theorem roots are registered in `lakefile.lean` and
 `Tests/AxiomsAudit.lean`.
+
+## GN-2 pure multi-gate tape-state foundation (2026-08-30)
+
+**Classification: infrastructure, not P-vs-NP mainline progress.**  GN-2 adds
+only the list-backed partially committed tape family and its pure commit.  It
+defines no machine mode, transition, `runConfig`, relocation execution, clock,
+or acceptance result, and reduces neither `SearchMCSPWeakLowerBound` nor
+`VerifiedNPDAGLowerBoundSource`.
+
+For `n = r.inputs.length`, `m = r.program.gates.length`,
+`S = gnRecordsLength r`, and stage `j = prior.length <= m`, the exact frame
+layout is
+
+`bof · data(inputs) · data(prior) · output(false)^(m-j) · separator ·
+recordsAt(j) · separator · output(finalAt(j)) · finish`.
+
+It has the unchanged GN-1 extent `n + m + S + 5` frames and four cells per
+frame.  The proofs use the GN-1 general offsets directly: the immutable input
+prefix has length `gnOutputSlotsStart r = 1+n`; the combined committed-value /
+unused-slot region has length `gnOutputSlotsLength r = m`; the program region
+starts at `gnRecordsStart r = n+m+2` and has length `gnRecordsLength r = S`;
+the final output is at `gnFinalOutputFrame r = n+m+S+3`.
+
+At stage `j`, records below `j` are `spent`, record `j` is the unique `cursor`
+record when `j < m`, and later records are `bof`-marked.  Exact split theorems
+show that all record bodies are immutable.  The selected record decodes through
+the corrected GN-1 typed parser, the work view is literally
+`encodeG1Frames (gnFieldRequest (gnGateFields g) (r.inputs ++ prior))`, and its
+pure specification is the current gate's `compute` at absolute indices.
+
+`gnCommit?` is defined only for `j < m`.  It appends the caller-supplied
+result Boolean to the current-value region, consumes exactly slot `j`, and
+changes the selected marker
+to `spent`, advances the controller index/cursor to `j+1`, preserves the input
+prefix and every record body, and preserves total length.  A nonterminal commit
+leaves the final output false; the terminal commit writes its result to the
+GN-1 final-output frame.  A terminal state has no cursor and admits no further
+commit.  Initial-stage parser preservation is exact.
+
+Blank scratch remains outside the finite input word.  `gnTapeFrames` appends an
+explicit list of blank frames, while `gnTapeCell` is the pure all-false extension
+and proves every cell at or beyond the finite word length false.  This is a
+list/function fact, not a physical machine-tape or relocation claim.
+
+For current gate `g`,
+`W = 4 * (gnRecordSize (gnGateFields g) + n + j + 2)` and
+`N = 4 * (n + m + S + 5)`.  Gate membership gives `j < m` and the record-size
+summand bound, hence the tight theorem `W + 16 <= N`.  The one-gate
+`n=0`, `const false` request has `W=32`, `N=48`, so equality holds and the
+named theorem `tight_bound_seventeen_false` explicitly refutes `W + 17 <= N`.
+
+The nonvacuous two-gate capstone reuses GN-1's `[input 0, notGate 0]` request.
+Its initial, first-commit, and second-commit words all have 21 frames / 84
+cells; values evolve `[] -> [true] -> [true,false]`, the full current-value
+environment is `[true,true,false]`, and the final output is false.  The source
+exports 47 theorems, examples export 22, the surface provides 69 exact named
+wrappers plus definition-only pins, and all 69 theorem roots are audited
+directly.

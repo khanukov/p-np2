@@ -131,6 +131,11 @@ lean_lib PnP3 where
     -- machine, execution, clock, or acceptance layer.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateNEncoding,
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateNEncodingExamples,
+    -- GN-2 (2026-08-30), pure infrastructure only: canonical partially
+    -- committed tape words, exact GN-1-offset views, pure commit, blank
+    -- suffix, and tight work-word capacity.  No machine or execution layer.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateNTapeState,
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateNTapeStateExamples,
     -- T2a, control layer: one zero-parameter finite control whose forward
     -- table decides the canonical grammar (`GateOneControl`), and that
     -- control as a genuine instance of the generic frame-scanner kernel
@@ -480,6 +485,9 @@ lean_lib PnP3 where
     -- GN-1 (2026-08-30): 59 exact wrappers and definition `#check` pins for
     -- the pure multi-gate encoding surface.
     Glob.one `Tests.TMGateNEncodingSurfaceTests,
+    -- GN-2 (2026-08-30): exact theorem wrappers and definition-only pins for
+    -- the pure multi-gate tape-state surface.
+    Glob.one `Tests.TMGateNTapeStateSurfaceTests,
     Glob.one `Tests.TMGateOneResidualSurfaceTests,
     Glob.one `Tests.TMGateOneControlSurfaceTests,
     Glob.one `Tests.TMGateOneRoutingSurfaceTests,

@@ -53,6 +53,7 @@ import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekTerminalExamples
 import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekSemanticsExamples
 import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekTerminalControl
 import Complexity.TMVerifier.TuringToolkit.GateNEncodingExamples
+import Complexity.TMVerifier.TuringToolkit.GateNTapeStateExamples
 
 /-!
   pnp3/Tests/AxiomsAudit.lean
@@ -324,6 +325,78 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.GNEncodingExamples.reject_trailing_frame
 #print axioms Internal.PsubsetPpoly.TM.GNEncodingExamples.reject_trailing_frame_frames
 #print axioms Internal.PsubsetPpoly.TM.GNEncodingExamples.reject_reserved_mid
+
+-- GN-2 (2026-08-30), pure tape-state infrastructure.  Direct theorem roots;
+-- no machine, transition, run, clock, acceptance, or relocation theorem.
+#print axioms Internal.PsubsetPpoly.TM.gnIndex_lt_length
+#print axioms Internal.PsubsetPpoly.TM.gnNat_le_sum
+#print axioms Internal.PsubsetPpoly.TM.gnUniformRecordsFrames_nil
+#print axioms Internal.PsubsetPpoly.TM.gnUniformRecordsFrames_length
+#print axioms Internal.PsubsetPpoly.TM.gnRecordsFrames_bof
+#print axioms Internal.PsubsetPpoly.TM.gnRecordsAtFrames_nil
+#print axioms Internal.PsubsetPpoly.TM.gnRecordsAtFrames_zero
+#print axioms Internal.PsubsetPpoly.TM.gnRecordsAtFrames_length
+#print axioms Internal.PsubsetPpoly.TM.gnRecordsAtFrames_split
+#print axioms Internal.PsubsetPpoly.TM.gnRecordsAtFrames_succ_split
+#print axioms Internal.PsubsetPpoly.TM.gnRecordsAtFrames_all_spent
+#print axioms Internal.PsubsetPpoly.TM.gnRecordsAtFrames_count_cursor
+#print axioms Internal.PsubsetPpoly.TM.gnRecordsAtFrames_count_spent
+#print axioms Internal.PsubsetPpoly.TM.encodeGNAtFrames_shape
+#print axioms Internal.PsubsetPpoly.TM.encodeGNAtFrames_zero
+#print axioms Internal.PsubsetPpoly.TM.encodeGNAt_zero
+#print axioms Internal.PsubsetPpoly.TM.encodeGNAtFrames_length
+#print axioms Internal.PsubsetPpoly.TM.encodeGNAt_length
+#print axioms Internal.PsubsetPpoly.TM.encodeGNAt_regions
+#print axioms Internal.PsubsetPpoly.TM.gnReadCurrentValues_exact
+#print axioms Internal.PsubsetPpoly.TM.gnSelectedGate?_exact
+#print axioms Internal.PsubsetPpoly.TM.gnSelectedRecord?_exact
+#print axioms Internal.PsubsetPpoly.TM.gnSelectedRecord_decode
+#print axioms Internal.PsubsetPpoly.TM.gnSelectedRecord_embedded
+#print axioms Internal.PsubsetPpoly.TM.gnSelected_index_bound
+#print axioms Internal.PsubsetPpoly.TM.gnCurrentValues_length
+#print axioms Internal.PsubsetPpoly.TM.gnCurrentWork?_exact
+#print axioms Internal.PsubsetPpoly.TM.gnWorkRequest_spec
+#print axioms Internal.PsubsetPpoly.TM.gnCommit?_exact
+#print axioms Internal.PsubsetPpoly.TM.gnCommit?_terminal
+#print axioms Internal.PsubsetPpoly.TM.encodeGNAt_commit_shape
+#print axioms Internal.PsubsetPpoly.TM.encodeGNAt_commit_length
+#print axioms Internal.PsubsetPpoly.TM.encodeGNAt_commit_inputs
+#print axioms Internal.PsubsetPpoly.TM.encodeGNAt_commit_records
+#print axioms Internal.PsubsetPpoly.TM.gnFinalValue_before_terminal
+#print axioms Internal.PsubsetPpoly.TM.gnFinalValue_terminal_commit
+#print axioms Internal.PsubsetPpoly.TM.gnFinalValue_nonterminal_commit
+#print axioms Internal.PsubsetPpoly.TM.GateNTapeState.initial
+#print axioms Internal.PsubsetPpoly.TM.GateNTapeState.step
+#print axioms Internal.PsubsetPpoly.TM.GateNTapeState.cursor_count
+#print axioms Internal.PsubsetPpoly.TM.GateNTapeState.initial_parser
+#print axioms Internal.PsubsetPpoly.TM.gnTapeFrames_scratch
+#print axioms Internal.PsubsetPpoly.TM.gnTapeCell_scratch_blank
+#print axioms Internal.PsubsetPpoly.TM.gnWorkWord_length
+#print axioms Internal.PsubsetPpoly.TM.encodeGN_length_eq
+#print axioms Internal.PsubsetPpoly.TM.gnRecordSize_le_recordsLength
+#print axioms Internal.PsubsetPpoly.TM.gnWorkWord_add_sixteen_le_input
+#print axioms Internal.PsubsetPpoly.TM.GNTapeStateExamples.capstone_initial_literal
+#print axioms Internal.PsubsetPpoly.TM.GNTapeStateExamples.capstone_initial_state
+#print axioms Internal.PsubsetPpoly.TM.GNTapeStateExamples.capstone_first_literal
+#print axioms Internal.PsubsetPpoly.TM.GNTapeStateExamples.capstone_first_commit
+#print axioms Internal.PsubsetPpoly.TM.GNTapeStateExamples.capstone_first_state
+#print axioms Internal.PsubsetPpoly.TM.GNTapeStateExamples.capstone_first_values
+#print axioms Internal.PsubsetPpoly.TM.GNTapeStateExamples.capstone_second_selected
+#print axioms Internal.PsubsetPpoly.TM.GNTapeStateExamples.capstone_second_record_decode
+#print axioms Internal.PsubsetPpoly.TM.GNTapeStateExamples.capstone_second_work
+#print axioms Internal.PsubsetPpoly.TM.GNTapeStateExamples.capstone_final_literal
+#print axioms Internal.PsubsetPpoly.TM.GNTapeStateExamples.capstone_second_commit
+#print axioms Internal.PsubsetPpoly.TM.GNTapeStateExamples.capstone_final_state
+#print axioms Internal.PsubsetPpoly.TM.GNTapeStateExamples.capstone_final_values
+#print axioms Internal.PsubsetPpoly.TM.GNTapeStateExamples.capstone_final_output
+#print axioms Internal.PsubsetPpoly.TM.GNTapeStateExamples.capstone_final_terminal
+#print axioms Internal.PsubsetPpoly.TM.GNTapeStateExamples.capstone_lengths
+#print axioms Internal.PsubsetPpoly.TM.GNTapeStateExamples.capstone_eval_consistent
+#print axioms Internal.PsubsetPpoly.TM.GNTapeStateExamples.capstone_first_scratch_cell_blank
+#print axioms Internal.PsubsetPpoly.TM.GNTapeStateExamples.tight_work_length
+#print axioms Internal.PsubsetPpoly.TM.GNTapeStateExamples.tight_input_length
+#print axioms Internal.PsubsetPpoly.TM.GNTapeStateExamples.tight_bound_eq
+#print axioms Internal.PsubsetPpoly.TM.GNTapeStateExamples.tight_bound_seventeen_false
 
 -- S1a, pure layer: the four pass-A residual operations of operand 1 and the
 -- bridge from `(tag, operand-2 value, operand-1 value)` to `G1Request.spec`.

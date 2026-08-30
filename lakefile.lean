@@ -274,6 +274,10 @@ lean_lib PnP3 where
     -- the caller-supplied terminal return, cursor cleanup and stationary
     -- `aRepairStart` handoff.  No activation, iteration or A-repair.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneAWalkKernel,
+    -- S5 (2026-08-29), the pure operand-A walk invariant foundation:
+    -- canonical `Σᴬ(j)` layout, exact post-S4 inhabitance and honest OOB
+    -- separation.  No round, driver, repair, result or output theorem.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneAWalkInvariant,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -443,6 +447,7 @@ lean_lib PnP3 where
     Glob.one `Tests.TMGateOnePassAEntrySurfaceTests,
     Glob.one `Tests.TMGateOneAWalkInstallAtomsSurfaceTests,
     Glob.one `Tests.TMGateOneAWalkSurfaceTests,
+    Glob.one `Tests.TMGateOneAWalkInvariantSurfaceTests,
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,
     Glob.one `Tests.TMGateOneReadBSurfaceTests,
     Glob.one `Tests.TMGateOneProbeInstallSurfaceTests,

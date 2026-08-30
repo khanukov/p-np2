@@ -2750,3 +2750,39 @@ there.  It executes no reverse seek, `index → spent` mark, forward cursor scan
 turn, restore, iteration, terminal continuation or A-repair.  Const routing,
 malformed/reject behavior, operand-B execution, output and acceptance are
 unchanged and are not claimed here.
+
+## S5 operand-A post-install invariant foundation (2026-08-29)
+
+**Classification: infrastructure, not P-vs-NP mainline progress.**  S5 adds no
+machine mode, row or transition.  `GateOneAWalkInvariant` names the canonical
+`Σᴬ(j)` word for the current ABI: the tag prefix, operand-A
+`index^(arg1-j) · spent^j` split, intact operand-B index field, separator,
+data prefix, one designated cursor at data slot `j`, data suffix and exact
+`output false · finish · blank` tail.
+
+The public layout API proves exact length and physical-bit extent, separate
+encoded length and machine capacity, per-field and whole-word index/spent/data
+counts, unique cursor count and exact cursor ordinal, reconstruction splits,
+conditional list-tape extensionality, and all run/prefix lengths and safety
+facts needed by a later single-round proof.  Cursor uniqueness is asserted
+only for the canonical invariant frame word.  An arbitrary caller tape or
+pre/suffix acquires no cursor-freedom claim without an explicit pointwise or
+frame-list equality hypothesis.
+
+`g1AWalkConfig` is exactly `aSeekOut .p3`, head on the final cell before the
+cursor.  Its dependent arguments require `j ≤ arg1`, `j < vals.length` and
+`vals[j]? = some v`; its context preserves `g1Residual r.tag bB` in the spare
+bits while `vB = v` is the operand-A bit hidden by the cursor.
+
+S5 transports S4 rather than re-executing it.  The S4 post-writer endpoint is
+proved equal to `Σᴬ(0)`, yielding generic real-initial unary and successful
+binary inhabitants with the same exact steps and unchanged-clock bounds.
+Literal input-false (`131`) and or-true (`236`) representatives pin both
+families.  Empty unary data cannot supply the required slot-zero value proof
+and follows the inherited `118`-step OOB capstone; that endpoint is proved
+distinct from every well-formed `Σᴬ(0)`.  The successful-binary nonempty
+premise remains explicit.
+
+The marked/restored layouts and their pure splits are only an S6 foundation.
+S5 contains no round theorem, induction, driver, terminal execution, operand-A
+repair, result/combine computation, output write or acceptance theorem.

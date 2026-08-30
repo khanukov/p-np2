@@ -2939,3 +2939,35 @@ rows cover every tag and both constant literals, with exact step counts
 
 This slice stops at `combineStart`: it executes no combine operation, writes no
 output cell, and proves no accept/reject or `TM.accepts` statement.
+
+## S10a dormant G1 output scan/turn/write kernel (2026-08-30)
+
+**Classification: infrastructure, not P-vs-NP mainline progress.**  S10a adds
+six finite modes only: `outSeek`, `outTurn`, `outWriteFalse`, `outWriteTrue`,
+`outputDoneFalse`, and `outputDoneTrue`.  The current five-tag canonical prefix
+grammar is strict: `bof`, `tag`, both `argSep` frames, `index`, `separator`, and
+`data` are the only crossable frames; the unique `output false` opens the turn.
+`output true`, `spent`, `cursor`, `finish`, `blank`, malformed windows, and all
+three reserved windows reject before any write.
+
+Every execution theorem starts from the explicit caller-supplied
+`g1OutputStartConfig`.  For `P = (g1PrefixFrames r).length`, the exact total is
+`4*(P+1)+5 = 4*(tag.units+arg1+arg2+vals.length+4)+9`: four steps per prefix
+and target frame, one turn, and four reverse writer steps.  Exactly the target
+`output false` becomes `output res`; all other cells and frames are preserved.
+The true run genuinely flips the output cell, the false run is tape-identical,
+there is exactly one output frame, and the final spent/cursor counts are zero.
+Both literal caller-supplied probes use the nine-frame constant layout and take
+exactly 33 steps.
+
+The exact public S10a surface contains 63 named theorem wrappers, 17 definition
+checks, six constructor checks, and two instance checks.  The same 63 source
+theorems occur exactly once as direct `AxiomsAudit` roots; private helper
+theorems are intentionally outside all three public sets.
+
+The endpoints are the distinct local stationary states `outputDoneFalse` and
+`outputDoneTrue`; computed false is therefore distinct from both `reject` and
+`bOOB`.  Full transition predecessor closure proves the six-mode family is
+dormant.  `combineStart` remains its S9 stationary self-loop, so no live result
+route enters S10a.  There is no accept transition, `TM.accepts` theorem,
+full-initial or clock composition, or reject claim for a `spec = none` request.

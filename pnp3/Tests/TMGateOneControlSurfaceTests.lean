@@ -486,8 +486,8 @@ theorem check_g1Transition_bRepairDone (phase : Fin 1)
 one and only row outside the five repair modes that enters one: it writes back
 the cell it scans — so the tape is unchanged — steps one cell **left**, and
 lands in the reverse-read entry shape `bRepairSeek .p3` with an empty frame
-buffer and the whole `G1Ctx`, latch included, preserved.  `readAStart` and
-`combineStart` remain idle beside it. -/
+buffer and the whole `G1Ctx`, latch included, preserved.  `readAStart` is the
+live result/pass-A dispatch; `combineStart` remains the stationary boundary. -/
 theorem check_g1Transition_readAResetStart_bridge (phase : Fin 1)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
     g1Transition phase (g1State .readAResetStart position b0 b1 b2 ctx) scan =

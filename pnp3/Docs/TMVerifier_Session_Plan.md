@@ -2818,3 +2818,44 @@ costs fit the unchanged `g1Clock`.  Literal caller-supplied probes cover the
 196-step literal composes the real initial configuration through S5 and one S6
 normal round only.  There is no induction, driver, live automatic loop,
 terminal repair, A-repair, result/combine computation, output or acceptance.
+
+## S7 exact operand-A induction/driver (2026-08-30)
+
+**Classification: infrastructure, not P-vs-NP mainline progress.**  S7 adds no
+transition, mode, state field, padding parameter or advice.  The new direct
+root `GateOneAWalkDriver` iterates the merged S6 normal-round theorem from the
+exact S5 `Σᴬ(0)` configuration.  Its accumulated schedule is the literal sum
+
+`sum_{j < m} (16*j + 8*arg2 + 45)
+  = 8*m^2 + (8*arg2 + 37)*m`.
+
+The induction takes an explicit function `v : Nat -> Bool` and witnesses
+`vals[j]? = some (v j)` for every `j <= m`, plus the explicit bounds
+`m <= arg1` and `m < vals.length`.  It reaches exact `Σᴬ(m)`.  A projection
+theorem pins the complete tape and head, `aSeekOut .p3`, residual, latest
+latched `v m`, unique cursor, whole-word spent/index counts and the operand-A
+field's remaining-index count.  Separate capstones prepend the exact S5 unary
+and successful-binary initial routes; the latter retains its physical
+operand-B witness.
+
+For provenance, the exact schedule is bounded first by the concrete local
+quadratic `64*(tag.units + arg1 + arg2 + vals.length + 6)^2`, and that
+quadratic is bounded by the unchanged public `g1Clock`.  The accumulated
+normal rounds plus either exact S5 unary or successful-binary prefix fit that
+same unchanged clock.  The exact exhaustion seek and optional S3b2b terminal
+tail also remain inside it.
+
+With data through slot `arg1`, the full exhaustion driver runs all `arg1`
+normal rounds and appends the S6 seek to exact local `aExh`; this includes the
+nonvacuous `arg1 = 0` case (zero rounds followed by the 12-step seek when
+`arg2 = 0`).  The S3b2b terminal is composed too: it returns from `aExh` to the
+cursor, restores `vals[arg1]`, removes the cursor and stops at stationary
+`aRepairStart` on named cursor-free `g1AWalkDoneFrames`.  A distinct theorem
+covers the first missing successor, appending S6's data-OOB round and stopping
+at `bOOB` rather than conflating it with operand-index exhaustion.
+
+Literal probes cover zero, one and two rounds (0, 45 and 106 steps), the
+134-step two-round exhaustion driver, the 12-step zero-operand exhaustion
+edge, and a genuine initial unary route followed by two rounds.  Deferred:
+the A-repair sweep, result/combine computation, output write and acceptance.
+The real-initial literal uses 277 exact steps (171 for S5 plus 106 for S7).

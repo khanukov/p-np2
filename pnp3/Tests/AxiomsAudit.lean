@@ -38,6 +38,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOneAWalkInstallAtoms
 import Complexity.TMVerifier.TuringToolkit.GateOneAWalkKernel
 import Complexity.TMVerifier.TuringToolkit.GateOneAWalkInvariant
 import Complexity.TMVerifier.TuringToolkit.GateOneAWalkRound
+import Complexity.TMVerifier.TuringToolkit.GateOneAWalkDriver
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -1416,6 +1417,44 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1AWalkRoundExamples.oob_round_exact
 #print axioms Internal.PsubsetPpoly.TM.G1AWalkRoundExamples.exhaust_exact
 #print axioms Internal.PsubsetPpoly.TM.G1AWalkRoundExamples.literal_clock_bounds
+
+-- S7 (2026-08-30): exact finite-sum operand-A induction from merged Sigma-A,
+-- real unary/binary prefix compositions, unchanged-clock provenance, separate
+-- exhaustion/OOB drivers and the cursor-free stationary S3b2b terminal.
+-- No transition, A-repair sweep, result, output or acceptance theorem.
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkDriverSteps_zero
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkDriverSteps_succ
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkDriverSteps_eq_sum
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_driver_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_driver_preservation
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readA_driver_unary_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readA_driver_binary_exact
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkDriverSteps_le_poly
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkDriverPoly_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkDriverSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1AUnaryDriverSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1ABinaryDriverSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_exhaust_driver_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_oob_driver_exact
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkExhaustDriverSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkFullDriverSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkRepairStartConfig_tape
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkRepairStartConfig_head
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkRepairStartConfig_state
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkRepairStartConfig_res
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkRepairStartConfig_vB
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkSplit_done
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkSplit_exhaust_fwd
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkDoneFrames_count_cursor
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_terminal_from_exhaust_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_full_driver_exact
+#print axioms Internal.PsubsetPpoly.TM.G1AWalkDriverExamples.requests_canonical
+#print axioms Internal.PsubsetPpoly.TM.G1AWalkDriverExamples.zero_round_exact
+#print axioms Internal.PsubsetPpoly.TM.G1AWalkDriverExamples.one_round_exact
+#print axioms Internal.PsubsetPpoly.TM.G1AWalkDriverExamples.two_round_exact
+#print axioms Internal.PsubsetPpoly.TM.G1AWalkDriverExamples.exhaustion_driver_exact
+#print axioms Internal.PsubsetPpoly.TM.G1AWalkDriverExamples.zero_operand_exhaustion_exact
+#print axioms Internal.PsubsetPpoly.TM.G1AWalkDriverExamples.two_round_from_initial_exact
 
 -- S3b2a (2026-08-29): direct source roots for the dormant normal walk.
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameScanner.revWindowStop

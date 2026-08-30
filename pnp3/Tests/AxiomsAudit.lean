@@ -36,6 +36,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOnePassAControl
 import Complexity.TMVerifier.TuringToolkit.GateOnePassAEntryExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneAWalkInstallAtoms
 import Complexity.TMVerifier.TuringToolkit.GateOneAWalkKernel
+import Complexity.TMVerifier.TuringToolkit.GateOneAWalkInvariant
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -1295,6 +1296,90 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1ALiveInstallExamples.or_true_cursor_exact
 #print axioms Internal.PsubsetPpoly.TM.G1ALiveInstallExamples.input_empty_oob_exact
 #print axioms Internal.PsubsetPpoly.TM.G1ALiveInstallExamples.literal_clock_bounds
+
+-- S5 (2026-08-29): every direct theorem root of the pure operand-A walk
+-- invariant and its exact S4 transport.  No round, terminal, repair or result.
+#print axioms Internal.PsubsetPpoly.TM.g1AGetn
+#print axioms Internal.PsubsetPpoly.TM.g1ALength_pos_of_get
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkCtx_vB
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkCtx_res
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkCtx_withVB
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkFrames_fields
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkOperand2_eq
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkOperand1_count_index
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkOperand1_count_spent
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkOperand1_count_cursor
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkOperand1_length
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkOperand2_count_index
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkOperand2_count_spent
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkOperand2_count_cursor
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkOperand2_length
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkFrames_count_cursor
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkFrames_count_spent
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkFrames_count_index
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkDataFrames_length
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkDataFrames_count
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkFramesRestored_count_cursor
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkFramesRestored_data
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkFramesRestored_count_spent
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkFramesRestored_count_index
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkFramesRestored_operand1_count_index
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkFrames_length
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkFrames_length_eq_validation
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkFrames_cursor_split
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkInvariantCursorPre_length
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkFrames_cursor_at
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkFrames_physical_length
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkFrames_physical_length_lt_capacity
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkTape_ext
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkTape_eq_of_frames_eq
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkFramesRestored_length
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkOuterRun_skip
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkOuterRun_no_argSep
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkInnerRun_skip
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkInnerRun_no_index
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkInnerRun_no_argSep
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkFwdRun_skip
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkFwdRun_no_cursor
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkInnerRun_length
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkOuterRun_length
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkFwdRun_length
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkSplit_seek
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkSplit_mark
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkSplit_marked
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkSplit_marked_fwd
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkSplit_marked_cursor
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkSplit_restored_cursor
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkSplit_restored_probe
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkSplit_restored_oob
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkSplit_succ
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkMarkPre_length
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkFwdPre_length
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkCursorPre_length
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkProbePre_length
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkCursor_safe
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkConfig_tape
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkConfig_head
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkConfig_state
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkConfig_vB
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkConfig_res
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkConfig_walkMode
+#print axioms Internal.PsubsetPpoly.TM.g1AFirstCursorFrames_eq_sigma0
+#print axioms Internal.PsubsetPpoly.TM.g1APostWriterConfig_eq_sigma0
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_sigma0_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readA_sigma0_unary_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readA_sigma0_binary_exact
+#print axioms Internal.PsubsetPpoly.TM.g1AWalk_unary_sigma0_steps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1AWalk_binary_sigma0_steps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1AWalk_sigma0_no_success_of_empty
+#print axioms Internal.PsubsetPpoly.TM.g1AWalk_binary_success_not_empty
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readA_sigma0_unary_oob_exact
+#print axioms Internal.PsubsetPpoly.TM.g1AInstallOOBConfig_ne_sigma0
+#print axioms Internal.PsubsetPpoly.TM.g1AWalk_unary_oob_steps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.G1AWalkInvariantExamples.input_false_sigma0_exact
+#print axioms Internal.PsubsetPpoly.TM.G1AWalkInvariantExamples.or_true_sigma0_exact
+#print axioms Internal.PsubsetPpoly.TM.G1AWalkInvariantExamples.input_empty_oob_exact
+#print axioms Internal.PsubsetPpoly.TM.G1AWalkInvariantExamples.input_empty_no_sigma0_success
 
 -- S3b2a (2026-08-29): direct source roots for the dormant normal walk.
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.ReverseFrameScanner.revWindowStop

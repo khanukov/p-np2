@@ -5,8 +5,8 @@ import Complexity.TMVerifier.TuringToolkit.GateOneAResult
 
 Definitions receive type checks only.  Every public theorem in
 `GateOneAResult` has one exact named wrapper rooted directly in that theorem;
-there are no anonymous examples.  The surface stops at stationary
-`combineStart` and contains no output, accept/reject, or `TM.accepts` claim.
+there are no anonymous examples.  The surface stops at the exact `combineStart`
+boundary and contains no output, accept/reject, or `TM.accepts` claim.
 -/
 
 namespace Pnp3.Tests.TMGateOneAResultSurface
@@ -212,12 +212,6 @@ theorem check_g1CS_gate_result_tape (r : G1Request) (hc : r.Canonical)
       (g1GateResultSteps r)).tape =
         (G1M.initialConfig (g1Point (encodeG1 r))).tape := by
   exact g1CS_gate_result_tape r hc res hs
-
-theorem check_g1CS_gate_result_stable (r : G1Request) (hc : r.Canonical)
-    (res : Bool) (hs : r.spec = some res) (k : Nat) :
-    TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
-        (g1GateResultSteps r + k) = g1CombineConfig r res := by
-  exact g1CS_gate_result_stable r hc res hs k
 
 theorem check_g1Spec_none_of_arg1_oob (r : G1Request)
     (ht : r.tag ≠ .const) (hm : r.vals.length ≤ r.arg1) :

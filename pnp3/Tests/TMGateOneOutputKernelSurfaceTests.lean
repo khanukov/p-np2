@@ -1,7 +1,7 @@
 import Complexity.TMVerifier.TuringToolkit.GateOneOutputKernel
 
 /-!
-# S10a dormant G1 output kernel: exact public surface
+# S10a G1 output kernel: exact public surface
 
 Definitions, constructors, and instances receive bare type checks.  Every
 public theorem introduced by S10a has one exact named wrapper rooted directly
@@ -88,11 +88,11 @@ theorem check_g1Transition_outWrite (phase : Fin 1) (res : Bool)
         .left) :=
   g1Transition_outWrite phase res position b0 b1 b2 scan ctx
 
-theorem check_g1Transition_outputDone_stable (phase : Fin 1)
+theorem check_g1Transition_outputDone_accept (phase : Fin 1)
     (res scan : Bool) :
     g1Transition phase (g1OutputDoneState res) scan =
-      (0, g1OutputDoneState res, scan, .stay) :=
-  g1Transition_outputDone_stable phase res scan
+      (0, g1AcceptState, scan, .stay) :=
+  g1Transition_outputDone_accept phase res scan
 
 /-! ## Strict scan grammar -/
 
@@ -143,15 +143,14 @@ theorem check_g1Complete_outSeek_malformed_reserved
 theorem check_g1Transition_outputKernel_predecessor (phase : Fin 1)
     (s : G1State) (scan : Bool)
     (h : G1OutputKernelMode (g1Transition phase s scan).2.1.mode) :
-    G1OutputKernelMode s.mode :=
+    G1OutputKernelMode s.mode ∨ s.mode = .combineStart :=
   g1Transition_outputKernel_predecessor phase s scan h
 
-theorem check_g1Transition_combineStart_not_output (phase : Fin 1)
+theorem check_g1Transition_combineStart_output_mode (phase : Fin 1)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
-    ¬ G1OutputKernelMode
-      (g1Transition phase
-        (g1State .combineStart position b0 b1 b2 ctx) scan).2.1.mode :=
-  g1Transition_combineStart_not_output phase position b0 b1 b2 scan ctx
+    (g1Transition phase
+      (g1State .combineStart position b0 b1 b2 ctx) scan).2.1.mode = .outSeek :=
+  g1Transition_combineStart_output_mode phase position b0 b1 b2 scan ctx
 
 /-! ## Exact caller-supplied atoms -/
 
@@ -197,14 +196,6 @@ theorem check_g1CS_out_write (n : Nat) (pre suffix : List G1Frame)
           ((pre ++ G1Frame.output res :: suffix).flatMap G1Frame.bits))
         (g1OutputDoneState res) :=
   g1CS_out_write n pre suffix res ctx hpre hsafe
-
-theorem check_g1CS_outputDone_stable (n h : Nat)
-    (hh : h < G1M.tapeLength n)
-    (tape : Fin (G1M.tapeLength n) → Bool) (res : Bool) (k : Nat) :
-    TM.runConfig (M := G1M)
-        (g1AlignedConfigQ n h hh tape (g1OutputDoneState res)) k =
-      g1AlignedConfigQ n h hh tape (g1OutputDoneState res) :=
-  g1CS_outputDone_stable n h hh tape res k
 
 /-! ## Canonical output layout -/
 
@@ -377,12 +368,6 @@ theorem check_g1OutputDone_false_ne_oob (ctx : G1Ctx) :
 theorem check_g1OutputDone_ne_combine (res : Bool) (ctx : G1Ctx) :
     g1OutputDoneState res ≠ g1CombineState ctx :=
   g1OutputDone_ne_combine res ctx
-
-theorem check_g1CS_output_kernel_stable (r : G1Request) (res : Bool)
-    (k : Nat) :
-    TM.runConfig (M := G1M) (g1OutputStartConfig r res)
-        (g1OutputKernelSteps r + k) = g1OutputDoneConfig r res :=
-  g1CS_output_kernel_stable r res k
 
 /-! ## Literal caller-supplied false/true probes -/
 

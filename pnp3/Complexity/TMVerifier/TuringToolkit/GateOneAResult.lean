@@ -13,9 +13,9 @@ middle row alone applies the latched residual to operand A and installs
 
 `const` retains its distinct pass-B bypass.  `g1GateResultSteps` is therefore
 an honest three-way schedule for all five tags.  Successful runs stop at the
-stationary `combineStart` boundary with the canonical tape and head zero.
-There is no combine execution beyond that boundary, output write, acceptance,
-rejection, or `TM.accepts` claim here.  A `none` specification remains a separate semantic
+`combineStart` boundary with the canonical tape and head zero; S10b consumes
+that boundary immediately.  This module itself states no output, acceptance,
+rejection, or `TM.accepts` claim.  A `none` specification remains a separate semantic
 case; in particular, no successful output is asserted for an out-of-bounds
 request.
 -/
@@ -405,13 +405,6 @@ theorem g1CS_gate_result_tape (r : G1Request) (hc : r.Canonical)
         (G1M.initialConfig (g1Point (encodeG1 r))).tape := by
   rw [g1CS_gate_result_exact r hc res hs]
   rfl
-
-theorem g1CS_gate_result_stable (r : G1Request) (hc : r.Canonical)
-    (res : Bool) (hs : r.spec = some res) (k : Nat) :
-    TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
-        (g1GateResultSteps r + k) = g1CombineConfig r res := by
-  rw [runConfig_add, g1CS_gate_result_exact r hc res hs, g1CombineConfig]
-  exact g1CS_runConfig_combine_idle _ _ _ _ _ k
 
 /-! ## Honest `none`/OOB separation -/
 

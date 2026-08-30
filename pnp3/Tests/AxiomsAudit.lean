@@ -42,6 +42,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOneAWalkDriver
 import Complexity.TMVerifier.TuringToolkit.GateOneARepair
 import Complexity.TMVerifier.TuringToolkit.GateOneAResult
 import Complexity.TMVerifier.TuringToolkit.GateOneOutputKernel
+import Complexity.TMVerifier.TuringToolkit.GateOneOutputAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -327,7 +328,8 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_rewind_p0_other
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_readAStart_entry
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_readAStart_result
-#print axioms Internal.PsubsetPpoly.TM.g1Transition_combineStart_idle
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_combineStart_output
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_outputDone_accept
 -- `readAResetStart` is **no longer idle**: Repair-2a makes it the one-step bridge
 -- into the repair sweep, writing back what it scans and stepping one cell left
 -- into `bRepairSeek .p3` with the whole `G1Ctx` preserved.  It is the only new
@@ -514,7 +516,6 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_step_readAStart_entry
 #print axioms Internal.PsubsetPpoly.TM.g1CS_step_readAStart_result
 #print axioms Internal.PsubsetPpoly.TM.g1CS_step_readAStart_operandB_not_result
-#print axioms Internal.PsubsetPpoly.TM.g1CS_runConfig_combine_idle
 #print axioms Internal.PsubsetPpoly.TM.g1CS_step_readAReset_bridge
 #print axioms Internal.PsubsetPpoly.TM.g1CS_step_round_bridge
 #print axioms Internal.PsubsetPpoly.TM.g1CS_runConfig_oob_sink
@@ -1614,8 +1615,9 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1AWalkOOBConfig_ne_aRepairDone
 
 -- S9 (2026-08-30): exact three-row non-const result handoff, unchanged const
--- bypass, five pure tag bridges, honest spec-none/OOB separation, exact stable
--- combine boundary and all-five-tag literal probes.  No output/acceptance root.
+-- bypass, five pure tag bridges, honest spec-none/OOB separation, exact
+-- combine boundary and all-five-tag literal probes.  S10b consumes the
+-- boundary; S9 itself has no output/acceptance root.
 #print axioms Internal.PsubsetPpoly.TM.g1CS_step_aRepairDone_result
 #print axioms Internal.PsubsetPpoly.TM.g1CS_step_aResultStart_apply
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aRepairDone_combine_exact
@@ -1647,7 +1649,6 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_gate_result_head
 #print axioms Internal.PsubsetPpoly.TM.g1CS_gate_result_state
 #print axioms Internal.PsubsetPpoly.TM.g1CS_gate_result_tape
-#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_result_stable
 #print axioms Internal.PsubsetPpoly.TM.g1Spec_none_of_arg1_oob
 #print axioms Internal.PsubsetPpoly.TM.g1Spec_none_of_arg2_oob_binary
 #print axioms Internal.PsubsetPpoly.TM.g1CS_gate_result_or_spec_none
@@ -1659,16 +1660,14 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1AResultProbes.literal_clocks
 #print axioms Internal.PsubsetPpoly.TM.G1AResultProbes.literal_results
 
--- S10a (2026-08-30): dormant, caller-supplied strict output scan/turn/write.
+-- S10a (2026-08-30): reusable strict output scan/turn/write.
 -- Definitions are pinned by the surface test; every public theorem is a direct
--- audit root here.  `combineStart` remains idle and no root composes a live
--- result route, acceptance, a clock, or spec-none behavior.
+-- audit root here.  S10b supplies the live result entry and accept exit.
 #print axioms Internal.PsubsetPpoly.TM.g1Advance_outputKernel_predecessor
 #print axioms Internal.PsubsetPpoly.TM.g1Complete_outputKernel_predecessor
 #print axioms Internal.PsubsetPpoly.TM.g1Stuck_of_not_forward
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_outTurn
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_outWrite
-#print axioms Internal.PsubsetPpoly.TM.g1Transition_outputDone_stable
 #print axioms Internal.PsubsetPpoly.TM.G1OutputSkip_ne_output
 #print axioms Internal.PsubsetPpoly.TM.G1OutputSkip_ne_spent
 #print axioms Internal.PsubsetPpoly.TM.G1OutputSkip_ne_cursor
@@ -1678,12 +1677,11 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1Advance_outSeek_forbidden
 #print axioms Internal.PsubsetPpoly.TM.g1Complete_outSeek_malformed_reserved
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_outputKernel_predecessor
-#print axioms Internal.PsubsetPpoly.TM.g1Transition_combineStart_not_output
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_combineStart_output_mode
 #print axioms Internal.PsubsetPpoly.TM.g1CS_out_scan
 #print axioms Internal.PsubsetPpoly.TM.g1CS_out_turn
 #print axioms Internal.PsubsetPpoly.TM.g1OutWriter_machine
 #print axioms Internal.PsubsetPpoly.TM.g1CS_out_write
-#print axioms Internal.PsubsetPpoly.TM.g1CS_outputDone_stable
 #print axioms Internal.PsubsetPpoly.TM.g1OutputFrames_false
 #print axioms Internal.PsubsetPpoly.TM.g1OutputFrames_length
 #print axioms Internal.PsubsetPpoly.TM.g1OutputBase_eq
@@ -1718,7 +1716,6 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1OutputDone_false_ne_reject
 #print axioms Internal.PsubsetPpoly.TM.g1OutputDone_false_ne_oob
 #print axioms Internal.PsubsetPpoly.TM.g1OutputDone_ne_combine
-#print axioms Internal.PsubsetPpoly.TM.g1CS_output_kernel_stable
 #print axioms Internal.PsubsetPpoly.TM.G1OutputKernelProbes.literal_frames_false
 #print axioms Internal.PsubsetPpoly.TM.G1OutputKernelProbes.literal_frames_true
 #print axioms Internal.PsubsetPpoly.TM.G1OutputKernelProbes.literal_steps
@@ -1726,6 +1723,54 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1OutputKernelProbes.literal_true_run
 #print axioms Internal.PsubsetPpoly.TM.G1OutputKernelProbes.literal_false_tape
 #print axioms Internal.PsubsetPpoly.TM.G1OutputKernelProbes.literal_true_tape
+
+-- S10b (2026-08-30): live one-gate output and literal acceptance.  Definitions
+-- are pinned by the surface test; every public theorem is rooted directly.
+-- The genuine `TM.accepts` result is forward (`spec = some res`); exact binary
+-- arg2-OOB nonacceptance is separate, and no multi-gate claim is made.
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_accept_predecessor
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_reject_not_accept
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_oob_not_accept
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_outSeek_malformed_reject
+#print axioms Internal.PsubsetPpoly.TM.g1AcceptConfig_state
+#print axioms Internal.PsubsetPpoly.TM.g1AcceptConfig_head
+#print axioms Internal.PsubsetPpoly.TM.g1AcceptConfig_tape
+#print axioms Internal.PsubsetPpoly.TM.g1CS_step_combine_output
+#print axioms Internal.PsubsetPpoly.TM.g1CS_step_outputDone_accept
+#print axioms Internal.PsubsetPpoly.TM.g1CS_output_accept_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_runConfig_accept_sink
+#print axioms Internal.PsubsetPpoly.TM.g1GateAcceptSteps_provenance
+#print axioms Internal.PsubsetPpoly.TM.g1GateAcceptSteps_closed
+#print axioms Internal.PsubsetPpoly.TM.g1GateAcceptSteps_const
+#print axioms Internal.PsubsetPpoly.TM.g1GateAcceptSteps_binary
+#print axioms Internal.PsubsetPpoly.TM.g1GateAcceptSteps_unary
+#print axioms Internal.PsubsetPpoly.TM.g1GateAcceptSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1GateAccept_clock_unchanged
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_accept_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_accept_state
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_accept_context
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_accept_head
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_accept_tape
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_accept_frames
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_accept_output
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_accept_off
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_accept_true_tape_ne
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_accept_false_tape_eq
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_accept_false_ne_oob
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_accept_false_ne_reject
+#print axioms Internal.PsubsetPpoly.TM.g1CS_run_accept_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_accepts_of_spec_some
+#print axioms Internal.PsubsetPpoly.TM.g1CS_reject_not_accept
+#print axioms Internal.PsubsetPpoly.TM.g1CS_oob_not_accept
+#print axioms Internal.PsubsetPpoly.TM.g1CS_outSeek_malformed_reject_stable
+#print axioms Internal.PsubsetPpoly.TM.g1CS_outSeek_malformed_not_accept
+#print axioms Internal.PsubsetPpoly.TM.g1CS_accepts_false_of_arg2_oob_positive
+#print axioms Internal.PsubsetPpoly.TM.g1CS_accepts_false_of_arg2_oob_zero
+#print axioms Internal.PsubsetPpoly.TM.G1OutputAcceptProbes.literal_steps
+#print axioms Internal.PsubsetPpoly.TM.G1OutputAcceptProbes.literal_clocks
+#print axioms Internal.PsubsetPpoly.TM.G1OutputAcceptProbes.literal_accepts
+#print axioms Internal.PsubsetPpoly.TM.G1OutputAcceptProbes.literal_false_output
+#print axioms Internal.PsubsetPpoly.TM.G1OutputAcceptProbes.literal_true_output
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_steps
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_false_repair_exact
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_true_repair_exact

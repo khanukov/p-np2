@@ -593,11 +593,10 @@ general runtime-index addressing beyond the single round below is claimed);
 **pass A, combine, output write
 and repair** (these were deferred at that revision — **superseded by
 Repair-2a and S1b2b**: `readAResetStart` now enters repair and `readAStart` now
-dispatches into pass A or combine; `combineStart` itself remains stationary);
-**acceptance/rejection semantics,
-full run and full clock** (no `TM.run`, no `TM.accepts`, no `spec`-correctness
-and no full-clock theorem — none could honestly exist while four handoffs are
-idle); **padded tapes** (the six initial-config capstones are scoped to the
+dispatches into pass A or combine; S10b now consumes `combineStart`);
+**acceptance/rejection semantics, full run and full clock** (these too were
+deferred at that revision; S10b now supplies the one-gate `TM.run` and forward
+`TM.accepts` theorem under the unchanged clock); **padded tapes** (the six initial-config capstones are scoped to the
 exact tape `encodeG1 r`; local adapters state arbitrary tapes explicitly, but
 no capstone covers a padded tape); and the **`SLGate` bridge, multi-gate evaluator
 and verifier obligation**, unchanged from T2a.
@@ -2928,8 +2927,9 @@ Every branch remains below the unchanged `g1Clock`.
 
 For canonical `r` with `r.spec = some res`, the exact endpoint has head zero,
 the initial canonical tape, state `g1CombineState (g1ResultCtx res)`, and
-`pass = true`, `vB = res`.  It is stable for arbitrary extra budget because
-`combineStart` remains stationary.  Pure bridges cover all five tags;
+`pass = true`, `vB = res`.  This exact boundary is consumed by S10b; there is
+no longer an arbitrary-extra-budget stability contract at `combineStart`.
+Pure bridges cover all five tags;
 out-of-range premises prove `spec = none`, and the total semantic split makes
 no machine-result, rejection, output or acceptance claim on that branch.
 A successful `false` endpoint is proved distinct from `bOOB`.  Six literal
@@ -2937,10 +2937,10 @@ rows cover every tag and both constant literals, with exact step counts
 `195, 243, 430, 454, 117, 133` and exact clocks
 `558080, 861184, 1438720, 1664000, 558080, 701440`.
 
-This slice stops at `combineStart`: it executes no combine operation, writes no
-output cell, and proves no accept/reject or `TM.accepts` statement.
+S9 itself stops at `combineStart`: its theorem composes no output write or
+acceptance step.  The later S10b theorem composes this boundary.
 
-## S10a dormant G1 output scan/turn/write kernel (2026-08-30)
+## S10a reusable G1 output scan/turn/write kernel (2026-08-30)
 
 **Classification: infrastructure, not P-vs-NP mainline progress.**  S10a adds
 six finite modes only: `outSeek`, `outTurn`, `outWriteFalse`, `outWriteTrue`,
@@ -2960,14 +2960,56 @@ there is exactly one output frame, and the final spent/cursor counts are zero.
 Both literal caller-supplied probes use the nine-frame constant layout and take
 exactly 33 steps.
 
-The exact public S10a surface contains 63 named theorem wrappers, 17 definition
-checks, six constructor checks, and two instance checks.  The same 63 source
-theorems occur exactly once as direct `AxiomsAudit` roots; private helper
-theorems are intentionally outside all three public sets.
-
-The endpoints are the distinct local stationary states `outputDoneFalse` and
+The endpoints are the distinct local states `outputDoneFalse` and
 `outputDoneTrue`; computed false is therefore distinct from both `reject` and
-`bOOB`.  Full transition predecessor closure proves the six-mode family is
-dormant.  `combineStart` remains its S9 stationary self-loop, so no live result
-route enters S10a.  There is no accept transition, `TM.accepts` theorem,
-full-initial or clock composition, or reject claim for a `spec = none` request.
+`bOOB`.  S10b activates `combineStart` as the exact entry to `outSeek` and both
+output-done rows as exits to the literal accept sink.  Accordingly, the exact
+output-family predecessor closure now admits the unique external
+`combineStart` door, and the obsolete stationary endpoint contracts are gone.
+S10a remains the reusable caller-supplied kernel; full-initial and genuine
+`TM.accepts` composition live in S10b.
+
+## S10b live one-gate output and acceptance (2026-08-30)
+
+**Classification: infrastructure, not P-vs-NP mainline progress.**  S10b adds
+no mode, runtime field, padding input or advice.  One tape-, context- and
+head-preserving stationary step sends the exact S9 `combineStart` boundary to
+S10a's aligned `outSeek` entry.  The strict S10a kernel writes `output res`,
+then one tape-preserving stationary step sends either `outputDoneFalse` or
+`outputDoneTrue` to the same literal accept sink.  A defined `false` result
+therefore accepts; acceptance denotes a defined one-gate computation, not
+Boolean truth.
+
+The concrete schedule has no arbitrary padding:
+
+`g1GateAcceptSteps r
+  = g1GateResultSteps r + 1 + g1OutputKernelSteps r + 1
+  = g1GateResultSteps r
+      + 4*(tag.units + arg1 + arg2 + vals.length + 4) + 11`.
+
+Named branch formulas replace `g1GateResultSteps` by the existing const,
+binary or unary S9 schedule.  The total fits the unchanged clock
+`g1CS.timeBound N = 512*(N+1)^2+512`.  From the real initial configuration,
+`Canonical r` and `r.spec = some res` reach an exact final configuration with
+head `g1OutputExitHead r`, literal `g1AcceptState` with exact reset context
+`g1Ctx0`, and tape exactly `writeCell (g1OutputPosition r) res initialTape` (equivalently
+the exact `g1OutputFrames r res` word).  Only the stationary literal accept
+sink is used to cover the remaining fixed-clock budget.
+
+The genuine repository `TM.accepts` theorem proves the forward implication
+`r.spec = some res -> accepts = true` for canonical requests.  This slice does
+not claim the full `accepts ↔ r.spec.isSome` equivalence: exact positive- and
+zero-`arg2` binary OOB hypotheses separately prove `accepts = false`, while
+full `spec = none` iff hardening is deferred.  Transition closure prevents
+reject and OOB from entering accept, and an undecodable output window enters
+the literal reject sink and remains nonaccepting.  Accepted false is explicitly
+distinct from both reject and OOB.
+
+Output projections pin the target cell to `res`, preserve every off-target
+cell, prove a genuine tape mutation for true and full tape identity for false.
+Six literals cover all five tags and both constant literals.  Their exact
+accept totals are `230, 286, 485, 513, 152, 172`; their unchanged clocks are
+`558080, 861184, 1438720, 1664000, 558080, 701440`.  Both false and true output
+cells are probed.  The S10b public surface has 43 named theorem wrappers and
+two definition-only checks, with the same 43 theorems rooted directly in the
+axiom audit.  This remains a one-gate result; multi-gate execution is deferred.

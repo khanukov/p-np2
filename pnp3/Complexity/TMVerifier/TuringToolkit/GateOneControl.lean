@@ -188,12 +188,11 @@ the post-read handoff and from configurations a caller writes down.  The sweep's
 rejection row leaves the sweep into the **pre-existing** `reject` sink: no sixth
 mode and no new state field.
 
-**What is deferred.**  `combineStart` remains idle; `readAStart` is now the
-two-way pass-A dispatch.  `bOOB` is a stable read boundary, distinct from the reject state, rather
-than a rejection verdict.  There is **no full-clock or acceptance theorem** —
-the public clock is unchanged and only the proved prefixes are bounded.
-`accept`/`reject` are the two stable sinks; only their tuple equations are
-proved.
+`readAStart` is the two-way pass-A dispatch.  S10b activates `combineStart` as
+the live output-scan door and both output-done handoffs as the literal accept
+door.  `bOOB` remains a stable read boundary, distinct from the reject state,
+rather than a rejection verdict.  The public clock is unchanged, and
+`accept`/`reject` remain the two stable sinks.
 
 ## The live pass-A entry (S1b2b)
 
@@ -303,9 +302,10 @@ The terminal-only continuation is `aExh`/`aRet`, `aTurnFin`, the two final
 restore writers and the live `aRepairStart` handoff.  S4 stops at the
 post-writer `aSeekOut .p3` boundary and executes none of these continuation rows.
 
-`combineStart` and `bOOB` remain local idle/stable boundaries; `readAStart` is
-the live two-way dispatch, and `readAResetStart` is the one-step
-bridge into `bRepairSeek`.  `accept`/`reject` are the sinks. -/
+`combineStart` is the live output door; `bOOB` remains a local stable boundary.
+`readAStart` is the live two-way dispatch, and `readAResetStart` is the
+one-step bridge into `bRepairSeek`.  Both output-done modes enter `accept`, and
+`accept`/`reject` are the sinks. -/
 inductive G1Mode
   | vBof
   | vTag0 | vTag1 | vTag2 | vTag3 | vTag4 | vTag5
@@ -348,7 +348,7 @@ inductive G1Mode
   -- result-normalisation row
   | aRepairSeek | aRepairWrite | aRepairBack | aRepairHop | aRepairDone
   | aResultStart
-  -- S10a's dormant output kernel.  No live row enters this family.
+  -- S10's output kernel and its two value-indexed completion handoffs.
   | outSeek | outTurn | outWriteFalse | outWriteTrue
   | outputDoneFalse | outputDoneTrue
   | readAStart | combineStart | readAResetStart | bOOB
@@ -593,7 +593,7 @@ def g1AResultStartState (ctx : G1Ctx) : G1State :=
 def g1CombineState (ctx : G1Ctx) : G1State :=
   g1State .combineStart .p0 false false false ctx
 
-/-- Caller-supplied entry to the dormant output scan. -/
+/-- Entry to the output scan. -/
 def g1OutSeekState (ctx : G1Ctx) : G1State :=
   g1State .outSeek .p0 false false false ctx
 
@@ -610,12 +610,12 @@ def g1OutWriteMode : Bool → G1Mode
 def g1OutWriteState (b : Bool) (ctx : G1Ctx) : G1State :=
   g1State (g1OutWriteMode b) .p3 false false false ctx
 
-/-- The two local, non-accepting output-complete modes. -/
+/-- The two local output-complete handoffs. -/
 def g1OutputDoneMode : Bool → G1Mode
   | false => .outputDoneFalse
   | true => .outputDoneTrue
 
-/-- Literal stationary endpoint of the dormant output kernel. -/
+/-- Literal result-indexed endpoint of the output kernel. -/
 def g1OutputDoneState (b : Bool) : G1State :=
   g1State (g1OutputDoneMode b) .p0 false false false g1Ctx0
 
@@ -874,7 +874,7 @@ def g1Advance : G1Mode → G1Frame → G1Mode
   | .aRet, .separator => .aRet
   | .aRet, .data _ => .aRet
   | .aRet, .cursor => .aTurnFin
-  -- S10a dormant output scan: exactly the canonical, fully repaired prefix is
+  -- S10a output scan: exactly the canonical, fully repaired prefix is
   -- crossable.  Only the unique unwritten destination opens the local turn.
   | .outSeek, .bof => .outSeek
   | .outSeek, .tag => .outSeek
@@ -1159,7 +1159,7 @@ theorem g1Complete_aRepair_predecessor_closure (mode : G1Mode)
 theorem g1ARepairStart_not_control :
     ¬ G1ARepairControlMode .aRepairStart := id
 
-/-- The complete, dependency-closed family of S10a output modes. -/
+/-- The complete family of S10 output modes. -/
 def G1OutputKernelMode : G1Mode → Prop
   | .outSeek | .outTurn | .outWriteFalse | .outWriteTrue
   | .outputDoneFalse | .outputDoneTrue => True
@@ -1168,7 +1168,7 @@ def G1OutputKernelMode : G1Mode → Prop
 instance : DecidablePred G1OutputKernelMode := fun mode => by
   cases mode <;> first | exact isTrue trivial | exact isFalse id
 
-/-- No decoded frame-table row can enter the dormant output family externally. -/
+/-- No decoded frame-table row can enter the output family externally. -/
 theorem g1Advance_outputKernel_predecessor (mode : G1Mode) (frame : G1Frame) :
     G1OutputKernelMode (g1Advance mode frame) → G1OutputKernelMode mode := by
   set_option maxRecDepth 8192 in
@@ -2045,8 +2045,8 @@ def g1Transition (_phase : Fin 1) (s : G1State) (scan : Bool) :
   | .aRepairDone => (0, g1AResultStartState s.ctx, scan, .stay)
   | .aResultStart =>
       (0, g1ReadAState (g1ResultCtx (s.ctx.res.apply s.ctx.vB)), scan, .stay)
-  -- S10a is dormant: callers may start at `outSeek`, but `combineStart` below
-  -- remains its existing stationary boundary and does not bridge here.
+  -- S10b activates the S10a kernel: `combineStart` enters the exact scan and
+  -- both value-indexed completion handoffs enter the literal accept sink.
   | .outTurn => (0, g1OutWriteState s.ctx.vB s.ctx, scan, .left)
   | .outWriteFalse =>
       match s.position with
@@ -2066,9 +2066,9 @@ def g1Transition (_phase : Fin 1) (s : G1State) (scan : Bool) :
       | .p1 => (0, g1State .outWriteTrue .p0 false false false s.ctx,
           false, .left)
       | .p0 => (0, g1OutputDoneState true, true, .left)
-  | .outputDoneFalse => (0, g1OutputDoneState false, scan, .stay)
-  | .outputDoneTrue => (0, g1OutputDoneState true, scan, .stay)
-  | .combineStart => (0, g1CombineState s.ctx, scan, .stay)
+  | .outputDoneFalse => (0, g1AcceptState, scan, .stay)
+  | .outputDoneTrue => (0, g1AcceptState, scan, .stay)
+  | .combineStart => (0, g1OutSeekState s.ctx, scan, .stay)
   | .bOOB => (0, g1OOBState s.ctx, scan, .stay)
   -- the four operand-1 operation latches: one stationary step each,
   -- writing the residual of the rescanned tag and the operand-2 value latched in
@@ -2386,8 +2386,8 @@ below.  `readAResetStart` has likewise stopped being idle: Repair-2a turns it in
 the one-step bridge of the operand-2 repair sweep, and its tuple is
 `g1Transition_readAResetStart_bridge` below.  `readAStart` is the live two-way
 dispatch and `aInstallStart` is the stationary-head entry into `aInsSeek`.
-`aRepairStart` is the left-moving entry into `aRepairSeek`; `combineStart` and
-`bOOB` remain stationary boundaries. -/
+`aRepairStart` is the left-moving entry into `aRepairSeek`; `combineStart` is
+the live output door and `bOOB` remains stationary. -/
 
 @[simp] theorem g1Transition_accept_sink (phase : Fin 1) (scan : Bool) :
     g1Transition phase g1AcceptState scan = (0, g1AcceptState, scan, .stay) :=
@@ -2848,16 +2848,19 @@ theorem g1Transition_outWrite (phase : Fin 1) (res : Bool)
         .left) := by
   cases res <;> cases position <;> rfl
 
-/-- Each local output-complete state is a stationary, tape-preserving sink. -/
-theorem g1Transition_outputDone_stable (phase : Fin 1) (res scan : Bool) :
+/-- Each output-complete handoff enters the literal accept sink in one
+tape-preserving stationary-head step. -/
+theorem g1Transition_outputDone_accept (phase : Fin 1) (res scan : Bool) :
     g1Transition phase (g1OutputDoneState res) scan =
-      (0, g1OutputDoneState res, scan, .stay) := by
+      (0, g1AcceptState, scan, .stay) := by
   cases res <;> rfl
 
-theorem g1Transition_combineStart_idle (phase : Fin 1)
+/-- The result boundary enters the exact output scan, preserving every context
+bit, the scanned cell, and the head. -/
+theorem g1Transition_combineStart_output (phase : Fin 1)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
     g1Transition phase (g1State .combineStart position b0 b1 b2 ctx) scan =
-      (0, g1CombineState ctx, scan, .stay) := rfl
+      (0, g1OutSeekState ctx, scan, .stay) := rfl
 
 /-- **The pass-A reset handoff is no longer idle.**  It is the one-step bridge
 of the operand-2 repair sweep: whatever it scans is written back — so the tape

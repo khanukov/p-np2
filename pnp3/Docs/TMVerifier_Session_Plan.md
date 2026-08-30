@@ -3130,3 +3130,57 @@ environment is `[true,true,false]`, and the final output is false.  The source
 exports 47 theorems, examples export 22, the surface provides 69 exact named
 wrappers plus definition-only pins, and all 69 theorem roots are audited
 directly.
+
+## GN-3A generic local relocation/conjugacy (2026-08-30)
+
+**Classification: infrastructure, not P-vs-NP mainline progress.**  GN-3A
+adds no GN machine, controller, mode, copier, clock, canonical gate trace, or
+acceptance result.  It reduces neither `SearchMCSPWeakLowerBound` nor
+`VerifiedNPDAGLowerBoundSource`.
+
+For a `G1M` configuration at input length `W`, `gnLocalSpan W = W + 5` is the
+only source footprint copied.  `gnOverlayTape` overlays source offsets
+`[0,W+5)` at a caller-supplied target `base` and preserves the arbitrary
+ambient target tape pointwise outside that interval.  It never copies the
+quadratic tail of `G1M.tapeLength W`.  The extra five cells are exact for the
+stated frame interface: the trailing four-cell blank frame starts at `W`, so
+the physical-frame premise is `W+4 < W+5`; replacing the span by `W+4` makes
+that strict premise false.  The room equivalence
+`base+W+4 < M.tapeLength N <-> base+(W+5) <= M.tapeLength N` pins the same
+boundary.
+
+`gnShiftConfig` maps the source state through a caller-supplied state map,
+shifts the local head by `base`, and uses that overlay.  State equality
+reflection separately assumes that the map is injective.  Exact
+state/head, bit/frame inside, ambient outside, and extensionality theorems are
+public.  Every target-machine theorem retains the physical-room hypothesis
+`base+(W+5) <= M.tapeLength N`.
+
+`G1LocalStepSafe` is nonvacuous: it requires the current head inside the local
+span, forbids an actual left transition at local head zero, and forbids an
+actual right transition whose next head would leave the span.
+`G1StepDelegates M ι c` is only equality of the two transition tuples at the
+scanned bit; it is not a `stepConfig` equality.  From these hypotheses,
+`gn_delegate_step_shift` proves exact configuration equality, including the
+derived next-head proof and a full extensional tape equality.
+
+`G1RunSafe` and `G1RunDelegates` quantify those obligations over every proper
+run prefix.  `gn_delegate_run_shift` proves exact conjugacy by induction, and
+the outside-preservation theorem is pointwise at every prefix (hence also at
+the endpoint).  No full-trace safety theorem for G1 and no canonical gate-run
+relocation is claimed.
+
+The GN-2 word inequality `W+16 <= N` yields room inside the input part of a
+`G1M` target for bases at most eleven, and therefore yields physical room in
+that specific target.  It is not treated as physical room for an arbitrary
+machine.  A future `GNM` must separately prove its clock comparison, including
+the intended `N <= clock N`; GN-3A defines no such clock.
+
+The literal capstones use `W=4`, `N=20`, base seven, identity state injection,
+a nonconstant ambient tape, and one-/two-step exact runs through two genuine
+safe left-moving repair rows.  A genuine
+`aRepairStart` left transition at local head zero supplies the counterexample:
+the source clamps at zero while its positive-base shift moves left, so the
+unconditional conjugacy statement is false.  The source exports 29 theorems,
+the examples export 18, the surface provides 47 exact named wrappers plus
+definition-only pins, and all 47 theorem roots are audited directly.

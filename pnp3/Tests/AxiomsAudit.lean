@@ -54,6 +54,7 @@ import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekSemanticsExamples
 import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekTerminalControl
 import Complexity.TMVerifier.TuringToolkit.GateNEncodingExamples
 import Complexity.TMVerifier.TuringToolkit.GateNTapeStateExamples
+import Complexity.TMVerifier.TuringToolkit.GateNRelocationExamples
 
 /-!
   pnp3/Tests/AxiomsAudit.lean
@@ -397,6 +398,57 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.GNTapeStateExamples.tight_input_length
 #print axioms Internal.PsubsetPpoly.TM.GNTapeStateExamples.tight_bound_eq
 #print axioms Internal.PsubsetPpoly.TM.GNTapeStateExamples.tight_bound_seventeen_false
+
+-- GN-3A (2026-08-30), generic local-relocation infrastructure.  The copied
+-- footprint is exactly `[0,W+5)`; delegation is transition-tuple equality;
+-- there is no GN machine/controller/clock/copier/acceptance theorem.
+#print axioms Internal.PsubsetPpoly.TM.gnLocalSpan_le_g1_tapeLength
+#print axioms Internal.PsubsetPpoly.TM.gnLocalSpan_final_frame_fits
+#print axioms Internal.PsubsetPpoly.TM.gnLocalSpan_four_insufficient
+#print axioms Internal.PsubsetPpoly.TM.gnLocalSpan_room_iff
+#print axioms Internal.PsubsetPpoly.TM.gnSourceIndex_val
+#print axioms Internal.PsubsetPpoly.TM.gnTargetIndex_val
+#print axioms Internal.PsubsetPpoly.TM.gnOverlayTape_inside
+#print axioms Internal.PsubsetPpoly.TM.gnOverlayTape_outside
+#print axioms Internal.PsubsetPpoly.TM.gnShiftConfig_state
+#print axioms Internal.PsubsetPpoly.TM.gnShiftConfig_state_eq_iff
+#print axioms Internal.PsubsetPpoly.TM.gnShiftConfig_head_val
+#print axioms Internal.PsubsetPpoly.TM.gnShiftConfig_bit_inside
+#print axioms Internal.PsubsetPpoly.TM.gnShiftConfig_bit_outside
+#print axioms Internal.PsubsetPpoly.TM.gnShiftConfig_frame_inside
+#print axioms Internal.PsubsetPpoly.TM.gnOverlayTape_ext
+#print axioms Internal.PsubsetPpoly.TM.gnShiftConfig_ext
+#print axioms Internal.PsubsetPpoly.TM.gn_local_step_safe_next_head
+#print axioms Internal.PsubsetPpoly.TM.gn_shift_moveHead_val
+#print axioms Internal.PsubsetPpoly.TM.gn_shift_write_tape
+#print axioms Internal.PsubsetPpoly.TM.gn_delegate_step_shift
+#print axioms Internal.PsubsetPpoly.TM.G1RunSafe.mono
+#print axioms Internal.PsubsetPpoly.TM.G1RunDelegates.mono
+#print axioms Internal.PsubsetPpoly.TM.gn_run_safe_endpoint_head
+#print axioms Internal.PsubsetPpoly.TM.gn_delegate_run_shift
+#print axioms Internal.PsubsetPpoly.TM.gn_delegate_run_shift_outside_prefix
+#print axioms Internal.PsubsetPpoly.TM.gn_delegate_run_shift_outside
+#print axioms Internal.PsubsetPpoly.TM.gnLocalSpan_room_in_input_of_add_sixteen
+#print axioms Internal.PsubsetPpoly.TM.gn_g1_target_room_of_add_sixteen
+#print axioms Internal.PsubsetPpoly.TM.gn_g1_target_room_zero_of_add_sixteen
+#print axioms Internal.PsubsetPpoly.TM.GNRelocationExamples.cap_inject_injective
+#print axioms Internal.PsubsetPpoly.TM.GNRelocationExamples.cap_room
+#print axioms Internal.PsubsetPpoly.TM.GNRelocationExamples.cap_head_local
+#print axioms Internal.PsubsetPpoly.TM.GNRelocationExamples.cap_source_move
+#print axioms Internal.PsubsetPpoly.TM.GNRelocationExamples.cap_step_safe
+#print axioms Internal.PsubsetPpoly.TM.GNRelocationExamples.cap_step_delegates
+#print axioms Internal.PsubsetPpoly.TM.GNRelocationExamples.cap_source_step_head
+#print axioms Internal.PsubsetPpoly.TM.GNRelocationExamples.cap_source_step_move
+#print axioms Internal.PsubsetPpoly.TM.GNRelocationExamples.capstone_shifted_one_step
+#print axioms Internal.PsubsetPpoly.TM.GNRelocationExamples.cap_run_safe_two
+#print axioms Internal.PsubsetPpoly.TM.GNRelocationExamples.cap_run_delegates_two
+#print axioms Internal.PsubsetPpoly.TM.GNRelocationExamples.capstone_shifted_short_run
+#print axioms Internal.PsubsetPpoly.TM.GNRelocationExamples.capstone_outside_every_prefix
+#print axioms Internal.PsubsetPpoly.TM.GNRelocationExamples.capstone_footprint_exact
+#print axioms Internal.PsubsetPpoly.TM.GNRelocationExamples.left_zero_head_local
+#print axioms Internal.PsubsetPpoly.TM.GNRelocationExamples.left_zero_target_room
+#print axioms Internal.PsubsetPpoly.TM.GNRelocationExamples.left_zero_source_next_local
+#print axioms Internal.PsubsetPpoly.TM.GNRelocationExamples.capstone_left_zero_unconditional_shift_false
 
 -- S1a, pure layer: the four pass-A residual operations of operand 1 and the
 -- bridge from `(tag, operand-2 value, operand-1 value)` to `G1Request.spec`.

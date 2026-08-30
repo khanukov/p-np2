@@ -285,8 +285,8 @@ lean_lib PnP3 where
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneAWalkRound,
     -- S7 (2026-08-30), the exact operand-A induction/driver.  The first `m`
     -- normal rounds use the finite sum of S6's own costs, then the exhaustion
-    -- and dormant terminal capstones stop at `aExh` or stationary
-    -- cursor-free `aRepairStart`; first-successor OOB remains separate.
+    -- and dormant terminal capstones stop at `aExh` or the cursor-free
+    -- `aRepairStart` boundary later consumed by S8b; OOB remains separate.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneAWalkDriver,
     -- S8b (2026-08-30), live reject-aware operand-A repair.  The unique
     -- `aRepairStart` door composes S7 terminal cleanup with S8a's canonical

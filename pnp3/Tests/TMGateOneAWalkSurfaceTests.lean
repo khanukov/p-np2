@@ -4,8 +4,8 @@ import Complexity.TMVerifier.TuringToolkit.GateOneAWalkKernel
 # S3b2a/S3b2b dormant operand-A walk surface
 
 Dated 2026-08-29.  The normal/terminal runs remain caller-supplied; S4 stops at
-their `aSeekOut .p3` entry boundary, terminal cleanup stops at stationary
-`aRepairStart`; S8b's separate surface composes its live repair entry.
+their `aSeekOut .p3` entry boundary, and terminal cleanup reaches the exact
+finite-budget `aRepairStart` boundary consumed by S8b's live repair entry.
 -/
 
 namespace Pnp3.Tests.TMGateOneAWalkSurface

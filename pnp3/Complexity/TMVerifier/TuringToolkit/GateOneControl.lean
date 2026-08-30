@@ -564,7 +564,7 @@ theorem g1AFinMode_ne_restore (b b' : Bool) :
     g1AFinMode b ≠ g1ARestoreMode b' := by
   cases b <;> cases b' <;> decide
 
-/-- The stationary local handoff after terminal cursor cleanup. -/
+/-- The exact live repair-entry handoff after terminal cursor cleanup. -/
 def g1ARepairStartState (ctx : G1Ctx) : G1State :=
   g1State .aRepairStart .p0 false false false ctx
 

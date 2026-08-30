@@ -1421,7 +1421,8 @@ open Pnp3.Magnification
 
 -- S7 (2026-08-30): exact finite-sum operand-A induction from merged Sigma-A,
 -- real unary/binary prefix compositions, unchanged-clock provenance, separate
--- exhaustion/OOB drivers and the cursor-free stationary S3b2b terminal.
+-- exhaustion/OOB drivers and the cursor-free S3b2b terminal boundary later
+-- consumed by S8b's live repair entry.
 -- No transition, A-repair sweep, result, output or acceptance theorem.
 #print axioms Internal.PsubsetPpoly.TM.g1AWalkDriverSteps_zero
 #print axioms Internal.PsubsetPpoly.TM.g1AWalkDriverSteps_succ

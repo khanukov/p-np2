@@ -1,10 +1,10 @@
 import Complexity.TMVerifier.TuringToolkit.GateOneARepair
 
 /-!
-# S8a dormant operand-A repair surface (2026-08-30)
+# S8b live operand-A repair surface (2026-08-30)
 
-Definitions are checked only.  Every public S8a theorem has one exact named
-wrapper; there are no anonymous examples and no derived result/combine surface.
+Definitions are checked only.  Every public S8b theorem has one exact named
+wrapper; there are no anonymous examples and no result/combine execution.
 -/
 
 namespace Pnp3.Tests.TMGateOneARepairSurface
@@ -37,6 +37,11 @@ set_option linter.unnecessarySeqFocus false
 #check @g1ARepairSteps
 #check @g1ARepairEntryConfig
 #check @g1ARepairDoneConfig
+#check @g1ARepairLiveSteps
+#check @g1AWalkRepairSteps
+#check @g1AUnaryRepairSteps
+#check @g1ABinaryRepairSteps
+#check @g1ARepairLivePoly
 #check @G1ARepairExamples.reqFalse
 #check @G1ARepairExamples.reqTrue
 #check @G1ARepairExamples.reqZero
@@ -65,13 +70,15 @@ theorem check_g1ARepairBackComplete_forbidden :
     g1ARepairBackComplete false false false false = .reject ∧
       g1ARepairBackComplete false true true true = .reject := by
   apply g1ARepairBackComplete_forbidden <;> assumption
-theorem check_g1Advance_aRepair_dormant (mode : G1Mode) (frame : G1Frame) :
+theorem check_g1Advance_aRepair_predecessor_closure
+    (mode : G1Mode) (frame : G1Frame) :
     G1ARepairControlMode (g1Advance mode frame) → G1ARepairControlMode mode := by
-  apply g1Advance_aRepair_dormant <;> assumption
-theorem check_g1Complete_aRepair_dormant (mode : G1Mode) (b0 b1 b2 b3 : Bool) :
+  apply g1Advance_aRepair_predecessor_closure <;> assumption
+theorem check_g1Complete_aRepair_predecessor_closure
+    (mode : G1Mode) (b0 b1 b2 b3 : Bool) :
     G1ARepairControlMode (g1Complete mode b0 b1 b2 b3) →
       G1ARepairControlMode mode := by
-  apply g1Complete_aRepair_dormant <;> assumption
+  apply g1Complete_aRepair_predecessor_closure <;> assumption
 theorem check_g1ARepairStart_not_control :
     ¬ G1ARepairControlMode .aRepairStart := by
   apply g1ARepairStart_not_control <;> assumption
@@ -157,11 +164,6 @@ theorem check_g1Transition_aRepairDone_idle (phase : Fin 1)
     g1Transition phase (g1State .aRepairDone position b0 b1 b2 ctx) scan =
       (0, g1ARepairDoneState ctx, scan, .stay) := by
   apply g1Transition_aRepairDone_idle <;> assumption
-theorem check_g1Transition_aRepair_predecessor_closure (phase : Fin 1) (s : G1State)
-    (scan : Bool)
-    (h : G1ARepairControlMode (g1Transition phase s scan).2.1.mode) :
-    G1ARepairControlMode s.mode := by
-  apply g1Transition_aRepair_predecessor_closure <;> assumption
 theorem check_g1Transition_aRepair_entry_closure (phase : Fin 1) (s : G1State)
     (scan : Bool)
     (h : G1ARepairControlMode (g1Transition phase s scan).2.1.mode) :
@@ -172,12 +174,17 @@ theorem check_g1Transition_aRepair_unique_external_door (phase : Fin 1)
     (hnext : G1ARepairControlMode (g1Transition phase s scan).2.1.mode)
     (hprev : ¬ G1ARepairControlMode s.mode) : s.mode = .aRepairStart := by
   apply g1Transition_aRepair_unique_external_door <;> assumption
-theorem check_g1Transition_aRepairStart_no_entry (phase : Fin 1)
+theorem check_g1Transition_aRepairStart_entry (phase : Fin 1)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
-    ¬ G1ARepairControlMode
+    G1ARepairControlMode
       (g1Transition phase
         (g1State .aRepairStart position b0 b1 b2 ctx) scan).2.1.mode := by
-  apply g1Transition_aRepairStart_no_entry <;> assumption
+  apply g1Transition_aRepairStart_entry <;> assumption
+theorem check_g1Transition_aRepair_external_entry_iff (phase : Fin 1)
+    (s : G1State) (scan : Bool) (hprev : ¬ G1ARepairControlMode s.mode) :
+    G1ARepairControlMode (g1Transition phase s scan).2.1.mode ↔
+      s.mode = .aRepairStart := by
+  apply g1Transition_aRepair_external_entry_iff <;> assumption
 theorem check_G1ARepairScanMode_eq {m : G1Mode} (h : G1ARepairScanMode m) :
     m = .aRepairSeek := by
   apply G1ARepairScanMode.eq <;> assumption
@@ -411,6 +418,116 @@ theorem check_g1CS_aRepair_canonical_vB (r : G1Request) (b v : Bool)
     (TM.runConfig (M := G1M) (g1ARepairEntryConfig r b v hm hv)
       (g1ARepairSteps r)).state.snd.ctx.vB = v := by
   apply g1CS_aRepair_canonical_vB <;> assumption
+theorem check_g1ARepairLiveSteps_eq (r : G1Request) :
+    g1ARepairLiveSteps r =
+      4 * r.tag.units + 17 * r.arg1 + 4 * r.arg2 + 21 := by
+  apply g1ARepairLiveSteps_eq
+theorem check_g1CS_aRepair_activation_exact (r : G1Request) (b v : Bool)
+    (hm : r.arg1 < r.vals.length) (hv : r.vals[r.arg1]? = some v) :
+    TM.runConfig (M := G1M) (g1AWalkRepairStartConfig r b v hm hv) 1 =
+      g1ARepairEntryConfig r b v hm hv := by
+  apply g1CS_aRepair_activation_exact <;> assumption
+theorem check_g1CS_aRepair_live_exact (r : G1Request) (b v : Bool)
+    (hm : r.arg1 < r.vals.length) (hv : r.vals[r.arg1]? = some v) :
+    TM.runConfig (M := G1M) (g1AWalkRepairStartConfig r b v hm hv)
+        (g1ARepairLiveSteps r) = g1ARepairDoneConfig r b v := by
+  apply g1CS_aRepair_live_exact <;> assumption
+theorem check_g1CS_aRepair_live_done_stable (r : G1Request) (b v : Bool)
+    (hm : r.arg1 < r.vals.length) (hv : r.vals[r.arg1]? = some v) (k : Nat) :
+    TM.runConfig (M := G1M) (g1AWalkRepairStartConfig r b v hm hv)
+        (g1ARepairLiveSteps r + k) = g1ARepairDoneConfig r b v := by
+  apply g1CS_aRepair_live_done_stable <;> assumption
+theorem check_g1CS_aRepair_live_endpoint (r : G1Request) (b v : Bool)
+    (hm : r.arg1 < r.vals.length) (hv : r.vals[r.arg1]? = some v) :
+    let out := TM.runConfig (M := G1M)
+      (g1AWalkRepairStartConfig r b v hm hv) (g1ARepairLiveSteps r)
+    out.tape =
+        g1ListTape ((encodeG1Frames r ++ [G1Frame.blank]).flatMap
+          G1Frame.bits) ∧
+      (out.head : Nat) = 0 ∧
+      out.state.snd = g1ARepairDoneState (g1AWalkCtx r b v) ∧
+      out.state.snd.ctx.res = g1Residual r.tag b ∧
+      out.state.snd.ctx.vB = v ∧
+      (encodeG1Frames r ++ [G1Frame.blank]).count .spent = 0 ∧
+      (encodeG1Frames r ++ [G1Frame.blank]).count .cursor = 0 ∧
+      out.state.snd.mode = .aRepairDone ∧
+      out.state.snd.mode ≠ .readAStart ∧
+      out.state.snd.mode ≠ .combineStart ∧
+      out.state.snd.mode ≠ .accept ∧ out.state.snd.mode ≠ .reject ∧
+      out.state.snd.mode ≠ .bOOB := by
+  apply g1CS_aRepair_live_endpoint <;> assumption
+theorem check_g1AWalkRepairSteps_eq (r : G1Request) :
+    g1AWalkRepairSteps r =
+      8 * r.arg1 ^ 2 + (8 * r.arg2 + 70) * r.arg1 +
+        4 * r.tag.units + 12 * r.arg2 + 57 := by
+  apply g1AWalkRepairSteps_eq
+theorem check_g1CS_aWalk_repair_driver_exact (r : G1Request) (b : Bool)
+    (hlen : r.arg1 < r.vals.length) (v : Nat → Bool)
+    (hv : ∀ j, j ≤ r.arg1 → r.vals[j]? = some (v j)) :
+    TM.runConfig (M := G1M)
+        (g1AWalkConfig r b 0 (Nat.zero_le _) (by omega) (v 0)
+          (hv 0 (by omega))) (g1AWalkRepairSteps r) =
+      g1ARepairDoneConfig r b (v r.arg1) := by
+  apply g1CS_aWalk_repair_driver_exact <;> assumption
+theorem check_g1CS_aRepair_unary_initial_exact (r : G1Request)
+    (hc : r.Canonical) (ht : r.tag = .input ∨ r.tag = .not)
+    (v : Nat → Bool)
+    (hv : ∀ j, j ≤ r.arg1 → r.vals[j]? = some (v j))
+    (rest : List Bool) (hvals : r.vals = v 0 :: rest) :
+    TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1AUnaryRepairSteps r) =
+      g1ARepairDoneConfig r false (v r.arg1) := by
+  apply g1CS_aRepair_unary_initial_exact <;> assumption
+theorem check_g1CS_aRepair_binary_initial_exact (r : G1Request)
+    (hc : r.Canonical) (ht : r.tag = .and ∨ r.tag = .or) (bB : Bool)
+    (hB : r.vals[r.arg2]? = some bB) (v : Nat → Bool)
+    (hv : ∀ j, j ≤ r.arg1 → r.vals[j]? = some (v j))
+    (rest : List Bool) (hvals : r.vals = v 0 :: rest) :
+    TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1ABinaryRepairSteps r) =
+      g1ARepairDoneConfig r bB (v r.arg1) := by
+  apply g1CS_aRepair_binary_initial_exact <;> assumption
+theorem check_g1CS_aRepair_unary_arg1_zero_exact (r : G1Request)
+    (hc : r.Canonical) (ht : r.tag = .input ∨ r.tag = .not)
+    (hzero : r.arg1 = 0) (v : Bool) (rest : List Bool)
+    (hvals : r.vals = v :: rest) :
+    TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1AUnaryRepairSteps r) = g1ARepairDoneConfig r false v := by
+  apply g1CS_aRepair_unary_arg1_zero_exact <;> assumption
+theorem check_g1AWalkRepairSteps_le_poly (r : G1Request) :
+    g1AWalkRepairSteps r ≤ g1ARepairLivePoly r := by
+  apply g1AWalkRepairSteps_le_poly
+theorem check_g1AUnaryRepairSteps_le_poly (r : G1Request) :
+    g1AUnaryRepairSteps r ≤ g1ARepairLivePoly r := by
+  apply g1AUnaryRepairSteps_le_poly
+theorem check_g1ABinaryRepairSteps_le_poly (r : G1Request) :
+    g1ABinaryRepairSteps r ≤ g1ARepairLivePoly r := by
+  apply g1ABinaryRepairSteps_le_poly
+theorem check_g1ARepairLivePoly_le_clock (r : G1Request) :
+    g1ARepairLivePoly r ≤ g1Clock (encodeG1 r).length := by
+  apply g1ARepairLivePoly_le_clock
+theorem check_g1AUnaryRepairSteps_le_clock (r : G1Request) :
+    g1AUnaryRepairSteps r ≤ g1Clock (encodeG1 r).length := by
+  apply g1AUnaryRepairSteps_le_clock
+theorem check_g1ABinaryRepairSteps_le_clock (r : G1Request) :
+    g1ABinaryRepairSteps r ≤ g1Clock (encodeG1 r).length := by
+  apply g1ABinaryRepairSteps_le_clock
+theorem check_g1CS_aWalk_oob_driver_stable (r : G1Request) (b : Bool)
+    (t : Nat) (ht1 : t < r.arg1) (hlast : t + 1 = r.vals.length)
+    (v : Nat → Bool) (hv : ∀ j, j ≤ t → r.vals[j]? = some (v j))
+    (k : Nat) :
+    TM.runConfig (M := G1M)
+        (g1AWalkConfig r b 0 (Nat.zero_le _) (by omega) (v 0)
+          (hv 0 (by omega)))
+        (g1AWalkDriverSteps r t + g1AWalkRoundOOBSteps r t + k) =
+      g1AWalkOOBConfig r b t ht1 (by omega) (v t)
+        (hv t (Nat.le_refl _)) := by
+  apply g1CS_aWalk_oob_driver_stable <;> assumption
+theorem check_g1AWalkOOBConfig_ne_aRepairDone (r : G1Request) (b v w : Bool)
+    (t : Nat) (ht1 : t < r.arg1) (ht : t < r.vals.length)
+    (hv : r.vals[t]? = some v) :
+    g1AWalkOOBConfig r b t ht1 ht v hv ≠ g1ARepairDoneConfig r b w := by
+  apply g1AWalkOOBConfig_ne_aRepairDone <;> assumption
 theorem check_literal_steps : g1ARepairSteps reqFalse = 58 ∧
     g1ARepairSteps reqTrue = 58 ∧
     g1ARepairSteps reqZero = 24 := by
@@ -430,6 +547,25 @@ theorem check_literal_zero_arg1_repair_exact :
         (g1ARepairEntryConfig reqZero false true (by decide) (by decide)) 24 =
       g1ARepairDoneConfig reqZero false true := by
   apply G1ARepairExamples.literal_zero_arg1_repair_exact <;> assumption
+theorem check_literal_live_steps : g1AUnaryRepairSteps reqFalse = 404 ∧
+    g1AUnaryRepairSteps reqTrue = 404 ∧
+    g1AUnaryRepairSteps reqZero = 192 := by
+  apply G1ARepairExamples.literal_live_steps
+theorem check_literal_false_live_exact :
+    TM.runConfig (M := G1M)
+        (G1M.initialConfig (g1Point (encodeG1 reqFalse))) 404 =
+      g1ARepairDoneConfig reqFalse false false := by
+  apply G1ARepairExamples.literal_false_live_exact
+theorem check_literal_true_live_exact :
+    TM.runConfig (M := G1M)
+        (G1M.initialConfig (g1Point (encodeG1 reqTrue))) 404 =
+      g1ARepairDoneConfig reqTrue false true := by
+  apply G1ARepairExamples.literal_true_live_exact
+theorem check_literal_zero_live_exact :
+    TM.runConfig (M := G1M)
+        (G1M.initialConfig (g1Point (encodeG1 reqZero))) 192 =
+      g1ARepairDoneConfig reqZero false true := by
+  apply G1ARepairExamples.literal_zero_live_exact
 theorem check_literal_false_endpoint_word :
     encodeG1Frames reqFalse ++ [G1Frame.blank] =
       [.bof, .tag, .argSep, .index, .index, .argSep, .separator,

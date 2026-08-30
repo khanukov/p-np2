@@ -1507,12 +1507,11 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_turn
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_restore
 
--- S3b2b (2026-08-29): all 11 direct source roots for the dormant terminal
--- continuation.  Every run here remains caller-supplied; `aRepairStart` is
--- stationary, and no A-repair, driver or result row exists.
+-- S3b2b/S8b boundary (2026-08-30): terminal cleanup reaches the unique live
+-- door, whose exact one-step execution enters aligned `aRepairSeek .p3`.
 #print axioms Internal.PsubsetPpoly.TM.g1AFinMode_ne_restore
 #print axioms Internal.PsubsetPpoly.TM.g1Advance_aTerminal_rows
-#print axioms Internal.PsubsetPpoly.TM.g1Transition_aRepairStart_idle
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aRepairStart_live
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aTurnFin
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aFin
 #print axioms Internal.PsubsetPpoly.TM.g1Advance_aRet_of_skip
@@ -1520,12 +1519,12 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_turn_fin
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_fin_restore
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_terminal_exact
-#print axioms Internal.PsubsetPpoly.TM.g1CS_runConfig_aRepairStart_idle
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepairStart_entry_exact
 
--- S8a (2026-08-30): dormant reject-aware operand-A repair.  The walk handoff
--- remains idle; all executions start from caller-supplied A-repair states and
--- stop at the stationary local `aRepairDone` boundary.  No real-initial,
--- result/combine/output or acceptance root is present.
+-- S8b (2026-08-30): live reject-aware operand-A repair.  S8a's caller-supplied
+-- macros remain audited, then the direct roots below compose the unique door,
+-- S7 terminal driver and real initial unary/successful-binary routes through
+-- canonical stationary `aRepairDone`.  No result/combine/output/accept root.
 #print axioms Internal.PsubsetPpoly.TM.G1ForwardMode.not_aRepair
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairScanMode.eq
 #print axioms Internal.PsubsetPpoly.TM.g1ARepairStopState_write
@@ -1537,8 +1536,8 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1ARepairBackComplete_none
 #print axioms Internal.PsubsetPpoly.TM.g1ARepairBackComplete_reserved
 #print axioms Internal.PsubsetPpoly.TM.g1ARepairBackComplete_forbidden
-#print axioms Internal.PsubsetPpoly.TM.g1Advance_aRepair_dormant
-#print axioms Internal.PsubsetPpoly.TM.g1Complete_aRepair_dormant
+#print axioms Internal.PsubsetPpoly.TM.g1Advance_aRepair_predecessor_closure
+#print axioms Internal.PsubsetPpoly.TM.g1Complete_aRepair_predecessor_closure
 #print axioms Internal.PsubsetPpoly.TM.g1ARepairStart_not_control
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aRepairSeek_p3
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aRepairSeek_p2
@@ -1552,10 +1551,10 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aRepairBack
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aRepairHop
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aRepairDone_idle
-#print axioms Internal.PsubsetPpoly.TM.g1Transition_aRepair_predecessor_closure
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aRepair_entry_closure
 #print axioms Internal.PsubsetPpoly.TM.g1Transition_aRepair_unique_external_door
-#print axioms Internal.PsubsetPpoly.TM.g1Transition_aRepairStart_no_entry
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aRepairStart_entry
+#print axioms Internal.PsubsetPpoly.TM.g1Transition_aRepair_external_entry_iff
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_cycle_onList
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_seek_and_repair
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_frame_skip
@@ -1587,10 +1586,32 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_canonical_state
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_canonical_res
 #print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_canonical_vB
+#print axioms Internal.PsubsetPpoly.TM.g1ARepairLiveSteps_eq
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_activation_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_live_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_live_done_stable
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_live_endpoint
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkRepairSteps_eq
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_repair_driver_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_unary_initial_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_binary_initial_exact
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_unary_arg1_zero_exact
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkRepairSteps_le_poly
+#print axioms Internal.PsubsetPpoly.TM.g1AUnaryRepairSteps_le_poly
+#print axioms Internal.PsubsetPpoly.TM.g1ABinaryRepairSteps_le_poly
+#print axioms Internal.PsubsetPpoly.TM.g1ARepairLivePoly_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1AUnaryRepairSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1ABinaryRepairSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_oob_driver_stable
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkOOBConfig_ne_aRepairDone
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_steps
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_false_repair_exact
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_true_repair_exact
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_zero_arg1_repair_exact
+#print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_live_steps
+#print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_false_live_exact
+#print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_true_live_exact
+#print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_zero_live_exact
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_false_endpoint_word
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_true_endpoint_word
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_zero_endpoint_word

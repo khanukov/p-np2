@@ -2,23 +2,39 @@ import Complexity.TMVerifier.TuringToolkit.GateOneRepairKernel
 import Complexity.TMVerifier.TuringToolkit.GateOneAWalkDriver
 
 /-!
-# S8a dormant reject-aware operand-A repair (2026-08-30)
+# S8b live operand-A repair activation and closure (2026-08-30)
 
 **Progress classification: Infrastructure, not P-vs-NP mainline progress.**
 
-Five fresh modes, all in `G1ForwardMode`'s `False` branch and therefore
-unavailable to the generic forward scanner, implement a caller-supplied reverse
-repair scan.  It crosses only `G1RepairSkip`, rewrites `spent` to `index`, rejects
-malformed/reserved windows, and stops at stationary `aRepairDone`.
-`aRepairStart` remains stationary: this file does not activate the repair from
-the S7 driver, compose a real initial configuration, compute a gate result, or
-run combine/output/acceptance.
+S8b activates S8a's five-mode reject-aware reverse repair through the unique
+`aRepairStart` door.  The live door takes one tape-preserving step left into
+aligned `aRepairSeek .p3`; the canonical S8a sweep then crosses only
+`G1RepairSkip`, rewrites every operand-A `spent` frame to `index`, rejects the
+same malformed/reserved windows, and stops at stationary `aRepairDone`.
+
+The dependency-closed capstones compose S7's complete terminal driver with
+that one activation step and the canonical sweep, both from caller-supplied
+`Σᴬ(0)` and from genuine unary/successful-binary initial configurations.  The
+endpoint is the exact canonical tape at head zero with the residual (operand B)
+and latest operand-A latch preserved.  Data-OOB remains the separate stationary
+`bOOB` path.  No result, combine, output-write or acceptance transition runs.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
 open Pnp3.Internal.PsubsetPpoly.TM.FrameScan
+
+private theorem g1ARepairConfig_congr (n h h' : Nat)
+    (hh : h < G1M.tapeLength n) (hh' : h' < G1M.tapeLength n)
+    (heq : h = h') (tape : Fin (G1M.tapeLength n) → Bool)
+    (mode : G1Mode) (position : G1FramePosition) (b0 b1 b2 : Bool)
+    (ctx : G1Ctx) :
+    g1AlignedConfig n h hh tape mode position b0 b1 b2 ctx =
+      g1AlignedConfig n h' hh' tape mode position b0 b1 b2 ctx := by
+  subst heq
+  rfl
+
 /-! ## Reject-aware scanner and rewrite-cycle instances -/
-/-- The single reverse-reading mode of the dormant A-repair scan. -/
+/-- The single reverse-reading mode of the live A-repair scan. -/
 def G1ARepairScanMode : G1Mode → Prop
   | .aRepairSeek => True
   | _ => False
@@ -113,7 +129,7 @@ def g1ARepairScanner : ReverseFrameScanner G1State G1Frame G1Mode G1Ctx where
               from hc] at hstop
             rcases hstop with h | h | h <;> exact absurd h (by decide)
 @[simp] theorem g1ARepairScanner_machine : g1ARepairScanner.machine = G1M := rfl
-/-- The dormant `spent ↦ index` rewrite cycle at the fresh A modes. -/
+/-- The `spent ↦ index` rewrite cycle at the operand-A repair modes. -/
 def g1ARepairCycle : FrameRewriteCycle G1State G1Frame G1Mode G1Ctx where
   scanner := g1ARepairScanner
   seekMode := .aRepairSeek
@@ -533,7 +549,7 @@ theorem g1ARepairSteps_eq (r : G1Request) (hm : r.arg1 < r.vals.length) :
   omega
 
 set_option linter.unusedVariables false in
-/-- Caller-supplied entry adjacent to, but not reached from, idle `aRepairStart`. -/
+/-- Exact aligned entry reached by the live `aRepairStart` step. -/
 def g1ARepairEntryConfig (r : G1Request) (b v : Bool)
     (hm : r.arg1 < r.vals.length) (hv : r.vals[r.arg1]? = some v) :
     Configuration (M := G1M) (encodeG1 r).length :=
@@ -608,7 +624,294 @@ theorem g1CS_aRepair_canonical_vB (r : G1Request) (b v : Bool)
   rw [g1CS_aRepair_canonical_exact r b v hm hv]
   rfl
 
-/-! ## Literal caller-supplied probes -/
+/-! ## S8b live activation and dependency-closed terminal composition -/
+
+/-- One live door step followed by the exact S8a canonical repair cost. -/
+def g1ARepairLiveSteps (r : G1Request) : Nat := 1 + g1ARepairSteps r
+
+theorem g1ARepairLiveSteps_eq (r : G1Request) :
+    g1ARepairLiveSteps r =
+      4 * r.tag.units + 17 * r.arg1 + 4 * r.arg2 + 21 := by
+  simp [g1ARepairLiveSteps, g1ARepairSteps]
+  omega
+
+/-- The exact live door: tape and complete context are preserved while the
+head moves from the S7 handoff to S8a's aligned reverse-read entry. -/
+theorem g1CS_aRepair_activation_exact (r : G1Request) (b v : Bool)
+    (hm : r.arg1 < r.vals.length) (hv : r.vals[r.arg1]? = some v) :
+    TM.runConfig (M := G1M) (g1AWalkRepairStartConfig r b v hm hv) 1 =
+      g1ARepairEntryConfig r b v hm hv := by
+  rw [g1AWalkRepairStartConfig, g1ARepairEntryConfig]
+  have h := g1CS_aRepairStart_entry_exact (encodeG1 r).length
+    (4 * (g1AWalkCursor r r.arg1 + 1)) (by omega)
+    (by
+      have hs := g1AWalkCursor_safe r r.arg1 hm
+      omega)
+    (g1ListTape ((g1AWalkDoneFrames r).flatMap G1Frame.bits))
+    (g1AWalkCtx r b v)
+  have hhead :
+      4 * (1 + (g1ARepairLeft r).length + r.arg1 +
+        (g1ARepairMid r).length) - 1 =
+        4 * (g1AWalkCursor r r.arg1 + 1) - 1 := by
+    rw [g1ARepairLeft_length, g1ARepairMid_length r hm]
+    simp only [g1AWalkCursor]
+    omega
+  exact h.trans (g1ARepairConfig_congr _ _ _ _ _ hhead.symm _ _ _ _ _ _ _)
+
+/-- Generic terminal-configuration-to-repair-done theorem.  This is the exact
+live `aRepairStart → aRepairSeek → aRepairDone` closure. -/
+theorem g1CS_aRepair_live_exact (r : G1Request) (b v : Bool)
+    (hm : r.arg1 < r.vals.length) (hv : r.vals[r.arg1]? = some v) :
+    TM.runConfig (M := G1M) (g1AWalkRepairStartConfig r b v hm hv)
+        (g1ARepairLiveSteps r) = g1ARepairDoneConfig r b v := by
+  rw [g1ARepairLiveSteps, runConfig_add,
+    g1CS_aRepair_activation_exact r b v hm hv]
+  exact g1CS_aRepair_canonical_exact r b v hm hv
+
+/-- `aRepairDone` is the stationary boundary: even an explicit extra budget
+cannot execute result, combine, output or acceptance control. -/
+theorem g1CS_aRepair_live_done_stable (r : G1Request) (b v : Bool)
+    (hm : r.arg1 < r.vals.length) (hv : r.vals[r.arg1]? = some v) (k : Nat) :
+    TM.runConfig (M := G1M) (g1AWalkRepairStartConfig r b v hm hv)
+        (g1ARepairLiveSteps r + k) = g1ARepairDoneConfig r b v := by
+  rw [runConfig_add, g1CS_aRepair_live_exact r b v hm hv]
+  exact g1CS_runConfig_aRepairDone_idle _ _ _ _ _ k
+
+/-- Exact endpoint projections, including context preservation, canonical
+spent/cursor freedom, and separation from every downstream or wrong exit. -/
+theorem g1CS_aRepair_live_endpoint (r : G1Request) (b v : Bool)
+    (hm : r.arg1 < r.vals.length) (hv : r.vals[r.arg1]? = some v) :
+    let out := TM.runConfig (M := G1M)
+      (g1AWalkRepairStartConfig r b v hm hv) (g1ARepairLiveSteps r)
+    out.tape =
+        g1ListTape ((encodeG1Frames r ++ [G1Frame.blank]).flatMap
+          G1Frame.bits) ∧
+      (out.head : Nat) = 0 ∧
+      out.state.snd = g1ARepairDoneState (g1AWalkCtx r b v) ∧
+      out.state.snd.ctx.res = g1Residual r.tag b ∧
+      out.state.snd.ctx.vB = v ∧
+      (encodeG1Frames r ++ [G1Frame.blank]).count .spent = 0 ∧
+      (encodeG1Frames r ++ [G1Frame.blank]).count .cursor = 0 ∧
+      out.state.snd.mode = .aRepairDone ∧
+      out.state.snd.mode ≠ .readAStart ∧
+      out.state.snd.mode ≠ .combineStart ∧
+      out.state.snd.mode ≠ .accept ∧ out.state.snd.mode ≠ .reject ∧
+      out.state.snd.mode ≠ .bOOB := by
+  dsimp only
+  rw [g1CS_aRepair_live_exact r b v hm hv]
+  exact ⟨rfl, rfl, rfl, g1AWalkCtx_res r b v, rfl,
+    g1ARepairCanonical_count_spent r, g1ARepairCanonical_count_cursor r,
+    rfl, by simp [g1ARepairDoneConfig, g1State],
+    by simp [g1ARepairDoneConfig, g1State],
+    by simp [g1ARepairDoneConfig, g1State],
+    by simp [g1ARepairDoneConfig, g1State],
+    by simp [g1ARepairDoneConfig, g1State]⟩
+
+/-- S7's full local driver plus activation and repair. -/
+def g1AWalkRepairSteps (r : G1Request) : Nat :=
+  g1AWalkExhaustDriverSteps r + g1AWalkTerminalSteps r +
+    g1ARepairLiveSteps r
+
+/-- Exact combined formula from `Σᴬ(0)` to stationary `aRepairDone`. -/
+theorem g1AWalkRepairSteps_eq (r : G1Request) :
+    g1AWalkRepairSteps r =
+      8 * r.arg1 ^ 2 + (8 * r.arg2 + 70) * r.arg1 +
+        4 * r.tag.units + 12 * r.arg2 + 57 := by
+  simp only [g1AWalkRepairSteps, g1AWalkExhaustDriverSteps,
+    g1AWalkDriverSteps, g1AWalkExhaustSteps, g1AWalkTerminalSteps,
+    g1ARepairLiveSteps_eq, Nat.add_mul, Nat.mul_assoc]
+  omega
+
+/-- Dependency-closed caller-supplied driver from exact `Σᴬ(0)` through S7
+terminal cleanup and the live S8 repair. -/
+theorem g1CS_aWalk_repair_driver_exact (r : G1Request) (b : Bool)
+    (hlen : r.arg1 < r.vals.length) (v : Nat → Bool)
+    (hv : ∀ j, j ≤ r.arg1 → r.vals[j]? = some (v j)) :
+    TM.runConfig (M := G1M)
+        (g1AWalkConfig r b 0 (Nat.zero_le _) (by omega) (v 0)
+          (hv 0 (by omega))) (g1AWalkRepairSteps r) =
+      g1ARepairDoneConfig r b (v r.arg1) := by
+  rw [g1AWalkRepairSteps, runConfig_add,
+    g1CS_aWalk_full_driver_exact r b hlen v hv]
+  exact g1CS_aRepair_live_exact r b (v r.arg1) hlen
+    (hv r.arg1 (Nat.le_refl _))
+
+/-- Genuine unary-initial total through the stationary canonical repair
+endpoint. -/
+def g1AUnaryRepairSteps (r : G1Request) : Nat :=
+  g1AUnaryCursorSteps r + g1AWalkRepairSteps r
+
+/-- Genuine successful-binary-initial total through the same endpoint. -/
+def g1ABinaryRepairSteps (r : G1Request) : Nat :=
+  g1ABinaryCursorSteps r + g1AWalkRepairSteps r
+
+theorem g1CS_aRepair_unary_initial_exact (r : G1Request) (hc : r.Canonical)
+    (ht : r.tag = .input ∨ r.tag = .not) (v : Nat → Bool)
+    (hv : ∀ j, j ≤ r.arg1 → r.vals[j]? = some (v j))
+    (rest : List Bool) (hvals : r.vals = v 0 :: rest) :
+    TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1AUnaryRepairSteps r) =
+      g1ARepairDoneConfig r false (v r.arg1) := by
+  rw [g1AUnaryRepairSteps, runConfig_add,
+    g1CS_readA_sigma0_unary_exact r hc ht (v 0) rest hvals]
+  exact g1CS_aWalk_repair_driver_exact r false (by
+    have := hv r.arg1 (Nat.le_refl r.arg1)
+    exact (List.getElem?_eq_some_iff.1 this).1) v hv
+
+theorem g1CS_aRepair_binary_initial_exact (r : G1Request) (hc : r.Canonical)
+    (ht : r.tag = .and ∨ r.tag = .or) (bB : Bool)
+    (hB : r.vals[r.arg2]? = some bB) (v : Nat → Bool)
+    (hv : ∀ j, j ≤ r.arg1 → r.vals[j]? = some (v j))
+    (rest : List Bool) (hvals : r.vals = v 0 :: rest) :
+    TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1ABinaryRepairSteps r) =
+      g1ARepairDoneConfig r bB (v r.arg1) := by
+  rw [g1ABinaryRepairSteps, runConfig_add,
+    g1CS_readA_sigma0_binary_exact r hc ht (v 0) bB rest hB hvals]
+  exact g1CS_aWalk_repair_driver_exact r bB (by
+    have := hv r.arg1 (Nat.le_refl r.arg1)
+    exact (List.getElem?_eq_some_iff.1 this).1) v hv
+
+/-- Nonvacuous generic `arg1 = 0` specialization: the selected operand-A
+latch is slot zero and the full live route still reaches canonical done. -/
+theorem g1CS_aRepair_unary_arg1_zero_exact (r : G1Request)
+    (hc : r.Canonical) (ht : r.tag = .input ∨ r.tag = .not)
+    (hzero : r.arg1 = 0) (v : Bool) (rest : List Bool)
+    (hvals : r.vals = v :: rest) :
+    TM.runConfig (M := G1M) (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1AUnaryRepairSteps r) = g1ARepairDoneConfig r false v := by
+  simpa using g1CS_aRepair_unary_initial_exact r hc ht (fun _ => v)
+    (by
+      intro j hj
+      have : j = 0 := by omega
+      subst j
+      simp [hvals]) rest hvals
+
+/-! ## Polynomial provenance and unchanged clock -/
+
+/-- A concrete quadratic dominating both real-initial S8b schedules. -/
+def g1ARepairLivePoly (r : G1Request) : Nat :=
+  1024 * (r.tag.units + r.arg1 + r.arg2 + r.vals.length + 6) ^ 2
+
+theorem g1AWalkRepairSteps_le_poly (r : G1Request) :
+    g1AWalkRepairSteps r ≤ g1ARepairLivePoly r := by
+  let S := r.tag.units + r.arg1 + r.arg2 + r.vals.length + 6
+  have ha : r.arg1 ≤ S := by dsimp [S]; omega
+  have hb : r.arg2 ≤ S := by dsimp [S]; omega
+  have ht : r.tag.units ≤ S := by dsimp [S]; omega
+  have hsq : r.arg1 ^ 2 ≤ S ^ 2 := Nat.pow_le_pow_left ha 2
+  have hab : r.arg2 * r.arg1 ≤ S ^ 2 := by
+    simpa [pow_two] using Nat.mul_le_mul hb ha
+  have hS : S ≤ S ^ 2 := by
+    simpa [pow_two] using Nat.le_mul_of_pos_right S (by dsimp [S]; omega)
+  rw [g1AWalkRepairSteps_eq]
+  change _ ≤ 1024 * S ^ 2
+  simp only [Nat.add_mul, Nat.mul_assoc]
+  omega
+
+private theorem g1AWalkRepairSteps_le_small_poly (r : G1Request) :
+    g1AWalkRepairSteps r ≤
+      128 * (r.tag.units + r.arg1 + r.arg2 + r.vals.length + 6) ^ 2 := by
+  let S := r.tag.units + r.arg1 + r.arg2 + r.vals.length + 6
+  have ha : r.arg1 ≤ S := by dsimp [S]; omega
+  have hb : r.arg2 ≤ S := by dsimp [S]; omega
+  have ht : r.tag.units ≤ S := by dsimp [S]; omega
+  have hsq : r.arg1 ^ 2 ≤ S ^ 2 := Nat.pow_le_pow_left ha 2
+  have hab : r.arg2 * r.arg1 ≤ S ^ 2 := by
+    simpa [pow_two] using Nat.mul_le_mul hb ha
+  have hS : S ≤ S ^ 2 := by
+    simpa [pow_two] using Nat.le_mul_of_pos_right S (by dsimp [S]; omega)
+  rw [g1AWalkRepairSteps_eq]
+  change _ ≤ 128 * S ^ 2
+  simp only [Nat.add_mul, Nat.mul_assoc]
+  omega
+
+theorem g1AUnaryRepairSteps_le_poly (r : G1Request) :
+    g1AUnaryRepairSteps r ≤ g1ARepairLivePoly r := by
+  let S := r.tag.units + r.arg1 + r.arg2 + r.vals.length + 6
+  have hl := g1AWalkRepairSteps_le_small_poly r
+  have hl' : g1AWalkRepairSteps r ≤ 128 * S ^ 2 := by
+    simpa only [S] using hl
+  have hS : S ≤ S ^ 2 := by
+    simpa [pow_two] using Nat.le_mul_of_pos_right S (by dsimp [S]; omega)
+  have hlen := encodeG1_length r
+  simp only [g1AUnaryRepairSteps, g1AUnaryCursorSteps, g1UActivatedSteps,
+    g1UReadASteps, g1ReadARouteSteps, g1ReadBHandoffSteps,
+    g1AUnaryRewindSteps, g1ALiveInstallSteps, hlen,
+    g1ARepairLivePoly]
+  change _ + g1AWalkRepairSteps r ≤ 1024 * S ^ 2
+  omega
+
+theorem g1ABinaryRepairSteps_le_poly (r : G1Request) :
+    g1ABinaryRepairSteps r ≤ g1ARepairLivePoly r := by
+  let S := r.tag.units + r.arg1 + r.arg2 + r.vals.length + 6
+  have hl := g1AWalkRepairSteps_le_small_poly r
+  have hl' : g1AWalkRepairSteps r ≤ 128 * S ^ 2 := by
+    simpa only [S] using hl
+  have hsq : 8 * r.arg2 ^ 2 ≤ 128 * S ^ 2 :=
+    Nat.mul_le_mul (by omega)
+      (Nat.pow_le_pow_left (by dsimp [S]; omega) 2)
+  have hS : S ≤ S ^ 2 := by
+    simpa [pow_two] using Nat.le_mul_of_pos_right S (by dsimp [S]; omega)
+  have hlen := encodeG1_length r
+  simp only [g1ABinaryRepairSteps, g1ABinaryCursorSteps, g1BActivatedSteps,
+    g1BPassASteps, g1BReadSteps, g1InstallScanSteps, g1ZPassASteps,
+    g1ReadBSteps, g1RepairSteps, g1ReadBHandoffSteps, g1ALiveInstallSteps,
+    hlen, g1ARepairLivePoly]
+  change _ + g1AWalkRepairSteps r ≤ 1024 * S ^ 2
+  split_ifs <;> omega
+
+private theorem g1ARepairSq_succ (N : Nat) :
+    (N + 1) ^ 2 = N ^ 2 + (2 * N + 1) := by
+  rw [Nat.pow_two, Nat.pow_two, Nat.mul_add, Nat.add_mul, Nat.add_mul]
+  omega
+
+private theorem g1ARepairClock_quad (N : Nat) :
+    g1Clock (4 * N) = 8192 * N ^ 2 + (4096 * N + 1024) := by
+  rw [g1Clock, g1ARepairSq_succ, Nat.mul_pow,
+    show (4 : Nat) ^ 2 = 16 from rfl]
+  omega
+
+theorem g1ARepairLivePoly_le_clock (r : G1Request) :
+    g1ARepairLivePoly r ≤ g1Clock (encodeG1 r).length := by
+  rw [encodeG1_length, g1ARepairClock_quad]
+  simp only [g1ARepairLivePoly]
+  omega
+
+theorem g1AUnaryRepairSteps_le_clock (r : G1Request) :
+    g1AUnaryRepairSteps r ≤ g1Clock (encodeG1 r).length :=
+  (g1AUnaryRepairSteps_le_poly r).trans (g1ARepairLivePoly_le_clock r)
+
+theorem g1ABinaryRepairSteps_le_clock (r : G1Request) :
+    g1ABinaryRepairSteps r ≤ g1Clock (encodeG1 r).length :=
+  (g1ABinaryRepairSteps_le_poly r).trans (g1ARepairLivePoly_le_clock r)
+
+/-! ## OOB separation -/
+
+/-- A first-missing-successor S7 run stays forever at `bOOB`; the live repair
+door is never reached. -/
+theorem g1CS_aWalk_oob_driver_stable (r : G1Request) (b : Bool) (t : Nat)
+    (ht1 : t < r.arg1) (hlast : t + 1 = r.vals.length) (v : Nat → Bool)
+    (hv : ∀ j, j ≤ t → r.vals[j]? = some (v j)) (k : Nat) :
+    TM.runConfig (M := G1M)
+        (g1AWalkConfig r b 0 (Nat.zero_le _) (by omega) (v 0)
+          (hv 0 (by omega)))
+        (g1AWalkDriverSteps r t + g1AWalkRoundOOBSteps r t + k) =
+      g1AWalkOOBConfig r b t ht1 (by omega) (v t)
+        (hv t (Nat.le_refl _)) := by
+  rw [runConfig_add,
+    g1CS_aWalk_oob_driver_exact r b t ht1 hlast v hv]
+  exact g1CS_runConfig_oob_sink _ _ _ _ _ k
+
+theorem g1AWalkOOBConfig_ne_aRepairDone (r : G1Request) (b v w : Bool)
+    (t : Nat) (ht1 : t < r.arg1) (ht : t < r.vals.length)
+    (hv : r.vals[t]? = some v) :
+    g1AWalkOOBConfig r b t ht1 ht v hv ≠ g1ARepairDoneConfig r b w := by
+  intro h
+  have hm := congrArg (fun c => c.state.snd.mode) h
+  exact G1Mode.noConfusion hm
+
+/-! ## Literal caller-supplied and real-initial probes -/
 
 namespace G1ARepairExamples
 
@@ -640,6 +943,36 @@ theorem literal_zero_arg1_repair_exact :
       g1ARepairDoneConfig reqZero false true := by
   simpa using g1CS_aRepair_canonical_exact reqZero false true
     (by decide) (by decide)
+
+theorem literal_live_steps : g1AUnaryRepairSteps reqFalse = 404 ∧
+    g1AUnaryRepairSteps reqTrue = 404 ∧
+    g1AUnaryRepairSteps reqZero = 192 := by decide
+
+/-- Real-initial unary representative whose selected operand A is false. -/
+theorem literal_false_live_exact :
+    TM.runConfig (M := G1M)
+        (G1M.initialConfig (g1Point (encodeG1 reqFalse))) 404 =
+      g1ARepairDoneConfig reqFalse false false := by
+  simpa [reqFalse] using
+    g1CS_aRepair_unary_initial_exact reqFalse (by decide) (Or.inl rfl)
+      (fun j => [true, true, false][j]!) (by decide) [true, false] rfl
+
+/-- Real-initial unary representative whose selected operand A is true. -/
+theorem literal_true_live_exact :
+    TM.runConfig (M := G1M)
+        (G1M.initialConfig (g1Point (encodeG1 reqTrue))) 404 =
+      g1ARepairDoneConfig reqTrue false true := by
+  simpa [reqTrue] using
+    g1CS_aRepair_unary_initial_exact reqTrue (by decide) (Or.inl rfl)
+      (fun j => [false, false, true][j]!) (by decide) [false, true] rfl
+
+/-- Real-initial `arg1 = 0` representative; there are no normal S7 rounds. -/
+theorem literal_zero_live_exact :
+    TM.runConfig (M := G1M)
+        (G1M.initialConfig (g1Point (encodeG1 reqZero))) 192 =
+      g1ARepairDoneConfig reqZero false true := by
+  simpa [reqZero] using g1CS_aRepair_unary_arg1_zero_exact reqZero
+    (by decide) (Or.inl rfl) rfl true [] rfl
 
 theorem literal_false_endpoint_word :
     encodeG1Frames reqFalse ++ [G1Frame.blank] =

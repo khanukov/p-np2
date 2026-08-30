@@ -5,7 +5,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOneAWalkKernel
 
 Dated 2026-08-29.  The normal/terminal runs remain caller-supplied; S4 stops at
 their `aSeekOut .p3` entry boundary, terminal cleanup stops at stationary
-`aRepairStart`, and no repair executes.
+`aRepairStart`; S8b's separate surface composes its live repair entry.
 -/
 
 namespace Pnp3.Tests.TMGateOneAWalkSurface
@@ -120,11 +120,11 @@ theorem check_g1Advance_aTerminal_rows :
       g1Advance .aRet .cursor = .aTurnFin :=
   g1Advance_aTerminal_rows
 
-theorem check_g1Transition_aRepairStart_idle (phase : Fin 1)
+theorem check_g1Transition_aRepairStart_live (phase : Fin 1)
     (position : G1FramePosition) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
     g1Transition phase (g1State .aRepairStart position b0 b1 b2 ctx) scan =
-      (0, g1ARepairStartState ctx, scan, .stay) :=
-  g1Transition_aRepairStart_idle phase position b0 b1 b2 scan ctx
+      (0, g1ARepairSeekState ctx, scan, .left) :=
+  g1Transition_aRepairStart_live phase position b0 b1 b2 scan ctx
 
 theorem check_g1Transition_aSeekOut_p3
     (phase : Fin 1) (b0 b1 b2 scan : Bool) (ctx : G1Ctx) :
@@ -529,13 +529,14 @@ theorem check_g1CS_aWalk_terminal_exact
         .aRepairStart .p0 false false false ctx :=
   g1CS_aWalk_terminal_exact n pre skipped suffix ctx hskip hsafe
 
-theorem check_g1CS_runConfig_aRepairStart_idle
-    (n h : Nat) (hh : h < G1M.tapeLength n)
-    (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx) (k : Nat) :
+theorem check_g1CS_aRepairStart_entry_exact
+    (n h : Nat) (hpos : 0 < h) (hh : h < G1M.tapeLength n)
+    (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx) :
     TM.runConfig (M := G1M)
-        (g1AlignedConfig n h hh tape .aRepairStart .p0 false false false ctx) k =
-      g1AlignedConfig n h hh tape .aRepairStart .p0 false false false ctx :=
-  g1CS_runConfig_aRepairStart_idle n h hh tape ctx k
+        (g1AlignedConfig n h hh tape .aRepairStart .p0 false false false ctx) 1 =
+      g1AlignedConfig n (h - 1) (by omega) tape .aRepairSeek .p3
+        false false false ctx :=
+  g1CS_aRepairStart_entry_exact n h hpos hh tape ctx
 
 /-! Literal normal, terminal and malformed caller-supplied probes. -/
 

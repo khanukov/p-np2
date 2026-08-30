@@ -976,10 +976,11 @@ write and the two turns hold), the five modes of the operand-2 repair sweep
 moves left and the terminal dispatch holds), the four non-forward operand-1
 operation latches (`aOpInput`, `aOpNot`, `aOpAnd`, `aOpOr`), the five remaining
 handoffs (`aInstallStart`, `readAStart`, `combineStart`, `readAResetStart`,
-`bOOB`) and the two sinks are not.  The dormant
-`aInsSeek`/`aProbe`/`aFwd`/`aExh`/`aRet` modes are forward; its latches, writer,
-reverse seeks, mark, turns, restore writers and stationary `aRepairStart` are
-not.  The pass-A anchor read
+`bOOB`) and the two sinks are not.  The dormant `aInsSeek`/`aProbe`/`aFwd`/
+`aExh`/`aRet` modes are forward; its latches, writer, reverse seeks, mark,
+turns, restore writers and stationary `aRepairStart` are not.  All five
+`aRepair*` patterns are in the `False` branch, so the generic forward scanner
+cannot accept them.  The pass-A anchor read
 `aBof` and its counters `aTag0 … aTag5` *are* forward modes and fall through to
 the `True` catch-all — they read frames after the live dispatch reaches them. -/
 def G1ForwardMode : G1Mode → Prop
@@ -1185,6 +1186,12 @@ theorem G1ForwardMode.not_reject : ¬ G1ForwardMode .reject := id
 theorem G1ForwardMode.not_rewindStart : ¬ G1ForwardMode .rewindStart := id
 
 theorem G1ForwardMode.readBStart : G1ForwardMode .readBStart := trivial
+
+/-- All five operand-A repair patterns reduce through the `False` branch. -/
+theorem G1ForwardMode.not_aRepair :
+    ¬ G1ForwardMode .aRepairSeek ∧ ¬ G1ForwardMode .aRepairWrite ∧
+      ¬ G1ForwardMode .aRepairBack ∧ ¬ G1ForwardMode .aRepairHop ∧
+      ¬ G1ForwardMode .aRepairDone := by decide
 
 /-- **Stuck modes.**  A mode with no successful frame row: an attempted
 complete-frame read enters `reject`, and it is not the end-of-input mode.  In

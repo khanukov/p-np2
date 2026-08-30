@@ -2865,6 +2865,8 @@ The real-initial literal uses 277 exact steps (171 for S5 plus 106 for S7).
 **Classification: infrastructure, not P-vs-NP mainline progress.**  S8a adds
 five finite modes and no state, runtime or advice field:
 `aRepairSeek`, `aRepairWrite`, `aRepairBack`, `aRepairHop`, `aRepairDone`.
+All five patterns are in `G1ForwardMode`'s `False` branch, so the generic
+forward scanner cannot accept them.
 The existing `aRepairStart` row remains stationary.  No transition from a real
 S7 run enters the new family; predecessor closure and the idle handoff theorem
 make that dormancy explicit.  Caller-supplied runs begin directly in the

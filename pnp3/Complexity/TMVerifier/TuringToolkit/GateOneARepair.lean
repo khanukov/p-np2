@@ -6,9 +6,10 @@ import Complexity.TMVerifier.TuringToolkit.GateOneAWalkDriver
 
 **Progress classification: Infrastructure, not P-vs-NP mainline progress.**
 
-Five fresh modes implement a caller-supplied reverse repair scan.  The scan
-crosses only `G1RepairSkip`, rewrites `spent` to `index`, rejects malformed or
-reserved windows, and stops at the stationary local handoff `aRepairDone`.
+Five fresh modes, all in `G1ForwardMode`'s `False` branch and therefore
+unavailable to the generic forward scanner, implement a caller-supplied reverse
+repair scan.  It crosses only `G1RepairSkip`, rewrites `spent` to `index`, rejects
+malformed/reserved windows, and stops at stationary `aRepairDone`.
 `aRepairStart` remains stationary: this file does not activate the repair from
 the S7 driver, compose a real initial configuration, compute a gate result, or
 run combine/output/acceptance.
@@ -180,7 +181,6 @@ theorem g1CS_aRepair_seek_and_repair (n : Nat)
           G1Frame.bits)) .aRepairSeek .p3 false false false ctx :=
   g1ARepairCycle.seekAndRewrite n pre skipped suffix ctx hpre
     (fun f hf => g1ARepairBackAdvance_of_skip (hskip f hf)) hsafe
-
 theorem g1CS_aRepair_frame_skip (n base : Nat) (hpos : 0 < base)
     (hsafe : base + 4 < G1M.tapeLength n)
     (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx) (f : G1Frame)
@@ -196,7 +196,6 @@ theorem g1CS_aRepair_frame_skip (n base : Nat) (hpos : 0 < base)
   simpa [g1ARepairScanner, g1ARepairBackAdvance_of_skip hf] using
     g1ARepairScanner.revFrameMacrostep n base hpos hsafe tape .aRepairSeek f ctx
       trivial hnext hbits
-
 theorem g1CS_aRepair_frame_reject (n base : Nat)
     (hsafe : base + 4 < G1M.tapeLength n)
     (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx) (f : G1Frame)
@@ -214,7 +213,6 @@ theorem g1CS_aRepair_frame_reject (n base : Nat)
   have h := g1ARepairScanner.revAnchorStep n base hsafe tape .aRepairSeek f ctx
     trivial hstop hbits
   simpa [g1ARepairScanner, g1ARepairStopState, hbad] using h
-
 theorem g1CS_aRepair_frame_reject_idle (n base : Nat)
     (hsafe : base + 4 < G1M.tapeLength n)
     (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx) (f : G1Frame)
@@ -228,7 +226,6 @@ theorem g1CS_aRepair_frame_reject_idle (n base : Nat)
   rw [runConfig_add,
     g1CS_aRepair_frame_reject n base hsafe tape ctx f hf hbits]
   exact g1CS_runConfig_reject_sink n base (by omega) tape k
-
 /-- Exact raw rejection of the literal reserved window `1101`. -/
 theorem g1CS_aRepair_reserved_1101_reject (n base : Nat)
     (hsafe : base + 4 < G1M.tapeLength n)
@@ -256,7 +253,6 @@ theorem g1CS_aRepair_reserved_1101_reject (n base : Nat)
   have h := g1ARepairScanner.revWindowStop n base hsafe tape .aRepairSeek ctx
     trivial hs
   simpa [g1ARepairScanner, g1ARepairStopState, hc] using h
-
 theorem g1CS_aRepair_reserved_1101_reject_idle (n base : Nat)
     (hsafe : base + 4 < G1M.tapeLength n)
     (tape : Fin (G1M.tapeLength n) → Bool) (ctx : G1Ctx)
@@ -269,7 +265,6 @@ theorem g1CS_aRepair_reserved_1101_reject_idle (n base : Nat)
   rw [runConfig_add,
     g1CS_aRepair_reserved_1101_reject n base hsafe tape ctx hbits]
   exact g1CS_runConfig_reject_sink n base (by omega) tape k
-
 theorem g1CS_aRepair_scan_skip (n : Nat) (pre skipped suffix : List G1Frame)
     (ctx : G1Ctx) (hpre : 0 < pre.length)
     (hskip : ∀ f ∈ skipped, G1RepairSkip f)
@@ -312,7 +307,6 @@ theorem g1CS_aRepair_scan_skip (n : Nat) (pre skipped suffix : List G1Frame)
         runConfig_add]
       simp only [List.length_cons, List.append_assoc, List.cons_append]
       rw [hi, hs]
-
 theorem g1CS_aRepair_spent_run (n : Nat) (pre suffix : List G1Frame) (s : Nat)
     (ctx : G1Ctx) (hpre : 0 < pre.length)
     (hsafe : 4 * (pre.length + s) < G1M.tapeLength n) :
@@ -340,7 +334,6 @@ theorem g1CS_aRepair_spent_run (n : Nat) (pre suffix : List G1Frame) (s : Nat)
       simp only [List.replicate_succ, List.append_assoc, List.cons_append]
         at hi hc ⊢
       rw [hi, hc]
-
 theorem g1CS_aRepair_finish (n : Nat) (suffix : List G1Frame) (ctx : G1Ctx)
     (hsafe : 4 < G1M.tapeLength n) :
     TM.runConfig (M := G1M)
@@ -360,7 +353,6 @@ theorem g1CS_aRepair_finish (n : Nat) (suffix : List G1Frame) (ctx : G1Ctx)
     (g1ListTape (n := n) ((G1Frame.bof :: suffix).flatMap G1Frame.bits))
     .aRepairSeek G1Frame.bof ctx trivial (Or.inr (Or.inl rfl)) hb
   simpa [g1ARepairScanner, g1ARepairStopState] using h
-
 /-- The canonical endpoint stays put for every extra caller-supplied budget. -/
 theorem g1CS_runConfig_aRepairDone_idle (n h : Nat)
     (hh : h < G1M.tapeLength n) (tape : Fin (G1M.tapeLength n) → Bool)
@@ -371,15 +363,11 @@ theorem g1CS_runConfig_aRepairDone_idle (n h : Nat)
   g1CS_runConfig_stable n h hh tape (g1ARepairDoneState ctx)
     (fun phase scan => g1Transition_aRepairDone_idle phase .p0 false false
       false scan ctx) k
-
 /-! ## Generic dependency-closed repair pass -/
-
 def g1ARepairPassSteps (a s m : Nat) : Nat := 4 * m + 13 * s + 4 * a + 4
-
 theorem g1ARepairPassSteps_eq (a s m : Nat) :
     g1ARepairPassSteps a s m + 1 = g1RepairPassSteps a s m := by
   simp [g1ARepairPassSteps, g1RepairPassSteps]
-
 theorem g1CS_aRepair_pass_exact (n s : Nat) (left mid tail : List G1Frame)
     (ctx : G1Ctx) (hleft : ∀ f ∈ left, G1RepairSkip f)
     (hmid : ∀ f ∈ mid, G1RepairSkip f)
@@ -420,30 +408,23 @@ theorem g1CS_aRepair_pass_exact (n s : Nat) (left mid tail : List G1Frame)
   simp only [List.append_assoc, List.cons_append, List.nil_append]
     at hA hB hC hD ⊢
   rw [hA, hB, hC, hD]
-
 /-! ## Canonical terminal-layout instantiation -/
-
 def g1ARepairLeft (r : G1Request) : List G1Frame :=
   List.replicate r.tag.units G1Frame.tag ++ [G1Frame.argSep]
-
 def g1ARepairMid (r : G1Request) : List G1Frame :=
   G1Frame.argSep :: (g1AWalkOperand2 r ++
     G1Frame.separator :: (r.vals.map G1Frame.data).take (r.arg1 + 1))
-
 def g1ARepairTail (r : G1Request) : List G1Frame :=
   (r.vals.map G1Frame.data).drop (r.arg1 + 1) ++
     [G1Frame.output false, G1Frame.finish, G1Frame.blank]
-
 @[simp] theorem g1ARepairLeft_length (r : G1Request) :
     (g1ARepairLeft r).length = r.tag.units + 1 := by
   simp [g1ARepairLeft]
-
 theorem g1ARepairMid_length (r : G1Request) (hm : r.arg1 < r.vals.length) :
     (g1ARepairMid r).length = r.arg1 + r.arg2 + 3 := by
   simp only [g1ARepairMid, List.length_cons, List.length_append,
     g1AWalkOperand2_length, List.length_take, List.length_map]
   omega
-
 theorem g1ARepair_split_of (r : G1Request) (X : List G1Frame) :
     [G1Frame.bof] ++ g1ARepairLeft r ++ X ++ g1ARepairMid r ++
         g1ARepairTail r =
@@ -458,7 +439,6 @@ theorem g1ARepair_split_of (r : G1Request) (X : List G1Frame) :
     rw [← List.append_assoc, List.take_append_drop]
   simp only [g1ARepairLeft, g1ARepairMid, g1ARepairTail, g1TagRouteFrames,
     List.append_assoc, List.cons_append, List.nil_append, hd]
-
 /-- The S7 terminal word in the exact five-block spelling consumed by repair. -/
 theorem g1AWalkDoneFrames_repair_split (r : G1Request) :
     g1AWalkDoneFrames r =
@@ -467,7 +447,6 @@ theorem g1AWalkDoneFrames_repair_split (r : G1Request) :
         g1ARepairTail r := by
   rw [g1ARepair_split_of r (List.replicate r.arg1 G1Frame.spent)]
   simp [g1AWalkDoneFrames, g1AWalkOperand1, List.append_assoc]
-
 theorem g1ARepairLeft_skip (r : G1Request) :
     ∀ f ∈ g1ARepairLeft r, G1RepairSkip f := by
   intro f hf

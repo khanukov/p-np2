@@ -1526,6 +1526,7 @@ open Pnp3.Magnification
 -- remains idle; all executions start from caller-supplied A-repair states and
 -- stop at the stationary local `aRepairDone` boundary.  No real-initial,
 -- result/combine/output or acceptance root is present.
+#print axioms Internal.PsubsetPpoly.TM.G1ForwardMode.not_aRepair
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairScanMode.eq
 #print axioms Internal.PsubsetPpoly.TM.g1ARepairStopState_write
 #print axioms Internal.PsubsetPpoly.TM.g1ARepairStopState_done

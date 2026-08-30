@@ -40,6 +40,11 @@ set_option linter.unnecessarySeqFocus false
 #check @G1ARepairExamples.reqFalse
 #check @G1ARepairExamples.reqTrue
 #check @G1ARepairExamples.reqZero
+theorem check_G1ForwardMode_not_aRepair :
+    ¬ G1ForwardMode .aRepairSeek ∧ ¬ G1ForwardMode .aRepairWrite ∧
+      ¬ G1ForwardMode .aRepairBack ∧ ¬ G1ForwardMode .aRepairHop ∧
+      ¬ G1ForwardMode .aRepairDone := by
+  apply G1ForwardMode.not_aRepair
 theorem check_g1ARepairBackAdvance_of_skip {f : G1Frame} (h : G1RepairSkip f) :
     g1ARepairBackAdvance f = .aRepairSeek := by
   apply g1ARepairBackAdvance_of_skip <;> assumption

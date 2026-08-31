@@ -1,7 +1,7 @@
 import Complexity.TMVerifier.TuringToolkit.GateOnePassBTraceSafety
 
 /-!
-# GN-3B2c2: terminal pass-B cleanup and one repair-cycle trace safety (2026-08-31)
+# GN-3B2c2: terminal pass-B cleanup and complete repair-sweep safety (2026-08-31)
 
 **Progress classification: infrastructure, not P-vs-NP mainline progress.**
 
@@ -39,55 +39,10 @@ namespace Pnp3.Internal.PsubsetPpoly.TM
 
 open Pnp3.Internal.PsubsetPpoly.TM.FrameScan
 
-private theorem g1Terminal_getn {l : List Bool} {j : Nat} {v : Bool}
-    (h : l[j]? = some v) (hj : j < l.length) : l[j] = v := by
-  rw [List.getElem?_eq_getElem hj] at h
-  exact Option.some.inj h
-
-private theorem g1Terminal_drop_cons (l : List Bool) (j : Nat)
-    (hj : j < l.length) : l.drop j = l[j] :: l.drop (j + 1) := by
-  induction l generalizing j with
-  | nil => simp at hj
-  | cons a t ih =>
-      cases j with
-      | zero => simp
-      | succ j => exact ih j (by simpa using hj)
-
 private theorem g1Terminal_runSafe_one {W : Nat}
     (c : Configuration (M := G1M) W) (h : G1LocalStepSafe c) :
     G1RunSafe c 1 := by
   simpa using G1RunSafe.succ (G1RunSafe.empty c) h
-
-private theorem g1Terminal_step_head_le_next_add_one {W : Nat}
-    (c : Configuration (M := G1M) W) :
-    (c.head : Nat) ≤ ((TM.stepConfig (M := G1M) c).head : Nat) + 1 := by
-  rw [stepConfig_head]
-  generalize hm : (G1M.step c.state (c.tape c.head)).snd.snd = move
-  cases move with
-  | stay => simp
-  | left =>
-      by_cases hzero : (c.head : Nat) = 0
-      · simp [hzero]
-      · rw [Configuration.moveHead_left_val_of_pos c (by omega)]
-        omega
-  | right =>
-      by_cases hright : (c.head : Nat) + 1 < G1M.tapeLength W
-      · rw [Configuration.moveHead_right_lt c hright]
-        change (c.head : Nat) ≤ (c.head : Nat) + 1 + 1
-        omega
-      · rw [Configuration.moveHead_right_clamp c hright]
-        exact Nat.le_succ _
-
-private theorem g1Terminal_run_head_start_le_add {W k : Nat}
-    (c : Configuration (M := G1M) W) :
-    (c.head : Nat) ≤ ((TM.runConfig (M := G1M) c k).head : Nat) + k := by
-  induction k with
-  | zero => simp
-  | succ k ih =>
-      rw [runConfig_succ]
-      have hs := g1Terminal_step_head_le_next_add_one
-        (TM.runConfig (M := G1M) c k)
-      omega
 
 /-! ## Structural terminal and repair paths -/
 
@@ -350,10 +305,10 @@ theorem g1CS_walk_terminal_trace_safe (r : G1Request)
 
 /-! ## Repair macro safety -/
 
-/-- Four reverse-buffer microsteps on an interior repair frame are safe.  The
-buffer positions are the exact `p3 → p2 → p1 → p0` relation; successful
-skip, spent-stop and reject-stop rows are all covered because the frame base is
-strictly positive. -/
+/-- Four reverse-buffer microsteps on a repair frame are safe.  The buffer
+positions are the exact `p3 → p2 → p1 → p0` relation.  A continued skip row
+requires a strictly positive frame base; stop rows are also covered by the
+explicit `G1RepairStop` disjunct, including the head-zero anchor. -/
 theorem g1Repair_reverseFrame_runSafe {W base : Nat}
     (tape : Fin (G1M.tapeLength W) → Bool) (ctx : G1Ctx)
     (hroom : base + 4 < gnLocalSpan W)
@@ -912,9 +867,9 @@ theorem g1CS_repair_sweep_runSafe (r : G1Request) (s : Nat)
     Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
     using hall
 
-/-- Arbitrary-terminal-state capstone: terminal exhaustion/cleanup and one
-complete reject-aware repair cycle are safe and reach the existing canonical
-pass-A handoff. -/
+/-- Parametric terminal-configuration capstone: terminal exhaustion/cleanup
+and one complete reject-aware repair sweep are safe and reach the existing
+canonical pass-A handoff. -/
 theorem g1CS_walk_terminal_repair_trace_safe (r : G1Request)
     (hm : r.arg2 < r.vals.length) (v : Bool)
     (hv : r.vals[r.arg2]? = some v) :

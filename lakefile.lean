@@ -337,8 +337,9 @@ lean_lib PnP3 where
     -- repair, full gate, `ShiftRunSafe`, GN controller, clock, or acceptance.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOnePassBTraceSafety,
     -- GN-3B2c2 (2026-08-31), infrastructure only: exact successful terminal-B
-    -- cleanup plus one reject-aware spent-to-index repair cycle, ending at the
-    -- canonical read-A handoff.  No arbitrary-round induction or pass A.
+    -- cleanup plus one complete reject-aware spent-to-index repair sweep,
+    -- ending at the canonical read-A handoff.  No arbitrary-round induction,
+    -- pass A, full gate, `ShiftRunSafe`, GN controller, clock, or acceptance.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOnePassBTerminalRepairTraceSafety,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,

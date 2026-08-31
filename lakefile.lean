@@ -336,6 +336,10 @@ lean_lib PnP3 where
     -- successful B cursor-walk round.  No arg2 induction, terminal cleanup,
     -- repair, full gate, `ShiftRunSafe`, GN controller, clock, or acceptance.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOnePassBTraceSafety,
+    -- GN-3B2c2 (2026-08-31), infrastructure only: exact successful terminal-B
+    -- cleanup plus one reject-aware spent-to-index repair cycle, ending at the
+    -- canonical read-A handoff.  No arbitrary-round induction or pass A.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOnePassBTerminalRepairTraceSafety,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -528,6 +532,9 @@ lean_lib PnP3 where
     -- GN-3B2c1 (2026-08-31): exact named structural safety surfaces for the
     -- pass-B route/install and one successful cursor-walk round only.
     Glob.one `Tests.TMGateOnePassBTraceSafetySurfaceTests,
+    -- GN-3B2c2 (2026-08-31): exact named structural safety surfaces for
+    -- terminal pass-B cleanup and one repair sweep to the read-A handoff.
+    Glob.one `Tests.TMGateOnePassBTerminalRepairTraceSafetySurfaceTests,
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,
     Glob.one `Tests.TMGateOneReadBSurfaceTests,
     Glob.one `Tests.TMGateOneProbeInstallSurfaceTests,

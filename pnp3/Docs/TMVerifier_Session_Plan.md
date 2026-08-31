@@ -3316,8 +3316,53 @@ capstone is inhabited.
 
 This is the budget-driven B2c1 semantic boundary.  It proves neither induction
 over arbitrary `arg2` nor a terminal B exhaustion/cleanup path, and it does not
-cover the reject-aware repair sweep.  Those remain GN-3B2c2 obligations.  It
-also makes no read-A, full-gate, `ShiftRunSafe`, GN controller/clock, output,
-verdict, or acceptance claim.  The surface adds nineteen exact named theorem
-wrappers/direct axiom roots and twelve definition/structure/constructor
-`#check` pins.
+cover the reject-aware repair sweep; GN-3B2c2 below discharges those two
+obligations.  B2c1 itself also makes no read-A, full-gate, `ShiftRunSafe`, GN
+controller/clock, output, verdict, or acceptance claim.  The surface adds
+nineteen exact named theorem wrappers/direct axiom roots and twelve
+definition/structure/constructor `#check` pins.
+
+## GN-3B2c2 parametric G1 terminal cleanup/repair trace safety (2026-08-31)
+
+Progress classification: infrastructure, not P-vs-NP mainline progress.
+
+`GateOnePassBTerminalRepairTraceSafety` starts at the existing successful
+terminal walk configuration `g1WalkConfig r r.arg2 ...`; it does not invent a
+driver state or schedule.  The terminal schedule is exactly
+`(8 * arg2 + 8) + (8 * arg2 + 12) + 4 + 4 = 16 * arg2 + 28`: reverse
+exhaustion detection at the opening `argSep`, forward return through the spent
+and data frames, terminal turn, and `cursor → data` restoration.  Its exact
+endpoint is the existing `g1CS_walk_terminal_exact` configuration: head
+`4 * (g1WalkCursor r arg2 + 1)`, mode `readAResetStart`, unchanged latched
+context, and tape `g1BSpentFrames r arg2`.
+
+The repair proof then follows the existing driver schedule
+`g1RepairSteps r s = 4 * tag.units + 4 * arg1 + 8 * arg2 + 9 * s + 22`,
+equivalently `1 + 4 * mid.length + 13 * s + 4 * left.length + 5`.  Those
+summands are respectively the reset bridge, reverse scan over the right clean
+run, `s` exact `spent → index` cycles, reverse scan over the left clean run,
+and `bof` anchor plus terminal dispatch.  The endpoint is exactly the existing
+`g1CS_repair_sweep_readAConfig`: head zero, canonical input tape, mode
+`readAStart`, and the preserved context, expressed as `g1ReadAConfig r v`.
+
+`G1TerminalBShape` records the exact cursor split, spent/data skip run,
+reverse and forward buffer coherence, lengths, tape path and context.
+`G1RepairSweepShape` records the pending spent split, repaired index split,
+clean reverse paths, spent/cursor/index counts and reverse buffer coherence.
+Neither record contains reachability, a run index, safety, or target-machine
+data.  The local and macro proofs cover all four reverse buffer positions,
+clean-frame scans, the thirteen-step rewrite cycle, and the stationary `bof`
+stop without relying on head clamping.  Malformed/reserved frames retain the
+merged scanner's reject behavior; the request-specific successful sweep uses
+only the existing clean-path premises.
+
+The arbitrary-terminal capstone composes `16 * arg2 + 28` with
+`g1RepairSteps r arg2` and reaches `g1ReadAConfig r v`.  The nonvacuous literal
+capstone uses the already-proved single `arg2 = 1` round for
+`and(0,1,[true,false])`, then this terminal/repair segment, and is safe for the
+existing literal `g1BPassASteps` schedule with the exact `readAStart` endpoint.
+No arbitrary-`arg2` repeated-round induction is added; that remains B2d.  The
+slice executes no pass A and proves no full gate, `ShiftRunSafe`, GN
+controller/clock, output, verdict, or acceptance result.  GN-3B2c2 adds
+thirteen source theorems, thirteen exact named surface wrappers/direct axiom
+roots, and seven definition/structure/constructor `#check` pins.

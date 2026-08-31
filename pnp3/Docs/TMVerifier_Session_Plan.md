@@ -3209,11 +3209,12 @@ inspected at its exact maximum head `W+4`: that configuration is one cell
 below the `W+5` span, and its actual next transition is left, so the boundary
 configuration itself satisfies `G1LocalStepSafe`.
 
-This split is deliberately honest about what is not yet present.  It does not
-claim the schedule-specific bound for every later proper prefix, the actual
-trace theorem forbidding a left move at head zero, full canonical
-`G1RunSafe`, or a `ShiftRunSafe` corollary.  Those are GN-3B2 obligations and
-are not replaced by assumptions or inferred from the output-done endpoint.
+At GN-3B1 this split deliberately did not claim the schedule-specific bound
+for every later proper prefix, the actual trace theorem forbidding a left move
+at head zero, full canonical `G1RunSafe`, or a `ShiftRunSafe` corollary.
+GN-3B2a/b now close those safety obligations through the validation/rewind
+prefix ending at `readBStart`; full-gate `G1RunSafe` and `ShiftRunSafe` remain
+open and are not inferred from the output-done endpoint.
 Consequently no full false/true literal trace-safety capstone is claimed in
 GN-3B1.  The two literal boundary probes are narrower and explicit: concrete
 `const false` and `const true` traces really attain `W+4`, and that attained
@@ -3252,3 +3253,40 @@ surface/audit totals to 33 source plus 18 example theorems and 51 direct
 wrappers/roots.  GN-3B2a adds seven trace-safety theorems, bringing that module
 to 38 theorem wrappers/roots, with ten definition/structure/constructor
 `#check` pins.
+
+## GN-3B2b parametric G1 validation-rewind trace safety (2026-08-31)
+
+**Classification: infrastructure, not P-vs-NP mainline progress.**  This
+slice starts after GN-3B2a's safe boundary transition, at genuine step
+`(encodeG1 r).length + 5`, and stops at the existing
+`g1ReadBHandoffSteps r = 2 * (encodeG1 r).length + 9` endpoint.  The suffix
+schedule is exactly `g1ValidationRewindSteps r =
+4 * (g1ValidationFrames r).length = (encodeG1 r).length + 4`; the sum is
+proved equal to the existing handoff schedule rather than naming a new
+endpoint.
+
+`G1ReverseBufferCoherent` pins the right-to-left buffers at `p3`, `p2`, `p1`,
+and `p0` to bits 3, 2, and 1 of the actual current validation frame.
+`G1RewindScannerMicrostate` records the exact validation-frame decomposition,
+reverse mode/position, head, unchanged initial tape, `g1Ctx0`, buffer, and an
+inductive `G1ReversePath` back to the unique `bof`.  The microstate and
+envelope contain no reachability, run index, local-safety claim, or target
+theorem.  The derived rank is kept outside those records.
+
+The boundary successor is inhabited exactly.  Every reverse position is
+`G1LocalStepSafe` in `W+5`; in particular, reverse-reading `bof` at local head
+zero takes the concrete stationary transition into `readBStart`, so the proof
+does not use left clamping.  Ranked one-step preservation covers internal
+positions, non-anchor frame boundaries, and the terminal `bof` handoff.
+Well-founded induction gives the suffix `G1RunSafe`, and `G1RunSafe.add`
+composes it with `g1Validation_run_safe_through_boundary` at the exact
+`g1ReadBHandoffSteps` schedule.  The composed surface exports the inclusive
+head bound, proper-prefix no-left-at-zero consequence, and the arbitrary-
+canonical exact configuration equality at head zero, `readBStart/p0`, cleared
+buffer, `g1Ctx0`, and unchanged tape.
+
+No pass-B walk is executed.  This is not a full-gate or `ShiftRunSafe` result,
+and it adds no GN controller, copier, clock, or acceptance construction.
+GN-3B2b adds fifteen source theorems and fifteen exact named surface wrappers
+and direct axiom roots, bringing `GateOneTraceSafety` to 53 theorem
+wrappers/roots, with 27 definition/structure/constructor `#check` pins.

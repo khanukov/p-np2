@@ -1,7 +1,7 @@
 import Complexity.TMVerifier.TuringToolkit.GateOneTraceSafety
 
 /-!
-# GN-3B1 + GN-3B2a structural validation safety surface (2026-08-31)
+# GN-3B1 + GN-3B2a + GN-3B2b validation/rewind safety surface (2026-08-31)
 
 Definitions receive `#check` pins only.  Every theorem receives a named
 exact-type wrapper rooted directly in its source theorem.
@@ -26,6 +26,23 @@ macro_rules
 #check @G1ValidationScannerEnvelope
 #check @G1ValidationScannerEnvelope.scanning
 #check @G1ValidationScannerEnvelope.boundary
+#check @g1ValidationRewindSteps
+#check @g1ReverseFrameSteps
+#check @G1ReversePath
+#check @G1ReversePath.bof
+#check @G1ReversePath.step
+#check @G1ReverseBufferCoherent
+#check @G1RewindScannerMicrostate
+#check @G1RewindScannerMicrostate.mk
+#check @G1RewindHandoff
+#check @G1RewindHandoff.mk
+#check @G1RewindEnvelope
+#check @G1RewindEnvelope.rewinding
+#check @G1RewindEnvelope.handoff
+#check @G1RewindScannerMicrostate.stepsRemaining
+#check @G1RewindStepResult
+#check @G1RewindStepResult.rewinding
+#check @G1RewindStepResult.handoff
 
 theorem check_g1GateDoneSteps_provenance := @g1GateDoneSteps_provenance
 theorem check_g1GateAcceptSteps_eq_done_add_one :=
@@ -72,6 +89,36 @@ theorem check_g1CS_validation_span_pred_local_safe :=
 theorem check_g1Validation_run_safe_through_boundary :=
   @g1Validation_run_safe_through_boundary
 theorem check_g1CS_validation_trace_safe := @g1CS_validation_trace_safe
+theorem check_g1Validation_rewind_entry_exact :=
+  @g1Validation_rewind_entry_exact
+theorem check_g1Validation_rewind_entry_envelope :=
+  @g1Validation_rewind_entry_envelope
+theorem check_g1Rewind_microstate_local_safe :=
+  @g1Rewind_microstate_local_safe
+theorem check_g1Rewind_microstate_step_ranked :=
+  @g1Rewind_microstate_step_ranked
+theorem check_g1Rewind_microstate_step_exact :=
+  @g1Rewind_microstate_step_exact
+theorem check_g1Rewind_envelope_local_safe :=
+  @g1Rewind_envelope_local_safe
+theorem check_g1Validation_rewind_entry_ranked :=
+  @g1Validation_rewind_entry_ranked
+theorem check_g1Rewind_microstate_run_safe :=
+  @g1Rewind_microstate_run_safe
+theorem check_g1ValidationRewindSteps_closed :=
+  @g1ValidationRewindSteps_closed
+theorem check_g1ValidationRewindSteps_add_boundary :=
+  @g1ValidationRewindSteps_add_boundary
+theorem check_g1Validation_rewind_run_safe :=
+  @g1Validation_rewind_run_safe
+theorem check_g1ValidationRewind_run_safe_to_readB :=
+  @g1ValidationRewind_run_safe_to_readB
+theorem check_g1ValidationRewind_prefix_head_lt :=
+  @g1ValidationRewind_prefix_head_lt
+theorem check_g1ValidationRewind_no_left_at_zero :=
+  @g1ValidationRewind_no_left_at_zero
+theorem check_g1CS_validation_rewind_trace_safe :=
+  @g1CS_validation_rewind_trace_safe
 theorem check_literal_done_steps := @G1TraceSafetyProbes.literal_done_steps
 theorem check_literal_false_done := @G1TraceSafetyProbes.literal_false_done
 theorem check_literal_true_done := @G1TraceSafetyProbes.literal_true_done

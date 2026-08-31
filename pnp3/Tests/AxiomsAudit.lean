@@ -1966,10 +1966,10 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1OutputAcceptProbes.literal_false_output
 #print axioms Internal.PsubsetPpoly.TM.G1OutputAcceptProbes.literal_true_output
 
--- GN-3B1 + GN-3B2a (2026-08-31): exact result-indexed output-done boundary,
--- plus structural arbitrary-canonical validation safety through the attained
--- `W+4` left-turn boundary.  This slice does not claim full-gate trace safety
--- or `ShiftRunSafe` beyond validation.
+-- GN-3B1 + GN-3B2a + GN-3B2b (2026-08-31): exact result-indexed output-done
+-- boundary, plus structural arbitrary-canonical validation and read-only
+-- rewind safety through the existing read-B handoff.  This slice does not
+-- execute pass-B or claim full-gate/ShiftRunSafe safety.
 #print axioms Internal.PsubsetPpoly.TM.g1GateDoneSteps_provenance
 #print axioms Internal.PsubsetPpoly.TM.g1GateAcceptSteps_eq_done_add_one
 #print axioms Internal.PsubsetPpoly.TM.g1GateDoneSteps_closed
@@ -2003,6 +2003,21 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_validation_span_pred_local_safe
 #print axioms Internal.PsubsetPpoly.TM.g1Validation_run_safe_through_boundary
 #print axioms Internal.PsubsetPpoly.TM.g1CS_validation_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1Validation_rewind_entry_exact
+#print axioms Internal.PsubsetPpoly.TM.g1Validation_rewind_entry_envelope
+#print axioms Internal.PsubsetPpoly.TM.g1Rewind_microstate_local_safe
+#print axioms Internal.PsubsetPpoly.TM.g1Rewind_microstate_step_ranked
+#print axioms Internal.PsubsetPpoly.TM.g1Rewind_microstate_step_exact
+#print axioms Internal.PsubsetPpoly.TM.g1Rewind_envelope_local_safe
+#print axioms Internal.PsubsetPpoly.TM.g1Validation_rewind_entry_ranked
+#print axioms Internal.PsubsetPpoly.TM.g1Rewind_microstate_run_safe
+#print axioms Internal.PsubsetPpoly.TM.g1ValidationRewindSteps_closed
+#print axioms Internal.PsubsetPpoly.TM.g1ValidationRewindSteps_add_boundary
+#print axioms Internal.PsubsetPpoly.TM.g1Validation_rewind_run_safe
+#print axioms Internal.PsubsetPpoly.TM.g1ValidationRewind_run_safe_to_readB
+#print axioms Internal.PsubsetPpoly.TM.g1ValidationRewind_prefix_head_lt
+#print axioms Internal.PsubsetPpoly.TM.g1ValidationRewind_no_left_at_zero
+#print axioms Internal.PsubsetPpoly.TM.g1CS_validation_rewind_trace_safe
 #print axioms Internal.PsubsetPpoly.TM.G1TraceSafetyProbes.literal_done_steps
 #print axioms Internal.PsubsetPpoly.TM.G1TraceSafetyProbes.literal_false_done
 #print axioms Internal.PsubsetPpoly.TM.G1TraceSafetyProbes.literal_true_done

@@ -326,10 +326,10 @@ lean_lib PnP3 where
     -- result enters S10a, writes the exact Boolean output, and accepts both
     -- defined false and true results under the unchanged clock.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneOutputAccept,
-    -- GN-3B1 + GN-3B2a (2026-08-31), infrastructure only: expose the exact
-    -- result-indexed output-done boundary and prove structural, arbitrary-
-    -- canonical validation safety through its attained `W+4` left turn.
-    -- No full-gate `ShiftRunSafe`, GN controller, copier, clock, or acceptance.
+    -- GN-3B1 + GN-3B2a + GN-3B2b (2026-08-31), infrastructure only: expose
+    -- output-done and prove structural arbitrary-canonical validation/rewind
+    -- safety through the existing read-B handoff.  No pass-B walk, full-gate
+    -- `ShiftRunSafe`, GN controller, copier, clock, or acceptance.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneTraceSafety,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
@@ -516,9 +516,9 @@ lean_lib PnP3 where
     Glob.one `Tests.TMGateOneAResultSurfaceTests,
     Glob.one `Tests.TMGateOneOutputKernelSurfaceTests,
     Glob.one `Tests.TMGateOneOutputAcceptSurfaceTests,
-    -- GN-3B1 + GN-3B2a (2026-08-31): exact output-done plus structural,
-    -- parametric canonical validation safety through the rewind-start left
-    -- turn.  No full-gate or `ShiftRunSafe` claim in this split slice.
+    -- GN-3B1 + GN-3B2a + GN-3B2b (2026-08-31): exact output-done plus
+    -- structural parametric canonical validation/rewind safety through the
+    -- real read-B handoff.  No pass-B, full-gate, or `ShiftRunSafe` claim.
     Glob.one `Tests.TMGateOneTraceSafetySurfaceTests,
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,
     Glob.one `Tests.TMGateOneReadBSurfaceTests,

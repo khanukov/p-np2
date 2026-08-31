@@ -3298,7 +3298,7 @@ Progress classification: infrastructure, not P-vs-NP mainline progress.
 `GateOnePassBTraceSafety` starts at the exact merged
 `readBStart`/`p0`/head-zero endpoint of
 `g1CS_validation_rewind_trace_safe`.  Purely structural forward-scanner
-records track frame decomposition, physical tape, head, four-bit buffer,
+records track frame decomposition, physical tape, head, three-cell frame buffer,
 context and the strict non-rejecting path.  Reverse safety uses the existing
 scanner buffer/path interfaces.  No record stores reachability, a run index,
 safety, or a target-machine configuration.

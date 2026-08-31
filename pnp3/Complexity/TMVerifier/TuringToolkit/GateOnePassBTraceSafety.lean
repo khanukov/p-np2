@@ -963,8 +963,9 @@ theorem g1Forward_scanFrom_runSafe {W : Nat} (pre frames suffix : List G1Frame)
 
 /-! ## Existing pass-B macro schedules, made safe -/
 
-/-- The existing reverse-seek-plus-mark schedule is safe.  The marker prefix is
-nonempty in every pass-B use; the footprint bound is the local-copy bound. -/
+/-- The existing reverse-seek-plus-mark schedule is safe.  The marker prefix has
+at least two frames in every pass-B use; the footprint bound is the local-copy
+bound. -/
 theorem g1CS_walk_seek_mark_runSafe {W : Nat} (pre skipped suffix : List G1Frame)
     (ctx : G1Ctx) (hpre : 1 < pre.length)
     (hskip : ∀ f ∈ skipped, G1WalkSkip f)
@@ -1058,7 +1059,8 @@ theorem g1CS_readB_install_scan_runSafe (r : G1Request) (hc : r.Canonical)
   simpa [g1InstallScanSteps, route, g1InstallRouteFrames_length] using hadd
 
 /-- Route, probe/latch, and cursor installation are safe from the real initial
-configuration, ending at exactly the existing `Sigma(0)` handoff. -/
+configuration.  The existing exact endpoint theorem is paired with this safety
+result by the one-round capstone below. -/
 theorem g1CS_walk_install_runSafe (r : G1Request) (hc : r.Canonical)
     (ht : r.tag = .and ∨ r.tag = .or) (k : Nat) (h2 : r.arg2 = k + 1)
     (v : Bool) (hv : r.vals[0]? = some v) :

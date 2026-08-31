@@ -332,7 +332,7 @@ lean_lib PnP3 where
     -- `ShiftRunSafe`, GN controller, copier, clock, or acceptance.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneTraceSafety,
     -- GN-3B2c1 (2026-08-31), infrastructure only: from the merged read-B
-    -- handoff, prove structural route/install safety and exactly one
+    -- handoff, prove structural positive-operand-B route/install safety and one
     -- successful B cursor-walk round.  No arg2 induction, terminal cleanup,
     -- repair, full gate, `ShiftRunSafe`, GN controller, clock, or acceptance.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOnePassBTraceSafety,

@@ -2025,7 +2025,7 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1TraceSafetyProbes.literal_false_span_pred_safe
 #print axioms Internal.PsubsetPpoly.TM.G1TraceSafetyProbes.literal_true_span_pred_safe
 
--- GN-3B2c1 (2026-08-31): structural pass-B route/install safety and exactly
+-- GN-3B2c1 (2026-08-31): structural positive-operand-B route/install safety and
 -- one successful cursor-walk round.  No arg2 induction, terminal cleanup,
 -- repair cycle, full-gate safety, ShiftRunSafe, GN controller or acceptance.
 #print axioms Internal.PsubsetPpoly.TM.g1LocalStepSafe_of_interior

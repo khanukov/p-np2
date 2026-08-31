@@ -331,6 +331,11 @@ lean_lib PnP3 where
     -- safety through the existing read-B handoff.  No pass-B walk, full-gate
     -- `ShiftRunSafe`, GN controller, copier, clock, or acceptance.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneTraceSafety,
+    -- GN-3B2c1 (2026-08-31), infrastructure only: from the merged read-B
+    -- handoff, prove structural positive-operand-B route/install safety and one
+    -- successful B cursor-walk round.  No arg2 induction, terminal cleanup,
+    -- repair, full gate, `ShiftRunSafe`, GN controller, clock, or acceptance.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOnePassBTraceSafety,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -520,6 +525,9 @@ lean_lib PnP3 where
     -- structural parametric canonical validation/rewind safety through the
     -- real read-B handoff.  No pass-B, full-gate, or `ShiftRunSafe` claim.
     Glob.one `Tests.TMGateOneTraceSafetySurfaceTests,
+    -- GN-3B2c1 (2026-08-31): exact named structural safety surfaces for the
+    -- pass-B route/install and one successful cursor-walk round only.
+    Glob.one `Tests.TMGateOnePassBTraceSafetySurfaceTests,
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,
     Glob.one `Tests.TMGateOneReadBSurfaceTests,
     Glob.one `Tests.TMGateOneProbeInstallSurfaceTests,

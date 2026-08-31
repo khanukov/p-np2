@@ -3368,3 +3368,42 @@ slice executes no pass A and proves no full gate, `ShiftRunSafe`, GN
 controller/clock, output, verdict, or acceptance result.  GN-3B2c2 adds
 thirteen public source theorems, thirteen exact named surface wrappers/direct
 axiom roots, and seven definition/structure/constructor `#check` pins.
+
+## GN-3B2d arbitrary-arg2 G1 pass-B driver trace safety (2026-08-31)
+
+Progress classification: infrastructure, not P-vs-NP mainline progress.
+
+`GateOnePassBDriverTraceSafety` closes safety only through arrival at the
+canonical pass-A entry.  `g1CS_walk_loop_runSafe` is the actual induction that
+mirrors `g1CS_walk_loop_exact`: its base is
+`g1CS_walk_install_runSafe`, and its successor transports
+`g1CS_walk_iteration_runSafe` across the exact reached `Σ(k)` configuration
+before composing with `G1RunSafe.add`.  Exact execution is not used to infer
+safety.  The cumulative schedule remains
+`g1WalkInstallSteps r + g1BLoopSteps k`; the successor normalization uses
+only `g1BLoopSteps_succ`.
+
+The zero-index branch is independent of cursor installation.
+`g1CS_readB_zero_runSafe` composes the merged validation/rewind safety prefix,
+`g1Forward_scanFrom_runSafe` on the public `g1ReadBRouteFrames` path, and one
+safe stationary `g1StoreMode` step.  Its endpoint is the existing exact
+`g1CS_readB_zero_exact` boundary.  The positive branch composes the loop at
+`k = arg2` with `g1CS_walk_terminal_repair_trace_safe`; the zero branch
+composes the safe zero read with `g1CS_repair_sweep_runSafe r 0`.  They yield
+respectively `G1RunSafe initial (g1BPassASteps r)` and
+`G1RunSafe initial (g1ZPassASteps r)`, both with exact endpoint
+`g1ReadAConfig r b`.
+
+`g1CS_readB_repaired_trace_safe` splits only on `arg2 = 0` and exposes the
+conditional exact schedule together with the shared head-zero `readAStart`
+state and canonical tape.  Its premise `r.vals[r.arg2]? = some b` is
+essential; it makes no out-of-bounds claim.  The literal capstones reuse the
+merged requests and exact totals: the two-round positive request is safe for
+`400` genuine steps and the zero-index request for `172`, both from the real
+`G1M.initialConfig`.
+
+The slice stops before the first pass-A step.  It adds no machine or schedule
+field and proves no result/output, full-gate `ShiftRunSafe`, GN controller or
+clock, verdict, or acceptance statement.  GN-3B2d adds seven public source
+theorems, seven exact named surface wrappers, and seven direct axiom roots; it
+adds no surface examples or definition checks.

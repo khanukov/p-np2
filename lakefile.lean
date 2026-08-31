@@ -341,6 +341,12 @@ lean_lib PnP3 where
     -- ending at the canonical read-A handoff.  No arbitrary-round induction,
     -- pass A, full gate, `ShiftRunSafe`, GN controller, clock, or acceptance.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOnePassBTerminalRepairTraceSafety,
+    -- GN-3B2d (2026-08-31), infrastructure only: actual arbitrary-arg2
+    -- pass-B safety induction plus the separately safe zero-index route,
+    -- composed through terminal cleanup/repair to the canonical read-A
+    -- handoff.  No pass-A step, full gate, `ShiftRunSafe`, controller, output,
+    -- verdict, or acceptance theorem.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOnePassBDriverTraceSafety,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -536,6 +542,10 @@ lean_lib PnP3 where
     -- GN-3B2c2 (2026-08-31): exact named structural safety surfaces for
     -- terminal pass-B cleanup and one repair sweep to the read-A handoff.
     Glob.one `Tests.TMGateOnePassBTerminalRepairTraceSafetySurfaceTests,
+    -- GN-3B2d (2026-08-31): exact named wrappers for the arbitrary-arg2
+    -- pass-B safety induction, the zero route, both repaired branches, their
+    -- common read-A endpoint and the `400`/`172` real-initial capstones.
+    Glob.one `Tests.TMGateOnePassBDriverTraceSafetySurfaceTests,
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,
     Glob.one `Tests.TMGateOneReadBSurfaceTests,
     Glob.one `Tests.TMGateOneProbeInstallSurfaceTests,

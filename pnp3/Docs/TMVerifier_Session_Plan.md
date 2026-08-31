@@ -3310,12 +3310,14 @@ cursor install.  It also proves the exact existing one-round schedule
 the domain of `g1CS_walk_iteration_exact`.  The real-initial capstone composes
 installation with the `j = 0` round and pairs safety through
 `g1WalkInstallSteps r + 37` with the exact endpoint `Σ(1)`.  The concrete
-`G1PassBTraceProbes.reqAnd` theorem pins that this capstone is inhabited.
+`G1PassBTraceProbes.reqAnd` definition and
+`G1PassBTraceProbes.literal_one_round_trace_safe` theorem pin that this
+capstone is inhabited.
 
 This is the budget-driven B2c1 semantic boundary.  It proves neither induction
 over arbitrary `arg2` nor a terminal B exhaustion/cleanup path, and it does not
 cover the reject-aware repair sweep.  Those remain GN-3B2c2 obligations.  It
 also makes no read-A, full-gate, `ShiftRunSafe`, GN controller/clock, output,
-verdict, or acceptance claim.  The surface adds eighteen exact named theorem
-wrappers/direct axiom roots and eleven definition/structure/constructor
+verdict, or acceptance claim.  The surface adds nineteen exact named theorem
+wrappers/direct axiom roots and twelve definition/structure/constructor
 `#check` pins.

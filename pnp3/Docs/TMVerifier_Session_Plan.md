@@ -3221,3 +3221,34 @@ configuration is locally safe.  Separate literal endpoints reach output-done
 at steps 151 and 171.  The source exports 31 theorems, the surface gives 31
 exact named wrappers plus the definition-only pin, and all 31 theorem roots
 are audited directly.
+
+## GN-3B2a structural validation trace safety (2026-08-31)
+
+**Classification: infrastructure, not P-vs-NP mainline progress.**  This slice
+proves parametric local safety for the validation segment of every canonical
+`G1Request`.  `G1ForwardBufferCoherent` spells out the exact buffered bits at
+`p0`, `p1`, `p2`, and `p3`.  The scanner microstate records a decomposition
+`g1ValidationFrames r = pre ++ frame :: suffix`, the mode produced by the
+actual `g1AdvanceList .vBof pre`, head `4*pre.length+offset`, the real initial
+tape and `g1Ctx0`, buffer coherence, and the valid remaining path.  It has no
+reachability, run-index, or local-safety field.  A separate boundary record
+pins completion of the trailing blank at `rewindStart`.
+
+The real initial configuration inhabits the envelope by `g1ValidationPath`.
+One-step preservation follows the concrete right-moving rows
+`p0 → p1 → p2 → p3`; the `p3` case either extends `pre` and starts the
+next frame, or completes the terminal blank at the exact `W+4` boundary.
+Every envelope state is `G1LocalStepSafe` in span `W+5`.  Induction therefore
+proves `G1RunSafe` for the `W+4` forward scan, and the reusable successor
+combinator splices `g1CS_validation_span_pred_local_safe` to include the
+boundary's left transition.  The capstone quantifies arbitrary canonical `r`,
+states that head `W+4` is attained, and proves safety through that transition.
+
+This is not a full gate trace, a `ShiftRunSafe` result, or a GN
+machine/controller/clock/acceptance construction.  No target safety premise,
+provider wrapper, or reachability-and-safety envelope is introduced.  Four
+new generic `G1RunSafe` composition theorems bring the relocation source and
+surface/audit totals to 33 source plus 18 example theorems and 51 direct
+wrappers/roots.  GN-3B2a adds seven trace-safety theorems, bringing that module
+to 38 theorem wrappers/roots, with ten definition/structure/constructor
+`#check` pins.

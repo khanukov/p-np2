@@ -1,7 +1,7 @@
 import Complexity.TMVerifier.TuringToolkit.GateOneTraceSafety
 
 /-!
-# GN-3B1 canonical G1 output-done surface (2026-08-30)
+# GN-3B1 + GN-3B2a structural validation safety surface (2026-08-31)
 
 Definitions receive `#check` pins only.  Every theorem receives a named
 exact-type wrapper rooted directly in its source theorem.
@@ -17,6 +17,15 @@ macro_rules
       `(theorem $name : type_of% $proof := $proof)
 
 #check @g1GateDoneSteps
+#check @g1FramePositionOffset
+#check @G1ForwardBufferCoherent
+#check @G1ValidationScannerMicrostate
+#check @G1ValidationScannerMicrostate.mk
+#check @G1ValidationRewindBoundary
+#check @G1ValidationRewindBoundary.mk
+#check @G1ValidationScannerEnvelope
+#check @G1ValidationScannerEnvelope.scanning
+#check @G1ValidationScannerEnvelope.boundary
 
 theorem check_g1GateDoneSteps_provenance := @g1GateDoneSteps_provenance
 theorem check_g1GateAcceptSteps_eq_done_add_one :=
@@ -46,12 +55,23 @@ theorem check_g1_local_right_safe_of_head_le_span_pred :=
   @g1_local_right_safe_of_head_le_span_pred
 theorem check_g1_initial_prefix_right_safe_of_steps_lt_span :=
   @g1_initial_prefix_right_safe_of_steps_lt_span
+theorem check_g1Validation_initial_envelope :=
+  @g1Validation_initial_envelope
+theorem check_g1Validation_envelope_local_safe :=
+  @g1Validation_envelope_local_safe
+theorem check_g1Validation_scanner_step_exact :=
+  @g1Validation_scanner_step_exact
+theorem check_g1Validation_run_envelope := @g1Validation_run_envelope
+theorem check_g1Validation_run_safe := @g1Validation_run_safe
 theorem check_g1CS_validation_reaches_span_pred :=
   @g1CS_validation_reaches_span_pred
 theorem check_g1CS_validation_span_pred_moves_left :=
   @g1CS_validation_span_pred_moves_left
 theorem check_g1CS_validation_span_pred_local_safe :=
   @g1CS_validation_span_pred_local_safe
+theorem check_g1Validation_run_safe_through_boundary :=
+  @g1Validation_run_safe_through_boundary
+theorem check_g1CS_validation_trace_safe := @g1CS_validation_trace_safe
 theorem check_literal_done_steps := @G1TraceSafetyProbes.literal_done_steps
 theorem check_literal_false_done := @G1TraceSafetyProbes.literal_false_done
 theorem check_literal_true_done := @G1TraceSafetyProbes.literal_true_done

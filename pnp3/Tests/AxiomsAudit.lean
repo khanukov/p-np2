@@ -423,6 +423,10 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.gn_shift_moveHead_val
 #print axioms Internal.PsubsetPpoly.TM.gn_shift_write_tape
 #print axioms Internal.PsubsetPpoly.TM.gn_delegate_step_shift
+#print axioms Internal.PsubsetPpoly.TM.G1RunSafe.empty
+#print axioms Internal.PsubsetPpoly.TM.G1RunSafe.succ
+#print axioms Internal.PsubsetPpoly.TM.G1RunSafe.add
+#print axioms Internal.PsubsetPpoly.TM.G1RunSafe.transport
 #print axioms Internal.PsubsetPpoly.TM.G1RunSafe.mono
 #print axioms Internal.PsubsetPpoly.TM.G1RunDelegates.mono
 #print axioms Internal.PsubsetPpoly.TM.gn_run_safe_endpoint_head
@@ -1962,10 +1966,10 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1OutputAcceptProbes.literal_false_output
 #print axioms Internal.PsubsetPpoly.TM.G1OutputAcceptProbes.literal_true_output
 
--- GN-3B1 (2026-08-30): exact result-indexed output-done boundary, one step
--- before literal accept, plus generic prefix/right-footprint reductions and
--- the exact `W+4` validation-boundary inspection.  This split slice does not
--- claim the schedule-specific full canonical trace or `ShiftRunSafe`.
+-- GN-3B1 + GN-3B2a (2026-08-31): exact result-indexed output-done boundary,
+-- plus structural arbitrary-canonical validation safety through the attained
+-- `W+4` left-turn boundary.  This slice does not claim full-gate trace safety
+-- or `ShiftRunSafe` beyond validation.
 #print axioms Internal.PsubsetPpoly.TM.g1GateDoneSteps_provenance
 #print axioms Internal.PsubsetPpoly.TM.g1GateAcceptSteps_eq_done_add_one
 #print axioms Internal.PsubsetPpoly.TM.g1GateDoneSteps_closed
@@ -1989,9 +1993,16 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1_initial_prefix_head_le_steps
 #print axioms Internal.PsubsetPpoly.TM.g1_local_right_safe_of_head_le_span_pred
 #print axioms Internal.PsubsetPpoly.TM.g1_initial_prefix_right_safe_of_steps_lt_span
+#print axioms Internal.PsubsetPpoly.TM.g1Validation_initial_envelope
+#print axioms Internal.PsubsetPpoly.TM.g1Validation_envelope_local_safe
+#print axioms Internal.PsubsetPpoly.TM.g1Validation_scanner_step_exact
+#print axioms Internal.PsubsetPpoly.TM.g1Validation_run_envelope
+#print axioms Internal.PsubsetPpoly.TM.g1Validation_run_safe
 #print axioms Internal.PsubsetPpoly.TM.g1CS_validation_reaches_span_pred
 #print axioms Internal.PsubsetPpoly.TM.g1CS_validation_span_pred_moves_left
 #print axioms Internal.PsubsetPpoly.TM.g1CS_validation_span_pred_local_safe
+#print axioms Internal.PsubsetPpoly.TM.g1Validation_run_safe_through_boundary
+#print axioms Internal.PsubsetPpoly.TM.g1CS_validation_trace_safe
 #print axioms Internal.PsubsetPpoly.TM.G1TraceSafetyProbes.literal_done_steps
 #print axioms Internal.PsubsetPpoly.TM.G1TraceSafetyProbes.literal_false_done
 #print axioms Internal.PsubsetPpoly.TM.G1TraceSafetyProbes.literal_true_done

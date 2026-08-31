@@ -47,6 +47,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOneTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOnePassBTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOnePassBTerminalRepairTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOnePassBDriverTraceSafety
+import Complexity.TMVerifier.TuringToolkit.GateOnePassATraceSafety
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -2083,6 +2084,11 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_readB_zero_repaired_trace_safe
 #print axioms Internal.PsubsetPpoly.TM.g1CS_readB_repaired_trace_safe
 #print axioms Internal.PsubsetPpoly.TM.G1PassBDriverTraceProbes.literal_positive_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readA_binary_install_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readA_binary_install_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readA_binary_install_from_initial_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readA_binary_install_structure
+#print axioms Internal.PsubsetPpoly.TM.G1PassATraceProbes.literal_install_trace_safe
 #print axioms Internal.PsubsetPpoly.TM.G1PassBDriverTraceProbes.literal_zero_trace_safe
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_steps
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_false_repair_exact

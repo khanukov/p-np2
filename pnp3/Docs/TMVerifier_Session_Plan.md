@@ -3407,3 +3407,42 @@ field and proves no result/output, full-gate `ShiftRunSafe`, GN controller or
 clock, verdict, or acceptance statement.  GN-3B2d adds seven public source
 theorems, seven exact named surface wrappers, and seven direct axiom roots; it
 adds no surface examples or definition checks.
+
+## GN-3B2e1a binary pass-A installation trace safety (2026-08-31)
+
+Progress classification: infrastructure, not P-vs-NP mainline progress.
+
+`GateOnePassATraceSafety` takes the dependency-closed e1a fallback.  Starting
+at the merged binary `g1ReadAConfig`/`readAStart` handoff, it proves actual
+`G1RunSafe` for the stationary dispatch, forward pass-A tag rescan, operation
+latch, live-install entry, strict forward installation scan, probe/latch and
+cursor writer.  The local schedule is exactly
+`g1AReadInstallSteps r = 1 + (4 * (tag.units + 2) + 1) +
+g1ALiveInstallSteps r`.  The forward portions reuse the merged generic scanner
+and margin APIs; exact execution is used only to transport the next safe
+prefix, never to infer safety.
+
+The real-initial capstone composes the merged conditional pass-B common safety
+with that local prefix using `G1RunSafe.add` and transport.  Its exact schedule
+is the existing `g1ABinaryCursorSteps r`, namely the conditional
+`g1ZPassASteps`/`g1BPassASteps` handoff followed by the live binary A
+installation.  The endpoint is both the exact `g1APostWriterConfig` and the
+existing invariant configuration `g1AWalkConfig ... 0`, or `Σᴬ(0)`.
+
+The structural capstone projects the supported endpoint facts: residual
+`g1Residual tag bB`, latched A value, exactly one cursor, zero spent frames,
+`arg1 + arg2` index frames, and a head strictly within the local `W+5`
+footprint.  For the literal request `and(1,1,[true,true,false])`, the
+kernel-visible safe schedule is exactly `370` steps and reaches exact
+`Σᴬ(0)`.
+
+The two-mode structural reverse proof across the inner `argSep`, safety at
+`aSeekOut`/`aSeekIn`, and the arbitrary-`j` successful round are the separate
+e1b obligation.  In particular, the literal first-round exact cost is `53`,
+but the combined `423`-step `Σᴬ(1)` safety statement is not claimed here.
+Empty-data and successor-data-OOB endpoints remain explicitly separate and
+are not successful-route claims.  This slice adds no arbitrary A-driver
+induction, terminal cleanup/A repair, unary/constant prefix, result/output,
+full-gate `ShiftRunSafe`, controller, clock, verdict, or acceptance theorem.
+GN-3B2e1a adds five public source theorems, five exact named surface wrappers
+and direct axiom roots, and two definition pins; it adds no examples.

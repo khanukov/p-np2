@@ -46,6 +46,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOneOutputAccept
 import Complexity.TMVerifier.TuringToolkit.GateOneTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOnePassBTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOnePassBTerminalRepairTraceSafety
+import Complexity.TMVerifier.TuringToolkit.GateOnePassBDriverTraceSafety
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -2066,6 +2067,23 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_walk_terminal_repair_trace_safe
 #print axioms Internal.PsubsetPpoly.TM.G1PassBTerminalRepairTraceProbes.reqAnd_canonical
 #print axioms Internal.PsubsetPpoly.TM.G1PassBTerminalRepairTraceProbes.literal_terminal_repair_trace_safe
+
+-- GN-3B2d (2026-08-31): actual arbitrary-arg2 pass-B safety induction from
+-- the real initial configuration, plus the independent zero-index scan/store
+-- prefix.  The successful positive and zero branches compose with the merged
+-- terminal/repair safety and meet at the canonical head-zero `readAStart`
+-- endpoint on the exact conditional schedule.  The selector premise
+-- `vals[arg2]? = some b` is required; no OOB, pass-A step, full-gate,
+-- `ShiftRunSafe`, controller, output, verdict, or acceptance claim is made.
+-- The literal roots are kernel-visible real-initial safe runs of `400` and
+-- `172` steps.
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_loop_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_zero_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_positive_repaired_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_zero_repaired_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_repaired_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.G1PassBDriverTraceProbes.literal_positive_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.G1PassBDriverTraceProbes.literal_zero_trace_safe
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_steps
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_false_repair_exact
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_true_repair_exact

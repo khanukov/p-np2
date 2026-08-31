@@ -8,9 +8,9 @@ import Complexity.TMVerifier.TuringToolkit.GateOneAWalkInvariant
 
 This dependency-closed e1a module starts at the merged successful binary
 `readAStart` handoff.  It proves prefix safety for the stationary dispatch,
-pass-A tag rescan and operation latch, live cursor installation, and the exact
-`Σᴬ(0)` endpoint.  Its real-initial capstone composes the merged pass-B driver
-safety with that installation.
+pass-A tag rescan, operation latch, and live cursor installation.  Separate
+endpoint conjuncts identify the exact `Σᴬ(0)` configuration.  Its real-initial
+capstone composes the merged pass-B driver safety with that installation.
 
 The mixed two-mode A reverse seek and one successful round are deliberately
 deferred to e1b: no endpoint-to-safety inference or clamp-dependent substitute
@@ -320,6 +320,7 @@ theorem g1CS_readA_binary_install_structure (r : G1Request)
       (G1M.initialConfig (g1Point (encodeG1 r))) (g1ABinaryCursorSteps r)
     out.state.snd.ctx.res = g1Residual r.tag bB ∧
       out.state.snd.ctx.vB = bA ∧
+      out.tape = g1ListTape ((g1AWalkFrames r 0).flatMap G1Frame.bits) ∧
       (g1AWalkFrames r 0).count .cursor = 1 ∧
       (g1AWalkFrames r 0).count .spent = 0 ∧
       (g1AWalkFrames r 0).count .index = r.arg1 + r.arg2 ∧
@@ -327,7 +328,7 @@ theorem g1CS_readA_binary_install_structure (r : G1Request)
   dsimp only
   rw [(g1CS_readA_binary_install_from_initial_trace_safe r hc ht bA bB rest
     hB hv).2.2]
-  refine ⟨g1AWalkConfig_res _ _ _ _ _ _ _, rfl,
+  refine ⟨g1AWalkConfig_res _ _ _ _ _ _ _, rfl, rfl,
     g1AWalkFrames_count_cursor _ _, g1AWalkFrames_count_spent _ _, ?_, ?_⟩
   · simpa using g1AWalkFrames_count_index r 0
   · simp [g1AWalkConfig, g1AWalkCursor, gnLocalSpan, encodeG1_length]

@@ -449,6 +449,43 @@ def G1RunDelegates (M : TM.{u}) (ι : G1M.state -> M.state)
   forall j, j < k ->
     G1StepDelegates M ι (TM.runConfig (M := G1M) c j)
 
+/-- The empty source run has no local-safety obligations. -/
+theorem G1RunSafe.empty {W : Nat} (c : Configuration (M := G1M) W) :
+    G1RunSafe c 0 := by
+  intro j hj
+  omega
+
+/-- Extend a safe run by the local-safety fact at its endpoint. -/
+theorem G1RunSafe.succ {W k : Nat} {c : Configuration (M := G1M) W}
+    (hprefix : G1RunSafe c k)
+    (hend : G1LocalStepSafe (TM.runConfig (M := G1M) c k)) :
+    G1RunSafe c (k + 1) := by
+  intro j hj
+  by_cases hlt : j < k
+  · exact hprefix j hlt
+  · have hjk : j = k := by omega
+    simpa [hjk] using hend
+
+/-- Compose safe adjacent run segments without assuming anything about a
+target machine or shifted execution. -/
+theorem G1RunSafe.add {W j k : Nat} {c : Configuration (M := G1M) W}
+    (hprefix : G1RunSafe c j)
+    (hsuffix : G1RunSafe (TM.runConfig (M := G1M) c j) k) :
+    G1RunSafe c (j + k) := by
+  intro t ht
+  by_cases hprefixIndex : t < j
+  · exact hprefix t hprefixIndex
+  · have hsplit : t = j + (t - j) := by omega
+    rw [hsplit, runConfig_add]
+    exact hsuffix (t - j) (by omega)
+
+/-- Transport source-run safety across equality of initial configurations. -/
+theorem G1RunSafe.transport {W k : Nat}
+    {c d : Configuration (M := G1M) W} (hcd : c = d)
+    (h : G1RunSafe c k) : G1RunSafe d k := by
+  subst d
+  exact h
+
 /-- Restrict prefix safety to a shorter run. -/
 theorem G1RunSafe.mono {W : Nat} {c : Configuration (M := G1M) W} {j k : Nat}
     (h : G1RunSafe c k) (hjk : j <= k) : G1RunSafe c j := by

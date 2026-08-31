@@ -423,6 +423,10 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.gn_shift_moveHead_val
 #print axioms Internal.PsubsetPpoly.TM.gn_shift_write_tape
 #print axioms Internal.PsubsetPpoly.TM.gn_delegate_step_shift
+#print axioms Internal.PsubsetPpoly.TM.G1RunSafe.empty
+#print axioms Internal.PsubsetPpoly.TM.G1RunSafe.succ
+#print axioms Internal.PsubsetPpoly.TM.G1RunSafe.add
+#print axioms Internal.PsubsetPpoly.TM.G1RunSafe.transport
 #print axioms Internal.PsubsetPpoly.TM.G1RunSafe.mono
 #print axioms Internal.PsubsetPpoly.TM.G1RunDelegates.mono
 #print axioms Internal.PsubsetPpoly.TM.gn_run_safe_endpoint_head
@@ -1989,9 +1993,16 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1_initial_prefix_head_le_steps
 #print axioms Internal.PsubsetPpoly.TM.g1_local_right_safe_of_head_le_span_pred
 #print axioms Internal.PsubsetPpoly.TM.g1_initial_prefix_right_safe_of_steps_lt_span
+#print axioms Internal.PsubsetPpoly.TM.g1Validation_initial_envelope
+#print axioms Internal.PsubsetPpoly.TM.g1Validation_envelope_local_safe
+#print axioms Internal.PsubsetPpoly.TM.g1Validation_scanner_step_exact
+#print axioms Internal.PsubsetPpoly.TM.g1Validation_run_envelope
+#print axioms Internal.PsubsetPpoly.TM.g1Validation_run_safe
 #print axioms Internal.PsubsetPpoly.TM.g1CS_validation_reaches_span_pred
 #print axioms Internal.PsubsetPpoly.TM.g1CS_validation_span_pred_moves_left
 #print axioms Internal.PsubsetPpoly.TM.g1CS_validation_span_pred_local_safe
+#print axioms Internal.PsubsetPpoly.TM.g1Validation_run_safe_through_boundary
+#print axioms Internal.PsubsetPpoly.TM.g1CS_validation_trace_safe
 #print axioms Internal.PsubsetPpoly.TM.G1TraceSafetyProbes.literal_done_steps
 #print axioms Internal.PsubsetPpoly.TM.G1TraceSafetyProbes.literal_false_done
 #print axioms Internal.PsubsetPpoly.TM.G1TraceSafetyProbes.literal_true_done

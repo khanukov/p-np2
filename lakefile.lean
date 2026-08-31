@@ -516,8 +516,9 @@ lean_lib PnP3 where
     Glob.one `Tests.TMGateOneAResultSurfaceTests,
     Glob.one `Tests.TMGateOneOutputKernelSurfaceTests,
     Glob.one `Tests.TMGateOneOutputAcceptSurfaceTests,
-    -- GN-3B1 (2026-08-30): exact output-done and generic prefix/right-bound
-    -- wrappers; no full canonical `ShiftRunSafe` claim in this split slice.
+    -- GN-3B1 + GN-3B2a (2026-08-31): exact output-done plus structural,
+    -- parametric canonical validation safety through the rewind-start left
+    -- turn.  No full-gate or `ShiftRunSafe` claim in this split slice.
     Glob.one `Tests.TMGateOneTraceSafetySurfaceTests,
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,
     Glob.one `Tests.TMGateOneReadBSurfaceTests,

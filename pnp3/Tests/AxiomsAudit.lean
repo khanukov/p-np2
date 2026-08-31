@@ -2046,6 +2046,7 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_walk_install_runSafe
 #print axioms Internal.PsubsetPpoly.TM.g1CS_walk_iteration_runSafe
 #print axioms Internal.PsubsetPpoly.TM.g1CS_walk_one_round_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.G1PassBTraceProbes.literal_one_round_trace_safe
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_steps
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_false_repair_exact
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_true_repair_exact

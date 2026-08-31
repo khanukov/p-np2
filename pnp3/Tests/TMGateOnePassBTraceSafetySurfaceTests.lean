@@ -27,6 +27,7 @@ macro_rules
 #check @G1ForwardStepResult.scanning
 #check @G1ForwardStepResult.handoff
 #check @g1Forward_scan_entry
+#check @G1PassBTraceProbes.reqAnd
 
 theorem check_g1LocalStepSafe_of_interior := @g1LocalStepSafe_of_interior
 theorem check_g1LocalStepSafe_at_zero_of_not_left :=
@@ -51,5 +52,7 @@ theorem check_g1CS_walk_install_runSafe := @g1CS_walk_install_runSafe
 theorem check_g1CS_walk_iteration_runSafe := @g1CS_walk_iteration_runSafe
 theorem check_g1CS_walk_one_round_trace_safe :=
   @g1CS_walk_one_round_trace_safe
+theorem check_literal_one_round_trace_safe :=
+  @G1PassBTraceProbes.literal_one_round_trace_safe
 
 end Pnp3.Tests.TMGateOnePassBTraceSafetySurface

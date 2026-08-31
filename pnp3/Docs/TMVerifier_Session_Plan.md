@@ -3309,7 +3309,8 @@ cursor install.  It also proves the exact existing one-round schedule
 `16 * j + 37` safe for every caller-supplied canonical walk configuration in
 the domain of `g1CS_walk_iteration_exact`.  The real-initial capstone composes
 installation with the `j = 0` round and pairs safety through
-`g1WalkInstallSteps r + 37` with the exact endpoint `Sigma(1)`.
+`g1WalkInstallSteps r + 37` with the exact endpoint `Σ(1)`.  The concrete
+`G1PassBTraceProbes.reqAnd` theorem pins that this capstone is inhabited.
 
 This is the budget-driven B2c1 semantic boundary.  It proves neither induction
 over arbitrary `arg2` nor a terminal B exhaustion/cleanup path, and it does not

@@ -7,10 +7,10 @@ import Complexity.TMVerifier.TuringToolkit.GateOneTraceSafety
 
 This module begins at the exact merged `readBStart`/`p0`/head-zero handoff of
 `g1CS_validation_rewind_trace_safe`.  It proves local-footprint safety for the
-existing binary pass-B route, strict installation scan, data probe/latch,
+existing positive-operand-B route, strict installation scan, data probe/latch,
 cursor installation, and exactly one successful cursor-walk round.  The final
 capstone starts at the real `G1M.initialConfig`, uses the existing exact
-schedule `g1CS_walk_iteration_exact`, and stops at `Sigma(1)`.
+schedule `g1CS_walk_iteration_exact`, and stops at `Σ(1)`.
 
 The structural records below contain only frame decomposition, scanner buffer,
 head, tape, context, and path facts.  They contain no reachability, run index,
@@ -1305,8 +1305,8 @@ theorem g1CS_walk_iteration_runSafe (r : G1Request) (j : Nat)
 
 set_option maxHeartbeats 200000
 
-/-- Real-initial, nonvacuous capstone: install and one successful round are
-safe and reach the same `Sigma(1)` as the existing exact schedules. -/
+/-- Real-initial capstone: install and one successful round are safe and reach
+the same `Σ(1)` as the existing exact schedules. -/
 theorem g1CS_walk_one_round_trace_safe (r : G1Request) (hc : r.Canonical)
     (ht : r.tag = .and ∨ r.tag = .or) (k : Nat) (h2 : r.arg2 = k + 1)
     (v v' : Bool) (hv : r.vals[0]? = some v) (hv' : r.vals[1]? = some v') :
@@ -1328,5 +1328,26 @@ theorem g1CS_walk_one_round_trace_safe (r : G1Request) (hc : r.Canonical)
     rw [runConfig_add, hexact]
     exact g1CS_walk_iteration_exact r 0 (by omega)
       (g1PassB_length_pos_of_get hv') v v' hv hv'⟩
+
+namespace G1PassBTraceProbes
+
+/-- Concrete positive-B request witnessing that the real-initial capstone is
+inhabited. -/
+def reqAnd : G1Request := ⟨.and, 0, 1, [true, false]⟩
+
+/-- A literal `and` request executes installation plus one safe B round and
+reaches the exact `Σ(1)` endpoint. -/
+theorem literal_one_round_trace_safe :
+    G1RunSafe (G1M.initialConfig (g1Point (encodeG1 reqAnd)))
+        (g1WalkInstallSteps reqAnd + 37) ∧
+      TM.runConfig (M := G1M)
+          (G1M.initialConfig (g1Point (encodeG1 reqAnd)))
+          (g1WalkInstallSteps reqAnd + 37) =
+        g1WalkConfig reqAnd 1 (by decide) (by decide) false (by decide) := by
+  simpa [reqAnd] using
+    g1CS_walk_one_round_trace_safe reqAnd (by decide) (Or.inl rfl)
+      0 rfl true false rfl rfl
+
+end G1PassBTraceProbes
 
 end Pnp3.Internal.PsubsetPpoly.TM

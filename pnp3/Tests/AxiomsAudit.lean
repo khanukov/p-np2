@@ -45,6 +45,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOneOutputKernel
 import Complexity.TMVerifier.TuringToolkit.GateOneOutputAccept
 import Complexity.TMVerifier.TuringToolkit.GateOneTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOnePassBTraceSafety
+import Complexity.TMVerifier.TuringToolkit.GateOnePassBTerminalRepairTraceSafety
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -2047,6 +2048,24 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_walk_iteration_runSafe
 #print axioms Internal.PsubsetPpoly.TM.g1CS_walk_one_round_trace_safe
 #print axioms Internal.PsubsetPpoly.TM.G1PassBTraceProbes.literal_one_round_trace_safe
+
+-- GN-3B2c2 (2026-08-31): exact successful terminal-B cleanup and one
+-- reject-aware repair sweep to the canonical read-A handoff.  No arbitrary
+-- operand-2 round induction, pass A, full gate, ShiftRunSafe, controller,
+-- clock, output, verdict or acceptance theorem.
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_seek_exhaust_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_exh_to_cursor_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_terminal_turn_restore_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_terminal_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1Repair_reverseFrame_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_repair_scan_skip_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_repair_cycle_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_repair_spent_run_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_repair_finish_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_repair_sweep_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_terminal_repair_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.G1PassBTerminalRepairTraceProbes.reqAnd_canonical
+#print axioms Internal.PsubsetPpoly.TM.G1PassBTerminalRepairTraceProbes.literal_terminal_repair_trace_safe
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_steps
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_false_repair_exact
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_true_repair_exact

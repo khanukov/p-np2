@@ -44,6 +44,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOneAResult
 import Complexity.TMVerifier.TuringToolkit.GateOneOutputKernel
 import Complexity.TMVerifier.TuringToolkit.GateOneOutputAccept
 import Complexity.TMVerifier.TuringToolkit.GateOneTraceSafety
+import Complexity.TMVerifier.TuringToolkit.GateOnePassBTraceSafety
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -2023,6 +2024,28 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1TraceSafetyProbes.literal_true_done
 #print axioms Internal.PsubsetPpoly.TM.G1TraceSafetyProbes.literal_false_span_pred_safe
 #print axioms Internal.PsubsetPpoly.TM.G1TraceSafetyProbes.literal_true_span_pred_safe
+
+-- GN-3B2c1 (2026-08-31): structural pass-B route/install safety and exactly
+-- one successful cursor-walk round.  No arg2 induction, terminal cleanup,
+-- repair cycle, full-gate safety, ShiftRunSafe, GN controller or acceptance.
+#print axioms Internal.PsubsetPpoly.TM.g1LocalStepSafe_of_interior
+#print axioms Internal.PsubsetPpoly.TM.g1LocalStepSafe_at_zero_of_not_left
+#print axioms Internal.PsubsetPpoly.TM.g1Forward_microstate_localSafe
+#print axioms Internal.PsubsetPpoly.TM.g1Forward_microstate_step
+#print axioms Internal.PsubsetPpoly.TM.g1Forward_microstate_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1Forward_scan_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1Walk_reverseFrame_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1Walk_revSkip_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1Walk_seekToMarker_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1RunSafe_of_margins
+#print axioms Internal.PsubsetPpoly.TM.g1Forward_frame_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1Forward_scanFrom_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_seek_mark_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_fwd_to_cursor_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_install_scan_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_install_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_iteration_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_walk_one_round_trace_safe
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_steps
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_false_repair_exact
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_true_repair_exact

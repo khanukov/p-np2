@@ -3290,3 +3290,31 @@ and it adds no GN controller, copier, clock, or acceptance construction.
 GN-3B2b adds fifteen source theorems and fifteen exact named surface wrappers
 and direct axiom roots, bringing `GateOneTraceSafety` to 53 theorem
 wrappers/roots, with 27 definition/structure/constructor `#check` pins.
+
+## GN-3B2c1 parametric G1 pass-B route/round trace safety (2026-08-31)
+
+Progress classification: infrastructure, not P-vs-NP mainline progress.
+
+`GateOnePassBTraceSafety` starts at the exact merged
+`readBStart`/`p0`/head-zero endpoint of
+`g1CS_validation_rewind_trace_safe`.  Purely structural forward-scanner
+records track frame decomposition, physical tape, head, four-bit buffer,
+context and the strict non-rejecting path.  Reverse safety uses the existing
+scanner buffer/path interfaces.  No record stores reachability, a run index,
+safety, or a target-machine configuration.
+
+The slice proves `G1RunSafe` for the existing positive operand-B route through
+`g1InstallScanSteps`, then for its five-step data probe/latch and four-step
+cursor install.  It also proves the exact existing one-round schedule
+`16 * j + 37` safe for every caller-supplied canonical walk configuration in
+the domain of `g1CS_walk_iteration_exact`.  The real-initial capstone composes
+installation with the `j = 0` round and pairs safety through
+`g1WalkInstallSteps r + 37` with the exact endpoint `Sigma(1)`.
+
+This is the budget-driven B2c1 semantic boundary.  It proves neither induction
+over arbitrary `arg2` nor a terminal B exhaustion/cleanup path, and it does not
+cover the reject-aware repair sweep.  Those remain GN-3B2c2 obligations.  It
+also makes no read-A, full-gate, `ShiftRunSafe`, GN controller/clock, output,
+verdict, or acceptance claim.  The surface adds eighteen exact named theorem
+wrappers/direct axiom roots and eleven definition/structure/constructor
+`#check` pins.

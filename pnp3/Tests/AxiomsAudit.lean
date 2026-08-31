@@ -1966,10 +1966,10 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1OutputAcceptProbes.literal_false_output
 #print axioms Internal.PsubsetPpoly.TM.G1OutputAcceptProbes.literal_true_output
 
--- GN-3B1 (2026-08-30): exact result-indexed output-done boundary, one step
--- before literal accept, plus generic prefix/right-footprint reductions and
--- the exact `W+4` validation-boundary inspection.  This split slice does not
--- claim the schedule-specific full canonical trace or `ShiftRunSafe`.
+-- GN-3B1 + GN-3B2a (2026-08-31): exact result-indexed output-done boundary,
+-- plus structural arbitrary-canonical validation safety through the attained
+-- `W+4` left-turn boundary.  This slice does not claim full-gate trace safety
+-- or `ShiftRunSafe` beyond validation.
 #print axioms Internal.PsubsetPpoly.TM.g1GateDoneSteps_provenance
 #print axioms Internal.PsubsetPpoly.TM.g1GateAcceptSteps_eq_done_add_one
 #print axioms Internal.PsubsetPpoly.TM.g1GateDoneSteps_closed

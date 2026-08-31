@@ -631,8 +631,8 @@ theorem g1Validation_run_envelope (r : G1Request) (hc : r.Canonical)
           have hbound := g1_initial_prefix_head_le_steps r k
           omega
 
-/-- The complete forward validation scan is safe at every proper prefix and
-attains its exact `W+4` endpoint. -/
+/-- The complete forward validation scan is safe at every proper prefix.
+Exact `W+4` attainment is combined with this theorem below. -/
 theorem g1Validation_run_safe (r : G1Request) (hc : r.Canonical) :
     G1RunSafe (G1M.initialConfig (g1Point (encodeG1 r)))
       ((encodeG1 r).length + 4) := by

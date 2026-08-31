@@ -326,10 +326,10 @@ lean_lib PnP3 where
     -- result enters S10a, writes the exact Boolean output, and accepts both
     -- defined false and true results under the unchanged clock.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneOutputAccept,
-    -- GN-3B1 (2026-08-30), infrastructure only: stop the exact canonical G1
-    -- schedule at its result-indexed output-done configuration, one step
-    -- before literal accept, and expose generic prefix/right-footprint bounds.
-    -- No GN machine, controller, copier, clock, or acceptance construction.
+    -- GN-3B1 + GN-3B2a (2026-08-31), infrastructure only: expose the exact
+    -- result-indexed output-done boundary and prove structural, arbitrary-
+    -- canonical validation safety through its attained `W+4` left turn.
+    -- No full-gate `ShiftRunSafe`, GN controller, copier, clock, or acceptance.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneTraceSafety,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,

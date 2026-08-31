@@ -3209,11 +3209,12 @@ inspected at its exact maximum head `W+4`: that configuration is one cell
 below the `W+5` span, and its actual next transition is left, so the boundary
 configuration itself satisfies `G1LocalStepSafe`.
 
-This split is deliberately honest about what is not yet present.  It does not
-claim the schedule-specific bound for every later proper prefix, the actual
-trace theorem forbidding a left move at head zero, full canonical
-`G1RunSafe`, or a `ShiftRunSafe` corollary.  Those are GN-3B2 obligations and
-are not replaced by assumptions or inferred from the output-done endpoint.
+At GN-3B1 this split deliberately did not claim the schedule-specific bound
+for every later proper prefix, the actual trace theorem forbidding a left move
+at head zero, full canonical `G1RunSafe`, or a `ShiftRunSafe` corollary.
+GN-3B2a/b now close those safety obligations through the validation/rewind
+prefix ending at `readBStart`; full-gate `G1RunSafe` and `ShiftRunSafe` remain
+open and are not inferred from the output-done endpoint.
 Consequently no full false/true literal trace-safety capstone is claimed in
 GN-3B1.  The two literal boundary probes are narrower and explicit: concrete
 `const false` and `const true` traces really attain `W+4`, and that attained

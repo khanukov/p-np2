@@ -2,7 +2,7 @@ import Complexity.TMVerifier.TuringToolkit.GateNRelocation
 import Complexity.TMVerifier.TuringToolkit.GateOneOutputAccept
 
 /-!
-# GN-3B1 + GN-3B2a: structural validation trace safety (2026-08-31)
+# GN-3B1 + GN-3B2a + GN-3B2b: validation/rewind trace safety (2026-08-31)
 
 **Progress classification: infrastructure, not P-vs-NP mainline progress.**
 
@@ -17,7 +17,12 @@ head, initial tape/context, coherent four-bit buffer, and remaining valid path;
 it stores no reachability, run index, or safety assertion.  Exact microsteps
 preserve that envelope through the trailing blank and stop at `rewindStart`.
 The resulting `G1RunSafe` includes that boundary's left turn, but no later
-rewind or full-gate trace is claimed.
+rewind or full-gate trace is claimed by GN-3B2a.  GN-3B2b starts at the
+successor of that left turn and follows the exact read-only reverse scan to
+the existing `readBStart` handoff.  Its reverse envelope has the same purely
+structural character: actual validation frames and tape bits, reverse mode
+and position, coherent buffer, context, and remaining reverse path, with no
+reachability, run-index, or safety field.
 
 No GN machine, controller, copier, clock, or acceptance construction is added,
 and the literal accept state is not mapped into a future GN control.
@@ -702,6 +707,624 @@ theorem g1CS_validation_trace_safe (r : G1Request) (hc : r.Canonical) :
     simp only [gnLocalSpan] at h
     omega
   · exact g1Validation_run_safe_through_boundary r hc
+
+/-! ## GN-3B2b structural validation rewind -/
+
+/-- Number of physical reverse-read steps from the successor of the
+validation boundary to the existing read-B handoff. -/
+def g1ValidationRewindSteps (r : G1Request) : Nat :=
+  4 * (g1ValidationFrames r).length
+
+/-- Remaining microsteps in the current reverse-read frame position. -/
+def g1ReverseFrameSteps : G1FramePosition → Nat
+  | .p3 => 4
+  | .p2 => 3
+  | .p1 => 2
+  | .p0 => 1
+
+/-- The already established prefix from the unique left anchor through the
+current reverse-read frame.  Each extension is explicitly non-anchor. -/
+inductive G1ReversePath : List G1Frame → G1Frame → Prop
+  | bof : G1ReversePath [] .bof
+  | step {pre frame next} : G1ReversePath pre frame → next ≠ .bof →
+      G1ReversePath (pre ++ [frame]) next
+
+/-- The reverse buffer contains exactly the bits already scanned from the
+right side of the current canonical frame.  Unused slots retain their reset
+value. -/
+def G1ReverseBufferCoherent (frame : G1Frame) :
+    G1FramePosition → Bool → Bool → Bool → Prop
+  | .p3, b0, b1, b2 => b0 = false ∧ b1 = false ∧ b2 = false
+  | .p2, b0, b1, b2 =>
+      b0 = false ∧ b1 = false ∧ b2 = frame.bits[3]!
+  | .p1, b0, b1, b2 =>
+      b0 = false ∧ b1 = frame.bits[2]! ∧ b2 = frame.bits[3]!
+  | .p0, b0, b1, b2 =>
+      b0 = frame.bits[1]! ∧ b1 = frame.bits[2]! ∧
+        b2 = frame.bits[3]!
+
+/-- A concrete reverse-scanner configuration over the canonical validation
+tape.  `pre ++ frame :: suffix` is the actual frame decomposition, while
+`remaining` is the structural path back to the unique leading anchor. -/
+structure G1RewindScannerMicrostate (r : G1Request)
+    (c : Configuration (M := G1M) (encodeG1 r).length) where
+  pre : List G1Frame
+  frame : G1Frame
+  suffix : List G1Frame
+  position : G1FramePosition
+  b0 : Bool
+  b1 : Bool
+  b2 : Bool
+  frames_eq : g1ValidationFrames r = pre ++ frame :: suffix
+  head_lt : 4 * pre.length + g1FramePositionOffset position <
+    G1M.tapeLength (encodeG1 r).length
+  config_eq : c =
+    g1AlignedConfig (encodeG1 r).length
+      (4 * pre.length + g1FramePositionOffset position) head_lt
+      (G1M.initialConfig (g1Point (encodeG1 r))).tape
+      .rewind position b0 b1 b2 g1Ctx0
+  buffer : G1ReverseBufferCoherent frame position b0 b1 b2
+  remaining : G1ReversePath pre frame
+
+/-- The canonical terminal configuration reached by reverse-reading `bof`.
+This is the pre-existing read-B/pass-B handoff, not a pass-B walk. -/
+structure G1RewindHandoff (r : G1Request)
+    (c : Configuration (M := G1M) (encodeG1 r).length) where
+  head_lt : 0 < G1M.tapeLength (encodeG1 r).length
+  config_eq : c =
+    g1AlignedConfig (encodeG1 r).length 0 head_lt
+      (G1M.initialConfig (g1Point (encodeG1 r))).tape
+      .readBStart .p0 false false false g1Ctx0
+
+/-- Structural reverse envelope, including only the terminal handoff as its
+non-rewinding case. -/
+inductive G1RewindEnvelope (r : G1Request) :
+    Configuration (M := G1M) (encodeG1 r).length → Prop
+  | rewinding {c} : G1RewindScannerMicrostate r c → G1RewindEnvelope r c
+  | handoff {c} : G1RewindHandoff r c → G1RewindEnvelope r c
+
+/-- Structural measure used by the safety induction; it is derived from the
+frame decomposition and position and is not stored in the microstate. -/
+def G1RewindScannerMicrostate.stepsRemaining {r c}
+    (h : G1RewindScannerMicrostate r c) : Nat :=
+  4 * h.pre.length + g1ReverseFrameSteps h.position
+
+private theorem g1ReversePath_extend_to_blank {pre : List G1Frame}
+    {frame : G1Frame} (hpath : G1ReversePath pre frame)
+    (tail : List G1Frame) (hne : ∀ f ∈ tail, f ≠ .bof) :
+    G1ReversePath ((pre ++ [frame]) ++ tail) .blank := by
+  induction tail generalizing pre frame with
+  | nil =>
+      simpa using G1ReversePath.step hpath (by decide : G1Frame.blank ≠ .bof)
+  | cons next rest ih =>
+      have hnext : next ≠ G1Frame.bof := hne next (by simp)
+      have hrest : ∀ f ∈ rest, f ≠ G1Frame.bof := by
+        intro f hf
+        exact hne f (by simp [hf])
+      simpa [List.append_assoc] using
+        ih (G1ReversePath.step hpath hnext) hrest
+
+private theorem g1Validation_reverse_path (r : G1Request) :
+    G1ReversePath (encodeG1Frames r) .blank := by
+  have hne : ∀ f ∈ (encodeG1Frames r).tail, f ≠ G1Frame.bof := by
+    intro f hf heq
+    subst f
+    rcases r with ⟨tag, arg1, arg2, vals⟩
+    simp [encodeG1Frames] at hf
+  have h := g1ReversePath_extend_to_blank G1ReversePath.bof
+    (encodeG1Frames r).tail hne
+  rcases r with ⟨tag, arg1, arg2, vals⟩
+  simpa [encodeG1Frames] using h
+
+/-- Exact successor of the merged GN-3B2a `W+4` validation boundary. -/
+theorem g1Validation_rewind_entry_exact (r : G1Request) (hc : r.Canonical) :
+    TM.runConfig (M := G1M)
+        (G1M.initialConfig (g1Point (encodeG1 r)))
+        ((encodeG1 r).length + 5) =
+      g1AlignedConfig (encodeG1 r).length ((encodeG1 r).length + 3)
+        (g1_lt_tapeLength (by omega))
+        (G1M.initialConfig (g1Point (encodeG1 r))).tape
+        .rewind .p3 false false false g1Ctx0 := by
+  rw [show (encodeG1 r).length + 5 =
+      ((encodeG1 r).length + 4) + 1 by omega, runConfig_add,
+    g1CS_validate_encoded_exact r hc, runConfig_one]
+  have hstep := g1CS_aligned_step_left (encodeG1 r).length
+    ((encodeG1 r).length + 4) (g1_lt_tapeLength (by omega)) (by omega)
+    (G1M.initialConfig (g1Point (encodeG1 r))).tape
+    (g1State .rewindStart .p0 false false false g1Ctx0)
+    (g1State .rewind .p3 false false false g1Ctx0)
+    ((G1M.initialConfig (g1Point (encodeG1 r))).tape
+      ⟨(encodeG1 r).length + 4, g1_lt_tapeLength (by omega)⟩)
+    (fun phase => g1Transition_rewindStart phase .p0 false false false _ g1Ctx0)
+  rwa [writeCell_self] at hstep
+
+/-- The boundary successor inhabits the reverse envelope with the terminal
+blank as current frame and the whole canonical word as its remaining path. -/
+theorem g1Validation_rewind_entry_envelope (r : G1Request)
+    (hc : r.Canonical) :
+    G1RewindEnvelope r
+      (TM.runConfig (M := G1M)
+        (G1M.initialConfig (g1Point (encodeG1 r)))
+        ((encodeG1 r).length + 5)) := by
+  apply G1RewindEnvelope.rewinding
+  refine {
+    pre := encodeG1Frames r
+    frame := .blank
+    suffix := []
+    position := .p3
+    b0 := false
+    b1 := false
+    b2 := false
+    frames_eq := by simp [g1ValidationFrames]
+    head_lt := by
+      simp only [g1FramePositionOffset, encodeG1Frames_length,
+        encodeG1_length]
+      exact g1_lt_tapeLength (by omega)
+    config_eq := ?_
+    buffer := ⟨rfl, rfl, rfl⟩
+    remaining := g1Validation_reverse_path r }
+  rw [g1Validation_rewind_entry_exact r hc]
+  apply Configuration.ext_of_components
+  · rfl
+  · apply Fin.ext
+    simp [g1FramePositionOffset, encodeG1Frames_length, encodeG1_length]
+  · rfl
+
+private theorem g1Rewind_initial_tape_bit (r : G1Request)
+    (pre : List G1Frame) (frame : G1Frame) (suffix : List G1Frame)
+    (hframes : g1ValidationFrames r = pre ++ frame :: suffix)
+    (j : Nat) (hj : j < 4)
+    (hh : 4 * pre.length + j < G1M.tapeLength (encodeG1 r).length) :
+    (G1M.initialConfig (g1Point (encodeG1 r))).tape
+        ⟨4 * pre.length + j, hh⟩ = frame.bits[j]! :=
+  g1Validation_initial_tape_bit r pre frame suffix hframes j hj hh
+
+/-- Every genuine rewind microstate is locally safe in the exact `W+5`
+footprint.  In the anchor `p0` case the concrete transition is `stay`, so the
+head-zero proof does not use the source machine's left clamp. -/
+theorem g1Rewind_microstate_local_safe (r : G1Request)
+    {c : Configuration (M := G1M) (encodeG1 r).length}
+    (h : G1RewindScannerMicrostate r c) : G1LocalStepSafe c := by
+  rcases h with ⟨pre, frame, suffix, position, b0, b1, b2, hframes,
+    hhead, rfl, hbuffer, hpath⟩
+  have hlocal := g1Validation_scan_local_room r pre frame suffix position
+    hframes
+  cases position with
+  | p3 =>
+      rcases hbuffer with ⟨rfl, rfl, rfl⟩
+      simp only [G1LocalStepSafe, g1AlignedConfig_head_val,
+        g1AlignedConfig_state, g1AlignedConfig_tape]
+      refine ⟨Nat.lt_of_succ_lt hlocal, ?_, ?_⟩
+      · intro _
+        simp only [g1FramePositionOffset]
+        omega
+      · intro hright
+        change (g1Transition (0 : Fin 1)
+          (g1State .rewind .p3 false false false g1Ctx0) _).snd.snd.snd =
+            Move.right at hright
+        rw [g1Transition_rewind_p3] at hright
+        exact Move.noConfusion hright
+  | p2 =>
+      rcases hbuffer with ⟨rfl, rfl, rfl⟩
+      simp only [G1LocalStepSafe, g1AlignedConfig_head_val,
+        g1AlignedConfig_state, g1AlignedConfig_tape]
+      refine ⟨Nat.lt_of_succ_lt hlocal, ?_, ?_⟩
+      · intro _
+        simp only [g1FramePositionOffset]
+        omega
+      · intro hright
+        change (g1Transition (0 : Fin 1)
+          (g1State .rewind .p2 false false frame.bits[3]! g1Ctx0) _).snd.snd.snd =
+            Move.right at hright
+        rw [g1Transition_rewind_p2] at hright
+        exact Move.noConfusion hright
+  | p1 =>
+      rcases hbuffer with ⟨rfl, rfl, rfl⟩
+      simp only [G1LocalStepSafe, g1AlignedConfig_head_val,
+        g1AlignedConfig_state, g1AlignedConfig_tape]
+      refine ⟨Nat.lt_of_succ_lt hlocal, ?_, ?_⟩
+      · intro _
+        simp only [g1FramePositionOffset]
+        omega
+      · intro hright
+        change (g1Transition (0 : Fin 1)
+          (g1State .rewind .p1 false frame.bits[2]! frame.bits[3]! g1Ctx0)
+            _).snd.snd.snd = Move.right at hright
+        rw [g1Transition_rewind_p1] at hright
+        exact Move.noConfusion hright
+  | p0 =>
+      rcases hbuffer with ⟨rfl, rfl, rfl⟩
+      have hscan : (G1M.initialConfig (g1Point (encodeG1 r))).tape
+          ⟨4 * pre.length, hhead⟩ = frame.bits[0]! := by
+        simpa using g1Rewind_initial_tape_bit r pre frame suffix hframes 0
+          (by omega) hhead
+      have hdecode : decodeG1Frame?
+          [(G1M.initialConfig (g1Point (encodeG1 r))).tape
+              ⟨4 * pre.length, hhead⟩,
+            frame.bits[1]!, frame.bits[2]!, frame.bits[3]!] = some frame := by
+        rw [hscan]
+        simpa only [g1Frame_bits_four] using decodeG1Frame_bits frame
+      cases hpath with
+      | bof =>
+          have hdecode0 : decodeG1Frame?
+              [(G1M.initialConfig (g1Point (encodeG1 r))).tape
+                  ⟨0, hhead⟩,
+                G1Frame.bof.bits[1]!, G1Frame.bof.bits[2]!,
+                G1Frame.bof.bits[3]!] = some G1Frame.bof := by
+            simpa using hdecode
+          simp only [G1LocalStepSafe, g1AlignedConfig_head_val,
+            g1AlignedConfig_state, g1AlignedConfig_tape,
+            g1FramePositionOffset]
+          refine ⟨by simpa using Nat.lt_of_succ_lt hlocal, ?_, ?_⟩
+          · intro hleft
+            simp only [g1AlignedConfig, g1AlignedConfigQ] at hleft
+            simp only [List.length_nil, Nat.mul_zero, Nat.add_zero] at hleft
+            change (g1Transition (0 : Fin 1)
+              (g1State .rewind .p0 G1Frame.bof.bits[1]!
+                G1Frame.bof.bits[2]! G1Frame.bof.bits[3]! g1Ctx0)
+              ((G1M.initialConfig (g1Point (encodeG1 r))).tape
+                ⟨0, hhead⟩)).snd.snd.snd = Move.left at hleft
+            rw [g1Transition_rewind_p0_bof (heq := hdecode0)] at hleft
+            exact Move.noConfusion hleft
+          · intro hright
+            simp only [g1AlignedConfig, g1AlignedConfigQ] at hright
+            simp only [List.length_nil, Nat.mul_zero, Nat.add_zero] at hright
+            change (g1Transition (0 : Fin 1)
+              (g1State .rewind .p0 G1Frame.bof.bits[1]!
+                G1Frame.bof.bits[2]! G1Frame.bof.bits[3]! g1Ctx0)
+              ((G1M.initialConfig (g1Point (encodeG1 r))).tape
+                ⟨0, hhead⟩)).snd.snd.snd = Move.right at hright
+            rw [g1Transition_rewind_p0_bof (heq := hdecode0)] at hright
+            exact Move.noConfusion hright
+      | @step left previous _ hprevious hne =>
+          simp only [G1LocalStepSafe, g1AlignedConfig_head_val,
+            g1AlignedConfig_state, g1AlignedConfig_tape,
+            g1FramePositionOffset]
+          refine ⟨by simpa using Nat.lt_of_succ_lt hlocal, ?_, ?_⟩
+          · intro _
+            simp only [List.length_append, List.length_cons, List.length_nil,
+              Nat.add_zero]
+            omega
+          · intro hright
+            simp only [g1AlignedConfig, g1AlignedConfigQ] at hright
+            change (g1Transition (0 : Fin 1)
+              (g1State .rewind .p0 frame.bits[1]! frame.bits[2]!
+                frame.bits[3]! g1Ctx0)
+              ((G1M.initialConfig (g1Point (encodeG1 r))).tape
+                ⟨4 * (left ++ [previous]).length, hhead⟩)).snd.snd.snd =
+                  Move.right at hright
+            rw [g1Transition_rewind_p0_other
+              (hne := by rw [hdecode]; simpa using hne)] at hright
+            exact Move.noConfusion hright
+
+/-- Ranked structural result of one reverse microstep.  The rank is external
+to both structural records and decreases exactly once on a rewinding result. -/
+inductive G1RewindStepResult (r : G1Request) (remaining : Nat) :
+    Configuration (M := G1M) (encodeG1 r).length → Prop
+  | rewinding {c} (h : G1RewindScannerMicrostate r c)
+      (remaining_eq : h.stepsRemaining + 1 = remaining) :
+      G1RewindStepResult r remaining c
+  | handoff {c} (h : G1RewindHandoff r c) (remaining_eq : remaining = 1) :
+      G1RewindStepResult r remaining c
+
+set_option maxHeartbeats 1000000 in
+/-- One genuine TM step has a rank-decreasing structural result at all four
+positions.  A non-anchor `p0` crosses a frame boundary; the anchor `p0` takes
+the actual stationary row into the canonical read-B handoff. -/
+theorem g1Rewind_microstate_step_ranked (r : G1Request)
+    {c : Configuration (M := G1M) (encodeG1 r).length}
+    (h : G1RewindScannerMicrostate r c) :
+    G1RewindStepResult r h.stepsRemaining
+      (TM.stepConfig (M := G1M) c) := by
+  rcases h with ⟨pre, frame, suffix, position, b0, b1, b2, hframes,
+    hhead, rfl, hbuffer, hpath⟩
+  have bitAt (j : Nat) (hj : j < 4)
+      (hh : 4 * pre.length + j < G1M.tapeLength (encodeG1 r).length) :
+      (G1M.initialConfig (g1Point (encodeG1 r))).tape
+          ⟨4 * pre.length + j, hh⟩ = frame.bits[j]! :=
+    g1Rewind_initial_tape_bit r pre frame suffix hframes j hj hh
+  cases position with
+  | p3 =>
+      simp only [g1FramePositionOffset] at hhead
+      rcases hbuffer with ⟨rfl, rfl, rfl⟩
+      have hscan := bitAt 3 (by omega) hhead
+      have hstep := g1CS_aligned_step_left (encodeG1 r).length
+        (4 * pre.length + 3) hhead (by omega)
+        (G1M.initialConfig (g1Point (encodeG1 r))).tape
+        (g1State .rewind .p3 false false false g1Ctx0)
+        (g1State .rewind .p2 false false
+          ((G1M.initialConfig (g1Point (encodeG1 r))).tape
+            ⟨4 * pre.length + 3, hhead⟩) g1Ctx0)
+        ((G1M.initialConfig (g1Point (encodeG1 r))).tape
+          ⟨4 * pre.length + 3, hhead⟩)
+        (fun phase => g1Transition_rewind_p3 phase false false false _ g1Ctx0)
+      rw [writeCell_self] at hstep
+      refine G1RewindStepResult.rewinding ?_ ?_
+      refine ⟨pre, frame, suffix, .p2, false, false, frame.bits[3]!, hframes,
+        ?_, ?_, ⟨rfl, rfl, rfl⟩, hpath⟩
+      · simp only [g1FramePositionOffset]
+        omega
+      · simpa only [g1AlignedConfig, g1FramePositionOffset, hscan,
+          Nat.add_assoc] using hstep
+      · simp [G1RewindScannerMicrostate.stepsRemaining, g1ReverseFrameSteps]
+  | p2 =>
+      simp only [g1FramePositionOffset] at hhead
+      rcases hbuffer with ⟨rfl, rfl, rfl⟩
+      have hscan := bitAt 2 (by omega) hhead
+      have hstep := g1CS_aligned_step_left (encodeG1 r).length
+        (4 * pre.length + 2) hhead (by omega)
+        (G1M.initialConfig (g1Point (encodeG1 r))).tape
+        (g1State .rewind .p2 false false frame.bits[3]! g1Ctx0)
+        (g1State .rewind .p1 false
+          ((G1M.initialConfig (g1Point (encodeG1 r))).tape
+            ⟨4 * pre.length + 2, hhead⟩) frame.bits[3]! g1Ctx0)
+        ((G1M.initialConfig (g1Point (encodeG1 r))).tape
+          ⟨4 * pre.length + 2, hhead⟩)
+        (fun phase => g1Transition_rewind_p2 phase false false
+          frame.bits[3]! _ g1Ctx0)
+      rw [writeCell_self] at hstep
+      refine G1RewindStepResult.rewinding ?_ ?_
+      refine ⟨pre, frame, suffix, .p1, false, frame.bits[2]!, frame.bits[3]!,
+        hframes, ?_, ?_, ⟨rfl, rfl, rfl⟩, hpath⟩
+      · simp only [g1FramePositionOffset]
+        omega
+      · simpa only [g1AlignedConfig, g1FramePositionOffset, hscan,
+          Nat.add_assoc] using hstep
+      · simp [G1RewindScannerMicrostate.stepsRemaining, g1ReverseFrameSteps]
+  | p1 =>
+      simp only [g1FramePositionOffset] at hhead
+      rcases hbuffer with ⟨rfl, rfl, rfl⟩
+      have hscan := bitAt 1 (by omega) hhead
+      have hstep := g1CS_aligned_step_left (encodeG1 r).length
+        (4 * pre.length + 1) hhead (by omega)
+        (G1M.initialConfig (g1Point (encodeG1 r))).tape
+        (g1State .rewind .p1 false frame.bits[2]! frame.bits[3]! g1Ctx0)
+        (g1State .rewind .p0
+          ((G1M.initialConfig (g1Point (encodeG1 r))).tape
+            ⟨4 * pre.length + 1, hhead⟩)
+          frame.bits[2]! frame.bits[3]! g1Ctx0)
+        ((G1M.initialConfig (g1Point (encodeG1 r))).tape
+          ⟨4 * pre.length + 1, hhead⟩)
+        (fun phase => g1Transition_rewind_p1 phase false frame.bits[2]!
+          frame.bits[3]! _ g1Ctx0)
+      rw [writeCell_self] at hstep
+      refine G1RewindStepResult.rewinding ?_ ?_
+      refine ⟨pre, frame, suffix, .p0, frame.bits[1]!, frame.bits[2]!,
+        frame.bits[3]!, hframes, ?_, ?_, ⟨rfl, rfl, rfl⟩, hpath⟩
+      · simp only [g1FramePositionOffset]
+        omega
+      · simpa only [g1AlignedConfig, g1FramePositionOffset, hscan,
+          Nat.add_assoc] using hstep
+      · simp [G1RewindScannerMicrostate.stepsRemaining, g1ReverseFrameSteps]
+  | p0 =>
+      simp only [g1FramePositionOffset] at hhead
+      rcases hbuffer with ⟨rfl, rfl, rfl⟩
+      have hscan : (G1M.initialConfig (g1Point (encodeG1 r))).tape
+          ⟨4 * pre.length, hhead⟩ = frame.bits[0]! := by
+        simpa using bitAt 0 (by omega) hhead
+      have hdecode : decodeG1Frame?
+          [(G1M.initialConfig (g1Point (encodeG1 r))).tape
+              ⟨4 * pre.length, hhead⟩,
+            frame.bits[1]!, frame.bits[2]!, frame.bits[3]!] = some frame := by
+        rw [hscan]
+        simpa only [g1Frame_bits_four] using decodeG1Frame_bits frame
+      cases hpath with
+      | bof =>
+          have hstep := g1CS_aligned_step_stay (encodeG1 r).length 0 hhead
+            (G1M.initialConfig (g1Point (encodeG1 r))).tape
+            (g1State .rewind .p0 G1Frame.bof.bits[1]!
+              G1Frame.bof.bits[2]! G1Frame.bof.bits[3]! g1Ctx0)
+            (g1ReadBState g1Ctx0)
+            ((G1M.initialConfig (g1Point (encodeG1 r))).tape ⟨0, hhead⟩)
+            (fun phase => g1Transition_rewind_p0_bof phase _ _ _ _ g1Ctx0
+              hdecode)
+          rw [writeCell_self] at hstep
+          refine G1RewindStepResult.handoff ?_ ?_
+          · exact ⟨hhead, by simpa only [g1AlignedConfig] using hstep⟩
+          · rfl
+      | @step left previous _ hprevious hne =>
+          have hpos : 0 < 4 * (left ++ [previous]).length := by simp
+          have hstep := g1CS_aligned_step_left (encodeG1 r).length
+            (4 * (left ++ [previous]).length) hhead hpos
+            (G1M.initialConfig (g1Point (encodeG1 r))).tape
+            (g1State .rewind .p0 frame.bits[1]! frame.bits[2]!
+              frame.bits[3]! g1Ctx0)
+            (g1State .rewind .p3 false false false g1Ctx0)
+            ((G1M.initialConfig (g1Point (encodeG1 r))).tape
+              ⟨4 * (left ++ [previous]).length, hhead⟩)
+            (fun phase => g1Transition_rewind_p0_other phase _ _ _ _ g1Ctx0
+              (by rw [hdecode]; simpa using hne))
+          rw [writeCell_self] at hstep
+          refine G1RewindStepResult.rewinding ?_ ?_
+          refine ⟨left, previous, frame :: suffix, .p3, false, false, false,
+            ?_, ?_, ?_, ⟨rfl, rfl, rfl⟩, hprevious⟩
+          · simpa [List.append_assoc] using hframes
+          · simp only [g1FramePositionOffset, List.length_append,
+              List.length_cons, List.length_nil, Nat.add_zero] at hhead ⊢
+            omega
+          · simpa only [g1AlignedConfig, g1FramePositionOffset,
+              List.length_append, List.length_cons, List.length_nil,
+              Nat.add_zero, Nat.mul_add, Nat.mul_one] using hstep
+          · simp [G1RewindScannerMicrostate.stepsRemaining,
+              g1ReverseFrameSteps]
+            omega
+
+/-- One genuine TM step preserves the unranked structural reverse envelope. -/
+theorem g1Rewind_microstate_step_exact (r : G1Request)
+    {c : Configuration (M := G1M) (encodeG1 r).length}
+    (h : G1RewindScannerMicrostate r c) :
+    G1RewindEnvelope r (TM.stepConfig (M := G1M) c) := by
+  cases g1Rewind_microstate_step_ranked r h with
+  | rewinding hnext _ => exact G1RewindEnvelope.rewinding hnext
+  | handoff hdone _ => exact G1RewindEnvelope.handoff hdone
+
+/-- The complete structural envelope is locally safe.  The handoff case only
+inspects its first forward row; no pass-B execution is appended. -/
+theorem g1Rewind_envelope_local_safe (r : G1Request)
+    {c : Configuration (M := G1M) (encodeG1 r).length}
+    (h : G1RewindEnvelope r c) : G1LocalStepSafe c := by
+  cases h with
+  | rewinding hs => exact g1Rewind_microstate_local_safe r hs
+  | handoff hd =>
+      rcases hd with ⟨hhead, rfl⟩
+      simp only [G1LocalStepSafe, g1AlignedConfig_head_val,
+        g1AlignedConfig_state, g1AlignedConfig_tape]
+      refine ⟨by simp [gnLocalSpan], ?_, ?_⟩
+      · intro hleft
+        change (g1Transition (0 : Fin 1)
+          (g1State .readBStart .p0 false false false g1Ctx0) _).snd.snd.snd =
+            Move.left at hleft
+        rw [g1Transition_forward_p0 G1ForwardMode.readBStart] at hleft
+        exact Move.noConfusion hleft
+      · intro _
+        simp [gnLocalSpan]
+
+/-- The boundary successor carries the exact structural rank
+`g1ValidationRewindSteps`; the rank is a theorem, not a record field. -/
+theorem g1Validation_rewind_entry_ranked (r : G1Request)
+    (hc : r.Canonical) :
+    ∃ h : G1RewindScannerMicrostate r
+        (TM.runConfig (M := G1M)
+          (G1M.initialConfig (g1Point (encodeG1 r)))
+          ((encodeG1 r).length + 5)),
+      h.stepsRemaining = g1ValidationRewindSteps r := by
+  let hhead : 4 * (encodeG1Frames r).length +
+      g1FramePositionOffset .p3 < G1M.tapeLength (encodeG1 r).length := by
+    simp only [g1FramePositionOffset, encodeG1Frames_length, encodeG1_length]
+    exact g1_lt_tapeLength (by omega)
+  let h : G1RewindScannerMicrostate r
+      (TM.runConfig (M := G1M)
+        (G1M.initialConfig (g1Point (encodeG1 r)))
+        ((encodeG1 r).length + 5)) := {
+    pre := encodeG1Frames r
+    frame := .blank
+    suffix := []
+    position := .p3
+    b0 := false
+    b1 := false
+    b2 := false
+    frames_eq := by simp [g1ValidationFrames]
+    head_lt := hhead
+    config_eq := by
+      rw [g1Validation_rewind_entry_exact r hc]
+      apply Configuration.ext_of_components
+      · rfl
+      · apply Fin.ext
+        simp [g1FramePositionOffset, encodeG1Frames_length, encodeG1_length]
+      · rfl
+    buffer := ⟨rfl, rfl, rfl⟩
+    remaining := g1Validation_reverse_path r }
+  refine ⟨h, ?_⟩
+  simp [h, G1RewindScannerMicrostate.stepsRemaining, g1ReverseFrameSteps,
+    g1ValidationRewindSteps, g1ValidationFrames]
+  omega
+
+set_option maxHeartbeats 1000000 in
+/-- Safety for the exact derived rank of any structural rewind microstate. -/
+theorem g1Rewind_microstate_run_safe (r : G1Request)
+    {c : Configuration (M := G1M) (encodeG1 r).length}
+    (h : G1RewindScannerMicrostate r c) :
+    G1RunSafe c h.stepsRemaining := by
+  have hlocal := g1Rewind_microstate_local_safe r h
+  cases hstep : g1Rewind_microstate_step_ranked r h with
+  | handoff hdone hrank =>
+      rw [hrank]
+      simpa using G1RunSafe.succ (G1RunSafe.empty c) hlocal
+  | rewinding hnext hrank =>
+      have htail := g1Rewind_microstate_run_safe r hnext
+      have hone : G1RunSafe c 1 := by
+        simpa using G1RunSafe.succ (G1RunSafe.empty c) hlocal
+      have htail' : G1RunSafe (TM.runConfig (M := G1M) c 1)
+          hnext.stepsRemaining := by
+        simpa only [runConfig_one] using htail
+      have hadd := G1RunSafe.add hone htail'
+      rw [← hrank]
+      simpa [Nat.add_comm] using hadd
+termination_by h.stepsRemaining
+decreasing_by omega
+
+/-- Closed form of the exact rewind suffix schedule. -/
+theorem g1ValidationRewindSteps_closed (r : G1Request) :
+    g1ValidationRewindSteps r = (encodeG1 r).length + 4 := by
+  simp [g1ValidationRewindSteps, g1ValidationFrames, encodeG1_length]
+  omega
+
+/-- The merged boundary prefix plus the rewind suffix is exactly the existing
+read-B handoff schedule. -/
+theorem g1ValidationRewindSteps_add_boundary (r : G1Request) :
+    (encodeG1 r).length + 5 + g1ValidationRewindSteps r =
+      g1ReadBHandoffSteps r := by
+  rw [g1ValidationRewindSteps_closed]
+  simp only [g1ReadBHandoffSteps]
+  omega
+
+/-- Parametric local safety for exactly the reverse scan after the safe
+validation-boundary left turn and before the read-B handoff. -/
+theorem g1Validation_rewind_run_safe (r : G1Request) (hc : r.Canonical) :
+    G1RunSafe
+      (TM.runConfig (M := G1M)
+        (G1M.initialConfig (g1Point (encodeG1 r)))
+        ((encodeG1 r).length + 5))
+      (g1ValidationRewindSteps r) := by
+  rcases g1Validation_rewind_entry_ranked r hc with ⟨h, hrank⟩
+  rw [← hrank]
+  exact g1Rewind_microstate_run_safe r h
+
+/-- GN-3B2b composition: canonical validation plus the complete rewind is
+safe for the exact pre-existing read-B handoff schedule. -/
+theorem g1ValidationRewind_run_safe_to_readB (r : G1Request)
+    (hc : r.Canonical) :
+    G1RunSafe (G1M.initialConfig (g1Point (encodeG1 r)))
+      (g1ReadBHandoffSteps r) := by
+  have h := G1RunSafe.add (g1Validation_run_safe_through_boundary r hc)
+    (g1Validation_rewind_run_safe r hc)
+  rw [g1ValidationRewindSteps_add_boundary] at h
+  exact h
+
+/-- Every configuration in the composed validation/rewind prefix, including
+the read-B endpoint, keeps its head inside the exact `W+5` footprint. -/
+theorem g1ValidationRewind_prefix_head_lt (r : G1Request)
+    (hc : r.Canonical) (j : Nat) (hj : j ≤ g1ReadBHandoffSteps r) :
+    ((TM.runConfig (M := G1M)
+      (G1M.initialConfig (g1Point (encodeG1 r))) j).head : Nat) <
+        gnLocalSpan (encodeG1 r).length := by
+  apply gn_run_safe_endpoint_head
+  · simp [gnLocalSpan]
+  · exact G1RunSafe.mono (g1ValidationRewind_run_safe_to_readB r hc) hj
+
+/-- No proper source configuration of the composed prefix moves left from
+local head zero. -/
+theorem g1ValidationRewind_no_left_at_zero (r : G1Request)
+    (hc : r.Canonical) (j : Nat) (hj : j < g1ReadBHandoffSteps r)
+    (hzero : ((TM.runConfig (M := G1M)
+      (G1M.initialConfig (g1Point (encodeG1 r))) j).head : Nat) = 0) :
+    (G1M.step
+      (TM.runConfig (M := G1M)
+        (G1M.initialConfig (g1Point (encodeG1 r))) j).state
+      ((TM.runConfig (M := G1M)
+        (G1M.initialConfig (g1Point (encodeG1 r))) j).tape
+      (TM.runConfig (M := G1M)
+        (G1M.initialConfig (g1Point (encodeG1 r))) j).head)).snd.snd ≠
+        Move.left := by
+  intro hleft
+  have hsafe := g1ValidationRewind_run_safe_to_readB r hc j hj
+  exact (Nat.not_lt_zero 0) (by simpa [hzero] using hsafe.2.1 hleft)
+
+/-- Nonvacuous arbitrary-canonical capstone: the composed safety theorem and
+the existing exact configuration equality meet at the same real handoff. -/
+theorem g1CS_validation_rewind_trace_safe (r : G1Request)
+    (hc : r.Canonical) :
+    G1RunSafe (G1M.initialConfig (g1Point (encodeG1 r)))
+        (g1ReadBHandoffSteps r) ∧
+      TM.runConfig (M := G1M)
+          (G1M.initialConfig (g1Point (encodeG1 r)))
+          (g1ReadBHandoffSteps r) =
+        g1AlignedConfig (encodeG1 r).length 0
+          (g1_lt_tapeLength (by omega))
+          (G1M.initialConfig (g1Point (encodeG1 r))).tape
+          .readBStart .p0 false false false g1Ctx0 := by
+  exact ⟨g1ValidationRewind_run_safe_to_readB r hc,
+    g1CS_validate_rewind_readB_exact r hc⟩
 
 /-! ## Nonvacuous literal false/true probes -/
 

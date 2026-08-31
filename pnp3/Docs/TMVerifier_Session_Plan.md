@@ -3366,5 +3366,5 @@ existing literal `g1BPassASteps` schedule with the exact `readAStart` endpoint.
 No arbitrary-`arg2` repeated-round induction is added; that remains B2d.  The
 slice executes no pass A and proves no full gate, `ShiftRunSafe`, GN
 controller/clock, output, verdict, or acceptance result.  GN-3B2c2 adds
-thirteen public source theorems, thirteen exact named surface wrappers/direct axiom
-roots, and seven definition/structure/constructor `#check` pins.
+thirteen public source theorems, thirteen exact named surface wrappers/direct
+axiom roots, and seven definition/structure/constructor `#check` pins.

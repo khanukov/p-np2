@@ -17,7 +17,7 @@ head, tape, context, and path facts.  They contain no reachability, run index,
 safety, or target-machine field.  No induction over `arg2`, terminal B
 exhaustion, repair sweep, pass A, full gate, `ShiftRunSafe`, GN controller,
 clock, or acceptance statement is made here.  Terminal cleanup and one
-reject-aware repair cycle are the separate GN-3B2c2 boundary.
+complete reject-aware repair sweep are the separate GN-3B2c2 boundary.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM

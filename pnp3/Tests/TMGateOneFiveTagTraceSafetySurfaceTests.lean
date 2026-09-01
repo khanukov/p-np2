@@ -74,7 +74,7 @@ theorem check_g1CS_gate_done_const_trace_safe
           (g1GateDoneSteps r) = g1OutputDoneConfig r res :=
   g1CS_gate_done_const_trace_safe r hc ht res hs
 
-theorem check_g1CS_gate_done_five_tag_trace_safe
+theorem check_g1CS_gate_done_trace_safe
     (r : G1Request) (hc : r.Canonical) (res : Bool)
     (hs : r.spec = some res) :
     G1RunSafe (G1M.initialConfig (g1Point (encodeG1 r)))
@@ -82,9 +82,9 @@ theorem check_g1CS_gate_done_five_tag_trace_safe
       TM.runConfig (M := G1M)
           (G1M.initialConfig (g1Point (encodeG1 r)))
           (g1GateDoneSteps r) = g1OutputDoneConfig r res :=
-  g1CS_gate_done_five_tag_trace_safe r hc res hs
+  g1CS_gate_done_trace_safe r hc res hs
 
-theorem check_g1CS_gate_done_five_tag_structure
+theorem check_g1CS_gate_done_structure
     (r : G1Request) (hc : r.Canonical) (res : Bool)
     (hs : r.spec = some res) :
     let out := TM.runConfig (M := G1M)
@@ -103,7 +103,7 @@ theorem check_g1CS_gate_done_five_tag_structure
         (i : Nat) ≠ g1OutputPosition r ->
           out.tape i =
             (G1M.initialConfig (g1Point (encodeG1 r))).tape i) :=
-  g1CS_gate_done_five_tag_structure r hc res hs
+  g1CS_gate_done_structure r hc res hs
 
 theorem check_literal_done_steps :
     g1GateDoneSteps reqInputT = 229 ∧

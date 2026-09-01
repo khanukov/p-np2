@@ -101,7 +101,7 @@ theorem g1CS_gate_done_const_trace_safe (r : G1Request) (hc : r.Canonical)
 
 /-- Successful canonical requests of any of the exact five tags have a safe
 full G1 prefix and reach the exact output-done boundary. -/
-theorem g1CS_gate_done_five_tag_trace_safe (r : G1Request) (hc : r.Canonical)
+theorem g1CS_gate_done_trace_safe (r : G1Request) (hc : r.Canonical)
     (res : Bool) (hs : r.spec = some res) :
     G1RunSafe (G1M.initialConfig (g1Point (encodeG1 r)))
         (g1GateDoneSteps r) ∧
@@ -123,7 +123,7 @@ theorem g1CS_gate_done_five_tag_trace_safe (r : G1Request) (hc : r.Canonical)
 /-- Common five-tag output-done structure after rewriting by the capstone:
 the designated cell contains the result, all other cells are unchanged, and
 head/state/mode/context are exact and distinct from reject and OOB. -/
-theorem g1CS_gate_done_five_tag_structure (r : G1Request) (hc : r.Canonical)
+theorem g1CS_gate_done_structure (r : G1Request) (hc : r.Canonical)
     (res : Bool) (hs : r.spec = some res) :
     let out := TM.runConfig (M := G1M)
       (G1M.initialConfig (g1Point (encodeG1 r))) (g1GateDoneSteps r)
@@ -142,7 +142,7 @@ theorem g1CS_gate_done_five_tag_structure (r : G1Request) (hc : r.Canonical)
           out.tape i =
             (G1M.initialConfig (g1Point (encodeG1 r))).tape i) := by
   dsimp only
-  rw [(g1CS_gate_done_five_tag_trace_safe r hc res hs).2]
+  rw [(g1CS_gate_done_trace_safe r hc res hs).2]
   refine ⟨g1OutputTape_eq_writeCell r res, rfl, rfl, ?_, rfl, ?_, ?_, ?_, ?_⟩
   · cases res <;> rfl
   · intro h
@@ -178,7 +178,7 @@ theorem literal_input_true_done :
       TM.runConfig (M := G1M)
           (G1M.initialConfig (g1Point (encodeG1 reqInputT))) 229 =
         g1OutputDoneConfig reqInputT true := by
-  have h := g1CS_gate_done_five_tag_trace_safe reqInputT
+  have h := g1CS_gate_done_trace_safe reqInputT
     literal_canonical.1 true literal_specs.1
   rw [literal_done_steps.1] at h
   exact h
@@ -188,7 +188,7 @@ theorem literal_const_false_done :
       TM.runConfig (M := G1M)
           (G1M.initialConfig (g1Point (encodeG1 reqConstF))) 151 =
         g1OutputDoneConfig reqConstF false := by
-  have h := g1CS_gate_done_five_tag_trace_safe reqConstF
+  have h := g1CS_gate_done_trace_safe reqConstF
     literal_canonical.2.2.2.2.1 false literal_specs.2.2.2.2.1
   rw [literal_done_steps.2.1] at h
   exact h
@@ -198,7 +198,7 @@ theorem literal_const_true_done :
       TM.runConfig (M := G1M)
           (G1M.initialConfig (g1Point (encodeG1 reqConstT))) 171 =
         g1OutputDoneConfig reqConstT true := by
-  have h := g1CS_gate_done_five_tag_trace_safe reqConstT
+  have h := g1CS_gate_done_trace_safe reqConstT
     literal_canonical.2.2.2.2.2 true literal_specs.2.2.2.2.2
   rw [literal_done_steps.2.2.1] at h
   exact h
@@ -208,7 +208,7 @@ theorem literal_not_false_done :
       TM.runConfig (M := G1M)
           (G1M.initialConfig (g1Point (encodeG1 reqNotF))) 285 =
         g1OutputDoneConfig reqNotF false := by
-  have h := g1CS_gate_done_five_tag_trace_safe reqNotF
+  have h := g1CS_gate_done_trace_safe reqNotF
     literal_canonical.2.1 false literal_specs.2.1
   rw [literal_done_steps.2.2.2.1] at h
   exact h
@@ -218,7 +218,7 @@ theorem literal_and_false_done :
       TM.runConfig (M := G1M)
           (G1M.initialConfig (g1Point (encodeG1 reqAndF))) 484 =
         g1OutputDoneConfig reqAndF false := by
-  have h := g1CS_gate_done_five_tag_trace_safe reqAndF
+  have h := g1CS_gate_done_trace_safe reqAndF
     literal_canonical.2.2.1 false literal_specs.2.2.1
   rw [literal_done_steps.2.2.2.2.1] at h
   exact h
@@ -228,7 +228,7 @@ theorem literal_or_true_done :
       TM.runConfig (M := G1M)
           (G1M.initialConfig (g1Point (encodeG1 reqOrT))) 512 =
         g1OutputDoneConfig reqOrT true := by
-  have h := g1CS_gate_done_five_tag_trace_safe reqOrT
+  have h := g1CS_gate_done_trace_safe reqOrT
     literal_canonical.2.2.2.1 true literal_specs.2.2.2.1
   rw [literal_done_steps.2.2.2.2.2.1] at h
   exact h
@@ -238,7 +238,7 @@ theorem literal_binary_a_done :
       TM.runConfig (M := G1M)
           (G1M.initialConfig (g1Point (encodeG1 reqA))) 606 =
         g1OutputDoneConfig reqA true := by
-  have h := g1CS_gate_done_five_tag_trace_safe reqA (by decide) true (by decide)
+  have h := g1CS_gate_done_trace_safe reqA (by decide) true (by decide)
   rw [literal_done_steps.2.2.2.2.2.2] at h
   exact h
 

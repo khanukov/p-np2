@@ -2257,8 +2257,8 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_gate_done_unary_trace_safe
 #print axioms Internal.PsubsetPpoly.TM.g1GateDoneSteps_const_trace_eq
 #print axioms Internal.PsubsetPpoly.TM.g1CS_gate_done_const_trace_safe
-#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_done_five_tag_trace_safe
-#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_done_five_tag_structure
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_done_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_done_structure
 #print axioms Internal.PsubsetPpoly.TM.G1FiveTagTraceProbes.literal_done_steps
 #print axioms Internal.PsubsetPpoly.TM.G1FiveTagTraceProbes.literal_input_true_done
 #print axioms Internal.PsubsetPpoly.TM.G1FiveTagTraceProbes.literal_const_false_done

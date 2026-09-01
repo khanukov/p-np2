@@ -3904,3 +3904,60 @@ As in E1a, the blank-padded tape is unable to distinguish an exact list from a
 trailing-zero extension.  Confirmation can reject structural junk within the
 one inspected physical frame, but proves neither trailing-zero-extension
 rejection nor equivalence with exact-list `decodeGN?`.
+
+## GN-E2-0 pure physical first-install bridge (2026-09-01)
+
+Progress classification: infrastructure, not P-vs-NP mainline progress.
+
+`GateNFirstInstallBridge` gives the pure stage word an exact physical GNM
+representation.  `gnStageTape r prior` is
+`frameListTape (encodeGNAt r prior)` at tape width
+`GNM.tapeLength (encodeGN r).length`, and `GateNPhysicalTapeState` is exactly
+the conjunction of the existing fit bound with equality to that tape.  Under
+fit, the stage word retains length `N`; cells inside it are the corresponding
+list cells and cells outside it are false.  The two `GateNTapeState` bridge
+theorems use its existing exact frame equality directly rather than duplicate
+its semantics.
+
+The E1b endpoint now has the explicit stage-zero boundary
+
+`state = gnScratchEntryQ`, `head = N`, `tape = gnStageTape r []`.
+
+This is a pure complete-configuration fact about the already-proved E1b
+endpoint, not a new run.  At stage zero, a hypothesis
+`r.program.gates[0]? = some g` gives the exact first-record split around
+`gnRecordFrames .cursor g`, a unique record cursor, and no spent record marker.
+The canonical first G1 request is
+
+`gnFirstRequest r g = gnFieldRequest (gnGateFields g) r.inputs`.
+
+It is exactly `gnWorkRequest? r []`, is canonical, has width
+`4 * (gnRecordSize (gnGateFields g) + r.inputs.length + 2)`, and inherits the
+tight `W + 16 <= N` capacity theorem.  Combining that inequality with E1b's
+room lemma proves `N + gnLocalSpan W <= GNM.tapeLength N`.  The canonical G1
+request word contains neither internal frame marker `cursor` nor `spent`; no
+new or reserved marker code is introduced.
+
+`gnFirstInstalledConfig r g hg` is the existing `gnGateShiftConfig` at base
+`N`, over the real initial GN ambient tape, with the specialized room proof.
+The capstone proves equality of this complete configuration with
+`gnFirstInstalledPhysicalConfig r g`.  The latter has the exact delegated G1
+initial state, head `N`, and tape
+`frameListTape (encodeGN r ++ encodeG1 (gnFirstRequest r g))`.  Its structural
+corollary pins the GN prefix `[0,N)`, request word `[N,N+W)`, five false cells
+`[N+W,N+W+5)`, and ambient equality outside the complete footprint.
+
+The nonempty literal uses `GNFixedDelegateProbes.oneConstFalseProgram`: its
+first gate is `.const false`, its exact request is `reqConstF`, `N = 48`,
+`W = 32`, and the installed endpoint is the explicit physical configuration.
+The empty probe separately proves `emptyProgram.program.gates[0]? = none`; it
+does not manufacture an install.
+
+There is still no reachability theorem for this installed configuration.
+GN-E2-1 must choose how an actual installer marks copying progress.  In
+particular, the unresolved decision is whether it can reuse an existing
+internal frame marker under a recoverable invariant or needs a different
+strategy; GN-E2-0 deliberately supplies no runtime marker codec or transition
+row and does not prejudge that choice.  There is also no scratch-entry
+activation, shuttle, result, commit, clock-adequacy, multigate, verdict, or
+acceptance theorem in this slice.

@@ -3485,3 +3485,49 @@ unary/constant route, result/output/full-gate `ShiftRunSafe`, controller,
 clock, verdict or acceptance theorem.  It adds twelve public source theorems,
 twelve direct named surface wrappers and axiom roots, and seven definition
 pins; it adds no examples.
+
+## GN-3B2e2 arbitrary pass-A driver and terminal trace safety (2026-09-01)
+
+Progress classification: infrastructure, not P-vs-NP mainline progress.
+
+`GateOnePassADriverTraceSafety` performs the genuine `G1RunSafe` induction
+that mirrors `g1CS_aWalk_driver_exact`.  From `Σᴬ(0)`, the first `m` successful
+rounds are safe for exactly
+`g1AWalkDriverSteps r m = 8*m^2 + (8*arg2 + 37)*m`.  The successor proof uses
+e1b's one-round safety, the exact `Σᴬ(m)` equality only to transport the next
+segment, `G1RunSafe.add` for composition, and
+`g1AWalkDriverSteps_succ` for the final normalization.
+
+At `m = arg1`, a separate specialization of the mixed reverse scanner proves
+the opening-`argSep` exhaustion seek safe for
+`g1AWalkExhaustSteps r = 8*arg1 + 4*arg2 + 12`.  This is the successful
+operand-index exhaustion endpoint `aExh`; successor-data OOB remains the
+distinct existing `bOOB` route.  From `aExh`, a structural forward scan returns
+through `argSep ++ g1AWalkFwdRun ++ cursor` in
+`8*arg1 + 4*arg2 + 16` steps.  Eight further locally bounded steps turn left,
+restore the selected data bit, remove the cursor, and stop at exact
+`g1AWalkRepairStartConfig`.  Thus the terminal cost is exactly
+`g1AWalkTerminalSteps r = 8*arg1 + 4*arg2 + 24`.  All premises are strict
+local-span bounds; no clamp case or clamp-derived endpoint is used.
+
+The binary real-initial capstone composes merged e1a `Σᴬ(0)` safety with the
+full local suffix at the actual existing public schedule expression
+`g1ABinaryCursorSteps r + (g1AWalkExhaustDriverSteps r +
+g1AWalkTerminalSteps r)`.  There is no public
+`g1ABinaryWalkRepairStartSteps` definition at this base, so GN-3B2e2 does not
+invent one.  Its structural endpoint exports exact tape, head
+`4*(g1AWalkCursor r arg1+1)`, `aRepairStart` state, the preserved full walk
+context/residual/selected A value, zero cursors, `arg1` spent A units, zero
+remaining A indices, and `arg2` intact B indices.
+
+The existing multi-round local request `input(2,0,[false,true,false])` pins
+exact safety and execution at 106 steps for two rounds, 134 through successful
+exhaustion, and 174 through terminal cleanup.  Its 345-step real-initial total
+is a unary schedule (`171 + 174`), so this binary-only slice deliberately does
+not export that statement as a binary capstone.  No unary or constant route,
+A-repair execution, result/output/full-gate `ShiftRunSafe`, GN controller,
+clock, verdict or acceptance theorem is added.
+
+The slice adds seventeen public source theorems, seventeen exact direct surface
+wrappers and axiom roots, and seven definition pins; it adds no Lean
+`example` declarations.

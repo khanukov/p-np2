@@ -1,11 +1,11 @@
 import Complexity.TMVerifier.TuringToolkit.GateOnePassATraceSafety
 
 /-!
-# GN-3B2e1a binary pass-A installation safety surface (2026-08-31)
+# GN-3B2e1a nonconstant pass-A installation safety surface (2026-08-31)
 
 Definitions receive `#check` pins.  Every public theorem has an exact named
-wrapper rooted directly in its source theorem.  No one-round safety surface is
-claimed by this dependency-closed e1a split.
+wrapper rooted directly in its source theorem.  The generic installation root
+retains the existing binary capstones; no one-round safety surface is claimed.
 -/
 
 namespace Pnp3.Tests.TMGateOnePassATraceSafetySurface
@@ -20,6 +20,11 @@ macro_rules
 #check @g1AReadInstallSteps
 #check @G1PassATraceProbes.reqA
 
+theorem check_g1CS_readA_install_runSafe
+    (r : G1Request) (htag : r.tag ≠ .const) (bA bB : Bool)
+    (rest : List Bool) (hv : r.vals = bA :: rest) :
+    G1RunSafe (g1ReadAConfig r bB) (g1AReadInstallSteps r) :=
+  g1CS_readA_install_runSafe r htag bA bB rest hv
 theorem check_g1CS_readA_binary_install_runSafe :=
   @g1CS_readA_binary_install_runSafe
 theorem check_g1CS_readA_binary_install_trace_safe :=

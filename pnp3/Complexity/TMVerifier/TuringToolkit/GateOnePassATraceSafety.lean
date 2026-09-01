@@ -2,15 +2,16 @@ import Complexity.TMVerifier.TuringToolkit.GateOnePassBDriverTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOneAWalkInvariant
 
 /-!
-# GN-3B2e1a: binary pass-A installation trace safety (2026-08-31)
+# GN-3B2e1a: nonconstant pass-A installation trace safety (2026-08-31)
 
 **Progress classification: infrastructure, not P-vs-NP mainline progress.**
 
-This dependency-closed e1a module starts at the merged successful binary
+This dependency-closed e1a module starts at the merged nonconstant
 `readAStart` handoff.  It proves prefix safety for the stationary dispatch,
 pass-A tag rescan, operation latch, and live cursor installation.  Separate
-endpoint conjuncts identify the exact `Σᴬ(0)` configuration.  Its real-initial
-capstone composes the merged pass-B driver safety with that installation.
+endpoint conjuncts identify the exact `Σᴬ(0)` configuration.  Its original
+real-initial binary capstone composes the merged pass-B driver safety with that
+installation.
 
 The mixed two-mode A reverse seek and one successful round are deliberately
 deferred to e1b: no endpoint-to-safety inference or clamp-dependent substitute
@@ -51,15 +52,13 @@ private theorem g1AInstall_path (r : G1Request) :
     ⟨trivial, by decide, trivial⟩ _ hfix
 
 set_option maxHeartbeats 1000000 in
-/-- From the merged binary `readAStart` configuration, stationary dispatch,
+/-- From any merged nonconstant `readAStart` configuration, stationary dispatch,
 the forward tag rescan, operation latch, live installation entry, strict
 installation scan, probe/latch and cursor writer are all prefix-safe. -/
-theorem g1CS_readA_binary_install_runSafe (r : G1Request)
-    (ht : r.tag = .and ∨ r.tag = .or) (bA bB : Bool)
+theorem g1CS_readA_install_runSafe (r : G1Request) (htag : r.tag ≠ .const)
+    (bA bB : Bool)
     (rest : List Bool) (hv : r.vals = bA :: rest) :
     G1RunSafe (g1ReadAConfig r bB) (g1AReadInstallSteps r) := by
-  have htag : r.tag ≠ .const := by
-    rcases ht with h | h <;> rw [h] <;> decide
   have hdispatchLocal : G1LocalStepSafe (g1ReadAConfig r bB) := by
     apply g1LocalStepSafe_at_zero_of_not_left
     · exact g1ReadAConfig_head r bB
@@ -237,6 +236,14 @@ theorem g1CS_readA_binary_install_runSafe (r : G1Request)
   unfold g1AReadInstallSteps g1ALiveInstallSteps
   convert hall using 1
   all_goals omega
+
+/-- Compatibility wrapper preserving the original successful binary API. -/
+theorem g1CS_readA_binary_install_runSafe (r : G1Request)
+    (ht : r.tag = .and ∨ r.tag = .or) (bA bB : Bool)
+    (rest : List Bool) (hv : r.vals = bA :: rest) :
+    G1RunSafe (g1ReadAConfig r bB) (g1AReadInstallSteps r) := by
+  apply g1CS_readA_install_runSafe r _ bA bB rest hv
+  rcases ht with h | h <;> rw [h] <;> decide
 
 /-- The safe binary installation schedule has the exact completed-writer
 endpoint, hence the exact `Σᴬ(0)` endpoint when the nonempty data witness is

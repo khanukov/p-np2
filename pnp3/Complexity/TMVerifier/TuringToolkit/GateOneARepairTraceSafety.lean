@@ -261,12 +261,6 @@ theorem g1CS_aRepair_cycle_runSafe {W : Nat} (pre suffix : List G1Frame)
   have hbits : physicalBitsAt hsafe tape = G1Frame.spent.bits := by
     simpa [base, tape] using physicalBitsAt_flatMap
       (L := G1M.tapeLength W) g1FrameCodec pre suffix G1Frame.spent hsafe
-  have hcomplete : g1ARepairBackComplete
-      (tape ⟨base, by omega⟩) (tape ⟨base + 1, by omega⟩)
-      (tape ⟨base + 2, by omega⟩) (tape ⟨base + 3, by omega⟩) =
-      .aRepairWrite := by
-    have h := g1ARepairScanner.revComplete_of_bits .aRepairSeek .spent hbits
-    simpa [g1ARepairScanner] using h
   have hrev := g1ARepair_reverseFrame_runSafe (W := W) (base := base)
     tape ctx (by omega) (Or.inl (by dsimp [base]; omega))
   have hrevExact : TM.runConfig (M := G1M)

@@ -354,7 +354,7 @@ lean_lib PnP3 where
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOnePassATraceSafety,
     -- GN-3B2e1b (2026-09-01), infrastructure only: structural two-mode A
     -- reverse-seek safety and exactly one successful A round, composed from
-    -- the merged e1a Sigma-A(0) endpoint.  No driver, terminal repair or gate.
+    -- the merged e1a `Σᴬ(0)` endpoint.  No driver, terminal repair or gate.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOnePassARoundTraceSafety,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,

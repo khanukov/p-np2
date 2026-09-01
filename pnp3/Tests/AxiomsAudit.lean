@@ -53,6 +53,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOnePassADriverTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOneARepairTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOneOutputDoneTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOneRouteRewindTraceSafety
+import Complexity.TMVerifier.TuringToolkit.GateOneUnaryARepairTraceSafety
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -2091,9 +2092,11 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1PassBDriverTraceProbes.literal_positive_trace_safe
 #print axioms Internal.PsubsetPpoly.TM.G1PassBDriverTraceProbes.literal_zero_trace_safe
 
--- GN-3B2e1a (2026-08-31): binary pass-A dispatch, rescan, latch and live
--- cursor-install safety through the exact `Σᴬ(0)` endpoint.  No A round,
--- OOB-success, unary/constant prefix, repair, output or full-gate claim.
+-- GN-3B2e1a (2026-08-31): nonconstant pass-A dispatch, rescan, latch and live
+-- cursor-install safety, retaining the binary capstones through exact
+-- `Σᴬ(0)`.  No A round, OOB-success, unary/constant real-initial prefix,
+-- repair, output or full-gate claim.
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readA_install_runSafe
 #print axioms Internal.PsubsetPpoly.TM.g1CS_readA_binary_install_runSafe
 #print axioms Internal.PsubsetPpoly.TM.g1CS_readA_binary_install_trace_safe
 #print axioms Internal.PsubsetPpoly.TM.g1CS_readA_binary_install_from_initial_trace_safe
@@ -2225,6 +2228,23 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1RouteRewindTraceProbes.literal_not_trace_safe
 #print axioms Internal.PsubsetPpoly.TM.G1RouteRewindTraceProbes.literal_const_false_trace_safe
 #print axioms Internal.PsubsetPpoly.TM.G1RouteRewindTraceProbes.literal_const_true_trace_safe
+
+-- GN-3B2fB (2026-09-01): unary activation through generic nonconstant A
+-- installation, the generic A driver/terminal suffix, and live repair to the
+-- exact canonical `aRepairDone` endpoint.  The semantic capstone requires only
+-- canonicality, an input/not tag, and `spec = some res`; selected/prefix values
+-- are derived.  Empty values remain on the separate OOB route.  No result,
+-- combine, output, const/five-tag, shifted-run, controller, clock, verdict or
+-- acceptance theorem is claimed.  Literal install/repair totals are 131/192
+-- for input and 171/240 for not.
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aBof_install_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readA_unary_install_from_initial_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1AUnaryRepairSteps_trace_eq
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_unary_initial_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_unary_spec_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.G1UnaryARepairTraceProbes.literal_steps
+#print axioms Internal.PsubsetPpoly.TM.G1UnaryARepairTraceProbes.literal_input_install_repair_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.G1UnaryARepairTraceProbes.literal_not_install_repair_trace_safe
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

@@ -376,6 +376,11 @@ lean_lib PnP3 where
     -- unary values/OOB and later unary work stay separate; const stops at
     -- combine, before the output kernel.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneRouteRewindTraceSafety,
+    -- GN-3B2fB (2026-09-01), infrastructure only: successful unary pass-A
+    -- installation, generic driver/terminal cleanup, and live repair safety
+    -- through exact canonical `aRepairDone`.  Empty values remain OOB; no
+    -- result, combine, output, five-tag, shifted-run, controller or clock.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneUnaryARepairTraceSafety,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -596,6 +601,9 @@ lean_lib PnP3 where
     -- safe activations, including the actual 99/100, 131/132, 116/117 and
     -- 132/133 literal schedules.  Const stops at combine.
     Glob.one `Tests.TMGateOneRouteRewindTraceSafetySurfaceTests,
+    -- GN-3B2fB (2026-09-01): direct explicit-proposition wrappers for unary
+    -- install/driver/repair safety and the exact 131/192 and 171/240 literals.
+    Glob.one `Tests.TMGateOneUnaryARepairTraceSafetySurfaceTests,
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,
     Glob.one `Tests.TMGateOneReadBSurfaceTests,
     Glob.one `Tests.TMGateOneProbeInstallSurfaceTests,

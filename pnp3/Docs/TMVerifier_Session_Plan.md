@@ -3662,8 +3662,54 @@ roots.  Together with the eight new non-literal and five literal theorem roots,
 GN-3B2fA exports and audits nineteen theorem roots and nineteen explicit
 surface wrappers.
 
-GN-3B2fB remains the unary pass-A install/driver/repair/result trace-safety
-slice.  GN-3B2fC remains the later five-tag output/shift integration.  This
+GN-3B2fB is the unary pass-A install/driver/repair trace-safety slice described
+below.  GN-3B2fC remains the later five-tag output/shift integration.  This
 slice does not conflate empty unary values with success.  For canonical
 constants the specification premise names the carried Boolean; execution still
 stops at `combineStart`, before the output kernel.
+
+## GN-3B2fB unary pass-A install/driver/repair trace safety (2026-09-01)
+
+Progress classification: infrastructure, not P-vs-NP mainline progress.
+
+`GateOnePassATraceSafety` now exposes
+`g1CS_readA_install_runSafe` for every `tag ≠ const`.  Its proof is exactly the
+former binary installation proof; the original
+`g1CS_readA_binary_install_runSafe` statement remains as a compatibility
+wrapper, so no binary downstream theorem changes.
+
+`GateOneUnaryARepairTraceSafety` removes the already-executed stationary
+dispatch from that generic theorem and composes the remaining install suffix
+with GN-3B2fA's exact `g1ABofConfig r false` activation endpoint.  Thus a
+successful unary route is safe at `g1AUnaryCursorSteps r` and reaches the exact
+`Σᴬ(0)` configuration.  It then composes the merged generic A driver and
+terminal cleanup to `aRepairStart` with the merged live repair suffix.  The
+exact decomposition is
+
+`g1AUnaryRepairSteps r =
+  (g1AUnaryCursorSteps r +
+    (g1AWalkExhaustDriverSteps r + g1AWalkTerminalSteps r)) +
+  g1ARepairLiveSteps r`,
+
+and the endpoint is the canonical head-zero
+`g1ARepairDoneConfig r false selectedA`.
+
+The semantic capstone asks callers only for `r.Canonical`,
+`r.tag = input or r.tag = not`, and `r.spec = some res`.  Existing spec and
+prefix-witness lemmas derive `selectedA`, the nonempty value-list tail, and the
+finite driver witness; no runtime or advice field is added.  It also records
+that the latched unary residual applied to `selectedA` equals `res` without
+executing the later result rows.
+
+The existing five-tag literal requests pin genuine intermediate/final totals:
+`reqInputT` reaches `Σᴬ(0)` at 131 and `aRepairDone` at 192;
+`reqNotF` reaches `Σᴬ(0)` at 171 and `aRepairDone` at 240.  Each total is
+proved by `decide` and paired with `G1RunSafe` plus the exact endpoint.  Empty
+unary values remain solely on the existing OOB endpoint; there is no successful
+empty-values capstone.
+
+The GN-3B2fB module adds five non-literal and three literal theorem roots.  With
+the prerequisite generic-install root, this change adds nine direct
+explicit-proposition wrappers and nine axiom-audit roots.  It adds no Lean
+`example`, result/combine/output step, constant or five-tag capstone,
+`ShiftRunSafe`, controller, clock, verdict, or acceptance theorem.

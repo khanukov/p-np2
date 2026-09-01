@@ -20,6 +20,11 @@ macro_rules
 #check @g1AReadInstallSteps
 #check @G1PassATraceProbes.reqA
 
+theorem check_g1CS_readA_install_runSafe
+    (r : G1Request) (htag : r.tag ≠ .const) (bA bB : Bool)
+    (rest : List Bool) (hv : r.vals = bA :: rest) :
+    G1RunSafe (g1ReadAConfig r bB) (g1AReadInstallSteps r) :=
+  g1CS_readA_install_runSafe r htag bA bB rest hv
 theorem check_g1CS_readA_binary_install_runSafe :=
   @g1CS_readA_binary_install_runSafe
 theorem check_g1CS_readA_binary_install_trace_safe :=

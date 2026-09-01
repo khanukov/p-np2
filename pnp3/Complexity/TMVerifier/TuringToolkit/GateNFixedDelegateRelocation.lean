@@ -1,4 +1,6 @@
 import Complexity.TMVerifier.TuringToolkit.GateOneFiveTagTraceSafety
+import Complexity.TMVerifier.TuringToolkit.FrameScannerKernel
+import Complexity.TMVerifier.TuringToolkit.GateNRuntimeGrammar
 
 /-!
 # GN-3C1 fixed outer delegate and concrete shifted G1 run (2026-09-01)
@@ -6,9 +8,11 @@ import Complexity.TMVerifier.TuringToolkit.GateOneFiveTagTraceSafety
 **Progress classification: infrastructure, not P-vs-NP mainline progress.**
 
 This module defines one closed finite outer control.  Its delegated states carry
-only the already-finite complete `G1M.state`; its five outer states are fixed.
+only the already-finite complete `G1M.state`; every outer state remains finite.
 There is no request, result, natural number, base, width, offset, index, or
-runtime datum in the control.  The initial `idle` state is an inert sink.
+runtime datum in the control.  GN-E1a adds one finite four-cell lexical scan
+payload and a fixed `wordEnd` state; the old `idle` state remains an inert
+regression sink, while the real start state is the aligned scanner entry.
 
 Ordinary delegated states execute the exact `G1M.step` tuple.  The only two
 interceptions are the complete canonical states `g1DoneQ false` and
@@ -24,9 +28,11 @@ tape, relocates the complete safe source trace, preserves every outside cell at
 every prefix, and executes one further stationary target step into the fixed
 result-indexed returned state.  It adds no parser, copier, installer, runtime
 base discovery, commit sweep, multi-gate loop, clock-adequacy theorem, verdict,
-or acceptance result.  The fixed outer `accept` and `reject` states are currently
-unreachable placeholders: no transition row enters them.  Installing the
-shifted word from a live GN tape remains the open E1 blocker.
+or acceptance result.  The scan is lexical only: it does not compare slot and
+record counts or enforce semantic index bounds, and it is not equivalent to
+`decodeGN?`.  The blank-padded tape cannot distinguish an exact word from a
+trailing-zero extension.  E1a stops immediately after terminal `finish`, at
+the logical word end; blank-frame confirmation and return to scratch are E1b.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -42,17 +48,40 @@ def g1DoneQ (b : Bool) : G1M.state :=
 /-- The complete one-phase source accept state. -/
 def g1AcceptQ : G1M.state := ⟨(0 : Fin 1), g1AcceptState⟩
 
-set_option synthInstance.maxSize 4096 in
+/-- Four physical positions of the finite read-only frame buffer. -/
+inductive GNScanBuffer where
+  | p0
+  | p1 (b0 : Bool)
+  | p2 (b0 b1 : Bool)
+  | p3 (b0 b1 b2 : Bool)
+  deriving Fintype, DecidableEq, Repr
+
+/-- The sole scanning payload: one finite grammar mode and at most three bits. -/
+structure GNScanState where
+  mode : GNDiscoveryMode
+  buffer : GNScanBuffer
+  deriving Fintype, DecidableEq, Repr
+
+set_option synthInstance.maxSize 8192 in
 /-- Fixed GN outer control.  The delegated payload is itself a closed finite
 G1 control state; none of the constructors contains runtime geometry or data. -/
 inductive GNState where
   | delegated (q : G1M.state)
   | returnedFalse
   | returnedTrue
+  | scanning (scan : GNScanState)
+  | wordEnd
   | idle
   | accept
   | reject
   deriving Fintype, DecidableEq
+
+/-- Collapse the two terminal discovery modes to fixed outer states. -/
+def gnScanControl (mode : GNDiscoveryMode) (buffer : GNScanBuffer) : GNState :=
+  match mode with
+  | .wordEnd => .wordEnd
+  | .reject => .reject
+  | _ => .scanning ⟨mode, buffer⟩
 
 /-- Result-indexed fixed returned state. -/
 def gnReturnedState : Bool → GNState
@@ -72,6 +101,17 @@ def gnTransition (_phase : Fin 1) (s : GNState) (scan : Bool) :
         (0, .delegated out.fst, out.snd.fst, out.snd.snd)
   | .returnedFalse => (0, .returnedFalse, scan, .stay)
   | .returnedTrue => (0, .returnedTrue, scan, .stay)
+  | .scanning q =>
+      match q.buffer with
+      | .p0 => (0, .scanning ⟨q.mode, .p1 scan⟩, scan, .right)
+      | .p1 b0 => (0, .scanning ⟨q.mode, .p2 b0 scan⟩, scan, .right)
+      | .p2 b0 b1 =>
+          (0, .scanning ⟨q.mode, .p3 b0 b1 scan⟩, scan, .right)
+      | .p3 b0 b1 b2 =>
+          let next := gnDiscoveryComplete q.mode b0 b1 b2 scan
+          (0, gnScanControl next .p0, scan,
+            if next = .reject then .stay else .right)
+  | .wordEnd => (0, .wordEnd, scan, .stay)
   | .idle => (0, .idle, scan, .stay)
   | .accept => (0, .accept, scan, .stay)
   | .reject => (0, .reject, scan, .stay)
@@ -79,11 +119,11 @@ def gnTransition (_phase : Fin 1) (s : GNState) (scan : Bool) :
 /-- Closed outer clock declaration.  No adequacy claim is made here. -/
 def gnClock (N : Nat) : Nat := g1Clock N
 
-/-- One fixed GN outer program.  Its real initial state is deliberately inert. -/
+/-- One fixed GN outer program.  Its real initial state is the aligned scan. -/
 def gnCS : ConstStatePhasedProgram GNState where
   numPhases := 1
   startPhase := 0
-  startState := .idle
+  startState := gnScanControl .start .p0
   acceptPhase := 0
   acceptState := .accept
   transition := gnTransition
@@ -100,6 +140,11 @@ def gnEmbed (q : G1M.state) : GNM.state :=
 def gnReturnedQ (b : Bool) : GNM.state :=
   ⟨(0 : Fin 1), gnReturnedState b⟩
 
+/-- Exact-list Boolean-cube point used by the real GN initial configuration. -/
+def gnPoint (bits : List Bool) : Boolcube.Point bits.length := fun i => bits.get i
+
+@[simp] theorem gnCS_startState : gnCS.startState = gnScanControl .start .p0 := rfl
+
 @[simp] theorem gnTransition_idle (phase : Fin 1) (scan : Bool) :
     gnTransition phase .idle scan = (0, .idle, scan, .stay) := rfl
 
@@ -110,6 +155,9 @@ def gnReturnedQ (b : Bool) : GNM.state :=
 @[simp] theorem gnTransition_returnedTrue (phase : Fin 1) (scan : Bool) :
     gnTransition phase .returnedTrue scan =
       (0, .returnedTrue, scan, .stay) := rfl
+
+@[simp] theorem gnTransition_wordEnd (phase : Fin 1) (scan : Bool) :
+    gnTransition phase .wordEnd scan = (0, .wordEnd, scan, .stay) := rfl
 
 @[simp] theorem gnTransition_accept (phase : Fin 1) (scan : Bool) :
     gnTransition phase .accept scan = (0, .accept, scan, .stay) := rfl
@@ -163,6 +211,313 @@ theorem gnM_step_embed_done (b scan : Bool) :
       exact G1Mode.noConfusion (congrArg (fun q : G1M.state => q.snd.mode) h)
     simp [gnEmbed, gnReturnedQ, gnReturnedState, gnCS,
       ConstStatePhasedProgram.toPhased, PhasedProgram.toTM, gnTransition, hne]
+
+/-! ## GN-E1a live lexical scan -/
+
+/-- The GN outer machine as an instance of the shared four-cell scanner. -/
+def gnFrameScanner : FrameScanner GNState G1Frame GNDiscoveryMode Unit where
+  program := gnCS
+  phase := gnCS.startPhase
+  codec := g1FrameCodec
+  rejectMode := .reject
+  advance := gnDiscoveryAdvance
+  complete := gnDiscoveryComplete
+  Forward := GNDiscoveryMode.Forward
+  st0 := fun mode _ => gnScanControl mode .p0
+  st1 := fun mode _ b0 => gnScanControl mode (.p1 b0)
+  st2 := fun mode _ b0 b1 => gnScanControl mode (.p2 b0 b1)
+  st3 := fun mode _ b0 b1 b2 => gnScanControl mode (.p3 b0 b1 b2)
+  complete_decode := fun m b0 b1 b2 b3 => by
+    cases h : decodeG1Frame? [b0, b1, b2, b3] <;>
+      simp [gnDiscoveryComplete, g1FrameCodec, h]
+  step_p0 := fun {m} hm _ scan => by
+    cases m <;> simp [GNDiscoveryMode.Forward] at hm ⊢ <;>
+      rfl
+  step_p1 := fun {m} hm _ b0 scan => by
+    cases m <;> simp [GNDiscoveryMode.Forward] at hm ⊢ <;>
+      rfl
+  step_p2 := fun {m} hm _ b0 b1 scan => by
+    cases m <;> simp [GNDiscoveryMode.Forward] at hm ⊢ <;>
+      rfl
+  step_p3 := fun {m} hm _ b0 b1 b2 scan hne => by
+    cases m <;> simp [GNDiscoveryMode.Forward] at hm ⊢ <;>
+      simp [gnCS, gnTransition, gnScanControl, hne]
+
+private theorem gnFrameScanner_program : gnFrameScanner.program = gnCS := rfl
+
+private theorem gnFrameScanner_codec : gnFrameScanner.codec = g1FrameCodec := rfl
+
+private theorem gnFrameScanner_machine : gnFrameScanner.machine = GNM := by
+  rfl
+
+private theorem gnFrameScanner_advanceList (m : GNDiscoveryMode)
+    (fs : List G1Frame) :
+    gnFrameScanner.advanceList m fs = gnDiscoveryAdvanceList m fs := by
+  induction fs generalizing m with
+  | nil => rfl
+  | cons f fs ih =>
+      change gnFrameScanner.advanceList (gnDiscoveryAdvance m f) fs =
+        gnDiscoveryAdvanceList (gnDiscoveryAdvance m f) fs
+      exact ih (gnDiscoveryAdvance m f)
+
+private theorem gnFrameScanner_validPath (m : GNDiscoveryMode)
+    (fs : List G1Frame) :
+    gnFrameScanner.ValidPath m fs ↔ GNDiscoveryValidPath m fs := by
+  induction fs generalizing m with
+  | nil => exact Iff.rfl
+  | cons f fs ih =>
+      change (m.Forward ∧ gnDiscoveryAdvance m f ≠ .reject ∧
+        gnFrameScanner.ValidPath (gnDiscoveryAdvance m f) fs) ↔
+          (m.Forward ∧ gnDiscoveryAdvance m f ≠ .reject ∧
+            GNDiscoveryValidPath (gnDiscoveryAdvance m f) fs)
+      rw [ih (gnDiscoveryAdvance m f)]
+
+/-- Initial GN tape equals the shared list-backed, blank-padded tape. -/
+theorem gnInitialTape_eq_frameListTape (bits : List Bool) :
+    (GNM.initialConfig (gnPoint bits)).tape = frameListTape bits := by
+  funext i
+  simp only [TM.initialConfig, gnPoint, frameListTape]
+  split <;> rename_i h
+  · simp [List.getD, h]
+  · have hi : bits.length ≤ i.val := Nat.le_of_not_gt h
+    simp [List.getD, h]
+
+/-- Exact dormant E1b handoff: fixed word-end state, physical head at the
+logical GN word length, and the unchanged real initial tape. -/
+def gnWordEndConfig (r : GNProgram) :
+    Configuration (M := GNM) (encodeGN r).length where
+  state := ⟨(0 : Fin 1), .wordEnd⟩
+  head := ⟨(encodeGN r).length, by
+    simp [TM.tapeLength, gnCS, gnClock, g1Clock]
+    omega⟩
+  tape := (GNM.initialConfig (gnPoint (encodeGN r))).tape
+
+/-- GN-E1a real-input capstone.  The read-only live scan stops immediately
+after terminal `finish`; no blank cell is read and no exact-list parser
+equivalence is claimed. -/
+theorem gnCS_encodeGN_wordEnd (r : GNProgram) :
+    TM.runConfig (M := GNM)
+      (GNM.initialConfig (gnPoint (encodeGN r)))
+      (encodeGN r).length = gnWordEndConfig r := by
+  have hpath : gnFrameScanner.ValidPath .start (encodeGNFrames r) :=
+    (gnFrameScanner_validPath _ _).2 (gnDiscovery_encodeGNFrames r).2
+  have hsafe : 4 * (([] : List G1Frame).length + (encodeGNFrames r).length) <
+      GNM.tapeLength (encodeGN r).length := by
+    change 4 * (([] : List G1Frame).length + (encodeGNFrames r).length) <
+      (encodeGN r).length + gnClock (encodeGN r).length + 1
+    simp only [List.length_nil, Nat.zero_add]
+    rw [encodeGN_length]
+    omega
+  have hscan := gnFrameScanner.scanFrames (encodeGN r).length []
+    (encodeGNFrames r) [] .start () hpath (by
+      simpa [gnFrameScanner_machine] using hsafe)
+  rw [gnFrameScanner_advanceList, (gnDiscovery_encodeGNFrames r).1] at hscan
+  have hinit : GNM.initialConfig (gnPoint (encodeGN r)) =
+      gnFrameScanner.alignedFrame (encodeGN r).length 0
+        (by simpa [gnFrameScanner_machine] using
+          TM.tapeLength_pos GNM (encodeGN r).length)
+        (frameListTape (encodeGN r)) .start () := by
+    apply Configuration.ext_of_components
+    · rfl
+    · rfl
+    · change (GNM.initialConfig (gnPoint (encodeGN r))).tape =
+        frameListTape (encodeGN r)
+      exact gnInitialTape_eq_frameListTape _
+  rw [hinit]
+  have hscan' :
+      TM.runConfig (M := GNM)
+        (gnFrameScanner.alignedFrame (encodeGN r).length 0
+          (by simpa [gnFrameScanner_machine] using
+            TM.tapeLength_pos GNM (encodeGN r).length)
+          (frameListTape (encodeGN r)) .start ())
+        (encodeGN r).length =
+      gnFrameScanner.alignedFrame (encodeGN r).length
+        (4 * (encodeGNFrames r).length) (by
+          simpa [gnFrameScanner_machine] using hsafe)
+        (frameListTape (encodeGN r)) .wordEnd () := by
+    simpa only [gnFrameScanner_machine, gnFrameScanner_codec,
+      g1FrameCodec_bits, List.nil_append, List.append_nil, List.length_nil,
+      Nat.zero_add, encodeGN_length] using hscan
+  rw [hscan']
+  apply Configuration.ext_of_components
+  · rfl
+  · apply Fin.ext
+    change 4 * (encodeGNFrames r).length = (encodeGN r).length
+    exact (encodeGN_length r).symm
+  · change frameListTape (encodeGN r) =
+      (GNM.initialConfig (gnPoint (encodeGN r))).tape
+    exact (gnInitialTape_eq_frameListTape _).symm
+
+private theorem gnM_step_wordEnd (scan : Bool) :
+    GNM.step ⟨(0 : Fin 1), GNState.wordEnd⟩ scan =
+      (⟨(0 : Fin 1), GNState.wordEnd⟩, scan, .stay) := rfl
+
+/-- Word end is a stationary read-only dormant state for every E1b delay. -/
+theorem gnCS_wordEnd_stable (r : GNProgram) (k : Nat) :
+    TM.runConfig (M := GNM) (gnWordEndConfig r) k = gnWordEndConfig r := by
+  induction k with
+  | zero => rfl
+  | succ k ih =>
+      rw [runConfig_succ, ih]
+      apply Configuration.ext_of_components
+      · change (GNM.step ⟨(0 : Fin 1), GNState.wordEnd⟩
+          ((gnWordEndConfig r).tape (gnWordEndConfig r).head)).fst =
+            ⟨(0 : Fin 1), GNState.wordEnd⟩
+        rw [gnM_step_wordEnd]
+      · change Configuration.moveHead (gnWordEndConfig r) .stay =
+          (gnWordEndConfig r).head
+        rfl
+      · change (gnWordEndConfig r).write (gnWordEndConfig r).head
+          ((gnWordEndConfig r).tape (gnWordEndConfig r).head) =
+            (gnWordEndConfig r).tape
+        funext i
+        by_cases hi : i = (gnWordEndConfig r).head
+        · subst i
+          exact Configuration.write_self _ _ _
+        · exact Configuration.write_other _ hi _
+
+/-- Four raw physical reads ending in a rejecting completion.  The first
+three rows move right; the p3 completion is stationary, and every row writes
+back the bit it scanned. -/
+theorem gnFrameScanner_rejectMacrostep (n h : Nat)
+    (hsafe : h + 4 < gnFrameScanner.machine.tapeLength n)
+    (tape : Fin (gnFrameScanner.machine.tapeLength n) → Bool)
+    (m : GNDiscoveryMode)
+    (hm : m.Forward)
+    (hbad : gnDiscoveryComplete m
+      (tape ⟨h, by omega⟩) (tape ⟨h + 1, by omega⟩)
+      (tape ⟨h + 2, by omega⟩) (tape ⟨h + 3, by omega⟩) = .reject) :
+    TM.runConfig (M := gnFrameScanner.machine)
+        (gnFrameScanner.alignedFrame n h (by omega) tape m ()) 4 =
+      gnFrameScanner.alignedConfigQ n (h + 3) (by omega) tape .reject := by
+  show TM.runConfig (M := gnFrameScanner.machine)
+      (gnFrameScanner.alignedConfigQ n h (by omega) tape
+        (gnFrameScanner.st0 m ())) (1 + 1 + 1 + 1) = _
+  rw [runConfig_add, runConfig_add, runConfig_add]
+  simp only [runConfig_one]
+  have hp0 := gnFrameScanner.alignedStepRight n h (by omega) (by omega) tape
+    (gnFrameScanner.st0 m ())
+    (gnFrameScanner.st1 m () (tape ⟨h, by omega⟩))
+    (tape ⟨h, by omega⟩) (gnFrameScanner.step_p0 hm () _)
+  rw [FrameScan.writeCell_self] at hp0
+  rw [hp0]
+  have hp1 := gnFrameScanner.alignedStepRight n (h + 1) (by omega) (by omega)
+    tape (gnFrameScanner.st1 m () (tape ⟨h, by omega⟩))
+    (gnFrameScanner.st2 m () (tape ⟨h, by omega⟩)
+      (tape ⟨h + 1, by omega⟩))
+    (tape ⟨h + 1, by omega⟩)
+    (gnFrameScanner.step_p1 hm () _ _)
+  rw [FrameScan.writeCell_self] at hp1
+  rw [hp1]
+  have hp2 := gnFrameScanner.alignedStepRight n (h + 2) (by omega) (by omega)
+    tape (gnFrameScanner.st2 m () (tape ⟨h, by omega⟩)
+      (tape ⟨h + 1, by omega⟩))
+    (gnFrameScanner.st3 m () (tape ⟨h, by omega⟩)
+      (tape ⟨h + 1, by omega⟩) (tape ⟨h + 2, by omega⟩))
+    (tape ⟨h + 2, by omega⟩)
+    (gnFrameScanner.step_p2 hm () _ _ _)
+  rw [FrameScan.writeCell_self] at hp2
+  rw [hp2]
+  have hp3 := gnFrameScanner.alignedStepStay n (h + 3) (by omega) tape
+    (gnFrameScanner.st3 m () (tape ⟨h, by omega⟩)
+      (tape ⟨h + 1, by omega⟩) (tape ⟨h + 2, by omega⟩))
+    GNState.reject (tape ⟨h + 3, by omega⟩) (by
+      cases m <;> simp [GNDiscoveryMode.Forward] at hm ⊢ <;>
+        simp [gnFrameScanner, gnCS, gnTransition, gnScanControl, hbad])
+  rwa [FrameScan.writeCell_self] at hp3
+
+def gnReserved1101Bits : List Bool := [true, true, false, true]
+
+/-- Literal rejecting endpoint for the raw reserved `1101` window. -/
+def gnReserved1101RejectConfig : Configuration (M := GNM) 4 where
+  state := ⟨(0 : Fin 1), .reject⟩
+  head := ⟨3, by
+    change 3 < 4 + gnClock 4 + 1
+    omega⟩
+  tape := (GNM.initialConfig (gnPoint gnReserved1101Bits)).tape
+
+/-- Raw exact four-step reserved-code rejection, with head left at p3 and the
+entire blank-padded tape unchanged. -/
+theorem gnCS_reserved1101_reject_four :
+    TM.runConfig (M := GNM)
+      (GNM.initialConfig (gnPoint gnReserved1101Bits)) 4 =
+        gnReserved1101RejectConfig := by
+  have hsafe : 0 + 4 < GNM.tapeLength 4 := by
+    simp [TM.tapeLength, gnCS, gnClock, g1Clock]
+  have hmacro := gnFrameScanner_rejectMacrostep 4 0 hsafe
+    (GNM.initialConfig (gnPoint gnReserved1101Bits)).tape .start (by trivial)
+    (by rfl)
+  have hinit : GNM.initialConfig (gnPoint gnReserved1101Bits) =
+      gnFrameScanner.alignedFrame 4 0 (by
+        simpa [gnFrameScanner_machine] using hsafe)
+        (GNM.initialConfig (gnPoint gnReserved1101Bits)).tape .start () := by
+    apply Configuration.ext_of_components <;> rfl
+  have hmacro' : TM.runConfig (M := GNM)
+      (gnFrameScanner.alignedFrame 4 0 (by
+        simpa [gnFrameScanner_machine] using hsafe)
+        (GNM.initialConfig (gnPoint gnReserved1101Bits)).tape .start ()) 4 =
+      gnFrameScanner.alignedConfigQ 4 3 (by
+        simpa [gnFrameScanner_machine] using (show 3 < GNM.tapeLength 4 by
+          change 3 < 4 + gnClock 4 + 1
+          omega))
+        (GNM.initialConfig (gnPoint gnReserved1101Bits)).tape .reject := by
+    simpa only [gnFrameScanner_machine, Nat.zero_add] using hmacro
+  rw [hinit, hmacro']
+  apply Configuration.ext_of_components <;> rfl
+
+/-- Literal reserved completions in the machine table: `1101`, `1110`, and
+`1111` all enter the fixed GN reject state without moving from p3. -/
+theorem gnTransition_reserved_windows (m : GNDiscoveryMode) :
+    gnTransition 0 (.scanning ⟨m, .p3 true true false⟩) true =
+        (0, .reject, true, .stay) ∧
+      gnTransition 0 (.scanning ⟨m, .p3 true true true⟩) false =
+        (0, .reject, false, .stay) ∧
+      gnTransition 0 (.scanning ⟨m, .p3 true true true⟩) true =
+        (0, .reject, true, .stay) := by
+  cases m <;> simp [gnTransition, gnDiscoveryComplete, decodeG1Frame?,
+    gnScanControl]
+
+/-- Representative decoded but misplaced frames also take the literal reject
+row at the initial lexical mode. -/
+theorem gnTransition_start_malformed_windows :
+    gnTransition 0 (.scanning ⟨.start, .p3 false false false⟩) false =
+        (0, .reject, false, .stay) ∧
+      gnTransition 0 (.scanning ⟨.start, .p3 true true false⟩) false =
+        (0, .reject, false, .stay) ∧
+      gnTransition 0 (.scanning ⟨.start, .p3 true false false⟩) true =
+        (0, .reject, true, .stay) ∧
+      gnTransition 0 (.scanning ⟨.start, .p3 false true false⟩) false =
+        (0, .reject, false, .stay) ∧
+      gnTransition 0 (.scanning ⟨.start, .p3 false true true⟩) true =
+        (0, .reject, true, .stay) ∧
+      gnTransition 0 (.scanning ⟨.assignments, .p3 false false false⟩) true =
+        (0, .reject, true, .stay) := by
+  exact ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩
+
+private theorem gnM_step_reject (scan : Bool) :
+    GNM.step ⟨(0 : Fin 1), GNState.reject⟩ scan =
+      (⟨(0 : Fin 1), GNState.reject⟩, scan, .stay) := rfl
+
+/-- Reject is a stationary read-only sink under arbitrary physical padding. -/
+theorem gnCS_reject_stable {n : Nat} (c : Configuration (M := GNM) n)
+    (hstate : c.state = ⟨(0 : Fin 1), GNState.reject⟩) (k : Nat) :
+    TM.runConfig (M := GNM) c k = c := by
+  induction k with
+  | zero => rfl
+  | succ k ih =>
+      rw [runConfig_succ, ih]
+      apply Configuration.ext_of_components
+      · change (GNM.step c.state (c.tape c.head)).fst = c.state
+        rw [hstate]
+        rfl
+      · rw [stepConfig_head, hstate, gnM_step_reject]
+        rfl
+      · rw [stepConfig_tape, hstate, gnM_step_reject]
+        funext i
+        by_cases hi : i = c.head
+        · subst i
+          exact Configuration.write_self _ _ _
+        · exact Configuration.write_other _ hi _
 
 /-! ## Source-only proper-prefix exclusion and concrete delegation -/
 
@@ -394,6 +749,33 @@ theorem gnCS_gate_shift_intercept_structure (r : G1Request)
 namespace GNFixedDelegateProbes
 
 open G1AResultProbes
+
+def emptyProgram : GNProgram := ⟨[], ⟨[]⟩⟩
+
+def oneConstFalseProgram : GNProgram :=
+  ⟨[], ⟨[.const false]⟩⟩
+
+theorem literal_encodeGN_lengths :
+    (encodeGN emptyProgram).length = 20 ∧
+      (encodeGN oneConstFalseProgram).length = 48 := by
+  decide
+
+/-- Literal empty-program scan: five frames, twenty physical steps. -/
+theorem literal_empty_wordEnd :
+    TM.runConfig (M := GNM)
+      (GNM.initialConfig (gnPoint (encodeGN emptyProgram))) 20 =
+        gnWordEndConfig emptyProgram := by
+  simpa only [literal_encodeGN_lengths.1] using
+    gnCS_encodeGN_wordEnd emptyProgram
+
+/-- Literal nonempty scan: one constant record, twelve frames, forty-eight
+physical steps. -/
+theorem literal_oneConstFalse_wordEnd :
+    TM.runConfig (M := GNM)
+      (GNM.initialConfig (gnPoint (encodeGN oneConstFalseProgram))) 48 =
+        gnWordEndConfig oneConstFalseProgram := by
+  simpa only [literal_encodeGN_lengths.2] using
+    gnCS_encodeGN_wordEnd oneConstFalseProgram
 
 /-- Literal true probe: `N=64`, `base=7`, all-true ambient, `229+1=230`. -/
 theorem literal_input_true_shifted_intercept :

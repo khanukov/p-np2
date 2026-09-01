@@ -3811,8 +3811,53 @@ definitions, and supplies 26 direct explicit-proposition wrappers for the 26
 public theorem roots.  All 26 roots are printed directly in `AxiomsAudit`.
 There are no inferred aliases, Lean `example` declarations, parser/copier,
 runtime base discovery, installer, commit sweep, multi-gate loop,
-clock-adequacy theorem, verdict, or acceptance theorem.  No current transition
-enters the fixed outer `accept` or `reject` states; they remain unreachable
-placeholders for later controller policy.  The next open E1 blocker is a live
-installer that constructs the shifted local word from the GN ambient tape
-before this delegate shell can be entered.
+clock-adequacy theorem, verdict, or acceptance theorem.  In the GN-3C1
+snapshot no transition entered the fixed outer `accept` or `reject` states;
+GN-E1a below supersedes only that initial-control status while preserving the
+delegate and interception results.
+
+## GN-E1a live self-delimiting runtime scan (2026-09-01)
+
+Progress classification: infrastructure, not P-vs-NP mainline progress.
+
+`GateNRuntimeGrammar` adds a pure fixed-state lexical recognizer for canonical
+`encodeGNFrames` words.  Its only tag memory is `tag0` through `tag5`, while
+index runs self-loop.  Record `finish` returns to the next-record mode; only
+the terminal `separator · output false · finish` enters `wordEnd`.  One shared
+`gnDiscoveryAdvance`/`gnDiscoveryComplete` decision maps reserved undecodable
+windows and unexpected decoded frames to reject.  The canonical theorem is
+one-way: every `encodeGNFrames r` follows a valid path to `wordEnd`.
+
+The accepted language is deliberately lexical and self-delimiting, not the
+full parser language.  The finite scan does not enforce an unbounded equality
+between output-slot and record counts, and it does not retain enough data to
+check input indices, prior-gate indices, or typed operand conventions.  There
+is therefore no `decodeGN?` iff theorem and no claim that every parser-invalid
+word rejects.
+
+The same `GNState`, `gnTransition`, `gnCS`, and `GNM` now contain one finite
+`GNScanState` payload and the fixed `wordEnd` state.  The old delegated,
+returned, idle, accept, and reject rows are unchanged; `idle` remains an inert
+regression sink.  The real start is the aligned p0 scanner.  The p0/p1/p2 rows
+buffer and move right, and p3 either re-aligns right, moves right into
+`wordEnd`, or rejects without leaving p3.  Every row writes back the scanned
+bit.  The merged GN-3C1 shifted delegation and interception capstones continue
+to compile unchanged.
+
+`gnCS_encodeGN_wordEnd` runs from the real
+`GNM.initialConfig (gnPoint (encodeGN r))` for exactly `(encodeGN r).length`
+steps and reaches `gnWordEndConfig r`: state `wordEnd`, physical head exactly
+at the logical word length, and tape exactly equal to the real initial tape.
+The empty and one-constant literal lengths are 20 and 48.  The reserved `1101`
+literal reaches fixed reject in four steps with unchanged tape and head at p3;
+table roots also pin `1110`, `1111`, and representative decoded malformed
+blank/spent/output-true/separator frames plus misplaced cursor/bof markers.
+Reject is stable for arbitrary padding.
+
+The blank-padded physical tape cannot distinguish `encodeGN r` from a trailing
+zero extension, so no machine equivalence to exact-list `decodeGN?` and no
+trailing-zero rejection is asserted.  E1a stops immediately after the
+terminal finish.  The stationary `wordEnd` state is the dormant E1b endpoint;
+blank-frame confirmation and return to scratch remain E1b work.  There is no
+scratch entry, installer/copy/commit path, delegated entry, multigate loop,
+clock-adequacy theorem, verdict, or acceptance claim in this slice.

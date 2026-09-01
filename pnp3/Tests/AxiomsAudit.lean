@@ -2269,13 +2269,19 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1FiveTagTraceProbes.literal_or_true_done
 #print axioms Internal.PsubsetPpoly.TM.G1FiveTagTraceProbes.literal_binary_a_done
 
--- GN-3C1 (2026-09-01): fixed finite outer delegate shell, source-only
--- proper-prefix exclusion, exact shifted five-tag output-done run,
--- every-prefix outside preservation, and one stationary result interception.
--- The inert initial state is not an installer and no acceptance claim is made.
+-- GN-E1a (2026-09-01): the same fixed finite outer delegate shell now starts
+-- with a read-only four-cell lexical scan and stops at fixed `wordEnd` exactly
+-- after terminal finish.  This does not count records/slots, enforce semantic
+-- bounds, equal `decodeGN?`, inspect padding, return to scratch, or accept.
+#print axioms Internal.PsubsetPpoly.TM.gnDiscoveryComplete_decode
+#print axioms Internal.PsubsetPpoly.TM.gnDiscovery_encodeGNFrames
+#print axioms Internal.PsubsetPpoly.TM.gnDiscoveryComplete_reserved
+#print axioms Internal.PsubsetPpoly.TM.gnDiscoveryAdvance_start_malformed
+#print axioms Internal.PsubsetPpoly.TM.gnCS_startState
 #print axioms Internal.PsubsetPpoly.TM.gnTransition_idle
 #print axioms Internal.PsubsetPpoly.TM.gnTransition_returnedFalse
 #print axioms Internal.PsubsetPpoly.TM.gnTransition_returnedTrue
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_wordEnd
 #print axioms Internal.PsubsetPpoly.TM.gnTransition_accept
 #print axioms Internal.PsubsetPpoly.TM.gnTransition_reject
 #print axioms Internal.PsubsetPpoly.TM.gnTransition_delegate_ordinary
@@ -2285,6 +2291,14 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1M_step_accept
 #print axioms Internal.PsubsetPpoly.TM.gnM_step_embed_ordinary
 #print axioms Internal.PsubsetPpoly.TM.gnM_step_embed_done
+#print axioms Internal.PsubsetPpoly.TM.gnInitialTape_eq_frameListTape
+#print axioms Internal.PsubsetPpoly.TM.gnCS_encodeGN_wordEnd
+#print axioms Internal.PsubsetPpoly.TM.gnCS_wordEnd_stable
+#print axioms Internal.PsubsetPpoly.TM.gnFrameScanner_rejectMacrostep
+#print axioms Internal.PsubsetPpoly.TM.gnCS_reserved1101_reject_four
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_reserved_windows
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_start_malformed_windows
+#print axioms Internal.PsubsetPpoly.TM.gnCS_reject_stable
 #print axioms Internal.PsubsetPpoly.TM.g1CS_gate_done_no_early_outputDone
 #print axioms Internal.PsubsetPpoly.TM.gn_g1_gate_done_delegates
 #print axioms Internal.PsubsetPpoly.TM.gn_g1_outputDone_not_delegates
@@ -2299,6 +2313,9 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.gnCS_gate_shift_intercept_structure
 #print axioms Internal.PsubsetPpoly.TM.GNFixedDelegateProbes.literal_input_true_shifted_intercept
 #print axioms Internal.PsubsetPpoly.TM.GNFixedDelegateProbes.literal_const_false_shifted_intercept
+#print axioms Internal.PsubsetPpoly.TM.GNFixedDelegateProbes.literal_encodeGN_lengths
+#print axioms Internal.PsubsetPpoly.TM.GNFixedDelegateProbes.literal_empty_wordEnd
+#print axioms Internal.PsubsetPpoly.TM.GNFixedDelegateProbes.literal_oneConstFalse_wordEnd
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

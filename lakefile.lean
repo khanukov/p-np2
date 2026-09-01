@@ -356,6 +356,12 @@ lean_lib PnP3 where
     -- reverse-seek safety and exactly one successful A round, composed from
     -- the merged e1a `Σᴬ(0)` endpoint.  No driver, terminal repair or gate.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOnePassARoundTraceSafety,
+    -- GN-3B2e2 (2026-09-01), infrastructure only: genuine arbitrary-round A
+    -- driver safety, successful exhaustion seek, and terminal cursor cleanup
+    -- through the exact cursor-free `aRepairStart` endpoint.  The binary
+    -- capstone uses the actual existing schedule expression.  No A-repair,
+    -- OOB conflation, unary/constant route, full gate, clock, or acceptance.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOnePassADriverTraceSafety,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -561,6 +567,9 @@ lean_lib PnP3 where
     -- GN-3B2e1b (2026-09-01): direct wrappers for A reverse-frame/run safety,
     -- the mixed boundary, one arbitrary-j successful round, and 53/423 pins.
     Glob.one `Tests.TMGateOnePassARoundTraceSafetySurfaceTests,
+    -- GN-3B2e2 (2026-09-01): explicit direct wrappers for arbitrary driver,
+    -- exhaustion, terminal cleanup, binary capstone, structure, and literals.
+    Glob.one `Tests.TMGateOnePassADriverTraceSafetySurfaceTests,
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,
     Glob.one `Tests.TMGateOneReadBSurfaceTests,
     Glob.one `Tests.TMGateOneProbeInstallSurfaceTests,

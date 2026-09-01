@@ -49,6 +49,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOnePassBTerminalRepairTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOnePassBDriverTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOnePassATraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOnePassARoundTraceSafety
+import Complexity.TMVerifier.TuringToolkit.GateOnePassADriverTraceSafety
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -2112,6 +2113,28 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_readA_binary_one_round_from_initial_trace_safe
 #print axioms Internal.PsubsetPpoly.TM.G1PassATraceProbes.literal_round_trace_safe
 #print axioms Internal.PsubsetPpoly.TM.G1PassATraceProbes.literal_one_round_from_initial_trace_safe
+
+-- GN-3B2e2 (2026-09-01): genuine arbitrary-round A safety, successful
+-- exhaustion and cursor cleanup to exact `aRepairStart`, plus the binary
+-- real-initial capstone and structural/literal endpoints.  No A-repair step,
+-- OOB conflation, unary/constant route, shifted gate, clock or acceptance.
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_driver_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_driver_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_exhaust_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_exhaust_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_exh_to_cursor_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_terminal_turn_restore_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_terminal_from_exhaust_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_exhaust_terminal_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_exhaust_driver_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_full_driver_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readA_binary_full_driver_from_initial_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkDoneFrames_count_spent
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkDoneFrames_count_index
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readA_binary_full_driver_structure
+#print axioms Internal.PsubsetPpoly.TM.G1PassADriverTraceProbes.literal_two_round_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.G1PassADriverTraceProbes.literal_exhaustion_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.G1PassADriverTraceProbes.literal_full_driver_trace_safe
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_steps
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_false_repair_exact
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_true_repair_exact

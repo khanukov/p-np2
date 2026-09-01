@@ -1,9 +1,10 @@
 import Complexity.TMVerifier.TuringToolkit.GateOneFiveTagTraceSafety
 import Complexity.TMVerifier.TuringToolkit.FrameScannerKernel
+import Complexity.TMVerifier.TuringToolkit.FrameScannerReverse
 import Complexity.TMVerifier.TuringToolkit.GateNRuntimeGrammar
 
 /-!
-# Fixed GN delegate, relocation, and E1a runtime scan (2026-09-01)
+# Fixed GN delegate, relocation, and E1b scratch-entry scan (2026-09-01)
 
 **Progress classification: infrastructure, not P-vs-NP mainline progress.**
 
@@ -11,8 +12,11 @@ This module defines one closed finite outer control.  Its delegated states carry
 only the already-finite complete `G1M.state`; every outer state remains finite.
 There is no request, result, natural number, base, width, offset, index, or
 runtime datum in the control.  GN-E1a adds one finite four-cell lexical scan
-payload and a fixed `wordEnd` state; the old `idle` state remains an inert
-regression sink, while the real start state is the aligned scanner entry.
+payload and a fixed `wordEnd` state; GN-E1b reuses that public arrival to read
+exactly the next four physical cells, require the blank frame `0000`, return
+four cells left, and enter fixed `scratchEntry`.  The old `idle` state remains
+an inert regression sink, while the real start state is the aligned scanner
+entry.
 
 Ordinary delegated states execute the exact `G1M.step` tuple.  The only two
 interceptions are the complete canonical states `g1DoneQ false` and
@@ -27,12 +31,14 @@ The capstone overlays exactly `[0,W+5)` into a caller-supplied ambient target
 tape, relocates the complete safe source trace, preserves every outside cell at
 every prefix, and executes one further stationary target step into the fixed
 result-indexed returned state.  It adds no exact-list parser, copier, installer,
-runtime base discovery, commit sweep, multi-gate loop, clock-adequacy theorem,
-verdict, or acceptance result.  The scan is lexical only: it does not compare
-slot and record counts or enforce semantic index bounds, and it is not equivalent to
-`decodeGN?`.  The blank-padded tape cannot distinguish an exact word from a
-trailing-zero extension.  E1a stops immediately after terminal `finish`, at
-the logical word end; blank-frame confirmation and return to scratch are E1b.
+runtime base discovery, commit sweep, multi-gate loop, total clock-adequacy
+theorem, verdict, or acceptance result.  The scan is lexical only: it does not
+compare slot and record counts or enforce semantic index bounds, and it is not
+equivalent to `decodeGN?`.  The blank-padded tape cannot distinguish an exact
+word from a trailing-zero extension.  E1b rejects nonblank decoded or reserved
+windows in the inspected frame, but makes no trailing-zero rejection claim.
+The exported endpoint is exact `scratchEntry`; its transition behavior is
+deliberately not exported because E2 will activate that row.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -71,6 +77,13 @@ inductive GNState where
   | returnedTrue
   | scanning (scan : GNScanState)
   | wordEnd
+  | blankConfirm (buffer : GNScanBuffer)
+  | blankSeen
+  | return3
+  | return2
+  | return1
+  | return0
+  | scratchEntry
   | idle
   | accept
   | reject
@@ -111,7 +124,23 @@ def gnTransition (_phase : Fin 1) (s : GNState) (scan : Bool) :
           let next := gnDiscoveryComplete q.mode b0 b1 b2 scan
           (0, gnScanControl next .p0, scan,
             if next = .reject then .stay else .right)
-  | .wordEnd => (0, .wordEnd, scan, .stay)
+  | .wordEnd => (0, .blankConfirm (.p1 scan), scan, .right)
+  | .blankConfirm buffer =>
+      match buffer with
+      | .p0 => (0, .blankConfirm (.p1 scan), scan, .right)
+      | .p1 b0 => (0, .blankConfirm (.p2 b0 scan), scan, .right)
+      | .p2 b0 b1 =>
+          (0, .blankConfirm (.p3 b0 b1 scan), scan, .right)
+      | .p3 b0 b1 b2 =>
+          if b0 = false ∧ b1 = false ∧ b2 = false ∧ scan = false then
+            (0, .blankSeen, scan, .right)
+          else (0, .reject, scan, .stay)
+  | .blankSeen => (0, .return3, scan, .left)
+  | .return3 => (0, .return2, scan, .left)
+  | .return2 => (0, .return1, scan, .left)
+  | .return1 => (0, .return0, scan, .left)
+  | .return0 => (0, .scratchEntry, scan, .stay)
+  | .scratchEntry => (0, .scratchEntry, scan, .stay)
   | .idle => (0, .idle, scan, .stay)
   | .accept => (0, .accept, scan, .stay)
   | .reject => (0, .reject, scan, .stay)
@@ -161,6 +190,46 @@ def gnPoint (bits : List Bool) : Boolcube.Point bits.length := fun i => bits.get
 
 @[simp] theorem gnTransition_reject (phase : Fin 1) (scan : Bool) :
     gnTransition phase .reject scan = (0, .reject, scan, .stay) := rfl
+
+/-- The public E1a `wordEnd` arrival is the p0 row of E1b confirmation. -/
+theorem gnTransition_wordEnd (phase : Fin 1) (scan : Bool) :
+    gnTransition phase .wordEnd scan =
+      (0, .blankConfirm (.p1 scan), scan, .right) := rfl
+
+/-- The two remaining buffering rows of blank-frame confirmation. -/
+theorem gnTransition_blankConfirm_buffer (phase : Fin 1)
+    (b0 b1 scan : Bool) :
+    gnTransition phase (.blankConfirm (.p1 b0)) scan =
+        (0, .blankConfirm (.p2 b0 scan), scan, .right) ∧
+      gnTransition phase (.blankConfirm (.p2 b0 b1)) scan =
+        (0, .blankConfirm (.p3 b0 b1 scan), scan, .right) := by
+  exact ⟨rfl, rfl⟩
+
+/-- Exactly `0000` completes confirmation and advances to the post-frame
+landing cell. -/
+theorem gnTransition_blankConfirm_zero (phase : Fin 1) :
+    gnTransition phase (.blankConfirm (.p3 false false false)) false =
+      (0, .blankSeen, false, .right) := rfl
+
+/-- Representative nonblank decoded (`0001`, `bof`) and reserved (`1101`)
+confirmation windows reject stationarily at p3 and write back the scan. -/
+theorem gnTransition_blankConfirm_rejections (phase : Fin 1) :
+    gnTransition phase (.blankConfirm (.p3 false false false)) true =
+        (0, .reject, true, .stay) ∧
+      gnTransition phase (.blankConfirm (.p3 true true false)) true =
+        (0, .reject, true, .stay) := by
+  exact ⟨rfl, rfl⟩
+
+/-- The five fixed post-confirmation rows: four read-only left moves followed
+by one stationary entry into `scratchEntry`. -/
+theorem gnTransition_blankReturn_rows (phase : Fin 1) (scan : Bool) :
+    gnTransition phase .blankSeen scan = (0, .return3, scan, .left) ∧
+      gnTransition phase .return3 scan = (0, .return2, scan, .left) ∧
+      gnTransition phase .return2 scan = (0, .return1, scan, .left) ∧
+      gnTransition phase .return1 scan = (0, .return0, scan, .left) ∧
+      gnTransition phase .return0 scan =
+        (0, .scratchEntry, scan, .stay) := by
+  exact ⟨rfl, rfl, rfl, rfl, rfl⟩
 
 theorem gnTransition_delegate_ordinary (phase : Fin 1) (q : G1M.state)
     (scan : Bool) (hf : q ≠ g1DoneQ false) (ht : q ≠ g1DoneQ true) :
@@ -344,6 +413,188 @@ theorem gnCS_encodeGN_wordEnd (r : GNProgram) :
   · change frameListTape (encodeGN r) =
       (GNM.initialConfig (gnPoint (encodeGN r))).tape
     exact (gnInitialTape_eq_frameListTape _).symm
+
+/-! ## GN-E1b blank-frame confirmation and scratch entry -/
+
+/-- The complete fixed state at the E1b/E2 scratch-entry boundary. -/
+def gnScratchEntryQ : GNM.state := ⟨(0 : Fin 1), .scratchEntry⟩
+
+/-- Exact E1b endpoint: scratch-entry control, physical head at the logical
+word end, and the unchanged real initial tape. -/
+def gnScratchEntryConfig (r : GNProgram) :
+    Configuration (M := GNM) (encodeGN r).length where
+  state := gnScratchEntryQ
+  head := ⟨(encodeGN r).length, by
+    simp [TM.tapeLength, gnCS, gnClock, g1Clock]
+    omega⟩
+  tape := (GNM.initialConfig (gnPoint (encodeGN r))).tape
+
+/-- E1a scan plus the fixed E1b nine-row segment. -/
+def gnValidateSteps (r : GNProgram) : Nat := (encodeGN r).length + 9
+
+private theorem gnCS_wordEnd_blankFrame_macro (n h : Nat)
+    (hsafe : h + 4 < (Phased.machine gnCS).tapeLength n)
+    (tape : Fin ((Phased.machine gnCS).tapeLength n) → Bool)
+    (h0 : tape ⟨h, by omega⟩ = false)
+    (h1 : tape ⟨h + 1, by omega⟩ = false)
+    (h2 : tape ⟨h + 2, by omega⟩ = false)
+    (h3 : tape ⟨h + 3, by omega⟩ = false) :
+    TM.runConfig (M := Phased.machine gnCS)
+        (Phased.alignedAt gnCS gnCS.startPhase n h (by omega) tape .wordEnd) 9 =
+      Phased.alignedAt gnCS gnCS.startPhase n h (by omega) tape .scratchEntry := by
+  have s0 := Phased.stepRight gnCS gnCS.startPhase n h (by omega) (by omega) tape
+    GNState.wordEnd (.blankConfirm (.p1 (tape ⟨h, by omega⟩)))
+    (tape ⟨h, by omega⟩) (by rfl)
+  rw [writeCell_self, h0] at s0
+  have s1 := Phased.stepRight gnCS gnCS.startPhase n (h + 1) (by omega) (by omega) tape
+    (.blankConfirm (.p1 false))
+    (.blankConfirm (.p2 false (tape ⟨h + 1, by omega⟩)))
+    (tape ⟨h + 1, by omega⟩) (by rfl)
+  rw [writeCell_self, h1] at s1
+  have s2 := Phased.stepRight gnCS gnCS.startPhase n (h + 2) (by omega) (by omega) tape
+    (.blankConfirm (.p2 false false))
+    (.blankConfirm (.p3 false false (tape ⟨h + 2, by omega⟩)))
+    (tape ⟨h + 2, by omega⟩) (by rfl)
+  rw [writeCell_self, h2] at s2
+  have s3 := Phased.stepRight gnCS gnCS.startPhase n (h + 3) (by omega) hsafe tape
+    (.blankConfirm (.p3 false false false)) .blankSeen
+    (tape ⟨h + 3, by omega⟩) (by simpa [h3] using
+      gnTransition_blankConfirm_zero (0 : Fin 1))
+  rw [writeCell_self] at s3
+  have hread : TM.runConfig (M := Phased.machine gnCS)
+      (Phased.alignedAt gnCS gnCS.startPhase n h (by omega) tape .wordEnd) 4 =
+      Phased.alignedAt gnCS gnCS.startPhase n (h + 4) hsafe tape .blankSeen := by
+    show TM.runConfig (M := Phased.machine gnCS)
+      (Phased.alignedAt gnCS gnCS.startPhase n h (by omega) tape .wordEnd)
+      (1 + 1 + 1 + 1) = _
+    rw [runConfig_add, runConfig_add, runConfig_add]
+    simp only [runConfig_one]
+    rw [s0, s1, s2, s3]
+  have hback := Phased.holdWalk4 gnCS gnCS.startPhase n h hsafe tape
+    GNState.blankSeen .return3 .return2 .return1 .return0
+    (fun _ => rfl) (fun _ => rfl) (fun _ => rfl) (fun _ => rfl)
+  have hentry := Phased.stepStay gnCS gnCS.startPhase n h (by omega) tape
+    GNState.return0 .scratchEntry (tape ⟨h, by omega⟩) (by rfl)
+  rw [writeCell_self] at hentry
+  have hreturn : TM.runConfig (M := Phased.machine gnCS)
+      (Phased.alignedAt gnCS gnCS.startPhase n (h + 4) hsafe tape .blankSeen) 5 =
+      Phased.alignedAt gnCS gnCS.startPhase n h (by omega) tape .scratchEntry := by
+    show TM.runConfig (M := Phased.machine gnCS)
+      (Phased.alignedAt gnCS gnCS.startPhase n (h + 4) hsafe tape .blankSeen) (4 + 1) = _
+    rw [runConfig_add, hback, runConfig_one, hentry]
+  show TM.runConfig (M := Phased.machine gnCS)
+    (Phased.alignedAt gnCS gnCS.startPhase n h (by omega) tape .wordEnd) (4 + 5) = _
+  rw [runConfig_add, hread, hreturn]
+
+/-- Exact nonblank-first-cell confirmation probe.  Starting at `wordEnd`, a
+nonzero first padding cell is buffered, the remaining three cells are read,
+and p3 enters stationary reject after exactly four rows, with unchanged tape. -/
+theorem gnCS_wordEnd_nonblank_first_reject (n h : Nat)
+    (hsafe : h + 4 < (Phased.machine gnCS).tapeLength n)
+    (tape : Fin ((Phased.machine gnCS).tapeLength n) → Bool)
+    (hfirst : tape ⟨h, by omega⟩ = true) :
+    TM.runConfig (M := Phased.machine gnCS)
+        (Phased.alignedAt gnCS gnCS.startPhase n h (by omega) tape .wordEnd) 4 =
+      Phased.alignedAt gnCS gnCS.startPhase n (h + 3) (by omega) tape .reject := by
+  have s0 := Phased.stepRight gnCS gnCS.startPhase n h (by omega) (by omega)
+    tape GNState.wordEnd (.blankConfirm (.p1 (tape ⟨h, by omega⟩)))
+    (tape ⟨h, by omega⟩) (by rfl)
+  rw [writeCell_self, hfirst] at s0
+  let b1 := tape ⟨h + 1, by omega⟩
+  have s1 := Phased.stepRight gnCS gnCS.startPhase n (h + 1) (by omega)
+    (by omega) tape (.blankConfirm (.p1 true)) (.blankConfirm (.p2 true b1))
+    b1 (by rfl)
+  rw [writeCell_self] at s1
+  let b2 := tape ⟨h + 2, by omega⟩
+  have s2 := Phased.stepRight gnCS gnCS.startPhase n (h + 2) (by omega)
+    (by omega) tape (.blankConfirm (.p2 true b1))
+    (.blankConfirm (.p3 true b1 b2)) b2 (by rfl)
+  rw [writeCell_self] at s2
+  let b3 := tape ⟨h + 3, by omega⟩
+  have s3 := Phased.stepStay gnCS gnCS.startPhase n (h + 3) (by omega) tape
+    (.blankConfirm (.p3 true b1 b2)) .reject b3 (by
+      dsimp [b1, b2, b3]
+      cases tape ⟨h + 1, by omega⟩ <;>
+        cases tape ⟨h + 2, by omega⟩ <;>
+          cases tape ⟨h + 3, by omega⟩ <;> rfl)
+  rw [writeCell_self] at s3
+  show TM.runConfig (M := Phased.machine gnCS)
+    (Phased.alignedAt gnCS gnCS.startPhase n h (by omega) tape .wordEnd)
+    (1 + 1 + 1 + 1) = _
+  rw [runConfig_add, runConfig_add, runConfig_add]
+  simp only [runConfig_one]
+  rw [s0, s1, s2, s3]
+
+/-- Local E1b capstone.  From the public E1a arrival, exactly four blank reads
+and five return/entry rows restore head `N`, preserve the tape exactly, and
+enter fixed `scratchEntry` in nine steps. -/
+theorem gnCS_wordEnd_to_scratchEntry_exact (r : GNProgram) :
+    TM.runConfig (M := GNM) (gnWordEndConfig r) 9 =
+      gnScratchEntryConfig r := by
+  let N := (encodeGN r).length
+  let tape := (GNM.initialConfig (gnPoint (encodeGN r))).tape
+  have hsafe : N + 4 < GNM.tapeLength N := by
+    simp [N, TM.tapeLength, gnCS, gnClock, g1Clock]
+    omega
+  have hblank (j : Nat) (hj : N ≤ j) (hfit : j < GNM.tapeLength N) :
+      tape ⟨j, hfit⟩ = false := by
+    exact GNM.initial_tape_blank (gnPoint (encodeGN r)) hj
+  have hmacro := gnCS_wordEnd_blankFrame_macro N N hsafe tape
+    (hblank N (by omega) (by omega))
+    (hblank (N + 1) (by omega) (by omega))
+    (hblank (N + 2) (by omega) (by omega))
+    (hblank (N + 3) (by omega) (by omega))
+  have hN : N < (Phased.machine gnCS).tapeLength N := by
+    exact lt_trans (by omega) hsafe
+  have hword : gnWordEndConfig r =
+      Phased.alignedAt gnCS gnCS.startPhase N N hN tape .wordEnd := by
+    apply Configuration.ext_of_components <;> rfl
+  have hscratch : gnScratchEntryConfig r =
+      Phased.alignedAt gnCS gnCS.startPhase N N hN tape .scratchEntry := by
+    apply Configuration.ext_of_components <;> rfl
+  rw [hword, hmacro, hscratch]
+
+/-- Full E1a+E1b capstone from the real encoded input. -/
+theorem gnCS_encodeGN_scratchEntry (r : GNProgram) :
+    TM.runConfig (M := GNM)
+      (GNM.initialConfig (gnPoint (encodeGN r))) (gnValidateSteps r) =
+        gnScratchEntryConfig r := by
+  rw [gnValidateSteps, runConfig_add, gnCS_encodeGN_wordEnd,
+    gnCS_wordEnd_to_scratchEntry_exact]
+
+/-- Explicit endpoint projections for E2: fixed state, physical head at `N`,
+and tape identical to the real initial tape. -/
+theorem gnScratchEntryConfig_structure (r : GNProgram) :
+    (gnScratchEntryConfig r).state = gnScratchEntryQ ∧
+      ((gnScratchEntryConfig r).head : Nat) = (encodeGN r).length ∧
+      (gnScratchEntryConfig r).tape =
+        (GNM.initialConfig (gnPoint (encodeGN r))).tape := by
+  exact ⟨rfl, rfl, rfl⟩
+
+/-- Schedule provenance: E1a's `N` scan, four confirmation reads, and five
+fixed return/entry rows. -/
+theorem gnValidateSteps_provenance (r : GNProgram) :
+    gnValidateSteps r = (encodeGN r).length + 4 + 5 := by
+  simp [gnValidateSteps]
+
+/-- Only a bound for the scan/confirmation/return segment, not adequacy for a
+future installer, delegated run, loop, or the machine's full clock. -/
+theorem gnScanValidateSegment_le_gnClock (N : Nat) :
+    N + 9 ≤ gnClock N := by
+  have hsquare : N + 1 ≤ (N + 1) ^ 2 := by
+    rw [pow_two]
+    exact Nat.le_mul_of_pos_left _ (by omega)
+  unfold gnClock g1Clock
+  omega
+
+/-- GN-2's generic `W+16≤N` capacity leaves enough physical GNM room to place
+the exact local G1 span at scratch base `N`.  This is arithmetic only; it does
+not identify a selected request or install/copy it. -/
+theorem gnScratch_room_of_add_sixteen {W N : Nat} (hWN : W + 16 ≤ N) :
+    N + gnLocalSpan W ≤ GNM.tapeLength N := by
+  have hsegment := gnScanValidateSegment_le_gnClock N
+  change N + (W + 5) ≤ N + gnClock N + 1
+  omega
 
 /-- Four raw physical reads ending in a rejecting completion.  The first
 three rows move right; the p3 completion is stationary, and every row writes
@@ -745,6 +996,22 @@ theorem literal_oneConstFalse_wordEnd :
         gnWordEndConfig oneConstFalseProgram := by
   simpa only [literal_encodeGN_lengths.2] using
     gnCS_encodeGN_wordEnd oneConstFalseProgram
+
+/-- Literal empty-program E1a+E1b schedule: `20 + 9 = 29`. -/
+theorem literal_empty_scratchEntry :
+    TM.runConfig (M := GNM)
+      (GNM.initialConfig (gnPoint (encodeGN emptyProgram))) 29 =
+        gnScratchEntryConfig emptyProgram := by
+  have h := gnCS_encodeGN_scratchEntry emptyProgram
+  simpa [gnValidateSteps, literal_encodeGN_lengths.1] using h
+
+/-- Literal one-constant-false E1a+E1b schedule: `48 + 9 = 57`. -/
+theorem literal_oneConstFalse_scratchEntry :
+    TM.runConfig (M := GNM)
+      (GNM.initialConfig (gnPoint (encodeGN oneConstFalseProgram))) 57 =
+        gnScratchEntryConfig oneConstFalseProgram := by
+  have h := gnCS_encodeGN_scratchEntry oneConstFalseProgram
+  simpa [gnValidateSteps, literal_encodeGN_lengths.2] using h
 
 /-- Literal true probe: `N=64`, `base=7`, all-true ambient, `229+1=230`. -/
 theorem literal_input_true_shifted_intercept :

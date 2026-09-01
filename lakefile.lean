@@ -390,10 +390,10 @@ lean_lib PnP3 where
     -- `outputDone`.  The merged binary theorem is unchanged; no accept step,
     -- shifted run, controller, multigate, clock or verdict is added.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneFiveTagTraceSafety,
-    -- GN-E1a (2026-09-01), infrastructure only: the same fixed finite outer
-    -- delegate shell and shifted capstones, now with a live read-only lexical
-    -- scan from the real start through logical word end.  No padding check,
-    -- scratch return, installer, loop, verdict or acceptance.
+    -- GN-E1b (2026-09-01), infrastructure only: the same fixed finite outer
+    -- delegate shell and shifted capstones now confirm one physical `0000`
+    -- frame after logical word end and return to fixed scratch entry.  No
+    -- trailing-zero rejection, installer, loop, verdict or acceptance.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateNFixedDelegateRelocation,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
@@ -622,8 +622,9 @@ lean_lib PnP3 where
     -- wrappers for five-tag output-done safety, structure, schedules, and the
     -- complete 229/151/171/285/484/512/606 literal matrix.
     Glob.one `Tests.TMGateOneFiveTagTraceSafetySurfaceTests,
-    -- GN-3C1 (2026-09-01): constructor/definition pins and direct explicit
-    -- proposition wrappers for the fixed shell and concrete shifted capstone.
+    -- GN-E1b (2026-09-01): constructor/definition pins and direct explicit
+    -- proposition wrappers for blank confirmation, exact scratch entry,
+    -- rejection probes, schedules, room arithmetic, and preserved capstones.
     Glob.one `Tests.TMGateNFixedDelegateRelocationSurfaceTests,
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,
     Glob.one `Tests.TMGateOneReadBSurfaceTests,

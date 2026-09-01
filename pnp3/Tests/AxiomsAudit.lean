@@ -2269,10 +2269,11 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1FiveTagTraceProbes.literal_or_true_done
 #print axioms Internal.PsubsetPpoly.TM.G1FiveTagTraceProbes.literal_binary_a_done
 
--- GN-E1a (2026-09-01): the same fixed finite outer delegate shell now starts
--- with a read-only four-cell lexical scan and stops at fixed `wordEnd` exactly
--- after terminal finish.  This does not count records/slots, enforce semantic
--- bounds, equal `decodeGN?`, inspect padding, return to scratch, or accept.
+-- GN-E1b (2026-09-01): after the unchanged E1a lexical scan reaches public
+-- `wordEnd`, the same fixed finite shell reads exactly one four-cell blank
+-- frame, returns four cells left, and enters fixed `scratchEntry`.  This does
+-- not reject trailing zeros, equal `decodeGN?`, install/copy work, delegate a
+-- selected request, establish total clock adequacy, decide, or accept.
 #print axioms Internal.PsubsetPpoly.TM.gnDiscoveryComplete_decode
 #print axioms Internal.PsubsetPpoly.TM.gnDiscovery_encodeGNFrames
 #print axioms Internal.PsubsetPpoly.TM.gnDiscoveryComplete_reserved
@@ -2283,6 +2284,11 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.gnTransition_returnedTrue
 #print axioms Internal.PsubsetPpoly.TM.gnTransition_accept
 #print axioms Internal.PsubsetPpoly.TM.gnTransition_reject
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_wordEnd
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_blankConfirm_buffer
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_blankConfirm_zero
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_blankConfirm_rejections
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_blankReturn_rows
 #print axioms Internal.PsubsetPpoly.TM.gnTransition_delegate_ordinary
 #print axioms Internal.PsubsetPpoly.TM.gnTransition_intercept_false
 #print axioms Internal.PsubsetPpoly.TM.gnTransition_intercept_true
@@ -2292,6 +2298,13 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.gnM_step_embed_done
 #print axioms Internal.PsubsetPpoly.TM.gnInitialTape_eq_frameListTape
 #print axioms Internal.PsubsetPpoly.TM.gnCS_encodeGN_wordEnd
+#print axioms Internal.PsubsetPpoly.TM.gnCS_wordEnd_nonblank_first_reject
+#print axioms Internal.PsubsetPpoly.TM.gnCS_wordEnd_to_scratchEntry_exact
+#print axioms Internal.PsubsetPpoly.TM.gnCS_encodeGN_scratchEntry
+#print axioms Internal.PsubsetPpoly.TM.gnScratchEntryConfig_structure
+#print axioms Internal.PsubsetPpoly.TM.gnValidateSteps_provenance
+#print axioms Internal.PsubsetPpoly.TM.gnScanValidateSegment_le_gnClock
+#print axioms Internal.PsubsetPpoly.TM.gnScratch_room_of_add_sixteen
 #print axioms Internal.PsubsetPpoly.TM.gnFrameScanner_rejectMacrostep
 #print axioms Internal.PsubsetPpoly.TM.gnCS_reserved1101_reject_four
 #print axioms Internal.PsubsetPpoly.TM.gnTransition_reserved_windows
@@ -2314,6 +2327,8 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.GNFixedDelegateProbes.literal_encodeGN_lengths
 #print axioms Internal.PsubsetPpoly.TM.GNFixedDelegateProbes.literal_empty_wordEnd
 #print axioms Internal.PsubsetPpoly.TM.GNFixedDelegateProbes.literal_oneConstFalse_wordEnd
+#print axioms Internal.PsubsetPpoly.TM.GNFixedDelegateProbes.literal_empty_scratchEntry
+#print axioms Internal.PsubsetPpoly.TM.GNFixedDelegateProbes.literal_oneConstFalse_scratchEntry
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

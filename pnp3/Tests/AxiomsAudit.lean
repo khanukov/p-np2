@@ -50,6 +50,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOnePassBDriverTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOnePassATraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOnePassARoundTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOnePassADriverTraceSafety
+import Complexity.TMVerifier.TuringToolkit.GateOneARepairTraceSafety
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -2146,6 +2147,30 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_false_endpoint_word
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_true_endpoint_word
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_zero_endpoint_word
+
+-- GN-3B2e3 (2026-09-01): actual operand-A reverse-frame, skip, rewrite,
+-- anchor and complete live-repair safety through exact head-zero
+-- `aRepairDone`, plus the merged e2 binary composition.  The three local
+-- literals are 58/58/24; the real-initial binary literal is 541, not a unary
+-- total.  No result/combine/output successor, full-gate shifted safety,
+-- unary/const route, controller, clock, verdict or acceptance claim.
+#print axioms Internal.PsubsetPpoly.TM.g1ARepair_reverseFrame_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_scan_skip_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_cycle_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_spent_run_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_finish_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_pass_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_sweep_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_activation_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_live_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_live_structure
+#print axioms Internal.PsubsetPpoly.TM.g1ABinaryRepairSteps_trace_eq
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepair_binary_initial_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.G1ARepairTraceProbes.literal_false_local_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.G1ARepairTraceProbes.literal_true_local_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.G1ARepairTraceProbes.literal_zero_local_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.G1ARepairTraceProbes.literal_binary_steps
+#print axioms Internal.PsubsetPpoly.TM.G1ARepairTraceProbes.literal_binary_initial_trace_safe
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

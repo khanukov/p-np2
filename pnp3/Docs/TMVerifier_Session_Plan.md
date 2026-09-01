@@ -3531,3 +3531,49 @@ clock, verdict or acceptance theorem is added.
 The slice adds seventeen public source theorems, seventeen exact direct surface
 wrappers and axiom roots, and seven definition pins; it adds no Lean
 `example` declarations.
+
+## GN-3B2e3 complete live operand-A repair trace safety (2026-09-01)
+
+Progress classification: infrastructure, not P-vs-NP mainline progress.
+
+`GateOneARepairTraceSafety` starts from the existing positive-head
+`g1AWalkRepairStartConfig` reached exactly by e2, and proves the live left
+entry, every physical
+`aRepairSeek` buffer row, skip runs, thirteen-step `spent -> index` cycles,
+the full spent run, the left clean run, and the stationary `bof` dispatch safe.
+The reverse theorem uses the actual `G1ARepairStop` split: write, done and
+reject completions stay; only a non-stop skip completion may move left, and it
+requires a positive frame base.  The anchor completion at head zero is
+therefore independent of the machine's left clamp.
+
+The rewrite cycle uses the exact physical decomposition `4 + 4 + 5`: reverse
+stop, four-cell writer, then back-walk plus hop.  On the actual A layout the
+rewritten frame has both `bof` and the nonempty tag/`argSep` block to its left,
+so the strict local writer margin holds even at the leftmost operand-A unit.
+The complete aligned sweep has the existing public cost
+`g1ARepairSteps r = 4*tag.units + 17*arg1 + 4*arg2 + 20`; adding the one live
+entry gives exactly
+`g1ARepairLiveSteps r = 4*tag.units + 17*arg1 + 4*arg2 + 21`.
+
+The live capstone pairs `G1RunSafe` with exact `g1ARepairDoneConfig`: canonical
+initial tape spelling restored at head zero, no cursor or spent frame, exactly
+`arg1 + arg2` index frames, and the residual and selected operand-A latch
+preserved.  The binary capstone composes the merged e2 prefix on the actual
+existing decomposition
+`(g1ABinaryCursorSteps + g1AWalkExhaustDriverSteps +
+g1AWalkTerminalSteps) + g1ARepairLiveSteps`, which re-associates to the
+existing `g1ABinaryRepairSteps` schedule.
+
+The three caller-supplied local repairs are exactly `58`, `58`, and `24`
+steps.  The existing binary probe `and(1,1,[true,true,false])` reaches
+`aRepairStart` after `483` steps and performs `58` live repair steps, so its
+real-initial binary total is `541`.  The historical `404`/`192` totals are
+unary and are not relabeled as binary.
+
+Malformed, reserved, blank and leftover-cursor behavior remains only the
+existing reject stop scope; successful canonical sweeps do not cross it.  The
+slice adds no result/combine/output/pass-A successor, full-gate
+`ShiftRunSafe`, unary/const route, controller, clock, verdict or acceptance
+theorem.  It adds twelve new public non-literal theorem roots, five literal
+roots, explicit proposition wrappers, definition/constructor pins and axiom
+prints; it adds no Lean `example` declarations.

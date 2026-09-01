@@ -3859,8 +3859,48 @@ Reject is stable for arbitrary padding.
 The blank-padded physical tape cannot distinguish `encodeGN r` from a trailing
 zero extension, so no machine equivalence to exact-list `decodeGN?` and no
 trailing-zero rejection is asserted.  E1a stops immediately after the
-terminal finish.  `wordEnd` is the E1b handoff, but E1a deliberately exports no
-continuation or stability contract for it; blank-frame confirmation and return
-to scratch remain E1b work.  There is no scratch entry, installer/copy/commit
-path, delegated entry, multigate loop, clock-adequacy theorem, verdict, or
-acceptance claim in this slice.
+terminal finish.  `wordEnd` is the E1b handoff; the dated E1b slice below
+supersedes only that dormant continuation.  E1a itself has no scratch entry,
+installer/copy/commit path, delegated entry, multigate loop, clock-adequacy
+theorem, verdict, or acceptance claim.
+
+## GN-E1b blank-frame confirmation and scratch entry (2026-09-01)
+
+Progress classification: infrastructure, not P-vs-NP mainline progress.
+
+The same `GNState`, `gnTransition`, `gnCS`, and `GNM` consume E1a's public
+`wordEnd` arrival.  That row is confirmation p0: it reads cell `N`, buffers the
+bit, writes it back, and moves right.  The p1 and p2 rows do the same at
+`N+1` and `N+2`; p3 checks the complete window at `N+3`.  Exactly `0000`
+moves right to fixed `blankSeen` at `N+4`.  Any nonblank decoded or reserved
+window rejects stationarily at p3.  Exact table probes pin decoded `0001`
+(`bof`) and reserved `1101`, and an arbitrary-tape execution probe pins a
+nonzero first padding cell through the exact four-read rejecting run.
+
+From `blankSeen`, four read-only left rows move through positions `N+3`,
+`N+2`, `N+1`, and `N`, with strictly positive source heads in every use of the
+generic left-step theorem.  There is therefore no left-clamp case.  One fixed
+stationary row then enters `scratchEntry`.  E1b deliberately exports no
+transition or stability contract for `scratchEntry`; E2 owns activation of
+that row.
+
+`gnCS_wordEnd_to_scratchEntry_exact` proves the local nine-step capstone with
+exact state, head, and unchanged tape.  `gnCS_encodeGN_scratchEntry` composes
+the real E1a scan and establishes
+`runConfig GNM (GNM.initialConfig (gnPoint (encodeGN r)))
+(gnValidateSteps r) = gnScratchEntryConfig r`, where the schedule is
+`N + 4 + 5 = N + 9`.  The empty and one-constant-false literal runs are pinned
+at 29 and 57 steps.  `N+9 <= gnClock N` is exposed only as a bound for this
+scan/confirmation/return segment, not as total clock adequacy.
+
+The generic arithmetic bridge proves
+`W+16<=N -> N+gnLocalSpan W<=GNM.tapeLength N`.  It supplies scratch room at
+physical base `N`, but does not identify `W` with a selected gate request and
+does not bridge the pure `GateNTapeState` to a physical machine state.  No
+installer/copy, delegated G1 entry, commit, multigate loop, verdict, or
+acceptance theorem is present.
+
+As in E1a, the blank-padded tape is unable to distinguish an exact list from a
+trailing-zero extension.  Confirmation can reject structural junk within the
+one inspected physical frame, but proves neither trailing-zero-extension
+rejection nor equivalence with exact-list `decodeGN?`.

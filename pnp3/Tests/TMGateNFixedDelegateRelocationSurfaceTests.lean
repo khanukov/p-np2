@@ -1,7 +1,7 @@
 import Complexity.TMVerifier.TuringToolkit.GateNFixedDelegateRelocation
 
 /-!
-# GN-E1a live scan and fixed delegate/relocation surface (2026-09-01)
+# GN-E1b blank confirmation/scratch entry and fixed delegate surface (2026-09-01)
 
 Definitions and constructors receive `#check` pins.  Every public source
 theorem has a direct wrapper with an explicit proposition; no inferred alias or
@@ -49,6 +49,13 @@ open Pnp3.Internal.PsubsetPpoly.TM.G1AResultProbes
 #check @GNState.returnedTrue
 #check @GNState.scanning
 #check @GNState.wordEnd
+#check @GNState.blankConfirm
+#check @GNState.blankSeen
+#check @GNState.return3
+#check @GNState.return2
+#check @GNState.return1
+#check @GNState.return0
+#check @GNState.scratchEntry
 #check @GNState.idle
 #check @GNState.accept
 #check @GNState.reject
@@ -73,6 +80,9 @@ open Pnp3.Internal.PsubsetPpoly.TM.G1AResultProbes
 #check @gnPoint
 #check @gnFrameScanner
 #check @gnWordEndConfig
+#check @gnScratchEntryQ
+#check @gnScratchEntryConfig
+#check @gnValidateSteps
 #check @gnReserved1101Bits
 #check @gnReserved1101RejectConfig
 #check @gnGateShiftConfig
@@ -107,6 +117,40 @@ theorem check_gnTransition_accept (phase : Fin 1) (scan : Bool) :
 theorem check_gnTransition_reject (phase : Fin 1) (scan : Bool) :
     gnTransition phase .reject scan = (0, .reject, scan, .stay) :=
   gnTransition_reject phase scan
+
+theorem check_gnTransition_wordEnd (phase : Fin 1) (scan : Bool) :
+    gnTransition phase .wordEnd scan =
+      (0, .blankConfirm (.p1 scan), scan, .right) :=
+  gnTransition_wordEnd phase scan
+
+theorem check_gnTransition_blankConfirm_buffer (phase : Fin 1)
+    (b0 b1 scan : Bool) :
+    gnTransition phase (.blankConfirm (.p1 b0)) scan =
+        (0, .blankConfirm (.p2 b0 scan), scan, .right) ∧
+      gnTransition phase (.blankConfirm (.p2 b0 b1)) scan =
+        (0, .blankConfirm (.p3 b0 b1 scan), scan, .right) :=
+  gnTransition_blankConfirm_buffer phase b0 b1 scan
+
+theorem check_gnTransition_blankConfirm_zero (phase : Fin 1) :
+    gnTransition phase (.blankConfirm (.p3 false false false)) false =
+      (0, .blankSeen, false, .right) :=
+  gnTransition_blankConfirm_zero phase
+
+theorem check_gnTransition_blankConfirm_rejections (phase : Fin 1) :
+    gnTransition phase (.blankConfirm (.p3 false false false)) true =
+        (0, .reject, true, .stay) ∧
+      gnTransition phase (.blankConfirm (.p3 true true false)) true =
+        (0, .reject, true, .stay) :=
+  gnTransition_blankConfirm_rejections phase
+
+theorem check_gnTransition_blankReturn_rows (phase : Fin 1) (scan : Bool) :
+    gnTransition phase .blankSeen scan = (0, .return3, scan, .left) ∧
+      gnTransition phase .return3 scan = (0, .return2, scan, .left) ∧
+      gnTransition phase .return2 scan = (0, .return1, scan, .left) ∧
+      gnTransition phase .return1 scan = (0, .return0, scan, .left) ∧
+      gnTransition phase .return0 scan =
+        (0, .scratchEntry, scan, .stay) :=
+  gnTransition_blankReturn_rows phase scan
 
 theorem check_gnTransition_delegate_ordinary (phase : Fin 1)
     (q : G1M.state) (scan : Bool) (hf : q ≠ g1DoneQ false)
@@ -183,6 +227,46 @@ theorem check_gnCS_encodeGN_wordEnd (r : GNProgram) :
       (GNM.initialConfig (gnPoint (encodeGN r)))
       (encodeGN r).length = gnWordEndConfig r :=
   gnCS_encodeGN_wordEnd r
+
+theorem check_gnCS_wordEnd_nonblank_first_reject (n h : Nat)
+    (hsafe : h + 4 < (Phased.machine gnCS).tapeLength n)
+    (tape : Fin ((Phased.machine gnCS).tapeLength n) → Bool)
+    (hfirst : tape ⟨h, by omega⟩ = true) :
+    TM.runConfig (M := Phased.machine gnCS)
+        (Phased.alignedAt gnCS gnCS.startPhase n h (by omega) tape .wordEnd) 4 =
+      Phased.alignedAt gnCS gnCS.startPhase n (h + 3) (by omega) tape .reject :=
+  gnCS_wordEnd_nonblank_first_reject n h hsafe tape hfirst
+
+theorem check_gnCS_wordEnd_to_scratchEntry_exact (r : GNProgram) :
+    TM.runConfig (M := GNM) (gnWordEndConfig r) 9 =
+      gnScratchEntryConfig r :=
+  gnCS_wordEnd_to_scratchEntry_exact r
+
+theorem check_gnCS_encodeGN_scratchEntry (r : GNProgram) :
+    TM.runConfig (M := GNM)
+      (GNM.initialConfig (gnPoint (encodeGN r))) (gnValidateSteps r) =
+        gnScratchEntryConfig r :=
+  gnCS_encodeGN_scratchEntry r
+
+theorem check_gnScratchEntryConfig_structure (r : GNProgram) :
+    (gnScratchEntryConfig r).state = gnScratchEntryQ ∧
+      ((gnScratchEntryConfig r).head : Nat) = (encodeGN r).length ∧
+      (gnScratchEntryConfig r).tape =
+        (GNM.initialConfig (gnPoint (encodeGN r))).tape :=
+  gnScratchEntryConfig_structure r
+
+theorem check_gnValidateSteps_provenance (r : GNProgram) :
+    gnValidateSteps r = (encodeGN r).length + 4 + 5 :=
+  gnValidateSteps_provenance r
+
+theorem check_gnScanValidateSegment_le_gnClock (N : Nat) :
+    N + 9 ≤ gnClock N :=
+  gnScanValidateSegment_le_gnClock N
+
+theorem check_gnScratch_room_of_add_sixteen {W N : Nat}
+    (hWN : W + 16 ≤ N) :
+    N + gnLocalSpan W ≤ GNM.tapeLength N :=
+  gnScratch_room_of_add_sixteen hWN
 
 theorem check_gnFrameScanner_rejectMacrostep (n h : Nat)
     (hsafe : h + 4 < gnFrameScanner.machine.tapeLength n)
@@ -372,5 +456,19 @@ theorem check_literal_oneConstFalse_wordEnd :
         (gnPoint (encodeGN GNFixedDelegateProbes.oneConstFalseProgram))) 48 =
       gnWordEndConfig GNFixedDelegateProbes.oneConstFalseProgram :=
   GNFixedDelegateProbes.literal_oneConstFalse_wordEnd
+
+theorem check_literal_empty_scratchEntry :
+    TM.runConfig (M := GNM)
+      (GNM.initialConfig
+        (gnPoint (encodeGN GNFixedDelegateProbes.emptyProgram))) 29 =
+      gnScratchEntryConfig GNFixedDelegateProbes.emptyProgram :=
+  GNFixedDelegateProbes.literal_empty_scratchEntry
+
+theorem check_literal_oneConstFalse_scratchEntry :
+    TM.runConfig (M := GNM)
+      (GNM.initialConfig
+        (gnPoint (encodeGN GNFixedDelegateProbes.oneConstFalseProgram))) 57 =
+      gnScratchEntryConfig GNFixedDelegateProbes.oneConstFalseProgram :=
+  GNFixedDelegateProbes.literal_oneConstFalse_scratchEntry
 
 end Pnp3.Tests.TMGateNFixedDelegateRelocationSurface

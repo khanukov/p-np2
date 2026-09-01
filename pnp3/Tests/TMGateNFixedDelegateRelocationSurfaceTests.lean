@@ -1,7 +1,7 @@
 import Complexity.TMVerifier.TuringToolkit.GateNFixedDelegateRelocation
 
 /-!
-# GN-3C1 fixed delegate/relocation surface (2026-09-01)
+# GN-E1a live scan and fixed delegate/relocation surface (2026-09-01)
 
 Definitions and constructors receive `#check` pins.  Every public source
 theorem has a direct wrapper with an explicit proposition; no inferred alias or
@@ -17,15 +17,52 @@ open Pnp3.Internal.PsubsetPpoly.TM.G1AResultProbes
 
 #check @g1DoneQ
 #check @g1AcceptQ
+#check @GNDiscoveryMode
+#check @GNDiscoveryMode.start
+#check @GNDiscoveryMode.assignments
+#check @GNDiscoveryMode.slots
+#check @GNDiscoveryMode.firstRecord
+#check @GNDiscoveryMode.laterRecord
+#check @GNDiscoveryMode.tag0
+#check @GNDiscoveryMode.tag1
+#check @GNDiscoveryMode.tag2
+#check @GNDiscoveryMode.tag3
+#check @GNDiscoveryMode.tag4
+#check @GNDiscoveryMode.tag5
+#check @GNDiscoveryMode.arg1
+#check @GNDiscoveryMode.arg2
+#check @GNDiscoveryMode.terminalOutput
+#check @GNDiscoveryMode.terminalFinish
+#check @GNDiscoveryMode.wordEnd
+#check @GNDiscoveryMode.reject
+#check @GNDiscoveryMode.Forward
+#check @GNScanBuffer
+#check @GNScanBuffer.p0
+#check @GNScanBuffer.p1
+#check @GNScanBuffer.p2
+#check @GNScanBuffer.p3
+#check @GNScanState
+#check @GNScanState.mk
 #check @GNState
 #check @GNState.delegated
 #check @GNState.returnedFalse
 #check @GNState.returnedTrue
+#check @GNState.scanning
+#check @GNState.wordEnd
 #check @GNState.idle
 #check @GNState.accept
 #check @GNState.reject
 #synth Fintype GNState
 #synth DecidableEq GNState
+#synth Fintype GNDiscoveryMode
+#synth DecidableEq GNDiscoveryMode
+#synth Fintype GNScanState
+#synth DecidableEq GNScanState
+#check @gnDiscoveryAdvance
+#check @gnDiscoveryComplete
+#check @gnDiscoveryAdvanceList
+#check @GNDiscoveryValidPath
+#check @gnScanControl
 #check @gnReturnedState
 #check @gnTransition
 #check @gnClock
@@ -33,11 +70,21 @@ open Pnp3.Internal.PsubsetPpoly.TM.G1AResultProbes
 #check @GNM
 #check @gnEmbed
 #check @gnReturnedQ
+#check @gnPoint
+#check @gnFrameScanner
+#check @gnWordEndConfig
+#check @gnReserved1101Bits
+#check @gnReserved1101RejectConfig
 #check @gnGateShiftConfig
 #check @gnReturnConfig
 #check @G1RunDelegates
 #check @gnLocalSpan
 #check @gnShiftConfig
+#check @GNFixedDelegateProbes.emptyProgram
+#check @GNFixedDelegateProbes.oneConstFalseProgram
+
+theorem check_gnCS_startState : gnCS.startState = gnScanControl .start .p0 :=
+  gnCS_startState
 
 theorem check_gnTransition_idle (phase : Fin 1) (scan : Bool) :
     gnTransition phase .idle scan = (0, .idle, scan, .stay) :=
@@ -98,6 +145,92 @@ theorem check_gnM_step_embed_done (b scan : Bool) :
     GNM.step (gnEmbed (g1DoneQ b)) scan =
       (gnReturnedQ b, scan, .stay) :=
   gnM_step_embed_done b scan
+
+theorem check_gnDiscoveryComplete_decode (m : GNDiscoveryMode)
+    (b0 b1 b2 b3 : Bool) :
+    gnDiscoveryComplete m b0 b1 b2 b3 =
+      match decodeG1Frame? [b0, b1, b2, b3] with
+      | some frame => gnDiscoveryAdvance m frame
+      | none => .reject :=
+  gnDiscoveryComplete_decode m b0 b1 b2 b3
+
+theorem check_gnDiscovery_encodeGNFrames (r : GNProgram) :
+    gnDiscoveryAdvanceList .start (encodeGNFrames r) = .wordEnd ∧
+      GNDiscoveryValidPath .start (encodeGNFrames r) :=
+  gnDiscovery_encodeGNFrames r
+
+theorem check_gnDiscoveryComplete_reserved (m : GNDiscoveryMode) :
+    gnDiscoveryComplete m true true false true = .reject ∧
+      gnDiscoveryComplete m true true true false = .reject ∧
+        gnDiscoveryComplete m true true true true = .reject :=
+  gnDiscoveryComplete_reserved m
+
+theorem check_gnDiscoveryAdvance_start_malformed :
+    gnDiscoveryAdvance .start .blank = .reject ∧
+      gnDiscoveryAdvance .start .spent = .reject ∧
+        gnDiscoveryAdvance .start (.output true) = .reject ∧
+          gnDiscoveryAdvance .start .separator = .reject ∧
+            gnDiscoveryAdvance .start .cursor = .reject ∧
+              gnDiscoveryAdvance .assignments .bof = .reject :=
+  gnDiscoveryAdvance_start_malformed
+
+theorem check_gnInitialTape_eq_frameListTape (bits : List Bool) :
+    (GNM.initialConfig (gnPoint bits)).tape = frameListTape bits :=
+  gnInitialTape_eq_frameListTape bits
+
+theorem check_gnCS_encodeGN_wordEnd (r : GNProgram) :
+    TM.runConfig (M := GNM)
+      (GNM.initialConfig (gnPoint (encodeGN r)))
+      (encodeGN r).length = gnWordEndConfig r :=
+  gnCS_encodeGN_wordEnd r
+
+theorem check_gnFrameScanner_rejectMacrostep (n h : Nat)
+    (hsafe : h + 4 < gnFrameScanner.machine.tapeLength n)
+    (tape : Fin (gnFrameScanner.machine.tapeLength n) → Bool)
+    (m : GNDiscoveryMode) (hm : m.Forward)
+    (hbad : gnDiscoveryComplete m
+      (tape ⟨h, by omega⟩) (tape ⟨h + 1, by omega⟩)
+      (tape ⟨h + 2, by omega⟩) (tape ⟨h + 3, by omega⟩) = .reject) :
+    TM.runConfig (M := gnFrameScanner.machine)
+        (gnFrameScanner.alignedFrame n h (by omega) tape m ()) 4 =
+      gnFrameScanner.alignedConfigQ n (h + 3) (by omega) tape .reject :=
+  gnFrameScanner_rejectMacrostep n h hsafe tape m hm hbad
+
+theorem check_gnCS_reserved1101_reject_four :
+    TM.runConfig (M := GNM)
+      (GNM.initialConfig (gnPoint gnReserved1101Bits)) 4 =
+        gnReserved1101RejectConfig :=
+  gnCS_reserved1101_reject_four
+
+theorem check_gnTransition_reserved_windows (m : GNDiscoveryMode) :
+    gnTransition 0 (.scanning ⟨m, .p3 true true false⟩) true =
+        (0, .reject, true, .stay) ∧
+      gnTransition 0 (.scanning ⟨m, .p3 true true true⟩) false =
+        (0, .reject, false, .stay) ∧
+      gnTransition 0 (.scanning ⟨m, .p3 true true true⟩) true =
+        (0, .reject, true, .stay) :=
+  gnTransition_reserved_windows m
+
+theorem check_gnTransition_start_malformed_windows :
+    gnTransition 0 (.scanning ⟨.start, .p3 false false false⟩) false =
+        (0, .reject, false, .stay) ∧
+      gnTransition 0 (.scanning ⟨.start, .p3 true true false⟩) false =
+        (0, .reject, false, .stay) ∧
+      gnTransition 0 (.scanning ⟨.start, .p3 true false false⟩) true =
+        (0, .reject, true, .stay) ∧
+      gnTransition 0 (.scanning ⟨.start, .p3 false true false⟩) false =
+        (0, .reject, false, .stay) ∧
+      gnTransition 0 (.scanning ⟨.start, .p3 false true true⟩) true =
+        (0, .reject, true, .stay) ∧
+      gnTransition 0 (.scanning ⟨.assignments, .p3 false false false⟩) true =
+        (0, .reject, true, .stay) :=
+  gnTransition_start_malformed_windows
+
+theorem check_gnCS_reject_stable {n : Nat}
+    (c : Configuration (M := GNM) n)
+    (hstate : c.state = ⟨(0 : Fin 1), GNState.reject⟩) (k : Nat) :
+    TM.runConfig (M := GNM) c k = c :=
+  gnCS_reject_stable c hstate k
 
 theorem check_g1CS_gate_done_no_early_outputDone (r : G1Request)
     (hc : r.Canonical) (res : Bool) (hs : r.spec = some res)
@@ -220,5 +353,24 @@ theorem check_literal_const_false_shifted_intercept :
         (g1OutputDoneConfig reqConstF false) (by decide)
         (g1OutputDoneConfig_head_lt_gnLocalSpan reqConstF false)) :=
   GNFixedDelegateProbes.literal_const_false_shifted_intercept
+
+theorem check_literal_encodeGN_lengths :
+    (encodeGN GNFixedDelegateProbes.emptyProgram).length = 20 ∧
+      (encodeGN GNFixedDelegateProbes.oneConstFalseProgram).length = 48 :=
+  GNFixedDelegateProbes.literal_encodeGN_lengths
+
+theorem check_literal_empty_wordEnd :
+    TM.runConfig (M := GNM)
+      (GNM.initialConfig
+        (gnPoint (encodeGN GNFixedDelegateProbes.emptyProgram))) 20 =
+      gnWordEndConfig GNFixedDelegateProbes.emptyProgram :=
+  GNFixedDelegateProbes.literal_empty_wordEnd
+
+theorem check_literal_oneConstFalse_wordEnd :
+    TM.runConfig (M := GNM)
+      (GNM.initialConfig
+        (gnPoint (encodeGN GNFixedDelegateProbes.oneConstFalseProgram))) 48 =
+      gnWordEndConfig GNFixedDelegateProbes.oneConstFalseProgram :=
+  GNFixedDelegateProbes.literal_oneConstFalse_wordEnd
 
 end Pnp3.Tests.TMGateNFixedDelegateRelocationSurface

@@ -130,6 +130,10 @@ lean_lib PnP3 where
     -- sequential `G1Request.spec`/`SLProgram.eval` correspondence.  No
     -- machine, execution, clock, or acceptance layer.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateNEncoding,
+    -- GN-E1a (2026-09-01), infrastructure only: finite lexical discovery
+    -- grammar for the self-delimiting GN word.  It stores no counts/indices
+    -- and is deliberately weaker than the exact-list parser.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateNRuntimeGrammar,
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateNEncodingExamples,
     -- GN-2 (2026-08-30), pure infrastructure only: canonical partially
     -- committed tape words, exact GN-1-offset views, pure commit, blank
@@ -386,10 +390,10 @@ lean_lib PnP3 where
     -- `outputDone`.  The merged binary theorem is unchanged; no accept step,
     -- shifted run, controller, multigate, clock or verdict is added.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneFiveTagTraceSafety,
-    -- GN-3C1 (2026-09-01), infrastructure only: one fixed finite outer
-    -- delegate shell, source-only proper-prefix output-done exclusion, exact
-    -- shifted five-tag G1 run, outside-prefix preservation, and one stationary
-    -- result-indexed interception.  No installer, loop, verdict or acceptance.
+    -- GN-E1a (2026-09-01), infrastructure only: the same fixed finite outer
+    -- delegate shell and shifted capstones, now with a live read-only lexical
+    -- scan from the real start through logical word end.  No padding check,
+    -- scratch return, installer, loop, verdict or acceptance.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateNFixedDelegateRelocation,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,

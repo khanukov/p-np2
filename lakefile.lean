@@ -381,6 +381,11 @@ lean_lib PnP3 where
     -- through exact canonical `aRepairDone`.  Empty values remain OOB; no
     -- result, combine, output, five-tag, shifted-run, controller or clock.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneUnaryARepairTraceSafety,
+    -- GN-3B2fC (2026-09-01), infrastructure only: successful canonical
+    -- input/const/not/and/or real-initial safety through exact result-indexed
+    -- `outputDone`.  The merged binary theorem is unchanged; no accept step,
+    -- shifted run, controller, multigate, clock or verdict is added.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneFiveTagTraceSafety,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -604,6 +609,10 @@ lean_lib PnP3 where
     -- GN-3B2fB (2026-09-01): direct explicit-proposition wrappers for unary
     -- install/driver/repair safety and the exact 131/192 and 171/240 literals.
     Glob.one `Tests.TMGateOneUnaryARepairTraceSafetySurfaceTests,
+    -- GN-3B2fC (2026-09-01): definition pins and direct explicit-proposition
+    -- wrappers for five-tag output-done safety, structure, schedules, and the
+    -- complete 229/151/171/285/484/512/606 literal matrix.
+    Glob.one `Tests.TMGateOneFiveTagTraceSafetySurfaceTests,
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,
     Glob.one `Tests.TMGateOneReadBSurfaceTests,
     Glob.one `Tests.TMGateOneProbeInstallSurfaceTests,

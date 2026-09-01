@@ -3577,3 +3577,42 @@ slice adds no result/combine/output/pass-A successor, full-gate
 theorem.  It adds twelve new public non-literal theorem roots, five literal
 roots, explicit proposition wrappers, definition/constructor pins and axiom
 prints; it adds no Lean `example` declarations.
+
+## GN-3B2e4 binary result/combine/output-done trace safety (2026-09-01)
+
+Progress classification: infrastructure, not P-vs-NP mainline progress.
+
+`GateOneOutputDoneTraceSafety` starts at the exact merged e3
+`g1ARepairDoneConfig r b v` endpoint.  It proves all three stationary rows
+
+`aRepairDone -> aResultStart -> readAStart -> combineStart`
+
+safe at head zero and pairs that proof with the existing exact result endpoint.
+The next stationary `combineStart -> outSeek` row is proved safe separately.
+The complete output kernel then reuses `g1Forward_scanFrom_runSafe` on the
+strict route `g1PrefixFrames r ++ [output false]`; the one-cell turn and four
+literal writer rows use `g1RunSafe_of_margins`.  Their exact endpoint is the
+existing result-indexed `g1OutputDoneConfig r res`.
+
+For a successful canonical binary request, the merged e3 real-initial repair
+safety composes with the exact suffix on the kernel-visible schedule
+
+`g1ABinaryRepairSteps r + 3 + 1 + g1OutputKernelSteps r`.
+
+The semantic wrapper requires `r.tag = and or r.tag = or` and
+`r.spec = some res`; it does not assert a successful output for an OOB/`none`
+request.  The endpoint theorem pins the single designated output-cell write,
+all off-target cells, the output-exit head, false/true output-done mode,
+empty result context, and separation from reject and every OOB state.
+
+The established binary literal totals to output-done are `606` for
+`and(1,1,[true,true,false])`, `484` for the existing false `and` literal, and
+`512` for the existing true `or` literal.  The `606` total decomposes as
+`541 + 3 + 1 + 61`.  It is not `607`: the separate
+`outputDone -> accept` transition is not executed or proved safe here.
+
+This slice adds eleven public non-literal theorem roots and six literal roots,
+seventeen direct explicit-proposition surface wrappers, definition/state pins,
+and seventeen axiom prints.  It adds no Lean `example` declaration, no unary
+or constant prefix theorem, no five-tag safety capstone, and no shifted run,
+GN controller/clock, verdict, or acceptance construction.

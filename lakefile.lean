@@ -366,6 +366,10 @@ lean_lib PnP3 where
     -- repair trace safety through canonical head-zero `aRepairDone`, composed
     -- with e2 on the existing binary schedule.  No result or full-gate step.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneARepairTraceSafety,
+    -- GN-3B2e4 (2026-09-01), infrastructure only: binary result/combine and
+    -- complete output-kernel safety from merged e3 through exact result-indexed
+    -- `outputDone`, stopping before accept.  No unary/const or five-tag safety.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneOutputDoneTraceSafety,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -577,6 +581,10 @@ lean_lib PnP3 where
     -- GN-3B2e3 (2026-09-01): direct proposition wrappers for the complete
     -- live A-repair safety surface, local 58/58/24 and binary 541 literals.
     Glob.one `Tests.TMGateOneARepairTraceSafetySurfaceTests,
+    -- GN-3B2e4 (2026-09-01): explicit proposition wrappers for binary
+    -- result/combine/output-kernel safety through exact output-done, with
+    -- 606/484/512 literal totals and no outputDone-to-accept step.
+    Glob.one `Tests.TMGateOneOutputDoneTraceSafetySurfaceTests,
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,
     Glob.one `Tests.TMGateOneReadBSurfaceTests,
     Glob.one `Tests.TMGateOneProbeInstallSurfaceTests,

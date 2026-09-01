@@ -51,6 +51,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOnePassATraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOnePassARoundTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOnePassADriverTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOneARepairTraceSafety
+import Complexity.TMVerifier.TuringToolkit.GateOneOutputDoneTraceSafety
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -2171,6 +2172,30 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairTraceProbes.literal_zero_local_trace_safe
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairTraceProbes.literal_binary_steps
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairTraceProbes.literal_binary_initial_trace_safe
+
+-- GN-3B2e4 (2026-09-01): the three stationary result rows, stationary
+-- combine entry, strict forward output scan and local-margin turn/writer,
+-- composed from merged e3 for successful canonical binary requests through
+-- exact result-indexed output-done.  Literal totals are 606/484/512 and do
+-- not include outputDone-to-accept.  No unary/const, five-tag, shifted,
+-- controller, clock, verdict or acceptance safety theorem is claimed.
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepairDone_result_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepairDone_combine_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_combine_entry_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_output_scan_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_output_turn_write_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_output_kernel_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_output_done_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1GateDoneSteps_binary_trace_eq
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aRepairDone_output_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_done_binary_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_done_binary_structure
+#print axioms Internal.PsubsetPpoly.TM.G1OutputDoneTraceProbes.literal_binary_done_steps
+#print axioms Internal.PsubsetPpoly.TM.G1OutputDoneTraceProbes.literal_binary_output_done_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.G1OutputDoneTraceProbes.literal_binary_false_done_steps
+#print axioms Internal.PsubsetPpoly.TM.G1OutputDoneTraceProbes.literal_binary_false_done
+#print axioms Internal.PsubsetPpoly.TM.G1OutputDoneTraceProbes.literal_binary_true_done_steps
+#print axioms Internal.PsubsetPpoly.TM.G1OutputDoneTraceProbes.literal_binary_true_done
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

@@ -3664,6 +3664,6 @@ surface wrappers.
 
 GN-3B2fB remains the unary pass-A install/driver/repair/result trace-safety
 slice.  GN-3B2fC remains the later five-tag output/shift integration.  This
-slice does not conflate empty unary values with success, does not handle an
-undefined constant specification, and does not execute the constant output
-kernel beyond `combineStart`.
+slice does not conflate empty unary values with success.  For canonical
+constants the specification premise names the carried Boolean; execution still
+stops at `combineStart`, before the output kernel.

@@ -21,8 +21,8 @@ meet the existing exact endpoints at `g1UReadASteps` and
 `g1ABofConfig r false` and constant at `g1CombineConfig r b`.
 
 Empty unary values and later unary install/driver/repair/output behavior remain
-separate.  The constant lane requires `spec = some b` and stops at combine;
-undefined specification and the output kernel are not claimed here.
+separate.  For canonical constants, `spec = some b` names the result carried to
+combine; this slice stops there and does not execute the output kernel.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM

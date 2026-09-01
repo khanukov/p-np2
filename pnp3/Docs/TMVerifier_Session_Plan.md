@@ -3616,3 +3616,54 @@ seventeen direct explicit-proposition surface wrappers, definition/state pins,
 and seventeen axiom prints.  It adds no Lean `example` declaration, no unary
 or constant prefix theorem, no five-tag safety capstone, and no shifted run,
 GN controller/clock, verdict, or acceptance construction.
+
+## GN-3B2fA unary/constant route-rewind trace safety (2026-09-01)
+
+Progress classification: infrastructure, not P-vs-NP mainline progress.
+
+`GateOneRouteRewindTraceSafety` fills the unary/constant prefix gap without
+widening the binary driver theorem.  Its tag-independent forward-route theorem
+composes the merged validation/rewind safety prefix with any strict
+`G1ValidPath` from `readBStart`.  Its generic zero-rewrite theorem starts at an
+arbitrary canonical prefix boundary in `readAResetStart` and follows the exact
+existing schedule
+
+`1 + 4 * left.length + 5 = 4 * left.length + 6`.
+
+The first step is the live bridge into `bRepairSeek`; the middle term is only a
+reverse scan over `G1RepairSkip`; the last five steps are the four-cell `bof`
+read and stationary `bRepairDone -> readAStart` dispatch.  There is no
+`spent -> index` cycle and the head-zero rows are proved stationary, so the
+proof does not use left clamping.  The theorem has no `vals.length` premise;
+its sole room premise states the exact local footprint of the supplied route.
+
+The unary instantiation accepts `tag = input or tag = not` and has no value
+premise.  It is safe at exactly `g1UReadASteps r` and reaches
+`g1ReadAConfig r false`, preserving the existing empty-values/OOB behavior as a
+separate later concern.  The constant instantiation requires
+`tag = const` and `spec = some b`; it includes the stationary literal-store
+row, is safe at `g1ConstReadASteps r`, and reaches
+`g1ReadAResultConfig r b`.  One more safe stationary step gives the existing
+activation endpoints:
+
+- `g1UActivatedSteps r`: `g1ABofConfig r false`;
+- `g1ConstActivatedSteps r`: `g1CombineConfig r b`.
+
+The existing literal requests pin the actual merged route/activation totals:
+`reqInputT` is `99/100`, `reqNotF` is `131/132`, `reqConstF` is `116/117`, and
+`reqConstT` is `132/133`.  Every number is paired with `G1RunSafe` and the exact
+named endpoint, rather than inferred from an older whole-gate total.
+
+The prerequisite API change removes `private` from exactly the two canonical
+route-list definitions and their six length/skip/split theorems, with no
+statement or proof change.  The two definitions have `#check` pins, and all six
+newly public theorems have explicit proposition wrappers and direct axiom
+roots.  Together with the eight new non-literal and five literal theorem roots,
+GN-3B2fA exports and audits nineteen theorem roots and nineteen explicit
+surface wrappers.
+
+GN-3B2fB remains the unary pass-A install/driver/repair/result trace-safety
+slice.  GN-3B2fC remains the later five-tag output/shift integration.  This
+slice does not conflate empty unary values with success.  For canonical
+constants the specification premise names the carried Boolean; execution still
+stops at `combineStart`, before the output kernel.

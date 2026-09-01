@@ -52,6 +52,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOnePassARoundTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOnePassADriverTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOneARepairTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOneOutputDoneTraceSafety
+import Complexity.TMVerifier.TuringToolkit.GateOneRouteRewindTraceSafety
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -2196,6 +2197,34 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1OutputDoneTraceProbes.literal_binary_false_done
 #print axioms Internal.PsubsetPpoly.TM.G1OutputDoneTraceProbes.literal_binary_true_done_steps
 #print axioms Internal.PsubsetPpoly.TM.G1OutputDoneTraceProbes.literal_binary_true_done
+
+-- GN-3B2fA (2026-09-01): tag-independent validation/forward-route safety and
+-- the exact `1 + 4|left| + 5` zero-rewrite rewind, instantiated at unary and
+-- constant real-initial routes and their stationary live activations.  Empty
+-- unary values/OOB stay separate; const requires `spec = some b` and stops at
+-- combine.  The public canonical route lists are definition-pinned, and all
+-- six structural facts made public for this slice have direct roots below.
+#check @Internal.PsubsetPpoly.TM.g1AUnaryLeft
+#check @Internal.PsubsetPpoly.TM.g1AConstLeft
+#print axioms Internal.PsubsetPpoly.TM.g1AUnaryLeft_length
+#print axioms Internal.PsubsetPpoly.TM.g1AConstLeft_length
+#print axioms Internal.PsubsetPpoly.TM.g1AUnaryLeft_skip
+#print axioms Internal.PsubsetPpoly.TM.g1AConstLeft_skip
+#print axioms Internal.PsubsetPpoly.TM.g1AUnaryLeft_split
+#print axioms Internal.PsubsetPpoly.TM.g1AConstLeft_split
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readB_forward_route_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_route_rewind_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readA_unary_repaired_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_const_repaired_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readA_unary_activate_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readA_const_activate_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_activate_unary_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_activate_const_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.G1RouteRewindTraceProbes.literal_route_activation_steps
+#print axioms Internal.PsubsetPpoly.TM.G1RouteRewindTraceProbes.literal_input_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.G1RouteRewindTraceProbes.literal_not_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.G1RouteRewindTraceProbes.literal_const_false_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.G1RouteRewindTraceProbes.literal_const_true_trace_safe
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

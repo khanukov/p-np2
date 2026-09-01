@@ -370,6 +370,12 @@ lean_lib PnP3 where
     -- complete output-kernel safety from merged e3 through exact result-indexed
     -- `outputDone`, stopping before accept.  No unary/const or five-tag safety.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneOutputDoneTraceSafety,
+    -- GN-3B2fA (2026-09-01), infrastructure only: tag-independent forward
+    -- route safety and a zero-rewrite rewind, instantiated for unary/constant
+    -- real-initial routes through their one-step live activations.  Empty
+    -- unary values/OOB and later unary work stay separate; const stops at
+    -- combine, before the output kernel.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneRouteRewindTraceSafety,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -585,6 +591,11 @@ lean_lib PnP3 where
     -- result/combine/output-kernel safety through exact output-done, with
     -- 606/484/512 literal totals and no outputDone-to-accept step.
     Glob.one `Tests.TMGateOneOutputDoneTraceSafetySurfaceTests,
+    -- GN-3B2fA (2026-09-01): explicit proposition wrappers for the generic
+    -- forward route/zero-rewrite rewind, unary/constant repaired routes and
+    -- safe activations, including the actual 99/100, 131/132, 116/117 and
+    -- 132/133 literal schedules.  Const stops at combine.
+    Glob.one `Tests.TMGateOneRouteRewindTraceSafetySurfaceTests,
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,
     Glob.one `Tests.TMGateOneReadBSurfaceTests,
     Glob.one `Tests.TMGateOneProbeInstallSurfaceTests,

@@ -17,15 +17,16 @@ Malformed output modes, buffers, positions, and contexts therefore continue to
 delegate.  The successful five-tag source trace cannot reach either intercepted
 state at a proper prefix; that source fact is proved from the live
 `outputDone -> accept` row, the stable accept sink, and the exact merged
-output-done endpoint, independently of target delegation or trace safety.
+output-done endpoint, without target delegation, relocation, or `G1RunSafe`.
 
 The capstone overlays exactly `[0,W+5)` into a caller-supplied ambient target
 tape, relocates the complete safe source trace, preserves every outside cell at
 every prefix, and executes one further stationary target step into the fixed
 result-indexed returned state.  It adds no parser, copier, installer, runtime
 base discovery, commit sweep, multi-gate loop, clock-adequacy theorem, verdict,
-or acceptance result.  Installing the shifted word from a live GN tape remains
-the open E1 blocker.
+or acceptance result.  The fixed outer `accept` and `reject` states are currently
+unreachable placeholders: no transition row enters them.  Installing the
+shifted word from a live GN tape remains the open E1 blocker.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM

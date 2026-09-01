@@ -3774,7 +3774,7 @@ exceptions test equality with the complete phase/state values `g1DoneQ false`
 and `g1DoneQ true`.  Those two rows stay at the current head, preserve the
 scanned bit, and enter the corresponding fixed returned state.  In particular,
 an arbitrary `outputDoneFalse`/`outputDoneTrue` mode with a noncanonical frame
-position, buffer, context, or phase is not intercepted.  The explicit
+position, buffer, or context is not intercepted.  The explicit
 `gn_g1_outputDone_not_delegates` theorem records that delegation really fails
 at the exact endpoints, so the shell is not an identity relabeling.
 
@@ -3811,6 +3811,8 @@ definitions, and supplies 26 direct explicit-proposition wrappers for the 26
 public theorem roots.  All 26 roots are printed directly in `AxiomsAudit`.
 There are no inferred aliases, Lean `example` declarations, parser/copier,
 runtime base discovery, installer, commit sweep, multi-gate loop,
-clock-adequacy theorem, verdict, or acceptance theorem.  The next open E1
-blocker is a live installer that constructs the shifted local word from the
-GN ambient tape before this delegate shell can be entered.
+clock-adequacy theorem, verdict, or acceptance theorem.  No current transition
+enters the fixed outer `accept` or `reject` states; they remain unreachable
+placeholders for later controller policy.  The next open E1 blocker is a live
+installer that constructs the shifted local word from the GN ambient tape
+before this delegate shell can be entered.

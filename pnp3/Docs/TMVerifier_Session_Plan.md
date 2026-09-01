@@ -3446,3 +3446,42 @@ induction, terminal cleanup/A repair, unary/constant prefix, result/output,
 full-gate `ShiftRunSafe`, controller, clock, verdict, or acceptance theorem.
 GN-3B2e1a adds five public source theorems, five exact named surface wrappers
 and direct axiom roots, and two definition pins; it adds no examples.
+
+## GN-3B2e1b one-round pass-A trace safety (2026-09-01)
+
+Progress classification: infrastructure, not P-vs-NP mainline progress.
+
+`GateOnePassARoundTraceSafety` discharges the e1b obligation without adding a
+reachability record or a run-index/safety-target field.  Its structural kernel
+tracks the actual tape bits buffered right-to-left by `aSeekOut` and `aSeekIn`,
+uses `g1ASeekRevComplete`, `g1ASeekRevAdvance` and `G1ASeekStop` directly, and
+proves all four proper prefixes of a reverse frame locally safe.  Homogeneous
+skip runs are proved separately for the outer and inner A modes.
+
+The sole mixed reverse seek crosses `outer` in `aSeekOut`, reads the unique
+`argSep` that changes the mode to `aSeekIn`, crosses `inner`, and stops on the
+selected operand-A `index`.  Its schedule is exactly
+`4 * (inner.length + outer.length + 1) + 4`, the schedule of
+`revSeekAcrossBoundary`; every head premise is a strict local-span inequality,
+so the proof has no clamp case or clamp-derived endpoint.
+
+The arbitrary-`j` successful theorem has the same premises and argument order
+as `g1CS_aWalk_round_exact`.  It proves `G1RunSafe` for exactly
+`g1AWalkRoundSteps r j = 16*j + 8*arg2 + 45`, composing the reverse seek,
+four-step mark, homogeneous forward return, eight-step turn/restore, five-step
+successor probe/latch and four-step cursor install.  Exact segment equalities
+serve only to transport the next safety proof; `G1RunSafe.add` performs every
+schedule composition.
+
+The binary capstone composes the merged e1a `Σᴬ(0)` prefix with only the
+`j = 0` round and stops at exact `Σᴬ(1)`.  For the merged literal
+`and(1,1,[true,true,false])`, the local round is exactly `53` steps and the
+real-initial capstone is exactly `370 + 53 = 423` steps.  Successor-data OOB
+and operand-index exhaustion remain the separate endpoints already exposed by
+`GateOneAWalkRound`; neither is folded into the successful theorem.
+
+The slice adds no arbitrary A-driver induction, terminal cleanup, A repair,
+unary/constant route, result/output/full-gate `ShiftRunSafe`, controller,
+clock, verdict or acceptance theorem.  It adds twelve public source theorems,
+twelve direct named surface wrappers and axiom roots, and seven definition
+pins; it adds no examples.

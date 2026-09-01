@@ -48,6 +48,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOnePassBTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOnePassBTerminalRepairTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOnePassBDriverTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOnePassATraceSafety
+import Complexity.TMVerifier.TuringToolkit.GateOnePassARoundTraceSafety
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -2094,6 +2095,23 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_readA_binary_install_from_initial_trace_safe
 #print axioms Internal.PsubsetPpoly.TM.g1CS_readA_binary_install_structure
 #print axioms Internal.PsubsetPpoly.TM.G1PassATraceProbes.literal_install_trace_safe
+
+-- GN-3B2e1b (2026-09-01): actual two-mode A reverse-buffer safety, its
+-- homogeneous and unique mixed-boundary schedules, and exactly one successful
+-- A round.  The real-initial binary capstone stops at `Σᴬ(1)`; no driver,
+-- terminal repair, shifted gate, controller, clock or acceptance result.
+#print axioms Internal.PsubsetPpoly.TM.g1ASeek_reverseFrame_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1ASeek_revSkip_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1ASeekOut_revSkip_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1ASeekIn_revSkip_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1ASeek_acrossBoundary_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_seek_index_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_fwd_to_cursor_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_round_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_aWalk_round_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readA_binary_one_round_from_initial_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.G1PassATraceProbes.literal_round_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.G1PassATraceProbes.literal_one_round_from_initial_trace_safe
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_steps
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_false_repair_exact
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_true_repair_exact

@@ -395,6 +395,11 @@ lean_lib PnP3 where
     -- frame after logical word end and return to fixed scratch entry.  No
     -- trailing-zero rejection, installer, loop, verdict or acceptance.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateNFixedDelegateRelocation,
+    -- GN-E2-0 (2026-09-01), infrastructure only: exact pure-stage physical
+    -- tapes, canonical first-request geometry, and complete equality between
+    -- the base-N shifted target and an explicit concatenated-list endpoint.
+    -- No state/transition mutation, installer execution, or marker strategy.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateNFirstInstallBridge,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -626,6 +631,10 @@ lean_lib PnP3 where
     -- proposition wrappers for blank confirmation, exact scratch entry,
     -- rejection probes, schedules, room arithmetic, and preserved capstones.
     Glob.one `Tests.TMGateNFixedDelegateRelocationSurfaceTests,
+    -- GN-E2-0 (2026-09-01): definition/configuration pins and direct explicit
+    -- wrappers for pure physical stages, first-request geometry, and the
+    -- complete installed physical endpoint equality.
+    Glob.one `Tests.TMGateNFirstInstallBridgeSurfaceTests,
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,
     Glob.one `Tests.TMGateOneReadBSurfaceTests,
     Glob.one `Tests.TMGateOneProbeInstallSurfaceTests,

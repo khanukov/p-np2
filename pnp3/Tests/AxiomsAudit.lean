@@ -67,6 +67,7 @@ import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekSemanticsExamples
 import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekTerminalControl
 import Complexity.TMVerifier.TuringToolkit.GateNEncodingExamples
 import Complexity.TMVerifier.TuringToolkit.GateNTapeStateExamples
+import Complexity.TMVerifier.TuringToolkit.GateNFirstInstallBridge
 import Complexity.TMVerifier.TuringToolkit.GateNRelocationExamples
 
 /-!
@@ -2329,6 +2330,38 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.GNFixedDelegateProbes.literal_oneConstFalse_wordEnd
 #print axioms Internal.PsubsetPpoly.TM.GNFixedDelegateProbes.literal_empty_scratchEntry
 #print axioms Internal.PsubsetPpoly.TM.GNFixedDelegateProbes.literal_oneConstFalse_scratchEntry
+
+-- GN-E2-0 (2026-09-01): pure stage words are pinned to exact physical GNM
+-- tapes, E1b is identified with the stage-zero boundary, and the selected
+-- first request is identified with the complete base-N shifted physical
+-- configuration.  This is representation/geometry infrastructure only: no
+-- state/transition activation, installer execution, marker codec, commit,
+-- clock adequacy, multigate loop, verdict, or acceptance theorem.
+#print axioms Internal.PsubsetPpoly.TM.gnStageWord_length
+#print axioms Internal.PsubsetPpoly.TM.gnStageTape_zero
+#print axioms Internal.PsubsetPpoly.TM.gnStageTape_cell
+#print axioms Internal.PsubsetPpoly.TM.gnStageTape_outside_blank
+#print axioms Internal.PsubsetPpoly.TM.GateNTapeState.physical_tape_eq
+#print axioms Internal.PsubsetPpoly.TM.GateNTapeState.toPhysical
+#print axioms Internal.PsubsetPpoly.TM.gnScratchEntryConfig_stage_zero
+#print axioms Internal.PsubsetPpoly.TM.gnScratchEntryConfig_physical_state
+#print axioms Internal.PsubsetPpoly.TM.gnCurrentValues_zero
+#print axioms Internal.PsubsetPpoly.TM.gnWorkRequest?_zero
+#print axioms Internal.PsubsetPpoly.TM.gnFirstRequest_canonical
+#print axioms Internal.PsubsetPpoly.TM.gnFirstRequest_width
+#print axioms Internal.PsubsetPpoly.TM.gnFirstRequest_add_sixteen_le
+#print axioms Internal.PsubsetPpoly.TM.gnFirstRequest_room
+#print axioms Internal.PsubsetPpoly.TM.encodeGNAtFrames_zero_first_split
+#print axioms Internal.PsubsetPpoly.TM.encodeGNAtFrames_zero_cursor_unique
+#print axioms Internal.PsubsetPpoly.TM.encodeGNAtFrames_zero_no_spent
+#print axioms Internal.PsubsetPpoly.TM.encodeG1Frames_first_no_internal_markers
+#print axioms Internal.PsubsetPpoly.TM.gnFirstInstalledConfig_eq_physical
+#print axioms Internal.PsubsetPpoly.TM.gnFirstInstalledPhysicalConfig_structure
+#print axioms Internal.PsubsetPpoly.TM.GNFirstInstallProbes.oneConstFalse_first_gate
+#print axioms Internal.PsubsetPpoly.TM.GNFirstInstallProbes.oneConstFalse_first_request
+#print axioms Internal.PsubsetPpoly.TM.GNFirstInstallProbes.oneConstFalse_width_room
+#print axioms Internal.PsubsetPpoly.TM.GNFirstInstallProbes.oneConstFalse_installed_physical
+#print axioms Internal.PsubsetPpoly.TM.GNFirstInstallProbes.empty_no_first_gate
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

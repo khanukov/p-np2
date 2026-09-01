@@ -347,6 +347,11 @@ lean_lib PnP3 where
     -- handoff.  No pass-A step, full gate, `ShiftRunSafe`, controller, output,
     -- verdict, or acceptance theorem.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOnePassBDriverTraceSafety,
+    -- GN-3B2e1a (2026-08-31), infrastructure only: dependency-closed binary
+    -- pass-A dispatch/rescan/install safety from the merged read-A handoff,
+    -- plus the real-initial exact Σᴬ(0) capstone.  Reverse seek and one-round
+    -- safety are deferred to e1b; no terminal A repair or full-gate claim.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOnePassATraceSafety,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -546,6 +551,9 @@ lean_lib PnP3 where
     -- pass-B safety induction, the zero route, both repaired branches, their
     -- common read-A endpoint and the `400`/`172` real-initial capstones.
     Glob.one `Tests.TMGateOnePassBDriverTraceSafetySurfaceTests,
+    -- GN-3B2e1a (2026-08-31): direct wrappers for binary pass-A installation
+    -- safety and the exact real-initial/literal Σᴬ(0) capstones only.
+    Glob.one `Tests.TMGateOnePassATraceSafetySurfaceTests,
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,
     Glob.one `Tests.TMGateOneReadBSurfaceTests,
     Glob.one `Tests.TMGateOneProbeInstallSurfaceTests,

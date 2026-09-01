@@ -47,6 +47,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOneTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOnePassBTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOnePassBTerminalRepairTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOnePassBDriverTraceSafety
+import Complexity.TMVerifier.TuringToolkit.GateOnePassATraceSafety
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -2084,6 +2085,15 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_readB_repaired_trace_safe
 #print axioms Internal.PsubsetPpoly.TM.G1PassBDriverTraceProbes.literal_positive_trace_safe
 #print axioms Internal.PsubsetPpoly.TM.G1PassBDriverTraceProbes.literal_zero_trace_safe
+
+-- GN-3B2e1a (2026-08-31): binary pass-A dispatch, rescan, latch and live
+-- cursor-install safety through the exact `Σᴬ(0)` endpoint.  No A round,
+-- OOB-success, unary/constant prefix, repair, output or full-gate claim.
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readA_binary_install_runSafe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readA_binary_install_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readA_binary_install_from_initial_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_readA_binary_install_structure
+#print axioms Internal.PsubsetPpoly.TM.G1PassATraceProbes.literal_install_trace_safe
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_steps
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_false_repair_exact
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_true_repair_exact

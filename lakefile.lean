@@ -386,6 +386,11 @@ lean_lib PnP3 where
     -- `outputDone`.  The merged binary theorem is unchanged; no accept step,
     -- shifted run, controller, multigate, clock or verdict is added.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneFiveTagTraceSafety,
+    -- GN-3C1 (2026-09-01), infrastructure only: one fixed finite outer
+    -- delegate shell, source-only proper-prefix output-done exclusion, exact
+    -- shifted five-tag G1 run, outside-prefix preservation, and one stationary
+    -- result-indexed interception.  No installer, loop, verdict or acceptance.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateNFixedDelegateRelocation,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -613,6 +618,9 @@ lean_lib PnP3 where
     -- wrappers for five-tag output-done safety, structure, schedules, and the
     -- complete 229/151/171/285/484/512/606 literal matrix.
     Glob.one `Tests.TMGateOneFiveTagTraceSafetySurfaceTests,
+    -- GN-3C1 (2026-09-01): constructor/definition pins and direct explicit
+    -- proposition wrappers for the fixed shell and concrete shifted capstone.
+    Glob.one `Tests.TMGateNFixedDelegateRelocationSurfaceTests,
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,
     Glob.one `Tests.TMGateOneReadBSurfaceTests,
     Glob.one `Tests.TMGateOneProbeInstallSurfaceTests,

@@ -55,6 +55,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOneOutputDoneTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOneRouteRewindTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOneUnaryARepairTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOneFiveTagTraceSafety
+import Complexity.TMVerifier.TuringToolkit.GateNFixedDelegateRelocation
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -2267,6 +2268,37 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1FiveTagTraceProbes.literal_and_false_done
 #print axioms Internal.PsubsetPpoly.TM.G1FiveTagTraceProbes.literal_or_true_done
 #print axioms Internal.PsubsetPpoly.TM.G1FiveTagTraceProbes.literal_binary_a_done
+
+-- GN-3C1 (2026-09-01): fixed finite outer delegate shell, source-only
+-- proper-prefix exclusion, exact shifted five-tag output-done run,
+-- every-prefix outside preservation, and one stationary result interception.
+-- The inert initial state is not an installer and no acceptance claim is made.
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_idle
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_returnedFalse
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_returnedTrue
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_accept
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_reject
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_delegate_ordinary
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_intercept_false
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_intercept_true
+#print axioms Internal.PsubsetPpoly.TM.g1M_step_done
+#print axioms Internal.PsubsetPpoly.TM.g1M_step_accept
+#print axioms Internal.PsubsetPpoly.TM.gnM_step_embed_ordinary
+#print axioms Internal.PsubsetPpoly.TM.gnM_step_embed_done
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_done_no_early_outputDone
+#print axioms Internal.PsubsetPpoly.TM.gn_g1_gate_done_delegates
+#print axioms Internal.PsubsetPpoly.TM.gn_g1_outputDone_not_delegates
+#print axioms Internal.PsubsetPpoly.TM.g1InitialConfig_head_lt_gnLocalSpan
+#print axioms Internal.PsubsetPpoly.TM.g1OutputDoneConfig_head_lt_gnLocalSpan
+#print axioms Internal.PsubsetPpoly.TM.gnCS_gate_shift_exact
+#print axioms Internal.PsubsetPpoly.TM.gnCS_gate_shift_outside_every_prefix
+#print axioms Internal.PsubsetPpoly.TM.gnCS_step_shifted_outputDone
+#print axioms Internal.PsubsetPpoly.TM.gnCS_gate_shift_intercept_exact
+#print axioms Internal.PsubsetPpoly.TM.gnCS_gate_shift_intercept_state
+#print axioms Internal.PsubsetPpoly.TM.gnCS_gate_shift_intercept_mode
+#print axioms Internal.PsubsetPpoly.TM.gnCS_gate_shift_intercept_structure
+#print axioms Internal.PsubsetPpoly.TM.GNFixedDelegateProbes.literal_input_true_shifted_intercept
+#print axioms Internal.PsubsetPpoly.TM.GNFixedDelegateProbes.literal_const_false_shifted_intercept
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

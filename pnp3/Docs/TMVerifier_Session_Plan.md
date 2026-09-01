@@ -3756,3 +3756,63 @@ all 14 source roots have direct axiom-audit entries.  It adds no Lean
 clock, verdict, or P-vs-NP mainline claim.  Successful five-tag full-prefix G1
 safety is now closed exactly at output-done.  Relocation of that safe prefix is
 the next blocker.
+
+## GN-3C1 fixed outer delegate shell and concrete shifted G1 run (2026-09-01)
+
+Progress classification: infrastructure, not P-vs-NP mainline progress.
+
+`GateNFixedDelegateRelocation` defines one zero-parameter finite outer control.
+`GNState` consists of `delegated q` for the already-finite complete `G1M.state`
+and the five fixed states `returnedFalse`, `returnedTrue`, `idle`, `accept`, and
+`reject`.  It contains no natural number, request, result, width, base, offset,
+index, or other runtime field.  `gnCS` has one phase and starts in inert `idle`;
+this slice makes no execution claim from that real initial state.
+
+For an ordinary delegated state, `gnTransition` returns exactly the source
+`G1M.step` bit and move and embeds its complete successor state.  Its only
+exceptions test equality with the complete phase/state values `g1DoneQ false`
+and `g1DoneQ true`.  Those two rows stay at the current head, preserve the
+scanned bit, and enter the corresponding fixed returned state.  In particular,
+an arbitrary `outputDoneFalse`/`outputDoneTrue` mode with a noncanonical frame
+position, buffer, or context is not intercepted.  The explicit
+`gn_g1_outputDone_not_delegates` theorem records that delegation really fails
+at the exact endpoints, so the shell is not an identity relabeling.
+
+The source-only theorem `g1CS_gate_done_no_early_outputDone` rules out either
+exact done state at every `j < g1GateDoneSteps r`.  It does not use relocation,
+target delegation, or `G1RunSafe`: an assumed done state executes the live
+source `outputDone -> accept` row, the literal accept sink remains stable for
+the rest of the schedule, and this contradicts the merged exact
+`g1OutputDoneConfig r res` endpoint.  Consequently
+`gn_g1_gate_done_delegates` proves the concrete `G1RunDelegates GNM gnEmbed`
+premise for every successful canonical five-tag source run.
+
+`gnGateShiftConfig` overlays exactly the existing half-open `W+5` footprint at
+an explicit caller base, with an explicit physical-room premise, and preserves
+the caller ambient tape elsewhere.  The only new geometry facts place the real
+source initial head and exact output-done exit head inside that footprint.
+`gnCS_gate_shift_exact` combines the merged five-tag `G1RunSafe`, concrete
+delegation, and `gn_delegate_run_shift` to give exact `GNM.runConfig` conjugacy
+through `g1GateDoneSteps r`.  `gnCS_gate_shift_outside_every_prefix` keeps every
+outside cell equal to the ambient tape for every `j <= g1GateDoneSteps r`.
+
+One additional target step is exposed by
+`gnCS_gate_shift_intercept_exact`: it reaches `gnReturnedQ res` with exactly the
+same head and tape as the shifted `g1OutputDoneConfig`; the state-only and
+state/head/tape structure corollaries pin both views.  The literal true probe
+uses `N=64`, `base=7`, the all-true ambient tape, and schedule `229+1=230` for
+`reqInputT`.  The literal false probe uses the same geometry and ambient tape
+with schedule `151+1=152` for `reqConstF`.  The earlier GN-3A `W+4` insufficiency
+and left-zero counterexample remain directly pinned by the existing relocation
+surface rather than being duplicated here.
+
+The GN-3C1 surface pins all constructors, finite/decidable instances and public
+definitions, and supplies 26 direct explicit-proposition wrappers for the 26
+public theorem roots.  All 26 roots are printed directly in `AxiomsAudit`.
+There are no inferred aliases, Lean `example` declarations, parser/copier,
+runtime base discovery, installer, commit sweep, multi-gate loop,
+clock-adequacy theorem, verdict, or acceptance theorem.  No current transition
+enters the fixed outer `accept` or `reject` states; they remain unreachable
+placeholders for later controller policy.  The next open E1 blocker is a live
+installer that constructs the shifted local word from the GN ambient tape
+before this delegate shell can be entered.

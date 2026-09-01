@@ -400,43 +400,43 @@ theorem g1CS_route_rewind_exact (r : G1Request) (left tail : List G1Frame)
   exact hpass
 
 /-- Frames between the anchor and the unary route boundary. -/
-private def g1AUnaryLeft (r : G1Request) : List G1Frame :=
+def g1AUnaryLeft (r : G1Request) : List G1Frame :=
   List.replicate r.tag.units G1Frame.tag ++ [G1Frame.argSep]
 
 /-- Frames between the anchor and the constant-literal route boundary. -/
-private def g1AConstLeft (r : G1Request) : List G1Frame :=
+def g1AConstLeft (r : G1Request) : List G1Frame :=
   List.replicate r.tag.units G1Frame.tag ++ G1Frame.argSep ::
     (List.replicate r.arg1 G1Frame.index ++ [G1Frame.argSep])
 
-@[simp] private theorem g1AUnaryLeft_length (r : G1Request) :
+@[simp] theorem g1AUnaryLeft_length (r : G1Request) :
     (g1AUnaryLeft r).length = r.tag.units + 1 := by
   simp [g1AUnaryLeft]
 
-@[simp] private theorem g1AConstLeft_length (r : G1Request) :
+@[simp] theorem g1AConstLeft_length (r : G1Request) :
     (g1AConstLeft r).length = r.tag.units + r.arg1 + 2 := by
   simp [g1AConstLeft]; omega
 
-private theorem g1AUnaryLeft_skip (r : G1Request) :
+theorem g1AUnaryLeft_skip (r : G1Request) :
     ∀ f ∈ g1AUnaryLeft r, G1RepairSkip f := by
   intro f hf
   simp only [g1AUnaryLeft, List.mem_append, List.mem_replicate,
     List.mem_singleton] at hf
   rcases hf with ⟨-, rfl⟩ | rfl <;> trivial
 
-private theorem g1AConstLeft_skip (r : G1Request) :
+theorem g1AConstLeft_skip (r : G1Request) :
     ∀ f ∈ g1AConstLeft r, G1RepairSkip f := by
   intro f hf
   simp only [g1AConstLeft, List.mem_append, List.mem_cons, List.mem_replicate,
     List.not_mem_nil, or_false] at hf
   rcases hf with ⟨-, rfl⟩ | rfl | ⟨-, rfl⟩ | rfl <;> trivial
 
-private theorem g1AUnaryLeft_split (r : G1Request) :
+theorem g1AUnaryLeft_split (r : G1Request) :
     [G1Frame.bof] ++ g1AUnaryLeft r ++ g1TagRouteRest r =
       encodeG1Frames r ++ [G1Frame.blank] := by
   rw [← g1TagRoute_split r]
   simp [g1TagRouteFrames, g1AUnaryLeft, List.append_assoc]
 
-private theorem g1AConstLeft_split (r : G1Request) :
+theorem g1AConstLeft_split (r : G1Request) :
     [G1Frame.bof] ++ g1AConstLeft r ++ g1FieldRouteRest r =
       encodeG1Frames r ++ [G1Frame.blank] := by
   rw [← g1FieldRoute_split r]

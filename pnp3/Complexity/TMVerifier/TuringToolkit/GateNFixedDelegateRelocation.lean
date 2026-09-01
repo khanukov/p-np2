@@ -26,7 +26,7 @@ output-done endpoint, without target delegation, relocation, or `G1RunSafe`.
 The capstone overlays exactly `[0,W+5)` into a caller-supplied ambient target
 tape, relocates the complete safe source trace, preserves every outside cell at
 every prefix, and executes one further stationary target step into the fixed
-result-indexed returned state.  It adds no parser, copier, installer, runtime
+result-indexed returned state.  It adds no exact-list parser, copier, installer, runtime
 base discovery, commit sweep, multi-gate loop, clock-adequacy theorem, verdict,
 or acceptance result.  The scan is lexical only: it does not compare slot and
 record counts or enforce semantic index bounds, and it is not equivalent to
@@ -155,9 +155,6 @@ def gnPoint (bits : List Bool) : Boolcube.Point bits.length := fun i => bits.get
 @[simp] theorem gnTransition_returnedTrue (phase : Fin 1) (scan : Bool) :
     gnTransition phase .returnedTrue scan =
       (0, .returnedTrue, scan, .stay) := rfl
-
-@[simp] theorem gnTransition_wordEnd (phase : Fin 1) (scan : Bool) :
-    gnTransition phase .wordEnd scan = (0, .wordEnd, scan, .stay) := rfl
 
 @[simp] theorem gnTransition_accept (phase : Fin 1) (scan : Bool) :
     gnTransition phase .accept scan = (0, .accept, scan, .stay) := rfl
@@ -348,33 +345,6 @@ theorem gnCS_encodeGN_wordEnd (r : GNProgram) :
       (GNM.initialConfig (gnPoint (encodeGN r))).tape
     exact (gnInitialTape_eq_frameListTape _).symm
 
-private theorem gnM_step_wordEnd (scan : Bool) :
-    GNM.step ⟨(0 : Fin 1), GNState.wordEnd⟩ scan =
-      (⟨(0 : Fin 1), GNState.wordEnd⟩, scan, .stay) := rfl
-
-/-- Word end is a stationary read-only dormant state for every E1b delay. -/
-theorem gnCS_wordEnd_stable (r : GNProgram) (k : Nat) :
-    TM.runConfig (M := GNM) (gnWordEndConfig r) k = gnWordEndConfig r := by
-  induction k with
-  | zero => rfl
-  | succ k ih =>
-      rw [runConfig_succ, ih]
-      apply Configuration.ext_of_components
-      · change (GNM.step ⟨(0 : Fin 1), GNState.wordEnd⟩
-          ((gnWordEndConfig r).tape (gnWordEndConfig r).head)).fst =
-            ⟨(0 : Fin 1), GNState.wordEnd⟩
-        rw [gnM_step_wordEnd]
-      · change Configuration.moveHead (gnWordEndConfig r) .stay =
-          (gnWordEndConfig r).head
-        rfl
-      · change (gnWordEndConfig r).write (gnWordEndConfig r).head
-          ((gnWordEndConfig r).tape (gnWordEndConfig r).head) =
-            (gnWordEndConfig r).tape
-        funext i
-        by_cases hi : i = (gnWordEndConfig r).head
-        · subst i
-          exact Configuration.write_self _ _ _
-        · exact Configuration.write_other _ hi _
 
 /-- Four raw physical reads ending in a rejecting completion.  The first
 three rows move right; the p3 completion is stationary, and every row writes

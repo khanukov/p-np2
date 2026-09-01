@@ -3757,16 +3757,18 @@ clock, verdict, or P-vs-NP mainline claim.  Successful five-tag full-prefix G1
 safety is now closed exactly at output-done.  Relocation of that safe prefix is
 the next blocker.
 
-## GN-3C1 fixed outer delegate shell and concrete shifted G1 run (2026-09-01)
+## GN-3C1 fixed outer delegate shell and concrete shifted G1 run
+   (historical snapshot, 2026-09-01)
 
 Progress classification: infrastructure, not P-vs-NP mainline progress.
 
-`GateNFixedDelegateRelocation` defines one zero-parameter finite outer control.
-`GNState` consists of `delegated q` for the already-finite complete `G1M.state`
-and the five fixed states `returnedFalse`, `returnedTrue`, `idle`, `accept`, and
-`reject`.  It contains no natural number, request, result, width, base, offset,
-index, or other runtime field.  `gnCS` has one phase and starts in inert `idle`;
-this slice makes no execution claim from that real initial state.
+At the GN-3C1 merge, `GateNFixedDelegateRelocation` defined one zero-parameter
+finite outer control.  `GNState` consisted of `delegated q` for the
+already-finite complete `G1M.state` and the five fixed states `returnedFalse`,
+`returnedTrue`, `idle`, `accept`, and `reject`.  It contained no natural number,
+request, result, width, base, offset, index, or other runtime field.  `gnCS` had
+one phase and started in inert `idle`; that snapshot made no execution claim
+from the real initial state.
 
 For an ordinary delegated state, `gnTransition` returns exactly the source
 `G1M.step` bit and move and embeds its complete successor state.  Its only
@@ -3806,15 +3808,15 @@ with schedule `151+1=152` for `reqConstF`.  The earlier GN-3A `W+4` insufficienc
 and left-zero counterexample remain directly pinned by the existing relocation
 surface rather than being duplicated here.
 
-The GN-3C1 surface pins all constructors, finite/decidable instances and public
-definitions, and supplies 26 direct explicit-proposition wrappers for the 26
-public theorem roots.  All 26 roots are printed directly in `AxiomsAudit`.
-There are no inferred aliases, Lean `example` declarations, parser/copier,
-runtime base discovery, installer, commit sweep, multi-gate loop,
-clock-adequacy theorem, verdict, or acceptance theorem.  In the GN-3C1
-snapshot no transition entered the fixed outer `accept` or `reject` states;
-GN-E1a below supersedes only that initial-control status while preserving the
-delegate and interception results.
+The GN-3C1 surface pinned all constructors, finite/decidable instances and
+public definitions, with 26 direct explicit-proposition wrappers and 26 direct
+axiom roots.  That snapshot had no inferred aliases, Lean `example`
+declarations, parser/copier, runtime base discovery, installer, commit sweep,
+multi-gate loop, clock-adequacy theorem, verdict, or acceptance theorem, and no
+transition entered the fixed outer `accept` or `reject` states.  GN-E1a below
+supersedes the state inventory, initial-control status, lexical-recognizer
+status, and surface counts while preserving the delegate and interception
+results.
 
 ## GN-E1a live self-delimiting runtime scan (2026-09-01)
 
@@ -3857,7 +3859,8 @@ Reject is stable for arbitrary padding.
 The blank-padded physical tape cannot distinguish `encodeGN r` from a trailing
 zero extension, so no machine equivalence to exact-list `decodeGN?` and no
 trailing-zero rejection is asserted.  E1a stops immediately after the
-terminal finish.  The stationary `wordEnd` state is the dormant E1b endpoint;
-blank-frame confirmation and return to scratch remain E1b work.  There is no
-scratch entry, installer/copy/commit path, delegated entry, multigate loop,
-clock-adequacy theorem, verdict, or acceptance claim in this slice.
+terminal finish.  `wordEnd` is the E1b handoff, but E1a deliberately exports no
+continuation or stability contract for it; blank-frame confirmation and return
+to scratch remain E1b work.  There is no scratch entry, installer/copy/commit
+path, delegated entry, multigate loop, clock-adequacy theorem, verdict, or
+acceptance claim in this slice.

@@ -100,10 +100,6 @@ theorem check_gnTransition_returnedTrue (phase : Fin 1) (scan : Bool) :
       (0, .returnedTrue, scan, .stay) :=
   gnTransition_returnedTrue phase scan
 
-theorem check_gnTransition_wordEnd (phase : Fin 1) (scan : Bool) :
-    gnTransition phase .wordEnd scan = (0, .wordEnd, scan, .stay) :=
-  gnTransition_wordEnd phase scan
-
 theorem check_gnTransition_accept (phase : Fin 1) (scan : Bool) :
     gnTransition phase .accept scan = (0, .accept, scan, .stay) :=
   gnTransition_accept phase scan
@@ -187,10 +183,6 @@ theorem check_gnCS_encodeGN_wordEnd (r : GNProgram) :
       (GNM.initialConfig (gnPoint (encodeGN r)))
       (encodeGN r).length = gnWordEndConfig r :=
   gnCS_encodeGN_wordEnd r
-
-theorem check_gnCS_wordEnd_stable (r : GNProgram) (k : Nat) :
-    TM.runConfig (M := GNM) (gnWordEndConfig r) k = gnWordEndConfig r :=
-  gnCS_wordEnd_stable r k
 
 theorem check_gnFrameScanner_rejectMacrostep (n h : Nat)
     (hsafe : h + 4 < gnFrameScanner.machine.tapeLength n)

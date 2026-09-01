@@ -362,6 +362,10 @@ lean_lib PnP3 where
     -- capstone uses the actual existing schedule expression.  No A-repair,
     -- OOB conflation, unary/constant route, full gate, clock, or acceptance.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOnePassADriverTraceSafety,
+    -- GN-3B2e3 (2026-09-01), infrastructure only: actual live operand-A
+    -- repair trace safety through canonical head-zero `aRepairDone`, composed
+    -- with e2 on the existing binary schedule.  No result or full-gate step.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneARepairTraceSafety,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -570,6 +574,9 @@ lean_lib PnP3 where
     -- GN-3B2e2 (2026-09-01): explicit direct wrappers for arbitrary driver,
     -- exhaustion, terminal cleanup, binary capstone, structure, and literals.
     Glob.one `Tests.TMGateOnePassADriverTraceSafetySurfaceTests,
+    -- GN-3B2e3 (2026-09-01): direct proposition wrappers for the complete
+    -- live A-repair safety surface, local 58/58/24 and binary 541 literals.
+    Glob.one `Tests.TMGateOneARepairTraceSafetySurfaceTests,
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,
     Glob.one `Tests.TMGateOneReadBSurfaceTests,
     Glob.one `Tests.TMGateOneProbeInstallSurfaceTests,

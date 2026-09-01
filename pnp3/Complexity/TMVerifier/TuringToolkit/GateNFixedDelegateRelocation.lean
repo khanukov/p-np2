@@ -127,6 +127,7 @@ def gnTransition (_phase : Fin 1) (s : GNState) (scan : Bool) :
   | .wordEnd => (0, .blankConfirm (.p1 scan), scan, .right)
   | .blankConfirm buffer =>
       match buffer with
+      -- Totality only: live `wordEnd` entry starts at `p1`; no row targets `p0`.
       | .p0 => (0, .blankConfirm (.p1 scan), scan, .right)
       | .p1 b0 => (0, .blankConfirm (.p2 b0 scan), scan, .right)
       | .p2 b0 b1 =>

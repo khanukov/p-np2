@@ -3663,10 +3663,11 @@ GN-3B2fA exports and audits nineteen theorem roots and nineteen explicit
 surface wrappers.
 
 GN-3B2fB is the unary pass-A install/driver/repair trace-safety slice described
-below.  GN-3B2fC remains the later five-tag output/shift integration.  This
-slice does not conflate empty unary values with success.  For canonical
-constants the specification premise names the carried Boolean; execution still
-stops at `combineStart`, before the output kernel.
+below.  GN-3B2fC, also described below, now supplies the later five-tag
+output-done integration; shifted relocation remains separate.  This slice does
+not conflate empty unary values with success.  For canonical constants the
+specification premise names the carried Boolean; execution still stops at
+`combineStart`, before the output kernel.
 
 ## GN-3B2fB unary pass-A install/driver/repair trace safety (2026-09-01)
 
@@ -3713,3 +3714,45 @@ the prerequisite generic-install root, this change adds nine direct
 explicit-proposition wrappers and nine axiom-audit roots.  It adds no Lean
 `example`, result/combine/output step, constant or five-tag capstone,
 `ShiftRunSafe`, controller, clock, verdict, or acceptance theorem.
+
+## GN-3B2fC complete five-tag G1 output-done trace safety (2026-09-01)
+
+Progress classification: infrastructure, not P-vs-NP mainline progress.
+
+`GateOneFiveTagTraceSafety` closes successful real-initial `G1RunSafe` through
+the exact existing `g1OutputDoneConfig r res` boundary for all five request
+tags.  The input/not proof composes GN-3B2fB's exact unary `aRepairDone`
+capstone with the tag-generic three-row result suffix, combine door, and output
+kernel.  Its pinned schedule is
+
+`g1GateDoneSteps r =
+  g1AUnaryRepairSteps r + 3 + 1 + g1OutputKernelSteps r`.
+
+The const proof composes GN-3B2fA's exact activation-to-`combineStart` capstone
+directly with the combine/output suffix.  It needs no `vals` premise, and its
+pinned schedule is
+
+`g1GateDoneSteps r =
+  g1ConstActivatedSteps r + 1 + g1OutputKernelSteps r`.
+
+The common five-tag theorem requires only `(r : G1Request)`,
+`(hc : r.Canonical)`, `(res : Bool)`, and `(hs : r.spec = some res)`.  Its tag
+case split uses the two new compositions for input/const/not and reuses the
+merged binary output-done theorem unchanged for and/or; each safety branch is
+paired with the existing exact five-tag output-done execution theorem.  A
+common structural corollary rewrites to the exact endpoint and pins the write-cell result,
+unchanged off-target cells, exact exit head/state/mode/context, and separation
+from reject and every OOB state.
+
+The existing request matrix is pinned at output-done with `G1RunSafe` and exact
+configuration equality: inputT 229, constF 151, constT 171, notF 285, andF 484,
+orT 512, and reqA 606.  These stop points do not assert acceptance at the
+one-step-later totals 230, 152, 172, 286, 485, 513, or 607.
+
+The module adds six non-literal and eight literal theorem roots.  Its surface
+has 24 explicit definition pins and 14 direct explicit-proposition wrappers;
+all 14 source roots have direct axiom-audit entries.  It adds no Lean
+`example`, output-done-to-accept step, `ShiftRunSafe`, GN controller, multigate,
+clock, verdict, or P-vs-NP mainline claim.  Successful five-tag full-prefix G1
+safety is now closed exactly at output-done.  Relocation of that safe prefix is
+the next blocker.

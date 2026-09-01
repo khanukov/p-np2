@@ -54,6 +54,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOneARepairTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOneOutputDoneTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOneRouteRewindTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOneUnaryARepairTraceSafety
+import Complexity.TMVerifier.TuringToolkit.GateOneFiveTagTraceSafety
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -2245,6 +2246,27 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1UnaryARepairTraceProbes.literal_steps
 #print axioms Internal.PsubsetPpoly.TM.G1UnaryARepairTraceProbes.literal_input_install_repair_trace_safe
 #print axioms Internal.PsubsetPpoly.TM.G1UnaryARepairTraceProbes.literal_not_install_repair_trace_safe
+
+-- GN-3B2fC (2026-09-01): successful canonical input/const/not/and/or
+-- real-initial `G1RunSafe` through exact result-indexed output-done.  Unary
+-- and const schedules are pinned explicitly; binary reuses e4 unchanged.  The
+-- common theorem has only request, canonicality, result and successful spec.
+-- Endpoint structure and all 229/151/171/285/484/512/606 literals are direct
+-- roots.  There is no output-done-to-accept or relocation theorem here.
+#print axioms Internal.PsubsetPpoly.TM.g1GateDoneSteps_unary_trace_eq
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_done_unary_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1GateDoneSteps_const_trace_eq
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_done_const_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_done_trace_safe
+#print axioms Internal.PsubsetPpoly.TM.g1CS_gate_done_structure
+#print axioms Internal.PsubsetPpoly.TM.G1FiveTagTraceProbes.literal_done_steps
+#print axioms Internal.PsubsetPpoly.TM.G1FiveTagTraceProbes.literal_input_true_done
+#print axioms Internal.PsubsetPpoly.TM.G1FiveTagTraceProbes.literal_const_false_done
+#print axioms Internal.PsubsetPpoly.TM.G1FiveTagTraceProbes.literal_const_true_done
+#print axioms Internal.PsubsetPpoly.TM.G1FiveTagTraceProbes.literal_not_false_done
+#print axioms Internal.PsubsetPpoly.TM.G1FiveTagTraceProbes.literal_and_false_done
+#print axioms Internal.PsubsetPpoly.TM.G1FiveTagTraceProbes.literal_or_true_done
+#print axioms Internal.PsubsetPpoly.TM.G1FiveTagTraceProbes.literal_binary_a_done
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

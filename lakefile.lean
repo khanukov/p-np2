@@ -580,8 +580,8 @@ lean_lib PnP3 where
     -- pass-B safety induction, the zero route, both repaired branches, their
     -- common read-A endpoint and the `400`/`172` real-initial capstones.
     Glob.one `Tests.TMGateOnePassBDriverTraceSafetySurfaceTests,
-    -- GN-3B2e1a (2026-08-31): direct wrappers for binary pass-A installation
-    -- safety and the exact real-initial/literal Σᴬ(0) capstones only.
+    -- GN-3B2e1a (2026-08-31): direct wrappers for nonconstant pass-A
+    -- installation safety, retaining exact binary Σᴬ(0) capstones.
     Glob.one `Tests.TMGateOnePassATraceSafetySurfaceTests,
     -- GN-3B2e1b (2026-09-01): direct wrappers for A reverse-frame/run safety,
     -- the mixed boundary, one arbitrary-j successful round, and 53/423 pins.

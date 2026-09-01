@@ -82,7 +82,6 @@ theorem g1CS_aWalk_exhaust_runSafe (r : G1Request) (b v : Bool)
   have hpre := g1AWalkExhaustPre_length r
   have hinner := g1AWalkInnerRun_length r.arg1
   have houter := g1AWalkOuterRun_length r r.arg1 (by omega)
-  have hcursor := g1AWalkCursor_safe r r.arg1 hj
   have hroom : 4 * ((g1AWalkExhaustPre r).length +
       ((g1AWalkInnerRun r.arg1).length +
         (g1AWalkOuterRun r r.arg1).length + 1)) + 8 <

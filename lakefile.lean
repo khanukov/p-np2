@@ -352,6 +352,10 @@ lean_lib PnP3 where
     -- plus the real-initial exact Σᴬ(0) capstone.  Reverse seek and one-round
     -- safety are deferred to e1b; no terminal A repair or full-gate claim.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOnePassATraceSafety,
+    -- GN-3B2e1b (2026-09-01), infrastructure only: structural two-mode A
+    -- reverse-seek safety and exactly one successful A round, composed from
+    -- the merged e1a Sigma-A(0) endpoint.  No driver, terminal repair or gate.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOnePassARoundTraceSafety,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -554,6 +558,9 @@ lean_lib PnP3 where
     -- GN-3B2e1a (2026-08-31): direct wrappers for binary pass-A installation
     -- safety and the exact real-initial/literal Σᴬ(0) capstones only.
     Glob.one `Tests.TMGateOnePassATraceSafetySurfaceTests,
+    -- GN-3B2e1b (2026-09-01): direct wrappers for A reverse-frame/run safety,
+    -- the mixed boundary, one arbitrary-j successful round, and 53/423 pins.
+    Glob.one `Tests.TMGateOnePassARoundTraceSafetySurfaceTests,
     Glob.one `Tests.TMGateOneExecutionSurfaceTests,
     Glob.one `Tests.TMGateOneReadBSurfaceTests,
     Glob.one `Tests.TMGateOneProbeInstallSurfaceTests,

@@ -3536,8 +3536,9 @@ wrappers and axiom roots, and seven definition pins; it adds no Lean
 
 Progress classification: infrastructure, not P-vs-NP mainline progress.
 
-`GateOneARepairTraceSafety` consumes e2's exact positive-head
-`g1AWalkRepairStartConfig` and proves the live left entry, every physical
+`GateOneARepairTraceSafety` starts from the existing positive-head
+`g1AWalkRepairStartConfig` reached exactly by e2, and proves the live left
+entry, every physical
 `aRepairSeek` buffer row, skip runs, thirteen-step `spent -> index` cycles,
 the full spent run, the left clean run, and the stationary `bof` dispatch safe.
 The reverse theorem uses the actual `G1ARepairStop` split: write, done and
@@ -3560,7 +3561,7 @@ initial tape spelling restored at head zero, no cursor or spent frame, exactly
 preserved.  The binary capstone composes the merged e2 prefix on the actual
 existing decomposition
 `(g1ABinaryCursorSteps + g1AWalkExhaustDriverSteps +
-g1AWalkTerminalSteps) + g1ARepairLiveSteps`, which is definitionally the
+g1AWalkTerminalSteps) + g1ARepairLiveSteps`, which re-associates to the
 existing `g1ABinaryRepairSteps` schedule.
 
 The three caller-supplied local repairs are exactly `58`, `58`, and `24`

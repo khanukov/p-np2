@@ -2144,6 +2144,9 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_false_live_exact
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_true_live_exact
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_zero_live_exact
+#print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_false_endpoint_word
+#print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_true_endpoint_word
+#print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_zero_endpoint_word
 
 -- GN-3B2e3 (2026-09-01): actual operand-A reverse-frame, skip, rewrite,
 -- anchor and complete live-repair safety through exact head-zero
@@ -2168,9 +2171,6 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairTraceProbes.literal_zero_local_trace_safe
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairTraceProbes.literal_binary_steps
 #print axioms Internal.PsubsetPpoly.TM.G1ARepairTraceProbes.literal_binary_initial_trace_safe
-#print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_false_endpoint_word
-#print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_true_endpoint_word
-#print axioms Internal.PsubsetPpoly.TM.G1ARepairExamples.literal_zero_endpoint_word
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

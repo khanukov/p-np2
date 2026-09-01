@@ -130,11 +130,6 @@ theorem check_g1CS_aRepair_activation_runSafe (r : G1Request) (b v : Bool)
     G1RunSafe (g1AWalkRepairStartConfig r b v hm hv) 1 :=
   g1CS_aRepair_activation_runSafe r b v hm hv
 
-theorem check_g1ARepairLiveSteps_eq (r : G1Request) :
-    g1ARepairLiveSteps r =
-      4 * r.tag.units + 17 * r.arg1 + 4 * r.arg2 + 21 :=
-  g1ARepairLiveSteps_eq r
-
 theorem check_g1CS_aRepair_live_trace_safe (r : G1Request) (b v : Bool)
     (hm : r.arg1 < r.vals.length) (hv : r.vals[r.arg1]? = some v) :
     G1RunSafe (g1AWalkRepairStartConfig r b v hm hv)

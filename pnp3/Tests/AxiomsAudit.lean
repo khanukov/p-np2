@@ -2281,7 +2281,6 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.gnTransition_idle
 #print axioms Internal.PsubsetPpoly.TM.gnTransition_returnedFalse
 #print axioms Internal.PsubsetPpoly.TM.gnTransition_returnedTrue
-
 #print axioms Internal.PsubsetPpoly.TM.gnTransition_accept
 #print axioms Internal.PsubsetPpoly.TM.gnTransition_reject
 #print axioms Internal.PsubsetPpoly.TM.gnTransition_delegate_ordinary
@@ -2293,7 +2292,6 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.gnM_step_embed_done
 #print axioms Internal.PsubsetPpoly.TM.gnInitialTape_eq_frameListTape
 #print axioms Internal.PsubsetPpoly.TM.gnCS_encodeGN_wordEnd
-
 #print axioms Internal.PsubsetPpoly.TM.gnFrameScanner_rejectMacrostep
 #print axioms Internal.PsubsetPpoly.TM.gnCS_reserved1101_reject_four
 #print axioms Internal.PsubsetPpoly.TM.gnTransition_reserved_windows

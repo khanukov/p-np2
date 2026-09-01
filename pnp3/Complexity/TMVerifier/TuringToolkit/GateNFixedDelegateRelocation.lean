@@ -3,7 +3,7 @@ import Complexity.TMVerifier.TuringToolkit.FrameScannerKernel
 import Complexity.TMVerifier.TuringToolkit.GateNRuntimeGrammar
 
 /-!
-# GN-3C1 fixed outer delegate and concrete shifted G1 run (2026-09-01)
+# Fixed GN delegate, relocation, and E1a runtime scan (2026-09-01)
 
 **Progress classification: infrastructure, not P-vs-NP mainline progress.**
 
@@ -26,10 +26,10 @@ output-done endpoint, without target delegation, relocation, or `G1RunSafe`.
 The capstone overlays exactly `[0,W+5)` into a caller-supplied ambient target
 tape, relocates the complete safe source trace, preserves every outside cell at
 every prefix, and executes one further stationary target step into the fixed
-result-indexed returned state.  It adds no exact-list parser, copier, installer, runtime
-base discovery, commit sweep, multi-gate loop, clock-adequacy theorem, verdict,
-or acceptance result.  The scan is lexical only: it does not compare slot and
-record counts or enforce semantic index bounds, and it is not equivalent to
+result-indexed returned state.  It adds no exact-list parser, copier, installer,
+runtime base discovery, commit sweep, multi-gate loop, clock-adequacy theorem,
+verdict, or acceptance result.  The scan is lexical only: it does not compare
+slot and record counts or enforce semantic index bounds, and it is not equivalent to
 `decodeGN?`.  The blank-padded tape cannot distinguish an exact word from a
 trailing-zero extension.  E1a stops immediately after terminal `finish`, at
 the logical word end; blank-frame confirmation and return to scratch are E1b.
@@ -344,7 +344,6 @@ theorem gnCS_encodeGN_wordEnd (r : GNProgram) :
   · change frameListTape (encodeGN r) =
       (GNM.initialConfig (gnPoint (encodeGN r))).tape
     exact (gnInitialTape_eq_frameListTape _).symm
-
 
 /-- Four raw physical reads ending in a rejecting completion.  The first
 three rows move right; the p3 completion is stationary, and every row writes

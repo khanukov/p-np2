@@ -6,7 +6,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOneAWalkRound
 
 **Progress classification: infrastructure, not P-vs-NP mainline progress.**
 
-This module extends the merged e1a binary installation endpoint `SigmaA(0)`
+This module extends the merged e1a binary installation endpoint `Σᴬ(0)`
 through exactly one successful operand-A round.  Its reverse safety layer is
 structural: it follows the actual four buffered cells, `g1ASeekRevComplete`,
 `g1ASeekRevAdvance`, `G1ASeekStop`, physical head positions, tape and context.
@@ -341,9 +341,10 @@ private theorem g1ASeekIn_seekToMarker_runSafe {W : Nat}
   exact G1RunSafe.add hscan hmarker'
 
 /-- The unique A mixed-boundary seek is safe on the exact
-`revSeekAcrossBoundary` schedule.  It crosses `outer` in `aSeekOut`, reads the
-single `argSep` mode switch, crosses `inner` in `aSeekIn`, and stops on
-`marker`; the tape and context are unchanged by the structural reverse scan. -/
+`revSeekAcrossBoundary` schedule: `outer` is scanned in `aSeekOut`, the unique
+`argSep` switches to `aSeekIn`, and `inner` is scanned in that mode.  The exact
+marker endpoint and tape/context preservation are supplied separately by the
+merged execution theorem used for transport below. -/
 theorem g1ASeek_acrossBoundary_runSafe {W : Nat} (pre : List G1Frame)
     (marker : G1Frame) (inner outer suffix : List G1Frame) (ctx : G1Ctx)
     (houter : ∀ f ∈ outer, G1ASeekOutSkip f)
@@ -515,7 +516,7 @@ theorem g1CS_aWalk_fwd_to_cursor_runSafe {W : Nat}
 
 set_option maxHeartbeats 1000000 in
 /-- One successful A round is safe for precisely the schedule and premises of
-`g1CS_aWalk_round_exact`: `16*j + 8*arg2 + 45` steps from `SigmaA(j)`. -/
+`g1CS_aWalk_round_exact`: `16*j + 8*arg2 + 45` steps from `Σᴬ(j)`. -/
 theorem g1CS_aWalk_round_runSafe (r : G1Request) (b : Bool) (j : Nat)
     (hj1 : j < r.arg1) (hnext : j + 1 < r.vals.length) (v v' : Bool)
     (hv : r.vals[j]? = some v) (hv' : r.vals[j + 1]? = some v') :
@@ -758,7 +759,7 @@ theorem g1CS_aWalk_round_runSafe (r : G1Request) (b : Bool) (j : Nat)
   have hall := G1RunSafe.add hprefix htailSafe
   simpa [g1AWalkRoundSteps, g1AWalkRoundPrefixSteps] using hall
 
-/-- Safety paired with the already-established exact `SigmaA(j+1)` endpoint. -/
+/-- Safety paired with the already-established exact `Σᴬ(j+1)` endpoint. -/
 theorem g1CS_aWalk_round_trace_safe (r : G1Request) (b : Bool) (j : Nat)
     (hj1 : j < r.arg1) (hnext : j + 1 < r.vals.length) (v v' : Bool)
     (hv : r.vals[j]? = some v) (hv' : r.vals[j + 1]? = some v') :
@@ -774,8 +775,8 @@ theorem g1CS_aWalk_round_trace_safe (r : G1Request) (b : Bool) (j : Nat)
 
 /-! ## Binary real-initial and literal capstones -/
 
-/-- The merged e1a binary `SigmaA(0)` safety composes with one successful A
-round and reaches the exact `SigmaA(1)` endpoint, with no later driver step. -/
+/-- The merged e1a binary `Σᴬ(0)` safety composes with one successful A round
+and reaches the exact `Σᴬ(1)` endpoint, with no later driver step. -/
 theorem g1CS_readA_binary_one_round_from_initial_trace_safe (r : G1Request)
     (hc : r.Canonical) (ht : r.tag = .and ∨ r.tag = .or)
     (bA bA' bB : Bool) (rest : List Bool) (harg : 0 < r.arg1)
@@ -814,7 +815,7 @@ theorem literal_round_trace_safe :
       true true (by decide) (by decide)
 
 /-- The requested real-initial binary execution is safe for exactly `423`
-steps and stops at the exact `SigmaA(1)` endpoint (`370 + 53`). -/
+steps and stops at the exact `Σᴬ(1)` endpoint (`370 + 53`). -/
 theorem literal_one_round_from_initial_trace_safe :
     G1RunSafe (G1M.initialConfig (g1Point (encodeG1 reqA))) 423 ∧
       TM.runConfig (M := G1M)

@@ -3458,7 +3458,7 @@ uses `g1ASeekRevComplete`, `g1ASeekRevAdvance` and `G1ASeekStop` directly, and
 proves all four proper prefixes of a reverse frame locally safe.  Homogeneous
 skip runs are proved separately for the outer and inner A modes.
 
-The sole mixed reverse driver crosses `outer` in `aSeekOut`, reads the unique
+The sole mixed reverse seek crosses `outer` in `aSeekOut`, reads the unique
 `argSep` that changes the mode to `aSeekIn`, crosses `inner`, and stops on the
 selected operand-A `index`.  Its schedule is exactly
 `4 * (inner.length + outer.length + 1) + 4`, the schedule of
@@ -3473,8 +3473,8 @@ successor probe/latch and four-step cursor install.  Exact segment equalities
 serve only to transport the next safety proof; `G1RunSafe.add` performs every
 schedule composition.
 
-The binary capstone composes the merged e1a `SigmaA(0)` prefix with only the
-`j = 0` round and stops at exact `SigmaA(1)`.  For the merged literal
+The binary capstone composes the merged e1a `Σᴬ(0)` prefix with only the
+`j = 0` round and stops at exact `Σᴬ(1)`.  For the merged literal
 `and(1,1,[true,true,false])`, the local round is exactly `53` steps and the
 real-initial capstone is exactly `370 + 53 = 423` steps.  Successor-data OOB
 and operand-index exhaustion remain the separate endpoints already exposed by

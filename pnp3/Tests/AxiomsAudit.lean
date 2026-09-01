@@ -2098,7 +2098,7 @@ open Pnp3.Magnification
 
 -- GN-3B2e1b (2026-09-01): actual two-mode A reverse-buffer safety, its
 -- homogeneous and unique mixed-boundary schedules, and exactly one successful
--- A round.  The real-initial binary capstone stops at Sigma-A(1); no driver,
+-- A round.  The real-initial binary capstone stops at `Σᴬ(1)`; no driver,
 -- terminal repair, shifted gate, controller, clock or acceptance result.
 #print axioms Internal.PsubsetPpoly.TM.g1ASeek_reverseFrame_runSafe
 #print axioms Internal.PsubsetPpoly.TM.g1ASeek_revSkip_runSafe

@@ -40,7 +40,7 @@ word from a trailing-zero extension.  E1b rejects nonblank decoded or reserved
 windows in the inspected frame, but makes no trailing-zero rejection claim.
 The exported E1b endpoint is exact `scratchEntry`.  GN-E2-1c now activates that
 row into the strict read-only reverse locator in this same control owner;
-`firstRecord` is the single live stationary door into the installer probe;
+`firstRecord` is the initial stationary door into the installer probe;
 `noGate` remains a dormant arrival.  GN-E2-2 uses that door only for the first
 cursor shuttle.  GN-E2-3a activates the payload-preserving installer exit as a
 finite one-round dispatcher and adds only the fixed `recordDone` terminal

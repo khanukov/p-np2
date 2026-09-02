@@ -4083,7 +4083,7 @@ stage-zero grammar enter the existing stationary reject sink without a write
 or completion move.  The exact raw reverse macro pins the four-row
 `r3 → r2 → r1 → r0 → reject` schedule, and the literal `1101` specialization
 pins both that endpoint and arbitrary `+k` reject-sink padding.  The public
-surface now has 30 full-proposition wrappers and 30 direct axiom roots.  The
+surface now has 29 full-proposition wrappers and 29 direct axiom roots.  The
 E2-2 handoff theorem packages the exact cursor-source
 and forward-middle blank/`output true` exclusions, the first implicit blank as
 an explicit tape frontier, and the physical room premise required by

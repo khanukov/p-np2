@@ -19,6 +19,7 @@ import Complexity.TMVerifier.TuringToolkit.FrameScannerReverseProbe
 import Complexity.TMVerifier.TuringToolkit.FrameScannerReverseInstances
 import Complexity.TMVerifier.TuringToolkit.FrameRewriteCycleProbe
 import Complexity.TMVerifier.TuringToolkit.FrameRewriteCycleInstances
+import Complexity.TMVerifier.TuringToolkit.FrameShuttleProbe
 import Complexity.TMVerifier.TuringToolkit.GateOneExamples
 import Complexity.TMVerifier.TuringToolkit.GateOneRouting
 import Complexity.TMVerifier.TuringToolkit.GateOneReadBExamples
@@ -249,6 +250,19 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.t1OutWriter_outWriteOut_frame
 #print axioms Internal.PsubsetPpoly.TM.g1RevScanner_seek_bof
 #print axioms Internal.PsubsetPpoly.TM.G1RewriteCycleObligation.machine_eq
+
+-- GN-E2-1a generic source-restoring shuttle: context-dependent right writer,
+-- one shared machine/phase/codec, exact list capstone/schedule, and unrelated
+-- positive/negative probes.  Infrastructure only; no GNM instance.
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.frameListTape_append_blank
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameWriterCtx.writeMacrostep
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameWriterCtx.writeFrameOnList
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameShuttle.shuttleSteps_provenance
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameShuttle.marker_breaks_forwardPath
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameShuttle.shuttleOnList
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameShuttle.shuttleOnList_nextBlank
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.shuttleProbe_run45
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.shuttleProbe_marker_middle_rejected
 
 -- T2a, pure layer: the fresh unary one-gate ABI, its exact parser
 -- characterisation, and the pure gate semantics.  These are parser/spec

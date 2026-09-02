@@ -3961,3 +3961,57 @@ strategy; GN-E2-0 deliberately supplies no runtime marker codec or transition
 row and does not prejudge that choice.  There is also no scratch-entry
 activation, shuttle, result, commit, clock-adequacy, multigate, verdict, or
 acceptance theorem in this slice.
+
+## GN-E2-1a generic source-restoring frame shuttle (2026-09-02)
+
+Progress classification: infrastructure, not P-vs-NP mainline progress.
+
+`FrameScannerWriteCtx` adds the missing rightward four-cell writer whose target
+is computed from finite auxiliary control.  Its four-step arbitrary-list
+replacement theorem is derived from four concrete transition tuples and a
+codec law; it has no correctness/provider field.
+
+`FrameShuttle` then fixes one `FrameScanner` as the sole program, phase, codec,
+finite `Aux`, and finite `Mode` source.  The reverse scanner, constant marker
+writer, context-dependent destination writer, and context-dependent source
+restorer are definitions over that source, so their compiled machines and all
+entry/exit handoffs agree definitionally.  The row obligations decode and latch
+one source, turn back, install one marker, seek the first blank, write
+`image (carry aux)`, reverse-seek the marker, and restore `carry aux`.  The laws
+include `carry (latch a f) = f`, exact blank/marker seek behavior, exact turn
+rows, and blank/marker/image separation constraints for downstream composition.
+Every middle-frame
+hypothesis explicitly excludes both blank and marker; no global marker-count
+preservation theorem is claimed.
+
+The capstone starts at source p0 on
+`pre ++ f :: middle ++ blank :: rest`.  Under the explicit middle separation
+and physical room bound, it ends immediately after restored `f`, in the exact
+exit state, with the whole tape exactly
+`pre ++ f :: middle ++ image f :: rest`.  The next-frontier form starts with
+two blanks and pins the endpoint suffix as `image f :: blank :: rest`.
+`frameListTape_append_blank` separately identifies implicit false padding with
+an explicit appended blank when the blank codec is `0000`.
+
+The derived schedule is
+`probe 4 + turn-back 4 + mark 4 + forward 4(d+1) + destination-turn 1 +
+destination-write 4 + reverse-seek (4d+4) + restore 4 = 8d+29`.
+The documentary source-to-post-destination arithmetic span is `4(d+2)` cells;
+the capstone discharges each composing segment's concrete room premise directly.
+The fresh probe alphabet has
+different source/middle/image constructors, distinct blank and marker, a
+finite frame-valued latch, two nonempty middle frames, and an exact 45-step
+run restoring the source, preserving both middle frames, installing the image,
+retaining the next blank, and fixing the final head/state.  Its negative probe
+proves that the singleton middle path `[marker]` cannot satisfy the forward
+valid path: the exact marker row enters reject.
+
+This slice does not instantiate GNM.  In particular it does not add
+`GNState`, `gnTransition`, scratch-entry activation, a runtime controller,
+installer driver, commit, clock, verdict, or acceptance.  GN-E2-1b must supply
+the concrete GNM finite-control constructors and tuple rows, instantiate the
+chosen existing `output true` source marker and `blank` frontier without a
+reserved-code codec, prove the concrete stage word's middle separation and
+room invariant, and connect the generic entry/exit states to the intended GNM
+scratch/install control.  Clock adequacy and any repeated installer/controller
+remain later obligations.

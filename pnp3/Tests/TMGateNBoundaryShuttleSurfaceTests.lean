@@ -62,7 +62,8 @@ theorem check_gnCS_encodeGN_bofSeed_exact {r : GNProgram}
 
 theorem check_gnBofSeedConfig_structure {r : GNProgram}
     {g : SLGate r.inputs.length} (hg : r.program.gates[0]? = some g) :
-    (gnBofSeedConfig r g hg).state = ⟨(0 : Fin 1), gnInstallExitState⟩ ∧
+    (gnBofSeedConfig r g hg).state =
+        ⟨(0 : Fin 1), gnInstallExitState (.carried .cursor)⟩ ∧
       ((gnBofSeedConfig r g hg).head : Nat) = 4 * (gnRecordsStart r + 1) ∧
       (gnBofSeedConfig r g hg).tape = frameListTape
         ((gnLocatePrefix r ++ G1Frame.cursor :: gnFirstRecordMiddle r ++

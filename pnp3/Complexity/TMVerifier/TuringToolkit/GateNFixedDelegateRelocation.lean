@@ -42,7 +42,9 @@ The exported E1b endpoint is exact `scratchEntry`.  GN-E2-1c now activates that
 row into the strict read-only reverse locator in this same control owner;
 `firstRecord` is the single live stationary door into the installer probe;
 `noGate` remains a dormant arrival.  GN-E2-2 uses that door only for the first
-cursor shuttle and leaves the installer exit dormant.
+cursor shuttle.  GN-E2-3a activates the payload-preserving installer exit as a
+finite one-round dispatcher and adds only the fixed `recordDone` terminal
+switch; repeated body driving remains a later obligation.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -177,10 +179,40 @@ inductive GNState where
   | locating (locate : GNLocateState)
   | firstRecord
   | noGate
+  | recordDone
   | idle
   | accept
   | reject
   deriving Fintype, DecidableEq
+
+/-- Payload-preserving shuttle endpoint.  The payload is finite and contains
+no runtime geometry. -/
+def gnInstallExitState (aux : GNInstallAux) : GNState :=
+  .install .exit .p0 aux
+
+/-- Exact finite payloads allowed to dispatch another source probe.  Empty is
+retained solely for the old door/seed compatibility boundary. -/
+def GNInstallExitContinue : GNInstallAux → Prop
+  | .empty => True
+  | .carried .cursor => True
+  | .carried .tag => True
+  | .carried .index => True
+  | .carried .argSep => True
+  | _ => False
+
+/-- Every exit payload other than a continuing payload or terminal finish. -/
+def GNInstallExitInvalid (aux : GNInstallAux) : Prop :=
+  ¬ GNInstallExitContinue aux ∧ aux ≠ .carried .finish
+
+/-- Finite payload-only exit decision. -/
+def gnInstallExitDispatch : GNInstallAux → GNState
+  | .empty => .install .probe .p0 .empty
+  | .carried .cursor => .install .probe .p0 .empty
+  | .carried .tag => .install .probe .p0 .empty
+  | .carried .index => .install .probe .p0 .empty
+  | .carried .argSep => .install .probe .p0 .empty
+  | .carried .finish => .recordDone
+  | _ => .reject
 
 /-- Installer rejection is the already-existing stable outer reject sink. -/
 def gnInstallControl (mode : GNInstallMode) (buffer : GNInstallBuffer)
@@ -317,8 +349,10 @@ def gnTransition (_phase : Fin 1) (s : GNState) (scan : Bool) :
         (.p3 (gnInstallBit0 a) (gnInstallBit1 a) (gnInstallBit2 a)) a,
         gnInstallBit2 a, .right)
   | .install .restore (.p3 _ _ _) a =>
-      (0, .install .exit .p0 .empty, gnInstallBit3 a, .right)
-  | .install .exit buffer a => (0, .install .exit buffer a, scan, .stay)
+      (0, gnInstallExitState a, gnInstallBit3 a, .right)
+  | .install .exit .p0 a =>
+      (0, gnInstallExitDispatch a, scan, .stay)
+  | .install .exit _ _ => (0, .reject, scan, .stay)
   | .install _ _ _ => (0, .reject, scan, .stay)
   | .scratchEntry =>
       (0, .locating ⟨.tailFinish, .r3⟩, scan, .left)
@@ -336,6 +370,7 @@ def gnTransition (_phase : Fin 1) (s : GNState) (scan : Bool) :
       else (0, .locating ⟨next, .r3⟩, scan, .left)
   | .firstRecord => (0, .install .probe .p0 .empty, scan, .stay)
   | .noGate => (0, .noGate, scan, .stay)
+  | .recordDone => (0, .recordDone, scan, .stay)
   | .idle => (0, .idle, scan, .stay)
   | .accept => (0, .accept, scan, .stay)
   | .reject => (0, .reject, scan, .stay)

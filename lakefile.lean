@@ -414,8 +414,12 @@ lean_lib PnP3 where
     -- discovery; noGate remains dormant.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateNScratchBootstrap,
     -- GN-E2-2 (2026-09-02): the live firstRecord door and exactly one
-    -- cursor-to-bof source-restoring shuttle, stopping at dormant install exit.
+    -- cursor-to-bof source-restoring shuttle, stopping at dormant exit carrying
+    -- cursor; GN-E2-3a owns the later activation of that boundary.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateNBoundaryShuttle,
+    -- GN-E2-3a (2026-09-02): payload-preserving one-body-round execution and
+    -- fixed recordDone switch only; no arbitrary driver or real-input capstone.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateNBodyRound,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -659,6 +663,9 @@ lean_lib PnP3 where
     -- GN-E2-2 (2026-09-02): exact door/seed/live-capstone, rejection, handoff,
     -- schedule and 188/16 literal wrappers.
     Glob.one `Tests.TMGateNBoundaryShuttleSurfaceTests,
+    -- GN-E2-3a (2026-09-02): direct payload-exit, one-round, terminal-switch,
+    -- rejection, clock and 94/20 literal proposition wrappers.
+    Glob.one `Tests.TMGateNBodyRoundSurfaceTests,
     -- GN-E2-0 (2026-09-01): definition/configuration pins and direct explicit
     -- wrappers for pure physical stages, first-request geometry, and the
     -- complete installed physical endpoint equality.

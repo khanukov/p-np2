@@ -57,6 +57,7 @@ open Pnp3.Internal.PsubsetPpoly.TM.G1AResultProbes
 #check @GNState.return1
 #check @GNState.return0
 #check @GNState.scratchEntry
+#check @GNState.recordDone
 #check @GNState.idle
 #check @GNState.accept
 #check @GNState.reject

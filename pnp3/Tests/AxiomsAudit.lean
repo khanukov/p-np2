@@ -73,6 +73,7 @@ import Complexity.TMVerifier.TuringToolkit.GateNTapeStateExamples
 import Complexity.TMVerifier.TuringToolkit.GateNFirstInstallBridge
 import Complexity.TMVerifier.TuringToolkit.GateNScratchBootstrap
 import Complexity.TMVerifier.TuringToolkit.GateNBoundaryShuttle
+import Complexity.TMVerifier.TuringToolkit.GateNBodyRound
 import Complexity.TMVerifier.TuringToolkit.GateNRelocationExamples
 
 /-!
@@ -2438,7 +2439,8 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.GNScratchBootstrapProbes.literal_empty_noGate
 
 -- GN-E2-2 (2026-09-02): the sole live firstRecord door plus exactly one
--- cursor-to-bof shuttle, ending in the dormant install exit at first-body p0.
+-- cursor-to-bof shuttle, ending in dormant install exit carrying cursor at
+-- first-body p0.
 -- The source cursor and original GN word are restored.  The five-step 1101
 -- rejection and E2-3 handoff are exact; there is no body execution, live
 -- finish, exit activation, loop, total installer clock, verdict or acceptance.
@@ -2454,6 +2456,27 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.gnCS_firstRecord_reserved1101_reject_five
 #print axioms Internal.PsubsetPpoly.TM.gnCS_firstRecord_reserved1101_reject_stable
 #print axioms Internal.PsubsetPpoly.TM.GNBoundaryShuttleProbes.literal_oneConstFalse_bofSeed
+
+-- GN-E2-3a (2026-09-02): the same finite GNM retains shuttle payloads and
+-- activates only a one-round exit dispatcher plus fixed recordDone switch.
+-- The proof-level invariant, exact 8d+30/8d+31 rounds, boundary rejection,
+-- scoped round clock, and 94/head20 tag literal are direct roots.  There is no
+-- arbitrary body driver or real-initial recordDone capstone.
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_install_exit_dispatch
+#print axioms Internal.PsubsetPpoly.TM.gnBodyRoundConfig_structure
+#print axioms Internal.PsubsetPpoly.TM.gnBodyRoundSteps_provenance
+#print axioms Internal.PsubsetPpoly.TM.gnBodyRoundMiddle_length_constant
+#print axioms Internal.PsubsetPpoly.TM.gnCS_bodyRound_exact
+#print axioms Internal.PsubsetPpoly.TM.gnCS_bodyRound_iteration_exact
+#print axioms Internal.PsubsetPpoly.TM.gnCS_bodyFinishRound_exact
+#print axioms Internal.PsubsetPpoly.TM.gnCS_finishExit_to_recordDone_one
+#print axioms Internal.PsubsetPpoly.TM.gnCS_bodyFinishRound_recordDone_exact
+#print axioms Internal.PsubsetPpoly.TM.gnCS_install_exit_invalid_reject_one
+#print axioms Internal.PsubsetPpoly.TM.gnCS_install_exit_badBuffer_reject_one
+#print axioms Internal.PsubsetPpoly.TM.gnCS_install_exit_reserved1101_reject_five
+#print axioms Internal.PsubsetPpoly.TM.gnCS_install_exit_reserved1101_reject_stable
+#print axioms Internal.PsubsetPpoly.TM.gnBodyTerminalSteps_le_gnClock
+#print axioms Internal.PsubsetPpoly.TM.GNBodyRoundProbes.literal_oneConstFalse_tagRound
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

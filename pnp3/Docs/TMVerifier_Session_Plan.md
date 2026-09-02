@@ -4025,8 +4025,9 @@ and finite `GNInstallAux` (empty or one carried `G1Frame`).  The existing
 `gnTransition`, `gnCS`, and `GNM` remain the ownership points: the finite
 tuple rows implement source probe/latch, four-left turn, marker write, forward
 seek, one-left destination turn, leftward image write, reverse seek, original
-source restore, and one fixed exit state.  GN-E2-2 changes only `firstRecord`
-into a stationary door targeting the installer probe; `noGate` stays dormant.
+source restore, and a finite payload-preserving exit family.  GN-E2-2 changes
+only `firstRecord` into a stationary door targeting the installer probe;
+`noGate` stays dormant.  GN-E2-3a subsequently activates only exact exit p0.
 
 `gnCopyShuttle : FrameShuttle GNState G1Frame GNInstallMode GNInstallAux`
 uses the one shared `gnCS`, phase zero, and public `g1FrameCodec`.  Its marker
@@ -4036,10 +4037,11 @@ is the already-decoded `output true = 1001`, its frontier is the first aligned
 explicit: every such frame differs from both blank and `output true`.
 The generic capstones specialize to exact `8 * middle.length + 29` runs with
 full head/state/tape endpoints, restored source, image at the destination, and
-(in the second form) a retained next blank.  Exact corollaries recover the old
+the exit payload `carried source` (in the second form, also a retained next
+blank).  Exact corollaries recover the old
 identity-shaped endpoint for `tag`, `index`, and `argSep`.  Hence the literal
 run still copies `tag` across `[argSep, index]` in 45 steps and ends at head
-four in the fixed exit state.
+four in exit carrying tag.
 
 All undecodable windows, including reserved `1101`, `1110`, and `1111`, enter
 the existing stable reject sink in probe, forward seek, and reverse seek.
@@ -4102,13 +4104,14 @@ or acceptance theorem in this slice.
 
 Progress classification: infrastructure, not P-vs-NP mainline progress.
 
-The fixed `firstRecord` row is now the sole live stationary door into
+The fixed `firstRecord` row is the sole E2-2 stationary door into
 `install.probe.p0.empty`.  From the real locator endpoint, the machine executes
 exactly one source-restoring shuttle.  It restores the source cursor and the
 entire original encoded GN word, writes `bof` into the first scratch frame,
-leaves the next scratch frame blank, and stops in the existing dormant
-`gnInstallExitState` at p0 of the first record-body frame.  No exit row is
-activated and no ordinary body frame is executed.
+leaves the next scratch frame blank, and stops in dormant
+`gnInstallExitState (.carried .cursor)` at p0 of the first record-body frame.
+E2-2 itself activates no exit row and executes no ordinary body frame;
+E2-3a subsequently consumes this exact carried-cursor endpoint.
 
 The local schedule is
 `1 + (8 * (gnFirstRecordMiddle r).length + 29)`: one door row followed by the
@@ -4128,3 +4131,47 @@ The E2-2 surface has 12 full-proposition wrappers and `AxiomsAudit` has the same
 12 direct source roots; private helpers are excluded.  There is no live finish
 execution, body driver, record-done dispatch, values/tail writer,
 launch/delegation, commit, loop, total installer clock, verdict, or acceptance.
+
+## GN-E2-3a payload-preserving body round and terminal switch (2026-09-02)
+
+Progress classification: infrastructure, not P-vs-NP mainline progress.
+
+The same fixed `GNState`, `gnTransition`, `gnCS`, and `GNM` add exactly one
+finite top-level constructor, `recordDone`; it contains no payload or geometry.
+`gnInstallExitState aux` is exact `.install .exit .p0 aux`, and every shuttle
+restore row preserves its carried frame into that endpoint.  The only activated
+exit boundary is p0.  Empty (for compatibility), carried cursor, tag, index,
+and argSep dispatch stationarily to `install.probe.p0.empty`; carried finish
+dispatches stationarily to `recordDone`.  Carried blank, output true, output
+false, data, spent, bof, and separator reject, as does every non-p0 exit buffer.
+`recordDone` is total internally, but E2-3a exposes no public stability or
+continuation theorem.
+
+`GNBodyRoundInvariant` and `gnBodyRoundConfig` use proof-level frame lists only.
+They pin the unchanged source prefix, the mapped scratch prefix
+`seed ++ done.map gnInstallImage`, the first and retained blank frontier, the
+marker/blank-free middle, and physical room.  One ordinary round is exactly
+one stationary dispatcher row plus the existing `8*d+29` shuttle: `8*d+30`
+rows restore the source, append `gnInstallImage current`, advance the head four
+cells, and finish in exit carrying current.  The one-iteration endpoint moves
+current from `done` to the next proof-level source without proving a driver;
+the middle distance stays constant because one source frame removed from the
+unprocessed suffix becomes one mapped scratch frame.  A finish source takes
+the same round to exit carrying finish, and a separate stationary row reaches
+`recordDone`, for `8*d+31` total.
+
+Invalid exit payloads and buffers reject in one row.  Reserved `1101` after a
+valid continuing dispatch rejects in exactly five rows and permits stable
+reject padding.  The only clock result is a caller-scoped per-round bound from
+`4*(d+2) <= N`; there is no total body or installer clock.  The concrete
+one-constant-false probe starts at the E2-2 bof seed, executes only the first
+ordinary tag round in exactly 94 rows, moves head 16 to 20, and leaves the
+explicit scratch suffix `bof, tag, blank` in exit carrying tag.  It does not
+execute all five body frames.
+
+The E2-3a public surface has 15 full-proposition wrappers and `AxiomsAudit` has
+the same 15 direct source roots.  There is no arbitrary body-loop driver,
+real-initial finish/recordDone capstone, complete request record, values, fixed
+tail, launch/delegation, commit, loop, total clock, verdict, or acceptance.
+E2-3b owns the arbitrary proof-level body induction and real-initial
+recordDone capstone; E2-4 owns continuation from `recordDone`.

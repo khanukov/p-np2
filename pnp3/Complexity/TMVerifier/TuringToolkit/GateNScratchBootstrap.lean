@@ -255,7 +255,8 @@ private theorem gnCS_locate_reject_four (n base : Nat)
           (by exact lt_trans (by omega) hsafe) tape (.locating ⟨mode, .r3⟩)) =
       Phased.alignedAt gnCS gnCS.startPhase n (base + 2) (by omega) tape
         (.locating ⟨mode, .r2 (tape ⟨base + 3, by omega⟩)⟩) := by
-    have h := Phased.stepLeft gnCS gnCS.startPhase n (base + 3) (by omega) (by omega) tape (.locating ⟨mode, .r3⟩)
+    have h := Phased.stepLeft gnCS gnCS.startPhase n (base + 3)
+      (by omega) (by omega) tape (.locating ⟨mode, .r3⟩)
       (.locating ⟨mode, .r2 (tape ⟨base + 3, by omega⟩)⟩)
       (tape ⟨base + 3, by omega⟩) (by rfl)
     rw [writeCell_self] at h

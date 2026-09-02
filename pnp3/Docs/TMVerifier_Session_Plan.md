@@ -4009,13 +4009,12 @@ valid path: the exact marker row enters reject.
 
 This slice does not instantiate GNM.  In particular it does not add
 `GNState`, `gnTransition`, scratch-entry activation, a runtime controller,
-installer driver, commit, clock, verdict, or acceptance.  GN-E2-1b must supply
-the concrete GNM finite-control constructors and tuple rows, instantiate the
-chosen existing `output true` source marker and `blank` frontier without a
-reserved-code codec, prove the concrete stage word's middle separation and
-room invariant, and connect the generic entry/exit states to the intended GNM
-scratch/install control.  Clock adequacy and any repeated installer/controller
-remain later obligations.
+installer driver, commit, clock, verdict, or acceptance.  GN-E2-1b supplies
+the concrete GNM finite-control rows and instantiates the existing `output true`
+source marker and `blank` frontier without a reserved-code codec.  The live
+stage-word middle/room invariants and connection from scratch entry to install
+control are now the explicit GN-E2-1c obligations.  Clock adequacy and any
+repeated installer/controller remain later obligations.
 
 ## GN-E2-1b dormant GNM identity-copy specialization (2026-09-02)
 

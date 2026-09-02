@@ -100,7 +100,7 @@ theorem check_gnCS_copyShuttle_onList (n : Nat) (pre : List G1Frame)
         (frameListTape
           ((pre ++ f :: middle ++ gnInstallImage f :: rest).flatMap
             G1Frame.bits))
-        gnInstallExitState :=
+        (gnInstallExitState (.carried f)) :=
   gnCS_copyShuttle_onList n pre f middle rest a hsource hmiddle hsafe
 
 theorem check_gnCS_copyShuttle_nextBlank (n : Nat) (pre : List G1Frame)
@@ -120,7 +120,7 @@ theorem check_gnCS_copyShuttle_nextBlank (n : Nat) (pre : List G1Frame)
         omega)
         (frameListTape
           ((pre ++ f :: middle ++ gnInstallImage f :: .blank :: rest).flatMap
-            G1Frame.bits)) gnInstallExitState :=
+            G1Frame.bits)) (gnInstallExitState (.carried f)) :=
   gnCS_copyShuttle_nextBlank n pre f middle rest a hsource hmiddle hsafe
 
 theorem check_gnCS_copyShuttle_body_onList (n : Nat) (pre : List G1Frame)
@@ -141,7 +141,7 @@ theorem check_gnCS_copyShuttle_body_onList (n : Nat) (pre : List G1Frame)
         omega)
         (frameListTape
           ((pre ++ f :: middle ++ f :: rest).flatMap G1Frame.bits))
-        gnInstallExitState :=
+        (gnInstallExitState (.carried f)) :=
   gnCS_copyShuttle_body_onList n pre f middle rest a hbody hmiddle hsafe
 
 theorem check_gnCS_copyShuttle_body_nextBlank (n : Nat)
@@ -162,7 +162,7 @@ theorem check_gnCS_copyShuttle_body_nextBlank (n : Nat)
         omega)
         (frameListTape
           ((pre ++ f :: middle ++ f :: .blank :: rest).flatMap G1Frame.bits))
-        gnInstallExitState :=
+        (gnInstallExitState (.carried f)) :=
   gnCS_copyShuttle_body_nextBlank n pre f middle rest a hbody hmiddle hsafe
 
 theorem check_gnTransition_install_cursor_destination_restore
@@ -193,7 +193,7 @@ theorem check_gnTransition_install_cursor_destination_restore
           true, .right) ∧
       gnTransition phase
         (.install .restore (.p3 false true true) (.carried .cursor)) scan =
-        (0, .install .exit .p0 .empty, true, .right) :=
+        (0, gnInstallExitState (.carried .cursor), true, .right) :=
   gnTransition_install_cursor_destination_restore phase scan
 
 theorem check_gnTransition_install_finish_destination_restore
@@ -224,7 +224,7 @@ theorem check_gnTransition_install_finish_destination_restore
           true, .right) ∧
       gnTransition phase
         (.install .restore (.p3 true false true) (.carried .finish)) scan =
-        (0, .install .exit .p0 .empty, false, .right) :=
+        (0, gnInstallExitState (.carried .finish), false, .right) :=
   gnTransition_install_finish_destination_restore phase scan
 
 theorem check_gnTransition_install_forward_none (phase : Fin 1)
@@ -289,7 +289,7 @@ theorem check_gnCS_copyShuttle_tag_run45 (n : Nat) :
         simp [TM.tapeLength, gnCS, gnClock, g1Clock]
         omega)
         (frameListTape (gnCopyLiteralOutput.flatMap G1Frame.bits))
-        gnInstallExitState :=
+        (gnInstallExitState (.carried .tag)) :=
   gnCS_copyShuttle_tag_run45 n
 
 set_option maxRecDepth 2048 in
@@ -306,7 +306,7 @@ theorem check_gnCS_copyShuttle_cursor_run37 (n : Nat) :
         simp [TM.tapeLength, gnCS, gnClock, g1Clock]
         omega)
         (frameListTape ([.cursor, .tag, .bof, .blank].flatMap G1Frame.bits))
-        gnInstallExitState :=
+        (gnInstallExitState (.carried .cursor)) :=
   gnCS_copyShuttle_cursor_run37 n
 
 set_option maxRecDepth 2048 in
@@ -324,7 +324,7 @@ theorem check_gnCS_copyShuttle_finish_run37 (n : Nat) :
         omega)
         (frameListTape
           ([.finish, .tag, .separator, .blank].flatMap G1Frame.bits))
-        gnInstallExitState :=
+        (gnInstallExitState (.carried .finish)) :=
   gnCS_copyShuttle_finish_run37 n
 
 theorem check_gnCopyShuttle_marker_middle_rejected :

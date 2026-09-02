@@ -12,10 +12,11 @@ This module specializes the merged `FrameShuttle` kernel to the existing
 fixing every other frame.  Consequently source and middle frames must be
 neither blank nor the marker.
 
-Only `firstRecord` enters `GNState.install`; the separate boundary module owns
-the resulting live cursor shuttle.  This owner still adds no body driver,
-installer-exit activation, live finish execution, `GateNTapeState` execution
-bridge, total clock adequacy, commit, verdict, or acceptance.
+Only `firstRecord` initially enters `GNState.install`; the separate boundary
+module owns the resulting live cursor shuttle.  GN-E2-3a changes this owner's
+endpoint to retain the carried source frame.  This owner still adds no body
+driver, `GateNTapeState` execution bridge, total clock adequacy, commit,
+verdict, or acceptance.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -62,9 +63,6 @@ def gnInstallRevComplete (mode : GNInstallMode) (b0 b1 b2 b3 : Bool) :
   match g1FrameCodec.decode? [b0, b1, b2, b3] with
   | some frame => gnInstallRevAdvance mode frame
   | none => .reject
-
-/-- The single fixed exit state; carried data is deliberately discarded. -/
-def gnInstallExitState : GNState := .install .exit .p0 .empty
 
 private theorem gnInstall_bits (a : GNInstallAux) :
     a.frame.bits =
@@ -257,7 +255,7 @@ def gnCopyShuttle : FrameShuttle GNState G1Frame GNInstallMode GNInstallAux wher
     .install .restore (.p2 (gnInstallBit0 a) (gnInstallBit1 a)) a
   restore3 := fun a => .install .restore
     (.p3 (gnInstallBit0 a) (gnInstallBit1 a) (gnInstallBit2 a)) a
-  exitState := fun _ => gnInstallExitState
+  exitState := gnInstallExitState
   rw0 := gnInstallBit0
   rw1 := gnInstallBit1
   rw2 := gnInstallBit2
@@ -295,7 +293,7 @@ theorem gnCS_copyShuttle_onList (n : Nat) (pre : List G1Frame) (f : G1Frame)
         (frameListTape
           ((pre ++ f :: middle ++ gnInstallImage f :: rest).flatMap
             G1Frame.bits))
-        gnInstallExitState := by
+        (gnInstallExitState (.carried f)) := by
   have h := gnCopyShuttle.shuttleOnList n pre f middle rest a hsource hmiddle
     hsafe
   rw [(FrameShuttle.shuttleSteps_provenance middle.length).2] at h
@@ -320,7 +318,7 @@ theorem gnCS_copyShuttle_nextBlank (n : Nat) (pre : List G1Frame)
         omega)
         (frameListTape
           ((pre ++ f :: middle ++ gnInstallImage f :: .blank :: rest).flatMap
-            G1Frame.bits)) gnInstallExitState := by
+            G1Frame.bits)) (gnInstallExitState (.carried f)) := by
   have h := gnCopyShuttle.shuttleOnList_nextBlank n pre f middle rest a
     hsource hmiddle hsafe
   rw [(FrameShuttle.shuttleSteps_provenance middle.length).2] at h
@@ -346,7 +344,7 @@ theorem gnCS_copyShuttle_body_onList (n : Nat) (pre : List G1Frame)
         omega)
         (frameListTape
           ((pre ++ f :: middle ++ f :: rest).flatMap G1Frame.bits))
-        gnInstallExitState := by
+        (gnInstallExitState (.carried f)) := by
   have hsource : f ≠ G1Frame.blank ∧ f ≠ .output true := by
     rcases hbody with rfl | rfl | rfl <;> decide
   have himage := gnInstallImage_laws.2.2.1 f hbody
@@ -370,7 +368,7 @@ theorem gnCS_copyShuttle_body_nextBlank (n : Nat) (pre : List G1Frame)
         change 4 * pre.length + 4 < GNM.tapeLength n
         omega)
         (frameListTape ((pre ++ f :: middle ++ f :: .blank :: rest).flatMap
-          G1Frame.bits)) gnInstallExitState := by
+          G1Frame.bits)) (gnInstallExitState (.carried f)) := by
   have hsource : f ≠ G1Frame.blank ∧ f ≠ .output true := by
     rcases hbody with rfl | rfl | rfl <;> decide
   have himage := gnInstallImage_laws.2.2.1 f hbody
@@ -407,7 +405,7 @@ theorem gnTransition_install_cursor_destination_restore
           true, .right) ∧
       gnTransition phase
         (.install .restore (.p3 false true true) (.carried .cursor)) scan =
-        (0, .install .exit .p0 .empty, true, .right) := by
+        (0, gnInstallExitState (.carried .cursor), true, .right) := by
   exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
 
 /-- Exact destination `separator` and original-source restoration rows for a
@@ -440,7 +438,7 @@ theorem gnTransition_install_finish_destination_restore
           true, .right) ∧
       gnTransition phase
         (.install .restore (.p3 true false true) (.carried .finish)) scan =
-        (0, .install .exit .p0 .empty, false, .right) := by
+        (0, gnInstallExitState (.carried .finish), false, .right) := by
   exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
 
 /-- Raw forward decoder completion rejects every malformed four-bit window. -/
@@ -522,7 +520,7 @@ theorem gnCS_copyShuttle_tag_run45 (n : Nat) :
           (.install .probe .p0 .empty)) 45 =
       gnCopyShuttle.cfg n 4 (gnCopy_lt_tapeLength (by omega))
         (frameListTape (gnCopyLiteralOutput.flatMap G1Frame.bits))
-        gnInstallExitState := by
+        (gnInstallExitState (.carried .tag)) := by
   have h := gnCS_copyShuttle_nextBlank n [] .tag [.argSep, .index] [] .empty
     (by decide) (by intro g hg; simp at hg; rcases hg with rfl | rfl <;> decide)
     (gnCopy_lt_tapeLength (n := n) (k := 16) (by omega))
@@ -538,7 +536,7 @@ theorem gnCS_copyShuttle_cursor_run37 (n : Nat) :
           (.install .probe .p0 .empty)) 37 =
       gnCopyShuttle.cfg n 4 (gnCopy_lt_tapeLength (by omega))
         (frameListTape ([.cursor, .tag, .bof, .blank].flatMap G1Frame.bits))
-        gnInstallExitState := by
+        (gnInstallExitState (.carried .cursor)) := by
   have h := gnCS_copyShuttle_nextBlank n [] .cursor [.tag] [] .empty
     (by decide) (by intro g hg; simp at hg; subst g; decide)
     (gnCopy_lt_tapeLength (n := n) (k := 12) (by omega))
@@ -555,7 +553,7 @@ theorem gnCS_copyShuttle_finish_run37 (n : Nat) :
       gnCopyShuttle.cfg n 4 (gnCopy_lt_tapeLength (by omega))
         (frameListTape
           ([.finish, .tag, .separator, .blank].flatMap G1Frame.bits))
-        gnInstallExitState := by
+        (gnInstallExitState (.carried .finish)) := by
   have h := gnCS_copyShuttle_nextBlank n [] .finish [.tag] [] .empty
     (by decide) (by intro g hg; simp at hg; subst g; decide)
     (gnCopy_lt_tapeLength (n := n) (k := 12) (by omega))

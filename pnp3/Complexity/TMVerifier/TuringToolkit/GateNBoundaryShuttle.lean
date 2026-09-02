@@ -8,11 +8,11 @@ import Complexity.TMVerifier.TuringToolkit.GateNScratchBootstrap
 This module activates exactly the stationary `firstRecord` door and composes
 it with one source-restoring shuttle.  The source cursor is restored, the
 first scratch frame becomes `bof`, the next scratch frame remains blank, and
-execution stops in the existing dormant `gnInstallExitState` at p0 of the
-first record-body frame.
+execution stops in payload-preserving
+`gnInstallExitState (.carried .cursor)` at p0 of the first record-body frame.
 
 There is no body driver or body copy, no live finish-to-separator execution,
-no exit activation or record-done dispatch, no values/tail writer, no launch,
+no E2-3a exit activation or record-done dispatch, no values/tail writer, no launch,
 delegation, commit, loop, total installer clock, verdict, or acceptance.
 -/
 
@@ -60,7 +60,7 @@ the unchanged GN word, the first scratch `bof`, and the following blank. -/
 def gnBofSeedConfig (r : GNProgram) (g : SLGate r.inputs.length)
     (hg : r.program.gates[0]? = some g) :
     Configuration (M := GNM) (encodeGN r).length where
-  state := ⟨(0 : Fin 1), gnInstallExitState⟩
+  state := ⟨(0 : Fin 1), gnInstallExitState (.carried .cursor)⟩
   head := ⟨4 * (gnRecordsStart r + 1), by
     have hs := encodeGNFrames_firstRecord_split hg
     have hlt : 4 * (gnRecordsStart r + 1) < (encodeGN r).length := by
@@ -135,7 +135,8 @@ private theorem gnFirstRecordProbe_tape_explicit {r : GNProgram}
         [G1Frame.blank]) G1Frame.blank rfl)
 
 /-- Local exact E2-2 capstone: one door row followed by the concrete shuttle
-schedule, stopping at the dormant installer exit. -/
+schedule, stopping at the exact installer-exit boundary later activated by
+GN-E2-3a. -/
 theorem gnCS_firstRecord_to_bofSeed_exact {r : GNProgram}
     {g : SLGate r.inputs.length} (hg : r.program.gates[0]? = some g) :
     TM.runConfig (M := GNM) (gnFirstRecordConfig r g hg)
@@ -170,7 +171,7 @@ theorem gnCS_firstRecord_to_bofSeed_exact {r : GNProgram}
         (frameListTape
           ((gnLocatePrefix r ++ G1Frame.cursor :: gnFirstRecordMiddle r ++
             [G1Frame.bof, G1Frame.blank]).flatMap G1Frame.bits))
-        gnInstallExitState =
+        (gnInstallExitState (.carried .cursor)) =
       gnBofSeedConfig r g hg := by
     apply Configuration.ext_of_components
     · rfl
@@ -202,7 +203,8 @@ theorem gnCS_encodeGN_bofSeed_exact {r : GNProgram}
 original encoded GN word; only the first scratch frame is appended as `bof`. -/
 theorem gnBofSeedConfig_structure {r : GNProgram}
     {g : SLGate r.inputs.length} (hg : r.program.gates[0]? = some g) :
-    (gnBofSeedConfig r g hg).state = ⟨(0 : Fin 1), gnInstallExitState⟩ ∧
+    (gnBofSeedConfig r g hg).state =
+        ⟨(0 : Fin 1), gnInstallExitState (.carried .cursor)⟩ ∧
       ((gnBofSeedConfig r g hg).head : Nat) = 4 * (gnRecordsStart r + 1) ∧
       (gnBofSeedConfig r g hg).tape = frameListTape
         ((gnLocatePrefix r ++ G1Frame.cursor :: gnFirstRecordMiddle r ++

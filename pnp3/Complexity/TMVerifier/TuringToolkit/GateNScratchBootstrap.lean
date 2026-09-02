@@ -12,10 +12,11 @@ scanned source bit back unchanged.  On a nonempty stage-zero program it stops
 on p0 of the unique `cursor` in fixed `firstRecord`; on an empty program it
 stops on the adjacent earlier `separator` in fixed `noGate`.
 
-Both arrival states are dormant.  In particular this slice performs no
-`cursor → bof` source-boundary transform, does not enter `install`, and does
-not execute the shuttle.  The final theorem exposes exactly the source,
-middle, first-blank, and room facts needed by the next GN-E2-2 handoff.
+This module's capstones stop at both arrival states.  GN-E2-2 subsequently
+activates only `firstRecord`; `noGate` remains dormant.  E2-1c itself performs
+no `cursor → bof` boundary transform and executes no shuttle.  Its final
+theorem exposes exactly the source, middle, first-blank, and room facts used by
+that GN-E2-2 handoff.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM

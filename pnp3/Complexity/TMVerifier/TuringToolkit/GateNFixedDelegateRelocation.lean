@@ -40,8 +40,9 @@ word from a trailing-zero extension.  E1b rejects nonblank decoded or reserved
 windows in the inspected frame, but makes no trailing-zero rejection claim.
 The exported E1b endpoint is exact `scratchEntry`.  GN-E2-1c now activates that
 row into the strict read-only reverse locator in this same control owner;
-`firstRecord` and `noGate` are the new dormant arrivals.  GN-E2-1b's separate
-caller-supplied `install` states remain unconnected.
+`firstRecord` is the single live stationary door into the installer probe;
+`noGate` remains a dormant arrival.  GN-E2-2 uses that door only for the first
+cursor shuttle and leaves the installer exit dormant.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -71,9 +72,8 @@ structure GNScanState where
   buffer : GNScanBuffer
   deriving Fintype, DecidableEq, Repr
 
-/-- Finite modes of the dormant GN identity-copy shuttle.  They contain no
-runtime geometry; the later bootstrap/record driver owns all boundary
-translations and entry selection. -/
+/-- Finite modes of the GN boundary-image shuttle.  They contain no runtime
+geometry; later slices own repeated body installation and entry selection. -/
 inductive GNInstallMode where
   | probe | turnBack | mark | seek | destinationTurn | destination
   | reverse | reverseStop | restore | exit | reject
@@ -111,10 +111,50 @@ def gnInstallBit1 (a : GNInstallAux) : Bool := a.frame.bits.getD 1 false
 def gnInstallBit2 (a : GNInstallAux) : Bool := a.frame.bits.getD 2 false
 def gnInstallBit3 (a : GNInstallAux) : Bool := a.frame.bits.getD 3 false
 
-/-- Identity-copy admissibility.  Blank is the destination frontier and
+/-- The one finite boundary image used by every installer destination write.
+Source restoration continues to use the original carried frame. -/
+def gnInstallImage : G1Frame → G1Frame
+  | .cursor => .bof
+  | .finish => .separator
+  | frame => frame
+
+def gnInstallImageBit0 (a : GNInstallAux) : Bool :=
+  (gnInstallImage a.frame).bits.getD 0 false
+def gnInstallImageBit1 (a : GNInstallAux) : Bool :=
+  (gnInstallImage a.frame).bits.getD 1 false
+def gnInstallImageBit2 (a : GNInstallAux) : Bool :=
+  (gnInstallImage a.frame).bits.getD 2 false
+def gnInstallImageBit3 (a : GNInstallAux) : Bool :=
+  (gnInstallImage a.frame).bits.getD 3 false
+
+/-- Exactly the ordinary serialized record-body alphabet.  Boundary cursor
+and finish frames are deliberately excluded. -/
+def GNInstallBody (frame : G1Frame) : Prop :=
+  frame = .tag ∨ frame = .index ∨ frame = .argSep
+
+/-- Shuttle-source admissibility.  Blank is the destination frontier and
 `output true` is the temporary source marker, so neither may be a source. -/
 def GNInstallAdmissible (frame : G1Frame) : Prop :=
   frame ≠ .blank ∧ frame ≠ .output true
+
+/-- Exact image laws: the two boundary translations, identity on the finite
+ordinary-body alphabet, and freshness for every admissible source. -/
+theorem gnInstallImage_laws :
+    gnInstallImage .cursor = .bof ∧
+      gnInstallImage .finish = .separator ∧
+      (∀ frame, GNInstallBody frame → gnInstallImage frame = frame) ∧
+      (∀ frame, GNInstallAdmissible frame →
+        gnInstallImage frame ≠ .blank ∧
+          gnInstallImage frame ≠ .output true) := by
+  constructor
+  · rfl
+  constructor
+  · rfl
+  constructor
+  · intro frame h
+    rcases h with rfl | rfl | rfl <;> rfl
+  · intro frame h
+    cases frame <;> simp_all [gnInstallImage, GNInstallAdmissible]
 
 set_option synthInstance.maxSize 8192 in
 /-- Fixed GN outer control.  The delegated payload is itself a closed finite
@@ -247,11 +287,11 @@ def gnTransition (_phase : Fin 1) (s : GNState) (scan : Bool) :
   | .install .destinationTurn .p0 a =>
       (0, .install .destination (.p3 false false false) a, scan, .left)
   | .install .destination (.p3 _ _ _) a =>
-      (0, .install .destination (.p2 false false) a, gnInstallBit3 a, .left)
+      (0, .install .destination (.p2 false false) a, gnInstallImageBit3 a, .left)
   | .install .destination (.p2 _ _) a =>
-      (0, .install .destination (.p1 false) a, gnInstallBit2 a, .left)
+      (0, .install .destination (.p1 false) a, gnInstallImageBit2 a, .left)
   | .install .destination (.p1 _) a =>
-      (0, .install .destination .p0 a, gnInstallBit1 a, .left)
+      (0, .install .destination .p0 a, gnInstallImageBit1 a, .left)
   | .install .reverse .r3 a =>
       (0, .install .reverse (.r2 scan) a, scan, .left)
   | .install .reverse (.r2 b3) a =>
@@ -265,7 +305,7 @@ def gnTransition (_phase : Fin 1) (s : GNState) (scan : Bool) :
       | some _ => (0, .install .reverse .r3 a, scan, .left)
       | none => (0, .reject, scan, .stay)
   | .install .destination .p0 a =>
-      (0, .install .reverse .r3 a, gnInstallBit0 a, .left)
+      (0, .install .reverse .r3 a, gnInstallImageBit0 a, .left)
   | .install .reverseStop .p0 a =>
       (0, .install .restore (.p1 (gnInstallBit0 a)) a,
         gnInstallBit0 a, .right)
@@ -294,7 +334,7 @@ def gnTransition (_phase : Fin 1) (s : GNState) (scan : Bool) :
       else if next = .noGate then (0, .noGate, scan, .stay)
       else if next = .reject then (0, .reject, scan, .stay)
       else (0, .locating ⟨next, .r3⟩, scan, .left)
-  | .firstRecord => (0, .firstRecord, scan, .stay)
+  | .firstRecord => (0, .install .probe .p0 .empty, scan, .stay)
   | .noGate => (0, .noGate, scan, .stay)
   | .idle => (0, .idle, scan, .stay)
   | .accept => (0, .accept, scan, .stay)
@@ -345,6 +385,13 @@ def gnPoint (bits : List Bool) : Boolcube.Point bits.length := fun i => bits.get
 
 @[simp] theorem gnTransition_reject (phase : Fin 1) (scan : Bool) :
     gnTransition phase .reject scan = (0, .reject, scan, .stay) := rfl
+
+/-- The sole live boundary door and the still-dormant empty-program row. -/
+theorem gnTransition_boundary_rows (phase : Fin 1) (scan : Bool) :
+    gnTransition phase .firstRecord scan =
+        (0, .install .probe .p0 .empty, scan, .stay) ∧
+      gnTransition phase .noGate scan = (0, .noGate, scan, .stay) := by
+  exact ⟨rfl, rfl⟩
 
 /-- The public E1a `wordEnd` arrival is the p0 row of E1b confirmation. -/
 theorem gnTransition_wordEnd (phase : Fin 1) (scan : Bool) :

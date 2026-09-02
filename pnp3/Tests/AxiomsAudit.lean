@@ -72,6 +72,7 @@ import Complexity.TMVerifier.TuringToolkit.GateNEncodingExamples
 import Complexity.TMVerifier.TuringToolkit.GateNTapeStateExamples
 import Complexity.TMVerifier.TuringToolkit.GateNFirstInstallBridge
 import Complexity.TMVerifier.TuringToolkit.GateNScratchBootstrap
+import Complexity.TMVerifier.TuringToolkit.GateNBoundaryShuttle
 import Complexity.TMVerifier.TuringToolkit.GateNRelocationExamples
 
 /-!
@@ -2348,19 +2349,26 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.GNFixedDelegateProbes.literal_empty_scratchEntry
 #print axioms Internal.PsubsetPpoly.TM.GNFixedDelegateProbes.literal_oneConstFalse_scratchEntry
 
--- GN-E2-1b (2026-09-02): dormant identity-copy specialization of the merged
--- FrameShuttle kernel in the same finite GNM control.  The decoded `1001`
--- marker is accepted only by reverse seek; malformed/reserved completions use
--- the existing stable reject sink.  This has no scratch-entry activation,
--- installer driver, boundary translation, clock, verdict, or acceptance.
+-- GN-E2-2 owner update (2026-09-02): the same finite GNM shuttle writes the
+-- exact boundary image at its destination and restores the original carried
+-- frame at its source.  Body-only corollaries retain the old identity shape;
+-- finish rows are pinned but not executed.  No driver, exit activation, total
+-- clock, verdict, or acceptance is present.
+#print axioms Internal.PsubsetPpoly.TM.gnInstallImage_laws
 #print axioms Internal.PsubsetPpoly.TM.gnCS_copyShuttle_onList
 #print axioms Internal.PsubsetPpoly.TM.gnCS_copyShuttle_nextBlank
+#print axioms Internal.PsubsetPpoly.TM.gnCS_copyShuttle_body_onList
+#print axioms Internal.PsubsetPpoly.TM.gnCS_copyShuttle_body_nextBlank
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_install_cursor_destination_restore
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_install_finish_destination_restore
 #print axioms Internal.PsubsetPpoly.TM.gnTransition_install_forward_none
 #print axioms Internal.PsubsetPpoly.TM.gnTransition_install_reverse_none
 #print axioms Internal.PsubsetPpoly.TM.gnTransition_install_reserved
 #print axioms Internal.PsubsetPpoly.TM.gnTransition_install_marker_modes
 #print axioms Internal.PsubsetPpoly.TM.gnCS_install_reject_stable
 #print axioms Internal.PsubsetPpoly.TM.gnCS_copyShuttle_tag_run45
+#print axioms Internal.PsubsetPpoly.TM.gnCS_copyShuttle_cursor_run37
+#print axioms Internal.PsubsetPpoly.TM.gnCS_copyShuttle_finish_run37
 #print axioms Internal.PsubsetPpoly.TM.gnCopyShuttle_marker_middle_rejected
 
 -- GN-E2-0 (2026-09-01): pure stage words are pinned to exact physical GNM
@@ -2396,9 +2404,9 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.GNFirstInstallProbes.empty_no_first_gate
 
 -- GN-E2-1c (2026-09-02): strict stage-zero reverse locator and exact
--- read-only real-initial arrivals at dormant firstRecord/noGate.  The scoped
--- clock facts cover validation+locator only; the handoff proves shuttle
--- premises but executes no boundary transform, shuttle, install, or loop.
+-- read-only real-initial arrivals at firstRecord/noGate.  Its own capstones
+-- stop before the live firstRecord door; noGate remains dormant.  The scoped
+-- clock facts cover validation+locator only.
 #print axioms Internal.PsubsetPpoly.TM.gnLocateComplete_reserved
 #print axioms Internal.PsubsetPpoly.TM.gnLocateAdvance_tail_and_edge
 #print axioms Internal.PsubsetPpoly.TM.gnLocateAdvance_stageZero_malformed
@@ -2428,6 +2436,24 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.gnNoGateSteps_le_gnClock
 #print axioms Internal.PsubsetPpoly.TM.GNScratchBootstrapProbes.literal_oneConstFalse_firstRecord
 #print axioms Internal.PsubsetPpoly.TM.GNScratchBootstrapProbes.literal_empty_noGate
+
+-- GN-E2-2 (2026-09-02): the sole live firstRecord door plus exactly one
+-- cursor-to-bof shuttle, ending in the dormant install exit at first-body p0.
+-- The source cursor and original GN word are restored.  The five-step 1101
+-- rejection and E2-3 handoff are exact; there is no body execution, live
+-- finish, exit activation, loop, total installer clock, verdict or acceptance.
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_boundary_rows
+#print axioms Internal.PsubsetPpoly.TM.gnFirstRecord_image_request_prefix
+#print axioms Internal.PsubsetPpoly.TM.gnCS_firstRecord_to_probe_exact
+#print axioms Internal.PsubsetPpoly.TM.gnBofSeedSteps_provenance
+#print axioms Internal.PsubsetPpoly.TM.gnCS_firstRecord_to_bofSeed_exact
+#print axioms Internal.PsubsetPpoly.TM.gnCS_encodeGN_bofSeed_exact
+#print axioms Internal.PsubsetPpoly.TM.gnBofSeedConfig_structure
+#print axioms Internal.PsubsetPpoly.TM.gnBofSeed_firstBody_handoff
+#print axioms Internal.PsubsetPpoly.TM.gnBofSeedSteps_le_gnClock
+#print axioms Internal.PsubsetPpoly.TM.gnCS_firstRecord_reserved1101_reject_five
+#print axioms Internal.PsubsetPpoly.TM.gnCS_firstRecord_reserved1101_reject_stable
+#print axioms Internal.PsubsetPpoly.TM.GNBoundaryShuttleProbes.literal_oneConstFalse_bofSeed
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

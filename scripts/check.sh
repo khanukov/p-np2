@@ -501,6 +501,9 @@ fi
 
 echo "Agent policy docs OK (pnp4 P-vs-NP mainline + restricted side-track boundary enforced)."
 
+echo "[check] Step 3.b: frozen TMVerifier tree manifest"
+"${ROOT_DIR}/scripts/check_tmverifier_freeze.sh"
+
 echo "[check] Step 4/17: doc-honesty linter (Research Governance v0.1, Rule 1)"
 "${ROOT_DIR}/scripts/check_doc_honesty.sh"
 

@@ -150,6 +150,34 @@ theorem check_gnTransition_locate_reserved (phase : Fin 1)
         (0, .reject, true, .stay) :=
   gnTransition_locate_reserved phase mode
 
+theorem check_gnCS_locate_reserved1101_reject_four (n base : Nat)
+    (hsafe : base + 4 < GNM.tapeLength n)
+    (tape : Fin (GNM.tapeLength n) → Bool) (mode : GNLocateMode)
+    (hbits : physicalBitsAt hsafe tape = [true, true, false, true]) :
+    TM.runConfig (M := GNM)
+        (Phased.alignedAt gnCS gnCS.startPhase n (base + 3) (by
+          change base + 3 < GNM.tapeLength n
+          omega) tape
+          (.locating ⟨mode, .r3⟩)) 4 =
+      Phased.alignedAt gnCS gnCS.startPhase n base (by
+        change base < GNM.tapeLength n
+        omega) tape .reject :=
+  gnCS_locate_reserved1101_reject_four n base hsafe tape mode hbits
+
+theorem check_gnCS_locate_reserved1101_reject_stable (n base : Nat)
+    (hsafe : base + 4 < GNM.tapeLength n)
+    (tape : Fin (GNM.tapeLength n) → Bool) (mode : GNLocateMode)
+    (hbits : physicalBitsAt hsafe tape = [true, true, false, true]) (k : Nat) :
+    TM.runConfig (M := GNM)
+        (Phased.alignedAt gnCS gnCS.startPhase n (base + 3) (by
+          change base + 3 < GNM.tapeLength n
+          omega) tape
+          (.locating ⟨mode, .r3⟩)) (4 + k) =
+      Phased.alignedAt gnCS gnCS.startPhase n base (by
+        change base < GNM.tapeLength n
+        omega) tape .reject :=
+  gnCS_locate_reserved1101_reject_stable n base hsafe tape mode hbits k
+
 theorem check_gnLocate_firstRecord_path {r : GNProgram}
     {g : SLGate r.inputs.length} (hg : r.program.gates[0]? = some g) :
     GNLocateRevValidPath .tailFinish (gnFirstRecordMiddle r) ∧

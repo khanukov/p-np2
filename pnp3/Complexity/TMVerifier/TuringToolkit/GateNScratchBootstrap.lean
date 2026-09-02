@@ -6,8 +6,8 @@ import Complexity.TMVerifier.TuringToolkit.GateNFirstInstallBridge
 
 **Progress classification: infrastructure, not P-vs-NP mainline progress.**
 
-This module activates only the former `scratchEntry` row of the existing GNM.
-The live pass leaves the whole scratch slice `[N, …)` blank and writes every
+This module proves the live pass after `scratchEntry` is activated in the fixed
+GN control.  It leaves the whole scratch slice `[N, …)` blank and writes every
 scanned source bit back unchanged.  On a nonempty stage-zero program it stops
 on p0 of the unique `cursor` in fixed `firstRecord`; on an empty program it
 stops on the adjacent earlier `separator` in fixed `noGate`.
@@ -15,7 +15,7 @@ stops on the adjacent earlier `separator` in fixed `noGate`.
 Both arrival states are dormant.  In particular this slice performs no
 `cursor → bof` source-boundary transform, does not enter `install`, and does
 not execute the shuttle.  The final theorem exposes exactly the source,
-middle, first-blank, and room facts needed by the reviewed GN-E2-2 handoff.
+middle, first-blank, and room facts needed by the next GN-E2-2 handoff.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -225,6 +225,109 @@ theorem gnTransition_locate_reserved (phase : Fin 1) (mode : GNLocateMode) :
   exact ⟨gnTransition_locate_none phase mode true true false true rfl,
     gnTransition_locate_none phase mode true true true false rfl,
     gnTransition_locate_none phase mode true true true true rfl⟩
+
+/-- Private exact four-row raw reverse rejection helper. -/
+private theorem gnCS_locate_reject_four (n base : Nat)
+    (hsafe : base + 4 < GNM.tapeLength n)
+    (tape : Fin (GNM.tapeLength n) → Bool) (mode : GNLocateMode)
+    (b0 b1 b2 b3 : Bool)
+    (hbits : physicalBitsAt hsafe tape = [b0, b1, b2, b3])
+    (hreject : gnLocateComplete mode b0 b1 b2 b3 = .reject) :
+    TM.runConfig (M := GNM)
+        (Phased.alignedAt gnCS gnCS.startPhase n (base + 3)
+          (by exact lt_trans (by omega) hsafe) tape
+          (.locating ⟨mode, .r3⟩)) 4 =
+      Phased.alignedAt gnCS gnCS.startPhase n base
+        (by exact lt_trans (by omega) hsafe) tape .reject := by
+  have hmachine : (Phased.machine gnCS).tapeLength n = GNM.tapeLength n := rfl
+  have hcells :
+      tape ⟨base, by omega⟩ = b0 ∧
+        tape ⟨base + 1, by omega⟩ = b1 ∧
+        tape ⟨base + 2, by omega⟩ = b2 ∧
+        tape ⟨base + 3, by omega⟩ = b3 := by
+    simpa only [physicalBitsAt, List.cons.injEq, and_true] using hbits
+  rcases hcells with ⟨h0, h1, h2, h3⟩
+  show TM.runConfig (M := GNM) _ (1 + 1 + 1 + 1) = _
+  rw [runConfig_add, runConfig_add, runConfig_add]
+  simp only [runConfig_one]
+  have s3 : TM.stepConfig (M := GNM)
+      (Phased.alignedAt gnCS gnCS.startPhase n (base + 3)
+          (by exact lt_trans (by omega) hsafe) tape (.locating ⟨mode, .r3⟩)) =
+      Phased.alignedAt gnCS gnCS.startPhase n (base + 2) (by omega) tape
+        (.locating ⟨mode, .r2 (tape ⟨base + 3, by omega⟩)⟩) := by
+    have h := Phased.stepLeft gnCS gnCS.startPhase n (base + 3) (by omega) (by omega) tape (.locating ⟨mode, .r3⟩)
+      (.locating ⟨mode, .r2 (tape ⟨base + 3, by omega⟩)⟩)
+      (tape ⟨base + 3, by omega⟩) (by rfl)
+    rw [writeCell_self] at h
+    simpa using h
+  rw [s3]
+  have s2 : TM.stepConfig (M := GNM)
+      (Phased.alignedAt gnCS gnCS.startPhase n (base + 2) (by omega) tape
+        (.locating ⟨mode, .r2 (tape ⟨base + 3, by omega⟩)⟩)) =
+      Phased.alignedAt gnCS gnCS.startPhase n (base + 1) (by omega) tape
+        (.locating ⟨mode, .r1 (tape ⟨base + 2, by omega⟩)
+          (tape ⟨base + 3, by omega⟩)⟩) := by
+    have h := Phased.stepLeft gnCS gnCS.startPhase n (base + 2) (by omega) (by omega) tape
+      (.locating ⟨mode, .r2 (tape ⟨base + 3, by omega⟩)⟩)
+      (.locating ⟨mode, .r1 (tape ⟨base + 2, by omega⟩)
+        (tape ⟨base + 3, by omega⟩)⟩)
+      (tape ⟨base + 2, by omega⟩) (by rfl)
+    rw [writeCell_self] at h
+    simpa using h
+  rw [s2]
+  have s1 : TM.stepConfig (M := GNM)
+      (Phased.alignedAt gnCS gnCS.startPhase n (base + 1) (by omega) tape
+        (.locating ⟨mode, .r1 (tape ⟨base + 2, by omega⟩)
+          (tape ⟨base + 3, by omega⟩)⟩)) =
+      Phased.alignedAt gnCS gnCS.startPhase n base (by omega) tape
+        (.locating ⟨mode, .r0 (tape ⟨base + 1, by omega⟩)
+          (tape ⟨base + 2, by omega⟩) (tape ⟨base + 3, by omega⟩)⟩) := by
+    have h := Phased.stepLeft gnCS gnCS.startPhase n (base + 1) (by omega) (by omega) tape
+      (.locating ⟨mode, .r1 (tape ⟨base + 2, by omega⟩)
+        (tape ⟨base + 3, by omega⟩)⟩)
+      (.locating ⟨mode, .r0 (tape ⟨base + 1, by omega⟩)
+        (tape ⟨base + 2, by omega⟩) (tape ⟨base + 3, by omega⟩)⟩)
+      (tape ⟨base + 1, by omega⟩) (by rfl)
+    rw [writeCell_self] at h
+    simpa using h
+  rw [s1]
+  have s0 := Phased.stepStay gnCS gnCS.startPhase n base (by omega) tape
+    (.locating ⟨mode, .r0 (tape ⟨base + 1, by omega⟩)
+      (tape ⟨base + 2, by omega⟩) (tape ⟨base + 3, by omega⟩)⟩)
+    .reject (tape ⟨base, by omega⟩) (by
+      simp [gnCS, gnTransition, h0, h1, h2, h3, hreject])
+  rwa [writeCell_self] at s0
+
+/-- The reserved word `1101`, supplied at an arbitrary aligned locator window,
+reaches outer reject in exactly four rows with p0 and the full tape fixed. -/
+theorem gnCS_locate_reserved1101_reject_four (n base : Nat)
+    (hsafe : base + 4 < GNM.tapeLength n)
+    (tape : Fin (GNM.tapeLength n) → Bool) (mode : GNLocateMode)
+    (hbits : physicalBitsAt hsafe tape = [true, true, false, true]) :
+    TM.runConfig (M := GNM)
+        (Phased.alignedAt gnCS gnCS.startPhase n (base + 3)
+          (by exact lt_trans (by omega) hsafe) tape
+          (.locating ⟨mode, .r3⟩)) 4 =
+      Phased.alignedAt gnCS gnCS.startPhase n base
+        (by exact lt_trans (by omega) hsafe) tape .reject :=
+  gnCS_locate_reject_four n base hsafe tape mode true true false true hbits
+    (gnLocateComplete_reserved mode).1
+
+/-- The literal four-row `1101` rejection admits arbitrary stable reject-sink
+padding while retaining the same state, p0 head, and caller-supplied tape. -/
+theorem gnCS_locate_reserved1101_reject_stable (n base : Nat)
+    (hsafe : base + 4 < GNM.tapeLength n)
+    (tape : Fin (GNM.tapeLength n) → Bool) (mode : GNLocateMode)
+    (hbits : physicalBitsAt hsafe tape = [true, true, false, true]) (k : Nat) :
+    TM.runConfig (M := GNM)
+        (Phased.alignedAt gnCS gnCS.startPhase n (base + 3)
+          (by exact lt_trans (by omega) hsafe) tape
+          (.locating ⟨mode, .r3⟩)) (4 + k) =
+      Phased.alignedAt gnCS gnCS.startPhase n base
+        (by exact lt_trans (by omega) hsafe) tape .reject := by
+  rw [runConfig_add, gnCS_locate_reserved1101_reject_four n base hsafe tape mode
+    hbits]
+  exact gnCS_reject_stable _ rfl k
 
 private theorem gnLocateScanner_machine : gnLocateScanner.machine = GNM := rfl
 

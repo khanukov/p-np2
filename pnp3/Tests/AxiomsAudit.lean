@@ -2409,6 +2409,8 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.gnTransition_locate_none
 #print axioms Internal.PsubsetPpoly.TM.gnTransition_locate_decoded_reject
 #print axioms Internal.PsubsetPpoly.TM.gnTransition_locate_reserved
+#print axioms Internal.PsubsetPpoly.TM.gnCS_locate_reserved1101_reject_four
+#print axioms Internal.PsubsetPpoly.TM.gnCS_locate_reserved1101_reject_stable
 #print axioms Internal.PsubsetPpoly.TM.gnLocate_firstRecord_path
 #print axioms Internal.PsubsetPpoly.TM.gnLocate_noGate_path
 #print axioms Internal.PsubsetPpoly.TM.gnFirstRecordSteps_provenance

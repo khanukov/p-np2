@@ -12,11 +12,14 @@ natural number, base, index, width, request, or list.
 
 The grammar is deliberately stage-zero strict.  It first requires the exact
 terminal suffix `finish · output false · separator` in reverse reading order,
-then accepts only canonical record bodies.  It stops on the unique first
-`cursor`, or on the immediately preceding `separator` when the record region
-is empty.  Blank, data, either output in record mode, spent, misplaced
-delimiters, and every undecodable word reject.  Later-stage marker shortcuts
-are not part of this switch.
+then accepts only canonical record bodies.  Locally it stops on any `cursor`
+encountered in a legal tag-count mode, or on the immediately preceding
+`separator` when the record region is empty.  The designated first cursor and
+its global uniqueness are conclusions only for canonical encoded nonempty
+programs, via the split/uniqueness theorems and capstones in
+`GateNScratchBootstrap`.  Blank, data, either output in record mode, spent,
+misplaced delimiters, and every undecodable word reject.  Later-stage marker
+shortcuts are not part of this switch.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM

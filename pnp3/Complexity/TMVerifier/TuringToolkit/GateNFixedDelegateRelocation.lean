@@ -6,19 +6,18 @@ import Complexity.TMVerifier.TuringToolkit.GateNRuntimeGrammar
 import Complexity.TMVerifier.TuringToolkit.GateNLocateGrammar
 
 /-!
-# Fixed GN delegate, relocation, and E1b scratch-entry scan (2026-09-01)
+# Fixed GN delegate, relocation, runtime scan, and live locator (2026-09-02)
 
 **Progress classification: infrastructure, not P-vs-NP mainline progress.**
 
 This module defines one closed finite outer control.  Its delegated states carry
 only the already-finite complete `G1M.state`; every outer state remains finite.
 There is no request, result, natural number, base, width, offset, index, or
-runtime datum in the control.  GN-E1a adds one finite four-cell lexical scan
-payload and a fixed `wordEnd` state; GN-E1b reuses that public arrival to read
-exactly the next four physical cells, require the blank frame `0000`, return
-four cells left, and enter fixed `scratchEntry`.  The old `idle` state remains
-an inert regression sink, while the real start state is the aligned scanner
-entry.
+runtime datum in the control.  GN-E1a adds a finite lexical scan; GN-E1b
+confirms one blank frame and enters `scratchEntry`; GN-E2-1c activates that row
+with a finite reverse locator and fixed `firstRecord`/`noGate` endpoints.  The
+old `idle` state remains an inert regression sink, while the real start state
+is the aligned scanner entry.  All added payloads remain finite.
 
 Ordinary delegated states execute the exact `G1M.step` tuple.  The only two
 interceptions are the complete canonical states `g1DoneQ false` and

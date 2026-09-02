@@ -3954,11 +3954,9 @@ The empty probe separately proves `emptyProgram.program.gates[0]? = none`; it
 does not manufacture an install.
 
 There is still no reachability theorem for this installed configuration.
-GN-E2-1 must choose how an actual installer marks copying progress.  In
-particular, the unresolved decision is whether it can reuse an existing
-internal frame marker under a recoverable invariant or needs a different
-strategy; GN-E2-0 deliberately supplies no runtime marker codec or transition
-row and does not prejudge that choice.  There is also no scratch-entry
+Later GN-E2-1 work chooses decoded `output true` as a temporary source marker
+and the first blank as destination frontier; GN-E2-0 itself supplies no runtime
+marker row and does not prejudge its proof.  There is also no scratch-entry
 activation, shuttle, result, commit, clock-adequacy, multigate, verdict, or
 acceptance theorem in this slice.
 
@@ -4048,10 +4046,11 @@ the exact reverse-completion row treats it as the stop marker.  A negative
 literal pins rejection of the forward path containing
 `[argSep, output true, index]`.  The public four-bit codec remains unchanged.
 
-GN-E2-2 now owns the source-restoring `cursor → bof` boundary transform, the
-door into shuttle probe, actual shuttle execution, and subsequent record
-installation.  GN-E2-1b itself adds no installer driver, `GateNTapeState`
-execution bridge, clock adequacy, commit, verdict, or acceptance theorem.
+GN-E2-2 now owns the source-restoring `cursor → bof` and `finish → separator`
+boundary transforms, the door into shuttle probe, actual shuttle execution,
+and subsequent record installation.  GN-E2-1b itself adds no installer driver,
+`GateNTapeState` execution bridge, total clock adequacy, commit, verdict, or
+acceptance theorem.
 
 ## GN-E2-1c live read-only scratch bootstrap (2026-09-02)
 
@@ -4062,10 +4061,13 @@ head `N` and enters a finite strict reverse locator.  Its 16 `GNLocateMode`
 constructors and four reverse-buffer shapes contain no natural, base, index,
 width, request, or list.  The locator requires terminal frames in the exact
 reverse order `finish`, `output false`, `separator`, then accepts only complete
-canonical record bodies.  It stops on the unique first `cursor` in fixed
-`firstRecord`, or on the adjacent earlier `separator` in fixed `noGate` when
-the record region is empty.  All rows write back the scanned bit.  Completion
-rows are stationary at marker p0; `firstRecord` and `noGate` remain dormant.
+canonical record bodies.  Locally it stops on any `cursor` encountered in a
+legal tag-count mode, or on the adjacent earlier `separator` in fixed `noGate`
+when the record region is empty.  The canonical encoding split,
+cursor-uniqueness theorem, and run capstones establish that the cursor
+encounter is the designated first cursor in fixed `firstRecord` for encoded
+nonempty programs.  All rows write back the scanned bit.  Completion rows are
+stationary at marker p0; `firstRecord` and `noGate` remain dormant.
 
 The exact nonempty endpoint has head `4 * gnRecordsStart r`; the empty endpoint
 has head `4 * (r.inputs.length + 1)`.  Both retain the real initial tape, so the
@@ -4078,7 +4080,11 @@ installer-clock claim.
 
 Undecodable/reserved reverse windows and decoded frames forbidden by the
 stage-zero grammar enter the existing stationary reject sink without a write
-or completion move.  The E2-2 handoff theorem packages the exact cursor-source
+or completion move.  The exact raw reverse macro pins the four-row
+`r3 → r2 → r1 → r0 → reject` schedule, and the literal `1101` specialization
+pins both that endpoint and arbitrary `+k` reject-sink padding.  The public
+surface now has 30 full-proposition wrappers and 30 direct axiom roots.  The
+E2-2 handoff theorem packages the exact cursor-source
 and forward-middle blank/`output true` exclusions, the first implicit blank as
 an explicit tape frontier, and the physical room premise required by
 `gnCopyShuttle`.  It does not execute that shuttle.  There is no `.bof` seed,

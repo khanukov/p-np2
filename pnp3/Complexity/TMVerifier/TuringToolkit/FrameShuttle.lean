@@ -29,8 +29,8 @@ structure FrameShuttle (S : Type v) [Fintype S] [DecidableEq S]
   marker : F
   /-- Source frames for which `image` is a genuine nonblank, nonmarker
   payload.  This is explicit because useful specializations (notably the GN
-  identity copy) cannot satisfy those freshness facts for every alphabet
-  element. -/
+  boundary-image shuttle) cannot satisfy those freshness facts for every
+  alphabet element. -/
   admissible : F → Prop
   image : F → F
   latch : Aux → F → Aux

@@ -3,9 +3,10 @@ import Complexity.TMVerifier.TuringToolkit.GateNFixedDelegateRelocation
 /-!
 # GN-E1b blank confirmation/scratch entry and fixed delegate surface (2026-09-01)
 
-Definitions and constructors receive `#check` pins.  Every public source
-theorem has a direct wrapper with an explicit proposition; no inferred alias or
-Lean `example` is used.
+Definitions and constructors receive `#check` pins.  Every theorem owned by
+the E1b fixed-delegate surface has a direct explicit wrapper; later image and
+boundary-row theorems resident in the shared owner module are wrapped by their
+GN-E2-1b/E2-2 surfaces.  No inferred alias or Lean `example` is used.
 -/
 
 namespace Pnp3.Tests.TMGateNFixedDelegateRelocationSurface

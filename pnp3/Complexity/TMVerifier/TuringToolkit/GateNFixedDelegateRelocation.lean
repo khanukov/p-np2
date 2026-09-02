@@ -132,7 +132,7 @@ and finish frames are deliberately excluded. -/
 def GNInstallBody (frame : G1Frame) : Prop :=
   frame = .tag ∨ frame = .index ∨ frame = .argSep
 
-/-- Identity-copy admissibility.  Blank is the destination frontier and
+/-- Shuttle-source admissibility.  Blank is the destination frontier and
 `output true` is the temporary source marker, so neither may be a source. -/
 def GNInstallAdmissible (frame : G1Frame) : Prop :=
   frame ≠ .blank ∧ frame ≠ .output true

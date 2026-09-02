@@ -414,8 +414,8 @@ lean_lib PnP3 where
     -- discovery; noGate remains dormant.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateNScratchBootstrap,
     -- GN-E2-2 (2026-09-02): the live firstRecord door and exactly one
-    -- cursor-to-bof source-restoring shuttle, stopping at dormant exit carrying
-    -- cursor; GN-E2-3a owns the later activation of that boundary.
+    -- cursor-to-bof source-restoring shuttle, stopping at the exact exit
+    -- boundary carrying cursor; GN-E2-3a owns its later activation.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateNBoundaryShuttle,
     -- GN-E2-3a (2026-09-02): payload-preserving one-body-round execution and
     -- fixed recordDone switch only; no arbitrary driver or real-input capstone.

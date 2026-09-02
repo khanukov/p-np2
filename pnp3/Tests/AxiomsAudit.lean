@@ -2353,7 +2353,8 @@ open Pnp3.Magnification
 -- GN-E2-2 owner update (2026-09-02): the same finite GNM shuttle writes the
 -- exact boundary image at its destination and restores the original carried
 -- frame at its source.  Body-only corollaries retain the old identity shape;
--- finish rows are pinned but not executed.  No driver, exit activation, total
+-- finish rows are pinned but not executed in this E2-1b owner slice.  No
+-- driver, exit activation, total
 -- clock, verdict, or acceptance is present.
 #print axioms Internal.PsubsetPpoly.TM.gnInstallImage_laws
 #print axioms Internal.PsubsetPpoly.TM.gnCS_copyShuttle_onList
@@ -2438,8 +2439,8 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.GNScratchBootstrapProbes.literal_oneConstFalse_firstRecord
 #print axioms Internal.PsubsetPpoly.TM.GNScratchBootstrapProbes.literal_empty_noGate
 
--- GN-E2-2 (2026-09-02): the sole live firstRecord door plus exactly one
--- cursor-to-bof shuttle, ending in dormant install exit carrying cursor at
+-- GN-E2-2 (2026-09-02): the firstRecord door plus exactly one cursor-to-bof
+-- shuttle, ending at the exact install-exit boundary carrying cursor at
 -- first-body p0.
 -- The source cursor and original GN word are restored.  The five-step 1101
 -- rejection and E2-3 handoff are exact; there is no body execution, live

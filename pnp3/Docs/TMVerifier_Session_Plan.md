@@ -4104,12 +4104,12 @@ or acceptance theorem in this slice.
 
 Progress classification: infrastructure, not P-vs-NP mainline progress.
 
-The fixed `firstRecord` row is the sole E2-2 stationary door into
+The fixed `firstRecord` row is the E2-2 stationary door into
 `install.probe.p0.empty`.  From the real locator endpoint, the machine executes
 exactly one source-restoring shuttle.  It restores the source cursor and the
 entire original encoded GN word, writes `bof` into the first scratch frame,
-leaves the next scratch frame blank, and stops in dormant
-`gnInstallExitState (.carried .cursor)` at p0 of the first record-body frame.
+leaves the next scratch frame blank, and stops at the exact
+`gnInstallExitState (.carried .cursor)` boundary at p0 of the first body frame.
 E2-2 itself activates no exit row and executes no ordinary body frame;
 E2-3a subsequently consumes this exact carried-cursor endpoint.
 
@@ -4128,8 +4128,8 @@ door plus four physical reads) and has arbitrary stable reject padding.  The
 E2-3 handoff exposes first body frame `tag`, the exact list/tape split, body and
 middle admissibility, and room for the next shuttle, but executes none of it.
 The E2-2 surface has 12 full-proposition wrappers and `AxiomsAudit` has the same
-12 direct source roots; private helpers are excluded.  There is no live finish
-execution, body driver, record-done dispatch, values/tail writer,
+12 direct source roots; private helpers are excluded.  E2-2 itself has no live
+finish execution, body driver, record-done dispatch, values/tail writer,
 launch/delegation, commit, loop, total installer clock, verdict, or acceptance.
 
 ## GN-E2-3a payload-preserving body round and terminal switch (2026-09-02)
@@ -4140,10 +4140,10 @@ The same fixed `GNState`, `gnTransition`, `gnCS`, and `GNM` add exactly one
 finite top-level constructor, `recordDone`; it contains no payload or geometry.
 `gnInstallExitState aux` is exact `.install .exit .p0 aux`, and every shuttle
 restore row preserves its carried frame into that endpoint.  The only activated
-exit boundary is p0.  Empty (for compatibility), carried cursor, tag, index,
-and argSep dispatch stationarily to `install.probe.p0.empty`; carried finish
-dispatches stationarily to `recordDone`.  Carried blank, output true, output
-false, data, spent, bof, and separator reject, as does every non-p0 exit buffer.
+exit boundary is p0.  Carried cursor, tag, index, and argSep dispatch
+stationarily to `install.probe.p0.empty`; carried finish dispatches to
+`recordDone`.  Empty, carried blank, output true, output false, data, spent,
+bof, and separator reject, as does every non-p0 exit buffer.
 `recordDone` is total internally, but E2-3a exposes no public stability or
 continuation theorem.
 

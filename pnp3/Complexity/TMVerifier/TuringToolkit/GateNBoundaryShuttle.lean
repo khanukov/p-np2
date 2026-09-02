@@ -135,7 +135,8 @@ private theorem gnFirstRecordProbe_tape_explicit {r : GNProgram}
         [G1Frame.blank]) G1Frame.blank rfl)
 
 /-- Local exact E2-2 capstone: one door row followed by the concrete shuttle
-schedule, stopping at the dormant installer exit. -/
+schedule, stopping at the exact installer-exit boundary later activated by
+GN-E2-3a. -/
 theorem gnCS_firstRecord_to_bofSeed_exact {r : GNProgram}
     {g : SLGate r.inputs.length} (hg : r.program.gates[0]? = some g) :
     TM.runConfig (M := GNM) (gnFirstRecordConfig r g hg)

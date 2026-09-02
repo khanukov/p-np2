@@ -46,7 +46,7 @@ theorem gnTransition_install_exit_dispatch (phase : Fin 1) (scan : Bool) :
   constructor
   · intro aux haux
     cases aux with
-    | empty => rfl
+    | empty => simp [GNInstallExitContinue] at haux
     | carried frame =>
         cases frame <;> simp_all [GNInstallExitContinue, gnInstallExitState,
           gnInstallExitDispatch, gnTransition]
@@ -55,7 +55,7 @@ theorem gnTransition_install_exit_dispatch (phase : Fin 1) (scan : Bool) :
   constructor
   · intro aux haux
     cases aux with
-    | empty => simp [GNInstallExitInvalid, GNInstallExitContinue] at haux
+    | empty => rfl
     | carried frame =>
         cases frame <;> simp_all [GNInstallExitInvalid, GNInstallExitContinue,
           gnInstallExitState, gnInstallExitDispatch, gnTransition]
@@ -94,7 +94,7 @@ structure GNBodyRoundInvariant (n : Nat) (fixed done : List G1Frame)
   room : 4 * ((fixed ++ done).length +
       (gnBodyRoundMiddle done todo seed).length + 2) < GNM.tapeLength n
 
-/-- Dormant payload-preserving exit at the current source p0. -/
+/-- Exact payload-preserving exit boundary at the current source p0. -/
 def gnBodyRoundConfig (n : Nat) (fixed done : List G1Frame)
     (current : G1Frame) (todo seed rest : List G1Frame)
     (previous : GNInstallAux)

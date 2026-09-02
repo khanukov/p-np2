@@ -190,10 +190,9 @@ no runtime geometry. -/
 def gnInstallExitState (aux : GNInstallAux) : GNState :=
   .install .exit .p0 aux
 
-/-- Exact finite payloads allowed to dispatch another source probe.  Empty is
-retained solely for the old door/seed compatibility boundary. -/
+/-- Exact finite carried payloads allowed to dispatch another source probe. -/
 def GNInstallExitContinue : GNInstallAux → Prop
-  | .empty => True
+  | .empty => False
   | .carried .cursor => True
   | .carried .tag => True
   | .carried .index => True
@@ -206,7 +205,7 @@ def GNInstallExitInvalid (aux : GNInstallAux) : Prop :=
 
 /-- Finite payload-only exit decision. -/
 def gnInstallExitDispatch : GNInstallAux → GNState
-  | .empty => .install .probe .p0 .empty
+  | .empty => .reject
   | .carried .cursor => .install .probe .p0 .empty
   | .carried .tag => .install .probe .p0 .empty
   | .carried .index => .install .probe .p0 .empty
@@ -421,7 +420,7 @@ def gnPoint (bits : List Bool) : Boolcube.Point bits.length := fun i => bits.get
 @[simp] theorem gnTransition_reject (phase : Fin 1) (scan : Bool) :
     gnTransition phase .reject scan = (0, .reject, scan, .stay) := rfl
 
-/-- The sole live boundary door and the still-dormant empty-program row. -/
+/-- The first-record boundary door and the still-dormant empty-program row. -/
 theorem gnTransition_boundary_rows (phase : Fin 1) (scan : Bool) :
     gnTransition phase .firstRecord scan =
         (0, .install .probe .p0 .empty, scan, .stay) ∧

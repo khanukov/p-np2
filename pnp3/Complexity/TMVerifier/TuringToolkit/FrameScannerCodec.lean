@@ -133,6 +133,40 @@ theorem physicalBitsAt_flatMap {F : Type v} (C : FrameCodec F) {L : Nat}
   simp [physicalBitsAt, frameListTape, List.getD, List.flatMap_append, hlen,
     hbits]
 
+private theorem getD_append_false4 (bits : List Bool) (i : Nat) :
+    (bits ++ [false, false, false, false]).getD i false =
+      bits.getD i false := by
+  induction bits generalizing i with
+  | nil =>
+      cases i with
+      | zero => rfl
+      | succ i =>
+          cases i with
+          | zero => rfl
+          | succ i =>
+              cases i with
+              | zero => rfl
+              | succ i =>
+                  cases i <;> rfl
+  | cons bit rest ih =>
+      cases i with
+      | zero => simp [List.getD]
+      | succ j => simpa [List.getD] using ih j
+
+/-- Appending one explicitly blank frame does not change a list-backed tape:
+`frameListTape` already pads every cell beyond the supplied list with `false`.
+This is the bridge between an implicit blank frontier and the explicit
+`prefix ++ [blank]` view consumed by frame-list scan theorems. -/
+theorem frameListTape_append_blank {F : Type v} (C : FrameCodec F) {L : Nat}
+    (frames : List F) (blank : F)
+    (hblank : C.bits blank = [false, false, false, false]) :
+    frameListTape (L := L) (frames.flatMap C.bits) =
+      frameListTape ((frames ++ [blank]).flatMap C.bits) := by
+  funext i
+  simp only [frameListTape, List.flatMap_append, List.flatMap_cons,
+    List.flatMap_nil, List.append_nil, hblank]
+  exact (getD_append_false4 _ _).symm
+
 end FrameScan
 
 end TM

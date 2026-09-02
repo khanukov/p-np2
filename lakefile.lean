@@ -90,6 +90,11 @@ lean_lib PnP3 where
     -- four-cell frame replacement, and the S3a non-T1 mixed-boundary probe.
     Glob.one `Complexity.TMVerifier.TuringToolkit.FrameScannerReverse,
     Glob.one `Complexity.TMVerifier.TuringToolkit.FrameScannerWrite,
+    Glob.one `Complexity.TMVerifier.TuringToolkit.FrameScannerWriteCtx,
+    -- GN-E2-1a (2026-09-02), infrastructure only: a context-derived
+    -- rightward writer and one-program source-restoring frame shuttle.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.FrameShuttle,
+    Glob.one `Complexity.TMVerifier.TuringToolkit.FrameShuttleProbe,
     Glob.one `Complexity.TMVerifier.TuringToolkit.FrameScannerReverseProbe,
     -- Mutation half of the same kernel: leftward writer, seek-until-marker
     -- and S3a mixed-boundary drivers, the exact thirteen-step rewrite cycle,
@@ -561,6 +566,9 @@ lean_lib PnP3 where
     -- Reverse/write and S3a mixed-boundary exact contract surface.
     Glob.one `Tests.TMFrameScannerReverseSurfaceTests,
     Glob.one `Tests.TMFrameRewriteCycleSurfaceTests,
+    -- GN-E2-1a (2026-09-02): explicit generic context-writer/shuttle surface,
+    -- exact 8d+29 capstone, next blank, and fresh 45-step probes.
+    Glob.one `Tests.TMFrameShuttleSurfaceTests,
     Glob.one `Tests.TMGateOnePureSurfaceTests,
     -- GN-1 (2026-08-30): 59 exact wrappers and definition `#check` pins for
     -- the pure multi-gate encoding surface.

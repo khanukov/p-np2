@@ -411,8 +411,11 @@ lean_lib PnP3 where
     -- No state/transition mutation, installer execution, or marker strategy.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateNFirstInstallBridge,
     -- GN-E2-1c (2026-09-02): live read-only scratch bootstrap and first-record
-    -- discovery, with dormant firstRecord/noGate handoffs.
+    -- discovery; noGate remains dormant.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateNScratchBootstrap,
+    -- GN-E2-2 (2026-09-02): the live firstRecord door and exactly one
+    -- cursor-to-bof source-restoring shuttle, stopping at dormant install exit.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateNBoundaryShuttle,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -653,6 +656,9 @@ lean_lib PnP3 where
     -- GN-E2-1c (2026-09-02): explicit locator grammar, endpoint, schedule,
     -- handoff, rejection, and literal surface pins.
     Glob.one `Tests.TMGateNScratchBootstrapSurfaceTests,
+    -- GN-E2-2 (2026-09-02): exact door/seed/live-capstone, rejection, handoff,
+    -- schedule and 188/16 literal wrappers.
+    Glob.one `Tests.TMGateNBoundaryShuttleSurfaceTests,
     -- GN-E2-0 (2026-09-01): definition/configuration pins and direct explicit
     -- wrappers for pure physical stages, first-request geometry, and the
     -- complete installed physical endpoint equality.

@@ -4011,33 +4011,35 @@ installer driver, commit, clock, verdict, or acceptance.  GN-E2-1b supplies
 the concrete GNM finite-control rows and instantiates the existing `output true`
 source marker and `blank` frontier without a reserved-code codec.  GN-E2-1c
 now supplies the live read-only locator and the stage-word middle/room premise
-package.  Entry into install control and any repeated installer/controller
-remain later obligations.
+package.  GN-E2-2 subsequently activates the `firstRecord` door and one cursor
+shuttle.  Repeated body installation and the installer/controller remain later
+obligations.
 
-## GN-E2-1b dormant GNM identity-copy specialization (2026-09-02)
+## GN-E2-1b/E2-2 GNM boundary-image shuttle owner (2026-09-02)
 
 Progress classification: infrastructure, not P-vs-NP mainline progress.
 
 The existing closed `GNState` now has one additional `install` constructor
 containing only a finite `GNInstallMode`, finite four-cell `GNInstallBuffer`,
 and finite `GNInstallAux` (empty or one carried `G1Frame`).  The existing
-`gnTransition`, `gnCS`, and `GNM` are unchanged as ownership points: the new
+`gnTransition`, `gnCS`, and `GNM` remain the ownership points: the finite
 tuple rows implement source probe/latch, four-left turn, marker write, forward
-seek, one-left destination turn, leftward identity write, reverse seek, source
-restore, and one fixed exit state.  No discovery, delegation, or interception
-row targets `install`.  GN-E2-1c subsequently activates `scratchEntry` into a
-separate reverse locator, but still does not target `install`.
+seek, one-left destination turn, leftward image write, reverse seek, original
+source restore, and one fixed exit state.  GN-E2-2 changes only `firstRecord`
+into a stationary door targeting the installer probe; `noGate` stays dormant.
 
 `gnCopyShuttle : FrameShuttle GNState G1Frame GNInstallMode GNInstallAux`
 uses the one shared `gnCS`, phase zero, and public `g1FrameCodec`.  Its marker
 is the already-decoded `output true = 1001`, its frontier is the first aligned
-`blank = 0000`, and its image is identity.  Source and middle admissibility are
-therefore explicit: every such frame differs from both blank and `output true`.
+`blank = 0000`, and its finite image maps `cursor` to `bof`, maps `finish` to
+`separator`, and fixes every other frame.  Source and middle admissibility are
+explicit: every such frame differs from both blank and `output true`.
 The generic capstones specialize to exact `8 * middle.length + 29` runs with
-full head/state/tape endpoints, restored source, copied frame, and (in the
-second form) a retained next blank.  The literal non-vacuous run copies `tag`
-across `[argSep, index]` in 45 steps and ends at head four in the fixed exit
-state.
+full head/state/tape endpoints, restored source, image at the destination, and
+(in the second form) a retained next blank.  Exact corollaries recover the old
+identity-shaped endpoint for `tag`, `index`, and `argSep`.  Hence the literal
+run still copies `tag` across `[argSep, index]` in 45 steps and ends at head
+four in the fixed exit state.
 
 All undecodable windows, including reserved `1101`, `1110`, and `1111`, enter
 the existing stable reject sink in probe, forward seek, and reverse seek.
@@ -4046,9 +4048,13 @@ the exact reverse-completion row treats it as the stop marker.  A negative
 literal pins rejection of the forward path containing
 `[argSep, output true, index]`.  The public four-bit codec remains unchanged.
 
-GN-E2-2 now owns the source-restoring `cursor → bof` and `finish → separator`
-boundary transforms, the door into shuttle probe, actual shuttle execution,
-and subsequent record installation.  GN-E2-1b itself adds no installer driver,
+The cursor and finish destination/restore tuples are pinned separately:
+destination writes use the image bits, while restoration uses the original
+carried-frame bits.  Only cursor-to-bof executes in GN-E2-2.  Finish-to-
+separator remains dormant for E2-3.  Caller-supplied cursor and finish probes
+separately pin their image endpoints in exactly 37 rows without making finish
+live.  The owner surface has 16 exact theorem wrappers and the audit has the
+same 16 direct source roots.  There is no body driver, exit activation,
 `GateNTapeState` execution bridge, total clock adequacy, commit, verdict, or
 acceptance theorem.
 
@@ -4067,7 +4073,8 @@ when the record region is empty.  The canonical encoding split,
 cursor-uniqueness theorem, and run capstones establish that the cursor
 encounter is the designated first cursor in fixed `firstRecord` for encoded
 nonempty programs.  All rows write back the scanned bit.  Completion rows are
-stationary at marker p0; `firstRecord` and `noGate` remain dormant.
+stationary at marker p0.  E2-1c's theorems stop there; GN-E2-2 subsequently
+activates `firstRecord`, while `noGate` remains dormant.
 
 The exact nonempty endpoint has head `4 * gnRecordsStart r`; the empty endpoint
 has head `4 * (r.inputs.length + 1)`.  Both retain the real initial tape, so the
@@ -4084,9 +4091,40 @@ or completion move.  The exact raw reverse macro pins the four-row
 `r3 → r2 → r1 → r0 → reject` schedule, and the literal `1101` specialization
 pins both that endpoint and arbitrary `+k` reject-sink padding.  The public
 surface now has 29 full-proposition wrappers and 29 direct axiom roots.  The
-E2-2 handoff theorem packages the exact cursor-source
+E2-1c handoff theorem packages the exact cursor-source
 and forward-middle blank/`output true` exclusions, the first implicit blank as
 an explicit tape frontier, and the physical room premise required by
 `gnCopyShuttle`.  It does not execute that shuttle.  There is no `.bof` seed,
 boundary transform, record/value copy, launch/delegation, commit, loop, verdict,
 or acceptance theorem in this slice.
+
+## GN-E2-2 live cursor boundary shuttle and bof seed (2026-09-02)
+
+Progress classification: infrastructure, not P-vs-NP mainline progress.
+
+The fixed `firstRecord` row is now the sole live stationary door into
+`install.probe.p0.empty`.  From the real locator endpoint, the machine executes
+exactly one source-restoring shuttle.  It restores the source cursor and the
+entire original encoded GN word, writes `bof` into the first scratch frame,
+leaves the next scratch frame blank, and stops in the existing dormant
+`gnInstallExitState` at p0 of the first record-body frame.  No exit row is
+activated and no ordinary body frame is executed.
+
+The local schedule is
+`1 + (8 * (gnFirstRecordMiddle r).length + 29)`: one door row followed by the
+generic shuttle schedule.  The real-initial schedule is
+`((encodeGN r).length + 9) +
+ (1 + 4 * (gnFirstRecordMiddle r).length + 4) +
+ (1 + (8 * (gnFirstRecordMiddle r).length + 29))`.
+It is bounded only as this validation/locator/single-shuttle segment, not as a
+total installer clock.  The one-constant-false literal is exactly 188 rows and
+ends at physical head 16.
+
+The post-door reserved `1101` probe reaches reject in exactly five rows (the
+door plus four physical reads) and has arbitrary stable reject padding.  The
+E2-3 handoff exposes first body frame `tag`, the exact list/tape split, body and
+middle admissibility, and room for the next shuttle, but executes none of it.
+The E2-2 surface has 12 full-proposition wrappers and `AxiomsAudit` has the same
+12 direct source roots; private helpers are excluded.  There is no live finish
+execution, body driver, record-done dispatch, values/tail writer,
+launch/delegation, commit, loop, total installer clock, verdict, or acceptance.

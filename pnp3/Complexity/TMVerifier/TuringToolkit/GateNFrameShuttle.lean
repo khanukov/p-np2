@@ -1,22 +1,21 @@
 import Complexity.TMVerifier.TuringToolkit.GateNFixedDelegateRelocation
 
 /-!
-# GN-E2-1b dormant GNM identity-copy shuttle (2026-09-02)
+# GN-E2-2 GNM boundary-image shuttle owner (2026-09-02)
 
 **Progress classification: infrastructure, not P-vs-NP mainline progress.**
 
 This module specializes the merged `FrameShuttle` kernel to the existing
 `gnCS`/`GNM` transition table.  The temporary marker is decoded
 `G1Frame.output true` (`1001`), the destination is the first aligned blank
-(`0000`), and the image is identity.  Consequently source and middle frames
-must be neither blank nor the marker.
+(`0000`), and the finite image maps cursor to bof and finish to separator while
+fixing every other frame.  Consequently source and middle frames must be
+neither blank nor the marker.
 
-The installer remains dormant: no row from the discovery, delegation,
-interception, or `scratchEntry` regions enters `GNState.install`.  In
-particular, this slice does not own the future fixed `cursor → bof` or
-`finish → separator` boundary rows, a first-record seek, an installer driver,
-a `GateNTapeState` execution bridge, clock adequacy, commit, verdict, or
-acceptance.
+Only `firstRecord` enters `GNState.install`; the separate boundary module owns
+the resulting live cursor shuttle.  This owner still adds no body driver,
+installer-exit activation, live finish execution, `GateNTapeState` execution
+bridge, total clock adequacy, commit, verdict, or acceptance.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -78,6 +77,18 @@ private theorem gnInstall_bits (a : GNInstallAux) :
       | blank | bof | tag | index | separator | cursor | finish | argSep |
           spent => rfl
 
+private theorem gnInstall_image_bits (a : GNInstallAux) :
+    (gnInstallImage a.frame).bits =
+      [gnInstallImageBit0 a, gnInstallImageBit1 a,
+        gnInstallImageBit2 a, gnInstallImageBit3 a] := by
+  cases a with
+  | empty => rfl
+  | carried frame =>
+      cases frame with
+      | data b | output b => cases b <;> rfl
+      | blank | bof | tag | index | separator | cursor | finish | argSep |
+          spent => rfl
+
 /-- The installer scanner uses exactly the existing `gnCS`, phase, and public
 G1 codec. -/
 def gnInstallCore : FrameScanner GNState G1Frame GNInstallMode GNInstallAux where
@@ -115,20 +126,24 @@ def gnInstallCore : FrameScanner GNState G1Frame GNInstallMode GNInstallAux wher
     all_goals simp_all [gnCS, gnTransition, gnInstallComplete, g1FrameCodec,
       gnInstallAdvance, gnInstallControl, decodeG1Frame?]
 
-/-- Concrete dormant identity-copy specialization of the merged kernel. -/
+/-- Concrete boundary-image specialization of the merged kernel. -/
 def gnCopyShuttle : FrameShuttle GNState G1Frame GNInstallMode GNInstallAux where
   core := gnInstallCore
   blank := .blank
   marker := .output true
   admissible := GNInstallAdmissible
-  image := id
+  image := gnInstallImage
   latch := gnInstallLatch
   carry := GNInstallAux.frame
   carry_latch := by intro a frame; rfl
   blank_bits := rfl
   blank_ne_marker := by decide
-  image_ne_blank := by intro frame h; exact h.1
-  image_ne_marker := by intro frame h; exact h.2
+  image_ne_blank := by
+    intro frame h
+    exact (gnInstallImage_laws.2.2.2 frame h).1
+  image_ne_marker := by
+    intro frame h
+    exact (gnInstallImage_laws.2.2.2 frame h).2
   pst0 := fun a => .install .probe .p0 a
   pst1 := fun a b0 => .install .probe (.p1 b0) a
   pst2 := fun a b0 b1 => .install .probe (.p2 b0 b1) a
@@ -228,11 +243,11 @@ def gnCopyShuttle : FrameShuttle GNState G1Frame GNInstallMode GNInstallAux wher
   dest2 := fun a => .install .destination (.p2 false false) a
   dest1 := fun a => .install .destination (.p1 false) a
   dest0 := fun a => .install .destination .p0 a
-  dw0 := gnInstallBit0
-  dw1 := gnInstallBit1
-  dw2 := gnInstallBit2
-  dw3 := gnInstallBit3
-  dest_bits := gnInstall_bits
+  dw0 := gnInstallImageBit0
+  dw1 := gnInstallImageBit1
+  dw2 := gnInstallImageBit2
+  dw3 := gnInstallImageBit3
+  dest_bits := gnInstall_image_bits
   dest_p3 := by intro a scan; rfl
   dest_p2 := by intro a scan; rfl
   dest_p1 := by intro a scan; rfl
@@ -259,8 +274,8 @@ private theorem gnCopy_lt_tapeLength {n k : Nat} (h : k ≤ 64) :
   simp [gnClock, g1Clock]
   omega
 
-/-- Concrete specialization of the generic list capstone.  Admissibility is
-stated explicitly and identity copy leaves the source restored. -/
+/-- Concrete specialization of the generic list capstone.  The source is
+restored while the destination receives the finite boundary image. -/
 theorem gnCS_copyShuttle_onList (n : Nat) (pre : List G1Frame) (f : G1Frame)
     (middle rest : List G1Frame) (a : GNInstallAux)
     (hsource : f ≠ .blank ∧ f ≠ .output true)
@@ -278,7 +293,8 @@ theorem gnCS_copyShuttle_onList (n : Nat) (pre : List G1Frame) (f : G1Frame)
         change 4 * pre.length + 4 < GNM.tapeLength n
         omega)
         (frameListTape
-          ((pre ++ f :: middle ++ f :: rest).flatMap G1Frame.bits))
+          ((pre ++ f :: middle ++ gnInstallImage f :: rest).flatMap
+            G1Frame.bits))
         gnInstallExitState := by
   have h := gnCopyShuttle.shuttleOnList n pre f middle rest a hsource hmiddle
     hsafe
@@ -302,12 +318,130 @@ theorem gnCS_copyShuttle_nextBlank (n : Nat) (pre : List G1Frame)
       gnCopyShuttle.cfg n (4 * pre.length + 4) (by
         change 4 * pre.length + 4 < GNM.tapeLength n
         omega)
-        (frameListTape ((pre ++ f :: middle ++ f :: .blank :: rest).flatMap
-          G1Frame.bits)) gnInstallExitState := by
+        (frameListTape
+          ((pre ++ f :: middle ++ gnInstallImage f :: .blank :: rest).flatMap
+            G1Frame.bits)) gnInstallExitState := by
   have h := gnCopyShuttle.shuttleOnList_nextBlank n pre f middle rest a
     hsource hmiddle hsafe
   rw [(FrameShuttle.shuttleSteps_provenance middle.length).2] at h
   exact h
+
+/-- Old identity-shaped capstone, now restricted precisely to ordinary record
+body frames. -/
+theorem gnCS_copyShuttle_body_onList (n : Nat) (pre : List G1Frame)
+    (f : G1Frame) (middle rest : List G1Frame) (a : GNInstallAux)
+    (hbody : GNInstallBody f)
+    (hmiddle : ∀ g ∈ middle, g ≠ .blank ∧ g ≠ .output true)
+    (hsafe : 4 * (pre.length + middle.length + 2) < GNM.tapeLength n) :
+    TM.runConfig (M := gnCopyShuttle.machine)
+        (gnCopyShuttle.cfg n (4 * pre.length) (by
+          change 4 * pre.length < GNM.tapeLength n
+          omega)
+          (frameListTape
+            ((pre ++ f :: middle ++ .blank :: rest).flatMap G1Frame.bits))
+          (.install .probe .p0 a))
+        (8 * middle.length + 29) =
+      gnCopyShuttle.cfg n (4 * pre.length + 4) (by
+        change 4 * pre.length + 4 < GNM.tapeLength n
+        omega)
+        (frameListTape
+          ((pre ++ f :: middle ++ f :: rest).flatMap G1Frame.bits))
+        gnInstallExitState := by
+  have hsource : f ≠ G1Frame.blank ∧ f ≠ .output true := by
+    rcases hbody with rfl | rfl | rfl <;> decide
+  have himage := gnInstallImage_laws.2.2.1 f hbody
+  simpa [himage] using
+    gnCS_copyShuttle_onList n pre f middle rest a hsource hmiddle hsafe
+
+/-- Next-blank identity corollary for exactly the same finite body alphabet. -/
+theorem gnCS_copyShuttle_body_nextBlank (n : Nat) (pre : List G1Frame)
+    (f : G1Frame) (middle rest : List G1Frame) (a : GNInstallAux)
+    (hbody : GNInstallBody f)
+    (hmiddle : ∀ g ∈ middle, g ≠ .blank ∧ g ≠ .output true)
+    (hsafe : 4 * (pre.length + middle.length + 2) < GNM.tapeLength n) :
+    TM.runConfig (M := gnCopyShuttle.machine)
+        (gnCopyShuttle.cfg n (4 * pre.length) (by
+          change 4 * pre.length < GNM.tapeLength n
+          omega)
+          (frameListTape ((pre ++ f :: middle ++ .blank :: .blank :: rest).flatMap
+            G1Frame.bits)) (.install .probe .p0 a))
+        (8 * middle.length + 29) =
+      gnCopyShuttle.cfg n (4 * pre.length + 4) (by
+        change 4 * pre.length + 4 < GNM.tapeLength n
+        omega)
+        (frameListTape ((pre ++ f :: middle ++ f :: .blank :: rest).flatMap
+          G1Frame.bits)) gnInstallExitState := by
+  have hsource : f ≠ G1Frame.blank ∧ f ≠ .output true := by
+    rcases hbody with rfl | rfl | rfl <;> decide
+  have himage := gnInstallImage_laws.2.2.1 f hbody
+  simpa [himage] using
+    gnCS_copyShuttle_nextBlank n pre f middle rest a hsource hmiddle hsafe
+
+/-- Exact leftward destination rows for the cursor image `bof`; the four
+source-restoration rows still write the original cursor bits. -/
+theorem gnTransition_install_cursor_destination_restore
+    (phase : Fin 1) (scan : Bool) :
+    gnTransition phase
+        (.install .destination (.p3 false false false) (.carried .cursor)) scan =
+        (0, .install .destination (.p2 false false) (.carried .cursor),
+          true, .left) ∧
+      gnTransition phase
+        (.install .destination (.p2 false false) (.carried .cursor)) scan =
+        (0, .install .destination (.p1 false) (.carried .cursor),
+          false, .left) ∧
+      gnTransition phase
+        (.install .destination (.p1 false) (.carried .cursor)) scan =
+        (0, .install .destination .p0 (.carried .cursor), false, .left) ∧
+      gnTransition phase
+        (.install .destination .p0 (.carried .cursor)) scan =
+        (0, .install .reverse .r3 (.carried .cursor), false, .left) ∧
+      gnTransition phase
+        (.install .reverseStop .p0 (.carried .cursor)) scan =
+        (0, .install .restore (.p1 false) (.carried .cursor), false, .right) ∧
+      gnTransition phase
+        (.install .restore (.p1 false) (.carried .cursor)) scan =
+        (0, .install .restore (.p2 false true) (.carried .cursor), true, .right) ∧
+      gnTransition phase
+        (.install .restore (.p2 false true) (.carried .cursor)) scan =
+        (0, .install .restore (.p3 false true true) (.carried .cursor),
+          true, .right) ∧
+      gnTransition phase
+        (.install .restore (.p3 false true true) (.carried .cursor)) scan =
+        (0, .install .exit .p0 .empty, true, .right) := by
+  exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
+
+/-- Exact destination `separator` and original-source restoration rows for a
+carried finish frame.  These rows are pinned now but are not live in E2-2. -/
+theorem gnTransition_install_finish_destination_restore
+    (phase : Fin 1) (scan : Bool) :
+    gnTransition phase
+        (.install .destination (.p3 false false false) (.carried .finish)) scan =
+        (0, .install .destination (.p2 false false) (.carried .finish),
+          false, .left) ∧
+      gnTransition phase
+        (.install .destination (.p2 false false) (.carried .finish)) scan =
+        (0, .install .destination (.p1 false) (.carried .finish),
+          false, .left) ∧
+      gnTransition phase
+        (.install .destination (.p1 false) (.carried .finish)) scan =
+        (0, .install .destination .p0 (.carried .finish), true, .left) ∧
+      gnTransition phase
+        (.install .destination .p0 (.carried .finish)) scan =
+        (0, .install .reverse .r3 (.carried .finish), false, .left) ∧
+      gnTransition phase
+        (.install .reverseStop .p0 (.carried .finish)) scan =
+        (0, .install .restore (.p1 true) (.carried .finish), true, .right) ∧
+      gnTransition phase
+        (.install .restore (.p1 true) (.carried .finish)) scan =
+        (0, .install .restore (.p2 true false) (.carried .finish), false, .right) ∧
+      gnTransition phase
+        (.install .restore (.p2 true false) (.carried .finish)) scan =
+        (0, .install .restore (.p3 true false true) (.carried .finish),
+          true, .right) ∧
+      gnTransition phase
+        (.install .restore (.p3 true false true) (.carried .finish)) scan =
+        (0, .install .exit .p0 .empty, false, .right) := by
+  exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
 
 /-- Raw forward decoder completion rejects every malformed four-bit window. -/
 theorem gnTransition_install_forward_none (phase : Fin 1)
@@ -393,6 +527,39 @@ theorem gnCS_copyShuttle_tag_run45 (n : Nat) :
     (by decide) (by intro g hg; simp at hg; rcases hg with rfl | rfl <;> decide)
     (gnCopy_lt_tapeLength (n := n) (k := 16) (by omega))
   simpa [gnCopyLiteralInput, gnCopyLiteralOutput] using h
+
+/-- Caller-supplied boundary probe: cursor is restored while `bof` is written
+across one middle frame in exactly 37 rows. -/
+theorem gnCS_copyShuttle_cursor_run37 (n : Nat) :
+    TM.runConfig (M := gnCopyShuttle.machine)
+        (gnCopyShuttle.cfg n 0 (gnCopy_lt_tapeLength (by omega))
+          (frameListTape
+            ([.cursor, .tag, .blank, .blank].flatMap G1Frame.bits))
+          (.install .probe .p0 .empty)) 37 =
+      gnCopyShuttle.cfg n 4 (gnCopy_lt_tapeLength (by omega))
+        (frameListTape ([.cursor, .tag, .bof, .blank].flatMap G1Frame.bits))
+        gnInstallExitState := by
+  have h := gnCS_copyShuttle_nextBlank n [] .cursor [.tag] [] .empty
+    (by decide) (by intro g hg; simp at hg; subst g; decide)
+    (gnCopy_lt_tapeLength (n := n) (k := 12) (by omega))
+  simpa [gnInstallImage] using h
+
+/-- Caller-supplied dormant boundary probe: finish is restored while
+`separator` is written across one middle frame in exactly 37 rows. -/
+theorem gnCS_copyShuttle_finish_run37 (n : Nat) :
+    TM.runConfig (M := gnCopyShuttle.machine)
+        (gnCopyShuttle.cfg n 0 (gnCopy_lt_tapeLength (by omega))
+          (frameListTape
+            ([.finish, .tag, .blank, .blank].flatMap G1Frame.bits))
+          (.install .probe .p0 .empty)) 37 =
+      gnCopyShuttle.cfg n 4 (gnCopy_lt_tapeLength (by omega))
+        (frameListTape
+          ([.finish, .tag, .separator, .blank].flatMap G1Frame.bits))
+        gnInstallExitState := by
+  have h := gnCS_copyShuttle_nextBlank n [] .finish [.tag] [] .empty
+    (by decide) (by intro g hg; simp at hg; subst g; decide)
+    (gnCopy_lt_tapeLength (n := n) (k := 12) (by omega))
+  simpa [gnInstallImage] using h
 
 /-- Negative literal: a marker in forward middle invalidates the concrete
 seek path before any capstone can be applied. -/

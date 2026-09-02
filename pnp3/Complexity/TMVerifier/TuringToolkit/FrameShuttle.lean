@@ -8,9 +8,10 @@ import Complexity.TMVerifier.TuringToolkit.FrameScannerWriteLeft
 
 One decoded source frame is latched in finite auxiliary control, temporarily
 replaced by a marker, copied as `image source` to the first aligned blank, and
-then restored after a reverse seek to the unique marker.  All derived scanners
-and writers use `core.program`, `core.phase`, and `core.codec` definitionally;
-there is no second machine or prose-only coherence assumption.
+then restored after a reverse seek to the first marker in the traversed interval.
+All derived scanners and writers use `core.program`, `core.phase`, and
+`core.codec` definitionally; there is no second machine or prose-only coherence
+assumption.
 -/
 namespace Pnp3.Internal.PsubsetPpoly.TM.FrameScan
 
@@ -289,52 +290,52 @@ def restoreWriter (K : FrameShuttle S F Mode Aux) : FrameWriterCtx S F Aux where
   wstep_p3 := K.restore_p3
 
 /- Explicit coherence pins: all components compile the same shared program. -/
-@[simp] theorem reverseScanner_machine (K : FrameShuttle S F Mode Aux) :
+@[simp] private theorem reverseScanner_machine (K : FrameShuttle S F Mode Aux) :
     K.reverseScanner.machine = K.machine := rfl
-@[simp] theorem markWriter_machine (K : FrameShuttle S F Mode Aux) :
+@[simp] private theorem markWriter_machine (K : FrameShuttle S F Mode Aux) :
     K.markWriter.machine = K.machine := rfl
-@[simp] theorem destinationWriter_machine (K : FrameShuttle S F Mode Aux) :
+@[simp] private theorem destinationWriter_machine (K : FrameShuttle S F Mode Aux) :
     K.destinationWriter.machine = K.machine := rfl
-@[simp] theorem restoreWriter_machine (K : FrameShuttle S F Mode Aux) :
+@[simp] private theorem restoreWriter_machine (K : FrameShuttle S F Mode Aux) :
     K.restoreWriter.machine = K.machine := rfl
 
 /-- Explicit program/phase/codec coherence for every derived component. -/
-theorem reverseScanner_shared (K : FrameShuttle S F Mode Aux) :
+private theorem reverseScanner_shared (K : FrameShuttle S F Mode Aux) :
     K.reverseScanner.program = K.core.program ∧
     K.reverseScanner.phase = K.core.phase ∧
     K.reverseScanner.codec = K.core.codec := ⟨rfl, rfl, rfl⟩
 
-theorem markWriter_shared (K : FrameShuttle S F Mode Aux) :
+private theorem markWriter_shared (K : FrameShuttle S F Mode Aux) :
     K.markWriter.program = K.core.program ∧ K.markWriter.phase = K.core.phase ∧
     K.markWriter.codec = K.core.codec := ⟨rfl, rfl, rfl⟩
 
-theorem destinationWriter_shared (K : FrameShuttle S F Mode Aux) :
+private theorem destinationWriter_shared (K : FrameShuttle S F Mode Aux) :
     K.destinationWriter.program = K.core.program ∧
     K.destinationWriter.phase = K.core.phase ∧
     K.destinationWriter.codec = K.core.codec := ⟨rfl, rfl, rfl⟩
 
-theorem restoreWriter_shared (K : FrameShuttle S F Mode Aux) :
+private theorem restoreWriter_shared (K : FrameShuttle S F Mode Aux) :
     K.restoreWriter.program = K.core.program ∧
     K.restoreWriter.phase = K.core.phase ∧
     K.restoreWriter.codec = K.core.codec := ⟨rfl, rfl, rfl⟩
 
 /-- Executable target/exit glue, rather than unrelated component records. -/
-theorem markWriter_glue (K : FrameShuttle S F Mode Aux) (a : Aux) :
+private theorem markWriter_glue (K : FrameShuttle S F Mode Aux) (a : Aux) :
     K.markWriter.target = K.marker ∧
     K.markWriter.exitState a = K.core.st0 K.seekMode a := ⟨rfl, rfl⟩
 
-theorem destinationWriter_glue (K : FrameShuttle S F Mode Aux) (a : Aux) :
+private theorem destinationWriter_glue (K : FrameShuttle S F Mode Aux) (a : Aux) :
     K.destinationWriter.target a = K.image (K.carry a) ∧
     K.destinationWriter.exitState a = K.reverseScanner.rst3 K.revMode a :=
   ⟨rfl, rfl⟩
 
-theorem restoreWriter_glue (K : FrameShuttle S F Mode Aux) (a : Aux) :
+private theorem restoreWriter_glue (K : FrameShuttle S F Mode Aux) (a : Aux) :
     K.restoreWriter.target a = K.carry a ∧
     K.restoreWriter.wst0 a = K.reverseScanner.stopState K.revStopMode a ∧
     K.restoreWriter.exitState a = K.exitState a := ⟨rfl, rfl, rfl⟩
 
 /-- Four genuine source-probe steps decode and latch one valid frame. -/
-theorem probe4 (K : FrameShuttle S F Mode Aux) (n base : Nat)
+private theorem probe4 (K : FrameShuttle S F Mode Aux) (n base : Nat)
     (hsafe : base + 4 < K.machine.tapeLength n)
     (tape : Fin (K.machine.tapeLength n) → Bool) (a : Aux) (f : F)
     (hbits : physicalBitsAt hsafe tape = K.core.codec.bits f) :
@@ -395,7 +396,7 @@ theorem probe4 (K : FrameShuttle S F Mode Aux) (n base : Nat)
   simpa using s3
 
 /-- Four exact hold-left rows return to source p0 and enter marker write. -/
-theorem turnBack4 (K : FrameShuttle S F Mode Aux) (n base : Nat)
+private theorem turnBack4 (K : FrameShuttle S F Mode Aux) (n base : Nat)
     (hsafe : base + 4 < K.machine.tapeLength n)
     (tape : Fin (K.machine.tapeLength n) → Bool) (a : Aux) :
     TM.runConfig (M := K.machine)
@@ -407,7 +408,7 @@ theorem turnBack4 (K : FrameShuttle S F Mode Aux) (n base : Nat)
     (K.turnBack_p1 a) (K.turnBack_p0 a)
 
 /-- One exact hold-left row enters the destination writer at blank p3. -/
-theorem turnDestination1 (K : FrameShuttle S F Mode Aux) (n base : Nat)
+private theorem turnDestination1 (K : FrameShuttle S F Mode Aux) (n base : Nat)
     (hsafe : base + 4 < K.machine.tapeLength n)
     (tape : Fin (K.machine.tapeLength n) → Bool) (a : Aux) :
     TM.runConfig (M := K.machine)
@@ -420,7 +421,7 @@ theorem turnDestination1 (K : FrameShuttle S F Mode Aux) (n base : Nat)
 
 /-- Forward validity for exactly the marker-free/nonblank middle followed by
 the first blank frontier. -/
-theorem forwardPath (K : FrameShuttle S F Mode Aux) (middle : List F)
+private theorem forwardPath (K : FrameShuttle S F Mode Aux) (middle : List F)
     (hmid : ∀ g ∈ middle, g ≠ K.blank ∧ g ≠ K.marker) :
     K.core.ValidPath K.seekMode (middle ++ [K.blank]) ∧
       K.core.advanceList K.seekMode (middle ++ [K.blank]) = K.destMode := by
@@ -442,9 +443,9 @@ theorem forwardPath (K : FrameShuttle S F Mode Aux) (middle : List F)
           by simpa [hs] using hp⟩
       · simpa [FrameScanner.advanceList, hs] using ha
 
-/-- A marker cannot be admitted as a forward-seek middle frame: its exact
-table law enters the reject mode, contradicting `ValidPath`'s nonreject edge.
-This is the generic necessity witness behind the marker-free half of `hmid`. -/
+/-- The singleton middle path `[marker]` is rejected: its exact table row
+contradicts `ValidPath`'s nonreject edge.  This is an executable necessity probe,
+not an arbitrary-position theorem for every longer middle list. -/
 theorem marker_breaks_forwardPath (K : FrameShuttle S F Mode Aux) :
     ¬ K.core.ValidPath K.seekMode [K.marker] := by
   intro h
@@ -465,13 +466,11 @@ theorem shuttleSteps_provenance (d : Nat) :
   simp [shuttleSteps, shuttleSegments]
   omega
 
-/-- The physical head footprint has `d+2` frames, from source p0 through the
-cell immediately after the destination frontier.  Every named schedule
-boundary lies in this closed interval; the composing macrotheorems traverse
-monotonically between adjacent boundaries. -/
+/-- Arithmetic span used internally by the capstone's segment-room proofs:
+`d+2` frames from source p0 through the cell after the destination frontier. -/
 def shuttleFootprint (d : Nat) : Nat := 4 * (d + 2)
 
-theorem shuttle_boundary_footprint (base d : Nat) :
+private theorem shuttle_boundary_footprint (base d : Nat) :
     base ≤ base + 4 ∧
     base + 4 ≤ base + shuttleFootprint d ∧
     base + 4 * (d + 2) ≤ base + shuttleFootprint d ∧

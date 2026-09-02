@@ -91,16 +91,16 @@ lean_lib PnP3 where
     Glob.one `Complexity.TMVerifier.TuringToolkit.FrameScannerReverse,
     Glob.one `Complexity.TMVerifier.TuringToolkit.FrameScannerWrite,
     Glob.one `Complexity.TMVerifier.TuringToolkit.FrameScannerWriteCtx,
-    -- GN-E2-1a (2026-09-02), infrastructure only: a context-derived
-    -- rightward writer and one-program source-restoring frame shuttle.
-    Glob.one `Complexity.TMVerifier.TuringToolkit.FrameShuttle,
-    Glob.one `Complexity.TMVerifier.TuringToolkit.FrameShuttleProbe,
     Glob.one `Complexity.TMVerifier.TuringToolkit.FrameScannerReverseProbe,
     -- Mutation half of the same kernel: leftward writer, seek-until-marker
     -- and S3a mixed-boundary drivers, the exact thirteen-step rewrite cycle,
     -- and a non-T1 probe.
     Glob.one `Complexity.TMVerifier.TuringToolkit.FrameScannerWriteLeft,
     Glob.one `Complexity.TMVerifier.TuringToolkit.FrameScannerSeek,
+    -- GN-E2-1a (2026-09-02), infrastructure only: a context-derived
+    -- rightward writer and one-program source-restoring frame shuttle.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.FrameShuttle,
+    Glob.one `Complexity.TMVerifier.TuringToolkit.FrameShuttleProbe,
     Glob.one `Complexity.TMVerifier.TuringToolkit.FrameRewriteCycle,
     Glob.one `Complexity.TMVerifier.TuringToolkit.FrameRewriteCycleProbe,
     Glob.one `Complexity.TMVerifier.TuringToolkit.RowConsistencyCheck,

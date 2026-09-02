@@ -18,13 +18,6 @@ open Pnp3.Internal.PsubsetPpoly.TM.FrameScan
 #check @FrameShuttle.markWriter
 #check @FrameShuttle.destinationWriter
 #check @FrameShuttle.restoreWriter
-#check @FrameShuttle.reverseScanner_shared
-#check @FrameShuttle.markWriter_shared
-#check @FrameShuttle.destinationWriter_shared
-#check @FrameShuttle.restoreWriter_shared
-#check @FrameShuttle.markWriter_glue
-#check @FrameShuttle.destinationWriter_glue
-#check @FrameShuttle.restoreWriter_glue
 #check @FrameShuttle.shuttleSegments
 #check @FrameShuttle.shuttleSteps
 #check @FrameShuttle.shuttleFootprint
@@ -36,7 +29,26 @@ universe v
 variable {S : Type v} [Fintype S] [DecidableEq S]
 variable {F Mode Aux : Type v}
 
-theorem check_writerCtx_onList (W : FrameWriterCtx S F Aux) (n : Nat)
+theorem check_frameListTape_append_blank (C : FrameCodec F) {L : Nat}
+    (frames : List F) (blank : F)
+    (hblank : C.bits blank = [false, false, false, false]) :
+    frameListTape (L := L) (frames.flatMap C.bits) =
+      frameListTape ((frames ++ [blank]).flatMap C.bits) :=
+  frameListTape_append_blank C frames blank hblank
+
+theorem check_FrameWriterCtx_writeMacrostep
+    (W : FrameWriterCtx S F Aux) (n base : Nat)
+    (hsafe : base + 4 < W.machine.tapeLength n)
+    (tape : Fin (W.machine.tapeLength n) → Bool) (a : Aux) :
+    W.machine.runConfig
+        (W.alignedConfigQ n base (by omega) tape (W.wst0 a)) 4 =
+      W.alignedConfigQ n (base + 4) hsafe
+        (writeFrame4 base (W.w0 a) (W.w1 a) (W.w2 a) (W.w3 a) tape)
+        (W.exitState a) :=
+  W.writeMacrostep n base hsafe tape a
+
+theorem check_FrameWriterCtx_writeFrameOnList
+    (W : FrameWriterCtx S F Aux) (n : Nat)
     (pre suffix : List F) (old : F) (a : Aux)
     (hsafe : 4 * pre.length + 4 < W.machine.tapeLength n) :
     W.machine.runConfig
@@ -50,11 +62,20 @@ theorem check_writerCtx_onList (W : FrameWriterCtx S F Aux) (n : Nat)
 
 variable [Fintype Mode] [Fintype Aux]
 
-theorem check_shuttle_steps (d : Nat) :
-    FrameShuttle.shuttleSteps d = 8 * d + 29 :=
-  (FrameShuttle.shuttleSteps_provenance d).2
+theorem check_FrameShuttle_shuttleSteps_provenance (d : Nat) :
+    FrameShuttle.shuttleSteps d =
+        4 + (4 + (4 + (4 * (d + 1) +
+          (1 + (4 + ((4 * d + 4) + 4)))))) ∧
+      FrameShuttle.shuttleSteps d = 8 * d + 29 :=
+  FrameShuttle.shuttleSteps_provenance d
 
-theorem check_shuttle_capstone (K : FrameShuttle S F Mode Aux) (n : Nat)
+theorem check_FrameShuttle_marker_breaks_forwardPath
+    (K : FrameShuttle S F Mode Aux) :
+    ¬ K.core.ValidPath K.seekMode [K.marker] :=
+  K.marker_breaks_forwardPath
+
+theorem check_FrameShuttle_shuttleOnList
+    (K : FrameShuttle S F Mode Aux) (n : Nat)
     (pre : List F) (f : F) (middle rest : List F) (a : Aux)
     (hmid : ∀ g ∈ middle, g ≠ K.blank ∧ g ≠ K.marker)
     (hsafe : 4 * (pre.length + middle.length + 2) < K.machine.tapeLength n) :
@@ -69,7 +90,8 @@ theorem check_shuttle_capstone (K : FrameShuttle S F Mode Aux) (n : Nat)
         (K.exitState (K.latch a f)) :=
   K.shuttleOnList n pre f middle rest a hmid hsafe
 
-theorem check_shuttle_next_blank (K : FrameShuttle S F Mode Aux) (n : Nat)
+theorem check_FrameShuttle_shuttleOnList_nextBlank
+    (K : FrameShuttle S F Mode Aux) (n : Nat)
     (pre : List F) (f : F) (middle rest : List F) (a : Aux)
     (hmid : ∀ g ∈ middle, g ≠ K.blank ∧ g ≠ K.marker)
     (hsafe : 4 * (pre.length + middle.length + 2) < K.machine.tapeLength n) :
@@ -85,18 +107,24 @@ theorem check_shuttle_next_blank (K : FrameShuttle S F Mode Aux) (n : Nat)
             K.core.codec.bits)) (K.exitState (K.latch a f)) :=
   K.shuttleOnList_nextBlank n pre f middle rest a hmid hsafe
 
-theorem check_probe_run45 (n : Nat) :
+theorem check_shuttleProbe_run45 (n : Nat) :
     shuttleProbe.machine.runConfig
-        (shuttleProbe.cfg n 0 (shuttleProbe_lt_tapeLength (by omega))
+        (shuttleProbe.cfg n 0 (by
+          change 0 < n + shuttleProbeClock n + 1
+          rw [shuttleProbeClock]
+          omega)
           (frameListTape (shuttleProbeInput.flatMap ShuttleProbeFrame.bits))
           (shuttleProbeState .probe .q0 false false false ⟨false, .blank⟩)) 45 =
-      shuttleProbe.cfg n 4 (shuttleProbe_lt_tapeLength (by omega))
+      shuttleProbe.cfg n 4 (by
+        change 4 < n + shuttleProbeClock n + 1
+        rw [shuttleProbeClock]
+        omega)
         (frameListTape (shuttleProbeOutput.flatMap ShuttleProbeFrame.bits))
         (shuttleProbeState .exit .q0 false false false
           ⟨false, .source true⟩) :=
   shuttleProbe_run45 n
 
-theorem check_probe_marker_middle :
+theorem check_shuttleProbe_marker_middle_rejected :
     ¬ shuttleProbe.core.ValidPath shuttleProbe.seekMode
       [ShuttleProbeFrame.marker] :=
   shuttleProbe_marker_middle_rejected

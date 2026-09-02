@@ -240,27 +240,6 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_index_round_onList
 #print axioms Internal.PsubsetPpoly.TM.g1RewriteCycleObligation
 
--- GN-E2-1a generic source-restoring shuttle: context-dependent right writer,
--- one shared machine/phase/codec, exact list capstone/schedule/footprint, and
--- unrelated positive/negative probes.  Infrastructure only; no GNM instance.
-#print axioms Internal.PsubsetPpoly.TM.FrameScan.frameListTape_append_blank
-#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameWriterCtx.writeMacrostep
-#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameWriterCtx.writeFrameOnList
-#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameShuttle.probe4
-#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameShuttle.reverseScanner_shared
-#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameShuttle.markWriter_glue
-#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameShuttle.destinationWriter_glue
-#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameShuttle.restoreWriter_glue
-#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameShuttle.turnBack4
-#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameShuttle.turnDestination1
-#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameShuttle.forwardPath
-#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameShuttle.marker_breaks_forwardPath
-#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameShuttle.shuttleSteps_provenance
-#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameShuttle.shuttle_boundary_footprint
-#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameShuttle.shuttleOnList
-#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameShuttle.shuttleOnList_nextBlank
-#print axioms Internal.PsubsetPpoly.TM.FrameScan.shuttleProbe_run45
-#print axioms Internal.PsubsetPpoly.TM.FrameScan.shuttleProbe_marker_middle_rejected
 #print axioms Internal.PsubsetPpoly.TM.G1RewriteCycleObligation.rewrite_cycle
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameRewriteCycle.seekAndRewrite
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.cycProbeCS_rewrite_cycle
@@ -272,6 +251,19 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.t1OutWriter_outWriteOut_frame
 #print axioms Internal.PsubsetPpoly.TM.g1RevScanner_seek_bof
 #print axioms Internal.PsubsetPpoly.TM.G1RewriteCycleObligation.machine_eq
+
+-- GN-E2-1a generic source-restoring shuttle: context-dependent right writer,
+-- one shared machine/phase/codec, exact list capstone/schedule, and unrelated
+-- positive/negative probes.  Infrastructure only; no GNM instance.
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.frameListTape_append_blank
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameWriterCtx.writeMacrostep
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameWriterCtx.writeFrameOnList
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameShuttle.shuttleSteps_provenance
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameShuttle.marker_breaks_forwardPath
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameShuttle.shuttleOnList
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameShuttle.shuttleOnList_nextBlank
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.shuttleProbe_run45
+#print axioms Internal.PsubsetPpoly.TM.FrameScan.shuttleProbe_marker_middle_rejected
 
 -- T2a, pure layer: the fresh unary one-gate ABI, its exact parser
 -- characterisation, and the pure gate semantics.  These are parser/spec

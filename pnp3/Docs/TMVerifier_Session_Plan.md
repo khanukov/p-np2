@@ -3979,7 +3979,8 @@ entry/exit handoffs agree definitionally.  The row obligations decode and latch
 one source, turn back, install one marker, seek the first blank, write
 `image (carry aux)`, reverse-seek the marker, and restore `carry aux`.  The laws
 include `carry (latch a f) = f`, exact blank/marker seek behavior, exact turn
-rows, and the required blank/marker/image separation.  Every middle-frame
+rows, and blank/marker/image separation constraints for downstream composition.
+Every middle-frame
 hypothesis explicitly excludes both blank and marker; no global marker-count
 preservation theorem is claimed.
 
@@ -3995,14 +3996,15 @@ an explicit appended blank when the blank codec is `0000`.
 The derived schedule is
 `probe 4 + turn-back 4 + mark 4 + forward 4(d+1) + destination-turn 1 +
 destination-write 4 + reverse-seek (4d+4) + restore 4 = 8d+29`.
-The source-to-post-destination physical span is `4(d+2)` cells, with every
-named segment boundary proved inside it.  The fresh probe alphabet has
+The source-to-post-destination arithmetic span is `4(d+2)` cells; the capstone
+uses it internally to discharge each composing segment's room premise.  The
+fresh probe alphabet has
 different source/middle/image constructors, distinct blank and marker, a
 finite frame-valued latch, two nonempty middle frames, and an exact 45-step
 run restoring the source, preserving both middle frames, installing the image,
 retaining the next blank, and fixing the final head/state.  Its negative probe
-proves that a marker in the middle cannot satisfy the forward valid path: the
-exact marker row enters reject.
+proves that the singleton middle path `[marker]` cannot satisfy the forward
+valid path: the exact marker row enters reject.
 
 This slice does not instantiate GNM.  In particular it does not add
 `GNState`, `gnTransition`, scratch-entry activation, a runtime controller,

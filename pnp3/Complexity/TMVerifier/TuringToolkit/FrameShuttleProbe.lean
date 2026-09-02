@@ -105,7 +105,7 @@ def ShuttleProbeForward : ShuttleProbeMode → Prop
   | .seek => True
   | _ => False
 
-theorem ShuttleProbeForward.eq {m} (h : ShuttleProbeForward m) : m = .seek := by
+private theorem ShuttleProbeForward.eq {m} (h : ShuttleProbeForward m) : m = .seek := by
   cases m <;> simp_all [ShuttleProbeForward]
 
 def shuttleProbeRevAdvance : ShuttleProbeMode → ShuttleProbeFrame →
@@ -125,7 +125,7 @@ def ShuttleProbeReverse : ShuttleProbeMode → Prop
   | .rev => True
   | _ => False
 
-theorem ShuttleProbeReverse.eq {m} (h : ShuttleProbeReverse m) : m = .rev := by
+private theorem ShuttleProbeReverse.eq {m} (h : ShuttleProbeReverse m) : m = .rev := by
   cases m <;> simp_all [ShuttleProbeReverse]
 
 def ShuttleProbeStop (m : ShuttleProbeMode) : Prop := m = .revStop
@@ -141,7 +141,7 @@ def shuttleProbeCode3 : ShuttleProbeFrame → Bool
   | .blank | .source false | .middle false | .image false => false
   | _ => true
 
-theorem shuttleProbe_bits_components (f : ShuttleProbeFrame) :
+private theorem shuttleProbe_bits_components (f : ShuttleProbeFrame) :
     f.bits = [shuttleProbeCode0 f, shuttleProbeCode1 f,
       shuttleProbeCode2 f, shuttleProbeCode3 f] := by
   cases f with
@@ -406,7 +406,7 @@ def shuttleProbe : FrameShuttle ShuttleProbeState ShuttleProbeFrame
   restore_p2 := by intro a scan; rfl
   restore_p3 := by intro a scan; rfl
 
-theorem shuttleProbe_lt_tapeLength {n k : Nat} (h : k ≤ 64) :
+private theorem shuttleProbe_lt_tapeLength {n k : Nat} (h : k ≤ 64) :
     k < shuttleProbe.machine.tapeLength n := by
   show k < n + shuttleProbeClock n + 1
   rw [shuttleProbeClock]
@@ -440,8 +440,8 @@ theorem shuttleProbe_run45 (n : Nat) :
   simpa [shuttleProbeInput, shuttleProbeOutput, FrameShuttle.shuttleSteps,
     FrameShuttle.shuttleSegments, shuttleProbe, shuttleProbeLatch] using h
 
-/-- Necessity probe: a decoded marker in the middle is not a valid forward
-path; it takes the exact marker row into `reject`. -/
+/-- Necessity probe: the singleton middle path containing the decoded marker is
+invalid because the concrete marker row enters `reject`. -/
 theorem shuttleProbe_marker_middle_rejected :
     ¬ shuttleProbe.core.ValidPath shuttleProbe.seekMode
       [ShuttleProbeFrame.marker] :=

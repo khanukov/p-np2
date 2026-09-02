@@ -287,14 +287,15 @@ def shuttleProbe : FrameShuttle ShuttleProbeState ShuttleProbeFrame
   core := shuttleProbeCore
   blank := .blank
   marker := .marker
+  admissible := fun _ => True
   image := shuttleProbeImage
   latch := shuttleProbeLatch
   carry := ShuttleProbeAux.held
   carry_latch := by intro a f; rfl
   blank_bits := rfl
   blank_ne_marker := by decide
-  image_ne_blank := by intro f; cases f <;> simp [shuttleProbeImage]
-  image_ne_marker := by intro f; cases f <;> simp [shuttleProbeImage]
+  image_ne_blank := by intro f _; cases f <;> simp [shuttleProbeImage]
+  image_ne_marker := by intro f _; cases f <;> simp [shuttleProbeImage]
   pst0 := fun a => shuttleProbeState .probe .q0 false false false a
   pst1 := fun a b0 => shuttleProbeState .probe .q1 b0 false false a
   pst2 := fun a b0 b1 => shuttleProbeState .probe .q2 b0 b1 false a
@@ -304,7 +305,7 @@ def shuttleProbe : FrameShuttle ShuttleProbeState ShuttleProbeFrame
   probe_p1 := by intro a b0 scan; rfl
   probe_p2 := by intro a b0 b1 scan; rfl
   probe_p3 := by
-    intro a b0 b1 b2 scan f h
+    intro a b0 b1 b2 scan f _ h
     have h' : decodeShuttleProbeFrame? [b0, b1, b2, scan] = some f := by
       simpa [shuttleProbeCore, shuttleProbeCodec] using h
     simp [shuttleProbeCore, shuttleProbeCS, shuttleProbeTransition, h']
@@ -435,7 +436,7 @@ theorem shuttleProbe_run45 (n : Nat) :
     simp at hg
     rcases hg with rfl | rfl <;> decide
   have h := shuttleProbe.shuttleOnList_nextBlank n [] (.source true)
-    [.middle false, .middle true] [] ⟨false, .blank⟩ hmid
+    [.middle false, .middle true] [] ⟨false, .blank⟩ trivial hmid
     (shuttleProbe_lt_tapeLength (n := n) (k := 16) (by omega))
   simpa [shuttleProbeInput, shuttleProbeOutput, FrameShuttle.shuttleSteps,
     FrameShuttle.shuttleSegments, shuttleProbe, shuttleProbeLatch] using h

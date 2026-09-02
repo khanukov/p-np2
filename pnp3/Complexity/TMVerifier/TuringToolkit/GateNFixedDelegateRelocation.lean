@@ -1,6 +1,7 @@
 import Complexity.TMVerifier.TuringToolkit.GateOneFiveTagTraceSafety
 import Complexity.TMVerifier.TuringToolkit.FrameScannerKernel
 import Complexity.TMVerifier.TuringToolkit.FrameScannerReverse
+import Complexity.TMVerifier.TuringToolkit.FrameShuttle
 import Complexity.TMVerifier.TuringToolkit.GateNRuntimeGrammar
 
 /-!
@@ -37,8 +38,9 @@ compare slot and record counts or enforce semantic index bounds, and it is not
 equivalent to `decodeGN?`.  The blank-padded tape cannot distinguish an exact
 word from a trailing-zero extension.  E1b rejects nonblank decoded or reserved
 windows in the inspected frame, but makes no trailing-zero rejection claim.
-The exported endpoint is exact `scratchEntry`; its transition behavior is
-deliberately not exported because E2 will activate that row.
+The exported endpoint is exact `scratchEntry`; its transition remains a
+stationary dormant row.  GN-E2-1b adds separately caller-supplied dormant
+`install` states and does not connect this endpoint to them.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -68,6 +70,51 @@ structure GNScanState where
   buffer : GNScanBuffer
   deriving Fintype, DecidableEq, Repr
 
+/-- Finite modes of the dormant GN identity-copy shuttle.  They contain no
+runtime geometry; the later bootstrap/record driver owns all boundary
+translations and entry selection. -/
+inductive GNInstallMode where
+  | probe | turnBack | mark | seek | destinationTurn | destination
+  | reverse | reverseStop | restore | exit | reject
+  deriving Fintype, DecidableEq, Repr
+
+/-- Four physical positions used by every installer reader/writer. -/
+inductive GNInstallBuffer where
+  | p0
+  | p1 (b0 : Bool)
+  | p2 (b0 b1 : Bool)
+  | p3 (b0 b1 b2 : Bool)
+  | r3
+  | r2 (b3 : Bool)
+  | r1 (b2 b3 : Bool)
+  | r0 (b1 b2 b3 : Bool)
+  deriving Fintype, DecidableEq, Repr
+
+/-- The only installer auxiliary payload: either empty or one decoded frame. -/
+inductive GNInstallAux where
+  | empty
+  | carried (frame : G1Frame)
+  deriving Fintype, DecidableEq, Repr
+
+/-- Total projection used by dormant rows; live probe completion always
+replaces the initial payload with `carried source`. -/
+def GNInstallAux.frame : GNInstallAux → G1Frame
+  | .empty => .blank
+  | .carried frame => frame
+
+def gnInstallLatch (_ : GNInstallAux) (frame : G1Frame) : GNInstallAux :=
+  .carried frame
+
+def gnInstallBit0 (a : GNInstallAux) : Bool := a.frame.bits.getD 0 false
+def gnInstallBit1 (a : GNInstallAux) : Bool := a.frame.bits.getD 1 false
+def gnInstallBit2 (a : GNInstallAux) : Bool := a.frame.bits.getD 2 false
+def gnInstallBit3 (a : GNInstallAux) : Bool := a.frame.bits.getD 3 false
+
+/-- Identity-copy admissibility.  Blank is the destination frontier and
+`output true` is the temporary source marker, so neither may be a source. -/
+def GNInstallAdmissible (frame : G1Frame) : Prop :=
+  frame ≠ .blank ∧ frame ≠ .output true
+
 set_option synthInstance.maxSize 8192 in
 /-- Fixed GN outer control.  The delegated payload is itself a closed finite
 G1 control state; none of the constructors contains runtime geometry or data. -/
@@ -83,11 +130,20 @@ inductive GNState where
   | return2
   | return1
   | return0
+  | install (mode : GNInstallMode) (buffer : GNInstallBuffer)
+      (aux : GNInstallAux)
   | scratchEntry
   | idle
   | accept
   | reject
   deriving Fintype, DecidableEq
+
+/-- Installer rejection is the already-existing stable outer reject sink. -/
+def gnInstallControl (mode : GNInstallMode) (buffer : GNInstallBuffer)
+    (aux : GNInstallAux) : GNState :=
+  match mode with
+  | .reject => .reject
+  | _ => .install mode buffer aux
 
 /-- Collapse the two terminal discovery modes to fixed outer states. -/
 def gnScanControl (mode : GNDiscoveryMode) (buffer : GNScanBuffer) : GNState :=
@@ -141,6 +197,85 @@ def gnTransition (_phase : Fin 1) (s : GNState) (scan : Bool) :
   | .return2 => (0, .return1, scan, .left)
   | .return1 => (0, .return0, scan, .left)
   | .return0 => (0, .scratchEntry, scan, .stay)
+  | .install .probe .p0 a =>
+      (0, .install .probe (.p1 scan) a, scan, .right)
+  | .install .probe (.p1 b0) a =>
+      (0, .install .probe (.p2 b0 scan) a, scan, .right)
+  | .install .probe (.p2 b0 b1) a =>
+      (0, .install .probe (.p3 b0 b1 scan) a, scan, .right)
+  | .install .probe (.p3 b0 b1 b2) a =>
+      match decodeG1Frame? [b0, b1, b2, scan] with
+      | some frame =>
+          if frame = .blank ∨ frame = .output true then
+            (0, .reject, scan, .stay)
+          else
+            (0, .install .turnBack (.p3 false false false)
+              (gnInstallLatch a frame), scan, .right)
+      | none => (0, .reject, scan, .stay)
+  | .install .turnBack (.p3 _ _ _) a =>
+      (0, .install .turnBack (.p2 false false) a, scan, .left)
+  | .install .turnBack (.p2 _ _) a =>
+      (0, .install .turnBack (.p1 false) a, scan, .left)
+  | .install .turnBack (.p1 _) a =>
+      (0, .install .turnBack .p0 a, scan, .left)
+  | .install .turnBack .p0 a =>
+      (0, .install .mark .p0 a, scan, .left)
+  | .install .mark .p0 a =>
+      (0, .install .mark (.p1 true) a, true, .right)
+  | .install .mark (.p1 _) a =>
+      (0, .install .mark (.p2 true false) a, false, .right)
+  | .install .mark (.p2 _ _) a =>
+      (0, .install .mark (.p3 true false false) a, false, .right)
+  | .install .mark (.p3 _ _ _) a =>
+      (0, .install .seek .p0 a, true, .right)
+  | .install .seek .p0 a =>
+      (0, .install .seek (.p1 scan) a, scan, .right)
+  | .install .seek (.p1 b0) a =>
+      (0, .install .seek (.p2 b0 scan) a, scan, .right)
+  | .install .seek (.p2 b0 b1) a =>
+      (0, .install .seek (.p3 b0 b1 scan) a, scan, .right)
+  | .install .seek (.p3 b0 b1 b2) a =>
+      match decodeG1Frame? [b0, b1, b2, scan] with
+      | some .blank => (0, .install .destinationTurn .p0 a, scan, .right)
+      | some (.output true) => (0, .reject, scan, .stay)
+      | some _ => (0, .install .seek .p0 a, scan, .right)
+      | none => (0, .reject, scan, .stay)
+  | .install .destinationTurn .p0 a =>
+      (0, .install .destination (.p3 false false false) a, scan, .left)
+  | .install .destination (.p3 _ _ _) a =>
+      (0, .install .destination (.p2 false false) a, gnInstallBit3 a, .left)
+  | .install .destination (.p2 _ _) a =>
+      (0, .install .destination (.p1 false) a, gnInstallBit2 a, .left)
+  | .install .destination (.p1 _) a =>
+      (0, .install .destination .p0 a, gnInstallBit1 a, .left)
+  | .install .reverse .r3 a =>
+      (0, .install .reverse (.r2 scan) a, scan, .left)
+  | .install .reverse (.r2 b3) a =>
+      (0, .install .reverse (.r1 scan b3) a, scan, .left)
+  | .install .reverse (.r1 b2 b3) a =>
+      (0, .install .reverse (.r0 scan b2 b3) a, scan, .left)
+  | .install .reverse (.r0 b1 b2 b3) a =>
+      match decodeG1Frame? [scan, b1, b2, b3] with
+      | some (.output true) =>
+          (0, .install .reverseStop .p0 a, scan, .stay)
+      | some _ => (0, .install .reverse .r3 a, scan, .left)
+      | none => (0, .reject, scan, .stay)
+  | .install .destination .p0 a =>
+      (0, .install .reverse .r3 a, gnInstallBit0 a, .left)
+  | .install .reverseStop .p0 a =>
+      (0, .install .restore (.p1 (gnInstallBit0 a)) a,
+        gnInstallBit0 a, .right)
+  | .install .restore (.p1 _) a =>
+      (0, .install .restore (.p2 (gnInstallBit0 a) (gnInstallBit1 a)) a,
+        gnInstallBit1 a, .right)
+  | .install .restore (.p2 _ _) a =>
+      (0, .install .restore
+        (.p3 (gnInstallBit0 a) (gnInstallBit1 a) (gnInstallBit2 a)) a,
+        gnInstallBit2 a, .right)
+  | .install .restore (.p3 _ _ _) a =>
+      (0, .install .exit .p0 .empty, gnInstallBit3 a, .right)
+  | .install .exit buffer a => (0, .install .exit buffer a, scan, .stay)
+  | .install _ _ _ => (0, .reject, scan, .stay)
   | .scratchEntry => (0, .scratchEntry, scan, .stay)
   | .idle => (0, .idle, scan, .stay)
   | .accept => (0, .accept, scan, .stay)

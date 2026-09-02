@@ -400,6 +400,9 @@ lean_lib PnP3 where
     -- frame after logical word end and return to fixed scratch entry.  No
     -- trailing-zero rejection, installer, loop, verdict or acceptance.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateNFixedDelegateRelocation,
+    -- GN-E2-1b (2026-09-02), infrastructure only: dormant identity-copy
+    -- specialization of FrameShuttle in the same finite GNM control.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateNFrameShuttle,
     -- GN-E2-0 (2026-09-01), infrastructure only: exact pure-stage physical
     -- tapes, canonical first-request geometry, and complete equality between
     -- the base-N shifted target and an explicit concatenated-list endpoint.
@@ -639,6 +642,9 @@ lean_lib PnP3 where
     -- proposition wrappers for blank confirmation, exact scratch entry,
     -- rejection probes, schedules, room arithmetic, and preserved capstones.
     Glob.one `Tests.TMGateNFixedDelegateRelocationSurfaceTests,
+    -- GN-E2-1b (2026-09-02): dormant GNM identity-copy shuttle tuple laws,
+    -- exact 8d+29 capstones, reserved rejection, and literal 45-step run.
+    Glob.one `Tests.TMGateNFrameShuttleSurfaceTests,
     -- GN-E2-0 (2026-09-01): definition/configuration pins and direct explicit
     -- wrappers for pure physical stages, first-request geometry, and the
     -- complete installed physical endpoint equality.

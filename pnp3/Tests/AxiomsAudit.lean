@@ -57,6 +57,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOneRouteRewindTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOneUnaryARepairTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOneFiveTagTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateNFixedDelegateRelocation
+import Complexity.TMVerifier.TuringToolkit.GateNFrameShuttle
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAccept
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramConditionalAcceptExamples
@@ -2344,6 +2345,21 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.GNFixedDelegateProbes.literal_oneConstFalse_wordEnd
 #print axioms Internal.PsubsetPpoly.TM.GNFixedDelegateProbes.literal_empty_scratchEntry
 #print axioms Internal.PsubsetPpoly.TM.GNFixedDelegateProbes.literal_oneConstFalse_scratchEntry
+
+-- GN-E2-1b (2026-09-02): dormant identity-copy specialization of the merged
+-- FrameShuttle kernel in the same finite GNM control.  The decoded `1001`
+-- marker is accepted only by reverse seek; malformed/reserved completions use
+-- the existing stable reject sink.  This has no scratch-entry activation,
+-- installer driver, boundary translation, clock, verdict, or acceptance.
+#print axioms Internal.PsubsetPpoly.TM.gnCS_copyShuttle_onList
+#print axioms Internal.PsubsetPpoly.TM.gnCS_copyShuttle_nextBlank
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_install_forward_none
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_install_reverse_none
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_install_reserved
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_install_marker_modes
+#print axioms Internal.PsubsetPpoly.TM.gnCS_install_reject_stable
+#print axioms Internal.PsubsetPpoly.TM.gnCS_copyShuttle_tag_run45
+#print axioms Internal.PsubsetPpoly.TM.gnCopyShuttle_marker_middle_rejected
 
 -- GN-E2-0 (2026-09-01): pure stage words are pinned to exact physical GNM
 -- tapes, E1b is identified with the stage-zero boundary, and the selected

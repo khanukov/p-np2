@@ -77,6 +77,7 @@ theorem check_FrameShuttle_marker_breaks_forwardPath
 theorem check_FrameShuttle_shuttleOnList
     (K : FrameShuttle S F Mode Aux) (n : Nat)
     (pre : List F) (f : F) (middle rest : List F) (a : Aux)
+    (hf : K.admissible f)
     (hmid : ∀ g ∈ middle, g ≠ K.blank ∧ g ≠ K.marker)
     (hsafe : 4 * (pre.length + middle.length + 2) < K.machine.tapeLength n) :
     K.machine.runConfig
@@ -88,11 +89,12 @@ theorem check_FrameShuttle_shuttleOnList
         (frameListTape
           ((pre ++ f :: middle ++ K.image f :: rest).flatMap K.core.codec.bits))
         (K.exitState (K.latch a f)) :=
-  K.shuttleOnList n pre f middle rest a hmid hsafe
+  K.shuttleOnList n pre f middle rest a hf hmid hsafe
 
 theorem check_FrameShuttle_shuttleOnList_nextBlank
     (K : FrameShuttle S F Mode Aux) (n : Nat)
     (pre : List F) (f : F) (middle rest : List F) (a : Aux)
+    (hf : K.admissible f)
     (hmid : ∀ g ∈ middle, g ≠ K.blank ∧ g ≠ K.marker)
     (hsafe : 4 * (pre.length + middle.length + 2) < K.machine.tapeLength n) :
     K.machine.runConfig
@@ -105,7 +107,7 @@ theorem check_FrameShuttle_shuttleOnList_nextBlank
         (frameListTape
           ((pre ++ f :: middle ++ K.image f :: K.blank :: rest).flatMap
             K.core.codec.bits)) (K.exitState (K.latch a f)) :=
-  K.shuttleOnList_nextBlank n pre f middle rest a hmid hsafe
+  K.shuttleOnList_nextBlank n pre f middle rest a hf hmid hsafe
 
 theorem check_shuttleProbe_run45 (n : Nat) :
     shuttleProbe.machine.runConfig

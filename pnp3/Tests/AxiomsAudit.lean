@@ -239,7 +239,6 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.g1CS_index_round
 #print axioms Internal.PsubsetPpoly.TM.g1CS_index_round_onList
 #print axioms Internal.PsubsetPpoly.TM.g1RewriteCycleObligation
-
 #print axioms Internal.PsubsetPpoly.TM.G1RewriteCycleObligation.rewrite_cycle
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.FrameRewriteCycle.seekAndRewrite
 #print axioms Internal.PsubsetPpoly.TM.FrameScan.cycProbeCS_rewrite_cycle

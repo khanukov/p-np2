@@ -466,17 +466,10 @@ theorem shuttleSteps_provenance (d : Nat) :
   simp [shuttleSteps, shuttleSegments]
   omega
 
-/-- Arithmetic span used internally by the capstone's segment-room proofs:
-`d+2` frames from source p0 through the cell after the destination frontier. -/
+/-- Documentary arithmetic span of `d+2` frames from source p0 through the
+cell after the destination frontier.  The capstone discharges each concrete
+segment-room premise directly. -/
 def shuttleFootprint (d : Nat) : Nat := 4 * (d + 2)
-
-private theorem shuttle_boundary_footprint (base d : Nat) :
-    base ≤ base + 4 ∧
-    base + 4 ≤ base + shuttleFootprint d ∧
-    base + 4 * (d + 2) ≤ base + shuttleFootprint d ∧
-    base + 4 * (d + 1) + 3 < base + shuttleFootprint d := by
-  simp [shuttleFootprint]
-  omega
 
 /-- **Capstone.**  On an arbitrary list
 `pre ++ f :: middle ++ blank :: rest`, start at source p0.  Exactly

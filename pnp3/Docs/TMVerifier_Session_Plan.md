@@ -3996,9 +3996,9 @@ an explicit appended blank when the blank codec is `0000`.
 The derived schedule is
 `probe 4 + turn-back 4 + mark 4 + forward 4(d+1) + destination-turn 1 +
 destination-write 4 + reverse-seek (4d+4) + restore 4 = 8d+29`.
-The source-to-post-destination arithmetic span is `4(d+2)` cells; the capstone
-uses it internally to discharge each composing segment's room premise.  The
-fresh probe alphabet has
+The documentary source-to-post-destination arithmetic span is `4(d+2)` cells;
+the capstone discharges each composing segment's concrete room premise directly.
+The fresh probe alphabet has
 different source/middle/image constructors, distinct blank and marker, a
 finite frame-valued latch, two nonempty middle frames, and an exact 45-step
 run restoring the source, preserving both middle frames, installing the image,

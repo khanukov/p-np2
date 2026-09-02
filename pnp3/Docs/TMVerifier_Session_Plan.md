@@ -3954,11 +3954,9 @@ The empty probe separately proves `emptyProgram.program.gates[0]? = none`; it
 does not manufacture an install.
 
 There is still no reachability theorem for this installed configuration.
-GN-E2-1 must choose how an actual installer marks copying progress.  In
-particular, the unresolved decision is whether it can reuse an existing
-internal frame marker under a recoverable invariant or needs a different
-strategy; GN-E2-0 deliberately supplies no runtime marker codec or transition
-row and does not prejudge that choice.  There is also no scratch-entry
+Later GN-E2-1 work chooses decoded `output true` as a temporary source marker
+and the first blank as destination frontier; GN-E2-0 itself supplies no runtime
+marker row and does not prejudge its proof.  There is also no scratch-entry
 activation, shuttle, result, commit, clock-adequacy, multigate, verdict, or
 acceptance theorem in this slice.
 
@@ -4011,10 +4009,10 @@ This slice does not instantiate GNM.  In particular it does not add
 `GNState`, `gnTransition`, scratch-entry activation, a runtime controller,
 installer driver, commit, clock, verdict, or acceptance.  GN-E2-1b supplies
 the concrete GNM finite-control rows and instantiates the existing `output true`
-source marker and `blank` frontier without a reserved-code codec.  The live
-stage-word middle/room invariants and connection from scratch entry to install
-control are now the explicit GN-E2-1c obligations.  Clock adequacy and any
-repeated installer/controller remain later obligations.
+source marker and `blank` frontier without a reserved-code codec.  GN-E2-1c
+now supplies the live read-only locator and the stage-word middle/room premise
+package.  Entry into install control and any repeated installer/controller
+remain later obligations.
 
 ## GN-E2-1b dormant GNM identity-copy specialization (2026-09-02)
 
@@ -4026,9 +4024,9 @@ and finite `GNInstallAux` (empty or one carried `G1Frame`).  The existing
 `gnTransition`, `gnCS`, and `GNM` are unchanged as ownership points: the new
 tuple rows implement source probe/latch, four-left turn, marker write, forward
 seek, one-left destination turn, leftward identity write, reverse seek, source
-restore, and one fixed exit state.  No old discovery, delegation,
-interception, or scratch row targets `install`; `scratchEntry` remains a
-stationary dormant state.
+restore, and one fixed exit state.  No discovery, delegation, or interception
+row targets `install`.  GN-E2-1c subsequently activates `scratchEntry` into a
+separate reverse locator, but still does not target `install`.
 
 `gnCopyShuttle : FrameShuttle GNState G1Frame GNInstallMode GNInstallAux`
 uses the one shared `gnCS`, phase zero, and public `g1FrameCodec`.  Its marker
@@ -4048,9 +4046,47 @@ the exact reverse-completion row treats it as the stop marker.  A negative
 literal pins rejection of the forward path containing
 `[argSep, output true, index]`.  The public four-bit codec remains unchanged.
 
-GN-E2-1c still owns the live bootstrap: fixed `cursor → bof` and
-`finish → separator` boundary rows, first-record/source selection, entry from
-the post-validation control, repeated record installation, and the physical
-stage/room invariants needed to call these dormant capstones.  This slice adds
-no installer driver, `GateNTapeState` execution bridge, clock adequacy, commit,
-verdict, or acceptance theorem.
+GN-E2-2 now owns the source-restoring `cursor → bof` and `finish → separator`
+boundary transforms, the door into shuttle probe, actual shuttle execution,
+and subsequent record installation.  GN-E2-1b itself adds no installer driver,
+`GateNTapeState` execution bridge, total clock adequacy, commit, verdict, or
+acceptance theorem.
+
+## GN-E2-1c live read-only scratch bootstrap (2026-09-02)
+
+Progress classification: infrastructure, not P-vs-NP mainline progress.
+
+The former `scratchEntry` self-loop now performs one left row from physical
+head `N` and enters a finite strict reverse locator.  Its 16 `GNLocateMode`
+constructors and four reverse-buffer shapes contain no natural, base, index,
+width, request, or list.  The locator requires terminal frames in the exact
+reverse order `finish`, `output false`, `separator`, then accepts only complete
+canonical record bodies.  Locally it stops on any `cursor` encountered in a
+legal tag-count mode, or on the adjacent earlier `separator` in fixed `noGate`
+when the record region is empty.  The canonical encoding split,
+cursor-uniqueness theorem, and run capstones establish that the cursor
+encounter is the designated first cursor in fixed `firstRecord` for encoded
+nonempty programs.  All rows write back the scanned bit.  Completion rows are
+stationary at marker p0; `firstRecord` and `noGate` remain dormant.
+
+The exact nonempty endpoint has head `4 * gnRecordsStart r`; the empty endpoint
+has head `4 * (r.inputs.length + 1)`.  Both retain the real initial tape, so the
+whole scratch slice at and after `N` stays blank.  The locator-only schedules
+are `1 + 4 * (gnFirstRecordMiddle r).length + 4` and 17.  Composing with E1b's
+`N + 9` validation schedule gives kernel-reduced literals 94/head 12 for the
+one-constant-false program and 46/head 4 for the empty program.  Separate
+theorems bound validation plus locator by `gnClock`; they make no total
+installer-clock claim.
+
+Undecodable/reserved reverse windows and decoded frames forbidden by the
+stage-zero grammar enter the existing stationary reject sink without a write
+or completion move.  The exact raw reverse macro pins the four-row
+`r3 → r2 → r1 → r0 → reject` schedule, and the literal `1101` specialization
+pins both that endpoint and arbitrary `+k` reject-sink padding.  The public
+surface now has 29 full-proposition wrappers and 29 direct axiom roots.  The
+E2-2 handoff theorem packages the exact cursor-source
+and forward-middle blank/`output true` exclusions, the first implicit blank as
+an explicit tape frontier, and the physical room premise required by
+`gnCopyShuttle`.  It does not execute that shuttle.  There is no `.bof` seed,
+boundary transform, record/value copy, launch/delegation, commit, loop, verdict,
+or acceptance theorem in this slice.

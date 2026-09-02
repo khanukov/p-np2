@@ -3,21 +3,21 @@ import Complexity.TMVerifier.TuringToolkit.FrameScannerKernel
 import Complexity.TMVerifier.TuringToolkit.FrameScannerReverse
 import Complexity.TMVerifier.TuringToolkit.FrameShuttle
 import Complexity.TMVerifier.TuringToolkit.GateNRuntimeGrammar
+import Complexity.TMVerifier.TuringToolkit.GateNLocateGrammar
 
 /-!
-# Fixed GN delegate, relocation, and E1b scratch-entry scan (2026-09-01)
+# Fixed GN delegate, relocation, runtime scan, and live locator (2026-09-02)
 
 **Progress classification: infrastructure, not P-vs-NP mainline progress.**
 
 This module defines one closed finite outer control.  Its delegated states carry
 only the already-finite complete `G1M.state`; every outer state remains finite.
 There is no request, result, natural number, base, width, offset, index, or
-runtime datum in the control.  GN-E1a adds one finite four-cell lexical scan
-payload and a fixed `wordEnd` state; GN-E1b reuses that public arrival to read
-exactly the next four physical cells, require the blank frame `0000`, return
-four cells left, and enter fixed `scratchEntry`.  The old `idle` state remains
-an inert regression sink, while the real start state is the aligned scanner
-entry.
+runtime datum in the control.  GN-E1a adds a finite lexical scan; GN-E1b
+confirms one blank frame and enters `scratchEntry`; GN-E2-1c activates that row
+with a finite reverse locator and fixed `firstRecord`/`noGate` endpoints.  The
+old `idle` state remains an inert regression sink, while the real start state
+is the aligned scanner entry.  All added payloads remain finite.
 
 Ordinary delegated states execute the exact `G1M.step` tuple.  The only two
 interceptions are the complete canonical states `g1DoneQ false` and
@@ -38,9 +38,10 @@ compare slot and record counts or enforce semantic index bounds, and it is not
 equivalent to `decodeGN?`.  The blank-padded tape cannot distinguish an exact
 word from a trailing-zero extension.  E1b rejects nonblank decoded or reserved
 windows in the inspected frame, but makes no trailing-zero rejection claim.
-The exported endpoint is exact `scratchEntry`; its transition remains a
-stationary dormant row.  GN-E2-1b adds separately caller-supplied dormant
-`install` states and does not connect this endpoint to them.
+The exported E1b endpoint is exact `scratchEntry`.  GN-E2-1c now activates that
+row into the strict read-only reverse locator in this same control owner;
+`firstRecord` and `noGate` are the new dormant arrivals.  GN-E2-1b's separate
+caller-supplied `install` states remain unconnected.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -133,6 +134,9 @@ inductive GNState where
   | install (mode : GNInstallMode) (buffer : GNInstallBuffer)
       (aux : GNInstallAux)
   | scratchEntry
+  | locating (locate : GNLocateState)
+  | firstRecord
+  | noGate
   | idle
   | accept
   | reject
@@ -276,7 +280,22 @@ def gnTransition (_phase : Fin 1) (s : GNState) (scan : Bool) :
       (0, .install .exit .p0 .empty, gnInstallBit3 a, .right)
   | .install .exit buffer a => (0, .install .exit buffer a, scan, .stay)
   | .install _ _ _ => (0, .reject, scan, .stay)
-  | .scratchEntry => (0, .scratchEntry, scan, .stay)
+  | .scratchEntry =>
+      (0, .locating ⟨.tailFinish, .r3⟩, scan, .left)
+  | .locating ⟨mode, .r3⟩ =>
+      (0, .locating ⟨mode, .r2 scan⟩, scan, .left)
+  | .locating ⟨mode, .r2 b3⟩ =>
+      (0, .locating ⟨mode, .r1 scan b3⟩, scan, .left)
+  | .locating ⟨mode, .r1 b2 b3⟩ =>
+      (0, .locating ⟨mode, .r0 scan b2 b3⟩, scan, .left)
+  | .locating ⟨mode, .r0 b1 b2 b3⟩ =>
+      let next := gnLocateComplete mode scan b1 b2 b3
+      if next = .firstRecord then (0, .firstRecord, scan, .stay)
+      else if next = .noGate then (0, .noGate, scan, .stay)
+      else if next = .reject then (0, .reject, scan, .stay)
+      else (0, .locating ⟨next, .r3⟩, scan, .left)
+  | .firstRecord => (0, .firstRecord, scan, .stay)
+  | .noGate => (0, .noGate, scan, .stay)
   | .idle => (0, .idle, scan, .stay)
   | .accept => (0, .accept, scan, .stay)
   | .reject => (0, .reject, scan, .stay)

@@ -56,6 +56,7 @@ import Complexity.TMVerifier.TuringToolkit.GateOneOutputDoneTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOneRouteRewindTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOneUnaryARepairTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOneFiveTagTraceSafety
+import Complexity.TMVerifier.TuringToolkit.GateNLocateGrammar
 import Complexity.TMVerifier.TuringToolkit.GateNFixedDelegateRelocation
 import Complexity.TMVerifier.TuringToolkit.GateNFrameShuttle
 import Complexity.TMVerifier.TuringToolkit.ConstStatePhasedProgramSeqListRunExamples
@@ -70,6 +71,7 @@ import Complexity.TMVerifier.TuringToolkit.TrueUniformSeekTerminalControl
 import Complexity.TMVerifier.TuringToolkit.GateNEncodingExamples
 import Complexity.TMVerifier.TuringToolkit.GateNTapeStateExamples
 import Complexity.TMVerifier.TuringToolkit.GateNFirstInstallBridge
+import Complexity.TMVerifier.TuringToolkit.GateNScratchBootstrap
 import Complexity.TMVerifier.TuringToolkit.GateNRelocationExamples
 
 /-!
@@ -2392,6 +2394,40 @@ open Pnp3.Magnification
 #print axioms Internal.PsubsetPpoly.TM.GNFirstInstallProbes.oneConstFalse_width_room
 #print axioms Internal.PsubsetPpoly.TM.GNFirstInstallProbes.oneConstFalse_installed_physical
 #print axioms Internal.PsubsetPpoly.TM.GNFirstInstallProbes.empty_no_first_gate
+
+-- GN-E2-1c (2026-09-02): strict stage-zero reverse locator and exact
+-- read-only real-initial arrivals at dormant firstRecord/noGate.  The scoped
+-- clock facts cover validation+locator only; the handoff proves shuttle
+-- premises but executes no boundary transform, shuttle, install, or loop.
+#print axioms Internal.PsubsetPpoly.TM.gnLocateComplete_reserved
+#print axioms Internal.PsubsetPpoly.TM.gnLocateAdvance_tail_and_edge
+#print axioms Internal.PsubsetPpoly.TM.gnLocateAdvance_stageZero_malformed
+#print axioms Internal.PsubsetPpoly.TM.encodeGNFrames_firstRecord_split
+#print axioms Internal.PsubsetPpoly.TM.encodeGNFrames_noGate_split
+#print axioms Internal.PsubsetPpoly.TM.encodeGNFrames_no_blank_no_outputTrue
+#print axioms Internal.PsubsetPpoly.TM.encodeGNFrames_cursor_unique
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_locate_none
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_locate_decoded_reject
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_locate_reserved
+#print axioms Internal.PsubsetPpoly.TM.gnCS_locate_reserved1101_reject_four
+#print axioms Internal.PsubsetPpoly.TM.gnCS_locate_reserved1101_reject_stable
+#print axioms Internal.PsubsetPpoly.TM.gnLocate_firstRecord_path
+#print axioms Internal.PsubsetPpoly.TM.gnLocate_noGate_path
+#print axioms Internal.PsubsetPpoly.TM.gnFirstRecordSteps_provenance
+#print axioms Internal.PsubsetPpoly.TM.gnNoGateSteps_provenance
+#print axioms Internal.PsubsetPpoly.TM.gnFirstRecordConfig_scratch_blank
+#print axioms Internal.PsubsetPpoly.TM.gnNoGateConfig_scratch_blank
+#print axioms Internal.PsubsetPpoly.TM.gnFirstRecordConfig_structure
+#print axioms Internal.PsubsetPpoly.TM.gnNoGateConfig_structure
+#print axioms Internal.PsubsetPpoly.TM.gnFirstRecord_copyShuttle_handoff
+#print axioms Internal.PsubsetPpoly.TM.gnCS_scratchEntry_to_firstRecord
+#print axioms Internal.PsubsetPpoly.TM.gnCS_scratchEntry_to_noGate
+#print axioms Internal.PsubsetPpoly.TM.gnCS_encodeGN_firstRecord
+#print axioms Internal.PsubsetPpoly.TM.gnCS_encodeGN_noGate
+#print axioms Internal.PsubsetPpoly.TM.gnFirstRecordSteps_le_gnClock
+#print axioms Internal.PsubsetPpoly.TM.gnNoGateSteps_le_gnClock
+#print axioms Internal.PsubsetPpoly.TM.GNScratchBootstrapProbes.literal_oneConstFalse_firstRecord
+#print axioms Internal.PsubsetPpoly.TM.GNScratchBootstrapProbes.literal_empty_noGate
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

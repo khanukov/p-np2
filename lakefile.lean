@@ -139,6 +139,8 @@ lean_lib PnP3 where
     -- grammar for the self-delimiting GN word.  It stores no counts/indices
     -- and is deliberately weaker than the exact-list parser.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateNRuntimeGrammar,
+    -- GN-E2-1c (2026-09-02): finite strict stage-zero reverse locator grammar.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateNLocateGrammar,
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateNEncodingExamples,
     -- GN-2 (2026-08-30), pure infrastructure only: canonical partially
     -- committed tape words, exact GN-1-offset views, pure commit, blank
@@ -408,6 +410,9 @@ lean_lib PnP3 where
     -- the base-N shifted target and an explicit concatenated-list endpoint.
     -- No state/transition mutation, installer execution, or marker strategy.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateNFirstInstallBridge,
+    -- GN-E2-1c (2026-09-02): live read-only scratch bootstrap and first-record
+    -- discovery, with dormant firstRecord/noGate handoffs.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateNScratchBootstrap,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -645,6 +650,9 @@ lean_lib PnP3 where
     -- GN-E2-1b (2026-09-02): dormant GNM identity-copy shuttle tuple laws,
     -- exact 8d+29 capstones, reserved rejection, and literal 45-step run.
     Glob.one `Tests.TMGateNFrameShuttleSurfaceTests,
+    -- GN-E2-1c (2026-09-02): explicit locator grammar, endpoint, schedule,
+    -- handoff, rejection, and literal surface pins.
+    Glob.one `Tests.TMGateNScratchBootstrapSurfaceTests,
     -- GN-E2-0 (2026-09-01): definition/configuration pins and direct explicit
     -- wrappers for pure physical stages, first-request geometry, and the
     -- complete installed physical endpoint equality.

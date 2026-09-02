@@ -14,8 +14,9 @@ configuration equality for the installed physical endpoint.
 There is no `gnTransition` or `GNState` change here, and no execution claim.
 In particular this module adds no installer, shuttle, runtime marker codec,
 scratch-entry transition, result, commit, clock-adequacy, multigate loop,
-verdict, or acceptance theorem.  The choice of any future E2-1 temporary
-marker strategy remains open.
+verdict, or acceptance theorem.  Later E2-1 work chooses `output true` as the
+temporary source marker and the first blank as frontier; this pure bridge does
+not itself introduce either runtime row.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM

@@ -3979,7 +3979,8 @@ entry/exit handoffs agree definitionally.  The row obligations decode and latch
 one source, turn back, install one marker, seek the first blank, write
 `image (carry aux)`, reverse-seek the marker, and restore `carry aux`.  The laws
 include `carry (latch a f) = f`, exact blank/marker seek behavior, exact turn
-rows, and blank/marker/image separation constraints for downstream composition.
+rows, and admissible-source blank/marker/image separation constraints for
+downstream composition.
 Every middle-frame
 hypothesis explicitly excludes both blank and marker; no global marker-count
 preservation theorem is claimed.
@@ -4015,3 +4016,42 @@ reserved-code codec, prove the concrete stage word's middle separation and
 room invariant, and connect the generic entry/exit states to the intended GNM
 scratch/install control.  Clock adequacy and any repeated installer/controller
 remain later obligations.
+
+## GN-E2-1b dormant GNM identity-copy specialization (2026-09-02)
+
+Progress classification: infrastructure, not P-vs-NP mainline progress.
+
+The existing closed `GNState` now has one additional `install` constructor
+containing only a finite `GNInstallMode`, finite four-cell `GNInstallBuffer`,
+and finite `GNInstallAux` (empty or one carried `G1Frame`).  The existing
+`gnTransition`, `gnCS`, and `GNM` are unchanged as ownership points: the new
+tuple rows implement source probe/latch, four-left turn, marker write, forward
+seek, one-left destination turn, leftward identity write, reverse seek, source
+restore, and one fixed exit state.  No old discovery, delegation,
+interception, or scratch row targets `install`; `scratchEntry` remains a
+stationary dormant state.
+
+`gnCopyShuttle : FrameShuttle GNState G1Frame GNInstallMode GNInstallAux`
+uses the one shared `gnCS`, phase zero, and public `g1FrameCodec`.  Its marker
+is the already-decoded `output true = 1001`, its frontier is the first aligned
+`blank = 0000`, and its image is identity.  Source and middle admissibility are
+therefore explicit: every such frame differs from both blank and `output true`.
+The generic capstones specialize to exact `8 * middle.length + 29` runs with
+full head/state/tape endpoints, restored source, copied frame, and (in the
+second form) a retained next blank.  The literal non-vacuous run copies `tag`
+across `[argSep, index]` in 45 steps and ends at head four in the fixed exit
+state.
+
+All undecodable windows, including reserved `1101`, `1110`, and `1111`, enter
+the existing stable reject sink in probe, forward seek, and reverse seek.
+Decoded `output true` is rejected at source probe and in forward middle; only
+the exact reverse-completion row treats it as the stop marker.  A negative
+literal pins rejection of the forward path containing
+`[argSep, output true, index]`.  The public four-bit codec remains unchanged.
+
+GN-E2-1c still owns the live bootstrap: fixed `cursor → bof` and
+`finish → separator` boundary rows, first-record/source selection, entry from
+the post-validation control, repeated record installation, and the physical
+stage/room invariants needed to call these dormant capstones.  This slice adds
+no installer driver, `GateNTapeState` execution bridge, clock adequacy, commit,
+verdict, or acceptance theorem.

@@ -27,14 +27,19 @@ structure FrameShuttle (S : Type v) [Fintype S] [DecidableEq S]
   core : FrameScanner S F Mode Aux
   blank : F
   marker : F
+  /-- Source frames for which `image` is a genuine nonblank, nonmarker
+  payload.  This is explicit because useful specializations (notably the GN
+  identity copy) cannot satisfy those freshness facts for every alphabet
+  element. -/
+  admissible : F → Prop
   image : F → F
   latch : Aux → F → Aux
   carry : Aux → F
   carry_latch : ∀ a f, carry (latch a f) = f
   blank_bits : core.codec.bits blank = [false, false, false, false]
   blank_ne_marker : blank ≠ marker
-  image_ne_blank : ∀ f, image f ≠ blank
-  image_ne_marker : ∀ f, image f ≠ marker
+  image_ne_blank : ∀ f, admissible f → image f ≠ blank
+  image_ne_marker : ∀ f, admissible f → image f ≠ marker
 
   /- Source probe: decode the source and latch it on the fourth right step. -/
   pst0 : Aux → S
@@ -49,7 +54,7 @@ structure FrameShuttle (S : Type v) [Fintype S] [DecidableEq S]
   probe_p2 : ∀ a b0 b1 scan,
     core.program.transition core.phase (pst2 a b0 b1) scan =
       (core.phase, pst3 a b0 b1 scan, scan, Move.right)
-  probe_p3 : ∀ a b0 b1 b2 scan f,
+  probe_p3 : ∀ a b0 b1 b2 scan f, admissible f →
     core.codec.decode? [b0, b1, b2, scan] = some f →
     core.program.transition core.phase (pst3 a b0 b1 b2) scan =
       (core.phase, turnBack3 (latch a f), scan, Move.right)
@@ -338,6 +343,7 @@ private theorem restoreWriter_glue (K : FrameShuttle S F Mode Aux) (a : Aux) :
 private theorem probe4 (K : FrameShuttle S F Mode Aux) (n base : Nat)
     (hsafe : base + 4 < K.machine.tapeLength n)
     (tape : Fin (K.machine.tapeLength n) → Bool) (a : Aux) (f : F)
+    (hf : K.admissible f)
     (hbits : physicalBitsAt hsafe tape = K.core.codec.bits f) :
     TM.runConfig (M := K.machine) (K.cfg n base (by omega) tape (K.pst0 a)) 4 =
       K.cfg n (base + 4) hsafe tape (K.turnBack3 (K.latch a f)) := by
@@ -391,7 +397,7 @@ private theorem probe4 (K : FrameShuttle S F Mode Aux) (n base : Nat)
   have s3 := Phased.stepRight K.core.program K.core.phase n (base + 3) h3 hsafe tape
     (K.pst3 a (tape ⟨base, h0⟩) (tape ⟨base + 1, h1⟩)
       (tape ⟨base + 2, h2⟩)) (K.turnBack3 (K.latch a f))
-    (tape ⟨base + 3, h3⟩) (K.probe_p3 a _ _ _ _ f hd)
+    (tape ⟨base + 3, h3⟩) (K.probe_p3 a _ _ _ _ f hf hd)
   rw [writeCell_self] at s3
   simpa using s3
 
@@ -479,6 +485,7 @@ source in the exact exit state.  The explicit blank remains compatible with
 implicit `frameListTape` padding by `frameListTape_append_blank`. -/
 theorem shuttleOnList (K : FrameShuttle S F Mode Aux) (n : Nat)
     (pre : List F) (f : F) (middle rest : List F) (a : Aux)
+    (hf : K.admissible f)
     (hmid : ∀ g ∈ middle, g ≠ K.blank ∧ g ≠ K.marker)
     (hsafe : 4 * (pre.length + middle.length + 2) < K.machine.tapeLength n) :
     TM.runConfig (M := K.machine)
@@ -509,7 +516,7 @@ theorem shuttleOnList (K : FrameShuttle S F Mode Aux) (n : Nat)
     simpa [tape0, List.append_assoc] using
       physicalBitsAt_flatMap (L := K.machine.tapeLength n) K.core.codec pre
         (middle ++ K.blank :: rest) f (by omega)
-  have hA := K.probe4 n (4 * pre.length) (by omega) tape0 a f hsource
+  have hA := K.probe4 n (4 * pre.length) (by omega) tape0 a f hf hsource
   have hB := K.turnBack4 n (4 * pre.length) (by omega) tape0 a'
   have hC := K.markWriter.writeFrameOnList n pre (middle ++ K.blank :: rest)
     f a' (by change 4 * pre.length + 4 < K.machine.tapeLength n; omega)
@@ -603,6 +610,7 @@ blanks become `image f :: blank`, so the blank immediately after the installed
 image is pinned in the complete endpoint tape. -/
 theorem shuttleOnList_nextBlank (K : FrameShuttle S F Mode Aux) (n : Nat)
     (pre : List F) (f : F) (middle rest : List F) (a : Aux)
+    (hf : K.admissible f)
     (hmid : ∀ g ∈ middle, g ≠ K.blank ∧ g ≠ K.marker)
     (hsafe : 4 * (pre.length + middle.length + 2) < K.machine.tapeLength n) :
     TM.runConfig (M := K.machine)
@@ -614,7 +622,7 @@ theorem shuttleOnList_nextBlank (K : FrameShuttle S F Mode Aux) (n : Nat)
         (frameListTape ((pre ++ f :: middle ++ K.image f :: K.blank :: rest).flatMap
           K.core.codec.bits)) (K.exitState (K.latch a f)) := by
   simpa [List.append_assoc] using
-    K.shuttleOnList n pre f middle (K.blank :: rest) a hmid hsafe
+    K.shuttleOnList n pre f middle (K.blank :: rest) a hf hmid hsafe
 
 end FrameShuttle
 

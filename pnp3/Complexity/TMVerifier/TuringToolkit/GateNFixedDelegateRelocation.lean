@@ -3,6 +3,7 @@ import Complexity.TMVerifier.TuringToolkit.FrameScannerKernel
 import Complexity.TMVerifier.TuringToolkit.FrameScannerReverse
 import Complexity.TMVerifier.TuringToolkit.FrameShuttle
 import Complexity.TMVerifier.TuringToolkit.GateNRuntimeGrammar
+import Complexity.TMVerifier.TuringToolkit.GateNLocateGrammar
 
 /-!
 # Fixed GN delegate, relocation, and E1b scratch-entry scan (2026-09-01)
@@ -38,9 +39,10 @@ compare slot and record counts or enforce semantic index bounds, and it is not
 equivalent to `decodeGN?`.  The blank-padded tape cannot distinguish an exact
 word from a trailing-zero extension.  E1b rejects nonblank decoded or reserved
 windows in the inspected frame, but makes no trailing-zero rejection claim.
-The exported endpoint is exact `scratchEntry`; its transition remains a
-stationary dormant row.  GN-E2-1b adds separately caller-supplied dormant
-`install` states and does not connect this endpoint to them.
+The exported E1b endpoint is exact `scratchEntry`.  GN-E2-1c now activates that
+row into the strict read-only reverse locator in this same control owner;
+`firstRecord` and `noGate` are the new dormant arrivals.  GN-E2-1b's separate
+caller-supplied `install` states remain unconnected.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -133,6 +135,9 @@ inductive GNState where
   | install (mode : GNInstallMode) (buffer : GNInstallBuffer)
       (aux : GNInstallAux)
   | scratchEntry
+  | locating (locate : GNLocateState)
+  | firstRecord
+  | noGate
   | idle
   | accept
   | reject
@@ -276,7 +281,22 @@ def gnTransition (_phase : Fin 1) (s : GNState) (scan : Bool) :
       (0, .install .exit .p0 .empty, gnInstallBit3 a, .right)
   | .install .exit buffer a => (0, .install .exit buffer a, scan, .stay)
   | .install _ _ _ => (0, .reject, scan, .stay)
-  | .scratchEntry => (0, .scratchEntry, scan, .stay)
+  | .scratchEntry =>
+      (0, .locating ⟨.tailFinish, .r3⟩, scan, .left)
+  | .locating ⟨mode, .r3⟩ =>
+      (0, .locating ⟨mode, .r2 scan⟩, scan, .left)
+  | .locating ⟨mode, .r2 b3⟩ =>
+      (0, .locating ⟨mode, .r1 scan b3⟩, scan, .left)
+  | .locating ⟨mode, .r1 b2 b3⟩ =>
+      (0, .locating ⟨mode, .r0 scan b2 b3⟩, scan, .left)
+  | .locating ⟨mode, .r0 b1 b2 b3⟩ =>
+      let next := gnLocateComplete mode scan b1 b2 b3
+      if next = .firstRecord then (0, .firstRecord, scan, .stay)
+      else if next = .noGate then (0, .noGate, scan, .stay)
+      else if next = .reject then (0, .reject, scan, .stay)
+      else (0, .locating ⟨next, .r3⟩, scan, .left)
+  | .firstRecord => (0, .firstRecord, scan, .stay)
+  | .noGate => (0, .noGate, scan, .stay)
   | .idle => (0, .idle, scan, .stay)
   | .accept => (0, .accept, scan, .stay)
   | .reject => (0, .reject, scan, .stay)

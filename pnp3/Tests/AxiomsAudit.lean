@@ -2354,8 +2354,7 @@ open Pnp3.Magnification
 -- exact boundary image at its destination and restores the original carried
 -- frame at its source.  Body-only corollaries retain the old identity shape;
 -- finish rows are pinned but not executed in this E2-1b owner slice.  No
--- driver, exit activation, total
--- clock, verdict, or acceptance is present.
+-- driver, exit activation, total clock, verdict, or acceptance is present.
 #print axioms Internal.PsubsetPpoly.TM.gnInstallImage_laws
 #print axioms Internal.PsubsetPpoly.TM.gnCS_copyShuttle_onList
 #print axioms Internal.PsubsetPpoly.TM.gnCS_copyShuttle_nextBlank

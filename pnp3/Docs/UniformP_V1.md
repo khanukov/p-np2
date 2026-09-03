@@ -1,7 +1,7 @@
-# Uniform P V1 foundation (P1a)
+# Uniform P V1 foundation and circuit simulation
 
-**Status:** P1a infrastructure model, repaired on 2026-09-03. This status does
-not assert completion of any later milestone.
+**Status:** P1a uniform model and P1b `UniformP ⊆ PpolyDAG` simulation completed
+on 2026-09-03. Canonical `P` remains unchanged.
 
 The versioned namespace is:
 
@@ -190,8 +190,7 @@ uniformP_subset_PpolyDAG :
 
 This is infrastructure, not P-vs-NP mainline progress.  It does not rebind the
 repository's canonical `P`, establish canonical `P ⊆ PpolyDAG`, prove
-countability, introduce `UniformNP`, or prove a circuit lower bound.  Fable 5.1
-architecture review is currently quota-blocked, so no Fable review is claimed.
+countability, introduce `UniformNP`, or prove a circuit lower bound.
 
 This P1a repair is infrastructure. It does not change the repository's canonical
 `P` or `NP` definitions and is not P-vs-NP mainline progress.  In particular,

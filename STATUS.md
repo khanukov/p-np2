@@ -70,8 +70,7 @@ proofs.  The completed endpoint is
 only the versioned V1 class and `PpolyDAG` is the canonical DAG target.  This
 does not rebind or prove inclusion for canonical `P`, establish countability,
 define `UniformNP`, or prove a lower bound; it is not P-vs-NP mainline
-progress.  Fable 5.1 architecture review is currently quota-blocked and is not
-claimed.
+progress.
 
 Authoritative checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.

@@ -129,7 +129,6 @@ private theorem tapeLength_clock_le_pow {c n : Nat} (hn2 : 2 ≤ n) :
   have hn1 : 1 ≤ n := Nat.le_trans (by decide) hn2
   have hn : n ≤ n ^ (c + 1) := Nat.le_self_pow (Nat.succ_ne_zero c) n
   have hb := polyClock_le_pow_succ (c := c) hn2
-  have hone : 1 ≤ n ^ (c + 1) := Nat.le_trans hn1 hn
   have h3 : 3 ≤ n ^ 2 := by
     have h4 : 4 ≤ n * n := Nat.mul_le_mul hn2 hn2
     exact Nat.le_trans (by decide : 3 ≤ 4) (by simpa [pow_two] using h4)
@@ -243,11 +242,6 @@ theorem runCircuit_size_le_poly (M : UniformTM) (c n : Nat) :
       cases n with
       | zero => exact runCircuit_size_le_poly_one M c
       | succ n => exact runCircuit_size_le_poly_large M c (n + 2) (by omega)
-
-private theorem runCircuit_size_le_poly_exponent_zero (M : UniformTM) (n : Nat) :
-    (runCircuit M 0 n).size ≤
-      n ^ runCircuitExponent M 0 + runCircuitExponent M 0 :=
-  runCircuit_size_le_poly M 0 n
 
 end Pnp3.Complexity.Uniform.V1.Circuit
 

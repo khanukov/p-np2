@@ -77,6 +77,7 @@ import Complexity.TMVerifier.TuringToolkit.GateNBodyRound
 import Complexity.TMVerifier.TuringToolkit.GateNRelocationExamples
 import Complexity.Uniform.V1.Examples
 import Complexity.DagGadgets
+import Tests.UniformV1CountabilitySurfaceTests
 import Tests.UniformV1CircuitEncodingSurfaceTests
 import Tests.UniformV1StepKernelSurfaceTests
 import Tests.UniformV1StepBundleSurfaceTests
@@ -159,6 +160,29 @@ section DagBundleComposeAxiomAudit
 #print axioms Pnp3.ComplexityInterfaces.DagCircuit.doubleNot_false_literal
 
 end DagBundleComposeAxiomAudit
+
+section UniformV1CountabilityAxiomAudit
+
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.data_injective
+#print axioms Pnp3.Tests.UniformV1Countability.check_data_injective
+#print axioms Pnp3.Complexity.Uniform.V1.uniformTM_countable
+#print axioms Pnp3.Tests.UniformV1Countability.check_uniformTM_countable
+#print axioms Pnp3.Complexity.Uniform.V1.machineLanguage_eq_of_decidesAt
+#print axioms Pnp3.Tests.UniformV1Countability.check_machineLanguage_eq_of_decidesAt
+#print axioms Pnp3.Complexity.Uniform.V1.uniformP_exists_machineLanguage
+#print axioms Pnp3.Tests.UniformV1Countability.check_uniformP_exists_machineLanguage
+#print axioms Pnp3.Complexity.Uniform.V1.uniformP_languages_countable
+#print axioms Pnp3.Tests.UniformV1Countability.check_uniformP_languages_countable
+#print axioms Pnp3.Complexity.Uniform.V1.lengthOnly_injective
+#print axioms Pnp3.Tests.UniformV1Countability.check_lengthOnly_injective
+#print axioms Pnp3.Complexity.Uniform.V1.exists_lengthOnly_not_mem
+#print axioms Pnp3.Tests.UniformV1Countability.check_exists_lengthOnly_not_mem
+#print axioms Pnp3.Complexity.Uniform.V1.exists_lengthOnly_not_uniformP
+#print axioms Pnp3.Tests.UniformV1Countability.check_exists_lengthOnly_not_uniformP
+#print axioms Pnp3.Complexity.Uniform.V1.not_forall_lengthOnly_uniformP
+#print axioms Pnp3.Tests.UniformV1Countability.check_not_forall_lengthOnly_uniformP
+
+end UniformV1CountabilityAxiomAudit
 
 section UniformV1CircuitEncodingAxiomAudit
 

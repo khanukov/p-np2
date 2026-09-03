@@ -77,6 +77,9 @@ lean_lib PnP3 where
     Glob.one `Complexity.Uniform.V1.PpolyDAG,
     Glob.one `Complexity.Uniform.V1.PolynomialTime,
     Glob.one `Complexity.Uniform.V1.Examples,
+    -- P1c (2026-09-03), versioned countability/no-length-advice boundary:
+    -- explicit finite-machine coding and a direct length-only diagonal.
+    Glob.one `Complexity.Uniform.V1.Countability,
     Glob.one `Complexity.Uniform.V1.PpolyDAGExamples,
     Glob.one `Complexity.Uniform.V1.StepKernelExamples,
     Glob.one `Complexity.Uniform.V1.StepBundleExamples,
@@ -595,6 +598,7 @@ lean_lib PnP3 where
     Glob.one `Tests.PromiseRouteConclusionProbe,
     Glob.one `Tests.WeakRouteSurfaceTests,
     Glob.one `Tests.UniformV1SurfaceTests,
+    Glob.one `Tests.UniformV1CountabilitySurfaceTests,
     Glob.one `Tests.UniformV1CircuitEncodingSurfaceTests,
     Glob.one `Tests.UniformV1StepKernelSurfaceTests,
     Glob.one `Tests.UniformV1StepBundleSurfaceTests,

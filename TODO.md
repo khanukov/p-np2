@@ -1,6 +1,6 @@
 # TODO / Roadmap (current)
 
-Updated: 2026-08-21
+Updated: 2026-09-03
 
 Canonical checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
@@ -122,7 +122,9 @@ Canonical docs must say:
 9. the preferred pnp4 `ContentPrefixExtensionNPWitness` obligation (and the retained
    `PrefixExtensionNPWitness` compatibility target) is stated in the repository's single-tape,
    exact-step `TM` model, with no cross-model runtime-robustness theorem and no formal prevention of
-   input-length advice.
+   input-length advice. P1c now proves countability and a direct no-length-advice diagonal for the
+   separate versioned `Pnp3.Complexity.Uniform.V1.UniformP`; canonical `P` remains legacy and
+   unchanged, with no rebind or equivalence inferred.
 
 ### Target 4. pnp4 mainline: the two consolidated source obligations
 

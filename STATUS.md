@@ -7,14 +7,16 @@ tree is frozen at `42c59881`; see `pnp3/Docs/TMVERIFIER_FREEZE.md`. Do not
 resume GN-E2-3b or later gate-by-gate construction. Active model-repair work
 must use the versioned uniform complexity foundation outside that tree.
 
-**P1a uniform foundation (infrastructure only).** The independent namespace
+**P1a/P1c uniform foundation (infrastructure only).** The independent namespace
 `Pnp3.Complexity.Uniform.V1` provides finite `UniformTM` data with the distinct
 symbols `some false`, `some true`, and blank `none`; same-budget exact/within
 decision semantics; `polyClock`; a versioned `UniformP`; complement closure;
 and an arbitrary-length parity scanner proving that input length is observable.
-See `pnp3/Docs/UniformP_V1.md`. This scoped P1a repair does not claim completion
-of later work, rebind or change the canonical repository `P`/`NP`, provide a
-legacy or `PpolyDAG` bridge, or establish countability.
+P1c explicitly codes the finite machines, proves the versioned `UniformP`
+languages countable, and directly diagonalizes a length-only language outside
+that class. See `pnp3/Docs/UniformP_V1.md`. This does not rebind, characterize,
+or change the legacy canonical repository `P`/`NP`, define `UniformNP`, prove a
+lower bound, or reduce a pnp4 mainline source obligation.
 
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
@@ -67,9 +69,10 @@ the all-input polynomial theorem uses the explicit exponent
 `3 + (c+1)*(19*c + 16*M.stateCount + 70)`, with separate zero/one-length
 proofs.  The completed endpoint is
 `uniformP_subset_PpolyDAG : ∀ L, UniformP L → PpolyDAG L`, where `UniformP` is
-only the versioned V1 class and `PpolyDAG` is the canonical DAG target.  This
-does not rebind or prove inclusion for canonical `P`, establish countability,
-define `UniformNP`, or prove a lower bound; it is not P-vs-NP mainline
+only the versioned V1 class and `PpolyDAG` is the canonical DAG target.  P1c
+separately proves countability and the length-only diagonal for that versioned
+class. Neither slice rebinds or proves an equivalence for canonical `P`,
+defines `UniformNP`, or proves a lower bound; neither is P-vs-NP mainline
 progress.
 
 Authoritative checklist:

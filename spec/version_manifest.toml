@@ -20,9 +20,9 @@
 # files.  Drift fails the check.
 
 [meta]
-manifest_version = "0.1.0"
+manifest_version = "0.1.1"
 status           = "frozen"
-last_reviewed    = "2026-05-02"
+last_reviewed    = "2026-09-02"
 
 # ---------------------------------------------------------------------------
 # Coordinated snapshot — current per-spec versions.
@@ -55,6 +55,11 @@ provider_audit_registry_path     = "spec/provider_audit_registry.toml"
 version = "0.1.0"
 notes   = "Eight probes shipped (5 rejected + 1 accepted_shape_only + 2 kernel-check)."
 target  = "bench/SmokeProbe/expected_results.json"
+
+[snapshot.tmverifier_freeze]
+version = "2"
+notes   = "Git-anchored source snapshot with mode/type/content and negative controls."
+target  = "spec/tmverifier_freeze.json"
 
 # Autoresearch MVP control plane.  Bumped each time a major MVP
 # slice ships.  Component-level history:

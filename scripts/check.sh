@@ -5,6 +5,10 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT_DIR}"
 
+echo "[check] Preflight: frozen TMVerifier tree"
+"${ROOT_DIR}/scripts/check_tmverifier_freeze.sh"
+"${ROOT_DIR}/scripts/test_tmverifier_freeze.sh"
+
 if ! command -v rg >/dev/null 2>&1; then
   echo "Missing required dependency: rg (ripgrep). Install ripgrep and rerun." >&2
   exit 127
@@ -500,9 +504,6 @@ if ! rg -n "PpolyDAG" "${agent_policy_docs[@]}" >/tmp/pnp4_agent_policy_ppolydag
 fi
 
 echo "Agent policy docs OK (pnp4 P-vs-NP mainline + restricted side-track boundary enforced)."
-
-echo "[check] Step 3.b: frozen TMVerifier tree manifest"
-"${ROOT_DIR}/scripts/check_tmverifier_freeze.sh"
 
 echo "[check] Step 4/17: doc-honesty linter (Research Governance v0.1, Rule 1)"
 "${ROOT_DIR}/scripts/check_doc_honesty.sh"

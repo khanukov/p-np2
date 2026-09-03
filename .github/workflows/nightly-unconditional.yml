@@ -10,6 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: TMVerifier freeze preflight
+        run: ./scripts/check_tmverifier_freeze.sh && ./scripts/test_tmverifier_freeze.sh
       - name: Setup elan
         uses: Julian/setup-lean@v1
         with:

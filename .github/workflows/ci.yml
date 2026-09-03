@@ -8,6 +8,11 @@ jobs:
     steps:
       # 1. Checkout code
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TMVerifier freeze preflight
+        run: ./scripts/check_tmverifier_freeze.sh && ./scripts/test_tmverifier_freeze.sh
 
       # 2. Setup Lean 4
       - name: Setup Lean

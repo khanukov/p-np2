@@ -1,0 +1,17 @@
+# Model/freeze governance requires explicit repository-owner review.
+/pnp3/Complexity/TMVerifier/ @khanukov
+/spec/tmverifier_freeze.json @khanukov
+/spec/version_manifest.toml @khanukov
+/lakefile.lean @khanukov
+/scripts/check.sh @khanukov
+/scripts/check_tmverifier_freeze.py @khanukov
+/scripts/check_tmverifier_freeze.sh @khanukov
+/scripts/test_tmverifier_freeze.py @khanukov
+/scripts/test_tmverifier_freeze.sh @khanukov
+/pnp3/Docs/TMVERIFIER_FREEZE.md @khanukov
+/.github/workflows/tmverifier-freeze.yml @khanukov
+/.github/workflows/ci.yml @khanukov
+/.github/workflows/lean.yml @khanukov
+/.github/workflows/nightly-unconditional.yml @khanukov
+/.github/CODEOWNERS @khanukov
+/.gitattributes @khanukov

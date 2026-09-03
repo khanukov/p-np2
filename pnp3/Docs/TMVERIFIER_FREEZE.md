@@ -9,16 +9,34 @@ The complete tree below is content-addressed by `spec/tmverifier_freeze.json`:
 pnp3/Complexity/TMVerifier/
 ```
 
-`scripts/check_tmverifier_freeze.sh` verifies both the exact file set and the
-SHA-256 digest of every file. It is part of `scripts/check.sh`.
+`scripts/check_tmverifier_freeze.sh` validates the manifest against Git objects
+at the frozen commit, then verifies the working tree's exact paths, object types,
+executable modes, SHA-256 contents, and lakefile inclusion without following
+symlinks. It and an isolated manifest/lake/filesystem negative-control suite
+are part of `scripts/check.sh` and run before any build.
+
+The freeze-policy paths are listed in `.github/CODEOWNERS`. Repository settings
+must require code-owner review on protected `main` for that ownership boundary
+to prevent an ordinary PR from weakening the checker and manifest together.
+The base-controlled `TMVerifier Freeze Policy` workflow independently rejects
+changes to the frozen tree or policy files unless a maintainer applies the
+`tmverifier-unfreeze` label; it never checks out or executes pull-request code.
+
+This is a source snapshot, not a frozen semantic dependency or toolchain
+closure. In particular, `Complexity.PsubsetPpolyInternal.TuringEncoding`,
+`Complexity.PsubsetPpolyInternal.Bitstring`, `Models.Model_PartialMCSP`,
+`Magnification.CanonicalAsymptoticTrackData`,
+`Magnification.CanonicalAsymptoticDecider`, and the Lean/Mathlib toolchain
+remain separately governed. P1 must introduce versioned foundations outside
+the frozen tree and must not silently alter these dependencies to change the
+meaning of the snapshot.
 
 ## Why it is frozen
 
 The one-tape verifier track is preserved as formal-methods and model-audit
-infrastructure, but further gate-by-gate construction is paused while the
-complexity-class foundation is replaced by a uniform machine interface without
-an unrestricted `runTime : Nat → Nat` field. New model-repair work must live
-outside the frozen tree.
+infrastructure, but further gate-by-gate construction is paused while a new
+versioned uniform complexity-class foundation is established. New model-repair
+work must live outside the frozen tree.
 
 This record is internal repository governance. Public-facing model claims are
 updated separately once the replacement interface and migration theorems are
@@ -34,6 +52,9 @@ A change requires a dedicated unfreeze/migration PR that:
 2. reruns the complete local and remote review gates;
 3. updates this decision record and regenerates the manifest deliberately;
 4. does not silently resume the old verifier roadmap.
+
+Such a PR must carry the maintainer-only `tmverifier-unfreeze` label and receive
+the required code-owner review before merge.
 
 The next active track is the versioned uniform `P` model and its circuit
 simulation, not GN-E2-3b or later TMVerifier stages.

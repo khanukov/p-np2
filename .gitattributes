@@ -1,0 +1,6 @@
+pnp3/Complexity/TMVerifier/** text eol=lf
+spec/tmverifier_freeze.json text eol=lf
+scripts/check_tmverifier_freeze.py text eol=lf
+scripts/check_tmverifier_freeze.sh text eol=lf
+scripts/test_tmverifier_freeze.py text eol=lf
+scripts/test_tmverifier_freeze.sh text eol=lf

@@ -1,120 +1,685 @@
 {
   "files": {
-    "pnp3/Complexity/TMVerifier/GapMCSPVerifier.lean": "95769d6c751668273582b0dbc8bc2c0912855a7f55541d47181b00dfb7912480",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/AtomicPrograms.lean": "b7566b5c30e78116a09783d7ba575e0c774019486ef53f3abe98ffec9ebbbac6",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/BinaryCounter.lean": "d8aeb434e81734471fceb210fdc48d1eb330a9310d9a3fcdfa695d3a9bac18c2",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/CombineAtOffset.lean": "bc971c48cba57579db38c111eda91fd7ea5732d71e19ca8d804dce6f6cdd3901",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/ConstStatePhasedProgram.lean": "035172d3cbd91d9ae2c0fb744cbae9898dbadbcb35f19b54ea02fa81b98bd6ab",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/ConstStatePhasedProgramAccepts.lean": "b6c987d8856846e3103bc0523280d5d406d583fc1c19353873d6283b4d67a8c5",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/ConstStatePhasedProgramConditionalAccept.lean": "b3499e6f1b64b5b37d209dd98716f2eed2d1b7b26e6f7d6eccf18d9ee9647678",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/ConstStatePhasedProgramConditionalAcceptExamples.lean": "19cac044e28f659ded248f58ff7c78fe61f655cff2d2514bbd7ac370067d282a",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/ConstStatePhasedProgramInitialConfig.lean": "1d2e4d1b81d843b65e0d4ed7d912deb2d8cb7bcdeaa0029049bdd8ade2b9f79e",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/ConstStatePhasedProgramSeqListRun.lean": "16df39c3ab9dbe4ba7a8d956c0e1e5da43a357b810280df0f6e91b8c74b7a7a9",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/ConstStatePhasedProgramSeqListRunExamples.lean": "935dc0b0a51f9b1f29ca28c4f26cccc6e3e707aa9c9ab44ea3b3b84cf3cc8f84",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/ConstStatePhasedProgramSeqRun.lean": "337df8486cd2adb2dd5d0a956f609956d987af842511c14336b8b3d00269ce94",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/ConstStatePhasedProgramSeqRunExamples.lean": "77cfa956227ed1f159bd318b4c1eb13d4bbf264ea26ac96ab383dfb5b1dbb278",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/ConstStatePhasedStepBridge.lean": "6adae9ba6c057d1dc901a4eae1c7ba8bf38abf8af9454f5020fa0aaff42fdf94",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/ConstStatePhasedStepBridgeExamples.lean": "6a09a39d658ad1b92b92d1bf323be7b9b009106672e01a15f3ec8c52391e586b",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/CopyAtOffset.lean": "a9201712ce276c94fdb1b71239c5a56ee4d2c5a3d9aee125861119ec9a058634",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/Encoding.lean": "407c2577d15c2566b3248db3edca9e8992b066c61ce13b72009796f4a5910eec",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/Foundation.lean": "b32a8730843d86b25d54f3cc92815caee20496ea7ee67fb2621f3b8f823e22b3",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameRewriteCycle.lean": "abecb49c69f2097d3f0b3fca6857a6288d42e81f4706caf532bd9fc85d621384",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameRewriteCycleInstances.lean": "6334206a585a1cc4e8c4240977319d7a3577de2223aec9dfe931a6f98357f14e",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameRewriteCycleProbe.lean": "0e532d21cf29f518d3b4fbbf322790b1457305af65c4bb32b1c039194e7a672b",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameScannerCodec.lean": "85f20373793922cc7b1183b29dad52f960a0f785d5656ab9e3677921d1dd5bef",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameScannerKernel.lean": "34d2ca013136d57c5ff11dc770499eec3027fbfcfc1c0a2fd4b5d407a0972119",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameScannerProbe.lean": "548866d47f8bc71511cc1d3d0ded98fbc06eefe6714601163f82b339569dc163",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameScannerReverse.lean": "1945be56a1405ea4057c044079305f4781c0e30044d1467020595bf04d9e700a",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameScannerReverseInstances.lean": "0526102b8dbd3700c11e59a335916084ec56b2c6003aad24ba6303d6754c2bcf",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameScannerReverseProbe.lean": "3cd83db8af18ae3aed4923aa2bd155160f02004ab80a12b722c16a2a4d390d86",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameScannerSeek.lean": "10beeb9e62fae628012b7baa5c2984b0f82f2fc246317d776a68621927e3bf9d",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameScannerT1.lean": "f88955287de080fc1812885fa5d102584c9e70af364b92f34d8943ecd7d18631",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameScannerWrite.lean": "2777e2d52e95b7e8837d49d9286781fc47ce37226fc593bd51df4fd10c2d6b51",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameScannerWriteCtx.lean": "39e5a48fa166fa3d9f395f4dc2287bda63e370736fc32759c35256979dad407b",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameScannerWriteLeft.lean": "35ace553b94b4d51f08bc501e2b1890d1554d3b8791395711e498b3ab52b3c8b",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameShuttle.lean": "b89abf390e8db266f05441da51c01ccb0dd2dc789da6576fe4fbe082e7cdec14",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameShuttleProbe.lean": "870b25ca41435d85abea1987bdca71d0b874b43781ddd6b8ab8a888cd9787ca2",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateNBodyRound.lean": "ae4b433fd8f57f9a411ef1f3910512572b6bd67105f12c18b30faa1954f0ef7a",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateNBoundaryShuttle.lean": "800f178ac048d2c75158c02b905a3cc28b6084eb853e83f00a06e6c188ef3225",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateNEncoding.lean": "892c714cd899ebebc38cf2e113f89c07361233aaa24de79c1fcee4e7bf7c93d0",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateNEncodingExamples.lean": "17b6d26fb46caf7f72090c17a117d1b8afb0c5a7143cf4525ac082a14a29e8d0",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateNFirstInstallBridge.lean": "bb9288a97c05a06970f86d98f2857707b3551727ac841f774ddebac64c5de437",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateNFixedDelegateRelocation.lean": "f5b0a9ed433b6e69c426e33f68e9054399c4cf6bbf03d91135bb368c9b103e11",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateNFrameShuttle.lean": "6955e56eabf1bcb2978974a6ee087fc43b171b06e65f5a01d986120f1bd7bc8d",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateNLocateGrammar.lean": "964616e48cec9a06349922f472e7b4d7f08966958f368eee4d135ed699cbb925",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateNRelocation.lean": "bf60303cc94a202fe24a7e3a358533c2491b4cccd1ececc7d47211eb2a0ae50c",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateNRelocationExamples.lean": "7120f3e3ed2f1b543dddec64f74916fe2540e01dfb4e55fc4407a71ca82106d2",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateNRuntimeGrammar.lean": "b3575e280bc8ba210d9a32081aaada7a1fa3e994818ff194d1f154c67d63418f",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateNScratchBootstrap.lean": "f16189727a079c4c3d3522737164b3c33f89c27e78dcaae7b2a526b3913e4000",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateNTapeState.lean": "d839c857aa5d0be53bd0c49cb81c1cc6d77070afc5b7dbcca2bf07ab03993715",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateNTapeStateExamples.lean": "794b3d7164e9786fd88ee6609dd94a0bec9d748adcb5f69fb87139755208a532",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneARepair.lean": "a77a70b06e59df505c683d384de359872e93aa450dfc12b7cb815fd81e5220cf",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneARepairTraceSafety.lean": "8b4a938333b71b05ce5804c911d237ae453cddfcf5a943de8de86dae591c5252",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneAResult.lean": "15497461104e0060c0e510f535068f9f4122531eaf12cbf1a3f586c108043067",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneAWalkDriver.lean": "523fff3d0a2202934a7aace1a504f92b2fd792b05e9b1827f7fe5af249f79047",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneAWalkInstallAtoms.lean": "feeeb8b942a2d632bd3ac150f7de517c912307cb171db4589756f8f9e243b004",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneAWalkInvariant.lean": "4446ca0ef9ff040493b9f2948022bbb560400df553bd8e26888170057040416c",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneAWalkKernel.lean": "387d75435559d354645de3cc7a6b355faec75193e40edeee001e2d172e64f6a8",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneAWalkRound.lean": "ee0066cf7174369a431e19aedb0f109271523f0b42830a08bf1eced65809478a",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneControl.lean": "4ebf21a23a266509d03a7916c379280af20cffeef127bd0656b476346a112733",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneEncoding.lean": "d026ac073787edb6b7076274e20d15223a57a459fe9fe8e8c1496f3a50050ac5",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneExamples.lean": "582de499a817e198fb64ec0affd8f4972ccc171194103fce744a8760bf1075a2",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneFiveTagTraceSafety.lean": "633b3d08109886ff1327bb1ff126e71c3a8dbfb43b779297b48cd07896e11526",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneIndexRound.lean": "254f26abbfacb921a013fed822532bc0f4474b07bef3bcb9c95b714580e6cac2",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneInstallScan.lean": "5ba960bad9cf9102b7be3bbcdcf841b7d749abc19836e50f32dbcb4b4168b93c",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneInstallScanExamples.lean": "4165c7044512cd3637891de335da89d71d66a2a14fcb4873955ce56d4a6f6d29",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneOutputAccept.lean": "5bd7f7d3fa443c0ce5bbfe93388ed697a2b07f3358d31e2559748b6320ef1b56",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneOutputDoneTraceSafety.lean": "e9f0edb3989f0858ee73dfe727988f8051564d301d3fdc80e6782bb826289864",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneOutputKernel.lean": "4da31a7342a55dd17de73c1305940aab8b8abe630f161e72d8f7bcc8f53d7c8b",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOnePassAControl.lean": "cd5026e9ee96ea81e84579a98af8a1380489dcc4017f81deb491709a97e40596",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOnePassADriverTraceSafety.lean": "65d19443024107e351b0b303ad4ca26b5b034ac1366861d5561ce530e4209fe1",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOnePassAEntryExamples.lean": "30c9da62be4ff4e127c013dd7f9fff467d3054ca0b069f7d8efae3cb6c3a126f",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOnePassARoundTraceSafety.lean": "a48e51e5f0f5f14849dcdafb5eec95835489aa048a7100086fbea3c50713f28a",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOnePassATraceSafety.lean": "009c1ac3a4dd0276a3ad7f30e55d342bbaddf1ef7314ecba23f8686f08f88253",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOnePassBDriverTraceSafety.lean": "a91ac6998e81d99f0c88423972d5f33041d18c57cf760b44fbb4a2599e0669d8",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOnePassBTerminalRepairTraceSafety.lean": "9e3b906d50a8b817f40f3a32f82752b35f3b49367aaaca1519abb7bb5e8fd1e3",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOnePassBTraceSafety.lean": "dbc9145dcc6bd0d698f5b2a2c6761e139ac454f598302fd755853d6daa251c76",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneProbeInstall.lean": "e2d0b31e5453344ab4659d08091570cceb4f38046d80dcbc583b6f0699229f6c",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneProbeInstallExamples.lean": "b27453f8fbb2ad34651a1d0766afbc45727c78601b8fa6e9b1f635878d60fa13",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneReadB.lean": "fb76d0fc1b8a013d3ce22e113c67d7c9a4fcd36ecff75ff0800f158cd9f3ee6a",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneReadBExamples.lean": "fc924f40448f7819e95a7f106e364b6465b975b7e57bf959255cd6592b7dd108",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneRepairDriver.lean": "40b8cdfe5e7e5d1f0d8a6a0b5ce8f000ad733e3098b32c0c11a4a83aafdc3120",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneRepairExamples.lean": "9806c827af22698a5e3e5661052fd2c317e98738fbe1f7924cf2530251a539e8",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneRepairKernel.lean": "2c2458348a7df38a89e5a04aef3d3fe7c338bca4757b612b875bfa6799bf08ad",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneRepairKernelExamples.lean": "a4513bb5dc1ed3a7cfb9f852d1102f6370bafc3fb93c986f68da4e5583e2b109",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneResidual.lean": "73d265d20a8f9f94fb8f564aac8f6a413dd8660f945dec67b30e52bf43060395",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneRouteRewindTraceSafety.lean": "9e937dcf760d1fba2cfb0e3b18344dea1c7f075539228e31b12614c4cf21ba14",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneRouting.lean": "bd454d9b2b18b9e0a5fb127182f7faf9700860c6a27ffece2a6c868590ca8ddb",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneScanner.lean": "df86e0fdfe0ec9c373d42872b0064f18ed3e58cdeadd77c01a92ec9fc22a4f1c",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneSemantics.lean": "8b669c3262c75370e97e0ffa083f0053a8e253a2f40700e4e773a1f3b36ef05f",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneTraceSafety.lean": "9f467d6a67c13e31c162d21254a0eedced0358a51c99b96bac6f87aa5af75a29",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneUnaryARepairTraceSafety.lean": "10848cab46b9ed0b41a60c304e2c4932173d1326c7ef46a63395f34cdeb61420",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneValidation.lean": "d38e8b1bd2d26d3399ad52b583a067f1b22a66d4c11c45658fccf99f9d4a34cf",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneWalkDriver.lean": "e25a59a89e6f0388601f744174fdff32261365eb9cc20afa3d40f745c6b74bf8",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneWalkDriverExamples.lean": "653a5ab4fc1ceb9f3fd73fb50d3049709120a4ff9c5e9cbb95784a67828cd680",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneWalkExamples.lean": "d4eda8f3da7f0c2e130bd6b6d3e7c2d256f7c9bb51d72328570710d8afa2aada",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneWalkInvariant.lean": "b547a0f8d13219f96db7ae7b511eee7a4d3e1556d0d17211e40bca97989a34e1",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneWalkInvariantExamples.lean": "6f4193b6b2e83ce40a635f9cdd6724ae1f5611b504e5583baa82f39d39d56174",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneWalkKernel.lean": "76c6506b5f98518ed639c59b3d45e3678ecefcba2c22fc053c356220977ac73a",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/GateWrappers.lean": "997b2e0fa7fd1c342b4ac84714e3bb57a3659f460dbff66a4e86cb4ffa6db0ba",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/RowConsistencyCheck.lean": "661fdff51115621d6328d07ea4d35e2806a67d8961035b069f685dd38d55bc70",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/TrueUniformSeek.lean": "ec91cb672f5fa78a5b328d2c63000e25a8c2573fcd1cab914e5eed58e0d2f7f5",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/TrueUniformSeekEncoding.lean": "554239d3563a39a87f97bdd6e867c17c55dcf963aac7e8e67e9977273366b6b2",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/TrueUniformSeekExamples.lean": "aa5ed8f6c6b25f4a6bc5880d54415ca924cdb400cf0712e89b9cf82796f5480f",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/TrueUniformSeekMutation.lean": "2903dd406838a842f4ac04bd2a0b6b38b8da12327229b48d473b5df86a104b77",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/TrueUniformSeekMutationDriver.lean": "0c5c20488103e6bc608ff0a020bb03507c6aef715d41465ba62cf64554349b4c",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/TrueUniformSeekMutationDriverExamples.lean": "938c3b5be85bd1cf5f1a2c5374baee1d3849f9d58b3d5f65a99e1c040768d613",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/TrueUniformSeekMutationLoop.lean": "dace6334e117d2d16a122d2ea73dd789a595ffb522ee29c80cc9d3a85d1c77e3",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/TrueUniformSeekMutationLoopExamples.lean": "23f81b5ab1499b0f84df8825e5c541bddeac19e4de1f0efa8f3be6fe40b8ad93",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/TrueUniformSeekSemantics.lean": "85e59d7cdd18e455c034ea14a1c5b7035268a32720e6ae9de94ccf4b02037cef",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/TrueUniformSeekSemanticsExamples.lean": "42e494c212e552fe080f0b89396c3e053a94c6e54a48d58f3e7910b17ba5b677",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/TrueUniformSeekTerminal.lean": "9ba65399353383475ab140b0f19afdafb02c52659c588651d0c13c38a84bd34e",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/TrueUniformSeekTerminalControl.lean": "67b11065b4949e8983419cace39189deb5474090fba720fa8f891673bfca2248",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/TrueUniformSeekTerminalExamples.lean": "84f6cfd1a28ff0c4d7488381ce92bb20578cf3e94dccbe07fe1a59699630c88a",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/TrueUniformSeekValidation.lean": "378ed9b42a3de73532908784b16c63b91e555991909c6ca954aba32da88d4e1b",
-    "pnp3/Complexity/TMVerifier/TuringToolkit/UnaryAtOffset.lean": "e60f16e41e3ec78c807b83c24ce67f6339270142cd90906c1dc946b4c65fd3d4"
+    "pnp3/Complexity/TMVerifier/GapMCSPVerifier.lean": {
+      "git_oid": "6f136699074b4706804f7140f8a12753ad93df72",
+      "mode": "100644",
+      "sha256": "95769d6c751668273582b0dbc8bc2c0912855a7f55541d47181b00dfb7912480",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/AtomicPrograms.lean": {
+      "git_oid": "86e3ebce5607ca6b4775d5c6df484984b19d1501",
+      "mode": "100644",
+      "sha256": "b7566b5c30e78116a09783d7ba575e0c774019486ef53f3abe98ffec9ebbbac6",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/BinaryCounter.lean": {
+      "git_oid": "be99cd80e139eb25d1e947e6c7ad6338ec8c9c02",
+      "mode": "100644",
+      "sha256": "d8aeb434e81734471fceb210fdc48d1eb330a9310d9a3fcdfa695d3a9bac18c2",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/CombineAtOffset.lean": {
+      "git_oid": "d59c88adbd6c5c42268b36204d6e0dd873dba2a4",
+      "mode": "100644",
+      "sha256": "bc971c48cba57579db38c111eda91fd7ea5732d71e19ca8d804dce6f6cdd3901",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/ConstStatePhasedProgram.lean": {
+      "git_oid": "cd39350e6f79a3c8075cb0268d1819af5c032faf",
+      "mode": "100644",
+      "sha256": "035172d3cbd91d9ae2c0fb744cbae9898dbadbcb35f19b54ea02fa81b98bd6ab",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/ConstStatePhasedProgramAccepts.lean": {
+      "git_oid": "15262a4902dfc915c5c58629d47c78333c155193",
+      "mode": "100644",
+      "sha256": "b6c987d8856846e3103bc0523280d5d406d583fc1c19353873d6283b4d67a8c5",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/ConstStatePhasedProgramConditionalAccept.lean": {
+      "git_oid": "bb3a16ad67804f0cc3225193f09eba6bf5be2c6a",
+      "mode": "100644",
+      "sha256": "b3499e6f1b64b5b37d209dd98716f2eed2d1b7b26e6f7d6eccf18d9ee9647678",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/ConstStatePhasedProgramConditionalAcceptExamples.lean": {
+      "git_oid": "455d48057268589860040f63e34698d0fd5f194c",
+      "mode": "100644",
+      "sha256": "19cac044e28f659ded248f58ff7c78fe61f655cff2d2514bbd7ac370067d282a",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/ConstStatePhasedProgramInitialConfig.lean": {
+      "git_oid": "f078b20c5c7cb44657e1b2acb4caf1bb516e4fa6",
+      "mode": "100644",
+      "sha256": "1d2e4d1b81d843b65e0d4ed7d912deb2d8cb7bcdeaa0029049bdd8ade2b9f79e",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/ConstStatePhasedProgramSeqListRun.lean": {
+      "git_oid": "d36b15d8a5d77b9a4fd117f242c4e6b6663c429a",
+      "mode": "100644",
+      "sha256": "16df39c3ab9dbe4ba7a8d956c0e1e5da43a357b810280df0f6e91b8c74b7a7a9",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/ConstStatePhasedProgramSeqListRunExamples.lean": {
+      "git_oid": "6a27a66474a059e6094c51db07a1dd66e87b640b",
+      "mode": "100644",
+      "sha256": "935dc0b0a51f9b1f29ca28c4f26cccc6e3e707aa9c9ab44ea3b3b84cf3cc8f84",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/ConstStatePhasedProgramSeqRun.lean": {
+      "git_oid": "5e15c87bc0d435230fe4e52cf581fd30ec1b9bd4",
+      "mode": "100644",
+      "sha256": "337df8486cd2adb2dd5d0a956f609956d987af842511c14336b8b3d00269ce94",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/ConstStatePhasedProgramSeqRunExamples.lean": {
+      "git_oid": "648ef144bf0d1d03cb17b1da8f7adc32665b580e",
+      "mode": "100644",
+      "sha256": "77cfa956227ed1f159bd318b4c1eb13d4bbf264ea26ac96ab383dfb5b1dbb278",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/ConstStatePhasedStepBridge.lean": {
+      "git_oid": "49192a5405aecee206bc8cd0c76f06060cda340b",
+      "mode": "100644",
+      "sha256": "6adae9ba6c057d1dc901a4eae1c7ba8bf38abf8af9454f5020fa0aaff42fdf94",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/ConstStatePhasedStepBridgeExamples.lean": {
+      "git_oid": "3263095b87e8b705d40ef61cf63473254036f702",
+      "mode": "100644",
+      "sha256": "6a09a39d658ad1b92b92d1bf323be7b9b009106672e01a15f3ec8c52391e586b",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/CopyAtOffset.lean": {
+      "git_oid": "fee96fc71d18ada6cfacb6a5660c8c98713fb5c8",
+      "mode": "100644",
+      "sha256": "a9201712ce276c94fdb1b71239c5a56ee4d2c5a3d9aee125861119ec9a058634",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/Encoding.lean": {
+      "git_oid": "8b3c5e745618c9bd582f3846d5c942db886f8cf1",
+      "mode": "100644",
+      "sha256": "407c2577d15c2566b3248db3edca9e8992b066c61ce13b72009796f4a5910eec",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/Foundation.lean": {
+      "git_oid": "ccb277a82f5e1692358108d17f557484f289da13",
+      "mode": "100644",
+      "sha256": "b32a8730843d86b25d54f3cc92815caee20496ea7ee67fb2621f3b8f823e22b3",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameRewriteCycle.lean": {
+      "git_oid": "2f5ace94d5cdb5ee2915cc208d4370606945c477",
+      "mode": "100644",
+      "sha256": "abecb49c69f2097d3f0b3fca6857a6288d42e81f4706caf532bd9fc85d621384",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameRewriteCycleInstances.lean": {
+      "git_oid": "7fe24d7c0e181aab79ce3e6c47a611a10f640e7b",
+      "mode": "100644",
+      "sha256": "6334206a585a1cc4e8c4240977319d7a3577de2223aec9dfe931a6f98357f14e",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameRewriteCycleProbe.lean": {
+      "git_oid": "55fff753b2e5129eacefd4545de186937aace739",
+      "mode": "100644",
+      "sha256": "0e532d21cf29f518d3b4fbbf322790b1457305af65c4bb32b1c039194e7a672b",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameScannerCodec.lean": {
+      "git_oid": "a04c5d09ad53522fd836d7ec9ff56406a7d11b14",
+      "mode": "100644",
+      "sha256": "85f20373793922cc7b1183b29dad52f960a0f785d5656ab9e3677921d1dd5bef",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameScannerKernel.lean": {
+      "git_oid": "c995b2ff703cae0763c3f9a5ae68903f2dae0d23",
+      "mode": "100644",
+      "sha256": "34d2ca013136d57c5ff11dc770499eec3027fbfcfc1c0a2fd4b5d407a0972119",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameScannerProbe.lean": {
+      "git_oid": "b98ee49b4d3c8d76a6a5e0eaa18208c22da74f22",
+      "mode": "100644",
+      "sha256": "548866d47f8bc71511cc1d3d0ded98fbc06eefe6714601163f82b339569dc163",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameScannerReverse.lean": {
+      "git_oid": "55db2548c16094b289c6b3805acc3d610faae534",
+      "mode": "100644",
+      "sha256": "1945be56a1405ea4057c044079305f4781c0e30044d1467020595bf04d9e700a",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameScannerReverseInstances.lean": {
+      "git_oid": "be3928bbb55cbce0a7026db196bd4957bf2ad945",
+      "mode": "100644",
+      "sha256": "0526102b8dbd3700c11e59a335916084ec56b2c6003aad24ba6303d6754c2bcf",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameScannerReverseProbe.lean": {
+      "git_oid": "e6810bdfbd0bec27c203a41af65923fee061b715",
+      "mode": "100644",
+      "sha256": "3cd83db8af18ae3aed4923aa2bd155160f02004ab80a12b722c16a2a4d390d86",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameScannerSeek.lean": {
+      "git_oid": "854006497bb3f1753d405d50d315f268366759dd",
+      "mode": "100644",
+      "sha256": "10beeb9e62fae628012b7baa5c2984b0f82f2fc246317d776a68621927e3bf9d",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameScannerT1.lean": {
+      "git_oid": "3c3d18f08960ccccfd9cf4285848e3ca86ae6324",
+      "mode": "100644",
+      "sha256": "f88955287de080fc1812885fa5d102584c9e70af364b92f34d8943ecd7d18631",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameScannerWrite.lean": {
+      "git_oid": "145f0b2f10dcf4cfd3ed5a5686566742b48167d5",
+      "mode": "100644",
+      "sha256": "2777e2d52e95b7e8837d49d9286781fc47ce37226fc593bd51df4fd10c2d6b51",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameScannerWriteCtx.lean": {
+      "git_oid": "b5316c7103390c5dede1ce5efbe81f6af11b1c25",
+      "mode": "100644",
+      "sha256": "39e5a48fa166fa3d9f395f4dc2287bda63e370736fc32759c35256979dad407b",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameScannerWriteLeft.lean": {
+      "git_oid": "60187c3fba2ace3602d0dbc1a9d85223d7b6085d",
+      "mode": "100644",
+      "sha256": "35ace553b94b4d51f08bc501e2b1890d1554d3b8791395711e498b3ab52b3c8b",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameShuttle.lean": {
+      "git_oid": "4bbbb5534a82ede50470714653684dd063d4850d",
+      "mode": "100644",
+      "sha256": "b89abf390e8db266f05441da51c01ccb0dd2dc789da6576fe4fbe082e7cdec14",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/FrameShuttleProbe.lean": {
+      "git_oid": "fe27b6ccdd675085cd4c7fd5c0af5caff7a10c04",
+      "mode": "100644",
+      "sha256": "870b25ca41435d85abea1987bdca71d0b874b43781ddd6b8ab8a888cd9787ca2",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateNBodyRound.lean": {
+      "git_oid": "89bac7b7f7ab9cf5629da4dc3866a794b160bc2e",
+      "mode": "100644",
+      "sha256": "ae4b433fd8f57f9a411ef1f3910512572b6bd67105f12c18b30faa1954f0ef7a",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateNBoundaryShuttle.lean": {
+      "git_oid": "5598caf41dccc1494046831db4e19047bb2e1ecc",
+      "mode": "100644",
+      "sha256": "800f178ac048d2c75158c02b905a3cc28b6084eb853e83f00a06e6c188ef3225",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateNEncoding.lean": {
+      "git_oid": "a33eba38b7fd1060eeb1aaa81e5010e106dee644",
+      "mode": "100644",
+      "sha256": "892c714cd899ebebc38cf2e113f89c07361233aaa24de79c1fcee4e7bf7c93d0",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateNEncodingExamples.lean": {
+      "git_oid": "7c641a13b1c8a6d7143b3f7b389f8fbf0966a564",
+      "mode": "100644",
+      "sha256": "17b6d26fb46caf7f72090c17a117d1b8afb0c5a7143cf4525ac082a14a29e8d0",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateNFirstInstallBridge.lean": {
+      "git_oid": "d536b9c495f7d901d882eb68d1a81a712c01a10d",
+      "mode": "100644",
+      "sha256": "bb9288a97c05a06970f86d98f2857707b3551727ac841f774ddebac64c5de437",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateNFixedDelegateRelocation.lean": {
+      "git_oid": "2c63db4184ff383d9c41a662637edb341aa3ecaf",
+      "mode": "100644",
+      "sha256": "f5b0a9ed433b6e69c426e33f68e9054399c4cf6bbf03d91135bb368c9b103e11",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateNFrameShuttle.lean": {
+      "git_oid": "f0bc64e7d0af3419bbc3a752d49c1bcdd97ea3c0",
+      "mode": "100644",
+      "sha256": "6955e56eabf1bcb2978974a6ee087fc43b171b06e65f5a01d986120f1bd7bc8d",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateNLocateGrammar.lean": {
+      "git_oid": "e44fe07c0dd0a2f34501128c94fd2417066ded59",
+      "mode": "100644",
+      "sha256": "964616e48cec9a06349922f472e7b4d7f08966958f368eee4d135ed699cbb925",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateNRelocation.lean": {
+      "git_oid": "21b0356e28902bd4357859d0fb515da08f91a966",
+      "mode": "100644",
+      "sha256": "bf60303cc94a202fe24a7e3a358533c2491b4cccd1ececc7d47211eb2a0ae50c",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateNRelocationExamples.lean": {
+      "git_oid": "c7217e13687cd398ed84736f043941272df7ae2e",
+      "mode": "100644",
+      "sha256": "7120f3e3ed2f1b543dddec64f74916fe2540e01dfb4e55fc4407a71ca82106d2",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateNRuntimeGrammar.lean": {
+      "git_oid": "009ccc53a0f7b9b7539924ba367ec3b80697404d",
+      "mode": "100644",
+      "sha256": "b3575e280bc8ba210d9a32081aaada7a1fa3e994818ff194d1f154c67d63418f",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateNScratchBootstrap.lean": {
+      "git_oid": "1a5abecad932467e1384f1042d66721cc883f27f",
+      "mode": "100644",
+      "sha256": "f16189727a079c4c3d3522737164b3c33f89c27e78dcaae7b2a526b3913e4000",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateNTapeState.lean": {
+      "git_oid": "4ad25d55ca59d8f9d512e12fca490b9b93b332f6",
+      "mode": "100644",
+      "sha256": "d839c857aa5d0be53bd0c49cb81c1cc6d77070afc5b7dbcca2bf07ab03993715",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateNTapeStateExamples.lean": {
+      "git_oid": "a28a427e9b163cb94aad1ecad301fe79327602db",
+      "mode": "100644",
+      "sha256": "794b3d7164e9786fd88ee6609dd94a0bec9d748adcb5f69fb87139755208a532",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneARepair.lean": {
+      "git_oid": "96605c79c72ce36e6177f1d5da7a49a66ac7cf89",
+      "mode": "100644",
+      "sha256": "a77a70b06e59df505c683d384de359872e93aa450dfc12b7cb815fd81e5220cf",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneARepairTraceSafety.lean": {
+      "git_oid": "6098e2221ba397035eb71ba4c0eefdb5941b37c4",
+      "mode": "100644",
+      "sha256": "8b4a938333b71b05ce5804c911d237ae453cddfcf5a943de8de86dae591c5252",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneAResult.lean": {
+      "git_oid": "97761dabb14a54d020d7678e0be8e5e320bf23e9",
+      "mode": "100644",
+      "sha256": "15497461104e0060c0e510f535068f9f4122531eaf12cbf1a3f586c108043067",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneAWalkDriver.lean": {
+      "git_oid": "562834bd369d5207523ade6f220d4e1e64820a2a",
+      "mode": "100644",
+      "sha256": "523fff3d0a2202934a7aace1a504f92b2fd792b05e9b1827f7fe5af249f79047",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneAWalkInstallAtoms.lean": {
+      "git_oid": "d9d3c4ae361e2384db25e9a6586f5b6de192e6a6",
+      "mode": "100644",
+      "sha256": "feeeb8b942a2d632bd3ac150f7de517c912307cb171db4589756f8f9e243b004",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneAWalkInvariant.lean": {
+      "git_oid": "8c3b7c3793720fbeaf95619fcba4929aba9abf8c",
+      "mode": "100644",
+      "sha256": "4446ca0ef9ff040493b9f2948022bbb560400df553bd8e26888170057040416c",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneAWalkKernel.lean": {
+      "git_oid": "84ba84ba7960c9954809bfd3f706a57b4dbd3ae9",
+      "mode": "100644",
+      "sha256": "387d75435559d354645de3cc7a6b355faec75193e40edeee001e2d172e64f6a8",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneAWalkRound.lean": {
+      "git_oid": "78ea9bb66e09b0048fd84bb8ce9a935a595bb15b",
+      "mode": "100644",
+      "sha256": "ee0066cf7174369a431e19aedb0f109271523f0b42830a08bf1eced65809478a",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneControl.lean": {
+      "git_oid": "4bc738d189992713b477cf222649680274bc989a",
+      "mode": "100644",
+      "sha256": "4ebf21a23a266509d03a7916c379280af20cffeef127bd0656b476346a112733",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneEncoding.lean": {
+      "git_oid": "7eea69157ee8a9f4c8d8e6e3da0e13f4047dd9a8",
+      "mode": "100644",
+      "sha256": "d026ac073787edb6b7076274e20d15223a57a459fe9fe8e8c1496f3a50050ac5",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneExamples.lean": {
+      "git_oid": "4496bcc01ef8447efb8fddc871c0dfd28aaf616f",
+      "mode": "100644",
+      "sha256": "582de499a817e198fb64ec0affd8f4972ccc171194103fce744a8760bf1075a2",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneFiveTagTraceSafety.lean": {
+      "git_oid": "2d2554e968d4ca9bc73cee7e1ae240ccf527c9ae",
+      "mode": "100644",
+      "sha256": "633b3d08109886ff1327bb1ff126e71c3a8dbfb43b779297b48cd07896e11526",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneIndexRound.lean": {
+      "git_oid": "8deccd352f15018e4f72fd5e784c5e3d168f5dbb",
+      "mode": "100644",
+      "sha256": "254f26abbfacb921a013fed822532bc0f4474b07bef3bcb9c95b714580e6cac2",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneInstallScan.lean": {
+      "git_oid": "252f4b440f7907e7fcc7b57db66f35249c64b9e1",
+      "mode": "100644",
+      "sha256": "5ba960bad9cf9102b7be3bbcdcf841b7d749abc19836e50f32dbcb4b4168b93c",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneInstallScanExamples.lean": {
+      "git_oid": "3eef4d9afebd3434d669cfc41e88e8791dfdf534",
+      "mode": "100644",
+      "sha256": "4165c7044512cd3637891de335da89d71d66a2a14fcb4873955ce56d4a6f6d29",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneOutputAccept.lean": {
+      "git_oid": "c90ad32df08d99748afb927b1749ccc84b253b95",
+      "mode": "100644",
+      "sha256": "5bd7f7d3fa443c0ce5bbfe93388ed697a2b07f3358d31e2559748b6320ef1b56",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneOutputDoneTraceSafety.lean": {
+      "git_oid": "86897887554e080b1c914398df0b2958b2952ead",
+      "mode": "100644",
+      "sha256": "e9f0edb3989f0858ee73dfe727988f8051564d301d3fdc80e6782bb826289864",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneOutputKernel.lean": {
+      "git_oid": "b7b840a6031b18703862c441a4ecc729ba8310fb",
+      "mode": "100644",
+      "sha256": "4da31a7342a55dd17de73c1305940aab8b8abe630f161e72d8f7bcc8f53d7c8b",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOnePassAControl.lean": {
+      "git_oid": "d07146ab28980074ef90314d6313d471319f7693",
+      "mode": "100644",
+      "sha256": "cd5026e9ee96ea81e84579a98af8a1380489dcc4017f81deb491709a97e40596",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOnePassADriverTraceSafety.lean": {
+      "git_oid": "19273781b45bb57f1f6077e3383b77b3dca3b9ae",
+      "mode": "100644",
+      "sha256": "65d19443024107e351b0b303ad4ca26b5b034ac1366861d5561ce530e4209fe1",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOnePassAEntryExamples.lean": {
+      "git_oid": "5c54f34fd8df148b19ab89ecf7074e0f2db302b1",
+      "mode": "100644",
+      "sha256": "30c9da62be4ff4e127c013dd7f9fff467d3054ca0b069f7d8efae3cb6c3a126f",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOnePassARoundTraceSafety.lean": {
+      "git_oid": "3a2296a9b8b8c4a6e71d3d45330e3762003990f7",
+      "mode": "100644",
+      "sha256": "a48e51e5f0f5f14849dcdafb5eec95835489aa048a7100086fbea3c50713f28a",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOnePassATraceSafety.lean": {
+      "git_oid": "d62b013a4b12c202f1fbd7c1e3758196fdb54d9a",
+      "mode": "100644",
+      "sha256": "009c1ac3a4dd0276a3ad7f30e55d342bbaddf1ef7314ecba23f8686f08f88253",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOnePassBDriverTraceSafety.lean": {
+      "git_oid": "496f69d10a1c25defeb38a513ae842aea3662863",
+      "mode": "100644",
+      "sha256": "a91ac6998e81d99f0c88423972d5f33041d18c57cf760b44fbb4a2599e0669d8",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOnePassBTerminalRepairTraceSafety.lean": {
+      "git_oid": "b303870ed4f6f61f8f92323324ed6490dcf3eee3",
+      "mode": "100644",
+      "sha256": "9e3b906d50a8b817f40f3a32f82752b35f3b49367aaaca1519abb7bb5e8fd1e3",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOnePassBTraceSafety.lean": {
+      "git_oid": "ea3fd5134a16a6a7550907700cd80b1450506555",
+      "mode": "100644",
+      "sha256": "dbc9145dcc6bd0d698f5b2a2c6761e139ac454f598302fd755853d6daa251c76",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneProbeInstall.lean": {
+      "git_oid": "5a367ddbdfb765225e1fe82ddd8e1ac49ccfc4ad",
+      "mode": "100644",
+      "sha256": "e2d0b31e5453344ab4659d08091570cceb4f38046d80dcbc583b6f0699229f6c",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneProbeInstallExamples.lean": {
+      "git_oid": "cdeaa6210560918126056f65821aa69d894a5e64",
+      "mode": "100644",
+      "sha256": "b27453f8fbb2ad34651a1d0766afbc45727c78601b8fa6e9b1f635878d60fa13",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneReadB.lean": {
+      "git_oid": "c347b378645317dddff2502417719737a974dc5f",
+      "mode": "100644",
+      "sha256": "fb76d0fc1b8a013d3ce22e113c67d7c9a4fcd36ecff75ff0800f158cd9f3ee6a",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneReadBExamples.lean": {
+      "git_oid": "f84199deb4f4ded0f6e8e205ac3fbbff62dd4f28",
+      "mode": "100644",
+      "sha256": "fc924f40448f7819e95a7f106e364b6465b975b7e57bf959255cd6592b7dd108",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneRepairDriver.lean": {
+      "git_oid": "c8a43b27d2f516f24fdc2b25cd023cf91f428e53",
+      "mode": "100644",
+      "sha256": "40b8cdfe5e7e5d1f0d8a6a0b5ce8f000ad733e3098b32c0c11a4a83aafdc3120",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneRepairExamples.lean": {
+      "git_oid": "0e22518c7445102e1c13f8b3bdc78472160954e4",
+      "mode": "100644",
+      "sha256": "9806c827af22698a5e3e5661052fd2c317e98738fbe1f7924cf2530251a539e8",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneRepairKernel.lean": {
+      "git_oid": "29ae515fc12c0c92e3d3062d18661accb9434d09",
+      "mode": "100644",
+      "sha256": "2c2458348a7df38a89e5a04aef3d3fe7c338bca4757b612b875bfa6799bf08ad",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneRepairKernelExamples.lean": {
+      "git_oid": "f3aedfc0ca71ff10ea7bb48d8aebc6dc5ad50926",
+      "mode": "100644",
+      "sha256": "a4513bb5dc1ed3a7cfb9f852d1102f6370bafc3fb93c986f68da4e5583e2b109",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneResidual.lean": {
+      "git_oid": "80783c0b6a5f3123b3eb4514f80b669ccb7f6706",
+      "mode": "100644",
+      "sha256": "73d265d20a8f9f94fb8f564aac8f6a413dd8660f945dec67b30e52bf43060395",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneRouteRewindTraceSafety.lean": {
+      "git_oid": "03299d1605f43ffa8ef21c9767def1e175970344",
+      "mode": "100644",
+      "sha256": "9e937dcf760d1fba2cfb0e3b18344dea1c7f075539228e31b12614c4cf21ba14",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneRouting.lean": {
+      "git_oid": "8b1e43797444425c6d5f8da58fd850c0f29e0b79",
+      "mode": "100644",
+      "sha256": "bd454d9b2b18b9e0a5fb127182f7faf9700860c6a27ffece2a6c868590ca8ddb",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneScanner.lean": {
+      "git_oid": "a93e65fc8ba3e4b04ffd72110c1a30d1732cba79",
+      "mode": "100644",
+      "sha256": "df86e0fdfe0ec9c373d42872b0064f18ed3e58cdeadd77c01a92ec9fc22a4f1c",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneSemantics.lean": {
+      "git_oid": "66538c35ee00e2f3ce8f769723e15c16dba5077d",
+      "mode": "100644",
+      "sha256": "8b669c3262c75370e97e0ffa083f0053a8e253a2f40700e4e773a1f3b36ef05f",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneTraceSafety.lean": {
+      "git_oid": "49b7f92749ac4691a06f8c6b2a70fb30d5a42b70",
+      "mode": "100644",
+      "sha256": "9f467d6a67c13e31c162d21254a0eedced0358a51c99b96bac6f87aa5af75a29",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneUnaryARepairTraceSafety.lean": {
+      "git_oid": "66d7bbb8641a8079429690a17fbea7552fd63c4e",
+      "mode": "100644",
+      "sha256": "10848cab46b9ed0b41a60c304e2c4932173d1326c7ef46a63395f34cdeb61420",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneValidation.lean": {
+      "git_oid": "9e85eda7c76aca862dea42bd3d1372d278cee25d",
+      "mode": "100644",
+      "sha256": "d38e8b1bd2d26d3399ad52b583a067f1b22a66d4c11c45658fccf99f9d4a34cf",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneWalkDriver.lean": {
+      "git_oid": "e6cef89807159b81ca3fec65d105f7819e404873",
+      "mode": "100644",
+      "sha256": "e25a59a89e6f0388601f744174fdff32261365eb9cc20afa3d40f745c6b74bf8",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneWalkDriverExamples.lean": {
+      "git_oid": "71d23dd51c68abbfa4cee64272a7e97ab6c2e09d",
+      "mode": "100644",
+      "sha256": "653a5ab4fc1ceb9f3fd73fb50d3049709120a4ff9c5e9cbb95784a67828cd680",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneWalkExamples.lean": {
+      "git_oid": "569a232c562f71288aceb23bb158d5dd2554154c",
+      "mode": "100644",
+      "sha256": "d4eda8f3da7f0c2e130bd6b6d3e7c2d256f7c9bb51d72328570710d8afa2aada",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneWalkInvariant.lean": {
+      "git_oid": "4011a81d7aa4d689f05ae89f2f3a0bdfedc608a8",
+      "mode": "100644",
+      "sha256": "b547a0f8d13219f96db7ae7b511eee7a4d3e1556d0d17211e40bca97989a34e1",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneWalkInvariantExamples.lean": {
+      "git_oid": "0d595c68271de0d8a1c7d2ba583b12d08b48890f",
+      "mode": "100644",
+      "sha256": "6f4193b6b2e83ce40a635f9cdd6724ae1f5611b504e5583baa82f39d39d56174",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneWalkKernel.lean": {
+      "git_oid": "ea839c3d5a8cea662dd153bc9f62abe93dd9f167",
+      "mode": "100644",
+      "sha256": "76c6506b5f98518ed639c59b3d45e3678ecefcba2c22fc053c356220977ac73a",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateWrappers.lean": {
+      "git_oid": "3144c12e5b4ff661005240bfa913cd9dcaca62e2",
+      "mode": "100644",
+      "sha256": "997b2e0fa7fd1c342b4ac84714e3bb57a3659f460dbff66a4e86cb4ffa6db0ba",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/RowConsistencyCheck.lean": {
+      "git_oid": "119589db6aa5599f936450b000611f7303f5ba7b",
+      "mode": "100644",
+      "sha256": "661fdff51115621d6328d07ea4d35e2806a67d8961035b069f685dd38d55bc70",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/TrueUniformSeek.lean": {
+      "git_oid": "4b0405d02cc0fae4dfe9716d415618227ec47cae",
+      "mode": "100644",
+      "sha256": "ec91cb672f5fa78a5b328d2c63000e25a8c2573fcd1cab914e5eed58e0d2f7f5",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/TrueUniformSeekEncoding.lean": {
+      "git_oid": "42bf11729d1d540ccab668d33f40996d1671bb89",
+      "mode": "100644",
+      "sha256": "554239d3563a39a87f97bdd6e867c17c55dcf963aac7e8e67e9977273366b6b2",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/TrueUniformSeekExamples.lean": {
+      "git_oid": "4e1736070c8a2170594feb37ba77f57e8f7be164",
+      "mode": "100644",
+      "sha256": "aa5ed8f6c6b25f4a6bc5880d54415ca924cdb400cf0712e89b9cf82796f5480f",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/TrueUniformSeekMutation.lean": {
+      "git_oid": "b07519fb9f618cfffa4178850327092edba9cd3a",
+      "mode": "100644",
+      "sha256": "2903dd406838a842f4ac04bd2a0b6b38b8da12327229b48d473b5df86a104b77",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/TrueUniformSeekMutationDriver.lean": {
+      "git_oid": "99614af6f12e95de65dbed4cc9ed14fd0dc7009a",
+      "mode": "100644",
+      "sha256": "0c5c20488103e6bc608ff0a020bb03507c6aef715d41465ba62cf64554349b4c",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/TrueUniformSeekMutationDriverExamples.lean": {
+      "git_oid": "66443a90923857a68337bb0b2a1034feed924b42",
+      "mode": "100644",
+      "sha256": "938c3b5be85bd1cf5f1a2c5374baee1d3849f9d58b3d5f65a99e1c040768d613",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/TrueUniformSeekMutationLoop.lean": {
+      "git_oid": "407e4132cfbeb6d1decd6a2f00086a9ab9863671",
+      "mode": "100644",
+      "sha256": "dace6334e117d2d16a122d2ea73dd789a595ffb522ee29c80cc9d3a85d1c77e3",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/TrueUniformSeekMutationLoopExamples.lean": {
+      "git_oid": "3b4566c59c5aa43d6950c9f9e1a834811bd53d6d",
+      "mode": "100644",
+      "sha256": "23f81b5ab1499b0f84df8825e5c541bddeac19e4de1f0efa8f3be6fe40b8ad93",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/TrueUniformSeekSemantics.lean": {
+      "git_oid": "46b2b2f9ecde59f1065e0a535bbff58bd6983ad6",
+      "mode": "100644",
+      "sha256": "85e59d7cdd18e455c034ea14a1c5b7035268a32720e6ae9de94ccf4b02037cef",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/TrueUniformSeekSemanticsExamples.lean": {
+      "git_oid": "921e8682977941d7b4d952106584f13c57066705",
+      "mode": "100644",
+      "sha256": "42e494c212e552fe080f0b89396c3e053a94c6e54a48d58f3e7910b17ba5b677",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/TrueUniformSeekTerminal.lean": {
+      "git_oid": "eb96ef9cf6dcb2b7fa8d61ca9fb6d66487e9f674",
+      "mode": "100644",
+      "sha256": "9ba65399353383475ab140b0f19afdafb02c52659c588651d0c13c38a84bd34e",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/TrueUniformSeekTerminalControl.lean": {
+      "git_oid": "9df5b96cf1e09502159ce4a391dbf1c7b942a528",
+      "mode": "100644",
+      "sha256": "67b11065b4949e8983419cace39189deb5474090fba720fa8f891673bfca2248",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/TrueUniformSeekTerminalExamples.lean": {
+      "git_oid": "197845fce8d5a824fdaaef1c3397dc47fa0ccf7b",
+      "mode": "100644",
+      "sha256": "84f6cfd1a28ff0c4d7488381ce92bb20578cf3e94dccbe07fe1a59699630c88a",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/TrueUniformSeekValidation.lean": {
+      "git_oid": "6e0c7a4859791d19648751bc839ccc21cd74eac1",
+      "mode": "100644",
+      "sha256": "378ed9b42a3de73532908784b16c63b91e555991909c6ca954aba32da88d4e1b",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/UnaryAtOffset.lean": {
+      "git_oid": "a87803cb57f1a1fe340be7304435ea5947593d14",
+      "mode": "100644",
+      "sha256": "e60f16e41e3ec78c807b83c24ce67f6339270142cd90906c1dc946b4c65fd3d4",
+      "type": "blob"
+    }
   },
   "frozen_commit": "42c598815c8e7d27a53f26102705f84455c6979d",
-  "schema_version": 1,
+  "schema_version": 2,
   "tree": "pnp3/Complexity/TMVerifier"
 }

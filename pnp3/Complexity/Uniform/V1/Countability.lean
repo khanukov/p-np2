@@ -1,4 +1,4 @@
-import Complexity.Uniform.V1.Examples
+import Complexity.Uniform.V1.PolynomialTime
 import Mathlib.Data.Set.Countable
 import Mathlib.Data.Fintype.Option
 
@@ -35,7 +35,7 @@ proof irrelevance makes it injective. -/
 theorem UniformTM.data_injective : Function.Injective UniformTM.data := by
   intro M N h
   cases M with
-  | mk mk ms ma mr mh mstep =>
+  | mk mCount ms ma mr mh mstep =>
       cases N with
       | mk nk ns na nr nh nstep =>
           simp only [UniformTM.data] at h

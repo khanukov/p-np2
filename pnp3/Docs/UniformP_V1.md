@@ -240,7 +240,8 @@ they prove none of the following:
 - a canonical `P` rebind or equivalence with versioned `UniformP`;
 - `UniformNP`, a lower bound, or any pnp4 mainline source obligation.
 
-Accordingly, arbitrary length-advice languages are excluded only from this
-versioned `UniformP`, not from the unchanged legacy canonical `P`.  Final P1b
-and P1c infer no canonical-class bridge.  Any optional comparison corollary
-involving pnp4 is deferred to a separate reviewed slice.
+Accordingly, not every length-only language belongs to this versioned
+`UniformP`; the direct theorem makes no corresponding exclusion claim about
+the unchanged legacy canonical `P`. Final P1b and P1c infer no canonical-class
+bridge. Any optional comparison corollary involving pnp4 is deferred to a
+separate reviewed slice.

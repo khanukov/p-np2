@@ -135,7 +135,8 @@ P1b-2 adds `Complexity.Uniform.V1.StepKernel`.  Its `encodedStep` is a pure
 Boolean function, exact only on canonical `encodeConfig` inputs.  It scans the
 one-hot old head, matches the canonical blank/false/true rails, selects one
 public `M.step` row, and derives next state and clamped next head, plus write
-rails and the old-head tape update from that same action.  Its headline theorem is
+rails and the old-head tape update from that same action. Its headline
+theorem is
 
 ```text
 encodedStep M n budget (encodeConfig M c) = encodeConfig M (M.stepConfig c)

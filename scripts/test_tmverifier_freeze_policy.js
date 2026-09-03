@@ -6,10 +6,32 @@ const {
 } = require('../.github/scripts/tmverifier-freeze-policy.js');
 
 const complete = { changedFiles: 1, ownerAttestedHead: false };
+const lake = body => `lean_lib PnP3 where\n  globs := #[\n${body}  ]\n`;
 
-assert.equal(lakefileIncludesModules('  Glob.one `A.B,\n', ['A.B']), true);
-assert.equal(lakefileIncludesModules('  -- Glob.one `A.B,\n', ['A.B']), false);
-assert.equal(lakefileIncludesModules('  /- Glob.one `A.B, -/\n', ['A.B']), false);
+assert.equal(lakefileIncludesModules(lake('  Glob.one `A.B,\n'), ['A.B']), true);
+assert.equal(lakefileIncludesModules(lake('  -- Glob.one `A.B,\n'), ['A.B']), false);
+assert.equal(lakefileIncludesModules(lake('  /- Glob.one `A.B, -/\n'), ['A.B']), false);
+assert.equal(
+  lakefileIncludesModules(
+    'lean_lib PnP3 where\n  globs := #[\n  ]\ndef decoy := #[\n  Glob.one `A.B,\n]\n',
+    ['A.B'],
+  ),
+  false,
+);
+assert.equal(
+  lakefileIncludesModules(
+    'lean_lib PnP3 where\n  globs := #[\n  ]\ndef decoy := r#"Glob.one `A.B,"#\n',
+    ['A.B'],
+  ),
+  false,
+);
+assert.equal(
+  lakefileIncludesModules(
+    'lean_lib PnP3 where\n  globs := #[\n    #[\n      Glob.one `A.B,\n    ]\n  ]\n',
+    ['A.B'],
+  ),
+  false,
+);
 
 assert.equal(evaluateFreezeDiff([{ filename: 'README.md' }], [], complete).ok, true);
 assert.equal(

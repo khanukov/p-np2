@@ -70,8 +70,37 @@ function stripLeanComments(text) {
   return output;
 }
 
-function lakefileIncludesModules(text, modules) {
+function pnp3GlobsArray(text) {
   const active = stripLeanComments(text);
+  const headers = [...active.matchAll(/^[ \t]*lean_lib[ \t]+PnP3[ \t]+where[ \t]*$/gm)];
+  if (headers.length !== 1) return null;
+  const start = headers[0].index + headers[0][0].length;
+  const rest = active.slice(start);
+  const nextLibrary = /^[ \t]*lean_lib[ \t]+/m.exec(rest);
+  const end = nextLibrary ? start + nextLibrary.index : active.length;
+  const block = active.slice(start, end);
+  const declarations = [...block.matchAll(/^[ \t]+globs[ \t]*:=[ \t]*#\[/gm)];
+  if (declarations.length !== 1) return null;
+  const openBracket = start + declarations[0].index + declarations[0][0].length - 1;
+  let depth = 1;
+  let output = '';
+  for (let index = openBracket + 1; index < end; index += 1) {
+    const char = active[index];
+    if (char === '[') {
+      depth += 1;
+      output += ' ';
+    } else if (char === ']') {
+      if (depth === 1) return output;
+      depth -= 1;
+      output += ' ';
+    } else output += depth === 1 ? char : (char === '\n' ? '\n' : ' ');
+  }
+  return null;
+}
+
+function lakefileIncludesModules(text, modules) {
+  const active = pnp3GlobsArray(text);
+  if (active === null) return false;
   return modules.every(module => {
     const escaped = module.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     return new RegExp('^[ \\t]*Glob\\.one `' + escaped + ',[ \\t]*$', 'm').test(active);

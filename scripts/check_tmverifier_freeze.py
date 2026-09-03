@@ -164,8 +164,38 @@ def strip_lean_comments(text: str) -> str:
     return "".join(output)
 
 
+def pnp3_globs_array(text: str) -> str:
+    active = strip_lean_comments(text)
+    headers = list(re.finditer(r"^[ \t]*lean_lib[ \t]+PnP3[ \t]+where[ \t]*$", active, re.MULTILINE))
+    if len(headers) != 1:
+        raise ValueError("lakefile must contain exactly one active 'lean_lib PnP3 where'")
+    start = headers[0].end()
+    next_library = re.search(r"^[ \t]*lean_lib[ \t]+", active[start:], re.MULTILINE)
+    end = start + next_library.start() if next_library else len(active)
+    block = active[start:end]
+    declarations = list(re.finditer(r"^[ \t]+globs[ \t]*:=[ \t]*#\[", block, re.MULTILINE))
+    if len(declarations) != 1:
+        raise ValueError("PnP3 library must contain exactly one active globs array")
+    open_bracket = start + declarations[0].end() - 1
+    depth = 1
+    output: list[str] = []
+    for index in range(open_bracket + 1, end):
+        char = active[index]
+        if char == "[":
+            depth += 1
+            output.append(" ")
+        elif char == "]":
+            if depth == 1:
+                return "".join(output)
+            depth -= 1
+            output.append(" ")
+        else:
+            output.append(char if depth == 1 else ("\n" if char == "\n" else " "))
+    raise ValueError("unterminated PnP3 globs array")
+
+
 def missing_lake_modules(expected_paths: set[str], lakefile_path: Path) -> list[str]:
-    lakefile = strip_lean_comments(lakefile_path.read_text(encoding="utf-8"))
+    lakefile = pnp3_globs_array(lakefile_path.read_text(encoding="utf-8"))
     missing: list[str] = []
     for rel in sorted(expected_paths):
         if not rel.endswith(".lean") or not rel.startswith("pnp3/"):

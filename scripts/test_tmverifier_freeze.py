@@ -99,6 +99,30 @@ def main() -> None:
         blocked_module.write_text(lake)
         run(baseline, False, lakefile=blocked_module)
 
+        decoy_module = parent / "decoy-module.lean"
+        active = "    Glob.one `Complexity.TMVerifier.TuringToolkit.GateNBodyRound,\n"
+        lake = LAKEFILE.read_text().replace(active, "", 1)
+        lake += "\ndef decoyGlobs := #[\n" + active + "]\n"
+        decoy_module.write_text(lake)
+        run(baseline, False, lakefile=decoy_module)
+
+        raw_decoy = parent / "raw-decoy.lean"
+        lake = LAKEFILE.read_text().replace(active, "", 1)
+        lake += '\ndef decoy := r#"' + active + '"#\n'
+        raw_decoy.write_text(lake)
+        run(baseline, False, lakefile=raw_decoy)
+
+        nested_decoy = parent / "nested-decoy.lean"
+        lake = LAKEFILE.read_text().replace(active, "", 1)
+        nested = "    by\n      let decoy := #[\n" + active + "      ]\n"
+        lake = lake.replace(
+            "  ]\n\nlean_lib Pnp4 where",
+            nested + "  ]\n\nlean_lib Pnp4 where",
+            1,
+        )
+        nested_decoy.write_text(lake)
+        run(baseline, False, lakefile=nested_decoy)
+
         tampered_manifest = parent / "tampered-manifest.json"
         data = json.loads(MANIFEST.read_text())
         data["frozen_commit"] = "0" * 40

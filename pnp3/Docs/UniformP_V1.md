@@ -9,10 +9,9 @@ The versioned namespace is:
 Pnp3.Complexity.Uniform.V1
 ```
 
-Its source modules are `Complexity/Uniform/V1/Machine.lean`,
-`CircuitEncoding.lean`, `PolynomialTime.lean`, and `Examples.lean`.  They use
-local definitionally
-equal aliases
+The P1a model modules are `Complexity/Uniform/V1/Machine.lean`,
+`PolynomialTime.lean`, and `Examples.lean`. They use local definitionally equal
+aliases
 
 ```lean
 Bitstring n := Fin n → Bool
@@ -21,7 +20,10 @@ Language := ∀ n, Bitstring n → Bool
 
 and do not import the frozen `Complexity/TMVerifier` tree or the legacy
 `PsubsetPpolyInternal/TuringEncoding`, `Complexity/Interfaces`, or
-`Complexity/Simulation` layers.
+`Complexity/Simulation` layers. The later P1b `CircuitEncoding.lean` module
+intentionally reaches the canonical `ComplexityInterfaces.DagCircuit` API
+through `DagGadgets` and `DagBundleCompose`; it still imports neither the
+legacy Turing-machine/simulator layers nor the frozen tree.
 
 ## Finite machine ABI
 

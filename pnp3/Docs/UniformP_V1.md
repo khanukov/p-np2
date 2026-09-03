@@ -131,11 +131,32 @@ length-one regression distinguishes a present false bit in cell zero from the
 blank padding cell one.  `Tests/UniformV1CircuitEncodingSurfaceTests.lean` pins
 this API, with direct theorem and wrapper roots in the central axiom audit.
 
-This P1b-1 slice is infrastructure, not P-vs-NP mainline progress.  It provides
-no transition/step compiler, run compiler, polynomial-size simulation theorem,
-`UniformP`/`PpolyDAG` bridge, canonical class rebind, or lower bound.  P1b-2
-must separately compile one transition over this fixed layout and prove its
-exact semantics and size accounting before any repeated-run construction.
+P1b-2 adds `Complexity.Uniform.V1.StepKernel`.  Its `encodedStep` is a pure
+Boolean function, exact only on canonical `encodeConfig` inputs.  It scans the
+one-hot old head, matches the canonical blank/false/true rails, selects one
+public `M.step` row, and derives next state, move, clamped next head, write
+rails, and old-head tape update from that same action.  Its headline theorem is
+
+```text
+encodedStep M n budget (encodeConfig M c) = encodeConfig M (M.stepConfig c)
+```
+
+and `Nat.iterate` agrees with `M.run`.  The general head theorem uses the real
+`moveHead`, so both boundary clamps are covered without a separate literal
+clamp example.
+
+The module also defines a conditional `StepSpec S`.  If a caller supplies such
+an `S`, `runBundle M n budget S t` is exact for `M.run t` and has exactly
+`2 + t*S.gates` gates: the two initial gates plus one shared copy of `S` per
+iteration.  No concrete `S`, `stepBundle`, or action bundle is constructed.
+The first-bit and length-parity capstones are derived from the general semantic
+theorem rather than independent computation.
+
+P1b-2 is infrastructure, not P-vs-NP mainline progress.  It provides no
+polynomial simulation theorem, `UniformP`/`PpolyDAG` bridge, canonical class
+rebind, or lower bound.  P1b-3 must construct a concrete direct DAG step bundle,
+prove `StepSpec`, and establish the relevant gate bound before a circuit-class
+bridge can be considered.
 
 This P1a repair is infrastructure. It does not change the repository's canonical
 `P` or `NP` definitions and is not P-vs-NP mainline progress.  In particular,

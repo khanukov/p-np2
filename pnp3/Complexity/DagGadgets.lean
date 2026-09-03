@@ -88,6 +88,55 @@ def orCircuit : DagCircuit 2 where
     eval orCircuit x = (x 0 || x 1) := by
   simp [eval, DagCircuit.eval.evalGateAt, orCircuit]
 
+/-! ## Linear false-seeded big OR -/
+
+/-- Disjoin a list of direct circuits.  The empty list is represented by one
+false gate; each nonempty row appends that circuit once and one OR gate. -/
+def bigOrCircuit {n : Nat} : List (DagCircuit n) → DagCircuit n
+  | [] => constCircuit n false
+  | C :: Cs => substInputs orCircuit ![C, bigOrCircuit Cs]
+
+/-- Exact evaluation of the false-seeded big OR. -/
+@[simp] theorem eval_bigOrCircuit {n : Nat} (Cs : List (DagCircuit n))
+    (x : Bitstring n) :
+    eval (bigOrCircuit Cs) x = Cs.any (fun C => eval C x) := by
+  induction Cs with
+  | nil => simp [bigOrCircuit]
+  | cons C Cs ih => simp [bigOrCircuit, ih]
+
+/-- Map-friendly evaluation form used by finite compile-time enumerations. -/
+theorem eval_bigOrCircuit_map {n : Nat} {A : Type} (xs : List A)
+    (C : A → DagCircuit n) (x : Bitstring n) :
+    eval (bigOrCircuit (xs.map C)) x = xs.any (fun a => eval (C a) x) := by
+  simp [Function.comp_def]
+
+/-- `Fin`-enumeration specialization of `eval_bigOrCircuit_map`. -/
+theorem eval_bigOrCircuit_finRange {n k : Nat} (C : Fin k → DagCircuit n)
+    (x : Bitstring n) :
+    eval (bigOrCircuit ((List.finRange k).map C)) x =
+      (List.finRange k).any (fun i => eval (C i) x) :=
+  eval_bigOrCircuit_map (List.finRange k) C x
+
+/-- Exact linear gate formula, including the empty-list false seed. -/
+@[simp] theorem bigOrCircuit_gates {n : Nat} (Cs : List (DagCircuit n)) :
+    (bigOrCircuit Cs).gates =
+      1 + (Cs.map (fun C => C.gates + 1)).sum := by
+  induction Cs with
+  | nil => rfl
+  | cons C Cs ih =>
+      rw [bigOrCircuit]
+      change (bundleOfFamily 2 ![C, bigOrCircuit Cs]).gates + 1 = _
+      rw [bundleOfFamily_gates]
+      simp [ih]
+      omega
+
+/-- Coarse size-accounting form: the big OR uses at most the false seed plus
+the sum of the input circuit sizes. -/
+theorem bigOrCircuit_gates_le_size {n : Nat} (Cs : List (DagCircuit n)) :
+    (bigOrCircuit Cs).gates ≤ 1 + (Cs.map size).sum := by
+  rw [bigOrCircuit_gates]
+  rfl
+
 /-- Four-gate MUX assembled by circuit substitution.  Input 0 is the selector,
 input 1 the true branch, and input 2 the false branch. -/
 def muxCircuit : DagCircuit 3 :=

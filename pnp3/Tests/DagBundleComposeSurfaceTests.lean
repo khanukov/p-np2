@@ -21,6 +21,7 @@ open Pnp3.ComplexityInterfaces.DagCircuit
 #check notCircuit
 #check andCircuit
 #check orCircuit
+#check bigOrCircuit
 #check muxCircuit
 #check notBundle
 #check andBundle
@@ -163,6 +164,31 @@ theorem check_size_orCircuit : size orCircuit = 2 :=
 theorem check_eval_orCircuit (x : Bitstring 2) :
     eval orCircuit x = (x 0 || x 1) :=
   eval_orCircuit x
+
+theorem check_eval_bigOrCircuit {n : Nat} (Cs : List (DagCircuit n))
+    (x : Bitstring n) :
+    eval (bigOrCircuit Cs) x = Cs.any (fun C => eval C x) :=
+  eval_bigOrCircuit Cs x
+
+theorem check_eval_bigOrCircuit_map {n : Nat} {A : Type} (xs : List A)
+    (C : A → DagCircuit n) (x : Bitstring n) :
+    eval (bigOrCircuit (xs.map C)) x = xs.any (fun a => eval (C a) x) :=
+  eval_bigOrCircuit_map xs C x
+
+theorem check_eval_bigOrCircuit_finRange {n k : Nat}
+    (C : Fin k → DagCircuit n) (x : Bitstring n) :
+    eval (bigOrCircuit ((List.finRange k).map C)) x =
+      (List.finRange k).any (fun i => eval (C i) x) :=
+  eval_bigOrCircuit_finRange C x
+
+theorem check_bigOrCircuit_gates {n : Nat} (Cs : List (DagCircuit n)) :
+    (bigOrCircuit Cs).gates =
+      1 + (Cs.map (fun C => C.gates + 1)).sum :=
+  bigOrCircuit_gates Cs
+
+theorem check_bigOrCircuit_gates_le_size {n : Nat} (Cs : List (DagCircuit n)) :
+    (bigOrCircuit Cs).gates ≤ 1 + (Cs.map size).sum :=
+  bigOrCircuit_gates_le_size Cs
 
 theorem check_muxCircuit_gates : muxCircuit.gates = 4 :=
   muxCircuit_gates

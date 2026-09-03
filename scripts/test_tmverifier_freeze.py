@@ -112,6 +112,21 @@ def main() -> None:
         raw_decoy.write_text(lake)
         run(baseline, False, lakefile=raw_decoy)
 
+        in_array_raw = parent / "in-array-raw.lean"
+        lake = LAKEFILE.read_text().replace(active, "", 1)
+        decoy = (
+            "    by\n"
+            "      let _ := r#\"embedded ordinary \" quote\n"
+            + active
+            + "      \"#\n"
+            "      exact Glob.one `Core.BooleanBasics,\n"
+        )
+        lake = lake.replace(
+            "  ]\n\nlean_lib Pnp4 where", decoy + "  ]\n\nlean_lib Pnp4 where", 1
+        )
+        in_array_raw.write_text(lake)
+        run(baseline, False, lakefile=in_array_raw)
+
         nested_decoy = parent / "nested-decoy.lean"
         lake = LAKEFILE.read_text().replace(active, "", 1)
         nested = "    by\n      let decoy := #[\n" + active + "      ]\n"

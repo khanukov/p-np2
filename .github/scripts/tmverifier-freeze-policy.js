@@ -23,6 +23,61 @@ function isProtected(path) {
   return path.startsWith('pnp3/Complexity/TMVerifier/') || PROTECTED_EXACT.has(path);
 }
 
+function stripLeanComments(text) {
+  let output = '';
+  let index = 0;
+  let blockDepth = 0;
+  let lineComment = false;
+  let string = false;
+  while (index < text.length) {
+    const pair = text.slice(index, index + 2);
+    const char = text[index];
+    if (lineComment) {
+      if (char === '\n') {
+        lineComment = false;
+        output += char;
+      } else output += ' ';
+    } else if (blockDepth) {
+      if (pair === '/-') {
+        blockDepth += 1;
+        output += '  ';
+        index += 1;
+      } else if (pair === '-/') {
+        blockDepth -= 1;
+        output += '  ';
+        index += 1;
+      } else output += char === '\n' ? '\n' : ' ';
+    } else if (string) {
+      output += char === '\n' ? '\n' : ' ';
+      if (char === '\\' && index + 1 < text.length) {
+        output += ' ';
+        index += 1;
+      } else if (char === '"') string = false;
+    } else if (pair === '--') {
+      lineComment = true;
+      output += '  ';
+      index += 1;
+    } else if (pair === '/-') {
+      blockDepth = 1;
+      output += '  ';
+      index += 1;
+    } else if (char === '"') {
+      string = true;
+      output += ' ';
+    } else output += char;
+    index += 1;
+  }
+  return output;
+}
+
+function lakefileIncludesModules(text, modules) {
+  const active = stripLeanComments(text);
+  return modules.every(module => {
+    const escaped = module.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp('^[ \\t]*Glob\\.one `' + escaped + ',[ \\t]*$', 'm').test(active);
+  });
+}
+
 function evaluateFreezeDiff(files, labels, options = {}) {
   const changedFiles = options.changedFiles;
   const ownerAttestedHead = options.ownerAttestedHead ?? false;
@@ -58,4 +113,4 @@ function evaluateFreezeDiff(files, labels, options = {}) {
   };
 }
 
-module.exports = { evaluateFreezeDiff };
+module.exports = { evaluateFreezeDiff, lakefileIncludesModules };

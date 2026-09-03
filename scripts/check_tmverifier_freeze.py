@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import stat
 import subprocess
 import sys
@@ -113,14 +114,65 @@ def working_entries(candidate_root: Path) -> dict[str, dict[str, str]]:
     return result
 
 
+def strip_lean_comments(text: str) -> str:
+    output: list[str] = []
+    index = 0
+    block_depth = 0
+    line_comment = False
+    string = False
+    while index < len(text):
+        pair = text[index:index + 2]
+        char = text[index]
+        if line_comment:
+            if char == "\n":
+                line_comment = False
+                output.append(char)
+            else:
+                output.append(" ")
+        elif block_depth:
+            if pair == "/-":
+                block_depth += 1
+                output.extend("  ")
+                index += 1
+            elif pair == "-/":
+                block_depth -= 1
+                output.extend("  ")
+                index += 1
+            else:
+                output.append("\n" if char == "\n" else " ")
+        elif string:
+            output.append("\n" if char == "\n" else " ")
+            if char == "\\" and index + 1 < len(text):
+                output.append(" ")
+                index += 1
+            elif char == '"':
+                string = False
+        elif pair == "--":
+            line_comment = True
+            output.extend("  ")
+            index += 1
+        elif pair == "/-":
+            block_depth = 1
+            output.extend("  ")
+            index += 1
+        elif char == '"':
+            string = True
+            output.append(" ")
+        else:
+            output.append(char)
+        index += 1
+    return "".join(output)
+
+
 def missing_lake_modules(expected_paths: set[str], lakefile_path: Path) -> list[str]:
-    lakefile = lakefile_path.read_text(encoding="utf-8")
+    lakefile = strip_lean_comments(lakefile_path.read_text(encoding="utf-8"))
     missing: list[str] = []
     for rel in sorted(expected_paths):
         if not rel.endswith(".lean") or not rel.startswith("pnp3/"):
             continue
         module = rel.removeprefix("pnp3/").removesuffix(".lean").replace("/", ".")
-        if f"Glob.one `{module}," not in lakefile:
+        pattern = rf"^[ \t]*Glob\.one `{re.escape(module)},[ \t]*$"
+        if re.search(pattern, lakefile, re.MULTILINE) is None:
             missing.append(module)
     return missing
 

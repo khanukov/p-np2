@@ -81,6 +81,24 @@ def main() -> None:
         missing_module.write_text(lake)
         run(baseline, False, lakefile=missing_module)
 
+        commented_module = parent / "commented-module.lean"
+        lake = LAKEFILE.read_text().replace(
+            "    Glob.one `Complexity.TMVerifier.TuringToolkit.GateNBodyRound,\n",
+            "    -- Glob.one `Complexity.TMVerifier.TuringToolkit.GateNBodyRound,\n",
+            1,
+        )
+        commented_module.write_text(lake)
+        run(baseline, False, lakefile=commented_module)
+
+        blocked_module = parent / "blocked-module.lean"
+        lake = LAKEFILE.read_text().replace(
+            "    Glob.one `Complexity.TMVerifier.TuringToolkit.GateNBodyRound,\n",
+            "    /- Glob.one `Complexity.TMVerifier.TuringToolkit.GateNBodyRound, -/\n",
+            1,
+        )
+        blocked_module.write_text(lake)
+        run(baseline, False, lakefile=blocked_module)
+
         tampered_manifest = parent / "tampered-manifest.json"
         data = json.loads(MANIFEST.read_text())
         data["frozen_commit"] = "0" * 40

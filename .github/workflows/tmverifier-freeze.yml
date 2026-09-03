@@ -24,7 +24,7 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const { evaluateFreezeDiff } = require(
+            const { evaluateFreezeDiff, lakefileIncludesModules } = require(
               `${process.env.GITHUB_WORKSPACE}/.freeze-policy-base/.github/scripts/tmverifier-freeze-policy.js`
             );
             const { data: pull } = await github.rest.pulls.get({
@@ -59,7 +59,7 @@ jobs:
                 const modules = Object.keys(manifest.files).map(path =>
                   path.replace(/^pnp3\//, '').replace(/\.lean$/, '').replaceAll('/', '.')
                 );
-                lakefileComplete = modules.every(module => text.includes(`Glob.one \`${module},`));
+                lakefileComplete = lakefileIncludesModules(text, modules);
               } catch (error) {
                 core.warning(`Could not verify head lakefile: ${error.message}`);
                 lakefileComplete = false;

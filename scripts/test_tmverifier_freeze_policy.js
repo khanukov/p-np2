@@ -1,8 +1,15 @@
 #!/usr/bin/env node
 const assert = require('node:assert/strict');
-const { evaluateFreezeDiff } = require('../.github/scripts/tmverifier-freeze-policy.js');
+const {
+  evaluateFreezeDiff,
+  lakefileIncludesModules,
+} = require('../.github/scripts/tmverifier-freeze-policy.js');
 
 const complete = { changedFiles: 1, ownerAttestedHead: false };
+
+assert.equal(lakefileIncludesModules('  Glob.one `A.B,\n', ['A.B']), true);
+assert.equal(lakefileIncludesModules('  -- Glob.one `A.B,\n', ['A.B']), false);
+assert.equal(lakefileIncludesModules('  /- Glob.one `A.B, -/\n', ['A.B']), false);
 
 assert.equal(evaluateFreezeDiff([{ filename: 'README.md' }], [], complete).ok, true);
 assert.equal(

@@ -118,6 +118,7 @@ def main() -> None:
             "    by\n"
             "      let _ := r#\"embedded ordinary \" quote\n"
             + active
+            + "      embedded second \" quote\n"
             + "      \"#\n"
             "      exact Glob.one `Core.BooleanBasics,\n"
         )

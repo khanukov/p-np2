@@ -120,10 +120,18 @@ def strip_lean_comments(text: str) -> str:
     block_depth = 0
     line_comment = False
     string = False
+    raw_end: str | None = None
     while index < len(text):
         pair = text[index:index + 2]
         char = text[index]
-        if line_comment:
+        if raw_end is not None:
+            if text.startswith(raw_end, index):
+                output.extend(" " * len(raw_end))
+                index += len(raw_end) - 1
+                raw_end = None
+            else:
+                output.append("\n" if char == "\n" else " ")
+        elif line_comment:
             if char == "\n":
                 line_comment = False
                 output.append(char)
@@ -155,6 +163,17 @@ def strip_lean_comments(text: str) -> str:
             block_depth = 1
             output.extend("  ")
             index += 1
+        elif char == "r":
+            cursor = index + 1
+            while cursor < len(text) and text[cursor] == "#":
+                cursor += 1
+            if cursor < len(text) and text[cursor] == '"':
+                hashes = text[index + 1:cursor]
+                raw_end = '"' + hashes
+                output.extend(" " * (cursor - index + 1))
+                index = cursor
+            else:
+                output.append(char)
         elif char == '"':
             string = True
             output.append(" ")

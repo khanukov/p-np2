@@ -29,10 +29,17 @@ function stripLeanComments(text) {
   let blockDepth = 0;
   let lineComment = false;
   let string = false;
+  let rawEnd = null;
   while (index < text.length) {
     const pair = text.slice(index, index + 2);
     const char = text[index];
-    if (lineComment) {
+    if (rawEnd !== null) {
+      if (text.startsWith(rawEnd, index)) {
+        output += ' '.repeat(rawEnd.length);
+        index += rawEnd.length - 1;
+        rawEnd = null;
+      } else output += char === '\n' ? '\n' : ' ';
+    } else if (lineComment) {
       if (char === '\n') {
         lineComment = false;
         output += char;
@@ -61,6 +68,14 @@ function stripLeanComments(text) {
       blockDepth = 1;
       output += '  ';
       index += 1;
+    } else if (char === 'r') {
+      let cursor = index + 1;
+      while (cursor < text.length && text[cursor] === '#') cursor += 1;
+      if (cursor < text.length && text[cursor] === '"') {
+        rawEnd = '"' + text.slice(index + 1, cursor);
+        output += ' '.repeat(cursor - index + 1);
+        index = cursor;
+      } else output += char;
     } else if (char === '"') {
       string = true;
       output += ' ';

@@ -27,7 +27,7 @@ assert.equal(
 );
 assert.equal(
   lakefileIncludesModules(
-    'lean_lib PnP3 where\n  globs := #[\n    by\n      let _ := r#"embedded " quote\n    Glob.one `A.B,\n      "#\n      exact Glob.one `Other,\n  ]\n',
+    'lean_lib PnP3 where\n  globs := #[\n    by\n      let _ := r#"embedded " quote\n    Glob.one `A.B,\n      embedded second " quote\n      "#\n      exact Glob.one `Other,\n  ]\n',
     ['A.B'],
   ),
   false,

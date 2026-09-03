@@ -30,25 +30,25 @@ structure UniformTM where
   accept : Fin stateCount
   reject : Fin stateCount
   accept_ne_reject : accept ≠ reject
-  rawStep : Fin stateCount → Bool → Fin stateCount × Bool × Move
+  rawStep : Fin stateCount → Option Bool → Fin stateCount × Option Bool × Move
 
 /-- Public execution makes both verdict states absorbing and preserves the
-scanned cell while staying put.  Consequently raw terminal rows are
+exact scanned symbol while staying put.  Consequently raw terminal rows are
 unobservable. -/
-def UniformTM.step (M : UniformTM) (q : Fin M.stateCount) (b : Bool) :
-    Fin M.stateCount × Bool × Move :=
-  if q = M.accept then (q, b, Move.stay)
-  else if q = M.reject then (q, b, Move.stay)
-  else M.rawStep q b
+def UniformTM.step (M : UniformTM) (q : Fin M.stateCount) (symbol : Option Bool) :
+    Fin M.stateCount × Option Bool × Move :=
+  if q = M.accept then (q, symbol, Move.stay)
+  else if q = M.reject then (q, symbol, Move.stay)
+  else M.rawStep q symbol
 
 /-- The accept row of the public step is absorbing. -/
-theorem UniformTM.step_accept (M : UniformTM) (b : Bool) :
-    M.step M.accept b = (M.accept, b, Move.stay) := by
+theorem UniformTM.step_accept (M : UniformTM) (symbol : Option Bool) :
+    M.step M.accept symbol = (M.accept, symbol, Move.stay) := by
   simp [UniformTM.step]
 
 /-- The reject row of the public step is absorbing. -/
-theorem UniformTM.step_reject (M : UniformTM) (b : Bool) :
-    M.step M.reject b = (M.reject, b, Move.stay) := by
+theorem UniformTM.step_reject (M : UniformTM) (symbol : Option Bool) :
+    M.step M.reject symbol = (M.reject, symbol, Move.stay) := by
   simp [UniformTM.step]
 
 /-- A budget-`budget` run on an `n`-bit input has `n + budget + 1` cells. -/
@@ -59,7 +59,7 @@ run. -/
 structure Config (k n budget : Nat) where
   state : Fin k
   head : Fin (tapeLength n budget)
-  tape : Fin (tapeLength n budget) → Bool
+  tape : Fin (tapeLength n budget) → Option Bool
 
 private theorem config_eq {k n budget : Nat} {c d : Config k n budget}
     (hstate : c.state = d.state) (hhead : c.head = d.head)
@@ -95,12 +95,13 @@ theorem moveHead_right_last (length : Nat) :
     moveHead (Fin.last length) Move.right = Fin.last length := by
   simp [moveHead, Fin.last]
 
-/-- Initial configuration: input at the left edge and false padding. -/
+/-- Initial configuration: tagged input bits at the left edge and a distinct
+blank symbol everywhere afterwards. -/
 def initialConfig (M : UniformTM) {n : Nat} (budget : Nat) (x : Bitstring n) :
     Config M.stateCount n budget where
   state := M.start
   head := ⟨0, by simp [tapeLength]⟩
-  tape := fun i => if h : i.val < n then x ⟨i.val, h⟩ else false
+  tape := fun i => if h : i.val < n then some (x ⟨i.val, h⟩) else none
 
 /-- One full transition on the fixed-budget tape. -/
 def UniformTM.stepConfig (M : UniformTM) {n budget : Nat}
@@ -181,16 +182,19 @@ theorem UniformTM.run_reject (M : UniformTM) {n budget : Nat}
 theorem initialConfig_tape_input (M : UniformTM) {n budget : Nat}
     (x : Bitstring n) (i : Fin n) :
     (initialConfig M budget x).tape
-      ⟨i.val, Nat.lt_of_lt_of_le i.isLt (Nat.le_add_right n (budget + 1))⟩ = x i := by
+      ⟨i.val, Nat.lt_of_lt_of_le i.isLt (Nat.le_add_right n (budget + 1))⟩ =
+        some (x i) := by
   simp [initialConfig]
 
-/-- Initial tape cells at or above `n` are false padding. -/
+/-- Initial tape cells at or above `n` contain the distinct blank symbol. -/
 theorem initialConfig_tape_padding (M : UniformTM) {n budget : Nat}
     (x : Bitstring n) (i : Fin (tapeLength n budget)) (h : n ≤ i.val) :
-    (initialConfig M budget x).tape i = false := by
+    (initialConfig M budget x).tape i = none := by
   simp [initialConfig, Nat.not_lt_of_ge h]
 
-/-- Acceptance after exactly `steps` transitions on a `budget` tape. -/
+/-- Acceptance after exactly `steps` transitions on a `budget` tape.  This is
+total even when `steps > budget`: the finite head movement remains clamped.
+`UniformP` below uses only within-budget execution. -/
 def AcceptsAt (M : UniformTM) {n : Nat} (budget steps : Nat) (x : Bitstring n) : Prop :=
   (M.run steps (initialConfig M budget x)).state = M.accept
 

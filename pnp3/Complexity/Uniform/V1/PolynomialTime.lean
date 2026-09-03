@@ -63,8 +63,9 @@ def UniformTM.swap (M : UniformTM) : UniformTM where
   rawStep := M.rawStep
 
 /-- Swapping terminal labels leaves every executable transition unchanged. -/
-theorem UniformTM.swap_step (M : UniformTM) (q : Fin M.stateCount) (b : Bool) :
-    M.swap.step q b = M.step q b := by
+theorem UniformTM.swap_step (M : UniformTM) (q : Fin M.stateCount)
+    (symbol : Option Bool) :
+    M.swap.step q symbol = M.step q symbol := by
   by_cases ha : q = M.accept <;> by_cases hr : q = M.reject <;>
     simp [UniformTM.swap, UniformTM.step, ha, hr, M.accept_ne_reject]
 

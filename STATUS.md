@@ -7,14 +7,14 @@ tree is frozen at `42c59881`; see `pnp3/Docs/TMVERIFIER_FREEZE.md`. Do not
 resume GN-E2-3b or later gate-by-gate construction. Active model-repair work
 must use the versioned uniform complexity foundation outside that tree.
 
-**P1a uniform foundation landed (infrastructure).** The independent namespace
-`Pnp3.Complexity.Uniform.V1` now provides finite `UniformTM` data,
-same-budget exact/within decision semantics, `polyClock`, a versioned
-`UniformP`, its exact-deadline P1b handoff, complement closure, and literal
-sanity machines; see `pnp3/Docs/UniformP_V1.md`. This does not rebind or change
-the canonical repository `P`/`NP`, does not yet bridge to `PpolyDAG`, and does
-not yet prove that the old runtime-advice languages are excluded from the
-canonical classes.
+**P1a uniform foundation (infrastructure only).** The independent namespace
+`Pnp3.Complexity.Uniform.V1` provides finite `UniformTM` data with the distinct
+symbols `some false`, `some true`, and blank `none`; same-budget exact/within
+decision semantics; `polyClock`; a versioned `UniformP`; complement closure;
+and an arbitrary-length parity scanner proving that input length is observable.
+See `pnp3/Docs/UniformP_V1.md`. This scoped P1a repair does not claim completion
+of later work, rebind or change the canonical repository `P`/`NP`, provide a
+legacy or `PpolyDAG` bridge, or establish countability.
 
 Authoritative checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.

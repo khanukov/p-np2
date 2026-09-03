@@ -1,6 +1,7 @@
 # Uniform P V1 foundation (P1a)
 
-**Status:** P1a infrastructure landed on 2026-09-03.
+**Status:** P1a infrastructure model, repaired on 2026-09-03. This status does
+not assert completion of any later milestone.
 
 The versioned namespace is:
 
@@ -29,18 +30,23 @@ and do not import the frozen `Complexity/TMVerifier` tree or the legacy
 stateCount : Nat
 start accept reject : Fin stateCount
 accept_ne_reject : accept ≠ reject
-rawStep : Fin stateCount → Bool → Fin stateCount × Bool × Move
+rawStep : Fin stateCount → Option Bool →
+  Fin stateCount × Option Bool × Move
 ```
 
 It has no input-length function, clock, advice, runtime, or correctness field.
-The public executable `UniformTM.step` overrides both terminal rows: accept and
-reject preserve the scanned bit and stay put.  Thus raw terminal rows are not
-observable.
+The tape alphabet distinguishes `some false`, `some true`, and the blank
+`none`. The public executable `UniformTM.step` overrides both terminal rows:
+accept and reject preserve the exact scanned symbol and stay put. Thus raw
+terminal rows are not observable.
 
 For an `n`-bit input and budget `budget`, `Config k n budget` uses the finite
 tape length `n + budget + 1`.  A run changes only elapsed steps; its input and
 budget indices remain fixed.  Left and right moves clamp at the tape
-boundaries.  P1a deliberately provides no cross-budget transport theorem.
+boundaries. `initialConfig` stores `some (x i)` exactly below `n` and `none`
+from `n` onward, so a machine can observe the input boundary. P1a deliberately
+provides no cross-budget transport theorem: such a result would require honest
+dependent `Fin` transport between different tape types.
 
 ## Verdict semantics
 
@@ -59,8 +65,14 @@ witness times differ.
 
 `DecidesAt` and `DecidesWithin` branch on the requested Boolean answer.  True
 requires acceptance; false requires literal rejection.  A nonterminal state at
-the deadline is neither a false decision nor rejection.  Exact-deadline and
-within-budget decision semantics are equivalent.
+the deadline is neither acceptance nor rejection and decides neither true nor
+false. Exact-deadline and within-budget decision semantics are equivalent at
+the same budget.
+
+Exact-time execution remains a total operation when `steps > budget`; the head
+simply obeys the same finite-tape boundary clamps. This total clamped behavior
+is not used to witness `UniformP`, whose semantics requires a verdict within
+the clock budget.
 
 The clock is pinned to `polyClock c n = n ^ c + c`, including its exponent-zero,
 zero-input, exponent-one, and positivity behavior.  The class predicate is:
@@ -78,19 +90,25 @@ not weakened to nonacceptance.
 
 Closed literal machines prove the expected exact and within-budget behavior
 for constant true, constant false, and the first bit (with empty input false).
-All three languages are in this versioned `UniformP`.  The surface also checks
-input padding and concrete true/false verdicts.  A separate literal remains in
-a nonterminal state forever; its acceptance equality test is false, but it
-neither rejects nor decides false.  This is the regression pin separating
-timeout from rejection.
+A fixed four-state scanner also decides `lengthParityLanguage`: it toggles a
+finite parity state across each `some` input symbol and branches on the first
+`none` after exactly `n + 1 = polyClock 1 n` steps. Its arbitrary-length proof,
+plus executable empty/one-/two-bit pins, is the regression that length is
+observable and false input bits are not padding. These four languages are in
+this versioned `UniformP`.
 
-`Tests/UniformV1SurfaceTests.lean` pins the constructor shape, all definitions
-and instances, every authored public theorem's full proposition, and direct
-`#print axioms` output.
+A separate literal remains in a nonterminal state forever; its acceptance
+equality test is false, but it neither accepts nor rejects and decides neither
+Boolean answer. This is the regression pin separating timeout from rejection.
+
+`Tests/UniformV1SurfaceTests.lean` pins the constructor shape, definitions,
+instances, and every authored public theorem's full proposition. All theorem
+`#print axioms` roots live in the central `Tests/AxiomsAudit.lean`; private proof
+helpers are excluded from both public surfaces.
 
 ## Honest boundary and P1b work
 
-This landing is infrastructure.  It does not change the repository's canonical
+This P1a repair is infrastructure. It does not change the repository's canonical
 `P` or `NP` definitions and is not P-vs-NP mainline progress.  In particular,
 P1a proves none of the following:
 

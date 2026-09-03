@@ -4,8 +4,9 @@ import Complexity.Uniform.V1.Examples
 # Uniform P V1 surface tests
 
 This file pins the P1a executable machine, same-budget semantics, polynomial
-clock, complement, and literal-example API.  Every authored public theorem has
-an explicit full-proposition wrapper and a direct axiom audit below.
+clock, complement, and executable regression API.  Every authored public theorem
+has an explicit full-proposition wrapper here; theorem axiom output lives only
+in the central `Tests/AxiomsAudit.lean`.
 -/
 
 namespace Pnp3.Tests.UniformV1
@@ -41,14 +42,17 @@ open Pnp3.Complexity.Uniform.V1
 #check constTrue
 #check constFalse
 #check firstBit
+#check lengthParityLanguage
 #check allAcceptMachine
 #check allRejectMachine
 #check firstBitMachine
+#check lengthParityMachine
 #check nonterminalMachine
 
 #synth DecidableEq Move
 
-/-- Regression pin: `UniformTM.mk` has exactly the finite P1a fields. -/
+/-- Regression pin: `UniformTM.mk` has exactly the finite P1a fields, with an
+`Option Bool` transition alphabet and no `Nat → Nat` or runtime field. -/
 def constructorShapeRegression : UniformTM :=
   UniformTM.mk
     2
@@ -56,15 +60,15 @@ def constructorShapeRegression : UniformTM :=
     (⟨0, by decide⟩)
     (⟨1, by decide⟩)
     (by decide)
-    (fun q b => (q, b, Move.stay))
+    (fun q (symbol : Option Bool) => (q, symbol, Move.stay))
 
-def check_step_accept (M : UniformTM) (b : Bool) :
-    M.step M.accept b = (M.accept, b, Move.stay) :=
-  M.step_accept b
+def check_step_accept (M : UniformTM) (symbol : Option Bool) :
+    M.step M.accept symbol = (M.accept, symbol, Move.stay) :=
+  M.step_accept symbol
 
-def check_step_reject (M : UniformTM) (b : Bool) :
-    M.step M.reject b = (M.reject, b, Move.stay) :=
-  M.step_reject b
+def check_step_reject (M : UniformTM) (symbol : Option Bool) :
+    M.step M.reject symbol = (M.reject, symbol, Move.stay) :=
+  M.step_reject symbol
 
 def check_moveHead_left_zero (length : Nat) :
     moveHead (⟨0, Nat.zero_lt_succ length⟩ : Fin (length + 1)) Move.left =
@@ -103,12 +107,13 @@ def check_run_reject (M : UniformTM) {n budget steps : Nat}
 def check_initialConfig_tape_input (M : UniformTM) {n budget : Nat}
     (x : Bitstring n) (i : Fin n) :
     (initialConfig M budget x).tape
-      ⟨i.val, Nat.lt_of_lt_of_le i.isLt (Nat.le_add_right n (budget + 1))⟩ = x i :=
+      ⟨i.val, Nat.lt_of_lt_of_le i.isLt (Nat.le_add_right n (budget + 1))⟩ =
+        some (x i) :=
   initialConfig_tape_input M (budget := budget) x i
 
 def check_initialConfig_tape_padding (M : UniformTM) {n budget : Nat}
     (x : Bitstring n) (i : Fin (tapeLength n budget)) (h : n ≤ i.val) :
-    (initialConfig M budget x).tape i = false :=
+    (initialConfig M budget x).tape i = none :=
   initialConfig_tape_padding M (budget := budget) x i h
 
 def check_acceptsAt_budget_iff_acceptsWithin (M : UniformTM)
@@ -168,9 +173,10 @@ def check_uniformP_iff_exists_decidesAt (L : Language) :
         DecidesAt M (polyClock c n) (polyClock c n) x (L n x) :=
   uniformP_iff_exists_decidesAt L
 
-def check_swap_step (M : UniformTM) (q : Fin M.stateCount) (b : Bool) :
-    M.swap.step q b = M.step q b :=
-  M.swap_step q b
+def check_swap_step (M : UniformTM) (q : Fin M.stateCount)
+    (symbol : Option Bool) :
+    M.swap.step q symbol = M.step q symbol :=
+  M.swap_step q symbol
 
 def check_swap_stepConfig (M : UniformTM) {n budget : Nat}
     (c : Config M.stateCount n budget) :
@@ -255,6 +261,28 @@ def check_firstBit_false_verdict :
     DecidesWithin firstBitMachine 1 (fun _ : Fin 0 => true) false :=
   firstBit_false_verdict
 
+def check_lengthParity_decidesAt {n budget : Nat} (x : Bitstring n) :
+    DecidesAt lengthParityMachine budget (n + 1) x
+      (lengthParityLanguage n x) :=
+  lengthParity_decidesAt x
+
+def check_lengthParity_decidesWithin {n : Nat} (x : Bitstring n) :
+    DecidesWithin lengthParityMachine (n + 1) x
+      (lengthParityLanguage n x) :=
+  lengthParity_decidesWithin x
+
+def check_lengthParity_empty_verdict :
+    DecidesWithin lengthParityMachine 1 (fun _ : Fin 0 => false) true :=
+  lengthParity_empty_verdict
+
+def check_lengthParity_one_verdict (bit : Bool) :
+    DecidesWithin lengthParityMachine 2 (fun _ : Fin 1 => bit) false :=
+  lengthParity_one_verdict bit
+
+def check_lengthParity_two_verdict (x : Bitstring 2) :
+    DecidesWithin lengthParityMachine 3 x true :=
+  lengthParity_two_verdict x
+
 def check_nonterminal_run_state {n budget steps : Nat} (x : Bitstring n) :
     (nonterminalMachine.run steps (initialConfig nonterminalMachine budget x)).state =
       nonterminalMachine.start :=
@@ -270,72 +298,32 @@ def check_nonterminal_not_rejectsWithin {n budget : Nat} (x : Bitstring n) :
     ¬ RejectsWithin nonterminalMachine budget x :=
   nonterminal_not_rejectsWithin x
 
+def check_nonterminal_not_acceptsWithin {n budget : Nat} (x : Bitstring n) :
+    ¬ AcceptsWithin nonterminalMachine budget x :=
+  nonterminal_not_acceptsWithin x
+
 def check_nonterminal_not_decidesWithin_false {n budget : Nat} (x : Bitstring n) :
     ¬ DecidesWithin nonterminalMachine budget x false :=
   nonterminal_not_decidesWithin_false x
+
+def check_nonterminal_not_decidesWithin_true {n budget : Nat} (x : Bitstring n) :
+    ¬ DecidesWithin nonterminalMachine budget x true :=
+  nonterminal_not_decidesWithin_true x
 
 def check_nonterminal_timeout_counterexample {n budget : Nat} (x : Bitstring n) :
     ((nonterminalMachine.run budget
         (initialConfig nonterminalMachine budget x)).state ==
           nonterminalMachine.accept) = false ∧
+      ¬ AcceptsWithin nonterminalMachine budget x ∧
       ¬ RejectsWithin nonterminalMachine budget x ∧
+      ¬ DecidesWithin nonterminalMachine budget x true ∧
       ¬ DecidesWithin nonterminalMachine budget x false :=
   nonterminal_timeout_counterexample x
 
 def check_uniformP_constTrue : UniformP constTrue := uniformP_constTrue
 def check_uniformP_constFalse : UniformP constFalse := uniformP_constFalse
 def check_uniformP_firstBit : UniformP firstBit := uniformP_firstBit
-
-#print axioms UniformTM.step_accept
-#print axioms UniformTM.step_reject
-#print axioms moveHead_left_zero
-#print axioms moveHead_right_last
-#print axioms UniformTM.stepConfig_accept
-#print axioms UniformTM.stepConfig_reject
-#print axioms UniformTM.run_add
-#print axioms UniformTM.run_accept
-#print axioms UniformTM.run_reject
-#print axioms initialConfig_tape_input
-#print axioms initialConfig_tape_padding
-#print axioms acceptsAt_budget_iff_acceptsWithin
-#print axioms rejectsAt_budget_iff_rejectsWithin
-#print axioms not_acceptsAt_and_rejectsAt
-#print axioms not_acceptsWithin_and_rejectsWithin
-#print axioms decidesAt_budget_iff_decidesWithin
-#print axioms not_decidesAt_true_and_false
-#print axioms not_decidesWithin_true_and_false
-#print axioms polyClock_exponent_zero
-#print axioms polyClock_zero_zero
-#print axioms polyClock_input_zero
-#print axioms polyClock_exponent_one
-#print axioms polyClock_pos
-#print axioms uniformP_iff_exists_decidesAt
-#print axioms UniformTM.swap_step
-#print axioms UniformTM.swap_stepConfig
-#print axioms UniformTM.swap_run
-#print axioms UniformTM.swap_acceptsAt_iff_rejectsAt
-#print axioms UniformTM.swap_rejectsAt_iff_acceptsAt
-#print axioms UniformTM.swap_decidesWithin
-#print axioms uniformP_complement
-#print axioms allAccept_acceptsAt
-#print axioms allAccept_acceptsWithin
-#print axioms allReject_rejectsAt
-#print axioms allReject_rejectsWithin
-#print axioms firstBit_acceptsAt_iff
-#print axioms firstBit_rejectsAt_iff
-#print axioms firstBit_acceptsWithin_iff
-#print axioms firstBit_rejectsWithin_iff
-#print axioms firstBit_decidesAt
-#print axioms firstBit_decidesWithin
-#print axioms firstBit_true_verdict
-#print axioms firstBit_false_verdict
-#print axioms nonterminal_run_state
-#print axioms nonterminal_acceptFlag_false
-#print axioms nonterminal_not_rejectsWithin
-#print axioms nonterminal_not_decidesWithin_false
-#print axioms nonterminal_timeout_counterexample
-#print axioms uniformP_constTrue
-#print axioms uniformP_constFalse
-#print axioms uniformP_firstBit
+def check_uniformP_lengthParity : UniformP lengthParityLanguage :=
+  uniformP_lengthParity
 
 end Pnp3.Tests.UniformV1

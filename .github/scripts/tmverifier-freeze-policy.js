@@ -82,8 +82,23 @@ function pnp3GlobsArray(text) {
   const lines = block.split('\n').filter(line => line.trim());
   if (!lines.length || lines.some(line => line.startsWith('\t'))) return null;
   const topIndent = Math.min(...lines.map(line => line.length - line.trimStart().length));
+  const depths = [];
+  let parens = 0;
+  let brackets = 0;
+  let braces = 0;
+  for (const char of block) {
+    depths.push([parens, brackets, braces]);
+    if (char === '(') parens += 1;
+    else if (char === ')') parens -= 1;
+    else if (char === '[') brackets += 1;
+    else if (char === ']') brackets -= 1;
+    else if (char === '{') braces += 1;
+    else if (char === '}') braces -= 1;
+    if (Math.min(parens, brackets, braces) < 0) return null;
+  }
   const declarations = [...block.matchAll(/^([ ]+)globs[ \t]*:=[ \t]*#\[/gm)]
-    .filter(match => match[1].length === topIndent);
+    .filter(match => match[1].length === topIndent &&
+      depths[match.index].every(depth => depth === 0));
   if (declarations.length !== 1) return null;
   const openBracket = start + declarations[0].index + declarations[0][0].length - 1;
   let depth = 1;

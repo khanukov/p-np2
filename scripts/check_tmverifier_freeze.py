@@ -177,10 +177,22 @@ def pnp3_globs_array(text: str) -> str:
     if not lines or any(line.startswith("\t") for line in lines):
         raise ValueError("PnP3 fields require nonempty space-indented layout")
     top_indent = min(len(line) - len(line.lstrip(" ")) for line in lines)
+    depths: list[tuple[int, int, int]] = []
+    parens = brackets = braces = 0
+    for char in block:
+        depths.append((parens, brackets, braces))
+        if char == "(": parens += 1
+        elif char == ")": parens -= 1
+        elif char == "[": brackets += 1
+        elif char == "]": brackets -= 1
+        elif char == "{": braces += 1
+        elif char == "}": braces -= 1
+        if min(parens, brackets, braces) < 0:
+            raise ValueError("unbalanced delimiters in PnP3 library block")
     declarations = [
         match for match in re.finditer(
             r"^([ ]+)globs[ \t]*:=[ \t]*#\[", block, re.MULTILINE
-        ) if len(match.group(1)) == top_indent
+        ) if len(match.group(1)) == top_indent and depths[match.start()] == (0, 0, 0)
     ]
     if len(declarations) != 1:
         raise ValueError("PnP3 library must contain exactly one active globs array")

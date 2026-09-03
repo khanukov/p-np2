@@ -125,11 +125,11 @@ def main() -> None:
 
         nested_field = parent / "nested-field.lean"
         lake = LAKEFILE.read_text().replace(
-            "  globs := #[\n", "  other := {\n    globs := #[\n", 1
+            "  globs := #[\n", "  roots := (let _ := {\n  globs := #[\n", 1
         )
         lake = lake.replace(
             "  ]\n\nlean_lib Pnp4 where",
-            "    ]\n  }\n\nlean_lib Pnp4 where",
+            "  ]\n  }; #[])\n\nlean_lib Pnp4 where",
             1,
         )
         nested_field.write_text(lake)

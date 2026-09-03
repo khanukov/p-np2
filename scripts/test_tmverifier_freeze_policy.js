@@ -34,7 +34,7 @@ assert.equal(
 );
 assert.equal(
   lakefileIncludesModules(
-    'lean_lib PnP3 where\n  other := {\n    globs := #[\n      Glob.one `A.B,\n    ]\n  }\n',
+    'lean_lib PnP3 where\n  roots := (let _ := {\n  globs := #[\n    Glob.one `A.B,\n  ]\n  }; #[])\n',
     ['A.B'],
   ),
   false,

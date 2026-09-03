@@ -80,6 +80,7 @@ import Complexity.DagGadgets
 import Tests.UniformV1CircuitEncodingSurfaceTests
 import Tests.UniformV1StepKernelSurfaceTests
 import Tests.UniformV1StepBundleSurfaceTests
+import Tests.UniformV1PpolyDAGSurfaceTests
 import Tests.DagBundleComposeSurfaceTests
 
 /-!
@@ -319,6 +320,31 @@ section UniformV1StepBundleAxiomAudit
 #print axioms Pnp3.Tests.UniformV1StepBundle.check_stepBundle_moving_write_old_head_only
 
 end UniformV1StepBundleAxiomAudit
+
+section UniformV1PpolyDAGAxiomAudit
+
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.runCircuit_gates
+#print axioms Pnp3.Tests.UniformV1PpolyDAG.check_runCircuit_gates
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.runCircuit_size
+#print axioms Pnp3.Tests.UniformV1PpolyDAG.check_runCircuit_size
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.runCircuit_size_le_raw
+#print axioms Pnp3.Tests.UniformV1PpolyDAG.check_runCircuit_size_le_raw
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.runCircuit_accept_iff
+#print axioms Pnp3.Tests.UniformV1PpolyDAG.check_runCircuit_accept_iff
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.runCircuit_eval_of_decidesAt
+#print axioms Pnp3.Tests.UniformV1PpolyDAG.check_runCircuit_eval_of_decidesAt
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.runCircuit_size_le_poly
+#print axioms Pnp3.Tests.UniformV1PpolyDAG.check_runCircuit_size_le_poly
+#print axioms Pnp3.Complexity.Uniform.V1.uniformP_subset_PpolyDAG
+#print axioms Pnp3.Tests.UniformV1PpolyDAG.check_uniformP_subset_PpolyDAG
+#print axioms Pnp3.Complexity.Uniform.V1.lengthParity_runCircuit_eval
+#print axioms Pnp3.Tests.UniformV1PpolyDAG.check_lengthParity_runCircuit_eval
+#print axioms Pnp3.Complexity.Uniform.V1.lengthParity_in_PpolyDAG
+#print axioms Pnp3.Tests.UniformV1PpolyDAG.check_lengthParity_in_PpolyDAG
+#print axioms Pnp3.Complexity.Uniform.V1.allReject_runCircuit_eval_false
+#print axioms Pnp3.Tests.UniformV1PpolyDAG.check_allReject_runCircuit_eval_false
+
+end UniformV1PpolyDAGAxiomAudit
 
 section UniformV1AxiomAudit
 

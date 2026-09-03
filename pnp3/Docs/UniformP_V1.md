@@ -1,7 +1,7 @@
-# Uniform P V1 foundation (P1a)
+# Uniform P V1 foundation and circuit simulation
 
-**Status:** P1a infrastructure model, repaired on 2026-09-03. This status does
-not assert completion of any later milestone.
+**Status:** P1a uniform model and P1b `UniformP ⊆ PpolyDAG` simulation completed
+on 2026-09-03. Canonical `P` remains unchanged.
 
 The versioned namespace is:
 
@@ -165,21 +165,43 @@ The direct-bundle regressions additionally cover blank-versus-false dispatch,
 both accept and reject fixed points despite malicious raw terminal rows, and a
 moving write that changes only the old-head cell.
 
-P1b-3 is infrastructure, not P-vs-NP mainline progress. It does not provide a
-run-family polynomial-size theorem, a `UniformP`-to-`PpolyDAG` bridge, a
-canonical class rebind, or any lower bound.
+Final P1b adds `Complexity.Uniform.V1.PpolyDAG`.  For fixed `M`, `c`, and `n`,
+it iterates the direct `stepBundle` exactly `polyClock c n` times over the
+two-gate initial bundle and selects the literal accept-state rail.  The circuit
+has exact size
 
-This P1a repair is infrastructure. It does not change the repository's canonical
-`P` or `NP` definitions and is not P-vs-NP mainline progress.  In particular,
-P1a proves none of the following:
+```text
+3 + polyClock c n * (stepBundle M n (polyClock c n)).gates
+```
+
+and is bounded at every input length by `n^d + d`, with the explicit exponent
+`d = 3 + (c+1)*(19*c + 16*M.stateCount + 70)`.  The proof handles `n=0` and
+`n=1` separately (including the `c=0`, `0^0=1` clock corner) before the
+`n>=2` power argument.  Exact correctness uses `DecidesAt`: false output is
+derived from literal `RejectsAt` plus distinct accept/reject states, never from
+timeout or nonacceptance.
+
+The completed endpoint is precisely the versioned inclusion
+
+```text
+uniformP_subset_PpolyDAG :
+  forall L, UniformP L -> Pnp3.ComplexityInterfaces.PpolyDAG L
+```
+
+This is infrastructure, not P-vs-NP mainline progress.  It does not rebind the
+repository's canonical `P`, establish canonical `P ⊆ PpolyDAG`, prove
+countability, introduce `UniformNP`, or prove a circuit lower bound.
+
+The P1a model repair and final P1b circuit simulation are infrastructure. They
+do not change the repository's canonical `P` or `NP` definitions and are not
+P-vs-NP mainline progress. In particular, they prove none of the following:
 
 - countability or an encoding of `UniformTM`;
-- a bridge to any legacy machine or language interface;
-- `UniformP ⊆ PpolyDAG`;
+- a bridge to the legacy machine model or canonical `P`;
 - a canonical `P` rebind;
 - `UniformNP` or any circuit lower bound.
 
 Accordingly, the old runtime-advice languages are not yet proved excluded from
-the canonical classes.  P1b can consume the exact-deadline equivalence while
-adding separately audited encoding/simulation bridges; it must not infer those
-bridges from P1a.
+the canonical classes. Final P1b consumes the exact-deadline equivalence only
+for the versioned `UniformP` theorem above; it does not infer a canonical-class
+bridge from P1a.

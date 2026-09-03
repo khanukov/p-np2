@@ -59,6 +59,19 @@ is substituted once, yielding `stepBundle`, `StepSpec`, and the explicit bound
 `19*T + 16*Q + 13`. This does not prove polynomial size for a run family,
 `UniformP ⊆ PpolyDAG`, a canonical rebind, or P-vs-NP mainline progress.
 
+**Final P1b versioned UniformP bridge (infrastructure only).**
+`Complexity.Uniform.V1.PpolyDAG` builds the clocked run circuit solely from a
+fixed `UniformTM`, clock exponent, and input length.  Its exact size is the
+initial three units plus the clock times the direct step-bundle gate count, and
+the all-input polynomial theorem uses the explicit exponent
+`3 + (c+1)*(19*c + 16*M.stateCount + 70)`, with separate zero/one-length
+proofs.  The completed endpoint is
+`uniformP_subset_PpolyDAG : ∀ L, UniformP L → PpolyDAG L`, where `UniformP` is
+only the versioned V1 class and `PpolyDAG` is the canonical DAG target.  This
+does not rebind or prove inclusion for canonical `P`, establish countability,
+define `UniformNP`, or prove a lower bound; it is not P-vs-NP mainline
+progress.
+
 Authoritative checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
 Current release posture:

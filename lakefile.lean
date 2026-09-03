@@ -69,11 +69,15 @@ lean_lib PnP3 where
     -- No transition/run compiler, polynomial simulation, or Ppoly bridge.
     Glob.one `Complexity.Uniform.V1.CircuitEncoding,
     -- P1b-2/P1b-3 (2026-09-03), encoded semantics, direct shared step bundle,
-    -- and linear per-step gate cap.  No run-family or Ppoly bridge.
+    -- and linear per-step gate cap.
     Glob.one `Complexity.Uniform.V1.StepKernel,
     Glob.one `Complexity.Uniform.V1.StepBundle,
+    -- Final P1b bridge (2026-09-03): fixed clocked run circuits and the
+    -- versioned UniformP subset of canonical PpolyDAG theorem only.
+    Glob.one `Complexity.Uniform.V1.PpolyDAG,
     Glob.one `Complexity.Uniform.V1.PolynomialTime,
     Glob.one `Complexity.Uniform.V1.Examples,
+    Glob.one `Complexity.Uniform.V1.PpolyDAGExamples,
     Glob.one `Complexity.Uniform.V1.StepKernelExamples,
     Glob.one `Complexity.Uniform.V1.StepBundleExamples,
     Glob.one `Complexity.PsubsetPpolyInternal.Bitstring,
@@ -594,6 +598,7 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1CircuitEncodingSurfaceTests,
     Glob.one `Tests.UniformV1StepKernelSurfaceTests,
     Glob.one `Tests.UniformV1StepBundleSurfaceTests,
+    Glob.one `Tests.UniformV1PpolyDAGSurfaceTests,
     Glob.one `Tests.DagBundleComposeSurfaceTests,
     Glob.one `Tests.TMSeqRunSurfaceTests,
     Glob.one `Tests.TMTrueUniformSeekSurfaceTests,

@@ -32,6 +32,13 @@ assert.equal(
   ),
   false,
 );
+assert.equal(
+  lakefileIncludesModules(
+    'lean_lib PnP3 where\n  other := {\n    globs := #[\n      Glob.one `A.B,\n    ]\n  }\n',
+    ['A.B'],
+  ),
+  false,
+);
 
 assert.equal(evaluateFreezeDiff([{ filename: 'README.md' }], [], complete).ok, true);
 assert.equal(

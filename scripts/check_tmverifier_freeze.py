@@ -173,7 +173,15 @@ def pnp3_globs_array(text: str) -> str:
     next_library = re.search(r"^[ \t]*lean_lib[ \t]+", active[start:], re.MULTILINE)
     end = start + next_library.start() if next_library else len(active)
     block = active[start:end]
-    declarations = list(re.finditer(r"^[ \t]+globs[ \t]*:=[ \t]*#\[", block, re.MULTILINE))
+    lines = [line for line in block.splitlines() if line.strip()]
+    if not lines or any(line.startswith("\t") for line in lines):
+        raise ValueError("PnP3 fields require nonempty space-indented layout")
+    top_indent = min(len(line) - len(line.lstrip(" ")) for line in lines)
+    declarations = [
+        match for match in re.finditer(
+            r"^([ ]+)globs[ \t]*:=[ \t]*#\[", block, re.MULTILINE
+        ) if len(match.group(1)) == top_indent
+    ]
     if len(declarations) != 1:
         raise ValueError("PnP3 library must contain exactly one active globs array")
     open_bracket = start + declarations[0].end() - 1

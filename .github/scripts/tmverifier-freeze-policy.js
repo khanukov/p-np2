@@ -79,7 +79,11 @@ function pnp3GlobsArray(text) {
   const nextLibrary = /^[ \t]*lean_lib[ \t]+/m.exec(rest);
   const end = nextLibrary ? start + nextLibrary.index : active.length;
   const block = active.slice(start, end);
-  const declarations = [...block.matchAll(/^[ \t]+globs[ \t]*:=[ \t]*#\[/gm)];
+  const lines = block.split('\n').filter(line => line.trim());
+  if (!lines.length || lines.some(line => line.startsWith('\t'))) return null;
+  const topIndent = Math.min(...lines.map(line => line.length - line.trimStart().length));
+  const declarations = [...block.matchAll(/^([ ]+)globs[ \t]*:=[ \t]*#\[/gm)]
+    .filter(match => match[1].length === topIndent);
   if (declarations.length !== 1) return null;
   const openBracket = start + declarations[0].index + declarations[0][0].length - 1;
   let depth = 1;

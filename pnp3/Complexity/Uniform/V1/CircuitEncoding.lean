@@ -103,6 +103,39 @@ theorem configIndex_layout (M : UniformTM) (n budget : Nat)
       M.stateCount + 2 * tapeLength n budget + i.val := by
   simp [stateIndex, headIndex, tapePresentIndex, tapeValueIndex]
 
+/-- Every configuration index belongs to one of the four layout blocks. -/
+theorem configIndex_cover (M : UniformTM) (n budget : Nat)
+    (o : Fin (configWidth M n budget)) :
+    (∃ q : Fin M.stateCount, o = stateIndex M n budget q) ∨
+    (∃ i : Fin (tapeLength n budget), o = headIndex M n budget i) ∨
+    (∃ i : Fin (tapeLength n budget), o = tapePresentIndex M n budget i) ∨
+    (∃ i : Fin (tapeLength n budget), o = tapeValueIndex M n budget i) := by
+  by_cases hstate : o.val < M.stateCount
+  · left
+    refine ⟨⟨o.val, hstate⟩, ?_⟩
+    apply Fin.ext
+    simp [stateIndex]
+  by_cases hhead : o.val < M.stateCount + tapeLength n budget
+  · right; left
+    refine ⟨⟨o.val - M.stateCount, by omega⟩, ?_⟩
+    apply Fin.ext
+    simp [headIndex]
+    omega
+  by_cases hpresent : o.val < M.stateCount + 2 * tapeLength n budget
+  · right; right; left
+    refine ⟨⟨o.val - (M.stateCount + tapeLength n budget), by omega⟩, ?_⟩
+    apply Fin.ext
+    simp [tapePresentIndex]
+    omega
+  · right; right; right
+    refine ⟨⟨o.val - (M.stateCount + 2 * tapeLength n budget), by
+      have hout := o.isLt
+      simp only [configWidth] at hout
+      omega⟩, ?_⟩
+    apply Fin.ext
+    simp [tapeValueIndex]
+    omega
+
 /-- The four constructors land in four consecutive disjoint ranges. -/
 theorem configIndex_ranges (M : UniformTM) (n budget : Nat)
     (q : Fin M.stateCount) (i : Fin (tapeLength n budget)) :

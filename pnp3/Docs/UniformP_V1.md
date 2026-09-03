@@ -21,9 +21,12 @@ Language := ∀ n, Bitstring n → Bool
 and do not import the frozen `Complexity/TMVerifier` tree or the legacy
 `PsubsetPpolyInternal/TuringEncoding`, `Complexity/Interfaces`, or
 `Complexity/Simulation` layers. The later P1b `CircuitEncoding.lean` module
-intentionally reaches the canonical `ComplexityInterfaces.DagCircuit` API
-through `DagGadgets` and `DagBundleCompose`; it still imports neither the
-legacy Turing-machine/simulator layers nor the frozen tree.
+reaches the canonical `Complexity/Interfaces` module through `DagGadgets` and
+the DAG composition layers.  That canonical interface has a transitive import
+path to the legacy `PsubsetPpolyInternal/TuringEncoding`, so the inherited P1b
+import cone does contain the legacy TM interface.  The P1b-1 construction and
+proofs do not use that legacy TM, its `runTime`, the legacy simulator/compiler,
+or the frozen `TMVerifier` semantics.
 
 ## Finite machine ABI
 
@@ -114,7 +117,9 @@ helpers are excluded from both public surfaces.
 P1b-1 adds direct fixed-width encoding infrastructure in the nested namespace
 `Pnp3.Complexity.Uniform.V1.Circuit`.  For tape length `T = n + budget + 1`,
 its width is `M.stateCount + 3*T`, ordered as state, head, tape-presence, then
-tape-value.  The two tape rails canonically encode blank as `(false,false)`,
+tape-value.  The layout theorems prove within-block injectivity, pairwise
+disjointness, and exhaustive coverage of every configuration index by those
+four blocks.  The two tape rails canonically encode blank as `(false,false)`,
 `some false` as `(true,false)`, and `some true` as `(true,true)`; the exact
 bundle specification therefore excludes malformed `(false,true)` outputs.
 

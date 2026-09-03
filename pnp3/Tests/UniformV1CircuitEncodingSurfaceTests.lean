@@ -19,6 +19,7 @@ open Pnp3.ComplexityInterfaces.DagCircuit
 #check symbolRails_injective
 #check symbolRails_cases
 #check configIndex_layout
+#check configIndex_cover
 #check configWidth
 #check stateIndex
 #check headIndex
@@ -63,6 +64,14 @@ theorem check_configIndex_layout (M : UniformTM) (n budget : Nat)
     (tapeValueIndex M n budget i).val =
       M.stateCount + 2 * tapeLength n budget + i.val :=
   configIndex_layout M n budget q i
+
+theorem check_configIndex_cover (M : UniformTM) (n budget : Nat)
+    (o : Fin (configWidth M n budget)) :
+    (∃ q : Fin M.stateCount, o = stateIndex M n budget q) ∨
+    (∃ i : Fin (tapeLength n budget), o = headIndex M n budget i) ∨
+    (∃ i : Fin (tapeLength n budget), o = tapePresentIndex M n budget i) ∨
+    (∃ i : Fin (tapeLength n budget), o = tapeValueIndex M n budget i) :=
+  configIndex_cover M n budget o
 
 theorem check_configIndex_ranges (M : UniformTM) (n budget : Nat)
     (q : Fin M.stateCount) (i : Fin (tapeLength n budget)) :

@@ -154,6 +154,8 @@ section UniformV1CircuitEncodingAxiomAudit
 #print axioms Pnp3.Tests.UniformV1CircuitEncoding.check_symbolRails_not_malformed
 #print axioms Pnp3.Complexity.Uniform.V1.Circuit.configIndex_layout
 #print axioms Pnp3.Tests.UniformV1CircuitEncoding.check_configIndex_layout
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.configIndex_cover
+#print axioms Pnp3.Tests.UniformV1CircuitEncoding.check_configIndex_cover
 #print axioms Pnp3.Complexity.Uniform.V1.Circuit.configIndex_ranges
 #print axioms Pnp3.Tests.UniformV1CircuitEncoding.check_configIndex_ranges
 #print axioms Pnp3.Complexity.Uniform.V1.Circuit.configIndex_injective

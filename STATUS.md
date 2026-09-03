@@ -28,12 +28,17 @@ mainline progress.
 
 **P1b-1 direct Uniform V1 configuration encoding (infrastructure only).**
 `Complexity.Uniform.V1.CircuitEncoding` fixes the state/head/presence/value
-layout, canonical three-symbol tape rails, exact concrete encoding, and a
-two-shared-gate `initialBundle` with zero-gate input projections.  Its
-length-one capstone separates a present false input bit from blank padding.
-This slice provides no transition/step or run compiler, polynomial-size
-simulation theorem, `UniformP`/`PpolyDAG` bridge, canonical class rebind, or
-P-vs-NP mainline progress.  P1b-2 remains the one-transition compiler handoff.
+layout with exhaustive block coverage, canonical three-symbol tape rails,
+exact concrete encoding, and a two-shared-gate `initialBundle` with zero-gate
+input projections.  Its length-one capstone separates a present false input
+bit from blank padding.  The module reaches canonical `Complexity.Interfaces`
+through the DAG gadgets; that interface transitively imports legacy
+`PsubsetPpolyInternal.TuringEncoding`.  The P1b-1 construction and proofs use
+neither that legacy TM nor its `runTime`, simulator/compiler, or frozen
+`TMVerifier` semantics.  This slice provides no transition/step or run
+compiler, polynomial-size simulation theorem, `UniformP`/`PpolyDAG` bridge,
+canonical class rebind, or P-vs-NP mainline progress.  P1b-2 remains the
+one-transition compiler handoff.
 
 Authoritative checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.

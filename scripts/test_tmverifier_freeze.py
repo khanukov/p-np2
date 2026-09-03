@@ -3,8 +3,8 @@
 
 from __future__ import annotations
 
-import os
 import json
+import os
 import shutil
 import subprocess
 import tempfile
@@ -14,17 +14,13 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "pnp3/Complexity/TMVerifier"
 CHECKER = ROOT / "scripts/check_tmverifier_freeze.py"
 MANIFEST = ROOT / "spec/tmverifier_freeze.json"
-LAKEFILE = ROOT / "lakefile.lean"
 TARGET = Path("pnp3/Complexity/TMVerifier/TuringToolkit/GateNBodyRound.lean")
 
 
-def run(candidate: Path, expect_ok: bool, manifest: Path | None = None,
-        lakefile: Path | None = None) -> None:
+def run(candidate: Path, expect_ok: bool, manifest: Path | None = None) -> None:
     command = [str(CHECKER), "--candidate-root", str(candidate)]
     if manifest is not None:
         command.extend(["--manifest", str(manifest)])
-    if lakefile is not None:
-        command.extend(["--lakefile", str(lakefile)])
     result = subprocess.run(
         command,
         cwd=ROOT,
@@ -41,14 +37,13 @@ def run(candidate: Path, expect_ok: bool, manifest: Path | None = None,
 
 def fixture(parent: Path) -> Path:
     root = parent / "candidate"
-    shutil.copytree(SOURCE, root / "pnp3/Complexity/TMVerifier", symlinks=True)
+    shutil.copytree(SOURCE, root / SOURCE.relative_to(ROOT), symlinks=True)
     return root
 
 
 def main() -> None:
     with tempfile.TemporaryDirectory(prefix="tmverifier-freeze-") as tmp:
         parent = Path(tmp)
-
         baseline = fixture(parent / "baseline")
         run(baseline, True)
 
@@ -67,100 +62,15 @@ def main() -> None:
         shutil.copy2(MANIFEST, exact_manifest)
         run(baseline, True, exact_manifest)
 
-        exact_lakefile = parent / "lakefile.lean"
-        shutil.copy2(LAKEFILE, exact_lakefile)
-        run(baseline, True, lakefile=exact_lakefile)
-
-        missing_module = parent / "missing-module.lean"
-        lake = LAKEFILE.read_text()
-        lake = lake.replace(
-            "    Glob.one `Complexity.TMVerifier.TuringToolkit.GateNBodyRound,\n",
-            "",
-            1,
-        )
-        missing_module.write_text(lake)
-        run(baseline, False, lakefile=missing_module)
-
-        commented_module = parent / "commented-module.lean"
-        lake = LAKEFILE.read_text().replace(
-            "    Glob.one `Complexity.TMVerifier.TuringToolkit.GateNBodyRound,\n",
-            "    -- Glob.one `Complexity.TMVerifier.TuringToolkit.GateNBodyRound,\n",
-            1,
-        )
-        commented_module.write_text(lake)
-        run(baseline, False, lakefile=commented_module)
-
-        blocked_module = parent / "blocked-module.lean"
-        lake = LAKEFILE.read_text().replace(
-            "    Glob.one `Complexity.TMVerifier.TuringToolkit.GateNBodyRound,\n",
-            "    /- Glob.one `Complexity.TMVerifier.TuringToolkit.GateNBodyRound, -/\n",
-            1,
-        )
-        blocked_module.write_text(lake)
-        run(baseline, False, lakefile=blocked_module)
-
-        decoy_module = parent / "decoy-module.lean"
-        active = "    Glob.one `Complexity.TMVerifier.TuringToolkit.GateNBodyRound,\n"
-        lake = LAKEFILE.read_text().replace(active, "", 1)
-        lake += "\ndef decoyGlobs := #[\n" + active + "]\n"
-        decoy_module.write_text(lake)
-        run(baseline, False, lakefile=decoy_module)
-
-        raw_decoy = parent / "raw-decoy.lean"
-        lake = LAKEFILE.read_text().replace(active, "", 1)
-        lake += '\ndef decoy := r#"' + active + '"#\n'
-        raw_decoy.write_text(lake)
-        run(baseline, False, lakefile=raw_decoy)
-
-        in_array_raw = parent / "in-array-raw.lean"
-        lake = LAKEFILE.read_text().replace(active, "", 1)
-        decoy = (
-            "    by\n"
-            "      let _ := r#\"embedded ordinary \" quote\n"
-            + active
-            + "      embedded second \" quote\n"
-            + "      \"#\n"
-            "      exact Glob.one `Core.BooleanBasics,\n"
-        )
-        lake = lake.replace(
-            "  ]\n\nlean_lib Pnp4 where", decoy + "  ]\n\nlean_lib Pnp4 where", 1
-        )
-        in_array_raw.write_text(lake)
-        run(baseline, False, lakefile=in_array_raw)
-
-        nested_decoy = parent / "nested-decoy.lean"
-        lake = LAKEFILE.read_text().replace(active, "", 1)
-        nested = "    by\n      let decoy := #[\n" + active + "      ]\n"
-        lake = lake.replace(
-            "  ]\n\nlean_lib Pnp4 where",
-            nested + "  ]\n\nlean_lib Pnp4 where",
-            1,
-        )
-        nested_decoy.write_text(lake)
-        run(baseline, False, lakefile=nested_decoy)
-
-        nested_field = parent / "nested-field.lean"
-        lake = LAKEFILE.read_text().replace(
-            "  globs := #[\n", "  roots := (let _ := {\n  globs := #[\n", 1
-        )
-        lake = lake.replace(
-            "  ]\n\nlean_lib Pnp4 where",
-            "  ]\n  }; #[])\n\nlean_lib Pnp4 where",
-            1,
-        )
-        nested_field.write_text(lake)
-        run(baseline, False, lakefile=nested_field)
-
-        tampered_manifest = parent / "tampered-manifest.json"
+        tampered_commit = parent / "tampered-commit.json"
         data = json.loads(MANIFEST.read_text())
         data["frozen_commit"] = "0" * 40
-        tampered_manifest.write_text(json.dumps(data))
-        run(baseline, False, tampered_manifest)
+        tampered_commit.write_text(json.dumps(data))
+        run(baseline, False, tampered_commit)
 
         tampered_entry = parent / "tampered-entry.json"
         data = json.loads(MANIFEST.read_text())
-        first = next(iter(data["files"].values()))
-        first["sha256"] = "0" * 64
+        next(iter(data["files"].values()))["sha256"] = "0" * 64
         tampered_entry.write_text(json.dumps(data))
         run(baseline, False, tampered_entry)
 
@@ -190,7 +100,7 @@ def main() -> None:
         mode_target.chmod(mode_target.stat().st_mode | 0o111)
         run(executable, False)
 
-    print("[tmverifier-freeze-test] OK: manifest/lake trust + 5 filesystem controls")
+    print("[tmverifier-freeze-test] OK: manifest trust + 5 filesystem controls")
 
 
 if __name__ == "__main__":

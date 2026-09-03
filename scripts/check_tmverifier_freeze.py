@@ -7,7 +7,6 @@ import argparse
 import hashlib
 import json
 import os
-import re
 import stat
 import subprocess
 import sys
@@ -114,143 +113,11 @@ def working_entries(candidate_root: Path) -> dict[str, dict[str, str]]:
     return result
 
 
-def strip_lean_comments(text: str) -> str:
-    output: list[str] = []
-    index = 0
-    block_depth = 0
-    line_comment = False
-    string = False
-    raw_end: str | None = None
-    while index < len(text):
-        pair = text[index:index + 2]
-        char = text[index]
-        if raw_end is not None:
-            if text.startswith(raw_end, index):
-                output.extend(" " * len(raw_end))
-                index += len(raw_end) - 1
-                raw_end = None
-            else:
-                output.append("\n" if char == "\n" else " ")
-        elif line_comment:
-            if char == "\n":
-                line_comment = False
-                output.append(char)
-            else:
-                output.append(" ")
-        elif block_depth:
-            if pair == "/-":
-                block_depth += 1
-                output.extend("  ")
-                index += 1
-            elif pair == "-/":
-                block_depth -= 1
-                output.extend("  ")
-                index += 1
-            else:
-                output.append("\n" if char == "\n" else " ")
-        elif string:
-            output.append("\n" if char == "\n" else " ")
-            if char == "\\" and index + 1 < len(text):
-                output.append(" ")
-                index += 1
-            elif char == '"':
-                string = False
-        elif pair == "--":
-            line_comment = True
-            output.extend("  ")
-            index += 1
-        elif pair == "/-":
-            block_depth = 1
-            output.extend("  ")
-            index += 1
-        elif char == "r":
-            cursor = index + 1
-            while cursor < len(text) and text[cursor] == "#":
-                cursor += 1
-            if cursor < len(text) and text[cursor] == '"':
-                hashes = text[index + 1:cursor]
-                raw_end = '"' + hashes
-                output.extend(" " * (cursor - index + 1))
-                index = cursor
-            else:
-                output.append(char)
-        elif char == '"':
-            string = True
-            output.append(" ")
-        else:
-            output.append(char)
-        index += 1
-    return "".join(output)
-
-
-def pnp3_globs_array(text: str) -> str:
-    active = strip_lean_comments(text)
-    headers = list(re.finditer(r"^[ \t]*lean_lib[ \t]+PnP3[ \t]+where[ \t]*$", active, re.MULTILINE))
-    if len(headers) != 1:
-        raise ValueError("lakefile must contain exactly one active 'lean_lib PnP3 where'")
-    start = headers[0].end()
-    next_library = re.search(r"^[ \t]*lean_lib[ \t]+", active[start:], re.MULTILINE)
-    end = start + next_library.start() if next_library else len(active)
-    block = active[start:end]
-    lines = [line for line in block.splitlines() if line.strip()]
-    if not lines or any(line.startswith("\t") for line in lines):
-        raise ValueError("PnP3 fields require nonempty space-indented layout")
-    top_indent = min(len(line) - len(line.lstrip(" ")) for line in lines)
-    depths: list[tuple[int, int, int]] = []
-    parens = brackets = braces = 0
-    for char in block:
-        depths.append((parens, brackets, braces))
-        if char == "(": parens += 1
-        elif char == ")": parens -= 1
-        elif char == "[": brackets += 1
-        elif char == "]": brackets -= 1
-        elif char == "{": braces += 1
-        elif char == "}": braces -= 1
-        if min(parens, brackets, braces) < 0:
-            raise ValueError("unbalanced delimiters in PnP3 library block")
-    declarations = [
-        match for match in re.finditer(
-            r"^([ ]+)globs[ \t]*:=[ \t]*#\[", block, re.MULTILINE
-        ) if len(match.group(1)) == top_indent and depths[match.start()] == (0, 0, 0)
-    ]
-    if len(declarations) != 1:
-        raise ValueError("PnP3 library must contain exactly one active globs array")
-    open_bracket = start + declarations[0].end() - 1
-    depth = 1
-    output: list[str] = []
-    for index in range(open_bracket + 1, end):
-        char = active[index]
-        if char == "[":
-            depth += 1
-            output.append(" ")
-        elif char == "]":
-            if depth == 1:
-                return "".join(output)
-            depth -= 1
-            output.append(" ")
-        else:
-            output.append(char if depth == 1 else ("\n" if char == "\n" else " "))
-    raise ValueError("unterminated PnP3 globs array")
-
-
-def missing_lake_modules(expected_paths: set[str], lakefile_path: Path) -> list[str]:
-    lakefile = pnp3_globs_array(lakefile_path.read_text(encoding="utf-8"))
-    missing: list[str] = []
-    for rel in sorted(expected_paths):
-        if not rel.endswith(".lean") or not rel.startswith("pnp3/"):
-            continue
-        module = rel.removeprefix("pnp3/").removesuffix(".lean").replace("/", ".")
-        pattern = rf"^[ \t]*Glob\.one `{re.escape(module)},[ \t]*$"
-        if re.search(pattern, lakefile, re.MULTILINE) is None:
-            missing.append(module)
-    return missing
-
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--candidate-root", type=Path, default=ROOT)
     parser.add_argument("--manifest", type=Path, default=MANIFEST)
-    parser.add_argument("--lakefile", type=Path, default=ROOT / "lakefile.lean")
     parser.add_argument("--write-manifest", action="store_true")
     args = parser.parse_args()
     if args.write_manifest:
@@ -263,7 +130,6 @@ def main() -> int:
     try:
         expected = load_manifest(args.manifest.resolve())
         actual = working_entries(args.candidate_root.resolve())
-        missing_modules = missing_lake_modules(set(expected), args.lakefile.resolve())
     except (OSError, ValueError, subprocess.CalledProcessError, json.JSONDecodeError) as exc:
         print(f"TMVerifier freeze check failed: {exc}", file=sys.stderr)
         return 1
@@ -277,13 +143,12 @@ def main() -> int:
         for rel in expected_paths & actual_paths
         if any(actual[rel].get(key) != expected[rel].get(key) for key in ("mode", "type", "sha256"))
     )
-    if added or removed or changed or missing_modules:
+    if added or removed or changed:
         print("TMVerifier freeze violation.", file=sys.stderr)
         for label, paths in (("Added", added), ("Removed", removed), ("Changed", changed)):
             if paths:
                 print(f"  {label}:", *paths, sep="\n    ", file=sys.stderr)
-        if missing_modules:
-            print("  Missing lake modules:", *missing_modules, sep="\n    ", file=sys.stderr)
+
         print(
             f"The tree is frozen at {FROZEN_COMMIT}. Use a separately reviewed "
             "unfreeze/migration PR to alter it.",

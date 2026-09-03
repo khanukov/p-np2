@@ -24,7 +24,7 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const { evaluateFreezeDiff, lakefileIncludesModules } = require(
+            const { evaluateFreezeDiff } = require(
               `${process.env.GITHUB_WORKSPACE}/.freeze-policy-base/.github/scripts/tmverifier-freeze-policy.js`
             );
             const { data: pull } = await github.rest.pulls.get({
@@ -40,31 +40,6 @@ jobs:
             });
             const labels = pull.labels.map(label => label.name);
             const head = pull.head.sha;
-            const changedPaths = files.flatMap(file =>
-              [file.filename, file.previous_filename].filter(Boolean)
-            );
-            let lakefileComplete = true;
-            if (changedPaths.includes('lakefile.lean')) {
-              try {
-                const { data } = await github.rest.repos.getContent({
-                  owner: pull.head.repo.owner.login,
-                  repo: pull.head.repo.name,
-                  path: 'lakefile.lean',
-                  ref: head,
-                });
-                const text = Buffer.from(data.content, data.encoding).toString('utf8');
-                const manifest = require(
-                  `${process.env.GITHUB_WORKSPACE}/.freeze-policy-base/spec/tmverifier_freeze.json`
-                );
-                const modules = Object.keys(manifest.files).map(path =>
-                  path.replace(/^pnp3\//, '').replace(/\.lean$/, '').replaceAll('/', '.')
-                );
-                lakefileComplete = lakefileIncludesModules(text, modules);
-              } catch (error) {
-                core.warning(`Could not verify head lakefile: ${error.message}`);
-                lakefileComplete = false;
-              }
-            }
             const attestation = `/tmverifier-unfreeze ${head}`;
             const comments = await github.paginate(github.rest.issues.listComments, {
               owner: context.repo.owner,
@@ -78,7 +53,6 @@ jobs:
             const result = evaluateFreezeDiff(files, labels, {
               changedFiles: pull.changed_files,
               ownerAttestedHead,
-              lakefileComplete,
             });
             const paths = result.protectedFiles.length
               ? `\n${result.protectedFiles.join('\n')}`

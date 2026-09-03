@@ -11,9 +11,10 @@ pnp3/Complexity/TMVerifier/
 
 `scripts/check_tmverifier_freeze.sh` validates the manifest against Git objects
 at the frozen commit, then verifies the working tree's exact paths, object types,
-executable modes, SHA-256 contents, and lakefile inclusion without following
-symlinks. It and an isolated manifest/lake/filesystem negative-control suite
-are part of `scripts/check.sh` and run before any build.
+executable modes, and SHA-256 contents without following symlinks. It and an
+isolated manifest/filesystem negative-control suite are part of
+`scripts/check.sh` and run before any build. `lakefile.lean` is blanket-protected
+by the trusted PR policy rather than partially parsed as Lean syntax.
 
 The freeze-policy paths are listed in `.github/CODEOWNERS` to make ownership
 explicit. By repository-owner decision, `main` does not currently enforce

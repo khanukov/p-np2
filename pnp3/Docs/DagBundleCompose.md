@@ -25,6 +25,10 @@ placed over the preceding iterate, `iterateBundle S t` agrees with
 each stage owns its new upper graph once, while every output shares the single
 predecessor graph already present in the bundle.
 
+`reindexOutputs B f` selects, permutes, or duplicates output wires while
+preserving exactly the same gate function and gate count. P1b-3 uses it to
+hide internal scan/row rails without copying their graph.
+
 `Complexity.DagGadgets` supplies projection and constant bundles plus direct
 NOT, AND, OR, and four-gate MUX circuits and singleton bundles.  The MUX has an
 explicit eight-row truth table; two NOT-bundle iterations have a proved
@@ -38,7 +42,6 @@ compile-time enumerations.
 
 ## Boundary and handoff
 
-This generic DAG layer provides no `UniformTM` step bundle, polynomial-size
-theorem, `PpolyDAG` bridge, or rebind of repository complexity classes.  The
-P1b-2 semantic kernel consumes its iteration laws conditionally; P1b-3 must
-still construct a concrete shared one-step bundle and prove its gate bound.
+This generic DAG layer alone provides no polynomial-size run-family theorem,
+`PpolyDAG` bridge, or rebind of repository complexity classes. P1b-3 separately
+uses it to construct a concrete shared one-step bundle and gate bound.

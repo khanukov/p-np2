@@ -72,9 +72,16 @@ import Pnp4.Frontier.ContractExpansion.ConsolidatedTreeSeparation
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 import Pnp4.Frontier.ModelAudit.RuntimeAdviceBarrier
+import Tests.UniformV1StepBundleSurfaceTests
 
 namespace Pnp4
 namespace Tests
+
+-- Uniform V1 P1b-3 infrastructure: direct and explicit-wrapper roots.
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.actionBundle_evalFun
+#print axioms Pnp3.Tests.UniformV1StepBundle.check_actionBundle_evalFun
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.stepBundle_spec
+#print axioms Pnp3.Tests.UniformV1StepBundle.check_stepBundle_spec
 
 -- Dependency-closed DAG support cardinality.  Infrastructure only: these
 -- theorems neither supply nor reduce a P-vs-NP lower-bound source obligation.

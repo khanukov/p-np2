@@ -147,21 +147,24 @@ and `Nat.iterate` agrees with `M.run`.  The general head theorem uses the real
 blank-write/left-clamp capstone additionally exercises a symbol-changing write
 and the left clamp together.
 
-The module also defines a conditional `StepSpec S`.  If a caller supplies such
-an `S`, `runBundle M n budget S t` is exact for `M.run t` and has exactly
-`2 + t*S.gates` gates: the two initial gates plus one additional shared
-step-bundle gate range per iteration; no per-output duplication occurs.  No
-concrete `S`, `stepBundle`, or action bundle is constructed.
+The module also defines `StepSpec S`. P1b-3 now supplies the direct witness
+`stepBundle M n budget`, built from one shared scan/action predecessor and a
+single update substitution. Its exact gate count is `19*T + 10*Q + 12` plus
+the numbers of public transition rows that write present/value, and hence is
+at most `19*T + 16*Q + 13`. The standalone `actionBundle` has exact all-vector
+semantics (including malformed inputs) and is bounded by `4*T + 16*Q + 12`.
+The state/symbol action filters inspect only the fixed public `M.step` table;
+no runtime, clock, language, or proof data enters either construction.
+The corresponding single-output `DagCircuit.size` is the shared bundle gate
+count plus one; that output-wire accounting is not folded into these formulas.
 The supporting false-seeded `bigOrCircuit` has exact size
 `2 + sum C.size`, including size two for the empty list.
 The first-bit, length-parity, and blank-write/left-clamp capstones are derived
 from the general semantic theorem rather than independent computation.
 
-P1b-2 is infrastructure, not P-vs-NP mainline progress.  It provides no
-polynomial simulation theorem, `UniformP`/`PpolyDAG` bridge, canonical class
-rebind, or lower bound.  P1b-3 must construct a concrete direct DAG step bundle,
-prove `StepSpec`, and establish the relevant gate bound before a circuit-class
-bridge can be considered.
+P1b-3 is infrastructure, not P-vs-NP mainline progress. It does not provide a
+run-family polynomial-size theorem, a `UniformP`-to-`PpolyDAG` bridge, a
+canonical class rebind, or any lower bound.
 
 This P1a repair is infrastructure. It does not change the repository's canonical
 `P` or `NP` definitions and is not P-vs-NP mainline progress.  In particular,

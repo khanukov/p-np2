@@ -79,6 +79,7 @@ import Complexity.Uniform.V1.Examples
 import Complexity.DagGadgets
 import Tests.UniformV1CircuitEncodingSurfaceTests
 import Tests.UniformV1StepKernelSurfaceTests
+import Tests.UniformV1StepBundleSurfaceTests
 import Tests.DagBundleComposeSurfaceTests
 
 /-!
@@ -104,6 +105,10 @@ section DagBundleComposeAxiomAudit
 #print axioms Pnp3.ComplexityInterfaces.DagCircuit.evalOutput_identityBundle
 #print axioms Pnp3.ComplexityInterfaces.DagCircuit.DagBundle.evalFun_apply
 #print axioms Pnp3.ComplexityInterfaces.DagCircuit.evalFun_identityBundle
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.reindexOutputs_gates
+#print axioms Pnp3.Tests.DagBundleCompose.check_reindexOutputs_gates
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.evalOutput_reindexOutputs
+#print axioms Pnp3.Tests.DagBundleCompose.check_evalOutput_reindexOutputs
 #print axioms Pnp3.ComplexityInterfaces.DagCircuit.iterateBundle_zero
 #print axioms Pnp3.ComplexityInterfaces.DagCircuit.iterateBundle_succ
 #print axioms Pnp3.ComplexityInterfaces.DagCircuit.iterateBundle_gates
@@ -275,6 +280,47 @@ section UniformV1StepKernelAxiomAudit
 #print axioms Pnp3.Tests.UniformV1StepKernel.check_blankWrite_leftClamp_encodedStep
 
 end UniformV1StepKernelAxiomAudit
+
+section UniformV1StepBundleAxiomAudit
+
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.actionBundle_evalFun
+#print axioms Pnp3.Tests.UniformV1StepBundle.check_actionBundle_evalFun
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.actionBundle_nextState
+#print axioms Pnp3.Tests.UniformV1StepBundle.check_actionBundle_nextState
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.actionBundle_move
+#print axioms Pnp3.Tests.UniformV1StepBundle.check_actionBundle_move
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.actionBundle_writePresent
+#print axioms Pnp3.Tests.UniformV1StepBundle.check_actionBundle_writePresent
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.actionBundle_writeValue
+#print axioms Pnp3.Tests.UniformV1StepBundle.check_actionBundle_writeValue
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.actionBundle_eval_encodeConfig
+#print axioms Pnp3.Tests.UniformV1StepBundle.check_actionBundle_eval_encodeConfig
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.actionBundle_gates
+#print axioms Pnp3.Tests.UniformV1StepBundle.check_actionBundle_gates
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.actionBundle_gates_le
+#print axioms Pnp3.Tests.UniformV1StepBundle.check_actionBundle_gates_le
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.actionBundle_gates_le_target
+#print axioms Pnp3.Tests.UniformV1StepBundle.check_actionBundle_gates_le_target
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.updateBundle_gates
+#print axioms Pnp3.Tests.UniformV1StepBundle.check_updateBundle_gates
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.stepBundle_eval_encodeConfig
+#print axioms Pnp3.Tests.UniformV1StepBundle.check_stepBundle_eval_encodeConfig
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.stepBundle_spec
+#print axioms Pnp3.Tests.UniformV1StepBundle.check_stepBundle_spec
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.stepBundle_gates
+#print axioms Pnp3.Tests.UniformV1StepBundle.check_stepBundle_gates
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.stepBundle_gates_le
+#print axioms Pnp3.Tests.UniformV1StepBundle.check_stepBundle_gates_le
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.stepBundle_blank_vs_false_dispatch
+#print axioms Pnp3.Tests.UniformV1StepBundle.check_stepBundle_blank_vs_false_dispatch
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.stepBundle_terminal_rows_absorb
+#print axioms Pnp3.Tests.UniformV1StepBundle.check_stepBundle_terminal_rows_absorb
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.stepBundle_blank_write_left_clamp
+#print axioms Pnp3.Tests.UniformV1StepBundle.check_stepBundle_blank_write_left_clamp
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.stepBundle_moving_write_old_head_only
+#print axioms Pnp3.Tests.UniformV1StepBundle.check_stepBundle_moving_write_old_head_only
+
+end UniformV1StepBundleAxiomAudit
 
 section UniformV1AxiomAudit
 

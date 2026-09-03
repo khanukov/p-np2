@@ -16,6 +16,7 @@ open Pnp3.ComplexityInterfaces.DagCircuit
 #check identityBundle
 #check DagBundle.evalFun
 #check iterateBundle
+#check reindexOutputs
 #check projectionBundle
 #check constantBundle
 #check notCircuit
@@ -73,6 +74,17 @@ theorem check_evalFun_apply {n out : Nat} (B : DagBundle n out)
 theorem check_evalFun_identityBundle (W : Nat) (v : Bitstring W) :
     (identityBundle W).evalFun v = v :=
   evalFun_identityBundle W v
+
+theorem check_reindexOutputs_gates {n out out' : Nat}
+    (B : DagBundle n out) (f : Fin out' → Fin out) :
+    (reindexOutputs B f).gates = B.gates :=
+  reindexOutputs_gates B f
+
+theorem check_evalOutput_reindexOutputs {n out out' : Nat}
+    (B : DagBundle n out) (f : Fin out' → Fin out) (o : Fin out')
+    (v : Bitstring n) :
+    (reindexOutputs B f).evalOutput o v = B.evalOutput (f o) v :=
+  evalOutput_reindexOutputs B f o v
 
 theorem check_iterateBundle_zero {W : Nat} (S : DagBundle W W) :
     iterateBundle S 0 = identityBundle W :=

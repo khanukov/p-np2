@@ -109,8 +109,8 @@ Boolean answer. This is the regression pin separating timeout from rejection.
 
 `Tests/UniformV1SurfaceTests.lean` pins the constructor shape, definitions,
 instances, and every authored public theorem's full proposition. All theorem
-`#print axioms` roots live in the central `Tests/AxiomsAudit.lean`; private proof
-helpers are excluded from both public surfaces.
+`#print axioms` roots live in the central `Tests/AxiomsAudit.lean`; private
+proof helpers are excluded from both public surfaces.
 
 ## Honest boundary and P1b work
 

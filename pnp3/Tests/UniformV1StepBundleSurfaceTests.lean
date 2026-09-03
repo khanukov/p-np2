@@ -9,12 +9,20 @@ open Pnp3.Complexity.Uniform.V1.Circuit
 open Pnp3.ComplexityInterfaces.DagCircuit
 
 #check actionWidth
+#check indexedSymbol
+#check rowIndex
+#check nextStateActionIndex
+#check moveActionIndex
+#check writePresentActionIndex
+#check writeValueActionIndex
+#check actionSupportCount
+#check actionPredicate
 #check actionBundle
+#check actionEncoding
 #check actionBundle_evalFun
 #check actionBundle_gates
 #check actionBundle_gates_le
 #check actionBundle_gates_le_target
-#check updateBundle
 #check stepBundle
 #check stepBundle_eval_encodeConfig
 #check stepBundle_spec
@@ -74,10 +82,6 @@ theorem check_actionBundle_gates_le_target (M : UniformTM) (n budget : Nat) :
       4 * tapeLength n budget + 22 * M.stateCount + 7 :=
   actionBundle_gates_le_target M n budget
 
-theorem check_updateBundle_gates (M : UniformTM) (n budget : Nat) :
-    (updateBundle M n budget).gates = 15 * tapeLength n budget :=
-  updateBundle_gates M n budget
-
 theorem check_stepBundle_eval_encodeConfig (M : UniformTM) {n budget : Nat}
     (c : Config M.stateCount n budget) :
     (stepBundle M n budget).evalFun (encodeConfig M c) =
@@ -99,43 +103,61 @@ theorem check_stepBundle_gates_le (M : UniformTM) (n budget : Nat) :
       19 * tapeLength n budget + 16 * M.stateCount + 13 :=
   stepBundle_gates_le M n budget
 
-theorem check_stepBundle_terminal_rows_absorb {n budget : Nat}
-    (c : Config maliciousTerminalProbe.stateCount n budget)
-    (h : c.state = maliciousTerminalProbe.accept) :
-    (stepBundle maliciousTerminalProbe n budget).evalFun
-      (encodeConfig maliciousTerminalProbe c) = encodeConfig maliciousTerminalProbe c :=
-  stepBundle_terminal_rows_absorb c h
+theorem check_stepBundle_terminal_rows_absorb {n budget : Nat} :
+    let M : UniformTM :=
+      ⟨3, ⟨0, by decide⟩, ⟨1, by decide⟩, ⟨2, by decide⟩, by decide,
+        fun _ _ => (⟨0, by decide⟩, some true, .right)⟩
+    ∀ (acceptConfig rejectConfig : Config M.stateCount n budget),
+      acceptConfig.state = M.accept →
+      rejectConfig.state = M.reject →
+      (stepBundle M n budget).evalFun (encodeConfig M acceptConfig) =
+          encodeConfig M acceptConfig ∧
+        (stepBundle M n budget).evalFun (encodeConfig M rejectConfig) =
+          encodeConfig M rejectConfig :=
+  stepBundle_terminal_rows_absorb
 
 theorem check_stepBundle_blank_vs_false_dispatch :
-    let blank := initialConfig dispatchProbe 1 (fun i : Fin 0 => i.elim0)
-    let tagged := initialConfig dispatchProbe 1 (fun _ : Fin 1 => false)
-    (stepBundle dispatchProbe 0 1).evalFun (encodeConfig dispatchProbe blank)
-        (stateIndex dispatchProbe 0 1 dispatchProbe.accept) = true ∧
-      (stepBundle dispatchProbe 1 1).evalFun (encodeConfig dispatchProbe tagged)
-        (stateIndex dispatchProbe 1 1 dispatchProbe.reject) = true :=
+    let M : UniformTM :=
+      ⟨4, ⟨0, by decide⟩, ⟨1, by decide⟩, ⟨2, by decide⟩, by decide,
+        fun _ s => match s with
+          | none => (⟨1, by decide⟩, none, .stay)
+          | some false => (⟨2, by decide⟩, some false, .stay)
+          | some true => (⟨3, by decide⟩, some true, .stay)⟩
+    let blank := initialConfig M 1 (fun i : Fin 0 => i.elim0)
+    let tagged := initialConfig M 1 (fun _ : Fin 1 => false)
+    (stepBundle M 0 1).evalFun (encodeConfig M blank)
+        (stateIndex M 0 1 M.accept) = true ∧
+      (stepBundle M 1 1).evalFun (encodeConfig M tagged)
+        (stateIndex M 1 1 M.reject) = true :=
   stepBundle_blank_vs_false_dispatch
 
 theorem check_stepBundle_blank_write_left_clamp :
-    let c := initialConfig writeMoveProbe 1 (fun _ : Fin 1 => true)
+    let M : UniformTM :=
+      ⟨3, ⟨0, by decide⟩, ⟨1, by decide⟩, ⟨2, by decide⟩, by decide,
+        fun _ _ => (⟨1, by decide⟩, none, .left)⟩
+    let c := initialConfig M 1 (fun _ : Fin 1 => true)
     let zero : Fin (tapeLength 1 1) := ⟨0, by decide⟩
-    (stepBundle writeMoveProbe 1 1).evalFun (encodeConfig writeMoveProbe c)
-        (headIndex writeMoveProbe 1 1 zero) = true ∧
-      (stepBundle writeMoveProbe 1 1).evalFun (encodeConfig writeMoveProbe c)
-        (tapePresentIndex writeMoveProbe 1 1 zero) = false :=
+    (stepBundle M 1 1).evalFun (encodeConfig M c)
+        (headIndex M 1 1 zero) = true ∧
+      (stepBundle M 1 1).evalFun (encodeConfig M c)
+        (tapePresentIndex M 1 1 zero) = false :=
   stepBundle_blank_write_left_clamp
 
 theorem check_stepBundle_moving_write_old_head_only :
-    let c := initialConfig movingWriteProbe 1 (fun _ : Fin 1 => true)
+    let M : UniformTM :=
+      ⟨3, ⟨0, by decide⟩, ⟨1, by decide⟩, ⟨2, by decide⟩, by decide,
+        fun _ _ => (⟨1, by decide⟩, some false, .right)⟩
+    let c := initialConfig M 1 (fun _ : Fin 1 => true)
     let zero : Fin (tapeLength 1 1) := ⟨0, by decide⟩
     let one : Fin (tapeLength 1 1) := ⟨1, by decide⟩
-    (stepBundle movingWriteProbe 1 1).evalFun (encodeConfig movingWriteProbe c)
-        (tapePresentIndex movingWriteProbe 1 1 zero) = true ∧
-      (stepBundle movingWriteProbe 1 1).evalFun (encodeConfig movingWriteProbe c)
-        (tapeValueIndex movingWriteProbe 1 1 zero) = false ∧
-      (stepBundle movingWriteProbe 1 1).evalFun (encodeConfig movingWriteProbe c)
-        (headIndex movingWriteProbe 1 1 one) = true ∧
-      (stepBundle movingWriteProbe 1 1).evalFun (encodeConfig movingWriteProbe c)
-        (tapePresentIndex movingWriteProbe 1 1 one) = false :=
+    (stepBundle M 1 1).evalFun (encodeConfig M c)
+        (tapePresentIndex M 1 1 zero) = true ∧
+      (stepBundle M 1 1).evalFun (encodeConfig M c)
+        (tapeValueIndex M 1 1 zero) = false ∧
+      (stepBundle M 1 1).evalFun (encodeConfig M c)
+        (headIndex M 1 1 one) = true ∧
+      (stepBundle M 1 1).evalFun (encodeConfig M c)
+        (tapePresentIndex M 1 1 one) = false :=
   stepBundle_moving_write_old_head_only
 
 end Pnp3.Tests.UniformV1StepBundle

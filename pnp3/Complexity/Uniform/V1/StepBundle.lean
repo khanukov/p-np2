@@ -717,9 +717,7 @@ private def updateReindex (M : UniformTM) (n budget : Nat) :
       by have := i.isLt; omega⟩)
     (fun i => ⟨configWidth M n budget + actionWidth M + 2 * tapeLength n budget + i.val,
       by have := i.isLt; omega⟩)
-/-- Update the state/head/tape layout from old configuration plus action rails.
-The tape MUX selector is the old head rail. -/
-def updateBundle (M : UniformTM) (n budget : Nat) :
+private def updateBundle (M : UniformTM) (n budget : Nat) :
     DagBundle (configWidth M n budget + actionWidth M) (configWidth M n budget) :=
   reindexOutputs (updateInternalBundle M n budget) (updateReindex M n budget)
 private def updateHeadMeaning (M : UniformTM) (n budget : Nat)
@@ -923,7 +921,7 @@ private theorem rawUpdateValueBundle_gates (M : UniformTM) (n budget : Nat) :
   rw [rawUpdateValueBundle, bundleOfFamily_gates]
   simp
   omega
-@[simp] theorem updateBundle_gates (M : UniformTM) (n budget : Nat) :
+@[simp] private theorem updateBundle_gates (M : UniformTM) (n budget : Nat) :
     (updateBundle M n budget).gates = 15 * tapeLength n budget := by
   simp [updateBundle, updateInternalBundle, updatePresentStage, updateHeadStage,
     rawUpdateHeadBundle_gates, rawUpdatePresentBundle_gates,

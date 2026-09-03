@@ -301,8 +301,6 @@ section UniformV1StepBundleAxiomAudit
 #print axioms Pnp3.Tests.UniformV1StepBundle.check_actionBundle_gates_le
 #print axioms Pnp3.Complexity.Uniform.V1.Circuit.actionBundle_gates_le_target
 #print axioms Pnp3.Tests.UniformV1StepBundle.check_actionBundle_gates_le_target
-#print axioms Pnp3.Complexity.Uniform.V1.Circuit.updateBundle_gates
-#print axioms Pnp3.Tests.UniformV1StepBundle.check_updateBundle_gates
 #print axioms Pnp3.Complexity.Uniform.V1.Circuit.stepBundle_eval_encodeConfig
 #print axioms Pnp3.Tests.UniformV1StepBundle.check_stepBundle_eval_encodeConfig
 #print axioms Pnp3.Complexity.Uniform.V1.Circuit.stepBundle_spec

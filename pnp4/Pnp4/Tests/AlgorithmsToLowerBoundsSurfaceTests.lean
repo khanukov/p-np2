@@ -82,7 +82,6 @@ import Pnp4.Frontier.ContractExpansion.ConsolidatedTreeSeparation
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
 import Pnp4.Frontier.ModelAudit.RuntimeAdviceBarrier
-import Tests.UniformV1StepBundleSurfaceTests
 
 namespace Pnp4
 namespace Tests
@@ -4138,13 +4137,6 @@ end TreeMCSPPrefixSemanticVerifierSurface
 #check @Pnp4.Frontier.ContractExpansion.gammaTermOffset_lt_queryXOffset
 #check @Pnp4.Frontier.ContractExpansion.gammaTermOffset_le_treeMCSPPrefixM
 #check @Pnp4.Frontier.ContractExpansion.gammaMirror_mem
-
--- Uniform V1 P1b-3 is infrastructure only; this central surface pins its
--- concrete witness, semantic contract, and explicit gate cap.
-#check @Pnp3.Complexity.Uniform.V1.Circuit.actionBundle_evalFun
-#check @Pnp3.Complexity.Uniform.V1.Circuit.stepBundle_spec
-#check @Pnp3.Complexity.Uniform.V1.Circuit.stepBundle_gates_le
-#check @Pnp3.Tests.UniformV1StepBundle.check_stepBundle_spec
 
 end Tests
 end Pnp4

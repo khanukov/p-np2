@@ -161,6 +161,9 @@ The supporting false-seeded `bigOrCircuit` has exact size
 `2 + sum C.size`, including size two for the empty list.
 The first-bit, length-parity, and blank-write/left-clamp capstones are derived
 from the general semantic theorem rather than independent computation.
+The direct-bundle regressions additionally cover blank-versus-false dispatch,
+both accept and reject fixed points despite malicious raw terminal rows, and a
+moving write that changes only the old-head cell.
 
 P1b-3 is infrastructure, not P-vs-NP mainline progress. It does not provide a
 run-family polynomial-size theorem, a `UniformP`-to-`PpolyDAG` bridge, a

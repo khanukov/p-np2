@@ -1,0 +1,64 @@
+name: TMVerifier Freeze Policy
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited, labeled, unlabeled]
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+
+jobs:
+  protected-diff:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout trusted default-branch policy only
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          path: .freeze-policy-base
+          persist-credentials: false
+
+      - name: Reject ordinary changes to frozen or policy paths
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { evaluateFreezeDiff } = require(
+              `${process.env.GITHUB_WORKSPACE}/.freeze-policy-base/.github/scripts/tmverifier-freeze-policy.js`
+            );
+            const { data: pull } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              per_page: 100,
+            });
+            const labels = pull.labels.map(label => label.name);
+            const head = pull.head.sha;
+            const attestation = `/tmverifier-unfreeze ${head}`;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              per_page: 100,
+            });
+            const ownerAttestedHead = comments.some(comment =>
+              comment.user?.login === context.repo.owner && comment.body?.trim() === attestation
+            );
+            const result = evaluateFreezeDiff(files, labels, {
+              changedFiles: pull.changed_files,
+              ownerAttestedHead,
+            });
+            const paths = result.protectedFiles.length
+              ? `\n${result.protectedFiles.join('\n')}`
+              : '';
+            if (!result.ok) {
+              core.setFailed(`${result.message}${paths}`);
+            } else {
+              core.info(`${result.message}${paths}`);
+            }

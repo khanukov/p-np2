@@ -8,6 +8,8 @@
 /scripts/check_tmverifier_freeze.sh @khanukov
 /scripts/test_tmverifier_freeze.py @khanukov
 /scripts/test_tmverifier_freeze.sh @khanukov
+/scripts/test_tmverifier_freeze_policy.js @khanukov
+/.github/scripts/tmverifier-freeze-policy.js @khanukov
 /pnp3/Docs/TMVERIFIER_FREEZE.md @khanukov
 /.github/workflows/tmverifier-freeze.yml @khanukov
 /.github/workflows/ci.yml @khanukov

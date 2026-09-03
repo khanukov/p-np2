@@ -8,6 +8,7 @@ cd "${ROOT_DIR}"
 echo "[check] Preflight: frozen TMVerifier tree"
 "${ROOT_DIR}/scripts/check_tmverifier_freeze.sh"
 "${ROOT_DIR}/scripts/test_tmverifier_freeze.sh"
+node "${ROOT_DIR}/scripts/test_tmverifier_freeze_policy.js"
 
 if ! command -v rg >/dev/null 2>&1; then
   echo "Missing required dependency: rg (ripgrep). Install ripgrep and rerun." >&2

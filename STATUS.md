@@ -1,6 +1,11 @@
 # Project Status (current)
 
-Updated: 2026-08-17
+Updated: 2026-09-03
+
+**Current engineering priority.** The one-tape `pnp3/Complexity/TMVerifier/`
+tree is frozen at `42c59881`; see `pnp3/Docs/TMVERIFIER_FREEZE.md`. Do not
+resume GN-E2-3b or later gate-by-gate construction. Active model-repair work
+must introduce the versioned uniform complexity foundation outside that tree.
 
 Authoritative checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.

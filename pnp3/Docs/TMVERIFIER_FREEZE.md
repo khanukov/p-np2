@@ -1,6 +1,6 @@
 # TMVerifier freeze decision
 
-**Status:** frozen infrastructure snapshot.  
+**Status:** frozen infrastructure snapshot.
 **Frozen commit:** `42c598815c8e7d27a53f26102705f84455c6979d` (2026-09-02).
 
 The complete tree below is content-addressed by `spec/tmverifier_freeze.json`:
@@ -15,12 +15,15 @@ executable modes, SHA-256 contents, and lakefile inclusion without following
 symlinks. It and an isolated manifest/lake/filesystem negative-control suite
 are part of `scripts/check.sh` and run before any build.
 
-The freeze-policy paths are listed in `.github/CODEOWNERS`. Repository settings
-must require code-owner review on protected `main` for that ownership boundary
-to prevent an ordinary PR from weakening the checker and manifest together.
+The freeze-policy paths are listed in `.github/CODEOWNERS` to make ownership
+explicit. By repository-owner decision, `main` does not currently enforce
+branch protection or code-owner review, so these are repository-level checks,
+not an unoverrideable GitHub merge block.
 The base-controlled `TMVerifier Freeze Policy` workflow independently rejects
-changes to the frozen tree or policy files unless a maintainer applies the
-`tmverifier-unfreeze` label; it never checks out or executes pull-request code.
+changes to the frozen tree or policy files unless the PR has both the
+`tmverifier-unfreeze` label and an exact repository-owner comment
+`/tmverifier-unfreeze <current-head-sha>`. It checks both sides of renames,
+fails closed on incomplete GitHub file lists, and never executes PR code.
 
 This is a source snapshot, not a frozen semantic dependency or toolchain
 closure. In particular, `Complexity.PsubsetPpolyInternal.TuringEncoding`,
@@ -53,8 +56,10 @@ A change requires a dedicated unfreeze/migration PR that:
 3. updates this decision record and regenerates the manifest deliberately;
 4. does not silently resume the old verifier roadmap.
 
-Such a PR must carry the maintainer-only `tmverifier-unfreeze` label and receive
-the required code-owner review before merge.
+For each new head SHA, the repository owner must first post the exact command
+above and then apply or retrigger the `tmverifier-unfreeze` label. A later push
+invalidates the old attestation. Without branch protection the resulting check
+remains repository governance rather than an unoverrideable merge block.
 
 The next active track is the versioned uniform `P` model and its circuit
 simulation, not GN-E2-3b or later TMVerifier stages.

@@ -10,7 +10,8 @@ Pnp3.Complexity.Uniform.V1
 ```
 
 Its source modules are `Complexity/Uniform/V1/Machine.lean`,
-`PolynomialTime.lean`, and `Examples.lean`.  They use local definitionally
+`CircuitEncoding.lean`, `PolynomialTime.lean`, and `Examples.lean`.  They use
+local definitionally
 equal aliases
 
 ```lean
@@ -107,6 +108,27 @@ instances, and every authored public theorem's full proposition. All theorem
 helpers are excluded from both public surfaces.
 
 ## Honest boundary and P1b work
+
+P1b-1 adds direct fixed-width encoding infrastructure in the nested namespace
+`Pnp3.Complexity.Uniform.V1.Circuit`.  For tape length `T = n + budget + 1`,
+its width is `M.stateCount + 3*T`, ordered as state, head, tape-presence, then
+tape-value.  The two tape rails canonically encode blank as `(false,false)`,
+`some false` as `(true,false)`, and `some true` as `(true,true)`; the exact
+bundle specification therefore excludes malformed `(false,true)` outputs.
+
+`initialBundle M n budget` is a direct shared `DagBundle` depending only on
+those three parameters.  It uses exactly two shared constant gates, routes
+input values by zero-gate projections, and has exact single-output circuit size
+three.  Its specification is the exact encoding of `initialConfig`; the
+length-one regression distinguishes a present false bit in cell zero from the
+blank padding cell one.  `Tests/UniformV1CircuitEncodingSurfaceTests.lean` pins
+this API, with direct theorem and wrapper roots in the central axiom audit.
+
+This P1b-1 slice is infrastructure, not P-vs-NP mainline progress.  It provides
+no transition/step compiler, run compiler, polynomial-size simulation theorem,
+`UniformP`/`PpolyDAG` bridge, canonical class rebind, or lower bound.  P1b-2
+must separately compile one transition over this fixed layout and prove its
+exact semantics and size accounting before any repeated-run construction.
 
 This P1a repair is infrastructure. It does not change the repository's canonical
 `P` or `NP` definitions and is not P-vs-NP mainline progress.  In particular,

@@ -65,6 +65,9 @@ lean_lib PnP3 where
     -- literal machines.  This is intentionally independent of the frozen
     -- TMVerifier and legacy encoding/simulation stacks.
     Glob.one `Complexity.Uniform.V1.Machine,
+    -- P1b-1 (2026-09-03), direct fixed-width layout and initial bundle only.
+    -- No transition/run compiler, polynomial simulation, or Ppoly bridge.
+    Glob.one `Complexity.Uniform.V1.CircuitEncoding,
     Glob.one `Complexity.Uniform.V1.PolynomialTime,
     Glob.one `Complexity.Uniform.V1.Examples,
     Glob.one `Complexity.PsubsetPpolyInternal.Bitstring,
@@ -582,6 +585,7 @@ lean_lib PnP3 where
     Glob.one `Tests.PromiseRouteConclusionProbe,
     Glob.one `Tests.WeakRouteSurfaceTests,
     Glob.one `Tests.UniformV1SurfaceTests,
+    Glob.one `Tests.UniformV1CircuitEncodingSurfaceTests,
     Glob.one `Tests.DagBundleComposeSurfaceTests,
     Glob.one `Tests.TMSeqRunSurfaceTests,
     Glob.one `Tests.TMTrueUniformSeekSurfaceTests,

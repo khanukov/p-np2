@@ -77,6 +77,7 @@ import Complexity.TMVerifier.TuringToolkit.GateNBodyRound
 import Complexity.TMVerifier.TuringToolkit.GateNRelocationExamples
 import Complexity.Uniform.V1.Examples
 import Complexity.DagGadgets
+import Tests.UniformV1CircuitEncodingSurfaceTests
 
 /-!
   pnp3/Tests/AxiomsAudit.lean
@@ -140,6 +141,57 @@ section DagBundleComposeAxiomAudit
 #print axioms Pnp3.ComplexityInterfaces.DagCircuit.doubleNot_false_literal
 
 end DagBundleComposeAxiomAudit
+
+section UniformV1CircuitEncodingAxiomAudit
+
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.symbolRails_cases
+#print axioms Pnp3.Tests.UniformV1CircuitEncoding.check_symbolRails_cases
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.decodeSymbol_roundtrip
+#print axioms Pnp3.Tests.UniformV1CircuitEncoding.check_decodeSymbol_roundtrip
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.symbolRails_injective
+#print axioms Pnp3.Tests.UniformV1CircuitEncoding.check_symbolRails_injective
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.symbolRails_not_malformed
+#print axioms Pnp3.Tests.UniformV1CircuitEncoding.check_symbolRails_not_malformed
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.configIndex_layout
+#print axioms Pnp3.Tests.UniformV1CircuitEncoding.check_configIndex_layout
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.configIndex_cover
+#print axioms Pnp3.Tests.UniformV1CircuitEncoding.check_configIndex_cover
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.configIndex_ranges
+#print axioms Pnp3.Tests.UniformV1CircuitEncoding.check_configIndex_ranges
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.configIndex_injective
+#print axioms Pnp3.Tests.UniformV1CircuitEncoding.check_configIndex_injective
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.configIndex_disjoint
+#print axioms Pnp3.Tests.UniformV1CircuitEncoding.check_configIndex_disjoint
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.encodeConfig_state
+#print axioms Pnp3.Tests.UniformV1CircuitEncoding.check_encodeConfig_state
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.encodeConfig_head
+#print axioms Pnp3.Tests.UniformV1CircuitEncoding.check_encodeConfig_head
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.encodeConfig_tapePresent
+#print axioms Pnp3.Tests.UniformV1CircuitEncoding.check_encodeConfig_tapePresent
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.encodeConfig_tapeValue
+#print axioms Pnp3.Tests.UniformV1CircuitEncoding.check_encodeConfig_tapeValue
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.encodeConfig_tape_decode
+#print axioms Pnp3.Tests.UniformV1CircuitEncoding.check_encodeConfig_tape_decode
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.encodeConfig_state_unique
+#print axioms Pnp3.Tests.UniformV1CircuitEncoding.check_encodeConfig_state_unique
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.encodeConfig_head_unique
+#print axioms Pnp3.Tests.UniformV1CircuitEncoding.check_encodeConfig_head_unique
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.Spec_tape_decode
+#print axioms Pnp3.Tests.UniformV1CircuitEncoding.check_Spec_tape_decode
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.Spec_tape_not_malformed
+#print axioms Pnp3.Tests.UniformV1CircuitEncoding.check_Spec_tape_not_malformed
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.initialBundle_gates
+#print axioms Pnp3.Tests.UniformV1CircuitEncoding.check_initialBundle_gates
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.initialBundle_spec
+#print axioms Pnp3.Tests.UniformV1CircuitEncoding.check_initialBundle_spec
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.initialBundle_asCircuit_size
+#print axioms Pnp3.Tests.UniformV1CircuitEncoding.check_initialBundle_asCircuit_size
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.initialBundle_output_size
+#print axioms Pnp3.Tests.UniformV1CircuitEncoding.check_initialBundle_output_size
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.initialBundle_blank_distinction
+#print axioms Pnp3.Tests.UniformV1CircuitEncoding.check_initialBundle_blank_distinction
+
+end UniformV1CircuitEncodingAxiomAudit
 
 section UniformV1AxiomAudit
 

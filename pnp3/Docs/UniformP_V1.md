@@ -9,9 +9,9 @@ The versioned namespace is:
 Pnp3.Complexity.Uniform.V1
 ```
 
-Its source modules are `Complexity/Uniform/V1/Machine.lean`,
-`PolynomialTime.lean`, and `Examples.lean`.  They use local definitionally
-equal aliases
+The P1a model modules are `Complexity/Uniform/V1/Machine.lean`,
+`PolynomialTime.lean`, and `Examples.lean`. They use local definitionally equal
+aliases
 
 ```lean
 Bitstring n := Fin n → Bool
@@ -20,7 +20,13 @@ Language := ∀ n, Bitstring n → Bool
 
 and do not import the frozen `Complexity/TMVerifier` tree or the legacy
 `PsubsetPpolyInternal/TuringEncoding`, `Complexity/Interfaces`, or
-`Complexity/Simulation` layers.
+`Complexity/Simulation` layers. The later P1b `CircuitEncoding.lean` module
+reaches the canonical `Complexity/Interfaces` module through `DagGadgets` and
+the DAG composition layers.  That canonical interface has a transitive import
+path to the legacy `PsubsetPpolyInternal/TuringEncoding`, so the inherited P1b
+import cone does contain the legacy TM interface.  The P1b-1 construction and
+proofs do not use that legacy TM, its `runTime`, the legacy simulator/compiler,
+or the frozen `TMVerifier` semantics.
 
 ## Finite machine ABI
 
@@ -107,6 +113,29 @@ instances, and every authored public theorem's full proposition. All theorem
 helpers are excluded from both public surfaces.
 
 ## Honest boundary and P1b work
+
+P1b-1 adds direct fixed-width encoding infrastructure in the nested namespace
+`Pnp3.Complexity.Uniform.V1.Circuit`.  For tape length `T = n + budget + 1`,
+its width is `M.stateCount + 3*T`, ordered as state, head, tape-presence, then
+tape-value.  The layout theorems prove within-block injectivity, pairwise
+disjointness, and exhaustive coverage of every configuration index by those
+four blocks.  The two tape rails canonically encode blank as `(false,false)`,
+`some false` as `(true,false)`, and `some true` as `(true,true)`; the exact
+bundle specification therefore excludes malformed `(false,true)` outputs.
+
+`initialBundle M n budget` is a direct shared `DagBundle` depending only on
+those three parameters.  It uses exactly two shared constant gates, routes
+input values by zero-gate projections, and has exact single-output circuit size
+three.  Its specification is the exact encoding of `initialConfig`; the
+length-one regression distinguishes a present false bit in cell zero from the
+blank padding cell one.  `Tests/UniformV1CircuitEncodingSurfaceTests.lean` pins
+this API, with direct theorem and wrapper roots in the central axiom audit.
+
+This P1b-1 slice is infrastructure, not P-vs-NP mainline progress.  It provides
+no transition/step compiler, run compiler, polynomial-size simulation theorem,
+`UniformP`/`PpolyDAG` bridge, canonical class rebind, or lower bound.  P1b-2
+must separately compile one transition over this fixed layout and prove its
+exact semantics and size accounting before any repeated-run construction.
 
 This P1a repair is infrastructure. It does not change the repository's canonical
 `P` or `NP` definitions and is not P-vs-NP mainline progress.  In particular,

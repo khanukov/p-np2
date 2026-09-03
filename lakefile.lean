@@ -55,6 +55,11 @@ lean_lib PnP3 where
     Glob.one `Complexity.Promise,
     Glob.one `Complexity.Interfaces,
     Glob.one `Complexity.DagCompose,
+    -- P1b-0 (2026-09-03), infrastructure only: generic fixed-width bundle
+    -- composition with exact shared-gate recurrence and direct Boolean DAG
+    -- gadgets.  No uniform-machine or Ppoly bridge is introduced here.
+    Glob.one `Complexity.DagBundleCompose,
+    Glob.one `Complexity.DagGadgets,
     -- P1a (2026-09-03), versioned uniform-P infrastructure: finite machine
     -- data, same-budget execution/decision semantics, polynomial clocks, and
     -- literal machines.  This is intentionally independent of the frozen
@@ -577,6 +582,7 @@ lean_lib PnP3 where
     Glob.one `Tests.PromiseRouteConclusionProbe,
     Glob.one `Tests.WeakRouteSurfaceTests,
     Glob.one `Tests.UniformV1SurfaceTests,
+    Glob.one `Tests.DagBundleComposeSurfaceTests,
     Glob.one `Tests.TMSeqRunSurfaceTests,
     Glob.one `Tests.TMTrueUniformSeekSurfaceTests,
     Glob.one `Tests.TMTrueUniformSeekMutationSurfaceTests,

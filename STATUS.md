@@ -16,6 +16,16 @@ See `pnp3/Docs/UniformP_V1.md`. This scoped P1a repair does not claim completion
 of later work, rebind or change the canonical repository `P`/`NP`, provide a
 legacy or `PpolyDAG` bridge, or establish countability.
 
+**P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
+`Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
+predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from
+the zero-gate identity has exact count `t * S.gates` and `Nat.iterate`
+semantics.  `Complexity.DagGadgets` adds the small direct projection, constant,
+NOT, AND, OR, and MUX surface.  See `pnp3/Docs/DagBundleCompose.md`.  This slice
+does not provide a UniformTM configuration/step/run compiler, a polynomial-size
+theorem, a `PpolyDAG` bridge, or a complexity-class rebind; it is not P-vs-NP
+mainline progress.
+
 Authoritative checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
 Current release posture:

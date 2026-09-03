@@ -76,6 +76,7 @@ import Complexity.TMVerifier.TuringToolkit.GateNBoundaryShuttle
 import Complexity.TMVerifier.TuringToolkit.GateNBodyRound
 import Complexity.TMVerifier.TuringToolkit.GateNRelocationExamples
 import Complexity.Uniform.V1.Examples
+import Complexity.DagGadgets
 
 /-!
   pnp3/Tests/AxiomsAudit.lean
@@ -88,6 +89,57 @@ import Complexity.Uniform.V1.Examples
 open Pnp3
 open Pnp3.ComplexityInterfaces
 open Pnp3.Magnification
+
+section DagBundleComposeAxiomAudit
+
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.substBundle_gates
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.substBundle_output_no_growth
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.asCircuit_substBundle
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.evalOutput_substBundle
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.identityBundle_gates
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.identityBundle_output
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.evalOutput_identityBundle
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.DagBundle.evalFun_apply
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.evalFun_identityBundle
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.iterateBundle_zero
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.iterateBundle_succ
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.iterateBundle_gates
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.evalOutput_iterateBundle
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.iterateBundle_zero_gates
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.iterateBundle_one_gates
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.iterateBundle_two_gates
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.evalOutput_iterateBundle_zero
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.evalOutput_iterateBundle_one
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.evalOutput_iterateBundle_two
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.projectionBundle_gates
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.evalOutput_projectionBundle
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.constantBundle_gates
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.evalOutput_constantBundle
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.notCircuit_gates
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.size_notCircuit
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.eval_notCircuit
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.andCircuit_gates
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.size_andCircuit
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.eval_andCircuit
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.orCircuit_gates
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.size_orCircuit
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.eval_orCircuit
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.muxCircuit_gates
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.size_muxCircuit
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.eval_muxCircuit
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.notBundle_gates
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.evalOutput_notBundle
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.andBundle_gates
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.evalOutput_andBundle
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.orBundle_gates
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.evalOutput_orBundle
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.muxBundle_gates
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.evalOutput_muxBundle
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.muxBundle_truthTable
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.doubleNot_iteration
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.doubleNot_false_literal
+
+end DagBundleComposeAxiomAudit
 
 section UniformV1AxiomAudit
 

@@ -52,6 +52,17 @@ def main() -> None:
         baseline = fixture(parent / "baseline")
         run(baseline, True)
 
+        generated_manifest = parent / "generated-manifest.json"
+        generated = subprocess.run(
+            [str(CHECKER), "--manifest", str(generated_manifest), "--write-manifest"],
+            cwd=ROOT,
+            check=False,
+        )
+        if generated.returncode != 0:
+            raise AssertionError("manifest regeneration failed")
+        if json.loads(generated_manifest.read_text()) != json.loads(MANIFEST.read_text()):
+            raise AssertionError("regenerated manifest differs from the reviewed manifest")
+
         exact_manifest = parent / "exact-manifest.json"
         shutil.copy2(MANIFEST, exact_manifest)
         run(baseline, True, exact_manifest)

@@ -3,7 +3,6 @@
 const PROTECTED_EXACT = new Set([
   'spec/tmverifier_freeze.json',
   'spec/version_manifest.toml',
-  'lakefile.lean',
   'scripts/check.sh',
   'scripts/check_tmverifier_freeze.py',
   'scripts/check_tmverifier_freeze.sh',
@@ -25,9 +24,9 @@ function isProtected(path) {
 }
 
 function evaluateFreezeDiff(files, labels, options = {}) {
-  const changedFiles = options.changedFiles ?? files.length;
+  const changedFiles = options.changedFiles;
   const ownerAttestedHead = options.ownerAttestedHead ?? false;
-  if (files.length >= 3000 || files.length !== changedFiles) {
+  if (!Number.isInteger(changedFiles) || files.length >= 3000 || files.length !== changedFiles) {
     return {
       ok: false,
       protectedFiles: [],
@@ -37,7 +36,11 @@ function evaluateFreezeDiff(files, labels, options = {}) {
   const paths = files.flatMap(file =>
     [file.filename, file.previous_filename].filter(path => typeof path === 'string')
   );
-  const protectedFiles = [...new Set(paths.filter(isProtected))].sort();
+  const protectedFiles = [...new Set(paths.filter(isProtected))];
+  if (paths.includes('lakefile.lean') && options.lakefileComplete !== true) {
+    protectedFiles.push('lakefile.lean');
+  }
+  protectedFiles.sort();
   const unfreeze = labels.includes('tmverifier-unfreeze') && ownerAttestedHead;
   if (protectedFiles.length && !unfreeze) {
     return {

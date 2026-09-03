@@ -53,7 +53,13 @@ A change requires a dedicated unfreeze/migration PR that:
 1. states why the frozen artifact itself must change rather than a new versioned
    module outside it;
 2. reruns the complete local and remote review gates;
-3. updates this decision record and regenerates the manifest deliberately;
+3. updates this decision record, then regenerates the manifest from the newly
+   pinned Git commit with:
+
+   ```text
+   python3 scripts/check_tmverifier_freeze.py --write-manifest
+   ```
+
 4. does not silently resume the old verifier roadmap.
 
 For each new head SHA, the repository owner must first post the exact command

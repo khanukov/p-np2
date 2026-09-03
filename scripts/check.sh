@@ -6,6 +6,14 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT_DIR}"
 
 echo "[check] Preflight: frozen TMVerifier tree"
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "Missing required dependency: python3 (TMVerifier freeze preflight)." >&2
+  exit 127
+fi
+if ! command -v node >/dev/null 2>&1; then
+  echo "Missing required dependency: node (TMVerifier freeze policy tests)." >&2
+  exit 127
+fi
 "${ROOT_DIR}/scripts/check_tmverifier_freeze.sh"
 "${ROOT_DIR}/scripts/test_tmverifier_freeze.sh"
 node "${ROOT_DIR}/scripts/test_tmverifier_freeze_policy.js"

@@ -1,5 +1,10 @@
 # Plan: closing the TM verifier for canonical asymptotic GapPartialMCSP
 
+> **Frozen historical plan (2026-09-03).** The implementation tree is frozen at
+> `42c59881`; see `pnp3/Docs/TMVERIFIER_FREEZE.md`. Do not resume GN-E2-3b or
+> later stages. Active work has moved to a versioned uniform complexity
+> foundation outside the frozen tree.
+
 **Repository:** `/home/user/p-np2/pnp3`
 **Baseline branch:** `claude/audit-hnpbridge-interface-FnO1v` (already
 carries the decoder + components bridge)

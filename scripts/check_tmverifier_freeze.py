@@ -56,6 +56,15 @@ def frozen_git_entries() -> dict[str, dict[str, str]]:
     return result
 
 
+def manifest_data() -> dict[str, Any]:
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "frozen_commit": FROZEN_COMMIT,
+        "tree": TREE,
+        "files": dict(sorted(frozen_git_entries().items())),
+    }
+
+
 def load_manifest(path: Path) -> dict[str, dict[str, str]]:
     data: dict[str, Any] = json.loads(
         path.read_text(encoding="utf-8"), object_pairs_hook=unique_object
@@ -121,7 +130,15 @@ def main() -> int:
     parser.add_argument("--candidate-root", type=Path, default=ROOT)
     parser.add_argument("--manifest", type=Path, default=MANIFEST)
     parser.add_argument("--lakefile", type=Path, default=ROOT / "lakefile.lean")
+    parser.add_argument("--write-manifest", action="store_true")
     args = parser.parse_args()
+    if args.write_manifest:
+        args.manifest.write_text(
+            json.dumps(manifest_data(), indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        print(f"[tmverifier-freeze] wrote {args.manifest}")
+        return 0
     try:
         expected = load_manifest(args.manifest.resolve())
         actual = working_entries(args.candidate_root.resolve())

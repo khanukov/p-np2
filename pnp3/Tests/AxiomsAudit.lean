@@ -75,6 +75,7 @@ import Complexity.TMVerifier.TuringToolkit.GateNScratchBootstrap
 import Complexity.TMVerifier.TuringToolkit.GateNBoundaryShuttle
 import Complexity.TMVerifier.TuringToolkit.GateNBodyRound
 import Complexity.TMVerifier.TuringToolkit.GateNRelocationExamples
+import Complexity.Uniform.V1.Examples
 
 /-!
   pnp3/Tests/AxiomsAudit.lean
@@ -87,6 +88,70 @@ import Complexity.TMVerifier.TuringToolkit.GateNRelocationExamples
 open Pnp3
 open Pnp3.ComplexityInterfaces
 open Pnp3.Magnification
+
+section UniformV1AxiomAudit
+
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.step_accept
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.step_reject
+#print axioms Pnp3.Complexity.Uniform.V1.moveHead_left_zero
+#print axioms Pnp3.Complexity.Uniform.V1.moveHead_right_last
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.stepConfig_accept
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.stepConfig_reject
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.run_add
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.run_accept
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.run_reject
+#print axioms Pnp3.Complexity.Uniform.V1.initialConfig_tape_input
+#print axioms Pnp3.Complexity.Uniform.V1.initialConfig_tape_padding
+#print axioms Pnp3.Complexity.Uniform.V1.acceptsAt_budget_iff_acceptsWithin
+#print axioms Pnp3.Complexity.Uniform.V1.rejectsAt_budget_iff_rejectsWithin
+#print axioms Pnp3.Complexity.Uniform.V1.not_acceptsAt_and_rejectsAt
+#print axioms Pnp3.Complexity.Uniform.V1.not_acceptsWithin_and_rejectsWithin
+#print axioms Pnp3.Complexity.Uniform.V1.decidesAt_budget_iff_decidesWithin
+#print axioms Pnp3.Complexity.Uniform.V1.not_decidesAt_true_and_false
+#print axioms Pnp3.Complexity.Uniform.V1.not_decidesWithin_true_and_false
+#print axioms Pnp3.Complexity.Uniform.V1.polyClock_exponent_zero
+#print axioms Pnp3.Complexity.Uniform.V1.polyClock_zero_zero
+#print axioms Pnp3.Complexity.Uniform.V1.polyClock_input_zero
+#print axioms Pnp3.Complexity.Uniform.V1.polyClock_exponent_one
+#print axioms Pnp3.Complexity.Uniform.V1.polyClock_pos
+#print axioms Pnp3.Complexity.Uniform.V1.uniformP_iff_exists_decidesAt
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.swap_step
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.swap_stepConfig
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.swap_run
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.swap_acceptsAt_iff_rejectsAt
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.swap_rejectsAt_iff_acceptsAt
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.swap_decidesWithin
+#print axioms Pnp3.Complexity.Uniform.V1.uniformP_complement
+#print axioms Pnp3.Complexity.Uniform.V1.allAccept_acceptsAt
+#print axioms Pnp3.Complexity.Uniform.V1.allAccept_acceptsWithin
+#print axioms Pnp3.Complexity.Uniform.V1.allReject_rejectsAt
+#print axioms Pnp3.Complexity.Uniform.V1.allReject_rejectsWithin
+#print axioms Pnp3.Complexity.Uniform.V1.firstBit_acceptsAt_iff
+#print axioms Pnp3.Complexity.Uniform.V1.firstBit_rejectsAt_iff
+#print axioms Pnp3.Complexity.Uniform.V1.firstBit_acceptsWithin_iff
+#print axioms Pnp3.Complexity.Uniform.V1.firstBit_rejectsWithin_iff
+#print axioms Pnp3.Complexity.Uniform.V1.firstBit_decidesAt
+#print axioms Pnp3.Complexity.Uniform.V1.firstBit_decidesWithin
+#print axioms Pnp3.Complexity.Uniform.V1.firstBit_true_verdict
+#print axioms Pnp3.Complexity.Uniform.V1.firstBit_false_verdict
+#print axioms Pnp3.Complexity.Uniform.V1.lengthParity_decidesAt
+#print axioms Pnp3.Complexity.Uniform.V1.lengthParity_decidesWithin
+#print axioms Pnp3.Complexity.Uniform.V1.lengthParity_empty_verdict
+#print axioms Pnp3.Complexity.Uniform.V1.lengthParity_one_verdict
+#print axioms Pnp3.Complexity.Uniform.V1.lengthParity_two_verdict
+#print axioms Pnp3.Complexity.Uniform.V1.nonterminal_run_state
+#print axioms Pnp3.Complexity.Uniform.V1.nonterminal_acceptFlag_false
+#print axioms Pnp3.Complexity.Uniform.V1.nonterminal_not_rejectsWithin
+#print axioms Pnp3.Complexity.Uniform.V1.nonterminal_not_acceptsWithin
+#print axioms Pnp3.Complexity.Uniform.V1.nonterminal_not_decidesWithin_false
+#print axioms Pnp3.Complexity.Uniform.V1.nonterminal_not_decidesWithin_true
+#print axioms Pnp3.Complexity.Uniform.V1.nonterminal_timeout_counterexample
+#print axioms Pnp3.Complexity.Uniform.V1.uniformP_constTrue
+#print axioms Pnp3.Complexity.Uniform.V1.uniformP_constFalse
+#print axioms Pnp3.Complexity.Uniform.V1.uniformP_firstBit
+#print axioms Pnp3.Complexity.Uniform.V1.uniformP_lengthParity
+
+end UniformV1AxiomAudit
 
 -- Reusable sequential-TM infrastructure (W-A).
 #print axioms Internal.PsubsetPpoly.TM.ConstStatePhasedProgram.seq_boundary_step_eq_embedSeqP2Config_lift

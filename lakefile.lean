@@ -55,6 +55,13 @@ lean_lib PnP3 where
     Glob.one `Complexity.Promise,
     Glob.one `Complexity.Interfaces,
     Glob.one `Complexity.DagCompose,
+    -- P1a (2026-09-03), versioned uniform-P infrastructure: finite machine
+    -- data, same-budget execution/decision semantics, polynomial clocks, and
+    -- literal machines.  This is intentionally independent of the frozen
+    -- TMVerifier and legacy encoding/simulation stacks.
+    Glob.one `Complexity.Uniform.V1.Machine,
+    Glob.one `Complexity.Uniform.V1.PolynomialTime,
+    Glob.one `Complexity.Uniform.V1.Examples,
     Glob.one `Complexity.PsubsetPpolyInternal.Bitstring,
     Glob.one `Complexity.TMVerifier.GapMCSPVerifier,
     Glob.one `Complexity.PsubsetPpolyInternal.TuringEncoding,
@@ -569,6 +576,7 @@ lean_lib PnP3 where
     Glob.one `Tests.GeneralIsoStrongRouteClosure,
     Glob.one `Tests.PromiseRouteConclusionProbe,
     Glob.one `Tests.WeakRouteSurfaceTests,
+    Glob.one `Tests.UniformV1SurfaceTests,
     Glob.one `Tests.TMSeqRunSurfaceTests,
     Glob.one `Tests.TMTrueUniformSeekSurfaceTests,
     Glob.one `Tests.TMTrueUniformSeekMutationSurfaceTests,

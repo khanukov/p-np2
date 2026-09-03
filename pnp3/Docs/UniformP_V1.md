@@ -192,16 +192,16 @@ This is infrastructure, not P-vs-NP mainline progress.  It does not rebind the
 repository's canonical `P`, establish canonical `P ⊆ PpolyDAG`, prove
 countability, introduce `UniformNP`, or prove a circuit lower bound.
 
-This P1a repair is infrastructure. It does not change the repository's canonical
-`P` or `NP` definitions and is not P-vs-NP mainline progress.  In particular,
-P1a proves none of the following:
+The P1a model repair and final P1b circuit simulation are infrastructure. They
+do not change the repository's canonical `P` or `NP` definitions and are not
+P-vs-NP mainline progress. In particular, they prove none of the following:
 
 - countability or an encoding of `UniformTM`;
-- a bridge to any legacy machine or language interface;
+- a bridge to the legacy machine model or canonical `P`;
 - a canonical `P` rebind;
 - `UniformNP` or any circuit lower bound.
 
 Accordingly, the old runtime-advice languages are not yet proved excluded from
-the canonical classes.  Final P1b consumes the exact-deadline equivalence only
+the canonical classes. Final P1b consumes the exact-deadline equivalence only
 for the versioned `UniformP` theorem above; it does not infer a canonical-class
 bridge from P1a.

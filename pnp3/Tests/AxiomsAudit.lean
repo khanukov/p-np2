@@ -78,6 +78,8 @@ import Complexity.TMVerifier.TuringToolkit.GateNRelocationExamples
 import Complexity.Uniform.V1.Examples
 import Complexity.DagGadgets
 import Tests.UniformV1CircuitEncodingSurfaceTests
+import Tests.UniformV1StepKernelSurfaceTests
+import Tests.DagBundleComposeSurfaceTests
 
 /-!
   pnp3/Tests/AxiomsAudit.lean
@@ -125,6 +127,16 @@ section DagBundleComposeAxiomAudit
 #print axioms Pnp3.ComplexityInterfaces.DagCircuit.orCircuit_gates
 #print axioms Pnp3.ComplexityInterfaces.DagCircuit.size_orCircuit
 #print axioms Pnp3.ComplexityInterfaces.DagCircuit.eval_orCircuit
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.eval_bigOrCircuit
+#print axioms Pnp3.Tests.DagBundleCompose.check_eval_bigOrCircuit
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.eval_bigOrCircuit_map
+#print axioms Pnp3.Tests.DagBundleCompose.check_eval_bigOrCircuit_map
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.eval_bigOrCircuit_finRange
+#print axioms Pnp3.Tests.DagBundleCompose.check_eval_bigOrCircuit_finRange
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.bigOrCircuit_gates
+#print axioms Pnp3.Tests.DagBundleCompose.check_bigOrCircuit_gates
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.size_bigOrCircuit
+#print axioms Pnp3.Tests.DagBundleCompose.check_size_bigOrCircuit
 #print axioms Pnp3.ComplexityInterfaces.DagCircuit.muxCircuit_gates
 #print axioms Pnp3.ComplexityInterfaces.DagCircuit.size_muxCircuit
 #print axioms Pnp3.ComplexityInterfaces.DagCircuit.eval_muxCircuit
@@ -192,6 +204,77 @@ section UniformV1CircuitEncodingAxiomAudit
 #print axioms Pnp3.Tests.UniformV1CircuitEncoding.check_initialBundle_blank_distinction
 
 end UniformV1CircuitEncodingAxiomAudit
+
+section UniformV1StepKernelAxiomAudit
+
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.symbols_members
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_symbols_members
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.moves_members
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_moves_members
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.blockDispatch_state
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_blockDispatch_state
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.blockDispatch_head
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_blockDispatch_head
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.blockDispatch_present
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_blockDispatch_present
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.blockDispatch_value
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_blockDispatch_value
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.stateBit_encodeConfig
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_stateBit_encodeConfig
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.headBit_encodeConfig
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_headBit_encodeConfig
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.presentBit_encodeConfig
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_presentBit_encodeConfig
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.valueBit_encodeConfig
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_valueBit_encodeConfig
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.scanPresent_encodeConfig
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_scanPresent_encodeConfig
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.scanValue_encodeConfig
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_scanValue_encodeConfig
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.symbolGuard_encodeConfig
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_symbolGuard_encodeConfig
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.branch_encodeConfig
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_branch_encodeConfig
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.actionOr_encodeConfig
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_actionOr_encodeConfig
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.nextStateBit_encodeConfig
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_nextStateBit_encodeConfig
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.moveBit_encodeConfig
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_moveBit_encodeConfig
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.writePresent_encodeConfig
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_writePresent_encodeConfig
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.writeValue_encodeConfig
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_writeValue_encodeConfig
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.nextHeadBit_encodeConfig
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_nextHeadBit_encodeConfig
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.nextPresent_encodeConfig
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_nextPresent_encodeConfig
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.nextValue_encodeConfig
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_nextValue_encodeConfig
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.encodedStep_encodeConfig
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_encodedStep_encodeConfig
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.encodedStep_iterate_run
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_encodedStep_iterate_run
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.stepSpec_of_evalFun
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_stepSpec_of_evalFun
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.iterateBundle_stepSpec
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_iterateBundle_stepSpec
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.runBundle_gates
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_runBundle_gates
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.runBundle_spec
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_runBundle_spec
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.runBundle_accept_iff
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_runBundle_accept_iff
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.firstBit_true_encodedStep
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_firstBit_true_encodedStep
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.firstBit_empty_encodedStep
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_firstBit_empty_encodedStep
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.lengthParity_one_step_encodedStep
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_lengthParity_one_step_encodedStep
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.blankWrite_leftClamp_encodedStep
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_blankWrite_leftClamp_encodedStep
+
+end UniformV1StepKernelAxiomAudit
 
 section UniformV1AxiomAudit
 

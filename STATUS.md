@@ -37,8 +37,20 @@ through the DAG gadgets; that interface transitively imports legacy
 neither that legacy TM nor its `runTime`, simulator/compiler, or frozen
 `TMVerifier` semantics.  This slice provides no transition/step or run
 compiler, polynomial-size simulation theorem, `UniformP`/`PpolyDAG` bridge,
-canonical class rebind, or P-vs-NP mainline progress.  P1b-2 remains the
-one-transition compiler handoff.
+canonical class rebind, or P-vs-NP mainline progress.
+
+**P1b-2 encoded one-step semantic kernel (infrastructure only).**
+`Complexity.Uniform.V1.StepKernel` defines a pure Boolean `encodedStep` that is
+exact on canonical configuration encodings, including public-step terminal
+semantics, old-head writes, and real clamped head movement.  Iteration agrees
+with `UniformTM.run`.  A caller-supplied `StepSpec S` yields an exact
+`runBundle` with `2 + t*S.gates` gates, but this slice constructs no concrete
+step/action bundle or `StepSpec` witness.  `DagGadgets.bigOrCircuit` supplies a
+linear direct false-seeded list disjunction with exact `List.any` semantics and
+exact size `2 + sum C.size`, including size two for the empty list.  This slice
+proves no polynomial simulation, `PpolyDAG` bridge or rebind, and is not
+P-vs-NP mainline progress.  P1b-3 remains the concrete one-step DAG-bundle and
+gate-bound handoff.
 
 Authoritative checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.

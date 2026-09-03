@@ -28,14 +28,17 @@ predecessor graph already present in the bundle.
 `Complexity.DagGadgets` supplies projection and constant bundles plus direct
 NOT, AND, OR, and four-gate MUX circuits and singleton bundles.  The MUX has an
 explicit eight-row truth table; two NOT-bundle iterations have a proved
-double-negation regression.  No finite/list big OR is included because P1b-0
-does not yet require a stable downstream statement for it.
+double-negation regression.  P1b-2 adds `bigOrCircuit`, a direct linear
+false-seeded disjunction of a list of circuits.  Its evaluation is exactly
+`List.any`, its gate count is `1 + sum (C.gates + 1)`, and its exact
+`DagCircuit.size` is `2 + sum C.size`.  Thus the empty list has one false seed
+gate and size two, including its output; each listed circuit occurs once and
+each row adds one OR gate.  Map and `List.finRange` evaluation forms support
+compile-time enumerations.
 
 ## Boundary and handoff
 
-This slice provides no `UniformTM` configuration, step, or run construction;
-no polynomial-size theorem; no `PpolyDAG` bridge; and no rebind of repository
-complexity classes.  P1b-1 can consume `substBundle`, `identityBundle`, and the
-gadgets to compile one fixed-width transition layer.  It must preserve the
-same sharing rule and separately prove any width and polynomial bounds its
-application needs.
+This generic DAG layer provides no `UniformTM` step bundle, polynomial-size
+theorem, `PpolyDAG` bridge, or rebind of repository complexity classes.  The
+P1b-2 semantic kernel consumes its iteration laws conditionally; P1b-3 must
+still construct a concrete shared one-step bundle and prove its gate bound.

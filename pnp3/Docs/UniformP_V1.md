@@ -109,8 +109,8 @@ Boolean answer. This is the regression pin separating timeout from rejection.
 
 `Tests/UniformV1SurfaceTests.lean` pins the constructor shape, definitions,
 instances, and every authored public theorem's full proposition. All theorem
-`#print axioms` roots live in the central `Tests/AxiomsAudit.lean`; private proof
-helpers are excluded from both public surfaces.
+`#print axioms` roots live in the central `Tests/AxiomsAudit.lean`; private
+proof helpers are excluded from both public surfaces.
 
 ## Honest boundary and P1b work
 
@@ -131,11 +131,37 @@ length-one regression distinguishes a present false bit in cell zero from the
 blank padding cell one.  `Tests/UniformV1CircuitEncodingSurfaceTests.lean` pins
 this API, with direct theorem and wrapper roots in the central axiom audit.
 
-This P1b-1 slice is infrastructure, not P-vs-NP mainline progress.  It provides
-no transition/step compiler, run compiler, polynomial-size simulation theorem,
-`UniformP`/`PpolyDAG` bridge, canonical class rebind, or lower bound.  P1b-2
-must separately compile one transition over this fixed layout and prove its
-exact semantics and size accounting before any repeated-run construction.
+P1b-2 adds `Complexity.Uniform.V1.StepKernel`.  Its `encodedStep` is a pure
+Boolean function, exact only on canonical `encodeConfig` inputs.  It scans the
+one-hot old head, matches the canonical blank/false/true rails, selects one
+public `M.step` row, and derives next state and clamped next head, plus write
+rails and the old-head tape update from that same action. Its headline
+theorem is
+
+```text
+encodedStep M n budget (encodeConfig M c) = encodeConfig M (M.stepConfig c)
+```
+
+and `Nat.iterate` agrees with `M.run`.  The general head theorem uses the real
+`moveHead`, so it covers both boundary clamps.  A theorem-derived
+blank-write/left-clamp capstone additionally exercises a symbol-changing write
+and the left clamp together.
+
+The module also defines a conditional `StepSpec S`.  If a caller supplies such
+an `S`, `runBundle M n budget S t` is exact for `M.run t` and has exactly
+`2 + t*S.gates` gates: the two initial gates plus one additional shared
+step-bundle gate range per iteration; no per-output duplication occurs.  No
+concrete `S`, `stepBundle`, or action bundle is constructed.
+The supporting false-seeded `bigOrCircuit` has exact size
+`2 + sum C.size`, including size two for the empty list.
+The first-bit, length-parity, and blank-write/left-clamp capstones are derived
+from the general semantic theorem rather than independent computation.
+
+P1b-2 is infrastructure, not P-vs-NP mainline progress.  It provides no
+polynomial simulation theorem, `UniformP`/`PpolyDAG` bridge, canonical class
+rebind, or lower bound.  P1b-3 must construct a concrete direct DAG step bundle,
+prove `StepSpec`, and establish the relevant gate bound before a circuit-class
+bridge can be considered.
 
 This P1a repair is infrastructure. It does not change the repository's canonical
 `P` or `NP` definitions and is not P-vs-NP mainline progress.  In particular,

@@ -64,4 +64,40 @@ theorem lengthParity_one_step_encodedStep (bit : Bool) :
     moveHead, symbolPresent, symbolValue]
   norm_num [tapeLength]
 
+/-- A fixed three-state machine whose sole nonterminal row writes blank and
+moves left into the boundary.  Its raw terminal rows use the same arbitrary
+action; the public step makes both terminal states absorbing. -/
+private def blankWriteLeftClampMachine : UniformTM :=
+  UniformTM.mk
+    3
+    (⟨0, by decide⟩)
+    (⟨1, by decide⟩)
+    (⟨2, by decide⟩)
+    (by decide)
+    (fun _ _ => (⟨1, by decide⟩, none, Move.left))
+
+/-- One step both changes the scanned true symbol to blank and clamps a left
+move at cell zero, while entering the accept state. -/
+theorem blankWrite_leftClamp_encodedStep :
+    let x : Bitstring 1 := fun _ => true
+    let c := initialConfig blankWriteLeftClampMachine 1 x
+    let cell0 : Fin (tapeLength 1 1) := ⟨0, by simp [tapeLength]⟩
+    encodedStep blankWriteLeftClampMachine 1 1
+        (encodeConfig blankWriteLeftClampMachine c)
+        (stateIndex blankWriteLeftClampMachine 1 1
+          blankWriteLeftClampMachine.accept) = true ∧
+      encodedStep blankWriteLeftClampMachine 1 1
+        (encodeConfig blankWriteLeftClampMachine c)
+        (headIndex blankWriteLeftClampMachine 1 1 cell0) = true ∧
+      encodedStep blankWriteLeftClampMachine 1 1
+        (encodeConfig blankWriteLeftClampMachine c)
+        (tapePresentIndex blankWriteLeftClampMachine 1 1 cell0) = false ∧
+      encodedStep blankWriteLeftClampMachine 1 1
+        (encodeConfig blankWriteLeftClampMachine c)
+        (tapeValueIndex blankWriteLeftClampMachine 1 1 cell0) = false := by
+  dsimp
+  rw [encodedStep_encodeConfig]
+  simp [UniformTM.stepConfig, UniformTM.step, blankWriteLeftClampMachine,
+    initialConfig, moveHead, symbolPresent, symbolValue]
+
 end Pnp3.Complexity.Uniform.V1.Circuit

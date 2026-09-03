@@ -22,6 +22,7 @@ open Pnp3.ComplexityInterfaces.DagCircuit
 #check andCircuit
 #check orCircuit
 #check bigOrCircuit
+#check size_bigOrCircuit
 #check muxCircuit
 #check notBundle
 #check andBundle
@@ -186,9 +187,9 @@ theorem check_bigOrCircuit_gates {n : Nat} (Cs : List (DagCircuit n)) :
       1 + (Cs.map (fun C => C.gates + 1)).sum :=
   bigOrCircuit_gates Cs
 
-theorem check_bigOrCircuit_gates_le_size {n : Nat} (Cs : List (DagCircuit n)) :
-    (bigOrCircuit Cs).gates ≤ 1 + (Cs.map size).sum :=
-  bigOrCircuit_gates_le_size Cs
+theorem check_size_bigOrCircuit {n : Nat} (Cs : List (DagCircuit n)) :
+    size (bigOrCircuit Cs) = 2 + (Cs.map size).sum :=
+  size_bigOrCircuit Cs
 
 theorem check_muxCircuit_gates : muxCircuit.gates = 4 :=
   muxCircuit_gates

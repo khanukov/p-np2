@@ -30,10 +30,11 @@ NOT, AND, OR, and four-gate MUX circuits and singleton bundles.  The MUX has an
 explicit eight-row truth table; two NOT-bundle iterations have a proved
 double-negation regression.  P1b-2 adds `bigOrCircuit`, a direct linear
 false-seeded disjunction of a list of circuits.  Its evaluation is exactly
-`List.any`, and its gate count (including the empty list) is
-`1 + sum (C.gates + 1)`.  Each listed circuit occurs once, each row adds one OR
-gate, and the empty list retains the one false seed gate.  Map and
-`List.finRange` evaluation forms support compile-time enumerations.
+`List.any`, its gate count is `1 + sum (C.gates + 1)`, and its exact
+`DagCircuit.size` is `2 + sum C.size`.  Thus the empty list has one false seed
+gate and size two, including its output; each listed circuit occurs once and
+each row adds one OR gate.  Map and `List.finRange` evaluation forms support
+compile-time enumerations.
 
 ## Boundary and handoff
 

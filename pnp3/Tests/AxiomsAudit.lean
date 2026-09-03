@@ -135,8 +135,8 @@ section DagBundleComposeAxiomAudit
 #print axioms Pnp3.Tests.DagBundleCompose.check_eval_bigOrCircuit_finRange
 #print axioms Pnp3.ComplexityInterfaces.DagCircuit.bigOrCircuit_gates
 #print axioms Pnp3.Tests.DagBundleCompose.check_bigOrCircuit_gates
-#print axioms Pnp3.ComplexityInterfaces.DagCircuit.bigOrCircuit_gates_le_size
-#print axioms Pnp3.Tests.DagBundleCompose.check_bigOrCircuit_gates_le_size
+#print axioms Pnp3.ComplexityInterfaces.DagCircuit.size_bigOrCircuit
+#print axioms Pnp3.Tests.DagBundleCompose.check_size_bigOrCircuit
 #print axioms Pnp3.ComplexityInterfaces.DagCircuit.muxCircuit_gates
 #print axioms Pnp3.ComplexityInterfaces.DagCircuit.size_muxCircuit
 #print axioms Pnp3.ComplexityInterfaces.DagCircuit.eval_muxCircuit
@@ -271,6 +271,8 @@ section UniformV1StepKernelAxiomAudit
 #print axioms Pnp3.Tests.UniformV1StepKernel.check_firstBit_empty_encodedStep
 #print axioms Pnp3.Complexity.Uniform.V1.Circuit.lengthParity_one_step_encodedStep
 #print axioms Pnp3.Tests.UniformV1StepKernel.check_lengthParity_one_step_encodedStep
+#print axioms Pnp3.Complexity.Uniform.V1.Circuit.blankWrite_leftClamp_encodedStep
+#print axioms Pnp3.Tests.UniformV1StepKernel.check_blankWrite_leftClamp_encodedStep
 
 end UniformV1StepKernelAxiomAudit
 

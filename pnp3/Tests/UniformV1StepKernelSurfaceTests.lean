@@ -240,4 +240,26 @@ theorem check_lengthParity_one_step_encodedStep (bit : Bool) :
         (tapeValueIndex lengthParityMachine 1 1 cell1) = false :=
   lengthParity_one_step_encodedStep bit
 
+theorem check_blankWrite_leftClamp_encodedStep :
+    let M : UniformTM :=
+      UniformTM.mk
+        3
+        (⟨0, by decide⟩)
+        (⟨1, by decide⟩)
+        (⟨2, by decide⟩)
+        (by decide)
+        (fun _ _ => (⟨1, by decide⟩, none, Move.left))
+    let x : Pnp3.Complexity.Uniform.V1.Bitstring 1 := fun _ => true
+    let c := initialConfig M 1 x
+    let cell0 : Fin (tapeLength 1 1) := ⟨0, by simp [tapeLength]⟩
+    encodedStep M 1 1 (encodeConfig M c)
+        (stateIndex M 1 1 M.accept) = true ∧
+      encodedStep M 1 1 (encodeConfig M c)
+        (headIndex M 1 1 cell0) = true ∧
+      encodedStep M 1 1 (encodeConfig M c)
+        (tapePresentIndex M 1 1 cell0) = false ∧
+      encodedStep M 1 1 (encodeConfig M c)
+        (tapeValueIndex M 1 1 cell0) = false :=
+  blankWrite_leftClamp_encodedStep
+
 end Pnp3.Tests.UniformV1StepKernel

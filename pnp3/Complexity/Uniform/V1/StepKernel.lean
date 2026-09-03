@@ -18,7 +18,10 @@ open Pnp3.ComplexityInterfaces.DagCircuit
 /-- The canonical three-symbol alphabet, in blank/false/true order. -/
 def symbols : List (Option Bool) := [none, some false, some true]
 
-/-- The canonical three head moves, in left/stay/right order. -/
+/-- The canonical three head moves, in left/stay/right order.  This public
+enumeration is intentionally reserved for P1b-3 circuit compilation.  The pure
+`encodedStep` does not consume it because `nextHeadBit` inspects the selected
+action's move directly. -/
 def moves : List Move := [Move.left, Move.stay, Move.right]
 
 theorem symbols_members :
@@ -217,6 +220,9 @@ def nextStateBit (M : UniformTM) (n budget : Nat)
     (v : Bitstring (configWidth M n budget)) (q : Fin M.stateCount) : Bool :=
   actionOr M n budget v (fun action => decide (q = action.1))
 
+/-- The selected action has the specified move.  This public rail is
+intentionally reserved for P1b-3 circuit compilation; pure `encodedStep` does
+not consume it because `nextHeadBit` inspects the selected action directly. -/
 def moveBit (M : UniformTM) (n budget : Nat)
     (v : Bitstring (configWidth M n budget)) (move : Move) : Bool :=
   actionOr M n budget v (fun action => decide (move = action.2.2))

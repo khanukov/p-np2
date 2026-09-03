@@ -47,9 +47,10 @@ with `UniformTM.run`.  A caller-supplied `StepSpec S` yields an exact
 `runBundle` with `2 + t*S.gates` gates, but this slice constructs no concrete
 step/action bundle or `StepSpec` witness.  `DagGadgets.bigOrCircuit` supplies a
 linear direct false-seeded list disjunction with exact `List.any` semantics and
-gate accounting.  This slice proves no polynomial simulation, `PpolyDAG`
-bridge or rebind, and is not P-vs-NP mainline progress.  P1b-3 remains the
-concrete one-step DAG-bundle and gate-bound handoff.
+exact size `2 + sum C.size`, including size two for the empty list.  This slice
+proves no polynomial simulation, `PpolyDAG` bridge or rebind, and is not
+P-vs-NP mainline progress.  P1b-3 remains the concrete one-step DAG-bundle and
+gate-bound handoff.
 
 Authoritative checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.

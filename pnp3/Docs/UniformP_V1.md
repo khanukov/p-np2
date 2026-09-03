@@ -142,15 +142,19 @@ encodedStep M n budget (encodeConfig M c) = encodeConfig M (M.stepConfig c)
 ```
 
 and `Nat.iterate` agrees with `M.run`.  The general head theorem uses the real
-`moveHead`, so both boundary clamps are covered without a separate literal
-clamp example.
+`moveHead`, so it covers both boundary clamps.  A theorem-derived
+blank-write/left-clamp capstone additionally exercises a symbol-changing write
+and the left clamp together.
 
 The module also defines a conditional `StepSpec S`.  If a caller supplies such
 an `S`, `runBundle M n budget S t` is exact for `M.run t` and has exactly
-`2 + t*S.gates` gates: the two initial gates plus one shared copy of `S` per
-iteration.  No concrete `S`, `stepBundle`, or action bundle is constructed.
-The first-bit and length-parity capstones are derived from the general semantic
-theorem rather than independent computation.
+`2 + t*S.gates` gates: the two initial gates plus one additional shared
+step-bundle gate range per iteration; no per-output duplication occurs.  No
+concrete `S`, `stepBundle`, or action bundle is constructed.
+The supporting false-seeded `bigOrCircuit` has exact size
+`2 + sum C.size`, including size two for the empty list.
+The first-bit, length-parity, and blank-write/left-clamp capstones are derived
+from the general semantic theorem rather than independent computation.
 
 P1b-2 is infrastructure, not P-vs-NP mainline progress.  It provides no
 polynomial simulation theorem, `UniformP`/`PpolyDAG` bridge, canonical class

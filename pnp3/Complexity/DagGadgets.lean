@@ -130,12 +130,13 @@ theorem eval_bigOrCircuit_finRange {n k : Nat} (C : Fin k → DagCircuit n)
       simp [ih]
       omega
 
-/-- Coarse size-accounting form: the big OR uses at most the false seed plus
-the sum of the input circuit sizes. -/
-theorem bigOrCircuit_gates_le_size {n : Nat} (Cs : List (DagCircuit n)) :
-    (bigOrCircuit Cs).gates ≤ 1 + (Cs.map size).sum := by
+/-- Exact circuit size, including the output wire and empty-list false seed. -/
+@[simp] theorem size_bigOrCircuit {n : Nat} (Cs : List (DagCircuit n)) :
+    size (bigOrCircuit Cs) = 2 + (Cs.map size).sum := by
+  change (bigOrCircuit Cs).gates + 1 =
+    2 + (Cs.map (fun C => C.gates + 1)).sum
   rw [bigOrCircuit_gates]
-  rfl
+  omega
 
 /-- Four-gate MUX assembled by circuit substitution.  Input 0 is the selector,
 input 1 the true branch, and input 2 the false branch. -/

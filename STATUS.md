@@ -49,8 +49,15 @@ step/action bundle or `StepSpec` witness.  `DagGadgets.bigOrCircuit` supplies a
 linear direct false-seeded list disjunction with exact `List.any` semantics and
 exact size `2 + sum C.size`, including size two for the empty list.  This slice
 proves no polynomial simulation, `PpolyDAG` bridge or rebind, and is not
-P-vs-NP mainline progress.  P1b-3 remains the concrete one-step DAG-bundle and
-gate-bound handoff.
+P-vs-NP mainline progress.
+
+**P1b-3 direct shared step bundle (infrastructure only).**
+`Complexity.Uniform.V1.StepBundle` materializes scan, exact three-symbol
+classification, symbol-major transition rows, and filtered public-`M.step`
+action rails in one shared predecessor graph. A `15*T` old-head update layer
+is substituted once, yielding `stepBundle`, `StepSpec`, and the explicit bound
+`19*T + 16*Q + 13`. This does not prove polynomial size for a run family,
+`UniformP ⊆ PpolyDAG`, a canonical rebind, or P-vs-NP mainline progress.
 
 Authoritative checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.

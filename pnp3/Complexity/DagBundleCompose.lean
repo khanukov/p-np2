@@ -81,6 +81,23 @@ def DagBundle.evalFun {n out : Nat} (B : DagBundle n out) :
   funext o
   exact evalOutput_identityBundle W o v
 
+/-- Select, permute, or duplicate output wires without changing the shared
+gate graph. -/
+def reindexOutputs {n out out' : Nat} (B : DagBundle n out)
+    (f : Fin out' → Fin out) : DagBundle n out' where
+  gates := B.gates
+  gate := B.gate
+  output := fun o => B.output (f o)
+
+@[simp] theorem reindexOutputs_gates {n out out' : Nat}
+    (B : DagBundle n out) (f : Fin out' → Fin out) :
+    (reindexOutputs B f).gates = B.gates := rfl
+
+@[simp] theorem evalOutput_reindexOutputs {n out out' : Nat}
+    (B : DagBundle n out) (f : Fin out' → Fin out) (o : Fin out')
+    (v : Bitstring n) :
+    (reindexOutputs B f).evalOutput o v = B.evalOutput (f o) v := rfl
+
 /-- Repeat a fixed-width bundle, starting from the zero-gate identity.  The
 orientation is `S` over the preceding iterate, matching repeated application
 of `S.evalFun`. -/

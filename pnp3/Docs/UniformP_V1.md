@@ -4,7 +4,8 @@
 countability/direct no-length-advice diagonal, P2-1 pair-codec infrastructure,
 P2-2 advice-free relation semantics/versioned `UniformNP`, P2-3a fixed
 pair-parser executable core, and P2-3b universal exact parser correctness
-through 2026-09-04. Canonical `P` and `NP` remain legacy and unchanged.
+plus P2-3cA ambient-budget parser transport through 2026-09-04. Canonical `P`
+and `NP` remain legacy and unchanged.
 
 The versioned namespace is:
 
@@ -252,6 +253,31 @@ definition and theorem, and the central axiom audit contains paired direct and
 wrapper roots. This slice does not compose a parser and verifier, verify a
 relation, prove a complexity-class inclusion or migration, add a pnp4 theorem,
 or prove circuit resource bounds.
+
+## P2-3cA ambient-budget fixed-parser transport
+
+`Complexity.Uniform.V1.FixedPairParserAmbient` compares exact-clock execution
+with execution of the same fixed parser at an ambient budget `B`, under the
+explicit premise `clock N ≤ B`. It does not cast dependent configurations.
+Instead, `tapeEmbed` preserves numeric addresses, `tapeProject` is a partial
+inverse, and `ConfigExtension` records equal control, embedded head and tape
+cells, plus literal blankness at every newly allocated address.
+
+Movement commutes only under a proved strict right-room premise. Generic
+one-step and bounded-run extension lemmas retain that premise, while the
+parser-specific trace proves the head stays within the input segment through
+the exact deadline. The resulting ambient theorem preserves the complete raw
+word, keeps every cell from `N` onward blank, restores head zero and the full
+ambient tape, excludes both terminals at every earlier step, and classifies
+literal acceptance/rejection by dependent `decodePair` success/failure.
+`DecidesWithin` uses `clock N` and the budget inequality as an explicit witness.
+
+The typed surface is
+`Tests.UniformV1FixedPairParserAmbientSurfaceTests`; every public theorem has a
+`Pnp3.Tests...check_*` wrapper and paired direct/wrapper roots. This slice does
+not prove budget transport for an arbitrary verifier, build a combined
+parser/verifier machine, verify a relation, prove class inclusion or migration,
+add a pnp4 theorem, or establish circuit bounds.
 
 ## P1c countability and direct no-length-advice diagonal
 

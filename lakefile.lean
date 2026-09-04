@@ -81,6 +81,8 @@ lean_lib PnP3 where
     -- execution correctness for the fixed parser. No ambient composition.
     Glob.one `Complexity.Uniform.V1.FixedPairParserLanguage,
     Glob.one `Complexity.Uniform.V1.FixedPairParserCorrectness,
+    -- Budget-parametric trace/restoration for the same fixed parser.
+    Glob.one `Complexity.Uniform.V1.FixedPairParserAmbient,
     -- P1b-1 (2026-09-03), direct fixed-width layout and initial bundle only.
     -- No transition/run compiler, polynomial simulation, or Ppoly bridge.
     Glob.one `Complexity.Uniform.V1.CircuitEncoding,
@@ -618,6 +620,7 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1RelationSurfaceTests,
     Glob.one `Tests.UniformV1FixedPairParserCoreSurfaceTests,
     Glob.one `Tests.UniformV1FixedPairParserCorrectnessSurfaceTests,
+    Glob.one `Tests.UniformV1FixedPairParserAmbientSurfaceTests,
     Glob.one `Tests.UniformV1CountabilitySurfaceTests,
     Glob.one `Tests.UniformV1CircuitEncodingSurfaceTests,
     Glob.one `Tests.UniformV1StepKernelSurfaceTests,

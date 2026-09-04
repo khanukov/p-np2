@@ -84,6 +84,7 @@ import Tests.UniformV1FixedPairParserCoreSurfaceTests
 import Tests.UniformV1FixedPairParserCorrectnessSurfaceTests
 import Tests.UniformV1FixedPairParserAmbientSurfaceTests
 import Tests.UniformV1BudgetTransportSurfaceTests
+import Tests.UniformV1CombinedMachineSurfaceTests
 import Tests.UniformV1CircuitEncodingSurfaceTests
 import Tests.UniformV1StepKernelSurfaceTests
 import Tests.UniformV1StepBundleSurfaceTests
@@ -489,6 +490,81 @@ section UniformV1BudgetTransportAxiomAudit
 #print axioms Pnp3.Tests.UniformV1BudgetTransportSurfaceTests.check_decidesWithin_budget_mono
 
 end UniformV1BudgetTransportAxiomAudit
+
+section UniformV1CombinedMachineAxiomAudit
+/-! P2-3cB2 direct and one-to-one public surface audit roots. -/
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.parserWorkCount_eq
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_parserWorkCount
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.inParser_injective
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_inParser_injective
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.inVerifier_injective
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_inVerifier_injective
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.inParser_ne_inVerifier
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_inParser_ne_inVerifier
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.machine_stateCount
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_machine_stateCount
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.machine_start
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_machine_start
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.machine_accept
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_machine_accept
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.machine_reject
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_machine_reject
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.state_card
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_state_card
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.transitionTable_card
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_transitionTable_card
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.machine_rawStep
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_machine_rawStep
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.routeParserState_accept
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_routeParserState_accept
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.routeParserState_reject
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_routeParserState_reject
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.combinedRawStep_inParser
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_combinedRawStep_inParser
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.step_inParser
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_step_inParser
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.parser_row_start
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_parser_row_start
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.parser_row_dataF
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_parser_row_dataF
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.parser_row_tagF
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_parser_row_tagF
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.parser_row_witnessF
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_parser_row_witnessF
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.parser_row_witnessT
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_parser_row_witnessT
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.parser_row_backAcceptF
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_parser_row_backAcceptF
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.parser_row_backAcceptT
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_parser_row_backAcceptT
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.parser_row_backRejectF
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_parser_row_backRejectF
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.combinedRawStep_inVerifier
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_combinedRawStep_inVerifier
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.step_inVerifier
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_step_inVerifier
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.stepConfig_embed
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_stepConfig_embed
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.run_embed
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_run_embed
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.embed_initialConfig
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_embed_initialConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.fixedParser_nonwork_is_terminal
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_fixedParser_nonwork_is_terminal
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.stepConfig_translateParser_of_work
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_stepConfig_translateParser_of_work
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.run_parser_prefix
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_run_parser_prefix
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.parser_handoff_of_decodePair_some
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_parser_handoff_of_decodePair_some
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.parser_reject_of_decodePair_none
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_parser_reject_of_decodePair_none
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.parser_reject_empty
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_parser_reject_empty
+#print axioms Pnp3.Complexity.Uniform.V1.FixedParserVerifier.parser_reject_empty_exactBudget
+#print axioms Pnp3.Tests.UniformV1CombinedMachineSurfaceTests.check_parser_reject_empty_exactBudget
+
+end UniformV1CombinedMachineAxiomAudit
 
 section UniformV1CircuitEncodingAxiomAudit
 

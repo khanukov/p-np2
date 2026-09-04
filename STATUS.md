@@ -85,6 +85,18 @@ invariant, while within-budget predicates are transported only forward using
 the same witness. This adds no provider, advice, machine family, combined
 parser/verifier machine, relation/class theorem, pnp4 result, or gate bound.
 
+**P2-3cB2 routed combined-machine constructor and parser handoff
+(infrastructure only).** `Complexity.Uniform.V1.CombinedMachine` builds one
+fixed machine from a fixed verifier `V` using exactly `8 + V.stateCount`
+controls: eight nonterminal parser controls followed by all verifier controls.
+Parser-accept rows restore cell zero and enter injected `V.start` in the same
+transition; malformed/empty paths enter injected `V.reject`. The verifier side
+maps `V.step`. Full same-budget verifier embedding, bounded parser-prefix
+translation, successful full-configuration handoff, and literal malformed
+rejection are proved. No host restart or extra handoff step exists. This slice
+does not yet prove the total verifier suffix, relation verification, class
+inclusion, pnp4 result, or gate bound.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

@@ -2,9 +2,9 @@
 
 **Status:** P1a uniform model, P1b `UniformP ⊆ PpolyDAG` simulation, P1c
 countability/direct no-length-advice diagonal, P2-1 pair-codec infrastructure,
-P2-2 advice-free relation semantics/versioned `UniformNP`, and P2-3a fixed
-pair-parser executable core through 2026-09-04. Canonical `P` and `NP` remain
-legacy and unchanged.
+P2-2 advice-free relation semantics/versioned `UniformNP`, P2-3a fixed
+pair-parser executable core, and P2-3b universal exact parser correctness
+through 2026-09-04. Canonical `P` and `NP` remain legacy and unchanged.
 
 The versioned namespace is:
 
@@ -224,6 +224,34 @@ correctness, universal acceptance/decoder equivalence, first-terminal-time
 theorem, arbitrary ambient-budget result, parser/verifier composition,
 relation verification, `UniformP` inclusion, state minimality, or circuit-gate
 bound.
+
+## P2-3b universal exact fixed-pair-parser correctness
+
+`Complexity.Uniform.V1.FixedPairParserLanguage` independently specifies the
+complete-word grammar `(false,dataBit)* ++ true :: witnessBits` twice: as a
+three-phase DFA and as an inductive list grammar. Both are proved equivalent to
+successful `decodePair` on every raw indexed word; neither definition uses the
+parser machine.
+
+`Complexity.Uniform.V1.FixedPairParserCorrectness` keeps the tape budget fixed
+definitionally at `clock N = 2*N+1`. A separate `N=0` root handles the single
+blank transition. For positive inputs, `ForwardAt` covers times `1..N` with cell
+zero erased and `BackAt` covers times `N+1..2*N`; both state equality of the
+entire exact-budget tape against the erased-zero model. The deadline transition
+restores cell zero and is the first transition into either public terminal.
+
+Consequently, for every `y : Bitstring N`, the exact deadline configuration is
+the exact-budget initial configuration with only its state replaced by the
+decoder-classified verdict. The head is zero and every allocated tape cell,
+including padding, is restored. Exact `AcceptsAt`, `RejectsAt`, and `DecidesAt`
+are primary; `DecidesWithin` is derived from the same-budget exact-to-within
+theorem.
+
+`Tests.UniformV1FixedPairParserCorrectnessSurfaceTests` pins every public
+definition and theorem, and the central axiom audit contains paired direct and
+wrapper roots. This slice does not compose a parser and verifier, verify a
+relation, prove a complexity-class inclusion or migration, add a pnp4 theorem,
+or prove circuit resource bounds.
 
 ## P1c countability and direct no-length-advice diagonal
 

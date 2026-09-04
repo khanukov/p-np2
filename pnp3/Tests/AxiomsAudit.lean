@@ -81,6 +81,7 @@ import Tests.UniformV1CountabilitySurfaceTests
 import Tests.UniformV1PairEncodingSurfaceTests
 import Tests.UniformV1RelationSurfaceTests
 import Tests.UniformV1FixedPairParserCoreSurfaceTests
+import Tests.UniformV1FixedPairParserCorrectnessSurfaceTests
 import Tests.UniformV1CircuitEncodingSurfaceTests
 import Tests.UniformV1StepKernelSurfaceTests
 import Tests.UniformV1StepBundleSurfaceTests
@@ -333,6 +334,63 @@ section UniformV1FixedPairParserCoreAxiomAudit
 #print axioms Pnp3.Tests.UniformV1FixedPairParserCore.check_finite_restoration_capstone
 
 end UniformV1FixedPairParserCoreAxiomAudit
+
+section UniformV1FixedPairParserCorrectnessAxiomAudit
+/-! P2-3b direct and one-to-one public surface audit roots. -/
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.grammarRun_append
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCorrectness.check_grammarRun_append
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.syntaxOK_iff_grammar
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCorrectness.check_syntaxOK_iff_grammar
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.mergedPairGrammar_iff_encodePairList
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCorrectness.check_mergedPairGrammar_iff_encodePairList
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.syntaxOK_ofFn_eq_decodePair_isSome
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCorrectness.check_syntaxOK_ofFn_eq_decodePair_isSome
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.syntaxOK_ofFn_iff_decodePair_some
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCorrectness.check_syntaxOK_ofFn_iff_decodePair_some
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.mergedPairGrammar_ofFn_iff_decodePair_some
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCorrectness.check_mergedPairGrammar_ofFn_iff_decodePair_some
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.restore_erasedZeroTape
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCorrectness.check_restore_erasedZeroTape
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.run_forward
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCorrectness.check_run_forward
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.run_back
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCorrectness.check_run_back
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.rewind_reaches_zero_marker
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCorrectness.check_rewind_reaches_zero_marker
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.verdictState_phaseAt_eq_expected
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCorrectness.check_verdictState_phaseAt_eq_expected
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.run_empty_at_clock
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCorrectness.check_run_empty_at_clock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.run_initialConfig_fields
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCorrectness.check_run_initialConfig_fields
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.run_initialConfig_exact
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCorrectness.check_run_initialConfig_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.noEarlyTerminal_initialConfig
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCorrectness.check_noEarlyTerminal_initialConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.no_public_terminal_before_clock
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCorrectness.check_no_public_terminal_before_clock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.head_zero_at_clock
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCorrectness.check_head_zero_at_clock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.tape_restored_at_clock
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCorrectness.check_tape_restored_at_clock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.final_state_at_clock
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCorrectness.check_final_state_at_clock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.final_state_at_clock_syntax
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCorrectness.check_final_state_at_clock_syntax
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.acceptsAt_clock_iff_decodePair_some
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCorrectness.check_acceptsAt_clock_iff_decodePair_some
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.rejectsAt_clock_iff_decodePair_none
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCorrectness.check_rejectsAt_clock_iff_decodePair_none
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.decidesAt_clock
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCorrectness.check_decidesAt_clock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.decidesAt_clock_syntax
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCorrectness.check_decidesAt_clock_syntax
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.decidesWithin_clock
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCorrectness.check_decidesWithin_clock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.exact_execution_initialConfig
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCorrectness.check_exact_execution_initialConfig
+
+end UniformV1FixedPairParserCorrectnessAxiomAudit
 
 section UniformV1CircuitEncodingAxiomAudit
 

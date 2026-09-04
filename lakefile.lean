@@ -77,6 +77,10 @@ lean_lib PnP3 where
     -- P2-3a (2026-09-04), concrete ten-state pair-parser core and finite
     -- exact-run/restoration capstones only. No all-length correctness yet.
     Glob.one `Complexity.Uniform.V1.FixedPairParserCore,
+    -- P2-3b (2026-09-04), independent grammar and universal exact-budget
+    -- execution correctness for the fixed parser. No ambient composition.
+    Glob.one `Complexity.Uniform.V1.FixedPairParserLanguage,
+    Glob.one `Complexity.Uniform.V1.FixedPairParserCorrectness,
     -- P1b-1 (2026-09-03), direct fixed-width layout and initial bundle only.
     -- No transition/run compiler, polynomial simulation, or Ppoly bridge.
     Glob.one `Complexity.Uniform.V1.CircuitEncoding,
@@ -613,6 +617,7 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1PairEncodingSurfaceTests,
     Glob.one `Tests.UniformV1RelationSurfaceTests,
     Glob.one `Tests.UniformV1FixedPairParserCoreSurfaceTests,
+    Glob.one `Tests.UniformV1FixedPairParserCorrectnessSurfaceTests,
     Glob.one `Tests.UniformV1CountabilitySurfaceTests,
     Glob.one `Tests.UniformV1CircuitEncodingSurfaceTests,
     Glob.one `Tests.UniformV1StepKernelSurfaceTests,

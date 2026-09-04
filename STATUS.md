@@ -52,6 +52,18 @@ correctness, universal decoder equivalence, arbitrary-budget theorem,
 parser/verifier composition, relation verification, `UniformP` inclusion,
 gate bound, or P-vs-NP mainline result.
 
+**P2-3b universal exact Uniform V1 pair-parser correctness (infrastructure
+only).** `Complexity.Uniform.V1.FixedPairParserLanguage` gives independent DFA
+and inductive-grammar semantics and proves their equivalence to dependent
+`decodePair` success. `Complexity.Uniform.V1.FixedPairParserCorrectness` proves,
+for every raw `y : Bitstring N`, the exact `clock N = 2*N+1` final state, strict
+absence of either public terminal at every earlier step, head-zero and full
+allocated-tape restoration, exact acceptance/rejection iff decoder
+success/failure, exact `DecidesAt`, and only then derived `DecidesWithin`. The
+proof has a dedicated empty-input root and positive-input forward/rewind
+invariant roots. It introduces no parser/verifier composition, relation
+verification, class inclusion or migration, pnp4 theorem, or circuit bound.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

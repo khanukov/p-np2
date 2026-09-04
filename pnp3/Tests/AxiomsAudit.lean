@@ -83,6 +83,7 @@ import Tests.UniformV1RelationSurfaceTests
 import Tests.UniformV1FixedPairParserCoreSurfaceTests
 import Tests.UniformV1FixedPairParserCorrectnessSurfaceTests
 import Tests.UniformV1FixedPairParserAmbientSurfaceTests
+import Tests.UniformV1BudgetTransportSurfaceTests
 import Tests.UniformV1CircuitEncodingSurfaceTests
 import Tests.UniformV1StepKernelSurfaceTests
 import Tests.UniformV1StepBundleSurfaceTests
@@ -453,6 +454,41 @@ section UniformV1FixedPairParserAmbientAxiomAudit
 #print axioms Pnp3.Tests.UniformV1FixedPairParserAmbientSurfaceTests.check_ambient_decidesWithin
 
 end UniformV1FixedPairParserAmbientAxiomAudit
+
+section UniformV1BudgetTransportAxiomAudit
+/-! P2-3cB1 direct and one-to-one public surface audit roots. -/
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.stepConfig_head_le_succ
+#print axioms Pnp3.Tests.UniformV1BudgetTransportSurfaceTests.check_stepConfig_head_le_succ
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.run_head_le
+#print axioms Pnp3.Tests.UniformV1BudgetTransportSurfaceTests.check_run_head_le
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.run_initialConfig_head_le
+#print axioms Pnp3.Tests.UniformV1BudgetTransportSurfaceTests.check_run_initialConfig_head_le
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.run_initialConfig_right_room
+#print axioms Pnp3.Tests.UniformV1BudgetTransportSurfaceTests.check_run_initialConfig_right_room
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.run_initialConfig_extension
+#print axioms Pnp3.Tests.UniformV1BudgetTransportSurfaceTests.check_run_initialConfig_extension
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.run_initialConfig_state_eq
+#print axioms Pnp3.Tests.UniformV1BudgetTransportSurfaceTests.check_run_initialConfig_state_eq
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.acceptsAt_budget_iff
+#print axioms Pnp3.Tests.UniformV1BudgetTransportSurfaceTests.check_acceptsAt_budget_iff
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.acceptsAt_budget_mono
+#print axioms Pnp3.Tests.UniformV1BudgetTransportSurfaceTests.check_acceptsAt_budget_mono
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.rejectsAt_budget_iff
+#print axioms Pnp3.Tests.UniformV1BudgetTransportSurfaceTests.check_rejectsAt_budget_iff
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.rejectsAt_budget_mono
+#print axioms Pnp3.Tests.UniformV1BudgetTransportSurfaceTests.check_rejectsAt_budget_mono
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.decidesAt_budget_iff
+#print axioms Pnp3.Tests.UniformV1BudgetTransportSurfaceTests.check_decidesAt_budget_iff
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.decidesAt_budget_mono
+#print axioms Pnp3.Tests.UniformV1BudgetTransportSurfaceTests.check_decidesAt_budget_mono
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.acceptsWithin_budget_mono
+#print axioms Pnp3.Tests.UniformV1BudgetTransportSurfaceTests.check_acceptsWithin_budget_mono
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.rejectsWithin_budget_mono
+#print axioms Pnp3.Tests.UniformV1BudgetTransportSurfaceTests.check_rejectsWithin_budget_mono
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.decidesWithin_budget_mono
+#print axioms Pnp3.Tests.UniformV1BudgetTransportSurfaceTests.check_decidesWithin_budget_mono
+
+end UniformV1BudgetTransportAxiomAudit
 
 section UniformV1CircuitEncodingAxiomAudit
 

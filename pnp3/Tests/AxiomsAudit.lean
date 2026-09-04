@@ -79,6 +79,7 @@ import Complexity.Uniform.V1.Examples
 import Complexity.DagGadgets
 import Tests.UniformV1CountabilitySurfaceTests
 import Tests.UniformV1PairEncodingSurfaceTests
+import Tests.UniformV1RelationSurfaceTests
 import Tests.UniformV1CircuitEncodingSurfaceTests
 import Tests.UniformV1StepKernelSurfaceTests
 import Tests.UniformV1StepBundleSurfaceTests
@@ -273,6 +274,45 @@ section UniformV1PairEncodingAxiomAudit
 #print axioms Pnp3.Tests.UniformV1PairEncoding.check_decodePair_two_one
 
 end UniformV1PairEncodingAxiomAudit
+
+section UniformV1RelationAxiomAudit
+
+#print axioms Pnp3.Complexity.Uniform.V1.encodedRelationLanguage_encodePair
+#print axioms Pnp3.Tests.UniformV1Relation.check_encodedRelationLanguage_encodePair
+#print axioms Pnp3.Complexity.Uniform.V1.encodedRelationLanguage_malformed
+#print axioms Pnp3.Tests.UniformV1Relation.check_encodedRelationLanguage_malformed
+#print axioms Pnp3.Complexity.Uniform.V1.verifiesRelation_encodePair
+#print axioms Pnp3.Tests.UniformV1Relation.check_verifiesRelation_encodePair
+#print axioms Pnp3.Complexity.Uniform.V1.verifiesRelation_rejects_malformed
+#print axioms Pnp3.Tests.UniformV1Relation.check_verifiesRelation_rejects_malformed
+#print axioms Pnp3.Complexity.Uniform.V1.verifiesRelation_rejects_encodePair
+#print axioms Pnp3.Tests.UniformV1Relation.check_verifiesRelation_rejects_encodePair
+#print axioms Pnp3.Complexity.Uniform.V1.verifiesRelation_accepts_encodePair
+#print axioms Pnp3.Tests.UniformV1Relation.check_verifiesRelation_accepts_encodePair
+#print axioms Pnp3.Complexity.Uniform.V1.verifiesRelation_unique
+#print axioms Pnp3.Tests.UniformV1Relation.check_verifiesRelation_unique
+#print axioms Pnp3.Complexity.Uniform.V1.uniformNP_iff
+#print axioms Pnp3.Tests.UniformV1Relation.check_uniformNP_iff
+#print axioms Pnp3.Complexity.Uniform.V1.trueRelationMachine_decides_encodePair
+#print axioms Pnp3.Tests.UniformV1Relation.check_trueRelationMachine_decides_encodePair
+#print axioms Pnp3.Complexity.Uniform.V1.falseRelationMachine_decides_encodePair
+#print axioms Pnp3.Tests.UniformV1Relation.check_falseRelationMachine_decides_encodePair
+#print axioms Pnp3.Complexity.Uniform.V1.encodedRelationLanguage_falseRelation
+#print axioms Pnp3.Tests.UniformV1Relation.check_encodedRelationLanguage_falseRelation
+#print axioms Pnp3.Complexity.Uniform.V1.falseRelationMachine_verifies
+#print axioms Pnp3.Tests.UniformV1Relation.check_falseRelationMachine_verifies
+#print axioms Pnp3.Complexity.Uniform.V1.emptyRawWord_malformed
+#print axioms Pnp3.Tests.UniformV1Relation.check_emptyRawWord_malformed
+#print axioms Pnp3.Complexity.Uniform.V1.trueRelationMachine_not_verifies
+#print axioms Pnp3.Tests.UniformV1Relation.check_trueRelationMachine_not_verifies
+#print axioms Pnp3.Complexity.Uniform.V1.timeoutRelationMachine_negativeControl
+#print axioms Pnp3.Tests.UniformV1Relation.check_timeoutRelationMachine_negativeControl
+#print axioms Pnp3.Complexity.Uniform.V1.timeoutRelationMachine_not_verifies
+#print axioms Pnp3.Tests.UniformV1Relation.check_timeoutRelationMachine_not_verifies
+#print axioms Pnp3.Complexity.Uniform.V1.uniformNP_constFalse
+#print axioms Pnp3.Tests.UniformV1Relation.check_uniformNP_constFalse
+
+end UniformV1RelationAxiomAudit
 
 section UniformV1CircuitEncodingAxiomAudit
 

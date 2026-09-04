@@ -28,6 +28,19 @@ prefix-free because witness extension extends an encoding.  This slice adds no
 relation/verifier or parser machine, does not define `UniformNP`, prove
 `P ⊆ NP`, migrate canonical definitions, or reduce a pnp4 mainline obligation.
 
+**P2-2 advice-free relation semantics / versioned `UniformNP` (infrastructure
+only).** This slice defines one length-indexed `WitnessRelation`, its
+total raw-word language through the P2-1 decoder, and `VerifiesRelation` over
+every raw length and word at `polyClock verifierExponent N`. Malformed words
+and false relation answers require literal rejection. `UniformNP` fixes one
+relation, one finite machine, one verifier exponent, and an independent
+witness exponent before inputs, with witness bound
+`m ≤ polyClock witnessExponent n`. Named wrappers and paired axiom roots cover
+all seventeen P2-2 theorems. Executable controls distinguish acceptance,
+rejection, and timeout. This slice adds no parser machine,
+`UniformP ⊆ UniformNP`, canonical `P`/`NP` rebind, pnp4 theorem, or lower-bound
+claim.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

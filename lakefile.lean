@@ -68,6 +68,12 @@ lean_lib PnP3 where
     -- P2-1 (2026-09-04), uniquely-decodable input/witness pair codec only.
     -- No relation verifier, parser machine, UniformNP, or class inclusion.
     Glob.one `Complexity.Uniform.V1.PairEncoding,
+    -- P2-2 (2026-09-04), total raw-word relation semantics and versioned
+    -- UniformNP with independent verifier-time and witness-length exponents.
+    -- No parser machine, class inclusion, or canonical migration is claimed.
+    Glob.one `Complexity.Uniform.V1.Relation,
+    Glob.one `Complexity.Uniform.V1.UniformNP,
+    Glob.one `Complexity.Uniform.V1.RelationExamples,
     -- P1b-1 (2026-09-03), direct fixed-width layout and initial bundle only.
     -- No transition/run compiler, polynomial simulation, or Ppoly bridge.
     Glob.one `Complexity.Uniform.V1.CircuitEncoding,
@@ -602,6 +608,7 @@ lean_lib PnP3 where
     Glob.one `Tests.WeakRouteSurfaceTests,
     Glob.one `Tests.UniformV1SurfaceTests,
     Glob.one `Tests.UniformV1PairEncodingSurfaceTests,
+    Glob.one `Tests.UniformV1RelationSurfaceTests,
     Glob.one `Tests.UniformV1CountabilitySurfaceTests,
     Glob.one `Tests.UniformV1CircuitEncodingSurfaceTests,
     Glob.one `Tests.UniformV1StepKernelSurfaceTests,

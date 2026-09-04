@@ -75,6 +75,16 @@ decoder-equivalent literal acceptance/rejection, and `DecidesWithin` using
 runtime advice, generic verifier budget theorem, parser/verifier composition,
 relation verification, class inclusion, pnp4 theorem, or circuit bound.
 
+**P2-3cB1 generic bounded budget transport (infrastructure only).**
+`Complexity.Uniform.V1.BudgetTransport` proves for every fixed `UniformTM` that
+a run of `s ≤ C` transitions from canonical head zero is a genuine blank
+extension when the budget grows from `C` to `B`. The proof derives unit head
+speed and strict right room at every pre-step `r < s`, so it does not assume an
+unrestricted budget theorem. Exact-time accept/reject/decision predicates are
+invariant, while within-budget predicates are transported only forward using
+the same witness. This adds no provider, advice, machine family, combined
+parser/verifier machine, relation/class theorem, pnp4 result, or gate bound.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

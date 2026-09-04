@@ -83,6 +83,8 @@ lean_lib PnP3 where
     Glob.one `Complexity.Uniform.V1.FixedPairParserCorrectness,
     -- Budget-parametric trace/restoration for the same fixed parser.
     Glob.one `Complexity.Uniform.V1.FixedPairParserAmbient,
+    -- Generic bounded cross-budget simulation for one fixed UniformTM.
+    Glob.one `Complexity.Uniform.V1.BudgetTransport,
     -- P1b-1 (2026-09-03), direct fixed-width layout and initial bundle only.
     -- No transition/run compiler, polynomial simulation, or Ppoly bridge.
     Glob.one `Complexity.Uniform.V1.CircuitEncoding,
@@ -621,6 +623,7 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1FixedPairParserCoreSurfaceTests,
     Glob.one `Tests.UniformV1FixedPairParserCorrectnessSurfaceTests,
     Glob.one `Tests.UniformV1FixedPairParserAmbientSurfaceTests,
+    Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CountabilitySurfaceTests,
     Glob.one `Tests.UniformV1CircuitEncodingSurfaceTests,
     Glob.one `Tests.UniformV1StepKernelSurfaceTests,

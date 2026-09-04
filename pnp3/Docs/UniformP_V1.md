@@ -5,7 +5,8 @@ countability/direct no-length-advice diagonal, P2-1 pair-codec infrastructure,
 P2-2 advice-free relation semantics/versioned `UniformNP`, P2-3a fixed
 pair-parser executable core, and P2-3b universal exact parser correctness
 plus P2-3cA ambient-budget parser transport through 2026-09-04. Canonical `P`
-and `NP` remain legacy and unchanged.
+and `NP` remain legacy and unchanged. P2-3cB1 additionally provides generic
+bounded budget transport for a fixed `UniformTM`.
 
 The versioned namespace is:
 
@@ -278,6 +279,29 @@ The typed surface is
 not prove budget transport for an arbitrary verifier, build a combined
 parser/verifier machine, verify a relation, prove class inclusion or migration,
 add a pnp4 theorem, or establish circuit bounds.
+
+## P2-3cB1 generic bounded `UniformTM` budget transport
+
+`Complexity.Uniform.V1.BudgetTransport` proves machine-independent transport
+between budgets `C ≤ B` for exactly `s ≤ C` transitions from `initialConfig`.
+The condition is uniformly sufficient and tight at `N=0`: a run of `s`
+transitions uses pre-step configurations at `r < s`; unit head speed gives
+`head(r) ≤ r`, hence strict room before every simulated right move in the
+smaller `N+C+1` tape. For a fixed positive `N` the same speed estimate has
+additional slack; no stronger public theorem is needed by composition. The
+final configuration may reach the last cell when `N=0` and `s=C`, but no
+further transition is requested.
+
+The resulting runs satisfy the full blank-extension relation and therefore
+have equal finite control. `AcceptsAt`, `RejectsAt`, and `DecidesAt` are
+equivalent at the same elapsed time. `AcceptsWithin`, `RejectsWithin`, and
+`DecidesWithin` transport only from the smaller budget to the larger one using
+the original witness; no reverse implication is claimed.
+
+`Tests.UniformV1BudgetTransportSurfaceTests` supplies a full-proposition
+`check_*` wrapper for each public theorem, with paired central axiom roots.
+This slice adds no combined parser/verifier machine, runtime advice, relation
+verification, class inclusion or migration, pnp4 theorem, or circuit bound.
 
 ## P1c countability and direct no-length-advice diagonal
 

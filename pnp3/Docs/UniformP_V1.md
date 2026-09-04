@@ -6,7 +6,8 @@ P2-2 advice-free relation semantics/versioned `UniformNP`, P2-3a fixed
 pair-parser executable core, and P2-3b universal exact parser correctness
 plus P2-3cA ambient-budget parser transport through 2026-09-04. Canonical `P`
 and `NP` remain legacy and unchanged. P2-3cB1 additionally provides generic
-bounded budget transport for a fixed `UniformTM`.
+bounded budget transport for a fixed `UniformTM`; P2-3cB2 adds the routed
+combined-machine constructor and exact parser handoff.
 
 The versioned namespace is:
 
@@ -302,6 +303,35 @@ the original witness; no reverse implication is claimed.
 `check_*` wrapper for each public theorem, with paired central axiom roots.
 This slice adds no combined parser/verifier machine, runtime advice, relation
 verification, class inclusion or migration, pnp4 theorem, or circuit bound.
+
+## P2-3cB2 routed combined machine and parser handoff
+
+`Complexity.Uniform.V1.CombinedMachine` constructs one fixed `UniformTM` from
+a fixed verifier `V`. Its state space has exactly `8 + V.stateCount` controls:
+the eight nonterminal controls of the fixed parser and a disjoint offset copy
+of every verifier control. Combined accept and reject are the injected verifier
+terminals. The transition table depends only on `V`, never on input length,
+budget, decoder output, relation value, or witness.
+
+For parser work controls, the table computes the corresponding fixed-parser
+action. A target in the parser work range remains there; a parser-accept target
+is redirected directly to injected `V.start`; every other nonwork target is
+literal combined reject. Thus the successful rewind row restores cell zero and
+hands off in the same transition. The verifier branch maps `V.step`, including
+its public terminal absorption.
+
+The module proves same-budget verifier step/run embedding, parser work-state
+translation, and prefix agreement only through `steps ≤ clock N`. At the
+parser deadline, successful decoding yields full configuration equality with
+the embedded `initialConfig V budget y`; decoder failure yields the restored
+combined initial configuration with literal reject. This is one machine run;
+the standalone parser configuration is only a proof object.
+
+`Tests.UniformV1CombinedMachineSurfaceTests` pins the executable and theorem
+surface, while `Tests/AxiomsAudit.lean` contains the paired source/wrapper
+roots directly. This slice does not yet
+prove the verifier suffix, total clock, `VerifiesRelation`, class inclusion or
+migration, a pnp4 theorem, or a gate bound.
 
 ## P1c countability and direct no-length-advice diagonal
 

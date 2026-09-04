@@ -80,6 +80,7 @@ import Complexity.DagGadgets
 import Tests.UniformV1CountabilitySurfaceTests
 import Tests.UniformV1PairEncodingSurfaceTests
 import Tests.UniformV1RelationSurfaceTests
+import Tests.UniformV1FixedPairParserCoreSurfaceTests
 import Tests.UniformV1CircuitEncodingSurfaceTests
 import Tests.UniformV1StepKernelSurfaceTests
 import Tests.UniformV1StepBundleSurfaceTests
@@ -313,6 +314,25 @@ section UniformV1RelationAxiomAudit
 #print axioms Pnp3.Tests.UniformV1Relation.check_uniformNP_constFalse
 
 end UniformV1RelationAxiomAudit
+
+section UniformV1FixedPairParserCoreAxiomAudit
+
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.machine_rawStep
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCore.check_machine_rawStep
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.parserRawStep_table
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCore.check_parserRawStep_table
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.machine_public_step_pins
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCore.check_machine_public_step_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.machine_resource_pins
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCore.check_machine_resource_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.clock_tape_pins
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCore.check_clock_tape_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.finite_exact_run_capstone
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCore.check_finite_exact_run_capstone
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairParser.finite_restoration_capstone
+#print axioms Pnp3.Tests.UniformV1FixedPairParserCore.check_finite_restoration_capstone
+
+end UniformV1FixedPairParserCoreAxiomAudit
 
 section UniformV1CircuitEncodingAxiomAudit
 

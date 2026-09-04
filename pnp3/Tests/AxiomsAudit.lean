@@ -78,6 +78,7 @@ import Complexity.TMVerifier.TuringToolkit.GateNRelocationExamples
 import Complexity.Uniform.V1.Examples
 import Complexity.DagGadgets
 import Tests.UniformV1CountabilitySurfaceTests
+import Tests.UniformV1PairEncodingSurfaceTests
 import Tests.UniformV1CircuitEncodingSurfaceTests
 import Tests.UniformV1StepKernelSurfaceTests
 import Tests.UniformV1StepBundleSurfaceTests
@@ -183,6 +184,89 @@ section UniformV1CountabilityAxiomAudit
 #print axioms Pnp3.Tests.UniformV1Countability.check_not_forall_lengthOnly_uniformP
 
 end UniformV1CountabilityAxiomAudit
+
+section UniformV1PairEncodingAxiomAudit
+
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.tagList_length
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_tagList_length
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.encodePairList_length
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_encodePairList_length
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.tagList_tag
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_tagList_tag
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.tagList_data
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_tagList_data
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.encodePairList_tag
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_encodePairList_tag
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.encodePairList_data
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_encodePairList_data
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.encodePairList_separator
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_encodePairList_separator
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.encodePairList_witness
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_encodePairList_witness
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.encodePairList_boundary
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_encodePairList_boundary
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.decodePairList_roundtrip
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_decodePairList_roundtrip
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.decodePairList_eq_some_iff
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_decodePairList_eq_some_iff
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.decodePairList_eq_none_iff
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_decodePairList_eq_none_iff
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.encodePairList_injective
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_encodePairList_injective
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.decodePairList_tagList_none
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_decodePairList_tagList_none
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.decodePairList_dangling_false_none
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_decodePairList_dangling_false_none
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.decodePairList_nil
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_decodePairList_nil
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.decodePairList_false
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_decodePairList_false
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.decodePairList_false_true
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_decodePairList_false_true
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.decodePairList_true
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_decodePairList_true
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.decodePairList_true_false
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_decodePairList_true_false
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.encodePairList_two_one
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_encodePairList_two_one
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.decodePairList_two_one
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_decodePairList_two_one
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.pairLength_eq
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_pairLength_eq
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.encodePair_tag
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_encodePair_tag
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.encodePair_data
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_encodePair_data
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.encodePair_separator
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_encodePair_separator
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.encodePair_witness
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_encodePair_witness
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.encodePair_boundary
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_encodePair_boundary
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.encodePair_toList
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_encodePair_toList
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.decodePair_roundtrip
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_decodePair_roundtrip
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.encodePair_packed_injective
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_encodePair_packed_injective
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.encodePair_injective
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_encodePair_injective
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.initialConfig_pair_tag
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_initialConfig_pair_tag
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.initialConfig_pair_data
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_initialConfig_pair_data
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.initialConfig_pair_separator
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_initialConfig_pair_separator
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.initialConfig_pair_witness
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_initialConfig_pair_witness
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.initialConfig_pair_padding
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_initialConfig_pair_padding
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.decodePair_empty
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_decodePair_empty
+#print axioms Pnp3.Complexity.Uniform.V1.PairEncoding.decodePair_two_one
+#print axioms Pnp3.Tests.UniformV1PairEncoding.check_decodePair_two_one
+
+end UniformV1PairEncodingAxiomAudit
 
 section UniformV1CircuitEncodingAxiomAudit
 

@@ -1,8 +1,9 @@
 # Uniform P V1 foundation and circuit simulation
 
-**Status:** P1a uniform model, P1b `UniformP ⊆ PpolyDAG` simulation, and P1c
-countability/direct no-length-advice diagonal completed on 2026-09-03.
-Canonical `P` remains legacy and unchanged.
+**Status:** P1a uniform model, P1b `UniformP ⊆ PpolyDAG` simulation, P1c
+countability/direct no-length-advice diagonal, and P2-1 pair-codec
+infrastructure completed through 2026-09-04. Canonical `P` remains legacy and
+unchanged.
 
 The versioned namespace is:
 
@@ -112,6 +113,41 @@ Boolean answer. This is the regression pin separating timeout from rejection.
 instances, and every authored public theorem's full proposition. All theorem
 `#print axioms` roots live in the central `Tests/AxiomsAudit.lean`; private
 proof helpers are excluded from both public surfaces.
+
+## P2-1 uniquely-decodable pair codec
+
+`PairEncoding.lean` imports only the V1 machine foundation and narrow
+`Mathlib.Data.List.OfFn` support.  For input `x` and witness `w`, its exact
+grammar is
+
+```text
+encodePair(x,w) = false,x0,false,x1,...,false,x(n-1),true,w0,...,w(m-1)
+pairLength n m = 2*n + 1 + m
+```
+
+`decodePairList` is structural and executable: empty input and a dangling
+false tag fail; an initial true ends the input and leaves the entire remainder
+as witness; and an initial false consumes exactly one following data bit before
+recursing.  The exact-image theorem is
+
+```text
+decodePairList l = some (xs,ws) ↔ l = encodePairList xs ws
+```
+
+so malformed words are exactly those outside the image, and both the list
+encoder and the packed dependent indexed encoder are injective.  The indexed
+decoder returns `(Sigma n, Bitstring n) × (Sigma m, Bitstring m)` and its
+roundtrip preserves both lengths and functions exactly.  Layout theorems pin
+every tag, data, separator, witness, and initial-tape padding cell.  Empty and
+two-input/one-witness capstones are derived from the general roundtrip.
+
+This is unique decoding of complete finite words, not global prefix-freeness:
+extending the witness makes one valid encoding a prefix of another.  P2-1
+introduces no witness relation, relation verifier, parser machine, `UniformNP`,
+`P ⊆ NP`, canonical migration/rebind, or pnp4 theorem.  It is infrastructure,
+not P-vs-NP mainline progress.  `Tests/UniformV1PairEncodingSurfaceTests.lean`
+pins every public definition and theorem; direct and wrapper axiom roots remain
+centralized in `Tests/AxiomsAudit.lean`.
 
 ## P1c countability and direct no-length-advice diagonal
 

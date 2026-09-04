@@ -5,8 +5,8 @@ import Mathlib.Data.List.OfFn
 # Uniquely-decodable pairs for Uniform V1
 
 The input is encoded as tagged data pairs, followed by one true separator and
-the witness.  The complete finite word is uniquely decodable; the family is
-not prefix-free because extending a witness extends its encoding.
+the witness.  The complete finite word is uniquely decodable.  The family is
+NOT globally prefix-free because extending a witness extends its encoding.
 -/
 
 namespace Pnp3.Complexity.Uniform.V1.PairEncoding
@@ -96,6 +96,13 @@ theorem encodePairList_boundary (xs ws : List Bool) :
     (encodePairList xs ws).take (2 * xs.length) = tagList xs ∧
     (encodePairList xs ws).drop (2 * xs.length) = true :: ws := by
   simp [encodePairList, tagList_length]
+
+/-- Extending the witness appends exactly the same suffix to the encoding.
+This equality is a concrete prefix witness; the family is NOT globally
+prefix-free. -/
+theorem encodePairList_witness_extension_prefix (xs ws extra : List Bool) :
+    encodePairList xs (ws ++ extra) = encodePairList xs ws ++ extra := by
+  simp [encodePairList, List.append_assoc]
 
 theorem decodePairList_roundtrip (xs ws : List Bool) :
     decodePairList (encodePairList xs ws) = some (xs, ws) := by
@@ -255,6 +262,78 @@ theorem decodePair_roundtrip {n m : Nat} (x : Bitstring n) (w : Bitstring m) :
   have hw := List.equivSigmaTuple.right_inv (⟨m, w⟩ : Σ k, Fin k → Bool)
   exact congrArg some (congrArg₂ Prod.mk hx hw)
 
+/-- Exact packed image of the dependent decoder, preserving both recovered
+lengths and both indexed words. -/
+theorem decodePair_eq_some_iff {N : Nat} (y : Bitstring N)
+    (p : DecodedPair) :
+    decodePair y = some p ↔
+      (⟨N, y⟩ : EncodedWord) =
+        (⟨pairLength p.1.1 p.2.1,
+          encodePair p.1.2 p.2.2⟩ : EncodedWord) := by
+  rcases p with ⟨⟨n, x⟩, ⟨m, w⟩⟩
+  constructor
+  · intro h
+    cases hd : decodePairList (List.ofFn y) with
+    | none =>
+        simp [decodePair, hd] at h
+    | some q =>
+        rcases q with ⟨xs, ws⟩
+        have hp :
+            ((⟨xs.length, xs.get⟩, ⟨ws.length, ws.get⟩) :
+                DecodedPair) =
+              ((⟨n, x⟩, ⟨m, w⟩) : DecodedPair) := by
+          simpa only [decodePair, hd, Option.some.injEq] using h
+        have hl : List.ofFn y = encodePairList xs ws :=
+          (decodePairList_eq_some_iff (List.ofFn y) xs ws).1 hd
+        have hxs : List.ofFn xs.get = xs :=
+          List.equivSigmaTuple.left_inv xs
+        have hws : List.ofFn ws.get = ws :=
+          List.equivSigmaTuple.left_inv ws
+        have hword :
+            (⟨N, y⟩ : EncodedWord) =
+              (⟨pairLength xs.length ws.length,
+                encodePair xs.get ws.get⟩ : EncodedWord) := by
+          apply (List.equivSigmaTuple :
+            List Bool ≃ EncodedWord).symm.injective
+          change List.ofFn y = List.ofFn (encodePair xs.get ws.get)
+          rw [encodePair_toList, hxs, hws]
+          exact hl
+        have hpack :
+            (⟨pairLength xs.length ws.length,
+              encodePair xs.get ws.get⟩ : EncodedWord) =
+              (⟨pairLength n m, encodePair x w⟩ : EncodedWord) :=
+          congrArg
+            (fun q : DecodedPair =>
+              (⟨pairLength q.1.1 q.2.1,
+                encodePair q.1.2 q.2.2⟩ : EncodedWord))
+            hp
+        exact hword.trans hpack
+  · intro h
+    have hd := congrArg (fun z : EncodedWord => decodePair z.2) h
+    simpa only [decodePair_roundtrip] using hd
+
+/-- Failure of the dependent decoder is exactly nonmembership in the packed
+image of `encodePair`. -/
+theorem decodePair_eq_none_iff {N : Nat} (y : Bitstring N) :
+    decodePair y = none ↔
+      ¬ ∃ p : DecodedPair,
+        (⟨N, y⟩ : EncodedWord) =
+          (⟨pairLength p.1.1 p.2.1,
+            encodePair p.1.2 p.2.2⟩ : EncodedWord) := by
+  constructor
+  · intro hn hex
+    rcases hex with ⟨p, hp⟩
+    have hs : decodePair y = some p :=
+      (decodePair_eq_some_iff y p).2 hp
+    rw [hn] at hs
+    contradiction
+  · intro hno
+    cases hd : decodePair y with
+    | none => rfl
+    | some p =>
+        exact
+          (hno ⟨p, (decodePair_eq_some_iff y p).1 hd⟩).elim
+
 theorem encodePair_packed_injective :
     Function.Injective
       (fun p : DecodedPair =>
@@ -277,46 +356,49 @@ theorem initialConfig_pair_tag (M : UniformTM) {n m budget : Nat}
     (x : Bitstring n) (w : Bitstring m) (i : Fin n) :
     (initialConfig M budget (encodePair x w)).tape
       ⟨2 * i.val, by simp [tapeLength, pairLength]; omega⟩ = some false := by
-  rw [show (initialConfig M budget (encodePair x w)).tape
-      ⟨2 * i.val, by simp [tapeLength, pairLength]; omega⟩ =
-      some (encodePair x w ⟨2 * i.val, by simp [pairLength]; omega⟩) by
-    simp only [initialConfig]
-    rw [dif_pos (by rw [pairLength_eq]; omega)]]
-  exact congrArg some (encodePair_tag x w i)
+  let k : Fin (pairLength n m) :=
+    ⟨2 * i.val, by rw [pairLength_eq]; omega⟩
+  have ht :=
+    initialConfig_tape_input (budget := budget) M (encodePair x w) k
+  have hk : encodePair x w k = false := by
+    simpa [k] using encodePair_tag x w i
+  simpa [k, hk] using ht
 
 theorem initialConfig_pair_data (M : UniformTM) {n m budget : Nat}
     (x : Bitstring n) (w : Bitstring m) (i : Fin n) :
     (initialConfig M budget (encodePair x w)).tape
       ⟨2 * i.val + 1, by simp [tapeLength, pairLength]; omega⟩ = some (x i) := by
-  rw [show (initialConfig M budget (encodePair x w)).tape
-      ⟨2 * i.val + 1, by simp [tapeLength, pairLength]; omega⟩ =
-      some (encodePair x w ⟨2 * i.val + 1, by simp [pairLength]; omega⟩) by
-    simp only [initialConfig]
-    rw [dif_pos (by rw [pairLength_eq]; omega)]]
-  exact congrArg some (encodePair_data x w i)
+  let k : Fin (pairLength n m) :=
+    ⟨2 * i.val + 1, by rw [pairLength_eq]; omega⟩
+  have ht :=
+    initialConfig_tape_input (budget := budget) M (encodePair x w) k
+  have hk : encodePair x w k = x i := by
+    simpa [k] using encodePair_data x w i
+  simpa [k, hk] using ht
 
 theorem initialConfig_pair_separator (M : UniformTM) {n m budget : Nat}
     (x : Bitstring n) (w : Bitstring m) :
     (initialConfig M budget (encodePair x w)).tape
       ⟨2 * n, by simp [tapeLength, pairLength]; omega⟩ = some true := by
-  rw [show (initialConfig M budget (encodePair x w)).tape
-      ⟨2 * n, by simp [tapeLength, pairLength]; omega⟩ =
-      some (encodePair x w ⟨2 * n, by simp [pairLength]; omega⟩) by
-    simp only [initialConfig]
-    rw [dif_pos (by rw [pairLength_eq]; omega)]]
-  exact congrArg some (encodePair_separator x w)
+  let k : Fin (pairLength n m) :=
+    ⟨2 * n, by rw [pairLength_eq]; omega⟩
+  have ht :=
+    initialConfig_tape_input (budget := budget) M (encodePair x w) k
+  have hk : encodePair x w k = true := by
+    simpa [k] using encodePair_separator x w
+  simpa [k, hk] using ht
 
 theorem initialConfig_pair_witness (M : UniformTM) {n m budget : Nat}
     (x : Bitstring n) (w : Bitstring m) (j : Fin m) :
     (initialConfig M budget (encodePair x w)).tape
       ⟨2 * n + 1 + j.val, by simp [tapeLength, pairLength]; omega⟩ = some (w j) := by
-  rw [show (initialConfig M budget (encodePair x w)).tape
-      ⟨2 * n + 1 + j.val, by simp [tapeLength, pairLength]; omega⟩ =
-      some (encodePair x w
-        ⟨2 * n + 1 + j.val, by rw [pairLength_eq]; omega⟩) by
-    simp only [initialConfig]
-    rw [dif_pos (by rw [pairLength_eq]; omega)]]
-  exact congrArg some (encodePair_witness x w j)
+  let k : Fin (pairLength n m) :=
+    ⟨2 * n + 1 + j.val, by rw [pairLength_eq]; omega⟩
+  have ht :=
+    initialConfig_tape_input (budget := budget) M (encodePair x w) k
+  have hk : encodePair x w k = w j := by
+    simpa [k] using encodePair_witness x w j
+  simpa [k, hk] using ht
 
 theorem initialConfig_pair_padding (M : UniformTM) {n m budget : Nat}
     (x : Bitstring n) (w : Bitstring m)
@@ -332,7 +414,7 @@ theorem decodePair_empty :
   exact decodePair_roundtrip _ _
 
 theorem decodePair_two_one :
-    let x : Bitstring 2 := fun i => i.val = 0
+    let x : Bitstring 2 := fun i => decide (i.val = 0)
     let w : Bitstring 1 := fun _ => true
     List.ofFn (encodePair x w) = [false, true, false, false, true, true] ∧
     decodePair (encodePair x w) =

@@ -30,6 +30,7 @@ open Pnp3.Complexity.Uniform.V1.PairEncoding
 #check encodePairList_separator
 #check encodePairList_witness
 #check encodePairList_boundary
+#check encodePairList_witness_extension_prefix
 #check decodePairList_roundtrip
 #check decodePairList_eq_some_iff
 #check decodePairList_eq_none_iff
@@ -51,6 +52,8 @@ open Pnp3.Complexity.Uniform.V1.PairEncoding
 #check encodePair_boundary
 #check encodePair_toList
 #check decodePair_roundtrip
+#check decodePair_eq_some_iff
+#check decodePair_eq_none_iff
 #check encodePair_packed_injective
 #check encodePair_injective
 #check initialConfig_pair_tag
@@ -101,6 +104,11 @@ theorem check_encodePairList_boundary (xs ws : List Bool) :
     (encodePairList xs ws).take (2 * xs.length) = tagList xs ∧
     (encodePairList xs ws).drop (2 * xs.length) = true :: ws :=
   encodePairList_boundary xs ws
+
+theorem check_encodePairList_witness_extension_prefix
+    (xs ws extra : List Bool) :
+    encodePairList xs (ws ++ extra) = encodePairList xs ws ++ extra :=
+  encodePairList_witness_extension_prefix xs ws extra
 
 theorem check_decodePairList_roundtrip (xs ws : List Bool) :
     decodePairList (encodePairList xs ws) = some (xs, ws) :=
@@ -189,6 +197,22 @@ theorem check_decodePair_roundtrip {n m : Nat} (x : Bitstring n) (w : Bitstring 
       some ((⟨n, x⟩, ⟨m, w⟩) : DecodedPair) :=
   decodePair_roundtrip x w
 
+theorem check_decodePair_eq_some_iff {N : Nat} (y : Bitstring N)
+    (p : DecodedPair) :
+    decodePair y = some p ↔
+      (⟨N, y⟩ : EncodedWord) =
+        (⟨pairLength p.1.1 p.2.1,
+          encodePair p.1.2 p.2.2⟩ : EncodedWord) :=
+  decodePair_eq_some_iff y p
+
+theorem check_decodePair_eq_none_iff {N : Nat} (y : Bitstring N) :
+    decodePair y = none ↔
+      ¬ ∃ p : DecodedPair,
+        (⟨N, y⟩ : EncodedWord) =
+          (⟨pairLength p.1.1 p.2.1,
+            encodePair p.1.2 p.2.2⟩ : EncodedWord) :=
+  decodePair_eq_none_iff y
+
 theorem check_encodePair_packed_injective :
     Function.Injective
       (fun p : DecodedPair =>
@@ -238,7 +262,7 @@ theorem check_decodePair_empty :
   decodePair_empty
 
 theorem check_decodePair_two_one :
-    let x : Bitstring 2 := fun i => i.val = 0
+    let x : Bitstring 2 := fun i => decide (i.val = 0)
     let w : Bitstring 1 := fun _ => true
     List.ofFn (encodePair x w) = [false, true, false, false, true, true] ∧
     decodePair (encodePair x w) =

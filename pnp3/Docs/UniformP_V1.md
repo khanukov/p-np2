@@ -1,9 +1,9 @@
 # Uniform P V1 foundation and circuit simulation
 
 **Status:** P1a uniform model, P1b `UniformP ⊆ PpolyDAG` simulation, P1c
-countability/direct no-length-advice diagonal, and P2-1 pair-codec
-infrastructure completed through 2026-09-04. Canonical `P` remains legacy and
-unchanged.
+countability/direct no-length-advice diagonal, P2-1 pair-codec infrastructure,
+and P2-2 advice-free relation semantics/versioned `UniformNP` through
+2026-09-04. Canonical `P` and `NP` remain legacy and unchanged.
 
 The versioned namespace is:
 
@@ -153,6 +153,53 @@ not P-vs-NP mainline progress.  `Tests/UniformV1PairEncodingSurfaceTests.lean`
 pins every public definition and theorem; direct and wrapper axiom roots remain
 centralized in `Tests/AxiomsAudit.lean`.
 
+## P2-2 advice-free relations and versioned `UniformNP`
+
+P2-2 adds
+`WitnessRelation := ∀ n m, Bitstring n → Bitstring m → Bool` and lifts each
+relation to a **total raw-word language** through the P2-1 codec. For every
+`y : Bitstring N`, `encodedRelationLanguage R N y` matches `decodePair y`; a
+malformed word (`none`) has answer `false`, while a decoded pair is passed to
+the one fixed `R` at its dependent input and witness lengths.
+
+`VerifiesRelation M verifierExponent R` requires, for every raw length `N` and
+raw word `y`,
+
+```lean
+DecidesWithin M (polyClock verifierExponent N) y
+  (encodedRelationLanguage R N y)
+```
+
+Thus a false relation answer and a malformed encoding require literal
+rejection within the actual raw-length clock. Timeout or mere nonacceptance is
+not rejection. Correctness on `encodePair x w` is derived from total semantics
+using `decodePair_roundtrip`; no parser machine is introduced.
+
+`UniformNP L` fixes one relation `R`, one finite verifier `M`, one verifier
+exponent `verifierExponent`, and an independent witness exponent
+`witnessExponent` before inputs. Its certificate clause is exactly
+
+```lean
+∀ n (x : Bitstring n),
+  L n x = true ↔
+    ∃ m, ∃ w : Bitstring m,
+      m ≤ polyClock witnessExponent n ∧
+      R n m x w = true
+```
+
+The two exponents are not combined with `max`, and no budget-monotonicity
+theorem is assumed. Executable controls distinguish literal acceptance,
+literal rejection, and timeout/nondecision; in particular, the all-accepting
+machine fails total verification because it accepts the malformed empty raw
+word instead of rejecting it. Canonical round-trip plus literal two-sided
+decision yields `verifiesRelation_unique`: for fixed `M` and
+`verifierExponent`, at most one `WitnessRelation` is verified, formally closing
+the mathematical-relation advice loophole. This slice proves no parser machine,
+`UniformP ⊆ UniformNP`, canonical `P`/`NP` rebind, pnp4 theorem, or lower bound.
+`Tests/UniformV1RelationSurfaceTests.lean` pins all ten public definitions and
+all seventeen source theorems with full named wrappers; paired roots remain in
+the central axiom audit.
+
 ## P1c countability and direct no-length-advice diagonal
 
 `Countability.lean` injects `Move` into `Nat` and injects every `UniformTM`
@@ -272,13 +319,14 @@ repository's canonical `P`, establish a canonical-`P` equivalence with
 versioned `UniformP`, introduce `UniformNP`, or prove a circuit lower bound.
 
 The P1a model repair, final P1b circuit simulation, P1c countability diagonal,
-and P2-1 pair codec are infrastructure. They do not change the repository's
-canonical `P` or `NP` definitions and are not P-vs-NP mainline progress. In
-particular, they prove none of the following:
+P2-1 pair codec, and P2-2 versioned `UniformNP` layer are infrastructure. They
+do not change the repository's canonical `P` or `NP` definitions and are not
+P-vs-NP mainline progress. In particular, they prove none of the following:
 
 - a bridge to the legacy machine model or canonical `P`;
 - a canonical `P` rebind or equivalence with versioned `UniformP`;
-- `UniformNP`, a lower bound, or any pnp4 mainline source obligation.
+- a canonical `NP` rebind or equivalence with versioned `UniformNP`;
+- `UniformP ⊆ UniformNP`, a lower bound, or any pnp4 mainline source obligation.
 
 Accordingly, not every length-only language belongs to this versioned
 `UniformP`; the direct theorem makes no corresponding exclusion claim about

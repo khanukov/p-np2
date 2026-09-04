@@ -64,6 +64,17 @@ proof has a dedicated empty-input root and positive-input forward/rewind
 invariant roots. It introduces no parser/verifier composition, relation
 verification, class inclusion or migration, pnp4 theorem, or circuit bound.
 
+**P2-3cA ambient-budget fixed-parser transport (infrastructure only).**
+`Complexity.Uniform.V1.FixedPairParserAmbient` relates the exact-clock tape to
+every ambient budget `B` satisfying `clock N ≤ B` through explicit dependent
+`Fin` embedding/projection and a four-clause blank-extension invariant. It
+proves through-clock simulation of the same fixed parser, full ambient padding
+blankness, exact final state/head/tape restoration, strict preterminality,
+decoder-equivalent literal acceptance/rejection, and `DecidesWithin` using
+`clock N` as an explicit witness. It introduces no configuration casts,
+runtime advice, generic verifier budget theorem, parser/verifier composition,
+relation verification, class inclusion, pnp4 theorem, or circuit bound.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

@@ -1,7 +1,8 @@
 # Uniform P V1 foundation and circuit simulation
 
-**Status:** P1a uniform model and P1b `UniformP ⊆ PpolyDAG` simulation completed
-on 2026-09-03. Canonical `P` remains unchanged.
+**Status:** P1a uniform model, P1b `UniformP ⊆ PpolyDAG` simulation, and P1c
+countability/direct no-length-advice diagonal completed on 2026-09-03.
+Canonical `P` remains legacy and unchanged.
 
 The versioned namespace is:
 
@@ -10,8 +11,8 @@ Pnp3.Complexity.Uniform.V1
 ```
 
 The P1a model modules are `Complexity/Uniform/V1/Machine.lean`,
-`PolynomialTime.lean`, and `Examples.lean`. They use local definitionally equal
-aliases
+`PolynomialTime.lean`, and `Examples.lean`; P1c is the separate narrow module
+`Countability.lean`. They use local definitionally equal aliases
 
 ```lean
 Bitstring n := Fin n → Bool
@@ -112,6 +113,44 @@ instances, and every authored public theorem's full proposition. All theorem
 `#print axioms` roots live in the central `Tests/AxiomsAudit.lean`; private
 proof helpers are excluded from both public surfaces.
 
+## P1c countability and direct no-length-advice diagonal
+
+`Countability.lean` injects `Move` into `Nat` and injects every `UniformTM`
+into the explicit proof-erasing dependent code
+
+```text
+Σ k : Nat, Fin k × Fin k × Fin k ×
+  (Fin k → Option Bool → Fin k × Option Bool × Move)
+```
+
+in the pinned order start, accept, reject, transition table.  The injection
+reconstructs the dependent record fields and uses proof irrelevance only for
+the erased `accept_ne_reject` field; it does not use retroactive deriving.
+Finite-domain function and sigma countability then give `Countable UniformTM`
+and `Countable (UniformTM × Nat)`.
+
+`machineLanguage M c` is the total exact-deadline acceptance flag, mapping a
+timeout to false.  No timeout is used as a false decision: for every genuine
+`DecidesAt` witness, `machineLanguage_eq_of_decidesAt` proves the arbitrary
+Boolean answer, with the false case using literal `RejectsAt` and terminal
+state disjointness.  Exact-deadline equivalence and function extensionality
+therefore put every versioned `UniformP` language in the range of
+`(UniformTM × Nat) → Language`, proving `uniformP_languages_countable`.
+
+Finally, `lengthOnly A n x = A n` is injective by evaluating at the canonical
+all-false input, including `Fin 0`.  Given a countable set covered by
+`f : Nat → Language`, the direct witness
+
+```text
+A i = !(f i i (fun _ => false))
+```
+
+differs from its covering entry at index `i`.  This proves
+`exists_lengthOnly_not_uniformP` without a cardinal or uncountability
+abstraction. `Tests/UniformV1CountabilitySurfaceTests.lean` pins every public
+definition, theorem, and countability instance, with direct and wrapper axiom
+roots in the central audit.
+
 ## Honest boundary and P1b work
 
 P1b-1 adds direct fixed-width encoding infrastructure in the nested namespace
@@ -189,19 +228,20 @@ uniformP_subset_PpolyDAG :
 ```
 
 This is infrastructure, not P-vs-NP mainline progress.  It does not rebind the
-repository's canonical `P`, establish canonical `P ⊆ PpolyDAG`, prove
-countability, introduce `UniformNP`, or prove a circuit lower bound.
+repository's canonical `P`, establish a canonical-`P` equivalence with
+versioned `UniformP`, introduce `UniformNP`, or prove a circuit lower bound.
 
-The P1a model repair and final P1b circuit simulation are infrastructure. They
-do not change the repository's canonical `P` or `NP` definitions and are not
-P-vs-NP mainline progress. In particular, they prove none of the following:
+The P1a model repair, final P1b circuit simulation, and P1c countability
+diagonal are infrastructure. They do not change the repository's canonical
+`P` or `NP` definitions and are not P-vs-NP mainline progress. In particular,
+they prove none of the following:
 
-- countability or an encoding of `UniformTM`;
 - a bridge to the legacy machine model or canonical `P`;
-- a canonical `P` rebind;
-- `UniformNP` or any circuit lower bound.
+- a canonical `P` rebind or equivalence with versioned `UniformP`;
+- `UniformNP`, a lower bound, or any pnp4 mainline source obligation.
 
-Accordingly, the old runtime-advice languages are not yet proved excluded from
-the canonical classes. Final P1b consumes the exact-deadline equivalence only
-for the versioned `UniformP` theorem above; it does not infer a canonical-class
-bridge from P1a.
+Accordingly, not every length-only language belongs to this versioned
+`UniformP`; the direct theorem makes no corresponding exclusion claim about
+the unchanged legacy canonical `P`. Final P1b and P1c infer no canonical-class
+bridge. Any optional comparison corollary involving pnp4 is deferred to a
+separate reviewed slice.

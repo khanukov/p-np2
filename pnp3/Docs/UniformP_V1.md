@@ -2,8 +2,9 @@
 
 **Status:** P1a uniform model, P1b `UniformP ⊆ PpolyDAG` simulation, P1c
 countability/direct no-length-advice diagonal, P2-1 pair-codec infrastructure,
-and P2-2 advice-free relation semantics/versioned `UniformNP` through
-2026-09-04. Canonical `P` and `NP` remain legacy and unchanged.
+P2-2 advice-free relation semantics/versioned `UniformNP`, and P2-3a fixed
+pair-parser executable core through 2026-09-04. Canonical `P` and `NP` remain
+legacy and unchanged.
 
 The versioned namespace is:
 
@@ -199,6 +200,30 @@ the mathematical-relation advice loophole. This slice proves no parser machine,
 `Tests/UniformV1RelationSurfaceTests.lean` pins all ten public definitions and
 all seventeen source theorems with full named wrappers; paired roots remain in
 the central axiom audit.
+
+## P2-3a fixed pair-parser executable core
+
+`Complexity.Uniform.V1.FixedPairParserCore` supplies one fixed ten-state
+`UniformTM` for the complete-word grammar
+`(false,dataBit)* ++ true :: witnessBits`. The module pins its full raw table,
+the table installed in the machine, public absorbing verdict rows, the actual
+30-element state/symbol table domain, exact clock `2*N+1`, and exact-clock
+allocation `3*N+2`.
+
+Its semantic evidence is intentionally finite: closed decoder and literal
+exact-run regressions cover malformed `[]`, `[false]`, and `[false,true]`, as
+well as zero-input `[true]`, true-as-data `[false,true,true]`, and a false
+witness bit `[true,false]`. Closed valid and malformed configurations pin the
+literal verdict state, head zero, and equality of the entire allocated tape to
+the corresponding exact-budget initial tape. The paired surface module gives
+all seven source theorems exact named wrappers; their direct and wrapper roots
+live in the central `Tests/AxiomsAudit.lean` file.
+
+This is executable P2-3a infrastructure only. It proves no all-length parser
+correctness, universal acceptance/decoder equivalence, first-terminal-time
+theorem, arbitrary ambient-budget result, parser/verifier composition,
+relation verification, `UniformP` inclusion, state minimality, or circuit-gate
+bound.
 
 ## P1c countability and direct no-length-advice diagonal
 

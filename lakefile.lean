@@ -74,6 +74,9 @@ lean_lib PnP3 where
     Glob.one `Complexity.Uniform.V1.Relation,
     Glob.one `Complexity.Uniform.V1.UniformNP,
     Glob.one `Complexity.Uniform.V1.RelationExamples,
+    -- P2-3a (2026-09-04), concrete ten-state pair-parser core and finite
+    -- exact-run/restoration capstones only. No all-length correctness yet.
+    Glob.one `Complexity.Uniform.V1.FixedPairParserCore,
     -- P1b-1 (2026-09-03), direct fixed-width layout and initial bundle only.
     -- No transition/run compiler, polynomial simulation, or Ppoly bridge.
     Glob.one `Complexity.Uniform.V1.CircuitEncoding,
@@ -609,6 +612,7 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1SurfaceTests,
     Glob.one `Tests.UniformV1PairEncodingSurfaceTests,
     Glob.one `Tests.UniformV1RelationSurfaceTests,
+    Glob.one `Tests.UniformV1FixedPairParserCoreSurfaceTests,
     Glob.one `Tests.UniformV1CountabilitySurfaceTests,
     Glob.one `Tests.UniformV1CircuitEncodingSurfaceTests,
     Glob.one `Tests.UniformV1StepKernelSurfaceTests,

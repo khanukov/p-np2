@@ -41,6 +41,17 @@ rejection, and timeout. This slice adds no parser machine,
 `UniformP ⊆ UniformNP`, canonical `P`/`NP` rebind, pnp4 theorem, or lower-bound
 claim.
 
+**P2-3a fixed Uniform V1 pair-parser executable core (infrastructure only).**
+`Complexity.Uniform.V1.FixedPairParserCore` adds one fixed ten-state parser,
+its exact table/public-step bridge, exact `2*N+1` clock and `3*N+2`
+exact-clock tape allocation, and only closed malformed/valid exact-run and
+whole-tape-restoration capstones. The namespaced surface wrappers live in
+`Tests.UniformV1FixedPairParserCoreSurfaceTests`, with paired direct/wrapper
+roots in the central axiom audit. This slice proves no all-length parser
+correctness, universal decoder equivalence, arbitrary-budget theorem,
+parser/verifier composition, relation verification, `UniformP` inclusion,
+gate bound, or P-vs-NP mainline result.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

@@ -65,6 +65,9 @@ lean_lib PnP3 where
     -- literal machines.  This is intentionally independent of the frozen
     -- TMVerifier and legacy encoding/simulation stacks.
     Glob.one `Complexity.Uniform.V1.Machine,
+    -- P2-1 (2026-09-04), uniquely-decodable input/witness pair codec only.
+    -- No relation verifier, parser machine, UniformNP, or class inclusion.
+    Glob.one `Complexity.Uniform.V1.PairEncoding,
     -- P1b-1 (2026-09-03), direct fixed-width layout and initial bundle only.
     -- No transition/run compiler, polynomial simulation, or Ppoly bridge.
     Glob.one `Complexity.Uniform.V1.CircuitEncoding,
@@ -598,6 +601,7 @@ lean_lib PnP3 where
     Glob.one `Tests.PromiseRouteConclusionProbe,
     Glob.one `Tests.WeakRouteSurfaceTests,
     Glob.one `Tests.UniformV1SurfaceTests,
+    Glob.one `Tests.UniformV1PairEncodingSurfaceTests,
     Glob.one `Tests.UniformV1CountabilitySurfaceTests,
     Glob.one `Tests.UniformV1CircuitEncodingSurfaceTests,
     Glob.one `Tests.UniformV1StepKernelSurfaceTests,

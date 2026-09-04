@@ -1,6 +1,6 @@
 # Project Status (current)
 
-Updated: 2026-09-03
+Updated: 2026-09-04
 
 **Current engineering priority.** The one-tape `pnp3/Complexity/TMVerifier/`
 tree is frozen at `42c59881`; see `pnp3/Docs/TMVERIFIER_FREEZE.md`. Do not
@@ -17,6 +17,16 @@ languages countable, and directly diagonalizes a length-only language outside
 that class. See `pnp3/Docs/UniformP_V1.md`. This does not rebind, characterize,
 or change the legacy canonical repository `P`/`NP`, define `UniformNP`, prove a
 lower bound, or reduce a pnp4 mainline source obligation.
+
+**P2-1 Uniform V1 pair codec (infrastructure only).**
+`Complexity.Uniform.V1.PairEncoding` encodes `(x,w)` as false-tagged input
+bits, one true separator, and the untagged witness.  Its executable structural
+decoder has exact image, malformed-word, dependent roundtrip, and packed
+cross-length injectivity theorems, plus direct initial-tape layout bridges.
+The complete finite words are uniquely decodable, but the family is not
+prefix-free because witness extension extends an encoding.  This slice adds no
+relation/verifier or parser machine, does not define `UniformNP`, prove
+`P ⊆ NP`, migrate canonical definitions, or reduce a pnp4 mainline obligation.
 
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared

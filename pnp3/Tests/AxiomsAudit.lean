@@ -83,6 +83,7 @@ import Tests.UniformV1RelationSurfaceTests
 import Tests.UniformV1FixedPairParserCoreSurfaceTests
 import Tests.UniformV1FixedPairParserCorrectnessSurfaceTests
 import Tests.UniformV1FixedPairParserAmbientSurfaceTests
+import Tests.UniformV1FixedPairConcatSentinelSurfaceTests
 import Tests.UniformV1BudgetTransportSurfaceTests
 import Tests.UniformV1CombinedMachineSurfaceTests
 import Tests.UniformV1CombinedCorrectnessSurfaceTests
@@ -3872,3 +3873,35 @@ end DeprecatedAC0CompatibilityAxiomAudit
 -- these close the canonical-track conclusion side.
 #print axioms Tests.PromiseRouteConclusionProbe.promiseYesCertificate_conclusion_negative_for_canonical
 #print axioms Tests.PromiseRouteConclusionProbe.promiseYesWeak_conclusion_negative_for_canonical
+
+-- Part A fixed sentinel phase for later pair compaction.
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.sentinelStateCount
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.qStart
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.qScanF
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.qScanT
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.qBackF
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.qBackT
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.qAccept
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.qReject
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.machine
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.machine_rawStep_table
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.clock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.clock_eq
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.machine_resource_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.sentinelTape
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.sentinelConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.run_initialConfig_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.final_tape_behavior
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.blank_after_marker
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.head_le_input_through_clock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.beyond_input_blank_through_clock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.run_budget_independent
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.no_boundary_clamp_before_clock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.work_state_before_clock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.noEarlyTerminal_initialConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.acceptsAt_clock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.not_rejectsAt
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.decidesWithin
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.clock_le_polyClock_two
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.decidesWithin_polyClock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.sentinel_phase_contract

@@ -208,6 +208,15 @@ review order (the `lakefile.lean` registration is the dependency order):
   exactly when authoritative `treeMCSPPrefixM` strictly exceeds `B`. Successful
   outputs retain table/witness bounds. This is size arithmetic only: no content
   parser, semantic verifier, `UniformTM`, runtime, or bridge theorem is claimed.
+- `BoundedContentSemanticVerifier.lean` — Part A G0-B2c. It combines the merged
+  exact capped sizes with the virtual-zero-tail parser. The closed public parser
+  derives its cap only from the physical input length, invokes strict parsing at
+  the computed logical `sizes.M`, and is exactly the authoritative parser
+  filtered by the target cap. Unconditional parser equality is intentionally
+  not claimed. The copied source-level Boolean checker is proved equal to
+  authoritative `contentSemanticAccepts`, using the accepting-window theorem to
+  exclude overflow on true branches. This is executable semantic glue, not a
+  fixed `UniformTM`, tape program, runtime theorem, or `ContentVerifierBridge`.
 - `ContentParseFieldRecovery.lean` — FEAS-0 slice, part 1 (`VERIFIER_RETARGET_PLAN.md` §1.0): the
   parser field recovery the feasibility route needs and the parse inversion below does **not**
   provide. `parseTreeMCSPPrefixInput_x_slice` re-walks the same success cascade as

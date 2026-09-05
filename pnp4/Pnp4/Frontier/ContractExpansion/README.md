@@ -297,6 +297,15 @@ review order (the `lakefile.lean` registration is the dependency order):
   `concatBitstring`. This module proves only conversion and guard reductions: it constructs no
   `UniformTM`, proves no `VerifiesRelation` or content/tree pointwise equality, supplies no
   `ContentVerifierBridge`, and reduces no lower-bound obligation.
+- `TreeMCSPPrefixExplicitCap.lean` — Part A G0-B1. It expands the concrete
+  `thresholdPoly` witness width and prefix convention into transparent exponents,
+  with `e = treeMCSPPrefixTableExponent k = max 10 (k + 6) + 2`,
+  `treeMCSPPrefixPowAddExponent k = 2 * e + 2 ^ e`, and
+  `contentCapExponent k = treeMCSPPrefixPowAddExponent k + 1`. It proves
+  choice-free bounds for the actual dependent target returned by a successful
+  `contentInput?`. These are size bounds under semantic acceptance; this module
+  constructs no bounded semantic evaluator, `UniformTM`, verifier theorem,
+  bridge, or complexity conclusion.
 - `ContentPrefixExtensionGateClosure.lean` — I1 (`VERIFIER_RETARGET_PLAN.md` §4.3). It proves
   `treeMCSPPrefixM_strictMono` / `treeMCSPPrefixM_injective_of_monotone`, verifies the premise for
   `treeCircuitWitnessCodec (thresholdPoly k)`, and supplies

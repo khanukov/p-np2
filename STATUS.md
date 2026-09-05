@@ -120,6 +120,16 @@ noncomputable. This constructs no verifier machine, proves no equality between
 the two semantic relations, supplies no `ContentVerifierBridge`, and establishes
 no NP membership or lower bound.
 
+**Part A G0-B1 explicit content-window cap (infrastructure only).**
+`Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixExplicitCap` derives transparent,
+choice-free exponents directly from `thresholdPoly`, the concrete witness width,
+and `treeMCSPPrefixM`. Under successful authoritative content semantics it bounds
+both the header-designated window and the actual dependent parser target by
+`N ^ contentCapExponent k + contentCapExponent k`. The exponent is executable
+data fixed by `k`, not an existential witness or runtime advice. This does not
+yet implement compressed virtual-zero-tail semantics, compile a verifier to V1,
+or supply `ContentVerifierBridge`.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

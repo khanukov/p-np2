@@ -54,6 +54,7 @@ import Pnp4.Frontier.ContractExpansion.ContentSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.ContentVerifierTapeInterface
 import Pnp4.Frontier.ContractExpansion.ContentVerifierBridgeWitness
 import Pnp4.Frontier.ContractExpansion.ContentTargetSizeBound
+import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixExplicitCap
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionGateClosure
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPaddingTransport
@@ -704,3 +705,19 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.PartAEndpoint.contentWitnessRelation_of_wrongLength
 #print axioms Pnp4.Frontier.ContractExpansion.PartAEndpoint.treePrefixWitnessRelation_at_certificateLength
 #print axioms Pnp4.Frontier.ContractExpansion.PartAEndpoint.treePrefixWitnessRelation_of_wrongLength
+-- G0-B1: transparent content-window exponents and explicit acceptance caps.
+#print axioms Pnp4.Frontier.ContractExpansion.treeMCSPPrefixTableExponent
+#print axioms Pnp4.Frontier.ContractExpansion.treeMCSPPrefixPowAddExponent
+#print axioms Pnp4.Frontier.ContractExpansion.contentCapExponent
+#print axioms Pnp4.Frontier.ContractExpansion.tableLen_eq_two_pow_explicit
+#print axioms Pnp4.Frontier.ContractExpansion.thresholdPoly_eq_explicit
+#print axioms Pnp4.Frontier.ContractExpansion.treeCircuitWitnessBits_thresholdPoly_eq_explicit
+#print axioms Pnp4.Frontier.ContractExpansion.treeMCSPPrefixM_thresholdPoly_eq_explicit
+#print axioms Pnp4.Frontier.ContractExpansion.treeMCSPPrefixM_thresholdPoly_table_explicit
+#print axioms Pnp4.Frontier.ContractExpansion.polyBoundedInTable_treeMCSPPrefixM_thresholdPoly_explicit
+#print axioms Pnp4.Frontier.ContractExpansion.powAddNormalize_allBases
+#print axioms Pnp4.Frontier.ContractExpansion.treeMCSPPrefixM_thresholdPoly_powAdd_explicit
+#print axioms Pnp4.Frontier.ContractExpansion.contentSemanticAccepts_header_target_of_powAdd
+#print axioms Pnp4.Frontier.ContractExpansion.contentSemanticAccepts_header_target_explicit
+#print axioms Pnp4.Frontier.ContractExpansion.contentSemanticAccepts_successful_input_target_explicit
+#print axioms Pnp4.Frontier.ContractExpansion.contentSemanticAccepts_has_bounded_input_target_explicit

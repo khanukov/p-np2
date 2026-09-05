@@ -74,6 +74,7 @@ import Pnp4.Frontier.ContractExpansion.ConcreteTreeDirectTagProgram
 import Pnp4.Frontier.ContractExpansion.ConcreteTreeCodecSource
 import Pnp4.Frontier.ContractExpansion.ThresholdGrowth
 import Pnp4.Frontier.ContractExpansion.TreeCircuitContentWitnessRelation
+import Pnp4.Frontier.ContractExpansion.ThresholdTaggedContentFraming
 import Pnp4.Frontier.ContractExpansion.ConsolidatedTreeSeparation
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
@@ -825,3 +826,12 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.boundedContentSemanticAccepts_eq_false_iff
 #print axioms Pnp4.Frontier.ContractExpansion.boundedContentInput?_eq_contentInput_of_semantic_true
 #print axioms Pnp4.Frontier.ContractExpansion.boundedContentSemanticAccepts_eq_true_iff_contentAccepts
+
+-- Part A tagged-pair/content semantic framing ABI.
+#print axioms Pnp4.Frontier.ContractExpansion.PartAEndpoint.interfaceToV1Bitstring
+#print axioms Pnp4.Frontier.ContractExpansion.PartAEndpoint.canonicalTaggedContentPair
+#print axioms Pnp4.Frontier.ContractExpansion.PartAEndpoint.thresholdTaggedContentLanguage
+#print axioms Pnp4.Frontier.ContractExpansion.PartAEndpoint.v1ToInterfaceBitstring_interfaceToV1Bitstring
+#print axioms Pnp4.Frontier.ContractExpansion.PartAEndpoint.canonicalTaggedContentPair_pairLength
+#print axioms Pnp4.Frontier.ContractExpansion.PartAEndpoint.encodedThresholdContentRelation_canonicalTaggedContentPair
+#print axioms Pnp4.Frontier.ContractExpansion.PartAEndpoint.thresholdTaggedContentLanguage_malformed

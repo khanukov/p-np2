@@ -84,6 +84,7 @@ import Pnp4.Frontier.ContractExpansion.ConcreteTreeDirectTagProgram
 import Pnp4.Frontier.ContractExpansion.ConcreteTreeCodecSource
 import Pnp4.Frontier.ContractExpansion.ThresholdGrowth
 import Pnp4.Frontier.ContractExpansion.TreeCircuitContentWitnessRelation
+import Pnp4.Frontier.ContractExpansion.ThresholdTaggedContentFraming
 import Pnp4.Frontier.ContractExpansion.ConsolidatedTreeSeparation
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
@@ -4982,6 +4983,61 @@ theorem check_boundedContent_boundedContentSemanticAccepts_eq_true_iff_contentAc
   boundedContentSemanticAccepts_eq_true_iff_contentAccepts k z
 
 end BoundedContentSemanticVerifierSurface
+
+section ThresholdTaggedContentFramingSurface
+
+open Pnp4.Frontier.ContractExpansion
+open Pnp4.Frontier.ContractExpansion.PartAEndpoint
+
+def check_partAEndpoint_interfaceToV1Bitstring {n : Nat}
+    (x : Pnp3.ComplexityInterfaces.Bitstring n) :
+    Pnp3.Complexity.Uniform.V1.Bitstring n :=
+  interfaceToV1Bitstring x
+
+def check_partAEndpoint_canonicalTaggedContentPair {n : Nat}
+    (x : Pnp3.ComplexityInterfaces.Bitstring n)
+    (w : Pnp3.ComplexityInterfaces.Bitstring
+      (Pnp3.ComplexityInterfaces.certificateLength n 1)) :
+    Pnp3.Complexity.Uniform.V1.Bitstring
+      (Pnp3.Complexity.Uniform.V1.PairEncoding.pairLength n
+        (Pnp3.ComplexityInterfaces.certificateLength n 1)) :=
+  canonicalTaggedContentPair x w
+
+def check_partAEndpoint_thresholdTaggedContentLanguage (k : Nat) :
+    Pnp3.Complexity.Uniform.V1.Language :=
+  thresholdTaggedContentLanguage k
+
+theorem check_partAEndpoint_v1ToInterfaceBitstring_interfaceToV1Bitstring
+    {n : Nat} (x : Pnp3.ComplexityInterfaces.Bitstring n) :
+    v1ToInterfaceBitstring (interfaceToV1Bitstring x) = x :=
+  v1ToInterfaceBitstring_interfaceToV1Bitstring x
+
+theorem check_partAEndpoint_canonicalTaggedContentPair_pairLength (n : Nat) :
+    Pnp3.Complexity.Uniform.V1.PairEncoding.pairLength n
+        (Pnp3.ComplexityInterfaces.certificateLength n 1) = 3 * n + 2 :=
+  canonicalTaggedContentPair_pairLength n
+
+theorem check_partAEndpoint_encodedThresholdContentRelation_canonicalTaggedContentPair
+    (k n : Nat)
+    (x : Pnp3.ComplexityInterfaces.Bitstring n)
+    (w : Pnp3.ComplexityInterfaces.Bitstring
+      (Pnp3.ComplexityInterfaces.certificateLength n 1)) :
+    thresholdTaggedContentLanguage k
+        (Pnp3.Complexity.Uniform.V1.PairEncoding.pairLength n
+          (Pnp3.ComplexityInterfaces.certificateLength n 1))
+        (canonicalTaggedContentPair x w) =
+      contentSemanticAccepts (treeCircuitWitnessCodec (thresholdPoly k))
+        (Pnp3.ComplexityInterfaces.concatBitstring x w) :=
+  encodedThresholdContentRelation_canonicalTaggedContentPair k n x w
+
+theorem check_partAEndpoint_thresholdTaggedContentLanguage_malformed
+    (k : Nat) {N : Nat}
+    (raw : Pnp3.Complexity.Uniform.V1.Bitstring N)
+    (hdecode : Pnp3.Complexity.Uniform.V1.PairEncoding.decodePair raw = none) :
+    thresholdTaggedContentLanguage k N raw = false :=
+  thresholdTaggedContentLanguage_malformed k raw hdecode
+
+end ThresholdTaggedContentFramingSurface
 
 end Tests
 end Pnp4

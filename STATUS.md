@@ -166,6 +166,15 @@ is proved extensionally equal to authoritative `contentSemanticAccepts`. This
 still does not provide a fixed `UniformTM`, tape-level evaluator, runtime proof,
 `VerifiesRelation`, or `ContentVerifierBridge`.
 
+**Part A tagged/content framing ABI (infrastructure only).**
+`Pnp4.Frontier.ContractExpansion.ThresholdTaggedContentFraming` explicitly
+connects canonical V1 `encodePair` inputs to headerless authoritative
+`contentSemanticAccepts` and makes malformed raw words evaluate to `false`.
+This closes a proposition-level framing equation, not an operational tape
+conversion. `CombinedMachine` still hands its verifier the unchanged tagged
+word, so a fixed compactor/evaluator and blank-preserving legacy simulation
+remain open.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

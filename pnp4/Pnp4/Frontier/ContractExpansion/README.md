@@ -328,6 +328,12 @@ review order (the `lakefile.lean` registration is the dependency order):
   `concatBitstring`. This module proves only conversion and guard reductions: it constructs no
   `UniformTM`, proves no `VerifiesRelation` or content/tree pointwise equality, supplies no
   `ContentVerifierBridge`, and reduces no lower-bound obligation.
+- `ThresholdTaggedContentFraming.lean` — Part A framing ABI. It names the
+  canonical V1 `encodePair` word and total raw-word language for the threshold
+  content relation. Canonical tagged inputs reduce exactly to authoritative
+  `contentSemanticAccepts` on headerless `concatBitstring`, while malformed pair
+  words reduce to `false`. These are semantic equations only: no tape compaction,
+  `UniformTM`, legacy Boolean-tape simulation, or runtime theorem is supplied.
 - `TreeMCSPPrefixExplicitCap.lean` — Part A G0-B1. It expands the concrete
   `thresholdPoly` witness width and prefix convention into transparent exponents,
   with `e = treeMCSPPrefixTableExponent k = max 10 (k + 6) + 2`,

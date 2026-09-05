@@ -175,6 +175,18 @@ conversion. `CombinedMachine` still hands its verifier the unchanged tagged
 word, so a fixed compactor/evaluator and blank-preserving legacy simulation
 remain open.
 
+**Part A fixed pair-concat sentinel phase (infrastructure only).**
+`Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel` is a closed seven-state
+`UniformTM` that preserves every input bit, writes a positional `some true`
+marker at the first blank cell, and returns to head zero in exactly `2*N+1`
+steps. Full-configuration, all-prefix footprint, budget-independence,
+preterminality, literal acceptance, and `polyClock 2` decision theorems are
+proved, including `N = 0` and budget zero. This is only the reusable marker
+phase: it does not remove pair tags, compact `x ++ w`, evaluate the content
+relation, or provide the legacy bridge. The all-budget exact theorem includes
+budget zero; the exported blank-after-marker lookahead fact separately assumes
+positive budget so cell `N+1` actually exists.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

@@ -194,6 +194,13 @@ review order (the `lakefile.lean` registration is the dependency order):
   identify every operation with the frozen counterpart on `padWord z T`,
   including all failure branches. The named loop bounds record only structural
   widths or gamma fuel; they are not a `UniformTM`, gate, or runtime analysis.
+- `ContentCappedArithmetic.lean` — Part A G0-B2b1. It provides exact capped
+  natural addition, multiplication, binary-length, and exponentiation. Every
+  `some` theorem identifies the exact mathematical result and proves it fits;
+  every `none` theorem is strict overflow. `checkedPow` has one recursive call
+  at exponent `e / 2`, with separate zero-exponent and zero-base branches. This
+  records source recursion only: no bigint operation cost, `UniformTM`, gate,
+  runtime, semantic-verifier, or bridge theorem is claimed.
 - `ContentParseFieldRecovery.lean` — FEAS-0 slice, part 1 (`VERIFIER_RETARGET_PLAN.md` §1.0): the
   parser field recovery the feasibility route needs and the parse inversion below does **not**
   provide. `parseTreeMCSPPrefixInput_x_slice` re-walks the same success cascade as

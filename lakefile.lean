@@ -857,6 +857,8 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtension,
     -- Part A G0-B2a: source-indexed virtual-zero-tail reader/parser core.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentVirtualZeroTailReaderCore,
+    -- Part A G0-B2b1: exact cap-aware natural arithmetic.
+    Glob.one `Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic,
     -- FEAS-0 slice, part 1: parser field recovery. It imports only
     -- `ContentPrefixExtension`; the independent G0-B2a reader core is listed first.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery,

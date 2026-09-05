@@ -58,6 +58,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
 import Pnp4.Frontier.ContractExpansion.ContentVirtualZeroTailReaderCore
+import Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPadding
@@ -4525,6 +4526,72 @@ theorem check_VZR_contentHeader_gammaLoopBound (N : Nat) :
   Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.contentHeader_gammaLoopBound N
 
 end ContentVirtualZeroTailReaderCoreSurface
+
+section ContentCappedArithmeticSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+def check_contentCapped_checkedNat (B x : Nat) : Option Nat := checkedNat B x
+
+def check_contentCapped_checkedAdd (B a b : Nat) : Option Nat := checkedAdd B a b
+
+def check_contentCapped_checkedMul (B a b : Nat) : Option Nat := checkedMul B a b
+
+def check_contentCapped_checkedPow (B a e : Nat) : Option Nat := checkedPow B a e
+
+def check_contentCapped_checkedBitLength (B n : Nat) : Option Nat :=
+  checkedBitLength B n
+
+theorem check_checkedNat_eq_some_iff :
+    ∀ B x y : Nat, checkedNat B x = some y ↔ y = x ∧ x ≤ B :=
+  @checkedNat_eq_some_iff
+
+theorem check_checkedNat_eq_none_iff :
+    ∀ B x : Nat, checkedNat B x = none ↔ B < x :=
+  @checkedNat_eq_none_iff
+
+theorem check_checkedAdd_eq_some_iff :
+    ∀ B a b c : Nat,
+      checkedAdd B a b = some c ↔ c = a + b ∧ a + b ≤ B :=
+  @checkedAdd_eq_some_iff
+
+theorem check_checkedAdd_eq_none_iff :
+    ∀ B a b : Nat, checkedAdd B a b = none ↔ B < a + b :=
+  @checkedAdd_eq_none_iff
+
+theorem check_checkedMul_eq_some_iff :
+    ∀ B a b c : Nat,
+      checkedMul B a b = some c ↔ c = a * b ∧ a * b ≤ B :=
+  @checkedMul_eq_some_iff
+
+theorem check_checkedMul_eq_none_iff :
+    ∀ B a b : Nat, checkedMul B a b = none ↔ B < a * b :=
+  @checkedMul_eq_none_iff
+
+theorem check_checkedPow_recursiveArgument_lt :
+    ∀ {e : Nat}, e ≠ 0 → e / 2 < e :=
+  @checkedPow_recursiveArgument_lt
+
+theorem check_checkedPow_eq_some_iff :
+    ∀ B a e r : Nat,
+      checkedPow B a e = some r ↔ r = a ^ e ∧ a ^ e ≤ B :=
+  @checkedPow_eq_some_iff
+
+theorem check_checkedPow_eq_none_iff :
+    ∀ B a e : Nat, checkedPow B a e = none ↔ B < a ^ e :=
+  @checkedPow_eq_none_iff
+
+theorem check_checkedBitLength_eq_some_iff :
+    ∀ B n width : Nat,
+      checkedBitLength B n = some width ↔
+        width = bitLength n ∧ bitLength n ≤ B :=
+  @checkedBitLength_eq_some_iff
+
+theorem check_checkedBitLength_eq_none_iff :
+    ∀ B n : Nat, checkedBitLength B n = none ↔ B < bitLength n :=
+  @checkedBitLength_eq_none_iff
+
+end ContentCappedArithmeticSurface
 
 end Tests
 end Pnp4

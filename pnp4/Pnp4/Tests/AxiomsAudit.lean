@@ -49,6 +49,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
 import Pnp4.Frontier.ContractExpansion.ContentVirtualZeroTailReaderCore
 import Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic
+import Pnp4.Frontier.ContractExpansion.ContentCappedSizes
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPadding
@@ -762,3 +763,40 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.checkedPow_eq_none_iff
 #print axioms Pnp4.Frontier.ContractExpansion.checkedBitLength_eq_some_iff
 #print axioms Pnp4.Frontier.ContractExpansion.checkedBitLength_eq_none_iff
+
+-- G0-B2b2: concrete capped size-record declarations and exact contracts.
+#print axioms Pnp4.Frontier.ContractExpansion.checkedThresholdPoly
+#print axioms Pnp4.Frontier.ContractExpansion.checkedThresholdPoly_eq_some_iff
+#print axioms Pnp4.Frontier.ContractExpansion.checkedThresholdPoly_eq_none_iff
+#print axioms Pnp4.Frontier.ContractExpansion.checkedTableLen
+#print axioms Pnp4.Frontier.ContractExpansion.checkedTableLen_eq_some_iff
+#print axioms Pnp4.Frontier.ContractExpansion.checkedTableLen_eq_none_iff
+#print axioms Pnp4.Frontier.ContractExpansion.checkedTreeWitnessBits
+#print axioms Pnp4.Frontier.ContractExpansion.checkedTreeWitnessBits_eq_some_iff
+#print axioms Pnp4.Frontier.ContractExpansion.checkedTreeWitnessBits_eq_none_iff
+#print axioms Pnp4.Frontier.ContractExpansion.CheckedGammaSizes
+#print axioms Pnp4.Frontier.ContractExpansion.exactGammaSizes
+#print axioms Pnp4.Frontier.ContractExpansion.checkedGammaSizes
+#print axioms Pnp4.Frontier.ContractExpansion.checkedGammaSizes_eq_some_iff
+#print axioms Pnp4.Frontier.ContractExpansion.checkedGammaSizes_eq_none_iff
+#print axioms Pnp4.Frontier.ContractExpansion.checkedGammaLen
+#print axioms Pnp4.Frontier.ContractExpansion.checkedGammaLen_eq_some_iff
+#print axioms Pnp4.Frontier.ContractExpansion.checkedGammaLen_eq_none_iff
+#print axioms Pnp4.Frontier.ContractExpansion.checkedIndexWidth
+#print axioms Pnp4.Frontier.ContractExpansion.checkedIndexWidth_eq_some_iff
+#print axioms Pnp4.Frontier.ContractExpansion.checkedIndexWidth_eq_none_iff
+#print axioms Pnp4.Frontier.ContractExpansion.ContentSizes
+#print axioms Pnp4.Frontier.ContractExpansion.exactContentSizes
+#print axioms Pnp4.Frontier.ContractExpansion.ContentSizes.Exact
+#print axioms Pnp4.Frontier.ContractExpansion.exactContentSizes_exact
+#print axioms Pnp4.Frontier.ContractExpansion.ContentSizes.Exact.eq_exactContentSizes
+#print axioms Pnp4.Frontier.ContractExpansion.ContentSizes.Exact.witnessBits_le_M
+#print axioms Pnp4.Frontier.ContractExpansion.ContentSizes.Exact.tableLen_le_M
+#print axioms Pnp4.Frontier.ContractExpansion.computeContentSizesCapped
+#print axioms Pnp4.Frontier.ContractExpansion.computeContentSizesCapped_eq_some_iff
+#print axioms Pnp4.Frontier.ContractExpansion.computeContentSizesCapped_eq_none_iff
+#print axioms Pnp4.Frontier.ContractExpansion.computeContentSizesCapped_witnessBits_le_M
+#print axioms Pnp4.Frontier.ContractExpansion.computeContentSizesCapped_tableLen_le_M
+#print axioms Pnp4.Frontier.ContractExpansion.computeContentSizesCapped_components_le_cap
+#print axioms Pnp4.Frontier.ContractExpansion.CappedContentSizesCertificate
+#print axioms Pnp4.Frontier.ContractExpansion.CappedContentSizesCertificate.ofSuccess

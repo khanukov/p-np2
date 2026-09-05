@@ -147,6 +147,15 @@ power before checking its intermediates. These are source-level arithmetic
 facts, not yet the concrete content-size record, bounded semantic verifier,
 V1 machine, runtime proof, or `ContentVerifierBridge`.
 
+**Part A G0-B2b2 concrete capped size records (infrastructure only).**
+`Pnp4.Frontier.ContractExpansion.ContentCappedSizes` computes every concrete
+threshold/table/witness/gamma/index/ambient field behind the merged cap-aware
+arithmetic. Its exact `some` and strict-overflow `none` biconditionals tie the
+executable pipeline to authoritative `treeMCSPPrefixM`; successful results also
+retain `witnessBits ≤ M`, `tableLen ≤ M`, and cap corollaries. This does not yet
+construct the bounded content parser/semantic verifier, a V1 machine, a runtime
+proof, or `ContentVerifierBridge`.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

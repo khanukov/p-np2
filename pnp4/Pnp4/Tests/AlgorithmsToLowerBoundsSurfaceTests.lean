@@ -59,6 +59,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
 import Pnp4.Frontier.ContractExpansion.ContentVirtualZeroTailReaderCore
 import Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic
+import Pnp4.Frontier.ContractExpansion.ContentCappedSizes
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPadding
@@ -4592,6 +4593,174 @@ theorem check_checkedBitLength_eq_none_iff :
   @checkedBitLength_eq_none_iff
 
 end ContentCappedArithmeticSurface
+
+section ContentCappedSizesSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+/-- Typed definition pins for the exact capped concrete size fields. -/
+def check_contentSizes_checkedThresholdPoly (B k n : Nat) : Option Nat :=
+  checkedThresholdPoly B k n
+
+def check_contentSizes_checkedTableLen (B n : Nat) : Option Nat :=
+  checkedTableLen B n
+
+def check_contentSizes_checkedTreeWitnessBits (B k n : Nat) : Option Nat :=
+  checkedTreeWitnessBits B k n
+
+def check_contentSizes_CheckedGammaSizes : Type :=
+  CheckedGammaSizes
+
+def check_contentSizes_exactGammaSizes (n : Nat) : CheckedGammaSizes :=
+  exactGammaSizes n
+
+def check_contentSizes_checkedGammaSizes (B n : Nat) : Option CheckedGammaSizes :=
+  checkedGammaSizes B n
+
+def check_contentSizes_checkedGammaLen (B n : Nat) : Option Nat :=
+  checkedGammaLen B n
+
+def check_contentSizes_checkedIndexWidth (B witnessBits : Nat) : Option Nat :=
+  checkedIndexWidth B witnessBits
+
+/-- Typed definition pins for the complete concrete size record, its canonical
+specification, its exactness predicate, the executable pipeline, and the
+proved-result packaging. -/
+def check_contentSizes_ContentSizes : Type :=
+  ContentSizes
+
+def check_contentSizes_exactContentSizes (k n : Nat) : ContentSizes :=
+  exactContentSizes k n
+
+def check_contentSizes_ContentSizes_Exact (s : ContentSizes) (k n : Nat) : Prop :=
+  ContentSizes.Exact s k n
+
+def check_contentSizes_computeContentSizesCapped (k B n : Nat) : Option ContentSizes :=
+  computeContentSizesCapped k B n
+
+def check_contentSizes_CappedContentSizesCertificate (k B n : Nat) : Type :=
+  CappedContentSizesCertificate k B n
+
+def check_contentSizes_CappedContentSizesCertificate_ofSuccess
+    {k B n : Nat} {s : ContentSizes}
+    (h : computeContentSizesCapped k B n = some s) :
+    CappedContentSizesCertificate k B n :=
+  CappedContentSizesCertificate.ofSuccess h
+
+/-- Typed pins for the exact success and overflow characterizations of the
+threshold, table, witness-width, gamma, and index fields. -/
+theorem check_checkedThresholdPoly_eq_some_iff (B k n t : Nat) :
+    checkedThresholdPoly B k n = some t ↔
+      t = thresholdPoly k n ∧ thresholdPoly k n ≤ B :=
+  checkedThresholdPoly_eq_some_iff B k n t
+
+theorem check_checkedThresholdPoly_eq_none_iff (B k n : Nat) :
+    checkedThresholdPoly B k n = none ↔ B < thresholdPoly k n :=
+  checkedThresholdPoly_eq_none_iff B k n
+
+theorem check_checkedTableLen_eq_some_iff (B n t : Nat) :
+    checkedTableLen B n = some t ↔
+      t = Pnp3.Models.Partial.tableLen n ∧
+        Pnp3.Models.Partial.tableLen n ≤ B :=
+  checkedTableLen_eq_some_iff B n t
+
+theorem check_checkedTableLen_eq_none_iff (B n : Nat) :
+    checkedTableLen B n = none ↔
+      B < Pnp3.Models.Partial.tableLen n :=
+  checkedTableLen_eq_none_iff B n
+
+theorem check_checkedTreeWitnessBits_eq_some_iff (B k n W : Nat) :
+    checkedTreeWitnessBits B k n = some W ↔
+      W = (treeCircuitWitnessCodec (thresholdPoly k)).witnessBits n ∧
+      (treeCircuitWitnessCodec (thresholdPoly k)).witnessBits n ≤ B :=
+  checkedTreeWitnessBits_eq_some_iff B k n W
+
+theorem check_checkedTreeWitnessBits_eq_none_iff (B k n : Nat) :
+    checkedTreeWitnessBits B k n = none ↔
+      B < (treeCircuitWitnessCodec (thresholdPoly k)).witnessBits n :=
+  checkedTreeWitnessBits_eq_none_iff B k n
+
+theorem check_checkedGammaSizes_eq_some_iff
+    (B n : Nat) (g : CheckedGammaSizes) :
+    checkedGammaSizes B n = some g ↔
+      g = exactGammaSizes n ∧ gammaLen n ≤ B :=
+  checkedGammaSizes_eq_some_iff B n g
+
+theorem check_checkedGammaSizes_eq_none_iff (B n : Nat) :
+    checkedGammaSizes B n = none ↔ B < gammaLen n :=
+  checkedGammaSizes_eq_none_iff B n
+
+theorem check_checkedGammaLen_eq_some_iff (B n g : Nat) :
+    checkedGammaLen B n = some g ↔ g = gammaLen n ∧ gammaLen n ≤ B :=
+  checkedGammaLen_eq_some_iff B n g
+
+theorem check_checkedGammaLen_eq_none_iff (B n : Nat) :
+    checkedGammaLen B n = none ↔ B < gammaLen n :=
+  checkedGammaLen_eq_none_iff B n
+
+theorem check_checkedIndexWidth_eq_some_iff (B W i : Nat) :
+    checkedIndexWidth B W = some i ↔
+      i = bitLength W ∧ bitLength W ≤ B :=
+  checkedIndexWidth_eq_some_iff B W i
+
+theorem check_checkedIndexWidth_eq_none_iff (B W : Nat) :
+    checkedIndexWidth B W = none ↔ B < bitLength W :=
+  checkedIndexWidth_eq_none_iff B W
+
+/-- Typed pins for the canonical record's exactness, uniqueness of exact
+records, and the two principal component bounds. -/
+theorem check_exactContentSizes_exact (k n : Nat) :
+    (exactContentSizes k n).Exact k n :=
+  exactContentSizes_exact k n
+
+theorem check_ContentSizes_Exact_eq_exactContentSizes
+    {s : ContentSizes} {k n : Nat} (h : s.Exact k n) :
+    s = exactContentSizes k n :=
+  ContentSizes.Exact.eq_exactContentSizes h
+
+theorem check_ContentSizes_Exact_witnessBits_le_M
+    {s : ContentSizes} {k n : Nat} (h : s.Exact k n) :
+    s.witnessBits ≤ s.M :=
+  ContentSizes.Exact.witnessBits_le_M h
+
+theorem check_ContentSizes_Exact_tableLen_le_M
+    {s : ContentSizes} {k n : Nat} (h : s.Exact k n) :
+    s.tableLen ≤ s.M :=
+  ContentSizes.Exact.tableLen_le_M h
+
+/-- Typed pins for the executable pipeline: exact success characterization,
+exact overflow at the authoritative repository `M`, and the retained
+component bounds. -/
+theorem check_computeContentSizesCapped_eq_some_iff
+    (k B n : Nat) (s : ContentSizes) :
+    computeContentSizesCapped k B n = some s ↔
+      s.Exact k n ∧ s.M ≤ B :=
+  computeContentSizesCapped_eq_some_iff k B n s
+
+theorem check_computeContentSizesCapped_eq_none_iff (k B n : Nat) :
+    computeContentSizesCapped k B n = none ↔
+      B < treeMCSPPrefixM (treeCircuitWitnessCodec (thresholdPoly k)) n :=
+  computeContentSizesCapped_eq_none_iff k B n
+
+theorem check_computeContentSizesCapped_witnessBits_le_M
+    {k B n : Nat} {s : ContentSizes}
+    (h : computeContentSizesCapped k B n = some s) :
+    s.witnessBits ≤ s.M :=
+  computeContentSizesCapped_witnessBits_le_M h
+
+theorem check_computeContentSizesCapped_tableLen_le_M
+    {k B n : Nat} {s : ContentSizes}
+    (h : computeContentSizesCapped k B n = some s) :
+    s.tableLen ≤ s.M :=
+  computeContentSizesCapped_tableLen_le_M h
+
+theorem check_computeContentSizesCapped_components_le_cap
+    {k B n : Nat} {s : ContentSizes}
+    (h : computeContentSizesCapped k B n = some s) :
+    s.witnessBits ≤ B ∧ s.tableLen ≤ B :=
+  computeContentSizesCapped_components_le_cap h
+
+end ContentCappedSizesSurface
 
 end Tests
 end Pnp4

@@ -64,6 +64,7 @@ import Pnp4.Frontier.ContractExpansion.ContentSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.ContentVerifierTapeInterface
 import Pnp4.Frontier.ContractExpansion.ContentVerifierBridgeWitness
 import Pnp4.Frontier.ContractExpansion.ContentTargetSizeBound
+import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixExplicitCap
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionGateClosure
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPaddingTransport
@@ -4259,6 +4260,127 @@ theorem check_partAEndpoint_treePrefixWitnessRelation_of_wrongLength
   treePrefixWitnessRelation_of_wrongLength codec query cert h
 
 end TreeCircuitContentWitnessRelationSurface
+
+section TreeMCSPPrefixExplicitCapSurface
+
+open Pnp4.Frontier.ContractExpansion
+open Pnp4.AlgorithmsToLowerBounds
+
+/-- Typed definition pins for the transparent exponents. -/
+def check_treeMCSPPrefixTableExponent (k : Nat) : Nat :=
+  treeMCSPPrefixTableExponent k
+
+def check_treeMCSPPrefixPowAddExponent (k : Nat) : Nat :=
+  treeMCSPPrefixPowAddExponent k
+
+def check_contentCapExponent (k : Nat) : Nat :=
+  contentCapExponent k
+
+theorem check_tableLen_eq_two_pow_explicit :
+    ∀ n : Nat, Pnp3.Models.Partial.tableLen n = 2 ^ n :=
+  @tableLen_eq_two_pow_explicit
+
+theorem check_thresholdPoly_eq_explicit :
+    ∀ k n : Nat, thresholdPoly k n = n ^ k + k :=
+  @thresholdPoly_eq_explicit
+
+theorem check_treeCircuitWitnessBits_thresholdPoly_eq_explicit :
+    ∀ k n : Nat,
+      (treeCircuitWitnessCodec (thresholdPoly k)).witnessBits n =
+        (bitLength n + 4) * (n ^ k + k) :=
+  @treeCircuitWitnessBits_thresholdPoly_eq_explicit
+
+theorem check_treeMCSPPrefixM_thresholdPoly_eq_explicit :
+    ∀ k n : Nat,
+      treeMCSPPrefixM (treeCircuitWitnessCodec (thresholdPoly k)) n =
+        8 + (2 * bitLength (n + 1) - 1) + 2 ^ n +
+          bitLength ((bitLength n + 4) * (n ^ k + k)) +
+          (bitLength n + 4) * (n ^ k + k) :=
+  @treeMCSPPrefixM_thresholdPoly_eq_explicit
+
+theorem check_treeMCSPPrefixM_thresholdPoly_table_explicit :
+    ∀ k n : Nat,
+      treeMCSPPrefixM (treeCircuitWitnessCodec (thresholdPoly k)) n ≤
+        (Pnp3.Models.Partial.tableLen n + 1) ^
+          treeMCSPPrefixTableExponent k :=
+  @treeMCSPPrefixM_thresholdPoly_table_explicit
+
+theorem check_polyBoundedInTable_treeMCSPPrefixM_thresholdPoly_explicit :
+    ∀ k : Nat,
+      PolyBoundedInTable
+        (treeMCSPPrefixM (treeCircuitWitnessCodec (thresholdPoly k))) :=
+  @polyBoundedInTable_treeMCSPPrefixM_thresholdPoly_explicit
+
+theorem check_powAddNormalize_allBases :
+    ∀ N e : Nat,
+      (N + 1) ^ e ≤
+        N ^ (2 * e + 2 ^ e) + (2 * e + 2 ^ e) :=
+  @powAddNormalize_allBases
+
+theorem check_treeMCSPPrefixM_thresholdPoly_powAdd_explicit :
+    ∀ k n : Nat,
+      treeMCSPPrefixM (treeCircuitWitnessCodec (thresholdPoly k)) n ≤
+        Pnp3.Models.Partial.tableLen n ^
+            treeMCSPPrefixPowAddExponent k +
+          treeMCSPPrefixPowAddExponent k :=
+  @treeMCSPPrefixM_thresholdPoly_powAdd_explicit
+
+theorem check_contentSemanticAccepts_header_target_of_powAdd :
+    ∀ (k d : Nat),
+      (∀ r : Nat,
+        treeMCSPPrefixM (treeCircuitWitnessCodec (thresholdPoly k)) r ≤
+          Pnp3.Models.Partial.tableLen r ^ d + d) →
+      ∀ {N : Nat} (z : PrefixBitVec N) (n_header consumed : Nat),
+        contentHeader? z = some (n_header, consumed) →
+        contentSemanticAccepts
+            (treeCircuitWitnessCodec (thresholdPoly k)) z = true →
+        treeMCSPPrefixM
+            (treeCircuitWitnessCodec (thresholdPoly k)) n_header ≤
+          N ^ (d + 1) + (d + 1) :=
+  @contentSemanticAccepts_header_target_of_powAdd
+
+theorem check_contentSemanticAccepts_header_target_explicit :
+    ∀ (k : Nat) {N : Nat} (z : PrefixBitVec N)
+      (n_header consumed : Nat),
+      contentHeader? z = some (n_header, consumed) →
+      contentSemanticAccepts
+          (treeCircuitWitnessCodec (thresholdPoly k)) z = true →
+      treeMCSPPrefixM
+          (treeCircuitWitnessCodec (thresholdPoly k)) n_header ≤
+        N ^ contentCapExponent k + contentCapExponent k :=
+  @contentSemanticAccepts_header_target_explicit
+
+theorem check_contentSemanticAccepts_successful_input_target_explicit :
+    ∀ (k : Nat) {N : Nat} (z : PrefixBitVec N)
+      {pr : Σ r : Nat, PrefixInput
+        (Pnp4.Frontier.treeMCSPSearchProblem (thresholdPoly k)
+          (Pnp4.Frontier.TreeMCSPSearchWitnessEncoding.ofCodec
+            (treeCircuitWitnessCodec (thresholdPoly k))))
+        (treeMCSPPrefixM (treeCircuitWitnessCodec (thresholdPoly k)) r)},
+      contentInput? (treeCircuitWitnessCodec (thresholdPoly k)) z = some pr →
+      contentSemanticAccepts
+          (treeCircuitWitnessCodec (thresholdPoly k)) z = true →
+      treeMCSPPrefixM
+          (treeCircuitWitnessCodec (thresholdPoly k)) pr.2.n ≤
+        N ^ contentCapExponent k + contentCapExponent k :=
+  @contentSemanticAccepts_successful_input_target_explicit
+
+theorem check_contentSemanticAccepts_has_bounded_input_target_explicit :
+    ∀ (k : Nat) {N : Nat} (z : PrefixBitVec N),
+      contentSemanticAccepts
+          (treeCircuitWitnessCodec (thresholdPoly k)) z = true →
+      ∃ pr : Σ r : Nat, PrefixInput
+          (Pnp4.Frontier.treeMCSPSearchProblem (thresholdPoly k)
+            (Pnp4.Frontier.TreeMCSPSearchWitnessEncoding.ofCodec
+              (treeCircuitWitnessCodec (thresholdPoly k))))
+          (treeMCSPPrefixM (treeCircuitWitnessCodec (thresholdPoly k)) r),
+        contentInput? (treeCircuitWitnessCodec (thresholdPoly k)) z = some pr ∧
+        treeMCSPPrefixM
+            (treeCircuitWitnessCodec (thresholdPoly k)) pr.2.n ≤
+          N ^ contentCapExponent k + contentCapExponent k :=
+  @contentSemanticAccepts_has_bounded_input_target_explicit
+
+end TreeMCSPPrefixExplicitCapSurface
 
 end Tests
 end Pnp4

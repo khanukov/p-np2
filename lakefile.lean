@@ -871,6 +871,8 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentVerifierBridgeWitness,
     -- FEAS-0 slice, part 2: the concrete accepted-target polynomial bound.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentTargetSizeBound,
+    -- Part A G0-B1: transparent exponents and explicit accepting-window caps.
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixExplicitCap,
     -- GATE-0 slice: non-vacuity of `ContentAccepts` at the concrete codec.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity,
     -- I1: honest convention-length injectivity, gamma canonicity/narrowing,

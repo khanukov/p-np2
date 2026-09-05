@@ -286,6 +286,17 @@ review order (the `lakefile.lean` registration is the dependency order):
   supplies concrete non-vacuity. The four theorems
   stay within `[propext, Classical.choice, Quot.sound]` or a subset, and the surface tests include
   a concrete evaluation to guard computability.
+- `TreeCircuitContentWitnessRelation.lean` — Part A P2-4a's exact-length V1 relation boundary.
+  It defines separate content and tree-prefix relations and maps every witness length other than
+  `certificateLength n 1` to literal `false`. The content relation calls a computable query-first
+  concatenator; a proposition-level extensional theorem relates that view to the pre-existing
+  noncomputable `concatBitstring`, so the executable relation definition does not call that
+  concatenator. Axiom roots may still report `Classical.choice`: both generic relations inherit it
+  from the imported `verifiesBool` checker (`decide (codec.verifies …)`), threshold instances
+  additionally through `treeCircuitWitnessCodec`, and compatibility theorems through
+  `concatBitstring`. This module proves only conversion and guard reductions: it constructs no
+  `UniformTM`, proves no `VerifiesRelation` or content/tree pointwise equality, supplies no
+  `ContentVerifierBridge`, and reduces no lower-bound obligation.
 - `ContentPrefixExtensionGateClosure.lean` — I1 (`VERIFIER_RETARGET_PLAN.md` §4.3). It proves
   `treeMCSPPrefixM_strictMono` / `treeMCSPPrefixM_injective_of_monotone`, verifies the premise for
   `treeCircuitWitnessCodec (thresholdPoly k)`, and supplies

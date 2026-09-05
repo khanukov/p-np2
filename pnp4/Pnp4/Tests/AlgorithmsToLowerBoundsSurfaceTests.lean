@@ -78,6 +78,7 @@ import Pnp4.Frontier.ContractExpansion.ConcreteTreeCodec
 import Pnp4.Frontier.ContractExpansion.ConcreteTreeDirectTagProgram
 import Pnp4.Frontier.ContractExpansion.ConcreteTreeCodecSource
 import Pnp4.Frontier.ContractExpansion.ThresholdGrowth
+import Pnp4.Frontier.ContractExpansion.TreeCircuitContentWitnessRelation
 import Pnp4.Frontier.ContractExpansion.ConsolidatedTreeSeparation
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
@@ -4137,6 +4138,127 @@ end TreeMCSPPrefixSemanticVerifierSurface
 #check @Pnp4.Frontier.ContractExpansion.gammaTermOffset_lt_queryXOffset
 #check @Pnp4.Frontier.ContractExpansion.gammaTermOffset_le_treeMCSPPrefixM
 #check @Pnp4.Frontier.ContractExpansion.gammaMirror_mem
+
+section TreeCircuitContentWitnessRelationSurface
+
+open Pnp4.Frontier.ContractExpansion
+open Pnp4.Frontier.ContractExpansion.PartAEndpoint
+
+def check_partAEndpoint_v1ToInterfaceBitstring {n : Nat}
+    (x : Pnp3.Complexity.Uniform.V1.Bitstring n) :
+    Pnp3.ComplexityInterfaces.Bitstring n :=
+  v1ToInterfaceBitstring x
+
+def check_partAEndpoint_v1ToPrefixBitVec {n : Nat}
+    (x : Pnp3.Complexity.Uniform.V1.Bitstring n) : PrefixBitVec n :=
+  v1ToPrefixBitVec x
+
+def check_partAEndpoint_interfaceToPrefixBitVec {n : Nat}
+    (x : Pnp3.ComplexityInterfaces.Bitstring n) : PrefixBitVec n :=
+  interfaceToPrefixBitVec x
+
+def check_partAEndpoint_concatV1ToPrefixBitVec
+    {n m : Nat}
+    (query : Pnp3.Complexity.Uniform.V1.Bitstring n)
+    (cert : Pnp3.Complexity.Uniform.V1.Bitstring m) :
+    PrefixBitVec (n + m) :=
+  concatV1ToPrefixBitVec query cert
+
+def check_partAEndpoint_contentWitnessRelation
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold) :
+    Pnp3.Complexity.Uniform.V1.WitnessRelation :=
+  contentWitnessRelation codec
+
+def check_partAEndpoint_treePrefixWitnessRelation
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold) :
+    Pnp3.Complexity.Uniform.V1.WitnessRelation :=
+  treePrefixWitnessRelation codec
+
+def check_partAEndpoint_thresholdContentWitnessRelation (k : Nat) :
+    Pnp3.Complexity.Uniform.V1.WitnessRelation :=
+  thresholdContentWitnessRelation k
+
+def check_partAEndpoint_thresholdTreePrefixWitnessRelation (k : Nat) :
+    Pnp3.Complexity.Uniform.V1.WitnessRelation :=
+  thresholdTreePrefixWitnessRelation k
+
+theorem check_partAEndpoint_concatV1ToPrefixBitVec_eq_concatBitstring
+    {n m : Nat}
+    (query : Pnp3.Complexity.Uniform.V1.Bitstring n)
+    (cert : Pnp3.Complexity.Uniform.V1.Bitstring m) :
+    concatV1ToPrefixBitVec query cert =
+      interfaceToPrefixBitVec
+        (Pnp3.ComplexityInterfaces.concatBitstring
+          (v1ToInterfaceBitstring query)
+          (v1ToInterfaceBitstring cert)) :=
+  concatV1ToPrefixBitVec_eq_concatBitstring query cert
+
+theorem check_partAEndpoint_contentWitnessRelation_at_certificateLength
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n : Nat)
+    (query : Pnp3.Complexity.Uniform.V1.Bitstring n)
+    (cert : Pnp3.Complexity.Uniform.V1.Bitstring
+      (Pnp3.ComplexityInterfaces.certificateLength n 1)) :
+    contentWitnessRelation codec n
+        (Pnp3.ComplexityInterfaces.certificateLength n 1) query cert =
+      contentSemanticAccepts codec
+        (concatV1ToPrefixBitVec query cert) :=
+  contentWitnessRelation_at_certificateLength codec n query cert
+
+theorem check_partAEndpoint_contentWitnessRelation_at_certificateLength_concatBitstring
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n : Nat)
+    (query : Pnp3.Complexity.Uniform.V1.Bitstring n)
+    (cert : Pnp3.Complexity.Uniform.V1.Bitstring
+      (Pnp3.ComplexityInterfaces.certificateLength n 1)) :
+    contentWitnessRelation codec n
+        (Pnp3.ComplexityInterfaces.certificateLength n 1) query cert =
+      contentSemanticAccepts codec
+        (interfaceToPrefixBitVec
+          (Pnp3.ComplexityInterfaces.concatBitstring
+            (v1ToInterfaceBitstring query)
+            (v1ToInterfaceBitstring cert))) :=
+  contentWitnessRelation_at_certificateLength_concatBitstring codec n query cert
+
+theorem check_partAEndpoint_contentWitnessRelation_of_wrongLength
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    {n m : Nat}
+    (query : Pnp3.Complexity.Uniform.V1.Bitstring n)
+    (cert : Pnp3.Complexity.Uniform.V1.Bitstring m)
+    (h : m ≠ Pnp3.ComplexityInterfaces.certificateLength n 1) :
+    contentWitnessRelation codec n m query cert = false :=
+  contentWitnessRelation_of_wrongLength codec query cert h
+
+theorem check_partAEndpoint_treePrefixWitnessRelation_at_certificateLength
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n : Nat)
+    (query : Pnp3.Complexity.Uniform.V1.Bitstring n)
+    (cert : Pnp3.Complexity.Uniform.V1.Bitstring
+      (Pnp3.ComplexityInterfaces.certificateLength n 1)) :
+    treePrefixWitnessRelation codec n
+        (Pnp3.ComplexityInterfaces.certificateLength n 1) query cert =
+      treePrefixSemanticAccepts codec n
+        (v1ToPrefixBitVec query)
+        (v1ToPrefixBitVec cert) :=
+  treePrefixWitnessRelation_at_certificateLength codec n query cert
+
+theorem check_partAEndpoint_treePrefixWitnessRelation_of_wrongLength
+    {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    {n m : Nat}
+    (query : Pnp3.Complexity.Uniform.V1.Bitstring n)
+    (cert : Pnp3.Complexity.Uniform.V1.Bitstring m)
+    (h : m ≠ Pnp3.ComplexityInterfaces.certificateLength n 1) :
+    treePrefixWitnessRelation codec n m query cert = false :=
+  treePrefixWitnessRelation_of_wrongLength codec query cert h
+
+end TreeCircuitContentWitnessRelationSurface
 
 end Tests
 end Pnp4

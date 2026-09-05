@@ -110,6 +110,16 @@ generic infrastructure: it does not construct the concrete tree-circuit
 relation body, bridge to the legacy TM/framing model, prove class inclusion,
 add a pnp4 theorem, or establish P versus NP.
 
+**Part A P2-4a guarded content/tree witness relations (infrastructure only).**
+`Pnp4.Frontier.ContractExpansion.TreeCircuitContentWitnessRelation` packages
+the content and tree-prefix semantic Booleans as distinct V1 witness relations,
+rejecting every noncanonical certificate length. The content relation uses a
+computable query-first concatenator; a separate proposition-level theorem
+identifies it with canonical `concatBitstring`, whose historical definition is
+noncomputable. This constructs no verifier machine, proves no equality between
+the two semantic relations, supplies no `ContentVerifierBridge`, and establishes
+no NP membership or lower bound.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

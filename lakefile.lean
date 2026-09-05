@@ -862,6 +862,8 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPadding,
     -- P0: computable content-side semantic verifier and its specification correctness.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentSemanticVerifier,
+    -- Part A P2-4a: guarded V1 relations over content/tree-prefix semantics.
+    Glob.one `Pnp4.Frontier.ContractExpansion.TreeCircuitContentWitnessRelation,
     -- D1a: machine-facing tape lemmas and the predicate-parameterized exact-step bridge.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentVerifierTapeInterface,
     -- D1b: the codec-specific bridge alias and the conditional witness repackaging.  It imports

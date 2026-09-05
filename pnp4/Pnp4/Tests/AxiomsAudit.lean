@@ -68,6 +68,7 @@ import Pnp4.Frontier.ContractExpansion.ConcreteTreeCodec
 import Pnp4.Frontier.ContractExpansion.ConcreteTreeDirectTagProgram
 import Pnp4.Frontier.ContractExpansion.ConcreteTreeCodecSource
 import Pnp4.Frontier.ContractExpansion.ThresholdGrowth
+import Pnp4.Frontier.ContractExpansion.TreeCircuitContentWitnessRelation
 import Pnp4.Frontier.ContractExpansion.ConsolidatedTreeSeparation
 import Pnp4.Frontier.ContractExpansion.TreeMCSPZeroPrefixBuilder
 import Pnp4.Frontier.ContractExpansion.NaiveGreedySizeSpike
@@ -683,3 +684,23 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.gammaTermOffset_lt_queryXOffset
 #print axioms Pnp4.Frontier.ContractExpansion.gammaTermOffset_le_treeMCSPPrefixM
 #print axioms Pnp4.Frontier.ContractExpansion.gammaMirror_mem
+
+-- P2-4a: direct declaration roots only. Computation uses the computable
+-- concatenator. Roots may still report `Classical.choice`: generic relations
+-- inherit it from `verifiesBool` (`decide (codec.verifies …)`), threshold
+-- instances additionally from `treeCircuitWitnessCodec`, and compatibility
+-- theorems from `concatBitstring`.
+#print axioms Pnp4.Frontier.ContractExpansion.PartAEndpoint.v1ToInterfaceBitstring
+#print axioms Pnp4.Frontier.ContractExpansion.PartAEndpoint.v1ToPrefixBitVec
+#print axioms Pnp4.Frontier.ContractExpansion.PartAEndpoint.interfaceToPrefixBitVec
+#print axioms Pnp4.Frontier.ContractExpansion.PartAEndpoint.concatV1ToPrefixBitVec
+#print axioms Pnp4.Frontier.ContractExpansion.PartAEndpoint.contentWitnessRelation
+#print axioms Pnp4.Frontier.ContractExpansion.PartAEndpoint.treePrefixWitnessRelation
+#print axioms Pnp4.Frontier.ContractExpansion.PartAEndpoint.thresholdContentWitnessRelation
+#print axioms Pnp4.Frontier.ContractExpansion.PartAEndpoint.thresholdTreePrefixWitnessRelation
+#print axioms Pnp4.Frontier.ContractExpansion.PartAEndpoint.concatV1ToPrefixBitVec_eq_concatBitstring
+#print axioms Pnp4.Frontier.ContractExpansion.PartAEndpoint.contentWitnessRelation_at_certificateLength
+#print axioms Pnp4.Frontier.ContractExpansion.PartAEndpoint.contentWitnessRelation_at_certificateLength_concatBitstring
+#print axioms Pnp4.Frontier.ContractExpansion.PartAEndpoint.contentWitnessRelation_of_wrongLength
+#print axioms Pnp4.Frontier.ContractExpansion.PartAEndpoint.treePrefixWitnessRelation_at_certificateLength
+#print axioms Pnp4.Frontier.ContractExpansion.PartAEndpoint.treePrefixWitnessRelation_of_wrongLength

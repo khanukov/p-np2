@@ -87,6 +87,8 @@ lean_lib PnP3 where
     Glob.one `Complexity.Uniform.V1.BudgetTransport,
     -- Routed fixed-parser/verifier constructor and parser-prefix handoff.
     Glob.one `Complexity.Uniform.V1.CombinedMachine,
+    -- Total combined parser/verifier correctness and relation packaging.
+    Glob.one `Complexity.Uniform.V1.CombinedCorrectness,
     -- P1b-1 (2026-09-03), direct fixed-width layout and initial bundle only.
     -- No transition/run compiler, polynomial simulation, or Ppoly bridge.
     Glob.one `Complexity.Uniform.V1.CircuitEncoding,
@@ -627,6 +629,7 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1FixedPairParserAmbientSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
+    Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,
     Glob.one `Tests.UniformV1CountabilitySurfaceTests,
     Glob.one `Tests.UniformV1CircuitEncodingSurfaceTests,
     Glob.one `Tests.UniformV1StepKernelSurfaceTests,

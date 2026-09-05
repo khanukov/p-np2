@@ -7,7 +7,8 @@ pair-parser executable core, and P2-3b universal exact parser correctness
 plus P2-3cA ambient-budget parser transport through 2026-09-04. Canonical `P`
 and `NP` remain legacy and unchanged. P2-3cB1 additionally provides generic
 bounded budget transport for a fixed `UniformTM`; P2-3cB2 adds the routed
-combined-machine constructor and exact parser handoff.
+combined-machine constructor and exact parser handoff; P2-3cB3 proves total
+combined relation verification.
 
 The versioned namespace is:
 
@@ -332,6 +333,41 @@ surface, while `Tests/AxiomsAudit.lean` contains the paired source/wrapper
 roots directly. This slice does not yet
 prove the verifier suffix, total clock, `VerifiesRelation`, class inclusion or
 migration, a pnp4 theorem, or a gate bound.
+
+## P2-3cB3 total combined correctness
+
+`Complexity.Uniform.V1.CombinedCorrectness` defines the sharp total deadline
+
+```text
+totalClock c N = (2*N+1) + (N^c+c)
+```
+
+for the single routed machine run. `run_add` is used only to decompose that
+run in the proof. On successful pair syntax, the parser endpoint is the full
+embedded verifier initial configuration; generic bounded budget transport and
+same-budget `run_embed` then execute the verifier suffix. On malformed or empty
+raw words, the parser endpoint is literal combined reject and terminal
+absorption preserves it through the suffix.
+
+The module proves exact `DecidesAt` and `DecidesWithin` at the sharp total
+budget for every raw word. It then proves
+`totalClock c N ≤ polyClock (c+3) N`, with explicit zero-, one-, and larger-
+length cases; `c+2` fails at `N=1`. After transporting the exact combined
+result to the standard budget, it packages
+
+```lean
+VerifiesRelation (combinedMachine V) (c + 3) R
+```
+
+from `VerifiesRelation V c R`. The surface is
+`Tests.UniformV1CombinedCorrectnessSurfaceTests`, with three typed definition
+pins, 22 full-proposition `check_*` wrappers, and paired roots inline in the
+central axiom audit.
+
+This slice does not construct a concrete verifier for the tree-circuit content
+relation, adapt headerless pnp4 concatenation to tagged pair encoding, compile
+V1 `UniformTM` into the legacy pnp4 TM model, prove class inclusion/migration,
+or establish a pnp4 lower bound.
 
 ## P1c countability and direct no-length-advice diagonal
 

@@ -97,6 +97,19 @@ rejection are proved. No host restart or extra handoff step exists. This slice
 does not yet prove the total verifier suffix, relation verification, class
 inclusion, pnp4 result, or gate bound.
 
+**P2-3cB3 total combined correctness and relation packaging (infrastructure
+only).** `Complexity.Uniform.V1.CombinedCorrectness` proves that the routed
+machine executes one parser prefix of `2*N+1` steps and one verifier suffix of
+`N^c+c` steps with no additional handoff. Malformed raw words remain literal
+combined reject; successful words execute the embedded verifier at the same
+ambient budget. The exact total clock is dominated by `polyClock (c+3)`, while
+`c+2` fails at length one. Consequently every fixed verifier satisfying
+`VerifiesRelation V c R` yields
+`VerifiesRelation (combinedMachine V) (c+3) R` on all raw words. This is still
+generic infrastructure: it does not construct the concrete tree-circuit
+relation body, bridge to the legacy TM/framing model, prove class inclusion,
+add a pnp4 theorem, or establish P versus NP.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

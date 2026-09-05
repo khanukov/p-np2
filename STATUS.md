@@ -139,6 +139,14 @@ including every failure branch. This is the semantic reader/parser layer only:
 it does not yet compute capped schedules, evaluate the concrete codec, construct
 a V1 machine, prove a runtime bound, or supply `ContentVerifierBridge`.
 
+**Part A G0-B2b1 capped arithmetic (infrastructure only).**
+`Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic` adds exact
+success/overflow contracts for capped naturals, addition, multiplication,
+binary length, and exponentiation by halving. It avoids evaluating an uncapped
+power before checking its intermediates. These are source-level arithmetic
+facts, not yet the concrete content-size record, bounded semantic verifier,
+V1 machine, runtime proof, or `ContentVerifierBridge`.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

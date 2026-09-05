@@ -48,6 +48,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
 import Pnp4.Frontier.ContractExpansion.ContentVirtualZeroTailReaderCore
+import Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPadding
@@ -744,3 +745,20 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.allZeroLoopBound
 #print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.gammaLoopBound
 #print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.contentHeader_gammaLoopBound
+-- G0-B2b1: capped arithmetic declarations and exact success/overflow contracts.
+#print axioms Pnp4.Frontier.ContractExpansion.checkedNat
+#print axioms Pnp4.Frontier.ContractExpansion.checkedAdd
+#print axioms Pnp4.Frontier.ContractExpansion.checkedMul
+#print axioms Pnp4.Frontier.ContractExpansion.checkedPow
+#print axioms Pnp4.Frontier.ContractExpansion.checkedBitLength
+#print axioms Pnp4.Frontier.ContractExpansion.checkedNat_eq_some_iff
+#print axioms Pnp4.Frontier.ContractExpansion.checkedNat_eq_none_iff
+#print axioms Pnp4.Frontier.ContractExpansion.checkedAdd_eq_some_iff
+#print axioms Pnp4.Frontier.ContractExpansion.checkedAdd_eq_none_iff
+#print axioms Pnp4.Frontier.ContractExpansion.checkedMul_eq_some_iff
+#print axioms Pnp4.Frontier.ContractExpansion.checkedMul_eq_none_iff
+#print axioms Pnp4.Frontier.ContractExpansion.checkedPow_recursiveArgument_lt
+#print axioms Pnp4.Frontier.ContractExpansion.checkedPow_eq_some_iff
+#print axioms Pnp4.Frontier.ContractExpansion.checkedPow_eq_none_iff
+#print axioms Pnp4.Frontier.ContractExpansion.checkedBitLength_eq_some_iff
+#print axioms Pnp4.Frontier.ContractExpansion.checkedBitLength_eq_none_iff

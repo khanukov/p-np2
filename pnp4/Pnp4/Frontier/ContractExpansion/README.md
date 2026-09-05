@@ -201,6 +201,13 @@ review order (the `lakefile.lean` registration is the dependency order):
   at exponent `e / 2`, with separate zero-exponent and zero-base branches. This
   records source recursion only: no bigint operation cost, `UniformTM`, gate,
   runtime, semantic-verifier, or bridge theorem is claimed.
+- `ContentCappedSizes.lean` — Part A G0-B2b2. It composes capped arithmetic into
+  exact concrete threshold, table, witness, gamma, index, partial-endpoint, and
+  final convention-length fields. `computeContentSizesCapped` returns `some s`
+  exactly when `s` is the canonical record and `s.M ≤ B`, and returns `none`
+  exactly when authoritative `treeMCSPPrefixM` strictly exceeds `B`. Successful
+  outputs retain table/witness bounds. This is size arithmetic only: no content
+  parser, semantic verifier, `UniformTM`, runtime, or bridge theorem is claimed.
 - `ContentParseFieldRecovery.lean` — FEAS-0 slice, part 1 (`VERIFIER_RETARGET_PLAN.md` §1.0): the
   parser field recovery the feasibility route needs and the parse inversion below does **not**
   provide. `parseTreeMCSPPrefixInput_x_slice` re-walks the same success cascade as

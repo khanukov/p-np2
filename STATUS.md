@@ -130,6 +130,15 @@ data fixed by `k`, not an existential witness or runtime advice. This does not
 yet implement compressed virtual-zero-tail semantics, compile a verifier to V1,
 or supply `ContentVerifierBridge`.
 
+**Part A G0-B2a virtual-zero-tail reader core (infrastructure only).**
+`Pnp4.Frontier.ContractExpansion.ContentVirtualZeroTailReaderCore` implements
+the strict content readers and complete tree-prefix parser against a physical
+source plus an independent logical extent, without constructing a padded
+vector. Its whole-result theorems recover the frozen operations on `padWord`,
+including every failure branch. This is the semantic reader/parser layer only:
+it does not yet compute capped schedules, evaluate the concrete codec, construct
+a V1 machine, prove a runtime bound, or supply `ContentVerifierBridge`.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

@@ -156,6 +156,16 @@ retain `witnessBits ≤ M`, `tableLen ≤ M`, and cap corollaries. This does not
 construct the bounded content parser/semantic verifier, a V1 machine, a runtime
 proof, or `ContentVerifierBridge`.
 
+**Part A G0-B2c bounded content semantic glue (infrastructure only).**
+`Pnp4.Frontier.ContractExpansion.BoundedContentSemanticVerifier` feeds the
+merged capped `ContentSizes` result into the virtual-zero-tail parser at exact
+logical extent `sizes.M`. Its strongest unconditional parser theorem is the
+cap-filter characterization; plain parser equality is available only under a
+target-fit or semantic-acceptance hypothesis. Its source-level Boolean checker
+is proved extensionally equal to authoritative `contentSemanticAccepts`. This
+still does not provide a fixed `UniformTM`, tape-level evaluator, runtime proof,
+`VerifiesRelation`, or `ContentVerifierBridge`.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

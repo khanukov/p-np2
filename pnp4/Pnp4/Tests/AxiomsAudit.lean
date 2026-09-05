@@ -58,6 +58,7 @@ import Pnp4.Frontier.ContractExpansion.ContentVerifierTapeInterface
 import Pnp4.Frontier.ContractExpansion.ContentVerifierBridgeWitness
 import Pnp4.Frontier.ContractExpansion.ContentTargetSizeBound
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixExplicitCap
+import Pnp4.Frontier.ContractExpansion.BoundedContentSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionGateClosure
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPaddingTransport
@@ -800,3 +801,27 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.computeContentSizesCapped_components_le_cap
 #print axioms Pnp4.Frontier.ContractExpansion.CappedContentSizesCertificate
 #print axioms Pnp4.Frontier.ContractExpansion.CappedContentSizesCertificate.ofSuccess
+
+-- G0-B2c: bounded content parser and acceptance-preserving semantic glue.
+#print axioms Pnp4.Frontier.ContractExpansion.boundedContentCodec
+#print axioms Pnp4.Frontier.ContractExpansion.BoundedContentInputResult
+#print axioms Pnp4.Frontier.ContractExpansion.boundedContentCap
+#print axioms Pnp4.Frontier.ContractExpansion.boundedContentInput?
+#print axioms Pnp4.Frontier.ContractExpansion.boundedContentSemanticAccepts
+#print axioms Pnp4.Frontier.ContractExpansion.boundedContentCap_pos
+#print axioms Pnp4.Frontier.ContractExpansion.boundedContentInput?_eq_filter
+#print axioms Pnp4.Frontier.ContractExpansion.boundedContentInput?_eq_some_iff
+#print axioms Pnp4.Frontier.ContractExpansion.boundedContentInput?_sound
+#print axioms Pnp4.Frontier.ContractExpansion.boundedContentInput?_target_le
+#print axioms Pnp4.Frontier.ContractExpansion.boundedContentInput?_complete_of_target_le
+#print axioms Pnp4.Frontier.ContractExpansion.boundedContentInput?_computeContentSizesCapped_eq_some
+#print axioms Pnp4.Frontier.ContractExpansion.boundedContentInput?_eq_none_of_boundedContentCap_lt
+#print axioms Pnp4.Frontier.ContractExpansion.boundedContentInput?_eq_contentInput_of_header_target_le
+#print axioms Pnp4.Frontier.ContractExpansion.contentSemanticAccepts_successful_outer_target_explicit
+#print axioms Pnp4.Frontier.ContractExpansion.contentSemanticAccepts_eq_false_of_boundedContentCap_lt
+#print axioms Pnp4.Frontier.ContractExpansion.boundedContentSemanticAccepts_eq_false_of_boundedContentCap_lt
+#print axioms Pnp4.Frontier.ContractExpansion.boundedContentSemanticAccepts_eq_true_iff
+#print axioms Pnp4.Frontier.ContractExpansion.boundedContentSemanticAccepts_eq
+#print axioms Pnp4.Frontier.ContractExpansion.boundedContentSemanticAccepts_eq_false_iff
+#print axioms Pnp4.Frontier.ContractExpansion.boundedContentInput?_eq_contentInput_of_semantic_true
+#print axioms Pnp4.Frontier.ContractExpansion.boundedContentSemanticAccepts_eq_true_iff_contentAccepts

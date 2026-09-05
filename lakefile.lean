@@ -879,6 +879,8 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentTargetSizeBound,
     -- Part A G0-B1: transparent exponents and explicit accepting-window caps.
     Glob.one `Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixExplicitCap,
+    -- Part A G0-B2c: bounded content parser and semantic equality glue.
+    Glob.one `Pnp4.Frontier.ContractExpansion.BoundedContentSemanticVerifier,
     -- GATE-0 slice: non-vacuity of `ContentAccepts` at the concrete codec.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity,
     -- I1: honest convention-length injectivity, gamma canonicity/narrowing,

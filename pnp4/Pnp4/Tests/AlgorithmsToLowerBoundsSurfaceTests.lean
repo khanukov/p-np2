@@ -68,6 +68,7 @@ import Pnp4.Frontier.ContractExpansion.ContentVerifierTapeInterface
 import Pnp4.Frontier.ContractExpansion.ContentVerifierBridgeWitness
 import Pnp4.Frontier.ContractExpansion.ContentTargetSizeBound
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixExplicitCap
+import Pnp4.Frontier.ContractExpansion.BoundedContentSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionGateClosure
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPaddingTransport
@@ -4761,6 +4762,226 @@ theorem check_computeContentSizesCapped_components_le_cap
   computeContentSizesCapped_components_le_cap h
 
 end ContentCappedSizesSurface
+
+section BoundedContentSemanticVerifierSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+/-! ### G0-B2c bounded content parser and acceptance-preserving semantic checker
+
+Typed pins for the closed bounded content parser
+(`boundedContentInput?`, cap `boundedContentCap k N = N ^ contentCapExponent k +
+contentCapExponent k`) and its executable Boolean checker
+(`boundedContentSemanticAccepts`), together with named wrappers restating every
+public theorem of the module with all binders, each proved from the source
+theorem.  The internal transport parser and the after-header parser are private
+to the source module and have no surface.  Scope as in the source: semantic
+glue between source-level executables only; no `UniformTM`, tape layout,
+runtime bound, NP-membership, lower bound, or `P ≠ NP` claim. -/
+
+/-- Typed definition pins for the two public abbreviations: the concrete codec
+at `thresholdPoly k`, and the dependent Sigma result type returned by the
+authoritative `contentInput?`. -/
+def check_boundedContent_boundedContentCodec (k : Nat) :
+    Frontier.TreeCircuitWitnessCodec (thresholdPoly k) :=
+  boundedContentCodec k
+
+def check_boundedContent_BoundedContentInputResult (k : Nat) : Type :=
+  BoundedContentInputResult k
+
+/-- Typed definition pins for the three public definitions: the closed cap
+computed from the physical length only, the bounded parser (whose dependent
+result type is stated in full, unfolding `BoundedContentInputResult k`), and
+the executable bounded semantic checker. -/
+def check_boundedContent_boundedContentCap (k N : Nat) : Nat :=
+  boundedContentCap k N
+
+def check_boundedContent_boundedContentInput? (k : Nat) {N : Nat}
+    (z : PrefixBitVec N) :
+    Option (Σ n' : Nat,
+      PrefixInput
+        (Frontier.treeMCSPSearchProblem (thresholdPoly k)
+          (Frontier.TreeMCSPSearchWitnessEncoding.ofCodec (boundedContentCodec k)))
+        (treeMCSPPrefixM (boundedContentCodec k) n')) :=
+  boundedContentInput? k z
+
+def check_boundedContent_boundedContentSemanticAccepts (k : Nat) {N : Nat}
+    (z : PrefixBitVec N) : Bool :=
+  boundedContentSemanticAccepts k z
+
+/-- Typed pin for positivity of the closed accepting-window cap. -/
+theorem check_boundedContent_boundedContentCap_pos (k N : Nat) :
+    0 < boundedContentCap k N :=
+  boundedContentCap_pos k N
+
+/-- Typed pin for the exact cap-filter characterization: the bounded parser is
+the cap-filtered authoritative parser.  The restated `match` elaborates to a
+fresh matcher constant in this module, so the wrapper is the source theorem
+followed by a case split on the shared discriminant, under which both matcher
+applications reduce; the proof does not depend on matcher identity. -/
+theorem check_boundedContent_boundedContentInput?_eq_filter
+    (k : Nat) {N : Nat} (z : PrefixBitVec N) :
+    boundedContentInput? k z =
+      match contentInput? (boundedContentCodec k) z with
+      | none => none
+      | some pr =>
+          if treeMCSPPrefixM (boundedContentCodec k) pr.1 ≤
+              boundedContentCap k N then
+            some pr
+          else
+            none :=
+  (boundedContentInput?_eq_filter k z).trans
+    (by cases contentInput? (boundedContentCodec k) z <;> rfl)
+
+/-- Typed pin for the strongest parser interface: soundness and cap
+completeness in one biconditional. -/
+theorem check_boundedContent_boundedContentInput?_eq_some_iff
+    (k : Nat) {N : Nat} (z : PrefixBitVec N)
+    (pr : BoundedContentInputResult k) :
+    boundedContentInput? k z = some pr ↔
+      contentInput? (boundedContentCodec k) z = some pr ∧
+      treeMCSPPrefixM (boundedContentCodec k) pr.1 ≤
+        boundedContentCap k N :=
+  boundedContentInput?_eq_some_iff k z pr
+
+/-- Typed pin: every bounded-parser success is an identical authoritative
+success. -/
+theorem check_boundedContent_boundedContentInput?_sound
+    (k : Nat) {N : Nat} (z : PrefixBitVec N)
+    {pr : BoundedContentInputResult k}
+    (h : boundedContentInput? k z = some pr) :
+    contentInput? (boundedContentCodec k) z = some pr :=
+  boundedContentInput?_sound k z h
+
+/-- Typed pin: every bounded-parser success carries the closed target bound at
+its outer Sigma index. -/
+theorem check_boundedContent_boundedContentInput?_target_le
+    (k : Nat) {N : Nat} (z : PrefixBitVec N)
+    {pr : BoundedContentInputResult k}
+    (h : boundedContentInput? k z = some pr) :
+    treeMCSPPrefixM (boundedContentCodec k) pr.1 ≤
+      boundedContentCap k N :=
+  boundedContentInput?_target_le k z h
+
+/-- Typed pin: authoritative parsing is reproduced whenever its outer target
+lies under the cap. -/
+theorem check_boundedContent_boundedContentInput?_complete_of_target_le
+    (k : Nat) {N : Nat} (z : PrefixBitVec N)
+    {pr : BoundedContentInputResult k}
+    (hinput : contentInput? (boundedContentCodec k) z = some pr)
+    (htarget : treeMCSPPrefixM (boundedContentCodec k) pr.1 ≤
+      boundedContentCap k N) :
+    boundedContentInput? k z = some pr :=
+  boundedContentInput?_complete_of_target_le k z hinput htarget
+
+/-- Typed pin: every bounded-parser success has a successful exact capped size
+computation at its outer index, returning the canonical record. -/
+theorem check_boundedContent_boundedContentInput?_computeContentSizesCapped_eq_some
+    (k : Nat) {N : Nat} (z : PrefixBitVec N)
+    {pr : BoundedContentInputResult k}
+    (h : boundedContentInput? k z = some pr) :
+    computeContentSizesCapped k (boundedContentCap k N) pr.1 =
+      some (exactContentSizes k pr.1) :=
+  boundedContentInput?_computeContentSizesCapped_eq_some k z h
+
+/-- Typed pin: an explicit header-target overflow makes the bounded parser
+reject before strict parsing. -/
+theorem check_boundedContent_boundedContentInput?_eq_none_of_boundedContentCap_lt
+    (k : Nat) {N : Nat} (z : PrefixBitVec N)
+    (nHeader consumed : Nat)
+    (hheader : contentHeader? z = some (nHeader, consumed))
+    (hoverflow : boundedContentCap k N <
+      treeMCSPPrefixM (boundedContentCodec k) nHeader) :
+    boundedContentInput? k z = none :=
+  boundedContentInput?_eq_none_of_boundedContentCap_lt
+    k z nHeader consumed hheader hoverflow
+
+/-- Typed pin: parser equality under the exact physical header and its
+accepting-window bound. -/
+theorem check_boundedContent_boundedContentInput?_eq_contentInput_of_header_target_le
+    (k : Nat) {N : Nat} (z : PrefixBitVec N)
+    (nHeader consumed : Nat)
+    (hheader : contentHeader? z = some (nHeader, consumed))
+    (htarget : treeMCSPPrefixM (boundedContentCodec k) nHeader ≤
+      boundedContentCap k N) :
+    boundedContentInput? k z = contentInput? (boundedContentCodec k) z :=
+  boundedContentInput?_eq_contentInput_of_header_target_le
+    k z nHeader consumed hheader htarget
+
+/-- Typed pin for the accepting-window cap theorem specialized to the outer
+Sigma index `pr.1` of one authoritative success (not the parsed field
+`pr.2.n`). -/
+theorem check_boundedContent_contentSemanticAccepts_successful_outer_target_explicit
+    (k : Nat) {N : Nat} (z : PrefixBitVec N)
+    {pr : BoundedContentInputResult k}
+    (hinput : contentInput? (boundedContentCodec k) z = some pr)
+    (hsemantic : contentSemanticAccepts (boundedContentCodec k) z = true) :
+    treeMCSPPrefixM (boundedContentCodec k) pr.1 ≤
+      boundedContentCap k N :=
+  contentSemanticAccepts_successful_outer_target_explicit k z hinput hsemantic
+
+/-- Typed pin: an explicit header-target overflow forces authoritative semantic
+rejection (it does not assert that authoritative parsing failed). -/
+theorem check_boundedContent_contentSemanticAccepts_eq_false_of_boundedContentCap_lt
+    (k : Nat) {N : Nat} (z : PrefixBitVec N)
+    (nHeader consumed : Nat)
+    (hheader : contentHeader? z = some (nHeader, consumed))
+    (hoverflow : boundedContentCap k N <
+      treeMCSPPrefixM (boundedContentCodec k) nHeader) :
+    contentSemanticAccepts (boundedContentCodec k) z = false :=
+  contentSemanticAccepts_eq_false_of_boundedContentCap_lt
+    k z nHeader consumed hheader hoverflow
+
+/-- Typed pin: the bounded checker rejects the same explicit overflow before
+strict parsing. -/
+theorem check_boundedContent_boundedContentSemanticAccepts_eq_false_of_boundedContentCap_lt
+    (k : Nat) {N : Nat} (z : PrefixBitVec N)
+    (nHeader consumed : Nat)
+    (hheader : contentHeader? z = some (nHeader, consumed))
+    (hoverflow : boundedContentCap k N <
+      treeMCSPPrefixM (boundedContentCodec k) nHeader) :
+    boundedContentSemanticAccepts k z = false :=
+  boundedContentSemanticAccepts_eq_false_of_boundedContentCap_lt
+    k z nHeader consumed hheader hoverflow
+
+/-- Typed pin: the bounded and authoritative Boolean checkers have identical
+accepting branches. -/
+theorem check_boundedContent_boundedContentSemanticAccepts_eq_true_iff
+    (k : Nat) {N : Nat} (z : PrefixBitVec N) :
+    boundedContentSemanticAccepts k z = true ↔
+      contentSemanticAccepts (boundedContentCodec k) z = true :=
+  boundedContentSemanticAccepts_eq_true_iff k z
+
+/-- Typed pin for the Boolean equality of the two checkers. -/
+theorem check_boundedContent_boundedContentSemanticAccepts_eq
+    (k : Nat) {N : Nat} (z : PrefixBitVec N) :
+    boundedContentSemanticAccepts k z =
+      contentSemanticAccepts (boundedContentCodec k) z :=
+  boundedContentSemanticAccepts_eq k z
+
+/-- Typed pin for explicit rejecting-branch preservation. -/
+theorem check_boundedContent_boundedContentSemanticAccepts_eq_false_iff
+    (k : Nat) {N : Nat} (z : PrefixBitVec N) :
+    boundedContentSemanticAccepts k z = false ↔
+      contentSemanticAccepts (boundedContentCodec k) z = false :=
+  boundedContentSemanticAccepts_eq_false_iff k z
+
+/-- Typed pin: on semantic acceptance the parser equality is valid. -/
+theorem check_boundedContent_boundedContentInput?_eq_contentInput_of_semantic_true
+    (k : Nat) {N : Nat} (z : PrefixBitVec N)
+    (hsemantic : contentSemanticAccepts (boundedContentCodec k) z = true) :
+    boundedContentInput? k z = contentInput? (boundedContentCodec k) z :=
+  boundedContentInput?_eq_contentInput_of_semantic_true k z hsemantic
+
+/-- Typed pin: the bounded executable still decides the exact frozen content
+predicate. -/
+theorem check_boundedContent_boundedContentSemanticAccepts_eq_true_iff_contentAccepts
+    (k : Nat) {N : Nat} (z : PrefixBitVec N) :
+    boundedContentSemanticAccepts k z = true ↔
+      ContentAccepts (boundedContentCodec k) z :=
+  boundedContentSemanticAccepts_eq_true_iff_contentAccepts k z
+
+end BoundedContentSemanticVerifierSurface
 
 end Tests
 end Pnp4

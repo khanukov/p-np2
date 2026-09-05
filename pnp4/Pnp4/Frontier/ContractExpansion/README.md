@@ -186,6 +186,14 @@ review order (the `lakefile.lean` registration is the dependency order):
   language `ContentPrefixExtensionLanguage` (`L'`), and the NP-witness interface
   `ContentPrefixExtensionNPWitness`. Definitions plus the `accepts_iff` unwrapping;
   the interface is a **hypothesis**.
+- `ContentVirtualZeroTailReaderCore.lean` — Part A G0-B2a. It implements
+  strict bit, big-endian, slice, all-zero, gamma, header, and complete
+  tree-prefix parser operations over a physical source with a separate logical
+  length. Positions inside the logical extent but beyond physical support read
+  as false; positions beyond the logical extent fail. Whole-result equalities
+  identify every operation with the frozen counterpart on `padWord z T`,
+  including all failure branches. The named loop bounds record only structural
+  widths or gamma fuel; they are not a `UniformTM`, gate, or runtime analysis.
 - `ContentParseFieldRecovery.lean` — FEAS-0 slice, part 1 (`VERIFIER_RETARGET_PLAN.md` §1.0): the
   parser field recovery the feasibility route needs and the parse inversion below does **not**
   provide. `parseTreeMCSPPrefixInput_x_slice` re-walks the same success cascade as

@@ -47,6 +47,7 @@ import Pnp4.Frontier.ContractExpansion.PrefixExtensionNPWitness
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
+import Pnp4.Frontier.ContractExpansion.ContentVirtualZeroTailReaderCore
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPadding
@@ -721,3 +722,25 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.contentSemanticAccepts_header_target_explicit
 #print axioms Pnp4.Frontier.ContractExpansion.contentSemanticAccepts_successful_input_target_explicit
 #print axioms Pnp4.Frontier.ContractExpansion.contentSemanticAccepts_has_bounded_input_target_explicit
+-- G0-B2a: all public virtual-zero-tail reader/parser declarations.
+#print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.readBit?
+#print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.readBit?_eq_padWord
+#print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.readNatBE
+#print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.readNatBE_eq_padWord
+#print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.sliceBits?
+#print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.sliceBits?_eq_padWord
+#print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.allZeroSlice?
+#print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.allZeroSlice?_eq_padWord
+#print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.decodeGammaAux?
+#print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.decodeGammaAux?_eq_padWord
+#print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.decodeGamma?
+#print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.decodeGamma?_eq_padWord
+#print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.contentHeader?
+#print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.contentHeader?_eq_padWord
+#print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.contentHeader?_eq
+#print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.parseTreeMCSPPrefixInput
+#print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.parseTreeMCSPPrefixInput_eq_padWord
+#print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.readNatBELoopBound
+#print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.allZeroLoopBound
+#print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.gammaLoopBound
+#print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.contentHeader_gammaLoopBound

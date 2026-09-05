@@ -57,6 +57,7 @@ import Pnp4.Frontier.ContractExpansion.PrefixExtensionNPWitness
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
+import Pnp4.Frontier.ContractExpansion.ContentVirtualZeroTailReaderCore
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionCoincidence
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPadding
@@ -4381,6 +4382,149 @@ theorem check_contentSemanticAccepts_has_bounded_input_target_explicit :
   @contentSemanticAccepts_has_bounded_input_target_explicit
 
 end TreeMCSPPrefixExplicitCapSurface
+
+section ContentVirtualZeroTailReaderCoreSurface
+
+open Pnp4.Frontier.ContractExpansion
+
+/-- Typed definition pins for all public virtual-reader operations. -/
+def check_VZR_readBit {N : Nat} (z : PrefixBitVec N) (T offset : Nat) : Option Bool :=
+  Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.readBit? z T offset
+
+def check_VZR_readNatBE {N : Nat} (z : PrefixBitVec N) (T offset width : Nat) : Option Nat :=
+  Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.readNatBE z T offset width
+
+def check_VZR_sliceBits {N : Nat} (z : PrefixBitVec N) (T offset width : Nat) :
+    Option (PrefixBitVec width) :=
+  Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.sliceBits? z T offset width
+
+def check_VZR_allZeroSlice {N : Nat} (z : PrefixBitVec N) (T offset width : Nat) : Option Bool :=
+  Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.allZeroSlice? z T offset width
+
+def check_VZR_decodeGammaAux {N : Nat} (z : PrefixBitVec N)
+    (T offset fuel zeros : Nat) : Option (Nat × Nat) :=
+  Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.decodeGammaAux?
+    z T offset fuel zeros
+
+def check_VZR_decodeGamma {N : Nat} (z : PrefixBitVec N) (T offset : Nat) :
+    Option (Nat × Nat) :=
+  Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.decodeGamma? z T offset
+
+def check_VZR_contentHeader {N : Nat} (z : PrefixBitVec N) : Option (Nat × Nat) :=
+  Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.contentHeader? z
+
+def check_VZR_parseTreeMCSPPrefixInput
+    (threshold : Nat → Nat) (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    {N : Nat} (z : PrefixBitVec N) (T : Nat) :
+    Option (PrefixInput
+      (Pnp4.Frontier.treeMCSPSearchProblem threshold
+        (Pnp4.Frontier.TreeMCSPSearchWitnessEncoding.ofCodec codec)) T) :=
+  Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.parseTreeMCSPPrefixInput
+    threshold codec z T
+
+def check_VZR_readNatBELoopBound (width : Nat) : Nat :=
+  Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.readNatBELoopBound width
+
+def check_VZR_allZeroLoopBound (width : Nat) : Nat :=
+  Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.allZeroLoopBound width
+
+def check_VZR_gammaLoopBound (T : Nat) : Nat :=
+  Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.gammaLoopBound T
+
+/-- Typed pin for the strict logical single-bit reader, including failure. -/
+theorem check_VZR_readBit_eq_padWord
+    {N T : Nat} (z : PrefixBitVec N) (offset : Nat) :
+    Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.readBit? z T offset =
+      _root_.Pnp4.Frontier.ContractExpansion.readBit?
+        (Pnp4.Frontier.ContractExpansion.padWord z T) offset :=
+  Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.readBit?_eq_padWord z offset
+
+/-- Typed pin for the width-recursive big-endian reader. -/
+theorem check_VZR_readNatBE_eq_padWord
+    {N T : Nat} (z : PrefixBitVec N) (offset width : Nat) :
+    Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.readNatBE
+        z T offset width =
+      _root_.Pnp4.Frontier.ContractExpansion.readNatBE
+        (Pnp4.Frontier.ContractExpansion.padWord z T) offset width :=
+  Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.readNatBE_eq_padWord
+    z offset width
+
+/-- Typed pin for the exact-range, function-valued slice. -/
+theorem check_VZR_sliceBits_eq_padWord
+    {N T : Nat} (z : PrefixBitVec N) (offset width : Nat) :
+    Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.sliceBits?
+        z T offset width =
+      _root_.Pnp4.Frontier.ContractExpansion.sliceBits?
+        (Pnp4.Frontier.ContractExpansion.padWord z T) offset width :=
+  Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.sliceBits?_eq_padWord
+    z offset width
+
+/-- Typed pin for the strict all-zero scan, including its failure result. -/
+theorem check_VZR_allZeroSlice_eq_padWord
+    {N T : Nat} (z : PrefixBitVec N) (offset width : Nat) :
+    Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.allZeroSlice?
+        z T offset width =
+      _root_.Pnp4.Frontier.ContractExpansion.allZeroSlice?
+        (Pnp4.Frontier.ContractExpansion.padWord z T) offset width :=
+  Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.allZeroSlice?_eq_padWord
+    z offset width
+
+/-- Typed pin for every fuel and accumulated-zero state of gamma decoding. -/
+theorem check_VZR_decodeGammaAux_eq_padWord
+    {N T : Nat} (z : PrefixBitVec N) (offset fuel zeros : Nat) :
+    Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.decodeGammaAux?
+        z T offset fuel zeros =
+      _root_.Pnp4.Frontier.ContractExpansion.decodeGammaAux?
+        (Pnp4.Frontier.ContractExpansion.padWord z T) offset fuel zeros :=
+  Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.decodeGammaAux?_eq_padWord
+    z offset fuel zeros
+
+/-- Typed pin for the public `T + 1`-fuel gamma decoder. -/
+theorem check_VZR_decodeGamma_eq_padWord
+    {N T : Nat} (z : PrefixBitVec N) (offset : Nat) :
+    Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.decodeGamma?
+        z T offset =
+      _root_.Pnp4.Frontier.ContractExpansion.decodeGamma?
+        (Pnp4.Frontier.ContractExpansion.padWord z T) offset :=
+  Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.decodeGamma?_eq_padWord
+    z offset
+
+/-- Typed pin exposing the header's exact logical padded word. -/
+theorem check_VZR_contentHeader_eq_padWord
+    {N : Nat} (z : PrefixBitVec N) :
+    Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.contentHeader? z =
+      _root_.Pnp4.Frontier.ContractExpansion.decodeGamma?
+        (Pnp4.Frontier.ContractExpansion.padWord z (2 * N + 1))
+        Pnp4.Frontier.ContractExpansion.tagLen :=
+  Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.contentHeader?_eq_padWord z
+
+/-- Typed pin for equality with the named frozen content-header operation. -/
+theorem check_VZR_contentHeader_eq
+    {N : Nat} (z : PrefixBitVec N) :
+    Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.contentHeader? z =
+      _root_.Pnp4.Frontier.ContractExpansion.contentHeader? z :=
+  Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.contentHeader?_eq z
+
+/-- Typed pin for the complete dependent strict-parser equality. -/
+theorem check_VZR_parseTreeMCSPPrefixInput_eq_padWord
+    (threshold : Nat → Nat)
+    (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    {N : Nat} (z : PrefixBitVec N) (T : Nat) :
+    Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.parseTreeMCSPPrefixInput
+        threshold codec z T =
+      _root_.Pnp4.Frontier.ContractExpansion.parseTreeMCSPPrefixInput
+        threshold codec (Pnp4.Frontier.ContractExpansion.padWord z T) :=
+  Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.parseTreeMCSPPrefixInput_eq_padWord
+    threshold codec z T
+
+/-- Typed pin for the exact content-header prefix-search fuel arithmetic. -/
+theorem check_VZR_contentHeader_gammaLoopBound (N : Nat) :
+    Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.gammaLoopBound
+        (2 * N + 1) =
+      2 * N + 2 :=
+  Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.contentHeader_gammaLoopBound N
+
+end ContentVirtualZeroTailReaderCoreSurface
 
 end Tests
 end Pnp4

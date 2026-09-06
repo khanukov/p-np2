@@ -85,6 +85,7 @@ import Tests.UniformV1FixedPairParserCorrectnessSurfaceTests
 import Tests.UniformV1FixedPairParserAmbientSurfaceTests
 import Tests.UniformV1FixedPairConcatSentinelSurfaceTests
 import Tests.UniformV1FixedPairSeparatorCursorSurfaceTests
+import Tests.UniformV1FixedPairSeparatorHoleSurfaceTests
 import Tests.UniformV1BudgetTransportSurfaceTests
 import Tests.UniformV1CombinedMachineSurfaceTests
 import Tests.UniformV1CombinedCorrectnessSurfaceTests
@@ -3933,3 +3934,46 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorCursor.run_after_clock
 #print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorCursor.malformed_literal_fields
 #print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorCursor.phase_contract
+
+-- Part A fixed destructive separator-to-hole phase.
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.holeStateCount
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.qStart
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.qAccept
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.qReject
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.machine
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.holeRawStep_table
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.machine_resource_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.retag
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.retag_fields
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.startConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.startConfig_of_cursor_run
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.clock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.clock_eq
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.holeTape
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.finalConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.stepConfig_start_separator
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.stepConfig_start_non_separator
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.run_preterminal_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.run_encoded_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.final_literal_fields
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.final_tape_eq_holeTape
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.final_tape_eq_update
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.final_tape_behavior
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.final_blank_iff
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.hole_interior
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.natView
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.holeTape_natView_injective
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.final_tape_determines_pair
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.finalConfig_injective
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.head_fixed_through_clock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.tape_off_hole_through_clock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.hole_cell_trace
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.run_budget_independent
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.no_boundary_clamp_before_clock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.noEarlyTerminal
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.run_after_clock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.run_zero_query_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.run_empty_witness_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.run_zero_budget_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.run_minimal_literal
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.phase_contract

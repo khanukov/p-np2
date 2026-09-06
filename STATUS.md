@@ -199,6 +199,17 @@ deletion is intentionally rejected because it can collapse different pair
 splits to an identical configuration. This cursor locates the split but does
 not yet remove tags or compact the headerless payload.
 
+**Part A fixed separator-hole phase (infrastructure only).**
+`Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole` is a closed three-state
+one-transition machine whose standalone start is obtained by proof-level
+retagging of the validated cursor handoff. It blanks only
+the separator cell, and leaves the head on the resulting interior hole. Query
+tags/data, witness, sentinel, and padding remain at their original addresses.
+The hole is unique only through the sentinel (global uniqueness is false with
+extra padding); the final Nat-indexed tape view is injective in the original
+pair, so the separator-deletion collision does not apply. This phase does not
+remove query tags, shift the witness, or complete headerless compaction.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

@@ -87,6 +87,7 @@ import Tests.UniformV1FixedPairConcatSentinelSurfaceTests
 import Tests.UniformV1FixedPairSeparatorCursorSurfaceTests
 import Tests.UniformV1FixedPairSeparatorHoleSurfaceTests
 import Tests.UniformV1FixedPairTagRemovalSurfaceTests
+import Tests.UniformV1FixedPairOriginShiftBootstrapSurfaceTests
 import Tests.UniformV1BudgetTransportSurfaceTests
 import Tests.UniformV1CombinedMachineSurfaceTests
 import Tests.UniformV1CombinedCorrectnessSurfaceTests
@@ -4004,3 +4005,29 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Complexity.Uniform.V1.FixedPairTagRemoval.final_content_contiguous
 #print axioms Pnp3.Complexity.Uniform.V1.FixedPairTagRemoval.zero_cases
 #print axioms Pnp3.Complexity.Uniform.V1.FixedPairTagRemoval.phase_contract
+
+-- Part A fixed one-cell whole-content origin shift.
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftBootstrap.shiftStateCount
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftBootstrap.qStart
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftBootstrap.qAccept
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftBootstrap.qReject
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftBootstrap.machine
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftBootstrap.raw_table
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftBootstrap.resource_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftBootstrap.retag
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftBootstrap.startConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftBootstrap.handoff_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftBootstrap.clock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftBootstrap.clock_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftBootstrap.shiftedTape
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftBootstrap.finalConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftBootstrap.run_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftBootstrap.final_fields
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftBootstrap.noEarlyTerminal
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftBootstrap.run_after
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftBootstrap.footprint
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftBootstrap.clamps
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftBootstrap.budget_accounting
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftBootstrap.final_layout
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftBootstrap.recovery
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftBootstrap.phase_contract

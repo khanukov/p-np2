@@ -85,6 +85,8 @@ lean_lib PnP3 where
     Glob.one `Complexity.Uniform.V1.FixedPairParserAmbient,
     -- Part A fixed sentinel phase for later pair compaction.
     Glob.one `Complexity.Uniform.V1.FixedPairConcatSentinel,
+    -- Part A fixed cursor that validates and locates the pair separator.
+    Glob.one `Complexity.Uniform.V1.FixedPairSeparatorCursor,
     -- Generic bounded cross-budget simulation for one fixed UniformTM.
     Glob.one `Complexity.Uniform.V1.BudgetTransport,
     -- Routed fixed-parser/verifier constructor and parser-prefix handoff.
@@ -630,6 +632,7 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1FixedPairParserCorrectnessSurfaceTests,
     Glob.one `Tests.UniformV1FixedPairParserAmbientSurfaceTests,
     Glob.one `Tests.UniformV1FixedPairConcatSentinelSurfaceTests,
+    Glob.one `Tests.UniformV1FixedPairSeparatorCursorSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
     Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,

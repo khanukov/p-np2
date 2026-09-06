@@ -234,6 +234,19 @@ layout, and fixed-extent recovery. It is not full origin alignment when
 `n > 0`, and it does not claim that headerless concatenation recovers a varying
 query/witness split.
 
+**Part A fixed complete origin-alignment execution core (infrastructure only).**
+`Pnp3.Complexity.Uniform.V1.FixedPairOriginAlignment` is a closed 26-state
+machine that repeatedly performs structural origin probes and stable whole-block
+left shifts. At exact clock `(10*n + 7)*(n + m + 1) + 3*n`, it reaches literal
+accept with head at cell zero and the complete tape
+`[query][witness][marker][blanks]`. The machine uses no runtime counter or
+advice and never identifies the marker by its Boolean value. This foundation
+slice proves the exact predecessor handoff, fixed table/resources, polynomial
+clock identity, and exact full-configuration run. First-terminal, post-clock,
+footprint, clamp, cross-budget, layout-projection, and recovery surfaces are
+intentionally deferred to the dependency-closed safety follow-up; this slice
+alone is not yet the final framing bridge or semantic verifier.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

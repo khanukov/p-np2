@@ -221,6 +221,19 @@ independence, strict terminal timing, right-clamp avoidance, and this
 construction's single left-origin clamp. It does not yet shift the contiguous
 block to cell zero, evaluate the content relation, or provide the legacy bridge.
 
+**Part A fixed one-cell origin-shift bootstrap (infrastructure only).**
+`Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftBootstrap` is a closed
+seven-state rolling-hole machine that shifts the entire contiguous
+`query ++ witness ++ marker` block one cell left. At exact clock
+`4*n + 3*m + 5`, it transforms `[n+1 blanks][query][witness][marker]` into
+`[n blanks][query][witness][marker]`, preserving order and leaving no interior
+hole. The final right command clamps exactly when `B = 0`; otherwise it moves
+to the physical blank after the erased old marker. The phase proves exact
+execution, first terminal, footprint, scoped cross-budget accounting, exact
+layout, and fixed-extent recovery. It is not full origin alignment when
+`n > 0`, and it does not claim that headerless concatenation recovers a varying
+query/witness split.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

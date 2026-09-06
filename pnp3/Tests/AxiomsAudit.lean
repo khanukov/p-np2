@@ -88,6 +88,7 @@ import Tests.UniformV1FixedPairSeparatorCursorSurfaceTests
 import Tests.UniformV1FixedPairSeparatorHoleSurfaceTests
 import Tests.UniformV1FixedPairTagRemovalSurfaceTests
 import Tests.UniformV1FixedPairOriginShiftBootstrapSurfaceTests
+import Tests.UniformV1FixedPairOriginAlignmentSurfaceTests
 import Tests.UniformV1BudgetTransportSurfaceTests
 import Tests.UniformV1CombinedMachineSurfaceTests
 import Tests.UniformV1CombinedCorrectnessSurfaceTests
@@ -4031,3 +4032,21 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftBootstrap.final_layout
 #print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftBootstrap.recovery
 #print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftBootstrap.phase_contract
+
+-- Part A fixed complete content origin-alignment execution core.
+
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginAlignment.alignmentStateCount
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginAlignment.qStart
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginAlignment.qAccept
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginAlignment.qReject
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginAlignment.machine
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginAlignment.raw_table
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginAlignment.resource_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginAlignment.retag
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginAlignment.startConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginAlignment.clock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginAlignment.alignedTape
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginAlignment.finalConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginAlignment.handoff_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginAlignment.clock_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginAlignment.run_exact

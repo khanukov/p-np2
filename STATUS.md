@@ -187,6 +187,18 @@ relation, or provide the legacy bridge. The all-budget exact theorem includes
 budget zero; the exported blank-after-marker lookahead fact separately assumes
 positive budget so cell `N+1` actually exists.
 
+**Part A fixed separator cursor (infrastructure only).**
+`Pnp3.Complexity.Uniform.V1.FixedPairSeparatorCursor` is a closed five-state
+`UniformTM` that consumes the sentinelized tagged pair layout, validates the
+alternating query tags, confirms a nonblank successor for the separator, and
+halts with the head exactly on that separator in `2*n+2` steps. It preserves
+the entire tape and proves an exact valid trace plus an exact positive-budget
+malformed trace, footprint, budget-independence, no-clamp, and strict terminal
+behavior. Separator-first
+deletion is intentionally rejected because it can collapse different pair
+splits to an identical configuration. This cursor locates the split but does
+not yet remove tags or compact the headerless payload.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

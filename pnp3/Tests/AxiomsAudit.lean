@@ -84,6 +84,7 @@ import Tests.UniformV1FixedPairParserCoreSurfaceTests
 import Tests.UniformV1FixedPairParserCorrectnessSurfaceTests
 import Tests.UniformV1FixedPairParserAmbientSurfaceTests
 import Tests.UniformV1FixedPairConcatSentinelSurfaceTests
+import Tests.UniformV1FixedPairSeparatorCursorSurfaceTests
 import Tests.UniformV1BudgetTransportSurfaceTests
 import Tests.UniformV1CombinedMachineSurfaceTests
 import Tests.UniformV1CombinedCorrectnessSurfaceTests
@@ -3905,3 +3906,30 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.clock_le_polyClock_two
 #print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.decidesWithin_polyClock
 #print axioms Pnp3.Complexity.Uniform.V1.FixedPairConcatSentinel.sentinel_phase_contract
+
+-- Part A fixed separator cursor over sentinelized pair words.
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorCursor.cursorStateCount
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorCursor.qTag
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorCursor.qData
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorCursor.qPeek
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorCursor.qAccept
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorCursor.qReject
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorCursor.machine
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorCursor.cursorRawStep_table
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorCursor.machine_resource_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorCursor.startConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorCursor.startConfig_of_sentinel_run
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorCursor.clock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorCursor.finalConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorCursor.run_preterminal_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorCursor.run_encoded_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorCursor.final_tape_unchanged
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorCursor.final_literal_fields
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorCursor.head_le_separator_successor_through_clock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorCursor.reaches_separator_successor
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorCursor.run_budget_independent
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorCursor.no_boundary_clamp_before_clock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorCursor.noEarlyTerminal
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorCursor.run_after_clock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorCursor.malformed_literal_fields
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorCursor.phase_contract

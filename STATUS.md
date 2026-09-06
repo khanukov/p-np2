@@ -210,6 +210,17 @@ extra padding); the final Nat-indexed tape view is injective in the original
 pair, so the separator-deletion collision does not apply. This phase does not
 remove query tags, shift the witness, or complete headerless compaction.
 
+**Part A fixed all-tag-removal phase (infrastructure only).**
+`Pnp3.Complexity.Uniform.V1.FixedPairTagRemoval` is a closed nine-state
+machine that repeatedly compacts query data rightward into the separator-hole
+region. At exact clock `n*(n+5)+2`, the tape is
+`[n+1 blanks][query][witness][marker]`: every query tag is gone and query plus
+witness are physically contiguous, but the content block remains offset from
+the origin. The phase proves exact full execution, footprint, budget
+independence, strict terminal timing, right-clamp avoidance, and this
+construction's single left-origin clamp. It does not yet shift the contiguous
+block to cell zero, evaluate the content relation, or provide the legacy bridge.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

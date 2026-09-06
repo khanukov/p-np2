@@ -86,6 +86,7 @@ import Tests.UniformV1FixedPairParserAmbientSurfaceTests
 import Tests.UniformV1FixedPairConcatSentinelSurfaceTests
 import Tests.UniformV1FixedPairSeparatorCursorSurfaceTests
 import Tests.UniformV1FixedPairSeparatorHoleSurfaceTests
+import Tests.UniformV1FixedPairTagRemovalSurfaceTests
 import Tests.UniformV1BudgetTransportSurfaceTests
 import Tests.UniformV1CombinedMachineSurfaceTests
 import Tests.UniformV1CombinedCorrectnessSurfaceTests
@@ -3977,3 +3978,29 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.run_zero_budget_exact
 #print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.run_minimal_literal
 #print axioms Pnp3.Complexity.Uniform.V1.FixedPairSeparatorHole.phase_contract
+
+-- Part A fixed all-query-tag removal phase.
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairTagRemoval.removalStateCount
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairTagRemoval.qStart
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairTagRemoval.qAccept
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairTagRemoval.qReject
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairTagRemoval.machine
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairTagRemoval.removalRawStep_table
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairTagRemoval.machine_resource_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairTagRemoval.startConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairTagRemoval.startConfig_of_hole_run
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairTagRemoval.clock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairTagRemoval.clock_structural
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairTagRemoval.compactTape
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairTagRemoval.finalConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairTagRemoval.run_encoded_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairTagRemoval.final_literal_fields
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairTagRemoval.run_after_clock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairTagRemoval.noEarlyTerminal
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairTagRemoval.footprint_through_clock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairTagRemoval.boundary_clamps
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairTagRemoval.run_budget_independent
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairTagRemoval.final_tape_behavior
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairTagRemoval.final_content_contiguous
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairTagRemoval.zero_cases
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairTagRemoval.phase_contract

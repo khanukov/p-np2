@@ -257,6 +257,18 @@ exactly when `B = 0`, and the sole left clamp occurs at source time `clock-3`.
 Cross-budget synchronization, fixed-extent recovery, the explicit zero edge,
 and the bundled complete phase contract remain in Safety B.
 
+**Part A fixed complete alignment safety B (infrastructure only).**
+The second safety slice for `FixedPairOriginAlignment` proves exact
+cross-budget accounting: equal zero/nonzero budget classes agree from time zero,
+and all budgets synchronize from time three through the clock in state, numeric
+head, and equal-address tape values. It proves fixed-extent recovery of the query
+and witness without claiming varying-split injectivity, exposes the exact
+`n=m=B=0` edge, and bundles the complete predecessor handoff, endpoint,
+first-terminal, footprint, inclusive blank boundary, and literal output contract.
+Together with Safety A, the origin-alignment machine now has its full advertised
+execution and safety surface; semantic evaluation and the final framing bridge
+remain separate.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

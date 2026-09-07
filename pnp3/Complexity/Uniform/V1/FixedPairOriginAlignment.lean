@@ -2447,3 +2447,302 @@ theorem boundary_clamps {n m B : Nat} (x : Bitstring n) (w : Bitstring m) :
       omega
     rw [try_read x w (by omega) (by unfold K; omega)]
     exact congrArg (fun a => a.2.2) (try_action _ _)
+
+private def BudgetRel {N B B' : Nat}
+    (c : Config alignmentStateCount N B) (c' : Config alignmentStateCount N B') : Prop :=
+  c.state = c'.state ∧ c.head.val = c'.head.val ∧
+  ∀ (i : Fin (tapeLength N B)) (i' : Fin (tapeLength N B')),
+    i.val = i'.val → c.tape i = c'.tape i'
+
+private theorem budgetRel_step {N B B' : Nat}
+    {c : Config alignmentStateCount N B} {c' : Config alignmentStateCount N B'}
+    (h : BudgetRel c c')
+    (hright : (machine.step c.state (c.tape c.head)).2.2 = .right →
+      (c.head.val + 1 < tapeLength N B ↔
+        c'.head.val + 1 < tapeLength N B')) :
+    BudgetRel (machine.stepConfig c) (machine.stepConfig c') := by
+  rcases h with ⟨hstate, hhead, htape⟩
+  have hread : c.tape c.head = c'.tape c'.head := htape _ _ hhead
+  have haction : machine.step c.state (c.tape c.head) =
+      machine.step c'.state (c'.tape c'.head) := by rw [hstate, hread]
+  unfold BudgetRel
+  refine ⟨?_, ?_, ?_⟩
+  · change (machine.step c.state (c.tape c.head)).1 =
+      (machine.step c'.state (c'.tape c'.head)).1
+    rw [haction]
+  · change (moveHead c.head
+      (machine.step c.state (c.tape c.head)).2.2).val =
+      (moveHead c'.head
+        (machine.step c'.state (c'.tape c'.head)).2.2).val
+    rw [← haction]
+    generalize hm : (machine.step c.state (c.tape c.head)).2.2 = mv
+    cases mv with
+    | left =>
+        change c.head.val - 1 = c'.head.val - 1
+        omega
+    | stay => exact hhead
+    | right =>
+        have hb := hright hm
+        by_cases hb1 : c.head.val + 1 < tapeLength N B
+        · have hb2 := hb.mp hb1
+          rw [move_right_val _ hb1, move_right_val _ hb2]
+          omega
+        · have hb2 : ¬c'.head.val + 1 < tapeLength N B' := by
+            intro h
+            exact hb1 (hb.mpr h)
+          unfold moveHead
+          rw [dif_neg hb1, dif_neg hb2]
+          exact hhead
+  · intro i i' hii
+    change (if i = c.head then (machine.step c.state (c.tape c.head)).2.1
+      else c.tape i) =
+      (if i' = c'.head then (machine.step c'.state (c'.tape c'.head)).2.1
+      else c'.tape i')
+    rw [← haction]
+    by_cases hi : i = c.head
+    · have hi' : i' = c'.head := Fin.ext (by
+        have := congrArg Fin.val hi
+        omega)
+      rw [if_pos hi, if_pos hi']
+    · have hi' : i' ≠ c'.head := by
+        intro heq
+        apply hi
+        apply Fin.ext
+        have := congrArg Fin.val heq
+        omega
+      rw [if_neg hi, if_neg hi']
+      exact htape i i' hii
+
+private theorem budgetRel_start {n m : Nat} (B B' : Nat)
+    (x : Bitstring n) (w : Bitstring m) (hscope : B = 0 ↔ B' = 0) :
+    BudgetRel (startConfig B x w) (startConfig B' x w) := by
+  rw [start_source x w, start_source x w]
+  refine ⟨rfl, ?_, ?_⟩
+  · by_cases hB : B = 0
+    · have hB' := hscope.mp hB
+      simp [sourceConfig, sourceHead, hB, hB']
+    · have hB' : B' ≠ 0 := fun h => hB (hscope.mpr h)
+      simp [sourceConfig, sourceHead, hB, hB']
+  · intro i i' hii
+    exact congrArg (blockCell x w n) hii
+
+private theorem budgetRel_three {n m : Nat} (B B' : Nat)
+    (x : Bitstring n) (w : Bitstring m) :
+    BudgetRel (machine.run 3 (startConfig B x w))
+      (machine.run 3 (startConfig B' x w)) := by
+  rw [entry_three x w, entry_three x w]
+  refine ⟨rfl, rfl, ?_⟩
+  intro i i' hii
+  exact congrArg (blockCell x w n) hii
+
+private theorem budgetRel_same_class {n m : Nat} (B B' : Nat)
+    (x : Bitstring n) (w : Bitstring m) (hscope : B = 0 ↔ B' = 0)
+    (s : Nat) (hs : s ≤ clock n m) :
+    BudgetRel (machine.run s (startConfig B x w))
+      (machine.run s (startConfig B' x w)) := by
+  induction s with
+  | zero => exact budgetRel_start B B' x w hscope
+  | succ s ih =>
+      rw [UniformTM.run, UniformTM.run]
+      apply budgetRel_step (ih (by omega))
+      intro hm
+      have hstate := (ih (by omega)).1
+      have hread := (ih (by omega)).2.2 _ _ (ih (by omega)).2.1
+      have hm' : (machine.step
+          (machine.run s (startConfig B' x w)).state
+          ((machine.run s (startConfig B' x w)).tape
+            (machine.run s (startConfig B' x w)).head)).2.2 = .right := by
+        rw [← hstate, ← hread]
+        exact hm
+      by_cases hB : B = 0
+      · have hB' := hscope.mp hB
+        subst B
+        subst B'
+        rfl
+      · have hB' : B' ≠ 0 := fun h => hB (hscope.mpr h)
+        have hsafe := (trace_safe (B := B) x w s (by omega)).2.2.2.2.1 hm
+        have hsafe' := (trace_safe (B := B') x w s (by omega)).2.2.2.2.1 hm'
+        rcases hsafe with hspecial | hinterior
+        · exact absurd hspecial.2.1 hB
+        · rcases hsafe' with hspecial' | hinterior'
+          · exact absurd hspecial'.2.1 hB'
+          · exact ⟨fun _ => hinterior', fun _ => hinterior⟩
+
+private theorem budgetRel_after_three {n m : Nat} (B B' : Nat)
+    (x : Bitstring n) (w : Bitstring m) (u : Nat)
+    (hu : 3 + u ≤ clock n m) :
+    BudgetRel (machine.run (3 + u) (startConfig B x w))
+      (machine.run (3 + u) (startConfig B' x w)) := by
+  induction u with
+  | zero => simpa using budgetRel_three B B' x w
+  | succ u ih =>
+      rw [show 3 + (u + 1) = (3 + u) + 1 by omega,
+        UniformTM.run, UniformTM.run]
+      apply budgetRel_step (ih (by omega))
+      intro hm
+      have hrel := ih (by omega)
+      have hm' : (machine.step
+          (machine.run (3 + u) (startConfig B' x w)).state
+          ((machine.run (3 + u) (startConfig B' x w)).tape
+            (machine.run (3 + u) (startConfig B' x w)).head)).2.2 = .right := by
+        rw [← hrel.1, ← hrel.2.2 _ _ hrel.2.1]
+        exact hm
+      have hsafe := (trace_safe (B := B) x w (3 + u) (by omega)).2.2.2.2.1 hm
+      have hsafe' := (trace_safe (B := B') x w (3 + u) (by omega)).2.2.2.2.1 hm'
+      rcases hsafe with hspecial | hinterior
+      · omega
+      · rcases hsafe' with hspecial' | hinterior'
+        · omega
+        · exact ⟨fun _ => hinterior', fun _ => hinterior⟩
+
+/-- Cross-budget accounting.  Equal zero/nonzero classes agree from entry;
+arbitrary budgets synchronize from time three.  The clock and final
+equal-valued output are budget-independent. -/
+theorem budget_accounting {n m : Nat} (B B' : Nat)
+    (x : Bitstring n) (w : Bitstring m) :
+    ((B = 0 ↔ B' = 0) → ∀ s, s ≤ clock n m →
+      (machine.run s (startConfig B x w)).state =
+          (machine.run s (startConfig B' x w)).state ∧
+      (machine.run s (startConfig B x w)).head.val =
+          (machine.run s (startConfig B' x w)).head.val ∧
+      (∀ (i : Fin (tapeLength (pairLength n m) B))
+          (i' : Fin (tapeLength (pairLength n m) B')),
+        i.val = i'.val →
+        (machine.run s (startConfig B x w)).tape i =
+          (machine.run s (startConfig B' x w)).tape i')) ∧
+    (∀ s, 3 ≤ s → s ≤ clock n m →
+      (machine.run s (startConfig B x w)).state =
+          (machine.run s (startConfig B' x w)).state ∧
+      (machine.run s (startConfig B x w)).head.val =
+          (machine.run s (startConfig B' x w)).head.val ∧
+      (∀ (i : Fin (tapeLength (pairLength n m) B))
+          (i' : Fin (tapeLength (pairLength n m) B')),
+        i.val = i'.val →
+        (machine.run s (startConfig B x w)).tape i =
+          (machine.run s (startConfig B' x w)).tape i')) ∧
+    (∀ (i : Fin (tapeLength (pairLength n m) B))
+        (i' : Fin (tapeLength (pairLength n m) B')),
+      i.val = i'.val → alignedTape B x w i = alignedTape B' x w i') ∧
+    clock n m = (10 * n + 7) * (n + m + 1) + 3 * n := by
+  refine ⟨?_, ?_, ?_, rfl⟩
+  · intro hscope s hs
+    exact budgetRel_same_class B B' x w hscope s hs
+  · intro s hs3 hs
+    obtain ⟨u, rfl⟩ : ∃ u, s = 3 + u := ⟨s - 3, by omega⟩
+    exact budgetRel_after_three B B' x w u hs
+  · intro i i' hii
+    exact congrArg (blockCell x w 0) hii
+
+/-- Fixed-extent recovery: when `n` and `m` are fixed, the aligned tape
+recovers both fields and is injective in `(x,w)`.  This deliberately makes no
+injectivity claim between encodings with different splits. -/
+theorem fixed_extent_recovery {n m B : Nat} (x : Bitstring n) (w : Bitstring m) :
+    (∀ j : Fin n, alignedTape B x w
+      ⟨j.val, by unfold tapeLength pairLength; omega⟩ = some (x j)) ∧
+    (∀ j : Fin m, alignedTape B x w
+      ⟨n + j.val, by unfold tapeLength pairLength; omega⟩ = some (w j)) ∧
+    (∀ (x' : Bitstring n) (w' : Bitstring m),
+      alignedTape B x w = alignedTape B x' w' → x = x' ∧ w = w') := by
+  have hx : ∀ j : Fin n, alignedTape B x w
+      ⟨j.val, by unfold tapeLength pairLength; omega⟩ = some (x j) := by
+    intro j
+    exact block_read x w (p := 0) (k := j.val) (by omega)
+      (by unfold K; omega) _ rfl |>.trans (congrArg some (bit_x x w j))
+  have hw : ∀ j : Fin m, alignedTape B x w
+      ⟨n + j.val, by unfold tapeLength pairLength; omega⟩ = some (w j) := by
+    intro j
+    exact block_read x w (p := 0) (k := n + j.val) (by omega)
+      (by unfold K; omega) _ rfl |>.trans (congrArg some (bit_w x w j))
+  refine ⟨hx, hw, ?_⟩
+  intro x' w' hout
+  constructor <;> funext j
+  · have h := congrFun hout
+      (⟨j.val, by unfold tapeLength pairLength; omega⟩ :
+        Fin (tapeLength (pairLength n m) B))
+    have hx' : alignedTape B x' w'
+        ⟨j.val, by unfold tapeLength pairLength; omega⟩ = some (x' j) :=
+      (block_read x' w' (p := 0) (k := j.val) (by omega)
+        (by unfold K; omega) _ rfl).trans (congrArg some (bit_x x' w' j))
+    rw [hx j, hx'] at h
+    exact Option.some.inj h
+  · have h := congrFun hout
+      (⟨n + j.val, by unfold tapeLength pairLength; omega⟩ :
+        Fin (tapeLength (pairLength n m) B))
+    have hw' : alignedTape B x' w'
+        ⟨n + j.val, by unfold tapeLength pairLength; omega⟩ = some (w' j) :=
+      (block_read x' w' (p := 0) (k := n + j.val) (by omega)
+        (by unfold K; omega) _ rfl).trans (congrArg some (bit_w x' w' j))
+    rw [hw j, hw'] at h
+    exact Option.some.inj h
+
+/-- Fully explicit smallest instance.  It keeps the exact seven-step clock,
+strict first acceptance, literal marker output at the origin, and the two
+distinct clamps at source times two and four. -/
+theorem empty_zero_budget : ∀ (x : Bitstring 0) (w : Bitstring 0),
+    clock 0 0 = 7 ∧
+    machine.run 7 (startConfig 0 x w) = finalConfig 0 x w ∧
+    (machine.run 0 (startConfig 0 x w)).head.val = 1 ∧
+    (machine.run 2 (startConfig 0 x w)).head.val = 1 ∧
+    (machine.run 4 (startConfig 0 x w)).head.val = 0 ∧
+    (machine.run 7 (startConfig 0 x w)).head.val = 0 ∧
+    (machine.run 7 (startConfig 0 x w)).tape
+      ⟨0, by unfold tapeLength pairLength; omega⟩ = some true ∧
+    (∀ s, s < 7 →
+      (machine.run s (startConfig 0 x w)).state ≠ qAccept ∧
+      (machine.run s (startConfig 0 x w)).state ≠ qReject) ∧
+    (∀ s, s < 7 →
+      let c := machine.run s (startConfig 0 x w)
+      ((machine.step c.state (c.tape c.head)).2.2 = .right ∧
+        moveHead c.head .right = c.head ↔ s = 2)) ∧
+    (∀ s, s < 7 →
+      let c := machine.run s (startConfig 0 x w)
+      ((machine.step c.state (c.tape c.head)).2.2 = .left ∧
+        moveHead c.head .left = c.head ↔ s = 4)) := by
+  intro x w
+  refine ⟨rfl, run_exact 0 x w, ?_, ?_, ?_, ?_,
+    (final_fields_and_layout x w).2.2.2.2.2.2.2.2.1, ?_, ?_, ?_⟩
+  · exact (footprint_through_clock x w).2.1
+  · rw [run_entry_two x w]
+    rfl
+  · rw [show (4 : Nat) = clock 0 0 - 3 by rfl, run_last_try x w]
+    rfl
+  · exact (final_fields_and_layout x w).2.2.2.2.1
+  · intro s hs
+    exact (strict_first_terminal x w).1 s (by simpa using hs)
+  · intro s hs
+    simpa using (boundary_clamps (B := 0) x w).1 s (by simpa using hs)
+  · intro s hs
+    simpa using (boundary_clamps (B := 0) x w).2.1 s (by simpa using hs)
+
+/-- Bundled phase contract: exact predecessor handoff, exact endpoint, strict
+preterminality, full resource footprint, and literal accepting output.  Clamp
+and cross-budget iff statements remain available in their dedicated compact
+families above. -/
+theorem phase_contract {n m B : Nat} (x : Bitstring n) (w : Bitstring m) :
+    let p := FixedPairOriginShiftBootstrap.machine.run
+      (FixedPairOriginShiftBootstrap.clock n m)
+      (FixedPairOriginShiftBootstrap.startConfig B x w)
+    let c₀ := startConfig B x w
+    p = FixedPairOriginShiftBootstrap.finalConfig B x w ∧
+    p.state = FixedPairOriginShiftBootstrap.qAccept ∧ c₀.state = qStart ∧
+    c₀.head = p.head ∧ c₀.tape = p.tape ∧
+    machine.run (clock n m) c₀ = finalConfig B x w ∧
+    (∀ s, s < clock n m →
+      (machine.run s c₀).state ≠ qAccept ∧
+      (machine.run s c₀).state ≠ qReject) ∧
+    (∀ s, s ≤ clock n m →
+      (machine.run s c₀).head.val ≤ pairLength n m + Nat.min B 1) ∧
+    (∀ s, s ≤ clock n m → ∀ i : Fin (tapeLength (pairLength n m) B),
+      pairLength n m ≤ i.val → (machine.run s c₀).tape i = none) ∧
+    (machine.run (clock n m) c₀).state = qAccept ∧
+    (machine.run (clock n m) c₀).head.val = 0 ∧
+    (machine.run (clock n m) c₀).tape = alignedTape B x w := by
+  dsimp
+  exact ⟨(handoff_exact x w).1, (handoff_exact x w).2.1,
+    (handoff_exact x w).2.2.1, (handoff_exact x w).2.2.2.1,
+    (handoff_exact x w).2.2.2.2, run_exact B x w,
+    (strict_first_terminal x w).1, (footprint_through_clock x w).1,
+    (footprint_through_clock x w).2.2.2,
+    (final_fields_and_layout x w).2.1,
+    (final_fields_and_layout x w).2.2.2.2.1,
+    (final_fields_and_layout x w).2.2.2.2.2.1⟩

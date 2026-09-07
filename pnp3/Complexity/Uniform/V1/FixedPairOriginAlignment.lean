@@ -1327,3 +1327,1123 @@ theorem run_exact {n m : Nat} (B : Nat) (x : Bitstring n) (w : Bitstring m) :
     step_check x w (le_refl n) (by unfold K; omega)
   rw [hstep] at hs
   exact hs
+
+/-! ## Dependency-closed trace and safety surface -/
+
+private def R (n m : Nat) : Nat := 10 * K n m + 3
+
+private def phaseStart (n m k : Nat) : Nat := 3 + k * R n m
+
+private theorem clock_phase (n m : Nat) :
+    clock n m = phaseStart n m n + (7 * (K n m - 1) + 4) := by
+  unfold clock phaseStart R K
+  rw [show n + m + 1 - 1 = n + m by omega]
+  ring
+
+private theorem run_one {N B t : Nat}
+    (c : Config alignmentStateCount N B) :
+    machine.run (t + 1) c = machine.stepConfig (machine.run t c) := by
+  rw [show t + 1 = t + 1 from rfl, machine.run_add]
+  rfl
+
+private theorem save_round {n m B : Nat} (x : Bitstring n) (w : Bitstring m)
+    {p : Nat} (hp : p ≤ n) (hpos : 0 < p) :
+    machine.run (R n m)
+        (saveConfig B x w p 0 hp (by unfold K; omega)) =
+      saveConfig B x w (p - 1) 0 (by omega) (by unfold K; omega) := by
+  have hf := full_round (B := B) x w hp hpos
+  have hs := step_check (B := B) x w (p := p) (j := 0) hp
+    (by unfold K; omega)
+  have hs' := step_check (B := B) x w (p := p - 1) (j := 0)
+    (by omega) (by unfold K; omega)
+  calc
+    machine.run (R n m) (saveConfig B x w p 0 hp _) =
+        machine.run (R n m)
+          (machine.run 1 (checkConfig B x w p 0 hp (by omega))) := by
+            simpa only [UniformTM.run] using
+              congrArg (machine.run (R n m)) hs.symm
+    _ = machine.run (1 + R n m) (checkConfig B x w p 0 hp (by omega)) := by
+          rw [machine.run_add]
+    _ = machine.run (R n m + 1) (checkConfig B x w p 0 hp (by omega)) := by
+          rw [Nat.add_comm 1 (R n m)]
+    _ = machine.run 1
+        (machine.run (R n m) (checkConfig B x w p 0 hp (by omega))) := by
+          rw [machine.run_add]
+    _ = machine.run 1 (checkConfig B x w (p - 1) 0 (by omega) (by omega)) := by
+          rw [show R n m = 10 * K n m + 3 by rfl, hf]
+    _ = saveConfig B x w (p - 1) 0 (by omega) (by unfold K; omega) := hs'
+
+private theorem run_save {n m B : Nat} (x : Bitstring n) (w : Bitstring m)
+    (k : Nat) (hk : k ≤ n) :
+    machine.run (phaseStart n m k) (startConfig B x w) =
+      saveConfig B x w (n - k) 0 (by omega) (by unfold K; omega) := by
+  induction k with
+  | zero => simpa [phaseStart] using entry_three (B := B) x w
+  | succ k ih =>
+      rw [show phaseStart n m (k + 1) =
+          phaseStart n m k + R n m by unfold phaseStart; ring, machine.run_add,
+        ih (by omega)]
+      simpa only [show n - k - 1 = n - (k + 1) by omega] using
+        save_round (B := B) x w (p := n - k) (by omega) (by omega)
+
+private theorem run_save_scan {n m B : Nat} (x : Bitstring n) (w : Bitstring m)
+    {p j : Nat} (hp : p ≤ n) (hj : j < K n m)
+    (hstop : 0 < p ∨ j ≤ K n m - 1) :
+    machine.run (7 * j)
+        (saveConfig B x w p 0 hp (by unfold K; omega)) =
+      saveConfig B x w p j hp hj := by
+  have hscan := scan_prefix (B := B) x w hp j (by omega) hstop
+  have h0 := step_check (B := B) x w (p := p) (j := 0) hp
+    (by unfold K; omega)
+  have hj' := step_check (B := B) x w (p := p) (j := j) hp hj
+  have h : machine.run (7 * j + 1)
+      (checkConfig B x w p 0 hp (by omega)) = saveConfig B x w p j hp hj := by
+    rw [machine.run_add, hscan]
+    exact hj'
+  calc
+    machine.run (7 * j) (saveConfig B x w p 0 hp _) =
+        machine.run (7 * j)
+          (machine.run 1 (checkConfig B x w p 0 hp (by omega))) := by
+            simpa only [UniformTM.run] using
+              congrArg (machine.run (7 * j)) h0.symm
+    _ = saveConfig B x w p j hp hj := by
+      rw [← machine.run_add, show 1 + 7 * j = 7 * j + 1 by omega]
+      exact h
+
+private theorem run_scan_phases {n m B : Nat} (x : Bitstring n) (w : Bitstring m)
+    {p j : Nat} (hp : p ≤ n) (hj : j < K n m)
+    (hstop : 0 < p ∨ j ≤ K n m - 1)
+    (hcell : 0 < p + K n m - 1 - j) :
+    let c := saveConfig B x w p 0 hp (by unfold K; omega)
+    machine.run (7 * j) c = saveConfig B x w p j hp hj ∧
+    machine.run (7 * j + 1) c = tryConfig B x w p j hp hj ∧
+    machine.run (7 * j + 2) c = bounceConfig B x w p j hp hj ∧
+    machine.run (7 * j + 3) c = classConfig B x w p j hp hj ∧
+    machine.run (7 * j + 4) c = restoreConfig B x w p j hp hj ∧
+    machine.run (7 * j + 5) c = leftConfig B x w p j hp hj ∧
+    machine.run (7 * j + 6) c =
+      checkConfig B x w p (j + 1) hp (by omega) := by
+  dsimp
+  have h0 := run_save_scan (B := B) x w hp hj hstop
+  refine ⟨h0, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · rw [run_one, h0, step_save x w hp hj]
+  · rw [run_one, run_one, h0, step_save x w hp hj, step_try x w hp hj]
+  · rw [run_one, run_one, run_one, h0, step_save x w hp hj,
+      step_try x w hp hj, step_bounce x w hp hj hcell]
+  · rw [run_one, run_one, run_one, run_one, h0, step_save x w hp hj,
+      step_try x w hp hj, step_bounce x w hp hj hcell,
+      step_class x w hp hj hcell]
+  · rw [run_one, run_one, run_one, run_one, run_one, h0,
+      step_save x w hp hj, step_try x w hp hj,
+      step_bounce x w hp hj hcell, step_class x w hp hj hcell,
+      step_restore x w hp hj]
+  · rw [run_one, run_one, run_one, run_one, run_one, run_one, h0,
+      step_save x w hp hj, step_try x w hp hj,
+      step_bounce x w hp hj hcell, step_class x w hp hj hcell,
+      step_restore x w hp hj, step_left x w hp hj hcell]
+
+private theorem step_shift_start {n m B : Nat} (x : Bitstring n)
+    (w : Bitstring m) {p : Nat} (hp : p ≤ n) (hpos : 0 < p) :
+    machine.stepConfig (checkConfig B x w p (K n m) hp (le_refl _)) =
+      takeConfig B x w p 0 hp (by omega) := by
+  have hblank := block_blank x w (B := B) (p := p) (k := p - 1)
+    (Or.inl (by omega)) (checkConfig B x w p (K n m) hp (le_refl _)).head
+      (by change p + K n m - 1 - K n m = p - 1; omega)
+  have ha : machine.step
+      (checkConfig B x w p (K n m) hp (le_refl _)).state
+      ((checkConfig B x w p (K n m) hp (le_refl _)).tape
+        (checkConfig B x w p (K n m) hp (le_refl _)).head) =
+      (qShiftTake, none, .right) := by
+    change machine.step qCheckNext
+      (blockTape B x w p (checkConfig B x w p (K n m) hp (le_refl _)).head) = _
+    rw [hblank]
+    rfl
+  rw [stepConfig_eq _ _ _ _ ha]
+  apply config_ext
+  · rfl
+  · apply Fin.ext
+    rw [move_right_val _ (by
+      change p + K n m - 1 - K n m + 1 < tapeLength (pairLength n m) B
+      unfold tapeLength
+      rw [pair_eq]
+      omega)]
+    change p + K n m - 1 - K n m + 1 = p + 0
+    omega
+  · change (fun i => if i = _ then none else blockTape B x w p i) =
+      rollTape B x w p 0
+    rw [roll_zero x w hpos]
+    funext i
+    by_cases hi : i = (checkConfig B x w p (K n m) hp (le_refl _)).head
+    · rw [if_pos hi]
+      subst i
+      exact hblank.symm
+    · rw [if_neg hi]
+
+private theorem run_check_last {n m B : Nat} (x : Bitstring n) (w : Bitstring m)
+    {p : Nat} (hp : p ≤ n) (hpos : 0 < p) :
+    machine.run (7 * K n m - 1)
+        (saveConfig B x w p 0 hp (by unfold K; omega)) =
+      checkConfig B x w p (K n m) hp (le_refl _) := by
+  have h := (run_scan_phases (B := B) x w (p := p) (j := K n m - 1)
+    (hp := hp) (hj := by unfold K; omega) (hstop := Or.inl hpos)
+    (hcell := by unfold K; omega)).2.2.2.2.2.2
+  simpa only [show 7 * (K n m - 1) + 6 = 7 * K n m - 1 by
+    unfold K; omega] using h
+
+private theorem run_take_shift {n m B : Nat} (x : Bitstring n) (w : Bitstring m)
+    {p r : Nat} (hp : p ≤ n) (hpos : 0 < p) (hr : r ≤ K n m) :
+    machine.run (7 * K n m + 3 * r)
+        (saveConfig B x w p 0 hp (by unfold K; omega)) =
+      takeConfig B x w p r hp hr := by
+  rw [show 7 * K n m + 3 * r = (7 * K n m - 1) + (1 + 3 * r) by
+      unfold K; omega, machine.run_add, run_check_last x w hp hpos,
+    machine.run_add]
+  simp only [UniformTM.run]
+  rw [step_shift_start (B := B) x w hp hpos, copy_prefix x w hp hpos r hr]
+
+private theorem run_shift_phases {n m B : Nat} (x : Bitstring n) (w : Bitstring m)
+    {p r : Nat} (hp : p ≤ n) (hpos : 0 < p) (hr : r < K n m) :
+    let c := saveConfig B x w p 0 hp (by unfold K; omega)
+    machine.run (7 * K n m + 3 * r) c = takeConfig B x w p r hp (by omega) ∧
+    machine.run (7 * K n m + 3 * r + 1) c = putConfig B x w p r hp hpos hr ∧
+    machine.run (7 * K n m + 3 * r + 2) c =
+      gapConfig B x w p (r + 1) hp hpos (by omega) := by
+  dsimp
+  have h0 := run_take_shift (B := B) x w hp hpos (show r ≤ K n m by omega)
+  refine ⟨h0, ?_, ?_⟩
+  · rw [run_one, h0, step_take x w hp hpos hr]
+  · rw [run_one, run_one, h0, step_take x w hp hpos hr,
+      step_put x w hp hpos hr]
+
+private theorem run_shift_tail {n m B : Nat} (x : Bitstring n) (w : Bitstring m)
+    {p : Nat} (hp : p ≤ n) (hpos : 0 < p) :
+    let c := saveConfig B x w p 0 hp (by unfold K; omega)
+    machine.run (10 * K n m + 1) c = backConfig B x w p hp ∧
+    machine.run (10 * K n m + 2) c =
+      checkConfig B x w (p - 1) 0 (by omega) (by omega) := by
+  dsimp
+  have htake := run_take_shift (B := B) x w hp hpos (le_refl (K n m))
+  refine ⟨?_, ?_⟩
+  · rw [show 10 * K n m + 1 = (7 * K n m + 3 * K n m) + 1 by ring,
+      run_one, htake, step_take_last x w hp]
+  · rw [show 10 * K n m + 2 = (7 * K n m + 3 * K n m) + 2 by ring,
+      run_one, run_one, htake, step_take_last x w hp, step_back x w hp hpos]
+
+private theorem run_final_save {n m B : Nat} (x : Bitstring n) (w : Bitstring m)
+    {j : Nat} (hj : j < K n m) :
+    machine.run (7 * j)
+        (saveConfig B x w 0 0 (by omega) (by unfold K; omega)) =
+      saveConfig B x w 0 j (by omega) hj := by
+  exact run_save_scan x w (by omega) hj (Or.inr (by omega))
+
+private theorem run_final_scan_phases {n m B : Nat} (x : Bitstring n)
+    (w : Bitstring m) {j : Nat} (hj : j < K n m - 1) :
+    let c := saveConfig B x w 0 0 (by omega) (by unfold K; omega)
+    machine.run (7 * j) c = saveConfig B x w 0 j (by omega) (by omega) ∧
+    machine.run (7 * j + 1) c = tryConfig B x w 0 j (by omega) (by omega) ∧
+    machine.run (7 * j + 2) c = bounceConfig B x w 0 j (by omega) (by omega) ∧
+    machine.run (7 * j + 3) c = classConfig B x w 0 j (by omega) (by omega) ∧
+    machine.run (7 * j + 4) c = restoreConfig B x w 0 j (by omega) (by omega) ∧
+    machine.run (7 * j + 5) c = leftConfig B x w 0 j (by omega) (by omega) ∧
+    machine.run (7 * j + 6) c =
+      checkConfig B x w 0 (j + 1) (by omega) (by omega) := by
+  exact run_scan_phases x w (by omega) (by unfold K at *; omega)
+    (Or.inr (by omega)) (by omega)
+
+private theorem run_final_tail {n m B : Nat} (x : Bitstring n) (w : Bitstring m) :
+    let c := saveConfig B x w 0 0 (by omega) (by unfold K; omega)
+    machine.run (7 * (K n m - 1)) c =
+        saveConfig B x w 0 (K n m - 1) (by omega) (by unfold K; omega) ∧
+    machine.run (7 * (K n m - 1) + 1) c =
+        tryConfig B x w 0 (K n m - 1) (by omega) (by unfold K; omega) ∧
+    machine.run (7 * (K n m - 1) + 2) c =
+        bounceConfig B x w 0 (K n m - 1) (by omega) (by unfold K; omega) ∧
+    machine.run (7 * (K n m - 1) + 3) c = originClassConfig B x w ∧
+    machine.run (7 * (K n m - 1) + 4) c = finalConfig B x w := by
+  dsimp
+  have h0 := run_final_save (B := B) x w
+    (show K n m - 1 < K n m by unfold K; omega)
+  refine ⟨h0, ?_, ?_, ?_, ?_⟩
+  · rw [run_one, h0, step_save x w (by omega) (by unfold K; omega)]
+  · rw [run_one, run_one, h0, step_save x w (by omega) (by unfold K; omega),
+      step_try x w (by omega) (by unfold K; omega)]
+  · rw [run_one, run_one, run_one, h0,
+      step_save x w (by omega) (by unfold K; omega),
+      step_try x w (by omega) (by unfold K; omega), step_bounce_origin x w]
+  · rw [run_one, run_one, run_one, run_one, h0,
+      step_save x w (by omega) (by unfold K; omega),
+      step_try x w (by omega) (by unfold K; omega), step_bounce_origin x w,
+      step_origin x w]
+
+private theorem phaseStart_succ (n m k : Nat) :
+    phaseStart n m (k + 1) = phaseStart n m k + R n m := by
+  unfold phaseStart
+  ring
+
+private theorem phaseStart_decompose (n m s : Nat) (hs : 3 ≤ s) :
+    ∃ k d, d < R n m ∧ s = phaseStart n m k + d := by
+  induction s with
+  | zero => omega
+  | succ s ih =>
+      by_cases hs3 : s < 3
+      · have he : s = 2 := by omega
+        subst s
+        exact ⟨0, 0, by unfold R K; omega, by simp [phaseStart]⟩
+      · obtain ⟨k, d, hd, he⟩ := ih (by omega)
+        by_cases hd' : d + 1 < R n m
+        · exact ⟨k, d + 1, hd', by omega⟩
+        · refine ⟨k + 1, 0, by unfold R K; omega, ?_⟩
+          rw [phaseStart_succ]
+          omega
+
+private theorem phase_index_le {n m s k d : Nat} (hs : s ≤ clock n m)
+    (he : s = phaseStart n m k + d) : k ≤ n := by
+  by_contra hn
+  have hkn : n + 1 ≤ k := by omega
+  have hmul := Nat.mul_le_mul_right (R n m) hkn
+  have htail : 7 * (K n m - 1) + 4 < R n m := by
+    unfold R K
+    omega
+  have hclock := clock_phase n m
+  have hdist : (n + 1) * R n m = n * R n m + R n m := by ring
+  rw [hdist] at hmul
+  have hphase : phaseStart n m (n + 1) ≤ s := by
+    unfold phaseStart at he ⊢
+    omega
+  have hclocklt : clock n m < phaseStart n m (n + 1) := by
+    rw [hclock, phaseStart_succ]
+    omega
+  omega
+
+private theorem mod_seven (t : Nat) : ∃ r d, d ≤ 6 ∧ t = 7 * r + d := by
+  refine ⟨t / 7, t % 7, ?_, ?_⟩
+  · have h := Nat.mod_lt t (by decide : 0 < 7)
+    omega
+  · have h := Nat.mod_add_div t 7
+    omega
+
+private theorem mod_three_local (t : Nat) : ∃ r d, d ≤ 2 ∧ t = 3 * r + d := by
+  refine ⟨t / 3, t % 3, ?_, ?_⟩
+  · have h := Nat.mod_lt t (by decide : 0 < 3)
+    omega
+  · have h := Nat.mod_add_div t 3
+    omega
+
+private theorem block_above {n m B : Nat} (x : Bitstring n) (w : Bitstring m)
+    {p : Nat} (hp : p ≤ n) (i : Fin (tapeLength (pairLength n m) B))
+    (hi : pairLength n m ≤ i.val) : blockTape B x w p i = none := by
+  apply block_blank x w (Or.inr (show p + K n m ≤ i.val by
+    have he := pair_eq n m
+    omega)) i rfl
+
+private theorem clear_above {n m B : Nat} (x : Bitstring n) (w : Bitstring m)
+    {p j : Nat} (hp : p ≤ n) (i : Fin (tapeLength (pairLength n m) B))
+    (hi : pairLength n m ≤ i.val) : clearTape B x w p j i = none := by
+  change clearCell x w p j i.val = none
+  unfold clearCell
+  split
+  · rfl
+  · exact block_above x w hp i hi
+
+private theorem roll_above {n m B : Nat} (x : Bitstring n) (w : Bitstring m)
+    {p r : Nat} (hp : p ≤ n) (hr : r ≤ K n m)
+    (i : Fin (tapeLength (pairLength n m) B))
+    (hi : pairLength n m ≤ i.val) : rollTape B x w p r i = none := by
+  change rollCell x w p r i.val = none
+  have he := pair_eq n m
+  unfold rollCell
+  rw [if_neg (by omega), if_neg (by omega), if_neg (by omega),
+    if_neg (by omega)]
+
+private theorem taken_above {n m B : Nat} (x : Bitstring n) (w : Bitstring m)
+    {p r : Nat} (hp : p ≤ n) (hr : r ≤ K n m)
+    (i : Fin (tapeLength (pairLength n m) B))
+    (hi : pairLength n m ≤ i.val) : takenTape B x w p r i = none := by
+  change (if i.val = p + r then none else rollCell x w p r i.val) = none
+  split
+  · rfl
+  · exact roll_above x w hp hr i hi
+
+private def SafeSnapshot {n m B : Nat} (s : Nat)
+    (c : Config alignmentStateCount (pairLength n m) B) : Prop :=
+  c.state ≠ qAccept ∧ c.state ≠ qReject ∧
+  c.head.val ≤ pairLength n m + Nat.min B 1 ∧
+  (∀ i, pairLength n m ≤ i.val → c.tape i = none) ∧
+  ((machine.step c.state (c.tape c.head)).2.2 = .right →
+    (s = 2 ∧ B = 0 ∧ c.head.val = pairLength n m) ∨
+      c.head.val + 1 < tapeLength (pairLength n m) B) ∧
+  ((machine.step c.state (c.tape c.head)).2.2 = .left →
+    (s = clock n m - 3 ∧ c.head.val = 0) ∨ 0 < c.head.val)
+
+private theorem check_action {n m B : Nat} (x : Bitstring n) (w : Bitstring m)
+    {p j : Nat} (hp : p ≤ n) (hj : j ≤ K n m)
+    (hlast : j = K n m → 0 < p) :
+    (machine.step (checkConfig B x w p j hp hj).state
+      ((checkConfig B x w p j hp hj).tape
+        (checkConfig B x w p j hp hj).head)).2.2 = .right := by
+  by_cases hlt : j < K n m
+  · rw [check_read x w hp hlt]
+    change (machine.step (checkState j) (some _)).2.2 = .right
+    by_cases h0 : j = 0
+    · rw [show checkState j = qCheckAt by simp [checkState, h0], checkAt_action]
+    · rw [show checkState j = qCheckNext by simp [checkState, h0], checkNext_some]
+  · have he : j = K n m := by omega
+    subst j
+    have hp0 : 0 < p := hlast rfl
+    have hb := block_blank x w (B := B) (p := p) (k := p - 1)
+      (Or.inl (by omega)) (checkConfig B x w p (K n m) hp hj).head
+      (by change p + K n m - 1 - K n m = p - 1; omega)
+    change (machine.step (checkState (K n m))
+      (blockTape B x w p (checkConfig B x w p (K n m) hp hj).head)).2.2 = .right
+    rw [hb]
+    rw [show checkState (K n m) = qCheckNext by
+      simp [checkState, show K n m ≠ 0 by unfold K; omega]]
+    rfl
+
+private theorem safe_check {n m B : Nat} (x : Bitstring n) (w : Bitstring m)
+    {s p j : Nat} (hp : p ≤ n) (hj : j ≤ K n m)
+    (hlast : j = K n m → 0 < p) :
+    SafeSnapshot s (checkConfig B x w p j hp hj) := by
+  unfold SafeSnapshot
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩
+  · change checkState j ≠ qAccept
+    unfold checkState
+    split <;> decide
+  · change checkState j ≠ qReject
+    unfold checkState
+    split <;> decide
+  · change p + K n m - 1 - j ≤ pairLength n m + Nat.min B 1
+    rw [pair_eq]
+    omega
+  · exact fun i hi => block_above x w hp i hi
+  · rw [check_action x w hp hj hlast]
+    intro _
+    right
+    change p + K n m - 1 - j + 1 < tapeLength (pairLength n m) B
+    unfold tapeLength
+    rw [pair_eq]
+    have hK : 0 < K n m := by unfold K; omega
+    by_cases he : j = K n m
+    · have := hlast he
+      omega
+    · omega
+  · rw [check_action x w hp hj hlast]
+    simp
+
+private theorem safe_save {n m B : Nat} (x : Bitstring n) (w : Bitstring m)
+    {s p j : Nat} (hp : p ≤ n) (hj : j < K n m) :
+    SafeSnapshot s (saveConfig B x w p j hp hj) := by
+  have hmove : (machine.step (saveConfig B x w p j hp hj).state
+      ((saveConfig B x w p j hp hj).tape
+        (saveConfig B x w p j hp hj).head)).2.2 = .left := by
+    rw [save_read x w hp hj]
+    exact congrArg (fun a => a.2.2) (save_action _)
+  unfold SafeSnapshot
+  rw [hmove]
+  refine ⟨?_, ?_, ?_, fun i hi => block_above x w hp i hi,
+    by simp, ?_⟩
+  · change qCheckSave ≠ qAccept
+    decide
+  · change qCheckSave ≠ qReject
+    decide
+  · change p + K n m - j ≤ pairLength n m + Nat.min B 1
+    rw [pair_eq]
+    omega
+  · intro _
+    right
+    change 0 < p + K n m - j
+    unfold K at hj ⊢
+    omega
+
+private theorem safe_try {n m B : Nat} (x : Bitstring n) (w : Bitstring m)
+    {s p j : Nat} (hp : p ≤ n) (hj : j < K n m)
+    (horigin : p + K n m - 1 - j = 0 → s = clock n m - 3) :
+    SafeSnapshot s (tryConfig B x w p j hp hj) := by
+  have hmove : (machine.step (tryConfig B x w p j hp hj).state
+      ((tryConfig B x w p j hp hj).tape
+        (tryConfig B x w p j hp hj).head)).2.2 = .left := by
+    rw [try_read x w hp hj]
+    exact congrArg (fun a => a.2.2) (try_action _ _)
+  unfold SafeSnapshot
+  rw [hmove]
+  refine ⟨?_, ?_, ?_, fun i hi => clear_above x w hp i hi, by simp, ?_⟩
+  · change savedState _ ≠ qAccept
+    cases h : blockCell x w p (p + K n m - j) with
+    | none => simp [savedState]; decide
+    | some b => cases b <;> simp [savedState] <;> decide
+  · change savedState _ ≠ qReject
+    cases h : blockCell x w p (p + K n m - j) with
+    | none => simp [savedState]; decide
+    | some b => cases b <;> simp [savedState] <;> decide
+  · change p + K n m - 1 - j ≤ pairLength n m + Nat.min B 1
+    rw [pair_eq]
+    omega
+  · intro _
+    by_cases h0 : p + K n m - 1 - j = 0
+    · left
+      exact ⟨horigin h0, h0⟩
+    · right
+      change 0 < p + K n m - 1 - j
+      omega
+
+private theorem safe_bounce {n m B : Nat} (x : Bitstring n) (w : Bitstring m)
+    {s p j : Nat} (hp : p ≤ n) (hj : j < K n m) :
+    SafeSnapshot s (bounceConfig B x w p j hp hj) := by
+  have hmove : (machine.step (bounceConfig B x w p j hp hj).state
+      ((bounceConfig B x w p j hp hj).tape
+        (bounceConfig B x w p j hp hj).head)).2.2 = .right := by
+    change (machine.step (bounceState _) _).2.2 = .right
+    exact congrArg (fun a => a.2.2) (bounce_action _ _)
+  unfold SafeSnapshot
+  rw [hmove]
+  refine ⟨?_, ?_, ?_, fun i hi => clear_above x w hp i hi, ?_, by simp⟩
+  · change bounceState _ ≠ qAccept
+    cases h : blockCell x w p (p + K n m - j) with
+    | none => simp [bounceState]; decide
+    | some b => cases b <;> simp [bounceState] <;> decide
+  · change bounceState _ ≠ qReject
+    cases h : blockCell x w p (p + K n m - j) with
+    | none => simp [bounceState]; decide
+    | some b => cases b <;> simp [bounceState] <;> decide
+  · change p + K n m - 1 - j - 1 ≤ pairLength n m + Nat.min B 1
+    rw [pair_eq]
+    omega
+  · intro _
+    right
+    change p + K n m - 1 - j - 1 + 1 < tapeLength (pairLength n m) B
+    unfold tapeLength
+    rw [pair_eq]
+    omega
+
+private theorem safe_class {n m B : Nat} (x : Bitstring n) (w : Bitstring m)
+    {s p j : Nat} (hp : p ≤ n) (hj : j < K n m) :
+    SafeSnapshot s (classConfig B x w p j hp hj) := by
+  have hmove : (machine.step (classConfig B x w p j hp hj).state
+      ((classConfig B x w p j hp hj).tape
+        (classConfig B x w p j hp hj).head)).2.2 = .right := by
+    rw [class_read x w hp hj]
+    exact congrArg (fun a => a.2.2) (class_some _ _)
+  unfold SafeSnapshot
+  rw [hmove]
+  refine ⟨?_, ?_, ?_, fun i hi => clear_above x w hp i hi, ?_, by simp⟩
+  · change classState _ ≠ qAccept
+    cases h : blockCell x w p (p + K n m - j) with
+    | none => simp [classState]; decide
+    | some b => cases b <;> simp [classState] <;> decide
+  · change classState _ ≠ qReject
+    cases h : blockCell x w p (p + K n m - j) with
+    | none => simp [classState]; decide
+    | some b => cases b <;> simp [classState] <;> decide
+  · change p + K n m - 1 - j ≤ pairLength n m + Nat.min B 1
+    rw [pair_eq]
+    omega
+  · intro _
+    right
+    change p + K n m - 1 - j + 1 < tapeLength (pairLength n m) B
+    unfold tapeLength
+    rw [pair_eq]
+    omega
+
+private theorem safe_restore {n m B : Nat} (x : Bitstring n) (w : Bitstring m)
+    {s p j : Nat} (hp : p ≤ n) (hj : j < K n m) :
+    SafeSnapshot s (restoreConfig B x w p j hp hj) := by
+  have hmove : (machine.step (restoreConfig B x w p j hp hj).state
+      ((restoreConfig B x w p j hp hj).tape
+        (restoreConfig B x w p j hp hj).head)).2.2 = .left := by
+    rw [restore_read x w hp hj]
+    exact congrArg (fun a => a.2.2) (restore_action _)
+  unfold SafeSnapshot
+  rw [hmove]
+  refine ⟨?_, ?_, ?_, fun i hi => clear_above x w hp i hi, by simp, ?_⟩
+  · change restoreState _ ≠ qAccept
+    cases h : blockCell x w p (p + K n m - j) with
+    | none => simp [restoreState]; decide
+    | some b => cases b <;> simp [restoreState] <;> decide
+  · change restoreState _ ≠ qReject
+    cases h : blockCell x w p (p + K n m - j) with
+    | none => simp [restoreState]; decide
+    | some b => cases b <;> simp [restoreState] <;> decide
+  · change p + K n m - j ≤ pairLength n m + Nat.min B 1
+    rw [pair_eq]
+    omega
+  · intro _
+    right
+    change 0 < p + K n m - j
+    unfold K at hj ⊢
+    omega
+
+private theorem safe_left {n m B : Nat} (x : Bitstring n) (w : Bitstring m)
+    {s p j : Nat} (hp : p ≤ n) (hj : j < K n m)
+    (hcell : 0 < p + K n m - 1 - j) :
+    SafeSnapshot s (leftConfig B x w p j hp hj) := by
+  have hr0 := block_read x w (B := B) (p := p) (k := p + K n m - 1 - j)
+    (by omega) (by omega) (leftConfig B x w p j hp hj).head rfl
+  have hr : (leftConfig B x w p j hp hj).tape
+      (leftConfig B x w p j hp hj).head = some (bit x w (K n m - 1 - j)) := by
+    simpa only [show p + K n m - 1 - j - p = K n m - 1 - j by omega] using hr0
+  have hmove : (machine.step (leftConfig B x w p j hp hj).state
+      ((leftConfig B x w p j hp hj).tape
+        (leftConfig B x w p j hp hj).head)).2.2 = .left := by
+    rw [hr]
+    exact congrArg (fun a => a.2.2) (left_some _)
+  unfold SafeSnapshot
+  rw [hmove]
+  refine ⟨?_, ?_, ?_, fun i hi => block_above x w hp i hi,
+    by simp, ?_⟩
+  · change qCheckStepLeft ≠ qAccept
+    decide
+  · change qCheckStepLeft ≠ qReject
+    decide
+  · change p + K n m - 1 - j ≤ pairLength n m + Nat.min B 1
+    rw [pair_eq]
+    omega
+  · exact fun _ => Or.inr hcell
+
+private theorem safe_take {n m B : Nat} (x : Bitstring n) (w : Bitstring m)
+    {s p r : Nat} (hp : p ≤ n) (hpos : 0 < p) (hr : r ≤ K n m) :
+    SafeSnapshot s (takeConfig B x w p r hp hr) := by
+  have hmove : (machine.step (takeConfig B x w p r hp hr).state
+      ((takeConfig B x w p r hp hr).tape
+        (takeConfig B x w p r hp hr).head)).2.2 = .left := by
+    by_cases hlt : r < K n m
+    · rw [take_read x w hp hpos hlt]
+      exact congrArg (fun a => a.2.2) (take_action r _)
+    · have he : r = K n m := by omega
+      subst r
+      rw [take_last_read x w hp]
+      exact congrArg (fun a => a.2.2) inspect_none
+  unfold SafeSnapshot
+  rw [hmove]
+  refine ⟨?_, ?_, ?_, fun i hi => roll_above x w hp hr i hi, by simp, ?_⟩
+  · change takeState r ≠ qAccept
+    unfold takeState
+    split <;> decide
+  · change takeState r ≠ qReject
+    unfold takeState
+    split <;> decide
+  · change p + r ≤ pairLength n m + Nat.min B 1
+    rw [pair_eq]
+    omega
+  · intro _
+    right
+    change 0 < p + r
+    omega
+
+private theorem safe_put {n m B : Nat} (x : Bitstring n) (w : Bitstring m)
+    {s p r : Nat} (hp : p ≤ n) (hpos : 0 < p) (hr : r < K n m) :
+    SafeSnapshot s (putConfig B x w p r hp hpos hr) := by
+  have hmove : (machine.step (putConfig B x w p r hp hpos hr).state
+      ((putConfig B x w p r hp hpos hr).tape
+        (putConfig B x w p r hp hpos hr).head)).2.2 = .right := by
+    rw [put_read x w hp hpos hr]
+    exact congrArg (fun a => a.2.2) (put_action _)
+  unfold SafeSnapshot
+  rw [hmove]
+  refine ⟨?_, ?_, ?_, fun i hi => taken_above x w hp (by omega) i hi,
+    ?_, by simp⟩
+  · change putState _ ≠ qAccept
+    unfold putState
+    split <;> decide
+  · change putState _ ≠ qReject
+    unfold putState
+    split <;> decide
+  · change p + r - 1 ≤ pairLength n m + Nat.min B 1
+    rw [pair_eq]
+    omega
+  · intro _
+    right
+    change p + r - 1 + 1 < tapeLength (pairLength n m) B
+    unfold tapeLength
+    rw [pair_eq]
+    omega
+
+private theorem safe_gap {n m B : Nat} (x : Bitstring n) (w : Bitstring m)
+    {s p r : Nat} (hp : p ≤ n) (hpos : 0 < p) (hr0 : 0 < r)
+    (hr : r ≤ K n m) : SafeSnapshot s (gapConfig B x w p r hp hpos hr) := by
+  have hmove : (machine.step (gapConfig B x w p r hp hpos hr).state
+      ((gapConfig B x w p r hp hpos hr).tape
+        (gapConfig B x w p r hp hpos hr).head)).2.2 = .right := by
+    rw [gap_read x w hp hpos hr0 hr]
+    rfl
+  unfold SafeSnapshot
+  rw [hmove]
+  refine ⟨?_, ?_, ?_, fun i hi => roll_above x w hp hr i hi,
+    ?_, by simp⟩
+  · change qShiftGap ≠ qAccept
+    decide
+  · change qShiftGap ≠ qReject
+    decide
+  · change p + r - 1 ≤ pairLength n m + Nat.min B 1
+    rw [pair_eq]
+    omega
+  · intro _
+    right
+    change p + r - 1 + 1 < tapeLength (pairLength n m) B
+    unfold tapeLength
+    rw [pair_eq]
+    omega
+
+private theorem safe_back {n m B : Nat} (x : Bitstring n) (w : Bitstring m)
+    {s p : Nat} (hp : p ≤ n) (hpos : 0 < p) :
+    SafeSnapshot s (backConfig B x w p hp) := by
+  have hmove : (machine.step (backConfig B x w p hp).state
+      ((backConfig B x w p hp).tape (backConfig B x w p hp).head)).2.2 = .left := by
+    rw [back_read x w hp hpos]
+    rfl
+  unfold SafeSnapshot
+  rw [hmove]
+  refine ⟨?_, ?_, ?_,
+    fun i hi => roll_above x w hp (le_refl _) i hi, by simp, ?_⟩
+  · change qShiftBack ≠ qAccept
+    decide
+  · change qShiftBack ≠ qReject
+    decide
+  · change p + K n m - 1 ≤ pairLength n m + Nat.min B 1
+    rw [pair_eq]
+    omega
+  · intro _
+    right
+    change 0 < p + K n m - 1
+    unfold K
+    omega
+
+private theorem safe_origin {n m B : Nat} (x : Bitstring n) (w : Bitstring m)
+    {s : Nat} : SafeSnapshot s (originClassConfig B x w) := by
+  have hmove : (machine.step (originClassConfig B x w).state
+      ((originClassConfig B x w).tape (originClassConfig B x w).head)).2.2 = .left := by
+    rw [origin_read x w]
+    exact congrArg (fun a => a.2.2) (class_none _)
+  unfold SafeSnapshot
+  rw [hmove]
+  refine ⟨?_, ?_, ?_,
+    fun i hi => clear_above x w (by omega) i hi, by simp, ?_⟩
+  · change classState _ ≠ qAccept
+    cases h : blockCell x w 0 1 with
+    | none => simp [classState]; decide
+    | some b => cases b <;> simp [classState] <;> decide
+  · change classState _ ≠ qReject
+    cases h : blockCell x w 0 1 with
+    | none => simp [classState]; decide
+    | some b => cases b <;> simp [classState] <;> decide
+  · change 1 ≤ pairLength n m + Nat.min B 1
+    unfold pairLength
+    omega
+  · intro _
+    right
+    change 0 < 1
+    omega
+
+private theorem safe_source {n m B : Nat} (x : Bitstring n) (w : Bitstring m) :
+    SafeSnapshot 0 (sourceConfig B x w) := by
+  have hmove : (machine.step (sourceConfig B x w).state
+      ((sourceConfig B x w).tape (sourceConfig B x w).head)).2.2 = .left := by
+    rw [source_read x w]
+    rfl
+  unfold SafeSnapshot
+  rw [hmove]
+  refine ⟨?_, ?_, ?_, fun i hi => block_above x w (by omega) i hi,
+    by simp, ?_⟩
+  · change qStart ≠ qAccept
+    decide
+  · change qStart ≠ qReject
+    decide
+  · cases B <;> simp [sourceConfig, sourceHead]
+  · intro _
+    right
+    cases B <;> simp [sourceConfig, sourceHead]
+    all_goals unfold pairLength
+    all_goals omega
+
+private theorem safe_norm {n m B : Nat} (x : Bitstring n) (w : Bitstring m) :
+    SafeSnapshot 1 (normConfig B x w) := by
+  cases B with
+  | zero =>
+      have hmove : (machine.step (normConfig 0 x w).state
+          ((normConfig 0 x w).tape (normConfig 0 x w).head)).2.2 = .right := by
+        rw [norm_read x w]
+        rfl
+      unfold SafeSnapshot
+      rw [hmove]
+      refine ⟨?_, ?_, ?_,
+        fun i hi => block_above x w (by omega) i hi, ?_, by simp⟩
+      · change qNormalize ≠ qAccept
+        decide
+      · change qNormalize ≠ qReject
+        decide
+      · change pairLength n m + Nat.min 0 1 - 1 ≤ pairLength n m + Nat.min 0 1
+        omega
+      · intro _
+        right
+        change pairLength n m + Nat.min 0 1 - 1 + 1 <
+          tapeLength (pairLength n m) 0
+        simp only [Nat.zero_min, Nat.add_zero]
+        unfold tapeLength pairLength
+        omega
+  | succ B =>
+      have hmove : (machine.step (normConfig (B + 1) x w).state
+          ((normConfig (B + 1) x w).tape
+            (normConfig (B + 1) x w).head)).2.2 = .left := by
+        rw [norm_read x w]
+        rfl
+      unfold SafeSnapshot
+      rw [hmove]
+      refine ⟨?_, ?_, ?_,
+        fun i hi => block_above x w (by omega) i hi, by simp, ?_⟩
+      · change qNormalize ≠ qAccept
+        decide
+      · change qNormalize ≠ qReject
+        decide
+      · change pairLength n m + Nat.min (B + 1) 1 - 1 ≤
+          pairLength n m + Nat.min (B + 1) 1
+        omega
+      · intro _
+        right
+        change 0 < pairLength n m + Nat.min (B + 1) 1 - 1
+        simp only [Nat.min_eq_right (by omega : 1 ≤ B + 1)]
+        unfold pairLength
+        omega
+
+private theorem safe_entry {n m B : Nat} (x : Bitstring n) (w : Bitstring m) :
+    SafeSnapshot 2 (entryConfig B x w) := by
+  have hmove : (machine.step (entryConfig B x w).state
+      ((entryConfig B x w).tape (entryConfig B x w).head)).2.2 = .right := by
+    exact congrArg (fun a => a.2.2) (checkAt_action _)
+  unfold SafeSnapshot
+  rw [hmove]
+  refine ⟨?_, ?_, ?_, fun i hi => block_above x w (by omega) i hi,
+    ?_, by simp⟩
+  · change qCheckAt ≠ qAccept
+    decide
+  · change qCheckAt ≠ qReject
+    decide
+  · change (if B = 0 then pairLength n m else pairLength n m - 1) ≤
+      pairLength n m + Nat.min B 1
+    split <;> omega
+  · intro _
+    cases B with
+    | zero =>
+        left
+        refine ⟨rfl, rfl, ?_⟩
+        change pairLength n m = pairLength n m
+        rfl
+    | succ B =>
+        right
+        change (if B + 1 = 0 then pairLength n m else pairLength n m - 1) + 1 <
+          tapeLength (pairLength n m) (B + 1)
+        unfold tapeLength
+        simp
+        unfold pairLength
+        omega
+
+private theorem trace_safe {n m B : Nat} (x : Bitstring n) (w : Bitstring m)
+    (s : Nat) (hs : s < clock n m) :
+    SafeSnapshot s (machine.run s (startConfig B x w)) := by
+  by_cases hsmall : s < 3
+  · have hcases : s = 0 ∨ s = 1 ∨ s = 2 := by omega
+    rcases hcases with rfl | rfl | rfl
+    · rw [start_source x w]
+      exact safe_source x w
+    · simp only [UniformTM.run]
+      rw [start_source x w, step_source x w]
+      exact safe_norm x w
+    · simp only [UniformTM.run]
+      rw [start_source x w, step_source x w, step_norm x w]
+      exact safe_entry x w
+  · obtain ⟨k, d, hdR, he⟩ := phaseStart_decompose n m s (by omega)
+    have hk : k ≤ n := phase_index_le (Nat.le_of_lt hs) he
+    have hrun : machine.run s (startConfig B x w) =
+        machine.run d
+          (saveConfig B x w (n - k) 0 (by omega) (by unfold K; omega)) := by
+      rw [he, machine.run_add, run_save x w k hk]
+    rcases Nat.lt_or_eq_of_le hk with hkn | hkeq
+    · have hp : 0 < n - k := by omega
+      by_cases hscan : d < 7 * K n m
+      · obtain ⟨j, e, he6, hde⟩ := mod_seven d
+        have hj : j < K n m := by omega
+        have ph := run_scan_phases (B := B) x w (p := n - k) (j := j)
+          (hp := by omega) (hj := hj) (hstop := Or.inl hp) (hcell := by omega)
+        dsimp at ph
+        have hec : e = 0 ∨ e = 1 ∨ e = 2 ∨ e = 3 ∨ e = 4 ∨ e = 5 ∨ e = 6 := by omega
+        rcases hec with rfl | rfl | rfl | rfl | rfl | rfl | rfl
+        · rw [hrun, hde, Nat.add_zero, ph.1]
+          exact safe_save x w (by omega) hj
+        · rw [hrun, hde, ph.2.1]
+          exact safe_try x w (by omega) hj (by omega)
+        · rw [hrun, hde, ph.2.2.1]
+          exact safe_bounce x w (by omega) hj
+        · rw [hrun, hde, ph.2.2.2.1]
+          exact safe_class x w (by omega) hj
+        · rw [hrun, hde, ph.2.2.2.2.1]
+          exact safe_restore x w (by omega) hj
+        · rw [hrun, hde, ph.2.2.2.2.2.1]
+          exact safe_left x w (by omega) hj (by omega)
+        · rw [hrun, hde, ph.2.2.2.2.2.2]
+          exact safe_check x w (by omega) (by omega) (by omega)
+      · let z := d - 7 * K n m
+        have hdz : d = 7 * K n m + z := by dsimp [z]; omega
+        have hz : z < 3 * K n m + 3 := by unfold R at hdR; omega
+        obtain ⟨r, e, he2, hze⟩ := mod_three_local z
+        have hr : r ≤ K n m := by omega
+        rcases Nat.lt_or_eq_of_le hr with hrK | rfl
+        · have ph := run_shift_phases (B := B) x w (p := n - k) (r := r)
+            (hp := by omega) (hpos := hp) (hr := hrK)
+          dsimp at ph
+          have hec : e = 0 ∨ e = 1 ∨ e = 2 := by omega
+          rcases hec with rfl | rfl | rfl
+          · rw [hrun, hdz, hze, Nat.add_zero, ph.1]
+            exact safe_take x w (by omega) hp (by omega)
+          · rw [hrun, hdz, hze,
+              show 7 * K n m + (3 * r + 1) = 7 * K n m + 3 * r + 1 by omega,
+              ph.2.1]
+            exact safe_put x w (by omega) hp hrK
+          · rw [hrun, hdz, hze,
+              show 7 * K n m + (3 * r + 2) = 7 * K n m + 3 * r + 2 by omega,
+              ph.2.2]
+            exact safe_gap x w (by omega) hp (by omega) (by omega)
+        · have hec : e = 0 ∨ e = 1 ∨ e = 2 := by omega
+          have tail := run_shift_tail (B := B) x w (p := n - k)
+            (hp := by omega) (hpos := hp)
+          dsimp at tail
+          rcases hec with rfl | rfl | rfl
+          · have htake := run_take_shift (B := B) x w (p := n - k)
+              (r := K n m) (hp := by omega) (hpos := hp) (hr := le_refl _)
+            rw [hrun, hdz, hze, Nat.add_zero, htake]
+            exact safe_take x w (by omega) hp (le_refl _)
+          · rw [hrun, hdz, hze,
+              show 7 * K n m + (3 * K n m + 1) = 10 * K n m + 1 by ring,
+              tail.1]
+            exact safe_back x w (by omega) hp
+          · rw [hrun, hdz, hze,
+              show 7 * K n m + (3 * K n m + 2) = 10 * K n m + 2 by ring,
+              tail.2]
+            exact safe_check x w (hp := by omega) (hj := by omega)
+              (hlast := by intro h; unfold K at h; omega)
+    · subst k
+      have hrun0 : machine.run s (startConfig B x w) =
+          machine.run d
+            (saveConfig B x w 0 0 (by omega) (by unfold K; omega)) := by
+        simpa only [Nat.sub_self] using hrun
+      have hdF : d < 7 * (K n m - 1) + 4 := by
+        have hc := clock_phase n m
+        omega
+      by_cases hnormal : d < 7 * (K n m - 1)
+      · obtain ⟨j, e, he6, hde⟩ := mod_seven d
+        have hj : j < K n m - 1 := by omega
+        have ph := run_final_scan_phases (B := B) x w hj
+        dsimp at ph
+        have hec : e = 0 ∨ e = 1 ∨ e = 2 ∨ e = 3 ∨ e = 4 ∨ e = 5 ∨ e = 6 := by omega
+        rcases hec with rfl | rfl | rfl | rfl | rfl | rfl | rfl
+        · rw [hrun0, hde, Nat.add_zero, ph.1]
+          exact safe_save x w (by omega) (by omega)
+        · rw [hrun0, hde, ph.2.1]
+          exact safe_try x w (by omega) (by omega) (by omega)
+        · rw [hrun0, hde, ph.2.2.1]
+          exact safe_bounce x w (by omega) (by omega)
+        · rw [hrun0, hde, ph.2.2.2.1]
+          exact safe_class x w (by omega) (by omega)
+        · rw [hrun0, hde, ph.2.2.2.2.1]
+          exact safe_restore x w (by omega) (by omega)
+        · rw [hrun0, hde, ph.2.2.2.2.2.1]
+          exact safe_left x w (by omega) (by omega) (by omega)
+        · rw [hrun0, hde, ph.2.2.2.2.2.2]
+          exact safe_check x w (by omega) (by omega) (by omega)
+      · have hz : d = 7 * (K n m - 1) ∨
+            d = 7 * (K n m - 1) + 1 ∨
+            d = 7 * (K n m - 1) + 2 ∨
+            d = 7 * (K n m - 1) + 3 := by omega
+        have tail := run_final_tail (B := B) x w
+        dsimp at tail
+        rcases hz with rfl | rfl | rfl | rfl
+        · rw [hrun0, tail.1]
+          exact safe_save x w (by omega) (by unfold K; omega)
+        · rw [hrun0, tail.2.1]
+          exact safe_try x w (by omega) (by unfold K; omega) (by
+            intro _
+            have hc := clock_phase n m
+            omega)
+        · rw [hrun0, tail.2.2.1]
+          exact safe_bounce x w (by omega) (by unfold K; omega)
+        · rw [hrun0, tail.2.2.2.1]
+          exact safe_origin x w
+
+private theorem run_entry_two {n m B : Nat} (x : Bitstring n) (w : Bitstring m) :
+    machine.run 2 (startConfig B x w) = entryConfig B x w := by
+  simp only [UniformTM.run]
+  rw [start_source x w, step_source x w, step_norm x w]
+
+private theorem run_last_try {n m B : Nat} (x : Bitstring n) (w : Bitstring m) :
+    machine.run (clock n m - 3) (startConfig B x w) =
+      tryConfig B x w 0 (K n m - 1) (by omega) (by unfold K; omega) := by
+  have htail := (run_final_tail (B := B) x w).2.1
+  have hc := clock_phase n m
+  have hs0 : machine.run (phaseStart n m n) (startConfig B x w) =
+      saveConfig B x w 0 0 (by omega) (by unfold K; omega) := by
+    simpa only [Nat.sub_self] using run_save (B := B) x w n (le_refl _)
+  rw [show clock n m - 3 = phaseStart n m n +
+      (7 * (K n m - 1) + 1) by omega, machine.run_add, hs0]
+  exact htail
+
+/-- Literal accepting fields and the complete `[x][w][marker][blanks]`
+layout.  The marker clause records only its literal value; it makes no claim
+that this phase recognizes marker values. -/
+theorem final_fields_and_layout {n m B : Nat} (x : Bitstring n) (w : Bitstring m) :
+    let c := machine.run (clock n m) (startConfig B x w)
+    c = finalConfig B x w ∧ c.state = qAccept ∧ c.state = machine.accept ∧
+    c.head = (⟨0, by unfold tapeLength; omega⟩ :
+      Fin (tapeLength (pairLength n m) B)) ∧ c.head.val = 0 ∧
+    c.tape = alignedTape B x w ∧
+    (∀ j : Fin n, c.tape
+      ⟨j.val, by unfold tapeLength pairLength; omega⟩ = some (x j)) ∧
+    (∀ j : Fin m, c.tape
+      ⟨n + j.val, by unfold tapeLength pairLength; omega⟩ = some (w j)) ∧
+    c.tape ⟨n + m, by unfold tapeLength pairLength; omega⟩ = some true ∧
+    (∀ i : Fin (tapeLength (pairLength n m) B),
+      n + m + 1 ≤ i.val → c.tape i = none) := by
+  dsimp
+  rw [run_exact]
+  refine ⟨rfl, rfl, rfl, rfl, rfl, rfl, ?_, ?_, ?_, ?_⟩
+  · intro j
+    exact block_read x w (p := 0) (k := j.val)
+      (by omega) (by unfold K; omega) _ rfl |>.trans
+      (congrArg some (bit_x x w j))
+  · intro j
+    exact block_read x w (p := 0) (k := n + j.val)
+      (by omega) (by unfold K; omega) _ rfl |>.trans
+      (congrArg some (bit_w x w j))
+  · exact block_read x w (p := 0) (k := n + m)
+      (by omega) (by unfold K; omega) _ rfl |>.trans
+      (congrArg some (bit_marker x w))
+  · intro i hi
+    exact block_blank x w (Or.inr (by unfold K; omega)) i rfl
+
+/-- The accepting control is the strict first terminal control. -/
+theorem strict_first_terminal {n m B : Nat} (x : Bitstring n) (w : Bitstring m) :
+    (∀ s, s < clock n m →
+      (machine.run s (startConfig B x w)).state ≠ qAccept ∧
+      (machine.run s (startConfig B x w)).state ≠ qReject) ∧
+    (machine.run (clock n m) (startConfig B x w)).state = qAccept := by
+  refine ⟨?_, (final_fields_and_layout x w).2.1⟩
+  intro s hs
+  exact ⟨(trace_safe x w s hs).1, (trace_safe x w s hs).2.1⟩
+
+/-- Acceptance is absorbing, with the exact literal final configuration at
+every post-clock time. -/
+theorem accepting_absorption {n m B : Nat} (x : Bitstring n) (w : Bitstring m)
+    (extra : Nat) :
+    machine.run (clock n m + extra) (startConfig B x w) = finalConfig B x w ∧
+    (machine.run (clock n m + extra) (startConfig B x w)).state = qAccept ∧
+    (machine.run (clock n m + extra) (startConfig B x w)).head.val = 0 ∧
+    (machine.run (clock n m + extra) (startConfig B x w)).tape =
+      alignedTape B x w := by
+  have hrun : machine.run (clock n m + extra) (startConfig B x w) =
+      finalConfig B x w := by
+    rw [machine.run_add, run_exact,
+      machine.run_accept (finalConfig B x w) rfl extra]
+  rw [hrun]
+  exact ⟨rfl, rfl, rfl, rfl⟩
+
+/-- Exact head/write footprint through the clock.  Since each step writes its
+scanned address, the third clause bounds every source write address; time zero
+attains the bound.  All allocated cells above the input extent stay blank. -/
+theorem footprint_through_clock {n m B : Nat} (x : Bitstring n) (w : Bitstring m) :
+    (∀ s, s ≤ clock n m →
+      (machine.run s (startConfig B x w)).head.val ≤
+        pairLength n m + Nat.min B 1) ∧
+    (machine.run 0 (startConfig B x w)).head.val =
+      pairLength n m + Nat.min B 1 ∧
+    (∀ s, s < clock n m →
+      (machine.run s (startConfig B x w)).head.val ≤
+        pairLength n m + Nat.min B 1) ∧
+    (∀ s, s ≤ clock n m → ∀ i : Fin (tapeLength (pairLength n m) B),
+      pairLength n m ≤ i.val →
+      (machine.run s (startConfig B x w)).tape i = none) := by
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · intro s hs
+    rcases Nat.lt_or_eq_of_le hs with hlt | rfl
+    · exact (trace_safe x w s hlt).2.2.1
+    · rw [run_exact]
+      change 0 ≤ pairLength n m + Nat.min B 1
+      omega
+  · simp only [UniformTM.run]
+    rw [start_source x w]
+    cases B <;> simp [sourceConfig, sourceHead]
+  · exact fun s hs => (trace_safe x w s hs).2.2.1
+  · intro s hs i hi
+    rcases Nat.lt_or_eq_of_le hs with hlt | rfl
+    · exact (trace_safe x w s hlt).2.2.2.1 i hi
+    · rw [run_exact]
+      exact block_blank x w (p := 0) (k := i.val) (Or.inr (by
+        have he := pair_eq n m
+        omega)) i rfl
+
+/-- Complete clamp characterization.  The sole right clamp is the zero-budget
+entry transition at source time two.  The sole left clamp, for every budget,
+is the final origin probe at source time `clock - 3`. -/
+theorem boundary_clamps {n m B : Nat} (x : Bitstring n) (w : Bitstring m) :
+    (∀ s, s < clock n m →
+      let c := machine.run s (startConfig B x w)
+      ((machine.step c.state (c.tape c.head)).2.2 = .right ∧
+        moveHead c.head .right = c.head ↔ s = 2 ∧ B = 0)) ∧
+    (∀ s, s < clock n m →
+      let c := machine.run s (startConfig B x w)
+      ((machine.step c.state (c.tape c.head)).2.2 = .left ∧
+        moveHead c.head .left = c.head ↔ s = clock n m - 3)) ∧
+    ((let c := machine.run 2 (startConfig B x w);
+      c.head.val = (if B = 0 then pairLength n m else pairLength n m - 1) ∧
+      (machine.step c.state (c.tape c.head)).2.2 = .right) ∧
+    (let c := machine.run (clock n m - 3) (startConfig B x w);
+      c.head.val = 0 ∧
+      (machine.step c.state (c.tape c.head)).2.2 = .left)) := by
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · intro s hs
+    dsimp
+    constructor
+    · rintro ⟨hm, hclamp⟩
+      rcases (trace_safe x w s hs).2.2.2.2.1 hm with hspecial | hinterior
+      · exact ⟨hspecial.1, hspecial.2.1⟩
+      · have hv := congrArg Fin.val hclamp
+        rw [move_right_val _ hinterior] at hv
+        omega
+    · rintro ⟨rfl, rfl⟩
+      rw [run_entry_two x w]
+      refine ⟨?_, ?_⟩
+      · exact congrArg (fun a => a.2.2) (checkAt_action _)
+      · apply Fin.ext
+        change (moveHead (cell 0 (pairLength n m) (by omega)) .right).val =
+          (cell 0 (pairLength n m) (by omega)).val
+        unfold moveHead cell tapeLength
+        simp
+  · intro s hs
+    dsimp
+    constructor
+    · rintro ⟨hm, hclamp⟩
+      rcases (trace_safe x w s hs).2.2.2.2.2 hm with hspecial | hpos
+      · exact hspecial.1
+      · have hv := congrArg Fin.val hclamp
+        change (machine.run s (startConfig B x w)).head.val - 1 =
+          (machine.run s (startConfig B x w)).head.val at hv
+        omega
+    · intro he
+      subst s
+      rw [run_last_try x w]
+      refine ⟨?_, ?_⟩
+      · rw [try_read x w (by omega) (by unfold K; omega)]
+        exact congrArg (fun a => a.2.2) (try_action _ _)
+      · apply Fin.ext
+        change (0 + K n m - 1 - (K n m - 1)) - 1 =
+          0 + K n m - 1 - (K n m - 1)
+        unfold K
+        omega
+  · rw [run_entry_two x w]
+    refine ⟨?_, ?_⟩
+    · change (if B = 0 then pairLength n m else pairLength n m - 1) =
+        (if B = 0 then pairLength n m else pairLength n m - 1)
+      rfl
+    · exact congrArg (fun a => a.2.2) (checkAt_action _)
+  · rw [run_last_try x w]
+    refine ⟨?_, ?_⟩
+    · change 0 + K n m - 1 - (K n m - 1) = 0
+      unfold K
+      omega
+    rw [try_read x w (by omega) (by unfold K; omega)]
+    exact congrArg (fun a => a.2.2) (try_action _ _)

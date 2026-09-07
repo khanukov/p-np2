@@ -283,6 +283,21 @@ contract containing `Fin.append`, post-clock, and budget clauses. It is not a
 universal malformed-format validator and makes no varying-split injectivity
 claim.
 
+**Part A fixed content tag gate (infrastructure only).**
+`Pnp3.Complexity.Uniform.V1.FixedContentTagGate` is a closed
+15-state phase that rewinds the marker-erasure output in place, restores every
+content bit, and checks the fixed eight-bit parser tag `10110010`. Its exact
+common deadline is `3 * (n + m) + 7`; it proves each earlier malformed terminal,
+no right clamp, the unique origin-detection left clamp, tape preservation,
+blank-suffix preservation, and cross-budget equality. Its local accept is only
+a handoff at header offset eight, not semantic acceptance. The pnp4
+`FixedContentTagGateCorrect` bridge proves that every local rejection is sound
+for both `contentSemanticAccepts` and `boundedContentSemanticAccepts`, including
+the length-seven virtual-zero case where the padded tag itself matches but the
+gamma header still fails. This begins concrete semantic activation; gamma
+parsing, capped sizes, witness addressing, circuit decoding/evaluation,
+phase composition, and V1-to-legacy simulation remain separate.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

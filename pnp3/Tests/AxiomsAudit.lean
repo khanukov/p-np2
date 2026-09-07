@@ -92,6 +92,7 @@ import Tests.UniformV1FixedPairOriginAlignmentSurfaceTests
 import Tests.UniformV1FixedPairOriginAlignmentSafetyASurfaceTests
 import Tests.UniformV1FixedPairOriginAlignmentSafetyBSurfaceTests
 import Tests.UniformV1FixedPairContentMarkerEraseSurfaceTests
+import Tests.UniformV1FixedContentTagGateSurfaceTests
 import Tests.UniformV1BudgetTransportSurfaceTests
 import Tests.UniformV1CombinedMachineSurfaceTests
 import Tests.UniformV1CombinedCorrectnessSurfaceTests
@@ -4095,3 +4096,19 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Complexity.Uniform.V1.FixedPairContentMarkerErase.fixed_extent_recovery
 #print axioms Pnp3.Complexity.Uniform.V1.FixedPairContentMarkerErase.empty_zero_budget_trace
 #print axioms Pnp3.Complexity.Uniform.V1.FixedPairContentMarkerErase.phase_contract
+
+-- Part A fixed content tag gate.
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentTagGate.stateCount
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentTagGate.expectedTagBit
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentTagGate.physicalSymbol
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentTagGate.tagMatches
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentTagGate.machine
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentTagGate.startConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentTagGate.deadline
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentTagGate.finalConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentTagGate.tag_contract
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentTagGate.table_and_resource_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentTagGate.handoff_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentTagGate.run_deadline
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentTagGate.exact_terminal_contract
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentTagGate.phase_contract

@@ -59,6 +59,7 @@ import Pnp4.Frontier.ContractExpansion.ContentVerifierBridgeWitness
 import Pnp4.Frontier.ContractExpansion.ContentTargetSizeBound
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixExplicitCap
 import Pnp4.Frontier.ContractExpansion.BoundedContentSemanticVerifier
+import Pnp4.Frontier.ContractExpansion.FixedContentTagGateCorrect
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionGateClosure
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPaddingTransport
@@ -835,3 +836,9 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.PartAEndpoint.canonicalTaggedContentPair_pairLength
 #print axioms Pnp4.Frontier.ContractExpansion.PartAEndpoint.encodedThresholdContentRelation_canonicalTaggedContentPair
 #print axioms Pnp4.Frontier.ContractExpansion.PartAEndpoint.thresholdTaggedContentLanguage_malformed
+
+-- Part A fixed content tag semantic bridge.
+#print axioms Pnp4.Frontier.ContractExpansion.fixedTagMatches_iff
+#print axioms Pnp4.Frontier.ContractExpansion.fixedTag_short_virtual_zero_contract
+#print axioms Pnp4.Frontier.ContractExpansion.fixedTag_semantic_factorization
+#print axioms Pnp4.Frontier.ContractExpansion.fixedTag_machine_handoff

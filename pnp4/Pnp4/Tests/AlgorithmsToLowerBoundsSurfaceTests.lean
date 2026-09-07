@@ -69,6 +69,7 @@ import Pnp4.Frontier.ContractExpansion.ContentVerifierBridgeWitness
 import Pnp4.Frontier.ContractExpansion.ContentTargetSizeBound
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixExplicitCap
 import Pnp4.Frontier.ContractExpansion.BoundedContentSemanticVerifier
+import Pnp4.Frontier.ContractExpansion.FixedContentTagGateCorrect
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionGateClosure
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPaddingTransport
@@ -4983,6 +4984,62 @@ theorem check_boundedContent_boundedContentSemanticAccepts_eq_true_iff_contentAc
   boundedContentSemanticAccepts_eq_true_iff_contentAccepts k z
 
 end BoundedContentSemanticVerifierSurface
+
+section FixedContentTagGateCorrectSurface
+
+open AlgorithmsToLowerBounds
+open Pnp3.Complexity.Uniform.V1
+open Pnp4.Frontier.ContractExpansion
+
+theorem check_fixedTagMatches_iff {N : Nat} (z : PrefixBitVec N) :
+    FixedContentTagGate.tagMatches z = true ↔
+      ∀ j : Fin tagLen,
+        FixedContentTagGate.physicalSymbol z j.1 =
+          some (natBitBE treePrefixTag tagLen j) := by
+  exact Pnp4.Frontier.ContractExpansion.fixedTagMatches_iff z
+
+theorem check_fixedTag_short_virtual_zero_contract :
+    let sevenPrefix : PrefixBitVec 7 := fun j =>
+      FixedContentTagGate.expectedTagBit ⟨j.1, by omega⟩
+    (∀ {N : Nat} (z : PrefixBitVec N), N ≤ tagLen →
+      contentHeader? z = none) ∧
+    FixedContentTagGate.tagMatches sevenPrefix = false ∧
+    readNatBE (padWord sevenPrefix tagLen) 0 tagLen = some treePrefixTag ∧
+    contentHeader? sevenPrefix = none ∧
+    VirtualZeroTailReader.contentHeader? sevenPrefix = none := by
+  exact Pnp4.Frontier.ContractExpansion.fixedTag_short_virtual_zero_contract
+
+theorem check_fixedTag_semantic_factorization :
+    (∀ {threshold : Nat → Nat}
+      (codec : Pnp4.Frontier.TreeCircuitWitnessCodec threshold)
+      {N : Nat} (z : PrefixBitVec N),
+      contentSemanticAccepts codec z =
+        (FixedContentTagGate.tagMatches z &&
+          contentSemanticAccepts codec z)) ∧
+    (∀ k {N : Nat} (z : PrefixBitVec N),
+      boundedContentSemanticAccepts k z =
+          (FixedContentTagGate.tagMatches z &&
+            boundedContentSemanticAccepts k z) ∧
+      (FixedContentTagGate.tagMatches z = false →
+        boundedContentSemanticAccepts k z = false)) := by
+  exact Pnp4.Frontier.ContractExpansion.fixedTag_semantic_factorization
+
+theorem check_fixedTag_machine_handoff {a m B : Nat}
+    (x : PrefixBitVec a) (w : PrefixBitVec m) :
+    let z := Fin.append x w
+    ((FixedContentTagGate.machine.run
+        (FixedContentTagGate.deadline a m)
+        (FixedContentTagGate.startConfig B x w)).state =
+          FixedContentTagGate.machine.accept ↔
+      FixedContentTagGate.tagMatches z = true) ∧
+    ((FixedContentTagGate.machine.run
+        (FixedContentTagGate.deadline a m)
+        (FixedContentTagGate.startConfig B x w)).state =
+          FixedContentTagGate.machine.reject ↔
+      FixedContentTagGate.tagMatches z = false) := by
+  exact Pnp4.Frontier.ContractExpansion.fixedTag_machine_handoff x w
+
+end FixedContentTagGateCorrectSurface
 
 section ThresholdTaggedContentFramingSurface
 

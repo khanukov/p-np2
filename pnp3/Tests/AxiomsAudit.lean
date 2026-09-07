@@ -89,6 +89,7 @@ import Tests.UniformV1FixedPairSeparatorHoleSurfaceTests
 import Tests.UniformV1FixedPairTagRemovalSurfaceTests
 import Tests.UniformV1FixedPairOriginShiftBootstrapSurfaceTests
 import Tests.UniformV1FixedPairOriginAlignmentSurfaceTests
+import Tests.UniformV1FixedPairOriginAlignmentSafetyASurfaceTests
 import Tests.UniformV1BudgetTransportSurfaceTests
 import Tests.UniformV1CombinedMachineSurfaceTests
 import Tests.UniformV1CombinedCorrectnessSurfaceTests
@@ -4050,3 +4051,11 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginAlignment.handoff_exact
 #print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginAlignment.clock_exact
 #print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginAlignment.run_exact
+
+-- Part A complete alignment safety A.
+
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginAlignment.final_fields_and_layout
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginAlignment.strict_first_terminal
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginAlignment.accepting_absorption
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginAlignment.footprint_through_clock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginAlignment.boundary_clamps

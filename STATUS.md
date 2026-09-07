@@ -247,6 +247,16 @@ footprint, clamp, cross-budget, layout-projection, and recovery surfaces are
 intentionally deferred to the dependency-closed safety follow-up; this slice
 alone is not yet the final framing bridge or semantic verifier.
 
+**Part A fixed complete alignment safety A (infrastructure only).**
+The first safety slice for `FixedPairOriginAlignment` now exposes exact literal
+final fields and the full origin-aligned tape layout, proves that the declared
+clock is the strict first terminal time, proves absorbing exact post-clock
+execution, bounds the complete head/write footprint through the clock, and
+classifies all boundary clamps. In particular, the time-2 right move clamps
+exactly when `B = 0`, and the sole left clamp occurs at source time `clock-3`.
+Cross-budget synchronization, fixed-extent recovery, the explicit zero edge,
+and the bundled complete phase contract remain in Safety B.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

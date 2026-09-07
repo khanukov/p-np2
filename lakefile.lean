@@ -646,6 +646,7 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1FixedPairOriginShiftBootstrapSurfaceTests,
     Glob.one `Tests.UniformV1FixedPairOriginAlignmentSurfaceTests,
     Glob.one `Tests.UniformV1FixedPairOriginAlignmentSafetyASurfaceTests,
+    Glob.one `Tests.UniformV1FixedPairOriginAlignmentSafetyBSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
     Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,

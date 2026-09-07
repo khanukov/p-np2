@@ -269,6 +269,20 @@ Together with Safety A, the origin-alignment machine now has its full advertised
 execution and safety surface; semantic evaluation and the final framing bridge
 remain separate.
 
+**Part A fixed trailing content-marker erasure (infrastructure only).**
+`Pnp3.Complexity.Uniform.V1.FixedPairContentMarkerErase` is a closed
+four-state machine that scans the origin-aligned nonblank block, locates its end
+structurally via the following blank, validates and erases the trailing literal
+marker, and accepts at exact clock `n+m+3`. The scan treats data zero and one
+uniformly and never identifies a marker by Boolean value. The final tape is
+physical headerless `query ++ witness` at the origin with every allocated cell
+from `n+m` onward blank. The phase proves exact full execution, strict first
+terminal, absorption, no clamps, complete footprint, unconditional budget
+independence, fixed-extent recovery, the empty zero-budget trace, and a bundled
+contract containing `Fin.append`, post-clock, and budget clauses. It is not a
+universal malformed-format validator and makes no varying-split injectivity
+claim.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

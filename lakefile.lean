@@ -95,6 +95,8 @@ lean_lib PnP3 where
     Glob.one `Complexity.Uniform.V1.FixedPairOriginShiftBootstrap,
     -- Part A fixed complete content origin-alignment execution core.
     Glob.one `Complexity.Uniform.V1.FixedPairOriginAlignment,
+    -- Part A fixed trailing structural marker erasure.
+    Glob.one `Complexity.Uniform.V1.FixedPairContentMarkerErase,
     -- Generic bounded cross-budget simulation for one fixed UniformTM.
     Glob.one `Complexity.Uniform.V1.BudgetTransport,
     -- Routed fixed-parser/verifier constructor and parser-prefix handoff.
@@ -647,6 +649,7 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1FixedPairOriginAlignmentSurfaceTests,
     Glob.one `Tests.UniformV1FixedPairOriginAlignmentSafetyASurfaceTests,
     Glob.one `Tests.UniformV1FixedPairOriginAlignmentSafetyBSurfaceTests,
+    Glob.one `Tests.UniformV1FixedPairContentMarkerEraseSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
     Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,

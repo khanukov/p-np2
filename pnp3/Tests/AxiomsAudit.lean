@@ -91,6 +91,7 @@ import Tests.UniformV1FixedPairOriginShiftBootstrapSurfaceTests
 import Tests.UniformV1FixedPairOriginAlignmentSurfaceTests
 import Tests.UniformV1FixedPairOriginAlignmentSafetyASurfaceTests
 import Tests.UniformV1FixedPairOriginAlignmentSafetyBSurfaceTests
+import Tests.UniformV1FixedPairContentMarkerEraseSurfaceTests
 import Tests.UniformV1BudgetTransportSurfaceTests
 import Tests.UniformV1CombinedMachineSurfaceTests
 import Tests.UniformV1CombinedCorrectnessSurfaceTests
@@ -4067,3 +4068,30 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginAlignment.fixed_extent_recovery
 #print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginAlignment.empty_zero_budget
 #print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginAlignment.phase_contract
+
+-- Part A fixed trailing content-marker erasure.
+
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairContentMarkerErase.eraseStateCount
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairContentMarkerErase.qScan
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairContentMarkerErase.qErase
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairContentMarkerErase.qAccept
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairContentMarkerErase.qReject
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairContentMarkerErase.machine
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairContentMarkerErase.table_and_resource_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairContentMarkerErase.retag
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairContentMarkerErase.startConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairContentMarkerErase.clock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairContentMarkerErase.clock_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairContentMarkerErase.contentTape
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairContentMarkerErase.finalConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairContentMarkerErase.handoff_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairContentMarkerErase.run_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairContentMarkerErase.final_fields_and_layout
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairContentMarkerErase.strict_first_terminal
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairContentMarkerErase.post_clock_absorption
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairContentMarkerErase.full_footprint
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairContentMarkerErase.no_boundary_clamp
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairContentMarkerErase.budget_independence
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairContentMarkerErase.fixed_extent_recovery
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairContentMarkerErase.empty_zero_budget_trace
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairContentMarkerErase.phase_contract

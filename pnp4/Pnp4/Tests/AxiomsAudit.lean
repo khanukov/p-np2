@@ -74,6 +74,7 @@ import Pnp4.Frontier.ContractExpansion.ConcreteTreeCodec
 import Pnp4.Frontier.ContractExpansion.ConcreteTreeDirectTagProgram
 import Pnp4.Frontier.ContractExpansion.ConcreteTreeCodecSource
 import Pnp4.Frontier.ContractExpansion.ThresholdGrowth
+import Pnp4.Frontier.ContractExpansion.FiniteNandSameThresholdNoGo
 import Pnp4.Frontier.ContractExpansion.TreeCircuitContentWitnessRelation
 import Pnp4.Frontier.ContractExpansion.ThresholdTaggedContentFraming
 import Pnp4.Frontier.ContractExpansion.ConsolidatedTreeSeparation
@@ -592,6 +593,14 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.polyBoundedInTable_thresholdLinear
 #print axioms Pnp4.Frontier.ContractExpansion.polyBoundedInTable_thresholdQuadratic
 #print axioms Pnp4.Frontier.ContractExpansion.polyBoundedInTable_thresholdPoly
+
+-- Infrastructure/no-go only: finite NAND refutes transfer at the same numeric
+-- threshold under the repository's unaligned DAG/tree size functions.  The
+-- witness uses no sharing, proves no asymptotic separation, and discharges no
+-- P-vs-NP lower-bound source obligation.
+#print axioms Pnp4.Frontier.ContractExpansion.FiniteNand.nand_same_threshold_mismatch
+#print axioms Pnp4.Frontier.ContractExpansion.FiniteNand.same_threshold_promise_transfer_false
+#print axioms Pnp4.Frontier.ContractExpansion.FiniteNand.same_threshold_witness_transfer_false
 
 #print axioms Pnp4.Frontier.ContractExpansion.verifiedSource_treePoly
 #print axioms Pnp4.Frontier.ContractExpansion.NP_not_subset_PpolyDAG_treePoly

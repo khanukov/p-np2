@@ -868,6 +868,7 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.ConcreteTreeDirectTagProgram,
     Glob.one `Pnp4.Frontier.ContractExpansion.ConcreteTreeCodecSource,
     Glob.one `Pnp4.Frontier.ContractExpansion.ThresholdGrowth,
+    Glob.one `Pnp4.Frontier.ContractExpansion.FiniteNandSameThresholdNoGo,
     Glob.one `Pnp4.Frontier.ContractExpansion.ConsolidatedTreeSeparation,
     -- NP-verifier prerequisites for the prefix-extension language: the semantic
     -- verifier and its input-tape layout, listed in dependency order (the layout

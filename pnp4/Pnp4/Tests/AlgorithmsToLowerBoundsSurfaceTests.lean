@@ -84,6 +84,7 @@ import Pnp4.Frontier.ContractExpansion.ConcreteTreeCodec
 import Pnp4.Frontier.ContractExpansion.ConcreteTreeDirectTagProgram
 import Pnp4.Frontier.ContractExpansion.ConcreteTreeCodecSource
 import Pnp4.Frontier.ContractExpansion.ThresholdGrowth
+import Pnp4.Frontier.ContractExpansion.FiniteNandSameThresholdNoGo
 import Pnp4.Frontier.ContractExpansion.TreeCircuitContentWitnessRelation
 import Pnp4.Frontier.ContractExpansion.ThresholdTaggedContentFraming
 import Pnp4.Frontier.ContractExpansion.ConsolidatedTreeSeparation
@@ -1510,6 +1511,43 @@ theorem check_polyBoundedInTable_thresholdPoly (k : Nat) :
   polyBoundedInTable_thresholdPoly k
 
 end ThresholdGrowthSurface
+
+section FiniteNandSameThresholdNoGoSurface
+
+open Pnp3
+open Pnp3.ComplexityInterfaces
+open Pnp4.Frontier.ContractExpansion
+open Pnp4.Frontier.ContractExpansion.FiniteNand
+
+/-- Infrastructure/no-go surface: the explicit NAND DAG meets threshold three,
+while no NAND tree meets that same threshold. -/
+theorem check_nand_same_threshold_mismatch :
+    circuitComplexityLE explicitDagClass 2 (thresholdPoly 1 2) nandTable ∧
+      ¬ treeMCSPPredicate 2 (thresholdPoly 1 2) nandTable :=
+  nand_same_threshold_mismatch
+
+/-- Infrastructure/no-go surface: same-threshold predicate transfer already
+fails on the concrete two-input NAND truth table. -/
+theorem check_same_threshold_promise_transfer_false :
+    ¬ (∀ table : TruthTable 2,
+      circuitComplexityLE explicitDagClass 2 (thresholdPoly 1 2) table →
+        treeMCSPPredicate 2 (thresholdPoly 1 2) table) :=
+  same_threshold_promise_transfer_false
+
+/-- Infrastructure/no-go surface: under the repository's unaligned DAG/tree
+size functions, no universal conversion at the same numeric threshold from
+two-input DAG circuits to extensionally equivalent tree circuits exists. -/
+theorem check_same_threshold_witness_transfer_false :
+    ¬ (∀ circuit : DagCircuit 2,
+      DagCircuit.size circuit ≤ thresholdPoly 1 2 →
+        ∃ tree : Models.Circuit 2,
+          Models.Circuit.size tree ≤ thresholdPoly 1 2 ∧
+            ∀ assignment : Core.BitVec 2,
+              Models.Circuit.eval tree assignment =
+                DagCircuit.eval circuit (fun index => assignment index)) :=
+  same_threshold_witness_transfer_false
+
+end FiniteNandSameThresholdNoGoSurface
 
 section ConsolidatedTreeSeparationSurface
 

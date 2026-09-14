@@ -678,3 +678,12 @@ exactly when it is absent. Independently of machine execution, header absence
 forces both content semantic verifiers to reject. The operational phase stops
 on the terminator. It neither reads the gamma payload nor provides a machine
 implementation of `ContentCappedSizes`.
+
+`FixedContentGammaAnchorCorrect.lean` is the Part A G2a bridge. It proves the
+exact G1-final-to-G2a operational handoff and provides a logical cell-7
+restoration taking the successful marked tape back to literal `contentTape`.
+Header and gamma decode facts remain facts about the unchanged source word.
+There is no payload traversal, virtual payload read, decoded value, capped
+arithmetic, or semantic-acceptance theorem. G2b must not write `none` inside
+its counter zone and must physically restore cell 7 before any phase whose
+contract expects `contentTape`.

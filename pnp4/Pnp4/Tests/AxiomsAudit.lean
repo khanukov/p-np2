@@ -61,6 +61,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixExplicitCap
 import Pnp4.Frontier.ContractExpansion.BoundedContentSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.FixedContentTagGateCorrect
 import Pnp4.Frontier.ContractExpansion.FixedContentGammaTerminatorCorrect
+import Pnp4.Frontier.ContractExpansion.FixedContentGammaAnchorCorrect
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionGateClosure
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPaddingTransport
@@ -857,3 +858,8 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.fixedGamma_header_contract
 #print axioms Pnp4.Frontier.ContractExpansion.fixedGamma_semantic_factorization
 #print axioms Pnp4.Frontier.ContractExpansion.fixedGamma_machine_handoff
+#print axioms Pnp4.Frontier.ContractExpansion.logicalRestoreGammaAnchorCell7
+#print axioms Pnp4.Frontier.ContractExpansion.logicalRestore_markedTape
+#print axioms Pnp4.Frontier.ContractExpansion.fixedGammaAnchor_header_contract
+#print axioms Pnp4.Frontier.ContractExpansion.fixedGammaAnchor_decode_and_restoration
+#print axioms Pnp4.Frontier.ContractExpansion.fixedGammaAnchor_operational_handoff

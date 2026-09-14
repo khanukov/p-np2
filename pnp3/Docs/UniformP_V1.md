@@ -510,3 +510,12 @@ or rejects at the content blank. Its common deadline is `n + m - 7`; acceptance
 occurs exactly after `zeros + 1` steps: tape unchanged; execution
 budget-independent. This phase locates only the unary terminator and does not
 decode the payload or implement capped arithmetic.
+
+The Part A G2a `FixedContentGammaAnchor` successor has six states. It retags
+the merged G1 final configuration, shuttles from the physical terminator to
+the fixed tag tail, recognizes cells 6=true and 7=false, erases only cell 7,
+and returns to the same terminator in exactly `2 * zeros + 5` steps. The common
+deadline is `2 * (n + m)`; G1-none rejects honestly. Cell 7 is a recoverable
+marker, not payload storage: G2b must avoid `none` in its counter zone and
+restore cell 7 before a phase expecting literal `contentTape`. This phase does
+not read/decode payload bits, compute caps, or establish semantic acceptance.

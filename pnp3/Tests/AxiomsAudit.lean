@@ -95,6 +95,7 @@ import Tests.UniformV1FixedPairContentMarkerEraseSurfaceTests
 import Tests.UniformV1FixedContentTagGateSurfaceTests
 import Tests.UniformV1FixedContentGammaTerminatorSurfaceTests
 import Tests.UniformV1FixedContentGammaAnchorSurfaceTests
+import Tests.UniformV1FixedGammaPayloadCursorCoreSurfaceTests
 import Tests.UniformV1BudgetTransportSurfaceTests
 import Tests.UniformV1CombinedMachineSurfaceTests
 import Tests.UniformV1CombinedCorrectnessSurfaceTests
@@ -4161,3 +4162,41 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaAnchor.execution_safety
 #print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaAnchor.budget_independence_through_deadline
 #print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaAnchor.phase_contract
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.machine
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.stateCount
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.qStart
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.qBackFirst
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.qBackSeen
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.qSpend
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.qSeekTerm
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.qRead
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.qNextFalse
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.qRestoreOne
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.qRestoreVirtual
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.qFillOne
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.qFillVirtual
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.qOne
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.qVirtual
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.qReject
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.retag
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.startConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.nextTape
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.NextInvariant
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.table_and_resource_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.handoff_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.successful_handoff_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.read_partition
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.first_read_reachable
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.first_physical_false_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.zero_width_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.tracer_no_clamp_facts
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.nextTape_footprint
+#print axioms Pnp3.Tests.UniformV1FixedGammaPayloadCursorCoreSurfaceTests.check_table_and_resource_pins
+#print axioms Pnp3.Tests.UniformV1FixedGammaPayloadCursorCoreSurfaceTests.check_handoff_exact
+#print axioms Pnp3.Tests.UniformV1FixedGammaPayloadCursorCoreSurfaceTests.check_zero_width_exact
+#print axioms Pnp3.Tests.UniformV1FixedGammaPayloadCursorCoreSurfaceTests.check_successful_handoff_exact
+#print axioms Pnp3.Tests.UniformV1FixedGammaPayloadCursorCoreSurfaceTests.check_read_partition
+#print axioms Pnp3.Tests.UniformV1FixedGammaPayloadCursorCoreSurfaceTests.check_first_read_reachable
+#print axioms Pnp3.Tests.UniformV1FixedGammaPayloadCursorCoreSurfaceTests.check_first_physical_false_exact
+#print axioms Pnp3.Tests.UniformV1FixedGammaPayloadCursorCoreSurfaceTests.check_tracer_no_clamp_facts
+#print axioms Pnp3.Tests.UniformV1FixedGammaPayloadCursorCoreSurfaceTests.check_nextTape_footprint

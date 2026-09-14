@@ -70,6 +70,7 @@ import Pnp4.Frontier.ContractExpansion.ContentTargetSizeBound
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixExplicitCap
 import Pnp4.Frontier.ContractExpansion.BoundedContentSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.FixedContentTagGateCorrect
+import Pnp4.Frontier.ContractExpansion.FixedContentGammaTerminatorCorrect
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionGateClosure
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPaddingTransport
@@ -5078,6 +5079,47 @@ theorem check_fixedTag_machine_handoff {a m B : Nat}
   exact Pnp4.Frontier.ContractExpansion.fixedTag_machine_handoff x w
 
 end FixedContentTagGateCorrectSurface
+
+section FixedContentGammaTerminatorCorrectSurface
+
+open AlgorithmsToLowerBounds
+open Pnp3.Complexity.Uniform.V1
+open Pnp4.Frontier.ContractExpansion
+
+theorem check_fixedGamma_header_contract {N : Nat} (z : PrefixBitVec N) :
+    (FixedContentGammaTerminator.gammaZeros? z).isSome ↔
+      (contentHeader? z).isSome := by
+  exact fixedGamma_header_contract z
+
+theorem check_fixedGamma_semantic_factorization :
+    (∀ {threshold : Nat → Nat} (codec : Pnp4.Frontier.TreeCircuitWitnessCodec threshold)
+      {N : Nat} (z : PrefixBitVec N),
+      contentSemanticAccepts codec z =
+        ((FixedContentGammaTerminator.gammaZeros? z).isSome &&
+          contentSemanticAccepts codec z)) ∧
+    (∀ k {N : Nat} (z : PrefixBitVec N),
+      boundedContentSemanticAccepts k z =
+        ((FixedContentGammaTerminator.gammaZeros? z).isSome &&
+          boundedContentSemanticAccepts k z) ∧
+      (FixedContentGammaTerminator.gammaZeros? z = none →
+        boundedContentSemanticAccepts k z = false)) := by
+  exact fixedGamma_semantic_factorization
+
+theorem check_fixedGamma_machine_handoff {a m B : Nat}
+    (x : PrefixBitVec a) (w : PrefixBitVec m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true) :
+    let z := Fin.append x w
+    let c := FixedContentGammaTerminator.machine.run
+      (FixedContentGammaTerminator.deadline a m)
+      (FixedContentGammaTerminator.startConfig B x w)
+    (c.state = FixedContentGammaTerminator.machine.accept ↔
+      (contentHeader? z).isSome) ∧
+    (c.state = FixedContentGammaTerminator.machine.reject ↔
+      contentHeader? z = none) ∧
+    c.tape = FixedPairContentMarkerErase.contentTape B x w := by
+  exact fixedGamma_machine_handoff x w htag
+
+end FixedContentGammaTerminatorCorrectSurface
 
 section ThresholdTaggedContentFramingSurface
 

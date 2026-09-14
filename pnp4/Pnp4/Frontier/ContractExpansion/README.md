@@ -670,3 +670,11 @@ mathematics easier, and **no** magnification theorem is formalized here.
 
 This directory adds **no** unconditional claim, does **not** modify
 `SearchMCSPMagnificationContract`, and adds **no** `P ≠ NP` endpoint wrapper.
+
+`FixedContentGammaTerminatorCorrect.lean` is the Part A G1 activation bridge.
+Under a successful `FixedContentTagGate` handoff, it proves that the real
+three-state scan accepts exactly when `contentHeader?` is present and rejects
+exactly when it is absent. Independently of machine execution, header absence
+forces both content semantic verifiers to reject. The operational phase stops
+on the terminator. It neither reads the gamma payload nor provides a machine
+implementation of `ContentCappedSizes`.

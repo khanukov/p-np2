@@ -98,6 +98,8 @@ lean_lib PnP3 where
     -- Part A fixed trailing structural marker erasure.
     Glob.one `Complexity.Uniform.V1.FixedPairContentMarkerErase,
     Glob.one `Complexity.Uniform.V1.FixedContentTagGate,
+    -- Part A fixed three-state gamma terminator scan.
+    Glob.one `Complexity.Uniform.V1.FixedContentGammaTerminator,
     -- Generic bounded cross-budget simulation for one fixed UniformTM.
     Glob.one `Complexity.Uniform.V1.BudgetTransport,
     -- Routed fixed-parser/verifier constructor and parser-prefix handoff.
@@ -652,6 +654,7 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1FixedPairOriginAlignmentSafetyBSurfaceTests,
     Glob.one `Tests.UniformV1FixedPairContentMarkerEraseSurfaceTests,
     Glob.one `Tests.UniformV1FixedContentTagGateSurfaceTests,
+    Glob.one `Tests.UniformV1FixedContentGammaTerminatorSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
     Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,
@@ -910,6 +913,7 @@ lean_lib Pnp4 where
     -- Part A G0-B2c: bounded content parser and semantic equality glue.
     Glob.one `Pnp4.Frontier.ContractExpansion.BoundedContentSemanticVerifier,
     Glob.one `Pnp4.Frontier.ContractExpansion.FixedContentTagGateCorrect,
+    Glob.one `Pnp4.Frontier.ContractExpansion.FixedContentGammaTerminatorCorrect,
     -- GATE-0 slice: non-vacuity of `ContentAccepts` at the concrete codec.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity,
     -- I1: honest convention-length injectivity, gamma canonicity/narrowing,

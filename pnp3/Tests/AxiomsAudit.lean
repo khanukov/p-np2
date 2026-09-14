@@ -93,6 +93,7 @@ import Tests.UniformV1FixedPairOriginAlignmentSafetyASurfaceTests
 import Tests.UniformV1FixedPairOriginAlignmentSafetyBSurfaceTests
 import Tests.UniformV1FixedPairContentMarkerEraseSurfaceTests
 import Tests.UniformV1FixedContentTagGateSurfaceTests
+import Tests.UniformV1FixedContentGammaTerminatorSurfaceTests
 import Tests.UniformV1BudgetTransportSurfaceTests
 import Tests.UniformV1CombinedMachineSurfaceTests
 import Tests.UniformV1CombinedCorrectnessSurfaceTests
@@ -4112,3 +4113,23 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Complexity.Uniform.V1.FixedContentTagGate.run_deadline
 #print axioms Pnp3.Complexity.Uniform.V1.FixedContentTagGate.exact_terminal_contract
 #print axioms Pnp3.Complexity.Uniform.V1.FixedContentTagGate.phase_contract
+
+-- Part A fixed gamma terminator scan.
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaTerminator.stateCount
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaTerminator.qScan
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaTerminator.qAccept
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaTerminator.qReject
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaTerminator.machine
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaTerminator.gammaZeros?
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaTerminator.terminalIndex
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaTerminator.retag
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaTerminator.startConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaTerminator.deadline
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaTerminator.finalConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaTerminator.table_and_resource_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaTerminator.gamma_contract
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaTerminator.handoff_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaTerminator.run_deadline
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaTerminator.deadline_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaTerminator.exact_terminal_contract
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaTerminator.phase_contract

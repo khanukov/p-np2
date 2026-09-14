@@ -94,6 +94,7 @@ import Tests.UniformV1FixedPairOriginAlignmentSafetyBSurfaceTests
 import Tests.UniformV1FixedPairContentMarkerEraseSurfaceTests
 import Tests.UniformV1FixedContentTagGateSurfaceTests
 import Tests.UniformV1FixedContentGammaTerminatorSurfaceTests
+import Tests.UniformV1FixedContentGammaAnchorSurfaceTests
 import Tests.UniformV1BudgetTransportSurfaceTests
 import Tests.UniformV1CombinedMachineSurfaceTests
 import Tests.UniformV1CombinedCorrectnessSurfaceTests
@@ -4133,3 +4134,30 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaTerminator.deadline_exact
 #print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaTerminator.exact_terminal_contract
 #print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaTerminator.phase_contract
+
+-- Part A G2a fixed gamma-anchor shuttle (direct source roots).
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaAnchor.stateCount
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaAnchor.qStart
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaAnchor.qLeft
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaAnchor.qErase
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaAnchor.qReturn
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaAnchor.qAccept
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaAnchor.qReject
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaAnchor.machine
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaAnchor.retag
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaAnchor.startConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaAnchor.successTime
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaAnchor.deadline
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaAnchor.markedTape
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaAnchor.finalConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaAnchor.table_and_resource_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaAnchor.handoff_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaAnchor.run_success_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaAnchor.run_reject_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaAnchor.successTime_le_deadline
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaAnchor.run_deadline
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaAnchor.exact_terminal_contract
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaAnchor.final_tape_contract
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaAnchor.execution_safety
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaAnchor.budget_independence_through_deadline
+#print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaAnchor.phase_contract

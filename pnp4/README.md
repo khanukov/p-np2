@@ -267,6 +267,16 @@ that same presence predicate. This is an infrastructure boundary only: payload
 decoding, target materialization, capped-size execution, and the concrete
 verifier bridge remain open.
 
+Part A G2a now supplies the six-state gamma-anchor shuttle after G1. On the
+G1-success branch it has an exact first-terminal clock, stays between cell 6
+and the physical terminator without clamping, and changes no cell except the
+recoverable marker at cell 7; on G1 rejection it remains at the physical content
+blank and rejects in one step. The pnp4 bridge identifies its verdict with
+`contentHeader?` presence and proves a proof-level logical restoration that
+writes literal `some false` at cell 7. This is not executable restoration:
+physical restoration remains G2b work. G2a does not traverse or decode the
+payload and proves no semantic-acceptance claim.
+
 For an *arbitrary* threshold there is a third input, `PolyBoundedInTable threshold`;
 it is proved for the canonical polynomial thresholds, so it disappears at
 `thresholdPoly k`.  The general capstone `verifiedSource_of_explicit_interfaces`

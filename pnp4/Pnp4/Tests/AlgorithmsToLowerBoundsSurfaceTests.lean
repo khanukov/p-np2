@@ -71,6 +71,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixExplicitCap
 import Pnp4.Frontier.ContractExpansion.BoundedContentSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.FixedContentTagGateCorrect
 import Pnp4.Frontier.ContractExpansion.FixedContentGammaTerminatorCorrect
+import Pnp4.Frontier.ContractExpansion.FixedContentGammaAnchorCorrect
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionGateClosure
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPaddingTransport
@@ -5120,6 +5121,65 @@ theorem check_fixedGamma_machine_handoff {a m B : Nat}
   exact fixedGamma_machine_handoff x w htag
 
 end FixedContentGammaTerminatorCorrectSurface
+
+section FixedContentGammaAnchorCorrectSurface
+
+open AlgorithmsToLowerBounds
+open Pnp3.Complexity.Uniform.V1
+open Pnp4.Frontier.ContractExpansion
+
+def check_logicalRestoreGammaAnchorCell7 {a m B : Nat} :
+    (Fin (tapeLength (PairEncoding.pairLength a m) B) → Option Bool) →
+      Fin (tapeLength (PairEncoding.pairLength a m) B) → Option Bool :=
+  logicalRestoreGammaAnchorCell7
+
+theorem check_logicalRestore_markedTape {a m B : Nat}
+    (x : PrefixBitVec a) (w : PrefixBitVec m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true) :
+    logicalRestoreGammaAnchorCell7 (FixedContentGammaAnchor.markedTape B x w) =
+      FixedPairContentMarkerErase.contentTape B x w :=
+  logicalRestore_markedTape x w htag
+
+theorem check_fixedGammaAnchor_header_contract {a m B : Nat}
+    (x : PrefixBitVec a) (w : PrefixBitVec m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true) :
+    let c := FixedContentGammaAnchor.machine.run (FixedContentGammaAnchor.deadline a m)
+      (FixedContentGammaAnchor.startConfig B x w)
+    (c.state = FixedContentGammaAnchor.machine.accept ↔
+      (contentHeader? (Fin.append x w)).isSome) ∧
+    (c.state = FixedContentGammaAnchor.machine.reject ↔
+      contentHeader? (Fin.append x w) = none) :=
+  fixedGammaAnchor_header_contract x w htag
+
+theorem check_fixedGammaAnchor_decode_and_restoration {a m B : Nat}
+    (x : PrefixBitVec a) (w : PrefixBitVec m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
+    (hsuccess : (FixedContentGammaTerminator.gammaZeros? (Fin.append x w)).isSome) :
+    (∃ n consumed, contentHeader? (Fin.append x w) = some (n, consumed)) ∧
+    logicalRestoreGammaAnchorCell7
+      (FixedContentGammaAnchor.machine.run (FixedContentGammaAnchor.deadline a m)
+        (FixedContentGammaAnchor.startConfig B x w)).tape =
+      FixedPairContentMarkerErase.contentTape B x w :=
+  fixedGammaAnchor_decode_and_restoration x w htag hsuccess
+
+theorem check_fixedGammaAnchor_operational_handoff {a m B : Nat}
+    (x : PrefixBitVec a) (w : PrefixBitVec m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true) :
+    let g1 := FixedContentGammaTerminator.machine.run
+      (FixedContentGammaTerminator.deadline a m) (FixedContentGammaTerminator.startConfig B x w)
+    let g2 := FixedContentGammaAnchor.machine.run
+      (FixedContentGammaAnchor.deadline a m) (FixedContentGammaAnchor.retag g1)
+    g1 = FixedContentGammaTerminator.finalConfig B x w ∧
+    g2 = FixedContentGammaAnchor.finalConfig B x w ∧
+    (g2.state = FixedContentGammaAnchor.machine.accept ↔
+      (contentHeader? (Fin.append x w)).isSome) ∧
+    (g2.state = FixedContentGammaAnchor.machine.reject ↔
+      contentHeader? (Fin.append x w) = none) ∧
+    ((FixedContentGammaTerminator.gammaZeros? (Fin.append x w)).isSome →
+      logicalRestoreGammaAnchorCell7 g2.tape = FixedPairContentMarkerErase.contentTape B x w) :=
+  fixedGammaAnchor_operational_handoff x w htag
+
+end FixedContentGammaAnchorCorrectSurface
 
 section ThresholdTaggedContentFramingSurface
 

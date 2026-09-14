@@ -311,6 +311,16 @@ This phase does not read the payload, materialize the decoded target, call
 `computeContentSizesCapped`, check a cap, compose the phases, or claim capped
 execution. Header presence is the cap-facing boundary for this slice.
 
+**Part A G2a fixed-content gamma anchor (infrastructure only).**
+`FixedContentGammaAnchor` is a six-state phase retagged from merged G1. On G1
+success it walks left across the zero run, checks tag cells 6=true and 7=false,
+erases exactly cell 7 as a recoverable marker, returns across the unchanged
+zero run, and accepts on the same terminator at clock `2 * zeros + 5`. Its
+common absorbing deadline is `2 * (n + m)`; G1-none rejects at the content
+blank in one step. No payload traversal/value decoding, virtual payload read,
+capped arithmetic, or semantic acceptance is claimed. G2b must not write
+`none` in its counter zone and must restore cell 7 before a `contentTape` phase.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

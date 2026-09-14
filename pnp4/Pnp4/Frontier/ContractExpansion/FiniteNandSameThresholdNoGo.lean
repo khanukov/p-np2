@@ -4,7 +4,7 @@ import Pnp4.Frontier.ContractExpansion.ThresholdGrowth
 /-!
 # Finite NAND obstruction to same-threshold DAG-to-tree transfer
 
-This infrastructure/no-go module gives a concrete two-input counterexample to
+This side-track/no-go module gives a concrete two-input counterexample to
 transferring a DAG circuit to a tree circuit at the *same numeric threshold
 under the repository's two different size functions*.  A two-gate DAG (size
 three under `DagCircuit.size`) computes NAND, while the corresponding tree has

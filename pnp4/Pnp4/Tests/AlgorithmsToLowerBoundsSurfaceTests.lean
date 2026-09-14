@@ -1519,14 +1519,14 @@ open Pnp3.ComplexityInterfaces
 open Pnp4.Frontier.ContractExpansion
 open Pnp4.Frontier.ContractExpansion.FiniteNand
 
-/-- Infrastructure/no-go surface: the explicit NAND DAG meets threshold three,
+/-- Side-track/no-go surface: the explicit NAND DAG meets threshold three,
 while no NAND tree meets that same threshold. -/
 theorem check_nand_same_threshold_mismatch :
     circuitComplexityLE explicitDagClass 2 (thresholdPoly 1 2) nandTable ∧
       ¬ treeMCSPPredicate 2 (thresholdPoly 1 2) nandTable :=
   nand_same_threshold_mismatch
 
-/-- Infrastructure/no-go surface: same-threshold predicate transfer already
+/-- Side-track/no-go surface: same-threshold predicate transfer already
 fails on the concrete two-input NAND truth table. -/
 theorem check_same_threshold_promise_transfer_false :
     ¬ (∀ table : TruthTable 2,
@@ -1534,7 +1534,7 @@ theorem check_same_threshold_promise_transfer_false :
         treeMCSPPredicate 2 (thresholdPoly 1 2) table) :=
   same_threshold_promise_transfer_false
 
-/-- Infrastructure/no-go surface: under the repository's unaligned DAG/tree
+/-- Side-track/no-go surface: under the repository's unaligned DAG/tree
 size functions, no universal conversion at the same numeric threshold from
 two-input DAG circuits to extensionally equivalent tree circuits exists. -/
 theorem check_same_threshold_witness_transfer_false :

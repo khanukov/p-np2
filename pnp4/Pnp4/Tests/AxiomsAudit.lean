@@ -594,7 +594,7 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.polyBoundedInTable_thresholdQuadratic
 #print axioms Pnp4.Frontier.ContractExpansion.polyBoundedInTable_thresholdPoly
 
--- Infrastructure/no-go only: finite NAND refutes transfer at the same numeric
+-- Side-track/no-go only: finite NAND refutes transfer at the same numeric
 -- threshold under the repository's unaligned DAG/tree size functions.  The
 -- witness uses no sharing, proves no asymptotic separation, and discharges no
 -- P-vs-NP lower-bound source obligation.

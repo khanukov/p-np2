@@ -260,6 +260,13 @@ repackages a supplied `ContentVerifierBridge`, but constructs no bridge instance
 `L'` padding invariance, the concrete verifier bridge, runtime/advice enforcement, and
 `NoPolynomialBoundedSearchSolver` remain open.
 
+Part A G1 now supplies a fixed three-state terminator scan after the content
+tag gate. Under a successful tag-gate handoff, its machine verdict is exactly
+`contentHeader?` presence; independently, the semantic factorization gates on
+that same presence predicate. This is an infrastructure boundary only: payload
+decoding, target materialization, capped-size execution, and the concrete
+verifier bridge remain open.
+
 For an *arbitrary* threshold there is a third input, `PolyBoundedInTable threshold`;
 it is proved for the canonical polynomial thresholds, so it disappears at
 `thresholdPoly k`.  The general capstone `verifiedSource_of_explicit_interfaces`

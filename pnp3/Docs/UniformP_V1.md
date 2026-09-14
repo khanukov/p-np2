@@ -502,3 +502,11 @@ Accordingly, not every length-only language belongs to this versioned
 the unchanged legacy canonical `P`. Final P1b and P1c infer no canonical-class
 bridge. Any optional comparison corollary involving pnp4 is deferred to a
 separate reviewed slice.
+
+The Part A G1 `FixedContentGammaTerminator` phase is a three-state read-only
+successor to `FixedContentTagGate`. Under the predecessor's successful tag
+premise it scans from cell eight, stops on the first physical gamma terminator,
+or rejects at the content blank. Its common deadline is `n + m - 7`; acceptance
+occurs exactly after `zeros + 1` steps: tape unchanged; execution
+budget-independent. This phase locates only the unary terminator and does not
+decode the payload or implement capped arithmetic.

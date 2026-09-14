@@ -298,6 +298,19 @@ gamma header still fails. This begins concrete semantic activation; gamma
 parsing, capped sizes, witness addressing, circuit decoding/evaluation,
 phase composition, and V1-to-legacy simulation remain separate.
 
+**Part A G1 fixed-content gamma terminator scan (infrastructure only).**
+`FixedContentGammaTerminator` is a real three-state, nine-entry fixed-control
+scan. Under a successful tag-gate handoff it receives the unchanged tape and
+head at cell eight, accepts on the first physical `true`, rejects on the first
+physical blank, never writes, and exposes exact first-terminal, tape, head,
+absorption, and cross-budget contracts. Under that same successful-handoff
+premise, `FixedContentGammaTerminatorCorrect` identifies the machine verdict
+with `contentHeader?` presence and factors both semantic verifiers through the
+header-presence predicate independently of machine execution.
+This phase does not read the payload, materialize the decoded target, call
+`computeContentSizesCapped`, check a cap, compose the phases, or claim capped
+execution. Header presence is the cap-facing boundary for this slice.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

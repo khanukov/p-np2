@@ -321,6 +321,19 @@ blank in one step. No payload traversal/value decoding, virtual payload read,
 capped arithmetic, or semantic acceptance is claimed. G2b must not write
 `none` in its counter zone and must restore cell 7 before a `contentTape` phase.
 
+**Part A G2b fixed gamma-payload cursor core (infrastructure only).**
+`FixedGammaPayloadCursorCore` is a 14-state, 42-entry fixed-control tracer
+retagged from the exact successful G2a final configuration. It executes the
+zero-width case with literal cell-7 restoration and exposes the first
+rolling-hole read partition: physical false produces a canonical
+`qNextFalse` handoff, while physical true and the first virtual blank enter
+distinct cleanup modes whose general completion from the real handoff remains
+the next proof obligation. `qOne` and `qVirtual` are absorbing internal outcome
+tags; `machine.accept = qOne` is only this tracer's ABI choice, and `qVirtual`
+is not a machine terminal. This slice does not prove arbitrary-round induction,
+general true/virtual cleanup, whole-payload traversal, `allZeroSlice?`
+correctness, capped arithmetic, or semantic acceptance.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

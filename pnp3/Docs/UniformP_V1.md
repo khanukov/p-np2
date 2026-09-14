@@ -519,3 +519,13 @@ deadline is `2 * (n + m)`; G1-none rejects honestly. Cell 7 is a recoverable
 marker, not payload storage: G2b must avoid `none` in its counter zone and
 restore cell 7 before a phase expecting literal `contentTape`. This phase does
 not read/decode payload bits, compute caps, or establish semantic acceptance.
+The dependency-closed Part A G2b `FixedGammaPayloadCursorCore` successor has
+14 states and contains only the zero-width run and first rolling-hole round.
+Its start configuration is a pure retag of G2a's final configuration. The
+physical-false branch exposes a canonical next configuration carrying one
+`false` symbol in finite control; the physical-true and first-virtual branches
+enter distinct cleanup modes, but their general completion from the real
+handoff is deferred. `qOne` and `qVirtual` are absorbing internal outcome tags.
+The equation `machine.accept = qOne` is an ABI choice local to this tracer;
+`qVirtual` is not a machine terminal. No arbitrary-round, general
+true/virtual-cleanup, or semantic-acceptance theorem is part of this surface.

@@ -4188,6 +4188,8 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.read_partition
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.first_read_reachable
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.first_physical_false_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.first_physical_true_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.first_virtual_exact
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.zero_width_exact
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.tracer_no_clamp_facts
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore.nextTape_footprint
@@ -4198,5 +4200,7 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Tests.UniformV1FixedGammaPayloadCursorCoreSurfaceTests.check_read_partition
 #print axioms Pnp3.Tests.UniformV1FixedGammaPayloadCursorCoreSurfaceTests.check_first_read_reachable
 #print axioms Pnp3.Tests.UniformV1FixedGammaPayloadCursorCoreSurfaceTests.check_first_physical_false_exact
+#print axioms Pnp3.Tests.UniformV1FixedGammaPayloadCursorCoreSurfaceTests.check_first_physical_true_exact
+#print axioms Pnp3.Tests.UniformV1FixedGammaPayloadCursorCoreSurfaceTests.check_first_virtual_exact
 #print axioms Pnp3.Tests.UniformV1FixedGammaPayloadCursorCoreSurfaceTests.check_tracer_no_clamp_facts
 #print axioms Pnp3.Tests.UniformV1FixedGammaPayloadCursorCoreSurfaceTests.check_nextTape_footprint

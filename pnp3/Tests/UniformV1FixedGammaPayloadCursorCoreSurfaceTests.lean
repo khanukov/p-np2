@@ -149,6 +149,27 @@ theorem check_first_physical_false_exact {a m B zeros : Nat}
     NextInvariant B x w zeros (machine.run (2 * zeros + 4) (startConfig B x w)) :=
   first_physical_false_exact x w htag hg hzero hp hfalse
 
+theorem check_first_physical_true_exact {a m B zeros : Nat}
+    (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
+    (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros)
+    (hzero : 0 < zeros) (hp : 9 + zeros < a + m)
+    (htrue : (Fin.append x w) ⟨9 + zeros, hp⟩ = true) :
+    machine.run (3 * zeros + 6) (startConfig B x w) =
+      ⟨qOne, ⟨6, by unfold tapeLength pairLength; omega⟩,
+        FixedPairContentMarkerErase.contentTape B x w⟩ :=
+  first_physical_true_exact x w htag hg hzero hp htrue
+
+theorem check_first_virtual_exact {a m B zeros : Nat}
+    (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
+    (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros)
+    (hzero : 0 < zeros) (hvirtual : 9 + zeros = a + m) :
+    machine.run (3 * zeros + 6) (startConfig B x w) =
+      ⟨qVirtual, ⟨6, by unfold tapeLength pairLength; omega⟩,
+        FixedPairContentMarkerErase.contentTape B x w⟩ :=
+  first_virtual_exact x w htag hg hzero hvirtual
+
 theorem check_tracer_no_clamp_facts {a m B zeros : Nat}
     (hgamma : 8 + zeros < a + m) :
     0 < 7 ∧ 8 < tapeLength (pairLength a m) B ∧

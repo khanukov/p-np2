@@ -523,9 +523,10 @@ The dependency-closed Part A G2b `FixedGammaPayloadCursorCore` successor has
 14 states and contains only the zero-width run and first rolling-hole round.
 Its start configuration is a pure retag of G2a's final configuration. The
 physical-false branch exposes a canonical next configuration carrying one
-`false` symbol in finite control; the physical-true and first-virtual branches
-enter distinct cleanup modes, but their general completion from the real
-handoff is deferred. `qOne` and `qVirtual` are absorbing internal outcome tags.
+`false` symbol in finite control. The physical-true and first-virtual branches
+have exact actual-run theorems at `3 * zeros + 6`: both restore literal
+`contentTape` and stop at head 6, in `qOne` and `qVirtual` respectively.
+`qOne` and `qVirtual` are absorbing internal outcome tags.
 The equation `machine.accept = qOne` is an ABI choice local to this tracer;
 `qVirtual` is not a machine terminal. No arbitrary-round, general
-true/virtual-cleanup, or semantic-acceptance theorem is part of this surface.
+payload-decoding, or semantic-acceptance theorem is part of this surface.

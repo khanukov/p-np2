@@ -608,3 +608,16 @@ and virtual paths. Zero width retains head 7; cleaned paths retain head 6 and
 literal `contentTape`. Positive-round, pending, and exhausted rows are routed
 but do not yet have unified run theorems, so no whole-dispatcher semantics are
 claimed. This is infrastructure only and changes no pnp4 semantics.
+
+The proof-only Part A G2l `FixedGammaPayloadDispatcherRounds` activates the
+remaining positive-round dispatcher paths from the actual dispatcher
+`startConfig`. Its transparent clocks compose the core, round-driver, and
+cleanup clocks with zero handoff offsets. For `1 ≤ k < zeros`, an all-false
+prefix followed by a physical true bit reaches strict first `qHasOne`, while a
+first virtual cell reaches strict first `qAllZero`; a fully false payload with
+`0 < zeros` reaches strict first `qAllZero` through exhaustion. All cleaned
+endpoints have head 6 and literal `contentTape`, with the sound wrong endpoint
+and reject tags excluded throughout. The positive formulas deliberately omit
+`k = 0`, and pending outcomes deliberately require `k < zeros`. This remains
+execution infrastructure: it states no payload semantics, parser/decode fact,
+whole-dispatcher iff, length-only cap, or pnp4 consequence.

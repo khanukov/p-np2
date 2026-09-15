@@ -1,6 +1,14 @@
 # Project Status (current)
 
-Updated: 2026-09-04
+Updated: 2026-09-15
+
+**Part A G2l dispatcher positive rounds (infrastructure only).**
+`FixedGammaPayloadDispatcherRounds` now proves the same-machine, zero-offset
+positive physical-true, first-virtual, and full-false exhausted executions of
+the fixed G2k dispatcher from its actual G2a-derived start configuration. The
+strict cleaned endpoints restore literal content at head 6, and the public
+guards exclude `k = 0` and the final `k = zeros` boundary from pending formulas.
+No semantic iff, parser/decode theorem, length-only cap, or pnp4 claim is added.
 
 **Current engineering priority.** The one-tape `pnp3/Complexity/TMVerifier/`
 tree is frozen at `42c59881`; see `pnp3/Docs/TMVERIFIER_FREEZE.md`. Do not

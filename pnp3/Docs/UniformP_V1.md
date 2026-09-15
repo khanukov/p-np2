@@ -541,4 +541,13 @@ returns to this same machine's start state in `2*zeros+4` steps.  The exported
 `k=1→2` theorem is derived from the core's actual `first_physical_false_exact`
 run.  The true, virtual, and exhausted tags have no cleanup or semantic theorem
 here; `machine.accept = qOnePending` is only this successor's local ABI choice.
-There is no whole-payload induction.
+There is no whole-payload verdict; G2d adds boundary induction only.
+
+The proof-only Part A G2d `FixedGammaPayloadRoundDriver` reaches every boundary
+`1 ≤ k ≤ zeros` under the uniform absolute-cell physical-false prefix
+`9 + zeros ≤ j < 9 + zeros + k`. Boundary one is the real successor
+`startConfig` at local clock zero, and boundary `k` is reached at the
+transparent successor-local clock `(k - 1) * (2 * zeros + 4)`. This clock is
+not combined with the predecessor machine's run. The module adds no exhausted,
+true, or virtual outcome, no whole-payload verdict, and no semantic claim or
+bridge.

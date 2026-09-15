@@ -368,6 +368,16 @@ establishes strict first arrival and no-clamp bounds, and performs no tape
 restoration or cleanup. The tag does not claim a semantic all-zero verdict,
 acceptance, or a complexity bridge.
 
+**Part A G2h fixed gamma-payload pending outcomes (proof only; infrastructure only).**
+`FixedGammaPayloadPendingOutcomes` composes every reachable boundary
+`1 ≤ k < zeros` with an exact local round of cost `2 * zeros + 4`.  A physical
+true at cell `9 + zeros + k` reaches absorbing `qOnePending`, while equality of
+that cell with `a + m` reaches absorbing `qVirtualPending`; both stop on the
+read cell with the same `pendingTape`, and both are strict first pending
+outcomes.  The clock is successor-local.  This slice excludes `k = 0`,
+`k = zeros`, cleanup, a whole-payload or semantic verdict, and any
+cross-machine clock or complexity bridge.
+
 **Part A G2f fixed gamma-payload physical zero cleanup (infrastructure only).**
 `FixedGammaPayloadZeroCleanup` is a new five-state successor that retags the
 exact G2e `qExhausted` endpoint without changing that absorbing predecessor

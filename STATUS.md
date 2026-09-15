@@ -393,6 +393,20 @@ claimed. This is not
 a semantic all-zero or acceptance result, and its clock is not combined with
 any predecessor-machine time.
 
+**Part A G2i fixed gamma-payload pending cleanup (infrastructure only).**
+`FixedGammaPayloadPendingCleanup` is an eight-state successor of both exact G2h
+pending endpoints for `1 ≤ k < zeros`. One retagged `qStart` reads the pending
+cell: physical true selects `qBackOne`, the virtual blank selects
+`qBackVirtual`, and physical false rejects. Thus no proof becomes branch
+advice. Each branch restores holes `8+k` through `7` with physical false and
+stops at cell 6 in distinct absorbing `qOne` or `qVirtual`. The strict first
+successor-local endpoint is `zeros + k + 4`, with literal `contentTape`; the
+wrong tag is excluded throughout. All 24 rows/resources are pinned, no row
+moves right, heads are nonincreasing, and cells above the initial head remain
+fixed. This is structural infrastructure only: no semantic verdict,
+dispatcher correctness, acceptance meaning, cross-machine clock, or
+complexity bridge is claimed, and it is not P-vs-NP mainline work.
+
 **Part A G2g fixed gamma-payload zero semantic bridge (infrastructure only).**
 `Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadZeroSemanticBridge`
 characterizes `VirtualZeroTailReader.allZeroSlice? = some true`, under exact

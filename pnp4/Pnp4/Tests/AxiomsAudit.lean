@@ -48,6 +48,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
 import Pnp4.Frontier.ContractExpansion.ContentVirtualZeroTailReaderCore
+import Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadZeroSemanticBridge
 import Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic
 import Pnp4.Frontier.ContractExpansion.ContentCappedSizes
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
@@ -760,6 +761,10 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.allZeroLoopBound
 #print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.gammaLoopBound
 #print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.contentHeader_gammaLoopBound
+-- G2g: physical gamma-payload zero to strict-reader semantics.
+#print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.allZeroSlice?_eq_some_true_iff
+#print axioms Pnp4.Frontier.ContractExpansion.full_false_gamma_payload_iff_allZeroSlice
+#print axioms Pnp4.Frontier.ContractExpansion.cleanup_endpoint_and_allZeroSlice
 -- G0-B2b1: capped arithmetic declarations and exact success/overflow contracts.
 #print axioms Pnp4.Frontier.ContractExpansion.checkedNat
 #print axioms Pnp4.Frontier.ContractExpansion.checkedAdd

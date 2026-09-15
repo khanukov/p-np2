@@ -383,6 +383,18 @@ claimed. This is not
 a semantic all-zero or acceptance result, and its clock is not combined with
 any predecessor-machine time.
 
+**Part A G2g fixed gamma-payload zero semantic bridge (infrastructure only).**
+`Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadZeroSemanticBridge`
+characterizes `VirtualZeroTailReader.allZeroSlice? = some true`, under exact
+logical fit, by false blank-padded reads. With explicit physical and logical
+fit it specializes this to the gamma payload window
+`[9 + zeros, 9 + 2 * zeros)`, and combines the existing G2f endpoint with the
+result at logical length `a + m`; the physical-false prefix itself proves that
+fit. This is a one-way consequence of the existing `htag`/`hg`/`hzero`/full
+physical-false hypotheses. It is not a `qDone` equivalence, semantic acceptance,
+dispatcher correctness, complete parser correctness, or P-vs-NP mainline
+progress.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

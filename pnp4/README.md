@@ -277,6 +277,16 @@ writes literal `some false` at cell 7. This is not executable restoration:
 physical restoration remains G2b work. G2a does not traverse or decode the
 payload and proves no semantic-acceptance claim.
 
+Part A G2g adds an infrastructure-only semantic bridge for the later
+physical-false gamma-payload path. It proves that the exact payload window
+`[9 + zeros, 9 + 2 * zeros)` yields
+`VirtualZeroTailReader.allZeroSlice? = some true` at logical length `a + m`,
+and conjoins that fact with the existing G2f restored-tape `qDone` endpoint
+under the same trace hypotheses. The result is a one-way shared-hypothesis
+consequence, not a machine-verdict equivalence, semantic acceptance,
+dispatcher correctness, complete parser behavior, or P-vs-NP mainline
+progress.
+
 For an *arbitrary* threshold there is a third input, `PolyBoundedInTable threshold`;
 it is proved for the canonical polynomial thresholds, so it disappears at
 `thresholdPoly k`.  The general capstone `verifiedSource_of_explicit_interfaces`

@@ -194,6 +194,15 @@ review order (the `lakefile.lean` registration is the dependency order):
   identify every operation with the frozen counterpart on `padWord z T`,
   including all failure branches. The named loop bounds record only structural
   widths or gamma fuel; they are not a `UniformTM`, gate, or runtime analysis.
+- `ContentFixedGammaPayloadZeroSemanticBridge.lean` — Part A G2g
+  infrastructure. Under exact logical fit it characterizes a successful
+  virtual-reader all-zero scan by false `padRead`s. With explicit physical fit
+  it identifies the full physically false gamma payload on the exact window
+  `[9 + zeros, 9 + 2 * zeros)` with that scan, then conjoins the existing G2f
+  cleanup endpoint and the scan at logical length `a + m`. This is only a
+  one-way consequence of the validated trace hypotheses: it proves no
+  `qDone` iff, semantic acceptance, dispatcher correctness, or complete parser
+  behavior.
 - `ContentCappedArithmetic.lean` — Part A G0-B2b1. It provides exact capped
   natural addition, multiplication, binary-length, and exponentiation. Every
   `some` theorem identifies the exact mathematical result and proves it fits;

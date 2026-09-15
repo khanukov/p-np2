@@ -358,6 +358,16 @@ is the real `startConfig` itself at local clock zero. This is not a
 cross-machine total clock. The driver adds no exhausted, true, or virtual
 outcome, no whole-payload verdict, and no semantic claim or bridge.
 
+**Part A G2e fixed gamma-payload exhausted tail (proof only; infrastructure only).**
+`FixedGammaPayloadExhausted` composes the last G2d boundary with the exact
+successor-local tail `zeros + 3`, reaching the absorbing internal tag
+`qExhausted` at head `8 + zeros` and leaving `roundTape` unchanged. Its clock
+`boundaryClock zeros zeros + (zeros + 3)` is not a cross-machine total clock.
+The proof uses `0 < zeros` and the full physically present false prefix,
+establishes strict first arrival and no-clamp bounds, and performs no tape
+restoration or cleanup. The tag does not claim a semantic all-zero verdict,
+acceptance, or a complexity bridge.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

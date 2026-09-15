@@ -551,3 +551,13 @@ transparent successor-local clock `(k - 1) * (2 * zeros + 4)`. This clock is
 not combined with the predecessor machine's run. The module adds no exhausted,
 true, or virtual outcome, no whole-payload verdict, and no semantic claim or
 bridge.
+
+The proof-only Part A G2e `FixedGammaPayloadExhausted` executes the last
+boundary for exactly `zeros + 3` more successor-local steps. At the strict
+first visit to the absorbing internal tag `qExhausted`, the head is
+`8 + zeros` and the tape remains the last-boundary `roundTape`; there is no
+restoration or cleanup. The composed clock
+`boundaryClock zeros zeros + (zeros + 3)` is not a cross-machine total clock.
+The theorem requires `0 < zeros` and the full physically present false prefix.
+The tag asserts neither semantic acceptance nor an all-zero payload verdict,
+and this module adds no complexity bridge.

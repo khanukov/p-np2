@@ -346,8 +346,17 @@ reachable boundary with `k < zeros`, one physical-false round runs in exactly
 `k = 1 → 2` corollary starts from the core's `first_physical_false_exact`.
 True, virtual, and exhausted branches are only explicit internal exit tags;
 `machine.accept = qOnePending` is a local ABI choice, not a semantic-acceptance
-claim.  No cleanup, whole-payload induction, capped arithmetic, or semantic
-claim is made.
+claim.  No cleanup, whole-payload verdict, capped arithmetic, or semantic
+claim is made. Boundary-only induction is provided by the G2d proof driver.
+
+**Part A G2d fixed gamma-payload round driver (proof only; infrastructure only).**
+`FixedGammaPayloadRoundDriver` proves that every boundary `1 ≤ k ≤ zeros`
+is reachable when every absolute content cell
+`9 + zeros ≤ j < 9 + zeros + k` is physically present and false. Its
+transparent successor-local clock is `(k - 1) * (2 * zeros + 4)`: boundary one
+is the real `startConfig` itself at local clock zero. This is not a
+cross-machine total clock. The driver adds no exhausted, true, or virtual
+outcome, no whole-payload verdict, and no semantic claim or bridge.
 
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared

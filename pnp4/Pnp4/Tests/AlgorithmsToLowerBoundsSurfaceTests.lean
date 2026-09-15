@@ -58,6 +58,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixSemanticVerifier
 import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
 import Pnp4.Frontier.ContractExpansion.ContentVirtualZeroTailReaderCore
+import Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadZeroSemanticBridge
 import Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic
 import Pnp4.Frontier.ContractExpansion.ContentCappedSizes
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
@@ -4570,6 +4571,46 @@ theorem check_VZR_contentHeader_gammaLoopBound (N : Nat) :
   Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.contentHeader_gammaLoopBound N
 
 end ContentVirtualZeroTailReaderCoreSurface
+
+section ContentFixedGammaPayloadZeroSemanticBridgeSurface
+
+open Pnp4.Frontier.ContractExpansion
+open Pnp3.Complexity.Uniform.V1
+open Pnp3.Complexity.Uniform.V1.PairEncoding
+
+theorem check_VZR_allZeroSlice_eq_some_true_iff
+    {N T offset width : Nat} (z : PrefixBitVec N)
+    (hfit : offset + width ≤ T) :
+    VirtualZeroTailReader.allZeroSlice? z T offset width = some true ↔
+      ∀ t, t < width → padRead z (offset + t) = false :=
+  VirtualZeroTailReader.allZeroSlice?_eq_some_true_iff z hfit
+
+theorem check_full_false_gamma_payload_iff_allZeroSlice
+    {L T zeros : Nat} (z : Fin L → Bool)
+    (hphysicalFit : 9 + 2 * zeros ≤ L)
+    (hlogicalFit : 9 + 2 * zeros ≤ T) :
+    (∀ j, 9 + zeros ≤ j → j < 9 + 2 * zeros →
+      FixedContentTagGate.physicalSymbol z j = some false) ↔
+    VirtualZeroTailReader.allZeroSlice? z T (9 + zeros) zeros = some true :=
+  full_false_gamma_payload_iff_allZeroSlice z hphysicalFit hlogicalFit
+
+theorem check_cleanup_endpoint_and_allZeroSlice
+    {a m B zeros : Nat} (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
+    (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros)
+    (hzero : 0 < zeros)
+    (hprefix : ∀ j, 9 + zeros ≤ j → j < 9 + 2 * zeros →
+      FixedContentTagGate.physicalSymbol (Fin.append x w) j = some false) :
+    let d := FixedGammaPayloadZeroCleanup.machine.run
+      (FixedGammaPayloadZeroCleanup.cleanupClock zeros)
+      (FixedGammaPayloadZeroCleanup.startConfig B x w zeros)
+    d.state = FixedGammaPayloadZeroCleanup.qDone ∧ d.head.val = 6 ∧
+    d.tape = FixedPairContentMarkerErase.contentTape B x w ∧
+    VirtualZeroTailReader.allZeroSlice?
+      (Fin.append x w) (a + m) (9 + zeros) zeros = some true :=
+  cleanup_endpoint_and_allZeroSlice (B := B) x w htag hg hzero hprefix
+
+end ContentFixedGammaPayloadZeroSemanticBridgeSurface
 
 section ContentCappedArithmeticSurface
 

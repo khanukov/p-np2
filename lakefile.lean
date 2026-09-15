@@ -904,6 +904,8 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtension,
     -- Part A G0-B2a: source-indexed virtual-zero-tail reader/parser core.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentVirtualZeroTailReaderCore,
+    -- Part A G2g: physical gamma-payload zero to reader-semantics bridge.
+    Glob.one `Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadZeroSemanticBridge,
     -- Part A G0-B2b1: exact cap-aware natural arithmetic.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic,
     -- Part A G0-B2b2: concrete capped content-size records and exact pipeline.

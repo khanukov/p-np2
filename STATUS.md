@@ -368,6 +368,21 @@ establishes strict first arrival and no-clamp bounds, and performs no tape
 restoration or cleanup. The tag does not claim a semantic all-zero verdict,
 acceptance, or a complexity bridge.
 
+**Part A G2f fixed gamma-payload physical zero cleanup (infrastructure only).**
+`FixedGammaPayloadZeroCleanup` is a new five-state successor that retags the
+exact G2e `qExhausted` endpoint without changing that absorbing predecessor
+row. It scans right across the complete physical-false payload, fills the
+cursor with literal `false`, returns across the payload and terminator, fills
+the contiguous counter/anchor holes through cell 7, and stops on fixed tag
+cell 6 in absorbing internal `qDone`. Its exact successor-local clock is
+`3 * zeros + 3` for `0 < zeros`, with strict first arrival, head 6, and literal
+`contentTape` restoration. The table has 15 rows and is independent of tape
+budget; the proof also exposes its initial footprint and the exact arithmetic
+bounds used to type its phase configurations. No run-level no-clamp theorem is
+claimed. This is not
+a semantic all-zero or acceptance result, and its clock is not combined with
+any predecessor-machine time.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

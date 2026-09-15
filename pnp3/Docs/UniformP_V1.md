@@ -561,3 +561,16 @@ restoration or cleanup. The composed clock
 The theorem requires `0 < zeros` and the full physically present false prefix.
 The tag asserts neither semantic acceptance nor an all-zero payload verdict,
 and this module adds no complexity bridge.
+
+The Part A G2f successor `FixedGammaPayloadZeroCleanup` retags that exact
+absorbing endpoint into a separate five-state machine, preserving G2e's
+`qExhausted` row. Starting on the terminator, it scans right over the complete
+physical-false payload, replaces the cursor hole by literal `false`, scans left
+over payload and terminator, and fills every contiguous counter/anchor hole
+down through cell 7. It stops for the first time at local clock
+`3 * zeros + 3` (`0 < zeros`) in absorbing internal `qDone`, with head 6 and
+literal `FixedPairContentMarkerErase.contentTape`. The fixed 15-row table is
+per-step budget independent, and the API pins the handoff, initial footprint,
+and exact arithmetic bounds used to type the phase configurations. It does not
+state run-level no-clamp safety. Neither the tag nor the trace is a semantic
+all-zero/acceptance theorem, and no cross-machine total clock is stated.

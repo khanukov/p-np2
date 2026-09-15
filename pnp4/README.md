@@ -287,6 +287,16 @@ consequence, not a machine-verdict equivalence, semantic acceptance,
 dispatcher correctness, complete parser behavior, or P-vs-NP mainline
 progress.
 
+Part A G2j adds the matching cleaned-pending strict-reader bridge. Positive
+width scans return `none` exactly on logical non-fit; fitting scans return
+`some false` exactly when a scanned `padRead` is true. The physical-true and
+first-virtual cleanup endpoints are paired one-way with `some false` and
+`some true` respectively for arbitrary fitting `T`; the first-virtual scan at
+physical `T = a + m` is exactly `none`. All pending outcomes, plus the G2g zero
+case, are specialized to the common frozen window `2 * (a + m) + 1`. This does
+not assert endpoint iff semantics, dispatch, parser acceptance, payload decode,
+or a cross-machine clock, and is infrastructure rather than mainline progress.
+
 For an *arbitrary* threshold there is a third input, `PolyBoundedInTable threshold`;
 it is proved for the canonical polynomial thresholds, so it disappears at
 `thresholdPoly k`.  The general capstone `verifiedSource_of_explicit_interfaces`

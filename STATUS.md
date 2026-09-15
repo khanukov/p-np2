@@ -419,6 +419,19 @@ physical-false hypotheses. It is not a `qDone` equivalence, semantic acceptance,
 dispatcher correctness, complete parser correctness, or P-vs-NP mainline
 progress.
 
+**Part A G2j cleaned pending strict-reader semantics (infrastructure only).**
+`ContentFixedGammaPayloadPendingSemanticBridge` freezes the strict-reader
+boundary: for positive width, `allZeroSlice? = none` exactly when the logical
+window does not fit, while under fit `some false` exactly means that some
+`padRead` in the window is true.  It conjoins the G2i `qOne` and `qVirtual`
+cleanup endpoints with their respective `some false` and `some true` scans for
+arbitrary `T` satisfying `9 + 2 * zeros ≤ T`.  The virtual scan is exactly
+`none` at physical `T = a + m`.  Both pending branches, and the small G2g zero
+branch, also have corollaries at the shared frozen window `2 * (a + m) + 1`.
+The payload remains exactly `[9 + zeros, 9 + 2 * zeros)`.  These are one-way
+parallel consequences only, with no endpoint iff semantics, dispatch, parser,
+decode, acceptance, cross-machine clock, or P-vs-NP mainline claim.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

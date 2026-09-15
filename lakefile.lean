@@ -104,6 +104,8 @@ lean_lib PnP3 where
     Glob.one `Complexity.Uniform.V1.FixedContentGammaAnchor,
     -- Part A G2b executable zero-width and first rolling-hole round only.
     Glob.one `Complexity.Uniform.V1.FixedGammaPayloadCursorCore,
+    -- Part A G2c one exact arbitrary physical-false rolling-hole round.
+    Glob.one `Complexity.Uniform.V1.FixedGammaPayloadRoundStep,
     -- Generic bounded cross-budget simulation for one fixed UniformTM.
     Glob.one `Complexity.Uniform.V1.BudgetTransport,
     -- Routed fixed-parser/verifier constructor and parser-prefix handoff.
@@ -661,6 +663,7 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1FixedContentGammaTerminatorSurfaceTests,
     Glob.one `Tests.UniformV1FixedContentGammaAnchorSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaPayloadCursorCoreSurfaceTests,
+    Glob.one `Tests.UniformV1FixedGammaPayloadRoundStepSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
     Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,

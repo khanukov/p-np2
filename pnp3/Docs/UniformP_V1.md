@@ -530,3 +530,15 @@ have exact actual-run theorems at `3 * zeros + 6`: both restore literal
 The equation `machine.accept = qOne` is an ABI choice local to this tracer;
 `qVirtual` is not a machine terminal. No arbitrary-round, general
 payload-decoding, or semantic-acceptance theorem is part of this surface.
+
+The Part A G2c `FixedGammaPayloadRoundStep` successor has 11 states and 33
+publicly pinned transition entries.  It retags the core's absorbing false
+handoff without modifying that ABI.  Its exact `roundTape` boundary has holes
+at cell 7, counter cells `8 .. 7+k`, and the current payload cursor
+`8+zeros+k`.  For `1 ≤ k < zeros`, a physical-false step restores the old
+cursor, consumes exactly one new counter cell, opens the next cursor, and
+returns to this same machine's start state in `2*zeros+4` steps.  The exported
+`k=1→2` theorem is derived from the core's actual `first_physical_false_exact`
+run.  The true, virtual, and exhausted tags have no cleanup or semantic theorem
+here; `machine.accept = qOnePending` is only this successor's local ABI choice.
+There is no whole-payload induction.

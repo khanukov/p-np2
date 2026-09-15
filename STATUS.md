@@ -335,6 +335,20 @@ is not a machine terminal. This slice does not prove arbitrary-round induction,
 whole-payload traversal, `allZeroSlice?`
 correctness, capped arithmetic, or semantic acceptance.
 
+**Part A G2c fixed gamma-payload round step (infrastructure only).**
+`FixedGammaPayloadRoundStep` is a new 11-state, 33-entry successor; it does not
+change the core's published absorbing `qNextFalse` row.  Its machine-neutral
+`roundTape` and machine-specific `RoundInvariant` describe every boundary
+`1 ≤ k ≤ zeros`.  From a
+reachable boundary with `k < zeros`, one physical-false round runs in exactly
+`2 * zeros + 4` steps, restores the old payload hole, spends counter cell
+`8 + k`, opens the next payload hole, and re-enters its own `qStart`.  A real
+`k = 1 → 2` corollary starts from the core's `first_physical_false_exact`.
+True, virtual, and exhausted branches are only explicit internal exit tags;
+`machine.accept = qOnePending` is a local ABI choice, not a semantic-acceptance
+claim.  No cleanup, whole-payload induction, capped arithmetic, or semantic
+claim is made.
+
 **P1b-0 fixed-width DAG-bundle composition (infrastructure only).**
 `Complexity.DagBundleCompose` layers a fixed-output `DagBundle` over one shared
 predecessor bundle with exact gate count `B.gates + S.gates`, and iteration from

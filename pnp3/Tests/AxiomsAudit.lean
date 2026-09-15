@@ -96,6 +96,7 @@ import Tests.UniformV1FixedContentTagGateSurfaceTests
 import Tests.UniformV1FixedContentGammaTerminatorSurfaceTests
 import Tests.UniformV1FixedContentGammaAnchorSurfaceTests
 import Tests.UniformV1FixedGammaPayloadCursorCoreSurfaceTests
+import Tests.UniformV1FixedGammaPayloadRoundStepSurfaceTests
 import Tests.UniformV1BudgetTransportSurfaceTests
 import Tests.UniformV1CombinedMachineSurfaceTests
 import Tests.UniformV1CombinedCorrectnessSurfaceTests
@@ -4204,3 +4205,34 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Tests.UniformV1FixedGammaPayloadCursorCoreSurfaceTests.check_first_virtual_exact
 #print axioms Pnp3.Tests.UniformV1FixedGammaPayloadCursorCoreSurfaceTests.check_tracer_no_clamp_facts
 #print axioms Pnp3.Tests.UniformV1FixedGammaPayloadCursorCoreSurfaceTests.check_nextTape_footprint
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadRoundStep.stateCount
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadRoundStep.qStart
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadRoundStep.qBackPayload
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadRoundStep.qBackCounter
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadRoundStep.qSpend
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadRoundStep.qSeekTerm
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadRoundStep.qSeekHole
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadRoundStep.qRead
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadRoundStep.qExhausted
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadRoundStep.qOnePending
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadRoundStep.qVirtualPending
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadRoundStep.qReject
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadRoundStep.machine
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadRoundStep.retag
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadRoundStep.coreTime
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadRoundStep.roundCost
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadRoundStep.roundTape
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadRoundStep.RoundInvariant
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadRoundStep.startConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadRoundStep.table_and_resource_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadRoundStep.handoff_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadRoundStep.round_false_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadRoundStep.second_round_reachable
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadRoundStep.round_no_clamp_facts
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadRoundStep.roundTape_footprint
+#print axioms Pnp3.Tests.UniformV1FixedGammaPayloadRoundStepSurfaceTests.check_table_and_resource_pins
+#print axioms Pnp3.Tests.UniformV1FixedGammaPayloadRoundStepSurfaceTests.check_handoff_exact
+#print axioms Pnp3.Tests.UniformV1FixedGammaPayloadRoundStepSurfaceTests.check_round_false_exact
+#print axioms Pnp3.Tests.UniformV1FixedGammaPayloadRoundStepSurfaceTests.check_second_round_reachable
+#print axioms Pnp3.Tests.UniformV1FixedGammaPayloadRoundStepSurfaceTests.check_round_no_clamp_facts
+#print axioms Pnp3.Tests.UniformV1FixedGammaPayloadRoundStepSurfaceTests.check_roundTape_footprint

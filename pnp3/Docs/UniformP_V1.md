@@ -562,6 +562,16 @@ The theorem requires `0 < zeros` and the full physically present false prefix.
 The tag asserts neither semantic acceptance nor an all-zero payload verdict,
 and this module adds no complexity bridge.
 
+The proof-only Part A G2h `FixedGammaPayloadPendingOutcomes` handles exactly
+the nonfinal boundaries `1 ≤ k < zeros`.  From a G2d-reachable boundary, one
+round costs `2 * zeros + 4` and stops on cell `9 + zeros + k`, with the common
+uncleaned `pendingTape`: a physical `true` reaches absorbing `qOnePending`,
+and the exact physical-boundary equality `9 + zeros + k = a + m` reaches
+absorbing `qVirtualPending`.  Strict first arrival is proved both locally and
+from the successor start.  The transparent `pendingClock` is successor-local;
+the module excludes `k = 0`, `k = zeros`, cleanup, whole-payload and semantic
+verdicts, and cross-machine timing.
+
 The Part A G2f successor `FixedGammaPayloadZeroCleanup` retags that exact
 absorbing endpoint into a separate five-state machine, preserving G2e's
 `qExhausted` row. Starting on the terminator, it scans right over the complete

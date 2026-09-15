@@ -10,9 +10,9 @@ successful G2a tape: cell 7 is blank and the head is on the gamma terminator.
 For a nonempty zero run it blanks cell 8, scans right to the terminator, and
 opens a cursor at the first payload cell.  A false physical bit is carried in
 finite control as the next-round handoff.  A true bit or the first virtual
-blank enters a distinct cleanup mode; this file pins those transition rows but
-does not yet prove their general completion from the real handoff.  No theorem
-in this file iterates the representation or identifies semantic acceptance.
+blank enters a distinct cleanup mode; both first-round cleanup branches are
+proved from the real handoff and restore the literal predecessor tape.  No
+theorem in this file iterates the representation or identifies semantic acceptance.
 -/
 
 namespace Pnp3.Complexity.Uniform.V1.FixedGammaPayloadCursorCore
@@ -532,6 +532,192 @@ theorem first_physical_false_exact {a m B zeros : Nat}
   · have hiv : i.val ≠ 9 + zeros := by
       intro h; exact hi (Fin.ext h)
     simp [cursorConfig, nextTape, openedTape, hi, hiv]
+
+private theorem cleanup_exact {a m B zeros : Nat}
+    (x : Bitstring a) (w : Bitstring m) (qR qF qO : Fin stateCount)
+    (hzero : 0 < zeros) (hcontent : 8 + zeros < a + m)
+    (hbit7 : (Fin.append x w) ⟨7, by omega⟩ = false)
+    (hbit8 : (Fin.append x w) ⟨8, by omega⟩ = false)
+    (hrnone : machine.step qR none = (qF, some false, .left))
+    (hrsome : ∀ b, machine.step qR (some b) = (qR, some b, .left))
+    (hfnone : machine.step qF none = (qO, some false, .left)) :
+    machine.run (zeros + 2)
+        (cursorConfig B x w qR (8 + zeros)
+          (by unfold tapeLength pairLength; omega)) =
+      ⟨qO, ⟨6, by unfold tapeLength pairLength; omega⟩,
+        FixedPairContentMarkerErase.contentTape B x w⟩ := by
+  have hscan (r : Nat) (hr : r ≤ zeros) :
+      machine.run r
+          (cursorConfig B x w qR (8 + zeros)
+            (by unfold tapeLength pairLength; omega)) =
+        cursorConfig B x w qR (8 + zeros - r)
+          (by unfold tapeLength pairLength; omega) := by
+    induction r with
+    | zero => rfl
+    | succ r ih =>
+        have hjc : 8 + zeros - r < a + m := by omega
+        have hc := content_at (B := B) x w hjc
+        rw [UniformTM.run, ih (by omega)]
+        rw [step_cursor_keep x w qR qR _ .left (by
+          have hopen : openedTape B x w
+              ⟨8 + zeros - r, by unfold tapeLength pairLength; omega⟩ =
+              some ((Fin.append x w) ⟨8 + zeros - r, hjc⟩) := by
+            simpa [openedTape, show 8 + zeros - r ≠ 7 by omega,
+              show 8 + zeros - r ≠ 8 by omega] using hc
+          simpa [hopen] using hrsome ((Fin.append x w) ⟨8 + zeros - r, hjc⟩))]
+        apply config_ext <;> try rfl
+  have hscanEnd : machine.run zeros
+      (cursorConfig B x w qR (8 + zeros)
+        (by unfold tapeLength pairLength; omega)) =
+      cursorConfig B x w qR 8
+        (by unfold tapeLength pairLength; omega) := by
+    rw [hscan zeros (by omega)]
+    apply config_ext <;> try rfl
+    apply Fin.ext
+    simp [cursorConfig]
+  let h8 : 8 < tapeLength (pairLength a m) B := by unfold tapeLength pairLength; omega
+  let h7 : 7 < tapeLength (pairLength a m) B := by unfold tapeLength pairLength; omega
+  let h6 : 6 < tapeLength (pairLength a m) B := by unfold tapeLength pairLength; omega
+  let filled8 := fun i : Fin (tapeLength (pairLength a m) B) =>
+    if i = ⟨8, h8⟩ then some false else openedTape B x w i
+  have hfill : machine.run 1 (cursorConfig B x w qR 8 h8) =
+      (⟨qF, ⟨7, h7⟩, filled8⟩ : Config stateCount (pairLength a m) B) := by
+    simp only [UniformTM.run]
+    rw [step_eq _ qF (some false) .left (by
+      simpa [cursorConfig, openedTape] using hrnone)]
+    apply config_ext <;> try rfl
+  have hfilled7 : filled8 ⟨7, h7⟩ = none := by simp [filled8, openedTape]
+  have hfinal : machine.run 1
+      (⟨qF, ⟨7, h7⟩, filled8⟩ : Config stateCount (pairLength a m) B) =
+      ⟨qO, ⟨6, h6⟩, FixedPairContentMarkerErase.contentTape B x w⟩ := by
+    simp only [UniformTM.run]
+    rw [step_eq _ qO (some false) .left (by simpa [hfilled7] using hfnone)]
+    apply config_ext
+    · rfl
+    · apply Fin.ext; simp [moveHead]
+    · funext i
+      by_cases hi7 : i.val = 7
+      · have hi : i = ⟨7, h7⟩ := Fin.ext hi7
+        subst i
+        simp [FixedPairContentMarkerErase.contentTape,
+          show 7 < a + m by omega, hbit7]
+      · by_cases hi8 : i.val = 8
+        · have hi : i = ⟨8, h8⟩ := Fin.ext hi8
+          subst i
+          change filled8 ⟨8, h8⟩ = _
+          simp [filled8, FixedPairContentMarkerErase.contentTape,
+            show 8 < a + m by omega, hbit8]
+        · have hne7 : i ≠ ⟨7, h7⟩ := by intro h; exact hi7 (congrArg Fin.val h)
+          have hne8 : i ≠ ⟨8, h8⟩ := by intro h; exact hi8 (congrArg Fin.val h)
+          simp [filled8, openedTape, hne7, hne8, hi7, hi8]
+  rw [show zeros + 2 = zeros + 1 + 1 by omega, machine.run_add,
+    machine.run_add, hscanEnd, hfill]
+  simpa [filled8] using hfinal
+
+private theorem first_read_config {a m B zeros : Nat}
+    (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
+    (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros)
+    (hzero : 0 < zeros) :
+    machine.run (2 * zeros + 3) (startConfig B x w) =
+      cursorConfig B x w qRead (9 + zeros)
+        (by
+          have hgamma := ((FixedContentGammaTerminator.gamma_contract _).1 zeros hg).1
+          unfold tapeLength pairLength
+          omega) := by
+  have hr := first_read_reachable (B := B) x w htag hg hzero
+  apply config_ext
+  · exact hr.1
+  · apply Fin.ext; exact hr.2.1
+  · exact hr.2.2
+
+/-- Exact actual-run physical-true cleanup. `qOne` is only an absorbing
+internal outcome tag here, not a semantic acceptance claim. -/
+theorem first_physical_true_exact {a m B zeros : Nat}
+    (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
+    (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros)
+    (hzero : 0 < zeros) (hp : 9 + zeros < a + m)
+    (htrue : (Fin.append x w) ⟨9 + zeros, hp⟩ = true) :
+    machine.run (3 * zeros + 6) (startConfig B x w) =
+      ⟨qOne, ⟨6, by unfold tapeLength pairLength; omega⟩,
+        FixedPairContentMarkerErase.contentTape B x w⟩ := by
+  have hread := first_read_config (B := B) x w htag hg hzero
+  have hbit7 : (Fin.append x w) ⟨7, by omega⟩ = false := by
+    rcases FixedContentTagGate.tag_contract (Fin.append x w) with
+      ⟨_, _, _, _, _, _, _, _, hc, hlen⟩
+    have hL := hlen htag
+    have hc := hc.mp htag
+    simpa [FixedContentTagGate.expectedTagBit, FixedContentTagGate.physicalSymbol,
+      show 7 < a + m by omega] using hc ⟨7, by decide⟩
+  have hz := ((FixedContentGammaTerminator.gamma_contract _).1 zeros hg).2.2
+  have hbit8 : (Fin.append x w) ⟨8, by omega⟩ = false := by
+    have h := hz 0 hzero
+    simpa [FixedContentTagGate.physicalSymbol, show 8 < a + m by omega] using h
+  have hbranch : machine.run 1
+      (cursorConfig B x w qRead (9 + zeros)
+        (by unfold tapeLength pairLength; omega)) =
+      cursorConfig B x w qRestoreOne (8 + zeros)
+        (by unfold tapeLength pairLength; omega) := by
+    simp only [UniformTM.run]
+    rw [step_cursor_keep x w qRead qRestoreOne _ .left (by
+      have hc := content_at (B := B) x w hp
+      have hopen : openedTape B x w
+          ⟨9 + zeros, by unfold tapeLength pairLength; omega⟩ = some true := by
+        simpa [openedTape, show 9 + zeros ≠ 7 by omega,
+          show 9 + zeros ≠ 8 by omega, htrue] using hc
+      simpa [hopen] using read_true_action)]
+    apply config_ext <;> try rfl
+    apply Fin.ext
+    simp [cursorConfig, moveHead]
+  rw [show 3 * zeros + 6 = (2 * zeros + 3) + (zeros + 3) by omega,
+    machine.run_add, hread, show zeros + 3 = 1 + (zeros + 2) by omega,
+    machine.run_add, hbranch]
+  exact cleanup_exact x w qRestoreOne qFillOne qOne hzero (by omega) hbit7 hbit8
+    restoreOne_none_action (by intro b; cases b <;> decide) fillOne_none_action
+
+/-- Exact actual-run first-virtual cleanup into the absorbing internal
+`qVirtual` outcome, with literal `contentTape` restoration. -/
+theorem first_virtual_exact {a m B zeros : Nat}
+    (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
+    (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros)
+    (hzero : 0 < zeros) (hvirtual : 9 + zeros = a + m) :
+    machine.run (3 * zeros + 6) (startConfig B x w) =
+      ⟨qVirtual, ⟨6, by unfold tapeLength pairLength; omega⟩,
+        FixedPairContentMarkerErase.contentTape B x w⟩ := by
+  have hgamma := ((FixedContentGammaTerminator.gamma_contract _).1 zeros hg).1
+  have hbit7 : (Fin.append x w) ⟨7, by omega⟩ = false := by
+    rcases FixedContentTagGate.tag_contract (Fin.append x w) with
+      ⟨_, _, _, _, _, _, _, _, hc, hlen⟩
+    have hL := hlen htag
+    have hc := hc.mp htag
+    simpa [FixedContentTagGate.expectedTagBit, FixedContentTagGate.physicalSymbol,
+      show 7 < a + m by omega] using hc ⟨7, by decide⟩
+  have hz := ((FixedContentGammaTerminator.gamma_contract _).1 zeros hg).2.2
+  have hbit8 : (Fin.append x w) ⟨8, by omega⟩ = false := by
+    have h := hz 0 hzero
+    simpa [FixedContentTagGate.physicalSymbol, show 8 < a + m by omega] using h
+  have hread := first_read_config (B := B) x w htag hg hzero
+  have hbranch : machine.run 1
+      (cursorConfig B x w qRead (9 + zeros)
+        (by unfold tapeLength pairLength; omega)) =
+      cursorConfig B x w qRestoreVirtual (8 + zeros)
+        (by unfold tapeLength pairLength; omega) := by
+    simp only [UniformTM.run]
+    rw [step_cursor_keep x w qRead qRestoreVirtual _ .left (by
+      have hopen : openedTape B x w
+          ⟨9 + zeros, by unfold tapeLength pairLength; omega⟩ = none := by
+        simp [openedTape, FixedPairContentMarkerErase.contentTape, hvirtual]
+      simpa [hopen] using read_none_action)]
+    apply config_ext <;> try rfl
+    apply Fin.ext
+    simp [cursorConfig, moveHead]
+  rw [show 3 * zeros + 6 = (2 * zeros + 3) + (zeros + 3) by omega,
+    machine.run_add, hread, show zeros + 3 = 1 + (zeros + 2) by omega,
+    machine.run_add, hbranch]
+  exact cleanup_exact x w qRestoreVirtual qFillVirtual qVirtual hzero hgamma hbit7 hbit8
+    restoreVirtual_none_action (by intro b; cases b <;> decide) fillVirtual_none_action
 
 /-- Zero width is a complete run: the first left step sees G2a's cell-7 hole,
 restores literal `some false`, and stops without entering the payload. -/

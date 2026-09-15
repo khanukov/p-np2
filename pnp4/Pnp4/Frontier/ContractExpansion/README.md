@@ -203,6 +203,15 @@ review order (the `lakefile.lean` registration is the dependency order):
   one-way consequence of the validated trace hypotheses: it proves no
   `qDone` iff, semantic acceptance, dispatcher correctness, or complete parser
   behavior.
+- `ContentFixedGammaPayloadPendingSemanticBridge.lean` — Part A G2j
+  infrastructure. It characterizes strict positive-width logical failure and,
+  under fit, a false scan by the existence of a true `padRead`, without
+  classical witness selection. It pairs the cleaned physical-true and
+  first-virtual endpoints one-way with their scans on the exact payload window
+  `[9 + zeros, 9 + 2 * zeros)`, records exact virtual failure at physical
+  length, and specializes both plus the zero-cleanup case to
+  `2 * (a + m) + 1`. It proves no endpoint iff, dispatch, parser acceptance,
+  payload decode, or cross-machine clock.
 - `ContentCappedArithmetic.lean` — Part A G0-B2b1. It provides exact capped
   natural addition, multiplication, binary-length, and exponentiation. Every
   `some` theorem identifies the exact mathematical result and proves it fits;

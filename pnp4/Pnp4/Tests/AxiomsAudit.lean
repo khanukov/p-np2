@@ -49,6 +49,7 @@ import Pnp4.Frontier.ContractExpansion.TreeMCSPPrefixVerifierLayout
 import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
 import Pnp4.Frontier.ContractExpansion.ContentVirtualZeroTailReaderCore
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadZeroSemanticBridge
+import Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadPendingSemanticBridge
 import Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic
 import Pnp4.Frontier.ContractExpansion.ContentCappedSizes
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
@@ -765,6 +766,15 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.allZeroSlice?_eq_some_true_iff
 #print axioms Pnp4.Frontier.ContractExpansion.full_false_gamma_payload_iff_allZeroSlice
 #print axioms Pnp4.Frontier.ContractExpansion.cleanup_endpoint_and_allZeroSlice
+-- G2j: cleaned pending outcomes at a shared strict-reader window.
+#print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.allZeroSlice?_eq_none_iff
+#print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.allZeroSlice?_eq_some_false_iff
+#print axioms Pnp4.Frontier.ContractExpansion.true_cleanup_endpoint_and_allZeroSlice
+#print axioms Pnp4.Frontier.ContractExpansion.virtual_cleanup_endpoint_and_allZeroSlice
+#print axioms Pnp4.Frontier.ContractExpansion.virtual_allZeroSlice_at_physical_length
+#print axioms Pnp4.Frontier.ContractExpansion.true_cleanup_endpoint_and_allZeroSlice_shared_window
+#print axioms Pnp4.Frontier.ContractExpansion.virtual_cleanup_endpoint_and_allZeroSlice_shared_window
+#print axioms Pnp4.Frontier.ContractExpansion.cleanup_endpoint_and_allZeroSlice_shared_window
 -- G0-B2b1: capped arithmetic declarations and exact success/overflow contracts.
 #print axioms Pnp4.Frontier.ContractExpansion.checkedNat
 #print axioms Pnp4.Frontier.ContractExpansion.checkedAdd

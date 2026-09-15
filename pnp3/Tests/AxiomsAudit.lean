@@ -99,6 +99,7 @@ import Tests.UniformV1FixedGammaPayloadCursorCoreSurfaceTests
 import Tests.UniformV1FixedGammaPayloadRoundStepSurfaceTests
 import Tests.UniformV1FixedGammaPayloadRoundDriverSurfaceTests
 import Tests.UniformV1FixedGammaPayloadExhaustedSurfaceTests
+import Tests.UniformV1FixedGammaPayloadZeroCleanupSurfaceTests
 import Tests.UniformV1BudgetTransportSurfaceTests
 import Tests.UniformV1CombinedMachineSurfaceTests
 import Tests.UniformV1CombinedCorrectnessSurfaceTests
@@ -4261,6 +4262,30 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadExhausted.exhausted_absorbing
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadExhausted.exhausted_reachable
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadExhausted.exhausted_no_clamp_facts
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadZeroCleanup.stateCount
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadZeroCleanup.qScanRight
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadZeroCleanup.qBackTerm
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadZeroCleanup.qFillCounter
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadZeroCleanup.qDone
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadZeroCleanup.qReject
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadZeroCleanup.machine
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadZeroCleanup.cleanupClock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadZeroCleanup.retag
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadZeroCleanup.startConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadZeroCleanup.table_and_resource_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadZeroCleanup.handoff_from_exhausted_reachable
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadZeroCleanup.cleanup_arithmetic_bounds
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadZeroCleanup.initial_footprint
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadZeroCleanup.cleanup_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadZeroCleanup.cleanup_endpoint
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaPayloadZeroCleanup.per_step_budget_independent
+#print axioms Pnp3.Tests.UniformV1FixedGammaPayloadZeroCleanupSurfaceTests.check_table_and_resource_pins
+#print axioms Pnp3.Tests.UniformV1FixedGammaPayloadZeroCleanupSurfaceTests.check_handoff_from_exhausted_reachable
+#print axioms Pnp3.Tests.UniformV1FixedGammaPayloadZeroCleanupSurfaceTests.check_cleanup_arithmetic_bounds
+#print axioms Pnp3.Tests.UniformV1FixedGammaPayloadZeroCleanupSurfaceTests.check_initial_footprint
+#print axioms Pnp3.Tests.UniformV1FixedGammaPayloadZeroCleanupSurfaceTests.check_cleanup_exact
+#print axioms Pnp3.Tests.UniformV1FixedGammaPayloadZeroCleanupSurfaceTests.check_cleanup_endpoint
+#print axioms Pnp3.Tests.UniformV1FixedGammaPayloadZeroCleanupSurfaceTests.check_per_step_budget_independent
 #print axioms Pnp3.Tests.UniformV1FixedGammaPayloadExhaustedSurfaceTests.check_exhaustedTail
 #print axioms Pnp3.Tests.UniformV1FixedGammaPayloadExhaustedSurfaceTests.check_exhaustedClock
 #print axioms Pnp3.Tests.UniformV1FixedGammaPayloadExhaustedSurfaceTests.check_exhausted_tail_trace

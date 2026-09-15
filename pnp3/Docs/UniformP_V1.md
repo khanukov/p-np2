@@ -597,3 +597,14 @@ throughout. The fixed 24-row table has no right move and is budget independent.
 Generic trace theorems prove head nonincrease and that cells strictly above the
 initial head stay fixed. No semantic verdict, dispatcher claim, acceptance
 meaning, cross-machine clock, or complexity bridge is stated.
+
+The Part A G2k `FixedGammaPayloadDispatcher` is a fixed 28-state, 84-row routed
+block sum of the payload cursor, round, exhausted cleanup, and pending cleanup
+tables. Its input retags the actual G2a deadline run; the control and table
+contain no input, `zeros`, `k`, or proof data. Its absorbing endpoints are
+distinct `qAllZero`, internal `qHasOne`, and shared `qReject`. Exact executable
+theorems in this slice activate malformed, zero-width, and `k = 0` physical-true
+and virtual paths. Zero width retains head 7; cleaned paths retain head 6 and
+literal `contentTape`. Positive-round, pending, and exhausted rows are routed
+but do not yet have unified run theorems, so no whole-dispatcher semantics are
+claimed. This is infrastructure only and changes no pnp4 semantics.

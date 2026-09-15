@@ -407,6 +407,17 @@ fixed. This is structural infrastructure only: no semantic verdict,
 dispatcher correctness, acceptance meaning, cross-machine clock, or
 complexity bridge is claimed, and it is not P-vs-NP mainline work.
 
+**Part A G2k fixed gamma-payload dispatcher (infrastructure only).**
+`FixedGammaPayloadDispatcher` is a 28-state/84-row fixed routed block sum from
+the actual G2a deadline endpoint. It preserves three absorbing outcomes:
+`qAllZero`, distinct internal `qHasOne`, and shared malformed `qReject`; the
+control/table contain no input, zero count, width, or proof data. This slice
+activates exact executable malformed, zero-width, and `k=0` true/virtual paths,
+including literal tape and case-specific head outcomes (7 for zero width, 6
+after cleanup), endpoint absorption, and budget independence. Later round,
+pending, and exhausted routes are table-wired but not covered by unified run
+theorems, so this is not a whole-dispatcher semantic claim and not mainline.
+
 **Part A G2g fixed gamma-payload zero semantic bridge (infrastructure only).**
 `Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadZeroSemanticBridge`
 characterizes `VirtualZeroTailReader.allZeroSlice? = some true`, under exact

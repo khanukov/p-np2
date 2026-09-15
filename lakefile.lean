@@ -114,6 +114,9 @@ lean_lib PnP3 where
     Glob.one `Complexity.Uniform.V1.FixedGammaPayloadExhausted,
     -- Part A G2f fixed five-state physical zero cleanup.
     Glob.one `Complexity.Uniform.V1.FixedGammaPayloadZeroCleanup,
+    -- Part A G2k fixed routed payload dispatcher; executable paths are
+    -- deliberately limited to malformed, zero-width, and k=0 in this slice.
+    Glob.one `Complexity.Uniform.V1.FixedGammaPayloadDispatcher,
     -- Generic bounded cross-budget simulation for one fixed UniformTM.
     Glob.one `Complexity.Uniform.V1.BudgetTransport,
     -- Routed fixed-parser/verifier constructor and parser-prefix handoff.
@@ -677,6 +680,7 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1FixedGammaPayloadPendingCleanupSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaPayloadExhaustedSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaPayloadZeroCleanupSurfaceTests,
+    Glob.one `Tests.UniformV1FixedGammaPayloadDispatcherSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
     Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,

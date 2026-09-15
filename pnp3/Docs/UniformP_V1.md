@@ -621,3 +621,17 @@ and reject tags excluded throughout. The positive formulas deliberately omit
 `k = 0`, and pending outcomes deliberately require `k < zeros`. This remains
 execution infrastructure: it states no payload semantics, parser/decode fact,
 whole-dispatcher iff, length-only cap, or pnp4 consequence.
+
+The proof-only Part A G2m `FixedGammaPayloadDispatcherDeadline` closes the
+dependency-contained dispatcher timing/classifier slice.  Its transparent
+length-only deadline is `2*N*N`.  A bounded induction over the decoded gamma
+payload constructs the first physical-true, first-virtual, or exhausted index;
+the proof uses neither `Nat.find` nor choice and defines no proof-derived
+runtime search.  Every existing malformed, zero-width, first-read, positive
+pending, and exhausted exact clock is bounded by that deadline and lifted by
+the three absorbing endpoint rows.  Under a matching tag the resulting total
+classification pins literal `contentTape` and the branch-specific head
+(`a+m`, `7`, or `6`), and proves physical iff statements for `qHasOne`,
+`qAllZero`, and `qReject`.  It does not identify a uniform head, interpret a
+pnp4 reader, assert parser acceptance, or change any canonical complexity
+class; it is infrastructure only.

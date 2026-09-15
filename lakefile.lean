@@ -109,6 +109,7 @@ lean_lib PnP3 where
     -- Part A G2d proof-only arbitrary-k physical-false round driver.
     Glob.one `Complexity.Uniform.V1.FixedGammaPayloadRoundDriver,
     Glob.one `Complexity.Uniform.V1.FixedGammaPayloadPendingOutcomes,
+    Glob.one `Complexity.Uniform.V1.FixedGammaPayloadPendingCleanup,
     -- Part A G2e proof-only exact exhausted-tail execution.
     Glob.one `Complexity.Uniform.V1.FixedGammaPayloadExhausted,
     -- Part A G2f fixed five-state physical zero cleanup.
@@ -673,6 +674,7 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1FixedGammaPayloadRoundStepSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaPayloadRoundDriverSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaPayloadPendingOutcomesSurfaceTests,
+    Glob.one `Tests.UniformV1FixedGammaPayloadPendingCleanupSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaPayloadExhaustedSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaPayloadZeroCleanupSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,

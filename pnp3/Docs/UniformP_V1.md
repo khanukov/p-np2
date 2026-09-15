@@ -584,3 +584,16 @@ per-step budget independent, and the API pins the handoff, initial footprint,
 and exact arithmetic bounds used to type the phase configurations. It does not
 state run-level no-clamp safety. Neither the tag nor the trace is a semantic
 all-zero/acceptance theorem, and no cross-machine total clock is stated.
+
+The Part A G2i successor `FixedGammaPayloadPendingCleanup` retags either exact
+G2h pending endpoint with one branch-independent start configuration. The
+pending cell carries the branch data: `some true` is preserved into the
+one-back scan, `none` into the virtual-back scan, and `some false` rejects.
+Both branches restore holes `8+k` through cell 7 with physical false and read
+fixed tag cell 6 unchanged. At strict first successor-local clock
+`zeros + k + 4`, the tape is literal `contentTape`, the head is 6, and the
+distinct result is absorbing `qOne` or `qVirtual`; the wrong tag is excluded
+throughout. The fixed 24-row table has no right move and is budget independent.
+Generic trace theorems prove head nonincrease and that cells strictly above the
+initial head stay fixed. No semantic verdict, dispatcher claim, acceptance
+meaning, cross-machine clock, or complexity bridge is stated.

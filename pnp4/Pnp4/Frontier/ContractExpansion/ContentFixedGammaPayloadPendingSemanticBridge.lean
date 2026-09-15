@@ -159,7 +159,7 @@ theorem virtual_cleanup_endpoint_and_allZeroSlice
   exact ⟨hend.1, hend.2.1, hend.2.2, hsemantic⟩
 
 /-- At the physical boundary the first-virtual branch makes the positive-width
-strict scan fail, even though every available or virtual payload bit is false. -/
+strict scan fail because its full logical window does not fit. -/
 theorem virtual_allZeroSlice_at_physical_length
     {a m zeros k : Nat} (x : Bitstring a) (w : Bitstring m)
     (hk : 1 ≤ k) (hkz : k < zeros)

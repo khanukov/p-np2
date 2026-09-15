@@ -2,6 +2,18 @@
 
 Updated: 2026-09-15
 
+**Part A G2m dispatcher deadline/classifier (infrastructure only).**
+`FixedGammaPayloadDispatcherDeadline` gives the fixed G2k/G2l dispatcher the
+transparent common deadline `2*N*N`, constructively partitions every decoded
+gamma payload into first-true, first-virtual, or exhausted branches, and lifts
+all exact endpoints by absorption.  On matching tags it classifies the total
+deadline endpoint with branch-specific heads: malformed at `a+m`, zero width
+at `7`, and cleaned positive paths at `6`.  The physical endpoint equivalences
+say `qHasOne` exactly when a physical true occurs in the payload window,
+`qAllZero` exactly when none occurs for valid gamma, and `qReject` exactly when
+`gammaZeros? = none`.  This adds no pnp4 reader/parser semantics or acceptance
+claim and remains infrastructure rather than P-vs-NP mainline progress.
+
 **Part A G2l dispatcher positive rounds (infrastructure only).**
 `FixedGammaPayloadDispatcherRounds` now proves the same-machine, zero-offset
 positive physical-true, first-virtual, and full-false exhausted executions of

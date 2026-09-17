@@ -62,6 +62,7 @@ import Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadZeroSemanticBridg
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadPendingSemanticBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadDispatcherSemanticBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadDispatcherHeaderValueBridge
+import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTerminatorScratchBootstrapBridge
 import Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic
 import Pnp4.Frontier.ContractExpansion.ContentCappedSizes
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
@@ -5144,6 +5145,71 @@ example (B : Nat) :
 #print axioms Pnp4.Tests.check_dispatcher_qHasOne_iff_contentHeader_two_pow_lt_succ
 
 end ContentFixedGammaPayloadDispatcherHeaderValueBridgeSurface
+
+section ContentFixedGammaTerminatorScratchBootstrapBridgeSurface
+
+open Pnp3.Complexity.Uniform.V1
+open Pnp4.Frontier.ContractExpansion
+
+theorem check_scratchBootstrap_qReject_iff_contentHeader_none {a m B : Nat}
+    (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true) :
+    (FixedGammaTerminatorScratchBootstrap.machine.run
+      (FixedGammaTerminatorScratchBootstrap.deadline (a + m))
+      (FixedGammaTerminatorScratchBootstrap.startConfig B x w)).state =
+        FixedGammaTerminatorScratchBootstrap.qReject ↔
+      contentHeader? (Fin.append x w) = none :=
+  scratchBootstrap_qReject_iff_contentHeader_none x w htag
+
+theorem check_scratchBootstrap_scratch_eq_leading_bit {a m B n consumed : Nat}
+    (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
+    (hheader : contentHeader? (Fin.append x w) = some (n, consumed)) :
+    ∃ zeros, consumed = 2 * zeros + 1 ∧ 2 ^ zeros ≤ n + 1 ∧
+      n + 1 < 2 ^ (zeros + 1) ∧
+      let d := FixedGammaTerminatorScratchBootstrap.machine.run
+        (FixedGammaTerminatorScratchBootstrap.deadline (a + m))
+        (FixedGammaTerminatorScratchBootstrap.startConfig B x w)
+      d.state = FixedGammaTerminatorScratchBootstrap.qTerm ∧ d.head.val = 8 + zeros ∧
+        d.tape = FixedGammaTerminatorScratchBootstrap.scratchTape B x w ∧
+        d.tape ⟨a + m + 1, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
+          some ((n + 1).testBit zeros) :=
+  scratchBootstrap_scratch_eq_leading_bit x w htag hheader
+
+/-! On the G2o words the bootstrap rejects the malformed word, and on the word
+with header `(5, 5)` it halts at head `10` holding bit `2` of `6 = 110₂` in
+scratch cell `13`.  Both facts are derived for every `B` without running
+either machine. -/
+
+example (B : Nat) :
+    (FixedGammaTerminatorScratchBootstrap.machine.run
+      (FixedGammaTerminatorScratchBootstrap.deadline (8 + 3))
+      (FixedGammaTerminatorScratchBootstrap.startConfig B headerValueTag
+        headerValueMalformed)).state = FixedGammaTerminatorScratchBootstrap.qReject :=
+  (scratchBootstrap_qReject_iff_contentHeader_none (B := B) headerValueTag
+    headerValueMalformed (by decide)).2 (by decide)
+
+example (B : Nat) :
+    let d := FixedGammaTerminatorScratchBootstrap.machine.run
+      (FixedGammaTerminatorScratchBootstrap.deadline (8 + 4))
+      (FixedGammaTerminatorScratchBootstrap.startConfig B headerValueTag
+        headerValueVirtualTailOne)
+    d.state = FixedGammaTerminatorScratchBootstrap.qTerm ∧ d.head.val = 10 ∧
+      d.tape ⟨8 + 4 + 1, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
+        some true := by
+  obtain ⟨zeros, hconsumed, _, _, hq, hh, _, hcell⟩ :=
+    scratchBootstrap_scratch_eq_leading_bit (B := B) headerValueTag
+      headerValueVirtualTailOne (by decide)
+      (show contentHeader? _ = some (5, 5) by decide)
+  obtain rfl : zeros = 2 := by omega
+  refine ⟨hq, hh, ?_⟩
+  rw [hcell]
+  decide
+
+#print axioms Pnp4.Tests.check_scratchBootstrap_qReject_iff_contentHeader_none
+#print axioms Pnp4.Tests.check_scratchBootstrap_scratch_eq_leading_bit
+
+end ContentFixedGammaTerminatorScratchBootstrapBridgeSurface
 
 section ContentCappedArithmeticSurface
 

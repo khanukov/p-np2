@@ -635,3 +635,24 @@ classification pins literal `contentTape` and the branch-specific head
 `qAllZero`, and `qReject`.  It does not identify a uniform head, interpret a
 pnp4 reader, assert parser acceptance, or change any canonical complexity
 class; it is infrastructure only.
+
+The Part A G2p-a `FixedGammaTerminatorScratchBootstrap` is the first fixed
+phase that writes outside the content cells.  Its start configuration only
+retags the actual G2m dispatcher configuration at the dispatcher deadline.  On
+a matching tag with physical terminator at `8+zeros` (`N = a+m`), two fixed
+steps through the `qStart` and `qNormalize` rows normalize dispatcher heads
+`6` and `7` to cell `8`.  The machine then
+scans the gamma zeros and blanks the terminator as a return marker, the unique
+blank cell below `N`.  It scans to the blank boundary `N`, writes `true` at
+scratch cell `N+1` (allocated for every budget, since the tape has
+`2a+m+B+2` cells), steps back over `N`, scans left to the marker, and restores
+it.  The public `traceState`/`traceHead`/`traceTape` schedule is exact at
+every time.  The first terminal time is `2*N-11-zeros`, the length-only
+deadline is `2*N`, and the endpoint is `qTerm` at head `8+zeros` with
+`contentTape` changed only at `N+1`.  A failed gamma scan rejects after one
+step at head `N`.  All 27 rows are pinned literally.  On successful runs the
+module proves strict first arrival and the head window `[6, N+1]`, with only
+the marker and scratch cells ever differing from `contentTape`; clamp freedom
+and budget independence hold on every tagged input.  `qTerm` is an internal
+endpoint rather than language acceptance, and the module states no pnp4 reader
+or parser fact; it is infrastructure only.

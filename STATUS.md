@@ -2,6 +2,31 @@
 
 Updated: 2026-09-17
 
+**Part A G2p-a terminator-to-scratch bootstrap (infrastructure only).**
+`FixedGammaTerminatorScratchBootstrap` is a fixed 9-state, 27-row machine whose
+start configuration only retags the actual G2m dispatcher configuration at the
+dispatcher deadline. Write `N = a+m`. On a matching tag it normalizes the
+dispatcher heads `6`/`7` to cell `8` and scans the gamma zeros. It blanks the
+physical terminator at `8+zeros` as a return marker (the only blank cell below
+`N`), scans to the blank boundary `N`, and writes `true` at scratch cell `N+1`,
+which exists for every budget. It then steps back over `N`, scans left to the
+marker, restores the terminator, and halts in the absorbing `qTerm`. The first
+terminal time is exactly `2*N-11-zeros` and the length-only deadline is `2*N`.
+The endpoint head is `8+zeros`, and the endpoint tape is `contentTape` changed
+only at `N+1`. A failed gamma scan rejects after one step. Every row is pinned
+literally, and an explicit schedule gives the exact state, head, and tape at
+every time. The module proves strict first arrival, the head window `[6, N+1]`
+on successful runs, and clamp freedom and budget independence for every tagged
+input and budget. The pnp4 companion
+`ContentFixedGammaTerminatorScratchBootstrapBridge` proves two facts at that
+deadline, for matching tags. The bootstrap rejects exactly when
+`contentHeader? = none`. For a header `(n, 2*zeros+1)` the scratch cell holds
+`(n+1).testBit zeros`, the leading binary digit of `n+1`. Only that digit is
+written: the shuttle crosses the payload cells, but neither decodes nor copies
+their digits. Nothing here claims
+parser execution, content acceptance, untagged behavior, or P-vs-NP mainline
+progress.
+
 **Part A G2o dispatcher header-value bridge (infrastructure only).**
 `ContentFixedGammaPayloadDispatcherHeaderValueBridge` adds seven public
 theorems. Two hypothesis-free reader iffs, covering width zero and

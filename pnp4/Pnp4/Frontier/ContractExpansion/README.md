@@ -745,6 +745,29 @@ cover malformed gamma, width zero, physical zero and one, a wholly virtual zero
 payload, and a physical one followed by a virtual zero; the `contentInput?`
 theorem is instantiated on every canonical zero-prefix query.
 
+`ContentFixedGammaTerminatorScratchBootstrapBridge.lean` is the Part A G2p-a
+infrastructure bridge. It is registered immediately after G2o and imports G2o
+and the pnp3 `FixedGammaTerminatorScratchBootstrap` machine. It has exactly
+two public theorems, both at the bootstrap's length-only deadline
+`2 * (a + m)`:
+
+* `scratchBootstrap_qReject_iff_contentHeader_none`: under a matching tag,
+  `qReject` holds exactly when `contentHeader? = none`;
+* `scratchBootstrap_scratch_eq_leading_bit`: under a matching tag and
+  `contentHeader? z = some (n, consumed)`, some `zeros` has
+  `consumed = 2 * zeros + 1` and `2 ^ zeros ≤ n + 1 < 2 ^ (zeros + 1)`, the
+  endpoint is `qTerm` at head `8 + zeros` with the scratch tape, and scratch
+  cell `a + m + 1` holds `(n + 1).testBit zeros`.
+
+The digit bound comes from `readNatBE_lt_two_pow` on the padded payload read.
+Only the leading digit is placed on the tape. The shuttle crosses the gamma
+payload cells, but neither decodes nor copies their digits, and the module
+claims no parser execution, content acceptance, untagged behavior, uniform
+head, clock composition, or P-vs-NP
+mainline result. Surface regressions derive rejection on the malformed G2o word
+and, on the word with header `(5, 5)`, head `10` with `true` at scratch cell
+`13`.
+
 `FixedContentGammaAnchorCorrect.lean` is the Part A G2a bridge. It proves the
 exact G1-final-to-G2a operational handoff and provides a logical cell-7
 restoration taking the successful marked tape back to literal `contentTape`.

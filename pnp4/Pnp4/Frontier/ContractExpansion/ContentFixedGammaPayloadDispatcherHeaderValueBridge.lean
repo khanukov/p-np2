@@ -10,24 +10,28 @@ statements about the decoded content header.
   the same window is `some true`, and the scan is `some false` exactly when the
   read succeeds with a positive value.  Neither statement has a fit
   hypothesis: width zero and out-of-range windows are included.
-* `contentHeader? z = some (n, consumed)` holds exactly when gamma decoding
-  finds `zeros`, the payload read over `[9 + zeros, 9 + 2 * zeros)` at logical
-  length `2 * N + 1` returns `payload`, `n + 1 = 2 ^ zeros + payload`, and
+* `contentHeader? z = some (n, consumed)` holds exactly when, for some `zeros`
+  and `payload`, the physical terminator scan `gammaZeros?` returns `zeros`,
+  the payload read over `[9 + zeros, 9 + 2 * zeros)` at logical length
+  `2 * N + 1` returns `payload`, `n + 1 = 2 ^ zeros + payload`, and
   `consumed = 2 * zeros + 1`.  Payload cells at or beyond `N` read as virtual
   zeros; there is no tag, physical-fit, codec, or positivity premise.
-* A successful `contentInput?` recovers that header target both as its outer
-  Sigma index and as the parsed `PrefixInput` target read by `ContentAccepts`.
+* A successful `contentInput?`, for any codec, recovers that header target both
+  as its outer Sigma index and as the parsed `PrefixInput` target read by
+  `ContentAccepts`.  This direction is one-way.
 * On matching tags at the common dispatcher deadline, `qReject` is exactly
   header absence, `qAllZero` is exactly a header `(n, 2 * zeros + 1)` with
   `n + 1 = 2 ^ zeros`, and `qHasOne` is exactly such a header with
   `2 ^ zeros < n + 1`.
 
-The gamma width `zeros`, the payload natural, the header target `n` with its
-consumed width, and the parsed target `pr.2.n` remain distinct quantities.
-Nothing here claims that the dispatcher stores or materializes `n`, that an
-endpoint is acceptance of the content language, or anything about untagged
-input, a uniform head, cross-machine clocks, `ContentVerifierBridge`, or
-advice freedom.
+The gamma width `zeros` and the payload natural are never identified with the
+header target `n`; the parsed target `pr.2.n` equals the header target only
+through a successful `contentInput?`.  Nothing here claims that the dispatcher
+stores or materializes `n` or the payload on its tape, that any machine
+executes `contentInput?` or the parser, that an endpoint is acceptance of the
+content language, or anything about untagged input, a uniform head,
+cross-machine clock composition, `ContentVerifierBridge`, advice freedom, NP
+membership, or lower bounds; this is not P-vs-NP mainline progress.
 -/
 
 namespace Pnp4.Frontier.ContractExpansion
@@ -162,11 +166,12 @@ private theorem contentHeader?_of_gammaZeros_payload {N zeros payload : Nat}
     omega
 
 /-- Exact, subtraction-free value characterization of the content header: it
-decodes to `(n, consumed)` exactly when gamma decoding finds `zeros`, the
-payload read over `[9 + zeros, 9 + 2 * zeros)` at logical length `2 * N + 1`
-returns `payload`, `n + 1 = 2 ^ zeros + payload`, and
-`consumed = 2 * zeros + 1`.  Payload cells at or beyond `N` read as virtual
-zeros.  There is no tag, physical-fit, codec, or positivity premise. -/
+decodes to `(n, consumed)` exactly when, for some `zeros` and `payload`, the
+physical terminator scan `gammaZeros?` returns `zeros`, the payload read over
+`[9 + zeros, 9 + 2 * zeros)` at logical length `2 * N + 1` returns `payload`,
+`n + 1 = 2 ^ zeros + payload`, and `consumed = 2 * zeros + 1`.  Payload cells
+at or beyond `N` read as virtual zeros.  There is no tag, physical-fit, codec,
+or positivity premise. -/
 theorem contentHeader?_eq_some_iff_gammaZeros_payload
     {N n consumed : Nat} (z : PrefixBitVec N) :
     contentHeader? z = some (n, consumed) ↔

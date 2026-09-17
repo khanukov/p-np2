@@ -4972,6 +4972,121 @@ example :
         11 2 = some 2 := by
   decide
 
+/-! The reader iffs at concrete payload windows: width zero, a physical zero or
+one, a wholly virtual zero, and a physical one followed by a virtual zero.  At
+the physical length the virtual windows fail, so neither side of either iff
+holds there. -/
+
+example :
+    VirtualZeroTailReader.allZeroSlice?
+        (Fin.append headerValueTag headerValueWidthZero) (2 * (8 + 1) + 1)
+        9 0 = some true ∧
+      VirtualZeroTailReader.allZeroSlice?
+        (Fin.append headerValueTag headerValuePhysicalZero) (2 * (8 + 3) + 1)
+        10 1 = some true ∧
+      VirtualZeroTailReader.allZeroSlice?
+        (Fin.append headerValueTag headerValueVirtualZero) (2 * (8 + 3) + 1)
+        11 2 = some true :=
+  ⟨(VirtualZeroTailReader.readNatBE_eq_some_zero_iff_allZeroSlice?_eq_some_true
+      _).1 rfl,
+    (VirtualZeroTailReader.readNatBE_eq_some_zero_iff_allZeroSlice?_eq_some_true
+      _).1 (by decide),
+    (VirtualZeroTailReader.readNatBE_eq_some_zero_iff_allZeroSlice?_eq_some_true
+      _).1 (by decide)⟩
+
+example :
+    VirtualZeroTailReader.allZeroSlice?
+        (Fin.append headerValueTag headerValuePhysicalOne) (2 * (8 + 3) + 1)
+        10 1 = some false ∧
+      VirtualZeroTailReader.allZeroSlice?
+        (Fin.append headerValueTag headerValueVirtualTailOne) (2 * (8 + 4) + 1)
+        11 2 = some false :=
+  ⟨(VirtualZeroTailReader.allZeroSlice?_eq_some_false_iff_readNatBE_pos _).2
+      ⟨1, by decide, by decide⟩,
+    (VirtualZeroTailReader.allZeroSlice?_eq_some_false_iff_readNatBE_pos _).2
+      ⟨2, by decide, by decide⟩⟩
+
+example :
+    VirtualZeroTailReader.allZeroSlice?
+        (Fin.append headerValueTag headerValueVirtualZero) (8 + 3) 11 2 ≠
+          some true ∧
+      ¬ ∃ payload,
+        VirtualZeroTailReader.readNatBE
+          (Fin.append headerValueTag headerValueVirtualTailOne) (8 + 4) 11 2 =
+            some payload ∧ 0 < payload := by
+  refine ⟨fun h => ?_, fun h => ?_⟩
+  · have hread :=
+      (VirtualZeroTailReader.readNatBE_eq_some_zero_iff_allZeroSlice?_eq_some_true
+        _).2 h
+    exact absurd hread (by decide)
+  · have hscan :=
+      (VirtualZeroTailReader.allZeroSlice?_eq_some_false_iff_readNatBE_pos _).2 h
+    exact absurd hscan (by decide)
+
+/-! Header values assembled from the gamma width and the shared-length payload
+read, the reverse extraction at the physical-one/virtual-zero boundary, and no
+header value at all for malformed gamma. -/
+
+example :
+    contentHeader? (Fin.append headerValueTag headerValueWidthZero) =
+        some (0, 1) ∧
+      contentHeader? (Fin.append headerValueTag headerValuePhysicalZero) =
+        some (1, 3) ∧
+      contentHeader? (Fin.append headerValueTag headerValuePhysicalOne) =
+        some (2, 3) ∧
+      contentHeader? (Fin.append headerValueTag headerValueVirtualZero) =
+        some (3, 5) ∧
+      contentHeader? (Fin.append headerValueTag headerValueVirtualTailOne) =
+        some (5, 5) :=
+  ⟨(contentHeader?_eq_some_iff_gammaZeros_payload _).2
+      ⟨0, 0, by decide, rfl, rfl, rfl⟩,
+    (contentHeader?_eq_some_iff_gammaZeros_payload _).2
+      ⟨1, 0, by decide, by decide, rfl, rfl⟩,
+    (contentHeader?_eq_some_iff_gammaZeros_payload _).2
+      ⟨1, 1, by decide, by decide, rfl, rfl⟩,
+    (contentHeader?_eq_some_iff_gammaZeros_payload _).2
+      ⟨2, 0, by decide, by decide, rfl, rfl⟩,
+    (contentHeader?_eq_some_iff_gammaZeros_payload _).2
+      ⟨2, 2, by decide, by decide, rfl, rfl⟩⟩
+
+example :
+    ∃ zeros payload,
+      FixedContentGammaTerminator.gammaZeros?
+          (Fin.append headerValueTag headerValueVirtualTailOne) = some zeros ∧
+        VirtualZeroTailReader.readNatBE
+          (Fin.append headerValueTag headerValueVirtualTailOne)
+          (2 * (8 + 4) + 1) (9 + zeros) zeros = some payload ∧
+        5 + 1 = 2 ^ zeros + payload ∧ 5 = 2 * zeros + 1 :=
+  (contentHeader?_eq_some_iff_gammaZeros_payload _).1 (by decide)
+
+example (n consumed : Nat) :
+    contentHeader? (Fin.append headerValueTag headerValueMalformed) ≠
+      some (n, consumed) := by
+  intro h
+  obtain ⟨zeros, _, hg, _⟩ :=
+    (contentHeader?_eq_some_iff_gammaZeros_payload _).1 h
+  have hnone : FixedContentGammaTerminator.gammaZeros?
+      (Fin.append headerValueTag headerValueMalformed) = none := by
+    decide
+  rw [hnone] at hg
+  cases hg
+
+/-- The premise of `contentInput?_target_eq_contentHeader` is met by every
+canonical zero-prefix query followed by any certificate, for every codec, and
+the recovered header target is exactly the encoded `n`. -/
+example {threshold : Nat → Nat} (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    (n : Nat) (x : PrefixBitVec (Pnp3.Models.Partial.tableLen n))
+    (w : Pnp3.ComplexityInterfaces.Bitstring
+      (Pnp3.ComplexityInterfaces.certificateLength (treeMCSPPrefixM codec n) 1)) :
+    ∃ consumed,
+      contentHeader?
+        (Pnp3.ComplexityInterfaces.concatBitstring
+          (zeroPrefixQueryValue codec n x) w) = some (n, consumed) := by
+  obtain ⟨consumed, hheader, _⟩ := contentInput?_target_eq_contentHeader codec _
+    (contentInput?_concat_of_parse codec (zeroPrefixQueryValue codec n x) _
+      (parse_zeroPrefixQueryValue codec n x) rfl w)
+  exact ⟨consumed, hheader⟩
+
 example (B : Nat) :
     (FixedGammaPayloadDispatcher.machine.run
       (FixedGammaPayloadDispatcherDeadline.deadline (8 + 3))
@@ -5019,6 +5134,14 @@ example (B : Nat) :
         headerValueVirtualTailOne)).state = FixedGammaPayloadDispatcher.qHasOne :=
   (dispatcher_qHasOne_iff_contentHeader_two_pow_lt_succ (B := B) headerValueTag
     headerValueVirtualTailOne (by decide)).2 ⟨5, 2, by decide, by decide⟩
+
+#print axioms Pnp4.Tests.check_VZR_readNatBE_eq_some_zero_iff_allZeroSlice_eq_some_true
+#print axioms Pnp4.Tests.check_VZR_allZeroSlice_eq_some_false_iff_readNatBE_pos
+#print axioms Pnp4.Tests.check_contentHeader_eq_some_iff_gammaZeros_payload
+#print axioms Pnp4.Tests.check_contentInput_target_eq_contentHeader
+#print axioms Pnp4.Tests.check_dispatcher_qReject_iff_contentHeader_none
+#print axioms Pnp4.Tests.check_dispatcher_qAllZero_iff_contentHeader_succ_eq_two_pow
+#print axioms Pnp4.Tests.check_dispatcher_qHasOne_iff_contentHeader_two_pow_lt_succ
 
 end ContentFixedGammaPayloadDispatcherHeaderValueBridgeSurface
 

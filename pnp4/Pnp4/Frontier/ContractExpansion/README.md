@@ -716,14 +716,15 @@ It has exactly seven public theorems:
   and `VirtualZeroTailReader.allZeroSlice?_eq_some_false_iff_readNatBE_pos`,
   iffs with no hypothesis (width zero and non-fitting windows included);
 * `contentHeader?_eq_some_iff_gammaZeros_payload`, an iff with no hypothesis
-  and no subtraction: the header is `(n, consumed)` exactly when
-  `gammaZeros? z = some zeros`, the payload read at logical length
-  `2 * N + 1` over `[9 + zeros, 9 + 2 * zeros)` is `some payload`,
+  and no subtraction: the header is `(n, consumed)` exactly when, for some
+  `zeros` and `payload`, the physical scan gives `gammaZeros? z = some zeros`,
+  the payload read at logical length `2 * N + 1` over
+  `[9 + zeros, 9 + 2 * zeros)` is `some payload`,
   `n + 1 = 2 ^ zeros + payload`, and `consumed = 2 * zeros + 1`;
 * `contentInput?_target_eq_contentHeader`, one-way from the single premise
   `contentInput? codec z = some pr` for any codec (no monotonicity or
-  injectivity): `contentHeader? z = some (pr.1, consumed)` and
-  `pr.2.n = pr.1`, so the Sigma index and the parsed `PrefixInput` target
+  injectivity): for some `consumed`, `contentHeader? z = some (pr.1, consumed)`
+  and `pr.2.n = pr.1`, so the Sigma index and the parsed `PrefixInput` target
   that `ContentAccepts` reads both equal the header target;
 * `dispatcher_qReject_iff_contentHeader_none`,
   `dispatcher_qAllZero_iff_contentHeader_succ_eq_two_pow`, and
@@ -733,12 +734,16 @@ It has exactly seven public theorems:
   `2 ^ zeros < n + 1`.
 
 Width zero, positive physical payloads, and virtual payload cells are covered
-without a physical-fit premise. The gamma width, payload natural, header target
-with consumed width, and parsed target `pr.2.n` remain distinct. The module
-does not claim that the dispatcher stores or materializes `n`, that an endpoint
-is acceptance of the content language, or any untagged-input, uniform-head,
-clock-composition, `ContentVerifierBridge`, advice-freedom, or P-vs-NP mainline
-result.
+without a physical-fit premise. The gamma width and payload natural are never
+identified with the header target; the parsed target `pr.2.n` equals the header
+target only through a successful `contentInput?`. The module does not claim
+that the dispatcher stores or materializes `n` or the payload, that any machine
+executes the parser, that an endpoint is acceptance of the content language, or
+any untagged-input, uniform-head, clock-composition, `ContentVerifierBridge`,
+advice-freedom, NP-membership, or P-vs-NP mainline result. Surface regressions
+cover malformed gamma, width zero, physical zero and one, a wholly virtual zero
+payload, and a physical one followed by a virtual zero; the `contentInput?`
+theorem is instantiated on every canonical zero-prefix query.
 
 `FixedContentGammaAnchorCorrect.lean` is the Part A G2a bridge. It proves the
 exact G1-final-to-G2a operational handoff and provides a logical cell-7

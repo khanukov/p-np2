@@ -297,6 +297,16 @@ case, are specialized to the common frozen window `2 * (a + m) + 1`. This does
 not assert endpoint iff semantics, dispatch, parser acceptance, payload decode,
 or a cross-machine clock, and is infrastructure rather than mainline progress.
 
+Part A G2n adds the dependency-closed total endpoint bridge at that same shared
+window. Under a matching tag, the fixed dispatcher reaches `qAllZero` iff some
+decoded gamma width has an exact `some true` all-zero payload scan, reaches
+`qHasOne` iff the analogous scan is `some false`, and reaches `qReject` iff
+gamma decoding fails; header failure is additionally conjoined in a narrow
+corollary. Width zero is included. These are endpoint/reader propositions only:
+they do not expose decoded header values or payload naturals, and assert no TM
+acceptance, parser correctness, untagged behavior, uniform head, cross-machine
+clock, or P-vs-NP mainline progress.
+
 For an *arbitrary* threshold there is a third input, `PolyBoundedInTable threshold`;
 it is proved for the canonical polynomial thresholds, so it disappears at
 `thresholdPoly k`.  The general capstone `verifiedSource_of_explicit_interfaces`

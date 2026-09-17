@@ -948,6 +948,8 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.BoundedContentSemanticVerifier,
     Glob.one `Pnp4.Frontier.ContractExpansion.FixedContentTagGateCorrect,
     Glob.one `Pnp4.Frontier.ContractExpansion.FixedContentGammaTerminatorCorrect,
+    -- Part A G2n: total dispatcher endpoint semantics at the shared reader window.
+    Glob.one `Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadDispatcherSemanticBridge,
     Glob.one `Pnp4.Frontier.ContractExpansion.FixedContentGammaAnchorCorrect,
     -- GATE-0 slice: non-vacuity of `ContentAccepts` at the concrete codec.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity,

@@ -50,6 +50,7 @@ import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
 import Pnp4.Frontier.ContractExpansion.ContentVirtualZeroTailReaderCore
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadZeroSemanticBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadPendingSemanticBridge
+import Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadDispatcherSemanticBridge
 import Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic
 import Pnp4.Frontier.ContractExpansion.ContentCappedSizes
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
@@ -873,6 +874,12 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.fixedGamma_header_contract
 #print axioms Pnp4.Frontier.ContractExpansion.fixedGamma_semantic_factorization
 #print axioms Pnp4.Frontier.ContractExpansion.fixedGamma_machine_handoff
+#print axioms Pnp4.Frontier.ContractExpansion.physicalSymbol_true_iff_padRead_true
+#print axioms Pnp4.Frontier.ContractExpansion.gamma_payload_shared_window_fit
+#print axioms Pnp4.Frontier.ContractExpansion.dispatcher_qAllZero_iff_allZeroSlice_shared_window
+#print axioms Pnp4.Frontier.ContractExpansion.dispatcher_qHasOne_iff_allZeroSlice_shared_window
+#print axioms Pnp4.Frontier.ContractExpansion.dispatcher_qReject_iff_gamma_none
+#print axioms Pnp4.Frontier.ContractExpansion.dispatcher_qReject_iff_gamma_none_and_contentHeader_none
 #print axioms Pnp4.Frontier.ContractExpansion.logicalRestoreGammaAnchorCell7
 #print axioms Pnp4.Frontier.ContractExpansion.logicalRestore_markedTape
 #print axioms Pnp4.Frontier.ContractExpansion.fixedGammaAnchor_header_contract

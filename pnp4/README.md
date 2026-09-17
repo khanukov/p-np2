@@ -331,6 +331,21 @@ assert no content-language acceptance, untagged behavior, uniform head, clock
 composition, `ContentVerifierBridge`, advice freedom, NP membership, or P-vs-NP
 mainline progress.
 
+Part A G2p-a adds `ContentFixedGammaTerminatorScratchBootstrapBridge` over the
+pnp3 fixed terminator-to-scratch bootstrap. That machine retags the actual
+dispatcher deadline configuration and writes a literal `true` at scratch cell
+`a + m + 1`. The bridge has two public theorems at the bootstrap's length-only
+deadline `2 * (a + m)`. Under a matching tag, `qReject` holds iff
+`contentHeader? = none`. If additionally `contentHeader? z = some (n, consumed)`,
+then for some `zeros` with `consumed = 2 * zeros + 1` and
+`2 ^ zeros ≤ n + 1 < 2 ^ (zeros + 1)`, the endpoint is `qTerm` at head
+`8 + zeros` with the scratch tape, and cell `a + m + 1` holds
+`(n + 1).testBit zeros`, the leading binary digit of `n + 1`. Only that digit
+reaches the scratch register; the shuttle crosses the payload cells, but neither
+decodes nor copies their digits. This asserts
+no parser execution, content-language acceptance, untagged behavior, clock
+composition, or P-vs-NP mainline progress.
+
 For an *arbitrary* threshold there is a third input, `PolyBoundedInTable threshold`;
 it is proved for the canonical polynomial thresholds, so it disappears at
 `thresholdPoly k`.  The general capstone `verifiedSource_of_explicit_interfaces`

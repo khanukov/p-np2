@@ -307,6 +307,29 @@ they do not expose decoded header values or payload naturals, and assert no TM
 acceptance, parser correctness, untagged behavior, uniform head, cross-machine
 clock, or P-vs-NP mainline progress.
 
+Part A G2o exposes those header values and payload naturals in
+`ContentFixedGammaPayloadDispatcherHeaderValueBridge`, with seven public
+theorems. The reader iffs have no fit hypothesis: a strict payload
+`readNatBE` is `some 0` iff the same window's `allZeroSlice?` is `some true`,
+and the scan is `some false` iff the read is `some payload` with
+`0 < payload`. With no premise at all,
+`contentHeader? z = some (n, consumed)` iff `gammaZeros? z = some zeros`, the
+payload read at `2 * N + 1` over `[9 + zeros, 9 + 2 * zeros)` is
+`some payload`, `n + 1 = 2 ^ zeros + payload`, and
+`consumed = 2 * zeros + 1`. From the single premise
+`contentInput? codec z = some pr`, for any codec, a one-way theorem returns
+`contentHeader? z = some (pr.1, consumed)` and `pr.2.n = pr.1`, so on a
+successful parse the parsed target equals the header target; the gamma width
+`zeros` is identified with neither. Under only a matching tag, the dispatcher
+at the common deadline is in `qReject` iff the header is absent, in `qAllZero`
+iff the header is `(n, 2 * zeros + 1)` with `n + 1 = 2 ^ zeros`, and in
+`qHasOne` iff it has that shape with `2 ^ zeros < n + 1`; width zero and
+virtual payload cells are covered. These are proof-level facts: they do not
+claim that the dispatcher stores or materializes `n`, and assert no
+content-language acceptance, untagged behavior, uniform head, clock
+composition, `ContentVerifierBridge`, advice freedom, or P-vs-NP mainline
+progress.
+
 For an *arbitrary* threshold there is a third input, `PolyBoundedInTable threshold`;
 it is proved for the canonical polynomial thresholds, so it disappears at
 `thresholdPoly k`.  The general capstone `verifiedSource_of_explicit_interfaces`

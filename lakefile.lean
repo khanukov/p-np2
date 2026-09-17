@@ -950,6 +950,8 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.FixedContentGammaTerminatorCorrect,
     -- Part A G2n: total dispatcher endpoint semantics at the shared reader window.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadDispatcherSemanticBridge,
+    -- Part A G2o: header-value meaning of the fixed dispatcher endpoints.
+    Glob.one `Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadDispatcherHeaderValueBridge,
     Glob.one `Pnp4.Frontier.ContractExpansion.FixedContentGammaAnchorCorrect,
     -- GATE-0 slice: non-vacuity of `ContentAccepts` at the concrete codec.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity,

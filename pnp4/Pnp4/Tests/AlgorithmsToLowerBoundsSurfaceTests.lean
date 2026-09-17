@@ -61,6 +61,7 @@ import Pnp4.Frontier.ContractExpansion.ContentVirtualZeroTailReaderCore
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadZeroSemanticBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadPendingSemanticBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadDispatcherSemanticBridge
+import Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadDispatcherHeaderValueBridge
 import Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic
 import Pnp4.Frontier.ContractExpansion.ContentCappedSizes
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
@@ -4799,6 +4800,227 @@ theorem check_dispatcher_qReject_iff_gamma_none_and_contentHeader_none
   dispatcher_qReject_iff_gamma_none_and_contentHeader_none x w htag
 
 end ContentFixedGammaPayloadDispatcherSemanticBridgeSurface
+
+section ContentFixedGammaPayloadDispatcherHeaderValueBridgeSurface
+
+open AlgorithmsToLowerBounds
+open Pnp3.Complexity.Uniform.V1
+open Pnp4.Frontier.ContractExpansion
+
+theorem check_VZR_readNatBE_eq_some_zero_iff_allZeroSlice_eq_some_true
+    {N T offset width : Nat} (z : PrefixBitVec N) :
+    VirtualZeroTailReader.readNatBE z T offset width = some 0 ↔
+      VirtualZeroTailReader.allZeroSlice? z T offset width = some true :=
+  VirtualZeroTailReader.readNatBE_eq_some_zero_iff_allZeroSlice?_eq_some_true z
+
+theorem check_VZR_allZeroSlice_eq_some_false_iff_readNatBE_pos
+    {N T offset width : Nat} (z : PrefixBitVec N) :
+    VirtualZeroTailReader.allZeroSlice? z T offset width = some false ↔
+      ∃ payload,
+        VirtualZeroTailReader.readNatBE z T offset width = some payload ∧
+          0 < payload :=
+  VirtualZeroTailReader.allZeroSlice?_eq_some_false_iff_readNatBE_pos z
+
+theorem check_contentHeader_eq_some_iff_gammaZeros_payload
+    {N n consumed : Nat} (z : PrefixBitVec N) :
+    contentHeader? z = some (n, consumed) ↔
+      ∃ zeros payload,
+        FixedContentGammaTerminator.gammaZeros? z = some zeros ∧
+        VirtualZeroTailReader.readNatBE z (2 * N + 1)
+          (9 + zeros) zeros = some payload ∧
+        n + 1 = 2 ^ zeros + payload ∧
+        consumed = 2 * zeros + 1 :=
+  contentHeader?_eq_some_iff_gammaZeros_payload z
+
+theorem check_contentInput_target_eq_contentHeader
+    {threshold : Nat → Nat} (codec : Frontier.TreeCircuitWitnessCodec threshold)
+    {N : Nat} (z : PrefixBitVec N)
+    {pr : Σ r : Nat,
+      PrefixInput
+        (Frontier.treeMCSPSearchProblem threshold
+          (Frontier.TreeMCSPSearchWitnessEncoding.ofCodec codec))
+        (treeMCSPPrefixM codec r)}
+    (hpr : contentInput? codec z = some pr) :
+    ∃ consumed,
+      contentHeader? z = some (pr.1, consumed) ∧
+      pr.2.n = pr.1 :=
+  contentInput?_target_eq_contentHeader codec z hpr
+
+theorem check_dispatcher_qReject_iff_contentHeader_none
+    {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true) :
+    let d := FixedGammaPayloadDispatcher.machine.run
+      (FixedGammaPayloadDispatcherDeadline.deadline (a + m))
+      (FixedGammaPayloadDispatcher.startConfig B x w)
+    d.state = FixedGammaPayloadDispatcher.qReject ↔
+      contentHeader? (Fin.append x w) = none :=
+  dispatcher_qReject_iff_contentHeader_none x w htag
+
+theorem check_dispatcher_qAllZero_iff_contentHeader_succ_eq_two_pow
+    {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true) :
+    let z := Fin.append x w
+    let d := FixedGammaPayloadDispatcher.machine.run
+      (FixedGammaPayloadDispatcherDeadline.deadline (a + m))
+      (FixedGammaPayloadDispatcher.startConfig B x w)
+    d.state = FixedGammaPayloadDispatcher.qAllZero ↔
+      ∃ n zeros,
+        contentHeader? z = some (n, 2 * zeros + 1) ∧
+        n + 1 = 2 ^ zeros :=
+  dispatcher_qAllZero_iff_contentHeader_succ_eq_two_pow x w htag
+
+theorem check_dispatcher_qHasOne_iff_contentHeader_two_pow_lt_succ
+    {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true) :
+    let z := Fin.append x w
+    let d := FixedGammaPayloadDispatcher.machine.run
+      (FixedGammaPayloadDispatcherDeadline.deadline (a + m))
+      (FixedGammaPayloadDispatcher.startConfig B x w)
+    d.state = FixedGammaPayloadDispatcher.qHasOne ↔
+      ∃ n zeros,
+        contentHeader? z = some (n, 2 * zeros + 1) ∧
+        2 ^ zeros < n + 1 :=
+  dispatcher_qHasOne_iff_contentHeader_two_pow_lt_succ x w htag
+
+/-! Concrete boundary regressions: the matching tag `10110010` followed by a
+short gamma word.  `decide` evaluates only the tag, gamma, header, and reader
+specifications; each dispatcher endpoint is derived from the equivalences
+above for every `B`, without running the machine. -/
+
+private def headerValueTag : Bitstring 8 :=
+  ![true, false, true, true, false, false, true, false]
+
+/-- No physical terminator. -/
+private def headerValueMalformed : Bitstring 3 := ![false, false, false]
+
+/-- Gamma width zero. -/
+private def headerValueWidthZero : Bitstring 1 := ![true]
+
+/-- Width one; its physical payload cell is zero. -/
+private def headerValuePhysicalZero : Bitstring 3 := ![false, true, false]
+
+/-- Width one; its physical payload cell is one. -/
+private def headerValuePhysicalOne : Bitstring 3 := ![false, true, true]
+
+/-- Width two; the whole payload window is virtual. -/
+private def headerValueVirtualZero : Bitstring 3 := ![false, false, true]
+
+/-- Width two; a physical one followed by a virtual zero. -/
+private def headerValueVirtualTailOne : Bitstring 4 :=
+  ![false, false, true, true]
+
+example :
+    FixedContentTagGate.tagMatches
+        (Fin.append headerValueTag headerValueMalformed) = true ∧
+      FixedContentTagGate.tagMatches
+        (Fin.append headerValueTag headerValueWidthZero) = true ∧
+      FixedContentTagGate.tagMatches
+        (Fin.append headerValueTag headerValuePhysicalZero) = true ∧
+      FixedContentTagGate.tagMatches
+        (Fin.append headerValueTag headerValuePhysicalOne) = true ∧
+      FixedContentTagGate.tagMatches
+        (Fin.append headerValueTag headerValueVirtualZero) = true ∧
+      FixedContentTagGate.tagMatches
+        (Fin.append headerValueTag headerValueVirtualTailOne) = true := by
+  decide
+
+example :
+    FixedContentGammaTerminator.gammaZeros?
+        (Fin.append headerValueTag headerValueMalformed) = none ∧
+      FixedContentGammaTerminator.gammaZeros?
+        (Fin.append headerValueTag headerValueWidthZero) = some 0 ∧
+      FixedContentGammaTerminator.gammaZeros?
+        (Fin.append headerValueTag headerValuePhysicalZero) = some 1 ∧
+      FixedContentGammaTerminator.gammaZeros?
+        (Fin.append headerValueTag headerValuePhysicalOne) = some 1 ∧
+      FixedContentGammaTerminator.gammaZeros?
+        (Fin.append headerValueTag headerValueVirtualZero) = some 2 ∧
+      FixedContentGammaTerminator.gammaZeros?
+        (Fin.append headerValueTag headerValueVirtualTailOne) = some 2 := by
+  decide
+
+example :
+    contentHeader? (Fin.append headerValueTag headerValueMalformed) = none ∧
+      contentHeader? (Fin.append headerValueTag headerValueWidthZero) =
+        some (0, 1) ∧
+      contentHeader? (Fin.append headerValueTag headerValuePhysicalZero) =
+        some (1, 3) ∧
+      contentHeader? (Fin.append headerValueTag headerValuePhysicalOne) =
+        some (2, 3) ∧
+      contentHeader? (Fin.append headerValueTag headerValueVirtualZero) =
+        some (3, 5) ∧
+      contentHeader? (Fin.append headerValueTag headerValueVirtualTailOne) =
+        some (5, 5) := by
+  decide
+
+/-- Width zero reads `some 0`; virtual payload windows fail at the physical
+length and read with virtual zeros at the shared length `2 * (a + m) + 1`. -/
+example :
+    VirtualZeroTailReader.readNatBE
+        (Fin.append headerValueTag headerValueWidthZero) (2 * (8 + 1) + 1)
+        9 0 = some 0 ∧
+      VirtualZeroTailReader.readNatBE
+        (Fin.append headerValueTag headerValueVirtualZero) (8 + 3) 11 2 = none ∧
+      VirtualZeroTailReader.readNatBE
+        (Fin.append headerValueTag headerValueVirtualZero) (2 * (8 + 3) + 1)
+        11 2 = some 0 ∧
+      VirtualZeroTailReader.readNatBE
+        (Fin.append headerValueTag headerValueVirtualTailOne) (8 + 4)
+        11 2 = none ∧
+      VirtualZeroTailReader.readNatBE
+        (Fin.append headerValueTag headerValueVirtualTailOne) (2 * (8 + 4) + 1)
+        11 2 = some 2 := by
+  decide
+
+example (B : Nat) :
+    (FixedGammaPayloadDispatcher.machine.run
+      (FixedGammaPayloadDispatcherDeadline.deadline (8 + 3))
+      (FixedGammaPayloadDispatcher.startConfig B headerValueTag
+        headerValueMalformed)).state = FixedGammaPayloadDispatcher.qReject :=
+  (dispatcher_qReject_iff_contentHeader_none (B := B) headerValueTag
+    headerValueMalformed (by decide)).2 (by decide)
+
+example (B : Nat) :
+    (FixedGammaPayloadDispatcher.machine.run
+      (FixedGammaPayloadDispatcherDeadline.deadline (8 + 1))
+      (FixedGammaPayloadDispatcher.startConfig B headerValueTag
+        headerValueWidthZero)).state = FixedGammaPayloadDispatcher.qAllZero :=
+  (dispatcher_qAllZero_iff_contentHeader_succ_eq_two_pow (B := B) headerValueTag
+    headerValueWidthZero (by decide)).2 ⟨0, 0, by decide, rfl⟩
+
+example (B : Nat) :
+    (FixedGammaPayloadDispatcher.machine.run
+      (FixedGammaPayloadDispatcherDeadline.deadline (8 + 3))
+      (FixedGammaPayloadDispatcher.startConfig B headerValueTag
+        headerValuePhysicalZero)).state = FixedGammaPayloadDispatcher.qAllZero :=
+  (dispatcher_qAllZero_iff_contentHeader_succ_eq_two_pow (B := B) headerValueTag
+    headerValuePhysicalZero (by decide)).2 ⟨1, 1, by decide, rfl⟩
+
+example (B : Nat) :
+    (FixedGammaPayloadDispatcher.machine.run
+      (FixedGammaPayloadDispatcherDeadline.deadline (8 + 3))
+      (FixedGammaPayloadDispatcher.startConfig B headerValueTag
+        headerValuePhysicalOne)).state = FixedGammaPayloadDispatcher.qHasOne :=
+  (dispatcher_qHasOne_iff_contentHeader_two_pow_lt_succ (B := B) headerValueTag
+    headerValuePhysicalOne (by decide)).2 ⟨2, 1, by decide, by decide⟩
+
+example (B : Nat) :
+    (FixedGammaPayloadDispatcher.machine.run
+      (FixedGammaPayloadDispatcherDeadline.deadline (8 + 3))
+      (FixedGammaPayloadDispatcher.startConfig B headerValueTag
+        headerValueVirtualZero)).state = FixedGammaPayloadDispatcher.qAllZero :=
+  (dispatcher_qAllZero_iff_contentHeader_succ_eq_two_pow (B := B) headerValueTag
+    headerValueVirtualZero (by decide)).2 ⟨3, 2, by decide, rfl⟩
+
+example (B : Nat) :
+    (FixedGammaPayloadDispatcher.machine.run
+      (FixedGammaPayloadDispatcherDeadline.deadline (8 + 4))
+      (FixedGammaPayloadDispatcher.startConfig B headerValueTag
+        headerValueVirtualTailOne)).state = FixedGammaPayloadDispatcher.qHasOne :=
+  (dispatcher_qHasOne_iff_contentHeader_two_pow_lt_succ (B := B) headerValueTag
+    headerValueVirtualTailOne (by decide)).2 ⟨5, 2, by decide, by decide⟩
+
+end ContentFixedGammaPayloadDispatcherHeaderValueBridgeSurface
 
 section ContentCappedArithmeticSurface
 

@@ -60,6 +60,7 @@ import Pnp4.Frontier.ContractExpansion.ContentPrefixExtension
 import Pnp4.Frontier.ContractExpansion.ContentVirtualZeroTailReaderCore
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadZeroSemanticBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadPendingSemanticBridge
+import Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadDispatcherSemanticBridge
 import Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic
 import Pnp4.Frontier.ContractExpansion.ContentCappedSizes
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
@@ -4732,6 +4733,72 @@ theorem check_cleanup_endpoint_and_allZeroSlice_shared_window
     x w htag hg hzero hprefix
 
 end ContentFixedGammaPayloadPendingSemanticBridgeSurface
+
+section ContentFixedGammaPayloadDispatcherSemanticBridgeSurface
+
+open AlgorithmsToLowerBounds
+open Pnp3.Complexity.Uniform.V1
+open Pnp4.Frontier.ContractExpansion
+
+theorem check_physicalSymbol_true_iff_padRead_true {N j : Nat}
+    (z : PrefixBitVec N) :
+    FixedContentTagGate.physicalSymbol z j = some true ↔ padRead z j = true :=
+  physicalSymbol_true_iff_padRead_true z
+
+theorem check_gamma_payload_shared_window_fit {N zeros : Nat}
+    (z : PrefixBitVec N)
+    (hg : FixedContentGammaTerminator.gammaZeros? z = some zeros) :
+    9 + zeros + zeros ≤ 2 * N + 1 :=
+  gamma_payload_shared_window_fit z hg
+
+theorem check_dispatcher_qAllZero_iff_allZeroSlice_shared_window
+    {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true) :
+    let d := FixedGammaPayloadDispatcher.machine.run
+      (FixedGammaPayloadDispatcherDeadline.deadline (a + m))
+      (FixedGammaPayloadDispatcher.startConfig B x w)
+    d.state = FixedGammaPayloadDispatcher.qAllZero ↔
+      ∃ zeros,
+        FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros ∧
+        VirtualZeroTailReader.allZeroSlice? (Fin.append x w)
+          (2 * (a + m) + 1) (9 + zeros) zeros = some true :=
+  dispatcher_qAllZero_iff_allZeroSlice_shared_window x w htag
+
+theorem check_dispatcher_qHasOne_iff_allZeroSlice_shared_window
+    {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true) :
+    let d := FixedGammaPayloadDispatcher.machine.run
+      (FixedGammaPayloadDispatcherDeadline.deadline (a + m))
+      (FixedGammaPayloadDispatcher.startConfig B x w)
+    d.state = FixedGammaPayloadDispatcher.qHasOne ↔
+      ∃ zeros,
+        FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros ∧
+        VirtualZeroTailReader.allZeroSlice? (Fin.append x w)
+          (2 * (a + m) + 1) (9 + zeros) zeros = some false :=
+  dispatcher_qHasOne_iff_allZeroSlice_shared_window x w htag
+
+theorem check_dispatcher_qReject_iff_gamma_none
+    {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true) :
+    let d := FixedGammaPayloadDispatcher.machine.run
+      (FixedGammaPayloadDispatcherDeadline.deadline (a + m))
+      (FixedGammaPayloadDispatcher.startConfig B x w)
+    d.state = FixedGammaPayloadDispatcher.qReject ↔
+      FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = none :=
+  dispatcher_qReject_iff_gamma_none x w htag
+
+theorem check_dispatcher_qReject_iff_gamma_none_and_contentHeader_none
+    {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true) :
+    let d := FixedGammaPayloadDispatcher.machine.run
+      (FixedGammaPayloadDispatcherDeadline.deadline (a + m))
+      (FixedGammaPayloadDispatcher.startConfig B x w)
+    d.state = FixedGammaPayloadDispatcher.qReject ↔
+      FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = none ∧
+        contentHeader? (Fin.append x w) = none :=
+  dispatcher_qReject_iff_gamma_none_and_contentHeader_none x w htag
+
+end ContentFixedGammaPayloadDispatcherSemanticBridgeSurface
 
 section ContentCappedArithmeticSurface
 

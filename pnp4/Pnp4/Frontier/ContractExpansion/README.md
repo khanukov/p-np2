@@ -212,6 +212,15 @@ review order (the `lakefile.lean` registration is the dependency order):
   length, and specializes both plus the zero-cleanup case to
   `2 * (a + m) + 1`. It proves no endpoint iff, dispatch, parser acceptance,
   payload decode, or cross-machine clock.
+- `ContentFixedGammaPayloadDispatcherSemanticBridge.lean` — Part A G2n
+  infrastructure. On matching tags it turns the fixed dispatcher's common
+  deadline classification into total `qAllZero`/`qHasOne` existential iff
+  statements for the exact payload scan at logical length `2 * (a + m) + 1`,
+  including width zero, and identifies `qReject` with gamma failure (optionally
+  conjoined with header absence). The physical/padded truth helper and window
+  fit are constructive, with fit derived from `gamma_contract`. It claims no
+  decoded value, payload `readNatBE`, acceptance, parser correctness, untagged
+  behavior, uniform head, cross-machine clock, or P-vs-NP mainline progress.
 - `ContentCappedArithmetic.lean` — Part A G0-B2b1. It provides exact capped
   natural addition, multiplication, binary-length, and exponentiation. Every
   `some` theorem identifies the exact mathematical result and proves it fits;

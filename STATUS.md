@@ -2,6 +2,18 @@
 
 Updated: 2026-09-15
 
+**Part A G2n total dispatcher semantic bridge (infrastructure only).**
+`ContentFixedGammaPayloadDispatcherSemanticBridge` connects the fixed G2m
+deadline classifier to the strict content reader at the shared logical length
+`2*(a+m)+1`. On matching tags, `qAllZero` is equivalent to the existence of a
+decoded gamma width whose exact payload scan is `some true`, `qHasOne` is
+equivalent to the analogous `some false`, and `qReject` is equivalent to gamma
+failure (also to gamma failure conjoined with `contentHeader? = none`). The
+proof covers width zero, derives fit from `gamma_contract`, and constructively
+identifies physical true with a true padded read. It does not identify decoded
+values, payload naturals, acceptance, parser correctness, untagged behavior,
+uniform heads, or cross-machine clocks, and is not P-vs-NP mainline progress.
+
 **Part A G2m dispatcher deadline/classifier (infrastructure only).**
 `FixedGammaPayloadDispatcherDeadline` gives the fixed G2k/G2l dispatcher the
 transparent common deadline `2*N*N`, constructively partitions every decoded

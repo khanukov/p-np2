@@ -1,6 +1,37 @@
 # Project Status (current)
 
-Updated: 2026-09-15
+Updated: 2026-09-17
+
+**Part A G2o dispatcher header-value bridge (infrastructure only).**
+`ContentFixedGammaPayloadDispatcherHeaderValueBridge` adds seven public
+theorems. Two hypothesis-free reader iffs, covering width zero and
+out-of-range windows, say that `VirtualZeroTailReader.readNatBE` is `some 0`
+exactly when `allZeroSlice?` is `some true`, and that `allZeroSlice?` is
+`some false` exactly when the read is `some payload` with `0 < payload`. The
+hypothesis-free, subtraction-free iff
+`contentHeader?_eq_some_iff_gammaZeros_payload` says
+`contentHeader? z = some (n, consumed)` exactly when, for some `zeros` and
+`payload`, the physical scan gives `gammaZeros? z = some zeros`, the payload
+read at logical length `2*N+1` over `[9+zeros, 9+2*zeros)` is `some payload`
+(cells at or past `N` read as virtual zeros), `n+1 = 2^zeros + payload`, and
+`consumed = 2*zeros+1`. The one-way
+`contentInput?_target_eq_contentHeader` has the single premise
+`contentInput? codec z = some pr` (any codec, no monotonicity or injectivity)
+and yields some `consumed` with `contentHeader? z = some (pr.1, consumed)`
+together with `pr.2.n = pr.1`, so on a successful parse the target read by
+`ContentAccepts` equals the header target. Each dispatcher iff has the single
+premise of a matching tag: at the common deadline, `qReject` holds exactly when
+`contentHeader? = none`; `qAllZero` exactly when
+`∃ n zeros, contentHeader? = some (n, 2*zeros+1) ∧ n+1 = 2^zeros`; and
+`qHasOne` exactly when the same header shape has `2^zeros < n+1`. Width zero
+(header `(0, 1)`) and virtual payload cells are included. The gamma width and
+the payload natural are never identified with the header target; the parsed
+target equals the header target only through a successful `contentInput?`.
+Nothing claims that the dispatcher stores or materializes `n` or the payload,
+that any machine executes the parser, that an endpoint is acceptance of the
+content language, or anything about untagged input, uniform heads, clock
+composition, `ContentVerifierBridge`, advice freedom, or NP membership; this is
+not P-vs-NP mainline progress.
 
 **Part A G2n total dispatcher semantic bridge (infrastructure only).**
 `ContentFixedGammaPayloadDispatcherSemanticBridge` connects the fixed G2m

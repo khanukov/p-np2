@@ -51,6 +51,7 @@ import Pnp4.Frontier.ContractExpansion.ContentVirtualZeroTailReaderCore
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadZeroSemanticBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadPendingSemanticBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadDispatcherSemanticBridge
+import Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadDispatcherHeaderValueBridge
 import Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic
 import Pnp4.Frontier.ContractExpansion.ContentCappedSizes
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
@@ -885,3 +886,12 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.fixedGammaAnchor_header_contract
 #print axioms Pnp4.Frontier.ContractExpansion.fixedGammaAnchor_decode_and_restoration
 #print axioms Pnp4.Frontier.ContractExpansion.fixedGammaAnchor_operational_handoff
+
+-- Part A G2o dispatcher header-value bridge.
+#print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.readNatBE_eq_some_zero_iff_allZeroSlice?_eq_some_true
+#print axioms Pnp4.Frontier.ContractExpansion.VirtualZeroTailReader.allZeroSlice?_eq_some_false_iff_readNatBE_pos
+#print axioms Pnp4.Frontier.ContractExpansion.contentHeader?_eq_some_iff_gammaZeros_payload
+#print axioms Pnp4.Frontier.ContractExpansion.contentInput?_target_eq_contentHeader
+#print axioms Pnp4.Frontier.ContractExpansion.dispatcher_qReject_iff_contentHeader_none
+#print axioms Pnp4.Frontier.ContractExpansion.dispatcher_qAllZero_iff_contentHeader_succ_eq_two_pow
+#print axioms Pnp4.Frontier.ContractExpansion.dispatcher_qHasOne_iff_contentHeader_two_pow_lt_succ

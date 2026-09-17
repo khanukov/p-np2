@@ -348,11 +348,11 @@ composition, or P-vs-NP mainline progress.
 
 Part A G2p-b adds `ContentFixedGammaTargetFirstPayloadBridge` over the pnp3
 fixed first-payload machine. That machine retags the actual bootstrap deadline
-configuration and copies the first gamma payload bit to scratch cell
+configuration and copies the first gamma payload bit to target cell
 `a + m + 2`: a physical bit as itself, or the virtual zero when the payload cell
-is the boundary `a + m`. The bridge proves two one-way theorems at the machine's
-length-only deadline `3 * (a + m)`, under a matching tag. First, suppose
-`contentHeader? z = some (n, consumed)` with `0 < n` and
+`9 + zeros` is the boundary `a + m`. The bridge proves two one-way theorems at
+the machine's length-only deadline `3 * (a + m)`, under a matching tag. First,
+suppose `contentHeader? z = some (n, consumed)` with `0 < n` and
 `a + m + 2 < tapeLength (pairLength a m) B`. Then for some `zeros > 0` with
 `consumed = 2 * zeros + 1` and `2 ^ zeros ≤ n + 1 < 2 ^ (zeros + 1)`, the
 endpoint is `qDone` at head `7`. Cells `a + m + 1` and `a + m + 2` hold
@@ -360,8 +360,10 @@ endpoint is `qDone` at head `7`. Cells `a + m + 1` and `a + m + 2` hold
 header `(0, 1)` the endpoint keeps the one-digit register of `1`, with no room
 premise. The room premise is not implied by the header (it fails at
 `a = B = 0`). The remaining payload
-digits, the decrement to `n`, clock composition, and `ContentVerifierBridge` are
-not provided, and this is not P-vs-NP mainline progress.
+digits, the decrement to `n`, a `qReject` classification (unlike G2p-a, since
+without room there is no endpoint theorem to invoke), the machine's exact
+first-arrival clock, clock composition, and `ContentVerifierBridge` are not
+provided, and this is not P-vs-NP mainline progress.
 
 For an *arbitrary* threshold there is a third input, `PolyBoundedInTable threshold`;
 it is proved for the canonical polynomial thresholds, so it disappears at

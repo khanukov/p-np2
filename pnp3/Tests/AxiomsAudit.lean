@@ -4590,6 +4590,7 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.no_boundary_clamp
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.footprint
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.budget_independence
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetFirstPayloadSurfaceTests.check_deadline_eq
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetFirstPayloadSurfaceTests.check_table_and_resource_pins
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetFirstPayloadSurfaceTests.check_per_step_budget_independent
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetFirstPayloadSurfaceTests.check_endpoints_absorb

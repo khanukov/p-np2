@@ -658,24 +658,32 @@ endpoint rather than language acceptance, and the module states no pnp4 reader
 or parser fact; it is infrastructure only.
 
 The Part A G2p-b `FixedGammaTargetFirstPayload` copies the first gamma payload
-bit into the target register, stored most significant bit first from scratch
-cell `N+1`.  Its start configuration only retags the actual G2p-a bootstrap
-configuration at the bootstrap deadline.  On a matching tag the 18-state machine
-blanks the terminator `8+zeros` as a marker, walks left over the gamma zeros to
-tag cell `6`, and blanks cell `7` as an anchor.  If the marker directly follows
-the anchor (width zero), it restores both and halts; it reads no cell beyond `8`.
-Otherwise it walks to the marker and reads cell `9+zeros`.  A physical `some b`
-is carried in control as `b` to the blank boundary `N`.  A blank there is the
-virtual zero, carried as `false` without reading the scratch `true` at `N+1` as
-source.  The bit is written at `N+2`, and the machine returns to restore the
-terminator and cell `7`.  At the length-only deadline `3*N`, the endpoint is
-`qDone` at head `7`.  Width zero ends on the bootstrap scratch tape with no room
-premise.  Positive width ends on `firstPayloadTape` with the physical bit or
-`false`, assuming exactly `a+m+2 < tapeLength (pairLength a m) B`.  Malformed
-gamma ends in `qReject` at head `N` on `contentTape`.  All 54 rows are pinned.
-At every time the module proves clamp freedom and budget independence on every
-tagged input.  On decoded widths it also proves the head window `[6,8]` (width
-zero) or `[6,N+2]` (positive width) and the footprint `{7, 8+zeros, N+1, N+2}`;
-positive widths assume the room premise throughout, which fails at `a = B = 0`.
-`qDone` is an internal endpoint; only the first payload bit is copied, and the
-module states no pnp4 reader or parser fact.  It is infrastructure only.
+bit into the target register, which is filled most significant bit first from
+scratch cell `N+1`; this module adds only its second digit, at `N+2`.  Its start
+configuration only retags the actual G2p-a bootstrap configuration at the
+bootstrap deadline.  On a matching tag the 18-state machine blanks the terminator
+`8+zeros` as a marker, walks left over the gamma zeros to tag cell `6`, and
+blanks cell `7` as an anchor.  If the marker directly follows the anchor (width
+zero), it restores both and halts; it reads no cell beyond `8`.
+Otherwise it walks to the marker and reads the payload cell `9+zeros`.  A
+physical `some b` is carried in control as `b` to the blank boundary `N`.  A
+blank payload cell (then `9+zeros = N`) is the virtual zero, carried as `false`
+without reading the scratch `true` at `N+1` as source.  The bit is written at the
+target cell `N+2`, and the machine returns to restore the terminator and cell
+`7`.  At the length-only deadline `3*N`, the endpoint is `qDone` at head `7`.
+Width zero ends on the bootstrap scratch tape with no room premise.  Positive
+width ends on `firstPayloadTape` with the physical bit or `false`, assuming
+exactly `a+m+2 < tapeLength (pairLength a m) B`.  Malformed gamma ends in
+`qReject` at head `N` on `contentTape`.  All 54 rows are pinned.
+At every time the module proves clamp freedom on every tagged input and budget
+independence across any two budgets, assuming room (`a+m+2 < tapeLength
+(pairLength a m) B`, for both budgets in the latter) whenever the gamma width is
+positive; malformed and width-zero inputs need no premise.  On decoded widths it
+also proves the head window `[6,8]` (width zero) or `[6,N+2]` (positive width)
+and the footprint `{7, 8+zeros, N+1, N+2}`, again assuming room for positive
+widths; room fails at `a = B = 0`.  No theorem covers a positive width without
+room, so nothing here says that `qReject` at this deadline implies malformed
+gamma.  `qDone` is an internal endpoint; only the first payload bit is copied,
+and the module states no pnp4 reader or parser fact.  Unlike G2p-a it exports no
+exact first-arrival clock or strictness, only the length-only deadline.  It is
+infrastructure only.

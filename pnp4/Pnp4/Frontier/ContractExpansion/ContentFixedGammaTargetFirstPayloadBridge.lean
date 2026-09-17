@@ -23,17 +23,18 @@ identifies the stored bits with the parsed content header
 The second digit comes from the header decoder's own payload read, whose virtual
 zero tail makes a payload cell at the boundary `a + m` the digit `0`.  A positive
 `n` forces a positive gamma width; the room premise is not implied by the header
-(it fails at `a = B = 0`).  Nothing here stores further digits or `n`, or claims
-parser execution, content acceptance, untagged behavior, clock composition,
-`ContentVerifierBridge`, or P-vs-NP mainline progress.
+(it fails at `a = B = 0`), and without it there is no endpoint theorem to invoke,
+so this bridge states no `qReject` classification.  Nothing here stores further
+digits or `n`, or claims parser execution, content acceptance, untagged behavior,
+clock composition, `ContentVerifierBridge`, or P-vs-NP mainline progress.
 -/
 
 namespace Pnp4.Frontier.ContractExpansion
 
 open Pnp3.Complexity.Uniform.V1
 
-/-- A positive decoded header has positive gamma width, and its first payload
-cell, read with the virtual zero tail, is digit `zeros - 1` of `n + 1`. -/
+/-- A positive decoded header has positive gamma width, and its payload cell
+`9 + zeros`, read with the virtual zero tail, is digit `zeros - 1` of `n + 1`. -/
 private theorem header_second_digit {N n consumed : Nat} (z : PrefixBitVec N)
     (hheader : contentHeader? z = some (n, consumed)) (hn : 0 < n) :
     ∃ zeros, FixedContentGammaTerminator.gammaZeros? z = some zeros ∧ 0 < zeros ∧
@@ -80,8 +81,9 @@ private theorem header_second_digit {N n consumed : Nat} (z : PrefixBitVec N)
             rw [if_pos rfl, Nat.testBit_two_pow_add_eq, Nat.testBit_lt_two_pow hrestlt]
             rfl
 
-/-- On a matching tag with positive header target `n` and an allocated first
-payload cell, the deadline register holds the two leading digits of `n + 1`. -/
+/-- On a matching tag with positive header target `n` and an allocated target
+cell `a + m + 2`, the deadline register holds the two leading digits of
+`n + 1`. -/
 theorem firstPayload_positive_register {a m B n consumed : Nat}
     (x : Bitstring a) (w : Bitstring m)
     (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)

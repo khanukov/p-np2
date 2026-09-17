@@ -8,33 +8,39 @@ G2p-a bootstrap configuration at the bootstrap deadline.  Only the control is
 replaced; the gamma width, the payload bit, and every parser fact stay out of
 the control.
 
-Write `N = a + m`.  The target register holds `n + 1` most significant bit first
-from scratch cell `N + 1`; the bootstrap wrote its leading `true` there and
-halted on the physical terminator `8 + zeros`.  On a matching tag the run blanks
+Write `N = a + m`.  The target register is filled most significant bit first from
+scratch cell `N + 1`, where the bootstrap wrote the leading `true` of `n + 1`
+before halting on the physical terminator `8 + zeros`; this module adds its
+second digit at `N + 2` and nothing else.  On a matching tag the run blanks
 the terminator as a return marker, walks left over the gamma zeros to tag cell
 `6`, and blanks cell `7` as an anchor.  Then:
 
 * width zero: the cell after the anchor is the marker, so the machine restores
   the terminator and cell `7` and halts.  It reads no cell beyond `8` and needs
   no room past `N + 1`;
-* positive width: it walks right to the marker and reads cell `9 + zeros`.  A
-  physical `some b` is carried as `b` across the content to the blank boundary
-  `N`; a blank there (`9 + zeros = N`) is the virtual zero and is carried as
-  `false`.  The machine steps over the scratch `true` at `N + 1` without using
-  it as source, writes the carried bit at `N + 2`, returns to the marker,
-  restores the terminator, seeks the anchor, and restores cell `7`.  Cell
-  `N + 2` must be allocated: `a + m + 2 < tapeLength (pairLength a m) B`, i.e.
-  `0 < a + B`.  The positive-width theorems assume exactly this.
+* positive width: it walks right to the marker and reads the payload cell
+  `9 + zeros`.  A physical `some b` is carried as `b` across the content to the
+  blank boundary `N`; a blank payload cell (then `9 + zeros = N`) is the virtual
+  zero and is carried as `false`.  The machine steps over the scratch `true` at
+  `N + 1` without using it as source, writes the carried bit at the target cell
+  `N + 2`, returns to the marker, restores the terminator, seeks the anchor, and
+  restores cell `7`.  The target cell must be allocated:
+  `a + m + 2 < tapeLength (pairLength a m) B`, i.e. `0 < a + B`.  The
+  positive-width theorems assume exactly this.
 
 At the length-only deadline `3 * N` every successful run is in the absorbing
 `qDone` at head `7`, on the bootstrap scratch tape (width zero) or on that tape
 with the carried bit at `N + 2`.  A failed gamma scan rejects at the bootstrap
-head `N` with `contentTape`.
+head `N` with `contentTape`.  No theorem covers a positive width without room;
+in particular nothing here says that `qReject` at this deadline implies a
+malformed gamma.
 
 `qDone` is an internal endpoint, not language acceptance.  Only the first
 payload bit is copied; the remaining payload bits, the decrement to `n`, and
-every pnp4 reader fact are outside this module.  This is uniform-machine
-infrastructure, not P-vs-NP mainline progress.
+every pnp4 reader fact are outside this module.  Unlike G2p-a, only the
+length-only deadline is exported: the exact first-arrival time and its
+strictness are deferred.  This is uniform-machine infrastructure, not P-vs-NP
+mainline progress.
 -/
 
 namespace Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload
@@ -144,7 +150,7 @@ def startConfig {a m : Nat} (B : Nat) (x : Bitstring a) (w : Bitstring m) :
 /-- Public length-only deadline. -/
 def deadline (N : Nat) : Nat := 3 * N
 
-/-- The bootstrap scratch tape with bit `b` at the first payload cell `a + m + 2`. -/
+/-- The bootstrap scratch tape with bit `b` at the target cell `a + m + 2`. -/
 def firstPayloadTape {a m : Nat} (B : Nat) (x : Bitstring a) (w : Bitstring m) (b : Bool) :
     Fin (tapeLength (pairLength a m) B) → Option Bool := fun i =>
   if i.val = a + m + 2 then some b else FixedGammaTerminatorScratchBootstrap.scratchTape B x w i
@@ -470,7 +476,7 @@ private theorem gamma_cells {a m zeros : Nat} (x : Bitstring a) (w : Bitstring m
     rwa [show 8 + (i - 8) = i by omega] at hi
 
 /-- The bit carried by a positive-width run: the physical payload bit, or the
-virtual zero when the payload cell is the blank boundary. -/
+virtual zero when the payload cell `9 + zeros` is the blank boundary. -/
 private theorem carried_cases {a m zeros : Nat} (x : Bitstring a) (w : Bitstring m)
     (hN : 9 + zeros ≤ a + m) :
     content x w (9 + zeros) = some ((content x w (9 + zeros)).getD false) ∨
@@ -599,15 +605,16 @@ private theorem pos_step_seek {a m B zeros s : Nat} {x : Bitstring a} {w : Bitst
        have hr : posTape x w zeros c s (s + 4 - zeros) = some false :=
          (posTape_content (by omega)).trans (hfalse _ (by omega) (by omega))
        exact stepAt_right ih hr rfl (by omega) (by omega) hr (fun _ _ => rfl))
-  · -- Cross the marker onto the first payload cell.
+  · -- Cross the marker onto the payload cell `9 + zeros`.
     simp (disch := omega) only [posState, posHead, if_pos, if_neg] at ih ⊢
     rw [posTape_succ hN (by omega)]
     have hr : posTape x w zeros c s (s + 4 - zeros) = none := by
       unfold posTape; split_ifs <;> first | rfl | omega
     exact stepAt_right ih hr rfl (by omega) (by omega) hr (fun _ _ => rfl)
 
-/-- Read the payload cell, carry the bit over the boundary and the leading
-scratch bit, write it, and step back over the scratch bit to the boundary. -/
+/-- Read the payload cell `9 + zeros`, carry the bit over the boundary and the
+leading scratch bit, write it, and step back over the scratch bit to the
+boundary. -/
 private theorem pos_step_carry {a m B zeros s : Nat} {x : Bitstring a} {w : Bitstring m}
     {c : Bool} (hcells : Cells x w zeros c) (hz : 0 < zeros)
     (hs : 5 + 2 * zeros ≤ s ∧ s < a + m + zeros)
@@ -649,7 +656,7 @@ private theorem pos_step_carry {a m B zeros s : Nat} {x : Bitstring a} {w : Bits
     have hr : posTape x w zeros c s (s + 4 - zeros) = none :=
       (posTape_content (by omega)).trans (content_ge x w (by omega))
     exact stepAt_right ih hr (row_scanEnd c) (by omega) (by omega) hr (fun _ _ => rfl)
-  · -- Step over the leading scratch bit; the payload cell must be allocated.
+  · -- Step over the leading scratch bit; the target cell must be allocated.
     simp (disch := omega) only [posState, posHead, if_pos, if_neg] at ih ⊢
     rw [posTape_succ hN (by omega)]
     have hr : posTape x w zeros c s (s + 4 - zeros) = some true := by
@@ -768,9 +775,9 @@ theorem zero_width_at_deadline {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
   · unfold zeroTape scratch FixedGammaTerminatorScratchBootstrap.scratchTape deadline
     split_ifs <;> first | rfl | omega
 
-/-- Positive width with an allocated first payload cell halts at head `7` with the
-carried bit at `a + m + 2`: the physical payload bit, or `false` when the
-payload cell is the blank boundary. -/
+/-- Positive width with an allocated target cell `a + m + 2` halts at head `7`
+with the carried bit there: the physical payload bit, or `false` when the payload
+cell `9 + zeros` is the blank boundary. -/
 theorem first_payload_at_deadline {a m B zeros : Nat} (x : Bitstring a) (w : Bitstring m)
     (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
     (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros)
@@ -803,9 +810,9 @@ theorem first_physical_at_deadline {a m B zeros : Nat} (x : Bitstring a) (w : Bi
   rw [hread] at h
   exact h
 
-/-- When the first payload cell is the blank boundary `a + m`, the virtual zero is
-written at `a + m + 2`; the leading scratch `true` at `a + m + 1` is not taken as
-the source bit. -/
+/-- When the payload cell `9 + zeros` is the blank boundary `a + m`, the virtual
+zero is written at the target cell `a + m + 2`; the leading scratch `true` at
+`a + m + 1` is not taken as the source bit. -/
 theorem first_virtual_at_deadline {a m B zeros : Nat} (x : Bitstring a) (w : Bitstring m)
     (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
     (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros)
@@ -819,8 +826,8 @@ theorem first_virtual_at_deadline {a m B zeros : Nat} (x : Bitstring a) (w : Bit
   exact h
 
 /-- On every tagged input, no transition at any time clamps at either end of the
-tape, provided the first payload cell is allocated whenever the gamma width is
-positive.  Malformed and zero-width inputs need no premise. -/
+tape, provided the target cell `a + m + 2` is allocated whenever the gamma width
+is positive.  Malformed and zero-width inputs need no premise. -/
 theorem no_boundary_clamp {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
     (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
     (hroom : ∀ zeros, FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros →
@@ -870,9 +877,9 @@ theorem no_boundary_clamp {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
         · have := hroom zeros hg hz
           omega
 
-/-- On a decoded width the head stays in `[6, 8]` for width zero and in
-`[6, a+m+2]` otherwise, and only the anchor, the marker, and the two scratch cells
-ever differ from `contentTape`. -/
+/-- On a decoded width, assuming room when the width is positive, the head stays
+in `[6, 8]` for width zero and in `[6, a+m+2]` otherwise, and only the anchor, the
+marker, and the two scratch cells ever differ from `contentTape`. -/
 theorem footprint {a m B zeros : Nat} (x : Bitstring a) (w : Bitstring m)
     (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
     (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros)
@@ -912,8 +919,8 @@ private theorem same_of_at {n B B' : Nat} {c : Config stateCount n B}
   exact ⟨hq.trans hq'.symm, hh.trans hh'.symm, fun i i' hi => by rw [ht, ht', hi]⟩
 
 /-- Control, numeric head, and equal-address tape cells agree across two budgets
-at every time, on every tagged input, when both budgets allocate the first
-payload cell for positive widths. -/
+at every time, on every tagged input, when both budgets allocate the target cell
+`a + m + 2` for positive widths. -/
 theorem budget_independence {a m : Nat} (B B' : Nat) (x : Bitstring a) (w : Bitstring m)
     (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
     (hroom : ∀ zeros, FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros →

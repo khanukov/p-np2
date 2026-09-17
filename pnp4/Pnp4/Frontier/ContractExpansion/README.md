@@ -789,12 +789,17 @@ The second digit is the first cell of the header decoder's own payload read
 (G2o factorization), including its virtual zero tail. It is matched to the
 machine's carried bit `(physicalSymbol z (9 + zeros)).getD false`. The room
 premise is a capacity assumption that the header does not imply (it fails at
-`a = B = 0`). The module stores
-no further digit and claims no parser execution, content acceptance, untagged
-behavior, clock composition, `ContentVerifierBridge`, or P-vs-NP mainline
-result. Surface regressions derive `qDone` for header `(0, 1)`, `10₂` at cells
-`12, 13` for header `(3, 5)` (virtual second digit), and `11₂` at cells `13, 14`
-for header `(5, 5)` (physical second digit).
+`a = B = 0`, where the target cell `a + m + 2` is off the tape), so unlike G2p-a
+this bridge states no `qReject ↔ contentHeader? = none` equivalence: such an
+equivalence would need the same room premise. The two header hypotheses are
+nevertheless jointly exhaustive — the positive one only under that premise —
+since in the G2o factorization `n + 1 = 2 ^ zeros + payload` with
+`payload < 2 ^ zeros`, `n = 0` forces `zeros = 0` and `consumed = 1`. The module
+stores no further digit and claims no parser execution, content acceptance,
+untagged behavior, clock composition, `ContentVerifierBridge`, or P-vs-NP
+mainline result. Surface regressions derive `qDone` for header `(0, 1)`, `10₂`
+at cells `12, 13` for header `(3, 5)` (virtual second digit), and `11₂` at cells
+`13, 14` for header `(5, 5)` (physical second digit).
 
 `FixedContentGammaAnchorCorrect.lean` is the Part A G2a bridge. It proves the
 exact G1-final-to-G2a operational handoff and provides a logical cell-7

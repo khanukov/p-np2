@@ -25,6 +25,8 @@ def check_firstPayloadTape {a m : Nat} (B : Nat) (x : Bitstring a) (w : Bitstrin
     (b : Bool) : Fin (tapeLength (pairLength a m) B) → Option Bool :=
   firstPayloadTape B x w b
 
+theorem check_deadline_eq (N : Nat) : deadline N = 3 * N := rfl
+
 theorem check_table_and_resource_pins :
     machine.step qStart none = (qReject, none, .stay) ∧
     machine.step qStart (some false) = (qReject, some false, .stay) ∧
@@ -206,14 +208,16 @@ theorem check_budget_independence {a m : Nat} (B B' : Nat) (x : Bitstring a)
 
 /-! Concrete regressions after the tag `10110010`, derived for every budget from the
 public theorems; `decide` evaluates only the tag, gamma, and physical-cell facts.
-The words are malformed, width zero, width one with physical payload bit `1`, and
-width two whose payload cell is the boundary `N = 11` (virtual zero).  With
-`a = 8` every budget allocates cell `N + 2`. -/
+The words are malformed, width zero, width one with physical payload bit `1`,
+width one with physical payload bit `0`, and width two whose payload cell is the
+boundary `N = 11` (virtual zero).  With `a = 8` every budget allocates the target
+cell `N + 2`. -/
 
 private def tag : Bitstring 8 := ![true, false, true, true, false, false, true, false]
 private def malformed : Bitstring 3 := ![false, false, false]
 private def widthZero : Bitstring 1 := ![true]
 private def physicalOne : Bitstring 3 := ![false, true, true]
+private def physicalZero : Bitstring 3 := ![false, true, false]
 private def virtualZero : Bitstring 3 := ![false, false, true]
 
 example (B : Nat) :
@@ -232,6 +236,13 @@ example (B : Nat) :
     let d := machine.run (deadline (8 + 3)) (startConfig B tag physicalOne)
     d.state = qDone ∧ d.head.val = 7 ∧ d.tape = firstPayloadTape B tag physicalOne true := by
   have h := first_physical_at_deadline (B := B) (zeros := 1) tag physicalOne true
+    (by decide) (by decide) (by decide) (by decide) (by unfold tapeLength pairLength; omega)
+  exact h
+
+example (B : Nat) :
+    let d := machine.run (deadline (8 + 3)) (startConfig B tag physicalZero)
+    d.state = qDone ∧ d.head.val = 7 ∧ d.tape = firstPayloadTape B tag physicalZero false := by
+  have h := first_physical_at_deadline (B := B) (zeros := 1) tag physicalZero false
     (by decide) (by decide) (by decide) (by decide) (by unfold tapeLength pairLength; omega)
   exact h
 

@@ -920,8 +920,6 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadZeroSemanticBridge,
     -- Part A G2j: cleaned pending outcomes at the shared reader window.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadPendingSemanticBridge,
-    -- Part A G2n: total dispatcher endpoint semantics at that shared window.
-    Glob.one `Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadDispatcherSemanticBridge,
     -- Part A G0-B2b1: exact cap-aware natural arithmetic.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic,
     -- Part A G0-B2b2: concrete capped content-size records and exact pipeline.
@@ -950,6 +948,8 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.BoundedContentSemanticVerifier,
     Glob.one `Pnp4.Frontier.ContractExpansion.FixedContentTagGateCorrect,
     Glob.one `Pnp4.Frontier.ContractExpansion.FixedContentGammaTerminatorCorrect,
+    -- Part A G2n: total dispatcher endpoint semantics at the shared reader window.
+    Glob.one `Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadDispatcherSemanticBridge,
     Glob.one `Pnp4.Frontier.ContractExpansion.FixedContentGammaAnchorCorrect,
     -- GATE-0 slice: non-vacuity of `ContentAccepts` at the concrete codec.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity,

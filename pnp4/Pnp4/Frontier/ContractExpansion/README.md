@@ -768,6 +768,34 @@ mainline result. Surface regressions derive rejection on the malformed G2o word
 and, on the word with header `(5, 5)`, head `10` with `true` at scratch cell
 `13`.
 
+`ContentFixedGammaTargetFirstPayloadBridge.lean` is the Part A G2p-b
+infrastructure bridge. It is registered immediately after G2p-a and imports
+G2p-a and the pnp3 `FixedGammaTargetFirstPayload` machine. It has exactly two
+public theorems, both one-way, at the machine's length-only deadline
+`3 * (a + m)`:
+
+* `firstPayload_positive_register`: under a matching tag,
+  `contentHeader? z = some (n, consumed)`, `0 < n`, and
+  `a + m + 2 < tapeLength (pairLength a m) B`, some `zeros > 0` has
+  `consumed = 2 * zeros + 1` and `2 ^ zeros ≤ n + 1 < 2 ^ (zeros + 1)`. The
+  endpoint is `qDone` at head `7` on `firstPayloadTape` with bit
+  `(n + 1).testBit (zeros - 1)`. Cells `a + m + 1` and `a + m + 2` hold
+  `(n + 1).testBit zeros` and `(n + 1).testBit (zeros - 1)`;
+* `firstPayload_zero_width_register`: under a matching tag and the header
+  `(0, 1)`, the endpoint is `qDone` at head `7` on the bootstrap scratch tape.
+  Cell `a + m + 1` holds `(0 + 1).testBit 0`, and every later cell is blank.
+
+The second digit is the first cell of the header decoder's own payload read
+(G2o factorization), including its virtual zero tail. It is matched to the
+machine's carried bit `(physicalSymbol z (9 + zeros)).getD false`. The room
+premise is a capacity assumption that the header does not imply (it fails at
+`a = B = 0`). The module stores
+no further digit and claims no parser execution, content acceptance, untagged
+behavior, clock composition, `ContentVerifierBridge`, or P-vs-NP mainline
+result. Surface regressions derive `qDone` for header `(0, 1)`, `10₂` at cells
+`12, 13` for header `(3, 5)` (virtual second digit), and `11₂` at cells `13, 14`
+for header `(5, 5)` (physical second digit).
+
 `FixedContentGammaAnchorCorrect.lean` is the Part A G2a bridge. It proves the
 exact G1-final-to-G2a operational handoff and provides a logical cell-7
 restoration taking the successful marked tape back to literal `contentTape`.

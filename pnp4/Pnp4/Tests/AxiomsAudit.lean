@@ -53,6 +53,7 @@ import Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadPendingSemanticBr
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadDispatcherSemanticBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadDispatcherHeaderValueBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTerminatorScratchBootstrapBridge
+import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetFirstPayloadBridge
 import Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic
 import Pnp4.Frontier.ContractExpansion.ContentCappedSizes
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
@@ -900,3 +901,7 @@ end Pnp4
 -- Part A G2p-a terminator scratch bootstrap bridge.
 #print axioms Pnp4.Frontier.ContractExpansion.scratchBootstrap_qReject_iff_contentHeader_none
 #print axioms Pnp4.Frontier.ContractExpansion.scratchBootstrap_scratch_eq_leading_bit
+
+-- Part A G2p-b first gamma payload bit bridge.
+#print axioms Pnp4.Frontier.ContractExpansion.firstPayload_positive_register
+#print axioms Pnp4.Frontier.ContractExpansion.firstPayload_zero_width_register

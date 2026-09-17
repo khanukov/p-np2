@@ -2,6 +2,37 @@
 
 Updated: 2026-09-17
 
+**Part A G2p-b first gamma payload bit (infrastructure only).**
+`FixedGammaTargetFirstPayload` is a fixed 18-state, 54-row machine whose start
+configuration only retags the actual G2p-a bootstrap configuration at the
+bootstrap deadline; no width, bit, index, or proof enters the control. Write
+`N = a+m`. The target register holds `n+1` most significant bit first from
+scratch cell `N+1`, where the bootstrap wrote the leading `true`. On a matching
+tag the machine blanks the terminator `8+zeros` as a marker and cell `7` as an
+anchor. Width zero restores both without reading cell `9` and needs no room.
+Positive width reads cell `9+zeros`: a physical `some b` is carried as `b`, and
+the blank boundary (`9+zeros = N`) as the virtual `false`. The machine steps over
+the scratch `true` at `N+1` without reading it as source, writes the carried bit
+at `N+2`, and restores the terminator and cell `7`. At the length-only deadline
+`3*N` the endpoint is `qDone` at head `7`. For width zero the tape is the
+bootstrap scratch tape. For positive width it is that tape with the carried bit
+at `N+2`, under the exact premise `a+m+2 < tapeLength (pairLength a m) B`
+(equivalently `0 < a+B`); the header does not imply it, since it fails at
+`a = B = 0`. Malformed gamma ends in
+`qReject` at head `N` on `contentTape`, with no premise. All 54 rows are pinned
+literally. At every time, clamp freedom and budget independence hold on every
+tagged input, and on decoded widths the head stays in `[6,8]` (width zero) or
+`[6,N+2]` (positive width) with footprint `{7, 8+zeros, N+1, N+2}`; positive
+widths assume room throughout. The pnp4 companion
+`ContentFixedGammaTargetFirstPayloadBridge` proves one direction for matching
+tags. Suppose `contentHeader? z = some (n, consumed)` with `0 < n`
+and the room premise. Then for some `zeros > 0` with `consumed = 2*zeros+1` and
+`2^zeros ≤ n+1 < 2^(zeros+1)`, cells `N+1` and `N+2` hold `(n+1).testBit zeros`
+and `(n+1).testBit (zeros-1)`. For the header `(0, 1)`, the register stays the
+one digit of `1`. The remaining `zeros-1` payload digits, the decrement to `n`,
+clock composition, and `ContentVerifierBridge` are not provided, and nothing
+here is P-vs-NP mainline progress.
+
 **Part A G2p-a terminator-to-scratch bootstrap (infrastructure only).**
 `FixedGammaTerminatorScratchBootstrap` is a fixed 9-state, 27-row machine whose
 start configuration only retags the actual G2m dispatcher configuration at the

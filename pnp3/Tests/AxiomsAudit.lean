@@ -106,6 +106,7 @@ import Tests.UniformV1FixedGammaPayloadDispatcherSurfaceTests
 import Tests.UniformV1FixedGammaPayloadDispatcherRoundsSurfaceTests
 import Tests.UniformV1FixedGammaPayloadDispatcherDeadlineSurfaceTests
 import Tests.UniformV1FixedGammaTerminatorScratchBootstrapSurfaceTests
+import Tests.UniformV1FixedGammaTargetFirstPayloadSurfaceTests
 import Tests.UniformV1BudgetTransportSurfaceTests
 import Tests.UniformV1CombinedMachineSurfaceTests
 import Tests.UniformV1CombinedCorrectnessSurfaceTests
@@ -4551,6 +4552,57 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Tests.UniformV1FixedGammaTerminatorScratchBootstrapSurfaceTests.check_budget_independence
 #print axioms Pnp3.Tests.UniformV1FixedGammaTerminatorScratchBootstrapSurfaceTests.check_malformed_exact
 #print axioms Pnp3.Tests.UniformV1FixedGammaTerminatorScratchBootstrapSurfaceTests.check_malformed_at_deadline
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.stateCount
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.qStart
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.qBack
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.qMarkSeven
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.qInspectEight
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.qSeekTerm
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.qReadPayload
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.qScanRight0
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.qScanRight1
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.qCrossScratch0
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.qCrossScratch1
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.qWrite0
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.qWrite1
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.qBackScratch
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.qCrossBoundary
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.qScanLeft
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.qSeekAnchor
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.qDone
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.qReject
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.raw
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.machine
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.retagBootstrap
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.startConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.deadline
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.firstPayloadTape
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.table_and_resource_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.per_step_budget_independent
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.endpoints_absorb
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.handoff_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.firstPayloadTape_layout
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.malformed_at_deadline
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.zero_width_at_deadline
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.first_payload_at_deadline
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.first_physical_at_deadline
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.first_virtual_at_deadline
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.no_boundary_clamp
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.footprint
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload.budget_independence
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetFirstPayloadSurfaceTests.check_table_and_resource_pins
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetFirstPayloadSurfaceTests.check_per_step_budget_independent
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetFirstPayloadSurfaceTests.check_endpoints_absorb
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetFirstPayloadSurfaceTests.check_handoff_exact
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetFirstPayloadSurfaceTests.check_firstPayloadTape_layout
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetFirstPayloadSurfaceTests.check_malformed_at_deadline
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetFirstPayloadSurfaceTests.check_zero_width_at_deadline
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetFirstPayloadSurfaceTests.check_first_payload_at_deadline
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetFirstPayloadSurfaceTests.check_first_physical_at_deadline
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetFirstPayloadSurfaceTests.check_first_virtual_at_deadline
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetFirstPayloadSurfaceTests.check_no_boundary_clamp
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetFirstPayloadSurfaceTests.check_footprint
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetFirstPayloadSurfaceTests.check_budget_independence
 #print axioms Pnp3.Tests.UniformV1FixedGammaPayloadExhaustedSurfaceTests.check_exhaustedTail
 #print axioms Pnp3.Tests.UniformV1FixedGammaPayloadExhaustedSurfaceTests.check_exhaustedClock
 #print axioms Pnp3.Tests.UniformV1FixedGammaPayloadExhaustedSurfaceTests.check_exhausted_tail_trace

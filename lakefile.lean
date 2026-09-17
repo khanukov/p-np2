@@ -121,6 +121,8 @@ lean_lib PnP3 where
     Glob.one `Complexity.Uniform.V1.FixedGammaPayloadDispatcherDeadline,
     -- Part A G2p-a fixed terminator-marker to scratch-cell bootstrap.
     Glob.one `Complexity.Uniform.V1.FixedGammaTerminatorScratchBootstrap,
+    -- Part A G2p-b fixed first gamma payload bit into the target scratch register.
+    Glob.one `Complexity.Uniform.V1.FixedGammaTargetFirstPayload,
     -- Generic bounded cross-budget simulation for one fixed UniformTM.
     Glob.one `Complexity.Uniform.V1.BudgetTransport,
     -- Routed fixed-parser/verifier constructor and parser-prefix handoff.
@@ -688,6 +690,7 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1FixedGammaPayloadDispatcherRoundsSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaPayloadDispatcherDeadlineSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaTerminatorScratchBootstrapSurfaceTests,
+    Glob.one `Tests.UniformV1FixedGammaTargetFirstPayloadSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
     Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,
@@ -957,6 +960,8 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadDispatcherHeaderValueBridge,
     -- Part A G2p-a: the bootstrap scratch bit is the leading digit of `n + 1`.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTerminatorScratchBootstrapBridge,
+    -- Part A G2p-b: the first payload bit is the second digit of `n + 1`.
+    Glob.one `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetFirstPayloadBridge,
     Glob.one `Pnp4.Frontier.ContractExpansion.FixedContentGammaAnchorCorrect,
     -- GATE-0 slice: non-vacuity of `ContentAccepts` at the concrete codec.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity,

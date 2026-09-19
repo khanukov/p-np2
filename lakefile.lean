@@ -436,6 +436,18 @@ lean_lib PnP3 where
     -- result enters S10a, writes the exact Boolean output, and accepts both
     -- defined false and true results under the unchanged clock.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneOutputAccept,
+    -- S11 (2026-09-19), infrastructure only: close one-gate acceptance for
+    -- *every* request at the unchanged clock, in main's transducer convention
+    -- (`accepts = r.spec.isSome`, so a defined `false` accepts).  Adds the
+    -- noncanonical reject and canonical out-of-range `bOOB` classes and their
+    -- padding; no transition row, clock, step count, head position or `GateN`
+    -- declaration is touched.  Exact-step, not halting; scoped to the image of
+    -- `encodeG1`, so not a language theorem.  No multi-gate or content-verifier
+    -- claim.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneAcceptsClosure,
+    -- S11 literal probes: both defined completions accepting, plus
+    -- noncanonical, operand-1 and operand-2 out-of-range nonacceptance.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateOneAcceptsClosureExamples,
     -- GN-3B1 + GN-3B2a + GN-3B2b (2026-08-31), infrastructure only: expose
     -- output-done and prove structural arbitrary-canonical validation/rewind
     -- safety through the existing read-B handoff.  No pass-B walk, full-gate
@@ -747,6 +759,9 @@ lean_lib PnP3 where
     Glob.one `Tests.TMGateOneAResultSurfaceTests,
     Glob.one `Tests.TMGateOneOutputKernelSurfaceTests,
     Glob.one `Tests.TMGateOneOutputAcceptSurfaceTests,
+    -- S11 (2026-09-19): named pins for the all-request acceptance endpoints
+    -- and for both nonacceptance classes.
+    Glob.one `Tests.TMGateOneAcceptsClosureSurfaceTests,
     -- GN-3B1 + GN-3B2a + GN-3B2b (2026-08-31): exact output-done plus
     -- structural parametric canonical validation/rewind safety through the
     -- real read-B handoff.  No pass-B, full-gate, or `ShiftRunSafe` claim.

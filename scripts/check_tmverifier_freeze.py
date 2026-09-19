@@ -4,16 +4,23 @@
 The frozen content is enumerated from ``FROZEN_TREE``, the Git tree object of
 the frozen subtree.  Tree objects are content-addressed, so that enumeration
 survives every history rewrite: a squash merge, a rebase, a branch force-push,
-and a shallow or single-branch clone all still carry the tree object as long as
-they carry the bytes.  ``FROZEN_TREE`` is therefore the authoritative source
-this checker verifies against.
+and a shallow or single-branch clone all still carry the tree object, as long as
+they carry a Git object store that holds those bytes.  Carrying the bytes alone
+is not sufficient: an exported working tree — ``git archive``, a release
+tarball, any ``.git``-less copy — has byte-identical content and no object
+store, so it cannot be verified here and is refused rather than passed.
+``FROZEN_TREE`` is the authoritative source this checker verifies against.
 
 ``FROZEN_COMMIT`` is retained as *reviewed provenance*: the commit at which the
 frozen bytes were reviewed and re-pinned.  It is no longer the enumeration
 source.  When the checkout still contains it, its subtree is cross-checked
 against ``FROZEN_TREE``; when a rewritten or shallow history no longer contains
 it, content verification proceeds unchanged.  Provenance that is present but
-malformed or disagreeing fails closed — only genuine absence is skipped.
+malformed or disagreeing fails closed, and so does any Git failure that leaves
+the question unanswered — absence is concluded only from Git's own silent
+``missing`` reply, never from a command that merely failed.  Manifest authoring
+(``--write-manifest``) is stricter still: it refuses to write unless the
+reviewed provenance resolves and records exactly ``FROZEN_TREE``.
 
 A tree pin does not prove commit ancestry.  Retaining the reviewed commit in
 ``main``'s history still requires the history-preserving merge rule recorded in
@@ -41,6 +48,8 @@ FROZEN_COMMIT = "249435bfa4cb540822e47844107781042f18537f"
 FROZEN_TREE = "7ef6ac6e119f0f078f9c896f17415fa560a6edf3"
 SCHEMA_VERSION = 3
 MANIFEST = ROOT / "spec/tmverifier_freeze.json"
+# The object types `git cat-file --batch-check` can report for a resolved spec.
+OBJECT_TYPES = ("blob", "tree", "commit", "tag")
 
 
 def sha256(data: bytes) -> str:
@@ -60,46 +69,80 @@ def git(*args: str) -> bytes:
     return subprocess.check_output(["git", "-C", str(ROOT), *args])
 
 
-def git_probe(*args: str) -> str | None:
-    """Run a read-only Git query whose failure is a legitimate answer.
+def git_object(spec: str) -> tuple[str, str] | None:
+    """Resolve `spec` to its (object id, object type), or None when it is absent.
 
-    Returns the stripped stdout, or None when Git exits nonzero.  Git's own
-    stderr is discarded because "this object is not in this repository" is an
-    expected outcome here, not a diagnostic worth printing.
+    `git cat-file --batch-check` answers `<spec> missing` with exit status 0
+    both when an object genuinely is not in this object store and when Git found
+    it but could not read it.  The two are told apart by Git's own diagnostics:
+    a genuine miss is silent, while corruption, an unreadable object store, a
+    failed promisor fetch or a damaged pack is announced on stderr.
+
+    None therefore means, and only means, that Git reported the object missing
+    without emitting a single diagnostic.  A nonzero exit status, a terminating
+    signal, any diagnostic accompanying a `missing` answer, and any reply this
+    function cannot parse all raise, with Git's own stderr preserved in the
+    message.  A present-but-unreadable object is never reported as an absent
+    one, and no Git failure is ever silently answered.
     """
-    try:
-        output = subprocess.check_output(
-            ["git", "-C", str(ROOT), *args], stderr=subprocess.DEVNULL
+    process = subprocess.run(
+        ["git", "-C", str(ROOT), "cat-file", "--batch-check", "--buffer"],
+        input=f"{spec}\n".encode("utf-8"),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    stdout = process.stdout.decode("utf-8", "replace").strip()
+    stderr = process.stderr.decode("utf-8", "replace").strip()
+    if process.returncode != 0:
+        raise ValueError(
+            f"git cat-file --batch-check {spec} failed with exit status "
+            f"{process.returncode}: {stderr or '(no stderr)'}"
         )
-    except subprocess.CalledProcessError:
+    fields = stdout.split()
+    if len(fields) == 2 and fields[1] == "missing":
+        if stderr:
+            raise ValueError(
+                f"git reported {spec} missing but could not read this object "
+                f"store, so it is present but unusable, not absent: {stderr}"
+            )
         return None
-    return output.decode("ascii").strip()
+    if len(fields) == 3 and fields[1] in OBJECT_TYPES:
+        return fields[0], fields[1]
+    raise ValueError(
+        f"unexpected git cat-file --batch-check reply for {spec}: {stdout!r}"
+        + (f" (stderr: {stderr})" if stderr else "")
+    )
 
 
 def verify_provenance() -> bool:
     """Cross-check the reviewed provenance commit when this history still has it.
 
     Returns True when FROZEN_COMMIT was available and recorded TREE as
-    FROZEN_TREE, and False when the object is simply absent — the rewritten or
-    shallow-clone case, in which content verification still proceeds from
-    FROZEN_TREE.  Raises when the object is present but is not a commit, has no
-    frozen subtree, or records a different one: available provenance that
-    disagrees with the pin is a hard failure, never a skip.
+    FROZEN_TREE, and False only when Git reports the object genuinely absent —
+    the rewritten or shallow-clone case, in which content verification still
+    proceeds from FROZEN_TREE.  Raises when the object is present but is not a
+    commit, has no frozen subtree, or records a different one, and raises when
+    Git could not answer at all: provenance that disagrees with the pin, and a
+    Git failure that leaves the question open, are both hard failures and never
+    a skip.
     """
-    object_type = git_probe("cat-file", "-t", FROZEN_COMMIT)
-    if object_type is None:
+    found = git_object(FROZEN_COMMIT)
+    if found is None:
         return False
+    _, object_type = found
     if object_type != "commit":
         raise ValueError(
             f"reviewed provenance {FROZEN_COMMIT} is present as a {object_type}, "
             "not a commit"
         )
-    recorded = git_probe("rev-parse", "--verify", f"{FROZEN_COMMIT}:{TREE}")
-    if recorded is None:
+    subtree = git_object(f"{FROZEN_COMMIT}:{TREE}")
+    if subtree is None:
         raise ValueError(
             f"reviewed provenance commit {FROZEN_COMMIT} is present but records "
             f"no {TREE!r} subtree"
         )
+    recorded, _ = subtree
     if recorded != FROZEN_TREE:
         raise ValueError(
             f"reviewed provenance commit {FROZEN_COMMIT} records {TREE} as tree "
@@ -109,13 +152,19 @@ def verify_provenance() -> bool:
 
 
 def frozen_tree_object() -> str:
-    """Resolve FROZEN_TREE, with an exact diagnostic when it is unavailable."""
-    object_type = git_probe("cat-file", "-t", FROZEN_TREE)
-    if object_type is None:
+    """Resolve FROZEN_TREE, with an exact diagnostic when it is unavailable.
+
+    Absence and unreadability are reported as the different things they are: an
+    object store Git cannot read raises `git_object`'s Git-level diagnostic, and
+    only an object Git reports genuinely missing is called absent here.
+    """
+    found = git_object(FROZEN_TREE)
+    if found is None:
         raise ValueError(
             f"frozen tree object {FROZEN_TREE} is absent from this repository, so "
             f"the frozen {TREE} content cannot be enumerated"
         )
+    _, object_type = found
     if object_type != "tree":
         raise ValueError(
             f"frozen tree {FROZEN_TREE} is present as a {object_type}, not a tree"
@@ -158,6 +207,14 @@ def manifest_data() -> dict[str, Any]:
 
 
 def load_manifest(path: Path) -> dict[str, dict[str, str]]:
+    """Load the manifest and hold it to the pin, entry by entry.
+
+    Duplicate keys are rejected outright; unrecognised top-level keys are
+    ignored, deliberately, because the manifest carries no independent
+    authority: the four scalars below must equal this checker's own constants,
+    and `files` must equal what Git reports for the frozen tree, so an extra key
+    can neither add nor weaken a claim.
+    """
     data: dict[str, Any] = json.loads(
         path.read_text(encoding="utf-8"), object_pairs_hook=unique_object
     )
@@ -218,6 +275,20 @@ def main() -> int:
     try:
         provenance = verify_provenance()
         if args.write_manifest:
+            # Authoring is strict where verification is not.  A checkout that
+            # has lost the reviewed commit may still verify content against
+            # FROZEN_TREE, but it cannot prove the commit/tree pair a new
+            # manifest would assert, so it must not be allowed to author one.
+            if not provenance:
+                raise ValueError(
+                    f"refusing to write {args.manifest}: reviewed provenance "
+                    f"commit {FROZEN_COMMIT} is absent from this repository, so "
+                    "the commit/tree pair this manifest would record cannot be "
+                    "verified. Commit the new frozen bytes first, repin "
+                    "FROZEN_COMMIT and FROZEN_TREE onto that commit, then "
+                    "regenerate; see the unfreeze recipe in "
+                    "pnp3/Docs/TMVERIFIER_FREEZE.md."
+                )
             args.manifest.write_text(
                 json.dumps(manifest_data(), indent=2, sort_keys=True) + "\n",
                 encoding="utf-8",

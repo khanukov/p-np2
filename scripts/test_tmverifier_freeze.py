@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 """Negative controls for the TMVerifier freeze checker.
 
-Besides the manifest-trust and filesystem controls, this exercises the two
+Besides the manifest-trust and filesystem controls, this exercises the
 properties the tree pin buys: the checker must still verify content in a
-rewritten history where the reviewed provenance commit does not exist, and it
-must fail closed whenever provenance *is* available but disagrees with the pin.
-Both are run end to end against the real checker source in real synthetic Git
-repositories, never against a stand-in.
+rewritten history where the reviewed provenance commit does not exist; it must
+fail closed whenever provenance *is* available but disagrees with the pin; it
+must never report a present-but-unreadable object, or a Git failure of any
+other kind, as an absent one; and manifest authoring must refuse to write at
+all unless the reviewed provenance resolves and matches.  All of it runs end to
+end against the real checker source — unmodified, or repinned onto a synthetic
+object by textual constant substitution — in real synthetic Git repositories,
+never against a stand-in.
 """
 
 from __future__ import annotations
@@ -17,6 +21,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,6 +29,7 @@ TREE = "pnp3/Complexity/TMVerifier"
 SOURCE = ROOT / TREE
 CHECKER = ROOT / "scripts/check_tmverifier_freeze.py"
 MANIFEST = ROOT / "spec/tmverifier_freeze.json"
+VERSION_MANIFEST = ROOT / "spec/version_manifest.toml"
 TARGET = Path("pnp3/Complexity/TMVerifier/TuringToolkit/GateNBodyRound.lean")
 
 _REVIEWED = json.loads(MANIFEST.read_text(encoding="utf-8"))
@@ -51,12 +57,15 @@ def run(
     checker: Path = CHECKER,
     cwd: Path = ROOT,
     env: dict[str, str] | None = None,
+    write_manifest: bool = False,
 ) -> str:
     command = [str(checker)]
     if candidate is not None:
         command.extend(["--candidate-root", str(candidate)])
     if manifest is not None:
         command.extend(["--manifest", str(manifest)])
+    if write_manifest:
+        command.append("--write-manifest")
     result = subprocess.run(
         command,
         cwd=cwd,
@@ -78,6 +87,22 @@ def expect_text(output: str, needle: str, label: str) -> None:
         raise AssertionError(f"{label}: expected {needle!r} in checker output\n{output}")
 
 
+def expect_no_text(output: str, needle: str, label: str) -> None:
+    """Assert the checker did *not* say something — a wrong diagnosis is a bug.
+
+    Failing closed is not enough for the object-state controls below: a checker
+    that fails for the right reason and a checker that calls a damaged object
+    store an absent one both exit nonzero, and only this distinguishes them.
+    """
+    if needle in output:
+        raise AssertionError(f"{label}: unexpected {needle!r} in checker output\n{output}")
+
+
+def expect_unwritten(path: Path, label: str) -> None:
+    if path.exists():
+        raise AssertionError(f"{label}: refused authoring still created {path}")
+
+
 def fixture(parent: Path) -> Path:
     root = parent / "candidate"
     shutil.copytree(SOURCE, root / SOURCE.relative_to(ROOT), symlinks=True)
@@ -90,17 +115,41 @@ def git(repo: Path, *args: str) -> str:
     ).strip()
 
 
-def has_object(repo: Path, spec: str) -> bool:
-    return (
-        subprocess.run(
-            ["git", "-C", str(repo), "cat-file", "-e", spec],
-            env=GIT_ENV,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            check=False,
-        ).returncode
-        == 0
+def has_object(repo: Path, object_id: str) -> bool:
+    """Whether `object_id` is in `repo`'s object store, failing loudly otherwise.
+
+    `git cat-file -e` exits 0 when the object is there and 1 when it is not.
+    Every other status means Git could not answer, and the fixture assertions
+    built on this helper would be worthless if that were quietly recorded as a
+    clean absence — the very conflation the checker itself must avoid.
+    """
+    result = subprocess.run(
+        ["git", "-C", str(repo), "cat-file", "-e", object_id],
+        env=GIT_ENV,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+        text=True,
+        check=False,
     )
+    if result.returncode not in (0, 1):
+        raise AssertionError(
+            f"git cat-file -e {object_id} in {repo} failed with exit status "
+            f"{result.returncode}: {result.stderr.strip()}"
+        )
+    return result.returncode == 0
+
+
+def corrupt_loose_object(repo: Path, object_id: str) -> None:
+    """Overwrite one loose object with bytes Git cannot inflate.
+
+    This is what a damaged object store, a truncated transfer or a half-written
+    object looks like from the checker's side: the object file is there, Git
+    answers `missing` for it, and says so with a diagnostic on stderr.
+    """
+    path = repo / ".git" / "objects" / object_id[:2] / object_id[2:]
+    if not path.is_file():
+        raise AssertionError(f"expected a loose object to corrupt at {path}")
+    path.write_bytes(b"present, unreadable, and definitely not a zlib stream\n")
 
 
 def scaffold(root: Path) -> Path:
@@ -174,15 +223,43 @@ def rewritten_history_controls(parent: Path) -> None:
         raise AssertionError("the synthetic rewrite does not carry the frozen tree object")
     if git(rewritten, "rev-parse", f"HEAD:{TREE}") != FROZEN_TREE:
         raise AssertionError("the synthetic rewrite subtree is not the frozen tree")
+    checker = rewritten / "scripts" / CHECKER.name
+    output = run(None, True, checker=checker, cwd=rewritten, env=GIT_ENV)
+    expect_text(
+        output, f"reviewed provenance {FROZEN_COMMIT[:12]} absent", "rewritten history"
+    )
+    expect_text(output, f"{len(_REVIEWED['files'])} Git objects", "rewritten history")
+
+    # Genuine absence is enough to verify content and deliberately not enough to
+    # author a manifest: the refusal must be reported and must leave the file it
+    # was asked to write alone.
+    fresh = rewritten / "spec" / "authored-absent.json"
     output = run(
         None,
-        True,
-        checker=rewritten / "scripts" / CHECKER.name,
+        False,
+        fresh,
+        checker=checker,
         cwd=rewritten,
         env=GIT_ENV,
+        write_manifest=True,
     )
-    expect_text(output, "absent from this history", "rewritten history")
-    expect_text(output, f"{len(_REVIEWED['files'])} Git objects", "rewritten history")
+    expect_text(output, "refusing to write", "rewritten history/write")
+    expect_unwritten(fresh, "rewritten history/write")
+
+    existing = rewritten / "spec" / "authored-existing.json"
+    sentinel = b'{"not": "a manifest"}\n'
+    existing.write_bytes(sentinel)
+    run(
+        None,
+        False,
+        existing,
+        checker=checker,
+        cwd=rewritten,
+        env=GIT_ENV,
+        write_manifest=True,
+    )
+    if existing.read_bytes() != sentinel:
+        raise AssertionError("refused authoring overwrote an existing target")
 
     drifted = scaffold(parent / "drifted")
     with (drifted / TARGET).open("ab") as handle:
@@ -205,8 +282,11 @@ def provenance_controls(parent: Path) -> None:
 
     One repository holds the exact frozen subtree plus two deliberately wrong
     provenance commits.  Checker copies repinned onto each of them must fail;
-    the copy repinned onto the matching commit must pass, which is what shows
-    the failures come from the provenance cross-check and nothing else.
+    the copy repinned onto the matching commit must pass, and must say
+    `verified` rather than merely mentioning provenance, so that a mutation
+    downgrading a matching cross-check to a skip cannot survive this control.
+    Every failing pin is run a second time in authoring mode, where it must be
+    refused without touching the manifest it was told to write.
     """
     repo = scaffold(parent / "provenance")
     good = init_commit(repo, "Unrelated commit carrying the exact frozen subtree")
@@ -234,7 +314,7 @@ def provenance_controls(parent: Path) -> None:
 
     scripts = repo / "scripts"
     cases = (
-        ("matching", good, True, "reviewed provenance"),
+        ("matching", good, True, f"reviewed provenance {good[:12]} verified"),
         ("divergent", divergent, False, "not the frozen tree"),
         ("missing-subtree", bare, False, "records no"),
         ("not-a-commit", FROZEN_TREE, False, "not a commit"),
@@ -245,8 +325,127 @@ def provenance_controls(parent: Path) -> None:
         output = run(repo, expect_ok, manifest, checker=checker, cwd=repo, env=GIT_ENV)
         expect_text(output, needle, f"provenance/{label}")
 
+        authored = repo / "spec" / f"authored-{label}.json"
+        output = run(
+            repo,
+            expect_ok,
+            authored,
+            checker=checker,
+            cwd=repo,
+            env=GIT_ENV,
+            write_manifest=True,
+        )
+        if not expect_ok:
+            expect_text(output, needle, f"provenance/{label}/write")
+            expect_unwritten(authored, f"provenance/{label}/write")
+            continue
+        # The one pin that does verify must still author the reviewed content,
+        # so the refusals above are attributable to provenance alone.
+        written = json.loads(authored.read_text(encoding="utf-8"))
+        if written["frozen_commit"] != commit:
+            raise AssertionError("authored manifest does not record the verified commit")
+        if written["frozen_tree"] != FROZEN_TREE or written["files"] != _REVIEWED["files"]:
+            raise AssertionError("authored manifest does not reproduce the frozen tree")
+
+
+def object_state_controls(parent: Path) -> None:
+    """A present-but-unreadable object is not an absent one, for either pin.
+
+    Each pinned object gets its own repository in which that object's loose file
+    is overwritten with bytes Git cannot inflate.  Git then answers `missing`
+    for it — with a diagnostic — which is exactly the reply a genuinely absent
+    object produces silently.  The checker must fail closed *and* must not
+    diagnose absence, so restoring the old "every Git failure means absent"
+    probe cannot pass these.
+    """
+    provenance = scaffold(parent / "corrupt-provenance")
+    good = init_commit(provenance, "Exact frozen subtree under a readable commit")
+    checker = checker_variant(
+        provenance / "scripts" / "check-corrupt.py", FROZEN_COMMIT=good
+    )
+    manifest = repinned_manifest(provenance / "spec" / "manifest-corrupt.json", good)
+    output = run(provenance, True, manifest, checker=checker, cwd=provenance, env=GIT_ENV)
+    expect_text(output, f"reviewed provenance {good[:12]} verified", "corrupt/intact")
+
+    corrupt_loose_object(provenance, good)
+    if not has_object(provenance, good):
+        raise AssertionError("the corrupted provenance object must still be present")
+    output = run(provenance, False, manifest, checker=checker, cwd=provenance, env=GIT_ENV)
+    expect_text(output, "present but unusable, not absent", "corrupt/provenance")
+    expect_no_text(output, "absent from this history", "corrupt/provenance")
+
+    authored = provenance / "spec" / "authored-corrupt.json"
+    output = run(
+        provenance,
+        False,
+        authored,
+        checker=checker,
+        cwd=provenance,
+        env=GIT_ENV,
+        write_manifest=True,
+    )
+    expect_text(output, "present but unusable, not absent", "corrupt/provenance/write")
+    expect_unwritten(authored, "corrupt/provenance/write")
+
+    tree = scaffold(parent / "corrupt-tree")
+    init_commit(tree, "Exact frozen subtree with a damaged tree object")
+    corrupt_loose_object(tree, FROZEN_TREE)
+    if not has_object(tree, FROZEN_TREE):
+        raise AssertionError("the corrupted frozen tree object must still be present")
+    output = run(None, False, checker=tree / "scripts" / CHECKER.name, cwd=tree, env=GIT_ENV)
+    expect_text(output, "present but unusable, not absent", "corrupt/tree")
+    expect_no_text(output, "absent from this repository", "corrupt/tree")
+
+
+def no_object_store_control(parent: Path) -> None:
+    """Carrying the frozen bytes is not carrying the frozen tree object.
+
+    A `git archive` export, a release tarball or any other `.git`-less copy has
+    byte-identical content and no object store.  Git cannot answer at all there,
+    which must be reported as the repository failure it is rather than as two
+    absent objects.
+    """
+    export = scaffold(parent / "export")
+    if (export / ".git").exists():
+        raise AssertionError("the export fixture must not be a Git repository")
+    env = {**GIT_ENV, "GIT_CEILING_DIRECTORIES": str(parent)}
+    output = run(None, False, checker=export / "scripts" / CHECKER.name, cwd=export, env=env)
+    expect_text(output, "not a git repository", "export")
+    expect_no_text(output, "absent from this history", "export")
+    expect_no_text(output, "absent from this repository", "export")
+
+
+def version_manifest_row_control() -> None:
+    """`spec/version_manifest.toml` must track the freeze manifest's schema.
+
+    `scripts/validate_version_manifest.py` checks only that this row's `target`
+    path exists: by that validator's own documented contract the `version` of a
+    `target`-only sub-table is declarative, since the referenced file carries no
+    `[meta].spec_version`.  The freeze manifest does carry a machine-readable
+    `schema_version`, so the real cross-check belongs here, where it keeps the
+    advertised row from drifting away from the schema it describes.
+    """
+    with VERSION_MANIFEST.open("rb") as handle:
+        row = tomllib.load(handle).get("snapshot", {}).get("tmverifier_freeze")
+    if not isinstance(row, dict):
+        raise AssertionError(
+            f"{VERSION_MANIFEST} has no [snapshot.tmverifier_freeze] table"
+        )
+    expected = str(_REVIEWED["schema_version"])
+    if row.get("version") != expected:
+        raise AssertionError(
+            "snapshot.tmverifier_freeze.version is "
+            f"{row.get('version')!r}, not {expected!r} from {MANIFEST.name}"
+        )
+    if row.get("target") != str(MANIFEST.relative_to(ROOT)):
+        raise AssertionError(
+            f"snapshot.tmverifier_freeze.target is {row.get('target')!r}, "
+            f"not {str(MANIFEST.relative_to(ROOT))!r}"
+        )
+
 
 def main() -> None:
+    version_manifest_row_control()
     with tempfile.TemporaryDirectory(prefix="tmverifier-freeze-") as tmp:
         parent = Path(tmp)
         baseline = fixture(parent / "baseline")
@@ -320,10 +519,13 @@ def main() -> None:
 
         rewritten_history_controls(parent)
         provenance_controls(parent)
+        object_state_controls(parent)
+        no_object_store_control(parent)
 
     print(
-        "[tmverifier-freeze-test] OK: manifest trust + 4 manifest, 5 filesystem, "
-        "2 rewritten-history, 4 provenance controls"
+        "[tmverifier-freeze-test] OK: manifest trust + schema row, 4 manifest, "
+        "5 filesystem, 4 rewritten-history, 8 provenance, 4 object-state, "
+        "1 no-object-store controls"
     )
 
 

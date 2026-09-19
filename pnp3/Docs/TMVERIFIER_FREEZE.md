@@ -19,14 +19,21 @@ pnp3/Complexity/TMVerifier/
 objects in the frozen tree, then verifies the working tree's exact paths, object
 types, executable modes, and SHA-256 contents without following symlinks. Git
 tree objects are content-addressed, so that enumeration is reachable from any
-history carrying the bytes — squash merges, rebases, force-pushes, and shallow
-or single-branch clones do not take it away. Where the reviewed commit is still
-present the checker additionally verifies that its subtree resolves to the
+Git object store holding these bytes — squash merges, rebases, force-pushes, and
+shallow or single-branch clones do not take it away. What travels is the object
+store, not the bytes alone: an exported working tree — `git archive`, a release
+tarball, any `.git`-less copy — carries byte-identical content and nothing to
+enumerate, and is refused rather than verified. Where the reviewed commit is
+still present the checker additionally verifies that its subtree resolves to the
 frozen tree and fails closed if it does not; where a rewritten history no longer
-has that commit, content verification is unaffected. It and an isolated
-manifest/filesystem/rewritten-history negative-control suite are part of
-`scripts/check.sh` and run before any build. `lakefile.lean` is blanket-protected
-by the trusted PR policy rather than partially parsed as Lean syntax.
+has that commit, content verification is unaffected. An object Git cannot read
+is never counted as an absent one: corruption, an unreadable object store, a
+failed promisor fetch and every other Git failure are hard failures carrying
+Git's own diagnostic. It and an isolated negative-control suite — manifest,
+filesystem, rewritten-history, provenance and object-state controls — are part
+of `scripts/check.sh` and run before any build. `lakefile.lean` is
+blanket-protected by the trusted PR policy rather than partially parsed as Lean
+syntax.
 
 The freeze-policy paths are listed in `.github/CODEOWNERS` to make ownership
 explicit. By repository-owner decision, `main` does not currently enforce
@@ -66,13 +73,40 @@ A change requires a dedicated unfreeze/migration PR that:
 1. states why the frozen artifact itself must change rather than a new versioned
    module outside it;
 2. reruns the complete local and remote review gates;
-3. updates this decision record with the new authoritative tree and its
-   reviewed commit, then regenerates the manifest from the newly pinned Git
-   tree with:
+3. re-pins the freeze in two stages, in this order. `--write-manifest` refuses
+   to write unless the reviewed provenance commit already resolves in this
+   repository and records exactly the pinned tree, so the new bytes must be
+   committed before the new pin can be authored:
 
-   ```text
-   python3 scripts/check_tmverifier_freeze.py --write-manifest
-   ```
+   a. commit the new frozen bytes on their own. That commit becomes the new
+      reviewed provenance commit, and its subtree is the new authoritative
+      tree; read both off it:
+
+      ```text
+      git rev-parse HEAD
+      git rev-parse HEAD:pnp3/Complexity/TMVerifier
+      ```
+
+   b. in a second commit, set `FROZEN_COMMIT` and `FROZEN_TREE` in
+      `scripts/check_tmverifier_freeze.py` to those two values — plus
+      `SCHEMA_VERSION` there and the `[snapshot.tmverifier_freeze]` row in
+      `spec/version_manifest.toml` if the manifest shape changes — update the
+      header of this decision record with the same pair, and regenerate the
+      manifest, which re-verifies the pin before it writes anything:
+
+      ```text
+      python3 scripts/check_tmverifier_freeze.py --write-manifest
+      ```
+
+   Stage (b) must be its own commit: it names stage (a)'s SHA, which does not
+   exist until (a) is committed and would change again if (a) were amended.
+   Neither half of the repin can be skipped, and `--write-manifest` enforces
+   that rather than trusting it — it refuses, leaving the manifest untouched,
+   both when the pinned `FROZEN_COMMIT` is not in this repository (stage (a)
+   not landed, or a mistyped SHA) and when it is present but does not record
+   the pinned `FROZEN_TREE` (the tree repinned, the commit left stale). This
+   unfreeze itself has exactly that shape: `249435bf` is stage (a) and
+   `0d699f6e` is stage (b).
 
 4. does not silently resume the old verifier roadmap.
 
@@ -174,6 +208,17 @@ at that tree, as were `python3 scripts/validate_version_manifest.py` and the
 suite's new rewritten-history and provenance controls; the freeze checker now
 reports the tree match plus the state of the reviewed provenance commit.
 
+Two further independent read-only adversarial reviews of that follow-up commit
+required changes, and a third run of the same six gates — the complete
+`./scripts/check.sh`, the four freeze-specific gates, `check_doc_honesty.sh` and
+`validate_version_manifest.py` — was made on the tree of the review-fix commit
+that answers them. That commit again changes no frozen byte and no Lean source:
+the frozen tree is still `7ef6ac6e119f0f078f9c896f17415fa560a6edf3` and the
+manifest is byte-identical. What it changes is how the two pinned objects are
+probed (a Git failure of any kind is now a hard failure rather than an answer of
+"absent"), the strictness of `--write-manifest`, the negative-control suite that
+holds both properties down, and the wording corrected in this record.
+
 *Remote, not yet done and explicitly not claimed.* When this paragraph was
 written the branch had not been pushed and no PR existed, so there is **no**
 remote CI result and no remote review for it; nothing here should be read as
@@ -198,14 +243,31 @@ PR that touches the tree fails exactly as before.
 **Operational note on the pin — content is rewrite-proof, provenance is not.**
 The checker enumerates the frozen content from `FROZEN_TREE`, the Git tree
 object `7ef6ac6e119f0f078f9c896f17415fa560a6edf3`. Tree objects are
-content-addressed, so every history that carries these bytes carries this
-object: squash merges, rebases, branch rewrites, force-pushes, and shallow or
-single-branch clones all leave the content check working, and it works in a
-clone that never fetched this branch at all. `FROZEN_COMMIT` is retained beside
-it as reviewed provenance; when the checkout still contains that commit the
-checker verifies that its subtree resolves to the frozen tree, and available
-provenance that disagrees — a wrong subtree, a missing subtree, an object that
-is not a commit — is a hard failure. Only genuine absence is skipped.
+content-addressed, so every Git object store that carries these bytes carries
+this object: squash merges, rebases, branch rewrites, force-pushes, and shallow
+or single-branch clones all leave the content check working, and it works in a
+clone that never fetched this branch at all. What survives the rewrite is the
+object, not merely the content — a `git archive` export, a release tarball or
+any other `.git`-less copy has the bytes and no object store, and fails closed
+with that as the stated reason. `FROZEN_COMMIT` is retained beside it as
+reviewed provenance; when the checkout still contains that commit the checker
+verifies that its subtree resolves to the frozen tree, and available provenance
+that disagrees — a wrong subtree, a missing subtree, an object that is not a
+commit — is a hard failure. So is any Git failure that leaves the question
+unanswered: absence is concluded only from Git's own silent `missing` reply, so
+a corrupt object, an unreadable object store or a failed promisor fetch is
+reported as the fault it is and is never recorded as a rewritten history.
+Manifest authoring is stricter than verification: `--write-manifest` refuses to
+write anything at all unless the reviewed provenance resolves and matches, so a
+pin cannot be recorded without being proved, while an ordinary check of a
+rewritten or shallow history still verifies content against `FROZEN_TREE`.
+
+One diagnostic limitation is worth knowing before debugging a red check. When
+the working tree has drifted *and* this object store does not carry the frozen
+tree — a `--depth 1` clone of an already-drifted tip is the realistic case — the
+checker reports the unavailable tree object instead of listing the changed
+paths. It still fails closed, and the three workflows that run it all check out
+with `fetch-depth: 0`, so CI always gets the path-level report.
 
 A tree pin proves content identity, not commit ancestry. Nothing about a
 matching tree establishes that `249435bf`, the commit at which the theorem
@@ -229,13 +291,20 @@ longer the thing that keeps the repository's checks working.
 **Correction to an earlier revision of this record.** Before the tree pin, this
 section claimed that after a rewriting merge `scripts/check.sh` would fail on
 `main` for every subsequent PR and that `main` would stay broken until a gated
-recovery repin landed. That overstated the consequence even then —
-`delete_branch_on_merge` is off and every workflow checks out with
-`fetch-depth: 0`, so the pinned object stayed resolvable through the retained
-branch ref, and the breakage was latent rather than immediate — and since the
-tree pin it is not the failure mode at all. The cost of a rewriting merge is the
-loss of reviewed-commit provenance, recorded and repaired as governance, not a
-red build.
+recovery repin landed. That overstated the consequence even then. The three
+workflows that run the freeze checker — `.github/workflows/ci.yml`,
+`.github/workflows/lean.yml` and `.github/workflows/nightly-unconditional.yml` —
+all check out with `fetch-depth: 0`, so for as long as the merged source branch
+remained on the remote the pinned object stayed resolvable through that retained
+ref, and the breakage was latent rather than immediate. (Whether merged branches
+are auto-deleted is a GitHub repository setting that no checkout records; the
+earlier revision asserted `delete_branch_on_merge` was off as though it were a
+verified in-repository fact, and this record should not. The fourth workflow,
+`.github/workflows/tmverifier-freeze.yml`, sets no `fetch-depth`, but it only
+checks out the default-branch policy script and never runs the freeze checker,
+so it is outside this claim.) Since the tree pin it is not the failure mode at
+all. The cost of a rewriting merge is the loss of reviewed-commit provenance,
+recorded and repaired as governance, not a red build.
 
 **The migration branch itself must not be rebased or force-pushed.** The same
 reasoning applies to the branch for as long as the PR is open. If `main`

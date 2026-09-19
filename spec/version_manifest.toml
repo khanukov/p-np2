@@ -56,6 +56,14 @@ version = "0.1.0"
 notes   = "Eight probes shipped (5 rejected + 1 accepted_shape_only + 2 kernel-check)."
 target  = "bench/SmokeProbe/expected_results.json"
 
+# TMVerifier freeze manifest.  `scripts/validate_version_manifest.py`
+# gives every `target`-carrying sub-table in this section an
+# existence-only check — its documented contract, because those
+# targets have no `[meta].spec_version` to compare against — so the
+# `version` below is declarative *there*.  It is not decorative: the
+# freeze manifest does carry a machine-readable `schema_version`, and
+# `scripts/test_tmverifier_freeze.py` cross-checks this row against
+# it, so the two cannot drift apart silently.  Keep them equal.
 [snapshot.tmverifier_freeze]
 version = "3"
 notes   = "Git-anchored source snapshot with mode/type/content and negative controls.  v3 makes the frozen tree object authoritative and keeps the reviewed commit as provenance."

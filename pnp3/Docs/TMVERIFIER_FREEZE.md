@@ -144,12 +144,14 @@ in full, with the same result, on the tree of the docs-only governance commit
 that adds this paragraph. That run covers the frozen-tree manifest and
 filesystem preflight and its isolated negative-control suite, both Lean
 libraries, the placeholder and hygiene scans, the route-policy and doc-honesty
-gates, and the axiom-surface dumps. The freeze-specific gates were additionally
-run on their own at the same tree — `python3 scripts/check_tmverifier_freeze.py`,
-`scripts/check_tmverifier_freeze.sh`, `scripts/test_tmverifier_freeze.sh`,
-`node scripts/test_tmverifier_freeze_policy.js` and
-`scripts/check_doc_honesty.sh` — all reporting OK, with the freeze checker
-matching the frozen tree against `249435bf`.
+gates, and the axiom-surface dumps. The supplementary local gates were
+additionally run on their own at the same tree — the four freeze-specific ones,
+`python3 scripts/check_tmverifier_freeze.py`,
+`scripts/check_tmverifier_freeze.sh`, `scripts/test_tmverifier_freeze.sh` and
+`node scripts/test_tmverifier_freeze_policy.js`, together with
+`scripts/check_doc_honesty.sh`, which is the public-document claim gate rather
+than a freeze gate — all reporting OK, with the freeze checker matching the
+frozen tree against `249435bf`.
 
 *Remote, not yet done and explicitly not claimed.* When this paragraph was
 written the branch had not been pushed and no PR existed, so there is **no**
@@ -196,6 +198,21 @@ acceptable planned merge sequence: do not squash or rebase on the assumption
 that the pin can be cleaned up afterwards. If the merge-commit option is
 unavailable in the GitHub UI, enable it for this PR or perform an
 owner-controlled history-preserving merge; do not fall back to squash.
+
+**The migration branch itself must never be rebased or force-pushed.** The
+prohibition above covers the merge buttons; the same rule applies to the branch
+for as long as the PR is open. If `main` advances and the PR has to be updated,
+use GitHub's **"Update branch" → "Update with merge commit"**, never "Update
+with rebase", and likewise never a local `git rebase` followed by a force-push.
+Branch rebasing replays the pinned commit
+`249435bfa4cb540822e47844107781042f18537f` itself as a new object, so
+`FROZEN_COMMIT` in `scripts/check_tmverifier_freeze.py` becomes unresolvable on
+the PR branch and the PR's own freeze check fails before merge is even reached
+— strictly worse than a rewriting merge, because the pin is then lost on the
+branch as well as on `main`, and recovery is the same gated repin described
+above. Any such rewrite also changes the head SHA and invalidates the
+repository-owner attestation, which must then be reposted for the new
+40-character head.
 
 **Post-merge verification (required).** Immediately after the merge, on an
 updated `main` or a fresh clone, run both:

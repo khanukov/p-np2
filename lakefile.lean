@@ -123,6 +123,13 @@ lean_lib PnP3 where
     Glob.one `Complexity.Uniform.V1.FixedGammaTerminatorScratchBootstrap,
     -- Part A G2p-b fixed first gamma payload bit into the target scratch register.
     Glob.one `Complexity.Uniform.V1.FixedGammaTargetFirstPayload,
+    -- Part A G2p-c1 second gamma payload digit: fixed table, phase-local handoff
+    -- ABI, exact room, and the decoded widths with no net tape change and hence
+    -- no net payload or register write.  Clocks are exported in both directions
+    -- (endpoint from the clock on, both terminals excluded before it), malformed
+    -- branch included; the read/write footprint and the head range stay inside
+    -- the private traces and are exported by no theorem.
+    Glob.one `Complexity.Uniform.V1.FixedGammaTargetSecondPayload,
     -- Generic bounded cross-budget simulation for one fixed UniformTM.
     Glob.one `Complexity.Uniform.V1.BudgetTransport,
     -- Routed fixed-parser/verifier constructor and parser-prefix handoff.
@@ -691,6 +698,7 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1FixedGammaPayloadDispatcherDeadlineSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaTerminatorScratchBootstrapSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaTargetFirstPayloadSurfaceTests,
+    Glob.one `Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
     Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,

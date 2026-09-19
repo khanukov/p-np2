@@ -15,7 +15,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 TREE = "pnp3/Complexity/TMVerifier"
-FROZEN_COMMIT = "42c598815c8e7d27a53f26102705f84455c6979d"
+FROZEN_COMMIT = "249435bfa4cb540822e47844107781042f18537f"
 SCHEMA_VERSION = 2
 MANIFEST = ROOT / "spec/tmverifier_freeze.json"
 

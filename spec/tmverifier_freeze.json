@@ -336,6 +336,18 @@
       "sha256": "ee0066cf7174369a431e19aedb0f109271523f0b42830a08bf1eced65809478a",
       "type": "blob"
     },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneAcceptsClosure.lean": {
+      "git_oid": "1d11c0581b61b2039deed7e38164a45e74402f67",
+      "mode": "100644",
+      "sha256": "5f3215b6a189a50c83d297839e392b17b692ae36aa9c1cd2a19e1aee696141d2",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneAcceptsClosureExamples.lean": {
+      "git_oid": "a929da9aa98729e99808ff17b5a772a8479ab504",
+      "mode": "100644",
+      "sha256": "ef3e5aee8e50fd038f2a8e00b161f92f8370bea5809a0e0abd1bda0a41ed2ef0",
+      "type": "blob"
+    },
     "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneControl.lean": {
       "git_oid": "4bc738d189992713b477cf222649680274bc989a",
       "mode": "100644",
@@ -535,9 +547,9 @@
       "type": "blob"
     },
     "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneValidation.lean": {
-      "git_oid": "9e85eda7c76aca862dea42bd3d1372d278cee25d",
+      "git_oid": "38c6b8727cab43a0175263aba5ee2c7e1998be38",
       "mode": "100644",
-      "sha256": "d38e8b1bd2d26d3399ad52b583a067f1b22a66d4c11c45658fccf99f9d4a34cf",
+      "sha256": "e737f248e8c749784ce95db0028330722a17078ef6212db74c45d8c12fb68362",
       "type": "blob"
     },
     "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneWalkDriver.lean": {
@@ -679,7 +691,7 @@
       "type": "blob"
     }
   },
-  "frozen_commit": "42c598815c8e7d27a53f26102705f84455c6979d",
+  "frozen_commit": "249435bfa4cb540822e47844107781042f18537f",
   "schema_version": 2,
   "tree": "pnp3/Complexity/TMVerifier"
 }

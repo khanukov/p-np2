@@ -4284,10 +4284,13 @@ surface has 55 named full-proposition wrappers plus definition-only checks, and
 definitions directly — a bare `#check @name` pins only the name, so the restated
 wrappers carry the signature freeze.
 
-**Part A is not complete.**  This is one gate.  The next dependency is the
-multi-gate step: an `SLProgram`-style iteration of this endpoint, and the
-`ContentVerifierBridge` that would consume it.  Still unclaimed: the `SLGate`
-bridge (`G1Request.ofGate`/`spec_ofGate` to `SLGate.compute`), the multi-gate
-evaluator, any `GateN` acceptance or clock, any `GapMCSPVerifier` or
-content-verifier statement, any runtime-polynomial verifier claim, and any
-language-level statement about physical inputs.
+**The TMVerifier gate chain is not complete.**  This is one gate.  ("Part A"
+elsewhere in this repository — `STATUS.md` and `pnp3/Docs/UniformP_V1.md` —
+names the *Uniform V1 fixed-content gamma* track, which also has a stage called
+`G1`; that track is unrelated to this one and is untouched here.)  The next
+dependency is the multi-gate step: an `SLProgram`-style iteration of this
+endpoint, and the `ContentVerifierBridge` that would consume it.  Still
+unclaimed: the `SLGate` bridge (`G1Request.ofGate`/`spec_ofGate` to
+`SLGate.compute`), the multi-gate evaluator, any `GateN` acceptance or clock,
+any `GapMCSPVerifier` or content-verifier statement, any runtime-polynomial
+verifier claim, and any language-level statement about physical inputs.

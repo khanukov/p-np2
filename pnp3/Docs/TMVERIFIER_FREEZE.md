@@ -65,10 +65,17 @@ A change requires a dedicated unfreeze/migration PR that:
 
 4. does not silently resume the old verifier roadmap.
 
-For each new head SHA, the repository owner must first post the exact command
-above and then apply or retrigger the `tmverifier-unfreeze` label. A later push
-invalidates the old attestation. Without branch protection the resulting check
-remains repository governance rather than an unoverrideable merge block.
+For each new head SHA, the repository owner must first post the exact
+attestation comment `/tmverifier-unfreeze <current-head-sha>` as a PR issue
+comment whose entire body is that single line, with `<current-head-sha>`
+spelled out as the **full 40-character SHA** of the PR's current head. That
+comment — not the `--write-manifest` command in the code block above — is what
+the `TMVerifier Freeze Policy` workflow matches, and it must be posted by the
+repository owner account. The owner must then apply or retrigger the
+`tmverifier-unfreeze` label. A later push changes the head SHA and invalidates
+the old attestation, so a fresh comment naming the new 40-character head is
+required. Without branch protection the resulting check remains repository
+governance rather than an unoverrideable merge block.
 
 The next active track is the versioned uniform `P` model and its circuit
 simulation, not GN-E2-3b or later TMVerifier stages.
@@ -127,6 +134,34 @@ The reviewed tree is reproduced byte-for-byte in `249435bf`; only
 `pnp3/Tests/AxiomsAudit.lean` and `lakefile.lean` were re-merged, additively,
 against newer `main`.
 
+**Gates (requirement 2) — local done, remote still owed.** Requirement 2 above
+asks for the complete local *and* remote review gates. Only the local half is
+discharged by this record, and only the local half is claimed here.
+
+*Local, observed.* The complete `./scripts/check.sh` was run at the re-freeze
+commit `0d699f6e` and printed `[check] All checks passed.`; it was then re-run
+in full, with the same result, on the tree of the docs-only governance commit
+that adds this paragraph. That run covers the frozen-tree manifest and
+filesystem preflight and its isolated negative-control suite, both Lean
+libraries, the placeholder and hygiene scans, the route-policy and doc-honesty
+gates, and the axiom-surface dumps. The freeze-specific gates were additionally
+run on their own at the same tree — `python3 scripts/check_tmverifier_freeze.py`,
+`scripts/check_tmverifier_freeze.sh`, `scripts/test_tmverifier_freeze.sh`,
+`node scripts/test_tmverifier_freeze_policy.js` and
+`scripts/check_doc_honesty.sh` — all reporting OK, with the freeze checker
+matching the frozen tree against `249435bf`.
+
+*Remote, not yet done and explicitly not claimed.* When this paragraph was
+written the branch had not been pushed and no PR existed, so there is **no**
+remote CI result and no remote review for it; nothing here should be read as
+asserting green CI. Before merge the remote half must be completed against the
+*final* head: green `ci.yml` and `lean.yml`, the exact-head repository-owner
+attestation comment and `tmverifier-unfreeze` label described above, and the
+required PR review. The local run recorded here does not substitute for any of
+them, and the two independent read-only adversarial reviews recorded in the
+previous paragraph are reviews of the theorem content, not a rerun of the
+gates.
+
 **Scope.** This is a narrow migration of one already-reviewed theorem slice,
 not a resumption of the paused roadmap. GN-E2-3b and later gate-by-gate
 construction remain paused, the next active track remains the versioned uniform
@@ -137,9 +172,40 @@ immediately at `249435bf`; the manifest was regenerated with the documented
 `--write-manifest` command and the next ordinary PR that touches the tree fails
 exactly as before.
 
-**Operational note on the pin.** The checker resolves `FROZEN_COMMIT` with
-`git ls-tree`, so the pinned commit must be reachable in the checkout being
-verified. `249435bf` is an ancestor of this branch and of the resulting merge
-only if history is preserved. If the migration PR is squash-merged, the pinned
-commit stops being an ancestor of `main` and the pin must be refreshed to the
-squashed commit by an immediate follow-up under this same unfreeze gate.
+**Operational note on the pin — merge commit only.** The checker resolves
+`FROZEN_COMMIT` with `git ls-tree`, so the pinned commit must be reachable in
+the checkout being verified. `249435bf` is an ancestor of this branch, and it
+remains an ancestor of `main` only if the migration PR lands with its history
+preserved. **This PR must therefore be merged with a merge commit** (an exact
+fast-forward, which also preserves the commit objects, is equally acceptable).
+
+**"Squash and merge" and "Rebase and merge" are both prohibited for this
+migration.** Both rewrite commit SHAs — squash collapses the branch into one
+new commit, rebase replays the commits as new objects — so either one discards
+`249435bf` from `main`'s ancestry, and re-pinning to `0d699f6e` beforehand
+would not help because that commit's ancestry is discarded the same way. After
+such a merge the pinned object survives only incidentally, for as long as the
+unmerged source branch happens to be kept on the remote; a fresh clone or a
+single-branch checkout can no longer resolve it, so
+`scripts/check_tmverifier_freeze.py` raises, and `scripts/check.sh` then fails
+on `main` for every subsequent PR. Recovery is itself gated — the repin touches
+protected paths and needs a new `tmverifier-unfreeze` label plus a fresh
+exact-head owner attestation — so `main` stays broken until that second PR
+lands. A post-hoc repin is a recovery procedure for an accident, **not** an
+acceptable planned merge sequence: do not squash or rebase on the assumption
+that the pin can be cleaned up afterwards. If the merge-commit option is
+unavailable in the GitHub UI, enable it for this PR or perform an
+owner-controlled history-preserving merge; do not fall back to squash.
+
+**Post-merge verification (required).** Immediately after the merge, on an
+updated `main` or a fresh clone, run both:
+
+```text
+git merge-base --is-ancestor 249435bfa4cb540822e47844107781042f18537f origin/main
+python3 scripts/check_tmverifier_freeze.py
+```
+
+The first must exit `0`, and the second must report that the frozen tree
+matches `249435bf`. If the ancestry check fails, the pin was stripped by a
+rewriting merge: treat `main` as broken, announce it, and land the recovery
+repin under this same unfreeze gate before any other PR touches the tree.

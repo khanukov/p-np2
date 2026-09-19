@@ -196,6 +196,43 @@ strict cleaned endpoints restore literal content at head 6, and the public
 guards exclude `k = 0` and the final `k = zeros` boundary from pending formulas.
 No semantic iff, parser/decode theorem, length-only cap, or pnp4 claim is added.
 
+**S11 one-gate acceptance closure (infrastructure only).** The single reviewed
+unfreeze of the frozen TMVerifier tree added
+`TuringToolkit/GateOneAcceptsClosure` and its literal probes, closing
+acceptance of the one fixed gate machine for *every* request. The two
+endpoints are hypothesis-free — the sole binder is `r : G1Request`:
+
+```lean
+g1CS_accepts_eq_isSome (r : G1Request) :
+    TM.accepts (M := G1M) (encodeG1 r).length (g1Point (encodeG1 r)) =
+      r.spec.isSome
+
+g1CS_accepts_iff_wellFormed (r : G1Request) :
+    TM.accepts (M := G1M) (encodeG1 r).length (g1Point (encodeG1 r)) = true ↔
+      r.WellFormed
+```
+
+The first says the real `G1M` run, from the real initial configuration on the
+standard encoded point and read after exactly its own unchanged
+`g1Clock (encodeG1 r).length` steps, carries the accepting state exactly when
+the pure result `r.spec` is defined; the second composes that with main's
+pre-existing pure `spec_isSome_iff`, so the verdict is exactly
+`r.WellFormed = r.Canonical ∧ r.operandsInBounds`. This is main's T1
+transducer convention: a defined
+`false` accepts exactly as a defined `true` does, because both output-done
+handoffs enter the same literal accept state, and the result *value* sits on
+the output cell rather than in the verdict. Among the nonaccepting requests
+only the noncanonical class is a literal rejection; a canonical request with an
+out-of-range operand idles at a `bOOB` boundary that is proved distinct from
+both sinks. Acceptance is **exact-step, not halting** — no theorem says the
+machine halts — and every statement is scoped to the image of `encodeG1`, so
+nothing is claimed for a physical word outside that image and this is not a
+language-membership theorem. No transition row, clock, step count, head
+position, encoder or `GateN` declaration changed. This is one gate, not the
+multi-gate chain: it is unrelated to the Part A uniform gamma track above, it
+adds no `GateN`, `ContentVerifierBridge` or content-verifier claim, it reduces
+no pnp4 source obligation, and it is not P-vs-NP mainline progress.
+
 **Current engineering priority.** The one-tape `pnp3/Complexity/TMVerifier/`
 tree is frozen at `249435bf`; see `pnp3/Docs/TMVERIFIER_FREEZE.md`, whose
 migration record covers the single reviewed unfreeze since `42c59881` (the S11

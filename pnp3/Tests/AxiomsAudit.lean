@@ -110,6 +110,7 @@ import Tests.UniformV1FixedGammaPayloadDispatcherDeadlineSurfaceTests
 import Tests.UniformV1FixedGammaTerminatorScratchBootstrapSurfaceTests
 import Tests.UniformV1FixedGammaTargetFirstPayloadSurfaceTests
 import Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests
+import Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests
 import Tests.UniformV1BudgetTransportSurfaceTests
 import Tests.UniformV1CombinedMachineSurfaceTests
 import Tests.UniformV1CombinedCorrectnessSurfaceTests
@@ -4712,6 +4713,67 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_two_tight_premises
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_two_probe
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_two_tight_probe
+
+-- Part A G2p-d loop-marker foundation (2026-09-20), infrastructure only: the fixed
+-- 14-state/42-row machine that installs the counter marks and the walking
+-- terminator a self-stopping gamma payload loop needs, on the phase-local retag of
+-- the *actual* G2p-c second-payload endpoint (control field only).  The 14 `Fin`
+-- state constants are covered only through `raw`/`machine`; direct entries for them
+-- are owed to the next slice.  `markers_installed` is the halted endpoint of a
+-- decoded `2 ≤ zeros` from the width-only first terminal time `zeros+7` on, in all
+-- three source shapes, head and `loopTape` pinned; `markers_strict` excludes both
+-- terminals before it.  Deferred: the round, its iteration, the exhaustion finish,
+-- the complete register, the all-times clamp/footprint/budget package, the two
+-- degenerate widths (probes only), `malformed_strict`, every parsed header value
+-- and every pnp4 bridge.  `qDone` is an internal endpoint, never language acceptance.
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.stateCount
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.raw
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.machine
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.retagSecondPayload
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.startConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.exactClock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.malformedExactClock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.deadline
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.walk
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.registerBit
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.loopTape
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.table_and_resource_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.per_step_budget_independent
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.endpoints_absorb
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.handoff_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.clock_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.room_iff
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.exactClock_le_deadline
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.registerBit_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.loopTape_layout
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.markers_installed
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.markers_strict
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.markers_at_deadline
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.malformed_rejects
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_clock_values
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_table_and_resource_pins
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_per_step_budget_independent
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_endpoints_absorb
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_handoff_exact
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_clock_pins
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_room_iff
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_exactClock_le_deadline
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_registerBit_pins
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_loopTape_layout
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_markers_installed
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_markers_strict
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_markers_at_deadline
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_malformed_rejects
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_malformed_handoff
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_zero_handoff
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_one_handoff
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_both_physical_handoff
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_tight_handoff
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_malformed_probe
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_zero_probe
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_one_probe
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_both_physical_probe
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_tight_probe
 
 -- S11 (2026-09-19), infrastructure only: all-request one-gate acceptance
 -- closure in main's transducer convention.  `accepts = r.spec.isSome`, so a

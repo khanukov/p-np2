@@ -801,6 +801,64 @@ mainline result. Surface regressions derive `qDone` for header `(0, 1)`, `10₂`
 at cells `12, 13` for header `(3, 5)` (virtual second digit), and `11₂` at cells
 `13, 14` for header `(5, 5)` (physical second digit).
 
+`ContentFixedGammaTargetSecondPayloadBridge.lean` is the Part A G2p-c
+infrastructure bridge. It is registered immediately after G2p-b and imports
+G2p-b and the pnp3 `FixedGammaTargetSecondPayload` machine. It has exactly four
+public theorems, all one-way; the last three are at the machine's length-only
+deadline `2 * (a + m)`:
+
+* `header_digits` (one hypothesis; generic, no machine and no tag): from
+  `contentHeader? z = some (n, consumed)` for `z : PrefixBitVec N`, some `zeros`
+  has `gammaZeros? z = some zeros`, `consumed = 2 * zeros + 1`,
+  `2 ^ zeros ≤ n + 1 < 2 ^ (zeros + 1)`, `(n + 1).testBit zeros = true`, and for
+  every `t < zeros` the payload cell reads
+  `(physicalSymbol z (9 + zeros + t)).getD false = (n + 1).testBit (zeros - 1 - t)`;
+* `secondPayload_positive_register` (four hypotheses: matching tag, decoded
+  header, `3 ≤ n`, and `a + m + 3 < tapeLength (pairLength a m) B`): some
+  `zeros ≥ 2` has `consumed = 2 * zeros + 1` and
+  `2 ^ zeros ≤ n + 1 < 2 ^ (zeros + 1)`, the endpoint is `qDone` at head `7` on
+  `secondPayloadTape` with digits `(n + 1).testBit (zeros - 1)` and
+  `(n + 1).testBit (zeros - 2)`, and cells `a + m + 1`, `a + m + 2`,
+  `a + m + 3` hold `(n + 1).testBit zeros`, `(n + 1).testBit (zeros - 1)`,
+  `(n + 1).testBit (zeros - 2)`;
+* `secondPayload_width_one_register` (three hypotheses: matching tag,
+  `contentHeader? = some (n, 3)`, and the G2p-b room `a + m + 2 < tapeLength
+  (pairLength a m) B`): the endpoint is `qDone` at head `7` on the two-digit
+  `firstPayloadTape`, cells `a + m + 1` and `a + m + 2` hold
+  `(n + 1).testBit 1` and `(n + 1).testBit 0`, and every allocated cell past
+  `a + m + 2` is blank — no third digit is written;
+* `secondPayload_zero_width_register` (two hypotheses: matching tag and the
+  header `(0, 1)`): the endpoint is `qDone` at head `7` on the bootstrap scratch
+  tape with the one digit `(0 + 1).testBit 0` at `a + m + 1`, blank afterwards,
+  with no room premise.
+
+Every payload digit comes from the header decoder's *own* read, virtual zero
+tail included, which is why `header_digits` is about `Option.getD false` of the
+physical symbol rather than about a physical cell, and why its `t < zeros` guard
+matters: outside the payload block the truncated index `zeros - 1 - t` would
+repeat digit `0` at an address that has already left the block. The generic
+digit induction is `readNatBE_digit` (private). Given a decoded header, `3 ≤ n`
+is exactly `2 ≤ zeros`, because the exported bounds make `zeros` the index of
+the leading digit of `n + 1`; the bridge still states the implication one way
+only. Room is a capacity assumption the header does not imply —
+`FixedGammaTargetSecondPayload.room_iff` reads it as `2 ≤ a + B`, a condition on
+the `x` side and the budget that a decoded header does not constrain — so it is
+carried explicitly and this bridge states no
+`qReject` classification. `deadline` and `exactClock` are **phase-local**:
+`startConfig` retags the actual G2p-b endpoint configuration and embeds the
+earlier phases' steps, which neither clock accounts for, so nothing here is a
+runtime or a clock for the composed pipeline. The module asserts no converse
+(nothing derives a header, a width, or `2 ≤ zeros` from `qDone`, the tape, or a
+digit at `a + m + 3`) and claims no parser execution, `contentInput?`,
+`ContentAccepts`, language acceptance, clock composition, the remaining
+`zeros - 2` digits, the decrement to `n`, `ContentVerifierBridge`, or P-vs-NP
+mainline result. Surface regressions derive, for every budget, the one-digit
+register for header `(0, 1)`; `11₂` at cells `12, 13` with cell `14` still blank
+for header `(2, 3)`; `100₂` at cells `12, 13, 14` for header `(3, 5)`; `110₂` at
+cells `13, 14, 15` for header `(5, 5)`, whose second payload digit is the
+virtual zero at the boundary; and `111₂` at cells `14, 15, 16` for header
+`(6, 5)`, whose second payload digit is physical.
+
 `FixedContentGammaAnchorCorrect.lean` is the Part A G2a bridge. It proves the
 exact G1-final-to-G2a operational handoff and provides a logical cell-7
 restoration taking the successful marked tape back to literal `contentTape`.

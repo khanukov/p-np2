@@ -54,6 +54,7 @@ import Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadDispatcherSemanti
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadDispatcherHeaderValueBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTerminatorScratchBootstrapBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetFirstPayloadBridge
+import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetSecondPayloadBridge
 import Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic
 import Pnp4.Frontier.ContractExpansion.ContentCappedSizes
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
@@ -905,3 +906,12 @@ end Pnp4
 -- Part A G2p-b first gamma payload bit bridge.
 #print axioms Pnp4.Frontier.ContractExpansion.firstPayload_positive_register
 #print axioms Pnp4.Frontier.ContractExpansion.firstPayload_zero_width_register
+
+-- Part A G2p-c second gamma payload digit bridge.  One-way header-to-endpoint
+-- implications at the phase-local deadline of `FixedGammaTargetSecondPayload`;
+-- the matching named wrappers and nonvacuity probes are audited where they are
+-- declared, in `Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`.
+#print axioms Pnp4.Frontier.ContractExpansion.header_digits
+#print axioms Pnp4.Frontier.ContractExpansion.secondPayload_positive_register
+#print axioms Pnp4.Frontier.ContractExpansion.secondPayload_width_one_register
+#print axioms Pnp4.Frontier.ContractExpansion.secondPayload_zero_width_register

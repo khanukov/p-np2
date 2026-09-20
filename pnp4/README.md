@@ -365,6 +365,43 @@ without room there is no endpoint theorem to invoke), the machine's exact
 first-arrival clock, clock composition, and `ContentVerifierBridge` are not
 provided, and this is not P-vs-NP mainline progress.
 
+Part A G2p-c adds `ContentFixedGammaTargetSecondPayloadBridge` over the pnp3
+fixed second-payload machine, at that machine's length-only, *phase-local*
+deadline `2 * (a + m)`. It has four public theorems, all one-way out of a
+decoded `contentHeader? = some …` and none with a converse; only the last three
+reach a machine conclusion, because the first is machine-free.
+`header_digits` is generic and machine-free: it takes one hypothesis, a decoded
+header `contentHeader? z = some (n, consumed)` for an arbitrary
+`z : PrefixBitVec N`, and returns a gamma width `zeros` with
+`consumed = 2 * zeros + 1`, `2 ^ zeros ≤ n + 1 < 2 ^ (zeros + 1)`,
+`(n + 1).testBit zeros = true`, and, for every `t < zeros`, the payload cell
+`9 + zeros + t` read through the decoder's own virtual zero tail
+(`(physicalSymbol z (9 + zeros + t)).getD false`) equal to
+`(n + 1).testBit (zeros - 1 - t)`. The other three are concrete and carry a
+matching tag. With `3 ≤ n` and the exact room
+`a + m + 3 < tapeLength (pairLength a m) B` (four hypotheses), the endpoint is
+`qDone` at head `7` on `secondPayloadTape` and cells `a + m + 1`, `a + m + 2`,
+`a + m + 3` hold `(n + 1).testBit zeros`, `(n + 1).testBit (zeros - 1)`,
+`(n + 1).testBit (zeros - 2)` for some `zeros ≥ 2`. With `consumed = 3` and the
+G2p-b room (three hypotheses) the two-digit G2p-b register survives and every
+allocated cell past `a + m + 2` stays blank. With the header `(0, 1)` (two
+hypotheses) the one-digit G2p-a register survives, with no room premise. Given a
+decoded header the premise `3 ≤ n` is exactly `2 ≤ zeros`, since the exported
+bounds make `zeros` the index of the leading digit of `n + 1`; room, by
+contrast, is not implied by the header and fails whenever `a + B ≤ 1`. The three
+concrete header hypotheses are jointly exhaustive over decoded headers —
+`zeros = 0` forces `(0, 1)`, `zeros = 1` forces `consumed = 3`, `2 ≤ zeros`
+forces `3 ≤ n` — with the last two branches conditional on their explicit room.
+`deadline` and `exactClock` are phase-local: `startConfig` retags the actual
+G2p-b endpoint and embeds the earlier phases' steps, which neither clock counts.
+No `qReject` theorem is restated here: the one-way
+`contentHeader? = none → qReject` direction is already room-free from the
+imports, while the `qReject ↔ contentHeader? = none` equivalence would need the
+room premise. Parser execution, `contentInput?`, `ContentAccepts`, language
+acceptance from `qDone`, clock composition, the remaining `zeros - 2` digits,
+the decrement to `n`, and `ContentVerifierBridge` are not provided, and this is
+not P-vs-NP mainline progress.
+
 For an *arbitrary* threshold there is a third input, `PolyBoundedInTable threshold`;
 it is proved for the canonical polynomial thresholds, so it disappears at
 `thresholdPoly k`.  The general capstone `verifiedSource_of_explicit_interfaces`

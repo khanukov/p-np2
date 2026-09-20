@@ -805,10 +805,20 @@ transition taken there and visible at step `N-3`, a non-terminal control at step
 terminal arrival — and the halt at step `2*N-7`.
 
 `qDone` is an internal endpoint rather than language acceptance; the module
-states no pnp4 reader or parser fact.  Deferred: the remaining `zeros-2` digits,
-the decrement to `n`, the all-times footprint/budget package (no `footprint` and
-no `budget_independence` theorem is exported for any branch), the pnp4 semantic
-bridge, every parser and `contentHeader?` claim, and `ContentVerifierBridge`.
-It is a specialization and not an iterating round — ending a general payload
-scan needs both a counter and an advancing source marker, and this control has
-neither.  It is infrastructure only.
+itself still states no pnp4 reader or parser fact.  The reading is done outside
+pnp3, by the G2p-c3 companion
+`Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetSecondPayloadBridge`,
+which consumes the width-zero, width-one, and positive-width endpoints above and
+reads their registers as leading binary digits of `n+1` for a decoded
+`contentHeader? (Fin.append x w) = some (n, consumed)`.  How many digits are
+exposed is the width: positive width identifies all three cells `N+1`, `N+2`,
+`N+3`, width one identifies the two G2p-b cells `N+1`, `N+2` and leaves every
+allocated cell past `N+2` blank, and width zero identifies the single G2p-a cell
+`N+1`.  That bridge is one-way — header to endpoint — reuses the phase-local
+deadline unchanged, and needed no change to this module.  Deferred: the
+remaining `zeros-2` digits, the decrement to `n`, the all-times footprint/budget
+package (no `footprint` and no `budget_independence` theorem is exported for any
+branch), parser execution and every `contentInput?`/`ContentAccepts` claim, and
+`ContentVerifierBridge`.  It is a specialization and not an iterating round —
+ending a general payload scan needs both a counter and an advancing source
+marker, and this control has neither.  It is infrastructure only.

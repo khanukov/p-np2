@@ -997,6 +997,8 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTerminatorScratchBootstrapBridge,
     -- Part A G2p-b: the first payload bit is the second digit of `n + 1`.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetFirstPayloadBridge,
+    -- Part A G2p-c: the second payload digit is the third digit of `n + 1`.
+    Glob.one `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetSecondPayloadBridge,
     Glob.one `Pnp4.Frontier.ContractExpansion.FixedContentGammaAnchorCorrect,
     -- GATE-0 slice: non-vacuity of `ContentAccepts` at the concrete codec.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity,

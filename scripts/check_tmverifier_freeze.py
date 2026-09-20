@@ -393,18 +393,24 @@ def load_manifest(path: Path) -> dict[str, dict[str, str]]:
 
 
 def working_entries(candidate_root: Path) -> dict[str, dict[str, str]]:
-    """Describe the candidate copy the way Git would describe it.
+    """Describe the candidate copy using Git's fixed mode-collapse rule.
 
     The manifest records Git's modes, so the filesystem side has to derive them
     by Git's rule and not by a looser one: Git calls a regular file `100755`
     when its *owner* execute bit is set and `100644` otherwise, and the group
-    and other execute bits do not enter into it.  Reading any execute bit would
-    report `100755` for a `0o654` file that Git — and therefore the frozen tree
-    — records as `100644`, failing a checkout for a mode change Git does not
-    see.  Nothing else here defers to Git: content is compared by SHA-256 of the
-    bytes on disk, symlinks are hashed as their target text rather than
-    followed, and anything that is neither a regular file nor a symlink is
-    recorded as `special`, which no frozen entry can match.
+    and other execute bits do not enter into it.  This deliberately follows the
+    rule, not the checkout-local `core.fileMode` switch: honoring that mutable
+    setting would let local configuration disable mode verification entirely.
+    A filesystem that presents a spurious owner execute bit therefore fails
+    closed instead of silently weakening the freeze.  Conversely, a filesystem
+    that strips owner execute bits would report drift if a future frozen entry
+    were executable; all entries in this freeze are `100644`.  Reading any
+    execute bit would report `100755` for a `0o654` file that Git — and
+    therefore the frozen tree — records as `100644`, failing a checkout for a
+    mode change Git does not see.  Nothing else here defers to Git: content is
+    compared by SHA-256 of the bytes on disk, symlinks are hashed as their target
+    text rather than followed, and anything that is neither a regular file nor a
+    symlink is recorded as `special`, which no frozen entry can match.
     """
     tree = candidate_root / TREE
     if tree.is_symlink() or not tree.is_dir():

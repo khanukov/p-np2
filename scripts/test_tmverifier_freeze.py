@@ -558,9 +558,9 @@ def executable_mode_controls(parent: Path) -> bool:
 
     All three directions are driven end to end through the checker: group-only
     and other-only execute must still verify, owner-only execute must still be a
-    violation, and that violation must name the file and the mode column rather
-    than passing for some unrelated reason.  Nothing here loosens the failing
-    direction — an executable file in the frozen tree remains a violation.
+    violation, and that violation must name the file and report it under the
+    changed classification.  Nothing here loosens the failing direction — an
+    executable file in the frozen tree remains a violation.
 
     Returns whether the controls ran; they need real POSIX permission bits, and
     on a platform without them the caller says so rather than counting them.

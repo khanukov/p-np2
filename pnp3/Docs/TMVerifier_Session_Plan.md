@@ -1,7 +1,9 @@
 # Plan: closing the TM verifier for canonical asymptotic GapPartialMCSP
 
 > **Frozen historical plan (2026-09-03).** The implementation tree is frozen at
-> `42c59881`; see `pnp3/Docs/TMVERIFIER_FREEZE.md`. Do not resume GN-E2-3b or
+> Git tree `7ef6ac6e`, reviewed at commit `249435bf`; see
+> `pnp3/Docs/TMVERIFIER_FREEZE.md`, whose migration record covers the single
+> reviewed unfreeze since `42c59881` (S11 below). Do not resume GN-E2-3b or
 > later stages. Active work has moved to a versioned uniform complexity
 > foundation outside the frozen tree.
 
@@ -433,8 +435,10 @@ following are **explicitly deferred** and are not claimed anywhere:
 
 Every execution theorem is scoped to `encodeG1 r`; no execution claim is made
 for physically padded tapes.  The rejection theorems are likewise scoped: they
-are about the canonical encoding of a *noncanonical request*, not about an
-arbitrary padded or malformed physical tape.  The head, state and tape scope is
+are about the standard encoded word `encodeG1 r` of a *noncanonical request* —
+which is by definition not canonical, so "canonical encoding" would be a
+contradiction in terms — not about an arbitrary padded or malformed physical
+tape.  The head, state and tape scope is
 explicit: the canonical capstone pins head, state *and* tape, while the
 rejection statement pins state and tape but deliberately not the head.
 
@@ -3003,9 +3007,11 @@ sink is used to cover the remaining fixed-clock budget.
 
 The genuine repository `TM.accepts` theorem proves the forward implication
 `r.spec = some res -> accepts = true` for canonical requests.  This slice does
-not claim the full `accepts ↔ r.spec.isSome` equivalence: exact positive- and
+not claim the full `accepts = r.spec.isSome` equality: exact positive- and
 zero-`arg2` binary OOB hypotheses separately prove `accepts = false`, while
-full `spec = none` iff hardening is deferred.  Transition closure prevents
+full `spec = none` hardening is deferred.  (Closed later by S11 below,
+`g1CS_accepts_eq_isSome`, which leaves everything in this section unchanged.)
+Transition closure prevents
 reject and OOB from entering accept, and an undecodable output window enters
 the literal reject sink and remains nonaccepting.  Accepted false is explicitly
 distinct from both reject and OOB.
@@ -4180,3 +4186,112 @@ real-initial finish/recordDone capstone, complete request record, values, fixed
 tail, launch/delegation, commit, loop, total clock, verdict, or acceptance.
 E2-3b owns the arbitrary proof-level body induction and real-initial
 recordDone capstone; E2-4 owns continuation from `recordDone`.
+
+## S11 one-gate acceptance closure for every request (2026-09-19)
+
+Progress classification: infrastructure, not P-vs-NP mainline progress.  No
+source obligation is reduced: neither `VerifiedNPDAGLowerBoundSource` nor
+`SearchMCSPWeakLowerBound` is touched, and no
+`CanonicalAsymptoticVerifierComponents` obligation is discharged.
+
+S10b left the G1 verdict half-open: it proved `r.spec = some res -> accepts =
+true` for canonical `r`, plus two targeted operand-2 nonacceptance theorems, and
+there was no all-request statement.  S11 closes it.  Nothing upstream changes:
+no `g1Transition` row, no `g1Clock`, no `*Steps` definition, no head position,
+no `GateN` declaration, and no encoder.
+
+**Exact endpoints and exact implication direction.**  Two frozen signatures,
+both **quantified over every `r : G1Request` with zero side hypotheses** —
+neither takes `r.Canonical`, `r.operandsInBounds`, a tag restriction, an index
+bound, nor a step-count hypothesis:
+
+```lean
+theorem g1CS_accepts_eq_isSome (r : G1Request) :
+    TM.accepts (M := G1M) (encodeG1 r).length (g1Point (encodeG1 r)) =
+      r.spec.isSome
+
+theorem g1CS_accepts_iff_wellFormed (r : G1Request) :
+    TM.accepts (M := G1M) (encodeG1 r).length (g1Point (encodeG1 r)) = true ↔
+      r.WellFormed
+```
+
+The first is a Boolean **equality**, so it carries both implications: `spec`
+defined `-> accepts = true`, and `spec = none -> accepts = false`.  The second
+is a genuine **two-directional `↔`** obtained by composing the first with main's
+pure `G1Request.spec_isSome_iff`; it is not a decidability wrapper standing in
+for execution.  `->` holds because a nonaccepting run is one of the two
+valueless route classes, and `<-` holds because a well-formed request has a
+value and the S10b route accepts it.  Both directions run the real
+`G1M.initialConfig` through the real `TM.runConfig` for exactly
+`g1Clock (encodeG1 r).length` steps.
+
+**Transducer acceptance convention.**  G1 is a transducer, and S11 keeps main's
+convention unchanged: acceptance means *the computation was defined*.  Both
+`some true` and `some false` reach the single literal `g1AcceptState`, because
+`GateOneControl` sends `.outputDoneFalse` and `.outputDoneTrue` to the same
+successor; the result *value* lives on the output cell
+(`g1CS_gate_accept_output`).  This is the G1 instance of the sibling T1
+endpoint `t1CS_accepts_eq_isSome`.  A `spec = some false` request therefore
+**accepts**, and `g1CS_accepts_eq_isSome` is deliberately *not* a theorem about
+`some true`.  Making acceptance mean `some true` would be a policy change
+requiring a transition-row edit plus re-derivation of
+`g1Transition_accept_predecessor` and the `GateNFixedDelegateRelocation`
+delegation barrier; that is explicitly out of scope here.
+
+**Exhaustive classification of the valueless requests.**  Driven by main's own
+`G1Request.WellFormed`/`operandsInBounds` and `spec_isSome_iff`, so the tag
+analysis happens once, in the pure semantics:
+
+* **noncanonical** — the fixed `(encodeG1 r).length + 4`-step validation prefix
+  reaches the literal `g1RejectState`; `g1_validate_le_clock` puts that inside
+  the clock and `g1CS_runConfig_reject_state` absorbs the remainder from an
+  arbitrary configuration carrying the sink;
+* **canonical `const`** — the class is *empty*
+  (`g1_spec_ne_none_of_canonical_const`), so no `const` route is needed;
+* **canonical, operand out of range** — settles in a `bOOB` boundary: operand 2
+  via `g1CS_readB_zero_oob_stable`/`g1CS_readB_positive_oob_stable`, operand 1
+  via the pass-A walk stopping at the first absent successor
+  (`g1CS_aWalk_oob_driver_stable`) or, with empty data, at S4's install boundary
+  (`g1CS_readA_sigma0_unary_oob_exact`).
+
+The operand-1 walk needs **no new clock arithmetic**: the data-OOB round costs
+`16*t + 8*arg2 + 40` against the normal round's `16*t + 8*arg2 + 45`, so
+`g1AWalkOOBRoute_le_driver` bounds the whole route by the accumulated schedule
+of one more normal round and it inherits `g1AUnaryDriverSteps_le_clock` /
+`g1ABinaryDriverSteps_le_clock` unchanged.
+
+**`bOOB` is not a rejection.**  Its row is idle (`g1Transition_bOOB_stable`), so
+an out-of-range run reaches neither literal sink; `g1OOBState_ne_reject` and
+`g1OOBState_ne_accept` record both separations.  Of the three classes only the
+noncanonical one is a rejection, and no theorem here calls `bOOB` one.
+
+**Encoded-image and exact-step caveat.**  Acceptance is **exact-step, not
+halting**: every statement reads the configuration after exactly
+`g1Clock (encodeG1 r).length` steps, and no theorem says the machine halts.
+Every statement connecting the machine to `G1Request.spec` quantifies over the
+standard encoded points `g1Point (encodeG1 r)`; **nothing is claimed for a
+physical word outside the image of `encodeG1`**, so this is *not* a
+language-membership theorem and not a claim about arbitrary padded or malformed
+physical tapes.  No resource claim beyond the unchanged `g1Clock` is added.
+
+**Nonvacuity and surface.**  Seven new literals plus main's six five-tag
+literals keep every branch inhabited: six accepting completions covering both
+`const` bits and both Boolean results, two noncanonical, three operand-1
+out-of-range (nonempty data, empty data, arity 2), two operand-2 out-of-range
+(index zero, index positive).  Every verdict is a literal `Bool` derived from
+the theorems by running the machine, never by `decide` on `TM.accepts`.  The
+surface has 55 named full-proposition wrappers plus definition-only checks, and
+`AxiomsAudit` roots the same 55 theorems, the 55 wrappers and all eight new
+definitions directly — a bare `#check @name` pins only the name, so the restated
+wrappers carry the signature freeze.
+
+**The TMVerifier gate chain is not complete.**  This is one gate.  ("Part A"
+elsewhere in this repository — `STATUS.md` and `pnp3/Docs/UniformP_V1.md` —
+names the *Uniform V1 fixed-content gamma* track, which also has a stage called
+`G1`; that track is unrelated to this one and is untouched here.)  The next
+dependency is the multi-gate step: an `SLProgram`-style iteration of this
+endpoint, and the `ContentVerifierBridge` that would consume it.  Still
+unclaimed: the `SLGate` bridge (`G1Request.ofGate`/`spec_ofGate` to
+`SLGate.compute`), the multi-gate evaluator, any `GateN` acceptance or clock,
+any `GapMCSPVerifier` or content-verifier statement, any runtime-polynomial
+verifier claim, and any language-level statement about physical inputs.

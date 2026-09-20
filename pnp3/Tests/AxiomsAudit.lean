@@ -44,6 +44,8 @@ import Complexity.TMVerifier.TuringToolkit.GateOneARepair
 import Complexity.TMVerifier.TuringToolkit.GateOneAResult
 import Complexity.TMVerifier.TuringToolkit.GateOneOutputKernel
 import Complexity.TMVerifier.TuringToolkit.GateOneOutputAccept
+import Complexity.TMVerifier.TuringToolkit.GateOneAcceptsClosureExamples
+import Tests.TMGateOneAcceptsClosureSurfaceTests
 import Complexity.TMVerifier.TuringToolkit.GateOneTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOnePassBTraceSafety
 import Complexity.TMVerifier.TuringToolkit.GateOnePassBTerminalRepairTraceSafety
@@ -4710,3 +4712,136 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_two_tight_premises
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_two_probe
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_two_tight_probe
+
+-- S11 (2026-09-19), infrastructure only: all-request one-gate acceptance
+-- closure in main's transducer convention.  `accepts = r.spec.isSome`, so a
+-- defined `false` accepts; the classes without a value are a noncanonical
+-- rejection and a canonical out-of-range `bOOB` idle, and `bOOB` is not a
+-- rejection.  Exact-step, not halting, and scoped to the image of `encodeG1`:
+-- no language-membership, multi-gate or content-verifier claim, and no
+-- transition row, clock, step count or head position is touched.
+#print axioms Internal.PsubsetPpoly.TM.g1_validate_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1CS_pad_to_clock
+#print axioms Internal.PsubsetPpoly.TM.g1State_ne_accept_of_mode
+#print axioms Internal.PsubsetPpoly.TM.g1RejectState_ne_accept
+#print axioms Internal.PsubsetPpoly.TM.g1OOBState_ne_accept
+#print axioms Internal.PsubsetPpoly.TM.g1OOBState_ne_reject
+#print axioms Internal.PsubsetPpoly.TM.g1CS_stepConfig_reject_state
+#print axioms Internal.PsubsetPpoly.TM.g1CS_runConfig_reject_state
+#print axioms Internal.PsubsetPpoly.TM.g1CS_run_eq_runConfig
+#print axioms Internal.PsubsetPpoly.TM.g1CS_state_eq_accept_iff
+#print axioms Internal.PsubsetPpoly.TM.g1CS_accepts_iff_state
+#print axioms Internal.PsubsetPpoly.TM.g1CS_not_accepts_of_state
+#print axioms Internal.PsubsetPpoly.TM.g1_canonical_of_spec_some
+#print axioms Internal.PsubsetPpoly.TM.g1CS_accepts_true_of_spec_some
+#print axioms Internal.PsubsetPpoly.TM.g1CS_noncanonical_clock_reject
+#print axioms Internal.PsubsetPpoly.TM.g1CS_noncanonical_run_reject
+#print axioms Internal.PsubsetPpoly.TM.g1CS_noncanonical_not_accepts
+#print axioms Internal.PsubsetPpoly.TM.g1_operandsInBounds_const
+#print axioms Internal.PsubsetPpoly.TM.g1_operandsInBounds_unary
+#print axioms Internal.PsubsetPpoly.TM.g1_operandsInBounds_binary
+#print axioms Internal.PsubsetPpoly.TM.g1_operands_oob_of_canonical_none
+#print axioms Internal.PsubsetPpoly.TM.g1_spec_ne_none_of_canonical_const
+#print axioms Internal.PsubsetPpoly.TM.g1AWalkOOBRoute_le_driver
+#print axioms Internal.PsubsetPpoly.TM.g1AUnaryWalkOOBSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1ABinaryWalkOOBSteps_le_clock
+#print axioms Internal.PsubsetPpoly.TM.g1ValsWitness_spec
+#print axioms Internal.PsubsetPpoly.TM.g1ValsWitness_zero
+#print axioms Internal.PsubsetPpoly.TM.g1CS_canonical_none_clock_oob_unary
+#print axioms Internal.PsubsetPpoly.TM.g1CS_canonical_none_clock_oob_binary
+#print axioms Internal.PsubsetPpoly.TM.g1CS_canonical_none_clock_oob
+#print axioms Internal.PsubsetPpoly.TM.g1CS_canonical_none_run_oob
+#print axioms Internal.PsubsetPpoly.TM.g1CS_canonical_none_not_accepts
+#print axioms Internal.PsubsetPpoly.TM.g1CS_none_not_accepts
+#print axioms Internal.PsubsetPpoly.TM.g1CS_accepts_eq_isSome
+#print axioms Internal.PsubsetPpoly.TM.g1CS_accepts_iff_spec_isSome
+#print axioms Internal.PsubsetPpoly.TM.g1CS_accepts_iff_wellFormed
+#print axioms Internal.PsubsetPpoly.TM.g1CS_accepts_eq_decide_wellFormed
+#print axioms Internal.PsubsetPpoly.TM.g1CS_not_accepts_iff_spec_none
+#print axioms Internal.PsubsetPpoly.TM.g1ValsWitness
+
+-- S11 literal probes: both defined completions accepting, plus noncanonical,
+-- operand-1 (nonempty, empty, arity-2) and operand-2 (index zero, positive)
+-- out-of-range nonacceptance, with literal Bool verdicts.
+#print axioms Internal.PsubsetPpoly.TM.G1AcceptsClosureProbes.reqNonCanonInput
+#print axioms Internal.PsubsetPpoly.TM.G1AcceptsClosureProbes.reqNonCanonConst
+#print axioms Internal.PsubsetPpoly.TM.G1AcceptsClosureProbes.reqArg1OOBWalk
+#print axioms Internal.PsubsetPpoly.TM.G1AcceptsClosureProbes.reqArg1OOBEmpty
+#print axioms Internal.PsubsetPpoly.TM.G1AcceptsClosureProbes.reqArg1OOBBinary
+#print axioms Internal.PsubsetPpoly.TM.G1AcceptsClosureProbes.reqArg2OOBZero
+#print axioms Internal.PsubsetPpoly.TM.G1AcceptsClosureProbes.reqArg2OOBPositive
+#print axioms Internal.PsubsetPpoly.TM.G1AcceptsClosureProbes.literal_noncanonical
+#print axioms Internal.PsubsetPpoly.TM.G1AcceptsClosureProbes.literal_oob_canonical
+#print axioms Internal.PsubsetPpoly.TM.G1AcceptsClosureProbes.literal_none_specs
+#print axioms Internal.PsubsetPpoly.TM.G1AcceptsClosureProbes.literal_oob_operands
+#print axioms Internal.PsubsetPpoly.TM.G1AcceptsClosureProbes.literal_arg1_oob_reads_operand2
+#print axioms Internal.PsubsetPpoly.TM.G1AcceptsClosureProbes.literal_wellFormed
+#print axioms Internal.PsubsetPpoly.TM.G1AcceptsClosureProbes.literal_not_wellFormed
+#print axioms Internal.PsubsetPpoly.TM.G1AcceptsClosureProbes.literal_defined_accepts
+#print axioms Internal.PsubsetPpoly.TM.G1AcceptsClosureProbes.literal_noncanonical_not_accepts
+#print axioms Internal.PsubsetPpoly.TM.G1AcceptsClosureProbes.literal_arg1_oob_not_accepts
+#print axioms Internal.PsubsetPpoly.TM.G1AcceptsClosureProbes.literal_arg2_oob_not_accepts
+#print axioms Internal.PsubsetPpoly.TM.G1AcceptsClosureProbes.literal_accepts_eq_isSome
+#print axioms Internal.PsubsetPpoly.TM.G1AcceptsClosureProbes.literal_accepts_iff_wellFormed
+#print axioms Internal.PsubsetPpoly.TM.G1AcceptsClosureProbes.literal_oob_not_reject
+#print axioms Internal.PsubsetPpoly.TM.G1AcceptsClosureProbes.literal_oob_not_accept_state
+#print axioms Internal.PsubsetPpoly.TM.G1AcceptsClosureProbes.literal_arg1_oob_run_mode
+#print axioms Internal.PsubsetPpoly.TM.G1AcceptsClosureProbes.literal_noncanonical_run_reject
+
+-- S11 named signature pins.  A bare `#check @name` pins only the name, so the
+-- restated wrappers are audited here too.
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1_validate_le_clock
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1CS_pad_to_clock
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1State_ne_accept_of_mode
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1RejectState_ne_accept
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1OOBState_ne_accept
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1OOBState_ne_reject
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1CS_stepConfig_reject_state
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1CS_runConfig_reject_state
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1CS_run_eq_runConfig
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1CS_state_eq_accept_iff
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1CS_accepts_iff_state
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1CS_not_accepts_of_state
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1_canonical_of_spec_some
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1CS_accepts_true_of_spec_some
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1CS_noncanonical_clock_reject
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1CS_noncanonical_run_reject
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1CS_noncanonical_not_accepts
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1_operandsInBounds_const
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1_operandsInBounds_unary
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1_operandsInBounds_binary
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1_operands_oob_of_canonical_none
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1_spec_ne_none_of_canonical_const
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1AWalkOOBRoute_le_driver
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1AUnaryWalkOOBSteps_le_clock
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1ABinaryWalkOOBSteps_le_clock
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1ValsWitness_spec
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1ValsWitness_zero
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1CS_canonical_none_clock_oob_unary
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1CS_canonical_none_clock_oob_binary
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1CS_canonical_none_clock_oob
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1CS_canonical_none_run_oob
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1CS_canonical_none_not_accepts
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1CS_none_not_accepts
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1CS_accepts_eq_isSome
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1CS_accepts_iff_spec_isSome
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1CS_accepts_iff_wellFormed
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1CS_accepts_eq_decide_wellFormed
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_g1CS_not_accepts_iff_spec_none
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_literal_noncanonical
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_literal_oob_canonical
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_literal_none_specs
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_literal_oob_operands
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_literal_arg1_oob_reads_operand2
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_literal_wellFormed
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_literal_not_wellFormed
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_literal_defined_accepts
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_literal_noncanonical_not_accepts
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_literal_arg1_oob_not_accepts
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_literal_arg2_oob_not_accepts
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_literal_accepts_eq_isSome
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_literal_accepts_iff_wellFormed
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_literal_oob_not_reject
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_literal_oob_not_accept_state
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_literal_arg1_oob_run_mode
+#print axioms Pnp3.Tests.TMGateOneAcceptsClosureSurface.check_literal_noncanonical_run_reject

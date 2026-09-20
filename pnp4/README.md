@@ -367,8 +367,9 @@ provided, and this is not P-vs-NP mainline progress.
 
 Part A G2p-c adds `ContentFixedGammaTargetSecondPayloadBridge` over the pnp3
 fixed second-payload machine, at that machine's length-only, *phase-local*
-deadline `2 * (a + m)`. It has four public theorems, all one-way
-(`contentHeader? = some …` to machine conclusion) and none with a converse.
+deadline `2 * (a + m)`. It has four public theorems, all one-way out of a
+decoded `contentHeader? = some …` and none with a converse; only the last three
+reach a machine conclusion, because the first is machine-free.
 `header_digits` is generic and machine-free: it takes one hypothesis, a decoded
 header `contentHeader? z = some (n, consumed)` for an arbitrary
 `z : PrefixBitVec N`, and returns a gamma width `zeros` with
@@ -387,13 +388,19 @@ allocated cell past `a + m + 2` stays blank. With the header `(0, 1)` (two
 hypotheses) the one-digit G2p-a register survives, with no room premise. Given a
 decoded header the premise `3 ≤ n` is exactly `2 ≤ zeros`, since the exported
 bounds make `zeros` the index of the leading digit of `n + 1`; room, by
-contrast, is not implied by the header and fails whenever `a + B ≤ 1`.
+contrast, is not implied by the header and fails whenever `a + B ≤ 1`. The three
+concrete header hypotheses are jointly exhaustive over decoded headers —
+`zeros = 0` forces `(0, 1)`, `zeros = 1` forces `consumed = 3`, `2 ≤ zeros`
+forces `3 ≤ n` — with the last two branches conditional on their explicit room.
 `deadline` and `exactClock` are phase-local: `startConfig` retags the actual
 G2p-b endpoint and embeds the earlier phases' steps, which neither clock counts.
-Parser execution, `contentInput?`, `ContentAccepts`, language acceptance from
-`qDone`, clock composition, the remaining `zeros - 2` digits, the decrement to
-`n`, a room-free `qReject` classification, and `ContentVerifierBridge` are not
-provided, and this is not P-vs-NP mainline progress.
+No `qReject` theorem is restated here: the one-way
+`contentHeader? = none → qReject` direction is already room-free from the
+imports, while the `qReject ↔ contentHeader? = none` equivalence would need the
+room premise. Parser execution, `contentInput?`, `ContentAccepts`, language
+acceptance from `qDone`, clock composition, the remaining `zeros - 2` digits,
+the decrement to `n`, and `ContentVerifierBridge` are not provided, and this is
+not P-vs-NP mainline progress.
 
 For an *arbitrary* threshold there is a third input, `PolyBoundedInTable threshold`;
 it is proved for the canonical polynomial thresholds, so it disappears at

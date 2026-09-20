@@ -809,9 +809,12 @@ itself still states no pnp4 reader or parser fact.  The reading is done outside
 pnp3, by the G2p-c3 companion
 `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetSecondPayloadBridge`,
 which consumes the width-zero, width-one, and positive-width endpoints above and
-identifies the register cells `N+1`, `N+2`, `N+3` with the three leading binary
-digits of `n+1` for a decoded `contentHeader? (Fin.append x w) = some (n,
-consumed)`.  That bridge is one-way — header to endpoint — reuses the phase-local
+reads their registers as leading binary digits of `n+1` for a decoded
+`contentHeader? (Fin.append x w) = some (n, consumed)`.  How many digits are
+exposed is the width: positive width identifies all three cells `N+1`, `N+2`,
+`N+3`, width one identifies the two G2p-b cells `N+1`, `N+2` and leaves every
+allocated cell past `N+2` blank, and width zero identifies the single G2p-a cell
+`N+1`.  That bridge is one-way — header to endpoint — reuses the phase-local
 deadline unchanged, and needed no change to this module.  Deferred: the
 remaining `zeros-2` digits, the decrement to `n`, the all-times footprint/budget
 package (no `footprint` and no `budget_independence` theorem is exported for any

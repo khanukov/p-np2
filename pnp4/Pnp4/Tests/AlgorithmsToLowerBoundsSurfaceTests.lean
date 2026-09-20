@@ -5394,20 +5394,26 @@ probe derives its cells from the bridge theorems above, so it pins what those
 theorems give and is not an independent machine reduction. -/
 
 /-- Header `(0, 1)`: the endpoint is `qDone` and the register is still the single
-G2p-a digit of `0 + 1` at cell `a + m + 1`. -/
+G2p-a digit of `0 + 1` at cell `a + m + 1`.  "Single" is pinned twice over: the
+next cell `11` — which this `a` does allocate for every `B`, so the claim is not
+vacuous — is blank, and so is every allocated cell past the register. -/
 theorem probe_secondPayload_zero_width (B : Nat) :
     let d := FixedGammaTargetSecondPayload.machine.run
       (FixedGammaTargetSecondPayload.deadline (8 + 1))
       (FixedGammaTargetSecondPayload.startConfig B headerValueTag headerValueWidthZero)
     d.state = FixedGammaTargetSecondPayload.qDone ∧
       d.tape ⟨8 + 1 + 1, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
-        some true := by
-  obtain ⟨hq, -, -, h1, -⟩ :=
+        some true ∧
+      d.tape ⟨8 + 1 + 2, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
+        none ∧
+      ∀ i : Fin (tapeLength (PairEncoding.pairLength 8 1) B), 8 + 1 + 1 < i.val →
+        d.tape i = none := by
+  obtain ⟨hq, -, -, h1, hblank⟩ :=
     secondPayload_zero_width_register (B := B) headerValueTag headerValueWidthZero
       (by decide) (by decide)
-  refine ⟨hq, ?_⟩
-  rw [h1]
-  decide
+  refine ⟨hq, by rw [h1]; decide, ?_, hblank⟩
+  exact hblank ⟨8 + 1 + 2, by unfold tapeLength PairEncoding.pairLength; omega⟩
+    (by show 8 + 1 + 1 < 8 + 1 + 2; omega)
 
 /-- Header `(2, 3)`: gamma width one keeps the two G2p-b digits `11₂` of
 `2 + 1` at cells `12, 13`, and the target cell `14` — which this `a` does

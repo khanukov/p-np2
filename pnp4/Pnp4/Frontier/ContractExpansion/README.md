@@ -804,8 +804,8 @@ at cells `12, 13` for header `(3, 5)` (virtual second digit), and `11₂` at cel
 `ContentFixedGammaTargetSecondPayloadBridge.lean` is the Part A G2p-c
 infrastructure bridge. It is registered immediately after G2p-b and imports
 G2p-b and the pnp3 `FixedGammaTargetSecondPayload` machine. It has exactly four
-public theorems, all one-way; the last three are at the machine's length-only
-deadline `2 * (a + m)`:
+public theorems, all one-way out of a decoded header; only the last three
+mention the machine, at its length-only deadline `2 * (a + m)`:
 
 * `header_digits` (one hypothesis; generic, no machine and no tag): from
   `contentHeader? z = some (n, consumed)` for `z : PrefixBitVec N`, some `zeros`
@@ -840,11 +840,22 @@ repeat digit `0` at an address that has already left the block. The generic
 digit induction is `readNatBE_digit` (private). Given a decoded header, `3 ≤ n`
 is exactly `2 ≤ zeros`, because the exported bounds make `zeros` the index of
 the leading digit of `n + 1`; the bridge still states the implication one way
-only. Room is a capacity assumption the header does not imply —
-`FixedGammaTargetSecondPayload.room_iff` reads it as `2 ≤ a + B`, a condition on
-the `x` side and the budget that a decoded header does not constrain — so it is
-carried explicitly and this bridge states no
-`qReject` classification. `deadline` and `exactClock` are **phase-local**:
+only. The three concrete header hypotheses are jointly exhaustive over decoded
+headers, since `header_digits` splits them by width: `zeros = 0` forces the
+header `(0, 1)`, `zeros = 1` forces `consumed = 3`, and `2 ≤ zeros` forces
+`3 ≤ n` — the width-one branch only under the G2p-b room, the positive branch
+only under the wider one. Room is a capacity assumption the header does not
+imply — `FixedGammaTargetSecondPayload.room_iff` reads it as `2 ≤ a + B`, a
+condition on the `x` side and the budget that a decoded header does not
+constrain — so it is carried explicitly. This bridge states no `qReject`
+theorem, and not because room blocks one: on a matching tag,
+`contentHeader? = none → qReject` at this deadline is room-free from the
+imports, by `fixedGamma_header_contract` together with
+`FixedGammaTargetSecondPayload.malformed_at_deadline`, which takes no room
+premise. Room is what the opposite direction needs, and hence what the
+`qReject ↔ contentHeader? = none` equivalence of G2p-a would need here, since
+excluding `qReject` on a decoded header of width one or more goes through the
+endpoint theorems. `deadline` and `exactClock` are **phase-local**:
 `startConfig` retags the actual G2p-b endpoint configuration and embeds the
 earlier phases' steps, which neither clock accounts for, so nothing here is a
 runtime or a clock for the composed pipeline. The module asserts no converse
@@ -853,7 +864,8 @@ digit at `a + m + 3`) and claims no parser execution, `contentInput?`,
 `ContentAccepts`, language acceptance, clock composition, the remaining
 `zeros - 2` digits, the decrement to `n`, `ContentVerifierBridge`, or P-vs-NP
 mainline result. Surface regressions derive, for every budget, the one-digit
-register for header `(0, 1)`; `11₂` at cells `12, 13` with cell `14` still blank
+register for header `(0, 1)` (digit at cell `10`, with cell `11` and every
+later allocated cell blank); `11₂` at cells `12, 13` with cell `14` still blank
 for header `(2, 3)`; `100₂` at cells `12, 13, 14` for header `(3, 5)`; `110₂` at
 cells `13, 14, 15` for header `(5, 5)`, whose second payload digit is the
 virtual zero at the boundary; and `111₂` at cells `14, 15, 16` for header

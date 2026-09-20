@@ -6,9 +6,10 @@ Updated: 2026-09-20
 only).** The pnp4 module
 `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetSecondPayloadBridge`
 reads the landed G2p-c register against the parsed content header. Write
-`N = a+m`. It has exactly four public theorems, all one-way implications from
-`contentHeader? = some (n, consumed)` to a machine conclusion, and no converse
-anywhere. `header_digits` is generic and machine-free — one hypothesis, any
+`N = a+m`. It has exactly four public theorems, all one-way implications out of
+a decoded `contentHeader? = some (n, consumed)` and no converse anywhere; only
+the last three reach a machine conclusion, because the first is machine-free.
+`header_digits` is generic and machine-free — one hypothesis, any
 `z : PrefixBitVec N`, no tag: a decoded header fixes `zeros` with
 `gammaZeros? z = some zeros`, `consumed = 2*zeros+1`,
 `2^zeros ≤ n+1 < 2^(zeros+1)`, the leading digit `(n+1).testBit zeros = true`,
@@ -20,37 +21,52 @@ physical word is the digit `0` rather than a physical cell, and past the window
 the truncated index `zeros-1-t` would repeat digit `0` at an address outside the
 block. The other three theorems are about the landed machine at its
 length-only, **phase-local** deadline `2*N`. Under a matching tag, a decoded
-header with `3 ≤ n`, and exactly the room `a+m+3 < tapeLength (pairLength a m) B`
-(four hypotheses), some `zeros ≥ 2` has the header bounds above and the endpoint
-is `qDone` at head `7` on `secondPayloadTape` with both digits taken from that
-same header, with cells `N+1`, `N+2`, `N+3` holding `(n+1).testBit zeros`,
-`(n+1).testBit (zeros-1)`, `(n+1).testBit (zeros-2)` — the three leading binary
-digits of `n+1`. Under a matching tag and `consumed = 3`, with only the G2p-b
-room `a+m+2 < tapeLength (pairLength a m) B` (three hypotheses), the two-digit
-G2p-b register survives and every *allocated* cell past `N+2` stays blank, so no
-third digit is written. Under a matching tag and the header `(0,1)` (two
-hypotheses) the one-digit G2p-a register survives, with no room premise. Given a
+header with `3 ≤ n`, and exactly the room
+`a+m+3 < tapeLength (pairLength a m) B` (four hypotheses), some `zeros ≥ 2` has
+the header bounds above and the endpoint is `qDone` at head `7` on
+`secondPayloadTape` with both digits taken from that same header, with cells
+`N+1`, `N+2`, `N+3` holding `(n+1).testBit zeros`, `(n+1).testBit (zeros-1)`,
+`(n+1).testBit (zeros-2)` — the three leading binary digits of `n+1`. Under a
+matching tag and `consumed = 3`, with only the G2p-b room
+`a+m+2 < tapeLength (pairLength a m) B` (three hypotheses), the two-digit G2p-b
+register survives and every *allocated* cell past `N+2` stays blank, so no third
+digit is written. Under a matching tag and the header `(0,1)` (two hypotheses)
+the one-digit G2p-a register survives, with no room premise. Given a
 decoded header the premise `3 ≤ n` is exactly `2 ≤ zeros`, since the exported
 bounds make `zeros` the index of the leading digit of `n+1`; that equivalence is
 derivable from the exported conjuncts and is *not* stated as an equivalence
-theorem. Room, by contrast, is not implied by the header — `room_iff` reads it
-as `2 ≤ a+B`, a condition on the `x` side and the budget that a decoded header
-does not constrain — so `hroom` stays an explicit premise and this bridge states no room-free `qReject`
-classification. `deadline` and `exactClock` remain phase-local: `startConfig`
+theorem. The three concrete header hypotheses — `3 ≤ n`, `consumed = 3`, and
+the header `(0,1)` — are jointly exhaustive over decoded headers, since
+`header_digits` splits them by width: `zeros = 0` forces the header `(0,1)`,
+`zeros = 1` forces `consumed = 3`, and `2 ≤ zeros` forces `3 ≤ n`. That coverage
+is not free: the width-one branch assumes the G2p-b room and the positive branch
+the wider one. Room, by contrast, is not implied by
+the header — `room_iff` reads it as `2 ≤ a+B`, a condition on the `x` side and
+the budget that a decoded header does not constrain — so `hroom` stays an
+explicit premise. This bridge states no `qReject` theorem at all, and not for
+want of room in one direction: on a matching tag,
+`contentHeader? = none → qReject` at this deadline is already room-free from the
+imports (`fixedGamma_header_contract` plus `malformed_at_deadline`, which takes
+no room premise). What needs room is
+the opposite direction, hence the `qReject ↔ contentHeader? = none` equivalence
+that G2p-a states for the bootstrap: excluding `qReject` on a decoded header of
+width one or more runs through the endpoint theorems, which assume `N+2` and
+`N+3` allocated. `deadline` and `exactClock` remain phase-local: `startConfig`
 retags the *actual* G2p-b endpoint configuration and embeds every earlier step,
 which neither clock counts, so nothing here is a `UniformP` execution, a
 runtime, or a clock for the composed pipeline. Nonvacuity is theorem-derived
 rather than an independent machine reduction: for every budget, the probes pin
-the one-digit register for header `(0,1)`, `11₂` at cells `12,13` with cell `14`
+the one-digit register for header `(0,1)` (digit at cell `10`, with cell `11`
+and every later allocated cell blank), `11₂` at cells `12,13` with cell `14`
 still blank for `(2,3)`, `100₂` at `12,13,14` for `(3,5)`, `110₂` at `13,14,15`
 for `(5,5)` (second payload digit the virtual zero at the boundary), and `111₂`
 at `14,15,16` for `(6,5)` (second payload digit physical). No pnp3 machine,
-source, or test file changed in this slice; only pnp3 documentation. Deferred: the remaining `zeros-2`
-digits, the decrement of the stored `n+1` to `n`, parser execution,
-`contentInput?`, `ContentAccepts`, language acceptance from `qDone`, the
-raw-input composed machine and its clock, the all-times footprint/budget
-package, `ContentVerifierBridge`, advice-freedom, and `NP` membership. Nothing
-here is P-vs-NP mainline progress.
+source, or test file changed in this slice; only pnp3 documentation.
+Deferred: the remaining `zeros-2` digits, the decrement of the stored `n+1` to
+`n`, parser execution, `contentInput?`, `ContentAccepts`, language acceptance
+from `qDone`, the raw-input composed machine and its clock, the all-times
+footprint/budget package, `ContentVerifierBridge`, advice-freedom, and `NP`
+membership. Nothing here is P-vs-NP mainline progress.
 
 **Part A G2p-c2 second gamma payload digit, positive-width execution
 (infrastructure only).** `FixedGammaTargetSecondPayload` now runs its fixed
@@ -175,12 +191,11 @@ terminal states being absorbing, also excludes any earlier terminal arrival —
 and the halt at step `2*N-7`. The `contentHeader?` reading of these endpoints is
 now supplied outside pnp3, by the G2p-c3 bridge described above; this module
 itself still states no pnp4 reader or parser fact and needed no change for it.
-Deferred:
-the remaining `zeros-2` digits, the decrement to `n`, the all-times
-footprint/budget package, parser execution, and `ContentVerifierBridge`. This is a specialization, not an iterating
-round: the same rows cannot walk a general payload, because that needs both a
-counter and an advancing source marker, neither of which this control has.
-Nothing here is P-vs-NP mainline progress.
+Deferred: the remaining `zeros-2` digits, the decrement to `n`, the all-times
+footprint/budget package, parser execution, and `ContentVerifierBridge`. This is
+a specialization, not an iterating round: the same rows cannot walk a general
+payload, because that needs both a counter and an advancing source marker,
+neither of which this control has. Nothing here is P-vs-NP mainline progress.
 
 **Part A G2p-b first gamma payload bit (infrastructure only).**
 `FixedGammaTargetFirstPayload` is a fixed 18-state, 54-row machine whose start

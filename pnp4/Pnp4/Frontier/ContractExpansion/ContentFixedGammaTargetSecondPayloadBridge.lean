@@ -39,17 +39,32 @@ the resulting register against the parsed content header
 `2 ^ zeros ≤ n + 1 < 2 ^ (zeros + 1)` of `header_digits` make `zeros` the index
 of the leading binary digit of `n + 1`, so on a decoded header `2 ≤ zeros` holds
 if and only if `4 ≤ n + 1`.  Both directions of that equivalence are derivable
-from the exported conjuncts, and neither is stated as an equivalence theorem: the
-bridge theorems themselves only ever run
-`contentHeader? = some …  →  machine conclusion`.  There is deliberately **no
-converse**: nothing here derives a valid header, a width, or `2 ≤ zeros` from
-`qDone`, from the endpoint tape, or from a digit found at `N + 3`.
+from the exported conjuncts, and neither is stated as an equivalence theorem.
+All four theorems run one way only, from a decoded `contentHeader? = some …`:
+`header_digits` stops at the parser and has no machine in its statement, and only
+the other three carry that header through to a phase-local machine conclusion.
+There is deliberately **no converse**: nothing here derives a valid header, a
+width, or `2 ≤ zeros` from `qDone`, from the endpoint tape, or from a digit found
+at `N + 3`.
+
+The header hypotheses of the three concrete theorems are jointly exhaustive over
+decoded headers, because `header_digits` splits them by width: `zeros = 0` forces
+the header `(0, 1)`, `zeros = 1` forces `consumed = 3`, and `2 ≤ zeros` forces
+`3 ≤ n`.  That coverage is not free — the width-one branch still assumes the
+G2p-b room for `N + 2`, and the positive branch the room for `N + 3`.
 
 Room is not implied by the header: `FixedGammaTargetSecondPayload.room_iff` makes
 `N + 3 < tapeLength (pairLength a m) B` equivalent to `2 ≤ a + B`, a condition on
 the `x` side and the budget that a decoded header does not constrain, so `hroom`
-is carried explicitly and this bridge states no room-free `qReject`
-classification.
+is carried explicitly.  This bridge states no `qReject` theorem at all, and that
+is not because one is unavailable without room: on a matching tag the one-way
+`contentHeader? = none → qReject` at this deadline is already room-free from the
+imports, since `fixedGamma_header_contract` turns an absent header into
+`gammaZeros? = none` and `FixedGammaTargetSecondPayload.malformed_at_deadline`
+takes no room premise.  What needs room is the opposite direction, and hence the
+`qReject ↔ contentHeader? = none` equivalence that G2p-a states for the
+bootstrap: excluding `qReject` on a decoded header of width one or more runs
+through the endpoint theorems, which assume `N + 2` and `N + 3` allocated.
 
 `FixedGammaTargetSecondPayload.deadline` and `exactClock` are **phase-local**:
 `startConfig` is a retagging of the *actual* G2p-b endpoint configuration and

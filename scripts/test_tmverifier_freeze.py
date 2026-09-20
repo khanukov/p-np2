@@ -7,14 +7,17 @@ rewritten history where the reviewed provenance commit does not exist; it must
 fail closed whenever provenance *is* available but disagrees with the pin; it
 must never report a present-but-unreadable object, or a Git failure of any
 other kind, as an absent one; it must not mistake Git's own tracing output for
-a Git diagnostic; and manifest authoring must refuse to write at all unless the
-reviewed provenance resolves and matches, and must replace its target rather
-than truncate it when it does write.  This suite itself must pass in a checkout
-that has lost the reviewed commit, which one control asserts by running the
-whole suite inside such a repository.  All of it runs end to end against the
-real checker source — unmodified, or repinned onto a synthetic object by
-textual constant substitution — in real synthetic Git repositories, never
-against a stand-in.
+a Git diagnostic; it must enumerate a readable frozen tree whole rather than
+through the current directory's Git prefix, so a checkout nested inside another
+repository is not failed on a false mismatch; it must read executable mode the
+way Git reads it, from the owner execute bit alone; and manifest authoring must
+refuse to write at all unless the reviewed provenance resolves and matches, and
+must replace its target rather than truncate it when it does write.  This suite
+itself must pass in a checkout that has lost the reviewed commit, which one
+control asserts by running the whole suite inside such a repository.  All of it
+runs end to end against the real checker source — unmodified, or repinned onto
+a synthetic object by textual constant substitution — in real synthetic Git
+repositories, never against a stand-in.
 """
 
 from __future__ import annotations
@@ -478,6 +481,113 @@ def no_object_store_control(parent: Path) -> None:
     expect_no_text(output, "absent from this repository", "export")
 
 
+def nested_prefix_control(parent: Path) -> None:
+    """A readable frozen tree must enumerate whole from a nested checkout.
+
+    This checkout is not always the root of the Git repository that holds its
+    objects.  A vendored export, a fixture directory committed to an unrelated
+    repository, a copy made inside someone else's worktree — each leaves the
+    checker's own root under a non-empty Git prefix, and `git ls-tree` limits
+    its listing to that prefix unless it is told not to.  The frozen tree object
+    has nothing under such a prefix, so the enumeration comes back empty and the
+    checker reports a manifest mismatch against a tree object it can read
+    perfectly well: fail-closed, but on a false diagnosis, and unfixable by
+    anyone who believes it.
+
+    The fixture is that shape exactly.  An unrelated repository vendors this
+    checkout two directories deep; its object store carries the frozen tree
+    object, and the frozen bytes are byte-identical, so the enumeration is
+    available and must produce every entry.  The reviewed commit is absent, as
+    it is in any such export, so this also stays within the provenance-free
+    property the rest of the suite holds down.
+    """
+    outer = parent / "nested-prefix"
+    export = scaffold(outer / "vendor" / "pnp2")
+    init_commit(outer, "Unrelated repository vendoring an export of this checkout")
+
+    if (export / ".git").exists():
+        raise AssertionError("the vendored export must not be its own repository")
+    prefix = git(export, "rev-parse", "--show-prefix")
+    if prefix != "vendor/pnp2/":
+        raise AssertionError(
+            f"the vendored export must sit under a Git prefix, got {prefix!r}"
+        )
+    if git(outer, "cat-file", "-t", FROZEN_TREE) != "tree":
+        raise AssertionError("the nested fixture does not carry the frozen tree object")
+    if git(export, "rev-parse", f"HEAD:vendor/pnp2/{TREE}") != FROZEN_TREE:
+        raise AssertionError("the vendored subtree is not the frozen tree")
+    if has_object(outer, FROZEN_COMMIT):
+        raise AssertionError("the nested fixture must not contain the reviewed commit")
+
+    output = run(None, True, checker=export / "scripts" / CHECKER.name, cwd=export, env=GIT_ENV)
+    # The count is the point: a prefix-filtered listing is empty, not short, so
+    # only the full entry count proves the tree was enumerated from its own root.
+    expect_text(output, f"{len(_REVIEWED['files'])} Git objects", "nested-prefix")
+    expect_text(
+        output, f"reviewed provenance {FROZEN_COMMIT[:12]} absent", "nested-prefix"
+    )
+
+
+def chmod_exact(path: Path, mode: int, label: str) -> None:
+    """Set exactly `mode`, and refuse to continue if the filesystem did not.
+
+    The permission controls below are worthless on a filesystem that quietly
+    drops the bit they turn on, so the bit is read back rather than assumed.
+    Platforms that do not carry POSIX permission bits at all are handled by the
+    caller, which does not run these controls there.
+    """
+    path.chmod(mode)
+    recorded = stat.S_IMODE(path.lstat().st_mode)
+    if recorded != mode:
+        raise AssertionError(
+            f"{label}: this filesystem recorded {recorded:#o} for a requested "
+            f"{mode:#o}, so the executable-mode control cannot be trusted here"
+        )
+
+
+def executable_mode_controls(parent: Path) -> bool:
+    """Executable mode must be read the way Git reads it: the owner bit alone.
+
+    Git records `100755` for a regular file when its owner execute bit is set
+    and `100644` otherwise; the group and other execute bits do not enter into
+    it.  Deriving the mode from *any* execute bit instead makes a `0o654` or
+    `0o645` file — an unpacking tool's umask, a shared-group checkout, a copy
+    off a filesystem that hands out `o+x` — differ from a frozen tree in which
+    all 115 entries are `100644`, so the checker would report a freeze violation
+    for a mode change Git does not see and no unfreeze PR could ever fix.
+
+    All three directions are driven end to end through the checker: group-only
+    and other-only execute must still verify, owner-only execute must still be a
+    violation, and that violation must name the file and the mode column rather
+    than passing for some unrelated reason.  Nothing here loosens the failing
+    direction — an executable file in the frozen tree remains a violation.
+
+    Returns whether the controls ran; they need real POSIX permission bits, and
+    on a platform without them the caller says so rather than counting them.
+    """
+    if os.name != "posix":
+        print(
+            "[tmverifier-freeze-test] executable-mode controls skipped: this "
+            "platform does not record POSIX permission bits",
+            file=sys.stderr,
+        )
+        return False
+
+    for label, mode in (("group-exec", 0o654), ("other-exec", 0o645)):
+        tolerated = fixture(parent / label)
+        chmod_exact(tolerated / TARGET, mode, f"mode/{label}")
+        output = run(tolerated, True)
+        expect_text(output, f"{len(_REVIEWED['files'])} Git objects", f"mode/{label}")
+
+    owner = fixture(parent / "owner-exec")
+    chmod_exact(owner / TARGET, 0o744, "mode/owner-exec")
+    output = run(owner, False)
+    expect_text(output, "TMVerifier freeze violation", "mode/owner-exec")
+    expect_text(output, "Changed:", "mode/owner-exec")
+    expect_text(output, TARGET.as_posix(), "mode/owner-exec")
+    return True
+
+
 def authoring_controls(parent: Path) -> None:
     """A permitted write installs the manifest whole, or does not touch it.
 
@@ -774,10 +884,13 @@ def main() -> None:
         mode_target.chmod(mode_target.stat().st_mode | 0o111)
         run(executable, False)
 
+        filesystem = "8 filesystem" if executable_mode_controls(parent) else "5 filesystem"
+
         rewritten_history_controls(parent)
         provenance_controls(parent)
         object_state_controls(parent)
         no_object_store_control(parent)
+        nested_prefix_control(parent)
         authoring_controls(parent)
         tracing_controls(parent)
         if not nested():
@@ -789,8 +902,8 @@ def main() -> None:
         tail = "1 root-authoring, 1 provenance-free self-hosted controls"
     print(
         "[tmverifier-freeze-test] OK: manifest trust + schema row, 4 manifest, "
-        "5 filesystem, 4 rewritten-history, 8 provenance, 5 object-state, "
-        f"1 no-object-store, 5 authoring, 3 tracing, {tail}"
+        f"{filesystem}, 4 rewritten-history, 8 provenance, 5 object-state, "
+        f"1 no-object-store, 1 nested-prefix, 5 authoring, 3 tracing, {tail}"
     )
 
 

@@ -17,28 +17,34 @@ pnp3/Complexity/TMVerifier/
 
 `scripts/check_tmverifier_freeze.sh` validates the manifest against the Git
 objects in the frozen tree, then verifies the working tree's exact paths, object
-types, executable modes, and SHA-256 contents without following symlinks. Git
-tree objects are content-addressed, so that enumeration is reachable from any
-Git object store holding these bytes — squash merges, rebases, force-pushes, and
-shallow or single-branch clones do not take it away. What travels is the object
-store, not the bytes alone: an exported working tree — `git archive`, a release
-tarball, any `.git`-less copy — carries byte-identical content and nothing to
-enumerate, and is refused rather than verified. Where the reviewed commit is
-still present the checker additionally verifies that its subtree resolves to the
-frozen tree and fails closed if it does not; where a rewritten history no longer
-has that commit, content verification is unaffected. An object Git cannot read
-is never counted as an absent one: corruption, an unreadable object store, a
-failed promisor fetch and every other Git failure are hard failures carrying
-Git's own diagnostic. That distinction is drawn from Git's stderr, so the probe
+types, executable modes, and SHA-256 contents without following symlinks.
+Executable mode is read as Git reads it — from the owner execute bit alone — so
+a group- or other-execute bit that Git does not record is not reported as a
+change. Git tree objects are content-addressed, so that enumeration is reachable
+from any Git object store holding these bytes — squash merges, rebases,
+force-pushes, and shallow or single-branch clones do not take it away. It is
+also taken from the root of the tree object rather than through the current
+directory's Git prefix, so a checkout nested inside another repository — a
+vendored export, a fixture directory — is enumerated whole instead of failing on
+a false mismatch. What travels is the object store, not the bytes alone: an
+exported working tree — `git archive`, a release tarball, any `.git`-less copy —
+carries byte-identical content and nothing to enumerate, and is refused rather
+than verified. Where the reviewed commit is still present the checker
+additionally verifies that its subtree resolves to the frozen tree and fails
+closed if it does not; where a rewritten history no longer has that commit,
+content verification is unaffected. An object Git cannot read is never counted
+as an absent one: corruption, an unreadable object store, a failed promisor
+fetch and every other Git failure are hard failures carrying Git's own
+diagnostic. That distinction is drawn from Git's stderr, so the probe
 runs with every `GIT_TRACE*` variable stripped from its environment — tracing
 switched on to debug something else is not a Git diagnostic and must not turn a
 genuinely absent object into a reported fault. It and an isolated
 negative-control suite — manifest, filesystem, rewritten-history, provenance,
-object-state, authoring-atomicity, tracing and self-hosted provenance-free
-controls — are part of `scripts/check.sh` and run before any build. The suite
-proves it passes in a checkout that has lost the reviewed commit by running
-itself inside one. `lakefile.lean` is blanket-protected by the trusted PR
-policy rather than partially parsed as Lean syntax.
+object-state, nested-prefix, authoring-atomicity, tracing and self-hosted
+provenance-free controls — are part of `scripts/check.sh` and run before any
+build. The suite proves it passes in a checkout that has lost the reviewed
+commit by running itself inside one. `lakefile.lean` is blanket-protected by the
+trusted PR policy rather than partially parsed as Lean syntax.
 
 The freeze-policy paths are listed in `.github/CODEOWNERS` to make ownership
 explicit. By repository-owner decision, `main` does not currently enforce
@@ -251,6 +257,42 @@ is the object probe's environment (`GIT_TRACE*` is stripped, so tracing cannot
 be mistaken for a diagnostic), manifest authoring (a completed temporary file is
 renamed over the target instead of the target being truncated in place), the
 controls that hold both down, and the wording corrected in this record.
+
+A further independent read-only audit of this branch's head reported two
+low-severity defects in how the checker enumerates, and a third review-fix
+commit answers them. Neither was a freeze bypass — both failed closed — but both
+failed on the wrong question. `git ls-tree` was reading the frozen tree through
+Git's current-directory prefix, so a checkout nested inside another repository
+enumerated nothing and was told its manifest disagreed with a tree object the
+checker could read perfectly well; `--full-tree` now takes the listing from the
+root of the named tree object, leaving the tree-relative paths and their
+re-prefixing exactly as they were. And the working-tree side derived `100755`
+from any execute bit where Git derives it from the owner bit alone, so a group-
+or other-execute bit Git does not record was reported as a mode change; it now
+reads `stat.S_IXUSR`, which is Git's own rule. That commit changes no frozen
+byte, no Lean source, and no pin: the frozen tree is still
+`7ef6ac6e119f0f078f9c896f17415fa560a6edf3`, the manifest's 115 `files` entries
+are byte-identical, and `SCHEMA_VERSION` and the `[snapshot.tmverifier_freeze]`
+row are untouched. The negative-control suite gains four controls: a vendored
+export two directories deep inside an unrelated repository that carries the
+frozen tree object, and group-only, other-only and owner-only execute bits on
+one frozen file. Three of them — the export and the two tolerated bits — fail
+before these fixes and pass after; the owner-only case is the fail-closed
+direction and is a violation on both sides of the change, which is what pins the
+fix to Git's rule rather than to dropping the mode column.
+
+*The gates run for that third review-fix commit, and only those.* Six of the
+seven gates listed above were run on its tree and all passed: the four
+freeze-specific ones (`python3 scripts/check_tmverifier_freeze.py`,
+`scripts/check_tmverifier_freeze.sh`, `scripts/test_tmverifier_freeze.sh` and
+`node scripts/test_tmverifier_freeze_policy.js`), plus
+`scripts/check_doc_honesty.sh` and `python3
+scripts/validate_version_manifest.py`; `python3 -m py_compile` on both changed
+scripts and `git diff --check` were run alongside them. The seventh — the
+complete `./scripts/check.sh` — was **not** rerun for it, and no Lean or `lake`
+build was performed. It changes no Lean source and no frozen byte, so no module
+would be rebuilt, but that is a reason to expect the unrun gate to pass and not
+a record that it did. No remote result is claimed for it either.
 
 *Remote, not yet done and explicitly not claimed.* When this paragraph was
 written the branch had not been pushed and no PR existed, so there is **no**

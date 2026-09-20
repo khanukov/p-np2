@@ -207,6 +207,16 @@ def frozen_git_entries() -> dict[str, dict[str, str]]:
 
     `git ls-tree` on a tree object yields tree-relative paths, so each record is
     re-prefixed with TREE to rebuild the repository-relative manifest keys.
+    `--full-tree` is what makes that true from anywhere: without it `ls-tree`
+    limits the listing to Git's current-directory prefix, which is empty only
+    when this checkout happens to be the root of the repository holding its
+    objects.  A copy nested inside another repository — a vendored export, a
+    fixture directory, a checkout made under someone else's worktree — sits
+    under a non-empty prefix, the frozen tree object has nothing under that
+    prefix, and the enumeration would come back empty, reporting a perfectly
+    readable authoritative tree as a manifest mismatch.  With `--full-tree` the
+    listing is taken from the root of the named tree object, so the paths stay
+    tree-relative and the TREE re-prefix below is unchanged.
 
     The per-entry reads go through `git()`, which raises on any nonzero exit and
     lets Git's own message through: a blob inside the tree that Git cannot
@@ -214,7 +224,7 @@ def frozen_git_entries() -> dict[str, dict[str, str]]:
     manifest, so damage below the tree object fails closed too — as a read
     failure, never as an absence.
     """
-    records = git("ls-tree", "-r", "-z", frozen_tree_object()).split(b"\0")
+    records = git("ls-tree", "-r", "-z", "--full-tree", frozen_tree_object()).split(b"\0")
     result: dict[str, dict[str, str]] = {}
     for record in records:
         if not record:
@@ -383,6 +393,19 @@ def load_manifest(path: Path) -> dict[str, dict[str, str]]:
 
 
 def working_entries(candidate_root: Path) -> dict[str, dict[str, str]]:
+    """Describe the candidate copy the way Git would describe it.
+
+    The manifest records Git's modes, so the filesystem side has to derive them
+    by Git's rule and not by a looser one: Git calls a regular file `100755`
+    when its *owner* execute bit is set and `100644` otherwise, and the group
+    and other execute bits do not enter into it.  Reading any execute bit would
+    report `100755` for a `0o654` file that Git — and therefore the frozen tree
+    — records as `100644`, failing a checkout for a mode change Git does not
+    see.  Nothing else here defers to Git: content is compared by SHA-256 of the
+    bytes on disk, symlinks are hashed as their target text rather than
+    followed, and anything that is neither a regular file nor a symlink is
+    recorded as `special`, which no frozen entry can match.
+    """
     tree = candidate_root / TREE
     if tree.is_symlink() or not tree.is_dir():
         raise ValueError(f"candidate tree must be a real directory: {tree}")
@@ -393,7 +416,7 @@ def working_entries(candidate_root: Path) -> dict[str, dict[str, str]]:
             continue
         rel = path.relative_to(candidate_root).as_posix()
         if stat.S_ISREG(info.st_mode):
-            mode = "100755" if info.st_mode & 0o111 else "100644"
+            mode = "100755" if info.st_mode & stat.S_IXUSR else "100644"
             result[rel] = {
                 "mode": mode,
                 "type": "blob",

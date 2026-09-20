@@ -20,7 +20,8 @@ malformed or disagreeing fails closed, and so does any Git failure that leaves
 the question unanswered — absence is concluded only from Git's own silent
 ``missing`` reply, never from a command that merely failed.  Manifest authoring
 (``--write-manifest``) is stricter still: it refuses to write unless the
-reviewed provenance resolves and records exactly ``FROZEN_TREE``.
+reviewed provenance resolves and records exactly ``FROZEN_TREE``, and when it
+does write it replaces the target atomically instead of truncating it.
 
 A tree pin does not prove commit ancestry.  Retaining the reviewed commit in
 ``main``'s history still requires the history-preserving merge rule recorded in
@@ -37,6 +38,7 @@ import os
 import stat
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -69,6 +71,31 @@ def git(*args: str) -> bytes:
     return subprocess.check_output(["git", "-C", str(ROOT), *args])
 
 
+def probe_environment() -> dict[str, str]:
+    """The environment for the one Git call whose stderr carries meaning.
+
+    `git_object` reads stderr as a signal rather than as decoration, so anything
+    that writes to it for an unrelated reason would be misread as a Git
+    diagnostic.  Git's own tracing switches do exactly that: `GIT_TRACE=1`,
+    `GIT_TRACE2=1`, `GIT_TRACE_SETUP=1` and their relatives print command and
+    timing chatter to stderr on every invocation, which would turn a genuinely
+    absent object into a "present but unusable" hard failure for anyone
+    debugging something else in the same shell or runner.  Every `GIT_TRACE*`
+    variable is therefore dropped from this probe's environment, and only from
+    this probe's: the enumerating calls in `git()` leave the environment alone,
+    so tracing still works for everything it is normally turned on for.
+
+    Nothing else is filtered.  A real diagnostic — corruption, an unreadable
+    object store, a failed promisor fetch — still reaches the classifier and
+    still fails closed.
+    """
+    return {
+        name: value
+        for name, value in os.environ.items()
+        if not name.startswith("GIT_TRACE")
+    }
+
+
 def git_object(spec: str) -> tuple[str, str] | None:
     """Resolve `spec` to its (object id, object type), or None when it is absent.
 
@@ -76,7 +103,9 @@ def git_object(spec: str) -> tuple[str, str] | None:
     both when an object genuinely is not in this object store and when Git found
     it but could not read it.  The two are told apart by Git's own diagnostics:
     a genuine miss is silent, while corruption, an unreadable object store, a
-    failed promisor fetch or a damaged pack is announced on stderr.
+    failed promisor fetch or a damaged pack is announced on stderr.  That test
+    is only sound if stderr is Git's alone, which is what `probe_environment`
+    arranges.
 
     None therefore means, and only means, that Git reported the object missing
     without emitting a single diagnostic.  A nonzero exit status, a terminating
@@ -90,6 +119,7 @@ def git_object(spec: str) -> tuple[str, str] | None:
         input=f"{spec}\n".encode("utf-8"),
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
+        env=probe_environment(),
         check=False,
     )
     stdout = process.stdout.decode("utf-8", "replace").strip()
@@ -177,6 +207,12 @@ def frozen_git_entries() -> dict[str, dict[str, str]]:
 
     `git ls-tree` on a tree object yields tree-relative paths, so each record is
     re-prefixed with TREE to rebuild the repository-relative manifest keys.
+
+    The per-entry reads go through `git()`, which raises on any nonzero exit and
+    lets Git's own message through: a blob inside the tree that Git cannot
+    inflate stops the enumeration with that error rather than producing a short
+    manifest, so damage below the tree object fails closed too — as a read
+    failure, never as an absence.
     """
     records = git("ls-tree", "-r", "-z", frozen_tree_object()).split(b"\0")
     result: dict[str, dict[str, str]] = {}
@@ -204,6 +240,115 @@ def manifest_data() -> dict[str, Any]:
         "tree": TREE,
         "files": dict(sorted(frozen_git_entries().items())),
     }
+
+
+def manifest_payload() -> str:
+    """Produce the complete manifest bytes, before any destination is touched.
+
+    Enumeration, serialization and a round-trip of the serialized form all
+    happen here, so every way authoring can fail on its own account fails while
+    the old manifest is still intact.  The round-trip is not ceremony: it is the
+    same duplicate-rejecting decode `load_manifest` will perform, applied to the
+    exact bytes about to be installed, so what is written is known to read back
+    as what was enumerated.
+    """
+    data = manifest_data()
+    payload = json.dumps(data, indent=2, sort_keys=True) + "\n"
+    if json.loads(payload, object_pairs_hook=unique_object) != data:
+        raise ValueError(
+            "serialized manifest does not decode back to the enumerated frozen tree"
+        )
+    return payload
+
+
+def install_mode(target: Path) -> int:
+    """The permission bits a freshly installed `target` should end up with.
+
+    `tempfile` creates its file 0600 and `os.replace` carries that mode across,
+    so without this a regeneration would silently narrow the manifest's
+    permissions.  An existing regular file keeps exactly the mode it had; a new
+    one gets the ordinary umask-derived default, read by the only means the C
+    library offers — setting it and putting it straight back.
+    """
+    try:
+        info = target.lstat()
+    except FileNotFoundError:
+        info = None
+    if info is not None and stat.S_ISREG(info.st_mode):
+        return stat.S_IMODE(info.st_mode)
+    umask = os.umask(0)
+    os.umask(umask)
+    return 0o666 & ~umask
+
+
+def fsync_directory(directory: Path) -> None:
+    """Make the rename itself durable, on the platforms that can express it.
+
+    Atomicity for a concurrent reader is already guaranteed by `os.replace`
+    without this; fsyncing the directory is only about surviving a crash between
+    the rename and the filesystem's own flush.  Opening a directory as a file is
+    a POSIX facility that Windows does not offer, so the step is skipped there
+    rather than faked.  Where it is attempted and fails, that is reported as the
+    durability warning it is, and not as a failure of an installation that did
+    in fact happen.
+    """
+    if os.name != "posix":
+        return
+    try:
+        descriptor = os.open(directory, os.O_RDONLY)
+    except OSError as exc:
+        print(
+            f"[tmverifier-freeze] warning: could not open {directory} to flush it: {exc}",
+            file=sys.stderr,
+        )
+        return
+    try:
+        os.fsync(descriptor)
+    except OSError as exc:
+        print(
+            f"[tmverifier-freeze] warning: could not flush {directory}: {exc}",
+            file=sys.stderr,
+        )
+    finally:
+        os.close(descriptor)
+
+
+def install_file(target: Path, payload: str) -> None:
+    """Put `payload` at `target` by replacement, so nothing can truncate it.
+
+    `Path.write_text` opens the destination for truncation before it writes a
+    byte, so an I/O error, a full disk or a signal partway through destroys the
+    old manifest and leaves an unusable fragment in its place.  Here the bytes
+    go to a fresh file created in the destination's own directory — the same
+    directory, so the install is a rename within one filesystem and therefore
+    atomic — and they are flushed and fsynced before that rename swaps them in.
+    A reader of `target` sees either all of the old bytes or all of the new
+    ones, and every failure path unlinks the temporary file it created.
+
+    A symlinked target is replaced rather than followed: that is `os.replace`'s
+    documented behaviour, and it is the safer one for a governance artifact.
+    """
+    temp_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=target.parent,
+            prefix=f".{target.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            temp_path = Path(handle.name)
+            handle.write(payload)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.chmod(temp_path, install_mode(target))
+        os.replace(temp_path, target)
+    except BaseException:
+        if temp_path is not None:
+            temp_path.unlink(missing_ok=True)
+        raise
+    fsync_directory(target.parent)
 
 
 def load_manifest(path: Path) -> dict[str, dict[str, str]]:
@@ -268,9 +413,31 @@ def working_entries(candidate_root: Path) -> dict[str, dict[str, str]]:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--candidate-root", type=Path, default=ROOT)
-    parser.add_argument("--manifest", type=Path, default=MANIFEST)
-    parser.add_argument("--write-manifest", action="store_true")
+    parser.add_argument(
+        "--candidate-root",
+        type=Path,
+        default=ROOT,
+        help=(
+            "filesystem tree holding the copy of the frozen subtree to compare "
+            "against the manifest (default: this repository); ignored with "
+            "--write-manifest, which reads Git and never the working tree"
+        ),
+    )
+    parser.add_argument(
+        "--manifest",
+        type=Path,
+        default=MANIFEST,
+        help="manifest to verify, or to regenerate with --write-manifest",
+    )
+    parser.add_argument(
+        "--write-manifest",
+        action="store_true",
+        help=(
+            "regenerate the manifest from the frozen tree instead of verifying "
+            "a working tree; refuses unless the reviewed provenance commit "
+            "resolves here and records exactly the frozen tree"
+        ),
+    )
     args = parser.parse_args()
     try:
         provenance = verify_provenance()
@@ -279,6 +446,8 @@ def main() -> int:
             # has lost the reviewed commit may still verify content against
             # FROZEN_TREE, but it cannot prove the commit/tree pair a new
             # manifest would assert, so it must not be allowed to author one.
+            # It reads Git alone: --candidate-root names the filesystem side of
+            # verification, which has no counterpart here and is ignored.
             if not provenance:
                 raise ValueError(
                     f"refusing to write {args.manifest}: reviewed provenance "
@@ -289,10 +458,7 @@ def main() -> int:
                     "regenerate; see the unfreeze recipe in "
                     "pnp3/Docs/TMVERIFIER_FREEZE.md."
                 )
-            args.manifest.write_text(
-                json.dumps(manifest_data(), indent=2, sort_keys=True) + "\n",
-                encoding="utf-8",
-            )
+            install_file(args.manifest, manifest_payload())
             print(f"[tmverifier-freeze] wrote {args.manifest}")
             return 0
         expected = load_manifest(args.manifest.resolve())

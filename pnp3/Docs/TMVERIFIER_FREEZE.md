@@ -29,11 +29,16 @@ frozen tree and fails closed if it does not; where a rewritten history no longer
 has that commit, content verification is unaffected. An object Git cannot read
 is never counted as an absent one: corruption, an unreadable object store, a
 failed promisor fetch and every other Git failure are hard failures carrying
-Git's own diagnostic. It and an isolated negative-control suite — manifest,
-filesystem, rewritten-history, provenance and object-state controls — are part
-of `scripts/check.sh` and run before any build. `lakefile.lean` is
-blanket-protected by the trusted PR policy rather than partially parsed as Lean
-syntax.
+Git's own diagnostic. That distinction is drawn from Git's stderr, so the probe
+runs with every `GIT_TRACE*` variable stripped from its environment — tracing
+switched on to debug something else is not a Git diagnostic and must not turn a
+genuinely absent object into a reported fault. It and an isolated
+negative-control suite — manifest, filesystem, rewritten-history, provenance,
+object-state, authoring-atomicity, tracing and self-hosted provenance-free
+controls — are part of `scripts/check.sh` and run before any build. The suite
+proves it passes in a checkout that has lost the reviewed commit by running
+itself inside one. `lakefile.lean` is blanket-protected by the trusted PR
+policy rather than partially parsed as Lean syntax.
 
 The freeze-policy paths are listed in `.github/CODEOWNERS` to make ownership
 explicit. By repository-owner decision, `main` does not currently enforce
@@ -78,8 +83,12 @@ A change requires a dedicated unfreeze/migration PR that:
    repository and records exactly the pinned tree, so the new bytes must be
    committed before the new pin can be authored:
 
-   a. commit the new frozen bytes on their own. That commit becomes the new
-      reviewed provenance commit, and its subtree is the new authoritative
+   a. commit the new frozen bytes together with whatever registration they
+      need to build — a new module has to be declared in `lakefile.lean`, and
+      any new public surface has to reach the surface tests and the axiom
+      audit, in the same commit, or the tree the pin names does not compile.
+      What stage (a) must not carry is the pin itself. That commit becomes the
+      new reviewed provenance commit, and its subtree is the new authoritative
       tree; read both off it:
 
       ```text
@@ -104,9 +113,19 @@ A change requires a dedicated unfreeze/migration PR that:
    that rather than trusting it — it refuses, leaving the manifest untouched,
    both when the pinned `FROZEN_COMMIT` is not in this repository (stage (a)
    not landed, or a mistyped SHA) and when it is present but does not record
-   the pinned `FROZEN_TREE` (the tree repinned, the commit left stale). This
-   unfreeze itself has exactly that shape: `249435bf` is stage (a) and
-   `0d699f6e` is stage (b).
+   the pinned `FROZEN_TREE` (the tree repinned, the commit left stale). When it
+   does write, it serializes the whole manifest first and installs it by
+   renaming a completed temporary file over the target, so an interrupted
+   regeneration leaves the previous manifest intact rather than truncated.
+
+   This unfreeze has the same two-stage shape, though it predates part of the
+   machinery described here: `249435bf` is stage (a) — the new frozen bytes
+   together with their `lakefile.lean` registration, surface tests and
+   axiom-audit entries, seven files in all — and `0d699f6e` is stage (b), which
+   set `FROZEN_COMMIT` and regenerated the manifest. Stage (b) set neither of
+   the other two constants: `FROZEN_TREE` did not exist until `4abbe04b` moved
+   the authoritative pin onto the tree object, and `SCHEMA_VERSION` stayed at 2
+   because the manifest's shape did not change until then either.
 
 4. does not silently resume the old verifier roadmap.
 
@@ -209,7 +228,7 @@ suite's new rewritten-history and provenance controls; the freeze checker now
 reports the tree match plus the state of the reviewed provenance commit.
 
 Two further independent read-only adversarial reviews of that follow-up commit
-required changes, and a third run of the same six gates — the complete
+required changes, and a third run of the same seven gates — the complete
 `./scripts/check.sh`, the four freeze-specific gates, `check_doc_honesty.sh` and
 `validate_version_manifest.py` — was made on the tree of the review-fix commit
 that answers them. That commit again changes no frozen byte and no Lean source:
@@ -218,6 +237,20 @@ manifest is byte-identical. What it changes is how the two pinned objects are
 probed (a Git failure of any kind is now a hard failure rather than an answer of
 "absent"), the strictness of `--write-manifest`, the negative-control suite that
 holds both properties down, and the wording corrected in this record.
+
+Two more independent read-only adversarial reviews of *that* commit required
+changes in turn, and a fourth run of the same seven gates was made on the tree
+of the second review-fix commit that answers them, together with the check
+those reviews showed was missing: the checker and the negative-control suite
+were both run in a real `git clone --depth 1 --single-branch` of this branch,
+where `249435bf` is genuinely absent from the object store and the frozen tree
+object is present. Both pass there, and the suite now asserts that shape itself
+on every run by building a provenance-free repository and running itself inside
+it. That commit, too, changes no frozen byte and no Lean source. What it changes
+is the object probe's environment (`GIT_TRACE*` is stripped, so tracing cannot
+be mistaken for a diagnostic), manifest authoring (a completed temporary file is
+renamed over the target instead of the target being truncated in place), the
+controls that hold both down, and the wording corrected in this record.
 
 *Remote, not yet done and explicitly not claimed.* When this paragraph was
 written the branch had not been pushed and no PR existed, so there is **no**
@@ -257,10 +290,17 @@ commit — is a hard failure. So is any Git failure that leaves the question
 unanswered: absence is concluded only from Git's own silent `missing` reply, so
 a corrupt object, an unreadable object store or a failed promisor fetch is
 reported as the fault it is and is never recorded as a rewritten history.
+Reading stderr as a signal also means the probe must not inherit Git's own
+tracing, so `GIT_TRACE*` is dropped from its environment — from its environment
+only, leaving tracing usable for everything it is normally turned on for.
 Manifest authoring is stricter than verification: `--write-manifest` refuses to
 write anything at all unless the reviewed provenance resolves and matches, so a
 pin cannot be recorded without being proved, while an ordinary check of a
-rewritten or shallow history still verifies content against `FROZEN_TREE`.
+rewritten or shallow history still verifies content against `FROZEN_TREE`. A
+permitted write is atomic: the manifest is enumerated and serialized in full,
+written to a fresh file in the same directory, flushed, and renamed over the
+target, so an interrupted regeneration destroys nothing and leaves nothing
+behind.
 
 One diagnostic limitation is worth knowing before debugging a red check. When
 the working tree has drifted *and* this object store does not carry the frozen
@@ -281,12 +321,17 @@ merge" both rewrite commit SHAs — squash collapses the branch into one new
 commit, rebase replays the commits as new objects — so either one discards
 `249435bf` from `main`'s ancestry. Under the tree pin that is no longer a
 correctness problem for any check: the frozen content stays verifiable,
-`scripts/check_tmverifier_freeze.py` keeps passing, and `scripts/check.sh` stays
-green on `main` and in fresh or shallow clones. What a rewriting merge destroys
-is the recorded link from the frozen bytes back to the commit two independent
-reviews approved. Retaining that link is a requirement of this record, so the
-history-preserving merge stays mandatory for this migration; it is simply no
-longer the thing that keeps the repository's checks working.
+`scripts/check_tmverifier_freeze.py` keeps passing, and the freeze preflight of
+`scripts/check.sh` — the checker, the negative-control suite and the policy
+tests it runs before any build — stays green on `main` and in fresh or shallow
+clones. That is asserted rather than assumed: the suite builds a provenance-free
+repository and runs itself inside it on every invocation, and the same thing was
+reproduced by hand in a real `--depth 1 --single-branch` clone of this branch.
+What a rewriting merge destroys is the recorded link from the frozen bytes back
+to the commit two independent reviews approved. Retaining that link is a
+requirement of this record, so the history-preserving merge stays mandatory for
+this migration; it is simply no longer the thing that keeps the repository's
+checks working.
 
 **Correction to an earlier revision of this record.** Before the tree pin, this
 section claimed that after a rewriting merge `scripts/check.sh` would fail on
@@ -305,6 +350,24 @@ checks out the default-branch policy script and never runs the freeze checker,
 so it is outside this claim.) Since the tree pin it is not the failure mode at
 all. The cost of a rewriting merge is the loss of reviewed-commit provenance,
 recorded and repaired as governance, not a red build.
+
+**A second correction, to what that claim says about `scripts/check.sh`.** The
+claim is about the whole freeze preflight and not only about the checker, and
+from `a1227ba3` until the commit that adds this paragraph it was false of the
+negative-control suite. The suite regenerated the manifest at the repository
+root unconditionally, and the strict `--write-manifest` guard that `a1227ba3`
+introduced refuses to regenerate wherever `249435bf` is absent — so a `--depth
+1` clone of this branch, and a squash-rewritten `main`, had a green freeze
+checker and a red `scripts/check.sh` preflight. (Before `a1227ba3` the same
+clone was green, because authoring was not yet strict; the defect arrived with
+the guard, not with the tree pin.) The strictness is right and is kept. What
+was wrong was a control that demanded authoring in exactly the checkouts where
+authoring is deliberately forbidden; it now asserts whichever half of the
+authoring contract the checkout admits — regeneration must reproduce the
+reviewed manifest where the provenance commit resolves, and must be refused
+with its target untouched where it does not — and the self-hosted
+provenance-free control above exists so that this cannot silently become false
+again.
 
 **The migration branch itself must not be rebased or force-pushed.** The same
 reasoning applies to the branch for as long as the PR is open. If `main`

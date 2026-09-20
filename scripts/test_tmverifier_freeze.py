@@ -6,11 +6,15 @@ properties the tree pin buys: the checker must still verify content in a
 rewritten history where the reviewed provenance commit does not exist; it must
 fail closed whenever provenance *is* available but disagrees with the pin; it
 must never report a present-but-unreadable object, or a Git failure of any
-other kind, as an absent one; and manifest authoring must refuse to write at
-all unless the reviewed provenance resolves and matches.  All of it runs end to
-end against the real checker source — unmodified, or repinned onto a synthetic
-object by textual constant substitution — in real synthetic Git repositories,
-never against a stand-in.
+other kind, as an absent one; it must not mistake Git's own tracing output for
+a Git diagnostic; and manifest authoring must refuse to write at all unless the
+reviewed provenance resolves and matches, and must replace its target rather
+than truncate it when it does write.  This suite itself must pass in a checkout
+that has lost the reviewed commit, which one control asserts by running the
+whole suite inside such a repository.  All of it runs end to end against the
+real checker source — unmodified, or repinned onto a synthetic object by
+textual constant substitution — in real synthetic Git repositories, never
+against a stand-in.
 """
 
 from __future__ import annotations
@@ -19,7 +23,9 @@ import json
 import os
 import re
 import shutil
+import stat
 import subprocess
+import sys
 import tempfile
 import tomllib
 from pathlib import Path
@@ -28,6 +34,7 @@ ROOT = Path(__file__).resolve().parents[1]
 TREE = "pnp3/Complexity/TMVerifier"
 SOURCE = ROOT / TREE
 CHECKER = ROOT / "scripts/check_tmverifier_freeze.py"
+SUITE = Path(__file__).resolve()
 MANIFEST = ROOT / "spec/tmverifier_freeze.json"
 VERSION_MANIFEST = ROOT / "spec/version_manifest.toml"
 TARGET = Path("pnp3/Complexity/TMVerifier/TuringToolkit/GateNBodyRound.lean")
@@ -35,6 +42,30 @@ TARGET = Path("pnp3/Complexity/TMVerifier/TuringToolkit/GateNBodyRound.lean")
 _REVIEWED = json.loads(MANIFEST.read_text(encoding="utf-8"))
 FROZEN_COMMIT = _REVIEWED["frozen_commit"]
 FROZEN_TREE = _REVIEWED["frozen_tree"]
+
+# Set by the provenance-free control below on the copy of this suite it runs
+# inside its own fixture, so that copy does not build the same fixture again.
+NESTED_VARIABLE = "TMVERIFIER_FREEZE_TEST_NESTED"
+
+# Run the real checker as `__main__` with one `os` primitive replaced by a
+# certain failure, so a permitted write can be interrupted deterministically at
+# a chosen point.  argv is <checker> <os attribute to break> <checker args...>.
+ATOMIC_HARNESS = '''\
+import os
+import runpy
+import sys
+
+checker, broken, *arguments = sys.argv[1:]
+
+
+def fail(*args, **kwargs):
+    raise OSError(f"injected {broken} failure")
+
+
+setattr(os, broken, fail)
+sys.argv = [checker, *arguments]
+runpy.run_path(checker, run_name="__main__")
+'''
 
 # Synthetic repositories are built with no global or system Git configuration so
 # no filter or line-ending rule can rewrite the frozen blobs; that is what lets
@@ -103,6 +134,16 @@ def expect_unwritten(path: Path, label: str) -> None:
         raise AssertionError(f"{label}: refused authoring still created {path}")
 
 
+def listing(directory: Path) -> set[str]:
+    """Every name in `directory`, so a comparison can catch temporary litter."""
+    return {entry.name for entry in directory.iterdir()}
+
+
+def nested() -> bool:
+    """Whether this run is the one `provenance_free_suite_control` started."""
+    return os.environ.get(NESTED_VARIABLE) == "1"
+
+
 def fixture(parent: Path) -> Path:
     root = parent / "candidate"
     shutil.copytree(SOURCE, root / SOURCE.relative_to(ROOT), symlinks=True)
@@ -152,17 +193,22 @@ def corrupt_loose_object(repo: Path, object_id: str) -> None:
     path.write_bytes(b"present, unreadable, and definitely not a zlib stream\n")
 
 
-def scaffold(root: Path) -> Path:
+def scaffold(root: Path, with_suite: bool = False) -> Path:
     """Lay out a standalone repository root holding the frozen subtree.
 
     The checker resolves its own repository from `__file__`, so placing a copy
     under `scripts/` is what makes the synthetic repository the one it inspects.
+    `with_suite` additionally copies this suite and the version manifest it
+    cross-checks, which is what lets the whole suite be run inside the fixture.
     """
     shutil.copytree(SOURCE, root / TREE, symlinks=True)
     (root / "scripts").mkdir(parents=True, exist_ok=True)
     (root / "spec").mkdir(parents=True, exist_ok=True)
     shutil.copy2(CHECKER, root / "scripts" / CHECKER.name)
     shutil.copy2(MANIFEST, root / "spec" / MANIFEST.name)
+    if with_suite:
+        shutil.copy2(SUITE, root / "scripts" / SUITE.name)
+        shutil.copy2(VERSION_MANIFEST, root / "spec" / VERSION_MANIFEST.name)
     return root
 
 
@@ -396,6 +442,23 @@ def object_state_controls(parent: Path) -> None:
     expect_text(output, "present but unusable, not absent", "corrupt/tree")
     expect_no_text(output, "absent from this repository", "corrupt/tree")
 
+    # Damage below the two pinned objects is not classified by the object probe
+    # at all — a blob is read by the enumerating `git()` call, which raises on
+    # Git's own nonzero exit.  That path has no way to answer "absent", and this
+    # holds it to failing closed with Git's message rather than silently
+    # producing a manifest one entry short.
+    blob = scaffold(parent / "corrupt-blob")
+    init_commit(blob, "Exact frozen subtree with a damaged blob inside it")
+    metadata, _ = git(blob, "ls-tree", "-r", FROZEN_TREE).split("\n", 1)[0].split("\t", 1)
+    _, entry_type, entry_oid = metadata.split()
+    if entry_type != "blob":
+        raise AssertionError(f"expected a blob as the first frozen entry, got {entry_type}")
+    corrupt_loose_object(blob, entry_oid)
+    output = run(None, False, checker=blob / "scripts" / CHECKER.name, cwd=blob, env=GIT_ENV)
+    expect_text(output, "TMVerifier freeze check failed", "corrupt/blob")
+    expect_text(output, entry_oid, "corrupt/blob")
+    expect_no_text(output, "absent", "corrupt/blob")
+
 
 def no_object_store_control(parent: Path) -> None:
     """Carrying the frozen bytes is not carrying the frozen tree object.
@@ -413,6 +476,206 @@ def no_object_store_control(parent: Path) -> None:
     expect_text(output, "not a git repository", "export")
     expect_no_text(output, "absent from this history", "export")
     expect_no_text(output, "absent from this repository", "export")
+
+
+def authoring_controls(parent: Path) -> None:
+    """A permitted write installs the manifest whole, or does not touch it.
+
+    Provenance decides *whether* authoring may run; these controls are about
+    what happens once it may.  The manifest is replaced by a rename of a fully
+    written file rather than by truncating the destination, so a failure part
+    way through — an I/O error, a full disk, a signal — cannot leave the
+    reviewed manifest destroyed or half-rewritten.  The two failure points that
+    bracket the rename are injected deterministically into the real checker:
+    after the bytes reach the temporary file, and at the rename itself.  In both
+    cases an existing target must come out byte-identical and the directory must
+    be left with no temporary file in it.  A last control pins the other half of
+    "authoring reads Git": it is given a deliberately drifted `--candidate-root`
+    and must still author the frozen tree's content.
+    """
+    repo = scaffold(parent / "authoring")
+    good = init_commit(repo, "Exact frozen subtree under a resolvable commit")
+    checker = checker_variant(repo / "scripts" / "check-authoring.py", FROZEN_COMMIT=good)
+    harness = parent / "atomic-harness.py"
+    harness.write_text(ATOMIC_HARNESS, encoding="utf-8")
+    spec = repo / "spec"
+
+    fresh = spec / "authored-fresh.json"
+    before = listing(spec)
+    run(None, True, fresh, checker=checker, cwd=repo, env=GIT_ENV, write_manifest=True)
+    if listing(spec) != before | {fresh.name}:
+        raise AssertionError("authoring a new manifest left temporary files behind")
+    authored = json.loads(fresh.read_text(encoding="utf-8"))
+    if authored["frozen_tree"] != FROZEN_TREE or authored["files"] != _REVIEWED["files"]:
+        raise AssertionError("authored manifest does not reproduce the frozen tree")
+
+    existing = spec / "authored-existing.json"
+    sentinel = b'{"not": "a manifest"}\n'
+    for broken in ("fsync", "replace"):
+        existing.write_bytes(sentinel)
+        before = listing(spec)
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(harness),
+                str(checker),
+                broken,
+                "--manifest",
+                str(existing),
+                "--write-manifest",
+            ],
+            cwd=repo,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            env=GIT_ENV,
+            check=False,
+        )
+        if result.returncode == 0:
+            raise AssertionError(
+                f"authoring/{broken}: an injected failure was reported as success\n"
+                f"{result.stdout}"
+            )
+        expect_text(result.stdout, f"injected {broken} failure", f"authoring/{broken}")
+        if existing.read_bytes() != sentinel:
+            raise AssertionError(
+                f"authoring/{broken}: a failed write did not leave the existing "
+                "target byte-identical"
+            )
+        if listing(spec) != before:
+            raise AssertionError(
+                f"authoring/{broken}: a failed write left a temporary file behind"
+            )
+
+    existing.write_bytes(sentinel)
+    existing.chmod(0o644)
+    before = listing(spec)
+    run(None, True, existing, checker=checker, cwd=repo, env=GIT_ENV, write_manifest=True)
+    if json.loads(existing.read_text(encoding="utf-8"))["files"] != _REVIEWED["files"]:
+        raise AssertionError("a permitted write did not replace the existing target")
+    if listing(spec) != before:
+        raise AssertionError("replacing an existing manifest left temporary files behind")
+    # The replacement installs a file created by `tempfile`, which is private by
+    # default; a regeneration must not quietly narrow the manifest's mode.
+    if stat.S_IMODE(existing.stat().st_mode) != 0o644:
+        raise AssertionError(
+            "replacing an existing manifest changed its permissions to "
+            f"{stat.S_IMODE(existing.stat().st_mode):#o}"
+        )
+
+    drifted = fixture(parent / "authoring-drifted")
+    with (drifted / TARGET).open("ab") as handle:
+        handle.write(b"\n-- authoring must never read this\n")
+    ignored = spec / "authored-ignoring-candidate.json"
+    run(drifted, True, ignored, checker=checker, cwd=repo, env=GIT_ENV, write_manifest=True)
+    if json.loads(ignored.read_text(encoding="utf-8"))["files"] != _REVIEWED["files"]:
+        raise AssertionError("authoring read the candidate tree instead of Git")
+
+
+def tracing_controls(parent: Path) -> None:
+    """Git's own tracing must not be read as a Git diagnostic.
+
+    The object probe concludes absence from a `missing` reply with nothing on
+    stderr, so any `GIT_TRACE*` switch turned on to debug something else would
+    otherwise make every genuinely absent object look present-but-unreadable —
+    the mirror image of the conflation this checker exists to avoid, and a red
+    build for anyone tracing a shell or a runner.  The probe strips those
+    variables, and both halves of that are asserted here: a rewritten history
+    still verifies and still reports the reviewed commit absent under tracing,
+    and a corrupt object in the same repository still fails closed under
+    tracing rather than being traded for an absence.
+    """
+    repo = scaffold(parent / "tracing")
+    init_commit(repo, "Squashed rewrite carrying the exact frozen subtree")
+    if has_object(repo, FROZEN_COMMIT):
+        raise AssertionError("the tracing fixture must not contain the reviewed commit")
+    checker = repo / "scripts" / CHECKER.name
+    for variable in ("GIT_TRACE", "GIT_TRACE2"):
+        output = run(None, True, checker=checker, cwd=repo, env={**GIT_ENV, variable: "1"})
+        expect_text(
+            output,
+            f"reviewed provenance {FROZEN_COMMIT[:12]} absent",
+            f"tracing/{variable}",
+        )
+
+    corrupt_loose_object(repo, FROZEN_TREE)
+    output = run(
+        None, False, checker=checker, cwd=repo, env={**GIT_ENV, "GIT_TRACE_SETUP": "1"}
+    )
+    expect_text(output, "present but unusable, not absent", "tracing/corrupt")
+    expect_no_text(output, "absent from this repository", "tracing/corrupt")
+
+
+def provenance_free_suite_control(parent: Path) -> None:
+    """These controls must themselves pass without the reviewed commit.
+
+    A `git clone --depth 1`, a single-branch clone and a squash-rewritten `main`
+    all leave the same shape behind: the frozen tree object is present, the
+    reviewed commit is not.  The checker is documented to pass there — and this
+    suite runs in `scripts/check.sh` before any build, so a suite that needed
+    the reviewed commit would turn every such checkout red while the freeze
+    itself was perfectly intact.  The fixture is that shape exactly: one
+    unrelated commit carrying the frozen bytes, the checker and this suite, with
+    the reviewed commit absent from the object store.  Both are run inside it;
+    the nested copy is told not to build this same fixture again.
+    """
+    repo = scaffold(parent / "provenance-free", with_suite=True)
+    init_commit(repo, "Squashed rewrite carrying the suite and the frozen subtree")
+    if has_object(repo, FROZEN_COMMIT):
+        raise AssertionError("the provenance-free fixture must not contain the reviewed commit")
+    if git(repo, "cat-file", "-t", FROZEN_TREE) != "tree":
+        raise AssertionError("the provenance-free fixture does not carry the frozen tree object")
+
+    output = run(None, True, checker=repo / "scripts" / CHECKER.name, cwd=repo, env=GIT_ENV)
+    expect_text(
+        output,
+        f"reviewed provenance {FROZEN_COMMIT[:12]} absent",
+        "provenance-free/checker",
+    )
+
+    result = subprocess.run(
+        [sys.executable, str(repo / "scripts" / SUITE.name)],
+        cwd=repo,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        env={**GIT_ENV, NESTED_VARIABLE: "1"},
+        check=False,
+    )
+    if result.returncode != 0:
+        raise AssertionError(
+            "this suite does not pass in a checkout without the reviewed "
+            f"provenance commit\n{result.stdout}"
+        )
+    expect_text(result.stdout, "[tmverifier-freeze-test] OK", "provenance-free/suite")
+
+
+def root_authoring_control(parent: Path) -> None:
+    """Regeneration at ROOT, in whichever of the two shapes this checkout has.
+
+    That the committed manifest is exactly what this checker would generate is
+    re-proved unconditionally by every ordinary run here: `load_manifest` holds
+    all four pinned scalars to the checker's own constants and every `files`
+    entry to the frozen tree, in any checkout, with provenance or without.
+    Authoring on top of that is deliberately stricter than verification, so this
+    control asserts whichever half of the authoring contract applies to the
+    checkout it finds itself in, and skips neither.  A production checkout
+    resolves the reviewed commit, and then regeneration must reproduce the
+    reviewed manifest exactly.  A shallow, single-branch or squash-rewritten one
+    does not, and then authoring must be refused with its target untouched —
+    which is the whole point of the strict guard, asserted rather than assumed.
+    Authoring under matching provenance is proved in either shape regardless, by
+    the synthetic fixtures in `provenance_controls` and `authoring_controls`.
+    """
+    generated = parent / "generated-manifest.json"
+    if has_object(ROOT, FROZEN_COMMIT):
+        run(None, True, generated, write_manifest=True)
+        if json.loads(generated.read_text(encoding="utf-8")) != _REVIEWED:
+            raise AssertionError("regenerated manifest differs from the reviewed manifest")
+        return
+    output = run(None, False, generated, write_manifest=True)
+    expect_text(output, "refusing to write", "root authoring")
+    expect_unwritten(generated, "root authoring")
 
 
 def version_manifest_row_control() -> None:
@@ -449,18 +712,12 @@ def main() -> None:
     with tempfile.TemporaryDirectory(prefix="tmverifier-freeze-") as tmp:
         parent = Path(tmp)
         baseline = fixture(parent / "baseline")
-        run(baseline, True)
-
-        generated_manifest = parent / "generated-manifest.json"
-        generated = subprocess.run(
-            [str(CHECKER), "--manifest", str(generated_manifest), "--write-manifest"],
-            cwd=ROOT,
-            check=False,
-        )
-        if generated.returncode != 0:
-            raise AssertionError("manifest regeneration failed")
-        if json.loads(generated_manifest.read_text()) != _REVIEWED:
-            raise AssertionError("regenerated manifest differs from the reviewed manifest")
+        # This is the unconditional manifest-versus-Git check: the checker will
+        # not load a manifest whose pinned scalars or whose entries disagree
+        # with the frozen tree, so a green run here already says the committed
+        # manifest is the one this checker generates.
+        expect_text(run(baseline, True), f"{len(_REVIEWED['files'])} Git objects", "baseline")
+        root_authoring_control(parent)
 
         exact_manifest = parent / "exact-manifest.json"
         shutil.copy2(MANIFEST, exact_manifest)
@@ -521,11 +778,19 @@ def main() -> None:
         provenance_controls(parent)
         object_state_controls(parent)
         no_object_store_control(parent)
+        authoring_controls(parent)
+        tracing_controls(parent)
+        if not nested():
+            provenance_free_suite_control(parent)
 
+    if nested():
+        tail = "1 root-authoring controls, inside the caller's provenance-free fixture"
+    else:
+        tail = "1 root-authoring, 1 provenance-free self-hosted controls"
     print(
         "[tmverifier-freeze-test] OK: manifest trust + schema row, 4 manifest, "
-        "5 filesystem, 4 rewritten-history, 8 provenance, 4 object-state, "
-        "1 no-object-store controls"
+        "5 filesystem, 4 rewritten-history, 8 provenance, 5 object-state, "
+        f"1 no-object-store, 5 authoring, 3 tracing, {tail}"
     )
 
 

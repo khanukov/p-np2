@@ -76,6 +76,8 @@ import Complexity.TMVerifier.TuringToolkit.GateNFirstInstallBridge
 import Complexity.TMVerifier.TuringToolkit.GateNScratchBootstrap
 import Complexity.TMVerifier.TuringToolkit.GateNBoundaryShuttle
 import Complexity.TMVerifier.TuringToolkit.GateNBodyRound
+import Complexity.TMVerifier.TuringToolkit.GateNBodyDriver
+import Tests.TMGateNBodyDriverSurfaceTests
 import Complexity.TMVerifier.TuringToolkit.GateNRelocationExamples
 import Complexity.Uniform.V1.Examples
 import Complexity.DagGadgets
@@ -3282,6 +3284,48 @@ end UniformV1AxiomAudit
 #print axioms Internal.PsubsetPpoly.TM.gnCS_install_exit_reserved1101_reject_stable
 #print axioms Internal.PsubsetPpoly.TM.gnBodyTerminalSteps_le_gnClock
 #print axioms Internal.PsubsetPpoly.TM.GNBodyRoundProbes.literal_oneConstFalse_tagRound
+
+-- GN-E2-3b (2026-09-20): the same finite GNM gains no constructor, row, clock
+-- or encoder.  The arbitrary proof-level body induction iterates the E2-3a
+-- round over any finite source body list and terminates with the E2-3a
+-- recordDone switch; the real-input capstone composes it with the genuine
+-- GN-E2-2 initial execution for the actually selected first gate, ending at an
+-- exact full configuration with the source restored, the selected record's
+-- ordered install image in scratch and the blank frontier retained.  There is
+-- no continuation from recordDone, no values/tail writer, no launch,
+-- delegation, commit, next-gate loop, total installer clock, verdict,
+-- acceptance, or claim that the pure evaluator is executed by the machine.
+#print axioms Internal.PsubsetPpoly.TM.gnGateBodyFrames_cons
+#print axioms Internal.PsubsetPpoly.TM.gnRecordFrames_cursor_split
+#print axioms Internal.PsubsetPpoly.TM.gnGateBodyFrames_body
+#print axioms Internal.PsubsetPpoly.TM.gnGateBodyFrames_map_image
+#print axioms Internal.PsubsetPpoly.TM.gnFirstRecordMiddle_split
+#print axioms Internal.PsubsetPpoly.TM.gnFirstRecordTail_admissible
+#print axioms Internal.PsubsetPpoly.TM.gnBodyDriverSteps_provenance
+#print axioms Internal.PsubsetPpoly.TM.gnBodyDriver_room_start
+#print axioms Internal.PsubsetPpoly.TM.gnCS_bodyDriver_recordDone_exact
+#print axioms Internal.PsubsetPpoly.TM.gnFirstRecordDoneSteps_provenance
+#print axioms Internal.PsubsetPpoly.TM.gnCS_encodeGN_firstRecordDone_exact
+#print axioms Internal.PsubsetPpoly.TM.gnFirstRecordDoneConfig_structure
+#print axioms Internal.PsubsetPpoly.TM.gnFirstRecordDoneSteps_le_gnClock
+#print axioms Internal.PsubsetPpoly.TM.GNBodyDriverProbes.literal_oneConstFalse_recordDone
+
+-- GN-E2-3b named signature pins.  A bare `#check @name` pins only the name, so
+-- the restated full-proposition wrappers are audited here too.
+#print axioms Pnp3.Tests.TMGateNBodyDriverSurface.check_gnGateBodyFrames_cons
+#print axioms Pnp3.Tests.TMGateNBodyDriverSurface.check_gnRecordFrames_cursor_split
+#print axioms Pnp3.Tests.TMGateNBodyDriverSurface.check_gnGateBodyFrames_body
+#print axioms Pnp3.Tests.TMGateNBodyDriverSurface.check_gnGateBodyFrames_map_image
+#print axioms Pnp3.Tests.TMGateNBodyDriverSurface.check_gnFirstRecordMiddle_split
+#print axioms Pnp3.Tests.TMGateNBodyDriverSurface.check_gnFirstRecordTail_admissible
+#print axioms Pnp3.Tests.TMGateNBodyDriverSurface.check_gnBodyDriverSteps_provenance
+#print axioms Pnp3.Tests.TMGateNBodyDriverSurface.check_gnBodyDriver_room_start
+#print axioms Pnp3.Tests.TMGateNBodyDriverSurface.check_gnCS_bodyDriver_recordDone_exact
+#print axioms Pnp3.Tests.TMGateNBodyDriverSurface.check_gnFirstRecordDoneSteps_provenance
+#print axioms Pnp3.Tests.TMGateNBodyDriverSurface.check_gnCS_encodeGN_firstRecordDone_exact
+#print axioms Pnp3.Tests.TMGateNBodyDriverSurface.check_gnFirstRecordDoneConfig_structure
+#print axioms Pnp3.Tests.TMGateNBodyDriverSurface.check_gnFirstRecordDoneSteps_le_gnClock
+#print axioms Pnp3.Tests.TMGateNBodyDriverSurface.check_literal_oneConstFalse_recordDone
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

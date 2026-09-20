@@ -1,11 +1,18 @@
 # Plan: closing the TM verifier for canonical asymptotic GapPartialMCSP
 
-> **Frozen historical plan (2026-09-03).** The implementation tree is frozen at
-> Git tree `7ef6ac6e`, reviewed at commit `249435bf`; see
-> `pnp3/Docs/TMVERIFIER_FREEZE.md`, whose migration record covers the single
-> reviewed unfreeze since `42c59881` (S11 below). Do not resume GN-E2-3b or
-> later stages. Active work has moved to a versioned uniform complexity
-> foundation outside the frozen tree.
+> **Frozen historical plan (2026-09-03; amended 2026-09-20).** The freeze pin
+> still names Git tree `7ef6ac6e`, reviewed at commit `249435bf`; see
+> `pnp3/Docs/TMVERIFIER_FREEZE.md`, whose migration record covers one completed
+> reviewed unfreeze since `42c59881` (S11 below) and one **pending** unfreeze
+> whose stage (a) has landed and whose stage (b) has not (GN-E2-3b below).
+> Because stage (a) deliberately commits new frozen bytes *before* the repin,
+> the freeze checker rejects this tree until stage (b) lands; that is the
+> documented order, not a broken gate.
+>
+> This is **not** a silent resumption of the paused roadmap. GN-E2-3b was
+> unfrozen once, deliberately, as a single user-authorized dedicated slice.
+> Every later stage — E2-4 and beyond — stays paused, and active work otherwise
+> remains the versioned uniform complexity foundation outside the frozen tree.
 
 **Repository:** `/home/user/p-np2/pnp3`
 **Baseline branch:** `claude/audit-hnpbridge-interface-FnO1v` (already
@@ -4291,7 +4298,141 @@ names the *Uniform V1 fixed-content gamma* track, which also has a stage called
 `G1`; that track is unrelated to this one and is untouched here.)  The next
 dependency is the multi-gate step: an `SLProgram`-style iteration of this
 endpoint, and the `ContentVerifierBridge` that would consume it.  Still
-unclaimed: the `SLGate` bridge (`G1Request.ofGate`/`spec_ofGate` to
-`SLGate.compute`), the multi-gate evaluator, any `GateN` acceptance or clock,
-any `GapMCSPVerifier` or content-verifier statement, any runtime-polynomial
-verifier claim, and any language-level statement about physical inputs.
+unclaimed: any `GateN` acceptance or clock, any `GapMCSPVerifier` or
+content-verifier statement, any runtime-polynomial verifier claim, and any
+language-level statement about physical inputs.
+
+**Correction to the paragraph above (2026-09-20).**  As first written, that
+list of unclaimed items also named "the `SLGate` bridge
+(`G1Request.ofGate`/`spec_ofGate` to `SLGate.compute`)" and "the multi-gate
+evaluator".  That was already stale when it was written.  Both exist as
+**pure** declarations inside the frozen tree and are registered in
+`AxiomsAudit.lean`: the gate bridge is
+`gnFieldEval_gnGateFields` (`GateNEncoding.lean`), which equates the G1 request
+semantics of a serialized gate with `SLGate.compute`, together with its
+tape-side specialization `gnWorkRequest_spec` (`GateNTapeState.lean`); the
+multi-gate evaluator is `evalGNFields`/`evalGNProgramAll`/`evalGNProgram` with
+`evalGNFields_gates`, `evalGNProgramAll_eq_SLProgram_evalAll` and
+`evalGNProgram_eq_SLProgram_eval` (`GateNEncoding.lean`), which agree exactly
+with `SLProgram.evalAll`/`SLProgram.eval`.  What is incomplete is **machine
+execution**, not pure semantics: no theorem says `GNM` computes
+`evalGNProgram`, and GN-E2-3b below does not add one.  Pure semantics and TM
+execution are separate claims and must not be conflated in either direction.
+
+## GN-E2-3b arbitrary body induction and first-record recordDone (2026-09-20)
+
+Progress classification: infrastructure, not P-vs-NP mainline progress.  No
+source obligation is reduced: neither `VerifiedNPDAGLowerBoundSource` nor
+`SearchMCSPWeakLowerBound` is touched, and no
+`CanonicalAsymptoticVerifierComponents` obligation is discharged.
+
+This is the **user-authorized dedicated GN-E2-3b unfreeze slice**, stage (a)
+only; see the pending migration record in `TMVERIFIER_FREEZE.md`.  It is a
+single approved exception, not a reopening of the paused gate-by-gate roadmap.
+
+**What it adds, and only that.**  One module,
+`TuringToolkit/GateNBodyDriver.lean`, importing only `GateNBodyRound`.  The
+same fixed `GNState`, `gnTransition`, `gnCS`, `GNM`, `gnClock` and encoders are
+used unchanged: no constructor, no transition row, no machine, no clock, no
+encoder, no request-dependent runtime state, no runtime geometry and no advice
+is added.  E2-3a already proved one payload-preserving round and the fixed
+`recordDone` switch; E2-3b supplies exactly the two things it deliberately left
+out — the arbitrary proof-level induction over a finite source body list, and
+its composition with the real GN-E2-2 initial execution.
+
+**Exact record-body split.**  `gnGateBodyFrames g` is the serialized body of one
+gate record — the unary tag run and the two absolute-index runs, without the
+marker and without the closing `finish` — and `gnGateBodyTail g` is the same
+list after its mandatory leading `tag` (`gnGateBodyFrames_cons`, provable
+because `G1Tag.units` is never zero).  `gnRecordFrames_cursor_split` splits the
+whole record into marker, body, `finish`, and `gnFirstRecordMiddle_split` splits
+the forward middle of a real GN word as
+`gnGateBodyFrames g ++ finish :: gnFirstRecordTail r`, where
+`gnFirstRecordTail r` is every later record followed by the terminal separator,
+output slot and word-final finish.  The split is taken from the **actually
+selected** `g` supplied by `hg : r.program.gates[0]? = some g`; nothing
+existentially picks an unrelated record.  Every body frame is `GNInstallBody`
+and its install image is itself (`gnGateBodyFrames_body`,
+`gnGateBodyFrames_map_image`).
+
+**Accumulated schedule.**  `gnBodyDriverSteps rounds distance :=
+rounds * gnBodyRoundSteps distance + gnBodyTerminalSteps distance`, that is
+`rounds * (8*d+30) + (8*d+31)`.  `gnBodyDriverSteps_provenance` exposes the
+closed form and both recurrences: zero rounds is exactly the terminal round, and
+one more round is exactly one `gnBodyRoundSteps` in front.  The distance is a
+single parameter because it is invariant along the driver — each source frame
+removed from the unprocessed suffix becomes one mapped scratch frame, which is
+E2-3a's `gnBodyRoundMiddle_length_constant`.  Room shrinks monotonically as
+processed frames move into `done`, so the driver states only the strongest
+bound it needs and `gnBodyDriver_room_start` derives the first round's.
+
+**Generic capstone.**  `gnCS_bodyDriver_recordDone_exact` has every hypothesis
+explicit: the incoming payload continues (`GNInstallExitContinue previous`), the
+current frame and every frame of `body` are `GNInstallBody`, every frame of the
+already-mapped middle `tail ++ seed ++ done.map gnInstallImage` is admissible,
+and there is physical room for the last round.  Its conclusion is genuine
+`TM.runConfig (M := GNM)` execution for exactly
+`gnBodyDriverSteps (current :: body).length d` rows, ending in the literal
+`.recordDone` state at head `4 * (fixed ++ (done ++ current :: body)).length + 4`
+with the **complete** physical tape: the source
+`fixed ++ done ++ current :: body ++ finish :: tail` restored verbatim, the
+scratch region `seed ++ (done ++ current :: body).map gnInstallImage ++
+[separator]` in processing order, and one blank frontier retained.  The tape
+equality is physical; no endpoint is weakened to a wrapper predicate.
+
+**Real-input capstone.**  `gnCS_encodeGN_firstRecordDone_exact` starts at the
+genuine `GNM.initialConfig (gnPoint (encodeGN r))`, takes only
+`hg : r.program.gates[0]? = some g`, runs exactly
+`gnFirstRecordDoneSteps r g = gnBofSeedSteps r +
+gnBodyDriverSteps (gnGateBodyFrames g).length (gnFirstRecordMiddle r).length`
+rows, and lands in `gnFirstRecordDoneConfig r g hg`.
+`gnFirstRecordDoneConfig_structure` pins that configuration without hiding a
+component: state `⟨0, recordDone⟩`; head
+`4 * (gnRecordsStart r + gnRecordSize (gnGateFields g))`, i.e. p0 of the frame
+immediately after the consumed record; the full tape
+`frameListTape ((encodeGNFrames r ++ (gnRecordFrames .cursor g).map
+gnInstallImage ++ [blank]).flatMap G1Frame.bits)`; the restored source word; the
+ordered scratch image `bof :: gnGateBodyFrames g ++ [separator]`; the fact that
+this image plus the current data frames is exactly
+`g1PrefixFrames (gnFirstRequest r g)`; and the pure semantics
+`(gnFirstRequest r g).spec = g.compute (fun i => r.inputs[i]) []`, derived from
+`gnWorkRequest_spec hg` at the actual stage-zero environment
+`gnCurrentValues r [] = r.inputs`, not from canonicality.
+`gnFirstRecordDoneSteps_le_gnClock` records that this whole proved prefix fits
+inside the unchanged public `gnClock`; it bounds exactly that prefix and is not
+a total installer, multigate or runtime clock.
+
+**Semantics versus execution.**  The last two conjuncts of the structure
+theorem are statements about the *pure* request determined by `g`.  At this
+endpoint the machine has only relocated the selected record's frames: it has
+written no value, launched nothing, and evaluated nothing.  Nothing here says
+`GNM` executes `evalGNProgram` or `SLProgram.eval`.
+
+**Nonvacuity and rejection coverage.**  One literal probe,
+`GNBodyDriverProbes.literal_oneConstFalse_recordDone`, runs the real initial
+configuration of `oneConstFalseProgram` for a numeral 659 rows and reaches
+`recordDone` at physical head 36 with the explicit nineteen-frame tape
+`bof, output false, separator, cursor, tag, tag, argSep, argSep, finish,
+separator, output false, finish, bof, tag, tag, argSep, argSep, separator,
+blank`.  Unlike E2-3a's 94-row probe, it executes **all** body frames of the
+record, and then the terminal round.  No new rejection probe is added, and that
+is deliberate: this driver introduces no state, no transition row and no new
+place where tape data enters the finite control, so it opens no new ingress
+boundary.  The malformed/reserved-`1101` coverage at the only boundary it uses
+is already exact in E2-3a (`gnCS_install_exit_reserved1101_reject_five`,
+`gnCS_install_exit_reserved1101_reject_stable`), and duplicating it would add
+volume, not coverage.
+
+**Surface and audit.**  `Tests/TMGateNBodyDriverSurfaceTests.lean` pins all
+twenty-one new public declarations with `#check` — seven definitions and
+fourteen theorems — and restates every one of the fourteen theorems as a
+full-proposition `check_*` wrapper; `AxiomsAudit.lean` roots the
+same fourteen theorems and the fourteen wrappers directly, because a bare
+`#check @name` pins only the name.  Observed axiom sets are subsets of
+`{propext, Classical.choice, Quot.sound}`.
+
+**Explicitly not here.**  No continuation from `recordDone`, no completed
+request record, no values or fixed-tail writer, no launch, delegation, commit,
+next-gate loop, total installer clock, verdict, acceptance, total evaluator
+claim, or language-level statement.  E2-4 owns continuation from `recordDone`
+and remains paused.

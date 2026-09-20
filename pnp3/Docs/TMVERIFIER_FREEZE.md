@@ -1,13 +1,22 @@
 # TMVerifier freeze decision
 
-**Status:** frozen infrastructure snapshot.
+**Status:** frozen infrastructure snapshot, with **one unfreeze in flight**.
+The two pinned constants below are unchanged and this revision does **not**
+repin anything. A GN-E2-3b stage-(a) commit has added new bytes to the frozen
+subtree ahead of its repin, exactly in the order requirement 3 below mandates,
+so `scripts/check_tmverifier_freeze.py` and the freeze preflight of
+`scripts/check.sh` are **expected to fail** on this tree until stage (b) lands.
+See the pending migration record at the end of this file for what is done and
+what is still owed.
 **Frozen tree (authoritative):** `7ef6ac6e119f0f078f9c896f17415fa560a6edf3` —
 the Git tree object of the subtree below, and the content source the checker
-verifies against.
+verifies against. It is the tree of the *last completed* migration, not of the
+working tree while an unfreeze is in flight.
 **Reviewed commit (provenance):** `249435bfa4cb540822e47844107781042f18537f`
 (2026-09-19) — the commit at which those bytes were reviewed and re-pinned.
 **Previously frozen at:** `42c598815c8e7d27a53f26102705f84455c6979d` (2026-09-02);
-see the migration record below for the one reviewed unfreeze since then.
+see the migration record below for the one completed reviewed unfreeze since
+then, and for the pending one.
 
 The complete tree below is content-addressed by `spec/tmverifier_freeze.json`:
 
@@ -149,6 +158,13 @@ governance rather than an unoverrideable merge block.
 
 The next active track is the versioned uniform `P` model and its circuit
 simulation, not GN-E2-3b or later TMVerifier stages.
+
+**One authorized exception to that sentence, 2026-09-20.** The repository owner
+authorized a single dedicated unfreeze for GN-E2-3b, under this record's
+two-stage rule and with no other stage resumed. Its stage (a) is recorded as
+pending below. The sentence above still governs everything else: E2-4 and later
+TMVerifier stages remain paused, and no further slice may be taken without a
+fresh authorization.
 
 ## Migration record
 
@@ -438,3 +454,97 @@ the frozen content is still verified and `main` is not broken, so the response
 is not an emergency but a deliberate repin onto a commit in `main`'s ancestry,
 landed under this same unfreeze gate, plus a note in this record saying which
 merge dropped the link.
+
+### 2026-09-20 — GN-E2-3b body driver (PENDING: stage (a) only, not repinned)
+
+**This record is not a repin.** `FROZEN_COMMIT`, `FROZEN_TREE`,
+`SCHEMA_VERSION`, `spec/tmverifier_freeze.json` and
+`spec/version_manifest.toml` are untouched by the stage-(a) commit, and the
+header of this file still names tree `7ef6ac6e` reviewed at `249435bf`. That is
+the required order: requirement 3(a) says the new bytes must be committed
+first, because `--write-manifest` refuses to author a pin whose provenance
+commit does not yet exist. Until stage (b) lands, the frozen tree on this branch
+legitimately disagrees with the pin, and the freeze checker fails closed saying
+so.
+
+**Why the frozen artifact itself had to change (requirement 1).** The slice is
+the arbitrary proof-level induction over GN-E2-3a's own
+`gnCS_bodyRound_iteration_exact` and `gnCS_bodyFinishRound_recordDone_exact`,
+composed with GN-E2-2's `gnCS_encodeGN_bofSeed_exact`. Every one of those names,
+and `GNM`, `gnCS`, `gnTransition`, `gnClock`, `encodeGN`, `gnBodyRoundConfig`
+and `gnCopyShuttle`, is defined inside the snapshot. A module outside the tree
+would name the same frozen internals, would be a satellite of the snapshot
+rather than an independent versioned foundation, and would split the `GateN*`
+chain that the surface tests and `AxiomsAudit` walk as one unit. Relocation
+would also not avoid this gate, because `lakefile.lean` is blanket-protected and
+a new module must be registered there.
+
+**What entered the frozen tree.** One new module,
+`TuringToolkit/GateNBodyDriver.lean`. Nothing else in the frozen subtree is
+added, removed, renamed or modified — no existing `GateN*` or `GateOne*` file is
+touched. The module adds no `GNState` constructor, no `gnTransition` row, no
+machine, no clock, no encoder, no step-count hack, no request-dependent runtime
+state and no runtime geometry or advice. Its two endpoints are:
+
+```lean
+gnCS_bodyDriver_recordDone_exact (n : Nat) (fixed done : List G1Frame)
+    (current : G1Frame) (body tail seed : List G1Frame)
+    (previous : GNInstallAux) … :
+    TM.runConfig (M := GNM) (gnBodyRoundConfig …)
+        (gnBodyDriverSteps (current :: body).length …) =
+      gnCopyShuttle.cfg n (4 * (fixed ++ (done ++ current :: body)).length + 4) …
+        (frameListTape …) .recordDone
+
+gnCS_encodeGN_firstRecordDone_exact {r : GNProgram}
+    {g : SLGate r.inputs.length} (hg : r.program.gates[0]? = some g) :
+    TM.runConfig (M := GNM) (GNM.initialConfig (gnPoint (encodeGN r)))
+        (gnFirstRecordDoneSteps r g) = gnFirstRecordDoneConfig r g hg
+```
+
+Both are genuine `TM.runConfig` execution with an exact accumulated schedule, a
+literal `.recordDone` state, an exact head and a complete physical tape
+equality; neither is weakened to a wrapper predicate. The second starts at the
+real initial configuration and tracks the actually selected first gate through
+`hg`. Nothing claims continuation from `recordDone`, a values or tail writer, a
+launch, delegation, commit, next-gate loop, total installer clock, verdict,
+acceptance, or that the pure evaluator `evalGNProgram` is executed by the
+machine. Details, including the semantics-versus-execution distinction, are in
+the GN-E2-3b section of `TMVerifier_Session_Plan.md`.
+
+**Registration carried in the same commit (requirement 3(a)).**
+`lakefile.lean` registers both the new source module and the new
+`Tests/TMGateNBodyDriverSurfaceTests.lean`; that surface test `#check`s all
+twenty-one new public declarations (seven definitions and fourteen theorems)
+and restates every one of the fourteen theorems as a full-proposition
+`check_*` wrapper; `pnp3/Tests/AxiomsAudit.lean` imports both
+and adds twenty-eight direct `#print axioms` roots (the fourteen theorems and
+the fourteen wrappers). Observed axiom sets are subsets of
+`{propext, Classical.choice, Quot.sound}`; no `sorryAx`, `Lean.ofReduceBool`,
+`Lean.trustCompiler` or `nativeDecide` appears.
+
+**Gates — what was actually run, and only that.** The complete
+`./scripts/check.sh` was **not** run and is **not** claimed: its first action is
+the freeze preflight, which correctly rejects a changed frozen tree before the
+repin, so at stage (a) it cannot pass by construction. What was run, on the
+stage-(a) tree: targeted `lake build` of
+`Complexity.TMVerifier.TuringToolkit.GateNBodyDriver`,
+`Tests.TMGateNBodyDriverSurfaceTests` and `Tests.AxiomsAudit`, serialized, all
+succeeding; the hygiene scans for `axiom`, `sorry`/`admit`, `native_decide`,
+`Lean.ofReduceBool`, `Lean.trustCompiler` and `unsafe` over active pnp3/pnp4
+Lean; `git diff --check`; `scripts/check_doc_honesty.sh`;
+`python3 scripts/validate_version_manifest.py`; and the non-freeze governance
+gates of `scripts/check.sh` that do not depend on the freeze preflight. The
+freeze checker was run exactly once, to record the expected rejection, and was
+not weakened or bypassed in any way.
+
+**Still owed before merge.** All of it: stage (b) itself (set `FROZEN_COMMIT`
+and `FROZEN_TREE` to the stage-(a) commit and its
+`git rev-parse HEAD:pnp3/Complexity/TMVerifier` subtree, update this file's
+header, regenerate the manifest with the documented `--write-manifest`
+command), then the complete local gate set including `./scripts/check.sh` and
+the four freeze-specific gates on the repinned tree, then the remote half
+against the *final* head: green `ci.yml` and `lean.yml`, the required PR review,
+the repository owner's exact full-SHA attestation comment, the
+`tmverifier-unfreeze` label, and a history-preserving merge. None of that has
+happened. There is no PR, no independent review of this slice, and no CI result
+of any kind, and nothing in this record should be read as asserting one.

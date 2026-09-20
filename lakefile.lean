@@ -123,12 +123,24 @@ lean_lib PnP3 where
     Glob.one `Complexity.Uniform.V1.FixedGammaTerminatorScratchBootstrap,
     -- Part A G2p-b fixed first gamma payload bit into the target scratch register.
     Glob.one `Complexity.Uniform.V1.FixedGammaTargetFirstPayload,
-    -- Part A G2p-c1 second gamma payload digit: fixed table, phase-local handoff
-    -- ABI, exact room, and the decoded widths with no net tape change and hence
-    -- no net payload or register write.  Clocks are exported in both directions
-    -- (endpoint from the clock on, both terminals excluded before it), malformed
-    -- branch included; the read/write footprint and the head range stay inside
-    -- the private traces and are exported by no theorem.
+    -- Part A G2p-c1/G2p-c2 second gamma payload digit: fixed table, phase-local
+    -- handoff ABI, exact room, the decoded widths with no net tape change and
+    -- hence no net payload or register write, and the positive-width
+    -- (`2 <= zeros`) run that copies the content symbol at the logical source
+    -- address `10 + zeros` to the target cell `N + 3` in exactly `2 * N - 7`
+    -- steps.  That endpoint is extensional, and the schedule behind it has
+    -- three shapes.  With `10 + zeros < N` the source is physical: `qRead`
+    -- reads it and its bit picks the carry state.  With `10 + zeros = N` the
+    -- source address is the blank boundary: `qRead` is still entered, scans
+    -- that blank, and hands to `qReg0`.  With `9 + zeros = N` the *first*
+    -- payload cell is already that blank, so `qStepOne` scans it and `qRead`
+    -- is bypassed entirely.  Both boundary shapes write the virtual zero.
+    -- Clocks are exported in both directions (endpoint from the clock on, both
+    -- terminals excluded before it), malformed branch included.  The positive
+    -- branch also exports a head range and freedom from boundary clamps; the
+    -- all-times footprint/budget package stays deferred for every branch, and
+    -- the read/write footprint of the two width-zero/one traces stays inside
+    -- those private traces.
     Glob.one `Complexity.Uniform.V1.FixedGammaTargetSecondPayload,
     -- Generic bounded cross-budget simulation for one fixed UniformTM.
     Glob.one `Complexity.Uniform.V1.BudgetTransport,

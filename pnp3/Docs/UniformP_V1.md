@@ -688,72 +688,127 @@ and the module states no pnp4 reader or parser fact.  Unlike G2p-a it exports no
 exact first-arrival clock or strictness, only the length-only deadline.  It is
 infrastructure only.
 
-The Part A G2p-c1 `FixedGammaTargetSecondPayload` is the *foundation* slice of
-the second gamma payload digit: it lands the fixed 14-state, 42-row table, the
-input ABI, exact room, the phase-local clocks, and the two decoded widths at
-which the machine provably makes no net payload or register write and leaves the
-tape unchanged end to end (the anchor *is* blanked in flight and restored, so
-what is proved is the absence of a net tape change).  The positive-width
-(`2 <= zeros`) trace that copies the digit to `N+3` and the pnp4 bridge are
-deferred to later slices, and so is the all-times clamp/footprint/budget
-package, which this slice exports for no branch at all — not even for the two
-widths it proves, so unlike G2p-a and G2p-b there is no `no_boundary_clamp`,
-`footprint`, or `budget_independence` theorem here, and every head-range
-statement in this paragraph is internal to the private traces rather than a
-theorem a reader can use.  The start configuration is
-a *phase-local handoff*: it definitionally retags the actual G2p-b
-`FixedGammaTargetFirstPayload` configuration at the G2p-b deadline, replacing
-only the control field, and `handoff_exact` pins head and tape to that
+The Part A G2p-c `FixedGammaTargetSecondPayload` copies the **second** gamma
+payload digit into the target register.  It landed in two slices against one
+fixed 14-state, 42-row table: G2p-c1 fixed the table, the input ABI, exact room,
+the phase-local clocks, and the two decoded widths at which the machine makes no
+net payload or register write, and G2p-c2 added the positive-width
+(`2 ≤ zeros`) execution that actually performs the copy.  The start
+configuration is a *phase-local handoff*: it definitionally retags the actual
+G2p-b `FixedGammaTargetFirstPayload` configuration at the G2p-b deadline,
+replacing only the control field, and `handoff_exact` pins head and tape to that
 endpoint.  It is a real provider, but it is not one fixed machine running from
-the raw pair input, so the length-only deadline `2*N` is this phase's cost
-alone and omits every step inside the start configuration; clock composition
-remains out of scope.  No width, digit index, bit, target address, proof term,
-or clock enters the control; eight of the fourteen states (`qSeekTerm`,
-`qStepOne`, `qRead`, `qCarry0`, `qCarry1`, `qReg0`, `qReg1`, `qBackReg`) are
-landed and pinned deliberately as the control the deferred positive-width trace
-will run, and no public execution theorem of this slice exercises them.  The
-machine blanks tag cell `7` as its single anchor and steps onto cell `8`.  A
-terminator at `8` is width zero and a terminator at `9` is width one; in both
-cases it turns around, restores the anchor, halts in `qDone` at head `7`, and
-hands back the tape it was handed unchanged, so it leaves behind no net payload
-or register write; every *allocated* cell after `N+2` stays blank, the
-target cell `N+3` included whenever it is allocated (the width-one premise
-allocates only `N+2`, so that claim is vacuous exactly when `N+3` does not
-exist).  The private traces keep the head in `[7,9]`, so no cell past `9` is
-read, but that read bound is internal: the exported endpoints are tape
-equalities, which pin the net effect of the run and not the cells it visited.
-The two sweeps have different delimiters: only the leftward
-`qScanLeft` sweep is delimited by a cell the run itself maintains, the blanked
-anchor at `7` (the unique blank below `N` while the run is in flight); the
-rightward sweep is delimited by the input terminator at `8+zeros`, which the
-run does not maintain.  `exactClock` is `3`, `5`, `2*N-7` by *decoded* width; a
-malformed gamma has no decoded width and is clocked separately by
-`malformedExactClock = 1`, which `malformed_exact` and `malformed_strict`
-together prove to be its first terminal time — the `qReject` endpoint holds
-from step `1` on, and at step `0`, the handed-over configuration itself, neither
-terminal state is reached.  This slice proves the first two decoded values
-as exact first arrivals in the same sense — the endpoint holds from that time
-on, and neither terminal state is reached before it — while `2*N-7` is the
-unproved design
-constant consumed by the deferred positive-width trace, where truncated `Nat`
-subtraction makes it `0` for `N <= 3` and the intended scope is
-`N >= 9+zeros >= 11`.  `exactClock_le_deadline` carries the premise `3 <= N`;
-it is sharp, since width one costs `5` steps, and free in scope because
-`N >= 9+zeros`.  Room is exact and never inferred from a decoded header:
-`room_iff` reads `a+m+3 < tapeLength (pairLength a m) B` as `2 <= a+B`, which
-fails at `a = B = 0` and at `a+B = 1`; width zero carries no room premise and
-width one carries only the G2p-b premise
-`a+m+2 < tapeLength (pairLength a m) B`.  No theorem covers a width without its
-premise, so nothing here says that `qReject` at this deadline implies a
-malformed gamma, and no converse is stated.  Independent literal reduction
-probes identify the actual start configuration for three concrete inputs, using
-only the landed G2p-b endpoint theorems, and then reduce this machine's own run
-by kernel computation, pinning the intermediate width dispatch at cells
-`8`/`9`, the anchor blank and its restoration, the target cell those inputs
-allocate staying blank, and — for the malformed input — the handed-over
-configuration being in neither terminal state.  `qDone` is an internal endpoint
-rather than language
-acceptance; the module states no pnp4 reader or parser fact.  It is a
-specialization and not an iterating round — ending a general payload scan needs
-both a counter and an advancing source marker, and this control has neither.
-It is infrastructure only.
+the raw pair input, so the length-only deadline `2*N` and the exact clocks below
+are this phase's cost alone and omit every step inside the start configuration;
+clock composition remains out of scope.  No width, digit index, bit, target
+address, proof term, or clock enters the control.
+
+Positive width.  Under a matching tag, `gammaZeros? (Fin.append x w) = some
+zeros` with `2 ≤ zeros`, and the exact room `a+m+3 < tapeLength (pairLength a m)
+B` (equivalently `2 ≤ a+B`), `second_payload_exact` gives for every
+`s ≥ exactClock N zeros = 2*N-7` the endpoint `qDone` at head `7` with the whole
+tape equal to `secondPayloadTape B x w b0 c`: content restored, blank boundary
+at `N`, register `true` at `N+1`, G2p-b digit `b0` at `N+2`, second digit `c` at
+`N+3`, blanks after (`secondPayloadTape_layout`).  `second_payload_strict`
+excludes both terminal states for every `s < 2*N-7`, so that value is the
+*first* terminal time — derived row by row, not assumed, and the same in all
+three shapes of the route (both payload cells physical; the source cell exactly
+at the boundary; the first payload cell already at the boundary).  The copied
+value `c` is the *content* symbol at the logical source address `10+zeros`, the
+second payload cell of the block `[9+zeros, 9+2*zeros)` — `second_source_cell`
+pins `10+zeros = 9+zeros+1` and places it inside the block under `2 ≤ zeros`,
+that direction only and with no converse — so `c` is
+`(physicalSymbol (Fin.append x w) (10+zeros)).getD false`.  That endpoint is
+extensional, and the three shapes realize it by three different schedules.  With
+`10+zeros < N` the source is physical and the control really does read it: the
+run steps *over* the first payload cell `9+zeros` in `qStepOne` and reads
+`10+zeros` in `qRead`, and that bit is copied verbatim
+(`second_physical_exact`).  With `10+zeros = N` the source address *is* the
+blank boundary, so `qRead` is entered and scans that blank, taking the virtual
+zero.  With `9+zeros = N` the *first* payload cell is already the blank
+boundary, so `qStepOne` reads *that* blank and hands straight to the register:
+`qRead` is never entered, and the address `10+zeros` is then `N+1`, the register
+cell — the head passes it, but in `qReg0` and over a tape holding the register
+`true`, which is crossed rather than read as a source.  Both virtual shapes copy
+`false` (`second_virtual_exact`, premise `a+m ≤ 10+zeros`), which is what
+`Option.getD` records for a `none` content symbol.  Neither the register `true`
+at `N+1` nor the G2p-b digit at `N+2` is taken as the source; both are crossed
+in the register state that the selection already fixed.
+`positive_width_head_range` bounds the head by `[7, N+3]` at every time and
+`positive_width_no_boundary_clamp` shows that no transition of this branch
+clamps at either tape end (the head *enters* the last allocated cell of the run,
+`N+3`, on the preceding right move out of `N+2`, and the transition taken *at*
+`N+3` is the write, which moves left, so no right move is attempted from the
+last cell).  Both are head facts, not a footprint: they say nothing about which
+cells may differ from the incoming tape.
+
+Widths zero and one.  The machine blanks tag cell `7` as its single anchor and
+steps onto cell `8`.  A terminator at `8` is width zero and a terminator at `9`
+is width one; in both cases it turns around, restores the anchor, halts in
+`qDone` at head `7`, and hands back the tape it was handed unchanged, so it
+leaves behind no net payload or register write (the anchor *is* blanked in
+flight and restored, so what is proved is the absence of a net tape change).
+Every *allocated* cell after `N+2` stays blank, the target cell `N+3` included
+whenever it is allocated (the width-one premise allocates only `N+2`, so that
+claim is vacuous exactly when `N+3` does not exist).  For these two widths the
+private traces keep the head in `[7,9]`, so no cell past `9` is read, but that
+read bound is internal: the exported endpoints are tape equalities, which pin
+the net effect of the run and not the cells it visited.  The two sweeps have
+different delimiters: only the leftward `qScanLeft` sweep is delimited by a cell
+the run itself maintains, the blanked anchor at `7` (the unique blank below `N`
+while the run is in flight); the rightward sweep is delimited in phases by cells
+the run maintains none of — the input terminator at `8+zeros` ends the
+`qSeekTerm` scan at every width, and on a positive width the layout blank at `N`
+then ends the walk across the content and the first blank after the register,
+the target cell `N+3`, ends the register walk, that last delimiter being
+consumed by the write rather than maintained.
+
+Clocks and room.  `exactClock` is `3`, `5`, `2*N-7` by *decoded* width, and all
+three values are now proved exact first arrivals — the endpoint holds from that
+time on, and neither terminal state is reached before it.  A malformed gamma has
+no decoded width and is clocked separately by `malformedExactClock = 1`, which
+`malformed_exact` and `malformed_strict` together prove to be its first terminal
+time: the `qReject` endpoint holds from step `1` on, and at step `0`, the
+handed-over configuration itself, neither terminal state is reached.  Truncated
+`Nat` subtraction makes `2*N-7` degenerate for `N ≤ 3`, which the positive-width
+premises exclude: there `N ≥ 9+zeros ≥ 11`.  `exactClock_le_deadline` carries
+the premise `3 ≤ N`; it is sharp, since width one costs `5` steps, and free in
+scope.  Room is exact per width and never inferred from a decoded header:
+`room_iff` reads `a+m+3 < tapeLength (pairLength a m) B` as `2 ≤ a+B`, which
+fails at `a = B = 0` and at `a+B = 1`; width zero carries no room premise, width
+one carries only the G2p-b premise `a+m+2 < tapeLength (pairLength a m) B`, and
+the positive width carries `a+m+3 < tapeLength (pairLength a m) B`.  No theorem
+covers a width without its premise, so nothing here says that `qReject` at this
+deadline implies a malformed gamma, and no converse is stated — in particular
+nothing says that `qDone`, or a written digit at `N+3`, implies `2 ≤ zeros`.
+
+Probes.  Independent literal reduction probes identify the actual start
+configuration for five concrete inputs, using only the landed G2p-b endpoint
+theorems, and then reduce this machine's own run by kernel computation without
+invoking any endpoint theorem of this module.  Of the three foundation probes,
+the width-zero and width-one probes pin the width dispatch at cells `8`/`9` and
+the anchor blank and its restoration, the width-one probe alone also pins the
+target cell `N+3` — which every one of these five inputs allocates — still blank
+at the endpoint, and the malformed probe pins instead that the handed-over
+configuration is in neither terminal state and that one step rejects in place at
+the boundary head.  Two positive-width probes walk the whole route in its two
+extreme shapes.  The physical probe (`zeros = 2` at `N = 13`) pins
+`qStepOne` over the first payload cell, `qRead` at the source cell `12`, and the
+`qCarry1` that records the source bit.  The tight probe (`zeros = 2` at
+`N = 11`, both payload digits virtual) pins the opposite schedule: `qStepOne`
+reads the blank first payload cell and the next step is already `qReg0` at
+`12 = N+1`, so `qRead` is never entered and the register `true` that its
+endpoint pins at that address is crossed rather than read.  Both then pin the
+head on the still-blank target cell at step `N-4`, the digit written by the
+transition taken there and visible at step `N-3`, a non-terminal control at step
+`2*N-8` — which, both terminal states being absorbing, also excludes any earlier
+terminal arrival — and the halt at step `2*N-7`.
+
+`qDone` is an internal endpoint rather than language acceptance; the module
+states no pnp4 reader or parser fact.  Deferred: the remaining `zeros-2` digits,
+the decrement to `n`, the all-times footprint/budget package (no `footprint` and
+no `budget_independence` theorem is exported for any branch), the pnp4 semantic
+bridge, every parser and `contentHeader?` claim, and `ContentVerifierBridge`.
+It is a specialization and not an iterating round — ending a general payload
+scan needs both a counter and an advancing source marker, and this control has
+neither.  It is infrastructure only.

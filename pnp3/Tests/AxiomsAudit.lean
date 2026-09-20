@@ -4637,6 +4637,7 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetSecondPayload.exactClock
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetSecondPayload.malformedExactClock
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetSecondPayload.deadline
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetSecondPayload.secondPayloadTape
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetSecondPayload.exactClock_pins
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetSecondPayload.table_and_resource_pins
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetSecondPayload.per_step_budget_independent
@@ -4653,6 +4654,15 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetSecondPayload.width_one_exact
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetSecondPayload.width_one_at_deadline
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetSecondPayload.width_one_strict
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetSecondPayload.second_source_cell
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetSecondPayload.secondPayloadTape_layout
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetSecondPayload.second_payload_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetSecondPayload.second_payload_strict
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetSecondPayload.second_payload_at_deadline
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetSecondPayload.second_physical_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetSecondPayload.second_virtual_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetSecondPayload.positive_width_head_range
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetSecondPayload.positive_width_no_boundary_clamp
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_stateCount
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_states
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_raw
@@ -4662,6 +4672,7 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_exactClock
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_malformedExactClock
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_deadline
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_secondPayloadTape
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_deadline_eq
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_malformedExactClock_eq
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_exactClock_pins
@@ -4686,6 +4697,21 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_malformed_probe
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_zero_probe
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_one_probe
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_second_source_cell
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_secondPayloadTape_layout
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_second_payload_exact
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_second_payload_strict
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_second_payload_at_deadline
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_second_physical_exact
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_second_virtual_exact
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_positive_width_head_range
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_positive_width_no_boundary_clamp
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_two_handoff
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_two_tight_handoff
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_two_premises
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_two_tight_premises
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_two_probe
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests.check_two_tight_probe
 
 -- S11 (2026-09-19), infrastructure only: all-request one-gate acceptance
 -- closure in main's transducer convention.  `accepts = r.spec.isSome`, so a

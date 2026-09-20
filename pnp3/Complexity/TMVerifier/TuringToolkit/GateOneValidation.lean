@@ -564,7 +564,11 @@ fixed `(encodeG1 r).length + 4`-step validation prefix as
 
 The head is deliberately not pinned: it stops wherever the offending frame is.
 Nothing is claimed here about arbitrary padded physical tapes — only about the
-canonical encoding of a noncanonical request. -/
+standard encoded word `encodeG1 r` of a noncanonical request.  Such a request is
+by definition *not* canonical (`G1Request.Canonical`), and `decodeG1Tape?` sends
+its encoded word to `none`; "canonical encoding" would therefore be a
+contradiction in terms here, and the word is standard only in the sense that it
+is the image of `r` under the one fixed encoder. -/
 
 theorem g1CS_aligned_step_right (n h : Nat) (hh : h < G1M.tapeLength n)
     (hb : h + 1 < G1M.tapeLength n) (tape : Fin (G1M.tapeLength n) → Bool)

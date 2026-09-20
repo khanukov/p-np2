@@ -193,6 +193,11 @@ def corrupt_loose_object(repo: Path, object_id: str) -> None:
     path = repo / ".git" / "objects" / object_id[:2] / object_id[2:]
     if not path.is_file():
         raise AssertionError(f"expected a loose object to corrupt at {path}")
+    # Git commonly creates loose objects read-only (0444).  Root can overwrite
+    # those locally, which hid this portability requirement; hosted CI runs as
+    # an ordinary user.  Make only this disposable fixture object owner-writable
+    # before injecting the corruption.
+    path.chmod(path.stat().st_mode | stat.S_IWUSR)
     path.write_bytes(b"present, unreadable, and definitely not a zlib stream\n")
 
 

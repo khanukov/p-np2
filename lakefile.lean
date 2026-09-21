@@ -142,6 +142,13 @@ lean_lib PnP3 where
     -- the read/write footprint of the two width-zero/one traces stays inside
     -- those private traces.
     Glob.one `Complexity.Uniform.V1.FixedGammaTargetSecondPayload,
+    -- Part A G2p-d foundation: one fixed 14-state/42-row machine that installs the
+    -- counter marks and the walking terminator a self-stopping gamma payload loop
+    -- needs, on the phase-local retag of the actual G2p-c endpoint, and halts;
+    -- exact first terminal time zeros+7 in all three source shapes, the endpoint
+    -- tape pinned cell by cell.  The round, its iteration, the exhaustion finish,
+    -- the complete register and the two degenerate widths stay deferred.
+    Glob.one `Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation,
     -- Generic bounded cross-budget simulation for one fixed UniformTM.
     Glob.one `Complexity.Uniform.V1.BudgetTransport,
     -- Routed fixed-parser/verifier constructor and parser-prefix handoff.
@@ -723,6 +730,7 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1FixedGammaTerminatorScratchBootstrapSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaTargetFirstPayloadSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests,
+    Glob.one `Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
     Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,

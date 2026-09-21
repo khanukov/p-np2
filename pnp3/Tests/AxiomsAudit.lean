@@ -4719,11 +4719,11 @@ end DeprecatedAC0CompatibilityAxiomAudit
 -- 14-state/42-row machine that installs the counter marks and the walking
 -- terminator a self-stopping gamma payload loop needs, on the phase-local retag of
 -- the *actual* G2p-c second-payload endpoint (control field only).  The 14 `Fin`
--- state constants now have direct entries below, and the surface test restates all
--- 42 rows literally in `check_table_rows`.  `markers_installed` is the halted endpoint of a
+-- state constants now have direct entries below, the surface test restates all 42 rows
+-- literally, and the round that slice deferred lands in the next block.  `markers_installed` is the halted endpoint of a
 -- decoded `2 ≤ zeros` from the width-only first terminal time `zeros+7` on, in all
 -- three source shapes, head and `loopTape` pinned; `markers_strict` excludes both
--- terminals before it.  Deferred: the round, its iteration, the exhaustion finish,
+-- terminals before it.  Deferred: that round's iteration, the exhaustion finish,
 -- the complete register, the all-times clamp/footprint/budget package, the two
 -- degenerate widths (probes only), `malformed_strict`, every parsed header value
 -- and every pnp4 bridge.  `qDone` is an internal endpoint, never language acceptance.
@@ -4803,9 +4803,8 @@ end DeprecatedAC0CompatibilityAxiomAudit
 -- be transported later and no deadline is exported; no first-arrival/strictness direction
 -- is proved, and there is no converse.  Deferred: the iteration, the exhaustion finish (its
 -- `qFin` rows are fixed in the table but never executed here), the complete register, the
--- loop deadline, the all-times clamp/footprint/budget package, the decrement from `n+1` to
--- `n`, the degenerate widths `zeros ≤ 2`, every header value and every pnp4 bridge.
--- `qDone` is unreachable here and is never language acceptance.
+-- loop deadline, the all-times clamp/footprint/budget package, the decrement from `n+1` to `n`, the degenerate
+-- widths `zeros ≤ 2`, every header value and every pnp4 bridge.  `qDone` is unreachable here and is never language acceptance.
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.stateCount
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.qLoop
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.qCntL

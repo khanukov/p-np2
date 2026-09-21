@@ -51,10 +51,12 @@ Room is strictly wider than the foundation's because the register grows:
 `room_iff` reads `a+m+4 < tapeLength (pairLength a m) B` as `3 ≤ a+B`, one cell more
 than `2 ≤ a+B`, is exactly what is needed (the head reaches `N+4` and writes there),
 and implies the foundation premise so the handoff stays available. The head never
-goes below cell `9`, so the tag prefix and the first two counter marks are never
-scanned. `malformed_rejects` covers the retag of a failed gamma scan: the retagged
-foundation rejection rejects again in one step, room-free, at the boundary head, on
-the unchanged content tape — with no first-arrival direction and no converse.
+goes below cell `9`, so the tag prefix and the first counter mark, cell `8`, are
+never scanned; the second mark, cell `9`, *is* scanned — it is the symbol that stops
+the leftward `qCntZ` sweep. `malformed_rejects` covers the retag of a failed gamma
+scan: the retagged foundation rejection rejects again in one step, room-free, at the
+boundary head, on the unchanged content tape — with no first-arrival direction and no
+converse.
 
 Probes. Nonvacuity is independent of the endpoint theorems: two literal probes
 first identify the phase-local start configuration for every budget from the landed
@@ -146,7 +148,7 @@ machine halts after two steps (`zeros = 0`) and after five with its counter mark
 restored (`zeros = 1`), which is exercised here only by the literal probes at
 concrete inputs — together with `malformed_strict`, the first-arrival direction of
 the malformed branch, which this slice does not prove. The two surface obligations this slice
-owed to the next one are now discharged by the G2p-d round slice below: all 42
+owed to the next one are now discharged by the G2p-d round slice above: all 42
 table rows are restated literally in `check_table_rows` of the foundation's surface
 test, and the 14 `Fin` state constants have direct `#print axioms` entries instead
 of being reached only through `raw`/`machine`.

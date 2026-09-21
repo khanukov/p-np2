@@ -41,8 +41,8 @@ def check_roundClock (N : Nat) : Nat := roundClock N
 def check_malformedExactClock : Nat := malformedExactClock
 def check_sourceCell (N zeros : Nat) : Nat := sourceCell N zeros
 
-/-- All 66 transition rows of the fixed table, restated literally here and
-re-derived by `rfl`, together with the resource counts. -/
+/-- All 66 transition rows of the fixed table, restated literally and re-derived by `rfl`,
+with the resource counts; the 22 `.val` index pins are surfaced by the alias below. -/
 theorem check_table_rows :
     machine.step qLoop none = (qReject, none, .stay) ∧
     machine.step qLoop (some false) = (qReject, some false, .stay) ∧
@@ -227,13 +227,12 @@ theorem check_virt_handoff (B : Nat) :
   config_of_parts rfl (hh.trans (by decide)) ht
 
 set_option maxRecDepth 100000 in
-/-- Physical source (`N = 15`, `roundClock 15 = 23`): the third counter mark
-appears at cell `10` at step six, the head stands on the source cell `14` at step
-nine, the `true` it reads is carried in the control (`qClear1` at step ten), the
-new terminator is at `14` and the vacated `13` is blank from step eleven, the
-appended digit is written at `N + 4 = 19` at step seventeen, step twenty-two is
-still walking back in `qBackCont`, and step twenty-three is `qLoop` on the new
-terminator with the register digits `true, false, true, true`. -/
+/-- Physical source (`N = 15`, `roundClock 15 = 23`): cell `10` carries the third
+counter mark at step six, the head is on the source `14` at step nine, the `true`
+there is carried in the control (`qClear1` at step ten), the vacated `13` is blank at
+step eleven, `N + 4 = 19` goes from blank at step sixteen to `true` at step seventeen,
+step twenty-two is `qBackCont`, one step before the end, and step twenty-three is `qLoop`
+on the new terminator `14`, with `13` blank, `10` marked, `17` `false` and `19` `true`. -/
 theorem check_phys_probe :
     (machine.run 6 (startConfig 0 tag physWord)).tape ⟨10, by decide⟩ = some true ∧
     (machine.run 9 (startConfig 0 tag physWord)).head.val = 14 ∧
@@ -254,12 +253,12 @@ theorem check_phys_probe :
     by decide, by decide, by decide, by decide, by decide, by decide, by decide⟩
 
 set_option maxRecDepth 100000 in
-/-- Virtual source (`N = 12`, `roundClock 12 = 17`): the third counter mark appears
-at cell `10` at step four, the head stands on the boundary blank `12` at step five,
-the padding states `qVa`/`qVb` are entered at steps six and seven, the virtual zero
-is appended at `N + 4 = 16` at step twelve, and step seventeen is `qLoop` on the
-*unmoved* terminator `11` with `12` still blank and the register digits
-`true, false, false, false`. -/
+/-- Virtual source (`N = 12`, `roundClock 12 = 17`): cell `10` carries the third
+counter mark at step four, the head is on the boundary cell `12` in `qSrc` at step
+five, the padding states `qVa`/`qVb` are entered at steps six and seven,
+`N + 4 = 16` goes from blank at step eleven to the virtual `false` at step twelve,
+step sixteen is `qVc`, and step seventeen is `qLoop` on the *unmoved*
+terminator `11`, with `12` blank and the digits at `14` and `16` both `false`. -/
 theorem check_virt_probe :
     (machine.run 4 (startConfig 0 tag virtWord)).tape ⟨10, by decide⟩ = some true ∧
     (machine.run 5 (startConfig 0 tag virtWord)).head.val = 12 ∧

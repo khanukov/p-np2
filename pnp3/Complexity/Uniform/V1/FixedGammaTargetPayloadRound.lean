@@ -37,8 +37,8 @@ needs strictly more room than the foundation, since the register grows:
 `room_iff` reads `a + m + 4 < tapeLength (pairLength a m) B` as `3 ≤ a + B`, one
 cell more than the foundation's `2 ≤ a + B`.  It is exactly what is needed — the
 head reaches `N + 4` and writes there — and it implies the foundation's premise.
-The head never goes below cell `9`, so the tag prefix and the first two counter
-marks are never scanned.
+The head never goes below cell `9`, so the tag prefix and the first counter mark
+(cell `8`) are never scanned; the second mark, cell `9`, is what stops `qCntZ`.
 
 Deferred: the iteration of this round, the exhaustion finish, the complete target
 register, the loop's own deadline, a cell-by-cell `r = 3` layout theorem (the

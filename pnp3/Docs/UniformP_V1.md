@@ -895,12 +895,12 @@ loop needs (`N+1+zeros < tapeLength (pairLength a m) B`, assumed nowhere here), 
 the *quantified* endpoints of the two degenerate widths — `zeros = 0` halts after
 two steps and `zeros = 1` after five with its counter mark restored through `qFin`,
 but only the literal probes witness that here — along with `malformed_strict`, the
-first-arrival direction of the malformed branch.  Two surface obligations are owed
-to the next slice as well, left undone here only because this slice already sits at
-its 1500-changed-Lean-LOC gate: the surface test should restate all 42 table rows
-literally instead of aliasing `table_and_resource_pins`, and the audit should carry
-direct `#print axioms` entries for the 14 `Fin` state constants, which it currently
-reaches only through `raw`/`machine`.  This foundation is not connected to
+first-arrival direction of the malformed branch.  Two surface obligations were also
+owed to the next slice, left undone by this one only because it already sat at its
+1500-changed-Lean-LOC gate: its surface test did not yet restate all 42 table rows
+literally, aliasing `table_and_resource_pins` instead, and the audit reached the 14
+`Fin` state constants only through `raw`/`machine`.  Both are discharged at this
+head, as the next paragraph records.  This foundation is not connected to
 `contentHeader?`: no theorem mentions a decoded header field, and no pnp4 bridge
 exists for it.  `qDone` is an internal endpoint, never language acceptance, and no
 clock here accounts for the steps embedded in `startConfig`.  It is infrastructure,
@@ -975,12 +975,14 @@ foundation's, because the register grows by one digit: `room_iff` reads
 `a+m+4 < tapeLength (pairLength a m) B` as `3 <= a+B`, one cell more than the
 foundation's `2 <= a+B`, notes that it implies the foundation premise so the handoff
 stays available, and it is exactly what is needed -- the head reaches `N+4` and writes
-there.  The head never goes below cell `9`, so the tag prefix and the first two
-counter marks are never scanned.  `malformed_rejects` handles the one case the retag
-could otherwise obscure: `retagLoopFoundation` replaces the foundation's `qReject`
-with `qLoop`, and a malformed gamma then rejects again in one step, room-free, at the
-boundary head `a+m`, on the unchanged content tape -- with no first-arrival direction
-and no converse.
+there.  The head never goes below cell `9`, so the tag prefix and the first counter
+mark, cell `8`, are never scanned; the second mark, cell `9`, *is* scanned -- it is
+the symbol that stops the leftward `qCntZ` sweep and hands over to `qCntMark`.
+`malformed_rejects` handles the one case the retag could otherwise obscure:
+`retagLoopFoundation` replaces the foundation's `qReject` with `qLoop`, and a
+malformed gamma then rejects again in one step, room-free, at the boundary head
+`a+m`, on the unchanged content tape -- with no first-arrival direction and no
+converse.
 
 Nonvacuity is independent of the endpoint theorems.  Two literal probes first
 identify the phase-local start configuration for every budget from the landed G2p-d

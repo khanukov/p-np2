@@ -111,6 +111,7 @@ import Tests.UniformV1FixedGammaTerminatorScratchBootstrapSurfaceTests
 import Tests.UniformV1FixedGammaTargetFirstPayloadSurfaceTests
 import Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests
 import Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests
+import Tests.UniformV1FixedGammaTargetPayloadRoundSurfaceTests
 import Tests.UniformV1BudgetTransportSurfaceTests
 import Tests.UniformV1CombinedMachineSurfaceTests
 import Tests.UniformV1CombinedCorrectnessSurfaceTests
@@ -4718,8 +4719,8 @@ end DeprecatedAC0CompatibilityAxiomAudit
 -- 14-state/42-row machine that installs the counter marks and the walking
 -- terminator a self-stopping gamma payload loop needs, on the phase-local retag of
 -- the *actual* G2p-c second-payload endpoint (control field only).  The 14 `Fin`
--- state constants are covered only through `raw`/`machine`; direct entries for them
--- are owed to the next slice.  `markers_installed` is the halted endpoint of a
+-- state constants now have direct entries below, and the surface test restates all
+-- 42 rows literally in `check_table_rows`.  `markers_installed` is the halted endpoint of a
 -- decoded `2 ≤ zeros` from the width-only first terminal time `zeros+7` on, in all
 -- three source shapes, head and `loopTape` pinned; `markers_strict` excludes both
 -- terminals before it.  Deferred: the round, its iteration, the exhaustion finish,
@@ -4727,6 +4728,20 @@ end DeprecatedAC0CompatibilityAxiomAudit
 -- degenerate widths (probes only), `malformed_strict`, every parsed header value
 -- and every pnp4 bridge.  `qDone` is an internal endpoint, never language acceptance.
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.stateCount
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.qStart
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.qZeroA
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.qZeroB
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.qSeek
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.qSrcA
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.qClearA
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.qBackA
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.qOnTerm
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.qSrcB
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.qClearB
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.qBackB
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.qFin
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.qDone
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.qReject
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.raw
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.machine
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.retagSecondPayload
@@ -4752,6 +4767,7 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation.malformed_rejects
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_clock_values
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_table_and_resource_pins
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_table_rows
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_per_step_budget_independent
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_endpoints_absorb
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_handoff_exact
@@ -4774,6 +4790,77 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_one_probe
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_both_physical_probe
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_tight_probe
+
+-- Part A G2p-d round (2026-09-21), infrastructure only: one fixed 22-state/66-row machine
+-- that executes ONE round of the self-stopping gamma payload loop.  Its `startConfig` is a
+-- phase-local control retag of the *actual* G2p-d foundation run at the foundation's own
+-- length-only deadline, so `roundClock N = 2*N-7` counts this phase alone and clocks no
+-- composed pipeline.  `round_step` carries the loop invariant `loopTape B x w zeros r` from
+-- `r = 2` to `r = 3` at a matching tag, a decoded width with work remaining (`3 ≤ zeros`)
+-- and the round's own wider room `a+m+4 < tapeLength (pairLength a m) B` (equivalently
+-- `3 ≤ a+B`), giving state, head and the whole tape at exactly that time, in the physical
+-- and the virtual source shape at once.  `qLoop` does NOT absorb, so the endpoint may not
+-- be transported later and no deadline is exported; no first-arrival/strictness direction
+-- is proved, and there is no converse.  Deferred: the iteration, the exhaustion finish (its
+-- `qFin` rows are fixed in the table but never executed here), the complete register, the
+-- loop deadline, the all-times clamp/footprint/budget package, the decrement from `n+1` to
+-- `n`, the degenerate widths `zeros ≤ 2`, every header value and every pnp4 bridge.
+-- `qDone` is unreachable here and is never language acceptance.
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.stateCount
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.qLoop
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.qCntL
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.qCntZ
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.qCntMark
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.qCntBack
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.qSrc
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.qClear0
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.qClear1
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.qCarry0
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.qCarry1
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.qReg0
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.qReg1
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.qBackReg
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.qBackCont
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.qVa
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.qVb
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.qRegV
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.qBackRegV
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.qVc
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.qFin
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.qDone
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.qReject
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.raw
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.machine
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.retagLoopFoundation
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.startConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.roundClock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.malformedExactClock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.sourceCell
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.table_and_resource_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.per_step_budget_independent
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.endpoints_absorb
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.handoff_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.clock_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.room_iff
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.source_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.registerBit_source
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.round_step
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.malformed_rejects
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadRoundSurfaceTests.check_table_rows
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadRoundSurfaceTests.check_table_and_resource_pins
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadRoundSurfaceTests.check_per_step_budget_independent
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadRoundSurfaceTests.check_endpoints_absorb
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadRoundSurfaceTests.check_handoff_exact
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadRoundSurfaceTests.check_clock_pins
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadRoundSurfaceTests.check_room_iff
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadRoundSurfaceTests.check_source_pins
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadRoundSurfaceTests.check_registerBit_source
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadRoundSurfaceTests.check_round_step
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadRoundSurfaceTests.check_malformed_rejects
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadRoundSurfaceTests.check_phys_handoff
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadRoundSurfaceTests.check_virt_handoff
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadRoundSurfaceTests.check_phys_probe
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadRoundSurfaceTests.check_virt_probe
 
 -- S11 (2026-09-19), infrastructure only: all-request one-gate acceptance
 -- closure in main's transducer convention.  `accepts = r.spec.isSome`, so a

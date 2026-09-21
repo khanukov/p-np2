@@ -149,6 +149,12 @@ lean_lib PnP3 where
     -- tape pinned cell by cell.  The round, its iteration, the exhaustion finish,
     -- the complete register and the two degenerate widths stay deferred.
     Glob.one `Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation,
+    -- Part A G2p-d round: one fixed 22-state/66-row machine that executes one round
+    -- of the self-stopping gamma payload loop on the phase-local retag of the actual
+    -- G2p-d foundation endpoint, carrying the loop invariant from r=2 to r=3 in
+    -- exactly 2*(a+m)-7 steps at a decoded 3 <= zeros with the wider room 3 <= a+B.
+    -- The iteration, the exhaustion finish and the loop deadline stay deferred.
+    Glob.one `Complexity.Uniform.V1.FixedGammaTargetPayloadRound,
     -- Generic bounded cross-budget simulation for one fixed UniformTM.
     Glob.one `Complexity.Uniform.V1.BudgetTransport,
     -- Routed fixed-parser/verifier constructor and parser-prefix handoff.
@@ -731,6 +737,7 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1FixedGammaTargetFirstPayloadSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests,
+    Glob.one `Tests.UniformV1FixedGammaTargetPayloadRoundSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
     Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,

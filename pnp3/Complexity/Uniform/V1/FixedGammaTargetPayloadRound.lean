@@ -4,55 +4,54 @@ import Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation
 # The first remaining gamma payload round (Part A G2p-d round)
 
 One fixed 22-state, 66-row machine whose start configuration retags the *actual*
-endpoint of the G2p-d `FixedGammaTargetPayloadLoopFoundation` run and which
-executes **one** round of the self-stopping gamma payload loop.  It is one round,
-not the loop.  `pnp3/Docs/UniformP_V1.md` carries the long-form design notes.
+endpoint of the G2p-d `FixedGammaTargetPayloadLoopFoundation` run and executes
+**one** round of the self-stopping gamma payload loop — one round, not the loop.
+`pnp3/Docs/UniformP_V1.md` carries the long-form design notes.
 
-Write `N = a + m`.  The foundation left the tape in the `r = 2` instance of the
-loop invariant `loopTape B x w zeros r`: the counter prefix `[8, 7 + r]` of the
-gamma zero field marked `some true`, the terminator trail
+Write `N = a + m`.  The foundation left the tape in the `r = 2` instance of the loop
+invariant `loopTape B x w zeros r`: the counter prefix `[8, 7 + r]` of the gamma
+zero field marked `some true`, the terminator trail
 `[8 + zeros, 8 + zeros + walk N zeros r)` blank, the walking terminator at
 `8 + zeros + walk N zeros r`, and the target register `[N + 1, N + 1 + r]` holding
-its `r + 1` digits.  This machine carries that invariant from `r = 2` to `r = 3`:
-it tests the tape counter, marks the first unconsumed gamma zero (cell `10`),
-consumes the next source, **appends** its bit to the register at cell `N + 2 + r`,
-and advances the walking terminator when that source was physical.  The source is
-the third payload digit — index `2` of the block `[9 + zeros, 9 + 2 * zeros)`, the
-cell `11 + zeros` — and there is such a digit exactly when `3 ≤ zeros`, this
-module's work-remaining premise, which is also what makes cell `10` an
-*unconsumed* zero.  Every branch is decided by the symbol under the head: no
-width, digit index, bit, address, proof term, advice, or producer mark occurs in
-the control.  There is no arithmetic carry: the register write is an append, and
-the decrement from `n + 1` to `n` is a separate, deferred phase.  The `qFin`
-exhaustion rows are fixed in the table but **never executed here**, since
-`3 ≤ zeros` excludes that branch.
+its `r + 1` digits.  This machine carries that invariant from `r = 2` to `r = 3`: it
+tests the tape counter, marks the first unconsumed gamma zero (cell `10`), consumes
+the next source, **appends** its bit to the register at cell `N + 2 + r`, and
+advances the walking terminator when that source was physical.  The source is the
+third payload digit — index `2` of the block `[9 + zeros, 9 + 2 * zeros)`, the cell
+`11 + zeros` — and there is such a digit exactly when `3 ≤ zeros`, this module's
+work-remaining premise, which is also what makes cell `10` an *unconsumed* zero.
+Every branch is decided by the symbol under the head: no width, digit index, bit,
+address, proof term, advice, or producer mark occurs in the control.  There is no
+arithmetic carry: the register write is an append, and the decrement from `n + 1` to
+`n` is a separate, deferred phase.  The `qFin` exhaustion rows are fixed in the
+table but **never executed here**, since `3 ≤ zeros` excludes that branch.
 
 `roundClock N = 2 * N - 7` is the exact cost of the round and is **length-only**:
 the virtual branch's `qVa`/`qVb` padding makes it independent of the source shape
-and of the width.  It counts this phase alone and none of the steps embedded in
-`startConfig`, so it clocks no composed pipeline.  There is deliberately no phase
-deadline, because the endpoint control `qLoop` is **not** absorbing: the endpoint
-holds at exactly `roundClock N` and may not be transported past it.  The round
-needs strictly more room than the foundation, since the register grows:
-`room_iff` reads `a + m + 4 < tapeLength (pairLength a m) B` as `3 ≤ a + B`, one
-cell more than the foundation's `2 ≤ a + B`.  It is exactly what is needed — the
-head reaches `N + 4` and writes there — and it implies the foundation's premise.
-The head never goes below cell `9`, so the tag prefix and the first counter mark
-(cell `8`) are never scanned; the second mark, cell `9`, is what stops `qCntZ`.
+and of the width.  It counts this phase alone, none of the steps `startConfig`
+embeds, so it clocks no composed pipeline.  There is deliberately no phase deadline:
+`qLoop` is **not** absorbing, so the endpoint holds at exactly `roundClock N` and
+may not be transported past it.  The round needs more room since the register
+grows: `room_iff` reads `a + m + 4 < tapeLength (pairLength a m) B` as `3 ≤ a + B`,
+one cell more than the foundation's `2 ≤ a + B`, exactly what is needed — the head
+reaches `N + 4` and writes there — and it implies the foundation's premise.  On the
+decoded-width `round_step` path the head never goes below cell `9`, so the tag
+prefix and the first counter mark (cell `8`) are never scanned; the second mark,
+cell `9`, is what stops `qCntZ`.  `malformed_rejects` instead sits on the boundary
+head `a + m`, which is cell `8` when `a + m = 8`.
 
 Deferred: the iteration of this round, the exhaustion finish, the complete target
 register, the loop's own deadline, a cell-by-cell `r = 3` layout theorem (the
-endpoint is a full tape equality to the public `loopTape`, whose `r = 2` layout the
-foundation pins), a first-arrival/strictness direction, the all-times
-clamp/footprint/budget package, the decrement from `n + 1` to `n`, the room the full
-loop needs (`N + 1 + zeros < tapeLength …`, assumed nowhere), and the degenerate
-widths `zeros ≤ 2`.  No converse is stated: nothing
-says that `qLoop` at `roundClock N`, or the digit at `N + 4`, implies `3 ≤ zeros`.
-Nothing here is connected to `contentHeader?` or to any parsed header value, and no
-pnp4 bridge exists.  `qDone` is unreachable here and is never language acceptance;
-`startConfig` is a phase-local control retag of an actual prior run, not a composed
-`UniformTM` execution from the raw pair input.
-Clock composition, the fixed parser, advice freedom, `NP` membership, and
+endpoint is a full tape equality to `loopTape`, whose `r = 2` layout the foundation
+pins), a first-arrival/strictness direction, the all-times clamp/footprint/budget
+package, the decrement from `n + 1` to `n`, the room the full loop needs
+(`N + 1 + zeros < tapeLength …`, assumed nowhere), and the degenerate widths
+`zeros ≤ 2`.  No converse is stated: nothing says that `qLoop` at `roundClock N`, or
+the digit at `N + 4`, implies `3 ≤ zeros`.  Nothing here is connected to
+`contentHeader?` or to any parsed header value, and no pnp4 bridge exists.  `qDone`
+is unreachable here and is never language acceptance; `startConfig` retags an actual
+prior run, not a composed `UniformTM` execution from the raw pair input.  Clock
+composition, the fixed parser, advice freedom, `NP` membership, and
 `ContentVerifierBridge` are out of scope: infrastructure, not P-vs-NP mainline.
 -/
 
@@ -165,8 +164,7 @@ def machine : UniformTM where
   accept_ne_reject := by decide
   rawStep := raw
 
-/-- Phase-local handoff ABI: only the control of the actual G2p-d foundation
-configuration is replaced. -/
+/-- Phase-local handoff ABI: only the control field of the configuration is replaced. -/
 def retagLoopFoundation {N B : Nat}
     (c : Config FixedGammaTargetPayloadLoopFoundation.stateCount N B) :
     Config stateCount N B := ⟨qLoop, c.head, c.tape⟩
@@ -419,8 +417,7 @@ private theorem At_absorb {n B t : Nat} {c : Config stateCount n B} {q : Fin sta
   · rw [machine.run_reject _ hq' u]
     exact ⟨hq', hh, ht⟩
 
-/-- A same-symbol leftward scan: `d` steps in one state that rewrites what it
-reads and moves left. -/
+/-- A same-symbol leftward scan: `d` steps in `q`, rewriting each read, moving left. -/
 private theorem walk_left {n B : Nat} {c : Config stateCount n B} {q : Fin stateCount}
     {T : Nat → Option Bool} {t k : Nat} :
     ∀ d : Nat, d ≤ k → At (machine.run t c) q k T →
@@ -438,8 +435,7 @@ private theorem walk_left {n B : Nat} {c : Config stateCount n B} {q : Fin state
       rw [show t + (d + 1) = t + d + 1 by omega, show k - (d + 1) = k - d - 1 by omega]
       exact h2
 
-/-- A same-symbol rightward scan: `d` steps in one state that rewrites what it
-reads and moves right. -/
+/-- A same-symbol rightward scan: `d` steps in `q`, rewriting each read, moving right. -/
 private theorem walk_right {n B : Nat} {c : Config stateCount n B} {q : Fin stateCount}
     {T : Nat → Option Bool} {t k : Nat} :
     ∀ d : Nat, At (machine.run t c) q k T →
@@ -728,9 +724,8 @@ private theorem start_at {a m B zeros : Nat} (x : Bitstring a) (w : Bitstring m)
   rw [ht]
   exact loopTape_eq x w zeros 2 i
 
-/-- The counter phase and the walk back to the source, shared by both branches:
-the machine marks the first unconsumed gamma zero, cell `10`, and lands on the
-cell right of the walking terminator — the next source. -/
+/-- The counter phase shared by both branches: mark the first unconsumed gamma zero,
+cell `10`, and land on the cell right of the walking terminator — the next source. -/
 private theorem prefix_at {a m B zeros : Nat} (x : Bitstring a) (w : Bitstring m)
     (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
     (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros)

@@ -62,8 +62,7 @@ themselves are restated literally in `check_table_rows` below. -/
 def check_table_and_resource_pins := @table_and_resource_pins
 
 /-- All 42 transition rows of the fixed table, restated literally here and
-re-derived by `rfl` rather than taken from the module's own pin, together with the
-resource counts. -/
+re-derived by `rfl` rather than the module's own pin, with the resource counts. -/
 theorem check_table_rows :
     machine.step qStart none = (qReject, none, .stay) ∧
     machine.step qStart (some false) = (qZeroA, some false, .right) ∧

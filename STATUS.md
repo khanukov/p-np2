@@ -50,13 +50,13 @@ absorb — so no deadline is exported and the endpoint may not be transported la
 Room is strictly wider than the foundation's because the register grows:
 `room_iff` reads `a+m+4 < tapeLength (pairLength a m) B` as `3 ≤ a+B`, one cell more
 than `2 ≤ a+B`, is exactly what is needed (the head reaches `N+4` and writes there),
-and implies the foundation premise so the handoff stays available. The head never
-goes below cell `9`, so the tag prefix and the first counter mark, cell `8`, are
-never scanned; the second mark, cell `9`, *is* scanned — it is the symbol that stops
-the leftward `qCntZ` sweep. `malformed_rejects` covers the retag of a failed gamma
+and implies the foundation premise so the handoff stays available. On the decoded-width
+`round_step` path the head never goes below cell `9`, so the tag prefix and the first
+counter mark, cell `8`, are never scanned; the second mark, cell `9`, *is* scanned —
+it stops the leftward `qCntZ` sweep. `malformed_rejects` covers the retag of a failed gamma
 scan: the retagged foundation rejection rejects again in one step, room-free, at the
-boundary head, on the unchanged content tape — with no first-arrival direction and no
-converse.
+boundary head (cell `8` when `a+m = 8`), on the unchanged content tape — with no
+first-arrival direction and no converse.
 
 Probes. Nonvacuity is independent of the endpoint theorems: two literal probes
 first identify the phase-local start configuration for every budget from the landed

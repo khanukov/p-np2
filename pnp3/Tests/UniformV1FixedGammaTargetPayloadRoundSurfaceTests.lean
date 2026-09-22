@@ -3,18 +3,17 @@ import Complexity.Uniform.V1.FixedGammaTargetPayloadRound
 /-!
 Surface pins for the Part A G2p-d round: the fixed 22-state/66-row machine that
 executes **one** round of the self-stopping gamma payload loop on the phase-local
-retag of the *actual* G2p-d foundation endpoint, and the exact endpoint that
-carries the loop invariant `loopTape B x w zeros r` from `r = 2` to `r = 3`.  All
-66 transition rows are restated literally below rather than aliased.
-`roundClock N = 2 * N - 7` is length-only, counts this phase alone, and is an
-*exact* time rather than one from which the endpoint persists, because `qLoop`
-does not absorb — so no wrapper pins the endpoint later and there is no phase
-deadline to pin.  Not here and not available to pin: the iteration, the exhaustion
-finish, the complete register, the loop's own deadline, a cell-by-cell `r = 3`
-layout, a first-arrival/strictness direction, the all-times clamp/footprint/budget
-package, the degenerate widths `zeros ≤ 2`, any parsed header value, and any pnp4
-bridge.  `qDone` is unreachable here and is never language acceptance; no wrapper
-states a converse.
+retag of the *actual* G2p-d foundation endpoint, and the exact endpoint that carries
+the loop invariant `loopTape B x w zeros r` from `r = 2` to `r = 3`.  All 66
+transition rows are restated literally below, not aliased.  `roundClock N` is
+`2 * N - 7`, length-only, counts this phase alone, and is an *exact* time, not one
+from which the endpoint persists, because `qLoop` does not absorb — so no wrapper
+pins the endpoint later and there is no phase deadline to pin.  Not here and not
+available to pin: the iteration, the exhaustion finish, the complete register, the
+loop's own deadline, a cell-by-cell `r = 3` layout, a first-arrival/strictness
+direction, the all-times clamp/footprint/budget package, the degenerate widths
+`zeros ≤ 2`, any parsed header value, and any pnp4 bridge.  `qDone` is unreachable
+here and is never language acceptance; no wrapper states a converse.
 -/
 
 namespace Pnp3.Tests.UniformV1FixedGammaTargetPayloadRoundSurfaceTests
@@ -186,11 +185,9 @@ with an explicit configuration for every budget, using only the landed G2p-d
 foundation endpoint theorem and the definitional `retagLoopFoundation` handoff;
 then, at `B = 0`, this module's own `machine.run` is reduced by kernel computation
 on it.  Each probe is a claim about its own input.  The tag is `10110010` and both
-words decode to `zeros = 3`.  `physWord` has `N = 15`: the source `11 + zeros = 14`
-is a physical content cell holding `true`, so the terminator walks from `13` to
-`14` and `13` is blanked.  `virtWord` has `N = 12`: `walk N 3 2 = 0`, the source
-address `9 + zeros = 12` *is* the boundary blank, the terminator never moves, and
-the appended digit is the virtual `false`. -/
+words decode to `zeros = 3`.  `physWord` has `N = 15`, so the source
+`11 + zeros = 14` is a physical content cell; `virtWord` has `N = 12`, where
+`walk N 3 2 = 0` and the source address `9 + zeros = 12` *is* the boundary blank. -/
 
 private def tag : Bitstring 8 := ![true, false, true, true, false, false, true, false]
 private def physWord : Bitstring 7 := ![false, false, false, true, false, true, true]

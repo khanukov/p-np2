@@ -975,14 +975,14 @@ foundation's, because the register grows by one digit: `room_iff` reads
 `a+m+4 < tapeLength (pairLength a m) B` as `3 <= a+B`, one cell more than the
 foundation's `2 <= a+B`, notes that it implies the foundation premise so the handoff
 stays available, and it is exactly what is needed -- the head reaches `N+4` and writes
-there.  The head never goes below cell `9`, so the tag prefix and the first counter
-mark, cell `8`, are never scanned; the second mark, cell `9`, *is* scanned -- it is
-the symbol that stops the leftward `qCntZ` sweep and hands over to `qCntMark`.
+there.  On the decoded-width `round_step` path the head never goes below cell `9`, so
+the tag prefix and the first counter mark, cell `8`, are never scanned; the second
+mark, cell `9`, *is* scanned -- it stops `qCntZ` and hands over to `qCntMark`.
 `malformed_rejects` handles the one case the retag could otherwise obscure:
 `retagLoopFoundation` replaces the foundation's `qReject` with `qLoop`, and a
-malformed gamma then rejects again in one step, room-free, at the boundary head
-`a+m`, on the unchanged content tape -- with no first-arrival direction and no
-converse.
+malformed gamma then rejects again in one step, room-free, at boundary head `a+m`
+(cell `8` when `a+m = 8`), on the unchanged content tape -- with no first-arrival
+direction and no converse.
 
 Nonvacuity is independent of the endpoint theorems.  Two literal probes first
 identify the phase-local start configuration for every budget from the landed G2p-d

@@ -23,8 +23,8 @@ work-remaining premise, which is also what makes cell `10` an *unconsumed* zero.
 Every branch is decided by the symbol under the head: no width, digit index, bit,
 address, proof term, advice, or producer mark occurs in the control.  There is no
 arithmetic carry: the register write is an append, and the decrement from `n + 1` to
-`n` is a separate, deferred phase.  The `qFin` exhaustion rows are fixed in the
-table but **never executed here**, since `3 ≤ zeros` excludes that branch.
+`n` is a separate, deferred phase.  The `qFin` exhaustion rows are not executed by
+runs satisfying the `round_step` premises, since `3 ≤ zeros` excludes that branch.
 
 `roundClock N = 2 * N - 7` is the exact cost of the round and is **length-only**:
 the virtual branch's `qVa`/`qVb` padding makes it independent of the source shape
@@ -48,12 +48,13 @@ package, the decrement from `n + 1` to `n`, the room the full loop needs
 (`N + 1 + zeros < tapeLength …`, assumed nowhere), and the degenerate widths
 `zeros ≤ 2`.  No converse is stated: nothing says that `qLoop` at `roundClock N`, or
 the digit at `N + 4`, implies `3 ≤ zeros`.  Nothing here is connected to
-`contentHeader?` or to any parsed header value, and no pnp4 bridge exists.  `qDone`
-is unreachable here and is never language acceptance; `startConfig` retags an actual
-prior run, not a composed `UniformTM` execution from the raw pair input.  Clock
+`contentHeader?` or to any parsed header value, and no pnp4 bridge exists.  Public
+`startConfig` at `zeros = 2` can take the exhaustion path through `qFin` to `qDone`, but
+`zeros ≤ 2` and exhaustion are outside the proved theorem surface; `qDone` is not language
+acceptance.  `startConfig` retags an actual prior run, not a composed
+`UniformTM` execution from the raw pair input.  Clock
 composition, the fixed parser, advice freedom, `NP` membership, and
-`ContentVerifierBridge` are out of scope: infrastructure, not P-vs-NP mainline.
--/
+`ContentVerifierBridge` are out of scope: infrastructure, not P-vs-NP mainline. -/
 
 namespace Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound
 
@@ -85,8 +86,7 @@ def qFin : Fin stateCount := ⟨19, by decide⟩
 def qDone : Fin stateCount := ⟨20, by decide⟩
 def qReject : Fin stateCount := ⟨21, by decide⟩
 
-/-- The complete fixed 22-state, 66-row table: every branch is decided by the
-symbol under the head.  The `qFin` rows are never executed by this slice. -/
+/-- Complete fixed 22-state, 66-row table.  `qFin` is not executed under `round_step`'s premises. -/
 def raw (q : Fin stateCount) (s : Option Bool) : Fin stateCount × Option Bool × Move :=
   match q.1 with
   | 0 => match s with

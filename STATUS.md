@@ -72,8 +72,8 @@ entered, the appended digit at `N+4 = 16` is the virtual `false`, and `qLoop` is
 re-entered at step `17` on the *unmoved* terminator `11`.
 
 Deferred: the iteration of this round, the exhaustion finish that restores the
-gamma zero field (its `qFin` rows are fixed in the table but **never executed** by
-this slice, since `3 ≤ zeros` excludes that branch), the complete target register,
+gamma zero field (the `round_step` premises, notably `3 ≤ zeros`, exclude its `qFin`
+rows), the complete target register,
 the loop's own deadline, a cell-by-cell `r = 3` layout theorem (the endpoint is
 already a full tape equality to the public `loopTape`, whose `r = 2` layout the
 foundation pins), a first-arrival/strictness direction for the round, the all-times
@@ -82,8 +82,9 @@ loop needs (`N+1+zeros < tapeLength (pairLength a m) B`, assumed nowhere), and t
 degenerate widths `zeros ≤ 2`. No converse is stated: nothing says that `qLoop` at
 `roundClock N`, or the digit at `N+4`, implies `3 ≤ zeros`. Nothing here is
 connected to `contentHeader?` or to any parsed header value and no pnp4 bridge
-exists for this module; `qDone` is unreachable in this slice and is never language
-acceptance. Nothing here is P-vs-NP mainline progress.
+exists for this module. The public `startConfig` at `zeros = 2` can follow exhaustion
+through `qFin` to `qDone`, but `zeros ≤ 2` and exhaustion remain outside the proved
+theorem surface; `qDone` is not language acceptance. Nothing here is P-vs-NP mainline progress.
 
 **Part A G2p-d loop markers, foundation slice (infrastructure only).** New pnp3
 module `Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation`: one fixed

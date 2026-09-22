@@ -4801,10 +4801,10 @@ end DeprecatedAC0CompatibilityAxiomAudit
 -- `3 ≤ a+B`), giving state, head and the whole tape at exactly that time, in the physical
 -- and the virtual source shape at once.  `qLoop` does NOT absorb, so the endpoint may not
 -- be transported later and no deadline is exported; no first-arrival/strictness direction
--- is proved, and there is no converse.  Deferred: the iteration, the exhaustion finish (its
--- `qFin` rows are fixed in the table but never executed here), the complete register, the
--- loop deadline, the all-times clamp/footprint/budget package, the decrement from `n+1` to `n`, the degenerate
--- widths `zeros ≤ 2`, every header value and every pnp4 bridge.  `qDone` is unreachable here and is never language acceptance.
+-- is proved, and there is no converse.  The `round_step` premises exclude the `qFin` rows,
+-- although public `startConfig` at `zeros = 2` can run through them to `qDone`.  Deferred: the
+-- iteration, that exhaustion behavior, the complete register, the loop deadline, the
+-- all-times clamp/footprint/budget package, the decrement from `n+1` to `n`, degenerate widths `zeros ≤ 2`, every header value and every pnp4 bridge.  `qDone` is not language acceptance.
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.stateCount
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.qLoop
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.qCntL

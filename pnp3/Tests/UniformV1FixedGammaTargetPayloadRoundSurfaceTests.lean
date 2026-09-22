@@ -12,12 +12,12 @@ pins the endpoint later and there is no phase deadline to pin.  Not here and not
 available to pin: the iteration, the exhaustion finish, the complete register, the
 loop's own deadline, a cell-by-cell `r = 3` layout, a first-arrival/strictness
 direction, the all-times clamp/footprint/budget package, the degenerate widths
-`zeros ≤ 2`, any parsed header value, and any pnp4 bridge.  `qDone` is unreachable
-here and is never language acceptance; no wrapper states a converse.
--/
+`zeros ≤ 2`, any parsed header value, and any pnp4 bridge.  Runs satisfying
+`round_step`'s premises do not execute `qFin`; public `startConfig` at `zeros = 2` can follow
+exhaustion through `qFin` to `qDone`, but no theorem wrapper covers that behavior;
+`qDone` is not language acceptance, and no wrapper states a converse. -/
 
 namespace Pnp3.Tests.UniformV1FixedGammaTargetPayloadRoundSurfaceTests
-
 open Complexity.Uniform.V1
 open Complexity.Uniform.V1.PairEncoding
 open Complexity.Uniform.V1.FixedGammaTargetPayloadRound

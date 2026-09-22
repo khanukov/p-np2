@@ -928,8 +928,8 @@ The round carries the loop invariant `loopTape B x w zeros r` from `r = 2` to
 `r = 3`.  In detail: `qLoop` steps off the walking terminator; `qCntL` runs left over
 the blank trail into the gamma zero field, where a `some false` is an unconsumed zero
 (work remains) and a `some true` would be the last counter mark, the exhaustion case,
-handed to `qFin` -- those rows are fixed in the table and **never executed** by this
-slice, since `3 <= zeros` excludes that branch.  `qCntZ` then runs left over the
+handed to `qFin` -- those rows are fixed in the table but are not executed by runs
+satisfying `round_step`, since `3 <= zeros` excludes that branch.  `qCntZ` then runs left over the
 unconsumed zeros to the last counter mark, `qCntMark` marks the first unconsumed
 zero, which at `r = 2` is cell `10`, and `qCntBack` runs right over the rest of the
 field and the blank trail to the terminator and steps onto the cell right of it: the
@@ -1004,8 +1004,10 @@ zero field, the complete target register, the loop's own deadline, a cell-by-cel
 first-arrival/strictness direction for the round, the all-times clamp/footprint/budget
 package, the decrement from `n+1` to `n`, the room a full loop needs
 (`N+1+zeros < tapeLength (pairLength a m) B`, assumed nowhere), and the degenerate
-widths `zeros <= 2`.  Nothing here is connected to `contentHeader?` or to any parsed
-header value, and no pnp4 bridge exists for this module; `qDone` is unreachable in
-this slice and is never language acceptance.  Clock composition, the fixed parser,
+widths `zeros <= 2`.  The public `startConfig` at `zeros = 2` can follow the
+exhaustion path through `qFin` to `qDone`, but that behavior remains outside the
+proved theorem surface.  Nothing here is connected to `contentHeader?` or to any parsed
+header value, and no pnp4 bridge exists for this module; `qDone` is not language
+acceptance.  Clock composition, the fixed parser,
 the checks, advice freedom, `NP` membership and `ContentVerifierBridge` are out of
 scope.  It is infrastructure, not P-vs-NP mainline progress.

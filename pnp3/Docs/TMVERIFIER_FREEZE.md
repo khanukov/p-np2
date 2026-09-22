@@ -1,21 +1,23 @@
 # TMVerifier freeze decision
 
-**Status:** frozen infrastructure snapshot. No unfreeze is in flight: the
-GN-E2-3b migration recorded at the end of this file has landed both of its
-stages, and the two pinned constants below name its stage-(a) commit and that
-commit's subtree, so `scripts/check_tmverifier_freeze.py` and the freeze
-preflight of `scripts/check.sh` pass on this tree again. What that migration
-still owes — the complete `./scripts/check.sh` on the final head and the whole
-remote half — is listed in its record, not here.
+**Status:** frozen infrastructure snapshot. The GN-E2-3b migration recorded at
+the end of this file has landed both of its stages on its branch, and the two
+pinned constants below name its stage-(a) commit and that commit's subtree, so
+`scripts/check_tmverifier_freeze.py` and the freeze preflight of
+`scripts/check.sh` pass on this tree again. That migration is open as PR #1777
+and is **not** merged; what it has already discharged and what it still owes
+are split out in its record, not here.
 **Frozen tree (authoritative):** `b49456d6e08bbce69fd94af2d2a97beef438d210` —
 the Git tree object of the subtree below, and the content source the checker
 verifies against.
 **Reviewed-provenance commit (`FROZEN_COMMIT`):**
 `7b53a08fc13517fcf8b2c73b45f6515102a13863` (2026-09-20) — the stage-(a)
 commit whose subtree the pin names. The checker calls this value "reviewed
-provenance" because that is the role the constant plays; for this migration
-the independent review of the slice is still owed, so this line records
-provenance only, not a completed review.
+provenance" because that is the role the constant plays; for this migration the
+two independent read-only adversarial reviews of the slice were run at branch
+head `50f3eadd`, whose `pnp3/Complexity/TMVerifier` subtree is this same tree
+object, so this line records provenance and names the commit whose bytes were
+reviewed, not a review performed at this commit.
 **Previously frozen at:** tree `7ef6ac6e119f0f078f9c896f17415fa560a6edf3`,
 reviewed at `249435bfa4cb540822e47844107781042f18537f` (2026-09-19), and before
 that at commit `42c598815c8e7d27a53f26102705f84455c6979d` (2026-09-02); see the
@@ -165,7 +167,8 @@ simulation, not GN-E2-3b or later TMVerifier stages.
 **One authorized exception to that sentence, 2026-09-20.** The repository owner
 authorized a single dedicated unfreeze for GN-E2-3b, under this record's
 two-stage rule and with no other stage resumed. Both of its stages are recorded
-below; its remote half is still owed. The sentence above still governs
+below, together with the split between what that migration has already
+discharged and what its remote half still owes. The sentence above still governs
 everything else: E2-4 and later TMVerifier stages remain paused, and no further
 slice may be taken without a fresh authorization.
 
@@ -587,13 +590,34 @@ Lean, and a targeted `lake build` of
 The complete `./scripts/check.sh` was **not** rerun at stage (b) and is not
 claimed for it either; no Lean source differs from the stage-(a) tree.
 
-**Still owed before merge.** The complete `./scripts/check.sh` on the final
-head, and the entire remote half against that head: green `ci.yml` and
-`lean.yml`, the required PR review, the repository owner's exact full-SHA
-attestation comment, the `tmverifier-unfreeze` label, and a history-preserving
-merge. None of that has happened. There is no PR, no independent review of this
-slice, and no CI result of any kind, and nothing in this record should be read
-as asserting one.
+**Discharged at branch head `50f3eadd` — completed, and only this.** The
+complete `./scripts/check.sh` was run locally on the tree of head
+`50f3eadd48a88e7ce6cde31791cb50a1d9b3b753` and passed. That head's
+`pnp3/Complexity/TMVerifier` subtree is the pinned tree
+`b49456d6e08bbce69fd94af2d2a97beef438d210`, so the run covered exactly the
+frozen bytes pinned here. Two independent read-only adversarial reviews of the
+slice — Codex and Claude Fable 5.1 — were completed at that same exact head.
+The slice is open as PR #1777, which carries the `Infrastructure` and
+`tmverifier-unfreeze` labels and the repository owner's exact full-SHA
+attestation comment `/tmverifier-unfreeze
+50f3eadd48a88e7ce6cde31791cb50a1d9b3b753`. An automated Qodo review of that PR
+raised one documentation finding — that this record denied evidence the PR
+already carried — and the docs-only commit that rewrites these two paragraphs
+is its fix.
+
+**Still owed before merge.** The remote gate results against the *final* head:
+`ci.yml` and `lean.yml` observed green, and the `TMVerifier Freeze Policy`
+rollup observed passing on that head. When this paragraph was written those
+runs had not been observed to completion, so **no** green CI is claimed here
+and nothing in this record should be read as asserting one; an earlier
+`TMVerifier Freeze Policy` run against a pre-attestation head failed as
+designed. Also owed: the required PR review, a history-preserving merge, and
+the post-merge verification below. The docs-only fix commit named above changes
+the head SHA, so the attestation must be reposted for the new 40-character
+head, the label retriggered, and the remote gates rerun there; the complete
+`./scripts/check.sh` was **not** rerun for that commit and is not claimed for
+it — it changes no frozen byte and no Lean source, which is a reason to expect
+the unrun gate to pass and not a record that it did.
 
 **Merge with a merge commit — required, for provenance.** As for the S11
 migration above: this branch must be merged with a merge commit or an exact

@@ -5,9 +5,12 @@
 > see `pnp3/Docs/TMVERIFIER_FREEZE.md`, whose migration record covers two
 > unfreezes since `42c59881`: S11 below, reviewed and completed, and GN-E2-3b
 > below, whose stage (a) committed the new frozen bytes and whose stage (b)
-> repinned the freeze onto them. The freeze checker passes on this tree again;
-> the independent review of the GN-E2-3b slice and the remote half of its gates
-> are still owed.
+> repinned the freeze onto them. The freeze checker passes on this tree again.
+> GN-E2-3b is open as PR #1777: its exact-head local `./scripts/check.sh`, its
+> two independent read-only reviews, the owner attestation and the
+> `tmverifier-unfreeze` label are complete, while the remote gate results
+> against the final head, the required PR review and a history-preserving merge
+> are still owed; `TMVERIFIER_FREEZE.md` carries the exact split.
 >
 > This is **not** a silent resumption of the paused roadmap. GN-E2-3b was
 > unfrozen once, deliberately, as a single user-authorized dedicated slice.
@@ -4328,8 +4331,9 @@ source obligation is reduced: neither `VerifiedNPDAGLowerBoundSource` nor
 
 This is the **user-authorized dedicated GN-E2-3b unfreeze slice**; its stage
 (a) landed the module and its stage (b) repinned the freeze onto it — see the
-migration record in `TMVERIFIER_FREEZE.md`, which also lists what is still
-owed.  It is a single approved exception, not a reopening of the paused
+migration record in `TMVERIFIER_FREEZE.md`, which lists both what is already
+discharged and what is still owed.  It is a single approved exception, not a
+reopening of the paused
 gate-by-gate roadmap.
 
 **What it adds, and only that.**  One module,

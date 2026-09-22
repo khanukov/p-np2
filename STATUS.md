@@ -518,8 +518,12 @@ no pnp4 source obligation, and it is not P-vs-NP mainline progress.
 tree is frozen at Git tree `b49456d6`, the subtree of commit `7b53a08f`; see
 `pnp3/Docs/TMVERIFIER_FREEZE.md`, whose migration record covers the two
 unfreezes since `42c59881` (the reviewed S11 one-gate acceptance closure, and
-the single authorized GN-E2-3b body-driver slice whose remote review is still
-owed). Do not resume E2-4 or later gate-by-gate construction. Active
+the single authorized GN-E2-3b body-driver slice, open as PR #1777: its
+exact-head local `./scripts/check.sh`, its two independent read-only reviews,
+the owner attestation and the `tmverifier-unfreeze` label are done, while the
+remote gate results against the final head, the required PR review and a
+history-preserving merge are still owed). Do not resume E2-4 or later
+gate-by-gate construction. Active
 model-repair work must use the versioned uniform complexity foundation outside
 that tree.
 

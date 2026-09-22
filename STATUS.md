@@ -1,6 +1,228 @@
 # Project Status (current)
 
-Updated: 2026-09-20
+Updated: 2026-09-22
+
+**Part A G2p-d round, first remaining payload digit (infrastructure only).** New
+pnp3 module `Complexity.Uniform.V1.FixedGammaTargetPayloadRound`: one fixed
+22-state, 66-row machine — every row pinned literally, and restated literally again
+in its surface test — that executes **one** round of the self-stopping gamma
+payload loop whose markers the G2p-d foundation installed. It is one round, not the
+loop: the iteration, the exhaustion finish and the loop's own deadline are
+deferred. Write `N = a+m`. `startConfig` definitionally retags the *actual* G2p-d
+`FixedGammaTargetPayloadLoopFoundation` configuration at that phase's own
+length-only deadline, replacing only the control field; `handoff_exact` pins head
+and tape to that endpoint. So this is a real phase-local provider, not one fixed
+machine running from the raw pair input, and `roundClock N = 2*N-7` is this phase's
+cost alone and omits every step inside the start configuration; clock composition
+remains out of scope.
+
+What the round does. The foundation left the tape in the `r = 2` instance of the
+loop invariant `loopTape B x w zeros r` — counter prefix `[8,7+r]` marked, trail
+`[8+zeros, 8+zeros+walk N zeros r)` blank, walking terminator at
+`8+zeros+walk N zeros r`, register `[N+1,N+1+r]` holding its `r+1` digits — and
+`round_step` carries that invariant to `r = 3`. Under a matching tag,
+`gammaZeros? (Fin.append x w) = some zeros` with **`3 ≤ zeros`** (work remains) and
+the round's own room `a+m+4 < tapeLength (pairLength a m) B`, after exactly
+`roundClock (a+m)` steps the machine is back in `qLoop` at head
+`8+zeros+walk (a+m) zeros 3` with the whole tape equal to `loopTape B x w zeros 3`.
+The round tests the tape counter (`qCntL`/`qCntZ` scan left over the blank trail
+into the gamma zero field), marks the first unconsumed zero, cell `10`, walks back
+to the terminator, reads the next source, **appends** its bit to the register at
+cell `N+2+r`, and advances the walking terminator when the source was physical.
+Every branch is decided by the symbol under the head: no width, digit index, target
+address, proof term, advice or producer mark enters the control. It carries only the
+scanned source result: a physical bit until its write, and the physical-versus-blank
+branch until `qLoop` re-entry. There is no arithmetic carry —
+the register write is an append, and the decrement from `n+1` to `n` stays a separate
+deferred phase; `qCarry_b` names that held source bit.
+
+Source, clock and room. The source is the third payload digit, index `2` of the
+block `[9+zeros, 9+2*zeros)`, i.e. the cell `11+zeros`, and there is such a digit
+exactly when `3 ≤ zeros` — which is also what makes cell `10` an *unconsumed* gamma
+zero, so the counter can grow. `source_pins` states the address direction only: with
+`11+zeros < N`, `sourceCell N zeros = 11+zeros`, and with `N ≤ 11+zeros` it is the
+boundary blank `N`. In the latter branch `round_step` leaves the terminator unmoved,
+while `registerBit_source` identifies the appended digit as virtual `false`.
+`roundClock N = 2*N-7` is **length-only** and
+identical in both shapes: the virtual branch's `qVa`/`qVb` are pure padding, which
+is what makes the cost independent of the source shape and of the width. It is an
+*exact* time and not a time from which the endpoint persists — `qLoop` does not
+absorb — so no deadline is exported and the endpoint may not be transported later.
+Room is strictly wider than the foundation's because the register grows:
+`room_iff` reads `a+m+4 < tapeLength (pairLength a m) B` as `3 ≤ a+B`, one cell more
+than `2 ≤ a+B`; this is sufficient for the proved run, whose head reaches `N+4` and
+writes there, and implies the foundation premise so the handoff stays available. By
+the proof's table trace (not an exported all-times theorem), the decoded-width
+`round_step` path never goes below cell `9`: the tag prefix and first counter mark,
+cell `8`, are never scanned, while cell `9` stops `qCntZ`. `malformed_rejects` covers the retag of a failed gamma
+scan: the retagged foundation rejection rejects again in one step, room-free, at the
+boundary head (cell `8` when `a+m = 8`), on the unchanged content tape — with no
+first-arrival direction and no converse.
+
+Probes. Nonvacuity is independent of the endpoint theorems: two literal probes
+first identify the phase-local start configuration for every budget from the landed
+G2p-d foundation endpoint alone, then reduce this machine's own `run` by kernel
+computation at `B = 0`. The physical probe (`zeros = 3`, `N = 15`) pins the third
+counter mark at cell `10`, the head on the source cell `14`, the `true` it reads
+carried in the control as `qClear1`, the vacated cell `13` blanked, the appended
+digit written at `N+4 = 19`, a still non-terminal `qBackCont` one step before the
+end, and the halt-free re-entry into `qLoop` at step `23 = 2*15-7`. The virtual
+probe (`zeros = 3`, `N = 12`, `walk N 3 2 = 0`) pins the opposite schedule: the
+source address is the boundary blank `12`, the padding states `qVa`/`qVb` are
+entered, the appended digit at `N+4 = 16` is the virtual `false`, and `qLoop` is
+re-entered at step `17` on the *unmoved* terminator `11`.
+
+Deferred: the iteration of this round, the exhaustion finish that restores the
+gamma zero field (`3 ≤ zeros` excludes `qFin` only during the first `roundClock N`
+transitions, the exact `r = 2 → r = 3` segment), the complete target register,
+the loop's own deadline, a cell-by-cell `r = 3` layout theorem (the endpoint is
+already a full tape equality to the public `loopTape`, whose `r = 2` layout the
+foundation pins), a first-arrival/strictness direction for the round, the all-times
+clamp/footprint/budget package, the decrement from `n+1` to `n`, the room a full
+loop needs (`N+1+zeros < tapeLength (pairLength a m) B`, assumed nowhere), and the
+degenerate widths `zeros ≤ 2`. No converse is stated: nothing says that `qLoop` at
+`roundClock N`, or the digit at `N+4`, implies `3 ≤ zeros`. Nothing here is
+connected to `contentHeader?` or to any parsed header value and no pnp4 bridge
+exists for this module. The public `startConfig` at `zeros = 2` can follow exhaustion
+through `qFin` to `qDone`, but `zeros ≤ 2` and exhaustion remain outside the proved
+theorem surface; `qDone` is not language acceptance. Nothing here is P-vs-NP mainline progress.
+
+**Part A G2p-d loop markers, foundation slice (infrastructure only).** New pnp3
+module `Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation`: one fixed
+14-state, 42-row machine — every row pinned literally — that installs on the tape
+the two markers a *self-stopping* gamma payload loop needs, and halts as soon as
+they are in place. It is the finite preamble of that loop, not the loop: the round,
+its iteration and the exhaustion finish are deferred. Write `N = a+m`. The target
+register grows from scratch cell `N+1`; G2p-a wrote the leading `true` of `n+1`
+there, G2p-b the first payload digit at `N+2`, G2p-c the second at `N+3`, so at a
+decoded width `2 ≤ zeros` — the only width this slice proves anything quantified
+about — exactly two payload digits, `9+zeros` and `10+zeros`, are consumed when
+this phase starts, a constant of the phase ABI rather than data read off the tape;
+the degenerate widths have consumed fewer, one at `zeros = 1` and none at
+`zeros = 0`, the payload having fewer than two digits there. The markers are (i) a
+**counter** inside the gamma zero field, a consumed zero rewritten
+`some true` **left to right**, so that scanning left from the terminator
+the first non-blank cell is an unconsumed zero while work is left and the last
+consumed marker when the payload is exhausted — right-to-left marking would be
+indistinguishable from tag cell `7`, which is also `some false` — and (ii) a
+**walking terminator**, the `some true` at `8+zeros` moving one cell right per
+*physical* source consumed with the vacated cell blanked, so the cell right of the
+terminator is always the next source. `startConfig` definitionally retags the
+*actual* G2p-c `FixedGammaTargetSecondPayload` configuration at the G2p-c
+deadline, replacing only the control field (`handoff_exact` pins head and tape).
+`markers_installed`: on a matching tag, `gammaZeros? = some zeros`, `2 ≤ zeros`,
+and the inherited G2p-c room `a+m+3 < tapeLength (pairLength a m) B` (four
+hypotheses), the machine has from step `exactClock zeros = zeros+7` on halted in
+the absorbing `qDone` at head `8+zeros+walk (a+m) zeros 2` with tape
+`loopTape B x w zeros 2` — the gamma zeros at `8` and `9` marked, the terminator
+trail blank, the walking terminator installed, the three inherited register digits
+untouched — and `markers_strict` excludes both terminal states at every earlier
+step, so `zeros+7` is the *first* terminal time. `walk N zeros r =
+min r (N-9-zeros)` covers the three source shapes in one closed form: both
+consumed sources physical (`10+zeros < N`, terminator to `10+zeros`), only the
+first physical (`10+zeros = N`, terminator to `9+zeros`), neither (`9+zeros = N`,
+terminator unmoved); a virtual source costs the same three steps as a physical one,
+which is what keeps the clock width-only. The advance is destructive only as far as
+it moves, so the writes are shape-dependent: the both-physical shape overwrites
+`9+zeros` and `10+zeros` with `some true` and blanks the first again, the middle
+shape overwrites only `9+zeros` as the new terminator, and the tight shape
+overwrites neither; the input terminator cell `8+zeros` is blanked exactly when
+`9+zeros < N`, which is how `loopTape_layout` states it (a conditional conjunct, not
+an unconditional one). The endpoint tape is therefore not `contentTape`, and
+`loopTape_layout` pins it cell by cell (both marks, the conditionally blanked input
+terminator, the walking terminator, the three register cells, blanks past `N+3`, and
+the untouched tag prefix `[0,6]`). `markers_at_deadline` restates the endpoint at the
+phase's length-only `deadline N = N`, and `malformed_rejects` inherits the G2p-c
+rejection in one step, room-free. Room is inherited rather than needed: the head
+never moves past `N`, which every budget allocates, so no `.right` move of this
+phase can clamp; the premise (`room_iff`: `2 ≤ a+B`) is what makes the incoming
+tape known and what allocates the register cells. Nonvacuity is independent of the
+endpoint theorems: for both extreme shapes plus width zero, width one and a
+malformed gamma, the surface tests first identify the phase-local start
+configuration for every budget from the landed G2p-c endpoint theorems alone, then
+reduce this machine's own `run` by kernel computation at `B = 0`. Deferred: the
+round (counter test, source read, carry, register write), its iteration, the
+exhaustion finish, the complete target register, the intended loop's own deadline,
+the all-times clamp/footprint/budget package, the decrement from `n+1` to `n`, the
+room a full loop needs (`N+1+zeros < tapeLength (pairLength a m) B`, assumed
+nowhere), and the *quantified* endpoints of the two degenerate widths — where this
+machine halts after two steps (`zeros = 0`) and after five with its counter mark
+restored (`zeros = 1`), which is exercised here only by the literal probes at
+concrete inputs — together with `malformed_strict`, the first-arrival direction of
+the malformed branch, which this slice does not prove. The two surface obligations this slice
+owed to the next one are now discharged by the G2p-d round slice above: all 42
+table rows are restated literally in `check_table_rows` of the foundation's surface
+test, and the 14 `Fin` state constants have direct `#print axioms` entries instead
+of being reached only through `raw`/`machine`.
+This foundation is **not** connected to `contentHeader?`: no theorem mentions a
+decoded header field and no pnp4 bridge exists for it; `qDone` is an internal
+endpoint, never language acceptance. Nothing here is P-vs-NP mainline progress.
+
+**Part A G2p-c3 second-payload `contentHeader?` semantic bridge (infrastructure
+only).** The pnp4 module
+`Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetSecondPayloadBridge`
+reads the landed G2p-c register against the parsed content header. Write
+`N = a+m`. It has exactly four public theorems, all one-way implications out of
+a decoded `contentHeader? = some (n, consumed)` and no converse anywhere; only
+the last three reach a machine conclusion, because the first is machine-free.
+`header_digits` is generic and machine-free — one hypothesis, any
+`z : PrefixBitVec N`, no tag: a decoded header fixes `zeros` with
+`gammaZeros? z = some zeros`, `consumed = 2*zeros+1`,
+`2^zeros ≤ n+1 < 2^(zeros+1)`, the leading digit `(n+1).testBit zeros = true`,
+and, for **every** `t < zeros`, the payload cell `9+zeros+t` read as
+`(physicalSymbol z (9+zeros+t)).getD false = (n+1).testBit (zeros-1-t)`. The
+`getD false` and the `t < zeros` guard are both load bearing: the decoder reads
+its payload window through a virtual zero tail, so a payload cell at or past the
+physical word is the digit `0` rather than a physical cell, and past the window
+the truncated index `zeros-1-t` would repeat digit `0` at an address outside the
+block. The other three theorems are about the landed machine at its
+length-only, **phase-local** deadline `2*N`. Under a matching tag, a decoded
+header with `3 ≤ n`, and exactly the room
+`a+m+3 < tapeLength (pairLength a m) B` (four hypotheses), some `zeros ≥ 2` has
+the header bounds above and the endpoint is `qDone` at head `7` on
+`secondPayloadTape` with both digits taken from that same header, with cells
+`N+1`, `N+2`, `N+3` holding `(n+1).testBit zeros`, `(n+1).testBit (zeros-1)`,
+`(n+1).testBit (zeros-2)` — the three leading binary digits of `n+1`. Under a
+matching tag and `consumed = 3`, with only the G2p-b room
+`a+m+2 < tapeLength (pairLength a m) B` (three hypotheses), the two-digit G2p-b
+register survives and every *allocated* cell past `N+2` stays blank, so no third
+digit is written. Under a matching tag and the header `(0,1)` (two hypotheses)
+the one-digit G2p-a register survives, with no room premise. Given a
+decoded header the premise `3 ≤ n` is exactly `2 ≤ zeros`, since the exported
+bounds make `zeros` the index of the leading digit of `n+1`; that equivalence is
+derivable from the exported conjuncts and is *not* stated as an equivalence
+theorem. The three concrete header hypotheses — `3 ≤ n`, `consumed = 3`, and
+the header `(0,1)` — are jointly exhaustive over decoded headers, since
+`header_digits` splits them by width: `zeros = 0` forces the header `(0,1)`,
+`zeros = 1` forces `consumed = 3`, and `2 ≤ zeros` forces `3 ≤ n`. That coverage
+is not free: the width-one branch assumes the G2p-b room and the positive branch
+the wider one. Room, by contrast, is not implied by
+the header — `room_iff` reads it as `2 ≤ a+B`, a condition on the `x` side and
+the budget that a decoded header does not constrain — so `hroom` stays an
+explicit premise. This bridge states no `qReject` theorem at all, and not for
+want of room in one direction: on a matching tag,
+`contentHeader? = none → qReject` at this deadline is already room-free from the
+imports (`fixedGamma_header_contract` plus `malformed_at_deadline`, which takes
+no room premise). What needs room is
+the opposite direction, hence the `qReject ↔ contentHeader? = none` equivalence
+that G2p-a states for the bootstrap: excluding `qReject` on a decoded header of
+width one or more runs through the endpoint theorems, which assume `N+2` and
+`N+3` allocated. `deadline` and `exactClock` remain phase-local: `startConfig`
+retags the *actual* G2p-b endpoint configuration and embeds every earlier step,
+which neither clock counts, so nothing here is a `UniformP` execution, a
+runtime, or a clock for the composed pipeline. Nonvacuity is theorem-derived
+rather than an independent machine reduction: for every budget, the probes pin
+the one-digit register for header `(0,1)` (digit at cell `10`, with cell `11`
+and every later allocated cell blank), `11₂` at cells `12,13` with cell `14`
+still blank for `(2,3)`, `100₂` at `12,13,14` for `(3,5)`, `110₂` at `13,14,15`
+for `(5,5)` (second payload digit the virtual zero at the boundary), and `111₂`
+at `14,15,16` for `(6,5)` (second payload digit physical). No pnp3 machine,
+source, or test file changed in this slice; only pnp3 documentation.
+Deferred: the remaining `zeros-2` digits, the decrement of the stored `n+1` to
+`n`, parser execution, `contentInput?`, `ContentAccepts`, language acceptance
+from `qDone`, the raw-input composed machine and its clock, the all-times
+footprint/budget package, `ContentVerifierBridge`, advice-freedom, and `NP`
+membership. Nothing here is P-vs-NP mainline progress.
 
 **Part A G2p-c2 second gamma payload digit, positive-width execution
 (infrastructure only).** `FixedGammaTargetSecondPayload` now runs its fixed
@@ -122,13 +344,14 @@ address is crossed rather than read. Both then pin the head on the still-blank
 target cell at step `N-4`, the digit written by the transition taken there and
 visible at step `N-3`, a non-terminal control at step `2*N-8` — which, both
 terminal states being absorbing, also excludes any earlier terminal arrival —
-and the halt at step `2*N-7`. Deferred:
-the remaining `zeros-2` digits, the decrement to `n`, the all-times
-footprint/budget package, the pnp4 semantic bridge, parser and `contentHeader?`
-claims, and `ContentVerifierBridge`. This is a specialization, not an iterating
-round: the same rows cannot walk a general payload, because that needs both a
-counter and an advancing source marker, neither of which this control has.
-Nothing here is P-vs-NP mainline progress.
+and the halt at step `2*N-7`. The `contentHeader?` reading of these endpoints is
+now supplied outside pnp3, by the G2p-c3 bridge described above; this module
+itself still states no pnp4 reader or parser fact and needed no change for it.
+Deferred: the remaining `zeros-2` digits, the decrement to `n`, the all-times
+footprint/budget package, parser execution, and `ContentVerifierBridge`. This is
+a specialization, not an iterating round: the same rows cannot walk a general
+payload, because that needs both a counter and an advancing source marker,
+neither of which this control has. Nothing here is P-vs-NP mainline progress.
 
 **Part A G2p-b first gamma payload bit (infrastructure only).**
 `FixedGammaTargetFirstPayload` is a fixed 18-state, 54-row machine whose start

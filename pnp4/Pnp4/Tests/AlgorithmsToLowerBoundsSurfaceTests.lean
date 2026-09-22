@@ -64,6 +64,7 @@ import Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadDispatcherSemanti
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadDispatcherHeaderValueBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTerminatorScratchBootstrapBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetFirstPayloadBridge
+import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetSecondPayloadBridge
 import Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic
 import Pnp4.Frontier.ContractExpansion.ContentCappedSizes
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
@@ -5306,6 +5307,208 @@ example (B : Nat) :
 #print axioms Pnp4.Tests.check_firstPayload_zero_width_register
 
 end ContentFixedGammaTargetFirstPayloadBridgeSurface
+
+section ContentFixedGammaTargetSecondPayloadBridgeSurface
+
+open Pnp3.Complexity.Uniform.V1
+open Pnp4.Frontier.ContractExpansion
+
+theorem check_header_digits {N n consumed : Nat} (z : PrefixBitVec N)
+    (hheader : contentHeader? z = some (n, consumed)) :
+    ∃ zeros, FixedContentGammaTerminator.gammaZeros? z = some zeros ∧
+      consumed = 2 * zeros + 1 ∧ 2 ^ zeros ≤ n + 1 ∧ n + 1 < 2 ^ (zeros + 1) ∧
+      (n + 1).testBit zeros = true ∧
+      ∀ t, t < zeros →
+        (FixedContentTagGate.physicalSymbol z (9 + zeros + t)).getD false =
+          (n + 1).testBit (zeros - 1 - t) :=
+  header_digits z hheader
+
+theorem check_secondPayload_positive_register {a m B n consumed : Nat}
+    (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
+    (hheader : contentHeader? (Fin.append x w) = some (n, consumed)) (hn : 3 ≤ n)
+    (hroom : a + m + 3 < tapeLength (PairEncoding.pairLength a m) B) :
+    ∃ zeros, 2 ≤ zeros ∧ consumed = 2 * zeros + 1 ∧
+      2 ^ zeros ≤ n + 1 ∧ n + 1 < 2 ^ (zeros + 1) ∧
+      let d := FixedGammaTargetSecondPayload.machine.run
+        (FixedGammaTargetSecondPayload.deadline (a + m))
+        (FixedGammaTargetSecondPayload.startConfig B x w)
+      d.state = FixedGammaTargetSecondPayload.qDone ∧ d.head.val = 7 ∧
+        d.tape = FixedGammaTargetSecondPayload.secondPayloadTape B x w
+          ((n + 1).testBit (zeros - 1)) ((n + 1).testBit (zeros - 2)) ∧
+        d.tape ⟨a + m + 1, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
+          some ((n + 1).testBit zeros) ∧
+        d.tape ⟨a + m + 2, by omega⟩ = some ((n + 1).testBit (zeros - 1)) ∧
+        d.tape ⟨a + m + 3, hroom⟩ = some ((n + 1).testBit (zeros - 2)) :=
+  secondPayload_positive_register x w htag hheader hn hroom
+
+theorem check_secondPayload_width_one_register {a m B n : Nat}
+    (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
+    (hheader : contentHeader? (Fin.append x w) = some (n, 3))
+    (hroom : a + m + 2 < tapeLength (PairEncoding.pairLength a m) B) :
+    let d := FixedGammaTargetSecondPayload.machine.run
+      (FixedGammaTargetSecondPayload.deadline (a + m))
+      (FixedGammaTargetSecondPayload.startConfig B x w)
+    d.state = FixedGammaTargetSecondPayload.qDone ∧ d.head.val = 7 ∧
+      d.tape = FixedGammaTargetFirstPayload.firstPayloadTape B x w ((n + 1).testBit 0) ∧
+      d.tape ⟨a + m + 1, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
+        some ((n + 1).testBit 1) ∧
+      d.tape ⟨a + m + 2, hroom⟩ = some ((n + 1).testBit 0) ∧
+      ∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B), a + m + 2 < i.val →
+        d.tape i = none :=
+  secondPayload_width_one_register x w htag hheader hroom
+
+theorem check_secondPayload_zero_width_register {a m B : Nat}
+    (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
+    (hheader : contentHeader? (Fin.append x w) = some (0, 1)) :
+    let d := FixedGammaTargetSecondPayload.machine.run
+      (FixedGammaTargetSecondPayload.deadline (a + m))
+      (FixedGammaTargetSecondPayload.startConfig B x w)
+    d.state = FixedGammaTargetSecondPayload.qDone ∧ d.head.val = 7 ∧
+      d.tape = FixedGammaTerminatorScratchBootstrap.scratchTape B x w ∧
+      d.tape ⟨a + m + 1, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
+        some ((0 + 1).testBit 0) ∧
+      ∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B), a + m + 1 < i.val →
+        d.tape i = none :=
+  secondPayload_zero_width_register x w htag hheader
+
+/-- Width two with both payload cells physically present: the gamma is `00 1`
+and the payload window `[11, 13)` holds `11₂`, so the header is `(6, 5)`. -/
+private def headerValuePhysicalPair : Bitstring 5 :=
+  ![false, false, true, true, true]
+
+example :
+    FixedContentTagGate.tagMatches
+        (Fin.append headerValueTag headerValuePhysicalPair) = true ∧
+      FixedContentGammaTerminator.gammaZeros?
+        (Fin.append headerValueTag headerValuePhysicalPair) = some 2 ∧
+      contentHeader? (Fin.append headerValueTag headerValuePhysicalPair) =
+        some (6, 5) := by
+  decide
+
+/-! On the G2o words (`a = 8`, so `2 ≤ a + B` and every budget allocates the
+target cell `a + m + 3`), for every `B` and without running any machine.  Each
+probe derives its cells from the bridge theorems above, so it pins what those
+theorems give and is not an independent machine reduction. -/
+
+/-- Header `(0, 1)`: the endpoint is `qDone` and the register is still the single
+G2p-a digit of `0 + 1` at cell `a + m + 1`.  "Single" is pinned twice over: the
+next cell `11` — which this `a` does allocate for every `B`, so the claim is not
+vacuous — is blank, and so is every allocated cell past the register. -/
+theorem probe_secondPayload_zero_width (B : Nat) :
+    let d := FixedGammaTargetSecondPayload.machine.run
+      (FixedGammaTargetSecondPayload.deadline (8 + 1))
+      (FixedGammaTargetSecondPayload.startConfig B headerValueTag headerValueWidthZero)
+    d.state = FixedGammaTargetSecondPayload.qDone ∧
+      d.tape ⟨8 + 1 + 1, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
+        some true ∧
+      d.tape ⟨8 + 1 + 2, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
+        none ∧
+      ∀ i : Fin (tapeLength (PairEncoding.pairLength 8 1) B), 8 + 1 + 1 < i.val →
+        d.tape i = none := by
+  obtain ⟨hq, -, -, h1, hblank⟩ :=
+    secondPayload_zero_width_register (B := B) headerValueTag headerValueWidthZero
+      (by decide) (by decide)
+  refine ⟨hq, by rw [h1]; decide, ?_, hblank⟩
+  exact hblank ⟨8 + 1 + 2, by unfold tapeLength PairEncoding.pairLength; omega⟩
+    (by show 8 + 1 + 1 < 8 + 1 + 2; omega)
+
+/-- Header `(2, 3)`: gamma width one keeps the two G2p-b digits `11₂` of
+`2 + 1` at cells `12, 13`, and the target cell `14` — which this `a` does
+allocate, so the claim is not vacuous — stays blank: no third digit. -/
+theorem probe_secondPayload_width_one (B : Nat) :
+    let d := FixedGammaTargetSecondPayload.machine.run
+      (FixedGammaTargetSecondPayload.deadline (8 + 3))
+      (FixedGammaTargetSecondPayload.startConfig B headerValueTag headerValuePhysicalOne)
+    d.state = FixedGammaTargetSecondPayload.qDone ∧
+      d.tape ⟨8 + 3 + 1, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
+        some true ∧
+      d.tape ⟨8 + 3 + 2, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
+        some true ∧
+      d.tape ⟨8 + 3 + 3, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
+        none := by
+  obtain ⟨hq, -, -, h1, h2, hblank⟩ :=
+    secondPayload_width_one_register (B := B) headerValueTag headerValuePhysicalOne
+      (by decide) (show contentHeader? _ = some (2, 3) by decide)
+      (by unfold tapeLength PairEncoding.pairLength; omega)
+  refine ⟨hq, by rw [h1]; decide, by rw [h2]; decide, ?_⟩
+  exact hblank ⟨8 + 3 + 3, by unfold tapeLength PairEncoding.pairLength; omega⟩
+    (by show 8 + 3 + 2 < 8 + 3 + 3; omega)
+
+/-- Header `(3, 5)`: gamma width two stores `100₂` at cells `12, 13, 14`; both
+payload cells are past the physical word, so both digits are virtual zeros. -/
+theorem probe_secondPayload_width_two_virtual_pair (B : Nat) :
+    let d := FixedGammaTargetSecondPayload.machine.run
+      (FixedGammaTargetSecondPayload.deadline (8 + 3))
+      (FixedGammaTargetSecondPayload.startConfig B headerValueTag headerValueVirtualZero)
+    d.state = FixedGammaTargetSecondPayload.qDone ∧
+      d.tape ⟨8 + 3 + 1, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
+        some true ∧
+      d.tape ⟨8 + 3 + 2, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
+        some false ∧
+      d.tape ⟨8 + 3 + 3, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
+        some false := by
+  obtain ⟨zeros, -, hconsumed, -, -, hq, -, -, h1, h2, h3⟩ :=
+    secondPayload_positive_register (B := B) headerValueTag headerValueVirtualZero
+      (by decide) (show contentHeader? _ = some (3, 5) by decide) (by decide)
+      (by unfold tapeLength PairEncoding.pairLength; omega)
+  obtain rfl : zeros = 2 := by omega
+  exact ⟨hq, by rw [h1]; decide, by rw [h2]; decide, by rw [h3]; decide⟩
+
+/-- Header `(5, 5)`: gamma width two stores `110₂` at cells `13, 14, 15`; the
+first payload digit is the physical one at cell `11` and the second is the
+virtual zero at the blank boundary `12`. -/
+theorem probe_secondPayload_width_two_virtual_tail (B : Nat) :
+    let d := FixedGammaTargetSecondPayload.machine.run
+      (FixedGammaTargetSecondPayload.deadline (8 + 4))
+      (FixedGammaTargetSecondPayload.startConfig B headerValueTag headerValueVirtualTailOne)
+    d.state = FixedGammaTargetSecondPayload.qDone ∧
+      d.tape ⟨8 + 4 + 1, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
+        some true ∧
+      d.tape ⟨8 + 4 + 2, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
+        some true ∧
+      d.tape ⟨8 + 4 + 3, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
+        some false := by
+  obtain ⟨zeros, -, hconsumed, -, -, hq, -, -, h1, h2, h3⟩ :=
+    secondPayload_positive_register (B := B) headerValueTag headerValueVirtualTailOne
+      (by decide) (show contentHeader? _ = some (5, 5) by decide) (by decide)
+      (by unfold tapeLength PairEncoding.pairLength; omega)
+  obtain rfl : zeros = 2 := by omega
+  exact ⟨hq, by rw [h1]; decide, by rw [h2]; decide, by rw [h3]; decide⟩
+
+/-- Header `(6, 5)`: gamma width two stores `111₂` at cells `14, 15, 16`; here
+the second payload digit is a *physical* one at cell `12`. -/
+theorem probe_secondPayload_width_two_physical_pair (B : Nat) :
+    let d := FixedGammaTargetSecondPayload.machine.run
+      (FixedGammaTargetSecondPayload.deadline (8 + 5))
+      (FixedGammaTargetSecondPayload.startConfig B headerValueTag headerValuePhysicalPair)
+    d.state = FixedGammaTargetSecondPayload.qDone ∧
+      d.tape ⟨8 + 5 + 1, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
+        some true ∧
+      d.tape ⟨8 + 5 + 2, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
+        some true ∧
+      d.tape ⟨8 + 5 + 3, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
+        some true := by
+  obtain ⟨zeros, -, hconsumed, -, -, hq, -, -, h1, h2, h3⟩ :=
+    secondPayload_positive_register (B := B) headerValueTag headerValuePhysicalPair
+      (by decide) (show contentHeader? _ = some (6, 5) by decide) (by decide)
+      (by unfold tapeLength PairEncoding.pairLength; omega)
+  obtain rfl : zeros = 2 := by omega
+  exact ⟨hq, by rw [h1]; decide, by rw [h2]; decide, by rw [h3]; decide⟩
+
+#print axioms Pnp4.Tests.check_header_digits
+#print axioms Pnp4.Tests.check_secondPayload_positive_register
+#print axioms Pnp4.Tests.check_secondPayload_width_one_register
+#print axioms Pnp4.Tests.check_secondPayload_zero_width_register
+#print axioms Pnp4.Tests.probe_secondPayload_zero_width
+#print axioms Pnp4.Tests.probe_secondPayload_width_one
+#print axioms Pnp4.Tests.probe_secondPayload_width_two_virtual_pair
+#print axioms Pnp4.Tests.probe_secondPayload_width_two_virtual_tail
+#print axioms Pnp4.Tests.probe_secondPayload_width_two_physical_pair
+
+end ContentFixedGammaTargetSecondPayloadBridgeSurface
 
 section ContentCappedArithmeticSurface
 

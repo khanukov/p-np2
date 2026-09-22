@@ -142,6 +142,19 @@ lean_lib PnP3 where
     -- the read/write footprint of the two width-zero/one traces stays inside
     -- those private traces.
     Glob.one `Complexity.Uniform.V1.FixedGammaTargetSecondPayload,
+    -- Part A G2p-d foundation: one fixed 14-state/42-row machine that installs the
+    -- counter marks and the walking terminator a self-stopping gamma payload loop
+    -- needs, on the phase-local retag of the actual G2p-c endpoint, and halts;
+    -- exact first terminal time zeros+7 in all three source shapes, the endpoint
+    -- tape pinned cell by cell.  The one-round slice lands below; its iteration, exhaustion finish,
+    -- the complete register and the two degenerate widths stay deferred.
+    Glob.one `Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation,
+    -- Part A G2p-d round: one fixed 22-state/66-row machine that executes one round
+    -- of the self-stopping gamma payload loop on the phase-local retag of the actual
+    -- G2p-d foundation endpoint, carrying the loop invariant from r=2 to r=3 in
+    -- exactly 2*(a+m)-7 steps at a decoded 3 <= zeros with the wider room 3 <= a+B.
+    -- The iteration, the exhaustion finish and the loop deadline stay deferred.
+    Glob.one `Complexity.Uniform.V1.FixedGammaTargetPayloadRound,
     -- Generic bounded cross-budget simulation for one fixed UniformTM.
     Glob.one `Complexity.Uniform.V1.BudgetTransport,
     -- Routed fixed-parser/verifier constructor and parser-prefix handoff.
@@ -727,6 +740,8 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1FixedGammaTerminatorScratchBootstrapSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaTargetFirstPayloadSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests,
+    Glob.one `Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests,
+    Glob.one `Tests.UniformV1FixedGammaTargetPayloadRoundSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
     Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,
@@ -1005,6 +1020,8 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTerminatorScratchBootstrapBridge,
     -- Part A G2p-b: the first payload bit is the second digit of `n + 1`.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetFirstPayloadBridge,
+    -- Part A G2p-c: the second payload digit is the third digit of `n + 1`.
+    Glob.one `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetSecondPayloadBridge,
     Glob.one `Pnp4.Frontier.ContractExpansion.FixedContentGammaAnchorCorrect,
     -- GATE-0 slice: non-vacuity of `ContentAccepts` at the concrete codec.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity,

@@ -18,9 +18,9 @@ the walking terminator at `8 + zeros + walk N zeros r`, and the target register
 and advances the walking terminator when that source was physical.  The source is the third
 payload digit — index `2` of the block `[9 + zeros, 9 + 2 * zeros)`, the cell `11 + zeros` —
 and there is such a digit exactly when `3 ≤ zeros`, this module's work-remaining premise,
-which is also what makes cell `10` an *unconsumed* zero.  Every branch is decided by the symbol
-under the head: no width, digit index, target address, proof term, advice, or producer mark occurs
-in the control; only the source bit is held between read and write.  There is no arithmetic carry:
+which is also what makes cell `10` an *unconsumed* zero.  Every branch is symbol-driven: no width,
+digit index, target address, proof term, advice, or producer mark occurs in control.  It carries the
+source bit until its write and the physical-versus-blank branch until `qLoop` re-entry.  There is no arithmetic carry:
 the register write is an append, and decrement from `n + 1` to `n` is deferred.  The `qFin` exhaustion
 rows go unexecuted only over the bounded `r = 2 → r = 3` segment — the first `roundClock N`
 transitions out of `startConfig`, where `3 ≤ zeros` keeps cell `10` unconsumed — and that is
@@ -34,10 +34,8 @@ composed pipeline.  There is deliberately no phase deadline: `qLoop` is **not** 
 so the endpoint holds at exactly `roundClock N` and may not be transported past it.  The
 round needs more room since the register grows: `room_iff` reads
 `a + m + 4 < tapeLength (pairLength a m) B` as `3 ≤ a + B`, one cell more than the
-foundation's `2 ≤ a + B`; it suffices for the run and implies the foundation premise.  By the proof's
-table trace, not an exported
-all-times theorem, the path never goes below cell `9`: cell `8` and the tag prefix are never
-scanned, while cell `9` stops `qCntZ`.  `malformed_rejects`
+foundation's `2 ≤ a + B`; it suffices for the run and implies the foundation premise.  The proof's table
+trace (not an all-times theorem) never scans the tag prefix or cell `8`; cell `9` stops `qCntZ`.  `malformed_rejects`
 instead sits on the boundary head `a + m`, which is cell `8` when `a + m = 8`.
 
 Deferred: the iteration of this round, the exhaustion finish, the complete target register, the

@@ -146,7 +146,7 @@ lean_lib PnP3 where
     -- counter marks and the walking terminator a self-stopping gamma payload loop
     -- needs, on the phase-local retag of the actual G2p-c endpoint, and halts;
     -- exact first terminal time zeros+7 in all three source shapes, the endpoint
-    -- tape pinned cell by cell.  The round, its iteration, the exhaustion finish,
+    -- tape pinned cell by cell.  The one-round slice lands below; its iteration, exhaustion finish,
     -- the complete register and the two degenerate widths stay deferred.
     Glob.one `Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation,
     -- Part A G2p-d round: one fixed 22-state/66-row machine that executes one round

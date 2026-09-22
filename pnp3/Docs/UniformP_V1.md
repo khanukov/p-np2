@@ -946,8 +946,9 @@ held in the finite control between the read and the write.  `qBackReg`/`qBackCon
 (physical) and `qBackRegV`/`qVc` (virtual) walk back and re-enter `qLoop` on the new
 terminator, restoring the `r+1` invariant.  Every branch is decided by the symbol
 under the head: no width, digit index, target address, proof term, advice or producer
-mark occurs in the control; its only held datum is the source bit between read and
-write, and the round never computes its source address.
+mark occurs in the control. It carries only the scanned source result: a physical bit
+until its write, and the physical-versus-blank branch until `qLoop` re-entry; the
+round never computes its source address.
 
 `round_step` is the execution theorem.  Under a matching tag,
 `gammaZeros? (Fin.append x w) = some zeros` with `3 <= zeros`, and the round's own
@@ -967,8 +968,8 @@ the converse: neither that `qLoop` at `roundClock N`, nor a digit at `N+4`, impl
 
 `roundClock N = 2*N-7` is **length-only** and the same in both source shapes.  That
 is not an accident of the bookkeeping: the counter walks cancel against the
-terminator's position, and the virtual branch is padded by `qVa`/`qVb` to the cost
-the physical branch has at `sourceCell N zeros = N`.  It is an *exact* time and not a
+terminator's position, and `qVa`/`qVb` pad the virtual boundary case to the algebraic
+continuation of the physical schedule.  It is an *exact* time and not a
 time from which the endpoint persists, because the endpoint control `qLoop` is **not**
 absorbing; consequently this slice exports no phase deadline at all, and the next
 slice must hand off at exactly `roundClock N`.  Room is strictly wider than the
@@ -993,7 +994,7 @@ probe (`zeros = 3`, `N = 15`) pins the third counter mark at cell `10`, the head
 the source cell `14`, the `true` read there carried in the control as `qClear1`, the
 vacated cell `13` blanked, the appended digit written at `N+4 = 19`, a still
 non-terminal `qBackCont` at step twenty-two, and the re-entry into `qLoop` at step
-`23 = 2*15-7` on the new terminator `14`.  The tight probe (`zeros = 3`, `N = 12`,
+`23 = 2*15-7` on the new terminator `14`.  The virtual probe (`zeros = 3`, `N = 12`,
 `walk N 3 2 = 0`) pins the opposite schedule: the source address is the boundary
 blank `12`, `qVa`/`qVb` are entered, the digit appended at `N+4 = 16` is the virtual
 `false`, and `qLoop` is re-entered at step `17` on the *unmoved* terminator `11`.

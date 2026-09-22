@@ -30,8 +30,9 @@ into the gamma zero field), marks the first unconsumed zero, cell `10`, walks ba
 to the terminator, reads the next source, **appends** its bit to the register at
 cell `N+2+r`, and advances the walking terminator when the source was physical.
 Every branch is decided by the symbol under the head: no width, digit index, target
-address, proof term, advice or producer mark enters the control. The only datum held
-there is the source bit between its read and write. There is no arithmetic carry —
+address, proof term, advice or producer mark enters the control. It carries only the
+scanned source result: a physical bit until its write, and the physical-versus-blank
+branch until `qLoop` re-entry. There is no arithmetic carry —
 the register write is an append, and the decrement from `n+1` to `n` stays a separate
 deferred phase; `qCarry_b` names that held source bit.
 

@@ -57,9 +57,64 @@ theorem check_clock_values (N zeros r : Nat) :
   ⟨rfl, rfl, rfl, rfl⟩
 
 /-- Name-and-type pin of the table theorem: its 42-row-plus-resource conjunction is
-written out literally in the module, and this wrapper only aliases it.  Restating
-all 42 rows literally here is owed to the next slice (this one is at its LOC gate). -/
+written out literally in the module, and this wrapper aliases it.  The rows
+themselves are restated literally in `check_table_rows` below. -/
 def check_table_and_resource_pins := @table_and_resource_pins
+
+/-- All 42 transition rows of the fixed table, restated literally here and
+re-derived by `rfl` rather than the module's own pin, with the resource counts. -/
+theorem check_table_rows :
+    machine.step qStart none = (qReject, none, .stay) ∧
+    machine.step qStart (some false) = (qZeroA, some false, .right) ∧
+    machine.step qStart (some true) = (qReject, some true, .stay) ∧
+    machine.step qZeroA none = (qReject, none, .stay) ∧
+    machine.step qZeroA (some false) = (qZeroB, some true, .right) ∧
+    machine.step qZeroA (some true) = (qDone, some true, .left) ∧
+    machine.step qZeroB none = (qReject, none, .stay) ∧
+    machine.step qZeroB (some false) = (qSeek, some true, .right) ∧
+    machine.step qZeroB (some true) = (qFin, some true, .left) ∧
+    machine.step qSeek none = (qReject, none, .stay) ∧
+    machine.step qSeek (some false) = (qSeek, some false, .right) ∧
+    machine.step qSeek (some true) = (qSrcA, some true, .right) ∧
+    machine.step qSrcA none = (qBackA, none, .left) ∧
+    machine.step qSrcA (some false) = (qClearA, some true, .left) ∧
+    machine.step qSrcA (some true) = (qClearA, some true, .left) ∧
+    machine.step qClearA none = (qReject, none, .stay) ∧
+    machine.step qClearA (some false) = (qReject, some false, .stay) ∧
+    machine.step qClearA (some true) = (qOnTerm, none, .right) ∧
+    machine.step qBackA none = (qReject, none, .stay) ∧
+    machine.step qBackA (some false) = (qReject, some false, .stay) ∧
+    machine.step qBackA (some true) = (qOnTerm, some true, .stay) ∧
+    machine.step qOnTerm none = (qReject, none, .stay) ∧
+    machine.step qOnTerm (some false) = (qReject, some false, .stay) ∧
+    machine.step qOnTerm (some true) = (qSrcB, some true, .right) ∧
+    machine.step qSrcB none = (qBackB, none, .left) ∧
+    machine.step qSrcB (some false) = (qClearB, some true, .left) ∧
+    machine.step qSrcB (some true) = (qClearB, some true, .left) ∧
+    machine.step qClearB none = (qReject, none, .stay) ∧
+    machine.step qClearB (some false) = (qReject, some false, .stay) ∧
+    machine.step qClearB (some true) = (qDone, none, .right) ∧
+    machine.step qBackB none = (qReject, none, .stay) ∧
+    machine.step qBackB (some false) = (qReject, some false, .stay) ∧
+    machine.step qBackB (some true) = (qDone, some true, .stay) ∧
+    machine.step qFin none = (qReject, none, .stay) ∧
+    machine.step qFin (some false) = (qDone, some false, .stay) ∧
+    machine.step qFin (some true) = (qFin, some false, .left) ∧
+    machine.step qDone none = (qDone, none, .stay) ∧
+    machine.step qDone (some false) = (qDone, some false, .stay) ∧
+    machine.step qDone (some true) = (qDone, some true, .stay) ∧
+    machine.step qReject none = (qReject, none, .stay) ∧
+    machine.step qReject (some false) = (qReject, some false, .stay) ∧
+    machine.step qReject (some true) = (qReject, some true, .stay) ∧
+    machine.stateCount = 14 ∧ machine.start = qStart ∧
+    machine.accept = qDone ∧ machine.reject = qReject ∧
+    qStart.val = 0 ∧ qZeroA.val = 1 ∧ qZeroB.val = 2 ∧ qSeek.val = 3 ∧
+    qSrcA.val = 4 ∧ qClearA.val = 5 ∧ qBackA.val = 6 ∧ qOnTerm.val = 7 ∧
+    qSrcB.val = 8 ∧ qClearB.val = 9 ∧ qBackB.val = 10 ∧ qFin.val = 11 ∧
+    qDone.val = 12 ∧ qReject.val = 13 ∧
+    Fintype.card (Fin machine.stateCount × Option Bool) = 42 := by
+  repeat' apply And.intro
+  all_goals rfl
 
 theorem check_per_step_budget_independent :
     ∀ q s, machine.step q s = machine.rawStep q s :=

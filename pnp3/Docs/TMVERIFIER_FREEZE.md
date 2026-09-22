@@ -1,22 +1,25 @@
 # TMVerifier freeze decision
 
-**Status:** frozen infrastructure snapshot, with **one unfreeze in flight**.
-The two pinned constants below are unchanged and this revision does **not**
-repin anything. A GN-E2-3b stage-(a) commit has added new bytes to the frozen
-subtree ahead of its repin, exactly in the order requirement 3 below mandates,
-so `scripts/check_tmverifier_freeze.py` and the freeze preflight of
-`scripts/check.sh` are **expected to fail** on this tree until stage (b) lands.
-See the pending migration record at the end of this file for what is done and
-what is still owed.
-**Frozen tree (authoritative):** `7ef6ac6e119f0f078f9c896f17415fa560a6edf3` —
+**Status:** frozen infrastructure snapshot. No unfreeze is in flight: the
+GN-E2-3b migration recorded at the end of this file has landed both of its
+stages, and the two pinned constants below name its stage-(a) commit and that
+commit's subtree, so `scripts/check_tmverifier_freeze.py` and the freeze
+preflight of `scripts/check.sh` pass on this tree again. What that migration
+still owes — the complete `./scripts/check.sh` on the final head and the whole
+remote half — is listed in its record, not here.
+**Frozen tree (authoritative):** `b49456d6e08bbce69fd94af2d2a97beef438d210` —
 the Git tree object of the subtree below, and the content source the checker
-verifies against. It is the tree of the *last completed* migration, not of the
-working tree while an unfreeze is in flight.
-**Reviewed commit (provenance):** `249435bfa4cb540822e47844107781042f18537f`
-(2026-09-19) — the commit at which those bytes were reviewed and re-pinned.
-**Previously frozen at:** `42c598815c8e7d27a53f26102705f84455c6979d` (2026-09-02);
-see the migration record below for the one completed reviewed unfreeze since
-then, and for the pending one.
+verifies against.
+**Reviewed-provenance commit (`FROZEN_COMMIT`):**
+`7b53a08fc13517fcf8b2c73b45f6515102a13863` (2026-09-20) — the stage-(a)
+commit whose subtree the pin names. The checker calls this value "reviewed
+provenance" because that is the role the constant plays; for this migration
+the independent review of the slice is still owed, so this line records
+provenance only, not a completed review.
+**Previously frozen at:** tree `7ef6ac6e119f0f078f9c896f17415fa560a6edf3`,
+reviewed at `249435bfa4cb540822e47844107781042f18537f` (2026-09-19), and before
+that at commit `42c598815c8e7d27a53f26102705f84455c6979d` (2026-09-02); see the
+migration record below for the two unfreezes since then.
 
 The complete tree below is content-addressed by `spec/tmverifier_freeze.json`:
 
@@ -161,17 +164,20 @@ simulation, not GN-E2-3b or later TMVerifier stages.
 
 **One authorized exception to that sentence, 2026-09-20.** The repository owner
 authorized a single dedicated unfreeze for GN-E2-3b, under this record's
-two-stage rule and with no other stage resumed. Its stage (a) is recorded as
-pending below. The sentence above still governs everything else: E2-4 and later
-TMVerifier stages remain paused, and no further slice may be taken without a
-fresh authorization.
+two-stage rule and with no other stage resumed. Both of its stages are recorded
+below; its remote half is still owed. The sentence above still governs
+everything else: E2-4 and later TMVerifier stages remain paused, and no further
+slice may be taken without a fresh authorization.
 
 ## Migration record
 
 ### 2026-09-19 — S11 one-gate acceptance closure (single reviewed unfreeze)
 
-Re-pinned from `42c59881` to `249435bf`. This is the only unfreeze since the
-tree was frozen on 2026-09-02.
+Re-pinned from `42c59881` to `249435bf`. This was the only unfreeze since the
+tree was frozen on 2026-09-02 until the GN-E2-3b migration recorded below;
+every mention of tree `7ef6ac6e` and commit `249435bf` in this section
+describes the pin as it stood at this migration, and the current pin is the one
+in the header.
 
 **What entered the frozen tree.** Two new modules,
 `TuringToolkit/GateOneAcceptsClosure.lean` and
@@ -455,17 +461,43 @@ is not an emergency but a deliberate repin onto a commit in `main`'s ancestry,
 landed under this same unfreeze gate, plus a note in this record saying which
 merge dropped the link.
 
-### 2026-09-20 — GN-E2-3b body driver (PENDING: stage (a) only, not repinned)
+### 2026-09-20 — GN-E2-3b body driver (stage (a) 2026-09-20, stage (b) repin 2026-09-22)
 
-**This record is not a repin.** `FROZEN_COMMIT`, `FROZEN_TREE`,
+Re-pinned from tree `7ef6ac6e` (reviewed at `249435bf`) to tree `b49456d6`,
+the `pnp3/Complexity/TMVerifier` subtree of the stage-(a) commit
+`7b53a08fc13517fcf8b2c73b45f6515102a13863`. This is the second unfreeze since
+the tree was frozen on 2026-09-02, and it landed as the two separate commits
+requirement 3 prescribes, in that order.
+
+**Stage (a), commit `7b53a08f`.** The new frozen bytes together with their
+registration, and nothing of the pin: `FROZEN_COMMIT`, `FROZEN_TREE`,
 `SCHEMA_VERSION`, `spec/tmverifier_freeze.json` and
-`spec/version_manifest.toml` are untouched by the stage-(a) commit, and the
-header of this file still names tree `7ef6ac6e` reviewed at `249435bf`. That is
-the required order: requirement 3(a) says the new bytes must be committed
-first, because `--write-manifest` refuses to author a pin whose provenance
-commit does not yet exist. Until stage (b) lands, the frozen tree on this branch
-legitimately disagrees with the pin, and the freeze checker fails closed saying
-so.
+`spec/version_manifest.toml` are untouched by it, and the header of this file
+at that commit still named tree `7ef6ac6e` reviewed at `249435bf`. That is the
+required order: requirement 3(a) says the new bytes must be committed first,
+because `--write-manifest` refuses to author a pin whose provenance commit does
+not yet exist. Between the two commits the frozen tree on this branch
+legitimately disagreed with the pin, and the freeze checker failed closed
+reporting exactly one added path,
+`pnp3/Complexity/TMVerifier/TuringToolkit/GateNBodyDriver.lean`.
+
+**Stage (b), the separate commit that adds this paragraph.** It sets
+`FROZEN_COMMIT` to `7b53a08fc13517fcf8b2c73b45f6515102a13863` and
+`FROZEN_TREE` to `b49456d6e08bbce69fd94af2d2a97beef438d210` in
+`scripts/check_tmverifier_freeze.py`, updates the header of this record with
+the same pair, and regenerates `spec/tmverifier_freeze.json` with the
+documented `python3 scripts/check_tmverifier_freeze.py --write-manifest`,
+which re-verified that `7b53a08f` resolves here and records exactly `b49456d6`
+before writing. The manifest goes from 115 to 116 `files` entries; the only
+entry-level change is the one new blob, and every other entry is
+byte-identical. `SCHEMA_VERSION` stays at 3 and the
+`[snapshot.tmverifier_freeze]` row of `spec/version_manifest.toml` is
+untouched, because the manifest's shape did not change. Stage (b) changes no
+frozen byte and no Lean source. Beyond the pin it touches only prose that named
+the old pin: this record, the preamble of `TMVerifier_Session_Plan.md`, the two
+freeze sentences of `STATUS.md`, and one docstring of
+`scripts/test_tmverifier_freeze.py` that counted the frozen entries. It amends
+neither stage (a) nor anything before it.
 
 **Why the frozen artifact itself had to change (requirement 1).** The slice is
 the arbitrary proof-level induction over GN-E2-3a's own
@@ -522,11 +554,11 @@ the fourteen wrappers). Observed axiom sets are subsets of
 `{propext, Classical.choice, Quot.sound}`; no `sorryAx`, `Lean.ofReduceBool`,
 `Lean.trustCompiler` or `nativeDecide` appears.
 
-**Gates — what was actually run, and only that.** The complete
-`./scripts/check.sh` was **not** run and is **not** claimed: its first action is
-the freeze preflight, which correctly rejects a changed frozen tree before the
-repin, so at stage (a) it cannot pass by construction. What was run, on the
-stage-(a) tree: targeted `lake build` of
+**Gates at stage (a) — what was actually run, and only that.** The complete
+`./scripts/check.sh` was **not** run at stage (a) and is **not** claimed for it:
+its first action is the freeze preflight, which correctly rejects a changed
+frozen tree before the repin, so at stage (a) it cannot pass by construction.
+What was run, on the stage-(a) tree: targeted `lake build` of
 `Complexity.TMVerifier.TuringToolkit.GateNBodyDriver`,
 `Tests.TMGateNBodyDriverSurfaceTests` and `Tests.AxiomsAudit`, serialized, all
 succeeding; the hygiene scans for `axiom`, `sorry`/`admit`, `native_decide`,
@@ -537,14 +569,53 @@ gates of `scripts/check.sh` that do not depend on the freeze preflight. The
 freeze checker was run exactly once, to record the expected rejection, and was
 not weakened or bypassed in any way.
 
-**Still owed before merge.** All of it: stage (b) itself (set `FROZEN_COMMIT`
-and `FROZEN_TREE` to the stage-(a) commit and its
-`git rev-parse HEAD:pnp3/Complexity/TMVerifier` subtree, update this file's
-header, regenerate the manifest with the documented `--write-manifest`
-command), then the complete local gate set including `./scripts/check.sh` and
-the four freeze-specific gates on the repinned tree, then the remote half
-against the *final* head: green `ci.yml` and `lean.yml`, the required PR review,
-the repository owner's exact full-SHA attestation comment, the
-`tmverifier-unfreeze` label, and a history-preserving merge. None of that has
-happened. There is no PR, no independent review of this slice, and no CI result
-of any kind, and nothing in this record should be read as asserting one.
+**Gates at stage (b) — what was actually run, and only that.** On the tree of
+the stage-(b) commit: the four freeze-specific gates —
+`python3 scripts/check_tmverifier_freeze.py` (116 Git objects match tree
+`b49456d6`, reviewed provenance `7b53a08f` verified),
+`scripts/check_tmverifier_freeze.sh`, `scripts/test_tmverifier_freeze.sh` (the
+complete negative-control suite, including the self-hosted provenance-free
+control) and `node scripts/test_tmverifier_freeze_policy.js` — plus
+`python3 scripts/validate_version_manifest.py`, `scripts/check_doc_honesty.sh`,
+`python3 -m py_compile` on both changed scripts, `git diff --check`, the
+hygiene scans for `axiom`, `sorry`/`admit`, `native_decide`,
+`Lean.ofReduceBool`, `Lean.trustCompiler` and `unsafe` over active pnp3/pnp4
+Lean, and a targeted `lake build` of
+`Complexity.TMVerifier.TuringToolkit.GateNBodyDriver`,
+`Tests.TMGateNBodyDriverSurfaceTests` and `Tests.AxiomsAudit`, all passing.
+The complete `./scripts/check.sh` was **not** rerun at stage (b) and is not
+claimed for it either; no Lean source differs from the stage-(a) tree.
+
+**Still owed before merge.** The complete `./scripts/check.sh` on the final
+head, and the entire remote half against that head: green `ci.yml` and
+`lean.yml`, the required PR review, the repository owner's exact full-SHA
+attestation comment, the `tmverifier-unfreeze` label, and a history-preserving
+merge. None of that has happened. There is no PR, no independent review of this
+slice, and no CI result of any kind, and nothing in this record should be read
+as asserting one.
+
+**Merge with a merge commit — required, for provenance.** As for the S11
+migration above: this branch must be merged with a merge commit or an exact
+fast-forward, never squashed or rebased, and the branch itself must not be
+rebased or force-pushed while its PR is open. A rewriting merge would not break
+any check — the frozen tree object `b49456d6` travels with the bytes — but it
+would drop `7b53a08f`, the commit this pin names as provenance, from `main`'s
+ancestry. Bringing `main` into this branch must likewise be a merge commit, so
+that stage (a) and stage (b) remain two distinct, auditable commits.
+
+**Post-merge verification (required).** Immediately after the merge, on an
+updated `main` or a fresh clone, run both:
+
+```text
+git merge-base --is-ancestor 7b53a08fc13517fcf8b2c73b45f6515102a13863 origin/main
+python3 scripts/check_tmverifier_freeze.py
+```
+
+The second is the content gate: it must report that the frozen tree matches
+`b49456d6e08bbce69fd94af2d2a97beef438d210`, and it is expected to pass under
+any merge style. The first is the provenance audit and must exit `0`. If it
+does not, the merge was a rewriting one and the provenance link was dropped:
+the frozen content is still verified and `main` is not broken, so the response
+is not an emergency but a deliberate repin onto a commit in `main`'s ancestry,
+landed under this same unfreeze gate, plus a note in this record saying which
+merge dropped the link.

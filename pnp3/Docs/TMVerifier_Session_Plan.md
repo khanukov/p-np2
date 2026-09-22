@@ -1,13 +1,13 @@
 # Plan: closing the TM verifier for canonical asymptotic GapPartialMCSP
 
-> **Frozen historical plan (2026-09-03; amended 2026-09-20).** The freeze pin
-> still names Git tree `7ef6ac6e`, reviewed at commit `249435bf`; see
-> `pnp3/Docs/TMVERIFIER_FREEZE.md`, whose migration record covers one completed
-> reviewed unfreeze since `42c59881` (S11 below) and one **pending** unfreeze
-> whose stage (a) has landed and whose stage (b) has not (GN-E2-3b below).
-> Because stage (a) deliberately commits new frozen bytes *before* the repin,
-> the freeze checker rejects this tree until stage (b) lands; that is the
-> documented order, not a broken gate.
+> **Frozen historical plan (2026-09-03; amended 2026-09-20 and 2026-09-22).**
+> The freeze pin names Git tree `b49456d6`, the subtree of commit `7b53a08f`;
+> see `pnp3/Docs/TMVERIFIER_FREEZE.md`, whose migration record covers two
+> unfreezes since `42c59881`: S11 below, reviewed and completed, and GN-E2-3b
+> below, whose stage (a) committed the new frozen bytes and whose stage (b)
+> repinned the freeze onto them. The freeze checker passes on this tree again;
+> the independent review of the GN-E2-3b slice and the remote half of its gates
+> are still owed.
 >
 > This is **not** a silent resumption of the paused roadmap. GN-E2-3b was
 > unfrozen once, deliberately, as a single user-authorized dedicated slice.
@@ -4326,9 +4326,11 @@ source obligation is reduced: neither `VerifiedNPDAGLowerBoundSource` nor
 `SearchMCSPWeakLowerBound` is touched, and no
 `CanonicalAsymptoticVerifierComponents` obligation is discharged.
 
-This is the **user-authorized dedicated GN-E2-3b unfreeze slice**, stage (a)
-only; see the pending migration record in `TMVERIFIER_FREEZE.md`.  It is a
-single approved exception, not a reopening of the paused gate-by-gate roadmap.
+This is the **user-authorized dedicated GN-E2-3b unfreeze slice**; its stage
+(a) landed the module and its stage (b) repinned the freeze onto it — see the
+migration record in `TMVERIFIER_FREEZE.md`, which also lists what is still
+owed.  It is a single approved exception, not a reopening of the paused
+gate-by-gate roadmap.
 
 **What it adds, and only that.**  One module,
 `TuringToolkit/GateNBodyDriver.lean`, importing only `GateNBodyRound`.  The

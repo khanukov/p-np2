@@ -45,9 +45,9 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 TREE = "pnp3/Complexity/TMVerifier"
 # Reviewed provenance only.  Content enumeration must not depend on it.
-FROZEN_COMMIT = "249435bfa4cb540822e47844107781042f18537f"
+FROZEN_COMMIT = "7b53a08fc13517fcf8b2c73b45f6515102a13863"
 # Authoritative immutable content source: the Git tree object for TREE.
-FROZEN_TREE = "7ef6ac6e119f0f078f9c896f17415fa560a6edf3"
+FROZEN_TREE = "b49456d6e08bbce69fd94af2d2a97beef438d210"
 SCHEMA_VERSION = 3
 MANIFEST = ROOT / "spec/tmverifier_freeze.json"
 # The object types `git cat-file --batch-check` can report for a resolved spec.

@@ -1,21 +1,21 @@
 import Complexity.Uniform.V1.FixedGammaTargetPayloadRound
 
 /-!
-Surface pins for the Part A G2p-d round: the fixed 22-state/66-row machine that
-executes **one** round of the self-stopping gamma payload loop on the phase-local
-retag of the *actual* G2p-d foundation endpoint, and the exact endpoint that carries
-the loop invariant `loopTape B x w zeros r` from `r = 2` to `r = 3`.  All 66
-transition rows are restated literally below, not aliased.  `roundClock N` is
-`2 * N - 7`, length-only, counts this phase alone, and is an *exact* time, not one
-from which the endpoint persists, because `qLoop` does not absorb — so no wrapper
-pins the endpoint later and there is no phase deadline to pin.  Not here and not
-available to pin: the iteration, the exhaustion finish, the complete register, the
-loop's own deadline, a cell-by-cell `r = 3` layout, a first-arrival/strictness
-direction, the all-times clamp/footprint/budget package, the degenerate widths
-`zeros ≤ 2`, any parsed header value, and any pnp4 bridge.  Runs satisfying
-`round_step`'s premises do not execute `qFin`; public `startConfig` at `zeros = 2` can follow
-exhaustion through `qFin` to `qDone`, but no theorem wrapper covers that behavior;
-`qDone` is not language acceptance, and no wrapper states a converse. -/
+Surface pins for the Part A G2p-d round: the fixed 22-state/66-row machine that executes
+**one** round of the self-stopping gamma payload loop on the phase-local retag of the
+*actual* G2p-d foundation endpoint, and the exact endpoint that carries the loop invariant
+`loopTape B x w zeros r` from `r = 2` to `r = 3`.  All 66 transition rows are restated
+literally below, not aliased.  `roundClock N` is `2 * N - 7`, length-only, counts this phase
+alone, and is an *exact* time, not one from which the endpoint persists, because `qLoop` does
+not absorb — so no wrapper pins the endpoint later and there is no phase deadline to pin.
+Not here and not available to pin: the iteration, the exhaustion finish, the complete
+register, the loop's own deadline, a cell-by-cell `r = 3` layout, a first-arrival/strictness
+direction, the all-times clamp/footprint/budget package, the degenerate widths `zeros ≤ 2`,
+any parsed header value, and any pnp4 bridge.  Runs satisfying `round_step`'s premises do not
+execute `qFin` over the first `roundClock N` transitions that theorem covers, and a
+`zeros = 3` run continued past that endpoint does reach `qFin`; public `startConfig` at
+`zeros = 2` can follow exhaustion through `qFin` to `qDone`, but no theorem wrapper covers
+that behavior; `qDone` is not language acceptance, and no wrapper states a converse. -/
 
 namespace Pnp3.Tests.UniformV1FixedGammaTargetPayloadRoundSurfaceTests
 open Complexity.Uniform.V1

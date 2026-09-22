@@ -4791,20 +4791,20 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_both_physical_probe
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests.check_tight_probe
 
--- Part A G2p-d round (2026-09-21), infrastructure only: one fixed 22-state/66-row machine
--- that executes ONE round of the self-stopping gamma payload loop.  Its `startConfig` is a
--- phase-local control retag of the *actual* G2p-d foundation run at the foundation's own
--- length-only deadline, so `roundClock N = 2*N-7` counts this phase alone and clocks no
--- composed pipeline.  `round_step` carries the loop invariant `loopTape B x w zeros r` from
--- `r = 2` to `r = 3` at a matching tag, a decoded width with work remaining (`3 ≤ zeros`)
--- and the round's own wider room `a+m+4 < tapeLength (pairLength a m) B` (equivalently
--- `3 ≤ a+B`), giving state, head and the whole tape at exactly that time, in the physical
--- and the virtual source shape at once.  `qLoop` does NOT absorb, so the endpoint may not
--- be transported later and no deadline is exported; no first-arrival/strictness direction
--- is proved, and there is no converse.  The `round_step` premises exclude the `qFin` rows,
--- although public `startConfig` at `zeros = 2` can run through them to `qDone`.  Deferred: the
--- iteration, that exhaustion behavior, the complete register, the loop deadline, the
--- all-times clamp/footprint/budget package, the decrement from `n+1` to `n`, degenerate widths `zeros ≤ 2`, every header value and every pnp4 bridge.  `qDone` is not language acceptance.
+-- Part A G2p-d round (2026-09-21), infrastructure only: one fixed 22-state/66-row machine that executes ONE round
+-- of the self-stopping gamma payload loop.  Its `startConfig` is a phase-local control retag of the *actual*
+-- G2p-d foundation run at the foundation's own length-only deadline, so `roundClock N = 2*N-7` counts this phase
+-- alone and clocks no composed pipeline.  `round_step` carries the loop invariant `loopTape B x w zeros r` from
+-- `r = 2` to `r = 3` at a matching tag, a decoded width with work remaining (`3 ≤ zeros`) and the round's own
+-- wider room `a+m+4 < tapeLength (pairLength a m) B` (equivalently `3 ≤ a+B`), giving state, head and the whole
+-- tape at exactly that time, in the physical and the virtual source shape at once.  `qLoop` does NOT absorb, so
+-- the endpoint may not be transported later and no deadline is exported; no first-arrival/strictness direction is
+-- proved, and there is no converse.  The `round_step` premises exclude the `qFin` rows only over the first
+-- `roundClock N` transitions out of `startConfig`: continued past that endpoint even a `zeros = 3` run enters
+-- `qFin`, then `qDone`, and public `startConfig` at `zeros = 2` can likewise run through them to `qDone`.
+-- Deferred: the iteration, that exhaustion behavior, the complete register, the loop deadline, the all-times
+-- clamp/footprint/budget package, the decrement from `n+1` to `n`, degenerate widths `zeros ≤ 2`, every header
+-- value and every pnp4 bridge.  `qDone` is not language acceptance.
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.stateCount
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.qLoop
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound.qCntL

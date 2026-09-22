@@ -40,20 +40,19 @@ head never goes below cell `9`, so the tag prefix and the first counter mark (ce
 never scanned; the second mark, cell `9`, is what stops `qCntZ`.  `malformed_rejects`
 instead sits on the boundary head `a + m`, which is cell `8` when `a + m = 8`.
 
-Deferred: the iteration of this round, the exhaustion finish, the complete target
-register, the loop's own deadline, a cell-by-cell `r = 3` layout theorem (the endpoint is
-a full tape equality to `loopTape`, whose `r = 2` layout the foundation pins), a
-first-arrival/strictness direction, the all-times clamp/footprint/budget package, the
-decrement from `n + 1` to `n`, the room the full loop needs
-(`N + 1 + zeros < tapeLength …`, assumed nowhere), and the degenerate widths `zeros ≤ 2`.
-No converse is stated: nothing says that `qLoop` at `roundClock N`, or the digit at
-`N + 4`, implies `3 ≤ zeros`.  Nothing here is connected to `contentHeader?` or to any
-parsed header value, and no pnp4 bridge exists.  Public `startConfig` at `zeros = 2` can
-take the exhaustion path through `qFin` to `qDone`, but `zeros ≤ 2` and exhaustion are
-outside the proved theorem surface; `qDone` is not language acceptance.  `startConfig`
-retags an actual prior run, not a composed `UniformTM` execution from the raw pair input.
-Clock composition, the fixed parser, advice freedom, `NP` membership, and
-`ContentVerifierBridge` are out of scope: infrastructure, not P-vs-NP mainline. -/
+Deferred: the iteration of this round, the exhaustion finish, the complete target register, the
+loop's own deadline, a cell-by-cell `r = 3` layout theorem (the endpoint is a full tape equality
+to `loopTape`, whose `r = 2` layout the foundation pins), a first-arrival/strictness direction,
+the all-times clamp/footprint/budget package, the decrement from `n + 1` to `n`, the room the
+full loop needs (`N + 1 + zeros < tapeLength …`, assumed nowhere), and the degenerate widths
+`zeros ≤ 2`.  No converse is stated: nothing says that `qLoop` at `roundClock N`, or the digit
+at `N + 4`, implies `3 ≤ zeros`.  Nothing here is connected to `contentHeader?` or to any parsed
+header value, and no pnp4 bridge exists.  Public `startConfig` at `zeros = 2` can take the
+exhaustion path through `qFin` to `qDone`, but `zeros ≤ 2` and exhaustion are outside the proved
+theorem surface; `qDone` is not language acceptance.  `startConfig` retags an actual prior run,
+not a composed `UniformTM` execution from the raw pair input.  Clock composition, the fixed
+parser, advice freedom, `NP` membership, and `ContentVerifierBridge` are out of scope:
+infrastructure, not P-vs-NP mainline. -/
 
 namespace Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound
 
@@ -85,7 +84,8 @@ def qFin : Fin stateCount := ⟨19, by decide⟩
 def qDone : Fin stateCount := ⟨20, by decide⟩
 def qReject : Fin stateCount := ⟨21, by decide⟩
 
-/-- Complete fixed 22-state, 66-row table.  `qFin` is not executed under `round_step`'s premises. -/
+/-- Complete fixed 22-state, 66-row table.  Under `round_step`'s premises no `qFin` row runs in
+the first `roundClock N` transitions; past that endpoint a `zeros = 3` run does reach `qFin`. -/
 def raw (q : Fin stateCount) (s : Option Bool) : Fin stateCount × Option Bool × Move :=
   match q.1 with
   | 0 => match s with

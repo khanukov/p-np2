@@ -4343,8 +4343,9 @@ out — the arbitrary proof-level induction over a finite source body list, and
 its composition with the real GN-E2-2 initial execution.
 
 **Exact record-body split.**  `gnGateBodyFrames g` is the serialized body of one
-gate record — the unary tag run and the two absolute-index runs, without the
-marker and without the closing `finish` — and `gnGateBodyTail g` is the same
+gate record — the unary tag run, the two intervening `argSep` frames, and the
+two absolute-index runs, without the marker and without the closing `finish` —
+and `gnGateBodyTail g` is the same
 list after its mandatory leading `tag` (`gnGateBodyFrames_cons`, provable
 because `G1Tag.units` is never zero).  `gnRecordFrames_cursor_split` splits the
 whole record into marker, body, `finish`, and `gnFirstRecordMiddle_split` splits

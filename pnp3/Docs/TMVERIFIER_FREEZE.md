@@ -136,7 +136,7 @@ A change requires a dedicated unfreeze/migration PR that:
    renaming a completed temporary file over the target, so an interrupted
    regeneration leaves the previous manifest intact rather than truncated.
 
-   This unfreeze has the same two-stage shape, though it predates part of the
+   The S11 unfreeze has the same two-stage shape, though it predates part of the
    machinery described here: `249435bf` is stage (a) — the new frozen bytes
    together with their `lakefile.lean` registration, surface tests and
    axiom-audit entries, seven files in all — and `0d699f6e` is stage (b), which
@@ -327,11 +327,12 @@ them, and the two independent read-only adversarial reviews recorded in the
 previous paragraph are reviews of the theorem content, not a rerun of the
 gates.
 
-**Scope.** This is a narrow migration of one already-reviewed theorem slice,
-not a resumption of the paused roadmap. GN-E2-3b and later gate-by-gate
-construction remain paused, the next active track remains the versioned uniform
-`P` model and its circuit simulation, and nothing here reduces
-`VerifiedNPDAGLowerBoundSource` or `SearchMCSPWeakLowerBound` or discharges a
+**Scope at the time of the S11 migration.** This was a narrow migration of one
+already-reviewed theorem slice, not a resumption of the paused roadmap.
+GN-E2-3b and later gate-by-gate construction then remained paused; the later
+GN-E2-3b migration is recorded separately below. The next active track remained
+the versioned uniform `P` model and its circuit simulation, and nothing here
+reduces `VerifiedNPDAGLowerBoundSource` or `SearchMCSPWeakLowerBound` or discharges a
 `CanonicalAsymptoticVerifierComponents` obligation. The tree is re-frozen
 immediately at tree `7ef6ac6e`, reviewed at `249435bf`; the manifest was
 regenerated with the documented `--write-manifest` command and the next ordinary
@@ -494,10 +495,10 @@ byte-identical. `SCHEMA_VERSION` stays at 3 and the
 `[snapshot.tmverifier_freeze]` row of `spec/version_manifest.toml` is
 untouched, because the manifest's shape did not change. Stage (b) changes no
 frozen byte and no Lean source. Beyond the pin it touches only prose that named
-the old pin: this record, the preamble of `TMVerifier_Session_Plan.md`, the two
-freeze sentences of `STATUS.md`, and one docstring of
-`scripts/test_tmverifier_freeze.py` that counted the frozen entries. It amends
-neither stage (a) nor anything before it.
+the old pin: this record, the preamble and GN-E2-3b slice sentence of
+`TMVerifier_Session_Plan.md`, the two freeze sentences of `STATUS.md`, and one
+docstring of `scripts/test_tmverifier_freeze.py` that counted the frozen
+entries. It amends neither stage (a) nor anything before it.
 
 **Why the frozen artifact itself had to change (requirement 1).** The slice is
 the arbitrary proof-level induction over GN-E2-3a's own

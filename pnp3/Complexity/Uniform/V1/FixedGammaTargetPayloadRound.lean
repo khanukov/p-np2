@@ -9,51 +9,50 @@ endpoint of the G2p-d `FixedGammaTargetPayloadLoopFoundation` run and executes
 `pnp3/Docs/UniformP_V1.md` carries the long-form design notes.
 
 Write `N = a + m`.  The foundation left the tape in the `r = 2` instance of the loop
-invariant `loopTape B x w zeros r`: the counter prefix `[8, 7 + r]` of the gamma
-zero field marked `some true`, the terminator trail
-`[8 + zeros, 8 + zeros + walk N zeros r)` blank, the walking terminator at
-`8 + zeros + walk N zeros r`, and the target register `[N + 1, N + 1 + r]` holding
-its `r + 1` digits.  This machine carries that invariant from `r = 2` to `r = 3`: it
-tests the tape counter, marks the first unconsumed gamma zero (cell `10`), consumes
-the next source, **appends** its bit to the register at cell `N + 2 + r`, and
-advances the walking terminator when that source was physical.  The source is the
-third payload digit — index `2` of the block `[9 + zeros, 9 + 2 * zeros)`, the cell
-`11 + zeros` — and there is such a digit exactly when `3 ≤ zeros`, this module's
-work-remaining premise, which is also what makes cell `10` an *unconsumed* zero.
-Every branch is decided by the symbol under the head: no width, digit index, bit,
-address, proof term, advice, or producer mark occurs in the control.  There is no
-arithmetic carry: the register write is an append, and the decrement from `n + 1` to
-`n` is a separate, deferred phase.  The `qFin` exhaustion rows are not executed by
-runs satisfying the `round_step` premises, since `3 ≤ zeros` excludes that branch.
+invariant `loopTape B x w zeros r`: the counter prefix `[8, 7 + r]` of the gamma zero field
+marked `some true`, the terminator trail `[8 + zeros, 8 + zeros + walk N zeros r)` blank,
+the walking terminator at `8 + zeros + walk N zeros r`, and the target register
+`[N + 1, N + 1 + r]` holding its `r + 1` digits.  This machine carries that invariant from
+`r = 2` to `r = 3`: it tests the tape counter, marks the first unconsumed gamma zero (cell
+`10`), consumes the next source, **appends** its bit to the register at cell `N + 2 + r`,
+and advances the walking terminator when that source was physical.  The source is the third
+payload digit — index `2` of the block `[9 + zeros, 9 + 2 * zeros)`, the cell `11 + zeros` —
+and there is such a digit exactly when `3 ≤ zeros`, this module's work-remaining premise,
+which is also what makes cell `10` an *unconsumed* zero.  Every branch is decided by the
+symbol under the head: no width, digit index, bit, address, proof term, advice, or producer
+mark occurs in the control.  There is no arithmetic carry: the register write is an append,
+and the decrement from `n + 1` to `n` is a separate, deferred phase.  The `qFin` exhaustion
+rows go unexecuted only over the bounded `r = 2 → r = 3` segment — the first `roundClock N`
+transitions out of `startConfig`, where `3 ≤ zeros` keeps cell `10` unconsumed — and that is
+deliberately no claim about later times: run on past that endpoint, even a `zeros = 3`
+instance enters `qFin` and then `qDone`, its zero field exhausted at `r = 3`.
 
-`roundClock N = 2 * N - 7` is the exact cost of the round and is **length-only**:
-the virtual branch's `qVa`/`qVb` padding makes it independent of the source shape
-and of the width.  It counts this phase alone, none of the steps `startConfig`
-embeds, so it clocks no composed pipeline.  There is deliberately no phase deadline:
-`qLoop` is **not** absorbing, so the endpoint holds at exactly `roundClock N` and
-may not be transported past it.  The round needs more room since the register
-grows: `room_iff` reads `a + m + 4 < tapeLength (pairLength a m) B` as `3 ≤ a + B`,
-one cell more than the foundation's `2 ≤ a + B`, exactly what is needed — the head
-reaches `N + 4` and writes there — and it implies the foundation's premise.  On the
-decoded-width `round_step` path the head never goes below cell `9`, so the tag
-prefix and the first counter mark (cell `8`) are never scanned; the second mark,
-cell `9`, is what stops `qCntZ`.  `malformed_rejects` instead sits on the boundary
-head `a + m`, which is cell `8` when `a + m = 8`.
+`roundClock N = 2 * N - 7` is the exact cost of the round and is **length-only**: the
+virtual branch's `qVa`/`qVb` padding makes it independent of the source shape and of the
+width.  It counts this phase alone, none of the steps `startConfig` embeds, so it clocks no
+composed pipeline.  There is deliberately no phase deadline: `qLoop` is **not** absorbing,
+so the endpoint holds at exactly `roundClock N` and may not be transported past it.  The
+round needs more room since the register grows: `room_iff` reads
+`a + m + 4 < tapeLength (pairLength a m) B` as `3 ≤ a + B`, one cell more than the
+foundation's `2 ≤ a + B`, exactly what is needed (the head reaches `N + 4` and writes
+there), and it implies the foundation's premise.  On the decoded-width `round_step` path the
+head never goes below cell `9`, so the tag prefix and the first counter mark (cell `8`) are
+never scanned; the second mark, cell `9`, is what stops `qCntZ`.  `malformed_rejects`
+instead sits on the boundary head `a + m`, which is cell `8` when `a + m = 8`.
 
 Deferred: the iteration of this round, the exhaustion finish, the complete target
-register, the loop's own deadline, a cell-by-cell `r = 3` layout theorem (the
-endpoint is a full tape equality to `loopTape`, whose `r = 2` layout the foundation
-pins), a first-arrival/strictness direction, the all-times clamp/footprint/budget
-package, the decrement from `n + 1` to `n`, the room the full loop needs
-(`N + 1 + zeros < tapeLength …`, assumed nowhere), and the degenerate widths
-`zeros ≤ 2`.  No converse is stated: nothing says that `qLoop` at `roundClock N`, or
-the digit at `N + 4`, implies `3 ≤ zeros`.  Nothing here is connected to
-`contentHeader?` or to any parsed header value, and no pnp4 bridge exists.  Public
-`startConfig` at `zeros = 2` can take the exhaustion path through `qFin` to `qDone`, but
-`zeros ≤ 2` and exhaustion are outside the proved theorem surface; `qDone` is not language
-acceptance.  `startConfig` retags an actual prior run, not a composed
-`UniformTM` execution from the raw pair input.  Clock
-composition, the fixed parser, advice freedom, `NP` membership, and
+register, the loop's own deadline, a cell-by-cell `r = 3` layout theorem (the endpoint is
+a full tape equality to `loopTape`, whose `r = 2` layout the foundation pins), a
+first-arrival/strictness direction, the all-times clamp/footprint/budget package, the
+decrement from `n + 1` to `n`, the room the full loop needs
+(`N + 1 + zeros < tapeLength …`, assumed nowhere), and the degenerate widths `zeros ≤ 2`.
+No converse is stated: nothing says that `qLoop` at `roundClock N`, or the digit at
+`N + 4`, implies `3 ≤ zeros`.  Nothing here is connected to `contentHeader?` or to any
+parsed header value, and no pnp4 bridge exists.  Public `startConfig` at `zeros = 2` can
+take the exhaustion path through `qFin` to `qDone`, but `zeros ≤ 2` and exhaustion are
+outside the proved theorem surface; `qDone` is not language acceptance.  `startConfig`
+retags an actual prior run, not a composed `UniformTM` execution from the raw pair input.
+Clock composition, the fixed parser, advice freedom, `NP` membership, and
 `ContentVerifierBridge` are out of scope: infrastructure, not P-vs-NP mainline. -/
 
 namespace Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound

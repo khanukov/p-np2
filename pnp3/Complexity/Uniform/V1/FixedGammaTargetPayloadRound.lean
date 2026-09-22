@@ -18,10 +18,10 @@ the walking terminator at `8 + zeros + walk N zeros r`, and the target register
 and advances the walking terminator when that source was physical.  The source is the third
 payload digit — index `2` of the block `[9 + zeros, 9 + 2 * zeros)`, the cell `11 + zeros` —
 and there is such a digit exactly when `3 ≤ zeros`, this module's work-remaining premise,
-which is also what makes cell `10` an *unconsumed* zero.  Every branch is decided by the
-symbol under the head: no width, digit index, bit, address, proof term, advice, or producer
-mark occurs in the control.  There is no arithmetic carry: the register write is an append,
-and the decrement from `n + 1` to `n` is a separate, deferred phase.  The `qFin` exhaustion
+which is also what makes cell `10` an *unconsumed* zero.  Every branch is decided by the symbol
+under the head: no width, digit index, target address, proof term, advice, or producer mark occurs
+in the control; only the source bit is held between read and write.  There is no arithmetic carry:
+the register write is an append, and decrement from `n + 1` to `n` is deferred.  The `qFin` exhaustion
 rows go unexecuted only over the bounded `r = 2 → r = 3` segment — the first `roundClock N`
 transitions out of `startConfig`, where `3 ≤ zeros` keeps cell `10` unconsumed — and that is
 deliberately no claim about later times: run on past that endpoint, even a `zeros = 3`
@@ -34,10 +34,10 @@ composed pipeline.  There is deliberately no phase deadline: `qLoop` is **not** 
 so the endpoint holds at exactly `roundClock N` and may not be transported past it.  The
 round needs more room since the register grows: `room_iff` reads
 `a + m + 4 < tapeLength (pairLength a m) B` as `3 ≤ a + B`, one cell more than the
-foundation's `2 ≤ a + B`, exactly what is needed (the head reaches `N + 4` and writes
-there), and it implies the foundation's premise.  On the decoded-width `round_step` path the
-head never goes below cell `9`, so the tag prefix and the first counter mark (cell `8`) are
-never scanned; the second mark, cell `9`, is what stops `qCntZ`.  `malformed_rejects`
+foundation's `2 ≤ a + B`; it suffices for the run and implies the foundation premise.  By the proof's
+table trace, not an exported
+all-times theorem, the path never goes below cell `9`: cell `8` and the tag prefix are never
+scanned, while cell `9` stops `qCntZ`.  `malformed_rejects`
 instead sits on the boundary head `a + m`, which is cell `8` when `a + m = 8`.
 
 Deferred: the iteration of this round, the exhaustion finish, the complete target register, the
@@ -51,8 +51,7 @@ header value, and no pnp4 bridge exists.  Public `startConfig` at `zeros = 2` ca
 exhaustion path through `qFin` to `qDone`, but `zeros ≤ 2` and exhaustion are outside the proved
 theorem surface; `qDone` is not language acceptance.  `startConfig` retags an actual prior run,
 not a composed `UniformTM` execution from the raw pair input.  Clock composition, the fixed
-parser, advice freedom, `NP` membership, and `ContentVerifierBridge` are out of scope:
-infrastructure, not P-vs-NP mainline. -/
+parser, advice freedom, `NP` membership, and `ContentVerifierBridge` are out of scope: infrastructure, not P-vs-NP mainline. -/
 
 namespace Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadRound
 
@@ -84,8 +83,8 @@ def qFin : Fin stateCount := ⟨19, by decide⟩
 def qDone : Fin stateCount := ⟨20, by decide⟩
 def qReject : Fin stateCount := ⟨21, by decide⟩
 
-/-- Complete fixed 22-state, 66-row table.  Under `round_step`'s premises no `qFin` row runs in
-the first `roundClock N` transitions; past that endpoint a `zeros = 3` run does reach `qFin`. -/
+/-- Complete fixed 22-state, 66-row table.  Direct inspection excludes `qFin` in the first
+`roundClock N` transitions under `round_step`; `zeros = 3` reaches it later.  No all-times theorem. -/
 def raw (q : Fin stateCount) (s : Option Bool) : Fin stateCount × Option Bool × Move :=
   match q.1 with
   | 0 => match s with

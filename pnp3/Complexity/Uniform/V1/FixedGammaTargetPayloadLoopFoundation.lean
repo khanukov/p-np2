@@ -85,7 +85,7 @@ cell `8`, meets the terminator at `9`, restores that mark through `qFin` and hal
 at head `7` after five steps — but those runs are exercised *only* by the literal
 probes of the surface tests at concrete inputs, and their quantified endpoint
 theorems, like `malformed_strict`, the first-arrival direction of the malformed branch,
-are the next slice.  Nothing here is connected to `contentHeader?` or to any parsed
+are deferred to a later slice.  Nothing here is connected to `contentHeader?` or to any parsed
 header value, and no pnp4 bridge exists for this module.  `qDone` is an internal
 endpoint and never language acceptance; `startConfig` is a phase-local retag of an
 actual prior run, not a composed `UniformTM` execution from the raw pair input.  Clock

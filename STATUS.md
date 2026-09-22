@@ -1,6 +1,6 @@
 # Project Status (current)
 
-Updated: 2026-09-21
+Updated: 2026-09-22
 
 **Part A G2p-d round, first remaining payload digit (infrastructure only).** New
 pnp3 module `Complexity.Uniform.V1.FixedGammaTargetPayloadRound`: one fixed
@@ -29,31 +29,31 @@ The round tests the tape counter (`qCntL`/`qCntZ` scan left over the blank trail
 into the gamma zero field), marks the first unconsumed zero, cell `10`, walks back
 to the terminator, reads the next source, **appends** its bit to the register at
 cell `N+2+r`, and advances the walking terminator when the source was physical.
-Every branch is decided by the symbol under the head: no width, digit index, bit,
-address, proof term, advice or producer mark enters the control. There is no
-arithmetic carry — the register write is an append, and the decrement from `n+1` to
-`n` stays a separate deferred phase; `qCarry_b` only names the bit held in the
-control between the read and the write.
+Every branch is decided by the symbol under the head: no width, digit index, target
+address, proof term, advice or producer mark enters the control. The only datum held
+there is the source bit between its read and write. There is no arithmetic carry —
+the register write is an append, and the decrement from `n+1` to `n` stays a separate
+deferred phase; `qCarry_b` names that held source bit.
 
 Source, clock and room. The source is the third payload digit, index `2` of the
 block `[9+zeros, 9+2*zeros)`, i.e. the cell `11+zeros`, and there is such a digit
 exactly when `3 ≤ zeros` — which is also what makes cell `10` an *unconsumed* gamma
-zero, so the counter can grow. `source_pins` states that direction only: with
-`11+zeros < N` the source is physical and `sourceCell N zeros = 11+zeros`, and with
-`N ≤ 11+zeros` the source address *is* the boundary blank `N`, the terminator does
-not move, and the appended digit is the virtual `false` that
-`registerBit x w zeros 3` records. `roundClock N = 2*N-7` is **length-only** and
+zero, so the counter can grow. `source_pins` states the address direction only: with
+`11+zeros < N`, `sourceCell N zeros = 11+zeros`, and with `N ≤ 11+zeros` it is the
+boundary blank `N`. In the latter branch `round_step` leaves the terminator unmoved,
+while `registerBit_source` identifies the appended digit as virtual `false`.
+`roundClock N = 2*N-7` is **length-only** and
 identical in both shapes: the virtual branch's `qVa`/`qVb` are pure padding, which
 is what makes the cost independent of the source shape and of the width. It is an
 *exact* time and not a time from which the endpoint persists — `qLoop` does not
 absorb — so no deadline is exported and the endpoint may not be transported later.
 Room is strictly wider than the foundation's because the register grows:
 `room_iff` reads `a+m+4 < tapeLength (pairLength a m) B` as `3 ≤ a+B`, one cell more
-than `2 ≤ a+B`, is exactly what is needed (the head reaches `N+4` and writes there),
-and implies the foundation premise so the handoff stays available. On the decoded-width
-`round_step` path the head never goes below cell `9`, so the tag prefix and the first
-counter mark, cell `8`, are never scanned; the second mark, cell `9`, *is* scanned —
-it stops the leftward `qCntZ` sweep. `malformed_rejects` covers the retag of a failed gamma
+than `2 ≤ a+B`; this is sufficient for the proved run, whose head reaches `N+4` and
+writes there, and implies the foundation premise so the handoff stays available. By
+the proof's table trace (not an exported all-times theorem), the decoded-width
+`round_step` path never goes below cell `9`: the tag prefix and first counter mark,
+cell `8`, are never scanned, while cell `9` stops `qCntZ`. `malformed_rejects` covers the retag of a failed gamma
 scan: the retagged foundation rejection rejects again in one step, room-free, at the
 boundary head (cell `8` when `a+m = 8`), on the unchanged content tape — with no
 first-arrival direction and no converse.
@@ -72,8 +72,8 @@ entered, the appended digit at `N+4 = 16` is the virtual `false`, and `qLoop` is
 re-entered at step `17` on the *unmoved* terminator `11`.
 
 Deferred: the iteration of this round, the exhaustion finish that restores the
-gamma zero field (the `round_step` premises, notably `3 ≤ zeros`, exclude its `qFin`
-rows), the complete target register,
+gamma zero field (`3 ≤ zeros` excludes `qFin` only during the first `roundClock N`
+transitions, the exact `r = 2 → r = 3` segment), the complete target register,
 the loop's own deadline, a cell-by-cell `r = 3` layout theorem (the endpoint is
 already a full tape equality to the public `loopTape`, whose `r = 2` layout the
 foundation pins), a first-arrival/strictness direction for the round, the all-times

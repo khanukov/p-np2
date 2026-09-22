@@ -928,8 +928,9 @@ The round carries the loop invariant `loopTape B x w zeros r` from `r = 2` to
 `r = 3`.  In detail: `qLoop` steps off the walking terminator; `qCntL` runs left over
 the blank trail into the gamma zero field, where a `some false` is an unconsumed zero
 (work remains) and a `some true` would be the last counter mark, the exhaustion case,
-handed to `qFin` -- those rows are fixed in the table but are not executed by runs
-satisfying `round_step`, since `3 <= zeros` excludes that branch.  `qCntZ` then runs left over the
+handed to `qFin` -- those rows are fixed in the table but do not run during the first
+`roundClock N` transitions covered by `round_step`; `3 <= zeros` excludes that branch
+on this exact `r = 2` to `r = 3` segment.  `qCntZ` then runs left over the
 unconsumed zeros to the last counter mark, `qCntMark` marks the first unconsumed
 zero, which at `r = 2` is cell `10`, and `qCntBack` runs right over the rest of the
 field and the blank trail to the terminator and steps onto the cell right of it: the
@@ -944,8 +945,9 @@ from `n+1` to `n` is a separate, deferred phase, and `qCarry_b` only names the b
 held in the finite control between the read and the write.  `qBackReg`/`qBackCont`
 (physical) and `qBackRegV`/`qVc` (virtual) walk back and re-enter `qLoop` on the new
 terminator, restoring the `r+1` invariant.  Every branch is decided by the symbol
-under the head: no width, digit index, bit, target address, proof term, advice or
-producer mark occurs in the control, and the round never computes its source address.
+under the head: no width, digit index, target address, proof term, advice or producer
+mark occurs in the control; its only held datum is the source bit between read and
+write, and the round never computes its source address.
 
 `round_step` is the execution theorem.  Under a matching tag,
 `gammaZeros? (Fin.append x w) = some zeros` with `3 <= zeros`, and the round's own
@@ -955,12 +957,11 @@ with the whole tape equal to `loopTape B x w zeros 3`.  The premise `3 <= zeros`
 the work-remaining condition: the round's source is the third payload digit, index
 `2` of the block `[9+zeros, 9+2*zeros)`, i.e. the cell `11+zeros`, and there is such
 a digit exactly then -- which is also exactly what makes cell `10` an *unconsumed*
-gamma zero, so that the counter can grow.  `source_pins` states that in one
-direction only: with `11+zeros < N` the source is physical and
-`sourceCell N zeros = 11+zeros`, inside the payload block; with `N <= 11+zeros` the
-source address *is* the boundary blank `N`, so the terminator does not move
-(`walk N zeros 3 = walk N zeros 2` there) and the appended digit is the virtual
-`false` that `registerBit x w zeros 3` records through `Option.getD`.  Nothing says
+gamma zero, so that the counter can grow.  `source_pins` states the address direction
+only: with `11+zeros < N`, `sourceCell N zeros = 11+zeros`, inside the payload block;
+with `N <= 11+zeros`, the source address is the boundary blank `N`.  In the latter
+branch `round_step` leaves the terminator unmoved, while `registerBit_source` identifies
+the appended digit as the virtual `false` through `Option.getD`.  Nothing says
 the converse: neither that `qLoop` at `roundClock N`, nor a digit at `N+4`, implies
 `3 <= zeros`.
 
@@ -973,11 +974,11 @@ absorbing; consequently this slice exports no phase deadline at all, and the nex
 slice must hand off at exactly `roundClock N`.  Room is strictly wider than the
 foundation's, because the register grows by one digit: `room_iff` reads
 `a+m+4 < tapeLength (pairLength a m) B` as `3 <= a+B`, one cell more than the
-foundation's `2 <= a+B`, notes that it implies the foundation premise so the handoff
-stays available, and it is exactly what is needed -- the head reaches `N+4` and writes
-there.  On the decoded-width `round_step` path the head never goes below cell `9`, so
-the tag prefix and the first counter mark, cell `8`, are never scanned; the second
-mark, cell `9`, *is* scanned -- it stops `qCntZ` and hands over to `qCntMark`.
+foundation's `2 <= a+B`, and notes that it implies the foundation premise so the
+handoff stays available.  This is sufficient for the proved run, whose head reaches
+`N+4` and writes there.  By the proof's table trace (not an exported all-times theorem),
+the decoded-width path never goes below cell `9`: the tag prefix and first counter mark,
+cell `8`, are never scanned, while cell `9` stops `qCntZ` and hands over to `qCntMark`.
 `malformed_rejects` handles the one case the retag could otherwise obscure:
 `retagLoopFoundation` replaces the foundation's `qReject` with `qLoop`, and a
 malformed gamma then rejects again in one step, room-free, at boundary head `a+m`

@@ -428,7 +428,8 @@ every later time. `exhausted_register_parsed_target` takes a successful
 `contentInput? codec (Fin.append x w) = some pr` for an arbitrary codec and
 exports `pr.2.n = pr.1`, so the register digits are digits of the target that
 `ContentAccepts` feeds to the search relation. The register holds the digits of
-`n + 1`, the gamma convention value, not of `n`; room is carried, not derived,
+`n + 1`, the encoded gamma integer whose bits physically occur in the header, not
+of the decoded target `n` the parser returns; room is carried, not derived,
 and is not shown necessary. Parser execution, the decrement to `n`, any
 converse, a footprint theorem, the degenerate widths `zeros ≤ 1` on the machine
 side, a malformed-gamma branch, first arrival from `startConfig`, clock

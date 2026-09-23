@@ -5620,7 +5620,7 @@ theorem check_exhausted_register_parsed_target {threshold : Nat → Nat}
 
 /-- Gamma width three with the whole payload physically present: the gamma is
 `000 1` at cells `8 … 11` and the payload window `[12, 15)` holds `101₂`, so the
-header is `(12, 7)` and the stored convention value is `13 = 1101₂`. -/
+decoded header is `(12, 7)` and the encoded gamma integer is `13 = 1101₂`. -/
 private def exhaustRegisterWidthThree : Bitstring 7 :=
   ![false, false, false, true, true, false, true]
 

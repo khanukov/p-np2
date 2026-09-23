@@ -924,10 +924,12 @@ past the physical word are a `false` that no theorem there ties to any value.
 `exhaustion_register_digits` is where they are proved to agree, so a virtual
 `false` in a truncated register is the parsed target's own digit. Three numbers
 stay apart: `pr.2.n`, the actual parsed target that `ContentAccepts` feeds to
-the search relation; `n + 1`, the gamma convention value whose digits the
-register holds, the decrement to `n` being performed by no machine here and not
-claimed; and `consumed = 2 * zeros + 1`, a cell count that is never in the
-register. The parser's other length convention `treeMCSPPrefixM codec pr.1`
+the search relation, the value a decoded `contentHeader?` and the parser after it
+*return* once the gamma convention has been applied, not a value the header
+stores; `n + 1`, the encoded gamma integer that convention writes, whose bits
+physically occur in the header and whose digits the register holds, the decrement
+to `n` being performed by no machine here and not claimed; and
+`consumed = 2 * zeros + 1`, a cell count that is never in the register. The parser's other length convention `treeMCSPPrefixM codec pr.1`
 occurs only in the type of `pr`. Room is carried, not derived: a decoded header
 does not imply it, since `room_iff_target_bound` reads it as `zeros ≤ a + B`, a
 condition on the `x` side and the budget, and it is sufficient only — there is

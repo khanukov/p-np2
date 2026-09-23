@@ -50,14 +50,17 @@ incoming content tape, and the endpoint persists at every later time.
 header by a successful **dependent parse** `contentInput? codec (Fin.append x w) = some pr`
 and exports `pr.2.n = pr.1` — the target the parsed `PrefixInput` carries, which is the
 `pr.2.n` that `ContentAccepts` feeds to the search relation, is the outer Sigma index and
-the decoded header's first component — then restates the register, pinning conjunct
-included, in terms of `pr.2.n`. It re-exports every conjunct of the header form except the
+the target a decoded `contentHeader?` *returns* — then restates the register, pinning
+conjunct included, in terms of `pr.2.n`. It re-exports every conjunct of the header form except the
 gamma zero field restoration, which is about the tape and not about the target.
 
-Three numbers stay apart. `pr.2.n` is the **actual parsed target**. `n+1` is the gamma
-**convention value** the header physically stores so the leading digit is a `true` the
-decoder can find; the register holds the digits of `n+1`, *not* of `n`, and the decrement
-is performed by no machine here and is not claimed. `consumed = 2*zeros+1` is the header's
+Three numbers stay apart. `pr.2.n` is the **actual parsed target**: the value a decoded
+`contentHeader?`, and the dependent parser after it, *returns* once the gamma convention has
+been applied — not a value the header stores. `n+1` is the **encoded gamma integer** that
+convention writes: the integer whose bits physically occur in the header and in the
+exhausted register, so that the leading digit is a `true` the decoder can find. The register
+holds the digits of `n+1`, *not* of `n`, and the decrement is performed by no machine here
+and is not claimed. `consumed = 2*zeros+1` is the header's
 **cell count**, a length convention that is not the target and never sits in the register;
 the parser's other length convention `treeMCSPPrefixM codec pr.1` occurs only in the type
 of `pr`.

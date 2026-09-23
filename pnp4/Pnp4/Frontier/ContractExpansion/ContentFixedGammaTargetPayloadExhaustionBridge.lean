@@ -61,10 +61,10 @@ register cell  a+m+1+j   holds   (n + 1).testBit (zeros - j)      for every  j �
 * `exhausted_register_parsed_target` replaces the header by a successful **dependent parse**
   `contentInput? codec (Fin.append x w) = some pr` for an arbitrary codec.  It exports
   `pr.2.n = pr.1` — the target the parsed `PrefixInput` carries, which is what
-  `ContentAccepts` reads, is the outer Sigma index and the header's first component — and
-  then states the register, pinning conjunct included, in terms of `pr.2.n`.  This is the
-  "actual parsed target".  It re-exports every conjunct of the header form except the gamma
-  zero field restoration, which is about the tape and not about the target.
+  `ContentAccepts` reads, is the outer Sigma index and the first component the *decoder*
+  returns — and then states the register, pinning conjunct included, in terms of `pr.2.n`.
+  This is the "actual parsed target".  It re-exports every conjunct of the header form
+  except the gamma zero field restoration, which is about the tape and not about the target.
 
 ## The parsed target versus the header's conventions
 
@@ -72,9 +72,12 @@ Three different numbers are in play and this module keeps them apart.
 
 * `pr.2.n`, the **actual parsed target**: the field of the parsed `PrefixInput` that
   `ContentAccepts` feeds to the search relation.  `contentInput?_target_eq_contentHeader`
-  makes it the header's `n`, for every codec and with no monotonicity premise.
-* `n + 1`, the gamma **convention value**: what an Elias-gamma header physically stores, so
-  that the leading digit is a `true` the decoder can find.  The register holds the digits of
+  makes it the `n` that a decoded `contentHeader?` *returns*, for every codec and with no
+  monotonicity premise.  That `n` is the target the parser hands back after applying the
+  gamma convention, not a value the header stores.
+* `n + 1`, the **encoded gamma integer** that convention writes: the integer whose bits
+  physically occur in the header, so that the leading digit is a `true` the decoder can
+  find, and whose digits the exhausted register holds.  The register holds the digits of
   `n + 1`, **not** of `n`.  The decrement is not performed by any machine here and is not
   claimed; `payload_exhausted` records it as deferred and this bridge does not close it.
 * `consumed = 2 * zeros + 1`, the header's **cell count**: a length convention describing how
@@ -192,8 +195,8 @@ theorem register_determines_target {a m n consumed zeros v : Nat}
     rw [h1, h2]
 
 /-- **The room premise, in header terms.**  On a decoded header the bound
-`n + 1 < 2 ^ (a + B + 1)` on the parsed target, the width bound `zeros ≤ a + B`, and the room
-premise `payload_exhausted` inherits from the pnp3 iteration,
+`n + 1 < 2 ^ (a + B + 1)` on the encoded gamma integer, the width bound `zeros ≤ a + B`, and
+the room premise `payload_exhausted` inherits from the pnp3 iteration,
 `a + m + 1 + zeros < tapeLength (pairLength a m) B` — the premise that allocates the top
 register cell — are one and the same condition.  A decoded header does not imply it: `B` is a
 free budget, and at `a = B = 0` the condition fails for every `1 ≤ zeros`.  So the machine
@@ -237,11 +240,12 @@ Given a decoded header `3 ≤ n` is exactly `2 ≤ zeros`, the premise of the pn
 both directions follow from the exported bounds, only the direction used here is proved — and
 it admits `zeros = 2`, where the round count `zeros - 2` is zero and `totalClock` is the
 finish alone.  The room premise is carried, not derived, and is sufficient only
-(`room_iff_target_bound`).  The digits of `n + 1` are the header's convention value; nothing
-here decrements it to `n`, decodes the register on the tape — the pinning conjunct is
-arithmetic about the digits, not a decoding step the control performs — or claims that any
-machine executes `contentHeader?`.  `qDone` is an internal control tag: this is neither
-halting of a composed machine nor language acceptance, and no converse is claimed. -/
+(`room_iff_target_bound`).  The register's digits are those of `n + 1`, the encoded gamma
+integer, not of the decoded target `n`; nothing here decrements it to `n`, decodes the
+register on the tape — the pinning conjunct is arithmetic about the digits, not a decoding
+step the control performs — or claims that any machine executes `contentHeader?`.  `qDone`
+is an internal control tag: this is neither halting of a composed machine nor language
+acceptance, and no converse is claimed. -/
 theorem exhausted_register_header_value {a m B n consumed : Nat}
     (x : Bitstring a) (w : Bitstring m)
     (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
@@ -301,16 +305,17 @@ theorem exhausted_register_header_value {a m B n consumed : Nat}
 header by a successful dependent parse `contentInput? codec (Fin.append x w) = some pr`, for
 an arbitrary codec: the target carried by the parsed `PrefixInput` — the `pr.2.n` that
 `ContentAccepts` feeds to the search relation — is the outer Sigma index `pr.1` and the
-decoded header's first component, and every register cell of the exhausted endpoint holds the
-matching digit of `pr.2.n + 1`, virtual tail included.  Those cells pin `pr.2.n + 1` as well:
-any `v` whose digits they are and which has no bit above `zeros` is `pr.2.n + 1`.
+target a decoded `contentHeader?` *returns*, and every register cell of the exhausted
+endpoint holds the matching digit of `pr.2.n + 1`, the encoded gamma integer, virtual tail
+included.  Those cells pin `pr.2.n + 1` as well: any `v` whose digits they are and which has
+no bit above `zeros` is `pr.2.n + 1`.
 
 The parse is the hypothesis, not a claim about execution: no machine here runs
 `contentInput?`, the strict parser, or the decoder, and the window length convention
 `treeMCSPPrefixM codec pr.1` occurs only in the type of `pr`.  As above the register holds the
-digits of `pr.2.n + 1`, the gamma convention value, and the decrement to `pr.2.n` is not
-performed.  Nothing here is a `ContentAccepts` statement, a language membership, or
-P-vs-NP mainline progress. -/
+digits of `pr.2.n + 1`, the encoded gamma integer, and the decrement to the decoded target
+`pr.2.n` is not performed.  Nothing here is a `ContentAccepts` statement, a language
+membership, or P-vs-NP mainline progress. -/
 theorem exhausted_register_parsed_target {threshold : Nat → Nat}
     (codec : TreeCircuitWitnessCodec threshold) {a m B : Nat}
     (x : Bitstring a) (w : Bitstring m)

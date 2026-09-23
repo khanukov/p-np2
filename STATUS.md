@@ -1,6 +1,98 @@
 # Project Status (current)
 
-Updated: 2026-09-22
+Updated: 2026-09-23
+
+**Part A G2p-e, iterating the gamma payload round (infrastructure only).** New pnp3
+module `Complexity.Uniform.V1.FixedGammaTargetPayloadIteration`. There is **no new
+machine**: the landed G2p-d `FixedGammaTargetPayloadRound.machine` re-enters `qLoop`
+at the end of a round, so the *same* fixed 22-state, 66-row table iterates, and
+`check_machine_reused` records that identity. Write `N = a+m`.
+
+What is new. `round_generic` carries the loop invariant `loopTape B x w zeros r` from
+`r` to `r+1` for **every** index with `1 ≤ r` and work remaining (`r < zeros`), out of
+an **arbitrary** configuration matching the `r`-instance rather than out of
+`startConfig`. That double quantification — over the index and over the incoming
+configuration — is exactly what the hard-coded `r = 2 → r = 3` theorem could not
+support, and it is what makes an induction possible. Its hypotheses are a matching
+tag, `gammaZeros? (Fin.append x w) = some zeros`, `1 ≤ r`, `r < zeros`, that index's
+own room `a+m+2+r < tapeLength (pairLength a m) B`, and the three projections of the
+incoming configuration (`qLoop`, head `8+zeros+walk N zeros r`, tape
+`loopTape B x w zeros r`); its conclusion is state, head and the whole tape after
+exactly `roundClock N = 2*N-7` steps. The cost stays length-only at every index
+because every `r`-dependence cancels. A round is a counter phase costing
+`2*walk N zeros r + 2*(zeros-r) + 3`, a register walk out and back costing `2*(r+1)`,
+a content carry out and back costing `2*(N-9-zeros-r)` that only the physical shape
+performs, and six fixed steps. In the physical shape `walk = r`, so the counter phase
+is already free of `r` and the carry's `-2*r` cancels the register walk's `+2*r`; in
+the virtual shape there is no carry, `walk` is the constant `N-9-zeros`, and it is the
+counter phase's `-2*r` that cancels the register walk. Both shapes take the same six
+fixed steps; three of the virtual ones pass through the `qVa`/`qVb`/`qVc` padding,
+standing at the positions where the physical shape enters `qClear`, `qCarry` and
+`qBackCont`.
+`check_round_generic_subsumes_round_step` derives the landed hard-coded `round_step`
+statement back out of `round_generic` at `r = 2`, so the generic round is a strict
+generalisation of the landed one rather than a parallel claim beside it.
+
+`rounds_iterate` is the induction: at `2 ≤ zeros`, `2+k ≤ zeros` and the room every
+round needs, running the same machine for exactly `k * roundClock N` steps out
+of the landed G2p-d `startConfig` reaches the `r = 2+k` instance. `register_complete`
+is its `k = zeros-2` instance: after exactly `loopClock N zeros = (zeros-2)*roundClock N`
+steps the register `[N+1, N+1+zeros]` holds all `zeros+1` digits
+`registerBit x w zeros j`. `register_digits` spells those out — digit `0` is the
+bootstrap's leading `true` and digit `i+1` is the payload cell `9+zeros+i` read through
+the blank padding, so `i < zeros` covers exactly the payload block
+`[9+zeros, 9+2*zeros)` and a truncated payload contributes virtual zeros; "exactly" is
+its own conjunct, an iff pinning those source addresses as precisely that block. That is
+register **content** at an exact time, not a decoded number: no theorem here mentions
+`contentHeader?` or any parsed header value.
+
+Room and clocks. `room_iff` reads the iteration's room premise
+`N+1+zeros < tapeLength (pairLength a m) B` as `zeros ≤ a+B` — the premise the G2p-d
+round slice recorded as "assumed nowhere" — while a single round at index `r` assumes
+only `r < a+B`; at `3 ≤ zeros` the iteration premise implies the round's `3 ≤ a+B` and
+at `2 ≤ zeros` the foundation's `2 ≤ a+B`. Those premises are sufficient and used —
+each round's trace reaches `N+2+r` and writes there, the largest such cell over the
+rounds iterated being `N+1+zeros` at `r = zeros-1` — but nothing proves them
+necessary: there is no footprint theorem here, and the deferred exhaustion finish has
+none either, so nothing claims this to be the room a *complete* loop needs. `qLoop`
+does **not** absorb, so every endpoint above is an *exact* time and may not be
+transported past it; no deadline is exported and no first-arrival or strictness
+direction is proved. None of these clocks counts the steps `startConfig` embeds, so
+none clocks a composed pipeline.
+
+Probes. Nonvacuity is independent of the endpoint theorems: two literal probes first
+identify the phase-local start configuration for every budget from the landed G2p-d
+foundation endpoint alone, then reduce the round machine's own `run` by kernel
+computation at `B = 0` for **two** consecutive rounds. Both words decode to
+`zeros = 4`, so exactly two rounds remain. The physical probe (`N = 17`,
+`roundClock 17 = 27`, `loopClock 17 4 = 54`) pins round one's physical source `15`
+with its `false` carried in the control as `qClear0`, the round-one re-entry into
+`qLoop` on the advanced terminator `15` with a `false` appended at `21`, then round
+two's `qCntMark` on counter cell `11`, its physical source `16` with the `true`
+carried as `qClear1`, and the final register `[18,22] = true, true, false, false,
+true` — so the two rounds drive both carried-bit halves of the table. The truncated
+probe (`N = 15`, `roundClock 15 = 23`, `loopClock 15 4 = 46`) pins the virtual
+schedule at both round endpoints: the terminator is at `14` after each round and the
+corresponding appended register digits are false. In round two it additionally pins
+the boundary source `15` and entry through `qVa`/`qVb`/`qVc`; the final register is
+`[16,20] = true, true, false, false, false`.
+`check_probe_inputs_valid` states separately that both probe words satisfy the
+tag/width hypotheses the general theorems assume, and at the probes' own budget
+`B = 0` the room hypothesis too, so those are not statements about an unsatisfiable
+premise set.
+
+Deferred: the exhaustion finish — at `r = zeros` the next round's counter scan finds
+the marked cell `7+zeros` and leaves `qLoop` through `qFin`, and that behaviour,
+`qDone`, and the restoration of the gamma zero field are outside every theorem here —
+the loop's own deadline, a first-arrival/strictness direction, the decrement from
+`n+1` to `n`, the all-times clamp/footprint/budget package, and every converse:
+nothing says that `qLoop` at `loopClock N zeros`, or any register digit, implies
+anything about `zeros`. `zeros = 2` is covered only degenerately (`loopClock N 2 = 0`
+makes `register_complete` a restatement of the retagged foundation endpoint
+`startConfig`) and `zeros ≤ 1` is excluded by `2 ≤ zeros`. No pnp4 bridge exists for
+this module; `startConfig` is a phase-local retag of an actual prior run, not a
+composed execution from the raw pair input, and `qDone` is not language acceptance.
+Nothing here is P-vs-NP mainline progress.
 
 **Part A G2p-d round, first remaining payload digit (infrastructure only).** New
 pnp3 module `Complexity.Uniform.V1.FixedGammaTargetPayloadRound`: one fixed
@@ -86,6 +178,12 @@ connected to `contentHeader?` or to any parsed header value and no pnp4 bridge
 exists for this module. The public `startConfig` at `zeros = 2` can follow exhaustion
 through `qFin` to `qDone`, but `zeros ≤ 2` and exhaustion remain outside the proved
 theorem surface; `qDone` is not language acceptance. Nothing here is P-vs-NP mainline progress.
+Two of those deferred items — the iteration of this round and the complete target
+register — are discharged by the G2p-e slice above. A third moves rather than closes:
+the premise `N+1+zeros < tapeLength (pairLength a m) B` recorded here as assumed
+nowhere is now assumed and characterized (`zeros ≤ a+B`), and it is sufficient for
+every round G2p-e iterates; whether a *complete* loop, exhaustion finish included,
+needs exactly that much is still open. The rest still stand.
 
 **Part A G2p-d loop markers, foundation slice (infrastructure only).** New pnp3
 module `Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation`: one fixed

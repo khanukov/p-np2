@@ -146,15 +146,23 @@ lean_lib PnP3 where
     -- counter marks and the walking terminator a self-stopping gamma payload loop
     -- needs, on the phase-local retag of the actual G2p-c endpoint, and halts;
     -- exact first terminal time zeros+7 in all three source shapes, the endpoint
-    -- tape pinned cell by cell.  The one-round slice lands below; its iteration, exhaustion finish,
-    -- the complete register and the two degenerate widths stay deferred.
+    -- tape pinned cell by cell.  The one-round, iteration, and complete-register slices land
+    -- below; the exhaustion finish and the two degenerate widths stay deferred.
     Glob.one `Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation,
     -- Part A G2p-d round: one fixed 22-state/66-row machine that executes one round
     -- of the self-stopping gamma payload loop on the phase-local retag of the actual
     -- G2p-d foundation endpoint, carrying the loop invariant from r=2 to r=3 in
     -- exactly 2*(a+m)-7 steps at a decoded 3 <= zeros with the wider room 3 <= a+B.
-    -- The iteration, the exhaustion finish and the loop deadline stay deferred.
+    -- The iteration lands below; the exhaustion finish and the loop deadline stay deferred.
     Glob.one `Complexity.Uniform.V1.FixedGammaTargetPayloadRound,
+    -- Part A G2p-e iteration: no new machine.  The landed G2p-d round machine re-enters
+    -- qLoop, so the same table iterates: round_generic carries the loop invariant from r to
+    -- r+1 out of an arbitrary r-instance at every 1 <= r < zeros in 2*(a+m)-7 steps,
+    -- rounds_iterate runs k such rounds out of the landed startConfig, and register_complete
+    -- is the k = zeros-2 instance where the target register holds all zeros+1 digits, at the
+    -- exact time (zeros-2)*(2*(a+m)-7) and the iteration room zeros <= a+B.  The exhaustion
+    -- finish, the loop deadline, strictness and the decrement from n+1 to n stay deferred.
+    Glob.one `Complexity.Uniform.V1.FixedGammaTargetPayloadIteration,
     -- Generic bounded cross-budget simulation for one fixed UniformTM.
     Glob.one `Complexity.Uniform.V1.BudgetTransport,
     -- Routed fixed-parser/verifier constructor and parser-prefix handoff.
@@ -742,6 +750,7 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaTargetPayloadRoundSurfaceTests,
+    Glob.one `Tests.UniformV1FixedGammaTargetPayloadIterationSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
     Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,

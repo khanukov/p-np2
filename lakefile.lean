@@ -175,6 +175,17 @@ lean_lib PnP3 where
     -- The decrement from n+1 to n, a footprint theorem and every header/pnp4 bridge stay
     -- deferred; qDone is not language acceptance.
     Glob.one `Complexity.Uniform.V1.FixedGammaTargetPayloadExhaustion,
+    -- Part A G2q register decrement: a new fixed 7-state, 21-row machine, the first new
+    -- table since the G2p-d round.  Out of the retagged G2p-f endpoint it walks right to the
+    -- walking terminator, to the boundary blank and past the target register, then borrows
+    -- right to left: false digits become true, the first true becomes false and the machine
+    -- halts in the absorbing qDone, in exactly a+m+zeros+d-3 steps at borrow length d.
+    -- sub_one_bits/decBit_sub_one are the separate arithmetic saying those digits are the
+    -- digits of v-1 for an arbitrary v whose bits are the incoming ones; no theorem here
+    -- supplies such a v.  Every converse, a footprint theorem, the gamma leading-digit
+    -- convention and every header/pnp4 bridge stay deferred; qDone is not language
+    -- acceptance, and startConfig is a phase-local retag, not a composed raw-input run.
+    Glob.one `Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement,
     -- Generic bounded cross-budget simulation for one fixed UniformTM.
     Glob.one `Complexity.Uniform.V1.BudgetTransport,
     -- Routed fixed-parser/verifier constructor and parser-prefix handoff.
@@ -764,6 +775,7 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1FixedGammaTargetPayloadRoundSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaTargetPayloadIterationSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaTargetPayloadExhaustionSurfaceTests,
+    Glob.one `Tests.UniformV1FixedGammaTargetRegisterDecrementSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
     Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,

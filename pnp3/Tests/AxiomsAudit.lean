@@ -114,6 +114,7 @@ import Tests.UniformV1FixedGammaTargetFirstPayloadSurfaceTests
 import Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests
 import Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests
 import Tests.UniformV1FixedGammaTargetPayloadRoundSurfaceTests
+import Tests.UniformV1FixedGammaTargetPayloadIterationSurfaceTests
 import Tests.UniformV1BudgetTransportSurfaceTests
 import Tests.UniformV1CombinedMachineSurfaceTests
 import Tests.UniformV1CombinedCorrectnessSurfaceTests
@@ -4913,6 +4914,54 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadRoundSurfaceTests.check_virt_handoff
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadRoundSurfaceTests.check_phys_probe
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadRoundSurfaceTests.check_virt_probe
+
+-- Part A G2p-e iteration (2026-09-23), infrastructure only: NO new machine.  The landed G2p-d
+-- round machine re-enters `qLoop`, so the same fixed 22-state/66-row table iterates.
+-- `round_generic` carries the loop invariant `loopTape B x w zeros r` from `r` to `r + 1` out
+-- of an ARBITRARY configuration matching the `r`-instance, at every index with `1 ≤ r` and
+-- work remaining (`r < zeros`), in exactly `roundClock (a+m) = 2*(a+m)-7` steps and under that
+-- index's own room `a+m+2+r < tapeLength (pairLength a m) B`; that quantification over `r` and
+-- over the incoming configuration is what the hard-coded `round_step` could not support.
+-- `rounds_iterate` runs `k` such rounds out of the landed G2p-d `startConfig` at `2 ≤ zeros`,
+-- `2 + k ≤ zeros` and the iteration's room `a+m+1+zeros < tapeLength (pairLength a m) B`
+-- (equivalently `zeros ≤ a + B`), and `register_complete` is its `k = zeros - 2` instance: at
+-- the exact time `loopClock (a+m) zeros = (zeros-2)*roundClock (a+m)` the target register
+-- `[a+m+1, a+m+1+zeros]` holds all `zeros + 1` digits.  That is register CONTENT, not a
+-- decoded number: `register_digits` only says digit 0 is the bootstrap `true`, digit `i+1` is
+-- the payload cell `9+zeros+i` read through the blank padding, and those source addresses are
+-- exactly the block `[9+zeros, 9+2*zeros)`.  `check_round_generic_subsumes_round_step` derives
+-- the landed hard-coded `round_step` statement back out of `round_generic` at `r = 2`, and
+-- `check_probe_inputs_valid` pins that both probe inputs satisfy the tag/width/room hypotheses,
+-- so none of the general statements is about an unsatisfiable premise set.  `qLoop` does NOT absorb, so
+-- every endpoint is an exact time and none may be transported later; there is no deadline, no
+-- first-arrival/strictness direction and no converse.  Deferred: the exhaustion finish (at
+-- `r = zeros` the next round leaves `qLoop` through `qFin`; that behaviour, `qDone` and the
+-- restoration of the gamma zero field are outside every theorem here), the loop deadline, the
+-- decrement from `n+1` to `n`, the all-times clamp/footprint/budget package, every header
+-- value and every pnp4 bridge.  `qDone` is not language acceptance, and `startConfig` is a
+-- phase-local retag of an actual prior run, not a composed execution from the raw pair input.
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadIteration.loopClock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadIteration.loopClock_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadIteration.room_iff
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadIteration.register_digits
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadIteration.round_generic
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadIteration.rounds_iterate
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadIteration.register_complete
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadIterationSurfaceTests.check_machine_reused
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadIterationSurfaceTests.check_loopClock
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadIterationSurfaceTests.check_loopClock_pins
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadIterationSurfaceTests.check_loopClock_values
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadIterationSurfaceTests.check_room_iff
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadIterationSurfaceTests.check_register_digits
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadIterationSurfaceTests.check_round_generic
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadIterationSurfaceTests.check_round_generic_subsumes_round_step
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadIterationSurfaceTests.check_rounds_iterate
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadIterationSurfaceTests.check_register_complete
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadIterationSurfaceTests.check_phys_handoff
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadIterationSurfaceTests.check_virt_handoff
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadIterationSurfaceTests.check_probe_inputs_valid
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadIterationSurfaceTests.check_phys_probe
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadIterationSurfaceTests.check_virt_probe
 
 -- S11 (2026-09-19), infrastructure only: all-request one-gate acceptance
 -- closure in main's transducer convention.  `accepts = r.spec.isSome`, so a

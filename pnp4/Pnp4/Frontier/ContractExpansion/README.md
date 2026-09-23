@@ -871,6 +871,93 @@ cells `13, 14, 15` for header `(5, 5)`, whose second payload digit is the
 virtual zero at the boundary; and `111₂` at cells `14, 15, 16` for header
 `(6, 5)`, whose second payload digit is physical.
 
+`ContentFixedGammaTargetPayloadExhaustionBridge.lean` is the Part A G2p-g
+infrastructure bridge, the pnp4 companion the pnp3 G2p-f slice deferred. It is
+registered immediately after G2p-c and imports G2p-c together with the pnp3
+`FixedGammaTargetPayloadExhaustion`. It adds no machine: the run is G2p-f's
+`payload_exhausted`, unchanged, and everything here is a statement about what
+that endpoint's cells are. Five public theorems, all one-way out of a decoded
+header or a successful parse; the first three mention no machine, no tag and no
+clock, and only `room_iff_target_bound` mentions the budget `B`, through the
+tape length:
+
+* `exhaustion_register_digits` (one propositional hypothesis, a decoded header
+  `contentHeader? (Fin.append x w) = some (n, consumed)`): some `zeros` has
+  `gammaZeros? (Fin.append x w) = some zeros`, `consumed = 2 * zeros + 1`,
+  `2 ^ zeros ≤ n + 1 < 2 ^ (zeros + 1)`, the **register equation**
+  `FixedGammaTargetPayloadLoopFoundation.registerBit x w zeros j =
+  (n + 1).testBit (zeros - j)` at every `j ≤ zeros`, the completeness fact
+  `∀ b, zeros < b → (n + 1).testBit b = false`, and the **virtual-tail**
+  conjunct: for every `j` with `1 ≤ j ≤ zeros` and `a + m ≤ 8 + zeros + j`, both
+  `registerBit x w zeros j` and `(n + 1).testBit (zeros - j)` are `false`;
+* `register_determines_target` (four hypotheses: a decoded header, a decoded
+  width, the register digits of a `v`, and that `v` has no bit above `zeros`):
+  `v = n + 1`;
+* `room_iff_target_bound` (two hypotheses: a decoded header and a decoded
+  width): `n + 1 < 2 ^ (a + B + 1) ↔ zeros ≤ a + B`, and
+  `zeros ≤ a + B ↔ a + m + 1 + zeros < tapeLength (pairLength a m) B`;
+* `exhausted_register_header_value` (four hypotheses: matching tag, decoded
+  header, `3 ≤ n`, and `n + 1 < 2 ^ (a + B + 1)`): some `zeros ≥ 2` has
+  `consumed = 2 * zeros + 1`, the bit-length bounds, the room in its tape form,
+  and, at `FixedGammaTargetPayloadRound.machine.run
+  (FixedGammaTargetPayloadExhaustion.totalClock (a + m) zeros)
+  (FixedGammaTargetPayloadRound.startConfig B x w)`: `qDone` at head `7`, the
+  tape `finishTape B x w zeros`, `d.tape i = some ((n + 1).testBit (zeros - j))`
+  at every `i.val = a + m + 1 + j` with `j ≤ zeros`, the virtual-tail cells
+  `some false` together with the matching parsed `false`, the completeness fact,
+  the uniqueness of `n + 1` among values read off those cells with no bit above
+  `zeros`, the restoration of `[7, 8 + zeros)` to
+  `FixedPairContentMarkerErase.contentTape`, and persistence at every later time;
+* `exhausted_register_parsed_target` (four hypotheses: matching tag, a
+  successful `contentInput? codec (Fin.append x w) = some pr` for an arbitrary
+  codec, `3 ≤ pr.2.n`, and `pr.2.n + 1 < 2 ^ (a + B + 1)`): `pr.2.n = pr.1`,
+  `contentHeader? (Fin.append x w) = some (pr.2.n, 2 * zeros + 1)`, and the same
+  endpoint conjuncts restated in `pr.2.n` — every one of the header form except
+  the gamma zero field restoration, which is about the tape and not the target.
+
+The virtual-tail conjunct is the point of the slice. G2p-f exports the register
+cells as `registerBit`, which is *content*: on a truncated payload its digits
+past the physical word are a `false` that no theorem there ties to any value.
+`registerBit` pads there because the payload cell is not in the word — on
+`contentTape` that cell is blank — while `contentHeader?` pads through
+`VirtualZeroTailReader`. Those are two different paddings, and
+`exhaustion_register_digits` is where they are proved to agree, so a virtual
+`false` in a truncated register is the parsed target's own digit. Three numbers
+stay apart: `pr.2.n`, the actual parsed target that `ContentAccepts` feeds to
+the search relation; `n + 1`, the gamma convention value whose digits the
+register holds, the decrement to `n` being performed by no machine here and not
+claimed; and `consumed = 2 * zeros + 1`, a cell count that is never in the
+register. The parser's other length convention `treeMCSPPrefixM codec pr.1`
+occurs only in the type of `pr`. Room is carried, not derived: a decoded header
+does not imply it, since `room_iff_target_bound` reads it as `zeros ≤ a + B`, a
+condition on the `x` side and the budget, and it is sufficient only — there is
+still no footprint theorem on the pnp3 side. Given a decoded header, `3 ≤ n` is
+exactly `2 ≤ zeros`, because the exported bounds make `zeros` the index of the
+leading digit of `n + 1`; both directions are derivable from the exported
+conjuncts and neither is stated as an equivalence, only the direction used. The
+two machine theorems therefore inherit G2p-f's exclusion of `zeros ≤ 1`, while
+the three parser-side theorems carry no width premise and cover them; `zeros = 2`
+is admitted, where the G2p-e round count `zeros - 2` is zero and the endpoint is
+the finish alone. `totalClock` is **phase-local**: `startConfig` retags an actual
+prior run and embeds the earlier phases' steps, which it does not count, and
+`qDone` is an internal control tag, so nothing here is halting of a composed
+machine, language acceptance, or a runtime. The module states no converse —
+nothing derives a header, a width, `2 ≤ zeros`, or room from `qDone`, the
+endpoint tape, or a digit at a register cell — and claims no parser execution,
+no reading of the register as a number on the tape (the uniqueness conjunct is
+arithmetic about the digits found there, not a decoding step the control
+performs), no footprint or budget theorem, no malformed-gamma branch, no first
+arrival from `startConfig`, no `ContentAccepts`, no clock composition, no
+`ContentVerifierBridge`, and no P-vs-NP mainline result. Surface regressions
+derive, for every budget, the wholly physical four-digit register `1101₂` at
+cells `16 … 19` for header `(12, 7)` with `totalClock 15 3 = 31`; `110₂` at
+cells `13 … 15` for header `(5, 5)` with `totalClock 12 2 = 5`, whose last digit
+is the virtual tail; and a twelve-cell word, pinned to be the same word under
+both the split `a = 8, m = 4` and the split `a = 1, m = 11` and decoding to
+`(5, 5)` under either, where at `B = 0` room holds on the first in its tape form
+and fails on the second in the outer two of the three equivalent forms, hence by
+`room_iff_target_bound` in all three.
+
 `FixedContentGammaAnchorCorrect.lean` is the Part A G2a bridge. It proves the
 exact G1-final-to-G2a operational handoff and provides a logical cell-7
 restoration taking the successful marked tape back to literal `contentTape`.

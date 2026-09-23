@@ -1253,9 +1253,21 @@ truncated payload.  Both probes run past the endpoint, which exhibits `qDone` ab
 `check_probe_inputs_valid` states separately that both words satisfy the tag and width
 hypotheses the general theorems assume, and at `B = 0` the room hypothesis too.
 
+`qDone` is an internal endpoint rather than language acceptance, and this module states no pnp4
+reader or parser fact.  The reading is done outside pnp3, by the G2p-g companion
+`Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetPayloadExhaustionBridge`, which consumes
+`payload_exhausted` and identifies every register cell `N+1+j`, `j <= zeros`, with
+`(n+1).testBit (zeros-j)` for a decoded `contentHeader? (Fin.append x w) = some (n, consumed)`
+and for the target `pr.2.n` of a successful `contentInput?` parse.  Its virtual-tail conjunct is
+what settles the truncated case this module leaves open: where the payload cell has left the
+word, `registerBit`'s `false` and the decoder's virtual zero are proved to be the same digit.
+That companion adds no machine and no clock, carries the same room premise, and claims no
+converse and no decrement.
+
 Deferred: the decrement of the register from `n+1` digits to `n`, any reading of the register as
-a *number* (`registerBit` gives content, not a value), every connection to `contentHeader?` or a
-parsed header value, any pnp4 bridge, a footprint/budget theorem, every converse -- nothing says
+a *number* on the tape (`registerBit` gives content, not a value; the companion's uniqueness
+conjunct is arithmetic about those digits, not a decoding step the control performs), a
+footprint/budget theorem, every converse -- nothing says
 that `qDone` at `totalClock N zeros`, or any endpoint cell, implies anything about `zeros` --
 first arrival measured from `startConfig`, the degenerate widths, and a malformed-gamma
 branch.  Of those widths `zeros = 0` is excluded from `exhaust_schedule`, `exhaust_generic`

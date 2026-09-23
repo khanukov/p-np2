@@ -402,6 +402,39 @@ acceptance from `qDone`, clock composition, the remaining `zeros - 2` digits,
 the decrement to `n`, and `ContentVerifierBridge` are not provided, and this is
 not P-vs-NP mainline progress.
 
+Part A G2p-g adds `ContentFixedGammaTargetPayloadExhaustionBridge` over the pnp3
+G2p-f `FixedGammaTargetPayloadExhaustion`, the companion that slice deferred. It
+has five public theorems, all one-way and none with a converse. Three are
+machine-free. `exhaustion_register_digits` (one hypothesis, a decoded header
+`contentHeader? (Fin.append x w) = some (n, consumed)`) gives a width `zeros`
+with `consumed = 2 * zeros + 1`, `2 ^ zeros ≤ n + 1 < 2 ^ (zeros + 1)`, the
+register equation `registerBit x w zeros j = (n + 1).testBit (zeros - j)` at
+every `j ≤ zeros`, the fact that `n + 1` has no bit above `zeros`, and the
+**virtual-tail** conjunct: for `1 ≤ j ≤ zeros` with `a + m ≤ 8 + zeros + j` both
+the register digit and `(n + 1).testBit (zeros - j)` are `false`, so
+`registerBit`'s padding of a payload cell that has left the word and the
+decoder's virtual zero tail agree. `register_determines_target` (four
+hypotheses) adds that those digits determine `n + 1` uniquely among values with
+no bit above `zeros`; it is arithmetic, not a decoding step any machine
+performs. `room_iff_target_bound` (two hypotheses) identifies
+`n + 1 < 2 ^ (a + B + 1)`, `zeros ≤ a + B` and the G2p-e room
+`a + m + 1 + zeros < tapeLength (pairLength a m) B`. The other two reach the
+G2p-f endpoint at `totalClock (a + m) zeros`, under a matching tag, a decoded
+header (or a successful parse), `3 ≤ n` and that room — four hypotheses each:
+`qDone` at head `7` on `finishTape`, every register cell `a + m + 1 + j` holding
+the matching digit, every virtual-tail cell `some false` with the matching
+parsed `false`, those cells pinning the target, and the endpoint persisting at
+every later time. `exhausted_register_parsed_target` takes a successful
+`contentInput? codec (Fin.append x w) = some pr` for an arbitrary codec and
+exports `pr.2.n = pr.1`, so the register digits are digits of the target that
+`ContentAccepts` feeds to the search relation. The register holds the digits of
+`n + 1`, the gamma convention value, not of `n`; room is carried, not derived,
+and is not shown necessary. Parser execution, the decrement to `n`, any
+converse, a footprint theorem, the degenerate widths `zeros ≤ 1` on the machine
+side, a malformed-gamma branch, first arrival from `startConfig`, clock
+composition, `ContentAccepts`, and `ContentVerifierBridge` are not provided, and
+this is not P-vs-NP mainline progress.
+
 For an *arbitrary* threshold there is a third input, `PolyBoundedInTable threshold`;
 it is proved for the canonical polynomial thresholds, so it disappears at
 `thresholdPoly k`.  The general capstone `verifiedSource_of_explicit_interfaces`

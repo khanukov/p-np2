@@ -1044,6 +1044,14 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetFirstPayloadBridge,
     -- Part A G2p-c: the second payload digit is the third digit of `n + 1`.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetSecondPayloadBridge,
+    -- Part A G2p-g: the complete exhausted target register is the parsed target's
+    -- digits.  Every register cell `a+m+1+j`, `j <= zeros`, of the G2p-f endpoint holds
+    -- `(n+1).testBit (zeros - j)` for the decoded header `(n, consumed)`, and where the
+    -- payload is truncated the machine's blank padding and the decoder's virtual zero
+    -- tail agree, so a virtual `false` is the parsed target's own digit.  The dependent
+    -- parse form reads `pr.2.n`; the decrement of `n+1` to `n`, every converse, and
+    -- parser execution stay deferred.
+    Glob.one `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetPayloadExhaustionBridge,
     Glob.one `Pnp4.Frontier.ContractExpansion.FixedContentGammaAnchorCorrect,
     -- GATE-0 slice: non-vacuity of `ContentAccepts` at the concrete codec.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity,

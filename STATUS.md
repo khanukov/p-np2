@@ -57,16 +57,18 @@ probes pin a handful of pre-endpoint states only, not the absence of `qDone` thr
 that segment. `exhaust_schedule` pins the control at every time of the phase (`qLoop`,
 then `qCntL`, then `qFin`), which with `exhaust_generic` leaves no time at which a source
 or register state could occur. `payload_exhausted` is the slice's concrete exact run: on
-a matching tag, `2 ≤ zeros` and the inherited G2p-e room `N+1+zeros < tapeLength
-(pairLength a m) B` — four premises — the same machine run out of the landed `startConfig`
-for exactly `totalClock N zeros` steps is in `qDone` on cell `7`, its tape is
-`finishTape B x w zeros`, the gamma zero field is back to the content tape, and the endpoint
-persists at every later time. The register conjunct is **preservation, not completion**:
-that `[N+1, N+1+zeros]` holds its `zeros+1` digits is G2p-e's `register_complete`, and all
-this slice adds is that the finish carries it through unchanged — nothing decodes those
-digits, and where the payload is truncated the digits past it are `registerBit`'s virtual
-`false`, which no theorem calls the payload's value. That room premise is sufficient and
-used; it is not shown necessary, since there is no footprint theorem.
+a matching tag, a gamma field decoding to `zeros` with `2 ≤ zeros`, and the inherited G2p-e
+room `N+1+zeros < tapeLength (pairLength a m) B` — four premises, the decode `gammaZeros?
+(Fin.append x w) = some zeros` and the bound on `zeros` being two of them — the same machine
+run out of the landed `startConfig` for exactly `totalClock N zeros` steps is in `qDone` on
+cell `7`, its tape is `finishTape B x w zeros`, the gamma zero field is back to the content
+tape, and the endpoint persists at every later time. The register conjunct is
+**preservation, not completion**: that `[N+1, N+1+zeros]` holds its `zeros+1` digits is
+G2p-e's `register_complete`, and all this slice adds is that the finish carries it through
+unchanged — nothing decodes those digits, and where the payload is truncated the digits past
+it are `registerBit`'s virtual `false`, which no theorem calls the payload's value. That
+room premise is sufficient and used; it is not shown necessary, since there is no footprint
+theorem.
 
 Probes. Two literal probes identify the phase-local start configuration for every budget
 from the landed G2p-d foundation endpoint alone, then reduce the round machine's own `run`
@@ -78,9 +80,10 @@ execution theorem of this module. Both words decode to `zeros = 4`. The physical
 sixty-four with cells `7,8,9,10,11` all back to `some false`, the consumed payload cell `13`
 blank, the terminator at `16` and the register `[18,22] = true, true, false, false, true`.
 The truncated probe (`N = 15`, `loopClock 15 4 = 46`, `termWalk 15 4 = 2`,
-`exhaustClock 15 4 = 8`, `totalClock 15 4 = 54`) is two steps cheaper, which is the concrete
-form of the clock's shape dependence; it pins the same restoration, cell `14` carrying the
-terminator's `some true` over an input `false`, and the register
+`exhaustClock 15 4 = 8`, `totalClock 15 4 = 54`) is two steps cheaper. That gap tracks `N`
+alone: both probes lie in the band `9+zeros ≤ N ≤ 9+2*zeros`, where the clock is `N-7`, so
+the pair is no witness of the clock's dependence on `zeros`. It pins the same restoration,
+cell `14` carrying the terminator's `some true` over an input `false`, and the register
 `[16,20] = true, true, false, false, false`. Both run past the endpoint, exhibiting `qDone`
 absorbing. `check_probe_inputs_valid` states separately that both words satisfy the
 tag/width hypotheses and, at `B = 0`, the room hypothesis.

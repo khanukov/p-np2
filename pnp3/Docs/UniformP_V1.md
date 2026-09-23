@@ -1244,13 +1244,14 @@ step sixty-three, and `qDone` on `7` at step sixty-four with cells `7,8,9,10,11`
 `some false`, the consumed payload cell `13` blank although its input bit is `true`, the walking
 terminator at `16`, and the register `[18,22] = true, true, false, false, true`.  The truncated
 probe (`N = 15`, `loopClock 15 4 = 46`, `termWalk 15 4 = 2`, `exhaustClock 15 4 = 8`,
-`totalClock 15 4 = 54`) is two steps cheaper, which is the concrete form of the clock's shape
-dependence; it pins the same restoration, cell `14` carrying the terminator's `some true` over
-an input `false`, and the register `[16,20] = true, true, false, false, false`, its last two
-digits the virtual zeros of the truncated payload.  Both probes run past the endpoint, which
-exhibits `qDone` absorbing.  `check_probe_inputs_valid` states separately that both words
-satisfy the tag and width hypotheses the general theorems assume, and at `B = 0` the room
-hypothesis too.
+`totalClock 15 4 = 54`) is two steps cheaper.  That gap tracks `N` alone: both probes lie in the
+band `9+zeros <= N <= 9+2*zeros`, where the clock is `N-7`, so the pair is no witness of the
+clock's dependence on `zeros`.  It pins the same restoration, cell `14` carrying the
+terminator's `some true` over an input `false`, and the register
+`[16,20] = true, true, false, false, false`, its last two digits the virtual zeros of the
+truncated payload.  Both probes run past the endpoint, which exhibits `qDone` absorbing.
+`check_probe_inputs_valid` states separately that both words satisfy the tag and width
+hypotheses the general theorems assume, and at `B = 0` the room hypothesis too.
 
 Deferred: the decrement of the register from `n+1` digits to `n`, any reading of the register as
 a *number* (`registerBit` gives content, not a value), every connection to `contentHeader?` or a

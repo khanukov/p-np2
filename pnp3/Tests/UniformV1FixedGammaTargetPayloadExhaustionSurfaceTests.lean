@@ -82,8 +82,9 @@ theorem check_clock_pins (N zeros : Nat) :
   clock_pins N zeros
 
 /-- The literal clocks the two probes below execute, pinned by kernel reduction.  The finish
-cost differs between the two shapes — `10` against `8` — which is the concrete form of
-`exhaustClock` not being length-only. -/
+costs `10` and `8` differ as `N` alone does: both probes sit in the band
+`9 + zeros ≤ N ≤ 9 + 2 * zeros` of `check_clock_pins`, where `exhaustClock N zeros = N - 7`,
+so this pair is no witness of `exhaustClock`'s dependence on `zeros`. -/
 theorem check_clock_values :
     termWalk 17 4 = 4 ∧ exhaustClock 17 4 = 10 ∧ loopClock 17 4 = 54 ∧ totalClock 17 4 = 64 ∧
       termWalk 15 4 = 2 ∧ exhaustClock 15 4 = 8 ∧ loopClock 15 4 = 46 ∧

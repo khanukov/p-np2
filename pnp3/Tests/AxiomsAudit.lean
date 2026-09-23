@@ -115,6 +115,7 @@ import Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests
 import Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests
 import Tests.UniformV1FixedGammaTargetPayloadRoundSurfaceTests
 import Tests.UniformV1FixedGammaTargetPayloadIterationSurfaceTests
+import Tests.UniformV1FixedGammaTargetPayloadExhaustionSurfaceTests
 import Tests.UniformV1BudgetTransportSurfaceTests
 import Tests.UniformV1CombinedMachineSurfaceTests
 import Tests.UniformV1CombinedCorrectnessSurfaceTests
@@ -4962,6 +4963,82 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadIterationSurfaceTests.check_probe_inputs_valid
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadIterationSurfaceTests.check_phys_probe
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadIterationSurfaceTests.check_virt_probe
+
+-- Part A G2p-f (2026-09-23), infrastructure only: the exhaustion finish of the gamma payload
+-- loop.  STILL NO NEW MACHINE -- every theorem runs the landed G2p-d
+-- `FixedGammaTargetPayloadRound.machine`, the same fixed 22-state/66-row table, and
+-- `machine_reused` pins that identity together with the five rows this phase executes.
+-- Write `N = a+m`.  At `r = zeros` every gamma zero carries a consumed-source mark, so the
+-- `qCntL` row for `some true` -- the row the round slices leave unexecuted over their own
+-- bounded segments, by direct inspection of the table trace inside their proofs rather than
+-- by any theorem either of them exports -- fires the stopping rule into `qFin`; `qFin`
+-- sweeps the counter field `[8, 7+zeros]` back to `some false` and halts on the tag cell
+-- `7`, which a matching tag already holds as `some false`.  `exhaust_generic` is that run
+-- out of an ARBITRARY configuration matching the `r = zeros` invariant, with NO room premise
+-- (the finish only moves left from a head the hypothesis already places inside the tape), in
+-- exactly `exhaustClock N zeros = termWalk N zeros + zeros + 2` steps.  That clock is NOT
+-- length-only: it depends on the decoded width and on the source shape
+-- (`termWalk N zeros = walk N zeros zeros`), being `2*zeros+2` on a physical payload and
+-- `N-7` on a truncated one.  `finishTape_pins` says what the endpoint tape is and is not:
+-- the gamma zero field `[7, 8+zeros)` is back to the incoming content tape, and everywhere
+-- else the incoming invariant is untouched -- consumed sources still blank, walking
+-- terminator still standing, register still holding its `zeros+1` digits -- so the endpoint
+-- is NOT `contentTape` and nothing claims it is.  Because `qDone` absorbs -- which `qLoop`,
+-- where both round endpoints of this loop sit, does not -- `exhaust_strict` proves BOTH
+-- directions available here: the endpoint holds at every later time and `qDone` is not
+-- entered at any strictly earlier
+-- time, so `exhaustClock` is a proved first arrival -- measured from the `r = zeros`
+-- configuration, not from `startConfig`, since the G2p-e rounds carry no strictness theorem.
+-- `exhaust_schedule` pins the control through the phase (`qLoop`, then `qCntL`, then
+-- `qFin`), so no source state and no register state is entered and no digit is appended.
+-- `payload_exhausted` composes with G2p-e's `register_complete` into one exact run out of
+-- the landed `startConfig` at `totalClock N zeros = loopClock N zeros + exhaustClock N zeros`,
+-- inheriting the iteration's room premise `a+m+1+zeros < tapeLength (pairLength a m) B`;
+-- that premise is sufficient and used, not shown necessary, since there is no footprint
+-- theorem.  `totalClock` counts those rounds and this finish only -- not one step that
+-- `startConfig` embeds -- so it clocks no composed pipeline.  `check_probe_inputs_valid`
+-- pins that both probe inputs satisfy the tag/width/room hypotheses, so none of the general
+-- statements is about an unsatisfiable premise set.  Deferred: the decrement from `n+1`
+-- digits to `n`, the completion of the register (that is G2p-e's `register_complete`; the
+-- register conjunct of `payload_exhausted` is preservation, not completion), any reading of
+-- the register as a NUMBER or any claim that a truncated payload's virtual `false` digits are
+-- its value, every `contentHeader?` or parsed header value, every pnp4 bridge, a
+-- footprint/budget theorem, every converse, first arrival measured from `startConfig`, the
+-- degenerate widths (`zeros = 0` is excluded from `exhaust_schedule`, `exhaust_generic` and
+-- `exhaust_strict` by their `1 <= zeros` premise, which the tape-shape theorem
+-- `finishTape_pins` does not carry; `zeros = 1` satisfies those three but is produced by
+-- nothing here, since `payload_exhausted` needs `2 <= zeros`), and a malformed-gamma
+-- branch.  `qDone` is an internal control tag of a machine started here from a phase-local
+-- retag of an actual prior run rather than from `initialConfig` on a raw pair input, so it
+-- is neither halting of a composed machine nor language acceptance.
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadExhaustion.termWalk
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadExhaustion.exhaustClock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadExhaustion.totalClock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadExhaustion.finishTape
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadExhaustion.machine_reused
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadExhaustion.clock_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadExhaustion.finishTape_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadExhaustion.exhaust_schedule
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadExhaustion.exhaust_generic
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadExhaustion.exhaust_strict
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadExhaustion.payload_exhausted
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadExhaustionSurfaceTests.check_machine_reused
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadExhaustionSurfaceTests.check_termWalk
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadExhaustionSurfaceTests.check_exhaustClock
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadExhaustionSurfaceTests.check_totalClock
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadExhaustionSurfaceTests.check_finishTape
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadExhaustionSurfaceTests.check_clock_pins
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadExhaustionSurfaceTests.check_clock_values
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadExhaustionSurfaceTests.check_finishTape_pins
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadExhaustionSurfaceTests.check_exhaust_schedule
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadExhaustionSurfaceTests.check_exhaust_generic
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadExhaustionSurfaceTests.check_exhaust_strict
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadExhaustionSurfaceTests.check_payload_exhausted
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadExhaustionSurfaceTests.check_phys_handoff
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadExhaustionSurfaceTests.check_virt_handoff
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadExhaustionSurfaceTests.check_probe_inputs_valid
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadExhaustionSurfaceTests.check_phys_probe
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadExhaustionSurfaceTests.check_virt_probe
 
 -- S11 (2026-09-19), infrastructure only: all-request one-gate acceptance
 -- closure in main's transducer convention.  `accepts = r.spec.isSome`, so a

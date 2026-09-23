@@ -1021,11 +1021,14 @@ closes: the premise `N+1+zeros < tapeLength (pairLength a m) B` recorded above a
 assumed nowhere is now assumed and characterized (`zeros <= a+B`), and G2p-f's
 `payload_exhausted` proves it *sufficient* for a complete loop with the exhaustion
 finish included; whether that much is *necessary* is still open, there being no
-footprint theorem.  The rest -- the loop deadline, the decrement from `n+1` to `n`, the
-footprint/budget half of the all-times package, and every header/pnp4 connection --
-still stand, and so does strictness for the round itself: G2p-f's first-arrival
-direction and all-times clamp hold for the finish, where `qDone` absorbs, and not for a
-round endpoint sitting in the non-absorbing `qLoop`.
+footprint theorem.  A fifth shrinks: of the degenerate widths above, `zeros = 2` is now
+inside G2p-f's `payload_exhausted`, which needs only `2 <= zeros`, so only `zeros <= 1`
+stays outside the proved surface.  The rest -- a *length-only* loop deadline (G2p-f's
+exported persistence is from the width-dependent `totalClock N zeros`), the decrement from
+`n+1` to `n`, the footprint/budget half of the all-times package, and every header/pnp4
+connection -- still stand, and so does strictness for the round itself: G2p-f's
+first-arrival direction and all-times clamp hold for the finish, where `qDone` absorbs,
+and not for a round endpoint sitting in the non-absorbing `qLoop`.
 
 The Part A G2p-e `FixedGammaTargetPayloadIteration` adds **no new machine**.  The round
 machine above re-enters `qLoop` on the new walking terminator, which is exactly the
@@ -1138,10 +1141,11 @@ and the restoration of the gamma zero field are outside every theorem here -- th
 own deadline, a first-arrival/strictness direction, the decrement from `n+1` to `n`, the
 all-times clamp/footprint/budget package, and every converse.  The exhaustion
 finish, the first-arrival direction and the all-times clamp are discharged for that phase by
-the G2p-f slice below (the clamp only because `qDone` absorbs, which `qLoop` does not); the
-loop deadline, the decrement from `n+1` to `n`, the footprint/budget half and every converse
-still stand.  G2p-f adds no room premise of its own, and its `payload_exhausted` does claim
-this slice's `zeros <= a+B` *sufficient* for a complete loop with the finish included, so the
+the G2p-f slice below (the clamp only because `qDone` absorbs, which `qLoop` does not); a
+*length-only* loop deadline -- G2p-f exports persistence only from the width-dependent
+`totalClock N zeros` -- the decrement from `n+1` to `n`, the footprint/budget half and every
+converse still stand.  G2p-f adds no room premise of its own, and its `payload_exhausted` does
+claim this slice's `zeros <= a+B` *sufficient* for a complete loop with the finish included, so the
 paragraph above reserving that question holds only for *necessity*.  `zeros = 2` is covered
 only degenerately, since `loopClock N 2 = 0` makes `register_complete` a restatement of
 the retagged foundation endpoint `startConfig`, and `zeros <= 1` is excluded by the
@@ -1206,8 +1210,9 @@ this endpoint may be transported forward, and `exhaust_strict` proves both direc
 here: the endpoint holds at every later time, and `qDone` is not
 entered at any strictly earlier time, so `exhaustClock` is a proved first arrival.  That
 minimality is measured from the `r = zeros` configuration, not from `startConfig`: the G2p-e
-rounds carry no strictness theorem, so `qDone`-freeness across the round segment is available
-only for the literal probe instances below.  `exhaust_schedule` pins the control at every time
+rounds carry no strictness theorem, so `qDone`-freeness across the round segment is established
+nowhere here -- the two probes below pin a handful of pre-endpoint states only, not the absence
+of `qDone` throughout that segment.  `exhaust_schedule` pins the control at every time
 of the phase -- `qLoop`, then `qCntL` over the blank trail, then `qFin` from the rule to the
 halt, with the head walking monotonically left to `7` -- which together with `exhaust_generic`
 names the control at every time up to and including the halt, leaving no time at which a source

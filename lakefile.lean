@@ -153,7 +153,8 @@ lean_lib PnP3 where
     -- of the self-stopping gamma payload loop on the phase-local retag of the actual
     -- G2p-d foundation endpoint, carrying the loop invariant from r=2 to r=3 in
     -- exactly 2*(a+m)-7 steps at a decoded 3 <= zeros with the wider room 3 <= a+B.
-    -- The iteration and the exhaustion finish land below; the loop deadline stays deferred.
+    -- The iteration and the exhaustion finish land below; a length-only loop deadline and
+    -- round strictness stay deferred.
     Glob.one `Complexity.Uniform.V1.FixedGammaTargetPayloadRound,
     -- Part A G2p-e iteration: no new machine.  The landed G2p-d round machine re-enters
     -- qLoop, so the same table iterates: round_generic carries the loop invariant from r to
@@ -161,7 +162,8 @@ lean_lib PnP3 where
     -- rounds_iterate runs k such rounds out of the landed startConfig, and register_complete
     -- is the k = zeros-2 instance where the target register holds all zeros+1 digits, at the
     -- exact time (zeros-2)*(2*(a+m)-7) and the iteration room zeros <= a+B.  The exhaustion
-    -- finish lands below; the loop deadline and the decrement from n+1 to n stay deferred.
+    -- finish lands below, with strictness for the finish only; round strictness, a
+    -- length-only loop deadline and the decrement from n+1 to n stay deferred.
     Glob.one `Complexity.Uniform.V1.FixedGammaTargetPayloadIteration,
     -- Part A G2p-f exhaustion finish: still no new machine.  At r = zeros every gamma zero
     -- carries a consumed-source mark, so the same table's qCntL row for some true fires the

@@ -68,8 +68,9 @@ theorem is not, so none of the room premises is shown necessary), a converse —
 that `qDone` at `totalClock N zeros`, or any endpoint cell, implies anything about `zeros` —
 first arrival measured from `startConfig` rather than from the `r = zeros` configuration
 (the G2p-e rounds carry no strictness theorem, so `qDone`-freeness over the round segment is
-available only for the literal probe instances), the degenerate widths — `zeros = 0` is
-excluded from `exhaust_schedule`, `exhaust_generic` and `exhaust_strict` by their `1 ≤ zeros`
+established nowhere here — the surface test's probes pin a handful of pre-endpoint states
+only, not the absence of `qDone` throughout that segment), the degenerate widths — `zeros = 0`
+is excluded from `exhaust_schedule`, `exhaust_generic` and `exhaust_strict` by their `1 ≤ zeros`
 premise, which the tape-shape theorem `finishTape_pins` does not carry, while `zeros = 1`
 satisfies those three but is produced by nothing here, `payload_exhausted` needing
 `2 ≤ zeros` — and a malformed-gamma branch.  Clock composition, the fixed parser, advice

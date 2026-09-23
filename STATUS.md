@@ -52,8 +52,9 @@ endpoint may be transported forward, and `exhaust_strict` proves **both** direct
 available here: the endpoint holds at every later time, and `qDone` is not entered at any strictly
 earlier time, so `exhaustClock` is a proved first arrival. That minimality is measured
 from the `r = zeros` configuration, not from `startConfig` — the G2p-e rounds carry no
-strictness theorem, so `qDone`-freeness across them is available only for the literal
-probe instances. `exhaust_schedule` pins the control at every time of the phase (`qLoop`,
+strictness theorem, so `qDone`-freeness across them is established nowhere here — the two
+probes pin a handful of pre-endpoint states only, not the absence of `qDone` throughout
+that segment. `exhaust_schedule` pins the control at every time of the phase (`qLoop`,
 then `qCntL`, then `qFin`), which with `exhaust_generic` leaves no time at which a source
 or register state could occur. `payload_exhausted` is the slice's concrete exact run: on
 a matching tag, `2 ≤ zeros` and the inherited G2p-e room `N+1+zeros < tapeLength
@@ -194,13 +195,16 @@ composed execution from the raw pair input, and `qDone` is not language acceptan
 Nothing here is P-vs-NP mainline progress.
 The exhaustion finish deferred here — the stopping rule, `qDone`, and the restoration of
 the gamma zero field — is discharged by the G2p-f slice above, together with a
-first-arrival/strictness direction and an all-times clamp for that phase (both available
-only because `qDone` absorbs, which `qLoop` does not). The loop deadline, the decrement
-from `n+1` to `n`, a footprint/budget theorem and every converse still stand, and G2p-f
-adds no room premise of its own: it inherits this slice's `zeros ≤ a+B`, and its
-`payload_exhausted` does claim that room *sufficient* for a complete loop with the finish
-included, so the sentence above — that nothing claims this to be the room a *complete* loop
-needs — now holds of *necessity* only, which no footprint theorem establishes.
+first-arrival/strictness direction and an all-times clamp for that phase (the clamp only
+because `qDone` absorbs, which `qLoop` does not; minimality comes from that phase's
+closed-form schedule instead). A *length-only* loop deadline, the decrement from `n+1` to
+`n`, a footprint/budget theorem and every converse still stand — G2p-f's
+`payload_exhausted` does export persistence from `totalClock N zeros`, but that clock
+depends on the decoded width. G2p-f adds no room premise of its own: it inherits this
+slice's `zeros ≤ a+B`, and its `payload_exhausted` does claim that room *sufficient* for a
+complete loop with the finish included, so the sentence above — that nothing claims this to
+be the room a *complete* loop needs — now holds of *necessity* only, which no footprint
+theorem establishes.
 
 **Part A G2p-d round, first remaining payload digit (infrastructure only).** New
 pnp3 module `Complexity.Uniform.V1.FixedGammaTargetPayloadRound`: one fixed
@@ -292,10 +296,14 @@ field by G2p-f. A fourth moves rather than closes: the premise
 `N+1+zeros < tapeLength (pairLength a m) B` recorded here as assumed nowhere is now
 assumed and characterized (`zeros ≤ a+B`), and G2p-f's `payload_exhausted` proves it
 *sufficient* for a complete loop with the exhaustion finish included; whether that much
-is *necessary* is still open, there being no footprint theorem. The rest still stand,
-including the two items G2p-f discharges for its own phase only: the
-first-arrival/strictness direction and the all-times clamp hold for the finish, where
-`qDone` absorbs, and not for this round, whose endpoint sits in the non-absorbing `qLoop`.
+is *necessary* is still open, there being no footprint theorem. A fifth shrinks: of the
+degenerate widths deferred here, `zeros = 2` is now inside G2p-f's `payload_exhausted`,
+which needs only `2 ≤ zeros`, so only `zeros ≤ 1` stays outside the proved surface. The
+rest still stand — a *length-only* loop deadline among them, since G2p-f's exported
+persistence is from the width-dependent `totalClock N zeros` — including the two items
+G2p-f discharges for its own phase only: the first-arrival/strictness direction and the
+all-times clamp hold for the finish, where `qDone` absorbs, and not for this round, whose
+endpoint sits in the non-absorbing `qLoop`.
 
 **Part A G2p-d loop markers, foundation slice (infrastructure only).** New pnp3
 module `Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation`: one fixed

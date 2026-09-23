@@ -556,6 +556,10 @@ lean_lib PnP3 where
     -- GN-E2-3a (2026-09-02): payload-preserving one-body-round execution and
     -- fixed recordDone switch only; no arbitrary driver or real-input capstone.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateNBodyRound,
+    -- GN-E2-3b (2026-09-20): arbitrary proof-level body induction and the
+    -- real-initial first-record recordDone capstone; no continuation from
+    -- recordDone, no values/tail writer, no loop, verdict or acceptance.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateNBodyDriver,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -847,6 +851,10 @@ lean_lib PnP3 where
     -- GN-E2-3a (2026-09-02): direct payload-exit, one-round, terminal-switch,
     -- rejection, clock and 94/20 literal proposition wrappers.
     Glob.one `Tests.TMGateNBodyRoundSurfaceTests,
+    -- GN-E2-3b (2026-09-20): record-body split, driver schedule, generic
+    -- induction, real-initial capstone, endpoint structure, scoped clock and
+    -- the 659/36 literal proposition wrappers.
+    Glob.one `Tests.TMGateNBodyDriverSurfaceTests,
     -- GN-E2-0 (2026-09-01): definition/configuration pins and direct explicit
     -- wrappers for pure physical stages, first-request geometry, and the
     -- complete installed physical endpoint equality.

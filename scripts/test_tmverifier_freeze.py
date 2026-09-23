@@ -558,7 +558,7 @@ def executable_mode_controls(parent: Path) -> bool:
     it.  Deriving the mode from *any* execute bit instead makes a `0o654` or
     `0o645` file — an unpacking tool's umask, a shared-group checkout, a copy
     off a filesystem that hands out `o+x` — differ from a frozen tree in which
-    all 115 entries are `100644`, so the checker would report a freeze violation
+    every entry is `100644`, so the checker would report a freeze violation
     for a mode change Git does not see and no unfreeze PR could ever fix.
 
     All three directions are driven end to end through the checker: group-only

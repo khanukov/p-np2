@@ -515,11 +515,17 @@ adds no `GateN`, `ContentVerifierBridge` or content-verifier claim, it reduces
 no pnp4 source obligation, and it is not P-vs-NP mainline progress.
 
 **Current engineering priority.** The one-tape `pnp3/Complexity/TMVerifier/`
-tree is frozen at Git tree `7ef6ac6e`, reviewed at commit `249435bf`; see
-`pnp3/Docs/TMVERIFIER_FREEZE.md`, whose migration record covers the single
-reviewed unfreeze since `42c59881` (the S11 one-gate acceptance closure). Do
-not resume GN-E2-3b or later gate-by-gate construction. Active model-repair
-work must use the versioned uniform complexity foundation outside that tree.
+tree is frozen at Git tree `b49456d6`, the subtree of commit `7b53a08f`; see
+`pnp3/Docs/TMVERIFIER_FREEZE.md`, whose migration record covers the two
+unfreezes since `42c59881` (the reviewed S11 one-gate acceptance closure, and
+the single authorized GN-E2-3b body-driver slice, open as PR #1777: its
+exact-head local `./scripts/check.sh`, its two independent read-only reviews,
+the owner attestation and the `tmverifier-unfreeze` label are done, while the
+remote gate results against the final head, the required PR review and a
+history-preserving merge are still owed). Do not resume E2-4 or later
+gate-by-gate construction. Active
+model-repair work must use the versioned uniform complexity foundation outside
+that tree.
 
 **P1a/P1c uniform foundation (infrastructure only).** The independent namespace
 `Pnp3.Complexity.Uniform.V1` provides finite `UniformTM` data with the distinct
@@ -1485,10 +1491,11 @@ fixed-slice `PpolyDAG` membership:
 ### Canonical-track TM-verifier deliverable (frozen historical roadmap)
 
 > **Freeze note.** This roadmap is paused; the tree snapshot is pinned at Git
-> tree `7ef6ac6e`, reviewed at commit `249435bf` (one reviewed S11
-> acceptance-closure migration since `42c59881`, which did not resume the
-> roadmap). The active engineering queue is the versioned uniform complexity
-> foundation outside TMVerifier.
+> tree `b49456d6`, the subtree of commit `7b53a08f` (two migrations since
+> `42c59881`: the reviewed S11 acceptance closure and the single authorized
+> GN-E2-3b body-driver slice, neither of which resumed the roadmap). The
+> active engineering queue is the versioned uniform complexity foundation
+> outside TMVerifier.
 
 > **Scope note.**  After the canonical iso-strong / promise-YES
 > conclusion-side refutations recorded above, the canonical asymptotic

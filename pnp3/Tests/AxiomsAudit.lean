@@ -116,6 +116,7 @@ import Tests.UniformV1FixedGammaTargetPayloadLoopFoundationSurfaceTests
 import Tests.UniformV1FixedGammaTargetPayloadRoundSurfaceTests
 import Tests.UniformV1FixedGammaTargetPayloadIterationSurfaceTests
 import Tests.UniformV1FixedGammaTargetPayloadExhaustionSurfaceTests
+import Tests.UniformV1FixedGammaTargetRegisterDecrementSurfaceTests
 import Tests.UniformV1BudgetTransportSurfaceTests
 import Tests.UniformV1CombinedMachineSurfaceTests
 import Tests.UniformV1CombinedCorrectnessSurfaceTests
@@ -5039,6 +5040,56 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadExhaustionSurfaceTests.check_probe_inputs_valid
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadExhaustionSurfaceTests.check_phys_probe
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetPayloadExhaustionSurfaceTests.check_virt_probe
+
+-- Part A G2q (2026-09-23), INFRASTRUCTURE only: a new fixed 7-state, 21-row machine borrowing one
+-- out of the G2p-e/G2p-f target register in exactly `a+m+zeros+d-3` steps, out of a phase-local
+-- retag of the actual G2p-f endpoint.  Open premises (matching tag, decoded `2 <= zeros`, room
+-- `zeros+1 <= a+B`), the phase-local non-acceptance of `qDone`, the arbitrary-`v` arithmetic and
+-- every deferral are stated in the module docstring and in `pnp3/Docs/UniformP_V1.md`.  EVERY public
+-- declaration of the module is listed, then every surface entry carrying a proof term of its own.
+-- The surface wrappers not listed only apply or alias listed declarations, so they add no axiom;
+-- that is the omission the G2p-d loop-foundation block above makes for its own def wrappers.
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.stateCount
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.qStart
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.qSeekTerm
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.qSeekGap
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.qRegEnd
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.qBorrow
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.qDone
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.qReject
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.raw
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.machine
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.retagExhausted
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.priorDeadline
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.startConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.decClock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.deadline
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.borrow
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.decBit
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.decTape
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.table_and_resource_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.per_step_budget_independent
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.endpoints_absorb
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.handoff_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.clock_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.room_iff
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.prior_covers
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.borrow_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.sub_one_bits
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.decBit_sub_one
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.decTape_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.decrement_schedule
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.decrement_generic
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.decrement_strict
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement.register_decremented
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetRegisterDecrementSurfaceTests.check_table_rows
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetRegisterDecrementSurfaceTests.check_clock_values
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetRegisterDecrementSurfaceTests.check_probe_inputs_valid
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetRegisterDecrementSurfaceTests.check_phys_handoff
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetRegisterDecrementSurfaceTests.check_virt_handoff
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetRegisterDecrementSurfaceTests.check_decBit_sub_one_instance
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetRegisterDecrementSurfaceTests.check_phys_probe
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetRegisterDecrementSurfaceTests.check_virt_probe
 
 -- S11 (2026-09-19), infrastructure only: all-request one-gate acceptance
 -- closure in main's transducer convention.  `accepts = r.spec.isSome`, so a

@@ -1264,7 +1264,11 @@ word, `registerBit`'s `false` and the decoder's virtual zero are proved to be th
 That companion adds no machine and no clock, carries the same room premise, and claims no
 converse and no decrement.
 
-Deferred: the decrement of the register from `n+1` digits to `n`, any reading of the register as
+The decrement of the register is now performed on the machine side by the G2q slice below, which
+borrows one out of this very endpoint's register cells in a new fixed 7-state table, out of a
+phase-local retag of this slice's own run; what that slice does not supply is the identification
+of the result with `n`, which needs the G2p-g bridge's `n+1` and is a pnp4 composition nobody has
+carried out.  Deferred: that identification, any reading of the register as
 a *number* on the tape (`registerBit` gives content, not a value; the companion's uniqueness
 conjunct is arithmetic about those digits, not a decoding step the control performs), a
 footprint/budget theorem, every converse -- nothing says
@@ -1282,3 +1286,173 @@ composed machine nor language acceptance; the module states no `accepts`, no `Ac
 language membership.  Clock composition, the fixed parser, the checks, advice freedom, `NP`
 membership and `ContentVerifierBridge` are out of scope.  It is infrastructure, not P-vs-NP
 mainline progress.
+
+The Part A G2q `FixedGammaTargetRegisterDecrement` is the first slice of this loop to add a
+**new machine**: a fixed 7-state, 21-row table, the first new table since the G2p-d round
+machine.  A new table was unavoidable rather than convenient.  The G2p-d/G2p-e/G2p-f loop only
+ever *appends* a digit to the target register and marks a consumed gamma zero, and no row of
+its 22-state table performs a borrow -- it has no state that rewrites a register cell right to
+left as a function of that cell alone.  `table_and_resource_pins` pins all 21 rows literally
+(seven states against the three symbols), with `machine.stateCount = 7`, the three
+distinguished states, and `per_step_budget_independent` for the fact that the public
+`machine.step` never consults the budget and agrees with `raw` on every row.  The surface test
+restates the same 21 rows independently in `check_table_rows`, so a silent table change breaks
+the test rather than passing through an alias.
+
+Write `N = a+m`.  The incoming configuration is G2p-f's endpoint: halted on the tag cell `7`
+with the tape `finishTape B x w zeros`, whose shape is G2p-f's `finishTape_pins` -- the restored
+gamma zero field `[7, 8+zeros)` reading `some false`, the blank terminator trail, the walking
+terminator at `8+zeros+termWalk N zeros`, the content untouched from there, the boundary blank
+at `N`, and the completed target register `[N+1, N+1+zeros]` holding its `zeros+1` digits
+`registerBit x w zeros j`.  On a decoded header those digits are the digits of the *encoded*
+gamma integer `n+1`, which is what the G2p-g pnp4 bridge states on the parser side; this module
+states nothing about `n`, about a header, or about a parse.  This phase subtracts one from that
+register, in place, by the schoolbook borrow.
+
+Everything is symbol-driven, and that is the point of the design.  No width, digit index,
+register address, counter, proof term, advice or producer mark occurs in the table: every branch
+is decided by the one symbol under the head.  `qStart` leaves the tag cell.  `qSeekTerm` runs
+right over everything that is not `some true`, and since the restored gamma zeros are
+`some false` and the consumed trail is blank, the first `some true` it meets is the walking
+terminator; that sends it into `qSeekGap`.  `qSeekGap` runs right over every non-blank content
+cell, so the first blank it meets is the boundary cell `N`; that sends it into `qRegEnd` on the
+register's leading digit `N+1`.  `qRegEnd` runs right over the register, so the first blank past
+it is `N+2+zeros`, and the one left step from there lands on the least significant digit
+`N+1+zeros`.  The register's own right end is therefore found by that blank and by nothing else,
+which is the one cell of room this phase needs beyond G2p-f's.  `room_iff` reads that cell two
+ways: `N+2+zeros < tapeLength (pairLength a m) B` is exactly `zeros+1 <= a+B`, one more than
+G2p-f's `zeros <= a+B`, and it *implies* G2p-f's own premise `N+1+zeros < tapeLength …`, so the
+composite run below carries this single room premise and no other.  Sufficient and used; there
+is still no footprint theorem here, so it is not shown necessary.
+
+`qBorrow` then reads a digit and does the whole of the arithmetic in two rows: `some false`
+becomes `some true` and the head moves one cell left; `some true` becomes `some false` and the
+machine halts in the absorbing `qDone` on that cell.  So the run of `false` digits at the low
+end is flipped, the `true` that stops it is cleared, and every higher digit is left alone --
+which is subtraction of one.  The borrow never walks off the register's left end because digit
+`0` is the bootstrap's leading `true`: `borrow_pins` produces the stopping index `borrow x w
+zeros` from G2p-d's `registerBit_pins`, and states three conjuncts: the bound
+`borrow x w zeros <= zeros`, which is why the sweep stays inside the register, and then that the
+digits below the stopping index are `false` and that the digit it stops on is `true`, which are
+exactly the symbol-level facts the two `qBorrow` rows read.  `borrow` is a statement-level
+quantity computed from the digits, not advice: no row of the table mentions it, and the machine
+finds the same cell by reading symbols.
+
+`decClock N zeros d = N+zeros+d-3` is the exact cost at borrow length `d`, and `clock_pins`
+decomposes it under the decoded-width guard `9+zeros <= N` as `(N-7) + 1 + (zeros+1) + 1 + d +
+1`: `N-7` steps from the tag cell to the boundary blank, one step onto the register, `zeros+1`
+steps to the blank past its right end, one step back onto the least significant digit, `d`
+borrow steps, and the halt.  It is not length-only, and in two ways: it depends on the decoded
+width, and through `d` it depends on the stored digits.  `deadline N = 3*N` is the length-only
+bound it meets at every decoded width and every borrow length, and `clock_pins` states that in
+the guarded form `9+zeros <= N -> d <= zeros -> decClock N zeros d <= deadline N`; both guards
+are hypotheses of the conjunct and not editorial caution, the second being `borrow_pins`'s bound
+at `d = borrow x w zeros`.
+
+The handoff consults no decoded data either.  `startConfig` retags the G2p-d round machine's run
+at the **length-only** time `priorDeadline N = 3*(N*N)`, and `handoff_exact` pins that retagging
+replaces the control and nothing else -- same head, same tape.  `prior_covers` is the arithmetic
+that makes the handoff legitimate: at every decoded width `9+zeros <= N`, G2p-f's exact endpoint
+time `totalClock N zeros` is at or before `priorDeadline N`, so G2p-f's own all-times clamp
+identifies the retagged configuration with the endpoint `payload_exhausted` describes.  That
+bound is the *length-only* loop deadline the G2p-e/G2p-f loop itself never stated, and it is
+worth being precise about what it is not: it bounds that loop's own phase-local clock and
+nothing else, it counts no step that the G2p-d `startConfig` embeds, and `decClock` counts the
+steps of this phase alone.  Nothing here composes clocks across phases.
+
+`decTape` is the endpoint tape and `decBit` the endpoint digit: above the borrow's stopping digit
+the incoming digits survive, the stopping digit `zeros-d` is cleared, and the `d` digits below it
+are set.  `decTape_pins` states that in five conjuncts -- every register cell `N+1+j` holds
+`decBit x w zeros d j`; every cell outside `[N+1, N+1+zeros]` is the incoming `finishTape` cell;
+the stopping cell is `some false`; the cells under it are `some true`; and below the stopping
+digit the cell is the incoming `registerBit`.  It is a statement about the tape function and
+carries no claim about which cells the machine visited.
+
+`decrement_generic` is the run out of an **arbitrary** configuration matching that endpoint, on
+nine propositional hypotheses: a matching tag, a decoded width, the room premise, a borrow length
+`d` with `d <= zeros` together with the two symbol-level facts the borrow rule reads, and the three
+projections of the incoming configuration.  After exactly `decClock N zeros d` steps the machine is
+in `qDone` on the cell `N+1+zeros-d` the borrow stopped on, with the whole tape equal to
+`decTape B x w zeros d`.  `d` enters through those three hypotheses only, and no row of the table
+mentions it.  `decrement_schedule` pins the control and the head at
+every time of the phase -- `qStart`, then `qSeekTerm` to the walking terminator, then `qSeekGap`
+to the boundary blank, then `qRegEnd` to the blank past the register, then `qBorrow` to the halt,
+with the head monotonically right to `N+2+zeros` and then monotonically left -- which together
+with `decrement_generic` names the control at *every* time up to and including the halt, so no
+other state can occur there and `qReject` is entered nowhere in that range -- nor later, since the
+clamp below freezes the configuration.  Its head conjuncts cover every time strictly before the
+halt; the halting step is a `.stay`, and `decrement_generic` gives the head there.
+`decrement_strict` proves both directions available here: `qDone` is not entered at any strictly
+earlier time, and because `qDone` absorbs the endpoint holds at every later time -- in particular
+at the length-only `deadline N`, which `clock_pins` puts at or past `decClock` under this
+theorem's own hypotheses.  That minimality is measured from
+*this* configuration, not from the G2p-d `startConfig` of the previous phase, whose round segment
+carries no strictness theorem in this loop.
+
+`register_decremented` is the slice's concrete exact run: on a matching tag, a decoded
+`2 <= zeros` and the room premise -- four hypotheses -- the phase-local `startConfig` reaches
+`qDone` after exactly `decClock N zeros (borrow x w zeros)` steps of this machine, on the stopping
+cell, with tape `decTape B x w zeros (borrow x w zeros)`, every register cell `N+1+j` holding
+`decBit x w zeros (borrow x w zeros) j`, every cell outside the register still the incoming G2p-f
+endpoint cell, and the endpoint persisting at every later time.  The `2 <= zeros` premise is
+inherited from G2p-f's `payload_exhausted`, so `zeros <= 1` stays outside the proved surface here
+as it does there.
+
+What the decrement *means* is deliberately kept apart from what it *does*.  `sub_one_bits` and
+`decBit_sub_one` are arithmetic about `Nat`: no machine, no tape, no parser and no codec occurs
+in either.  `sub_one_bits` says that if `v`'s bits below `d` are `false` and its bit `d` is
+`true` -- exactly what the two `qBorrow` rows read off the register -- then `v-1` sets every bit
+below `d`, clears bit `d` and leaves every higher bit alone.  `decBit_sub_one` transports that to
+the register: on an **arbitrary** natural `v` whose bit `zeros-j` is register digit `j` at every
+`j <= zeros` and which has no bit above `zeros`, the endpoint digits are the bits of `v-1` at the
+same positions, and `v-1` has no bit above `zeros` either, so those `zeros+1` cells carry all of
+its digits.  Only the second conjunct uses the no-high-bits hypothesis; the borrow never reaches
+past digit `zeros`, so the low digits of `v-1` do not depend on the high bits of `v`.  No theorem
+of this module supplies such a `v`.  The two hypotheses are precisely what the G2p-g bridge's
+`exhaustion_register_digits` proves for `v = n+1` on a decoded header, and composing the two is a
+pnp4 step this slice does not take; nothing here mentions `contentHeader?`, `contentInput?`, or a
+parsed target.
+
+Nonvacuity is again independent of the endpoint theorems.  Two literal probes identify the
+phase-local start configuration for every budget using only G2p-f's `payload_exhausted` and this
+module's `prior_covers` -- an arithmetic statement about clocks that executes nothing -- and then
+reduce this machine's own `run` by kernel computation at `B = 0`.  The tag is `10110010` and both
+words decode to `zeros = 4`, so the register is five digits wide, and the two probes exercise the
+two shapes of the borrow.  The physical probe (`N = 17`, `termWalk 17 4 = 4`, walking terminator
+at `16 = N-1`, `totalClock 17 4 = 64`, `priorDeadline 17 = 867`, `deadline 17 = 51`) has
+`borrow tag physWord 4 = 0` and `decClock 17 4 0 = 18`: `qSeekTerm` stops on the terminator at
+step nine, `qSeekGap` is on the boundary blank `17` at step ten, `qRegEnd` enters the register at
+`18` at step eleven and leaves it at the blank `23` at step sixteen, `qBorrow` is on the least
+significant digit `22` at step seventeen, and since that digit is `some true` the borrow stops at
+once: step eighteen is `qDone` on `22`, with `[18,22]` reading `11001` before and `11000` after.
+The truncated probe (`N = 15`, `termWalk 15 4 = 2`, terminator at `14`, `totalClock 15 4 = 54`,
+`priorDeadline 15 = 675`, `deadline 15 = 45`) has `borrow tag virtWord 4 = 3` and
+`decClock 15 4 3 = 19`: the register `[16,20]` ends in three `false` digits, two of them the
+virtual zeros of the truncated payload, so `qBorrow` walks `20, 19, 18` and stops on `17`, and
+step nineteen is `qDone` on `17` with `[16,20]` reading `11000` before and `10111` after.  Those
+bit patterns are cell contents read from the register's leading cell; nothing in the probes claims
+them to be a decoded value.  Both probes sample a cell outside the register (`7` and `16`
+respectively for the physical one, `14` for the truncated one) and run past the endpoint, which
+exhibits `qDone` absorbing.  `check_probe_inputs_valid` states separately that both words satisfy
+the tag and width hypotheses the general theorems assume, and at `B = 0` the room hypothesis too,
+and `check_clock_values` pins the literal clocks and borrow lengths.
+`check_decBit_sub_one_instance` shows the arithmetic's hypotheses are satisfiable: the truncated
+probe's five register digits are the bits of `24` and the endpoint digits are then the bits of
+`23`.  That `24` is a **hand-written literal** chosen to match the digits; no theorem of this
+slice or of pnp3 produces it from a parse, which is exactly the deferred pnp4 step.
+
+Deferred, and deliberately not claimed: that pnp4 bridge, and with it every connection to
+`contentHeader?`, to `contentInput?`, or to a parsed target; a footprint or budget theorem, so
+the room premise is sufficient and used but not shown necessary; every converse -- nothing says
+that `qDone` at `decClock`, or any endpoint cell, implies anything about `zeros`, about the borrow
+length, or about the incoming digits; a malformed-gamma branch; first arrival measured from the
+G2p-d `startConfig` of the previous phase rather than from this one; the handoff of this endpoint
+to a next phase; and any restoration of the gamma leading-digit convention.  That last one is a
+real gap rather than a formality: when the register holds exactly `2^zeros` the borrow clears
+digit `0`, so the decremented register need not begin with a `true`, and nothing here
+re-establishes the invariant the gamma encoding relies on.  `qDone` is `machine.accept` of a
+machine started here from a phase-local retag of an actual prior run rather than from
+`initialConfig` on a raw pair input, so reaching it is neither halting of a composed machine nor
+language acceptance; the module states no `accepts`, no `AcceptsAt` and no language membership.
+Clock composition, the fixed parser, the checks, advice freedom, `NP` membership and
+`ContentVerifierBridge` are out of scope.  It is infrastructure, not P-vs-NP mainline progress.

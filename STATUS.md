@@ -40,8 +40,10 @@ blank-trail steps, the step that fires the rule, `zeros-1` further unmarking ste
 the halt. It is neither length-only nor shape-independent — `2*zeros+2` on a physically
 present payload, `N-7` on a truncated one — and it is the one clock of this loop that is
 not padded flat, because the finish is performed once and no induction has to add up a
-sequence of its costs. `clock_pins` pins both shapes and `exhaustClock N zeros ≤
-roundClock N`. `totalClock N zeros = loopClock N zeros + exhaustClock N zeros` counts the
+sequence of its costs. `clock_pins` pins both shapes and, under `9+zeros ≤ N`,
+`exhaustClock N zeros ≤ roundClock N`; that guard is a hypothesis of the conjunct and not
+editorial caution — at `N = 0`, `zeros = 100` the finish costs `102` while `roundClock 0`
+truncates to `0`. `totalClock N zeros = loopClock N zeros + exhaustClock N zeros` counts the
 G2p-e rounds and this finish only: not one step that `startConfig` embeds, so it clocks no
 composed pipeline.
 
@@ -87,7 +89,10 @@ Deferred, and deliberately not claimed: the decrement of the register from `n+1`
 every connection to `contentHeader?` or a parsed header value, any pnp4 bridge, a
 footprint/budget theorem, every converse — nothing says that `qDone` at `totalClock N
 zeros`, or any endpoint cell, implies anything about `zeros` — first arrival measured from
-`startConfig`, the degenerate widths `zeros ≤ 1` (`zeros = 2` is covered, with
+`startConfig`, the degenerate widths (`zeros = 0` is excluded from `exhaust_schedule`,
+`exhaust_generic` and `exhaust_strict` by their `1 ≤ zeros` premise, which the tape-shape
+theorem `finishTape_pins` does not carry; `zeros = 1` satisfies those three but is produced
+by nothing here, since `payload_exhausted` needs `2 ≤ zeros`; `zeros = 2` is covered, with
 `loopClock N 2 = 0` making `payload_exhausted` the finish applied directly to the retagged
 foundation endpoint), and a malformed-gamma branch. `qDone` is `machine.accept` of a
 machine started here from a phase-local retag of an actual prior run rather than from
@@ -192,8 +197,10 @@ the gamma zero field — is discharged by the G2p-f slice above, together with a
 first-arrival/strictness direction and an all-times clamp for that phase (both available
 only because `qDone` absorbs, which `qLoop` does not). The loop deadline, the decrement
 from `n+1` to `n`, a footprint/budget theorem and every converse still stand, and G2p-f
-adds no room premise of its own: it inherits this slice's `zeros ≤ a+B` and still does not
-show it necessary.
+adds no room premise of its own: it inherits this slice's `zeros ≤ a+B`, and its
+`payload_exhausted` does claim that room *sufficient* for a complete loop with the finish
+included, so the sentence above — that nothing claims this to be the room a *complete* loop
+needs — now holds of *necessity* only, which no footprint theorem establishes.
 
 **Part A G2p-d round, first remaining payload digit (infrastructure only).** New
 pnp3 module `Complexity.Uniform.V1.FixedGammaTargetPayloadRound`: one fixed
@@ -279,12 +286,16 @@ connected to `contentHeader?` or to any parsed header value and no pnp4 bridge
 exists for this module. The public `startConfig` at `zeros = 2` can follow exhaustion
 through `qFin` to `qDone`, but `zeros ≤ 2` and exhaustion remain outside the proved
 theorem surface; `qDone` is not language acceptance. Nothing here is P-vs-NP mainline progress.
-Two of those deferred items — the iteration of this round and the complete target
-register — are discharged by the G2p-e slice above. A third moves rather than closes:
-the premise `N+1+zeros < tapeLength (pairLength a m) B` recorded here as assumed
-nowhere is now assumed and characterized (`zeros ≤ a+B`), and it is sufficient for
-every round G2p-e iterates; whether a *complete* loop, exhaustion finish included,
-needs exactly that much is still open. The rest still stand.
+Three of those deferred items are discharged above: the iteration of this round and the
+complete target register by G2p-e, and the exhaustion finish that restores the gamma zero
+field by G2p-f. A fourth moves rather than closes: the premise
+`N+1+zeros < tapeLength (pairLength a m) B` recorded here as assumed nowhere is now
+assumed and characterized (`zeros ≤ a+B`), and G2p-f's `payload_exhausted` proves it
+*sufficient* for a complete loop with the exhaustion finish included; whether that much
+is *necessary* is still open, there being no footprint theorem. The rest still stand,
+including the two items G2p-f discharges for its own phase only: the
+first-arrival/strictness direction and the all-times clamp hold for the finish, where
+`qDone` absorbs, and not for this round, whose endpoint sits in the non-absorbing `qLoop`.
 
 **Part A G2p-d loop markers, foundation slice (infrastructure only).** New pnp3
 module `Complexity.Uniform.V1.FixedGammaTargetPayloadLoopFoundation`: one fixed

@@ -23,12 +23,16 @@ composes with G2p-e into one exact run from the landed `startConfig` at
 
 Not here and not available to pin: the decrement from `n+1` digits to `n`, the completion
 of the register (that is G2p-e's; this slice only preserves it), any reading of the register
-as a number or any claim that a truncated payload's virtual `false` digits are its value, any `contentHeader?` or parsed header value, any pnp4 bridge, a
-footprint/budget theorem (so no room premise is shown necessary), any converse, first
-arrival measured from `startConfig` rather than from the `r = zeros` configuration, the
-degenerate widths `zeros ≤ 1`, and any language statement — `qDone` is an internal control
-tag of a machine started here from a phase-local retag of an actual prior run, so it is
-neither halting of a composed machine nor language acceptance. -/
+as a number or any claim that a truncated payload's virtual `false` digits are its value,
+any `contentHeader?` or parsed header value, any pnp4 bridge, a footprint/budget theorem (so
+no room premise is shown necessary), any converse, first arrival measured from `startConfig`
+rather than from the `r = zeros` configuration, the degenerate widths (`zeros = 0` is
+excluded from `check_exhaust_schedule`, `check_exhaust_generic` and `check_exhaust_strict` by
+their `1 ≤ zeros` premise, which the tape-shape wrapper `check_finishTape_pins` does not
+carry; `zeros = 1` satisfies those three but is produced by nothing here, since
+`check_payload_exhausted` needs `2 ≤ zeros`), and any language statement — `qDone` is an
+internal control tag of a machine started here from a phase-local retag of an actual prior
+run, so it is neither halting of a composed machine nor language acceptance. -/
 
 namespace Pnp3.Tests.UniformV1FixedGammaTargetPayloadExhaustionSurfaceTests
 

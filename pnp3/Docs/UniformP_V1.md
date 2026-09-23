@@ -1014,14 +1014,18 @@ acceptance.  Clock composition, the fixed parser,
 the checks, advice freedom, `NP` membership and `ContentVerifierBridge` are out of
 scope.  It is infrastructure, not P-vs-NP mainline progress.
 
-Two of those deferred items are discharged by the Part A G2p-e slice below: the
-iteration of the round and the complete target register.  A third moves rather than
+Three of those deferred items are discharged below: the iteration of the round and the
+complete target register by the Part A G2p-e slice, and the exhaustion finish that
+restores the gamma zero field by the Part A G2p-f slice.  A fourth moves rather than
 closes: the premise `N+1+zeros < tapeLength (pairLength a m) B` recorded above as
-assumed nowhere is now assumed and characterized (`zeros <= a+B`), and it is
-sufficient for every round G2p-e iterates, but whether a *complete* loop, exhaustion
-finish included, needs exactly that much is still open.  The rest -- the exhaustion
-finish, the loop deadline, strictness, the decrement from `n+1` to `n`, the all-times
-package, and every header/pnp4 connection -- still stand.
+assumed nowhere is now assumed and characterized (`zeros <= a+B`), and G2p-f's
+`payload_exhausted` proves it *sufficient* for a complete loop with the exhaustion
+finish included; whether that much is *necessary* is still open, there being no
+footprint theorem.  The rest -- the loop deadline, the decrement from `n+1` to `n`, the
+footprint/budget half of the all-times package, and every header/pnp4 connection --
+still stand, and so does strictness for the round itself: G2p-f's first-arrival
+direction and all-times clamp hold for the finish, where `qDone` absorbs, and not for a
+round endpoint sitting in the non-absorbing `qLoop`.
 
 The Part A G2p-e `FixedGammaTargetPayloadIteration` adds **no new machine**.  The round
 machine above re-enters `qLoop` on the new walking terminator, which is exactly the
@@ -1136,7 +1140,9 @@ all-times clamp/footprint/budget package, and every converse.  The exhaustion
 finish, the first-arrival direction and the all-times clamp are discharged for that phase by
 the G2p-f slice below (the clamp only because `qDone` absorbs, which `qLoop` does not); the
 loop deadline, the decrement from `n+1` to `n`, the footprint/budget half and every converse
-still stand.  `zeros = 2` is covered
+still stand.  G2p-f adds no room premise of its own, and its `payload_exhausted` does claim
+this slice's `zeros <= a+B` *sufficient* for a complete loop with the finish included, so the
+paragraph above reserving that question holds only for *necessity*.  `zeros = 2` is covered
 only degenerately, since `loopClock N 2 = 0` makes `register_complete` a restatement of
 the retagged foundation endpoint `startConfig`, and `zeros <= 1` is excluded by the
 `2 <= zeros` premise.  No pnp4 bridge
@@ -1160,10 +1166,11 @@ endpoint -- `qLoop` leaves the walking terminator into `qCntL`, `qCntL` scans le
 blank trail of consumed sources, and the first non-blank it meets is cell `7+zeros`.  At every
 index `r < zeros` that cell held an unconsumed gamma zero, `some false`, and the same `qCntL`
 row sent the round on through `qCntZ` to mark it; at `r = zeros` it is a consumed mark,
-`some true`, and the `qCntL` row for `some true` -- the row the round slices proved goes
-unexecuted over their own bounded segments -- sends the machine into `qFin` instead.  The rule
-reads one tape cell and nothing else: no width, digit index, address, counter value, proof
-term, advice or producer mark occurs in control.
+`some true`, and the `qCntL` row for `some true` -- the row the round slices leave unexecuted
+over their own bounded segments, which their proofs establish by direct inspection of the
+table trace rather than by any exported theorem -- sends the machine into `qFin` instead.
+The rule reads one tape cell and nothing else: no width, digit index, address, counter value,
+proof term, advice or producer mark occurs in control.
 
 `qFin` then walks back left writing `some false` over every mark, so the field `[8, 7+zeros]`
 ends holding exactly what the incoming content tape holds there, and the sweep stops of its own
@@ -1186,8 +1193,10 @@ does not have.  The cost is exactly `exhaustClock N zeros = termWalk N zeros + z
 blank-trail steps, the step that fires the rule, `zeros-1` further unmarking steps, and the
 halt.  That clock is neither length-only nor shape-independent -- `2*zeros+2` on a physically
 present payload, `N-7` on a truncated one, both pinned by `clock_pins`, which also pins
-`exhaustClock N zeros <= roundClock N`.  It is the one clock of this loop that is not padded
-flat: a round had to be, because `rounds_iterate` adds up a sequence of round costs and an
+`exhaustClock N zeros <= roundClock N` under the guard `9+zeros <= N`.  That guard is a
+hypothesis of the conjunct and not editorial caution: at `N = 0`, `zeros = 100` the finish
+costs `102` while `roundClock 0` truncates to `0`.  It is the one clock of this loop that is
+not padded flat: a round had to be, because `rounds_iterate` adds up a sequence of round costs and an
 `r`-dependent summand would have forced the induction to carry a sum, while the finish is
 performed once and nothing adds it up, so the round's `qVa`/`qVb`/`qVc` padding has no
 counterpart here.
@@ -1242,8 +1251,12 @@ Deferred: the decrement of the register from `n+1` digits to `n`, any reading of
 a *number* (`registerBit` gives content, not a value), every connection to `contentHeader?` or a
 parsed header value, any pnp4 bridge, a footprint/budget theorem, every converse -- nothing says
 that `qDone` at `totalClock N zeros`, or any endpoint cell, implies anything about `zeros` --
-first arrival measured from `startConfig`, the degenerate widths `zeros <= 1`, and a
-malformed-gamma branch.  `zeros = 2` is covered, with `loopClock N 2 = 0` making
+first arrival measured from `startConfig`, the degenerate widths, and a malformed-gamma
+branch.  Of those widths `zeros = 0` is excluded from `exhaust_schedule`, `exhaust_generic`
+and `exhaust_strict` by their `1 <= zeros` premise, which the tape-shape theorem
+`finishTape_pins` does not carry, while `zeros = 1` satisfies those three but is produced by
+nothing here, since `payload_exhausted` needs `2 <= zeros`.  `zeros = 2` is covered, with
+`loopClock N 2 = 0` making
 `payload_exhausted` the finish applied directly to the retagged foundation endpoint.  `qDone` is
 `machine.accept` of a machine started here from a phase-local retag of an actual prior run
 rather than from `initialConfig` on a raw pair input, so reaching it is neither halting of a

@@ -20,10 +20,11 @@ things, and this slice proves all three.
   over the blank trail, and the first non-blank it meets is cell `7 + zeros`.  At every
   index `r < zeros` that cell was an *unconsumed* gamma zero, `some false`, which is the
   branch the rounds took; at `r = zeros` it is a consumed mark, `some true`, and the
-  `qCntL` row for `some true` — the one the round slices proved goes unexecuted over their
-  own bounded segments — sends the machine into `qFin`.  The rule reads one tape cell and
-  nothing else: no width, digit index, address, counter value, proof term, advice, or
-  producer mark occurs in control.
+  `qCntL` row for `some true` — the row the round slices leave unexecuted over their own
+  bounded segments, by direct inspection of the table trace inside their proofs and not by
+  any theorem either of them exports — sends the machine into `qFin`.  The rule reads one
+  tape cell and nothing else: no width, digit index, address, counter value, proof term,
+  advice, or producer mark occurs in control.
 * The gamma zero field is restored.  `qFin` walks back left writing `some false` over every
   mark, so cells `[8, 7 + zeros]` end holding exactly what the incoming content tape holds
   there, and the sweep stops of its own accord on the tag cell `7`, which a matching tag
@@ -67,10 +68,13 @@ theorem is not, so none of the room premises is shown necessary), a converse —
 that `qDone` at `totalClock N zeros`, or any endpoint cell, implies anything about `zeros` —
 first arrival measured from `startConfig` rather than from the `r = zeros` configuration
 (the G2p-e rounds carry no strictness theorem, so `qDone`-freeness over the round segment is
-available only for the literal probe instances), the degenerate widths `zeros ≤ 1`, and a
-malformed-gamma branch.  Clock composition, the fixed parser, advice freedom, `NP`
-membership, and `ContentVerifierBridge` are out of scope: infrastructure, not P-vs-NP
-mainline progress. -/
+available only for the literal probe instances), the degenerate widths — `zeros = 0` is
+excluded from `exhaust_schedule`, `exhaust_generic` and `exhaust_strict` by their `1 ≤ zeros`
+premise, which the tape-shape theorem `finishTape_pins` does not carry, while `zeros = 1`
+satisfies those three but is produced by nothing here, `payload_exhausted` needing
+`2 ≤ zeros` — and a malformed-gamma branch.  Clock composition, the fixed parser, advice
+freedom, `NP` membership, and `ContentVerifierBridge` are out of scope: infrastructure, not
+P-vs-NP mainline progress. -/
 
 namespace Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadExhaustion
 
@@ -130,7 +134,10 @@ theorem machine_reused :
 
 /-- Closed forms of this slice's clocks and of the terminator advance, and the two source
 shapes the finish cost splits into: `2 * zeros + 2` when the payload is physically present,
-and `N - 7` when it is truncated.  The finish never costs more than one round. -/
+and `N - 7` when it is truncated.  Under `9 + zeros ≤ N` — the tag, the gamma zero field and
+the gamma terminator cell all fitting inside the content — the finish never costs more than
+one round.  That guard is a hypothesis of the last conjunct and not prose scaffolding: at
+`N = 0`, `zeros = 100` the finish costs `102` while `roundClock 0` truncates to `0`. -/
 theorem clock_pins (N zeros : Nat) :
     termWalk N zeros = walk N zeros zeros ∧
       exhaustClock N zeros = termWalk N zeros + zeros + 2 ∧

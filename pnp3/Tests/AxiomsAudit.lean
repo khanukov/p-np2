@@ -4969,13 +4969,14 @@ end DeprecatedAC0CompatibilityAxiomAudit
 -- `FixedGammaTargetPayloadRound.machine`, the same fixed 22-state/66-row table, and
 -- `machine_reused` pins that identity together with the five rows this phase executes.
 -- Write `N = a+m`.  At `r = zeros` every gamma zero carries a consumed-source mark, so the
--- `qCntL` row for `some true` -- the one the round slices proved goes unexecuted over their
--- own bounded segments -- fires the stopping rule into `qFin`; `qFin` sweeps the counter
--- field `[8, 7+zeros]` back to `some false` and halts on the tag cell `7`, which a matching
--- tag already holds as `some false`.  `exhaust_generic` is that run out of an ARBITRARY
--- configuration matching the `r = zeros` invariant, with NO room premise (the finish only
--- moves left from a head the hypothesis already places inside the tape), in exactly
--- `exhaustClock N zeros = termWalk N zeros + zeros + 2` steps.  That clock is NOT
+-- `qCntL` row for `some true` -- the row the round slices leave unexecuted over their own
+-- bounded segments, by direct inspection of the table trace inside their proofs rather than
+-- by any theorem either of them exports -- fires the stopping rule into `qFin`; `qFin`
+-- sweeps the counter field `[8, 7+zeros]` back to `some false` and halts on the tag cell
+-- `7`, which a matching tag already holds as `some false`.  `exhaust_generic` is that run
+-- out of an ARBITRARY configuration matching the `r = zeros` invariant, with NO room premise
+-- (the finish only moves left from a head the hypothesis already places inside the tape), in
+-- exactly `exhaustClock N zeros = termWalk N zeros + zeros + 2` steps.  That clock is NOT
 -- length-only: it depends on the decoded width and on the source shape
 -- (`termWalk N zeros = walk N zeros zeros`), being `2*zeros+2` on a physical payload and
 -- `N-7` on a truncated one.  `finishTape_pins` says what the endpoint tape is and is not:
@@ -5001,11 +5002,15 @@ end DeprecatedAC0CompatibilityAxiomAudit
 -- digits to `n`, the completion of the register (that is G2p-e's `register_complete`; the
 -- register conjunct of `payload_exhausted` is preservation, not completion), any reading of
 -- the register as a NUMBER or any claim that a truncated payload's virtual `false` digits are
--- its value, every `contentHeader?` or parsed header value, every pnp4 bridge, a footprint/budget theorem, every converse, first arrival
--- measured from `startConfig`, the degenerate widths `zeros <= 1`, and a malformed-gamma
+-- its value, every `contentHeader?` or parsed header value, every pnp4 bridge, a
+-- footprint/budget theorem, every converse, first arrival measured from `startConfig`, the
+-- degenerate widths (`zeros = 0` is excluded from `exhaust_schedule`, `exhaust_generic` and
+-- `exhaust_strict` by their `1 <= zeros` premise, which the tape-shape theorem
+-- `finishTape_pins` does not carry; `zeros = 1` satisfies those three but is produced by
+-- nothing here, since `payload_exhausted` needs `2 <= zeros`), and a malformed-gamma
 -- branch.  `qDone` is an internal control tag of a machine started here from a phase-local
--- retag of an actual prior run rather than from `initialConfig` on a raw pair input, so it is
--- neither halting of a composed machine nor language acceptance.
+-- retag of an actual prior run rather than from `initialConfig` on a raw pair input, so it
+-- is neither halting of a composed machine nor language acceptance.
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadExhaustion.termWalk
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadExhaustion.exhaustClock
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetPayloadExhaustion.totalClock

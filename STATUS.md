@@ -2,6 +2,104 @@
 
 Updated: 2026-09-23
 
+**Part A G2p-g, the exhausted register is the parsed target's digits (infrastructure
+only).** New pnp4 module
+`Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetPayloadExhaustionBridge`, the
+companion the G2p-f slice below left deferred. There is **no new machine and no new pnp3
+module**: the run is G2p-f's `payload_exhausted`, unchanged, and everything added is a
+statement about what its endpoint cells *are*. Write `N = a+m`. Five public theorems, all
+one-way out of a decoded `contentHeader? = some …` or out of a successful parse; no
+converse is stated anywhere.
+
+Three are parser-side: no machine, no tag and no clock occurs in any of them, and only
+`room_iff_target_bound` mentions the budget `B`, through the tape length.
+`exhaustion_register_digits` (one propositional hypothesis, a decoded header
+`contentHeader? (Fin.append x w) = some (n, consumed)`) produces the width `zeros` with
+`consumed = 2*zeros+1`, `2^zeros ≤ n+1 < 2^(zeros+1)`, and the **register equation**
+`registerBit x w zeros j = (n+1).testBit (zeros-j)` at *every* `j ≤ zeros` — the
+bootstrap's leading `true` at `j = 0` is the header's own leading digit, and each later
+`j` is the payload cell `8+zeros+j`. Two further conjuncts make "complete" precise. `n+1`
+has **no** bit above `zeros`, so the `zeros+1` register cells carry all of its digits and
+none is stored elsewhere. And for `1 ≤ j ≤ zeros` with `a+m ≤ 8+zeros+j` — the **virtual
+tail**, where the payload cell has left the physical word — the register digit is `false`
+*and* the parsed `(n+1).testBit (zeros-j)` is `false` too. That conjunct is the point of
+the slice. `registerBit` pads with `false` because the cell is not in the word (on
+`contentTape` it is blank); the decoder pads with a virtual zero because `contentHeader?`
+reads through `VirtualZeroTailReader`. Those are two different paddings, and this is where
+they are proved to agree, so a virtual `false` in a truncated register is *the parsed
+target's own digit* rather than the default G2p-f could only call content.
+`register_determines_target` (four hypotheses) adds uniqueness: any `v` whose bit
+`zeros-j` is the register digit `j` for every `j ≤ zeros` and which has no bit above
+`zeros` **is** `n+1`. Both premises are needed — without the second, `v + 2^(zeros+1)`
+would match every cell. This is arithmetic about the digits, not a decoding step any
+machine performs. `room_iff_target_bound` (two hypotheses) makes the room premise legible:
+on a decoded header `n+1 < 2^(a+B+1)`, `zeros ≤ a+B`, and the premise G2p-f inherits from
+the G2p-e iteration, `N+1+zeros < tapeLength (pairLength a m) B`, are the *same*
+condition.
+
+Two are machine-side, at G2p-f's own endpoint. `exhausted_register_header_value` (four
+hypotheses: matching tag, decoded header, `3 ≤ n`, and the room `n+1 < 2^(a+B+1)`): the
+landed G2p-d round machine run out of the landed `startConfig` for exactly
+`totalClock N zeros` steps is in `qDone` on the tag cell `7` with tape
+`finishTape B x w zeros`, every register cell `N+1+j`, `j ≤ zeros`, holds
+`some ((n+1).testBit (zeros-j))`, every virtual-tail cell holds `some false` together with
+the matching parsed `false`, those endpoint cells *pin* `n+1` among all values with no bit
+above `zeros`, the tag cell `7` with the gamma zero field `[8, 7+zeros]` is back to the
+incoming content tape, and the endpoint persists at every later time.
+`exhausted_register_parsed_target` (four hypotheses, for an arbitrary codec) replaces the
+header by a successful **dependent parse** `contentInput? codec (Fin.append x w) = some pr`
+and exports `pr.2.n = pr.1` — the target the parsed `PrefixInput` carries, which is the
+`pr.2.n` that `ContentAccepts` feeds to the search relation, is the outer Sigma index and
+the target a decoded `contentHeader?` *returns* — then restates the register, pinning
+conjunct included, in terms of `pr.2.n`. It re-exports every conjunct of the header form except the
+gamma zero field restoration, which is about the tape and not about the target.
+
+Three numbers stay apart. `pr.2.n` is the **actual parsed target**: the value a decoded
+`contentHeader?`, and the dependent parser after it, *returns* once the gamma convention has
+been applied — not a value the header stores. `n+1` is the **encoded gamma integer** that
+convention writes: the integer whose bits physically occur in the header and in the
+exhausted register, so that the leading digit is a `true` the decoder can find. The register
+holds the digits of `n+1`, *not* of `n`, and the decrement is performed by no machine here
+and is not claimed. `consumed = 2*zeros+1` is the header's
+**cell count**, a length convention that is not the target and never sits in the register;
+the parser's other length convention `treeMCSPPrefixM codec pr.1` occurs only in the type
+of `pr`.
+
+Room is carried, not derived. A decoded header does not imply it: `B` is free, and
+`room_iff_target_bound` reads it as `zeros ≤ a+B`, a condition on the `x` side and the
+budget. The surface probe `probe_exhausted_room_not_implied` makes that sharp — one
+twelve-cell word with a matching tag and the decoded header `(5, 5)`, hence `3 ≤ n`, split
+once as `a = 8, m = 4` and once as `a = 1, m = 11`, with the word identity of the two
+splits pinned as a conjunct; every reader here sees `Fin.append x w`, so both splits decode
+to the same header, but at `B = 0` room holds on the first and fails on the second. The
+probe states the tape form on the first split and refutes the outer two of the three
+equivalent forms on the second, which `room_iff_target_bound` makes all three. Room is
+therefore sufficient and used,
+never shown necessary: there is still no footprint theorem on the pnp3 side. Two further
+probes derive their cells from `exhausted_register_header_value` for every budget: header
+`(12, 7)` gives the wholly physical four-digit register `1101₂` at cells `16 … 19` with
+`totalClock 15 3 = 31`, and header `(5, 5)` gives `110₂` at cells `13 … 15` whose last
+digit is the virtual tail — endpoint cell `some false`, parsed `(5+1).testBit 0 = false` —
+with `totalClock 12 2 = 5`, the finish alone.
+
+Deferred, and deliberately not claimed: the decrement of `n+1` to `n`; reading the register
+as a number *on the tape* (the pinning conjunct is arithmetic about the digits found there,
+not a decoding step the control performs — no machine here executes `contentHeader?`,
+`contentInput?`, or any parser, and control reads a tape symbol and nothing else); every
+converse — nothing derives a header, a width, `2 ≤ zeros`, or room from `qDone`, from the
+endpoint tape, or from a digit at a register cell; a footprint or budget theorem; a
+malformed-gamma branch; first arrival measured from `startConfig`. The two machine theorems
+inherit G2p-f's exclusion of `zeros ≤ 1`, since on a decoded header `3 ≤ n` is exactly
+`2 ≤ zeros` (both directions follow from the exported bounds; only the direction used here
+is proved, as in G2p-c); the three parser-side theorems carry no width premise and do cover
+those widths. `zeros = 2` is admitted, where the G2p-e round count `zeros-2` is zero and
+the endpoint is the finish alone. `qDone` is an internal control tag of a phase whose
+`startConfig` retags an *actual* prior run, so reaching it is neither halting of a composed
+machine nor language acceptance, and `totalClock` counts no step that `startConfig` embeds,
+so it clocks no composed pipeline. Nothing here is a `ContentAccepts` statement. Clock
+composition, advice freedom, `NP` membership, `ContentVerifierBridge` and P-vs-NP mainline
+progress stay out of scope.
+
 **Part A G2p-f, the gamma payload exhaustion finish (infrastructure only).** New pnp3
 module `Complexity.Uniform.V1.FixedGammaTargetPayloadExhaustion`. Still **no new
 machine**: the landed G2p-d `FixedGammaTargetPayloadRound.machine` — the same fixed
@@ -88,12 +186,14 @@ cell `14` carrying the terminator's `some true` over an input `false`, and the r
 absorbing. `check_probe_inputs_valid` states separately that both words satisfy the
 tag/width hypotheses and, at `B = 0`, the room hypothesis.
 
-Deferred, and deliberately not claimed: the decrement of the register from `n+1` digits to
-`n`, any reading of the register as a *number* (`registerBit` gives content, not a value),
-every connection to `contentHeader?` or a parsed header value, any pnp4 bridge, a
-footprint/budget theorem, every converse — nothing says that `qDone` at `totalClock N
-zeros`, or any endpoint cell, implies anything about `zeros` — first arrival measured from
-`startConfig`, the degenerate widths (`zeros = 0` is excluded from `exhaust_schedule`,
+Two of this slice's deferrals are now discharged by the G2p-g bridge above, which supplies
+the pnp4 companion and ties every register cell — virtual tail included — to a digit of the
+decoded header's, and of the actual parsed input's, target; the rest stand as written.
+Deferred, and deliberately not claimed here: the decrement of the register from `n+1`
+digits to `n`, any reading of the register as a *number* (`registerBit` gives content, not
+a value), a footprint/budget theorem, every converse — nothing says that `qDone` at
+`totalClock N zeros`, or any endpoint cell, implies anything about `zeros` — first arrival
+measured from `startConfig`, the degenerate widths (`zeros = 0` is excluded from `exhaust_schedule`,
 `exhaust_generic` and `exhaust_strict` by their `1 ≤ zeros` premise, which the tape-shape
 theorem `finishTape_pins` does not carry; `zeros = 1` satisfies those three but is produced
 by nothing here, since `payload_exhausted` needs `2 ≤ zeros`; `zeros = 2` is covered, with

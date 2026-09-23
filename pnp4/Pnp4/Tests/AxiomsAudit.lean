@@ -55,6 +55,7 @@ import Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadDispatcherHeaderV
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTerminatorScratchBootstrapBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetFirstPayloadBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetSecondPayloadBridge
+import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetPayloadExhaustionBridge
 import Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic
 import Pnp4.Frontier.ContractExpansion.ContentCappedSizes
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
@@ -915,3 +916,14 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.secondPayload_positive_register
 #print axioms Pnp4.Frontier.ContractExpansion.secondPayload_width_one_register
 #print axioms Pnp4.Frontier.ContractExpansion.secondPayload_zero_width_register
+
+-- Part A G2p-g exhausted gamma payload register bridge.  One-way implications
+-- out of a decoded header, and out of a successful dependent parse, at the G2p-f
+-- endpoint `totalClock (a + m) zeros`; the matching named wrappers and the
+-- nonvacuity probes are audited where they are declared, in
+-- `Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`.
+#print axioms Pnp4.Frontier.ContractExpansion.exhaustion_register_digits
+#print axioms Pnp4.Frontier.ContractExpansion.register_determines_target
+#print axioms Pnp4.Frontier.ContractExpansion.room_iff_target_bound
+#print axioms Pnp4.Frontier.ContractExpansion.exhausted_register_header_value
+#print axioms Pnp4.Frontier.ContractExpansion.exhausted_register_parsed_target

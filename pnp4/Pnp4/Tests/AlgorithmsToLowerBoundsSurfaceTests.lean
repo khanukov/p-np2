@@ -65,6 +65,7 @@ import Pnp4.Frontier.ContractExpansion.ContentFixedGammaPayloadDispatcherHeaderV
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTerminatorScratchBootstrapBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetFirstPayloadBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetSecondPayloadBridge
+import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetPayloadExhaustionBridge
 import Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic
 import Pnp4.Frontier.ContractExpansion.ContentCappedSizes
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
@@ -5509,6 +5510,255 @@ theorem probe_secondPayload_width_two_physical_pair (B : Nat) :
 #print axioms Pnp4.Tests.probe_secondPayload_width_two_physical_pair
 
 end ContentFixedGammaTargetSecondPayloadBridgeSurface
+
+section ContentFixedGammaTargetPayloadExhaustionBridgeSurface
+
+open AlgorithmsToLowerBounds
+open Pnp3.Complexity.Uniform.V1
+open Pnp4.Frontier.ContractExpansion
+
+theorem check_exhaustion_register_digits {a m n consumed : Nat}
+    (x : Bitstring a) (w : Bitstring m)
+    (hheader : contentHeader? (Fin.append x w) = some (n, consumed)) :
+    ∃ zeros, FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros ∧
+      consumed = 2 * zeros + 1 ∧ 2 ^ zeros ≤ n + 1 ∧ n + 1 < 2 ^ (zeros + 1) ∧
+      (∀ j, j ≤ zeros →
+        FixedGammaTargetPayloadLoopFoundation.registerBit x w zeros j =
+          (n + 1).testBit (zeros - j)) ∧
+      (∀ b, zeros < b → (n + 1).testBit b = false) ∧
+      (∀ j, 1 ≤ j → j ≤ zeros → a + m ≤ 8 + zeros + j →
+        FixedGammaTargetPayloadLoopFoundation.registerBit x w zeros j = false ∧
+          (n + 1).testBit (zeros - j) = false) :=
+  exhaustion_register_digits x w hheader
+
+theorem check_register_determines_target {a m n consumed zeros v : Nat}
+    (x : Bitstring a) (w : Bitstring m)
+    (hheader : contentHeader? (Fin.append x w) = some (n, consumed))
+    (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros)
+    (hbits : ∀ j, j ≤ zeros →
+      v.testBit (zeros - j) = FixedGammaTargetPayloadLoopFoundation.registerBit x w zeros j)
+    (hhigh : ∀ b, zeros < b → v.testBit b = false) :
+    v = n + 1 :=
+  register_determines_target x w hheader hg hbits hhigh
+
+theorem check_room_iff_target_bound {a m B n consumed zeros : Nat}
+    (x : Bitstring a) (w : Bitstring m)
+    (hheader : contentHeader? (Fin.append x w) = some (n, consumed))
+    (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros) :
+    (n + 1 < 2 ^ (a + B + 1) ↔ zeros ≤ a + B) ∧
+      (zeros ≤ a + B ↔
+        a + m + 1 + zeros < tapeLength (PairEncoding.pairLength a m) B) :=
+  room_iff_target_bound x w hheader hg
+
+theorem check_exhausted_register_header_value {a m B n consumed : Nat}
+    (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
+    (hheader : contentHeader? (Fin.append x w) = some (n, consumed)) (hn : 3 ≤ n)
+    (hroom : n + 1 < 2 ^ (a + B + 1)) :
+    ∃ zeros, 2 ≤ zeros ∧ consumed = 2 * zeros + 1 ∧
+      2 ^ zeros ≤ n + 1 ∧ n + 1 < 2 ^ (zeros + 1) ∧
+      a + m + 1 + zeros < tapeLength (PairEncoding.pairLength a m) B ∧
+      let d := FixedGammaTargetPayloadRound.machine.run
+        (FixedGammaTargetPayloadExhaustion.totalClock (a + m) zeros)
+        (FixedGammaTargetPayloadRound.startConfig B x w)
+      d.state = FixedGammaTargetPayloadRound.qDone ∧ d.head.val = 7 ∧
+        d.tape = FixedGammaTargetPayloadExhaustion.finishTape B x w zeros ∧
+        (∀ j : Nat, j ≤ zeros → ∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B),
+          i.val = a + m + 1 + j → d.tape i = some ((n + 1).testBit (zeros - j))) ∧
+        (∀ j : Nat, 1 ≤ j → j ≤ zeros → a + m ≤ 8 + zeros + j →
+          (n + 1).testBit (zeros - j) = false ∧
+            ∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B),
+              i.val = a + m + 1 + j → d.tape i = some false) ∧
+        (∀ b : Nat, zeros < b → (n + 1).testBit b = false) ∧
+        (∀ v : Nat,
+          (∀ j : Nat, j ≤ zeros → ∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B),
+            i.val = a + m + 1 + j → d.tape i = some (v.testBit (zeros - j))) →
+          (∀ b : Nat, zeros < b → v.testBit b = false) → v = n + 1) ∧
+        (∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B), 7 ≤ i.val →
+          i.val < 8 + zeros →
+          d.tape i = FixedPairContentMarkerErase.contentTape B x w i) ∧
+        (∀ t, FixedGammaTargetPayloadExhaustion.totalClock (a + m) zeros ≤ t →
+          FixedGammaTargetPayloadRound.machine.run t
+            (FixedGammaTargetPayloadRound.startConfig B x w) = d) :=
+  exhausted_register_header_value x w htag hheader hn hroom
+
+theorem check_exhausted_register_parsed_target {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold) {a m B : Nat}
+    (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
+    {pr : Σ r : Nat,
+      PrefixInput
+        (Frontier.treeMCSPSearchProblem threshold
+          (Frontier.TreeMCSPSearchWitnessEncoding.ofCodec codec))
+        (treeMCSPPrefixM codec r)}
+    (hpr : contentInput? codec (Fin.append x w) = some pr) (hn : 3 ≤ pr.2.n)
+    (hroom : pr.2.n + 1 < 2 ^ (a + B + 1)) :
+    ∃ zeros, 2 ≤ zeros ∧ pr.2.n = pr.1 ∧
+      contentHeader? (Fin.append x w) = some (pr.2.n, 2 * zeros + 1) ∧
+      2 ^ zeros ≤ pr.2.n + 1 ∧ pr.2.n + 1 < 2 ^ (zeros + 1) ∧
+      a + m + 1 + zeros < tapeLength (PairEncoding.pairLength a m) B ∧
+      let d := FixedGammaTargetPayloadRound.machine.run
+        (FixedGammaTargetPayloadExhaustion.totalClock (a + m) zeros)
+        (FixedGammaTargetPayloadRound.startConfig B x w)
+      d.state = FixedGammaTargetPayloadRound.qDone ∧ d.head.val = 7 ∧
+        d.tape = FixedGammaTargetPayloadExhaustion.finishTape B x w zeros ∧
+        (∀ j : Nat, j ≤ zeros → ∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B),
+          i.val = a + m + 1 + j → d.tape i = some ((pr.2.n + 1).testBit (zeros - j))) ∧
+        (∀ j : Nat, 1 ≤ j → j ≤ zeros → a + m ≤ 8 + zeros + j →
+          (pr.2.n + 1).testBit (zeros - j) = false ∧
+            ∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B),
+              i.val = a + m + 1 + j → d.tape i = some false) ∧
+        (∀ b : Nat, zeros < b → (pr.2.n + 1).testBit b = false) ∧
+        (∀ v : Nat,
+          (∀ j : Nat, j ≤ zeros → ∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B),
+            i.val = a + m + 1 + j → d.tape i = some (v.testBit (zeros - j))) →
+          (∀ b : Nat, zeros < b → v.testBit b = false) → v = pr.2.n + 1) ∧
+        (∀ t, FixedGammaTargetPayloadExhaustion.totalClock (a + m) zeros ≤ t →
+          FixedGammaTargetPayloadRound.machine.run t
+            (FixedGammaTargetPayloadRound.startConfig B x w) = d) :=
+  exhausted_register_parsed_target codec x w htag hpr hn hroom
+
+/-- Gamma width three with the whole payload physically present: the gamma is
+`000 1` at cells `8 … 11` and the payload window `[12, 15)` holds `101₂`, so the
+decoded header is `(12, 7)` and the encoded gamma integer is `13 = 1101₂`. -/
+private def exhaustRegisterWidthThree : Bitstring 7 :=
+  ![false, false, false, true, true, false, true]
+
+example :
+    FixedContentTagGate.tagMatches
+        (Fin.append headerValueTag exhaustRegisterWidthThree) = true ∧
+      FixedContentGammaTerminator.gammaZeros?
+        (Fin.append headerValueTag exhaustRegisterWidthThree) = some 3 ∧
+      contentHeader? (Fin.append headerValueTag exhaustRegisterWidthThree) =
+        some (12, 7) := by
+  decide
+
+/-! The two probes below run the *actual* G2p-d round machine out of the landed
+`startConfig`, for every budget `B`.  Each derives its cells from
+`exhausted_register_header_value`, so it pins what that theorem gives and is not
+an independent machine reduction; in particular neither runs a parser.  The
+round counts named in their docstrings are narration: the only clock either
+probe pins is `totalClock`, by `rfl`. -/
+
+/-- Header `(12, 7)`: width three, so the exhausted register at cells `16 … 19`
+is the four digits `1101₂` of `12 + 1`, and the G2p-e loop performs
+`zeros - 2 = 1` round before the finish.  Every payload cell is physical here
+(the payload block `[12, 15)` lies inside the fifteen-cell word), so no digit of
+this register is virtual.  `totalClock 15 3 = 31` is pinned by `rfl`. -/
+theorem probe_exhausted_register_width_three (B : Nat) :
+    FixedGammaTargetPayloadExhaustion.totalClock (8 + 7) 3 = 31 ∧
+      let d := FixedGammaTargetPayloadRound.machine.run
+        (FixedGammaTargetPayloadExhaustion.totalClock (8 + 7) 3)
+        (FixedGammaTargetPayloadRound.startConfig B headerValueTag
+          exhaustRegisterWidthThree)
+      d.state = FixedGammaTargetPayloadRound.qDone ∧ d.head.val = 7 ∧
+        d.tape ⟨8 + 7 + 1, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
+          some true ∧
+        d.tape ⟨8 + 7 + 2, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
+          some true ∧
+        d.tape ⟨8 + 7 + 3, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
+          some false ∧
+        d.tape ⟨8 + 7 + 4, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
+          some true := by
+  have hpow : (2 : Nat) ^ 9 ≤ 2 ^ (8 + B + 1) := Nat.pow_le_pow_right (by omega) (by omega)
+  have h9 : (2 : Nat) ^ 9 = 512 := by norm_num
+  obtain ⟨zeros, -, hconsumed, -, -, -, hq, hh, -, hreg, -, -, -, -, -⟩ :=
+    exhausted_register_header_value (B := B) headerValueTag exhaustRegisterWidthThree
+      (by decide) (show contentHeader? _ = some (12, 7) by decide) (by omega) (by omega)
+  obtain rfl : zeros = 3 := by omega
+  refine ⟨rfl, hq, hh, ?_, ?_, ?_, ?_⟩
+  · rw [hreg 0 (by omega) _ (by rfl)]; decide
+  · rw [hreg 1 (by omega) _ (by rfl)]; decide
+  · rw [hreg 2 (by omega) _ (by rfl)]; decide
+  · rw [hreg 3 (by omega) _ (by rfl)]; decide
+
+/-- Header `(5, 5)`: width two on a word of length `12`, so of the payload block
+`[11, 13)` the cell `12` has already left the physical input.  The register at
+cells `13 … 15` is `110₂`, the digits of `5 + 1`, and its last digit is the
+**virtual tail**: the endpoint cell `15` holds `some false` because `registerBit`
+pads a payload cell outside the word with `false`, and the parsed digit
+`(5 + 1).testBit 0` is `false` because the decoder reads a virtual zero there.
+Both halves are the single `hvirt` conjunct of
+`exhausted_register_header_value`, which is what proves the two paddings agree.
+At width two the G2p-e round count `zeros - 2` is zero, so `totalClock 12 2 = 5`
+is the finish alone. -/
+theorem probe_exhausted_register_virtual_tail (B : Nat) :
+    FixedGammaTargetPayloadExhaustion.totalClock (8 + 4) 2 = 5 ∧
+      let d := FixedGammaTargetPayloadRound.machine.run
+        (FixedGammaTargetPayloadExhaustion.totalClock (8 + 4) 2)
+        (FixedGammaTargetPayloadRound.startConfig B headerValueTag
+          headerValueVirtualTailOne)
+      d.state = FixedGammaTargetPayloadRound.qDone ∧ d.head.val = 7 ∧
+        d.tape ⟨8 + 4 + 1, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
+          some true ∧
+        d.tape ⟨8 + 4 + 2, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
+          some true ∧
+        d.tape ⟨8 + 4 + 3, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
+          some false ∧
+        (5 + 1 : Nat).testBit 0 = false := by
+  have hpow : (2 : Nat) ^ 9 ≤ 2 ^ (8 + B + 1) := Nat.pow_le_pow_right (by omega) (by omega)
+  have h9 : (2 : Nat) ^ 9 = 512 := by norm_num
+  obtain ⟨zeros, -, hconsumed, -, -, -, hq, hh, -, hreg, hvirt, -, -, -, -⟩ :=
+    exhausted_register_header_value (B := B) headerValueTag headerValueVirtualTailOne
+      (by decide) (show contentHeader? _ = some (5, 5) by decide) (by omega) (by omega)
+  obtain rfl : zeros = 2 := by omega
+  refine ⟨rfl, hq, hh, ?_, ?_, ?_, ?_⟩
+  · rw [hreg 0 (by omega) _ (by rfl)]; decide
+  · rw [hreg 1 (by omega) _ (by rfl)]; decide
+  · exact (hvirt 2 (by omega) (by omega) (by omega)).2 _ (by rfl)
+  · exact (hvirt 2 (by omega) (by omega) (by omega)).1
+
+/-- The `a` half of the same twelve cells that `Fin.append headerValueTag
+headerValueVirtualTailOne` carries, re-split as `a = 1`, `m = 11` instead of
+`a = 8`, `m = 4`.  The probe below pins that identity rather than narrating it. -/
+private def exhaustRoomSplitX : Bitstring 1 := ![true]
+
+/-- The remaining eleven cells of that word. -/
+private def exhaustRoomSplitW : Bitstring 11 :=
+  ![false, true, true, false, false, true, false, false, false, true, true]
+
+/-- **Room is not implied by the decoded header.**  Every reader of this route sees
+`Fin.append x w`, so the split between `x` and `w` is invisible to the tag, the gamma
+and the header.  The first conjunct pins that the two splits below are literally the
+*same* twelve cells; the next two, that those cells decode to `(5, 5)` under either
+split, giving `3 ≤ n`; the third, that the re-split word still matches the tag.  Room,
+by contrast, is a condition on `a` and `B` rather than on `a + m`, so at `B = 0` it
+holds at `a = 8` and fails at `a = 1`.  Only the tape form is stated on the first
+split.  On the second the two failing conjuncts are the outer two of the three
+equivalent forms, and each is refuted *through* `room_iff_target_bound` — by deriving
+the middle form `zeros ≤ a + B` from it and contradicting `2 ≤ 1 + 0` — so all three
+forms fail together.  What fails is therefore the very premise the two machine theorems
+carry; those theorems are inapplicable to the second split, and no endpoint is claimed
+for it. -/
+theorem probe_exhausted_room_not_implied :
+    Fin.append exhaustRoomSplitX exhaustRoomSplitW =
+        Fin.append headerValueTag headerValueVirtualTailOne ∧
+      contentHeader? (Fin.append headerValueTag headerValueVirtualTailOne) = some (5, 5) ∧
+      contentHeader? (Fin.append exhaustRoomSplitX exhaustRoomSplitW) = some (5, 5) ∧
+      FixedContentTagGate.tagMatches
+        (Fin.append exhaustRoomSplitX exhaustRoomSplitW) = true ∧
+      3 ≤ 5 ∧
+      8 + 4 + 1 + 2 < tapeLength (PairEncoding.pairLength 8 4) 0 ∧
+      ¬ (5 + 1 < 2 ^ (1 + 0 + 1)) ∧
+      ¬ (1 + 11 + 1 + 2 < tapeLength (PairEncoding.pairLength 1 11) 0) := by
+  have hiff := check_room_iff_target_bound (B := 0) exhaustRoomSplitX exhaustRoomSplitW
+    (show contentHeader? _ = some (5, 5) by decide)
+    (show FixedContentGammaTerminator.gammaZeros? _ = some 2 by decide)
+  refine ⟨by decide, by decide, by decide, by decide, by omega, ?_, fun h => ?_, fun h => ?_⟩
+  · unfold tapeLength PairEncoding.pairLength; omega
+  · have := hiff.1.1 h; omega
+  · have := hiff.2.2 h; omega
+
+#print axioms Pnp4.Tests.check_exhaustion_register_digits
+#print axioms Pnp4.Tests.check_register_determines_target
+#print axioms Pnp4.Tests.check_room_iff_target_bound
+#print axioms Pnp4.Tests.check_exhausted_register_header_value
+#print axioms Pnp4.Tests.check_exhausted_register_parsed_target
+#print axioms Pnp4.Tests.probe_exhausted_register_width_three
+#print axioms Pnp4.Tests.probe_exhausted_register_virtual_tail
+#print axioms Pnp4.Tests.probe_exhausted_room_not_implied
+
+end ContentFixedGammaTargetPayloadExhaustionBridgeSurface
 
 section ContentCappedArithmeticSurface
 

@@ -2,6 +2,97 @@
 
 Updated: 2026-09-24
 
+**Part A G2v + G2w-a, the countdown drains on the parsed target, under a semantic linear cap
+(infrastructure only).**
+Two new pnp4 modules, `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetUnaryCountdownIterationBridge`
+and `Pnp4.Frontier.ContractExpansion.ContentCountdownLinearCap`. There is **no new machine, no new
+state, no new table row and no new pnp3 module**: every step is G2s-a's fixed 11-state, 33-row table,
+run for longer by G2u. Write `N = a+m` and `d = borrow x w zeros`. Eight public theorems, all
+one-way.
+
+G2v is to G2u exactly what G2t was to G2s-a: the *value*. G2u's `register_drained` is stated for a
+universally quantified `v` and supplies none — its own probes use the hand-picked literals `24` and
+`3` — and on a decoded header the G2r bridge already proves both digit facts for the decoded target
+`n`, so `v := n` is the whole content of the slice.
+
+* `countdown_width_eq_gammaZeros` (two hypotheses, a decoded header and a decoded width): the
+  **physical** width `FixedContentGammaTerminator.gammaZeros?` reads off the word equals the
+  **canonical** `gammaZeros n = bitLength (n+1) - 1` the pnp4 layout computes from the decoded
+  target, and the adjacent-power bounds hold at that common value. The proof is exponent uniqueness
+  on `2^zeros <= n+1 < 2^(zeros+1)`; both widths are already functions of data, so this is an
+  equation between two computed quantities and **not** extraction of a value from a proof.
+* `countdown_drain_cap_iff_machine_room` (the same two): the explicit lane cap `n <= F` together
+  with `gammaZeros n + 2 + F <= a+B` is G2u's `lane_room` premise once the width is recovered — the
+  same condition as the physical `zeros+2+F <= a+B` and as the tape form
+  `a+m+3+zeros+F < tapeLength (pairLength a m) B` — and cap plus room **imply** G2t's first-round
+  room `2*(n+1) < 2^(a+B)`. The converse is **not** stated and is false in general;
+  `probe_countdown_drain_room_strictly_stronger` exhibits a literal split where G2t's room holds and
+  this one fails at *every* `F` the cap admits.
+* `countdown_drained_header_value` (five: matching tag, decoded header, `3 <= n`, the cap, the
+  room): out of the landed `startConfig` the machine *enters* `qLoop` on the separator blank
+  `N+2+zeros` after exactly `d+2` steps with the register holding `n` cell by cell, and after
+  exactly `fullClock zeros d n` steps is in the absorbing `qDone` there with tape
+  `loopTape B x w zeros 0 n` — every register cell `some false`, exactly `n` marks filling
+  `[N+3+zeros, N+3+zeros+n)`, blanks from `N+3+zeros+n` on — and that endpoint persists. `3 <= n`
+  reaches `2 <= zeros`; G2u's drain needs no positivity, so unlike G2t nothing here uses `1 <= n`.
+* `countdown_drained_parsed_target` (five, with the header replaced by a successful
+  `contentInput? codec (Fin.append x w) = some pr` for an arbitrary codec, no monotonicity and no
+  injectivity premise): `pr.2.n = pr.1`, the decoded header and width, and the same endpoint at the
+  actual parsed target.
+
+G2w-a supplies a *value* for `F`, as semantics rather than as parsing. No theorem bounds the target
+from parser success alone, and none is claimed: the source is virtually zero-padded, so the strict
+parser's returned target is tied to no bound on the physical length. Content *acceptance* does bound
+it, at the concrete `treeCircuitWitnessCodec (thresholdPoly k)`.
+
+* `contentSemanticAccepts_parsed_target_le_length` (two: the successful parse and the Boolean
+  acceptance; the exponent `k` is data): `pr.2.n <= N` for `z : PrefixBitVec N`. Two branches. If
+  `treeMCSPPrefixM codec pr.2.n <= N`, the layout bound `instanceSize_lt_treeMCSPPrefixM` already
+  places `pr.2.n` below it. Otherwise FEAS-0's
+  `contentAccepts_parsed_tableLen_le_of_header_target_wide` turns acceptance into
+  `tableLen pr.2.n = 2^pr.2.n <= N`, and `pr.2.n < 2^pr.2.n` finishes;
+  `contentInput?_target_eq_contentHeader` is what lets the wide case be read at the parsed target
+  rather than the header's. Neither branch needs `0 < N`.
+* `contentSemanticAccepts_eq_false_of_length_lt_parsed_target` is the contrapositive in the form a
+  routing phase would consume: a successful parse with `N < pr.2.n` makes the frozen Boolean checker
+  **reject**. It is a statement about `contentSemanticAccepts` and about nothing else.
+* `contentSemanticAccepts_parsed_target_le_pair_length` is the same bound at the split
+  `z := Fin.append x w`, where `N` is the compacted content length `a+m` the fixed-phase tape ABI is
+  laid out against.
+* `countdown_drained_accepted_content` takes it: on an accepted word whose parse succeeds, G2v's
+  drain runs at `F := a+m`, so the lane cap is **derived** from acceptance instead of assumed. The
+  room stays a hypothesis.
+
+Deferred and deliberately not claimed. The **fence**: `F` is a parameter of every G2v statement, the
+tape is the unchanged canonical `loopTape` — blank at `N+3+zeros+F` — and nothing here lays a cutoff
+cell, adds a `qOverflow` state or shows that any execution theorem survives an installed
+`some false` in the lane. The executed-fence requirement recorded in the G2s-a and G2u entries below
+stands unchanged: the lane is still uncapped *in the machine*, a target too large for the budget
+still runs `qRunEnd` off the end of the tape and sticks there, which is a timeout and therefore
+neither verdict, and G2w-a's bound does not change that — it identifies a cap value that is
+legitimate for accepted words, not a mechanism that enforces one. The **room** is carried and never
+derived — `B` is a free budget — and is sufficient and used, never shown necessary; G2u's
+`check_below_room_drain_probe` still exhibits a budget where it fails while the drain completes.
+**First arrival**: `qDone` absorbs, so the all-times conjunct is persistence and nothing more, and no
+theorem says `qDone` is entered for the first time at `fullClock zeros d n`. **Every converse**:
+nothing derives a header, a width, `2 <= zeros`, the cap, the room, the borrow length or a parsed
+target from `qDone`, from the endpoint tape or from a mark in the lane, and no endpoint-to-parse
+direction exists; on the G2w-a side nothing derives acceptance, a parse or a header from
+`pr.2.n <= N`, and a `false` verdict can equally come from a failed parse or a failed witness check.
+The more expensive `boundedContentCap` alternative — a polynomial lane derived from
+`boundedContentInput?` success rather than a linear one derived from acceptance — is documented in
+the G2w-a module and **not implemented**; `BoundedContentSemanticVerifier` is not imported. The
+degenerate widths `zeros <= 1` stay out of reach of the machine theorems, since `3 <= n` forces
+`2 <= zeros`; the two G2v parser-side theorems carry no width premise and cover them. The gamma
+leading-digit convention stays destroyed and the endpoint register is all `some false`. Also every
+malformed-gamma branch, parser execution, `accepts`, `AcceptsAt`, language membership, advice
+freedom, `NP` membership, `ContentVerifierBridge` and P-vs-NP mainline progress. The lane holds `n`
+**marks** — the tally is exactly as long as the decoded target, stated as a cell predicate, not as a
+claim that the machine re-encoded `n` in unary. `fullClock` counts this phase's steps alone, not one
+of the steps `startConfig` embeds and no clock of any earlier phase, so nothing here composes a
+pipeline clock. `qDone` is phase-local acceptance of a machine handed a retagged actual prior
+endpoint, not raw-input language acceptance. Infrastructure only.
+
 **Part A G2u, the countdown iterates and drains the register (infrastructure only).**
 New pnp3 module `Complexity.Uniform.V1.FixedGammaTargetUnaryCountdownIteration`, the iteration the
 G2s-a entry below deferred as G2s-c. There is **no new machine and no new table row**: every step is
@@ -63,8 +154,9 @@ machine, a register too large for the budget still runs `qRunEnd` off the end of
 there, which is a timeout and therefore neither verdict, and the `qRunEnd`-on-`some false` row stays
 pinned and unexercised. The **pnp4 parsed-target drain**, and with it every connection to
 `contentHeader?`, `contentInput?` or a parsed target: `v` is universally quantified here, the
-probes' `24` and `3` are hand-written literals, and no theorem of pnp3 produces either from a parse.
-Also every converse, first arrival — `qDone` absorbs, so every persistence conjunct is persistence
+probes' `24` and `3` are hand-written literals, and no theorem of pnp3 produces either from a parse
+— that companion has since landed separately, as the G2v entry above, which changed no declaration
+of this slice. Also every converse, first arrival — `qDone` absorbs, so every persistence conjunct is persistence
 and nothing more — any footprint or budget theorem, a malformed-gamma branch, parser execution,
 `accepts`, `AcceptsAt`, `ContentAccepts`, language membership, `ContentVerifierBridge` and P-vs-NP
 mainline progress. The gamma leading-digit convention stays destroyed. The lane holds `v` **marks**,
@@ -112,7 +204,8 @@ anything.
 Deferred and deliberately not claimed. The **iteration**: this bridge is one round and one only —
 nothing *here* composes rounds or states a clock beyond `firstClock zeros d`, which counts this
 phase's steps alone, and the pnp3 iteration landed later as G2u above is not carried across to a
-parsed target by anything in this bridge. **Persistence**: `qLoop` is not terminal, so unlike G2r's
+parsed target by anything in this bridge — the G2v entry above is the bridge that does it, and it
+changed no declaration of this one. **Persistence**: `qLoop` is not terminal, so unlike G2r's
 `qDone` these endpoints hold at
 exactly their stated time and there is no all-times conjunct, no deadline and no clamp. The
 **fence**: the room allocates the *first* lane cell and is not a bound on the countdown; a target

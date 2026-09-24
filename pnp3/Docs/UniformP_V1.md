@@ -1667,3 +1667,16 @@ neither halting of a composed machine nor raw-input language acceptance, and the
 phase alone -- not one of the steps `startConfig` embeds.  Clock composition with earlier phases,
 the fixed parser, the checks, advice freedom, `NP` membership and `ContentVerifierBridge` are out of
 scope.  It is infrastructure, not P-vs-NP mainline progress.
+
+The pnp4 bridge deferred above has since landed, as G2v
+`Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetUnaryCountdownIterationBridge`.  It
+instantiates this slice's `v` at the decoded target `n`, using the G2r bridge's decremented register
+digits and `3<=n` for the `2<=zeros` this slice inherits, and it recovers the canonical width
+`gammaZeros n` from the physical one before rewriting `lane_room` at that width, so the whole drain
+runs on the actual parsed target.  Its companion
+`Pnp4.Frontier.ContractExpansion.ContentCountdownLinearCap` supplies a value for `F` from *content
+acceptance* -- not from parser success, which bounds no target -- so that `F := a+m` becomes
+legitimate for accepted words.  Neither changed a declaration here, neither added a machine, and
+**neither took the fence**: the requirement recorded above stands unchanged, the lane is still
+uncapped in this machine, no cutoff cell is laid anywhere, `F` is still a parameter of every
+statement, and this module still states nothing about a header, a parse or a decoded value.

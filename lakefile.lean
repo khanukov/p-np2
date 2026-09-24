@@ -191,10 +191,20 @@ lean_lib PnP3 where
     -- subtracts one more from the target register and lays one mark in the tally lane past it, in
     -- exactly 2*zeros+2*r+7 steps at r marks already laid; the all-false register exhausts to the
     -- absorbing qDone in 2*zeros+5 steps with the tape unchanged.  The lane is uncapped, so the
-    -- fence, the iteration and every header/pnp4 bridge stay deferred; qLoop does not absorb, so no
+    -- fence and every header/pnp4 bridge stay deferred by it; qLoop does not absorb, so no
     -- qLoop endpoint is a deadline, qDone is not language acceptance, and startConfig is a
     -- phase-local retag, not a composed raw-input run.
     Glob.one `Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown,
+    -- Part A G2u countdown iteration: no new machine and no new table row, only longer runs of
+    -- the G2s-a table.  k rounds cost exactly k*k+k*(2*zeros+2*r+6); taking k := v drains the
+    -- register to zero and the exhaustion then fires, so out of the landed startConfig the machine
+    -- reaches the absorbing qDone with an empty register and exactly v marks in the lane.  F is an
+    -- explicit lane-budget parameter with room zeros+2+F <= a+B, sufficient and never shown
+    -- necessary; these are canonical bounded execution lemmas, not execution with an installed
+    -- cutoff, nothing lays a fence cell and F = N is claimed nowhere.  The fence phase, every
+    -- header/pnp4 bridge, every converse and first arrival stay deferred; qDone is phase-local
+    -- acceptance of a retagged actual prior endpoint, not raw-input language acceptance.
+    Glob.one `Complexity.Uniform.V1.FixedGammaTargetUnaryCountdownIteration,
     -- Generic bounded cross-budget simulation for one fixed UniformTM.
     Glob.one `Complexity.Uniform.V1.BudgetTransport,
     -- Routed fixed-parser/verifier constructor and parser-prefix handoff.
@@ -786,6 +796,7 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1FixedGammaTargetPayloadExhaustionSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaTargetRegisterDecrementSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaTargetUnaryCountdownSurfaceTests,
+    Glob.one `Tests.UniformV1FixedGammaTargetUnaryCountdownIterationSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
     Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,

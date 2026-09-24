@@ -118,6 +118,7 @@ import Tests.UniformV1FixedGammaTargetPayloadIterationSurfaceTests
 import Tests.UniformV1FixedGammaTargetPayloadExhaustionSurfaceTests
 import Tests.UniformV1FixedGammaTargetRegisterDecrementSurfaceTests
 import Tests.UniformV1FixedGammaTargetUnaryCountdownSurfaceTests
+import Tests.UniformV1FixedGammaTargetUnaryCountdownIterationSurfaceTests
 import Tests.UniformV1BudgetTransportSurfaceTests
 import Tests.UniformV1CombinedMachineSurfaceTests
 import Tests.UniformV1CombinedCorrectnessSurfaceTests
@@ -5132,6 +5133,44 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetUnaryCountdownSurfaceTests.check_phys_probe
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetUnaryCountdownSurfaceTests.check_virt_probe
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetUnaryCountdownSurfaceTests.check_zero_probe
+
+-- Part A G2u (2026-09-24), infrastructure only: the G2s-a countdown round
+-- iterates and drains.  No new machine and no new table row -- `k` rounds cost
+-- exactly `k*k + k*(2*zeros + 2*r + 6)`, taking `k := v` empties the register and
+-- the landed exhaustion then fires, and out of the actual `startConfig` the
+-- machine reaches the absorbing `qDone` with an empty register and exactly `v`
+-- marks in the lane.  `F` is an explicit lane-budget parameter with room
+-- `zeros + 2 + F <= a + B`, sufficient and never shown necessary; these are
+-- canonical bounded execution lemmas, not execution with an installed cutoff,
+-- nothing lays a fence cell and `F = N` is claimed nowhere.  The fence phase,
+-- every header/pnp4 bridge, every converse and first arrival stay deferred;
+-- `qDone` is phase-local acceptance of a retagged actual prior endpoint, not
+-- raw-input language acceptance, and the clocks count this phase's steps alone.
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdownIteration.high_iff_lt
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdownIteration.roundsClock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdownIteration.drainClock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdownIteration.fullClock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdownIteration.rounds_clock_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdownIteration.lane_room
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdownIteration.iterate_generic
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdownIteration.drain_generic
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdownIteration.register_drained
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetUnaryCountdownIterationSurfaceTests.check_roundsClock
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetUnaryCountdownIterationSurfaceTests.check_drainClock
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetUnaryCountdownIterationSurfaceTests.check_fullClock
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetUnaryCountdownIterationSurfaceTests.check_high_iff_lt
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetUnaryCountdownIterationSurfaceTests.check_rounds_clock_pins
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetUnaryCountdownIterationSurfaceTests.check_lane_room
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetUnaryCountdownIterationSurfaceTests.check_iterate_generic
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetUnaryCountdownIterationSurfaceTests.check_drain_generic
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetUnaryCountdownIterationSurfaceTests.check_register_drained
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetUnaryCountdownIterationSurfaceTests.check_clock_values
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetUnaryCountdownIterationSurfaceTests.check_drain_probe
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetUnaryCountdownIterationSurfaceTests.check_drain_generic_instance
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetUnaryCountdownIterationSurfaceTests.check_start_iterate_probe
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetUnaryCountdownIterationSurfaceTests.check_below_room_drain_probe
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetUnaryCountdownIterationSurfaceTests.check_register_drained_instance
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetUnaryCountdownIterationSurfaceTests.check_register_drained_literal_endpoint
 
 -- S11 (2026-09-19), infrastructure only: all-request one-gate acceptance
 -- closure in main's transducer convention.  `accepts = r.spec.isSome`, so a

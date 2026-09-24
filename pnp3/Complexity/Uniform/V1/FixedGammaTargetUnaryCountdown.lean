@@ -39,7 +39,9 @@ entered for the *first* time at `zeroClock zeros`, and none is proved.
 
 Deferred, and deliberately not claimed.  The **iteration**: this slice runs one round out of an
 arbitrary `qLoop` configuration and one first round out of `startConfig`, and stops there; no
-theorem iterates the round, and none may until the fence below is settled.  The **fence**: the lane
+theorem *of this module* iterates the round.  G2u `FixedGammaTargetUnaryCountdownIteration` does,
+under an explicit lane-budget parameter `F`; it installs no cutoff either, so it leaves the fence
+below exactly as deferred as it is here.  The **fence**: the lane
 is unbounded here, so a register too large for the budget runs `qRunEnd` off the end of the tape and
 sticks there, which is a timeout and therefore neither verdict.  Capping the lane needs an executed
 `some false` at a length-derived offset, laid by its own phase inserted between G2q and this one;

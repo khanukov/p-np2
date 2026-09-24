@@ -1541,6 +1541,19 @@ that `F = N` is sound rests on `contentAccepts_parsed_tableLen_le_of_header_targ
 (`pnp4/Pnp4/Frontier/ContractExpansion/ContentTargetSizeBound.lean`), which is codec-specific and covers only the wide case; the plan
 must derive it or replace it before G2s-c opens.
 
+**Reconciled by G2u.**  Those are two requirements about two different objects, and they read as one
+policy only by accident of being written in one paragraph.  The iteration slice, landed below as
+G2u, satisfies the first literally and leaves the second untouched.  G2u's loop theorems take `F` as
+a parameter of the *statement* and carry the room premise `zeros+2+F <= a+B` verbatim; they run on
+the unchanged canonical `loopTape`, and no cell of that tape is a cutoff.  They are **canonical
+bounded execution lemmas**, not execution with an installed cutoff, and they are not claimed to
+survive one: an installed `some false` at `N+3+zeros+F` is not a `loopTape` -- `loopTape` is blank
+there -- so the G2u execution theorems would have to be re-proved against that tape, and nothing in G2u is
+evidence that it can be.  The executed-fence requirement, and with it the obligation to derive or
+replace the `F = N` justification, therefore stands unchanged and undischarged for the fenced
+machine a later phase must build; it is not a precondition of lemmas that install nothing.  G2u's
+production statements leave `F` abstract; its tests use literal budgets. No general `F = N` bound is claimed.
+
 Deferred by this module, and deliberately not claimed in it: the iteration itself; the fence phase;
 the pnp4 bridge G2s-b, and with it every connection to `contentHeader?`, to `contentInput?` or to a
 parsed target -- `v` is universally quantified here, the probes' `24` and `23` are hand-written
@@ -1566,3 +1579,91 @@ and it restates the room premise as `2*(n+1) < 2^(a+B)` on a decoded header.  It
 declaration here, added no machine, and took neither the iteration nor the fence: this module still
 states nothing about a header, a parse or a decoded value, and `v` is still universally quantified
 here.
+
+The Part A G2u `FixedGammaTargetUnaryCountdownIteration` is the iteration the G2s-a entry above
+deferred, and it adds **no machine and no table row**: every step it runs is G2s-a's fixed
+11-state, 33-row table, run for longer.  Write `N = a+m` and `S = N+2+zeros` for the separator
+blank.  Three public execution theorems and three clocks, all composing landed ones.
+
+`roundsClock zeros r k = k*k + k*(2*zeros+2*r+6)` is the closed form of
+`sum_{i<k} roundClock zeros (r+i)`, written so that no `Nat` subtraction occurs anywhere;
+`drainClock zeros r v = roundsClock zeros r v + zeroClock zeros` adds the exhaustion and
+`fullClock zeros d v = (d+2) + drainClock zeros 0 v` the entry.  `rounds_clock_pins` pins all three
+closed forms, the recurrence
+`roundsClock zeros r (k+1) = roundClock zeros r + roundsClock zeros (r+1) k` that drives the
+induction, `roundsClock zeros r 1 = roundClock zeros r`, and
+`fullClock zeros d 1 = firstClock zeros d + zeroClock zeros`, which is the exact statement that this
+slice's one-round case is G2s-a's `first_round` followed by G2s-a's exhaustion.  `high_iff_lt` is
+the one piece of new arithmetic: "`v` has no digit above `zeros`" and "`v < 2^(zeros+1)`" are one
+condition, which is what lets the decrement be taken `k` times without re-deriving the bound each
+round.
+
+`iterate_generic` runs `k` rounds out of an arbitrary `qLoop` configuration on `S` whose register
+holds `v` and whose lane holds `r` marks, in exactly `roundsClock zeros r k` steps, and leaves
+`qLoop` on `S` with the register holding `v-k` and `r+k` marks -- the same canonical `loopTape`, so
+its endpoint is again an entry point of the same theorem, which is the whole reason one induction
+suffices.  Two hypotheses are load-bearing and neither is decorative.  `k <= v` is what keeps every
+one of those rounds a subtraction rather than an exhaustion: a round that meets a register whose
+`zeros+1` cells are all `false` runs, by G2s-a's own `exhaust_generic`, to the absorbing `qDone`
+instead of borrowing, so at `0 < k` the conclusion fails in state and tape.  The width hypothesis
+`forall b, zeros < b -> v.testBit b = false` is what ties the abstract `v` to the `zeros+1` digits
+the register physically holds: at `zeros = 2` and `v = 8` those three cells hold `8.testBit 2`,
+`8.testBit 1` and `8.testBit 0`, all `false`, so `loopTape` there is literally the all-`false`
+register `exhaust_generic` consumes and the machine again exhausts.  Both failures land in `qDone`
+on the *same* separator cell, so neither is a head mismatch.
+
+`drain_generic` takes `k := v`, so the register reaches zero and G2s-a's `exhaust_generic` fires:
+after exactly `drainClock zeros r v` steps the machine is in `qDone` on `S` with an all-`false`
+register and `r+v` marks, and that endpoint persists.  Persistence is all the last conjunct claims:
+`qDone` absorbs, and no theorem says it is entered for the **first** time at `drainClock`.  There is
+no `1 <= v` hypothesis -- at `v = 0` no round runs and the exhaustion fires at once.
+
+`register_drained` is the concrete exact run: not an arbitrary configuration but the landed
+phase-local `startConfig B x w`, the *actual* G2q machine retagged at G2q's own length-only
+`deadline (a+m)`.  It re-derives G2s-a's `first_round` entry identification -- the portion that does
+not use positivity -- then composes `entry_generic` with `drain_generic` at `r = 0`.  Out of that
+configuration the machine *enters* `qLoop` on `S` after exactly `d+2` steps with the register
+holding `v`, and after exactly `fullClock zeros d v` steps is in `qDone` on that same cell with
+every register cell `some false`, exactly `v` marks in `[N+3+zeros, N+3+zeros+v)`, blanks beyond,
+and the endpoint persisting.  Its hypotheses are G2s-a's `first_round` hypotheses with `1 <= v`
+dropped and the room split into `v <= F` and `zeros+2+F <= a+B`.  `v = 0` is a legitimate case of
+`drain_generic`, but under `2 <= zeros` it cannot inhabit this theorem's digit hypotheses, so no
+concrete zero-target coverage is claimed.
+
+`lane_room` is the room the parameter `F` buys: from `r+k <= F` and `zeros+2+F <= a+B` every round
+of the iteration, and the exhaustion, have their own room, and one cell past the last mark is
+reserved besides.  It is **sufficient and used, never shown necessary**, and it is not even the
+tightest sufficient condition: it reserves exactly the cell an installed cutoff would occupy, so it
+can fail on a budget where the canonical unfenced drain still completes.  The surface test's
+`check_below_room_drain_probe` exhibits one -- at `a = m = zeros = 0`, `v = F = 1`, `B = 2` the
+condition reads `3 <= 2` and fails, while `drainClock 0 0 1 = 12` steps reach `qDone` on the
+separator blank with the register cleared and one mark laid.  No footprint or budget theorem exists
+here, so no room premise of any slice is shown necessary and none is claimed.
+
+The three execution probes independently reduce the countdown runs.
+`check_drain_probe` drains a hand-written five-digit register holding `3` at `zeros = 4`, `B = 1` in
+`drainClock 4 0 3 = 64` steps to `qDone` on `23` with `[18,22]` all `some false`, marks at `24`,
+`25`, `26` and a blank at `27`, with step `80` showing the clamp; `check_start_iterate_probe` runs
+two rounds out of the **actual** `startConfig 0 tag physWord` at `2 + roundsClock 4 0 2 = 34` steps
+and pins the second mark at `25`; `check_register_drained_instance` inhabits the capstone's seven
+hypotheses at the hand-written literal `24` with `F = 24`, `B = 22`, and
+`check_register_drained_literal_endpoint` derives the capstone's endpoint there at
+`fullClock 4 0 24 = 927`.
+
+Deferred by this slice, and deliberately not claimed: the **fence phase** itself -- the lane is
+still uncapped in the machine, a register too large for the budget still runs `qRunEnd` off the end
+of the tape and sticks, which is a timeout and so neither verdict, and the `qRunEnd`-on-`some false`
+row stays pinned and unexercised; any **pnp4 bridge**, and with it every connection to
+`contentHeader?`, to `contentInput?` or to a parsed target, since `v` is universally quantified here
+and no theorem of pnp3 supplies one; every **converse**; **first arrival**; a **footprint or budget
+theorem**; a malformed-gamma branch; and any restoration of the gamma leading-digit convention.
+The lane holds `v` **marks**, where `v` is the parameter whose
+register digits are *hypothesised* -- calling them the target in unary would be a claim about a
+decoded value, and no theorem here decodes a register, executes a parser or produces a `v` from a
+parse.  `qDone` is `machine.accept` of a machine started from a phase-local retag of an actual prior
+run rather than from `initialConfig` on a raw pair input, so reaching it is phase-local acceptance:
+neither halting of a composed machine nor raw-input language acceptance, and the module states no
+`accepts`, no `AcceptsAt` and no language membership.  Every clock here counts the steps of this
+phase alone -- not one of the steps `startConfig` embeds.  Clock composition with earlier phases,
+the fixed parser, the checks, advice freedom, `NP` membership and `ContentVerifierBridge` are out of
+scope.  It is infrastructure, not P-vs-NP mainline progress.

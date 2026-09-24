@@ -16,8 +16,9 @@ and the first round out of the phase-local `startConfig`, whose handoff time is 
 length-only `deadline (a+m)`.  `check_loopTape_pins` places every cell with no hypothesis at all,
 and `check_loopTape_zero_eq_decTape` identifies the entry tape with G2q's endpoint tape.
 
-Not here and not available to pin.  The **iteration**: no wrapper iterates the round, and none may
-before the fence below is settled in the family plan.  The **fence**: the lane is uncapped here, so
+Not here and not available to pin.  The **iteration**: no wrapper *here* iterates the round; the G2u
+test `UniformV1FixedGammaTargetUnaryCountdownIterationSurfaceTests` does, under an explicit
+lane-budget parameter `F`, and installs no cutoff.  The **fence**: the lane is uncapped here, so
 a register too large for the budget runs `qRunEnd` off the tape and sticks, which is a timeout and
 so neither verdict; the `qRunEnd`-on-`some false` row is pinned and deliberately unexercised.  Any
 **pnp4 bridge**, and with it every connection to `contentHeader?`, `contentInput?` or a parsed

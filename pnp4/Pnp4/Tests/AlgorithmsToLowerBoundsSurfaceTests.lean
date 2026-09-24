@@ -66,6 +66,7 @@ import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTerminatorScratchBootstr
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetFirstPayloadBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetSecondPayloadBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetPayloadExhaustionBridge
+import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetRegisterDecrementBridge
 import Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic
 import Pnp4.Frontier.ContractExpansion.ContentCappedSizes
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
@@ -5759,6 +5760,256 @@ theorem probe_exhausted_room_not_implied :
 #print axioms Pnp4.Tests.probe_exhausted_room_not_implied
 
 end ContentFixedGammaTargetPayloadExhaustionBridgeSurface
+
+section ContentFixedGammaTargetRegisterDecrementBridgeSurface
+
+open AlgorithmsToLowerBounds
+open Pnp3.Complexity.Uniform.V1
+open Pnp4.Frontier.ContractExpansion
+
+theorem check_decremented_register_digits {a m n consumed : Nat}
+    (x : Bitstring a) (w : Bitstring m)
+    (hheader : contentHeader? (Fin.append x w) = some (n, consumed)) :
+    ∃ zeros, FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros ∧
+      consumed = 2 * zeros + 1 ∧ 2 ^ zeros ≤ n + 1 ∧ n + 1 < 2 ^ (zeros + 1) ∧
+      FixedGammaTargetRegisterDecrement.borrow x w zeros ≤ zeros ∧
+      (∀ j, j ≤ zeros →
+        FixedGammaTargetRegisterDecrement.decBit x w zeros
+            (FixedGammaTargetRegisterDecrement.borrow x w zeros) j =
+          n.testBit (zeros - j)) ∧
+      (∀ b, zeros < b → n.testBit b = false) :=
+  decremented_register_digits x w hheader
+
+theorem check_decremented_register_determines_target {a m n consumed zeros v : Nat}
+    (x : Bitstring a) (w : Bitstring m)
+    (hheader : contentHeader? (Fin.append x w) = some (n, consumed))
+    (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros)
+    (hbits : ∀ j, j ≤ zeros →
+      v.testBit (zeros - j) = FixedGammaTargetRegisterDecrement.decBit x w zeros
+        (FixedGammaTargetRegisterDecrement.borrow x w zeros) j)
+    (hhigh : ∀ b, zeros < b → v.testBit b = false) :
+    v = n :=
+  decremented_register_determines_target x w hheader hg hbits hhigh
+
+theorem check_decrement_room_iff_target_bound {a m B n consumed zeros : Nat}
+    (x : Bitstring a) (w : Bitstring m)
+    (hheader : contentHeader? (Fin.append x w) = some (n, consumed))
+    (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros) :
+    (n + 1 < 2 ^ (a + B) ↔ zeros + 1 ≤ a + B) ∧
+      (zeros + 1 ≤ a + B ↔
+        a + m + 2 + zeros < tapeLength (PairEncoding.pairLength a m) B) ∧
+      (n + 1 < 2 ^ (a + B) → n + 1 < 2 ^ (a + B + 1)) ∧
+      (zeros = a + B → ¬ n + 1 < 2 ^ (a + B)) :=
+  decrement_room_iff_target_bound x w hheader hg
+
+theorem check_decremented_register_header_value {a m B n consumed : Nat}
+    (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
+    (hheader : contentHeader? (Fin.append x w) = some (n, consumed)) (hn : 3 ≤ n)
+    (hroom : n + 1 < 2 ^ (a + B)) :
+    ∃ zeros, 2 ≤ zeros ∧ consumed = 2 * zeros + 1 ∧
+      2 ^ zeros ≤ n + 1 ∧ n + 1 < 2 ^ (zeros + 1) ∧
+      a + m + 2 + zeros < tapeLength (PairEncoding.pairLength a m) B ∧
+      (∀ j : Nat, j ≤ zeros → ∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B),
+        i.val = a + m + 1 + j →
+        FixedGammaTargetPayloadExhaustion.finishTape B x w zeros i =
+          some ((n + 1).testBit (zeros - j))) ∧
+      let d := FixedGammaTargetRegisterDecrement.borrow x w zeros
+      let e := FixedGammaTargetRegisterDecrement.machine.run
+        (FixedGammaTargetRegisterDecrement.decClock (a + m) zeros d)
+        (FixedGammaTargetRegisterDecrement.startConfig B x w)
+      d ≤ zeros ∧ e.state = FixedGammaTargetRegisterDecrement.qDone ∧
+        e.head.val = a + m + 1 + zeros - d ∧
+        e.tape = FixedGammaTargetRegisterDecrement.decTape B x w zeros d ∧
+        (∀ j : Nat, j ≤ zeros → ∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B),
+          i.val = a + m + 1 + j → e.tape i = some (n.testBit (zeros - j))) ∧
+        (∀ b : Nat, zeros < b → n.testBit b = false) ∧
+        (∀ v : Nat,
+          (∀ j : Nat, j ≤ zeros → ∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B),
+            i.val = a + m + 1 + j → e.tape i = some (v.testBit (zeros - j))) →
+          (∀ b : Nat, zeros < b → v.testBit b = false) → v = n) ∧
+        (∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B),
+          i.val < a + m + 1 ∨ a + m + 1 + zeros < i.val →
+          e.tape i = FixedGammaTargetPayloadExhaustion.finishTape B x w zeros i) ∧
+        (∀ t, FixedGammaTargetRegisterDecrement.decClock (a + m) zeros d ≤ t →
+          FixedGammaTargetRegisterDecrement.machine.run t
+            (FixedGammaTargetRegisterDecrement.startConfig B x w) = e) :=
+  decremented_register_header_value x w htag hheader hn hroom
+
+theorem check_decremented_register_parsed_target {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold) {a m B : Nat}
+    (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
+    {pr : Σ r : Nat,
+      PrefixInput
+        (Frontier.treeMCSPSearchProblem threshold
+          (Frontier.TreeMCSPSearchWitnessEncoding.ofCodec codec))
+        (treeMCSPPrefixM codec r)}
+    (hpr : contentInput? codec (Fin.append x w) = some pr) (hn : 3 ≤ pr.2.n)
+    (hroom : pr.2.n + 1 < 2 ^ (a + B)) :
+    ∃ zeros, 2 ≤ zeros ∧ pr.2.n = pr.1 ∧
+      contentHeader? (Fin.append x w) = some (pr.2.n, 2 * zeros + 1) ∧
+      2 ^ zeros ≤ pr.2.n + 1 ∧ pr.2.n + 1 < 2 ^ (zeros + 1) ∧
+      a + m + 2 + zeros < tapeLength (PairEncoding.pairLength a m) B ∧
+      (∀ j : Nat, j ≤ zeros → ∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B),
+        i.val = a + m + 1 + j →
+        FixedGammaTargetPayloadExhaustion.finishTape B x w zeros i =
+          some ((pr.2.n + 1).testBit (zeros - j))) ∧
+      let d := FixedGammaTargetRegisterDecrement.borrow x w zeros
+      let e := FixedGammaTargetRegisterDecrement.machine.run
+        (FixedGammaTargetRegisterDecrement.decClock (a + m) zeros d)
+        (FixedGammaTargetRegisterDecrement.startConfig B x w)
+      d ≤ zeros ∧ e.state = FixedGammaTargetRegisterDecrement.qDone ∧
+        e.head.val = a + m + 1 + zeros - d ∧
+        e.tape = FixedGammaTargetRegisterDecrement.decTape B x w zeros d ∧
+        (∀ j : Nat, j ≤ zeros → ∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B),
+          i.val = a + m + 1 + j → e.tape i = some (pr.2.n.testBit (zeros - j))) ∧
+        (∀ b : Nat, zeros < b → pr.2.n.testBit b = false) ∧
+        (∀ v : Nat,
+          (∀ j : Nat, j ≤ zeros → ∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B),
+            i.val = a + m + 1 + j → e.tape i = some (v.testBit (zeros - j))) →
+          (∀ b : Nat, zeros < b → v.testBit b = false) → v = pr.2.n) ∧
+        (∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B),
+          i.val < a + m + 1 ∨ a + m + 1 + zeros < i.val →
+          e.tape i = FixedGammaTargetPayloadExhaustion.finishTape B x w zeros i) ∧
+        (∀ t, FixedGammaTargetRegisterDecrement.decClock (a + m) zeros d ≤ t →
+          FixedGammaTargetRegisterDecrement.machine.run t
+            (FixedGammaTargetRegisterDecrement.startConfig B x w) = e) :=
+  decremented_register_parsed_target codec x w htag hpr hn hroom
+
+/-! The next two probes run the *actual* G2q decrement machine out of the landed
+`startConfig`, for every budget `B`; the third, after them, runs no machine at all.
+Each of the two derives its cells from
+`decremented_register_header_value`, so it pins what that theorem gives and is not
+an independent machine reduction; in particular neither runs a parser, and neither
+reduces the `startConfig` the endpoint is measured from — that configuration retags
+an actual G2p-d run and no probe evaluates it.  Neither probe claims first arrival:
+the endpoint is the one at exactly `decClock`, and nothing here says `qDone` is not
+entered earlier.  `qDone` is an internal control tag of a phase whose `startConfig`
+retags an actual prior run, so no probe below states halting of a composed machine
+or language acceptance.  The borrow lengths are pinned separately, by `decide` on
+the register digits, and the clocks by `rfl`. -/
+
+/-- The G2p-g word, reused: its tag, width three and header `(12, 7)` are pinned by the
+`example` above, and `probe_exhausted_register_width_three` pins the incoming register at
+cells `16 … 19` as the four digits `1101₂` of `12 + 1`, so this probe pins only what the
+decrement adds.  That register's last digit is a `true`, so the borrow stops at once
+(`borrow = 0`), the machine clears that digit, and the endpoint register reads `1100₂` —
+the four digits of the decoded target `12` itself.  The head ends on the cell `19` it
+cleared, and `decClock 15 3 0 = 15` is pinned by `rfl`. -/
+theorem probe_decrement_register_width_three (B : Nat) :
+    FixedGammaTargetRegisterDecrement.borrow headerValueTag exhaustRegisterWidthThree 3 = 0 ∧
+      FixedGammaTargetRegisterDecrement.decClock (8 + 7) 3 0 = 15 ∧
+      let e := FixedGammaTargetRegisterDecrement.machine.run
+        (FixedGammaTargetRegisterDecrement.decClock (8 + 7) 3 0)
+        (FixedGammaTargetRegisterDecrement.startConfig B headerValueTag
+          exhaustRegisterWidthThree)
+      e.state = FixedGammaTargetRegisterDecrement.qDone ∧ e.head.val = 19 ∧
+        e.tape ⟨8 + 7 + 1, by unfold tapeLength PairEncoding.pairLength; omega⟩ = some true ∧
+        e.tape ⟨8 + 7 + 2, by unfold tapeLength PairEncoding.pairLength; omega⟩ = some true ∧
+        e.tape ⟨8 + 7 + 3, by unfold tapeLength PairEncoding.pairLength; omega⟩ = some false ∧
+        e.tape ⟨8 + 7 + 4, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
+          some false := by
+  have hb : FixedGammaTargetRegisterDecrement.borrow headerValueTag
+      exhaustRegisterWidthThree 3 = 0 := by decide
+  have hpow : (2 : Nat) ^ 8 ≤ 2 ^ (8 + B) := Nat.pow_le_pow_right (by omega) (by omega)
+  have h8 : (2 : Nat) ^ 8 = 256 := by norm_num
+  obtain ⟨zeros, -, hconsumed, -, -, -, -, -, hq, hh, -, hreg, -, -, -, -⟩ :=
+    decremented_register_header_value (B := B) headerValueTag exhaustRegisterWidthThree
+      (by decide) (show contentHeader? _ = some (12, 7) by decide) (by omega) (by omega)
+  obtain rfl : zeros = 3 := by omega
+  rw [hb] at hq hh hreg
+  refine ⟨hb, rfl, hq, by omega, ?_, ?_, ?_, ?_⟩
+  · rw [hreg 0 (by omega) _ (by rfl)]; decide
+  · rw [hreg 1 (by omega) _ (by rfl)]; decide
+  · rw [hreg 2 (by omega) _ (by rfl)]; decide
+  · rw [hreg 3 (by omega) _ (by rfl)]; decide
+
+/-- The gamma `000 1` followed by the payload `000`, so the header is `(7, 7)` and the
+incoming register holds exactly `2 ^ 3 = 8`, the digits `1000₂` of `7 + 1`. -/
+private def decrementClearedTopWord : Bitstring 7 :=
+  ![false, false, false, true, false, false, false]
+
+/-- **The decrement clears the leading digit, and nothing restores it.**  On the word
+above the borrow runs its whole length (`borrow = 3`): the three low digits are `false`
+and are flipped, the `true` that stops it is the bootstrap digit at the register's *top*
+cell `16`, and clearing it leaves the endpoint register reading `0111₂` — the four digits
+of the decoded target `7`, with a `false` on top.  The gamma convention writes `n + 1`
+precisely so that this leading digit is a `true`; after this phase it is not, and no
+theorem of this bridge says otherwise.  The head ends on the cell `16` it cleared, and
+`decClock 15 3 3 = 18` is pinned by `rfl`. -/
+theorem probe_decrement_cleared_top_digit (B : Nat) :
+    FixedContentTagGate.tagMatches
+        (Fin.append headerValueTag decrementClearedTopWord) = true ∧
+      contentHeader? (Fin.append headerValueTag decrementClearedTopWord) = some (7, 7) ∧
+      FixedGammaTargetRegisterDecrement.borrow headerValueTag decrementClearedTopWord 3 = 3 ∧
+      FixedGammaTargetRegisterDecrement.decClock (8 + 7) 3 3 = 18 ∧
+      let e := FixedGammaTargetRegisterDecrement.machine.run
+        (FixedGammaTargetRegisterDecrement.decClock (8 + 7) 3 3)
+        (FixedGammaTargetRegisterDecrement.startConfig B headerValueTag
+          decrementClearedTopWord)
+      e.state = FixedGammaTargetRegisterDecrement.qDone ∧ e.head.val = 16 ∧
+        e.tape ⟨8 + 7 + 1, by unfold tapeLength PairEncoding.pairLength; omega⟩ = some false ∧
+        e.tape ⟨8 + 7 + 2, by unfold tapeLength PairEncoding.pairLength; omega⟩ = some true ∧
+        e.tape ⟨8 + 7 + 3, by unfold tapeLength PairEncoding.pairLength; omega⟩ = some true ∧
+        e.tape ⟨8 + 7 + 4, by unfold tapeLength PairEncoding.pairLength; omega⟩ = some true := by
+  have hb : FixedGammaTargetRegisterDecrement.borrow headerValueTag
+      decrementClearedTopWord 3 = 3 := by decide
+  have hpow : (2 : Nat) ^ 8 ≤ 2 ^ (8 + B) := Nat.pow_le_pow_right (by omega) (by omega)
+  have h8 : (2 : Nat) ^ 8 = 256 := by norm_num
+  obtain ⟨zeros, -, hconsumed, -, -, -, -, -, hq, hh, -, hreg, -, -, -, -⟩ :=
+    decremented_register_header_value (B := B) headerValueTag decrementClearedTopWord
+      (by decide) (show contentHeader? _ = some (7, 7) by decide) (by omega) (by omega)
+  obtain rfl : zeros = 3 := by omega
+  rw [hb] at hq hh hreg
+  refine ⟨by decide, by decide, hb, rfl, hq, by omega, ?_, ?_, ?_, ?_⟩
+  · rw [hreg 0 (by omega) _ (by rfl)]; decide
+  · rw [hreg 1 (by omega) _ (by rfl)]; decide
+  · rw [hreg 2 (by omega) _ (by rfl)]; decide
+  · rw [hreg 3 (by omega) _ (by rfl)]; decide
+
+/-- **The extra cell is a real strengthening, at a literal word.**  The twelve cells of
+`probe_exhausted_room_not_implied`, re-split as `a = 1, m = 11`, decode to the header
+`(5, 5)` at width `zeros = 2`; at the budget `B = 1` that width is exactly `a + B`, the
+boundary case of `decrement_room_iff_target_bound`.  There G2p-g's room
+`n + 1 < 2 ^ (a + B + 1)` holds — that conjunct is arithmetic, `6 < 8` — while G2q's
+`n + 1 < 2 ^ (a + B)` fails, and with it both equivalent forms, the width bound
+`zeros + 1 ≤ a + B` and the tape form
+`a + m + 2 + zeros < tapeLength (pairLength a m) B`.  Each of the three failing conjuncts
+is refuted *through* `decrement_room_iff_target_bound`, by deriving `n + 1 < 2 ^ (a + B)`
+from it and contradicting the fourth conjunct at `zeros = a + B`, so the three fail
+together.  The one extra cell `qRegEnd` needs is therefore a condition G2p-g's premise does
+not supply: the two machine theorems of this bridge are inapplicable to this split and no
+endpoint is claimed for it, while every premise of G2p-g's own holds here — its room is the
+third conjunct, its header the first, `3 ≤ 5` is arithmetic, and the tag of these very cells
+under this very split is pinned by `probe_exhausted_room_not_implied` above. -/
+theorem probe_decrement_room_strictly_stronger :
+    contentHeader? (Fin.append exhaustRoomSplitX exhaustRoomSplitW) = some (5, 5) ∧
+      FixedContentGammaTerminator.gammaZeros?
+        (Fin.append exhaustRoomSplitX exhaustRoomSplitW) = some 2 ∧
+      5 + 1 < 2 ^ (1 + 1 + 1) ∧
+      ¬ (5 + 1 < 2 ^ (1 + 1)) ∧
+      ¬ (2 + 1 ≤ 1 + 1) ∧
+      ¬ (1 + 11 + 2 + 2 < tapeLength (PairEncoding.pairLength 1 11) 1) := by
+  have hiff := check_decrement_room_iff_target_bound (B := 1)
+    exhaustRoomSplitX exhaustRoomSplitW
+    (show contentHeader? _ = some (5, 5) by decide)
+    (show FixedContentGammaTerminator.gammaZeros? _ = some 2 by decide)
+  refine ⟨by decide, by decide, by norm_num, fun h => ?_, fun h => ?_, fun h => ?_⟩
+  · exact hiff.2.2.2 (by norm_num) h
+  · exact hiff.2.2.2 (by norm_num) (hiff.1.2 h)
+  · exact hiff.2.2.2 (by norm_num) (hiff.1.2 (hiff.2.1.2 h))
+
+#print axioms Pnp4.Tests.check_decremented_register_digits
+#print axioms Pnp4.Tests.check_decremented_register_determines_target
+#print axioms Pnp4.Tests.check_decrement_room_iff_target_bound
+#print axioms Pnp4.Tests.check_decremented_register_header_value
+#print axioms Pnp4.Tests.check_decremented_register_parsed_target
+#print axioms Pnp4.Tests.probe_decrement_register_width_three
+#print axioms Pnp4.Tests.probe_decrement_cleared_top_digit
+#print axioms Pnp4.Tests.probe_decrement_room_strictly_stronger
+
+end ContentFixedGammaTargetRegisterDecrementBridgeSurface
 
 section ContentCappedArithmeticSurface
 

@@ -960,6 +960,97 @@ both the split `a = 8, m = 4` and the split `a = 1, m = 11` and decoding to
 and fails on the second in the outer two of the three equivalent forms, hence by
 `room_iff_target_bound` in all three.
 
+`ContentFixedGammaTargetRegisterDecrementBridge.lean` is the Part A G2r
+infrastructure bridge, the pnp4 companion the pnp3 G2q slice deferred. It is
+registered immediately after G2p-g and imports G2p-g together with the pnp3
+`FixedGammaTargetRegisterDecrement`. It adds no machine: the run is G2q's
+`register_decremented`, unchanged. Its whole mathematical content is one
+instantiation. G2q's `decBit_sub_one` is arithmetic about an **arbitrary** `v`
+whose bit `zeros - j` is register digit `j` at every `j ≤ zeros` and which has no
+bit above `zeros`, and no pnp3 theorem supplies such a `v`; G2p-g's
+`exhaustion_register_digits` proves both facts for `v = n + 1` on a decoded
+header, and `v - 1` is then the decoded target `n`. Five public theorems, all
+one-way out of a decoded header or a successful parse; the first three mention no
+machine, no tag and no clock, and only `decrement_room_iff_target_bound` mentions
+the budget `B`, through the tape length. Write `d = borrow x w zeros`:
+
+* `decremented_register_digits` (one propositional hypothesis, a decoded header
+  `contentHeader? (Fin.append x w) = some (n, consumed)`): some `zeros` has
+  `gammaZeros? (Fin.append x w) = some zeros`, `consumed = 2 * zeros + 1`,
+  `2 ^ zeros ≤ n + 1 < 2 ^ (zeros + 1)`, `d ≤ zeros`, the **decremented register
+  equation** `FixedGammaTargetRegisterDecrement.decBit x w zeros d j =
+  n.testBit (zeros - j)` at every `j ≤ zeros`, and the completeness fact
+  `∀ b, zeros < b → n.testBit b = false`;
+* `decremented_register_determines_target` (four hypotheses: a decoded header, a
+  decoded width, the decremented digits of a `v`, and that `v` has no bit above
+  `zeros`): `v = n`;
+* `decrement_room_iff_target_bound` (two hypotheses: a decoded header and a
+  decoded width): `n + 1 < 2 ^ (a + B) ↔ zeros + 1 ≤ a + B`, and
+  `zeros + 1 ≤ a + B ↔ a + m + 2 + zeros < tapeLength (pairLength a m) B`, plus
+  `n + 1 < 2 ^ (a + B) → n + 1 < 2 ^ (a + B + 1)` and
+  `zeros = a + B → ¬ n + 1 < 2 ^ (a + B)`;
+* `decremented_register_header_value` (four hypotheses: matching tag, decoded
+  header, `3 ≤ n`, and `n + 1 < 2 ^ (a + B)`): some `zeros ≥ 2` has
+  `consumed = 2 * zeros + 1`, the bit-length bounds, the room in its tape form,
+  the incoming `finishTape B x w zeros` register cells reading
+  `some ((n + 1).testBit (zeros - j))`, and, at
+  `FixedGammaTargetRegisterDecrement.machine.run
+  (FixedGammaTargetRegisterDecrement.decClock (a + m) zeros d)
+  (FixedGammaTargetRegisterDecrement.startConfig B x w)`: `d ≤ zeros`, `qDone` at
+  head `a + m + 1 + zeros - d`, the tape `decTape B x w zeros d`,
+  `e.tape i = some (n.testBit (zeros - j))` at every `i.val = a + m + 1 + j` with
+  `j ≤ zeros`, the completeness fact, the uniqueness of `n` among values read off
+  those cells with no bit above `zeros`, every cell outside
+  `[a+m+1, a+m+1+zeros]` equal to the incoming `finishTape` cell, and persistence
+  at every later time;
+* `decremented_register_parsed_target` (four hypotheses: matching tag, a
+  successful `contentInput? codec (Fin.append x w) = some pr` for an arbitrary
+  codec, `3 ≤ pr.2.n`, and `pr.2.n + 1 < 2 ^ (a + B)`): `pr.2.n = pr.1`,
+  `contentHeader? (Fin.append x w) = some (pr.2.n, 2 * zeros + 1)`, and every
+  endpoint conjunct of the header form restated in `pr.2.n`.
+
+The room premise is G2q's, one cell more than G2p-f's because `qRegEnd` finds the
+register's right end by the blank past it and by nothing else. The third and
+fourth conjuncts of `decrement_room_iff_target_bound` place it exactly against
+G2p-g's: it implies that one, and at the boundary width `zeros = a + B` it fails.
+That G2p-g's can still hold at that boundary is not a conjunct of any theorem
+here; `probe_decrement_room_strictly_stronger` exhibits it at a literal word,
+which is what makes the strengthening strict rather than a restatement. It is carried, never
+derived — `B` is a free budget — and sufficient only; there is still no footprint
+theorem on the pnp3 side. The **gamma leading-digit convention is not restored**:
+the convention writes `n + 1` so that the leading digit is a `true` the decoder
+can find, and subtracting one destroys that, so when the incoming register is
+exactly `2 ^ zeros` the borrow clears digit `0` and the endpoint's top cell is
+`some false`. Nothing here re-establishes the invariant, and the decremented
+register is not claimed to be a re-encodable gamma payload. For the same reason
+G2p-g's virtual-tail conjunct has no analogue: a truncated payload's register cell
+is `some false` before the phase and the borrow may flip it to `some true`, so the
+only statement made about such a cell is the general one. Three numbers still stay
+apart, and which of them is on the tape is what changed: after this phase the
+register holds the digits of the decoded target `n`, where before it held those of
+the encoded gamma integer `n + 1`, while `consumed = 2 * zeros + 1` and
+`treeMCSPPrefixM codec pr.1` remain length conventions that never sit in a
+register cell. `decClock` is **phase-local**: `startConfig` retags an actual prior
+run and embeds the earlier phases' steps, which it does not count, and `qDone` is
+an internal control tag, so nothing here is halting of a composed machine,
+language acceptance, or a runtime. The module states no converse — nothing derives
+a header, a width, `2 ≤ zeros`, room, or the borrow length from `qDone`, the
+endpoint tape, or a digit at a register cell — and claims no parser execution, no
+reading of the register as a number on the tape (the uniqueness conjunct is
+arithmetic about the digits found there), no footprint or budget theorem, no
+malformed-gamma branch, no degenerate width `zeros ≤ 1` on the machine side, no
+`ContentAccepts`, no clock composition, no `ContentVerifierBridge`, and no P-vs-NP
+mainline result. It states **no first arrival** either: the two machine theorems
+give the endpoint at exactly `decClock (a + m) zeros d` and its persistence at
+every later time, and no conjunct of theirs says `qDone` is not entered earlier —
+minimality is G2q's `decrement_strict`, stated there for an arbitrary configuration
+of the G2p-f endpoint shape and neither instantiated nor restated here. Surface
+regressions derive, for every budget, the ordinary shape — header `(12, 7)`,
+`borrow = 0`, `decClock 15 3 0 = 15`, endpoint register `1100₂` at cells
+`16 … 19`, the digits of `12` — and the cleared-top-digit shape — header `(7, 7)`,
+whose incoming register is exactly `2 ^ 3`, `borrow = 3`, `decClock 15 3 3 = 18`,
+endpoint register `0111₂`, the digits of `7` with a `false` on top.
+
 `FixedContentGammaAnchorCorrect.lean` is the Part A G2a bridge. It proves the
 exact G1-final-to-G2a operational handoff and provides a logical cell-7
 restoration taking the successful marked tape back to literal `contentTape`.

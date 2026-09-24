@@ -1064,6 +1064,15 @@ lean_lib Pnp4 where
     -- parse form reads `pr.2.n`; the decrement of `n+1` to `n`, every converse, and
     -- parser execution stay deferred.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetPayloadExhaustionBridge,
+    -- Part A G2r: the decremented target register is the parsed target's digits.  It
+    -- instantiates G2q's arithmetic `decBit_sub_one` at the value G2p-g supplies, `n+1`,
+    -- so every register cell `a+m+1+j`, `j <= zeros`, of the G2q endpoint holds
+    -- `n.testBit (zeros - j)` for the decoded header `(n, consumed)`, those cells pin `n`,
+    -- and the dependent parse form reads the actual `pr.2.n`.  The room premise is G2q's
+    -- one-extra-cell premise, carried and never shown necessary; the gamma leading-digit
+    -- convention is *not* restored — the top cell may be cleared; every converse, parser
+    -- execution, acceptance and clock composition stay deferred.
+    Glob.one `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetRegisterDecrementBridge,
     Glob.one `Pnp4.Frontier.ContractExpansion.FixedContentGammaAnchorCorrect,
     -- GATE-0 slice: non-vacuity of `ContentAccepts` at the concrete codec.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity,

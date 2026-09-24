@@ -506,6 +506,67 @@ the degenerate widths `zeros ≤ 1` on the machine side, a malformed-gamma branc
 `accepts`, `ContentAccepts`, language membership, clock composition, and
 `ContentVerifierBridge` are not provided, and this is not P-vs-NP mainline progress.
 
+Part A G2v adds `ContentFixedGammaTargetUnaryCountdownIterationBridge` over the pnp3
+G2u `FixedGammaTargetUnaryCountdownIteration`, standing to it exactly as G2t stands to
+G2s-a. It adds no machine, no state and no table row: the run is G2u's
+`register_drained`, unchanged. Its content is again one instantiation — that theorem is
+stated for a universally quantified `v` whose bits are the decremented register's
+digits, its own probes use the hand-picked literals `24` and `3`, and G2r's
+`decremented_register_digits` proves both digit facts for the decoded target `n`, so
+`v := n`. Four public theorems, all one-way.
+`countdown_width_eq_gammaZeros` (two hypotheses, a decoded header and a decoded width)
+identifies the physical width `FixedContentGammaTerminator.gammaZeros?` reads off the
+word with the canonical `gammaZeros n = bitLength (n + 1) - 1` the layout convention
+computes from the decoded target, by exponent uniqueness on
+`2 ^ zeros ≤ n + 1 < 2 ^ (zeros + 1)`; both widths are already functions of data, so
+nothing is extracted from a proof. `countdown_drain_cap_iff_machine_room` (the same
+two) states the explicit lane cap `n ≤ F` and G2u's room
+`gammaZeros n + 2 + F ≤ a + B` in its width and tape forms, and the **one** direction
+that holds: cap and room imply G2t's first-round room `2 * (n + 1) < 2 ^ (a + B)`,
+never the converse, which
+`probe_countdown_drain_room_strictly_stronger` refutes on a literal split at every `F`
+the cap admits. The other two reach the absorbing `qDone` at
+`fullClock zeros d n` under a matching tag, a decoded header (or a successful
+`contentInput?` parse for an arbitrary codec, which also exports `pr.2.n = pr.1`),
+`3 ≤ n`, the cap and the room: the entry register holds `n`, the endpoint register is
+all `some false`, exactly `n` **marks** fill `[a+m+3+zeros, a+m+3+zeros+n)`, the lane
+is blank beyond them, and the endpoint persists. `3 ≤ n` reaches `2 ≤ zeros`; G2u's
+drain needs no positivity, so unlike G2t nothing here uses `1 ≤ n`.
+
+Part A G2w-a adds `ContentCountdownLinearCap`, which supplies a value for `F` from
+semantics rather than from parsing. **No** theorem bounds the target from parser
+success alone, and none is claimed — the source is virtually zero-padded, so the
+strict parser's returned target carries no bound on the physical length. Content
+*acceptance* does, at the concrete `treeCircuitWitnessCodec (thresholdPoly k)`:
+`contentSemanticAccepts_parsed_target_le_length` gives `pr.2.n ≤ N` for
+`z : PrefixBitVec N`, by `instanceSize_lt_treeMCSPPrefixM` when the target's convention
+length fits and by FEAS-0's
+`contentAccepts_parsed_tableLen_le_of_header_target_wide` when it does not, which
+forces `2 ^ pr.2.n ≤ N`. Its contrapositive
+`contentSemanticAccepts_eq_false_of_length_lt_parsed_target` says that a successful
+parse with `N < pr.2.n` makes the frozen Boolean checker reject;
+`contentSemanticAccepts_parsed_target_le_pair_length` restates the bound at the split
+`Fin.append x w`, whose `N` is the compacted content length `a + m` of the fixed-phase
+tape ABI; and `countdown_drained_accepted_content` runs G2v's drain at the derived cap
+`F := a + m`, carrying G2v's room unchanged.
+
+Neither slice takes the **fence**. `F` is a parameter of every G2v statement, the tape
+is the unchanged canonical `loopTape` — blank at `a+m+3+zeros+F` — and nothing here
+lays a cutoff cell, adds a `qOverflow` state, or shows any execution theorem surviving
+an installed `some false` in the lane. The lane is still uncapped in the machine: a
+target too large for the budget runs off the end of the tape and sticks, which is a
+timeout and neither verdict, and G2w-a's bound identifies a legitimate cap value rather
+than a mechanism enforcing one. The room is carried, never derived, and sufficient
+only. The more expensive `boundedContentCap` alternative — a polynomial lane from
+`boundedContentInput?` success instead of a linear one from acceptance — is documented
+and **not implemented**. Persistence is not first arrival (`qDone` absorbs). No
+converse is stated in either direction: not endpoint-to-parse, and not
+`pr.2.n ≤ N`-to-acceptance. Parser execution, a footprint theorem, the degenerate
+widths `zeros ≤ 1` on the machine side, a malformed-gamma branch, `accepts`,
+`AcceptsAt`, language membership, advice freedom, `NP` membership, clock composition and
+`ContentVerifierBridge` are not provided, and neither slice is P-vs-NP mainline
+progress.
+
 For an *arbitrary* threshold there is a third input, `PolyBoundedInTable threshold`;
 it is proved for the canonical polynomial thresholds, so it disappears at
 `thresholdPoly k`.  The general capstone `verifiedSource_of_explicit_interfaces`

@@ -58,6 +58,8 @@ import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetSecondPayloadBridg
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetPayloadExhaustionBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetRegisterDecrementBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetUnaryCountdownBridge
+import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetUnaryCountdownIterationBridge
+import Pnp4.Frontier.ContractExpansion.ContentCountdownLinearCap
 import Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic
 import Pnp4.Frontier.ContractExpansion.ContentCappedSizes
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
@@ -954,3 +956,41 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.countdown_room_iff_target_bound
 #print axioms Pnp4.Frontier.ContractExpansion.first_countdown_header_value
 #print axioms Pnp4.Frontier.ContractExpansion.first_countdown_parsed_target
+
+-- Part A G2v gamma target countdown iteration bridge.  The whole G2u drain, at the
+-- value that module left universally quantified: `v := n` on a decoded header and
+-- `v := pr.2.n` on a successful dependent parse.  `countdown_width_eq_gammaZeros`
+-- identifies the physical gamma width with the canonical `gammaZeros n` by exponent
+-- uniqueness — an equation between two functions of data, not a runtime extraction;
+-- `countdown_drain_cap_iff_machine_room` states the explicit lane cap `n <= F` and
+-- G2u's room in three interchangeable forms and the **one** direction that holds,
+-- towards G2t's first-round room, never the converse; the two execution theorems
+-- reach the absorbing `qDone` at `fullClock zeros (borrow x w zeros) n` with a zero
+-- register, exactly `n` marks and a blank lane beyond, persisting.  `F` remains a
+-- parameter, no cutoff cell is laid, the room is sufficient and used rather than
+-- necessary, and persistence is not first arrival.  All four declarations are
+-- theorems: the module defines nothing, so there is no definition root to add.  The
+-- matching named wrappers and the two probes are audited where they are declared, in
+-- `Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`.
+#print axioms Pnp4.Frontier.ContractExpansion.countdown_width_eq_gammaZeros
+#print axioms Pnp4.Frontier.ContractExpansion.countdown_drain_cap_iff_machine_room
+#print axioms Pnp4.Frontier.ContractExpansion.countdown_drained_header_value
+#print axioms Pnp4.Frontier.ContractExpansion.countdown_drained_parsed_target
+
+-- Part A G2w-a content countdown linear cap.  Content *acceptance*, not parser
+-- success alone, bounds the parsed target by the complete word's own length; the
+-- overflow direction is the contrapositive, as a `contentSemanticAccepts = false`
+-- verdict on the frozen specification-side checker; the pair-length form is the same
+-- bound at the compacted content length `a+m` of the fixed-phase tape ABI; and the
+-- capstone runs G2v's drain at the derived cap `F := a+m`, carrying G2v's room
+-- unchanged.  No machine, state, table row, cutoff cell or `qOverflow` endpoint is
+-- built here, and the more expensive `boundedContentCap` alternative is documented
+-- but not implemented.  All four declarations are theorems; the module's only other
+-- declaration is the `private` arithmetic helper `target_lt_tableLen`, which has no
+-- public surface.  The matching named wrappers and the nonvacuity probe are audited
+-- where they are declared, in `Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`.
+#print axioms Pnp4.Frontier.ContractExpansion.contentSemanticAccepts_parsed_target_le_length
+#print axioms
+  Pnp4.Frontier.ContractExpansion.contentSemanticAccepts_eq_false_of_length_lt_parsed_target
+#print axioms Pnp4.Frontier.ContractExpansion.contentSemanticAccepts_parsed_target_le_pair_length
+#print axioms Pnp4.Frontier.ContractExpansion.countdown_drained_accepted_content

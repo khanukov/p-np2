@@ -1104,6 +1104,17 @@ lean_lib Pnp4 where
     -- terminal), every converse, parser execution, acceptance and clock composition stay
     -- deferred.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetUnaryCountdownBridge,
+    -- Part A G2v: the whole countdown drains on the parsed target.  It supplies the value
+    -- G2u left universally quantified, at `v := n` for a decoded header and at `v := pr.2.n`
+    -- for a successful parse, recovers the canonical width `gammaZeros n` from the physical
+    -- one, and carries the explicit lane cap `n <= F` with the G2u room
+    -- `gammaZeros n + 2 + F <= a+B`, which implies G2t's first-round room but is not implied
+    -- by it.  At `fullClock zeros d n` the register is all `false`, the lane holds exactly
+    -- `n` marks, the rest of it is blank, and the endpoint persists.  `F` stays a parameter,
+    -- the tape stays unfenced, first arrival, every converse, parser execution, language
+    -- acceptance and clock composition stay deferred.
+    Glob.one
+      `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetUnaryCountdownIterationBridge,
     Glob.one `Pnp4.Frontier.ContractExpansion.FixedContentGammaAnchorCorrect,
     -- GATE-0 slice: non-vacuity of `ContentAccepts` at the concrete codec.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity,
@@ -1114,6 +1125,13 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionGateClosure,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPaddingTransport,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionTransfer,
+    -- Part A G2w-a: the linear cap, as semantics.  Listed after both G2v and FEAS-0's
+    -- `ContentTargetSizeBound`, which it imports.  Content *acceptance* — not parser
+    -- success alone — bounds the parsed target by the complete word's length, so the
+    -- overflow direction `a+m < pr.2.n` forces `contentSemanticAccepts = false`, and the
+    -- G2v drain may be taken at the concrete lane cap `F := a+m`.  No fence, no
+    -- `qOverflow` state, no machine and no cutoff cell is built here.
+    Glob.one `Pnp4.Frontier.ContractExpansion.ContentCountdownLinearCap,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentConsolidatedSource,
     -- Model-audit module: it depends only on the shared complexity interfaces,
     -- so it is listed after the whole contract-expansion chain and before the

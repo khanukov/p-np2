@@ -1083,6 +1083,16 @@ lean_lib Pnp4 where
     -- convention is *not* restored — the top cell may be cleared; every converse, parser
     -- execution, acceptance and clock composition stay deferred.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetRegisterDecrementBridge,
+    -- Part A G2t: the first countdown round runs on the parsed target.  It supplies the
+    -- value G2s-a left universally quantified: on a decoded header the G2r digits make
+    -- `v := n` legal, so the landed `startConfig` enters `qLoop` on the separator blank in
+    -- `d+2` steps with the register holding `n`, and at `firstClock zeros d = 2*zeros+d+9`
+    -- holds `n-1` with one mark in the tally lane, every endpoint cell pinned.  The room
+    -- `2*(n+1) < 2^(a+B)` allocates the first lane cell only and is carried, never derived.
+    -- One round: iteration, the lane fence, exhaustion, persistence (`qLoop` is not
+    -- terminal), every converse, parser execution, acceptance and clock composition stay
+    -- deferred.
+    Glob.one `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetUnaryCountdownBridge,
     Glob.one `Pnp4.Frontier.ContractExpansion.FixedContentGammaAnchorCorrect,
     -- GATE-0 slice: non-vacuity of `ContentAccepts` at the concrete codec.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionNonVacuity,

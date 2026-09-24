@@ -1557,3 +1557,12 @@ halting of a composed machine nor language acceptance; the module states no `acc
 `AcceptsAt` and no language membership.  Clock composition, the fixed parser, the checks, advice
 freedom, `NP` membership and `ContentVerifierBridge` are out of scope.  It is infrastructure, not
 P-vs-NP mainline progress.
+
+The pnp4 bridge has since landed, as G2t
+`Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetUnaryCountdownBridge`.  It instantiates this
+slice's `v` at the decoded target `n`, using the G2r bridge's decremented register digits and `3<=n`
+for positivity, so that the first round's endpoint register holds `n-1` with one mark in the lane,
+and it restates the room premise as `2*(n+1) < 2^(a+B)` on a decoded header.  It changed no
+declaration here, added no machine, and took neither the iteration nor the fence: this module still
+states nothing about a header, a parse or a decoded value, and `v` is still universally quantified
+here.

@@ -2,6 +2,52 @@
 
 Updated: 2026-09-24
 
+**Part A G2t, the first countdown round runs on the parsed target (infrastructure only).**
+New pnp4 module `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetUnaryCountdownBridge`, the
+companion the G2s-a entry below deferred. There is **no new machine and no new pnp3 module**: the
+run is G2s-a's `first_round`, unchanged. G2s-a states it for a `v` that is universally quantified
+and supplies none — its own probes use the hand-picked literals `24` and `23` — and on a decoded
+header the G2r bridge already proves both digit facts for the decoded target `n`, so `v := n` is
+the whole content of this slice. Write `N = a+m` and `d = borrow x w zeros`. Three public theorems,
+all one-way out of a decoded `contentHeader? = some …` or out of a successful dependent parse.
+
+* `countdown_room_iff_target_bound` (two hypotheses, a decoded header and a decoded width): on that
+  header the three forms `2*(n+1) < 2^(a+B)`, `zeros+2 <= a+B` and
+  `a+m+3+zeros < tapeLength (pairLength a m) B` are the same condition, the doubling being exact
+  because the gamma bounds put `2*(n+1)` strictly between `2^(zeros+1)` and `2^(zeros+2)`. Two
+  further conjuncts place it against G2q's room: it implies it, and at the boundary width
+  `zeros+1 = a+B` G2q's holds while this one fails. Unlike the G2r analogue both halves of that
+  separation are proved rather than probed, and `probe_countdown_room_boundary_nonvacuous` only
+  shows the boundary hypothesis is inhabited.
+* `first_countdown_header_value` (four: matching tag, decoded header, `3 <= n`, and the room
+  `2*(n+1) < 2^(a+B)`): the landed `startConfig` *enters* `qLoop` on the separator blank `N+2+zeros`
+  after exactly `d+2` steps with the register holding `n`, and after exactly
+  `firstClock zeros d = 2*zeros+d+9` steps is back in `qLoop` there with the register holding `n-1`
+  and **one mark** at `N+3+zeros`. Six cell conjuncts read every index of the endpoint tape, and the
+  endpoint register cells pin `n-1` among the values with no bit above `zeros`. `3 <= n` does two
+  jobs: it reaches `2 <= zeros` and discharges G2s-a's `1 <= v`.
+* `first_countdown_parsed_target` (four, with the header replaced by a successful
+  `contentInput? codec (Fin.append x w) = some pr` for an arbitrary codec, no monotonicity and no
+  injectivity premise): `pr.2.n = pr.1`, the decoded header and width, and the same concrete
+  endpoint at the actual parsed target `pr.2.n`.
+
+A fourth number is now on the tape. `zeros` is the physical gamma width, `n+1` the encoded gamma
+integer, `consumed = 2*zeros+1` and `treeMCSPPrefixM codec pr.1` length conventions, `n` what G2r
+left in the register, and `n-1` what this round leaves there. The lane holds one **mark**; calling a
+tally the target in unary would be a claim about a decoded value and no theorem here decodes
+anything.
+
+Deferred and deliberately not claimed. The **iteration**: this is one round and one only — nothing
+composes rounds or states a clock beyond `firstClock zeros d`, which counts this phase's steps
+alone. **Persistence**: `qLoop` is not terminal, so unlike G2r's `qDone` these endpoints hold at
+exactly their stated time and there is no all-times conjunct, no deadline and no clamp. The
+**fence**: the room allocates the *first* lane cell and is not a bound on the countdown; a target
+too large for the budget would run the lane off the tape, which is a timeout and therefore neither
+verdict, and nothing here excludes that. Also every converse, first arrival, any footprint or budget
+theorem, any malformed-gamma branch, the exhaustion, parser execution, `accepts`, `AcceptsAt`,
+`ContentAccepts`, language membership, `ContentVerifierBridge` and P-vs-NP mainline progress. The
+gamma leading-digit convention stays destroyed. Infrastructure only.
+
 **Part A G2s-a, the gamma target unary countdown round (infrastructure only).**
 New pnp3 module `Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown`: a **new** fixed 11-state,
 33-row machine, the second new table since the G2p-d round. Write `N = a+m`. Out of the retagged
@@ -27,8 +73,9 @@ and nothing may until the fence policy in `pnp3/Docs/UniformP_V1.md` is settled.
 lane is uncapped, so a register too large for the budget runs `qRunEnd` off the end of the tape and
 sticks there, which is a timeout and therefore neither verdict; the `qRunEnd`-on-`some false` row is
 the reject hook the future fence phase will use, and it is pinned and unexercised. The **pnp4
-bridge** (G2s-b), and with it every connection to `contentHeader?`, `contentInput?` or a parsed
-target: `v` is universally quantified and no theorem here supplies one. A footprint or budget
+bridge**, and with it every connection to `contentHeader?`, `contentInput?` or a parsed
+target: `v` is universally quantified and no theorem *in this pnp3 module* supplies one — that
+companion has since landed separately, as the G2t entry above. A footprint or budget
 theorem, so every room premise is sufficient and used but never shown necessary. Every converse. A
 malformed-gamma branch, since G2q characterises no non-`qDone` endpoint to route. And any
 restoration of the gamma leading-digit convention, which this phase destroys further each round.

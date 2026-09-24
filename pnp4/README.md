@@ -475,6 +475,37 @@ progress. First arrival is not provided either: the endpoint is stated at exactl
 conjunct says `qDone` is not entered earlier — minimality is G2q's
 `decrement_strict`, neither instantiated nor restated here.
 
+Part A G2t adds `ContentFixedGammaTargetUnaryCountdownBridge` over the pnp3 G2s-a
+`FixedGammaTargetUnaryCountdown`, the companion that slice deferred. It adds no
+machine either: the run is G2s-a's `first_round`, unchanged. Its content is again
+one instantiation — `first_round` is stated for a positive `v` whose bits are the
+decremented register's digits and which has no bit above `zeros`, no pnp3 theorem
+supplies one, and G2r's `decremented_register_digits` proves both facts for the
+decoded target `n` while `3 ≤ n` gives positivity, so `v := n`. Three public
+theorems, all one-way. `countdown_room_iff_target_bound` (two hypotheses, a decoded
+header and a decoded width) identifies `2 * (n + 1) < 2 ^ (a + B)`,
+`zeros + 2 ≤ a + B` and G2s-a's tape form
+`a + m + 3 + zeros < tapeLength (pairLength a m) B`, shows this room implies G2q's
+`n + 1 < 2 ^ (a + B)`, and shows that at the boundary width `zeros + 1 = a + B`
+G2q's holds while this one fails — both halves proved, where the G2r analogue had
+to probe the second. The other two reach the G2s-a entry at `d + 2` steps and its
+first round at `firstClock zeros d = 2 * zeros + d + 9`, under a matching tag, a
+decoded header (or a successful `contentInput?` parse for an arbitrary codec, which
+also exports `pr.2.n = pr.1`), `3 ≤ n` and that room: `qLoop` on the separator blank
+`a + m + 2 + zeros` at both times, the entry register holding the decoded target
+`n`, the exit register holding `n - 1`, one **mark** at `a + m + 3 + zeros`, and six
+cell conjuncts covering every index of the endpoint tape, the exit register cells
+pinning `n - 1`. This is one round: iteration, composed clocks, the lane fence, the
+exhaustion, and every converse stay deferred, and there is deliberately **no
+persistence conjunct** — `qLoop` does not absorb, so each endpoint is the
+configuration at exactly its stated time. The room allocates the first lane cell and
+is not a bound on the countdown; a target too large for the budget would run the
+lane off the tape, which is a timeout and neither verdict. The gamma leading-digit
+convention stays destroyed. Parser execution, first arrival, a footprint theorem,
+the degenerate widths `zeros ≤ 1` on the machine side, a malformed-gamma branch,
+`accepts`, `ContentAccepts`, language membership, clock composition, and
+`ContentVerifierBridge` are not provided, and this is not P-vs-NP mainline progress.
+
 For an *arbitrary* threshold there is a third input, `PolyBoundedInTable threshold`;
 it is proved for the canonical polynomial thresholds, so it disappears at
 `thresholdPoly k`.  The general capstone `verifiedSource_of_explicit_interfaces`

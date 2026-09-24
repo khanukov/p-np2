@@ -487,8 +487,8 @@ header and a decoded width) identifies `2 * (n + 1) < 2 ^ (a + B)`,
 `zeros + 2 ≤ a + B` and G2s-a's tape form
 `a + m + 3 + zeros < tapeLength (pairLength a m) B`, shows this room implies G2q's
 `n + 1 < 2 ^ (a + B)`, and shows that at the boundary width `zeros + 1 = a + B`
-G2q's holds while this one fails — both halves proved, where the G2r analogue had
-to probe the second. The other two reach the G2s-a entry at `d + 2` steps and its
+G2q's holds while this one fails — both halves stated and proved, where the G2r
+analogue stated only the failing half and left the other to a probe. The other two reach the G2s-a entry at `d + 2` steps and its
 first round at `firstClock zeros d = 2 * zeros + d + 9`, under a matching tag, a
 decoded header (or a successful `contentInput?` parse for an arbitrary codec, which
 also exports `pr.2.n = pr.1`), `3 ≤ n` and that room: `qLoop` on the separator blank

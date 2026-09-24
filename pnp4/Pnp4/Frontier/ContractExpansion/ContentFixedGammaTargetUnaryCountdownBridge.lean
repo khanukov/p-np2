@@ -29,9 +29,9 @@ Three theorems, all one-way, all out of a decoded header or a successful depende
   exact, not a convenience: the gamma bounds `2 ^ zeros ≤ n + 1 < 2 ^ (zeros + 1)` make
   `2 * (n + 1)` straddle `2 ^ (zeros + 1)` and `2 ^ (zeros + 2)` precisely, so the equivalence has
   no slack at either end.  Two further conjuncts place this room against G2q's: it implies it, and
-  at the boundary width `zeros + 1 = a + B` G2q's room holds while this one fails.  Unlike the
-  corresponding G2r separation, that second half needs no literal probe — `n + 1 < 2 ^ (zeros + 1)`
-  is a header conjunct, so at that width `n + 1 < 2 ^ (a + B)` is immediate.  `B` is a free budget,
+  at the boundary width `zeros + 1 = a + B` G2q's room holds while this one fails.  The
+  corresponding G2r theorem stated only the failing half and left the other to a literal probe;
+  here both halves are stated and proved.  `B` is a free budget,
   so a header implies none of this; the room is carried, never derived, and is sufficient only.
 * `first_countdown_header_value` carries the header through to the actual G2s-a run.  The landed
   `FixedGammaTargetUnaryCountdown.startConfig` — a retag of an actual G2q run at G2q's length-only
@@ -138,8 +138,8 @@ gamma bounds give `2 ^ (zeros + 1) ≤ 2 * (n + 1) < 2 ^ (zeros + 2)`, so neithe
 The last two conjuncts place this room against G2q's.  It implies `n + 1 < 2 ^ (a + B)`, which is
 the premise the G2r bridge carries; and at the boundary width `zeros + 1 = a + B` G2q's room holds
 while this one fails, so the strengthening is real and not a restatement.  Both halves of that
-separation are *proved* here — the upper gamma bound is a header conjunct — where the G2r analogue
-had to exhibit the second half on a literal word.
+separation are *proved* here, where the G2r analogue stated only the failing half and left the
+other to a literal probe.
 
 `B` is universally quantified and free, which is exactly why a decoded header implies none of this:
 the room is a joint condition on the parsed target and the budget, carried by the machine theorems
@@ -174,8 +174,9 @@ theorem countdown_room_iff_target_bound {a m B n consumed zeros : Nat}
 
 /-- **The first countdown round, on the decoded header's target.**  On a matching tag, a decoded
 header with `3 ≤ n`, and the room `2 * (n + 1) < 2 ^ (a + B)`, the landed G2s-a `startConfig`
-*enters* `qLoop` on the separator blank `a + m + 2 + zeros` after exactly `d + 2` steps, writing
-nothing, with the register `[a+m+1, a+m+1+zeros]` holding the decoded target `n`; and after exactly
+*enters* `qLoop` on the separator blank `a + m + 2 + zeros` after exactly `d + 2` steps with tape
+`loopTape B x w zeros n 0`, whose register `[a+m+1, a+m+1+zeros]` holds the decoded target `n`;
+and after exactly
 `firstClock zeros d = 2 * zeros + d + 9` steps it is back in `qLoop` there with the register holding
 `n - 1`, one mark at `a + m + 3 + zeros`, and `n - 1` still free of digits above `zeros`.  Those
 endpoint register cells moreover *pin* `n - 1`: any `v` read off them with no bit above `zeros` is

@@ -1098,8 +1098,8 @@ past the separator. The doubling in the target form is exact — the gamma bound
 give `2 ^ (zeros + 1) ≤ 2 * (n + 1) < 2 ^ (zeros + 2)`, so neither direction of the
 equivalence has slack — and the last two conjuncts place this room against G2q's:
 it implies it, and at the boundary width `zeros + 1 = a + B` G2q's holds while this
-one fails. Unlike the G2r separation *both* halves are proved here, because the
-upper gamma bound `n + 1 < 2 ^ (zeros + 1)` is a header conjunct;
+one fails. Unlike the G2r separation, which stated only the failing half and left
+the other to a probe, *both* halves are stated and proved here;
 `probe_countdown_room_boundary_nonvacuous` therefore only shows that the boundary
 hypothesis is inhabited, at the `a = 1, m = 11` split of the twelve-cell word with
 `B = 2`. Like G2q's, the room is carried, never derived — `B` is a free budget —

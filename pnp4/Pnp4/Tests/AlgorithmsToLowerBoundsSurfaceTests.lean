@@ -6137,7 +6137,8 @@ lengths are pinned by `decide` on the register digits and the clocks by `rfl`. -
 already pinned where it is declared, and `probe_decrement_register_width_three` pins the G2q
 endpoint register at cells `16 … 19` as `1100₂`, the four digits of the decoded target `12`.
 This probe pins what the countdown adds on top of that.  The entry costs `d + 2 = 2` steps
-and writes nothing, so the register still reads `1100₂` at the `qLoop` configuration two
+and reaches `loopTape B x w zeros n 0`; together with `probe_decrement_register_width_three`,
+this pins the register as `1100₂` at the `qLoop` configuration two
 steps in, on the separator blank `20`; the round then subtracts one, leaving `1011₂` — the
 digits of `11` — and lays one mark on the first lane cell `21`, with the separator `20` and
 cell `22` still blank, all at exactly `firstClock 3 0 = 15` steps.  Neither `qLoop`

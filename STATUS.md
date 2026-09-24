@@ -14,7 +14,7 @@ all one-way out of a decoded `contentHeader? = some …` or out of a successful 
 * `countdown_room_iff_target_bound` (two hypotheses, a decoded header and a decoded width): on that
   header the three forms `2*(n+1) < 2^(a+B)`, `zeros+2 <= a+B` and
   `a+m+3+zeros < tapeLength (pairLength a m) B` are the same condition, the doubling being exact
-  because the gamma bounds put `2*(n+1)` strictly between `2^(zeros+1)` and `2^(zeros+2)`. Two
+  because the gamma bounds put `2*(n+1)` in `[2^(zeros+1), 2^(zeros+2))`. Two
   further conjuncts place it against G2q's room: it implies it, and at the boundary width
   `zeros+1 = a+B` G2q's holds while this one fails. Unlike the G2r analogue both halves of that
   separation are proved rather than probed, and `probe_countdown_room_boundary_nonvacuous` only

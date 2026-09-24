@@ -985,12 +985,23 @@ end Pnp4
 -- capstone runs G2v's drain at the derived cap `F := a+m`, carrying G2v's room
 -- unchanged.  No machine, state, table row, cutoff cell or `qOverflow` endpoint is
 -- built here, and the more expensive `boundedContentCap` alternative is documented
--- but not implemented.  All four declarations are theorems; the module's only other
--- declaration is the `private` arithmetic helper `target_lt_tableLen`, which has no
--- public surface.  The matching named wrappers and the nonvacuity probe are audited
--- where they are declared, in `Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`.
+-- but not implemented.  Part A G2w-b then closes the budget: `concatBitstring_eq_append`
+-- is a pure word-shape equation between the interface's concatenation and the
+-- fixed-phase `Fin.append` split, with no parse, acceptance or machine in it, and
+-- `countdown_drained_accepted_content_at_polyClock` instantiates the capstone at
+-- `B := polyClock 3 (pairLength a m)` and runs to exactly `B` steps by persistence, so
+-- its hypotheses are exactly the parse, the acceptance and `3 <= pr.2.n` -- the tag, the
+-- cap, the room and the clock bound are all conclusions.  The budget is sufficient and
+-- the exponent `3` is not shown least; persistence is still not first arrival.  All six
+-- declarations are theorems; the module's only other declarations are the `private`
+-- arithmetic helpers `target_lt_tableLen`, `gammaZeros_le` and
+-- `polyClock_room_and_clock`, which have no public surface.  The matching named
+-- wrappers and the two probes are audited where they are declared, in
+-- `Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`.
 #print axioms Pnp4.Frontier.ContractExpansion.contentSemanticAccepts_parsed_target_le_length
 #print axioms
   Pnp4.Frontier.ContractExpansion.contentSemanticAccepts_eq_false_of_length_lt_parsed_target
 #print axioms Pnp4.Frontier.ContractExpansion.contentSemanticAccepts_parsed_target_le_pair_length
 #print axioms Pnp4.Frontier.ContractExpansion.countdown_drained_accepted_content
+#print axioms Pnp4.Frontier.ContractExpansion.concatBitstring_eq_append
+#print axioms Pnp4.Frontier.ContractExpansion.countdown_drained_accepted_content_at_polyClock

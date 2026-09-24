@@ -1235,15 +1235,16 @@ first-tally-cell tape form both hold while the cell `21 + 12 = 33` that a twelve
 lane reserves is outside the tape, so G2v's room fails at every `F ≥ 12` — which is
 every cap the countdown admits there, since `n ≤ F`.
 
-`ContentCountdownLinearCap.lean` is the Part A G2w-a slice: a value for G2v's lane cap,
-obtained from *semantics*. It is registered after both G2v and FEAS-0's
+`ContentCountdownLinearCap.lean` is the Part A G2w-a slice, extended by Part A G2w-b: a
+value for G2v's lane cap obtained from *semantics*, and then a value for G2v's budget.
+It is registered after both G2v and FEAS-0's
 `ContentTargetSizeBound`, which it imports, and it builds **no machine, no state, no
 table row, no cutoff cell and no `qOverflow` endpoint**. Its starting point is that no
 theorem bounds the target from parser success alone, and none is claimed here: the
 source is virtually zero-padded, so the strict parser's returned target carries no bound
-on the physical length. Four public theorems, at the concrete
-`treeCircuitWitnessCodec (thresholdPoly k)` throughout, because the wide case is a
-codec-specific fact and no codec-generic analogue is asserted:
+on the physical length. Six public theorems. The four G2w-a ones are stated at the
+concrete `treeCircuitWitnessCodec (thresholdPoly k)` throughout, because the wide case is
+a codec-specific fact and no codec-generic analogue is asserted:
 
 * `contentSemanticAccepts_parsed_target_le_length` (two hypotheses: a successful
   `contentInput? codec z = some pr` and `contentSemanticAccepts codec z = true`; the
@@ -1266,6 +1267,40 @@ codec-specific fact and no codec-generic analogue is asserted:
   `qDone` endpoint at that cap. The cap is **derived** from acceptance; the room is
   still carried.
 
+The two G2w-b theorems close the budget:
+
+* `concatBitstring_eq_append` (no hypotheses, no codec, both blocks arbitrary):
+  `Pnp3.ComplexityInterfaces.concatBitstring x w = Fin.append x w`. It exists because
+  GATE-0's accepted words are built with `concatBitstring` while every fixed-phase
+  statement of this pipeline is laid out against `Fin.append`. No parse, acceptance,
+  header or machine occurs in it, and it says nothing about which splits of a word exist;
+* `countdown_drained_accepted_content_at_polyClock` (**three**: the successful parse, the
+  Boolean acceptance, `3 ≤ pr.2.n`): the same endpoint at the concrete budget
+  `B := polyClock 3 (PairEncoding.pairLength a m) = (2 * a + 1 + m) ^ 3 + 3`, run to
+  exactly `B` steps. No tag premise — `fixedTag_semantic_factorization` derives it from
+  acceptance — no cap, no room, no free `B`, no free `F`, no runtime premise and no
+  correctness premise. Acceptance caps the target at `a + m`, `gammaZeros n ≤ n` caps the
+  width, `borrow_pins` caps the borrow by the width, and the cube dominates the expanded
+  clock `fullClock zeros d n = d + n*n + n*(2*zeros+6) + 2*zeros + 7`, so the room
+  `gammaZeros pr.2.n + 2 + (a + m) ≤ a + B` and the clock bound
+  `fullClock zeros (borrow x w zeros) pr.2.n ≤ B` are both **conclusions**, exported as
+  conjuncts alongside `3 ≤ a + m` and the derived tag. The transport from `fullClock` to
+  `B` steps is G2v's persistence conjunct, so it is persistence rather than first arrival.
+
+Three caveats specific to G2w-b. The exponent `3` is sufficient and is **not** shown
+least; nothing rules out a smaller one. The same number `B` is both the tape budget that
+`startConfig` and `tapeLength` are laid out against and the number of steps run, which is
+an instantiation choice rather than a theorem — nothing says the two must agree, only
+that this one value is large enough for both. And `polyClock` occurs here as an
+arithmetic value: no `DecidesWithin`, `UniformP`, runtime or `NP` statement is made or
+implied. The surface probe `probe_countdown_polyClock_accepted_target_three` inhabits the
+three premises **jointly**, one accepted word per exponent — GATE-0's zero-prefix query
+for the all-false table on three variables followed by the certificate carrying
+`Circuit.const false` — at the pinned target `pr.2.n = 3` and the pinned width
+`gammaZeros 3 = 2`, and reads the `qDone` endpoint state back after exactly `B` steps. It
+exhibits one word per exponent and nothing about any other: no *rejected* word, no
+*overshooting* word, and no tape cell.
+
 The more expensive alternative is documented and **not implemented**: if the contract
 must instead be that every *bounded-parser* success completes the countdown, the cap has
 to come from `boundedContentCap k N = N ^ contentCapExponent k + contentCapExponent k`,
@@ -1275,14 +1310,15 @@ linear one; this module defines no such cap and takes **no new direct import** f
 `BoundedContentSemanticVerifier` is nonetheless already in its transitive closure, through
 `FixedContentTagGateCorrect`, so the accurate statement is that no declaration of it is
 *used* here, not that it is absent. Non-vacuity is not claimed here either — GATE-0's
-`contentAccepts_nonvacuous_treePoly` supplies it, and the surface probe
-`probe_linear_cap_accepted_nonvacuous` only reads it back to show that the parse and
+`contentAccepts_nonvacuous_treePoly` and `contentAccepts_zeroPrefixQuery_of_predicate`
+supply it, and the surface probes only read it back.
+`probe_linear_cap_accepted_nonvacuous` shows that the parse and
 acceptance premises of `contentSemanticAccepts_parsed_target_le_length` hold together on a
 word that exists. It pins no target value, and it inhabits neither the overflow theorem's
-premise pair nor the capstone's five hypotheses jointly, so neither of those is shown
-non-vacuous; nor is any parse-successful word exhibited whose target overshoots its own
-length, so acceptance is used rather than shown necessary. The capstone's hypotheses are
-not independent: acceptance already implies the tag premise, by
+premise pair nor the free-budget capstone's five hypotheses jointly, so neither of those is
+shown non-vacuous; nor is any parse-successful word exhibited whose target overshoots its
+own length, so acceptance is used rather than shown necessary. The free-budget capstone's
+hypotheses are not independent: acceptance already implies the tag premise, by
 `fixedTag_semantic_factorization`. No converse is stated:
 nothing derives acceptance, a parse, a header or a width from `pr.2.n ≤ N`, and a
 `false` verdict can equally come from a failed parse or a failed witness check. No

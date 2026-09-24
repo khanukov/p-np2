@@ -2,13 +2,13 @@
 
 Updated: 2026-09-24
 
-**Part A G2v + G2w-a, the countdown drains on the parsed target, under a semantic linear cap
-(infrastructure only).**
+**Part A G2v + G2w-a + G2w-b, the countdown drains on the parsed target, under a semantic linear
+cap, at a fixed cubic budget (infrastructure only).**
 Two new pnp4 modules, `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetUnaryCountdownIterationBridge`
 and `Pnp4.Frontier.ContractExpansion.ContentCountdownLinearCap`. There is **no new machine, no new
 state, no new table row and no new pnp3 module**: every step is G2s-a's fixed 11-state, 33-row table,
-run for longer by G2u. Write `N = a+m` and `d = borrow x w zeros`. Eight public theorems, all
-one-way.
+run for longer by G2u. Write `N = a+m` and `d = borrow x w zeros`. Ten public theorems: nine
+one-way implications and one plain equation between two spellings of a split word.
 
 G2v is to G2u exactly what G2t was to G2s-a: the *value*. G2u's `register_drained` is stated for a
 universally quantified `v` and supplies none — its own probes use the hand-picked literals `24` and
@@ -63,6 +63,31 @@ it, at the concrete `treeCircuitWitnessCodec (thresholdPoly k)`.
   drain runs at `F := a+m`, so the lane cap is **derived** from acceptance instead of assumed. The
   room stays a hypothesis.
 
+G2w-b closes the remaining free budget by *choosing* it, at
+`B := polyClock 3 (pairLength a m) = (2*a+1+m)^3 + 3`, a fixed cubic function of the split's own two
+lengths. Acceptance caps the target at `N`, `gammaZeros n <= n` caps the width at `N`,
+`borrow_pins` caps the borrow by the width, and G2u's clock expands to
+`fullClock zeros d n = d + n*n + n*(2*zeros+6) + 2*zeros + 7`, whose every summand is then below a
+fixed quadratic in `N`; the cube dominates it because `3 <= pr.2.n <= N` is in force.
+
+* `concatBitstring_eq_append` is a word-shape bridge and nothing else: the verifier interface's
+  `concatBitstring x w` and the fixed-phase split `Fin.append x w` are the same function of the two
+  blocks. No parse, no acceptance, no header, no codec and no machine occurs in it.
+* `countdown_drained_accepted_content_at_polyClock` has exactly **three** proposition hypotheses —
+  the successful parse, the Boolean acceptance and `3 <= pr.2.n` — and no others: no tag premise
+  (the factorization `fixedTag_semantic_factorization` derives it from acceptance), no cap, no
+  room, no free `B`, no free `F`, no runtime premise and no correctness premise. Both the room
+  `gammaZeros pr.2.n + 2 + N <= a+B` and the clock bound `fullClock zeros d pr.2.n <= B` are
+  **conclusions**, exported as conjuncts alongside `3 <= N` and the derived tag, and the endpoint is
+  transported from `fullClock` to exactly `B` steps by the persistence conjunct G2v already proves.
+* `probe_countdown_polyClock_accepted_target_three` inhabits those three premises **jointly** — one
+  accepted word per exponent, GATE-0's zero-prefix query for the all-false table on three variables
+  followed by its certificate — at the pinned target `pr.2.n = 3` and hence the pinned width
+  `gammaZeros 3 = 2`, and reads the `qDone` endpoint state back after exactly `B` steps. So G2w-b
+  is not a statement about an empty premise set. That probe exhibits one word per exponent and
+  claims nothing about any other; in particular it exhibits no *rejected* and no *overshooting*
+  word.
+
 Deferred and deliberately not claimed. The **fence**: `F` is a parameter of every G2v statement, the
 tape is the unchanged canonical `loopTape` — blank at `N+3+zeros+F` — and nothing here lays a cutoff
 cell, adds a `qOverflow` state or shows that any execution theorem survives an installed
@@ -75,8 +100,16 @@ requirement, that the `F = N` justification be derived or replaced, is what G2w-
 in the form stated above: `F = N = a+m` for **accepted** words, at the concrete
 `treeCircuitWitnessCodec (thresholdPoly k)` and conditional on acceptance, never from parser success
 and never codec-generically. The executed-fence half stands. The **room** is carried and never
-derived — `B` is a free budget — and is sufficient and used, never shown necessary; G2u's
-`check_below_room_drain_probe` still exhibits a budget where it fails while the drain completes.
+derived in G2v and G2w-a — `B` is a free budget there — and is sufficient and used, never shown
+necessary; G2u's `check_below_room_drain_probe` still exhibits a budget where it fails while the
+drain completes. G2w-b **derives** that room, but only by instantiating `B`: the condition is still
+sufficient only, and nothing shows the cubic budget necessary. The **exponent** `3` is chosen to
+dominate the quadratic clock; nothing shows it least and no smaller exponent is ruled out. The same
+number `B` plays two roles in the G2w-b statement — the tape budget `startConfig` and `tapeLength`
+are laid out against, and the number of steps the machine is run for — and that is an instantiation
+choice, not a theorem: nothing says the two must agree, only that this one value is large enough for
+both. `polyClock` is the repository's pinned clock family, and using it here is **not** a runtime,
+`DecidesWithin`, `UniformP` or `NP` claim about anything.
 **First arrival**: `qDone` absorbs, so the all-times conjunct is persistence and nothing more, and no
 theorem says `qDone` is entered for the first time at `fullClock zeros d n`. **Every converse**:
 nothing derives a header, a width, `2 <= zeros`, the cap, the room, the borrow length or a parsed

@@ -1,6 +1,6 @@
 # TODO / Roadmap (current)
 
-Updated: 2026-09-03
+Updated: 2026-09-24
 
 Canonical checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
@@ -162,7 +162,12 @@ vacuity of the convention-length equality gate. Exactly three tag/index/padding 
 remain in the parser characterization.
 
 For input (2), the remaining work is an actual concrete verifier bridge: machine construction,
-runtime proof, and exact-step acceptance correctness. Wrapper-level `L'` padding invariance and
+runtime proof, and exact-step acceptance correctness. Part A G2w-b picks a concrete budget
+`polyClock 3 (pairLength a m)` for the *gamma-target countdown phase* and runs that phase to exactly
+that many steps, but this is **not** progress on the runtime proof: it is one phase's step count out
+of a retagged phase-local `startConfig`, it composes no pipeline clock, it states no `DecidesWithin`,
+`UniformP`, `accepts` or `AcceptsAt`, and the machine is still unfenced — a target too large for the
+budget times out rather than rejecting. Wrapper-level `L'` padding invariance and
 formal runtime/advice enforcement also remain open; complete-word `ContentAccepts` padding
 invariance does not close either item. The original length-gated
 `NP_not_subset_PpolyDAG_treePoly` / `PrefixExtensionNPWitness` capstone remains compiled and audited

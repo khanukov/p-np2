@@ -1,6 +1,46 @@
 # Project Status (current)
 
-Updated: 2026-09-23
+Updated: 2026-09-24
+
+**Part A G2s-a, the gamma target unary countdown round (infrastructure only).**
+New pnp3 module `Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown`: a **new** fixed 11-state,
+33-row machine, the second new table since the G2p-d round. Write `N = a+m`. Out of the retagged
+G2q endpoint it *enters* `qLoop` on the separator blank `N+2+zeros` in exactly `d+2` steps, writing
+nothing; one round then subtracts one more from the target register and lays **one mark** in the
+tally lane past that blank, in exactly `roundClock zeros r = 2*zeros+2*r+7` steps at `r` marks
+already laid; an all-`false` register exhausts to the absorbing `qDone` in exactly
+`zeroClock zeros = 2*zeros+5` steps with the tape unchanged. `first_round` runs the entry and the
+first round out of the phase-local `startConfig` at `firstClock zeros d = 2*zeros+d+9`.
+
+Everything is symbol-driven: no width, digit index, register address, mark count, clock, counter,
+proof term, advice or producer mark occurs in any row, and every branch is decided by the one symbol
+under the head. `qPadL` and `qPadR` pad each sweep back out to the full register, which is why the
+round clock does not depend on how long the borrow ran. The statement-level `lowRun` is read off the
+value and is private and structural; the machine finds the same cell by reading symbols.
+
+**Entry ABI**, which any phase inserted before this machine must re-establish: `qStart` on the
+cleared stopping digit `some false` at `N+1+zeros-d`, exactly `d` cells of `some true` to its right,
+the separator blank at `N+2+zeros`, a blank lane beyond.
+
+Deferred and deliberately not claimed. The **iteration** (G2s-c): nothing here iterates the round,
+and nothing may until the fence policy in `pnp3/Docs/UniformP_V1.md` is settled. The **fence**: the
+lane is uncapped, so a register too large for the budget runs `qRunEnd` off the end of the tape and
+sticks there, which is a timeout and therefore neither verdict; the `qRunEnd`-on-`some false` row is
+the reject hook the future fence phase will use, and it is pinned and unexercised. The **pnp4
+bridge** (G2s-b), and with it every connection to `contentHeader?`, `contentInput?` or a parsed
+target: `v` is universally quantified and no theorem here supplies one. A footprint or budget
+theorem, so every room premise is sufficient and used but never shown necessary. Every converse. A
+malformed-gamma branch, since G2q characterises no non-`qDone` endpoint to route. And any
+restoration of the gamma leading-digit convention, which this phase destroys further each round.
+
+`qLoop` does not absorb, so every `qLoop` endpoint is an exact time and **not** a deadline, and
+`exhaust_generic`'s all-times conjunct is persistence, not first arrival — no theorem says `qDone`
+is entered for the first time at `zeroClock zeros`. The lane holds marks; calling it the target in
+unary would be a claim about a decoded value, and nothing here decodes anything. `qDone` is an
+internal control tag of a machine started from a phase-local retag of an actual prior run, so
+reaching it is neither halting of a composed machine nor language acceptance; the module states no
+`accepts`, no `AcceptsAt` and no language membership, and the clocks compose no earlier clock.
+Infrastructure, not P-vs-NP mainline progress.
 
 **Part A G2r, the decremented register is the parsed target's digits (infrastructure only).**
 New pnp4 module `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetRegisterDecrementBridge`,

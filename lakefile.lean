@@ -186,6 +186,15 @@ lean_lib PnP3 where
     -- convention and every header/pnp4 bridge stay deferred; qDone is not language
     -- acceptance, and startConfig is a phase-local retag, not a composed raw-input run.
     Glob.one `Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement,
+    -- Part A G2s-a unary countdown round: a new fixed 11-state, 33-row machine.  Out of the
+    -- retagged G2q endpoint it enters qLoop on the separator blank in d+2 steps, then one round
+    -- subtracts one more from the target register and lays one mark in the tally lane past it, in
+    -- exactly 2*zeros+2*r+7 steps at r marks already laid; the all-false register exhausts to the
+    -- absorbing qDone in 2*zeros+5 steps with the tape unchanged.  The lane is uncapped, so the
+    -- fence, the iteration and every header/pnp4 bridge stay deferred; qLoop does not absorb, so no
+    -- qLoop endpoint is a deadline, qDone is not language acceptance, and startConfig is a
+    -- phase-local retag, not a composed raw-input run.
+    Glob.one `Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown,
     -- Generic bounded cross-budget simulation for one fixed UniformTM.
     Glob.one `Complexity.Uniform.V1.BudgetTransport,
     -- Routed fixed-parser/verifier constructor and parser-prefix handoff.
@@ -776,6 +785,7 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1FixedGammaTargetPayloadIterationSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaTargetPayloadExhaustionSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaTargetRegisterDecrementSurfaceTests,
+    Glob.one `Tests.UniformV1FixedGammaTargetUnaryCountdownSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
     Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,

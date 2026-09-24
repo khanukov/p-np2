@@ -117,6 +117,7 @@ import Tests.UniformV1FixedGammaTargetPayloadRoundSurfaceTests
 import Tests.UniformV1FixedGammaTargetPayloadIterationSurfaceTests
 import Tests.UniformV1FixedGammaTargetPayloadExhaustionSurfaceTests
 import Tests.UniformV1FixedGammaTargetRegisterDecrementSurfaceTests
+import Tests.UniformV1FixedGammaTargetUnaryCountdownSurfaceTests
 import Tests.UniformV1BudgetTransportSurfaceTests
 import Tests.UniformV1CombinedMachineSurfaceTests
 import Tests.UniformV1CombinedCorrectnessSurfaceTests
@@ -5090,6 +5091,47 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetRegisterDecrementSurfaceTests.check_decBit_sub_one_instance
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetRegisterDecrementSurfaceTests.check_phys_probe
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetRegisterDecrementSurfaceTests.check_virt_probe
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.stateCount
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.qStart
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.qSeekSep
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.qLoop
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.qBorrow
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.qPadL
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.qPadR
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.qRunEnd
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.qBackRun
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.qFin
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.qDone
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.qReject
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.raw
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.machine
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.retagDecrement
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.startConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.roundClock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.zeroClock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.firstClock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.loopTape
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.table_and_resource_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.per_step_budget_independent
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.endpoints_absorb
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.handoff_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.clock_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.room_iff
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.loopTape_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.loopTape_zero_eq_decTape
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.entry_generic
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.round_generic
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.exhaust_generic
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.first_round
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetUnaryCountdownSurfaceTests.check_table_rows
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetUnaryCountdownSurfaceTests.check_clock_values
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetUnaryCountdownSurfaceTests.check_probe_inputs_valid
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetUnaryCountdownSurfaceTests.check_phys_handoff
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetUnaryCountdownSurfaceTests.check_virt_handoff
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetUnaryCountdownSurfaceTests.check_first_round_instance
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetUnaryCountdownSurfaceTests.check_phys_probe
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetUnaryCountdownSurfaceTests.check_virt_probe
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetUnaryCountdownSurfaceTests.check_zero_probe
 
 -- S11 (2026-09-19), infrastructure only: all-request one-gate acceptance
 -- closure in main's transducer convention.  `accepts = r.spec.isSome`, so a

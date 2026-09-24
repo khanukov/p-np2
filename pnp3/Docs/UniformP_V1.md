@@ -1467,3 +1467,93 @@ machine started here from a phase-local retag of an actual prior run rather than
 language acceptance; the module states no `accepts`, no `AcceptsAt` and no language membership.
 Clock composition, the fixed parser, the checks, advice freedom, `NP` membership and
 `ContentVerifierBridge` are out of scope.  It is infrastructure, not P-vs-NP mainline progress.
+
+The Part A G2s-a `FixedGammaTargetUnaryCountdown` is the second slice of this loop to add a
+**new machine**: a fixed 11-state, 33-row table, the second new table since the G2p-d round
+machine.  A new table was again unavoidable.  G2q's 7-state table halts in the absorbing `qDone`
+the moment the borrow stops, so no run of it can perform a second subtraction, and none of its
+states walks a tally lane; `table_and_resource_pins` pins all 33 rows literally (eleven states
+against the three symbols) with `machine.stateCount = 11`, the three distinguished states, and
+`per_step_budget_independent`, and the surface test restates the same 33 rows independently in
+`check_table_rows`, so a silent table change breaks the test rather than passing through an alias.
+
+Write `N = a+m`.  The incoming configuration is G2q's endpoint, retagged: the target register
+`[N+1, N+1+zeros]` decremented in place, with the digit the borrow stopped on cleared at
+`N+1+zeros-d`, the `d` digits below it set, the digits above it untouched, and the head on the
+cleared cell.  That is this phase's **entry ABI**, stated in the module docstring and pinned by
+`handoff_exact`: `qStart` on a `some false` at `N+1+zeros-d`, exactly `d` cells of `some true` to
+its right, the separator blank at `N+2+zeros`, and a blank lane beyond it.  Any phase inserted
+before this machine -- the fence below is the one such phase now foreseen -- must end on that ABI,
+and when one lands, `startConfig`, `handoff_exact`, `first_round` and both handoff probes are
+re-targeted at it.  Exporting the entry as the *generic* `entry_generic` and pinning the ABI is what
+keeps that re-targeting to the cost of one handoff derivation.
+
+`startConfig` is a phase-local retag of an **actual** G2q run taken at G2q's own length-only
+`deadline (a+m) = 3*(a+m)`; `first_round` identifies it with an explicit configuration through the
+all-times clamp of G2q's `register_decremented` and the fifth conjunct of G2q's `clock_pins`, which
+bounds `decClock` by that deadline at every decoded width and borrow length.  No decoded data enters
+the handoff, and the clocks below count none of the steps `startConfig` embeds.
+
+`loopTape B x w zeros v r` is the tape of the countdown: the G2q/G2p-f content below the boundary
+blank `N`, the register `[N+1, N+1+zeros]` holding the `zeros+1` digits of `v` with digit `zeros-j`
+at cell `N+1+j`, the separator blank at `N+2+zeros`, `r` marks in the lane
+`[N+3+zeros, N+3+zeros+r)`, and blanks beyond.  `loopTape_pins` places every one of those cells with
+**no hypothesis at all**, and `loopTape_zero_eq_decTape` identifies the zero-mark tape with G2q's
+`decTape` on any `v` whose digit `zeros-j` is G2q's `decBit ... j` at every `j <= zeros`.  Only that
+identification and `first_round` carry the tag and the width, because `decTape` falls back to the
+finish tape at `N` and past the register and only a decoded width makes those cells blank; the three
+generic run theorems carry neither, because the machine never reads a cell left of `N` and
+`loopTape` places that blank explicitly.
+
+The round is symbol-driven throughout.  `qSeekSep` runs right over the set digits to the separator
+blank and `qLoop` steps left off it onto the least significant digit; `qBorrow` flips the low run of
+`false` digits to `true` and clears the `true` that stops it, which is subtraction of one, or -- when
+every digit is `false` -- walks off the register's left end onto the boundary blank and hands over
+to `qFin`; `qPadL` walks left to that same boundary blank and `qPadR` right to the separator;
+`qRunEnd` runs right over the marks already in the lane and writes one more on the first blank; and
+`qBackRun` walks back over them to the separator and re-enters `qLoop`.  No width, digit index,
+register address, mark count, clock, counter, proof term, advice or producer mark occurs in any row.
+The `qPadL`/`qPadR` pair is the whole reason `roundClock zeros r = 2*zeros+2*r+7` is closed-form:
+the borrow's own length cancels against the padding walk, so the round costs the same whatever the
+stored digits are.  `entry_generic` costs exactly `d+2` and writes nothing; `zeroClock zeros =
+2*zeros+5` is the exact exhaustion cost and leaves the tape exactly as it found it, marks included;
+`firstClock zeros d = 2*zeros+d+9` is the entry plus the first round, which `clock_pins` states as
+`(d+2) + roundClock zeros 0`.  The statement-level `lowRun` is read off the value, is private and
+structural in a fuel bound rather than a search, and no row of the table mentions it -- the machine
+finds the same cell by reading symbols.  `room_iff` reads the lane as one cell per mark:
+`N+3+zeros+r < tapeLength (pairLength a m) B` iff `zeros+2+r <= a+B`, and the `r = 0` room implies
+the entry's and the exhaustion's.  It is sufficient and used, never shown necessary.
+
+None of this makes `qLoop` a deadline.  `qLoop` is not terminal, so each `qLoop` endpoint holds at
+its exact time and says nothing about any other time; only the exhaustion's `qDone` persists, and
+persistence is all `exhaust_generic`'s last conjunct claims.  Nothing here says `qDone` is entered
+for the **first** time at `zeroClock zeros`, and no such theorem is proved.
+
+**The fence, and the fence policy.**  The tally lane is uncapped in this slice.  A register too
+large for the budget therefore runs `qRunEnd` off the end of the tape and sticks there, which is a
+timeout and so neither verdict.  Capping it needs an executed `some false` cell in the lane at a
+length-derived offset `F`, laid by its **own** fixed phase inserted between G2q and this machine,
+and that phase must end on the entry ABI above; the `qRunEnd`-on-`some false` row is the reject hook
+it will use, and it is pinned and deliberately unexercised here.  The iteration slice G2s-c may not
+open until this policy is recorded here and in `STATUS.md`, which this entry does: G2s-c's loop
+theorem must take `F` as a parameter and its room premise must be `zeros+2+F <= a+B`.  The claim
+that `F = N` is sound rests on `contentAccepts_parsed_tableLen_le_of_header_target_wide`
+(`pnp4/Pnp4/Frontier/ContractExpansion/ContentTargetSizeBound.lean`), which is codec-specific and covers only the wide case; the plan
+must derive it or replace it before G2s-c opens.
+
+Deferred by this module, and deliberately not claimed in it: the iteration itself; the fence phase;
+the pnp4 bridge G2s-b, and with it every connection to `contentHeader?`, to `contentInput?` or to a
+parsed target -- `v` is universally quantified here, the probes' `24` and `23` are hand-written
+literals, and no theorem of this slice or of pnp3 produces either from a parse; a footprint or
+budget theorem, so no room premise is shown necessary; every converse -- nothing says that `qLoop`,
+that `qDone`, or that any endpoint cell implies anything about `zeros`, about `v` or about the
+incoming digits; a malformed-gamma branch, since G2q characterises no non-`qDone` endpoint to route;
+and any restoration of the gamma leading-digit convention, which G2q already destroyed when the
+register held exactly `2^zeros` and which this phase destroys further at every round.  The lane
+holds `r` marks: calling it the target in unary would be a claim about a decoded value, and nothing
+here decodes anything.  `qDone` is `machine.accept` of a machine started from a phase-local retag of
+an actual prior run rather than from `initialConfig` on a raw pair input, so reaching it is neither
+halting of a composed machine nor language acceptance; the module states no `accepts`, no
+`AcceptsAt` and no language membership.  Clock composition, the fixed parser, the checks, advice
+freedom, `NP` membership and `ContentVerifierBridge` are out of scope.  It is infrastructure, not
+P-vs-NP mainline progress.

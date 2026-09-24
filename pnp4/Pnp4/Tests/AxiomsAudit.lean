@@ -57,6 +57,7 @@ import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetFirstPayloadBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetSecondPayloadBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetPayloadExhaustionBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetRegisterDecrementBridge
+import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetUnaryCountdownBridge
 import Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic
 import Pnp4.Frontier.ContractExpansion.ContentCappedSizes
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
@@ -940,3 +941,16 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.decrement_room_iff_target_bound
 #print axioms Pnp4.Frontier.ContractExpansion.decremented_register_header_value
 #print axioms Pnp4.Frontier.ContractExpansion.decremented_register_parsed_target
+
+-- Part A G2t gamma target unary countdown bridge.  One-way implications out of a
+-- decoded header, and out of a successful dependent parse, at the G2s-a entry
+-- `d + 2` and first round `firstClock zeros (borrow x w zeros)`: the countdown
+-- enters `qLoop` with the register holding the decoded target `n`, respectively the
+-- parsed `pr.2.n`, and leaves it holding that target minus one with one mark in the
+-- tally lane.  `qLoop` is not terminal, so these are exact times and not deadlines;
+-- there is no persistence conjunct, no iteration and no lane fence.  The matching
+-- named wrappers and the nonvacuity probes are audited where they are declared, in
+-- `Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`.
+#print axioms Pnp4.Frontier.ContractExpansion.countdown_room_iff_target_bound
+#print axioms Pnp4.Frontier.ContractExpansion.first_countdown_header_value
+#print axioms Pnp4.Frontier.ContractExpansion.first_countdown_parsed_target

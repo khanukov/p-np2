@@ -1051,6 +1051,94 @@ regressions derive, for every budget, the ordinary shape — header `(12, 7)`,
 whose incoming register is exactly `2 ^ 3`, `borrow = 3`, `decClock 15 3 3 = 18`,
 endpoint register `0111₂`, the digits of `7` with a `false` on top.
 
+`ContentFixedGammaTargetUnaryCountdownBridge.lean` is the Part A G2t
+infrastructure bridge, the pnp4 companion the pnp3 G2s-a slice deferred. It is
+registered immediately after G2r and imports G2r together with the pnp3
+`FixedGammaTargetUnaryCountdown`. It adds no machine: the run is G2s-a's
+`first_round`, unchanged. Its whole mathematical content is again one
+instantiation — G2s-a's `first_round` is stated for a positive `v` whose bit
+`zeros - j` is G2q's decremented register digit `j` at every `j ≤ zeros` and which
+has no bit above `zeros`, and no pnp3 theorem supplies such a `v`; its own probes
+use the hand-picked literals `24` and `23`. G2r's `decremented_register_digits`
+proves both digit facts for the decoded target `n`, and `3 ≤ n` gives positivity,
+so `v := n` is the instantiation and the first round is a round on the actual
+parsed target. Three public theorems, all one-way out of a decoded header or a
+successful parse. Write `N = a + m` and `d = borrow x w zeros`:
+
+* `countdown_room_iff_target_bound` (two hypotheses: a decoded header and a
+  decoded width): `2 * (n + 1) < 2 ^ (a + B) ↔ zeros + 2 ≤ a + B`, and
+  `zeros + 2 ≤ a + B ↔ a + m + 3 + zeros < tapeLength (pairLength a m) B`, plus
+  `2 * (n + 1) < 2 ^ (a + B) → n + 1 < 2 ^ (a + B)` and
+  `zeros + 1 = a + B → n + 1 < 2 ^ (a + B) ∧ ¬ 2 * (n + 1) < 2 ^ (a + B)`;
+* `first_countdown_header_value` (four hypotheses: matching tag, decoded header,
+  `3 ≤ n`, and `2 * (n + 1) < 2 ^ (a + B)`): some `zeros ≥ 2` has
+  `consumed = 2 * zeros + 1`, the decoded width, the bit-length bounds, the room in
+  its tape form, and, at the two configurations
+  `FixedGammaTargetUnaryCountdown.machine.run (d + 2)
+  (FixedGammaTargetUnaryCountdown.startConfig B x w)` and the same at
+  `FixedGammaTargetUnaryCountdown.firstClock zeros d`: `d ≤ zeros`, `qLoop` on the
+  separator blank `N + 2 + zeros` at both times, the entry tape
+  `loopTape B x w zeros n 0` with every register cell `N + 1 + j` reading
+  `some (n.testBit (zeros - j))`, the exit tape `loopTape B x w zeros (n - 1) 1`
+  with those cells reading `some ((n - 1).testBit (zeros - j))`, the completeness
+  fact for `n - 1`, the uniqueness of `n - 1` among values read off those cells
+  with no bit above `zeros`, one mark at `N + 3 + zeros`, blanks from
+  `N + 3 + zeros + 1` on, the separator blank `N + 2 + zeros`, the boundary blank
+  `N`, and the untouched `finishTape` content below `N`;
+* `first_countdown_parsed_target` (four hypotheses: matching tag, a successful
+  `contentInput? codec (Fin.append x w) = some pr` for an arbitrary codec,
+  `3 ≤ pr.2.n`, and the room at `pr.2.n`): `pr.2.n = pr.1`,
+  `contentHeader? (Fin.append x w) = some (pr.2.n, 2 * zeros + 1)`, and every
+  endpoint conjunct of the header form restated in `pr.2.n`.
+
+The six cell conjuncts cover every index of the endpoint tape, so the statement
+pins the whole tape rather than a sample of it. The room premise is G2s-a's: one
+cell more than G2q's, because `qRunEnd` writes the first mark on the first blank
+past the separator. The doubling in the target form is exact — the gamma bounds
+give `2 ^ (zeros + 1) ≤ 2 * (n + 1) < 2 ^ (zeros + 2)`, so neither direction of the
+equivalence has slack — and the last two conjuncts place this room against G2q's:
+it implies it, and at the boundary width `zeros + 1 = a + B` G2q's holds while this
+one fails. Unlike the G2r separation, which stated only the failing half and left
+the other to a probe, *both* halves are stated and proved here;
+`probe_countdown_room_boundary_nonvacuous` therefore only shows that the boundary
+hypothesis is inhabited, at the `a = 1, m = 11` split of the twelve-cell word with
+`B = 2`. Like G2q's, the room is carried, never derived — `B` is a free budget —
+and sufficient only; there is still no footprint theorem on the pnp3 side, and it
+allocates the *first* lane cell rather than bounding the countdown.
+
+Four numbers now stay apart, and the fourth is the one on the tape: `zeros` is the
+physical gamma width, `n + 1` the encoded gamma integer, `consumed = 2 * zeros + 1`
+and `treeMCSPPrefixM codec pr.1` length conventions that never sit in a register
+cell, `n` what G2r left in the register, and `n - 1` what this round leaves there.
+The tally is one **mark**; calling it the target in unary would be a claim about a
+decoded value, and no theorem here decodes anything. The gamma **leading-digit
+convention is not restored** and is destroyed further at each round, so the
+endpoint register's top cell may be `some false` and nothing here excludes it.
+
+This is **one round**. Nothing iterates, composes rounds, or states a clock beyond
+`firstClock zeros d = 2 * zeros + d + 9`, which is phase-local and counts none of
+the steps `startConfig` embeds — that configuration retags an actual G2q run, which
+itself retags an actual G2p-d run. There is deliberately **no persistence
+conjunct**: unlike G2r's `qDone`, `qLoop` does not absorb, so each endpoint holds at
+exactly its stated time and says nothing about any other time, and there is no
+deadline and no clamp. There is **no lane fence**: a target too large for the budget
+would run `qRunEnd` off the end of the tape and stick there, which is a timeout and
+therefore neither verdict, and no theorem here excludes that or claims the target
+fits. The module states no converse — nothing derives a header, a width,
+`2 ≤ zeros`, room, the borrow length or a parsed target from `qLoop`, from an
+endpoint tape, or from a digit at a register cell — and claims no first arrival, no
+parser execution, no reading of the register as a number on the tape (the
+uniqueness conjunct is arithmetic about the digits found there), no footprint or
+budget theorem, no malformed-gamma branch, no exhaustion, no degenerate width
+`zeros ≤ 1` on the machine side, no `accepts`, no `AcceptsAt`, no `ContentAccepts`,
+no language membership, no clock composition, no `ContentVerifierBridge`, and no
+P-vs-NP mainline result. Surface regressions derive, for every budget, the ordinary
+shape — header `(12, 7)`, `borrow = 0`, entry at `2` steps with the register still
+`1100₂`, `firstClock 3 0 = 15`, endpoint register `1011₂` at cells `16 … 19` with
+one mark at `21`, the separator `20` and cell `22` blank — and the cleared-top shape
+— header `(7, 7)`, `borrow = 3`, `firstClock 3 3 = 18`, endpoint register `0110₂`
+with the `false` still on top and one mark at `21`.
+
 `FixedContentGammaAnchorCorrect.lean` is the Part A G2a bridge. It proves the
 exact G1-final-to-G2a operational handoff and provides a logical cell-7
 restoration taking the successful marked tape back to literal `contentTape`.

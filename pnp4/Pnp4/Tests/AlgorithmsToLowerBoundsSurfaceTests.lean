@@ -67,6 +67,7 @@ import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetFirstPayloadBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetSecondPayloadBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetPayloadExhaustionBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetRegisterDecrementBridge
+import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetUnaryCountdownBridge
 import Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic
 import Pnp4.Frontier.ContractExpansion.ContentCappedSizes
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
@@ -6010,6 +6011,259 @@ theorem probe_decrement_room_strictly_stronger :
 #print axioms Pnp4.Tests.probe_decrement_room_strictly_stronger
 
 end ContentFixedGammaTargetRegisterDecrementBridgeSurface
+
+section ContentFixedGammaTargetUnaryCountdownBridgeSurface
+
+open AlgorithmsToLowerBounds
+open Pnp3.Complexity.Uniform.V1
+open Pnp4.Frontier.ContractExpansion
+
+theorem check_countdown_room_iff_target_bound {a m B n consumed zeros : Nat}
+    (x : Bitstring a) (w : Bitstring m)
+    (hheader : contentHeader? (Fin.append x w) = some (n, consumed))
+    (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros) :
+    (2 * (n + 1) < 2 ^ (a + B) ↔ zeros + 2 ≤ a + B) ∧
+      (zeros + 2 ≤ a + B ↔
+        a + m + 3 + zeros < tapeLength (PairEncoding.pairLength a m) B) ∧
+      (2 * (n + 1) < 2 ^ (a + B) → n + 1 < 2 ^ (a + B)) ∧
+      (zeros + 1 = a + B → n + 1 < 2 ^ (a + B) ∧ ¬ 2 * (n + 1) < 2 ^ (a + B)) :=
+  countdown_room_iff_target_bound x w hheader hg
+
+theorem check_first_countdown_header_value {a m B n consumed : Nat}
+    (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
+    (hheader : contentHeader? (Fin.append x w) = some (n, consumed)) (hn : 3 ≤ n)
+    (hroom : 2 * (n + 1) < 2 ^ (a + B)) :
+    ∃ zeros, 2 ≤ zeros ∧ consumed = 2 * zeros + 1 ∧
+      FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros ∧
+      2 ^ zeros ≤ n + 1 ∧ n + 1 < 2 ^ (zeros + 1) ∧
+      a + m + 3 + zeros < tapeLength (PairEncoding.pairLength a m) B ∧
+      let d := FixedGammaTargetRegisterDecrement.borrow x w zeros
+      let c0 := FixedGammaTargetUnaryCountdown.machine.run (d + 2)
+        (FixedGammaTargetUnaryCountdown.startConfig B x w)
+      let e := FixedGammaTargetUnaryCountdown.machine.run
+        (FixedGammaTargetUnaryCountdown.firstClock zeros d)
+        (FixedGammaTargetUnaryCountdown.startConfig B x w)
+      d ≤ zeros ∧ c0.state = FixedGammaTargetUnaryCountdown.qLoop ∧
+        c0.head.val = a + m + 2 + zeros ∧
+        c0.tape = FixedGammaTargetUnaryCountdown.loopTape B x w zeros n 0 ∧
+        (∀ j : Nat, j ≤ zeros → ∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B),
+          i.val = a + m + 1 + j → c0.tape i = some (n.testBit (zeros - j))) ∧
+        e.state = FixedGammaTargetUnaryCountdown.qLoop ∧
+        e.head.val = a + m + 2 + zeros ∧
+        e.tape = FixedGammaTargetUnaryCountdown.loopTape B x w zeros (n - 1) 1 ∧
+        (∀ j : Nat, j ≤ zeros → ∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B),
+          i.val = a + m + 1 + j → e.tape i = some ((n - 1).testBit (zeros - j))) ∧
+        (∀ b : Nat, zeros < b → (n - 1).testBit b = false) ∧
+        (∀ v : Nat,
+          (∀ j : Nat, j ≤ zeros → ∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B),
+            i.val = a + m + 1 + j → e.tape i = some (v.testBit (zeros - j))) →
+          (∀ b : Nat, zeros < b → v.testBit b = false) → v = n - 1) ∧
+        (∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B),
+          i.val = a + m + 3 + zeros → e.tape i = some true) ∧
+        (∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B),
+          a + m + 3 + zeros + 1 ≤ i.val → e.tape i = none) ∧
+        (∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B),
+          i.val = a + m + 2 + zeros → e.tape i = none) ∧
+        (∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B),
+          i.val = a + m → e.tape i = none) ∧
+        (∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B), i.val < a + m →
+          e.tape i = FixedGammaTargetPayloadExhaustion.finishTape B x w zeros i) :=
+  first_countdown_header_value x w htag hheader hn hroom
+
+theorem check_first_countdown_parsed_target {threshold : Nat → Nat}
+    (codec : Frontier.TreeCircuitWitnessCodec threshold) {a m B : Nat}
+    (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
+    {pr : Σ r : Nat,
+      PrefixInput
+        (Frontier.treeMCSPSearchProblem threshold
+          (Frontier.TreeMCSPSearchWitnessEncoding.ofCodec codec))
+        (treeMCSPPrefixM codec r)}
+    (hpr : contentInput? codec (Fin.append x w) = some pr) (hn : 3 ≤ pr.2.n)
+    (hroom : 2 * (pr.2.n + 1) < 2 ^ (a + B)) :
+    ∃ zeros, 2 ≤ zeros ∧ pr.2.n = pr.1 ∧
+      contentHeader? (Fin.append x w) = some (pr.2.n, 2 * zeros + 1) ∧
+      FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros ∧
+      2 ^ zeros ≤ pr.2.n + 1 ∧ pr.2.n + 1 < 2 ^ (zeros + 1) ∧
+      a + m + 3 + zeros < tapeLength (PairEncoding.pairLength a m) B ∧
+      let d := FixedGammaTargetRegisterDecrement.borrow x w zeros
+      let c0 := FixedGammaTargetUnaryCountdown.machine.run (d + 2)
+        (FixedGammaTargetUnaryCountdown.startConfig B x w)
+      let e := FixedGammaTargetUnaryCountdown.machine.run
+        (FixedGammaTargetUnaryCountdown.firstClock zeros d)
+        (FixedGammaTargetUnaryCountdown.startConfig B x w)
+      d ≤ zeros ∧ c0.state = FixedGammaTargetUnaryCountdown.qLoop ∧
+        c0.head.val = a + m + 2 + zeros ∧
+        c0.tape = FixedGammaTargetUnaryCountdown.loopTape B x w zeros pr.2.n 0 ∧
+        (∀ j : Nat, j ≤ zeros → ∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B),
+          i.val = a + m + 1 + j → c0.tape i = some (pr.2.n.testBit (zeros - j))) ∧
+        e.state = FixedGammaTargetUnaryCountdown.qLoop ∧
+        e.head.val = a + m + 2 + zeros ∧
+        e.tape = FixedGammaTargetUnaryCountdown.loopTape B x w zeros (pr.2.n - 1) 1 ∧
+        (∀ j : Nat, j ≤ zeros → ∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B),
+          i.val = a + m + 1 + j → e.tape i = some ((pr.2.n - 1).testBit (zeros - j))) ∧
+        (∀ b : Nat, zeros < b → (pr.2.n - 1).testBit b = false) ∧
+        (∀ v : Nat,
+          (∀ j : Nat, j ≤ zeros → ∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B),
+            i.val = a + m + 1 + j → e.tape i = some (v.testBit (zeros - j))) →
+          (∀ b : Nat, zeros < b → v.testBit b = false) → v = pr.2.n - 1) ∧
+        (∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B),
+          i.val = a + m + 3 + zeros → e.tape i = some true) ∧
+        (∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B),
+          a + m + 3 + zeros + 1 ≤ i.val → e.tape i = none) ∧
+        (∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B),
+          i.val = a + m + 2 + zeros → e.tape i = none) ∧
+        (∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B),
+          i.val = a + m → e.tape i = none) ∧
+        (∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B), i.val < a + m →
+          e.tape i = FixedGammaTargetPayloadExhaustion.finishTape B x w zeros i) :=
+  first_countdown_parsed_target codec x w htag hpr hn hroom
+
+/-! The next two probes run the *actual* G2s-a countdown machine out of the landed
+`startConfig`, for every budget `B`; the third runs no machine at all.  Each of the two
+derives its cells from `first_countdown_header_value`, so it pins what that theorem gives
+and is not an independent machine reduction; neither runs a parser, and neither reduces the
+`startConfig` the endpoints are measured from — that configuration retags an actual G2q run,
+which itself retags an actual G2p-d run, and no probe evaluates either.  Neither probe
+claims first arrival, and neither claims persistence: `qLoop` is not terminal, so each
+endpoint is the configuration at exactly its stated time and nothing is said about any other
+time.  `qLoop` is an internal control tag of a phase whose `startConfig` retags an actual
+prior run, so no probe below states halting of a composed machine or language acceptance,
+and the single mark each endpoint carries is a mark, not a value in unary.  The borrow
+lengths are pinned by `decide` on the register digits and the clocks by `rfl`. -/
+
+/-- The G2p-g/G2r word, reused a third time: its tag, width three and header `(12, 7)` are
+already pinned where it is declared, and `probe_decrement_register_width_three` pins the G2q
+endpoint register at cells `16 … 19` as `1100₂`, the four digits of the decoded target `12`.
+This probe pins what the countdown adds on top of that.  The entry costs `d + 2 = 2` steps
+and reaches `loopTape B x w zeros n 0`; together with `probe_decrement_register_width_three`,
+this pins the register as `1100₂` at the `qLoop` configuration two
+steps in, on the separator blank `20`; the round then subtracts one, leaving `1011₂` — the
+digits of `11` — and lays one mark on the first lane cell `21`, with the separator `20` and
+cell `22` still blank, all at exactly `firstClock 3 0 = 15` steps.  Neither `qLoop`
+configuration is claimed to be the first one: `qLoop` does not absorb, and these are the
+configurations at exactly those two times.  The room `2 * 13 < 2 ^ (8 + B)` holds at every
+budget because `a = 8` alone already gives `256`. -/
+theorem probe_first_countdown_width_three (B : Nat) :
+    FixedGammaTargetRegisterDecrement.borrow headerValueTag exhaustRegisterWidthThree 3 = 0 ∧
+      FixedGammaTargetUnaryCountdown.firstClock 3 0 = 15 ∧
+      let c0 := FixedGammaTargetUnaryCountdown.machine.run 2
+        (FixedGammaTargetUnaryCountdown.startConfig B headerValueTag exhaustRegisterWidthThree)
+      let e := FixedGammaTargetUnaryCountdown.machine.run 15
+        (FixedGammaTargetUnaryCountdown.startConfig B headerValueTag exhaustRegisterWidthThree)
+      c0.state = FixedGammaTargetUnaryCountdown.qLoop ∧ c0.head.val = 20 ∧
+        c0.tape ⟨8 + 7 + 1, by unfold tapeLength PairEncoding.pairLength; omega⟩ = some true ∧
+        c0.tape ⟨8 + 7 + 2, by unfold tapeLength PairEncoding.pairLength; omega⟩ = some true ∧
+        c0.tape ⟨8 + 7 + 3, by unfold tapeLength PairEncoding.pairLength; omega⟩ = some false ∧
+        c0.tape ⟨8 + 7 + 4, by unfold tapeLength PairEncoding.pairLength; omega⟩ = some false ∧
+        e.state = FixedGammaTargetUnaryCountdown.qLoop ∧ e.head.val = 20 ∧
+        e.tape ⟨8 + 7 + 1, by unfold tapeLength PairEncoding.pairLength; omega⟩ = some true ∧
+        e.tape ⟨8 + 7 + 2, by unfold tapeLength PairEncoding.pairLength; omega⟩ = some false ∧
+        e.tape ⟨8 + 7 + 3, by unfold tapeLength PairEncoding.pairLength; omega⟩ = some true ∧
+        e.tape ⟨8 + 7 + 4, by unfold tapeLength PairEncoding.pairLength; omega⟩ = some true ∧
+        e.tape ⟨8 + 7 + 3 + 3, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
+          some true ∧
+        e.tape ⟨8 + 7 + 2 + 3, by unfold tapeLength PairEncoding.pairLength; omega⟩ = none ∧
+        e.tape ⟨8 + 7 + 3 + 3 + 1, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
+          none := by
+  have hb : FixedGammaTargetRegisterDecrement.borrow headerValueTag
+      exhaustRegisterWidthThree 3 = 0 := by decide
+  have hpow : (2 : Nat) ^ 8 ≤ 2 ^ (8 + B) := Nat.pow_le_pow_right (by omega) (by omega)
+  have h8 : (2 : Nat) ^ 8 = 256 := by norm_num
+  obtain ⟨zeros, -, hconsumed, -, -, -, -, -, hc1, hc2, -, hcreg, he1, he2, -, hereg, -, -,
+    hmark, hlane, hsep, -, -⟩ :=
+    first_countdown_header_value (B := B) headerValueTag exhaustRegisterWidthThree
+      (by decide) (show contentHeader? _ = some (12, 7) by decide) (by omega) (by omega)
+  obtain rfl : zeros = 3 := by omega
+  have hf : FixedGammaTargetUnaryCountdown.firstClock 3 0 = 15 := rfl
+  rw [hb] at hc1 hc2 hcreg he1 he2 hereg hmark hlane hsep
+  rw [show (0 : Nat) + 2 = 2 from rfl] at hc1 hc2 hcreg
+  rw [hf] at he1 he2 hereg hmark hlane hsep
+  refine ⟨hb, rfl, hc1, by omega, ?_, ?_, ?_, ?_, he1, by omega, ?_, ?_, ?_, ?_,
+    hmark _ rfl, hsep _ rfl, hlane _ (Nat.le_refl _)⟩
+  · rw [hcreg 0 (by omega) _ (by rfl)]; decide
+  · rw [hcreg 1 (by omega) _ (by rfl)]; decide
+  · rw [hcreg 2 (by omega) _ (by rfl)]; decide
+  · rw [hcreg 3 (by omega) _ (by rfl)]; decide
+  · rw [hereg 0 (by omega) _ (by rfl)]; decide
+  · rw [hereg 1 (by omega) _ (by rfl)]; decide
+  · rw [hereg 2 (by omega) _ (by rfl)]; decide
+  · rw [hereg 3 (by omega) _ (by rfl)]; decide
+
+/-- **The round starts from an already-cleared leading digit, and clears nothing back.**  On
+`decrementClearedTopWord` the header is `(7, 7)`, and `probe_decrement_cleared_top_digit`
+pins the incoming G2q register as `0111₂` — the digits of `7`, with the `false` on top that
+the decrement left behind.  Here the borrow length is `d = 3`, three cells of entry offset,
+and `firstClock 3 3 = 18`; at exactly that time the register reads `0110₂`, the digits of
+`6`, with one mark at `21`.  This probe pins the endpoint only — it states no entry
+configuration — and claims no first arrival.  The gamma leading-digit convention is not
+restored here: the top cell was `false` before this round and is `false` after it. -/
+theorem probe_first_countdown_cleared_top_digit (B : Nat) :
+    FixedGammaTargetRegisterDecrement.borrow headerValueTag decrementClearedTopWord 3 = 3 ∧
+      FixedGammaTargetUnaryCountdown.firstClock 3 3 = 18 ∧
+      let e := FixedGammaTargetUnaryCountdown.machine.run 18
+        (FixedGammaTargetUnaryCountdown.startConfig B headerValueTag decrementClearedTopWord)
+      e.state = FixedGammaTargetUnaryCountdown.qLoop ∧ e.head.val = 20 ∧
+        e.tape ⟨8 + 7 + 1, by unfold tapeLength PairEncoding.pairLength; omega⟩ = some false ∧
+        e.tape ⟨8 + 7 + 2, by unfold tapeLength PairEncoding.pairLength; omega⟩ = some true ∧
+        e.tape ⟨8 + 7 + 3, by unfold tapeLength PairEncoding.pairLength; omega⟩ = some true ∧
+        e.tape ⟨8 + 7 + 4, by unfold tapeLength PairEncoding.pairLength; omega⟩ = some false ∧
+        e.tape ⟨8 + 7 + 3 + 3, by unfold tapeLength PairEncoding.pairLength; omega⟩ =
+          some true := by
+  have hb : FixedGammaTargetRegisterDecrement.borrow headerValueTag
+      decrementClearedTopWord 3 = 3 := by decide
+  have hpow : (2 : Nat) ^ 8 ≤ 2 ^ (8 + B) := Nat.pow_le_pow_right (by omega) (by omega)
+  have h8 : (2 : Nat) ^ 8 = 256 := by norm_num
+  obtain ⟨zeros, -, hconsumed, -, -, -, -, -, -, -, -, -, he1, he2, -, hereg, -, -, hmark, -,
+    -, -, -⟩ :=
+    first_countdown_header_value (B := B) headerValueTag decrementClearedTopWord
+      (by decide) (show contentHeader? _ = some (7, 7) by decide) (by omega) (by omega)
+  obtain rfl : zeros = 3 := by omega
+  rw [hb] at he1 he2 hereg hmark
+  rw [show FixedGammaTargetUnaryCountdown.firstClock 3 3 = 18 from rfl] at he1 he2 hereg hmark
+  refine ⟨hb, rfl, he1, by omega, ?_, ?_, ?_, ?_, hmark _ rfl⟩
+  · rw [hereg 0 (by omega) _ (by rfl)]; decide
+  · rw [hereg 1 (by omega) _ (by rfl)]; decide
+  · rw [hereg 2 (by omega) _ (by rfl)]; decide
+  · rw [hereg 3 (by omega) _ (by rfl)]; decide
+
+/-- **The boundary of `countdown_room_iff_target_bound` is inhabited.**  Its fourth conjunct
+separates this phase's room from G2q's *conditionally*, at widths with `zeros + 1 = a + B`,
+and this probe shows that hypothesis is not empty: the twelve cells of
+`probe_exhausted_room_not_implied`, split as `a = 1, m = 11`, decode to the header `(5, 5)`
+at width `zeros = 2`, and at the budget `B = 2` that is exactly `zeros + 1 = a + B = 3`.
+There G2q's room `n + 1 < 2 ^ (a + B)` holds — `6 < 8` — while this phase's
+`2 * (n + 1) < 2 ^ (a + B)` fails, `12 < 8` being false, and with it the width and tape
+forms.  So the extra tally cell is a real strengthening at a literal word: the two machine
+theorems of this bridge are inapplicable to this split, while G2r's own room premise still
+holds here, which is the fourth conjunct below. -/
+theorem probe_countdown_room_boundary_nonvacuous :
+    contentHeader? (Fin.append exhaustRoomSplitX exhaustRoomSplitW) = some (5, 5) ∧
+      FixedContentGammaTerminator.gammaZeros?
+        (Fin.append exhaustRoomSplitX exhaustRoomSplitW) = some 2 ∧
+      2 + 1 = 1 + 2 ∧
+      5 + 1 < 2 ^ (1 + 2) ∧
+      ¬ (2 * (5 + 1) < 2 ^ (1 + 2)) ∧
+      ¬ (2 + 2 ≤ 1 + 2) ∧
+      ¬ (1 + 11 + 3 + 2 < tapeLength (PairEncoding.pairLength 1 11) 2) := by
+  have hiff := check_countdown_room_iff_target_bound (B := 2)
+    exhaustRoomSplitX exhaustRoomSplitW
+    (show contentHeader? _ = some (5, 5) by decide)
+    (show FixedContentGammaTerminator.gammaZeros? _ = some 2 by decide)
+  refine ⟨by decide, by decide, rfl, (hiff.2.2.2 rfl).1, (hiff.2.2.2 rfl).2, fun h => ?_,
+    fun h => ?_⟩
+  · exact (hiff.2.2.2 rfl).2 (hiff.1.2 h)
+  · exact (hiff.2.2.2 rfl).2 (hiff.1.2 (hiff.2.1.2 h))
+
+#print axioms Pnp4.Tests.check_countdown_room_iff_target_bound
+#print axioms Pnp4.Tests.check_first_countdown_header_value
+#print axioms Pnp4.Tests.check_first_countdown_parsed_target
+#print axioms Pnp4.Tests.probe_first_countdown_width_three
+#print axioms Pnp4.Tests.probe_first_countdown_cleared_top_digit
+#print axioms Pnp4.Tests.probe_countdown_room_boundary_nonvacuous
+
+end ContentFixedGammaTargetUnaryCountdownBridgeSurface
 
 section ContentCappedArithmeticSurface
 

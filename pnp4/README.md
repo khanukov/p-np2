@@ -579,16 +579,19 @@ lays a cutoff cell, adds a `qOverflow` state, or shows any execution theorem sur
 an installed `some false` in the lane. The lane is still uncapped in the machine: a
 target too large for the budget runs off the end of the tape and sticks, which is a
 timeout and neither verdict, and G2w-a's bound identifies a legitimate cap value rather
-than a mechanism enforcing one. The room is carried, never derived, and sufficient
-only. The more expensive `boundedContentCap` alternative — a polynomial lane from
-`boundedContentInput?` success instead of a linear one from acceptance — is documented
+than a mechanism enforcing one. In G2v and G2w-a the room is **carried, never
+derived** — `B` is a free budget in both — while G2w-b derives it, but only by
+*instantiating* `B` at the cube: that room is sufficient only, and no budget, cubic or
+otherwise, is shown necessary. The more expensive `boundedContentCap` alternative — a
+polynomial lane from `boundedContentInput?` success instead of a linear one from
+acceptance — is documented
 and **not implemented**. Persistence is not first arrival (`qDone` absorbs). No
 converse is stated in either direction: not endpoint-to-parse, and not
 `pr.2.n ≤ N`-to-acceptance. Parser execution, a footprint theorem, the degenerate
 widths `zeros ≤ 1` on the machine side, a malformed-gamma branch, `accepts`,
 `AcceptsAt`, language membership, advice freedom, `NP` membership, clock composition and
-`ContentVerifierBridge` are not provided, and neither slice is P-vs-NP mainline
-progress.
+`ContentVerifierBridge` are not provided, and none of these three slices is P-vs-NP
+mainline progress.
 
 For an *arbitrary* threshold there is a third input, `PolyBoundedInTable threshold`;
 it is proved for the canonical polynomial thresholds, so it disappears at

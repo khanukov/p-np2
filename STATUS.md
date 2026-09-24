@@ -7,8 +7,9 @@ cap, at a fixed cubic budget (infrastructure only).**
 Two new pnp4 modules, `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetUnaryCountdownIterationBridge`
 and `Pnp4.Frontier.ContractExpansion.ContentCountdownLinearCap`. There is **no new machine, no new
 state, no new table row and no new pnp3 module**: every step is G2s-a's fixed 11-state, 33-row table,
-run for longer by G2u. Write `N = a+m` and `d = borrow x w zeros`. Ten public theorems: nine
-one-way implications and one plain equation between two spellings of a split word.
+run for longer by G2u. Write `N = a+m` and `d = borrow x w zeros`. Ten public theorems: the G2v
+surface includes room equivalences and one-way execution results; G2w adds one-way semantic and
+execution results plus one plain equation between two spellings of a split word.
 
 G2v is to G2u exactly what G2t was to G2s-a: the *value*. G2u's `register_drained` is stated for a
 universally quantified `v` and supplies none — its own probes use the hand-picked literals `24` and

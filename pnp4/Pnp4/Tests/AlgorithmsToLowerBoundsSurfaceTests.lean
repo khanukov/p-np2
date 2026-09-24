@@ -6605,7 +6605,8 @@ private theorem allFalse_predicate_three (k : Nat) :
 
 /-- **The G2w-b endpoint's three premises are jointly inhabited, at a pinned target.**  One accepted
 word per exponent: GATE-0's zero-prefix query for the all-false table on three variables, followed
-by the certificate carrying `Circuit.const false`'s encoding.  `zeroPrefixQueryValue_parses` and
+by its certificate — the one `contentAccepts_zeroPrefixQuery_of_predicate` supplies for that
+instance, whose contents nothing here pins.  `zeroPrefixQueryValue_parses` and
 `contentInput?_concat_of_parse` pin the parse to the canonical `⟨3, input⟩`, so the parsed target is
 `3` and the canonical width is `gammaZeros 3 = 2`; `concatBitstring_eq_append` moves the word from
 the interface's `concatBitstring` spelling to the fixed-phase `Fin.append` split.  The last conjunct

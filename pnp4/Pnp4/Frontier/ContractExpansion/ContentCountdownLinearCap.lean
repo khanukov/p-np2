@@ -247,14 +247,20 @@ persists.
 The **room is still carried**: `B` is a free budget and no hypothesis of this theorem implies it.
 The cap is derived, the room is not, and neither is shown necessary.  The five hypotheses are not
 independent — acceptance already implies the tag premise, by
-`fixedTag_semantic_factorization`, which is carried here only to match G2v's shape — and **no probe
-inhabits them jointly**, so the capstone is not shown to be non-vacuous.  Nothing is fenced: `a + m`
-occurs as a *number* in the room premise and in G2v's statement, not as a `some false` cell laid on
-the tape, and no `qOverflow` route exists to take when the bound fails — a word whose parse succeeds
-and whose target exceeds `a + m` is semantically rejected by
-`contentSemanticAccepts_eq_false_of_length_lt_parsed_target`, but no machine here detects that.  The
-persistence conjunct is persistence, not first arrival; `qDone` is phase-local, not halting or
-language acceptance; and `fullClock` counts this phase's steps alone. -/
+`fixedTag_semantic_factorization`, which is carried here only to match G2v's shape.  **No probe
+states these five hypotheses directly.**  They are inhabited jointly only through
+`countdown_drained_accepted_content_at_polyClock` below, which derives the tag, the cap and the room
+from the parse, the acceptance and `3 ≤ pr.2.n` at the single budget
+`B := polyClock 3 (PairEncoding.pairLength a m)`, together with the surface probe
+`probe_countdown_polyClock_accepted_target_three`, which inhabits those three hypotheses on a
+concrete word.  So this statement is non-vacuous at that one budget; at a free `B` nothing here
+exhibits the room.  Nothing is fenced: `a + m` occurs as a *number* in the room premise and in
+G2v's statement, not as a `some false` cell laid on the tape, and no `qOverflow` route exists to
+take when the bound fails — a word whose parse succeeds and whose target exceeds `a + m` is
+semantically rejected by `contentSemanticAccepts_eq_false_of_length_lt_parsed_target`, but no
+machine here detects that.  The persistence conjunct is persistence, not first arrival; `qDone` is
+phase-local, not halting or language acceptance; and `fullClock` counts this phase's steps
+alone. -/
 theorem countdown_drained_accepted_content (k : Nat) {a m B : Nat}
     (x : Bitstring a) (w : Bitstring m)
     (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
@@ -328,10 +334,14 @@ private theorem gammaZeros_le (n : Nat) : gammaZeros n ≤ n := by
 
 /-- **The cubic budget dominates.**  Pure arithmetic, with `zeros` and `d` abstract: under
 `3 ≤ n ≤ a + m`, `zeros ≤ n` and `d ≤ zeros`, the fixed value
-`polyClock 3 (pairLength a m) = (2 * a + 1 + m) ^ 3 + 3` satisfies both of G2v's numeric premises —
-the room, and the expanded exact clock `fullClock zeros d n`.  Only `(a + m + 1) ^ 3 ≤
-pairLength a m ^ 3` and `3 ≤ a + m` are used.  The exponent `3` is sufficient here; nothing shows it
-is least, and no smaller exponent is ruled out. -/
+`polyClock 3 (pairLength a m) = (2 * a + 1 + m) ^ 3 + 3` satisfies both numeric obligations needed
+here — G2v's imported room premise and G2w-b's additional domination of the expanded exact clock
+`fullClock zeros d n`.  All four hypotheses are used: the
+target, width and borrow bounds are what shrink every summand of the clock to a quadratic in
+`a + m`.  Of the *cube* only two facts are used — the monotone comparison
+`(a + m + 1) ^ 3 ≤ pairLength a m ^ 3` and `3 ≤ a + m`, the latter itself read off `3 ≤ n ≤ a + m` —
+so no further property of `pairLength` or of `polyClock` enters.  The exponent `3` is sufficient
+here; nothing shows it is least, and no smaller exponent is ruled out. -/
 private theorem polyClock_room_and_clock {a m zeros d n : Nat}
     (hn : 3 ≤ n) (hcap : n ≤ a + m) (hzn : zeros ≤ n) (hd : d ≤ zeros) :
     zeros + 2 + (a + m) ≤ a + polyClock 3 (PairEncoding.pairLength a m) ∧

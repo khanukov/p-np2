@@ -1295,8 +1295,8 @@ that this one value is large enough for both. And `polyClock` occurs here as an
 arithmetic value: no `DecidesWithin`, `UniformP`, runtime or `NP` statement is made or
 implied. The surface probe `probe_countdown_polyClock_accepted_target_three` inhabits the
 three premises **jointly**, one accepted word per exponent — GATE-0's zero-prefix query
-for the all-false table on three variables followed by the certificate carrying
-`Circuit.const false` — at the pinned target `pr.2.n = 3` and the pinned width
+for the all-false table on three variables followed by the certificate that
+`contentAccepts_zeroPrefixQuery_of_predicate` supplies — at the pinned target `pr.2.n = 3` and the pinned width
 `gammaZeros 3 = 2`, and reads the `qDone` endpoint state back after exactly `B` steps. It
 exhibits one word per exponent and nothing about any other: no *rejected* word, no
 *overshooting* word, and no tape cell.
@@ -1314,11 +1314,14 @@ linear one; this module defines no such cap and takes **no new direct import** f
 supply it, and the surface probes only read it back.
 `probe_linear_cap_accepted_nonvacuous` shows that the parse and
 acceptance premises of `contentSemanticAccepts_parsed_target_le_length` hold together on a
-word that exists. It pins no target value, and it inhabits neither the overflow theorem's
-premise pair nor the free-budget capstone's five hypotheses jointly, so neither of those is
-shown non-vacuous; nor is any parse-successful word exhibited whose target overshoots its
-own length, so acceptance is used rather than shown necessary. The free-budget capstone's
-hypotheses are not independent: acceptance already implies the tag premise, by
+word that exists. It pins no target value and does not inhabit the overflow theorem's
+premise pair, so that theorem is not shown non-vacuous; nor is any parse-successful word
+exhibited whose target overshoots its own length, so acceptance is used rather than shown
+necessary. No probe states the free-budget capstone's five hypotheses directly, but the
+G2w-b probe inhabits them at `B := polyClock 3 (pairLength a m)`: G2w-b derives the tag,
+cap and room from its jointly inhabited parse, acceptance and target-bound premises. Thus
+that capstone is non-vacuous at this one budget, while no probe exhibits its room at a free
+`B`. Its hypotheses are not independent: acceptance already implies the tag premise, by
 `fixedTag_semantic_factorization`. No converse is stated:
 nothing derives acceptance, a parse, a header or a width from `pr.2.n ≤ N`, and a
 `false` verdict can equally come from a failed parse or a failed witness check. No

@@ -1125,12 +1125,13 @@ lean_lib Pnp4 where
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionGateClosure,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionPaddingTransport,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentPrefixExtensionTransfer,
-    -- Part A G2w-a: the linear cap, as semantics.  Listed after both G2v and FEAS-0's
+    -- Part A G2w-a/b: the semantic linear cap and its fixed-cubic-budget closure.  Listed after both G2v and FEAS-0's
     -- `ContentTargetSizeBound`, which it imports.  Content *acceptance* — not parser
     -- success alone — bounds the parsed target by the complete word's length, so the
     -- overflow direction `a+m < pr.2.n` forces `contentSemanticAccepts = false`, and the
-    -- G2v drain may be taken at the concrete lane cap `F := a+m`.  No fence, no
-    -- `qOverflow` state, no machine and no cutoff cell is built here.
+    -- G2v drain may be taken at the concrete lane cap `F := a+m`; G2w-b then chooses a
+    -- cubic tape/step budget and derives the room and clock bounds.  No fence, no `qOverflow`
+    -- state, no machine and no cutoff cell is built here.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentCountdownLinearCap,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentConsolidatedSource,
     -- Model-audit module: it depends only on the shared complexity interfaces,

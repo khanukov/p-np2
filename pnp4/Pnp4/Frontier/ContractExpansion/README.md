@@ -1162,8 +1162,16 @@ out of a decoded header or a successful parse. Write `N = a + m` and
   exponent uniqueness: G2p-g exports `2 ^ zeros ≤ n + 1 < 2 ^ (zeros + 1)`, `bitLength`
   satisfies the same two bounds at `gammaZeros n`, and no natural lies in two such
   windows. Both widths are functions of data that already exist, so this is an equation
-  between two computed quantities, **not** extraction of a runtime value from a proof;
-  the much broader I1 gate-closure module is deliberately not imported for it;
+  between two computed quantities, **not** extraction of a runtime value from a proof.
+  No **new direct import** is taken for it, and its proof uses no declaration of the much
+  broader I1 gate-closure module — which is not the same as that module being absent: it is
+  already in this bridge's transitive closure, through the G2o header-value bridge, whose
+  semantic-bridge import reaches `FixedContentGammaTerminatorCorrect` and thence
+  `FixedContentTagGateCorrect`, which imports both `ContentPrefixExtensionGateClosure` and
+  `BoundedContentSemanticVerifier`. The dependency this bridge actually uses from that
+  direction is G2o's `contentInput?_target_eq_contentHeader`, consumed by
+  `countdown_drained_parsed_target` below, and *its* proof does invoke I1's
+  `contentInput?_lengthGate_vacuous`;
 * `countdown_drain_cap_iff_machine_room` (the same two): `zeros = gammaZeros n`; the
   cap-and-room pair `n ≤ F ∧ gammaZeros n + 2 + F ≤ a + B` is the same condition as
   `n ≤ F ∧ zeros + 2 + F ≤ a + B`; `zeros + 2 + F ≤ a + B` is the same condition as
@@ -1263,11 +1271,19 @@ must instead be that every *bounded-parser* success completes the countdown, the
 to come from `boundedContentCap k N = N ^ contentCapExponent k + contentCapExponent k`,
 since `boundedContentInput?` success bounds `treeMCSPPrefixM codec pr.1` and
 `pr.2.n = pr.1 ≤ treeMCSPPrefixM codec pr.1`. That is a polynomial lane rather than a
-linear one; this module defines no such cap and does not import
-`BoundedContentSemanticVerifier`. Non-vacuity is not claimed here either — GATE-0's
+linear one; this module defines no such cap and takes **no new direct import** for one.
+`BoundedContentSemanticVerifier` is nonetheless already in its transitive closure, through
+`FixedContentTagGateCorrect`, so the accurate statement is that no declaration of it is
+*used* here, not that it is absent. Non-vacuity is not claimed here either — GATE-0's
 `contentAccepts_nonvacuous_treePoly` supplies it, and the surface probe
-`probe_linear_cap_accepted_nonvacuous` only reads it back to show that the parse,
-acceptance and bound hold together on a word that exists. No converse is stated:
+`probe_linear_cap_accepted_nonvacuous` only reads it back to show that the parse and
+acceptance premises of `contentSemanticAccepts_parsed_target_le_length` hold together on a
+word that exists. It pins no target value, and it inhabits neither the overflow theorem's
+premise pair nor the capstone's five hypotheses jointly, so neither of those is shown
+non-vacuous; nor is any parse-successful word exhibited whose target overshoots its own
+length, so acceptance is used rather than shown necessary. The capstone's hypotheses are
+not independent: acceptance already implies the tag premise, by
+`fixedTag_semantic_factorization`. No converse is stated:
 nothing derives acceptance, a parse, a header or a width from `pr.2.n ≤ N`, and a
 `false` verdict can equally come from a failed parse or a failed witness check. No
 runtime bound, advice-freedom claim, `NP` membership, `accepts`, `AcceptsAt`, language

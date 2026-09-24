@@ -70,7 +70,11 @@ cell, adds a `qOverflow` state or shows that any execution theorem survives an i
 stands unchanged: the lane is still uncapped *in the machine*, a target too large for the budget
 still runs `qRunEnd` off the end of the tape and sticks there, which is a timeout and therefore
 neither verdict, and G2w-a's bound does not change that — it identifies a cap value that is
-legitimate for accepted words, not a mechanism that enforces one. The **room** is carried and never
+legitimate for accepted words, not a mechanism that enforces one. The *other* half of that recorded
+requirement, that the `F = N` justification be derived or replaced, is what G2w-a supplies, and only
+in the form stated above: `F = N = a+m` for **accepted** words, at the concrete
+`treeCircuitWitnessCodec (thresholdPoly k)` and conditional on acceptance, never from parser success
+and never codec-generically. The executed-fence half stands. The **room** is carried and never
 derived — `B` is a free budget — and is sufficient and used, never shown necessary; G2u's
 `check_below_room_drain_probe` still exhibits a budget where it fails while the drain completes.
 **First arrival**: `qDone` absorbs, so the all-times conjunct is persistence and nothing more, and no
@@ -81,7 +85,14 @@ direction exists; on the G2w-a side nothing derives acceptance, a parse or a hea
 `pr.2.n <= N`, and a `false` verdict can equally come from a failed parse or a failed witness check.
 The more expensive `boundedContentCap` alternative — a polynomial lane derived from
 `boundedContentInput?` success rather than a linear one derived from acceptance — is documented in
-the G2w-a module and **not implemented**; `BoundedContentSemanticVerifier` is not imported. The
+the G2w-a module and **not implemented**, and **no new direct import** is taken for it.
+`BoundedContentSemanticVerifier` and the I1 gate-closure module are both already in the transitive
+closure of both new modules, through `FixedContentTagGateCorrect`, which the G2v bridge reaches via
+the G2o header-value bridge; the accurate statement is that no declaration of `boundedContentInput?`
+or of its verifier is *used* here. What the new proofs do use from that direction is G2o's
+`contentInput?_target_eq_contentHeader`, whose own proof invokes I1's
+`contentInput?_lengthGate_vacuous`; on the G2w-a side the used dependencies are FEAS-0's
+`contentAccepts_parsed_tableLen_le_of_header_target_wide` and `instanceSize_lt_treeMCSPPrefixM`. The
 degenerate widths `zeros <= 1` stay out of reach of the machine theorems, since `3 <= n` forces
 `2 <= zeros`; the two G2v parser-side theorems carry no width premise and cover them. The gamma
 leading-digit convention stays destroyed and the endpoint register is all `some false`. Also every
@@ -139,9 +150,16 @@ execution lemmas**: `F` is a parameter of the *statement*, the tape is the uncha
 `loopTape`, and no cell of it is a cutoff. They are **not** execution with an installed cutoff and
 are not claimed to survive one — an installed `some false` at `N+3+zeros+F` is not a `loopTape`,
 which is blank there, so the execution theorems would have to be re-proved against that tape and nothing
-here is evidence that it can be. The executed-fence requirement, and with it the `F = N` obligation,
-stands unchanged and undischarged for the fenced machine a later phase must build. The production
-statements leave `F` abstract; the tests use literal budgets. No general `F = N` bound is claimed.
+here is evidence that it can be. The executed-fence requirement stands unchanged and undischarged
+for the fenced machine a later phase must build. The production statements leave `F` abstract; the
+tests use literal budgets. No general `F = N` bound is claimed *here*.
+
+The `F = N` half of that obligation has since been supplied separately, by G2w-a in the entry
+above, which changed no declaration of this slice: `contentSemanticAccepts_parsed_target_le_pair_length`
+derives `pr.2.n <= a+m` for **accepted** words at the concrete
+`treeCircuitWitnessCodec (thresholdPoly k)`, covering both the wide and the narrow case. It remains
+codec-specific and conditional on acceptance — parser success alone still bounds no target — and it
+installs nothing, so the executed-fence half of the requirement stands undischarged.
 
 `lane_room` is **sufficient and used, never shown necessary**, and it is not even the tightest
 sufficient condition: it reserves exactly the cell an installed cutoff would occupy, so it can fail

@@ -51,15 +51,21 @@ every accepted word, the cap has to come from the bounded parser instead, as
 `boundedContentCap k N = N ^ contentCapExponent k + contentCapExponent k`: `boundedContentInput?`
 success bounds `treeMCSPPrefixM codec pr.1` by that polynomial, and `pr.2.n = pr.1 ≤
 treeMCSPPrefixM codec pr.1`.  That route is sound and strictly more expensive — a polynomial lane
-rather than a linear one — and **nothing here implements it**: this module defines no such cap, and
-`BoundedContentSemanticVerifier` is not imported.
+rather than a linear one — and **nothing here implements it**: this module defines no such cap and
+adds **no new direct import** for one.  `BoundedContentSemanticVerifier` is nonetheless already in
+this module's transitive import closure — `FixedContentTagGateCorrect` imports it, and the G2v
+bridge reaches that module through the G2o header-value bridge — so the accurate statement is that
+no declaration of it is *used* here, not that it is absent.
 
 ## What is not claimed
 
 **No theorem here bounds the target from parser success alone**, and none is claimed: every
 statement below either carries acceptance as a hypothesis or concludes a rejection.  Nothing here is a claim about
 `ContentAccepts` non-vacuity — GATE-0's `contentAccepts_nonvacuous_treePoly` supplies that
-separately, and the surface probe `probe_linear_cap_accepted_nonvacuous` only reads it back.
+separately, and the surface probe `probe_linear_cap_accepted_nonvacuous` only reads it back.  That
+probe inhabits the parse-and-acceptance premise pair of
+`contentSemanticAccepts_parsed_target_le_length`, on one word, and nothing more: it pins no target
+value, and it inhabits neither the overflow theorem's premises nor the capstone's five jointly.
 
 **No fence exists.**  This module builds no machine, no state, no table row and no cutoff cell; it
 adds no `qOverflow` endpoint, and it does not show that any execution theorem of G2s-a, G2u or G2v
@@ -95,9 +101,11 @@ private theorem target_lt_tableLen (n : Nat) : n < Pnp3.Models.Partial.tableLen 
 /-- **The linear cap.**  At the concrete polynomial-threshold codec, a complete word that both
 parses and is *accepted* has a parsed target no larger than its own length.
 
-Acceptance is load-bearing and is not decoration: the source is virtually zero-padded, so parser
-success gives a header and a target but no support bound, and nothing here proves this conclusion
-from the first hypothesis alone.  The proof splits on the parsed target's convention length.  If
+Acceptance is **used** by the proof below, and no theorem here proves this conclusion from the first
+hypothesis alone: the source is virtually zero-padded, so parser success gives a header and a target
+but no support bound.  That acceptance is *necessary* — that some parse-successful word really does
+overshoot its own length — is **not claimed and not exhibited here**; no probe inhabits that
+situation.  The proof splits on the parsed target's convention length.  If
 `treeMCSPPrefixM codec pr.2.n ≤ N`, the layout bound `instanceSize_lt_treeMCSPPrefixM` already puts
 `pr.2.n` below it.  If not, FEAS-0's wide-case theorem turns acceptance into
 `tableLen pr.2.n ≤ N`, and `pr.2.n < tableLen pr.2.n` finishes; the header and the parsed target
@@ -140,7 +148,8 @@ This is a statement about `contentSemanticAccepts`, and about nothing else.  It 
 `qOverflow` state, no fence cell and no execution, and it does not say that any machine detects the
 overflow — only that, if one ever does, rejecting is the correct verdict.  The implication runs one
 way: nothing here derives a target bound, a header or a parse from a `false` verdict, which can also
-come from a failed parse or from a failed witness check. -/
+come from a failed parse or from a failed witness check.  No word is exhibited that satisfies both
+hypotheses, so this statement is not shown to be non-vacuous. -/
 theorem contentSemanticAccepts_eq_false_of_length_lt_parsed_target (k : Nat) {N : Nat}
     (z : PrefixBitVec N)
     {pr : Σ r : Nat,
@@ -183,7 +192,10 @@ After exactly `fullClock zeros d pr.2.n` steps out of the landed `startConfig` t
 persists.
 
 The **room is still carried**: `B` is a free budget and no hypothesis of this theorem implies it.
-The cap is derived, the room is not, and neither is shown necessary.  Nothing is fenced: `a + m`
+The cap is derived, the room is not, and neither is shown necessary.  The five hypotheses are not
+independent — acceptance already implies the tag premise, by
+`fixedTag_semantic_factorization`, which is carried here only to match G2v's shape — and **no probe
+inhabits them jointly**, so the capstone is not shown to be non-vacuous.  Nothing is fenced: `a + m`
 occurs as a *number* in the room premise and in G2v's statement, not as a `some false` cell laid on
 the tape, and no `qOverflow` route exists to take when the bound fails — a word whose parse succeeds
 and whose target exceeds `a + m` is semantically rejected by

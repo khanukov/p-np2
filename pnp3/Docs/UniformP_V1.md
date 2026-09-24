@@ -1549,10 +1549,16 @@ the unchanged canonical `loopTape`, and no cell of that tape is a cutoff.  They 
 bounded execution lemmas**, not execution with an installed cutoff, and they are not claimed to
 survive one: an installed `some false` at `N+3+zeros+F` is not a `loopTape` -- `loopTape` is blank
 there -- so the G2u execution theorems would have to be re-proved against that tape, and nothing in G2u is
-evidence that it can be.  The executed-fence requirement, and with it the obligation to derive or
-replace the `F = N` justification, therefore stands unchanged and undischarged for the fenced
-machine a later phase must build; it is not a precondition of lemmas that install nothing.  G2u's
-production statements leave `F` abstract; its tests use literal budgets. No general `F = N` bound is claimed.
+evidence that it can be.  The executed-fence requirement therefore stands unchanged and
+undischarged for the fenced machine a later phase must build; it is not a precondition of lemmas
+that install nothing.  G2u's production statements leave `F` abstract; its tests use literal
+budgets. No general `F = N` bound is claimed by G2u.
+
+The `F = N` half of that obligation has since been supplied separately by G2w-a, without changing
+this module: `contentSemanticAccepts_parsed_target_le_pair_length` derives `pr.2.n <= a+m` for
+**accepted** words at the concrete `treeCircuitWitnessCodec (thresholdPoly k)`, covering both the
+wide and narrow cases.  It remains codec-specific and conditional on acceptance -- parser success
+alone still bounds no target -- and installs nothing, so the executed-fence half remains open.
 
 Deferred by this module, and deliberately not claimed in it: the iteration itself; the fence phase;
 the pnp4 bridge G2s-b, and with it every connection to `contentHeader?`, to `contentInput?` or to a
@@ -1677,6 +1683,6 @@ runs on the actual parsed target.  Its companion
 `Pnp4.Frontier.ContractExpansion.ContentCountdownLinearCap` supplies a value for `F` from *content
 acceptance* -- not from parser success, which bounds no target -- so that `F := a+m` becomes
 legitimate for accepted words.  Neither changed a declaration here, neither added a machine, and
-**neither took the fence**: the requirement recorded above stands unchanged, the lane is still
-uncapped in this machine, no cutoff cell is laid anywhere, `F` is still a parameter of every
+**neither took the fence**: the executed-fence requirement recorded above stands unchanged, the lane
+is still uncapped in this machine, no cutoff cell is laid anywhere, `F` is still a parameter of every
 statement, and this module still states nothing about a header, a parse or a decoded value.

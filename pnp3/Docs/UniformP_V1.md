@@ -1267,8 +1267,14 @@ converse and no decrement.
 The decrement of the register is now performed on the machine side by the G2q slice below, which
 borrows one out of this very endpoint's register cells in a new fixed 7-state table, out of a
 phase-local retag of this slice's own run; what that slice does not supply is the identification
-of the result with `n`, which needs the G2p-g bridge's `n+1` and is a pnp4 composition nobody has
-carried out.  Deferred: that identification, any reading of the register as
+of the result with `n`, which needs the G2p-g bridge's `n+1`.  That identification has since been
+carried out in pnp4 by the G2r bridge
+`Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetRegisterDecrementBridge`, which composes
+the two and states, at G2q's endpoint and under G2q's stronger room premise, that every
+decremented register cell holds `n.testBit (zeros-j)` -- and for the target `pr.2.n` of a
+successful `contentInput?` parse.  It adds no machine, states no converse, and restores no gamma
+leading-digit convention.  Deferred here, and still absent from pnp3: that identification, any
+reading of the register as
 a *number* on the tape (`registerBit` gives content, not a value; the companion's uniqueness
 conjunct is arithmetic about those digits, not a decoding step the control performs), a
 footprint/budget theorem, every converse -- nothing says
@@ -1411,7 +1417,10 @@ past digit `zeros`, so the low digits of `v-1` do not depend on the high bits of
 of this module supplies such a `v`.  The two hypotheses are precisely what the G2p-g bridge's
 `exhaustion_register_digits` proves for `v = n+1` on a decoded header, and composing the two is a
 pnp4 step this slice does not take; nothing here mentions `contentHeader?`, `contentInput?`, or a
-parsed target.
+parsed target.  The pnp4 G2r bridge
+`Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetRegisterDecrementBridge` has since taken
+that step, instantiating this `v` at `n+1` so that `v-1` is the decoded target `n`; it changed no
+declaration here, and this module still states nothing about a header or a parse.
 
 Nonvacuity is again independent of the endpoint theorems.  Two literal probes identify the
 phase-local start configuration for every budget using only G2p-f's `payload_exhausted` and this
@@ -1441,8 +1450,10 @@ probe's five register digits are the bits of `24` and the endpoint digits are th
 `23`.  That `24` is a **hand-written literal** chosen to match the digits; no theorem of this
 slice or of pnp3 produces it from a parse, which is exactly the deferred pnp4 step.
 
-Deferred, and deliberately not claimed: that pnp4 bridge, and with it every connection to
-`contentHeader?`, to `contentInput?`, or to a parsed target; a footprint or budget theorem, so
+Deferred by this module, and deliberately not claimed in it: that pnp4 bridge, and with it every
+connection to `contentHeader?`, to `contentInput?`, or to a parsed target -- the bridge has since
+landed as G2r, outside pnp3, with no change to any declaration here; a footprint or budget
+theorem, so
 the room premise is sufficient and used but not shown necessary; every converse -- nothing says
 that `qDone` at `decClock`, or any endpoint cell, implies anything about `zeros`, about the borrow
 length, or about the incoming digits; a malformed-gamma branch; first arrival measured from the

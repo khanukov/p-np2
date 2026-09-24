@@ -2,6 +2,94 @@
 
 Updated: 2026-09-23
 
+**Part A G2r, the decremented register is the parsed target's digits (infrastructure only).**
+New pnp4 module `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetRegisterDecrementBridge`,
+the composition that both entries below deferred. There is **no new machine and no new pnp3
+module**: the run is G2q's `register_decremented`, unchanged, and everything added is a statement
+about what its endpoint cells *are*. Write `N = a+m` and `d = borrow x w zeros`. Five public
+theorems, all one-way out of a decoded `contentHeader? = some …` or out of a successful parse; no
+converse is stated anywhere.
+
+The composition is short, and that is the point. G2q's `decBit_sub_one` is arithmetic about an
+**arbitrary** `v` whose bit `zeros-j` is register digit `j` at every `j ≤ zeros` and which has no
+bit above `zeros`; G2p-g's `exhaustion_register_digits` proves exactly those two facts for
+`v = n+1` on a decoded header. Instantiating one at the other, and using `n+1-1 = n`, is the
+whole mathematical content of this slice: the register that held the digits of the encoded gamma
+integer `n+1` now holds the digits of the **decoded target `n` itself**, at every `j ≤ zeros`.
+
+Three theorems are parser-side: no machine, no tag and no clock occurs in any of them, and only
+`decrement_room_iff_target_bound` mentions the budget `B`. `decremented_register_digits` (one
+propositional hypothesis, a decoded header) produces `zeros` with `consumed = 2*zeros+1`, the
+bounds `2^zeros ≤ n+1 < 2^(zeros+1)`, the bound `d ≤ zeros` that keeps the borrow inside the
+register, the equation `decBit x w zeros d j = n.testBit (zeros-j)` at every `j ≤ zeros`, and the
+completeness fact that `n` has no bit above `zeros`, so those `zeros+1` cells carry *all* of the
+decoded target's digits. `decBit` and `borrow` are G2q's endpoint-content functions — pure
+functions of the word and the width — so this theorem runs nothing.
+`decremented_register_determines_target` (four hypotheses) adds uniqueness: any `v` whose bit
+`zeros-j` is the decremented digit `j` for every `j ≤ zeros` and which has no bit above `zeros`
+**is** `n`. It is arithmetic about digits, not a decoding step any machine performs.
+`decrement_room_iff_target_bound` (two hypotheses) makes G2q's **stronger** room premise legible:
+`n+1 < 2^(a+B)`, `zeros+1 ≤ a+B` and `N+2+zeros < tapeLength (pairLength a m) B` are the same
+condition; it implies G2p-g's `n+1 < 2^(a+B+1)`; and at the boundary width `zeros = a+B` it
+*fails*. That G2p-g's can still hold at that boundary is no conjunct of it — the probe
+`probe_decrement_room_strictly_stronger` exhibits that at a literal word, and only together do
+the two show the one extra cell `qRegEnd` needs is a real strengthening rather than a
+restatement.
+
+Two are machine-side, at G2q's own endpoint. `decremented_register_header_value` (four
+hypotheses: matching tag, decoded header, `3 ≤ n`, and the room `n+1 < 2^(a+B)`): the landed G2q
+machine run out of the landed `startConfig` for exactly `decClock N zeros d` steps is in `qDone`
+on the stopping cell `N+1+zeros-d` with tape `decTape B x w zeros d`, every register cell `N+1+j`,
+`j ≤ zeros`, holds `some (n.testBit (zeros-j))`, `n` has no bit above `zeros`, those endpoint
+cells *pin* `n` among all values with no bit above `zeros`, every cell outside the register is the
+incoming G2p-f endpoint cell of `finishTape B x w zeros`, and the endpoint persists at every later
+time. One conjunct looks backwards instead of forwards — the incoming `finishTape` register cells
+hold `some ((n+1).testBit (zeros-j))` — so both sides of the subtraction are visible in a single
+statement. `decremented_register_parsed_target` (four hypotheses, for an arbitrary codec) replaces
+the header by a successful **dependent parse** `contentInput? codec (Fin.append x w) = some pr`,
+exports `pr.2.n = pr.1` — the target the parsed `PrefixInput` carries, which is what
+`ContentAccepts` feeds to the search relation, is the outer Sigma index and the target a decoded
+`contentHeader?` *returns* — and restates every endpoint conjunct in terms of `pr.2.n`. That is
+the actual parsed dependent target, not a convention length: `consumed = 2*zeros+1` and the window
+length `treeMCSPPrefixM codec pr.1` stay length conventions, and no conclusion here puts either in
+a register cell.
+
+**The gamma leading-digit convention is not restored, and must not be read back in.** The
+convention encodes `n` as the bits of `n+1` precisely so that the leading digit is a `true` the
+decoder can find, and subtracting one destroys that. When the incoming register is exactly
+`2^zeros` the borrow runs its whole length and clears digit `0`, so the decremented register's top
+cell is `some false`; the theorems say so rather than excluding it, and the probe
+`probe_decrement_cleared_top_digit` exhibits the case on a literal word — gamma `0001`, payload
+`000`, header `(7, 7)`, `borrow = 3`, `decClock 15 3 3 = 18`, endpoint register `0111₂` at cells
+`16 … 19`, the four digits of `7` with a `false` on top. For the same reason G2p-g's virtual-tail
+conjunct has **no analogue** here: a truncated payload's register cell is `some false` before the
+phase and the borrow may flip it to `some true`, so only the general statement, that the cell holds
+`n`'s digit, is made. The other probe, `probe_decrement_register_width_three`, is the ordinary
+shape: header `(12, 7)`, incoming register `1101₂`, `borrow = 0`, `decClock 15 3 0 = 15`, endpoint
+register `1100₂` — the digits of `12`. Both derive their cells from
+`decremented_register_header_value` for every budget and reduce no `startConfig`.
+
+Deferred, and deliberately not claimed: every converse — nothing derives a header, a width,
+`2 ≤ zeros`, room, or the borrow length from `qDone`, from the endpoint tape, or from a digit at a
+register cell; parser execution of any kind (`n` and `pr` occur only in statements, and G2q's
+control reads one tape symbol and nothing else); reading the register as a number *on the tape*,
+the pinning conjunct being arithmetic about the digits found there; a footprint or budget theorem,
+so the room premise is carried and sufficient, never shown necessary; a malformed-gamma branch and
+the degenerate widths `zeros ≤ 1` **on the machine side**, which `register_decremented` inherits
+from `payload_exhausted` and excludes, while the three parser-side theorems carry no width premise
+and cover them; **first arrival**, which no conjunct of either machine theorem states — they give
+the endpoint at exactly `decClock` and its persistence at every later time, and nothing says
+`qDone` is not entered earlier, minimality being G2q's own `decrement_strict`, stated there for an
+arbitrary configuration of the G2p-f endpoint shape and neither instantiated nor restated here;
+and the handoff of this endpoint onward.
+Given a decoded header `3 ≤ n` is exactly `2 ≤ zeros` — both directions follow from the exported
+bounds, only the direction used here is proved. `decClock` counts the steps of the G2q phase
+alone, not one of the steps its `startConfig` embeds, so no clock here composes a pipeline, and
+`qDone` is an internal control tag of a phase whose `startConfig` retags an *actual* prior run, so
+reaching it is neither halting of a composed machine nor language acceptance. Nothing here is a
+`ContentAccepts` statement. Clock composition, the fixed parser, advice freedom, `NP` membership,
+`ContentVerifierBridge` and P-vs-NP mainline progress stay out of scope.
+
 **Part A G2q, the gamma target register decrement (infrastructure only).** New pnp3 module
 `Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement`, and the first **new machine** since
 the G2p-d round: a fixed 7-state, 21-row table that subtracts one from the target register the
@@ -66,7 +154,9 @@ exactly what the G2p-g bridge's `exhaustion_register_digits` proves for `v = n+1
 header, and composing the two is a pnp4 step this slice does not take; nothing here mentions
 `contentHeader?`, `contentInput?`, or a parsed target. The G2p-g entry below says the register
 holds the digits of `n+1` and not of `n`; this slice supplies the *machine* that borrows one out
-of those cells, and not the identification of the result with `n`.
+of those cells, and not the identification of the result with `n`. That identification is now
+supplied, outside this module, by the G2r bridge at the top of this file, which instantiates this
+`v` at `n+1`; it changes nothing inside pnp3, which still mentions no header and no parse.
 
 Nonvacuity is independent of the endpoint theorems. Two literal probes identify the phase-local
 start configuration for every budget from G2p-f's `payload_exhausted` and `prior_covers` alone,
@@ -88,7 +178,9 @@ register's digits are the bits of `24`, the endpoint's the bits of `23`. That `2
 **hand-written literal** matched to the digits; no theorem of this slice or of pnp3 derives it
 from a parse, which is precisely the deferred pnp4 step.
 
-Deferred, and deliberately not claimed: that pnp4 bridge and every connection to a parsed target;
+Deferred by *this module*, and deliberately not claimed in it: that pnp4 bridge and every
+connection to a parsed target — the bridge has since landed as the G2r entry at the top of this
+file, and no declaration of this module changed;
 a footprint or budget theorem; every converse — nothing derives `zeros`, the borrow length, or
 anything about the incoming digits from `qDone` or from an endpoint cell; a malformed-gamma
 branch; first arrival measured from the previous phase's `startConfig`; the handoff of this
@@ -183,12 +275,14 @@ probes derive their cells from `exhausted_register_header_value` for every budge
 digit is the virtual tail — endpoint cell `some false`, parsed `(5+1).testBit 0 = false` —
 with `totalClock 12 2 = 5`, the finish alone.
 
-The decrement of `n+1` to `n` is now *half* discharged by the G2q machine above: that slice
-borrows one out of these very register cells and proves, arithmetically and for an arbitrary
-`v`, that the resulting digits are the digits of `v-1`. What still stands is the composition —
-no theorem anywhere yet instantiates that `v` with the `n+1` this entry's
-`exhaustion_register_digits` supplies, so no theorem says the decremented register holds the
-digits of `n`. Deferred, and deliberately not claimed here: that composition; reading the
+The decrement of `n+1` to `n` is now discharged, in two steps that were landed separately. The
+G2q machine above borrows one out of these very register cells and proves, arithmetically and for
+an arbitrary `v`, that the resulting digits are the digits of `v-1`; the G2r bridge at the top of
+this file instantiates that `v` with the `n+1` this entry's `exhaustion_register_digits` supplies,
+so the decremented register is proved to hold the digits of `n` — at G2q's own endpoint, under its
+stronger one-extra-cell room premise, and for the parsed `pr.2.n` as well. Nothing about *this*
+entry's theorems changed: they are still about the G2p-f endpoint, where the register holds `n+1`.
+Deferred, and deliberately not claimed here: that composition, which is G2r's; reading the
 register as a number *on the tape* (the pinning conjunct is arithmetic about the digits found
 there, not a decoding step the control performs — no machine here executes `contentHeader?`,
 `contentInput?`, or any parser, and control reads a tape symbol and nothing else); every

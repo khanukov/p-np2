@@ -436,6 +436,45 @@ side, a malformed-gamma branch, first arrival from `startConfig`, clock
 composition, `ContentAccepts`, and `ContentVerifierBridge` are not provided, and
 this is not P-vs-NP mainline progress.
 
+Part A G2r adds `ContentFixedGammaTargetRegisterDecrementBridge` over the pnp3
+G2q `FixedGammaTargetRegisterDecrement`, the companion that slice deferred. It
+adds no machine either: the run is G2q's `register_decremented`, unchanged. Its
+content is one instantiation — G2q's `decBit_sub_one` is arithmetic about an
+arbitrary `v` whose bits are the incoming register's digits and which has no bit
+above `zeros`, and G2p-g's `exhaustion_register_digits` proves both for
+`v = n + 1`, whence `v - 1 = n`. Five public theorems, all one-way. Three are
+machine-free: `decremented_register_digits` (one hypothesis, a decoded header)
+gives a width `zeros` with `consumed = 2 * zeros + 1`,
+`2 ^ zeros ≤ n + 1 < 2 ^ (zeros + 1)`, `borrow x w zeros ≤ zeros`, the equation
+`decBit x w zeros (borrow x w zeros) j = n.testBit (zeros - j)` at every
+`j ≤ zeros`, and the fact that `n` has no bit above `zeros`;
+`decremented_register_determines_target` adds that those digits determine `n`
+uniquely among values with no bit above `zeros`;
+`decrement_room_iff_target_bound` identifies `n + 1 < 2 ^ (a + B)`,
+`zeros + 1 ≤ a + B` and G2q's tape form
+`a + m + 2 + zeros < tapeLength (pairLength a m) B`, shows this room implies the
+G2p-g room `n + 1 < 2 ^ (a + B + 1)`, and shows it fails at `zeros = a + B` —
+that the weaker one can still hold there is no conjunct of it, but a literal word
+in the surface probes. The other two reach the G2q endpoint at
+`decClock (a + m) zeros (borrow x w zeros)`, under a matching tag, a decoded
+header (or a successful parse), `3 ≤ n` and that stronger room: `qDone` on the
+stopping cell with tape `decTape`, every register cell `a + m + 1 + j` holding
+`some (n.testBit (zeros - j))`, those cells pinning `n`, every cell outside the
+register unchanged from `finishTape`, the incoming `finishTape` register cells
+still reading `n + 1`, and the endpoint persisting at every later time.
+`decremented_register_parsed_target` takes a successful `contentInput?` parse for
+an arbitrary codec and exports `pr.2.n = pr.1`, so the decremented digits are the
+digits of the actual target `ContentAccepts` feeds to the search relation. The
+gamma leading-digit convention is **not** restored: the borrow can clear the top
+cell, and a surface probe exhibits that on a literal word. Parser execution, any
+converse, a footprint theorem, the degenerate widths `zeros ≤ 1` on the machine
+side, a malformed-gamma branch, clock composition, `ContentAccepts`, and
+`ContentVerifierBridge` are not provided, and this is not P-vs-NP mainline
+progress. First arrival is not provided either: the endpoint is stated at exactly
+`decClock (a + m) zeros (borrow x w zeros)` with persistence afterwards, and no
+conjunct says `qDone` is not entered earlier — minimality is G2q's
+`decrement_strict`, neither instantiated nor restated here.
+
 For an *arbitrary* threshold there is a third input, `PolyBoundedInTable threshold`;
 it is proved for the canonical polynomial thresholds, so it disappears at
 `thresholdPoly k`.  The general capstone `verifiedSource_of_explicit_interfaces`

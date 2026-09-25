@@ -63,6 +63,8 @@ import Pnp4.Frontier.ContractExpansion.ContentCountdownLinearCap
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetDecrementCountdownBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetLoopDecrementCountdownBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetMarkersLoopDecrementCountdownBridge
+import
+  Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetSecondPayloadMarkersLoopDecrementCountdownBridge
 import Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic
 import Pnp4.Frontier.ContractExpansion.ContentCappedSizes
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
@@ -1044,3 +1046,17 @@ end Pnp4
 -- stay open.  The only other declaration is the `private` helper `markersChainClock_le_polyClock`;
 -- the wrapper and the probe are audited in `Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`.
 #print axioms Pnp4.Frontier.ContractExpansion.markers_loop_decrement_countdown_drained_accepted_content_at_polyClock
+
+-- Part A G3a executed second-payload-to-G2z handoff bridge: the pnp3 composed 68-state machine
+-- run out of the retagged actual G2p-b first-payload endpoint under exactly G2z's three
+-- hypotheses at the same budget `B := polyClock 3 (pairLength a m)`.  The new switch H14 fires at
+-- G2p-c's first arrival, which on the only width an accepted parsed target reaches is the
+-- length-dependent `2N - 7`, no composed verdict occurs before it, and the composed accept is
+-- reached at `(2N - 7) + exactClock + totalClock + composedClock <= B`, read at that clock and at
+-- `B`.  Four handoffs of seventeen; the thirteen earlier retags, the fence, first arrival of the
+-- composed accept, every witness-check phase, `AcceptsAt`, `UniformP`, advice freedom and
+-- `ContentVerifierBridge` stay open.  The only other declaration is the `private` helper
+-- `secondChainClock_le_polyClock`; the wrapper and the probe are audited in
+-- `Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`.
+#print axioms
+  Pnp4.Frontier.ContractExpansion.second_payload_markers_loop_decrement_countdown_drained_accepted_content_at_polyClock

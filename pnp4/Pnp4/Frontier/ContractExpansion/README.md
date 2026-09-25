@@ -656,8 +656,9 @@ multi-tape or read-only-input-tape models.  Input (2) is therefore an obligation
 model*, and should be cited that way.
 
 The Part A fixed-phase chain, including the G2x composed decrement/countdown machine, the
-G2y composed loop/decrement/countdown machine that contains it and the G2z composed
-markers/loop/decrement/countdown machine that contains *that*, lives
+G2y composed loop/decrement/countdown machine that contains it, the G2z composed
+markers/loop/decrement/countdown machine that contains *that*, and the G3a composed
+second-payload/markers/loop/decrement/countdown machine that contains all of them, lives
 in a different model: the versioned `Pnp3.Complexity.Uniform.V1.UniformTM`, with
 `Option Bool` cells, no runtime field, and tapes laid out against the pair length
 `pairLength a m`.  No theorem transfers a V1 execution into this `TM`, no V1 statement of an
@@ -1473,6 +1474,69 @@ reached out of a retagged actual prior endpoint — neither halting on a raw inp
 acceptance — and the machine is a V1 `UniformTM` on `Option Bool` cells laid out against
 `pairLength a m`, not the legacy `TM` with a `runTime` field that `ContentVerifierBridge` names (see
 "Runtime model behind input (2)"), whose caveat 6 is untouched. No `accepts`, `AcceptsAt`,
+`DecidesWithin`, `UniformP`, `VerifiesRelation`, `NP` membership, advice-freedom claim or
+`ContentVerifierBridge` appears; this is infrastructure, not P-vs-NP mainline progress, and it makes
+no `P ≠ NP` claim.  H14 has since been taken by G3a below, so the counts in this G2z entry are the
+ones that slice left.
+
+`ContentFixedGammaTargetSecondPayloadMarkersLoopDecrementCountdownBridge.lean` is the Part A G3a
+slice: the **fourth** executed phase handoff of the chain, the one immediately before G2z's, on the
+same parsed target at the same budget. It applies the same generic `UniformTM.seq` one block further
+left, to `FixedGammaTargetSecondPayload.machine` and the whole G2z composite — G2p-c's 14-state,
+42-row second-payload table followed by G2z's 54-state, 162-row table as one 68-state, 204-row
+table, whose **single** live routed row `qScanLeft`-on-blank (composed index `11`, into composed
+index `14`, writing `some false` and staying) is the new handoff H14 and whose index-`23`/`24`
+→ `28`, `47` → `50` and `54` → `57` rows are G2z's H15, H16 and H17, inherited unchanged. H14 has
+exactly one live routed row because `qScanLeft`-on-blank is G2p-c's only row out of a working state
+into its own `qDone`; the three `qDone` self-rows are routed too, on a state the routing leaves
+unoccupied. The pnp3 `table_and_resource_pins` pins the one *routed* row that is new to this
+composition — `qScanLeft`-on-blank with its target re-routed to `14`, not a new table row — plus the
+composed indices of all four handoff states, and leaves the inherited rows to the universal
+right-block row equation it also pins, which transports every G2z row verbatim; the pnp3 fixtures
+reduce H14, H15's `qClearB` row, H16 and H17 out of an actual configuration, H15's `qBackB` row
+resting on that row equation and G2z's own probes.
+
+* `second_payload_markers_loop_decrement_countdown_drained_accepted_content_at_polyClock`
+  (**three**: the successful parse, the Boolean acceptance, `3 ≤ pr.2.n`; no tag, cap, room, budget,
+  clock, width, digit, initial-state, correctness or runtime premise): with `N = a + m`,
+  `zeros = gammaZeros pr.2.n`, `d = borrow x w zeros`,
+  `S = FixedGammaTargetSecondPayload.exactClock N zeros = 2N − 7`,
+  `C = S + markersChainClock N zeros d pr.2.n` and `B = polyClock 3 (pairLength a m)`, out of the
+  composed `startConfig` — G2p-c's own, the retagged *actual* G2p-b first-payload endpoint, routed —
+  the composed control is in neither verdict before `S`, is G2z's landed `startConfig B x w`
+  re-embedded at exactly `S`, satisfies `C ≤ B`, and is in the composed accept on the separator
+  blank with tape `loopTape B x w zeros 0 pr.2.n` at exactly `C`, at exactly `B` and at every later
+  time. The cap, tag, header, width, the switch time `S = 2N − 7` and the clock bound are derived
+  and exported, the exported length bound is `11 ≤ N`, and the room is derived and used here but is
+  not among this statement's conclusions; the switch time is G2p-c's first arrival, from the landed
+  `second_payload_strict`, so G3a adds **no new first-arrival theorem**. G2z's domination lemma is
+  private and supplies no slack for the extra `2N − 7`, so the budget bound
+  `C ≤ (2N − 7) + (zeros + 7) + 3N² + (3N² + 12N + 7) ≤ (N+1)³ + 3` is re-derived from the public
+  clock formulas and its proof uses `11 ≤ N`. Only G2p-c's positive-width branch is reachable here,
+  since `3 ≤ pr.2.n` forces `2 ≤ gammaZeros pr.2.n`, and inside it G2p-c's endpoint is extensional in
+  its three source shapes, so no shape premise appears. The surface probe
+  `probe_second_payload_markers_loop_decrement_countdown_polyClock_accepted_target_three` reuses
+  G2w-b's accepted word at the pinned target `3`, whose canonical width `gammaZeros 3 = 2` selects
+  that branch, and reads the composed accept back at `B`; unlike G2z's literal `9` the switch time
+  here is **length-dependent**, so the probe pins it by the closed formula `2N − 7` together with
+  the exported `11 ≤ N` rather than by a numeral.
+
+Caveats specific to G3a. It is **four handoffs of seventeen**: the composed `startConfig` still
+embeds every earlier phase, the thirteen handoffs before H14 stay proof-level, no `initialConfig` on
+a raw pair input is executed, and no clock counts a step of any earlier phase; the next handoff down
+is blocked on a missing G2p-b first-arrival theorem. `S` is the first time H14 fires, but no theorem
+says `C` is the first time the composed accept is entered; the first arrival proved is G2p-c's,
+inside the left block. All five tables are unfenced, hence so is the composition: accepted words
+never overflow the lane, since `pr.2.n ≤ N` is derived, but an overshooting word still times out.
+The pnp3 module's `malformed_reject_handoff` transports G2p-c's landed malformed endpoint in the
+forward direction only: **no** rejection converse, no `RejectsAt`, and no parsed-target rejection is
+characterised in this bridge. The pnp3 module also states the same switch at the two degenerate
+decoded widths (first arrivals `3` and `5`), which no accepted parsed target reaches and for which
+nothing downstream is claimed. Targets `0`, `1`, `2` stay excluded. The composed accept is the
+countdown's phase-local `qDone`, reached out of a retagged actual prior endpoint — neither halting on
+a raw input nor language acceptance — and the machine is a V1 `UniformTM` on `Option Bool` cells laid
+out against `pairLength a m`, not the legacy `TM` with a `runTime` field that `ContentVerifierBridge`
+names (see "Runtime model behind input (2)"), whose caveat 6 is untouched. No `accepts`, `AcceptsAt`,
 `DecidesWithin`, `UniformP`, `VerifiesRelation`, `NP` membership, advice-freedom claim or
 `ContentVerifierBridge` appears; this is infrastructure, not P-vs-NP mainline progress, and it makes
 no `P ≠ NP` claim.

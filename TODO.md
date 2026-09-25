@@ -171,13 +171,17 @@ budget times out rather than rejecting. Part A G2x then executes **one** of the 
 handoffs — G2q's decrement into G2s-a's countdown — inside a single composed 18-state machine at
 that same budget, switching at G2q's first arrival, Part A G2y executes the one before it — the
 gamma payload loop into that composite — inside a single composed 40-state machine at the same
-budget, switching at the loop's first arrival, and Part A G2z executes the one before *that* —
+budget, switching at the loop's first arrival, Part A G2z executes the one before *that* —
 G2p-d's marker preamble into the G2y composite — inside a single composed 54-state machine at the
-same budget, switching at the preamble's first arrival `exactClock zeros = zeros + 7`. **Three** of
+same budget, switching at the preamble's first arrival `exactClock zeros = zeros + 7`, and Part A
+G3a executes the one before *that* — G2p-c's second payload digit into the G2z composite — inside
+a single composed 68-state machine at the same budget, switching at G2p-c's first arrival, which on
+the only width an accepted parsed target reaches is the length-dependent `2N - 7`. **Four** of
 the seventeen handoffs are therefore now
-performed by a finite table; the fourteen earlier ones remain proof-level identifications, the
+performed by a finite table; the thirteen earlier ones remain proof-level identifications, the
 composed accept is still the countdown's phase-local `qDone`, and no witness-check
-phase exists, so this is not the runtime proof either. Wrapper-level `L'` padding invariance and
+phase exists, so this is not the runtime proof either. The next handoff down, G2p-b's first payload
+into G2p-c, is blocked on a missing G2p-b first-arrival theorem. Wrapper-level `L'` padding invariance and
 formal runtime/advice enforcement also remain open; complete-word `ContentAccepts` padding
 invariance does not close either item. The original length-gated
 `NP_not_subset_PpolyDAG_treePoly` / `PrefixExtensionNPWitness` capstone remains compiled and audited

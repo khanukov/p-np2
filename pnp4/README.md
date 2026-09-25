@@ -654,7 +654,36 @@ the composed `startConfig` still embeds every earlier phase — no first arrival
 accept is proved (the first arrival proved is the preamble's, inside the left block), the lane is
 still unfenced, the composed accept is still the countdown's phase-local `qDone` rather than
 language acceptance, and, like G2x and G2y, this is infrastructure, not P-vs-NP mainline progress;
-it makes no `P ≠ NP` claim.
+it makes no `P ≠ NP` claim. The fourteen-and-three counts in this G2z paragraph are the ones that
+slice left; H14 has since been taken by G3a.
+
+**Part A G3a** applies the same combinator a fourth time, one block further left:
+`ContentFixedGammaTargetSecondPayloadMarkersLoopDecrementCountdownBridge` runs **one** machine —
+G2p-c's 14-state second-payload table followed by the whole G2z 54-state composite as one closed
+68-state table, whose *single* live routed row `qScanLeft`-on-blank (into index `14`) is the new
+handoff H14 and whose index-`23`/`24` → `28`, `47` → `50` and `54` → `57` rows are G2z's H15, H16
+and H17, inherited — under exactly the same three hypotheses at the same budget.
+`second_payload_markers_loop_decrement_countdown_drained_accepted_content_at_polyClock` concludes
+that the composed run switches blocks at G2p-c's **first arrival**, exported as the
+length-dependent `2N − 7`, not at G2p-c's length-only deadline `2N`, is in neither composed verdict
+before it, is G2z's landed `startConfig` re-embedded at it, and is in the composed accept at exactly
+`(2N − 7) + exactClock zeros + chainClock N zeros d pr.2.n ≤ B`, at exactly `B` and at every later
+time, with tape `loopTape B x w zeros 0 pr.2.n`. The target tracked throughout is the parsed
+`pr.2.n`. G3a needs no new first-arrival theorem: G2p-c's `second_payload_exact`,
+`second_payload_strict` and `exactClock_le_deadline` are all landed. `3 ≤ pr.2.n` forces
+`2 ≤ gammaZeros pr.2.n`, so an accepted parsed target reaches only G2p-c's positive-width branch,
+whose endpoint is extensional in its three source shapes; the pnp3 module additionally states the
+same switch at the two degenerate decoded widths (first arrivals `3` and `5`), for which **nothing
+downstream is claimed**, and transports G2p-c's malformed rejection into the composed reject in the
+forward direction only, which is no converse and characterises no parsed target. **Four of the
+seventeen** handoffs are now performed by a finite table; the thirteen earlier ones remain
+proof-level identifications — the composed `startConfig` still embeds every earlier phase — the next
+one down is blocked on a missing G2p-b first-arrival theorem, no first arrival of the composed
+accept is proved (the first arrival proved is G2p-c's, inside the left block), the lane is still
+unfenced, the composed accept is still the countdown's phase-local `qDone` rather than language
+acceptance, the machine is a V1 `UniformTM` on `Option Bool` cells against `pairLength a m` and not
+the legacy `TM` with a `runTime` field that `ContentVerifierBridge` names, and, like G2x, G2y and
+G2z, this is infrastructure, not P-vs-NP mainline progress; it makes no `P ≠ NP` claim.
 
 For an *arbitrary* threshold there is a third input, `PolyBoundedInTable threshold`;
 it is proved for the canonical polynomial thresholds, so it disappears at

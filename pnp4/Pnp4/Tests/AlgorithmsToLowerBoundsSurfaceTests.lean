@@ -73,6 +73,8 @@ import Pnp4.Frontier.ContractExpansion.ContentCountdownLinearCap
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetDecrementCountdownBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetLoopDecrementCountdownBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetMarkersLoopDecrementCountdownBridge
+import
+  Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetSecondPayloadMarkersLoopDecrementCountdownBridge
 import Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic
 import Pnp4.Frontier.ContractExpansion.ContentCappedSizes
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
@@ -7004,6 +7006,115 @@ theorem probe_markers_loop_decrement_countdown_polyClock_accepted_target_three (
 #print axioms Pnp4.Tests.probe_markers_loop_decrement_countdown_polyClock_accepted_target_three
 
 end ContentFixedGammaTargetMarkersLoopDecrementCountdownBridgeSurface
+
+section ContentFixedGammaTargetSecondPayloadMarkersLoopDecrementCountdownBridgeSurface
+
+open AlgorithmsToLowerBounds
+open Pnp3.Complexity.Uniform.V1
+open Pnp4.Frontier.ContractExpansion
+
+theorem check_second_payload_markers_loop_decrement_countdown_drained_accepted_content_at_polyClock
+    (k : Nat) {a m : Nat} (x : Bitstring a) (w : Bitstring m)
+    {pr : Σ r : Nat,
+      PrefixInput
+        (Frontier.treeMCSPSearchProblem (thresholdPoly k)
+          (Frontier.TreeMCSPSearchWitnessEncoding.ofCodec
+            (treeCircuitWitnessCodec (thresholdPoly k))))
+        (treeMCSPPrefixM (treeCircuitWitnessCodec (thresholdPoly k)) r)}
+    (hpr : contentInput? (treeCircuitWitnessCodec (thresholdPoly k)) (Fin.append x w) = some pr)
+    (haccept : contentSemanticAccepts (treeCircuitWitnessCodec (thresholdPoly k))
+      (Fin.append x w) = true)
+    (hn : 3 ≤ pr.2.n) :
+    let B := polyClock 3 (PairEncoding.pairLength a m)
+    let M := FixedGammaTargetSecondPayloadMarkersLoopDecrementCountdown.machine
+    let c := FixedGammaTargetSecondPayloadMarkersLoopDecrementCountdown.startConfig B x w
+    pr.2.n ≤ a + m ∧ 11 ≤ a + m ∧
+      FixedContentTagGate.tagMatches (Fin.append x w) = true ∧
+      ∃ zeros, zeros = gammaZeros pr.2.n ∧ 2 ≤ zeros ∧ pr.2.n = pr.1 ∧
+        contentHeader? (Fin.append x w) = some (pr.2.n, 2 * zeros + 1) ∧
+        FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros ∧
+        let d := FixedGammaTargetRegisterDecrement.borrow x w zeros
+        let S := FixedGammaTargetSecondPayload.exactClock (a + m) zeros
+        let C := FixedGammaTargetSecondPayloadMarkersLoopDecrementCountdown.secondChainClock
+          (a + m) zeros d pr.2.n
+        S = 2 * (a + m) - 7 ∧
+        C = S + FixedGammaTargetMarkersLoopDecrementCountdown.markersChainClock
+          (a + m) zeros d pr.2.n ∧
+          C ≤ B ∧
+        (∀ t, t < S → (M.run t c).state ≠ M.accept ∧ (M.run t c).state ≠ M.reject) ∧
+        M.run S c =
+          FixedGammaTargetSecondPayload.machine.seqEmbedRight
+            FixedGammaTargetMarkersLoopDecrementCountdown.machine
+            (FixedGammaTargetMarkersLoopDecrementCountdown.startConfig B x w) ∧
+        let e := M.run C c
+        e.state = M.accept ∧ e.head.val = a + m + 2 + zeros ∧
+          e.tape = FixedGammaTargetUnaryCountdown.loopTape B x w zeros 0 pr.2.n ∧
+          M.run B c = e ∧ (∀ t, C ≤ t → M.run t c = e) :=
+  second_payload_markers_loop_decrement_countdown_drained_accepted_content_at_polyClock k x w
+    hpr haccept hn
+
+/-- **The G3a endpoint's three premises are jointly inhabited, at a pinned target, and the newly
+executed handoff H14 is read back at a pinned time.**  The word and the three premises are those of
+`probe_countdown_polyClock_accepted_target_three` — GATE-0's zero-prefix query for the all-false
+table on three variables plus its certificate, parsed at target `3`; nothing new is constructed.
+The parsed target `3` fixes the canonical width `gammaZeros 3 = 2`, hence the positive-width branch
+and with it G2p-c's first arrival.  Unlike G2z's preamble arrival, that time is **length-dependent**:
+it is `2 * N - 7` for the derived `N = a + m`, not a numeral, so the probe pins it by that closed
+formula together with the exported `11 ≤ N`.  On this word the composed 68-state machine is in
+neither verdict before `2 * N - 7`, at exactly `2 * N - 7` it *is* G2z's landed `startConfig`
+re-embedded, and after exactly `B` steps it is in the composed accept.  One word per exponent: no
+rejected word, no overshooting word, no tape cell, and neither degenerate width.  Reaching the
+composed accept here is neither halting on a raw input, nor language acceptance, nor an
+`NP`-membership claim. -/
+theorem probe_second_payload_markers_loop_decrement_countdown_polyClock_accepted_target_three
+    (k : Nat) :
+    ∃ (w : Pnp3.ComplexityInterfaces.Bitstring
+            (Pnp3.ComplexityInterfaces.certificateLength
+              (treeMCSPPrefixM (treeCircuitWitnessCodec (thresholdPoly k)) 3) 1))
+        (pr : Σ r : Nat,
+          PrefixInput
+            (Frontier.treeMCSPSearchProblem (thresholdPoly k)
+              (Frontier.TreeMCSPSearchWitnessEncoding.ofCodec
+                (treeCircuitWitnessCodec (thresholdPoly k))))
+            (treeMCSPPrefixM (treeCircuitWitnessCodec (thresholdPoly k)) r)),
+      let y := zeroPrefixQueryValue (treeCircuitWitnessCodec (thresholdPoly k)) 3 (fun _ => false)
+      let N := treeMCSPPrefixM (treeCircuitWitnessCodec (thresholdPoly k)) 3 +
+        Pnp3.ComplexityInterfaces.certificateLength
+          (treeMCSPPrefixM (treeCircuitWitnessCodec (thresholdPoly k)) 3) 1
+      let B := polyClock 3 (PairEncoding.pairLength
+        (treeMCSPPrefixM (treeCircuitWitnessCodec (thresholdPoly k)) 3)
+        (Pnp3.ComplexityInterfaces.certificateLength
+          (treeMCSPPrefixM (treeCircuitWitnessCodec (thresholdPoly k)) 3) 1))
+      let M := FixedGammaTargetSecondPayloadMarkersLoopDecrementCountdown.machine
+      let c := FixedGammaTargetSecondPayloadMarkersLoopDecrementCountdown.startConfig B y w
+      contentInput? (treeCircuitWitnessCodec (thresholdPoly k)) (Fin.append y w) = some pr ∧
+        contentSemanticAccepts (treeCircuitWitnessCodec (thresholdPoly k))
+          (Fin.append y w) = true ∧
+        3 ≤ pr.2.n ∧ pr.2.n = 3 ∧ gammaZeros pr.2.n = 2 ∧ 11 ≤ N ∧ 2 * N - 7 ≤ B ∧
+        (∀ t, t < 2 * N - 7 →
+          (M.run t c).state ≠ M.accept ∧ (M.run t c).state ≠ M.reject) ∧
+        M.run (2 * N - 7) c =
+          FixedGammaTargetSecondPayload.machine.seqEmbedRight
+            FixedGammaTargetMarkersLoopDecrementCountdown.machine
+            (FixedGammaTargetMarkersLoopDecrementCountdown.startConfig B y w) ∧
+        (M.run B c).state = M.accept := by
+  obtain ⟨w, pr, hpr, haccept, hn, hthree, hwidth, -⟩ :=
+    probe_countdown_polyClock_accepted_target_three k
+  obtain ⟨-, hN, -, zeros, hzg, -, -, -, -, hSval, hCS, hCB, hfirst, hS, he1, -, -, hB, -⟩ :=
+    second_payload_markers_loop_decrement_countdown_drained_accepted_content_at_polyClock k
+      (zeroPrefixQueryValue (treeCircuitWitnessCodec (thresholdPoly k)) 3 (fun _ => false)) w
+      hpr haccept hn
+  rw [hSval] at hfirst hS hCS
+  refine ⟨w, pr, hpr, haccept, hn, hthree, hwidth, hN, by omega, hfirst, hS, ?_⟩
+  rw [hB]
+  exact he1
+
+#print axioms
+  Pnp4.Tests.check_second_payload_markers_loop_decrement_countdown_drained_accepted_content_at_polyClock
+#print axioms
+  Pnp4.Tests.probe_second_payload_markers_loop_decrement_countdown_polyClock_accepted_target_three
+
+end ContentFixedGammaTargetSecondPayloadMarkersLoopDecrementCountdownBridgeSurface
 
 section ContentCappedArithmeticSurface
 

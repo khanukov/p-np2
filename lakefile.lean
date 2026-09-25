@@ -227,11 +227,20 @@ lean_lib PnP3 where
     -- Part A G2z: G2p-d's marker preamble composed with the whole G2y composite, one 54-state
     -- table whose four routed rows into qDone target G2y's start -- the newly executed handoff
     -- H15, taken at the preamble's first arrival exactClock zeros = zeros + 7; H16 and H17 are
-    -- inherited.  Its malformed branch is the first routed reject the chain exercises.  Three
+    -- inherited (H14 since taken by G3a below).  Its malformed branch is the first routed reject
+    -- the chain exercises.  Three
     -- handoffs of seventeen; the start still retags the actual G2p-c endpoint and the lane stays
     -- unfenced.  No raw-input execution, first arrival of the composed accept, or language
     -- acceptance is claimed.
     Glob.one `Complexity.Uniform.V1.FixedGammaTargetMarkersLoopDecrementCountdown,
+    -- Part A G3a: G2p-c's second-payload table composed with the whole G2z composite, one
+    -- 68-state table whose single live routed row qScanLeft-on-blank targets G2z's start -- the
+    -- newly executed handoff H14, taken at G2p-c's first arrival exactClock N zeros; H15, H16 and
+    -- H17 are inherited.  The switch is also stated at the two degenerate decoded widths, which
+    -- no accepted parsed target reaches.  Four handoffs of seventeen; the start still retags the
+    -- actual G2p-b endpoint and the lane stays unfenced.  No raw-input execution, first arrival
+    -- of the composed accept, or language acceptance is claimed.
+    Glob.one `Complexity.Uniform.V1.FixedGammaTargetSecondPayloadMarkersLoopDecrementCountdown,
     -- Generic bounded cross-budget simulation for one fixed UniformTM.
     Glob.one `Complexity.Uniform.V1.BudgetTransport,
     -- Routed fixed-parser/verifier constructor and parser-prefix handoff.
@@ -828,6 +837,8 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1FixedGammaTargetDecrementCountdownSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaTargetLoopDecrementCountdownSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaTargetMarkersLoopDecrementCountdownSurfaceTests,
+    Glob.one
+      `Tests.UniformV1FixedGammaTargetSecondPayloadMarkersLoopDecrementCountdownSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
     Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,
@@ -1183,10 +1194,19 @@ lean_lib Pnp4 where
     -- cubic budget, listed after the G2y bridge, which it imports: one 54-state machine runs
     -- under exactly the same three hypotheses, switches blocks at the preamble's first arrival
     -- and reaches its accept at `exactClock + totalClock + composedClock <= B`.  Three handoffs
-    -- of seventeen; the fourteen earlier handoffs, the fence, the witness checks, `AcceptsAt`
-    -- and `ContentVerifierBridge` stay open.
+    -- of seventeen (H14 since taken by G3a below); the fourteen earlier handoffs, the fence, the
+    -- witness checks, `AcceptsAt` and `ContentVerifierBridge` stay open.
     Glob.one
       `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetMarkersLoopDecrementCountdownBridge,
+    -- Part A G3a: the executed second-payload -> G2z handoff on the parsed target at the same
+    -- cubic budget, listed after the G2z bridge, which it imports: one 68-state machine runs
+    -- under exactly the same three hypotheses, switches blocks at G2p-c's first arrival
+    -- `2 * N - 7` and reaches its accept at
+    -- `(2N - 7) + exactClock + totalClock + composedClock <= B`.  Four handoffs of seventeen; the
+    -- thirteen earlier handoffs, the fence, the witness checks, `AcceptsAt` and
+    -- `ContentVerifierBridge` stay open.
+    Glob.one
+      `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetSecondPayloadMarkersLoopDecrementCountdownBridge,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentConsolidatedSource,
     -- Model-audit module: it depends only on the shared complexity interfaces,
     -- so it is listed after the whole contract-expansion chain and before the

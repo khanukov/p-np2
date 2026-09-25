@@ -2,6 +2,88 @@
 
 Updated: 2026-09-25
 
+**Part A G2y, the executed payload-loop → G2x handoff: the same generic sequential composition
+applied a second time, one block further left, at the same cubic budget (infrastructure only).**
+One new pnp3 module, `Complexity.Uniform.V1.FixedGammaTargetLoopDecrementCountdown`, and one new
+pnp4 module, `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetLoopDecrementCountdownBridge`.
+**No new table row**: the concrete machine is G2p-d's fixed 22-state, 66-row payload-round table
+followed by the whole G2x 18-state composite as one closed 40-state, 120-row table,
+`FixedGammaTargetPayloadRound.machine.seq FixedGammaTargetDecrementCountdown.machine`. Write
+`N = a+m`, `zeros = gammaZeros pr.2.n` and `d = borrow x w zeros`.
+
+Of the seventeen phase handoffs of the Part A chain, G2x executed the last one. G2y executes the
+one before it, **H16**, and inherits G2x's as **H17**, so **two** of the seventeen are now performed
+by a finite table and fifteen remain proof-level retags.
+
+* `FixedGammaTargetLoopDecrementCountdown.loop_strict` (four: matching tag, decoded width,
+  `2 <= zeros`, G2p-e's room): the payload-round machine, out of its own `startConfig`, is not in
+  `qDone` at any time strictly before `totalClock N zeros`. This is the first-arrival fact G2x
+  recorded as missing, and it needs no new trace: at `loopClock N zeros` G2p-e's `register_complete`
+  puts the machine in the non-absorbing `qLoop`, `no_terminal_of_le` turns that single non-verdict
+  into "neither verdict at any earlier time", and above that time `run_add` reduces to the finish,
+  where G2p-f's `exhaust_strict` already excludes `qDone` before `exhaustClock N zeros`. Arrival
+  itself is G2p-f's `payload_exhausted`; only minimality is new.
+* `FixedGammaTargetLoopDecrementCountdown.handoff_exact` (the same four): out of the composed
+  `startConfig` — the payload round's own `startConfig`, the retagged *actual* G2p-d foundation
+  endpoint, routed — the composed run is that machine's run up to `T = totalClock N zeros`, is in
+  neither composed verdict before `T`, at exactly `T` **is** G2x's landed `startConfig B x w`
+  re-embedded, and every later step is a G2x step. The switch fires at the loop's **first arrival**,
+  not at G2q's length-only deadline `priorDeadline N = 3N²`, at which G2q's `startConfig` retags;
+  the head and whole tape are identified through the round machine's persistence between the two
+  times, via `prior_covers`.
+* `FixedGammaTargetLoopDecrementCountdown.loop_decrement_countdown_drained` (G2u's **seven**
+  hypotheses, unchanged; `v` universally quantified): at exactly
+  `chainClock N zeros d v = totalClock N zeros + composedClock N zeros d v` the composed machine is
+  in its accept — the countdown's `qDone` — on the separator blank `N + 2 + zeros` with tape
+  `loopTape B x w zeros 0 v` — one tape equality, which already fixes the cleared register and the
+  `v` marks — persisting. There is **no**
+  eighth room premise: the decrement's room is G2u's `lane_room` at `r = k = 0` and the loop's
+  weaker room is `room_iff`'s second conjunct on it, both derived inside the proof.
+* `loop_decrement_countdown_drained_accepted_content_at_polyClock` (exactly G2x's **three**: the
+  parse, the acceptance, `3 <= pr.2.n`; no tag, cap, room, budget, clock, width, digit,
+  initial-state, correctness or runtime premise): at the same `B := polyClock 3 (pairLength a m)`
+  the chained clock `C = totalClock N zeros + composedClock N zeros d pr.2.n` is at most `B`, the
+  same two handoff facts are re-exported — no composed verdict before `T = totalClock N zeros`, and
+  at exactly `T` G2x's landed `startConfig B x w` re-embedded — and at exactly `C`, at exactly `B`
+  and at every later time the composed machine is in its accept with tape
+  `loopTape B x w zeros 0 pr.2.n`, with `pr.2.n = pr.1` and `11 <= N` exported. The new arithmetic
+  is `C <= 3N² + (3N² + 12N + 7) <= (N+1)³ + 3`, whose proof uses `11 <= N`; G2x's own domination lemma
+  is private, so the public clock formulas are expanded rather than reused.
+* Non-vacuity: `probe_loop_decrement_countdown_polyClock_accepted_target_three` reuses G2w-b's
+  accepted word at the pinned target `3` and reads back a switch time `T <= B`, no composed verdict
+  before it, G2x's `startConfig` at it, and the composed accept at `B`; on the pnp3 side
+  `check_loop_handoff_instance` and `check_loop_drained_instance` inhabit the four and the seven
+  hypotheses at their own budgets (`B = 0` and `B = 22`), and `check_handoff_probe` reduces the
+  composed run out of the identified actual `startConfig 0 tag physWord` by kernel computation
+  through **both** cross-block edges: the loop's `qFin` (index `19`) on the tag cell `7` at step
+  `63`, G2q's `qStart` (index `22`) on that cell at step `64`, G2q's `qBorrow` (index `26`) on the
+  digit `22` at step `81`, and the countdown's `qStart` (index `29`) on it at step `82`.
+
+Deferred and deliberately not claimed. **Two handoffs of seventeen**: the composed `startConfig`
+still embeds every earlier phase — the fifteen handoffs from the sentinel through the payload loop
+foundation remain proof-level identifications, no `initialConfig` on a raw pair input is executed,
+and no clock here counts a step of any earlier phase. Composing the next handoff down — G2p-d's
+marker foundation into the payload round — needs no new first-arrival theorem: the foundation's
+`markers_strict`, `markers_installed` and `exactClock_le_deadline` are the same three ingredients
+`loop_strict`, `payload_exhausted` and `prior_covers` supply here. Further down, G2p-b's first
+arrival is still missing, as recorded under G2x below. **First arrival
+of the composed accept**: `T` is the first time H16 fires, but nothing says `C` is the first time
+the composed accept is entered, since G2s-a and G2u prove no first arrival for `qDone`; the first
+arrival proved here is the payload loop's, inside the left block. **The fence**: all three tables
+are unfenced, hence so is the composition; an oversized register still runs off the end of the tape
+and sticks, a timeout and neither verdict, and the rows routed to the composed reject are pinned but
+not exercised here: no rejecting run or malformed-gamma rejection is composed in this slice, though
+the round machine's `malformed_rejects` with `seq_reject_handoff` would give one. **Small targets**
+`0`, `1`, `2` stay excluded by `3 <= pr.2.n`. **Every converse**,
+a **footprint** theorem — so every room premise is sufficient and used, never shown necessary —
+every witness-check phase, and the **model connection**: this is a V1 `UniformTM` on `Option Bool`
+cells laid out against `pairLength a m`, while `ContentVerifierBridge` asks for the legacy `TM` with
+a `runTime` field on `concatBitstring x w`. The composed accept is the countdown's phase-local
+`qDone`; reaching it out of a retagged actual prior endpoint is neither halting on a raw input nor
+language acceptance, and no `accepts`, `AcceptsAt`, `DecidesWithin`, `UniformP`, `VerifiesRelation`,
+`NP` membership, advice-freedom claim or `ContentVerifierBridge` is stated. Neither
+`SearchMCSPWeakLowerBound` nor `VerifiedNPDAGLowerBoundSource` is reduced. Infrastructure only.
+
 **Part A G2x, the executed G2q → G2s-a handoff: a generic sequential composition of two fixed
 `UniformTM`s, applied once, at G2w-b's cubic budget (infrastructure only).**
 Two new pnp3 modules, `Complexity.Uniform.V1.SequentialComposition` and
@@ -64,9 +146,11 @@ deadline, and no finite table performs a control switch. G2x builds the switch f
 
 Deferred and deliberately not claimed. **One handoff of seventeen**: the composed `startConfig`
 still embeds every earlier phase — the sixteen handoffs from the sentinel through payload
-exhaustion remain proof-level identifications, no `initialConfig` on a raw pair input is executed,
+exhaustion remain proof-level identifications in G2x's machine (Part A G2y above has since executed
+the last of them, H16), no `initialConfig` on a raw pair input is executed,
 and no clock here counts a step of any earlier phase; composing further handoffs needs first-arrival
-theorems that G2p-b and the G2p-d/e loop do not yet have. **First arrival of the composed accept**:
+theorems from their own start configurations — the G2p-d/e/f loop's is what Part A G2y above later
+supplied, G2p-b's is still missing. **First arrival of the composed accept**:
 `T` is the first time the handoff
 fires, but nothing says `C` is the first time the composed accept is entered, since G2s-a and G2u
 prove no first arrival for `qDone`. **The fence**: both tables are unfenced, hence so is the

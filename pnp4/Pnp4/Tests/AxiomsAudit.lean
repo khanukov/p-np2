@@ -61,6 +61,7 @@ import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetUnaryCountdownBrid
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetUnaryCountdownIterationBridge
 import Pnp4.Frontier.ContractExpansion.ContentCountdownLinearCap
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetDecrementCountdownBridge
+import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetLoopDecrementCountdownBridge
 import Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic
 import Pnp4.Frontier.ContractExpansion.ContentCappedSizes
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
@@ -1018,3 +1019,15 @@ end Pnp4
 -- `composedClock_le_polyClock`; the wrapper and the probe are audited in
 -- `Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`.
 #print axioms Pnp4.Frontier.ContractExpansion.decrement_countdown_drained_accepted_content_at_polyClock
+
+-- Part A G2y executed payload-loop-to-G2x handoff bridge: the pnp3 composed 40-state machine
+-- run out of the retagged actual G2p-d foundation endpoint under exactly G2x's three
+-- hypotheses at the same budget `B := polyClock 3 (pairLength a m)`.  The new switch H16 fires
+-- at the payload loop's first arrival `totalClock`, no composed verdict occurs before it, and
+-- the composed accept is reached at `totalClock + composedClock <= B`, read at that clock and
+-- at `B`.  Two handoffs of seventeen; the fifteen earlier retags, the fence, first arrival of
+-- the composed accept, every witness-check phase, `AcceptsAt`, `UniformP`, advice freedom and
+-- `ContentVerifierBridge` stay open.  The only other declaration is the `private` helper
+-- `chainClock_le_polyClock`; the wrapper and the probe are audited in
+-- `Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`.
+#print axioms Pnp4.Frontier.ContractExpansion.loop_decrement_countdown_drained_accepted_content_at_polyClock

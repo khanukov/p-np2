@@ -167,7 +167,11 @@ runtime proof, and exact-step acceptance correctness. Part A G2w-b picks a concr
 that many steps, but this is **not** progress on the runtime proof: it is one phase's step count out
 of a retagged phase-local `startConfig`, it composes no pipeline clock, it states no `DecidesWithin`,
 `UniformP`, `accepts` or `AcceptsAt`, and the machine is still unfenced — a target too large for the
-budget times out rather than rejecting. Wrapper-level `L'` padding invariance and
+budget times out rather than rejecting. Part A G2x then executes **one** of the seventeen phase
+handoffs — G2q's decrement into G2s-a's countdown — inside a single composed 18-state machine at
+that same budget, switching at G2q's first arrival; the sixteen earlier handoffs remain proof-level
+identifications, the composed accept is still the countdown's phase-local `qDone`, and no witness-check
+phase exists, so this is not the runtime proof either. Wrapper-level `L'` padding invariance and
 formal runtime/advice enforcement also remain open; complete-word `ContentAccepts` padding
 invariance does not close either item. The original length-gated
 `NP_not_subset_PpolyDAG_treePoly` / `PrefixExtensionNPWitness` capstone remains compiled and audited

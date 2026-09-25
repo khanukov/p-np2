@@ -119,6 +119,8 @@ import Tests.UniformV1FixedGammaTargetPayloadExhaustionSurfaceTests
 import Tests.UniformV1FixedGammaTargetRegisterDecrementSurfaceTests
 import Tests.UniformV1FixedGammaTargetUnaryCountdownSurfaceTests
 import Tests.UniformV1FixedGammaTargetUnaryCountdownIterationSurfaceTests
+import Tests.UniformV1SequentialCompositionSurfaceTests
+import Tests.UniformV1FixedGammaTargetDecrementCountdownSurfaceTests
 import Tests.UniformV1BudgetTransportSurfaceTests
 import Tests.UniformV1CombinedMachineSurfaceTests
 import Tests.UniformV1CombinedCorrectnessSurfaceTests
@@ -5171,6 +5173,97 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetUnaryCountdownIterationSurfaceTests.check_below_room_drain_probe
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetUnaryCountdownIterationSurfaceTests.check_register_drained_instance
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetUnaryCountdownIterationSurfaceTests.check_register_drained_literal_endpoint
+
+-- Part A G2x (2026-09-25), infrastructure only: the generic sequential composition
+-- `M₁.seq M₂` of two fixed `UniformTM`s into one closed table (`M₁`'s rows routed, so a row
+-- targeting `M₁.accept` enters `M₂.start` in that same transition: a zero-step handoff)
+-- and its one application, G2q's decrement then G2s-a's countdown as one 18-state
+-- machine, which switches blocks at G2q's first arrival `decClock` and reaches the
+-- composed accept at `decClock + fullClock`.  One handoff of seventeen; the start still
+-- retags every earlier phase, the lane stays unfenced, no first arrival of the composed
+-- accept is proved, and reaching it is neither halting on a raw input nor acceptance.
+#print axioms Pnp3.Complexity.Uniform.V1.Config.ext_parts
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.run_accept_of_le
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.run_reject_of_le
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.no_terminal_of_le
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.step_of_ne
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seqLeft
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seqRight
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seqRoute
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seqRawStep
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seqLeft_injective
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seqRight_injective
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seqLeft_ne_seqRight
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seq
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seqEmbedRouted
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seqEmbedRight
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seq_pins
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seqEmbedRouted_state
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seqEmbedRouted_head
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seqEmbedRouted_tape
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seqEmbedRight_state
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seqEmbedRight_head
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seqEmbedRight_tape
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seq_initialConfig
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seqRawStep_left
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seqRawStep_right
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seq_step_left
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seq_step_right
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seq_step_eq_rawStep
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seq_stepConfig_right
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seq_stepConfig_routed
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seq_run_right
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seq_run_left
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seq_handoff
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seq_reject_handoff
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetDecrementCountdown.machine
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetDecrementCountdown.inDecrement
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetDecrementCountdown.inCountdown
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetDecrementCountdown.route
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetDecrementCountdown.startConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetDecrementCountdown.composedClock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetDecrementCountdown.table_and_resource_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetDecrementCountdown.per_step_budget_independent
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetDecrementCountdown.handoff_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetDecrementCountdown.clock_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetDecrementCountdown.handoff_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetDecrementCountdown.decrement_countdown_drained
+#print axioms Pnp3.Tests.UniformV1SequentialCompositionSurfaceTests.check_seqLeft
+#print axioms Pnp3.Tests.UniformV1SequentialCompositionSurfaceTests.check_seqRight
+#print axioms Pnp3.Tests.UniformV1SequentialCompositionSurfaceTests.check_seqRoute
+#print axioms Pnp3.Tests.UniformV1SequentialCompositionSurfaceTests.check_seqRawStep
+#print axioms Pnp3.Tests.UniformV1SequentialCompositionSurfaceTests.check_seq
+#print axioms Pnp3.Tests.UniformV1SequentialCompositionSurfaceTests.check_seqEmbedRouted
+#print axioms Pnp3.Tests.UniformV1SequentialCompositionSurfaceTests.check_seqEmbedRight
+#print axioms Pnp3.Tests.UniformV1SequentialCompositionSurfaceTests.check_ext_parts
+#print axioms Pnp3.Tests.UniformV1SequentialCompositionSurfaceTests.check_absorption
+#print axioms Pnp3.Tests.UniformV1SequentialCompositionSurfaceTests.check_step_of_ne
+#print axioms Pnp3.Tests.UniformV1SequentialCompositionSurfaceTests.check_seq_pins
+#print axioms Pnp3.Tests.UniformV1SequentialCompositionSurfaceTests.check_seqEmbed_pins
+#print axioms Pnp3.Tests.UniformV1SequentialCompositionSurfaceTests.check_seq_rows
+#print axioms Pnp3.Tests.UniformV1SequentialCompositionSurfaceTests.check_seq_stepConfig
+#print axioms Pnp3.Tests.UniformV1SequentialCompositionSurfaceTests.check_seq_run_right
+#print axioms Pnp3.Tests.UniformV1SequentialCompositionSurfaceTests.check_seq_run_left
+#print axioms Pnp3.Tests.UniformV1SequentialCompositionSurfaceTests.check_seq_handoff
+#print axioms Pnp3.Tests.UniformV1SequentialCompositionSurfaceTests.check_seq_reject_handoff
+#print axioms Pnp3.Tests.UniformV1SequentialCompositionSurfaceTests.check_seq_literal_probe
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetDecrementCountdownSurfaceTests.check_machine
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetDecrementCountdownSurfaceTests.check_inDecrement
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetDecrementCountdownSurfaceTests.check_inCountdown
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetDecrementCountdownSurfaceTests.check_route
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetDecrementCountdownSurfaceTests.check_startConfig
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetDecrementCountdownSurfaceTests.check_composedClock
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetDecrementCountdownSurfaceTests.check_table_and_resource_pins
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetDecrementCountdownSurfaceTests.check_per_step_budget_independent
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetDecrementCountdownSurfaceTests.check_handoff_pins
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetDecrementCountdownSurfaceTests.check_clock_pins
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetDecrementCountdownSurfaceTests.check_handoff_exact
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetDecrementCountdownSurfaceTests.check_decrement_countdown_drained
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetDecrementCountdownSurfaceTests.check_clock_values
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetDecrementCountdownSurfaceTests.check_decrement_countdown_instance
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetDecrementCountdownSurfaceTests.check_handoff_literal
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetDecrementCountdownSurfaceTests.check_decrement_countdown_literal_endpoint
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetDecrementCountdownSurfaceTests.check_handoff_probe
 
 -- S11 (2026-09-19), infrastructure only: all-request one-gate acceptance
 -- closure in main's transducer convention.  `accepts = r.spec.isSome`, so a

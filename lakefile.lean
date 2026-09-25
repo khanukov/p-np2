@@ -205,6 +205,17 @@ lean_lib PnP3 where
     -- header/pnp4 bridge, every converse and first arrival stay deferred; qDone is phase-local
     -- acceptance of a retagged actual prior endpoint, not raw-input language acceptance.
     Glob.one `Complexity.Uniform.V1.FixedGammaTargetUnaryCountdownIteration,
+    -- Part A G2x, generic half: sequential composition of two fixed UniformTMs into one closed
+    -- table, M₁'s rows and start routed so that a target M₁.accept enters M₂.start in that same
+    -- transition (a zero-step handoff); seq_handoff composes the two runs under a load-bearing
+    -- first-arrival hypothesis.  No concrete machine, clock or acceptance claim.
+    Glob.one `Complexity.Uniform.V1.SequentialComposition,
+    -- Part A G2x, concrete half: G2q's decrement composed with G2s-a's countdown, one 18-state
+    -- table whose routed edge qBorrow-on-true -> countdown qStart is the executed handoff, taken
+    -- at G2q's first arrival decClock; the composed accept is reached at decClock + fullClock.
+    -- One handoff of seventeen; the start still retags the actual G2p-f endpoint, the lane stays
+    -- unfenced, no raw-input execution or acceptance is claimed.
+    Glob.one `Complexity.Uniform.V1.FixedGammaTargetDecrementCountdown,
     -- Generic bounded cross-budget simulation for one fixed UniformTM.
     Glob.one `Complexity.Uniform.V1.BudgetTransport,
     -- Routed fixed-parser/verifier constructor and parser-prefix handoff.
@@ -797,6 +808,8 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1FixedGammaTargetRegisterDecrementSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaTargetUnaryCountdownSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaTargetUnaryCountdownIterationSurfaceTests,
+    Glob.one `Tests.UniformV1SequentialCompositionSurfaceTests,
+    Glob.one `Tests.UniformV1FixedGammaTargetDecrementCountdownSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
     Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,
@@ -1133,6 +1146,12 @@ lean_lib Pnp4 where
     -- cubic tape/step budget and derives the room and clock bounds.  No fence, no `qOverflow`
     -- state, no machine and no cutoff cell is built here.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentCountdownLinearCap,
+    -- Part A G2x: the executed G2q -> G2s-a handoff on the parsed target at G2w-b's cubic
+    -- budget, listed after `ContentCountdownLinearCap`, which it imports: the composed machine
+    -- runs under exactly G2w-b's three hypotheses, switches blocks at G2q's first arrival and
+    -- reaches its accept at `decClock + fullClock <= B`.  One handoff of seventeen; the earlier
+    -- handoffs, the fence, the witness checks, `AcceptsAt` and `ContentVerifierBridge` stay open.
+    Glob.one `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetDecrementCountdownBridge,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentConsolidatedSource,
     -- Model-audit module: it depends only on the shared complexity interfaces,
     -- so it is listed after the whole contract-expansion chain and before the

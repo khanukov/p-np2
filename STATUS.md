@@ -47,7 +47,7 @@ by a finite table and fifteen remain proof-level retags.
   at exactly `T` G2x's landed `startConfig B x w` re-embedded — and at exactly `C`, at exactly `B`
   and at every later time the composed machine is in its accept with tape
   `loopTape B x w zeros 0 pr.2.n`, with `pr.2.n = pr.1` and `11 <= N` exported. The new arithmetic
-  is `C <= 3N² + (3N² + 12N + 7) <= (N+1)³ + 3`, which needs `11 <= N`; G2x's own domination lemma
+  is `C <= 3N² + (3N² + 12N + 7) <= (N+1)³ + 3`, whose proof uses `11 <= N`; G2x's own domination lemma
   is private, so the public clock formulas are expanded rather than reused.
 * Non-vacuity: `probe_loop_decrement_countdown_polyClock_accepted_target_three` reuses G2w-b's
   accepted word at the pinned target `3` and reads back a switch time `T <= B`, no composed verdict

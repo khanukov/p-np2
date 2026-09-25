@@ -5270,14 +5270,15 @@ end DeprecatedAC0CompatibilityAxiomAudit
 -- G2x composite into one closed 40-state, 120-row table.  `loop_strict` proves the minimality
 -- half of the payload loop's first arrival -- `qDone` is not entered before `totalClock` out of
 -- the loop's own `startConfig` -- from G2p-e's `register_complete`, `no_terminal_of_le` and
--- G2p-f's `exhaust_strict` alone, while arrival at `totalClock` itself is G2p-f's landed
+-- G2p-f's `exhaust_strict`, while arrival at `totalClock` itself is G2p-f's landed
 -- `payload_exhausted`; the routed row `qFin`-on-`some false` (index 19 -> 22) then executes
 -- handoff H16 at that first arrival, landing exactly on G2x's `startConfig`, and H17 is
 -- inherited.  The composed accept
 -- is reached at `totalClock + composedClock` under exactly G2u's seven hypotheses, the
 -- decrement's and the loop's room being derived inside the proof.  Two handoffs of seventeen;
 -- the start still retags every earlier phase, the lane stays unfenced, no first arrival of the
--- composed accept is proved, and reaching it is neither halting on a raw input nor acceptance.
+-- composed accept is proved, and reaching it is neither halting on a raw input nor language
+-- acceptance.
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetLoopDecrementCountdown.machine
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetLoopDecrementCountdown.inLoop
 #print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetLoopDecrementCountdown.inTail

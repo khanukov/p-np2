@@ -1404,7 +1404,7 @@ H16 and whose index-`26` → `29` row is G2x's H17, inherited unchanged.
   statement's conclusions; the switch time is the payload loop's first arrival, from the new pnp3
   `loop_strict`, and `pr.2.n = pr.1` is exported. G2x's domination lemma is private, so the
   budget bound `C ≤ 3N² + (3N² + 12N + 7) ≤ (N+1)³ + 3` is re-derived from the public clock
-  formulas and needs `11 ≤ N`. The surface probe
+  formulas and its proof uses `11 ≤ N`. The surface probe
   `probe_loop_decrement_countdown_polyClock_accepted_target_three` reuses G2w-b's accepted word at
   the pinned target `3` and reads the switch and the composed accept back.
 

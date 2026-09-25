@@ -213,8 +213,9 @@ lean_lib PnP3 where
     -- Part A G2x, concrete half: G2q's decrement composed with G2s-a's countdown, one 18-state
     -- table whose routed edge qBorrow-on-true -> countdown qStart is the executed handoff, taken
     -- at G2q's first arrival decClock; the composed accept is reached at decClock + fullClock.
-    -- One handoff of seventeen; the start still retags the actual G2p-f endpoint, the lane stays
-    -- unfenced, no raw-input execution or acceptance is claimed.
+    -- One handoff of seventeen; the start still retags the actual G2p-f endpoint and the lane stays
+    -- unfenced.  No raw-input execution, first arrival of the composed accept, or language
+    -- acceptance is claimed.
     Glob.one `Complexity.Uniform.V1.FixedGammaTargetDecrementCountdown,
     -- Part A G2y: G2p-d's payload round composed with the whole G2x composite, one 40-state
     -- table whose routed edge qFin-on-false -> G2x qStart is the newly executed handoff H16,

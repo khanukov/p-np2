@@ -1,6 +1,83 @@
 # Project Status (current)
 
-Updated: 2026-09-24
+Updated: 2026-09-25
+
+**Part A G2x, the executed G2q → G2s-a handoff: a generic sequential composition of two fixed
+`UniformTM`s, applied once, at G2w-b's cubic budget (infrastructure only).**
+Two new pnp3 modules, `Complexity.Uniform.V1.SequentialComposition` and
+`Complexity.Uniform.V1.FixedGammaTargetDecrementCountdown`, and one new pnp4 module,
+`Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetDecrementCountdownBridge`. **No new table
+row**: the concrete machine is G2q's fixed 7-state, 21-row table followed by G2s-a's fixed 11-state,
+33-row table as one closed 18-state, 54-row table, `FixedGammaTargetRegisterDecrement.machine.seq
+FixedGammaTargetUnaryCountdown.machine`. Write `N = a+m`, `zeros = gammaZeros pr.2.n` and
+`d = borrow x w zeros`.
+
+Until now every one of the seventeen phase handoffs of the Part A chain was a proof-level retag:
+each phase's `startConfig` replaces the control of the previous phase's run at a length-only
+deadline, and no finite table performs a control switch. G2x builds the switch for one of them.
+
+* `UniformTM.seq M₁ M₂` (generic, imports only `Machine`): `M₁`'s states at their own indices,
+  `M₂`'s shifted past them, the raw table the disjoint union of the two public step functions with
+  every `M₁` row **routed** — a target `M₁.accept` becomes `M₂.start` *in that same transition*, a
+  target `M₁.reject` the composed reject. This is the routed-edge handoff of the P2-3cB2
+  parser/verifier constructor with the left component made generic; it costs **zero** steps, and
+  routing inspects a row's target state and nothing else. `seq_run_right` (no hypothesis) runs `M₂`
+  out of any right-embedded configuration; `seq_run_left` runs `M₁` up to `T` provided `M₁` does not
+  accept strictly before `T`, an `M₁` rejection needing no hypothesis; `seq_handoff` composes them
+  under **first arrival** of `M₁.accept` at `T`, which is load-bearing — an earlier acceptance would
+  have fired the routed edge earlier; `seq_reject_handoff` needs no first-arrival premise.
+  `seqLeft M₁.accept` and `seqLeft M₁.reject` are dead states no routed row targets.
+* `FixedGammaTargetDecrementCountdown.handoff_exact` (four: matching tag, decoded width,
+  `2 <= zeros`, G2q's room): out of the composed `startConfig` — G2q's own `startConfig`, the
+  retagged *actual* G2p-f endpoint, routed — the composed run is G2q's run up to
+  `T = decClock N zeros d`, is in neither composed verdict before `T`, at exactly `T` **is** the
+  countdown's landed `startConfig B x w` re-embedded, and every later step is a countdown step. The
+  switch fires at G2q's **first arrival**, supplied by G2q's `decrement_strict`, not at G2q's
+  deadline `3N`: a switch described at the deadline would credit the countdown with steps it had
+  already taken.
+* `FixedGammaTargetDecrementCountdown.decrement_countdown_drained` (G2u's seven hypotheses,
+  unchanged; `v` universally quantified): at exactly
+  `composedClock N zeros d v = decClock N zeros d + fullClock zeros d v` the composed machine is in
+  its accept — the countdown's `qDone` — on the separator blank with the register cleared, `v` marks
+  laid and blanks beyond, persisting.
+* `decrement_countdown_drained_accepted_content_at_polyClock` (exactly G2w-b's **three**: the
+  parse, the acceptance, `3 <= pr.2.n`; no tag, cap, room, budget, clock, width, digit, initial-state,
+  correctness or runtime premise): at `B := polyClock 3 (pairLength a m)` the composed clock
+  `C = decClock N zeros d + fullClock zeros d pr.2.n` is at most `B`, the handoff conjuncts above
+  hold, and at exactly `C`, at exactly `B` and at every later time the composed machine is in its
+  accept with tape `loopTape B x w zeros 0 pr.2.n` — the register cleared, exactly `pr.2.n` marks —
+  with `pr.2.n = pr.1` exported and the target tracked as `pr.2.n` throughout. The register value is
+  the G2r digit fact on the decoded header; the new arithmetic is `C <= 3N² + 12N + 4 <= (N+1)³ + 3`.
+* Non-vacuity: `probe_decrement_countdown_polyClock_accepted_target_three` reuses G2w-b's accepted
+  word at the pinned target `3` and reads back a switch time `T <= B`, no composed verdict before it,
+  the countdown's `startConfig` at it, and the composed accept at `B`; on the pnp3 side
+  `check_handoff_probe` reduces the composed run out of the identified actual `startConfig 0 tag
+  physWord` by kernel computation and sees G2q's `qBorrow` at step `17` and the countdown's `qStart`
+  on the same cell, now `some false`, at step `18`; `check_seq_literal_probe` reduces a six-state
+  toy composition through both the accepting and the rejecting handoff.
+
+Deferred and deliberately not claimed. **One handoff of seventeen**: the composed `startConfig`
+still embeds every earlier phase — the sixteen handoffs from the sentinel through payload
+exhaustion remain proof-level identifications, no `initialConfig` on a raw pair input is executed, and no clock here counts a step of any
+earlier phase; composing further handoffs needs first-arrival theorems that G2p-b and the G2p-d/e
+loop do not yet have. **First arrival of the composed accept**: `T` is the first time the handoff
+fires, but nothing says `C` is the first time the composed accept is entered, since G2s-a and G2u
+prove no first arrival for `qDone`. **The fence**: both tables are unfenced, hence so is the
+composition; accepted words never overflow the lane, since `pr.2.n <= N` is derived, but an
+overshooting word still runs off the end of the tape and sticks, a timeout and neither verdict, and
+no rejected or malformed input is characterised — the rows routed to the composed reject are pinned
+and never exercised. A future fence phase would be a middle component of `seq`, and
+`seq_reject_handoff` would propagate its rejection at no extra cost; nothing here builds it. **Small
+targets** `0`, `1`, `2` stay excluded by `3 <= pr.2.n`. **Every converse**, every witness-check
+phase (index and table locating, witness window, circuit decode and evaluation, size check), and the
+**model connection**: this is a V1 `UniformTM` on `Option Bool` cells laid out against
+`pairLength a m`, while `ContentVerifierBridge` asks for the legacy `TM` with a `runTime` field on
+`concatBitstring x w`; no V1 statement of the advice-free target is frozen, and the legacy `runTime`
+advice channel of caveat 6 is untouched. The composed accept is the countdown's phase-local `qDone`;
+reaching it out of a retagged actual prior endpoint is neither halting on a raw input nor language
+acceptance, and no `accepts`, `AcceptsAt`, `DecidesWithin`, `UniformP`, `VerifiesRelation`, `NP`
+membership, advice-freedom claim or `ContentVerifierBridge` is stated. Neither
+`SearchMCSPWeakLowerBound` nor `VerifiedNPDAGLowerBoundSource` is reduced. Infrastructure only.
 
 **Part A G2v + G2w-a + G2w-b, the countdown drains on the parsed target, under a semantic linear
 cap, at a fixed cubic budget (infrastructure only).**

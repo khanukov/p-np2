@@ -1692,3 +1692,80 @@ statement is made about this machine.  None of them changed a declaration here, 
 and **none took the fence**: the executed-fence requirement recorded above stands unchanged, the lane
 is still uncapped in this machine, no cutoff cell is laid anywhere, `F` is still a parameter of every
 statement here, and this module still states nothing about a header, a parse or a decoded value.
+
+The Part A G2x `SequentialComposition` is the generic half of the first **executed** handoff of
+this chain, and it imports only `Machine`.  `UniformTM.seq M₁ M₂` has `M₁.stateCount +
+M₂.stateCount` states -- `M₁`'s at their own indices (`seqLeft`), `M₂`'s shifted past them
+(`seqRight`) -- and its raw table is the disjoint union of the two public step functions with every
+`M₁` row **routed** through `seqRoute`: a target `M₁.accept` becomes `M₂.start` *in that same
+transition*, a target `M₁.reject` becomes the composed reject, every other target stays left.  This
+is the routed-edge handoff of the P2-3cB2 parser/verifier constructor above with the hard-coded left
+component made generic, and as there the handoff costs **zero** steps; routing inspects a row's
+target state and nothing else, so `M₁.seq M₂` is a fixed table as soon as `M₁` and `M₂` are.
+`seqLeft M₁.accept` and `seqLeft M₁.reject` are dead states: no routed row targets them, and
+`seqEmbedRouted` routes an `M₁` configuration before a run starts.  `seq_pins` pins the state count,
+the distinguished states, the two injections, their disjointness and the three routing cases;
+`seq_step_left`, `seq_step_right` and `seq_step_eq_rawStep` pin every row.  `seq_run_right` runs
+`M₂` out of any right-embedded configuration, with no hypothesis.  `seq_run_left` runs `M₁` out of
+a routed embedding up to `T`, provided `M₁` does not accept strictly before `T`; an `M₁` rejection
+needs no hypothesis, since both machines absorb it.  `seq_handoff` composes them: if `M₁` accepts
+**for the first time** at `T`, the composed run at `T + s` is the `M₂` run of `s` steps out of
+`M₂.start` on the head and tape `M₁` left.  First arrival is load-bearing and is not a persistence
+fact -- had `M₁` accepted earlier, the routed edge would have fired earlier and `M₂` would have run
+longer -- which is the reason a proof-level retag at a deadline was never a substitute for it.
+`seq_reject_handoff` needs no first-arrival hypothesis.  The module states nothing about any input,
+clock or budget and proves no `AcceptsAt`, `DecidesWithin`, `UniformP`, `VerifiesRelation` or
+language-membership fact about a composed machine: reaching `(M₁.seq M₂).accept` is reaching
+`M₂.accept` inside the composed control.
+
+The Part A G2x `FixedGammaTargetDecrementCountdown` is that combinator applied once, and it adds
+**no table row**: `machine` is `FixedGammaTargetRegisterDecrement.machine.seq
+FixedGammaTargetUnaryCountdown.machine`, G2q's 7-state, 21-row table on the block `[0, 7)` and
+G2s-a's 11-state, 33-row table on `[7, 18)`, one closed 18-state, 54-row table.  G2q's
+`qBorrow`-on-`some true` row, which targets G2q's absorbing `qDone`, is routed to the countdown's
+`qStart` at index `7`; so the composed machine hands over the moment the borrow stops, on the cell
+it stops on, with the tape G2q leaves, which is exactly the entry ABI recorded in the G2s-a entry
+above.  `startConfig` is G2q's own `startConfig` routed into the composed control -- still the
+retagged *actual* G2p-f endpoint, so still a phase-local retag of every earlier phase -- and
+`composedClock N zeros d v = decClock N zeros d + fullClock zeros d v`.
+
+`handoff_exact` is the executed handoff.  On a matching tag, a decoded `2 <= zeros` and G2q's room,
+with `T = decClock N zeros (borrow x w zeros)`: the composed run is G2q's run, routed, at every
+time up to `T`; the composed control is in neither verdict before `T`; at exactly `T` the composed
+configuration **is** the countdown's landed `startConfig B x w` re-embedded; and every later step is
+a countdown step out of it.  The identification rests on G2q's `decrement_strict` -- `qDone` is
+entered for the *first* time at `T` -- and on G2q's persistence from `T` to its deadline `3N`, at
+which G2s-a's `startConfig` retags.  The switch time is `T`, not `3N`: a running composed machine
+cannot wait for a length-only deadline, and describing it as switching at `3N` would credit the
+countdown with `3N - T` steps it had already taken.  `decrement_countdown_drained` then runs G2u's
+`register_drained` on top, under G2u's seven hypotheses unchanged: at exactly `composedClock` the
+composed machine is in its accept, the countdown's `qDone`, on the separator blank with the register
+cleared, `v` marks laid and blanks beyond, persisting.  `v` is universally quantified here and
+nothing in pnp3 supplies it.  The surface test's `check_handoff_probe` identifies the actual
+`startConfig 0 tag physWord` with an explicit configuration -- using only the landed G2p-f endpoint
+theorem and G2q's prior bound, which executes nothing -- and then reduces the composed run by kernel
+computation: G2q's `qBorrow` on the digit `22` at step `17`, the countdown's `qStart` on that same
+cell, now `some false`, at step `18`, and one mark at `24` after the first round at step `35`, which
+is step `17` of G2u's `check_start_iterate_probe` shifted by the `18` steps G2q takes.
+
+Deferred by G2x, and deliberately not claimed.  **One handoff of seventeen**: `startConfig` still
+embeds every earlier phase, the sixteen earlier handoffs stay proof-level, no raw-input `initialConfig` is executed, and no clock here
+counts a step of any earlier phase; composing the next handoffs needs first-arrival theorems from
+their own start configurations, which G2p-b and the G2p-d/e loop do not yet have.  **First arrival
+of the composed accept**: `T` is the first time the handoff fires, but no theorem says
+`composedClock` is the first time the composed accept is entered, because G2s-a and G2u prove no
+first arrival for `qDone`.  **The fence**: the policy recorded in the G2s-a entry above stands
+unchanged; both tables are uncapped, hence so is this one, an oversized register still runs
+`qRunEnd` off the tape and sticks, a timeout and neither verdict, and the rows routed to the
+composed reject are pinned and never exercised, since G2q characterises no non-`qDone` endpoint.  A
+fence phase inserted between G2q and the countdown would become a middle component of `seq`, ending
+on the same entry ABI, and `seq_reject_handoff` would propagate its rejection at no extra cost;
+nothing here builds it.  Every **converse**, a **footprint** theorem, and the gamma leading-digit
+convention.  The composed `accept` is the countdown's phase-local `qDone`: reaching it out of a
+retagged actual prior endpoint is neither halting on a raw input nor language acceptance, and the
+module states no `accepts`, `AcceptsAt`, `DecidesWithin`, `UniformP` or language membership.  The
+pnp4 bridge `ContentFixedGammaTargetDecrementCountdownBridge` runs the composed machine under
+exactly G2w-b's three hypotheses at G2w-b's cubic budget and is described in
+`pnp4/Pnp4/Frontier/ContractExpansion/README.md`.  Clock composition with the earlier phases, the
+fixed parser, advice freedom, `NP` membership and `ContentVerifierBridge` remain out of scope.  It
+is infrastructure, not P-vs-NP mainline progress.

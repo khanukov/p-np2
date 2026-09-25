@@ -60,6 +60,7 @@ import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetRegisterDecrementB
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetUnaryCountdownBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetUnaryCountdownIterationBridge
 import Pnp4.Frontier.ContractExpansion.ContentCountdownLinearCap
+import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetDecrementCountdownBridge
 import Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic
 import Pnp4.Frontier.ContractExpansion.ContentCappedSizes
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
@@ -1005,3 +1006,15 @@ end Pnp4
 #print axioms Pnp4.Frontier.ContractExpansion.countdown_drained_accepted_content
 #print axioms Pnp4.Frontier.ContractExpansion.concatBitstring_eq_append
 #print axioms Pnp4.Frontier.ContractExpansion.countdown_drained_accepted_content_at_polyClock
+
+-- Part A G2x executed decrement-to-countdown handoff bridge: the pnp3 composed 18-state
+-- machine run out of the retagged actual G2p-f endpoint under exactly G2w-b's three
+-- hypotheses at G2w-b's budget `B := polyClock 3 (pairLength a m)`.  The switch fires at
+-- G2q's first arrival `decClock`, no composed verdict occurs before it, and the composed
+-- accept is reached at `decClock + fullClock <= B`, read at that clock and at `B`.  One
+-- handoff of seventeen; the earlier retags, the fence, first arrival of the composed
+-- accept, every witness-check phase, `AcceptsAt`, `UniformP`, advice freedom and
+-- `ContentVerifierBridge` stay open.  The only other declaration is the `private` helper
+-- `composedClock_le_polyClock`; the wrapper and the probe are audited in
+-- `Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`.
+#print axioms Pnp4.Frontier.ContractExpansion.decrement_countdown_drained_accepted_content_at_polyClock

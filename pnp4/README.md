@@ -593,6 +593,23 @@ widths `zeros ≤ 1` on the machine side, a malformed-gamma branch, `accepts`,
 `ContentVerifierBridge` are not provided, and none of these three slices is P-vs-NP
 mainline progress.
 
+Part A G2x executes **one** of those seventeen handoffs.
+`ContentFixedGammaTargetDecrementCountdownBridge.lean` runs the pnp3 composed machine
+`FixedGammaTargetRegisterDecrement.machine.seq FixedGammaTargetUnaryCountdown.machine` —
+G2q's 7-state table followed by G2s-a's 11-state table as one closed 18-state table, built
+by the new generic `UniformTM.seq` whose routed rows make a target `M₁.accept` enter
+`M₂.start` in that same transition — under exactly G2w-b's three hypotheses at G2w-b's
+budget. `decrement_countdown_drained_accepted_content_at_polyClock` concludes that the
+composed run switches blocks at G2q's **first arrival** `decClock`, not at G2q's deadline,
+is in neither composed verdict before it, is the countdown's landed `startConfig`
+re-embedded at it, and is in the composed accept at exactly
+`decClock + fullClock ≤ B`, at exactly `B` and at every later time, with the register
+cleared and `pr.2.n` marks laid. The other sixteen handoffs remain proof-level
+identifications — the composed `startConfig` still embeds every earlier phase — no first arrival of the
+composed accept is proved, the lane is still unfenced, the composed accept is the
+countdown's phase-local `qDone` rather than language acceptance, the V1 machine model is
+not the legacy `TM` the bridge interface names, and this is not P-vs-NP mainline progress.
+
 For an *arbitrary* threshold there is a third input, `PolyBoundedInTable threshold`;
 it is proved for the canonical polynomial thresholds, so it disappears at
 `thresholdPoly k`.  The general capstone `verifiedSource_of_explicit_interfaces`

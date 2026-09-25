@@ -180,10 +180,14 @@ the only width an accepted parsed target reaches is the length-dependent `2N - 7
 the seventeen handoffs are therefore now
 performed by a finite table; the thirteen earlier ones remain proof-level identifications, the
 composed accept is still the countdown's phase-local `qDone`, and no witness-check
-phase exists, so this is not the runtime proof either. The next handoff down, G2p-b's first payload
-into G2p-c, is blocked on a missing G2p-b first-arrival theorem. Wrapper-level `L'` padding invariance and
-formal runtime/advice enforcement also remain open; complete-word `ContentAccepts` padding
-invariance does not close either item. The original length-gated
+phase exists, so this is not the runtime proof either. Part A G3b then supplied the prerequisite the
+next handoff down — G2p-b's first payload into G2p-c — was blocked on: G2p-b now exports its exact
+first arrival (`exactClock N zeros`, `6` at width zero and `2N + zeros - 6` at a positive width),
+strictness before it at every decoded width, and the deadline identification a composition needs.
+G3b builds **no** composition — no `seq`, no composed machine, no composed clock — so the count of
+executed handoffs is unchanged at four and that composition is still owed. Wrapper-level `L'`
+padding invariance and formal runtime/advice enforcement also remain open; complete-word
+`ContentAccepts` padding invariance does not close either item. The original length-gated
 `NP_not_subset_PpolyDAG_treePoly` / `PrefixExtensionNPWitness` capstone remains compiled and audited
 as a compatibility route. See `pnp4/Pnp4/Frontier/ContractExpansion/README.md` for the full
 proved-vs-open breakdown.

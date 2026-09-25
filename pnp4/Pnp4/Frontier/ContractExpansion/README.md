@@ -1524,7 +1524,9 @@ resting on that row equation and G2z's own probes.
 Caveats specific to G3a. It is **four handoffs of seventeen**: the composed `startConfig` still
 embeds every earlier phase, the thirteen handoffs before H14 stay proof-level, no `initialConfig` on
 a raw pair input is executed, and no clock counts a step of any earlier phase; the next handoff down
-is blocked on a missing G2p-b first-arrival theorem. `S` is the first time H14 fires, but no theorem
+was blocked on a missing G2p-b first-arrival theorem, which Part A G3b has since supplied in pnp3
+(`exactClock`, `first_payload_strict`, `strict_first_terminal`) without building that composition,
+so this entry's counts are unchanged. `S` is the first time H14 fires, but no theorem
 says `C` is the first time the composed accept is entered; the first arrival proved is G2p-c's,
 inside the left block. All five tables are unfenced, hence so is the composition: accepted words
 never overflow the lane, since `pr.2.n ≤ N` is derived, but an overshooting word still times out.

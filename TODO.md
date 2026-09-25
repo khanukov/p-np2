@@ -169,10 +169,13 @@ of a retagged phase-local `startConfig`, it composes no pipeline clock, it state
 `UniformP`, `accepts` or `AcceptsAt`, and the machine is still unfenced — a target too large for the
 budget times out rather than rejecting. Part A G2x then executes **one** of the seventeen phase
 handoffs — G2q's decrement into G2s-a's countdown — inside a single composed 18-state machine at
-that same budget, switching at G2q's first arrival, and Part A G2y executes the one before it — the
+that same budget, switching at G2q's first arrival, Part A G2y executes the one before it — the
 gamma payload loop into that composite — inside a single composed 40-state machine at the same
-budget, switching at the loop's first arrival. **Two** of the seventeen handoffs are therefore now
-performed by a finite table; the fifteen earlier ones remain proof-level identifications, the
+budget, switching at the loop's first arrival, and Part A G2z executes the one before *that* —
+G2p-d's marker preamble into the G2y composite — inside a single composed 54-state machine at the
+same budget, switching at the preamble's first arrival `exactClock zeros = zeros + 7`. **Three** of
+the seventeen handoffs are therefore now
+performed by a finite table; the fourteen earlier ones remain proof-level identifications, the
 composed accept is still the countdown's phase-local `qDone`, and no witness-check
 phase exists, so this is not the runtime proof either. Wrapper-level `L'` padding invariance and
 formal runtime/advice enforcement also remain open; complete-word `ContentAccepts` padding

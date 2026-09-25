@@ -1823,8 +1823,9 @@ next handoff down, from G2p-d's marker foundation into the payload round, needs 
 first-arrival theorem: the foundation's `markers_strict`, `markers_installed` and
 `exactClock_le_deadline` are the same three ingredients `loop_strict`, `payload_exhausted` and
 `prior_covers` supply here, and the round's `startConfig` retags the foundation's run at its
-length-only deadline exactly as G2q's retags the loop's.  Further down, G2p-b's first arrival is
-still missing.  **First arrival of the composed accept**:
+length-only deadline exactly as G2q's retags the loop's.  That handoff, H15, has since been taken by
+G2z below, so the counts in this G2y entry are the ones this slice left.  Further down, G2p-b's
+first arrival is still missing.  **First arrival of the composed accept**:
 `T` is the first time H16 fires, but no theorem says `chainClock` is the first time the composed
 accept is entered, because G2s-a and G2u prove no first arrival for `qDone`; the first arrival
 proved here is the payload loop's, inside the left block.  **The fence**: the policy recorded in the
@@ -1844,3 +1845,82 @@ under exactly the same three hypotheses at the same cubic budget and is describe
 `pnp4/Pnp4/Frontier/ContractExpansion/README.md`.  Clock composition with the earlier phases, the
 fixed parser, advice freedom, `NP` membership and `ContentVerifierBridge` remain out of scope.  It
 is infrastructure, not P-vs-NP mainline progress.
+
+The Part A G2z `FixedGammaTargetMarkersLoopDecrementCountdown` is that same combinator applied a
+third time, one block further left, and it again adds **no table row**: `machine` is
+`FixedGammaTargetPayloadLoopFoundation.machine.seq FixedGammaTargetLoopDecrementCountdown.machine`,
+G2p-d's 14-state, 42-row marker-preamble table on the block `[0, 14)` and the whole G2y composite on
+`[14, 54)` -- inside it G2p-d's payload round at `[14, 36)`, G2q's decrement at `[36, 43)` and
+G2s-a's countdown at `[43, 54)` -- one closed 54-state, 162-row table.  **H15 is executed by four
+routed rows.**  Every working-state preamble row targeting its own
+absorbing `qDone` is routed to G2y's start at index `14`: `qZeroA`/`some true`,
+`qClearB`/`some true`, `qBackB`/`some true` and `qFin`/`some false`; so are the three dead `qDone`
+self-rows, on a state the routing leaves unoccupied.  The table reaches `qZeroA`'s exit only on a
+terminator already at cell `8` (width zero) and `qFin`'s only on one at cell `9` (width one), both
+excluded by `2 <= zeros`, so what the fixtures exercise are the two `qSrcB` selects by reading the
+second payload source: `qClearB` (index `9`, writing the blank and moving right) on a content
+symbol, `qBackB` (index `10`, preserving the `true` and staying) on the boundary blank.  No theorem
+here says which of the four rows a given word takes.  G2y's
+`qFin`-on-`some false` row, now at composed index `33` targeting `36`, is **H16**, and G2x's
+`qBorrow`-on-`some true` row, now at `40` targeting `43`, is **H17**; both are inherited unchanged
+and re-derived here through `seq_step_right`.  `startConfig` is the marker preamble's own
+`startConfig` routed into the composed control -- still the retagged *actual* G2p-c second-payload
+endpoint, so still a phase-local retag of every earlier phase -- and
+`markersChainClock N zeros d v = exactClock zeros + chainClock N zeros d v`.
+
+G2z needs **no new first-arrival theorem**, which is the whole reason it is the smallest next slice.
+The preamble already carries arrival with persistence (`markers_installed`), minimality
+(`markers_strict`) and the deadline cover (`exactClock_le_deadline`), and the generic
+`UniformTM.run_accept_of_le` identifies the preamble's run at its first arrival
+`exactClock zeros = zeros + 7` with its run at the length-only `deadline N = N`, which is exactly the
+run G2p-d's round `startConfig` retags.  `handoff_exact` is then the executed handoff, on a matching
+tag, a decoded `2 <= zeros` and the **preamble's own** weaker room `N + 3 < tapeLength …` -- not
+G2y's loop room -- with `S = exactClock zeros`: the composed run is the preamble's run, routed, at
+every time up to `S`; the composed control is in neither verdict before `S`; at exactly `S` the
+composed configuration **is** G2y's landed `startConfig B x w` re-embedded; and every later step is
+a G2y step out of it.  The switch time is `S`, not `N`.  Because the room premise is the weaker one,
+the simulation holds even where the tail would later lack room.
+`markers_loop_decrement_countdown_drained` then runs G2y's `loop_decrement_countdown_drained` on
+top, under G2u's and G2y's **seven** hypotheses unchanged -- no eighth room premise: the preamble's
+room is `room_iff`'s `2 <= a + B`, read off the drain's own room premise `zeros + 2 + F <= a + B`
+together with `2 <= zeros`, and derived inside the proof.
+At exactly `markersChainClock` the composed machine is in its accept, the countdown's `qDone`, on the
+separator blank `N + 2 + zeros` with tape `loopTape B x w zeros 0 v`, persisting.  `v` is universally
+quantified here and nothing in pnp3 supplies it.  `malformed_reject_handoff` adds the **first routed
+reject the chain composition exercises**: on a matching tag with no decoded width the preamble
+rejects in one step, and `seq_reject_handoff` carries that verdict into the composed reject at index
+`53` -- not the preamble's own `qReject` at `13` -- at the boundary head `N` on the unchanged content
+tape, from step one on.  It is no converse and characterises no parsed target.  The surface test
+identifies the actual `startConfig B tag ·` for four literal words with explicit configurations --
+using only the landed G2p-c `second_payload_at_deadline` and `malformed_at_deadline`, which execute
+nothing -- and then reduces the composed run by kernel computation: H15's write-and-right exit on a
+`zeros = 4` word with both sources physical (state `9` at head `13` at step `10`, state `14` at head
+`14` with cell `13` blanked at step `11`), its stay exit on a `zeros = 2` middle-source word
+(`N = 12`; state `10` at head `11` at step `8`, state `14` at that head at step `9`) and on a
+`zeros = 2` word with neither source physical (`N = 11`; head `10`), the two inherited edges at steps
+`74`/`75` and `92`/`93` -- G2y's `63`/`64` and `81`/`82` shifted by the preamble's eleven steps --
+and the routed reject at steps `1` and `5`.
+
+Deferred by G2z, and deliberately not claimed.  **Three handoffs of seventeen**: `startConfig` still
+embeds every earlier phase, the fourteen handoffs before H15 stay proof-level, no raw-input
+`initialConfig` is executed, and no clock here counts a step of any earlier phase.  Composing the
+next handoff down, from G2p-c's second payload into the marker preamble, again needs no new
+first-arrival theorem, since `second_payload_strict` is landed; below that, G2p-b's first arrival is
+still missing.  **First arrival of the composed accept**: `S` is the first time H15 fires, but no
+theorem says `markersChainClock` is the first time the composed accept is entered, because G2s-a and
+G2u prove no first arrival for `qDone`; the first arrival proved here is the marker preamble's,
+inside the left block.  **The fence**: the policy recorded in the G2s-a entry above stands unchanged;
+all four tables are uncapped, hence so is this one, and an oversized register still runs `qRunEnd`
+off the tape and sticks, a timeout and neither verdict.  The routed reject is exercised on a
+malformed gamma only: there is no rejection converse, no `RejectsAt`, and no parsed-target rejection
+characterisation.  Every other **converse**, a **footprint** theorem -- so every room premise stays
+sufficient and used, never shown necessary -- and the gamma leading-digit convention.  The table is
+fixed and complete but not claimed state-minimal.  The composed `accept` is the countdown's
+phase-local `qDone`: reaching it out of a retagged actual prior endpoint is neither halting on a raw
+input nor language acceptance, and the module states no `accepts`, `AcceptsAt`, `DecidesWithin`,
+`UniformP` or language membership.  The pnp4 bridge
+`ContentFixedGammaTargetMarkersLoopDecrementCountdownBridge` runs the composed machine under exactly
+the same three hypotheses at the same cubic budget and is described in
+`pnp4/Pnp4/Frontier/ContractExpansion/README.md`.  Clock composition with the earlier phases, the
+fixed parser, advice freedom, `NP` membership and `ContentVerifierBridge` remain out of scope.  It is
+infrastructure, not P-vs-NP mainline progress.

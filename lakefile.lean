@@ -219,8 +219,8 @@ lean_lib PnP3 where
     -- Part A G2y: G2p-d's payload round composed with the whole G2x composite, one 40-state
     -- table whose routed edge qFin-on-false -> G2x qStart is the newly executed handoff H16,
     -- taken at the loop's first arrival totalClock; H17 is inherited.  Two handoffs of
-    -- seventeen; the start still retags the actual G2p-d endpoint, the lane stays unfenced, no
-    -- raw-input execution, composed first arrival or acceptance is claimed.
+    -- seventeen; the start still retags the actual G2p-d endpoint and the lane stays unfenced.
+    -- No raw-input execution, first arrival of the composed accept, or language acceptance is claimed.
     Glob.one `Complexity.Uniform.V1.FixedGammaTargetLoopDecrementCountdown,
     -- Generic bounded cross-budget simulation for one fixed UniformTM.
     Glob.one `Complexity.Uniform.V1.BudgetTransport,

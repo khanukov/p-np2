@@ -6548,6 +6548,127 @@ theorem check_countdown_drained_accepted_content (k : Nat) {a m B : Nat}
             a + m + 3 + zeros + pr.2.n ≤ i.val → e.tape i = none) :=
   countdown_drained_accepted_content k x w htag hpr haccept hn hroom
 
+theorem check_concatBitstring_eq_append {n m : Nat} (x : Bitstring n) (w : Bitstring m) :
+    Pnp3.ComplexityInterfaces.concatBitstring x w = Fin.append x w :=
+  concatBitstring_eq_append x w
+
+theorem check_countdown_drained_accepted_content_at_polyClock (k : Nat) {a m : Nat}
+    (x : Bitstring a) (w : Bitstring m)
+    {pr : Σ r : Nat,
+      PrefixInput
+        (Frontier.treeMCSPSearchProblem (thresholdPoly k)
+          (Frontier.TreeMCSPSearchWitnessEncoding.ofCodec
+            (treeCircuitWitnessCodec (thresholdPoly k))))
+        (treeMCSPPrefixM (treeCircuitWitnessCodec (thresholdPoly k)) r)}
+    (hpr : contentInput? (treeCircuitWitnessCodec (thresholdPoly k)) (Fin.append x w) = some pr)
+    (haccept : contentSemanticAccepts (treeCircuitWitnessCodec (thresholdPoly k))
+      (Fin.append x w) = true)
+    (hn : 3 ≤ pr.2.n) :
+    let B := polyClock 3 (PairEncoding.pairLength a m)
+    pr.2.n ≤ a + m ∧ 3 ≤ a + m ∧
+      FixedContentTagGate.tagMatches (Fin.append x w) = true ∧
+      ∃ zeros, zeros = gammaZeros pr.2.n ∧ 2 ≤ zeros ∧ pr.2.n = pr.1 ∧
+        contentHeader? (Fin.append x w) = some (pr.2.n, 2 * zeros + 1) ∧
+        FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros ∧
+        gammaZeros pr.2.n + 2 + (a + m) ≤ a + B ∧
+        FixedGammaTargetUnaryCountdownIteration.fullClock zeros
+            (FixedGammaTargetRegisterDecrement.borrow x w zeros) pr.2.n ≤ B ∧
+        let e := FixedGammaTargetUnaryCountdown.machine.run B
+          (FixedGammaTargetUnaryCountdown.startConfig B x w)
+        e.state = FixedGammaTargetUnaryCountdown.qDone ∧
+          e.head.val = a + m + 2 + zeros ∧
+          e.tape = FixedGammaTargetUnaryCountdown.loopTape B x w zeros 0 pr.2.n ∧
+          (∀ t, B ≤ t → FixedGammaTargetUnaryCountdown.machine.run t
+            (FixedGammaTargetUnaryCountdown.startConfig B x w) = e) ∧
+          (∀ j : Nat, j ≤ zeros → ∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B),
+            i.val = a + m + 1 + j → e.tape i = some false) ∧
+          (∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B), a + m + 3 + zeros ≤ i.val →
+            i.val < a + m + 3 + zeros + pr.2.n → e.tape i = some true) ∧
+          (∀ i : Fin (tapeLength (PairEncoding.pairLength a m) B),
+            a + m + 3 + zeros + pr.2.n ≤ i.val → e.tape i = none) :=
+  countdown_drained_accepted_content_at_polyClock k x w hpr haccept hn
+
+/-- The all-false truth table on three variables satisfies the tree-MCSP promise at every
+polynomial threshold: `Circuit.const false` has size `1` and `1 ≤ 3 ^ k + k`.  This is the same
+instance GATE-0's own non-vacuity headline uses, re-proved here because that module's version is
+`private`. -/
+private theorem allFalse_predicate_three (k : Nat) :
+    treeMCSPPredicate 3 (thresholdPoly k 3)
+      (fun _ : Fin (Pnp3.Models.Partial.tableLen 3) => false) :=
+  ⟨Pnp3.Models.Circuit.const false,
+    by
+      have h1 : (1 : Nat) ≤ 3 ^ k := Nat.one_le_pow k 3 (by norm_num)
+      show (1 : Nat) ≤ thresholdPoly k 3
+      unfold thresholdPoly
+      omega,
+    fun _ => rfl⟩
+
+/-- **The G2w-b endpoint's three premises are jointly inhabited, at a pinned target.**  One accepted
+word per exponent: GATE-0's zero-prefix query for the all-false table on three variables, followed
+by its certificate — the one `contentAccepts_zeroPrefixQuery_of_predicate` supplies for that
+instance, whose contents nothing here pins.  `zeroPrefixQueryValue_parses` and
+`contentInput?_concat_of_parse` pin the parse to the canonical `⟨3, input⟩`, so the parsed target is
+`3` and the canonical width is `gammaZeros 3 = 2`; `concatBitstring_eq_append` moves the word from
+the interface's `concatBitstring` spelling to the fixed-phase `Fin.append` split.  The last conjunct
+reads the endpoint back: after exactly `B = polyClock 3 (pairLength a m)` steps out of the landed
+`startConfig`, the machine is in `qDone`.
+
+So `countdown_drained_accepted_content_at_polyClock` is not a statement about an empty premise set.
+This probe exhibits **one** word per exponent and claims nothing about any other: it exhibits no
+*rejected* word and no *overshooting* word, and pins no cell of the tape.  Reaching `qDone` here is
+phase-local, not halting and not language acceptance; it is not a complexity or `NP`-membership
+claim. -/
+theorem probe_countdown_polyClock_accepted_target_three (k : Nat) :
+    ∃ (w : Pnp3.ComplexityInterfaces.Bitstring
+            (Pnp3.ComplexityInterfaces.certificateLength
+              (treeMCSPPrefixM (treeCircuitWitnessCodec (thresholdPoly k)) 3) 1))
+        (pr : Σ r : Nat,
+          PrefixInput
+            (Frontier.treeMCSPSearchProblem (thresholdPoly k)
+              (Frontier.TreeMCSPSearchWitnessEncoding.ofCodec
+                (treeCircuitWitnessCodec (thresholdPoly k))))
+            (treeMCSPPrefixM (treeCircuitWitnessCodec (thresholdPoly k)) r)),
+      let y := zeroPrefixQueryValue (treeCircuitWitnessCodec (thresholdPoly k)) 3 (fun _ => false)
+      let B := polyClock 3 (PairEncoding.pairLength
+        (treeMCSPPrefixM (treeCircuitWitnessCodec (thresholdPoly k)) 3)
+        (Pnp3.ComplexityInterfaces.certificateLength
+          (treeMCSPPrefixM (treeCircuitWitnessCodec (thresholdPoly k)) 3) 1))
+      contentInput? (treeCircuitWitnessCodec (thresholdPoly k)) (Fin.append y w) = some pr ∧
+        contentSemanticAccepts (treeCircuitWitnessCodec (thresholdPoly k))
+          (Fin.append y w) = true ∧
+        3 ≤ pr.2.n ∧ pr.2.n = 3 ∧ gammaZeros pr.2.n = 2 ∧
+        (FixedGammaTargetUnaryCountdown.machine.run B
+          (FixedGammaTargetUnaryCountdown.startConfig B y w)).state
+            = FixedGammaTargetUnaryCountdown.qDone := by
+  obtain ⟨w, hw⟩ :=
+    contentAccepts_zeroPrefixQuery_of_predicate (treeCircuitWitnessCodec (thresholdPoly k)) 3
+      (fun _ => false) (allFalse_predicate_three k)
+  obtain ⟨input, hparse, hn3, -⟩ :=
+    zeroPrefixQueryValue_parses (treeCircuitWitnessCodec (thresholdPoly k)) 3 (fun _ => false)
+  have hpr := contentInput?_concat_of_parse (treeCircuitWitnessCodec (thresholdPoly k))
+    (zeroPrefixQueryValue (treeCircuitWitnessCodec (thresholdPoly k)) 3 (fun _ => false))
+    input hparse hn3 w
+  have haccept : contentSemanticAccepts (treeCircuitWitnessCodec (thresholdPoly k))
+      (Pnp3.ComplexityInterfaces.concatBitstring
+        (zeroPrefixQueryValue (treeCircuitWitnessCodec (thresholdPoly k)) 3 (fun _ => false)) w)
+      = true := (contentSemanticAccepts_eq_true_iff _ _).2 hw
+  rw [concatBitstring_eq_append] at hpr haccept
+  have hthree : ((⟨3, input⟩ : Σ r : Nat,
+      PrefixInput
+        (Frontier.treeMCSPSearchProblem (thresholdPoly k)
+          (Frontier.TreeMCSPSearchWitnessEncoding.ofCodec
+            (treeCircuitWitnessCodec (thresholdPoly k))))
+        (treeMCSPPrefixM (treeCircuitWitnessCodec (thresholdPoly k)) r)).2.n) = 3 := hn3
+  refine ⟨w, ⟨3, input⟩, hpr, haccept, by omega, hthree, ?_, ?_⟩
+  · rw [hthree]
+    unfold gammaZeros bitLength
+    norm_num [Nat.log2]
+  · obtain ⟨-, -, -, -, -, -, -, -, -, -, -, he1, -⟩ :=
+      countdown_drained_accepted_content_at_polyClock k
+        (zeroPrefixQueryValue (treeCircuitWitnessCodec (thresholdPoly k)) 3 (fun _ => false)) w
+        hpr haccept (by omega)
+    exact he1
+
 /-- **The linear cap's premises are jointly inhabited, at every exponent and every target.**
 GATE-0's `contentAccepts_nonvacuous_treePoly` supplies an accepted complete word of the exact
 query-plus-certificate length the verifier interface evaluates at; unfolding `ContentAccepts` gives
@@ -6583,7 +6704,10 @@ theorem probe_linear_cap_accepted_nonvacuous (k n : Nat) :
 #print axioms Pnp4.Tests.check_contentSemanticAccepts_eq_false_of_length_lt_parsed_target
 #print axioms Pnp4.Tests.check_contentSemanticAccepts_parsed_target_le_pair_length
 #print axioms Pnp4.Tests.check_countdown_drained_accepted_content
+#print axioms Pnp4.Tests.check_concatBitstring_eq_append
+#print axioms Pnp4.Tests.check_countdown_drained_accepted_content_at_polyClock
 #print axioms Pnp4.Tests.probe_linear_cap_accepted_nonvacuous
+#print axioms Pnp4.Tests.probe_countdown_polyClock_accepted_target_three
 
 end ContentCountdownLinearCapSurface
 

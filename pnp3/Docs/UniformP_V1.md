@@ -1682,7 +1682,13 @@ digits and `3<=n` for the `2<=zeros` this slice inherits, and it recovers the ca
 runs on the actual parsed target.  Its companion
 `Pnp4.Frontier.ContractExpansion.ContentCountdownLinearCap` supplies a value for `F` from *content
 acceptance* -- not from parser success, which bounds no target -- so that `F := a+m` becomes
-legitimate for accepted words.  Neither changed a declaration here, neither added a machine, and
-**neither took the fence**: the executed-fence requirement recorded above stands unchanged, the lane
+legitimate for accepted words.  G2w-b, in that same pnp4 module, then supplies a value for `B` as
+well, at `polyClock 3 (pairLength a m)`, deriving both the room and `fullClock zeros d n <= B` from
+its three hypotheses *jointly* -- the successful parse, the Boolean acceptance and `3 <= pr.2.n` --
+rather than from acceptance alone, and running the drain to exactly `B` steps through this slice's
+own persistence conjunct; the derived room is sufficient only, and no budget is shown necessary.
+`polyClock` occurs there as an arithmetic value only, and no `DecidesWithin`, `UniformP` or runtime
+statement is made about this machine.  None of them changed a declaration here, none added a machine,
+and **none took the fence**: the executed-fence requirement recorded above stands unchanged, the lane
 is still uncapped in this machine, no cutoff cell is laid anywhere, `F` is still a parameter of every
-statement, and this module still states nothing about a header, a parse or a decoded value.
+statement here, and this module still states nothing about a header, a parse or a decoded value.

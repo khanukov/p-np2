@@ -550,22 +550,48 @@ parse with `N < pr.2.n` makes the frozen Boolean checker reject;
 tape ABI; and `countdown_drained_accepted_content` runs G2v's drain at the derived cap
 `F := a + m`, carrying G2v's room unchanged.
 
-Neither slice takes the **fence**. `F` is a parameter of every G2v statement, the tape
+Part A G2w-b closes the remaining free budget in the same module, by *choosing* it at
+`B := polyClock 3 (PairEncoding.pairLength a m) = (2 * a + 1 + m) ^ 3 + 3`.
+`concatBitstring_eq_append` is the word-shape bridge it needs and nothing more — the
+interface's `concatBitstring x w` and the fixed-phase `Fin.append x w` are the same
+function of the two blocks, with no parse, acceptance, header, codec or machine in the
+statement. `countdown_drained_accepted_content_at_polyClock` then has exactly **three**
+proposition hypotheses — the successful parse, the Boolean acceptance and
+`3 ≤ pr.2.n` — and no others: no tag premise (acceptance supplies it through
+`fixedTag_semantic_factorization`), no cap, no room, no free `B`, no free `F`, no
+runtime premise and no correctness premise. Acceptance caps the target at `a + m`,
+`gammaZeros n ≤ n` caps the width, `borrow_pins` caps the borrow, and the cube dominates
+the expanded quadratic clock
+`fullClock zeros d n = d + n*n + n*(2*zeros+6) + 2*zeros + 7`, so both the room and
+`fullClock zeros d pr.2.n ≤ B` come out as **conclusions**; the endpoint is transported
+from `fullClock` to exactly `B` steps by G2v's persistence conjunct. The surface probe
+`probe_countdown_polyClock_accepted_target_three` inhabits the three premises jointly,
+on GATE-0's zero-prefix query for the all-false table on three variables plus its
+certificate, at the pinned target `3` and width `2`, and reads the `qDone` endpoint state
+back after exactly `B` steps. The exponent `3` is sufficient and
+is **not** shown least; the same `B` serves as both the tape budget and the step count,
+which is an instantiation choice rather than a theorem; and `polyClock` here is an
+arithmetic value, not a runtime, `DecidesWithin`, `UniformP` or `NP` claim.
+
+None of these slices takes the **fence**. `F` is a parameter of every G2v statement, the tape
 is the unchanged canonical `loopTape` — blank at `a+m+3+zeros+F` — and nothing here
 lays a cutoff cell, adds a `qOverflow` state, or shows any execution theorem surviving
 an installed `some false` in the lane. The lane is still uncapped in the machine: a
 target too large for the budget runs off the end of the tape and sticks, which is a
 timeout and neither verdict, and G2w-a's bound identifies a legitimate cap value rather
-than a mechanism enforcing one. The room is carried, never derived, and sufficient
-only. The more expensive `boundedContentCap` alternative — a polynomial lane from
-`boundedContentInput?` success instead of a linear one from acceptance — is documented
+than a mechanism enforcing one. In G2v and G2w-a the room is **carried, never
+derived** — `B` is a free budget in both — while G2w-b derives it, but only by
+*instantiating* `B` at the cube: that room is sufficient only, and no budget, cubic or
+otherwise, is shown necessary. The more expensive `boundedContentCap` alternative — a
+polynomial lane from `boundedContentInput?` success instead of a linear one from
+acceptance — is documented
 and **not implemented**. Persistence is not first arrival (`qDone` absorbs). No
 converse is stated in either direction: not endpoint-to-parse, and not
 `pr.2.n ≤ N`-to-acceptance. Parser execution, a footprint theorem, the degenerate
 widths `zeros ≤ 1` on the machine side, a malformed-gamma branch, `accepts`,
 `AcceptsAt`, language membership, advice freedom, `NP` membership, clock composition and
-`ContentVerifierBridge` are not provided, and neither slice is P-vs-NP mainline
-progress.
+`ContentVerifierBridge` are not provided, and none of these three slices is P-vs-NP
+mainline progress.
 
 For an *arbitrary* threshold there is a third input, `PolyBoundedInTable threshold`;
 it is proved for the canonical polynomial thresholds, so it disappears at

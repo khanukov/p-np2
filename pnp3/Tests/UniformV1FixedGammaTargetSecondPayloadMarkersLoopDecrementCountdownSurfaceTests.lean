@@ -7,7 +7,9 @@ the *single* live routed row `qScanLeft`-on-blank, targeting G2z's start at comp
 H15 (four routed rows into `28`, of which `2 ≤ zeros` reaches only `23` and `24`), H16
 (`47 → 50`) and H17 (`54 → 57`) are inherited from G2z and pinned
 here by composed index only, their rows being transported verbatim by the universal right-block row
-equation and reduced concretely by `check_inherited_handoff_probe`.  Every public declaration is
+equation; of those, `check_inherited_handoff_probe` reduces concretely the `qClearB` row `23 → 28`,
+H16 and H17, while the `qBackB` row `24 → 28` rests on that row equation and G2z's own probes and is
+reached by no fixture here.  Every public declaration is
 restated in full; `check_clock_values` reduces the literal clocks the probes
 use: `FixedGammaTargetSecondPayload.exactClock 17 4 = 27`, `... 12 2 = 17`, `... 11 2 = 15`,
 `... 10 0 = 3`, `... 11 1 = 5`, `markersChainClock 17 4 0 24 = 1020` and
@@ -481,7 +483,8 @@ set_option maxRecDepth 100000 in
 /-- **H14 at the two degenerate widths, reduced.**  Out of `startConfig 0 tag zeroWord` (`N = 10`,
 `zeros = 0`) the same routed row fires at step `3`, and out of `startConfig 0 tag oneWord`
 (`N = 11`, `zeros = 1`) at step `5` — both length-free, because neither width walks the content.
-Each leaves the tape it was handed, so neither is followed downstream. -/
+Each leaves the tape it was handed with no net write — that is the tape equality of
+`zero_width_exact`/`width_one_exact`, not a conjunct below — so neither is followed downstream. -/
 theorem check_h14_probe_degenerate :
     (machine.run 2 (startConfig 0 tag zeroWord)).state.val = 11 ∧
     (machine.run 3 (startConfig 0 tag zeroWord)).state.val = 14 ∧

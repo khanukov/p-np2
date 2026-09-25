@@ -1941,10 +1941,13 @@ the routing leaves unoccupied.  That one transition both restores the anchor G2p
 composed indices `23`/`24` (the two the `2 <= zeros` surface reaches) targeting `28`, are **H15**;
 the payload round's `qFin`-on-`some false` row, now at `47` targeting `50`, is **H16**; and G2x's
 `qBorrow`-on-`some true` row, now at `54` targeting `57`, is **H17**.  All three are inherited
-unchanged.  `table_and_resource_pins` pins the row this module *adds* together with the composed
-indices of all four handoff states; it does **not** restate the inherited rows, because the
+unchanged.  `table_and_resource_pins` pins the one *routed* row that is new to this composition --
+`qScanLeft`/`none` with its target re-routed to `14`, not a new table row -- together with the
+composed indices of all four handoff states; it does **not** restate the inherited rows, because the
 universal right-block row equation it also pins transports every G2z row verbatim from G2z's own
-audited pins, and the surface test reduces all four transitions out of an actual configuration.
+audited pins, and the surface test reduces H14, H15's `qClearB` row, H16 and H17 out of an actual
+configuration; H15's `qBackB` row is carried by that row equation and G2z's own probes, not by a G3a
+fixture.
 `startConfig` is G2p-c's own `startConfig` routed into the composed control -- still the retagged
 *actual* G2p-b first-payload endpoint, so still a phase-local retag of every earlier phase -- and
 `secondChainClock N zeros d v = FixedGammaTargetSecondPayload.exactClock N zeros
@@ -1974,9 +1977,11 @@ and the first payload cell already on the boundary `9 + zeros = N`, which bypass
 altogether -- so all three hand the same configuration over and no shape premise appears.
 `zero_width_handoff` (no room premise; first arrival `3`) and `width_one_handoff` (G2p-b's weaker
 room `N + 2 < tapeLength …`; first arrival `5`) state the same switch at the two degenerate decoded
-widths.  Both are outside every accepted parsed target, neither width writes, and **nothing
-downstream is claimed for them**: they record only that the composed table performs the switch at
-every decoded width, not only at the one the accepted surface uses.
+widths.  Both are outside every accepted parsed target, neither width leaves a net write -- the tag
+cell `7` is blanked and restored, and what G2p-c exports at these widths is a tape equality with the
+incoming tape, not a footprint -- and **nothing downstream is claimed for them**: they record only
+that the composed table performs the switch at every decoded width, not only at the one the accepted
+surface uses.
 
 `second_payload_markers_loop_decrement_countdown_drained` then runs G2z's
 `markers_loop_decrement_countdown_drained` on top, under G2u's, G2y's and G2z's **seven** hypotheses

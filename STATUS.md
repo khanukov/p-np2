@@ -29,8 +29,9 @@ G2p-d's marker `startConfig`, and through it G2z's, retags.
   transition that crosses the block boundary. H15 (`23 -> 28` through `qClearB`, `24 -> 28` through
   `qBackB`), H16 (`47 -> 50`) and H17 (`54 -> 57`) are inherited from G2z, pinned here by composed
   index; their rows are transported verbatim by the universal right-block row equation from G2z's
-  own audited pins rather than restated, and all four are reduced concretely by
-  `check_inherited_handoff_probe`.
+  own audited pins rather than restated. `check_inherited_handoff_probe` reduces concretely the
+  `qClearB` row `23 -> 28`, H16 and H17; the `qBackB` row `24 -> 28` is carried by that universal
+  row equation and G2z's own probes, and no fixture here reaches it.
 * `FixedGammaTargetSecondPayloadMarkersLoopDecrementCountdown.handoff_exact` (four: matching tag,
   decoded width, `2 <= zeros`, and G2p-c's own room `N + 3 < tapeLength (pairLength a m) B`, which
   is `room_iff`'s `2 <= a + B` on both sides of the switch): out of the composed `startConfig` —
@@ -49,7 +50,9 @@ G2p-d's marker `startConfig`, and through it G2z's, retags.
   `N + 2 < tapeLength (pairLength a m) B`) state the same switch at the two degenerate decoded
   widths, whose first arrivals are the length-free `3` and `5`. Both are **outside** every accepted
   parsed target, since `3 <= pr.2.n` forces `2 <= gammaZeros pr.2.n`; nothing downstream is claimed
-  for them, and neither width writes, so G2z starts on the tape it was handed.
+  for them, and neither width leaves a net write — the tag cell `7` is blanked and restored, and
+  what G2p-c exports at these widths is a tape equality with the incoming tape, not a footprint — so
+  G2z starts on the tape it was handed.
 * `FixedGammaTargetSecondPayloadMarkersLoopDecrementCountdown.second_payload_markers_loop_decrement_countdown_drained`
   (G2u's, G2y's and G2z's **seven** hypotheses, unchanged; `v` universally quantified): at exactly
   `secondChainClock N zeros d v = FixedGammaTargetSecondPayload.exactClock N zeros

@@ -124,10 +124,12 @@ states with their indices, the two block injections with their disjointness, the
 sub-blocks of G2z and their indices, the routing cases, every left row as the routed second-payload
 row, every right row as the G2z row, the public step against the composed raw table everywhere, the
 **single** live routed row into `qDone` with the state indices it connects, and the composed indices
-of the four inherited handoff states.  This module pins the one row it *adds*; the inherited rows
-are not restated, because the universal right-block row equation above transports every G2z row —
-`qClearB`/`qBackB` into `28`, `qFin` into `50`, `qBorrow` into `57` — verbatim from G2z's own
-audited pins, and the surface tests reduce all four transitions out of an actual configuration. -/
+of the four inherited handoff states.  This module pins the one *routed* row that is new to this
+composition — `qScanLeft` on `none`, its target re-routed to `14` — and not a new table row; the
+inherited rows are not restated, because the universal right-block row equation above transports
+every G2z row — `qClearB`/`qBackB` into `28`, `qFin` into `50`, `qBorrow` into `57` — verbatim from
+G2z's own audited pins, and the surface tests reduce H14, H15's `qClearB` row, H16 and H17 out of an
+actual configuration. -/
 theorem table_and_resource_pins :
     machine.stateCount = 68 ∧
       Fintype.card (Fin machine.stateCount × Option Bool) = 204 ∧
@@ -353,7 +355,9 @@ theorem handoff_exact {a m B zeros : Nat} (x : Bitstring a) (w : Bitstring m)
     (FixedGammaTargetSecondPayload.exactClock_le_deadline (by omega))
 
 /-- **H14 at width zero.**  The same single routed row fires, at G2p-c's first arrival
-`exactClock (a+m) 0 = 3`, with no room premise at all: width zero writes nothing, so the tape G2z's
+`exactClock (a+m) 0 = 3`, with no room premise at all: width zero leaves no *net* write — the fixed
+table still blanks the tag cell `7` and restores it in that routed transition, and what G2p-c
+exports here is a tape equality with the incoming tape, not a footprint — so the tape G2z's
 `startConfig` is handed is the incoming bootstrap scratch tape.  This width is outside every
 accepted parsed target (`3 ≤ pr.2.n` forces `2 ≤ gammaZeros pr.2.n`) and nothing downstream is
 claimed for it; the point is that the composed table performs the switch at every *decoded* width,
@@ -384,9 +388,10 @@ theorem zero_width_handoff {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
 
 /-- **H14 at width one.**  The same single routed row fires, at G2p-c's first arrival
 `exactClock (a+m) 1 = 5`, under G2p-b's *weaker* room `a + m + 2 < tapeLength (pairLength a m) B`,
-which is what makes the incoming tape known at this width; width one writes nothing either.  Like
-width zero this is outside every accepted parsed target, and nothing downstream is claimed for
-it. -/
+which is what makes the incoming tape known at this width; width one leaves no net write either, in
+the same sense — the anchor is blanked and restored, and the export is a tape equality, not a
+footprint.  Like width zero this is outside every accepted parsed target, and nothing downstream is
+claimed for it. -/
 theorem width_one_handoff {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
     (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
     (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some 1)

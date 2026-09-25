@@ -1489,10 +1489,12 @@ index `14`, writing `some false` and staying) is the new handoff H14 and whose i
 → `28`, `47` → `50` and `54` → `57` rows are G2z's H15, H16 and H17, inherited unchanged. H14 has
 exactly one live routed row because `qScanLeft`-on-blank is G2p-c's only row out of a working state
 into its own `qDone`; the three `qDone` self-rows are routed too, on a state the routing leaves
-unoccupied. The pnp3 `table_and_resource_pins` pins the row this slice adds plus the composed
-indices of all four handoff states, and leaves the inherited rows to the universal right-block row
-equation it also pins, which transports every G2z row verbatim; the pnp3 fixtures reduce all four
-transitions out of an actual configuration.
+unoccupied. The pnp3 `table_and_resource_pins` pins the one *routed* row that is new to this
+composition — `qScanLeft`-on-blank with its target re-routed to `14`, not a new table row — plus the
+composed indices of all four handoff states, and leaves the inherited rows to the universal
+right-block row equation it also pins, which transports every G2z row verbatim; the pnp3 fixtures
+reduce H14, H15's `qClearB` row, H16 and H17 out of an actual configuration, H15's `qBackB` row
+resting on that row equation and G2z's own probes.
 
 * `second_payload_markers_loop_decrement_countdown_drained_accepted_content_at_polyClock`
   (**three**: the successful parse, the Boolean acceptance, `3 ≤ pr.2.n`; no tag, cap, room, budget,

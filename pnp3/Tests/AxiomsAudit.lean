@@ -5267,11 +5267,13 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetDecrementCountdownSurfaceTests.check_handoff_probe
 
 -- Part A G2y (2026-09-25), infrastructure only: G2p-d's payload round composed with the whole
--- G2x composite into one closed 40-state, 120-row table.  `loop_strict` proves the payload
--- loop's first arrival of `qDone` at `totalClock` out of the loop's own `startConfig`, from
--- G2p-e's `register_complete`, `no_terminal_of_le` and G2p-f's `exhaust_strict` alone; the
--- routed row `qFin`-on-`some false` (index 19 -> 22) then executes handoff H16 at that first
--- arrival, landing exactly on G2x's `startConfig`, and H17 is inherited.  The composed accept
+-- G2x composite into one closed 40-state, 120-row table.  `loop_strict` proves the minimality
+-- half of the payload loop's first arrival -- `qDone` is not entered before `totalClock` out of
+-- the loop's own `startConfig` -- from G2p-e's `register_complete`, `no_terminal_of_le` and
+-- G2p-f's `exhaust_strict` alone, while arrival at `totalClock` itself is G2p-f's landed
+-- `payload_exhausted`; the routed row `qFin`-on-`some false` (index 19 -> 22) then executes
+-- handoff H16 at that first arrival, landing exactly on G2x's `startConfig`, and H17 is
+-- inherited.  The composed accept
 -- is reached at `totalClock + composedClock` under exactly G2u's seven hypotheses, the
 -- decrement's and the loop's room being derived inside the proof.  Two handoffs of seventeen;
 -- the start still retags every earlier phase, the lane stays unfenced, no first arrival of the

@@ -46,8 +46,10 @@ accept: nothing says `chainClock` is the first time it is entered, since G2s-a a
 first arrival for `qDone`; the first arrival proved here is the *loop's*, inside the left block.
 The **fence**: all three tables are uncapped, hence so is this one; an oversized register runs
 `qRunEnd` off the tape and sticks, a timeout and neither verdict.  The rows routed to the composed
-reject are never exercised, since no non-`qDone` endpoint of the loop or of the decrement is
-characterised.  Every **converse**, a **footprint** theorem — so every room premise is sufficient
+reject are pinned but not exercised here: this slice states no rejecting run and composes no
+malformed-gamma rejection, although the round machine's `malformed_rejects` (a matching tag with
+no decoded width rejects in one step) together with the generic `seq_reject_handoff` would give
+one.  Every **converse**, a **footprint** theorem — so every room premise is sufficient
 and used, never shown necessary — and the pnp4 bridge (taken in
 `ContentFixedGammaTargetLoopDecrementCountdownBridge`).  The composed `accept` is the countdown's
 phase-local `qDone`: reaching it out of a retagged actual prior endpoint is neither halting on a raw
@@ -180,13 +182,14 @@ theorem handoff_pins {a m B : Nat} (x : Bitstring a) (w : Bitstring m) :
 
 /-- **The payload loop enters `qDone` for the first time at `totalClock`.**  This is the enabling
 fact for H16, stated about the *payload-round* machine out of its own `startConfig` and nothing
-else, and it is assembled from landed theorems without a new trace.  Below `loopClock (a+m) zeros`
+else, and it is assembled from landed theorems without a new trace.  At `loopClock (a+m) zeros`
 G2p-e's `register_complete` puts the machine in the non-absorbing `qLoop`, and `no_terminal_of_le`
-turns that single non-verdict into "neither verdict at any earlier time"; above it `run_add` reduces
-to the finish out of exactly the `r = zeros` configuration `register_complete` describes, where
-G2p-f's `exhaust_strict` excludes `qDone` before `exhaustClock (a+m) zeros`.  Arrival itself is
-`payload_exhausted`; only minimality is added here.  The room premise is G2p-e's, sufficient and
-used, never shown necessary. -/
+turns that single non-verdict into "neither verdict at that time or earlier"; above it `run_add`
+reduces to the finish out of exactly the `r = zeros` configuration `register_complete` describes,
+where G2p-f's `exhaust_strict` excludes `qDone` before `exhaustClock (a+m) zeros`, so strictness
+holds below `totalClock (a+m) zeros = loopClock (a+m) zeros + exhaustClock (a+m) zeros`.  Arrival
+itself is `payload_exhausted`; only minimality is added here.  The room premise is G2p-e's,
+sufficient and used, never shown necessary. -/
 theorem loop_strict {a m B zeros : Nat} (x : Bitstring a) (w : Bitstring m)
     (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
     (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros)

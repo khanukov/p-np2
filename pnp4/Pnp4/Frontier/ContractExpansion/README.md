@@ -1363,7 +1363,8 @@ followed by G2s-a's 11-state table as one 18-state, 54-row table.
   the pinned target `3` and reads the switch and the composed accept back.
 
 Caveats specific to G2x. It is **one handoff of seventeen**: the composed `startConfig`
-still embeds every earlier phase, the sixteen earlier handoffs stay proof-level, no
+still embeds every earlier phase, the sixteen earlier handoffs stay proof-level in G2x's machine
+(G2y below has since executed the last of them, H16), no
 `initialConfig` on a raw pair input is executed, and no clock counts a step of any earlier phase.
 `T` is the first time the handoff fires, but no theorem says `C` is the first time the composed
 accept is entered.
@@ -1395,8 +1396,11 @@ H16 and whose index-`26` → `29` row is G2x's H17, inherited unchanged.
   endpoint, routed — the composed control is in neither verdict before `T`, is G2x's landed
   `startConfig B x w` re-embedded at exactly `T`, satisfies `C ≤ B`, and is in the composed
   accept on the separator blank with tape `loopTape B x w zeros 0 pr.2.n` at exactly `C`, at
-  exactly `B` and at every later time. The cap, tag, header, width, `11 ≤ N` and clock bound are
-  derived and exported as in G2x, while the room is derived and used here but is not among this
+  exactly `B` and at every later time; that one tape equality already fixes the cleared register,
+  the `pr.2.n` marks and the blanks beyond, and G2x's cell-by-cell conjuncts are not restated. The
+  cap, tag, header, width and clock bound are derived and exported as in G2x, the exported length
+  bound is `11 ≤ N` where G2x exported `3 ≤ N`, and the room is derived and used here but is not
+  among this
   statement's conclusions; the switch time is the payload loop's first arrival, from the new pnp3
   `loop_strict`, and `pr.2.n = pr.1` is exported. G2x's domination lemma is private, so the
   budget bound `C ≤ 3N² + (3N² + 12N + 7) ≤ (N+1)³ + 3` is re-derived from the public clock
@@ -1411,13 +1415,15 @@ still embeds every earlier phase, the fifteen handoffs before H16 stay proof-lev
 entered; the first arrival proved is the payload loop's, inside the left block. All three tables
 are unfenced, hence so is the composition: accepted words never overflow the lane, since
 `pr.2.n ≤ N` is derived, but an overshooting word still times out, and the rows routed to the
-composed reject are pinned and never exercised. Targets `0`, `1`, `2` stay excluded. The composed
+composed reject are pinned but not exercised here: this slice composes no malformed-gamma
+rejection. Targets `0`, `1`, `2` stay excluded. The composed
 accept is the countdown's phase-local `qDone`, reached out of a retagged actual prior endpoint —
 neither halting on a raw input nor language acceptance — and the machine is a V1 `UniformTM` on
 `Option Bool` cells laid out against `pairLength a m`, not the legacy `TM` with a `runTime` field
 that `ContentVerifierBridge` names (see "Runtime model behind input (2)"). No `accepts`,
 `AcceptsAt`, `DecidesWithin`, `UniformP`, `VerifiesRelation`, `NP` membership, advice-freedom claim
-or `ContentVerifierBridge` appears, and this is not P-vs-NP mainline progress.
+or `ContentVerifierBridge` appears; this is infrastructure, not P-vs-NP mainline progress, and it
+makes no `P ≠ NP` claim.
 
 `FixedContentGammaAnchorCorrect.lean` is the Part A G2a bridge. It proves the
 exact G1-final-to-G2a operational handoff and provides a logical cell-7

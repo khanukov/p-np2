@@ -1750,10 +1750,11 @@ cell, now `some false`, at step `18`, and one mark at `24` after the first round
 is step `17` of G2u's `check_start_iterate_probe` shifted by the `18` steps G2q takes.
 
 Deferred by G2x, and deliberately not claimed.  **One handoff of seventeen**: `startConfig` still
-embeds every earlier phase, the sixteen earlier handoffs stay proof-level, no raw-input
-`initialConfig` is executed, and no clock here counts a step of any earlier phase; composing the
-next handoffs needs first-arrival theorems from their own start configurations, which G2p-b and the
-G2p-d/e loop do not yet have.  **First arrival
+embeds every earlier phase, the sixteen earlier handoffs stay proof-level in G2x's machine (the G2y
+entry below has since executed the last of them, H16), no raw-input `initialConfig` is executed,
+and no clock here counts a step of any earlier phase; composing the next handoffs needs
+first-arrival theorems from their own start configurations -- the G2p-d/e/f loop's is what the G2y
+entry below later supplied, G2p-b's is still missing.  **First arrival
 of the composed accept**: `T` is the first time the handoff fires, but no theorem says
 `composedClock` is the first time the composed accept is entered, because G2s-a and G2u prove no
 first arrival for `qDone`.  **The fence**: the policy recorded in the G2s-a entry above stands
@@ -1817,16 +1818,23 @@ at step `64`, G2q's `qBorrow` (index `26`) on the digit `22` at step `81`, and t
 
 Deferred by G2y, and deliberately not claimed.  **Two handoffs of seventeen**: `startConfig` still
 embeds every earlier phase, the fifteen handoffs before H16 stay proof-level, no raw-input
-`initialConfig` is executed, and no clock here counts a step of any earlier phase; composing the
-next handoffs down still needs first-arrival theorems from their own start configurations, which
-G2p-b and the G2p-d/e loop foundation do not yet have.  **First arrival of the composed accept**:
+`initialConfig` is executed, and no clock here counts a step of any earlier phase.  Composing the
+next handoff down, from G2p-d's marker foundation into the payload round, needs no new
+first-arrival theorem: the foundation's `markers_strict`, `markers_installed` and
+`exactClock_le_deadline` are the same three ingredients `loop_strict`, `payload_exhausted` and
+`prior_covers` supply here, and the round's `startConfig` retags the foundation's run at its
+length-only deadline exactly as G2q's retags the loop's.  Further down, G2p-b's first arrival is
+still missing.  **First arrival of the composed accept**:
 `T` is the first time H16 fires, but no theorem says `chainClock` is the first time the composed
 accept is entered, because G2s-a and G2u prove no first arrival for `qDone`; the first arrival
 proved here is the payload loop's, inside the left block.  **The fence**: the policy recorded in the
 G2s-a entry above stands unchanged; all three tables are uncapped, hence so is this one, an
 oversized register still runs `qRunEnd` off the tape and sticks, a timeout and neither verdict, and
-the rows routed to the composed reject are pinned and never exercised, since neither the loop nor
-the decrement characterises a non-`qDone` endpoint.  Every **converse**, a **footprint** theorem --
+the rows routed to the composed reject are pinned but not exercised here: this slice states no
+rejecting run and composes no malformed-gamma rejection, although the round machine's
+`malformed_rejects` (a matching tag with no decoded width rejects in one step, on the unchanged
+content tape) together with the generic `seq_reject_handoff` would give one.  Every **converse**, a
+**footprint** theorem --
 so every room premise stays sufficient and used, never shown necessary -- and the gamma
 leading-digit convention.  The composed `accept` is the countdown's phase-local `qDone`: reaching it
 out of a retagged actual prior endpoint is neither halting on a raw input nor language acceptance,

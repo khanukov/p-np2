@@ -624,12 +624,14 @@ under exactly the same three hypotheses at the same budget.
 switches blocks at the payload loop's **first arrival** `totalClock`, not at G2q's length-only
 deadline, is in neither composed verdict before it, is G2x's landed `startConfig` re-embedded at it,
 and is in the composed accept at exactly `totalClock + composedClock ≤ B`, at exactly `B` and at
-every later time, with the register cleared and `pr.2.n` marks laid. The fifteen earlier handoffs
+every later time, with tape `loopTape B x w zeros 0 pr.2.n` — one equality from which the cleared
+register and the `pr.2.n` marks follow; G2x's cell-by-cell conjuncts are not restated. The
+exported length bound is `11 ≤ N`, stronger than G2x's `3 ≤ N`. The fifteen earlier handoffs
 remain proof-level identifications — the composed `startConfig` still embeds every earlier phase —
 no first arrival of the composed accept is proved (the first arrival proved is the loop's, inside
 the left block), the lane is still unfenced, the composed accept is still the countdown's
-phase-local `qDone` rather than language acceptance, and this is not P-vs-NP mainline progress
-either.
+phase-local `qDone` rather than language acceptance, and, like G2x, this is infrastructure, not
+P-vs-NP mainline progress; it makes no `P ≠ NP` claim.
 
 For an *arbitrary* threshold there is a third input, `PolyBoundedInTable threshold`;
 it is proved for the canonical polynomial thresholds, so it disappears at

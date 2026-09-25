@@ -1157,7 +1157,8 @@ lean_lib Pnp4 where
     -- budget, listed after `ContentCountdownLinearCap`, which it imports: the composed machine
     -- runs under exactly G2w-b's three hypotheses, switches blocks at G2q's first arrival and
     -- reaches its accept at `decClock + fullClock <= B`.  One handoff of seventeen; the earlier
-    -- handoffs, the fence, the witness checks, `AcceptsAt` and `ContentVerifierBridge` stay open.
+    -- handoffs (H16 since taken by G2y below), the fence, the witness checks, `AcceptsAt` and
+    -- `ContentVerifierBridge` stay open.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetDecrementCountdownBridge,
     -- Part A G2y: the executed payload-loop -> G2x handoff on the parsed target at the same
     -- cubic budget, listed after the G2x bridge, which it imports: one 40-state machine runs

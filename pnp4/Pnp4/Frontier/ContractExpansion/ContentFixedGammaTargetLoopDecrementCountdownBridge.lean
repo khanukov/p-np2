@@ -27,16 +27,19 @@ endpoint, routed — it concludes the cap `pr.2.n ≤ N`, the length bound `11 �
 configuration *is* G2x's landed `startConfig B x w` re-embedded, the switch happening at the payload
 loop's first arrival (`loop_strict`), not at G2q's deadline; and at exactly `C`, at exactly `B` and
 at every later time, the composed accept on the separator blank `N + 2 + zeros` with tape
-`loopTape B x w zeros 0 pr.2.n` — the register cleared, exactly `pr.2.n` marks, blanks beyond.  The
+`loopTape B x w zeros 0 pr.2.n`, one equality from which the cleared register, exactly `pr.2.n`
+marks and the blanks beyond follow (G2x's cell-by-cell conjuncts are not restated).  The
 target is tracked as `pr.2.n`, the field `ContentAccepts` reads; the register value is the G2r digit
 fact on the decoded header, as in G2v and G2x; nothing here executes a parser.
 
 The arithmetic.  G2x's domination lemma is private and bounds `composedClock` alone, so
-`chainClock_le_polyClock` expands the public clock formulas instead: `totalClock N zeros ≤ 3N²` is
-G2q's `prior_covers` at `9 + zeros ≤ N`, and `composedClock N zeros d pr.2.n ≤ 3N² + 12N + 7` from
-`3 ≤ pr.2.n ≤ N`, `d ≤ zeros` and `zeros ≤ pr.2.n`, the last read off the decoded header's
-`2 ^ zeros ≤ pr.2.n + 1`.  Their sum is at most `(N+1)³ + 3 ≤ B` once `11 ≤ N`, which the gamma
-contract supplies from `9 + zeros ≤ N` and `2 ≤ zeros`.  The exponent `3` is sufficient and not
+`chainClock_le_polyClock` expands the public clock formulas instead.  Its inputs are exactly
+`pr.2.n ≤ N`, `d ≤ zeros`, `2 ≤ zeros` and `9 + zeros ≤ N`, the last two giving `11 ≤ N`; neither
+`3 ≤ pr.2.n` nor a decoded bound `zeros ≤ pr.2.n` is consumed, since `9 + zeros ≤ N` already caps
+`zeros` by the length.  `totalClock N zeros ≤ 3N²` is G2q's `prior_covers` at `9 + zeros ≤ N`;
+`composedClock N zeros d pr.2.n ≤ 3N² + 12N + 7` follows from `clock_pins` under `pr.2.n ≤ N`,
+`d ≤ zeros` and `zeros ≤ N`; and their sum is at most `(N+1)³ + 3 ≤ B` once `11 ≤ N`.  The gamma
+contract supplies `9 + zeros ≤ N` from the decoded width.  The exponent `3` is sufficient and not
 shown least; `B` is both tape budget and step count, an instantiation choice.
 
 Not claimed.  **Two handoffs of seventeen**: `startConfig` still embeds every earlier phase, the
@@ -45,18 +48,18 @@ and no clock here counts a step of any earlier phase.  **Composed first arrival*
 is the first time the composed accept is entered; the first arrival used here is the payload loop's,
 inside the left block.  **The fence**: all three tables are unfenced; accepted words never overflow
 the lane, since `pr.2.n ≤ N` is derived, but an overshooting word still runs off the tape and
-sticks, a timeout and neither verdict, and no rejected or malformed input is characterised.  **Small
-targets** `0`, `1`, `2` are excluded by `3 ≤ pr.2.n`, as in G2w-b and G2x.  **Every converse**, every
-witness-check phase, and the **model connection**: this is a V1 `UniformTM` on `Option Bool` cells
-laid out against `pairLength a m`, while `ContentVerifierBridge` asks for the legacy `TM` with a
-`runTime` field on `concatBitstring x w`; the legacy `runTime` advice channel of
+sticks, a timeout and neither verdict, and no rejected or malformed input is characterised here.
+**Small targets** `0`, `1`, `2` are excluded by `3 ≤ pr.2.n`, as in G2w-b and G2x.  **Every
+converse**, every witness-check phase, and the **model connection**: this is a V1 `UniformTM` on
+`Option Bool` cells laid out against `pairLength a m`, while `ContentVerifierBridge` asks for the
+legacy `TM` with a `runTime` field on `concatBitstring x w`; the legacy `runTime` advice channel of
 `VERIFIER_RETARGET_PLAN.md` caveat 6 is untouched.  Reaching the composed accept out of a retagged
 actual prior endpoint is neither halting on a raw input nor language acceptance.  No `accepts`,
 `AcceptsAt`, `DecidesWithin`, `UniformP`, `VerifiesRelation`, `NP` membership, advice-freedom claim
 or `ContentVerifierBridge` is stated, and neither `SearchMCSPWeakLowerBound` nor
 `VerifiedNPDAGLowerBoundSource` is reduced.
 
-**Progress classification (AGENTS.md): Infrastructure.**
+**Progress classification (AGENTS.md): Infrastructure.**  It makes no `P ≠ NP` claim.
 -/
 
 namespace Pnp4.Frontier.ContractExpansion
@@ -109,8 +112,9 @@ G2x's landed `startConfig B x w` re-embedded (H16, at the payload loop's first a
 `C = T + composedClock N zeros d pr.2.n ≤ B`, both conclusions; and at exactly `C` — and at exactly
 `B`, and at every time from `C` on — the composed machine is in its accept on the separator blank
 `N + 2 + zeros` with tape `loopTape B x w zeros 0 pr.2.n`, which already fixes the cleared register,
-the `pr.2.n` marks and the blanks beyond.  Tag, cap, length, width, header and clock bound are
-derived and exported as in G2x; the room is derived and used, not exported; persistence is not first
+the `pr.2.n` marks and the blanks beyond.  Tag, cap, width, header and clock bound are derived and
+exported as in G2x, and the exported length bound is `11 ≤ N` where G2x exported `3 ≤ N`; the room
+is derived and used, not exported; persistence is not first
 arrival of the composed accept; `startConfig` still embeds every earlier phase as a retag; the lane
 is unfenced; reaching the composed accept is neither halting on a raw input nor language
 acceptance. -/

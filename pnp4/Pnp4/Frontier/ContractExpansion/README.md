@@ -1354,8 +1354,9 @@ followed by G2s-a's 11-state table as one 18-state, 54-row table.
   composed control is in neither verdict before `T`, is the countdown's landed
   `startConfig B x w` re-embedded at exactly `T`, satisfies `C ≤ B`, and is in the composed
   accept on the separator blank with tape `loopTape B x w zeros 0 pr.2.n` at exactly `C`, at
-  exactly `B` and at every later time. The cap, tag, header, width, room and clock bound
-  are derived as in G2w-b; the switch time is G2q's first arrival, from G2q's
+  exactly `B` and at every later time. The cap, tag, header, width and clock bound are
+  derived and exported as in G2w-b, while G2w-b's room is derived and used here but is not
+  among this statement's conclusions; the switch time is G2q's first arrival, from G2q's
   `decrement_strict`, and `pr.2.n = pr.1` is exported. The surface probe
   `probe_decrement_countdown_polyClock_accepted_target_three` reuses G2w-b's accepted word at
   the pinned target `3` and reads the switch and the composed accept back.

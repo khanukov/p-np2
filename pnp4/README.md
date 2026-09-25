@@ -593,6 +593,9 @@ widths `zeros ≤ 1` on the machine side, a malformed-gamma branch, `accepts`,
 `ContentVerifierBridge` are not provided, and none of these three slices is P-vs-NP
 mainline progress.
 
+The Part A fixed-phase chain strings its phases together across **seventeen** handoffs, and
+until now every one of them was proof-level: each phase's `startConfig` retags the previous
+phase's run at a length-only deadline, and no finite table performs the control switch.
 Part A G2x executes **one** of those seventeen handoffs.
 `ContentFixedGammaTargetDecrementCountdownBridge.lean` runs the pnp3 composed machine
 `FixedGammaTargetRegisterDecrement.machine.seq FixedGammaTargetUnaryCountdown.machine` —

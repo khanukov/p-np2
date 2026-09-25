@@ -9,7 +9,9 @@ G2q's run at G2q's length-only deadline — for exactly `B := polyClock 3 (pairL
 under three hypotheses.  This module runs **one machine** for the decrement *and* the countdown
 under the **same three hypotheses** at the **same budget**: the pnp3 G2x composed
 `FixedGammaTargetDecrementCountdown.machine`, G2q's table followed by G2s-a's as one closed 18-state
-table whose only cross-block edge is the routed row `qBorrow`-on-`some true` → countdown `qStart`.
+table.  The routed row `qBorrow`-on-`some true` → countdown `qStart` is the *successful* cross-block
+edge, the one the runs characterised here take, and not the table's only one: `seq` also routes every
+G2q row targeting `qReject` into the composed reject, and the dead left `qDone` rows into `qStart`.
 Write `N = a + m`, `zeros = gammaZeros pr.2.n` and `d = borrow x w zeros`.
 
 `decrement_countdown_drained_accepted_content_at_polyClock` has exactly G2w-b's hypotheses — the
@@ -87,10 +89,10 @@ the countdown's landed `startConfig B x w` re-embedded (the handoff, at G2q's fi
 cost); `C = T + fullClock zeros d pr.2.n ≤ B`, both conclusions; and at exactly `C` — and at
 exactly `B`, and at every time from `C` on — the composed machine is in its accept on the separator
 blank `N + 2 + zeros` with tape `loopTape B x w zeros 0 pr.2.n`, the register cleared and exactly
-`pr.2.n` marks laid.  Tag, cap, width, header, room and clock bound are derived, as in G2w-b;
-persistence is not first arrival of the composed accept; `startConfig` still embeds every earlier
-phase as a retag; the lane is unfenced; reaching the composed accept is neither halting on a raw
-input nor language acceptance. -/
+`pr.2.n` marks laid.  Tag, cap, width, header and clock bound are derived and exported as in G2w-b;
+G2w-b's room is derived and used, not exported; persistence is not first arrival of the composed
+accept; `startConfig` still embeds every earlier phase as a retag; the lane is unfenced; reaching
+the composed accept is neither halting on a raw input nor language acceptance. -/
 theorem decrement_countdown_drained_accepted_content_at_polyClock (k : Nat) {a m : Nat}
     (x : Bitstring a) (w : Bitstring m)
     {pr : Σ r : Nat,

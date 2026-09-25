@@ -43,8 +43,11 @@ deadline, and no finite table performs a control switch. G2x builds the switch f
 * `decrement_countdown_drained_accepted_content_at_polyClock` (exactly G2w-b's **three**: the
   parse, the acceptance, `3 <= pr.2.n`; no tag, cap, room, budget, clock, width, digit, initial-state,
   correctness or runtime premise): at `B := polyClock 3 (pairLength a m)` the composed clock
-  `C = decClock N zeros d + fullClock zeros d pr.2.n` is at most `B`, the handoff conjuncts above
-  hold, and at exactly `C`, at exactly `B` and at every later time the composed machine is in its
+  `C = decClock N zeros d + fullClock zeros d pr.2.n` is at most `B`, exactly **two** of the handoff
+  facts above are re-exported — no composed verdict before `T = decClock N zeros d`, and at exactly
+  `T` the countdown's landed `startConfig B x w` re-embedded; the routed run up to `T` and the
+  countdown suffix after it stay inside the pnp3 proof — and at exactly `C`, at exactly `B` and at
+  every later time the composed machine is in its
   accept with tape `loopTape B x w zeros 0 pr.2.n` — the register cleared, exactly `pr.2.n` marks —
   with `pr.2.n = pr.1` exported and the target tracked as `pr.2.n` throughout. The register value is
   the G2r digit fact on the decoded header; the new arithmetic is `C <= 3N² + 12N + 4 <= (N+1)³ + 3`.

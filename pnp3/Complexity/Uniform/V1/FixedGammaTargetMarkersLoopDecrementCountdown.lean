@@ -17,7 +17,7 @@ preamble's own absorbing `qDone`, routed to the tail's start — G2p-d's round `
 index `14` — in that same transition, on that cell, with the tape the preamble leaves, at no cost.
 Four rows out of *working* states target `qDone`, and all four are routed:
 `qZeroA`/`some true`, `qClearB`/`some true`, `qBackB`/`some true` and `qFin`/`some false`.  The
-table reaches the first two of those exits only through the width dispatch that `2 ≤ zeros`
+table reaches the `qZeroA` and `qFin` exits only through the width dispatch that `2 ≤ zeros`
 excludes — `qZeroA`'s on a terminator already at cell `8` (width zero) and `qFin`'s on one at cell
 `9` (width one) — so the fixtures below exercise `qClearB` and `qBackB`, which `qSrcB` selects by
 reading the second payload source: a content symbol takes `qClearB` (write blank, move right), the

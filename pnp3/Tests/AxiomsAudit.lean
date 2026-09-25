@@ -122,6 +122,7 @@ import Tests.UniformV1FixedGammaTargetUnaryCountdownIterationSurfaceTests
 import Tests.UniformV1SequentialCompositionSurfaceTests
 import Tests.UniformV1FixedGammaTargetDecrementCountdownSurfaceTests
 import Tests.UniformV1FixedGammaTargetLoopDecrementCountdownSurfaceTests
+import Tests.UniformV1FixedGammaTargetMarkersLoopDecrementCountdownSurfaceTests
 import Tests.UniformV1BudgetTransportSurfaceTests
 import Tests.UniformV1CombinedMachineSurfaceTests
 import Tests.UniformV1CombinedCorrectnessSurfaceTests
@@ -5307,6 +5308,56 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetLoopDecrementCountdownSurfaceTests.check_handoff_literal
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetLoopDecrementCountdownSurfaceTests.check_loop_decrement_countdown_literal_endpoint
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetLoopDecrementCountdownSurfaceTests.check_handoff_probe
+
+-- Part A G2z (2026-09-25), infrastructure only: G2p-d's 14-state marker preamble and the whole
+-- G2y composite into one closed 54-state, 162-row table.  No new first-arrival theorem is added:
+-- the preamble's arrival and persistence (`markers_installed`), minimality (`markers_strict`) and
+-- deadline cover (`exactClock_le_deadline`) are all landed, and `run_accept_of_le` identifies the
+-- run at the first arrival `exactClock zeros = zeros + 7` with the run at the length-only deadline
+-- `N` that G2y's `startConfig` retags.  Four preamble rows target `qDone` and all four are routed
+-- to G2y's start at index 14 -- handoff H15 -- of which `qClearB` and `qBackB` fire inside the
+-- proved `2 <= zeros` surface; H16 (33 -> 36) and H17 (40 -> 43) are inherited.  The composed
+-- accept is reached at `exactClock + totalClock + composedClock` under exactly G2u's seven
+-- hypotheses, the preamble's room being derived inside the proof, and `malformed_reject_handoff`
+-- is the first routed reject the chain composition exercises.  Three handoffs of seventeen; the
+-- start still retags every earlier phase, the lane stays unfenced, no first arrival of the
+-- composed accept is proved, the reject handoff is no converse, and reaching the composed accept
+-- is neither halting on a raw input nor language acceptance.
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetMarkersLoopDecrementCountdown.machine
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetMarkersLoopDecrementCountdown.inMarkers
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetMarkersLoopDecrementCountdown.inTail
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetMarkersLoopDecrementCountdown.route
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetMarkersLoopDecrementCountdown.startConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetMarkersLoopDecrementCountdown.markersChainClock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetMarkersLoopDecrementCountdown.table_and_resource_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetMarkersLoopDecrementCountdown.handoff_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetMarkersLoopDecrementCountdown.clock_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetMarkersLoopDecrementCountdown.handoff_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetMarkersLoopDecrementCountdown.markers_loop_decrement_countdown_drained
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetMarkersLoopDecrementCountdown.malformed_reject_handoff
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetMarkersLoopDecrementCountdownSurfaceTests.check_machine
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetMarkersLoopDecrementCountdownSurfaceTests.check_inMarkers
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetMarkersLoopDecrementCountdownSurfaceTests.check_inTail
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetMarkersLoopDecrementCountdownSurfaceTests.check_route
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetMarkersLoopDecrementCountdownSurfaceTests.check_startConfig
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetMarkersLoopDecrementCountdownSurfaceTests.check_markersChainClock
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetMarkersLoopDecrementCountdownSurfaceTests.check_table_and_resource_pins
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetMarkersLoopDecrementCountdownSurfaceTests.check_handoff_pins
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetMarkersLoopDecrementCountdownSurfaceTests.check_clock_pins
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetMarkersLoopDecrementCountdownSurfaceTests.check_handoff_exact
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetMarkersLoopDecrementCountdownSurfaceTests.check_markers_loop_decrement_countdown_drained
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetMarkersLoopDecrementCountdownSurfaceTests.check_malformed_reject_handoff
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetMarkersLoopDecrementCountdownSurfaceTests.check_clock_values
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetMarkersLoopDecrementCountdownSurfaceTests.check_markers_handoff_instance
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetMarkersLoopDecrementCountdownSurfaceTests.check_malformed_instance
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetMarkersLoopDecrementCountdownSurfaceTests.check_markers_drained_instance
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetMarkersLoopDecrementCountdownSurfaceTests.check_handoff_literal
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetMarkersLoopDecrementCountdownSurfaceTests.check_markers_literal_endpoint
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetMarkersLoopDecrementCountdownSurfaceTests.check_h15_probe_physical
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetMarkersLoopDecrementCountdownSurfaceTests.check_h15_probe_middle
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetMarkersLoopDecrementCountdownSurfaceTests.check_h15_probe_tight
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetMarkersLoopDecrementCountdownSurfaceTests.check_inherited_handoff_probe
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetMarkersLoopDecrementCountdownSurfaceTests.check_malformed_probe
 
 -- S11 (2026-09-19), infrastructure only: all-request one-gate acceptance
 -- closure in main's transducer convention.  `accepts = r.spec.isSome`, so a

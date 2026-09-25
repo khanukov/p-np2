@@ -633,6 +633,29 @@ the left block), the lane is still unfenced, the composed accept is still the co
 phase-local `qDone` rather than language acceptance, and, like G2x, this is infrastructure, not
 P-vs-NP mainline progress; it makes no `P ≠ NP` claim.
 
+**Part A G2z** applies the same combinator a third time, one block further left:
+`ContentFixedGammaTargetMarkersLoopDecrementCountdownBridge` runs **one** machine — G2p-d's
+14-state marker-preamble table followed by the whole G2y 40-state composite as one closed 54-state
+table, whose four routed rows into `qDone` (index `14`) are the new handoff H15 and whose
+index-`33` → `36` and `40` → `43` rows are G2y's H16 and G2x's H17, inherited — under exactly the
+same three hypotheses at the same budget.
+`markers_loop_decrement_countdown_drained_accepted_content_at_polyClock` concludes that the composed
+run switches blocks at the marker preamble's **first arrival** `exactClock zeros = zeros + 7`, not at
+the preamble's length-only deadline `N`, is in neither composed verdict before it, is G2y's landed
+`startConfig` re-embedded at it, and is in the composed accept at exactly
+`exactClock zeros + chainClock N zeros d pr.2.n ≤ B`, at exactly `B` and at every later time, with
+tape `loopTape B x w zeros 0 pr.2.n`. G2z needs no new first-arrival theorem: the preamble's
+`markers_installed`, `markers_strict` and `exactClock_le_deadline` are all landed. Of its four
+routed H15 rows the pnp3 fixtures exercise the two that `qSrcB` selects, the other two being the
+width-zero and width-one dispatch that `2 ≤ zeros` excludes; the pnp3 module also exercises
+the **first routed reject** of the chain composition, on a malformed gamma, which is no converse and
+characterises no parsed target. The fourteen earlier handoffs remain proof-level identifications —
+the composed `startConfig` still embeds every earlier phase — no first arrival of the composed
+accept is proved (the first arrival proved is the preamble's, inside the left block), the lane is
+still unfenced, the composed accept is still the countdown's phase-local `qDone` rather than
+language acceptance, and, like G2x and G2y, this is infrastructure, not P-vs-NP mainline progress;
+it makes no `P ≠ NP` claim.
+
 For an *arbitrary* threshold there is a third input, `PolyBoundedInTable threshold`;
 it is proved for the canonical polynomial thresholds, so it disappears at
 `thresholdPoly k`.  The general capstone `verifiedSource_of_explicit_interfaces`

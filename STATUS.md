@@ -2,6 +2,101 @@
 
 Updated: 2026-09-25
 
+**Part A G2z, the executed marker-preamble → G2y handoff: the same generic sequential composition
+applied a third time, one block further left, at the same cubic budget (infrastructure only).**
+One new pnp3 module, `Complexity.Uniform.V1.FixedGammaTargetMarkersLoopDecrementCountdown`, and one
+new pnp4 module,
+`Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetMarkersLoopDecrementCountdownBridge`.
+**No new table row**: the concrete machine is G2p-d's fixed 14-state, 42-row marker-preamble table
+followed by the whole G2y 40-state composite as one closed 54-state, 162-row table,
+`FixedGammaTargetPayloadLoopFoundation.machine.seq FixedGammaTargetLoopDecrementCountdown.machine`.
+Write `N = a+m`, `zeros = gammaZeros pr.2.n` and `d = borrow x w zeros`.
+
+Of the seventeen phase handoffs of the Part A chain, G2y executed two. G2z executes the one before
+them, **H15**, so **three** of the seventeen are now performed by a finite table and **fourteen**
+remain proof-level retags. G2z adds **no new first-arrival theorem**: the preamble's arrival with
+persistence (`markers_installed`), its minimality (`markers_strict`) and its deadline cover
+(`exactClock_le_deadline`) are all landed, and `UniformTM.run_accept_of_le` identifies the run at
+the first arrival with the run at the length-only deadline `N` that G2p-d's round `startConfig`,
+and through it G2y's, retags.
+
+* `FixedGammaTargetMarkersLoopDecrementCountdown.handoff_exact` (four: matching tag, decoded width,
+  `2 <= zeros`, and the **foundation's** weaker room `N + 3 < tapeLength (pairLength a m) B`, not
+  G2y's loop room): out of the composed `startConfig` — the marker preamble's own `startConfig`, the
+  retagged *actual* G2p-c second-payload endpoint, routed — the composed run is the preamble's run
+  up to `S = exactClock zeros = zeros + 7`, is in neither composed verdict before `S`, at exactly
+  `S` **is** G2y's landed `startConfig B x w` re-embedded, and every later step is a G2y step. The
+  switch fires at the preamble's **first arrival**, not at its length-only deadline `deadline N = N`,
+  at which G2p-d's round `startConfig` retags. Because the room premise is the preamble's, the
+  simulation holds even where the tail would later lack room.
+* **H15 is executed by four routed rows.** All four working-state preamble rows targeting `qDone` —
+  `qZeroA`/`some true`, `qClearB`/`some true`, `qBackB`/`some true`, `qFin`/`some false` — are
+  routed to G2y's `qLoop` at composed index `14`, and so are the three dead `qDone` self-rows. The
+  table reaches `qZeroA`'s exit only on a terminator already at cell `8` (width zero) and `qFin`'s
+  only on one at cell `9` (width one), both excluded by `2 <= zeros`; the remaining two are the ones
+  `qSrcB` selects by reading the second payload source, a content symbol taking `qClearB` (index
+  `9`, write blank and move right) and the boundary blank taking `qBackB` (index `10`, preserve
+  `true` and stay). No theorem here says which row a given word takes. H16 (`33 -> 36`) and H17
+  (`40 -> 43`) are inherited from G2y and re-derived through the right-block row equation.
+* `FixedGammaTargetMarkersLoopDecrementCountdown.markers_loop_decrement_countdown_drained` (G2u's
+  and G2y's **seven** hypotheses, unchanged; `v` universally quantified): at exactly
+  `markersChainClock N zeros d v = exactClock zeros + chainClock N zeros d v` the composed machine
+  is in its accept — the countdown's `qDone` — on the separator blank `N + 2 + zeros` with tape
+  `loopTape B x w zeros 0 v`, persisting. There is **no** eighth room premise: the preamble's room
+  is `room_iff`'s `2 <= a + B`, read off the drain's own room premise `zeros + 2 + F <= a + B`
+  together with `2 <= zeros`, and derived inside the proof.
+* `FixedGammaTargetMarkersLoopDecrementCountdown.malformed_reject_handoff` (two: matching tag, no
+  decoded width): from step one on, the composed machine is in the **composed** reject (index `53`,
+  not the preamble's own `qReject` at `13`) at the boundary head `N` on the unchanged content tape.
+  This is the first **routed reject** the chain composition exercises. It is no converse — nothing
+  says the composed reject implies a malformed gamma — and characterises no parsed target.
+* `markers_loop_decrement_countdown_drained_accepted_content_at_polyClock` (exactly G2y's **three**:
+  the parse, the acceptance, `3 <= pr.2.n`; no tag, cap, room, budget, clock, width, digit,
+  initial-state, correctness or runtime premise): at the same `B := polyClock 3 (pairLength a m)`
+  the chained clock `C = exactClock zeros + chainClock N zeros d pr.2.n` is at most `B`, the handoff
+  facts are re-exported — no composed verdict before `S`, and at exactly `S` G2y's landed
+  `startConfig B x w` re-embedded — and at exactly `C`, at exactly `B` and at every later time the
+  composed machine is in its accept with tape `loopTape B x w zeros 0 pr.2.n`, with `pr.2.n = pr.1`
+  and `11 <= N` exported. The new arithmetic is
+  `C <= (zeros + 7) + 3N² + (3N² + 12N + 7) <= (N+1)³ + 3`, whose proof uses `11 <= N`; G2y's own
+  domination lemma is private and supplies no slack for the extra `zeros + 7`, so the public clock
+  formulas are expanded rather than reused.
+* Non-vacuity: `probe_markers_loop_decrement_countdown_polyClock_accepted_target_three` reuses
+  G2w-b's accepted word at the pinned target `3`, whose canonical width `gammaZeros 3 = 2` pins the
+  switch at the literal `9` rather than an existential time, and reads back no composed verdict
+  before `9`, G2y's `startConfig` at `9`, and the composed accept at `B`. On the pnp3 side
+  `check_markers_handoff_instance` inhabits the four hypotheses at all three source shapes
+  (`zeros = 4`, `2`, `2` at `N = 17`, `12`, `11`) and `check_markers_drained_instance` the seven at
+  `B = 22`; `check_h15_probe_physical`, `check_h15_probe_middle` and `check_h15_probe_tight` reduce
+  the composed run out of the identified actual `startConfig 0 tag ·` through those two H15 rows by
+  kernel computation, `check_inherited_handoff_probe` reads H16 at steps `74`/`75` and H17 at
+  `92`/`93` — G2y's `63`/`64` and `81`/`82` shifted by the preamble's `11` steps — and
+  `check_malformed_probe` reduces the routed reject. The register value `24 > N = 17` is supplied by
+  hand, so the pnp3 fixture is an execution fixture and not evidence for the pnp4 cap.
+
+Deferred and deliberately not claimed. **Three handoffs of seventeen**: the composed `startConfig`
+still embeds every earlier phase — the fourteen handoffs from the sentinel through G2p-c's second
+payload remain proof-level identifications, no `initialConfig` on a raw pair input is executed, and
+no clock here counts a step of any earlier phase. Composing the next handoff down — G2p-c's second
+payload into the preamble — needs no new first-arrival theorem either, since
+`second_payload_strict` is landed; below that, G2p-b's first arrival is still missing, as recorded
+under G2x below. **First arrival of the composed accept**: `S` is the first time H15 fires, but
+nothing says `C` is the first time the composed accept is entered; the first arrival proved here is
+the marker preamble's, inside the left block. **The fence**: all four tables are unfenced, hence so
+is the composition; an oversized register still runs off the end of the tape and sticks, a timeout
+and neither verdict. The routed reject is exercised on a malformed gamma only: **no** rejection
+converse, no `RejectsAt`, and no parsed-target rejection characterisation. **Small targets** `0`,
+`1`, `2` stay excluded by `3 <= pr.2.n`. **Every converse**, a **footprint** theorem — so every room
+premise is sufficient and used, never shown necessary — every witness-check phase, and the **model
+connection**: this is a V1 `UniformTM` on `Option Bool` cells laid out against `pairLength a m`,
+while `ContentVerifierBridge` asks for the legacy `TM` with a `runTime` field on
+`concatBitstring x w`, and caveat 6 of `VERIFIER_RETARGET_PLAN.md` is untouched. The composed accept
+is the countdown's phase-local `qDone`; reaching it out of a retagged actual prior endpoint is
+neither halting on a raw input nor language acceptance, and no `accepts`, `AcceptsAt`,
+`DecidesWithin`, `UniformP`, `VerifiesRelation`, `NP` membership, advice-freedom claim or
+`ContentVerifierBridge` is stated. Neither `SearchMCSPWeakLowerBound` nor
+`VerifiedNPDAGLowerBoundSource` is reduced. Infrastructure only.
+
 **Part A G2y, the executed payload-loop → G2x handoff: the same generic sequential composition
 applied a second time, one block further left, at the same cubic budget (infrastructure only).**
 One new pnp3 module, `Complexity.Uniform.V1.FixedGammaTargetLoopDecrementCountdown`, and one new
@@ -65,7 +160,9 @@ foundation remain proof-level identifications, no `initialConfig` on a raw pair 
 and no clock here counts a step of any earlier phase. Composing the next handoff down — G2p-d's
 marker foundation into the payload round — needs no new first-arrival theorem: the foundation's
 `markers_strict`, `markers_installed` and `exactClock_le_deadline` are the same three ingredients
-`loop_strict`, `payload_exhausted` and `prior_covers` supply here. Further down, G2p-b's first
+`loop_strict`, `payload_exhausted` and `prior_covers` supply here; that handoff, H15, has since been
+taken by G2z above, so the count of proof-level retags below is the one this slice left. Further
+down, G2p-b's first
 arrival is still missing, as recorded under G2x below. **First arrival
 of the composed accept**: `T` is the first time H16 fires, but nothing says `C` is the first time
 the composed accept is entered, since G2s-a and G2u prove no first arrival for `qDone`; the first

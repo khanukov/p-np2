@@ -62,6 +62,7 @@ import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetUnaryCountdownIter
 import Pnp4.Frontier.ContractExpansion.ContentCountdownLinearCap
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetDecrementCountdownBridge
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetLoopDecrementCountdownBridge
+import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetMarkersLoopDecrementCountdownBridge
 import Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic
 import Pnp4.Frontier.ContractExpansion.ContentCappedSizes
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
@@ -1031,3 +1032,15 @@ end Pnp4
 -- `chainClock_le_polyClock`; the wrapper and the probe are audited in
 -- `Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`.
 #print axioms Pnp4.Frontier.ContractExpansion.loop_decrement_countdown_drained_accepted_content_at_polyClock
+
+-- Part A G2z executed marker-preamble-to-G2y handoff bridge: the pnp3 composed 54-state machine
+-- run out of the retagged actual G2p-c second-payload endpoint under exactly G2y's three
+-- hypotheses at the same budget `B := polyClock 3 (pairLength a m)`.  The new switch H15 fires
+-- at the marker preamble's first arrival `exactClock zeros = zeros + 7`, no composed verdict
+-- occurs before it, and the composed accept is reached at
+-- `exactClock + totalClock + composedClock <= B`, read at that clock and at `B`.  Three handoffs
+-- of seventeen; the fourteen earlier retags, the fence, first arrival of the composed accept,
+-- every witness-check phase, `AcceptsAt`, `UniformP`, advice freedom and `ContentVerifierBridge`
+-- stay open.  The only other declaration is the `private` helper `markersChainClock_le_polyClock`;
+-- the wrapper and the probe are audited in `Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`.
+#print axioms Pnp4.Frontier.ContractExpansion.markers_loop_decrement_countdown_drained_accepted_content_at_polyClock

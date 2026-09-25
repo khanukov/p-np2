@@ -607,11 +607,29 @@ composed run switches blocks at G2q's **first arrival** `decClock`, not at G2q's
 is in neither composed verdict before it, is the countdown's landed `startConfig`
 re-embedded at it, and is in the composed accept at exactly
 `decClock + fullClock ≤ B`, at exactly `B` and at every later time, with the register
-cleared and `pr.2.n` marks laid. The other sixteen handoffs remain proof-level
+cleared and `pr.2.n` marks laid. The sixteen handoffs G2x leaves untouched stay proof-level
 identifications — the composed `startConfig` still embeds every earlier phase — no first arrival
 of the composed accept is proved, the lane is still unfenced, the composed accept is the
 countdown's phase-local `qDone` rather than language acceptance, the V1 machine model is
 not the legacy `TM` the bridge interface names, and this is not P-vs-NP mainline progress.
+
+Part A G2y executes the handoff immediately before it, so **two** of those seventeen are now
+performed by a finite table. `ContentFixedGammaTargetLoopDecrementCountdownBridge.lean` runs the
+pnp3 composed machine `FixedGammaTargetPayloadRound.machine.seq
+FixedGammaTargetDecrementCountdown.machine` — G2p-d's 22-state payload-round table followed by the
+whole G2x 18-state composite as one closed 40-state table, whose routed row `qFin`-on-`some false`
+(index `19` → `22`) is the new handoff H16 and whose index-`26` → `29` row is G2x's H17, inherited —
+under exactly the same three hypotheses at the same budget.
+`loop_decrement_countdown_drained_accepted_content_at_polyClock` concludes that the composed run
+switches blocks at the payload loop's **first arrival** `totalClock`, not at G2q's length-only
+deadline, is in neither composed verdict before it, is G2x's landed `startConfig` re-embedded at it,
+and is in the composed accept at exactly `totalClock + composedClock ≤ B`, at exactly `B` and at
+every later time, with the register cleared and `pr.2.n` marks laid. The fifteen earlier handoffs
+remain proof-level identifications — the composed `startConfig` still embeds every earlier phase —
+no first arrival of the composed accept is proved (the first arrival proved is the loop's, inside
+the left block), the lane is still unfenced, the composed accept is still the countdown's
+phase-local `qDone` rather than language acceptance, and this is not P-vs-NP mainline progress
+either.
 
 For an *arbitrary* threshold there is a third input, `PolyBoundedInTable threshold`;
 it is proved for the canonical polynomial thresholds, so it disappears at

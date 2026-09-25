@@ -216,6 +216,12 @@ lean_lib PnP3 where
     -- One handoff of seventeen; the start still retags the actual G2p-f endpoint, the lane stays
     -- unfenced, no raw-input execution or acceptance is claimed.
     Glob.one `Complexity.Uniform.V1.FixedGammaTargetDecrementCountdown,
+    -- Part A G2y: G2p-d's payload round composed with the whole G2x composite, one 40-state
+    -- table whose routed edge qFin-on-false -> G2x qStart is the newly executed handoff H16,
+    -- taken at the loop's first arrival totalClock; H17 is inherited.  Two handoffs of
+    -- seventeen; the start still retags the actual G2p-d endpoint, the lane stays unfenced, no
+    -- raw-input execution, composed first arrival or acceptance is claimed.
+    Glob.one `Complexity.Uniform.V1.FixedGammaTargetLoopDecrementCountdown,
     -- Generic bounded cross-budget simulation for one fixed UniformTM.
     Glob.one `Complexity.Uniform.V1.BudgetTransport,
     -- Routed fixed-parser/verifier constructor and parser-prefix handoff.
@@ -810,6 +816,7 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1FixedGammaTargetUnaryCountdownIterationSurfaceTests,
     Glob.one `Tests.UniformV1SequentialCompositionSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaTargetDecrementCountdownSurfaceTests,
+    Glob.one `Tests.UniformV1FixedGammaTargetLoopDecrementCountdownSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
     Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,
@@ -1152,6 +1159,13 @@ lean_lib Pnp4 where
     -- reaches its accept at `decClock + fullClock <= B`.  One handoff of seventeen; the earlier
     -- handoffs, the fence, the witness checks, `AcceptsAt` and `ContentVerifierBridge` stay open.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetDecrementCountdownBridge,
+    -- Part A G2y: the executed payload-loop -> G2x handoff on the parsed target at the same
+    -- cubic budget, listed after the G2x bridge, which it imports: one 40-state machine runs
+    -- under exactly the same three hypotheses, switches blocks at the loop's first arrival and
+    -- reaches its accept at `totalClock + composedClock <= B`.  Two handoffs of seventeen; the
+    -- fifteen earlier handoffs, the fence, the witness checks, `AcceptsAt` and
+    -- `ContentVerifierBridge` stay open.
+    Glob.one `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetLoopDecrementCountdownBridge,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentConsolidatedSource,
     -- Model-audit module: it depends only on the shared complexity interfaces,
     -- so it is listed after the whole contract-expansion chain and before the

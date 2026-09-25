@@ -655,7 +655,8 @@ runtime-robustness statement: nothing here relates this single-tape, exact-step 
 multi-tape or read-only-input-tape models.  Input (2) is therefore an obligation *in this
 model*, and should be cited that way.
 
-The Part A fixed-phase chain, including the G2x composed decrement/countdown machine, lives
+The Part A fixed-phase chain, including the G2x composed decrement/countdown machine and the
+G2y composed loop/decrement/countdown machine that contains it, lives
 in a different model: the versioned `Pnp3.Complexity.Uniform.V1.UniformTM`, with
 `Option Bool` cells, no runtime field, and tapes laid out against the pair length
 `pairLength a m`.  No theorem transfers a V1 execution into this `TM`, no V1 statement of an
@@ -1376,6 +1377,47 @@ and the machine is a V1 `UniformTM` on `Option Bool` cells laid out against
 names (see "Runtime model behind input (2)"). No `accepts`, `AcceptsAt`, `DecidesWithin`,
 `UniformP`, `VerifiesRelation`, `NP` membership, advice-freedom claim or
 `ContentVerifierBridge` appears, and this is not P-vs-NP mainline progress.
+
+`ContentFixedGammaTargetLoopDecrementCountdownBridge.lean` is the Part A G2y slice: the
+**second** executed phase handoff of the chain, the one immediately before G2x's, on the same
+parsed target at the same budget. It applies the same generic `UniformTM.seq` one block further
+left, to `FixedGammaTargetPayloadRound.machine` and the whole G2x composite — G2p-d's 22-state,
+66-row payload-round table followed by G2x's 18-state, 54-row table as one 40-state, 120-row
+table, whose routed row `qFin`-on-`some false` (composed index `19` → `22`) is the new handoff
+H16 and whose index-`26` → `29` row is G2x's H17, inherited unchanged.
+
+* `loop_decrement_countdown_drained_accepted_content_at_polyClock` (**three**: the successful
+  parse, the Boolean acceptance, `3 ≤ pr.2.n`; no tag, cap, room, budget, clock, width,
+  digit, initial-state, correctness or runtime premise): with `N = a + m`,
+  `zeros = gammaZeros pr.2.n`, `d = borrow x w zeros`, `T = totalClock N zeros`,
+  `C = T + composedClock N zeros d pr.2.n` and `B = polyClock 3 (pairLength a m)`, out of the
+  composed `startConfig` — the payload round's own, the retagged *actual* G2p-d foundation
+  endpoint, routed — the composed control is in neither verdict before `T`, is G2x's landed
+  `startConfig B x w` re-embedded at exactly `T`, satisfies `C ≤ B`, and is in the composed
+  accept on the separator blank with tape `loopTape B x w zeros 0 pr.2.n` at exactly `C`, at
+  exactly `B` and at every later time. The cap, tag, header, width, `11 ≤ N` and clock bound are
+  derived and exported as in G2x, while the room is derived and used here but is not among this
+  statement's conclusions; the switch time is the payload loop's first arrival, from the new pnp3
+  `loop_strict`, and `pr.2.n = pr.1` is exported. G2x's domination lemma is private, so the
+  budget bound `C ≤ 3N² + (3N² + 12N + 7) ≤ (N+1)³ + 3` is re-derived from the public clock
+  formulas and needs `11 ≤ N`. The surface probe
+  `probe_loop_decrement_countdown_polyClock_accepted_target_three` reuses G2w-b's accepted word at
+  the pinned target `3` and reads the switch and the composed accept back.
+
+Caveats specific to G2y. It is **two handoffs of seventeen**: the composed `startConfig`
+still embeds every earlier phase, the fifteen handoffs before H16 stay proof-level, no
+`initialConfig` on a raw pair input is executed, and no clock counts a step of any earlier phase.
+`T` is the first time H16 fires, but no theorem says `C` is the first time the composed accept is
+entered; the first arrival proved is the payload loop's, inside the left block. All three tables
+are unfenced, hence so is the composition: accepted words never overflow the lane, since
+`pr.2.n ≤ N` is derived, but an overshooting word still times out, and the rows routed to the
+composed reject are pinned and never exercised. Targets `0`, `1`, `2` stay excluded. The composed
+accept is the countdown's phase-local `qDone`, reached out of a retagged actual prior endpoint —
+neither halting on a raw input nor language acceptance — and the machine is a V1 `UniformTM` on
+`Option Bool` cells laid out against `pairLength a m`, not the legacy `TM` with a `runTime` field
+that `ContentVerifierBridge` names (see "Runtime model behind input (2)"). No `accepts`,
+`AcceptsAt`, `DecidesWithin`, `UniformP`, `VerifiesRelation`, `NP` membership, advice-freedom claim
+or `ContentVerifierBridge` appears, and this is not P-vs-NP mainline progress.
 
 `FixedContentGammaAnchorCorrect.lean` is the Part A G2a bridge. It proves the
 exact G1-final-to-G2a operational handoff and provides a logical cell-7

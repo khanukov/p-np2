@@ -121,6 +121,7 @@ import Tests.UniformV1FixedGammaTargetUnaryCountdownSurfaceTests
 import Tests.UniformV1FixedGammaTargetUnaryCountdownIterationSurfaceTests
 import Tests.UniformV1SequentialCompositionSurfaceTests
 import Tests.UniformV1FixedGammaTargetDecrementCountdownSurfaceTests
+import Tests.UniformV1FixedGammaTargetLoopDecrementCountdownSurfaceTests
 import Tests.UniformV1BudgetTransportSurfaceTests
 import Tests.UniformV1CombinedMachineSurfaceTests
 import Tests.UniformV1CombinedCorrectnessSurfaceTests
@@ -5264,6 +5265,45 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetDecrementCountdownSurfaceTests.check_handoff_literal
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetDecrementCountdownSurfaceTests.check_decrement_countdown_literal_endpoint
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetDecrementCountdownSurfaceTests.check_handoff_probe
+
+-- Part A G2y (2026-09-25), infrastructure only: G2p-d's payload round composed with the whole
+-- G2x composite into one closed 40-state, 120-row table.  `loop_strict` proves the payload
+-- loop's first arrival of `qDone` at `totalClock` out of the loop's own `startConfig`, from
+-- G2p-e's `register_complete`, `no_terminal_of_le` and G2p-f's `exhaust_strict` alone; the
+-- routed row `qFin`-on-`some false` (index 19 -> 22) then executes handoff H16 at that first
+-- arrival, landing exactly on G2x's `startConfig`, and H17 is inherited.  The composed accept
+-- is reached at `totalClock + composedClock` under exactly G2u's seven hypotheses, the
+-- decrement's and the loop's room being derived inside the proof.  Two handoffs of seventeen;
+-- the start still retags every earlier phase, the lane stays unfenced, no first arrival of the
+-- composed accept is proved, and reaching it is neither halting on a raw input nor acceptance.
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetLoopDecrementCountdown.machine
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetLoopDecrementCountdown.inLoop
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetLoopDecrementCountdown.inTail
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetLoopDecrementCountdown.route
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetLoopDecrementCountdown.startConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetLoopDecrementCountdown.chainClock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetLoopDecrementCountdown.table_and_resource_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetLoopDecrementCountdown.handoff_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetLoopDecrementCountdown.loop_strict
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetLoopDecrementCountdown.handoff_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetLoopDecrementCountdown.loop_decrement_countdown_drained
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetLoopDecrementCountdownSurfaceTests.check_machine
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetLoopDecrementCountdownSurfaceTests.check_inLoop
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetLoopDecrementCountdownSurfaceTests.check_inTail
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetLoopDecrementCountdownSurfaceTests.check_route
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetLoopDecrementCountdownSurfaceTests.check_startConfig
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetLoopDecrementCountdownSurfaceTests.check_chainClock
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetLoopDecrementCountdownSurfaceTests.check_table_and_resource_pins
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetLoopDecrementCountdownSurfaceTests.check_handoff_pins
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetLoopDecrementCountdownSurfaceTests.check_loop_strict
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetLoopDecrementCountdownSurfaceTests.check_handoff_exact
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetLoopDecrementCountdownSurfaceTests.check_loop_decrement_countdown_drained
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetLoopDecrementCountdownSurfaceTests.check_clock_values
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetLoopDecrementCountdownSurfaceTests.check_loop_handoff_instance
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetLoopDecrementCountdownSurfaceTests.check_loop_drained_instance
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetLoopDecrementCountdownSurfaceTests.check_handoff_literal
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetLoopDecrementCountdownSurfaceTests.check_loop_decrement_countdown_literal_endpoint
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetLoopDecrementCountdownSurfaceTests.check_handoff_probe
 
 -- S11 (2026-09-19), infrastructure only: all-request one-gate acceptance
 -- closure in main's transducer convention.  `accepts = r.spec.isSome`, so a

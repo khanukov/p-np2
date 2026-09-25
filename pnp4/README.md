@@ -608,8 +608,8 @@ is in neither composed verdict before it, is the countdown's landed `startConfig
 re-embedded at it, and is in the composed accept at exactly
 `decClock + fullClock ≤ B`, at exactly `B` and at every later time, with the register
 cleared and `pr.2.n` marks laid. The other sixteen handoffs remain proof-level
-identifications — the composed `startConfig` still embeds every earlier phase — no first arrival of the
-composed accept is proved, the lane is still unfenced, the composed accept is the
+identifications — the composed `startConfig` still embeds every earlier phase — no first arrival
+of the composed accept is proved, the lane is still unfenced, the composed accept is the
 countdown's phase-local `qDone` rather than language acceptance, the V1 machine model is
 not the legacy `TM` the bridge interface names, and this is not P-vs-NP mainline progress.
 

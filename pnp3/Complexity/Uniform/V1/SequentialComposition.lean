@@ -12,7 +12,7 @@ P2-3cB2 parser/verifier constructor (`CombinedMachine.lean`, `routeParserState`)
 component made generic; as there, the handoff costs **zero** steps, and routing inspects the target
 state of a row and nothing else.  The **start** is routed too, so `seq_initialConfig` reads
 `initialConfig (M₁.seq M₂)` as `initialConfig M₁` routed with no hypothesis on `M₁.start`: a
-*terminal* one, which `UniformTM` permits, hands over at time zero instead of parking in the left
+*terminal* one, which `UniformTM` permits, hands over at time zero instead of crossing one step late
 block.  `seqLeft M₁.accept` and `seqLeft M₁.reject` stay dead: no routed row or start targets them.
 
 `seq_run_right`: out of a right-embedded configuration the composed run is the `M₂` run, with no

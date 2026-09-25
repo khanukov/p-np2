@@ -1362,8 +1362,9 @@ followed by G2s-a's 11-state table as one 18-state, 54-row table.
   the pinned target `3` and reads the switch and the composed accept back.
 
 Caveats specific to G2x. It is **one handoff of seventeen**: the composed `startConfig`
-still embeds every earlier phase, the sixteen earlier handoffs stay proof-level, no `initialConfig` on a raw pair input is
-executed, and no clock counts a step of any earlier phase. `T` is the first time the
+still embeds every earlier phase, the sixteen earlier handoffs stay proof-level, no
+`initialConfig` on a raw pair input is executed, and no clock counts a step of any earlier phase.
+`T` is the first time the
 handoff fires, but no theorem says `C` is the first time the composed accept is entered.
 Both tables are unfenced, hence so is the composition: accepted words never overflow the
 lane, since `pr.2.n ≤ N` is derived, but an overshooting word still times out, and the rows

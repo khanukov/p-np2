@@ -1702,9 +1702,10 @@ transition*, a target `M₁.reject` becomes the composed reject, every other tar
 is the routed-edge handoff of the P2-3cB2 parser/verifier constructor above with the hard-coded left
 component made generic, and as there the handoff costs **zero** steps; routing inspects a row's
 target state and nothing else, so `M₁.seq M₂` is a fixed table as soon as `M₁` and `M₂` are.
-`seqLeft M₁.accept` and `seqLeft M₁.reject` are dead states: no routed row targets them, and
-`seqEmbedRouted` routes an `M₁` configuration before a run starts.  `seq_pins` pins the state count,
-the distinguished states, the two injections, their disjointness and the three routing cases;
+The composed start is routed too: `seq_initialConfig` identifies its `initialConfig` with `M₁`'s
+routed configuration, so a terminal `M₁.start` hands over at time zero.  `seqLeft M₁.accept` and
+`seqLeft M₁.reject` are dead states: no routed row or start targets them.  `seq_pins` pins the state
+count, the distinguished states, the two injections, their disjointness and the three routing cases;
 `seq_step_left`, `seq_step_right` and `seq_step_eq_rawStep` pin every row.  `seq_run_right` runs
 `M₂` out of any right-embedded configuration, with no hypothesis.  `seq_run_left` runs `M₁` out of
 a routed embedding up to `T`, provided `M₁` does not accept strictly before `T`; an `M₁` rejection
@@ -1749,8 +1750,9 @@ cell, now `some false`, at step `18`, and one mark at `24` after the first round
 is step `17` of G2u's `check_start_iterate_probe` shifted by the `18` steps G2q takes.
 
 Deferred by G2x, and deliberately not claimed.  **One handoff of seventeen**: `startConfig` still
-embeds every earlier phase, the sixteen earlier handoffs stay proof-level, no raw-input `initialConfig` is executed, and no clock here
-counts a step of any earlier phase; composing the next handoffs needs first-arrival theorems from
+embeds every earlier phase, the sixteen earlier handoffs stay proof-level, no raw-input
+`initialConfig` is executed, and no clock here counts a step of any earlier phase; composing the
+next handoffs needs first-arrival theorems from
 their own start configurations, which G2p-b and the G2p-d/e loop do not yet have.  **First arrival
 of the composed accept**: `T` is the first time the handoff fires, but no theorem says
 `composedClock` is the first time the composed accept is entered, because G2s-a and G2u prove no

@@ -26,7 +26,8 @@ deadline, and no finite table performs a control switch. G2x builds the switch f
   accept strictly before `T`, an `M₁` rejection needing no hypothesis; `seq_handoff` composes them
   under **first arrival** of `M₁.accept` at `T`, which is load-bearing — an earlier acceptance would
   have fired the routed edge earlier; `seq_reject_handoff` needs no first-arrival premise.
-  `seqLeft M₁.accept` and `seqLeft M₁.reject` are dead states no routed row targets.
+  The composed start is routed too: `seq_initialConfig` proves that a terminal `M₁.start` hands over
+  at time zero. `seqLeft M₁.accept` and `seqLeft M₁.reject` are dead states no row or start targets.
 * `FixedGammaTargetDecrementCountdown.handoff_exact` (four: matching tag, decoded width,
   `2 <= zeros`, G2q's room): out of the composed `startConfig` — G2q's own `startConfig`, the
   retagged *actual* G2p-f endpoint, routed — the composed run is G2q's run up to
@@ -57,12 +58,14 @@ deadline, and no finite table performs a control switch. G2x builds the switch f
   `check_handoff_probe` reduces the composed run out of the identified actual `startConfig 0 tag
   physWord` by kernel computation and sees G2q's `qBorrow` at step `17` and the countdown's `qStart`
   on the same cell, now `some false`, at step `18`; `check_seq_literal_probe` reduces a six-state
-  toy composition through both the accepting and the rejecting handoff.
+  toy through both row handoffs and two terminal-start toys through their time-zero accept/reject
+  routes.
 
 Deferred and deliberately not claimed. **One handoff of seventeen**: the composed `startConfig`
 still embeds every earlier phase — the sixteen handoffs from the sentinel through payload
-exhaustion remain proof-level identifications, no `initialConfig` on a raw pair input is executed, and no clock here counts a step of any
-earlier phase; composing further handoffs needs first-arrival theorems that G2p-b and the G2p-d/e
+exhaustion remain proof-level identifications, no `initialConfig` on a raw pair input is executed,
+and no clock here counts a step of any earlier phase; composing further handoffs needs first-arrival
+theorems that G2p-b and the G2p-d/e
 loop do not yet have. **First arrival of the composed accept**: `T` is the first time the handoff
 fires, but nothing says `C` is the first time the composed accept is entered, since G2s-a and G2u
 prove no first arrival for `qDone`. **The fence**: both tables are unfenced, hence so is the

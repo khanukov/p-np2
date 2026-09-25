@@ -1752,8 +1752,8 @@ is step `17` of G2u's `check_start_iterate_probe` shifted by the `18` steps G2q 
 Deferred by G2x, and deliberately not claimed.  **One handoff of seventeen**: `startConfig` still
 embeds every earlier phase, the sixteen earlier handoffs stay proof-level, no raw-input
 `initialConfig` is executed, and no clock here counts a step of any earlier phase; composing the
-next handoffs needs first-arrival theorems from
-their own start configurations, which G2p-b and the G2p-d/e loop do not yet have.  **First arrival
+next handoffs needs first-arrival theorems from their own start configurations, which G2p-b and the
+G2p-d/e loop do not yet have.  **First arrival
 of the composed accept**: `T` is the first time the handoff fires, but no theorem says
 `composedClock` is the first time the composed accept is entered, because G2s-a and G2u prove no
 first arrival for `qDone`.  **The fence**: the policy recorded in the G2s-a entry above stands

@@ -26,8 +26,9 @@ deadline, and no finite table performs a control switch. G2x builds the switch f
   accept strictly before `T`, an `M₁` rejection needing no hypothesis; `seq_handoff` composes them
   under **first arrival** of `M₁.accept` at `T`, which is load-bearing — an earlier acceptance would
   have fired the routed edge earlier; `seq_reject_handoff` needs no first-arrival premise.
-  The composed start is routed too: `seq_initialConfig` proves that a terminal `M₁.start` hands over
-  at time zero. `seqLeft M₁.accept` and `seqLeft M₁.reject` are dead states no row or start targets.
+  The composed start is routed too: `seq_initialConfig` identifies its initial configuration with
+  `M₁`'s routed one, so a terminal `M₁.start` hands over at time zero. `seqLeft M₁.accept` and
+  `seqLeft M₁.reject` are dead states no row or start targets.
 * `FixedGammaTargetDecrementCountdown.handoff_exact` (four: matching tag, decoded width,
   `2 <= zeros`, G2q's room): out of the composed `startConfig` — G2q's own `startConfig`, the
   retagged *actual* G2p-f endpoint, routed — the composed run is G2q's run up to
@@ -65,8 +66,8 @@ Deferred and deliberately not claimed. **One handoff of seventeen**: the compose
 still embeds every earlier phase — the sixteen handoffs from the sentinel through payload
 exhaustion remain proof-level identifications, no `initialConfig` on a raw pair input is executed,
 and no clock here counts a step of any earlier phase; composing further handoffs needs first-arrival
-theorems that G2p-b and the G2p-d/e
-loop do not yet have. **First arrival of the composed accept**: `T` is the first time the handoff
+theorems that G2p-b and the G2p-d/e loop do not yet have. **First arrival of the composed accept**:
+`T` is the first time the handoff
 fires, but nothing says `C` is the first time the composed accept is entered, since G2s-a and G2u
 prove no first arrival for `qDone`. **The fence**: both tables are unfenced, hence so is the
 composition; accepted words never overflow the lane, since `pr.2.n <= N` is derived, but an

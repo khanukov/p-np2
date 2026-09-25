@@ -10,8 +10,10 @@ table is the disjoint union of the two public step functions with every `M₁` r
 becomes the composed reject, every other target stays left.  This is the routed-edge handoff of the
 P2-3cB2 parser/verifier constructor (`CombinedMachine.lean`, `routeParserState`) with the left
 component made generic; as there, the handoff costs **zero** steps, and routing inspects the target
-state of a row and nothing else.  `seqLeft M₁.accept` and `seqLeft M₁.reject` are dead states: no
-routed row targets them, and `seqEmbedRouted` routes an `M₁` configuration before a run starts.
+state of a row and nothing else.  The **start** is routed too, so `seq_initialConfig` reads
+`initialConfig (M₁.seq M₂)` as `initialConfig M₁` routed with no hypothesis on `M₁.start`: a
+*terminal* one, which `UniformTM` permits, hands over at time zero instead of parking in the left
+block.  `seqLeft M₁.accept` and `seqLeft M₁.reject` stay dead: no routed row or start targets them.
 
 `seq_run_right`: out of a right-embedded configuration the composed run is the `M₂` run, with no
 hypothesis.  `seq_run_left`: out of a routed embedding it is the `M₁` run up to `T`, provided `M₁`
@@ -35,11 +37,8 @@ theorem Config.ext_parts {k n B : Nat} {c d : Config k n B} (hstate : c.state = 
   | mk cs ch ct =>
       cases d with
       | mk ds dh dt =>
-          change cs = ds at hstate
-          change ch = dh at hhead
-          change ct = dt at htape
-          subst ds; subst dh; subst dt
-          rfl
+          change cs = ds at hstate; change ch = dh at hhead; change ct = dt at htape
+          subst ds; subst dh; subst dt; rfl
 
 /-! ### Absorption across time, for one machine -/
 
@@ -104,25 +103,20 @@ theorem UniformTM.seqLeft_injective (M₁ M₂ : UniformTM) : Function.Injective
   have hv : (M₁.seqLeft M₂ p).val = (M₁.seqLeft M₂ q).val := congrArg Fin.val h
   exact Fin.ext hv
 
-theorem UniformTM.seqRight_injective (M₁ M₂ : UniformTM) :
-    Function.Injective (M₁.seqRight M₂) := by
+theorem UniformTM.seqRight_injective (M₁ M₂ : UniformTM) : Function.Injective (M₁.seqRight M₂) := by
   intro p q h
-  have hv := congrArg Fin.val h
-  simp only [UniformTM.seqRight] at hv
+  have hv : M₁.stateCount + p.val = M₁.stateCount + q.val := congrArg Fin.val h
   exact Fin.ext (by omega)
-
 theorem UniformTM.seqLeft_ne_seqRight (M₁ M₂ : UniformTM) (p : Fin M₁.stateCount)
-    (q : Fin M₂.stateCount) : M₁.seqLeft M₂ p ≠ M₁.seqRight M₂ q := by
-  intro h
-  have hv := congrArg Fin.val h
-  simp only [UniformTM.seqLeft, UniformTM.seqRight] at hv
+    (q : Fin M₂.stateCount) : M₁.seqLeft M₂ p ≠ M₁.seqRight M₂ q := fun h => by
+  have hv : p.val = M₁.stateCount + q.val := congrArg Fin.val h
   have := p.isLt
   omega
 
-/-- The sequential composition: `M₁`'s start, `M₂`'s verdicts, the routed union table. -/
+/-- The sequential composition: `M₁`'s start **routed**, `M₂`'s verdicts, the routed union table. -/
 def UniformTM.seq (M₁ M₂ : UniformTM) : UniformTM where
   stateCount := M₁.stateCount + M₂.stateCount
-  start := M₁.seqLeft M₂ M₁.start
+  start := M₁.seqRoute M₂ M₁.start
   accept := M₁.seqRight M₂ M₂.accept
   reject := M₁.seqRight M₂ M₂.reject
   accept_ne_reject := fun h => M₂.accept_ne_reject (M₁.seqRight_injective M₂ h)
@@ -145,7 +139,7 @@ def UniformTM.seqEmbedRight (M₁ M₂ : UniformTM) {n B : Nat} (c : Config M₂
 block injections with their disjointness, and the three routing cases. -/
 theorem UniformTM.seq_pins (M₁ M₂ : UniformTM) :
     (M₁.seq M₂).stateCount = M₁.stateCount + M₂.stateCount ∧
-      (M₁.seq M₂).start = M₁.seqLeft M₂ M₁.start ∧
+      (M₁.seq M₂).start = M₁.seqRoute M₂ M₁.start ∧
       (M₁.seq M₂).accept = M₁.seqRight M₂ M₂.accept ∧
       (M₁.seq M₂).reject = M₁.seqRight M₂ M₂.reject ∧
       (∀ q, (M₁.seqLeft M₂ q).val = q.val) ∧
@@ -164,22 +158,23 @@ theorem UniformTM.seq_pins (M₁ M₂ : UniformTM) :
 theorem UniformTM.seqEmbedRouted_state (M₁ M₂ : UniformTM) {n B : Nat}
     (c : Config M₁.stateCount n B) :
     (M₁.seqEmbedRouted M₂ c).state = M₁.seqRoute M₂ c.state := rfl
-
 theorem UniformTM.seqEmbedRouted_head (M₁ M₂ : UniformTM) {n B : Nat}
     (c : Config M₁.stateCount n B) : (M₁.seqEmbedRouted M₂ c).head = c.head := rfl
-
 theorem UniformTM.seqEmbedRouted_tape (M₁ M₂ : UniformTM) {n B : Nat}
     (c : Config M₁.stateCount n B) : (M₁.seqEmbedRouted M₂ c).tape = c.tape := rfl
-
 theorem UniformTM.seqEmbedRight_state (M₁ M₂ : UniformTM) {n B : Nat}
     (c : Config M₂.stateCount n B) :
     (M₁.seqEmbedRight M₂ c).state = M₁.seqRight M₂ c.state := rfl
-
 theorem UniformTM.seqEmbedRight_head (M₁ M₂ : UniformTM) {n B : Nat}
     (c : Config M₂.stateCount n B) : (M₁.seqEmbedRight M₂ c).head = c.head := rfl
-
 theorem UniformTM.seqEmbedRight_tape (M₁ M₂ : UniformTM) {n B : Nat}
     (c : Config M₂.stateCount n B) : (M₁.seqEmbedRight M₂ c).tape = c.tape := rfl
+
+/-- **A composed `initialConfig` is `M₁`'s, routed.**  For every budget and input, and with no
+hypothesis on `M₁.start`: a working `M₁.start` begins on the left block, and a *terminal* one —
+legal for a `UniformTM` — begins already handed over, at time zero rather than one step later. -/
+theorem UniformTM.seq_initialConfig (M₁ M₂ : UniformTM) {n : Nat} (B : Nat) (x : Bitstring n) :
+    initialConfig (M₁.seq M₂) B x = M₁.seqEmbedRouted M₂ (initialConfig M₁ B x) := rfl
 
 /-- Every left-block row of the composed *raw* table is the routed `M₁` row. -/
 theorem UniformTM.seqRawStep_left (M₁ M₂ : UniformTM) (q : Fin M₁.stateCount) (s : Option Bool) :
@@ -219,13 +214,9 @@ theorem UniformTM.seq_step_right (M₁ M₂ : UniformTM) (q : Fin M₂.stateCoun
     (M₁.seq M₂).step (M₁.seqRight M₂ q) s =
       (M₁.seqRight M₂ (M₂.step q s).1, (M₂.step q s).2.1, (M₂.step q s).2.2) := by
   by_cases ha : q = M₂.accept
-  · subst ha
-    rw [UniformTM.step_accept]
-    exact UniformTM.step_accept (M₁.seq M₂) s
+  · subst ha; rw [UniformTM.step_accept]; exact UniformTM.step_accept (M₁.seq M₂) s
   · by_cases hr : q = M₂.reject
-    · subst hr
-      rw [UniformTM.step_reject]
-      exact UniformTM.step_reject (M₁.seq M₂) s
+    · subst hr; rw [UniformTM.step_reject]; exact UniformTM.step_reject (M₁.seq M₂) s
     · rw [UniformTM.step_of_ne (M₁.seq M₂) (fun h => ha (M₁.seqRight_injective M₂ h))
         (fun h => hr (M₁.seqRight_injective M₂ h))]
       exact M₁.seqRawStep_right M₂ q s
@@ -234,17 +225,13 @@ theorem UniformTM.seq_step_right (M₁ M₂ : UniformTM) (q : Fin M₂.stateCoun
 theorem UniformTM.seq_step_eq_rawStep (M₁ M₂ : UniformTM) (q : Fin (M₁.seq M₂).stateCount)
     (s : Option Bool) : (M₁.seq M₂).step q s = (M₁.seq M₂).rawStep q s := by
   by_cases ha : q = (M₁.seq M₂).accept
-  · subst ha
-    rw [UniformTM.step_accept]
+  · subst ha; rw [UniformTM.step_accept]
     show _ = M₁.seqRawStep M₂ (M₁.seqRight M₂ M₂.accept) s
-    rw [UniformTM.seqRawStep_right, UniformTM.step_accept]
-    rfl
+    rw [UniformTM.seqRawStep_right, UniformTM.step_accept]; rfl
   · by_cases hr : q = (M₁.seq M₂).reject
-    · subst hr
-      rw [UniformTM.step_reject]
+    · subst hr; rw [UniformTM.step_reject]
       show _ = M₁.seqRawStep M₂ (M₁.seqRight M₂ M₂.reject) s
-      rw [UniformTM.seqRawStep_right, UniformTM.step_reject]
-      rfl
+      rw [UniformTM.seqRawStep_right, UniformTM.step_reject]; rfl
     · exact UniformTM.step_of_ne _ ha hr s
 
 /-! ### Simulation -/

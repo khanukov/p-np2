@@ -5204,6 +5204,7 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seqEmbedRight_state
 #print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seqEmbedRight_head
 #print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seqEmbedRight_tape
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seq_initialConfig
 #print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seqRawStep_left
 #print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seqRawStep_right
 #print axioms Pnp3.Complexity.Uniform.V1.UniformTM.seq_step_left

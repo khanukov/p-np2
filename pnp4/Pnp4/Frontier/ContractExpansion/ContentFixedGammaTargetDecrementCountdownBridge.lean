@@ -29,24 +29,26 @@ target is tracked as `pr.2.n`, the field `ContentAccepts` reads; the register va
 fact on the decoded header, as in G2v; nothing here executes a parser.
 
 The arithmetic.  G2w-b's private domination lemma bounds `fullClock` alone; with
-`decClock N zeros d = N + zeros + d - 3` added, `C ≤ 3N² + 12N + 4 ≤ (N+1)³ + 3 ≤ B` from the same
-facts `3 ≤ pr.2.n ≤ N`, `zeros ≤ pr.2.n`, `d ≤ zeros`.  The exponent `3` is sufficient and not shown
-least; `B` is both tape budget and step count, an instantiation choice.
+`decClock N zeros d = N + zeros + d - 3` added, `C ≤ 3N² + 12N + 4 ≤ (N+1)³ + 3 ≤ B` from
+`3 ≤ pr.2.n ≤ N`, `d ≤ zeros` and `zeros ≤ pr.2.n`, the last read off the decoded header's
+`2 ^ zeros ≤ pr.2.n + 1`.  The exponent `3` is sufficient and not shown least; `B` is both tape
+budget and step count, an instantiation choice.
 
 Not claimed.  **One handoff of seventeen**: `startConfig` still embeds every earlier phase, the
-sixteen earlier handoffs stay proof-level, no `initialConfig` on a raw pair input is executed, and no clock here counts a step of any
-earlier phase.  **Composed first arrival**: nothing says `C` is the first time the composed accept
-is entered.  **The fence**: both tables are unfenced; accepted words never overflow the lane, since
-`pr.2.n ≤ N` is derived, but an overshooting word still runs off the tape and sticks, a timeout and
-neither verdict, and no rejected or malformed input is characterised.  **Small targets** `0`, `1`,
-`2` are excluded by `3 ≤ pr.2.n`, as in G2w-b.  **Every converse**, every witness-check phase, and
-the **model connection**: this is a V1 `UniformTM` on `Option Bool` cells laid out against
-`pairLength a m`, while `ContentVerifierBridge` asks for the legacy `TM` with a `runTime` field on
-`concatBitstring x w`; the legacy `runTime` advice channel of `VERIFIER_RETARGET_PLAN.md` caveat 6
-is untouched.  Reaching the composed accept out of a retagged actual prior endpoint is neither
-halting on a raw input nor language acceptance.  No `accepts`, `AcceptsAt`, `DecidesWithin`,
-`UniformP`, `VerifiesRelation`, `NP` membership, advice-freedom claim or `ContentVerifierBridge` is
-stated, and neither `SearchMCSPWeakLowerBound` nor `VerifiedNPDAGLowerBoundSource` is reduced.
+sixteen earlier handoffs stay proof-level, no `initialConfig` on a raw pair input is executed, and
+no clock here counts a step of any earlier phase.  **Composed first arrival**: nothing says `C` is
+the first time the composed accept is entered.  **The fence**: both tables are unfenced; accepted
+words never overflow the lane, since `pr.2.n ≤ N` is derived, but an overshooting word still runs
+off the tape and sticks, a timeout and neither verdict, and no rejected or malformed input is
+characterised.  **Small targets** `0`, `1`, `2` are excluded by `3 ≤ pr.2.n`, as in G2w-b.  **Every
+converse**, every witness-check phase, and the **model connection**: this is a V1 `UniformTM` on
+`Option Bool` cells laid out against `pairLength a m`, while `ContentVerifierBridge` asks for the
+legacy `TM` with a `runTime` field on `concatBitstring x w`; the legacy `runTime` advice channel of
+`VERIFIER_RETARGET_PLAN.md` caveat 6 is untouched.  Reaching the composed accept out of a retagged
+actual prior endpoint is neither halting on a raw input nor language acceptance.  No `accepts`,
+`AcceptsAt`, `DecidesWithin`, `UniformP`, `VerifiesRelation`, `NP` membership, advice-freedom claim
+or `ContentVerifierBridge` is stated, and neither `SearchMCSPWeakLowerBound` nor
+`VerifiedNPDAGLowerBoundSource` is reduced.
 
 **Progress classification (AGENTS.md): Infrastructure.**
 -/
@@ -139,9 +141,9 @@ theorem decrement_countdown_drained_accepted_content_at_polyClock (k : Nat) {a m
   have hroom' : zeros + 2 + (a + m) ≤ a + polyClock 3 (PairEncoding.pairLength a m) := by
     rw [hzg]
     exact hroom
-  have hzn : zeros ≤ pr.2.n := by
-    have hlt : zeros < 2 ^ zeros := Nat.lt_two_pow_self
-    omega
+  -- The load-bearing hypothesis is `hlo : 2 ^ zeros ≤ pr.2.n + 1`, the decoded-header width bound
+  -- from `decremented_register_digits`; `Nat.lt_two_pow_self` alone gives only `zeros < 2 ^ zeros`.
+  have hzn : zeros ≤ pr.2.n := Nat.le_of_lt_succ (Nat.lt_of_lt_of_le Nat.lt_two_pow_self hlo)
   have hd := (FixedGammaTargetRegisterDecrement.borrow_pins x w zeros).1
   have hCB : FixedGammaTargetDecrementCountdown.composedClock (a + m) zeros
       (FixedGammaTargetRegisterDecrement.borrow x w zeros) pr.2.n

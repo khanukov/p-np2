@@ -205,16 +205,16 @@ lean_lib PnP3 where
     -- header/pnp4 bridge, every converse and first arrival stay deferred; qDone is phase-local
     -- acceptance of a retagged actual prior endpoint, not raw-input language acceptance.
     Glob.one `Complexity.Uniform.V1.FixedGammaTargetUnaryCountdownIteration,
-    -- Part A G2x, generic half: sequential composition of two fixed UniformTMs into one
-    -- closed table, M₁'s rows routed so that a row targeting M₁.accept enters M₂.start in
-    -- that same transition (a zero-step handoff); seq_handoff composes the two runs under a
-    -- load-bearing first-arrival hypothesis.  No concrete machine, clock or acceptance claim.
+    -- Part A G2x, generic half: sequential composition of two fixed UniformTMs into one closed
+    -- table, M₁'s rows and start routed so that a target M₁.accept enters M₂.start in that same
+    -- transition (a zero-step handoff); seq_handoff composes the two runs under a load-bearing
+    -- first-arrival hypothesis.  No concrete machine, clock or acceptance claim.
     Glob.one `Complexity.Uniform.V1.SequentialComposition,
-    -- Part A G2x, concrete half: G2q's decrement composed with G2s-a's countdown, one
-    -- 18-state table whose routed edge qBorrow-on-true -> countdown qStart is the executed
-    -- handoff, taken at G2q's first arrival decClock; the composed accept is reached at
-    -- decClock + fullClock.  One handoff of seventeen; the start still retags the actual G2p-f
-    -- endpoint, the lane stays unfenced, no raw-input execution or acceptance is claimed.
+    -- Part A G2x, concrete half: G2q's decrement composed with G2s-a's countdown, one 18-state
+    -- table whose routed edge qBorrow-on-true -> countdown qStart is the executed handoff, taken
+    -- at G2q's first arrival decClock; the composed accept is reached at decClock + fullClock.
+    -- One handoff of seventeen; the start still retags the actual G2p-f endpoint, the lane stays
+    -- unfenced, no raw-input execution or acceptance is claimed.
     Glob.one `Complexity.Uniform.V1.FixedGammaTargetDecrementCountdown,
     -- Generic bounded cross-budget simulation for one fixed UniformTM.
     Glob.one `Complexity.Uniform.V1.BudgetTransport,

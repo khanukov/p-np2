@@ -20,7 +20,7 @@ working-state row into its own `qTerm` — targeting G3c's start (index `9`); H1
 (`74 → 77`) and H17 (`81 → 84`) are inherited from G3c. None of these is the table's only
 cross-block edge: `seq` also routes every G2p-a row targeting `qReject` into the composed reject,
 and the dead left `qTerm` rows into G3c's start. Write `N = a + m`, `zeros = gammaZeros pr.2.n` and
-`d = borrow x w zeros`. The label `G3d` is unused; the immediately preceding composite is G3c.
+`d = borrow x w zeros`. The slice label `G3d` is intentionally unused here; the immediately preceding composite is G3c.
 
 `scratch_bootstrap_..._drained_accepted_content_at_polyClock` has exactly G3c's hypotheses — the
 parse, the acceptance, `3 ≤ pr.2.n`, at the concrete `treeCircuitWitnessCodec (thresholdPoly k)` —

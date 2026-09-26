@@ -2180,7 +2180,7 @@ edges at steps `58`/`59`, `69`/`70`, `133`/`134` and `151`/`152` -- G3a's `26`/`
 `1` and `5`.
 
 Deferred by G3c, and deliberately not claimed.  **Five handoffs of seventeen**: `startConfig` still
-embeds every earlier phase, the twelve handoffs before H13 stay proof-level, no raw-input
+embeds every earlier phase, the twelve handoffs before H13 were proof-level at that slice, no raw-input
 `initialConfig` is executed, and no clock here counts a step of any earlier phase.  Composing the
 next handoff down, from G2p-a's scratch bootstrap into G2p-b, needs no new first-arrival theorem
 either -- G2p-a's `strict_first_terminal` and `exactClock_le_deadline` are landed -- so what is owed
@@ -2206,7 +2206,7 @@ fixed parser, advice freedom, `NP` membership and `ContentVerifierBridge` remain
 is infrastructure, not P-vs-NP mainline progress.
 
 The Part A G3e slice applies the generic sequential composition a sixth time, one block further
-left again.  (The label `G3d` is unused; the immediately preceding composite is G3c.)  The new
+left again.  (The slice label `G3d` is intentionally unused here; the immediately preceding composite is G3c.)  The new
 module
 `Complexity.Uniform.V1.FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown`
 defines `machine` as `FixedGammaTerminatorScratchBootstrap.machine.seq

@@ -12,7 +12,7 @@ and one new pnp4 module,
 followed by the whole G3c 86-state composite as one closed 95-state, 285-row table,
 `FixedGammaTerminatorScratchBootstrap.machine.seq
 FixedGammaTargetFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.machine`. Write `N = a+m`,
-`zeros = gammaZeros pr.2.n` and `d = borrow x w zeros`. (The label `G3d` is unused; the immediately
+`zeros = gammaZeros pr.2.n` and `d = borrow x w zeros`. (The slice label `G3d` is intentionally unused here; the immediately
 preceding composite is G3c.)
 
 Of the seventeen phase handoffs of the Part A chain, G3c executed five. G3e executes the one before

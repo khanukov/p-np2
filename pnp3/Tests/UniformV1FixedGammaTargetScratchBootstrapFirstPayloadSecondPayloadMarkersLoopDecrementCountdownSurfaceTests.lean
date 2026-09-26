@@ -252,7 +252,7 @@ private def malformed : Bitstring 3 := ![false, false, false]
 /-- `handoff_exact`'s **two** hypotheses are satisfiable in all five probe fixtures: the tag matches
 and the words decode to `zeros = 4`, `2`, `2`, `1` and `0`.  There is no third conjunct: G2p-a's
 phase needs no room, and its clock does not split on the width, so width zero enters through the
-same statement as the four positive widths. -/
+same statement as the four positive-width fixtures. -/
 theorem check_boot_handoff_instance :
     (FixedContentTagGate.tagMatches (Fin.append tag physWord) = true ∧
       FixedContentGammaTerminator.gammaZeros? (Fin.append tag physWord) = some 4) ∧

@@ -1526,7 +1526,7 @@ embeds every earlier phase, the thirteen handoffs before H14 stay proof-level, n
 a raw pair input is executed, and no clock counts a step of any earlier phase; the next handoff down
 was blocked on a missing G2p-b first-arrival theorem, which Part A G3b has since supplied in pnp3
 (`exactClock`, `first_payload_strict`, `strict_first_terminal`) and which Part A G3c below has since
-executed as H13, taking the count to five, so this entry's counts are the ones that slice left. `S`
+executed as H13; G3e then executed H12, taking the count to six, so this entry's counts are historical. `S`
 is the first time H14 fires, but no theorem
 says `C` is the first time the composed accept is entered; the first arrival proved is G2p-c's,
 inside the left block. All five tables are unfenced, hence so is the composition: accepted words
@@ -1589,7 +1589,7 @@ transported through two right-block row equations.
   also as `2N − 4`, together with the exported `11 ≤ N` rather than by a numeral.
 
 Caveats specific to G3c. It is **five handoffs of seventeen**: the composed `startConfig` still
-embeds every earlier phase, the twelve handoffs before H13 stay proof-level, no `initialConfig` on a
+embeds every earlier phase, the twelve handoffs before H13 were proof-level at that slice, no `initialConfig` on a
 raw pair input is executed, and no clock counts a step of any earlier phase; the next handoff down,
 G2p-a's scratch bootstrap into G2p-b, needs no new first-arrival theorem either, since G2p-a's
 `strict_first_terminal` is landed, so what is owed there is that composition itself, which Part A
@@ -1613,7 +1613,7 @@ not P-vs-NP mainline progress, and it makes no `P ≠ NP` claim.
 
 `ContentFixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownBridge.lean`
 is the Part A G3e slice: the **sixth** executed phase handoff of the chain, the one immediately
-before G3c's, on the same parsed target at the same budget. (The label `G3d` is unused; the
+before G3c's, on the same parsed target at the same budget. (The slice label `G3d` is intentionally unused here; the
 immediately preceding composite is G3c.) It applies the same generic `UniformTM.seq` one block
 further left, to `FixedGammaTerminatorScratchBootstrap.machine` and the whole G3c composite —
 G2p-a's 9-state, 27-row scratch-bootstrap table followed by G3c's 86-state, 258-row table as one

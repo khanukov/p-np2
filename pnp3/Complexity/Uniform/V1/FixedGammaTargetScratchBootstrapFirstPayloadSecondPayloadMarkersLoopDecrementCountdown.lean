@@ -12,7 +12,7 @@ second payload at `[27, 41)`, G2p-d's marker preamble at `[41, 55)`, G2p-d's pay
 `[55, 77)`, G2q's decrement at `[77, 84)` and G2s-a's countdown at `[84, 95)` — one closed 95-state,
 285-row table whose every row is a row of one of those seven tables with its target routed.  Write
 `N = a + m` and `d = borrow x w zeros`.  `pnp3/Docs/UniformP_V1.md` carries the long-form notes.
-The label `G3d` is unused; the immediately preceding composite is G3c.  Classification
+The slice label `G3d` is intentionally unused here; the immediately preceding composite is G3c.  Classification
 (AGENTS.md): **Infrastructure**.
 
 **Six executed handoffs.**  H12 is the newly executed one, and like H13 and H14 it has exactly

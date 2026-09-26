@@ -678,7 +678,8 @@ downstream is claimed**, and transports G2p-c's malformed rejection into the com
 forward direction only, which is no converse and characterises no parsed target. **Four of the
 seventeen** handoffs are now performed by a finite table; the thirteen earlier ones remain
 proof-level identifications — the composed `startConfig` still embeds every earlier phase — the next
-one down is blocked on a missing G2p-b first-arrival theorem, no first arrival of the composed
+one down was blocked on a missing G2p-b first-arrival theorem, which Part A G3b has since supplied
+in pnp3 without building that composition, no first arrival of the composed
 accept is proved (the first arrival proved is G2p-c's, inside the left block), the lane is still
 unfenced, the composed accept is still the countdown's phase-local `qDone` rather than language
 acceptance, the machine is a V1 `UniformTM` on `Option Bool` cells against `pairLength a m` and not

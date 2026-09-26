@@ -28,19 +28,24 @@ the terminator as a return marker, walks left over the gamma zeros to tag cell
   `a + m + 2 < tapeLength (pairLength a m) B`, i.e. `0 < a + B`.  The
   positive-width theorems assume exactly this.
 
-At the length-only deadline `3 * N` every successful run is in the absorbing
-`qDone` at head `7`, on the bootstrap scratch tape (width zero) or on that tape
-with the carried bit at `N + 2`.  A failed gamma scan rejects at the bootstrap
-head `N` with `contentTape`.  No theorem covers a positive width without room;
-in particular nothing here says that `qReject` at this deadline implies a
-malformed gamma.
+From the exact first terminal time on — `exactClock N zeros`, which is `6` at
+width zero and `2 * N + zeros - 6` at a positive width — every successful run is
+in the absorbing `qDone` at head `7`, on the bootstrap scratch tape (width zero)
+or on that tape with the carried bit at `N + 2`; the length-only deadline `3 * N`
+is one such time (`exactClock_le_deadline`).  A failed gamma scan rejects at the
+bootstrap head `N` with `contentTape`, from `malformedExactClock = 1` on.  No
+theorem covers a positive width without room; in particular nothing here says
+that `qReject` at these times implies a malformed gamma.
 
-`qDone` is an internal endpoint, not language acceptance.  Only the first
-payload bit is copied; the remaining payload bits, the decrement to `n`, and
-every pnp4 reader fact are outside this module.  Unlike G2p-a, only the
-length-only deadline is exported: the exact first-arrival time and its
-strictness are deferred.  This is uniform-machine infrastructure, not P-vs-NP
-mainline progress.
+Each clock is a *first* arrival: `zero_width_strict`, `first_payload_strict` and
+`malformed_strict` put the control in neither terminal state at every strictly
+earlier time, and `strict_first_terminal` bundles the two directions on a decoded
+width together with the identification of that configuration with the deadline
+one.  `qDone` is an internal endpoint, not language acceptance, and no converse
+is proved: nothing here says that reaching `qDone` implies a positive width.
+Only the first payload bit is copied; the remaining payload bits, the decrement
+to `n`, and every pnp4 reader fact are outside this module.  This is
+uniform-machine infrastructure, not P-vs-NP mainline progress.
 -/
 
 namespace Pnp3.Complexity.Uniform.V1.FixedGammaTargetFirstPayload
@@ -149,6 +154,51 @@ def startConfig {a m : Nat} (B : Nat) (x : Bitstring a) (w : Bitstring m) :
 
 /-- Public length-only deadline. -/
 def deadline (N : Nat) : Nat := 3 * N
+
+/-- First terminal time on a *decoded* gamma width `zeros` over `N` content
+cells, read off the fixed table rather than chosen.  Width zero blanks the
+terminator at `8`, walks back to tag cell `6`, blanks the anchor at `7`, finds
+the marker directly after it, restores both and halts: six steps, whatever `N`
+is.  A positive width additionally walks the content out to the target cell
+`N + 2` and back to the anchor, and halts at `2 * N + zeros - 6`: the gamma block
+is crossed twice before the payload cell is read — leftward to tag cell `6`, then
+rightward back to the marker — while the walk from the payload cell `9 + zeros`
+to the target cell is exactly that much shorter, so the width contributes
+`+ zeros` net.
+`zero_width_strict` and `first_payload_strict` exclude *both* terminals strictly
+earlier, so this is a first arrival and not merely a time by which the run has
+halted.  A malformed gamma has no decoded width and is outside this clock
+entirely (`malformedExactClock`). -/
+def exactClock (N zeros : Nat) : Nat := if zeros = 0 then 6 else 2 * N + zeros - 6
+
+/-- First terminal time of a *malformed* gamma, which has no decoded width.  It
+is length-independent: the handed-over bootstrap rejection is re-entered in one
+step.  `malformed_strict` excludes both terminals before it. -/
+def malformedExactClock : Nat := 1
+
+theorem exactClock_pins :
+    (∀ N, exactClock N 0 = 6) ∧
+      (∀ N zeros, 0 < zeros → exactClock N zeros = 2 * N + zeros - 6) ∧
+      malformedExactClock = 1 := by
+  refine ⟨fun _ => rfl, fun N zeros hz => ?_, rfl⟩
+  unfold exactClock
+  rw [if_neg (show ¬ zeros = 0 by omega)]
+
+/-- The subtraction in `exactClock` never truncates on a decoded positive width:
+the gamma contract already forces `9 + zeros ≤ N`. -/
+theorem exactClock_add {N zeros : Nat} (hN : 9 + zeros ≤ N) (hz : 0 < zeros) :
+    exactClock N zeros + 6 = 2 * N + zeros := by
+  rw [(exactClock_pins).2.1 N zeros hz]
+  omega
+
+/-- Every decoded width halts at or before the length-only deadline.  The
+premise is the width bound that `FixedContentGammaTerminator.gamma_contract`
+already supplies for a decoded width; it is not an extra assumption on the
+input. -/
+theorem exactClock_le_deadline {N zeros : Nat} (hN : 9 + zeros ≤ N) :
+    exactClock N zeros ≤ deadline N := by
+  unfold exactClock deadline
+  split_ifs <;> omega
 
 /-- The bootstrap scratch tape with bit `b` at the target cell `a + m + 2`. -/
 def firstPayloadTape {a m : Nat} (B : Nat) (x : Bitstring a) (w : Bitstring m) (b : Bool) :
@@ -413,6 +463,16 @@ private def zeroTape {a m : Nat} (x : Bitstring a) (w : Bitstring m) (s k : Nat)
     Option Bool :=
   if k = 7 ∧ 4 ≤ s ∧ s ≤ 5 then none else if k = 8 ∧ 1 ≤ s ∧ s ≤ 4 then none
   else scratch x w k
+
+/-- Every control state a positive-width run occupies strictly before
+`2 * N + zeros - 6` is a working state: the schedule reaches `qDone` only in its
+last branch, and `qReject` in none.  This is where the first arrival comes
+from — the schedule, not an appeal to absorption. -/
+private theorem posState_ne_terminal {N zeros s : Nat} (c : Bool) (hN : 9 + zeros ≤ N)
+    (hz : 0 < zeros) (hs : s < 2 * N + zeros - 6) :
+    posState N zeros c s ≠ qDone ∧ posState N zeros c s ≠ qReject := by
+  unfold posState scanState crossState writeState
+  cases c <;> split_ifs <;> first | exact ⟨by decide, by decide⟩ | omega
 
 /-! ### Traces -/
 
@@ -745,20 +805,101 @@ private theorem pos_at {a m B zeros : Nat} (x : Bitstring a) (w : Bitstring m) {
 /-! ### Public execution theorems -/
 
 /-- A failed gamma scan ends in `qReject` at the bootstrap head `a + m`, with
-`contentTape` unchanged.  No workspace premise is needed. -/
+`contentTape` unchanged, from `malformedExactClock = 1` on.  No workspace premise
+is needed.  `malformed_strict` supplies the matching first-arrival direction, so
+`1` is the *first* terminal time here and not merely a time by which the run has
+rejected.  There is deliberately **no converse**: this does not say that
+`qReject` implies a malformed gamma. -/
+theorem malformed_exact {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
+    (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = none)
+    (s : Nat) (hs : malformedExactClock ≤ s) :
+    let d := machine.run s (startConfig B x w)
+    d.state = qReject ∧ d.head.val = a + m ∧
+      d.tape = FixedPairContentMarkerErase.contentTape B x w := by
+  have hs1 : 1 ≤ s := hs
+  obtain ⟨hq, hh, ht⟩ := malformed_at (B := B) x w htag hg s
+  rw [if_neg (show ¬ s = 0 by omega)] at hq
+  exact ⟨hq, hh, funext ht⟩
+
+/-- `malformedExactClock = 1` is a *first* arrival: before step one — that is, at
+the handed-over start configuration itself — the control is in neither terminal
+state.  The premise admits `s = 0` only, and what excludes the two terminals
+there is the handoff's own control tag (`machine.start = qStart`, see
+`handoff_exact`); the malformed premises are carried so that the statement is
+scoped to the same branch as `malformed_exact`. -/
+theorem malformed_strict {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
+    (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = none)
+    (s : Nat) (hs : s < malformedExactClock) :
+    let d := machine.run s (startConfig B x w)
+    d.state ≠ qDone ∧ d.state ≠ qReject := by
+  obtain rfl : s = 0 := by
+    have hs1 : s < 1 := hs
+    omega
+  obtain ⟨hq, -, -⟩ := malformed_at (B := B) x w htag hg 0
+  show (machine.run 0 (startConfig B x w)).state ≠ qDone ∧
+    (machine.run 0 (startConfig B x w)).state ≠ qReject
+  rw [hq]
+  exact ⟨by decide, by decide⟩
+
+/-- `malformed_exact` at the public length-only deadline `3 * (a + m)`: the tag
+contract's length bound puts `malformedExactClock = 1` at or below it.  Still no
+workspace premise. -/
 theorem malformed_at_deadline {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
     (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
     (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = none) :
     let d := machine.run (deadline (a + m)) (startConfig B x w)
     d.state = qReject ∧ d.head.val = a + m ∧
-      d.tape = FixedPairContentMarkerErase.contentTape B x w := by
-  have h8 := (FixedContentTagGate.tag_contract (Fin.append x w)).2.2.2.2.2.2.2.2.2 htag
-  obtain ⟨hq, hh, ht⟩ := malformed_at (B := B) x w htag hg (deadline (a + m))
-  rw [if_neg (show ¬ deadline (a + m) = 0 by unfold deadline; omega)] at hq
-  exact ⟨hq, hh, funext ht⟩
+      d.tape = FixedPairContentMarkerErase.contentTape B x w :=
+  malformed_exact x w htag hg _ (by
+    have h8 := (FixedContentTagGate.tag_contract (Fin.append x w)).2.2.2.2.2.2.2.2.2 htag
+    unfold deadline malformedExactClock
+    omega)
 
-/-- Width zero halts at head `7` on the unchanged bootstrap scratch tape, with no
-room premise; `footprint` keeps this run within cells `[6, 8]`. -/
+/-- Width zero halts at head `7` on the unchanged bootstrap scratch tape from
+`exactClock (a + m) 0 = 6` on, with no room premise: the anchor at cell `7` and
+the terminator at cell `8` are blanked in flight and restored, so the tape
+equality below *is* the statement that the run leaves no net write behind.
+`footprint` keeps this run within cells `[6, 8]`, and `zero_width_strict`
+supplies the matching first-arrival direction. -/
+theorem zero_width_exact {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
+    (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some 0)
+    (s : Nat) (hs : exactClock (a + m) 0 ≤ s) :
+    let d := machine.run s (startConfig B x w)
+    d.state = qDone ∧ d.head.val = 7 ∧
+      d.tape = FixedGammaTerminatorScratchBootstrap.scratchTape B x w := by
+  rw [show exactClock (a + m) 0 = 6 from rfl] at hs
+  obtain ⟨hq, hh, ht⟩ := zero_at (B := B) x w htag hg s
+  refine ⟨hq.trans ?_, hh.trans ?_, funext fun i => (ht i).trans ?_⟩
+  · unfold zeroState
+    split_ifs <;> first | rfl | omega
+  · unfold zeroHead
+    split_ifs <;> omega
+  · unfold zeroTape scratch FixedGammaTerminatorScratchBootstrap.scratchTape
+    split_ifs <;> first | rfl | omega
+
+/-- `exactClock (a + m) 0 = 6` is a *first* arrival: at every strictly earlier
+time the control is in neither terminal state. -/
+theorem zero_width_strict {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
+    (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some 0)
+    (s : Nat) (hs : s < exactClock (a + m) 0) :
+    let d := machine.run s (startConfig B x w)
+    d.state ≠ qDone ∧ d.state ≠ qReject := by
+  rw [show exactClock (a + m) 0 = 6 from rfl] at hs
+  obtain ⟨hq, -, -⟩ := zero_at (B := B) x w htag hg s
+  show (machine.run s (startConfig B x w)).state ≠ qDone ∧
+    (machine.run s (startConfig B x w)).state ≠ qReject
+  rw [hq]
+  rcases (show s = 0 ∨ s = 1 ∨ s = 2 ∨ s = 3 ∨ s = 4 ∨ s = 5 by omega)
+    with rfl | rfl | rfl | rfl | rfl | rfl <;>
+    exact ⟨by decide, by decide⟩
+
+/-- `zero_width_exact` at the public length-only deadline `3 * (a + m)`, through
+`exactClock_le_deadline` on the width bound the gamma contract supplies.  Still
+no room premise. -/
 theorem zero_width_at_deadline {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
     (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
     (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some 0) :
@@ -766,18 +907,70 @@ theorem zero_width_at_deadline {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
     d.state = qDone ∧ d.head.val = 7 ∧
       d.tape = FixedGammaTerminatorScratchBootstrap.scratchTape B x w := by
   obtain ⟨hN, -⟩ := gamma_cells x w htag hg
-  obtain ⟨hq, hh, ht⟩ := zero_at (B := B) x w htag hg (deadline (a + m))
+  exact zero_width_exact x w htag hg _ (exactClock_le_deadline hN)
+
+/-- **The first-arrival execution theorem of this slice.**  Positive width with
+an allocated target cell `a + m + 2` halts at head `7` with the carried bit
+there — the physical payload bit, or `false` when the payload cell `9 + zeros`
+is the blank boundary — from `exactClock (a + m) zeros = 2 * (a + m) + zeros - 6`
+on.  The conclusion is extensional: it fixes the endpoint tape, not the
+schedule, and the schedule has two shapes.  With `9 + zeros < a + m` the source
+is physical and the fixed control reads it in `qReadPayload`; with
+`9 + zeros = a + m` the source address *is* the blank boundary, `qReadPayload`
+scans that blank, and the carried bit is the virtual zero
+(`first_physical_exact`, `first_virtual_exact`).  The leading scratch `true` at
+`a + m + 1` is crossed in `qCrossScratch0`/`qCrossScratch1`, never taken as the
+source: the carry state is already fixed when the head reaches it.
+`first_payload_strict` supplies the matching first-arrival direction, so
+`2 * (a + m) + zeros - 6` is the *first* terminal time and not merely a time by
+which the run has halted.  `qDone` is an internal endpoint, not language
+acceptance, and there is deliberately no converse: nothing here says that
+`qDone` at this time implies a positive width. -/
+theorem first_payload_exact {a m B zeros : Nat} (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
+    (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros)
+    (hzeros : 0 < zeros) (hroom : a + m + 2 < tapeLength (pairLength a m) B)
+    (s : Nat) (hs : exactClock (a + m) zeros ≤ s) :
+    let d := machine.run s (startConfig B x w)
+    d.state = qDone ∧ d.head.val = 7 ∧
+      d.tape = firstPayloadTape B x w
+        ((FixedContentTagGate.physicalSymbol (Fin.append x w) (9 + zeros)).getD false) := by
+  obtain ⟨hN, -⟩ := gamma_cells x w htag hg
+  rw [(exactClock_pins).2.1 (a + m) zeros hzeros] at hs
+  obtain ⟨hq, hh, ht⟩ :=
+    pos_at (B := B) x w htag hg hzeros (carried_cases x w hN) hroom s
   refine ⟨hq.trans ?_, hh.trans ?_, funext fun i => (ht i).trans ?_⟩
-  · unfold zeroState deadline
+  · unfold posState
     split_ifs <;> first | rfl | omega
-  · unfold zeroHead deadline
+  · unfold posHead
     split_ifs <;> omega
-  · unfold zeroTape scratch FixedGammaTerminatorScratchBootstrap.scratchTape deadline
+  · unfold posTape scratch firstPayloadTape FixedGammaTerminatorScratchBootstrap.scratchTape
     split_ifs <;> first | rfl | omega
 
-/-- Positive width with an allocated target cell `a + m + 2` halts at head `7`
-with the carried bit there: the physical payload bit, or `false` when the payload
-cell `9 + zeros` is the blank boundary. -/
+/-- `exactClock (a + m) zeros = 2 * (a + m) + zeros - 6` is a *first* arrival at
+a positive width: at every strictly earlier time the control is in neither
+terminal state.  This is read off the schedule, not off absorption, and it is
+what a sequential composition needs to switch blocks at this phase's
+acceptance. -/
+theorem first_payload_strict {a m B zeros : Nat} (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
+    (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros)
+    (hzeros : 0 < zeros) (hroom : a + m + 2 < tapeLength (pairLength a m) B)
+    (s : Nat) (hs : s < exactClock (a + m) zeros) :
+    let d := machine.run s (startConfig B x w)
+    d.state ≠ qDone ∧ d.state ≠ qReject := by
+  obtain ⟨hN, -⟩ := gamma_cells x w htag hg
+  rw [(exactClock_pins).2.1 (a + m) zeros hzeros] at hs
+  obtain ⟨hq, -, -⟩ :=
+    pos_at (B := B) x w htag hg hzeros (carried_cases x w hN) hroom s
+  show (machine.run s (startConfig B x w)).state ≠ qDone ∧
+    (machine.run s (startConfig B x w)).state ≠ qReject
+  rw [hq]
+  exact posState_ne_terminal _ hN hzeros hs
+
+/-- `first_payload_exact` at the public length-only deadline `3 * (a + m)`,
+through `exactClock_le_deadline` on the width bound the gamma contract supplies;
+the room premise is the one that theorem already uses. -/
 theorem first_payload_at_deadline {a m B zeros : Nat} (x : Bitstring a) (w : Bitstring m)
     (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
     (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros)
@@ -787,17 +980,24 @@ theorem first_payload_at_deadline {a m B zeros : Nat} (x : Bitstring a) (w : Bit
       d.tape = firstPayloadTape B x w
         ((FixedContentTagGate.physicalSymbol (Fin.append x w) (9 + zeros)).getD false) := by
   obtain ⟨hN, -⟩ := gamma_cells x w htag hg
-  obtain ⟨hq, hh, ht⟩ :=
-    pos_at (B := B) x w htag hg hzeros (carried_cases x w hN) hroom (deadline (a + m))
-  refine ⟨hq.trans ?_, hh.trans ?_, funext fun i => (ht i).trans ?_⟩
-  · simp (disch := omega) only [posState, deadline, if_pos, if_neg]
-  · unfold posHead deadline
-    split_ifs <;> omega
-  · unfold posTape scratch firstPayloadTape FixedGammaTerminatorScratchBootstrap.scratchTape
-      deadline
-    split_ifs <;> first | rfl | omega
+  exact first_payload_exact x w htag hg hzeros hroom _ (exactClock_le_deadline hN)
 
-/-- A physical first payload bit `b` is copied to `a + m + 2`. -/
+/-- A physical first payload bit `b` is copied to `a + m + 2`, from the exact
+first arrival on. -/
+theorem first_physical_exact {a m B zeros : Nat} (x : Bitstring a) (w : Bitstring m)
+    (b : Bool) (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
+    (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros)
+    (hzeros : 0 < zeros)
+    (hread : FixedContentTagGate.physicalSymbol (Fin.append x w) (9 + zeros) = some b)
+    (hroom : a + m + 2 < tapeLength (pairLength a m) B)
+    (s : Nat) (hs : exactClock (a + m) zeros ≤ s) :
+    let d := machine.run s (startConfig B x w)
+    d.state = qDone ∧ d.head.val = 7 ∧ d.tape = firstPayloadTape B x w b := by
+  have h := first_payload_exact (B := B) x w htag hg hzeros hroom s hs
+  rw [hread] at h
+  exact h
+
+/-- `first_physical_exact` at the public length-only deadline `3 * (a + m)`. -/
 theorem first_physical_at_deadline {a m B zeros : Nat} (x : Bitstring a) (w : Bitstring m)
     (b : Bool) (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
     (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros)
@@ -806,13 +1006,26 @@ theorem first_physical_at_deadline {a m B zeros : Nat} (x : Bitstring a) (w : Bi
     (hroom : a + m + 2 < tapeLength (pairLength a m) B) :
     let d := machine.run (deadline (a + m)) (startConfig B x w)
     d.state = qDone ∧ d.head.val = 7 ∧ d.tape = firstPayloadTape B x w b := by
-  have h := first_payload_at_deadline (B := B) x w htag hg hzeros hroom
-  rw [hread] at h
-  exact h
+  obtain ⟨hN, -⟩ := gamma_cells x w htag hg
+  exact first_physical_exact x w b htag hg hzeros hread hroom _ (exactClock_le_deadline hN)
 
 /-- When the payload cell `9 + zeros` is the blank boundary `a + m`, the virtual
-zero is written at the target cell `a + m + 2`; the leading scratch `true` at
-`a + m + 1` is not taken as the source bit. -/
+zero is written at the target cell `a + m + 2` from the exact first arrival on;
+the leading scratch `true` at `a + m + 1` is not taken as the source bit. -/
+theorem first_virtual_exact {a m B zeros : Nat} (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
+    (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros)
+    (hzeros : 0 < zeros) (hvirtual : 9 + zeros = a + m)
+    (hroom : a + m + 2 < tapeLength (pairLength a m) B)
+    (s : Nat) (hs : exactClock (a + m) zeros ≤ s) :
+    let d := machine.run s (startConfig B x w)
+    d.state = qDone ∧ d.head.val = 7 ∧ d.tape = firstPayloadTape B x w false := by
+  have h := first_payload_exact (B := B) x w htag hg hzeros hroom s hs
+  rw [show FixedContentTagGate.physicalSymbol (Fin.append x w) (9 + zeros) = none from
+    content_ge x w (by omega)] at h
+  exact h
+
+/-- `first_virtual_exact` at the public length-only deadline `3 * (a + m)`. -/
 theorem first_virtual_at_deadline {a m B zeros : Nat} (x : Bitstring a) (w : Bitstring m)
     (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
     (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros)
@@ -820,10 +1033,50 @@ theorem first_virtual_at_deadline {a m B zeros : Nat} (x : Bitstring a) (w : Bit
     (hroom : a + m + 2 < tapeLength (pairLength a m) B) :
     let d := machine.run (deadline (a + m)) (startConfig B x w)
     d.state = qDone ∧ d.head.val = 7 ∧ d.tape = firstPayloadTape B x w false := by
-  have h := first_payload_at_deadline (B := B) x w htag hg hzeros hroom
-  rw [show FixedContentTagGate.physicalSymbol (Fin.append x w) (9 + zeros) = none from
-    content_ge x w (by omega)] at h
-  exact h
+  obtain ⟨hN, -⟩ := gamma_cells x w htag hg
+  exact first_virtual_exact x w htag hg hzeros hvirtual hroom _ (exactClock_le_deadline hN)
+
+/-- **The first arrival, in the shape a sequential composition consumes.**  On a
+matching tag and a decoded width, with the target cell allocated whenever that
+width is positive: the control is in neither terminal state strictly before
+`exactClock (a + m) zeros`, it is in `machine.accept` exactly there, that time is
+at or below the length-only deadline `3 * (a + m)`, and the configuration there
+*is* the configuration at the deadline — the one the next phase's `startConfig`
+retags.  The last conjunct is absorption, not a second run: `qDone` is
+absorbing, so the run cannot move between the two times.
+
+Nothing here composes anything: no second machine, no `seq`, and no composed
+clock occurs in this module.  This is the premise such a composition needs, and
+the reason it was previously unavailable is that only the deadline endpoint was
+exported. -/
+theorem strict_first_terminal {a m B zeros : Nat} (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
+    (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros)
+    (hroom : 0 < zeros → a + m + 2 < tapeLength (pairLength a m) B) :
+    (∀ s, s < exactClock (a + m) zeros →
+        (machine.run s (startConfig B x w)).state ≠ machine.accept ∧
+        (machine.run s (startConfig B x w)).state ≠ machine.reject) ∧
+      (machine.run (exactClock (a + m) zeros) (startConfig B x w)).state = machine.accept ∧
+      exactClock (a + m) zeros ≤ deadline (a + m) ∧
+      machine.run (exactClock (a + m) zeros) (startConfig B x w) =
+        machine.run (deadline (a + m)) (startConfig B x w) := by
+  obtain ⟨hN, -⟩ := gamma_cells x w htag hg
+  have hacc : (machine.run (exactClock (a + m) zeros) (startConfig B x w)).state = qDone := by
+    rcases Nat.eq_zero_or_pos zeros with rfl | hz
+    · exact (zero_width_exact x w htag hg _ le_rfl).1
+    · exact (first_payload_exact x w htag hg hz (hroom hz) _ le_rfl).1
+  have hstrict : ∀ s, s < exactClock (a + m) zeros →
+      (machine.run s (startConfig B x w)).state ≠ qDone ∧
+      (machine.run s (startConfig B x w)).state ≠ qReject := by
+    rcases Nat.eq_zero_or_pos zeros with rfl | hz
+    · exact fun s hs => zero_width_strict x w htag hg s hs
+    · exact fun s hs => first_payload_strict x w htag hg hz (hroom hz) s hs
+  refine ⟨hstrict, hacc, exactClock_le_deadline hN, ?_⟩
+  rw [show deadline (a + m) = exactClock (a + m) zeros +
+      (deadline (a + m) - exactClock (a + m) zeros) from by
+    have := exactClock_le_deadline (N := a + m) (zeros := zeros) hN
+    omega, machine.run_add]
+  exact (machine.run_accept _ hacc _).symm
 
 /-- On every tagged input, no transition at any time clamps at either end of the
 tape, provided the target cell `a + m + 2` is allocated whenever the gamma width

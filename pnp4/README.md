@@ -747,7 +747,7 @@ the composed reject in the forward direction only, which is no converse and char
 target. **Six of the seventeen** handoffs are now performed by a finite table; the eleven earlier
 ones remain proof-level identifications — the composed `startConfig` still embeds every earlier
 phase — the next one down, **H11** from G2m's payload dispatcher into G2p-a, is blocked twice over
-(no first-arrival theorem for the dispatcher's own terminal, and two absorbing outcomes `qAllZero`
+(no first-arrival theorem for the dispatcher's own terminal, and two non-reject absorbing outcomes `qAllZero`
 and `qHasOne` of which `UniformTM.seq` routes only the first), no first arrival of the composed
 accept is proved (the first arrival proved is G2p-a's, inside the left block), the lane is still
 unfenced, the composed accept is still the countdown's phase-local `qDone` rather than language

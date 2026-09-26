@@ -193,7 +193,7 @@ composed accept is still the countdown's phase-local `qDone`, and no witness-che
 phase exists, so this is not the runtime proof either. The next handoff down, **H11** — G2m's
 payload dispatcher into G2p-a — is **not** in that position, and is blocked twice over: the
 dispatcher exports its deadline-indexed endpoint classification but no first-arrival theorem for
-its own terminal, so it needs a G3b-style slice first; and it has *two* absorbing outcomes,
+its own terminal, so it needs a G3b-style slice first; and it has *two non-reject* absorbing outcomes,
 `qAllZero` (its `machine.accept`) and `qHasOne`, of which `UniformTM.seq` would route only the
 first, so the generic combinator does not apply to it as it stands. Wrapper-level `L'`
 padding invariance and formal runtime/advice enforcement also remain open; complete-word

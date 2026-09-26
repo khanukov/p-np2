@@ -224,8 +224,8 @@ theorem check_malformed_reject_handoff {a m B : Nat} (x : Bitstring a) (w : Bits
       e.tape = FixedPairContentMarkerErase.contentTape B x w :=
   malformed_reject_handoff x w htag hg s hs
 
-/-- The literal clocks the probes use, reduced by kernel computation: G2p-a's first arrival at all
-five probe widths — `2N - 11 - zeros` needs no case split, so width zero is one of them — G3c's
+/-- The literal clocks the probes use, reduced by kernel computation: G2p-a's first arrival in all
+five fixtures across four widths — `2N - 11 - zeros` needs no case split, including at width zero — G3c's
 sum, and this slice's sum. -/
 theorem check_clock_values :
     FixedGammaTerminatorScratchBootstrap.exactClock 17 4 = 19 ∧
@@ -249,7 +249,7 @@ private def oneWord : Bitstring 3 := ![false, true, false]
 private def zeroWord : Bitstring 2 := ![true, false]
 private def malformed : Bitstring 3 := ![false, false, false]
 
-/-- `handoff_exact`'s **two** hypotheses are satisfiable at all five probe widths: the tag matches
+/-- `handoff_exact`'s **two** hypotheses are satisfiable in all five probe fixtures: the tag matches
 and the words decode to `zeros = 4`, `2`, `2`, `1` and `0`.  There is no third conjunct: G2p-a's
 phase needs no room, and its clock does not split on the width, so width zero enters through the
 same statement as the four positive widths. -/
@@ -456,7 +456,7 @@ theorem check_h12_probe_physical :
   all_goals decide
 
 set_option maxRecDepth 100000 in
-/-- **H12 at three further widths, reduced.**  Out of `startConfig 0 tag middleWord` (`N = 12`,
+/-- **H12 in three further fixtures, reduced.**  Out of `startConfig 0 tag middleWord` (`N = 12`,
 `zeros = 2`) the same routed row fires at step `11 = 2 * 12 - 11 - 2`, restoring the terminator at
 `10` and leaving the scratch `true` at `13`; out of `startConfig 0 tag oneWord` (`N = 11`,
 `zeros = 1`) at step `10 = 2 * 11 - 11 - 1`, terminator `9`, scratch `12`; out of `startConfig 0 tag

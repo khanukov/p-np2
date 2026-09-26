@@ -340,10 +340,10 @@ Out of `startConfig`: before `T` the composed control is in neither verdict; up 
 `T` the composed configuration is G2p-a's own, routed; at exactly `T` it **is** G3c's landed
 `startConfig B x w`, re-embedded — the head and tape G2p-b's first-payload phase retags at G2p-a's
 length-only deadline `deadline (a+m) = 2*(a+m)`, identified through G2p-a's persistence from `T` to
-that deadline; and every further step is a G3c step.  The final conjunct rests on
-`strict_first_terminal` together with the no-early-accept premise — `qTerm` is entered for the
-*first* time at `T`, so the routed edge fires then and not earlier — which persistence alone would
-not give.  Width zero is **not** excluded: it
+that deadline; and every further step is a G3c step.  All four conjuncts use
+`strict_first_terminal`: its no-early-accept half keeps the left block live through `T`, and its
+exact-arrival half says `qTerm` is entered for the *first* time at `T`, so the routed edge fires then
+and not earlier — facts persistence alone would not give.  Width zero is **not** excluded: it
 differs only in the incoming dispatcher head (`7` against `6`), which G2p-a's own trace absorbs, so
 this one statement covers it; an accepted parsed target reaches only the sub-case `2 ≤ zeros`.  No
 room premise appears, because G2p-a needs none: `tapeLength` allocates the scratch cell `a+m+1` at

@@ -65,6 +65,8 @@ import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetLoopDecrementCount
 import Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetMarkersLoopDecrementCountdownBridge
 import
   Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetSecondPayloadMarkersLoopDecrementCountdownBridge
+import
+  Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetFirstPayloadSecondPayloadMarkersLoopDecrementCountdownBridge
 import Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic
 import Pnp4.Frontier.ContractExpansion.ContentCappedSizes
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
@@ -1060,3 +1062,18 @@ end Pnp4
 -- `Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`.
 #print axioms
   Pnp4.Frontier.ContractExpansion.second_payload_markers_loop_decrement_countdown_drained_accepted_content_at_polyClock
+
+-- Part A G3c executed first-payload-to-G3a handoff bridge: the pnp3 composed 86-state machine run
+-- out of the retagged actual G2p-a bootstrap endpoint under exactly G3a's three hypotheses at the
+-- same budget `B := polyClock 3 (pairLength a m)`.  The new switch H13 fires at G2p-b's first
+-- arrival, which at every positive width -- and an accepted parsed target reaches only those -- is
+-- the length- and width-dependent `2N + zeros - 6`, no composed verdict occurs before it, and the
+-- composed accept is reached at
+-- `(2N + zeros - 6) + (2N - 7) + exactClock + totalClock + composedClock <= B`, read at that clock
+-- and at `B`.  Five handoffs of seventeen; the twelve earlier retags, the fence, first arrival of
+-- the composed accept, every witness-check phase, `AcceptsAt`, `UniformP`, advice freedom and
+-- `ContentVerifierBridge` stay open.  The only other declaration is the `private` helper
+-- `firstChainClock_le_polyClock`; the wrapper and the probe are audited in
+-- `Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`.
+#print axioms
+  Pnp4.Frontier.ContractExpansion.first_payload_second_payload_markers_loop_decrement_countdown_drained_accepted_content_at_polyClock

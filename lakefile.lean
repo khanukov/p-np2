@@ -241,6 +241,15 @@ lean_lib PnP3 where
     -- actual G2p-b endpoint and the lane stays unfenced.  No raw-input execution, first arrival
     -- of the composed accept, or language acceptance is claimed.
     Glob.one `Complexity.Uniform.V1.FixedGammaTargetSecondPayloadMarkersLoopDecrementCountdown,
+    -- G2p-b's first-payload table and that whole composite as one closed 86-state, 258-row table.
+    -- H13 is the newly executed routed row `qSeekAnchor`-on-blank into index 18; H14, H15, H16 and
+    -- H17 are inherited.  The switch is stated at every positive decoded width (first arrival
+    -- `2N + zeros - 6`) and at width zero (`6`), which no accepted parsed target reaches.  Five
+    -- handoffs of seventeen; the start still retags the actual G2p-a endpoint and the lane stays
+    -- unfenced.  No raw-input execution, first arrival of the composed accept, or language
+    -- acceptance is claimed.
+    Glob.one
+      `Complexity.Uniform.V1.FixedGammaTargetFirstPayloadSecondPayloadMarkersLoopDecrementCountdown,
     -- Generic bounded cross-budget simulation for one fixed UniformTM.
     Glob.one `Complexity.Uniform.V1.BudgetTransport,
     -- Routed fixed-parser/verifier constructor and parser-prefix handoff.
@@ -839,6 +848,8 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1FixedGammaTargetMarkersLoopDecrementCountdownSurfaceTests,
     Glob.one
       `Tests.UniformV1FixedGammaTargetSecondPayloadMarkersLoopDecrementCountdownSurfaceTests,
+    Glob.one
+      `Tests.UniformV1FixedGammaTargetFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
     Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,
@@ -1207,6 +1218,13 @@ lean_lib Pnp4 where
     -- `ContentVerifierBridge` stay open.
     Glob.one
       `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetSecondPayloadMarkersLoopDecrementCountdownBridge,
+    -- Part A G3c: the same chained run one block further left, at the same three hypotheses and
+    -- the same cubic budget, through the newly executed H13.  The clock bound expands to
+    -- `(2N + zeros - 6) + (2N - 7) + exactClock + totalClock + composedClock <= B`.  Five handoffs
+    -- of seventeen; the twelve earlier handoffs, the fence, the witness checks, `AcceptsAt` and
+    -- `ContentVerifierBridge` stay open.
+    Glob.one
+      `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetFirstPayloadSecondPayloadMarkersLoopDecrementCountdownBridge,
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentConsolidatedSource,
     -- Model-audit module: it depends only on the shared complexity interfaces,
     -- so it is listed after the whole contract-expansion chain and before the

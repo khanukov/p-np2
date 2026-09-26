@@ -1,6 +1,82 @@
 # Project Status (current)
 
-Updated: 2026-09-25
+Updated: 2026-09-26
+
+**Part A G3c, the executed first-payload → G3a handoff: the same generic sequential composition
+applied a fifth time, one block further left, at the same cubic budget (infrastructure only).**
+One new pnp3 module,
+`Complexity.Uniform.V1.FixedGammaTargetFirstPayloadSecondPayloadMarkersLoopDecrementCountdown`, and
+one new pnp4 module,
+`Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetFirstPayloadSecondPayloadMarkersLoopDecrementCountdownBridge`.
+**No new table row**: the concrete machine is G2p-b's fixed 18-state, 54-row first-payload table
+followed by the whole G3a 68-state composite as one closed 86-state, 258-row table,
+`FixedGammaTargetFirstPayload.machine.seq
+FixedGammaTargetSecondPayloadMarkersLoopDecrementCountdown.machine`. Write `N = a+m`,
+`zeros = gammaZeros pr.2.n` and `d = borrow x w zeros`.
+
+Of the seventeen phase handoffs of the Part A chain, G3a executed four. G3c executes the one before
+them, **H13**, so **five** of the seventeen are now performed by a finite table and **twelve**
+remain proof-level retags. G3c adds **no new first-arrival theorem**: Part A G3b landed G2p-b's
+arrival (`first_payload_exact`, `zero_width_exact`), its minimality (`first_payload_strict`,
+`zero_width_strict`) and its deadline cover (`exactClock_le_deadline`) at every decoded width, and
+`UniformTM.run_accept_of_le` identifies the run at the first arrival with the run at the length-only
+deadline `3 * N` that G2p-c's `startConfig`, and through it G3a's, retags. That is exactly the
+premise G3a and G3b recorded as blocking this composition.
+
+* **H13 is executed by a single live routed row.** `qSeekAnchor` on the blank is G2p-b's *only* row
+  out of a working state into its own absorbing `qDone`, and `seq` routes it — writing `some false`
+  and staying — to G3a's start at composed index `18`, in that same transition, at no cost. The
+  three `qDone` self-rows are routed too, but that state stays dead. H14 (`29 → 32`), H15 (four
+  routed rows into `46`, of which `2 ≤ zeros` reaches only `41` and `42`), H16 (`65 → 68`) and H17
+  (`72 → 75`) are inherited from G3a, located here by the two block-offset equations and carried by
+  the universal right-block row equation, which transports every G3a row verbatim.
+* **Every decoded width, and only truthful ones.** `handoff_exact` covers the whole positive branch
+  `0 < zeros`, whose first arrival is `2N + zeros - 6`; G2p-b splits its widths as `0` against
+  `0 < zeros`, so no separate width-one statement exists or is needed, and an accepted parsed target
+  (`3 ≤ pr.2.n`, hence `2 ≤ zeros`) is a sub-case of that branch. Inside it G2p-b's endpoint is
+  extensional in its two source shapes — a physical payload cell, and a payload cell that *is* the
+  boundary blank and copies the virtual zero — so both hand the same configuration over.
+  `zero_width_handoff` states the same switch at width zero (first arrival `6`, no room premise);
+  that width is outside every accepted target and **nothing downstream is claimed for it**.
+* **The composed run, at the same three pnp4 hypotheses.** The pnp4 wrapper
+  `first_payload_second_payload_markers_loop_decrement_countdown_drained_accepted_content_at_polyClock`
+  takes exactly G3a's parse, acceptance and `3 ≤ pr.2.n`, at `B := polyClock 3 (pairLength a m)`,
+  and derives the cap `pr.2.n ≤ N`, `11 ≤ N`, the tag, the header, the width, the switch time
+  `S = 2N + zeros - 6`, the clock `C = S + secondChainClock N zeros d pr.2.n ≤ B`, the handoff
+  itself, and the composed accept at `C`, at `B` and at every later time, on the separator blank
+  `N+2+zeros` with tape `loopTape B x w zeros 0 pr.2.n`.
+* **Probes execute the composed table, they do not restate it.** Six `*_start` lemmas identify the
+  actual composed `startConfig B tag ·` with an explicit configuration using only G2p-a's landed
+  bootstrap endpoint theorems, which execute nothing; kernel reduction then reads H13 back at four
+  positive widths and at width zero (`N = 17` clock `32`, `N = 12` clock `20`, `N = 11` clock `18`
+  on the virtual source, `N = 11` clock `17`, and the length-free `6`), reads the four inherited
+  handoffs at steps `58`/`59`, `69`/`70`, `133`/`134` and `151`/`152` — G3a's `26`/`27`, `37`/`38`,
+  `101`/`102` and `119`/`120` shifted by the `32` steps G2p-b takes — and reduces the routed reject.
+  The register value `24 > N = 17` is supplied by hand, so the pnp3 fixture is an execution fixture
+  and not evidence for the pnp4 cap.
+
+Deferred and deliberately not claimed. **Five handoffs of seventeen**: the composed `startConfig`
+still embeds every earlier phase — the twelve handoffs from the sentinel through G2p-a's bootstrap
+remain proof-level identifications, no `initialConfig` on a raw pair input is executed, and no clock
+here counts a step of any earlier phase. Composing the next handoff down — G2p-a's bootstrap into
+G2p-b — needs no new first-arrival theorem either: G2p-a's `strict_first_terminal` and
+`exactClock_le_deadline` are landed, so what is owed there is that composition itself. **First
+arrival of the composed accept**: `S` is the first time H13 fires, but nothing says `C` is the first
+time the composed accept is entered, since G2s-a and G2u prove no first arrival for `qDone`; the
+first arrival proved here is G2p-b's, inside the left block. **The fence**: all six tables are
+unfenced, hence so is the composition; an oversized register still runs off the end of the tape and
+sticks, a timeout and neither verdict. The routed reject is exercised on a malformed gamma only:
+**no** rejection converse, no `RejectsAt`, and no parsed-target rejection characterisation. **Small
+targets** `0`, `1`, `2` stay excluded by `3 <= pr.2.n`, and width zero gets the switch and nothing
+else. **Every converse**, a **footprint** theorem — so every room premise is sufficient and used,
+never shown necessary — every witness-check phase, and the **model connection**: this is a V1
+`UniformTM` on `Option Bool` cells laid out against `pairLength a m`, while `ContentVerifierBridge`
+asks for the legacy `TM` with a `runTime` field on `concatBitstring x w`, and caveat 6 of
+`VERIFIER_RETARGET_PLAN.md` is untouched. The composed accept is the countdown's phase-local
+`qDone`: reaching it out of a retagged actual prior endpoint is neither halting on a raw input nor
+language acceptance, and no `accepts`, `AcceptsAt`, `DecidesWithin`, `UniformP`, `VerifiesRelation`,
+`NP` membership or `ContentVerifierBridge` fact is stated. Neither `SearchMCSPWeakLowerBound` nor
+`VerifiedNPDAGLowerBoundSource` is reduced. Infrastructure only.
 
 **Part A G3b, the exact first arrival of the first-payload phase: the prerequisite the next
 sequential composition was missing (infrastructure only).** No new module, no new machine and no new
@@ -45,9 +121,11 @@ premise for this concrete machine, and nothing else.
   gamma (clock `1`). No probe appeals to the theorem it checks.
 
 Deferred and deliberately not claimed. **No composition is built here**: G3b states no `seq`, no
-composed machine, no composed clock and no new handoff, so **four of the seventeen** handoffs are
-still the ones performed by a finite table and the thirteen earlier ones remain proof-level
-identifications. What blocks that composition is now the composition itself, not a missing premise.
+composed machine, no composed clock and no new handoff, so **four of the seventeen** handoffs were
+still the ones performed by a finite table when this slice landed and the thirteen earlier ones
+remained proof-level identifications. What blocked that composition was then the composition itself,
+not a missing premise; Part A G3c above has since built it, taking the count to five, so the counts
+in this G3b entry are the ones this slice left.
 **No converse**: nothing says that `qDone` at the exact clock implies a positive width, nor that
 `qReject` implies a malformed gamma, and no theorem covers a positive width without room. The
 **fence** is unchanged — the table is uncapped, and this slice adds no cap. `qDone` is an internal
@@ -159,8 +237,9 @@ payload remain proof-level identifications, no `initialConfig` on a raw pair inp
 no clock here counts a step of any earlier phase. Composing the next handoff down — G2p-b's first
 payload into G2p-c — was **blocked on a missing first-arrival theorem** when this slice landed:
 G2p-b exported its endpoint at its deadline but no `first_payload_strict`, as recorded under G2x
-below. Part A G3b above has since supplied that premise; the composition itself is still not built,
-so the counts in this G3a entry are unchanged. **First arrival of the
+below. Part A G3b above has since supplied that premise and Part A G3c above has since executed that
+handoff as H13, taking the count to five, so the counts in this G3a entry are the ones this slice
+left. **First arrival of the
 composed accept**: `S` is the first time H14 fires, but nothing says `C` is the first time the
 composed accept is entered, since G2s-a and G2u prove no first arrival for `qDone`; the first
 arrival proved here is G2p-c's, inside the left block. **The fence**: all five tables are unfenced,

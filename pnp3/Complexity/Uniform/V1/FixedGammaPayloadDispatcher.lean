@@ -406,6 +406,30 @@ theorem zero_width_exact {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
   · apply Fin.ext; exact hhead
   · exact htape
 
+/-- The cursor phase's first payload read, transported to the dispatcher: at the
+shared clock `2 * zeros + 3` the dispatcher is in the working state `qCursorRead`
+over the first payload cell.  This is a routed working configuration, not an
+endpoint, and it reads no payload symbol here. -/
+theorem first_read_exact {a m B zeros : Nat} (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
+    (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros)
+    (hzero : 0 < zeros) :
+    let d := machine.run (2 * zeros + 3) (startConfig B x w)
+    d.state = qCursorRead ∧ d.head.val = 9 + zeros := by
+  have hend := FixedGammaPayloadCursorCore.first_read_reachable (B := B) x w htag hg hzero
+  dsimp only at hend
+  have hneq : (FixedGammaPayloadCursorCore.machine.run (2 * zeros + 3)
+      (FixedGammaPayloadCursorCore.startConfig B x w)).state ≠
+      FixedGammaPayloadCursorCore.qNextFalse := by rw [hend.1]; decide
+  dsimp only
+  rw [actual_start_eq_core x w htag,
+    core_run_embed_of_avoids _ _ (avoids_next_of_final _ hneq)]
+  refine ⟨?_, hend.2.1⟩
+  change coreState (FixedGammaPayloadCursorCore.machine.run (2 * zeros + 3)
+    (FixedGammaPayloadCursorCore.startConfig B x w)).state = qCursorRead
+  rw [hend.1]
+  decide
+
 /-- Activated `k = 0` physical-true path, ending at the distinct internal endpoint. -/
 theorem first_true_exact {a m B zeros : Nat} (x : Bitstring a) (w : Bitstring m)
     (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)

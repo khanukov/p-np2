@@ -119,6 +119,9 @@ lean_lib PnP3 where
     Glob.one `Complexity.Uniform.V1.FixedGammaPayloadDispatcher,
     Glob.one `Complexity.Uniform.V1.FixedGammaPayloadDispatcherRounds,
     Glob.one `Complexity.Uniform.V1.FixedGammaPayloadDispatcherDeadline,
+    -- Part A G3f strict first arrival of the dispatcher's three absorbing
+    -- endpoints; still no routing of the two non-reject outcomes.
+    Glob.one `Complexity.Uniform.V1.FixedGammaPayloadDispatcherFirstArrival,
     -- Part A G2p-a fixed terminator-marker to scratch-cell bootstrap.
     Glob.one `Complexity.Uniform.V1.FixedGammaTerminatorScratchBootstrap,
     -- Part A G2p-b fixed first gamma payload bit into the target scratch register.
@@ -841,6 +844,7 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1FixedGammaPayloadDispatcherSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaPayloadDispatcherRoundsSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaPayloadDispatcherDeadlineSurfaceTests,
+    Glob.one `Tests.UniformV1FixedGammaPayloadDispatcherFirstArrivalSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaTerminatorScratchBootstrapSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaTargetFirstPayloadSurfaceTests,
     Glob.one `Tests.UniformV1FixedGammaTargetSecondPayloadSurfaceTests,

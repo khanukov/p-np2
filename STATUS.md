@@ -2,6 +2,83 @@
 
 Updated: 2026-09-26
 
+**Part A G3f, the strict first terminal arrival of the gamma-payload dispatcher: the first of the
+two blockers on H11, and only that one (infrastructure only).** One new pnp3 module,
+`Complexity.Uniform.V1.FixedGammaPayloadDispatcherFirstArrival`, and its surface test. **No new
+table row and no new machine**: G2k's fixed 28-state, 84-row dispatcher table is untouched, and the
+only edit to a landed implementation module is one added theorem,
+`FixedGammaPayloadDispatcher.first_read_exact`, which lives there because the embedding it
+transports is private to that module. Write
+`N = a+m`.
+
+The G3e entry below records H11 — G2m's payload dispatcher into G2p-a — as blocked twice over: no
+first-arrival theorem for the dispatcher's own terminal, and *two* non-reject absorbing outcomes.
+G3f removes the first blocker and **nothing else**; the second stands, so the handoff count is
+still **six of seventeen** and no H11 composite table exists.
+
+* **The terminal set is derived from the table, not chosen.** `IsTerminal q` is
+  `q = qAllZero ∨ q = qHasOne ∨ q = qReject`, and `isTerminal_iff_absorbing` proves it equivalent,
+  in both directions over all 28 states, to `∀ s, machine.step q s = (q, s, .stay)` — so it is
+  exactly the absorbing part of the fixed table. `terminals_distinct` pins the three apart, pins
+  `machine.accept = qAllZero` and `machine.reject = qReject`, and pins that `qHasOne` is neither.
+* **Strictness is against *any* endpoint, not the path's own.** `StrictFirstTerminalAt B x w C q`
+  asserts the state at `C` is `q`, that `q` is terminal, and that **no** terminal of any of the
+  three occurs at any `s < C`, all on the actual `startConfig B x w` — the retagged G2a deadline
+  run — and at the actual path-dependent clock. Nothing is generic in a machine, and there is no
+  `Source`, `Contract` or `Provider` wrapper and no structure field.
+* **Seven outcome theorems, no room premise anywhere.** Malformed gamma: `qReject` at `1`, head
+  `N`, 2 hypotheses. Width zero: `qAllZero` at `2`, on its own historical head `7`, 2 hypotheses.
+  First payload cell physically `true`: `qHasOne` at `3*zeros + 6`, head `6`, 5 hypotheses; the
+  same cell virtual: `qAllZero` at the *same* clock, head `6`, 4 hypotheses. A `true` cell at a
+  positive `k < zeros`: `qHasOne` at `pendingEndClock zeros k`, 6 hypotheses; virtual there:
+  `qAllZero` at the same clock, 6 hypotheses. A payload `false` in all `zeros` cells: `qAllZero` at
+  `zeroEndClock zeros`, 4 hypotheses. Here `pendingEndClock zeros k =
+  2*zeros*k + 3*zeros + 5*k + 8` for `1 ≤ k`, and `zeroEndClock zeros =
+  2*zeros*zeros + 8*zeros + 6` for `0 < zeros`. Each also carries the head and the tape at its
+  clock. Unlike G3b, no statement needs a room premise or an additional width cutoff.
+* **Four of the seven are new content; three are a repackaging, and the module says so.**
+  `malformed_exact`, `zero_width_exact`, `first_true_exact` and `first_virtual_exact` carried no
+  exclusion conjunct at all. G2l's `TrueExecution`/`VirtualExecution`/`ZeroExecution` bundles
+  already excluded their own endpoint before the clock and the other two at every time, so for the
+  two pending paths and the exhausted one the work is assembling the three into the single form.
+* **The reusable step is absorption.** `run_frozen_of_terminal` freezes the whole
+  configuration from a terminal onward; `no_terminal_of_le` contraposes it, so one terminal-free
+  checkpoint clears every earlier time. The two `k = 0` cleanups had no intermediate checkpoint, so
+  the slice adds one — the cursor read, `qCursorRead` at cell `9+zeros` at time `2*zeros + 3` — and
+  closes the remaining window on a leftward head bound: the endpoint is at cell `6` at
+  `3*zeros + 6`, and `zeros + 3` transitions is exactly that distance, so no terminal fits in
+  between.
+* **One existential over every tagged input, one direction only.** `tagged_strict_first_terminal`
+  produces, from `tagMatches = true` alone, some `C ≤ deadline N = 2*N*N` and some `q` with
+  `StrictFirstTerminalAt B x w C q` and `machine.run (deadline N) (startConfig B x w) =
+  machine.run C (startConfig B x w)` — so G2m's deadline classification reads back verbatim at the
+  first arrival and the dispatcher needs no deadline padding to be stopped. It produces a `C`; it
+  says **nothing** about which parsed target an endpoint characterises, and there is no converse.
+* **Eight probes execute the table.** `check_probe_reductions` identifies the actual
+  `startConfig 0 tag ·` with G2a's landed `finalConfig` — `run_deadline` executes the anchor and
+  nothing later — and then reduces the dispatcher by kernel computation at eight fixtures across
+  five content lengths (`N = 10, 11, 12, 13, 17`), reading back the working state one step before
+  each clock at seven distinct states and the endpoint index and head at it. It appeals to none
+  of the slice's theorems, so the clocks
+  are cross-checked against the table and not only against the proofs; the `check_*_probe`
+  wrappers separately derive the same arrivals from the theorems.
+
+Deferred and deliberately not claimed. **The second H11 blocker stands**: `qHasOne` is still a
+second non-reject absorbing outcome, and `UniformTM.seq` routes the left machine's `accept` and
+`reject` only, so the generic combinator still does not apply to this dispatcher unchanged. **No
+composition is built here**: no `seq`, no composed machine, no composed clock, no new handoff and
+no pnp4 bridge, so **six of the seventeen** handoffs remain the ones performed by a finite table
+and the eleven earlier ones remain proof-level identifications. **No converse**: nothing says that
+`qHasOne` at its clock implies a `true` payload cell, nor that `qReject` implies a malformed gamma;
+the implications run from the parsed shape to the endpoint only. The **fence** is unchanged — the
+dispatcher table is uncapped, and this slice adds no cap. The three endpoints are internal states
+reached out of a retagged actual prior endpoint: that is neither halting on a raw input nor
+language acceptance, and no statement in the slice mentions `accepts`, `AcceptsAt`,
+`DecidesWithin`, `UniformP`, `VerifiesRelation`, `NP` membership or `ContentVerifierBridge`; no
+bridge instance is constructed. Neither `SearchMCSPWeakLowerBound` nor
+`VerifiedNPDAGLowerBoundSource` is reduced.
+Infrastructure only.
+
 **Part A G3e, the executed scratch-bootstrap → G3c handoff: the same generic sequential composition
 applied a sixth time, one block further left, at the same cubic budget (infrastructure only).**
 One new pnp3 module,
@@ -68,12 +145,14 @@ Deferred and deliberately not claimed. **Six handoffs of seventeen**: the compos
 still embeds every earlier phase — the eleven handoffs from the sentinel through G2m's dispatcher
 deadline remain proof-level identifications, no `initialConfig` on a raw pair input is executed, and
 no clock here counts a step of any earlier phase. Composing the next handoff down, **H11** — G2m's
-dispatcher into G2p-a — is **not** in the same position, and is blocked twice over:
-`FixedGammaPayloadDispatcherDeadline` exports the deadline-indexed endpoint classification but no
-first-arrival theorem for its own terminal, so that composition needs a new first-arrival slice
-first, the way G3b had to precede G3c; and the dispatcher has *two non-reject* absorbing outcomes,
-`qAllZero` (its `machine.accept`) and `qHasOne`, of which `UniformTM.seq` routes only the first, so the
-generic combinator does not apply to it unchanged. **First arrival of the composed accept**: `S` is the first time H12 fires, but
+dispatcher into G2p-a — is **not** in the same position, and was blocked twice over when this slice
+landed: `FixedGammaPayloadDispatcherDeadline` exported the deadline-indexed endpoint classification
+but no first-arrival theorem for its own terminal, so that composition needed a new first-arrival
+slice first, the way G3b had to precede G3c; and the dispatcher has *two non-reject* absorbing
+outcomes, `qAllZero` (its `machine.accept`) and `qHasOne`, of which `UniformTM.seq` routes only the
+first, so the generic combinator does not apply to it unchanged. Part A G3f above has since closed
+the first of those two blockers, and only that one: the second stands, so H11 is still not
+composed and the count below is unchanged. **First arrival of the composed accept**: `S` is the first time H12 fires, but
 nothing says `C` is the first time the composed accept is entered, since G2s-a and G2u prove no
 first arrival for `qDone`; the first arrival proved here is G2p-a's, inside the left block. **The
 fence**: all seven tables are unfenced, hence so is the composition; an oversized register still

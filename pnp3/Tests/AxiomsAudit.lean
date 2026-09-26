@@ -5458,8 +5458,9 @@ end DeprecatedAC0CompatibilityAxiomAudit
 
 -- Part A G3c (2026-09-26), infrastructure only: G2p-b's 18-state first-payload table and that
 -- whole G3a composite as one closed 86-state, 258-row table, `FixedGammaTargetFirstPayload.machine
--- |>.seq FixedGammaTargetSecondPayloadMarkersLoopDecrementCountdown.machine`.  No new machine, no
--- new table row and no new first-arrival theorem: Part A G3b already landed G2p-b's arrival
+-- |>.seq FixedGammaTargetSecondPayloadMarkersLoopDecrementCountdown.machine`.  This is one new
+-- composed machine, but adds no component table row and no new first-arrival theorem: Part A G3b
+-- already landed G2p-b's arrival
 -- (`first_payload_exact`), minimality (`first_payload_strict`) and deadline cover
 -- (`exactClock_le_deadline`) at every decoded width, and `run_accept_of_le` identifies the run at
 -- the first arrival with the run at the length-only deadline `3 * N` that G2p-c's `startConfig`,

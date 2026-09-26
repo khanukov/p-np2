@@ -40,8 +40,9 @@ dispatcher's configuration at `C` with the G2m deadline configuration G2p-a's `s
 through it G3e's, retags; it is used in that direction only.
 
 **Both outcomes route, the reject stays rejecting, the verdict is merged.**  With `q = qAllZero`
-or `q = qHasOne` the merged control at `C` is `qAllZero` and the same routed row fires on the same
-head and tape; before `C` no terminal of any kind occurs, so no merged accept does.  On a malformed
+or `q = qHasOne` the merged control at `C` is `qAllZero`, and the same row the standalone dispatcher
+takes is routed on the same head and tape; before `C` no terminal of any kind occurs, so no merged
+accept does.  On a malformed
 gamma the composed control is the composed reject `122` from step `1` on.  Head and tape are
 preserved at every time up to `C`, and the switch hands G2p-a exactly its own `startConfig`
 projections (`handoff_endpoint_pins`).  The composed control after the switch does not record

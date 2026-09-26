@@ -195,7 +195,8 @@ no witness-check phase exists, so this is not the runtime proof either. The next
 dispatcher's three terminals, with equality to the deadline configuration. Part A G3g closes the
 second — the dispatcher's *two non-reject* absorbing outcomes, `qAllZero` (its `machine.accept`)
 and `qHasOne`, of which `UniformTM.seq` routes only the first — by the generic table transformation
-`UniformTM.mergeAccept`, which retargets the two rows into `qHasOne` at `qAllZero` and leaves
+`UniformTM.mergeAccept`, which retargets the two working-state rows into `qHasOne` at `qAllZero`
+and leaves
 `qHasOne` dead, and then executes H11 inside a single composed 123-state machine,
 `(dispatcher.mergeAccept qHasOne).seq` the G3e composite, switching at the dispatcher's strict first
 terminal time, which is input-dependent and has no length-only form. The two successful verdicts

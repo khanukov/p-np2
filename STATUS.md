@@ -44,8 +44,9 @@ seventeen handoffs are now performed by a finite table and **ten** remain proof-
   the universal right-block row equation.
 * **The switch time is input-dependent.** Unlike every earlier handoff, H11 fires at the
   dispatcher's strict first terminal time `C` of G3f's `StrictFirstTerminalAt B x w C q`, one of
-  seven closed forms selected by the payload (`1`, `2`, `3*zeros+6`, `pendingEndClock zeros k`,
-  `zeroEndClock zeros`); there is no length-only formula. `handoff_of_first_terminal` takes that
+  seven path cases selected by the payload, sharing five closed forms (`1`, `2`, `3*zeros+6`,
+  `pendingEndClock zeros k`, `zeroEndClock zeros`); there is no length-only formula.
+  `handoff_of_first_terminal` takes that
   first arrival, `q ≠ qReject` and `C ≤ deadline N` as hypotheses and concludes: no composed
   verdict before `C`; the composed run is G2k's own run merged and routed up to and including `C`,
   with the same head and whole tape at every such time; at exactly `C` it **is** G3e's landed
@@ -55,7 +56,8 @@ seventeen handoffs are now performed by a finite table and **ten** remain proof-
   packages the switch existentially from those two hypotheses alone.
 * **Both outcomes route, the reject stays rejecting, and the verdict is merged exactly where the
   chain already discards it.** With `q = qAllZero` or `q = qHasOne` the merged control at `C` is
-  `qAllZero` and the same routed row fires on the same head and tape; `handoff_endpoint_pins` reads
+  `qAllZero` and the same row the standalone dispatcher takes is routed on the same head and tape;
+  `handoff_endpoint_pins` reads
   the switch configuration back as G2p-a's own `startConfig` projections — the unchanged
   `contentTape` and the cleaned head, `7` at width zero and `6` otherwise. The composed control
   after the switch does not record which of the two the dispatcher reached; G2p-a's landed

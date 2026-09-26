@@ -3,15 +3,15 @@
 Updated: 2026-09-26
 
 **Part A G3g, the executed dispatcher → G3e handoff H11 by accept merging: a generic table
-transformation and the same sequential composition applied a seventh time, one block further left,
-at the same cubic budget (infrastructure only).** Two new pnp3 modules,
+transformation and the same sequential composition applied a seventh time, one block further left
+(infrastructure only).** Two new pnp3 modules,
 `Complexity.Uniform.V1.AcceptMerge` (generic) and
 `Complexity.Uniform.V1.FixedGammaPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown`
-(concrete), with their surface tests. **No new table row and no edit to any landed module.** The
-concrete machine is G2k's fixed 28-state, 84-row payload dispatcher with its second successful
-absorbing endpoint `qHasOne` merged into its `accept` `qAllZero`, followed by the whole G3e 95-state
-composite, as one closed 123-state, 369-row table,
-`(FixedGammaPayloadDispatcher.machine.mergeAccept qHasOne).seq
+(concrete), with their surface tests. **No new table row and no landed module's code edited**; one
+stale sentence in G3f's module docstring is corrected. The concrete machine is G2k's fixed
+28-state, 84-row payload dispatcher with its second successful absorbing endpoint `qHasOne` merged
+into its `accept` `qAllZero`, followed by the whole G3e 95-state composite, as one closed 123-state,
+369-row table, `(FixedGammaPayloadDispatcher.machine.mergeAccept qHasOne).seq
 FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.machine`.
 Write `N = a+m` and `d = borrow x w zeros`.
 
@@ -70,9 +70,10 @@ seventeen handoffs are now performed by a finite table and **ten** remain proof-
   first arrival — eight, none redundant — and lands the composed accept `121` at exactly
   `dispatcherChainClock C N zeros d v = C + bootChainClock N zeros d v` on the separator blank
   `N+2+zeros` with tape `loopTape B x w zeros 0 v`, persisting.
-* **Probes.** The surface test reuses G3f's eight words, whose switch times are `2`, `16`, `12`,
-  `18`, `12`, `23`, `23`, three of them through the retargeted rows. It derives H11 through both
-  success endpoints (`physWord` via `qHasOne`, `oneWord` via `qAllZero`) from
+* **Probes.** The surface test reuses G3f's eight words. The seven well-formed ones switch at `2`,
+  `16`, `12`, `18`, `12`, `23`, `23`, three of them through the retargeted rows; the malformed word
+  has no switch time at all — its first terminal is the reject at step `1`. It derives H11
+  through both success endpoints (`physWord` via `qHasOne`, `oneWord` via `qAllZero`) from
   `handoff_of_first_terminal` and G3f's path theorems, the handed-over head and tape from
   `handoff_endpoint_pins`, the drain at the physical fixture at `B = 22` after `1116` steps, and the
   malformed reject; and it independently reduces the composed machine by kernel computation one

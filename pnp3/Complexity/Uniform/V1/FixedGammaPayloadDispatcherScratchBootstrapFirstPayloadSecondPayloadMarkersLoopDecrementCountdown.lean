@@ -31,18 +31,18 @@ to H17 (`109 → 112`) are inherited from G3e, its indices shifted by twenty-eig
 row equation.
 
 **The switch time is input-dependent.**  H11 fires at the dispatcher's strict first terminal time
-`C` of G3f's `StrictFirstTerminalAt B x w C q`, one of seven closed forms selected by the payload;
-no length-only formula exists.  `handoff_of_first_terminal` takes that first arrival, `q ≠ qReject`
-and `C ≤ deadline N` as hypotheses; `side_premises_of_strictFirstTerminalAt` derives the latter two
-from a matching tag and a decoded width, `strictFirstTerminalAt_unique` pins the arrival unique and
-`tagged_handoff` packages the switch existentially.  The deadline premise identifies the
-dispatcher's configuration at `C` with the G2m deadline configuration G2p-a's `startConfig`, and
-through it G3e's, retags; it is used in that direction only.
+`C` of G3f's `StrictFirstTerminalAt B x w C q`, one of seven terminal path cases that share five
+formulas; no length-only formula exists.  `handoff_of_first_terminal` takes that first arrival,
+`q ≠ qReject` and `C ≤ deadline N` as hypotheses; `side_premises_of_strictFirstTerminalAt` derives
+the latter two from a matching tag and a decoded width, `strictFirstTerminalAt_unique` pins the
+arrival unique and `tagged_handoff` packages the switch existentially.  The deadline premise
+identifies the dispatcher's configuration at `C` with the G2m deadline configuration G2p-a's
+`startConfig`, and through it G3e's, retags; it is used in that direction only.
 
 **Both outcomes route, the reject stays rejecting, the verdict is merged.**  With `q = qAllZero`
-or `q = qHasOne` the merged control at `C` is `qAllZero`, and the same row the standalone dispatcher
-takes is routed on the same head and tape; before `C` no terminal of any kind occurs, so no merged
-accept does.  On a malformed
+or `q = qHasOne` the merged control at `C` is `qAllZero`, and the same row the standalone
+dispatcher takes is routed, on the same head and tape — for `q = qHasOne` one of the two
+retargeted rows.  Before `C` no terminal occurs at all, so no merged accept does.  On a malformed
 gamma the composed control is the composed reject `122` from step `1` on.  Head and tape are
 preserved at every time up to `C`, and the switch hands G2p-a exactly its own `startConfig`
 projections (`handoff_endpoint_pins`).  The composed control after the switch does not record

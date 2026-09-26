@@ -2356,8 +2356,9 @@ caveat 6 of `VERIFIER_RETARGET_PLAN.md` is untouched. Neither `SearchMCSPWeakLow
 
 The Part A G3g `Complexity.Uniform.V1.AcceptMerge` and
 `Complexity.Uniform.V1.FixedGammaPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown`
-close the second H11 blocker and execute H11, with no new table row and no edit to any landed
-module.  The generic half is a table transformation: `M.mergeAccept e` keeps `M`'s states,
+close the second H11 blocker and execute H11, with no new table row and no landed module's code
+edited (one stale sentence of G3f's module docstring is corrected).  The generic half is a table
+transformation: `M.mergeAccept e` keeps `M`'s states,
 `accept` and `reject`, and retargets, in the start and in every raw row, a target `e` to
 `M.accept` (`mergeState`), leaving every written symbol and move untouched.  With `e` neither
 verdict of `M`, `e` is a dead index -- no merged row targets it (`mergeAccept_step_ne`) and no
@@ -2379,8 +2380,9 @@ G3e's blocks at offsets `28`, `37`, `55`, `69`, `83`, `105`, `112`.  H11 has six
 into `28`: the four that already targeted `qAllZero` (`1`, `9` on the blank; `19`, `24` on `true`)
 and the two retargeted ones (`8` on the blank; `23` on `true`); the left copies of the three
 endpoints are dead.  H12 (`34 -> 37`) to H17 (`109 -> 112`) are inherited.  The switch time is the
-dispatcher's strict first terminal time `C` of G3f's `StrictFirstTerminalAt B x w C q`, one of the
-seven closed forms selected by the payload; no length-only formula exists.
+dispatcher's strict first terminal time `C` of G3f's `StrictFirstTerminalAt B x w C q`, one of
+seven terminal path cases selected by the payload, which share five formulas (`1`, `2`,
+`3*zeros+6`, `pendingEndClock zeros k`, `zeroEndClock zeros`); no length-only formula exists.
 `handoff_of_first_terminal` takes it, `q ≠ qReject` and `C ≤ deadline N` as hypotheses and
 concludes no composed verdict before `C`, the composed run as G2k's own run merged and routed up
 to and including `C` (same head and whole tape), G3e's landed `startConfig B x w` re-embedded at
@@ -2390,7 +2392,9 @@ decoded width, `tagged_handoff` packages the switch
 existentially from those two alone, and `handoff_endpoint_pins` reads the switch configuration
 back as G2p-a's own `startConfig` projections -- the unchanged `contentTape` under head `7` at
 width zero and `6` otherwise.  With `q = qAllZero` and with `q = qHasOne` the merged control at
-`C` is `qAllZero` and the same row fires; the composed control after the switch does not record
+`C` is `qAllZero`, and the same row the standalone dispatcher takes is routed, on the same head
+and tape — for `q = qHasOne` it is one of the two retargeted rows.  The composed control after
+the switch does not record
 which, exactly as G2p-a's landed `retagDispatcher` already discards it, and G2m's `qHasOne_iff`
 family remains about the standalone dispatcher.  The drained theorem takes G3e's seven hypotheses
 plus the first arrival and lands the composed accept at exactly `dispatcherChainClock C N zeros d
@@ -2400,8 +2404,9 @@ from step one on a malformed gamma, forward direction only.
 
 The surface tests reduce a four-state literal with two success endpoints, its merge, the routed
 composition and the unmerged composition as a negative control (which sticks in the dead left
-state), and, on G3f's eight words (switch times `2`, `16`, `12`, `18`, `12`, `23`, `23`, three
-through the retargeted rows), derive H11 through both success endpoints, the handed-over head and
+state), and, on G3f's eight words (the seven well-formed ones switch at `2`, `16`, `12`, `18`,
+`12`, `23`, `23`, three through the retargeted rows; the malformed word never switches), derive
+H11 through both success endpoints, the handed-over head and
 tape, the drain at the physical fixture at `B = 22` after `1116` steps and the malformed reject,
 and independently reduce the composed machine one step before and at the switch on all seven
 well-formed words, the inherited H12 and H13 at steps `36`/`37` and `68`/`69`, and the composed

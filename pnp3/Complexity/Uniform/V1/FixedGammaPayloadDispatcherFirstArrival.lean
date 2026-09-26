@@ -36,8 +36,8 @@ at time `2 * zeros + 3`, the endpoint at cell `6` at time `3 * zeros + 6`, and
 `zeros + 3` transitions is exactly the distance.
 
 Not here: `qHasOne` is still a second non-reject absorbing outcome, which
-`UniformTM.seq` cannot route, so H11 is not composed and no H11 composite table
-exists; and no statement below mentions raw-input acceptance, `AcceptsAt`,
+`UniformTM.seq` cannot route, so H11 is not composed here; Part A G3g's merged
+composite does that, and no statement below mentions raw-input acceptance, `AcceptsAt`,
 `DecidesWithin`, a language, or `ContentVerifierBridge`.
 -/
 

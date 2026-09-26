@@ -4,9 +4,10 @@ import Complexity.Uniform.V1.AcceptMerge
 Surface pins for the Part A G3g generic half: the accept merge `M.mergeAccept e` of a fixed
 `UniformTM`, which retargets every row aiming at a second absorbing successful endpoint `e` to
 `M.accept`, so that the landed `UniformTM.seq` routes both endpoints into the next machine's start.
-Every public declaration is restated in full; `check_mergeState_pins` bundles the retargeting-map
-facts, `check_mergeAccept_step` the three row equations and `check_mergeAccept_runs` the four run
-facts.
+Every public declaration is restated; `check_mergeState_pins` bundles the retargeting-map facts,
+`check_mergeAccept_step` the three row equations and `check_mergeAccept_runs` the four run facts,
+each bundled conjunct carrying exactly the hypotheses of the declaration it pins, so none of the
+four hypothesis-free or one-hypothesis facts is restated under a stronger premise.
 
 The literal probe.  `twin` has four states: on a blank it writes `some true`, moves right and
 accepts; on `true` it stops in its second absorbing endpoint `e3 = ⟨3, _⟩`, neither verdict; on

@@ -1669,11 +1669,13 @@ three right-block row equations.
 Caveats specific to G3e. It is **six handoffs of seventeen**: the composed `startConfig` still
 embeds every earlier phase, the eleven handoffs before H12 stay proof-level, no `initialConfig` on
 a raw pair input is executed, and no clock counts a step of any earlier phase; the next handoff
-down, **H11** from G2m's payload dispatcher into G2p-a, is blocked twice over —
-`FixedGammaPayloadDispatcherDeadline` exports the deadline-indexed endpoint classification but no
-first-arrival theorem for its own terminal, so it needs a G3b-style slice first, and it has *two*
-non-reject absorbing outcomes, `qAllZero` (its `machine.accept`) and `qHasOne`, of which `UniformTM.seq`
-routes only the first, so the generic combinator does not apply to it unchanged. `S` is the first
+down, **H11** from G2m's payload dispatcher into G2p-a, remains uncomposed. Part A G3f's pnp3
+`FixedGammaPayloadDispatcherFirstArrival` closes the first of its two blockers: strict first
+arrival at any dispatcher terminal, with equality to the deadline configuration. The second
+blocker stands: *two* non-reject absorbing outcomes, `qAllZero` (its `machine.accept`) and
+`qHasOne`, of which `UniformTM.seq` routes only the first, so the generic combinator does not apply
+to it unchanged. G3f adds no composite table, executed handoff or pnp4 bridge; the count stays
+**six of seventeen**. G3f is Infrastructure only. `S` is the first
 time H12 fires, but no theorem says `C` is the first time the composed accept is entered; the first
 arrival proved is G2p-a's, inside the left block. All seven tables are unfenced, hence so is the
 composition: accepted words never overflow the lane, since `pr.2.n ≤ N` is derived, but an

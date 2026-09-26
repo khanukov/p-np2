@@ -21,11 +21,11 @@ fixtures therefore exercise all seven of the slice's outcome theorems — `first
 `check_probe_instances` inhabits the hypotheses at those literals and `check_probe_clocks`
 reduces the literal path clocks.  `check_*_probe` **derives** the first arrival at each
 literal from the slice's theorem, while `check_probe_reductions` is **independent** of those
-theorems: it identifies the actual `startConfig 0 tag ·` with G2a's landed `finalConfig` —
-`run_deadline` executes the anchor, nothing later — and then reduces the dispatcher by kernel
-computation, reading back the working state one step before each clock and the endpoint index
-and head at it.  So the clocks are cross-checked against the table, not only against the
-proofs.
+theorems: it identifies the actual `startConfig 0 tag ·` with G2a's landed `finalConfig` using
+`probe_start` and the proved `run_deadline` equality, which execute nothing there, and then reduces
+the dispatcher by kernel computation, reading back the working state one step before each clock
+and the endpoint index and head at it. So the clocks are cross-checked against the table, not
+only against the proofs.
 
 Not here: `qHasOne` remains a second non-reject absorbing endpoint, so no `UniformTM.seq`
 routing, no H11 composite and no composed clock; and no `accepts`, `AcceptsAt`,
@@ -351,7 +351,7 @@ theorem check_pending_virtual_probe :
 /-! ### Independent kernel reductions of the same clocks -/
 
 /-- The actual dispatcher `startConfig B tag ·` is G2a's landed `finalConfig`, retagged.
-`run_deadline` executes the anchor phase and nothing later. -/
+The proved `run_deadline` equality identifies the anchor endpoint; it executes nothing here. -/
 private theorem probe_start {a m : Nat} (B : Nat) (x : Bitstring a) (w : Bitstring m)
     (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true) :
     startConfig B x w = retagG2a (FixedContentGammaAnchor.finalConfig B x w) :=

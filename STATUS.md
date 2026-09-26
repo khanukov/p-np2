@@ -11,8 +11,8 @@ only edit to a landed implementation module is one added theorem,
 transports is private to that module. Write
 `N = a+m`.
 
-The G3e entry below records H11 — G2m's payload dispatcher into G2p-a — as blocked twice over: no
-first-arrival theorem for the dispatcher's own terminal, and *two* non-reject absorbing outcomes.
+When G3e landed, H11 — G2m's payload dispatcher into G2p-a — had two blockers: missing
+first arrival for the dispatcher's own terminal, and *two* non-reject absorbing outcomes.
 G3f removes the first blocker and **nothing else**; the second stands, so the handoff count is
 still **six of seventeen** and no H11 composite table exists.
 
@@ -21,6 +21,8 @@ still **six of seventeen** and no H11 composite table exists.
   in both directions over all 28 states, to `∀ s, machine.step q s = (q, s, .stay)` — so it is
   exactly the absorbing part of the fixed table. `terminals_distinct` pins the three apart, pins
   `machine.accept = qAllZero` and `machine.reject = qReject`, and pins that `qHasOne` is neither.
+  It also pins `¬ IsTerminal qCursorStart` and `¬ IsTerminal qCursorRead`, the two working
+  checkpoints used in the strictness proofs.
 * **Strictness is against *any* endpoint, not the path's own.** `StrictFirstTerminalAt B x w C q`
   asserts the state at `C` is `q`, that `q` is terminal, and that **no** terminal of any of the
   three occurs at any `s < C`, all on the actual `startConfig B x w` — the retagged G2a deadline
@@ -53,12 +55,13 @@ still **six of seventeen** and no H11 composite table exists.
   `StrictFirstTerminalAt B x w C q` and `machine.run (deadline N) (startConfig B x w) =
   machine.run C (startConfig B x w)` — so G2m's deadline classification reads back verbatim at the
   first arrival and the dispatcher needs no deadline padding to be stopped. It produces a `C`; it
-  says **nothing** about which parsed target an endpoint characterises, and there is no converse.
+  states no parsed-target characterisation or converse of its tagged-input existence implication.
 * **Eight probes execute the table.** `check_probe_reductions` identifies the actual
-  `startConfig 0 tag ·` with G2a's landed `finalConfig` — `run_deadline` executes the anchor and
-  nothing later — and then reduces the dispatcher by kernel computation at eight fixtures across
-  five content lengths (`N = 10, 11, 12, 13, 17`), reading back the working state one step before
-  each clock at seven distinct states and the endpoint index and head at it. It appeals to none
+  `startConfig 0 tag ·` with G2a's landed `finalConfig` using `probe_start` and the proved
+  `run_deadline` equality, which execute nothing there, and then reduces the dispatcher by kernel
+  computation at eight fixtures across five content lengths (`N = 10, 11, 12, 13, 17`), reading back
+  the working state one step before each clock at seven distinct states and the endpoint index
+  and head at it. It appeals to none
   of the slice's theorems, so the clocks
   are cross-checked against the table and not only against the proofs; the `check_*_probe`
   wrappers separately derive the same arrivals from the theorems.
@@ -68,16 +71,20 @@ second non-reject absorbing outcome, and `UniformTM.seq` routes the left machine
 `reject` only, so the generic combinator still does not apply to this dispatcher unchanged. **No
 composition is built here**: no `seq`, no composed machine, no composed clock, no new handoff and
 no pnp4 bridge, so **six of the seventeen** handoffs remain the ones performed by a finite table
-and the eleven earlier ones remain proof-level identifications. **No converse**: nothing says that
-`qHasOne` at its clock implies a `true` payload cell, nor that `qReject` implies a malformed gamma;
-the implications run from the parsed shape to the endpoint only. The **fence** is unchanged — the
-dispatcher table is uncapped, and this slice adds no cap. The three endpoints are internal states
+and the eleven earlier ones remain proof-level identifications. **No new converse theorem is
+stated here**: the seven path theorems run from the parsed shape to the endpoint only. G2m's
+imported `qHasOne_iff` and `qReject_iff` already give endpoint converses under their respective
+hypotheses; `run_deadline_eq_of_strictFirstTerminalAt` transports that classification to a strict
+first-arrival clock at or below the deadline. The **fence** is unchanged — the dispatcher table
+is uncapped, and this slice adds no cap. The three endpoints are internal states
 reached out of a retagged actual prior endpoint: that is neither halting on a raw input nor
 language acceptance, and no statement in the slice mentions `accepts`, `AcceptsAt`,
 `DecidesWithin`, `UniformP`, `VerifiesRelation`, `NP` membership or `ContentVerifierBridge`; no
-bridge instance is constructed. Neither `SearchMCSPWeakLowerBound` nor
-`VerifiedNPDAGLowerBoundSource` is reduced.
-Infrastructure only.
+bridge instance is constructed. The **model connection** remains open: this is a V1 `UniformTM`
+on `Option Bool` cells laid out against `pairLength a m`, while `ContentVerifierBridge` asks for
+the legacy `TM` with a `runTime` field on `concatBitstring x w`; caveat 6 of
+`VERIFIER_RETARGET_PLAN.md` is untouched. Neither `SearchMCSPWeakLowerBound` nor
+`VerifiedNPDAGLowerBoundSource` is reduced. Infrastructure only.
 
 **Part A G3e, the executed scratch-bootstrap → G3c handoff: the same generic sequential composition
 applied a sixth time, one block further left, at the same cubic budget (infrastructure only).**

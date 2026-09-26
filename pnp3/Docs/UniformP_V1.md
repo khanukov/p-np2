@@ -2287,13 +2287,14 @@ steps G2p-a takes -- and the routed reject at steps `1` and `5`.
 Deferred by G3e, and deliberately not claimed.  **Six handoffs of seventeen**: `startConfig` still
 embeds every earlier phase, the eleven handoffs before H12 stay proof-level, no raw-input
 `initialConfig` is executed, and no clock here counts a step of any earlier phase.  The next
-handoff down, **H11** from G2m's payload dispatcher into G2p-a, is blocked twice over:
-`FixedGammaPayloadDispatcherDeadline` exports the deadline-indexed endpoint classification but no
-first-arrival theorem for its own terminal, so it needs a G3b-style slice first; and it has *two*
-non-reject absorbing outcomes, `qAllZero` (its `machine.accept`) and `qHasOne`, of which `UniformTM.seq`
-routes only the first, so the generic combinator does not apply to it unchanged.  **First arrival
-of the composed accept**: `S` is the first time H12 fires, but no theorem says `bootChainClock` is
-the first time the composed accept is entered, because G2s-a and G2u prove no first arrival for
+handoff down, **H11** from G2m's payload dispatcher into G2p-a, had two blockers when G3e landed.
+Part A G3f below closes the missing dispatcher first-arrival interface, with equality to its
+deadline configuration. The second blocker stands: it has *two* non-reject absorbing outcomes,
+`qAllZero` (its `machine.accept`) and `qHasOne`, of which `UniformTM.seq` routes only the first,
+so the generic combinator does not apply to it unchanged. H11 remains uncomposed and the count
+stays **six of seventeen**.  **First arrival of the composed accept**: `S` is the first time H12
+fires, but no theorem says `bootChainClock` is the first time the composed accept is entered,
+because G2s-a and G2u prove no first arrival for
 `qDone`; the first arrival proved here is G2p-a's, inside the left block.  **The fence**: the
 policy recorded in the G2s-a entry above stands unchanged; all seven tables are uncapped, hence so
 is this one, and an oversized register still runs `qRunEnd` off the tape and sticks, a timeout and
@@ -2310,3 +2311,43 @@ runs the composed machine under exactly the same three hypotheses at the same cu
 described in `pnp4/Pnp4/Frontier/ContractExpansion/README.md`.  Clock composition with the earlier
 phases, the fixed parser, advice freedom, `NP` membership and `ContentVerifierBridge` remain out of
 scope.  It is infrastructure, not P-vs-NP mainline progress.
+
+The Part A G3f `Complexity.Uniform.V1.FixedGammaPayloadDispatcherFirstArrival` supplies the
+strict first terminal arrival needed before H11, with no new machine or table row. The fixed
+28-state, 84-row dispatcher is unchanged. `IsTerminal` is exactly `qAllZero`, `qHasOne` or
+`qReject`; `isTerminal_iff_absorbing` proves this is precisely the absorbing part of the table.
+`terminals_distinct` separates the endpoints, identifies `machine.accept` and `machine.reject`,
+and pins `qCursorStart` and `qCursorRead` as nonterminal checkpoints. `StrictFirstTerminalAt B x w C q`
+asserts arrival at `q` at `C` and excludes **every** terminal at every `s < C`, from the actual
+`startConfig B x w` retagging G2a's deadline run. With `N = a+m`, seven path theorems cover malformed
+gamma (`qReject`, clock `1`, head `N`), width zero (`qAllZero`, clock `2`, head `7`), first physical
+true or virtual payload (`qHasOne` or `qAllZero`, clock `3*zeros+6`, head `6`), positive-index true
+or virtual payload (`qHasOne` or `qAllZero`, clock `2*zeros*k+3*zeros+5*k+8` for `1 ≤ k < zeros`,
+head `6`), and exhaustion (`qAllZero`, clock `2*zeros*zeros+8*zeros+6` for `0 < zeros`, head `6`).
+Each preserves `contentTape`, uses the actual decoded width and payload hypotheses, and needs no
+room premise. Strictness for malformed, zero-width and both `k = 0` paths is new; the other three
+paths assemble G2l's existing exclusions. The added `FixedGammaPayloadDispatcher.first_read_exact`
+transports the private cursor embedding to pin `qCursorRead` at cell `9+zeros` at time
+`2*zeros+3`; absorption and a leftward head bound then exclude an earlier terminal during cleanup.
+
+`tagged_strict_first_terminal` has one direction only: a matching tag gives some
+`C ≤ deadline N = 2*N*N` and terminal `q` satisfying `StrictFirstTerminalAt B x w C q`, with the
+whole configuration at `C` equal to the deadline configuration. It states no converse of this
+existence implication. The seven path theorems likewise run from parsed shape to endpoint; no new
+endpoint converse theorem is stated here. Under their respective hypotheses, G2m's existing
+`qHasOne_iff` and `qReject_iff` can be transported to `C` using
+`run_deadline_eq_of_strictFirstTerminalAt`. The surface test covers eight inhabited fixtures and
+independently reduces the dispatcher at and just before each path clock. Its `probe_start` uses
+the proved anchor `run_deadline` equality to identify the starting configuration; kernel reduction
+executes the dispatcher, and does not execute the anchor there.
+
+G3f closes only the first H11 blocker. `qHasOne` remains a second non-reject absorbing outcome,
+while `UniformTM.seq` routes only `machine.accept = qAllZero` and `machine.reject = qReject`.
+No H11 composition, new executed handoff or pnp4 bridge is built; the count remains **six of
+seventeen**, with eleven earlier handoffs still proof-level identifications. The table remains
+uncapped. Arrival at these internal endpoints from a retagged prior endpoint gives no raw-input
+halting or language acceptance, no `UniformP` or `NP` membership, and no `ContentVerifierBridge`.
+The model connection remains open: V1 `UniformTM` uses `Option Bool` cells against `pairLength a m`,
+whereas that bridge asks for the legacy `TM` with a `runTime` field on `concatBitstring x w`;
+caveat 6 of `VERIFIER_RETARGET_PLAN.md` is untouched. Neither `SearchMCSPWeakLowerBound` nor
+`VerifiedNPDAGLowerBoundSource` is reduced. This is Infrastructure, not P-vs-NP mainline progress.

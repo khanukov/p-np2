@@ -680,8 +680,9 @@ seventeen** handoffs were performed by a finite table when this slice landed; th
 ones remained proof-level identifications — the composed `startConfig` still embeds every earlier
 phase — the next one down was blocked on a missing G2p-b first-arrival theorem, which Part A G3b
 supplied in pnp3; G3c has since used it to build that next composition. No first arrival of the
-G3a composed accept is proved (the first arrival proved there is G2p-c's, inside the left block), the lane is still
-unfenced, the composed accept is still the countdown's phase-local `qDone` rather than language
+G3a composed accept is proved (the first arrival proved there is G2p-c's, inside the left block),
+the lane is still unfenced, the composed accept is still the countdown's phase-local `qDone` rather
+than language
 acceptance, the machine is a V1 `UniformTM` on `Option Bool` cells against `pairLength a m` and not
 the legacy `TM` with a `runTime` field that `ContentVerifierBridge` names, and, like G2x, G2y and
 G2z, this is infrastructure, not P-vs-NP mainline progress; it makes no `P ≠ NP` claim. The

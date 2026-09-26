@@ -182,8 +182,8 @@ G2p-b now exports its exact first arrival (`exactClock N zeros`, `6` at width ze
 `2N + zeros - 6` at a positive width), strictness before it at every decoded width, and the deadline
 identification a composition needs; G3b itself builds **no** composition. Part A G3c then executes
 that handoff, **H13** — G2p-b's first payload digit into the G3a composite — inside a single
-composed 86-state machine at the same budget, switching at G2p-b's first arrival `2N + zeros - 6`,
-which is the width an accepted parsed target reaches. **Five** of
+composed 86-state machine at the same budget, switching at G2p-b's first arrival `2N + zeros - 6`
+on every positive width, the only kind an accepted parsed target reaches. **Five** of
 the seventeen handoffs are therefore now
 performed by a finite table; the twelve earlier ones remain proof-level identifications, the
 composed accept is still the countdown's phase-local `qDone`, and no witness-check

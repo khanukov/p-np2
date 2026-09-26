@@ -8,8 +8,9 @@ is the *single* live routed row `qSeekAnchor`-on-blank, targeting G3a's start at
 `42`), H16 (`65 → 68`) and H17 (`72 → 75`) are inherited from G3a and pinned here by the two
 block-offset equations only, their rows being transported verbatim by the universal right-block row
 equation; of those, `check_inherited_handoff_probe` reduces concretely H14, the `qClearB` row
-`41 → 46`, H16 and H17, while the `qBackB` row `42 → 46` rests on that row equation and G3a's own
-probes and is reached by no fixture here.  Every public declaration is restated in full;
+`41 → 46`, H16 and H17, while the `qBackB` row `42 → 46` rests on that row equation and G2z's
+probes, transported through two right-block row equations, and is reached by no fixture here.
+Every public declaration is restated in full;
 `check_clock_values` reduces the literal clocks the probes use:
 `FixedGammaTargetFirstPayload.exactClock 17 4 = 32`, `... 12 2 = 20`, `... 11 2 = 18`,
 `... 11 1 = 17`, `... 10 0 = 6`, `secondChainClock 17 4 0 24 = 1047` and

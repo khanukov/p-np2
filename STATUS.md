@@ -41,7 +41,8 @@ premise G3a and G3b recorded as blocking this composition.
 * **The composed run, at the same three pnp4 hypotheses.** The pnp4 wrapper
   `first_payload_second_payload_markers_loop_decrement_countdown_drained_accepted_content_at_polyClock`
   takes exactly G3a's parse, acceptance and `3 ≤ pr.2.n`, at `B := polyClock 3 (pairLength a m)`,
-  and derives the cap `pr.2.n ≤ N`, `11 ≤ N`, the tag, the header, the width, the switch time
+  and derives the cap `pr.2.n ≤ N`, `11 ≤ N`, the target identity `pr.2.n = pr.1`, the tag, the
+  header, the width bound `2 ≤ zeros`, the switch time
   `S = 2N + zeros - 6`, the clock `C = S + secondChainClock N zeros d pr.2.n ≤ B`, the handoff
   itself, and the composed accept at `C`, at `B` and at every later time, on the separator blank
   `N+2+zeros` with tape `loopTape B x w zeros 0 pr.2.n`.

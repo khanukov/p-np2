@@ -1559,7 +1559,8 @@ that is new to this composition — `qSeekAnchor`-on-blank with its target re-ro
 new table row — plus the two block-offset equations that locate every inherited handoff state, and
 leaves the inherited rows to the universal right-block row equation it also pins, which transports
 every G3a row verbatim; the pnp3 fixtures reduce H13, H14, H15's `qClearB` row, H16 and H17 out of
-an actual configuration, H15's `qBackB` row resting on that row equation and G3a's own probes.
+an actual configuration, H15's `qBackB` row resting on that row equation and G2z's probes
+transported through two right-block row equations.
 
 * `first_payload_second_payload_markers_loop_decrement_countdown_drained_accepted_content_at_polyClock`
   (**three**: the successful parse, the Boolean acceptance, `3 ≤ pr.2.n`; no tag, cap, room, budget,

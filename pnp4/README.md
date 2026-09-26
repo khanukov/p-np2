@@ -752,7 +752,14 @@ blockers on **H11**, from G2m's payload dispatcher into G2p-a: strict first arri
 terminal, with equality to the deadline configuration. The second blocker remains: two non-reject
 absorbing outcomes, `qAllZero` (its `machine.accept`) and `qHasOne`, of which `UniformTM.seq` routes
 only the first. G3f adds no composite table, executed handoff or pnp4 bridge; H11 stays uncomposed
-and the count stays **six of seventeen**. G3f is Infrastructure only. No first arrival of the G3e
+and the count stays **six of seventeen**. G3f is Infrastructure only. Part A G3g (pnp3 only) has
+since removed that second blocker with the generic `UniformTM.mergeAccept` — `qHasOne` merged into
+`qAllZero`, the merged dispatcher composed with the G3e composite as one 123-state table — and
+executed H11 at the dispatcher's input-dependent strict first arrival, taking the count to **seven
+of seventeen** with ten earlier handoffs still proof-level; the six-and-eleven counts in this G3e
+paragraph are the ones that slice left. G3g builds **no pnp4 bridge**, so the three-hypothesis
+chained run described here still starts at G3e's composite, and the standalone dispatcher's pnp4
+semantics (`qHasOne_iff`, `qAllZero_iff`, `qReject_iff`) are unchanged. No first arrival of the G3e
 composed accept is proved (the first arrival proved is G2p-a's, inside the left block), the lane is still
 unfenced, the composed accept is still the countdown's phase-local `qDone` rather than language
 acceptance, the machine is a V1 `UniformTM` on `Option Bool` cells against `pairLength a m` and not

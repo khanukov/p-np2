@@ -187,17 +187,22 @@ on every positive width, the only kind an accepted parsed target reaches. Part A
 the one before *that*, **H12** — G2p-a's scratch bootstrap into the G3c composite — inside a single
 composed 95-state machine at the same budget, switching at G2p-a's first arrival
 `2N - 11 - zeros`, which needs no width case and no room premise, so width zero enters through the
-same statement. **Six** of the seventeen handoffs are therefore now
-performed by a finite table; the eleven earlier ones remain proof-level identifications, the
-composed accept is still the countdown's phase-local `qDone`, and no witness-check
-phase exists, so this is not the runtime proof either. The next handoff down, **H11** — G2m's
-payload dispatcher into G2p-a — remains uncomposed. Part A G3f's
-`FixedGammaPayloadDispatcherFirstArrival` closes the first of its two blockers: strict first
-arrival at any of the dispatcher's three terminals, with equality to the deadline configuration.
-The second blocker stands: it has *two non-reject* absorbing outcomes, `qAllZero` (its
-`machine.accept`) and `qHasOne`, of which `UniformTM.seq` routes only the first, so the generic
-combinator does not apply to it unchanged. G3f adds no composite table or executed handoff; the
-count stays **six of seventeen**. This is Infrastructure only. Wrapper-level `L'`
+same statement. **Six** of the seventeen handoffs were then
+performed by a finite table, the composed accept is still the countdown's phase-local `qDone`, and
+no witness-check phase exists, so this is not the runtime proof either. The next handoff down,
+**H11** — G2m's payload dispatcher into G2p-a — had two blockers. Part A G3f's
+`FixedGammaPayloadDispatcherFirstArrival` closed the first: strict first arrival at any of the
+dispatcher's three terminals, with equality to the deadline configuration. Part A G3g closes the
+second — the dispatcher's *two non-reject* absorbing outcomes, `qAllZero` (its `machine.accept`)
+and `qHasOne`, of which `UniformTM.seq` routes only the first — by the generic table transformation
+`UniformTM.mergeAccept`, which retargets the two rows into `qHasOne` at `qAllZero` and leaves
+`qHasOne` dead, and then executes H11 inside a single composed 123-state machine,
+`(dispatcher.mergeAccept qHasOne).seq` the G3e composite, switching at the dispatcher's strict first
+terminal time, which is input-dependent and has no length-only form. The two successful verdicts
+are merged at the switch, exactly where G2p-a's landed retag already discards them. **Seven** of
+the seventeen handoffs are therefore now performed by a finite table; the ten earlier ones remain
+proof-level identifications, and G3g builds no pnp4 bridge, no fence and no raw-input execution.
+This is Infrastructure only. Wrapper-level `L'`
 padding invariance and formal runtime/advice enforcement also remain open; complete-word
 `ContentAccepts` padding invariance does not close either item. The original length-gated
 `NP_not_subset_PpolyDAG_treePoly` / `PrefixExtensionNPWitness` capstone remains compiled and audited

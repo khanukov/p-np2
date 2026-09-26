@@ -23,8 +23,9 @@ head is `7` rather than `6`.  All five take H12 through the same one routed row 
 other working-state row into `qTerm` — so what the five probes separate is the **switch time**,
 which is `2N - 11 - zeros` at every decoded width, width zero included.  Each probe is a claim
 about its own word; nothing here says which width an arbitrary word decodes to.
-`check_boot_handoff_instance` inhabits `handoff_exact`'s **two** hypotheses at all five widths at
-the *probe's* budget `B = 0` — G2p-a needs neither room nor a positive width, so no room conjunct
+`check_boot_handoff_instance` inhabits `handoff_exact`'s **two** hypotheses in all five fixtures;
+the configuration parameter is `B = 0`, but those hypotheses mention neither `B`, room nor a
+positive width, so no room conjunct
 appears — and `check_boot_drained_instance` inhabits the drain's seven at `B = 22`, where
 `4 + 2 + 24 = 8 + 22` meets the lane budget exactly, so budget `0` is never presented as validating
 the 1098-step drain.  The register value `24` is supplied **by hand**; `24 > N = 17`, so this is a

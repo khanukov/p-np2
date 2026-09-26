@@ -58,7 +58,8 @@ That is exactly the premise the G3c entry below recorded as all that was owed he
 * **Probes execute the composed table, they do not restate it.** Six `*_start` lemmas identify the
   actual composed `startConfig B tag ·` with an explicit configuration using only G2m's landed
   dispatcher endpoint classification, which executes nothing; kernel reduction then reads H12 back
-  at five widths (`N = 17` clock `19`, `N = 12` clock `11`, `N = 11` clock `10`, `N = 11` clock `9`
+  in five fixtures across four widths (`N = 17` clock `19`, `N = 12` clock `11`, `N = 11` clock
+  `10`, `N = 11` clock `9`
   and width zero at `N = 10`, clock `9`), reads the five inherited handoffs at steps `50`/`51`,
   `77`/`78`, `88`/`89`, `152`/`153` and `170`/`171` — G3c's steps shifted by nine states and by the
   `19` steps G2p-a takes — and reduces the routed reject. The register value `24 > N = 17` is
@@ -69,9 +70,10 @@ still embeds every earlier phase — the eleven handoffs from the sentinel throu
 deadline remain proof-level identifications, no `initialConfig` on a raw pair input is executed, and
 no clock here counts a step of any earlier phase. Composing the next handoff down, **H11** — G2m's
 dispatcher into G2p-a — is **not** in the same position, and is blocked twice over:
-`FixedGammaPayloadDispatcher` exports its deadline-indexed endpoint classification but no
+`FixedGammaPayloadDispatcherDeadline` exports the deadline-indexed endpoint classification but no
 first-arrival theorem for its own terminal, so that composition needs a new first-arrival slice
-first, the way G3b had to precede G3c; and the dispatcher has *two* absorbing outcomes, `qAllZero`
+first, the way G3b had to precede G3c; and the dispatcher has *two non-reject* absorbing outcomes,
+`qAllZero`
 (its `machine.accept`) and `qHasOne`, of which `UniformTM.seq` routes only the first, so the
 generic combinator does not apply to it unchanged. **First arrival of the composed accept**: `S` is the first time H12 fires, but
 nothing says `C` is the first time the composed accept is entered, since G2s-a and G2u prove no

@@ -2217,8 +2217,9 @@ G2p-c's second payload at `[27, 41)`, G2p-d's marker preamble at `[41, 55)`, G2p
 at `[55, 77)`, G2q's decrement at `[77, 84)` and G2s-a's countdown at `[84, 95)` -- as one closed
 95-state, 285-row table.  **No table row is new**: every row is a row of one of those seven tables
 with its target routed, and `table_and_resource_pins` pins the counts, the three distinguished
-states (`0`, `93`, `94`), the two block injections with their disjointness, the four block-offset
-equations that locate every G3c, G2p-b, G2p-c and G3a state, the three routing cases, the universal
+states (`0`, `93`, `94`), the two block injections with their disjointness, the four nested
+block-offset equations that locate the G2p-b, G2p-c, G3a and G2z sub-blocks inside G3c, the three
+routing cases, the universal
 left- and right-block row equations, the public step against the composed raw table, and the one
 *routed* row this composition adds.
 
@@ -2287,9 +2288,9 @@ Deferred by G3e, and deliberately not claimed.  **Six handoffs of seventeen**: `
 embeds every earlier phase, the eleven handoffs before H12 stay proof-level, no raw-input
 `initialConfig` is executed, and no clock here counts a step of any earlier phase.  The next
 handoff down, **H11** from G2m's payload dispatcher into G2p-a, is blocked twice over:
-`FixedGammaPayloadDispatcher` exports its deadline-indexed endpoint classification but no
+`FixedGammaPayloadDispatcherDeadline` exports the deadline-indexed endpoint classification but no
 first-arrival theorem for its own terminal, so it needs a G3b-style slice first; and it has *two*
-absorbing outcomes, `qAllZero` (its `machine.accept`) and `qHasOne`, of which `UniformTM.seq`
+non-reject absorbing outcomes, `qAllZero` (its `machine.accept`) and `qHasOne`, of which `UniformTM.seq`
 routes only the first, so the generic combinator does not apply to it unchanged.  **First arrival
 of the composed accept**: `S` is the first time H12 fires, but no theorem says `bootChainClock` is
 the first time the composed accept is entered, because G2s-a and G2u prove no first arrival for

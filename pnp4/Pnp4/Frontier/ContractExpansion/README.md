@@ -1670,9 +1670,9 @@ Caveats specific to G3e. It is **six handoffs of seventeen**: the composed `star
 embeds every earlier phase, the eleven handoffs before H12 stay proof-level, no `initialConfig` on
 a raw pair input is executed, and no clock counts a step of any earlier phase; the next handoff
 down, **H11** from G2m's payload dispatcher into G2p-a, is blocked twice over —
-`FixedGammaPayloadDispatcher` exports its deadline-indexed endpoint classification but no
+`FixedGammaPayloadDispatcherDeadline` exports the deadline-indexed endpoint classification but no
 first-arrival theorem for its own terminal, so it needs a G3b-style slice first, and it has *two*
-absorbing outcomes, `qAllZero` (its `machine.accept`) and `qHasOne`, of which `UniformTM.seq`
+non-reject absorbing outcomes, `qAllZero` (its `machine.accept`) and `qHasOne`, of which `UniformTM.seq`
 routes only the first, so the generic combinator does not apply to it unchanged. `S` is the first
 time H12 fires, but no theorem says `C` is the first time the composed accept is entered; the first
 arrival proved is G2p-a's, inside the left block. All seven tables are unfenced, hence so is the

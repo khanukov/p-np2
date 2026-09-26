@@ -43,7 +43,6 @@ register still times out; the rejecting run is exercised but is no converse and 
 parsed target; no footprint theorem for the composite, so every room premise of the tail is
 sufficient and used, never shown necessary; and no `accepts`, `AcceptsAt`, `DecidesWithin`,
 `UniformP` or language-membership statement. -/
-
 namespace
   Pnp3.Tests.UniformV1FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests
 

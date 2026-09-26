@@ -614,7 +614,8 @@ countdown's phase-local `qDone` rather than language acceptance, the V1 machine 
 not the legacy `TM` the bridge interface names, and this is not P-vs-NP mainline progress.
 
 Part A G2y executes the handoff immediately before it, so **two** of those seventeen were performed
-at that slice; later handoffs through G3e have since taken the count to six. `ContentFixedGammaTargetLoopDecrementCountdownBridge.lean` runs the
+at that slice. Four earlier chain handoffs were later executed by G2z, G3a, G3c and G3e, taking the
+count to six. `ContentFixedGammaTargetLoopDecrementCountdownBridge.lean` runs the
 pnp3 composed machine `FixedGammaTargetPayloadRound.machine.seq
 FixedGammaTargetDecrementCountdown.machine` — G2p-d's 22-state payload-round table followed by the
 whole G2x 18-state composite as one closed 40-state table, whose routed row `qFin`-on-`some false`

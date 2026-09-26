@@ -362,8 +362,8 @@ Write `N = a+m`, `zeros = gammaZeros pr.2.n` and `d = borrow x w zeros`.
 
 Of the seventeen phase handoffs of the Part A chain, G2y executed two. G2z executes the one before
 them, **H15**, so **three** of the seventeen are performed by a finite table as of this slice and
-**fourteen** remain proof-level retags; H14 has since been taken by G3a above, so the current counts
-are four and thirteen. G2z adds **no new first-arrival theorem**: the preamble's arrival with
+**fourteen** remain proof-level retags; H14, H13 and H12 have since been taken by G3a, G3c and G3e
+above, so the current counts are six and eleven. G2z adds **no new first-arrival theorem**: the preamble's arrival with
 persistence (`markers_installed`), its minimality (`markers_strict`) and its deadline cover
 (`exactClock_le_deadline`) are all landed, and `UniformTM.run_accept_of_le` identifies the run at
 the first arrival with the run at the length-only deadline `N` that G2p-d's round `startConfig`,

@@ -1,6 +1,5 @@
 import
   Complexity.Uniform.V1.FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown
-
 /-!
 Surface pins for the Part A G3e concrete slice: G2p-a's scratch-bootstrap table and G3c's whole
 first-payload composite as **one** closed 95-state, 285-row table.  Its newly executed handoff H12
@@ -25,8 +24,7 @@ which is `2N - 11 - zeros` at every decoded width, width zero included.  Each pr
 about its own word; nothing here says which width an arbitrary word decodes to.
 `check_boot_handoff_instance` inhabits `handoff_exact`'s **two** hypotheses in all five fixtures;
 the configuration parameter is `B = 0`, but those hypotheses mention neither `B`, room nor a
-positive width, so no room conjunct
-appears — and `check_boot_drained_instance` inhabits the drain's seven at `B = 22`, where
+positive width, so no room conjunct appears — and `check_boot_drained_instance` inhabits the drain's seven at `B = 22`, where
 `4 + 2 + 24 = 8 + 22` meets the lane budget exactly, so budget `0` is never presented as validating
 the 1098-step drain.  The register value `24` is supplied **by hand**; `24 > N = 17`, so this is a
 pnp3 execution fixture and neither an accepted-content fixture nor evidence for the pnp4 cap.

@@ -207,8 +207,8 @@ theorem check_malformed_reject_handoff {a m B : Nat} (x : Bitstring a) (w : Bits
       e.tape = FixedPairContentMarkerErase.contentTape B x w :=
   malformed_reject_handoff x w htag hg s hs
 
-/-- The literal clocks the probes use, reduced by kernel computation: G2p-b's first arrival at all
-five probe widths — length-dependent at the four positive ones, length-free at width zero — G3a's
+/-- The literal clocks the probes use, reduced by kernel computation: G2p-b's first arrival in all
+five fixtures over four widths — length-dependent in four positive-width fixtures, free at zero — G3a's
 sum, and this slice's sum. -/
 theorem check_clock_values :
     FixedGammaTargetFirstPayload.exactClock 17 4 = 32 ∧

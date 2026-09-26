@@ -1613,7 +1613,7 @@ not P-vs-NP mainline progress, and it makes no `P ≠ NP` claim.
 
 `ContentFixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownBridge.lean`
 is the Part A G3e slice: the **sixth** executed phase handoff of the chain, the one immediately
-before G3c's, on the same parsed target at the same budget. (The slice label `G3d` is intentionally unused here; the
+before G3c's, on the same parsed target at the same budget. (The G3d slice label is skipped here; the
 immediately preceding composite is G3c.) It applies the same generic `UniformTM.seq` one block
 further left, to `FixedGammaTerminatorScratchBootstrap.machine` and the whole G3c composite —
 G2p-a's 9-state, 27-row scratch-bootstrap table followed by G3c's 86-state, 258-row table as one

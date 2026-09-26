@@ -12,18 +12,18 @@ and one new pnp4 module,
 followed by the whole G3c 86-state composite as one closed 95-state, 285-row table,
 `FixedGammaTerminatorScratchBootstrap.machine.seq
 FixedGammaTargetFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.machine`. Write `N = a+m`,
-`zeros = gammaZeros pr.2.n` and `d = borrow x w zeros`. (The slice label `G3d` is intentionally unused here; the immediately
+`zeros = gammaZeros pr.2.n` and `d = borrow x w zeros`. (The G3d slice label is skipped here; the
 preceding composite is G3c.)
 
 Of the seventeen phase handoffs of the Part A chain, G3c executed five. G3e executes the one before
 them, **H12**, so **six** of the seventeen are now performed by a finite table and **eleven** remain
 proof-level retags. G3e adds **no new first-arrival theorem**: G2p-a already landed arrival,
-minimality and the deadline cover in one statement — `strict_first_terminal` puts the control in
+minimality and the deadline cover in the bootstrap module — `strict_first_terminal` puts the control in
 neither `qTerm` nor `qReject` at every time strictly before `exactClock N zeros = 2N - 11 - zeros`
 and in `qTerm` exactly there, and `exactClock_le_deadline` holds for all `N` and `zeros` with no
 premise at all — and `UniformTM.run_accept_of_le` identifies the run at the first arrival with the
 run at the length-only deadline `2 * N` that G2p-b's `startConfig`, and through it G3c's, retags.
-That is exactly the premise the G3c entry below recorded as all that was owed here.
+Those are exactly the landed facts the G3c entry below required; the composition itself was owed here.
 
 * **H12 is executed by a single live routed row.** `qScanLeft` on the blank is G2p-a's *only* row
   out of a working state into its own absorbing `qTerm`, and `seq` routes it — writing `some true`,
@@ -105,7 +105,7 @@ FixedGammaTargetSecondPayloadMarkersLoopDecrementCountdown.machine`. Write `N = 
 
 Of the seventeen phase handoffs of the Part A chain, G3a executed four. G3c executes the one before
 them, **H13**, so **five** of the seventeen were then performed by a finite table and **twelve**
-remain proof-level retags. G3c adds **no new first-arrival theorem**: Part A G3b landed G2p-b's
+remained proof-level retags. G3c adds **no new first-arrival theorem**: Part A G3b landed G2p-b's
 arrival (`first_payload_exact`, `zero_width_exact`), its minimality (`first_payload_strict`,
 `zero_width_strict`) and its deadline cover (`exactClock_le_deadline`) at every decoded width, and
 `UniformTM.run_accept_of_le` identifies the run at the first arrival with the run at the length-only
@@ -138,8 +138,8 @@ premise G3a and G3b recorded as blocking this composition.
   `N+2+zeros` with tape `loopTape B x w zeros 0 pr.2.n`.
 * **Probes execute the composed table, they do not restate it.** Six `*_start` lemmas identify the
   actual composed `startConfig B tag ·` with an explicit configuration using only G2p-a's landed
-  bootstrap endpoint theorems, which execute nothing; kernel reduction then reads H13 back at four
-  positive widths and at width zero (`N = 17` clock `32`, `N = 12` clock `20`, `N = 11` clock `18`
+  bootstrap endpoint theorems, which execute nothing; kernel reduction then reads H13 back in four
+  positive-width fixtures across three widths and at width zero (`N = 17` clock `32`, `N = 12` clock `20`, `N = 11` clock `18`
   on the virtual source, `N = 11` clock `17`, and the length-free `6`), reads the four inherited
   handoffs at steps `58`/`59`, `69`/`70`, `133`/`134` and `151`/`152` — G3a's `26`/`27`, `37`/`38`,
   `101`/`102` and `119`/`120` shifted by the `32` steps G2p-b takes — and reduces the routed reject.
@@ -238,8 +238,8 @@ followed by the whole G2z 54-state composite as one closed 68-state, 204-row tab
 Write `N = a+m`, `zeros = gammaZeros pr.2.n` and `d = borrow x w zeros`.
 
 Of the seventeen phase handoffs of the Part A chain, G2z executed three. G3a executes the one
-before them, **H14**, so **four** of the seventeen are now performed by a finite table and
-**thirteen** remain proof-level retags. G3a adds **no new first-arrival theorem**: G2p-c's arrival
+before them, **H14**, so **four** of the seventeen were then performed by a finite table and
+**thirteen** remained proof-level retags. G3a adds **no new first-arrival theorem**: G2p-c's arrival
 (`second_payload_exact`, `zero_width_exact`, `width_one_exact`), its minimality
 (`second_payload_strict`, `zero_width_strict`, `width_one_strict`) and its deadline cover
 (`exactClock_le_deadline`) are landed at every decoded width, and `UniformTM.run_accept_of_le`
@@ -458,8 +458,8 @@ followed by the whole G2x 18-state composite as one closed 40-state, 120-row tab
 `N = a+m`, `zeros = gammaZeros pr.2.n` and `d = borrow x w zeros`.
 
 Of the seventeen phase handoffs of the Part A chain, G2x executed the last one. G2y executes the
-one before it, **H16**, and inherits G2x's as **H17**, so **two** of the seventeen are now performed
-by a finite table and fifteen remain proof-level retags.
+one before it, **H16**, and inherits G2x's as **H17**, so **two** of the seventeen were then performed
+by a finite table and fifteen remained proof-level retags.
 
 * `FixedGammaTargetLoopDecrementCountdown.loop_strict` (four: matching tag, decoded width,
   `2 <= zeros`, G2p-e's room): the payload-round machine, out of its own `startConfig`, is not in

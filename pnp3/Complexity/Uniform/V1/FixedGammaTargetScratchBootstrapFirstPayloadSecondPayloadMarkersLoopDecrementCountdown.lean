@@ -1,5 +1,4 @@
 import Complexity.Uniform.V1.FixedGammaTargetFirstPayloadSecondPayloadMarkersLoopDecrementCountdown
-
 /-!
 # The scratch bootstrap, the first payload digit, the second payload digit, the loop markers, the
 payload loop, the decrement and the countdown as one machine (Part A G3e)
@@ -12,7 +11,7 @@ second payload at `[27, 41)`, G2p-d's marker preamble at `[41, 55)`, G2p-d's pay
 `[55, 77)`, G2q's decrement at `[77, 84)` and G2s-a's countdown at `[84, 95)` — one closed 95-state,
 285-row table whose every row is a row of one of those seven tables with its target routed.  Write
 `N = a + m` and `d = borrow x w zeros`.  `pnp3/Docs/UniformP_V1.md` carries the long-form notes.
-The slice label `G3d` is intentionally unused here; the immediately preceding composite is G3c.  Classification
+The G3d slice label is skipped here; the preceding composite is G3c.  Classification
 (AGENTS.md): **Infrastructure**.
 
 **Six executed handoffs.**  H12 is the newly executed one, and like H13 and H14 it has exactly
@@ -28,14 +27,12 @@ carried by the universal right-block row equation, which transports every G3c ro
 composed indices are the G3c indices shifted by nine.  Until now H12 was a proof-level retag at
 G2p-a's length-only deadline `deadline N = 2 * N`; a running composed machine switches at G2p-a's
 **first arrival**, so `handoff_exact` rests on `strict_first_terminal`.
-
 No new first-arrival theorem is needed: G2p-a landed arrival, minimality *and* the deadline cover
-in one statement — `strict_first_terminal` excludes both terminals strictly before
+in the bootstrap module — `strict_first_terminal` excludes both terminals strictly before
 `exactClock N zeros = 2 * N - 11 - zeros` and lands `qTerm` there, and `exactClock_le_deadline`
 holds for *all* `N` and `zeros` with no premise at all — and `UniformTM.run_accept_of_le`
 identifies the run at the first arrival with the run at `deadline N`, the very run G2p-b's
 `startConfig`, and through it G3c's, retags.
-
 **Every decoded width, no room premise.**  `handoff_exact` takes only a matching tag and a decoded
 width: G2p-a's clock does not split on the width (only its start head does, `7` at width zero
 against `6` at a positive one, which its own trace absorbs) and its run needs no room, since the
@@ -43,7 +40,6 @@ scratch cell `N + 1` is allocated by `tapeLength` for every budget including `B 
 G3c, which needs a separate width-zero statement and G2p-b's room, one theorem covers `zeros = 0`
 and `0 < zeros` alike.  An accepted parsed target reaches only `2 ≤ zeros`, since `3 ≤ pr.2.n`
 forces `2 ≤ gammaZeros pr.2.n`, and that is a sub-case.
-
 `handoff_exact`: out of `startConfig` — G2p-a's own, hence still the retagged *actual* G2m
 dispatcher endpoint — the composed run is G2p-a's run up to
 `T = FixedGammaTerminatorScratchBootstrap.exactClock N zeros`, is in neither composed verdict
@@ -64,7 +60,6 @@ decoded width — the dispatcher stopped at the blank boundary cell `N` — reje
 composed control is the composed reject, index `94`, from then on.  It is stated in the forward
 direction only; nothing says the composed reject implies a malformed gamma, and it characterises no
 parsed target.
-
 Deferred, and deliberately not claimed.  `startConfig` still **embeds** every earlier phase: the
 eleven handoffs before H12 remain proof-level identifications, no raw-input `initialConfig` is
 executed, and no clock here counts a step of any earlier phase.  **First arrival** of the composed
@@ -79,7 +74,6 @@ The composed `accept` is the countdown's phase-local `qDone`: reaching it out of
 prior endpoint is neither halting on a raw input nor language acceptance; no `accepts`, `AcceptsAt`,
 `DecidesWithin` or `UniformP` is stated.  The table is fixed and complete but not claimed
 state-minimal. -/
-
 namespace
   Pnp3.Complexity.Uniform.V1.FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown
 
@@ -89,7 +83,6 @@ open FixedGammaTargetDecrementCountdown (composedClock)
 open FixedGammaTargetRegisterDecrement (borrow decBit)
 open FixedGammaTargetUnaryCountdown (loopTape)
 open FixedGammaTargetFirstPayloadSecondPayloadMarkersLoopDecrementCountdown (firstChainClock)
-
 /-- The composed machine: G2p-a's scratch-bootstrap table, then G3c's whole first-payload
 composite, as one closed table.  No row is new; the left rows are routed. -/
 def machine : UniformTM :=
@@ -463,8 +456,8 @@ theorem scratch_bootstrap_first_payload_second_payload_markers_loop_decrement_co
 
 /-- **The routed reject, executed one block further left.**  A matching tag with no decoded width —
 the G2m dispatcher stopped at the blank boundary cell `a + m`, so the bootstrap's first read is a
-blank: G2p-a rejects in one step — its own landed `malformed_exact`, whose first-arrival companion
-is not needed, since both machines absorb a rejection — and the generic rejecting handoff carries
+blank: G2p-a rejects in one step — its own landed `malformed_exact`; no first-arrival theorem is
+needed, since both machines absorb a rejection — and the generic rejecting handoff carries
 that verdict into the composed control, so from step one on the composed machine is in the composed
 reject — index `94`, not G2p-a's own `qReject` at index `8` — at the boundary head `a + m` on the
 unchanged content tape.  It needs no room premise.  It is **not** a converse — nothing here says

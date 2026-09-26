@@ -225,7 +225,7 @@ theorem check_malformed_reject_handoff {a m B : Nat} (x : Bitstring a) (w : Bits
   malformed_reject_handoff x w htag hg s hs
 
 /-- The literal clocks the probes use, reduced by kernel computation: G2p-a's first arrival in all
-five fixtures across four widths — `2N - 11 - zeros` needs no case split, including at width zero — G3c's
+five fixtures over four widths — including width zero and needing no case split — G3c's
 sum, and this slice's sum. -/
 theorem check_clock_values :
     FixedGammaTerminatorScratchBootstrap.exactClock 17 4 = 19 ∧

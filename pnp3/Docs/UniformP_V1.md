@@ -2206,7 +2206,7 @@ fixed parser, advice freedom, `NP` membership and `ContentVerifierBridge` remain
 is infrastructure, not P-vs-NP mainline progress.
 
 The Part A G3e slice applies the generic sequential composition a sixth time, one block further
-left again.  (The slice label `G3d` is intentionally unused here; the immediately preceding composite is G3c.)  The new
+left again.  (The G3d slice label is skipped here; the preceding composite is G3c.)  The new
 module
 `Complexity.Uniform.V1.FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown`
 defines `machine` as `FixedGammaTerminatorScratchBootstrap.machine.seq
@@ -2270,7 +2270,7 @@ on a matching tag with no decoded width the G2m dispatcher stopped at the blank 
 so G2p-a's first read is a blank and it rejects in one step, and `seq_reject_handoff` carries that
 verdict into the composed reject at index `94` -- not G2p-a's own `qReject` at `8`, nor G2p-b's at
 `26` -- at the boundary head `N` on the unchanged content tape, from step one on.  Its
-first-arrival companion is not needed, since both machines absorb a rejection.  It is stated in the
+rejection needs no first-arrival theorem, since both machines absorb.  It is stated in the
 forward direction only: no converse, and it characterises no parsed target.
 
 The surface test identifies the actual `startConfig B tag ·` for six literal words with explicit

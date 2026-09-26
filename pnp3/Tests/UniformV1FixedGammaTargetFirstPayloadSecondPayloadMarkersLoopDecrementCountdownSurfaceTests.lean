@@ -22,10 +22,10 @@ with `N = 11`, physical; `tightWord` to `zeros = 2` with `N = 11`, where the fir
 `9 + zeros` *is* the boundary blank and the copied bit is the virtual zero; `zeroWord` to
 `zeros = 0` with `N = 10`, the one width that copies nothing.  All five take H13 through the same
 one routed row — G2p-b has no other working-state row into `qDone` — so what the five probes
-separate is the **switch time**, which is `2N + zeros - 6` at the four positive widths and the
+separate is the **switch time**, which is `2N + zeros - 6` in four positive-width fixtures and the
 length-free `6` at width zero.  Each probe is a claim about its own word; nothing here says which
 width an arbitrary word decodes to.  `check_first_handoff_instance` inhabits `handoff_exact`'s four
-hypotheses at all four positive widths and `check_zero_width_instance` the premises of
+hypotheses in all four positive-width fixtures and `check_zero_width_instance` the premises of
 `zero_width_handoff`, all at the *probe's* budget `B = 0`; `check_first_drained_instance` inhabits
 the drain's seven at `B = 22`, where `4 + 2 + 24 = 8 + 22` meets the lane budget exactly — so budget
 `0` is never presented as validating the 1079-step drain, and the short probes never establish the
@@ -232,7 +232,7 @@ private def oneWord : Bitstring 3 := ![false, true, false]
 private def zeroWord : Bitstring 2 := ![true, false]
 private def malformed : Bitstring 3 := ![false, false, false]
 
-/-- `handoff_exact`'s four hypotheses are satisfiable at all four positive widths, at the *probe's*
+/-- `handoff_exact`'s four hypotheses are satisfiable in all four positive-width fixtures, at the *probe's*
 budget `B = 0`: the tag matches, the words decode to `zeros = 4`, `2`, `2` and `1`, and G2p-b's room
 `19 < 27`, `14 < 22`, `13 < 21` and `13 < 21` holds. -/
 theorem check_first_handoff_instance :

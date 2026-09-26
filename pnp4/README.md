@@ -720,8 +720,8 @@ and, like G2x, G2y, G2z and G3a, this is infrastructure, not P-vs-NP mainline pr
 `P ≠ NP` claim. The five-and-twelve counts in this G3c paragraph are the ones that slice left; H12
 has since been taken by G3e below.
 
-**Part A G3e** applies the same combinator a sixth time, one block further left again (the slice label
-`G3d` is intentionally unused here; the immediately preceding composite is G3c):
+**Part A G3e** applies the same combinator a sixth time, one block further left again (the G3d slice
+label is skipped here; the preceding composite is G3c):
 `ContentFixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownBridge`
 runs **one** machine — G2p-a's 9-state scratch-bootstrap table followed by the whole G3c 86-state
 composite as one closed 95-state table, whose *single* live routed row `qScanLeft`-on-blank (into

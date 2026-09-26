@@ -28,7 +28,7 @@ premise for this concrete machine, and nothing else.
   the clock is a *first* arrival and not merely a time by which the run has halted.
   `first_physical_exact` and `first_virtual_exact` name the two positive-width source shapes at that
   time, and `zero_width_exact`/`zero_width_strict` and `malformed_exact`/`malformed_strict` do the
-  same for the other two decoded shapes.
+  same for width zero and for a malformed gamma, which has no decoded width at all.
 * **The premise shape a sequential composition consumes.** `strict_first_terminal` bundles, on any
   decoded width and assuming room only when that width is positive: neither verdict before
   `exactClock N zeros`, `machine.accept` exactly there, `exactClock N zeros <= deadline N`, and the
@@ -342,8 +342,8 @@ marker foundation into the payload round — needs no new first-arrival theorem:
 `markers_strict`, `markers_installed` and `exactClock_le_deadline` are the same three ingredients
 `loop_strict`, `payload_exhausted` and `prior_covers` supply here; that handoff, H15, has since been
 taken by G2z above, so the count of proof-level retags below is the one this slice left. Further
-down, G2p-b's first
-arrival is still missing, as recorded under G2x below. **First arrival
+down, G2p-b's first arrival was still missing when this slice landed, as recorded under G2x below;
+Part A G3b above has since supplied it. **First arrival
 of the composed accept**: `T` is the first time H16 fires, but nothing says `C` is the first time
 the composed accept is entered, since G2s-a and G2u prove no first arrival for `qDone`; the first
 arrival proved here is the payload loop's, inside the left block. **The fence**: all three tables
@@ -1663,7 +1663,8 @@ and `(n+1).testBit (zeros-1)`. For the header `(0, 1)`, the register stays the
 one digit of `1`. Part A G3b above later added the exact first-arrival surface
 this slice had deferred: `exactClock N zeros` (`6` at width zero,
 `2*N + zeros - 6` at a positive width), `malformedExactClock = 1`, the matching
-`*_exact`/`*_strict` pairs at each of the three decoded shapes, and
+`*_exact`/`*_strict` pairs at a positive width, at width zero and at a
+malformed gamma, and
 `strict_first_terminal`, which bundles them with `exactClock_le_deadline` and
 the identification of the first-arrival configuration with the deadline one. The
 remaining `zeros-1` payload digits, the decrement to `n`, clock composition, and

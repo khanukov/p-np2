@@ -688,7 +688,8 @@ and the module states no pnp4 reader or parser fact.  Part A G3b later added the
 exact first-arrival surface this phase had deferred, against the same untouched
 table and with every earlier signature unchanged: `exactClock N zeros` is `6` at
 width zero and `2*N + zeros - 6` at a positive width, `malformedExactClock` is
-`1`, and at each of the three decoded shapes an `*_exact` theorem holds from that
+`1`, and at a positive width, at width zero and at a malformed gamma — which has
+no decoded width at all — an `*_exact` theorem holds from that
 time on while the matching `*_strict` theorem puts the control in neither
 terminal state strictly earlier, so each clock is a *first* arrival rather than
 an upper bound.  `exactClock_le_deadline` (premise `9+zeros <= N`, which the
@@ -1839,7 +1840,8 @@ first-arrival theorem: the foundation's `markers_strict`, `markers_installed` an
 `prior_covers` supply here, and the round's `startConfig` retags the foundation's run at its
 length-only deadline exactly as G2q's retags the loop's.  That handoff, H15, has since been taken by
 G2z below, so the counts in this G2y entry are the ones this slice left.  Further down, G2p-b's
-first arrival is still missing.  **First arrival of the composed accept**:
+first arrival was still missing when this slice landed; the G3b entry below has since supplied
+it.  **First arrival of the composed accept**:
 `T` is the first time H16 fires, but no theorem says `chainClock` is the first time the composed
 accept is entered, because G2s-a and G2u prove no first arrival for `qDone`; the first arrival
 proved here is the payload loop's, inside the left block.  **The fence**: the policy recorded in the
@@ -2061,7 +2063,8 @@ cell `N + 2` and back to the anchor -- and `malformedExactClock` is `1`.  Both n
 the fixed schedules this phase already used for its endpoint, not chosen: the last branch of
 `posState` is the only one that is `qDone`, and none is `qReject`.
 
-At each of the three decoded shapes the slice proves both directions.  `first_payload_exact` puts a
+At a positive width, at width zero and at a malformed gamma — the last of which has no decoded width
+at all — the slice proves both directions.  `first_payload_exact` puts a
 positive-width run in `qDone` at head `7` with the carried bit at `N + 2` from `exactClock N zeros`
 on, under the same room premise `a + m + 2 < tapeLength (pairLength a m) B` the landed endpoint
 already used, and `first_payload_strict` puts the control in neither `qDone` nor `qReject` at every

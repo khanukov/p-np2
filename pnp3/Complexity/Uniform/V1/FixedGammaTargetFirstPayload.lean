@@ -843,6 +843,9 @@ theorem malformed_strict {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
   rw [hq]
   exact ⟨by decide, by decide⟩
 
+/-- `malformed_exact` at the public length-only deadline `3 * (a + m)`: the tag
+contract's length bound puts `malformedExactClock = 1` at or below it.  Still no
+workspace premise. -/
 theorem malformed_at_deadline {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
     (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
     (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = none) :
@@ -894,6 +897,9 @@ theorem zero_width_strict {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
     with rfl | rfl | rfl | rfl | rfl | rfl <;>
     exact ⟨by decide, by decide⟩
 
+/-- `zero_width_exact` at the public length-only deadline `3 * (a + m)`, through
+`exactClock_le_deadline` on the width bound the gamma contract supplies.  Still
+no room premise. -/
 theorem zero_width_at_deadline {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
     (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
     (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some 0) :
@@ -962,6 +968,9 @@ theorem first_payload_strict {a m B zeros : Nat} (x : Bitstring a) (w : Bitstrin
   rw [hq]
   exact posState_ne_terminal _ hN hzeros hs
 
+/-- `first_payload_exact` at the public length-only deadline `3 * (a + m)`,
+through `exactClock_le_deadline` on the width bound the gamma contract supplies;
+the room premise is the one that theorem already uses. -/
 theorem first_payload_at_deadline {a m B zeros : Nat} (x : Bitstring a) (w : Bitstring m)
     (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
     (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros)
@@ -988,6 +997,7 @@ theorem first_physical_exact {a m B zeros : Nat} (x : Bitstring a) (w : Bitstrin
   rw [hread] at h
   exact h
 
+/-- `first_physical_exact` at the public length-only deadline `3 * (a + m)`. -/
 theorem first_physical_at_deadline {a m B zeros : Nat} (x : Bitstring a) (w : Bitstring m)
     (b : Bool) (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
     (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros)
@@ -1015,6 +1025,7 @@ theorem first_virtual_exact {a m B zeros : Nat} (x : Bitstring a) (w : Bitstring
     content_ge x w (by omega)] at h
   exact h
 
+/-- `first_virtual_exact` at the public length-only deadline `3 * (a + m)`. -/
 theorem first_virtual_at_deadline {a m B zeros : Nat} (x : Bitstring a) (w : Bitstring m)
     (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
     (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros)

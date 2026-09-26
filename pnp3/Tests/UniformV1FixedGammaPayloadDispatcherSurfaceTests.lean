@@ -152,6 +152,14 @@ theorem check_zero_width_exact {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
         omega⟩, FixedPairContentMarkerErase.contentTape B x w⟩ :=
   zero_width_exact x w htag hg
 
+theorem check_first_read_exact {a m B zeros : Nat} (x : Bitstring a) (w : Bitstring m)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
+    (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros)
+    (hzero : 0 < zeros) :
+    let d := machine.run (2 * zeros + 3) (startConfig B x w)
+    d.state = qCursorRead ∧ d.head.val = 9 + zeros :=
+  first_read_exact x w htag hg hzero
+
 theorem check_first_true_exact {a m B zeros : Nat} (x : Bitstring a) (w : Bitstring m)
     (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
     (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros)

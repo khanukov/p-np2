@@ -747,10 +747,13 @@ widths and there is no separate degenerate theorem. G2p-a's malformed rejection 
 the composed reject in the forward direction only, which is no converse and characterises no parsed
 target. **Six of the seventeen** handoffs are now performed by a finite table; the eleven earlier
 ones remain proof-level identifications — the composed `startConfig` still embeds every earlier
-phase — the next one down, **H11** from G2m's payload dispatcher into G2p-a, is blocked twice over
-(no first-arrival theorem for the dispatcher's own terminal, and two non-reject absorbing outcomes `qAllZero`
-and `qHasOne` of which `UniformTM.seq` routes only the first), no first arrival of the composed
-accept is proved (the first arrival proved is G2p-a's, inside the left block), the lane is still
+phase. Part A G3f's pnp3 `FixedGammaPayloadDispatcherFirstArrival` closes the first of the two
+blockers on **H11**, from G2m's payload dispatcher into G2p-a: strict first arrival at any dispatcher
+terminal, with equality to the deadline configuration. The second blocker remains: two non-reject
+absorbing outcomes, `qAllZero` (its `machine.accept`) and `qHasOne`, of which `UniformTM.seq` routes
+only the first. G3f adds no composite table, executed handoff or pnp4 bridge; H11 stays uncomposed
+and the count stays **six of seventeen**. G3f is Infrastructure only. No first arrival of the G3e
+composed accept is proved (the first arrival proved is G2p-a's, inside the left block), the lane is still
 unfenced, the composed accept is still the countdown's phase-local `qDone` rather than language
 acceptance, the machine is a V1 `UniformTM` on `Option Bool` cells against `pairLength a m` and not
 the legacy `TM` with a `runTime` field that `ContentVerifierBridge` names, and, like G2x, G2y, G2z,

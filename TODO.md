@@ -191,11 +191,13 @@ same statement. **Six** of the seventeen handoffs are therefore now
 performed by a finite table; the eleven earlier ones remain proof-level identifications, the
 composed accept is still the countdown's phase-local `qDone`, and no witness-check
 phase exists, so this is not the runtime proof either. The next handoff down, **H11** — G2m's
-payload dispatcher into G2p-a — is **not** in that position, and is blocked twice over: the
-dispatcher exports its deadline-indexed endpoint classification but no first-arrival theorem for
-its own terminal, so it needs a G3b-style slice first; and it has *two non-reject* absorbing outcomes,
-`qAllZero` (its `machine.accept`) and `qHasOne`, of which `UniformTM.seq` would route only the
-first, so the generic combinator does not apply to it as it stands. Wrapper-level `L'`
+payload dispatcher into G2p-a — remains uncomposed. Part A G3f's
+`FixedGammaPayloadDispatcherFirstArrival` closes the first of its two blockers: strict first
+arrival at any of the dispatcher's three terminals, with equality to the deadline configuration.
+The second blocker stands: it has *two non-reject* absorbing outcomes, `qAllZero` (its
+`machine.accept`) and `qHasOne`, of which `UniformTM.seq` routes only the first, so the generic
+combinator does not apply to it unchanged. G3f adds no composite table or executed handoff; the
+count stays **six of seventeen**. This is Infrastructure only. Wrapper-level `L'`
 padding invariance and formal runtime/advice enforcement also remain open; complete-word
 `ContentAccepts` padding invariance does not close either item. The original length-gated
 `NP_not_subset_PpolyDAG_treePoly` / `PrefixExtensionNPWitness` capstone remains compiled and audited

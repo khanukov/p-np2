@@ -67,6 +67,8 @@ import
   Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetSecondPayloadMarkersLoopDecrementCountdownBridge
 import
   Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetFirstPayloadSecondPayloadMarkersLoopDecrementCountdownBridge
+import
+  Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownBridge
 import Pnp4.Frontier.ContractExpansion.ContentCappedArithmetic
 import Pnp4.Frontier.ContractExpansion.ContentCappedSizes
 import Pnp4.Frontier.ContractExpansion.ContentParseFieldRecovery
@@ -1077,3 +1079,19 @@ end Pnp4
 -- `Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`.
 #print axioms
   Pnp4.Frontier.ContractExpansion.first_payload_second_payload_markers_loop_decrement_countdown_drained_accepted_content_at_polyClock
+
+-- Part A G3e executed scratch-bootstrap-to-G3c handoff bridge: the pnp3 composed 95-state machine
+-- run out of the retagged actual G2m dispatcher endpoint under exactly G3c's three hypotheses at
+-- the same budget `B := polyClock 3 (pairLength a m)`.  The new switch H12 fires at G2p-a's first
+-- arrival, which at every decoded width -- width zero included, so no width case appears -- is the
+-- length- and width-dependent `2N - 11 - zeros`, no composed verdict occurs before it, the
+-- configuration handed over is read back semantically (head `8 + zeros`, tape `scratchTape`: the
+-- two projections G2p-b's own `startConfig` carries), and the composed accept is reached at
+-- `(2N - 11 - zeros) + (2N + zeros - 6) + (2N - 7) + exactClock + totalClock
+-- + composedClock <= B`, read at that clock and at `B`.  Six handoffs of seventeen; the eleven
+-- earlier retags, the fence, first arrival of the composed accept, every witness-check phase,
+-- `AcceptsAt`, `UniformP`, advice freedom and `ContentVerifierBridge` stay open.  The only other
+-- declaration is the `private` helper `bootChainClock_le_polyClock`; the wrapper and the probe are
+-- audited in `Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`.
+#print axioms
+  Pnp4.Frontier.ContractExpansion.scratch_bootstrap_first_payload_second_payload_markers_loop_decrement_countdown_drained_accepted_content_at_polyClock

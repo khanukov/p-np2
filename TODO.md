@@ -183,13 +183,19 @@ G2p-b now exports its exact first arrival (`exactClock N zeros`, `6` at width ze
 identification a composition needs; G3b itself builds **no** composition. Part A G3c then executes
 that handoff, **H13** — G2p-b's first payload digit into the G3a composite — inside a single
 composed 86-state machine at the same budget, switching at G2p-b's first arrival `2N + zeros - 6`
-on every positive width, the only kind an accepted parsed target reaches. **Five** of
-the seventeen handoffs are therefore now
-performed by a finite table; the twelve earlier ones remain proof-level identifications, the
+on every positive width, the only kind an accepted parsed target reaches. Part A G3e then executes
+the one before *that*, **H12** — G2p-a's scratch bootstrap into the G3c composite — inside a single
+composed 95-state machine at the same budget, switching at G2p-a's first arrival
+`2N - 11 - zeros`, which needs no width case and no room premise, so width zero enters through the
+same statement. **Six** of the seventeen handoffs are therefore now
+performed by a finite table; the eleven earlier ones remain proof-level identifications, the
 composed accept is still the countdown's phase-local `qDone`, and no witness-check
-phase exists, so this is not the runtime proof either. The next handoff down — G2p-a's scratch
-bootstrap into G2p-b — needs no new first-arrival theorem either, since G2p-a's
-`strict_first_terminal` is landed; that composition is owed. Wrapper-level `L'`
+phase exists, so this is not the runtime proof either. The next handoff down, **H11** — G2m's
+payload dispatcher into G2p-a — is **not** in that position, and is blocked twice over: the
+dispatcher exports its deadline-indexed endpoint classification but no first-arrival theorem for
+its own terminal, so it needs a G3b-style slice first; and it has *two non-reject* absorbing outcomes,
+`qAllZero` (its `machine.accept`) and `qHasOne`, of which `UniformTM.seq` would route only the
+first, so the generic combinator does not apply to it as it stands. Wrapper-level `L'`
 padding invariance and formal runtime/advice enforcement also remain open; complete-word
 `ContentAccepts` padding invariance does not close either item. The original length-gated
 `NP_not_subset_PpolyDAG_treePoly` / `PrefixExtensionNPWitness` capstone remains compiled and audited

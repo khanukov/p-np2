@@ -126,6 +126,8 @@ import Tests.UniformV1FixedGammaTargetMarkersLoopDecrementCountdownSurfaceTests
 import Tests.UniformV1FixedGammaTargetSecondPayloadMarkersLoopDecrementCountdownSurfaceTests
 import
   Tests.UniformV1FixedGammaTargetFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests
+import
+  Tests.UniformV1FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests
 import Tests.UniformV1BudgetTransportSurfaceTests
 import Tests.UniformV1CombinedMachineSurfaceTests
 import Tests.UniformV1CombinedCorrectnessSurfaceTests
@@ -5514,6 +5516,65 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_h13_probe_zero_width
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_inherited_handoff_probe
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_malformed_probe
+
+-- Part A G3e (2026-09-26), infrastructure only: G2p-a's 9-state scratch-bootstrap table and that
+-- whole G3c composite as one closed 95-state, 285-row table,
+-- `FixedGammaTerminatorScratchBootstrap.machine
+-- |>.seq FixedGammaTargetFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.machine`.  This is
+-- one new composed machine, but adds no component table row and no new first-arrival theorem:
+-- G2p-a already landed arrival, minimality and the deadline cover -- `strict_first_terminal`
+-- excludes both terminals before `exactClock N zeros = 2N - 11 - zeros` and lands `qTerm` there,
+-- and `exactClock_le_deadline` holds with no premise at all -- and `run_accept_of_le` identifies
+-- the run at the first arrival with the run at the length-only deadline `2 * N` that G2p-b's
+-- `startConfig`, and through it G3c's, retags.  G2p-a has exactly one working-state row into
+-- `qTerm` -- `qScanLeft` on the blank -- and it is routed to G3c's start at index 9, which is
+-- handoff H12; H13 (24 -> 27), H14 (38 -> 41), H15 (50/51 -> 55), H16 (74 -> 77) and H17
+-- (81 -> 84) are inherited.  One statement covers every decoded width, width zero included, and
+-- needs no room premise.  `handoff_endpoint_pins` reads the switch configuration back
+-- semantically: head `8 + zeros` and tape `scratchTape`, the two projections G2p-b's own
+-- `startConfig` carries.  The composed accept is reached at `exactClock N zeros + firstChainClock`
+-- under exactly G3c's seven hypotheses, and `malformed_reject_handoff` transports G2p-a's own
+-- exact malformed endpoint in the forward direction only.  Six handoffs of seventeen; the start
+-- still retags every earlier phase, the lane stays unfenced, no first arrival of the composed
+-- accept is proved, the reject handoff is no converse, and reaching the composed accept is
+-- neither halting on a raw input nor language acceptance.
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.machine
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.inBoot
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.inChain
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.route
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.startConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.bootChainClock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.table_and_resource_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.handoff_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.clock_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.handoff_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.handoff_endpoint_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.scratch_bootstrap_first_payload_second_payload_markers_loop_decrement_countdown_drained
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.malformed_reject_handoff
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_machine
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_inBoot
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_inChain
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_route
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_startConfig
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_bootChainClock
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_table_and_resource_pins
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_handoff_pins
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_clock_pins
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_handoff_exact
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_handoff_endpoint_pins
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_scratch_bootstrap_first_payload_second_payload_markers_loop_decrement_countdown_drained
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_malformed_reject_handoff
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_clock_values
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_boot_handoff_instance
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_malformed_instance
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_boot_drained_instance
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_handoff_literal
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_boot_literal_endpoint
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_h12_probe_physical
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_h12_probe_short_widths
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_h12_probe_zero_width
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_inherited_handoff_probe
+#print axioms Pnp3.Tests.UniformV1FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_malformed_probe
 
 -- S11 (2026-09-19), infrastructure only: all-request one-gate acceptance
 -- closure in main's transducer convention.  `accepts = r.spec.isSome`, so a

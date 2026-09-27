@@ -19,10 +19,11 @@ seventeen handoffs are now performed by a finite table and **nine** remain proof
   states and all three symbols, with the accept's own absorbing row excluded, a target of the
   anchor's accept forces `qReturn` on `some true` (`accept_row_unique`). `seq` retargets that row
   to the right block's start `tailStart` at index `6`, writing `some true` and staying, in that same
-  transition and at no cost. Six further anchor rows route to the composed reject `128`, the four
-  working rows stay inside the left block, and the two left verdict copies are dead: no left-block
-  row targets either, which with the right-block row equation and the block disjointness
-  `inAnchor p ≠ inTail q` — both in the same theorem — is every composed row.
+  transition and at no cost. Six further anchor rows route to the composed reject `128`; the marker-
+  erase row and four other working rows stay inside the left block; and the six rows of the two left
+  verdict copies are dead: no left-block row targets either verdict. Together with the right-block
+  row equation and the block disjointness `inAnchor p ≠ inTail q` — both in the same theorem — this
+  accounts for every composed row.
   `table_and_resource_pins` pins all eighteen anchor rows in the composed control alongside the
   counts, the injections with their offsets, and the routing cases. H11 (six rows inside `[6, 34)`,
   all into `34`) and H12 (`40 → 43`) to H17 (`115 → 118`) are inherited from G3g, its indices
@@ -69,7 +70,7 @@ seventeen handoffs are now performed by a finite table and **nine** remain proof
 
 Deferred and deliberately not claimed. **Nine of the seventeen handoffs remain proof-level**: the
 composed `startConfig` is G2a's own routed into the composed control, so it still retags the actual
-G2-terminator `finalConfig` and embeds every earlier phase, no raw-input `initialConfig` is
+gamma-terminator `finalConfig` and embeds every earlier phase, no raw-input `initialConfig` is
 executed, and no clock counts a step of any earlier phase. **No pnp4 bridge**: the standalone
 phases' pnp4 semantics are unchanged and no `ContentVerifierBridge`, raw-input acceptance,
 `AcceptsAt`, `DecidesWithin` or `UniformP` runtime theorem appears; whether the cubic budget still

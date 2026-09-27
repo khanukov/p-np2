@@ -2475,7 +2475,7 @@ width-`4` fixture, both switches on all seven well-formed words, the inherited H
 on that same fixture, and the composed reject.
 
 Deferred by G3h, and deliberately not claimed.  **Eight handoffs of seventeen**: `startConfig` is
-G2a's own routed into the composed control, so it still retags the actual G2-terminator `finalConfig`
+G2a's own routed into the composed control, so it still retags the actual gamma-terminator `finalConfig`
 and embeds every earlier phase; the nine handoffs before H10 stay proof-level, no raw-input
 `initialConfig` is executed, and no clock counts a step of any earlier phase.  **No first arrival of
 the composed accept**: the arrivals proved are the anchor's and, as a hypothesis, the dispatcher's,

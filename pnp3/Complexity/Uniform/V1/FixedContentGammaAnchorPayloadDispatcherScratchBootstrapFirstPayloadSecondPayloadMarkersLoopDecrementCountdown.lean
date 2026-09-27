@@ -52,7 +52,7 @@ forward direction only, from the malformed-gamma premise alone with no tag premi
 
 Deferred, and deliberately not claimed.  `startConfig` still **embeds** every earlier phase: the
 nine handoffs before H10 remain proof-level identifications (G2a's `startConfig` retags the actual
-G2-terminator `finalConfig`), no raw-input `initialConfig` is executed, and no clock here counts a
+gamma-terminator `finalConfig`), no raw-input `initialConfig` is executed, and no clock here counts a
 step of any earlier phase.  No **first arrival** of the composed accept (the arrivals proved are
 the anchor's and, as a hypothesis, the dispatcher's, both inside their own blocks); the **fence**
 (all nine tables are uncapped); every **converse**; a **footprint** theorem; and the pnp4 bridge,

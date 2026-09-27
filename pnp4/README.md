@@ -762,7 +762,7 @@ chained run described here still starts at G3e's composite, and the standalone d
 semantics (`qHasOne_iff`, `qAllZero_iff`, `qReject_iff`) are unchanged. Part A G3h (pnp3 only) has
 since executed **H10** as well — G2a's fixed 6-state gamma anchor prefixed to that G3g composite as
 one closed 129-state, 387-row table, with no new row and no `mergeAccept`, switching at the anchor's
-width-only strict first arrival `2*zeros+5` through the anchor's single row targeting its accept —
+width-only strict first arrival `2*zeros+5` through the anchor's single live row targeting its accept —
 taking the count to **eight of seventeen** with nine earlier handoffs still proof-level. G3h is
 Infrastructure only and likewise builds **no pnp4 bridge**: no `ContentVerifierBridge`, no
 raw-input acceptance, no advice-freedom claim and no P-vs-NP mainline progress; the standalone

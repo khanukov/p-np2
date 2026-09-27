@@ -767,7 +767,15 @@ taking the count to **eight of seventeen** with nine earlier handoffs still proo
 Infrastructure only and likewise builds **no pnp4 bridge**: no `ContentVerifierBridge`, no
 raw-input acceptance, no advice-freedom claim and no P-vs-NP mainline progress; the standalone
 phases' pnp4 semantics are unchanged and the chained run described here still starts at G3e's
-composite. No first arrival of the G3e
+composite. Part A G3i (pnp3 only) has since executed **H9** as well — G2's fixed 3-state gamma
+terminator prefixed to that G3h composite as one closed 132-state, 396-row table, again with no new
+row and no `mergeAccept`, switching at the terminator's width-only strict first arrival `zeros + 1`
+through its single live row targeting its accept — taking the count to **nine of seventeen** with
+eight earlier handoffs still proof-level; the eight-and-nine counts just given are the ones G3h left.
+G3i is Infrastructure only and likewise builds **no pnp4 bridge**: no `ContentVerifierBridge`, no
+raw-input acceptance, no advice-freedom claim and no P-vs-NP mainline progress; the standalone
+phases' pnp4 semantics are unchanged, this chained run still starts at G3e's composite, and G3i's own
+routed reject is forward-direction only and tag-gated. No first arrival of the G3e
 composed accept is proved (the first arrival proved is G2p-a's, inside the left block), the lane is still
 unfenced, the composed accept is still the countdown's phase-local `qDone` rather than language
 acceptance, the machine is a V1 `UniformTM` on `Option Bool` cells against `pairLength a m` and not

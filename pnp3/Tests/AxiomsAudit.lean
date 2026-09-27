@@ -5775,11 +5775,14 @@ end DeprecatedAC0CompatibilityAxiomAudit
 -- Part A G3i (2026-09-27), infrastructure only.  G2's fixed 3-state, 9-row gamma terminator, then
 -- the whole G3h composite, as one closed 132-state, 396-row table with no new row.  H9 is executed
 -- by the terminator's single live routed row -- `qScan` on `some true`, its only row targeting its
--- accept -- into index 3 at the terminator's width-only strict first arrival `zeros + 1`, with its
--- one remaining routed row `qScan` on the blank aimed at the composed reject 131 and both left
--- verdict copies dead; H10 to H17 are inherited from G3h.  Nine handoffs of seventeen; the start
--- still retags the actual tag-gate endpoint, the lane stays unfenced, the routed reject carries the
--- tag premise and is no converse, no first arrival of the composed accept and no pnp4 bridge is
+-- accept once the accept's own absorbing three are excluded -- into index 3 at the terminator's
+-- width-only strict first arrival `zeros + 1`.  Its one remaining live routed row, `qScan` on the
+-- blank, is aimed at the composed reject 131 and is unique in the same scoped sense, over the
+-- terminator's rows and outside the reject's own absorbing three; the inherited right block keeps
+-- its own rows into 131; and both left verdict copies are dead.  H10 to H17 are inherited from
+-- G3h.  Nine handoffs of seventeen; the start still retags the actual tag-gate endpoint, the lane
+-- stays unfenced, the routed reject carries the tag premise and is no converse, no first arrival of
+-- the composed accept and no pnp4 bridge is
 -- proved, and reaching the composed accept is neither halting on a raw input nor acceptance.
 #print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.machine
 #print axioms Pnp3.Complexity.Uniform.V1.FixedContentGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.inTerminator

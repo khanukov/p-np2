@@ -284,11 +284,13 @@ lean_lib PnP3 where
       `Complexity.Uniform.V1.FixedContentGammaAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown,
     -- Part A G3i: G2's gamma terminator, then that whole G3h composite, as one closed 132-state,
     -- 396-row table.  H9 is newly executed by the terminator's one live routed row -- qScan on
-    -- `some true`, its only row targeting its accept -- into index 3 at the terminator's width-only
-    -- first arrival zeros+1; H10 to H17 are inherited.  Nine handoffs of seventeen; the start still
-    -- retags the actual tag-gate endpoint, the lane stays unfenced, the routed reject now carries
-    -- the tag premise, and no raw-input execution, first arrival of the composed accept, pnp4
-    -- bridge, or language acceptance is claimed.
+    -- `some true`, its only row targeting its accept once the accept's own absorbing three are
+    -- excluded -- into index 3 at the terminator's width-only first arrival zeros+1; H10 to H17 are
+    -- inherited.  Nine handoffs of seventeen; the start still retags the actual tag-gate endpoint,
+    -- the lane stays unfenced, the newly routed reject row (unique in the same scoped sense, and
+    -- alongside the right block's own inherited rows into 131) now carries the tag premise, and no
+    -- raw-input execution, first arrival of the composed accept, pnp4 bridge, or language
+    -- acceptance is claimed.
     Glob.one
       `Complexity.Uniform.V1.FixedContentGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown,
     -- Generic bounded cross-budget simulation for one fixed UniformTM.

@@ -1689,7 +1689,15 @@ at the width-only strict first arrival `2*zeros+5` — taking the count to **eig
 nine earlier handoffs still proof-level. G3h is Infrastructure only and builds **no pnp4 bridge**
 either: no G3h bridge module exists, this bridge still starts at G3e's composite, and no
 `ContentVerifierBridge`, raw-input acceptance, advice-freedom claim or P-vs-NP mainline progress
-follows from it. `S` is the first
+follows from it. Part A G3i (pnp3 only) has since executed **H9** as well — G2's fixed 3-state, 9-row
+gamma terminator prefixed to that G3h composite as one closed 132-state, 396-row table, again with no
+new row and no `mergeAccept`, switching through the terminator's single live row targeting its accept
+at the width-only strict first arrival `zeros+1` — taking the count to **nine of seventeen** with
+eight earlier handoffs still proof-level; the eight-and-nine counts just given are the ones G3h left.
+G3i is Infrastructure only and builds **no pnp4 bridge** either: no G3i bridge module exists, this
+bridge still starts at G3e's composite, its newly routed reject is tag-gated and forward-direction
+only, and no `ContentVerifierBridge`, raw-input acceptance, advice-freedom claim or P-vs-NP mainline
+progress follows from it. `S` is the first
 time H12 fires, but no theorem says `C` is the first time the composed accept is entered; the first
 arrival proved is G2p-a's, inside the left block. All seven tables are unfenced, hence so is the
 composition: accepted words never overflow the lane, since `pr.2.n ≤ N` is derived, but an

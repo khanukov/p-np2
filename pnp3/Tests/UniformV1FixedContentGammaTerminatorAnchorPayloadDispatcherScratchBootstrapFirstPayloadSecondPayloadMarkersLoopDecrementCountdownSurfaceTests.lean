@@ -28,9 +28,12 @@ H11, the inherited H12 at steps `54`/`55` on the width-`4` fixture, and the comp
 terminator's deadline `4` on the malformed fixture.
 
 Not here: the composed `startConfig` still embeds every earlier phase as a retag of the actual
-tag-gate `finalConfig`, so no raw-input run and none of the eight earlier handoffs is executed or
-pinned; no first arrival of the composed accept, fence, converse, footprint theorem or pnp4 bridge;
-and no `accepts`, `AcceptsAt`, `DecidesWithin`, `UniformP` or language-membership statement. -/
+tag-gate `finalConfig`, so there is no raw-input run and none of the eight earlier handoffs is
+**executed** by this table.  One of them is pinned, as an identification and not as an executed row:
+`check_handoff_pins` records H8 — G2's `startConfig` is the tag gate's `finalConfig` at its own
+deadline, retagged — and no table row of any earlier phase is pinned anywhere here.  Also not here:
+no first arrival of the composed accept, fence, converse, footprint theorem or pnp4 bridge; and no
+`accepts`, `AcceptsAt`, `DecidesWithin`, `UniformP` or language-membership statement. -/
 namespace
   Pnp3.Tests.UniformV1FixedContentGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests
 

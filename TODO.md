@@ -209,10 +209,21 @@ and no new combinator: the anchor has exactly two absorbing states, so the lande
 routes both and no `mergeAccept` is needed. H10's one live row — `qReturn` on `some true`, proved
 the anchor's only row targeting its accept — fires at the anchor's width-only strict first arrival
 `2*zeros + 5`, which carries no room premise and is bounded by the length-only deadline `2N`.
-**Eight** of the seventeen handoffs are therefore now performed by a finite table; the nine earlier
-ones remain proof-level identifications, the composed accept is still the countdown's phase-local
-`qDone`, and G3h constructs no `ContentVerifierBridge` or other pnp4 bridge, no fence, no raw-input
-acceptance and no advice-freedom claim, so it is no P-vs-NP mainline progress.
+**Eight** of the seventeen handoffs were therefore then performed by a finite table, and G3h
+constructs no `ContentVerifierBridge` or other pnp4 bridge, no fence, no raw-input acceptance and no
+advice-freedom claim, so it is no P-vs-NP mainline progress. Part A G3i then executes the one before
+*that*, **H9** — G2's gamma terminator into G2a's gamma anchor — inside a single composed 132-state,
+396-row machine, `FixedContentGammaTerminator.machine.seq` the G3h composite, again with **no new
+table row** and no new combinator: the terminator also has exactly two absorbing states, so the
+landed `UniformTM.seq` routes both. H9's one live row — `qScan` on `some true`, the terminator's only
+row targeting its accept once the accept's own absorbing three are excluded — fires at the
+terminator's width-only strict first arrival `zeros + 1`, which carries no room premise and is
+bounded by the length-only deadline `N - 7`; unlike G3h's, the newly routed reject row carries the
+tag premise and is forward-direction only. **Nine** of the seventeen handoffs are therefore now
+performed by a finite table; the eight earlier ones remain proof-level identifications, the composed
+accept is still the countdown's phase-local `qDone`, and G3i likewise constructs no
+`ContentVerifierBridge` or other pnp4 bridge, no fence, no raw-input acceptance and no
+advice-freedom claim, so it too is no P-vs-NP mainline progress.
 This is Infrastructure only. Wrapper-level `L'`
 padding invariance and formal runtime/advice enforcement also remain open; complete-word
 `ContentAccepts` padding invariance does not close either item. The original length-gated

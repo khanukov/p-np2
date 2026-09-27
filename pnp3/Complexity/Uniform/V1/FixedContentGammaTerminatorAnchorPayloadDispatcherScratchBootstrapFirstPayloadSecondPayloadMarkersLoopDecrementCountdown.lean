@@ -227,12 +227,16 @@ theorem table_and_resource_pins :
   · decide
 
 /-- **The terminator has exactly one live row targeting each of its verdicts.**  Over all three
-states and all three symbols, with the accept's own absorbing row excluded, a target of
+states and all three symbols, with the accept's own absorbing three excluded, a target of
 `FixedContentGammaTerminator.machine.accept` forces `qScan` on `some true`; with the reject's own
-absorbing row excluded, a target of `FixedContentGammaTerminator.machine.reject` forces `qScan` on
-the blank.  So H9 has exactly one live routed row and the composed machine exactly one live routed
-reject row.  The excluded rows are the dead left copies' own, which `seq` routes to `tailStart` and
-to the composed reject and no composed row ever enters. -/
+absorbing three excluded, a target of `FixedContentGammaTerminator.machine.reject` forces `qScan` on
+the blank.  So H9 has exactly one live routed row, and `qScan` on the blank is the **terminator
+block's** one live row newly routed to the composed reject `131`.  Both halves quantify over the
+terminator's rows alone and say nothing about the composed table as a whole: the inherited right
+block keeps its own rows into `131`, among them G2a's `qStart` rejections, which by the right-block
+row equation sit at `tailStart` on the blank and on `some false`.  The excluded rows are the dead
+left copies' own, which `seq` routes to `tailStart` and to the composed reject and no composed row
+ever enters. -/
 theorem verdict_rows_unique (q : Fin FixedContentGammaTerminator.stateCount) (s : Option Bool) :
     (q ≠ FixedContentGammaTerminator.qAccept →
       (FixedContentGammaTerminator.machine.rawStep q s).1 =

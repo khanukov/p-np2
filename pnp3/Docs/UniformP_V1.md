@@ -2357,8 +2357,8 @@ caveat 6 of `VERIFIER_RETARGET_PLAN.md` is untouched. Neither `SearchMCSPWeakLow
 The Part A G3g `Complexity.Uniform.V1.AcceptMerge` and
 `Complexity.Uniform.V1.FixedGammaPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown`
 close the second H11 blocker and execute H11, with no new table row and no landed module's code
-edited (one stale sentence of G3f's module docstring is corrected).  The generic half is a table
-transformation: `M.mergeAccept e` keeps `M`'s states,
+edited (one stale sentence of G3f's module docstring and one of its surface-test docstring are
+corrected).  The generic half is a table transformation: `M.mergeAccept e` keeps `M`'s states,
 `accept` and `reject`, and retargets, in the start and in every raw row, a target `e` to
 `M.accept` (`mergeState`), leaving every written symbol and move untouched.  With `e` neither
 verdict of `M`, `e` is a dead index -- no merged row targets it (`mergeAccept_step_ne`) and no

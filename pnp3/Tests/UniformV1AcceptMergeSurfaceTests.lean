@@ -6,7 +6,7 @@ Surface pins for the Part A G3g generic half: the accept merge `M.mergeAccept e`
 `M.accept`, so that the landed `UniformTM.seq` routes both endpoints into the next machine's start.
 Every public declaration is named on the surface and directly axiom-audited.  For compactness,
 `check_mergeState_pins`, `check_mergeAccept_step` and `check_mergeAccept_runs` bundle several facts
-under shared premises; individual conjuncts can therefore be stronger than their source theorem.
+under shared premises; individual conjuncts may carry stronger premises than their source theorem.
 
 The literal probe.  `twin` has four states: on a blank it writes `some true`, moves right and
 accepts; on `true` it stops in its second absorbing endpoint `e3 = ⟨3, _⟩`, neither verdict; on

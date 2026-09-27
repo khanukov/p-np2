@@ -8,10 +8,11 @@ transformation and the same sequential composition applied a seventh time, one b
 `Complexity.Uniform.V1.AcceptMerge` (generic) and
 `Complexity.Uniform.V1.FixedGammaPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown`
 (concrete), with their surface tests. **No new table row and no landed module's code edited**; one
-stale sentence in G3f's module docstring is corrected. The concrete machine is G2k's fixed
-28-state, 84-row payload dispatcher with its second successful absorbing endpoint `qHasOne` merged
-into its `accept` `qAllZero`, followed by the whole G3e 95-state composite, as one closed 123-state,
-369-row table, `(FixedGammaPayloadDispatcher.machine.mergeAccept qHasOne).seq
+stale sentence in G3f's module docstring and one in its surface-test docstring are corrected. The
+concrete machine is G2k's fixed 28-state, 84-row payload dispatcher with its second successful
+absorbing endpoint `qHasOne` merged into its `accept` `qAllZero`, followed by the whole G3e
+95-state composite, as one closed 123-state, 369-row table,
+`(FixedGammaPayloadDispatcher.machine.mergeAccept qHasOne).seq
 FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.machine`.
 Write `N = a+m` and `d = borrow x w zeros`.
 

@@ -11,8 +11,8 @@ step targets it and no merged run out of a merged configuration is ever in it
 (`mergeAccept_step_ne`, `mergeAccept_run_ne`).
 
 `mergeState`, `mergeAccept` and `mergeConfig` retarget **whatever** index they are handed, no case
-hidden: at `e = M.reject` they retarget `M`'s *rejecting* rows to `M.accept` as well, so no merged
-row targets the merged `reject` at all.  Every theorem that reads `e` as a **second success**
+hidden: at `e = M.reject` they retarget `M`'s *rejecting raw* rows to `M.accept` as well, so no
+merged raw row targets the merged `reject` at all.  Every theorem that reads `e` as a **second success**
 therefore carries `e ≠ M.reject`.  `mergeAccept_step`, `mergeAccept_step_ne`, `mergeAccept_run_ne`
 and `mergeAccept_seq_reject_handoff` consume it in the proof; in `mergeAccept_run_accept` and
 `mergeAccept_seq_handoff` it is a **scope guard** the proof does not use — the equations hold for

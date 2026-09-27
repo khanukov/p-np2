@@ -55,8 +55,8 @@ seventeen handoffs are now performed by a finite table and **nine** remain proof
   separator blank `N+2+zeros` with tape `loopTape B x w zeros 0 v`, persisting; `v` is universally
   quantified and unsupplied, and persistence is not first arrival. On a malformed gamma the anchor
   rejects at step `1`, the dispatcher never runs, and `malformed_reject_handoff` lands the composed
-  reject `128` from step one on — forward direction only, out of the decoded width alone, with **no**
-  tag premise.
+  reject `128` from step one on — forward direction only, from the malformed-gamma premise alone,
+  with **no** tag premise.
 * **Probes.** The surface test reuses G3f's and G3g's eight words. The seven well-formed ones switch
   at `5`, `7`, `9`, `9`, `9`, `9`, `13`, and the inherited H11 then fires at `7`, `23`, `21`, `21`,
   `32`, `32`, `31`. It derives H10 at the widest and the narrowest fixture, the drain at `B = 22`

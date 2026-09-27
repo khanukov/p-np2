@@ -2466,7 +2466,7 @@ chosen; and the drained theorem lands the composed accept `127` at exactly
 eight hypotheses unchanged, on the separator blank `N + 2 + zeros` with tape
 `loopTape B x w zeros 0 v`, persisting.  On a malformed gamma the anchor rejects at step `1`, the
 dispatcher never runs, and `malformed_reject_handoff` lands the composed reject `128` from step one
-on, forward direction only, out of the decoded width alone with **no** tag premise.  The surface
+on, forward direction only, from the malformed-gamma premise alone with **no** tag premise.  The surface
 test reuses G3f's and G3g's eight words, derives H10 at the widest and the narrowest fixture, the
 drain at `B = 22` after `1129` steps (`13` anchor, `18` dispatcher, `1098` G3e) with the register
 value `24` supplied by hand, and the malformed reject; and it independently reduces, with no slice

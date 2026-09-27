@@ -48,7 +48,7 @@ machine, and the drained theorem lands the composed accept `127` at exactly
 `anchorChainClock C N zeros d v = 2 * zeros + 5 + dispatcherChainClock C N zeros d v` under G3g's
 eight hypotheses unchanged.  On a malformed gamma the anchor rejects at step `1` — the dispatcher
 never runs — and `malformed_reject_handoff` lands the composed reject `128` from step one on,
-forward direction only, out of the decoded width alone with no tag premise.
+forward direction only, from the malformed-gamma premise alone with no tag premise.
 
 Deferred, and deliberately not claimed.  `startConfig` still **embeds** every earlier phase: the
 nine handoffs before H10 remain proof-level identifications (G2a's `startConfig` retags the actual

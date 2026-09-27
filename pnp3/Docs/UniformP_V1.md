@@ -2626,8 +2626,8 @@ composed reject `146` from `3 * N + 7 + (N - 7)` on, forward direction only.  On
 match -- the right block never runs at all and the composed reject `146` holds from the gate's
 length-only deadline `3 * N + 7` on, on the gate's own `finalConfig` head over the unchanged content
 tape, forward direction only.  That branch is deliberately **not** timed exactly: the gate first
-rejects at its mismatch index, and the phase's public API exposes that index only through
-`finalConfig.head`, whose defining `badIndex` is private, so no "and not before" accompanies it.  The
+rejects at a time determined by its mismatch cell, and the phase's public API exposes that cell only
+through `finalConfig.head`, whose defining `badIndex` is private, so no "and not before" accompanies it.  The
 surface test reuses G3f's, G3g's, G3h's and G3i's eight words and adds `badTag`, that tag with its
 first bit flipped.  Because the gate's switch is length-only the seven well-formed words switch at
 `58`, `43`, `40`, `40`, `37`, `46` and `43` -- always on the gamma cell `8`, whatever the width -- and
@@ -2636,7 +2636,7 @@ the test derives H8 at the widest and the narrowest fixture, the drain at `B = 2
 supplied by hand, the malformed reject at `44` and the mismatched reject at `40`; and it independently
 reduces, with no slice theorem used, the gate's rewind and tag scan, all seven H8 switches, the
 inherited H9, H10 and H11, the inherited H12 at steps `112`/`113`, the composed reject `146` at `44`
-on the malformed fixture, and the composed reject on `badTag` at the gate's own mismatch index `33`,
+on the malformed fixture, and the composed reject on `badTag` at rejection time `33`, at mismatch cell `0`,
 one step after a control in neither composed verdict and seven steps before the length-only deadline
 `40` the theorem states.
 

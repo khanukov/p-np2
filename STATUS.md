@@ -70,8 +70,8 @@ seventeen handoffs are now performed by a finite table and **seven** remain proo
   match — the right block never runs at all and the composed reject `146` holds from the gate's
   length-only deadline `3 * N + 7` on, on the gate's own `finalConfig` head over the unchanged
   content tape. Both are forward direction only, and the mismatched one is deliberately **not** timed
-  exactly: the gate first rejects at its mismatch index, and the phase's public API exposes that
-  index only through `finalConfig.head`, whose defining `badIndex` is private.
+  exactly: the gate first rejects at a time determined by its mismatch cell, and the phase's public
+  API exposes that cell only through `finalConfig.head`, whose defining `badIndex` is private.
 * **Probes.** The surface test reuses G3f's, G3g's, G3h's and G3i's eight words and adds `badTag`,
   that tag with its first bit flipped. Because the gate's switch is length-only the seven well-formed
   words switch at `58`, `43`, `40`, `40`, `37`, `46` and `43` — always on the gamma cell `8`,
@@ -82,7 +82,7 @@ seventeen handoffs are now performed by a finite table and **seven** remain proo
   `40`; and it independently reduces the composed machine by kernel computation, with no slice
   theorem used, through the gate's rewind and tag scan, all seven H8 switches, the inherited H9, H10
   and H11, the inherited H12 at steps `112`/`113`, and the composed reject `146` at `44` on the
-  malformed fixture and at the gate's own mismatch index `33` on `badTag` — one step after a control
+  malformed fixture and at rejection time `33` on `badTag`, at mismatch cell `0` — one step after a control
   in neither composed verdict, and seven steps before the length-only deadline `40` the theorem
   states.
 

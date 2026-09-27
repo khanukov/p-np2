@@ -27,8 +27,8 @@ the dispatcher by kernel computation, reading back the working state one step be
 and the endpoint index and head at it. So the clocks are cross-checked against the table, not
 only against the proofs.
 
-Not here: `qHasOne` remains a second non-reject absorbing endpoint, so no `UniformTM.seq`
-routing, no H11 composite and no composed clock; and no `accepts`, `AcceptsAt`,
+Not in G3f itself: `qHasOne` remains a second non-reject absorbing endpoint here, so this slice has
+no `UniformTM.seq` routing, H11 composite or composed clock (G3g adds those later); and no `accepts`, `AcceptsAt`,
 `DecidesWithin`, `UniformP`, language-membership or `ContentVerifierBridge` statement. -/
 
 namespace Pnp3.Tests.UniformV1FixedGammaPayloadDispatcherFirstArrivalSurfaceTests

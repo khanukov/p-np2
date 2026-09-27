@@ -1,6 +1,100 @@
 # Project Status (current)
 
-Updated: 2026-09-26
+Updated: 2026-09-27
+
+**Part A G3g, the executed dispatcher → G3e handoff H11 by accept merging: a generic table
+transformation and the same sequential composition applied a seventh time, one block further left
+(infrastructure only).** Two new pnp3 modules,
+`Complexity.Uniform.V1.AcceptMerge` (generic) and
+`Complexity.Uniform.V1.FixedGammaPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown`
+(concrete), with their surface tests. **No new table row and no landed module's code edited**; one
+stale sentence in G3f's module docstring and one in its surface-test docstring are corrected. The
+concrete machine is G2k's fixed 28-state, 84-row payload dispatcher with its second successful
+absorbing endpoint `qHasOne` merged into its `accept` `qAllZero`, followed by the whole G3e
+95-state composite, as one closed 123-state, 369-row table,
+`(FixedGammaPayloadDispatcher.machine.mergeAccept qHasOne).seq
+FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.machine`.
+Write `N = a+m` and `d = borrow x w zeros`.
+
+When G3f landed, H11 — G2m's payload dispatcher into G2p-a — had one blocker left: the dispatcher
+has *two* non-reject absorbing outcomes, and `UniformTM.seq` routes a left `accept` and `reject`
+only. G3g removes it without touching `seq` or G2k's table, and executes H11, so **seven** of the
+seventeen handoffs are now performed by a finite table and **ten** remain proof-level retags.
+
+* **The generic half is a table transformation, not a machine.** `M.mergeAccept e` keeps `M`'s
+  states, `accept` and `reject`; its start and every raw row have a target `e` retargeted to
+  `M.accept` (`mergeState`), with every written symbol and move untouched. With `e` neither verdict
+  of `M`, `e` becomes a dead index: no merged row targets it and no merged run out of a merged
+  configuration is ever in it (`mergeAccept_step_ne`, `mergeAccept_run_ne`). `mergeAccept_run`
+  simulates: as long as `M` has not been in `e` before `T`, the merged run is `M`'s run re-embedded
+  up to and including `T`, and at `T` both `e` and `M.accept` read back as the merged accept
+  (`mergeAccept_run_accept`). `mergeAccept_seq_handoff` is then `seq_handoff` against both
+  endpoints at once, with every landed `seq` lemma reused unchanged: row for row,
+  `(M.mergeAccept e).seq M₂` is the table a bespoke two-success-source combinator would produce.
+  Its surface test reduces a four-state literal with two success endpoints, its merge, the routed
+  composition, and the unmerged composition as a negative control, which sticks in the dead left
+  state.
+* **H11 is executed by six live routed rows.** After the merge exactly two working-state rows of
+  G2k change target — `qCursorFillOne` on the blank and `qPendingFillOne` on `true`, which aimed at
+  `qHasOne` — and `seq` routes them, together with the four rows that already aimed at `qAllZero`
+  (`qCursorBackFirst` and `qCursorFillVirtual` on the blank, `qZeroFillCounter` and
+  `qPendingFillVirtual` on `true`), into G3e's start at composed index `28`, in that same
+  transition, at no cost. `table_and_resource_pins` pins every merged row as G2k's row with its
+  target merged, the two retargeted rows, `qHasOne` as no row's target, and the six routed rows. H12 (`34 → 37`), H13 (`52 → 55`), H14 (`66 → 69`), H15 (`78`/`79 → 83`),
+  H16 (`102 → 105`) and H17 (`109 → 112`) are inherited from G3e by the block-offset equations and
+  the universal right-block row equation.
+* **The switch time is input-dependent.** Unlike every earlier handoff, H11 fires at the
+  dispatcher's strict first terminal time `C` of G3f's `StrictFirstTerminalAt B x w C q`, one of
+  seven path cases selected by the payload, sharing five closed forms (`1`, `2`, `3*zeros+6`,
+  `pendingEndClock zeros k`, `zeroEndClock zeros`); there is no length-only formula.
+  `handoff_of_first_terminal` takes that
+  first arrival, `q ≠ qReject` and `C ≤ deadline N` as hypotheses and concludes: no composed
+  verdict before `C`; the composed run is G2k's own run merged and routed up to and including `C`,
+  with the same head and whole tape at every such time; at exactly `C` it **is** G3e's landed
+  `startConfig B x w` re-embedded; and every later step is a G3e step.
+  `strictFirstTerminalAt_unique` pins the arrival unique, `side_premises_of_strictFirstTerminalAt`
+  derives the two side premises from a matching tag and a decoded width, and `tagged_handoff`
+  packages the switch existentially from those two hypotheses alone.
+* **Both outcomes route, the reject stays rejecting, and the verdict is merged exactly where the
+  chain already discards it.** With `q = qAllZero` or `q = qHasOne` the merged control at `C` is
+  `qAllZero` and the same row the standalone dispatcher takes is routed on the same head and tape;
+  `handoff_endpoint_pins` reads
+  the switch configuration back as G2p-a's own `startConfig` projections — the unchanged
+  `contentTape` and the cleaned head, `7` at width zero and `6` otherwise. The composed control
+  after the switch does not record which of the two the dispatcher reached; G2p-a's landed
+  `retagDispatcher` keeps only head and tape, so nothing downstream ever read that verdict, and
+  G2m's `qHasOne_iff`/`qAllZero_iff` remain statements about the standalone dispatcher, untouched.
+  On a malformed gamma the dispatcher rejects at step `1`, the merge keeps `qReject` fixed, and
+  `malformed_reject_handoff` lands the composed reject `122` from step one on, forward direction
+  only.
+* **The composed run.** The drained theorem takes G3e's **seven** hypotheses plus the dispatcher's
+  first arrival — eight, none redundant — and lands the composed accept `121` at exactly
+  `dispatcherChainClock C N zeros d v = C + bootChainClock N zeros d v` on the separator blank
+  `N+2+zeros` with tape `loopTape B x w zeros 0 v`, persisting.
+* **Probes.** The surface test reuses G3f's eight words. The seven well-formed ones switch at `2`,
+  `16`, `12`, `18`, `12`, `23`, `23`, three of them through the retargeted rows; the malformed word
+  has no switch time at all — its first terminal is the reject at step `1`. It derives H11
+  through both success endpoints (`physWord` via `qHasOne`, `oneWord` via `qAllZero`) from
+  `handoff_of_first_terminal` and G3f's path theorems, the handed-over head and tape from
+  `handoff_endpoint_pins`, the drain at the physical fixture at `B = 22` after `1116` steps, and the
+  malformed reject; and it independently reduces the composed machine by kernel computation one
+  step before and at the switch on all seven well-formed words, the inherited H12 and H13 at steps
+  `36`/`37` and `68`/`69`, and the composed reject `122` at step `1`, out of configurations
+  identified only through G2a's landed `run_deadline`.
+
+Deferred and deliberately not claimed. **Ten of the seventeen handoffs remain proof-level**: the
+composed `startConfig` still retags the actual G2a anchor endpoint and embeds every earlier phase,
+no raw-input `initialConfig` is executed, and no clock counts a step of any earlier phase. **No pnp4
+bridge**: the standalone dispatcher's pnp4 semantics are unchanged and no `ContentVerifierBridge`,
+raw-input acceptance, `AcceptsAt`, `DecidesWithin` or `UniformP` runtime theorem appears; whether
+the cubic budget still dominates `2N² + bootChainClock` is not proved here. **No first arrival of
+the composed accept**: the first arrival proved is the dispatcher's, inside the left block. The
+**fence** is unchanged, so an oversized register still times out; no **footprint** theorem; no
+**converse**, so the composed reject implies nothing about the input. The endpoints reached are
+internal states out of a retagged actual prior endpoint, neither halting on a raw input nor
+language acceptance. The **model connection** remains open (caveat 6 of
+`VERIFIER_RETARGET_PLAN.md`). Neither `SearchMCSPWeakLowerBound` nor
+`VerifiedNPDAGLowerBoundSource` is reduced. Infrastructure only.
 
 **Part A G3f, the strict first terminal arrival of the gamma-payload dispatcher: the first of the
 two blockers on H11, and only that one (infrastructure only).** One new pnp3 module,
@@ -14,7 +108,8 @@ transports is private to that module. Write
 When G3e landed, H11 — G2m's payload dispatcher into G2p-a — had two blockers: missing
 first arrival for the dispatcher's own terminal, and *two* non-reject absorbing outcomes.
 G3f removes the first blocker and **nothing else**; the second stands, so the handoff count is
-still **six of seventeen** and no H11 composite table exists.
+still **six of seventeen** and no H11 composite table exists. (Those are the count and the open
+blocker this G3f slice left; G3g above has since removed the second blocker and executed H11.)
 
 * **The terminal set is derived from the table, not chosen.** `IsTerminal q` is
   `q = qAllZero ∨ q = qHasOne ∨ q = qReject`, and `isTerminal_iff_absorbing` proves it equivalent,
@@ -66,12 +161,12 @@ still **six of seventeen** and no H11 composite table exists.
   are cross-checked against the table and not only against the proofs; the `check_*_probe`
   wrappers separately derive the same arrivals from the theorems.
 
-Deferred and deliberately not claimed. **The second H11 blocker stands**: `qHasOne` is still a
-second non-reject absorbing outcome, and `UniformTM.seq` routes the left machine's `accept` and
-`reject` only, so the generic combinator still does not apply to this dispatcher unchanged. **No
-composition is built here**: no `seq`, no composed machine, no composed clock, no new handoff and
-no pnp4 bridge, so **six of the seventeen** handoffs remain the ones performed by a finite table
-and the eleven earlier ones remain proof-level identifications. **No new converse theorem is
+Deferred and deliberately not claimed by G3f itself. At its landing, **the second H11 blocker
+stood**: `qHasOne` was still a second non-reject absorbing outcome, and `UniformTM.seq` routes the
+left machine's `accept` and `reject` only, so the generic combinator did not apply to this dispatcher
+unchanged. **G3g above later closes that blocker and composes H11**; no composition is built in G3f
+itself. At the G3f head, **six of the seventeen** handoffs were performed by a finite table and the
+eleven earlier ones remained proof-level identifications. **No new converse theorem is
 stated here**: the seven path theorems run from the parsed shape to the endpoint only. G2m's
 imported `qHasOne_iff` and `qReject_iff` already give endpoint converses under their respective
 hypotheses; `run_deadline_eq_of_strictFirstTerminalAt` transports that classification to a strict
@@ -157,9 +252,10 @@ landed: `FixedGammaPayloadDispatcherDeadline` exported the deadline-indexed endp
 but no first-arrival theorem for its own terminal, so that composition needed a new first-arrival
 slice first, the way G3b had to precede G3c; and the dispatcher has *two non-reject* absorbing
 outcomes, `qAllZero` (its `machine.accept`) and `qHasOne`, of which `UniformTM.seq` routes only the
-first, so the generic combinator does not apply to it unchanged. Part A G3f above has since closed
-the first of those two blockers, and only that one: the second stands, so H11 is still not
-composed and the count below is unchanged. **First arrival of the composed accept**: `S` is the first time H12 fires, but
+first, so the generic combinator does not apply to it unchanged. Part A G3f above later closed the
+first blocker, and G3g now closes the second by accept merging and composes H11. The six-of-seventeen
+count in this historical G3e entry is the count at G3e's landing. **First arrival of the composed
+accept**: `S` is the first time H12 fires, but
 nothing says `C` is the first time the composed accept is entered, since G2s-a and G2u prove no
 first arrival for `qDone`; the first arrival proved here is G2p-a's, inside the left block. **The
 fence**: all seven tables are unfenced, hence so is the composition; an oversized register still

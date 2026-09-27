@@ -1675,7 +1675,14 @@ arrival at any dispatcher terminal, with equality to the deadline configuration.
 blocker stands: *two* non-reject absorbing outcomes, `qAllZero` (its `machine.accept`) and
 `qHasOne`, of which `UniformTM.seq` routes only the first, so the generic combinator does not apply
 to it unchanged. G3f adds no composite table, executed handoff or pnp4 bridge; the count stays
-**six of seventeen**. G3f is Infrastructure only. `S` is the first
+**six of seventeen**. G3f is Infrastructure only. Part A G3g (pnp3 only) has since removed that
+second blocker with the generic `UniformTM.mergeAccept` — `qHasOne` merged into `qAllZero`, the
+merged dispatcher composed with the G3e composite as one 123-state table — and executed H11 at the
+dispatcher's input-dependent strict first arrival, taking the count to **seven of seventeen** with
+ten earlier handoffs still proof-level; the six-and-eleven counts in this G3e paragraph are the
+ones that slice left. G3g builds **no pnp4 bridge**: this bridge still starts at G3e's composite,
+no G3g bridge module exists, and the standalone dispatcher's `qHasOne_iff`, `qAllZero_iff` and
+`qReject_iff` are unchanged. `S` is the first
 time H12 fires, but no theorem says `C` is the first time the composed accept is entered; the first
 arrival proved is G2p-a's, inside the left block. All seven tables are unfenced, hence so is the
 composition: accepted words never overflow the lane, since `pr.2.n ≤ N` is derived, but an

@@ -21,8 +21,8 @@ drain runs at `B = 22` after `1129` steps — `13` for the anchor, `18` for the 
 G3e — with the register value `24 > N` supplied **by hand** (an execution fixture, no
 accepted-content fixture).  The `check_*_probe` theorems reduce the composed machine by kernel computation
 out of the actual `startConfig`, with no slice theorem used: the anchor's leftward walk, its
-marker erase writing `none` into cell `7` at step `zeros + 4`, both switches, and the composed
-reject.
+marker erase writing `none` into cell `7` at step `zeros + 4`, both switches, the inherited H12 at
+steps `49`/`50` on the width-`4` fixture, and the composed reject.
 
 Not here: the composed `startConfig` still embeds every earlier phase as a retag, so no raw-input
 run and none of the nine earlier handoffs is executed or pinned; no first arrival of the composed
@@ -371,8 +371,9 @@ set_option maxRecDepth 1000000 in
 /-- **The inherited H11, reduced.**  The dispatcher block runs out of the switch and hands over to
 G2p-a at index `34`, at `2 * zeros + 5 + C`: `31` on `physWord` (one step earlier the dispatcher's
 `qCursorFillOne` at `14`), `23` on `oneWord`, `21` on `middleWord` and `tightWord`, `32` on
-`pendTrueWord` and `pendVirtWord`, `7` on `zeroWord`, at which — uniquely among these words — the
-head is G2p-a's `7` and not the `6` pinned at the `physWord` switch. -/
+`pendTrueWord` and `pendVirtWord`, `7` on `zeroWord`, where the head is pinned at G2p-a's `7`
+rather than the `6` pinned on `physWord`.  Only those two heads are pinned here; the other five
+words' heads are left to `check_tagged_inherited_switch`. -/
 theorem check_inherited_handoff_probe :
     (machine.run 30 (startConfig 0 tag physWord)).state.val = 14 ∧
     (machine.run 31 (startConfig 0 tag physWord)).state.val = 34 ∧
@@ -384,6 +385,21 @@ theorem check_inherited_handoff_probe :
     (machine.run 32 (startConfig 0 tag pendVirtWord)).state.val = 34 ∧
     (machine.run 7 (startConfig 0 tag zeroWord)).state.val = 34 ∧
     (machine.run 7 (startConfig 0 tag zeroWord)).head.val = 7 := by
+  repeat' apply And.intro
+  all_goals decide
+
+set_option maxRecDepth 1000000 in
+/-- **The inherited H12, reduced.**  Out of `startConfig 0 tag physWord` the G2p-a block runs on and
+hands over to G2p-b at steps `49`/`50`: index `40`, then `43` on the restored terminator cell `12`
+with G2p-a's scratch `true` at cell `18`.  These are G3g's own steps `36`/`37` shifted by the `13`
+steps the anchor takes and its indices by the six anchor states, so the inherited `40 → 43` fires
+inside this machine and is not merely offset arithmetic. -/
+theorem check_inherited_h12_probe :
+    (machine.run 49 (startConfig 0 tag physWord)).state.val = 40 ∧
+    (machine.run 50 (startConfig 0 tag physWord)).state.val = 43 ∧
+    (machine.run 50 (startConfig 0 tag physWord)).head.val = 12 ∧
+    (machine.run 50 (startConfig 0 tag physWord)).tape ⟨12, by decide⟩ = some true ∧
+    (machine.run 50 (startConfig 0 tag physWord)).tape ⟨18, by decide⟩ = some true := by
   repeat' apply And.intro
   all_goals decide
 

@@ -1682,7 +1682,14 @@ dispatcher's input-dependent strict first arrival, taking the count to **seven o
 ten earlier handoffs still proof-level; the six-and-eleven counts in this G3e paragraph are the
 ones that slice left. G3g builds **no pnp4 bridge**: this bridge still starts at G3e's composite,
 no G3g bridge module exists, and the standalone dispatcher's `qHasOne_iff`, `qAllZero_iff` and
-`qReject_iff` are unchanged. `S` is the first
+`qReject_iff` are unchanged. Part A G3h (pnp3 only) has since executed **H10** as well — G2a's fixed
+6-state, 18-row gamma anchor prefixed to that G3g composite as one closed 129-state, 387-row table,
+with no new row and no `mergeAccept`, switching through the anchor's single row targeting its accept
+at the width-only strict first arrival `2*zeros+5` — taking the count to **eight of seventeen** with
+nine earlier handoffs still proof-level. G3h is Infrastructure only and builds **no pnp4 bridge**
+either: no G3h bridge module exists, this bridge still starts at G3e's composite, and no
+`ContentVerifierBridge`, raw-input acceptance, advice-freedom claim or P-vs-NP mainline progress
+follows from it. `S` is the first
 time H12 fires, but no theorem says `C` is the first time the composed accept is entered; the first
 arrival proved is G2p-a's, inside the left block. All seven tables are unfenced, hence so is the
 composition: accepted words never overflow the lane, since `pr.2.n ≤ N` is derived, but an

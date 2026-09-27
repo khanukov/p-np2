@@ -201,8 +201,18 @@ and leaves
 `(dispatcher.mergeAccept qHasOne).seq` the G3e composite, switching at the dispatcher's strict first
 terminal time, which is input-dependent and has no length-only form. The two successful verdicts
 are merged at the switch, exactly where G2p-a's landed retag already discards them. **Seven** of
-the seventeen handoffs are therefore now performed by a finite table; the ten earlier ones remain
-proof-level identifications, and G3g builds no pnp4 bridge, no fence and no raw-input execution.
+the seventeen handoffs were therefore then performed by a finite table, and G3g builds no pnp4
+bridge, no fence and no raw-input execution. Part A G3h then executes the one before *that*,
+**H10** — G2a's gamma anchor into G2k's payload dispatcher — inside a single composed 129-state,
+387-row machine, `FixedContentGammaAnchor.machine.seq` the G3g composite, with **no new table row**
+and no new combinator: the anchor has exactly two absorbing states, so the landed `UniformTM.seq`
+routes both and no `mergeAccept` is needed. H10's one live row — `qReturn` on `some true`, proved
+the anchor's only row targeting its accept — fires at the anchor's width-only strict first arrival
+`2*zeros + 5`, which carries no room premise and is bounded by the length-only deadline `2N`.
+**Eight** of the seventeen handoffs are therefore now performed by a finite table; the nine earlier
+ones remain proof-level identifications, the composed accept is still the countdown's phase-local
+`qDone`, and G3h constructs no `ContentVerifierBridge` or other pnp4 bridge, no fence, no raw-input
+acceptance and no advice-freedom claim, so it is no P-vs-NP mainline progress.
 This is Infrastructure only. Wrapper-level `L'`
 padding invariance and formal runtime/advice enforcement also remain open; complete-word
 `ContentAccepts` padding invariance does not close either item. The original length-gated

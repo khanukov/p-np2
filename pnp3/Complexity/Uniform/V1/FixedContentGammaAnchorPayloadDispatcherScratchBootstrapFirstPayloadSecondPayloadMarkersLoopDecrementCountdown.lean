@@ -25,10 +25,11 @@ G3g, its indices shifted by six and located by `(inTail q).val = 6 + q.val` with
 right-block row equation.
 
 **The feasibility of this one step, as measured before it was built.**  The anchor has exactly two
-absorbing states, `qAccept` and `qReject` — its raw rows `4` and `5` — so the landed `seq` routes
-both and no `mergeAccept` is needed, unlike H11.  Its strict first arrival is already public and
-carries no room premise: on a matching tag with a decoded width, `exact_terminal_contract` puts the
-anchor in neither verdict before `successTime zeros = 2 * zeros + 5` and in `finalConfig` at it.
+absorbing states, `qAccept` and `qReject` — its raw states `4` and `5`, three rows each — so the
+landed `seq` routes both and no `mergeAccept` is needed, unlike H11.  Its strict first arrival is
+already public and carries no room premise: on a matching tag with a decoded width,
+`exact_terminal_contract` puts the anchor in neither verdict before
+`successTime zeros = 2 * zeros + 5` and in `finalConfig` at it.
 Its endpoint is compatible with the right block's start by construction: G2k's `startConfig`
 retags the anchor's run at the *length-only* deadline `2 * N`, and `run_deadline` makes that run
 equal to the run at `successTime zeros`, so the switch hands over exactly the head and tape the
@@ -73,8 +74,7 @@ open FixedGammaTargetUnaryCountdown (loopTape)
 open FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown
   (bootChainClock)
 open FixedGammaPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown
-  (dispatcherChainClock handoff_of_first_terminal side_premises_of_strictFirstTerminalAt
-    tagged_handoff
+  (dispatcherChainClock tagged_handoff
     dispatcher_scratch_bootstrap_first_payload_second_payload_markers_loop_decrement_countdown_drained)
 
 /-- The composed machine: G2a's gamma anchor, then G3g's whole composite, as one closed table.
@@ -133,8 +133,9 @@ distinguished states with their indices, the block injections with their offsets
 the G3g row, the public step against the composed raw table, **every** one of the anchor's eighteen
 rows in the composed control — the one live routed row `qReturn` on `some true`, the marker-erase
 row writing `none`, the six routed rejects, the four working rows and the two dead verdict copies —
-and that no composed row targets either dead copy.  Inherited rows are not restated: the
-right-block row equation transports every G3g row verbatim. -/
+and that no **left-block** row targets either dead copy, which together with the right-block row
+equation and `inAnchor p ≠ inTail q`, both conjuncts above, is every composed row.  Inherited rows
+are not restated: the right-block row equation transports every G3g row verbatim. -/
 theorem table_and_resource_pins :
     machine.stateCount = 129 ∧ Fintype.card (Fin machine.stateCount × Option Bool) = 387 ∧
       FixedContentGammaAnchor.machine.start = qStart ∧

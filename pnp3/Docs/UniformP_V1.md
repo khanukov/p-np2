@@ -2440,8 +2440,9 @@ verdict copies are dead, no composed row targeting either.  H11 (six rows inside
 `(inTail q).val = 6 + q.val` and the universal right-block row equation.
 
 The feasibility spike run before the slice was built found no blocker.  The anchor has exactly two
-absorbing states, `qAccept` and `qReject` -- its raw rows `4` and `5` -- so the landed `seq` routes
-both and no `mergeAccept` is needed, unlike H11.  Its strict first arrival is already public and
+absorbing states, `qAccept` and `qReject` -- its raw states `4` and `5`, three rows each -- so the
+landed `seq` routes both and no `mergeAccept` is needed, unlike H11.  Its strict first arrival is
+already public and
 carries no room premise: on a matching tag with a decoded width, `exact_terminal_contract` puts it
 in neither verdict before `successTime zeros = 2 * zeros + 5` and in `finalConfig` at it.  Its
 endpoint is compatible with the right block's start by construction -- G2k's `startConfig` retags
@@ -2470,7 +2471,8 @@ test reuses G3f's and G3g's eight words, derives H10 at the widest and the narro
 drain at `B = 22` after `1129` steps (`13` anchor, `18` dispatcher, `1098` G3e) with the register
 value `24` supplied by hand, and the malformed reject; and it independently reduces, with no slice
 theorem used, the anchor's leftward walk and its marker erase into cell `7` at step `8` on the
-width-`4` fixture, both switches on all seven well-formed words, and the composed reject.
+width-`4` fixture, both switches on all seven well-formed words, the inherited H12 at steps `49`/`50`
+on that same fixture, and the composed reject.
 
 Deferred by G3h, and deliberately not claimed.  **Eight handoffs of seventeen**: `startConfig` is
 G2a's own routed into the composed control, so it still retags the actual G2-terminator `finalConfig`

@@ -698,6 +698,10 @@ lean_lib PnP3 where
     -- real-initial first-record recordDone capstone; no continuation from
     -- recordDone, no values/tail writer, no loop, verdict or acceptance.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateNBodyDriver,
+    -- GN-E2-4a (2026-09-27): read-only rewind from the activated recordDone to
+    -- the values boundary; no value copied, no tail written, no launch,
+    -- delegation, commit, loop, verdict or acceptance.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateNValuesRewind,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -1016,6 +1020,10 @@ lean_lib PnP3 where
     -- induction, real-initial capstone, endpoint structure, scoped clock and
     -- the 659/36 literal proposition wrappers.
     Glob.one `Tests.TMGateNBodyDriverSurfaceTests,
+    -- GN-E2-4a (2026-09-27): new control rows, reverse-scanner instance,
+    -- rewind schedule, generic and real-input capstones, endpoint structure,
+    -- scoped clock and the 700/4 literal proposition wrappers.
+    Glob.one `Tests.TMGateNValuesRewindSurfaceTests,
     -- GN-E2-0 (2026-09-01): definition/configuration pins and direct explicit
     -- wrappers for pure physical stages, first-request geometry, and the
     -- complete installed physical endpoint equality.

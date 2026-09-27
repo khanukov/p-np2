@@ -1,6 +1,6 @@
 # Project Status (current)
 
-Updated: 2026-09-26
+Updated: 2026-09-27
 
 **Part A G3g, the executed dispatcher → G3e handoff H11 by accept merging: a generic table
 transformation and the same sequential composition applied a seventh time, one block further left
@@ -160,12 +160,12 @@ blocker this G3f slice left; G3g above has since removed the second blocker and 
   are cross-checked against the table and not only against the proofs; the `check_*_probe`
   wrappers separately derive the same arrivals from the theorems.
 
-Deferred and deliberately not claimed. **The second H11 blocker stands**: `qHasOne` is still a
-second non-reject absorbing outcome, and `UniformTM.seq` routes the left machine's `accept` and
-`reject` only, so the generic combinator still does not apply to this dispatcher unchanged. **No
-composition is built here**: no `seq`, no composed machine, no composed clock, no new handoff and
-no pnp4 bridge, so **six of the seventeen** handoffs remain the ones performed by a finite table
-and the eleven earlier ones remain proof-level identifications. **No new converse theorem is
+Deferred and deliberately not claimed by G3f itself. At its landing, **the second H11 blocker
+stood**: `qHasOne` was still a second non-reject absorbing outcome, and `UniformTM.seq` routes the
+left machine's `accept` and `reject` only, so the generic combinator did not apply to this dispatcher
+unchanged. **G3g above later closes that blocker and composes H11**; no composition is built in G3f
+itself. At the G3f head, **six of the seventeen** handoffs were performed by a finite table and the
+eleven earlier ones remained proof-level identifications. **No new converse theorem is
 stated here**: the seven path theorems run from the parsed shape to the endpoint only. G2m's
 imported `qHasOne_iff` and `qReject_iff` already give endpoint converses under their respective
 hypotheses; `run_deadline_eq_of_strictFirstTerminalAt` transports that classification to a strict
@@ -251,9 +251,10 @@ landed: `FixedGammaPayloadDispatcherDeadline` exported the deadline-indexed endp
 but no first-arrival theorem for its own terminal, so that composition needed a new first-arrival
 slice first, the way G3b had to precede G3c; and the dispatcher has *two non-reject* absorbing
 outcomes, `qAllZero` (its `machine.accept`) and `qHasOne`, of which `UniformTM.seq` routes only the
-first, so the generic combinator does not apply to it unchanged. Part A G3f above has since closed
-the first of those two blockers, and only that one: the second stands, so H11 is still not
-composed and the count below is unchanged. **First arrival of the composed accept**: `S` is the first time H12 fires, but
+first, so the generic combinator does not apply to it unchanged. Part A G3f above later closed the
+first blocker, and G3g now closes the second by accept merging and composes H11. The six-of-seventeen
+count in this historical G3e entry is the count at G3e's landing. **First arrival of the composed
+accept**: `S` is the first time H12 fires, but
 nothing says `C` is the first time the composed accept is entered, since G2s-a and G2u prove no
 first arrival for `qDone`; the first arrival proved here is G2p-a's, inside the left block. **The
 fence**: all seven tables are unfenced, hence so is the composition; an oversized register still

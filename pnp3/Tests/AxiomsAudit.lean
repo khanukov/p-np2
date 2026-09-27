@@ -5629,7 +5629,7 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_inherited_handoff_probe
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_malformed_probe
 
--- Part A G3g (2026-09-26), infrastructure only.  Generic half: `M.mergeAccept e` retargets every
+-- Part A G3g (2026-09-27), infrastructure only.  Generic half: `M.mergeAccept e` retargets every
 -- row of `M` aiming at a second absorbing successful endpoint `e` to `M.accept`, leaving `e` dead,
 -- so the landed `seq` routes both endpoints on.  Concrete half: G2k's dispatcher so merged, then
 -- the whole G3e composite as one closed 123-state, 369-row table, H11 executed by six routed rows

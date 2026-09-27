@@ -293,6 +293,19 @@ lean_lib PnP3 where
     -- acceptance is claimed.
     Glob.one
       `Complexity.Uniform.V1.FixedContentGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown,
+    -- Part A G3j: G1's content tag gate, then that whole G3i composite, as one closed 147-state,
+    -- 441-row table.  H8 is newly executed by the gate's one live routed row -- the last tag state
+    -- 12 on `some false`, its only row targeting its accept once the accept's own absorbing three
+    -- are excluded -- into index 15 at the gate's length-only first arrival 3N+7, which is also the
+    -- gate's own deadline; H9 to H17 are inherited.  Unlike the terminator's and the anchor's, the
+    -- gate's reject is the target of many live rows (the mismatch exits), so no reject-row
+    -- uniqueness is claimed and `reject_rows_routed` routes them all to 146 instead.  Ten handoffs
+    -- of seventeen; the start still retags the actual marker-erase endpoint, the lane stays
+    -- unfenced, the new mismatched-tag reject is forward-direction only and timed only at the
+    -- length-only deadline, and no raw-input execution, first arrival of the composed accept, pnp4
+    -- bridge, or language acceptance is claimed.
+    Glob.one
+      `Complexity.Uniform.V1.FixedContentTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown,
     -- Generic bounded cross-budget simulation for one fixed UniformTM.
     Glob.one `Complexity.Uniform.V1.BudgetTransport,
     -- Routed fixed-parser/verifier constructor and parser-prefix handoff.
@@ -903,6 +916,8 @@ lean_lib PnP3 where
       `Tests.UniformV1FixedContentGammaAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests,
     Glob.one
       `Tests.UniformV1FixedContentGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests,
+    Glob.one
+      `Tests.UniformV1FixedContentTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
     Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,

@@ -273,6 +273,15 @@ lean_lib PnP3 where
     -- accept, pnp4 bridge, or language acceptance is claimed.
     Glob.one
       `Complexity.Uniform.V1.FixedGammaPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown,
+    -- Part A G3h: G2a's gamma anchor, then that whole G3g composite, as one closed 129-state,
+    -- 387-row table.  H10 is newly executed by the anchor's one live routed row -- qReturn on
+    -- `some true`, its only row targeting its accept -- into index 6 at the anchor's width-only
+    -- first arrival 2*zeros+5; H11 to H17 are inherited.  Eight handoffs of seventeen; the start
+    -- still retags the actual gamma-terminator endpoint, the lane stays unfenced, and no raw-input
+    -- execution, first arrival of the composed accept, pnp4 bridge, or language acceptance is
+    -- claimed.
+    Glob.one
+      `Complexity.Uniform.V1.FixedContentGammaAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown,
     -- Generic bounded cross-budget simulation for one fixed UniformTM.
     Glob.one `Complexity.Uniform.V1.BudgetTransport,
     -- Routed fixed-parser/verifier constructor and parser-prefix handoff.
@@ -879,6 +888,8 @@ lean_lib PnP3 where
       `Tests.UniformV1FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests,
     Glob.one
       `Tests.UniformV1FixedGammaPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests,
+    Glob.one
+      `Tests.UniformV1FixedContentGammaAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
     Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,

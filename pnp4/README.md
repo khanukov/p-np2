@@ -759,7 +759,15 @@ executed H11 at the dispatcher's input-dependent strict first arrival, taking th
 of seventeen** with ten earlier handoffs still proof-level; the six-and-eleven counts in this G3e
 paragraph are the ones that slice left. G3g builds **no pnp4 bridge**, so the three-hypothesis
 chained run described here still starts at G3e's composite, and the standalone dispatcher's pnp4
-semantics (`qHasOne_iff`, `qAllZero_iff`, `qReject_iff`) are unchanged. No first arrival of the G3e
+semantics (`qHasOne_iff`, `qAllZero_iff`, `qReject_iff`) are unchanged. Part A G3h (pnp3 only) has
+since executed **H10** as well — G2a's fixed 6-state gamma anchor prefixed to that G3g composite as
+one closed 129-state, 387-row table, with no new row and no `mergeAccept`, switching at the anchor's
+width-only strict first arrival `2*zeros+5` through the anchor's single live row targeting its accept —
+taking the count to **eight of seventeen** with nine earlier handoffs still proof-level. G3h is
+Infrastructure only and likewise builds **no pnp4 bridge**: no `ContentVerifierBridge`, no
+raw-input acceptance, no advice-freedom claim and no P-vs-NP mainline progress; the standalone
+phases' pnp4 semantics are unchanged and the chained run described here still starts at G3e's
+composite. No first arrival of the G3e
 composed accept is proved (the first arrival proved is G2p-a's, inside the left block), the lane is still
 unfenced, the composed accept is still the countdown's phase-local `qDone` rather than language
 acceptance, the machine is a V1 `UniformTM` on `Option Bool` cells against `pairLength a m` and not

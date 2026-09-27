@@ -2423,3 +2423,67 @@ dispatcher's, inside the left block.  The **fence**, every **converse**, a **foo
 and the model connection stay open.  The composed `accept` is the countdown's phase-local `qDone`:
 reaching it out of a retagged actual prior endpoint is neither halting on a raw input nor language
 acceptance.  It is infrastructure, not P-vs-NP mainline progress.
+
+The Part A G3h
+`Complexity.Uniform.V1.FixedContentGammaAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown`
+executes the handoff one block further left, **H10** -- G2a's gamma anchor into G2k's payload
+dispatcher -- with **no new table row** and no landed module's code edited.  `machine` is
+`FixedContentGammaAnchor.machine.seq` the whole G3g composite: the anchor's fixed 6-state, 18-row
+shuttle on `[0, 6)` and G3g's 123 states on `[6, 129)`, one closed 129-state, 387-row table with
+accept `127` and reject `128`.  H10 has exactly **one** live routed row -- `qReturn` on `some true`,
+the anchor's only row targeting its accept, which `accept_row_unique` proves unique over all six
+states and all three symbols once the accept's own absorbing row is excluded -- which `seq`
+retargets to G3g's start `tailStart` at `6`, writing `some true` and staying, in that same
+transition and at no cost.  Six further anchor rows route to the composed reject and the two left
+verdict copies are dead, no composed row targeting either.  H11 (six rows inside `[6, 34)`, all into
+`34`) and H12 (`40 -> 43`) to H17 (`115 -> 118`) are inherited from G3g by the offset equation
+`(inTail q).val = 6 + q.val` and the universal right-block row equation.
+
+The feasibility spike run before the slice was built found no blocker.  The anchor has exactly two
+absorbing states, `qAccept` and `qReject` -- its raw states `4` and `5`, three rows each -- so the
+landed `seq` routes both and no `mergeAccept` is needed, unlike H11.  Its strict first arrival is
+already public and
+carries no room premise: on a matching tag with a decoded width, `exact_terminal_contract` puts it
+in neither verdict before `successTime zeros = 2 * zeros + 5` and in `finalConfig` at it.  Its
+endpoint is compatible with the right block's start by construction -- G2k's `startConfig` retags
+the anchor's run at the *length-only* deadline `2N`, and the anchor's `run_deadline` makes that run
+equal to its run at `successTime zeros`, which `dispatcher_start_at_first_arrival` records -- so the
+switch hands over exactly the head and tape G3g's own `startConfig` carries: the marked tape with
+cell `7` erased as the recoverable marker, on the gamma terminator cell `8 + zeros`.  The switch
+time is width-dependent but not path-dependent, and at most the anchor's own length-only deadline
+`2N`, so it adds a linear prefix to the composed clock and no new room premise.
+
+`handoff_exact` takes the matching tag and the decoded width -- two hypotheses, no room, no budget.
+The composed run is in neither verdict at any time up to and **including** `2 * zeros + 5` (at the
+switch itself the control is `tailStart`, so the bound is `<=`), is the anchor's own run routed at
+every such time with the same head and whole tape, at exactly `2 * zeros + 5` **is** G3g's landed
+`startConfig B x w` re-embedded, and takes G3g steps afterwards.  `handoff_endpoint_pins` reads that
+switch configuration back as G2k's own `startConfig` projections, as the anchor's `markedTape`, as
+`none` on cell `7` and as the `contentTape` off it; `tagged_inherited_switch` locates the inherited
+H11 at `2 * zeros + 5 + C` at index `34` on G2p-a's own head and tape, with `C` produced rather than
+chosen; and the drained theorem lands the composed accept `127` at exactly
+`anchorChainClock C N zeros d v = 2 * zeros + 5 + dispatcherChainClock C N zeros d v` under G3g's
+eight hypotheses unchanged, on the separator blank `N + 2 + zeros` with tape
+`loopTape B x w zeros 0 v`, persisting.  On a malformed gamma the anchor rejects at step `1`, the
+dispatcher never runs, and `malformed_reject_handoff` lands the composed reject `128` from step one
+on, forward direction only, from the malformed-gamma premise alone with **no** tag premise.  The surface
+test reuses G3f's and G3g's eight words, derives H10 at the widest and the narrowest fixture, the
+drain at `B = 22` after `1129` steps (`13` anchor, `18` dispatcher, `1098` G3e) with the register
+value `24` supplied by hand, and the malformed reject; and it independently reduces, with no slice
+theorem used, the anchor's leftward walk and its marker erase into cell `7` at step `8` on the
+width-`4` fixture, both switches on all seven well-formed words, the inherited H12 at steps `49`/`50`
+on that same fixture, and the composed reject.
+
+Deferred by G3h, and deliberately not claimed.  **Eight handoffs of seventeen**: `startConfig` is
+G2a's own routed into the composed control, so it still retags the actual gamma-terminator `finalConfig`
+and embeds every earlier phase; the nine handoffs before H10 stay proof-level, no raw-input
+`initialConfig` is executed, and no clock counts a step of any earlier phase.  **No first arrival of
+the composed accept**: the arrivals proved are the anchor's and, as a hypothesis, the dispatcher's,
+each inside its own block.  The **fence** (all nine tables are uncapped), every **converse**, a
+**footprint** theorem and the **model connection** (caveat 6 of `VERIFIER_RETARGET_PLAN.md`) stay
+open, and there is **no pnp4 bridge** -- the standalone phases' pnp4 semantics are unchanged and no
+`ContentVerifierBridge`, raw-input acceptance, `AcceptsAt`, `DecidesWithin` or `UniformP` theorem
+appears.  The composed `accept` is the countdown's phase-local `qDone`: reaching it out of a
+retagged actual prior endpoint is neither halting on a raw input nor language acceptance.  The table
+is fixed and complete but not claimed state-minimal.  Neither `SearchMCSPWeakLowerBound` nor
+`VerifiedNPDAGLowerBoundSource` is reduced.  It is infrastructure, not P-vs-NP mainline progress.

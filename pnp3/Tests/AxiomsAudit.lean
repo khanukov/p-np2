@@ -5850,9 +5850,11 @@ end DeprecatedAC0CompatibilityAxiomAudit
 -- inherited from G3i.  Ten handoffs of seventeen; the start still retags the actual marker-erase
 -- endpoint, the lane stays unfenced, and both rejecting branches are forward direction only and no
 -- converse.  The new mismatched-tag branch is timed only at the length-only deadline 3N+7, not at
--- the mismatch index (which the gate exposes only through its private `badIndex`), and no first
--- arrival of the composed accept and no pnp4 bridge is proved; reaching the composed accept is
--- neither halting on a raw input nor acceptance.
+-- the gate's own rejection time 3N+j for its mismatch cell j on a nonempty content: the gate's
+-- landed `exact_terminal_contract` does prove that time, but j is not recoverable from
+-- `tagMatches (Fin.append x w) = false` alone, the `badIndex` defining it being private and its only
+-- public trace the value of `finalConfig.head`.  No first arrival of the composed accept and no pnp4
+-- bridge is proved; reaching the composed accept is neither halting on a raw input nor acceptance.
 #print axioms Pnp3.Complexity.Uniform.V1.FixedContentTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.machine
 #print axioms Pnp3.Complexity.Uniform.V1.FixedContentTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.inGate
 #print axioms Pnp3.Complexity.Uniform.V1.FixedContentTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.inTail

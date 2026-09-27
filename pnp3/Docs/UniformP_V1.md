@@ -2576,8 +2576,8 @@ absorbing three are excluded (`accept_row_unique`) -- which `seq` retargets to G
 at `15`, writing `some false` and moving **right**, in that same transition and at no cost.  The
 reject side is where this slice differs from every earlier one: the gate's reject is the target of
 *many* live rows -- the mismatch exits of the eight tag positions and the rewind's defensive rows --
-so no uniqueness holds there and no count is claimed; `reject_rows_routed` instead proves that `seq` sends
-every live row targeting the gate's reject to the composed reject `146`, symbol written and move
+so no uniqueness holds there and no count is claimed; `reject_rows_routed` instead proves that `seq`
+sends every live row targeting the gate's reject to the composed reject `146`, symbol written and move
 unchanged, with the two verdicts' own rows excluded because both of their left copies are dead
 (`table_and_resource_pins`).  H9 (`15 -> 18`), H10 (`21 -> 24`) and H11 (six rows inside `[24, 52)`,
 all into `52`) to H17 (`133 -> 136`) are inherited from G3i by the offset equation
@@ -2592,9 +2592,10 @@ strict first arrival was *not* exported in the shape `UniformTM.seq_handoff` con
 `run_deadline`, with no room premise.  On a matching tag the gate is in neither verdict before
 `switchTime N = 3 * N + 7` and in `finalConfig` at it, and that time **is** its own length-only
 deadline -- `gate_first_arrival` pins that identity, so nothing is lost by the fact that a running
-composed machine cannot wait for a deadline; the theorem also returns the `8 <= N` the matching tag forces.  Its
-endpoint is compatible with the right block's start by construction: G2's `startConfig` retags the
-gate's `finalConfig` itself, which `run_deadline` shows *is* the gate's run at `switchTime N` for
+composed machine cannot wait for a deadline; the theorem also returns the `8 <= N` the matching tag
+forces.  Its endpoint is compatible with the right block's start by construction: G2's `startConfig`
+retags the gate's `finalConfig` itself, which `run_deadline` shows *is* the gate's run at
+`switchTime N` for
 **every** input, matching tag or not, and `terminator_start_at_first_arrival` records that
 hypothesis-free.  So the switch hands over exactly the head and tape G3i's own `startConfig` carries:
 the unchanged `contentTape`, on the gamma cell `8`.  The switch time is length-only, neither width-
@@ -2625,10 +2626,16 @@ composed reject `146` from `3 * N + 7 + (N - 7)` on, forward direction only.  On
 -- `mismatched_tag_reject_handoff`, the first statement of this chain that assumes the tag does *not*
 match -- the right block never runs at all and the composed reject `146` holds from the gate's
 length-only deadline `3 * N + 7` on, on the gate's own `finalConfig` head over the unchanged content
-tape, forward direction only.  That branch is deliberately **not** timed exactly: the gate first
-rejects at a time determined by its mismatch cell, and the phase's public API exposes that cell only
-through `finalConfig.head`, whose defining `badIndex` is private, so no "and not before" accompanies it.  The
-surface test reuses G3f's, G3g's, G3h's and G3i's eight words and adds `badTag`, that tag with its
+tape, forward direction only.  That branch is deliberately **not** timed exactly.  On a nonempty
+content the gate's own rejection *time* is `3 * N + j` for its mismatch *cell* `j` -- with `j` the
+blank cell `N` itself, so `4 * N`, when the word is too short to carry the whole tag -- and its
+landed `exact_terminal_contract` proves exactly that, strictness included, for a `j` characterised by
+the public `physicalSymbol` and `expectedTagBit`; what the single hypothesis
+`tagMatches (Fin.append x w) = false` does not let this slice recover is `j` itself, the `badIndex`
+defining it being private and its only public trace the value of `finalConfig.head`, so no "and not
+before" accompanies the deadline.
+
+The surface test reuses G3f's, G3g's, G3h's and G3i's eight words and adds `badTag`, that tag with its
 first bit flipped.  Because the gate's switch is length-only the seven well-formed words switch at
 `58`, `43`, `40`, `40`, `37`, `46` and `43` -- always on the gamma cell `8`, whatever the width -- and
 the test derives H8 at the widest and the narrowest fixture, the drain at `B = 22` after `1192` steps
@@ -2636,9 +2643,9 @@ the test derives H8 at the widest and the narrowest fixture, the drain at `B = 2
 supplied by hand, the malformed reject at `44` and the mismatched reject at `40`; and it independently
 reduces, with no slice theorem used, the gate's rewind and tag scan, all seven H8 switches, the
 inherited H9, H10 and H11, the inherited H12 at steps `112`/`113`, the composed reject `146` at `44`
-on the malformed fixture, and the composed reject on `badTag` at rejection time `33`, at mismatch cell `0`,
-one step after a control in neither composed verdict and seven steps before the length-only deadline
-`40` the theorem states.
+on the malformed fixture, and the composed reject on `badTag` at rejection time `33`, at mismatch
+cell `0`, one step after a control in neither composed verdict and seven steps before the length-only
+deadline `40` the theorem states.
 
 Deferred by G3j, and deliberately not claimed.  **Ten handoffs of seventeen**: `startConfig` is G1's
 own routed into the composed control, so it still retags the actual marker-erase `finalConfig` and

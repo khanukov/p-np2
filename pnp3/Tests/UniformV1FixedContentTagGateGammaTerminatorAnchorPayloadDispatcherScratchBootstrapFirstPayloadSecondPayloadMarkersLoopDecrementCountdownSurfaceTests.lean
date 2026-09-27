@@ -24,9 +24,10 @@ dispatcher, `1098` for G3e — with the register value `24 > N` supplied **by ha
 fixture, no accepted-content fixture).  The `check_*_probe` theorems reduce the composed machine by
 kernel computation out of the actual `startConfig`, with no slice theorem used: the gate's rewind and
 tag scan, all seven H8 switches, the inherited H9, H10, H11 and H12, the composed reject at the
-terminator's deadline on the malformed fixture, and the composed reject on `badTag` at the gate's own
-mismatch index `33` — seven steps before the length-only deadline `40` that the slice's theorem
-states, and one step after a control that is in neither composed verdict.
+terminator's deadline on the malformed fixture, and the composed reject on `badTag` at **rejection
+time** `33`: `badTag`'s mismatch **cell** is `0`, so `3 * (a + m) + 0` is `33` — seven steps before
+the length-only deadline `40` that the slice's theorem states, and one step after a control that is
+in neither composed verdict.
 
 Not here: the composed `startConfig` still embeds every earlier phase as a retag of the actual
 marker-erase `finalConfig`, so there is no raw-input run and none of the seven earlier handoffs is
@@ -411,7 +412,7 @@ theorem check_malformed_literal :
 
 /-- The routed reject at the mismatched fixture, derived: from the gate's length-only deadline `40`
 on — at `40` and again at `44` — the composed reject on the gate's own `finalConfig` head, here the
-mismatch index `0`, over the unchanged content tape.  No claim is made about any earlier time; the
+mismatch cell `0`, over the unchanged content tape.  No claim is made about any earlier time; the
 probe below shows the composed reject is in fact entered at `33`. -/
 theorem check_mismatched_literal :
     (machine.run 40 (startConfig 0 badTag tightWord)).state = machine.reject ∧
@@ -435,8 +436,9 @@ set_option maxRecDepth 4000000 in
 /-- **The tag-gate phase, reduced.**  Out of the actual `startConfig 0 tag physWord`: `qStart` (`0`)
 on the boundary blank `17`, one step left into `qProbe` (`1`) on `16`, then the erase/check/restore
 cycle — `qCheckT` (`3`) and `qReturnT` (`5`) at steps `2` and `3` — three steps per physical cell
-until the first tag state `qTag 0` (`6`) reads cell `1` at step `51`, and the last tag state (`12`)
-reads cell `7` at `57`.  No slice theorem is used. -/
+until the first tag state `qTag 0` (`6`) reads cell `1` at step `51`, and the head is on the last tag
+cell `7` at `57`.  That last conjunct pins the head alone; the control there — the last tag state
+`12` — is pinned by `check_h8_probe_reductions` below.  No slice theorem is used. -/
 theorem check_gate_rewind_probe :
     (machine.run 0 (startConfig 0 tag physWord)).state.val = 0 ∧
     (machine.run 0 (startConfig 0 tag physWord)).head.val = 17 ∧
@@ -533,9 +535,9 @@ theorem check_malformed_probe :
 set_option maxRecDepth 4000000 in
 /-- **The routed reject on a mismatched tag, reduced.**  Out of `startConfig 0 badTag tightWord`:
 at step `32` the gate is still working — `qCheckF` (`2`), in neither composed verdict — and at `33`,
-`3 * (a + m) + 0` for the mismatch index `0`, the composed reject `146` on cell `0`; it is still
+`3 * (a + m) + 0` for the mismatch cell `0`, the composed reject `146` on cell `0`; it is still
 there at the gate's length-only deadline `40`, which is the earliest time
-`mismatched_tag_reject_handoff` speaks about.  This probe is the only place the exact mismatch time
+`mismatched_tag_reject_handoff` speaks about.  This probe is the only place the exact rejection time
 is exhibited, and it is exhibited for one fixture by computation, not proved in general. -/
 theorem check_mismatched_probe :
     (machine.run 32 (startConfig 0 badTag tightWord)).state.val = 2 ∧

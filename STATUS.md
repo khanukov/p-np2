@@ -21,12 +21,12 @@ seventeen handoffs are now performed by a finite table and **seven** remain proo
   `seq` retargets that row to the right block's start `tailStart` at index `15`, writing
   `some false` and moving **right**, in that same transition and at no cost. Unlike the terminator's
   and the anchor's, the gate's reject is the target of *many* live rows — the mismatch exits of the
-  eight tag positions and the rewind's defensive rows — so no reject-row uniqueness holds, and neither
-  it nor a count is claimed; `reject_rows_routed` proves instead that `seq` sends every live row targeting the gate's
-  reject to the composed reject `146`, symbol written and move unchanged. The six rows of the two
-  left verdict copies are dead, no left-block row targeting either verdict; together with the
-  right-block row equation and the block disjointness `inGate p ≠ inTail q` — both in
-  `table_and_resource_pins` — that accounts for every composed row. H9 (`15 → 18`), H10
+  eight tag positions and the rewind's defensive rows — so no reject-row uniqueness holds, and
+  neither it nor a count is claimed; `reject_rows_routed` proves instead that `seq` sends every live
+  row targeting the gate's reject to the composed reject `146`, symbol written and move unchanged.
+  The six rows of the two left verdict copies are dead, no left-block row targeting either verdict;
+  together with the right-block row equation and the block disjointness `inGate p ≠ inTail q` — both
+  in `table_and_resource_pins` — that accounts for every composed row. H9 (`15 → 18`), H10
   (`21 → 24`) and H11 (six rows inside `[24, 52)`, all into `52`) to H17 (`133 → 136`) are inherited
   from G3i, its indices shifted by fifteen, located by `(inTail q).val = 15 + q.val` and the
   universal right-block row equation.
@@ -69,9 +69,14 @@ seventeen handoffs are now performed by a finite table and **seven** remain proo
   `mismatched_tag_reject_handoff`, the first statement of this chain that assumes the tag does *not*
   match — the right block never runs at all and the composed reject `146` holds from the gate's
   length-only deadline `3 * N + 7` on, on the gate's own `finalConfig` head over the unchanged
-  content tape. Both are forward direction only, and the mismatched one is deliberately **not** timed
-  exactly: the gate first rejects at a time determined by its mismatch cell, and the phase's public
-  API exposes that cell only through `finalConfig.head`, whose defining `badIndex` is private.
+  content tape. Both are forward direction only, and the mismatched one is deliberately **not**
+  timed exactly. On a nonempty content the gate's own rejection *time* is `3 * N + j` for its
+  mismatch *cell* `j` — with `j` the blank cell `N` itself, so `4 * N`, when the word is too short to
+  carry the whole tag — and its landed `exact_terminal_contract` proves exactly that, strictness
+  included, for a `j` characterised by the public `physicalSymbol` and `expectedTagBit`; what the
+  single hypothesis `tagMatches (Fin.append x w) = false` does not let this slice recover is `j`
+  itself, the `badIndex` defining it being private and its only public trace the value of
+  `finalConfig.head`.
 * **Probes.** The surface test reuses G3f's, G3g's, G3h's and G3i's eight words and adds `badTag`,
   that tag with its first bit flipped. Because the gate's switch is length-only the seven well-formed
   words switch at `58`, `43`, `40`, `40`, `37`, `46` and `43` — always on the gamma cell `8`,
@@ -82,9 +87,9 @@ seventeen handoffs are now performed by a finite table and **seven** remain proo
   `40`; and it independently reduces the composed machine by kernel computation, with no slice
   theorem used, through the gate's rewind and tag scan, all seven H8 switches, the inherited H9, H10
   and H11, the inherited H12 at steps `112`/`113`, and the composed reject `146` at `44` on the
-  malformed fixture and at rejection time `33` on `badTag`, at mismatch cell `0` — one step after a control
-  in neither composed verdict, and seven steps before the length-only deadline `40` the theorem
-  states.
+  malformed fixture and at rejection time `33` on `badTag`, at mismatch cell `0` — one step after a
+  control in neither composed verdict, and seven steps before the length-only deadline `40` the
+  theorem states.
 
 Deferred and deliberately not claimed. **Seven of the seventeen handoffs remain proof-level**: the
 composed `startConfig` is G1's own routed into the composed control, so it still retags the actual
@@ -361,9 +366,8 @@ the remainder to seven; the seven-and-ten counts in this entry are the ones this
   identified only through G2a's landed `run_deadline`.
 
 Deferred and deliberately not claimed. **Ten of the seventeen handoffs remained proof-level** as of
-this slice (G3h, G3i and G3j above have since taken H10, H9 and H8, leaving seven): this module's composed
-`startConfig` still
-retags the actual G2a anchor endpoint and embeds every earlier phase,
+this slice (G3h, G3i and G3j above have since taken H10, H9 and H8, leaving seven): this module's
+composed `startConfig` still retags the actual G2a anchor endpoint and embeds every earlier phase,
 no raw-input `initialConfig` is executed, and no clock counts a step of any earlier phase. **No pnp4
 bridge**: the standalone dispatcher's pnp4 semantics are unchanged and no `ContentVerifierBridge`,
 raw-input acceptance, `AcceptsAt`, `DecidesWithin` or `UniformP` runtime theorem appears; whether

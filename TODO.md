@@ -219,9 +219,25 @@ landed `UniformTM.seq` routes both. H9's one live row — `qScan` on `some true`
 row targeting its accept once the accept's own absorbing three are excluded — fires at the
 terminator's width-only strict first arrival `zeros + 1`, which carries no room premise and is
 bounded by the length-only deadline `N - 7`; unlike G3h's, the newly routed reject row carries the
-tag premise and is forward-direction only. **Nine** of the seventeen handoffs are therefore now
-performed by a finite table; the eight earlier ones remain proof-level identifications, the composed
-accept is still the countdown's phase-local `qDone`, and G3i likewise constructs no
+tag premise and is forward-direction only. **Nine** of the seventeen handoffs were therefore then
+performed by a finite table, and G3i likewise constructs no `ContentVerifierBridge` or other pnp4
+bridge, no fence, no raw-input acceptance and no advice-freedom claim, so it too is no P-vs-NP
+mainline progress. Part A G3j then executes the one before *that*, **H8** — G1's content tag gate
+into G2's gamma terminator — inside a single composed 147-state, 441-row machine,
+`FixedContentTagGate.machine.seq` the G3i composite, once again with **no new table row** and no new
+combinator: the gate too has exactly two absorbing states, so the landed `UniformTM.seq` routes
+both. H8's one live row — the last tag state `12` on `some false`, the gate's only row targeting its
+accept once the accept's own absorbing three are excluded — fires at the gate's **length-only**
+strict first arrival `3N + 7`, which is also the gate's own deadline and carries no room premise;
+the arrival itself was not exported in the shape `seq` consumes and is assembled here from the
+gate's landed `exact_terminal_contract` and `run_deadline`. Unlike the terminator's and the
+anchor's, the gate's reject is the target of *many* live rows — the mismatch exits of the eight tag
+positions and the rewind's defensive rows — so no reject-row uniqueness holds or is claimed; every
+one of them is routed to the composed reject instead. **Ten** of the seventeen handoffs are
+therefore now performed by a finite table; the **seven** earlier ones remain proof-level
+identifications, the composed accept is still the countdown's phase-local `qDone`, G3j's two
+rejecting branches (malformed suffix, mismatched tag) are forward-direction only and the mismatched
+one is timed only at that length-only deadline, and G3j likewise constructs no
 `ContentVerifierBridge` or other pnp4 bridge, no fence, no raw-input acceptance and no
 advice-freedom claim, so it too is no P-vs-NP mainline progress.
 This is Infrastructure only. Wrapper-level `L'`

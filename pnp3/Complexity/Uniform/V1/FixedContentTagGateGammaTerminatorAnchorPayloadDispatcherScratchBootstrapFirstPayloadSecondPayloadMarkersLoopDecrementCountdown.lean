@@ -68,9 +68,14 @@ Deferred, and deliberately not claimed.  `startConfig` still **embeds** every ea
 seven handoffs before H8 remain proof-level identifications (G1's `startConfig` retags the actual
 marker-erase `finalConfig`, which `handoff_pins` records hypothesis-free), no raw-input
 `initialConfig` is executed, and no clock here counts a step of any earlier phase.  The mismatched
-branch is **not** timed exactly: the gate first rejects at its mismatch index, and the phase's
-public API exposes that index only through `finalConfig.head`, whose defining `badIndex` is private,
-so only the length-only deadline `3 * N + 7` is claimed and no "and not before" accompanies it.  No
+branch is **not** timed exactly.  Its rejection *time* is `3 * N + j` for the gate's mismatch *cell*
+`j` whenever the content is nonempty — with `j` the blank cell `N` itself, so `4 * N`, when the word
+is too short to carry the whole tag — and `2` when `N = 0`; the gate's landed
+`exact_terminal_contract` does prove exactly those times, strictness included, for a `j`
+characterised by the public `physicalSymbol` and `expectedTagBit`.  What is unavailable here is `j`
+itself: from `tagMatches (Fin.append x w) = false` alone it cannot be recovered, the `badIndex` that
+defines it being private and its only public trace the value of `finalConfig.head`.  So only the
+length-only deadline `3 * N + 7` is claimed, and no "and not before" accompanies it.  No
 **first arrival** of the composed accept (the arrivals proved are the gate's and, as a hypothesis,
 the dispatcher's, each inside its own block); the **fence** (all eleven tables are uncapped); every
 **converse**, so neither composed reject implies anything about the input; a **footprint** theorem;
@@ -357,8 +362,10 @@ theorem gate_first_arrival {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
 
 /-- **The tag gate's rejecting arrival, at its length-only deadline.**  On a mismatched tag its run
 at `switchTime N` **is** its `finalConfig` and its control its reject.  There is deliberately no
-"and not before": the gate first rejects at its mismatch index, which its public API exposes only
-through `finalConfig.head`, whose defining `badIndex` is private. -/
+"and not before": on a nonempty content the gate first rejects at `3 * N + j` for its mismatch cell
+`j`, a time its landed `exact_terminal_contract` does prove, but that `j` is not recoverable from
+`tagMatches (Fin.append x w) = false` alone — the `badIndex` defining it is private and its only
+public trace is the value of `finalConfig.head`. -/
 theorem gate_reject_arrival {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
     (htag : FixedContentTagGate.tagMatches (Fin.append x w) = false) :
     FixedContentTagGate.machine.run (switchTime (a + m))
@@ -709,10 +716,11 @@ theorem malformed_reject_handoff {a m B : Nat} (x : Bitstring a) (w : Bitstring 
 
 /-- **The routed reject on a mismatched tag: the first statement of this chain that assumes the tag
 does not match.**  From the gate's length-only deadline `3 * N + 7` on, the composed run is in the
-composed reject `146`, on the gate's own `finalConfig` head — its mismatch index, clamped — over the
-unchanged content tape; the right block never runs.  Forward direction only, and **not** timed
-exactly: the gate first rejects at that mismatch index, which its public API exposes only through
-`finalConfig.head`.  **Not** a converse either. -/
+composed reject `146`, on the gate's own `finalConfig` head — its mismatch cell, clamped to `N` —
+over the unchanged content tape; the right block never runs.  Forward direction only, and **not**
+timed exactly: on a nonempty content the gate first rejects at `3 * N + j` for that cell `j`, and `j`
+is not recoverable from `tagMatches (Fin.append x w) = false` alone, its only public trace being the
+value of `finalConfig.head`.  **Not** a converse either. -/
 theorem mismatched_tag_reject_handoff {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
     (htag : FixedContentTagGate.tagMatches (Fin.append x w) = false) :
     ∀ s, switchTime (a + m) ≤ s →

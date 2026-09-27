@@ -775,10 +775,25 @@ eight earlier handoffs still proof-level; the eight-and-nine counts just given a
 G3i is Infrastructure only and likewise builds **no pnp4 bridge**: no `ContentVerifierBridge`, no
 raw-input acceptance, no advice-freedom claim and no P-vs-NP mainline progress; the standalone
 phases' pnp4 semantics are unchanged, this chained run still starts at G3e's composite, and G3i's own
-routed reject is forward-direction only and tag-gated. No first arrival of the G3e
-composed accept is proved (the first arrival proved is G2p-a's, inside the left block), the lane is still
-unfenced, the composed accept is still the countdown's phase-local `qDone` rather than language
-acceptance, the machine is a V1 `UniformTM` on `Option Bool` cells against `pairLength a m` and not
+routed reject is forward-direction only and tag-gated. Part A G3j (pnp3 only) has since executed
+**H8** as well — G1's fixed 15-state content tag gate prefixed to that G3i composite as one closed
+147-state, 441-row table, again with no new row and no `mergeAccept`, switching at the gate's
+length-only strict first arrival `3N + 7` (which is also the gate's own deadline, assembled here from
+its landed `exact_terminal_contract` and `run_deadline`) through its single live row targeting its
+accept — taking the count to **ten of seventeen** with **seven** earlier handoffs still proof-level;
+the nine-and-eight counts just given are the ones G3i left. Unlike the terminator's and the anchor's,
+the gate's reject is the target of many live rows, so G3j claims no reject-row uniqueness and routes
+them all to the composed reject instead. G3j is Infrastructure only and likewise builds **no pnp4
+bridge**: no `ContentVerifierBridge`, no raw-input acceptance, no advice-freedom claim and no P-vs-NP
+mainline progress; the standalone phases' pnp4 semantics are unchanged, this chained run still starts
+at G3e's composite, and both of G3j's routed rejects are forward-direction only, the new mismatched-
+tag one timed only from the gate's length-only deadline `3N + 7` on, with no claim about any earlier
+time: the gate's own rejection lands at `3N + j` for a mismatch cell `j ≤ 7`, at or before that
+deadline, and that `j` is not recoverable from the mismatch hypothesis alone. No first arrival of
+the G3e composed accept is proved (the first arrival proved is G2p-a's, inside the left block), the
+lane is still unfenced, the composed accept is still the countdown's phase-local `qDone` rather than
+language acceptance, the machine is a V1 `UniformTM` on `Option Bool` cells against `pairLength a m`
+and not
 the legacy `TM` with a `runTime` field that `ContentVerifierBridge` names, and, like G2x, G2y, G2z,
 G3a and G3c, this is infrastructure, not P-vs-NP mainline progress; it makes no `P ≠ NP` claim.
 

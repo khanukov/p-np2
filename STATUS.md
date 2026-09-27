@@ -2344,18 +2344,21 @@ acceptance, or any claim that the pure evaluator `evalGNProgram` is executed by
 the machine.
 
 **Current engineering priority.** The one-tape `pnp3/Complexity/TMVerifier/`
-tree is frozen at Git tree `b49456d6`, the subtree of commit `7b53a08f`; see
+tree is frozen at Git tree `c544405f`, the subtree of commit `b35bdca2`; see
 `pnp3/Docs/TMVERIFIER_FREEZE.md`, whose migration record covers the three
 unfreezes since `42c59881` (the reviewed S11 one-gate acceptance closure; the
-single authorized GN-E2-3b body-driver slice, open as PR #1777: its exact-head
-local `./scripts/check.sh`, its two independent read-only reviews, the owner
-attestation and the `tmverifier-unfreeze` label are done, while the remote gate
-results against the final head, the required PR review and a history-preserving
-merge are still owed; and the authorized GN-E2-4a values-rewind slice, of which
-**only stage (a) exists**, so the freeze checker and the `./scripts/check.sh`
-preflight fail closed on this tree by construction, reporting exactly one added
-and one changed frozen path — no green freeze gate is claimed here). Do not
-resume E2-4b or later gate-by-gate construction. Active
+single authorized GN-E2-3b body-driver slice, landed by PR #1777 as merge
+commit `48151689` on 2026-09-23, an ancestor of this branch, so its history was
+preserved: its exact-head local `./scripts/check.sh`, its two independent
+read-only reviews, the owner attestation and the `tmverifier-unfreeze` label
+were recorded before that merge, while local Git records neither the remote gate
+results against its final head nor the required PR review, so neither is
+claimed here; and the authorized GN-E2-4a values-rewind slice, whose
+stage (a) landed the new frozen bytes and whose stage (b) repinned the freeze
+onto them, so the freeze checker and the `./scripts/check.sh` preflight pass on
+this tree again, while that slice still owes an independent review at any head,
+the complete `./scripts/check.sh` and the entire remote half — none of which is
+claimed). Do not resume E2-4b or later gate-by-gate construction. Active
 model-repair work must use the versioned uniform complexity foundation outside
 that tree.
 
@@ -3323,13 +3326,14 @@ fixed-slice `PpolyDAG` membership:
 ### Canonical-track TM-verifier deliverable (frozen historical roadmap)
 
 > **Freeze note.** This roadmap is paused; the tree snapshot is pinned at Git
-> tree `b49456d6`, the subtree of commit `7b53a08f` (three migrations since
+> tree `c544405f`, the subtree of commit `b35bdca2` (three migrations since
 > `42c59881`: the reviewed S11 acceptance closure, the single authorized
 > GN-E2-3b body-driver slice, and the authorized GN-E2-4a values-rewind slice,
-> whose stage (a) has landed and whose repin deliberately has not, so the
-> freeze gate is red on this tree by construction; none of them resumed the
-> roadmap). The active engineering queue is the versioned uniform complexity
-> foundation outside TMVerifier.
+> whose stage (a) landed the new frozen bytes and whose stage (b) repinned the
+> freeze onto them, so the freeze checker passes on this tree again; none of
+> them resumed the roadmap, and E2-4b and later gate-by-gate construction stay
+> open and unstarted). The active engineering queue is the versioned uniform
+> complexity foundation outside TMVerifier.
 
 > **Scope note.**  After the canonical iso-strong / promise-YES
 > conclusion-side refutations recorded above, the canonical asymptotic

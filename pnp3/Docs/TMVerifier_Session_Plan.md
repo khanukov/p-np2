@@ -2,15 +2,17 @@
 
 > **Frozen historical plan (2026-09-03; amended 2026-09-20, 2026-09-22 and
 > 2026-09-27).**
-> The freeze pin still names Git tree `b49456d6`, the subtree of commit
-> `7b53a08f`; see `pnp3/Docs/TMVERIFIER_FREEZE.md`, whose migration record
+> The freeze pin now names Git tree `c544405f`, the subtree of commit
+> `b35bdca2`; see `pnp3/Docs/TMVERIFIER_FREEZE.md`, whose migration record
 > covers three unfreezes since `42c59881`: S11 below, reviewed and completed;
 > GN-E2-3b below, whose stage (a) committed the new frozen bytes and whose
-> stage (b) repinned the freeze onto them; and GN-E2-4a below, of which **only
-> stage (a) exists**. Because that repin is deliberately absent, the freeze
-> checker and the `./scripts/check.sh` preflight **fail closed on this tree**,
-> reporting exactly one added and one changed frozen path; that is the required
-> order, the checker is unweakened, and no green freeze gate is claimed here.
+> stage (b) repinned the freeze onto them; and GN-E2-4a below, which has now
+> landed both of those stages in that same order, so the freeze checker and the
+> `./scripts/check.sh` preflight pass on this tree again. What GN-E2-4a still
+> owes is everything beyond those two local commits: no independent review of
+> the slice exists at any head, the complete `./scripts/check.sh` has not been
+> run on this branch, and the entire remote half is outstanding. No green gate
+> beyond the ones `TMVERIFIER_FREEZE.md` names is claimed here.
 > GN-E2-3b is open as PR #1777: its exact-head local `./scripts/check.sh`, its
 > two independent read-only reviews, the owner attestation and the
 > `tmverifier-unfreeze` label are complete, while the remote gate results
@@ -4457,12 +4459,13 @@ source obligation is reduced: neither `VerifiedNPDAGLowerBoundSource` nor
 `SearchMCSPWeakLowerBound` is touched, and no
 `CanonicalAsymptoticVerifierComponents` obligation is discharged.
 
-This is the **user-authorized dedicated GN-E2-4a unfreeze slice**, and only its
-stage (a) exists — the new frozen bytes and their registration, with the pin
-deliberately left alone, so the freeze gate is red on this tree by
-construction.  See the migration record in `TMVERIFIER_FREEZE.md`, which states
-the expected failure exactly.  It is a single approved exception, not a
-reopening of the paused gate-by-gate roadmap.
+This is the **user-authorized dedicated GN-E2-4a unfreeze slice**, and both of
+its stages have now landed — stage (a) the new frozen bytes and their
+registration with the pin left alone, stage (b) the repin onto that commit and
+its subtree — so the freeze gate passes on this tree again.  See the migration
+record in `TMVERIFIER_FREEZE.md`, which states what each stage carried, exactly
+which gates were run at each, and what the slice still owes.  It is a single
+approved exception, not a reopening of the paused gate-by-gate roadmap.
 
 **Where GN-E2-3b stopped, and why the head is in the wrong place.**  At
 `recordDone` the scratch region holds exactly

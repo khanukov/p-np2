@@ -7,29 +7,25 @@ newly executed handoff H11 has **six** live routed rows into G3e's start `tailSt
 `qCursorBackFirst` (`1`), `qCursorFillOne` (`8`) and `qCursorFillVirtual` (`9`) on the blank,
 `qZeroFillCounter` (`19`), `qPendingFillOne` (`23`) and `qPendingFillVirtual` (`24`) on `true`; `8`
 and `23` targeted `qHasOne` before the merge.  H12 (`34 → 37`) to H17 (`109 → 112`) are inherited
-from G3e; `check_inherited_handoff_probe` reduces H12 and H13 concretely.  Every public
-declaration is restated in full.
+from G3e.  Every public declaration is restated in full.
 
-The probes.  The eight words are G3f's (tag `10110010`): `malformedWord` has no gamma terminator
-below `N = 11`; `zeroWord` decodes to `zeros = 0` (`N = 10`); `oneWord` to `zeros = 1` (`N = 11`)
-with an exhausted payload; `middleWord` and `physWord` to `zeros = 2` (`N = 12`) and `zeros = 4`
-(`N = 17`) with a physical `true` at the first payload cell; `tightWord` to `zeros = 2` (`N = 11`)
-with a virtual first payload cell; `pendTrueWord` (`N = 13`) and `pendVirtWord` (`N = 12`) to
-`zeros = 2` with `false` then `true`, respectively a virtual cell.  The seven well-formed words
-reach H11 through all six routed rows at switch times `2`, `16`, `12`, `18`, `12`, `23`, `23`:
-**the switch time is input-dependent**, and `physWord`, `middleWord` and `pendTrueWord` take the two
-rows the merge retargeted.  The `check_*_literal*` theorems are **derived** from the slice's
-theorems and G3f's path theorems, whose hypotheses they discharge inline at the literals; the drain
-runs at `B = 22`, where `4 + 2 + 24 = 8 + 22` meets the lane budget exactly, with the register value
-`24 > N` supplied **by hand** (an execution fixture, no accepted-content fixture).  The reduction
-probes are **independent**: `probe_start` identifies the composed `startConfig B tag ·` with an
-explicit configuration using only G2a's landed `run_deadline` equality, which executes nothing.
+The probes.  The eight words are G3f's (tag `10110010`): `malformedWord` has no gamma terminator;
+`zeroWord` decodes to `zeros = 0`, `oneWord` to `zeros = 1` with an exhausted payload, `middleWord`
+and `physWord` to `zeros = 2` and `zeros = 4` with a physical `true` at the first payload cell,
+`tightWord` to `zeros = 2` with a virtual one, and `pendTrueWord` and `pendVirtWord` to `zeros = 2`
+with `false` then `true`, respectively a virtual cell.  The seven well-formed words reach H11
+through all six routed rows at switch times `2`, `16`, `12`, `18`, `12`, `23`, `23`; `physWord`,
+`middleWord` and `pendTrueWord` take the two rows the merge retargeted.  The `check_*_literal*`
+theorems are **derived** from the slice's theorems and G3f's path theorems, whose hypotheses they
+discharge inline at the literals; the drain runs at `B = 22`, where `4 + 2 + 24 = 8 + 22` meets the
+lane budget exactly, with the register value `24 > N` supplied **by hand** (an execution fixture,
+no accepted-content fixture).  The independent `probe_start` identifies the composed `startConfig`
+with an explicit configuration built from G2a's landed `run_deadline` equality alone.
 
 Not here: the composed `startConfig` still embeds every earlier phase as a retag, so no raw-input
 run and none of the ten earlier handoffs is executed or pinned; nothing reads the merged verdict
-back; no first arrival of the composed accept; no fence; the rejecting run is no converse; no
-footprint theorem; no pnp4 bridge; and no `accepts`, `AcceptsAt`, `DecidesWithin`, `UniformP` or
-language-membership statement. -/
+back; no first arrival of the composed accept, fence, converse, footprint theorem or pnp4 bridge;
+and no `accepts`, `AcceptsAt`, `DecidesWithin`, `UniformP` or language-membership statement. -/
 namespace
   Pnp3.Tests.UniformV1FixedGammaPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests
 
@@ -253,10 +249,9 @@ private def pendVirtWord : Bitstring 4 := ![false, false, true, false]
 /-! ### Derived literal handoffs -/
 
 /-- H11 through both success endpoints, **derived**: no composed verdict before the switch, and at
-the switch — `18` on `physWord` (`qHasOne`, the retargeted row `8`) and `16` on `oneWord`
-(`qAllZero`, row `19`) — G3e's actual `startConfig 0 tag ·`, re-embedded; and, from
-`handoff_endpoint_pins`, the handed-over head `6` on the unchanged `contentTape` at the physical
-fixture and head `7` at width zero (`zeroWord`, switch `2`). -/
+the switch — `18` on `physWord` (`qHasOne`, retargeted row `8`) and `16` on `oneWord` (`qAllZero`,
+row `19`) — G3e's actual `startConfig 0 tag ·`, re-embedded; and, from `handoff_endpoint_pins`,
+head `6` on the unchanged `contentTape` at `physWord` and head `7` at width zero (`zeroWord`). -/
 theorem check_handoff_literal :
     (∀ t, t < 18 → (machine.run t (startConfig 0 tag physWord)).state ≠ machine.accept ∧
       (machine.run t (startConfig 0 tag physWord)).state ≠ machine.reject) ∧
@@ -342,11 +337,10 @@ private theorem probe_start {a m : Nat} (B : Nat) (x : Bitstring a) (w : Bitstri
   rw [FixedGammaPayloadDispatcher.startConfig, FixedContentGammaAnchor.run_deadline x w htag]
 
 set_option maxRecDepth 100000 in
-/-- **H11 through all six routed rows, reduced.**  One step before each switch the composed control
-is in the dispatcher's state that owns the row — `8` on `physWord` and `middleWord` and `23` on
-`pendTrueWord`, the two retargeted rows; `9` on `tightWord`, `19` on `oneWord`, `24` on
-`pendVirtWord`, `1` on `zeroWord` — and at the switch it is in G3e's start `28` on head `6`, or
-`7` at width zero.  Nothing here uses the slice's theorems. -/
+/-- **H11 through all six routed rows, reduced.**  One step before each switch the control is in
+the dispatcher state owning the row — `8` on `physWord` and `middleWord`, `23` on `pendTrueWord`,
+`9` on `tightWord`, `19` on `oneWord`, `24` on `pendVirtWord`, `1` on `zeroWord` — and at the
+switch in G3e's start `28` on head `6`, or `7` at width zero.  No slice theorem is used. -/
 theorem check_h11_probe_reductions :
     (machine.run 17 (startConfig 0 tag physWord)).state.val = 8 ∧
     (machine.run 18 (startConfig 0 tag physWord)).state.val = 28 ∧

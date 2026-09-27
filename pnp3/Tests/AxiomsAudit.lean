@@ -5630,15 +5630,14 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Tests.UniformV1FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_malformed_probe
 
 -- Part A G3g (2026-09-26), infrastructure only.  Generic half: `M.mergeAccept e` retargets every
--- row of `M` aiming at a second absorbing successful endpoint `e` to `M.accept`, leaving `e` a
--- dead index, so that the landed `seq` routes both endpoints into the next machine's start.
--- Concrete half: G2k's payload dispatcher with `qHasOne` merged into `qAllZero`, then the whole
--- G3e composite, as one closed 123-state, 369-row table; H11 is executed by six live routed rows
--- into index 28 at the dispatcher's input-dependent strict first terminal time of G3f, H12 to
--- H17 are inherited, and the two successful verdicts are merged at the switch, where G2p-a's
--- landed retag already discards them.  Seven handoffs of seventeen; the start still retags every
--- earlier phase, the lane stays unfenced, no first arrival of the composed accept is proved, no
--- pnp4 bridge is built, and reaching the composed accept is neither halting nor acceptance.
+-- row of `M` aiming at a second absorbing successful endpoint `e` to `M.accept`, leaving `e` dead,
+-- so the landed `seq` routes both endpoints on.  Concrete half: G2k's dispatcher so merged, then
+-- the whole G3e composite as one closed 123-state, 369-row table, H11 executed by six routed rows
+-- into index 28 at G3f's input-dependent first terminal time and H12 to H17 inherited; the two
+-- successful verdicts merge at the switch, where G2p-a's landed retag already discards them.
+-- Seven handoffs of seventeen; the start still retags every earlier phase, the lane stays
+-- unfenced, no first arrival of the composed accept or pnp4 bridge is proved, and reaching the
+-- composed accept is neither halting on a raw input nor acceptance.
 #print axioms Pnp3.Complexity.Uniform.V1.UniformTM.mergeState
 #print axioms Pnp3.Complexity.Uniform.V1.UniformTM.mergeAccept
 #print axioms Pnp3.Complexity.Uniform.V1.UniformTM.mergeConfig

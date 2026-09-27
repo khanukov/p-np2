@@ -4,21 +4,19 @@ import Complexity.Uniform.V1.AcceptMerge
 Surface pins for the Part A G3g generic half: the accept merge `M.mergeAccept e` of a fixed
 `UniformTM`, which retargets every row aiming at a second absorbing successful endpoint `e` to
 `M.accept`, so that the landed `UniformTM.seq` routes both endpoints into the next machine's start.
-Every public declaration is restated; `check_mergeState_pins` bundles the retargeting-map facts,
-`check_mergeAccept_step` the three row equations and `check_mergeAccept_runs` the four run facts,
-each bundled conjunct carrying exactly the hypotheses of the declaration it pins, so none of the
-four hypothesis-free or one-hypothesis facts is restated under a stronger premise.
+Every public declaration is restated; `check_mergeState_pins`, `check_mergeAccept_step` and
+`check_mergeAccept_runs` bundle several, each conjunct carrying exactly the hypotheses of the
+declaration it pins, so none is restated under a stronger premise.
 
 The literal probe.  `twin` has four states: on a blank it writes `some true`, moves right and
 accepts; on `true` it stops in its second absorbing endpoint `e3 = ⟨3, _⟩`, neither verdict; on
 `false` it rejects in place.  `merged = twin.mergeAccept e3`; `reader` accepts on a blank and
-rejects otherwise; `pair = merged.seq reader` is the routed composition and `stuck = twin.seq
-reader` the same composition *without* the merge, the negative control.  `check_merge_literal_probe`
-reduces them by kernel computation: `merged`'s row out of `0` on `true` targets `1` where `twin`'s
-targets `3`, and no merged row targets `3`; on `true` `twin` is in `3` after one step while
-`merged` is in its accept; `pair` is in the reader's start `4` after **one** step on `true` — the
-merged endpoint, routed — and `stuck` sticks in the dead left state `3`, in neither composed
-verdict.
+rejects otherwise; `pair = merged.seq reader`, and `stuck = twin.seq reader` is the same
+composition *without* the merge, the negative control.  `check_merge_literal_probe` reduces them by
+kernel computation: `merged`'s row out of `0` on `true` targets `1` where `twin`'s targets `3`, and
+no merged row targets `3`; on `true` `twin` is in `3` after one step while `merged` is in its
+accept; `pair` is in the reader's start `4` after **one** step on `true`, the merged endpoint
+routed, and `stuck` sticks in the dead left state `3`, in neither composed verdict.
 
 Not here: no concrete Part A machine, clock or budget, no first-arrival theorem for any concrete
 machine, and no `AcceptsAt`, `DecidesWithin`, `UniformP`, `VerifiesRelation` or

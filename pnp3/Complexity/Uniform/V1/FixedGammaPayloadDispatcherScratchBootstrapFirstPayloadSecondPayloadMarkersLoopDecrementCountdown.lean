@@ -13,44 +13,41 @@ where `mergedDispatcher` is G2k's fixed 28-state, 84-row payload dispatcher with
 successful absorbing endpoint `qHasOne` merged into its `accept` `qAllZero` by the generic
 `UniformTM.mergeAccept`: the same 28 states and 84 rows, exactly the two working-state rows that
 targeted `qHasOne` — `qCursorFillOne` on the blank, `qPendingFillOne` on `true` — now targeting
-`qAllZero`, and `qHasOne` a dead index.  That merged table is the left block `[0, 28)`; the whole
-landed G3e 95-state composite is the right block `[28, 123)`, G2p-a's bootstrap at `[28, 37)` and
-G2p-b, G2p-c, G2p-d's preamble, G2p-d's round, G2q, G2s-a at `37`, `55`, `69`, `83`, `105`, `112`:
-one closed 123-state, 369-row table whose every row is a row of one of those eight tables with its
-target routed.  Write `N = a + m` and `d = borrow x w zeros`.  `pnp3/Docs/UniformP_V1.md` carries
-the long-form notes.  Classification (AGENTS.md): **Infrastructure**.
+`qAllZero`, and `qHasOne` a dead index.  That merged table is the left block `[0, 28)` and the
+whole landed G3e 95-state composite the right block `[28, 123)`: one closed 123-state, 369-row
+table whose every row is a row of one of those eight tables with its target routed.  Write
+`N = a + m` and `d = borrow x w zeros`.  `pnp3/Docs/UniformP_V1.md` carries the long-form notes.
+Classification (AGENTS.md): **Infrastructure**.
 
 **Seven executed handoffs.**  H11 is the newly executed one, with **six** live routed rows into
 G3e's start `tailStart` at index `28`: the four rows that targeted `qAllZero` (`qCursorBackFirst`,
 `qCursorFillVirtual` on the blank; `qZeroFillCounter`, `qPendingFillVirtual` on `true`) and the two
-that targeted `qHasOne`, which the merge retargets so that `seq` routes them too, in that same
-transition, at no cost — this is why H11 could not be composed before, since `seq` routes a left
-`accept` and `reject` only.  The left copies of the three endpoints stay dead.  H12 (`34 → 37`)
-to H17 (`109 → 112`) are inherited from G3e, its indices shifted by twenty-eight, located by
-`(inTail q).val = 28 + q.val` composed with G3e's own pins and carried by the universal right-block
-row equation.
+that targeted `qHasOne`, which the merge retargets so that `seq` — which routes a left `accept` and
+`reject` only, hence the earlier block — routes them too, in that same transition, at no cost.  The
+left copies of the three endpoints stay dead.  H12 (`34 → 37`) to H17 (`109 → 112`) are inherited
+from G3e, its indices shifted by twenty-eight and located by `(inTail q).val = 28 + q.val` with the
+universal right-block row equation.
 
 **The switch time is input-dependent.**  H11 fires at the dispatcher's strict first terminal time
-`C` of G3f's `StrictFirstTerminalAt B x w C q`, one of seven terminal path cases that share five
-formulas; no length-only formula exists.  `handoff_of_first_terminal` takes that first arrival,
-`q ≠ qReject` and `C ≤ deadline N` as hypotheses; `side_premises_of_strictFirstTerminalAt` derives
-the latter two from a matching tag and a decoded width, `strictFirstTerminalAt_unique` pins the
-arrival unique and `tagged_handoff` packages the switch existentially.  The deadline premise
-identifies the dispatcher's configuration at `C` with the G2m deadline configuration G2p-a's
-`startConfig`, and through it G3e's, retags; it is used in that direction only.
+`C` of G3f's `StrictFirstTerminalAt B x w C q`; no length-only formula for it exists.
+`handoff_of_first_terminal` takes that first arrival, `q ≠ qReject` and `C ≤ deadline N` as
+hypotheses; `side_premises_of_strictFirstTerminalAt` derives the latter two from a matching tag and
+a decoded width, `strictFirstTerminalAt_unique` pins the arrival unique and `tagged_handoff`
+packages the switch existentially.  The deadline premise only identifies the configuration at `C`
+with the G2m deadline one that G2p-a's `startConfig`, and through it G3e's, retags.
 
-**Both outcomes route, the reject stays rejecting, the verdict is merged.**  With `q = qAllZero`
-or `q = qHasOne` the merged control at `C` is `qAllZero`, and the same row the standalone
-dispatcher takes is routed, on the same head and tape — for `q = qHasOne` one of the two
-retargeted rows.  Before `C` no terminal occurs at all, so no merged accept does.  On a malformed
-gamma the composed control is the composed reject `122` from step `1` on.  Head and tape are
-preserved at every time up to `C`, and the switch hands G2p-a exactly its own `startConfig`
-projections (`handoff_endpoint_pins`).  The composed control after the switch does not record
-which of `qAllZero` and `qHasOne` the dispatcher reached — exactly what G2p-a's landed
-`retagDispatcher` already discards, keeping only head and tape; the distinction survives in the
-theorems through `q`, and G2m's `qHasOne_iff` family remains about the standalone dispatcher.  The
-drained theorem lands the composed accept `121` at exactly `dispatcherChainClock C N zeros d v =
-C + bootChainClock N zeros d v` under G3e's seven hypotheses plus the first arrival.
+**Both outcomes route, the reject stays rejecting, the verdict is merged.**  With `q = qAllZero` or
+`q = qHasOne` the merged control at `C` is `qAllZero`, and the same row the standalone dispatcher
+takes is routed, on the same head and tape — for `q = qHasOne` one of the two retargeted rows.
+Before `C` no terminal occurs at all, so no merged accept does; on a malformed gamma the composed
+control is the composed reject `122` from step `1` on.  Head and tape are preserved at every time
+up to `C`, and the switch hands G2p-a exactly its own `startConfig` projections
+(`handoff_endpoint_pins`).  The composed control after the switch does not record which of
+`qAllZero` and `qHasOne` the dispatcher reached — exactly what G2p-a's landed `retagDispatcher`
+already discards — the distinction surviving in the theorems through `q`, with G2m's `qHasOne_iff`
+family still about the standalone dispatcher.  The drained theorem lands the composed accept `121`
+at exactly `dispatcherChainClock C N zeros d v = C + bootChainClock N zeros d v` under G3e's seven
+hypotheses plus the first arrival.
 
 Deferred, and deliberately not claimed.  `startConfig` still **embeds** every earlier phase: the
 ten handoffs before H11 remain proof-level identifications (G2k's `startConfig` retags the actual
@@ -135,9 +132,8 @@ verdicts, the distinguished states with their indices, the block injections with
 disjointness, `tailStart` at `28`, the routing cases, **every** merged row as G2k's row with its
 target merged, `qHasOne` as no merged row's target, the two retargeted rows, every left row as the
 routed merged row, every right row as the G3e row, the public step against the composed raw table,
-the **six** live routed rows into `tailStart`, and the routed reject row out of the start.  The
-inherited rows are not restated: the right-block row equation transports every G3e row verbatim,
-and the offset equation, composed with G3e's own pins, locates them. -/
+the **six** live routed rows into `tailStart`, and the routed reject row out of the start.
+Inherited rows are not restated: the right-block row equation transports every G3e row verbatim. -/
 theorem table_and_resource_pins :
     machine.stateCount = 123 ∧ Fintype.card (Fin machine.stateCount × Option Bool) = 369 ∧
       mergedDispatcher.start = qCursorStart ∧ mergedDispatcher.accept = qAllZero ∧
@@ -209,8 +205,7 @@ theorem table_and_resource_pins :
     by decide, by decide, by decide, by decide, by decide, by decide, by decide⟩
 
 /-- The start, pinned: G2k's `startConfig` merged and routed into the composed control — the same
-head and tape, the composed start as control.  Neither the merge nor the routing consults decoded
-data. -/
+head and tape, the composed start as control.  Neither step consults decoded data. -/
 theorem handoff_pins {a m B : Nat} (x : Bitstring a) (w : Bitstring m) :
     let p := FixedGammaPayloadDispatcher.startConfig B x w
     let c := startConfig B x w
@@ -269,11 +264,10 @@ theorem side_premises_of_strictFirstTerminalAt {a m B C zeros : Nat}
 
 /-! ### The executed handoff -/
 
-/-- **H11 fires at whatever time the dispatcher first stops in a success endpoint, whichever of
-the two, and it costs nothing.**  The composed run out of `startConfig` is in neither composed
-verdict before `C`, is G2k's own run merged and routed up to and including `C` — the same head and
-whole tape at every such time — at exactly `C` **is** G3e's landed `startConfig B x w`
-re-embedded, and takes G3e steps afterwards. -/
+/-- **H11 fires at whatever time the dispatcher first stops in a success endpoint, whichever of the
+two, and it costs nothing.**  The run out of `startConfig` is in neither composed verdict before
+`C`, is G2k's own run merged and routed up to and including `C` — same head and whole tape at every
+such time — at exactly `C` **is** G3e's landed `startConfig B x w` re-embedded, and runs G3e on. -/
 theorem handoff_of_first_terminal {a m B C : Nat}
     {q : Fin FixedGammaPayloadDispatcher.stateCount} (x : Bitstring a) (w : Bitstring m)
     (h : StrictFirstTerminalAt B x w C q) (hq : q ≠ qReject) (hle : C ≤ deadline (a + m)) :
@@ -368,11 +362,10 @@ theorem handoff_of_first_terminal {a m B C : Nat}
   exact ⟨fun t ht => UniformTM.no_terminal_of_le machine c hCa hCr t (Nat.le_of_lt ht), hleft, hC,
     hsuffix⟩
 
-/-- **What the switch hands over is exactly what G2p-a reads.**  At the strict first arrival `C`
-in `q`: `q` is one of the two success endpoints, the composed configuration's head and whole tape
-are *the same two projections* that G2p-a's own `startConfig` carries, that tape is the unchanged
-`contentTape B x w`, and the head is the dispatcher's cleaned head — `7` at width zero, `6` at a
-positive width — read off G2m's landed endpoint classification. -/
+/-- **What the switch hands over is exactly what G2p-a reads.**  At the strict first arrival `C` in
+`q`: `q` is one of the two success endpoints, the composed head and whole tape are *the same*
+projections G2p-a's own `startConfig` carries, that tape is the unchanged `contentTape B x w`, and
+the head is the cleaned head G2m classifies — `7` at width zero, `6` at a positive width. -/
 theorem handoff_endpoint_pins {a m B C zeros : Nat}
     {q : Fin FixedGammaPayloadDispatcher.stateCount} (x : Bitstring a) (w : Bitstring m)
     (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
@@ -412,13 +405,12 @@ theorem handoff_endpoint_pins {a m B C zeros : Nat}
     · exact hh
 
 /-- **The concrete exact run: the payload dispatcher, H11, the scratch bootstrap, H12, the first
-payload digit, H13, the second payload digit, H14, the markers, H15, the loop, H16, the decrement,
-H17, the countdown, one machine.**  Under G3e's **seven** hypotheses plus the dispatcher's strict
-first arrival at `C` in `q`, after exactly `dispatcherChainClock C (a+m) zeros d v` steps the
-composed machine is in its accept (the countdown's `qDone`) on the separator blank `a+m+2+zeros`
-with tape `loopTape B x w zeros 0 v`, persisting; `q ≠ qReject` and `C ≤ deadline (a+m)` are
-derived.  `v` is universally quantified and nothing in pnp3 supplies it; persistence is not first
-arrival of the composed accept. -/
+and second payload digits, H13 and H14, the markers, H15, the loop, H16, the decrement, H17 and
+the countdown, one machine.**  Under G3e's **seven** hypotheses plus the dispatcher's strict first
+arrival at `C` in `q`, after exactly `dispatcherChainClock C (a+m) zeros d v` steps the composed
+machine is in its accept, the countdown's `qDone`, on the separator blank `a+m+2+zeros` with tape
+`loopTape B x w zeros 0 v`, persisting; `q ≠ qReject` and `C ≤ deadline (a+m)` are derived.  `v` is
+universally quantified and unsupplied; persistence is not first arrival of the composed accept. -/
 theorem dispatcher_scratch_bootstrap_first_payload_second_payload_markers_loop_decrement_countdown_drained
     {a m B C zeros v F : Nat} {q : Fin FixedGammaPayloadDispatcher.stateCount} (x : Bitstring a)
     (w : Bitstring m)
@@ -482,11 +474,10 @@ theorem tagged_handoff {a m B zeros : Nat} (x : Bitstring a) (w : Bitstring m)
   · exact Or.inr h3
   · exact absurd h3 hq
 
-/-- **The routed reject, executed one block further left.**  A matching tag with no decoded width:
-G2k rejects in one step at the blank boundary cell `a + m` (its landed `malformed_exact`), the
-merge keeps `qReject` fixed, and the generic rejecting handoff lands the composed reject — index
-`122`, not G2k's `qReject` at `27` — from step one on, on the unchanged content tape.  Forward
-direction only: **not** a converse, and it characterises no parsed target. -/
+/-- **The routed reject.**  Matching tag, no decoded width: G2k rejects at the blank boundary cell
+`a + m` (its landed `malformed_exact`), the merge keeps `qReject` fixed, and the generic rejecting
+handoff lands the composed reject — index `122`, not G2k's `qReject` at `27` — from step one on, on
+the unchanged content tape.  **Not** a converse; it characterises no parsed target. -/
 theorem malformed_reject_handoff {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
     (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
     (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = none)

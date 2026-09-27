@@ -120,8 +120,7 @@ lean_lib PnP3 where
     Glob.one `Complexity.Uniform.V1.FixedGammaPayloadDispatcherRounds,
     Glob.one `Complexity.Uniform.V1.FixedGammaPayloadDispatcherDeadline,
     -- Part A G3f strict first arrival of the dispatcher's three absorbing
-    -- endpoints; the two non-reject outcomes are routed by G3g's accept merge
-    -- below, not here.
+    -- endpoints; G3g's accept merge below routes the two non-reject outcomes.
     Glob.one `Complexity.Uniform.V1.FixedGammaPayloadDispatcherFirstArrival,
     -- Part A G2p-a fixed terminator-marker to scratch-cell bootstrap.
     Glob.one `Complexity.Uniform.V1.FixedGammaTerminatorScratchBootstrap,
@@ -214,9 +213,8 @@ lean_lib PnP3 where
     -- transition (a zero-step handoff); seq_handoff composes the two runs under a load-bearing
     -- first-arrival hypothesis.  No concrete machine, clock or acceptance claim.
     Glob.one `Complexity.Uniform.V1.SequentialComposition,
-    -- Part A G3g, generic half: `M.mergeAccept e` retargets every row aiming at a second
-    -- absorbing successful endpoint e to M.accept, leaving e dead, so that `seq` routes both
-    -- endpoints into the next machine's start.  No concrete machine, clock or acceptance claim.
+    -- Part A G3g, generic half: `M.mergeAccept e` retargets every row aiming at a second absorbing
+    -- success endpoint e to M.accept, leaving e dead, so `seq` routes both.  No acceptance claim.
     Glob.one `Complexity.Uniform.V1.AcceptMerge,
     -- Part A G2x, concrete half: G2q's decrement composed with G2s-a's countdown, one 18-state
     -- table whose routed edge qBorrow-on-true -> countdown qStart is the executed handoff, taken
@@ -267,12 +265,12 @@ lean_lib PnP3 where
     -- acceptance is claimed.
     Glob.one
       `Complexity.Uniform.V1.FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown,
-    -- Part A G3g: G2k's payload dispatcher with qHasOne merged into its accept qAllZero, then
-    -- that whole G3e composite, as one closed 123-state, 369-row table.  H11 is newly executed
-    -- by six live routed rows into index 28 at the dispatcher's input-dependent strict first
-    -- terminal time (G3f); H12 to H17 are inherited.  Seven handoffs of seventeen; the start
-    -- still retags the actual G2a anchor endpoint and the lane stays unfenced.  No raw-input
-    -- execution, first arrival of the composed accept, pnp4 bridge, or language acceptance.
+    -- Part A G3g: G2k's payload dispatcher with qHasOne merged into its accept qAllZero, then that
+    -- whole G3e composite, as one closed 123-state, 369-row table.  H11 is newly executed by six
+    -- live routed rows into index 28 at G3f's input-dependent strict first terminal time; H12 to
+    -- H17 are inherited.  Seven handoffs of seventeen; the start still retags the actual G2a anchor
+    -- endpoint, the lane stays unfenced, and no raw-input execution, first arrival of the composed
+    -- accept, pnp4 bridge, or language acceptance is claimed.
     Glob.one
       `Complexity.Uniform.V1.FixedGammaPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown,
     -- Generic bounded cross-budget simulation for one fixed UniformTM.

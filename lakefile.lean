@@ -282,6 +282,15 @@ lean_lib PnP3 where
     -- claimed.
     Glob.one
       `Complexity.Uniform.V1.FixedContentGammaAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown,
+    -- Part A G3i: G2's gamma terminator, then that whole G3h composite, as one closed 132-state,
+    -- 396-row table.  H9 is newly executed by the terminator's one live routed row -- qScan on
+    -- `some true`, its only row targeting its accept -- into index 3 at the terminator's width-only
+    -- first arrival zeros+1; H10 to H17 are inherited.  Nine handoffs of seventeen; the start still
+    -- retags the actual tag-gate endpoint, the lane stays unfenced, the routed reject now carries
+    -- the tag premise, and no raw-input execution, first arrival of the composed accept, pnp4
+    -- bridge, or language acceptance is claimed.
+    Glob.one
+      `Complexity.Uniform.V1.FixedContentGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown,
     -- Generic bounded cross-budget simulation for one fixed UniformTM.
     Glob.one `Complexity.Uniform.V1.BudgetTransport,
     -- Routed fixed-parser/verifier constructor and parser-prefix handoff.
@@ -890,6 +899,8 @@ lean_lib PnP3 where
       `Tests.UniformV1FixedGammaPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests,
     Glob.one
       `Tests.UniformV1FixedContentGammaAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests,
+    Glob.one
+      `Tests.UniformV1FixedContentGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
     Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,

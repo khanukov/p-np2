@@ -2,6 +2,95 @@
 
 Updated: 2026-09-27
 
+**Part A G3i, the executed gamma-terminator → gamma-anchor handoff H9: the same sequential
+composition applied a ninth time, one block further left, with no new table row and no new
+combinator (infrastructure only).** One new pnp3 module,
+`Complexity.Uniform.V1.FixedContentGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown`,
+with its surface test. **No new table row and no landed module's code edited**; the landed generic
+`UniformTM.seq` is reused unchanged and no `mergeAccept` is needed. The machine is G2's fixed
+3-state, 9-row gamma-terminator scan on the left block `[0, 3)` followed by the whole landed G3h
+129-state composite on `[3, 132)`, as one closed 132-state, 396-row table,
+`FixedContentGammaTerminator.machine.seq
+FixedContentGammaAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.machine`,
+with accept `130` and reject `131`. Write `N = a+m` and `d = borrow x w zeros`. **Nine** of the
+seventeen handoffs are now performed by a finite table and **eight** remain proof-level retags.
+
+* **H9 is executed by one live routed row, and both routed rows are proved unique.** Over all three
+  terminator states and all three symbols, with the accept's own absorbing row excluded, a target of
+  the terminator's accept forces `qScan` on `some true`; with the reject's own absorbing row
+  excluded, a target of its reject forces `qScan` on the blank (`verdict_rows_unique`). `seq`
+  retargets the first to the right block's start `tailStart` at index `3`, writing `some true` and
+  staying, in that same transition and at no cost, and the second to the composed reject `131`; the
+  one remaining working row, `qScan` on `some false`, stays inside the left block; and the six rows
+  of the two left verdict copies are dead, no left-block row targeting either verdict. Together
+  with the right-block row equation and the block disjointness `inTerminator p ≠ inTail q` — both in
+  the same theorem — this accounts for every composed row. `table_and_resource_pins` pins all nine
+  terminator rows in the composed control alongside the counts, the injections with their offsets,
+  and the routing cases. H10 (`6 → 9`) and H11 (six rows inside `[9, 37)`, all into `37`) to H17
+  (`118 → 121`) are inherited from G3h, its indices shifted by three, located by
+  `(inTail q).val = 3 + q.val` and the universal right-block row equation.
+* **The strict arrivals H9 needs were not exported, and are derived here.** The terminator has
+  exactly two absorbing states, `qAccept` and `qReject` — its raw states `1` and `2`, three rows
+  each — so the landed `seq` routes both, as for H10 and unlike H11. Its landed
+  `exact_terminal_contract` gives the run at the arrival but not the `state = accept` form
+  `seq_handoff` consumes, so `terminator_first_arrival` and `terminator_reject_arrival` derive both
+  halves, with no room premise: on a matching tag with a decoded width the terminator is in neither
+  verdict before `switchTime zeros = zeros + 1` and in `finalConfig` at it, at most its length-only
+  deadline `N - 7`; with no decoded width it is in neither verdict before that deadline and in
+  `finalConfig` — its `qReject` — at it.
+* **What the switch hands over is exactly what G2a reads.**
+  `anchor_start_at_first_arrival` records the semantic dependency and executes nothing: G2a's
+  `startConfig` retags the terminator's `finalConfig`, which *is* its run at `switchTime zeros`.
+  `handoff_exact` therefore takes a matching tag and a decoded width — two hypotheses, no room, no
+  budget — and concludes: no composed verdict at any time up to and **including** `zeros + 1` (at
+  the switch time itself the control is `tailStart`, so the bound is `≤`); the composed run is G2's
+  own run routed at every such time, as whole-`Config` equality; at exactly `zeros + 1` it **is**
+  G3h's landed `startConfig B x w` re-embedded; and every later step is a G3h step.
+  `handoff_endpoint_pins` reads that configuration back as G2a's own `startConfig` projections, with
+  the head on the gamma terminator cell `8 + zeros`, the tape the **unmarked** `contentTape`, and
+  cell `7` not yet blank — the anchor's recoverable marker is written later, inside the right block.
+* **The inherited switches and the composed run.** `tagged_inherited_switch` locates the inherited
+  H10 at `zeros + 1 + (2 * zeros + 5)` at composed index `9`, on exactly the head and tape G2k's
+  landed `startConfig` carries; `tagged_inherited_dispatcher_switch` locates the inherited H11 at
+  `zeros + 1 + (2 * zeros + 5) + C` at index `37`, with `C` produced existentially at or below
+  G2m's deadline rather than chosen. The drained theorem takes G3h's **eight** hypotheses unchanged
+  and lands the composed accept `130` at exactly
+  `terminatorChainClock C N zeros d v = zeros + 1 + anchorChainClock C N zeros d v` on the separator
+  blank `N+2+zeros` with tape `loopTape B x w zeros 0 v`, persisting; `v` is universally quantified
+  and unsupplied, and persistence is not first arrival. On a matching tag whose physical suffix holds
+  no gamma terminator the terminator rejects at exactly its deadline `N - 7` and not before, the
+  anchor never runs, and `malformed_reject_handoff` lands the composed reject `131` from that
+  deadline on — forward direction only. Unlike G3h's routed reject this one **does** carry the tag
+  premise: every run theorem of the terminator phase is tag-gated, because a mismatched tag leaves
+  G2's `startConfig` retagging the tag gate's *rejecting* endpoint, whose head the phase does not
+  characterise.
+* **Probes.** The surface test reuses G3f's, G3g's and G3h's eight words. The seven well-formed ones
+  switch at `1`, `2`, `3`, `3`, `3`, `3`, `5`, the inherited H10 then fires at `6`, `9`, `12`, `12`,
+  `12`, `12`, `18`, and the inherited H11 at `8`, `25`, `24`, `24`, `35`, `35`, `36`. It derives H9
+  at the widest and the narrowest fixture, the drain at `B = 22` after `1134` steps — `5` for the
+  terminator, `13` for the anchor, `18` for the dispatcher, `1098` for G3e — with the register value
+  `24 > N` supplied **by hand** (an execution fixture, not an accepted-content one), and the
+  malformed reject; and it independently reduces the composed machine by kernel computation, with no
+  slice theorem used, through the terminator's rightward scan, all seven H9 switches with the
+  unerased cell `7` pinned at the widest of them, the inherited H10 and H11, the inherited H12 at
+  steps `54`/`55`, and the composed reject `131` at the terminator's deadline `4`.
+
+Deferred and deliberately not claimed. **Eight of the seventeen handoffs remain proof-level**: the
+composed `startConfig` is G2's own routed into the composed control, so it still retags the actual
+tag-gate `finalConfig` and embeds every earlier phase, no raw-input `initialConfig` is executed, and
+no clock counts a step of any earlier phase. **No pnp4 bridge**: the standalone phases' pnp4
+semantics are unchanged and no `ContentVerifierBridge`, raw-input acceptance, `AcceptsAt`,
+`DecidesWithin` or `UniformP` runtime theorem appears; whether the cubic budget still dominates the
+composed clock is not proved here, and no advice-freedom or wrapper-level claim is made. **No first
+arrival of the composed accept**: the arrivals proved are the terminator's and, as a hypothesis, the
+dispatcher's, each inside its own block. The **fence** is unchanged — all ten tables are uncapped, so
+an oversized register still times out; no **footprint** theorem; no **converse**, so the composed
+reject implies nothing about the input. The endpoints reached are internal states out of a retagged
+actual prior endpoint, neither halting on a raw input nor language acceptance. The **model
+connection** remains open (caveat 6 of `VERIFIER_RETARGET_PLAN.md`). Neither
+`SearchMCSPWeakLowerBound` nor `VerifiedNPDAGLowerBoundSource` is reduced. This is infrastructure,
+not P-vs-NP mainline progress, and it makes no `P ≠ NP` claim.
+
 **Part A G3h, the executed gamma-anchor → dispatcher handoff H10: the same sequential composition
 applied an eighth time, one block further left, with no new table row and no new combinator
 (infrastructure only).** One new pnp3 module,
@@ -13,7 +102,7 @@ with its surface test. **No new table row and no landed module's code edited**; 
 `FixedContentGammaAnchor.machine.seq
 FixedGammaPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.machine`,
 with accept `127` and reject `128`. Write `N = a+m` and `d = borrow x w zeros`. **Eight** of the
-seventeen handoffs are now performed by a finite table and **nine** remain proof-level retags.
+seventeen handoffs were then performed by a finite table and **nine** remained proof-level retags.
 
 * **H10 is executed by one live routed row, and that row is proved unique.** Over all six anchor
   states and all three symbols, with the accept's own absorbing row excluded, a target of the
@@ -68,7 +157,8 @@ seventeen handoffs are now performed by a finite table and **nine** remain proof
   one step before and at the switch on all seven well-formed words, the inherited H12 at steps
   `49`/`50`, and the composed reject `128` at step `1`.
 
-Deferred and deliberately not claimed. **Nine of the seventeen handoffs remain proof-level**: the
+Deferred and deliberately not claimed. **Nine of the seventeen handoffs remained proof-level** as of
+this slice (G3i above has since taken H9, leaving eight): the
 composed `startConfig` is G2a's own routed into the composed control, so it still retags the actual
 gamma-terminator `finalConfig` and embeds every earlier phase, no raw-input `initialConfig` is
 executed, and no clock counts a step of any earlier phase. **No pnp4 bridge**: the standalone
@@ -102,8 +192,8 @@ When G3f landed, H11 — G2m's payload dispatcher into G2p-a — had one blocker
 has *two* non-reject absorbing outcomes, and `UniformTM.seq` routes a left `accept` and `reject`
 only. G3g removes it without touching `seq` or G2k's table, and executes H11, so **seven** of the
 seventeen handoffs were then performed by a finite table and **ten** remained proof-level retags.
-(G3h above has since executed H10 as well, taking the count to eight and the remainder to nine; the
-seven-and-ten counts in this entry are the ones this slice left.)
+(G3h and G3i above have since executed H10 and H9 as well, taking the count to nine and the
+remainder to eight; the seven-and-ten counts in this entry are the ones this slice left.)
 
 * **The generic half is a table transformation, not a machine.** `M.mergeAccept e` keeps `M`'s
   states, `accept` and `reject`; its start and every raw row have a target `e` retargeted to
@@ -167,7 +257,8 @@ seven-and-ten counts in this entry are the ones this slice left.)
   identified only through G2a's landed `run_deadline`.
 
 Deferred and deliberately not claimed. **Ten of the seventeen handoffs remained proof-level** as of
-this slice (G3h above has since taken H10, leaving nine): this module's composed `startConfig` still
+this slice (G3h and G3i above have since taken H10 and H9, leaving eight): this module's composed
+`startConfig` still
 retags the actual G2a anchor endpoint and embeds every earlier phase,
 no raw-input `initialConfig` is executed, and no clock counts a step of any earlier phase. **No pnp4
 bridge**: the standalone dispatcher's pnp4 semantics are unchanged and no `ContentVerifierBridge`,

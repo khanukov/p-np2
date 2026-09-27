@@ -1708,8 +1708,9 @@ the anchor's, is the target of many live rows, so G3j claims no reject-row uniqu
 routes every one of them to the composed reject. G3j is Infrastructure only and builds **no pnp4
 bridge** either: no G3j bridge module exists, this bridge still starts at G3e's composite, both of its
 routed rejects are forward-direction only — the new mismatched-tag one timed only from the gate's
-length-only deadline `3N + 7` on, no earlier time being claimed, the gate's own rejection landing at
-`3N + j` for a mismatch cell `j ≤ 7` that the mismatch hypothesis alone does not recover — and no
+length-only deadline `3N + 7` on, no earlier time being claimed, the gate's own rejection landing, on
+a nonempty content, at `3N + j` for a mismatch cell `j ≤ 7` that the mismatch hypothesis alone does
+not recover, and on empty content (`N = 0`) at `2` — and no
 `ContentVerifierBridge`, raw-input acceptance, advice-freedom claim or P-vs-NP mainline progress
 follows from it. `S` is the first
 time H12 fires, but no theorem says `C` is the first time the composed accept is entered; the first

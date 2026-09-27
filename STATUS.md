@@ -71,8 +71,10 @@ seventeen handoffs are now performed by a finite table and **seven** remain proo
   length-only deadline `3 * N + 7` on, on the gate's own `finalConfig` head over the unchanged
   content tape. Both are forward direction only, and the mismatched one is deliberately **not**
   timed exactly. On a nonempty content the gate's own rejection *time* is `3 * N + j` for its
-  mismatch *cell* `j` — with `j` the blank cell `N` itself, so `4 * N`, when the word is too short to
-  carry the whole tag — and its landed `exact_terminal_contract` proves exactly that, strictness
+  mismatch *cell* `j` — with `j` the blank cell `N` itself, so `4 * N`, exactly when the word is too
+  short to carry the whole tag *and* every bit it does carry already agrees with the tag prefix, a
+  word with an earlier mismatch keeping that mismatch's own `3 * N + j` — and its landed
+  `exact_terminal_contract` proves exactly that, strictness
   included, for a `j` characterised by the public `physicalSymbol` and `expectedTagBit`; what the
   single hypothesis `tagMatches (Fin.append x w) = false` does not let this slice recover is `j`
   itself, the `badIndex` defining it being private and its only public trace the value of

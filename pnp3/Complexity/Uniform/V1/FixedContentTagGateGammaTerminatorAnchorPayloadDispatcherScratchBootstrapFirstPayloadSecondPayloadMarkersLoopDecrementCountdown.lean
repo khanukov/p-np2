@@ -69,8 +69,10 @@ seven handoffs before H8 remain proof-level identifications (G1's `startConfig` 
 marker-erase `finalConfig`, which `handoff_pins` records hypothesis-free), no raw-input
 `initialConfig` is executed, and no clock here counts a step of any earlier phase.  The mismatched
 branch is **not** timed exactly.  Its rejection *time* is `3 * N + j` for the gate's mismatch *cell*
-`j` whenever the content is nonempty — with `j` the blank cell `N` itself, so `4 * N`, when the word
-is too short to carry the whole tag — and `2` when `N = 0`; the gate's landed
+`j` whenever the content is nonempty — with `j` the blank cell `N` itself, so `4 * N`, exactly when
+the word is too short to carry the whole tag *and* every bit it does carry already agrees with the
+tag prefix, a word with an earlier mismatch keeping that mismatch's own `3 * N + j` — and `2` when
+`N = 0`; the gate's landed
 `exact_terminal_contract` does prove exactly those times, strictness included, for a `j`
 characterised by the public `physicalSymbol` and `expectedTagBit`.  What is unavailable here is `j`
 itself: from `tagMatches (Fin.append x w) = false` alone it cannot be recovered, the `badIndex` that

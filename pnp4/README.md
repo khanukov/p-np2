@@ -788,8 +788,9 @@ bridge**: no `ContentVerifierBridge`, no raw-input acceptance, no advice-freedom
 mainline progress; the standalone phases' pnp4 semantics are unchanged, this chained run still starts
 at G3e's composite, and both of G3j's routed rejects are forward-direction only, the new mismatched-
 tag one timed only from the gate's length-only deadline `3N + 7` on, with no claim about any earlier
-time: the gate's own rejection lands at `3N + j` for a mismatch cell `j ≤ 7`, at or before that
-deadline, and that `j` is not recoverable from the mismatch hypothesis alone. No first arrival of
+time: on a nonempty content the gate's own rejection lands at `3N + j` for a mismatch cell `j ≤ 7`,
+at or before that deadline, and on empty content (`N = 0`) at `2`; that `j` is not recoverable from
+the mismatch hypothesis alone. No first arrival of
 the G3e composed accept is proved (the first arrival proved is G2p-a's, inside the left block), the
 lane is still unfenced, the composed accept is still the countdown's phase-local `qDone` rather than
 language acceptance, the machine is a V1 `UniformTM` on `Option Bool` cells against `pairLength a m`

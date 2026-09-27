@@ -90,7 +90,7 @@ theorem check_mergeAccept_runs (M : UniformTM) (e : Fin M.stateCount) (ha : e �
       (∀ t, t < T →
         ((M.mergeAccept e).run t (M.mergeConfig e c)).state ≠ (M.mergeAccept e).accept) :=
   ⟨M.mergeAccept_run e c (fun t ht => (hwork t ht).1), M.mergeAccept_run_ne e ha hr c,
-    M.mergeAccept_run_accept e c (fun t ht => (hwork t ht).1) hT,
+    M.mergeAccept_run_accept e hr c (fun t ht => (hwork t ht).1) hT,
     M.mergeAccept_run_ne_accept e c hwork⟩
 
 /-- The merged left block of a composition, restated in full. -/
@@ -107,12 +107,13 @@ theorem check_mergeAccept_seq_run_left (M₁ M₂ : UniformTM) (e : Fin M₁.sta
 theorem check_mergeAccept_seq_handoff (M₁ M₂ : UniformTM) (e : Fin M₁.stateCount) {n B : Nat}
     (c : Config M₁.stateCount n B) {T : Nat}
     (hwork : ∀ t, t < T → (M₁.run t c).state ≠ e ∧ (M₁.run t c).state ≠ M₁.accept)
-    (hT : (M₁.run T c).state = e ∨ (M₁.run T c).state = M₁.accept) (s : Nat) :
+    (hT : (M₁.run T c).state = e ∨ (M₁.run T c).state = M₁.accept)
+    (he : e ≠ M₁.reject) (s : Nat) :
     ((M₁.mergeAccept e).seq M₂).run (T + s)
         ((M₁.mergeAccept e).seqEmbedRouted M₂ (M₁.mergeConfig e c)) =
       (M₁.mergeAccept e).seqEmbedRight M₂
         (M₂.run s ⟨M₂.start, (M₁.run T c).head, (M₁.run T c).tape⟩) :=
-  M₁.mergeAccept_seq_handoff M₂ e c hwork hT s
+  M₁.mergeAccept_seq_handoff M₂ e c hwork hT he s
 
 /-- The rejecting handoff through the merge, restated in full. -/
 theorem check_mergeAccept_seq_reject_handoff (M₁ M₂ : UniformTM) (e : Fin M₁.stateCount)

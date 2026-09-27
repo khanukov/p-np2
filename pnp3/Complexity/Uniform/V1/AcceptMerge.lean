@@ -10,6 +10,20 @@ whose target is not `e` is `M`'s row verbatim.  With `e` neither verdict of `M`,
 **unreachable**: no row of the merged public step targets it and no merged run out of a merged
 configuration is ever in it (`mergeAccept_step_ne`, `mergeAccept_run_ne`) — a dead index.
 
+`mergeState`, `mergeAccept` and `mergeConfig` retarget **whatever** index they are handed; that is
+the whole of the transformation and no case is hidden.  In particular at `e = M.reject` they
+retarget `M`'s *rejecting* rows to `M.accept` as well, so no merged row targets the merged `reject`
+at all.  Every theorem that reads `e` as a **second success** therefore carries `e ≠ M.reject`:
+`mergeAccept_run_accept` and `mergeAccept_seq_handoff`, alongside `mergeAccept_step`,
+`mergeAccept_step_ne`, `mergeAccept_run_ne` and `mergeAccept_seq_reject_handoff`.  In the last four
+the premise is consumed by the proof; in the first two it is a **scope guard** the proof does not
+use — the equations hold for any `e`, and `mergeAccept_run` with `mergeConfig_pins` still states
+them unrestrictedly — whose job is to exclude the one instantiation under which they would be *read*
+wrongly, `e := M.reject`, where `mergeAccept_seq_handoff` would send a first *rejection* of `M₁`
+into `M₂.start`.  The purely simulational `mergeAccept_stepConfig`, `mergeAccept_run`,
+`mergeAccept_run_ne_accept` and `mergeAccept_seq_run_left` say nothing about what the merged
+endpoint means and carry no such guard.
+
 Purpose.  `UniformTM.seq` routes the left machine's `accept` and `reject` and nothing else, so a
 left machine with a *second* absorbing successful endpoint `e` — G2k's payload dispatcher, whose
 `qHasOne` is absorbing but neither verdict — would stick in `e` inside the left block.
@@ -33,7 +47,9 @@ def UniformTM.mergeState (M : UniformTM) (e q : Fin M.stateCount) : Fin M.stateC
   if q = e then M.accept else q
 
 /-- The merged table: `M`'s states and verdicts, `M`'s start and every raw row with a target `e`
-retargeted to `M.accept`.  Written symbols and moves are untouched. -/
+retargeted to `M.accept`.  Written symbols and moves are untouched.  `e` is unrestricted here: at
+`e = M.reject` the rejecting rows are retargeted too, which is why the theorems that read `e` as a
+second *success* require `e ≠ M.reject`. -/
 def UniformTM.mergeAccept (M : UniformTM) (e : Fin M.stateCount) : UniformTM where
   stateCount := M.stateCount
   start := M.mergeState e M.start
@@ -183,8 +199,12 @@ theorem UniformTM.mergeAccept_run_ne (M : UniformTM) (e : Fin M.stateCount) (ha 
       exact M.mergeAccept_step_ne e ha hr _ _
 
 /-- **Both successful endpoints read back as the merged `accept`**, on the head and tape the `M`
-run has at `T`; which of the two `M` reached is not recoverable. -/
-theorem UniformTM.mergeAccept_run_accept (M : UniformTM) (e : Fin M.stateCount) {n B : Nat}
+run has at `T`; which of the two `M` reached is not recoverable.  `e ≠ M.reject` is the scope guard
+that makes `e` a second *success*: the proof does not use it, but without it `e := M.reject` would
+read a first rejection back as the merged accept.  `mergeAccept_run` with `mergeConfig_pins` states
+the same equation for an arbitrary `e`. -/
+theorem UniformTM.mergeAccept_run_accept (M : UniformTM) (e : Fin M.stateCount)
+    (_hr : e ≠ M.reject) {n B : Nat}
     (c : Config M.stateCount n B) {T : Nat} (hwork : ∀ t, t < T → (M.run t c).state ≠ e)
     (hT : (M.run T c).state = e ∨ (M.run T c).state = M.accept) :
     (M.mergeAccept e).run T (M.mergeConfig e c) =
@@ -222,16 +242,20 @@ theorem UniformTM.mergeAccept_seq_run_left (M₁ M₂ : UniformTM) (e : Fin M₁
 /-- **The two-success-source handoff.**  If the `M₁` run is in `e` or in `M₁.accept` at `T` and in
 neither before `T`, the composed run is, at `T + s`, the `M₂` run of `s` steps out of `M₂.start` on
 the head and tape `M₁` left at `T` — whichever endpoint `M₁` reached.  First arrival is
-load-bearing, now against both endpoints at once. -/
+load-bearing, now against both endpoints at once.  `e ≠ M₁.reject` is the scope guard that makes `e`
+a second *success*: it is handed on to `mergeAccept_run_accept`, which does not consume it either,
+and what it excludes is `e := M₁.reject`, under which this equation would route a first *rejection*
+of `M₁` into `M₂.start` instead of the composed reject that
+`mergeAccept_seq_reject_handoff` gives. -/
 theorem UniformTM.mergeAccept_seq_handoff (M₁ M₂ : UniformTM) (e : Fin M₁.stateCount) {n B : Nat}
     (c : Config M₁.stateCount n B) {T : Nat}
     (hwork : ∀ t, t < T → (M₁.run t c).state ≠ e ∧ (M₁.run t c).state ≠ M₁.accept)
-    (hT : (M₁.run T c).state = e ∨ (M₁.run T c).state = M₁.accept) (s : Nat) :
+    (hT : (M₁.run T c).state = e ∨ (M₁.run T c).state = M₁.accept) (he : e ≠ M₁.reject) (s : Nat) :
     ((M₁.mergeAccept e).seq M₂).run (T + s)
         ((M₁.mergeAccept e).seqEmbedRouted M₂ (M₁.mergeConfig e c)) =
       (M₁.mergeAccept e).seqEmbedRight M₂
         (M₂.run s ⟨M₂.start, (M₁.run T c).head, (M₁.run T c).tape⟩) := by
-  have hacc := M₁.mergeAccept_run_accept e c (fun t ht => (hwork t ht).1) hT
+  have hacc := M₁.mergeAccept_run_accept e he c (fun t ht => (hwork t ht).1) hT
   have hstate : ((M₁.mergeAccept e).run T (M₁.mergeConfig e c)).state =
       (M₁.mergeAccept e).accept := by
     rw [hacc]

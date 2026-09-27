@@ -352,7 +352,7 @@ theorem handoff_of_first_terminal {a m B C : Nat}
     rw [hcfg]
     exact FixedGammaPayloadDispatcher.machine.mergeAccept_seq_handoff
       FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.machine
-      qHasOne _ hwork hT s
+      qHasOne _ hwork hT (by decide) s
   have hC : machine.run C c =
       mergedDispatcher.seqEmbedRight
         FixedGammaTargetScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.machine

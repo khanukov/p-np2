@@ -244,7 +244,7 @@ row** and no new combinator: the marker-erase phase too has exactly two absorbin
 landed `UniformTM.seq` routes both. H7's one live row — `qErase` on `some true`, the phase's only row
 targeting its accept once the accept's own absorbing three are excluded — fires at the phase's
 **length-only** strict first arrival `N + 3`, which is also the phase's own clock and carries no room
-premise, and it is the first routed row of the chain that *mutates* the cell it hands over: it writes
+premise, and it is the first such row in forward execution order that *mutates* the cell it hands over: it writes
 `none`, so the composed table performs the marker erasure itself. Because that arrival was already
 landed in the shape `seq` consumes and is hypothesis-free, `handoff_exact` here takes **no hypothesis
 at all** — the first executed handoff of the chain that takes none. Its reject side is the first that

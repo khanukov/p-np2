@@ -87,7 +87,8 @@ seventeen handoffs are now performed by a finite table and **six** remain proof-
 * **Probes.** The surface test reuses G3j's nine words. Because the marker-erase switch is
   length-only the seven well-formed words switch at `20`, `16`, `15`, `15`, `14`, `14` and `13` —
   always on the boundary cell `N`, whatever the width, and whatever the tag: `badTag` and
-  `malformedWord` switch on time too, the left block reading neither a tag cell nor a gamma cell. It
+  `malformedWord` switch on time too: the left block scans those cells but does not test their tag,
+  gamma, or bit meanings. It
   derives H7 at the widest and the narrowest fixture, both routed reject rows and the absence of any
   `qScan` row into the reject, the drain at `B = 22` after `1212` steps — `20` for the marker erasure,
   `58` for the gate, `5` for the terminator, `13` for the anchor, `18` for the dispatcher, `1098` for

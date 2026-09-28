@@ -509,8 +509,8 @@ set_option maxRecDepth 4000000 in
 `19`/`20` on `physWord`, `15`/`16` on `pendTrueWord`, `14`/`15` on `middleWord` and `pendVirtWord`,
 `13`/`14` on `tightWord`, `oneWord` and `malformedWord`, and `12`/`13` on `zeroWord`, which is
 `N + 2` and `N + 3` in each case.  `badTag` with `tightWord` switches at the same `13`/`14` as the
-matching tag does: the left block reads no tag cell, so a mismatched tag reaches the right block
-unhindered and is rejected there. -/
+matching tag does: the left block scans that cell but does not test its tag or bit meaning, so a
+mismatched tag reaches the right block unhindered and is rejected there. -/
 theorem check_h7_probe_reductions :
     (machine.run 19 (startConfig 0 tag physWord)).state.val = 1 ∧
     (machine.run 20 (startConfig 0 tag physWord)).state.val = 4 ∧

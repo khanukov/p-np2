@@ -3,14 +3,15 @@
 **Status:** frozen infrastructure snapshot. Both stages of the GN-E2-4a
 migration recorded at the end of this file have now landed on this branch:
 stage (a) committed the new frozen bytes together with their registration, and
-stage (b) — the commit carrying this sentence — re-pins the freeze onto that
+stage (b) — commit `e2c3ee33` — re-pins the freeze onto that
 commit and its subtree. The two pinned constants below therefore name the
 GN-E2-4a stage-(a) commit `b35bdca2` and its subtree `c544405f`, and
 `scripts/check_tmverifier_freeze.py` and the freeze preflight of
 `scripts/check.sh` pass on this tree again. What that migration still owes —
-the complete `./scripts/check.sh` on the final head, any independent review of
-the slice, and the whole remote half — is listed in its record, not here, and
-none of it is claimed anywhere.
+the complete `./scripts/check.sh` on the final head, any review of the final
+head, and the whole remote half — is listed in its record, not here, together
+with the two independent read-only reviews it did receive at the stage-(b) head
+`e2c3ee33`; none of the owed items is claimed anywhere.
 The earlier GN-E2-3b migration, whose pins these were until this commit, landed
 both of its stages on its own branch and was then merged by PR #1777 on
 2026-09-23 as the merge commit `48151689`, which preserved history, so its
@@ -25,8 +26,9 @@ verifies against.
 `b35bdca2cb24af709144998af5c4402d42a18aa5` (2026-09-27) — the stage-(a)
 commit whose subtree the pin names. The checker calls this value "reviewed
 provenance" because that is the role the constant plays; for this migration the
-independent review of the slice is still owed, so this line records provenance
-only, not a completed review.
+two independent reviews were performed at the stage-(b) head `e2c3ee33`, whose
+frozen subtree is exactly the pinned tree, and not at this commit's own head, so
+this line records provenance and the record below carries the reviews.
 **Previously frozen at:** tree `b49456d6e08bbce69fd94af2d2a97beef438d210`,
 reviewed at `7b53a08fc13517fcf8b2c73b45f6515102a13863` (2026-09-20), before
 that at tree `7ef6ac6e119f0f078f9c896f17415fa560a6edf3`, reviewed at
@@ -818,7 +820,9 @@ given above: its first action is the freeze preflight, which correctly rejected
 the stage-(a) tree. What was run, on that tree, all succeeding: targeted
 `lake build` of
 `Complexity.TMVerifier.TuringToolkit.GateNFixedDelegateRelocation`,
-`…GateNValuesRewind` and `…GateNRelocationExamples`, plus the complete
+`…GateNValuesRewind` and `…GateNRelocationExamples` (that last one imports
+`GateNRelocation`, not the changed control module, so it is an extra targeted
+build and not part of the cone), plus the complete
 reverse-dependency cone of the changed control module — the six other frozen
 `TuringToolkit/GateN*` modules that import it transitively
 (`GateNBodyDriver`, `GateNBodyRound`, `GateNBoundaryShuttle`,

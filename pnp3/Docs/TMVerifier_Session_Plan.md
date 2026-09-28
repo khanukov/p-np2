@@ -8,16 +8,21 @@
 > GN-E2-3b below, whose stage (a) committed the new frozen bytes and whose
 > stage (b) repinned the freeze onto them; and GN-E2-4a below, which has now
 > landed both of those stages in that same order, so the freeze checker and the
-> `./scripts/check.sh` preflight pass on this tree again. What GN-E2-4a still
-> owes is everything beyond those two local commits: no independent review of
-> the slice exists at any head, the complete `./scripts/check.sh` has not been
-> run on this branch, and the entire remote half is outstanding. No green gate
+> `./scripts/check.sh` preflight pass on this tree again. Two independent
+> read-only adversarial reviews of those two commits were completed at the
+> stage-(b) head `e2c3ee33` and both approved with no blocking finding; the
+> docs-only commit that fixes this paragraph changes the head, so no review of
+> the current head is claimed. What GN-E2-4a still owes is everything else
+> beyond those two commits: the complete `./scripts/check.sh` has not been run
+> on this branch, and the entire remote half is outstanding. No green gate
 > beyond the ones `TMVERIFIER_FREEZE.md` names is claimed here.
-> GN-E2-3b is open as PR #1777: its exact-head local `./scripts/check.sh`, its
-> two independent read-only reviews, the owner attestation and the
-> `tmverifier-unfreeze` label are complete, while the remote gate results
-> against the final head, the required PR review and a history-preserving merge
-> are still owed; `TMVERIFIER_FREEZE.md` carries the exact split.
+> GN-E2-3b was merged by PR #1777 on 2026-09-23 as the merge commit `48151689`,
+> which preserved history, so its provenance commit `7b53a08f` is an ancestor of
+> this branch: its exact-head local `./scripts/check.sh`, its two independent
+> read-only reviews, the owner attestation and the `tmverifier-unfreeze` label
+> were recorded before that merge, while local Git records neither the remote
+> gate results against its final head nor the required PR review, so neither is
+> claimed; `TMVERIFIER_FREEZE.md` carries the exact split.
 >
 > This is **not** a silent resumption of the paused roadmap. GN-E2-3b and
 > GN-E2-4a were each unfrozen once, deliberately, as single user-authorized
@@ -4542,9 +4547,12 @@ separator and the whole selected record, and `gnValuesRewindPre_ne_bof` shows
 none of those frames is a `bof`.  `gnValuesEntryConfig_structure` pins that
 configuration without hiding a component: state `⟨0, valuesEntry⟩`; head `4`;
 the full tape; the fact that this tape is the *same term* as
-`(gnFirstRecordDoneConfig r g hg).tape`; the identification of head `4` as p0
-of the first frame after the leading `bof`, where the current-value run
-`gnCurrentValues r [] = r.inputs` begins; and what still has to be written,
+`(gnFirstRecordDoneConfig r g hg).tape`; the `gnLocatePrefix r` list identity
+that locates head `4` as p0 of the first frame after the leading `bof`, where
+the current-value run `gnCurrentValues r [] = r.inputs` begins — a pure list
+fact, whose head reading leans on the GN-E2-3b word split, while head `4`
+itself is pinned outright by the second conjunct; and what still has to be
+written,
 namely that the installed scratch image followed by exactly that current-value
 run is `g1PrefixFrames (gnFirstRequest r g)`.
 `gnValuesEntrySteps_le_gnClock` records that this whole proved prefix —
